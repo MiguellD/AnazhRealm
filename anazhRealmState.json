@@ -1,0 +1,4852 @@
+{
+  "playerPosition": {
+    "x": 13.39858627319336,
+    "y": 0.5984663963317871,
+    "z": 6.214902400970459
+  },
+  "learningData": [
+    {
+      "timestamp": 116.688,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 116.7047,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 116.7213,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 116.738,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 116.7547,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 116.7714,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 116.788,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 116.8047,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 116.82130000000001,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 116.838,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 116.8547,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 116.8713,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 116.88789999999999,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 116.90469999999999,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 116.9213,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 116.938,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 116.9546,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 116.9713,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 116.988,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.0047,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.0214,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.0379,
+      "fps": 61,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.0547,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.0714,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.08810000000001,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.1047,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.1216,
+      "fps": 59,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.1382,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.1546,
+      "fps": 61,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.17139999999999,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.1881,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.2048,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.2215,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.23819999999999,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.2548,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.2715,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.2882,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.3048,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.3214,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.3384,
+      "fps": 59,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.3548,
+      "fps": 61,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.3716,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.3882,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.40480000000001,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.4215,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.4382,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.4549,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.47139999999999,
+      "fps": 61,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.48830000000001,
+      "fps": 59,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.505,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.5215,
+      "fps": 61,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.5382,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.5547,
+      "fps": 61,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.5714,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.588,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.6049,
+      "fps": 59,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.6214,
+      "fps": 61,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.63810000000001,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.65469999999999,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.67139999999999,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.688,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.7048,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.72139999999999,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.73819999999999,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.7547,
+      "fps": 61,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.7715,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.7881,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.8048,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.8214,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.83810000000001,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.8546,
+      "fps": 61,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.8714,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.88810000000001,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.90469999999999,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.92139999999999,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.9382,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.9548,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.97139999999999,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 117.98819999999999,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.0048,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.0214,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.0381,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.05489999999999,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.07130000000001,
+      "fps": 61,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.088,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.1047,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.1214,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.1382,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.15469999999999,
+      "fps": 61,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.1715,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.1882,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.2048,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.2215,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.23819999999999,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.2548,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.2714,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.2881,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.3047,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.3214,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.3382,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.3548,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.3714,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.388,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.40469999999999,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.4215,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.4381,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.4548,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.47139999999999,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.4881,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.5048,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.5215,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.5381,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.5548,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.5714,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.588,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.6047,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.6214,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.63810000000001,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.65469999999999,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.6715,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.6881,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.7047,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.7215,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.73819999999999,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.7548,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.7715,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.7881,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.8048,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.8214,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.83810000000001,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.8548,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.8714,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.88810000000001,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.90469999999999,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.9215,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.9382,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.9546,
+      "fps": 61,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.97139999999999,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 118.98819999999999,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.00489999999999,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.0215,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.0381,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.0548,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.0714,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.088,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.1048,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.1214,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.138,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.15480000000001,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.17139999999999,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.1882,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.2048,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.2215,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.23819999999999,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.2547,
+      "fps": 61,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.2714,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.2881,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.3047,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.3214,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.33810000000001,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.3547,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.3714,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.3882,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.40480000000001,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.4215,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.4382,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.4547,
+      "fps": 61,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.47139999999999,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.48819999999999,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.5047,
+      "fps": 61,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.5217,
+      "fps": 59,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.5381,
+      "fps": 61,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.5547,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.5714,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.58810000000001,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.6049,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.6214,
+      "fps": 61,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.6382,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.65469999999999,
+      "fps": 61,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.67139999999999,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.6882,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.7047,
+      "fps": 61,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.72139999999999,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.73819999999999,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.7548,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.7714,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.788,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.8047,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.82130000000001,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.8382,
+      "fps": 59,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.8547,
+      "fps": 61,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.8714,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.88810000000001,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.90480000000001,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.92139999999999,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.9382,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.9548,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.97139999999999,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 119.9881,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    },
+    {
+      "timestamp": 120.0047,
+      "fps": 60,
+      "playerPosition": {
+        "x": 13.39858627319336,
+        "y": 0.5984663963317871,
+        "z": 6.214902400970459
+      },
+      "playerVelocity": {
+        "dx": 0,
+        "dy": 0,
+        "dz": 0
+      },
+      "inputState": {
+        "forward": 0,
+        "right": 0,
+        "jump": 0
+      }
+    }
+  ],
+  "knowledgeBase": [
+    {
+      "type": "learning",
+      "content": "FPS: 114.2, Datenpunkte: 20",
+      "timestamp": 5.0046
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 10.0099
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 1, creatureDance",
+      "timestamp": 10.7464
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 15.0151
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.5, Datenpunkte: 20",
+      "timestamp": 20.0203
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 2, gravityShift",
+      "timestamp": 20.7486
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 25.025599999999997
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 113.5, Datenpunkte: 20",
+      "timestamp": 30.2316
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 3, creatureDance",
+      "timestamp": 30.750799999999998
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.5, Datenpunkte: 20",
+      "timestamp": 35.237199999999994
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.4, Datenpunkte: 20",
+      "timestamp": 40.2423
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 4, creatureDance",
+      "timestamp": 40.753
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 45.247800000000005
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.4, Datenpunkte: 20",
+      "timestamp": 50.252900000000004
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 5, terrainFlatten",
+      "timestamp": 50.755300000000005
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 55.258300000000006
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 60.2636
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 6, gravityShift",
+      "timestamp": 60.7573
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 65.2689
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 116.3, Datenpunkte: 20",
+      "timestamp": 70.2742
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 7, terrainFlatten",
+      "timestamp": 70.7597
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 75.2795
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 5.0046
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 10.0099
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 1, gravityShift",
+      "timestamp": 10.964
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.5, Datenpunkte: 20",
+      "timestamp": 15.0152
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 95.3, Datenpunkte: 20",
+      "timestamp": 20.020599999999998
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 2, gravityShift",
+      "timestamp": 20.9665
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 110.3, Datenpunkte: 20",
+      "timestamp": 25.0262
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.2, Datenpunkte: 20",
+      "timestamp": 30.0314
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 3, creatureDance",
+      "timestamp": 30.969
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 35.0364
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.4, Datenpunkte: 20",
+      "timestamp": 40.041599999999995
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 4, terrainFlatten",
+      "timestamp": 40.970699999999994
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.5, Datenpunkte: 20",
+      "timestamp": 45.047
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.4, Datenpunkte: 20",
+      "timestamp": 50.0522
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 5, creatureDance",
+      "timestamp": 50.9729
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 55.0575
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 116.3, Datenpunkte: 20",
+      "timestamp": 60.0629
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 6, gravityShift",
+      "timestamp": 60.975300000000004
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 106.5, Datenpunkte: 20",
+      "timestamp": 65.0764
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 96.8, Datenpunkte: 20",
+      "timestamp": 70.0815
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 7, terrainFlatten",
+      "timestamp": 70.9855
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.2, Datenpunkte: 20",
+      "timestamp": 75.0872
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.2, Datenpunkte: 20",
+      "timestamp": 80.0924
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 8, creatureDance",
+      "timestamp": 80.988
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 85.0976
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 102.5, Datenpunkte: 20",
+      "timestamp": 90.1361
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 9, creatureDance",
+      "timestamp": 91.09039999999999
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.4, Datenpunkte: 20",
+      "timestamp": 95.14160000000001
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.6, Datenpunkte: 20",
+      "timestamp": 100.1468
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 10, terrainFlatten",
+      "timestamp": 101.0927
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.2, Datenpunkte: 20",
+      "timestamp": 105.1523
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.5, Datenpunkte: 20",
+      "timestamp": 110.1575
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 11, terrainFlatten",
+      "timestamp": 111.0949
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 60.3, Datenpunkte: 20",
+      "timestamp": 115.17089999999999
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 75.9, Datenpunkte: 20",
+      "timestamp": 120.1851
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 12, terrainFlatten",
+      "timestamp": 121.5741
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 37.6, Datenpunkte: 20",
+      "timestamp": 125.2568
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 104.2, Datenpunkte: 20",
+      "timestamp": 130.26239999999999
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 13, terrainFlatten",
+      "timestamp": 131.5765
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 135.26770000000002
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 91.5, Datenpunkte: 20",
+      "timestamp": 140.2728
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 14, terrainFlatten",
+      "timestamp": 141.5787
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 116.6, Datenpunkte: 20",
+      "timestamp": 145.278
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 150.2836
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 15, creatureDance",
+      "timestamp": 151.58079999999998
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 155.2887
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 5.0026
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.5, Datenpunkte: 20",
+      "timestamp": 10.007700000000002
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 1, gravityShift",
+      "timestamp": 10.409600000000001
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.4, Datenpunkte: 20",
+      "timestamp": 15.0131
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.4, Datenpunkte: 20",
+      "timestamp": 20.0183
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 2, terrainFlatten",
+      "timestamp": 20.4116
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 25.0236
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 30.0289
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 3, terrainFlatten",
+      "timestamp": 30.414
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 35.0342
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 40.0395
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 4, gravityShift",
+      "timestamp": 40.416199999999996
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 45.0448
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 50.0501
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 5, creatureDance",
+      "timestamp": 50.4184
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 55.0555
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 60.0607
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 6, creatureDance",
+      "timestamp": 60.4207
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 116.3, Datenpunkte: 20",
+      "timestamp": 65.066
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 70.07130000000001
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 7, terrainFlatten",
+      "timestamp": 70.42280000000001
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 110.5, Datenpunkte: 20",
+      "timestamp": 75.0847
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.5, Datenpunkte: 20",
+      "timestamp": 80.0901
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 8, creatureDance",
+      "timestamp": 80.4251
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 113.5, Datenpunkte: 20",
+      "timestamp": 85.0954
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.5, Datenpunkte: 20",
+      "timestamp": 90.1007
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 9, creatureDance",
+      "timestamp": 90.4273
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.4, Datenpunkte: 20",
+      "timestamp": 95.106
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.5, Datenpunkte: 20",
+      "timestamp": 100.1113
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 10, terrainFlatten",
+      "timestamp": 100.4294
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.4, Datenpunkte: 20",
+      "timestamp": 105.1166
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.4, Datenpunkte: 20",
+      "timestamp": 110.1219
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 11, gravityShift",
+      "timestamp": 110.4316
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 115.1272
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 120.1323
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 12, terrainFlatten",
+      "timestamp": 120.43360000000001
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.5, Datenpunkte: 20",
+      "timestamp": 125.1376
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 110.0, Datenpunkte: 20",
+      "timestamp": 130.1511
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 13, creatureDance",
+      "timestamp": 130.4442
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 92.0, Datenpunkte: 20",
+      "timestamp": 135.1565
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.4, Datenpunkte: 20",
+      "timestamp": 5.0019
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.5, Datenpunkte: 20",
+      "timestamp": 10.007200000000001
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 1, creatureDance",
+      "timestamp": 10.409
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 15.0125
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.2, Datenpunkte: 20",
+      "timestamp": 20.0179
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 2, creatureDance",
+      "timestamp": 20.4113
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 116.4, Datenpunkte: 20",
+      "timestamp": 25.0231
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 30.0284
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 3, creatureDance",
+      "timestamp": 30.4135
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 35.0336
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 40.0391
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 4, creatureDance",
+      "timestamp": 40.4156
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 45.0443
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 50.0496
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 5, terrainFlatten",
+      "timestamp": 50.4179
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 55.0549
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.4, Datenpunkte: 20",
+      "timestamp": 60.0601
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 6, gravityShift",
+      "timestamp": 60.42
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.2, Datenpunkte: 20",
+      "timestamp": 65.0655
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.5, Datenpunkte: 20",
+      "timestamp": 70.0706
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 7, creatureDance",
+      "timestamp": 70.4223
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 75.076
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.4, Datenpunkte: 20",
+      "timestamp": 80.0812
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 8, terrainFlatten",
+      "timestamp": 80.4245
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.4, Datenpunkte: 20",
+      "timestamp": 85.0864
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.5, Datenpunkte: 20",
+      "timestamp": 90.0918
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 9, gravityShift",
+      "timestamp": 90.4267
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 95.09710000000001
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 100.1025
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 10, gravityShift",
+      "timestamp": 100.42880000000001
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.4, Datenpunkte: 20",
+      "timestamp": 105.1077
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 11, terrainFlatten",
+      "timestamp": 110.63189999999999
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 54.9, Datenpunkte: 20",
+      "timestamp": 110.1134
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.5, Datenpunkte: 20",
+      "timestamp": 115.1183
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 120.1235
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 12, terrainFlatten",
+      "timestamp": 120.63419999999999
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 125.12889999999999
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.4, Datenpunkte: 20",
+      "timestamp": 130.1342
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 13, terrainFlatten",
+      "timestamp": 130.63639999999998
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 119.3, Datenpunkte: 20",
+      "timestamp": 135.1394
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 57.5, Datenpunkte: 20",
+      "timestamp": 5.0042
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 60.0, Datenpunkte: 20",
+      "timestamp": 10.004299999999999
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 1, terrainFlatten",
+      "timestamp": 11.287600000000001
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 60.0, Datenpunkte: 20",
+      "timestamp": 15.004299999999999
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 60.1, Datenpunkte: 20",
+      "timestamp": 20.0044
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 2, creatureDance",
+      "timestamp": 21.304299999999998
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 60.0, Datenpunkte: 20",
+      "timestamp": 25.0044
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 60.0, Datenpunkte: 20",
+      "timestamp": 30.0209
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 3, gravityShift",
+      "timestamp": 31.3045
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 60.1, Datenpunkte: 20",
+      "timestamp": 35.021
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 60.1, Datenpunkte: 20",
+      "timestamp": 40.0211
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 4, creatureDance",
+      "timestamp": 41.3211
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 60.0, Datenpunkte: 20",
+      "timestamp": 45.0211
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 60.0, Datenpunkte: 20",
+      "timestamp": 50.0211
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 5, gravityShift",
+      "timestamp": 51.3211
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 60.1, Datenpunkte: 20",
+      "timestamp": 55.0211
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 60.0, Datenpunkte: 20",
+      "timestamp": 60.0211
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 6, terrainFlatten",
+      "timestamp": 61.3212
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 60.0, Datenpunkte: 20",
+      "timestamp": 65.0212
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 60.0, Datenpunkte: 20",
+      "timestamp": 70.0212
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 7, gravityShift",
+      "timestamp": 71.3378
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 60.0, Datenpunkte: 20",
+      "timestamp": 75.0213
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 60.1, Datenpunkte: 20",
+      "timestamp": 80.0213
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 8, gravityShift",
+      "timestamp": 81.338
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 60.0, Datenpunkte: 20",
+      "timestamp": 85.0213
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 60.0, Datenpunkte: 20",
+      "timestamp": 90.038
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 9, creatureDance",
+      "timestamp": 91.3547
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 60.1, Datenpunkte: 20",
+      "timestamp": 95.038
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 60.1, Datenpunkte: 20",
+      "timestamp": 100.038
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 10, gravityShift",
+      "timestamp": 101.3548
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 60.1, Datenpunkte: 20",
+      "timestamp": 105.038
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 60.0, Datenpunkte: 20",
+      "timestamp": 110.038
+    },
+    {
+      "type": "evolution",
+      "content": "Autonomie: 11, creatureDance",
+      "timestamp": 111.3713
+    },
+    {
+      "type": "learning",
+      "content": "FPS: 60.1, Datenpunkte: 20",
+      "timestamp": 115.0547
+    }
+  ],
+  "version": "7.65",
+  "abilities": [
+    "terrainFlatten",
+    "creatureDance",
+    "gravityShift"
+  ],
+  "selfAwareness": {
+    "components": [
+      "physicsWorld",
+      "playerMovementModel",
+      "renderer",
+      "scene",
+      "camera",
+      "playerMesh",
+      "playerBody"
+    ],
+    "weaknesses": [
+      "Boden fehlt oder unsichtbar",
+      "Low FPS",
+      "Boden fehlt oder unsichtbar",
+      "Boden fehlt oder unsichtbar",
+      "Boden fehlt oder unsichtbar",
+      "Boden fehlt oder unsichtbar",
+      "Boden fehlt oder unsichtbar",
+      "Low FPS",
+      "Low FPS",
+      "Low FPS",
+      "Low FPS",
+      "Low FPS",
+      "Low FPS",
+      "Boden fehlt oder unsichtbar",
+      "Boden fehlt oder unsichtbar",
+      "Boden fehlt oder unsichtbar",
+      "Low FPS",
+      "Boden fehlt oder unsichtbar",
+      "Boden fehlt oder unsichtbar",
+      "Boden fehlt oder unsichtbar",
+      "Boden fehlt oder unsichtbar",
+      "Boden fehlt oder unsichtbar",
+      "Boden fehlt oder unsichtbar",
+      "Low FPS",
+      "Boden fehlt oder unsichtbar"
+    ]
+  },
+  "creatures": [
+    {
+      "position": {
+        "x": 13.72026677269833,
+        "y": 0.0618613462845754,
+        "z": 7.0433656027713365
+      }
+    },
+    {
+      "position": {
+        "x": -18.17424069410339,
+        "y": 0.8711052654434248,
+        "z": -3.1953614086937554
+      }
+    },
+    {
+      "position": {
+        "x": 13.850942611694336,
+        "y": 0.38426916978345305,
+        "z": 7.513664245605469
+      }
+    },
+    {
+      "position": {
+        "x": 13.05893289157873,
+        "y": 0.48130277735829397,
+        "z": 7.744309576963992
+      }
+    },
+    {
+      "position": {
+        "x": 13.722197532653809,
+        "y": 0.3662138585972956,
+        "z": 7.983372211456299
+      }
+    },
+    {
+      "position": {
+        "x": 7.87162279476474,
+        "y": 0.07559699029319523,
+        "z": -3.1172237795813453
+      }
+    },
+    {
+      "position": {
+        "x": 2.043236452959462,
+        "y": 0.19051614115531612,
+        "z": -32.64429438510261
+      }
+    },
+    {
+      "position": {
+        "x": 13.229735374450684,
+        "y": 0.15573232270418366,
+        "z": 7.283236503601074
+      }
+    },
+    {
+      "position": {
+        "x": -1.8394209490883335,
+        "y": 0.7443914012318372,
+        "z": 3.2818890594345156
+      }
+    },
+    {
+      "position": {
+        "x": 14.219747639606908,
+        "y": 0.34015562710023983,
+        "z": -4.366323297781553
+      }
+    }
+  ],
+  "creatureEmotions": [
+    "happy",
+    "sad",
+    "happy",
+    "happy",
+    "happy",
+    "sad",
+    "sad",
+    "happy",
+    "sad",
+    "sad"
+  ],
+  "terrainSteepness": 0.009223372036854787,
+  "terrainBaseHeight": 0,
+  "weather": "sunny"
+}

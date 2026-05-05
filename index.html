@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anazh Realm v7.65 – Das Ultiversum</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+        #world-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        #log {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            width: 400px;
+            height: 200px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            overflow-y: auto;
+            padding: 10px;
+            font-size: 12px;
+            border: 1px solid #555;
+        }
+        #fps {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #fff;
+            font-size: 16px;
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 5px;
+            border: 1px solid #555;
+        }
+        #chat {
+            position: absolute;
+            top: 50px;
+            left: 10px;
+            width: 400px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 10px;
+            border: 1px solid #555;
+        }
+        #chat-output {
+            max-height: 100px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            font-size: 12px;
+        }
+        #chat-input {
+            width: 100%;
+            background-color: #333;
+            color: #fff;
+            border: 1px solid #555;
+            padding: 5px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="world-canvas"></canvas>
+    <div id="fps" style="position: absolute; top: 10px; left: 10px; color: white; background: rgba(0, 0, 0, 0.5); padding: 5px;"></div>
+    <div id="chat">
+        <div id="chat-output"></div>
+        <input type="text" id="chat-input" placeholder="Befehl eingeben (z. B. 'Ändere Wetter zu Regen')">
+    </div>
+    <div id="log"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ammojs3@0.0.11/dist/ammo.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.4.0/simplex-noise.min.js"></script>
+    <script>
+        window.addEventListener('load', () => {
+            const script = document.createElement('script');
+            script.src = 'anazhRealm.js';
+            script.onerror = () => console.error("Fehler beim Laden von anazhRealm.js");
+            document.body.appendChild(script);
+        });
+    </script>
+</body>
+</html>
