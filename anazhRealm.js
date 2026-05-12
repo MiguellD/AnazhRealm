@@ -199,7 +199,17 @@ class AnazhRealm {
                 emotions: { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 },
                 emotionDecayPerSec: 0.005,
                 emotionLastTick: -Infinity,
-                emotionLastApply: { joy: -Infinity, sorrow: -Infinity, chaos: -Infinity },
+                // Ring 3 V2: alle sechs Achsen koppeln. Jede hat ihren eigenen
+                // Cooldown, damit das Wechselspiel mehrerer Achsen nicht eine
+                // einzige still hält.
+                emotionLastApply: {
+                    joy: -Infinity,
+                    awe: -Infinity,
+                    sorrow: -Infinity,
+                    hope: -Infinity,
+                    peace: -Infinity,
+                    chaos: -Infinity,
+                },
                 emotionApplyCooldown: 30,
                 emotionThreshold: 0.7,
             },
@@ -526,11 +536,16 @@ class AnazhRealm {
                 this.state.timeOfDay = c(value, 0, 1);
             },
             skybox_color: ([color]) => {
+                // Die Skybox-Shader hat das Uniform `nebulaColor` (siehe
+                // createGalaxySkybox). Vorher schrieb dieser DSL-Op fälschlich
+                // in ein nicht existierendes `tintColor`-Uniform und war
+                // daher seit Phase 1 ein stiller No-Op — Ring 3 V2 hat das
+                // beim Trigger-Test bemerkt.
                 if (typeof color !== "string") return;
                 const skybox = this.state.skybox;
-                if (skybox && skybox.material && skybox.material.uniforms && skybox.material.uniforms.tintColor) {
+                if (skybox && skybox.material && skybox.material.uniforms && skybox.material.uniforms.nebulaColor) {
                     try {
-                        skybox.material.uniforms.tintColor.value = new THREE.Color(color);
+                        skybox.material.uniforms.nebulaColor.value = new THREE.Color(color);
                     } catch {
                         // ungültige Farbe ignorieren
                     }
@@ -882,18 +897,26 @@ class AnazhRealm {
         // wirken — initiale Chunks behielten ihre Werte, neue Extensions
         // bekämen andere Höhen → Klippe an der Naht. Diese Ops bleiben für
         // Chat (Phase 3) oder für eine spätere Welt-Regeneration-Op.
+        //
+        // Ring 3 V2: Emotion färbt die Komposition. joy zieht weather/
+        // emotion-Atome Richtung sunny/happy, sorrow Richtung rainy/sad.
+        // Bias ist sanft (max ±0.3 von der 0.5-Mitte) — Komposition bleibt
+        // erkundend, der Nexus „spürt" den Menschen, ohne ihn zu spiegeln.
+        const e = (this.state.player && this.state.player.emotions) || {};
+        const sunnyBias = Math.max(0.05, Math.min(0.95, 0.5 + (e.joy || 0) * 0.3 - (e.sorrow || 0) * 0.3));
+        const happyBias = Math.max(0.05, Math.min(0.95, 0.5 + (e.joy || 0) * 0.3 - (e.sorrow || 0) * 0.3));
         const choices = [
-            { w: 15, build: () => ["weather", rng() < 0.5 ? "rainy" : "sunny"] },
+            { w: 15, build: () => ["weather", rng() < sunnyBias ? "sunny" : "rainy"] },
             {
                 w: 12,
                 build: () => [
                     "spawn_creature",
                     this.dslComposePosition(rng),
                     1 + Math.floor(rng() * 5),
-                    rng() < 0.5 ? "happy" : "sad",
+                    rng() < happyBias ? "happy" : "sad",
                 ],
             },
-            { w: 10, build: () => ["creatures_emotion", rng() < 0.5 ? "happy" : "sad"] },
+            { w: 10, build: () => ["creatures_emotion", rng() < happyBias ? "happy" : "sad"] },
             { w: 8, build: () => ["creatures_color", this.dslComposeColor(rng)] },
             { w: 8, build: () => ["skybox_color", this.dslComposeColor(rng)] },
             { w: 7, build: () => ["player_jump_power", Number((8 + rng() * 12).toFixed(2))] },
@@ -1207,11 +1230,14 @@ class AnazhRealm {
             p.emotionLastApply[axis] = currentTime;
             this.log(`Emotion '${axis}' triggert Welt-Effekt (Wert ${p.emotions[axis].toFixed(2)})`, "INFO");
         };
-        // Drei sichtbare Kopplungen für V1. Weitere Achsen + komplexere
-        // Programme können später als reine DSL-Erweiterung kommen, ohne
-        // dass diese Tick-Funktion neue Code-Pfade braucht.
-        trigger("joy", ["skybox_color", "#f7d358"]);
+        // Ring 3 V2: alle sechs Achsen koppeln. Jede löst eine andere Art
+        // von Welt-Wirkung aus, damit sich die emotionalen Zustände nicht
+        // überlagern und sichtbar bleiben.
+        trigger("joy", ["skybox_color", "#f7d358"]); // warmes Gelb
+        trigger("awe", ["skybox_color", "#d4a3ff"]); // magisches Lila
         trigger("sorrow", ["weather", "rainy"]);
+        trigger("hope", ["chain", ["weather", "sunny"], ["creatures_emotion", "happy"]]);
+        trigger("peace", ["creatures_speed_mul", 0.7]);
         trigger("chaos", ["creatures_speed_mul", 1.5]);
     }
 

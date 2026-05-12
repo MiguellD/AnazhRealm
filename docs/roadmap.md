@@ -23,7 +23,7 @@ Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) is
 | 0 | Stabiles Fundament (Bewegung, Physik, Chunks, Save, CI) | ✅ erledigt | – | – |
 | 1 | Grok-Stimme (`dialogue-box`, narrative Reflexion) | ✅ V1 live | – | – |
 | 2 | DSL als gemeinsame Sprache | ✅ Phase 1-7 vollständig | – | – |
-| 3 | Player-Emotionen → Welt | 🟡 V1 live, V2 offen | 0.5-1 d Rest | – |
+| 3 | Player-Emotionen → Welt | ✅ V1+V2 live | – | – |
 | 4 | `anazhSymphony` V1 (Web Audio) | 🔴 offen | 2-3 d | Ring 3 |
 | 5 | `createPlayerSoul` (Mensch/Phönix/Drache) | 🔴 offen | 1-2 d | – |
 | 6 | `architectureTemplates` V1 (Dörfer, Tempel, Wasserfälle) | 🔴 offen | 2 d | Ring 2 Phase 3 |
@@ -96,12 +96,13 @@ Plus: inline-styles aus `index.html` entfernt (`#fps`, `#state-file-input`), Inl
 - Neue DSL-Condition `emotion_above(name, threshold)` — der Nexus kann selbst auf Emotionen reagieren.
 - Save persistiert `playerEmotions`. Sieben neue Playtest-Invarianten (Collect, Decay, Trigger, Cooldown, DSL-Cond, Save).
 
-**V2 offen** (0.5-1 d, später):
-- Mehr Achsen (`longing`, `melancholy`) und differenziertere Welt-Kopplungen (z. B. awe → fliegende Insel spawnen, hope → bestimmte Skybox-Farbe pulsiert).
-- Modulation der Generator-Wahrscheinlichkeiten in `dslComposeAtomic`: bei hoher joy → höheres `w` für „sunny"/"happy", bei hoher sorrow → höheres `w` für rainy/sad. Nexus färbt seine Evolution emotional.
-- Grok-Stimme: neuer Trigger „emotionShift" wenn eine Achse stark/abrupt steigt.
+**V2 ✅ erledigt** (dieser Commit): drei stille Achsen (awe, hope, peace) bekommen Welt-Kopplungen — awe→`["skybox_color", "#d4a3ff"]` (magisches Lila), hope→`["chain", ["weather", "sunny"], ["creatures_emotion", "happy"]]` (Licht), peace→`["creatures_speed_mul", 0.7]` (Beruhigung). Generator-Bias in `dslComposeAtomic`: joy verschiebt sunny-/happy-Wahrscheinlichkeit nach oben, sorrow nach unten (±0.3 sanft, Clamp 0.05..0.95). Fünf neue Playtest-Invarianten verifizieren die drei neuen Trigger und die Generator-Bias-Richtung statistisch (1000 Samples, Ratio > 2× gemessen). **Bug nebenbei gefunden und gefixt**: `skybox_color`-DSL-Op schrieb in `tintColor`, das Skybox-Uniform heißt aber `nebulaColor` — war seit Phase 1 stiller No-Op.
 
-**Akzeptanz**: 5 Min chatten mit emotionalem Vokabular → die Welt antwortet sichtbar.
+**V3 offen** (später, wenn nötig):
+- Mehr Achsen (`longing`, `melancholy`) wenn Vokabular es einfordert.
+- Grok-Stimme: neuer Trigger „emotionShift" wenn eine Achse abrupt steigt.
+
+**Akzeptanz** ✅: 5 Min chatten mit emotionalem Vokabular → die Welt antwortet sichtbar (Skybox, Wetter, Kreatur-Geschwindigkeit).
 
 ---
 

@@ -877,6 +877,132 @@ function startSaveServer() {
                     ring3Results.savedEmotions
                 );
             }
+
+            // ### Ring 3 V2 — Achsen-Vollabdeckung + Generator-Modulation ###
+            const ring3v2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.player) return null;
+                    const out = {};
+                    const p = r.state.player;
+
+                    const makeRng = (seed) => {
+                        let s = seed >>> 0 || 1;
+                        return () => {
+                            s = (s * 1664525 + 1013904223) >>> 0;
+                            return s / 4294967296;
+                        };
+                    };
+
+                    // (a) awe > 0.7 → skybox-Farbe wird gesetzt
+                    for (const k of Object.keys(p.emotions)) p.emotions[k] = 0;
+                    for (const k of Object.keys(p.emotionLastApply)) p.emotionLastApply[k] = -Infinity;
+                    p.emotionLastTick = -Infinity;
+                    p.emotions.awe = 0.9;
+                    p.emotionLastTick = 299;
+                    const readSkyHex = () =>
+                        r.state.skybox && r.state.skybox.material.uniforms.nebulaColor
+                            ? r.state.skybox.material.uniforms.nebulaColor.value.getHex()
+                            : -1;
+                    const skyBefore = readSkyHex();
+                    r.updatePlayerEmotions(300);
+                    const skyAfter = readSkyHex();
+                    out.aweTriggersSkybox = skyAfter !== skyBefore && skyBefore !== -1;
+
+                    // (b) hope > 0.7 → wetter sunny + kreaturen happy
+                    for (const k of Object.keys(p.emotionLastApply)) p.emotionLastApply[k] = -Infinity;
+                    p.emotions.hope = 0.9;
+                    r.state.weather = "rainy";
+                    r.state.creatureEmotions = r.state.creatures.map(() => "sad");
+                    p.emotionLastTick = 399;
+                    r.updatePlayerEmotions(400);
+                    const happyCount = r.state.creatureEmotions.filter((e) => e === "happy").length;
+                    out.hopeTriggersSunnyHappy =
+                        r.state.weather === "sunny" && happyCount === r.state.creatureEmotions.length;
+
+                    // (c) peace > 0.7 → creatures_speed_mul = 0.7 (also speedMul wird kleiner)
+                    for (const k of Object.keys(p.emotionLastApply)) p.emotionLastApply[k] = -Infinity;
+                    p.emotions.peace = 0.9;
+                    // speedMul zurücksetzen, damit der Vergleich verlässlich ist
+                    for (const cr of r.state.creatures) {
+                        if (cr.userData) cr.userData.speedMul = 1;
+                    }
+                    p.emotionLastTick = 499;
+                    r.updatePlayerEmotions(500);
+                    const allSlowed =
+                        r.state.creatures.length > 0 &&
+                        r.state.creatures.every(
+                            (cr) => cr.userData && Math.abs(cr.userData.speedMul - 0.7) < 1e-6
+                        );
+                    out.peaceTriggersSlowdown = allSlowed;
+
+                    // (d) Generator-Modulation: hoher joy → mehr "sunny" als "rainy"
+                    for (const k of Object.keys(p.emotions)) p.emotions[k] = 0;
+                    p.emotions.joy = 1.0;
+                    const rngJoy = makeRng(123);
+                    let sunny = 0;
+                    let rainy = 0;
+                    for (let i = 0; i < 1000; i++) {
+                        const atom = r.dslComposeAtomic(rngJoy);
+                        if (Array.isArray(atom) && atom[0] === "weather") {
+                            if (atom[1] === "sunny") sunny++;
+                            else if (atom[1] === "rainy") rainy++;
+                        }
+                    }
+                    out.joySunnyOverRainy = sunny;
+                    out.joyRainyCount = rainy;
+                    out.joyBiasWorks = sunny > rainy * 2;
+
+                    // (e) Hoher sorrow → mehr "rainy" als "sunny"
+                    for (const k of Object.keys(p.emotions)) p.emotions[k] = 0;
+                    p.emotions.sorrow = 1.0;
+                    const rngSorrow = makeRng(456);
+                    let sunny2 = 0;
+                    let rainy2 = 0;
+                    for (let i = 0; i < 1000; i++) {
+                        const atom = r.dslComposeAtomic(rngSorrow);
+                        if (Array.isArray(atom) && atom[0] === "weather") {
+                            if (atom[1] === "sunny") sunny2++;
+                            else if (atom[1] === "rainy") rainy2++;
+                        }
+                    }
+                    out.sorrowRainyOverSunny = rainy2;
+                    out.sorrowSunnyCount = sunny2;
+                    out.sorrowBiasWorks = rainy2 > sunny2 * 2;
+
+                    // Cleanup: alles zurück auf neutral
+                    for (const k of Object.keys(p.emotions)) p.emotions[k] = 0;
+
+                    return out;
+                })
+                .catch(() => null);
+
+            if (!ring3v2Results) {
+                check("Ring 3 V2: Snapshot erreichbar", false, "page.evaluate fehlgeschlagen");
+            } else {
+                check(
+                    "Ring 3 V2: awe > 0.7 triggert Skybox-Farbe",
+                    ring3v2Results.aweTriggersSkybox
+                );
+                check(
+                    "Ring 3 V2: hope > 0.7 triggert chain(sunny, happy)",
+                    ring3v2Results.hopeTriggersSunnyHappy
+                );
+                check(
+                    "Ring 3 V2: peace > 0.7 verlangsamt Kreaturen (speedMul=0.7)",
+                    ring3v2Results.peaceTriggersSlowdown
+                );
+                check(
+                    "Ring 3 V2: Generator-Bias — joy=1.0 → sunny dominiert (>2× rainy)",
+                    ring3v2Results.joyBiasWorks,
+                    `sunny=${ring3v2Results.joySunnyOverRainy}, rainy=${ring3v2Results.joyRainyCount}`
+                );
+                check(
+                    "Ring 3 V2: Generator-Bias — sorrow=1.0 → rainy dominiert (>2× sunny)",
+                    ring3v2Results.sorrowBiasWorks,
+                    `rainy=${ring3v2Results.sorrowRainyOverSunny}, sunny=${ring3v2Results.sorrowSunnyCount}`
+                );
+            }
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
