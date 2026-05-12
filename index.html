@@ -3,6 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!--
+      Ring 2 Phase 6 — CSP. Lockerer als „voll strict", aber ehrlich. Drei
+      bewusste Konzessionen:
+
+        1. 'unsafe-eval' im script-src: TensorFlow.js (vendor/tf.min.js)
+           kompiliert WebGL-Shader-Kernel zur Laufzeit per eval. Ohne diese
+           Erlaubnis schlägt initAI fehl. Phase 7 könnte TF durch eval-freies
+           brain.js ersetzen — bis dahin steht hier die Konzession. UNSER
+           eigener Code nutzt kein eval; das CI-Gate „Verbotenes dynamisches
+           Auswerten" schützt diesen Pfad hart.
+        2. 'wasm-unsafe-eval' im script-src: für Ammo.js (WebAssembly).
+        3. 'unsafe-inline' im style-src: Three.js setzt inline-Styles aufs
+           <canvas> für Größe + Position. Risiko gering, weil kein User-
+           kontrolliertes CSS injizierbar ist.
+
+      object-src 'none' und base-uri 'self' bleiben strict. frame-ancestors
+      gehört in den HTTP-Header (via <meta> ignoriert der Browser es) — der
+      lokale save-server kann das künftig liefern.
+    -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self';">
     <title>Anazh Realm v7.65 – Das Ultiversum</title>
     <style>
         body {
@@ -99,11 +119,12 @@
         }
         #grok-voice-toggle[aria-pressed="true"] { color: #fff; border-color: #aaa; }
         #grok-voice-toggle[hidden] { display: none; }
+        #state-file-input { display: none; }
     </style>
 </head>
 <body>
     <canvas id="world-canvas"></canvas>
-    <div id="fps" style="position: absolute; top: 10px; left: 10px; color: white; background: rgba(0, 0, 0, 0.5); padding: 5px;"></div>
+    <div id="fps"></div>
     <div id="dialogue-box" aria-live="polite"></div>
     <button id="grok-voice-toggle" type="button" aria-pressed="false" hidden>Stimme: aus</button>
     <div id="chat">
@@ -112,19 +133,15 @@
     </div>
     <div id="log"></div>
     <!-- Versteckter File-Picker für 'Lade Datei'-Chat-Befehl. -->
-    <input type="file" id="state-file-input" accept="application/json,.json" style="display:none">
+    <input type="file" id="state-file-input" accept="application/json,.json">
     <!-- Vendored libs (vendor/README.md erklärt Versionen + Update-Befehl) -->
     <script src="vendor/three.min.js"></script>
     <script src="vendor/ammo.js"></script>
     <script src="vendor/tf.min.js"></script>
     <script src="vendor/simplex-noise.js"></script>
-    <script>
-        window.addEventListener('load', () => {
-            const script = document.createElement('script');
-            script.src = 'anazhRealm.js';
-            script.onerror = () => console.error("Fehler beim Laden von anazhRealm.js");
-            document.body.appendChild(script);
-        });
-    </script>
+    <!-- Phase 6: kein Inline-Bootstrap mehr — direkte Skript-Einbindung, defer
+         garantiert die Reihenfolge nach den Vendor-Libs und das Warten auf
+         DOMContentLoaded ohne Inline-Listener. -->
+    <script src="anazhRealm.js" defer></script>
 </body>
 </html>

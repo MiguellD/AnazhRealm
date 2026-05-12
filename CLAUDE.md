@@ -21,7 +21,7 @@ Detaillierter Plan in `docs/state-of-realm.md` §5. Status (Mai 2026):
 |---|---|---|
 | 0 | Stabiles Fundament (Bewegung, Physik, Kreaturen, Chunks, Save, CI-Gate) | ✅ erledigt |
 | 1 | **Grok-Stimme** (`dialogue-box`, narrative Reflexion) | ✅ V1 erledigt — 5 Trigger (firstSpawn, idle, jumpBurst, rainLong, nexus), Text + optionale SpeechSynthesis |
-| 2 | DSL als gemeinsame Sprache Mensch+Grok (`docs/nexus-dsl.md`) | 🟡 Phase 1+2+3+4+5 live — Interpreter mit 41 Ops, Budget-Limits, Scheduler. **Abilities sind ausschließlich DSL-Programme** (`state.dsl.abilities`), `new Function`/`eval` aus dem Bundle verbannt (CI-Gate), Save persistiert DSL-Abilities, alte Saves migrieren über `restoreAbility` + Legacy-Namen-Mapping. 13/25 Chat-Befehle migriert. Phasen 6-7 offen: CSP-strict, Fitness-V2. |
+| 2 | DSL als gemeinsame Sprache Mensch+Grok (`docs/nexus-dsl.md`) | 🟢 Phase 1-6 live — Interpreter mit 41 Ops, Budget-Limits, Scheduler. **Abilities sind ausschließlich DSL-Programme** (`state.dsl.abilities`), `new Function`/`eval` aus dem Bundle verbannt (CI-Gate hart), Save persistiert DSL-Abilities, alte Saves migrieren über `restoreAbility`. 13/25 Chat-Befehle migriert. **CSP-Header strict in `index.html`** mit explizit dokumentierten Konzessionen für TF.js (unsafe-eval) und Three.js (unsafe-inline style). Nur Phase 7 (Fitness-V2) noch offen. |
 | 3 | Player-Emotionen (`{joy, awe, sorrow, hope, …}`) beeinflussen Welt | offen |
 | 4 | `anazhSymphony` V1 – Web-Audio-Klangschichten | offen |
 | 5 | `createPlayerSoul` (Mensch/Phönix/Drache) | offen |
@@ -29,7 +29,7 @@ Detaillierter Plan in `docs/state-of-realm.md` §5. Status (Mai 2026):
 | 7 | `brain.js`-Welt – lernt aus Spieler-Verhalten + Emotionen | offen |
 | 8-11 | **Welten-Ultiversum** (Identität, Export/Import, Fusion, Multi-User-Sync) | Vision-skizze in `docs/state-of-realm.md` §11 |
 
-Letzter Stand: Ring 1 + Ring 2 Phase 1+2+3+**4+5** live. Chunk-Physik komplett auf `btBvhTriangleMeshShape` (Commit `e612c60`) — visuelles Mesh = Kollisionsnetz. 120 fps im echten Browser, **52/52 Playtest-Invarianten grün**. Mensch und Nexus teilen eine Sprache für Welt-Mutation; Abilities sind reine DSL-Programme; dynamische Code-Generierung (`new Function`/`eval`) gibt es nicht mehr im Bundle (per CI-Gate hart geprüft). Nächster Schritt: Ring 3 (Player-Emotionen) oder Phase 6 (strict CSP — kleiner, schließt Ring 2 endgültig ab).
+Letzter Stand: Ring 1 + Ring 2 Phase 1-**6** live. Chunk-Physik komplett auf `btBvhTriangleMeshShape` (Commit `e612c60`) — visuelles Mesh = Kollisionsnetz. 120 fps im echten Browser, **58/58 Playtest-Invarianten grün**. Sicherheits-Block geschlossen: DSL-only-Code-Pfad, CI-Gate gegen `eval`/`new Function`, CSP-Header in `index.html` mit dokumentierten Vendor-Konzessionen, Playtest verifiziert dass keine CSP-Violations auftreten. Nächster Schritt: Ring 3 (Player-Emotionen → Welt) oder Phase 7 (Fitness-V2 für Nexus-Selektion).
 
 ## Wichtige Gotchas (technisch)
 

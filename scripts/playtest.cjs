@@ -603,6 +603,49 @@ function startSaveServer() {
                     phase3Results.dynamicCodeMethodsRemoved
                 );
             }
+
+            // ### Ring 2 Phase 6 – CSP ###
+            // CSP-Meta-Tag muss vorhanden sein und die kritischen Direktiven
+            // tragen. Plus: über die gesamte Lauf-Zeit darf keine CSP-Violation
+            // im console-Buffer landen.
+            const cspResults = await page
+                .evaluate(() => {
+                    const meta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+                    if (!meta) return { metaPresent: false };
+                    const content = meta.getAttribute("content") || "";
+                    return {
+                        metaPresent: true,
+                        hasScriptSrc: /script-src[^;]*'self'/.test(content),
+                        hasObjectNone: /object-src 'none'/.test(content),
+                        hasBaseUriSelf: /base-uri 'self'/.test(content),
+                        hasDefaultSrc: /default-src 'self'/.test(content),
+                    };
+                })
+                .catch(() => null);
+
+            const cspViolationLogs = logs.filter((l) =>
+                /Content Security Policy directive/i.test(l.text)
+            );
+
+            if (!cspResults) {
+                check("Phase 6: CSP-Meta-Snapshot erreichbar", false, "page.evaluate fehlgeschlagen");
+            } else {
+                check("Phase 6: CSP-Meta-Tag vorhanden", cspResults.metaPresent);
+                check(
+                    "Phase 6: script-src 'self' gesetzt (Skripte nur lokal)",
+                    cspResults.hasScriptSrc
+                );
+                check("Phase 6: object-src 'none' (Flash/Plugins blockiert)", cspResults.hasObjectNone);
+                check("Phase 6: base-uri 'self' (URL-Manipulation blockiert)", cspResults.hasBaseUriSelf);
+                check("Phase 6: default-src 'self' (alles per Default lokal)", cspResults.hasDefaultSrc);
+            }
+            check(
+                "Phase 6: keine CSP-Violations während Laufzeit",
+                cspViolationLogs.length === 0,
+                cspViolationLogs.length
+                    ? `${cspViolationLogs.length}× erste: ${cspViolationLogs[0].text.slice(0, 120)}`
+                    : ""
+            );
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

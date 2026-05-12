@@ -22,7 +22,7 @@ Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) is
 |---|---|---|---|---|
 | 0 | Stabiles Fundament (Bewegung, Physik, Chunks, Save, CI) | ✅ erledigt | – | – |
 | 1 | Grok-Stimme (`dialogue-box`, narrative Reflexion) | ✅ V1 live | – | – |
-| 2 | DSL als gemeinsame Sprache | 🟡 Phase 1+2+3+4+5 live, 6-7 offen | 0.5-1 d Rest | – |
+| 2 | DSL als gemeinsame Sprache | 🟢 Phase 1-6 live, nur Phase 7 (Fitness-V2) offen | 0.5 d Rest | – |
 | 3 | Player-Emotionen → Welt | 🔴 offen | 2 d | Ring 2 Phase 3 |
 | 4 | `anazhSymphony` V1 (Web Audio) | 🔴 offen | 2-3 d | Ring 3 |
 | 5 | `createPlayerSoul` (Mensch/Phönix/Drache) | 🔴 offen | 1-2 d | – |
@@ -71,10 +71,12 @@ Sechs neue Playtest-Invarianten verifizieren Parser, End-to-end-Routing und Leve
 
 **Phase 5 ✅ erledigt** (dieser Commit-Block): `createDynamicAbility`, `codeParser`, `developAdvancedPhysics`, `developAdvancedRenderer` gelöscht. Chat-Befehle `füge code` und `entwickle fähigkeit` raus. `learnAbility` produziert DSL-Programme via `parseAbilityDescriptionToDsl` (5 Pattern + Catch-All als `say`). `addNewAbility` akzeptiert ausschließlich DSL-Arrays. `aktiviere anazh-symphonie` wird als statisches DSL-Programm gespeichert (V1-Stub, echte Web-Audio mit Ring 4). `processOptimization` ruft direkt `optimizePhysics()`, der Legacy-`evolution.impl`-Pfad in der Loop fliegt raus. CI-Gate „kein `new Function`/`eval` im Bundle" hart aktiviert (fail), Playtest verifiziert dass die toten Methoden weg sind.
 
-**Phase 6 — CSP-Header strict** (2 h)
-- `<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; ...">` in `index.html`
-- WASM für Ammo: `script-src 'self' 'wasm-unsafe-eval'` (das ist der erlaubte CSP-Ausweg für WebAssembly)
-- Test: Playtest mit CSP aktiv läuft durch; in DevTools-Konsole keine CSP-Violations.
+**Phase 6 ✅ erledigt** (dieser Commit): `<meta http-equiv="Content-Security-Policy">` in `index.html` aktiviert. `default-src 'self'`, `object-src 'none'`, `base-uri 'self'` strict. Drei dokumentierte Konzessionen:
+- `script-src 'self' 'wasm-unsafe-eval' 'unsafe-eval'` — Ammo (WASM) braucht das erste, TF.js (WebGL-Kernel-Compilation) das zweite. Unser eigener Code nutzt **kein** eval; CI-Gate „Verbotenes dynamisches Auswerten" sichert das hart.
+- `style-src 'self' 'unsafe-inline'` — Three.js setzt Inline-Styles aufs `<canvas>` für Größe/Position. Risiko gering, kein User-CSS injizierbar.
+- `worker-src 'self' blob:` — TF.js erstellt einen Backend-Worker aus blob-URL.
+
+Plus: inline-styles aus `index.html` entfernt (`#fps`, `#state-file-input`), Inline-Bootstrap-`<script>` durch `<script src="anazhRealm.js" defer>` ersetzt. Sechs neue Playtest-Invarianten verifizieren CSP-Meta + dass über die Laufzeit keine CSP-Violations im Console-Buffer landen.
 
 **Phase 7 — Fitness V2** (0.5 d)
 - Generator nutzt `state.dsl.history`, um Programme mit niedrigem `fitness` seltener zu erzeugen (Selektion)
