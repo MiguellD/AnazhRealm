@@ -114,7 +114,10 @@ class AnazhRealm {
             tmpVec2: null,
             learningInFlight: false,
             worldgenInFlight: false,
-            lastWorldgen: 0,
+            // Sentinel: -Infinity heißt "noch nie generiert". Mit 0 würde der
+            // Cooldown-Check ((performance.now()/1000) - 0 < 30) den allerersten
+            // Worldgen blockieren, sodass das Spiel mit leerer Welt startete.
+            lastWorldgen: -Infinity,
             worldgenCooldown: 30.0,
             terrainEverGenerated: false,
             lastJumpLog: 0,
@@ -2590,6 +2593,19 @@ class AnazhRealm {
 
     // ### Terrain-Erweiterung ### V7.42
     extendTerrain(direction) {
+        // Schutz: ohne existierende Anker-Chunks gibt es keine sinnvolle
+        // Richtung. Ohne diesen Guard produzierte die Methode mit leerer
+        // chunkMap Chunks an (Infinity, Infinity) und ließ den Spieler ins
+        // Nichts fallen.
+        if (!this.state.chunkMap || this.state.chunkMap.size === 0) {
+            this.log("extendTerrain übersprungen: keine Anker-Chunks vorhanden", "DEBUG");
+            return;
+        }
+        if (!this.state.terrainMaterial) {
+            this.log("extendTerrain übersprungen: terrainMaterial fehlt", "DEBUG");
+            return;
+        }
+
         // ### Konstanten ###
         const CHUNK_SIZE = this.state.chunkSize;
         const WIDTH = this.state.chunkWidth;
