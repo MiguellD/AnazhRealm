@@ -1714,6 +1714,168 @@ function startSaveServer() {
                     consoleResults.localStorageOpen
                 );
             }
+
+            // ### Ring 5 — createPlayerSoul V1 ###
+            // Drei Formen (Mensch/Phönix/Drache), rein visuell. Wir prüfen:
+            // Default-Seele ist human, Wechsel ändert geometry+color, Chat-
+            // Pattern routet, Save/Load-Roundtrip persistiert die Seele,
+            // unbekannte Namen werden abgelehnt, Position überlebt den
+            // Wechsel, Drawer + Status-Bar enthalten das UI.
+            const ring5Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.player || !r.state.playerMesh) return null;
+                    const out = {};
+                    const mesh = r.state.playerMesh;
+
+                    // UI vorhanden?
+                    out.drawerSelectInDom = !!document.getElementById("player-soul-select");
+                    out.statusBarSoulInDom = !!document.getElementById("status-soul");
+                    const select = document.getElementById("player-soul-select");
+                    out.dropdownHasThreeOptions = select && select.options.length === 3;
+
+                    // Cleanup: starte vom Default aus.
+                    r.applyPlayerSoul("human");
+                    out.defaultIsHuman = r.state.player.soul === "human";
+                    out.defaultColorRed = mesh.material.color.getHex() === 0xff0000;
+                    out.defaultGeomBox =
+                        mesh.geometry && mesh.geometry.type === "BoxGeometry";
+
+                    // applyPlayerSoul("phoenix") → Farbe + Geometrie wechseln
+                    const posBefore = {
+                        x: mesh.position.x,
+                        y: mesh.position.y,
+                        z: mesh.position.z,
+                    };
+                    const okPhoenix = r.applyPlayerSoul("phoenix");
+                    out.applyReturnsTrue = okPhoenix === true;
+                    out.phoenixSoulSet = r.state.player.soul === "phoenix";
+                    out.phoenixColor = mesh.material.color.getHex() === 0xff7a1a;
+                    out.phoenixGeom =
+                        mesh.geometry && mesh.geometry.type === "OctahedronGeometry";
+                    out.positionPreserved =
+                        Math.abs(mesh.position.x - posBefore.x) < 1e-6 &&
+                        Math.abs(mesh.position.y - posBefore.y) < 1e-6 &&
+                        Math.abs(mesh.position.z - posBefore.z) < 1e-6;
+                    // Dropdown synchronisiert sich
+                    out.dropdownSyncsToPhoenix = select && select.value === "phoenix";
+
+                    // Chat-Pattern: "werde drache"
+                    r.processChatCommand("werde drache");
+                    out.chatRoutedToDsl =
+                        Array.isArray(r.state.dsl.lastUserProgram) &&
+                        r.state.dsl.lastUserProgram[0] === "player_soul" &&
+                        r.state.dsl.lastUserProgram[1] === "drache";
+                    out.dragonSoulSet = r.state.player.soul === "dragon";
+                    out.dragonColor = mesh.material.color.getHex() === 0x2d6e3b;
+
+                    // Deutsch+Englisch+Phönix-Alias funktionieren
+                    r.applyPlayerSoul("phönix");
+                    out.umlautAliasWorks = r.state.player.soul === "phoenix";
+                    r.applyPlayerSoul("dragon");
+                    out.englishAliasWorks = r.state.player.soul === "dragon";
+
+                    // Unbekannte Seele wird abgelehnt, alte Seele bleibt
+                    const prevSoul = r.state.player.soul;
+                    const okBad = r.applyPlayerSoul("riese");
+                    out.unknownRejected = okBad === false && r.state.player.soul === prevSoul;
+
+                    // DSL-Op direkt aufrufbar
+                    const resDsl = r.dslRun(["player_soul", "human"]);
+                    out.dslOpWorks = resDsl.ok === true && r.state.player.soul === "human";
+
+                    // Seele NICHT im atomic-Pool (Nexus soll Identität nicht überschreiben)
+                    const seedRng = (seed) => {
+                        let s = seed >>> 0 || 1;
+                        return () => {
+                            s = (s * 1664525 + 1013904223) >>> 0;
+                            return s / 4294967296;
+                        };
+                    };
+                    const rng = seedRng(2026);
+                    let seenSoulOp = false;
+                    for (let i = 0; i < 2000; i++) {
+                        const atom = r.dslComposeAtomic(rng);
+                        if (Array.isArray(atom) && atom[0] === "player_soul") {
+                            seenSoulOp = true;
+                            break;
+                        }
+                    }
+                    out.soulNotInAtomicPool = !seenSoulOp;
+
+                    // Save-Roundtrip: Seele auf phoenix, dann saveState → localStorage prüfen
+                    r.applyPlayerSoul("phoenix");
+                    r.saveState();
+                    const raw = localStorage.getItem("anazhRealmState");
+                    let parsed = null;
+                    try {
+                        parsed = JSON.parse(raw);
+                    } catch (e) {
+                        void e;
+                    }
+                    out.savedPlayerSoul = !!parsed && parsed.playerSoul === "phoenix";
+
+                    // loadState mit dragon-Seele → applyPlayerSoul wird intern aufgerufen
+                    r.loadState({ ...parsed, playerSoul: "dragon" });
+                    out.loadAppliesSoul =
+                        r.state.player.soul === "dragon" &&
+                        mesh.material.color.getHex() === 0x2d6e3b;
+
+                    // Status-Bar wird gefüllt
+                    r.applyPlayerSoul("phoenix");
+                    r.updateStatusPanel(1e6); // erzwungen abseits des Throttles
+                    const statusEl = document.getElementById("status-soul");
+                    out.statusBarShowsLabel = statusEl && statusEl.textContent === "Phönix";
+
+                    // Cleanup
+                    r.applyPlayerSoul("human");
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (!ring5Results || ring5Results.error) {
+                check(
+                    "Ring 5: Seele-Snapshot erreichbar",
+                    false,
+                    ring5Results && ring5Results.error ? ring5Results.error : "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Ring 5: Dropdown im Spieler-Drawer", ring5Results.drawerSelectInDom);
+                check("Ring 5: Status-Bar zeigt Seele-Item", ring5Results.statusBarSoulInDom);
+                check("Ring 5: Dropdown hat drei Optionen", ring5Results.dropdownHasThreeOptions);
+                check("Ring 5: Default-Seele ist 'human'", ring5Results.defaultIsHuman);
+                check("Ring 5: Default-Farbe ist rot (0xff0000)", ring5Results.defaultColorRed);
+                check("Ring 5: Default-Geometrie ist BoxGeometry", ring5Results.defaultGeomBox);
+                check("Ring 5: applyPlayerSoul('phoenix') liefert true", ring5Results.applyReturnsTrue);
+                check("Ring 5: Phönix setzt state.player.soul = 'phoenix'", ring5Results.phoenixSoulSet);
+                check("Ring 5: Phönix-Farbe ist 0xff7a1a", ring5Results.phoenixColor);
+                check("Ring 5: Phönix-Geometrie ist OctahedronGeometry", ring5Results.phoenixGeom);
+                check(
+                    "Ring 5: Seelen-Wechsel erhält Spieler-Position",
+                    ring5Results.positionPreserved
+                );
+                check(
+                    "Ring 5: Dropdown synchronisiert sich (UI ↔ State)",
+                    ring5Results.dropdownSyncsToPhoenix
+                );
+                check(
+                    "Ring 5: Chat 'werde drache' routet auf DSL player_soul",
+                    ring5Results.chatRoutedToDsl
+                );
+                check("Ring 5: Chat 'werde drache' setzt Seele auf dragon", ring5Results.dragonSoulSet);
+                check("Ring 5: Drache-Farbe ist 0x2d6e3b", ring5Results.dragonColor);
+                check("Ring 5: Umlaut-Alias 'phönix' kanonisiert auf phoenix", ring5Results.umlautAliasWorks);
+                check("Ring 5: Englisches Alias 'dragon' kanonisiert auf dragon", ring5Results.englishAliasWorks);
+                check("Ring 5: Unbekannte Seele wird abgelehnt", ring5Results.unknownRejected);
+                check("Ring 5: DSL-Op player_soul direkt aufrufbar", ring5Results.dslOpWorks);
+                check(
+                    "Ring 5: player_soul NICHT im dslComposeAtomic-Pool (Nexus überschreibt Identität nicht)",
+                    ring5Results.soulNotInAtomicPool
+                );
+                check("Ring 5: saveState persistiert playerSoul", ring5Results.savedPlayerSoul);
+                check("Ring 5: loadState wendet Seele auf Mesh an", ring5Results.loadAppliesSoul);
+                check("Ring 5: Status-Bar zeigt deutsches Label ('Phönix')", ring5Results.statusBarShowsLabel);
+            }
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

@@ -189,7 +189,7 @@ class AnazhRealm {
                 creator: "local",
                 visibility: "private",
                 parentWorlds: [],
-                schemaVersion: "7.67-emotions-v1",
+                schemaVersion: "7.68-souls-v1",
             },
             // Ring 3 — Player-Emotionen. Sechs Achsen, jeweils 0..1.
             // Chat-Inputs füllen sie regelbasiert; im Game-Loop verflüchtigen
@@ -209,6 +209,11 @@ class AnazhRealm {
                 creaturePingCount: 0,
             },
             player: {
+                // Ring 5 V1 — Spieler-Seele. Drei Formen (human/phoenix/dragon),
+                // rein visuell: Geometrie + Farbe wechseln, Ammo-Body bleibt
+                // identisch. Default "human" = roter Würfel = das, was es seit
+                // Tag 1 gibt.
+                soul: "human",
                 emotions: { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 },
                 emotionDecayPerSec: 0.005,
                 emotionLastTick: -Infinity,
@@ -635,6 +640,14 @@ class AnazhRealm {
                 if (this.state.playerMesh && this.state.playerMesh.scale) {
                     this.state.playerMesh.scale.multiplyScalar(f);
                 }
+            },
+            player_soul: ([name]) => {
+                // Ring 5: Seele wechseln. Bewusst NICHT im
+                // dslComposeAtomic-Pool (siehe playerSoulDefs-Kommentar) —
+                // der Nexus soll dem Menschen die Identität nicht
+                // umschreiben. Aber als DSL-Op verfügbar, damit Chat,
+                // Abilities und künftige Trigger denselben Pfad nutzen.
+                this.applyPlayerSoul(typeof name === "string" ? name : "");
             },
             set_visible: ([target, visible], ctx) => {
                 // Whitelist hält die Safety-Surface klein: nur grob steuerbare
@@ -1113,6 +1126,20 @@ class AnazhRealm {
                 }),
             },
             {
+                // Ring 5: "werde mensch|phönix|phoenix|drache|dragon" wechselt
+                // die Seele (visuell). applyPlayerSoul kanonisiert intern auf
+                // {human, phoenix, dragon}.
+                example: "werde phönix",
+                re: /^werde\s+(mensch|human|phönix|phoenix|drache|drachen|dragon)\s*$/i,
+                build: (m) => {
+                    const raw = m[1].toLowerCase();
+                    return {
+                        program: ["player_soul", raw],
+                        describe: `Seele gewechselt: ${raw}`,
+                    };
+                },
+            },
+            {
                 example: "erzähle Drachen leben hier",
                 // Erzähle <freier Text> — Text wird in die Knowledge-Base als
                 // Narrativ aufgenommen. Wir matchen das ursprüngliche Casing,
@@ -1432,6 +1459,10 @@ class AnazhRealm {
                 commands: ["Aktiviere Anazh-Symphonie"],
             },
             {
+                title: "Spieler-Seele",
+                commands: ["Werde Mensch", "Werde Phönix", "Werde Drache"],
+            },
+            {
                 title: "System / Persistenz",
                 commands: [
                     "Speichere Zustand",
@@ -1488,6 +1519,7 @@ class AnazhRealm {
             position: document.getElementById("status-position"),
             fps: document.getElementById("status-fps"),
             creatures: document.getElementById("status-creatures"),
+            soul: document.getElementById("status-soul"),
             emotions: emotionRefs,
             abilities: document.getElementById("status-abilities"),
             abilitiesSignature: "",
@@ -1713,6 +1745,10 @@ class AnazhRealm {
         }
         if (r.fps) r.fps.textContent = String(this.state.fps || 0);
         if (r.creatures) r.creatures.textContent = String(this.state.creatures.length);
+        if (r.soul) {
+            const def = this.playerSoulDefs[this.state.player.soul || "human"];
+            r.soul.textContent = (def && def.label) || "—";
+        }
         const e = this.state.player.emotions;
         for (const axis of Object.keys(r.emotions)) {
             const v = Math.max(0, Math.min(1, e[axis] || 0));
@@ -4307,6 +4343,9 @@ class AnazhRealm {
             // bleiben absichtlich draußen — sie sind reine Laufzeit-Drosselung,
             // ein Reload soll wieder triggerfähig sein.
             playerEmotions: { ...this.state.player.emotions },
+            // Ring 5: Spieler-Seele (visuelle Form). Beim Load wird sie nach
+            // dem playerMesh-Bau angewandt — kein Body-Recreate.
+            playerSoul: this.state.player.soul || "human",
         };
     }
 
@@ -4490,6 +4529,14 @@ class AnazhRealm {
         }
         // Ring 3: Emotionen wiederherstellen. Nur bekannte Achsen übernehmen,
         // damit alte Saves mit Tippfehlern keine fremden Keys einschleusen.
+        // Ring 5: Spieler-Seele wiederherstellen. Wenn das Mesh schon
+        // existiert (loadState wird auch nach Init aufgerufen, z. B. via
+        // "Lade Zustand"), wenden wir die Seele sofort an. Vor dem Mesh-Bau
+        // merkt sich applyPlayerSoul den Namen und der Init-Pfad wendet ihn
+        // nach Mesh-Erstellung an.
+        if (typeof state.playerSoul === "string" && this.playerSoulDefs[state.playerSoul]) {
+            this.applyPlayerSoul(state.playerSoul);
+        }
         if (state.playerEmotions && typeof state.playerEmotions === "object") {
             for (const axis of Object.keys(this.state.player.emotions)) {
                 const v = Number(state.playerEmotions[axis]);
@@ -4656,12 +4703,123 @@ class AnazhRealm {
         });
     }
 
+    // ### Ring 5 – Spieler-Seele ###
+    // Drei Formen für V1, rein visuell. Geometrie + Farbe werden auf das
+    // existierende playerMesh angewandt; die Ammo-Box (0.5er Half-Extents)
+    // bleibt unverändert. Damit:
+    //   - Bewegung, Sprung, CCD bleiben kalibriert.
+    //   - kein Body-Recreate (würde Position/Velocity verlieren).
+    //   - Test-Surface bleibt klein.
+    // Stats (speed/jump-Modifier pro Form) heben wir uns für V2 auf, sobald
+    // klar ist welches Spielgefühl mit welcher Seele entstehen soll.
+    //
+    // Die Seele steht NICHT im dslComposeAtomic-Pool — der Nexus soll dem
+    // Menschen seine Identität nicht im Vorbeigehen umschreiben. Wer "werde
+    // X" sagt, entscheidet das selbst (Chat / Drawer / Ability).
+    get playerSoulDefs() {
+        if (this._playerSoulDefsCache) return this._playerSoulDefsCache;
+        this._playerSoulDefsCache = {
+            human: {
+                label: "Mensch",
+                color: 0xff0000,
+                geometry: () => new THREE.BoxGeometry(1, 1, 1),
+            },
+            phoenix: {
+                label: "Phönix",
+                color: 0xff7a1a,
+                // Oktaeder: kristalline, „lodernde" Silhouette in derselben
+                // Größenordnung wie der Würfel (radius 0.75 ≈ 1.5×1.5×1.5).
+                geometry: () => new THREE.OctahedronGeometry(0.75, 0),
+            },
+            dragon: {
+                label: "Drache",
+                color: 0x2d6e3b,
+                // Gestreckter Quader: schlangenartig, immer noch in die
+                // Box-Collision (1×1×1) passend.
+                geometry: () => new THREE.BoxGeometry(0.8, 0.8, 1.6),
+            },
+        };
+        return this._playerSoulDefsCache;
+    }
+
+    applyPlayerSoul(name) {
+        const defs = this.playerSoulDefs;
+        const key = typeof name === "string" ? name.toLowerCase().trim() : "";
+        // Deutsch + Englisch + Umlaut tolerieren, damit Chat + DSL + Save +
+        // UI alle denselben Kanonisierungs-Pfad nehmen.
+        const alias = {
+            mensch: "human",
+            human: "human",
+            phönix: "phoenix",
+            phoenix: "phoenix",
+            drache: "dragon",
+            drachen: "dragon",
+            dragon: "dragon",
+        };
+        const canonical = alias[key] || (defs[key] ? key : null);
+        if (!canonical) {
+            this.log(`Seele '${name}' unbekannt — bekannt: ${Object.keys(defs).join(", ")}`, "ERROR");
+            return false;
+        }
+        if (!this.state.playerMesh) {
+            // playerMesh wird in init() erstellt; Aufrufe davor (z. B. aus
+            // loadState im frühen Bootstrap) werden gemerkt und beim Mesh-
+            // Bau angewandt.
+            this.state.player.soul = canonical;
+            return false;
+        }
+        const def = defs[canonical];
+        const mesh = this.state.playerMesh;
+        const oldGeometry = mesh.geometry;
+        mesh.geometry = def.geometry();
+        if (oldGeometry && typeof oldGeometry.dispose === "function") oldGeometry.dispose();
+        if (mesh.material && mesh.material.color && typeof mesh.material.color.setHex === "function") {
+            mesh.material.color.setHex(def.color);
+        }
+        this.state.player.soul = canonical;
+        this.log(`Seele gewechselt: ${def.label} (${canonical})`, "INFO");
+        // UI synchron halten (Dropdown im Spieler-Drawer + Status-Bar).
+        if (typeof document !== "undefined") {
+            const select = document.getElementById("player-soul-select");
+            if (select && select.value !== canonical) select.value = canonical;
+            const status = document.getElementById("status-soul");
+            if (status) status.textContent = def.label;
+        }
+        return true;
+    }
+
+    playerSoulInitDOM() {
+        const select = document.getElementById("player-soul-select");
+        if (!select) return;
+        // Optionen aus den Defs aufbauen, damit Label + Reihenfolge an einer
+        // Stelle leben.
+        const defs = this.playerSoulDefs;
+        select.innerHTML = "";
+        for (const key of Object.keys(defs)) {
+            const opt = document.createElement("option");
+            opt.value = key;
+            opt.textContent = defs[key].label;
+            select.appendChild(opt);
+        }
+        select.value = this.state.player.soul || "human";
+        select.addEventListener("change", () => {
+            this.applyPlayerSoul(select.value);
+        });
+        // Status-Bar mit Default beschriften, falls vorhanden.
+        const status = document.getElementById("status-soul");
+        if (status) {
+            const cur = defs[this.state.player.soul || "human"];
+            status.textContent = (cur && cur.label) || "—";
+        }
+    }
+
     async init() {
         this.log("Initialisiere Anazh Realm V7.65... Ewigkeit erwacht!", "INFO");
         this.themeInitDOM();
         this.grokInitDOM();
         this.symphonyInitDOM();
         this.initStatusPanel();
+        this.playerSoulInitDOM();
         this.initTopbar();
         this.initConsoleDOM();
         this.ensureWorldMeta();
@@ -4739,6 +4897,13 @@ class AnazhRealm {
         this.state.playerMesh = playerMesh;
         this.log("Spieler erstellt: Position (0, 20, 0), Schatten aktiviert", "INFO");
         this.state.selfAwareness.components.push("playerMesh");
+        // Ring 5: Seele auf die frische Mesh anwenden. Bei "human" ist das
+        // ein No-Op (Geometrie + Farbe stimmen schon); bei einem nicht-
+        // default-Save (loadState lief vor init) wird die gespeicherte Form
+        // jetzt sichtbar.
+        if (this.state.player.soul && this.state.player.soul !== "human") {
+            this.applyPlayerSoul(this.state.player.soul);
+        }
 
         if (this.state.physicsWorld) {
             const playerShape = new Ammo.btBoxShape(new Ammo.btVector3(0.5, 0.5, 0.5));

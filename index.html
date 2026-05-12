@@ -816,6 +816,43 @@
             width: 100%;
             accent-color: var(--brass-1);
         }
+        /* Ring 5: Spieler-Seele. Brass-getintetes <select>, passend zum
+           Drawer-Pergament-Look. */
+        .drawer .soul-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 4px;
+        }
+        .drawer .soul-row label {
+            font-family: 'Cinzel', Georgia, serif;
+            font-size: 11px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--parch-ink-soft);
+            min-width: 44px;
+        }
+        .drawer .soul-row select {
+            flex: 1;
+            background: linear-gradient(180deg, rgba(255, 235, 190, 0.5), rgba(180, 140, 80, 0.3));
+            color: var(--parch-ink);
+            border: 1px solid var(--brass-2);
+            border-radius: 3px;
+            padding: 5px 8px;
+            font-family: 'Cinzel', Georgia, serif;
+            font-size: 12px;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 240, 200, 0.4);
+        }
+        .drawer .soul-row select:hover {
+            background: linear-gradient(180deg, rgba(255, 245, 210, 0.6), rgba(200, 160, 100, 0.4));
+            border-color: var(--brass-1);
+        }
+        .drawer .soul-row select:focus {
+            outline: 1px solid var(--violet-1);
+            outline-offset: 1px;
+        }
         /* #help-toggle / #help-overlay sind in V2 weg — Hilfe ist ein Drawer-
            Tab. Selektoren bleiben, falls jemand sie referenziert, sind aber
            im neuen DOM tot. */
@@ -924,6 +961,7 @@
         <span class="status-item"><span class="label">Slug</span><span class="value" id="status-slug">—</span></span>
         <span class="status-item"><span class="label">FPS</span><span class="value" id="status-fps">—</span></span>
         <span class="status-item"><span class="label">Kreaturen</span><span class="value" id="status-creatures">—</span></span>
+        <span class="status-item"><span class="label">Seele</span><span class="value" id="status-soul">—</span></span>
         <span class="status-item pos"><span class="label">Position</span><span class="value" id="status-position">—</span></span>
     </div>
     <aside class="drawer open" data-drawer="welt" aria-label="Welt-Panel">
@@ -958,6 +996,14 @@
     <aside class="drawer" data-drawer="spieler" aria-label="Spieler-Panel" hidden>
         <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
         <h2>Spieler</h2>
+        <section class="section">
+            <h3>Seele</h3>
+            <p class="drawer-hint">Form des Spieler-Avatars. Rein visuell — Bewegung und Physik bleiben gleich.</p>
+            <div class="soul-row">
+                <label for="player-soul-select">Form</label>
+                <select id="player-soul-select" aria-label="Spieler-Seele wählen"></select>
+            </div>
+        </section>
         <section class="section">
             <h3>Emotionen</h3>
             <div id="status-emotions"></div>

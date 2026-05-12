@@ -1,4 +1,4 @@
-# Zustand des Realm — Stand: 12.05.2026 (Abend, nach Chunk-Physik-Refactor)
+# Zustand des Realm — Stand: 12.05.2026 (nach Ring 5 V1 — Spieler-Seele)
 
 Dieses Dokument ist das gemeinsame Gedächtnis für eine künftige Iteration. Es kondensiert (a) die Vision aus den vier Testamenten, (b) den historischen Weg, (c) den aktuellen Code-Stand, (d) den nächsten Plan und (e) die Learnings aus der bisherigen Session.
 
@@ -68,7 +68,7 @@ Konsequenz für jede künftige Iteration: **niemals re-komplexifizieren ohne Not
 | ✅ Spieler-Emotionen (`state.player.emotions`, `collectPlayerEmotions`, Welt-Trigger, Generator-Bias) | V1+V2 live — 6 Achsen vollständig gekoppelt (joy/awe→Skybox, sorrow/hope→Wetter, peace/chaos→Kreatur-Geschwindigkeit), Generator-Bias in `dslComposeAtomic` (joy/sorrow modulieren weather + emotion sanft), DSL-Condition `emotion_above`, Save-Roundtrip. |
 | ✅ Multisensorik / `anazhSymphony` (Web Audio API) | V1 live — drei Schichten (ambient drone + verlässliches LFO, Wetter-Layer als gefiltertes Noise mit Cross-Fade, Kreatur-Pings als emotion-abhängige Sinus-Töne). Toggle-Button auf User-Geste. |
 | ✅ **Bedien-Oberfläche / UI** (V1 + V2 Painterly) | V2 live — vendored Cinzel + IM Fell English + JetBrains Mono, Pergament + Eisen + Messing als Token-Set, Tag/Nacht via `[data-theme]`. Topbar mit sechs Tabs (Welt/Kreaturen/Spieler/Fähigkeiten/Einstellungen/Hilfe) + drei Latch-Toggles, Status-Bar live, Drawer-System (slidet rein bei Tab-Klick), fusioniertes Konsole-Panel (Chat + Logbuch + Input einklappbar), Brass-getintete Custom-Scrollbars. Astrolabium-Live-Element + Custom-Slider-Rail/Knob offen für UI V3. |
-| 🔴 `createPlayerSoul`, `transformPlayerForm` (Mensch/Phönix/Drache/Riese) | roter Würfel |
+| ✅ **`createPlayerSoul`** (Mensch/Phönix/Drache) | V1 live — drei wählbare Seelen, rein visuell (Geometrie + Farbe). Drawer-Dropdown im Spieler-Panel (`#player-soul-select`) + `#status-soul`-Item in der Status-Bar, Chat-Pattern `werde mensch/phönix/drache` → DSL-Op `player_soul`, Save persistiert `playerSoul`. Bewusst NICHT im `dslComposeAtomic`-Pool — der Nexus überschreibt die Identität nicht. Stats/Riese/Frei sind V2. |
 | 🔴 `architectureTemplates` (Dörfer, Tempel, Wasserfälle als Strukturen) | fehlt |
 | 🔴 `materialEvolution` (Crafting, Materie wächst) | fehlt |
 | 🔴 `evolveCommunity` (Kreatur-Kulturen) | fehlt |
@@ -136,8 +136,10 @@ Chronologisch, mit Commit-Hash und Kernaussage:
 | 50 | `36d2364` | **UI V2 #1 — Painterly Identity**: Cinzel + IM Fell English + JetBrains Mono lokal in `vendor/fonts/` (OFL-lizensiert, ~190 KB Latin-Subset), CSS-Color-Tokens (`--parch-*` / `--iron-*` / `--brass-*` / `--violet-*` / Emotion-Farben), Tag/Nacht-Theme via `body[data-theme]` mit localStorage-Persistenz, Pergament-Hintergrund (SVG-Noise) + Eisen-Rahmen mit Eckschrauben für Status-Panel. Acht neue Playtest-Invarianten. |
 | 51 | `2eb6771` | **UI V2 #2 — Topbar + Tabs + Drawer-System**: aus dem langen Status-Panel werden sechs Drawer (Welt / Kreaturen / Spieler / Fähigkeiten / Einstellungen / Hilfe) plus eine Topbar mit Tabs und drei Latch-Toggles plus eine Status-Bar mit Live-Welt-Daten. `initTopbar()` + `closeAllDrawers()` als Steuer-Layer; `state.uiActiveDrawer` trackt den aktiven Tab. Hilfe-Overlay komplett durch den Hilfe-Drawer ersetzt. **Bug nebenbei**: initStatusPanel-Guard auf das jetzt-fehlende `#status-panel` machte die Funktion stillschweigend zum No-Op. 11 neue + 19 angepasste Invarianten. |
 | 52 | `4f638cb` | **UI V2 #3 — Konsole + Custom-Scrollbars**: Chat + Logbuch + Input werden ein einklappbares `#console`-Panel links (Header mit Cinzel-Titel + Latch, Body mit Chat-Output über Log, Footer mit Input). Custom-Scrollbars in Brass-Token (Webkit + Firefox) für alle scrollbaren Container. localStorage merkt sich Collapse-Wahl. Acht neue Invarianten. |
+| 53 | `bd424b3` | **Reflexion**: UI V1+V2 Stand dokumentiert, Plan auf Ring 5/6 + UI V3 refreshed. |
+| 54 | (dieser) | **Ring 5 V1 — createPlayerSoul**: drei Seelen wählbar (`human`/`phoenix`/`dragon`). Rein visuell: `applyPlayerSoul` tauscht `playerMesh.geometry` (Box/Octahedron/elongated Box) + `material.color`, lässt Position + Scale + Ammo-Body unangetastet. Chat-Pattern `werde mensch/phönix/phoenix/drache/drachen/dragon` → DSL-Op `player_soul`. UI: `<select id="player-soul-select">` als zweite Sektion im Spieler-Drawer (über den Emotionen, mit Pergament-Hinweis + Brass-Styling) + `#status-soul`-Item in der Status-Bar; beide bidirektional synchronisiert. Save persistiert `playerSoul` (schemaVersion `"7.68-souls-v1"`); `loadState` wendet die Seele nach Mesh-Bau an. Hilfe-Drawer um „Spieler-Seele"-Gruppe erweitert. Bewusst nicht im `dslComposeAtomic`-Pool — der Nexus überschreibt die Identität des Spielers nicht. **23 neue Playtest-Invarianten** (Default-Soul, Geometrie-Tausch, Farbe, Position-Erhalt, Chat-Routing, Aliase, unbekannte Namen, Dropdown-Sync, Status-Bar-Label, Save/Load, Atomic-Pool-Ausschluss). |
 
-Aggregat: **49 Commits** in dieser Konversations-Serie (von `5df65e3` zu HEAD, ~+5000/−1100 Zeilen netto). Architektur: ein File, ein Chunk-Pfad, eine Höhen-Funktion, eine Collider-Quelle (Triangle-Mesh = Visual-Mesh), **eine Sprache für Welt-Mutation (DSL), kein dynamic-eval im eigenen Bundle, browser-durchgesetzte CSP-Schicht, autonomer Selektions-Loop aus Outcomes, vollständiger bidirektionaler Emotions-Kanal, klingende Welt, painterly-Bedien-Oberfläche mit Tab-Drawer-System**. Alle fünf Vision-Pfeiler haben jetzt eine V1 oder höher.
+Aggregat: **51 Commits** in dieser Konversations-Serie (von `5df65e3` zu HEAD, ~+5300/−1100 Zeilen netto). Architektur: ein File, ein Chunk-Pfad, eine Höhen-Funktion, eine Collider-Quelle (Triangle-Mesh = Visual-Mesh), **eine Sprache für Welt-Mutation (DSL), kein dynamic-eval im eigenen Bundle, browser-durchgesetzte CSP-Schicht, autonomer Selektions-Loop aus Outcomes, vollständiger bidirektionaler Emotions-Kanal, klingende Welt, drei wählbare Spieler-Seelen, painterly-Bedien-Oberfläche mit Tab-Drawer-System**. Alle fünf Vision-Pfeiler haben jetzt eine V1+, und der Spieler hat zum ersten Mal eine wählbare Form-Identität.
 
 ---
 
@@ -235,16 +237,25 @@ Echt gelernt, nicht performt:
 
 31. **Visuelle Identität ist auch Sicherheit.** Native System-Scrollbars (heller Grau-Track) in einem Painterly-Theme wirken wie Fremdkörper aus einer anderen App. Custom-Scrollbar in Brass + Pergament ist nicht Kosmetik — es zieht das gesamte Interface in einen Vertrag mit dem Spieler hinein („das ist alles dieselbe Welt"). 30 Zeilen CSS für einen großen Wahrnehmungsschritt.
 
+### Learnings dieser Session (Mai 2026, Ring 5 V1)
+
+32. **`origin/main` ist nicht „der neueste Stand".** Feature-Branches können schon weiter sein als main. Bei Session-Start NICHT nur main checken, sondern `git branch -r` durchgucken und nach Branches mit neueren Commits suchen. Konkret: ich habe Ring 5 zunächst auf einem zwei-Tage-alten main-Stand gebaut, ohne zu merken dass UI V1+V2 auf `claude/review-project-status-qfb1z` schon live war — 8 Commits, ~2000 Zeilen. Reset + Neuimplementierung im UI-V2-Kontext kostete eine zweite Iteration, die mit einem `git branch -r`-Blick vorne weg hätte entfallen können.
+33. **„Rein visuell" ist eine Disziplin, kein Versehen.** Ring 5 V1 hätte leicht in einen Body-Recreate-Pfad rutschen können (Drache = größere Hitbox, Phönix = leichter). Stattdessen: Geometrie + Farbe wechseln, Ammo-Box bleibt 0.5er Half-Extents, Position bleibt erhalten. Test-Surface klein, Physik kalibriert, Save-Roundtrip trivial. Stats kommen in V2, sobald wir wissen, welches Spielgefühl entstehen soll.
+34. **Identität gehört dem Spieler, nicht dem Nexus.** `player_soul` ist als DSL-Op verfügbar (für Chat, Abilities, künftige Trigger), aber bewusst NICHT im `dslComposeAtomic`-Pool. Eine Playtest-Invariante prüft das mit 2000 Atomic-Calls: keine zufällige Identitäts-Umschreibung durch den Nexus. Symmetrisch zu `terrain_steepness`/`terrain_base_height` — manche Ops sind Werkzeug, kein Spielzeug.
+35. **Alias-Tabellen vor Regex-Casing.** Chat-Pattern matcht `mensch|human|phönix|phoenix|drache|drachen|dragon`, `applyPlayerSoul` kanonisiert intern. Hält das Regex einfach und macht spätere Erweiterung (Synonyme, Englisch) ohne Pattern-Anpassung möglich. UI nutzt direkt die kanonischen Keys.
+36. **UI-V2-Drawer ist die natürliche Heimat neuer Spieler-Optionen.** Mein erster Reflex (extra Toggle-Button in der Topbar) hätte die Painterly-Identität verwässert; im Spieler-Drawer als zweite Sektion über den Emotionen passt es in den bestehenden Vertrag mit dem Spieler („alles über mich an einem Ort"). Lehrsatz: bei UI-Erweiterungen nicht nur „wo passt's", sondern „wo erwartet's der Spieler".
+
 ---
 
 ## 7. Offene Fragen für die nächste Iteration
 
-Ring 2 (alle 7 Phasen) und Ring 3 (V1+V2) und Ring 4 (V1) sind beantwortet und umgesetzt. Was offen ist:
+Ring 2 (alle 7 Phasen), Ring 3 (V1+V2), Ring 4 (V1), Ring 5 (V1) und UI V1+V2 sind beantwortet und umgesetzt. Was offen ist:
 
-**Für Ring 5 (`createPlayerSoul`):**
+**Für Ring 5 V2 (`createPlayerSoul` erweitern):**
 
-1. **Welche Formen?** Plan: Mensch / Phönix / Drache / Riese / Frei. Empfehlung: V1 mit drei Formen (Mensch / Phönix / Drache) — Riese bringt Physik-Komplexität (großer Hitbox, Kamera-Höhe), das wäre V2.
-2. **Stat-Spread oder rein visuell?** V1 nur Mesh + Farbe; speed/jump-Modifikationen wären Stat-Pfad — kann zu Balance-Problemen führen, würde Test-Surface vergrößern. Erst rein visuell, Stats später wenn klar ist welches Spielgefühl entstehen soll.
+1. **Stat-Spread pro Seele?** V1 ist rein visuell. V2 könnte pro Form `speed`/`jumpPower`-Modifier setzen (Phönix leichter + höher, Drache langsamer + stärker). Voraussetzung: klares Spielgefühl-Ziel, sonst rein kosmetische Balance-Arbeit. Bis dahin OK.
+2. **Riese als vierte Form?** Bringt Physik-Komplexität (größere Hitbox = Body-Recreate, Kamera-Höhe, Kollisions-Test mit Bäumen). V2-Kandidat, sobald wir bereit sind, den Body-Recreate-Pfad zu bauen.
+3. **„Frei" als fünfte Form?** Nutzer könnten eigene Geometrie/Farbe via DSL definieren — würde die Seelen-Mechanik auf das DSL-Fundament heben statt eine geschlossene Liste. Macht aber Save-Schema komplexer.
 
 **Für Ring 6 (`architectureTemplates`):**
 
@@ -320,7 +331,7 @@ AnazhRealm/
 1. `node --check anazhRealm.js` ✓
 2. `npm run format:check` ✓
 3. `npm run lint` ✓ (sollte 0 Warnings sein — Vorbestand wurde Phase-6-Commit aufgeräumt)
-4. `npm run playtest` ✓ (alle Invarianten grün, exit 0; aktuell 132)
+4. `npm run playtest` ✓ (alle Invarianten grün, exit 0; aktuell 155)
 5. CI-Gate „kein `new Function`/`eval`" muss grün bleiben — neuer dynamic-eval-Pfad wäre ein Architektur-Bruch.
 6. Doku im selben Commit: roadmap.md + state-of-realm.md + CLAUDE.md spiegeln den realen Stand.
 
@@ -330,7 +341,7 @@ CI macht 1-4 automatisch; 5+6 sind Disziplin.
 
 ## 10. Wie eine neue Session starten
 
-1. Branch checken: `git status` sollte auf `claude/plan-session-95Ejn` zeigen, working tree clean. Letzter SHA dieser Übergabe ist im Commit-Archiv §4 das letzte Element.
+1. Branch checken: `git status` sollte auf `claude/new-adventure-fetch-branch-NF847` zeigen, working tree clean. Letzter SHA dieser Übergabe ist im Commit-Archiv §4 das letzte Element. **Vor dem Anfangen: `git fetch --all` UND alle Branches durchsehen — `origin/main` ist oft nicht der neueste Stand, weitere Feature-Branches können vorausgehen (siehe Learning #28).**
 2. `CLAUDE.md` ist auto-geladen — sofort verfügbar. Diese Doc (`state-of-realm.md`) gezielt lesen wenn größere Entscheidungen anstehen.
 3. Bei Bedarf `docs/nexus-dsl.md` lesen für Ring 2 Phase 3+ Details.
 4. Falls der Schöpfer fragt „wo stehen wir?" → §3 (Matrix) + §5 (Pfad D Tabelle) zitieren. Stand: Ring 0+1 ✅, Ring 2 Phase 1+2 ✅, Phase 3-7 + Ringe 3-7 + Ringe 8-11 offen.
