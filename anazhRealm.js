@@ -109,6 +109,9 @@ class AnazhRealm {
             lastGrowthUpdate: 0,
             lastWallCollisionUpdate: 0,
             lastSelfAnalysis: 0,
+            movementWorker: null,
+            movementWorkerUrl: null,
+            movementWorkerBusy: false,
         };
         this.core = {
             initPhysics: this.initPhysics.bind(this),
@@ -603,30 +606,49 @@ updateCreatures(delta) {
         }
     }
 
-    // Worker-Thread für einfache Bewegungen außerhalb des Sichtfelds
-    if (workerData.length > 0) {
-        const worker = new Worker(URL.createObjectURL(new Blob([`
-            self.onmessage = function(e) {
-                const creatures = e.data;
-                const updated = creatures.map(c => {
-                    const speed = c.emotion === "happy" ? 2 : 1;
-                    const direction = { x: (Math.random() - 0.5) * speed, z: (Math.random() - 0.5) * speed };
-                    c.position.x += direction.x * 0.016;
-                    c.position.z += direction.z * 0.016;
-                    return c;
-                });
-                self.postMessage(updated);
-            };
-        `], { type: "application/javascript" })));
-        worker.onmessage = (e) => {
-            e.data.forEach(c => {
-                const creature = this.state.creatures[c.id];
-                creature.position.set(c.position.x, creature.position.y, c.position.z);
-            });
-            worker.terminate();
-        };
+    // Singleton-Worker für einfache Bewegungen außerhalb des Sichtfelds.
+    // Frames, in denen der Worker noch antwortet, werden übersprungen
+    // anstatt einen zweiten Worker zu spawnen.
+    if (workerData.length > 0 && !this.state.movementWorkerBusy) {
+        const worker = this.getMovementWorker();
+        this.state.movementWorkerBusy = true;
         worker.postMessage(workerData);
     }
+}
+
+getMovementWorker() {
+    if (this.state.movementWorker) return this.state.movementWorker;
+    const code = `
+        self.onmessage = function(e) {
+            const creatures = e.data;
+            const updated = creatures.map(c => {
+                const speed = c.emotion === "happy" ? 2 : 1;
+                c.position.x += (Math.random() - 0.5) * speed * 0.016;
+                c.position.z += (Math.random() - 0.5) * speed * 0.016;
+                return c;
+            });
+            self.postMessage(updated);
+        };
+    `;
+    const blob = new Blob([code], { type: "application/javascript" });
+    const url = URL.createObjectURL(blob);
+    const worker = new Worker(url);
+    worker.onmessage = (e) => {
+        e.data.forEach(c => {
+            const creature = this.state.creatures[c.id];
+            if (creature) {
+                creature.position.set(c.position.x, creature.position.y, c.position.z);
+            }
+        });
+        this.state.movementWorkerBusy = false;
+    };
+    worker.onerror = (err) => {
+        this.log(`Movement-Worker-Fehler: ${err.message}`, "ERROR");
+        this.state.movementWorkerBusy = false;
+    };
+    this.state.movementWorker = worker;
+    this.state.movementWorkerUrl = url;
+    return worker;
 }
 
 creatureJump(creature, jumpHeight) {

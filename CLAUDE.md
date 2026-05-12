@@ -24,7 +24,7 @@ Status-Legende: `[ ]` offen · `[x]` erledigt · `[~]` in Arbeit
 ### Kurzfristig (Tage)
 - [ ] **C2** Chat-Command-Map statt Mega-If-Else.
 - [ ] **C3** Ammo-Pool / zentrales `disposeAmmo` (behebt **B3** Memory-Leak).
-- [ ] **C4** Worker-Singleton in `updateCreatures` (behebt **B4** Worker-Spawn-Leak).
+- [x] **C4 / B4** Singleton-Movement-Worker (`getMovementWorker`) mit Busy-Flag; behebt Pro-Frame-Spawn und `URL.createObjectURL`-Leak.
 - [x] **B7** `learnAbility` case-insensitiv: `indexOf` über lowercased `command`, alle `.includes(...)` gegen `lower`.
 - [ ] **B9** Skybox-Uniform korrekt setzen (`.value.set(color)`).
 - [x] **B11** XSS-Schutz: `flushLog` nutzt `textContent`, Chat-Output appendet `<div>`-Elemente mit `textContent`.
