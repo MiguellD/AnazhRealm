@@ -19,7 +19,7 @@ Status-Legende: `[ ]` offen · `[x]` erledigt · `[~]` in Arbeit
 - [x] **B6** Trainingsdaten-Parser via Regex auf `x=…`/`z=…`.
 - [x] **B12** `loadState` ruft `restoreAbility` für Nexus-bekannte Namen; benutzerdefinierte Abilities werden mit Warnung verworfen (Code wird nicht persistiert).
 - [x] **B20/C11** `save-server.js`: `ALLOWED_STATE_FILES`-Allowlist + Dirname-Check.
-- [ ] **B25** Konsistente Einrückung (4 Spaces) in `anazhRealm.js`.
+- [x] **B25** Konsistente Einrückung (4 Spaces) durchgesetzt via Prettier.
 
 ### Kurzfristig (Tage)
 - [ ] **C2** Chat-Command-Map statt Mega-If-Else.
@@ -31,7 +31,8 @@ Status-Legende: `[ ]` offen · `[x]` erledigt · `[~]` in Arbeit
 - [x] **B16** `lastWallCollisionUpdate` (und `lastSelfAnalysis`) initial im State.
 - [x] **B17** `recordWeakness()`-Helper mit Dedup + Cap 50.
 - [x] **B19** `cacheNoise()`-Helper als FIFO-LRU mit Cap 100k.
-- [ ] **C14** ESLint + Prettier + `package.json` einrichten.
+- [x] **C14** ESLint v9 (Flat-Config in `eslint.config.mjs`) + Prettier (`.prettierrc.json`, tabWidth 4) + `package.json` + `.gitignore`. CI führt `npm run format:check && npm run lint` aus.
+- [ ] **C14-Followup** 5 ESLint-Warnings beheben: unused `body`/`state`/`zIndex`/`xIndex`/`closestHitY` in anazhRealm.js.
 
 ### Mittelfristig (Wochen)
 - [ ] **C1** Modul-Split (engine / physics / ai / chat / persistence / world).

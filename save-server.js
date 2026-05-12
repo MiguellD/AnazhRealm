@@ -5,9 +5,7 @@ const path = require("path");
 const HOST = "127.0.0.1";
 const PORT = 4312;
 const PROJECT_ROOT = __dirname;
-const ALLOWED_STATE_FILES = new Set([
-    "anazhRealmState.json",
-]);
+const ALLOWED_STATE_FILES = new Set(["anazhRealmState.json"]);
 
 const MIME_TYPES = {
     ".html": "text/html; charset=utf-8",

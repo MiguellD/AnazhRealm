@@ -16,6 +16,15 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Dependencies installieren
+        run: npm install --no-audit --no-fund
+
+      - name: Prettier-Format-Check
+        run: npm run format:check
+
+      - name: ESLint
+        run: npm run lint
+
       - name: Syntax-Check JS-Dateien
         run: |
           set -e
