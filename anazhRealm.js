@@ -1899,20 +1899,32 @@ class AnazhRealm {
     }
 
     restoreAbility(name) {
-        // Wird beim Laden eines Speicherstands aufgerufen. Nexus-Ideen werden aus
-        // der bekannten Liste rekonstruiert; benutzerdefinierte Fähigkeiten gehen
-        // verloren (Code wird nicht persistiert) und müssen neu gelernt werden.
-        const idea = this.getNexusIdeas().find((i) => i.name === name);
-        if (!idea) {
+        // Wird beim Laden eines alten Speicherstands aufgerufen. Statt
+        // `new Function`-Strings (die unter CSP scheitern) mappen wir die drei
+        // historischen Nexus-Namen auf ihre DSL-Äquivalente — siehe
+        // docs/nexus-dsl.md §14 (Migration). Unbekannte Namen werden ignoriert.
+        const legacyToDsl = {
+            gravityShift: ["gravity", -9.81],
+            creatureDance: ["repeat", 10, ["spawn_creature", ["near_player", 5], 1, "happy"]],
+            terrainFlatten: ["terrain_steepness", this.state.terrainSteepness * 0.8],
+        };
+        const program = legacyToDsl[name];
+        if (!program) {
             this.log(
-                `Gelernte Fähigkeit '${name}' kann nicht wiederhergestellt werden (Code nicht persistiert) – bitte neu lernen`,
+                `Gelernte Fähigkeit '${name}' kann nicht wiederhergestellt werden (kein DSL-Mapping) – bitte neu lernen`,
                 "WARNING"
             );
             return false;
         }
-        const dynamicAbility = this.createDynamicAbility(idea.name, idea.code);
-        if (!dynamicAbility) return false;
-        this.addNewAbility(idea.name, dynamicAbility);
+        // Als Ability-Wrapper, sodass `Führe Fähigkeit aus X` weiter funktioniert.
+        const wrapper = () => this.dslRun(program, { source: "restored" });
+        this.addNewAbility(name, wrapper);
+        this.state.dsl.abilities.push({
+            name,
+            program,
+            source: "restored",
+            createdAt: performance.now() / 1000,
+        });
         return true;
     }
 
@@ -2538,30 +2550,11 @@ class AnazhRealm {
                 const z = Math.floor(i / WIDTH) * (WORLD_SIZE / (DEPTH - 1)) - WORLD_SIZE / 2;
                 const cacheKey = `${x}:${z}:${steepness}`;
 
-                let height =
-                    this.state.noiseCache.get(cacheKey) ??
-                    (() => {
-                        const height1 = noise.noise2D(x * 0.01, z * 0.01) * 20 * steepness;
-                        const height2 = noise.noise2D(x * 0.03, z * 0.03) * 15 * steepness;
-                        const height3 = noise.noise2D(x * 0.06, z * 0.06) * 10 * steepness;
-                        const height4 = noise.noise2D(x * 0.1, z * 0.1) * 5 * steepness;
-                        const height5 = noise.noise2D(x * 0.005, z * 0.005) * 30 * steepness;
-                        const height6 = noise.noise2D(x * 0.002, z * 0.002) * 50 * steepness;
-                        const height7 = Math.pow(noise.noise2D(x * 0.02, z * 0.02), 3) * 30 * steepness;
-                        const canyonNoise = noise.noise2D(x * 0.008, z * 0.008);
-                        const fieldNoise = noise.noise2D(x * 0.004, z * 0.004);
-                        let h = baseHeight + height1 + height2 + height3 + height4 + height5 + height6 + height7;
-
-                        if (canyonNoise > 0.7) h -= (40 * (canyonNoise - 0.7)) / 0.3;
-                        if (fieldNoise < -0.5) h = Math.max(h * 0.2, -10);
-
-                        if (!Number.isFinite(h)) {
-                            this.log(`Ungültiger Höhenwert bei (${x}, ${z}): ${h}. Setze auf 0.`, "ERROR");
-                            h = 0;
-                        }
-                        this.cacheNoise(cacheKey, h);
-                        return h;
-                    })();
+                let height = this.state.noiseCache.get(cacheKey);
+                if (height === undefined) {
+                    height = this._terrainHeightAtWorld(x, z, noise, steepness, baseHeight);
+                    this.cacheNoise(cacheKey, height);
+                }
 
                 const caveValue = caveNoise.noise3D(x * 0.05, height * 0.05, z * 0.05);
                 caveData[i] = caveValue > 0.4 ? 1 : 0;
@@ -3302,6 +3295,26 @@ class AnazhRealm {
     }
 
     // ### Terrain-Erweiterung ### V7.42
+    // Zentrale Höhen-Formel. Wird sowohl vom initialen generateTerrainWithParameters
+    // als auch vom extendTerrain-Pfad genutzt — damit die Nähte zwischen
+    // ursprünglicher Welt und Erweiterung exakt zusammenpassen.
+    _terrainHeightAtWorld(worldX, worldZ, noise, steepness, baseHeight) {
+        const h1 = noise.noise2D(worldX * 0.01, worldZ * 0.01) * 20 * steepness;
+        const h2 = noise.noise2D(worldX * 0.03, worldZ * 0.03) * 15 * steepness;
+        const h3 = noise.noise2D(worldX * 0.06, worldZ * 0.06) * 10 * steepness;
+        const h4 = noise.noise2D(worldX * 0.1, worldZ * 0.1) * 5 * steepness;
+        const h5 = noise.noise2D(worldX * 0.005, worldZ * 0.005) * 30 * steepness;
+        const h6 = noise.noise2D(worldX * 0.002, worldZ * 0.002) * 50 * steepness;
+        const h7 = Math.pow(noise.noise2D(worldX * 0.02, worldZ * 0.02), 3) * 30 * steepness;
+        const canyonNoise = noise.noise2D(worldX * 0.008, worldZ * 0.008);
+        const fieldNoise = noise.noise2D(worldX * 0.004, worldZ * 0.004);
+        let h = baseHeight + h1 + h2 + h3 + h4 + h5 + h6 + h7;
+        if (canyonNoise > 0.7) h -= (40 * (canyonNoise - 0.7)) / 0.3;
+        if (fieldNoise < -0.5) h = Math.max(h * 0.2, -10);
+        if (!Number.isFinite(h)) h = 0;
+        return Math.max(-100, Math.min(100, h));
+    }
+
     extendTerrain(direction) {
         // Erweitert die Welt um einen einzelnen Chunk an der Außenkante.
         //
@@ -3398,14 +3411,7 @@ class AnazhRealm {
                 const cacheKey = `${worldX}:${worldZ}:${steepness}`;
                 let h = this.state.noiseCache.get(cacheKey);
                 if (h === undefined) {
-                    const h1 = noise.noise2D(worldX * 0.01, worldZ * 0.01) * 20 * steepness;
-                    const h2 = noise.noise2D(worldX * 0.03, worldZ * 0.03) * 15 * steepness;
-                    const h3 = noise.noise2D(worldX * 0.06, worldZ * 0.06) * 10 * steepness;
-                    const h4 = noise.noise2D(worldX * 0.002, worldZ * 0.002) * 50 * steepness;
-                    const h5 = Math.pow(noise.noise2D(worldX * 0.02, worldZ * 0.02), 3) * 30 * steepness;
-                    h = baseHeight + h1 + h2 + h3 + h4 + h5;
-                    if (!Number.isFinite(h)) h = 0;
-                    h = Math.max(-100, Math.min(100, h));
+                    h = this._terrainHeightAtWorld(worldX, worldZ, noise, steepness, baseHeight);
                     this.cacheNoise(cacheKey, h);
                 }
                 heightData[z * VTX + x] = h;
