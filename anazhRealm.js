@@ -3947,8 +3947,11 @@ class AnazhRealm {
             // gesetzt — der Spieler fiel deshalb in den ersten Sekunden öfter
             // durch den Boden.
             if (this.state.playerBody) {
-                this.state.playerBody.setCcdMotionThreshold(0.05);
-                this.state.playerBody.setCcdSweptSphereRadius(0.4);
+                // Aggressive CCD-Parameter: kleiner threshold = mehr Sweep-
+                // Checks pro Frame, größerer Radius = robusterer Catch durch
+                // dünne Triangles bei steilen Hängen oder Wänden.
+                this.state.playerBody.setCcdMotionThreshold(0.01);
+                this.state.playerBody.setCcdSweptSphereRadius(0.45);
             }
             this.log("Physik-Körper für Spieler hinzugefügt", "INFO");
             this.state.selfAwareness.components.push("playerBody");
@@ -4175,7 +4178,7 @@ class AnazhRealm {
 
             // ### Physik-Simulation ###
             if (this.state.physicsWorld) {
-                this.state.physicsWorld.stepSimulation(delta, 10, 1 / 60);
+                this.state.physicsWorld.stepSimulation(delta, 20, 1 / 60);
                 for (let i = 0; i < this.state.rigidBodies.length; i++) {
                     const mesh = this.state.rigidBodies[i];
                     const body = mesh.userData.physicsBody;
@@ -4186,7 +4189,23 @@ class AnazhRealm {
                         let scaledY = pos.y() * this.state.scaleFactor;
                         const velocity = body.getLinearVelocity();
 
-                        const killPlaneY = (this.state.minHeight || -50) - 1000;
+                        // Fall-Geschwindigkeit cappen: ohne Cap zog die
+                        // Schwerkraft den Spieler in eine sehr hohe vy, sodass
+                        // er pro Frame eine ganze Heightfield-Cell (~1.17 m)
+                        // überspringen konnte — Tunneling durch steile Hänge.
+                        // -25 m/s ist eine plausible Terminal Velocity und
+                        // bleibt unter Cell-Breite × 60 fps.
+                        if (mesh === this.state.playerMesh && velocity.y() < -25) {
+                            body.setLinearVelocity(this.setVec(this.state.tmpVec1, velocity.x(), -25, velocity.z()));
+                        }
+
+                        // Kill-Plane näher an den Welt-Boden gerückt: vorher
+                        // erst nach 1000 m freiem Fall — der Spieler war
+                        // gefühlt "verloren". 30 m unter dem tiefsten Welt-
+                        // Punkt ist nah genug, dass Resets sofort spürbar
+                        // sind, aber tief genug, dass eine legitime Schlucht
+                        // (heights -100..+100) den Spieler nicht reset.
+                        const killPlaneY = (this.state.minHeight || -50) - 30;
                         if (scaledY < killPlaneY) {
                             const zIndex = Math.floor(((pos.z() * this.state.scaleFactor + 150) / 300) * 255);
                             const xIndex = Math.floor(((pos.x() * this.state.scaleFactor + 150) / 300) * 255);
