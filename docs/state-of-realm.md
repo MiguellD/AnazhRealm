@@ -193,31 +193,57 @@ Echt gelernt, nicht performt:
 
 15. **Vision-Erweiterung gehört in die Doku, nicht in den Code.** Der Schöpfer formulierte mitten in der Session eine größere Vision (Multi-Welt, Fusion, Public/Private). Das gehört zu §11 — nicht in Phase 2. Code bleibt klein und stabil; die Vision wächst im Plan.
 
+### Learnings dieser Session (Mai 2026, Ring 2 P3-7 + Ring 3 V1+V2 + Ring 4 V1)
+
+16. **Latente Bugs verstecken sich in nie-getesteten Verbindungen.** Die DSL-Op `skybox_color` schrieb seit Ring 2 Phase 1 in ein nicht existierendes Uniform (`tintColor`) — der Shader benutzt `nebulaColor`. Drei Phasen lang stiller No-Op. Erst Ring 3 V2 mit Trigger-Tests (awe → Skybox-Farbänderung) hat es ans Licht gebracht. Lehrsatz: ein Test, der die *Verbindung* prüft, fängt mehr als zehn Tests, die nur das Endergebnis prüfen.
+
+17. **Plan-Reihenfolge zahlt sich aus.** Ring 2 Phasen 3a → 3b → 4+5 → 6 → 7 sequentiell, jeder Schritt grün. Versuchung wäre gewesen, Phase 7 (Fitness) vor Phase 5 (Cleanup) anzugehen — Cleanup wäre dann unter dem Damoklesschwert gelaufen. Schritt für Schritt, jeder Ring schließt sauber, bevor der nächste anfängt.
+
+18. **Sicherheits-Wand ist Doku-Disziplin, nicht nur Code.** CSP `'unsafe-eval'` ist eine ehrliche Vendor-Konzession an TF.js. Wenn das nicht in der CLAUDE.md-Gotcha-Liste steht, ist die nächste Session vielleicht versucht, das Loch zu nutzen oder es als Lizenz für eigenen eval-Pfad zu sehen. Doku schützt Architektur.
+
+19. **Statistik braucht Sample-Größe.** Erster Generator-Bias-Test ist mit 300 Atomic-Calls grenzwertig durchgefallen (32 sunny / 16 rainy = Ratio 2.0 exakt, Test verlangte > 2.0). Mit 1000 Samples reproduzierbar > 3.0. Bei probabilistischen Invarianten: lieber zehnmal so viele Samples nehmen als die Schwelle senken.
+
+20. **Eine Schicht pro Ring, in Vision-Reihenfolge.** Ring 2 baute die *Sprache*, Ring 3 die *Eingangsachse Mensch → Welt*, Ring 4 die *Ausgangsachse Welt → Mensch*. Jeder dieser drei Ringe erweiterte die Symbiose um genau eine Dimension. Ohne Ring 2 kein bidirektionaler DSL-Pfad, ohne Ring 3 keine emotionale Eingabe, ohne Ring 4 keine sinnliche Antwort. Reihenfolge ist Wert, nicht nur Komfort.
+
+21. **AudioContext braucht User-Geste, Tests brauchen Bypass.** Web-Audio im Headless-Browser bleibt im Status „suspended", bis eine User-Geste den Context aufweckt. Puppeteer-Arg `--autoplay-policy=no-user-gesture-required` ist die Standard-Konvention dafür; ohne ihn schlägt `initSymphony()` lautlos fehl und der gesamte Audio-Test ist unsichtbar grün.
+
+22. **„Dichten statt breitern" funktioniert auch fürs Test-Schreiben.** Mehrere Phase-Commits bauten auf identischer Testreihe auf (`r.processChatCommand(...)` → `r.state...` prüfen) statt jedes Mal neue Infrastruktur. Das hielt die `playtest.cjs` lesbar trotz Wachstum auf 83 Invarianten.
+
+23. **Reflexions-Pausen finden, was Code-Audits übersehen.** Zwischendurch hat der Schöpfer „reflektiere, plan noch klar?" gefragt — diese Pause hat vier latente Probleme aufgedeckt (schemaVersion eingefroren, ESLint-Warnings Vorbestand, CSP-Konzession unverlinkt, drei stille Emotion-Achsen). Reflexion ist nicht Verzögerung; sie ist eine andere Form von Tests.
+
+24. **`new Function`-Cleanup hat eine ehrliche Pyramide.** Phase 4 (Save-Migration) → Phase 5 (Code-Löschung) → Phase 6 (CSP-Header) ist eine Ketten-Abhängigkeit: erst sicherstellen dass alte Saves migrieren können, dann den alten Pfad löschen, dann den Browser einsperren. Reihenfolge falsch = Save-Verlust.
+
 ---
 
 ## 7. Offene Fragen für die nächste Iteration
 
-Ring 1 (alle 4 Fragen) und Ring 2 Phase 1+2 (3 Fragen) sind beantwortet und umgesetzt. Was offen ist:
+Ring 2 (alle 7 Phasen) und Ring 3 (V1+V2) und Ring 4 (V1) sind beantwortet und umgesetzt. Was offen ist:
 
-**Für Ring 2 Phase 3 (Chat-Parser → DSL):**
+**Für Ring 5 (`createPlayerSoul`):**
 
-1. **Wie viele bestehende Chat-Befehle migrieren?** `processChatCommand` hat ~25 if/else-Zweige. Pragmatisch: die 80 % häufigsten zu DSL, der Rest bleibt legacy bis Phase 5 (Cleanup) sie löscht.
-2. **Wie mit Levenshtein-„Meintest du..."-Vorschlägen umgehen?** Frech (sofort ausführen) oder vorsichtig (Bestätigung)?
+1. **Welche Formen?** Plan: Mensch / Phönix / Drache / Riese / Frei. Empfehlung: V1 mit drei Formen (Mensch / Phönix / Drache) — Riese bringt Physik-Komplexität (großer Hitbox, Kamera-Höhe), das wäre V2.
+2. **Stat-Spread oder rein visuell?** V1 nur Mesh + Farbe; speed/jump-Modifikationen wären Stat-Pfad — kann zu Balance-Problemen führen, würde Test-Surface vergrößern. Erst rein visuell, Stats später wenn klar ist welches Spielgefühl entstehen soll.
 
-**Für Ring 2 Phase 5 (Cleanup):**
+**Für Ring 6 (`architectureTemplates`):**
 
-3. **CSP strict aktivieren?** Heute bleibt `createDynamicAbility` (mit `new Function`) für `füge code <js>` Chat-Befehl und die toten `developAdvancedPhysics`/`developAdvancedRenderer`. Mit Phase 5: alle weg, Phase 6 setzt CSP-Header.
+3. **DSL-Primitives oder direkte Funktion?** Konsistenz mit Ring 2/3 sagt: DSL-Primitive (`spawn_village`, `spawn_temple`, `spawn_waterfall`). Macht sie auch für den Nexus zugänglich (er kann ganze Dörfer komponieren).
+4. **Persistieren wie Chunks oder einmalig?** Ein Dorf, das beim Chunk-Prune verschwindet, ist Verschwendung. Lösung: pro-Chunk-Delta-Liste (§11.3 Ebene B) als Vorbedingung.
+
+**Für Ring 7 (`brain.js`-Welt):**
+
+5. **TF.js durch brain.js ersetzen?** brain.js ist eval-frei und würde die CSP-Konzession `'unsafe-eval'` auflösen. Aber: TF.js wird heute aktiv genutzt (player-movement-Modell, Training, Vorhersage). Migration braucht eine Test-Schicht, die das alte und neue Modell vergleicht.
+6. **Was lernt die brain.js-Welt konkret?** Plan: Spieler-Pfad + Emotion-History → Biome-Empfehlung + Kreatur-Empfehlung. Triggert DSL-Effekte. Offene Frage: wie viel Trainings-Daten brauchen wir, bevor die Empfehlungen sinnvoll sind?
 
 **Für Ring 8+ (Welten-Ultiversum):**
 
-4. **„Welt modifizierbar"** — vom Schöpfer mehrfach angefragt: Spieler baut Hügel, läuft weg, kommt zurück, Hügel ist noch da. Heute alles deterministisch aus Noise+Seed → Hügel verschwindet. Lösungs-Optionen (Vision-Skizze in §11.3):
-   - **Ebene A**: Chunks „entladen statt löschen" (Marker statt delete) — bringt nichts, weil Heights deterministisch
-   - **Ebene B**: pro-Chunk Delta-Liste in DSL-Form (jede Spieler-Mutation wird im Chunk-Eintrag gespeichert, bei re-load wieder ausgeführt)
-   - **Ebene C**: vollständiges Voxel-/Heightmap-Edit-System (Vertex-Level-Building)
+7. **„Welt modifizierbar"** — vom Schöpfer mehrfach angefragt. Heute alles deterministisch aus Noise+Seed → vom Spieler erzeugte Strukturen verschwinden. Empfehlung weiterhin: Ebene B (pro-Chunk DSL-Delta-Liste) als Brücke zwischen Ring 2 (DSL) und Ring 8 (Welt-Persistenz). Aufwand ~2 d.
 
-   Empfehlung: B als Brücke zwischen Ring 2 (DSL) und Ring 8 (Welt-Persistenz). Aufwand ~2 d.
+8. **`btBvhTriangleMeshShape` → `btTriangleIndexVertexArray`?** Aktuell 52 fps avg im Headless-Playtest, 120 fps im echten Browser. Falls Performance ein Engpass wird: direkter Pointer-Pfad ist ~2× schneller. Heute nicht nötig.
 
-5. **`btBvhTriangleMeshShape` → `btTriangleIndexVertexArray`?** Aktuell 52 fps avg im Headless-Playtest, 120 fps im echten Browser. Falls Performance ein Engpass wird (z. B. bei sehr vielen extension-chunks): direkter Pointer-Pfad ist ~2× schneller. Heute nicht nötig.
+**Für UI/Komfort (Zwischenschritt vor Ring 5):**
+
+9. **Status-Overlay** — Emotionen als sechs Balken, aktuelle Welt-Metadaten (Wetter, Slug, FPS, Player-Pos). Soll der Spieler die Werte auch *manipulieren* können (Slider) oder nur sehen? V1: lesen + Quick-Action-Buttons für häufige Chat-Befehle.
+10. **Hilfe-Drawer** — alle Chat-Befehle gruppiert (Wetter, Welt, Kreaturen, Emotionen, System). Direkt klickbar = Befehl ausführen.
 
 ---
 
@@ -231,26 +257,27 @@ AnazhRealm/
 ├── start.bat                  # Windows-Starter
 ├── anazhRealmState.json       # Persistierter Zustand (auto)
 ├── package.json               # npm, ESLint+Prettier+puppeteer
-├── eslint.config.mjs          # Flat-Config mit Browser-/Ammo-/Three-Globalen
+├── eslint.config.mjs          # Flat-Config mit Browser-/Ammo-/Three-/Audio-Globalen
 ├── .prettierrc.json           # 4 spaces, printWidth 120
-├── .gitignore                 # node_modules, package-lock
+├── .gitignore                 # node_modules, package-lock, artifacts
 ├── README.md                  # praktisch leer
 ├── CLAUDE.md                  # ⭐ Session-Memory (kompakt)
 ├── vendor/                    # 3.6 MB selbst-gehostete Libs
 │   ├── three.min.js           # r134 UMD
 │   ├── ammo.js + ammo.wasm.wasm # WASM-Backend
-│   ├── tf.min.js              # @tensorflow/tfjs 3.21
+│   ├── tf.min.js              # @tensorflow/tfjs 3.21 (löst sich mit Ring 7 → brain.js)
 │   ├── simplex-noise.js       # 2.4.0
 │   └── README.md              # Update-Anleitung
 ├── docs/
 │   ├── state-of-realm.md      # ⭐ DIESES Dokument
+│   ├── roadmap.md             # Vollständige Pfad-D-Roadmap (Ringe 0-11+)
 │   └── nexus-dsl.md           # DSL Design v0.1
 ├── scripts/
-│   └── playtest.cjs           # Headless-Smoketest + CI-Gate (14 Invarianten)
+│   └── playtest.cjs           # Headless-Smoketest + CI-Gate (83 Invarianten)
 ├── .claude/commands/
 │   └── audit.md               # /audit-Slash-Command
 └── .github/workflows/
-    └── check.yml              # CI: check + playtest Jobs
+    └── check.yml              # CI: check + playtest Jobs (eval-Verbot hart)
 ```
 
 ---
@@ -259,10 +286,10 @@ AnazhRealm/
 
 1. `node --check anazhRealm.js` ✓
 2. `npm run format:check` ✓
-3. `npm run lint` ✓ (5 unused-locals warnings sind bekannt OK)
-4. `npm run playtest` ✓ (14/14 Invarianten grün, exit 0)
-5. Branch ist `claude/check-github-files-1MqpQ`?
-6. Test-Artefakte aus `anazhRealmState.json` revertiert?
+3. `npm run lint` ✓ (sollte 0 Warnings sein — Vorbestand wurde Phase-6-Commit aufgeräumt)
+4. `npm run playtest` ✓ (alle Invarianten grün, exit 0; aktuell 83)
+5. CI-Gate „kein `new Function`/`eval`" muss grün bleiben — neuer dynamic-eval-Pfad wäre ein Architektur-Bruch.
+6. Doku im selben Commit: roadmap.md + state-of-realm.md + CLAUDE.md spiegeln den realen Stand.
 
 CI macht 1-4 automatisch; 5+6 sind Disziplin.
 
