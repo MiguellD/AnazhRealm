@@ -3320,50 +3320,23 @@ class AnazhRealm {
         return Math.max(-100, Math.min(100, h));
     }
 
-    extendTerrain(direction) {
-        // Erweitert die Welt um einen einzelnen Chunk an der Außenkante.
-        //
-        // Die alte Implementierung versuchte, das volle 256×256-Heightfield
-        // für den neuen Chunk zu erzeugen und delegierte dann an
-        // `generateChunk(newChunkX, newChunkZ, ...)`. Das brach für jeden
-        // Chunk außerhalb des initialen 0..7-Index-Bereichs:
-        // - east/south (chunkX≥8 oder chunkZ≥8): startX = chunkX*CHUNK_SIZE
-        //   überschritt WIDTH, chunkWidth wurde 0, `generateChunk` brach mit
-        //   "Ungültige Chunk-Größe" ab — kein Chunk entstand.
-        // - north/west (chunkX=-1 oder chunkZ=-1): negative Indices ins
-        //   `heightData` lieferten undefined, alle Vertices fielen auf y=0
-        //   am falschen Welt-Ort — eine Schein-Platte ohne Höhenbezug.
-        //
-        // Neuer Pfad: chunk-lokales (CHUNK_SIZE+1)² Heightfield, vertices
-        // direkt in Welt-Koords aus Welt-Offset + Vertex-Index berechnet,
-        // Mesh inline gebaut. Frustum-Test bleibt boundingSphere-basiert
-        // wie in CLAUDE.md dokumentiert.
-        if (!this.state.chunkMap || this.state.chunkMap.size === 0) {
-            this.log("extendTerrain übersprungen: keine Anker-Chunks vorhanden", "DEBUG");
-            return;
-        }
-        if (!this.state.terrainMaterial) {
-            this.log("extendTerrain übersprungen: terrainMaterial fehlt", "DEBUG");
-            return;
-        }
-
+    // Welt-Konstanten für Chunk-Geometrie. Eine Quelle der Wahrheit für
+    // chunkWorldSize und vertexStep, damit initial worldgen und Extensions
+    // niemals driften können.
+    _chunkGeometry() {
         const CHUNK_SIZE = this.state.chunkSize;
         const WIDTH = this.state.chunkWidth;
         const WORLD_SIZE = 300;
-        const steepness = this.state.terrainSteepness;
-        const baseHeight = this.state.terrainBaseHeight;
-        const material = this.state.terrainMaterial;
-
-        // Wichtig: vertexStep wird aus chunkWorldSize abgeleitet, NICHT aus
-        // WORLD_SIZE/(WIDTH-1). Sonst akkumulieren sich Bruchteil-Mismatches
-        // pro Chunk (32 × 1.17647 = 37.65 ≠ chunkWorldSize 37.5) zu sichtbaren
-        // Lücken und Physik-Visual-Versatz. So bleiben Vertex-Naht UND
-        // Heightfield-Footprint identisch.
         const CHUNKS_PER_SIDE = Math.ceil(WIDTH / CHUNK_SIZE);
         const chunkWorldSize = WORLD_SIZE / CHUNKS_PER_SIDE;
         const vertexStep = chunkWorldSize / CHUNK_SIZE;
+        return { CHUNK_SIZE, WIDTH, WORLD_SIZE, chunkWorldSize, vertexStep };
+    }
 
-        // Anker-Chunk-Grenzen aus chunkMap herausziehen.
+    extendTerrain(direction) {
+        // Legacy direction-API (für Playtest + alte Caller). Berechnet aus den
+        // Map-Grenzen einen Außen-Chunk und delegiert an ensureChunkAt.
+        if (!this.state.chunkMap || this.state.chunkMap.size === 0) return;
         let minChunkX = Infinity,
             maxChunkX = -Infinity,
             minChunkZ = Infinity,
@@ -3375,35 +3348,46 @@ class AnazhRealm {
             if (cz < minChunkZ) minChunkZ = cz;
             if (cz > maxChunkZ) maxChunkZ = cz;
         }
-
-        let newChunkX, newChunkZ;
+        let cx, cz;
         switch (direction) {
             case "north":
-                newChunkX = Math.floor((minChunkX + maxChunkX) / 2);
-                newChunkZ = minChunkZ - 1;
+                cx = Math.floor((minChunkX + maxChunkX) / 2);
+                cz = minChunkZ - 1;
                 break;
             case "south":
-                newChunkX = Math.floor((minChunkX + maxChunkX) / 2);
-                newChunkZ = maxChunkZ + 1;
+                cx = Math.floor((minChunkX + maxChunkX) / 2);
+                cz = maxChunkZ + 1;
                 break;
             case "west":
-                newChunkX = minChunkX - 1;
-                newChunkZ = Math.floor((minChunkZ + maxChunkZ) / 2);
+                cx = minChunkX - 1;
+                cz = Math.floor((minChunkZ + maxChunkZ) / 2);
                 break;
             case "east":
-                newChunkX = maxChunkX + 1;
-                newChunkZ = Math.floor((minChunkZ + maxChunkZ) / 2);
+                cx = maxChunkX + 1;
+                cz = Math.floor((minChunkZ + maxChunkZ) / 2);
                 break;
             default:
                 return;
         }
+        this.ensureChunkAt(cx, cz);
+    }
+
+    ensureChunkAt(newChunkX, newChunkZ) {
+        // Baut einen einzelnen Chunk an den gegebenen Welt-Indizes — kann
+        // beliebig negativ oder über CHUNKS_PER_SIDE liegen. Vertices in
+        // absoluten Welt-Koords aus Welt-Offset + Vertex-Index berechnet,
+        // Mesh + eigenes Heightfield-Physik-Shape inline gebaut. No-op wenn
+        // der Chunk bereits existiert. Frustum-Test bleibt boundingSphere-
+        // basiert (siehe CLAUDE.md gotcha über chunks an position 0,0,0).
+        if (!this.state.chunkMap || !this.state.terrainMaterial) return;
         const key = `${newChunkX},${newChunkZ}`;
         if (this.state.chunkMap.has(key)) return;
 
-        // Welt-Offsets so wählen, dass die ersten Vertices nahtlos an die
-        // Vertices der existierenden Chunks anschließen. Initial deckt das
-        // 0..7-Grid die Welt von -WORLD_SIZE/2 bis +WORLD_SIZE/2 ab; ein
-        // Chunk bei Index k beginnt also bei `k * chunkWorldSize - WORLD_SIZE/2`.
+        const { CHUNK_SIZE, WORLD_SIZE, chunkWorldSize, vertexStep } = this._chunkGeometry();
+        const steepness = this.state.terrainSteepness;
+        const baseHeight = this.state.terrainBaseHeight;
+        const material = this.state.terrainMaterial;
+
         const VTX = CHUNK_SIZE + 1; // 33 Vertices pro Seite (Überlappung um 1)
         const worldStartX = newChunkX * chunkWorldSize - WORLD_SIZE / 2;
         const worldStartZ = newChunkZ * chunkWorldSize - WORLD_SIZE / 2;
@@ -3522,7 +3506,7 @@ class AnazhRealm {
             this.log(`extendTerrain Physik-Fehler bei (${newChunkX}, ${newChunkZ}): ${err.message}`, "ERROR");
         }
 
-        this.log(`Terrain erweitert in ${direction}: Chunk (${newChunkX}, ${newChunkZ})`);
+        this.log(`Chunk hinzugefügt: (${newChunkX}, ${newChunkZ})`);
     }
 
     generateNewWorld({ force = false } = {}) {
@@ -4296,25 +4280,31 @@ class AnazhRealm {
                 this.state.lastGrowthUpdate = currentTime;
             }
 
-            // ### Unendliches Terrain ###
+            // ### Unendliches Terrain – spieler-zentriert ###
+            // Statt Map-Mittelpunkt-Extension (die Chunks weit weg vom Spieler
+            // entstehen ließ und Lücken hinterließ) füllen wir jetzt einen
+            // 5×5-Ring um den Chunk, in dem der Spieler steht. Pro Frame max
+            // zwei neue Chunks, damit Frame-Time stabil bleibt.
             const playerPos = this.state.playerMesh.position;
-            const chunkSizeWorld = (this.state.chunkSize * 300) / this.state.chunkWidth;
-            let minChunkX = Infinity,
-                maxChunkX = -Infinity,
-                minChunkZ = Infinity,
-                maxChunkZ = -Infinity;
-            for (let key of this.state.chunkMap.keys()) {
-                const [cx, cz] = key.split(",").map(Number);
-                minChunkX = Math.min(minChunkX, cx);
-                maxChunkX = Math.max(maxChunkX, cx);
-                minChunkZ = Math.min(minChunkZ, cz);
-                maxChunkZ = Math.max(maxChunkZ, cz);
+            const { chunkWorldSize: csW } = this._chunkGeometry();
+            const playerChunkX = Math.floor((playerPos.x + 150) / csW);
+            const playerChunkZ = Math.floor((playerPos.z + 150) / csW);
+            let chunksThisFrame = 0;
+            const MAX_PER_FRAME = 2;
+            const RING_RADIUS = 2;
+            outer: for (let r = 0; r <= RING_RADIUS; r++) {
+                for (let dz = -r; dz <= r; dz++) {
+                    for (let dx = -r; dx <= r; dx++) {
+                        // Ring r: nur Zellen am äußeren Rand des Quadrats r.
+                        if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
+                        const cx = playerChunkX + dx;
+                        const cz = playerChunkZ + dz;
+                        if (this.state.chunkMap.has(`${cx},${cz}`)) continue;
+                        this.ensureChunkAt(cx, cz);
+                        if (++chunksThisFrame >= MAX_PER_FRAME) break outer;
+                    }
+                }
             }
-            const threshold = chunkSizeWorld * 1.0;
-            if (playerPos.z < minChunkZ * chunkSizeWorld + threshold) this.extendTerrain("north");
-            if (playerPos.z > maxChunkZ * chunkSizeWorld - threshold) this.extendTerrain("south");
-            if (playerPos.x < minChunkX * chunkSizeWorld + threshold) this.extendTerrain("west");
-            if (playerPos.x > maxChunkX * chunkSizeWorld - threshold) this.extendTerrain("east");
 
             // ### Skybox und Planeten ###
             this.state.skybox.material.uniforms.time.value = currentTime;

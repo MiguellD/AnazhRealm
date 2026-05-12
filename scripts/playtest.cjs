@@ -287,13 +287,15 @@ function startSaveServer() {
                     const r = window.anazhRealm;
                     const before = r.state.chunkMap.size;
                     const beforeKeys = new Set(r.state.chunkMap.keys());
-                    // Zwei east-Extensions hintereinander, um Naht-Treue zu prüfen:
-                    // erste east schließt an initial chunk 7, zweite an erste east.
-                    r.extendTerrain("east");
-                    r.extendTerrain("east");
-                    r.extendTerrain("south");
-                    r.extendTerrain("north");
-                    r.extendTerrain("west");
+                    // Direkte ensureChunkAt-Aufrufe für definierte Indizes —
+                    // sicherer als die direction-API, die immer den Map-Mittel-
+                    // punkt nimmt. Wir bauen ein 3×3-Außen-Cluster east-süd
+                    // sowie eine Diagonale, um auch Eck-Nähte zu testen.
+                    r.ensureChunkAt(8, 7);
+                    r.ensureChunkAt(9, 7);
+                    r.ensureChunkAt(8, 8);
+                    r.ensureChunkAt(-1, -1);
+                    r.ensureChunkAt(-1, 0);
                     const after = r.state.chunkMap.size;
                     const newKeys = [...r.state.chunkMap.keys()].filter((k) => !beforeKeys.has(k));
                     let allHeightsFinite = true;
