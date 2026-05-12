@@ -117,6 +117,8 @@ class AnazhRealm {
             lastWorldgen: 0,
             worldgenCooldown: 30.0,
             terrainEverGenerated: false,
+            lastJumpLog: 0,
+            jumpLogInterval: 1.0,
         };
         this.core = {
             initPhysics: this.initPhysics.bind(this),
@@ -717,30 +719,68 @@ class AnazhRealm {
         }
     }
 
-    isInFrustum(object) {
-        if (!object || !object.position) {
-            this.log(`isInFrustum: Objekt oder Position nicht definiert`, "ERROR");
+    isInFrustum(object, providedFrustum = null) {
+        // Chunks haben ihren Origin bei (0,0,0) und die Geometrie in Welt-Koordinaten.
+        // Eine reine containsPoint-Prüfung blendet sie weg, sobald (0,0,0) nicht im
+        // Frustum sitzt – das hat in der Praxis fast immer dazu geführt, dass der
+        // Boden je nach Blickrichtung komplett verschwand.
+        // Lösung: wenn das Objekt eine boundingSphere hat (Chunks, Inseln), prüfen
+        // wir intersectsSphere; andernfalls fallen wir auf den Punkttest zurück.
+        if (!object) {
             return false;
         }
 
-        const frustum = new THREE.Frustum();
-        const matrix = new THREE.Matrix4().multiplyMatrices(
-            this.state.camera.projectionMatrix,
-            this.state.camera.matrixWorldInverse
-        );
-        frustum.setFromProjectionMatrix(matrix);
+        const frustum =
+            providedFrustum ||
+            (() => {
+                const f = new THREE.Frustum();
+                f.setFromProjectionMatrix(
+                    new THREE.Matrix4().multiplyMatrices(
+                        this.state.camera.projectionMatrix,
+                        this.state.camera.matrixWorldInverse
+                    )
+                );
+                return f;
+            })();
 
-        // Einfache Punkt-basierte Prüfung aus V7.42
-        const isVisible = frustum.containsPoint(object.position);
-
-        // Sicherheitsprüfung: Objekte in der Nähe des Spielers immer sichtbar machen
-        if (!isVisible && object.position) {
-            const distance = object.position.distanceTo(this.state.playerMesh.position);
-            if (distance < 50) {
-                return true;
+        if (object.geometry) {
+            if (!object.geometry.boundingSphere) {
+                try {
+                    object.geometry.computeBoundingSphere();
+                } catch {
+                    // Geometrie ungültig – auf "sichtbar" fallen lassen
+                    return true;
+                }
+            }
+            const sphere = object.geometry.boundingSphere;
+            if (sphere && Number.isFinite(sphere.radius) && sphere.radius > 0) {
+                // boundingSphere für Chunks ist bereits in Welt-Koordinaten
+                // (chunk.position=(0,0,0)). Für Inseln/Vegetation mit position-Offset
+                // verschieben wir das Center temporär.
+                if (
+                    object.position &&
+                    (object.position.x !== 0 || object.position.y !== 0 || object.position.z !== 0)
+                ) {
+                    const center = sphere.center;
+                    const shiftedCenter = new THREE.Vector3(
+                        center.x + object.position.x,
+                        center.y + object.position.y,
+                        center.z + object.position.z
+                    );
+                    const shifted = new THREE.Sphere(shiftedCenter, sphere.radius);
+                    return frustum.intersectsSphere(shifted);
+                }
+                return frustum.intersectsSphere(sphere);
             }
         }
 
+        // Punkt-basierter Fallback (Kreaturen, einfache Meshes)
+        if (!object.position) return false;
+        const isVisible = frustum.containsPoint(object.position);
+        if (!isVisible && this.state.playerMesh) {
+            const distance = object.position.distanceTo(this.state.playerMesh.position);
+            if (distance < 50) return true;
+        }
         return isVisible;
     }
 
@@ -3102,7 +3142,10 @@ class AnazhRealm {
                 this.state.isJumping = true;
                 this.state.isInAir = true;
                 this.state.playerMesh.material.color.set(0xffa500);
-                this.log("Spieler springt!", "INFO");
+                if (currentTime - this.state.lastJumpLog >= this.state.jumpLogInterval) {
+                    this.log("Spieler springt!", "INFO");
+                    this.state.lastJumpLog = currentTime;
+                }
             }
         }
     }
@@ -3333,7 +3376,10 @@ class AnazhRealm {
                         );
                         this.state.isJumping = true;
                         this.state.isInAir = true;
-                        this.log("Spieler springt!", "INFO");
+                        if (currentTime - this.state.lastJumpLog >= this.state.jumpLogInterval) {
+                            this.log("Spieler springt!", "INFO");
+                            this.state.lastJumpLog = currentTime;
+                        }
                     }
                 }
             }
