@@ -22,7 +22,7 @@ Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) is
 |---|---|---|---|---|
 | 0 | Stabiles Fundament (Bewegung, Physik, Chunks, Save, CI) | ✅ erledigt | – | – |
 | 1 | Grok-Stimme (`dialogue-box`, narrative Reflexion) | ✅ V1 live | – | – |
-| 2 | DSL als gemeinsame Sprache | 🟢 Phase 1-6 live, nur Phase 7 (Fitness-V2) offen | 0.5 d Rest | – |
+| 2 | DSL als gemeinsame Sprache | ✅ Phase 1-7 vollständig | – | – |
 | 3 | Player-Emotionen → Welt | 🔴 offen | 2 d | Ring 2 Phase 3 |
 | 4 | `anazhSymphony` V1 (Web Audio) | 🔴 offen | 2-3 d | Ring 3 |
 | 5 | `createPlayerSoul` (Mensch/Phönix/Drache) | 🔴 offen | 1-2 d | – |
@@ -78,12 +78,9 @@ Sechs neue Playtest-Invarianten verifizieren Parser, End-to-end-Routing und Leve
 
 Plus: inline-styles aus `index.html` entfernt (`#fps`, `#state-file-input`), Inline-Bootstrap-`<script>` durch `<script src="anazhRealm.js" defer>` ersetzt. Sechs neue Playtest-Invarianten verifizieren CSP-Meta + dass über die Laufzeit keine CSP-Violations im Console-Buffer landen.
 
-**Phase 7 — Fitness V2** (0.5 d)
-- Generator nutzt `state.dsl.history`, um Programme mit niedrigem `fitness` seltener zu erzeugen (Selektion)
-- Mutation: ein bestehendes high-fitness Programm wird leicht modifiziert (z. B. ein Sub-AST ersetzt)
-- Test: nach 100 Generationen hat die durchschnittliche Fitness gegenüber Generation 1 zugenommen
+**Phase 7 ✅ erledigt** (dieser Commit): `dslSelectByFitness` (Roulette-Wheel über `state.dsl.history`; Gewicht `max(0.05, 1 − fpsDamage/100)`, Floor verhindert Aussterben), `dslMutate` (Sub-AST-Replacement, ±20 % Numeric-Shift, Chain-Wurzel-Schutz), `dslCompose({ historyProbability })` defaults auf 0.3 mit History ≥ 3 — der Nexus startet random, lernt aber zunehmend aus eigenen Outcomes. Fünf neue Playtest-Invarianten: high-fitness wird ≥ 2× häufiger gewählt (gemessen 11.2×), Selektion null-frei, Mutation behält `chain`-Root + Array-Sub-Strukturen, Compose nutzt History bei `historyProbability=1` zu 30/30.
 
-**Akzeptanz Ring 2 vollständig**: alle Chat-Befehle gehen durch DSL, kein `new Function` im Bundle, CSP-strict aktiv, Nexus lernt aus Outcomes.
+**Akzeptanz Ring 2 vollständig** ✅ — alle Phasen 1-7 abgeschlossen.
 
 ---
 

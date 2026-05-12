@@ -646,6 +646,116 @@ function startSaveServer() {
                     ? `${cspViolationLogs.length}× erste: ${cspViolationLogs[0].text.slice(0, 120)}`
                     : ""
             );
+
+            // ### Ring 2 Phase 7 – Fitness-V2 ###
+            // Drei Aspekte: (a) Selektion bevorzugt statistisch high-fitness,
+            // (b) Mutation behält strukturelle Invarianten, (c) dslCompose
+            // mit historyProbability=1 nutzt tatsächlich die History.
+            const phase7Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || typeof r.dslSelectByFitness !== "function") return null;
+                    const out = {};
+
+                    // Seeded RNG für deterministische Tests.
+                    const makeRng = (seed) => {
+                        let s = seed >>> 0 || 1;
+                        return () => {
+                            s = (s * 1664525 + 1013904223) >>> 0;
+                            return s / 4294967296;
+                        };
+                    };
+
+                    // History mit klar getrennten Fitness-Werten.
+                    const injHist = [
+                        {
+                            id: "lowfit",
+                            program: ["weather", "rainy"],
+                            outcome: { fpsBefore: 120, fpsAfter: 30 },
+                            ok: true,
+                        },
+                        {
+                            id: "highfit",
+                            program: ["weather", "sunny"],
+                            outcome: { fpsBefore: 120, fpsAfter: 119 },
+                            ok: true,
+                        },
+                    ];
+                    // (a) Selektion: über 500 Calls sollte highfit deutlich häufiger gewählt werden.
+                    const rngA = makeRng(42);
+                    let highCount = 0;
+                    let lowCount = 0;
+                    for (let i = 0; i < 500; i++) {
+                        const p = r.dslSelectByFitness(rngA, { history: injHist });
+                        if (Array.isArray(p) && p[1] === "sunny") highCount++;
+                        if (Array.isArray(p) && p[1] === "rainy") lowCount++;
+                    }
+                    out.highBeatsLowRatio = highCount / Math.max(1, lowCount);
+                    out.highBeatsLow = out.highBeatsLowRatio > 2.0;
+                    out.selectionCoversAll = highCount + lowCount === 500;
+
+                    // (b) Mutation behält chain-Wurzel und Array-Struktur
+                    const rngB = makeRng(7);
+                    const base = ["chain", ["weather", "sunny"], ["creatures_emotion", "happy"]];
+                    let chainRootKept = true;
+                    let allArrays = true;
+                    for (let i = 0; i < 50; i++) {
+                        const m = r.dslMutate(base, rngB);
+                        if (!Array.isArray(m) || m[0] !== "chain") chainRootKept = false;
+                        if (m.slice(1).some((sub) => !Array.isArray(sub))) allArrays = false;
+                    }
+                    out.mutationKeepsChainRoot = chainRootKept;
+                    out.mutationKeepsArrayChildren = allArrays;
+
+                    // (c) dslCompose mit erzwungener History-Quelle
+                    const rngC = makeRng(99);
+                    let usedHistory = 0;
+                    for (let i = 0; i < 30; i++) {
+                        const comp = r.dslCompose({
+                            rng: rngC,
+                            history: injHist,
+                            historyProbability: 1.0,
+                        });
+                        // Ein mutiertes Programm aus injHist hat entweder
+                        // "weather" als root (Mutation ohne Strukturwechsel)
+                        // oder durch Atom-Replacement ein anderes Atom.
+                        if (Array.isArray(comp) && (comp[0] === "weather" || comp.length === 2)) {
+                            usedHistory++;
+                        }
+                    }
+                    out.composeUsesHistory = usedHistory >= 20; // klar Mehrheit
+                    out.composeUsesHistoryCount = usedHistory;
+
+                    return out;
+                })
+                .catch(() => null);
+
+            if (!phase7Results) {
+                check("Phase 7: dslSelectByFitness erreichbar", false, "page.evaluate fehlgeschlagen");
+            } else {
+                check(
+                    "Phase 7: Fitness-Selektion bevorzugt high-fitness deutlich",
+                    phase7Results.highBeatsLow,
+                    `high/low Ratio=${phase7Results.highBeatsLowRatio.toFixed(2)} (Erwartung > 2.0)`
+                );
+                check(
+                    "Phase 7: Selektion deckt alle Einträge ab (keine null-Returns)",
+                    phase7Results.selectionCoversAll
+                );
+                check(
+                    "Phase 7: Mutation behält 'chain' als Wurzel bei Chain-Programmen",
+                    phase7Results.mutationKeepsChainRoot
+                );
+                check(
+                    "Phase 7: Mutation behält Array-Strukturen bei Sub-Programmen",
+                    phase7Results.mutationKeepsArrayChildren
+                );
+                check(
+                    "Phase 7: dslCompose mit historyProbability=1 nutzt History",
+                    phase7Results.composeUsesHistory,
+                    `${phase7Results.composeUsesHistoryCount}/30 Calls`
+                );
+            }
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

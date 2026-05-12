@@ -730,9 +730,99 @@ class AnazhRealm {
     // sich mit dem Interpreter-Budget; jede Wahl ist gewichtet, atomare
     // Effekte dominieren mit 40 % der Auswahl.
 
+    // Ring 2 Phase 7 — Fitness V2. Statt nur zufällig zu komponieren, zieht
+    // der Generator mit einer Wahrscheinlichkeit von ~30 % ein bestehendes
+    // Programm aus `state.dsl.history` und mutiert es leicht. Die Selektion
+    // ist Roulette-Wheel über die V1-Fitness; je höher die Fitness, desto
+    // wahrscheinlicher wird ein Programm gewählt. Damit beginnt der Nexus
+    // tatsächlich aus eigenen Outcomes zu lernen — der Selektions-Loop, den
+    // die Vision §11 als V2 vorsieht.
+    dslSelectByFitness(rng, opts = {}) {
+        const source = Array.isArray(opts.history) ? opts.history : this.state.dsl.history;
+        if (!Array.isArray(source) || source.length === 0) return null;
+        const entries = source.filter(
+            (h) => h && Array.isArray(h.program) && h.outcome && typeof h.outcome.fpsBefore === "number"
+        );
+        if (entries.length === 0) return null;
+        // Fitness als Gewicht. fpsDamage > 100 setzt auf Floor 0.05, damit
+        // schlechte Programme nicht ganz aussterben — wir wollen Diversität.
+        const weights = entries.map((e) => {
+            const fpsDmg = Math.max(0, e.outcome.fpsBefore - e.outcome.fpsAfter);
+            const raw = e.ok === false ? 0 : 1 - fpsDmg / 100;
+            return Math.max(0.05, raw);
+        });
+        const total = weights.reduce((s, w) => s + w, 0);
+        let r = rng() * total;
+        for (let i = 0; i < entries.length; i++) {
+            r -= weights[i];
+            if (r <= 0) return entries[i].program;
+        }
+        return entries[entries.length - 1].program;
+    }
+
+    // Mutiert ein Programm-AST leicht: clone + ein Knoten wird ausgetauscht.
+    // Drei Pfade gewichtet — atom-Tausch, Zahl-Verschiebung, Sub-Tree-Ersatz.
+    // Mutations-Tiefe ist hart begrenzt, damit auch ein verschachteltes
+    // Eltern-Programm strukturell intakt bleibt.
+    dslMutate(program, rng) {
+        if (!Array.isArray(program) || program.length === 0) return program;
+        const clone = JSON.parse(JSON.stringify(program));
+        const nodes = [];
+        const walk = (node, parent, indexInParent) => {
+            if (!Array.isArray(node) || node.length === 0) return;
+            nodes.push({ node, parent, indexInParent });
+            for (let i = 1; i < node.length; i++) {
+                if (Array.isArray(node[i])) walk(node[i], node, i);
+            }
+        };
+        walk(clone, null, -1);
+        if (nodes.length === 0) return clone;
+        const target = nodes[Math.floor(rng() * nodes.length)];
+        const choice = rng();
+        if (choice < 0.4 && target.parent) {
+            // Sub-Tree durch neues Atom ersetzen.
+            target.parent[target.indexInParent] = this.dslComposeAtomic(rng);
+            return clone;
+        }
+        if (choice < 0.8) {
+            // Zahlen-Argumente im Ziel-Knoten leicht verschieben (±20 %).
+            const node = target.node;
+            const numIdxs = [];
+            for (let i = 1; i < node.length; i++) {
+                if (typeof node[i] === "number") numIdxs.push(i);
+            }
+            if (numIdxs.length > 0) {
+                const idx = numIdxs[Math.floor(rng() * numIdxs.length)];
+                const factor = 0.8 + rng() * 0.4;
+                node[idx] = Number((node[idx] * factor).toFixed(3));
+                return clone;
+            }
+        }
+        // Fallback: ganzes Top-Level-Programm durch frisches Atom ersetzen
+        // (sehr seltene Mutation). Wir behalten die `chain`-Wurzel, falls
+        // vorhanden — sonst zerstört Mutation die Struktur.
+        if (Array.isArray(clone) && clone[0] === "chain" && clone.length > 1) {
+            clone[1] = this.dslComposeAtomic(rng);
+        }
+        return clone;
+    }
+
     dslCompose(opts = {}) {
         const rng = opts.rng || Math.random;
         const maxDepth = opts.maxDepth || 5;
+        // Mit ~30 % Wahrscheinlichkeit: Selektion + Mutation statt Random.
+        // History-Mindestgröße 3 verhindert, dass die ersten Generationen
+        // sich selbst nachkopieren, bevor genug Outcome-Daten da sind.
+        const historySource = Array.isArray(opts.history) ? opts.history : this.state.dsl.history;
+        const useHistory =
+            opts.useHistory !== false &&
+            Array.isArray(historySource) &&
+            historySource.length >= 3 &&
+            rng() < (opts.historyProbability ?? 0.3);
+        if (useHistory) {
+            const picked = this.dslSelectByFitness(rng, { history: historySource });
+            if (picked) return this.dslMutate(picked, rng);
+        }
         const composeAt = (depth) => {
             if (depth >= maxDepth) return this.dslComposeAtomic(rng);
             const r = rng();
