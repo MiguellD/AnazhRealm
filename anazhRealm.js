@@ -2705,65 +2705,10 @@ class AnazhRealm {
             }
         }
 
-        // ### Globales Heightfield-Physik für die zentrale 8×8-Welt ###
-        // ensureChunkAt überspringt per-chunk Physik im Bereich [0, CHUNKS_PER_SIDE);
-        // hier bauen wir EIN großes Heightfield, das die ganze initiale Welt
-        // nahtlos abdeckt. Das ist robuster als 64 aneinandergrenzende
-        // per-chunk Heightfields (deren Nähte den Spieler immer wieder
-        // durchfallen ließen). Extension-Chunks außerhalb behalten ihre
-        // eigene per-chunk Physik.
-        if (this.state.physicsWorld && this.state.scaleFactor > 0) {
-            const sf = this.state.scaleFactor;
-            const CHUNKS_PER_SIDE = CHUNKS_X;
-            const vertexStep = WORLD_SIZE / CHUNKS_PER_SIDE / CHUNK_SIZE;
-            const GVTX = CHUNKS_PER_SIDE * CHUNK_SIZE + 1; // 8*32+1 = 257
-            const globalHeights = new Float32Array(GVTX * GVTX);
-            const gSeed = this.state.seed || "anazh-realm-seed";
-            const gNoise = new SimplexNoise(gSeed);
-            const gCave = new SimplexNoise(gSeed + "-cave");
-            const gVolcano = new SimplexNoise(gSeed + "-volcano");
-            let gMin = Infinity;
-            let gMax = -Infinity;
-            for (let z = 0; z < GVTX; z++) {
-                const wz = z * vertexStep - WORLD_SIZE / 2;
-                for (let x = 0; x < GVTX; x++) {
-                    const wx = x * vertexStep - WORLD_SIZE / 2;
-                    const cacheKey = `${wx}:${wz}:${steepness}`;
-                    let h = this.state.noiseCache.get(cacheKey);
-                    if (h === undefined) {
-                        h = this._terrainHeightAtWorld(wx, wz, gNoise, steepness, baseHeight, gCave, gVolcano);
-                        this.cacheNoise(cacheKey, h);
-                    }
-                    globalHeights[z * GVTX + x] = h / sf;
-                    if (h < gMin) gMin = h;
-                    if (h > gMax) gMax = h;
-                }
-            }
-            const gShape = new Ammo.btHeightfieldTerrainShape(
-                GVTX,
-                GVTX,
-                globalHeights,
-                1.0,
-                gMin / sf,
-                gMax / sf,
-                1,
-                "PHY_FLOAT",
-                false
-            );
-            gShape.setLocalScaling(new Ammo.btVector3(vertexStep / sf, 1, vertexStep / sf));
-            const gTransform = new Ammo.btTransform();
-            gTransform.setIdentity();
-            gTransform.setOrigin(new Ammo.btVector3(0, (gMin + gMax) / 2 / sf, 0));
-            const gMotion = new Ammo.btDefaultMotionState(gTransform);
-            const gInertia = new Ammo.btVector3(0, 0, 0);
-            const gRb = new Ammo.btRigidBodyConstructionInfo(0, gMotion, gShape, gInertia);
-            const gBody = new Ammo.btRigidBody(gRb);
-            this.state.physicsWorld.addRigidBody(gBody);
-            Ammo.destroy(gRb);
-            Ammo.destroy(gInertia);
-            this.state.groundHeightFieldBody = gBody;
-            this.log(`Globales Heightfield-Physik aktiv: ${GVTX}×${GVTX}, y∈[${gMin.toFixed(1)}, ${gMax.toFixed(1)}]`);
-        }
+        // Globales Heightfield ist nicht mehr nötig: jeder Chunk hat jetzt
+        // sein eigenes btBvhTriangleMeshShape, das die Triangles des Visual-
+        // Meshes 1:1 als Collider nutzt. Nachbarn teilen ihre Naht-Vertices
+        // exakt, daher keine Spalten mehr.
 
         // ### Fliegende Inseln generieren ###
         this.state.floatingIslands = [];
@@ -3487,47 +3432,51 @@ class AnazhRealm {
         if (minHeight < this.state.minHeight) this.state.minHeight = minHeight;
         if (maxHeight > this.state.maxHeight) this.state.maxHeight = maxHeight;
 
-        // Physik für den neuen Chunk: ein eigenes Ammo-Heightfield mit Welt-
-        // Offset an `(chunk-Mitte, (min+max)/2)`. Ohne diesen Schritt liefe der
-        // Spieler visuell weiter, fiele aber durch die unsichtbare Lücke.
-        //
-        // Initial-Grid-Chunks (cx,cz in [0, CHUNKS_PER_SIDE)) bekommen KEINE
-        // eigene Physik: die zentrale 8×8-Welt wird von einem GLOBALEN
-        // Heightfield (state.groundHeightFieldBody) nahtlos abgedeckt, das
-        // direkt nach der initialen Welt-Gen aufgebaut wird. Spieler fielen
-        // immer wieder durch die Nähte der 64 per-chunk Heightfields.
-        const CHUNKS_PER_SIDE_PHYS = Math.ceil(this.state.chunkWidth / this.state.chunkSize);
-        const isInitialGridChunk =
-            newChunkX >= 0 && newChunkX < CHUNKS_PER_SIDE_PHYS && newChunkZ >= 0 && newChunkZ < CHUNKS_PER_SIDE_PHYS;
+        // Physik: btBvhTriangleMeshShape mit GENAU denselben Triangles wie
+        // das visuelle Mesh. Vorteile gegenüber dem alten btHeightfield-
+        // Ansatz:
+        //  - Visual = Kollision per Konstruktion identisch (keine Diskrepanz
+        //    zwischen height-cell-mitte und vertex-position).
+        //  - Nachbar-Chunks teilen exakt die Naht-Vertices, weil beide
+        //    Seiten die Höhe an worldX/worldZ via _terrainHeightAtWorld
+        //    deterministisch berechnen. Keine Spalten, keine Overlap-Hacks.
+        //  - Auch für initial-grid Chunks anwendbar — das alte globale
+        //    Heightfield ist damit obsolet.
         try {
-            if (!isInitialGridChunk && this.state.physicsWorld && this.state.scaleFactor > 0) {
+            if (this.state.physicsWorld && this.state.scaleFactor > 0) {
                 const sf = this.state.scaleFactor;
-                const heightfieldData = new Float32Array(VTX * VTX);
-                for (let i = 0; i < heightData.length; i++) heightfieldData[i] = heightData[i] / sf;
-                const shape = new Ammo.btHeightfieldTerrainShape(
-                    VTX,
-                    VTX,
-                    heightfieldData,
-                    1.0,
-                    minHeight / sf,
-                    maxHeight / sf,
-                    1,
-                    "PHY_FLOAT",
-                    false
-                );
-                // Überlappung an den Nähten zwischen Chunks. Ohne sie hörten
-                // die Triangles auf beiden Seiten der Naht exakt am Rand auf
-                // — Spieler genau auf der Linie hatten keinen Collider und
-                // fielen durch. An Ecken (4 Chunks treffen) ist die Lücke
-                // noch breiter, daher 1.5 % Overlap (~28 cm pro Naht).
-                const stepScaled = (vertexStep / sf) * 1.015;
-                shape.setLocalScaling(new Ammo.btVector3(stepScaled, 1, stepScaled));
-                const centerX = worldStartX + chunkWorldSize / 2;
-                const centerZ = worldStartZ + chunkWorldSize / 2;
-                const centerY = (minHeight + maxHeight) / 2;
+                const tmesh = new Ammo.btTriangleMesh(true, true);
+                const v0 = new Ammo.btVector3(0, 0, 0);
+                const v1 = new Ammo.btVector3(0, 0, 0);
+                const v2 = new Ammo.btVector3(0, 0, 0);
+                // Triangles direkt aus dem Mesh-Geometry-Index erzeugen
+                // (selbe Reihenfolge wie das visuelle Mesh oben).
+                for (let z = 0; z < VTX - 1; z++) {
+                    for (let x = 0; x < VTX - 1; x++) {
+                        const a = z * VTX + x;
+                        const b = z * VTX + x + 1;
+                        const c = (z + 1) * VTX + x;
+                        const d = (z + 1) * VTX + x + 1;
+                        // Triangle 1: a, b, d
+                        v0.setValue(vertices[a * 3] / sf, vertices[a * 3 + 1] / sf, vertices[a * 3 + 2] / sf);
+                        v1.setValue(vertices[b * 3] / sf, vertices[b * 3 + 1] / sf, vertices[b * 3 + 2] / sf);
+                        v2.setValue(vertices[d * 3] / sf, vertices[d * 3 + 1] / sf, vertices[d * 3 + 2] / sf);
+                        tmesh.addTriangle(v0, v1, v2);
+                        // Triangle 2: a, d, c
+                        v0.setValue(vertices[a * 3] / sf, vertices[a * 3 + 1] / sf, vertices[a * 3 + 2] / sf);
+                        v1.setValue(vertices[d * 3] / sf, vertices[d * 3 + 1] / sf, vertices[d * 3 + 2] / sf);
+                        v2.setValue(vertices[c * 3] / sf, vertices[c * 3 + 1] / sf, vertices[c * 3 + 2] / sf);
+                        tmesh.addTriangle(v0, v1, v2);
+                    }
+                }
+                Ammo.destroy(v0);
+                Ammo.destroy(v1);
+                Ammo.destroy(v2);
+                const shape = new Ammo.btBvhTriangleMeshShape(tmesh, true, true);
                 const transform = new Ammo.btTransform();
                 transform.setIdentity();
-                transform.setOrigin(new Ammo.btVector3(centerX / sf, centerY / sf, centerZ / sf));
+                // Vertices sind schon in absoluten Welt-Koords → origin (0,0,0).
+                transform.setOrigin(new Ammo.btVector3(0, 0, 0));
                 const motionState = new Ammo.btDefaultMotionState(transform);
                 const inertia = new Ammo.btVector3(0, 0, 0);
                 const rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, shape, inertia);
@@ -3536,16 +3485,12 @@ class AnazhRealm {
                 Ammo.destroy(rbInfo);
                 Ammo.destroy(inertia);
                 mesh.userData.physicsBody = body;
+                mesh.userData.physicsMesh = tmesh; // für späteres dispose
                 // NICHT in state.rigidBodies pushen: der physics-sync-Loop
-                // überschreibt mesh.position aus dem motionState-Origin —
-                // bei Terrain-Chunks würde das den ganzen Chunk-Mesh um
-                // (centerX, centerY, centerZ) verschieben, weil unsere
-                // Vertices schon in absoluten Welt-Koords liegen. Das
-                // mass=0-Heightfield ist statisch und braucht den Sync nicht;
-                // pruneDistantChunks findet die body über userData.physicsBody.
+                // würde mesh.position aus dem motionState-Origin überschreiben.
             }
         } catch (err) {
-            this.log(`extendTerrain Physik-Fehler bei (${newChunkX}, ${newChunkZ}): ${err.message}`, "ERROR");
+            this.log(`ensureChunkAt Physik-Fehler bei (${newChunkX}, ${newChunkZ}): ${err.message}`, "ERROR");
         }
 
         this.log(`Chunk hinzugefügt: (${newChunkX}, ${newChunkZ})`);
