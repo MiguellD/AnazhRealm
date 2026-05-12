@@ -21,7 +21,7 @@ Detaillierter Plan in `docs/state-of-realm.md` §5. Status (Mai 2026):
 |---|---|---|
 | 0 | Stabiles Fundament (Bewegung, Physik, Kreaturen, Chunks, Save, CI-Gate) | ✅ erledigt |
 | 1 | **Grok-Stimme** (`dialogue-box`, narrative Reflexion) | ✅ V1 erledigt — 5 Trigger (firstSpawn, idle, jumpBurst, rainLong, nexus), Text + optionale SpeechSynthesis |
-| 2 | DSL als gemeinsame Sprache Mensch+Grok (`docs/nexus-dsl.md`) | 🟡 Phase 1+2 live — Interpreter mit 39 Ops, Budget-Limits, Scheduler. Nexus-Generator komponiert rekursiv (`dslCompose`), Outcomes landen in `state.dsl.history` mit FPS-Fitness. Phasen 3-7 offen: Chat-Parser, Migration, Cleanup, CSP-strict, Fitness-V2. |
+| 2 | DSL als gemeinsame Sprache Mensch+Grok (`docs/nexus-dsl.md`) | 🟡 Phase 1+2+3a live — Interpreter mit 39 Ops, Budget-Limits, Scheduler. Nexus-Generator komponiert rekursiv (`dslCompose`), Outcomes landen in `state.dsl.history` mit FPS-Fitness. **Chat→DSL für 8 Welt-Befehle (`parseChatToDsl` + Levenshtein-Vorschlag) live.** Phasen 3b-7 offen: restliche Befehle (Visibility-Toggles, Narrative), Save-Migration, `new Function` raus, CSP-strict, Fitness-V2. |
 | 3 | Player-Emotionen (`{joy, awe, sorrow, hope, …}`) beeinflussen Welt | offen |
 | 4 | `anazhSymphony` V1 – Web-Audio-Klangschichten | offen |
 | 5 | `createPlayerSoul` (Mensch/Phönix/Drache) | offen |
@@ -29,7 +29,7 @@ Detaillierter Plan in `docs/state-of-realm.md` §5. Status (Mai 2026):
 | 7 | `brain.js`-Welt – lernt aus Spieler-Verhalten + Emotionen | offen |
 | 8-11 | **Welten-Ultiversum** (Identität, Export/Import, Fusion, Multi-User-Sync) | Vision-skizze in `docs/state-of-realm.md` §11 |
 
-Letzter Stand: Ring 1 + Ring 2 Phase 1+2 live. Chunk-Physik komplett auf `btBvhTriangleMeshShape` (Commit `e612c60`) — visuelles Mesh = Kollisionsnetz. 120 fps im echten Browser, 36/36 Playtest-Invarianten grün. Nächster Schritt: Ring 2 Phase 3 (Chat-Parser auf DSL) oder „Welt modifizierbar" (Ring 8+, Ebene B aus §11.3 — pro-Chunk DSL-Delta-Liste).
+Letzter Stand: Ring 1 + Ring 2 Phase 1+2+**3a** live. Chunk-Physik komplett auf `btBvhTriangleMeshShape` (Commit `e612c60`) — visuelles Mesh = Kollisionsnetz. 120 fps im echten Browser, **42/42 Playtest-Invarianten grün** (36 alte + 6 für Chat→DSL). Mensch und Nexus teilen jetzt eine Sprache für Welt-Mutation. Nächster Schritt: Ring 2 Phase 3b (Visibility-Toggles + Narrative als neue DSL-Primitives) oder direkt Ring 3 (Player-Emotionen).
 
 ## Wichtige Gotchas (technisch)
 

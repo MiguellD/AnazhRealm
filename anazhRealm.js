@@ -829,6 +829,161 @@ class AnazhRealm {
         return choices[choices.length - 1].build();
     }
 
+    // ### Ring 2 Phase 3 – Chat → DSL ###
+    // Regelbasierter Parser. Acht welt-betreffende Befehle gehen jetzt durch
+    // dieselbe DSL, die der Nexus spricht. Mensch und Nexus teilen damit eine
+    // Sprache, alle Effekte laufen mit Budget + Outcome-Log + Persistenz-fähig.
+    //
+    // Bewusste Auslassungen (Phasen 4-7 / spätere Ringe):
+    //  - System-IO (speichere/lade), Sichtbarkeits-Toggles, Debug-Flags
+    //  - lerne/führe/entwickle fähigkeit + füge code  → Phase 5 mit Save-Migration
+    //  - anazh-symphonie → Ring 4 (Web Audio)
+    //  - spawne neue welt / boden nicht sichtbar → grobe Welt-Trigger
+    get chatDslPatterns() {
+        if (this._chatDslPatternsCache) return this._chatDslPatternsCache;
+        const num = (s, fallback) => {
+            const n = parseFloat(s);
+            return Number.isFinite(n) ? n : fallback;
+        };
+        this._chatDslPatternsCache = [
+            {
+                example: "setze wetter rainy",
+                re: /^setze\s+wetter\s+(sunny|rainy)\s*$/i,
+                build: (m) => ({
+                    program: ["weather", m[1].toLowerCase()],
+                    describe: `Wetter gesetzt auf ${m[1].toLowerCase()}`,
+                }),
+            },
+            {
+                example: "spawne kreaturen 10",
+                re: /^spawne\s+kreaturen\s+(\d+)\s*$/i,
+                build: (m) => {
+                    const count = Math.max(1, Math.min(20, parseInt(m[1], 10) || 1));
+                    return {
+                        program: ["repeat", count, ["spawn_creature", ["at_player"], 1, "happy"]],
+                        describe: `${count} Kreaturen gespawnt (am Spieler)`,
+                    };
+                },
+            },
+            {
+                example: "ändere sternenhimmel red",
+                re: /^(?:ändere|aendere)\s+sternenhimmel\s+(\S+)\s*$/i,
+                build: (m) => ({
+                    program: ["skybox_color", m[1]],
+                    describe: `Sternenhimmel-Farbe gesetzt: ${m[1]}`,
+                }),
+            },
+            {
+                example: "setze terrain steilheit 0.8",
+                re: /^setze\s+terrain\s+steilheit\s+(-?\d+(?:\.\d+)?)\s*$/i,
+                build: (m) => ({
+                    program: ["terrain_steepness", num(m[1], 1.0)],
+                    describe: `Terrain-Steilheit gesetzt auf ${num(m[1], 1.0)} (wirkt mit nächstem Welt-Regen)`,
+                }),
+            },
+            {
+                example: "setze terrain basishöhe 5",
+                re: /^setze\s+terrain\s+(?:basishöhe|basishoehe)\s+(-?\d+(?:\.\d+)?)\s*$/i,
+                build: (m) => ({
+                    program: ["terrain_base_height", num(m[1], 0)],
+                    describe: `Terrain-Basishöhe gesetzt auf ${num(m[1], 0)} (wirkt mit nächstem Welt-Regen)`,
+                }),
+            },
+            {
+                example: "erhöhe sprungkraft um 2",
+                re: /^(?:erhöhe|erhoehe)\s+sprungkraft\s+um\s+(-?\d+(?:\.\d+)?)\s*$/i,
+                build: (m) => {
+                    const target = (this.state.jumpPower || 12) + num(m[1], 2);
+                    return {
+                        program: ["player_jump_power", target],
+                        describe: `Sprungkraft → ${target.toFixed(2)}`,
+                    };
+                },
+            },
+            {
+                example: "heile welt",
+                re: /^heile\s+welt\s*$/i,
+                build: () => ({
+                    program: ["chain", ["weather", "sunny"], ["creatures_emotion", "happy"], ["gravity", -14.715]],
+                    describe: "Welt geheilt: sonnig, Kreaturen glücklich, Gravitation auf 1.5G zurück",
+                }),
+            },
+            {
+                example: "vereine chaos ordnung",
+                re: /^vereine\s+chaos\s+ordnung\s*$/i,
+                build: () => ({
+                    program: ["chain", ["terrain_steepness", 1.0], ["creatures_color", "white"]],
+                    describe: "Chaos und Ordnung vereint: Steilheit 1.0, Kreaturen weiß",
+                }),
+            },
+        ];
+        return this._chatDslPatternsCache;
+    }
+
+    parseChatToDsl(text) {
+        if (typeof text !== "string") return null;
+        const t = text.trim();
+        if (!t) return null;
+        for (const p of this.chatDslPatterns) {
+            const m = t.match(p.re);
+            if (m) {
+                try {
+                    const built = p.build(m);
+                    if (built && Array.isArray(built.program)) return built;
+                } catch (err) {
+                    this.log(`Chat→DSL build-Fehler für '${p.example}': ${err.message}`, "ERROR");
+                    return null;
+                }
+            }
+        }
+        return null;
+    }
+
+    // Levenshtein-basierte Vorschläge, wenn weder DSL- noch Legacy-Pfad griff.
+    // Wir vergleichen den ersten Tokens-Bigram (z. B. "setze wetter") gegen
+    // die Beispiel-Patterns. Distanz <= 4 gilt als „nahe genug".
+    chatSuggest(text) {
+        if (typeof text !== "string") return null;
+        const t = text.trim().toLowerCase();
+        if (!t) return null;
+        const parts = t.split(/\s+/);
+        const head = parts.slice(0, 2).join(" ");
+        if (!head) return null;
+        const candidates = this.chatDslPatterns.map((p) => p.example);
+        let best = null;
+        let bestDist = Infinity;
+        for (const cand of candidates) {
+            const candHead = cand.split(/\s+/).slice(0, 2).join(" ");
+            const d = this.levenshtein(head, candHead);
+            if (d < bestDist) {
+                bestDist = d;
+                best = cand;
+            }
+        }
+        return best && bestDist <= 4 ? best : null;
+    }
+
+    levenshtein(a, b) {
+        if (a === b) return 0;
+        const m = a.length;
+        const n = b.length;
+        if (m === 0) return n;
+        if (n === 0) return m;
+        // Eine Zeile rollen, um Speicher zu sparen.
+        let prev = new Array(n + 1);
+        let curr = new Array(n + 1);
+        for (let j = 0; j <= n; j++) prev[j] = j;
+        for (let i = 1; i <= m; i++) {
+            curr[0] = i;
+            for (let j = 1; j <= n; j++) {
+                const cost = a.charCodeAt(i - 1) === b.charCodeAt(j - 1) ? 0 : 1;
+                curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
+            }
+            [prev, curr] = [curr, prev];
+        }
+        return prev[n];
+    }
+
     // ### Welt-Identität (Ring 8+ Vorbereitung) ###
     ensureWorldMeta() {
         const m = this.state.worldMeta;
@@ -1957,6 +2112,26 @@ class AnazhRealm {
             this.proactiveSuggestions();
         }
 
+        // Ring 2 Phase 3: DSL-First. Wenn der Befehl in DSL übersetzbar ist,
+        // läuft er durch denselben Interpreter wie der Nexus — Budgets, Outcome,
+        // Persistenz inklusive. Legacy-Pfad bleibt als Fallback für Befehle,
+        // die noch kein DSL-Äquivalent haben (System-IO, Toggles, Phase-5-Themen).
+        const parsed = this.parseChatToDsl(command);
+        if (parsed) {
+            const result = this.dslRun(parsed.program, { source: "human" });
+            this.state.dsl.lastUserProgram = parsed.program;
+            this.state.dsl.lastUserOutcome = result.outcome;
+            this.state.dsl.lastUserAt = performance.now() / 1000;
+            if (result.ok) {
+                appendChatOutput(parsed.describe);
+            } else {
+                const reason = result.log.find((e) => /budget|unknown|invalid|exception/.test(e.event));
+                appendChatOutput(`Befehl lief, aber mit Auffälligkeit: ${reason ? reason.event : "siehe Log"}`);
+            }
+            chatInput.value = "";
+            return;
+        }
+
         // Dynamische Befehlsverarbeitung
         if (parts[0] === "lerne" && parts[1] === "fähigkeit") {
             const abilityName = parts[2];
@@ -1974,10 +2149,6 @@ class AnazhRealm {
                     `Fähigkeit '${abilityName}' nicht gefunden. Lerne sie mit 'Lerne Fähigkeit <Name> <Beschreibung>'`
                 );
             }
-        } else if (parts[0] === "ändere" && parts[1] === "sternenhimmel") {
-            const color = parts[2] || "purple";
-            this.state.skybox.material.uniforms.nebulaColor.value.set(color);
-            appendChatOutput(`Sternenhimmel geändert: Farbe auf ${color} gesetzt`);
         } else if (parts[0] === "speichere" && parts[1] === "zustand") {
             this.saveState();
             this.saveToProjectFolder().then((result) => {
@@ -1998,40 +2169,12 @@ class AnazhRealm {
         } else if (parts[0] === "spawne" && parts[1] === "neue" && parts[2] === "welt") {
             this.generateNewWorld();
             appendChatOutput("Neue Welt generiert");
-        } else if (parts[0] === "spawne" && parts[1] === "kreaturen") {
-            const count = parseInt(parts[2]) || 5;
-            this.spawnCreatures(count);
-            appendChatOutput(`${count} Kreaturen gespawnt`);
-        } else if (parts[0] === "erhöhe" && parts[1] === "sprungkraft") {
-            const amount = parseFloat(parts[3]) || 2;
-            this.state.jumpPower += amount;
-            appendChatOutput(`Sprungkraft erhöht auf ${this.state.jumpPower}`);
         } else if (parts[0] === "behebe" && parts[1] === "physik-tunneling") {
             this.optimizeCollisions();
             appendChatOutput("Physik-Tunneling behoben: CCD angepasst");
         } else if (parts[0] === "optimiere" && parts[1] === "physik") {
             this.optimizePhysics();
             appendChatOutput("Physik optimiert");
-        } else if (parts[0] === "setze" && parts[1] === "wetter") {
-            const weather = parts[2];
-            if (["sunny", "rainy"].includes(weather)) {
-                this.state.weather = weather;
-                this.updateSkyboxWeather();
-                this.updateCreatureEmotions();
-                appendChatOutput(`Wetter gesetzt auf ${weather}`);
-            } else {
-                appendChatOutput("Unbekanntes Wetter. Beispiele: 'Setze Wetter sunny', 'Setze Wetter rainy'");
-            }
-        } else if (parts[0] === "setze" && parts[1] === "terrain" && parts[2] === "steilheit") {
-            const steepness = parseFloat(parts[3]) || 1.0;
-            this.state.terrainSteepness = Math.max(0.1, Math.min(2.0, steepness));
-            this.generateTerrainWithParameters(this.state.terrainSteepness, this.state.terrainBaseHeight);
-            appendChatOutput(`Terrain-Steilheit auf ${this.state.terrainSteepness} gesetzt und Terrain neu generiert`);
-        } else if (parts[0] === "setze" && parts[1] === "terrain" && parts[2] === "basishöhe") {
-            const baseHeight = parseFloat(parts[3]) || 0.0;
-            this.state.terrainBaseHeight = baseHeight;
-            this.generateTerrainWithParameters(this.state.terrainSteepness, this.state.terrainBaseHeight);
-            appendChatOutput(`Terrain-Basishöhe auf ${this.state.terrainBaseHeight} gesetzt und Terrain neu generiert`);
         } else if (parts[0] === "füge" && parts[1] === "trainingsdaten") {
             const xMatch = command.match(/x\s*=\s*(-?\d+(?:\.\d+)?)/i);
             const zMatch = command.match(/z\s*=\s*(-?\d+(?:\.\d+)?)/i);
@@ -2123,26 +2266,6 @@ class AnazhRealm {
                 self.log("Anazh-Symphonie aktiviert: Kreaturen tanzen im Rhythmus!", "INFO");
             });
             appendChatOutput("Anazh-Symphonie aktiviert – Kreaturen bewegen sich harmonisch");
-        } else if (parts[0] === "heile" && parts[1] === "welt") {
-            this.state.rigidBodies.forEach((rb) => {
-                const body = rb.userData.physicsBody;
-                if (body) {
-                    body.setLinearVelocity(new Ammo.btVector3(0, 0, 0));
-                    body.setAngularVelocity(new Ammo.btVector3(0, 0, 0));
-                }
-            });
-            this.state.creatureEmotions = this.state.creatureEmotions.map(() => "happy");
-            this.state.weather = "sunny";
-            this.updateSkyboxWeather();
-            this.updateCreatureEmotions();
-            appendChatOutput("Welt geheilt: Physik stabilisiert, Kreaturen glücklich, Wetter sonnig");
-        } else if (parts[0] === "vereine" && parts[1] === "chaos" && parts[2] === "ordnung") {
-            this.state.terrainSteepness = 1.0;
-            this.generateTerrainWithParameters(this.state.terrainSteepness, this.state.terrainBaseHeight);
-            this.state.creatures.forEach((creature) => {
-                creature.material.color.set(0xffffff);
-            });
-            appendChatOutput("Chaos und Ordnung vereint: Terrain ausgeglichen, Kreaturen in Harmonie (weiße Farbe)");
         } else if (parts[0] === "aktiviere" && parts[1] === "debug-logs") {
             this.state.debugLogging = true;
             appendChatOutput("Debug-Logs aktiviert");
@@ -2150,9 +2273,14 @@ class AnazhRealm {
             this.state.debugLogging = false;
             appendChatOutput("Debug-Logs deaktiviert");
         } else {
-            appendChatOutput(
-                "Unbekannter Befehl. Beispiele: 'Lerne Fähigkeit <Name> <Beschreibung>', 'Führe Fähigkeit aus <Name>', 'Ändere Sternenhimmel <Farbe>', 'Speichere Zustand', 'Lade Zustand', 'Lade Datei', 'Spawne neue Welt', 'Spawne Kreaturen 5', 'Erhöhe Sprungkraft um 2', 'Behebe Physik-Tunneling', 'Optimiere Physik', 'Setze Wetter sunny', 'Setze Terrain Steilheit 0.5', 'Setze Terrain Basishöhe 5', 'Füge Trainingsdaten x=10 z=5', 'Erzähle: Drachen leben hier', 'Füge Code function test() { console.log('Test'); }', 'Entwickle Fähigkeit fliegen', 'Boden nicht sichtbar', 'Boden aktivieren', 'Boden deaktivieren', 'Kreaturen aktivieren', 'Kreaturen deaktivieren', 'Aktiviere Anazh-Symphonie', 'Heile Welt', 'Vereine Chaos Ordnung', 'Aktiviere Debug-Logs', 'Deaktiviere Debug-Logs'"
-            );
+            const suggestion = this.chatSuggest(command);
+            if (suggestion) {
+                appendChatOutput(`Unbekannter Befehl. Meintest du: '${suggestion}'?`);
+            } else {
+                appendChatOutput(
+                    "Unbekannter Befehl. DSL-Befehle: 'Setze Wetter rainy', 'Spawne Kreaturen 10', 'Ändere Sternenhimmel red', 'Setze Terrain Steilheit 0.8', 'Setze Terrain Basishöhe 5', 'Erhöhe Sprungkraft um 2', 'Heile Welt', 'Vereine Chaos Ordnung'. Weitere: 'Speichere/Lade Zustand', 'Lade Datei', 'Spawne neue Welt', 'Boden aktivieren/deaktivieren', 'Kreaturen aktivieren/deaktivieren', 'Aktiviere Anazh-Symphonie', 'Aktiviere/Deaktiviere Debug-Logs', 'Behebe Physik-Tunneling', 'Optimiere Physik', 'Lerne/Führe/Entwickle Fähigkeit', 'Füge Code', 'Füge Trainingsdaten', 'Erzähle'."
+                );
+            }
         }
         chatInput.value = "";
     }

@@ -425,6 +425,85 @@ function startSaveServer() {
                     check("Phase-2-Snapshot erreichbar", false, "page.evaluate fehlgeschlagen");
                 }
             }
+
+            // ### Ring 2 Phase 3 – Chat → DSL ###
+            // Wir verifizieren drei Dinge: Parser liefert das richtige AST,
+            // processChatCommand routet den Chat-Befehl tatsächlich durch dslRun
+            // (state.dsl.lastUserProgram + Welt-Effekt), und chatSuggest erkennt
+            // einen leicht verschriebenen Befehl per Levenshtein.
+            const phase3Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    // 1. Parser-Smoketest
+                    const parsedWeather = r.parseChatToDsl("Setze Wetter rainy");
+                    out.parseWeatherOk =
+                        !!parsedWeather &&
+                        Array.isArray(parsedWeather.program) &&
+                        parsedWeather.program[0] === "weather" &&
+                        parsedWeather.program[1] === "rainy";
+
+                    const parsedSpawn = r.parseChatToDsl("Spawne Kreaturen 3");
+                    out.parseSpawnOk =
+                        !!parsedSpawn &&
+                        Array.isArray(parsedSpawn.program) &&
+                        parsedSpawn.program[0] === "repeat" &&
+                        parsedSpawn.program[1] === 3 &&
+                        Array.isArray(parsedSpawn.program[2]) &&
+                        parsedSpawn.program[2][0] === "spawn_creature";
+
+                    out.parseUnknownReturnsNull = r.parseChatToDsl("Tu irgendwas Wildes") === null;
+
+                    // 2. End-to-end: processChatCommand routet auf DSL.
+                    // Chat-Input/Output sicherstellen (Headless-DOM hat sie).
+                    const weatherBefore = r.state.weather;
+                    r.processChatCommand("Setze Wetter rainy");
+                    out.chatRoutedToDsl =
+                        Array.isArray(r.state.dsl.lastUserProgram) &&
+                        r.state.dsl.lastUserProgram[0] === "weather" &&
+                        r.state.dsl.lastUserProgram[1] === "rainy";
+                    out.weatherActuallyChanged = r.state.weather === "rainy";
+                    // Wetter wieder neutralisieren, damit andere Tests nicht verwirrt werden.
+                    r.processChatCommand("Setze Wetter sunny");
+                    out.weatherCleanup = r.state.weather === "sunny" && weatherBefore !== undefined;
+
+                    // 3. Levenshtein-Vorschlag bei Tippfehler
+                    const suggestion = r.chatSuggest("setze wettr rainy");
+                    out.suggestionForTypo = suggestion === "setze wetter rainy";
+
+                    return out;
+                })
+                .catch(() => null);
+
+            if (!phase3Results) {
+                check("Phase-3-Snapshot erreichbar", false, "page.evaluate fehlgeschlagen");
+            } else {
+                check("Chat→DSL: 'Setze Wetter rainy' → ['weather','rainy']", phase3Results.parseWeatherOk);
+                check(
+                    "Chat→DSL: 'Spawne Kreaturen 3' → repeat+spawn_creature",
+                    phase3Results.parseSpawnOk
+                );
+                check(
+                    "Chat→DSL: unbekannter Befehl liefert null (kein Match)",
+                    phase3Results.parseUnknownReturnsNull
+                );
+                check(
+                    "processChatCommand routet Welt-Befehl auf dslRun",
+                    phase3Results.chatRoutedToDsl,
+                    "state.dsl.lastUserProgram gesetzt"
+                );
+                check(
+                    "DSL-Pfad mutiert tatsächlich state.weather",
+                    phase3Results.weatherActuallyChanged
+                );
+                check(
+                    "chatSuggest schlägt korrigierten Befehl bei Tippfehler vor",
+                    phase3Results.suggestionForTypo,
+                    "'setze wettr rainy' → 'setze wetter rainy'"
+                );
+            }
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

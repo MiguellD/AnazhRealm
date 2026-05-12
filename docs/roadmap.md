@@ -22,7 +22,7 @@ Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) is
 |---|---|---|---|---|
 | 0 | Stabiles Fundament (Bewegung, Physik, Chunks, Save, CI) | ✅ erledigt | – | – |
 | 1 | Grok-Stimme (`dialogue-box`, narrative Reflexion) | ✅ V1 live | – | – |
-| 2 | DSL als gemeinsame Sprache | 🟡 Phase 1+2 live, 3-7 offen | 3-4 d Rest | – |
+| 2 | DSL als gemeinsame Sprache | 🟡 Phase 1+2+3a live, 3b-7 offen | 2-3 d Rest | – |
 | 3 | Player-Emotionen → Welt | 🔴 offen | 2 d | Ring 2 Phase 3 |
 | 4 | `anazhSymphony` V1 (Web Audio) | 🔴 offen | 2-3 d | Ring 3 |
 | 5 | `createPlayerSoul` (Mensch/Phönix/Drache) | 🔴 offen | 1-2 d | – |
@@ -44,13 +44,23 @@ Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) is
 **Ziel**: Mensch und Nexus teilen vollständig eine Sprache. Alle Chat-Befehle gehen durch dieselben DSL-Primitives, die der Generator nutzt. `new Function`/`eval` komplett raus, strict CSP wird möglich.
 
 **Phase 3 — Chat-Parser → DSL** (1-2 d)
-- `parseChatToDsl(text)`: regelbasiert (Regex + Pattern-Matching), kein LLM. Liefert ein DSL-Programm oder einen `unknown_command` mit Levenshtein-Vorschlag.
-- Alle ~25 Zweige von `processChatCommand` einer nach dem anderen migrieren:
-  - „Setze Wetter rainy" → `["weather", "rainy"]`
-  - „Spawne Kreaturen 10" → `["repeat", 10, ["spawn_creature", ["at_player"], 1, "happy"]]`
-  - „Erhöhe Sprungkraft um 2" → `["player_jump_power", current+2]`
-  - „Heile Welt" → `["chain", ["weather","sunny"], ["creatures_emotion","happy"], ["gravity",-14.715]]`
-- Test: Playtest schickt 5 vorgefertigte Chat-Strings, prüft dass jeder zum richtigen DSL kompiliert wird.
+
+**Phase 3a ✅ erledigt** (dieser Commit): `parseChatToDsl(text)` und `chatSuggest(text)` (Levenshtein, Distanz ≤ 4) live. Acht welt-betreffende Chat-Befehle laufen jetzt durch denselben Interpreter wie der Nexus:
+
+| Chat | DSL |
+|---|---|
+| `setze wetter sunny/rainy` | `["weather", $1]` |
+| `spawne kreaturen <n>` | `["repeat", n, ["spawn_creature", ["at_player"], 1, "happy"]]` |
+| `ändere sternenhimmel <color>` | `["skybox_color", color]` |
+| `setze terrain steilheit <v>` | `["terrain_steepness", v]` |
+| `setze terrain basishöhe <v>` | `["terrain_base_height", v]` |
+| `erhöhe sprungkraft um <n>` | `["player_jump_power", current+n]` |
+| `heile welt` | `["chain", ["weather","sunny"], ["creatures_emotion","happy"], ["gravity",-14.715]]` |
+| `vereine chaos ordnung` | `["chain", ["terrain_steepness",1.0], ["creatures_color","white"]]` |
+
+Sechs neue Playtest-Invarianten verifizieren Parser, End-to-end-Routing und Levenshtein-Vorschlag. `state.dsl.lastUserProgram` + `state.dsl.lastUserOutcome` halten den letzten Menschen-Befehl für Diagnose/Persistenz fest.
+
+**Phase 3b — Rest** (0.5-1 d, getrennter Commit): Sichtbarkeits-Toggles (`boden/kreaturen aktivieren/deaktivieren`) und narrative Befehle (`erzähle`) brauchen neue DSL-Primitives (`set_visible`, `record_narrative`). `lerne fähigkeit` / `entwickle fähigkeit` warten bewusst bis Phase 5 — sie hängen mit `new Function`-Cleanup zusammen und brauchen Save-Migration.
 
 **Phase 4 — Save-Migration alter Saves** (0.5 d)
 - Bekannte alte `abilities: string[]`-Saves erkennen, in `dsl.abilities` umwandeln (per `restoreAbility`-Mapping). Bereits halb da seit Commit `fef4baf`.

@@ -61,9 +61,9 @@ Konsequenz für jede künftige Iteration: **niemals re-komplexifizieren ohne Not
 | 🟡 KI lernt mit TF.js | rudimentär | trainiert auf Spieler-Bewegung, beeinflusst aber nichts |
 | 🟡 Wetter (sunny/rainy) | rudimentär | wechselt alle 30 s, beeinflusst Skybox + Kreatur-Emotion |
 | 🟡 Nexus-Evolution | rudimentär | 3 hartcodierte Effekte (gravityShift, creatureDance, terrainFlatten), zufällig gewählt |
-| 🟡 Chat-Steuerung | rudimentär | if/else-Parser für ~25 Befehle |
+| 🟡 Chat-Steuerung | teilweise migriert | 8 welt-betreffende Befehle laufen jetzt durch die DSL (`parseChatToDsl`), restliche Legacy-Zweige bleiben bis Ring 4/Phase 5 |
 | ✅ **Grok hat Stimme** (`dialogue-box`, narrative Reflexion) | V1 live — 5 Trigger (firstSpawn, idle, jumpBurst, rainLong, nexus), Text + optional Speech. `dreamWithPlayer`, `interpretEmotionalSpeech` weiterhin offen für spätere Ringe. |
-| 🟡 **DSL Interpreter + Generator** (Phase 1+2 von Ring 2) | live — 39 Ops, Budget-Limits, Scheduler, autonome Nexus-Komposition mit V1-Fitness. Phasen 3-7 (Chat-Parser, Migration, Cleanup, CSP-strict, Fitness-V2) offen. |
+| 🟡 **DSL Interpreter + Generator** (Phase 1+2+3a von Ring 2) | live — 39 Ops, Budget-Limits, Scheduler, autonome Nexus-Komposition mit V1-Fitness, **Chat→DSL für 8 Welt-Befehle inkl. Levenshtein-Vorschlag**. Phasen 3b-7 (restliche Befehle, Save-Migration, `new Function` raus, CSP-strict, Fitness-V2) offen. |
 | ✅ **Welt-Identität** (Ring 8+ Schema-Vorbereitung) | live — `worldMeta` mit `worldId` (UUID), `slug`, `creator`, `visibility`, `parentWorlds`, `schemaVersion`. Logik für Sharing/Fusion noch nicht implementiert (Ringe 8-11). |
 | 🔴 Spieler-Emotionen (`emotionSystem`, `collectPlayerEmotions`, `dreamWeb`) | **fehlt** |
 | 🔴 Multisensorik / `anazhSymphony` (Web Audio API) | stumm |
@@ -120,9 +120,10 @@ Chronologisch, mit Commit-Hash und Kernaussage:
 | 32 | `a8777c3` | Tunneling-Verhinderung: Velocity-Cap −25 m/s, CCD threshold 0.01, Kill-Plane minHeight−30, `stepSimulation` maxSubSteps 20 |
 | 33 | `2274c0b` | Terrain glätten: h3/h4/h7-Amplituden reduziert, Canyon −40→−15, Cave −20→−8, Volcano +50→+20 — gegen tunneling durch quasi-vertikale Wände |
 | 34 | `e612c60` | **Großer Refactor (auf Vorschlag des Schöpfers):** visuelles Mesh = Kollisionsnetz via `btBvhTriangleMeshShape`. Globales Heightfield weg, per-chunk Heightfields weg, Overlap-Hack weg, initial-vs-extension-Sonderfall weg. Eine Wahrheit pro Chunk, robuste 120 fps |
-| 35 | (dieser) | Doku-Übergabe für nächste Session |
+| 35 | `fdf9463` | Vollständige Roadmap `docs/roadmap.md` (Ringe 0-11, Meilensteine A-E) |
+| 36 | (dieser) | **Ring 2 Phase 3a**: Chat→DSL für 8 Welt-Befehle (`parseChatToDsl`, `chatSuggest`/Levenshtein), 6 neue Playtest-Invarianten, Mensch und Nexus teilen jetzt ein- und denselben Interpreter für Welt-Effekte |
 
-Aggregat: **17 weitere Commits** in dieser Session (~+1500/−400 Zeilen netto). Architektur: ein File, ein Chunk-Pfad, eine Höhen-Funktion, eine Collider-Quelle (Triangle-Mesh = Visual-Mesh).
+Aggregat: **18 weitere Commits** in dieser Session (~+1700/−500 Zeilen netto). Architektur: ein File, ein Chunk-Pfad, eine Höhen-Funktion, eine Collider-Quelle (Triangle-Mesh = Visual-Mesh), **eine Sprache für Welt-Mutation (DSL)**.
 
 ---
 
