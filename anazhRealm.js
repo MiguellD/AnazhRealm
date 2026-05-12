@@ -1214,16 +1214,21 @@ class AnazhRealm {
             appendChatOutput(`Sternenhimmel geändert: Farbe auf ${color} gesetzt`);
         } else if (parts[0] === "speichere" && parts[1] === "zustand") {
             this.saveState();
-            this.saveToProjectFolder().then((savedToFolder) => {
-                if (savedToFolder) {
-                    appendChatOutput("Zustand gespeichert (direkt im Spielordner)");
+            this.saveToProjectFolder().then((result) => {
+                if (result === "server") {
+                    appendChatOutput("Zustand gespeichert (direkt im Spielordner + localStorage)");
+                } else if (result === "download") {
+                    appendChatOutput("Zustand gespeichert (Browser-Download + localStorage)");
                 } else {
-                    appendChatOutput("Zustand gespeichert, Download als Fallback gestartet");
+                    appendChatOutput("Zustand gespeichert (nur localStorage)");
                 }
             });
         } else if (parts[0] === "lade" && parts[1] === "zustand") {
             this.loadState();
-            appendChatOutput("Zustand geladen");
+            appendChatOutput("Zustand aus localStorage geladen");
+        } else if (parts[0] === "lade" && parts[1] === "datei") {
+            this.openStateFilePicker();
+            appendChatOutput("Datei-Picker geöffnet – wähle eine anazhRealmState.json");
         } else if (parts[0] === "spawne" && parts[1] === "neue" && parts[2] === "welt") {
             this.generateNewWorld();
             appendChatOutput("Neue Welt generiert");
@@ -1380,7 +1385,7 @@ class AnazhRealm {
             appendChatOutput("Debug-Logs deaktiviert");
         } else {
             appendChatOutput(
-                "Unbekannter Befehl. Beispiele: 'Lerne Fähigkeit <Name> <Beschreibung>', 'Führe Fähigkeit aus <Name>', 'Ändere Sternenhimmel <Farbe>', 'Speichere Zustand', 'Spawne neue Welt', 'Spawne Kreaturen 5', 'Erhöhe Sprungkraft um 2', 'Behebe Physik-Tunneling', 'Optimiere Physik', 'Setze Wetter sunny', 'Setze Terrain Steilheit 0.5', 'Setze Terrain Basishöhe 5', 'Füge Trainingsdaten x=10 z=5', 'Erzähle: Drachen leben hier', 'Füge Code function test() { console.log('Test'); }', 'Entwickle Fähigkeit fliegen', 'Boden nicht sichtbar', 'Boden aktivieren', 'Boden deaktivieren', 'Kreaturen aktivieren', 'Kreaturen deaktivieren', 'Aktiviere Anazh-Symphonie', 'Heile Welt', 'Vereine Chaos Ordnung', 'Aktiviere Debug-Logs', 'Deaktiviere Debug-Logs'"
+                "Unbekannter Befehl. Beispiele: 'Lerne Fähigkeit <Name> <Beschreibung>', 'Führe Fähigkeit aus <Name>', 'Ändere Sternenhimmel <Farbe>', 'Speichere Zustand', 'Lade Zustand', 'Lade Datei', 'Spawne neue Welt', 'Spawne Kreaturen 5', 'Erhöhe Sprungkraft um 2', 'Behebe Physik-Tunneling', 'Optimiere Physik', 'Setze Wetter sunny', 'Setze Terrain Steilheit 0.5', 'Setze Terrain Basishöhe 5', 'Füge Trainingsdaten x=10 z=5', 'Erzähle: Drachen leben hier', 'Füge Code function test() { console.log('Test'); }', 'Entwickle Fähigkeit fliegen', 'Boden nicht sichtbar', 'Boden aktivieren', 'Boden deaktivieren', 'Kreaturen aktivieren', 'Kreaturen deaktivieren', 'Aktiviere Anazh-Symphonie', 'Heile Welt', 'Vereine Chaos Ordnung', 'Aktiviere Debug-Logs', 'Deaktiviere Debug-Logs'"
             );
         }
         chatInput.value = "";
@@ -2715,17 +2720,43 @@ class AnazhRealm {
         }
     }
 
-    async saveToProjectFolder(options = {}) {
-        const { fallbackToDownload = true } = options;
-        // Auf CDN-Hosts (raw.githack, GitHub Pages, file://) ist der lokale
-        // save-server nicht erreichbar. Vorzeitig aussteigen statt den
-        // ERR_CONNECTION_REFUSED alle 30 s in die Konsole zu pumpen.
+    triggerStateDownload(stateToSave) {
+        // Generischer Helper: stößt einen Browser-Download mit dem aktuellen
+        // State an. Funktioniert auch auf CDN-Hosts ohne save-server.
+        const dataStr =
+            "data:application/json;charset=utf-8," + encodeURIComponent(JSON.stringify(stateToSave, null, 2));
+        const a = document.createElement("a");
+        a.setAttribute("href", dataStr);
+        const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+        a.setAttribute("download", `anazhRealmState_${stamp}.json`);
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+    }
+
+    isSaveServerHost() {
         const href = typeof window !== "undefined" ? window.location.href : "";
-        if (!/^https?:\/\/(127\.0\.0\.1|localhost):4312\//.test(href)) {
-            this.log(`save-server nicht erreichbar (Host: ${href.split("/")[2] || "?"}) – nutze localStorage`, "DEBUG");
+        return /^https?:\/\/(127\.0\.0\.1|localhost):4312\//.test(href);
+    }
+
+    async saveToProjectFolder(options = {}) {
+        // Drei Pfade:
+        //   - Spiel läuft auf dem lokalen save-server → POST /api/save-state.
+        //   - Spiel läuft anderswo + fallbackToDownload=true → Browser-Download.
+        //   - Spiel läuft anderswo + fallbackToDownload=false (Auto-Save) → still aussteigen.
+        const { fallbackToDownload = true } = options;
+        const stateToSave = this.buildStateSnapshot();
+
+        if (!this.isSaveServerHost()) {
+            if (fallbackToDownload) {
+                this.triggerStateDownload(stateToSave);
+                this.log("Zustand als Datei heruntergeladen (kein lokaler save-server erreichbar)");
+                return "download";
+            }
+            this.log("Auto-Save übersprungen (kein lokaler save-server)", "DEBUG");
             return false;
         }
-        const stateToSave = this.buildStateSnapshot();
+
         try {
             const response = await fetch("http://localhost:4312/api/save-state", {
                 method: "POST",
@@ -2740,24 +2771,18 @@ class AnazhRealm {
             }
             const result = await response.json();
             this.log(`Zustand direkt im Spielordner gespeichert: ${result.path || "anazhRealmState.json"}`);
-            return true;
+            return "server";
         } catch (error) {
             if (!fallbackToDownload) {
                 this.log(`Direktes Speichern im Spielordner fehlgeschlagen (${error.message})`, "ERROR");
                 return false;
             }
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(stateToSave));
-            const downloadAnchor = document.createElement("a");
-            downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", "anazhRealmState.json");
-            document.body.appendChild(downloadAnchor);
-            downloadAnchor.click();
-            downloadAnchor.remove();
+            this.triggerStateDownload(stateToSave);
             this.log(
                 `Direktes Speichern im Spielordner fehlgeschlagen (${error.message}). Download-Fallback gestartet`,
                 "ERROR"
             );
-            return false;
+            return "download";
         }
     }
 
@@ -2796,60 +2821,123 @@ class AnazhRealm {
         this.log(`Chunk-Cache bereinigt: ${this.state.chunkMap.size} aktive Chunks`, "DEBUG");
     }
 
-    loadState() {
-        const savedState = localStorage.getItem("anazhRealmState");
-        if (savedState) {
-            let state;
+    loadState(externalState = null) {
+        // Drei Quellen werden unterstützt: localStorage (Default), externes
+        // Objekt (z. B. aus File-Upload), oder gar nichts (frühes init()).
+        let state = externalState;
+        if (!state) {
+            const savedState = localStorage.getItem("anazhRealmState");
+            if (!savedState) return false;
             try {
                 state = JSON.parse(savedState);
             } catch (error) {
                 this.log(`Speicherstand ist ungültiges JSON: ${error.message}`, "ERROR");
-                return;
+                return false;
             }
-            const playerPosition = state.playerPosition || { x: 0, y: 5, z: 0 };
-            const safeX = Number.isFinite(playerPosition.x) ? playerPosition.x : 0;
-            const safeY = Number.isFinite(playerPosition.y) ? playerPosition.y : 5;
-            const safeZ = Number.isFinite(playerPosition.z) ? playerPosition.z : 0;
-            if (this.state.playerMesh) {
-                this.state.playerMesh.position.set(safeX, safeY, safeZ);
-                this.state.playerMesh.visible = true;
-                if (this.state.playerBody) {
-                    const transform = new Ammo.btTransform();
-                    transform.setIdentity();
-                    transform.setOrigin(
-                        new Ammo.btVector3(
-                            safeX / this.state.scaleFactor,
-                            safeY / this.state.scaleFactor,
-                            safeZ / this.state.scaleFactor
-                        )
-                    );
-                    this.state.playerBody.setWorldTransform(transform);
-                    this.state.playerBody.setLinearVelocity(new Ammo.btVector3(0, 0, 0));
+        }
+
+        const playerPosition = state.playerPosition || { x: 0, y: 5, z: 0 };
+        const safeX = Number.isFinite(playerPosition.x) ? playerPosition.x : 0;
+        const safeY = Number.isFinite(playerPosition.y) ? playerPosition.y : 5;
+        const safeZ = Number.isFinite(playerPosition.z) ? playerPosition.z : 0;
+        if (this.state.playerMesh) {
+            this.state.playerMesh.position.set(safeX, safeY, safeZ);
+            this.state.playerMesh.visible = true;
+            if (this.state.playerBody && this.state.tmpTransform && this.state.tmpVec1) {
+                const t = this.state.tmpTransform;
+                t.setIdentity();
+                t.setOrigin(
+                    this.setVec(
+                        this.state.tmpVec1,
+                        safeX / this.state.scaleFactor,
+                        safeY / this.state.scaleFactor,
+                        safeZ / this.state.scaleFactor
+                    )
+                );
+                this.state.playerBody.setWorldTransform(t);
+                this.state.playerBody.setLinearVelocity(this.setVec(this.state.tmpVec2, 0, 0, 0));
+            }
+            this.log(`Spielerposition geladen: (${safeX}, ${safeY}, ${safeZ})`);
+        }
+        this.state.learningData = state.learningData || [];
+        this.state.knowledgeBase = state.knowledgeBase || [];
+        this.state.selfAwareness = state.selfAwareness || { components: [], weaknesses: [] };
+        this.state.creatureEmotions = state.creatureEmotions || [];
+        this.state.terrainSteepness = state.terrainSteepness || 1.0;
+        this.state.terrainBaseHeight = state.terrainBaseHeight || 0.0;
+        this.state.weather = state.weather || "sunny";
+        if (this.state.skybox) this.updateSkyboxWeather();
+        if (Array.isArray(state.abilities)) {
+            let restored = 0;
+            state.abilities.forEach((name) => {
+                if (this.state.abilities[name]) return;
+                if (this.restoreAbility(name)) restored++;
+            });
+            if (restored > 0) this.log(`Fähigkeiten wiederhergestellt: ${restored}`);
+        }
+        // Bei externer Quelle: in localStorage spiegeln, damit ein Reload
+        // den importierten Stand behält.
+        if (externalState) {
+            try {
+                localStorage.setItem("anazhRealmState", JSON.stringify(externalState));
+            } catch (e) {
+                this.log(`localStorage-Persistenz nach Import fehlgeschlagen: ${e.message}`, "WARNING");
+            }
+        }
+        this.log(externalState ? "Zustand aus Datei geladen" : "Zustand geladen");
+
+        if (!externalState) {
+            const savedVersions = localStorage.getItem("anazhRealmVersions");
+            if (savedVersions) {
+                this.state.versionHistory = JSON.parse(savedVersions);
+            }
+        }
+        return true;
+    }
+
+    openStateFilePicker() {
+        // Verwendet das versteckte <input type="file"> in index.html.
+        const input = document.getElementById("state-file-input");
+        if (!input) {
+            this.log("File-Input #state-file-input fehlt – index.html prüfen", "ERROR");
+            return;
+        }
+        input.value = ""; // erlaubt Re-Upload derselben Datei
+        input.click();
+    }
+
+    handleStateFile(file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            try {
+                const parsed = JSON.parse(reader.result);
+                if (typeof parsed !== "object" || parsed === null) {
+                    throw new Error("JSON-Wurzel muss ein Objekt sein");
                 }
-                this.log(`Spielerposition geladen: (${safeX}, ${safeY}, ${safeZ})`);
+                this.loadState(parsed);
+                const chatOutput = document.getElementById("chat-output");
+                if (chatOutput) {
+                    const line = document.createElement("div");
+                    line.textContent = `Datei ${file.name} (${file.size} B) erfolgreich importiert`;
+                    chatOutput.appendChild(line);
+                    chatOutput.scrollTop = chatOutput.scrollHeight;
+                }
+            } catch (e) {
+                this.log(`Import fehlgeschlagen (${file.name}): ${e.message}`, "ERROR");
+                const chatOutput = document.getElementById("chat-output");
+                if (chatOutput) {
+                    const line = document.createElement("div");
+                    line.textContent = `Import fehlgeschlagen: ${e.message}`;
+                    chatOutput.appendChild(line);
+                    chatOutput.scrollTop = chatOutput.scrollHeight;
+                }
             }
-            this.state.learningData = state.learningData || [];
-            this.state.knowledgeBase = state.knowledgeBase || [];
-            this.state.selfAwareness = state.selfAwareness || { components: [], weaknesses: [] };
-            this.state.creatureEmotions = state.creatureEmotions || [];
-            this.state.terrainSteepness = state.terrainSteepness || 1.0;
-            this.state.terrainBaseHeight = state.terrainBaseHeight || 0.0;
-            this.state.weather = state.weather || "sunny";
-            this.updateSkyboxWeather();
-            if (Array.isArray(state.abilities)) {
-                let restored = 0;
-                state.abilities.forEach((name) => {
-                    if (this.state.abilities[name]) return;
-                    if (this.restoreAbility(name)) restored++;
-                });
-                if (restored > 0) this.log(`Fähigkeiten wiederhergestellt: ${restored}`);
-            }
-            this.log("Zustand geladen");
-        }
-        const savedVersions = localStorage.getItem("anazhRealmVersions");
-        if (savedVersions) {
-            this.state.versionHistory = JSON.parse(savedVersions);
-        }
+        };
+        reader.onerror = () => {
+            this.log(`FileReader-Fehler beim Lesen von ${file.name}`, "ERROR");
+        };
+        reader.readAsText(file);
     }
 
     loadVersion(version) {
@@ -2986,6 +3074,15 @@ class AnazhRealm {
             }
         });
         this.log("Chat-Steuerung initialisiert", "INFO");
+
+        const fileInput = document.getElementById("state-file-input");
+        if (fileInput) {
+            fileInput.addEventListener("change", (event) => {
+                const file = event.target.files && event.target.files[0];
+                if (file) this.handleStateFile(file);
+            });
+            this.log("State-Import (Lade Datei) initialisiert", "INFO");
+        }
 
         this.core.startEternalLoop();
         this.log("Hauptschleife gestartet – Ultiversum pulsiert!", "INFO");
@@ -3653,4 +3750,6 @@ class AnazhRealm {
     }
 }
 const anazhRealm = new AnazhRealm();
+// Globale Referenz für DevTools-Debug und automatisierten Playtest.
+if (typeof window !== "undefined") window.anazhRealm = anazhRealm;
 anazhRealm.init();

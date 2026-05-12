@@ -21,6 +21,7 @@ export default [
                 console: "readonly",
                 localStorage: "readonly",
                 fetch: "readonly",
+                FileReader: "readonly",
                 // CDN-Libs
                 THREE: "readonly",
                 Ammo: "readonly",
