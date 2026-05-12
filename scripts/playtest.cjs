@@ -1644,6 +1644,76 @@ function startSaveServer() {
                     uiV2Results.fontsRegistered
                 );
             }
+
+            // ### UI V2 — Konsole (fusioniertes Chat + Log) ###
+            const consoleResults = await page
+                .evaluate(() => {
+                    const out = {};
+                    const panel = document.getElementById("console");
+                    out.consoleInDom = !!panel;
+                    out.chatOutputInside =
+                        panel && panel.querySelector("#chat-output") !== null;
+                    out.logInside = panel && panel.querySelector("#log") !== null;
+                    out.chatInputInside =
+                        panel && panel.querySelector("#chat-input") !== null;
+
+                    // Collapse-Toggle
+                    const toggle = document.getElementById("console-collapse");
+                    out.toggleInDom = !!toggle;
+                    out.initiallyOpen = panel && !panel.classList.contains("collapsed");
+
+                    if (toggle) toggle.click();
+                    out.afterFirstClickCollapsed =
+                        panel && panel.classList.contains("collapsed");
+                    out.toggleLabelChanged = toggle && toggle.textContent === "+";
+
+                    if (toggle) toggle.click();
+                    out.afterSecondClickOpen =
+                        panel && !panel.classList.contains("collapsed");
+
+                    // Persistenz: localStorage hat Wahl
+                    out.localStorageOpen =
+                        localStorage.getItem("anazhRealmConsole") === "open";
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (!consoleResults || consoleResults.error) {
+                check(
+                    "UI V2: Konsole-Snapshot erreichbar",
+                    false,
+                    consoleResults && consoleResults.error
+                        ? consoleResults.error
+                        : "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("UI V2: #console im DOM", consoleResults.consoleInDom);
+                check(
+                    "UI V2: #chat-output, #log, #chat-input leben in der Konsole",
+                    consoleResults.chatOutputInside &&
+                        consoleResults.logInside &&
+                        consoleResults.chatInputInside
+                );
+                check("UI V2: Collapse-Toggle vorhanden", consoleResults.toggleInDom);
+                check("UI V2: Konsole startet aufgeklappt", consoleResults.initiallyOpen);
+                check(
+                    "UI V2: Erster Klick klappt ein",
+                    consoleResults.afterFirstClickCollapsed
+                );
+                check(
+                    "UI V2: Toggle-Label wechselt zu '+'",
+                    consoleResults.toggleLabelChanged
+                );
+                check(
+                    "UI V2: Zweiter Klick klappt wieder auf",
+                    consoleResults.afterSecondClickOpen
+                );
+                check(
+                    "UI V2: Konsole-Status in localStorage persistiert",
+                    consoleResults.localStorageOpen
+                );
+            }
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

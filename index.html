@@ -191,64 +191,158 @@
             background-color: #000;
             color: #fff;
             font-family: 'Inter', system-ui, sans-serif;
+            /* Firefox: globaler Scrollbar-Stil (Brass auf Pergament-Dunkel). */
+            scrollbar-width: thin;
+            scrollbar-color: var(--brass-2) rgba(40, 25, 10, 0.18);
         }
+
+        /* Webkit-Scrollbars: schmale Brass-Spur statt heller System-Default.
+           Greift auf alle scrollbaren Container (Drawer, Konsole, Listen). */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(40, 25, 10, 0.18);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--brass-3);
+            border-radius: 4px;
+            border: 1px solid rgba(0, 0, 0, 0.3);
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--brass-2);
+        }
+        ::-webkit-scrollbar-corner { background: transparent; }
+        /* Pergament-Drawer haben einen helleren Track, damit der Brass-Thumb
+           sich vom Pergament-Boden absetzt. */
+        .drawer::-webkit-scrollbar-track { background: rgba(40, 25, 10, 0.12); }
+        .drawer { scrollbar-color: var(--brass-2) rgba(40, 25, 10, 0.12); }
         #world-canvas {
             position: absolute;
             top: 0;
             left: 0;
         }
-        #log {
+        /* Konsole — fusioniertes Chat + Log + Input, einklappbar.
+           Links unten, sitzt unter der Status-Bar; bottom: 16px. */
+        /* Alte FPS-Div bleibt versteckt — der Wert lebt jetzt in der Status-Bar.
+           updateFps() schreibt weiter in #fps.innerText, also nicht entfernen. */
+        #fps { display: none; }
+
+        #console {
             position: absolute;
+            top: 116px;
             bottom: 16px;
             left: 16px;
-            width: 400px;
-            height: 200px;
-            background: rgba(20, 12, 5, 0.78);
-            color: var(--brass-1);
-            overflow-y: auto;
-            padding: 12px;
-            font-size: 11px;
-            font-family: 'JetBrains Mono', monospace;
-            border: 1px solid var(--iron-1);
-            border-radius: 4px;
-            box-shadow: var(--shadow-deep);
-        }
-        #fps {
-            position: absolute;
-            top: 16px;
-            left: 16px;
-            color: var(--brass-1);
-            font-size: 13px;
-            font-family: 'JetBrains Mono', monospace;
-            background: rgba(20, 12, 5, 0.78);
-            padding: 6px 10px;
-            border: 1px solid var(--iron-1);
-            border-radius: 3px;
-            letter-spacing: 0.05em;
-        }
-        #chat {
-            position: absolute;
-            top: 58px;
-            left: 16px;
-            width: 400px;
-            background: rgba(20, 12, 5, 0.82);
+            width: 420px;
+            display: flex;
+            flex-direction: column;
+            background: rgba(20, 12, 5, 0.85);
             color: #f4e4b8;
-            padding: 12px;
-            border: 1px solid var(--iron-1);
-            border-radius: 4px;
+            border-radius: 6px;
+            z-index: 4;
             box-shadow: var(--shadow-deep);
+            overflow: hidden;
+        }
+        #console::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            pointer-events: none;
+            box-shadow:
+                inset 0 0 0 1px rgba(0, 0, 0, 0.55),
+                inset 0 0 0 4px var(--iron-1),
+                inset 0 0 0 5px rgba(0, 0, 0, 0.55),
+                inset 0 0 0 7px var(--brass-3),
+                inset 0 0 0 8px rgba(0, 0, 0, 0.4);
+        }
+        #console > * { position: relative; z-index: 1; }
+        #console-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 12px 6px 14px;
+            border-bottom: 1px solid var(--brass-3);
+            background: linear-gradient(180deg, rgba(60, 38, 16, 0.65), rgba(20, 12, 5, 0.4));
+        }
+        #console-header h3 {
+            margin: 0;
+            font-family: 'Cinzel', Georgia, serif;
+            font-size: 11px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--brass-1);
+            font-weight: 600;
+        }
+        #console-collapse {
+            background: transparent;
+            border: 1px solid var(--brass-3);
+            color: var(--brass-1);
+            font-size: 14px;
+            padding: 0 8px;
+            cursor: pointer;
+            border-radius: 2px;
+            line-height: 1.4;
+            font-family: serif;
+        }
+        #console-collapse:hover { color: #fbe9b8; border-color: var(--brass-1); }
+        #console-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 10px 12px 8px 12px;
+            min-height: 0;
+        }
+        #console.collapsed #console-body { display: none; }
+        #console.collapsed { bottom: auto; top: 116px; }
+        #console-chat-section,
+        #console-log-section {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        #console-chat-section { flex: 1; }
+        #console-log-section { flex: 1; }
+        .console-section-label {
+            font-family: 'IM Fell English', Georgia, serif;
+            font-style: italic;
+            color: var(--brass-2);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            margin-bottom: 4px;
         }
         #chat-output {
-            max-height: 110px;
+            flex: 1;
+            min-height: 80px;
             overflow-y: auto;
-            margin-bottom: 10px;
-            font-size: 12px;
+            font-size: 12.5px;
             color: #e8d8a8;
             font-family: 'IM Fell English', Georgia, serif;
+            line-height: 1.45;
+            padding-right: 4px;
+        }
+        #log {
+            flex: 1;
+            min-height: 80px;
+            overflow-y: auto;
+            font-size: 10.5px;
+            color: var(--brass-1);
+            font-family: 'JetBrains Mono', monospace;
+            padding-right: 4px;
+            line-height: 1.5;
+        }
+        #console-footer {
+            padding: 8px 12px 10px 12px;
+            border-top: 1px solid var(--brass-3);
+            background: linear-gradient(180deg, rgba(20, 12, 5, 0.4), rgba(60, 38, 16, 0.55));
         }
         #chat-input {
             width: 100%;
-            background: rgba(40, 24, 10, 0.6);
+            background: rgba(40, 24, 10, 0.65);
             color: #f4e4b8;
             border: 1px solid var(--brass-3);
             padding: 7px 10px;
@@ -256,6 +350,7 @@
             font-family: 'IM Fell English', Georgia, serif;
             font-style: italic;
             border-radius: 2px;
+            box-sizing: border-box;
         }
         #chat-input:focus {
             outline: none;
@@ -916,11 +1011,25 @@
         <p class="drawer-hint">Klick zum Ausführen. Befehle gehen durch denselben Pfad wie der Chat.</p>
         <div id="help-list"></div>
     </aside>
-    <div id="chat">
-        <div id="chat-output"></div>
-        <input type="text" id="chat-input" placeholder="Befehl eingeben (z. B. 'Ändere Wetter zu Regen')">
-    </div>
-    <div id="log"></div>
+    <aside id="console" aria-label="Konsole">
+        <header id="console-header">
+            <h3>Konsole</h3>
+            <button id="console-collapse" type="button" aria-pressed="false" aria-label="Konsole einklappen">−</button>
+        </header>
+        <div id="console-body">
+            <div id="console-chat-section">
+                <div class="console-section-label">Chat</div>
+                <div id="chat-output"></div>
+            </div>
+            <div id="console-log-section">
+                <div class="console-section-label">Logbuch</div>
+                <div id="log"></div>
+            </div>
+        </div>
+        <div id="console-footer">
+            <input type="text" id="chat-input" placeholder="Befehl eingeben (z. B. 'Ändere Wetter zu Regen')">
+        </div>
+    </aside>
     <!-- Versteckter File-Picker für 'Lade Datei'-Chat-Befehl. -->
     <input type="file" id="state-file-input" accept="application/json,.json">
     <!-- Vendored libs (vendor/README.md erklärt Versionen + Update-Befehl) -->

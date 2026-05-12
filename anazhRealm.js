@@ -1610,6 +1610,38 @@ class AnazhRealm {
         }
     }
 
+    // Konsole-Panel: einklappbar via #console-collapse. Im eingeklappten
+    // Zustand bleiben Header + Input sichtbar; Chat-Output + Log verschwinden.
+    // localStorage merkt sich die Wahl (anazhRealmConsole = "collapsed"/"open").
+    initConsoleDOM() {
+        const panel = document.getElementById("console");
+        const toggle = document.getElementById("console-collapse");
+        if (!panel || !toggle) return;
+        const setCollapsed = (collapsed) => {
+            panel.classList.toggle("collapsed", collapsed);
+            toggle.setAttribute("aria-pressed", collapsed ? "true" : "false");
+            toggle.textContent = collapsed ? "+" : "−";
+            toggle.setAttribute("aria-label", collapsed ? "Konsole entfalten" : "Konsole einklappen");
+        };
+        const stored = (() => {
+            try {
+                return localStorage.getItem("anazhRealmConsole");
+            } catch {
+                return null;
+            }
+        })();
+        setCollapsed(stored === "collapsed");
+        toggle.addEventListener("click", () => {
+            const next = !panel.classList.contains("collapsed");
+            setCollapsed(next);
+            try {
+                localStorage.setItem("anazhRealmConsole", next ? "collapsed" : "open");
+            } catch {
+                /* Persistenz best-effort. */
+            }
+        });
+    }
+
     // Tab-System: ein Tab je Drawer. activeTab-Klasse auf dem Knopf,
     // hidden-Attribut entscheidet welcher Drawer sichtbar slidet.
     // closeAllDrawers schließt alle (für Help-Klick + ESC).
@@ -4631,6 +4663,7 @@ class AnazhRealm {
         this.symphonyInitDOM();
         this.initStatusPanel();
         this.initTopbar();
+        this.initConsoleDOM();
         this.ensureWorldMeta();
         try {
             await this.core.initPhysics();
