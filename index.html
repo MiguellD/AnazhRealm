@@ -74,10 +74,11 @@
         <input type="text" id="chat-input" placeholder="Befehl eingeben (z. B. 'Ändere Wetter zu Regen')">
     </div>
     <div id="log"></div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/ammojs3@0.0.11/dist/ammo.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.4.0/simplex-noise.min.js"></script>
+    <!-- Vendored libs (vendor/README.md erklärt Versionen + Update-Befehl) -->
+    <script src="vendor/three.min.js"></script>
+    <script src="vendor/ammo.js"></script>
+    <script src="vendor/tf.min.js"></script>
+    <script src="vendor/simplex-noise.js"></script>
     <script>
         window.addEventListener('load', () => {
             const script = document.createElement('script');

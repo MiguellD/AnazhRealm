@@ -53,6 +53,8 @@ Status-Legende: `[ ]` offen · `[x]` erledigt · `[~]` in Arbeit
 - `processChatCommand` lowercased `command` *nur für `parts`*, das Original-`command` behält Casing.
 - Save-Endpoint ist nur an `127.0.0.1` gebunden, aber jede lokale Seite kann via CORS-`*` darauf zugreifen.
 - Branch-Konvention: alle Entwicklung auf `claude/check-github-files-1MqpQ`. Push mit `git push -u origin <branch>` und exponential backoff bei Fehlern.
+- Die vier Browser-Libs (Three/Ammo/TF/SimplexNoise) liegen in `vendor/`. CDN-Pfade werden nicht mehr benötigt; `vendor/README.md` hat den Update-Befehl.
+- `npm run playtest` startet save-server + Headless-Chromium, sammelt 25 s lang Logs, druckt FPS-Statistik + Top-Log-Muster + Error-Beispiele. Setze `PLAYTEST_SECONDS=N` für längere Läufe.
 
 ## Konventionen
 

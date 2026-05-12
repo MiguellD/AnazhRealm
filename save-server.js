@@ -15,6 +15,8 @@ const MIME_TYPES = {
     ".png": "image/png",
     ".jpg": "image/jpeg",
     ".jpeg": "image/jpeg",
+    ".wasm": "application/wasm",
+    ".md": "text/markdown; charset=utf-8",
 };
 
 function sendJson(res, statusCode, data) {

@@ -9,10 +9,12 @@
     "lint:fix": "eslint --fix anazhRealm.js save-server.js",
     "format": "prettier --write anazhRealm.js save-server.js",
     "format:check": "prettier --check anazhRealm.js save-server.js",
-    "check": "node --check anazhRealm.js && node --check save-server.js"
+    "check": "node --check anazhRealm.js && node --check save-server.js",
+    "playtest": "node scripts/playtest.cjs"
   },
   "devDependencies": {
     "eslint": "^9.18.0",
-    "prettier": "^3.4.2"
+    "prettier": "^3.4.2",
+    "puppeteer": "^24.0.0"
   }
 }
