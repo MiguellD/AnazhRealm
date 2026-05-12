@@ -2544,6 +2544,192 @@ function startSaveServer() {
                 r.state.architectures = [];
             });
 
+            // ### Ring 6.4 — Bauplan-Datenschicht ###
+            // state.blueprints enthält Built-in dorf/tempel/wasserfall als
+            // Daten. _buildFromBlueprint rendert sie. 8 Primitive werden
+            // erkannt. User-Baupläne sind hinzufügbar + persistierbar.
+            const ring64Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // Built-ins vorhanden
+                    out.hasVillage = !!r.state.blueprints && !!r.state.blueprints.village;
+                    out.hasTemple = !!r.state.blueprints && !!r.state.blueprints.temple;
+                    out.hasWaterfall = !!r.state.blueprints && !!r.state.blueprints.waterfall;
+                    out.villageBuiltIn =
+                        r.state.blueprints.village && r.state.blueprints.village.builtIn === true;
+                    out.villagePartsArray = Array.isArray(r.state.blueprints.village.parts);
+                    out.villageHasParts =
+                        r.state.blueprints.village.parts.length >= 10; // 6 huts × 2 + plaza
+                    out.templeHasParts = r.state.blueprints.temple.parts.length >= 9;
+                    out.waterfallHasParts = r.state.blueprints.waterfall.parts.length === 3;
+
+                    // 8 Primitive renderbar — wir bauen einen Test-Bauplan
+                    // mit allen 8 Shapes und prüfen, dass jede einen Mesh
+                    // produziert.
+                    const allShapes = [
+                        "box",
+                        "sphere",
+                        "cylinder",
+                        "cone",
+                        "pyramid",
+                        "octahedron",
+                        "plane",
+                        "torus",
+                    ];
+                    const testBp = {
+                        name: "_test_all_shapes",
+                        parts: allShapes.map((s, i) => ({
+                            shape: s,
+                            color: 0xffffff,
+                            position: { x: i, y: 0, z: 0 },
+                            size: { x: 1, y: 1, z: 1 },
+                        })),
+                    };
+                    const testGroup = r._buildFromBlueprint(testBp);
+                    out.allShapesRender =
+                        testGroup && testGroup.children.length === 8 &&
+                        testGroup.children.every((c) => !!c.geometry);
+
+                    // Erstellung via JSON: User-Bauplan registrieren + spawnen
+                    r.state.blueprints["test_hut"] = {
+                        name: "test_hut",
+                        label: "Test-Hütte",
+                        builtIn: false,
+                        parts: [
+                            {
+                                shape: "box",
+                                color: 0xaa5500,
+                                position: { x: 0, y: 1, z: 0 },
+                                size: { x: 2, y: 2, z: 2 },
+                            },
+                            {
+                                shape: "pyramid",
+                                color: 0x882211,
+                                position: { x: 0, y: 2.5, z: 0 },
+                                size: { x: 2.5, y: 1.5, z: 2.5 },
+                            },
+                        ],
+                    };
+                    for (const a of r.state.architectures.slice()) {
+                        if (a.mesh) r._cullArchitectureMesh(a);
+                    }
+                    r.state.architectures = [];
+                    const userEntry = r.spawnArchitecture(
+                        "test_hut",
+                        { x: 0, y: 5, z: 5 },
+                        { seed: 1 }
+                    );
+                    out.userBlueprintBuilds =
+                        !!userEntry && !!userEntry.mesh && userEntry.mesh.children.length === 2;
+
+                    // DSL-Op spawn_blueprint funktioniert
+                    for (const a of r.state.architectures.slice()) {
+                        if (a.mesh) r._cullArchitectureMesh(a);
+                    }
+                    r.state.architectures = [];
+                    const dslRes = r.dslRun(["spawn_blueprint", "test_hut", ["at_origin"]]);
+                    out.dslSpawnBlueprintOk =
+                        dslRes.ok === true &&
+                        r.state.architectures.length === 1 &&
+                        r.state.architectures[0].type === "test_hut" &&
+                        dslRes.log.some((e) => e.event === "spawned_blueprint");
+
+                    // Unbekannter Bauplan-Name wird abgelehnt
+                    const dslBad = r.dslRun(["spawn_blueprint", "phantom_nonexistent", ["at_origin"]]);
+                    out.unknownBlueprintRejected = dslBad.log.some((e) => e.event === "unknown_blueprint");
+
+                    // Save-Roundtrip: User-Bauplan überlebt
+                    r.saveState();
+                    const raw = localStorage.getItem("anazhRealmState");
+                    let parsed = null;
+                    try {
+                        parsed = JSON.parse(raw);
+                    } catch (e) {
+                        void e;
+                    }
+                    out.saveContainsUserBlueprint =
+                        !!parsed &&
+                        Array.isArray(parsed.blueprints) &&
+                        parsed.blueprints.some((bp) => bp.name === "test_hut");
+                    out.saveOmitsBuiltIn =
+                        !!parsed &&
+                        Array.isArray(parsed.blueprints) &&
+                        !parsed.blueprints.some((bp) => bp.name === "village");
+
+                    // loadState mit eigenem Bauplan reaktiviert ihn
+                    delete r.state.blueprints["test_hut"];
+                    r.loadState({
+                        blueprints: [
+                            {
+                                name: "test_hut_2",
+                                label: "Reload-Hütte",
+                                parts: [
+                                    {
+                                        shape: "sphere",
+                                        color: 0x33aa55,
+                                        position: { x: 0, y: 1, z: 0 },
+                                        size: { x: 2, y: 2, z: 2 },
+                                    },
+                                ],
+                            },
+                        ],
+                    });
+                    out.loadRestoresUserBlueprint = !!r.state.blueprints["test_hut_2"];
+
+                    // Cleanup
+                    for (const a of r.state.architectures.slice()) {
+                        if (a.mesh) r._cullArchitectureMesh(a);
+                    }
+                    r.state.architectures = [];
+                    delete r.state.blueprints["test_hut"];
+                    delete r.state.blueprints["test_hut_2"];
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (!ring64Results || ring64Results.error) {
+                check(
+                    "Ring 6.4: Bauplan-Snapshot erreichbar",
+                    false,
+                    ring64Results && ring64Results.error
+                        ? ring64Results.error
+                        : "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Ring 6.4: Built-in Dorf-Bauplan vorhanden", ring64Results.hasVillage);
+                check("Ring 6.4: Built-in Tempel-Bauplan vorhanden", ring64Results.hasTemple);
+                check("Ring 6.4: Built-in Wasserfall-Bauplan vorhanden", ring64Results.hasWaterfall);
+                check("Ring 6.4: Dorf ist als builtIn markiert", ring64Results.villageBuiltIn);
+                check("Ring 6.4: parts ist Array", ring64Results.villagePartsArray);
+                check("Ring 6.4: Dorf hat ≥10 Parts (6 Hütten + Plaza)", ring64Results.villageHasParts);
+                check("Ring 6.4: Tempel hat ≥9 Parts (6 Pfeiler + Dach + Altar + Spitze)", ring64Results.templeHasParts);
+                check("Ring 6.4: Wasserfall hat 3 Parts", ring64Results.waterfallHasParts);
+                check(
+                    "Ring 6.4: Alle 8 Primitive (box/sphere/cylinder/cone/pyramid/octahedron/plane/torus) renderbar",
+                    ring64Results.allShapesRender
+                );
+                check("Ring 6.4: User-Bauplan als Daten spawnt korrekt Mesh", ring64Results.userBlueprintBuilds);
+                check(
+                    "Ring 6.4: DSL-Op spawn_blueprint(name, pos) funktioniert",
+                    ring64Results.dslSpawnBlueprintOk
+                );
+                check(
+                    "Ring 6.4: Unbekannter Bauplan-Name wird abgelehnt",
+                    ring64Results.unknownBlueprintRejected
+                );
+                check("Ring 6.4: saveState persistiert eigene Baupläne", ring64Results.saveContainsUserBlueprint);
+                check(
+                    "Ring 6.4: Save lässt Built-in-Baupläne aus (kommen aus _defaultBlueprints)",
+                    ring64Results.saveOmitsBuiltIn
+                );
+                check(
+                    "Ring 6.4: loadState rekonstruiert eigene Baupläne",
+                    ring64Results.loadRestoresUserBlueprint
+                );
+            }
+
             // ### Ring 6 V2 — Distance-Culling, Fraktal, Counter, Bau-Cursor ###
             const ring6v2Results = await page
                 .evaluate(() => {

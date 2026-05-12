@@ -196,7 +196,7 @@ class AnazhRealm {
                 creator: "local",
                 visibility: "private",
                 parentWorlds: [],
-                schemaVersion: "7.70-architectures-v2",
+                schemaVersion: "7.71-blueprints-v1",
             },
             // Ring 3 — Player-Emotionen. Sechs Achsen, jeweils 0..1.
             // Chat-Inputs füllen sie regelbasiert; im Game-Loop verflüchtigen
@@ -254,6 +254,11 @@ class AnazhRealm {
             architectureCullingRadius: 150,
             architectureCullingTickHz: 1.0,
             architectureCullingLastTick: -Infinity,
+            // Ring 6.4 — Bauplan-Datenschicht. Map<name, blueprint>.
+            // Built-ins werden im Konstruktor-Ende über _defaultBlueprints
+            // gefüllt; eigene Baupläne (Editor 6.6) kommen dazu und werden
+            // persistiert.
+            blueprints: {},
             // Ring 6 V2 — Bau-Modus. Wenn aktiv, schwebt ein halbtransparenter
             // Phantom-Mesh 5 m vor dem Spieler. Tasten 1/2/3 wählen Form,
             // F baut, ESC verlässt. Sichtbar durch overlay-Hinweis.
@@ -269,6 +274,10 @@ class AnazhRealm {
             startEternalLoop: this.startEternalLoop.bind(this),
         };
         this.nexus = null;
+        // Ring 6.4 — Built-in-Baupläne als Daten registrieren. Wenn ein
+        // Save später User-Baupläne hinzufügt (Editor 6.6), werden sie auf
+        // dieses Default-Set draufgemerged.
+        this.state.blueprints = this._defaultBlueprints();
     }
 
     // ### Logging ###
@@ -665,6 +674,29 @@ class AnazhRealm {
                 ctx.budget.spawnsLeft--;
                 const entry = this.spawnArchitecture("waterfall", pos);
                 ctx.log.push({ event: "spawned_waterfall", id: entry ? entry.id : null, pos });
+            },
+            // Ring 6.4 — generischer Bauplan-Spawn. Funktioniert mit jedem
+            // Bauplan-Namen (built-in oder eigen): `["spawn_blueprint",
+            // "mein-tempelplatz", ["at_player"]]`. Wird vom Hotbar (6.5)
+            // und Werkstatt (6.6) als universeller Pfad benutzt.
+            spawn_blueprint: ([name, positionNode], ctx) => {
+                if (typeof name !== "string") {
+                    ctx.log.push({ event: "invalid_blueprint_name", name });
+                    return;
+                }
+                const bp = this.state.blueprints && this.state.blueprints[name];
+                if (!bp) {
+                    ctx.log.push({ event: "unknown_blueprint", name });
+                    return;
+                }
+                const pos = this.dslEvalPos(positionNode, ctx);
+                if (ctx.budget.spawnsLeft <= 0) {
+                    ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
+                    return;
+                }
+                ctx.budget.spawnsLeft--;
+                const entry = this.spawnArchitecture(name, pos);
+                ctx.log.push({ event: "spawned_blueprint", name, id: entry ? entry.id : null, pos });
             },
             // Ring 6 V2 — Fraktal-Bau. Eine Wurzel-Struktur, hexagonal
             // umringt von 6 Sub-Strukturen mit `ratio`-Skalierung; jede
@@ -4541,6 +4573,16 @@ class AnazhRealm {
                 seed: a.seed,
                 scale: Number.isFinite(a.scale) ? a.scale : 1,
             })),
+            // Ring 6.4 — eigene Baupläne (nicht built-in) persistieren. Die
+            // Built-ins werden beim Init aus _defaultBlueprints() erzeugt;
+            // wir speichern nur, was der Spieler dazugefügt hat.
+            blueprints: Object.values(this.state.blueprints || {})
+                .filter((bp) => bp && !bp.builtIn)
+                .map((bp) => ({
+                    name: bp.name,
+                    label: bp.label || bp.name,
+                    parts: Array.isArray(bp.parts) ? JSON.parse(JSON.stringify(bp.parts)) : [],
+                })),
         };
     }
 
@@ -4735,11 +4777,28 @@ class AnazhRealm {
         // Ring 6: Bau-Werke wiederherstellen. Bestehende Strukturen werden
         // tief disposed, dann jede aus {type, position, seed} neu gebaut.
         // Idempotent — mehrfaches loadState führt nicht zu Mesh-Verdopplung.
+        // Ring 6.4 — eigene Baupläne ZUERST registrieren, danach die
+        // Architekturen rekonstruieren. Sonst wären Strukturen, die einen
+        // User-Bauplan referenzieren, nicht renderbar (Builder fehlt).
+        if (Array.isArray(state.blueprints)) {
+            for (const bp of state.blueprints) {
+                if (!bp || typeof bp.name !== "string" || !Array.isArray(bp.parts)) continue;
+                // Built-in nicht überschreiben — sicherheitshalber prefixen
+                // oder skip wenn Name kollidiert.
+                if (this.state.blueprints[bp.name] && this.state.blueprints[bp.name].builtIn) continue;
+                this.state.blueprints[bp.name] = {
+                    name: bp.name,
+                    label: bp.label || bp.name,
+                    builtIn: false,
+                    parts: bp.parts,
+                };
+            }
+            this.log(`Baupläne geladen: ${state.blueprints.length} eigene`);
+        }
         if (Array.isArray(state.architectures) && this.state.scene) {
             for (const old of this.state.architectures) {
                 if (old.mesh) {
-                    this.state.scene.remove(old.mesh);
-                    this._disposeSoulGroup(old.mesh);
+                    this._cullArchitectureMesh(old);
                 }
             }
             this.state.architectures = [];
@@ -5284,151 +5343,268 @@ class AnazhRealm {
         };
     }
 
-    _buildVillageGroup(centerY, seed) {
-        const rng = this._seedRng(seed);
-        const group = new THREE.Group();
-        const woodMat = new THREE.MeshBasicMaterial({ color: 0x6e3a14 });
-        const roofMat = new THREE.MeshBasicMaterial({ color: 0x8b2a1e });
-        const stoneMat = new THREE.MeshBasicMaterial({ color: 0x707070 });
-        // Anzahl Hütten: 5–8
-        const hutCount = 5 + Math.floor(rng() * 4);
-        for (let i = 0; i < hutCount; i++) {
-            const hut = new THREE.Group();
-            const angle = (i / hutCount) * Math.PI * 2 + rng() * 0.5;
-            const radius = 6 + rng() * 4;
-            hut.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
-            hut.rotation.y = -angle + Math.PI;
-            // Hütten-Körper
-            const body = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.6, 2.4), woodMat);
-            body.position.y = 0.8;
-            body.castShadow = true;
-            body.receiveShadow = true;
-            hut.add(body);
-            // Kegel-Dach
-            const roof = new THREE.Mesh(new THREE.ConeGeometry(1.7, 1.2, 4), roofMat);
-            roof.position.y = 2.2;
-            roof.rotation.y = Math.PI / 4;
-            roof.castShadow = true;
-            hut.add(roof);
-            group.add(hut);
+    // ### Ring 6.4 — Bauplan-Datenschicht ###
+    //
+    // Vorher: drei hartcodierte `_buildVillageGroup/_buildTempleGroup/
+    // _buildWaterfallGroup`-Funktionen mit prozeduraler Logik. Jetzt ist
+    // ein Bauplan eine flache JSON-Liste von Primitiv-Parts (box, sphere,
+    // cylinder, cone, pyramid, octahedron, plane, torus), die `_buildFrom-
+    // Blueprint` zu einem THREE.Group rendert. Vorteile:
+    //   - User kann eigene Baupläne im Editor (6.6) hinzufügen.
+    //   - Save persistiert Strukturen als {blueprint-Name, position, seed}
+    //     plus eigene Baupläne als Daten.
+    //   - Fraktale Verschachtelung (Bauplan referenziert anderen Bauplan)
+    //     wird natürlich aus dem Datenschema heraus möglich (V3).
+    //
+    // Trade-off: Built-in Dörfer/Tempel sind jetzt alle identisch — die
+    // seed-basierte Variation (5-8 Hütten zufällig platziert) ist weg.
+    // Wer Varianten will, speichert sie als verschiedene Baupläne. Der
+    // Gewinn an Editierbarkeit + Saveability schlägt den Verlust an
+    // Prozeduralität bei weitem.
+    //
+    // Part-Format:
+    // ```
+    // {
+    //     shape: "box" | "sphere" | "cylinder" | "cone" | "pyramid" |
+    //            "octahedron" | "plane" | "torus",
+    //     color: 0xRRGGBB,
+    //     position: { x, y, z },
+    //     rotation: { x, y, z }, // optional, in Radiant
+    //     size: { x, y, z },     // Größe je Primitiv-spezifisch interpretiert
+    //     opacity: 0..1,         // optional, < 1 macht transparent
+    //     animate: "water_wave", // optional, Marker für tickArchitectures
+    // }
+    // ```
+    //
+    // Bauplan-Format:
+    // ```
+    // {
+    //     name: "village",
+    //     label: "Dorf",
+    //     builtIn: true,         // false bei User-Baupläne
+    //     parts: [...]
+    // }
+    // ```
+
+    _makePartGeometry(part) {
+        const sx = (part.size && part.size.x) || 1;
+        const sy = (part.size && part.size.y) || sx;
+        const sz = (part.size && part.size.z) || sx;
+        const segments = part.segments || 12;
+        switch (part.shape) {
+            case "sphere":
+                return new THREE.SphereGeometry(sx / 2, segments, Math.max(4, Math.floor(segments * 0.6)));
+            case "cylinder":
+                return new THREE.CylinderGeometry(sx / 2, sz / 2, sy, segments);
+            case "cone":
+                return new THREE.ConeGeometry(sx / 2, sy, segments);
+            case "pyramid":
+                // Vier-seitige Pyramide = Kegel mit 4 Segmenten
+                return new THREE.ConeGeometry(sx / 2, sy, 4);
+            case "octahedron":
+                return new THREE.OctahedronGeometry(sx / 2, 0);
+            case "plane":
+                // Plane: optional segmentiert für Vertex-Animation. Default
+                // 1×1, für animate="water_wave" lieber 6×18.
+                if (part.animate === "water_wave") {
+                    return new THREE.PlaneGeometry(sx, sy, 6, 18);
+                }
+                return new THREE.PlaneGeometry(sx, sy);
+            case "torus":
+                return new THREE.TorusGeometry(sx / 2, Math.max(0.05, sx / 6), 8, segments);
+            case "box":
+            default:
+                return new THREE.BoxGeometry(sx, sy, sz);
         }
-        // Zentraler Lagerplatz: flacher Stein-Zylinder
-        const plaza = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.2, 0.15, 12), stoneMat);
-        plaza.position.y = 0.05;
-        plaza.receiveShadow = true;
-        group.add(plaza);
-        group.userData.kind = "village";
-        group.userData.materials = [woodMat, roofMat, stoneMat];
-        // centerY ist die Boden-Höhe an dieser Welt-Position; die Group
-        // wird so platziert, dass die Hütten-Basen auf Boden-Höhe sitzen.
-        group.position.y = centerY;
+    }
+
+    // Einen Bauplan in einen THREE.Group rendern. Materialien werden pro
+    // Part erzeugt (mehrere Parts mit gleicher Farbe würden sich Material
+    // teilen können — V1 hält's einfach). Wasser-Animation kommt automatisch,
+    // wenn ein Part `animate: "water_wave"` trägt.
+    _buildFromBlueprint(blueprint) {
+        const group = new THREE.Group();
+        if (!blueprint || !Array.isArray(blueprint.parts)) {
+            group.userData.kind = blueprint ? blueprint.name : "empty";
+            return group;
+        }
+        const materials = [];
+        const waveTargets = [];
+        for (const part of blueprint.parts) {
+            const geom = this._makePartGeometry(part);
+            const matOpts = { color: typeof part.color === "number" ? part.color : 0xffffff };
+            if (Number.isFinite(part.opacity) && part.opacity < 1) {
+                matOpts.transparent = true;
+                matOpts.opacity = part.opacity;
+            }
+            const mat = new THREE.MeshBasicMaterial(matOpts);
+            materials.push(mat);
+            const mesh = new THREE.Mesh(geom, mat);
+            const pos = part.position || { x: 0, y: 0, z: 0 };
+            mesh.position.set(pos.x || 0, pos.y || 0, pos.z || 0);
+            if (part.rotation) {
+                mesh.rotation.set(part.rotation.x || 0, part.rotation.y || 0, part.rotation.z || 0);
+            }
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            group.add(mesh);
+            if (part.animate === "water_wave") waveTargets.push(mesh);
+        }
+        group.userData.kind = blueprint.name;
+        group.userData.materials = materials;
+        // Wasser-Animations-Hook: alle Wasser-Planes Sinus-wellen lassen.
+        // baseY je Mesh cachen damit die Welle relativ zur Ausgangsposition
+        // schwingt statt absolut zur 0.
+        if (waveTargets.length > 0) {
+            const captured = waveTargets.map((mesh) => {
+                const positions = mesh.geometry.attributes.position;
+                const baseY = new Float32Array(positions.count);
+                for (let i = 0; i < positions.count; i++) baseY[i] = positions.getY(i);
+                return { mesh, positions, baseY };
+            });
+            group.userData.animate = (t) => {
+                for (const cap of captured) {
+                    for (let i = 0; i < cap.positions.count; i++) {
+                        const y = cap.baseY[i];
+                        const wave = Math.sin(t * 4.5 + y * 1.5) * 0.12;
+                        cap.positions.setZ(i, wave);
+                    }
+                    cap.positions.needsUpdate = true;
+                }
+            };
+        }
         return group;
     }
 
-    _buildTempleGroup(centerY, seed) {
-        const rng = this._seedRng(seed);
-        const group = new THREE.Group();
-        const stoneMat = new THREE.MeshBasicMaterial({ color: 0xc8c0a8 });
-        const altarMat = new THREE.MeshBasicMaterial({ color: 0x6a4a8a });
-        // Sechs Pfeiler in einem Hexagon
+    // Default-Baupläne als Daten. Drei built-ins, die das ersetzen, was
+    // vorher als JS-Funktionen lebte. Wer Variation will, klont diese und
+    // ändert Parts.
+    _defaultBlueprints() {
+        // Hilfsfunktionen für die Built-in-Generierung. Bauen einen Bauplan
+        // imperativ und liefern flache Part-Listen zurück. Da das nur EINMAL
+        // beim Initialisieren läuft, kostet das nichts.
+        const villageParts = [];
+        const hutCount = 6;
+        for (let i = 0; i < hutCount; i++) {
+            const angle = (i / hutCount) * Math.PI * 2;
+            const radius = 7.5;
+            const hx = Math.cos(angle) * radius;
+            const hz = Math.sin(angle) * radius;
+            // Körper
+            villageParts.push({
+                shape: "box",
+                color: 0x6e3a14,
+                position: { x: hx, y: 0.8, z: hz },
+                rotation: { x: 0, y: -angle + Math.PI, z: 0 },
+                size: { x: 2.0, y: 1.6, z: 2.4 },
+            });
+            // Dach
+            villageParts.push({
+                shape: "pyramid",
+                color: 0x8b2a1e,
+                position: { x: hx, y: 2.2, z: hz },
+                rotation: { x: 0, y: -angle + Math.PI + Math.PI / 4, z: 0 },
+                size: { x: 3.4, y: 1.2, z: 3.4 },
+            });
+        }
+        // Lagerplatz
+        villageParts.push({
+            shape: "cylinder",
+            color: 0x707070,
+            position: { x: 0, y: 0.05, z: 0 },
+            size: { x: 4.4, y: 0.15, z: 4.4 },
+            segments: 12,
+        });
+
+        const templeParts = [];
         const pillarCount = 6;
-        const radius = 3.2;
+        const pillarRadius = 3.2;
         const pillarHeight = 4.0;
         for (let i = 0; i < pillarCount; i++) {
             const angle = (i / pillarCount) * Math.PI * 2;
-            const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, pillarHeight, 8), stoneMat);
-            pillar.position.set(Math.cos(angle) * radius, pillarHeight / 2, Math.sin(angle) * radius);
-            pillar.castShadow = true;
-            pillar.receiveShadow = true;
-            group.add(pillar);
+            templeParts.push({
+                shape: "cylinder",
+                color: 0xc8c0a8,
+                position: {
+                    x: Math.cos(angle) * pillarRadius,
+                    y: pillarHeight / 2,
+                    z: Math.sin(angle) * pillarRadius,
+                },
+                size: { x: 0.6, y: pillarHeight, z: 0.7 },
+                segments: 8,
+            });
         }
-        // Flaches Dach
-        const roof = new THREE.Mesh(new THREE.CylinderGeometry(radius + 0.6, radius + 0.6, 0.4, 8), stoneMat);
-        roof.position.y = pillarHeight + 0.2;
-        roof.castShadow = true;
-        group.add(roof);
-        // Altar in der Mitte
-        const altar = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.9, 1.2), altarMat);
-        altar.position.y = 0.45;
-        altar.castShadow = true;
-        altar.receiveShadow = true;
-        group.add(altar);
-        // Kleines Detail oben drauf (kristalline Spitze) — Farbe variiert
-        // pro Seed, sodass nicht alle Tempel identisch aussehen.
-        const tipHue = rng();
-        const tipMat = new THREE.MeshBasicMaterial({
-            color: new THREE.Color().setHSL(tipHue, 0.6, 0.55).getHex(),
+        // Dach
+        templeParts.push({
+            shape: "cylinder",
+            color: 0xc8c0a8,
+            position: { x: 0, y: pillarHeight + 0.2, z: 0 },
+            size: { x: (pillarRadius + 0.6) * 2, y: 0.4, z: (pillarRadius + 0.6) * 2 },
+            segments: 8,
         });
-        const tip = new THREE.Mesh(new THREE.OctahedronGeometry(0.45, 0), tipMat);
-        tip.position.y = 1.4;
-        tip.castShadow = true;
-        altar.add(tip);
-        group.userData.kind = "temple";
-        group.userData.materials = [stoneMat, altarMat, tipMat];
-        group.position.y = centerY;
-        return group;
-    }
+        // Altar
+        templeParts.push({
+            shape: "box",
+            color: 0x6a4a8a,
+            position: { x: 0, y: 0.45, z: 0 },
+            size: { x: 1.2, y: 0.9, z: 1.2 },
+        });
+        // Kristall-Spitze
+        templeParts.push({
+            shape: "octahedron",
+            color: 0xd9a3ff,
+            position: { x: 0, y: 1.4, z: 0 },
+            size: { x: 0.9, y: 0.9, z: 0.9 },
+        });
 
-    _buildWaterfallGroup(centerY, seed) {
-        const rng = this._seedRng(seed);
-        const group = new THREE.Group();
-        const rockMat = new THREE.MeshBasicMaterial({ color: 0x4a4a55 });
-        const waterMat = new THREE.MeshBasicMaterial({
-            color: 0x4ea0d4,
-            transparent: true,
-            opacity: 0.75,
-        });
-        const poolMat = new THREE.MeshBasicMaterial({
-            color: 0x2a6a8a,
-            transparent: true,
-            opacity: 0.7,
-        });
-        // Felsklippe hinten (Hintergrund für die Wasser-Plane)
-        const cliff = new THREE.Mesh(new THREE.BoxGeometry(4.0, 8.0, 1.0), rockMat);
-        cliff.position.set(0, 4.0, -0.6);
-        cliff.castShadow = true;
-        cliff.receiveShadow = true;
-        group.add(cliff);
-        // Wasser-Plane mit segmentierter Geometrie für Vertex-Animation
-        const waterGeom = new THREE.PlaneGeometry(2.6, 7.5, 6, 18);
-        const water = new THREE.Mesh(waterGeom, waterMat);
-        water.position.set(0, 4.0, 0.05);
-        group.add(water);
-        // Becken am Fuß (kleiner Zylinder)
-        const pool = new THREE.Mesh(new THREE.CylinderGeometry(2.5, 2.5, 0.4, 16), poolMat);
-        pool.position.y = 0.2;
-        group.add(pool);
-        // Animations-Hook: Wasser-Vertices wandern pro Frame leicht in Y,
-        // sodass der Eindruck einer fließenden Welle entsteht. Wir greifen
-        // nur die mittlere Spalte der Geometrie an (kleiner CPU-Aufwand).
-        const positions = waterGeom.attributes.position;
-        const baseY = new Float32Array(positions.count);
-        for (let i = 0; i < positions.count; i++) baseY[i] = positions.getY(i);
-        const phaseOffset = rng() * Math.PI * 2;
-        group.userData.animate = (t) => {
-            for (let i = 0; i < positions.count; i++) {
-                const x = positions.getX(i);
-                const y = baseY[i];
-                // Sinus-Welle entlang Y, leichte Verzerrung in Z für
-                // räumliche Tiefe.
-                const wave = Math.sin(t * 4.5 + y * 1.5 + phaseOffset) * 0.12;
-                positions.setZ(i, wave);
-                void x;
-            }
-            positions.needsUpdate = true;
+        const waterfallParts = [
+            // Klippe hinten
+            {
+                shape: "box",
+                color: 0x4a4a55,
+                position: { x: 0, y: 4.0, z: -0.6 },
+                size: { x: 4.0, y: 8.0, z: 1.0 },
+            },
+            // Wasser-Plane (segmentiert + animiert)
+            {
+                shape: "plane",
+                color: 0x4ea0d4,
+                position: { x: 0, y: 4.0, z: 0.05 },
+                size: { x: 2.6, y: 7.5, z: 1 },
+                opacity: 0.75,
+                animate: "water_wave",
+            },
+            // Becken am Fuß
+            {
+                shape: "cylinder",
+                color: 0x2a6a8a,
+                position: { x: 0, y: 0.2, z: 0 },
+                size: { x: 5.0, y: 0.4, z: 5.0 },
+                segments: 16,
+                opacity: 0.7,
+            },
+        ];
+
+        return {
+            village: { name: "village", label: "Dorf", builtIn: true, parts: villageParts },
+            temple: { name: "temple", label: "Tempel", builtIn: true, parts: templeParts },
+            waterfall: { name: "waterfall", label: "Wasserfall", builtIn: true, parts: waterfallParts },
         };
-        group.userData.kind = "waterfall";
-        group.userData.materials = [rockMat, waterMat, poolMat];
-        group.position.y = centerY;
-        return group;
     }
 
     _architectureBuilders() {
-        return {
-            village: (s) => this._buildVillageGroup(0, s),
-            temple: (s) => this._buildTempleGroup(0, s),
-            waterfall: (s) => this._buildWaterfallGroup(0, s),
-        };
+        // Builders kommen jetzt aus state.blueprints — eine Quelle für
+        // Built-in + User-Baupläne. Seed wird zur Zeit nicht mehr genutzt
+        // (Built-ins sind deterministisch); bleibt als Parameter, damit die
+        // Aufruf-Stelle gleich bleibt und zukünftige Bauplan-Varianten via
+        // Seed möglich sind.
+        const map = {};
+        const blueprints = this.state.blueprints || {};
+        for (const name of Object.keys(blueprints)) {
+            const bp = blueprints[name];
+            map[name] = () => this._buildFromBlueprint(bp);
+        }
+        return map;
     }
 
     // Mesh aus Eintrag (re-)bauen und in die Szene hängen. Trennt Daten von
