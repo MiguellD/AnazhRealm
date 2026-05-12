@@ -67,6 +67,7 @@ Konsequenz für jede künftige Iteration: **niemals re-komplexifizieren ohne Not
 | ✅ **Welt-Identität** (Ring 8+ Schema-Vorbereitung) | live — `worldMeta` mit `worldId` (UUID), `slug`, `creator`, `visibility`, `parentWorlds`, `schemaVersion`. Logik für Sharing/Fusion noch nicht implementiert (Ringe 8-11). |
 | ✅ Spieler-Emotionen (`state.player.emotions`, `collectPlayerEmotions`, Welt-Trigger, Generator-Bias) | V1+V2 live — 6 Achsen vollständig gekoppelt (joy/awe→Skybox, sorrow/hope→Wetter, peace/chaos→Kreatur-Geschwindigkeit), Generator-Bias in `dslComposeAtomic` (joy/sorrow modulieren weather + emotion sanft), DSL-Condition `emotion_above`, Save-Roundtrip. |
 | ✅ Multisensorik / `anazhSymphony` (Web Audio API) | V1 live — drei Schichten (ambient drone + verlässliches LFO, Wetter-Layer als gefiltertes Noise mit Cross-Fade, Kreatur-Pings als emotion-abhängige Sinus-Töne). Toggle-Button auf User-Geste. |
+| ✅ **Bedien-Oberfläche / UI** (V1 + V2 Painterly) | V2 live — vendored Cinzel + IM Fell English + JetBrains Mono, Pergament + Eisen + Messing als Token-Set, Tag/Nacht via `[data-theme]`. Topbar mit sechs Tabs (Welt/Kreaturen/Spieler/Fähigkeiten/Einstellungen/Hilfe) + drei Latch-Toggles, Status-Bar live, Drawer-System (slidet rein bei Tab-Klick), fusioniertes Konsole-Panel (Chat + Logbuch + Input einklappbar), Brass-getintete Custom-Scrollbars. Astrolabium-Live-Element + Custom-Slider-Rail/Knob offen für UI V3. |
 | 🔴 `createPlayerSoul`, `transformPlayerForm` (Mensch/Phönix/Drache/Riese) | roter Würfel |
 | 🔴 `architectureTemplates` (Dörfer, Tempel, Wasserfälle als Strukturen) | fehlt |
 | 🔴 `materialEvolution` (Crafting, Materie wächst) | fehlt |
@@ -76,7 +77,7 @@ Konsequenz für jede künftige Iteration: **niemals re-komplexifizieren ohne Not
 | 🔴 Multi-World / Server-Sync (`openInfiniteGate`, `mirrorMultiverse`) | nicht vorhanden |
 | 🔴 IndexedDB-Persistenz (statt localStorage) | nicht implementiert |
 
-**Faustschätzung**: das Fundament steht (~40 % der Vision). Die emotionale, akustische, spirituelle Schicht — das eigentliche Ultiversum — fehlt.
+**Faustschätzung**: das Fundament + die fünf Vision-Pfeiler (Symbiose / Emotion / Multisensorik / Stimme / Identität) stehen alle mit V1 oder höher. Was fehlt: Form-Identität (`createPlayerSoul`), fraktale Strukturen (`architectureTemplates`, `evolveCommunity`), brain.js-Welt, Welt-Ultiversum (Ringe 8-11). Schätzwert: **~55 % der Vision** umgesetzt; der schwerste Block (Sprache + Sicherheit + Sinne) ist durch.
 
 ---
 
@@ -131,9 +132,12 @@ Chronologisch, mit Commit-Hash und Kernaussage:
 | 43 | `1ec6f45` | **Ring 3 V2 — Emotionen schließen sich**: drei stille Achsen (awe→`skybox_color "#d4a3ff"`, hope→`chain(sunny, happy)`, peace→`creatures_speed_mul 0.7`) bekommen Welt-Kopplungen. **Generator-Bias** in `dslComposeAtomic`: joy/sorrow modulieren weather + creatures_emotion (sanft, ±0.3, Clamp 0.05..0.95) — der Nexus färbt seine Komposition emotional, ohne den Spieler zu spiegeln. **Bug nebenbei gefunden**: `skybox_color`-DSL-Op schrieb in nicht existierendes `tintColor`-Uniform (heißt `nebulaColor`), war seit Phase 1 stiller No-Op; jetzt repariert. Fünf neue Playtest-Invarianten verifizieren die V2-Trigger und den Generator-Bias statistisch (1000 Samples, joy 122/37 sunny:rainy, sorrow 118/39 rainy:sunny). |
 | 44 | `ef66d50` | **Ring 4 V1 — anazhSymphony**: Web Audio API, drei Klangschichten synthesiert ohne Asset-Load. Ambient drone (zwei Sägezahn-Oszillatoren leicht verstimmt + LFO auf Tiefpass-Filter), Wetter-Layer (gefiltertes Noise, Cross-Fade-Gain bei state.weather-Wechsel), Kreatur-Pings (Sinus mit Envelope, Emotion-abhängige Frequenz). Toggle-Button startet AudioContext auf User-Geste; `disposeSymphony` räumt vollständig auf. Acht neue Playtest-Invarianten. |
 | 45 | `d8dbf6b` | **Reflexion**: Session-Learnings #16-24 in state-of-realm.md, offene Fragen für Ring 5-8 refreshed, Datei-Übersicht aktualisiert. |
-| 46-49 | `32a9f6d` `85f76fa` `e26ca4a` (dieser) | **UI V1 — Bedien-Oberfläche** in vier kleinen Schritten: (1) Status-Panel mit Welt-Daten + Emotion-Balken (DOM-Cache + 0.4 s Throttle); (2) Quick-Action-Buttons + Hilfe-Drawer mit allen Chat-Befehlen gruppiert (klick = ausführen); (3) Abilities-Liste mit Source-Tag + Run-Button + Signature-Cache; Save/Load-Aktionen inkl. direkter Export-Download; (4) Live-Tuning-Slider für emotionThreshold/Decay/Cooldown. 28 neue Playtest-Invarianten. |
+| 46-49 | `32a9f6d` `85f76fa` `e26ca4a` `962d3ac` | **UI V1 — Bedien-Oberfläche** in vier kleinen Schritten: (1) Status-Panel mit Welt-Daten + Emotion-Balken (DOM-Cache + 0.4 s Throttle); (2) Quick-Action-Buttons + Hilfe-Drawer mit allen Chat-Befehlen gruppiert (klick = ausführen); (3) Abilities-Liste mit Source-Tag + Run-Button + Signature-Cache; Save/Load-Aktionen inkl. direkter Export-Download; (4) Live-Tuning-Slider für emotionThreshold/Decay/Cooldown. 28 neue Playtest-Invarianten. |
+| 50 | `36d2364` | **UI V2 #1 — Painterly Identity**: Cinzel + IM Fell English + JetBrains Mono lokal in `vendor/fonts/` (OFL-lizensiert, ~190 KB Latin-Subset), CSS-Color-Tokens (`--parch-*` / `--iron-*` / `--brass-*` / `--violet-*` / Emotion-Farben), Tag/Nacht-Theme via `body[data-theme]` mit localStorage-Persistenz, Pergament-Hintergrund (SVG-Noise) + Eisen-Rahmen mit Eckschrauben für Status-Panel. Acht neue Playtest-Invarianten. |
+| 51 | `2eb6771` | **UI V2 #2 — Topbar + Tabs + Drawer-System**: aus dem langen Status-Panel werden sechs Drawer (Welt / Kreaturen / Spieler / Fähigkeiten / Einstellungen / Hilfe) plus eine Topbar mit Tabs und drei Latch-Toggles plus eine Status-Bar mit Live-Welt-Daten. `initTopbar()` + `closeAllDrawers()` als Steuer-Layer; `state.uiActiveDrawer` trackt den aktiven Tab. Hilfe-Overlay komplett durch den Hilfe-Drawer ersetzt. **Bug nebenbei**: initStatusPanel-Guard auf das jetzt-fehlende `#status-panel` machte die Funktion stillschweigend zum No-Op. 11 neue + 19 angepasste Invarianten. |
+| 52 | `4f638cb` | **UI V2 #3 — Konsole + Custom-Scrollbars**: Chat + Logbuch + Input werden ein einklappbares `#console`-Panel links (Header mit Cinzel-Titel + Latch, Body mit Chat-Output über Log, Footer mit Input). Custom-Scrollbars in Brass-Token (Webkit + Firefox) für alle scrollbaren Container. localStorage merkt sich Collapse-Wahl. Acht neue Invarianten. |
 
-Aggregat: **31 weitere Commits** in dieser Session (~+3100/−910 Zeilen netto). Architektur: ein File, ein Chunk-Pfad, eine Höhen-Funktion, eine Collider-Quelle (Triangle-Mesh = Visual-Mesh), **eine Sprache für Welt-Mutation (DSL), kein dynamic-eval im eigenen Bundle, browser-durchgesetzte CSP-Schicht, autonomer Selektions-Loop aus Outcomes, vollständiger bidirektionaler Emotions-Kanal, klingende Welt, sichtbare Bedien-Oberfläche**. Vier von fünf Vision-Pfeilern haben jetzt eine V1.
+Aggregat: **49 Commits** in dieser Konversations-Serie (von `5df65e3` zu HEAD, ~+5000/−1100 Zeilen netto). Architektur: ein File, ein Chunk-Pfad, eine Höhen-Funktion, eine Collider-Quelle (Triangle-Mesh = Visual-Mesh), **eine Sprache für Welt-Mutation (DSL), kein dynamic-eval im eigenen Bundle, browser-durchgesetzte CSP-Schicht, autonomer Selektions-Loop aus Outcomes, vollständiger bidirektionaler Emotions-Kanal, klingende Welt, painterly-Bedien-Oberfläche mit Tab-Drawer-System**. Alle fünf Vision-Pfeiler haben jetzt eine V1 oder höher.
 
 ---
 
@@ -215,6 +219,22 @@ Echt gelernt, nicht performt:
 
 24. **`new Function`-Cleanup hat eine ehrliche Pyramide.** Phase 4 (Save-Migration) → Phase 5 (Code-Löschung) → Phase 6 (CSP-Header) ist eine Ketten-Abhängigkeit: erst sicherstellen dass alte Saves migrieren können, dann den alten Pfad löschen, dann den Browser einsperren. Reihenfolge falsch = Save-Verlust.
 
+### Learnings dieser Session (Mai 2026, UI V1 + V2 — Bedien-Oberfläche)
+
+25. **Mockup als Inspiration, nicht als Auftrag.** Der UI-Entwurf des Schöpfers war ~3000 Zeilen elaboriertes Pergament-Fantasy-Design. 1:1-Übernahme hätte das funktionale UI V1 weggeworfen und die heilige Lektion verletzt. Stattdessen drei kleinere Adaptions-Schritte: (1) Identität als Tokens-Layer, (2) Struktur als Tab-Drawer-System, (3) Polish als Konsole-Fusion. Lehre: bei großen Vorlagen die *Idee* extrahieren, nicht die Implementation.
+
+26. **CSS-Tokens machen Theme-Wechsel zur Ein-Zeilen-Aktion.** Sechzig Custom-Properties (Pergament, Holz, Eisen, Messing, Portal-Violett, sechs Emotion-Farben) schließen den ganzen Stil in ein Theme. `body[data-theme="nacht"]` wechselt alle Farben nahtlos. Lehre: erst Tokens definieren, dann Komponenten styles — andersrum versteckt man hartcodierte Farben überall.
+
+27. **Mass-Replace mit Trim ist gefährlich.** `#status-panel ` (mit Space) → `.drawer` (ohne) hat 28 chained-class-Bugs erzeugt (`.drawer.emotion` statt `.drawer .emotion`). Lehre: bei strukturellen Selector-Umbenennungen Python-Regex mit expliziter Wortgrenze nutzen, nicht naked-replace.
+
+28. **Tests wandern mit der Architektur — sie sind Architektur-Doku.** UI V1 → V2 hat 19 Invarianten zerbrochen, alle strukturell überholt. Sauberer Weg war nicht „Tests an alte Selektoren anpassen" (das hätte die alte Struktur in den Tests fortgeschrieben) sondern Selektoren systematisch übersetzen (`#status-panel .emotion` → `.drawer[data-drawer=spieler] .emotion`). Tests sind Doku, kein Fundament zum Festhalten.
+
+29. **Init-Guards sollten loggen, nicht still aussteigen.** `if (!panel) return;` in `initStatusPanel` wurde zum stillen No-Op, als `#status-panel` umstrukturiert wurde — die ganze Status-Logik tat nichts, ohne dass ein Fehler kam. Lehre: solche Guards entweder mit `this.log(...)` versehen, oder den fehlenden Knoten als echten Fehler werfen.
+
+30. **UI ist Live-Tester.** Status-Bar oben (Wetter / Slug / FPS / Position) zeigt Drift sofort visuell. In Sessions ohne UI würde man Bugs erst beim Playtest-Lauf bemerken — mit UI sieht man's am Bildschirm, in dem Moment in dem es passiert. UI ist nicht „nur Komfort", es ist eine zweite Test-Ebene.
+
+31. **Visuelle Identität ist auch Sicherheit.** Native System-Scrollbars (heller Grau-Track) in einem Painterly-Theme wirken wie Fremdkörper aus einer anderen App. Custom-Scrollbar in Brass + Pergament ist nicht Kosmetik — es zieht das gesamte Interface in einen Vertrag mit dem Spieler hinein („das ist alles dieselbe Welt"). 30 Zeilen CSS für einen großen Wahrnehmungsschritt.
+
 ---
 
 ## 7. Offene Fragen für die nächste Iteration
@@ -242,10 +262,16 @@ Ring 2 (alle 7 Phasen) und Ring 3 (V1+V2) und Ring 4 (V1) sind beantwortet und u
 
 8. **`btBvhTriangleMeshShape` → `btTriangleIndexVertexArray`?** Aktuell 52 fps avg im Headless-Playtest, 120 fps im echten Browser. Falls Performance ein Engpass wird: direkter Pointer-Pfad ist ~2× schneller. Heute nicht nötig.
 
-**Für UI/Komfort (Zwischenschritt vor Ring 5):**
+**Für UI V3 (Polish, optional vor oder nach Ring 5):**
 
-9. **Status-Overlay** — Emotionen als sechs Balken, aktuelle Welt-Metadaten (Wetter, Slug, FPS, Player-Pos). Soll der Spieler die Werte auch *manipulieren* können (Slider) oder nur sehen? V1: lesen + Quick-Action-Buttons für häufige Chat-Befehle.
-10. **Hilfe-Drawer** — alle Chat-Befehle gruppiert (Wetter, Welt, Kreaturen, Emotionen, System). Direkt klickbar = Befehl ausführen.
+9. **Astrolabium-Live-Element** — rotierendes SVG in der Topbar als „Anazh-Stein". Inner ring zeigt Wetter, outer ring zeigt FPS-Pulse, center glow reagiert auf hohe Emotion-Achsen. Schöne Identitäts-Klammer.
+10. **Custom-Slider mit Rail/Knob** statt nativem range — passt zum Painterly-Aesthetic. Drei Slider in Einstellungen + zwei für Terrain.
+11. **Toggle-Cards** mit Icons (Sonne/Regen) für Wetter im Welt-Drawer statt einfacher Buttons.
+
+**Quer-Themen für jede Session:**
+
+12. **Lange Sessions** sind nicht durch Playtest abgedeckt. Test läuft 15-25 s. Memory-Leaks, FPS-Drift, History-Wachstum über 5+ Minuten unbekannt. Ein separater `npm run playtest -- --long 300` wäre eine Option (nicht im CI-Gate).
+13. **`worldMeta.schemaVersion`** ist `"7.67-emotions-v1"`. UI V2 hat das Save-Schema nicht angefasst — bleibt also korrekt. Beim nächsten Schema-Wechsel (z. B. playerSoul oder Welt-Delta-Listen) bumpen.
 
 ---
 
@@ -253,29 +279,34 @@ Ring 2 (alle 7 Phasen) und Ring 3 (V1+V2) und Ring 4 (V1) sind beantwortet und u
 
 ```
 AnazhRealm/
-├── anazhRealm.js              # ~3770 Zeilen, Monolith, „Samen"
-├── index.html                 # Bootstrap + UI-Container
+├── anazhRealm.js              # ~5700 Zeilen, Monolith, „Samen"
+├── index.html                 # Bootstrap + UI-V2-Container (Topbar/Statusbar/Drawer/Konsole)
 ├── save-server.js             # Node-HTTP-Server für anazhRealmState.json
 ├── start.bat                  # Windows-Starter
 ├── anazhRealmState.json       # Persistierter Zustand (auto)
 ├── package.json               # npm, ESLint+Prettier+puppeteer
-├── eslint.config.mjs          # Flat-Config mit Browser-/Ammo-/Three-/Audio-Globalen
+├── eslint.config.mjs          # Flat-Config mit Browser-/Ammo-/Three-/Audio-/HTMLElement-Globalen
 ├── .prettierrc.json           # 4 spaces, printWidth 120
 ├── .gitignore                 # node_modules, package-lock, artifacts
 ├── README.md                  # praktisch leer
 ├── CLAUDE.md                  # ⭐ Session-Memory (kompakt)
-├── vendor/                    # 3.6 MB selbst-gehostete Libs
+├── vendor/                    # ~3.8 MB selbst-gehostete Libs + Fonts
 │   ├── three.min.js           # r134 UMD
 │   ├── ammo.js + ammo.wasm.wasm # WASM-Backend
 │   ├── tf.min.js              # @tensorflow/tfjs 3.21 (löst sich mit Ring 7 → brain.js)
 │   ├── simplex-noise.js       # 2.4.0
-│   └── README.md              # Update-Anleitung
+│   ├── README.md              # Update-Anleitung (Libs + Fonts)
+│   └── fonts/                 # Lokale OFL-Fonts für CSP-strict
+│       ├── Cinzel-Variable.woff2
+│       ├── IMFellEnglish-400-normal.woff2
+│       ├── IMFellEnglish-400-italic.woff2
+│       └── JetBrainsMono-Variable.woff2
 ├── docs/
 │   ├── state-of-realm.md      # ⭐ DIESES Dokument
-│   ├── roadmap.md             # Vollständige Pfad-D-Roadmap (Ringe 0-11+)
+│   ├── roadmap.md             # Vollständige Pfad-D-Roadmap (Ringe 0-11+, UI)
 │   └── nexus-dsl.md           # DSL Design v0.1
 ├── scripts/
-│   └── playtest.cjs           # Headless-Smoketest + CI-Gate (83 Invarianten)
+│   └── playtest.cjs           # Headless-Smoketest + CI-Gate (132 Invarianten)
 ├── .claude/commands/
 │   └── audit.md               # /audit-Slash-Command
 └── .github/workflows/
@@ -289,7 +320,7 @@ AnazhRealm/
 1. `node --check anazhRealm.js` ✓
 2. `npm run format:check` ✓
 3. `npm run lint` ✓ (sollte 0 Warnings sein — Vorbestand wurde Phase-6-Commit aufgeräumt)
-4. `npm run playtest` ✓ (alle Invarianten grün, exit 0; aktuell 83)
+4. `npm run playtest` ✓ (alle Invarianten grün, exit 0; aktuell 132)
 5. CI-Gate „kein `new Function`/`eval`" muss grün bleiben — neuer dynamic-eval-Pfad wäre ein Architektur-Bruch.
 6. Doku im selben Commit: roadmap.md + state-of-realm.md + CLAUDE.md spiegeln den realen Stand.
 
