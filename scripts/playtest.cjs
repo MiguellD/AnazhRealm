@@ -473,6 +473,29 @@ function startSaveServer() {
                     const suggestion = r.chatSuggest("setze wettr rainy");
                     out.suggestionForTypo = suggestion === "setze wetter rainy";
 
+                    // 4. Phase 3b: set_visible-Primitiv + Chat-Routing
+                    const groundChunksBefore = r.state.groundChunks.length;
+                    const someVisible = () => r.state.groundChunks.some((c) => c.visible);
+                    r.processChatCommand("Boden deaktivieren");
+                    out.terrainHiddenViaDsl = groundChunksBefore > 0 && !someVisible();
+                    r.processChatCommand("Boden aktivieren");
+                    out.terrainShownViaDsl = someVisible();
+
+                    // 5. Phase 3b: record_narrative-Primitiv via "Erzähle ..."
+                    const kbBefore = r.state.knowledgeBase.filter((k) => k.type === "narrative").length;
+                    r.processChatCommand("Erzähle Drachen leben hier");
+                    const narratives = r.state.knowledgeBase.filter((k) => k.type === "narrative");
+                    out.narrativeRecorded =
+                        narratives.length === kbBefore + 1 && narratives[narratives.length - 1].content === "Drachen leben hier";
+
+                    // 6. Phase 3b: set_visible mit unbekanntem Target wird abgelehnt
+                    const beforeLog = r.state.dsl.lastUserOutcome ? r.state.dsl.lastUserOutcome.errors : 0;
+                    const badResult = r.dslRun(["set_visible", "mond", true]);
+                    out.invalidTargetRejected = badResult.log.some(
+                        (e) => e.event === "invalid_set_visible_target"
+                    );
+                    void beforeLog;
+
                     return out;
                 })
                 .catch(() => null);
@@ -502,6 +525,22 @@ function startSaveServer() {
                     "chatSuggest schlägt korrigierten Befehl bei Tippfehler vor",
                     phase3Results.suggestionForTypo,
                     "'setze wettr rainy' → 'setze wetter rainy'"
+                );
+                check(
+                    "Phase 3b: 'Boden deaktivieren' via DSL versteckt Terrain",
+                    phase3Results.terrainHiddenViaDsl
+                );
+                check(
+                    "Phase 3b: 'Boden aktivieren' via DSL macht Terrain wieder sichtbar",
+                    phase3Results.terrainShownViaDsl
+                );
+                check(
+                    "Phase 3b: 'Erzähle ...' schreibt Narrativ in Knowledge-Base",
+                    phase3Results.narrativeRecorded
+                );
+                check(
+                    "Phase 3b: set_visible mit ungültigem Target wird abgelehnt",
+                    phase3Results.invalidTargetRejected
                 );
             }
         }

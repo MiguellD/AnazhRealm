@@ -22,7 +22,7 @@ Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) is
 |---|---|---|---|---|
 | 0 | Stabiles Fundament (Bewegung, Physik, Chunks, Save, CI) | ✅ erledigt | – | – |
 | 1 | Grok-Stimme (`dialogue-box`, narrative Reflexion) | ✅ V1 live | – | – |
-| 2 | DSL als gemeinsame Sprache | 🟡 Phase 1+2+3a live, 3b-7 offen | 2-3 d Rest | – |
+| 2 | DSL als gemeinsame Sprache | 🟡 Phase 1+2+3 live, 4-7 offen | 1.5-2 d Rest | – |
 | 3 | Player-Emotionen → Welt | 🔴 offen | 2 d | Ring 2 Phase 3 |
 | 4 | `anazhSymphony` V1 (Web Audio) | 🔴 offen | 2-3 d | Ring 3 |
 | 5 | `createPlayerSoul` (Mensch/Phönix/Drache) | 🔴 offen | 1-2 d | – |
@@ -60,7 +60,12 @@ Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) is
 
 Sechs neue Playtest-Invarianten verifizieren Parser, End-to-end-Routing und Levenshtein-Vorschlag. `state.dsl.lastUserProgram` + `state.dsl.lastUserOutcome` halten den letzten Menschen-Befehl für Diagnose/Persistenz fest.
 
-**Phase 3b — Rest** (0.5-1 d, getrennter Commit): Sichtbarkeits-Toggles (`boden/kreaturen aktivieren/deaktivieren`) und narrative Befehle (`erzähle`) brauchen neue DSL-Primitives (`set_visible`, `record_narrative`). `lerne fähigkeit` / `entwickle fähigkeit` warten bewusst bis Phase 5 — sie hängen mit `new Function`-Cleanup zusammen und brauchen Save-Migration.
+**Phase 3b ✅ erledigt** (dieser Commit): Zwei neue DSL-Primitives `set_visible(target, visible)` (Whitelist „terrain"/„creatures", unbekannte Targets werden geloggt) und `record_narrative(text)` (Cap 500 Zeichen, schreibt in `state.knowledgeBase`). Fünf neue Chat-Patterns: `boden/kreaturen × aktivieren/deaktivieren` + `erzähle <text>`. Vier neue Playtest-Invarianten. Damit gehen 13 von ~25 Chat-Befehlen durch die DSL.
+
+**Verbleibend nicht-migriert** (Phase 4/5 oder Ring 4):
+- `lerne/entwickle fähigkeit`, `füge code` → Phase 5 mit `new Function`-Cleanup + Save-Migration
+- `aktiviere anazh-symphonie` → Ring 4 (Web Audio)
+- System-IO (`speichere/lade/lade datei`), `aktiviere version`, `füge trainingsdaten`, `behebe physik-tunneling`, `optimiere physik`, `boden nicht sichtbar`, `aktiviere/deaktiviere debug-logs`, `spawne neue welt` bleiben bewusst legacy (System-Ops, kein Welt-Effekt)
 
 **Phase 4 — Save-Migration alter Saves** (0.5 d)
 - Bekannte alte `abilities: string[]`-Saves erkennen, in `dsl.abilities` umwandeln (per `restoreAbility`-Mapping). Bereits halb da seit Commit `fef4baf`.

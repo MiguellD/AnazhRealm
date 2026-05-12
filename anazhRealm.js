@@ -596,6 +596,24 @@ class AnazhRealm {
                     this.state.playerMesh.scale.multiplyScalar(f);
                 }
             },
+            set_visible: ([target, visible], ctx) => {
+                // Whitelist hält die Safety-Surface klein: nur grob steuerbare
+                // Welt-Schichten, keine beliebigen Mesh-Namen. Wer mehr Targets
+                // braucht, fügt neue Primitives hinzu (Doc-Review nötig).
+                const v = !!visible;
+                if (target === "terrain") this.toggleTerrain(v);
+                else if (target === "creatures") this.toggleCreatures(v);
+                else ctx.log.push({ event: "invalid_set_visible_target", target: String(target) });
+            },
+            record_narrative: ([text]) => {
+                if (typeof text !== "string") return;
+                const trimmed = text.trim();
+                if (!trimmed) return;
+                // Cap auf 500 Zeichen verhindert, dass ein Programm die Knowledge-
+                // Base mit einem Riesen-String volllaufen lässt.
+                const capped = trimmed.length > 500 ? trimmed.slice(0, 500) : trimmed;
+                this.addKnowledge("narrative", capped);
+            },
             say: ([message]) => {
                 if (typeof message !== "string" || message.length === 0) return;
                 // DSL-`say` hängt an Grok an, statt eigenen Output zu bauen. Damit
@@ -914,6 +932,50 @@ class AnazhRealm {
                 build: () => ({
                     program: ["chain", ["terrain_steepness", 1.0], ["creatures_color", "white"]],
                     describe: "Chaos und Ordnung vereint: Steilheit 1.0, Kreaturen weiß",
+                }),
+            },
+            {
+                example: "boden aktivieren",
+                re: /^boden\s+aktivieren\s*$/i,
+                build: () => ({
+                    program: ["set_visible", "terrain", true],
+                    describe: "Boden aktiviert",
+                }),
+            },
+            {
+                example: "boden deaktivieren",
+                re: /^boden\s+deaktivieren\s*$/i,
+                build: () => ({
+                    program: ["set_visible", "terrain", false],
+                    describe: "Boden deaktiviert",
+                }),
+            },
+            {
+                example: "kreaturen aktivieren",
+                re: /^kreaturen\s+aktivieren\s*$/i,
+                build: () => ({
+                    program: ["set_visible", "creatures", true],
+                    describe: "Kreaturen aktiviert",
+                }),
+            },
+            {
+                example: "kreaturen deaktivieren",
+                re: /^kreaturen\s+deaktivieren\s*$/i,
+                build: () => ({
+                    program: ["set_visible", "creatures", false],
+                    describe: "Kreaturen deaktiviert",
+                }),
+            },
+            {
+                example: "erzähle Drachen leben hier",
+                // Erzähle <freier Text> — Text wird in die Knowledge-Base als
+                // Narrativ aufgenommen. Wir matchen das ursprüngliche Casing,
+                // damit der Text 1:1 persistiert wird (Capture-Gruppe greift
+                // auf das Rohkommando zu, nicht das lowercase-`parts`).
+                re: /^erzähle[:\s]+(.+)$/i,
+                build: (m) => ({
+                    program: ["record_narrative", m[1].trim()],
+                    describe: `Narrativ gespeichert: ${m[1].trim()}`,
                 }),
             },
         ];
@@ -2188,10 +2250,6 @@ class AnazhRealm {
                 yVelocity: 0,
             });
             appendChatOutput(`Trainingsdaten hinzugefügt: x=${x}, z=${z}`);
-        } else if (parts[0] === "erzähle") {
-            const narrative = command.slice(8);
-            this.addKnowledge("narrative", narrative);
-            appendChatOutput(`Narrativ gespeichert: ${narrative}`);
         } else if (parts[0] === "aktiviere" && parts[1] === "version") {
             const version = parts[2];
             if (this.state.versionHistory.includes(version)) {
@@ -2239,18 +2297,6 @@ class AnazhRealm {
             } else {
                 appendChatOutput("Boden ist bereits sichtbar");
             }
-        } else if (parts[0] === "boden" && parts[1] === "aktivieren") {
-            this.toggleTerrain(true);
-            appendChatOutput("Boden aktiviert");
-        } else if (parts[0] === "boden" && parts[1] === "deaktivieren") {
-            this.toggleTerrain(false);
-            appendChatOutput("Boden deaktiviert");
-        } else if (parts[0] === "kreaturen" && parts[1] === "aktivieren") {
-            this.toggleCreatures(true);
-            appendChatOutput("Kreaturen aktiviert");
-        } else if (parts[0] === "kreaturen" && parts[1] === "deaktivieren") {
-            this.toggleCreatures(false);
-            appendChatOutput("Kreaturen deaktiviert");
         } else if (parts[0] === "aktiviere" && parts[1] === "anazh-symphonie") {
             this.addNewAbility("anazhSymphony", function (self, state) {
                 state.creatures.forEach((creature, i) => {

@@ -72,8 +72,10 @@ Diese ändern den Spielzustand. Reihenfolge: **die V1-Liste, die zur Migration a
 | `player_speed` | `(value: number)` | Clamp `[1, 30]` |
 | `player_size_mul` | `(factor: number)` | Clamp `[0.5, 2]` |
 | `say` | `(message: string)` | Schreibt eine Zeile in den Chat-Output (Nexus „spricht") |
+| `set_visible` | `(target: "terrain"\|"creatures", visible: bool)` | Whitelist-basiertes Sichtbarkeits-Toggle. Unbekannte Targets → Log + No-op. |
+| `record_narrative` | `(text: string)` | Schreibt einen Eintrag in `state.knowledgeBase` als `narrative`. Cap 500 Zeichen. |
 
-→ **18 V1-Primitive**, alle CSP-clean, alle persistierbar, alle mit harten Grenzen.
+→ **20 V1-Primitive**, alle CSP-clean, alle persistierbar, alle mit harten Grenzen.
 
 ## 5. Control-Flow & Komposition
 
