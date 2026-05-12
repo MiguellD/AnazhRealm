@@ -3303,10 +3303,23 @@ class AnazhRealm {
 
     // ### Terrain-Erweiterung ### V7.42
     extendTerrain(direction) {
-        // Schutz: ohne existierende Anker-Chunks gibt es keine sinnvolle
-        // Richtung. Ohne diesen Guard produzierte die Methode mit leerer
-        // chunkMap Chunks an (Infinity, Infinity) und ließ den Spieler ins
-        // Nichts fallen.
+        // Erweitert die Welt um einen einzelnen Chunk an der Außenkante.
+        //
+        // Die alte Implementierung versuchte, das volle 256×256-Heightfield
+        // für den neuen Chunk zu erzeugen und delegierte dann an
+        // `generateChunk(newChunkX, newChunkZ, ...)`. Das brach für jeden
+        // Chunk außerhalb des initialen 0..7-Index-Bereichs:
+        // - east/south (chunkX≥8 oder chunkZ≥8): startX = chunkX*CHUNK_SIZE
+        //   überschritt WIDTH, chunkWidth wurde 0, `generateChunk` brach mit
+        //   "Ungültige Chunk-Größe" ab — kein Chunk entstand.
+        // - north/west (chunkX=-1 oder chunkZ=-1): negative Indices ins
+        //   `heightData` lieferten undefined, alle Vertices fielen auf y=0
+        //   am falschen Welt-Ort — eine Schein-Platte ohne Höhenbezug.
+        //
+        // Neuer Pfad: chunk-lokales (CHUNK_SIZE+1)² Heightfield, vertices
+        // direkt in Welt-Koords aus Welt-Offset + Vertex-Index berechnet,
+        // Mesh inline gebaut. Frustum-Test bleibt boundingSphere-basiert
+        // wie in CLAUDE.md dokumentiert.
         if (!this.state.chunkMap || this.state.chunkMap.size === 0) {
             this.log("extendTerrain übersprungen: keine Anker-Chunks vorhanden", "DEBUG");
             return;
@@ -3316,107 +3329,174 @@ class AnazhRealm {
             return;
         }
 
-        // ### Konstanten ###
         const CHUNK_SIZE = this.state.chunkSize;
         const WIDTH = this.state.chunkWidth;
-        const DEPTH = this.state.chunkDepth;
         const WORLD_SIZE = 300;
         const steepness = this.state.terrainSteepness;
         const baseHeight = this.state.terrainBaseHeight;
         const material = this.state.terrainMaterial;
 
-        // ### Aktuelle Chunk-Grenzen ###
+        // Welt-Schritt pro Vertex und pro Chunk; abgeleitet aus den initialen
+        // Konstanten (WIDTH=256, CHUNK_SIZE=32 → 37.5 Welt-Einheiten/Chunk).
+        const vertexStep = WORLD_SIZE / (WIDTH - 1);
+        const chunkWorldSize = CHUNK_SIZE * (WORLD_SIZE / WIDTH);
+
+        // Anker-Chunk-Grenzen aus chunkMap herausziehen.
         let minChunkX = Infinity,
             maxChunkX = -Infinity,
             minChunkZ = Infinity,
             maxChunkZ = -Infinity;
-        for (let key of this.state.chunkMap.keys()) {
+        for (const key of this.state.chunkMap.keys()) {
             const [cx, cz] = key.split(",").map(Number);
-            minChunkX = Math.min(minChunkX, cx);
-            maxChunkX = Math.max(maxChunkX, cx);
-            minChunkZ = Math.min(minChunkZ, cz);
-            maxChunkZ = Math.max(maxChunkZ, cz);
+            if (cx < minChunkX) minChunkX = cx;
+            if (cx > maxChunkX) maxChunkX = cx;
+            if (cz < minChunkZ) minChunkZ = cz;
+            if (cz > maxChunkZ) maxChunkZ = cz;
         }
 
-        // ### Neuer Chunk ###
         let newChunkX, newChunkZ;
         switch (direction) {
             case "north":
-                newChunkX = minChunkX;
+                newChunkX = Math.floor((minChunkX + maxChunkX) / 2);
                 newChunkZ = minChunkZ - 1;
                 break;
             case "south":
-                newChunkX = maxChunkX;
+                newChunkX = Math.floor((minChunkX + maxChunkX) / 2);
                 newChunkZ = maxChunkZ + 1;
                 break;
             case "west":
                 newChunkX = minChunkX - 1;
-                newChunkZ = minChunkZ;
+                newChunkZ = Math.floor((minChunkZ + maxChunkZ) / 2);
                 break;
             case "east":
                 newChunkX = maxChunkX + 1;
-                newChunkZ = maxChunkZ;
+                newChunkZ = Math.floor((minChunkZ + maxChunkZ) / 2);
                 break;
             default:
                 return;
         }
+        const key = `${newChunkX},${newChunkZ}`;
+        if (this.state.chunkMap.has(key)) return;
 
-        if (this.state.chunkMap.has(`${newChunkX},${newChunkZ}`)) return; // Chunk existiert bereits
+        // Welt-Offsets so wählen, dass die ersten Vertices nahtlos an die
+        // Vertices der existierenden Chunks anschließen. Initial deckt das
+        // 0..7-Grid die Welt von -WORLD_SIZE/2 bis +WORLD_SIZE/2 ab; ein
+        // Chunk bei Index k beginnt also bei `k * chunkWorldSize - WORLD_SIZE/2`.
+        const VTX = CHUNK_SIZE + 1; // 33 Vertices pro Seite (Überlappung um 1)
+        const worldStartX = newChunkX * chunkWorldSize - WORLD_SIZE / 2;
+        const worldStartZ = newChunkZ * chunkWorldSize - WORLD_SIZE / 2;
 
-        // ### Höhendaten für neuen Chunk ###
-        const heightData = new Float32Array(WIDTH * DEPTH);
+        const noise = new SimplexNoise(this.state.seed || "anazh-realm-seed");
+        const heightData = new Float32Array(VTX * VTX);
         let minHeight = Infinity;
         let maxHeight = -Infinity;
 
-        const noise = new SimplexNoise(this.state.seed || "anazh-realm-seed");
-        for (let i = 0; i < WIDTH * DEPTH; i++) {
-            const x =
-                (i % WIDTH) * (WORLD_SIZE / (WIDTH - 1)) -
-                WORLD_SIZE / 2 +
-                newChunkX * CHUNK_SIZE * (WORLD_SIZE / WIDTH);
-            const z =
-                Math.floor(i / WIDTH) * (WORLD_SIZE / (DEPTH - 1)) -
-                WORLD_SIZE / 2 +
-                newChunkZ * CHUNK_SIZE * (WORLD_SIZE / DEPTH);
-            const cacheKey = `${x}:${z}:${steepness}`;
-
-            let height =
-                this.state.noiseCache.get(cacheKey) ??
-                (() => {
-                    const height1 = noise.noise2D(x * 0.01, z * 0.01) * 20 * steepness;
-                    const height2 = noise.noise2D(x * 0.03, z * 0.03) * 15 * steepness;
-                    const height3 = noise.noise2D(x * 0.06, z * 0.06) * 10 * steepness;
-                    const height4 = noise.noise2D(x * 0.002, z * 0.002) * 50 * steepness;
-                    const height5 = Math.pow(noise.noise2D(x * 0.02, z * 0.02), 3) * 30 * steepness;
-                    let h = baseHeight + height1 + height2 + height3 + height4 + height5;
-
-                    if (!Number.isFinite(h)) {
-                        this.log(
-                            `Ungültige Höhe bei (${x}, ${z}) in Richtung ${direction}: ${h}, setze auf 0`,
-                            "ERROR"
-                        );
-                        h = 0;
-                    }
+        for (let z = 0; z < VTX; z++) {
+            const worldZ = worldStartZ + z * vertexStep;
+            for (let x = 0; x < VTX; x++) {
+                const worldX = worldStartX + x * vertexStep;
+                const cacheKey = `${worldX}:${worldZ}:${steepness}`;
+                let h = this.state.noiseCache.get(cacheKey);
+                if (h === undefined) {
+                    const h1 = noise.noise2D(worldX * 0.01, worldZ * 0.01) * 20 * steepness;
+                    const h2 = noise.noise2D(worldX * 0.03, worldZ * 0.03) * 15 * steepness;
+                    const h3 = noise.noise2D(worldX * 0.06, worldZ * 0.06) * 10 * steepness;
+                    const h4 = noise.noise2D(worldX * 0.002, worldZ * 0.002) * 50 * steepness;
+                    const h5 = Math.pow(noise.noise2D(worldX * 0.02, worldZ * 0.02), 3) * 30 * steepness;
+                    h = baseHeight + h1 + h2 + h3 + h4 + h5;
+                    if (!Number.isFinite(h)) h = 0;
                     h = Math.max(-100, Math.min(100, h));
                     this.cacheNoise(cacheKey, h);
-                    return h;
-                })();
-
-            heightData[i] = height;
-            minHeight = Math.min(minHeight, height);
-            maxHeight = Math.max(maxHeight, height);
+                }
+                heightData[z * VTX + x] = h;
+                if (h < minHeight) minHeight = h;
+                if (h > maxHeight) maxHeight = h;
+            }
         }
 
-        this.generateChunk(newChunkX, newChunkZ, heightData, WIDTH, DEPTH, material);
-        this.log(`Terrain erweitert in ${direction}: Chunk (${newChunkX}, ${newChunkZ})`);
+        // Mesh inline bauen (parallel zur Logik in `generateChunk`, aber mit
+        // chunk-lokalen Indices und korrektem Welt-Offset).
+        const geometry = new THREE.BufferGeometry();
+        const vertices = new Float32Array(VTX * VTX * 3);
+        const uvs = new Float32Array(VTX * VTX * 2);
+        const indices = [];
+        for (let z = 0; z < VTX; z++) {
+            for (let x = 0; x < VTX; x++) {
+                const idx = z * VTX + x;
+                vertices[idx * 3] = worldStartX + x * vertexStep;
+                vertices[idx * 3 + 1] = heightData[idx];
+                vertices[idx * 3 + 2] = worldStartZ + z * vertexStep;
+                uvs[idx * 2] = x / (VTX - 1);
+                uvs[idx * 2 + 1] = z / (VTX - 1);
+            }
+        }
+        for (let z = 0; z < VTX - 1; z++) {
+            for (let x = 0; x < VTX - 1; x++) {
+                const a = z * VTX + x;
+                const b = z * VTX + x + 1;
+                const c = (z + 1) * VTX + x;
+                const d = (z + 1) * VTX + x + 1;
+                indices.push(a, b, d, a, d, c);
+            }
+        }
+        geometry.setIndex(indices);
+        geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+        geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+        geometry.computeVertexNormals();
+        geometry.computeBoundingSphere();
 
-        // ### Learnings ### [Stichwortartig optimieren, korrigieren und ergänzen aber nie Wissen löschen! Nie Learnings Entfernen!]
-        // - Überlappung in generateChunk macht Höhenabgleich überflüssig.
-        // - Weltkoordinaten und Seed sorgen für konsistente Noise über Chunks hinweg.
-        // - Höhen an den Rändern werden mit benachbarten Chunks synchronisiert.
-        // - Weltkoordinaten und Noise-Konsistenz sorgen für harmonische Übergänge.
-        // - Weltkoordinaten mit Chunk-Offset ermöglichen unendliche Erweiterung ohne Brüche.
-        // - Noise-Konsistenz durch Seed sichert harmonische Gebirge über neue Chunks.
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.set(0, 0, 0); // Vertices liegen in Welt-Koords
+        mesh.visible = true;
+        mesh.userData = { chunkX: newChunkX, chunkZ: newChunkZ, minHeight, maxHeight };
+        this.state.scene.add(mesh);
+        this.state.groundChunks.push(mesh);
+        this.state.chunkMap.set(key, { mesh, chunkX: newChunkX, chunkZ: newChunkZ });
+        if (minHeight < this.state.minHeight) this.state.minHeight = minHeight;
+        if (maxHeight > this.state.maxHeight) this.state.maxHeight = maxHeight;
+
+        // Physik für den neuen Chunk: ein eigenes Ammo-Heightfield mit Welt-
+        // Offset an `(chunk-Mitte, (min+max)/2)`. Ohne diesen Schritt liefe der
+        // Spieler visuell weiter, fiele aber durch die unsichtbare Lücke.
+        try {
+            if (this.state.physicsWorld && this.state.scaleFactor > 0) {
+                const sf = this.state.scaleFactor;
+                const heightfieldData = new Float32Array(VTX * VTX);
+                for (let i = 0; i < heightData.length; i++) heightfieldData[i] = heightData[i] / sf;
+                const shape = new Ammo.btHeightfieldTerrainShape(
+                    VTX,
+                    VTX,
+                    heightfieldData,
+                    1.0,
+                    minHeight / sf,
+                    maxHeight / sf,
+                    1,
+                    "PHY_FLOAT",
+                    false
+                );
+                const stepScaled = vertexStep / sf;
+                shape.setLocalScaling(new Ammo.btVector3(stepScaled, 1, stepScaled));
+                const centerX = worldStartX + chunkWorldSize / 2;
+                const centerZ = worldStartZ + chunkWorldSize / 2;
+                const centerY = (minHeight + maxHeight) / 2;
+                const transform = new Ammo.btTransform();
+                transform.setIdentity();
+                transform.setOrigin(new Ammo.btVector3(centerX / sf, centerY / sf, centerZ / sf));
+                const motionState = new Ammo.btDefaultMotionState(transform);
+                const inertia = new Ammo.btVector3(0, 0, 0);
+                const rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, shape, inertia);
+                const body = new Ammo.btRigidBody(rbInfo);
+                this.state.physicsWorld.addRigidBody(body);
+                Ammo.destroy(rbInfo);
+                Ammo.destroy(inertia);
+                mesh.userData.physicsBody = body;
+                this.state.rigidBodies.push(mesh);
+            }
+        } catch (err) {
+            this.log(`extendTerrain Physik-Fehler bei (${newChunkX}, ${newChunkZ}): ${err.message}`, "ERROR");
+        }
+
+        this.log(`Terrain erweitert in ${direction}: Chunk (${newChunkX}, ${newChunkZ})`);
     }
 
     generateNewWorld({ force = false } = {}) {

@@ -275,6 +275,56 @@ function startSaveServer() {
                 })
                 .catch(() => null);
 
+            // ### Terrain-Erweiterung ###
+            // extendTerrain ist eines der ältesten Subsysteme — vor diesem Fix
+            // produzierten east/south "Ungültige Chunk-Größe"-Fehler und north/
+            // west zero-height Schein-Platten an falscher Welt-Position. Wir
+            // erzwingen je eine Extension in alle vier Richtungen und prüfen:
+            // chunk wurde wirklich angefügt, vertices haben endliche Welt-
+            // Koordinaten, Höhen sind im erlaubten Range.
+            const extensionResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const before = r.state.chunkMap.size;
+                    const beforeKeys = new Set(r.state.chunkMap.keys());
+                    ["east", "south", "north", "west"].forEach((d) => r.extendTerrain(d));
+                    const after = r.state.chunkMap.size;
+                    const newKeys = [...r.state.chunkMap.keys()].filter((k) => !beforeKeys.has(k));
+                    let allHeightsFinite = true;
+                    let foundOutOfRange = false;
+                    for (const k of newKeys) {
+                        const entry = r.state.chunkMap.get(k);
+                        if (!entry || !entry.mesh) continue;
+                        const pos = entry.mesh.geometry.attributes.position.array;
+                        for (let i = 1; i < pos.length; i += 3) {
+                            if (!Number.isFinite(pos[i])) {
+                                allHeightsFinite = false;
+                                break;
+                            }
+                            if (pos[i] < -200 || pos[i] > 200) foundOutOfRange = true;
+                        }
+                        if (!allHeightsFinite) break;
+                    }
+                    return { before, after, addedKeys: newKeys, allHeightsFinite, foundOutOfRange };
+                })
+                .catch(() => null);
+
+            if (!extensionResults) {
+                check("Terrain-Erweiterung erreichbar", false, "page.evaluate fehlgeschlagen");
+            } else {
+                check(
+                    "extendTerrain fügt neue Chunks an (alle vier Richtungen)",
+                    extensionResults.after - extensionResults.before >= 4,
+                    `before=${extensionResults.before}, after=${extensionResults.after}, added=${extensionResults.addedKeys.length}`
+                );
+                check(
+                    "Erweiterte Chunks haben endliche Vertex-Höhen",
+                    extensionResults.allHeightsFinite,
+                    extensionResults.addedKeys.length ? `keys: ${extensionResults.addedKeys.join(", ")}` : ""
+                );
+                check("Erweiterte Vertex-Höhen liegen im Clamp-Bereich [-100, 100]", !extensionResults.foundOutOfRange);
+            }
+
             // Zwei Loop-Iterationen warten, damit der Nexus-Loop die Test-Evolution
             // aus der Queue zieht und in dsl.history einträgt.
             await new Promise((r) => setTimeout(r, 500));
