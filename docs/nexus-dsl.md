@@ -216,7 +216,7 @@ Neuer Block im Save:
 
 ```json
 {
-  "version": "7.66-dsl-v1",
+  "version": "7.67-emotions-v1",
   "abilities": [
     {
       "name": "farbwechsel",

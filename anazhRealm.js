@@ -189,7 +189,7 @@ class AnazhRealm {
                 creator: "local",
                 visibility: "private",
                 parentWorlds: [],
-                schemaVersion: "7.66-dsl-v1",
+                schemaVersion: "7.67-emotions-v1",
             },
             // Ring 3 — Player-Emotionen. Sechs Achsen, jeweils 0..1.
             // Chat-Inputs füllen sie regelbasiert; im Game-Loop verflüchtigen
@@ -1634,7 +1634,7 @@ class AnazhRealm {
 
             if (this.state.physicsWorld) {
                 const creatureShape = new Ammo.btBoxShape(new Ammo.btVector3(0.25, 0.25, 0.25));
-                const body = this.addRigidBody(creatureMesh, 0.5, creatureShape);
+                this.addRigidBody(creatureMesh, 0.5, creatureShape);
             }
         }
         this.log(`Kreaturen gespawnt: ${safeCount} Kreaturen`);
@@ -4388,8 +4388,6 @@ class AnazhRealm {
                         // (heights -100..+100) den Spieler nicht reset.
                         const killPlaneY = (this.state.minHeight || -50) - 30;
                         if (scaledY < killPlaneY) {
-                            const zIndex = Math.floor(((pos.z() * this.state.scaleFactor + 150) / 300) * 255);
-                            const xIndex = Math.floor(((pos.x() * this.state.scaleFactor + 150) / 300) * 255);
                             const currentX = pos.x() * this.state.scaleFactor;
                             const currentZ = pos.z() * this.state.scaleFactor;
 
@@ -4642,8 +4640,6 @@ class AnazhRealm {
         ];
 
         let isGrounded = false;
-        let closestHitDistance = Infinity;
-        let closestHitY = null;
 
         for (const ray of rays) {
             const rayStart = this.setVec(
@@ -4665,12 +4661,7 @@ class AnazhRealm {
                 const hitY = hitPoint.y() * this.state.scaleFactor;
                 const distance = Math.abs(hitY - (this.state.playerMesh.position.y - 0.5));
                 if (distance < 0.5) {
-                    // Reduziere Schwellenwert für präzisere Erkennung
                     isGrounded = true;
-                }
-                if (distance < closestHitDistance) {
-                    closestHitDistance = distance;
-                    closestHitY = hitY;
                 }
             }
             Ammo.destroy(rayCallback);
