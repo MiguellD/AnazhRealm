@@ -749,6 +749,11 @@ class AnazhRealm {
     }
 
     dslComposeAtomic(rng) {
+        // Bewusst NICHT im Pool: terrain_steepness und terrain_base_height
+        // mutieren state.terrain*, würden aber erst beim nächsten worldgen
+        // wirken — initiale Chunks behielten ihre Werte, neue Extensions
+        // bekämen andere Höhen → Klippe an der Naht. Diese Ops bleiben für
+        // Chat (Phase 3) oder für eine spätere Welt-Regeneration-Op.
         const choices = [
             { w: 15, build: () => ["weather", rng() < 0.5 ? "rainy" : "sunny"] },
             {
@@ -765,11 +770,9 @@ class AnazhRealm {
             { w: 8, build: () => ["skybox_color", this.dslComposeColor(rng)] },
             { w: 7, build: () => ["player_jump_power", Number((8 + rng() * 12).toFixed(2))] },
             { w: 7, build: () => ["player_speed", Number((4 + rng() * 8).toFixed(2))] },
-            { w: 5, build: () => ["terrain_steepness", Number((0.5 + rng() * 1).toFixed(2))] },
             { w: 5, build: () => ["time_of_day", Number(rng().toFixed(2))] },
             { w: 4, build: () => ["creatures_speed_mul", Number((0.5 + rng() * 1.5).toFixed(2))] },
             { w: 4, build: () => ["creatures_size_mul", Number((0.7 + rng()).toFixed(2))] },
-            { w: 3, build: () => ["gravity", Number((-8 - rng() * 12).toFixed(2))] },
             // ~10 % `say`: Nexus kommentiert seine eigene Evolution. Per
             // §18 Q1 ("Ja, sparsam") gewählt.
             { w: 10, build: () => ["say", this.dslComposeSayMessage(rng)] },
@@ -2552,31 +2555,15 @@ class AnazhRealm {
 
                 let height = this.state.noiseCache.get(cacheKey);
                 if (height === undefined) {
-                    height = this._terrainHeightAtWorld(x, z, noise, steepness, baseHeight);
+                    height = this._terrainHeightAtWorld(x, z, noise, steepness, baseHeight, caveNoise, volcanoNoise);
                     this.cacheNoise(cacheKey, height);
                 }
-
-                const caveValue = caveNoise.noise3D(x * 0.05, height * 0.05, z * 0.05);
-                caveData[i] = caveValue > 0.4 ? 1 : 0;
-                if (caveData[i] === 1 && height < 10 && height > -20) {
-                    height -= 20;
-                    if (!Number.isFinite(height)) {
-                        this.log(`Ungültiger Höhenwert nach Höhle bei (${x}, ${z}): ${height}. Setze auf 0.`, "ERROR");
-                        height = 0;
-                    }
-                }
-
-                const volcanoValue = volcanoNoise.noise2D(x * 0.02, z * 0.02);
-                volcanoData[i] = volcanoValue > 0.8 ? 1 : 0;
-                if (volcanoData[i] === 1) {
-                    height += (50 * (volcanoValue - 0.8)) / 0.2;
-                    if (!Number.isFinite(height)) {
-                        this.log(`Ungültiger Höhenwert nach Vulkan bei (${x}, ${z}): ${height}. Setze auf 0.`, "ERROR");
-                        height = 0;
-                    }
-                }
-
-                height = Math.max(-100, Math.min(100, height));
+                // caveData/volcanoData behalten wir nur als Tag-Flags für späteren
+                // shader-Gebrauch; die Höhen-Wirkung ist bereits im Helper drin.
+                const caveSample = caveNoise.noise3D(x * 0.05, height * 0.05, z * 0.05);
+                caveData[i] = caveSample > 0.4 ? 1 : 0;
+                const volcanoSample = volcanoNoise.noise2D(x * 0.02, z * 0.02);
+                volcanoData[i] = volcanoSample > 0.8 ? 1 : 0;
                 heightData[i] = height;
                 minHeight = Math.min(minHeight, height);
                 maxHeight = Math.max(maxHeight, height);
@@ -3297,8 +3284,10 @@ class AnazhRealm {
     // ### Terrain-Erweiterung ### V7.42
     // Zentrale Höhen-Formel. Wird sowohl vom initialen generateTerrainWithParameters
     // als auch vom extendTerrain-Pfad genutzt — damit die Nähte zwischen
-    // ursprünglicher Welt und Erweiterung exakt zusammenpassen.
-    _terrainHeightAtWorld(worldX, worldZ, noise, steepness, baseHeight) {
+    // ursprünglicher Welt und Erweiterung exakt zusammenpassen. Inklusive
+    // Canyon, Field, Cave und Volcano-Modifikatoren (alle Schichten der
+    // initialen Welt-Gen).
+    _terrainHeightAtWorld(worldX, worldZ, noise, steepness, baseHeight, caveNoise, volcanoNoise) {
         const h1 = noise.noise2D(worldX * 0.01, worldZ * 0.01) * 20 * steepness;
         const h2 = noise.noise2D(worldX * 0.03, worldZ * 0.03) * 15 * steepness;
         const h3 = noise.noise2D(worldX * 0.06, worldZ * 0.06) * 10 * steepness;
@@ -3312,6 +3301,22 @@ class AnazhRealm {
         if (canyonNoise > 0.7) h -= (40 * (canyonNoise - 0.7)) / 0.3;
         if (fieldNoise < -0.5) h = Math.max(h * 0.2, -10);
         if (!Number.isFinite(h)) h = 0;
+        // Cave: lokale Senke, wenn Cave-Noise und aktuelle Höhe übereinstimmen.
+        if (caveNoise) {
+            const caveValue = caveNoise.noise3D(worldX * 0.05, h * 0.05, worldZ * 0.05);
+            if (caveValue > 0.4 && h < 10 && h > -20) {
+                h -= 20;
+                if (!Number.isFinite(h)) h = 0;
+            }
+        }
+        // Volcano: lokaler Aufstieg, wenn Volcano-Noise sehr hoch ist.
+        if (volcanoNoise) {
+            const volcanoValue = volcanoNoise.noise2D(worldX * 0.02, worldZ * 0.02);
+            if (volcanoValue > 0.8) {
+                h += (50 * (volcanoValue - 0.8)) / 0.2;
+                if (!Number.isFinite(h)) h = 0;
+            }
+        }
         return Math.max(-100, Math.min(100, h));
     }
 
@@ -3403,7 +3408,10 @@ class AnazhRealm {
         const worldStartX = newChunkX * chunkWorldSize - WORLD_SIZE / 2;
         const worldStartZ = newChunkZ * chunkWorldSize - WORLD_SIZE / 2;
 
-        const noise = new SimplexNoise(this.state.seed || "anazh-realm-seed");
+        const seed = this.state.seed || "anazh-realm-seed";
+        const noise = new SimplexNoise(seed);
+        const caveNoise = new SimplexNoise(seed + "-cave");
+        const volcanoNoise = new SimplexNoise(seed + "-volcano");
         const heightData = new Float32Array(VTX * VTX);
         let minHeight = Infinity;
         let maxHeight = -Infinity;
@@ -3415,7 +3423,15 @@ class AnazhRealm {
                 const cacheKey = `${worldX}:${worldZ}:${steepness}`;
                 let h = this.state.noiseCache.get(cacheKey);
                 if (h === undefined) {
-                    h = this._terrainHeightAtWorld(worldX, worldZ, noise, steepness, baseHeight);
+                    h = this._terrainHeightAtWorld(
+                        worldX,
+                        worldZ,
+                        noise,
+                        steepness,
+                        baseHeight,
+                        caveNoise,
+                        volcanoNoise
+                    );
                     this.cacheNoise(cacheKey, h);
                 }
                 heightData[z * VTX + x] = h;
