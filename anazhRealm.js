@@ -112,6 +112,7 @@ class AnazhRealm {
             movementWorkerBusy: false,
             tmpVec1: null,
             tmpVec2: null,
+            learningInFlight: false,
         };
         this.core = {
             initPhysics: this.initPhysics.bind(this),
@@ -924,6 +925,15 @@ class AnazhRealm {
         // Zweck: Erstellt ein neuronales Netz zur Bewegungsvorhersage oder Fallback bei Fehlern
         try {
             if (typeof tf === "undefined") throw new Error("TensorFlow.js nicht geladen – index.html prüfen");
+            // WebGL-Backend bevorzugen: 5–20× schneller als CPU und blockiert den
+            // Main-Thread nicht. Fallback auf das Standard-Backend, wenn WebGL fehlt.
+            try {
+                await tf.setBackend("webgl");
+                await tf.ready();
+                this.log(`TF.js-Backend: ${tf.getBackend()}`, "INFO");
+            } catch (backendError) {
+                this.log(`WebGL-Backend nicht verfügbar: ${backendError.message}`, "WARNING");
+            }
             this.state.playerMovementModel = tf.sequential();
             this.state.playerMovementModel.add(tf.layers.dense({ units: 32, inputShape: [6], activation: "relu" })); // Input: x, y, z, dx, dy, dz
             this.state.playerMovementModel.add(tf.layers.dense({ units: 16, activation: "relu" }));
@@ -974,7 +984,11 @@ class AnazhRealm {
 
     async learn(currentTime) {
         // ### KI-Lernen und Optimierung ###
-        // Zweck: Trainiert das Modell mit Bewegungsdaten und optimiert bei FPS-Drops
+        // Zweck: Trainiert das Modell mit Bewegungsdaten und optimiert bei FPS-Drops.
+        // Schutz: Wenn ein vorheriges fit() noch läuft, überspringen statt zu queuen.
+        // Sonst spawnt der 5-s-Tick parallele Aufrufe, die TF.js mit
+        // „Cannot start training because another fit() call is ongoing" ablehnt.
+        if (this.state.learningInFlight) return;
         if (this.state.learningData.length < 20) return; // Mindestdaten für Training
         const recentData = this.state.learningData.slice(-20);
         const avgFps = recentData.reduce((sum, d) => sum + d.fps, 0) / recentData.length;
@@ -986,6 +1000,7 @@ class AnazhRealm {
         }
 
         if (this.state.playerMovementModel.fit) {
+            this.state.learningInFlight = true;
             const inputs = recentData.map((d) => [
                 d.playerPosition.x,
                 d.playerPosition.y,
@@ -1000,9 +1015,18 @@ class AnazhRealm {
             });
             const xs = tf.tensor2d(inputs);
             const ys = tf.tensor2d(outputs);
-            await this.state.playerMovementModel.fit(xs, ys, { epochs: 5, batchSize: 10, verbose: 0 });
-            tf.dispose([xs, ys]);
-            this.log("KI-Modell trainiert – Bewegungsprognose verbessert", "INFO");
+            try {
+                // Eine Epoche pro Trainings-Tick: günstig genug, um nicht den
+                // Frame-Loop zu blockieren, und ausreichend, weil alle 5 s
+                // erneut trainiert wird.
+                await this.state.playerMovementModel.fit(xs, ys, { epochs: 1, batchSize: 10, verbose: 0 });
+                this.log("KI-Modell trainiert – Bewegungsprognose verbessert", "INFO");
+            } catch (fitError) {
+                this.log(`KI-Training fehlgeschlagen: ${fitError.message}`, "ERROR");
+            } finally {
+                tf.dispose([xs, ys]);
+                this.state.learningInFlight = false;
+            }
         }
 
         this.state.knowledgeBase.push({
