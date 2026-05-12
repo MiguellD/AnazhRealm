@@ -1,0 +1,128 @@
+name: Code-Check
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Dependencies installieren
+        run: npm install --no-audit --no-fund
+
+      - name: Prettier-Format-Check
+        run: npm run format:check
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Syntax-Check JS-Dateien
+        run: |
+          set -e
+          for f in $(git ls-files '*.js'); do
+            echo "→ $f"
+            node --check "$f"
+          done
+
+      - name: Duplikate Methodendefinitionen
+        run: |
+          dups=$(grep -nE "^[a-zA-Z_]+\s*\([^)]*\)\s*\{" anazhRealm.js \
+            | sed -E 's/^[0-9]+://; s/\(.*//' \
+            | sort | uniq -d || true)
+          if [ -n "$dups" ]; then
+            echo "❌ Doppelte Methodendefinitionen gefunden:"
+            echo "$dups"
+            exit 1
+          fi
+          echo "✅ Keine Duplikate"
+
+      - name: Single-Quote-Template-Strings (B2-Pattern)
+        run: |
+          # Erkennt Funktionsaufrufe wie foo('… ${x} …') – ${...} in einfach-quotierten
+          # String-Argumenten interpoliert nicht. Backticks innerhalb von Bezeichnern
+          # werden bewusst nicht gematcht (auch wenn sie Apostrophe enthalten).
+          if grep -nE "\(\s*'[^']*\\\$\{[^}]+\}[^']*'\s*[,)]" anazhRealm.js; then
+            echo "❌ Single-Quote-Template-String erkannt – Backticks verwenden"
+            exit 1
+          fi
+          echo "✅ Keine fehlgeschlagenen Template-Strings"
+
+      - name: Ammo-Memory-Leak-Indikator
+        continue-on-error: true
+        run: |
+          alloc=$(grep -c 'new Ammo.btVector3' anazhRealm.js || echo 0)
+          freed=$(grep -c 'Ammo.destroy' anazhRealm.js || echo 0)
+          echo "btVector3-Allokationen: $alloc"
+          echo "Ammo.destroy-Aufrufe:   $freed"
+          if [ "$alloc" -gt $((freed * 4)) ]; then
+            echo "⚠️ Verdacht auf Memory-Leak: deutlich mehr Allokationen als Frees"
+          fi
+
+      - name: Verbotenes dynamisches Auswerten (eval / new Function)
+        # Ring 2 Phase 5: die DSL ist der einzige Pfad für dynamische
+        # Effekte. Wenn dieser Grep wieder fündig wird, schaltet jemand
+        # das Sicherheits-Modell aus.
+        run: |
+          if grep -nE "(eval\(|new Function\()" anazhRealm.js save-server.js; then
+            echo "❌ Dynamisches Code-Eval gefunden — DSL nutzen, nicht eval/new Function"
+            exit 1
+          fi
+          echo "✅ Kein dynamisches Code-Eval"
+
+      - name: innerHTML-Schreibzugriffe (Hinweis, kein Fail)
+        continue-on-error: true
+        run: |
+          grep -nE "innerHTML\s*\+?=" anazhRealm.js || echo "keine Treffer"
+
+      - name: TODO/FIXME-Übersicht (Hinweis, kein Fail)
+        continue-on-error: true
+        run: |
+          grep -nE "(TODO|FIXME|XXX|HACK|TBD)" anazhRealm.js save-server.js || echo "keine TODOs"
+
+      - name: State-Datei JSON-valid
+        run: |
+          python3 -c "import json; json.load(open('anazhRealmState.json'))"
+          echo "✅ anazhRealmState.json ist gültiges JSON"
+
+  playtest:
+    # Lädt das Spiel in headless Chromium, läuft 20 s, prüft Invarianten
+    # (Welt generiert? 60+ Chunks? Spieler nicht abgestürzt? keine TF-Race?
+    # keine Death-Spiral?). Bricht ab, wenn irgendeine Invariante verletzt
+    # ist – fängt also genau die Klasse von Bug, die per statischem Check
+    # nicht sichtbar ist (Cooldown-Self-Block, Frustum-Bug, …).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: System-Libs für headless Chromium
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+            libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
+            libgbm1 libpango-1.0-0 libcairo2 libasound2t64 || \
+          sudo apt-get install -y --no-install-recommends \
+            libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+            libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
+            libgbm1 libpango-1.0-0 libcairo2 libasound2
+
+      - name: Dependencies installieren (inkl. puppeteer)
+        run: npm install --no-audit --no-fund
+
+      - name: Headless-Playtest (20 s)
+        env:
+          PLAYTEST_SECONDS: "20"
+        run: npm run playtest
