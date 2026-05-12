@@ -22,6 +22,9 @@ export default [
                 localStorage: "readonly",
                 fetch: "readonly",
                 FileReader: "readonly",
+                setTimeout: "readonly",
+                clearTimeout: "readonly",
+                SpeechSynthesisUtterance: "readonly",
                 // CDN-Libs
                 THREE: "readonly",
                 Ammo: "readonly",

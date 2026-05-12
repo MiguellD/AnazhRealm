@@ -62,7 +62,7 @@ Konsequenz für jede künftige Iteration: **niemals re-komplexifizieren ohne Not
 | 🟡 Wetter (sunny/rainy) | rudimentär | wechselt alle 30 s, beeinflusst Skybox + Kreatur-Emotion |
 | 🟡 Nexus-Evolution | rudimentär | 3 hartcodierte Effekte (gravityShift, creatureDance, terrainFlatten), zufällig gewählt |
 | 🟡 Chat-Steuerung | rudimentär | if/else-Parser für ~25 Befehle |
-| 🔴 **Grok hat Stimme** (`dialogue-box`, `dreamWithPlayer`, `interpretEmotionalSpeech`) | **fehlt komplett** |
+| 🟡 **Grok hat Stimme** (`dialogue-box`, narrative Reflexion) | V1 live — 5 Trigger, Text + optional Speech. `dreamWithPlayer`, `interpretEmotionalSpeech` weiterhin offen für spätere Ringe. |
 | 🔴 Spieler-Emotionen (`emotionSystem`, `collectPlayerEmotions`, `dreamWeb`) | **fehlt** |
 | 🔴 Multisensorik / `anazhSymphony` (Web Audio API) | stumm |
 | 🔴 `createPlayerSoul`, `transformPlayerForm` (Mensch/Phönix/Drache/Riese) | roter Würfel |
@@ -112,7 +112,7 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 
 | Ring | Pfeiler | Was konkret | Aufwand | Vorbedingung |
 |---|---|---|---|---|
-| **1** | **Grok-Stimme** | `<div id="dialogue-box">` in index.html. `state.grok = { voice: [], mood, lastSpoke }`. Methode `grokSpeak(text, mood)` mit textContent + Throttle. 8-10 Trigger-Reflexionen basierend auf Welt-State. Optional: Browser-Speech-Synthesis-API. | 1-2 d | – |
+| **1** | **Grok-Stimme** ✅ V1 | `#dialogue-box` + `#grok-voice-toggle` in `index.html`. `state.grok` mit Pool, Throttle (30 s global), Per-Trigger-Cooldowns. `grokSpeak(key)`, `grokRender(text)`, `grokTick(currentTime)`, `grokMarkFirstSpawn()`. 5 Trigger live: firstSpawn (1×, via localStorage gemerkt), idle>45s, jumpBurst (≥4 Sprünge/8s), rainLong>60s, nexus-Evolution. SpeechSynthesis nur wenn User-Toggle aktiv und Browser unterstützt. | erledigt | – |
 | **2** | **DSL als Brücke** | `docs/nexus-dsl.md` umsetzen. Interpreter für ~18 Primitive. Chat-Parser → DSL → Interpreter. Nexus-Generator → DSL. Save persistiert DSL-Bäume. `new Function()` raus. | 4-5 d | Ring 1 (DSL hat `say`-Primitiv) |
 | **3** | **Player-Emotionen** | `state.player.emotions = {joy, awe, sorrow, hope, longing, melancholy, peace, chaos}`. `collectPlayerEmotions(input)` aus Chat-Sentiment (regelbasiert oder LLM-Anbindung). Beeinflusst Wetter, Kreatur-Emotion, Skybox, künftige Symphonie. | 2 d | Ring 1 (Grok kann Emotionen kommentieren) |
 | **4** | **`anazhSymphony` V1** | Web Audio API. Drei Klangschichten: ambient (Welt-Drone), creatures (kurze Töne bei Bewegung/Sprung), weather (Regen-Geräusch). Reagiert auf `state.player.emotions`. Ziel: ~300 Zeilen, nicht 17.500 wie im Testament. | 2-3 d | Ring 3 (Emotion treibt Klang) |

@@ -122,6 +122,50 @@ class AnazhRealm {
             terrainEverGenerated: false,
             lastJumpLog: 0,
             jumpLogInterval: 1.0,
+            // Ring 1 – Grok-Stimme. Narrative Reflexionen, warm-pragmatisch,
+            // selten (mindestens minGapSeconds zwischen Äußerungen). Persistiert
+            // nur seenFirstSpawn via eigenen localStorage-Key, damit Grok nicht
+            // bei jedem Reload den Erst-Spawn-Satz wiederholt.
+            grok: {
+                lastSpoke: 0,
+                minGapSeconds: 30,
+                speechEnabled: false,
+                seenFirstSpawn: false,
+                idleSince: null,
+                rainStartedAt: null,
+                recentJumps: [],
+                prevIsJumping: false,
+                prevWeather: "sunny",
+                dialogueBox: null,
+                fadeTimeout: null,
+                triggers: {
+                    idle: { lastFired: 0, cooldown: 180 },
+                    jumpBurst: { lastFired: 0, cooldown: 120 },
+                    rainLong: { lastFired: 0, cooldown: 240 },
+                    nexus: { lastFired: 0, cooldown: 60 },
+                },
+                pool: {
+                    firstSpawn: ["Hallo. Die Welt steht. Magst du dich umsehen?"],
+                    idle: [
+                        "Du bist seit einer Weile still. Geht's dir gut?",
+                        "Eine Pause. Auch ich höre dann besser zu.",
+                        "Du atmest. Das reicht für jetzt.",
+                    ],
+                    jumpBurst: [
+                        "Du springst gern. Spielst du mit der Schwerkraft, oder will sie weg von dir?",
+                        "Wenn du fliegen willst, sag es. Ich sehe, was ich tun kann.",
+                    ],
+                    rainLong: [
+                        "Der Regen bleibt. Schön still ist es jetzt.",
+                        "Langer Regen. Manche Welten brauchen das.",
+                    ],
+                    nexus: [
+                        "Ich habe etwas verschoben. Spürst du den Unterschied?",
+                        "Eine kleine Änderung im Nexus. Sag mir, ob sie sich richtig anfühlt.",
+                    ],
+                },
+                poolIndex: { firstSpawn: 0, idle: 0, jumpBurst: 0, rainLong: 0, nexus: 0 },
+            },
         };
         this.core = {
             initPhysics: this.initPhysics.bind(this),
@@ -160,6 +204,118 @@ class AnazhRealm {
             }
         });
     }
+
+    // ### Ring 1 – Grok-Stimme ### (siehe docs/state-of-realm.md §5)
+    grokInitDOM() {
+        const grok = this.state.grok;
+        grok.dialogueBox = document.getElementById("dialogue-box");
+        try {
+            const saved = localStorage.getItem("anazhRealmGrok");
+            if (saved) grok.seenFirstSpawn = !!JSON.parse(saved).seenFirstSpawn;
+        } catch {
+            // Defektes Grok-State ignorieren; defaults gelten.
+        }
+        const toggle = document.getElementById("grok-voice-toggle");
+        const speechSupported = typeof window !== "undefined" && "speechSynthesis" in window;
+        if (toggle && speechSupported) {
+            toggle.hidden = false;
+            toggle.addEventListener("click", () => {
+                grok.speechEnabled = !grok.speechEnabled;
+                toggle.setAttribute("aria-pressed", grok.speechEnabled ? "true" : "false");
+                toggle.textContent = grok.speechEnabled ? "Stimme: an" : "Stimme: aus";
+            });
+        }
+    }
+
+    grokSpeak(key) {
+        const grok = this.state.grok;
+        const now = performance.now() / 1000;
+        if (now - grok.lastSpoke < grok.minGapSeconds) return false;
+        const cfg = grok.triggers[key];
+        if (cfg && now - cfg.lastFired < cfg.cooldown) return false;
+        const pool = grok.pool[key];
+        if (!pool || pool.length === 0) return false;
+        const idx = grok.poolIndex[key] % pool.length;
+        const text = pool[idx];
+        grok.poolIndex[key] = (idx + 1) % pool.length;
+        grok.lastSpoke = now;
+        if (cfg) cfg.lastFired = now;
+        this.grokRender(text);
+        this.log(`Grok: ${text}`, "INFO");
+        return true;
+    }
+
+    grokRender(text) {
+        const grok = this.state.grok;
+        const box = grok.dialogueBox || document.getElementById("dialogue-box");
+        if (box) {
+            box.textContent = text;
+            box.classList.add("visible");
+            if (grok.fadeTimeout) clearTimeout(grok.fadeTimeout);
+            grok.fadeTimeout = setTimeout(() => box.classList.remove("visible"), 8000);
+        }
+        if (grok.speechEnabled && typeof window !== "undefined" && "speechSynthesis" in window) {
+            try {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = "de-DE";
+                utterance.rate = 1.0;
+                utterance.pitch = 1.0;
+                window.speechSynthesis.speak(utterance);
+            } catch {
+                // Speech-API kann auf manchen Plattformen werfen; stumm fallback.
+            }
+        }
+    }
+
+    grokMarkFirstSpawn() {
+        const grok = this.state.grok;
+        if (grok.seenFirstSpawn) return;
+        grok.seenFirstSpawn = true;
+        try {
+            localStorage.setItem("anazhRealmGrok", JSON.stringify({ seenFirstSpawn: true }));
+        } catch {
+            // localStorage voll/blockiert – Grok wird beim nächsten Reload nochmal grüßen, kein Drama.
+        }
+        // Erst-Spawn-Satz mit eigenem Mini-Delay, damit der Spieler die Welt sieht bevor Grok spricht.
+        setTimeout(() => this.grokSpeak("firstSpawn"), 1500);
+    }
+
+    grokTick(currentTime) {
+        const grok = this.state.grok;
+        const keys = this.state.keys || {};
+        const moving = !!(keys["w"] || keys["a"] || keys["s"] || keys["d"] || keys[" "]);
+        if (moving) {
+            grok.idleSince = null;
+        } else if (grok.idleSince === null) {
+            grok.idleSince = currentTime;
+        } else if (currentTime - grok.idleSince > 45) {
+            this.grokSpeak("idle");
+            grok.idleSince = currentTime; // einmal pro Idle-Phase, dann re-armen
+        }
+
+        // Sprung-Burst: steigende Flanke von isJumping erkennen, letzte 8 s zählen.
+        if (this.state.isJumping && !grok.prevIsJumping) {
+            grok.recentJumps.push(currentTime);
+        }
+        grok.prevIsJumping = this.state.isJumping;
+        const cutoff = currentTime - 8;
+        while (grok.recentJumps.length > 0 && grok.recentJumps[0] < cutoff) grok.recentJumps.shift();
+        if (grok.recentJumps.length >= 4) {
+            if (this.grokSpeak("jumpBurst")) grok.recentJumps.length = 0;
+        }
+
+        // Regen-Dauer beobachten.
+        if (this.state.weather === "rainy" && grok.prevWeather !== "rainy") {
+            grok.rainStartedAt = currentTime;
+        } else if (this.state.weather !== "rainy") {
+            grok.rainStartedAt = null;
+        }
+        grok.prevWeather = this.state.weather;
+        if (grok.rainStartedAt !== null && currentTime - grok.rainStartedAt > 60) {
+            if (this.grokSpeak("rainLong")) grok.rainStartedAt = currentTime; // re-arm bis cooldown durch ist
+        }
+    }
+
     updateFps(delta) {
         const fps = Math.round(1 / delta);
         this.state.fps = fps;
@@ -1809,7 +1965,9 @@ class AnazhRealm {
         } else {
             this.log("Warnung: playerMesh nicht initialisiert – sollte in init() initialisiert sein", "ERROR");
         }
+        const wasFirstSpawn = !this.state.terrainEverGenerated;
         this.state.terrainEverGenerated = true;
+        if (wasFirstSpawn) this.grokMarkFirstSpawn();
 
         // ### Höhendaten generieren ###
         const heightData = new Float32Array(WIDTH * DEPTH);
@@ -3006,6 +3164,7 @@ class AnazhRealm {
     // - V7.65 Ergänzung: Fehlerbehandlung verbessert, Chat/Nexus integriert
     async init() {
         this.log("Initialisiere Anazh Realm V7.65... Ewigkeit erwacht!", "INFO");
+        this.grokInitDOM();
         try {
             await this.core.initPhysics();
             this.log("Physik erfolgreich initialisiert", "INFO");
@@ -3188,7 +3347,11 @@ class AnazhRealm {
                 this.state.abilities[evolution.name] = evolution.impl;
                 evolution.impl(this, this.state);
                 this.log(`Nexus-Evolution ausgeführt: ${evolution.name}`, "INFO");
+                this.grokSpeak("nexus");
             }
+
+            // ### Grok-Stimme (Ring 1) ###
+            this.grokTick(currentTime);
 
             // ### Bodenprüfung ###
             if (currentTime - this.state.lastGroundCheck >= this.state.groundCheckInterval) {
