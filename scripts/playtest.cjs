@@ -1,18 +1,21 @@
-// Headless-Smoketest. Startet save-server.js, lädt das Spiel in Chromium,
-// sammelt Console-Logs für N Sekunden, produziert eine Statistik.
+// Headless-Smoketest, doppelt als CI-Gate verwendbar.
+// Startet save-server.js, lädt das Spiel in Chromium, sammelt Console-Logs für
+// N Sekunden, druckt Statistik UND prüft eine Liste harter Invarianten. Eine
+// verletzte Invariante setzt exit=1; CI bricht damit ab.
 //
-// Aufruf: npm run playtest
-//         PLAYTEST_SECONDS=60 npm run playtest
+// Aufruf:
+//   npm run playtest                       # Standardlauf
+//   PLAYTEST_SECONDS=60 npm run playtest   # länger
+//   PLAYTEST_STRICT=0 npm run playtest     # nur reporten, kein exit=1
 //
 // Voraussetzungen: puppeteer als devDependency (`npm install`).
-//
-// Hinweis: kein CI-Schritt. Das ist ein manueller Performance-Probe-Tool.
 
 const { spawn } = require("child_process");
 const puppeteer = require("puppeteer");
 
-const DURATION_MS = Number(process.env.PLAYTEST_SECONDS || 25) * 1000;
+const DURATION_MS = Number(process.env.PLAYTEST_SECONDS || 20) * 1000;
 const SERVER_URL = "http://127.0.0.1:4312/index.html";
+const STRICT = process.env.PLAYTEST_STRICT !== "0";
 
 function startSaveServer() {
     return new Promise((resolve, reject) => {
@@ -62,20 +65,25 @@ function startSaveServer() {
         errors.push({ kind: "requestfailed", url: req.url(), error: req.failure()?.errorText })
     );
 
+    const failures = [];
+    function check(name, ok, detail = "") {
+        const status = ok ? "✅" : "❌";
+        console.log(`  ${status} ${name}${detail ? " — " + detail : ""}`);
+        if (!ok) failures.push(name);
+    }
+
     try {
         await page.goto(SERVER_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
         await new Promise((r) => setTimeout(r, DURATION_MS));
 
+        // ### Bericht (informativ) ###
         const fpsText = await page.$eval("#fps", (el) => el.innerText).catch(() => "?");
-
-        // Analyse
         const fpsValues = [];
         const fpsRe = /\[INFO\] FPS: (\d+)/;
         for (const l of logs) {
             const m = l.text.match(fpsRe);
             if (m) fpsValues.push(Number(m[1]));
         }
-
         const histogram = new Map();
         for (const l of logs) {
             const generic = l.text
@@ -84,40 +92,116 @@ function startSaveServer() {
                 .replace(/\b\d+\b/g, "N");
             histogram.set(generic, (histogram.get(generic) || 0) + 1);
         }
-        const top = [...histogram.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15);
-        const errorTexts = logs.filter((l) => l.type === "error" || /\[ERROR\]/.test(l.text));
+        const top = [...histogram.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
 
-        console.log(`\n=== Smoketest-Ergebnis (${DURATION_MS / 1000}s) ===`);
-        console.log(`Aktueller FPS-Div: "${fpsText}"`);
-        console.log(`Total log-Einträge: ${logs.length}`);
-        console.log(`Page-Errors: ${errors.length}`);
-        console.log(`Console-Errors: ${errorTexts.length}`);
-
+        console.log(`\n=== Bericht (${DURATION_MS / 1000}s) ===`);
+        console.log(`FPS-Div: "${fpsText}", Log-Einträge: ${logs.length}, Page-Errors: ${errors.length}`);
         if (fpsValues.length) {
-            const sum = fpsValues.reduce((a, b) => a + b, 0);
             const min = Math.min(...fpsValues);
             const max = Math.max(...fpsValues);
-            const avg = sum / fpsValues.length;
-            const zeros = fpsValues.filter((f) => f === 0).length;
-            console.log(`\nFPS-Statistik: min=${min}, max=${max}, avg=${avg.toFixed(1)}, samples=${fpsValues.length}`);
-            console.log(`FPS=0 Frames: ${zeros}/${fpsValues.length}`);
-            console.log(`FPS-Verlauf (erste 30): ${fpsValues.slice(0, 30).join(",")}`);
+            const avg = fpsValues.reduce((a, b) => a + b, 0) / fpsValues.length;
+            console.log(`FPS samples: min=${min}, max=${max}, avg=${avg.toFixed(1)}, n=${fpsValues.length}`);
+        }
+        console.log(`Top-Log-Muster:`);
+        for (const [msg, count] of top) console.log(`  ${String(count).padStart(4)}× ${msg.slice(0, 110)}`);
+
+        // ### Invarianten (gatekeeping) ###
+        const finalState = await page
+            .evaluate(() => {
+                const r = window.anazhRealm;
+                if (!r || !r.state) return null;
+                return {
+                    terrainEverGenerated: r.state.terrainEverGenerated,
+                    groundChunks: r.state.groundChunks?.length || 0,
+                    chunkMapSize: r.state.chunkMap?.size || 0,
+                    playerY: r.state.playerMesh?.position?.y,
+                    playerX: r.state.playerMesh?.position?.x,
+                    playerZ: r.state.playerMesh?.position?.z,
+                    creatures: r.state.creatures?.length || 0,
+                    floatingIslands: r.state.floatingIslands?.length || 0,
+                    hasPlayerBody: !!r.state.playerBody,
+                };
+            })
+            .catch(() => null);
+
+        console.log(`\n=== Invarianten ===`);
+        if (!finalState) {
+            failures.push("Game-State erreichbar");
+            console.log("  ❌ window.anazhRealm.state nicht erreichbar (Seite tot?)");
         } else {
-            console.log(`\nKeine FPS-Logs erfasst (FPS-Logger feuert nur einmal pro Sekunde).`);
+            check(
+                "Welt initial generiert (terrainEverGenerated=true)",
+                finalState.terrainEverGenerated === true,
+                `terrainEverGenerated=${finalState.terrainEverGenerated}`
+            );
+            check(
+                "Mindestens 60 Chunks im groundChunks-Array",
+                finalState.groundChunks >= 60,
+                `groundChunks=${finalState.groundChunks}`
+            );
+            check(
+                "chunkMap konsistent mit groundChunks",
+                finalState.chunkMapSize >= 60 && Math.abs(finalState.chunkMapSize - finalState.groundChunks) < 10,
+                `chunkMap=${finalState.chunkMapSize}, groundChunks=${finalState.groundChunks}`
+            );
+            check(
+                "Spieler nicht durch den Boden gefallen",
+                typeof finalState.playerY === "number" && finalState.playerY > -50,
+                `playerY=${finalState.playerY?.toFixed(2)}`
+            );
+            check(
+                "Kreaturen gespawnt",
+                finalState.creatures >= 5,
+                `creatures=${finalState.creatures}`
+            );
+            check(
+                "Fliegende Inseln gespawnt",
+                finalState.floatingIslands >= 1,
+                `floatingIslands=${finalState.floatingIslands}`
+            );
+            check(
+                "Physik-Body für Spieler vorhanden",
+                finalState.hasPlayerBody === true,
+                `hasPlayerBody=${finalState.hasPlayerBody}`
+            );
         }
 
-        console.log(`\n=== Top-15 Log-Muster ===`);
-        for (const [msg, count] of top) console.log(`${String(count).padStart(4)}× ${msg.slice(0, 140)}`);
+        // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
+        const pageErrors = errors.filter((e) => e.kind === "pageerror");
+        check("Keine Script-Exceptions (page.on pageerror)", pageErrors.length === 0,
+            pageErrors.length ? `${pageErrors.length}× erste: ${pageErrors[0].text.slice(0, 100)}` : "");
 
-        if (errors.length || errorTexts.length) {
-            console.log(`\n=== Fehler-Beispiele ===`);
-            for (const e of errors.slice(0, 5))
-                console.log(`  [page] ${e.kind}: ${(e.text || e.url || "").slice(0, 200)}`);
-            for (const e of errorTexts.slice(0, 5)) console.log(`  [console] ${e.text.slice(0, 200)}`);
+        // Kritische Console-Patterns, die früher echte Bugs anzeigten.
+        const criticalPatterns = [
+            { re: /Cannot start training because another fit/, why: "TF-Race" },
+            { re: /Infinity, Infinity/, why: "extendTerrain-Infinity (Cooldown-Self-Block)" },
+            { re: /Ungültige Chunk-Größe/, why: "Chunk-Generation-Fehler" },
+            { re: /THREE is not defined|Ammo is not defined|tf is not defined|SimplexNoise is not defined/, why: "Vendor-Lib nicht geladen" },
+            { re: /Failed to execute 'compile' on 'WebAssembly'.*MIME/, why: "WASM-MIME falsch konfiguriert" },
+        ];
+        for (const { re, why } of criticalPatterns) {
+            const hits = logs.filter((l) => re.test(l.text));
+            check(`Keine '${why}'-Logs`, hits.length === 0,
+                hits.length ? `${hits.length}× erste: ${hits[0].text.slice(0, 100)}` : "");
         }
+
+        // Death-Spiral-Sensor: "Boden fehlt" mehr als zweimal in N Sekunden = Loop.
+        const bodenFehltCount = logs.filter((l) => /Boden fehlt/.test(l.text)).length;
+        check(
+            "Keine Welt-Regen-Death-Spiral",
+            bodenFehltCount <= 2,
+            `'Boden fehlt'-Logs=${bodenFehltCount}`
+        );
     } finally {
         await browser.close();
         server.kill();
+    }
+
+    if (failures.length > 0) {
+        console.log(`\n❌ ${failures.length} Invariante(n) verletzt: ${failures.join(", ")}`);
+        if (STRICT) process.exit(1);
+    } else {
+        console.log(`\n✅ Alle Invarianten OK`);
     }
 })().catch((err) => {
     console.error("Smoketest-Crash:", err);
