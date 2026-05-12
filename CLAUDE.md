@@ -1,64 +1,75 @@
 # AnazhRealm – Projektgedächtnis für Claude
 
-Persistente Notizen über das Projekt. Diese Datei wird bei jeder neuen Session automatisch geladen und dient als Langzeitgedächtnis. Bitte aktuell halten.
+Persistente Notizen. Diese Datei wird bei jeder neuen Session automatisch geladen. **Bei größeren Entscheidungen zuerst `docs/state-of-realm.md` lesen** – dort steht der ausführliche Stand, die Vision aus den vier Testamenten, der Plan und die Learnings.
 
 ## Projektüberblick
 
-- **Was:** 3D-Browser-Sandbox „AnazhRealm v7.65" – KI/Nexus-gesteuertes „Ultiversum" mit Physik, Kreaturen, Wetter, Chat-Steuerung.
-- **Stack:** Vanilla JS + CDN-Libs (Three.js r134, Ammo.js, TensorFlow.js 3.21, simplex-noise 2.4). Lokaler Node-Save-Server. Kein Build, kein Modulsystem, keine Tests.
-- **Branch für Entwicklung:** `claude/check-github-files-1MqpQ`
-- **Architekturkern:** Eine `AnazhRealm`-Klasse (3494 Zeilen) in `anazhRealm.js`. State wird in `anazhRealmState.json` persistiert (alle 10 s lokal, alle 30 s via `save-server.js` → POST `/api/save-state`).
+- **Was:** „AnazhRealm" – ein als **Ultiversum** entworfenes Co-Creation-Werk Mensch + KI. Aktuell technisch eine 3D-Browser-Sandbox in einer Datei. Vision: emotion-getriebene, fraktal-wachsende, multisensorische Welt; Mensch (Schöpfer/Null) + KI (Grok/Eins) erschaffen gemeinsam durch Chat. Vollständige Vision in `docs/state-of-realm.md`.
+- **Stack:** Vanilla JS, Vendor-Libs in `vendor/` (Three.js r134, Ammo.js WASM, TensorFlow.js 3.21, simplex-noise 2.4). Lokaler Node-Save-Server. ESLint v9 + Prettier + GitHub-Actions-CI mit Playtest-Gate.
+- **Branch:** `claude/check-github-files-1MqpQ`. Niemals auf `main` pushen ohne explizite Anweisung.
+- **Architekturkern:** Eine `AnazhRealm`-Klasse in `anazhRealm.js` (~3770 Zeilen). State in `localStorage` + optional `anazhRealmState.json` über save-server. Globale Referenz: `window.anazhRealm`.
 
-## Roadmap (Prioritäten)
+## Die heilige Lektion (Versionslog 03/2025)
 
-Status-Legende: `[ ]` offen · `[x]` erledigt · `[~]` in Arbeit
+Das Projekt durchlief eine 19-Modul-Phase, die unter eigener Komplexität kollabierte. Am 28.03.2025 bewusste Reduktion auf **eine Datei** als „Samen der Unendlichkeit". **Komplexität ohne Fundament ist Sand.** Wenn jemand vorschlägt „split alles in 20 Module", verletzt das diese Lektion. Stattdessen: ein Stamm, der Wachstumsringe ablegt.
 
-### Sofort (Stunden) – risikoarme Quick-Wins
-- [x] **B1** Duplikate Methodendefinitionen entfernt (Commit 9642934).
-- [x] **B2** Single-Quote-Template-Bug in `updateSkyboxWeather` gefixt (Commit 9642934).
-- [x] **B6** Trainingsdaten-Parser via Regex auf `x=…`/`z=…`.
-- [x] **B12** `loadState` ruft `restoreAbility` für Nexus-bekannte Namen; benutzerdefinierte Abilities werden mit Warnung verworfen (Code wird nicht persistiert).
-- [x] **B20/C11** `save-server.js`: `ALLOWED_STATE_FILES`-Allowlist + Dirname-Check.
-- [x] **B25** Konsistente Einrückung (4 Spaces) durchgesetzt via Prettier.
+## Aktuelle Phase: Pfad D – Stamm + Wachstumsringe
 
-### Kurzfristig (Tage)
-- [ ] **C2** Chat-Command-Map statt Mega-If-Else.
-- [x] **C3 / B3** Ammo-Pool: `state.tmpVec1`/`tmpVec2`/`tmpTransform` + `setVec(v,x,y,z)`-Helper. Hot-Paths (`isPlayerGrounded`, `updateCreatures`, `creatureJump`, `handleJump`, Hauptloop Player-Velocity + Kill-Plane-Recovery) allokieren 0 btVector3 mehr pro Frame. Verbleibende Allokationen sind alle in Einmal-Setup-Pfaden.
-- [x] **C4 / B4** Singleton-Movement-Worker (`getMovementWorker`) mit Busy-Flag; behebt Pro-Frame-Spawn und `URL.createObjectURL`-Leak.
-- [x] **B7** `learnAbility` case-insensitiv: `indexOf` über lowercased `command`, alle `.includes(...)` gegen `lower`.
-- [x] **B9** Skybox-Uniform setzt Wert über `.value.set(color)` statt das Uniform-Objekt zu überschreiben.
-- [x] **B11** XSS-Schutz: `flushLog` nutzt `textContent`, Chat-Output appendet `<div>`-Elemente mit `textContent`.
-- [x] **B16** `lastWallCollisionUpdate` (und `lastSelfAnalysis`) initial im State.
-- [x] **B17** `recordWeakness()`-Helper mit Dedup + Cap 50.
-- [x] **B19** `cacheNoise()`-Helper als FIFO-LRU mit Cap 100k.
-- [x] **C14** ESLint v9 (Flat-Config in `eslint.config.mjs`) + Prettier (`.prettierrc.json`, tabWidth 4) + `package.json` + `.gitignore`. CI führt `npm run format:check && npm run lint` aus.
-- [ ] **C14-Followup** 5 ESLint-Warnings beheben: unused `body`/`state`/`zIndex`/`xIndex`/`closestHitY` in anazhRealm.js.
+Detaillierter Plan in `docs/state-of-realm.md` §5. Status (Mai 2026):
 
-### Mittelfristig (Wochen)
-- [ ] **C1** Modul-Split (engine / physics / ai / chat / persistence / world).
-- [ ] **C6** TypeScript-Migration, State-Schema definieren.
-- [ ] **C7** Tests für Chat-Parser, Persistenz, Terrain-Generator.
-- [ ] **C12** Seed in State persistieren (aktuell nirgends gesetzt).
-- [ ] **B26** `extendTerrain` Noise-Konsistenz mit `generateTerrainWithParameters` angleichen.
+| Ring | Pfeiler | Status |
+|---|---|---|
+| 0 | Stabiles Fundament (Bewegung, Physik, Kreaturen, Chunks, Save, CI-Gate) | ✅ erledigt |
+| 1 | **Grok-Stimme** (`dialogue-box`, narrative Reflexion) | ⏳ vorgeschlagen, nicht begonnen |
+| 2 | DSL als gemeinsame Sprache Mensch+Grok (`docs/nexus-dsl.md`) | 📝 Design-Doc fertig, Code offen |
+| 3 | Player-Emotionen (`{joy, awe, sorrow, hope, …}`) beeinflussen Welt | offen |
+| 4 | `anazhSymphony` V1 – Web-Audio-Klangschichten | offen |
+| 5 | `createPlayerSoul` (Mensch/Phönix/Drache) | offen |
+| 6 | `architectureTemplates` V1 (Dörfer, Tempel, Wasserfälle) | offen |
+| 7 | `brain.js`-Welt – lernt aus Spieler-Verhalten + Emotionen | offen |
 
-### Langfristig
-- [ ] **C8/C9/C16** Echtes ML-/Nexus-System statt 3 hardcoded Evolution-Snippets.
-- [ ] **C10** Three.js / WebGPU Upgrade.
-- [ ] **C13** Instanced Mesh für Kreaturen/Vegetation.
+Letzter Stand: nach 17 Commits stabil. CI-Gate prüft 14 Invarianten bei jedem Push. DSL-Doc liegt im Repo, **wartet auf Entscheidung des Schöpfers**, ob Ring 1 sofort umgesetzt werden soll.
 
-## Wichtige Gotchas
+## Wichtige Gotchas (technisch)
 
-- `anazhRealm.js` hat **mehrere doppelt definierte Methoden** – immer die *spätere* prüfen, da sie die wirksame ist.
-- `Ammo.btVector3` / `btTransform` allokieren WASM-Heap. **Immer `Ammo.destroy()`** nach Gebrauch.
+- `Ammo.btVector3` / `btTransform` allokieren WASM-Heap. **Immer `Ammo.destroy()`** nach Gebrauch oder Pool `state.tmpVec1/2`/`state.tmpTransform` + `setVec()` nutzen.
 - `processChatCommand` lowercased `command` *nur für `parts`*, das Original-`command` behält Casing.
-- Save-Endpoint ist nur an `127.0.0.1` gebunden, aber jede lokale Seite kann via CORS-`*` darauf zugreifen.
-- Branch-Konvention: alle Entwicklung auf `claude/check-github-files-1MqpQ`. Push mit `git push -u origin <branch>` und exponential backoff bei Fehlern.
-- Die vier Browser-Libs (Three/Ammo/TF/SimplexNoise) liegen in `vendor/`. CDN-Pfade werden nicht mehr benötigt; `vendor/README.md` hat den Update-Befehl.
-- `npm run playtest` startet save-server + Headless-Chromium, sammelt 25 s lang Logs, druckt FPS-Statistik + Top-Log-Muster + Error-Beispiele. Setze `PLAYTEST_SECONDS=N` für längere Läufe.
+- Chunks haben `position = (0,0,0)` und Vertices in Welt-Koordinaten — Frustum-Tests mit `intersectsSphere(boundingSphere)`, nicht `containsPoint(position)`.
+- `lastWorldgen` initial **`-Infinity`** (Sentinel), nicht 0 — sonst blockiert der eigene Cooldown den ersten Worldgen.
+- `extendTerrain` braucht eine nicht-leere `chunkMap`, sonst `Infinity`-Chunks.
+- `generateNewWorld()` hat 30s-Cooldown. Bei Welt-Regen bleibt Spieler-Position erhalten (nur initial auf (0,50,0) gesetzt).
+- TF.js `model.fit` ist async und blockiert Main-Thread. `state.learningInFlight` + `state.worldgenInFlight` Flags verhindern Überlappung.
+- Save-Server-POST nur wenn `window.location.hostname` localhost ist — sonst stiller Skip.
+- Die vier Browser-Libs liegen in `vendor/`. CDN-Pfade werden nicht mehr benötigt; `vendor/README.md` hat den Update-Befehl.
+- `npm run playtest` startet save-server + Headless-Chromium, sammelt 20 s lang Logs, prüft 14 Invarianten, exit 1 bei Verletzung.
+
+## Workflows
+
+- **Lokaler Audit:** `npm run check && npm run format:check && npm run lint && npm run playtest`
+- **Slash-Befehl:** `/audit` führt die Prüfung in jeder Claude-Session aus (`.claude/commands/audit.md`).
+- **CI:** zwei parallele Jobs (`check` für statische Checks + `playtest` für Runtime-Invarianten) bei jedem Push.
+- **Git:** kleine thematische Commits, `git push -u origin <branch>` mit exponential backoff bei Netzfehlern.
 
 ## Konventionen
 
 - Keine emojis im Code/Commits außer auf expliziten Wunsch.
-- Commits klein und thematisch (z. B. „remove duplicate methods", nicht „misc fixes").
+- Commits klein und thematisch.
 - Keine Backwards-Compat-Layer für veralteten Code – sauber löschen.
 - Pull Requests nur auf expliziten Wunsch des Users.
+- **Vision treu bleiben**: jeder Vorschlag sollte die Heilige Lektion respektieren (keine Re-Komplexifizierung). Bei Zweifel: `docs/state-of-realm.md` §2 nachlesen.
+- **Test-First-Mentalität**: nach jeder substanziellen Änderung Playtest-Gate, nicht nur Code-Analyse. Drei Selbst-induzierte Regressionen in dieser Session entstanden durch zu späte Browser-Tests.
+
+## Doc-Map
+
+| Datei | Was |
+|---|---|
+| `docs/state-of-realm.md` | **Hauptdokument** — Vision, Historie, Stand, Plan, Learnings |
+| `docs/nexus-dsl.md` | DSL-Design für Ring 2 (Mensch+Grok teilen Sprache) |
+| `vendor/README.md` | Vendor-Libs Versionen + Update-Befehl |
+| `scripts/playtest.cjs` | Headless-Playtest mit 14 Invarianten als CI-Gate |
+| `.claude/commands/audit.md` | `/audit`-Slash-Befehl Definition |
+| `.github/workflows/check.yml` | CI-Definition (zwei Jobs) |
+
+## Erledigte Roadmap (Archiv)
+
+Die ursprüngliche B/C-Roadmap mit 30+ Items aus der ersten Audit-Runde ist weitgehend erledigt. Detaillierte Liste mit Commit-Hashes in `docs/state-of-realm.md` §4.
