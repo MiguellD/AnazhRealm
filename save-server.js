@@ -5,6 +5,9 @@ const path = require("path");
 const HOST = "127.0.0.1";
 const PORT = 4312;
 const PROJECT_ROOT = __dirname;
+const ALLOWED_STATE_FILES = new Set([
+    "anazhRealmState.json",
+]);
 
 const MIME_TYPES = {
     ".html": "text/html; charset=utf-8",
@@ -66,8 +69,13 @@ function handleSaveState(req, res) {
                 return;
             }
 
+            if (!ALLOWED_STATE_FILES.has(fileName)) {
+                sendJson(res, 403, { error: "Filename not in allowlist", allowed: [...ALLOWED_STATE_FILES] });
+                return;
+            }
+
             const targetPath = path.join(PROJECT_ROOT, fileName);
-            if (!targetPath.startsWith(PROJECT_ROOT)) {
+            if (path.dirname(targetPath) !== PROJECT_ROOT) {
                 sendJson(res, 403, { error: "Forbidden target path" });
                 return;
             }

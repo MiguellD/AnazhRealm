@@ -14,15 +14,11 @@ Persistente Notizen über das Projekt. Diese Datei wird bei jeder neuen Session 
 Status-Legende: `[ ]` offen · `[x]` erledigt · `[~]` in Arbeit
 
 ### Sofort (Stunden) – risikoarme Quick-Wins
-- [ ] **B1** Duplikate Methodendefinitionen entfernen (toter Code). Zweite Definition gewinnt in JS-Klassen, also die *ersten* löschen:
-  - `isPlayerGrounded` Z. 487–525 (effektiv = Z. 3219)
-  - `getTerrainHeightAt` Z. 527–548 (effektiv = Z. 3270)
-  - `calculateTerrainSteepness` Z. 550–581 (effektiv = Z. 3292)
-  - `addWallCollisions` Z. 341–485 (effektiv = Z. 3428, 8-Param-Signatur)
-- [ ] **B2** Single-Quote-Template-Bug in `updateSkyboxWeather` (Z. 677): `'…${this.state.weather}'` → Backticks.
-- [ ] **B6** `processChatCommand` „Füge Trainingsdaten x=10 z=5" parst `parts[3]`/`parts[5]` falsch. Werte aus `x=…`/`z=…` extrahieren.
-- [ ] **B12** `loadState` restauriert `abilities` nicht. Mindestens Namen registrieren oder erkennen.
-- [ ] **B20/C11** `save-server.js`: Allowlist statt freier `fileName`-Parameter.
+- [x] **B1** Duplikate Methodendefinitionen entfernt (Commit 9642934).
+- [x] **B2** Single-Quote-Template-Bug in `updateSkyboxWeather` gefixt (Commit 9642934).
+- [x] **B6** Trainingsdaten-Parser via Regex auf `x=…`/`z=…`.
+- [x] **B12** `loadState` ruft `restoreAbility` für Nexus-bekannte Namen; benutzerdefinierte Abilities werden mit Warnung verworfen (Code wird nicht persistiert).
+- [x] **B20/C11** `save-server.js`: `ALLOWED_STATE_FILES`-Allowlist + Dirname-Check.
 - [ ] **B25** Konsistente Einrückung (4 Spaces) in `anazhRealm.js`.
 
 ### Kurzfristig (Tage)

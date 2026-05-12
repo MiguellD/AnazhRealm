@@ -978,10 +978,8 @@ evolveNexus(currentTime) {
     });
 }
 
-generateEvolution() {
-    // ### Evolutionen mit Chaos und Ordnung ###
-    // Zweck: Generiert dynamische Erweiterungen für das Spiel
-    const ideas = [
+getNexusIdeas() {
+    return [
         {
             name: "gravityShift",
             code: `self.state.gravity = -9.81; self.state.physicsWorld.setGravity(new Ammo.btVector3(0, -9.81, 0)); self.log("Nexus: Gravitation auf Erdebene gesetzt", "INFO");`
@@ -995,6 +993,12 @@ generateEvolution() {
             code: `self.state.terrainSteepness *= 0.8; self.generateNewWorld(); self.log("Nexus: Terrain abgeflacht", "INFO");`
         }
     ];
+}
+
+generateEvolution() {
+    // ### Evolutionen mit Chaos und Ordnung ###
+    // Zweck: Generiert dynamische Erweiterungen für das Spiel
+    const ideas = this.getNexusIdeas();
     const idea = ideas[Math.floor(Math.random() * ideas.length)];
     const dynamicAbility = this.createDynamicAbility(idea.name, idea.code);
     if (!dynamicAbility) {
@@ -1004,6 +1008,21 @@ generateEvolution() {
         };
     }
     return { name: idea.name, impl: dynamicAbility };
+}
+
+restoreAbility(name) {
+    // Wird beim Laden eines Speicherstands aufgerufen. Nexus-Ideen werden aus
+    // der bekannten Liste rekonstruiert; benutzerdefinierte Fähigkeiten gehen
+    // verloren (Code wird nicht persistiert) und müssen neu gelernt werden.
+    const idea = this.getNexusIdeas().find(i => i.name === name);
+    if (!idea) {
+        this.log(`Gelernte Fähigkeit '${name}' kann nicht wiederhergestellt werden (Code nicht persistiert) – bitte neu lernen`, "WARNING");
+        return false;
+    }
+    const dynamicAbility = this.createDynamicAbility(idea.name, idea.code);
+    if (!dynamicAbility) return false;
+    this.addNewAbility(idea.name, dynamicAbility);
+    return true;
 }
 
 // ### Wissens- und Narrativ-Modul ###
@@ -1100,8 +1119,10 @@ if (parts[0] === "lerne" && parts[1] === "fähigkeit") {
     this.generateTerrainWithParameters(this.state.terrainSteepness, this.state.terrainBaseHeight);
     appendChatOutput(`Terrain-Basishöhe auf ${this.state.terrainBaseHeight} gesetzt und Terrain neu generiert`);
 } else if (parts[0] === "füge" && parts[1] === "trainingsdaten") {
-    const x = parseFloat(parts[3]) || 0;
-    const z = parseFloat(parts[5]) || 0;
+    const xMatch = command.match(/x\s*=\s*(-?\d+(?:\.\d+)?)/i);
+    const zMatch = command.match(/z\s*=\s*(-?\d+(?:\.\d+)?)/i);
+    const x = xMatch ? parseFloat(xMatch[1]) : 0;
+    const z = zMatch ? parseFloat(zMatch[1]) : 0;
     this.state.learningData.push({
         timestamp: performance.now() / 1000,
         fps: this.state.fps,
@@ -2508,6 +2529,14 @@ loadState() {
         this.state.terrainBaseHeight = state.terrainBaseHeight || 0.0;
         this.state.weather = state.weather || "sunny";
         this.updateSkyboxWeather();
+        if (Array.isArray(state.abilities)) {
+            let restored = 0;
+            state.abilities.forEach(name => {
+                if (this.state.abilities[name]) return;
+                if (this.restoreAbility(name)) restored++;
+            });
+            if (restored > 0) this.log(`Fähigkeiten wiederhergestellt: ${restored}`);
+        }
         this.log("Zustand geladen");
     }
     const savedVersions = localStorage.getItem("anazhRealmVersions");
