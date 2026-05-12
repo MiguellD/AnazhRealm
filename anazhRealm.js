@@ -2681,6 +2681,12 @@ class AnazhRealm {
         }
 
         // ### Initiale Chunks generieren ###
+        // Alle Chunks gehen jetzt durch ensureChunkAt — denselben Pfad wie
+        // spätere Erweiterungen. Damit haben initial UND extension Chunks
+        // exakt dasselbe Welt-Grid (chunkWorldSize=37.5, vertexStep=1.171875)
+        // und die Naht zwischen ihnen ist nicht mehr 0.15 Welt-Einheiten
+        // versetzt. Das alte generateChunk + globale btHeightfieldTerrainShape
+        // sind dadurch obsolet und werden in einem späteren Cleanup entfernt.
         this.state.chunkMap = new Map();
         this.state.chunkSize = CHUNK_SIZE;
         this.state.chunkWidth = WIDTH;
@@ -2688,76 +2694,15 @@ class AnazhRealm {
         this.state.terrainMaterial = material;
         this.state.groundChunks = [];
 
-        for (let cz = 0; cz < CHUNKS_Z; cz++) {
-            for (let cx = 0; cx < CHUNKS_X; cx++) {
-                this.generateChunk(cx, cz, heightData, WIDTH, DEPTH, material);
-            }
-        }
-
-        // ### Physik-Kollision für das Terrain hinzufügen ###
         if (!this.state.scaleFactor || this.state.scaleFactor <= 0) {
             this.state.scaleFactor = 1.0;
             this.log("scaleFactor ungültig oder nicht gesetzt, Fallback auf 1.0", "WARNING");
         }
 
-        const heightfieldData = new Float32Array(WIDTH * DEPTH);
-        for (let z = 0; z < DEPTH; z++) {
-            for (let x = 0; x < WIDTH; x++) {
-                const idx = z * WIDTH + x;
-                const height = heightData[idx];
-                if (!Number.isFinite(height)) {
-                    this.log(
-                        `Ungültiger Höhenwert in heightfieldData bei (${x}, ${z}): ${height}. Setze auf 0.`,
-                        "ERROR"
-                    );
-                    heightfieldData[idx] = 0;
-                } else {
-                    heightfieldData[idx] = height / this.state.scaleFactor;
-                }
+        for (let cz = 0; cz < CHUNKS_Z; cz++) {
+            for (let cx = 0; cx < CHUNKS_X; cx++) {
+                this.ensureChunkAt(cx, cz);
             }
-        }
-
-        const heightfieldShape = new Ammo.btHeightfieldTerrainShape(
-            WIDTH,
-            DEPTH,
-            heightfieldData,
-            1.0, // Höhe-Skalierung
-            minHeight / this.state.scaleFactor,
-            maxHeight / this.state.scaleFactor,
-            1, // Up-Achse (Y)
-            "PHY_FLOAT",
-            false // Kein Flip der Dreiecke
-        );
-
-        const scaleX = WORLD_SIZE / (WIDTH - 1);
-        const scaleZ = WORLD_SIZE / (DEPTH - 1);
-        const scaledX = scaleX / this.state.scaleFactor;
-        const scaledZ = scaleZ / this.state.scaleFactor;
-        if (!Number.isFinite(scaledX) || !Number.isFinite(scaledZ)) {
-            this.log(
-                `Ungültige Skalierung für Heightfield: scaleX=${scaledX}, scaleZ=${scaledZ}. Überspringe Physik-Kollision.`,
-                "ERROR"
-            );
-        } else {
-            heightfieldShape.setLocalScaling(new Ammo.btVector3(scaledX, 1, scaledZ));
-
-            const transform = new Ammo.btTransform();
-            transform.setIdentity();
-            transform.setOrigin(
-                new Ammo.btVector3(
-                    0 / this.state.scaleFactor,
-                    (minHeight + maxHeight) / 2 / this.state.scaleFactor,
-                    0 / this.state.scaleFactor
-                )
-            );
-
-            const motionState = new Ammo.btDefaultMotionState(transform);
-            const localInertia = new Ammo.btVector3(0, 0, 0);
-            const rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, heightfieldShape, localInertia);
-            const body = new Ammo.btRigidBody(rbInfo);
-            this.state.physicsWorld.addRigidBody(body);
-            this.state.groundHeightFieldBody = body;
-            this.log("Physik-Kollision für Terrain hinzugefügt");
         }
 
         // ### Fliegende Inseln generieren ###
@@ -3461,7 +3406,15 @@ class AnazhRealm {
         mesh.userData = { chunkX: newChunkX, chunkZ: newChunkZ, minHeight, maxHeight };
         this.state.scene.add(mesh);
         this.state.groundChunks.push(mesh);
-        this.state.chunkMap.set(key, { mesh, chunkX: newChunkX, chunkZ: newChunkZ });
+        // heightData mitspeichern, weil updateWallCollisions/addWallCollisions
+        // pro Chunk darauf zugreifen. .slice() entkoppelt das Array vom
+        // typed-buffer-Lifecycle der Mesh-Geometry.
+        this.state.chunkMap.set(key, {
+            mesh,
+            chunkX: newChunkX,
+            chunkZ: newChunkZ,
+            heightData: heightData.slice(),
+        });
         if (minHeight < this.state.minHeight) this.state.minHeight = minHeight;
         if (maxHeight > this.state.maxHeight) this.state.maxHeight = maxHeight;
 
@@ -4537,66 +4490,11 @@ class AnazhRealm {
     }
 
     updateWallCollisions() {
-        const currentTime = performance.now() / 1000;
-        if (currentTime - this.state.lastWallCollisionUpdate < 1.0) {
-            // Erhöhe Intervall auf 1 Sekunde
-            return;
-        }
-
-        // Alte Kollisionsboxen entfernen
-        this.state.wallBoxes.forEach((wall) => {
-            this.state.scene.remove(wall);
-            const body = wall.userData.physicsBody;
-            if (body) {
-                this.state.physicsWorld.removeRigidBody(body);
-                Ammo.destroy(body);
-                this.state.rigidBodies = this.state.rigidBodies.filter((rb) => rb !== wall);
-            }
-        });
-        this.state.wallBoxes = [];
-        this.log("Alte Kollisionsboxen entfernt", "DEBUG");
-
-        const playerPos = this.state.playerMesh.position;
-        const chunkSize = (this.state.chunkSize * 300) / this.state.chunkWidth;
-        const loadRadius = 50;
-        let totalAddedWalls = 0;
-
-        for (let [key, chunkData] of this.state.chunkMap) {
-            const [cx, cz] = key.split(",").map(Number);
-            const chunkCenterX = (cx * chunkSize * 300) / this.state.chunkWidth - 150;
-            const chunkCenterZ = (cz * chunkSize * 300) / this.state.chunkWidth - 150;
-            const distToPlayer = Math.sqrt(
-                Math.pow(playerPos.x - chunkCenterX, 2) + Math.pow(playerPos.z - chunkCenterZ, 2)
-            );
-
-            let minDistToCreature = Infinity;
-            this.state.creatures.forEach((creature) => {
-                const dist = Math.sqrt(
-                    Math.pow(creature.position.x - chunkCenterX, 2) + Math.pow(creature.position.z - chunkCenterZ, 2)
-                );
-                minDistToCreature = Math.min(minDistToCreature, dist);
-            });
-
-            if (distToPlayer <= loadRadius || minDistToCreature <= loadRadius) {
-                if (totalAddedWalls < 20) {
-                    // Reduziere auf 20 Boxen pro Update
-                    const addedInChunk = this.addWallCollisions(
-                        chunkData.heightData,
-                        this.state.chunkWidth,
-                        this.state.chunkDepth,
-                        300 / (this.state.chunkWidth - 1),
-                        300 / (this.state.chunkDepth - 1),
-                        cx,
-                        cz,
-                        20 - totalAddedWalls
-                    );
-                    totalAddedWalls += addedInChunk;
-                }
-            }
-        }
-
-        this.state.lastWallCollisionUpdate = currentTime;
-        this.log(`Kollisionsboxen aktualisiert, ${totalAddedWalls} Boxen hinzugefügt`, "DEBUG");
+        // No-op: Mit per-Chunk btHeightfieldTerrainShape (jetzt einheitlich für
+        // initial + extension) deckt die Heightfield-Physik die Wand-Kollisionen
+        // bereits zuverlässig ab. Das alte addWallCollisions las das globale
+        // 256×256-Heightfield, das nicht mehr existiert. Wird in einem späteren
+        // Cleanup ganz entfernt.
     }
 
     updateGrowth() {

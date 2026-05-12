@@ -64,7 +64,7 @@ function startSaveServer() {
     const logs = [];
     const errors = [];
     page.on("console", (msg) => logs.push({ type: msg.type(), text: msg.text(), at: Date.now() }));
-    page.on("pageerror", (err) => errors.push({ kind: "pageerror", text: err.message }));
+    page.on("pageerror", (err) => errors.push({ kind: "pageerror", text: err.message, stack: err.stack }));
     page.on("requestfailed", (req) =>
         errors.push({ kind: "requestfailed", url: req.url(), error: req.failure()?.errorText })
     );
