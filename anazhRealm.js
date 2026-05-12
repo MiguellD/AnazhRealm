@@ -47,6 +47,13 @@ class AnazhRealm {
             pitch: 0,
             mouseSensitivity: 0.002,
             isPointerLocked: false,
+            // Ring 5 V2 Vorbereitung: Kamera-Modus. "first" = Egoperspektive
+            // (Kamera am Spieler-Kopf), "third" = Orbit hinter dem Spieler in
+            // ~6 Einheiten Abstand. Im 3rd-Modus sieht der Spieler endlich
+            // seine eigene Seele (Mesh + spätere Glieder/Animation).
+            cameraMode: "first",
+            cameraThirdDistance: 6,
+            cameraThirdHeight: 2.0,
             physicsWorld: null,
             rigidBodies: [],
             playerBody: null,
@@ -4788,6 +4795,40 @@ class AnazhRealm {
         return true;
     }
 
+    // Ring 5 V2 Vorbereitung — Kamera-Modus (Erst-/Dritte-Person).
+    setCameraMode(mode) {
+        const next = mode === "third" ? "third" : "first";
+        this.state.cameraMode = next;
+        const toggle = typeof document !== "undefined" ? document.getElementById("camera-mode-toggle") : null;
+        if (toggle) {
+            toggle.setAttribute("aria-pressed", next === "third" ? "true" : "false");
+            toggle.textContent = next === "third" ? "Sicht: 3rd" : "Sicht: 1st";
+        }
+        try {
+            localStorage.setItem("anazhRealmCameraMode", next);
+        } catch {
+            // Persistenz nicht hart erforderlich; pro-Session reicht.
+        }
+        this.log(`Kamera-Modus: ${next}`, "INFO");
+    }
+
+    cameraModeInitDOM() {
+        const toggle = document.getElementById("camera-mode-toggle");
+        if (!toggle) return;
+        const stored = (() => {
+            try {
+                return localStorage.getItem("anazhRealmCameraMode");
+            } catch {
+                return null;
+            }
+        })();
+        const initial = stored === "third" ? "third" : "first";
+        this.setCameraMode(initial);
+        toggle.addEventListener("click", () => {
+            this.setCameraMode(this.state.cameraMode === "third" ? "first" : "third");
+        });
+    }
+
     playerSoulInitDOM() {
         const select = document.getElementById("player-soul-select");
         if (!select) return;
@@ -4820,6 +4861,7 @@ class AnazhRealm {
         this.symphonyInitDOM();
         this.initStatusPanel();
         this.playerSoulInitDOM();
+        this.cameraModeInitDOM();
         this.initTopbar();
         this.initConsoleDOM();
         this.ensureWorldMeta();
@@ -5389,12 +5431,32 @@ class AnazhRealm {
 
             // ### Kamera ###
             if (player && camera) {
-                camera.position.set(player.position.x, player.position.y + 1.6, player.position.z);
-                camera.lookAt(
-                    player.position.x + Math.sin(this.state.yaw),
-                    player.position.y + 1.6 + Math.sin(this.state.pitch),
-                    player.position.z + Math.cos(this.state.yaw)
-                );
+                // Spieler-Mesh in Yaw-Richtung drehen, damit die Seele in
+                // Bewegungsrichtung schaut — wichtig für asymmetrische Formen
+                // (Drache hat lange Z-Achse) und Vorbereitung für V2-Glieder.
+                player.rotation.y = this.state.yaw;
+                if (this.state.cameraMode === "third") {
+                    // Orbit-Kamera hinter + über dem Spieler. Pitch hebt/senkt
+                    // den Blickpunkt; Distance bleibt konstant. Look-At zielt
+                    // auf den Brust-Punkt, damit der Spieler beim Hochschauen
+                    // den Boden noch erfassen kann.
+                    const dist = this.state.cameraThirdDistance;
+                    const height = this.state.cameraThirdHeight;
+                    const cosPitch = Math.cos(this.state.pitch);
+                    camera.position.set(
+                        player.position.x - Math.sin(this.state.yaw) * dist * cosPitch,
+                        player.position.y + height + Math.sin(this.state.pitch) * dist,
+                        player.position.z - Math.cos(this.state.yaw) * dist * cosPitch
+                    );
+                    camera.lookAt(player.position.x, player.position.y + 1.0, player.position.z);
+                } else {
+                    camera.position.set(player.position.x, player.position.y + 1.6, player.position.z);
+                    camera.lookAt(
+                        player.position.x + Math.sin(this.state.yaw),
+                        player.position.y + 1.6 + Math.sin(this.state.pitch),
+                        player.position.z + Math.cos(this.state.yaw)
+                    );
+                }
                 if (currentTime - this.state.lastCameraLog >= this.state.cameraLogInterval) {
                     this.log(
                         `Kamera: (${camera.position.x.toFixed(2)}, ${camera.position.y.toFixed(2)}, ${camera.position.z.toFixed(2)})`,
