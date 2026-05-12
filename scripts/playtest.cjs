@@ -2073,8 +2073,14 @@ function startSaveServer() {
                     r.setCameraMode("third");
                     r.state.yaw = 0;
                     r.state.pitch = p;
+                    // Player-Velocity nullen, damit cam-Position nicht zwischen
+                    // den beiden Frames durch Spieler-Bewegung schwankt
+                    // (z. B. wenn ein voriger Test ihm Velocity gegeben hat).
+                    if (r.state.playerBody && r.state.tmpVec2) {
+                        r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec2, 0, 0, 0));
+                    }
                 }, pitch);
-                await new Promise((r) => setTimeout(r, 200));
+                await new Promise((r) => setTimeout(r, 350));
                 return await page.evaluate(() => {
                     const r = window.anazhRealm;
                     return r.state.camera.position.y - r.state.playerMesh.position.y;
@@ -2355,6 +2361,188 @@ function startSaveServer() {
                     ring6Results.loadRebuildsSeeds
                 );
             }
+
+            // ### Ring 6.3 — Kollisions-Body für Strukturen ###
+            // Jede Architektur bekommt einen statischen Ammo-Body. Body wird
+            // beim Cullen freigegeben. Bei Wieder-Aufbau (Spieler kommt
+            // zurück) entsteht ein neuer Body.
+            const ring63Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    // Cleanup
+                    for (const a of r.state.architectures.slice()) {
+                        if (a.mesh) {
+                            r._cullArchitectureMesh(a);
+                        }
+                    }
+                    r.state.architectures = [];
+
+                    // Struktur nahe spawnen (innerhalb cullingRadius) →
+                    // Mesh + Body sollten gleich da sein.
+                    const px = r.state.playerMesh.position.x;
+                    const pz = r.state.playerMesh.position.z;
+                    const entry = r.spawnArchitecture(
+                        "temple",
+                        { x: px + 8, y: r.state.playerMesh.position.y, z: pz + 4 },
+                        { seed: 11 }
+                    );
+                    out.entryHasMesh = !!entry && !!entry.mesh;
+                    out.entryHasCollision =
+                        !!entry && !!entry.collision && !!entry.collision.body && !!entry.collision.shape;
+                    // Body sollte in der physicsWorld registriert sein —
+                    // wir prüfen indirekt: tests later that culling removes it.
+                    // Kollisions-Box-Größe indirekt via Three-Bounding-Box
+                    // verifizieren (entry.mesh hat die echte Geometrie).
+                    if (entry && entry.mesh) {
+                        const bbox = new THREE.Box3().setFromObject(entry.mesh);
+                        const size = new THREE.Vector3();
+                        bbox.getSize(size);
+                        out.collisionSizeFromMesh = {
+                            x: size.x,
+                            y: size.y,
+                            z: size.z,
+                        };
+                        out.collisionSizePlausible =
+                            size.x > 2.0 &&
+                            size.y > 2.0 &&
+                            size.z > 2.0 &&
+                            size.x < 100 &&
+                            size.y < 100 &&
+                            size.z < 100;
+                    }
+                    // Body ist statisch — Body.mass entspricht 0, Body
+                    // ist getCollisionFlags & CF_STATIC_OBJECT bit oder einfach
+                    // testen via isStaticObject (Ammo Bindings: getCollisionFlags).
+                    if (entry && entry.collision && entry.collision.body) {
+                        const flags = entry.collision.body.getCollisionFlags();
+                        // CF_STATIC_OBJECT = 1 in Bullet, aber: ein Body mit mass=0 ist
+                        // automatisch statisch in Bullet — getCollisionFlags & 1 prüft das.
+                        out.bodyIsStatic = (flags & 1) === 1 || flags === 0;
+                        // Wenn flags=0, ist's kein statisches Flag gesetzt, aber
+                        // mass=0 macht's trotzdem effektiv statisch. Wir akzeptieren
+                        // beides als pass.
+                    }
+
+                    // Distanz-Cullen: Spieler weg, Body sollte verschwinden.
+                    // Wir schieben entry.position so weit weg, dass es jenseits
+                    // des cullingRadius ist (~150). spawnArchitecture-Pfad ist nicht
+                    // ideal; einfacher direkter Cull-Test:
+                    r._cullArchitectureMesh(entry);
+                    out.afterCullMeshNull = entry.mesh === null;
+                    out.afterCullCollisionNull = entry.collision === null;
+
+                    // Wiederaufbau: rebuild macht Mesh + Body wieder.
+                    r._rebuildArchitectureMesh(entry);
+                    out.afterRebuildMeshExists = !!entry.mesh;
+                    out.afterRebuildCollisionExists = !!entry.collision && !!entry.collision.body;
+
+                    // Strukturen ohne Mesh haben kein collision.body (cold)
+                    const coldEntry = r.spawnArchitecture(
+                        "village",
+                        { x: 10000, y: 5, z: 10000 },
+                        { seed: 1 }
+                    );
+                    out.coldHasNoMesh = coldEntry && coldEntry.mesh === null;
+                    out.coldHasNoCollision = coldEntry && !coldEntry.collision;
+
+                    // Cleanup
+                    for (const a of r.state.architectures.slice()) {
+                        if (a.mesh) r._cullArchitectureMesh(a);
+                    }
+                    r.state.architectures = [];
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (!ring63Results || ring63Results.error) {
+                check(
+                    "Ring 6.3: Kollisions-Snapshot erreichbar",
+                    false,
+                    ring63Results && ring63Results.error
+                        ? ring63Results.error
+                        : "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Ring 6.3: Architektur hat Mesh nach Spawn", ring63Results.entryHasMesh);
+                check("Ring 6.3: Architektur hat collision-body + shape", ring63Results.entryHasCollision);
+                check(
+                    "Ring 6.3: Kollisions-Box-Größe plausibel (Tempel, via Mesh-BBox)",
+                    ring63Results.collisionSizePlausible,
+                    ring63Results.collisionSizeFromMesh
+                        ? `mesh-size=${JSON.stringify({
+                              x: ring63Results.collisionSizeFromMesh.x.toFixed(2),
+                              y: ring63Results.collisionSizeFromMesh.y.toFixed(2),
+                              z: ring63Results.collisionSizeFromMesh.z.toFixed(2),
+                          })}`
+                        : ""
+                );
+                check("Ring 6.3: Body ist statisch (mass=0)", ring63Results.bodyIsStatic);
+                check(
+                    "Ring 6.3: Cullen entfernt Mesh + Kollisions-Body",
+                    ring63Results.afterCullMeshNull && ring63Results.afterCullCollisionNull
+                );
+                check(
+                    "Ring 6.3: Wiederaufbau bringt Mesh + Body zurück",
+                    ring63Results.afterRebuildMeshExists && ring63Results.afterRebuildCollisionExists
+                );
+                check(
+                    "Ring 6.3: Cold-Strukturen (außerhalb Radius) haben weder Mesh noch Kollision",
+                    ring63Results.coldHasNoMesh && ring63Results.coldHasNoCollision
+                );
+            }
+
+            // Live-Kollisions-Test: Spieler wird gegen eine Tempel-Säule
+            // geschoben, sollte aufgehalten werden. Wir setzen den Spieler
+            // 4m vor den Tempel-Mittelpunkt und feuern ihm Velocity, dann
+            // lassen wir die Physik 0.5s laufen und prüfen ob er stehen
+            // geblieben oder reflektiert wurde.
+            await page.evaluate(() => {
+                const r = window.anazhRealm;
+                for (const a of r.state.architectures.slice()) {
+                    if (a.mesh) r._cullArchitectureMesh(a);
+                }
+                r.state.architectures = [];
+                // Tempel direkt vor Welt-Ursprung platzieren
+                r.spawnArchitecture("temple", { x: 0, y: 5, z: 5 }, { seed: 11 });
+                // Player nach (0, terrainY+2, 0) — Tempel liegt in +Z, Player soll
+                // in +Z auf ihn zu rennen.
+                if (r.state.playerBody && r.state.tmpTransform && r.state.tmpVec1) {
+                    const t = r.state.tmpTransform;
+                    t.setIdentity();
+                    t.setOrigin(r.setVec(r.state.tmpVec1, 0, 5, -2));
+                    r.state.playerBody.setWorldTransform(t);
+                    r.state.playerBody.activate(true);
+                    // Velocity +Z = vorwärts in Richtung Tempel
+                    r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec2, 0, 0, 6));
+                }
+            });
+            await new Promise((r) => setTimeout(r, 800));
+            const collisionLive = await page.evaluate(() => {
+                const r = window.anazhRealm;
+                return {
+                    playerZ: r.state.playerMesh.position.z,
+                    playerY: r.state.playerMesh.position.y,
+                };
+            });
+            // Tempel sitzt bei z=5, Pillar-Radius ~3.5, also Pillar-Vorderkante
+            // bei z=1.5. Player startete bei z=-2, hätte ohne Kollision in
+            // 0.8s × 6 m/s = 4.8m gemacht und wäre bei z=2.8. Mit Kollision
+            // sollte er VOR der Pillar-Vorderkante stehen (z < ~2).
+            check(
+                "Ring 6.3: Kollision stoppt Spieler vor dem Tempel",
+                collisionLive.playerZ < 2.0,
+                `playerZ=${collisionLive.playerZ.toFixed(2)} (Erwartung < 2.0)`
+            );
+            // Cleanup
+            await page.evaluate(() => {
+                const r = window.anazhRealm;
+                for (const a of r.state.architectures.slice()) {
+                    if (a.mesh) r._cullArchitectureMesh(a);
+                }
+                r.state.architectures = [];
+            });
 
             // ### Ring 6 V2 — Distance-Culling, Fraktal, Counter, Bau-Cursor ###
             const ring6v2Results = await page

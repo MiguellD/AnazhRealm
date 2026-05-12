@@ -5448,13 +5448,137 @@ class AnazhRealm {
         }
         this.state.scene.add(group);
         entry.mesh = group;
+        // Ring 6.3 — Kollisions-Body für die Struktur. Statisch (mass=0),
+        // eine umschließende Box rund um die Group. Wir pushen NICHT in
+        // state.rigidBodies, damit der Sync-Loop die Group-Position nicht
+        // anhand des Body-Origin überschreibt — die Position kommt aus
+        // entry.position, der Body ist nur Hitbox.
+        this._buildArchitectureCollision(entry);
         return group;
+    }
+
+    // Statischer Kollisions-Body um die Architecture-Group als **Compound-
+    // Shape** aus einer btBoxShape pro Sub-Mesh. Eine einzelne umschließende
+    // AABB wäre einfacher, ist aber zu grob: ein Dorf mit Hütten auf
+    // Radius 10 hätte eine 24×4×24-AABB, in deren Mitte der Spieler steht —
+    // er wird beim Spawn aus der Box gepresst, oft durch den Boden. Mit
+    // Compound-Shape ist nur jede einzelne Hütte solide, der Weg zwischen
+    // Hütten frei.
+    _buildArchitectureCollision(entry) {
+        if (!entry || !entry.mesh || !this.state.physicsWorld) return null;
+        entry.mesh.updateMatrixWorld(true);
+        const groupPos = entry.mesh.position;
+        const compound = new Ammo.btCompoundShape();
+        const childShapes = [];
+        let added = 0;
+        entry.mesh.traverse((node) => {
+            if (!node.isMesh || !node.geometry) return;
+            // Welt-BBox des einzelnen Mesh-Child. setFromObject berücksichtigt
+            // alle verschachtelten Group-Transforms.
+            const childBox = new THREE.Box3().setFromObject(node);
+            if (childBox.isEmpty()) return;
+            const size = new THREE.Vector3();
+            childBox.getSize(size);
+            const center = new THREE.Vector3();
+            childBox.getCenter(center);
+            const hx = Math.max(0.05, size.x / 2);
+            const hy = Math.max(0.05, size.y / 2);
+            const hz = Math.max(0.05, size.z / 2);
+            const childShape = new Ammo.btBoxShape(new Ammo.btVector3(hx, hy, hz));
+            const childTransform = new Ammo.btTransform();
+            childTransform.setIdentity();
+            const offset = new Ammo.btVector3(center.x - groupPos.x, center.y - groupPos.y, center.z - groupPos.z);
+            childTransform.setOrigin(offset);
+            compound.addChildShape(childTransform, childShape);
+            childShapes.push(childShape);
+            Ammo.destroy(offset);
+            Ammo.destroy(childTransform);
+            added++;
+        });
+        if (added === 0) {
+            Ammo.destroy(compound);
+            return null;
+        }
+        const transform = new Ammo.btTransform();
+        transform.setIdentity();
+        const origin = new Ammo.btVector3(groupPos.x, groupPos.y, groupPos.z);
+        transform.setOrigin(origin);
+        const motionState = new Ammo.btDefaultMotionState(transform);
+        const localInertia = new Ammo.btVector3(0, 0, 0);
+        const rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, compound, localInertia);
+        const body = new Ammo.btRigidBody(rbInfo);
+        body.setFriction(0.8);
+        this.state.physicsWorld.addRigidBody(body);
+        entry.collision = {
+            body,
+            shape: compound,
+            childShapes,
+            motionState,
+            rbInfo,
+            transform,
+            origin,
+            localInertia,
+        };
+        return body;
+    }
+
+    _disposeArchitectureCollision(entry) {
+        if (!entry || !entry.collision) return;
+        const c = entry.collision;
+        if (this.state.physicsWorld) this.state.physicsWorld.removeRigidBody(c.body);
+        try {
+            Ammo.destroy(c.body);
+        } catch {
+            /* ignore */
+        }
+        try {
+            Ammo.destroy(c.rbInfo);
+        } catch {
+            /* ignore */
+        }
+        try {
+            Ammo.destroy(c.motionState);
+        } catch {
+            /* ignore */
+        }
+        try {
+            Ammo.destroy(c.shape);
+        } catch {
+            /* ignore */
+        }
+        if (Array.isArray(c.childShapes)) {
+            for (const cs of c.childShapes) {
+                try {
+                    Ammo.destroy(cs);
+                } catch {
+                    /* ignore */
+                }
+            }
+        }
+        try {
+            Ammo.destroy(c.transform);
+        } catch {
+            /* ignore */
+        }
+        try {
+            Ammo.destroy(c.origin);
+        } catch {
+            /* ignore */
+        }
+        try {
+            Ammo.destroy(c.localInertia);
+        } catch {
+            /* ignore */
+        }
+        entry.collision = null;
     }
 
     // Mesh disposen, Eintrag bleibt als reine Daten erhalten. Fenster für
     // späteren Wieder-Aufbau wenn der Spieler zurückkehrt.
     _cullArchitectureMesh(entry) {
         if (!entry || !entry.mesh) return;
+        // Erst Kollision freigeben, dann Mesh aus der Szene + Geometrien.
+        this._disposeArchitectureCollision(entry);
         if (this.state.scene) this.state.scene.remove(entry.mesh);
         this._disposeSoulGroup(entry.mesh);
         entry.mesh = null;
