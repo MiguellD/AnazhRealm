@@ -116,6 +116,7 @@ class AnazhRealm {
             worldgenInFlight: false,
             lastWorldgen: 0,
             worldgenCooldown: 30.0,
+            terrainEverGenerated: false,
         };
         this.core = {
             initPhysics: this.initPhysics.bind(this),
@@ -1735,21 +1736,32 @@ class AnazhRealm {
             this.log("Alte Wasserfälle entfernt");
         }
 
-        // ### Spieler-Position sicherstellen ###
+        // ### Spieler-Position ###
+        // Beim allerersten Worldgen wird der Spieler in die Welt-Mitte gesetzt.
+        // Bei späteren Regenerationen (z. B. Nexus terrainFlatten, manuelles
+        // "Spawne neue Welt") bleibt die aktuelle Position erhalten – sonst
+        // würde jede Selbstoptimierung den Spieler aus der Welt teleportieren.
+        // Kill-Plane und findSurfaceAbove fangen ab, falls die neue Topographie
+        // den Spieler unter dem Boden lässt.
         if (this.state.playerMesh) {
-            this.state.playerMesh.position.set(0, 50, 0);
             this.state.playerMesh.visible = true;
-            if (this.state.playerBody) {
-                const transform = new Ammo.btTransform();
-                transform.setIdentity();
-                transform.setOrigin(new Ammo.btVector3(0, 50 / this.state.scaleFactor, 0));
-                this.state.playerBody.setWorldTransform(transform);
-                this.state.playerBody.setLinearVelocity(new Ammo.btVector3(0, 0, 0));
+            if (!this.state.terrainEverGenerated) {
+                this.state.playerMesh.position.set(0, 50, 0);
+                if (this.state.playerBody) {
+                    const t = this.state.tmpTransform;
+                    t.setIdentity();
+                    t.setOrigin(this.setVec(this.state.tmpVec1, 0, 50 / this.state.scaleFactor, 0));
+                    this.state.playerBody.setWorldTransform(t);
+                    this.state.playerBody.setLinearVelocity(this.setVec(this.state.tmpVec2, 0, 0, 0));
+                }
+                this.log("Welt erstmals gespawnt: Spieler bei (0, 50, 0)");
+            } else {
+                this.log("Welt regeneriert – Spieler-Position bleibt erhalten", "DEBUG");
             }
-            this.log("Neue Welt: Spieler zurückgesetzt zu (0, 50, 0)");
         } else {
             this.log("Warnung: playerMesh nicht initialisiert – sollte in init() initialisiert sein", "ERROR");
         }
+        this.state.terrainEverGenerated = true;
 
         // ### Höhendaten generieren ###
         const heightData = new Float32Array(WIDTH * DEPTH);
@@ -2705,6 +2717,14 @@ class AnazhRealm {
 
     async saveToProjectFolder(options = {}) {
         const { fallbackToDownload = true } = options;
+        // Auf CDN-Hosts (raw.githack, GitHub Pages, file://) ist der lokale
+        // save-server nicht erreichbar. Vorzeitig aussteigen statt den
+        // ERR_CONNECTION_REFUSED alle 30 s in die Konsole zu pumpen.
+        const href = typeof window !== "undefined" ? window.location.href : "";
+        if (!/^https?:\/\/(127\.0\.0\.1|localhost):4312\//.test(href)) {
+            this.log(`save-server nicht erreichbar (Host: ${href.split("/")[2] || "?"}) – nutze localStorage`, "DEBUG");
+            return false;
+        }
         const stateToSave = this.buildStateSnapshot();
         try {
             const response = await fetch("http://localhost:4312/api/save-state", {
@@ -3571,19 +3591,24 @@ class AnazhRealm {
     addWallCollisions(heightData, width, depth, scaleX, scaleZ, chunkX, chunkZ, maxBoxes) {
         const WORLD_SIZE = 300;
         const steepnessThreshold = 2.0; // Erhöhe Schwellenwert, um weniger Boxen zu generieren
+        // chunkData.heightData speichert die globale 256×256-Heightmap, nicht
+        // nur den Chunk-Ausschnitt. Vor diesem Fix iterierte die Schleife über
+        // alle 256×256 Zellen und addierte zusätzlich einen chunkX-Offset zu
+        // worldX – Folge: pinke Kollisionsboxen schwebten quer durch die Welt
+        // und überlagerten sich pro Chunk. Jetzt nur den eigenen Chunk-Bereich
+        // scannen und worldX/Z direkt aus dem globalen Index berechnen.
+        const chunkSize = this.state.chunkSize;
+        const startX = chunkX * chunkSize;
+        const startZ = chunkZ * chunkSize;
+        const endX = Math.min(startX + chunkSize, width - 1);
+        const endZ = Math.min(startZ + chunkSize, depth - 1);
         let addedBoxes = 0;
 
-        for (let z = 0; z < depth - 1 && addedBoxes < maxBoxes; z++) {
-            for (let x = 0; x < width - 1 && addedBoxes < maxBoxes; x++) {
+        for (let z = startZ; z < endZ && addedBoxes < maxBoxes; z++) {
+            for (let x = startX; x < endX && addedBoxes < maxBoxes; x++) {
                 const idx = z * width + x;
-                const worldX =
-                    (x / (width - 1)) * WORLD_SIZE -
-                    WORLD_SIZE / 2 +
-                    chunkX * this.state.chunkSize * (WORLD_SIZE / width);
-                const worldZ =
-                    (z / (depth - 1)) * WORLD_SIZE -
-                    WORLD_SIZE / 2 +
-                    chunkZ * this.state.chunkSize * (WORLD_SIZE / depth);
+                const worldX = (x / (width - 1)) * WORLD_SIZE - WORLD_SIZE / 2;
+                const worldZ = (z / (depth - 1)) * WORLD_SIZE - WORLD_SIZE / 2;
                 const height = heightData[idx];
                 const heightRight = heightData[idx + 1];
                 const heightDown = heightData[(z + 1) * width + x];
