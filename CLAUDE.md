@@ -21,7 +21,7 @@ Detaillierter Plan in `docs/state-of-realm.md` §5. Status (Mai 2026):
 |---|---|---|
 | 0 | Stabiles Fundament (Bewegung, Physik, Kreaturen, Chunks, Save, CI-Gate) | ✅ erledigt |
 | 1 | **Grok-Stimme** (`dialogue-box`, narrative Reflexion) | ✅ V1 erledigt — 5 Trigger (firstSpawn, idle, jumpBurst, rainLong, nexus), Text + optionale SpeechSynthesis |
-| 2 | DSL als gemeinsame Sprache Mensch+Grok (`docs/nexus-dsl.md`) | 🟡 Phase 1 live — Interpreter mit 18 Effekt-/7 Control-/5 Position-/9 Condition-Ops, Budget-Limits, Scheduler. Generator + Chat-Parser-Umbau offen (Phasen 2-5). |
+| 2 | DSL als gemeinsame Sprache Mensch+Grok (`docs/nexus-dsl.md`) | 🟡 Phase 1+2 live — Interpreter mit 39 Ops, Budget-Limits, Scheduler. Nexus-Generator komponiert rekursiv (`dslCompose`), Outcomes landen in `state.dsl.history` mit FPS-Fitness. Phasen 3-7 offen: Chat-Parser, Migration, Cleanup, CSP-strict, Fitness-V2. |
 | 3 | Player-Emotionen (`{joy, awe, sorrow, hope, …}`) beeinflussen Welt | offen |
 | 4 | `anazhSymphony` V1 – Web-Audio-Klangschichten | offen |
 | 5 | `createPlayerSoul` (Mensch/Phönix/Drache) | offen |

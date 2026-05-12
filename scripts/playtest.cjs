@@ -257,8 +257,35 @@ function startSaveServer() {
                     out.delayScheduled = r.state.dsl.pending.length === pendingBefore + 1;
                     r.state.dsl.pending = r.state.dsl.pending.filter((p) => p.runAt < 9999999);
 
+                    // Phase 2: dslCompose + Loop-Dispatch.
+                    const composed = r.dslCompose();
+                    out.composeIsArray = Array.isArray(composed);
+                    out.composeRootIsChain = out.composeIsArray && composed[0] === "chain";
+                    const histBefore = r.state.dsl.history.length;
+                    r.state.nexusEvolutionQueue.push({
+                        name: `playtest_evo_${Date.now()}`,
+                        program: composed,
+                        source: "playtest",
+                        createdAt: performance.now() / 1000,
+                    });
+                    out.histBefore = histBefore;
+
                     r.state.jumpPower = jpBefore;
                     return out;
+                })
+                .catch(() => null);
+
+            // Zwei Loop-Iterationen warten, damit der Nexus-Loop die Test-Evolution
+            // aus der Queue zieht und in dsl.history einträgt.
+            await new Promise((r) => setTimeout(r, 500));
+            const phase2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    return {
+                        historyLen: r.state.dsl.history.length,
+                        queueLen: r.state.nexusEvolutionQueue.length,
+                        lastHistory: r.state.dsl.history[r.state.dsl.history.length - 1] || null,
+                    };
                 })
                 .catch(() => null);
 
@@ -274,6 +301,31 @@ function startSaveServer() {
                 check("DSL-Sicherheit: unbekannte Op wird abgelehnt", dslResults.unknownOpRejected);
                 check("DSL-Budget: maxDepth greift bei tiefer Verschachtelung", dslResults.depthBudgetEnforced);
                 check("DSL-Scheduler: delay reiht in pending ein", dslResults.delayScheduled);
+                check("Nexus-Generator: dslCompose produziert Array", dslResults.composeIsArray);
+                check(
+                    "Nexus-Generator: Komposition hat chain als Wurzel",
+                    dslResults.composeRootIsChain,
+                    `root=${dslResults.composeIsArray ? `"${(dslResults.composeRootIsChain && "chain") || "?"}"` : "n/a"}`
+                );
+                if (phase2Results) {
+                    // FPS-Drop-Handler kann während des Wait-Intervalls neue
+                    // Legacy-Evolutionen in die Queue schieben — wir prüfen
+                    // daher Effekt (history grew), nicht Queue-Tiefe.
+                    check(
+                        "Nexus-Loop verarbeitet DSL-Evolution (history wächst)",
+                        phase2Results.historyLen > dslResults.histBefore,
+                        `history before=${dslResults.histBefore}, after=${phase2Results.historyLen}`
+                    );
+                    check(
+                        "Letzte History-Einheit hat Outcome + Fitness-Daten",
+                        phase2Results.lastHistory &&
+                            phase2Results.lastHistory.outcome &&
+                            typeof phase2Results.lastHistory.outcome.fpsBefore === "number",
+                        phase2Results.lastHistory ? `id=${phase2Results.lastHistory.id}` : "kein Eintrag"
+                    );
+                } else {
+                    check("Phase-2-Snapshot erreichbar", false, "page.evaluate fehlgeschlagen");
+                }
             }
         }
 

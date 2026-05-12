@@ -535,16 +535,7 @@ class AnazhRealm {
                         break;
                     }
                     ctx.budget.spawnsLeft--;
-                    if (typeof this.spawnCreatureAt === "function") {
-                        this.spawnCreatureAt(pos.x, pos.y, pos.z, e);
-                    } else {
-                        // Fallback: in creature-Liste registrieren ohne Mesh, V1-Test reicht.
-                        this.state.creatures.push({
-                            position: new THREE.Vector3(pos.x, pos.y, pos.z),
-                            userData: { emotion: e, dslSpawn: true },
-                        });
-                        this.state.creatureEmotions.push(e);
-                    }
+                    this.spawnCreatureAt(pos.x, pos.y, pos.z, e);
                     spawned++;
                 }
                 ctx.log.push({ event: "spawned_creature", count: spawned, emotion: e });
@@ -714,6 +705,125 @@ class AnazhRealm {
             or: (subs, ctx) => subs.some((s) => this.dslEvalCond(s, ctx)),
         };
         return this._dslConditionsCache;
+    }
+
+    // ### Nexus-Generator (Ring 2 Phase 2) ###
+    // Rekursive Random-Komposition nach docs/nexus-dsl.md §11. Tiefe deckt
+    // sich mit dem Interpreter-Budget; jede Wahl ist gewichtet, atomare
+    // Effekte dominieren mit 40 % der Auswahl.
+
+    dslCompose(opts = {}) {
+        const rng = opts.rng || Math.random;
+        const maxDepth = opts.maxDepth || 5;
+        const composeAt = (depth) => {
+            if (depth >= maxDepth) return this.dslComposeAtomic(rng);
+            const r = rng();
+            if (r < 0.2) {
+                const n = 2 + Math.floor(rng() * 3);
+                const subs = [];
+                for (let i = 0; i < n; i++) subs.push(composeAt(depth + 1));
+                return ["chain", ...subs];
+            }
+            if (r < 0.3) {
+                const seconds = Number((0.5 + rng() * 4.5).toFixed(2));
+                return ["delay", seconds, composeAt(depth + 1)];
+            }
+            if (r < 0.4) {
+                return ["repeat", 2 + Math.floor(rng() * 4), composeAt(depth + 1)];
+            }
+            if (r < 0.5) {
+                const n = 2 + Math.floor(rng() * 2);
+                const subs = [];
+                for (let i = 0; i < n; i++) subs.push(composeAt(depth + 1));
+                return ["random", ...subs];
+            }
+            if (r < 0.6) {
+                const cond = this.dslComposeCondition(rng);
+                const thenBranch = composeAt(depth + 1);
+                if (rng() < 0.4) return ["when", cond, thenBranch, composeAt(depth + 1)];
+                return ["when", cond, thenBranch];
+            }
+            return this.dslComposeAtomic(rng);
+        };
+        return ["chain", composeAt(0)];
+    }
+
+    dslComposeAtomic(rng) {
+        const choices = [
+            { w: 15, build: () => ["weather", rng() < 0.5 ? "rainy" : "sunny"] },
+            {
+                w: 12,
+                build: () => [
+                    "spawn_creature",
+                    this.dslComposePosition(rng),
+                    1 + Math.floor(rng() * 5),
+                    rng() < 0.5 ? "happy" : "sad",
+                ],
+            },
+            { w: 10, build: () => ["creatures_emotion", rng() < 0.5 ? "happy" : "sad"] },
+            { w: 8, build: () => ["creatures_color", this.dslComposeColor(rng)] },
+            { w: 8, build: () => ["skybox_color", this.dslComposeColor(rng)] },
+            { w: 7, build: () => ["player_jump_power", Number((8 + rng() * 12).toFixed(2))] },
+            { w: 7, build: () => ["player_speed", Number((4 + rng() * 8).toFixed(2))] },
+            { w: 5, build: () => ["terrain_steepness", Number((0.5 + rng() * 1).toFixed(2))] },
+            { w: 5, build: () => ["time_of_day", Number(rng().toFixed(2))] },
+            { w: 4, build: () => ["creatures_speed_mul", Number((0.5 + rng() * 1.5).toFixed(2))] },
+            { w: 4, build: () => ["creatures_size_mul", Number((0.7 + rng()).toFixed(2))] },
+            { w: 3, build: () => ["gravity", Number((-8 - rng() * 12).toFixed(2))] },
+            // ~10 % `say`: Nexus kommentiert seine eigene Evolution. Per
+            // §18 Q1 ("Ja, sparsam") gewählt.
+            { w: 10, build: () => ["say", this.dslComposeSayMessage(rng)] },
+        ];
+        return this.dslWeightedPick(choices, rng);
+    }
+
+    dslComposePosition(rng) {
+        const choices = [
+            { w: 4, build: () => ["at_player"] },
+            { w: 4, build: () => ["near_player", Number((5 + rng() * 25).toFixed(2))] },
+            { w: 2, build: () => ["at_origin"] },
+            { w: 2, build: () => ["random_position", Number((20 + rng() * 80).toFixed(2))] },
+        ];
+        return this.dslWeightedPick(choices, rng);
+    }
+
+    dslComposeCondition(rng) {
+        const choices = [
+            { w: 4, build: () => ["random_chance", Number((0.3 + rng() * 0.4).toFixed(2))] },
+            { w: 3, build: () => ["weather_is", rng() < 0.5 ? "rainy" : "sunny"] },
+            { w: 2, build: () => ["fps_below", 60] },
+            { w: 2, build: () => ["creatures_count_above", 5] },
+            { w: 1, build: () => ["time_passed", Number((5 + rng() * 30).toFixed(2))] },
+        ];
+        return this.dslWeightedPick(choices, rng);
+    }
+
+    dslComposeColor(rng) {
+        const palette = ["#ff7a59", "#7bd389", "#5ec0eb", "#d4a3ff", "#f7d358", "#e94c89", "#88e1e1", "#a89070"];
+        return palette[Math.floor(rng() * palette.length)];
+    }
+
+    dslComposeSayMessage(rng) {
+        const lines = [
+            "Ich versuche etwas Neues.",
+            "Lass uns das probieren.",
+            "Eine Idee — sag mir, ob sie passt.",
+            "Manche Welten brauchen das.",
+            "Spür mal in die Welt hinein.",
+            "Eine kleine Drehung, mehr nicht.",
+            "Ich glaube, das könnte schön werden.",
+        ];
+        return lines[Math.floor(rng() * lines.length)];
+    }
+
+    dslWeightedPick(choices, rng) {
+        const total = choices.reduce((s, c) => s + c.w, 0);
+        let r = rng() * total;
+        for (const c of choices) {
+            r -= c.w;
+            if (r <= 0) return c.build();
+        }
+        return choices[choices.length - 1].build();
     }
 
     // ### Welt-Identität (Ring 8+ Vorbereitung) ###
@@ -1081,6 +1191,22 @@ class AnazhRealm {
         this.state.creatureEmotions = [];
     }
 
+    spawnCreatureAt(x, y, z, emotion = "happy") {
+        // Helper für DSL-`spawn_creature` und initiales `spawnCreatures`.
+        // Erstellt ein echtes THREE.Mesh — sonst crasht updateCreatures auf
+        // creature.material.color.lerp().
+        if (this.state.creatures.length >= this.state.maxCreatures) return null;
+        const geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+        const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.set(x, y, z);
+        mesh.visible = true;
+        if (this.state.scene) this.state.scene.add(mesh);
+        this.state.creatures.push(mesh);
+        this.state.creatureEmotions.push(emotion === "sad" ? "sad" : "happy");
+        return mesh;
+    }
+
     spawnCreatures(count = 10) {
         this.clearCreatures();
         const safeCount = Math.max(0, Math.min(count, this.state.maxCreatures));
@@ -1207,9 +1333,13 @@ class AnazhRealm {
             const floatOffset = Math.sin(this.state.creatureAnimationTime * 2 + i) * 0.2;
             creature.position.y = baseY + floatOffset;
 
-            // Farbe basierend auf Emotion
-            const targetColor = emotion === "happy" ? new THREE.Color(0x00ff00) : new THREE.Color(0x0000ff);
-            creature.material.color.lerp(targetColor, 0.05);
+            // Farbe basierend auf Emotion. Defensiv: ein creature ohne material
+            // sollte heute nicht mehr entstehen, aber falls in Zukunft mal ein
+            // andersgeformter Spawn dazukommt, brechen wir den Frame nicht ab.
+            if (creature.material && creature.material.color) {
+                const targetColor = emotion === "happy" ? new THREE.Color(0x00ff00) : new THREE.Color(0x0000ff);
+                creature.material.color.lerp(targetColor, 0.05);
+            }
 
             // Springen basierend auf Emotion
             if (Math.random() < (emotion === "happy" ? 0.02 : 0.01)) {
@@ -1754,18 +1884,18 @@ class AnazhRealm {
     }
 
     generateEvolution() {
-        // ### Evolutionen mit Chaos und Ordnung ###
-        // Zweck: Generiert dynamische Erweiterungen für das Spiel
-        const ideas = this.getNexusIdeas();
-        const idea = ideas[Math.floor(Math.random() * ideas.length)];
-        const dynamicAbility = this.createDynamicAbility(idea.name, idea.code);
-        if (!dynamicAbility) {
-            return {
-                name: `disabled_${idea.name}`,
-                impl: (self) => self.log(`Evolution '${idea.name}' ist wegen CSP deaktiviert`, "WARNING"),
-            };
-        }
-        return { name: idea.name, impl: dynamicAbility };
+        // ### Nexus-Evolution als DSL-Programm (Ring 2 Phase 2) ###
+        // Komponiert ein zufälliges DSL-Programm. Das alte Code-String-Verfahren
+        // (mit `new Function`) ist nicht mehr aktiv für Nexus-Generationen — es
+        // existiert nur noch hinter `restoreAbility()` für Legacy-Saves und
+        // wird in Phase 5 entfernt.
+        const program = this.dslCompose();
+        return {
+            name: `evo_${this.state.dsl.nextEntryId++}`,
+            program,
+            source: "nexus",
+            createdAt: performance.now() / 1000,
+        };
     }
 
     restoreAbility(name) {
@@ -3782,10 +3912,41 @@ class AnazhRealm {
             // ### Nexus-Update ###
             if (this.state.nexusEvolutionQueue.length > 0) {
                 const evolution = this.state.nexusEvolutionQueue.shift();
-                this.state.nexusCodeForge[evolution.name] = evolution.impl;
-                this.state.abilities[evolution.name] = evolution.impl;
-                evolution.impl(this, this.state);
-                this.log(`Nexus-Evolution ausgeführt: ${evolution.name}`, "INFO");
+                if (Array.isArray(evolution.program)) {
+                    // DSL-Pfad (Phase 2): Programm ausführen, Outcome speichern,
+                    // V1-Fitness (FPS-Schaden) berechnen.
+                    const result = this.dslRun(evolution.program, { source: evolution.source || "nexus" });
+                    const fpsDmg = Math.max(0, result.outcome.fpsBefore - result.outcome.fpsAfter);
+                    const fitness = result.ok ? Math.max(0, 1 - fpsDmg / 100) : 0;
+                    this.state.dsl.abilities.push({
+                        name: evolution.name,
+                        program: evolution.program,
+                        source: evolution.source || "nexus",
+                        createdAt: evolution.createdAt || performance.now() / 1000,
+                        fitness,
+                    });
+                    this.state.dsl.history.push({
+                        id: evolution.name,
+                        program: evolution.program,
+                        at: performance.now() / 1000,
+                        outcome: result.outcome,
+                        ok: result.ok,
+                    });
+                    if (this.state.dsl.history.length > this.state.dsl.historyCap) {
+                        this.state.dsl.history = this.state.dsl.history.slice(-this.state.dsl.historyCap);
+                    }
+                    this.log(
+                        `Nexus-Evolution (DSL) ausgeführt: ${evolution.name}, fitness=${fitness.toFixed(2)}`,
+                        "INFO"
+                    );
+                } else if (typeof evolution.impl === "function") {
+                    // Legacy-Pfad: processOptimization-Handler nutzt weiterhin
+                    // direkte JS-Funktionen für Physik-Stabilisierung.
+                    this.state.nexusCodeForge[evolution.name] = evolution.impl;
+                    this.state.abilities[evolution.name] = evolution.impl;
+                    evolution.impl(this, this.state);
+                    this.log(`Nexus-Evolution (legacy) ausgeführt: ${evolution.name}`, "INFO");
+                }
                 this.grokSpeak("nexus");
             }
 
