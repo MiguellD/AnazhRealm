@@ -3437,13 +3437,12 @@ class AnazhRealm {
                     "PHY_FLOAT",
                     false
                 );
-                // Mini-Überlappung an der Naht zwischen benachbarten Chunks:
-                // Ohne sie endete jeder per-chunk Heightfield exakt am Vertex
-                // x=0 (bzw. z=0) der Naht und die Triangles auf beiden Seiten
-                // hörten dort auf — Player landete genau auf der Linie und
-                // fiel durch (kein Collider). 0.2% Overlap (~7 cm bei 37.5 m
-                // Chunk-Breite) schließt das Loch ohne sichtbare Doppelung.
-                const stepScaled = (vertexStep / sf) * 1.002;
+                // Überlappung an den Nähten zwischen Chunks. Ohne sie hörten
+                // die Triangles auf beiden Seiten der Naht exakt am Rand auf
+                // — Spieler genau auf der Linie hatten keinen Collider und
+                // fielen durch. An Ecken (4 Chunks treffen) ist die Lücke
+                // noch breiter, daher 1.5 % Overlap (~28 cm pro Naht).
+                const stepScaled = (vertexStep / sf) * 1.015;
                 shape.setLocalScaling(new Ammo.btVector3(stepScaled, 1, stepScaled));
                 const centerX = worldStartX + chunkWorldSize / 2;
                 const centerZ = worldStartZ + chunkWorldSize / 2;
@@ -3873,6 +3872,15 @@ class AnazhRealm {
         if (this.state.physicsWorld) {
             const playerShape = new Ammo.btBoxShape(new Ammo.btVector3(0.5, 0.5, 0.5));
             this.state.playerBody = this.addRigidBody(playerMesh, 1, playerShape, true);
+            // CCD direkt aktivieren: schützt vor Tunneling durch dünne
+            // Heightfield-Cell-Ränder oder Sprung-Landungen genau auf einer
+            // Chunk-Naht. Bisher nur per optimizeCollisions nachträglich
+            // gesetzt — der Spieler fiel deshalb in den ersten Sekunden öfter
+            // durch den Boden.
+            if (this.state.playerBody) {
+                this.state.playerBody.setCcdMotionThreshold(0.05);
+                this.state.playerBody.setCcdSweptSphereRadius(0.4);
+            }
             this.log("Physik-Körper für Spieler hinzugefügt", "INFO");
             this.state.selfAwareness.components.push("playerBody");
         }
