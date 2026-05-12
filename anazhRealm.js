@@ -106,7 +106,9 @@ class AnazhRealm {
             nexusLastEvolution: 0,
             nexusEvolutionInterval: 10.0,
             nexusAutonomyLimit: 100,
-            lastGrowthUpdate: 0
+            lastGrowthUpdate: 0,
+            lastWallCollisionUpdate: 0,
+            lastSelfAnalysis: 0,
         };
         this.core = {
             initPhysics: this.initPhysics.bind(this),
@@ -142,7 +144,7 @@ class AnazhRealm {
         requestAnimationFrame(() => {
             const logDiv = document.getElementById("log");
             if (logDiv && this.state.displayedLogs.length > 0) {
-                logDiv.innerHTML = this.state.displayedLogs.join("\n");
+                logDiv.textContent = this.state.displayedLogs.join("\n");
                 logDiv.scrollTop = logDiv.scrollHeight;
             }
         });
@@ -757,6 +759,26 @@ evolutionEngine() {
     this.log(`Neues Modell für Evolution erstellt: evolutionModel_${this.state.evolutionModels.length}`);
 }
 
+recordWeakness(label) {
+    // Dedupliziert aufeinanderfolgende identische Einträge und cappt auf 50.
+    const weaknesses = this.state.selfAwareness.weaknesses;
+    if (weaknesses[weaknesses.length - 1] === label) return;
+    weaknesses.push(label);
+    if (weaknesses.length > 50) weaknesses.shift();
+}
+
+cacheNoise(key, value) {
+    // FIFO-Cap auf 100k Einträgen verhindert unbegrenztes Wachstum
+    // bei häufigem Steepness-Wechsel (Cache-Key enthält Steepness).
+    const cache = this.state.noiseCache;
+    if (cache.size >= 100000) {
+        const oldest = cache.keys().next().value;
+        cache.delete(oldest);
+    }
+    cache.set(key, value);
+    return value;
+}
+
 selfAwarenessAnalyze() {
     const currentTime = performance.now() / 1000;
     if (this.state.lastSelfAnalysis && currentTime - this.state.lastSelfAnalysis < 2.0) {
@@ -765,7 +787,7 @@ selfAwarenessAnalyze() {
     this.state.lastSelfAnalysis = currentTime;
 // FPS-Optimierung
 if (this.state.fps < 60) {
-    this.state.selfAwareness.weaknesses.push("Low FPS");
+    this.recordWeakness("Low FPS");
     this.log("Selbstanalyse: FPS zu niedrig – Optimiere...");
     this.state.gravity *= 0.9; // Reduziere Gravitation
     if (this.state.physicsWorld) {
@@ -776,19 +798,19 @@ if (this.state.fps < 60) {
 
 // Tunneling-Erkennung
 if (this.state.errorLog.some(log => log.includes("Tunneling"))) {
-    this.state.selfAwareness.weaknesses.push("Tunneling detected");
+    this.recordWeakness("Tunneling detected");
     this.log("Selbstanalyse: Tunneling erkannt – Optimiere...");
     this.optimizeCollisions();
 }
 
 // Boden- und Spielerprüfung
 if (!this.state.groundChunks || this.state.groundChunks.length === 0 || !this.state.groundChunks.some(chunk => chunk.visible)) {
-    this.state.selfAwareness.weaknesses.push("Boden fehlt oder unsichtbar");
+    this.recordWeakness("Boden fehlt oder unsichtbar");
     this.log("Selbstanalyse: Boden fehlt oder unsichtbar – Erzeuge neuen Boden...");
     this.generateNewWorld();
 }
 if (!this.state.playerMesh || !this.state.playerMesh.visible) {
-    this.state.selfAwareness.weaknesses.push("Spieler unsichtbar");
+    this.recordWeakness("Spieler unsichtbar");
     this.log("Selbstanalyse: Spieler unsichtbar – Setze Sichtbarkeit...");
     if (this.state.playerMesh) {
         this.state.playerMesh.visible = true;
@@ -1039,8 +1061,9 @@ processChatCommand(command) {
     const chatInput = document.getElementById("chat-input");
     const chatOutput = document.getElementById("chat-output");
     const appendChatOutput = (message) => {
-        chatOutput.innerHTML += `${message}
-`;
+        const line = document.createElement("div");
+        line.textContent = message;
+        chatOutput.appendChild(line);
         chatOutput.scrollTop = chatOutput.scrollHeight;
     };
 appendChatOutput(`> ${command}`);
@@ -1054,7 +1077,8 @@ if (this.state.knowledgeBase.filter(k => k.type === "chat").length % 10 === 0) {
 // Dynamische Befehlsverarbeitung
 if (parts[0] === "lerne" && parts[1] === "fähigkeit") {
     const abilityName = parts[2];
-    const abilityDesc = command.slice(command.indexOf(parts[3])).trim();
+    const startIdx = parts[3] ? command.toLowerCase().indexOf(parts[3]) : -1;
+    const abilityDesc = startIdx >= 0 ? command.slice(startIdx).trim() : "";
     this.learnAbility(abilityName, abilityDesc);
     appendChatOutput(`Fähigkeit '${abilityName}' gelernt: ${abilityDesc}`);
 } else if (parts[0] === "führe" && parts[1] === "fähigkeit" && parts[2] === "aus") {
@@ -1237,9 +1261,10 @@ chatInput.value = "";
 }
 
 learnAbility(name, description) {
+    const lower = (description || "").toLowerCase();
     let funcBody = "";
-    if (description.includes("ändere farbe von kreaturen")) {
-        const colorMatch = description.match(/zu ([\w]+)/);
+    if (lower.includes("ändere farbe von kreaturen")) {
+        const colorMatch = lower.match(/zu ([\w]+)/);
         const color = colorMatch ? colorMatch[1] : "white";
         funcBody = `
             state.creatures.forEach(creature => {
@@ -1247,15 +1272,15 @@ learnAbility(name, description) {
             });
             self.log("Farbe der Kreaturen geändert zu ${color}");
         `;
-    } else if (description.includes("erhöhe geschwindigkeit")) {
-        const amountMatch = description.match(/um ([\d\.]+)/);
+    } else if (lower.includes("erhöhe geschwindigkeit")) {
+        const amountMatch = lower.match(/um ([\d\.]+)/);
         const amount = amountMatch ? parseFloat(amountMatch[1]) : 1.0;
         funcBody = `
             state.speed += ${amount};
             state.sprintSpeed += ${amount};
             self.log("Geschwindigkeit erhöht um ${amount}, neue Geschwindigkeit: " + state.speed);
         `;
-    } else if (description.includes("spawne objekt")) {
+    } else if (lower.includes("spawne objekt")) {
         funcBody = `
             const geometry = new THREE.BoxGeometry(1, 1, 1);
             const material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
@@ -1264,7 +1289,7 @@ learnAbility(name, description) {
             state.scene.add(obj);
             self.log("Neues Objekt gespawnt!");
         `;
-    } else if (description.includes("erschaffe baum")) {
+    } else if (lower.includes("erschaffe baum")) {
         funcBody = `
             const trunkGeometry = new THREE.CylinderGeometry(0.5, 0.5, 5, 8);
             const trunkMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513 });
@@ -1305,8 +1330,9 @@ proactiveSuggestions() {
     ];
     const randomSuggestion = suggestions[Math.floor(Math.random() * suggestions.length)];
     const chatOutput = document.getElementById("chat-output");
-    chatOutput.innerHTML += `KI-Vorschlag: ${randomSuggestion}
-`;
+    const line = document.createElement("div");
+    line.textContent = `KI-Vorschlag: ${randomSuggestion}`;
+    chatOutput.appendChild(line);
     chatOutput.scrollTop = chatOutput.scrollHeight;
 }
 developAdvancedPhysics() {
@@ -1623,7 +1649,7 @@ generateTerrainWithParameters(steepness, baseHeight) {
                     this.log(`Ungültiger Höhenwert bei (${x}, ${z}): ${h}. Setze auf 0.`, "ERROR");
                     h = 0;
                 }
-                this.state.noiseCache.set(cacheKey, h);
+                this.cacheNoise(cacheKey, h);
                 return h;
             })();
 
@@ -2345,7 +2371,7 @@ extendTerrain(direction) {
                 h = 0;
             }
             h = Math.max(-100, Math.min(100, h));
-            this.state.noiseCache.set(cacheKey, h);
+            this.cacheNoise(cacheKey, h);
             return h;
         })();
 

@@ -25,12 +25,12 @@ Status-Legende: `[ ]` offen · `[x]` erledigt · `[~]` in Arbeit
 - [ ] **C2** Chat-Command-Map statt Mega-If-Else.
 - [ ] **C3** Ammo-Pool / zentrales `disposeAmmo` (behebt **B3** Memory-Leak).
 - [ ] **C4** Worker-Singleton in `updateCreatures` (behebt **B4** Worker-Spawn-Leak).
-- [ ] **B7** Case-Sensitivity in `learnAbility` (`indexOf` auf Lowercase-`command`).
+- [x] **B7** `learnAbility` case-insensitiv: `indexOf` über lowercased `command`, alle `.includes(...)` gegen `lower`.
 - [ ] **B9** Skybox-Uniform korrekt setzen (`.value.set(color)`).
-- [ ] **B11** XSS-Schutz im Chat (`textContent` statt `innerHTML`).
-- [ ] **B16** `lastWallCollisionUpdate` im State initialisieren.
-- [ ] **B17** `selfAwareness.weaknesses` mit Ringpuffer begrenzen.
-- [ ] **B19** `noiseCache` als LRU oder zeitbasiert.
+- [x] **B11** XSS-Schutz: `flushLog` nutzt `textContent`, Chat-Output appendet `<div>`-Elemente mit `textContent`.
+- [x] **B16** `lastWallCollisionUpdate` (und `lastSelfAnalysis`) initial im State.
+- [x] **B17** `recordWeakness()`-Helper mit Dedup + Cap 50.
+- [x] **B19** `cacheNoise()`-Helper als FIFO-LRU mit Cap 100k.
 - [ ] **C14** ESLint + Prettier + `package.json` einrichten.
 
 ### Mittelfristig (Wochen)
