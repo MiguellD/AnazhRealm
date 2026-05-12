@@ -2705,6 +2705,66 @@ class AnazhRealm {
             }
         }
 
+        // ### Globales Heightfield-Physik für die zentrale 8×8-Welt ###
+        // ensureChunkAt überspringt per-chunk Physik im Bereich [0, CHUNKS_PER_SIDE);
+        // hier bauen wir EIN großes Heightfield, das die ganze initiale Welt
+        // nahtlos abdeckt. Das ist robuster als 64 aneinandergrenzende
+        // per-chunk Heightfields (deren Nähte den Spieler immer wieder
+        // durchfallen ließen). Extension-Chunks außerhalb behalten ihre
+        // eigene per-chunk Physik.
+        if (this.state.physicsWorld && this.state.scaleFactor > 0) {
+            const sf = this.state.scaleFactor;
+            const CHUNKS_PER_SIDE = CHUNKS_X;
+            const vertexStep = WORLD_SIZE / CHUNKS_PER_SIDE / CHUNK_SIZE;
+            const GVTX = CHUNKS_PER_SIDE * CHUNK_SIZE + 1; // 8*32+1 = 257
+            const globalHeights = new Float32Array(GVTX * GVTX);
+            const gSeed = this.state.seed || "anazh-realm-seed";
+            const gNoise = new SimplexNoise(gSeed);
+            const gCave = new SimplexNoise(gSeed + "-cave");
+            const gVolcano = new SimplexNoise(gSeed + "-volcano");
+            let gMin = Infinity;
+            let gMax = -Infinity;
+            for (let z = 0; z < GVTX; z++) {
+                const wz = z * vertexStep - WORLD_SIZE / 2;
+                for (let x = 0; x < GVTX; x++) {
+                    const wx = x * vertexStep - WORLD_SIZE / 2;
+                    const cacheKey = `${wx}:${wz}:${steepness}`;
+                    let h = this.state.noiseCache.get(cacheKey);
+                    if (h === undefined) {
+                        h = this._terrainHeightAtWorld(wx, wz, gNoise, steepness, baseHeight, gCave, gVolcano);
+                        this.cacheNoise(cacheKey, h);
+                    }
+                    globalHeights[z * GVTX + x] = h / sf;
+                    if (h < gMin) gMin = h;
+                    if (h > gMax) gMax = h;
+                }
+            }
+            const gShape = new Ammo.btHeightfieldTerrainShape(
+                GVTX,
+                GVTX,
+                globalHeights,
+                1.0,
+                gMin / sf,
+                gMax / sf,
+                1,
+                "PHY_FLOAT",
+                false
+            );
+            gShape.setLocalScaling(new Ammo.btVector3(vertexStep / sf, 1, vertexStep / sf));
+            const gTransform = new Ammo.btTransform();
+            gTransform.setIdentity();
+            gTransform.setOrigin(new Ammo.btVector3(0, (gMin + gMax) / 2 / sf, 0));
+            const gMotion = new Ammo.btDefaultMotionState(gTransform);
+            const gInertia = new Ammo.btVector3(0, 0, 0);
+            const gRb = new Ammo.btRigidBodyConstructionInfo(0, gMotion, gShape, gInertia);
+            const gBody = new Ammo.btRigidBody(gRb);
+            this.state.physicsWorld.addRigidBody(gBody);
+            Ammo.destroy(gRb);
+            Ammo.destroy(gInertia);
+            this.state.groundHeightFieldBody = gBody;
+            this.log(`Globales Heightfield-Physik aktiv: ${GVTX}×${GVTX}, y∈[${gMin.toFixed(1)}, ${gMax.toFixed(1)}]`);
+        }
+
         // ### Fliegende Inseln generieren ###
         this.state.floatingIslands = [];
         this.state.ufos = [];
@@ -3421,8 +3481,17 @@ class AnazhRealm {
         // Physik für den neuen Chunk: ein eigenes Ammo-Heightfield mit Welt-
         // Offset an `(chunk-Mitte, (min+max)/2)`. Ohne diesen Schritt liefe der
         // Spieler visuell weiter, fiele aber durch die unsichtbare Lücke.
+        //
+        // Initial-Grid-Chunks (cx,cz in [0, CHUNKS_PER_SIDE)) bekommen KEINE
+        // eigene Physik: die zentrale 8×8-Welt wird von einem GLOBALEN
+        // Heightfield (state.groundHeightFieldBody) nahtlos abgedeckt, das
+        // direkt nach der initialen Welt-Gen aufgebaut wird. Spieler fielen
+        // immer wieder durch die Nähte der 64 per-chunk Heightfields.
+        const CHUNKS_PER_SIDE_PHYS = Math.ceil(this.state.chunkWidth / this.state.chunkSize);
+        const isInitialGridChunk =
+            newChunkX >= 0 && newChunkX < CHUNKS_PER_SIDE_PHYS && newChunkZ >= 0 && newChunkZ < CHUNKS_PER_SIDE_PHYS;
         try {
-            if (this.state.physicsWorld && this.state.scaleFactor > 0) {
+            if (!isInitialGridChunk && this.state.physicsWorld && this.state.scaleFactor > 0) {
                 const sf = this.state.scaleFactor;
                 const heightfieldData = new Float32Array(VTX * VTX);
                 for (let i = 0; i < heightData.length; i++) heightfieldData[i] = heightData[i] / sf;
