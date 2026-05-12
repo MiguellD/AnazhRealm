@@ -1957,6 +1957,36 @@ function startSaveServer() {
                 })
                 .catch(() => null);
 
+            // Pitch-Inversion + Boden-Clamp im 3rd-Modus prüfen: Maus hoch
+            // (pitch positiv) muss Kamera SENKEN, nicht heben. Bei extremem
+            // Pitch darf die Kamera nicht unter den Boden tauchen.
+            // Drei Pitch-Werte sequentiell prüfen. setTimeout innerhalb
+            // page.evaluate yields nicht an rAF im Headless — also außen
+            // warten zwischen "Pitch setzen" und "cam.y lesen", wie's auch
+            // beim Rotation-Test funktioniert.
+            const setPitchAndRead = async (pitch) => {
+                await page.evaluate((p) => {
+                    const r = window.anazhRealm;
+                    r.setCameraMode("third");
+                    r.state.yaw = 0;
+                    r.state.pitch = p;
+                }, pitch);
+                await new Promise((r) => setTimeout(r, 200));
+                return await page.evaluate(() => {
+                    const r = window.anazhRealm;
+                    return r.state.camera.position.y - r.state.playerMesh.position.y;
+                });
+            };
+            const upDelta = await setPitchAndRead(Math.PI / 6);
+            const clampedDelta = await setPitchAndRead(Math.PI / 2 - 0.1);
+            const downDelta = await setPitchAndRead(-Math.PI / 6);
+            const cameraPitch = { upDelta, clampedDelta, downDelta };
+            await page.evaluate(() => {
+                const r = window.anazhRealm;
+                r.setCameraMode("first");
+                r.state.pitch = 0;
+            });
+
             if (!cameraResults || cameraResults.error) {
                 check(
                     "Ring 5 V2-Prep: Kamera-Snapshot erreichbar",
@@ -1983,6 +2013,25 @@ function startSaveServer() {
                     "Ring 5 V2-Prep: playerMesh.rotation.y folgt yaw",
                     Math.abs(cameraEffect.playerRotationY - cameraEffect.playerYaw) < 0.01,
                     `yaw=${cameraEffect.playerYaw.toFixed(3)}, rot.y=${cameraEffect.playerRotationY.toFixed(3)}`
+                );
+            }
+            if (cameraPitch) {
+                // Mit height=2.0 und dist=6: pitch=+30° → cam-player = 2-3 = -1.
+                // pitch=-30° → cam-player = 2+3 = 5. clamp greift bei -0.2.
+                check(
+                    "Ring 5 V2-Prep: Pitch invertiert — Maus hoch senkt Kamera (3rd)",
+                    cameraPitch.upDelta < 2,
+                    `cam-player=${cameraPitch.upDelta.toFixed(2)} (Erwartung < 2)`
+                );
+                check(
+                    "Ring 5 V2-Prep: Maus runter hebt Kamera (3rd)",
+                    cameraPitch.downDelta > 2,
+                    `cam-player=${cameraPitch.downDelta.toFixed(2)} (Erwartung > 2)`
+                );
+                check(
+                    "Ring 5 V2-Prep: Boden-Clamp greift bei extremem Pitch",
+                    cameraPitch.clampedDelta >= -0.21,
+                    `cam-player=${cameraPitch.clampedDelta.toFixed(2)} (≥ -0.2 erwartet)`
                 );
             }
         }

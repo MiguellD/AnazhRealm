@@ -5437,15 +5437,29 @@ class AnazhRealm {
                 player.rotation.y = this.state.yaw;
                 if (this.state.cameraMode === "third") {
                     // Orbit-Kamera hinter + über dem Spieler. Pitch hebt/senkt
-                    // den Blickpunkt; Distance bleibt konstant. Look-At zielt
-                    // auf den Brust-Punkt, damit der Spieler beim Hochschauen
-                    // den Boden noch erfassen kann.
+                    // die Kamera vertikal; Distance bleibt konstant. Look-At
+                    // zielt auf den Brust-Punkt.
+                    //
+                    // Pitch-Vorzeichen ist gegenüber 1st bewusst invertiert:
+                    // im 1st-Modus heißt "nach oben schauen" = Welt nach unten
+                    // sehen; im 3rd-Modus erwartet der Spieler aber, dass die
+                    // Maus-Richtung mit der Kamera-Bewegung mitgeht (Maus hoch
+                    // = Kamera höher um den Charakter herum).
                     const dist = this.state.cameraThirdDistance;
                     const height = this.state.cameraThirdHeight;
                     const cosPitch = Math.cos(this.state.pitch);
+                    let camY = player.position.y + height - Math.sin(this.state.pitch) * dist;
+                    // Boden-Clamp: Kamera darf nicht unter Spieler-Füße. Ohne
+                    // diesen Schutz fährt sie bei steilem Hoch-Schauen durchs
+                    // Terrain und der Spieler sieht das Innere der Welt.
+                    // Player-Box ist 1×1×1, Center auf player.y, Füße bei
+                    // player.y − 0.5; etwas Puffer drüber (0.3) hält die
+                    // Kamera sicher über jeder normalen Heightfield-Spitze.
+                    const minCamY = player.position.y - 0.2;
+                    if (camY < minCamY) camY = minCamY;
                     camera.position.set(
                         player.position.x - Math.sin(this.state.yaw) * dist * cosPitch,
-                        player.position.y + height + Math.sin(this.state.pitch) * dist,
+                        camY,
                         player.position.z - Math.cos(this.state.yaw) * dist * cosPitch
                     );
                     camera.lookAt(player.position.x, player.position.y + 1.0, player.position.z);
