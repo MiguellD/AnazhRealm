@@ -23,10 +23,10 @@ Status-Legende: `[ ]` offen · `[x]` erledigt · `[~]` in Arbeit
 
 ### Kurzfristig (Tage)
 - [ ] **C2** Chat-Command-Map statt Mega-If-Else.
-- [ ] **C3** Ammo-Pool / zentrales `disposeAmmo` (behebt **B3** Memory-Leak).
+- [x] **C3 / B3** Ammo-Pool: `state.tmpVec1`/`tmpVec2`/`tmpTransform` + `setVec(v,x,y,z)`-Helper. Hot-Paths (`isPlayerGrounded`, `updateCreatures`, `creatureJump`, `handleJump`, Hauptloop Player-Velocity + Kill-Plane-Recovery) allokieren 0 btVector3 mehr pro Frame. Verbleibende Allokationen sind alle in Einmal-Setup-Pfaden.
 - [x] **C4 / B4** Singleton-Movement-Worker (`getMovementWorker`) mit Busy-Flag; behebt Pro-Frame-Spawn und `URL.createObjectURL`-Leak.
 - [x] **B7** `learnAbility` case-insensitiv: `indexOf` über lowercased `command`, alle `.includes(...)` gegen `lower`.
-- [ ] **B9** Skybox-Uniform korrekt setzen (`.value.set(color)`).
+- [x] **B9** Skybox-Uniform setzt Wert über `.value.set(color)` statt das Uniform-Objekt zu überschreiben.
 - [x] **B11** XSS-Schutz: `flushLog` nutzt `textContent`, Chat-Output appendet `<div>`-Elemente mit `textContent`.
 - [x] **B16** `lastWallCollisionUpdate` (und `lastSelfAnalysis`) initial im State.
 - [x] **B17** `recordWeakness()`-Helper mit Dedup + Cap 50.

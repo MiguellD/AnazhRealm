@@ -112,6 +112,8 @@ class AnazhRealm {
             movementWorker: null,
             movementWorkerUrl: null,
             movementWorkerBusy: false,
+            tmpVec1: null,
+            tmpVec2: null,
         };
         this.core = {
             initPhysics: this.initPhysics.bind(this),
@@ -185,8 +187,13 @@ async initPhysics() {
         const broadphase = new Ammo.btDbvtBroadphase();
         const solver = new Ammo.btSequentialImpulseConstraintSolver();
         this.state.physicsWorld = new Ammo.btDiscreteDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration);
-        this.state.physicsWorld.setGravity(new Ammo.btVector3(0, -9.81 * 1.5, 0)); // Gravitation 1.5G
         this.state.tmpTransform = new Ammo.btTransform();
+        // Wiederverwendbarer Pool für Hot-Path-Allokationen. Ammo kopiert Werte
+        // beim Übergeben in Bullet, daher dürfen diese Vektoren überschrieben
+        // werden, sobald die Aufrufkette zurückkehrt.
+        this.state.tmpVec1 = new Ammo.btVector3(0, 0, 0);
+        this.state.tmpVec2 = new Ammo.btVector3(0, 0, 0);
+        this.state.physicsWorld.setGravity(this.setVec(this.state.tmpVec1, 0, -9.81 * 1.5, 0));
         this.log("Physik-Welt initialisiert, Gravitation: 1.5G (-14.715 m/s²)");
 
         // Selbstbewusstsein aktualisieren
@@ -195,6 +202,14 @@ async initPhysics() {
         this.logError(error);
         throw error;
     }
+}
+
+setVec(v, x, y, z) {
+    // Schreibt Werte in einen vorhandenen Ammo.btVector3 statt einen neuen
+    // zu allokieren. Ammo.js / Bullet kopieren beim Übergeben den Inhalt,
+    // d. h. der Vektor kann anschließend sofort wiederverwendet werden.
+    v.setValue(x, y, z);
+    return v;
 }
 
 addRigidBody(mesh, mass, shape, lockRotation = false) {
@@ -512,12 +527,12 @@ updateCreatures(delta) {
         creature.visible = inFrustum; // Sichtbarkeit basierend auf Frustum
 
         // Raycast für Hindernis-Erkennung
-        const rayStart = new Ammo.btVector3(
+        const rayStart = this.setVec(this.state.tmpVec1,
             creature.position.x / this.state.scaleFactor,
             (creature.position.y + 0.5) / this.state.scaleFactor,
             creature.position.z / this.state.scaleFactor
         );
-        const rayEnd = new Ammo.btVector3(
+        const rayEnd = this.setVec(this.state.tmpVec2,
             (creature.position.x + (emotion === "happy" ? 2 : -2)) / this.state.scaleFactor,
             (creature.position.y + 0.5) / this.state.scaleFactor,
             (creature.position.z + (emotion === "happy" ? 2 : -2)) / this.state.scaleFactor
@@ -588,11 +603,11 @@ updateCreatures(delta) {
             this.log(`Kreatur ${i} zu tief gefallen, zurückgesetzt zu y=${terrainHeight + 1.0}`);
         }
 
-        // Physik-Update (immer aktiv)
+        // Physik-Update (immer aktiv) – nutzt gepoolte Transform + Vec
         if (body) {
-            const transform = new Ammo.btTransform();
+            const transform = this.state.tmpTransform;
             transform.setIdentity();
-            transform.setOrigin(new Ammo.btVector3(
+            transform.setOrigin(this.setVec(this.state.tmpVec1,
                 creature.position.x / this.state.scaleFactor,
                 creature.position.y / this.state.scaleFactor,
                 creature.position.z / this.state.scaleFactor
@@ -655,7 +670,7 @@ creatureJump(creature, jumpHeight) {
     const body = creature.userData.physicsBody;
     if (body) {
         const velocity = body.getLinearVelocity();
-        body.setLinearVelocity(new Ammo.btVector3(velocity.x(), jumpHeight * 5, velocity.z()));
+        body.setLinearVelocity(this.setVec(this.state.tmpVec1, velocity.x(), jumpHeight * 5, velocity.z()));
         if (Math.random() < 0.1) { // Nur 10% Chance, den Sprung zu loggen
             this.log(`Kreatur springt mit Höhe ${jumpHeight}`, "DEBUG");
         }
@@ -1113,7 +1128,7 @@ if (parts[0] === "lerne" && parts[1] === "fähigkeit") {
     }
 } else if (parts[0] === "ändere" && parts[1] === "sternenhimmel") {
     const color = parts[2] || "purple";
-    this.state.skybox.material.uniforms.nebulaColor = { value: new THREE.Color(color) };
+    this.state.skybox.material.uniforms.nebulaColor.value.set(color);
     appendChatOutput(`Sternenhimmel geändert: Farbe auf ${color} gesetzt`);
 } else if (parts[0] === "speichere" && parts[1] === "zustand") {
     this.saveState();
@@ -2740,7 +2755,7 @@ handleJump(currentTime) {
         const withinCoyoteTime = (currentTime - this.state.lastGroundedTime) <= this.state.coyoteTime;
         if ((isGrounded || withinCoyoteTime) && !this.state.isJumping) {
             const velocity = this.state.playerBody.getLinearVelocity();
-            this.state.playerBody.setLinearVelocity(new Ammo.btVector3(velocity.x(), this.state.jumpPower, velocity.z()));
+            this.state.playerBody.setLinearVelocity(this.setVec(this.state.tmpVec1, velocity.x(), this.state.jumpPower, velocity.z()));
             this.state.isJumping = true;
             this.state.isInAir = true;
             this.state.playerMesh.material.color.set(0xffa500);
@@ -2861,15 +2876,15 @@ startEternalLoop() {
                         const surfaceHeight = this.findSurfaceAbove(currentX, scaledY, currentZ);
                         scaledY = surfaceHeight + 0.5; // Spieler wird knapp über die Oberfläche gesetzt
 
-                        const transform = new Ammo.btTransform();
+                        const transform = this.state.tmpTransform;
                         transform.setIdentity();
-                        transform.setOrigin(new Ammo.btVector3(
+                        transform.setOrigin(this.setVec(this.state.tmpVec1,
                             currentX / this.state.scaleFactor,
                             scaledY / this.state.scaleFactor,
                             currentZ / this.state.scaleFactor
                         ));
                         body.setWorldTransform(transform);
-                        body.setLinearVelocity(new Ammo.btVector3(velocity.x(), 0, velocity.z()));
+                        body.setLinearVelocity(this.setVec(this.state.tmpVec2, velocity.x(), 0, velocity.z()));
                         this.state.isJumping = false;
                         this.state.isInAir = false;
                         mesh.position.set(currentX, scaledY, currentZ);
@@ -2915,16 +2930,14 @@ startEternalLoop() {
         if (this.state.physicsWorld && playerBody) {
             if (this.state.moveDirection.length() > 0) {
                 this.state.moveDirection.normalize();
-                const velocity = new Ammo.btVector3(
+                playerBody.setLinearVelocity(this.setVec(this.state.tmpVec1,
                     this.state.moveDirection.x * currentSpeed,
                     playerBody.getLinearVelocity().y(),
                     this.state.moveDirection.z * currentSpeed
-                );
-                playerBody.setLinearVelocity(velocity);
+                ));
                 playerBody.forceActivationState(1);
             } else {
-                const velocity = new Ammo.btVector3(0, playerBody.getLinearVelocity().y(), 0);
-                playerBody.setLinearVelocity(velocity);
+                playerBody.setLinearVelocity(this.setVec(this.state.tmpVec1, 0, playerBody.getLinearVelocity().y(), 0));
             }
 
             if (this.state.keys[" "] && !this.state.isJumping) {
@@ -2933,7 +2946,7 @@ startEternalLoop() {
                 if (isGrounded || withinCoyoteTime) {
                     const jumpForce = this.state.jumpPower;
                     const currentVelocity = playerBody.getLinearVelocity();
-                    playerBody.setLinearVelocity(new Ammo.btVector3(
+                    playerBody.setLinearVelocity(this.setVec(this.state.tmpVec1,
                         currentVelocity.x(),
                         jumpForce / this.state.scaleFactor,
                         currentVelocity.z()
@@ -3072,12 +3085,12 @@ isPlayerGrounded() {
     let closestHitY = null;
 
     for (const ray of rays) {
-        const rayStart = new Ammo.btVector3(
+        const rayStart = this.setVec(this.state.tmpVec1,
             (this.state.playerMesh.position.x + ray.offsetX) / this.state.scaleFactor,
             (this.state.playerMesh.position.y - 0.5) / this.state.scaleFactor,
             (this.state.playerMesh.position.z + ray.offsetZ) / this.state.scaleFactor
         );
-        const rayEnd = new Ammo.btVector3(
+        const rayEnd = this.setVec(this.state.tmpVec2,
             (this.state.playerMesh.position.x + ray.offsetX) / this.state.scaleFactor,
             (this.state.playerMesh.position.y - 3.0) / this.state.scaleFactor,
             (this.state.playerMesh.position.z + ray.offsetZ) / this.state.scaleFactor
