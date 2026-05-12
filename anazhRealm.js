@@ -1487,8 +1487,32 @@ class AnazhRealm {
             fps: document.getElementById("status-fps"),
             creatures: document.getElementById("status-creatures"),
             emotions: emotionRefs,
+            abilities: document.getElementById("status-abilities"),
+            abilitiesSignature: "",
             lastTick: -Infinity,
         };
+
+        // Abilities-Container: Event-Delegation für Ausführen-Buttons.
+        const abilitiesContainer = this._statusRefs.abilities;
+        if (abilitiesContainer) {
+            abilitiesContainer.addEventListener("click", (event) => {
+                const target = event.target;
+                if (!(target instanceof HTMLElement)) return;
+                const name = target.getAttribute("data-run-ability");
+                if (name && this.state.abilities[name]) {
+                    this.state.abilities[name]();
+                }
+            });
+        }
+
+        // Export-Button: lokaler Download des aktuellen Zustands ohne Chat-
+        // Umweg, damit man den Status-Snapshot direkt teilen kann.
+        const exportBtn = document.getElementById("action-export-state");
+        if (exportBtn) {
+            exportBtn.addEventListener("click", () => {
+                this.triggerStateDownload(this.buildStateSnapshot());
+            });
+        }
 
         // Quick-Action-Buttons: data-cmd-Attribut → processChatCommand
         const quick = document.getElementById("quick-actions");
@@ -1562,6 +1586,52 @@ class AnazhRealm {
             const v = Math.max(0, Math.min(1, e[axis] || 0));
             r.emotions[axis].fill.style.width = `${(v * 100).toFixed(0)}%`;
             r.emotions[axis].value.textContent = v.toFixed(2);
+        }
+        this.renderAbilitiesList();
+    }
+
+    // Abilities-Liste re-rendern, aber nur wenn sich Name/Source-Set
+    // tatsächlich geändert hat — Signature-Hash hält den Diff billig.
+    renderAbilitiesList() {
+        const r = this._statusRefs;
+        if (!r || !r.abilities) return;
+        const list = this.state.dsl.abilities;
+        // Length-Prefix sorgt dafür, dass die initiale leere Signature ("")
+        // und ein leeres Array ("0:") unterscheidbar sind — sonst würde der
+        // erste Empty-State-Render durch den Early-Return wegoptimiert.
+        const signature = list.length + ":" + list.map((a) => `${a.name}:${a.source || "?"}`).join("|");
+        if (signature === r.abilitiesSignature) return;
+        r.abilitiesSignature = signature;
+        const container = r.abilities;
+        container.innerHTML = "";
+        if (list.length === 0) {
+            const empty = document.createElement("div");
+            empty.className = "ability-empty";
+            empty.textContent = "Noch keine Fähigkeiten gelernt.";
+            container.appendChild(empty);
+            return;
+        }
+        // Neueste zuerst, max 20 angezeigt (UI-Limit, Save-Array bleibt 200).
+        const recent = list.slice(-20).reverse();
+        for (const ability of recent) {
+            const row = document.createElement("div");
+            const src = ability.source || "unknown";
+            row.className = `ability-row source-${src}`;
+            const name = document.createElement("span");
+            name.className = "name";
+            name.textContent = ability.name;
+            const source = document.createElement("span");
+            source.className = "source";
+            source.textContent = src;
+            const run = document.createElement("button");
+            run.type = "button";
+            run.textContent = "▶";
+            run.setAttribute("data-run-ability", ability.name);
+            run.setAttribute("aria-label", `Fähigkeit ${ability.name} ausführen`);
+            row.appendChild(name);
+            row.appendChild(source);
+            row.appendChild(run);
+            container.appendChild(row);
         }
     }
 

@@ -225,6 +225,50 @@
             background: rgba(255, 255, 255, 0.12);
             border-color: #888;
         }
+        #status-panel .ability-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 3px;
+            padding: 4px 6px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid #333;
+            border-radius: 2px;
+            font-size: 11px;
+        }
+        #status-panel .ability-row .name {
+            flex: 1;
+            font-family: monospace;
+            color: #ddd;
+        }
+        #status-panel .ability-row .source {
+            font-size: 9px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        #status-panel .ability-row.source-human .source { color: #7bd389; }
+        #status-panel .ability-row.source-nexus .source { color: #d4a3ff; }
+        #status-panel .ability-row.source-restored .source { color: #f7d358; }
+        #status-panel .ability-row button {
+            background: rgba(255, 255, 255, 0.08);
+            color: #ddd;
+            border: 1px solid #555;
+            padding: 2px 8px;
+            font-size: 10px;
+            cursor: pointer;
+            border-radius: 2px;
+            font-family: inherit;
+        }
+        #status-panel .ability-row button:hover {
+            background: rgba(255, 255, 255, 0.18);
+            border-color: #aaa;
+        }
+        #status-panel .ability-empty {
+            font-size: 11px;
+            color: #666;
+            font-style: italic;
+        }
         #help-toggle {
             position: absolute;
             bottom: 10px;
@@ -324,6 +368,19 @@
                 <button type="button" data-cmd="Spawne neue Welt">Neue Welt</button>
                 <button type="button" data-cmd="Boden aktivieren">Boden an</button>
                 <button type="button" data-cmd="Boden deaktivieren">Boden aus</button>
+            </div>
+        </section>
+        <section class="section">
+            <h3>Fähigkeiten</h3>
+            <div id="status-abilities"></div>
+        </section>
+        <section class="section">
+            <h3>Speicher</h3>
+            <div class="actions" id="save-actions">
+                <button type="button" data-cmd="Speichere Zustand">Speichern</button>
+                <button type="button" data-cmd="Lade Zustand">Laden</button>
+                <button type="button" data-cmd="Lade Datei">Datei…</button>
+                <button type="button" id="action-export-state">Export…</button>
             </div>
         </section>
     </aside>

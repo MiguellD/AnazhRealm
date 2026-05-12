@@ -1299,6 +1299,142 @@ function startSaveServer() {
                     uiActionsResults.closeButtonHidesOverlay
                 );
             }
+
+            // ### UI V1 — Abilities-Liste + Save/Load ###
+            const uiAbilitiesResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    const container = document.getElementById("status-abilities");
+                    out.containerInDom = !!container;
+
+                    // (a) Initial: leere Meldung oder bestehende Fähigkeiten —
+                    //     je nach Test-Vorlauf. Wir setzen erst eine bekannte
+                    //     Ability, dann erzwingen das Rendering.
+                    r.state.dsl.abilities = [];
+                    if (r._statusRefs) {
+                        r._statusRefs.abilitiesSignature = "";
+                        r._statusRefs.lastTick = -Infinity;
+                    }
+                    r.updateStatusPanel(3000);
+                    out.emptyStateShown = container && container.querySelector(".ability-empty") !== null;
+
+                    // (b) Eine Ability hinzufügen → Row erscheint
+                    r.addNewAbility("uiAbilityTest", ["creatures_color", "blue"], "human");
+                    if (r._statusRefs) {
+                        r._statusRefs.abilitiesSignature = "";
+                        r._statusRefs.lastTick = -Infinity;
+                    }
+                    r.updateStatusPanel(3001);
+                    const rows = container ? container.querySelectorAll(".ability-row") : [];
+                    out.rowCountAfterAdd = rows.length;
+                    out.rowAppears = rows.length === 1;
+                    out.rowHasName =
+                        rows[0] && rows[0].querySelector(".name").textContent === "uiAbilityTest";
+                    out.rowHasSourceClass =
+                        rows[0] && rows[0].classList.contains("source-human");
+
+                    // (c) Run-Button klicken → ability läuft, Welt-Effekt
+                    if (r.state.creatures[0]) r.state.creatures[0].material.color.setHex(0xff0000);
+                    const runBtn = rows[0] && rows[0].querySelector("[data-run-ability]");
+                    if (runBtn) runBtn.click();
+                    const colorAfter = r.state.creatures[0] ? r.state.creatures[0].material.color.getHex() : 0;
+                    out.runButtonExecutes = colorAfter === 0x0000ff;
+
+                    // (d) Signature-Cache: zweiter updateStatusPanel ohne
+                    //     Änderung darf das DOM nicht neu bauen — wir markieren
+                    //     einen unsichtbaren Wert und prüfen Persistenz.
+                    rows[0].setAttribute("data-test-marker", "preserved");
+                    if (r._statusRefs) r._statusRefs.lastTick = -Infinity;
+                    r.updateStatusPanel(3002);
+                    const rowAgain = container ? container.querySelector(".ability-row") : null;
+                    out.signatureCachePreserves =
+                        rowAgain && rowAgain.getAttribute("data-test-marker") === "preserved";
+
+                    // (e) Export-Button löst Download aus → wir prüfen, dass
+                    //     ein <a>-Element mit JSON-Data-URL angelegt UND wieder
+                    //     entfernt wird. triggerStateDownload macht das
+                    //     synchron, wir patchen click() um die Daten-URL zu
+                    //     fangen.
+                    let capturedHref = "";
+                    const origCreate = document.createElement.bind(document);
+                    document.createElement = function (tag) {
+                        const el = origCreate(tag);
+                        if (tag === "a") {
+                            const origClick = el.click.bind(el);
+                            el.click = function () {
+                                capturedHref = el.getAttribute("href") || "";
+                                origClick();
+                            };
+                        }
+                        return el;
+                    };
+                    const exportBtn = document.getElementById("action-export-state");
+                    if (exportBtn) exportBtn.click();
+                    document.createElement = origCreate;
+                    out.exportHrefStarts = capturedHref.startsWith("data:application/json");
+                    out.exportContainsPlayerEmotions = capturedHref.includes("playerEmotions");
+
+                    // Cleanup: Test-Ability wieder rausnehmen, damit andere
+                    //         Snapshots sauber sind.
+                    r.state.dsl.abilities = r.state.dsl.abilities.filter(
+                        (a) => a.name !== "uiAbilityTest"
+                    );
+                    delete r.state.abilities.uiAbilityTest;
+                    if (r._statusRefs) {
+                        r._statusRefs.abilitiesSignature = "";
+                        r._statusRefs.lastTick = -Infinity;
+                    }
+                    r.updateStatusPanel(3003);
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (!uiAbilitiesResults || uiAbilitiesResults.error) {
+                check(
+                    "UI: Abilities-Snapshot erreichbar",
+                    false,
+                    uiAbilitiesResults && uiAbilitiesResults.error
+                        ? uiAbilitiesResults.error
+                        : "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check(
+                    "UI: Abilities-Container ist im DOM",
+                    uiAbilitiesResults.containerInDom
+                );
+                check(
+                    "UI: Leerer State zeigt Hinweis-Text",
+                    uiAbilitiesResults.emptyStateShown
+                );
+                check(
+                    "UI: Hinzugefügte Ability erscheint als Row",
+                    uiAbilitiesResults.rowAppears,
+                    `rows=${uiAbilitiesResults.rowCountAfterAdd}`
+                );
+                check(
+                    "UI: Ability-Row trägt Name + Source-Klasse",
+                    uiAbilitiesResults.rowHasName && uiAbilitiesResults.rowHasSourceClass
+                );
+                check(
+                    "UI: Run-Button führt Ability aus (DSL-Programm mutiert Welt)",
+                    uiAbilitiesResults.runButtonExecutes
+                );
+                check(
+                    "UI: Signature-Cache verhindert DOM-Rebuild bei gleichem Stand",
+                    uiAbilitiesResults.signatureCachePreserves
+                );
+                check(
+                    "UI: Export-Button erzeugt JSON-Data-URL",
+                    uiAbilitiesResults.exportHrefStarts
+                );
+                check(
+                    "UI: Export-Payload enthält playerEmotions",
+                    uiAbilitiesResults.exportContainsPlayerEmotions
+                );
+            }
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
