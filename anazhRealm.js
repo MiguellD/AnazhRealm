@@ -3647,9 +3647,15 @@ class AnazhRealm {
 
     pruneDistantChunks(playerPos) {
         if (!playerPos || !this.state.chunkMap || this.state.chunkMap.size <= this.state.maxLoadedChunks) return;
-        const chunkSizeWorld = (this.state.chunkSize * 300) / this.state.chunkWidth;
-        const playerChunkX = Math.floor(playerPos.x / chunkSizeWorld);
-        const playerChunkZ = Math.floor(playerPos.z / chunkSizeWorld);
+        // Welt ist um (0,0,0) zentriert, initial chunks haben Index 0..7 für
+        // Welt-Bereich -150..+150. Ohne den +150-Offset rechnete der Prune-
+        // Code den Spieler bei x=0 auf chunkX=0 (Welt-Linkskante), wodurch
+        // genau die Chunks um den Spieler herum als „weit weg" galten und
+        // gelöscht wurden, sobald der Cache voll war — daher das Schach-
+        // brettmuster, wenn der Spieler über die initialen 8×8 hinaus lief.
+        const { chunkWorldSize } = this._chunkGeometry();
+        const playerChunkX = Math.floor((playerPos.x + 150) / chunkWorldSize);
+        const playerChunkZ = Math.floor((playerPos.z + 150) / chunkWorldSize);
 
         const sortable = [];
         for (const [key, entry] of this.state.chunkMap.entries()) {
