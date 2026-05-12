@@ -1455,9 +1455,11 @@ class AnazhRealm {
     }
 
     initStatusPanel() {
-        const panel = document.getElementById("status-panel");
-        if (!panel) return;
+        // UI V2: kein zentrales #status-panel mehr — Sektionen leben in den
+        // sechs Drawer (Welt, Kreaturen, Spieler, Fähigkeiten, Einstellungen,
+        // Hilfe). Wir greifen direkt auf die einzelnen IDs zu.
         const emotions = document.getElementById("status-emotions");
+        if (!emotions) return;
         const axes = Object.keys(this.state.player.emotions);
         emotions.innerHTML = "";
         const emotionRefs = {};
@@ -1566,12 +1568,23 @@ class AnazhRealm {
             });
         }
 
-        // Hilfe-Drawer: Toggle + Befehl-Liste aus chatCommandHelp generieren
-        const helpToggle = document.getElementById("help-toggle");
-        const helpOverlay = document.getElementById("help-overlay");
-        const helpClose = document.getElementById("help-close");
+        // Kreatur-Actions teilen denselben Klick-Handler wie Quick-Actions.
+        const creatureActions = document.getElementById("creature-actions");
+        if (creatureActions) {
+            creatureActions.addEventListener("click", (event) => {
+                const target = event.target;
+                if (!(target instanceof HTMLElement)) return;
+                const cmd = target.getAttribute("data-cmd");
+                if (cmd) this.processChatCommand(cmd);
+            });
+        }
+
+        // Hilfe-Drawer: Befehl-Liste aus chatCommandHelp generieren. Der
+        // Hilfe-Drawer ist einer der sechs Tabs; Anzeige + Schließen läuft
+        // über das Tab-/Drawer-System (siehe initTopbar). Hier nur die
+        // Befehlsliste und der Klick-Delegate.
         const helpList = document.getElementById("help-list");
-        if (helpToggle && helpOverlay && helpClose && helpList) {
+        if (helpList) {
             for (const group of this.chatCommandHelp) {
                 const h = document.createElement("h3");
                 h.textContent = group.title;
@@ -1585,28 +1598,74 @@ class AnazhRealm {
                     helpList.appendChild(btn);
                 }
             }
-            helpToggle.addEventListener("click", () => {
-                helpOverlay.hidden = false;
-            });
-            helpClose.addEventListener("click", () => {
-                helpOverlay.hidden = true;
-            });
             helpList.addEventListener("click", (event) => {
                 const target = event.target;
                 if (!(target instanceof HTMLElement)) return;
                 const cmd = target.getAttribute("data-cmd");
                 if (cmd) {
                     this.processChatCommand(cmd);
-                    helpOverlay.hidden = true;
-                }
-            });
-            // ESC schließt das Overlay.
-            document.addEventListener("keydown", (event) => {
-                if (event.key === "Escape" && !helpOverlay.hidden) {
-                    helpOverlay.hidden = true;
+                    this.closeAllDrawers();
                 }
             });
         }
+    }
+
+    // Tab-System: ein Tab je Drawer. activeTab-Klasse auf dem Knopf,
+    // hidden-Attribut entscheidet welcher Drawer sichtbar slidet.
+    // closeAllDrawers schließt alle (für Help-Klick + ESC).
+    initTopbar() {
+        const tabs = Array.from(document.querySelectorAll("#topbar .tab"));
+        const drawers = Array.from(document.querySelectorAll(".drawer[data-drawer]"));
+        if (tabs.length === 0 || drawers.length === 0) return;
+
+        const openDrawer = (name) => {
+            for (const tab of tabs) {
+                const isActive = tab.getAttribute("data-tab") === name;
+                tab.classList.toggle("active", isActive);
+                tab.setAttribute("aria-selected", isActive ? "true" : "false");
+            }
+            for (const drawer of drawers) {
+                const isThis = drawer.getAttribute("data-drawer") === name;
+                drawer.hidden = !isThis;
+            }
+        };
+        for (const tab of tabs) {
+            tab.addEventListener("click", () => {
+                const name = tab.getAttribute("data-tab");
+                if (name) openDrawer(name);
+            });
+        }
+        // Close-Buttons schließen den eigenen Drawer und entaktivieren den Tab.
+        for (const closeBtn of document.querySelectorAll("[data-drawer-close]")) {
+            closeBtn.addEventListener("click", () => this.closeAllDrawers());
+        }
+        // ESC schließt offene Drawers (außer Welt, der bleibt als Default).
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") this.closeAllDrawers();
+        });
+        // Welt ist Default-aktiv (siehe HTML); state.uiActiveDrawer trackt
+        // den aktuellen Tab, damit Tests + spätere Save-Persistenz darauf
+        // greifen können.
+        this.state.uiActiveDrawer = "welt";
+        // Wir loggen Tab-Klicks indirekt via uiActiveDrawer-Update.
+        for (const tab of tabs) {
+            tab.addEventListener("click", () => {
+                const name = tab.getAttribute("data-tab");
+                if (name) this.state.uiActiveDrawer = name;
+            });
+        }
+    }
+
+    closeAllDrawers() {
+        const tabs = document.querySelectorAll("#topbar .tab");
+        for (const tab of tabs) {
+            tab.classList.remove("active");
+            tab.setAttribute("aria-selected", "false");
+        }
+        for (const drawer of document.querySelectorAll(".drawer[data-drawer]")) {
+            drawer.hidden = true;
+        }
+        this.state.uiActiveDrawer = null;
     }
 
     updateStatusPanel(currentTime) {
@@ -4571,6 +4630,7 @@ class AnazhRealm {
         this.grokInitDOM();
         this.symphonyInitDOM();
         this.initStatusPanel();
+        this.initTopbar();
         this.ensureWorldMeta();
         try {
             await this.core.initPhysics();

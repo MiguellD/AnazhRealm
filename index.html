@@ -285,22 +285,29 @@
             box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5), 0 0 14px var(--violet-glow);
         }
         #dialogue-box.visible { opacity: 1; }
-        /* Toggle-Buttons (Stimme / Klang / Theme) als Messing-Latches. */
+        /* Topbar-Toggle-Buttons (Theme / Stimme / Klang) als Messing-Latches.
+           Sitzen rechts neben den Tabs in der Topbar — kompakt nebeneinander. */
+        .topbar-toggles {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            margin-left: 12px;
+        }
         .latch {
-            position: absolute;
             background: linear-gradient(180deg, var(--iron-1), var(--iron-3));
             color: var(--brass-1);
             border: 1px solid var(--iron-3);
             box-shadow:
                 inset 0 1px 0 rgba(255, 220, 160, 0.18),
                 0 2px 4px rgba(0, 0, 0, 0.5);
-            padding: 5px 12px;
-            font-size: 11px;
+            padding: 4px 9px;
+            font-size: 10.5px;
             font-family: 'Cinzel', Georgia, serif;
-            letter-spacing: 0.08em;
+            letter-spacing: 0.06em;
             cursor: pointer;
             z-index: 6;
             border-radius: 3px;
+            white-space: nowrap;
         }
         .latch:hover {
             color: #fbe9b8;
@@ -313,27 +320,180 @@
                 0 0 8px var(--violet-glow);
         }
         .latch[hidden] { display: none; }
-        #grok-voice-toggle      { top: 16px; right: 16px; }
-        #anazh-symphony-toggle  { top: 48px; right: 16px; }
-        #theme-toggle           { top: 16px; right: 160px; }
         #state-file-input { display: none; }
         /* Ring 4.5 — Status-Panel V1: lesbares Fenster auf Welt + Emotionen.
            Rechts unter den Toggles, kompakt, kein Re-Layout pro Frame. */
-        /* Status-Panel V2: Pergament-Look, Eisen-Rahmen, Token-Farben. */
-        #status-panel {
+        /* ====================================================================
+           UI V2 step 2 — Topbar mit Tabs + Status-Bar + Drawer-System.
+           Aus einem langen Panel werden sechs Drawer pro Tab. Topbar reitet
+           ganz oben, Status-Bar darunter (Welt-Daten kompakt). Drawer slidet
+           von rechts rein bei .open, sonst translateX(110%).
+           ==================================================================== */
+        #topbar {
             position: absolute;
-            top: 88px;
-            right: 16px;
-            width: 264px;
-            max-height: calc(100vh - 110px);
+            top: 12px;
+            left: 12px;
+            right: 12px;
+            height: 56px;
+            background: linear-gradient(180deg, var(--wood-1) 0%, var(--wood-2) 50%, var(--wood-3) 100%);
+            border-radius: 10px;
+            box-shadow:
+                var(--shadow-deep),
+                inset 0 0 0 1px rgba(0, 0, 0, 0.55),
+                inset 0 0 0 5px var(--iron-1),
+                inset 0 0 0 6px rgba(0, 0, 0, 0.45),
+                inset 0 0 0 8px var(--brass-3),
+                inset 0 0 0 9px rgba(0, 0, 0, 0.35);
+            z-index: 6;
+            display: flex;
+        }
+        #topbar::before {
+            /* Holz-Faser-Textur */
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='160'><filter id='g'><feTurbulence type='turbulence' baseFrequency='0.012 0.55' numOctaves='3' seed='7'/><feColorMatrix values='0 0 0 0 0.04 0 0 0 0 0.02 0 0 0 0 0.01 0 0 0 0.6 0'/></filter><rect width='400' height='160' filter='url(%23g)'/></svg>");
+            background-size: 800px 200px;
+            mix-blend-mode: multiply;
+            opacity: 0.7;
+            pointer-events: none;
+            border-radius: inherit;
+        }
+        .topbar-inner {
+            position: relative;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            padding: 0 22px;
+            gap: 18px;
+            z-index: 1;
+        }
+        #topbar .title {
+            font-family: 'Cinzel', Georgia, serif;
+            font-weight: 700;
+            color: #f3e2b6;
+            font-size: 18px;
+            letter-spacing: 0.06em;
+            text-shadow: 0 1px 0 rgba(0, 0, 0, 0.7), 0 0 14px rgba(255, 210, 140, 0.2);
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            white-space: nowrap;
+        }
+        #topbar .title .version,
+        #topbar .title .sub {
+            font-family: 'IM Fell English', Georgia, serif;
+            font-style: italic;
+            font-size: 12px;
+            color: var(--brass-1);
+            letter-spacing: 0.04em;
+            font-weight: 400;
+        }
+        @media (max-width: 1280px) {
+            #topbar .title .sub { display: none; }
+        }
+        @media (max-width: 1100px) {
+            #topbar .title .version { display: none; }
+        }
+        .tabs {
+            display: flex;
+            gap: 2px;
+            margin-left: auto;
+            align-items: stretch;
+        }
+        .tab {
+            font-family: 'Cinzel', Georgia, serif;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #d8c08a;
+            background: transparent;
+            border: none;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            position: relative;
+            white-space: nowrap;
+            transition: color 0.2s ease, background 0.2s ease;
+        }
+        .tab::after {
+            content: '';
+            position: absolute;
+            left: 8px; right: 8px; bottom: 3px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--brass-1) 30%, var(--brass-1) 70%, transparent);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        .tab:hover { color: #fbe9b8; background: rgba(255, 220, 160, 0.06); }
+        .tab:hover::after { opacity: 0.5; }
+        .tab.active { color: #ffe8b8; }
+        .tab.active::after { opacity: 1; }
+        [data-theme="nacht"] .tab.active { text-shadow: 0 0 12px var(--violet-glow); }
+
+        /* Status-Bar: kompakte Welt-Daten unter der Topbar. */
+        #statusbar {
+            position: absolute;
+            top: 76px;
+            left: 12px;
+            right: 12px;
+            height: 32px;
+            background: rgba(20, 12, 5, 0.78);
+            border: 1px solid var(--iron-1);
+            border-radius: 4px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+            display: flex;
+            align-items: center;
+            padding: 0 14px;
+            gap: 22px;
+            color: var(--brass-1);
+            font-size: 11px;
+            z-index: 5;
+        }
+        #statusbar .status-item {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 6px;
+        }
+        #statusbar .status-item .label {
+            font-family: 'IM Fell English', Georgia, serif;
+            font-style: italic;
+            color: var(--brass-2);
+            font-size: 10.5px;
+        }
+        #statusbar .status-item .value {
+            font-family: 'JetBrains Mono', monospace;
+            color: #f4e4b8;
+            font-size: 11px;
+        }
+        #statusbar .status-item.pos { margin-left: auto; }
+
+        /* Drawer: rechte Pergament-Schriftrolle, slidet rein bei .open. */
+        .drawer {
+            position: absolute;
+            top: 116px;
+            right: 12px;
+            width: 300px;
+            max-height: calc(100vh - 140px);
             overflow-y: auto;
             font-size: 12px;
             z-index: 5;
             border-radius: 12px;
             box-shadow: var(--shadow-deep);
+            padding: 24px 20px 18px 20px;
+            color: var(--parch-ink);
+            transition: transform 0.32s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.32s ease;
+            transform: translateX(0);
+            opacity: 1;
         }
-        #status-panel::before {
-            /* Pergament-Faser-Textur (Noise-Filter, eingebettet) */
+        .drawer[hidden] {
+            display: block !important;
+            transform: translateX(110%);
+            opacity: 0;
+            pointer-events: none;
+        }
+        .drawer::before {
             content: '';
             position: absolute;
             inset: 0;
@@ -345,8 +505,7 @@
             border-radius: inherit;
             z-index: -1;
         }
-        #status-panel::after {
-            /* Eisen-Rahmen mit Messing-Innenkante + Eckschrauben */
+        .drawer::after {
             content: '';
             position: absolute;
             inset: 0;
@@ -364,17 +523,44 @@
                 radial-gradient(circle 4px at 12px calc(100% - 12px), #1a1410 0 60%, transparent 65%),
                 radial-gradient(circle 4px at calc(100% - 12px) calc(100% - 12px), #1a1410 0 60%, transparent 65%);
         }
-        #status-panel > * {
-            position: relative;
-            z-index: 1;
-        }
-        #status-panel {
-            padding: 22px 18px 18px 18px;
+        .drawer > * { position: relative; z-index: 1; }
+        .drawer h2 {
+            font-family: 'Cinzel', Georgia, serif;
+            font-size: 17px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
             color: var(--parch-ink);
+            margin: 0 0 14px 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--parch-edge);
+            text-shadow: 0 1px 0 rgba(255, 240, 200, 0.5);
         }
-        #status-panel .section { margin-bottom: 16px; }
-        #status-panel .section:last-child { margin-bottom: 0; }
-        #status-panel h3 {
+        .drawer .drawer-hint {
+            font-family: 'IM Fell English', Georgia, serif;
+            font-style: italic;
+            color: var(--parch-ink-soft);
+            font-size: 12px;
+            margin: 0 0 14px 0;
+        }
+        .drawer-close {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: var(--iron-2);
+            border: 1px solid var(--brass-3);
+            color: var(--brass-1);
+            font-size: 16px;
+            font-family: serif;
+            padding: 0 8px;
+            cursor: pointer;
+            border-radius: 2px;
+            line-height: 1.5;
+            z-index: 2;
+        }
+        .drawer-close:hover { color: #fbe9b8; }
+        .drawer .section { margin-bottom: 16px; }
+        .drawer .section:last-child { margin-bottom: 0; }
+        .drawer h3 {
             font-family: 'Cinzel', Georgia, serif;
             font-size: 11px;
             margin: 0 0 8px 0;
@@ -385,37 +571,37 @@
             border-bottom: 1px solid var(--parch-edge);
             padding-bottom: 4px;
         }
-        #status-panel .row {
+        .drawer .row {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 3px;
         }
-        #status-panel .row .label {
+        .drawer .row .label {
             color: var(--parch-ink-faded);
             font-size: 11px;
             font-family: 'IM Fell English', Georgia, serif;
             font-style: italic;
         }
-        #status-panel .row .value {
+        .drawer .row .value {
             color: var(--parch-ink);
             font-size: 11px;
             font-family: 'JetBrains Mono', monospace;
         }
-        #status-panel .emotion {
+        .drawer .emotion {
             display: flex;
             align-items: center;
             gap: 6px;
             margin-bottom: 4px;
         }
-        #status-panel .emotion .name {
+        .drawer .emotion .name {
             width: 60px;
             font-size: 10px;
             color: var(--parch-ink-soft);
             text-transform: capitalize;
             font-family: 'IM Fell English', Georgia, serif;
         }
-        #status-panel .emotion .bar {
+        .drawer .emotion .bar {
             flex: 1;
             height: 8px;
             background: rgba(40, 25, 10, 0.18);
@@ -423,31 +609,31 @@
             overflow: hidden;
             box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
         }
-        #status-panel .emotion .bar > div {
+        .drawer .emotion .bar > div {
             height: 100%;
             width: 0%;
             transition: width 250ms ease-out;
             box-shadow: 0 0 4px currentColor;
         }
-        #status-panel .emotion .value {
+        .drawer .emotion .value {
             width: 30px;
             text-align: right;
             font-size: 10px;
             color: var(--parch-ink-faded);
             font-family: 'JetBrains Mono', monospace;
         }
-        #status-panel .emotion.joy    .bar > div { background: var(--joy);    color: var(--joy);    }
-        #status-panel .emotion.awe    .bar > div { background: var(--awe);    color: var(--awe);    }
-        #status-panel .emotion.sorrow .bar > div { background: var(--sorrow); color: var(--sorrow); }
-        #status-panel .emotion.hope   .bar > div { background: var(--hope);   color: var(--hope);   }
-        #status-panel .emotion.peace  .bar > div { background: var(--peace);  color: var(--peace);  }
-        #status-panel .emotion.chaos  .bar > div { background: var(--chaos);  color: var(--chaos);  }
-        #status-panel .actions {
+        .drawer .emotion.joy    .bar > div { background: var(--joy);    color: var(--joy);    }
+        .drawer .emotion.awe    .bar > div { background: var(--awe);    color: var(--awe);    }
+        .drawer .emotion.sorrow .bar > div { background: var(--sorrow); color: var(--sorrow); }
+        .drawer .emotion.hope   .bar > div { background: var(--hope);   color: var(--hope);   }
+        .drawer .emotion.peace  .bar > div { background: var(--peace);  color: var(--peace);  }
+        .drawer .emotion.chaos  .bar > div { background: var(--chaos);  color: var(--chaos);  }
+        .drawer .actions {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 5px;
         }
-        #status-panel .actions button {
+        .drawer .actions button {
             background: linear-gradient(180deg, rgba(255, 235, 190, 0.4), rgba(180, 140, 80, 0.25));
             color: var(--parch-ink);
             border: 1px solid var(--brass-2);
@@ -461,15 +647,15 @@
             text-align: center;
             box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 240, 200, 0.4);
         }
-        #status-panel .actions button:hover {
+        .drawer .actions button:hover {
             background: linear-gradient(180deg, rgba(255, 245, 210, 0.6), rgba(200, 160, 100, 0.4));
             border-color: var(--brass-1);
         }
-        #status-panel .actions button:active {
+        .drawer .actions button:active {
             box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
             transform: translateY(1px);
         }
-        #status-panel .ability-row {
+        .drawer .ability-row {
             display: flex;
             align-items: center;
             gap: 6px;
@@ -480,23 +666,23 @@
             border-radius: 3px;
             font-size: 11px;
         }
-        #status-panel .ability-row .name {
+        .drawer .ability-row .name {
             flex: 1;
             font-family: 'JetBrains Mono', monospace;
             color: var(--parch-ink);
             font-size: 11px;
         }
-        #status-panel .ability-row .source {
+        .drawer .ability-row .source {
             font-size: 8.5px;
             color: var(--parch-ink-faded);
             text-transform: uppercase;
             letter-spacing: 0.8px;
             font-family: 'Cinzel', Georgia, serif;
         }
-        #status-panel .ability-row.source-human    .source { color: var(--moss); }
-        #status-panel .ability-row.source-nexus    .source { color: var(--violet-1); }
-        #status-panel .ability-row.source-restored .source { color: var(--brass-2); }
-        #status-panel .ability-row button {
+        .drawer .ability-row.source-human    .source { color: var(--moss); }
+        .drawer .ability-row.source-nexus    .source { color: var(--violet-1); }
+        .drawer .ability-row.source-restored .source { color: var(--brass-2); }
+        .drawer .ability-row button {
             background: linear-gradient(180deg, rgba(255, 235, 190, 0.5), rgba(180, 140, 80, 0.3));
             color: var(--parch-ink);
             border: 1px solid var(--brass-2);
@@ -507,19 +693,19 @@
             font-family: inherit;
             line-height: 1;
         }
-        #status-panel .ability-row button:hover {
+        .drawer .ability-row button:hover {
             background: linear-gradient(180deg, rgba(255, 245, 210, 0.7), rgba(200, 160, 100, 0.5));
         }
-        #status-panel .ability-empty {
+        .drawer .ability-empty {
             font-size: 11px;
             color: var(--parch-ink-faded);
             font-style: italic;
             font-family: 'IM Fell English', Georgia, serif;
         }
-        #status-panel .tuning-row {
+        .drawer .tuning-row {
             margin-bottom: 10px;
         }
-        #status-panel .tuning-row label {
+        .drawer .tuning-row label {
             display: flex;
             justify-content: space-between;
             font-size: 10px;
@@ -527,19 +713,17 @@
             margin-bottom: 2px;
             font-family: 'IM Fell English', Georgia, serif;
         }
-        #status-panel .tuning-row label .v {
+        .drawer .tuning-row label .v {
             font-family: 'JetBrains Mono', monospace;
             color: var(--parch-ink);
         }
-        #status-panel .tuning-row input[type="range"] {
+        .drawer .tuning-row input[type="range"] {
             width: 100%;
             accent-color: var(--brass-1);
         }
-        #help-toggle {
-            bottom: 16px;
-            right: 16px;
-            top: auto;
-        }
+        /* #help-toggle / #help-overlay sind in V2 weg — Hilfe ist ein Drawer-
+           Tab. Selektoren bleiben, falls jemand sie referenziert, sind aber
+           im neuen DOM tot. */
         #help-overlay {
             position: absolute;
             top: 5%; left: 50%; transform: translateX(-50%);
@@ -622,39 +806,79 @@
     <canvas id="world-canvas"></canvas>
     <div id="fps"></div>
     <div id="dialogue-box" aria-live="polite"></div>
-    <button id="theme-toggle" class="latch" type="button" aria-pressed="false" aria-label="Tag / Nacht">☀ Tag</button>
-    <button id="grok-voice-toggle" class="latch" type="button" aria-pressed="false" hidden>Stimme: aus</button>
-    <button id="anazh-symphony-toggle" class="latch" type="button" aria-pressed="false">Klang: aus</button>
-    <aside id="status-panel" aria-label="Welt-Status">
+    <header id="topbar" class="hud-frame">
+        <div class="topbar-inner">
+            <div class="title">Anazh Realm <span class="version">v7.65</span> <span class="sub">— Das Ultiversum</span></div>
+            <nav class="tabs" role="tablist" aria-label="Hauptansichten">
+                <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">Welt</button>
+                <button class="tab" type="button" data-tab="kreaturen" role="tab">Kreaturen</button>
+                <button class="tab" type="button" data-tab="spieler" role="tab">Spieler</button>
+                <button class="tab" type="button" data-tab="faehigkeiten" role="tab">Fähigkeiten</button>
+                <button class="tab" type="button" data-tab="einstellungen" role="tab">Einstellungen</button>
+                <button class="tab" type="button" data-tab="hilfe" role="tab">Hilfe</button>
+            </nav>
+            <div class="topbar-toggles">
+                <button id="theme-toggle" class="latch" type="button" aria-pressed="false" aria-label="Tag / Nacht">☀ Tag</button>
+                <button id="grok-voice-toggle" class="latch" type="button" aria-pressed="false" hidden>Stimme: aus</button>
+                <button id="anazh-symphony-toggle" class="latch" type="button" aria-pressed="false">Klang: aus</button>
+            </div>
+        </div>
+    </header>
+    <div id="statusbar" class="hud-frame">
+        <span class="status-item"><span class="label">Wetter</span><span class="value" id="status-weather">—</span></span>
+        <span class="status-item"><span class="label">Slug</span><span class="value" id="status-slug">—</span></span>
+        <span class="status-item"><span class="label">FPS</span><span class="value" id="status-fps">—</span></span>
+        <span class="status-item"><span class="label">Kreaturen</span><span class="value" id="status-creatures">—</span></span>
+        <span class="status-item pos"><span class="label">Position</span><span class="value" id="status-position">—</span></span>
+    </div>
+    <aside class="drawer open" data-drawer="welt" aria-label="Welt-Panel">
+        <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
+        <h2>Welt</h2>
         <section class="section">
-            <h3>Welt</h3>
-            <div class="row"><span class="label">Wetter</span><span class="value" id="status-weather">—</span></div>
-            <div class="row"><span class="label">Slug</span><span class="value" id="status-slug">—</span></div>
-            <div class="row"><span class="label">Position</span><span class="value" id="status-position">—</span></div>
-            <div class="row"><span class="label">FPS</span><span class="value" id="status-fps">—</span></div>
-            <div class="row"><span class="label">Kreaturen</span><span class="value" id="status-creatures">—</span></div>
-        </section>
-        <section class="section">
-            <h3>Emotionen</h3>
-            <div id="status-emotions"></div>
-        </section>
-        <section class="section">
-            <h3>Quick</h3>
+            <h3>Aktionen</h3>
             <div class="actions" id="quick-actions">
                 <button type="button" data-cmd="Heile Welt">Heile Welt</button>
                 <button type="button" data-cmd="Vereine Chaos Ordnung">Harmonie</button>
                 <button type="button" data-cmd="Setze Wetter sunny">Sonne</button>
                 <button type="button" data-cmd="Setze Wetter rainy">Regen</button>
-                <button type="button" data-cmd="Spawne Kreaturen 5">+5 Kreaturen</button>
                 <button type="button" data-cmd="Spawne neue Welt">Neue Welt</button>
                 <button type="button" data-cmd="Boden aktivieren">Boden an</button>
                 <button type="button" data-cmd="Boden deaktivieren">Boden aus</button>
             </div>
         </section>
+    </aside>
+    <aside class="drawer" data-drawer="kreaturen" aria-label="Kreaturen-Panel" hidden>
+        <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
+        <h2>Kreaturen</h2>
         <section class="section">
-            <h3>Fähigkeiten</h3>
+            <h3>Spawnen</h3>
+            <div class="actions" id="creature-actions">
+                <button type="button" data-cmd="Spawne Kreaturen 5">+5</button>
+                <button type="button" data-cmd="Spawne Kreaturen 10">+10</button>
+                <button type="button" data-cmd="Kreaturen aktivieren">Sichtbar</button>
+                <button type="button" data-cmd="Kreaturen deaktivieren">Verbergen</button>
+            </div>
+        </section>
+    </aside>
+    <aside class="drawer" data-drawer="spieler" aria-label="Spieler-Panel" hidden>
+        <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
+        <h2>Spieler</h2>
+        <section class="section">
+            <h3>Emotionen</h3>
+            <div id="status-emotions"></div>
+        </section>
+    </aside>
+    <aside class="drawer" data-drawer="faehigkeiten" aria-label="Fähigkeiten-Panel" hidden>
+        <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
+        <h2>Fähigkeiten</h2>
+        <section class="section">
+            <h3>Erlernt + Komponiert</h3>
             <div id="status-abilities"></div>
         </section>
+    </aside>
+    <aside class="drawer" data-drawer="einstellungen" aria-label="Einstellungen-Panel" hidden>
+        <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
+        <h2>Einstellungen</h2>
         <section class="section">
             <h3>Speicher</h3>
             <div class="actions" id="save-actions">
@@ -686,13 +910,12 @@
             </div>
         </section>
     </aside>
-    <button id="help-toggle" class="latch" type="button" aria-label="Hilfe">? Befehle</button>
-    <div id="help-overlay" hidden aria-modal="true" role="dialog" aria-labelledby="help-title">
-        <button type="button" class="close" id="help-close" aria-label="Schließen">×</button>
-        <h2 id="help-title">Alle Chat-Befehle</h2>
-        <p style="color: #888; margin-bottom: 16px;">Klick auf einen Befehl, um ihn auszuführen.</p>
+    <aside class="drawer" data-drawer="hilfe" aria-label="Hilfe-Panel" hidden>
+        <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
+        <h2>Alle Chat-Befehle</h2>
+        <p class="drawer-hint">Klick zum Ausführen. Befehle gehen durch denselben Pfad wie der Chat.</p>
         <div id="help-list"></div>
-    </div>
+    </aside>
     <div id="chat">
         <div id="chat-output"></div>
         <input type="text" id="chat-input" placeholder="Befehl eingeben (z. B. 'Ändere Wetter zu Regen')">

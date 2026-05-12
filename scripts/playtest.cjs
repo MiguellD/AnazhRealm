@@ -1099,38 +1099,46 @@ function startSaveServer() {
                 );
             }
 
-            // ### UI V1 — Status-Panel ###
+            // ### UI V2 — Topbar + Status-Bar + Drawer-System ###
             const uiResults = await page
                 .evaluate(() => {
                     const r = window.anazhRealm;
                     if (!r) return null;
                     const out = {};
-                    const panel = document.getElementById("status-panel");
-                    out.panelInDom = !!panel;
+                    const topbar = document.getElementById("topbar");
+                    const statusbar = document.getElementById("statusbar");
+                    const spielerDrawer = document.querySelector('.drawer[data-drawer="spieler"]');
+                    out.topbarInDom = !!topbar;
+                    out.statusbarInDom = !!statusbar;
+                    out.spielerDrawerInDom = !!spielerDrawer;
 
-                    // Panel-Children: alle sechs Emotion-Rows vorhanden
-                    const rows = panel ? panel.querySelectorAll("#status-emotions .emotion") : [];
+                    // Emotion-Rows leben jetzt im Spieler-Drawer
+                    const rows = spielerDrawer
+                        ? spielerDrawer.querySelectorAll("#status-emotions .emotion")
+                        : [];
                     out.emotionRowCount = rows.length;
                     out.allSixAxes = rows.length === 6;
 
-                    // Werte aktualisieren mit kontrollierten Emotionen + Tick
+                    // Werte aktualisieren mit kontrollierten Emotionen
                     for (const k of Object.keys(r.state.player.emotions)) {
                         r.state.player.emotions[k] = 0;
                     }
                     r.state.player.emotions.joy = 0.5;
                     r.state.player.emotions.chaos = 0.8;
-                    // statusRefs.lastTick zurücksetzen, sonst greift Throttle
                     if (r._statusRefs) r._statusRefs.lastTick = -Infinity;
                     r.updateStatusPanel(1000);
 
-                    const joyFill = panel ? panel.querySelector(".emotion.joy .bar > div") : null;
-                    const chaosFill = panel ? panel.querySelector(".emotion.chaos .bar > div") : null;
+                    const joyFill = spielerDrawer
+                        ? spielerDrawer.querySelector(".emotion.joy .bar > div")
+                        : null;
+                    const chaosFill = spielerDrawer
+                        ? spielerDrawer.querySelector(".emotion.chaos .bar > div")
+                        : null;
                     out.joyBarWidth = joyFill ? joyFill.style.width : "";
                     out.chaosBarWidth = chaosFill ? chaosFill.style.width : "";
-                    out.barReflectsValue =
-                        out.joyBarWidth === "50%" && out.chaosBarWidth === "80%";
+                    out.barReflectsValue = out.joyBarWidth === "50%" && out.chaosBarWidth === "80%";
 
-                    // Welt-Sektion
+                    // Status-Bar (jetzt #statusbar oben) zeigt Welt-Daten
                     const weatherEl = document.getElementById("status-weather");
                     const slugEl = document.getElementById("status-slug");
                     const creaturesEl = document.getElementById("status-creatures");
@@ -1145,14 +1153,27 @@ function startSaveServer() {
 
                     // Throttle: zweiter Aufruf direkt danach ändert nichts
                     r.state.player.emotions.joy = 0.9;
-                    r.updateStatusPanel(1000.1); // <0.4s nach erstem Tick
-                    const joyFill2 = panel ? panel.querySelector(".emotion.joy .bar > div") : null;
+                    r.updateStatusPanel(1000.1);
+                    const joyFill2 = spielerDrawer
+                        ? spielerDrawer.querySelector(".emotion.joy .bar > div")
+                        : null;
                     out.throttleHolds = joyFill2 ? joyFill2.style.width === "50%" : false;
 
                     // Nach 0.4s wieder durchlassend
                     r.updateStatusPanel(1000.5);
-                    const joyFill3 = panel ? panel.querySelector(".emotion.joy .bar > div") : null;
+                    const joyFill3 = spielerDrawer
+                        ? spielerDrawer.querySelector(".emotion.joy .bar > div")
+                        : null;
                     out.throttleReleases = joyFill3 ? joyFill3.style.width === "90%" : false;
+
+                    // Tab-System
+                    const tabs = document.querySelectorAll("#topbar .tab");
+                    out.tabCount = tabs.length;
+                    out.allTabsPresent = tabs.length === 6;
+                    const weltTab = document.querySelector('#topbar .tab[data-tab="welt"]');
+                    out.weltTabActive = weltTab && weltTab.classList.contains("active");
+                    const weltDrawer = document.querySelector('.drawer[data-drawer="welt"]');
+                    out.weltDrawerOpenInitially = weltDrawer && !weltDrawer.hidden;
 
                     // Cleanup
                     for (const k of Object.keys(r.state.player.emotions)) {
@@ -1167,89 +1188,105 @@ function startSaveServer() {
 
             if (!uiResults || uiResults.error) {
                 check(
-                    "UI: Status-Panel-Snapshot erreichbar",
+                    "UI: Drawer-Snapshot erreichbar",
                     false,
                     uiResults && uiResults.error ? uiResults.error : "page.evaluate fehlgeschlagen"
                 );
             } else {
-                check("UI: #status-panel ist im DOM", uiResults.panelInDom);
+                check("UI V2: #topbar im DOM", uiResults.topbarInDom);
+                check("UI V2: #statusbar im DOM", uiResults.statusbarInDom);
+                check("UI V2: Spieler-Drawer im DOM", uiResults.spielerDrawerInDom);
                 check(
-                    "UI: alle sechs Emotion-Rows gerendert",
+                    "UI V2: alle sechs Emotion-Rows im Spieler-Drawer",
                     uiResults.allSixAxes,
                     `rows=${uiResults.emotionRowCount}`
                 );
                 check(
-                    "UI: Balken-Breite spiegelt Emotion-Wert (joy 0.5 → 50%, chaos 0.8 → 80%)",
+                    "UI V2: Balken-Breite spiegelt Emotion-Wert (joy 0.5 → 50%, chaos 0.8 → 80%)",
                     uiResults.barReflectsValue,
                     `joy=${uiResults.joyBarWidth}, chaos=${uiResults.chaosBarWidth}`
                 );
                 check(
-                    "UI: Welt-Sektion zeigt Wetter + Slug + Kreaturen",
+                    "UI V2: Status-Bar zeigt Wetter + Slug + Kreaturen",
                     uiResults.statusValuesPopulated,
                     `weather=${uiResults.weatherText}, slug=${uiResults.slugText}, creatures=${uiResults.creaturesText}`
                 );
                 check(
-                    "UI: updateStatusPanel ist throttled (Aufruf <0.4s ignoriert)",
+                    "UI V2: updateStatusPanel ist throttled (Aufruf <0.4s ignoriert)",
                     uiResults.throttleHolds
                 );
                 check(
-                    "UI: updateStatusPanel lässt nach 0.4s wieder durch",
+                    "UI V2: updateStatusPanel lässt nach 0.4s wieder durch",
                     uiResults.throttleReleases
                 );
+                check(
+                    "UI V2: sechs Tabs im Topbar",
+                    uiResults.allTabsPresent,
+                    `count=${uiResults.tabCount}`
+                );
+                check("UI V2: Welt-Tab ist initial aktiv", uiResults.weltTabActive);
+                check("UI V2: Welt-Drawer ist initial offen", uiResults.weltDrawerOpenInitially);
             }
 
-            // ### UI V1 — Quick-Buttons + Hilfe-Drawer ###
+            // ### UI V2 — Quick-Buttons + Hilfe-Drawer (Tab-System) ###
             const uiActionsResults = await page
                 .evaluate(() => {
                     const r = window.anazhRealm;
                     if (!r) return null;
                     const out = {};
 
-                    // (a) Quick-Buttons existieren
+                    // (a) Quick-Buttons existieren (im Welt-Drawer)
                     const qa = document.getElementById("quick-actions");
                     const qaButtons = qa ? qa.querySelectorAll("button[data-cmd]") : [];
                     out.quickButtonCount = qaButtons.length;
-                    out.quickButtonsPresent = qaButtons.length >= 6;
+                    out.quickButtonsPresent = qaButtons.length >= 5;
 
                     // (b) Klick auf einen Quick-Button feuert processChatCommand
                     r.state.weather = "sunny";
-                    const sunnyBtn = qa
+                    const rainyBtn = qa
                         ? qa.querySelector('button[data-cmd="Setze Wetter rainy"]')
                         : null;
-                    if (sunnyBtn) sunnyBtn.click();
+                    if (rainyBtn) rainyBtn.click();
                     out.quickButtonRoutesToChat = r.state.weather === "rainy";
 
-                    // (c) Hilfe-Overlay versteckt initial
-                    const overlay = document.getElementById("help-overlay");
-                    out.overlayInitiallyHidden = overlay && overlay.hidden === true;
+                    // (c) Hilfe-Drawer ist initial versteckt (Welt ist Default-Tab)
+                    const hilfeDrawer = document.querySelector('.drawer[data-drawer="hilfe"]');
+                    out.hilfeDrawerInitiallyHidden = hilfeDrawer && hilfeDrawer.hidden === true;
 
-                    // (d) Toggle-Click öffnet Drawer
-                    const toggle = document.getElementById("help-toggle");
-                    if (toggle) toggle.click();
-                    out.overlayOpensOnToggle = overlay && overlay.hidden === false;
+                    // (d) Klick auf Hilfe-Tab öffnet Hilfe-Drawer
+                    const hilfeTab = document.querySelector('#topbar .tab[data-tab="hilfe"]');
+                    if (hilfeTab) hilfeTab.click();
+                    out.hilfeDrawerOpensOnTab = hilfeDrawer && hilfeDrawer.hidden === false;
+
+                    // Welt-Drawer ist jetzt versteckt (nur ein Tab aktiv)
+                    const weltDrawer = document.querySelector('.drawer[data-drawer="welt"]');
+                    out.otherDrawersHidden = weltDrawer && weltDrawer.hidden === true;
 
                     // (e) Drawer enthält Befehl-Buttons
                     const helpButtons = document.querySelectorAll("#help-list button.cmd");
                     out.helpButtonCount = helpButtons.length;
                     out.helpHasButtons = helpButtons.length >= 10;
 
-                    // (f) Klick auf Help-Eintrag schließt Overlay + führt aus.
-                    // DSL-Pattern hat nur einen weather-example ("setze wetter
-                    // rainy"), den nutzen wir.
+                    // (f) Klick auf Help-Eintrag schließt Drawer + führt aus.
                     r.state.weather = "sunny";
                     const rainyHelp = Array.from(helpButtons).find(
                         (b) => b.getAttribute("data-cmd") === "setze wetter rainy"
                     );
-                    out.foundRainyHelp = !!rainyHelp;
                     if (rainyHelp) rainyHelp.click();
                     out.helpClickExecutes = r.state.weather === "rainy";
-                    out.helpClickClosesOverlay = overlay && overlay.hidden === true;
+                    out.helpClickClosesDrawer = hilfeDrawer && hilfeDrawer.hidden === true;
 
-                    // (g) Close-Button schließt Overlay
-                    if (toggle) toggle.click(); // Wieder öffnen
-                    const closeBtn = document.getElementById("help-close");
+                    // (g) Drawer wieder öffnen, dann Close-Button schließt
+                    if (hilfeTab) hilfeTab.click();
+                    const closeBtn = hilfeDrawer
+                        ? hilfeDrawer.querySelector("[data-drawer-close]")
+                        : null;
                     if (closeBtn) closeBtn.click();
-                    out.closeButtonHidesOverlay = overlay && overlay.hidden === true;
+                    out.closeButtonHidesDrawer = hilfeDrawer && hilfeDrawer.hidden === true;
+
+                    // Cleanup: Welt-Tab wieder aktivieren
+                    const weltTab = document.querySelector('#topbar .tab[data-tab="welt"]');
+                    if (weltTab) weltTab.click();
 
                     return out;
                 })
@@ -1257,7 +1294,7 @@ function startSaveServer() {
 
             if (!uiActionsResults || uiActionsResults.error) {
                 check(
-                    "UI: Quick/Help-Snapshot erreichbar",
+                    "UI V2: Quick/Help-Snapshot erreichbar",
                     false,
                     uiActionsResults && uiActionsResults.error
                         ? uiActionsResults.error
@@ -1265,38 +1302,42 @@ function startSaveServer() {
                 );
             } else {
                 check(
-                    "UI: Quick-Action-Buttons sind im DOM (≥6)",
+                    "UI V2: Quick-Action-Buttons im Welt-Drawer (≥5)",
                     uiActionsResults.quickButtonsPresent,
                     `count=${uiActionsResults.quickButtonCount}`
                 );
                 check(
-                    "UI: Quick-Button-Klick routet durch processChatCommand",
+                    "UI V2: Quick-Button-Klick routet durch processChatCommand",
                     uiActionsResults.quickButtonRoutesToChat
                 );
                 check(
-                    "UI: Hilfe-Overlay startet versteckt",
-                    uiActionsResults.overlayInitiallyHidden
+                    "UI V2: Hilfe-Drawer initial versteckt",
+                    uiActionsResults.hilfeDrawerInitiallyHidden
                 );
                 check(
-                    "UI: Toggle-Klick öffnet Hilfe-Drawer",
-                    uiActionsResults.overlayOpensOnToggle
+                    "UI V2: Tab-Klick auf Hilfe öffnet Hilfe-Drawer",
+                    uiActionsResults.hilfeDrawerOpensOnTab
                 );
                 check(
-                    "UI: Hilfe-Drawer enthält Befehl-Buttons (≥10)",
+                    "UI V2: andere Drawer werden versteckt wenn neuer Tab aktiv",
+                    uiActionsResults.otherDrawersHidden
+                );
+                check(
+                    "UI V2: Hilfe-Drawer enthält Befehl-Buttons (≥10)",
                     uiActionsResults.helpHasButtons,
                     `count=${uiActionsResults.helpButtonCount}`
                 );
                 check(
-                    "UI: Klick auf Befehl im Drawer führt aus",
+                    "UI V2: Klick auf Befehl im Drawer führt aus",
                     uiActionsResults.helpClickExecutes
                 );
                 check(
-                    "UI: Klick auf Befehl schließt Drawer automatisch",
-                    uiActionsResults.helpClickClosesOverlay
+                    "UI V2: Klick auf Befehl schließt Drawer automatisch",
+                    uiActionsResults.helpClickClosesDrawer
                 );
                 check(
-                    "UI: Close-Button schließt Drawer",
-                    uiActionsResults.closeButtonHidesOverlay
+                    "UI V2: Drawer-Close-Button schließt Drawer",
+                    uiActionsResults.closeButtonHidesDrawer
                 );
             }
 
@@ -1553,12 +1594,12 @@ function startSaveServer() {
                     const persisted = localStorage.getItem("anazhRealmTheme");
                     out.themePersisted = persisted === "nacht";
 
-                    // (f) Latch-Klasse haftet an allen Toggle-Buttons
+                    // (f) Latch-Klasse haftet an allen drei Topbar-Toggles
+                    // (Help ist in UI V2 ein Drawer-Tab, kein Latch mehr.)
                     out.allTogglesLatched = [
                         "grok-voice-toggle",
                         "anazh-symphony-toggle",
                         "theme-toggle",
-                        "help-toggle",
                     ].every((id) => {
                         const el = document.getElementById(id);
                         return el && el.classList.contains("latch");
