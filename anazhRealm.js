@@ -3293,32 +3293,41 @@ class AnazhRealm {
     // Canyon, Field, Cave und Volcano-Modifikatoren (alle Schichten der
     // initialen Welt-Gen).
     _terrainHeightAtWorld(worldX, worldZ, noise, steepness, baseHeight, caveNoise, volcanoNoise) {
+        // High-frequency Detail (h3/h4) deutlich reduziert: die scharfen
+        // Spitzen erzeugten quasi-vertikale Wände zwischen benachbarten
+        // Heightfield-Vertices (height-delta ~10..15 m über 1.17 m Cell-
+        // Breite = 80°+ Hang), durch die der Player tunnelte. Canyon und
+        // Volcano-Modifikatoren ebenfalls gedämpft.
         const h1 = noise.noise2D(worldX * 0.01, worldZ * 0.01) * 20 * steepness;
-        const h2 = noise.noise2D(worldX * 0.03, worldZ * 0.03) * 15 * steepness;
-        const h3 = noise.noise2D(worldX * 0.06, worldZ * 0.06) * 10 * steepness;
-        const h4 = noise.noise2D(worldX * 0.1, worldZ * 0.1) * 5 * steepness;
+        const h2 = noise.noise2D(worldX * 0.03, worldZ * 0.03) * 10 * steepness;
+        const h3 = noise.noise2D(worldX * 0.06, worldZ * 0.06) * 4 * steepness;
+        const h4 = noise.noise2D(worldX * 0.1, worldZ * 0.1) * 1.5 * steepness;
         const h5 = noise.noise2D(worldX * 0.005, worldZ * 0.005) * 30 * steepness;
         const h6 = noise.noise2D(worldX * 0.002, worldZ * 0.002) * 50 * steepness;
-        const h7 = Math.pow(noise.noise2D(worldX * 0.02, worldZ * 0.02), 3) * 30 * steepness;
+        const h7 = Math.pow(noise.noise2D(worldX * 0.02, worldZ * 0.02), 3) * 20 * steepness;
         const canyonNoise = noise.noise2D(worldX * 0.008, worldZ * 0.008);
         const fieldNoise = noise.noise2D(worldX * 0.004, worldZ * 0.004);
         let h = baseHeight + h1 + h2 + h3 + h4 + h5 + h6 + h7;
-        if (canyonNoise > 0.7) h -= (40 * (canyonNoise - 0.7)) / 0.3;
-        if (fieldNoise < -0.5) h = Math.max(h * 0.2, -10);
+        if (canyonNoise > 0.7) h -= (15 * (canyonNoise - 0.7)) / 0.3;
+        if (fieldNoise < -0.5) h = Math.max(h * 0.5, -10);
         if (!Number.isFinite(h)) h = 0;
         // Cave: lokale Senke, wenn Cave-Noise und aktuelle Höhe übereinstimmen.
+        // Vorher -20 → -8: tiefe Cave-Senken machten 20 m-Klippen quer durchs
+        // Terrain, an denen der Player abprallte oder durchtunnelte.
         if (caveNoise) {
             const caveValue = caveNoise.noise3D(worldX * 0.05, h * 0.05, worldZ * 0.05);
             if (caveValue > 0.4 && h < 10 && h > -20) {
-                h -= 20;
+                h -= 8;
                 if (!Number.isFinite(h)) h = 0;
             }
         }
         // Volcano: lokaler Aufstieg, wenn Volcano-Noise sehr hoch ist.
+        // Vorher +50 → +20: keine 50 m-Spitzen mehr, die der Spieler bei
+        // hoher Geschwindigkeit durchschlug.
         if (volcanoNoise) {
             const volcanoValue = volcanoNoise.noise2D(worldX * 0.02, worldZ * 0.02);
             if (volcanoValue > 0.8) {
-                h += (50 * (volcanoValue - 0.8)) / 0.2;
+                h += (20 * (volcanoValue - 0.8)) / 0.2;
                 if (!Number.isFinite(h)) h = 0;
             }
         }
