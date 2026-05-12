@@ -2137,6 +2137,217 @@ function startSaveServer() {
                     `cam-player=${cameraPitch.clampedDelta.toFixed(2)} (≥ -0.2 erwartet)`
                 );
             }
+
+            // ### Ring 6 — architectureTemplates V1 ###
+            // Drei Bau-Primitives (Dorf/Tempel/Wasserfall) als DSL-Ops mit
+            // Save-Roundtrip + FIFO-Cap + Atomic-Pool-Eintrag mit niedriger
+            // Gewichtung. Wasserfälle haben einen Animations-Hook im Tick.
+            const ring6Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+
+                    // Cleanup: alle bestehenden Architekturen entfernen.
+                    for (const a of r.state.architectures) {
+                        if (a.mesh) {
+                            r.state.scene.remove(a.mesh);
+                            r._disposeSoulGroup(a.mesh);
+                        }
+                    }
+                    r.state.architectures = [];
+
+                    // (a) Direkter Spawn jeder Sorte
+                    const v = r.spawnArchitecture("village", { x: 10, y: 5, z: 10 }, { seed: 42 });
+                    out.villageBuilt = !!v && v.type === "village" && !!v.mesh;
+                    out.villageHasChildren = v && v.mesh && v.mesh.children.length >= 5;
+                    out.villageInScene = v && r.state.scene.children.indexOf(v.mesh) >= 0;
+
+                    const t = r.spawnArchitecture("temple", { x: 30, y: 5, z: 10 }, { seed: 7 });
+                    out.templeBuilt = !!t && t.type === "temple" && !!t.mesh;
+                    // 6 Pfeiler + 1 Dach + 1 Altar = mind. 8 children
+                    out.templeHasPillars = t && t.mesh && t.mesh.children.length >= 8;
+
+                    const w = r.spawnArchitecture("waterfall", { x: 50, y: 5, z: 10 }, { seed: 99 });
+                    out.waterfallBuilt = !!w && w.type === "waterfall" && !!w.mesh;
+                    out.waterfallHasAnimateHook =
+                        w && w.mesh && w.mesh.userData && typeof w.mesh.userData.animate === "function";
+
+                    // (b) Unbekannter Typ wird abgelehnt
+                    const bad = r.spawnArchitecture("schloss", { x: 0, y: 5, z: 0 });
+                    out.unknownTypeRejected = bad === null;
+
+                    // (c) state.architectures wächst korrekt
+                    out.architectureCountAfterThree = r.state.architectures.length === 3;
+                    out.idsAreUnique =
+                        new Set(r.state.architectures.map((a) => a.id)).size === r.state.architectures.length;
+
+                    // (d) DSL-Op: spawn_village wirkt durch Interpreter
+                    const beforeCount = r.state.architectures.length;
+                    const dslRes = r.dslRun(["spawn_village", ["at_origin"]]);
+                    out.dslSpawnVillageOk =
+                        dslRes.ok === true &&
+                        r.state.architectures.length === beforeCount + 1 &&
+                        dslRes.log.some((e) => e.event === "spawned_village");
+
+                    // (e) Chat-Pattern routet auf DSL
+                    const beforeChat = r.state.architectures.length;
+                    r.processChatCommand("Baue Tempel hier");
+                    out.chatRoutesToDsl =
+                        Array.isArray(r.state.dsl.lastUserProgram) &&
+                        r.state.dsl.lastUserProgram[0] === "spawn_temple";
+                    out.chatActuallySpawned = r.state.architectures.length === beforeChat + 1;
+
+                    // (f) FIFO-Cap: über das Limit spawnen, älteste werden gepruned
+                    const cap = r.state.architectureCap;
+                    const beforeCap = r.state.architectures.length;
+                    const spawnsToOverflow = cap - beforeCap + 5;
+                    for (let i = 0; i < spawnsToOverflow; i++) {
+                        r.spawnArchitecture("temple", { x: 100 + i, y: 5, z: 0 }, { seed: i });
+                    }
+                    out.capRespected = r.state.architectures.length === cap;
+                    // Erster Eintrag sollte einen anderen ID haben als die
+                    // alten — d. h. älteste wurden tatsächlich entfernt.
+                    out.oldestPruned = r.state.architectures[0].id !== v.id;
+
+                    // (g) Atomic-Pool: spawn_village/temple/waterfall sind enthalten
+                    const seedRng = (s) => {
+                        let x = s >>> 0 || 1;
+                        return () => {
+                            x = (x * 1664525 + 1013904223) >>> 0;
+                            return x / 4294967296;
+                        };
+                    };
+                    const rng = seedRng(2026);
+                    const seenOps = new Set();
+                    for (let i = 0; i < 5000; i++) {
+                        const atom = r.dslComposeAtomic(rng);
+                        if (Array.isArray(atom)) seenOps.add(atom[0]);
+                    }
+                    out.villageInAtomicPool = seenOps.has("spawn_village");
+                    out.templeInAtomicPool = seenOps.has("spawn_temple");
+                    out.waterfallInAtomicPool = seenOps.has("spawn_waterfall");
+
+                    // (h) Wasserfall-Animation: vor und nach Tick müssen Z-
+                    // Werte der Geometrie unterschiedlich sein.
+                    // Frischen Wasserfall bauen, der noch nicht angesprochen wurde.
+                    const wf = r.spawnArchitecture("waterfall", { x: 200, y: 5, z: 200 }, { seed: 1 });
+                    const waterMesh = wf.mesh.children.find(
+                        (c) => c.geometry && c.geometry.type === "PlaneGeometry"
+                    );
+                    if (waterMesh) {
+                        const z0 = waterMesh.geometry.attributes.position.getZ(5);
+                        r.tickArchitectures(0.5);
+                        const z1 = waterMesh.geometry.attributes.position.getZ(5);
+                        out.waterfallTickAnimates = Math.abs(z0 - z1) > 0.001 || z1 !== 0;
+                    } else {
+                        out.waterfallTickAnimates = false;
+                    }
+
+                    // (i) Save-Roundtrip
+                    r.saveState();
+                    const raw = localStorage.getItem("anazhRealmState");
+                    let parsed = null;
+                    try {
+                        parsed = JSON.parse(raw);
+                    } catch (e) {
+                        void e;
+                    }
+                    out.saveContainsArchitectures =
+                        !!parsed &&
+                        Array.isArray(parsed.architectures) &&
+                        parsed.architectures.length > 0;
+                    // Gespeicherte Einträge haben nur {type, position, seed}, kein mesh
+                    out.saveOmitsMesh =
+                        !!parsed &&
+                        parsed.architectures.every(
+                            (a) => typeof a.type === "string" && a.position && Number.isFinite(a.seed) && !a.mesh
+                        );
+
+                    // loadState rekonstruiert die Liste deterministisch aus seed
+                    const loadInput = {
+                        architectures: [
+                            { type: "village", position: { x: 0, y: 5, z: 0 }, seed: 12345 },
+                            { type: "temple", position: { x: 20, y: 5, z: 0 }, seed: 67890 },
+                        ],
+                    };
+                    r.loadState(loadInput);
+                    out.loadRebuildsCount = r.state.architectures.length === 2;
+                    out.loadRebuildsTypes =
+                        r.state.architectures[0].type === "village" &&
+                        r.state.architectures[1].type === "temple";
+                    out.loadRebuildsSeeds =
+                        r.state.architectures[0].seed === 12345 &&
+                        r.state.architectures[1].seed === 67890;
+
+                    // Cleanup
+                    for (const a of r.state.architectures) {
+                        if (a.mesh) {
+                            r.state.scene.remove(a.mesh);
+                            r._disposeSoulGroup(a.mesh);
+                        }
+                    }
+                    r.state.architectures = [];
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (!ring6Results || ring6Results.error) {
+                check(
+                    "Ring 6: Architecture-Snapshot erreichbar",
+                    false,
+                    ring6Results && ring6Results.error ? ring6Results.error : "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Ring 6: spawnArchitecture('village') liefert Group", ring6Results.villageBuilt);
+                check("Ring 6: Dorf-Group hat ≥5 children (Hütten + Plaza)", ring6Results.villageHasChildren);
+                check("Ring 6: Dorf wird zur Szene hinzugefügt", ring6Results.villageInScene);
+                check("Ring 6: spawnArchitecture('temple') liefert Group", ring6Results.templeBuilt);
+                check("Ring 6: Tempel-Group hat ≥8 children (6 Pfeiler + Dach + Altar)", ring6Results.templeHasPillars);
+                check("Ring 6: spawnArchitecture('waterfall') liefert Group", ring6Results.waterfallBuilt);
+                check("Ring 6: Wasserfall hat userData.animate Hook", ring6Results.waterfallHasAnimateHook);
+                check("Ring 6: Unbekannter Typ wird abgelehnt (returns null)", ring6Results.unknownTypeRejected);
+                check(
+                    "Ring 6: state.architectures wächst korrekt nach drei Spawns",
+                    ring6Results.architectureCountAfterThree
+                );
+                check("Ring 6: Architecture-IDs sind eindeutig", ring6Results.idsAreUnique);
+                check(
+                    "Ring 6: DSL-Op spawn_village wirkt + emit spawned_village",
+                    ring6Results.dslSpawnVillageOk
+                );
+                check(
+                    "Ring 6: Chat 'Baue Tempel hier' routet auf DSL spawn_temple",
+                    ring6Results.chatRoutesToDsl
+                );
+                check("Ring 6: Chat-Routing spawnt tatsächlich", ring6Results.chatActuallySpawned);
+                check("Ring 6: FIFO-Cap respektiert state.architectureCap", ring6Results.capRespected);
+                check("Ring 6: Älteste Eintrag wird beim Cap-Überlauf gepruned", ring6Results.oldestPruned);
+                check(
+                    "Ring 6: spawn_village ist im dslComposeAtomic-Pool (Nexus baut)",
+                    ring6Results.villageInAtomicPool
+                );
+                check("Ring 6: spawn_temple ist im atomic-Pool", ring6Results.templeInAtomicPool);
+                check("Ring 6: spawn_waterfall ist im atomic-Pool", ring6Results.waterfallInAtomicPool);
+                check("Ring 6: tickArchitectures animiert Wasserfall-Vertices", ring6Results.waterfallTickAnimates);
+                check("Ring 6: saveState persistiert architectures", ring6Results.saveContainsArchitectures);
+                check(
+                    "Ring 6: Save enthält nur {type, position, seed} (kein mesh)",
+                    ring6Results.saveOmitsMesh
+                );
+                check(
+                    "Ring 6: loadState rekonstruiert Anzahl",
+                    ring6Results.loadRebuildsCount
+                );
+                check(
+                    "Ring 6: loadState rekonstruiert Typen",
+                    ring6Results.loadRebuildsTypes
+                );
+                check(
+                    "Ring 6: loadState rekonstruiert Seeds (deterministische Wiederherstellung)",
+                    ring6Results.loadRebuildsSeeds
+                );
+            }
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

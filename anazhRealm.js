@@ -196,7 +196,7 @@ class AnazhRealm {
                 creator: "local",
                 visibility: "private",
                 parentWorlds: [],
-                schemaVersion: "7.68-souls-v1",
+                schemaVersion: "7.69-architectures-v1",
             },
             // Ring 3 — Player-Emotionen. Sechs Achsen, jeweils 0..1.
             // Chat-Inputs füllen sie regelbasiert; im Game-Loop verflüchtigen
@@ -239,6 +239,16 @@ class AnazhRealm {
                 emotionApplyCooldown: 30,
                 emotionThreshold: 0.7,
             },
+            // Ring 6 — architectureTemplates V1. Drei DSL-Primitives
+            // (spawn_village, spawn_temple, spawn_waterfall), die je einen
+            // THREE.Group bauen und in dieser Liste landen. Save persistiert
+            // {type, position, seed} — der Mesh wird beim Laden aus dem Seed
+            // rekonstruiert (kein Mesh-Snapshot, einmalige Quelle der Wahrheit
+            // ist der Seed). FIFO-Cap verhindert Mesh-Spam wenn der Nexus
+            // viele Strukturen hintereinander komponiert.
+            architectures: [],
+            architectureCap: 30,
+            architectureNextId: 1,
         };
         this.core = {
             initPhysics: this.initPhysics.bind(this),
@@ -609,6 +619,39 @@ class AnazhRealm {
                 ctx.budget.spawnsLeft = Math.max(0, ctx.budget.spawnsLeft - 1);
                 ctx.log.push({ event: "spawn_ufo_requested", pos });
             },
+            // Ring 6 — architectureTemplates. Drei Bau-Primitives. Position
+            // kommt über die übliche Selektor-Form (`at_player`, `at_origin`,
+            // `near_player N`). Jeder Bau zählt als 1 Spawn-Budget.
+            spawn_village: ([positionNode], ctx) => {
+                const pos = this.dslEvalPos(positionNode, ctx);
+                if (ctx.budget.spawnsLeft <= 0) {
+                    ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
+                    return;
+                }
+                ctx.budget.spawnsLeft--;
+                const entry = this.spawnArchitecture("village", pos);
+                ctx.log.push({ event: "spawned_village", id: entry ? entry.id : null, pos });
+            },
+            spawn_temple: ([positionNode], ctx) => {
+                const pos = this.dslEvalPos(positionNode, ctx);
+                if (ctx.budget.spawnsLeft <= 0) {
+                    ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
+                    return;
+                }
+                ctx.budget.spawnsLeft--;
+                const entry = this.spawnArchitecture("temple", pos);
+                ctx.log.push({ event: "spawned_temple", id: entry ? entry.id : null, pos });
+            },
+            spawn_waterfall: ([positionNode], ctx) => {
+                const pos = this.dslEvalPos(positionNode, ctx);
+                if (ctx.budget.spawnsLeft <= 0) {
+                    ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
+                    return;
+                }
+                ctx.budget.spawnsLeft--;
+                const entry = this.spawnArchitecture("waterfall", pos);
+                ctx.log.push({ event: "spawned_waterfall", id: entry ? entry.id : null, pos });
+            },
             creatures_color: ([color]) => {
                 if (typeof color !== "string") return;
                 let tint = null;
@@ -958,6 +1001,13 @@ class AnazhRealm {
             { w: 5, build: () => ["time_of_day", Number(rng().toFixed(2))] },
             { w: 4, build: () => ["creatures_speed_mul", Number((0.5 + rng() * 1.5).toFixed(2))] },
             { w: 4, build: () => ["creatures_size_mul", Number((0.7 + rng()).toFixed(2))] },
+            // Ring 6 — architectureTemplates. Niedrige Gewichtung (3 von ~76),
+            // damit der Nexus die Welt mit der Zeit füllt, ohne dass jeder
+            // zweite Trigger ein Dorf produziert. FIFO-Cap (30) hält die
+            // Mesh-Last begrenzt.
+            { w: 3, build: () => ["spawn_village", this.dslComposePosition(rng)] },
+            { w: 3, build: () => ["spawn_temple", this.dslComposePosition(rng)] },
+            { w: 3, build: () => ["spawn_waterfall", this.dslComposePosition(rng)] },
             // ~10 % `say`: Nexus kommentiert seine eigene Evolution. Per
             // §18 Q1 ("Ja, sparsam") gewählt.
             { w: 10, build: () => ["say", this.dslComposeSayMessage(rng)] },
@@ -1144,6 +1194,20 @@ class AnazhRealm {
                     return {
                         program: ["player_soul", raw],
                         describe: `Seele gewechselt: ${raw}`,
+                    };
+                },
+            },
+            {
+                // Ring 6 — architectureTemplates. "baue dorf/tempel/wasserfall hier"
+                // platziert die Struktur am Spieler (`at_player`).
+                example: "baue dorf hier",
+                re: /^baue\s+(dorf|tempel|wasserfall)\s+hier\s*$/i,
+                build: (m) => {
+                    const map = { dorf: "spawn_village", tempel: "spawn_temple", wasserfall: "spawn_waterfall" };
+                    const op = map[m[1].toLowerCase()];
+                    return {
+                        program: [op, ["at_player"]],
+                        describe: `${m[1]} gebaut`,
                     };
                 },
             },
@@ -1471,6 +1535,10 @@ class AnazhRealm {
                 commands: ["Werde Mensch", "Werde Phönix", "Werde Drache"],
             },
             {
+                title: "Bauwerke (Ring 6)",
+                commands: ["Baue Dorf hier", "Baue Tempel hier", "Baue Wasserfall hier"],
+            },
+            {
                 title: "System / Persistenz",
                 commands: [
                     "Speichere Zustand",
@@ -1612,6 +1680,17 @@ class AnazhRealm {
         const creatureActions = document.getElementById("creature-actions");
         if (creatureActions) {
             creatureActions.addEventListener("click", (event) => {
+                const target = event.target;
+                if (!(target instanceof HTMLElement)) return;
+                const cmd = target.getAttribute("data-cmd");
+                if (cmd) this.processChatCommand(cmd);
+            });
+        }
+
+        // Ring 6 — Bauwerk-Actions teilen denselben Mechanismus.
+        const architectureActions = document.getElementById("architecture-actions");
+        if (architectureActions) {
+            architectureActions.addEventListener("click", (event) => {
                 const target = event.target;
                 if (!(target instanceof HTMLElement)) return;
                 const cmd = target.getAttribute("data-cmd");
@@ -4354,6 +4433,13 @@ class AnazhRealm {
             // Ring 5: Spieler-Seele (visuelle Form). Beim Load wird sie nach
             // dem playerMesh-Bau angewandt — kein Body-Recreate.
             playerSoul: this.state.player.soul || "human",
+            // Ring 6: Bau-Werke. Nur {type, position, seed} — der Mesh wird
+            // beim Laden aus dem Seed rekonstruiert (kein Mesh-Snapshot).
+            architectures: (this.state.architectures || []).map((a) => ({
+                type: a.type,
+                position: { x: a.position.x, y: a.position.y, z: a.position.z },
+                seed: a.seed,
+            })),
         };
     }
 
@@ -4544,6 +4630,23 @@ class AnazhRealm {
         // nach Mesh-Erstellung an.
         if (typeof state.playerSoul === "string" && this.playerSoulDefs[state.playerSoul]) {
             this.applyPlayerSoul(state.playerSoul);
+        }
+        // Ring 6: Bau-Werke wiederherstellen. Bestehende Strukturen werden
+        // tief disposed, dann jede aus {type, position, seed} neu gebaut.
+        // Idempotent — mehrfaches loadState führt nicht zu Mesh-Verdopplung.
+        if (Array.isArray(state.architectures) && this.state.scene) {
+            for (const old of this.state.architectures) {
+                if (old.mesh) {
+                    this.state.scene.remove(old.mesh);
+                    this._disposeSoulGroup(old.mesh);
+                }
+            }
+            this.state.architectures = [];
+            for (const a of state.architectures) {
+                if (!a || typeof a.type !== "string" || !a.position) continue;
+                this.spawnArchitecture(a.type, a.position, { seed: a.seed });
+            }
+            this.log(`Architekturen geladen: ${state.architectures.length}`);
         }
         if (state.playerEmotions && typeof state.playerEmotions === "object") {
             for (const axis of Object.keys(this.state.player.emotions)) {
@@ -5052,6 +5155,226 @@ class AnazhRealm {
             p.walkPhase += dt * stepHz;
         }
         def.animate(mesh, currentTime, p.walkPhase, isMoving);
+    }
+
+    // ### Ring 6 – architectureTemplates V1 ###
+    //
+    // Drei DSL-Primitives, die je einen THREE.Group aus Three.js-Primitives
+    // bauen: Dorf (Hütten + Lagerplatz), Tempel (Pfeiler + Dach + Altar),
+    // Wasserfall (Vertex-animierte Wasser-Plane + Becken). Jede Struktur
+    // bekommt einen Seed; Save persistiert nur {type, position, seed} und
+    // der Mesh wird beim Laden aus dem Seed neu gebaut — keine Mesh-Daten
+    // im JSON, kleine Save-Dateien.
+    //
+    // Strukturen sind global (nicht pro-Chunk parented). Sie überleben
+    // Chunk-Prune und liegen in `state.architectures`. FIFO-Cap (30) gegen
+    // Mesh-Spam wenn der Nexus mehrmals hintereinander baut.
+    //
+    // Pro-Frame-Animation (z. B. fließendes Wasser) läuft via
+    // `tickArchitectures(t)` — jede Struktur darf eine `userData.animate`-
+    // Funktion mitbringen, die der Tick aufruft. Statische Strukturen
+    // (Hütten, Tempel) brauchen das nicht.
+
+    _seedRng(seed) {
+        let s = (seed | 0) >>> 0 || 1;
+        return () => {
+            s = (s * 1664525 + 1013904223) >>> 0;
+            return s / 4294967296;
+        };
+    }
+
+    _buildVillageGroup(centerY, seed) {
+        const rng = this._seedRng(seed);
+        const group = new THREE.Group();
+        const woodMat = new THREE.MeshBasicMaterial({ color: 0x6e3a14 });
+        const roofMat = new THREE.MeshBasicMaterial({ color: 0x8b2a1e });
+        const stoneMat = new THREE.MeshBasicMaterial({ color: 0x707070 });
+        // Anzahl Hütten: 5–8
+        const hutCount = 5 + Math.floor(rng() * 4);
+        for (let i = 0; i < hutCount; i++) {
+            const hut = new THREE.Group();
+            const angle = (i / hutCount) * Math.PI * 2 + rng() * 0.5;
+            const radius = 6 + rng() * 4;
+            hut.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+            hut.rotation.y = -angle + Math.PI;
+            // Hütten-Körper
+            const body = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.6, 2.4), woodMat);
+            body.position.y = 0.8;
+            body.castShadow = true;
+            body.receiveShadow = true;
+            hut.add(body);
+            // Kegel-Dach
+            const roof = new THREE.Mesh(new THREE.ConeGeometry(1.7, 1.2, 4), roofMat);
+            roof.position.y = 2.2;
+            roof.rotation.y = Math.PI / 4;
+            roof.castShadow = true;
+            hut.add(roof);
+            group.add(hut);
+        }
+        // Zentraler Lagerplatz: flacher Stein-Zylinder
+        const plaza = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.2, 0.15, 12), stoneMat);
+        plaza.position.y = 0.05;
+        plaza.receiveShadow = true;
+        group.add(plaza);
+        group.userData.kind = "village";
+        group.userData.materials = [woodMat, roofMat, stoneMat];
+        // centerY ist die Boden-Höhe an dieser Welt-Position; die Group
+        // wird so platziert, dass die Hütten-Basen auf Boden-Höhe sitzen.
+        group.position.y = centerY;
+        return group;
+    }
+
+    _buildTempleGroup(centerY, seed) {
+        const rng = this._seedRng(seed);
+        const group = new THREE.Group();
+        const stoneMat = new THREE.MeshBasicMaterial({ color: 0xc8c0a8 });
+        const altarMat = new THREE.MeshBasicMaterial({ color: 0x6a4a8a });
+        // Sechs Pfeiler in einem Hexagon
+        const pillarCount = 6;
+        const radius = 3.2;
+        const pillarHeight = 4.0;
+        for (let i = 0; i < pillarCount; i++) {
+            const angle = (i / pillarCount) * Math.PI * 2;
+            const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, pillarHeight, 8), stoneMat);
+            pillar.position.set(Math.cos(angle) * radius, pillarHeight / 2, Math.sin(angle) * radius);
+            pillar.castShadow = true;
+            pillar.receiveShadow = true;
+            group.add(pillar);
+        }
+        // Flaches Dach
+        const roof = new THREE.Mesh(new THREE.CylinderGeometry(radius + 0.6, radius + 0.6, 0.4, 8), stoneMat);
+        roof.position.y = pillarHeight + 0.2;
+        roof.castShadow = true;
+        group.add(roof);
+        // Altar in der Mitte
+        const altar = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.9, 1.2), altarMat);
+        altar.position.y = 0.45;
+        altar.castShadow = true;
+        altar.receiveShadow = true;
+        group.add(altar);
+        // Kleines Detail oben drauf (kristalline Spitze) — Farbe variiert
+        // pro Seed, sodass nicht alle Tempel identisch aussehen.
+        const tipHue = rng();
+        const tipMat = new THREE.MeshBasicMaterial({
+            color: new THREE.Color().setHSL(tipHue, 0.6, 0.55).getHex(),
+        });
+        const tip = new THREE.Mesh(new THREE.OctahedronGeometry(0.45, 0), tipMat);
+        tip.position.y = 1.4;
+        tip.castShadow = true;
+        altar.add(tip);
+        group.userData.kind = "temple";
+        group.userData.materials = [stoneMat, altarMat, tipMat];
+        group.position.y = centerY;
+        return group;
+    }
+
+    _buildWaterfallGroup(centerY, seed) {
+        const rng = this._seedRng(seed);
+        const group = new THREE.Group();
+        const rockMat = new THREE.MeshBasicMaterial({ color: 0x4a4a55 });
+        const waterMat = new THREE.MeshBasicMaterial({
+            color: 0x4ea0d4,
+            transparent: true,
+            opacity: 0.75,
+        });
+        const poolMat = new THREE.MeshBasicMaterial({
+            color: 0x2a6a8a,
+            transparent: true,
+            opacity: 0.7,
+        });
+        // Felsklippe hinten (Hintergrund für die Wasser-Plane)
+        const cliff = new THREE.Mesh(new THREE.BoxGeometry(4.0, 8.0, 1.0), rockMat);
+        cliff.position.set(0, 4.0, -0.6);
+        cliff.castShadow = true;
+        cliff.receiveShadow = true;
+        group.add(cliff);
+        // Wasser-Plane mit segmentierter Geometrie für Vertex-Animation
+        const waterGeom = new THREE.PlaneGeometry(2.6, 7.5, 6, 18);
+        const water = new THREE.Mesh(waterGeom, waterMat);
+        water.position.set(0, 4.0, 0.05);
+        group.add(water);
+        // Becken am Fuß (kleiner Zylinder)
+        const pool = new THREE.Mesh(new THREE.CylinderGeometry(2.5, 2.5, 0.4, 16), poolMat);
+        pool.position.y = 0.2;
+        group.add(pool);
+        // Animations-Hook: Wasser-Vertices wandern pro Frame leicht in Y,
+        // sodass der Eindruck einer fließenden Welle entsteht. Wir greifen
+        // nur die mittlere Spalte der Geometrie an (kleiner CPU-Aufwand).
+        const positions = waterGeom.attributes.position;
+        const baseY = new Float32Array(positions.count);
+        for (let i = 0; i < positions.count; i++) baseY[i] = positions.getY(i);
+        const phaseOffset = rng() * Math.PI * 2;
+        group.userData.animate = (t) => {
+            for (let i = 0; i < positions.count; i++) {
+                const x = positions.getX(i);
+                const y = baseY[i];
+                // Sinus-Welle entlang Y, leichte Verzerrung in Z für
+                // räumliche Tiefe.
+                const wave = Math.sin(t * 4.5 + y * 1.5 + phaseOffset) * 0.12;
+                positions.setZ(i, wave);
+                void x;
+            }
+            positions.needsUpdate = true;
+        };
+        group.userData.kind = "waterfall";
+        group.userData.materials = [rockMat, waterMat, poolMat];
+        group.position.y = centerY;
+        return group;
+    }
+
+    // Eine Struktur zur Welt hinzufügen. Position kommt aus DSL (oder Save-
+    // Restore); centerY wird aus pos.y abgeleitet, mit Boden-Heuristik
+    // (pos.y - 0.5 ≈ Spielerfußhöhe falls at_player benutzt wurde).
+    spawnArchitecture(type, position, opts = {}) {
+        const builders = {
+            village: (y, s) => this._buildVillageGroup(y, s),
+            temple: (y, s) => this._buildTempleGroup(y, s),
+            waterfall: (y, s) => this._buildWaterfallGroup(y, s),
+        };
+        if (!builders[type]) {
+            this.log(`spawnArchitecture: unbekannter Typ '${type}'`, "ERROR");
+            return null;
+        }
+        if (!this.state.scene) return null;
+        const seed = Number.isFinite(opts.seed) ? opts.seed : Math.floor(Math.random() * 0xffffffff);
+        // Boden-Y ableiten: wenn pos.y vom Spieler kommt (Player-Center,
+        // ~0.5 über Boden), -0.5 holt's auf Boden-Höhe. Bei expliziten Y-
+        // Werten aus dem Nexus-Generator vertrauen wir dem Wert direkt.
+        const baseY = Number.isFinite(position.y) ? position.y - 0.5 : 0;
+        const group = builders[type](0, seed);
+        group.position.set(position.x || 0, baseY, position.z || 0);
+        this.state.scene.add(group);
+        const entry = {
+            id: this.state.architectureNextId++,
+            type,
+            position: { x: position.x || 0, y: position.y || 0, z: position.z || 0 },
+            seed,
+            mesh: group,
+        };
+        this.state.architectures.push(entry);
+        // FIFO-Cap: älteste Strukturen entfernen wenn voll. Dispose verhindert
+        // GPU-Leaks durch nicht freigegebene Geometrien/Materialien.
+        while (this.state.architectures.length > this.state.architectureCap) {
+            const oldest = this.state.architectures.shift();
+            if (oldest && oldest.mesh) {
+                this.state.scene.remove(oldest.mesh);
+                this._disposeSoulGroup(oldest.mesh);
+            }
+        }
+        this.log(`Struktur gebaut: ${type} bei (${position.x.toFixed(1)}, ${position.z.toFixed(1)})`, "INFO");
+        return entry;
+    }
+
+    // Pro-Frame-Tick: ruft animate() auf jeder Struktur, die einen Hook
+    // mitbringt (aktuell nur Wasserfälle). Idempotent für statische Bauten.
+    tickArchitectures(currentTime) {
+        const list = this.state.architectures;
+        if (!list || list.length === 0) return;
+        for (const entry of list) {
+            if (entry.mesh && entry.mesh.userData && typeof entry.mesh.userData.animate === "function") {
+                entry.mesh.userData.animate(currentTime);
+            }
+        }
     }
 
     // Ring 5 V2 Vorbereitung — Kamera-Modus (Erst-/Dritte-Person).
@@ -5744,6 +6067,9 @@ class AnazhRealm {
             // jeden Frame über sin/cos relativ zum aktuellen walkPhase
             // rotiert. Idle-Loop (atmen, hover) läuft auch im Stand.
             this.animatePlayerSoul(currentTime);
+
+            // Ring 6: Bau-Werke mit Animations-Hook (nur Wasserfälle aktuell).
+            this.tickArchitectures(currentTime);
 
             this.pruneDistantChunks(playerPos);
 
