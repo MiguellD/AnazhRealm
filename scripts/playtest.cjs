@@ -1525,6 +1525,84 @@ function startSaveServer() {
                     uiTuningResults.cooldownUpdatesState
                 );
             }
+
+            // ### UI V2 — Identity (Tokens + Theme + Fonts) ###
+            const uiV2Results = await page
+                .evaluate(() => {
+                    const out = {};
+
+                    // (a) Theme-Default ist "tag"
+                    out.bodyHasThemeTag = document.body.getAttribute("data-theme") === "tag";
+
+                    // (b) Token-Variable kommt durch (Pergament-Farbe)
+                    const computed = getComputedStyle(document.body);
+                    const parch1 = computed.getPropertyValue("--parch-1").trim();
+                    out.parchTokenLoaded = parch1.length > 0;
+
+                    // (c) Theme-Toggle wechselt zu "nacht"
+                    const toggle = document.getElementById("theme-toggle");
+                    if (toggle) toggle.click();
+                    out.themeSwitchedToNight = document.body.getAttribute("data-theme") === "nacht";
+                    out.toggleArrayAfterSwitch = toggle && toggle.getAttribute("aria-pressed") === "true";
+
+                    // (d) Theme-Wechsel ändert Token-Wert
+                    const parch1Night = getComputedStyle(document.body).getPropertyValue("--parch-1").trim();
+                    out.tokenChangesPerTheme = parch1 !== parch1Night && parch1Night.length > 0;
+
+                    // (e) Persistenz: localStorage trägt die Wahl
+                    const persisted = localStorage.getItem("anazhRealmTheme");
+                    out.themePersisted = persisted === "nacht";
+
+                    // (f) Latch-Klasse haftet an allen Toggle-Buttons
+                    out.allTogglesLatched = [
+                        "grok-voice-toggle",
+                        "anazh-symphony-toggle",
+                        "theme-toggle",
+                        "help-toggle",
+                    ].every((id) => {
+                        const el = document.getElementById(id);
+                        return el && el.classList.contains("latch");
+                    });
+
+                    // (g) Cinzel-Font ist registriert (über @font-face)
+                    out.fontsRegistered = Array.from(document.fonts).some(
+                        (f) => f.family === "Cinzel"
+                    );
+
+                    // Cleanup: zurück auf "tag" damit andere Tests konsistent sind
+                    if (toggle) toggle.click();
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (!uiV2Results || uiV2Results.error) {
+                check(
+                    "UI V2: Identity-Snapshot erreichbar",
+                    false,
+                    uiV2Results && uiV2Results.error
+                        ? uiV2Results.error
+                        : "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("UI V2: body[data-theme=tag] initial gesetzt", uiV2Results.bodyHasThemeTag);
+                check("UI V2: Pergament-Tokens geladen (--parch-1)", uiV2Results.parchTokenLoaded);
+                check("UI V2: Theme-Toggle wechselt zu nacht", uiV2Results.themeSwitchedToNight);
+                check(
+                    "UI V2: Theme-Toggle aria-pressed reflektiert State",
+                    uiV2Results.toggleArrayAfterSwitch
+                );
+                check("UI V2: Token-Werte ändern sich pro Theme", uiV2Results.tokenChangesPerTheme);
+                check("UI V2: Theme-Wahl in localStorage persistiert", uiV2Results.themePersisted);
+                check(
+                    "UI V2: alle Toggle-Buttons tragen .latch-Klasse",
+                    uiV2Results.allTogglesLatched
+                );
+                check(
+                    "UI V2: Cinzel-Font ist via @font-face registriert",
+                    uiV2Results.fontsRegistered
+                );
+            }
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
