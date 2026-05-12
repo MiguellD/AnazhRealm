@@ -6068,6 +6068,330 @@ class AnazhRealm {
         }
     }
 
+    // ### Ring 6.6 — Werkstatt: Bauplan-Editor ###
+    //
+    // Vier State-Mutationspfade. Alle gehen über `state.blueprints` direkt;
+    // Built-ins werden nicht überschrieben (Editor klont sie statt zu
+    // mutieren — sonst gehen sie bei nächstem Reload verloren, weil
+    // _defaultBlueprints() im Konstruktor immer das Original wiederherstellt).
+
+    createBlueprint(name, label) {
+        const cleanName = typeof name === "string" ? name.trim() : "";
+        if (!cleanName) {
+            this.log("createBlueprint: leerer Name", "ERROR");
+            return false;
+        }
+        if (this.state.blueprints[cleanName]) {
+            this.log(`createBlueprint: '${cleanName}' existiert bereits`, "ERROR");
+            return false;
+        }
+        this.state.blueprints[cleanName] = {
+            name: cleanName,
+            label: typeof label === "string" && label.trim() ? label.trim() : cleanName,
+            builtIn: false,
+            parts: [],
+        };
+        this.log(`Bauplan '${cleanName}' angelegt`, "INFO");
+        return true;
+    }
+
+    cloneBlueprint(sourceName, newName) {
+        const source = this.state.blueprints[sourceName];
+        if (!source) {
+            this.log(`cloneBlueprint: '${sourceName}' nicht gefunden`, "ERROR");
+            return false;
+        }
+        const cleanNew = typeof newName === "string" ? newName.trim() : "";
+        if (!cleanNew || this.state.blueprints[cleanNew]) {
+            this.log(`cloneBlueprint: Ziel-Name '${cleanNew}' leer oder schon belegt`, "ERROR");
+            return false;
+        }
+        this.state.blueprints[cleanNew] = {
+            name: cleanNew,
+            label: source.label ? `${source.label} (Kopie)` : cleanNew,
+            builtIn: false,
+            parts: JSON.parse(JSON.stringify(source.parts || [])),
+        };
+        this.log(`Bauplan '${sourceName}' nach '${cleanNew}' geklont`, "INFO");
+        return true;
+    }
+
+    deleteBlueprint(name) {
+        const bp = this.state.blueprints[name];
+        if (!bp) return false;
+        if (bp.builtIn) {
+            this.log(`deleteBlueprint: '${name}' ist Built-in und kann nicht gelöscht werden`, "ERROR");
+            return false;
+        }
+        delete this.state.blueprints[name];
+        // Hotbar-Slots, die diesen Bauplan halten, leeren.
+        for (let i = 0; i < 9; i++) {
+            if (this.state.hotbar[i] === name) this.state.hotbar[i] = null;
+        }
+        this._renderHotbarDOM();
+        this.log(`Bauplan '${name}' gelöscht`, "INFO");
+        return true;
+    }
+
+    addPartToBlueprint(name, part) {
+        const bp = this.state.blueprints[name];
+        if (!bp) return false;
+        if (bp.builtIn) {
+            this.log(`addPart: '${name}' ist Built-in — bitte erst klonen`, "ERROR");
+            return false;
+        }
+        // Default-Werte für ein neues Part, falls nicht alles übergeben wird.
+        const defaultPart = {
+            shape: "box",
+            color: 0x888888,
+            position: { x: 0, y: 1, z: 0 },
+            rotation: { x: 0, y: 0, z: 0 },
+            size: { x: 1, y: 1, z: 1 },
+        };
+        bp.parts.push({ ...defaultPart, ...(part || {}) });
+        return true;
+    }
+
+    removePartFromBlueprint(name, index) {
+        const bp = this.state.blueprints[name];
+        if (!bp || bp.builtIn) return false;
+        if (index < 0 || index >= bp.parts.length) return false;
+        bp.parts.splice(index, 1);
+        return true;
+    }
+
+    updatePartInBlueprint(name, index, patch) {
+        const bp = this.state.blueprints[name];
+        if (!bp || bp.builtIn) return false;
+        if (index < 0 || index >= bp.parts.length) return false;
+        const part = bp.parts[index];
+        // Patch ist ein Teil-Objekt; wir mergen rekursiv für position/size/
+        // rotation, damit man einzelne Koordinaten verändern kann.
+        if (patch.shape) part.shape = patch.shape;
+        if (typeof patch.color === "number") part.color = patch.color;
+        for (const key of ["position", "size", "rotation"]) {
+            if (patch[key]) {
+                part[key] = { ...(part[key] || {}), ...patch[key] };
+            }
+        }
+        if (typeof patch.opacity === "number") part.opacity = patch.opacity;
+        return true;
+    }
+
+    // Werkstatt-State: welchen Bauplan editieren wir gerade?
+    _ensureWorkshopState() {
+        if (!this.state.workshop) {
+            this.state.workshop = { selectedBlueprint: "village" };
+        }
+        return this.state.workshop;
+    }
+
+    selectBlueprintForEdit(name) {
+        const ws = this._ensureWorkshopState();
+        if (!this.state.blueprints[name]) {
+            this.log(`selectBlueprintForEdit: '${name}' nicht gefunden`, "ERROR");
+            return false;
+        }
+        ws.selectedBlueprint = name;
+        this._renderWorkshopDOM();
+        return true;
+    }
+
+    _renderWorkshopDOM() {
+        if (typeof document === "undefined") return;
+        const list = document.getElementById("workshop-list");
+        const editor = document.getElementById("workshop-editor");
+        if (!list || !editor) return;
+        const ws = this._ensureWorkshopState();
+        const blueprintNames = Object.keys(this.state.blueprints);
+        // Liste der Baupläne
+        list.innerHTML = "";
+        for (const name of blueprintNames) {
+            const bp = this.state.blueprints[name];
+            const row = document.createElement("div");
+            row.className = "workshop-list-row" + (name === ws.selectedBlueprint ? " selected" : "");
+            row.setAttribute("data-blueprint", name);
+            const nameSpan = document.createElement("span");
+            nameSpan.className = "name";
+            nameSpan.textContent = bp.label || name;
+            const badge = document.createElement("span");
+            badge.className = "badge";
+            badge.textContent = bp.builtIn ? "fest" : "eigen";
+            row.appendChild(nameSpan);
+            row.appendChild(badge);
+            row.addEventListener("click", () => this.selectBlueprintForEdit(name));
+            list.appendChild(row);
+        }
+        // Editor
+        editor.innerHTML = "";
+        const selected = this.state.blueprints[ws.selectedBlueprint];
+        if (!selected) return;
+        // Header mit Label + Aktionen
+        const header = document.createElement("div");
+        header.className = "workshop-header";
+        const title = document.createElement("h3");
+        title.textContent = selected.label || selected.name;
+        header.appendChild(title);
+        const status = document.createElement("span");
+        status.className = "workshop-status";
+        status.textContent = selected.builtIn ? "Eingebaut — zum Bearbeiten klonen" : `${selected.parts.length} Parts`;
+        header.appendChild(status);
+        editor.appendChild(header);
+        // Parts-Liste — bei Built-ins nur lesbar
+        const partsDiv = document.createElement("div");
+        partsDiv.className = "workshop-parts";
+        if (selected.parts.length === 0) {
+            const empty = document.createElement("div");
+            empty.className = "workshop-empty";
+            empty.textContent = "Noch keine Parts.";
+            partsDiv.appendChild(empty);
+        }
+        for (let i = 0; i < selected.parts.length; i++) {
+            const part = selected.parts[i];
+            const row = document.createElement("div");
+            row.className = "workshop-part-row";
+            // Shape-Dropdown
+            const shapeSelect = document.createElement("select");
+            for (const shape of ["box", "sphere", "cylinder", "cone", "pyramid", "octahedron", "plane", "torus"]) {
+                const opt = document.createElement("option");
+                opt.value = shape;
+                opt.textContent = shape;
+                if (shape === part.shape) opt.selected = true;
+                shapeSelect.appendChild(opt);
+            }
+            shapeSelect.disabled = !!selected.builtIn;
+            shapeSelect.addEventListener("change", () => {
+                this.updatePartInBlueprint(selected.name, i, { shape: shapeSelect.value });
+                this._renderWorkshopDOM();
+            });
+            row.appendChild(shapeSelect);
+            // Color-Input
+            const colorInput = document.createElement("input");
+            colorInput.type = "color";
+            const hex = "#" + (part.color || 0).toString(16).padStart(6, "0");
+            colorInput.value = hex;
+            colorInput.disabled = !!selected.builtIn;
+            colorInput.addEventListener("input", () => {
+                const num = parseInt(colorInput.value.replace("#", ""), 16);
+                this.updatePartInBlueprint(selected.name, i, { color: num });
+            });
+            row.appendChild(colorInput);
+            // Position + Size + Rotation kompakt als 9 Mini-Inputs
+            const xyzGrid = document.createElement("div");
+            xyzGrid.className = "workshop-xyz";
+            const fields = [
+                { label: "Pos X", key: "position", axis: "x" },
+                { label: "Y", key: "position", axis: "y" },
+                { label: "Z", key: "position", axis: "z" },
+                { label: "Größe X", key: "size", axis: "x" },
+                { label: "Y", key: "size", axis: "y" },
+                { label: "Z", key: "size", axis: "z" },
+                { label: "Rot X", key: "rotation", axis: "x" },
+                { label: "Y", key: "rotation", axis: "y" },
+                { label: "Z", key: "rotation", axis: "z" },
+            ];
+            for (const f of fields) {
+                const wrap = document.createElement("label");
+                wrap.className = "workshop-field";
+                const lbl = document.createElement("span");
+                lbl.textContent = f.label;
+                const input = document.createElement("input");
+                input.type = "number";
+                input.step = "0.1";
+                input.value = String((part[f.key] && part[f.key][f.axis]) || 0);
+                input.disabled = !!selected.builtIn;
+                input.addEventListener("change", () => {
+                    const v = parseFloat(input.value);
+                    if (!Number.isFinite(v)) return;
+                    this.updatePartInBlueprint(selected.name, i, {
+                        [f.key]: { [f.axis]: v },
+                    });
+                });
+                wrap.appendChild(lbl);
+                wrap.appendChild(input);
+                xyzGrid.appendChild(wrap);
+            }
+            row.appendChild(xyzGrid);
+            // Entfernen-Button
+            const delBtn = document.createElement("button");
+            delBtn.type = "button";
+            delBtn.className = "workshop-del";
+            delBtn.textContent = "×";
+            delBtn.disabled = !!selected.builtIn;
+            delBtn.addEventListener("click", () => {
+                this.removePartFromBlueprint(selected.name, i);
+                this._renderWorkshopDOM();
+            });
+            row.appendChild(delBtn);
+            partsDiv.appendChild(row);
+        }
+        editor.appendChild(partsDiv);
+        // Aktions-Buttons
+        const actions = document.createElement("div");
+        actions.className = "workshop-actions";
+        // Part hinzufügen (nur eigene Baupläne)
+        if (!selected.builtIn) {
+            const addBtn = document.createElement("button");
+            addBtn.type = "button";
+            addBtn.textContent = "Part hinzufügen";
+            addBtn.addEventListener("click", () => {
+                this.addPartToBlueprint(selected.name);
+                this._renderWorkshopDOM();
+            });
+            actions.appendChild(addBtn);
+        }
+        // Klonen
+        const cloneBtn = document.createElement("button");
+        cloneBtn.type = "button";
+        cloneBtn.textContent = "Klonen";
+        cloneBtn.addEventListener("click", () => {
+            const newName = window.prompt("Name für die Kopie?", `${selected.name}-kopie`);
+            if (!newName) return;
+            if (this.cloneBlueprint(selected.name, newName)) {
+                this.selectBlueprintForEdit(newName);
+            }
+        });
+        actions.appendChild(cloneBtn);
+        // Löschen (nur eigene)
+        if (!selected.builtIn) {
+            const delBtn = document.createElement("button");
+            delBtn.type = "button";
+            delBtn.className = "workshop-danger";
+            delBtn.textContent = "Löschen";
+            delBtn.addEventListener("click", () => {
+                if (!window.confirm(`Bauplan '${selected.name}' wirklich löschen?`)) return;
+                this.deleteBlueprint(selected.name);
+                // Auf einen anderen Bauplan umschalten
+                const remaining = Object.keys(this.state.blueprints);
+                if (remaining.length > 0) this.selectBlueprintForEdit(remaining[0]);
+                else this._renderWorkshopDOM();
+            });
+            actions.appendChild(delBtn);
+        }
+        // Neuer Bauplan (immer verfügbar)
+        const newBtn = document.createElement("button");
+        newBtn.type = "button";
+        newBtn.textContent = "Neuer Bauplan";
+        newBtn.addEventListener("click", () => {
+            const name = window.prompt("Name des neuen Bauplans?");
+            if (!name) return;
+            if (this.createBlueprint(name, name)) this.selectBlueprintForEdit(name);
+        });
+        actions.appendChild(newBtn);
+        editor.appendChild(actions);
+        // Hotbar-Config und alle Phantom-Mesh updaten, falls der aktive
+        // Bauplan editiert wurde.
+        this._renderHotbarConfigDOM();
+        this._renderHotbarDOM();
+        // Phantom in Bau-Modus neu rendern, falls er den editierten Bauplan zeigt
+        const bm = this.state.buildMode;
+        if (bm.active && bm.blueprintName === selected.name) {
+            const idx = bm.slotIndex;
+            this._clearBuildMode();
+            if (idx >= 0 && this.state.hotbar[idx] === selected.name) this.selectHotbarSlot(idx);
+        }
+    }
+
     // Hilfsmethode für UI/Tests: zählt Architekturen in Spieler-Nähe.
     countArchitecturesNearPlayer(radius = 60) {
         const playerPos = this.state.playerMesh ? this.state.playerMesh.position : null;
@@ -6152,6 +6476,8 @@ class AnazhRealm {
         // Ring 6.5 — Hotbar im DOM rendern. Wird hier einmal aufgesetzt;
         // setHotbarSlot löst ein Re-Render aus.
         this._renderHotbarDOM();
+        // Ring 6.6 — Werkstatt-Editor initial mit Default-Bauplan rendern.
+        this._renderWorkshopDOM();
         this._updateBuildModeHud();
         this.initTopbar();
         this.initConsoleDOM();

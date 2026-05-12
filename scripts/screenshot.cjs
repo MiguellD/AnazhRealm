@@ -182,6 +182,21 @@ function startSaveServer() {
                 if (tab) tab.click();
             });
         });
+
+        // Szene 8: Werkstatt-Drawer mit Bauplan-Liste + Editor.
+        await resetScene();
+        await shot("08-drawer-werkstatt", async () => {
+            await page.evaluate(() => {
+                const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
+                if (tab) tab.click();
+                // Eigenen Bauplan klonen + auswählen, damit der Editor mit
+                // editierbaren Inputs sichtbar wird (Built-ins sind disabled).
+                const r = window.anazhRealm;
+                if (r.cloneBlueprint("temple", "mein-tempel")) {
+                    r.selectBlueprintForEdit("mein-tempel");
+                }
+            });
+        });
     } finally {
         await browser.close();
         server.kill();

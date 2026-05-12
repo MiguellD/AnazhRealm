@@ -1169,7 +1169,7 @@ function startSaveServer() {
                     // Tab-System
                     const tabs = document.querySelectorAll("#topbar .tab");
                     out.tabCount = tabs.length;
-                    out.allTabsPresent = tabs.length === 6;
+                    out.allTabsPresent = tabs.length === 7;
                     const weltTab = document.querySelector('#topbar .tab[data-tab="welt"]');
                     out.weltTabActive = weltTab && weltTab.classList.contains("active");
                     const weltDrawer = document.querySelector('.drawer[data-drawer="welt"]');
@@ -1220,7 +1220,7 @@ function startSaveServer() {
                     uiResults.throttleReleases
                 );
                 check(
-                    "UI V2: sechs Tabs im Topbar",
+                    "UI V2: sieben Tabs im Topbar (inkl. Werkstatt)",
                     uiResults.allTabsPresent,
                     `count=${uiResults.tabCount}`
                 );
@@ -2895,6 +2895,195 @@ function startSaveServer() {
                 check("Ring 6.5: Hotbar-Config hat 9 Reihen", ring65Results.hotbarConfigHasNineRows);
                 check("Ring 6.5: saveState persistiert Hotbar", ring65Results.saveContainsHotbar);
                 check("Ring 6.5: loadState rekonstruiert Hotbar", ring65Results.loadRestoresHotbar);
+            }
+
+            // ### Ring 6.6 — Werkstatt-Tab + Part-Editor ###
+            const ring66Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // UI vorhanden
+                    out.workshopTabInDom = !!document.querySelector('#topbar [data-tab="werkstatt"]');
+                    out.workshopDrawerInDom = !!document.querySelector('.drawer[data-drawer="werkstatt"]');
+                    out.workshopListInDom = !!document.getElementById("workshop-list");
+                    out.workshopEditorInDom = !!document.getElementById("workshop-editor");
+
+                    // Liste hat einen Eintrag pro Bauplan
+                    const list = document.getElementById("workshop-list");
+                    out.listShowsAllBlueprints =
+                        list && list.querySelectorAll(".workshop-list-row").length ===
+                            Object.keys(r.state.blueprints).length;
+
+                    // createBlueprint
+                    const beforeCount = Object.keys(r.state.blueprints).length;
+                    const ok1 = r.createBlueprint("test_hut", "Test-Hütte");
+                    out.createBlueprintOk =
+                        ok1 === true &&
+                        Object.keys(r.state.blueprints).length === beforeCount + 1 &&
+                        r.state.blueprints["test_hut"].builtIn === false;
+
+                    // createBlueprint mit existierendem Namen wird abgelehnt
+                    const okDup = r.createBlueprint("test_hut", "Doppelt");
+                    out.duplicateNameRejected = okDup === false;
+
+                    // addPartToBlueprint
+                    const ok2 = r.addPartToBlueprint("test_hut", {
+                        shape: "box",
+                        color: 0xff0000,
+                        position: { x: 0, y: 1, z: 0 },
+                        size: { x: 2, y: 2, z: 2 },
+                    });
+                    out.addPartOk = ok2 === true && r.state.blueprints["test_hut"].parts.length === 1;
+
+                    // Built-in akzeptiert keine addPart
+                    const okBuiltIn = r.addPartToBlueprint("village", { shape: "sphere" });
+                    out.builtInRejectsAddPart = okBuiltIn === false;
+
+                    // updatePartInBlueprint
+                    r.updatePartInBlueprint("test_hut", 0, {
+                        color: 0x00ff00,
+                        position: { y: 2.5 },
+                    });
+                    const p = r.state.blueprints["test_hut"].parts[0];
+                    out.updatePartMerges =
+                        p.color === 0x00ff00 &&
+                        p.position.y === 2.5 &&
+                        p.position.x === 0 &&
+                        p.position.z === 0;
+
+                    // removePartFromBlueprint
+                    r.addPartToBlueprint("test_hut", { shape: "cone" });
+                    r.addPartToBlueprint("test_hut", { shape: "sphere" });
+                    const beforeRm = r.state.blueprints["test_hut"].parts.length;
+                    r.removePartFromBlueprint("test_hut", 1);
+                    out.removePartShrinks =
+                        r.state.blueprints["test_hut"].parts.length === beforeRm - 1;
+
+                    // cloneBlueprint (Built-in → eigen)
+                    const okClone = r.cloneBlueprint("temple", "my_temple");
+                    out.cloneBlueprintOk =
+                        okClone === true &&
+                        r.state.blueprints["my_temple"].builtIn === false &&
+                        r.state.blueprints["my_temple"].parts.length ===
+                            r.state.blueprints["temple"].parts.length;
+
+                    // Klone können editiert werden
+                    const okClonePart = r.removePartFromBlueprint("my_temple", 0);
+                    out.cloneIsEditable =
+                        okClonePart === true &&
+                        r.state.blueprints["my_temple"].parts.length ===
+                            r.state.blueprints["temple"].parts.length - 1;
+
+                    // deleteBlueprint (eigen)
+                    const beforeDel = Object.keys(r.state.blueprints).length;
+                    const okDel = r.deleteBlueprint("test_hut");
+                    out.deleteBlueprintOk =
+                        okDel === true &&
+                        Object.keys(r.state.blueprints).length === beforeDel - 1 &&
+                        !r.state.blueprints["test_hut"];
+
+                    // deleteBlueprint Built-in wird abgelehnt
+                    const okDelBuiltIn = r.deleteBlueprint("village");
+                    out.builtInProtectedFromDelete =
+                        okDelBuiltIn === false && !!r.state.blueprints["village"];
+
+                    // delete räumt Hotbar-Slots auf, die diesen Bauplan halten
+                    r.state.hotbar[4] = "my_temple";
+                    r.deleteBlueprint("my_temple");
+                    out.deleteCascadesHotbar = r.state.hotbar[4] === null;
+
+                    // selectBlueprintForEdit + DOM update
+                    r.createBlueprint("ed_test", "Editier-Test");
+                    r.selectBlueprintForEdit("ed_test");
+                    out.selectUpdatesWorkshop =
+                        r.state.workshop.selectedBlueprint === "ed_test";
+
+                    // Editor zeigt Selected-Status
+                    const selectedRow = document.querySelector(
+                        '.workshop-list-row[data-blueprint="ed_test"]'
+                    );
+                    out.selectedRowHasClass =
+                        selectedRow && selectedRow.classList.contains("selected");
+
+                    // Save-Roundtrip: eigene Baupläne werden serialisiert
+                    r.addPartToBlueprint("ed_test", {
+                        shape: "sphere",
+                        color: 0x553355,
+                        position: { x: 0, y: 2, z: 0 },
+                        size: { x: 3, y: 3, z: 3 },
+                    });
+                    r.saveState();
+                    const raw = localStorage.getItem("anazhRealmState");
+                    const parsed = JSON.parse(raw);
+                    const savedBp = parsed.blueprints.find((bp) => bp.name === "ed_test");
+                    out.saveContainsCustom =
+                        !!savedBp &&
+                        savedBp.parts.length === 1 &&
+                        savedBp.parts[0].shape === "sphere";
+
+                    // Cleanup
+                    r.deleteBlueprint("ed_test");
+                    r.selectBlueprintForEdit("village");
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (!ring66Results || ring66Results.error) {
+                check(
+                    "Ring 6.6: Werkstatt-Snapshot erreichbar",
+                    false,
+                    ring66Results && ring66Results.error
+                        ? ring66Results.error
+                        : "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Ring 6.6: Werkstatt-Tab in Topbar", ring66Results.workshopTabInDom);
+                check("Ring 6.6: Werkstatt-Drawer im DOM", ring66Results.workshopDrawerInDom);
+                check("Ring 6.6: #workshop-list im DOM", ring66Results.workshopListInDom);
+                check("Ring 6.6: #workshop-editor im DOM", ring66Results.workshopEditorInDom);
+                check(
+                    "Ring 6.6: Liste zeigt einen Eintrag pro Bauplan",
+                    ring66Results.listShowsAllBlueprints
+                );
+                check("Ring 6.6: createBlueprint legt neuen eigenen Bauplan an", ring66Results.createBlueprintOk);
+                check("Ring 6.6: createBlueprint lehnt doppelte Namen ab", ring66Results.duplicateNameRejected);
+                check("Ring 6.6: addPartToBlueprint hängt Part an", ring66Results.addPartOk);
+                check(
+                    "Ring 6.6: addPartToBlueprint lehnt Built-in ab",
+                    ring66Results.builtInRejectsAddPart
+                );
+                check(
+                    "Ring 6.6: updatePartInBlueprint merget Patch in Bestand",
+                    ring66Results.updatePartMerges
+                );
+                check("Ring 6.6: removePartFromBlueprint verkleinert parts", ring66Results.removePartShrinks);
+                check(
+                    "Ring 6.6: cloneBlueprint erzeugt eigene Kopie eines Built-in",
+                    ring66Results.cloneBlueprintOk
+                );
+                check("Ring 6.6: Klone sind voll editierbar", ring66Results.cloneIsEditable);
+                check("Ring 6.6: deleteBlueprint entfernt eigene Baupläne", ring66Results.deleteBlueprintOk);
+                check(
+                    "Ring 6.6: Built-in vor Löschung geschützt",
+                    ring66Results.builtInProtectedFromDelete
+                );
+                check(
+                    "Ring 6.6: deleteBlueprint räumt referenzierte Hotbar-Slots auf",
+                    ring66Results.deleteCascadesHotbar
+                );
+                check(
+                    "Ring 6.6: selectBlueprintForEdit setzt state.workshop.selectedBlueprint",
+                    ring66Results.selectUpdatesWorkshop
+                );
+                check(
+                    "Ring 6.6: Selected-Row trägt .selected-Class im DOM",
+                    ring66Results.selectedRowHasClass
+                );
+                check(
+                    "Ring 6.6: Save persistiert eigene Baupläne inkl. Parts",
+                    ring66Results.saveContainsCustom
+                );
             }
 
             // ### Ring 6 V2 — Distance-Culling, Fraktal, Counter, Bau-Cursor ###

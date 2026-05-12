@@ -965,6 +965,118 @@
         .drawer .hotbar-config-row select:hover {
             border-color: var(--brass-1);
         }
+        /* Ring 6.6 — Werkstatt-Editor */
+        #workshop-list { display: flex; flex-direction: column; gap: 3px; max-height: 160px; overflow-y: auto; }
+        .workshop-list-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 8px;
+            background: rgba(40, 25, 10, 0.08);
+            border: 1px solid rgba(138, 106, 54, 0.4);
+            border-radius: 3px;
+            cursor: pointer;
+            font-family: 'Cinzel', Georgia, serif;
+            font-size: 11px;
+            color: var(--parch-ink);
+        }
+        .workshop-list-row:hover { background: rgba(40, 25, 10, 0.18); }
+        .workshop-list-row.selected {
+            background: linear-gradient(180deg, rgba(255, 235, 190, 0.5), rgba(180, 140, 80, 0.3));
+            border-color: var(--violet-1);
+        }
+        .workshop-list-row .badge {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--parch-ink-faded);
+        }
+        .workshop-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+        .workshop-header h3 { margin: 0; padding: 0; border: none; }
+        .workshop-status { font-size: 10px; color: var(--parch-ink-faded); font-family: 'IM Fell English', Georgia, serif; font-style: italic; }
+        .workshop-parts { max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+        .workshop-empty { font-size: 11px; color: var(--parch-ink-faded); font-style: italic; padding: 6px 0; }
+        .workshop-part-row {
+            display: grid;
+            grid-template-columns: 1fr 28px 1fr 22px;
+            gap: 4px;
+            align-items: center;
+            padding: 4px;
+            background: rgba(40, 25, 10, 0.06);
+            border: 1px solid rgba(138, 106, 54, 0.3);
+            border-radius: 3px;
+        }
+        .workshop-part-row select,
+        .workshop-part-row input[type="color"] {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            padding: 2px 4px;
+            background: rgba(255, 235, 190, 0.3);
+            border: 1px solid var(--brass-3);
+            border-radius: 2px;
+            min-width: 0;
+        }
+        .workshop-part-row input[type="color"] { width: 28px; height: 22px; padding: 0; cursor: pointer; }
+        .workshop-part-row .workshop-xyz {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2px 6px;
+        }
+        .workshop-field { display: flex; flex-direction: column; gap: 1px; }
+        .workshop-field span {
+            font-size: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--parch-ink-faded);
+            font-family: 'Cinzel', Georgia, serif;
+        }
+        .workshop-field input[type="number"] {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            padding: 1px 4px;
+            background: rgba(255, 235, 190, 0.25);
+            border: 1px solid var(--brass-3);
+            border-radius: 2px;
+            color: var(--parch-ink);
+            min-width: 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .workshop-del {
+            background: rgba(138, 30, 30, 0.4);
+            border: 1px solid #8a2222;
+            color: #f8d8d8;
+            width: 22px;
+            height: 22px;
+            border-radius: 2px;
+            cursor: pointer;
+            font-family: 'Cinzel', Georgia, serif;
+            font-size: 14px;
+            line-height: 1;
+            padding: 0;
+        }
+        .workshop-del:hover { background: rgba(138, 30, 30, 0.7); }
+        .workshop-del:disabled { opacity: 0.3; cursor: not-allowed; }
+        .workshop-actions {
+            display: flex;
+            gap: 4px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+        .workshop-actions button {
+            background: linear-gradient(180deg, rgba(255, 235, 190, 0.4), rgba(180, 140, 80, 0.25));
+            color: var(--parch-ink);
+            border: 1px solid var(--brass-2);
+            padding: 4px 10px;
+            font-family: 'Cinzel', Georgia, serif;
+            font-size: 10px;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            border-radius: 2px;
+        }
+        .workshop-actions button:hover { border-color: var(--brass-1); }
+        .workshop-actions button.workshop-danger { background: linear-gradient(180deg, rgba(180, 60, 60, 0.4), rgba(120, 30, 30, 0.5)); border-color: #8a2222; color: #f8d8d8; }
         /* #help-toggle / #help-overlay sind in V2 weg — Hilfe ist ein Drawer-
            Tab. Selektoren bleiben, falls jemand sie referenziert, sind aber
            im neuen DOM tot. */
@@ -1060,6 +1172,7 @@
                 <button class="tab" type="button" data-tab="kreaturen" role="tab">Kreaturen</button>
                 <button class="tab" type="button" data-tab="spieler" role="tab">Spieler</button>
                 <button class="tab" type="button" data-tab="faehigkeiten" role="tab">Fähigkeiten</button>
+                <button class="tab" type="button" data-tab="werkstatt" role="tab">Werkstatt</button>
                 <button class="tab" type="button" data-tab="einstellungen" role="tab">Einstellungen</button>
                 <button class="tab" type="button" data-tab="hilfe" role="tab">Hilfe</button>
             </nav>
@@ -1146,6 +1259,19 @@
         <section class="section">
             <h3>Erlernt + Komponiert</h3>
             <div id="status-abilities"></div>
+        </section>
+    </aside>
+    <aside class="drawer" data-drawer="werkstatt" aria-label="Werkstatt-Panel" hidden>
+        <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
+        <h2>Werkstatt</h2>
+        <section class="section">
+            <h3>Baupläne</h3>
+            <p class="drawer-hint">Built-in können geklont, eigene voll editiert werden. Parts: 8 Primitive (Würfel, Kugel, Zylinder, Kegel, Pyramide, Oktaeder, Plane, Torus).</p>
+            <div id="workshop-list"></div>
+        </section>
+        <section class="section">
+            <h3>Editor</h3>
+            <div id="workshop-editor"></div>
         </section>
     </aside>
     <aside class="drawer" data-drawer="einstellungen" aria-label="Einstellungen-Panel" hidden>
