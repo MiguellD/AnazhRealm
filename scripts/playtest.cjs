@@ -1197,6 +1197,108 @@ function startSaveServer() {
                     uiResults.throttleReleases
                 );
             }
+
+            // ### UI V1 — Quick-Buttons + Hilfe-Drawer ###
+            const uiActionsResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    // (a) Quick-Buttons existieren
+                    const qa = document.getElementById("quick-actions");
+                    const qaButtons = qa ? qa.querySelectorAll("button[data-cmd]") : [];
+                    out.quickButtonCount = qaButtons.length;
+                    out.quickButtonsPresent = qaButtons.length >= 6;
+
+                    // (b) Klick auf einen Quick-Button feuert processChatCommand
+                    r.state.weather = "sunny";
+                    const sunnyBtn = qa
+                        ? qa.querySelector('button[data-cmd="Setze Wetter rainy"]')
+                        : null;
+                    if (sunnyBtn) sunnyBtn.click();
+                    out.quickButtonRoutesToChat = r.state.weather === "rainy";
+
+                    // (c) Hilfe-Overlay versteckt initial
+                    const overlay = document.getElementById("help-overlay");
+                    out.overlayInitiallyHidden = overlay && overlay.hidden === true;
+
+                    // (d) Toggle-Click öffnet Drawer
+                    const toggle = document.getElementById("help-toggle");
+                    if (toggle) toggle.click();
+                    out.overlayOpensOnToggle = overlay && overlay.hidden === false;
+
+                    // (e) Drawer enthält Befehl-Buttons
+                    const helpButtons = document.querySelectorAll("#help-list button.cmd");
+                    out.helpButtonCount = helpButtons.length;
+                    out.helpHasButtons = helpButtons.length >= 10;
+
+                    // (f) Klick auf Help-Eintrag schließt Overlay + führt aus.
+                    // DSL-Pattern hat nur einen weather-example ("setze wetter
+                    // rainy"), den nutzen wir.
+                    r.state.weather = "sunny";
+                    const rainyHelp = Array.from(helpButtons).find(
+                        (b) => b.getAttribute("data-cmd") === "setze wetter rainy"
+                    );
+                    out.foundRainyHelp = !!rainyHelp;
+                    if (rainyHelp) rainyHelp.click();
+                    out.helpClickExecutes = r.state.weather === "rainy";
+                    out.helpClickClosesOverlay = overlay && overlay.hidden === true;
+
+                    // (g) Close-Button schließt Overlay
+                    if (toggle) toggle.click(); // Wieder öffnen
+                    const closeBtn = document.getElementById("help-close");
+                    if (closeBtn) closeBtn.click();
+                    out.closeButtonHidesOverlay = overlay && overlay.hidden === true;
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (!uiActionsResults || uiActionsResults.error) {
+                check(
+                    "UI: Quick/Help-Snapshot erreichbar",
+                    false,
+                    uiActionsResults && uiActionsResults.error
+                        ? uiActionsResults.error
+                        : "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check(
+                    "UI: Quick-Action-Buttons sind im DOM (≥6)",
+                    uiActionsResults.quickButtonsPresent,
+                    `count=${uiActionsResults.quickButtonCount}`
+                );
+                check(
+                    "UI: Quick-Button-Klick routet durch processChatCommand",
+                    uiActionsResults.quickButtonRoutesToChat
+                );
+                check(
+                    "UI: Hilfe-Overlay startet versteckt",
+                    uiActionsResults.overlayInitiallyHidden
+                );
+                check(
+                    "UI: Toggle-Klick öffnet Hilfe-Drawer",
+                    uiActionsResults.overlayOpensOnToggle
+                );
+                check(
+                    "UI: Hilfe-Drawer enthält Befehl-Buttons (≥10)",
+                    uiActionsResults.helpHasButtons,
+                    `count=${uiActionsResults.helpButtonCount}`
+                );
+                check(
+                    "UI: Klick auf Befehl im Drawer führt aus",
+                    uiActionsResults.helpClickExecutes
+                );
+                check(
+                    "UI: Klick auf Befehl schließt Drawer automatisch",
+                    uiActionsResults.helpClickClosesOverlay
+                );
+                check(
+                    "UI: Close-Button schließt Drawer",
+                    uiActionsResults.closeButtonHidesOverlay
+                );
+            }
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

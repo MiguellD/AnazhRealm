@@ -1408,6 +1408,52 @@ class AnazhRealm {
     // Lesbares Fenster auf Welt-Zustand und Spieler-Emotionen. Kein Rebuild
     // pro Frame: DOM einmal anlegen, Werte alle 0.4 s aktualisieren. Refs
     // werden gecacht, damit der Tick keine Lookup-Kosten hat.
+    // Liste aller Chat-Befehle, gruppiert. Quelle der Wahrheit für Hilfe-
+    // Drawer und (später) für Befehl-Diff-Tests. DSL-Patterns liefern den
+    // ersten Block automatisch — die Legacy-Befehle stehen hier explizit.
+    get chatCommandHelp() {
+        if (this._chatCommandHelpCache) return this._chatCommandHelpCache;
+        const dslExamples = this.chatDslPatterns.map((p) => p.example);
+        this._chatCommandHelpCache = [
+            { title: "Welt-Effekte (DSL)", commands: dslExamples },
+            {
+                title: "Welt-Triggers",
+                commands: ["Spawne neue Welt", "Boden nicht sichtbar"],
+            },
+            {
+                title: "Fähigkeiten",
+                commands: [
+                    "Lerne Fähigkeit farbwechsel Ändere Farbe von Kreaturen zu blau",
+                    "Führe Fähigkeit aus farbwechsel",
+                ],
+            },
+            {
+                title: "Multisensorik",
+                commands: ["Aktiviere Anazh-Symphonie"],
+            },
+            {
+                title: "System / Persistenz",
+                commands: [
+                    "Speichere Zustand",
+                    "Lade Zustand",
+                    "Lade Datei",
+                    "Aktiviere Version 7.65",
+                    "Aktiviere Debug-Logs",
+                    "Deaktiviere Debug-Logs",
+                ],
+            },
+            {
+                title: "Self-Heal",
+                commands: ["Behebe Physik-Tunneling", "Optimiere Physik"],
+            },
+            {
+                title: "Wissen / KI",
+                commands: ["Füge Trainingsdaten x=10 z=5"],
+            },
+        ];
+        return this._chatCommandHelpCache;
+    }
+
     initStatusPanel() {
         const panel = document.getElementById("status-panel");
         if (!panel) return;
@@ -1443,6 +1489,59 @@ class AnazhRealm {
             emotions: emotionRefs,
             lastTick: -Infinity,
         };
+
+        // Quick-Action-Buttons: data-cmd-Attribut → processChatCommand
+        const quick = document.getElementById("quick-actions");
+        if (quick) {
+            quick.addEventListener("click", (event) => {
+                const target = event.target;
+                if (!(target instanceof HTMLElement)) return;
+                const cmd = target.getAttribute("data-cmd");
+                if (cmd) this.processChatCommand(cmd);
+            });
+        }
+
+        // Hilfe-Drawer: Toggle + Befehl-Liste aus chatCommandHelp generieren
+        const helpToggle = document.getElementById("help-toggle");
+        const helpOverlay = document.getElementById("help-overlay");
+        const helpClose = document.getElementById("help-close");
+        const helpList = document.getElementById("help-list");
+        if (helpToggle && helpOverlay && helpClose && helpList) {
+            for (const group of this.chatCommandHelp) {
+                const h = document.createElement("h3");
+                h.textContent = group.title;
+                helpList.appendChild(h);
+                for (const cmd of group.commands) {
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "cmd";
+                    btn.textContent = cmd;
+                    btn.setAttribute("data-cmd", cmd);
+                    helpList.appendChild(btn);
+                }
+            }
+            helpToggle.addEventListener("click", () => {
+                helpOverlay.hidden = false;
+            });
+            helpClose.addEventListener("click", () => {
+                helpOverlay.hidden = true;
+            });
+            helpList.addEventListener("click", (event) => {
+                const target = event.target;
+                if (!(target instanceof HTMLElement)) return;
+                const cmd = target.getAttribute("data-cmd");
+                if (cmd) {
+                    this.processChatCommand(cmd);
+                    helpOverlay.hidden = true;
+                }
+            });
+            // ESC schließt das Overlay.
+            document.addEventListener("keydown", (event) => {
+                if (event.key === "Escape" && !helpOverlay.hidden) {
+                    helpOverlay.hidden = true;
+                }
+            });
+        }
     }
 
     updateStatusPanel(currentTime) {

@@ -205,6 +205,93 @@
         #status-panel .emotion.hope   .bar > div { background: #7bd389; }
         #status-panel .emotion.peace  .bar > div { background: #88e1e1; }
         #status-panel .emotion.chaos  .bar > div { background: #e94c89; }
+        #status-panel .actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+        }
+        #status-panel .actions button {
+            background: rgba(255, 255, 255, 0.06);
+            color: #ddd;
+            border: 1px solid #555;
+            padding: 5px 6px;
+            font-size: 11px;
+            font-family: inherit;
+            cursor: pointer;
+            border-radius: 3px;
+            text-align: center;
+        }
+        #status-panel .actions button:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: #888;
+        }
+        #help-toggle {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.6);
+            color: #ddd;
+            border: 1px solid #555;
+            padding: 4px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            z-index: 6;
+            border-radius: 3px;
+        }
+        #help-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0, 0, 0, 0.85);
+            color: #ddd;
+            z-index: 100;
+            padding: 40px;
+            font-size: 13px;
+            overflow-y: auto;
+        }
+        #help-overlay[hidden] { display: none; }
+        #help-overlay h2 {
+            margin: 0 0 16px 0;
+            font-size: 16px;
+            color: #fff;
+        }
+        #help-overlay h3 {
+            margin: 16px 0 6px 0;
+            font-size: 12px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        #help-overlay .cmd {
+            display: block;
+            text-align: left;
+            background: rgba(255, 255, 255, 0.05);
+            color: #ddd;
+            border: 1px solid #444;
+            padding: 6px 10px;
+            margin-bottom: 3px;
+            font-family: monospace;
+            font-size: 12px;
+            cursor: pointer;
+            border-radius: 2px;
+            width: 100%;
+            max-width: 480px;
+        }
+        #help-overlay .cmd:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: #888;
+        }
+        #help-overlay .close {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid #555;
+            color: #ddd;
+            font-size: 16px;
+            padding: 2px 10px;
+            cursor: pointer;
+            border-radius: 2px;
+        }
     </style>
 </head>
 <body>
@@ -226,7 +313,27 @@
             <h3>Emotionen</h3>
             <div id="status-emotions"></div>
         </section>
+        <section class="section">
+            <h3>Quick</h3>
+            <div class="actions" id="quick-actions">
+                <button type="button" data-cmd="Heile Welt">Heile Welt</button>
+                <button type="button" data-cmd="Vereine Chaos Ordnung">Harmonie</button>
+                <button type="button" data-cmd="Setze Wetter sunny">Sonne</button>
+                <button type="button" data-cmd="Setze Wetter rainy">Regen</button>
+                <button type="button" data-cmd="Spawne Kreaturen 5">+5 Kreaturen</button>
+                <button type="button" data-cmd="Spawne neue Welt">Neue Welt</button>
+                <button type="button" data-cmd="Boden aktivieren">Boden an</button>
+                <button type="button" data-cmd="Boden deaktivieren">Boden aus</button>
+            </div>
+        </section>
     </aside>
+    <button id="help-toggle" type="button" aria-label="Hilfe">? Befehle</button>
+    <div id="help-overlay" hidden aria-modal="true" role="dialog" aria-labelledby="help-title">
+        <button type="button" class="close" id="help-close" aria-label="Schließen">×</button>
+        <h2 id="help-title">Alle Chat-Befehle</h2>
+        <p style="color: #888; margin-bottom: 16px;">Klick auf einen Befehl, um ihn auszuführen.</p>
+        <div id="help-list"></div>
+    </div>
     <div id="chat">
         <div id="chat-output"></div>
         <input type="text" id="chat-input" placeholder="Befehl eingeben (z. B. 'Ändere Wetter zu Regen')">
