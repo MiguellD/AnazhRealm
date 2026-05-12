@@ -113,6 +113,9 @@ class AnazhRealm {
             tmpVec1: null,
             tmpVec2: null,
             learningInFlight: false,
+            worldgenInFlight: false,
+            lastWorldgen: 0,
+            worldgenCooldown: 30.0,
         };
         this.core = {
             initPhysics: this.initPhysics.bind(this),
@@ -262,7 +265,8 @@ class AnazhRealm {
             // Speicher freigeben
             Ammo.destroy(ammoQuat);
             this.log(
-                `RigidBody hinzugefügt: Position (${position.x.toFixed(2)}, ${position.y.toFixed(2)}, ${position.z.toFixed(2)}), Masse: ${mass}`
+                `RigidBody hinzugefügt: Position (${position.x.toFixed(2)}, ${position.y.toFixed(2)}, ${position.z.toFixed(2)}), Masse: ${mass}`,
+                "DEBUG"
             );
             return body;
         } catch (error) {
@@ -877,13 +881,13 @@ class AnazhRealm {
         }
 
         // Boden- und Spielerprüfung
-        if (
-            !this.state.groundChunks ||
-            this.state.groundChunks.length === 0 ||
-            !this.state.groundChunks.some((chunk) => chunk.visible)
-        ) {
-            this.recordWeakness("Boden fehlt oder unsichtbar");
-            this.log("Selbstanalyse: Boden fehlt oder unsichtbar – Erzeuge neuen Boden...");
+        // Nur regenerieren, wenn wirklich KEIN Chunk existiert. chunk.visible ist
+        // Frustum-Culling und wechselt jeden Frame – früher führte das zu einer
+        // Death-Spiral, sobald der Spieler so guckte, dass alle Chunks off-screen
+        // waren: Welt regen → Spieler bei (0,50,0) → fällt → 1s Worldgen → wieder.
+        if (!this.state.groundChunks || this.state.groundChunks.length === 0) {
+            this.recordWeakness("Boden fehlt");
+            this.log("Selbstanalyse: Boden fehlt – Erzeuge neuen Boden...");
             this.generateNewWorld();
         }
         if (!this.state.playerMesh || !this.state.playerMesh.visible) {
@@ -989,6 +993,7 @@ class AnazhRealm {
         // Sonst spawnt der 5-s-Tick parallele Aufrufe, die TF.js mit
         // „Cannot start training because another fit() call is ongoing" ablehnt.
         if (this.state.learningInFlight) return;
+        if (this.state.worldgenInFlight) return; // Während Worldgen blockiert fit() den Main-Thread zusätzlich
         if (this.state.learningData.length < 20) return; // Mindestdaten für Training
         const recentData = this.state.learningData.slice(-20);
         const avgFps = recentData.reduce((sum, d) => sum + d.fps, 0) / recentData.length;
@@ -2514,7 +2519,7 @@ class AnazhRealm {
         this.state.scene.add(chunk);
         this.state.groundChunks.push(chunk);
         this.state.chunkMap.set(`${chunkX},${chunkZ}`, { mesh: chunk, heightData: heightData.slice() });
-        this.log(`Chunk (${chunkX}, ${chunkZ}) generiert: ${chunkWidth}x${chunkDepth}`);
+        this.log(`Chunk (${chunkX}, ${chunkZ}) generiert: ${chunkWidth}x${chunkDepth}`, "DEBUG");
 
         // ### Learnings ### [Stichwortartig optimieren, korrigieren und ergänzen aber nie Wissen löschen! Nie Learnings Entfernen!]
         // - Überlappung der Vertices (+1) an den Rändern sorgt für nahtlose Übergänge.
@@ -2631,8 +2636,26 @@ class AnazhRealm {
         // - Noise-Konsistenz durch Seed sichert harmonische Gebirge über neue Chunks.
     }
 
-    generateNewWorld() {
-        this.generateTerrainWithParameters(this.state.terrainSteepness, this.state.terrainBaseHeight);
+    generateNewWorld({ force = false } = {}) {
+        // Cool-Down verhindert Death-Spirals: ohne ihn rief die Selbstanalyse
+        // generateNewWorld() im Sekundentakt, während der Spieler durch das
+        // gerade gelöschte Terrain fiel.
+        const now = performance.now() / 1000;
+        if (!force && now - this.state.lastWorldgen < this.state.worldgenCooldown) {
+            this.log(
+                `generateNewWorld unterdrückt (Cool-Down, noch ${(this.state.worldgenCooldown - (now - this.state.lastWorldgen)).toFixed(1)}s)`,
+                "DEBUG"
+            );
+            return false;
+        }
+        this.state.lastWorldgen = now;
+        this.state.worldgenInFlight = true;
+        try {
+            this.generateTerrainWithParameters(this.state.terrainSteepness, this.state.terrainBaseHeight);
+        } finally {
+            this.state.worldgenInFlight = false;
+        }
+        return true;
     }
 
     // ### Persistenz ###
