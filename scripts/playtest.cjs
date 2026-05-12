@@ -1726,7 +1726,18 @@ function startSaveServer() {
                     const r = window.anazhRealm;
                     if (!r || !r.state || !r.state.player || !r.state.playerMesh) return null;
                     const out = {};
-                    const mesh = r.state.playerMesh;
+                    // V2: state.playerMesh wird bei jedem Soul-Wechsel
+                    // ersetzt (neuer Group). Wir lesen jedes Mal frisch
+                    // aus state, statt eine Referenz festzuhalten.
+                    const currentMesh = () => r.state.playerMesh;
+                    const currentMaterial = () => {
+                        const m = currentMesh();
+                        return m && m.userData && m.userData.material;
+                    };
+                    const currentParts = () => {
+                        const m = currentMesh();
+                        return m && m.userData && m.userData.parts;
+                    };
 
                     // UI vorhanden?
                     out.drawerSelectInDom = !!document.getElementById("player-soul-select");
@@ -1737,28 +1748,49 @@ function startSaveServer() {
                     // Cleanup: starte vom Default aus.
                     r.applyPlayerSoul("human");
                     out.defaultIsHuman = r.state.player.soul === "human";
-                    out.defaultColorRed = mesh.material.color.getHex() === 0xff0000;
-                    out.defaultGeomBox =
-                        mesh.geometry && mesh.geometry.type === "BoxGeometry";
+                    out.defaultColorRed = currentMaterial() && currentMaterial().color.getHex() === 0xff0000;
+                    // V2: statt Geometrie-Typ prüfen wir die Group-Struktur
+                    // (Mensch hat torso/head/2 Arme/2 Beine = 6 Parts).
+                    const humanParts = currentParts();
+                    out.humanHasAllParts =
+                        humanParts &&
+                        !!humanParts.torso &&
+                        !!humanParts.head &&
+                        !!humanParts.leftArm &&
+                        !!humanParts.rightArm &&
+                        !!humanParts.leftLeg &&
+                        !!humanParts.rightLeg;
 
-                    // applyPlayerSoul("phoenix") → Farbe + Geometrie wechseln
+                    // applyPlayerSoul("phoenix") → Group neu, Farbe + Parts wechseln
                     const posBefore = {
-                        x: mesh.position.x,
-                        y: mesh.position.y,
-                        z: mesh.position.z,
+                        x: currentMesh().position.x,
+                        y: currentMesh().position.y,
+                        z: currentMesh().position.z,
                     };
                     const okPhoenix = r.applyPlayerSoul("phoenix");
                     out.applyReturnsTrue = okPhoenix === true;
                     out.phoenixSoulSet = r.state.player.soul === "phoenix";
-                    out.phoenixColor = mesh.material.color.getHex() === 0xff7a1a;
-                    out.phoenixGeom =
-                        mesh.geometry && mesh.geometry.type === "OctahedronGeometry";
+                    out.phoenixColor = currentMaterial() && currentMaterial().color.getHex() === 0xff7a1a;
+                    const phoenixParts = currentParts();
+                    out.phoenixHasWingsAndTail =
+                        phoenixParts &&
+                        !!phoenixParts.body &&
+                        !!phoenixParts.leftWing &&
+                        !!phoenixParts.rightWing &&
+                        !!phoenixParts.tail;
                     out.positionPreserved =
-                        Math.abs(mesh.position.x - posBefore.x) < 1e-6 &&
-                        Math.abs(mesh.position.y - posBefore.y) < 1e-6 &&
-                        Math.abs(mesh.position.z - posBefore.z) < 1e-6;
+                        Math.abs(currentMesh().position.x - posBefore.x) < 1e-6 &&
+                        Math.abs(currentMesh().position.y - posBefore.y) < 1e-6 &&
+                        Math.abs(currentMesh().position.z - posBefore.z) < 1e-6;
                     // Dropdown synchronisiert sich
                     out.dropdownSyncsToPhoenix = select && select.value === "phoenix";
+
+                    // Physics-Body bleibt + bezieht sich auf den NEUEN Group
+                    out.physicsBodySwitchedToNewGroup =
+                        currentMesh().userData && !!currentMesh().userData.physicsBody;
+                    out.rigidBodiesArrayUpdated =
+                        Array.isArray(r.state.rigidBodies) &&
+                        r.state.rigidBodies.indexOf(currentMesh()) >= 0;
 
                     // Chat-Pattern: "werde drache"
                     r.processChatCommand("werde drache");
@@ -1767,7 +1799,15 @@ function startSaveServer() {
                         r.state.dsl.lastUserProgram[0] === "player_soul" &&
                         r.state.dsl.lastUserProgram[1] === "drache";
                     out.dragonSoulSet = r.state.player.soul === "dragon";
-                    out.dragonColor = mesh.material.color.getHex() === 0x2d6e3b;
+                    out.dragonColor = currentMaterial() && currentMaterial().color.getHex() === 0x2d6e3b;
+                    const dragonParts = currentParts();
+                    out.dragonHasFourLegs =
+                        dragonParts &&
+                        !!dragonParts.flLeg &&
+                        !!dragonParts.frLeg &&
+                        !!dragonParts.blLeg &&
+                        !!dragonParts.brLeg &&
+                        !!dragonParts.tailJoint;
 
                     // Deutsch+Englisch+Phönix-Alias funktionieren
                     r.applyPlayerSoul("phönix");
@@ -1803,7 +1843,7 @@ function startSaveServer() {
                     }
                     out.soulNotInAtomicPool = !seenSoulOp;
 
-                    // Save-Roundtrip: Seele auf phoenix, dann saveState → localStorage prüfen
+                    // Save-Roundtrip
                     r.applyPlayerSoul("phoenix");
                     r.saveState();
                     const raw = localStorage.getItem("anazhRealmState");
@@ -1815,17 +1855,50 @@ function startSaveServer() {
                     }
                     out.savedPlayerSoul = !!parsed && parsed.playerSoul === "phoenix";
 
-                    // loadState mit dragon-Seele → applyPlayerSoul wird intern aufgerufen
+                    // loadState mit dragon-Seele
                     r.loadState({ ...parsed, playerSoul: "dragon" });
                     out.loadAppliesSoul =
                         r.state.player.soul === "dragon" &&
-                        mesh.material.color.getHex() === 0x2d6e3b;
+                        currentMaterial() &&
+                        currentMaterial().color.getHex() === 0x2d6e3b;
 
-                    // Status-Bar wird gefüllt
+                    // Status-Bar
                     r.applyPlayerSoul("phoenix");
-                    r.updateStatusPanel(1e6); // erzwungen abseits des Throttles
+                    r.updateStatusPanel(1e6);
                     const statusEl = document.getElementById("status-soul");
                     out.statusBarShowsLabel = statusEl && statusEl.textContent === "Phönix";
+
+                    // V2-Animation: Beine/Flügel reagieren auf walkPhase + isMoving.
+                    // Wir lassen walkPhase manuell vorrücken und prüfen, dass
+                    // Mensch-Beine ihre rotation.x ändern.
+                    r.applyPlayerSoul("human");
+                    const humanGroup = currentMesh();
+                    const leftLegRotInitial = humanGroup.userData.parts.leftLeg.rotation.x;
+                    // Direkter Aufruf der Animations-Funktion mit isMoving=true
+                    // umgeht die isMoving-Detection (player ruht im Test).
+                    const def = r.playerSoulDefs.human;
+                    def.animate(humanGroup, 0, Math.PI / 2, true);
+                    const leftLegRotMoving = humanGroup.userData.parts.leftLeg.rotation.x;
+                    out.humanWalkAnimationMoves =
+                        Math.abs(leftLegRotMoving - leftLegRotInitial) > 0.1;
+
+                    // Phönix-Flügel flattern auch im Idle
+                    r.applyPlayerSoul("phoenix");
+                    const phGroup = currentMesh();
+                    r.playerSoulDefs.phoenix.animate(phGroup, 0.1, 0, false);
+                    const wingRotA = phGroup.userData.parts.leftWing.rotation.z;
+                    r.playerSoulDefs.phoenix.animate(phGroup, 0.3, 0, false);
+                    const wingRotB = phGroup.userData.parts.leftWing.rotation.z;
+                    out.phoenixWingsFlapInIdle = Math.abs(wingRotA - wingRotB) > 0.05;
+
+                    // Drache-Schweif wellt sich
+                    r.applyPlayerSoul("dragon");
+                    const drGroup = currentMesh();
+                    r.playerSoulDefs.dragon.animate(drGroup, 0.1, 0, false);
+                    const tailA = drGroup.userData.parts.tailJoint3.rotation.y;
+                    r.playerSoulDefs.dragon.animate(drGroup, 0.5, 0, false);
+                    const tailB = drGroup.userData.parts.tailJoint3.rotation.y;
+                    out.dragonTailWaves = Math.abs(tailA - tailB) > 0.05;
 
                     // Cleanup
                     r.applyPlayerSoul("human");
@@ -1844,15 +1917,29 @@ function startSaveServer() {
                 check("Ring 5: Status-Bar zeigt Seele-Item", ring5Results.statusBarSoulInDom);
                 check("Ring 5: Dropdown hat drei Optionen", ring5Results.dropdownHasThreeOptions);
                 check("Ring 5: Default-Seele ist 'human'", ring5Results.defaultIsHuman);
-                check("Ring 5: Default-Farbe ist rot (0xff0000)", ring5Results.defaultColorRed);
-                check("Ring 5: Default-Geometrie ist BoxGeometry", ring5Results.defaultGeomBox);
+                check("Ring 5: Default-Material-Farbe ist rot (0xff0000)", ring5Results.defaultColorRed);
+                check(
+                    "Ring 5 V2: Mensch-Group hat torso/head/2 Arme/2 Beine",
+                    ring5Results.humanHasAllParts
+                );
                 check("Ring 5: applyPlayerSoul('phoenix') liefert true", ring5Results.applyReturnsTrue);
                 check("Ring 5: Phönix setzt state.player.soul = 'phoenix'", ring5Results.phoenixSoulSet);
-                check("Ring 5: Phönix-Farbe ist 0xff7a1a", ring5Results.phoenixColor);
-                check("Ring 5: Phönix-Geometrie ist OctahedronGeometry", ring5Results.phoenixGeom);
+                check("Ring 5: Phönix-Material-Farbe ist 0xff7a1a", ring5Results.phoenixColor);
+                check(
+                    "Ring 5 V2: Phönix-Group hat body/2 Flügel/Schweif",
+                    ring5Results.phoenixHasWingsAndTail
+                );
                 check(
                     "Ring 5: Seelen-Wechsel erhält Spieler-Position",
                     ring5Results.positionPreserved
+                );
+                check(
+                    "Ring 5 V2: Physics-Body wandert mit dem neuen Soul-Group mit",
+                    ring5Results.physicsBodySwitchedToNewGroup
+                );
+                check(
+                    "Ring 5 V2: rigidBodies-Array enthält den neuen Group (nicht den alten)",
+                    ring5Results.rigidBodiesArrayUpdated
                 );
                 check(
                     "Ring 5: Dropdown synchronisiert sich (UI ↔ State)",
@@ -1863,7 +1950,11 @@ function startSaveServer() {
                     ring5Results.chatRoutedToDsl
                 );
                 check("Ring 5: Chat 'werde drache' setzt Seele auf dragon", ring5Results.dragonSoulSet);
-                check("Ring 5: Drache-Farbe ist 0x2d6e3b", ring5Results.dragonColor);
+                check("Ring 5: Drache-Material-Farbe ist 0x2d6e3b", ring5Results.dragonColor);
+                check(
+                    "Ring 5 V2: Drache-Group hat 4 Beine + Schweif-Joint",
+                    ring5Results.dragonHasFourLegs
+                );
                 check("Ring 5: Umlaut-Alias 'phönix' kanonisiert auf phoenix", ring5Results.umlautAliasWorks);
                 check("Ring 5: Englisches Alias 'dragon' kanonisiert auf dragon", ring5Results.englishAliasWorks);
                 check("Ring 5: Unbekannte Seele wird abgelehnt", ring5Results.unknownRejected);
@@ -1875,6 +1966,18 @@ function startSaveServer() {
                 check("Ring 5: saveState persistiert playerSoul", ring5Results.savedPlayerSoul);
                 check("Ring 5: loadState wendet Seele auf Mesh an", ring5Results.loadAppliesSoul);
                 check("Ring 5: Status-Bar zeigt deutsches Label ('Phönix')", ring5Results.statusBarShowsLabel);
+                check(
+                    "Ring 5 V2: Mensch-Walk-Animation rotiert Beine bei isMoving=true",
+                    ring5Results.humanWalkAnimationMoves
+                );
+                check(
+                    "Ring 5 V2: Phönix-Flügel flattern auch im Idle (zwei Frames, unterschiedliche rotation.z)",
+                    ring5Results.phoenixWingsFlapInIdle
+                );
+                check(
+                    "Ring 5 V2: Drache-Schweif wellt sich (zwei Frames, unterschiedliche tailJoint3.rotation.y)",
+                    ring5Results.dragonTailWaves
+                );
             }
 
             // ### Ring 5 V2-Vorbereitung — Third-Person-Kamera ###

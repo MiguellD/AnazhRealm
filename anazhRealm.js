@@ -216,11 +216,12 @@ class AnazhRealm {
                 creaturePingCount: 0,
             },
             player: {
-                // Ring 5 V1 — Spieler-Seele. Drei Formen (human/phoenix/dragon),
-                // rein visuell: Geometrie + Farbe wechseln, Ammo-Body bleibt
-                // identisch. Default "human" = roter Würfel = das, was es seit
-                // Tag 1 gibt.
+                // Ring 5 V2 — Spieler-Seele. Drei Formen (human/phoenix/dragon)
+                // mit Multi-Mesh-Group + sin/cos-Animation. Ammo-Body bleibt
+                // identisch (rein visuell). Default "human".
                 soul: "human",
+                walkPhase: 0,
+                animationLastTick: -Infinity,
                 emotions: { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 },
                 emotionDecayPerSec: 0.005,
                 emotionLastTick: -Infinity,
@@ -4710,43 +4711,256 @@ class AnazhRealm {
         });
     }
 
-    // ### Ring 5 – Spieler-Seele ###
-    // Drei Formen für V1, rein visuell. Geometrie + Farbe werden auf das
-    // existierende playerMesh angewandt; die Ammo-Box (0.5er Half-Extents)
-    // bleibt unverändert. Damit:
-    //   - Bewegung, Sprung, CCD bleiben kalibriert.
-    //   - kein Body-Recreate (würde Position/Velocity verlieren).
-    //   - Test-Surface bleibt klein.
-    // Stats (speed/jump-Modifier pro Form) heben wir uns für V2 auf, sobald
-    // klar ist welches Spielgefühl mit welcher Seele entstehen soll.
+    // ### Ring 5 V2 – Spieler-Seele mit animierten Multi-Mesh-Körpern ###
     //
-    // Die Seele steht NICHT im dslComposeAtomic-Pool — der Nexus soll dem
-    // Menschen seine Identität nicht im Vorbeigehen umschreiben. Wer "werde
-    // X" sagt, entscheidet das selbst (Chat / Drawer / Ability).
+    // V1 war ein Mesh + Farbe pro Seele. V2 baut für jede Seele einen
+    // `THREE.Group` aus Sub-Meshes (Torso/Kopf/Glieder/Flügel/Schweif), die
+    // pro Frame über sin/cos animiert werden. Walk-Cycle wenn der Spieler
+    // sich bewegt, Idle-Atem-/Hover-Animation wenn er steht.
+    //
+    // Disziplinen, die V1 schon getragen hat und die V2 nicht aufgibt:
+    //   - Ammo-Body bleibt 0.5er Half-Extent-Box. Visuelle Höhe ~1.7
+    //     Einheiten ist größer als die Collision-Box, das ist gewollt
+    //     (Game-Konvention: Charakter größer als Hitbox = mehr Spielraum).
+    //   - Position + Scale bleiben über Soul-Wechsel hinweg unangetastet.
+    //   - Kein dynamic-eval, kein Asset-Load — alles aus Three.js-Primitives.
+    //   - `player_soul` bleibt aus dem `dslComposeAtomic`-Pool draußen
+    //     (Identität gehört dem Spieler, nicht dem Nexus).
+    //
+    // Animation-Vertrag pro Soul: `animate(group, t, walkPhase, isMoving)`.
+    // - `t`: aktuelle Zeit in Sekunden (für Idle-Schwingungen).
+    // - `walkPhase`: monoton wachsender Phasen-Wert in Radiant, akkumuliert
+    //   nur wenn der Spieler sich bewegt — so springen Glieder nicht beim
+    //   Stop-Start-Wechsel, sondern frieren in der aktuellen Pose ein.
+    // - `isMoving`: bool, schaltet zwischen Walk/Trab/Flap-Speed und Idle.
     get playerSoulDefs() {
         if (this._playerSoulDefsCache) return this._playerSoulDefsCache;
         this._playerSoulDefsCache = {
             human: {
                 label: "Mensch",
                 color: 0xff0000,
-                geometry: () => new THREE.BoxGeometry(1, 1, 1),
+                build: () => this._buildHumanGroup(),
+                animate: (g, t, ph, mv) => this._animateHuman(g, t, ph, mv),
             },
             phoenix: {
                 label: "Phönix",
                 color: 0xff7a1a,
-                // Oktaeder: kristalline, „lodernde" Silhouette in derselben
-                // Größenordnung wie der Würfel (radius 0.75 ≈ 1.5×1.5×1.5).
-                geometry: () => new THREE.OctahedronGeometry(0.75, 0),
+                build: () => this._buildPhoenixGroup(),
+                animate: (g, t, ph, mv) => this._animatePhoenix(g, t, ph, mv),
             },
             dragon: {
                 label: "Drache",
                 color: 0x2d6e3b,
-                // Gestreckter Quader: schlangenartig, immer noch in die
-                // Box-Collision (1×1×1) passend.
-                geometry: () => new THREE.BoxGeometry(0.8, 0.8, 1.6),
+                build: () => this._buildDragonGroup(),
+                animate: (g, t, ph, mv) => this._animateDragon(g, t, ph, mv),
             },
         };
         return this._playerSoulDefsCache;
+    }
+
+    // Hilfs-Helper: ein Glied (Arm/Bein) mit Pivot am Joint. Joint-Group
+    // sitzt an (jx, jy, jz); das Mesh hängt von der Y-Achse nach unten,
+    // sodass Rotation der Joint-Group am Schulter-/Hüft-Punkt ankert.
+    _buildLimb(material, jx, jy, jz, length, width, depth) {
+        const joint = new THREE.Group();
+        joint.position.set(jx, jy, jz);
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, length, depth), material);
+        mesh.position.y = -length / 2;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        joint.add(mesh);
+        joint.userData.length = length;
+        return joint;
+    }
+
+    _buildHumanGroup() {
+        const group = new THREE.Group();
+        const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        const torso = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.7, 0.3), material);
+        torso.position.y = 0.45;
+        torso.castShadow = true;
+        torso.receiveShadow = true;
+        group.add(torso);
+        const head = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), material);
+        head.position.y = 1.0;
+        head.castShadow = true;
+        group.add(head);
+        const leftArm = this._buildLimb(material, -0.4, 0.8, 0, 0.6, 0.15, 0.15);
+        const rightArm = this._buildLimb(material, 0.4, 0.8, 0, 0.6, 0.15, 0.15);
+        const leftLeg = this._buildLimb(material, -0.15, 0.1, 0, 0.6, 0.2, 0.2);
+        const rightLeg = this._buildLimb(material, 0.15, 0.1, 0, 0.6, 0.2, 0.2);
+        group.add(leftArm, rightArm, leftLeg, rightLeg);
+        group.userData.material = material;
+        group.userData.parts = { torso, head, leftArm, rightArm, leftLeg, rightLeg };
+        return group;
+    }
+
+    _animateHuman(group, t, walkPhase, isMoving) {
+        const p = group.userData.parts;
+        if (isMoving) {
+            // Schritt-Zyklus: Beine ±0.5 rad gegenphasig, Arme ±0.3 entgegen
+            const swing = Math.sin(walkPhase) * 0.5;
+            p.leftLeg.rotation.x = swing;
+            p.rightLeg.rotation.x = -swing;
+            p.leftArm.rotation.x = -swing * 0.6;
+            p.rightArm.rotation.x = swing * 0.6;
+            p.torso.position.y = 0.45 + Math.abs(Math.sin(walkPhase)) * 0.04;
+        } else {
+            // Idle: leichter Atem-Hub + sanftes Arm-Pendel
+            const breath = Math.sin(t * 1.8) * 0.025;
+            p.torso.position.y = 0.45 + breath;
+            p.leftArm.rotation.x = Math.sin(t * 1.2) * 0.05;
+            p.rightArm.rotation.x = -Math.sin(t * 1.2) * 0.05;
+            p.leftLeg.rotation.x = 0;
+            p.rightLeg.rotation.x = 0;
+        }
+    }
+
+    _buildPhoenixGroup() {
+        const group = new THREE.Group();
+        const material = new THREE.MeshBasicMaterial({ color: 0xff7a1a });
+        // Körper: Oktaeder im Brust-Bereich
+        const body = new THREE.Mesh(new THREE.OctahedronGeometry(0.45, 0), material);
+        body.position.y = 0.5;
+        body.castShadow = true;
+        body.receiveShadow = true;
+        group.add(body);
+        // Kopf: kleinerer Oktaeder oben
+        const head = new THREE.Mesh(new THREE.OctahedronGeometry(0.22, 0), material);
+        head.position.set(0, 0.95, 0.05);
+        head.castShadow = true;
+        group.add(head);
+        // Schweif: Kegel nach hinten unten
+        const tail = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.9, 6), material);
+        tail.position.set(0, 0.4, -0.55);
+        tail.rotation.x = Math.PI / 2;
+        tail.castShadow = true;
+        group.add(tail);
+        // Flügel: zwei flache Boxen mit Joint an der Schulter, sodass
+        // Rotation um die Forward-Achse (Z) wie Flügelschlag aussieht.
+        const buildWing = (sign) => {
+            const joint = new THREE.Group();
+            joint.position.set(sign * 0.3, 0.55, 0);
+            const wing = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.04, 0.5), material);
+            wing.position.x = sign * 0.45;
+            wing.castShadow = true;
+            joint.add(wing);
+            return joint;
+        };
+        const leftWing = buildWing(-1);
+        const rightWing = buildWing(1);
+        group.add(leftWing, rightWing);
+        group.userData.material = material;
+        group.userData.parts = { body, head, tail, leftWing, rightWing };
+        return group;
+    }
+
+    _animatePhoenix(group, t, walkPhase, isMoving) {
+        const p = group.userData.parts;
+        // Flügel flattern immer (Phönix ist ein Flugwesen). In Bewegung
+        // schneller, im Idle gemächlich.
+        const flapSpeed = isMoving ? 14 : 7;
+        const flapAmp = isMoving ? 0.85 : 0.55;
+        const flap = Math.sin(t * flapSpeed) * flapAmp;
+        p.leftWing.rotation.z = -flap;
+        p.rightWing.rotation.z = flap;
+        // Hover-Bob für Körper, im Idle stärker als im Walk
+        const bobAmp = isMoving ? 0.04 : 0.07;
+        const bobSpeed = isMoving ? 6 : 1.6;
+        p.body.position.y = 0.5 + Math.sin(t * bobSpeed) * bobAmp;
+        p.head.position.y = 0.95 + Math.sin(t * bobSpeed) * bobAmp * 0.7;
+        // Schweif folgt sanft
+        p.tail.rotation.z = Math.sin(t * 1.2) * 0.1;
+    }
+
+    _buildDragonGroup() {
+        const group = new THREE.Group();
+        const material = new THREE.MeshBasicMaterial({ color: 0x2d6e3b });
+        // Körper: gestreckter Quader entlang Z
+        const body = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.45, 1.2), material);
+        body.position.y = 0.4;
+        body.castShadow = true;
+        body.receiveShadow = true;
+        group.add(body);
+        // Kopf: vorne dran
+        const head = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.38, 0.45), material);
+        head.position.set(0, 0.5, 0.85);
+        head.castShadow = true;
+        group.add(head);
+        // Vier Beine in Box-Eck-Anordnung
+        const legY = 0.18;
+        const legLen = 0.5;
+        const flLeg = this._buildLimb(material, -0.25, legY, 0.35, legLen, 0.15, 0.15);
+        const frLeg = this._buildLimb(material, 0.25, legY, 0.35, legLen, 0.15, 0.15);
+        const blLeg = this._buildLimb(material, -0.25, legY, -0.35, legLen, 0.15, 0.15);
+        const brLeg = this._buildLimb(material, 0.25, legY, -0.35, legLen, 0.15, 0.15);
+        group.add(flLeg, frLeg, blLeg, brLeg);
+        // Schweif: drei Segmente in Kette nach hinten, jedes als Joint
+        // rotiert um den vorherigen — gibt eine wellige Sinus-Welle.
+        const tailJoint = new THREE.Group();
+        tailJoint.position.set(0, 0.4, -0.6);
+        const tailSeg1 = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.28, 0.45), material);
+        tailSeg1.position.z = -0.22;
+        tailSeg1.castShadow = true;
+        tailJoint.add(tailSeg1);
+        const tailJoint2 = new THREE.Group();
+        tailJoint2.position.z = -0.45;
+        const tailSeg2 = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.2, 0.4), material);
+        tailSeg2.position.z = -0.2;
+        tailSeg2.castShadow = true;
+        tailJoint2.add(tailSeg2);
+        const tailJoint3 = new THREE.Group();
+        tailJoint3.position.z = -0.4;
+        const tailSeg3 = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.13, 0.35), material);
+        tailSeg3.position.z = -0.17;
+        tailSeg3.castShadow = true;
+        tailJoint3.add(tailSeg3);
+        tailJoint2.add(tailJoint3);
+        tailJoint.add(tailJoint2);
+        group.add(tailJoint);
+        group.userData.material = material;
+        group.userData.parts = { body, head, flLeg, frLeg, blLeg, brLeg, tailJoint, tailJoint2, tailJoint3 };
+        return group;
+    }
+
+    _animateDragon(group, t, walkPhase, isMoving) {
+        const p = group.userData.parts;
+        if (isMoving) {
+            // Trab: Diagonale Bein-Paare (FL+BR vs FR+BL) gegenphasig
+            const swing = Math.sin(walkPhase) * 0.45;
+            p.flLeg.rotation.x = swing;
+            p.brLeg.rotation.x = swing;
+            p.frLeg.rotation.x = -swing;
+            p.blLeg.rotation.x = -swing;
+            p.body.position.y = 0.4 + Math.abs(Math.sin(walkPhase * 2)) * 0.025;
+        } else {
+            const breath = Math.sin(t * 1.4) * 0.02;
+            p.body.position.y = 0.4 + breath;
+            p.flLeg.rotation.x = 0;
+            p.brLeg.rotation.x = 0;
+            p.frLeg.rotation.x = 0;
+            p.blLeg.rotation.x = 0;
+        }
+        // Schweif wellt sich immer (jedes Segment phasenversetzt)
+        p.tailJoint.rotation.y = Math.sin(t * 2.0) * 0.25;
+        p.tailJoint2.rotation.y = Math.sin(t * 2.0 - 0.6) * 0.35;
+        p.tailJoint3.rotation.y = Math.sin(t * 2.0 - 1.2) * 0.45;
+        // Kopf nickt leicht
+        p.head.position.y = 0.5 + Math.sin(t * 1.6) * 0.02;
+    }
+
+    // Tiefes Disposal eines alten Soul-Group: Geometrien + Materialien
+    // freigeben, damit GPU-Speicher nicht volläuft bei häufigem Wechsel.
+    _disposeSoulGroup(group) {
+        if (!group) return;
+        group.traverse((node) => {
+            if (node.geometry && typeof node.geometry.dispose === "function") {
+                node.geometry.dispose();
+            }
+            if (node.material && typeof node.material.dispose === "function") {
+                node.material.dispose();
+            }
+        });
     }
 
     applyPlayerSoul(name) {
@@ -4768,24 +4982,40 @@ class AnazhRealm {
             this.log(`Seele '${name}' unbekannt — bekannt: ${Object.keys(defs).join(", ")}`, "ERROR");
             return false;
         }
-        if (!this.state.playerMesh) {
-            // playerMesh wird in init() erstellt; Aufrufe davor (z. B. aus
-            // loadState im frühen Bootstrap) werden gemerkt und beim Mesh-
-            // Bau angewandt.
+        // Vor Mesh-Erstellung (z. B. loadState im frühen Bootstrap): Wahl
+        // merken, init() ruft uns nach Mesh-Bau erneut auf.
+        if (!this.state.scene) {
             this.state.player.soul = canonical;
             return false;
         }
         const def = defs[canonical];
-        const mesh = this.state.playerMesh;
-        const oldGeometry = mesh.geometry;
-        mesh.geometry = def.geometry();
-        if (oldGeometry && typeof oldGeometry.dispose === "function") oldGeometry.dispose();
-        if (mesh.material && mesh.material.color && typeof mesh.material.color.setHex === "function") {
-            mesh.material.color.setHex(def.color);
+        const old = this.state.playerMesh;
+        // Position + Scale + Rotation übernehmen, damit Soul-Wechsel mitten
+        // im Spiel keine Sprünge produziert.
+        const newGroup = def.build();
+        if (old) {
+            newGroup.position.copy(old.position);
+            newGroup.rotation.copy(old.rotation);
+            newGroup.scale.copy(old.scale);
+            newGroup.visible = old.visible;
+            // Physics-Body-Referenz mitnehmen (Sync-Loop liest
+            // mesh.userData.physicsBody) und Eintrag in state.rigidBodies
+            // mitswappen — sonst überschreibt der Sync-Loop die Position
+            // des bereits entfernten alten Group statt des neuen.
+            if (old.userData && old.userData.physicsBody) {
+                newGroup.userData.physicsBody = old.userData.physicsBody;
+            }
+            if (Array.isArray(this.state.rigidBodies)) {
+                const idx = this.state.rigidBodies.indexOf(old);
+                if (idx >= 0) this.state.rigidBodies[idx] = newGroup;
+            }
+            this.state.scene.remove(old);
+            this._disposeSoulGroup(old);
         }
+        this.state.scene.add(newGroup);
+        this.state.playerMesh = newGroup;
         this.state.player.soul = canonical;
         this.log(`Seele gewechselt: ${def.label} (${canonical})`, "INFO");
-        // UI synchron halten (Dropdown im Spieler-Drawer + Status-Bar).
         if (typeof document !== "undefined") {
             const select = document.getElementById("player-soul-select");
             if (select && select.value !== canonical) select.value = canonical;
@@ -4793,6 +5023,35 @@ class AnazhRealm {
             if (status) status.textContent = def.label;
         }
         return true;
+    }
+
+    // Pro-Frame-Animation des aktuellen Soul-Group. Wird im Render-Loop
+    // direkt nach der Kamera aufgerufen — playerMesh.position ist da schon
+    // mit dem Physik-Body synchronisiert.
+    animatePlayerSoul(currentTime) {
+        const mesh = this.state.playerMesh;
+        if (!mesh || !mesh.userData || !mesh.userData.parts) return;
+        const def = this.playerSoulDefs[this.state.player.soul || "human"];
+        if (!def || typeof def.animate !== "function") return;
+        const p = this.state.player;
+        // isMoving aus horizontaler Geschwindigkeit. Schwelle 0.4 m/s
+        // verhindert Mikro-Walk wenn der Spieler steht aber leicht rutscht.
+        let isMoving = false;
+        if (this.state.playerBody && typeof this.state.playerBody.getLinearVelocity === "function") {
+            const v = this.state.playerBody.getLinearVelocity();
+            const speed = Math.hypot(v.x(), v.z());
+            isMoving = speed > 0.4;
+        }
+        // Walk-Phase nur in Bewegung akkumulieren (keine Glieder-Sprünge
+        // beim Stop). Frame-Delta aus animationLastTick.
+        const last = p.animationLastTick;
+        const dt = last > -Infinity ? Math.max(0, currentTime - last) : 0;
+        p.animationLastTick = currentTime;
+        if (isMoving) {
+            const stepHz = this.state.player.soul === "dragon" ? 4.5 : 5.5;
+            p.walkPhase += dt * stepHz;
+        }
+        def.animate(mesh, currentTime, p.walkPhase, isMoving);
     }
 
     // Ring 5 V2 Vorbereitung — Kamera-Modus (Erst-/Dritte-Person).
@@ -4928,28 +5187,28 @@ class AnazhRealm {
         this.log("Kamera initialisiert", "INFO");
         this.state.selfAwareness.components.push("camera");
 
-        const playerGeometry = new THREE.BoxGeometry(1, 1, 1);
-        const playerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-        const playerMesh = new THREE.Mesh(playerGeometry, playerMaterial);
-        playerMesh.position.set(0, 20, 0);
-        playerMesh.visible = true;
-        playerMesh.castShadow = true;
-        playerMesh.receiveShadow = true;
-        scene.add(playerMesh);
-        this.state.playerMesh = playerMesh;
-        this.log("Spieler erstellt: Position (0, 20, 0), Schatten aktiviert", "INFO");
+        // Ring 5 V2: Spieler-Mesh ist ein THREE.Group (Multi-Mesh + Animation).
+        // Wir starten mit einem leeren Group als Anker (Position + Skalierung)
+        // und lassen applyPlayerSoul ihn sofort mit dem ersten Soul-Aufbau
+        // füllen. So hat der Code danach EINEN Pfad für initialen Bau und
+        // späteren Wechsel.
+        const initialGroup = new THREE.Group();
+        initialGroup.position.set(0, 20, 0);
+        initialGroup.visible = true;
+        scene.add(initialGroup);
+        this.state.playerMesh = initialGroup;
+        const initialSoul =
+            this.state.player.soul && this.playerSoulDefs[this.state.player.soul] ? this.state.player.soul : "human";
+        this.applyPlayerSoul(initialSoul);
+        this.log("Spieler erstellt: Position (0, 20, 0), Soul + Schatten aktiviert", "INFO");
         this.state.selfAwareness.components.push("playerMesh");
-        // Ring 5: Seele auf die frische Mesh anwenden. Bei "human" ist das
-        // ein No-Op (Geometrie + Farbe stimmen schon); bei einem nicht-
-        // default-Save (loadState lief vor init) wird die gespeicherte Form
-        // jetzt sichtbar.
-        if (this.state.player.soul && this.state.player.soul !== "human") {
-            this.applyPlayerSoul(this.state.player.soul);
-        }
 
         if (this.state.physicsWorld) {
             const playerShape = new Ammo.btBoxShape(new Ammo.btVector3(0.5, 0.5, 0.5));
-            this.state.playerBody = this.addRigidBody(playerMesh, 1, playerShape, true);
+            // WICHTIG: state.playerMesh, nicht der lokale `playerMesh` —
+            // applyPlayerSoul oben hat den initialen Group durch das fertige
+            // Soul-Group ersetzt. Local-var wäre stale.
+            this.state.playerBody = this.addRigidBody(this.state.playerMesh, 1, playerShape, true);
             // CCD direkt aktivieren: schützt vor Tunneling durch dünne
             // Heightfield-Cell-Ränder oder Sprung-Landungen genau auf einer
             // Chunk-Naht. Bisher nur per optimizeCollisions nachträglich
@@ -5035,7 +5294,9 @@ class AnazhRealm {
                 );
                 this.state.isJumping = true;
                 this.state.isInAir = true;
-                this.state.playerMesh.material.color.set(0xffa500);
+                // Ring 5 V2: keine Material-Tint mehr beim Sprung — der
+                // Soul-Group hat kein einzelnes Material, und die Sprung-
+                // Animation der Glieder ist die ehrlichere Anzeige.
                 if (currentTime - this.state.lastJumpLog >= this.state.jumpLogInterval) {
                     this.log("Spieler springt!", "INFO");
                     this.state.lastJumpLog = currentTime;
@@ -5257,7 +5518,7 @@ class AnazhRealm {
                                 this.state.lastGroundedTime = currentTime;
                                 this.state.isInAir = false;
                                 this.state.isJumping = false;
-                                this.state.playerMesh.material.color.set(0xff0000);
+                                // Ring 5 V2: Material-Tint entfernt (siehe handleJump).
                                 if (currentTime - this.state.lastGroundedLog >= this.state.groundedLogInterval) {
                                     this.log("Spieler geerdet!", "INFO");
                                     this.state.lastGroundedLog = currentTime;
@@ -5478,6 +5739,11 @@ class AnazhRealm {
                     );
                 }
             }
+
+            // Ring 5 V2: Soul-Animation. Glieder/Flügel/Schweif werden
+            // jeden Frame über sin/cos relativ zum aktuellen walkPhase
+            // rotiert. Idle-Loop (atmen, hover) läuft auch im Stand.
+            this.animatePlayerSoul(currentTime);
 
             this.pruneDistantChunks(playerPos);
 
