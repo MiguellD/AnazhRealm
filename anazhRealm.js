@@ -127,7 +127,10 @@ class AnazhRealm {
             // nur seenFirstSpawn via eigenen localStorage-Key, damit Grok nicht
             // bei jedem Reload den Erst-Spawn-Satz wiederholt.
             grok: {
-                lastSpoke: 0,
+                // Sentinel -Infinity wie bei lastWorldgen: 0 würde den ersten
+                // Aufruf vom 30 s-Throttle blocken (3 - 0 < 30). Selbe Logik
+                // für jeden Trigger-Cooldown.
+                lastSpoke: -Infinity,
                 minGapSeconds: 30,
                 speechEnabled: false,
                 seenFirstSpawn: false,
@@ -139,10 +142,10 @@ class AnazhRealm {
                 dialogueBox: null,
                 fadeTimeout: null,
                 triggers: {
-                    idle: { lastFired: 0, cooldown: 180 },
-                    jumpBurst: { lastFired: 0, cooldown: 120 },
-                    rainLong: { lastFired: 0, cooldown: 240 },
-                    nexus: { lastFired: 0, cooldown: 60 },
+                    idle: { lastFired: -Infinity, cooldown: 180 },
+                    jumpBurst: { lastFired: -Infinity, cooldown: 120 },
+                    rainLong: { lastFired: -Infinity, cooldown: 240 },
+                    nexus: { lastFired: -Infinity, cooldown: 60 },
                 },
                 pool: {
                     firstSpawn: ["Hallo. Die Welt steht. Magst du dich umsehen?"],

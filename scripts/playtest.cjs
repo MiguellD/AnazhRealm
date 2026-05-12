@@ -11,11 +11,15 @@
 // Voraussetzungen: puppeteer als devDependency (`npm install`).
 
 const { spawn } = require("child_process");
+const fs = require("fs");
+const path = require("path");
 const puppeteer = require("puppeteer");
 
 const DURATION_MS = Number(process.env.PLAYTEST_SECONDS || 20) * 1000;
 const SERVER_URL = "http://127.0.0.1:4312/index.html";
 const STRICT = process.env.PLAYTEST_STRICT !== "0";
+const ARTIFACT_DIR = path.join(__dirname, "..", "artifacts");
+const SCREENSHOT_PATH = path.join(ARTIFACT_DIR, "playtest.png");
 
 function startSaveServer() {
     return new Promise((resolve, reject) => {
@@ -110,6 +114,7 @@ function startSaveServer() {
             .evaluate(() => {
                 const r = window.anazhRealm;
                 if (!r || !r.state) return null;
+                const box = document.getElementById("dialogue-box");
                 return {
                     terrainEverGenerated: r.state.terrainEverGenerated,
                     groundChunks: r.state.groundChunks?.length || 0,
@@ -120,6 +125,9 @@ function startSaveServer() {
                     creatures: r.state.creatures?.length || 0,
                     floatingIslands: r.state.floatingIslands?.length || 0,
                     hasPlayerBody: !!r.state.playerBody,
+                    grokSeenFirstSpawn: r.state.grok?.seenFirstSpawn === true,
+                    grokLastSpoke: r.state.grok?.lastSpoke || 0,
+                    grokDialogueText: box ? box.textContent : null,
                 };
             })
             .catch(() => null);
@@ -149,11 +157,7 @@ function startSaveServer() {
                 typeof finalState.playerY === "number" && finalState.playerY > -50,
                 `playerY=${finalState.playerY?.toFixed(2)}`
             );
-            check(
-                "Kreaturen gespawnt",
-                finalState.creatures >= 5,
-                `creatures=${finalState.creatures}`
-            );
+            check("Kreaturen gespawnt", finalState.creatures >= 5, `creatures=${finalState.creatures}`);
             check(
                 "Fliegende Inseln gespawnt",
                 finalState.floatingIslands >= 1,
@@ -164,34 +168,81 @@ function startSaveServer() {
                 finalState.hasPlayerBody === true,
                 `hasPlayerBody=${finalState.hasPlayerBody}`
             );
+
+            // ### Ring 1 – Grok-Stimme ###
+            // firstSpawn feuert mit 1.5s Delay nach Erst-Worldgen und ist der
+            // einzige Trigger, der in 20-25 s Headless-Lauf zuverlässig kommt
+            // (idle braucht 45 s, jumpBurst keine Keys, rainLong 60 s, nexus
+            // irregulär). Daher: seenFirstSpawn + lastSpoke + Dialog-Text +
+            // mindestens ein "Grok: ..."-Log werden gateweise geprüft.
+            check(
+                "Grok hat Erst-Spawn registriert",
+                finalState.grokSeenFirstSpawn === true,
+                `seenFirstSpawn=${finalState.grokSeenFirstSpawn}`
+            );
+            check(
+                "Grok hat mindestens einmal gesprochen",
+                typeof finalState.grokLastSpoke === "number" && finalState.grokLastSpoke > 0,
+                `lastSpoke=${finalState.grokLastSpoke}`
+            );
+            check(
+                "Dialogue-Box trägt einen Satz",
+                typeof finalState.grokDialogueText === "string" && finalState.grokDialogueText.length > 0,
+                `text="${(finalState.grokDialogueText || "").slice(0, 60)}"`
+            );
+            const grokLogs = logs.filter((l) => /\[INFO\] Grok: /.test(l.text));
+            check(
+                "Mindestens ein Grok-Log im Buffer",
+                grokLogs.length >= 1,
+                `grokLogs=${grokLogs.length}${grokLogs.length ? ` erster: "${grokLogs[0].text.slice(0, 80)}"` : ""}`
+            );
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
         const pageErrors = errors.filter((e) => e.kind === "pageerror");
-        check("Keine Script-Exceptions (page.on pageerror)", pageErrors.length === 0,
-            pageErrors.length ? `${pageErrors.length}× erste: ${pageErrors[0].text.slice(0, 100)}` : "");
+        check(
+            "Keine Script-Exceptions (page.on pageerror)",
+            pageErrors.length === 0,
+            pageErrors.length ? `${pageErrors.length}× erste: ${pageErrors[0].text.slice(0, 100)}` : ""
+        );
 
         // Kritische Console-Patterns, die früher echte Bugs anzeigten.
         const criticalPatterns = [
             { re: /Cannot start training because another fit/, why: "TF-Race" },
             { re: /Infinity, Infinity/, why: "extendTerrain-Infinity (Cooldown-Self-Block)" },
             { re: /Ungültige Chunk-Größe/, why: "Chunk-Generation-Fehler" },
-            { re: /THREE is not defined|Ammo is not defined|tf is not defined|SimplexNoise is not defined/, why: "Vendor-Lib nicht geladen" },
+            {
+                re: /THREE is not defined|Ammo is not defined|tf is not defined|SimplexNoise is not defined/,
+                why: "Vendor-Lib nicht geladen",
+            },
             { re: /Failed to execute 'compile' on 'WebAssembly'.*MIME/, why: "WASM-MIME falsch konfiguriert" },
         ];
         for (const { re, why } of criticalPatterns) {
             const hits = logs.filter((l) => re.test(l.text));
-            check(`Keine '${why}'-Logs`, hits.length === 0,
-                hits.length ? `${hits.length}× erste: ${hits[0].text.slice(0, 100)}` : "");
+            check(
+                `Keine '${why}'-Logs`,
+                hits.length === 0,
+                hits.length ? `${hits.length}× erste: ${hits[0].text.slice(0, 100)}` : ""
+            );
         }
 
         // Death-Spiral-Sensor: "Boden fehlt" mehr als zweimal in N Sekunden = Loop.
         const bodenFehltCount = logs.filter((l) => /Boden fehlt/.test(l.text)).length;
-        check(
-            "Keine Welt-Regen-Death-Spiral",
-            bodenFehltCount <= 2,
-            `'Boden fehlt'-Logs=${bodenFehltCount}`
-        );
+        check("Keine Welt-Regen-Death-Spiral", bodenFehltCount <= 2, `'Boden fehlt'-Logs=${bodenFehltCount}`);
+
+        // Screenshot als Beweis-Artefakt. Force-revealt die Dialog-Box, falls
+        // ihr 8 s-Fade-Out schon durch ist — der Text bleibt ja im DOM.
+        try {
+            await page.evaluate(() => {
+                const box = document.getElementById("dialogue-box");
+                if (box && box.textContent) box.classList.add("visible");
+            });
+            fs.mkdirSync(ARTIFACT_DIR, { recursive: true });
+            await page.screenshot({ path: SCREENSHOT_PATH, fullPage: false });
+            console.log(`\nScreenshot: ${SCREENSHOT_PATH}`);
+        } catch (e) {
+            console.log(`\nScreenshot fehlgeschlagen: ${e.message}`);
+        }
     } finally {
         await browser.close();
         server.kill();
