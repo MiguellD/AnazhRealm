@@ -1404,6 +1404,68 @@ class AnazhRealm {
         this.log(`Symphonie: wetter-Layer → ${target.toFixed(2)} (${this.state.weather})`, "DEBUG");
     }
 
+    // ### Status-Panel (UI V1) ###
+    // Lesbares Fenster auf Welt-Zustand und Spieler-Emotionen. Kein Rebuild
+    // pro Frame: DOM einmal anlegen, Werte alle 0.4 s aktualisieren. Refs
+    // werden gecacht, damit der Tick keine Lookup-Kosten hat.
+    initStatusPanel() {
+        const panel = document.getElementById("status-panel");
+        if (!panel) return;
+        const emotions = document.getElementById("status-emotions");
+        const axes = Object.keys(this.state.player.emotions);
+        emotions.innerHTML = "";
+        const emotionRefs = {};
+        for (const axis of axes) {
+            const row = document.createElement("div");
+            row.className = `emotion ${axis}`;
+            const name = document.createElement("span");
+            name.className = "name";
+            name.textContent = axis;
+            const bar = document.createElement("span");
+            bar.className = "bar";
+            const fill = document.createElement("div");
+            bar.appendChild(fill);
+            const value = document.createElement("span");
+            value.className = "value";
+            value.textContent = "0.00";
+            row.appendChild(name);
+            row.appendChild(bar);
+            row.appendChild(value);
+            emotions.appendChild(row);
+            emotionRefs[axis] = { fill, value };
+        }
+        this._statusRefs = {
+            weather: document.getElementById("status-weather"),
+            slug: document.getElementById("status-slug"),
+            position: document.getElementById("status-position"),
+            fps: document.getElementById("status-fps"),
+            creatures: document.getElementById("status-creatures"),
+            emotions: emotionRefs,
+            lastTick: -Infinity,
+        };
+    }
+
+    updateStatusPanel(currentTime) {
+        if (!this._statusRefs) return;
+        if (currentTime - this._statusRefs.lastTick < 0.4) return;
+        this._statusRefs.lastTick = currentTime;
+        const r = this._statusRefs;
+        if (r.weather) r.weather.textContent = this.state.weather || "—";
+        if (r.slug) r.slug.textContent = this.state.worldMeta.slug || "—";
+        if (r.position && this.state.playerMesh) {
+            const p = this.state.playerMesh.position;
+            r.position.textContent = `${p.x.toFixed(1)} ${p.y.toFixed(1)} ${p.z.toFixed(1)}`;
+        }
+        if (r.fps) r.fps.textContent = String(this.state.fps || 0);
+        if (r.creatures) r.creatures.textContent = String(this.state.creatures.length);
+        const e = this.state.player.emotions;
+        for (const axis of Object.keys(r.emotions)) {
+            const v = Math.max(0, Math.min(1, e[axis] || 0));
+            r.emotions[axis].fill.style.width = `${(v * 100).toFixed(0)}%`;
+            r.emotions[axis].value.textContent = v.toFixed(2);
+        }
+    }
+
     // ### Welt-Identität (Ring 8+ Vorbereitung) ###
     ensureWorldMeta() {
         const m = this.state.worldMeta;
@@ -4265,6 +4327,7 @@ class AnazhRealm {
         this.log("Initialisiere Anazh Realm V7.65... Ewigkeit erwacht!", "INFO");
         this.grokInitDOM();
         this.symphonyInitDOM();
+        this.initStatusPanel();
         this.ensureWorldMeta();
         try {
             await this.core.initPhysics();
@@ -4498,6 +4561,9 @@ class AnazhRealm {
 
             // ### Symphonie-Wetter-Layer (Ring 4) ###
             this.symphonyTick();
+
+            // ### Status-Panel (UI V1) ###
+            this.updateStatusPanel(currentTime);
 
             // ### Bodenprüfung ###
             if (currentTime - this.state.lastGroundCheck >= this.state.groundCheckInterval) {

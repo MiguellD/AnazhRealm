@@ -1098,6 +1098,105 @@ function startSaveServer() {
                     ring4Results.disposeClears
                 );
             }
+
+            // ### UI V1 — Status-Panel ###
+            const uiResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    const panel = document.getElementById("status-panel");
+                    out.panelInDom = !!panel;
+
+                    // Panel-Children: alle sechs Emotion-Rows vorhanden
+                    const rows = panel ? panel.querySelectorAll("#status-emotions .emotion") : [];
+                    out.emotionRowCount = rows.length;
+                    out.allSixAxes = rows.length === 6;
+
+                    // Werte aktualisieren mit kontrollierten Emotionen + Tick
+                    for (const k of Object.keys(r.state.player.emotions)) {
+                        r.state.player.emotions[k] = 0;
+                    }
+                    r.state.player.emotions.joy = 0.5;
+                    r.state.player.emotions.chaos = 0.8;
+                    // statusRefs.lastTick zurücksetzen, sonst greift Throttle
+                    if (r._statusRefs) r._statusRefs.lastTick = -Infinity;
+                    r.updateStatusPanel(1000);
+
+                    const joyFill = panel ? panel.querySelector(".emotion.joy .bar > div") : null;
+                    const chaosFill = panel ? panel.querySelector(".emotion.chaos .bar > div") : null;
+                    out.joyBarWidth = joyFill ? joyFill.style.width : "";
+                    out.chaosBarWidth = chaosFill ? chaosFill.style.width : "";
+                    out.barReflectsValue =
+                        out.joyBarWidth === "50%" && out.chaosBarWidth === "80%";
+
+                    // Welt-Sektion
+                    const weatherEl = document.getElementById("status-weather");
+                    const slugEl = document.getElementById("status-slug");
+                    const creaturesEl = document.getElementById("status-creatures");
+                    out.weatherText = weatherEl ? weatherEl.textContent : "";
+                    out.slugText = slugEl ? slugEl.textContent : "";
+                    out.creaturesText = creaturesEl ? creaturesEl.textContent : "";
+                    out.statusValuesPopulated =
+                        out.weatherText !== "—" &&
+                        out.weatherText.length > 0 &&
+                        out.slugText !== "—" &&
+                        out.slugText.length > 0;
+
+                    // Throttle: zweiter Aufruf direkt danach ändert nichts
+                    r.state.player.emotions.joy = 0.9;
+                    r.updateStatusPanel(1000.1); // <0.4s nach erstem Tick
+                    const joyFill2 = panel ? panel.querySelector(".emotion.joy .bar > div") : null;
+                    out.throttleHolds = joyFill2 ? joyFill2.style.width === "50%" : false;
+
+                    // Nach 0.4s wieder durchlassend
+                    r.updateStatusPanel(1000.5);
+                    const joyFill3 = panel ? panel.querySelector(".emotion.joy .bar > div") : null;
+                    out.throttleReleases = joyFill3 ? joyFill3.style.width === "90%" : false;
+
+                    // Cleanup
+                    for (const k of Object.keys(r.state.player.emotions)) {
+                        r.state.player.emotions[k] = 0;
+                    }
+                    if (r._statusRefs) r._statusRefs.lastTick = -Infinity;
+                    r.updateStatusPanel(2000);
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (!uiResults || uiResults.error) {
+                check(
+                    "UI: Status-Panel-Snapshot erreichbar",
+                    false,
+                    uiResults && uiResults.error ? uiResults.error : "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("UI: #status-panel ist im DOM", uiResults.panelInDom);
+                check(
+                    "UI: alle sechs Emotion-Rows gerendert",
+                    uiResults.allSixAxes,
+                    `rows=${uiResults.emotionRowCount}`
+                );
+                check(
+                    "UI: Balken-Breite spiegelt Emotion-Wert (joy 0.5 → 50%, chaos 0.8 → 80%)",
+                    uiResults.barReflectsValue,
+                    `joy=${uiResults.joyBarWidth}, chaos=${uiResults.chaosBarWidth}`
+                );
+                check(
+                    "UI: Welt-Sektion zeigt Wetter + Slug + Kreaturen",
+                    uiResults.statusValuesPopulated,
+                    `weather=${uiResults.weatherText}, slug=${uiResults.slugText}, creatures=${uiResults.creaturesText}`
+                );
+                check(
+                    "UI: updateStatusPanel ist throttled (Aufruf <0.4s ignoriert)",
+                    uiResults.throttleHolds
+                );
+                check(
+                    "UI: updateStatusPanel lässt nach 0.4s wieder durch",
+                    uiResults.throttleReleases
+                );
+            }
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

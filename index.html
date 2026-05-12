@@ -133,6 +133,78 @@
         }
         #anazh-symphony-toggle[aria-pressed="true"] { color: #fff; border-color: #aaa; }
         #state-file-input { display: none; }
+        /* Ring 4.5 — Status-Panel V1: lesbares Fenster auf Welt + Emotionen.
+           Rechts unter den Toggles, kompakt, kein Re-Layout pro Frame. */
+        #status-panel {
+            position: absolute;
+            top: 80px;
+            right: 10px;
+            width: 240px;
+            max-height: 75vh;
+            overflow-y: auto;
+            background-color: rgba(0, 0, 0, 0.78);
+            color: #ddd;
+            border: 1px solid #555;
+            border-radius: 4px;
+            padding: 10px;
+            font-size: 12px;
+            z-index: 5;
+        }
+        #status-panel .section { margin-bottom: 14px; }
+        #status-panel .section:last-child { margin-bottom: 0; }
+        #status-panel h3 {
+            font-size: 10px;
+            margin: 0 0 6px 0;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+        #status-panel .row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3px;
+        }
+        #status-panel .row .label { color: #888; font-size: 11px; }
+        #status-panel .row .value { color: #ddd; font-size: 11px; font-family: monospace; }
+        #status-panel .emotion {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 4px;
+        }
+        #status-panel .emotion .name {
+            width: 60px;
+            font-size: 10px;
+            color: #aaa;
+            text-transform: capitalize;
+        }
+        #status-panel .emotion .bar {
+            flex: 1;
+            height: 7px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        #status-panel .emotion .bar > div {
+            height: 100%;
+            width: 0%;
+            transition: width 250ms ease-out;
+        }
+        #status-panel .emotion .value {
+            width: 28px;
+            text-align: right;
+            font-size: 10px;
+            color: #888;
+            font-family: monospace;
+        }
+        #status-panel .emotion.joy    .bar > div { background: #f7d358; }
+        #status-panel .emotion.awe    .bar > div { background: #d4a3ff; }
+        #status-panel .emotion.sorrow .bar > div { background: #5ec0eb; }
+        #status-panel .emotion.hope   .bar > div { background: #7bd389; }
+        #status-panel .emotion.peace  .bar > div { background: #88e1e1; }
+        #status-panel .emotion.chaos  .bar > div { background: #e94c89; }
     </style>
 </head>
 <body>
@@ -141,6 +213,20 @@
     <div id="dialogue-box" aria-live="polite"></div>
     <button id="grok-voice-toggle" type="button" aria-pressed="false" hidden>Stimme: aus</button>
     <button id="anazh-symphony-toggle" type="button" aria-pressed="false">Klang: aus</button>
+    <aside id="status-panel" aria-label="Welt-Status">
+        <section class="section">
+            <h3>Welt</h3>
+            <div class="row"><span class="label">Wetter</span><span class="value" id="status-weather">—</span></div>
+            <div class="row"><span class="label">Slug</span><span class="value" id="status-slug">—</span></div>
+            <div class="row"><span class="label">Position</span><span class="value" id="status-position">—</span></div>
+            <div class="row"><span class="label">FPS</span><span class="value" id="status-fps">—</span></div>
+            <div class="row"><span class="label">Kreaturen</span><span class="value" id="status-creatures">—</span></div>
+        </section>
+        <section class="section">
+            <h3>Emotionen</h3>
+            <div id="status-emotions"></div>
+        </section>
+    </aside>
     <div id="chat">
         <div id="chat-output"></div>
         <input type="text" id="chat-input" placeholder="Befehl eingeben (z. B. 'Ändere Wetter zu Regen')">
