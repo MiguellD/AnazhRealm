@@ -1514,6 +1514,47 @@ class AnazhRealm {
             });
         }
 
+        // Tuning-Slider: drei Werte von state.player direkt manipulierbar.
+        // Slider sind initial mit Defaults aus dem State befüllt; Änderungen
+        // wirken live. Diagnose-Tool — nicht für Persistenz, sondern um
+        // schnell auszuprobieren, wie sich Welt + Trigger anfühlen.
+        const wireTuningSlider = (id, valueId, apply) => {
+            const slider = document.getElementById(id);
+            const valueLabel = document.getElementById(valueId);
+            if (!slider || !valueLabel) return;
+            slider.addEventListener("input", () => {
+                const v = parseFloat(slider.value);
+                if (!Number.isFinite(v)) return;
+                apply(v);
+                valueLabel.textContent = slider.step.includes(".")
+                    ? v.toFixed(slider.step.split(".")[1].length)
+                    : String(v);
+            });
+        };
+        const p = this.state.player;
+        const thresholdSlider = document.getElementById("tune-threshold");
+        if (thresholdSlider) thresholdSlider.value = String(p.emotionThreshold);
+        const decaySlider = document.getElementById("tune-decay");
+        if (decaySlider) decaySlider.value = String(p.emotionDecayPerSec);
+        const cooldownSlider = document.getElementById("tune-cooldown");
+        if (cooldownSlider) cooldownSlider.value = String(p.emotionApplyCooldown);
+        const thresholdValue = document.getElementById("tune-threshold-v");
+        if (thresholdValue) thresholdValue.textContent = p.emotionThreshold.toFixed(2);
+        const decayValue = document.getElementById("tune-decay-v");
+        if (decayValue) decayValue.textContent = p.emotionDecayPerSec.toFixed(3);
+        const cooldownValue = document.getElementById("tune-cooldown-v");
+        if (cooldownValue) cooldownValue.textContent = String(p.emotionApplyCooldown);
+
+        wireTuningSlider("tune-threshold", "tune-threshold-v", (v) => {
+            p.emotionThreshold = v;
+        });
+        wireTuningSlider("tune-decay", "tune-decay-v", (v) => {
+            p.emotionDecayPerSec = v;
+        });
+        wireTuningSlider("tune-cooldown", "tune-cooldown-v", (v) => {
+            p.emotionApplyCooldown = v;
+        });
+
         // Quick-Action-Buttons: data-cmd-Attribut → processChatCommand
         const quick = document.getElementById("quick-actions");
         if (quick) {

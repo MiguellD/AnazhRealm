@@ -269,6 +269,24 @@
             color: #666;
             font-style: italic;
         }
+        #status-panel .tuning-row {
+            margin-bottom: 8px;
+        }
+        #status-panel .tuning-row label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: #888;
+            margin-bottom: 2px;
+        }
+        #status-panel .tuning-row label .v {
+            font-family: monospace;
+            color: #ddd;
+        }
+        #status-panel .tuning-row input[type="range"] {
+            width: 100%;
+            accent-color: #88e1e1;
+        }
         #help-toggle {
             position: absolute;
             bottom: 10px;
@@ -381,6 +399,27 @@
                 <button type="button" data-cmd="Lade Zustand">Laden</button>
                 <button type="button" data-cmd="Lade Datei">Datei…</button>
                 <button type="button" id="action-export-state">Export…</button>
+            </div>
+        </section>
+        <section class="section">
+            <h3>Tuning (Emotionen)</h3>
+            <div class="tuning-row">
+                <label for="tune-threshold">
+                    <span>Schwelle</span><span class="v" id="tune-threshold-v">0.70</span>
+                </label>
+                <input type="range" id="tune-threshold" min="0.3" max="1.0" step="0.05" value="0.7">
+            </div>
+            <div class="tuning-row">
+                <label for="tune-decay">
+                    <span>Decay/s</span><span class="v" id="tune-decay-v">0.005</span>
+                </label>
+                <input type="range" id="tune-decay" min="0.001" max="0.05" step="0.001" value="0.005">
+            </div>
+            <div class="tuning-row">
+                <label for="tune-cooldown">
+                    <span>Cooldown (s)</span><span class="v" id="tune-cooldown-v">30</span>
+                </label>
+                <input type="range" id="tune-cooldown" min="5" max="120" step="5" value="30">
             </div>
         </section>
     </aside>

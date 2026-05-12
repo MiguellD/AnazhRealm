@@ -1435,6 +1435,96 @@ function startSaveServer() {
                     uiAbilitiesResults.exportContainsPlayerEmotions
                 );
             }
+
+            // ### UI V1 — Live-Tuning Slider ###
+            const uiTuningResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    const sliders = {
+                        threshold: document.getElementById("tune-threshold"),
+                        decay: document.getElementById("tune-decay"),
+                        cooldown: document.getElementById("tune-cooldown"),
+                    };
+                    out.allSlidersPresent = !!(sliders.threshold && sliders.decay && sliders.cooldown);
+
+                    // Initiale Slider-Werte spiegeln state.player-Defaults
+                    out.initialThreshold = sliders.threshold ? parseFloat(sliders.threshold.value) : -1;
+                    out.initialMatchesState = Math.abs(out.initialThreshold - r.state.player.emotionThreshold) < 1e-6;
+
+                    // Slider-Bewegung → state.player.emotionThreshold ändert sich
+                    if (sliders.threshold) {
+                        sliders.threshold.value = "0.5";
+                        sliders.threshold.dispatchEvent(new Event("input", { bubbles: true }));
+                    }
+                    out.thresholdAfterMove = r.state.player.emotionThreshold;
+                    out.thresholdUpdatesState = Math.abs(out.thresholdAfterMove - 0.5) < 1e-6;
+
+                    // Value-Label spiegelt den Wert
+                    const tv = document.getElementById("tune-threshold-v");
+                    out.thresholdLabelMatches = tv ? tv.textContent === "0.50" : false;
+
+                    // Decay-Slider analog
+                    if (sliders.decay) {
+                        sliders.decay.value = "0.020";
+                        sliders.decay.dispatchEvent(new Event("input", { bubbles: true }));
+                    }
+                    out.decayUpdatesState = Math.abs(r.state.player.emotionDecayPerSec - 0.02) < 1e-6;
+
+                    // Cooldown-Slider
+                    if (sliders.cooldown) {
+                        sliders.cooldown.value = "60";
+                        sliders.cooldown.dispatchEvent(new Event("input", { bubbles: true }));
+                    }
+                    out.cooldownUpdatesState = r.state.player.emotionApplyCooldown === 60;
+
+                    // Cleanup: defaults wiederherstellen, damit weitere Tests
+                    // konsistent sind (falls dieser Test vorgezogen wird).
+                    r.state.player.emotionThreshold = 0.7;
+                    r.state.player.emotionDecayPerSec = 0.005;
+                    r.state.player.emotionApplyCooldown = 30;
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (!uiTuningResults || uiTuningResults.error) {
+                check(
+                    "UI: Tuning-Snapshot erreichbar",
+                    false,
+                    uiTuningResults && uiTuningResults.error
+                        ? uiTuningResults.error
+                        : "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check(
+                    "UI: Alle drei Tuning-Slider sind im DOM",
+                    uiTuningResults.allSlidersPresent
+                );
+                check(
+                    "UI: Initialer Slider-Wert spiegelt state.player-Default",
+                    uiTuningResults.initialMatchesState,
+                    `slider=${uiTuningResults.initialThreshold}`
+                );
+                check(
+                    "UI: Slider-Bewegung mutiert state.player.emotionThreshold",
+                    uiTuningResults.thresholdUpdatesState,
+                    `value=${uiTuningResults.thresholdAfterMove}`
+                );
+                check(
+                    "UI: Value-Label spiegelt Slider-Wert ('0.50')",
+                    uiTuningResults.thresholdLabelMatches
+                );
+                check(
+                    "UI: Decay-Slider mutiert emotionDecayPerSec",
+                    uiTuningResults.decayUpdatesState
+                );
+                check(
+                    "UI: Cooldown-Slider mutiert emotionApplyCooldown",
+                    uiTuningResults.cooldownUpdatesState
+                );
+            }
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
