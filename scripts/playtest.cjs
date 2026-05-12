@@ -2198,17 +2198,17 @@ function startSaveServer() {
                         r.state.dsl.lastUserProgram[0] === "spawn_temple";
                     out.chatActuallySpawned = r.state.architectures.length === beforeChat + 1;
 
-                    // (f) FIFO-Cap: über das Limit spawnen, älteste werden gepruned
-                    const cap = r.state.architectureCap;
-                    const beforeCap = r.state.architectures.length;
-                    const spawnsToOverflow = cap - beforeCap + 5;
-                    for (let i = 0; i < spawnsToOverflow; i++) {
-                        r.spawnArchitecture("temple", { x: 100 + i, y: 5, z: 0 }, { seed: i });
+                    // (f) V2: KEIN Cap mehr — 50 Strukturen können koexistieren.
+                    // Datenmäßig unbegrenzt; GPU-Last per Distance-Culling.
+                    const beforeMany = r.state.architectures.length;
+                    for (let i = 0; i < 50; i++) {
+                        r.spawnArchitecture("temple", { x: 500 + i * 2, y: 5, z: 500 }, { seed: i });
                     }
-                    out.capRespected = r.state.architectures.length === cap;
-                    // Erster Eintrag sollte einen anderen ID haben als die
-                    // alten — d. h. älteste wurden tatsächlich entfernt.
-                    out.oldestPruned = r.state.architectures[0].id !== v.id;
+                    out.unboundedSpawn = r.state.architectures.length === beforeMany + 50;
+                    // Die weiten (500m) Strukturen müssen ohne Mesh sein
+                    // (cold) — Spieler ist nahe (0,0,0).
+                    const farEntries = r.state.architectures.filter((a) => a.position.x >= 500);
+                    out.farStructuresAreCold = farEntries.length === 50 && farEntries.every((a) => a.mesh === null);
 
                     // (g) Atomic-Pool: spawn_village/temple/waterfall sind enthalten
                     const seedRng = (s) => {
@@ -2230,8 +2230,9 @@ function startSaveServer() {
 
                     // (h) Wasserfall-Animation: vor und nach Tick müssen Z-
                     // Werte der Geometrie unterschiedlich sein.
-                    // Frischen Wasserfall bauen, der noch nicht angesprochen wurde.
-                    const wf = r.spawnArchitecture("waterfall", { x: 200, y: 5, z: 200 }, { seed: 1 });
+                    // Position muss innerhalb cullingRadius (150) liegen,
+                    // sonst ist mesh null (cold) und der Test crasht.
+                    const wf = r.spawnArchitecture("waterfall", { x: 50, y: 5, z: 50 }, { seed: 1 });
                     const waterMesh = wf.mesh.children.find(
                         (c) => c.geometry && c.geometry.type === "PlaneGeometry"
                     );
@@ -2321,8 +2322,14 @@ function startSaveServer() {
                     ring6Results.chatRoutesToDsl
                 );
                 check("Ring 6: Chat-Routing spawnt tatsächlich", ring6Results.chatActuallySpawned);
-                check("Ring 6: FIFO-Cap respektiert state.architectureCap", ring6Results.capRespected);
-                check("Ring 6: Älteste Eintrag wird beim Cap-Überlauf gepruned", ring6Results.oldestPruned);
+                check(
+                    "Ring 6 V2: 50+ Strukturen koexistieren ohne Cap",
+                    ring6Results.unboundedSpawn
+                );
+                check(
+                    "Ring 6 V2: Weite Strukturen (>cullingRadius) sind 'cold' (mesh=null)",
+                    ring6Results.farStructuresAreCold
+                );
                 check(
                     "Ring 6: spawn_village ist im dslComposeAtomic-Pool (Nexus baut)",
                     ring6Results.villageInAtomicPool
@@ -2347,6 +2354,225 @@ function startSaveServer() {
                     "Ring 6: loadState rekonstruiert Seeds (deterministische Wiederherstellung)",
                     ring6Results.loadRebuildsSeeds
                 );
+            }
+
+            // ### Ring 6 V2 — Distance-Culling, Fraktal, Counter, Bau-Cursor ###
+            const ring6v2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    // Cleanup
+                    for (const a of r.state.architectures) {
+                        if (a.mesh) {
+                            r.state.scene.remove(a.mesh);
+                            r._disposeSoulGroup(a.mesh);
+                        }
+                    }
+                    r.state.architectures = [];
+                    r._clearBuildMode();
+
+                    // === A) Distance-Culling ===
+                    // Setze Spieler auf (0,0,0), spawne weit + nah.
+                    r.state.playerMesh.position.set(0, 20, 0);
+                    const near = r.spawnArchitecture("temple", { x: 5, y: 5, z: 5 }, { seed: 1 });
+                    const far = r.spawnArchitecture("temple", { x: 400, y: 5, z: 400 }, { seed: 2 });
+                    out.nearHasMesh = !!near.mesh;
+                    out.farIsCold = far.mesh === null;
+                    // Spieler weg vom near → cull-Tick muss near disposen
+                    r.state.playerMesh.position.set(400, 20, 400);
+                    r.state.architectureCullingLastTick = -Infinity; // erzwingen
+                    r.tickArchitectureCulling(1.0);
+                    out.nearCulledAfterWalkAway = near.mesh === null;
+                    out.farRebuiltAfterApproach = !!far.mesh;
+                    // Zurück gehen → near baut sich wieder auf
+                    r.state.playerMesh.position.set(0, 20, 0);
+                    r.state.architectureCullingLastTick = -Infinity;
+                    r.tickArchitectureCulling(2.0);
+                    out.nearRebuiltAfterReturn = !!near.mesh;
+
+                    // === B) spawn_fractal ===
+                    // Cleanup first
+                    for (const a of r.state.architectures) {
+                        if (a.mesh) {
+                            r.state.scene.remove(a.mesh);
+                            r._disposeSoulGroup(a.mesh);
+                        }
+                    }
+                    r.state.architectures = [];
+                    const before = r.state.architectures.length;
+                    const dslRes = r.dslRun(["spawn_fractal", ["at_origin"], "temple", 2, 0.5]);
+                    // depth=2 mit 6 Kindern: 1 + 6 + 36 = 43
+                    out.fractalSpawnsExpected = dslRes.ok === true && r.state.architectures.length === before + 43;
+                    const eventFound = dslRes.log.find((e) => e.event === "spawned_fractal");
+                    out.fractalEventEmitted = !!eventFound && eventFound.count === 43;
+                    // Determinismus: gleiche Argumente sollten in dieser Test-
+                    // Welt nicht zu identischen Positionen führen, weil
+                    // ctx.rng() den Root-Seed bestimmt — ABER die HEXAGONAL-
+                    // Anordnung sollte erkennbar sein (6 Children auf einem
+                    // Kreis um die Wurzel).
+                    // Visit ist depth-first: root, dann visit(child0) inkl.
+                    // dessen Grand-Children, dann child1, etc. Direkte
+                    // Kinder finden wir über scale (genau 0.5 bei ratio 0.5);
+                    // Grandchildren haben 0.25.
+                    const rootEntry = r.state.architectures[before];
+                    const directChildren = r.state.architectures
+                        .slice(before)
+                        .filter((e) => Math.abs(e.scale - 0.5) < 1e-6);
+                    const childRadii = directChildren.map((e) =>
+                        Math.hypot(e.position.x - rootEntry.position.x, e.position.z - rootEntry.position.z)
+                    );
+                    out.fractalChildrenAreHexagonal =
+                        childRadii.length === 6 &&
+                        childRadii.every((rad) => Math.abs(rad - childRadii[0]) < 0.5);
+                    // Scale-Hierarchie: Root=1, direkte Kinder=0.5, Grand-Children=0.25
+                    const grandChildren = r.state.architectures
+                        .slice(before)
+                        .filter((e) => Math.abs(e.scale - 0.25) < 1e-6);
+                    out.fractalScalesShrink =
+                        rootEntry.scale === 1 && directChildren.length === 6 && grandChildren.length === 36;
+
+                    // Chat-Pattern
+                    r.processChatCommand("baue fraktal wasserfall");
+                    out.chatFractalRoutes =
+                        Array.isArray(r.state.dsl.lastUserProgram) &&
+                        r.state.dsl.lastUserProgram[0] === "spawn_fractal" &&
+                        r.state.dsl.lastUserProgram[2] === "waterfall";
+
+                    // === C) Counter ===
+                    // Cleanup, baue 3 nah, 5 weit
+                    for (const a of r.state.architectures) {
+                        if (a.mesh) {
+                            r.state.scene.remove(a.mesh);
+                            r._disposeSoulGroup(a.mesh);
+                        }
+                    }
+                    r.state.architectures = [];
+                    r.state.playerMesh.position.set(0, 20, 0);
+                    for (let i = 0; i < 3; i++) r.spawnArchitecture("temple", { x: i * 10, y: 5, z: 0 }, { seed: i });
+                    for (let i = 0; i < 5; i++) r.spawnArchitecture("village", { x: 300 + i * 5, y: 5, z: 0 }, { seed: i });
+                    const counts = r.countArchitecturesNearPlayer(60);
+                    out.counterNear = counts.near === 3;
+                    out.counterTotal = counts.total === 8;
+                    // Status-Bar-Element existiert + zeigt korrektes Format
+                    out.statusBarItemInDom = !!document.getElementById("status-architectures");
+                    r.updateStatusPanel(1e7);
+                    const statusEl = document.getElementById("status-architectures");
+                    out.statusBarShowsCount = statusEl && /^\d+ nah \/ \d+$/.test(statusEl.textContent);
+
+                    // === D) Bau-Cursor ===
+                    r._clearBuildMode();
+                    out.hudInDom = !!document.getElementById("build-mode-hud");
+                    out.hudInitiallyHidden = document.getElementById("build-mode-hud").hidden === true;
+                    // Aktivieren
+                    r.setBuildMode("village");
+                    out.modeActiveAfterSet = r.state.buildMode.active === true && r.state.buildMode.type === "village";
+                    out.phantomInScene =
+                        r.state.buildMode.phantomMesh &&
+                        r.state.scene.children.indexOf(r.state.buildMode.phantomMesh) >= 0;
+                    out.hudShownWhenActive = document.getElementById("build-mode-hud").hidden === false;
+                    // Phantom-Material ist transparent
+                    let foundTransparent = false;
+                    r.state.buildMode.phantomMesh.traverse((node) => {
+                        if (node.material && node.material.transparent && node.material.opacity < 1) {
+                            foundTransparent = true;
+                        }
+                    });
+                    out.phantomIsTransparent = foundTransparent;
+                    // Toggle (same form again → off)
+                    r.setBuildMode("village");
+                    out.toggleOffSameForm = r.state.buildMode.active === false;
+                    // Switch form
+                    r.setBuildMode("temple");
+                    out.switchFormChanges = r.state.buildMode.type === "temple";
+                    // confirmBuild platziert echte Struktur
+                    const arBefore = r.state.architectures.length;
+                    r.confirmBuild();
+                    out.confirmBuildSpawns = r.state.architectures.length === arBefore + 1;
+                    out.confirmBuildKeepsMode = r.state.buildMode.active === true;
+                    // ESC räumt auf
+                    r._clearBuildMode();
+                    out.clearEndsMode = r.state.buildMode.active === false && r.state.buildMode.phantomMesh === null;
+
+                    // Cleanup
+                    for (const a of r.state.architectures) {
+                        if (a.mesh) {
+                            r.state.scene.remove(a.mesh);
+                            r._disposeSoulGroup(a.mesh);
+                        }
+                    }
+                    r.state.architectures = [];
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (!ring6v2Results || ring6v2Results.error) {
+                check(
+                    "Ring 6 V2: Snapshot erreichbar",
+                    false,
+                    ring6v2Results && ring6v2Results.error ? ring6v2Results.error : "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                // Culling
+                check("Ring 6 V2: Nahe Struktur hat Mesh", ring6v2Results.nearHasMesh);
+                check("Ring 6 V2: Weite Struktur startet 'cold'", ring6v2Results.farIsCold);
+                check(
+                    "Ring 6 V2: Culling-Tick disposed Mesh wenn Spieler weggeht",
+                    ring6v2Results.nearCulledAfterWalkAway
+                );
+                check(
+                    "Ring 6 V2: Culling-Tick baut Mesh wenn Spieler hingeht",
+                    ring6v2Results.farRebuiltAfterApproach
+                );
+                check(
+                    "Ring 6 V2: Culling-Tick baut Mesh wieder auf nach Rückkehr",
+                    ring6v2Results.nearRebuiltAfterReturn
+                );
+                // Fraktal
+                check(
+                    "Ring 6 V2: spawn_fractal(depth=2, ratio=0.5) → 1+6+36 = 43 Strukturen",
+                    ring6v2Results.fractalSpawnsExpected
+                );
+                check(
+                    "Ring 6 V2: spawned_fractal-Event emittiert mit count=43",
+                    ring6v2Results.fractalEventEmitted
+                );
+                check(
+                    "Ring 6 V2: 6 Kinder im Hexagon (gleicher Radius um Root)",
+                    ring6v2Results.fractalChildrenAreHexagonal
+                );
+                check(
+                    "Ring 6 V2: Scale-Hierarchie — Kinder bei ratio (0.5), Root bei 1",
+                    ring6v2Results.fractalScalesShrink
+                );
+                check(
+                    "Ring 6 V2: Chat 'baue fraktal wasserfall' routet korrekt",
+                    ring6v2Results.chatFractalRoutes
+                );
+                // Counter
+                check("Ring 6 V2: countArchitecturesNearPlayer nah = 3", ring6v2Results.counterNear);
+                check("Ring 6 V2: countArchitecturesNearPlayer total = 8", ring6v2Results.counterTotal);
+                check("Ring 6 V2: #status-architectures im DOM", ring6v2Results.statusBarItemInDom);
+                check(
+                    "Ring 6 V2: Status-Bar zeigt 'N nah / M' Format",
+                    ring6v2Results.statusBarShowsCount
+                );
+                // Bau-Cursor
+                check("Ring 6 V2: #build-mode-hud im DOM", ring6v2Results.hudInDom);
+                check("Ring 6 V2: HUD initial versteckt", ring6v2Results.hudInitiallyHidden);
+                check("Ring 6 V2: setBuildMode aktiviert State", ring6v2Results.modeActiveAfterSet);
+                check("Ring 6 V2: Phantom-Mesh in der Szene", ring6v2Results.phantomInScene);
+                check("Ring 6 V2: HUD sichtbar im aktiven Bau-Modus", ring6v2Results.hudShownWhenActive);
+                check("Ring 6 V2: Phantom-Material ist transparent", ring6v2Results.phantomIsTransparent);
+                check("Ring 6 V2: Selbe Form nochmal → Toggle off", ring6v2Results.toggleOffSameForm);
+                check("Ring 6 V2: Form-Wechsel ändert Typ", ring6v2Results.switchFormChanges);
+                check("Ring 6 V2: confirmBuild spawnt echte Struktur", ring6v2Results.confirmBuildSpawns);
+                check(
+                    "Ring 6 V2: confirmBuild lässt Modus aktiv (Mehrfach-Bau)",
+                    ring6v2Results.confirmBuildKeepsMode
+                );
+                check("Ring 6 V2: _clearBuildMode beendet Modus + räumt Phantom", ring6v2Results.clearEndsMode);
             }
         }
 

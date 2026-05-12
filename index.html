@@ -380,6 +380,28 @@
             box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5), 0 0 14px var(--violet-glow);
         }
         #dialogue-box.visible { opacity: 1; }
+        /* Bau-Modus-HUD (Ring 6 V2). Bleibt sichtbar während der Bau-Modus
+           aktiv ist; brass-getintetes Pergament-Etikett unter dem dialogue-box. */
+        #build-mode-hud {
+            position: absolute;
+            top: 96px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 6px 14px;
+            background-color: rgba(40, 25, 10, 0.85);
+            color: var(--brass-1);
+            border: 1px solid var(--brass-2);
+            border-radius: 3px;
+            font-family: 'Cinzel', Georgia, serif;
+            font-size: 12px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            text-align: center;
+            pointer-events: none;
+            z-index: 5;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+        }
+        #build-mode-hud[hidden] { display: none; }
         /* Topbar-Toggle-Buttons (Theme / Stimme / Klang) als Messing-Latches.
            Sitzen rechts neben den Tabs in der Topbar — kompakt nebeneinander. */
         .topbar-toggles {
@@ -938,6 +960,7 @@
     <canvas id="world-canvas"></canvas>
     <div id="fps"></div>
     <div id="dialogue-box" aria-live="polite"></div>
+    <div id="build-mode-hud" aria-live="polite" hidden></div>
     <header id="topbar" class="hud-frame">
         <div class="topbar-inner">
             <div class="title">Anazh Realm <span class="version">v7.65</span> <span class="sub">— Das Ultiversum</span></div>
@@ -963,6 +986,7 @@
         <span class="status-item"><span class="label">FPS</span><span class="value" id="status-fps">—</span></span>
         <span class="status-item"><span class="label">Kreaturen</span><span class="value" id="status-creatures">—</span></span>
         <span class="status-item"><span class="label">Seele</span><span class="value" id="status-soul">—</span></span>
+        <span class="status-item"><span class="label">Bauten</span><span class="value" id="status-architectures">—</span></span>
         <span class="status-item pos"><span class="label">Position</span><span class="value" id="status-position">—</span></span>
     </div>
     <aside class="drawer open" data-drawer="welt" aria-label="Welt-Panel">
@@ -987,6 +1011,7 @@
                 <button type="button" data-cmd="Baue Dorf hier">Dorf</button>
                 <button type="button" data-cmd="Baue Tempel hier">Tempel</button>
                 <button type="button" data-cmd="Baue Wasserfall hier">Wasserfall</button>
+                <button type="button" data-cmd="Baue Fraktal Tempel">Fraktal</button>
             </div>
         </section>
     </aside>

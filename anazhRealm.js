@@ -196,7 +196,7 @@ class AnazhRealm {
                 creator: "local",
                 visibility: "private",
                 parentWorlds: [],
-                schemaVersion: "7.69-architectures-v1",
+                schemaVersion: "7.70-architectures-v2",
             },
             // Ring 3 — Player-Emotionen. Sechs Achsen, jeweils 0..1.
             // Chat-Inputs füllen sie regelbasiert; im Game-Loop verflüchtigen
@@ -239,16 +239,30 @@ class AnazhRealm {
                 emotionApplyCooldown: 30,
                 emotionThreshold: 0.7,
             },
-            // Ring 6 — architectureTemplates V1. Drei DSL-Primitives
-            // (spawn_village, spawn_temple, spawn_waterfall), die je einen
-            // THREE.Group bauen und in dieser Liste landen. Save persistiert
-            // {type, position, seed} — der Mesh wird beim Laden aus dem Seed
-            // rekonstruiert (kein Mesh-Snapshot, einmalige Quelle der Wahrheit
-            // ist der Seed). FIFO-Cap verhindert Mesh-Spam wenn der Nexus
-            // viele Strukturen hintereinander komponiert.
+            // Ring 6 — architectureTemplates. Liste aller Bauwerke (Daten,
+            // ~50 Bytes/Eintrag). Save persistiert {type, position, seed,
+            // scale} — der Mesh wird beim Laden aus dem Seed rekonstruiert.
+            //
+            // V2: kein Hard-Cap mehr. Stattdessen Distance-based Mesh-Culling
+            // (Minecraft-Stil) — nur Strukturen innerhalb cullingRadius haben
+            // einen Mesh im GPU; weiter entfernte sind nur Daten-Einträge.
+            // Pro 1 s rotiert `tickArchitectureCulling` durch die Liste,
+            // baut Meshes nahe Spieler (auf), disposed weite (ab). Save bleibt
+            // unabhängig — Daten sind die Wahrheit, Mesh nur Sicht.
             architectures: [],
-            architectureCap: 30,
             architectureNextId: 1,
+            architectureCullingRadius: 150,
+            architectureCullingTickHz: 1.0,
+            architectureCullingLastTick: -Infinity,
+            // Ring 6 V2 — Bau-Modus. Wenn aktiv, schwebt ein halbtransparenter
+            // Phantom-Mesh 5 m vor dem Spieler. Tasten 1/2/3 wählen Form,
+            // F baut, ESC verlässt. Sichtbar durch overlay-Hinweis.
+            buildMode: {
+                active: false,
+                type: null, // "village" | "temple" | "waterfall" | null
+                phantomMesh: null,
+                phantomDistance: 5,
+            },
         };
         this.core = {
             initPhysics: this.initPhysics.bind(this),
@@ -652,6 +666,47 @@ class AnazhRealm {
                 const entry = this.spawnArchitecture("waterfall", pos);
                 ctx.log.push({ event: "spawned_waterfall", id: entry ? entry.id : null, pos });
             },
+            // Ring 6 V2 — Fraktal-Bau. Eine Wurzel-Struktur, hexagonal
+            // umringt von 6 Sub-Strukturen mit `ratio`-Skalierung; jede
+            // Sub-Struktur rekursiv das gleiche bis `depth` 0. Mit
+            // depth=2/ratio=0.5 entstehen 1+6+36 = 43 Strukturen, die
+            // dank Distance-Culling (V2) nicht alle gleichzeitig im GPU
+            // liegen müssen. Pfeiler 3 der Vision (Fraktales Wachstum)
+            // konkret im Code.
+            spawn_fractal: ([positionNode, type, depth, ratio], ctx) => {
+                const pos = this.dslEvalPos(positionNode, ctx);
+                const validTypes = { village: true, temple: true, waterfall: true };
+                const t = typeof type === "string" && validTypes[type] ? type : "temple";
+                const d = c(depth, 0, 3);
+                const r = c(ratio, 0.2, 0.8);
+                let spawned = 0;
+                const visit = (cx, cz, scale, level, parentSeed) => {
+                    if (ctx.budget.spawnsLeft <= 0) {
+                        ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
+                        return;
+                    }
+                    ctx.budget.spawnsLeft--;
+                    spawned++;
+                    // Seed deterministisch aus Parent + Level-Index ableiten,
+                    // damit ein Fraktal-Save reproduzierbar denselben Mesh-
+                    // Aufbau hat (selbe Hütten-Anordnung etc.).
+                    const childSeed = (parentSeed * 16807 + level * 31) >>> 0;
+                    this.spawnArchitecture(t, { x: cx, y: pos.y, z: cz }, { seed: childSeed, scale });
+                    if (level >= d) return;
+                    // Sechs Kinder im Hexagon, Radius proportional zur
+                    // aktuellen Skala (so wachsen Sub-Cluster nicht zu nahe).
+                    const childRadius = 14 * scale;
+                    for (let i = 0; i < 6; i++) {
+                        const angle = (i / 6) * Math.PI * 2;
+                        const ncx = cx + Math.cos(angle) * childRadius;
+                        const ncz = cz + Math.sin(angle) * childRadius;
+                        visit(ncx, ncz, scale * r, level + 1, childSeed + i);
+                    }
+                };
+                const rootSeed = Math.floor(ctx.rng() * 0xffffffff);
+                visit(pos.x, pos.z, 1, 0, rootSeed);
+                ctx.log.push({ event: "spawned_fractal", type: t, depth: d, ratio: r, count: spawned });
+            },
             creatures_color: ([color]) => {
                 if (typeof color !== "string") return;
                 let tint = null;
@@ -1001,13 +1056,29 @@ class AnazhRealm {
             { w: 5, build: () => ["time_of_day", Number(rng().toFixed(2))] },
             { w: 4, build: () => ["creatures_speed_mul", Number((0.5 + rng() * 1.5).toFixed(2))] },
             { w: 4, build: () => ["creatures_size_mul", Number((0.7 + rng()).toFixed(2))] },
-            // Ring 6 — architectureTemplates. Niedrige Gewichtung (3 von ~76),
-            // damit der Nexus die Welt mit der Zeit füllt, ohne dass jeder
-            // zweite Trigger ein Dorf produziert. FIFO-Cap (30) hält die
-            // Mesh-Last begrenzt.
+            // Ring 6 — architectureTemplates. Niedrige Gewichtung (3 von
+            // ~80), damit der Nexus die Welt mit der Zeit füllt, ohne dass
+            // jeder zweite Trigger ein Dorf produziert. V2: kein Hard-Cap
+            // mehr — Distance-Culling hält die GPU-Last begrenzt.
             { w: 3, build: () => ["spawn_village", this.dslComposePosition(rng)] },
             { w: 3, build: () => ["spawn_temple", this.dslComposePosition(rng)] },
             { w: 3, build: () => ["spawn_waterfall", this.dslComposePosition(rng)] },
+            // Ring 6 V2 — Fraktal als seltenes Nexus-Geschenk (Gewicht 1).
+            // depth=1 hält den Stil sichtbar (1 Wurzel + 6 Kinder = 7
+            // Strukturen), ratio variiert.
+            {
+                w: 1,
+                build: () => {
+                    const types = ["village", "temple", "waterfall"];
+                    return [
+                        "spawn_fractal",
+                        this.dslComposePosition(rng),
+                        types[Math.floor(rng() * types.length)],
+                        1,
+                        Number((0.4 + rng() * 0.3).toFixed(2)),
+                    ];
+                },
+            },
             // ~10 % `say`: Nexus kommentiert seine eigene Evolution. Per
             // §18 Q1 ("Ja, sparsam") gewählt.
             { w: 10, build: () => ["say", this.dslComposeSayMessage(rng)] },
@@ -1208,6 +1279,22 @@ class AnazhRealm {
                     return {
                         program: [op, ["at_player"]],
                         describe: `${m[1]} gebaut`,
+                    };
+                },
+            },
+            {
+                // Ring 6 V2 — Fraktal. "baue fraktal tempel" baut einen
+                // hexagonal-rekursiv selbstähnlichen Cluster (depth=2,
+                // ratio=0.5 als sinnvolle Defaults: 43 Strukturen). Type
+                // ist optional, default "tempel".
+                example: "baue fraktal tempel",
+                re: /^baue\s+fraktal(?:\s+(dorf|tempel|wasserfall))?\s*$/i,
+                build: (m) => {
+                    const map = { dorf: "village", tempel: "temple", wasserfall: "waterfall" };
+                    const t = (m[1] || "tempel").toLowerCase();
+                    return {
+                        program: ["spawn_fractal", ["at_player"], map[t], 2, 0.5],
+                        describe: `Fraktal-${t} gebaut (depth 2, ratio 0.5)`,
                     };
                 },
             },
@@ -1536,7 +1623,14 @@ class AnazhRealm {
             },
             {
                 title: "Bauwerke (Ring 6)",
-                commands: ["Baue Dorf hier", "Baue Tempel hier", "Baue Wasserfall hier"],
+                commands: [
+                    "Baue Dorf hier",
+                    "Baue Tempel hier",
+                    "Baue Wasserfall hier",
+                    "Baue Fraktal Tempel",
+                    "Baue Fraktal Dorf",
+                    "Baue Fraktal Wasserfall",
+                ],
             },
             {
                 title: "System / Persistenz",
@@ -1596,6 +1690,7 @@ class AnazhRealm {
             fps: document.getElementById("status-fps"),
             creatures: document.getElementById("status-creatures"),
             soul: document.getElementById("status-soul"),
+            architectures: document.getElementById("status-architectures"),
             emotions: emotionRefs,
             abilities: document.getElementById("status-abilities"),
             abilitiesSignature: "",
@@ -1835,6 +1930,10 @@ class AnazhRealm {
         if (r.soul) {
             const def = this.playerSoulDefs[this.state.player.soul || "human"];
             r.soul.textContent = (def && def.label) || "—";
+        }
+        if (r.architectures) {
+            const counts = this.countArchitecturesNearPlayer(60);
+            r.architectures.textContent = `${counts.near} nah / ${counts.total}`;
         }
         const e = this.state.player.emotions;
         for (const axis of Object.keys(r.emotions)) {
@@ -4433,12 +4532,14 @@ class AnazhRealm {
             // Ring 5: Spieler-Seele (visuelle Form). Beim Load wird sie nach
             // dem playerMesh-Bau angewandt — kein Body-Recreate.
             playerSoul: this.state.player.soul || "human",
-            // Ring 6: Bau-Werke. Nur {type, position, seed} — der Mesh wird
-            // beim Laden aus dem Seed rekonstruiert (kein Mesh-Snapshot).
+            // Ring 6: Bau-Werke. Nur {type, position, seed, scale} — der
+            // Mesh wird beim Laden aus dem Seed rekonstruiert (kein Mesh-
+            // Snapshot). V2 inkludiert scale für fraktale Sub-Strukturen.
             architectures: (this.state.architectures || []).map((a) => ({
                 type: a.type,
                 position: { x: a.position.x, y: a.position.y, z: a.position.z },
                 seed: a.seed,
+                scale: Number.isFinite(a.scale) ? a.scale : 1,
             })),
         };
     }
@@ -4644,7 +4745,7 @@ class AnazhRealm {
             this.state.architectures = [];
             for (const a of state.architectures) {
                 if (!a || typeof a.type !== "string" || !a.position) continue;
-                this.spawnArchitecture(a.type, a.position, { seed: a.seed });
+                this.spawnArchitecture(a.type, a.position, { seed: a.seed, scale: a.scale });
             }
             this.log(`Architekturen geladen: ${state.architectures.length}`);
         }
@@ -5322,51 +5423,83 @@ class AnazhRealm {
         return group;
     }
 
+    _architectureBuilders() {
+        return {
+            village: (s) => this._buildVillageGroup(0, s),
+            temple: (s) => this._buildTempleGroup(0, s),
+            waterfall: (s) => this._buildWaterfallGroup(0, s),
+        };
+    }
+
+    // Mesh aus Eintrag (re-)bauen und in die Szene hängen. Trennt Daten von
+    // Sicht: ein Eintrag in `state.architectures` kann jederzeit ohne Mesh
+    // existieren (gepruned, weil zu weit weg) und später wieder einen
+    // bekommen. Determinismus garantiert: gleiches Seed → gleicher Mesh.
+    _rebuildArchitectureMesh(entry) {
+        if (!this.state.scene || !entry) return null;
+        const builders = this._architectureBuilders();
+        const builder = builders[entry.type];
+        if (!builder) return null;
+        const baseY = Number.isFinite(entry.position.y) ? entry.position.y - 0.5 : 0;
+        const group = builder(entry.seed);
+        group.position.set(entry.position.x || 0, baseY, entry.position.z || 0);
+        if (Number.isFinite(entry.scale) && entry.scale !== 1) {
+            group.scale.setScalar(entry.scale);
+        }
+        this.state.scene.add(group);
+        entry.mesh = group;
+        return group;
+    }
+
+    // Mesh disposen, Eintrag bleibt als reine Daten erhalten. Fenster für
+    // späteren Wieder-Aufbau wenn der Spieler zurückkehrt.
+    _cullArchitectureMesh(entry) {
+        if (!entry || !entry.mesh) return;
+        if (this.state.scene) this.state.scene.remove(entry.mesh);
+        this._disposeSoulGroup(entry.mesh);
+        entry.mesh = null;
+    }
+
     // Eine Struktur zur Welt hinzufügen. Position kommt aus DSL (oder Save-
     // Restore); centerY wird aus pos.y abgeleitet, mit Boden-Heuristik
     // (pos.y - 0.5 ≈ Spielerfußhöhe falls at_player benutzt wurde).
     spawnArchitecture(type, position, opts = {}) {
-        const builders = {
-            village: (y, s) => this._buildVillageGroup(y, s),
-            temple: (y, s) => this._buildTempleGroup(y, s),
-            waterfall: (y, s) => this._buildWaterfallGroup(y, s),
-        };
+        const builders = this._architectureBuilders();
         if (!builders[type]) {
             this.log(`spawnArchitecture: unbekannter Typ '${type}'`, "ERROR");
             return null;
         }
         if (!this.state.scene) return null;
         const seed = Number.isFinite(opts.seed) ? opts.seed : Math.floor(Math.random() * 0xffffffff);
-        // Boden-Y ableiten: wenn pos.y vom Spieler kommt (Player-Center,
-        // ~0.5 über Boden), -0.5 holt's auf Boden-Höhe. Bei expliziten Y-
-        // Werten aus dem Nexus-Generator vertrauen wir dem Wert direkt.
-        const baseY = Number.isFinite(position.y) ? position.y - 0.5 : 0;
-        const group = builders[type](0, seed);
-        group.position.set(position.x || 0, baseY, position.z || 0);
-        this.state.scene.add(group);
+        const scale = Number.isFinite(opts.scale) && opts.scale > 0 ? opts.scale : 1;
         const entry = {
             id: this.state.architectureNextId++,
             type,
             position: { x: position.x || 0, y: position.y || 0, z: position.z || 0 },
             seed,
-            mesh: group,
+            scale,
+            mesh: null,
         };
         this.state.architectures.push(entry);
-        // FIFO-Cap: älteste Strukturen entfernen wenn voll. Dispose verhindert
-        // GPU-Leaks durch nicht freigegebene Geometrien/Materialien.
-        while (this.state.architectures.length > this.state.architectureCap) {
-            const oldest = this.state.architectures.shift();
-            if (oldest && oldest.mesh) {
-                this.state.scene.remove(oldest.mesh);
-                this._disposeSoulGroup(oldest.mesh);
-            }
-        }
-        this.log(`Struktur gebaut: ${type} bei (${position.x.toFixed(1)}, ${position.z.toFixed(1)})`, "INFO");
+        // V2: kein Cap mehr — wir bauen den Mesh nur, wenn der Spieler nahe
+        // genug ist. Sonst bleibt der Eintrag „cold" (nur Daten) und der
+        // Culling-Tick baut ihn auf, sobald der Spieler herankommt.
+        const playerPos = this.state.playerMesh ? this.state.playerMesh.position : null;
+        const inRange =
+            !playerPos ||
+            Math.hypot(entry.position.x - playerPos.x, entry.position.z - playerPos.z) <=
+                this.state.architectureCullingRadius;
+        if (inRange) this._rebuildArchitectureMesh(entry);
+        this.log(
+            `Struktur gebaut: ${type} bei (${entry.position.x.toFixed(1)}, ${entry.position.z.toFixed(1)})${scale !== 1 ? ` ×${scale.toFixed(2)}` : ""}${inRange ? "" : " (cold)"}`,
+            "INFO"
+        );
         return entry;
     }
 
-    // Pro-Frame-Tick: ruft animate() auf jeder Struktur, die einen Hook
-    // mitbringt (aktuell nur Wasserfälle). Idempotent für statische Bauten.
+    // Pro-Frame-Tick: ruft animate() auf jeder Struktur, die einen Mesh
+    // hat und einen animate-Hook mitbringt (aktuell nur Wasserfälle).
+    // Cold-Einträge (mesh=null) werden übersprungen.
     tickArchitectures(currentTime) {
         const list = this.state.architectures;
         if (!list || list.length === 0) return;
@@ -5375,6 +5508,150 @@ class AnazhRealm {
                 entry.mesh.userData.animate(currentTime);
             }
         }
+    }
+
+    // Distance-based Mesh-Culling (Minecraft-Stil). Pro Sekunde rotiert
+    // dieser Tick durch die Architektur-Liste:
+    //   - Spieler-Distanz <= cullingRadius + Mesh fehlt  → Mesh bauen
+    //   - Spieler-Distanz >  cullingRadius + Mesh exists → Mesh disposen
+    // Die Daten-Einträge bleiben immer; nur die GPU-Last ist begrenzt.
+    // Damit löst sich das alte Hard-Cap-Problem auf: der Spieler kann
+    // unbegrenzt bauen, solange das nicht alles gleichzeitig in Sicht ist.
+    tickArchitectureCulling(currentTime) {
+        const tickInterval = 1 / Math.max(0.1, this.state.architectureCullingTickHz);
+        if (currentTime - this.state.architectureCullingLastTick < tickInterval) return;
+        this.state.architectureCullingLastTick = currentTime;
+        const playerPos = this.state.playerMesh ? this.state.playerMesh.position : null;
+        if (!playerPos) return;
+        const radius = this.state.architectureCullingRadius;
+        const radiusSq = radius * radius;
+        for (const entry of this.state.architectures) {
+            const dx = entry.position.x - playerPos.x;
+            const dz = entry.position.z - playerPos.z;
+            const distSq = dx * dx + dz * dz;
+            if (distSq <= radiusSq) {
+                if (!entry.mesh) this._rebuildArchitectureMesh(entry);
+            } else {
+                if (entry.mesh) this._cullArchitectureMesh(entry);
+            }
+        }
+    }
+
+    // ### Ring 6 V2 — Bau-Modus (Phantom-Cursor) ###
+    //
+    // Aktivieren: Tasten 1 (Dorf) / 2 (Tempel) / 3 (Wasserfall) — schaltet
+    // die Form an oder wechselt zur neuen. Im Modus schwebt ein halb-
+    // transparentes Phantom 5 m vor dem Spieler (in Yaw-Richtung). F baut
+    // an der Phantom-Position. ESC verlässt den Modus.
+    //
+    // Phantom-Mesh ist ein normaler Builder-Group, dessen Materialien wir
+    // nach dem Bau auf transparent + opacity 0.4 stellen. So sieht's wie
+    // ein Geist der späteren Struktur aus, kostet aber kein Sondermodell.
+
+    setBuildMode(type) {
+        const valid = { village: true, temple: true, waterfall: true };
+        const next = type && valid[type] ? type : null;
+        const bm = this.state.buildMode;
+        // Toggle: wenn dieselbe Form nochmal gewählt wird, Modus aus.
+        if (bm.active && bm.type === next) {
+            this._clearBuildMode();
+            return;
+        }
+        // Altes Phantom wegräumen, falls Form-Wechsel
+        if (bm.phantomMesh && this.state.scene) {
+            this.state.scene.remove(bm.phantomMesh);
+            this._disposeSoulGroup(bm.phantomMesh);
+            bm.phantomMesh = null;
+        }
+        if (!next) {
+            this._clearBuildMode();
+            return;
+        }
+        bm.active = true;
+        bm.type = next;
+        const builders = this._architectureBuilders();
+        const phantom = builders[next](Math.floor(Math.random() * 0xffffffff));
+        // Materialien transparent machen — Phantom statt fertige Struktur.
+        phantom.traverse((node) => {
+            if (node.material) {
+                node.material.transparent = true;
+                node.material.opacity = 0.4;
+            }
+            if (node.castShadow !== undefined) node.castShadow = false;
+        });
+        if (this.state.scene) this.state.scene.add(phantom);
+        bm.phantomMesh = phantom;
+        this._updateBuildModeHud();
+        this.log(`Bau-Modus: ${next}`, "INFO");
+    }
+
+    _clearBuildMode() {
+        const bm = this.state.buildMode;
+        if (bm.phantomMesh && this.state.scene) {
+            this.state.scene.remove(bm.phantomMesh);
+            this._disposeSoulGroup(bm.phantomMesh);
+        }
+        bm.active = false;
+        bm.type = null;
+        bm.phantomMesh = null;
+        this._updateBuildModeHud();
+    }
+
+    // Bau ausführen: spawnArchitecture an aktueller Phantom-Position.
+    // Modus bleibt aktiv für Mehrfach-Bau (ESC verlässt explizit).
+    confirmBuild() {
+        const bm = this.state.buildMode;
+        if (!bm.active || !bm.type || !bm.phantomMesh) return false;
+        const p = bm.phantomMesh.position;
+        // +0.5 zurück addieren, damit baseY-Heuristik (pos.y - 0.5) den
+        // richtigen Boden trifft. Phantom selbst wurde mit baseY = pos.y
+        // - 0.5 platziert; pos für Spawn nimmt das wieder auf.
+        const spawnPos = { x: p.x, y: p.y + 0.5, z: p.z };
+        this.spawnArchitecture(bm.type, spawnPos);
+        return true;
+    }
+
+    // Pro Frame: Phantom 5 m in Yaw-Richtung vor dem Spieler positionieren.
+    tickBuildMode() {
+        const bm = this.state.buildMode;
+        if (!bm.active || !bm.phantomMesh || !this.state.playerMesh) return;
+        const p = this.state.playerMesh.position;
+        const dist = bm.phantomDistance;
+        bm.phantomMesh.position.set(
+            p.x + Math.sin(this.state.yaw) * dist,
+            p.y - 0.5,
+            p.z + Math.cos(this.state.yaw) * dist
+        );
+        bm.phantomMesh.rotation.y = -this.state.yaw;
+    }
+
+    _updateBuildModeHud() {
+        if (typeof document === "undefined") return;
+        const hud = document.getElementById("build-mode-hud");
+        if (!hud) return;
+        const bm = this.state.buildMode;
+        if (bm.active && bm.type) {
+            const labels = { village: "Dorf", temple: "Tempel", waterfall: "Wasserfall" };
+            hud.textContent = `Bau: ${labels[bm.type]} — F bauen, ESC verlassen, 1/2/3 wechseln`;
+            hud.hidden = false;
+        } else {
+            hud.hidden = true;
+            hud.textContent = "";
+        }
+    }
+
+    // Hilfsmethode für UI/Tests: zählt Architekturen in Spieler-Nähe.
+    countArchitecturesNearPlayer(radius = 60) {
+        const playerPos = this.state.playerMesh ? this.state.playerMesh.position : null;
+        if (!playerPos) return { near: 0, total: this.state.architectures.length };
+        const radiusSq = radius * radius;
+        let near = 0;
+        for (const entry of this.state.architectures) {
+            const dx = entry.position.x - playerPos.x;
+            const dz = entry.position.z - playerPos.z;
+            if (dx * dx + dz * dz <= radiusSq) near++;
+        }
+        return { near, total: this.state.architectures.length };
     }
 
     // Ring 5 V2 Vorbereitung — Kamera-Modus (Erst-/Dritte-Person).
@@ -5444,6 +5721,7 @@ class AnazhRealm {
         this.initStatusPanel();
         this.playerSoulInitDOM();
         this.cameraModeInitDOM();
+        this._updateBuildModeHud();
         this.initTopbar();
         this.initConsoleDOM();
         this.ensureWorldMeta();
@@ -5552,8 +5830,24 @@ class AnazhRealm {
         this.generateNewWorld();
 
         window.addEventListener("keydown", (event) => {
+            // Wenn der Fokus in einem Eingabe-Feld liegt (Chat), keine
+            // Spiel-Aktionen aus den Tasten lösen — sonst tippt der User
+            // "1" und es geht in den Bau-Modus statt in den Chat.
+            const target = event.target;
+            const inInput =
+                target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
             this.state.keys[event.key.toLowerCase()] = true;
-            if (event.key === " ") this.handleJump(performance.now() / 1000);
+            if (event.key === " " && !inInput) this.handleJump(performance.now() / 1000);
+            if (inInput) return;
+            // Ring 6 V2 — Bau-Cursor-Tasten
+            if (event.key === "1") this.setBuildMode("village");
+            else if (event.key === "2") this.setBuildMode("temple");
+            else if (event.key === "3") this.setBuildMode("waterfall");
+            else if (event.key.toLowerCase() === "f") {
+                if (this.confirmBuild()) event.preventDefault();
+            } else if (event.key === "Escape") {
+                if (this.state.buildMode.active) this._clearBuildMode();
+            }
         });
         window.addEventListener("keyup", (event) => {
             this.state.keys[event.key.toLowerCase()] = false;
@@ -6068,6 +6362,11 @@ class AnazhRealm {
             // rotiert. Idle-Loop (atmen, hover) läuft auch im Stand.
             this.animatePlayerSoul(currentTime);
 
+            // Ring 6 V2: Culling-Tick (1 Hz) — baut/disposed Meshes je nach
+            // Spieler-Distanz. Daten-Einträge bleiben immer.
+            this.tickArchitectureCulling(currentTime);
+            // Ring 6 V2: Bau-Modus — Phantom-Position nachziehen wenn aktiv.
+            this.tickBuildMode();
             // Ring 6: Bau-Werke mit Animations-Hook (nur Wasserfälle aktuell).
             this.tickArchitectures(currentTime);
 
