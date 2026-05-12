@@ -22,14 +22,14 @@ Detaillierter Plan in `docs/state-of-realm.md` §5. Status (Mai 2026):
 | 0 | Stabiles Fundament (Bewegung, Physik, Kreaturen, Chunks, Save, CI-Gate) | ✅ erledigt |
 | 1 | **Grok-Stimme** (`dialogue-box`, narrative Reflexion) | ✅ V1 erledigt — 5 Trigger (firstSpawn, idle, jumpBurst, rainLong, nexus), Text + optionale SpeechSynthesis |
 | 2 | DSL als gemeinsame Sprache Mensch+Grok (`docs/nexus-dsl.md`) | ✅ **Phase 1-7 vollständig** — Interpreter mit 41 Ops, Budget-Limits, Scheduler. **Abilities sind ausschließlich DSL-Programme**, `new Function`/`eval` aus dem Bundle verbannt (CI-Gate hart), Save persistiert DSL-Abilities. 13/25 Chat-Befehle migriert. **CSP-Header strict in `index.html`** mit dokumentierten Vendor-Konzessionen. **Fitness-V2**: `dslSelectByFitness` (Roulette-Wheel über History) + `dslMutate` (Sub-AST/Numeric-Mutation) + `dslCompose` mit ~30 % History-Probability — der Nexus lernt nun aus eigenen Outcomes. |
-| 3 | Player-Emotionen (`{joy, awe, sorrow, hope, …}`) beeinflussen Welt | offen |
+| 3 | Player-Emotionen (`{joy, awe, sorrow, hope, peace, chaos}`) beeinflussen Welt | 🟡 V1 live — `collectPlayerEmotions` (regelbasierte Sentiment-Erkennung an Chat-Input), Decay pro Sekunde, drei Schwellen-Trigger als DSL-Programme (joy→warme Skybox, sorrow→Regen, chaos→Kreaturen schneller), DSL-Condition `emotion_above`. V2 später: feinere Patterns, mehr Achsen-Welt-Kopplungen. |
 | 4 | `anazhSymphony` V1 – Web-Audio-Klangschichten | offen |
 | 5 | `createPlayerSoul` (Mensch/Phönix/Drache) | offen |
 | 6 | `architectureTemplates` V1 (Dörfer, Tempel, Wasserfälle) | offen |
 | 7 | `brain.js`-Welt – lernt aus Spieler-Verhalten + Emotionen | offen |
 | 8-11 | **Welten-Ultiversum** (Identität, Export/Import, Fusion, Multi-User-Sync) | Vision-skizze in `docs/state-of-realm.md` §11 |
 
-Letzter Stand: Ring 1 + **Ring 2 vollständig (Phase 1-7)** live. Chunk-Physik komplett auf `btBvhTriangleMeshShape` (Commit `e612c60`) — visuelles Mesh = Kollisionsnetz. 120 fps im echten Browser, **63/63 Playtest-Invarianten grün**. Mensch ↔ Nexus: eine Sprache, eine Sicherheits-Wand, ein Lernen-aus-Outcomes-Loop. Nächster Schritt: **Ring 3 (Player-Emotionen → Welt)** — die DSL ist bereit, Emotion als Input zu empfangen; nächster Vision-Pfeiler.
+Letzter Stand: Ring 1 + **Ring 2 vollständig (Phase 1-7)** + **Ring 3 V1** live. Chunk-Physik komplett auf `btBvhTriangleMeshShape` (Commit `e612c60`) — visuelles Mesh = Kollisionsnetz. 120 fps im echten Browser, **70/70 Playtest-Invarianten grün**. Mensch ↔ Nexus: eine Sprache, eine Sicherheits-Wand, ein Lernen-aus-Outcomes-Loop. Player-Emotionen fütterten jetzt die DSL. Nächster Schritt: Ring 3 V2 (feinere Patterns, mehr Kopplungen) **oder** Ring 4 (Web-Audio `anazhSymphony`) — Emotion soll auch klingen.
 
 ## Wichtige Gotchas (technisch)
 
@@ -49,7 +49,8 @@ Letzter Stand: Ring 1 + **Ring 2 vollständig (Phase 1-7)** live. Chunk-Physik k
 - **Save-Server-POST nur auf localhost.** Auf CDN/GitHack-Pfaden stiller Skip — State lebt nur im `localStorage` (plus Download-Button als Manual-Backup).
 - **`addNewAbility(name, program, source)`** ist der einzige Pfad, eine Fähigkeit zu registrieren. Akzeptiert **nur DSL-Arrays**, nie JS-Funktionen. Schreibt in `state.dsl.abilities` (Quelle der Wahrheit) und legt einen Wrapper in `state.abilities[name] = () => dslRun(program)` ab (für Keyboard-Loop + „Führe Fähigkeit aus X"). `restoreAbility` mappt die drei Legacy-Save-Namen (`gravityShift`, `creatureDance`, `terrainFlatten`) auf ihre DSL-Äquivalente.
 - **`learnAbility`** geht über `parseAbilityDescriptionToDsl` (regelbasiert, 5 Pattern + Catch-All als `say`). Keine Code-Generierung mehr; CSP-strict (Phase 6) wird damit möglich.
-- `npm run playtest` startet save-server + Headless-Chromium, sammelt 20-25 s Logs, prüft **36 Invarianten** (inkl. Grok-Stimme, DSL-Effekte, Naht-Treue, Welt-Identität), exit 1 bei Verletzung.
+- **`state.player.emotions`** ist eine 6-Achsen-Map (joy/awe/sorrow/hope/peace/chaos), Werte 0..1. Jeder Chat-Input geht durch `collectPlayerEmotions` (regelbasiert, deutsche Stichwörter). `updatePlayerEmotions(currentTime)` läuft jeden Frame im Game-Loop: Decay 0.005/s, drei Schwellen-Trigger (joy/sorrow/chaos jeweils > 0.7) feuern DSL-Programme. Cooldown 30 s pro Achse verhindert Spam. DSL-Condition `emotion_above(name, threshold)` macht Emotionen für den Nexus sichtbar.
+- `npm run playtest` startet save-server + Headless-Chromium, sammelt 20-25 s Logs, prüft **70 Invarianten** (inkl. Grok-Stimme, DSL-Effekte, Naht-Treue, CSP, Selektion, Emotionen), exit 1 bei Verletzung.
 
 ## Workflows
 

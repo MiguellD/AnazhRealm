@@ -756,6 +756,127 @@ function startSaveServer() {
                     `${phase7Results.composeUsesHistoryCount}/30 Calls`
                 );
             }
+
+            // ### Ring 3 – Player-Emotionen → Welt ###
+            const ring3Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.player) return null;
+                    const out = {};
+
+                    // Reset: für deterministische Tests alle Werte + Cooldowns löschen.
+                    for (const k of Object.keys(r.state.player.emotions)) {
+                        r.state.player.emotions[k] = 0;
+                    }
+                    r.state.player.emotionLastApply.joy = -Infinity;
+                    r.state.player.emotionLastApply.sorrow = -Infinity;
+                    r.state.player.emotionLastApply.chaos = -Infinity;
+                    r.state.player.emotionLastTick = -Infinity;
+
+                    // (a) collectPlayerEmotions reagiert auf deutsche Stichwörter
+                    r.collectPlayerEmotions("Was für ein schöner und magischer Moment");
+                    out.joyAfterCollect = r.state.player.emotions.joy;
+                    out.aweAfterCollect = r.state.player.emotions.awe;
+                    out.collectJoyOk = out.joyAfterCollect >= 0.1 - 1e-9;
+                    out.collectAweOk = out.aweAfterCollect >= 0.1 - 1e-9;
+
+                    // (b) Decay reduziert über simulierten Zeitfortschritt
+                    r.state.player.emotions.joy = 0.5;
+                    r.state.player.emotionLastTick = 100;
+                    r.updatePlayerEmotions(110); // 10s vergangen
+                    out.joyAfterDecay = r.state.player.emotions.joy;
+                    out.decayLowered = out.joyAfterDecay < 0.5 && out.joyAfterDecay > 0;
+
+                    // (c) Schwellen-Trigger: sorrow > 0.7 → state.weather = "rainy".
+                    // lastTick nahe an currentTime, damit der Decay-Schritt
+                    // sorrow nicht unter die Schwelle drückt bevor der Trigger
+                    // schaut.
+                    r.state.weather = "sunny";
+                    r.state.player.emotions.sorrow = 0.9;
+                    r.state.player.emotionLastApply.sorrow = -Infinity;
+                    r.state.player.emotionLastTick = 199;
+                    r.updatePlayerEmotions(200);
+                    out.sorrowAfterTick = r.state.player.emotions.sorrow;
+                    out.sorrowTriggersRain = r.state.weather === "rainy";
+
+                    // (d) Trigger respektiert Cooldown — zweiter Tick 5s später
+                    //     darf nicht wieder feuern.
+                    r.state.weather = "sunny";
+                    r.state.player.emotionLastTick = 204;
+                    r.updatePlayerEmotions(205);
+                    out.cooldownRespected = r.state.weather === "sunny";
+
+                    // (e) DSL-Condition emotion_above
+                    r.state.player.emotions.joy = 0.9;
+                    const condTrue = r.dslEvalCond(["emotion_above", "joy", 0.5], {
+                        state: r.state,
+                        rng: Math.random,
+                        log: [],
+                    });
+                    r.state.player.emotions.joy = 0.2;
+                    const condFalse = r.dslEvalCond(["emotion_above", "joy", 0.5], {
+                        state: r.state,
+                        rng: Math.random,
+                        log: [],
+                    });
+                    out.dslConditionJoyAbove = condTrue === true && condFalse === false;
+
+                    // (f) Save-Roundtrip
+                    r.state.player.emotions.joy = 0.42;
+                    r.state.player.emotions.chaos = 0.13;
+                    r.saveState();
+                    const raw = localStorage.getItem("anazhRealmState");
+                    let parsed = null;
+                    try {
+                        parsed = JSON.parse(raw);
+                    } catch (e) {
+                        void e;
+                    }
+                    out.savedEmotions =
+                        !!parsed &&
+                        parsed.playerEmotions &&
+                        Math.abs(parsed.playerEmotions.joy - 0.42) < 1e-6 &&
+                        Math.abs(parsed.playerEmotions.chaos - 0.13) < 1e-6;
+
+                    return out;
+                })
+                .catch(() => null);
+
+            if (!ring3Results) {
+                check("Ring 3: player.emotions erreichbar", false, "page.evaluate fehlgeschlagen");
+            } else {
+                check(
+                    "Ring 3: collectPlayerEmotions erkennt 'schön' (joy +0.1)",
+                    ring3Results.collectJoyOk,
+                    `joy=${ring3Results.joyAfterCollect.toFixed(3)}`
+                );
+                check(
+                    "Ring 3: collectPlayerEmotions erkennt 'magisch' (awe +0.1)",
+                    ring3Results.collectAweOk,
+                    `awe=${ring3Results.aweAfterCollect.toFixed(3)}`
+                );
+                check(
+                    "Ring 3: Decay reduziert Emotion über Zeit",
+                    ring3Results.decayLowered,
+                    `joy 0.5 → ${ring3Results.joyAfterDecay.toFixed(3)} nach 10s`
+                );
+                check(
+                    "Ring 3: sorrow > 0.7 triggert state.weather = 'rainy'",
+                    ring3Results.sorrowTriggersRain
+                );
+                check(
+                    "Ring 3: Trigger respektiert Cooldown (kein Wiederfeuern <30s)",
+                    ring3Results.cooldownRespected
+                );
+                check(
+                    "Ring 3: DSL-Condition emotion_above evaluiert korrekt",
+                    ring3Results.dslConditionJoyAbove
+                );
+                check(
+                    "Ring 3: Save persistiert playerEmotions",
+                    ring3Results.savedEmotions
+                );
+            }
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

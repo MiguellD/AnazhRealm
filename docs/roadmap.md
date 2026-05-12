@@ -23,7 +23,7 @@ Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) is
 | 0 | Stabiles Fundament (Bewegung, Physik, Chunks, Save, CI) | ✅ erledigt | – | – |
 | 1 | Grok-Stimme (`dialogue-box`, narrative Reflexion) | ✅ V1 live | – | – |
 | 2 | DSL als gemeinsame Sprache | ✅ Phase 1-7 vollständig | – | – |
-| 3 | Player-Emotionen → Welt | 🔴 offen | 2 d | Ring 2 Phase 3 |
+| 3 | Player-Emotionen → Welt | 🟡 V1 live, V2 offen | 0.5-1 d Rest | – |
 | 4 | `anazhSymphony` V1 (Web Audio) | 🔴 offen | 2-3 d | Ring 3 |
 | 5 | `createPlayerSoul` (Mensch/Phönix/Drache) | 🔴 offen | 1-2 d | – |
 | 6 | `architectureTemplates` V1 (Dörfer, Tempel, Wasserfälle) | 🔴 offen | 2 d | Ring 2 Phase 3 |
@@ -84,17 +84,24 @@ Plus: inline-styles aus `index.html` entfernt (`#fps`, `#state-file-input`), Inl
 
 ---
 
-### Ring 3: Player-Emotionen → Welt (~2 d)
+### Ring 3: Player-Emotionen → Welt
 
 **Ziel**: Spieler-Emotionen sind ein zentraler Welt-Treiber, nicht nur ein UI-Detail.
 
-- `state.player.emotions = {joy, awe, sorrow, hope, longing, melancholy, peace, chaos}` — alle 0..1
-- `collectPlayerEmotions(input)`: aus Chat-Input via Schlüsselwort-Regeln. „glücklich/froh" → joy++. „weinen/traurig" → sorrow++. Emotionen klingen über Zeit ab (-0.01 pro Sekunde).
-- Welt-Kopplung: Emotion → DSL-Composer. Hohe joy → Generator wählt häufiger `weather "sunny"`, `creatures_emotion "happy"`. Hohe sorrow → rainy, sad. Wird über `dslComposeAtomic`-Gewichte realisiert (Emotionen modulieren das `w` pro Choice).
-- Grok-Stimme reagiert: Trigger „emotionShift" wenn Spieler stark eine Emotion ausgedrückt hat.
-- Test: Spieler chattet „ich bin traurig" → state.player.emotions.sorrow > 0.5 → Wetter wechselt zu rainy innerhalb 30 s.
+**V1 ✅ erledigt** (dieser Commit):
+- `state.player.emotions = { joy, awe, sorrow, hope, peace, chaos }` (6 Achsen, 0..1)
+- `collectPlayerEmotions(text)` regelbasiert: deutsche Stichwörter (z. B. „schön/fröhlich/liebe" → joy, „traurig/dunkel/trauer" → sorrow, „chaos/wild/sturm" → chaos). Jeder Treffer +0.1, geclampt.
+- Eingehängt in `processChatCommand` → jeder Chat-Befehl füttert die Achsen.
+- `updatePlayerEmotions(currentTime)` läuft im Hauptloop: Decay 0.005/s, drei Schwellen-Trigger als DSL-Programme (joy > 0.7 → `["skybox_color", "#f7d358"]`, sorrow > 0.7 → `["weather", "rainy"]`, chaos > 0.7 → `["creatures_speed_mul", 1.5]`). 30 s Cooldown pro Achse verhindert Spam.
+- Neue DSL-Condition `emotion_above(name, threshold)` — der Nexus kann selbst auf Emotionen reagieren.
+- Save persistiert `playerEmotions`. Sieben neue Playtest-Invarianten (Collect, Decay, Trigger, Cooldown, DSL-Cond, Save).
 
-**Akzeptanz**: 5 Min mit dem Spiel chatten ergibt fühlbare Welt-Reaktion auf die Tonalität der Inputs.
+**V2 offen** (0.5-1 d, später):
+- Mehr Achsen (`longing`, `melancholy`) und differenziertere Welt-Kopplungen (z. B. awe → fliegende Insel spawnen, hope → bestimmte Skybox-Farbe pulsiert).
+- Modulation der Generator-Wahrscheinlichkeiten in `dslComposeAtomic`: bei hoher joy → höheres `w` für „sunny"/"happy", bei hoher sorrow → höheres `w` für rainy/sad. Nexus färbt seine Evolution emotional.
+- Grok-Stimme: neuer Trigger „emotionShift" wenn eine Achse stark/abrupt steigt.
+
+**Akzeptanz**: 5 Min chatten mit emotionalem Vokabular → die Welt antwortet sichtbar.
 
 ---
 

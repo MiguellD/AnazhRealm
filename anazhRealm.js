@@ -191,6 +191,18 @@ class AnazhRealm {
                 parentWorlds: [],
                 schemaVersion: "7.66-dsl-v1",
             },
+            // Ring 3 — Player-Emotionen. Sechs Achsen, jeweils 0..1.
+            // Chat-Inputs füllen sie regelbasiert; im Game-Loop verflüchtigen
+            // sie sich langsam; Schwellen-Trigger feuern DSL-Programme, sodass
+            // Emotion direkt zur Welt wird (Vision-Pfeiler „Emotion treibt").
+            player: {
+                emotions: { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 },
+                emotionDecayPerSec: 0.005,
+                emotionLastTick: -Infinity,
+                emotionLastApply: { joy: -Infinity, sorrow: -Infinity, chaos: -Infinity },
+                emotionApplyCooldown: 30,
+                emotionThreshold: 0.7,
+            },
         };
         this.core = {
             initPhysics: this.initPhysics.bind(this),
@@ -718,6 +730,14 @@ class AnazhRealm {
                 return y < Number(value);
             },
             random_chance: ([prob], ctx) => ctx.rng() < Number(prob),
+            // Ring 3: Nexus reagiert auf Player-Emotionen. `emotion_above`
+            // gibt true, wenn die Achse über der Schwelle liegt. Unbekannte
+            // Achsen → false (kein throw, damit DSL-Programme robust bleiben).
+            emotion_above: ([name, threshold], ctx) => {
+                const e = ctx.state.player && ctx.state.player.emotions;
+                if (!e || typeof e[name] !== "number") return false;
+                return e[name] > Number(threshold);
+            },
             not: ([sub], ctx) => !this.dslEvalCond(sub, ctx),
             and: (subs, ctx) => subs.every((s) => this.dslEvalCond(s, ctx)),
             or: (subs, ctx) => subs.some((s) => this.dslEvalCond(s, ctx)),
@@ -1134,6 +1154,65 @@ class AnazhRealm {
             [prev, curr] = [curr, prev];
         }
         return prev[n];
+    }
+
+    // ### Ring 3 – Player-Emotionen ###
+    // Regelbasierte Sentiment-Erkennung (Deutsch). Jeder Treffer addiert 0.1
+    // auf eine Achse, geclampt bei 1. Im Game-Loop verflüchtigen sich die
+    // Werte mit 0.005/Sekunde. Schwellen-Trigger feuern DSL-Programme, damit
+    // Emotion zur Welt wird, statt nur als Zahl im State zu liegen.
+    get emotionPatterns() {
+        if (this._emotionPatternsCache) return this._emotionPatternsCache;
+        this._emotionPatternsCache = {
+            joy: ["schön", "fröhlich", "liebe", "glücklich", "freude", "lachen", "warm"],
+            awe: ["wunder", "magisch", "groß", "ehrfurcht", "staunen", "unfassbar", "weit"],
+            sorrow: ["traurig", "weinen", "dunkel", "verloren", "trauer", "schmerz"],
+            hope: ["hoffe", "zukunft", "licht", "vertrau", "neu", "beginn"],
+            peace: ["ruhig", "still", "frieden", "leise", "sanft"],
+            chaos: ["chaos", "wild", "zerstör", "wut", "sturm", "kämpf"],
+        };
+        return this._emotionPatternsCache;
+    }
+
+    collectPlayerEmotions(text) {
+        if (typeof text !== "string" || !text.trim()) return;
+        const lower = text.toLowerCase();
+        const e = this.state.player.emotions;
+        const patterns = this.emotionPatterns;
+        for (const axis of Object.keys(patterns)) {
+            if (patterns[axis].some((word) => lower.includes(word))) {
+                e[axis] = Math.min(1, e[axis] + 0.1);
+            }
+        }
+    }
+
+    updatePlayerEmotions(currentTime) {
+        const p = this.state.player;
+        const prev = p.emotionLastTick;
+        const delta = prev > -Infinity ? Math.max(0, currentTime - prev) : 0;
+        p.emotionLastTick = currentTime;
+
+        if (delta > 0) {
+            const dec = p.emotionDecayPerSec * delta;
+            for (const k of Object.keys(p.emotions)) {
+                p.emotions[k] = Math.max(0, p.emotions[k] - dec);
+            }
+        }
+
+        const trigger = (axis, program) => {
+            if (p.emotions[axis] < p.emotionThreshold) return;
+            const last = p.emotionLastApply[axis] ?? -Infinity;
+            if (currentTime - last < p.emotionApplyCooldown) return;
+            this.dslRun(program, { source: `emotion:${axis}` });
+            p.emotionLastApply[axis] = currentTime;
+            this.log(`Emotion '${axis}' triggert Welt-Effekt (Wert ${p.emotions[axis].toFixed(2)})`, "INFO");
+        };
+        // Drei sichtbare Kopplungen für V1. Weitere Achsen + komplexere
+        // Programme können später als reine DSL-Erweiterung kommen, ohne
+        // dass diese Tick-Funktion neue Code-Pfade braucht.
+        trigger("joy", ["skybox_color", "#f7d358"]);
+        trigger("sorrow", ["weather", "rainy"]);
+        trigger("chaos", ["creatures_speed_mul", 1.5]);
     }
 
     // ### Welt-Identität (Ring 8+ Vorbereitung) ###
@@ -2240,6 +2319,10 @@ class AnazhRealm {
         };
         appendChatOutput(`> ${command}`);
         this.addKnowledge("chat", command);
+        // Ring 3: jeder Chat-Input füttert die Emotionen. Sentiment-Erkennung
+        // läuft auf dem Originaltext (inkl. Casing), nicht auf `parts`, damit
+        // ganze Sätze wie „Erzähle: ein schöner Tag" alle Stichwörter sehen.
+        this.collectPlayerEmotions(command);
 
         // Proaktive Vorschläge (alle 10 Chat-Befehle)
         if (this.state.knowledgeBase.filter((k) => k.type === "chat").length % 10 === 0) {
@@ -3664,6 +3747,10 @@ class AnazhRealm {
             worldMeta: { ...this.state.worldMeta },
             dslAbilities: this.state.dsl.abilities.slice(-200),
             dslHistory: this.state.dsl.history.slice(-this.state.dsl.historyCap),
+            // Ring 3: Player-Emotionen werden mitgespeichert. Cooldown-Timer
+            // bleiben absichtlich draußen — sie sind reine Laufzeit-Drosselung,
+            // ein Reload soll wieder triggerfähig sein.
+            playerEmotions: { ...this.state.player.emotions },
         };
     }
 
@@ -3844,6 +3931,16 @@ class AnazhRealm {
             this.state.worldMeta = { ...this.state.worldMeta, ...state.worldMeta };
         } else {
             this.log("Save-Migration: kein worldMeta gefunden, generiere neue Welt-Identität", "INFO");
+        }
+        // Ring 3: Emotionen wiederherstellen. Nur bekannte Achsen übernehmen,
+        // damit alte Saves mit Tippfehlern keine fremden Keys einschleusen.
+        if (state.playerEmotions && typeof state.playerEmotions === "object") {
+            for (const axis of Object.keys(this.state.player.emotions)) {
+                const v = Number(state.playerEmotions[axis]);
+                if (Number.isFinite(v)) {
+                    this.state.player.emotions[axis] = Math.max(0, Math.min(1, v));
+                }
+            }
         }
         if (Array.isArray(state.dslAbilities)) {
             // Phase 4: dslAbilities ist die Quelle der Wahrheit. Wir
@@ -4177,6 +4274,9 @@ class AnazhRealm {
 
             // ### Nexus-DSL Scheduler (Ring 2) ###
             this.dslTick(currentTime);
+
+            // ### Player-Emotionen (Ring 3) ###
+            this.updatePlayerEmotions(currentTime);
 
             // ### Bodenprüfung ###
             if (currentTime - this.state.lastGroundCheck >= this.state.groundCheckInterval) {
