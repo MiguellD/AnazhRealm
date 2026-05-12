@@ -2730,6 +2730,173 @@ function startSaveServer() {
                 );
             }
 
+            // ### Ring 6.5 — Hotbar mit 9 Slots ###
+            const ring65Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    // DOM-Hotbar
+                    const bar = document.getElementById("hotbar");
+                    out.hotbarInDom = !!bar;
+                    out.hotbarHasNineSlots =
+                        bar && bar.querySelectorAll(".hotbar-slot").length === 9;
+                    out.defaultHotbar =
+                        Array.isArray(r.state.hotbar) &&
+                        r.state.hotbar.length === 9 &&
+                        r.state.hotbar[0] === "village" &&
+                        r.state.hotbar[1] === "temple" &&
+                        r.state.hotbar[2] === "waterfall" &&
+                        r.state.hotbar.slice(3).every((s) => s === null);
+                    // Slot-Label folgt aus blueprints.label
+                    const firstSlotLabel = bar.querySelector('.hotbar-slot[data-slot="0"] .label');
+                    out.firstSlotShowsLabel = firstSlotLabel && firstSlotLabel.textContent === "Dorf";
+
+                    // setHotbarSlot setzt slot 5 auf eigenen Bauplan
+                    r.state.blueprints["test_hotbar_bp"] = {
+                        name: "test_hotbar_bp",
+                        label: "Test-Bp",
+                        builtIn: false,
+                        parts: [
+                            {
+                                shape: "box",
+                                color: 0x44aa44,
+                                position: { x: 0, y: 1, z: 0 },
+                                size: { x: 2, y: 2, z: 2 },
+                            },
+                        ],
+                    };
+                    const setOk = r.setHotbarSlot(5, "test_hotbar_bp");
+                    out.setHotbarOk =
+                        setOk === true && r.state.hotbar[5] === "test_hotbar_bp";
+                    // DOM hat label aktualisiert
+                    const slot5Label = bar.querySelector('.hotbar-slot[data-slot="5"] .label');
+                    out.hotbarDomReflectsSet = slot5Label && slot5Label.textContent === "Test-Bp";
+
+                    // Unbekannter Bauplan-Name wird abgelehnt
+                    const setBad = r.setHotbarSlot(5, "definitiv_nicht_da");
+                    out.setHotbarRejectsUnknown =
+                        setBad === false && r.state.hotbar[5] === "test_hotbar_bp";
+
+                    // selectHotbarSlot(idx) auf belegten Slot aktiviert Build-Modus
+                    r.selectHotbarSlot(5);
+                    out.selectActivatesMode =
+                        r.state.buildMode.active === true &&
+                        r.state.buildMode.blueprintName === "test_hotbar_bp" &&
+                        r.state.buildMode.slotIndex === 5;
+                    // Highlight im DOM
+                    const slot5El = bar.querySelector('.hotbar-slot[data-slot="5"]');
+                    out.highlightActiveSlot = slot5El && slot5El.classList.contains("active");
+
+                    // selectHotbarSlot(idx) auf leeren Slot deaktiviert Build-Mode
+                    r.selectHotbarSlot(8); // leer
+                    out.emptySlotDeactivates = r.state.buildMode.active === false;
+
+                    // confirmBuild im aktiven Modus spawnt den Bauplan
+                    r.selectHotbarSlot(5);
+                    for (const a of r.state.architectures.slice()) {
+                        if (a.mesh) r._cullArchitectureMesh(a);
+                    }
+                    r.state.architectures = [];
+                    const cb = r.confirmBuild();
+                    out.confirmBuildSpawnsCorrectBp =
+                        cb === true &&
+                        r.state.architectures.length === 1 &&
+                        r.state.architectures[0].type === "test_hotbar_bp";
+
+                    // setHotbarSlot(idx, null) leert den Slot
+                    r.setHotbarSlot(5, null);
+                    out.clearedSlotIsNull = r.state.hotbar[5] === null;
+                    const slot5LabelAfter = bar.querySelector('.hotbar-slot[data-slot="5"] .label');
+                    out.clearedDomShowsEmpty =
+                        slot5LabelAfter && slot5LabelAfter.textContent === "—";
+
+                    // Hotbar-Config-Drawer hat 9 Reihen
+                    const config = document.getElementById("hotbar-config");
+                    out.hotbarConfigInDom = !!config;
+                    out.hotbarConfigHasNineRows =
+                        config && config.querySelectorAll(".hotbar-config-row").length === 9;
+
+                    // Save-Roundtrip
+                    r.setHotbarSlot(7, "temple");
+                    r.saveState();
+                    const raw = localStorage.getItem("anazhRealmState");
+                    let parsed = null;
+                    try {
+                        parsed = JSON.parse(raw);
+                    } catch (e) {
+                        void e;
+                    }
+                    out.saveContainsHotbar =
+                        !!parsed &&
+                        Array.isArray(parsed.hotbar) &&
+                        parsed.hotbar.length === 9 &&
+                        parsed.hotbar[7] === "temple";
+
+                    // loadState restauriert hotbar
+                    r.state.hotbar = [null, null, null, null, null, null, null, null, null];
+                    r.loadState({ hotbar: ["temple", null, "village", null, null, null, null, null, null] });
+                    out.loadRestoresHotbar =
+                        r.state.hotbar[0] === "temple" && r.state.hotbar[2] === "village";
+
+                    // Cleanup
+                    delete r.state.blueprints["test_hotbar_bp"];
+                    r._clearBuildMode();
+                    r.state.hotbar = ["village", "temple", "waterfall", null, null, null, null, null, null];
+                    r._renderHotbarDOM();
+                    for (const a of r.state.architectures.slice()) {
+                        if (a.mesh) r._cullArchitectureMesh(a);
+                    }
+                    r.state.architectures = [];
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (!ring65Results || ring65Results.error) {
+                check(
+                    "Ring 6.5: Hotbar-Snapshot erreichbar",
+                    false,
+                    ring65Results && ring65Results.error
+                        ? ring65Results.error
+                        : "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Ring 6.5: #hotbar im DOM", ring65Results.hotbarInDom);
+                check("Ring 6.5: Hotbar hat 9 Slots", ring65Results.hotbarHasNineSlots);
+                check(
+                    "Ring 6.5: Default-Hotbar [village, temple, waterfall, ..., null]",
+                    ring65Results.defaultHotbar
+                );
+                check("Ring 6.5: Slot-Label folgt Bauplan-Label", ring65Results.firstSlotShowsLabel);
+                check("Ring 6.5: setHotbarSlot setzt Eintrag", ring65Results.setHotbarOk);
+                check("Ring 6.5: Hotbar-DOM aktualisiert sich nach setHotbarSlot", ring65Results.hotbarDomReflectsSet);
+                check(
+                    "Ring 6.5: setHotbarSlot lehnt unbekannte Baupläne ab",
+                    ring65Results.setHotbarRejectsUnknown
+                );
+                check(
+                    "Ring 6.5: selectHotbarSlot aktiviert Bau-Modus mit korrektem Bauplan",
+                    ring65Results.selectActivatesMode
+                );
+                check("Ring 6.5: aktiver Slot bekommt .active-Class", ring65Results.highlightActiveSlot);
+                check(
+                    "Ring 6.5: leerer Slot deaktiviert Bau-Modus",
+                    ring65Results.emptySlotDeactivates
+                );
+                check(
+                    "Ring 6.5: confirmBuild im Hotbar-Modus spawnt richtigen Bauplan",
+                    ring65Results.confirmBuildSpawnsCorrectBp
+                );
+                check("Ring 6.5: setHotbarSlot(idx, null) leert den Slot", ring65Results.clearedSlotIsNull);
+                check(
+                    "Ring 6.5: Leerer Slot zeigt — als Label",
+                    ring65Results.clearedDomShowsEmpty
+                );
+                check("Ring 6.5: #hotbar-config-Container im Spieler-Drawer", ring65Results.hotbarConfigInDom);
+                check("Ring 6.5: Hotbar-Config hat 9 Reihen", ring65Results.hotbarConfigHasNineRows);
+                check("Ring 6.5: saveState persistiert Hotbar", ring65Results.saveContainsHotbar);
+                check("Ring 6.5: loadState rekonstruiert Hotbar", ring65Results.loadRestoresHotbar);
+            }
+
             // ### Ring 6 V2 — Distance-Culling, Fraktal, Counter, Bau-Cursor ###
             const ring6v2Results = await page
                 .evaluate(() => {
@@ -2839,14 +3006,15 @@ function startSaveServer() {
                     r._clearBuildMode();
                     out.hudInDom = !!document.getElementById("build-mode-hud");
                     out.hudInitiallyHidden = document.getElementById("build-mode-hud").hidden === true;
-                    // Aktivieren
-                    r.setBuildMode("village");
-                    out.modeActiveAfterSet = r.state.buildMode.active === true && r.state.buildMode.type === "village";
+                    // Ring 6.5: Hotbar-API ersetzt setBuildMode. Slot 0 = village.
+                    r.selectHotbarSlot(0);
+                    out.modeActiveAfterSet =
+                        r.state.buildMode.active === true &&
+                        r.state.buildMode.blueprintName === "village";
                     out.phantomInScene =
                         r.state.buildMode.phantomMesh &&
                         r.state.scene.children.indexOf(r.state.buildMode.phantomMesh) >= 0;
                     out.hudShownWhenActive = document.getElementById("build-mode-hud").hidden === false;
-                    // Phantom-Material ist transparent
                     let foundTransparent = false;
                     r.state.buildMode.phantomMesh.traverse((node) => {
                         if (node.material && node.material.transparent && node.material.opacity < 1) {
@@ -2854,12 +3022,12 @@ function startSaveServer() {
                         }
                     });
                     out.phantomIsTransparent = foundTransparent;
-                    // Toggle (same form again → off)
-                    r.setBuildMode("village");
+                    // Toggle (gleicher Slot nochmal → off)
+                    r.selectHotbarSlot(0);
                     out.toggleOffSameForm = r.state.buildMode.active === false;
-                    // Switch form
-                    r.setBuildMode("temple");
-                    out.switchFormChanges = r.state.buildMode.type === "temple";
+                    // Slot wechseln (Slot 1 = temple)
+                    r.selectHotbarSlot(1);
+                    out.switchFormChanges = r.state.buildMode.blueprintName === "temple";
                     // confirmBuild platziert echte Struktur
                     const arBefore = r.state.architectures.length;
                     r.confirmBuild();
@@ -2935,12 +3103,12 @@ function startSaveServer() {
                 // Bau-Cursor
                 check("Ring 6 V2: #build-mode-hud im DOM", ring6v2Results.hudInDom);
                 check("Ring 6 V2: HUD initial versteckt", ring6v2Results.hudInitiallyHidden);
-                check("Ring 6 V2: setBuildMode aktiviert State", ring6v2Results.modeActiveAfterSet);
-                check("Ring 6 V2: Phantom-Mesh in der Szene", ring6v2Results.phantomInScene);
-                check("Ring 6 V2: HUD sichtbar im aktiven Bau-Modus", ring6v2Results.hudShownWhenActive);
-                check("Ring 6 V2: Phantom-Material ist transparent", ring6v2Results.phantomIsTransparent);
-                check("Ring 6 V2: Selbe Form nochmal → Toggle off", ring6v2Results.toggleOffSameForm);
-                check("Ring 6 V2: Form-Wechsel ändert Typ", ring6v2Results.switchFormChanges);
+                check("Ring 6.5: selectHotbarSlot aktiviert Build-Mode", ring6v2Results.modeActiveAfterSet);
+                check("Ring 6.5: Phantom-Mesh in der Szene", ring6v2Results.phantomInScene);
+                check("Ring 6.5: HUD sichtbar im aktiven Bau-Modus", ring6v2Results.hudShownWhenActive);
+                check("Ring 6.5: Phantom-Material ist transparent", ring6v2Results.phantomIsTransparent);
+                check("Ring 6.5: Selber Slot nochmal → Toggle off", ring6v2Results.toggleOffSameForm);
+                check("Ring 6.5: Slot-Wechsel ändert aktiven Bauplan", ring6v2Results.switchFormChanges);
                 check("Ring 6 V2: confirmBuild spawnt echte Struktur", ring6v2Results.confirmBuildSpawns);
                 check(
                     "Ring 6 V2: confirmBuild lässt Modus aktiv (Mehrfach-Bau)",

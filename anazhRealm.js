@@ -259,12 +259,16 @@ class AnazhRealm {
             // gefüllt; eigene Baupläne (Editor 6.6) kommen dazu und werden
             // persistiert.
             blueprints: {},
-            // Ring 6 V2 — Bau-Modus. Wenn aktiv, schwebt ein halbtransparenter
-            // Phantom-Mesh 5 m vor dem Spieler. Tasten 1/2/3 wählen Form,
-            // F baut, ESC verlässt. Sichtbar durch overlay-Hinweis.
+            // Ring 6.5 — Hotbar (9 Slots) + Bau-Modus. Jeder Slot enthält
+            // entweder einen Bauplan-Namen oder null. Tasten 1-9 wählen den
+            // Slot — leerer Slot lässt den Modus aus, belegter Slot aktiviert
+            // den entsprechenden Bauplan oder toggelt zurück, wenn er
+            // bereits aktiv ist. F baut. ESC verlässt.
+            hotbar: ["village", "temple", "waterfall", null, null, null, null, null, null],
             buildMode: {
                 active: false,
-                type: null, // "village" | "temple" | "waterfall" | null
+                slotIndex: -1,
+                blueprintName: null,
                 phantomMesh: null,
                 phantomDistance: 5,
             },
@@ -4583,6 +4587,9 @@ class AnazhRealm {
                     label: bp.label || bp.name,
                     parts: Array.isArray(bp.parts) ? JSON.parse(JSON.stringify(bp.parts)) : [],
                 })),
+            // Ring 6.5 — Hotbar-Belegung. Array von 9 Slots mit Bauplan-Name
+            // oder null. Default wird beim Init überschrieben.
+            hotbar: Array.isArray(this.state.hotbar) ? this.state.hotbar.slice(0, 9) : [],
         };
     }
 
@@ -4807,6 +4814,22 @@ class AnazhRealm {
                 this.spawnArchitecture(a.type, a.position, { seed: a.seed, scale: a.scale });
             }
             this.log(`Architekturen geladen: ${state.architectures.length}`);
+        }
+        // Ring 6.5 — Hotbar wiederherstellen. Nur 9 Slots, ungültige Einträge
+        // (Bauplan nicht registriert) auf null fallen lassen.
+        if (Array.isArray(state.hotbar)) {
+            const restored = [];
+            for (let i = 0; i < 9; i++) {
+                const name = state.hotbar[i];
+                if (typeof name === "string" && this.state.blueprints[name]) {
+                    restored.push(name);
+                } else {
+                    restored.push(null);
+                }
+            }
+            this.state.hotbar = restored;
+            this._renderHotbarDOM();
+            this.log(`Hotbar geladen: ${restored.filter((s) => s).length} Slots belegt`);
         }
         if (state.playerEmotions && typeof state.playerEmotions === "object") {
             for (const axis of Object.keys(this.state.player.emotions)) {
@@ -5848,30 +5871,37 @@ class AnazhRealm {
     // nach dem Bau auf transparent + opacity 0.4 stellen. So sieht's wie
     // ein Geist der späteren Struktur aus, kostet aber kein Sondermodell.
 
-    setBuildMode(type) {
-        const valid = { village: true, temple: true, waterfall: true };
-        const next = type && valid[type] ? type : null;
+    // Ring 6.5 — Hotbar-Slot auswählen. slotIndex 0..8. Wenn der Slot leer
+    // ist, wird der Bau-Modus deaktiviert. Wenn der Slot belegt UND derselbe
+    // Slot bereits aktiv ist, toggelt der Modus aus (zweiter 1-Druck =
+    // Modus aus). Sonst wird das Phantom auf den neuen Bauplan umgestellt.
+    selectHotbarSlot(slotIndex) {
         const bm = this.state.buildMode;
-        // Toggle: wenn dieselbe Form nochmal gewählt wird, Modus aus.
-        if (bm.active && bm.type === next) {
+        const idx = Math.max(0, Math.min(8, slotIndex | 0));
+        const blueprintName = this.state.hotbar[idx];
+        // Toggle: gleicher aktiver Slot → Modus aus.
+        if (bm.active && bm.slotIndex === idx) {
             this._clearBuildMode();
+            this._updateHotbarHighlight();
             return;
         }
-        // Altes Phantom wegräumen, falls Form-Wechsel
+        // Leerer Slot: keinen Modus aktivieren (aber Highlight setzen).
+        if (!blueprintName || !this.state.blueprints[blueprintName]) {
+            this._clearBuildMode();
+            bm.slotIndex = idx;
+            this._updateHotbarHighlight();
+            return;
+        }
+        // Altes Phantom wegräumen, falls Bauplan-Wechsel.
         if (bm.phantomMesh && this.state.scene) {
             this.state.scene.remove(bm.phantomMesh);
             this._disposeSoulGroup(bm.phantomMesh);
             bm.phantomMesh = null;
         }
-        if (!next) {
-            this._clearBuildMode();
-            return;
-        }
         bm.active = true;
-        bm.type = next;
-        const builders = this._architectureBuilders();
-        const phantom = builders[next](Math.floor(Math.random() * 0xffffffff));
-        // Materialien transparent machen — Phantom statt fertige Struktur.
+        bm.slotIndex = idx;
+        bm.blueprintName = blueprintName;
+        const phantom = this._buildFromBlueprint(this.state.blueprints[blueprintName]);
         phantom.traverse((node) => {
             if (node.material) {
                 node.material.transparent = true;
@@ -5882,7 +5912,27 @@ class AnazhRealm {
         if (this.state.scene) this.state.scene.add(phantom);
         bm.phantomMesh = phantom;
         this._updateBuildModeHud();
-        this.log(`Bau-Modus: ${next}`, "INFO");
+        this._updateHotbarHighlight();
+        this.log(`Bau-Modus: ${blueprintName} (Slot ${idx + 1})`, "INFO");
+    }
+
+    // Bauplan in einen Hotbar-Slot legen. Persistiert sich automatisch via
+    // Save. UI im Spieler-Drawer ruft das auf.
+    setHotbarSlot(slotIndex, blueprintName) {
+        const idx = Math.max(0, Math.min(8, slotIndex | 0));
+        if (blueprintName && !this.state.blueprints[blueprintName]) {
+            this.log(`Hotbar-Slot ${idx + 1}: unbekannter Bauplan '${blueprintName}'`, "ERROR");
+            return false;
+        }
+        this.state.hotbar[idx] = blueprintName || null;
+        this._renderHotbarDOM();
+        // Wenn der aktive Slot geändert wurde, Phantom-Mesh neu bauen.
+        if (this.state.buildMode.slotIndex === idx) {
+            const wasActive = this.state.buildMode.active;
+            this._clearBuildMode();
+            if (wasActive && blueprintName) this.selectHotbarSlot(idx);
+        }
+        return true;
     }
 
     _clearBuildMode() {
@@ -5892,7 +5942,7 @@ class AnazhRealm {
             this._disposeSoulGroup(bm.phantomMesh);
         }
         bm.active = false;
-        bm.type = null;
+        bm.blueprintName = null;
         bm.phantomMesh = null;
         this._updateBuildModeHud();
     }
@@ -5901,13 +5951,10 @@ class AnazhRealm {
     // Modus bleibt aktiv für Mehrfach-Bau (ESC verlässt explizit).
     confirmBuild() {
         const bm = this.state.buildMode;
-        if (!bm.active || !bm.type || !bm.phantomMesh) return false;
+        if (!bm.active || !bm.blueprintName || !bm.phantomMesh) return false;
         const p = bm.phantomMesh.position;
-        // +0.5 zurück addieren, damit baseY-Heuristik (pos.y - 0.5) den
-        // richtigen Boden trifft. Phantom selbst wurde mit baseY = pos.y
-        // - 0.5 platziert; pos für Spawn nimmt das wieder auf.
         const spawnPos = { x: p.x, y: p.y + 0.5, z: p.z };
-        this.spawnArchitecture(bm.type, spawnPos);
+        this.spawnArchitecture(bm.blueprintName, spawnPos);
         return true;
     }
 
@@ -5930,13 +5977,94 @@ class AnazhRealm {
         const hud = document.getElementById("build-mode-hud");
         if (!hud) return;
         const bm = this.state.buildMode;
-        if (bm.active && bm.type) {
-            const labels = { village: "Dorf", temple: "Tempel", waterfall: "Wasserfall" };
-            hud.textContent = `Bau: ${labels[bm.type]} — F bauen, ESC verlassen, 1/2/3 wechseln`;
+        if (bm.active && bm.blueprintName) {
+            const bp = this.state.blueprints[bm.blueprintName];
+            const label = bp && bp.label ? bp.label : bm.blueprintName;
+            hud.textContent = `Bau: ${label} — F bauen, ESC verlassen, 1-9 Slot wählen`;
             hud.hidden = false;
         } else {
             hud.hidden = true;
             hud.textContent = "";
+        }
+    }
+
+    // Hotbar-DOM neu rendern: 9 Slots mit Label + Slot-Nummer. Wird beim
+    // Init aufgerufen und nach jeder setHotbarSlot-Mutation.
+    _renderHotbarDOM() {
+        if (typeof document === "undefined") return;
+        const bar = document.getElementById("hotbar");
+        if (!bar) return;
+        bar.innerHTML = "";
+        for (let i = 0; i < 9; i++) {
+            const name = this.state.hotbar[i];
+            const slot = document.createElement("button");
+            slot.type = "button";
+            slot.className = "hotbar-slot";
+            slot.setAttribute("data-slot", String(i));
+            const num = document.createElement("span");
+            num.className = "num";
+            num.textContent = String(i + 1);
+            const label = document.createElement("span");
+            label.className = "label";
+            if (name && this.state.blueprints[name]) {
+                const bp = this.state.blueprints[name];
+                label.textContent = bp.label || name;
+                slot.classList.add("filled");
+            } else {
+                label.textContent = "—";
+            }
+            slot.appendChild(num);
+            slot.appendChild(label);
+            slot.addEventListener("click", () => this.selectHotbarSlot(i));
+            bar.appendChild(slot);
+        }
+        this._updateHotbarHighlight();
+        this._renderHotbarConfigDOM();
+    }
+
+    _updateHotbarHighlight() {
+        if (typeof document === "undefined") return;
+        const slots = document.querySelectorAll("#hotbar .hotbar-slot");
+        const bm = this.state.buildMode;
+        slots.forEach((slot, i) => {
+            slot.classList.toggle("active", bm.active && bm.slotIndex === i);
+        });
+    }
+
+    // Hotbar-Belegung im Spieler-Drawer: 9 Reihen mit Slot-Nummer + Dropdown.
+    // Wird aufgerufen, wenn der Spieler-Drawer geöffnet wird (oder beim Init,
+    // dann ist's idempotent).
+    _renderHotbarConfigDOM() {
+        if (typeof document === "undefined") return;
+        const container = document.getElementById("hotbar-config");
+        if (!container) return;
+        container.innerHTML = "";
+        const blueprintNames = Object.keys(this.state.blueprints || {});
+        for (let i = 0; i < 9; i++) {
+            const row = document.createElement("div");
+            row.className = "hotbar-config-row";
+            const num = document.createElement("span");
+            num.className = "num";
+            num.textContent = String(i + 1);
+            const sel = document.createElement("select");
+            sel.setAttribute("data-slot", String(i));
+            const emptyOpt = document.createElement("option");
+            emptyOpt.value = "";
+            emptyOpt.textContent = "— leer —";
+            sel.appendChild(emptyOpt);
+            for (const name of blueprintNames) {
+                const opt = document.createElement("option");
+                opt.value = name;
+                opt.textContent = this.state.blueprints[name].label || name;
+                sel.appendChild(opt);
+            }
+            sel.value = this.state.hotbar[i] || "";
+            sel.addEventListener("change", () => {
+                this.setHotbarSlot(i, sel.value || null);
+            });
+            row.appendChild(num);
+            row.appendChild(sel);
+            container.appendChild(row);
         }
     }
 
@@ -6021,6 +6149,9 @@ class AnazhRealm {
         this.initStatusPanel();
         this.playerSoulInitDOM();
         this.cameraModeInitDOM();
+        // Ring 6.5 — Hotbar im DOM rendern. Wird hier einmal aufgesetzt;
+        // setHotbarSlot löst ein Re-Render aus.
+        this._renderHotbarDOM();
         this._updateBuildModeHud();
         this.initTopbar();
         this.initConsoleDOM();
@@ -6139,14 +6270,16 @@ class AnazhRealm {
             this.state.keys[event.key.toLowerCase()] = true;
             if (event.key === " " && !inInput) this.handleJump(performance.now() / 1000);
             if (inInput) return;
-            // Ring 6 V2 — Bau-Cursor-Tasten
-            if (event.key === "1") this.setBuildMode("village");
-            else if (event.key === "2") this.setBuildMode("temple");
-            else if (event.key === "3") this.setBuildMode("waterfall");
-            else if (event.key.toLowerCase() === "f") {
+            // Ring 6.5 — Hotbar-Tasten 1-9. Slot wird gewählt; bei
+            // belegtem Slot aktiviert Build-Mode für den dort liegenden
+            // Bauplan, bei leerem Slot bleibt Build-Mode aus.
+            if (event.key >= "1" && event.key <= "9") {
+                this.selectHotbarSlot(parseInt(event.key, 10) - 1);
+            } else if (event.key.toLowerCase() === "f") {
                 if (this.confirmBuild()) event.preventDefault();
             } else if (event.key === "Escape") {
                 if (this.state.buildMode.active) this._clearBuildMode();
+                this._updateHotbarHighlight();
             }
         });
         window.addEventListener("keyup", (event) => {

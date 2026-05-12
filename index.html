@@ -402,6 +402,66 @@
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
         }
         #build-mode-hud[hidden] { display: none; }
+        /* Ring 6.5 — Hotbar. Neun Slots am unteren Bildschirmrand, brass-
+           getintet, aktiver Slot mit Violet-Glow markiert. */
+        #hotbar {
+            position: absolute;
+            bottom: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 6px;
+            padding: 6px;
+            background-color: rgba(20, 12, 4, 0.6);
+            border: 1px solid var(--brass-3);
+            border-radius: 6px;
+            z-index: 5;
+            box-shadow: 0 2px 14px rgba(0, 0, 0, 0.5);
+        }
+        .hotbar-slot {
+            width: 64px;
+            height: 56px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 4px 2px;
+            background: linear-gradient(180deg, rgba(255, 235, 190, 0.18), rgba(60, 40, 18, 0.4));
+            color: var(--parch-ink-faded);
+            border: 1px solid var(--brass-3);
+            border-radius: 3px;
+            font-family: 'Cinzel', Georgia, serif;
+            cursor: pointer;
+            transition: border-color 120ms ease, box-shadow 120ms ease;
+        }
+        .hotbar-slot .num {
+            font-size: 10px;
+            color: var(--brass-1);
+            font-weight: 600;
+            line-height: 1;
+        }
+        .hotbar-slot .label {
+            font-size: 11px;
+            text-align: center;
+            line-height: 1.1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 60px;
+        }
+        .hotbar-slot.filled {
+            background: linear-gradient(180deg, rgba(255, 235, 190, 0.32), rgba(110, 70, 26, 0.55));
+            color: var(--parch-1);
+            border-color: var(--brass-2);
+        }
+        .hotbar-slot.filled .label { color: var(--parch-1); }
+        .hotbar-slot:hover { border-color: var(--brass-1); }
+        .hotbar-slot.active {
+            border-color: var(--violet-1);
+            box-shadow: 0 0 12px var(--violet-glow), inset 0 0 8px rgba(180, 108, 255, 0.25);
+            color: #fff;
+        }
+        .hotbar-slot.active .label { color: #fff; }
         /* Topbar-Toggle-Buttons (Theme / Stimme / Klang) als Messing-Latches.
            Sitzen rechts neben den Tabs in der Topbar — kompakt nebeneinander. */
         .topbar-toggles {
@@ -875,6 +935,36 @@
             outline: 1px solid var(--violet-1);
             outline-offset: 1px;
         }
+        /* Ring 6.5 — Hotbar-Belegungs-Editor im Spieler-Drawer */
+        .drawer .hotbar-config-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+        .drawer .hotbar-config-row .num {
+            display: inline-block;
+            min-width: 18px;
+            text-align: center;
+            font-family: 'Cinzel', Georgia, serif;
+            color: var(--brass-1);
+            font-weight: 600;
+            font-size: 11px;
+        }
+        .drawer .hotbar-config-row select {
+            flex: 1;
+            background: linear-gradient(180deg, rgba(255, 235, 190, 0.4), rgba(180, 140, 80, 0.25));
+            color: var(--parch-ink);
+            border: 1px solid var(--brass-2);
+            border-radius: 3px;
+            padding: 3px 6px;
+            font-family: 'Cinzel', Georgia, serif;
+            font-size: 11px;
+            cursor: pointer;
+        }
+        .drawer .hotbar-config-row select:hover {
+            border-color: var(--brass-1);
+        }
         /* #help-toggle / #help-overlay sind in V2 weg — Hilfe ist ein Drawer-
            Tab. Selektoren bleiben, falls jemand sie referenziert, sind aber
            im neuen DOM tot. */
@@ -961,6 +1051,7 @@
     <div id="fps"></div>
     <div id="dialogue-box" aria-live="polite"></div>
     <div id="build-mode-hud" aria-live="polite" hidden></div>
+    <div id="hotbar" role="toolbar" aria-label="Bauplan-Hotbar"></div>
     <header id="topbar" class="hud-frame">
         <div class="topbar-inner">
             <div class="title">Anazh Realm <span class="version">v7.65</span> <span class="sub">— Das Ultiversum</span></div>
@@ -1038,6 +1129,11 @@
                 <label for="player-soul-select">Form</label>
                 <select id="player-soul-select" aria-label="Spieler-Seele wählen"></select>
             </div>
+        </section>
+        <section class="section">
+            <h3>Hotbar-Belegung</h3>
+            <p class="drawer-hint">Welcher Bauplan liegt auf welchem Slot (1–9). Tasten 1–9 wählen, F baut.</p>
+            <div id="hotbar-config"></div>
         </section>
         <section class="section">
             <h3>Emotionen</h3>
