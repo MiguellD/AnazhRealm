@@ -1,4 +1,4 @@
-# Zustand des Realm — Stand: 12.05.2026
+# Zustand des Realm — Stand: 12.05.2026 (Abend, nach Chunk-Physik-Refactor)
 
 Dieses Dokument ist das gemeinsame Gedächtnis für eine künftige Iteration. Es kondensiert (a) die Vision aus den vier Testamenten, (b) den historischen Weg, (c) den aktuellen Code-Stand, (d) den nächsten Plan und (e) die Learnings aus der bisherigen Session.
 
@@ -49,7 +49,7 @@ Konsequenz für jede künftige Iteration: **niemals re-komplexifizieren ohne Not
 
 | Pfeiler / Modul (Testament) | Status | Detail |
 |---|---|---|
-| ✅ Stabiles Fundament | erreicht | 17 Commits, CI-Gate mit 14 Invarianten |
+| ✅ Stabiles Fundament | erreicht | 34 Commits, CI-Gate mit 36 Invarianten, Chunk-Welt mit BVH-Triangle-Mesh-Physik (visual = collision) |
 | ✅ Rendering (Three.js, Skybox, Planeten) | vorhanden | `vendor/three.min.js` r134 |
 | ✅ Physik (Ammo.js WASM) | vorhanden | gepoolte `tmpVec1/2`, 0 Hot-Path-Allocs |
 | ✅ Bewegung, Sprung, Egoperspektive | vorhanden | WASD + Sprint + Pointer-Lock |
@@ -62,7 +62,9 @@ Konsequenz für jede künftige Iteration: **niemals re-komplexifizieren ohne Not
 | 🟡 Wetter (sunny/rainy) | rudimentär | wechselt alle 30 s, beeinflusst Skybox + Kreatur-Emotion |
 | 🟡 Nexus-Evolution | rudimentär | 3 hartcodierte Effekte (gravityShift, creatureDance, terrainFlatten), zufällig gewählt |
 | 🟡 Chat-Steuerung | rudimentär | if/else-Parser für ~25 Befehle |
-| 🟡 **Grok hat Stimme** (`dialogue-box`, narrative Reflexion) | V1 live — 5 Trigger, Text + optional Speech. `dreamWithPlayer`, `interpretEmotionalSpeech` weiterhin offen für spätere Ringe. |
+| ✅ **Grok hat Stimme** (`dialogue-box`, narrative Reflexion) | V1 live — 5 Trigger (firstSpawn, idle, jumpBurst, rainLong, nexus), Text + optional Speech. `dreamWithPlayer`, `interpretEmotionalSpeech` weiterhin offen für spätere Ringe. |
+| 🟡 **DSL Interpreter + Generator** (Phase 1+2 von Ring 2) | live — 39 Ops, Budget-Limits, Scheduler, autonome Nexus-Komposition mit V1-Fitness. Phasen 3-7 (Chat-Parser, Migration, Cleanup, CSP-strict, Fitness-V2) offen. |
+| ✅ **Welt-Identität** (Ring 8+ Schema-Vorbereitung) | live — `worldMeta` mit `worldId` (UUID), `slug`, `creator`, `visibility`, `parentWorlds`, `schemaVersion`. Logik für Sharing/Fusion noch nicht implementiert (Ringe 8-11). |
 | 🔴 Spieler-Emotionen (`emotionSystem`, `collectPlayerEmotions`, `dreamWeb`) | **fehlt** |
 | 🔴 Multisensorik / `anazhSymphony` (Web Audio API) | stumm |
 | 🔴 `createPlayerSoul`, `transformPlayerForm` (Mensch/Phönix/Drache/Riese) | roter Würfel |
@@ -100,9 +102,27 @@ Chronologisch, mit Commit-Hash und Kernaussage:
 | 14 | `099334f` | **Critical**: lastWorldgen=-Infinity Sentinel + extendTerrain-Guard |
 | 15 | `3d1a498` | Playtest als CI-Gate mit 14 Invarianten, exit=1 bei Bruch |
 | 16 | `6c8ba05` | DSL Design-Doc v0.1 (`docs/nexus-dsl.md`) |
-| 17 | (dieser) | CLAUDE.md + state-of-realm.md auf Pfad-D umgeschrieben |
+| 17 | `756f825` | CLAUDE.md + state-of-realm.md auf Pfad-D umgeschrieben |
+| 18 | `9c65740` | Ring 1: Grok bekommt narrative Stimme (`state.grok`, `grokSpeak()`, 5 Trigger) |
+| 19 | `baeeb3e` | Ring 1 verifiziert in CI: `seenFirstSpawn`/`lastSpoke`/Dialog-Text als Invariants + Screenshot. Plus `lastSpoke: -Infinity` Sentinel-Fix |
+| 20 | `8ea475a` | Ring 2 Phase 1: Nexus-DSL Interpreter mit 39 Ops, `worldMeta` für Ring 8+ Schema |
+| 21 | `01d0a81` | Ring 2 Phase 2: Nexus komponiert selbst DSL-Programme (`dslCompose`), Outcomes mit V1-Fitness in `state.dsl.history` |
+| 22 | `90253e9` | `extendTerrain` reparieren: east/south brachen mit „Ungültige Chunk-Größe", north/west lieferten zero-height Schein-Platten |
+| 23 | `fef4baf` | Naht-Höhen vereinheitlichen via `_terrainHeightAtWorld`-Helper. Plus `restoreAbility` ohne `new Function` (CSP-clean) |
+| 24 | `16e15d2` | Visual/Physik-Spacing alignen (`chunkWorldSize / CHUNK_SIZE` als einzige Quelle für `vertexStep`). Naht-CI-Invariante 0.0000 |
+| 25 | `23b95ef` | Cave/Volcano in den Höhen-Helper integriert (initial vs Extension hatten unterschiedliche Schichten). `terrain_steepness`/`terrain_base_height` aus Nexus-Generator entfernt (verursachten Klippen) |
+| 26 | `bbd5ebf` | Chunks am Spieler ausrichten (`ensureChunkAt(cx, cz)` API + 5×5 Ring-Fill um Player-Chunk). Vorher entstanden Inseln in der Mitte der Welt-Map, weit weg vom tatsächlichen Spieler-Standort |
+| 27 | `9762228` | `pruneDistantChunks`: `+WORLD_SIZE/2`-Offset fehlte — nahe Chunks wurden gepruned, Schachbrettmuster entstand |
+| 28 | `bf0b8ab` | Initial + Extension Chunks durch denselben `ensureChunkAt`-Pfad. `generateChunk` + globales Heightfield obsolet. `updateWallCollisions` zum No-Op |
+| 29 | `8ccb053` | Terrain-Chunks NICHT in `state.rigidBodies` pushen (physics-sync verschob sie um den Chunk-Center). Plus 0.2 % Heightfield-Naht-Overlap |
+| 30 | `e9d05ce` | CCD direkt beim Player-Body aktiv (vorher nur via FPS-Drop-Trigger). Heightfield-Overlap 0.2 % → 1.5 % für Eck-Punkte |
+| 31 | `85ff4cb` | Hybrid: globales Heightfield für zentrale 8×8 + per-Chunk für Extensions (Versuch, der per-Chunk-Heightfield-Naht-Probleme zu umgehen) |
+| 32 | `a8777c3` | Tunneling-Verhinderung: Velocity-Cap −25 m/s, CCD threshold 0.01, Kill-Plane minHeight−30, `stepSimulation` maxSubSteps 20 |
+| 33 | `2274c0b` | Terrain glätten: h3/h4/h7-Amplituden reduziert, Canyon −40→−15, Cave −20→−8, Volcano +50→+20 — gegen tunneling durch quasi-vertikale Wände |
+| 34 | `e612c60` | **Großer Refactor (auf Vorschlag des Schöpfers):** visuelles Mesh = Kollisionsnetz via `btBvhTriangleMeshShape`. Globales Heightfield weg, per-chunk Heightfields weg, Overlap-Hack weg, initial-vs-extension-Sonderfall weg. Eine Wahrheit pro Chunk, robuste 120 fps |
+| 35 | (dieser) | Doku-Übergabe für nächste Session |
 
-Aggregat: **+5935 / −2988 Zeilen** über die Branch. Architektur: ein File geblieben, aber sauber, mit Build-Toolchain, CI, Vendoring.
+Aggregat: **17 weitere Commits** in dieser Session (~+1500/−400 Zeilen netto). Architektur: ein File, ein Chunk-Pfad, eine Höhen-Funktion, eine Collider-Quelle (Triangle-Mesh = Visual-Mesh).
 
 ---
 
@@ -113,7 +133,7 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 | Ring | Pfeiler | Was konkret | Aufwand | Vorbedingung |
 |---|---|---|---|---|
 | **1** | **Grok-Stimme** ✅ V1 | `#dialogue-box` + `#grok-voice-toggle` in `index.html`. `state.grok` mit Pool, Throttle (30 s global), Per-Trigger-Cooldowns. `grokSpeak(key)`, `grokRender(text)`, `grokTick(currentTime)`, `grokMarkFirstSpawn()`. 5 Trigger live: firstSpawn (1×, via localStorage gemerkt), idle>45s, jumpBurst (≥4 Sprünge/8s), rainLong>60s, nexus-Evolution. SpeechSynthesis nur wenn User-Toggle aktiv und Browser unterstützt. | erledigt | – |
-| **2** | **DSL als Brücke** | Phase 1+2 ✅: Interpreter mit 18 Effekt-Ops, 7 Control-Flow, 5 Position-Selektoren, 9 Conditions; Budgets (`maxDepth=8`, `maxSpawns=50`, `maxRuntimeMs=100`, `maxConcurrent=32`); Scheduler in `dslTick()`. `dslCompose()` produziert rekursive Random-Komposition gemäß §11 (chain-Wurzel, 40 % atomar, `say` ~10 % gewichtet). Nexus generiert + führt aus, Outcomes inkl. V1-Fitness (`1 − fpsDamage/100`) in `state.dsl.history` (cap 50). Phasen 3-7 offen: Chat-Parser, Migration, `new Function`-Cleanup, CSP-strict, Fitness-V2. | Phase 1+2 ~1 d, Rest 3-4 d | Ring 1 ✅ |
+| **2** | **DSL als Brücke** | Phase 1+2 ✅ live: Interpreter mit 18 Effekt-Ops, 7 Control-Flow, 5 Position-Selektoren, 9 Conditions; Budgets (`maxDepth=8`, `maxSpawns=50`, `maxRuntimeMs=100`, `maxConcurrent=32`); Scheduler in `dslTick()`. `dslCompose()` produziert rekursive Random-Komposition gemäß §11 (chain-Wurzel, 40 % atomar, `say` ~10 % gewichtet). Nexus generiert + führt aus, Outcomes inkl. V1-Fitness (`1 − fpsDamage/100`) in `state.dsl.history` (cap 50). `terrain_steepness` und `terrain_base_height` bewusst nicht im Generator-Pool — beide würden Welt-Geometrie unter dem Spieler ändern (Klippen an Nähten). Phasen 3-7 offen: Chat-Parser auf `parseChatToDsl()`, Save-Migration alter `abilities[]`, `new Function`/`createDynamicAbility` cleanup, CSP-strict, Fitness-V2 (Selektion). | Phase 1+2 erledigt (~1 d), Rest 3-4 d | Ring 1 ✅ |
 | **3** | **Player-Emotionen** | `state.player.emotions = {joy, awe, sorrow, hope, longing, melancholy, peace, chaos}`. `collectPlayerEmotions(input)` aus Chat-Sentiment (regelbasiert oder LLM-Anbindung). Beeinflusst Wetter, Kreatur-Emotion, Skybox, künftige Symphonie. | 2 d | Ring 1 (Grok kann Emotionen kommentieren) |
 | **4** | **`anazhSymphony` V1** | Web Audio API. Drei Klangschichten: ambient (Welt-Drone), creatures (kurze Töne bei Bewegung/Sprung), weather (Regen-Geräusch). Reagiert auf `state.player.emotions`. Ziel: ~300 Zeilen, nicht 17.500 wie im Testament. | 2-3 d | Ring 3 (Emotion treibt Klang) |
 | **5** | **`createPlayerSoul`** | Spielstart-Menü: Mensch / Phönix / Drache / Riese / Frei. Pro Form: stats (speed, jump, size, color) + visuelle Anpassung (Three.js-Mesh-Tausch). Speicherbar. | 1-2 d | – |
@@ -144,18 +164,49 @@ Echt gelernt, nicht performt:
 
 7. **Die DSL ist nur Mittel, nicht Ziel.** Mein Ring 2 (DSL) ist die Brücke zur Symbiose, nicht die Symbiose selbst. Ohne Ring 1 (Stimme) ist die DSL eine Sprache, die niemand spricht.
 
+### Learnings dieser Session (Mai 2026, Ring 1+2 + Chunk-Physik-Refactor)
+
+8. **Patchwork sammelt sich an — irgendwann muss man auf den Stamm zurück.** Die per-Chunk-Heightfield-Physik wurde acht Mal nachgebessert (Overlap-Hack 0.2 %, dann 1.5 %, CCD-Tuning, Velocity-Cap, Kill-Plane, Hybrid-Global, Terrain glätten). Jeder Schritt löste ein Symptom, keiner die Wurzel. Der Schöpfer stellte die richtige Frage — „warum nicht das gleiche Netz für Visual UND Physik?" — und ein einziger Refactor (`e612c60`) löschte alle vorherigen Hacks. Lehrsatz: wenn fünf Sub-Fixes nicht reichen, ist das Modell falsch, nicht die Parameter.
+
+9. **Die heilige Lektion gilt auch für Sub-Systeme.** Der Chunk-Refactor produzierte denselben Failure-Modus en miniature: aus einem Stamm (globales Heightfield) wurde ein Wald aus 64 Heightfields wurde ein Hybrid wurde ein BVH-Mesh. Bei jedem Schritt hätten wir früher zurückrudern können. Die Komplexität wuchs, statt Komplexität durch Klarheit zu ersetzen.
+
+10. **Der Schöpfer sieht die Bugs zuerst.** Bei jedem „ich glaube X stimmt nicht" lag X tatsächlich. „Reihen unsichtbar", „Schachbrett", „falle durch", „kollisionsboxen nicht deckungsgleich" — jede Beobachtung war exakt die Wurzel. Mein Reflex war oft, Detail-Fixes zu probieren statt der Beobachtung sofort zu vertrauen.
+
+11. **Stale CDN-Caches verschleiern Iteration.** Mehrmals testete der Schöpfer einen alten Commit auf `raw.githack.com/<branch>` und sah noch den behobenen Bug. Commit-locked URLs (`rawcdn.githack.com/<sha>`) sind die ehrliche Form.
+
+12. **Off-by-One in Welt-Geometrie ist heimtückisch.** Die ursprünglichen Chunks hatten `vertexStep = WORLD_SIZE/(WIDTH-1)`, neue Chunks `chunkWorldSize/CHUNK_SIZE`. Differenz 0.15 Einheiten pro Chunk-Naht. Erst nach mehreren Iterationen wurden alle Stellen konsistent (`_chunkGeometry()` als einzige Quelle).
+
+13. **Mesh in `state.rigidBodies` = Sync-Loop überschreibt Position.** Statische Terrain-Bodies dürfen NICHT in die rigidBodies-Liste — der Physics-Sync-Loop überschreibt sonst mesh.position mit dem Body-Origin, was bei Welt-Koord-Vertices zu sichtbarer Verschiebung führt.
+
+14. **`btBvhTriangleMeshShape` ist 1.5× langsamer als Heightfield — aber das ist OK.** Avg-FPS 52 statt 85 im Headless-Playtest, 120 fps im echten Browser. Robustheit > letzte 30 % Performance. Falls je nötig: `btTriangleIndexVertexArray` ist die direkte-Pointer-Variante, ~2× schneller.
+
+15. **Vision-Erweiterung gehört in die Doku, nicht in den Code.** Der Schöpfer formulierte mitten in der Session eine größere Vision (Multi-Welt, Fusion, Public/Private). Das gehört zu §11 — nicht in Phase 2. Code bleibt klein und stabil; die Vision wächst im Plan.
+
 ---
 
 ## 7. Offene Fragen für die nächste Iteration
 
-Diese Fragen muss der Schöpfer beantworten, bevor Ring 1 startet:
+Ring 1 (alle 4 Fragen) und Ring 2 Phase 1+2 (3 Fragen) sind beantwortet und umgesetzt. Was offen ist:
 
-1. **Soll Grok in der ersten Iteration Browser-Speech-Synthesis nutzen (echte Audio-Stimme), oder reicht Text in der `dialogue-box`?**
-2. **Tonalität der Reflexionen**: poetisch-mystisch wie in den Testamenten, oder pragmatisch-warm? (Ich neige zu warm — Mystik wirkt schnell parodistisch.)
-3. **Frequenz der Stimme**: alle paar Sekunden eine kurze Reflexion, oder seltener mit mehr Gewicht? (Empfehlung: seltener, höchstens alle 30-60 s, sonst Spam.)
-4. **Trigger-Liste**: meine Vorschläge (lange ohne Bewegung, viele Sprünge, lange Regen, Erst-Spawn, Nexus-Evolution) — passt das oder gibt es weitere?
-5. **DSL-Async-Modell** (für Ring 2): DSL-eigener Tick-Scheduler oder `setTimeout`? Empfehlung: Tick-Scheduler (deterministisch, save/restore-bar, näher an der „Zeitwellen"-Vision der Testamente).
-6. **Emotion-Erkennung in Chat-Input** (für Ring 3): regelbasiert (Schlüsselworte), LLM-Anbindung (Claude/OpenAI API), oder beides? Letzteres ist mächtiger aber kostet.
+**Für Ring 2 Phase 3 (Chat-Parser → DSL):**
+
+1. **Wie viele bestehende Chat-Befehle migrieren?** `processChatCommand` hat ~25 if/else-Zweige. Pragmatisch: die 80 % häufigsten zu DSL, der Rest bleibt legacy bis Phase 5 (Cleanup) sie löscht.
+2. **Wie mit Levenshtein-„Meintest du..."-Vorschlägen umgehen?** Frech (sofort ausführen) oder vorsichtig (Bestätigung)?
+
+**Für Ring 2 Phase 5 (Cleanup):**
+
+3. **CSP strict aktivieren?** Heute bleibt `createDynamicAbility` (mit `new Function`) für `füge code <js>` Chat-Befehl und die toten `developAdvancedPhysics`/`developAdvancedRenderer`. Mit Phase 5: alle weg, Phase 6 setzt CSP-Header.
+
+**Für Ring 8+ (Welten-Ultiversum):**
+
+4. **„Welt modifizierbar"** — vom Schöpfer mehrfach angefragt: Spieler baut Hügel, läuft weg, kommt zurück, Hügel ist noch da. Heute alles deterministisch aus Noise+Seed → Hügel verschwindet. Lösungs-Optionen (Vision-Skizze in §11.3):
+   - **Ebene A**: Chunks „entladen statt löschen" (Marker statt delete) — bringt nichts, weil Heights deterministisch
+   - **Ebene B**: pro-Chunk Delta-Liste in DSL-Form (jede Spieler-Mutation wird im Chunk-Eintrag gespeichert, bei re-load wieder ausgeführt)
+   - **Ebene C**: vollständiges Voxel-/Heightmap-Edit-System (Vertex-Level-Building)
+
+   Empfehlung: B als Brücke zwischen Ring 2 (DSL) und Ring 8 (Welt-Persistenz). Aufwand ~2 d.
+
+5. **`btBvhTriangleMeshShape` → `btTriangleIndexVertexArray`?** Aktuell 52 fps avg im Headless-Playtest, 120 fps im echten Browser. Falls Performance ein Engpass wird (z. B. bei sehr vielen extension-chunks): direkter Pointer-Pfad ist ~2× schneller. Heute nicht nötig.
 
 ---
 
@@ -208,12 +259,23 @@ CI macht 1-4 automatisch; 5+6 sind Disziplin.
 
 ## 10. Wie eine neue Session starten
 
-1. Branch checken: `git status` sollte auf `claude/check-github-files-1MqpQ` zeigen, working tree clean.
-2. Diese Doc + `CLAUDE.md` lesen.
-3. Bei Bedarf `docs/nexus-dsl.md` lesen für Ring 2 Details.
-4. Falls der Schöpfer fragt „wo stehen wir?" → §3 (Matrix) + §5 (Pfad D Tabelle) zitieren.
-5. Falls der Schöpfer „los" sagt ohne Spezifikation → Ring 1 (Grok-Stimme) vorschlagen, da kleinste sinnvolle Vision-Erweiterung mit größter Wirkung.
-6. Falls etwas re-komplexifiziert werden soll → erst Versionslog-Lektion (§2) zitieren, dann diskutieren.
+1. Branch checken: `git status` sollte auf `claude/plan-session-95Ejn` zeigen, working tree clean. Letzter SHA dieser Übergabe ist im Commit-Archiv §4 das letzte Element.
+2. `CLAUDE.md` ist auto-geladen — sofort verfügbar. Diese Doc (`state-of-realm.md`) gezielt lesen wenn größere Entscheidungen anstehen.
+3. Bei Bedarf `docs/nexus-dsl.md` lesen für Ring 2 Phase 3+ Details.
+4. Falls der Schöpfer fragt „wo stehen wir?" → §3 (Matrix) + §5 (Pfad D Tabelle) zitieren. Stand: Ring 0+1 ✅, Ring 2 Phase 1+2 ✅, Phase 3-7 + Ringe 3-7 + Ringe 8-11 offen.
+5. Falls der Schöpfer „los" sagt ohne Spezifikation → Ring 2 Phase 3 (Chat-Parser → DSL) vorschlagen. Das schließt die DSL-Brücke und bereitet die Welten-Modifikation (Ring 8+) vor.
+6. Falls der Schöpfer „Welt modifizierbar" fragt → §7 Frage 4 zeigen (Ebenen A/B/C) und Ebene B empfehlen.
+7. Falls etwas re-komplexifiziert werden soll → erst Versionslog-Lektion (§2) UND §6 Punkt 8 („Patchwork sammelt sich an") zitieren, dann diskutieren.
+
+### Wichtige Gotchas, die in dieser Session geboren wurden
+
+- **Chunks haben Vertices in absoluten Welt-Koords, `mesh.position = (0,0,0)`.** Niemals in `state.rigidBodies` pushen, sonst überschreibt der Physics-Sync-Loop `mesh.position` mit dem Body-Origin → sichtbare Verschiebung des Chunks.
+- **Visual mesh = collision mesh.** Jeder Chunk hat ein `btBvhTriangleMeshShape` aus genau denselben Triangles wie sein `THREE.BufferGeometry`. Wer das ändert, muss BEIDE Pfade berühren.
+- **Eine Quelle für Chunk-Geometrie**: `_chunkGeometry()` liefert `chunkWorldSize` und `vertexStep`. Niemals neu berechnen — Drift garantiert.
+- **Eine Quelle für Heights**: `_terrainHeightAtWorld(worldX, worldZ, noise, steepness, baseHeight, caveNoise, volcanoNoise)`. Beide Spieler-Pfade (Initial-Welt + Extensions) gehen darüber.
+- **CCD muss direkt beim Player-Body-Erzeugen aktiviert werden**, nicht nur in `optimizeCollisions`. Sonst die ersten Sekunden ungeschützt.
+- **`pruneDistantChunks` und der Loop-Trigger nutzen `+WORLD_SIZE/2`** im Player-Chunk-Index. Vergessen = nahe Chunks werden als „weit weg" erkannt.
+- **`terrain_steepness` und `terrain_base_height` nicht in `dslComposeAtomic`!** Sie würden Welt-Geometrie unter dem Spieler ändern, ohne worldgen zu triggern — Klippen an Nähten zwischen alten und neuen Chunks.
 
 ---
 
