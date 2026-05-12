@@ -113,7 +113,7 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 | Ring | Pfeiler | Was konkret | Aufwand | Vorbedingung |
 |---|---|---|---|---|
 | **1** | **Grok-Stimme** ✅ V1 | `#dialogue-box` + `#grok-voice-toggle` in `index.html`. `state.grok` mit Pool, Throttle (30 s global), Per-Trigger-Cooldowns. `grokSpeak(key)`, `grokRender(text)`, `grokTick(currentTime)`, `grokMarkFirstSpawn()`. 5 Trigger live: firstSpawn (1×, via localStorage gemerkt), idle>45s, jumpBurst (≥4 Sprünge/8s), rainLong>60s, nexus-Evolution. SpeechSynthesis nur wenn User-Toggle aktiv und Browser unterstützt. | erledigt | – |
-| **2** | **DSL als Brücke** | `docs/nexus-dsl.md` umsetzen. Interpreter für ~18 Primitive. Chat-Parser → DSL → Interpreter. Nexus-Generator → DSL. Save persistiert DSL-Bäume. `new Function()` raus. | 4-5 d | Ring 1 (DSL hat `say`-Primitiv) |
+| **2** | **DSL als Brücke** | Phase 1 ✅: Interpreter mit 18 Effekt-Ops, 7 Control-Flow, 5 Position-Selektoren, 9 Conditions; Budgets (`maxDepth=8`, `maxSpawns=50`, `maxRuntimeMs=100`, `maxConcurrent=32`); Scheduler in `dslTick()`. Phasen 2-5 offen: Nexus-Generator V1 (Random-Komposition), Chat-Parser auf DSL, Persistenz-Migration, `new Function()` raus. | Phase 1 ~1 d, Rest 3-4 d | Ring 1 ✅ |
 | **3** | **Player-Emotionen** | `state.player.emotions = {joy, awe, sorrow, hope, longing, melancholy, peace, chaos}`. `collectPlayerEmotions(input)` aus Chat-Sentiment (regelbasiert oder LLM-Anbindung). Beeinflusst Wetter, Kreatur-Emotion, Skybox, künftige Symphonie. | 2 d | Ring 1 (Grok kann Emotionen kommentieren) |
 | **4** | **`anazhSymphony` V1** | Web Audio API. Drei Klangschichten: ambient (Welt-Drone), creatures (kurze Töne bei Bewegung/Sprung), weather (Regen-Geräusch). Reagiert auf `state.player.emotions`. Ziel: ~300 Zeilen, nicht 17.500 wie im Testament. | 2-3 d | Ring 3 (Emotion treibt Klang) |
 | **5** | **`createPlayerSoul`** | Spielstart-Menü: Mensch / Phönix / Drache / Riese / Frei. Pro Form: stats (speed, jump, size, color) + visuelle Anpassung (Three.js-Mesh-Tausch). Speicherbar. | 1-2 d | – |
@@ -214,6 +214,60 @@ CI macht 1-4 automatisch; 5+6 sind Disziplin.
 4. Falls der Schöpfer fragt „wo stehen wir?" → §3 (Matrix) + §5 (Pfad D Tabelle) zitieren.
 5. Falls der Schöpfer „los" sagt ohne Spezifikation → Ring 1 (Grok-Stimme) vorschlagen, da kleinste sinnvolle Vision-Erweiterung mit größter Wirkung.
 6. Falls etwas re-komplexifiziert werden soll → erst Versionslog-Lektion (§2) zitieren, dann diskutieren.
+
+---
+
+## 11. Erweiterte Vision: Welten-Ultiversum (12.05.2026)
+
+Vom Schöpfer am Tag der Ring-2-Entscheidung formuliert. Diese Sektion ist **nicht** Teil von Pfad D, sondern dessen natürliche Verlängerung — sie tritt in Kraft, sobald die Ringe 1-7 stehen.
+
+### 11.1 Kernidee
+
+Eine AnazhRealm-Welt ist kein abgeschlossenes Spiel-Level, sondern ein **persönliches Universum** mit eigenen Regeln (Terrain-Funktion, Physik-Konstanten, Kreatur-Verhalten, Wetter-Modell, Skybox-Identität). Welten leben, evolvieren, wachsen — und können sich begegnen.
+
+| Aspekt | Wie heute | Wie es werden soll |
+|---|---|---|
+| Welt-Identität | implizit (einzige Welt im localStorage) | explizit, mit `worldId` (UUID) + menschen-lesbarer Slug + Schöpfer-Pubkey |
+| Welt-Regeln | hartcodiert in `anazhRealm.js` | DSL-Programme, persistierbar, fork-bar |
+| Sichtbarkeit | nur lokal | private / unlisted / public — Schöpfer entscheidet |
+| Reise | unmöglich | Spieler tritt in fremde Welt → fremde Regeln greifen, eigene Identität bleibt |
+| Fusion | unmöglich | zwei Welten lassen sich „heiraten" — DSL-Bäume mergen, beide Schöpfer dokumentiert |
+| Ahnenreihe | unmöglich | jede Welt kennt ihre Vorfahren-Welten (`parentWorlds`), ein Stammbaum entsteht |
+
+### 11.2 Warum die DSL das Fundament ist
+
+Drei Welten zu mergen heißt nicht „mische 3D-Meshes" — das ist sinnlos. Es heißt: **mische die Regel-Programme**. Eine Welt ist ein Set von DSL-Bäumen plus deterministische Seeds plus Spieler-Geschichte. DSL macht das überhaupt erst denkbar:
+
+- AST in JSON → serialisierbar, signierbar, diff-bar
+- Primitive begrenzt → keine fremde Welt kann meine Welt killen (Budget-Limits)
+- Komponierbar → `merge(weltA, weltB) = ["chain", weltA, weltB]` ist konzeptuell trivial
+- CSP-clean → public Sharing ist sicherheitsmäßig vertretbar
+
+### 11.3 Skizzen für Ringe 8-11 (kein Aufwand, nur Form)
+
+| Ring | Pfeiler | Was minimal nötig wäre |
+|---|---|---|
+| **8** | Welt-Identität & Sichtbarkeit | `worldId` (UUID), `slug`, `creator` (Pubkey-Hash), `visibility ∈ {private, unlisted, public}`, `parentWorlds: [worldId]` als Save-Felder. Lokal: pro `worldId` ein eigener localStorage-Eintrag. „Neue Welt"-Befehl im Chat. |
+| **9** | Welt-Export/Import | Welt → JSON-File (DSL-Programme + Seeds + Metadaten, nicht Mesh-Snapshots). Drag-Drop importiert. Import wählt: ersetzen, neu daneben, oder fusionieren. |
+| **10** | Welt-Fusion | Zwei DSL-Programm-Sets werden zu einem dritten gemerged. Conflict-Resolution: gewichtete Random-Wahl auf Op-Ebene oder „beide laufen parallel mit Namespace-Präfix". UI: zwei Welt-Slugs eingeben, dritte Welt entsteht mit beiden als `parentWorlds`. |
+| **11** | Multi-User-Sync | Spieler A öffnet Welt von B (public). A sieht B's Regeln, A's eigener Charakter bleibt. Realtime-Sync von Spielerposition + Chat über WebRTC (P2P) oder lightweight signaling-Server. Save-Server-Pfad bleibt für lokal-only. |
+
+### 11.4 Was wir JETZT in Ring 2 schon richtig setzen
+
+Auch wenn die Logik für Ringe 8-11 weit entfernt ist, kosten die **Save-Felder** quasi nichts und vermeiden ein Schema-Bruch später:
+
+- `worldId` (UUID v4, beim Erst-Spawn generiert)
+- `slug` (Default: zufälliges Wort-Paar, später vom Spieler änderbar)
+- `creator` (V1: `"local"`, später Pubkey)
+- `visibility` (V1: `"private"`, später vom Spieler änderbar)
+- `parentWorlds` (V1: leeres Array)
+- `dslAbilities` (DSL-Programm-Liste, ersetzt das alte `abilities: string[]`)
+
+Code für 8-11 kommt später. Das Schema schon jetzt.
+
+### 11.5 Heilige Lektion bleibt gültig
+
+Diese Vision **verschärft** die Lektion, nicht relativiert sie: ein public-shared Multi-Welt-System ohne stabiles Fundament wird desaströs (Bugs werden zu „Welt B hat meine Welt A zerstört"). Pfad D bleibt der Weg — die Ringe 8-11 starten erst, wenn 1-7 grün sind.
 
 ---
 

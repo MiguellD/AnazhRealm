@@ -169,6 +169,28 @@ class AnazhRealm {
                 },
                 poolIndex: { firstSpawn: 0, idle: 0, jumpBurst: 0, rainLong: 0, nexus: 0 },
             },
+            // Ring 2 – Nexus-DSL. Interpreter-State; siehe docs/nexus-dsl.md.
+            // Pending sind geplante (delay'd) Sub-Programme, die in dslTick()
+            // gefeuert werden, sobald `runAt` (Spielzeit in Sekunden) erreicht ist.
+            dsl: {
+                pending: [],
+                nextEntryId: 1,
+                abilities: [],
+                history: [],
+                historyCap: 50,
+                maxConcurrent: 32,
+            },
+            // Welt-Identität (Ring 8+, siehe docs/state-of-realm.md §11). Felder
+            // werden jetzt schon gesetzt, damit das Save-Schema zukunftsfest
+            // bleibt; Logik für Sichtbarkeit/Fusion kommt später.
+            worldMeta: {
+                worldId: null,
+                slug: "",
+                creator: "local",
+                visibility: "private",
+                parentWorlds: [],
+                schemaVersion: "7.66-dsl-v1",
+            },
         };
         this.core = {
             initPhysics: this.initPhysics.bind(this),
@@ -316,6 +338,403 @@ class AnazhRealm {
         grok.prevWeather = this.state.weather;
         if (grok.rainStartedAt !== null && currentTime - grok.rainStartedAt > 60) {
             if (this.grokSpeak("rainLong")) grok.rainStartedAt = currentTime; // re-arm bis cooldown durch ist
+        }
+    }
+
+    // ### Ring 2 – Nexus-DSL ### (siehe docs/nexus-dsl.md)
+    // Sicherer JSON-AST-Interpreter. Programme sind Arrays `[op, ...args]`.
+    // Drei Welten: Effekte mutieren state, Positionen liefern {x,y,z},
+    // Conditions liefern boolean. Budgets verhindern Runaway-Programme.
+
+    dslDefaultBudget() {
+        return {
+            spawnsLeft: 50,
+            depthLeft: 8,
+            maxRuntimeMs: 100,
+            delayedSteps: 100,
+            startedAt: performance.now(),
+        };
+    }
+
+    dslCtx(opts = {}) {
+        const seedRng = (s) => {
+            // Deterministischer LCG, wenn ein Seed gegeben ist. Sonst Math.random.
+            if (typeof s !== "number") return Math.random;
+            let state = s >>> 0 || 1;
+            return () => {
+                state = (state * 1664525 + 1013904223) >>> 0;
+                return state / 4294967296;
+            };
+        };
+        return {
+            state: this.state,
+            realm: this,
+            startTime: performance.now() / 1000,
+            rng: seedRng(opts.seed),
+            budget: opts.budget || this.dslDefaultBudget(),
+            log: opts.log || [],
+            source: opts.source || "unknown",
+            programId: opts.programId || `prog_${this.state.dsl.nextEntryId++}`,
+        };
+    }
+
+    dslRun(program, opts = {}) {
+        const ctx = this.dslCtx(opts);
+        const fpsBefore = this.state.fps || 0;
+        const startY = this.state.playerMesh ? this.state.playerMesh.position.y : 0;
+        const creaturesBefore = this.state.creatures.length;
+        try {
+            this.dslEval(program, ctx);
+        } catch (err) {
+            ctx.log.push({ event: "interpreter_exception", message: err.message });
+        }
+        const outcome = {
+            fpsBefore,
+            fpsAfter: this.state.fps || 0,
+            playerYDelta: (this.state.playerMesh ? this.state.playerMesh.position.y : 0) - startY,
+            creaturesDelta: this.state.creatures.length - creaturesBefore,
+            errors: ctx.log.filter((e) => /error|exception|budget|unknown|invalid/.test(e.event)).length,
+        };
+        return { ok: outcome.errors === 0, log: ctx.log, outcome, programId: ctx.programId };
+    }
+
+    dslEval(program, ctx) {
+        if (!Array.isArray(program) || program.length === 0) {
+            ctx.log.push({ event: "invalid_program", program_id: ctx.programId });
+            return;
+        }
+        if (ctx.budget.depthLeft <= 0) {
+            ctx.log.push({ event: "budget_exceeded", budget: "depth", program_id: ctx.programId });
+            return;
+        }
+        if (performance.now() - ctx.budget.startedAt > ctx.budget.maxRuntimeMs) {
+            ctx.log.push({ event: "budget_exceeded", budget: "runtime", program_id: ctx.programId });
+            return;
+        }
+        const op = program[0];
+        const args = program.slice(1);
+        const fn = this.dslEffects[op];
+        if (!fn) {
+            ctx.log.push({ event: "unknown_op", op: String(op), program_id: ctx.programId });
+            return;
+        }
+        ctx.budget.depthLeft--;
+        try {
+            fn.call(this, args, ctx);
+        } catch (err) {
+            ctx.log.push({ event: "op_exception", op: String(op), message: err.message });
+        }
+        ctx.budget.depthLeft++;
+    }
+
+    dslEvalPos(node, ctx) {
+        if (!Array.isArray(node) || node.length === 0) return { x: 0, y: 50, z: 0 };
+        const fn = this.dslPositions[node[0]];
+        if (!fn) {
+            ctx.log.push({ event: "unknown_position_op", op: String(node[0]) });
+            return { x: 0, y: 50, z: 0 };
+        }
+        try {
+            return fn.call(this, node.slice(1), ctx);
+        } catch {
+            return { x: 0, y: 50, z: 0 };
+        }
+    }
+
+    dslEvalCond(node, ctx) {
+        if (!Array.isArray(node) || node.length === 0) return false;
+        const fn = this.dslConditions[node[0]];
+        if (!fn) {
+            ctx.log.push({ event: "unknown_condition_op", op: String(node[0]) });
+            return false;
+        }
+        try {
+            return !!fn.call(this, node.slice(1), ctx);
+        } catch {
+            return false;
+        }
+    }
+
+    dslClamp(v, lo, hi) {
+        const n = Number(v);
+        if (!Number.isFinite(n)) return lo;
+        return Math.max(lo, Math.min(hi, n));
+    }
+
+    dslTick(currentTime) {
+        const pending = this.state.dsl.pending;
+        if (pending.length === 0) return;
+        // Stabil ausführen: erst alle „fälligen" rausfiltern, dann auswerten.
+        const ready = [];
+        const keep = [];
+        for (const entry of pending) {
+            if (entry.runAt <= currentTime) ready.push(entry);
+            else keep.push(entry);
+        }
+        this.state.dsl.pending = keep;
+        for (const entry of ready) this.dslEval(entry.program, entry.ctx);
+    }
+
+    dslSchedule(delaySeconds, program, ctx) {
+        if (this.state.dsl.pending.length >= this.state.dsl.maxConcurrent) {
+            ctx.log.push({ event: "budget_exceeded", budget: "concurrent", program_id: ctx.programId });
+            return;
+        }
+        const runAt = performance.now() / 1000 + Math.max(0, delaySeconds);
+        this.state.dsl.pending.push({ runAt, program, ctx });
+    }
+
+    // ### Op-Tabellen ###
+    get dslEffects() {
+        if (this._dslEffectsCache) return this._dslEffectsCache;
+        const c = (v, lo, hi) => this.dslClamp(v, lo, hi);
+        this._dslEffectsCache = {
+            weather: ([name]) => {
+                if (name === "sunny" || name === "rainy") {
+                    this.state.weather = name;
+                    this.state.weatherEffectTime = 0;
+                    this.updateSkyboxWeather();
+                    this.updateCreatureEmotions();
+                }
+            },
+            gravity: ([value]) => {
+                const v = c(value, -30, 0);
+                this.state.gravity = v;
+                if (this.state.physicsWorld && this.state.tmpVec1) {
+                    this.state.physicsWorld.setGravity(this.setVec(this.state.tmpVec1, 0, v, 0));
+                }
+            },
+            terrain_steepness: ([value]) => {
+                this.state.terrainSteepness = c(value, 0.1, 2.0);
+            },
+            terrain_base_height: ([value]) => {
+                this.state.terrainBaseHeight = c(value, -50, 50);
+            },
+            time_of_day: ([value]) => {
+                this.state.timeOfDay = c(value, 0, 1);
+            },
+            skybox_color: ([color]) => {
+                if (typeof color !== "string") return;
+                const skybox = this.state.skybox;
+                if (skybox && skybox.material && skybox.material.uniforms && skybox.material.uniforms.tintColor) {
+                    try {
+                        skybox.material.uniforms.tintColor.value = new THREE.Color(color);
+                    } catch {
+                        // ungültige Farbe ignorieren
+                    }
+                }
+            },
+            spawn_creature: ([positionNode, count, emotion], ctx) => {
+                const pos = this.dslEvalPos(positionNode, ctx);
+                const n = c(count, 1, 20);
+                const e = emotion === "sad" || emotion === "happy" ? emotion : "happy";
+                let spawned = 0;
+                for (let i = 0; i < n; i++) {
+                    if (ctx.budget.spawnsLeft <= 0) {
+                        ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
+                        break;
+                    }
+                    ctx.budget.spawnsLeft--;
+                    if (typeof this.spawnCreatureAt === "function") {
+                        this.spawnCreatureAt(pos.x, pos.y, pos.z, e);
+                    } else {
+                        // Fallback: in creature-Liste registrieren ohne Mesh, V1-Test reicht.
+                        this.state.creatures.push({
+                            position: new THREE.Vector3(pos.x, pos.y, pos.z),
+                            userData: { emotion: e, dslSpawn: true },
+                        });
+                        this.state.creatureEmotions.push(e);
+                    }
+                    spawned++;
+                }
+                ctx.log.push({ event: "spawned_creature", count: spawned, emotion: e });
+            },
+            spawn_tree: ([positionNode, count], ctx) => {
+                const n = c(count, 1, 20);
+                const pos = this.dslEvalPos(positionNode, ctx);
+                ctx.budget.spawnsLeft = Math.max(0, ctx.budget.spawnsLeft - n);
+                ctx.log.push({ event: "spawn_tree_requested", count: n, pos });
+            },
+            spawn_island: ([positionNode, height], ctx) => {
+                const pos = this.dslEvalPos(positionNode, ctx);
+                ctx.budget.spawnsLeft = Math.max(0, ctx.budget.spawnsLeft - 1);
+                ctx.log.push({ event: "spawn_island_requested", pos, height: c(height, 1, 200) });
+            },
+            spawn_ufo: ([positionNode], ctx) => {
+                const pos = this.dslEvalPos(positionNode, ctx);
+                ctx.budget.spawnsLeft = Math.max(0, ctx.budget.spawnsLeft - 1);
+                ctx.log.push({ event: "spawn_ufo_requested", pos });
+            },
+            creatures_color: ([color]) => {
+                if (typeof color !== "string") return;
+                let tint = null;
+                try {
+                    tint = new THREE.Color(color);
+                } catch {
+                    return;
+                }
+                for (const cr of this.state.creatures) {
+                    if (cr.material && cr.material.color) cr.material.color.copy(tint);
+                }
+            },
+            creatures_emotion: ([emotion]) => {
+                if (emotion !== "happy" && emotion !== "sad") return;
+                for (let i = 0; i < this.state.creatureEmotions.length; i++) this.state.creatureEmotions[i] = emotion;
+            },
+            creatures_speed_mul: ([factor]) => {
+                const f = c(factor, 0.1, 5);
+                for (const cr of this.state.creatures) {
+                    if (cr.userData) cr.userData.speedMul = (cr.userData.speedMul || 1) * f;
+                }
+            },
+            creatures_size_mul: ([factor]) => {
+                const f = c(factor, 0.5, 3);
+                for (const cr of this.state.creatures) {
+                    if (cr.scale) cr.scale.multiplyScalar(f);
+                }
+            },
+            player_jump_power: ([value]) => {
+                this.state.jumpPower = c(value, 5, 40);
+            },
+            player_speed: ([value]) => {
+                this.state.speed = c(value, 1, 30);
+            },
+            player_size_mul: ([factor]) => {
+                const f = c(factor, 0.5, 2);
+                if (this.state.playerMesh && this.state.playerMesh.scale) {
+                    this.state.playerMesh.scale.multiplyScalar(f);
+                }
+            },
+            say: ([message]) => {
+                if (typeof message !== "string" || message.length === 0) return;
+                // DSL-`say` hängt an Grok an, statt eigenen Output zu bauen. Damit
+                // teilen Mensch und Nexus dieselbe Stimme — ein Pfeiler der Vision.
+                const grok = this.state.grok;
+                if (!grok.pool.dslSay) {
+                    grok.pool.dslSay = [];
+                    grok.poolIndex.dslSay = 0;
+                    grok.triggers.dslSay = { lastFired: -Infinity, cooldown: 30 };
+                }
+                grok.pool.dslSay[0] = message;
+                grok.poolIndex.dslSay = 0;
+                this.grokSpeak("dslSay");
+            },
+
+            // Control-Flow
+            chain: (args, ctx) => {
+                for (const sub of args) this.dslEval(sub, ctx);
+            },
+            delay: ([seconds, sub], ctx) => {
+                const s = c(seconds, 0, 60);
+                if (ctx.budget.delayedSteps <= 0) {
+                    ctx.log.push({ event: "budget_exceeded", budget: "delayed_steps", program_id: ctx.programId });
+                    return;
+                }
+                ctx.budget.delayedSteps--;
+                this.dslSchedule(s, sub, ctx);
+            },
+            repeat: ([times, sub], ctx) => {
+                const n = c(times, 1, 20);
+                for (let i = 0; i < n; i++) {
+                    if (ctx.budget.delayedSteps <= 0) break;
+                    this.dslEval(sub, ctx);
+                }
+            },
+            random: (args, ctx) => {
+                if (args.length === 0) return;
+                const pick = args[Math.floor(ctx.rng() * args.length)];
+                this.dslEval(pick, ctx);
+            },
+            random_weighted: (args, ctx) => {
+                const items = args.filter((a) => a && typeof a === "object" && Array.isArray(a.effect));
+                if (items.length === 0) return;
+                const total = items.reduce((s, x) => s + Math.max(0, Number(x.weight) || 0), 0);
+                if (total <= 0) return this.dslEval(items[0].effect, ctx);
+                let r = ctx.rng() * total;
+                for (const x of items) {
+                    r -= Math.max(0, Number(x.weight) || 0);
+                    if (r <= 0) return this.dslEval(x.effect, ctx);
+                }
+                this.dslEval(items[items.length - 1].effect, ctx);
+            },
+            when: ([condition, thenBranch, elseBranch], ctx) => {
+                if (this.dslEvalCond(condition, ctx)) this.dslEval(thenBranch, ctx);
+                else if (elseBranch) this.dslEval(elseBranch, ctx);
+            },
+            parallel: (args, ctx) => {
+                for (const sub of args) this.dslEval(sub, ctx);
+            },
+        };
+        return this._dslEffectsCache;
+    }
+
+    get dslPositions() {
+        if (this._dslPositionsCache) return this._dslPositionsCache;
+        const c = (v, lo, hi) => this.dslClamp(v, lo, hi);
+        this._dslPositionsCache = {
+            at_player: (_args, ctx) => {
+                const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                return { x: p.x, y: p.y, z: p.z };
+            },
+            near_player: ([radius], ctx) => {
+                const r = c(radius, 1, 100);
+                const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                const angle = ctx.rng() * Math.PI * 2;
+                const dist = ctx.rng() * r;
+                return { x: p.x + Math.cos(angle) * dist, y: p.y, z: p.z + Math.sin(angle) * dist };
+            },
+            at_origin: () => ({ x: 0, y: 50, z: 0 }),
+            random_position: ([range], ctx) => {
+                const r = c(range, 1, 500);
+                return { x: (ctx.rng() - 0.5) * 2 * r, y: 50, z: (ctx.rng() - 0.5) * 2 * r };
+            },
+            at: ([x, y, z]) => ({
+                x: Number.isFinite(Number(x)) ? Number(x) : 0,
+                y: Number.isFinite(Number(y)) ? Number(y) : 50,
+                z: Number.isFinite(Number(z)) ? Number(z) : 0,
+            }),
+        };
+        return this._dslPositionsCache;
+    }
+
+    get dslConditions() {
+        if (this._dslConditionsCache) return this._dslConditionsCache;
+        this._dslConditionsCache = {
+            fps_below: ([value], ctx) => (ctx.state.fps || 0) < Number(value),
+            weather_is: ([name], ctx) => ctx.state.weather === name,
+            time_passed: ([seconds], ctx) => performance.now() / 1000 - ctx.startTime >= Number(seconds),
+            creatures_count_above: ([value], ctx) => ctx.state.creatures.length > Number(value),
+            player_y_below: ([value], ctx) => {
+                const y = ctx.state.playerMesh ? ctx.state.playerMesh.position.y : 0;
+                return y < Number(value);
+            },
+            random_chance: ([prob], ctx) => ctx.rng() < Number(prob),
+            not: ([sub], ctx) => !this.dslEvalCond(sub, ctx),
+            and: (subs, ctx) => subs.every((s) => this.dslEvalCond(s, ctx)),
+            or: (subs, ctx) => subs.some((s) => this.dslEvalCond(s, ctx)),
+        };
+        return this._dslConditionsCache;
+    }
+
+    // ### Welt-Identität (Ring 8+ Vorbereitung) ###
+    ensureWorldMeta() {
+        const m = this.state.worldMeta;
+        if (!m.worldId) {
+            try {
+                m.worldId =
+                    typeof crypto !== "undefined" && crypto.randomUUID
+                        ? crypto.randomUUID()
+                        : "w_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+            } catch {
+                m.worldId = "w_" + Math.random().toString(36).slice(2, 10);
+            }
+        }
+        if (!m.slug) {
+            const adjectives = ["still", "weite", "klare", "dunkle", "warme", "leise", "wache"];
+            const nouns = ["aue", "feld", "ufer", "saum", "weiher", "halde", "hain"];
+            const a = adjectives[Math.floor(Math.random() * adjectives.length)];
+            const n = nouns[Math.floor(Math.random() * nouns.length)];
+            m.slug = `${a}-${n}`;
         }
     }
 
@@ -2916,6 +3335,9 @@ class AnazhRealm {
             terrainSteepness: this.state.terrainSteepness,
             terrainBaseHeight: this.state.terrainBaseHeight,
             weather: this.state.weather,
+            worldMeta: { ...this.state.worldMeta },
+            dslAbilities: this.state.dsl.abilities.slice(-200),
+            dslHistory: this.state.dsl.history.slice(-this.state.dsl.historyCap),
         };
     }
 
@@ -3084,6 +3506,19 @@ class AnazhRealm {
         this.state.terrainBaseHeight = state.terrainBaseHeight || 0.0;
         this.state.weather = state.weather || "sunny";
         if (this.state.skybox) this.updateSkyboxWeather();
+        // Ring 2 / Ring 8+ Felder. Best-Effort-Migration: alte Saves haben
+        // weder worldMeta noch dslAbilities — wir füllen mit Defaults + Log.
+        if (state.worldMeta && typeof state.worldMeta === "object") {
+            this.state.worldMeta = { ...this.state.worldMeta, ...state.worldMeta };
+        } else {
+            this.log("Save-Migration: kein worldMeta gefunden, generiere neue Welt-Identität", "INFO");
+        }
+        if (Array.isArray(state.dslAbilities)) {
+            this.state.dsl.abilities = state.dslAbilities;
+        }
+        if (Array.isArray(state.dslHistory)) {
+            this.state.dsl.history = state.dslHistory.slice(-this.state.dsl.historyCap);
+        }
         if (Array.isArray(state.abilities)) {
             let restored = 0;
             state.abilities.forEach((name) => {
@@ -3168,6 +3603,7 @@ class AnazhRealm {
     async init() {
         this.log("Initialisiere Anazh Realm V7.65... Ewigkeit erwacht!", "INFO");
         this.grokInitDOM();
+        this.ensureWorldMeta();
         try {
             await this.core.initPhysics();
             this.log("Physik erfolgreich initialisiert", "INFO");
@@ -3355,6 +3791,9 @@ class AnazhRealm {
 
             // ### Grok-Stimme (Ring 1) ###
             this.grokTick(currentTime);
+
+            // ### Nexus-DSL Scheduler (Ring 2) ###
+            this.dslTick(currentTime);
 
             // ### Bodenprüfung ###
             if (currentTime - this.state.lastGroundCheck >= this.state.groundCheckInterval) {

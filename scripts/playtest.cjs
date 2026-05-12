@@ -196,6 +196,85 @@ function startSaveServer() {
                 grokLogs.length >= 1,
                 `grokLogs=${grokLogs.length}${grokLogs.length ? ` erster: "${grokLogs[0].text.slice(0, 80)}"` : ""}`
             );
+
+            // ### Ring 2 – DSL-Interpreter ###
+            // Live-Smoketest: führt mehrere kleine DSL-Programme aus und prüft,
+            // dass Effekte real auf state durchschlagen, Budgets greifen,
+            // unbekannte Ops sauber abgelehnt werden und Welt-Identität anliegt.
+            const dslResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {
+                        worldIdSet: false,
+                        slugSet: false,
+                        weatherEffect: false,
+                        chainEffect: false,
+                        positionEffect: false,
+                        conditionEffect: false,
+                        unknownOpRejected: false,
+                        depthBudgetEnforced: false,
+                        delayScheduled: false,
+                    };
+                    if (!r || !r.state || typeof r.dslRun !== "function") return out;
+                    const m = r.state.worldMeta || {};
+                    out.worldIdSet = typeof m.worldId === "string" && m.worldId.length > 5;
+                    out.slugSet = typeof m.slug === "string" && m.slug.length > 0;
+
+                    const jpBefore = r.state.jumpPower;
+                    const res1 = r.dslRun(["weather", "rainy"]);
+                    out.weatherEffect = res1.ok && r.state.weather === "rainy";
+
+                    const res2 = r.dslRun(["chain", ["weather", "sunny"], ["player_jump_power", 17]]);
+                    out.chainEffect = res2.ok && r.state.weather === "sunny" && r.state.jumpPower === 17;
+
+                    const creBefore = r.state.creatures.length;
+                    const res3 = r.dslRun(["spawn_creature", ["at_origin"], 2, "happy"]);
+                    out.positionEffect =
+                        res3.ok &&
+                        res3.log.some((e) => e.event === "spawned_creature") &&
+                        r.state.creatures.length === creBefore + 2;
+
+                    const res4 = r.dslRun(["when", ["weather_is", "sunny"], ["player_jump_power", 22]]);
+                    out.conditionEffect = res4.ok && r.state.jumpPower === 22;
+
+                    const res5 = r.dslRun(["unbekannte_op_xyz", 1, 2]);
+                    out.unknownOpRejected = !res5.ok && res5.log.some((e) => e.event === "unknown_op");
+
+                    let deep = ["chain"];
+                    let inner = deep;
+                    for (let i = 0; i < 12; i++) {
+                        const next = ["chain"];
+                        inner.push(next);
+                        inner = next;
+                    }
+                    const res6 = r.dslRun(deep);
+                    out.depthBudgetEnforced = res6.log.some(
+                        (e) => e.event === "budget_exceeded" && e.budget === "depth"
+                    );
+
+                    const pendingBefore = r.state.dsl.pending.length;
+                    r.dslRun(["delay", 999, ["weather", "rainy"]]);
+                    out.delayScheduled = r.state.dsl.pending.length === pendingBefore + 1;
+                    r.state.dsl.pending = r.state.dsl.pending.filter((p) => p.runAt < 9999999);
+
+                    r.state.jumpPower = jpBefore;
+                    return out;
+                })
+                .catch(() => null);
+
+            if (!dslResults) {
+                check("DSL-Smoketest erreichbar", false, "dslRun nicht aufrufbar");
+            } else {
+                check("Welt-Identität (worldId) gesetzt", dslResults.worldIdSet);
+                check("Welt-Slug gesetzt", dslResults.slugSet);
+                check("DSL-Effekt: weather wirkt auf state", dslResults.weatherEffect);
+                check("DSL-Komposition: chain führt mehrere Effekte aus", dslResults.chainEffect);
+                check("DSL-Position: at_origin + spawn_creature wirkt", dslResults.positionEffect);
+                check("DSL-Condition: when/weather_is verzweigt korrekt", dslResults.conditionEffect);
+                check("DSL-Sicherheit: unbekannte Op wird abgelehnt", dslResults.unknownOpRejected);
+                check("DSL-Budget: maxDepth greift bei tiefer Verschachtelung", dslResults.depthBudgetEnforced);
+                check("DSL-Scheduler: delay reiht in pending ein", dslResults.delayScheduled);
+            }
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

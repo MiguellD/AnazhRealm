@@ -21,12 +21,13 @@ Detaillierter Plan in `docs/state-of-realm.md` §5. Status (Mai 2026):
 |---|---|---|
 | 0 | Stabiles Fundament (Bewegung, Physik, Kreaturen, Chunks, Save, CI-Gate) | ✅ erledigt |
 | 1 | **Grok-Stimme** (`dialogue-box`, narrative Reflexion) | ✅ V1 erledigt — 5 Trigger (firstSpawn, idle, jumpBurst, rainLong, nexus), Text + optionale SpeechSynthesis |
-| 2 | DSL als gemeinsame Sprache Mensch+Grok (`docs/nexus-dsl.md`) | 📝 Design-Doc fertig, Code offen |
+| 2 | DSL als gemeinsame Sprache Mensch+Grok (`docs/nexus-dsl.md`) | 🟡 Phase 1 live — Interpreter mit 18 Effekt-/7 Control-/5 Position-/9 Condition-Ops, Budget-Limits, Scheduler. Generator + Chat-Parser-Umbau offen (Phasen 2-5). |
 | 3 | Player-Emotionen (`{joy, awe, sorrow, hope, …}`) beeinflussen Welt | offen |
 | 4 | `anazhSymphony` V1 – Web-Audio-Klangschichten | offen |
 | 5 | `createPlayerSoul` (Mensch/Phönix/Drache) | offen |
 | 6 | `architectureTemplates` V1 (Dörfer, Tempel, Wasserfälle) | offen |
 | 7 | `brain.js`-Welt – lernt aus Spieler-Verhalten + Emotionen | offen |
+| 8-11 | **Welten-Ultiversum** (Identität, Export/Import, Fusion, Multi-User-Sync) | Vision-skizze in `docs/state-of-realm.md` §11 |
 
 Letzter Stand: Ring 1 live. `state.grok` + `grokSpeak()` + `grokTick()` in `anazhRealm.js`, `#dialogue-box` + `#grok-voice-toggle` in `index.html`. Tonalität warm-pragmatisch, min. 30 s globale Gap, Per-Trigger-Cooldowns (60-240 s). SpeechSynthesis nur per Toggle, sonst nur Text-Bubble.
 
