@@ -3437,7 +3437,13 @@ class AnazhRealm {
                     "PHY_FLOAT",
                     false
                 );
-                const stepScaled = vertexStep / sf;
+                // Mini-Überlappung an der Naht zwischen benachbarten Chunks:
+                // Ohne sie endete jeder per-chunk Heightfield exakt am Vertex
+                // x=0 (bzw. z=0) der Naht und die Triangles auf beiden Seiten
+                // hörten dort auf — Player landete genau auf der Linie und
+                // fiel durch (kein Collider). 0.2% Overlap (~7 cm bei 37.5 m
+                // Chunk-Breite) schließt das Loch ohne sichtbare Doppelung.
+                const stepScaled = (vertexStep / sf) * 1.002;
                 shape.setLocalScaling(new Ammo.btVector3(stepScaled, 1, stepScaled));
                 const centerX = worldStartX + chunkWorldSize / 2;
                 const centerZ = worldStartZ + chunkWorldSize / 2;
@@ -3453,7 +3459,13 @@ class AnazhRealm {
                 Ammo.destroy(rbInfo);
                 Ammo.destroy(inertia);
                 mesh.userData.physicsBody = body;
-                this.state.rigidBodies.push(mesh);
+                // NICHT in state.rigidBodies pushen: der physics-sync-Loop
+                // überschreibt mesh.position aus dem motionState-Origin —
+                // bei Terrain-Chunks würde das den ganzen Chunk-Mesh um
+                // (centerX, centerY, centerZ) verschieben, weil unsere
+                // Vertices schon in absoluten Welt-Koords liegen. Das
+                // mass=0-Heightfield ist statisch und braucht den Sync nicht;
+                // pruneDistantChunks findet die body über userData.physicsBody.
             }
         } catch (err) {
             this.log(`extendTerrain Physik-Fehler bei (${newChunkX}, ${newChunkZ}): ${err.message}`, "ERROR");
