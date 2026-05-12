@@ -56,6 +56,9 @@ function startSaveServer() {
             "--ignore-gpu-blocklist",
             "--no-sandbox",
             "--disable-setuid-sandbox",
+            // Ring 4: erlaubt AudioContext im Headless-Modus ohne User-Geste,
+            // sonst bleibt der Context im "suspended" und initSymphony tut nix.
+            "--autoplay-policy=no-user-gesture-required",
         ],
     });
     const page = await browser.newPage();
@@ -1001,6 +1004,98 @@ function startSaveServer() {
                     "Ring 3 V2: Generator-Bias — sorrow=1.0 → rainy dominiert (>2× sunny)",
                     ring3v2Results.sorrowBiasWorks,
                     `rainy=${ring3v2Results.sorrowRainyOverSunny}, sunny=${ring3v2Results.sorrowSunnyCount}`
+                );
+            }
+
+            // ### Ring 4 — anazhSymphony V1 ###
+            const ring4Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.symphony) return null;
+                    const out = {};
+
+                    // (a) initSymphony erfolgreich
+                    const initOk = r.initSymphony();
+                    const s = r.state.symphony;
+                    out.initOk = initOk === true && s.enabled === true && !!s.ctx;
+                    out.hasAmbient =
+                        !!s.ambient &&
+                        !!s.ambient.osc1 &&
+                        !!s.ambient.osc2 &&
+                        !!s.ambient.lfo &&
+                        !!s.ambient.filter;
+                    out.hasWeather = !!s.weather && !!s.weather.noise && !!s.weather.gain;
+
+                    // (b) Wetter-Layer-Gain folgt state.weather
+                    r.state.weather = "sunny";
+                    r.symphonyTick();
+                    // Direkter Wert kann durch laufende Rampe in Bewegung sein;
+                    // wir prüfen das _Ziel_ via lastWeather + dass der Tick
+                    // beim erneuten Aufruf mit gleichem Wetter nichts mehr
+                    // tut (idempotent).
+                    const lastBefore = s.lastWeather;
+                    r.symphonyTick(); // idempotent
+                    out.weatherTickIdempotent = s.lastWeather === lastBefore;
+
+                    // Setzt rainy → Tick muss umschalten und lastWeather mit ziehen
+                    r.state.weather = "rainy";
+                    r.symphonyTick();
+                    out.weatherSwitchedToRainy = s.lastWeather === "rainy";
+
+                    // (c) Creature-Ping-Zähler steigt mit jedem Spawn
+                    const pingBefore = s.creaturePingCount;
+                    // Direkter Aufruf des Hooks — entkoppelt von THREE-Setup,
+                    // verifiziert nur die Audio-Spur
+                    r.playCreaturePing("happy");
+                    r.playCreaturePing("sad");
+                    out.pingCounterRose = s.creaturePingCount === pingBefore + 2;
+
+                    // (d) Audio-Graph: masterGain ist mit destination verbunden
+                    //     (kann nicht direkt verifiziert werden, aber wir
+                    //     prüfen dass gain.value im erwarteten Bereich liegt)
+                    out.masterGainSane =
+                        !!s.masterGain &&
+                        typeof s.masterGain.gain.value === "number" &&
+                        s.masterGain.gain.value > 0 &&
+                        s.masterGain.gain.value <= 1;
+
+                    // (e) disposeSymphony räumt auf
+                    r.disposeSymphony();
+                    out.disposeClears = s.enabled === false && s.ctx === null && s.ambient === null;
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (!ring4Results || ring4Results.error) {
+                check(
+                    "Ring 4: Symphonie-Snapshot erreichbar",
+                    false,
+                    ring4Results && ring4Results.error ? ring4Results.error : "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Ring 4: initSymphony aktiviert Audio-Pipeline", ring4Results.initOk);
+                check(
+                    "Ring 4: Ambient-Layer hat alle Nodes (osc1+osc2+lfo+filter)",
+                    ring4Results.hasAmbient
+                );
+                check("Ring 4: Wetter-Layer hat Noise-Source + Gain", ring4Results.hasWeather);
+                check(
+                    "Ring 4: symphonyTick ist idempotent bei gleichem Wetter",
+                    ring4Results.weatherTickIdempotent
+                );
+                check(
+                    "Ring 4: symphonyTick schaltet Wetter-Layer um (sunny→rainy)",
+                    ring4Results.weatherSwitchedToRainy
+                );
+                check(
+                    "Ring 4: playCreaturePing erhöht Zähler",
+                    ring4Results.pingCounterRose
+                );
+                check("Ring 4: masterGain im plausiblen Bereich (0..1)", ring4Results.masterGainSane);
+                check(
+                    "Ring 4: disposeSymphony räumt Audio-Graph komplett auf",
+                    ring4Results.disposeClears
                 );
             }
         }

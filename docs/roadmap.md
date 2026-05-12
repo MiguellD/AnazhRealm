@@ -24,7 +24,7 @@ Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) is
 | 1 | Grok-Stimme (`dialogue-box`, narrative Reflexion) | ✅ V1 live | – | – |
 | 2 | DSL als gemeinsame Sprache | ✅ Phase 1-7 vollständig | – | – |
 | 3 | Player-Emotionen → Welt | ✅ V1+V2 live | – | – |
-| 4 | `anazhSymphony` V1 (Web Audio) | 🔴 offen | 2-3 d | Ring 3 |
+| 4 | `anazhSymphony` V1 (Web Audio) | ✅ V1 live | – | – |
 | 5 | `createPlayerSoul` (Mensch/Phönix/Drache) | 🔴 offen | 1-2 d | – |
 | 6 | `architectureTemplates` V1 (Dörfer, Tempel, Wasserfälle) | 🔴 offen | 2 d | Ring 2 Phase 3 |
 | 7 | `brain.js`-Welt (lernt aus Verhalten + Emotion) | 🔴 offen | 3-4 d | Ring 3 + Ring 2 Phase 3 |
@@ -106,20 +106,26 @@ Plus: inline-styles aus `index.html` entfernt (`#fps`, `#state-file-input`), Inl
 
 ---
 
-### Ring 4: anazhSymphony V1 (~2-3 d)
+### Ring 4: anazhSymphony
 
 **Ziel**: Multisensorik. Welt hat Klang, der mit ihrem Zustand atmet.
 
-- `state.symphony = { context, layers, masterGain }` mit Web Audio API
-- Drei Klang-Schichten:
-  - **Ambient**: Welt-Drone (low-frequency sinus, moduliert durch zeit + Spieler-y-position)
-  - **Creatures**: kurze Ping-Töne bei Kreatur-Sprung oder -Spawn (frequenz aus emotion: happy hoch, sad tief)
-  - **Weather**: Regen-Geräusch (gefiltertes Noise) bei `weather === "rainy"`, leise wind bei sunny
-- Player-Emotionen modulieren: hohe joy = höhere ambient-frequency, hohe sorrow = mehr reverb
-- Master-Toggle in UI (analog zum Grok-Stimme-Toggle)
-- Bewusst klein: ~300 Zeilen, keine SamplerLibrary, kein MIDI
+**V1 ✅ erledigt** (dieser Commit):
+- `state.symphony = { ctx, enabled, masterGain, ambient, weather, lastWeather, creaturePingCount }` lazy initialisiert.
+- Drei Klangschichten gebaut:
+  - **Ambient**: zwei verstimmte Sägezahn-Oszillatoren (110 / 111.5 Hz) → langsame Schwebung. Tiefpass-Filter mit LFO (0.08 Hz) auf Cutoff. Atmet konstant.
+  - **Wetter**: White-Noise-Loop → Bandpass 1500 Hz → Gain. Bei `weather === "rainy"` Cross-Fade auf 0.18, sunny → 0. `symphonyTick()` ist idempotent (nur Wechsel triggern Rampe).
+  - **Kreatur-Pings**: `playCreaturePing(emotion)` mit kurzem Sinus + ADSR-Envelope. Happy = 659 Hz (E5), sad = 220 Hz (A3). Aufgerufen aus `spawnCreatureAt` (DSL-Spawns), initialer Spawn-Loop ausgenommen.
+- Toggle-Button `#anazh-symphony-toggle` (analog Grok-Stimme): erster Klick startet AudioContext, weitere Klicks muten via `masterGain`.
+- `disposeSymphony()` räumt komplett auf (osc.stop, ctx.close, alle Referenzen null). Acht neue Playtest-Invarianten.
+- Headless-Tests funktionieren mit `--autoplay-policy=no-user-gesture-required` als Puppeteer-Arg.
 
-**Akzeptanz**: Spieler hört die Welt — ohne dass je ein Asset geladen werden muss (alles synthetisiert).
+**V2 offen** (später, klein, additiv):
+- Emotion-Modulation der Klangschichten: hohe joy → Filter-Cutoff höher (heller), hohe sorrow → tiefer (dunkler). Höhe peace → Master-Gain leiser, chaos → LFO schneller.
+- Player-Y-Position moduliert Ambient-Pitch (höher oben → höher in Frequenz).
+- Reverb-Send für Echo-Effekte (Halle bei großer Höhe).
+
+**Akzeptanz** ✅: Spieler hört die Welt — alles synthetisiert, kein Asset geladen, keine externe Library.
 
 ---
 

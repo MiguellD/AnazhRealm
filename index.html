@@ -119,6 +119,19 @@
         }
         #grok-voice-toggle[aria-pressed="true"] { color: #fff; border-color: #aaa; }
         #grok-voice-toggle[hidden] { display: none; }
+        #anazh-symphony-toggle {
+            position: absolute;
+            top: 40px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.6);
+            color: #ddd;
+            border: 1px solid #555;
+            padding: 4px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            z-index: 6;
+        }
+        #anazh-symphony-toggle[aria-pressed="true"] { color: #fff; border-color: #aaa; }
         #state-file-input { display: none; }
     </style>
 </head>
@@ -127,6 +140,7 @@
     <div id="fps"></div>
     <div id="dialogue-box" aria-live="polite"></div>
     <button id="grok-voice-toggle" type="button" aria-pressed="false" hidden>Stimme: aus</button>
+    <button id="anazh-symphony-toggle" type="button" aria-pressed="false">Klang: aus</button>
     <div id="chat">
         <div id="chat-output"></div>
         <input type="text" id="chat-input" placeholder="Befehl eingeben (z. B. 'Ändere Wetter zu Regen')">

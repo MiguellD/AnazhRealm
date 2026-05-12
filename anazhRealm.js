@@ -195,6 +195,19 @@ class AnazhRealm {
             // Chat-Inputs füllen sie regelbasiert; im Game-Loop verflüchtigen
             // sie sich langsam; Schwellen-Trigger feuern DSL-Programme, sodass
             // Emotion direkt zur Welt wird (Vision-Pfeiler „Emotion treibt").
+            // Ring 4 — anazhSymphony V1. Web Audio API, drei Klangschichten.
+            // AudioContext bleibt null bis der Spieler über den Toggle eine
+            // Geste macht (Browser-Policy). Headless-Playtest umgeht das mit
+            // --autoplay-policy=no-user-gesture-required.
+            symphony: {
+                ctx: null,
+                enabled: false,
+                masterGain: null,
+                ambient: null, // { osc1, osc2, lfo, lfoGain, filter, gain }
+                weather: null, // { noise, filter, gain }
+                lastWeather: null,
+                creaturePingCount: 0,
+            },
             player: {
                 emotions: { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 },
                 emotionDecayPerSec: 0.005,
@@ -1241,6 +1254,156 @@ class AnazhRealm {
         trigger("chaos", ["creatures_speed_mul", 1.5]);
     }
 
+    // ### Ring 4 — anazhSymphony V1 ###
+    // Web Audio API. Drei Schichten: ambient drone (zwei Oszillatoren leicht
+    // verstimmt, langsam moduliert), wetter (gefiltertes Noise für Regen),
+    // creature pings (kurze Sinus-Töne bei Spawn). Alle persistieren als
+    // Audio-Graph, keine periodische JS-Neu-Erzeugung — Web Audio macht die
+    // Arbeit.
+    //
+    // AudioContext muss durch eine User-Geste gestartet werden (Browser-
+    // Autoplay-Policy). Im Headless-Test umgeht `--autoplay-policy=no-user-
+    // gesture-required` das.
+    initSymphony() {
+        const s = this.state.symphony;
+        if (s.enabled) return true;
+        const AudioCtor = typeof AudioContext !== "undefined" ? AudioContext : window.webkitAudioContext;
+        if (!AudioCtor) {
+            this.log("Web Audio API nicht verfügbar — Symphonie bleibt stumm", "WARNING");
+            return false;
+        }
+        const ctx = new AudioCtor();
+        if (ctx.state === "suspended" && typeof ctx.resume === "function") {
+            ctx.resume();
+        }
+        // Master-Bus
+        const masterGain = ctx.createGain();
+        masterGain.gain.value = 0.35;
+        masterGain.connect(ctx.destination);
+
+        // Ambient: zwei sehr leise Sägezahn-Oszillatoren, leicht verstimmt
+        // → langsame Schwebung. LFO auf den Tiefpass-Filter macht das Ganze
+        // atmen statt zu stehen.
+        const filter = ctx.createBiquadFilter();
+        filter.type = "lowpass";
+        filter.frequency.value = 600;
+        filter.Q.value = 0.7;
+
+        const ambientGain = ctx.createGain();
+        ambientGain.gain.value = 0.15;
+
+        const osc1 = ctx.createOscillator();
+        osc1.type = "sawtooth";
+        osc1.frequency.value = 110;
+        const osc2 = ctx.createOscillator();
+        osc2.type = "sawtooth";
+        osc2.frequency.value = 111.5;
+
+        osc1.connect(filter);
+        osc2.connect(filter);
+        filter.connect(ambientGain);
+        ambientGain.connect(masterGain);
+
+        const lfo = ctx.createOscillator();
+        lfo.frequency.value = 0.08;
+        const lfoGain = ctx.createGain();
+        lfoGain.gain.value = 250;
+        lfo.connect(lfoGain);
+        lfoGain.connect(filter.frequency);
+
+        osc1.start();
+        osc2.start();
+        lfo.start();
+
+        s.ambient = { osc1, osc2, filter, ambientGain, lfo, lfoGain };
+
+        // Wetter: gefiltertes White-Noise. Gain bei 0, bis state.weather "rainy"
+        // wird; `symphonyTick` schaltet sanft hin und her.
+        const bufferSize = 2 * ctx.sampleRate;
+        const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+        const noise = ctx.createBufferSource();
+        noise.buffer = noiseBuffer;
+        noise.loop = true;
+        const weatherFilter = ctx.createBiquadFilter();
+        weatherFilter.type = "bandpass";
+        weatherFilter.frequency.value = 1500;
+        weatherFilter.Q.value = 0.3;
+        const weatherGain = ctx.createGain();
+        weatherGain.gain.value = 0;
+        noise.connect(weatherFilter);
+        weatherFilter.connect(weatherGain);
+        weatherGain.connect(masterGain);
+        noise.start();
+
+        s.weather = { noise, filter: weatherFilter, gain: weatherGain };
+
+        s.ctx = ctx;
+        s.masterGain = masterGain;
+        s.enabled = true;
+        s.lastWeather = this.state.weather;
+        this.log("anazhSymphony V1 aktiviert: ambient + wetter live", "INFO");
+        return true;
+    }
+
+    disposeSymphony() {
+        const s = this.state.symphony;
+        if (!s.enabled || !s.ctx) return;
+        try {
+            if (s.ambient) {
+                s.ambient.osc1.stop();
+                s.ambient.osc2.stop();
+                s.ambient.lfo.stop();
+            }
+            if (s.weather) s.weather.noise.stop();
+            s.ctx.close();
+        } catch (err) {
+            this.log(`Symphonie-Dispose-Fehler: ${err.message}`, "WARNING");
+        }
+        s.ctx = null;
+        s.enabled = false;
+        s.ambient = null;
+        s.weather = null;
+        s.masterGain = null;
+    }
+
+    playCreaturePing(emotion = "happy") {
+        const s = this.state.symphony;
+        if (!s.enabled || !s.ctx) return;
+        const ctx = s.ctx;
+        // Frequenz folgt Emotion: happy hell (E5 ≈ 659 Hz), sad dunkel (A3 ≈ 220 Hz).
+        const freq = emotion === "happy" ? 659 : 220;
+        const t = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        osc.type = "sine";
+        osc.frequency.value = freq;
+        const gain = ctx.createGain();
+        // Kurzes Envelope: 5 ms Attack, 200 ms Decay.
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.12, t + 0.005);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.25);
+        osc.connect(gain);
+        gain.connect(s.masterGain);
+        osc.start(t);
+        osc.stop(t + 0.3);
+        s.creaturePingCount++;
+    }
+
+    symphonyTick() {
+        const s = this.state.symphony;
+        if (!s.enabled || !s.ctx) return;
+        if (s.lastWeather === this.state.weather) return;
+        // Sanftes Cross-Fade des Wetter-Layers: 1.5 s Rampe auf Ziel.
+        const target = this.state.weather === "rainy" ? 0.18 : 0.0;
+        const now = s.ctx.currentTime;
+        s.weather.gain.gain.cancelScheduledValues(now);
+        s.weather.gain.gain.setValueAtTime(s.weather.gain.gain.value, now);
+        s.weather.gain.gain.linearRampToValueAtTime(target, now + 1.5);
+        s.lastWeather = this.state.weather;
+        this.log(`Symphonie: wetter-Layer → ${target.toFixed(2)} (${this.state.weather})`, "DEBUG");
+    }
+
     // ### Welt-Identität (Ring 8+ Vorbereitung) ###
     ensureWorldMeta() {
         const m = this.state.worldMeta;
@@ -1619,6 +1782,10 @@ class AnazhRealm {
         if (this.state.scene) this.state.scene.add(mesh);
         this.state.creatures.push(mesh);
         this.state.creatureEmotions.push(emotion === "sad" ? "sad" : "happy");
+        // Ring 4: jeder DSL-getriggerte Spawn erzeugt einen Klang-Ping, der
+        // Welt bekommt eine hörbare Spur. Initial-Spawn (über spawnCreatures)
+        // umgeht das absichtlich — sonst hagelt es 10 Pings beim Welt-Bau.
+        this.playCreaturePing(emotion === "sad" ? "sad" : "happy");
         return mesh;
     }
 
@@ -4070,9 +4237,34 @@ class AnazhRealm {
     // Learnings:
     // - V7.64 Basis: Stabile Initialisierung mit Physik, Szene, Kamera
     // - V7.65 Ergänzung: Fehlerbehandlung verbessert, Chat/Nexus integriert
+    symphonyInitDOM() {
+        // Toggle-Button koppelt User-Geste an AudioContext-Start (Browser-
+        // Autoplay-Policy). Beim ersten Klick: initSymphony(); danach
+        // ein/aus über masterGain.
+        const toggle = document.getElementById("anazh-symphony-toggle");
+        if (!toggle) return;
+        toggle.addEventListener("click", () => {
+            const s = this.state.symphony;
+            if (!s.enabled) {
+                const ok = this.initSymphony();
+                if (ok) {
+                    toggle.setAttribute("aria-pressed", "true");
+                    toggle.textContent = "Klang: an";
+                }
+                return;
+            }
+            const currentlyOn = toggle.getAttribute("aria-pressed") === "true";
+            const targetGain = currentlyOn ? 0 : 0.35;
+            s.masterGain.gain.setValueAtTime(targetGain, s.ctx.currentTime);
+            toggle.setAttribute("aria-pressed", currentlyOn ? "false" : "true");
+            toggle.textContent = currentlyOn ? "Klang: aus" : "Klang: an";
+        });
+    }
+
     async init() {
         this.log("Initialisiere Anazh Realm V7.65... Ewigkeit erwacht!", "INFO");
         this.grokInitDOM();
+        this.symphonyInitDOM();
         this.ensureWorldMeta();
         try {
             await this.core.initPhysics();
@@ -4303,6 +4495,9 @@ class AnazhRealm {
 
             // ### Player-Emotionen (Ring 3) ###
             this.updatePlayerEmotions(currentTime);
+
+            // ### Symphonie-Wetter-Layer (Ring 4) ###
+            this.symphonyTick();
 
             // ### Bodenprüfung ###
             if (currentTime - this.state.lastGroundCheck >= this.state.groundCheckInterval) {
