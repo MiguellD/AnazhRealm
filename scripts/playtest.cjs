@@ -287,7 +287,13 @@ function startSaveServer() {
                     const r = window.anazhRealm;
                     const before = r.state.chunkMap.size;
                     const beforeKeys = new Set(r.state.chunkMap.keys());
-                    ["east", "south", "north", "west"].forEach((d) => r.extendTerrain(d));
+                    // Zwei east-Extensions hintereinander, um Naht-Treue zu prüfen:
+                    // erste east schließt an initial chunk 7, zweite an erste east.
+                    r.extendTerrain("east");
+                    r.extendTerrain("east");
+                    r.extendTerrain("south");
+                    r.extendTerrain("north");
+                    r.extendTerrain("west");
                     const after = r.state.chunkMap.size;
                     const newKeys = [...r.state.chunkMap.keys()].filter((k) => !beforeKeys.has(k));
                     let allHeightsFinite = true;
@@ -305,7 +311,42 @@ function startSaveServer() {
                         }
                         if (!allHeightsFinite) break;
                     }
-                    return { before, after, addedKeys: newKeys, allHeightsFinite, foundOutOfRange };
+
+                    // Naht-Treue: für zwei aneinanderhängende Chunks (gleiches cz,
+                    // cx und cx+1) müssen die rechten Vertices des linken Chunks
+                    // exakt auf den linken Vertices des rechten Chunks landen —
+                    // sonst sieht der Spieler Klippen oder Lücken zwischen den
+                    // Erweiterungen.
+                    let seamMaxDelta = 0;
+                    for (const k of [...r.state.chunkMap.keys()]) {
+                        const [cx, cz] = k.split(",").map(Number);
+                        const right = r.state.chunkMap.get(`${cx + 1},${cz}`);
+                        const here = r.state.chunkMap.get(k);
+                        if (!right || !right.mesh || !here || !here.mesh) continue;
+                        if (!here.mesh.userData || !right.mesh.userData) continue;
+                        // Nur Naht zwischen 2 extended Chunks: beide haben unsere
+                        // userData mit chunkX-Tag.
+                        if (here.mesh.userData.chunkX === undefined) continue;
+                        if (right.mesh.userData.chunkX === undefined) continue;
+                        const hPos = here.mesh.geometry.attributes.position.array;
+                        const rPos = right.mesh.geometry.attributes.position.array;
+                        const VTX = 33;
+                        for (let z = 0; z < VTX; z++) {
+                            const hIdx = (z * VTX + (VTX - 1)) * 3;
+                            const rIdx = (z * VTX + 0) * 3;
+                            const dx = Math.abs(hPos[hIdx] - rPos[rIdx]);
+                            const dz = Math.abs(hPos[hIdx + 2] - rPos[rIdx + 2]);
+                            seamMaxDelta = Math.max(seamMaxDelta, dx, dz);
+                        }
+                    }
+                    return {
+                        before,
+                        after,
+                        addedKeys: newKeys,
+                        allHeightsFinite,
+                        foundOutOfRange,
+                        seamMaxDelta,
+                    };
                 })
                 .catch(() => null);
 
@@ -323,6 +364,11 @@ function startSaveServer() {
                     extensionResults.addedKeys.length ? `keys: ${extensionResults.addedKeys.join(", ")}` : ""
                 );
                 check("Erweiterte Vertex-Höhen liegen im Clamp-Bereich [-100, 100]", !extensionResults.foundOutOfRange);
+                check(
+                    "Naht zwischen aneinandergrenzenden Chunks <0.01 Welt-Einheiten",
+                    extensionResults.seamMaxDelta < 0.01,
+                    `seamMaxDelta=${extensionResults.seamMaxDelta.toFixed(4)}`
+                );
             }
 
             // Zwei Loop-Iterationen warten, damit der Nexus-Loop die Test-Evolution

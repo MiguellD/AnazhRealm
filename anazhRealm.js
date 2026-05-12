@@ -3349,10 +3349,14 @@ class AnazhRealm {
         const baseHeight = this.state.terrainBaseHeight;
         const material = this.state.terrainMaterial;
 
-        // Welt-Schritt pro Vertex und pro Chunk; abgeleitet aus den initialen
-        // Konstanten (WIDTH=256, CHUNK_SIZE=32 → 37.5 Welt-Einheiten/Chunk).
-        const vertexStep = WORLD_SIZE / (WIDTH - 1);
-        const chunkWorldSize = CHUNK_SIZE * (WORLD_SIZE / WIDTH);
+        // Wichtig: vertexStep wird aus chunkWorldSize abgeleitet, NICHT aus
+        // WORLD_SIZE/(WIDTH-1). Sonst akkumulieren sich Bruchteil-Mismatches
+        // pro Chunk (32 × 1.17647 = 37.65 ≠ chunkWorldSize 37.5) zu sichtbaren
+        // Lücken und Physik-Visual-Versatz. So bleiben Vertex-Naht UND
+        // Heightfield-Footprint identisch.
+        const CHUNKS_PER_SIDE = Math.ceil(WIDTH / CHUNK_SIZE);
+        const chunkWorldSize = WORLD_SIZE / CHUNKS_PER_SIDE;
+        const vertexStep = chunkWorldSize / CHUNK_SIZE;
 
         // Anker-Chunk-Grenzen aus chunkMap herausziehen.
         let minChunkX = Infinity,
