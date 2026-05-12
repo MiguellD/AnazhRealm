@@ -22,7 +22,7 @@ Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) is
 |---|---|---|---|---|
 | 0 | Stabiles Fundament (Bewegung, Physik, Chunks, Save, CI) | ✅ erledigt | – | – |
 | 1 | Grok-Stimme (`dialogue-box`, narrative Reflexion) | ✅ V1 live | – | – |
-| 2 | DSL als gemeinsame Sprache | 🟡 Phase 1+2+3 live, 4-7 offen | 1.5-2 d Rest | – |
+| 2 | DSL als gemeinsame Sprache | 🟡 Phase 1+2+3+4+5 live, 6-7 offen | 0.5-1 d Rest | – |
 | 3 | Player-Emotionen → Welt | 🔴 offen | 2 d | Ring 2 Phase 3 |
 | 4 | `anazhSymphony` V1 (Web Audio) | 🔴 offen | 2-3 d | Ring 3 |
 | 5 | `createPlayerSoul` (Mensch/Phönix/Drache) | 🔴 offen | 1-2 d | – |
@@ -67,16 +67,9 @@ Sechs neue Playtest-Invarianten verifizieren Parser, End-to-end-Routing und Leve
 - `aktiviere anazh-symphonie` → Ring 4 (Web Audio)
 - System-IO (`speichere/lade/lade datei`), `aktiviere version`, `füge trainingsdaten`, `behebe physik-tunneling`, `optimiere physik`, `boden nicht sichtbar`, `aktiviere/deaktiviere debug-logs`, `spawne neue welt` bleiben bewusst legacy (System-Ops, kein Welt-Effekt)
 
-**Phase 4 — Save-Migration alter Saves** (0.5 d)
-- Bekannte alte `abilities: string[]`-Saves erkennen, in `dsl.abilities` umwandeln (per `restoreAbility`-Mapping). Bereits halb da seit Commit `fef4baf`.
-- Schema-Version-Check: `worldMeta.schemaVersion === "7.66-dsl-v1"` erwartet; bei „1.x" → migration; bei unbekanntem → Warnung + frischer Start.
-- Test: ein alter Save-File (vor DSL) wird via Upload geladen, alle Abilities sind als DSL verfügbar.
+**Phase 4 ✅ erledigt** (dieser Commit-Block): `buildStateSnapshot` persistiert `dslAbilities` als Quelle der Wahrheit, die Legacy-`abilities`-Namensliste fliegt raus. `loadState` rehydriert das Array UND legt die zugehörigen `state.abilities[name]`-Wrapper an, damit „Führe Fähigkeit aus" und Keyboard-Loop nach Reload weiter funktionieren. Alte Saves (mit `abilities: string[]`) gehen weiter durch `restoreAbility` → Legacy-Namen-Mapping. `worldMeta.schemaVersion === "7.66-dsl-v1"` bleibt das Vertrags-Feld.
 
-**Phase 5 — Cleanup `new Function`** (0.5 d)
-- `createDynamicAbility` löschen
-- `codeParser` löschen (war für „füge code <js>" Chat-Command, hat eh nie produktiv funktioniert)
-- `developAdvancedPhysics`, `developAdvancedRenderer` löschen (toter Code seit immer)
-- Test: `grep -r "new Function" anazhRealm.js` liefert 0 Treffer; Playtest-Invariante „kein eval-Pfad im Bundle".
+**Phase 5 ✅ erledigt** (dieser Commit-Block): `createDynamicAbility`, `codeParser`, `developAdvancedPhysics`, `developAdvancedRenderer` gelöscht. Chat-Befehle `füge code` und `entwickle fähigkeit` raus. `learnAbility` produziert DSL-Programme via `parseAbilityDescriptionToDsl` (5 Pattern + Catch-All als `say`). `addNewAbility` akzeptiert ausschließlich DSL-Arrays. `aktiviere anazh-symphonie` wird als statisches DSL-Programm gespeichert (V1-Stub, echte Web-Audio mit Ring 4). `processOptimization` ruft direkt `optimizePhysics()`, der Legacy-`evolution.impl`-Pfad in der Loop fliegt raus. CI-Gate „kein `new Function`/`eval` im Bundle" hart aktiviert (fail), Playtest verifiziert dass die toten Methoden weg sind.
 
 **Phase 6 — CSP-Header strict** (2 h)
 - `<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; ...">` in `index.html`

@@ -67,12 +67,20 @@ jobs:
             echo "⚠️ Verdacht auf Memory-Leak: deutlich mehr Allokationen als Frees"
           fi
 
-      - name: Verbotene Konstrukte (Hinweis, kein Fail)
+      - name: Verbotenes dynamisches Auswerten (eval / new Function)
+        # Ring 2 Phase 5: die DSL ist der einzige Pfad für dynamische
+        # Effekte. Wenn dieser Grep wieder fündig wird, schaltet jemand
+        # das Sicherheits-Modell aus.
+        run: |
+          if grep -nE "(eval\(|new Function\()" anazhRealm.js save-server.js; then
+            echo "❌ Dynamisches Code-Eval gefunden — DSL nutzen, nicht eval/new Function"
+            exit 1
+          fi
+          echo "✅ Kein dynamisches Code-Eval"
+
+      - name: innerHTML-Schreibzugriffe (Hinweis, kein Fail)
         continue-on-error: true
         run: |
-          echo "--- eval / new Function ---"
-          grep -nE "(eval\(|new Function\()" anazhRealm.js || echo "keine Treffer"
-          echo "--- innerHTML-Schreibzugriffe (XSS-Risiko) ---"
           grep -nE "innerHTML\s*\+?=" anazhRealm.js || echo "keine Treffer"
 
       - name: TODO/FIXME-Übersicht (Hinweis, kein Fail)

@@ -496,6 +496,46 @@ function startSaveServer() {
                     );
                     void beforeLog;
 
+                    // 7. Phase 5: "Lerne Fähigkeit" speichert DSL-Programm
+                    r.processChatCommand("Lerne Fähigkeit blaukreaturen Ändere Farbe von Kreaturen zu blue");
+                    const learned = r.state.dsl.abilities.find((a) => a.name === "blaukreaturen");
+                    out.learnedAbilityIsDsl =
+                        !!learned &&
+                        Array.isArray(learned.program) &&
+                        learned.program[0] === "creatures_color" &&
+                        learned.program[1] === "blue" &&
+                        learned.source === "human";
+
+                    // 8. Phase 5: "Führe Fähigkeit aus" ruft dslRun und mutiert state
+                    const someCreature = r.state.creatures[0];
+                    const colorBefore = someCreature ? someCreature.material.color.getHex() : 0;
+                    r.processChatCommand("Führe Fähigkeit aus blaukreaturen");
+                    const colorAfter = someCreature ? someCreature.material.color.getHex() : 0;
+                    // 0x0000ff = blue
+                    out.abilityExecutedMutatesWorld = colorAfter === 0x0000ff && colorBefore !== colorAfter;
+
+                    // 9. Phase 4: Save-Roundtrip — dslAbilities überleben localStorage
+                    r.saveState();
+                    const raw = localStorage.getItem("anazhRealmState");
+                    let parsed = null;
+                    try {
+                        parsed = JSON.parse(raw);
+                    } catch (e) {
+                        void e;
+                    }
+                    out.savedDslAbilitiesPresent =
+                        !!parsed &&
+                        Array.isArray(parsed.dslAbilities) &&
+                        parsed.dslAbilities.some((a) => a.name === "blaukreaturen");
+                    out.savedNoLegacyAbilitiesList = !!parsed && parsed.abilities === undefined;
+
+                    // 10. Phase 5: createDynamicAbility/codeParser sind weg
+                    out.dynamicCodeMethodsRemoved =
+                        typeof r.createDynamicAbility === "undefined" &&
+                        typeof r.codeParser === "undefined" &&
+                        typeof r.developAdvancedPhysics === "undefined" &&
+                        typeof r.developAdvancedRenderer === "undefined";
+
                     return out;
                 })
                 .catch(() => null);
@@ -541,6 +581,26 @@ function startSaveServer() {
                 check(
                     "Phase 3b: set_visible mit ungültigem Target wird abgelehnt",
                     phase3Results.invalidTargetRejected
+                );
+                check(
+                    "Phase 5: 'Lerne Fähigkeit' speichert DSL-Programm in dsl.abilities",
+                    phase3Results.learnedAbilityIsDsl
+                );
+                check(
+                    "Phase 5: 'Führe Fähigkeit aus' ruft dslRun und mutiert Welt",
+                    phase3Results.abilityExecutedMutatesWorld
+                );
+                check(
+                    "Phase 4: Save persistiert dslAbilities",
+                    phase3Results.savedDslAbilitiesPresent
+                );
+                check(
+                    "Phase 4: Save enthält keine Legacy-abilities-Namensliste mehr",
+                    phase3Results.savedNoLegacyAbilitiesList
+                );
+                check(
+                    "Phase 5: createDynamicAbility/codeParser/developAdvanced* sind entfernt",
+                    phase3Results.dynamicCodeMethodsRemoved
                 );
             }
         }

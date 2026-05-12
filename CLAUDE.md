@@ -21,7 +21,7 @@ Detaillierter Plan in `docs/state-of-realm.md` §5. Status (Mai 2026):
 |---|---|---|
 | 0 | Stabiles Fundament (Bewegung, Physik, Kreaturen, Chunks, Save, CI-Gate) | ✅ erledigt |
 | 1 | **Grok-Stimme** (`dialogue-box`, narrative Reflexion) | ✅ V1 erledigt — 5 Trigger (firstSpawn, idle, jumpBurst, rainLong, nexus), Text + optionale SpeechSynthesis |
-| 2 | DSL als gemeinsame Sprache Mensch+Grok (`docs/nexus-dsl.md`) | 🟡 Phase 1+2+3 live — Interpreter mit 41 Ops (`set_visible` + `record_narrative` neu), Budget-Limits, Scheduler. Nexus-Generator komponiert rekursiv (`dslCompose`), Outcomes landen in `state.dsl.history` mit FPS-Fitness. **Chat→DSL für 13 Welt-Befehle (`parseChatToDsl` + Levenshtein-Vorschlag) live.** Phasen 4-7 offen: Save-Migration, `new Function` raus, CSP-strict, Fitness-V2. |
+| 2 | DSL als gemeinsame Sprache Mensch+Grok (`docs/nexus-dsl.md`) | 🟡 Phase 1+2+3+4+5 live — Interpreter mit 41 Ops, Budget-Limits, Scheduler. **Abilities sind ausschließlich DSL-Programme** (`state.dsl.abilities`), `new Function`/`eval` aus dem Bundle verbannt (CI-Gate), Save persistiert DSL-Abilities, alte Saves migrieren über `restoreAbility` + Legacy-Namen-Mapping. 13/25 Chat-Befehle migriert. Phasen 6-7 offen: CSP-strict, Fitness-V2. |
 | 3 | Player-Emotionen (`{joy, awe, sorrow, hope, …}`) beeinflussen Welt | offen |
 | 4 | `anazhSymphony` V1 – Web-Audio-Klangschichten | offen |
 | 5 | `createPlayerSoul` (Mensch/Phönix/Drache) | offen |
@@ -29,7 +29,7 @@ Detaillierter Plan in `docs/state-of-realm.md` §5. Status (Mai 2026):
 | 7 | `brain.js`-Welt – lernt aus Spieler-Verhalten + Emotionen | offen |
 | 8-11 | **Welten-Ultiversum** (Identität, Export/Import, Fusion, Multi-User-Sync) | Vision-skizze in `docs/state-of-realm.md` §11 |
 
-Letzter Stand: Ring 1 + Ring 2 Phase 1+2+**3** live. Chunk-Physik komplett auf `btBvhTriangleMeshShape` (Commit `e612c60`) — visuelles Mesh = Kollisionsnetz. 120 fps im echten Browser, **46/46 Playtest-Invarianten grün** (36 + 6 für Phase 3a + 4 für Phase 3b). Mensch und Nexus teilen jetzt eine Sprache für Welt-Mutation; 13 von ~25 Chat-Befehlen migriert. Nächster Schritt: Ring 3 (Player-Emotionen) oder Phase 4 (Save-Migration als Vorbereitung für Phase 5 / `new Function`-Cleanup).
+Letzter Stand: Ring 1 + Ring 2 Phase 1+2+3+**4+5** live. Chunk-Physik komplett auf `btBvhTriangleMeshShape` (Commit `e612c60`) — visuelles Mesh = Kollisionsnetz. 120 fps im echten Browser, **52/52 Playtest-Invarianten grün**. Mensch und Nexus teilen eine Sprache für Welt-Mutation; Abilities sind reine DSL-Programme; dynamische Code-Generierung (`new Function`/`eval`) gibt es nicht mehr im Bundle (per CI-Gate hart geprüft). Nächster Schritt: Ring 3 (Player-Emotionen) oder Phase 6 (strict CSP — kleiner, schließt Ring 2 endgültig ab).
 
 ## Wichtige Gotchas (technisch)
 
@@ -47,7 +47,8 @@ Letzter Stand: Ring 1 + Ring 2 Phase 1+2+**3** live. Chunk-Physik komplett auf `
 - **`generateNewWorld()` hat 30s-Cooldown.** Bei Welt-Regen bleibt Spieler-Position erhalten (nur initial auf (0,50,0) gesetzt).
 - **TF.js `model.fit` ist async und blockiert Main-Thread.** `state.learningInFlight` + `state.worldgenInFlight` Flags verhindern Überlappung.
 - **Save-Server-POST nur auf localhost.** Auf CDN/GitHack-Pfaden stiller Skip — State lebt nur im `localStorage` (plus Download-Button als Manual-Backup).
-- **`restoreAbility`** mappt die drei Legacy-Namen (`gravityShift`, `creatureDance`, `terrainFlatten`) direkt auf DSL-Programme — kein `new Function` mehr, CSP-clean.
+- **`addNewAbility(name, program, source)`** ist der einzige Pfad, eine Fähigkeit zu registrieren. Akzeptiert **nur DSL-Arrays**, nie JS-Funktionen. Schreibt in `state.dsl.abilities` (Quelle der Wahrheit) und legt einen Wrapper in `state.abilities[name] = () => dslRun(program)` ab (für Keyboard-Loop + „Führe Fähigkeit aus X"). `restoreAbility` mappt die drei Legacy-Save-Namen (`gravityShift`, `creatureDance`, `terrainFlatten`) auf ihre DSL-Äquivalente.
+- **`learnAbility`** geht über `parseAbilityDescriptionToDsl` (regelbasiert, 5 Pattern + Catch-All als `say`). Keine Code-Generierung mehr; CSP-strict (Phase 6) wird damit möglich.
 - `npm run playtest` startet save-server + Headless-Chromium, sammelt 20-25 s Logs, prüft **36 Invarianten** (inkl. Grok-Stimme, DSL-Effekte, Naht-Treue, Welt-Identität), exit 1 bei Verletzung.
 
 ## Workflows

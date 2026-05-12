@@ -1762,37 +1762,32 @@ class AnazhRealm {
     }
 
     // ### Selbstdefinition ###
-    addNewAbility(name, implementation) {
-        this.state.abilities[name] = implementation;
-        this.state.selfAwareness.components.push(name);
-        this.log(`Neue Fähigkeit hinzugefügt: ${name}`);
-    }
-
-    createDynamicAbility(name, code) {
-        try {
-            return new Function("self", "state", code);
-        } catch (error) {
-            this.log(`Dynamische Fähigkeit '${name}' durch CSP blockiert: ${error.message}`, "ERROR");
-            return null;
+    // Ring 2 Phase 5: Abilities sind ausschließlich DSL-Programme.
+    // `state.abilities[name]` bleibt als Wrapper-Cache (für die Keyboard-Loop
+    // und „Führe Fähigkeit aus X"), `state.dsl.abilities` ist die Quelle der
+    // Wahrheit für Persistenz. Dynamische Code-Generierung ist aus dem Bundle
+    // verbannt — CSP-strict wird damit möglich (Phase 6).
+    addNewAbility(name, program, source = "human") {
+        if (!Array.isArray(program)) {
+            this.log(`addNewAbility: Programm für '${name}' ist kein DSL-Array, ignoriert`, "ERROR");
+            return false;
         }
-    }
+        const existingIdx = this.state.dsl.abilities.findIndex((a) => a.name === name);
+        const entry = {
+            name,
+            program,
+            source,
+            createdAt: performance.now() / 1000,
+        };
+        if (existingIdx >= 0) this.state.dsl.abilities[existingIdx] = entry;
+        else this.state.dsl.abilities.push(entry);
 
-    codeParser(code) {
-        try {
-            const functionRegex = /function\s+(\w+)\s*\([^)]*\)\s*{([^}]*)}/g;
-            let match;
-            while ((match = functionRegex.exec(code)) !== null) {
-                const funcName = match[1];
-                const funcBody = match[2].trim();
-                const dynamicAbility = this.createDynamicAbility(funcName, funcBody);
-                if (dynamicAbility) {
-                    this.addNewAbility(funcName, dynamicAbility);
-                    this.log(`Funktion aus Beispielcode integriert: ${funcName}`);
-                }
-            }
-        } catch (error) {
-            this.logError(error);
+        this.state.abilities[name] = () => this.dslRun(program, { source: `ability:${name}` });
+        if (!this.state.selfAwareness.components.includes(name)) {
+            this.state.selfAwareness.components.push(name);
         }
+        this.log(`Neue Fähigkeit hinzugefügt (DSL): ${name}`);
+        return true;
     }
 
     // ### Wachstum und Lernen ###
@@ -2030,15 +2025,13 @@ class AnazhRealm {
                 }
             },
             processOptimization: (data) => {
-                // Reagiert auf FPS-Drops mit Optimierungsvorschlägen
-                if (data.fps < 50 && this.state.nexusEvolutionQueue.length < 5) {
-                    this.state.nexusEvolutionQueue.push({
-                        name: `optimize_${Date.now()}`,
-                        impl: (self, state) => {
-                            self.optimizePhysics();
-                            self.log("Nexus-Optimierung: Physik stabilisiert", "INFO");
-                        },
-                    });
+                // FPS-Drop → direkt Self-Heal. Vorher ging das durch eine
+                // JS-Closure in der Evolution-Queue; das war der letzte
+                // Nicht-DSL-Pfad. Physik-Stabilisierung ist Self-Heal, kein
+                // Welt-Effekt, also bewusst nicht in der DSL.
+                if (data.fps < 50) {
+                    this.optimizePhysics();
+                    this.log("Nexus-Optimierung: Physik stabilisiert", "INFO");
                 }
             },
             predictPlayerMove: () => {
@@ -2104,11 +2097,10 @@ class AnazhRealm {
     }
 
     generateEvolution() {
-        // ### Nexus-Evolution als DSL-Programm (Ring 2 Phase 2) ###
-        // Komponiert ein zufälliges DSL-Programm. Das alte Code-String-Verfahren
-        // (mit `new Function`) ist nicht mehr aktiv für Nexus-Generationen — es
-        // existiert nur noch hinter `restoreAbility()` für Legacy-Saves und
-        // wird in Phase 5 entfernt.
+        // ### Nexus-Evolution als DSL-Programm (Ring 2 Phase 2+5) ###
+        // Komponiert ein zufälliges DSL-Programm. Dynamische Code-Generierung
+        // ist seit Phase 5 vollständig entfernt — der einzige Pfad für neue
+        // Effekte ist die DSL.
         const program = this.dslCompose();
         return {
             name: `evo_${this.state.dsl.nextEntryId++}`,
@@ -2119,10 +2111,9 @@ class AnazhRealm {
     }
 
     restoreAbility(name) {
-        // Wird beim Laden eines alten Speicherstands aufgerufen. Statt
-        // `new Function`-Strings (die unter CSP scheitern) mappen wir die drei
-        // historischen Nexus-Namen auf ihre DSL-Äquivalente — siehe
-        // docs/nexus-dsl.md §14 (Migration). Unbekannte Namen werden ignoriert.
+        // Migration für alte Saves (vor Phase 4): die drei historischen
+        // Nexus-Namen mappen auf ihre DSL-Äquivalente — siehe
+        // docs/nexus-dsl.md §14. Unbekannte Namen werden geloggt.
         const legacyToDsl = {
             gravityShift: ["gravity", -9.81],
             creatureDance: ["repeat", 10, ["spawn_creature", ["near_player", 5], 1, "happy"]],
@@ -2136,16 +2127,7 @@ class AnazhRealm {
             );
             return false;
         }
-        // Als Ability-Wrapper, sodass `Führe Fähigkeit aus X` weiter funktioniert.
-        const wrapper = () => this.dslRun(program, { source: "restored" });
-        this.addNewAbility(name, wrapper);
-        this.state.dsl.abilities.push({
-            name,
-            program,
-            source: "restored",
-            createdAt: performance.now() / 1000,
-        });
-        return true;
+        return this.addNewAbility(name, program, "restored");
     }
 
     // ### Wissens- und Narrativ-Modul ###
@@ -2258,33 +2240,6 @@ class AnazhRealm {
             } else {
                 appendChatOutput(`Version ${version} nicht gefunden`);
             }
-        } else if (parts[0] === "füge" && parts[1] === "code") {
-            const code = command.slice(10);
-            this.codeParser(code);
-            appendChatOutput(`Code integriert: ${code}`);
-        } else if (parts[0] === "entwickle" && parts[1] === "fähigkeit") {
-            const ability = parts[2];
-            if (ability === "fliegen") {
-                this.addNewAbility("fly", function (self, state) {
-                    if (state.playerBody) {
-                        const velocity = state.playerBody.getLinearVelocity();
-                        state.playerBody.setLinearVelocity(new Ammo.btVector3(velocity.x(), 5, velocity.z()));
-                        self.log("Spieler fliegt!", "INFO");
-                    }
-                });
-                appendChatOutput("Fähigkeit 'Fliegen' entwickelt");
-            } else if (ability === "sehen") {
-                this.addNewAbility("see", function (self, state) {
-                    const light = new THREE.AmbientLight(0xffffff, 1);
-                    state.scene.add(light);
-                    self.log("Spieler kann sehen – Licht hinzugefügt!", "INFO");
-                });
-                appendChatOutput("Fähigkeit 'Sehen' entwickelt");
-            } else {
-                appendChatOutput(
-                    "Unbekannte Fähigkeit. Beispiele: 'Entwickle Fähigkeit fliegen', 'Entwickle Fähigkeit sehen'"
-                );
-            }
         } else if (parts[0] === "boden" && parts[1] === "nicht" && parts[2] === "sichtbar") {
             if (
                 !this.state.groundChunks ||
@@ -2298,20 +2253,17 @@ class AnazhRealm {
                 appendChatOutput("Boden ist bereits sichtbar");
             }
         } else if (parts[0] === "aktiviere" && parts[1] === "anazh-symphonie") {
-            this.addNewAbility("anazhSymphony", function (self, state) {
-                state.creatures.forEach((creature, i) => {
-                    const emotion = state.creatureEmotions[i];
-                    const speed = emotion === "happy" ? 3 : 1.5;
-                    const direction = new THREE.Vector3(
-                        Math.sin(state.creatureAnimationTime + i) * speed,
-                        0,
-                        Math.cos(state.creatureAnimationTime + i) * speed
-                    );
-                    creature.position.addScaledVector(direction, 0.016);
-                });
-                self.log("Anazh-Symphonie aktiviert: Kreaturen tanzen im Rhythmus!", "INFO");
-            });
-            appendChatOutput("Anazh-Symphonie aktiviert – Kreaturen bewegen sich harmonisch");
+            // V1-Platzhalter, bis Ring 4 Web-Audio bringt: ein DSL-Programm
+            // belebt die Kreaturen sichtbar (happy + schneller) statt eines
+            // JS-Closures, der per Sinus animiert. Ehrlicher als der alte
+            // Stub und persistierbar als Ability.
+            this.addNewAbility(
+                "anazhSymphony",
+                ["chain", ["creatures_emotion", "happy"], ["creatures_speed_mul", 1.5]],
+                "human"
+            );
+            this.state.abilities["anazhSymphony"]();
+            appendChatOutput("Anazh-Symphonie V1 aktiviert (Web-Audio kommt mit Ring 4)");
         } else if (parts[0] === "aktiviere" && parts[1] === "debug-logs") {
             this.state.debugLogging = true;
             appendChatOutput("Debug-Logs aktiviert");
@@ -2324,71 +2276,49 @@ class AnazhRealm {
                 appendChatOutput(`Unbekannter Befehl. Meintest du: '${suggestion}'?`);
             } else {
                 appendChatOutput(
-                    "Unbekannter Befehl. DSL-Befehle: 'Setze Wetter rainy', 'Spawne Kreaturen 10', 'Ändere Sternenhimmel red', 'Setze Terrain Steilheit 0.8', 'Setze Terrain Basishöhe 5', 'Erhöhe Sprungkraft um 2', 'Heile Welt', 'Vereine Chaos Ordnung'. Weitere: 'Speichere/Lade Zustand', 'Lade Datei', 'Spawne neue Welt', 'Boden aktivieren/deaktivieren', 'Kreaturen aktivieren/deaktivieren', 'Aktiviere Anazh-Symphonie', 'Aktiviere/Deaktiviere Debug-Logs', 'Behebe Physik-Tunneling', 'Optimiere Physik', 'Lerne/Führe/Entwickle Fähigkeit', 'Füge Code', 'Füge Trainingsdaten', 'Erzähle'."
+                    "Unbekannter Befehl. DSL-Befehle: 'Setze Wetter rainy', 'Spawne Kreaturen 10', 'Ändere Sternenhimmel red', 'Setze Terrain Steilheit 0.8', 'Setze Terrain Basishöhe 5', 'Erhöhe Sprungkraft um 2', 'Heile Welt', 'Vereine Chaos Ordnung', 'Boden aktivieren/deaktivieren', 'Kreaturen aktivieren/deaktivieren', 'Erzähle <text>'. Weitere: 'Speichere/Lade Zustand', 'Lade Datei', 'Spawne neue Welt', 'Aktiviere Anazh-Symphonie', 'Aktiviere/Deaktiviere Debug-Logs', 'Behebe Physik-Tunneling', 'Optimiere Physik', 'Lerne Fähigkeit <Name> <Beschreibung>', 'Führe Fähigkeit aus <Name>', 'Füge Trainingsdaten'."
                 );
             }
         }
         chatInput.value = "";
     }
 
-    learnAbility(name, description) {
-        const lower = (description || "").toLowerCase();
-        let funcBody = "";
+    // Beschreibung → DSL-Programm. Vier bekannte Pattern + Catch-All als
+    // `say`. Dieselbe Form wie `parseChatToDsl`: regelbasiert, sicher, JSON-
+    // serialisierbar. Keine Code-Generierung mehr.
+    parseAbilityDescriptionToDsl(description) {
+        const lower = (description || "").toLowerCase().trim();
         if (lower.includes("ändere farbe von kreaturen")) {
-            const colorMatch = lower.match(/zu ([\w]+)/);
-            const color = colorMatch ? colorMatch[1] : "white";
-            funcBody = `
-            state.creatures.forEach(creature => {
-                creature.material.color.set("${color}");
-            });
-            self.log("Farbe der Kreaturen geändert zu ${color}");
-        `;
-        } else if (lower.includes("erhöhe geschwindigkeit")) {
-            const amountMatch = lower.match(/um ([\d.]+)/);
-            const amount = amountMatch ? parseFloat(amountMatch[1]) : 1.0;
-            funcBody = `
-            state.speed += ${amount};
-            state.sprintSpeed += ${amount};
-            self.log("Geschwindigkeit erhöht um ${amount}, neue Geschwindigkeit: " + state.speed);
-        `;
-        } else if (lower.includes("spawne objekt")) {
-            funcBody = `
-            const geometry = new THREE.BoxGeometry(1, 1, 1);
-            const material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-            const obj = new THREE.Mesh(geometry, material);
-            obj.position.set(0, 10, 0);
-            state.scene.add(obj);
-            self.log("Neues Objekt gespawnt!");
-        `;
-        } else if (lower.includes("erschaffe baum")) {
-            funcBody = `
-            const trunkGeometry = new THREE.CylinderGeometry(0.5, 0.5, 5, 8);
-            const trunkMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513 });
-            const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
-            trunk.position.set(0, 2.5, 0);
-            const leavesGeometry = new THREE.SphereGeometry(2, 8, 8);
-            const leavesMaterial = new THREE.MeshBasicMaterial({ color: 0x00FF00 });
-            const leaves = new THREE.Mesh(leavesGeometry, leavesMaterial);
-            leaves.position.set(0, 5, 0);
-            const tree = new THREE.Group();
-            tree.add(trunk);
-            tree.add(leaves);
-            tree.position.set(Math.random() * 100 - 50, 0, Math.random() * 100 - 50);
-            state.scene.add(tree);
-            self.log("Baum erschaffen!");
-        `;
-        } else {
-            funcBody = `
-            self.log("Fähigkeit '${name}' ausgeführt: ${description}");
-        `;
+            const m = lower.match(/zu ([\wäöüß]+)/);
+            const color = m ? m[1] : "white";
+            return ["creatures_color", color];
         }
-        const dynamicAbility = this.createDynamicAbility(name, funcBody);
-        if (dynamicAbility) {
-            this.addNewAbility(name, dynamicAbility);
+        if (lower.includes("erhöhe geschwindigkeit") || lower.includes("erhoehe geschwindigkeit")) {
+            const m = lower.match(/um ([\d.]+)/);
+            const amount = m ? parseFloat(m[1]) : 1.0;
+            const target = (this.state.speed || 6) + amount;
+            return ["player_speed", target];
         }
+        if (lower.includes("spawne objekt") || lower.includes("erschaffe baum")) {
+            return ["spawn_tree", ["at_player"], 1];
+        }
+        if (lower.includes("regen") || lower.includes("regnen")) {
+            return ["weather", "rainy"];
+        }
+        if (lower.includes("sonnig") || lower.includes("sonne")) {
+            return ["weather", "sunny"];
+        }
+        // Catch-All: die Fähigkeit „sagt" ihre Beschreibung — kein Welt-
+        // Effekt, aber persistiert und auf der Grok-Stimme abspielbar.
+        return ["say", `Fähigkeit '${description.trim()}' aktiv`];
+    }
+
+    learnAbility(name, description) {
+        const program = this.parseAbilityDescriptionToDsl(description);
+        this.addNewAbility(name, program, "human");
         this.state.knowledgeBase.push({
             type: "ability",
-            content: { name, description },
+            content: { name, description, program },
             timestamp: performance.now() / 1000,
         });
     }
@@ -2408,80 +2338,6 @@ class AnazhRealm {
         line.textContent = `KI-Vorschlag: ${randomSuggestion}`;
         chatOutput.appendChild(line);
         chatOutput.scrollTop = chatOutput.scrollHeight;
-    }
-    developAdvancedPhysics() {
-        this.state.physicsWorld = null;
-        this.state.rigidBodies = [];
-        this.state.advancedPhysics = {
-            bodies: [],
-            simulate: (delta) => {
-                this.state.advancedPhysics.bodies.forEach((body) => {
-                    const pos = body.position;
-                    const vel = body.velocity;
-                    pos.x += vel.x * delta;
-                    pos.y += vel.y * delta;
-                    pos.z += vel.z * delta;
-                    vel.y -= 9.81 * delta;
-                    const terrainHeight = this.getTerrainHeightAt(pos.x, pos.z);
-                    if (pos.y < terrainHeight + 0.5) {
-                        pos.y = terrainHeight + 0.5;
-                        vel.y = 0;
-                    }
-                    body.mesh.position.set(pos.x, pos.y, pos.z);
-                });
-            },
-        };
-        this.state.advancedPhysics.bodies.push({
-            mesh: this.state.playerMesh,
-            position: { x: 0, y: 10, z: 0 },
-            velocity: { x: 0, y: 0, z: 0 },
-        });
-        this.state.creatures.forEach((creature) => {
-            this.state.advancedPhysics.bodies.push({
-                mesh: creature,
-                position: { x: creature.position.x, y: creature.position.y, z: creature.position.z },
-                velocity: { x: 0, y: 0, z: 0 },
-            });
-        });
-        this.log("Tensor.js-basierte Physik-Engine implementiert");
-    }
-    developAdvancedRenderer() {
-        this.state.scene.children.forEach((child) => {
-            if (child === this.state.playerMesh || this.state.creatures.includes(child)) return;
-            this.state.scene.remove(child);
-        });
-        const vertexShader = `
-    varying vec3 vWorldPosition;
-    void main() {
-        vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    }
-`;
-        const fragmentShader = `
-    varying vec3 vWorldPosition;
-    uniform vec3 uLightPosition;
-    void main() {
-        vec3 baseColor = vec3(0.1, 0.6, 0.1);
-        float lightDistance = distance(vWorldPosition, uLightPosition);
-        float intensity = 1.0 / (lightDistance * lightDistance);
-        gl_FragColor = vec4(baseColor * intensity, 1.0);
-    }
-`;
-        const material = new THREE.ShaderMaterial({
-            vertexShader: vertexShader,
-            fragmentShader: fragmentShader,
-            uniforms: {
-                uLightPosition: { value: new THREE.Vector3(0, 50, 0) },
-            },
-        });
-
-        if (this.state.groundMesh) {
-            this.state.groundMesh.material = material;
-            this.state.scene.add(this.state.groundMesh);
-        }
-        this.state.scene.add(this.state.playerMesh);
-        this.state.creatures.forEach((creature) => this.state.scene.add(creature));
-        this.log("Tensor.js-basierte Raytracing-Engine implementiert");
     }
     implementGameMechanics() {
         this.state.gameMechanics = {
@@ -3707,7 +3563,6 @@ class AnazhRealm {
             learningData: learningData,
             knowledgeBase: knowledgeBase,
             version: this.state.currentVersion,
-            abilities: Object.keys(this.state.abilities),
             selfAwareness: this.state.selfAwareness,
             creatures: this.state.creatures.map((creature) => ({
                 position: { x: creature.position.x, y: creature.position.y, z: creature.position.z },
@@ -3901,18 +3756,33 @@ class AnazhRealm {
             this.log("Save-Migration: kein worldMeta gefunden, generiere neue Welt-Identität", "INFO");
         }
         if (Array.isArray(state.dslAbilities)) {
+            // Phase 4: dslAbilities ist die Quelle der Wahrheit. Wir
+            // rehydrieren das Array und legen die zugehörigen Wrapper in
+            // state.abilities ab, damit „Führe Fähigkeit aus" + Keyboard-
+            // Loop funktionieren. Idempotent: Dubletten überschreiben sich.
             this.state.dsl.abilities = state.dslAbilities;
+            for (const a of state.dslAbilities) {
+                if (a && typeof a.name === "string" && Array.isArray(a.program)) {
+                    this.state.abilities[a.name] = () => this.dslRun(a.program, { source: `ability:${a.name}` });
+                }
+            }
+            this.log(`DSL-Abilities geladen: ${state.dslAbilities.length}`);
         }
         if (Array.isArray(state.dslHistory)) {
             this.state.dsl.history = state.dslHistory.slice(-this.state.dsl.historyCap);
         }
         if (Array.isArray(state.abilities)) {
+            // Legacy-Save (vor Phase 4): Namensliste statt DSL-Programme.
+            // `restoreAbility` mappt drei historische Nexus-Namen direkt auf
+            // ihre DSL-Äquivalente; unbekannte Namen werden geloggt und
+            // verworfen — die alten JS-Bodies sind im Save eh nicht
+            // enthalten gewesen.
             let restored = 0;
             state.abilities.forEach((name) => {
                 if (this.state.abilities[name]) return;
                 if (this.restoreAbility(name)) restored++;
             });
-            if (restored > 0) this.log(`Fähigkeiten wiederhergestellt: ${restored}`);
+            if (restored > 0) this.log(`Legacy-Fähigkeiten migriert: ${restored}`);
         }
         // Bei externer Quelle: in localStorage spiegeln, damit ein Reload
         // den importierten Stand behält.
@@ -4182,8 +4052,6 @@ class AnazhRealm {
             if (this.state.nexusEvolutionQueue.length > 0) {
                 const evolution = this.state.nexusEvolutionQueue.shift();
                 if (Array.isArray(evolution.program)) {
-                    // DSL-Pfad (Phase 2): Programm ausführen, Outcome speichern,
-                    // V1-Fitness (FPS-Schaden) berechnen.
                     const result = this.dslRun(evolution.program, { source: evolution.source || "nexus" });
                     const fpsDmg = Math.max(0, result.outcome.fpsBefore - result.outcome.fpsAfter);
                     const fitness = result.ok ? Math.max(0, 1 - fpsDmg / 100) : 0;
@@ -4208,13 +4076,8 @@ class AnazhRealm {
                         `Nexus-Evolution (DSL) ausgeführt: ${evolution.name}, fitness=${fitness.toFixed(2)}`,
                         "INFO"
                     );
-                } else if (typeof evolution.impl === "function") {
-                    // Legacy-Pfad: processOptimization-Handler nutzt weiterhin
-                    // direkte JS-Funktionen für Physik-Stabilisierung.
-                    this.state.nexusCodeForge[evolution.name] = evolution.impl;
-                    this.state.abilities[evolution.name] = evolution.impl;
-                    evolution.impl(this, this.state);
-                    this.log(`Nexus-Evolution (legacy) ausgeführt: ${evolution.name}`, "INFO");
+                } else {
+                    this.log(`Nexus-Evolution ohne DSL-Programm verworfen: ${evolution.name}`, "WARNING");
                 }
                 this.grokSpeak("nexus");
             }

@@ -61,9 +61,9 @@ Konsequenz für jede künftige Iteration: **niemals re-komplexifizieren ohne Not
 | 🟡 KI lernt mit TF.js | rudimentär | trainiert auf Spieler-Bewegung, beeinflusst aber nichts |
 | 🟡 Wetter (sunny/rainy) | rudimentär | wechselt alle 30 s, beeinflusst Skybox + Kreatur-Emotion |
 | 🟡 Nexus-Evolution | rudimentär | 3 hartcodierte Effekte (gravityShift, creatureDance, terrainFlatten), zufällig gewählt |
-| 🟡 Chat-Steuerung | 13/25 migriert | 13 welt-betreffende Befehle laufen jetzt durch die DSL (`parseChatToDsl`), restliche 12 sind bewusst legacy (System-IO + Phase-5-Themen) |
+| 🟡 Chat-Steuerung | 13/25 migriert | 13 welt-betreffende Befehle laufen jetzt durch die DSL (`parseChatToDsl`), restliche 12 sind bewusst legacy (System-IO + Self-Heal); `füge code` + `entwickle fähigkeit` komplett gelöscht (Phase 5) |
 | ✅ **Grok hat Stimme** (`dialogue-box`, narrative Reflexion) | V1 live — 5 Trigger (firstSpawn, idle, jumpBurst, rainLong, nexus), Text + optional Speech. `dreamWithPlayer`, `interpretEmotionalSpeech` weiterhin offen für spätere Ringe. |
-| 🟡 **DSL Interpreter + Generator** (Phase 1+2+3 von Ring 2) | live — 41 Ops (inkl. `set_visible`, `record_narrative`), Budget-Limits, Scheduler, autonome Nexus-Komposition mit V1-Fitness, **Chat→DSL für 13 Welt-Befehle inkl. Levenshtein-Vorschlag**. Phasen 4-7 (Save-Migration, `new Function` raus, CSP-strict, Fitness-V2) offen. |
+| 🟢 **DSL Interpreter + Generator + Abilities** (Phase 1-5 von Ring 2) | live — 41 Ops, Budget-Limits, Scheduler, autonome Nexus-Komposition mit V1-Fitness, **Chat→DSL für 13 Welt-Befehle**, **Abilities als reine DSL-Programme**, **Save persistiert DSL-Abilities**, **kein `new Function`/`eval` mehr im Bundle (CI-Gate hart)**. Phasen 6-7 (CSP-strict-Header, Fitness-V2) offen. |
 | ✅ **Welt-Identität** (Ring 8+ Schema-Vorbereitung) | live — `worldMeta` mit `worldId` (UUID), `slug`, `creator`, `visibility`, `parentWorlds`, `schemaVersion`. Logik für Sharing/Fusion noch nicht implementiert (Ringe 8-11). |
 | 🔴 Spieler-Emotionen (`emotionSystem`, `collectPlayerEmotions`, `dreamWeb`) | **fehlt** |
 | 🔴 Multisensorik / `anazhSymphony` (Web Audio API) | stumm |
@@ -122,9 +122,10 @@ Chronologisch, mit Commit-Hash und Kernaussage:
 | 34 | `e612c60` | **Großer Refactor (auf Vorschlag des Schöpfers):** visuelles Mesh = Kollisionsnetz via `btBvhTriangleMeshShape`. Globales Heightfield weg, per-chunk Heightfields weg, Overlap-Hack weg, initial-vs-extension-Sonderfall weg. Eine Wahrheit pro Chunk, robuste 120 fps |
 | 35 | `fdf9463` | Vollständige Roadmap `docs/roadmap.md` (Ringe 0-11, Meilensteine A-E) |
 | 36 | `a438647` | **Ring 2 Phase 3a**: Chat→DSL für 8 Welt-Befehle (`parseChatToDsl`, `chatSuggest`/Levenshtein), 6 neue Playtest-Invarianten, Mensch und Nexus teilen jetzt ein- und denselben Interpreter für Welt-Effekte |
-| 37 | (dieser) | **Ring 2 Phase 3b**: Zwei neue DSL-Primitives `set_visible` (Whitelist „terrain"/„creatures") + `record_narrative` (Cap 500 Zeichen). Fünf neue Chat-Patterns (boden/kreaturen ×2 + erzähle), 4 neue Playtest-Invarianten. Phase 3 abgeschlossen — 13/25 Befehle migriert, der Rest bleibt bewusst legacy. |
+| 37 | `3a9eced` | **Ring 2 Phase 3b**: Zwei neue DSL-Primitives `set_visible` (Whitelist „terrain"/„creatures") + `record_narrative` (Cap 500 Zeichen). Fünf neue Chat-Patterns (boden/kreaturen ×2 + erzähle), 4 neue Playtest-Invarianten. Phase 3 abgeschlossen — 13/25 Befehle migriert, der Rest bleibt bewusst legacy. |
+| 38 | (dieser) | **Ring 2 Phase 4+5**: Abilities sind ab jetzt reine DSL-Programme. `addNewAbility` akzeptiert nur DSL-Arrays, `learnAbility` parst Beschreibung zu DSL via `parseAbilityDescriptionToDsl`. `createDynamicAbility`, `codeParser`, `developAdvancedPhysics`, `developAdvancedRenderer` gelöscht. Chat-Befehle `füge code` + `entwickle fähigkeit` raus. `processOptimization` ruft `optimizePhysics()` direkt; Legacy-`evolution.impl`-Pfad gelöscht. Save persistiert `dslAbilities`, Legacy-`abilities`-Namensliste raus. CI-Gate „kein `new Function`/`eval`" hart aktiviert. 6 neue Playtest-Invarianten. |
 
-Aggregat: **19 weitere Commits** in dieser Session (~+1800/−550 Zeilen netto). Architektur: ein File, ein Chunk-Pfad, eine Höhen-Funktion, eine Collider-Quelle (Triangle-Mesh = Visual-Mesh), **eine Sprache für Welt-Mutation (DSL)**.
+Aggregat: **20 weitere Commits** in dieser Session (~+1900/−800 Zeilen netto). Architektur: ein File, ein Chunk-Pfad, eine Höhen-Funktion, eine Collider-Quelle (Triangle-Mesh = Visual-Mesh), **eine Sprache für Welt-Mutation (DSL), keine dynamische Code-Generierung mehr**.
 
 ---
 
