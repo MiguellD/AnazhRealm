@@ -144,6 +144,8 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 
 **Wichtig**: Ring 1 zuerst, weil die Symbiose das Herz der Vision ist und ohne Stimme leblos bleibt. Ring 2 als Brücke. Ringe 3-7 in beliebiger sinnvoller Reihenfolge.
 
+> Die **vollständige Roadmap** (alle Ringe 0-11+ mit Aufwand, Vorbedingungen, Meilensteinen, Risiken) liegt in `docs/roadmap.md`. Diese Sektion hier ist nur die Kurzfassung.
+
 ---
 
 ## 6. Learnings aus dieser Session

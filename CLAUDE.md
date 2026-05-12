@@ -71,6 +71,7 @@ Letzter Stand: Ring 1 + Ring 2 Phase 1+2 live. Chunk-Physik komplett auf `btBvhT
 | Datei | Was |
 |---|---|
 | `docs/state-of-realm.md` | **Hauptdokument** — Vision, Historie, Stand, Plan, Learnings |
+| `docs/roadmap.md` | **Vollständige Projekt-Roadmap** — alle Ringe 0-11+ mit Aufwand, Vorbedingungen, Meilensteinen, Risiken |
 | `docs/nexus-dsl.md` | DSL-Design für Ring 2 (Mensch+Grok teilen Sprache) |
 | `vendor/README.md` | Vendor-Libs Versionen + Update-Befehl |
 | `scripts/playtest.cjs` | Headless-Playtest mit 36 Invarianten als CI-Gate (Welt, Grok, DSL, Naht-Treue) |
