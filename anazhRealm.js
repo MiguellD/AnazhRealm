@@ -355,6 +355,24 @@ class AnazhRealm {
                 },
                 emotionApplyCooldown: 30,
                 emotionThreshold: 0.7,
+                // Welle 6.D Etappe 2 — Boosts: temporäre Tag-Modifikationen.
+                // Drei Quellen:
+                //   - Emotion (>0.7 auf einer Achse → Tag-Delta für 30 s)
+                //   - Welt-Resonanz (in der Nähe einer Signature-Struktur)
+                //   - Konsum (DSL-Op `consume`/`apply_boost`, Etappe 3)
+                // `boosts[i] = {source, tagDelta, expiresAt, label}`. `tickPlayerBoosts`
+                // filtert Abgelaufene + triggert neue 1×/s. `computePlayerStats`
+                // addiert aktive Deltas vor der Stat-Berechnung.
+                boosts: [],
+                boostLastTriggered: {
+                    "emotion:joy": -Infinity,
+                    "emotion:awe": -Infinity,
+                    "emotion:sorrow": -Infinity,
+                    "emotion:hope": -Infinity,
+                    "emotion:peace": -Infinity,
+                    "emotion:chaos": -Infinity,
+                },
+                boostLastTick: -Infinity,
                 // Schicht 1 — Pfad-Buckets. Histogramm wo der Spieler sich
                 // aufhält (Höhe, Distanz, Wetter, Aktivität). Wird im Loop
                 // alle pathSampleInterval Sekunden inkrementiert; alle Achsen
@@ -9843,6 +9861,140 @@ class AnazhRealm {
         return this.computeCompoundTags({ parts: soulDef.bodyParts });
     }
 
+    // Welle 6.D Etappe 2 — Boost-Management.
+    //
+    // API: addPlayerBoost({source, tagDelta, durationSeconds, label}). Sources:
+    //   - "emotion:<axis>" (auto-Trigger via tickPlayerBoosts)
+    //   - "world:resonance" (auto-Trigger via tickPlayerBoosts)
+    //   - "consume:<name>" (manuell via DSL-Op `apply_boost`, Etappe 3)
+    // Duplikate (gleiche source): expiresAt wird verlängert statt zweiter Eintrag.
+    addPlayerBoost(spec) {
+        if (!spec || typeof spec !== "object") return false;
+        const source = String(spec.source || "").slice(0, 60);
+        if (!source) return false;
+        const tagDelta = {};
+        const inputDelta = spec.tagDelta || {};
+        for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
+            const v = Number(inputDelta[tag]);
+            if (Number.isFinite(v) && v !== 0) tagDelta[tag] = Math.max(-1, Math.min(1, v));
+        }
+        if (Object.keys(tagDelta).length === 0) return false;
+        const duration = Math.max(0.5, Math.min(600, Number(spec.durationSeconds) || 30));
+        const now = performance.now() / 1000;
+        const expiresAt = now + duration;
+        const label = String(spec.label || source).slice(0, 80);
+        if (!Array.isArray(this.state.player.boosts)) this.state.player.boosts = [];
+        const existing = this.state.player.boosts.find((b) => b.source === source);
+        if (existing) {
+            existing.expiresAt = expiresAt;
+            existing.tagDelta = tagDelta;
+            existing.label = label;
+        } else {
+            this.state.player.boosts.push({ source, tagDelta, expiresAt, label });
+        }
+        this.recomputePlayerStats();
+        return true;
+    }
+
+    // 1×/s aufgerufen aus dem Game-Loop. Drei Schritte:
+    //   1. Abgelaufene Boosts entfernen
+    //   2. Emotion-Trigger: Achsen >0.7 → entsprechendes Tag-Delta
+    //   3. Welt-Resonanz-Trigger: nahe Signature-Struktur → resoniert-Bonus
+    // Wenn sich etwas geändert hat, rufen wir `recomputePlayerStats` einmal auf
+    // (statt mehrfach pro Sub-Schritt).
+    tickPlayerBoosts(currentTime) {
+        if (!this.state.player) return;
+        if (currentTime - (this.state.player.boostLastTick || -Infinity) < 1.0) return;
+        this.state.player.boostLastTick = currentTime;
+        const now = performance.now() / 1000;
+        let changed = false;
+        if (!Array.isArray(this.state.player.boosts)) this.state.player.boosts = [];
+
+        // (1) Ablauf
+        const kept = this.state.player.boosts.filter((b) => b.expiresAt > now);
+        if (kept.length !== this.state.player.boosts.length) {
+            this.state.player.boosts = kept;
+            changed = true;
+        }
+
+        // (2) Emotion-Trigger
+        const emotions = this.state.player.emotions || {};
+        const threshold = this.state.player.emotionThreshold || 0.7;
+        const lastTrig = this.state.player.boostLastTriggered || {};
+        for (const axis of Object.keys(AnazhRealm.BOOST_EMOTION_TAG)) {
+            const value = Number(emotions[axis]) || 0;
+            const source = `emotion:${axis}`;
+            const active = this.state.player.boosts.find((b) => b.source === source);
+            if (value >= threshold && !active) {
+                // Refract-Pause: nach Ablauf 60 s warten, bevor wir neu auslösen
+                const lastEnded = lastTrig[source] || -Infinity;
+                if (now - lastEnded < AnazhRealm.BOOST_EMOTION_REFRACT) continue;
+                const def = AnazhRealm.BOOST_EMOTION_TAG[axis];
+                this.state.player.boosts.push({
+                    source,
+                    tagDelta: { [def.tag]: def.delta },
+                    expiresAt: now + AnazhRealm.BOOST_EMOTION_DURATION,
+                    label: def.label,
+                });
+                changed = true;
+            } else if (!active && lastTrig[source] === undefined) {
+                // Initial-Mark für Refract — sonst würde lastEnded = -Infinity und
+                // sofort wieder triggern können. Mark only on first see.
+                lastTrig[source] = -Infinity;
+            }
+        }
+        // Refract-Stempel setzen für gerade abgelaufene Boosts
+        for (const b of kept) {
+            if (b.expiresAt <= now && b.source.startsWith("emotion:")) {
+                lastTrig[b.source] = now;
+            }
+        }
+
+        // (3) Welt-Resonanz: in der Nähe einer Architektur mit
+        // computeSpatialTags.resoniert >= WORLD_EFFECT_THRESHOLDS.resonance_signature.
+        const playerPos = this.state.playerMesh ? this.state.playerMesh.position : null;
+        let resonant = false;
+        if (playerPos && Array.isArray(this.state.architectures)) {
+            const T = AnazhRealm.WORLD_EFFECT_THRESHOLDS;
+            const radiusSq = AnazhRealm.BOOST_RESONANCE_RADIUS * AnazhRealm.BOOST_RESONANCE_RADIUS;
+            for (const entry of this.state.architectures) {
+                if (!entry || !entry.position) continue;
+                const dx = entry.position.x - playerPos.x;
+                const dz = entry.position.z - playerPos.z;
+                if (dx * dx + dz * dz > radiusSq) continue;
+                const bp = this.state.blueprints && this.state.blueprints[entry.type];
+                if (!bp) continue;
+                const sTags = this.computeSpatialTags ? this.computeSpatialTags(bp) : this.computeCompoundTags(bp);
+                if ((sTags.resoniert || 0) >= T.resonance_signature) {
+                    resonant = true;
+                    break;
+                }
+            }
+        }
+        const activeRes = this.state.player.boosts.find((b) => b.source === "world:resonance");
+        if (resonant) {
+            // Refresh-while-in-range: jede Sekunde 3 s in die Zukunft setzen.
+            if (activeRes) {
+                activeRes.expiresAt = now + 3;
+            } else {
+                this.state.player.boosts.push({
+                    source: "world:resonance",
+                    tagDelta: { resoniert: AnazhRealm.BOOST_RESONANCE_DELTA },
+                    expiresAt: now + 3,
+                    label: AnazhRealm.BOOST_RESONANCE_LABEL,
+                });
+                changed = true;
+            }
+        }
+
+        if (changed) {
+            this.recomputePlayerStats();
+        }
+        // UI 1×/s refreshen, damit die Boost-Restzeit sichtbar tickt — auch
+        // wenn sich an Boost-Bestand selbst nichts geändert hat (Counter läuft).
+        if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
+    }
+
     // Welle 6.D Etappe 1.6 — Seele auflösen: erst Built-in, dann Custom.
     // Single-Pfad für alle Lese-Stellen (computePlayerStats, applyPlayerSoul,
     // renderPlayerStatsUI). Gibt null zurück wenn unbekannt.
@@ -10186,6 +10338,22 @@ class AnazhRealm {
         const finalTags = {};
         for (const key of AnazhRealm.MATERIAL_TAG_KEYS) {
             finalTags[key] = Number(compoundTags[key]) || 0;
+        }
+        // Welle 6.D Etappe 2 — aktive Boosts addieren ihre Tag-Deltas auf den
+        // Compound-Soul-Tags. Boosts kommen aus drei Quellen (Emotion, Welt-
+        // Resonanz, Konsum) und decken sich nicht — Summe ist konzeptionell
+        // korrekt (mehrere Wirkungen lagern sich auf). Werte werden NICHT
+        // ge-clamp — STAT_FROM_TAGS toleriert Werte über 1 bereits (würde nur
+        // proportional mehr Stats geben, was die Boosts-Wirkung spürbar macht).
+        const boosts = (this.state.player && this.state.player.boosts) || [];
+        if (Array.isArray(boosts) && boosts.length > 0) {
+            for (const b of boosts) {
+                if (!b || !b.tagDelta) continue;
+                for (const tag of Object.keys(b.tagDelta)) {
+                    if (!AnazhRealm.MATERIAL_TAG_KEYS.includes(tag)) continue;
+                    finalTags[tag] = (finalTags[tag] || 0) + b.tagDelta[tag];
+                }
+            }
         }
         const stats = {};
         for (const stat of Object.keys(AnazhRealm.STAT_FROM_TAGS)) {
@@ -12979,7 +13147,7 @@ class AnazhRealm {
             div.appendChild(value);
             container.appendChild(div);
         }
-        // Tag-Profil dezent unten — die zwei dominantesten Achsen zeigen.
+        // Tag-Profil dezent unten — die drei dominantesten Achsen zeigen.
         if (tags) {
             const sorted = Object.keys(tags)
                 .map((k) => ({ k, v: tags[k] }))
@@ -12989,6 +13157,39 @@ class AnazhRealm {
             tagLine.className = "stat-tags";
             tagLine.textContent = "Stark: " + sorted.map((s) => `${s.k} ${s.v.toFixed(2)}`).join(" · ");
             container.appendChild(tagLine);
+        }
+        // Welle 6.D Etappe 2 — Aktive Boosts unten anzeigen. Label + Tag-Delta
+        // links, Restzeit rechts. Wenn keine aktiv: nichts (clean state).
+        const boosts = (this.state.player && this.state.player.boosts) || [];
+        if (Array.isArray(boosts) && boosts.length > 0) {
+            const now = performance.now() / 1000;
+            const active = boosts.filter((b) => b.expiresAt > now);
+            if (active.length > 0) {
+                const divider = document.createElement("div");
+                divider.className = "stats-divider";
+                container.appendChild(divider);
+                const header = document.createElement("div");
+                header.className = "body-parts-header";
+                header.textContent = "Aktive Boosts";
+                container.appendChild(header);
+                for (const b of active) {
+                    const row = document.createElement("div");
+                    row.className = "boost-row";
+                    const left = document.createElement("span");
+                    left.className = "boost-label";
+                    const tagSummary = Object.keys(b.tagDelta || {})
+                        .map((t) => `+${b.tagDelta[t].toFixed(2)} ${t}`)
+                        .join(", ");
+                    left.textContent = `${b.label} · ${tagSummary}`;
+                    const right = document.createElement("span");
+                    right.className = "boost-remaining";
+                    const rem = Math.max(0, b.expiresAt - now);
+                    right.textContent = `${rem.toFixed(0)} s`;
+                    row.appendChild(left);
+                    row.appendChild(right);
+                    container.appendChild(row);
+                }
+            }
         }
     }
 
@@ -13327,6 +13528,10 @@ class AnazhRealm {
 
             // ### Player-Emotionen (Ring 3) ###
             this.updatePlayerEmotions(currentTime);
+
+            // ### Player-Boosts (Welle 6.D Etappe 2) ###
+            // 1×/s self-throttled — Emotion-Trigger, Resonance-Trigger, Ablauf.
+            this.tickPlayerBoosts(currentTime);
 
             // ### Symphonie-Wetter-Layer (Ring 4) ###
             this.symphonyTick();
@@ -14045,6 +14250,24 @@ AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     magicResist: (t) => (t.magieleitung || 0) * 0.4 + (t.resoniert || 0) * 0.3,
     heatResist: (t) => (t.wärmeleitung || 0) * 0.5 - (t.brennbar || 0) * 0.3,
 });
+
+// Welle 6.D Etappe 2 — Emotion-→-Tag-Mapping für Boosts. Jede der 6 Emotionen
+// koppelt an einen MATERIAL_TAG_KEY: hoch genug (>0.7), Welt-Reaktion = Tag-Delta
+// auf den Spieler-Compound. Werte ge-tunet damit die Wirkung spürbar aber nicht
+// dominant ist (Stat-Steigerung ~10-15 %).
+AnazhRealm.BOOST_EMOTION_TAG = Object.freeze({
+    joy: { tag: "wärmeleitung", delta: 0.15, label: "Freude wärmt" },
+    awe: { tag: "magieleitung", delta: 0.15, label: "Ehrfurcht öffnet" },
+    sorrow: { tag: "resoniert", delta: 0.15, label: "Trauer schwingt tief" },
+    hope: { tag: "lebendig", delta: 0.1, label: "Hoffnung belebt" },
+    peace: { tag: "zähigkeit", delta: 0.1, label: "Friede härtet leise" },
+    chaos: { tag: "stromleitung", delta: 0.15, label: "Chaos sprüht Funken" },
+});
+AnazhRealm.BOOST_EMOTION_DURATION = 30; // s, läuft mit Emotion mit
+AnazhRealm.BOOST_EMOTION_REFRACT = 60; // s Pause nach Ablauf, sonst Endlos-Pulsen
+AnazhRealm.BOOST_RESONANCE_RADIUS = 18; // m, in deren Nähe das Welt-Effekt-Boost greift
+AnazhRealm.BOOST_RESONANCE_DELTA = 0.15; // +0.15 resoniert auf Spieler-Compound
+AnazhRealm.BOOST_RESONANCE_LABEL = "Welt-Resonanz";
 
 AnazhRealm.MATERIAL_TAG_KEYS = Object.freeze([
     "härte",

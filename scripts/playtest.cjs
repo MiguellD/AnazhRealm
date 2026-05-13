@@ -5501,6 +5501,181 @@ function startSaveServer() {
                 })
                 .catch(() => null);
 
+            // ### Welle 6.D Etappe 2 — Boosts (temporäre Tag-Deltas) ###
+            //
+            // state.player.boosts ist ein Array; tickPlayerBoosts filtert
+            // Abgelaufene + triggert Emotion + Resonance 1×/s; computePlayerStats
+            // addiert aktive Deltas vor der Stat-Berechnung.
+            const wave6d2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
+                    const out = {};
+                    out.hasBoostsField = Array.isArray(r.state.player.boosts);
+                    out.hasAddMethod = typeof r.addPlayerBoost === "function";
+                    out.hasTickMethod = typeof r.tickPlayerBoosts === "function";
+                    out.hasEmotionMap = C.BOOST_EMOTION_TAG && typeof C.BOOST_EMOTION_TAG === "object";
+                    out.emotionAxisCount = C.BOOST_EMOTION_TAG ? Object.keys(C.BOOST_EMOTION_TAG).length : 0;
+                    out.hasResonanceConst = typeof C.BOOST_RESONANCE_DELTA === "number";
+
+                    // Setup: Save initial state für Vergleich
+                    r.state.player.boosts = [];
+                    r.recomputePlayerStats();
+                    const baselineStats = JSON.parse(JSON.stringify(r.state.player.stats));
+
+                    // Test 1: addPlayerBoost fügt einen Boost hinzu + Stats ändern sich
+                    const added = r.addPlayerBoost({
+                        source: "test:flame",
+                        tagDelta: { wärmeleitung: 0.3 },
+                        durationSeconds: 60,
+                        label: "Test-Flamme",
+                    });
+                    out.addReturnsTrue = added === true;
+                    out.boostsArrayHasOne = r.state.player.boosts.length === 1;
+                    out.boostHasTagDelta =
+                        r.state.player.boosts[0] &&
+                        Math.abs(r.state.player.boosts[0].tagDelta.wärmeleitung - 0.3) < 0.001;
+
+                    // Stats reagieren auf das Boost — staminaMax steigt da
+                    // wärmeleitung in der Formel steht (× 40).
+                    const boostedStats = r.state.player.stats;
+                    out.staminaIncreased = boostedStats.staminaMax > baselineStats.staminaMax + 5;
+                    out.heatResistIncreased = boostedStats.heatResist > baselineStats.heatResist;
+
+                    // Duplikat-Source: zweiter Boost mit gleicher source verlängert nur
+                    r.addPlayerBoost({
+                        source: "test:flame",
+                        tagDelta: { wärmeleitung: 0.5 },
+                        durationSeconds: 120,
+                        label: "Test-Flamme stärker",
+                    });
+                    out.dedupesBySource = r.state.player.boosts.length === 1;
+                    out.dedupeReplacesDelta =
+                        Math.abs(r.state.player.boosts[0].tagDelta.wärmeleitung - 0.5) < 0.001;
+
+                    // tickPlayerBoosts entfernt abgelaufene
+                    r.state.player.boosts[0].expiresAt = -100; // bereits abgelaufen
+                    r.state.player.boostLastTick = -Infinity; // Throttle umgehen
+                    r.tickPlayerBoosts(performance.now() / 1000);
+                    out.expiredRemoved = r.state.player.boosts.length === 0;
+
+                    // Emotion-Trigger: awe hoch → magieleitung-Boost
+                    r.state.player.emotions.awe = 0.9;
+                    r.state.player.boostLastTriggered["emotion:awe"] = -Infinity; // Refract umgehen
+                    r.state.player.boostLastTick = -Infinity;
+                    r.tickPlayerBoosts(performance.now() / 1000);
+                    const aweBoost = r.state.player.boosts.find((b) => b.source === "emotion:awe");
+                    out.emotionAweTriggered = !!aweBoost;
+                    out.aweBoostHasMagieleitung =
+                        aweBoost && aweBoost.tagDelta.magieleitung && aweBoost.tagDelta.magieleitung > 0;
+                    out.magicResistIncreased = aweBoost
+                        ? r.state.player.stats.magicResist > baselineStats.magicResist
+                        : false;
+
+                    // Welt-Resonanz-Trigger: spawne Bauplan mit hoher Resonanz nahe Spieler
+                    const beforeArchCount = r.state.architectures.length;
+                    const savedPos = {
+                        x: r.state.playerMesh.position.x,
+                        y: r.state.playerMesh.position.y,
+                        z: r.state.playerMesh.position.z,
+                    };
+                    r.state.playerMesh.position.set(80, 5, 80);
+                    // Wir nutzen einen Custom-Bauplan mit Quarz-Helix-Array.
+                    // Vier helix-Parts EQUIDISTANT vom Schwerpunkt (0,0,0) —
+                    // Resonance-Array-Detector (W5-B Prinzip 5) verlangt
+                    // gleiche Shape auf gleichem Radius ±12 % vom Schwerpunkt.
+                    // Quarz hat resoniert=0.9 + magieleitung=0.85, helix-Shape
+                    // verstärkt beide. Array-Bonus + ggf. Symmetrieachse-Bonus
+                    // bringen das Compound über die signature-Schwelle (2.5).
+                    r.state.blueprints.wave6d2_resonator = {
+                        name: "wave6d2_resonator",
+                        label: "Resonator",
+                        builtIn: false,
+                        parts: [
+                            { shape: "helix", material: "quarz", position: { x: 1, y: 0, z: 0 }, size: { x: 0.5, y: 1, z: 3 } },
+                            { shape: "helix", material: "quarz", position: { x: 0, y: 0, z: 1 }, size: { x: 0.5, y: 1, z: 3 } },
+                            { shape: "helix", material: "quarz", position: { x: -1, y: 0, z: 0 }, size: { x: 0.5, y: 1, z: 3 } },
+                            { shape: "helix", material: "quarz", position: { x: 0, y: 0, z: -1 }, size: { x: 0.5, y: 1, z: 3 } },
+                        ],
+                    };
+                    r.spawnArchitecture("wave6d2_resonator", { x: 82, y: 0, z: 82 }, { seed: 1 });
+                    // Debug: tatsächlichen Spatial-Tag-Wert + Distanz ausgeben
+                    const sigTags = r.computeSpatialTags(r.state.blueprints.wave6d2_resonator);
+                    out.signatureResonierValue = sigTags.resoniert || 0;
+                    out.signatureThreshold = C.WORLD_EFFECT_THRESHOLDS.resonance_signature;
+                    out.distanceToSig = Math.hypot(82 - 80, 82 - 80);
+                    r.state.player.boosts = []; // Reset
+                    r.state.player.boostLastTick = -Infinity;
+                    r.tickPlayerBoosts(performance.now() / 1000);
+                    const resBoost = r.state.player.boosts.find((b) => b.source === "world:resonance");
+                    out.resonanceBoostTriggered = !!resBoost;
+                    out.resonanceHasResonierDelta =
+                        resBoost && resBoost.tagDelta.resoniert && resBoost.tagDelta.resoniert > 0;
+
+                    // Boost außerhalb Reichweite → kein Trigger
+                    r.state.playerMesh.position.set(-200, 5, -200);
+                    r.state.player.boosts = [];
+                    r.state.player.boostLastTick = -Infinity;
+                    r.tickPlayerBoosts(performance.now() / 1000);
+                    const resBoost2 = r.state.player.boosts.find((b) => b.source === "world:resonance");
+                    out.resonanceNotTriggeredFar = !resBoost2;
+
+                    // Cleanup
+                    r.state.architectures = r.state.architectures.slice(0, beforeArchCount);
+                    delete r.state.blueprints.wave6d2_resonator;
+                    r.state.playerMesh.position.set(savedPos.x, savedPos.y, savedPos.z);
+                    r.state.player.boosts = [];
+                    r.state.player.emotions.awe = 0;
+                    r.recomputePlayerStats();
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6d2Results && !wave6d2Results.error) {
+                check("Welle 6.D Etappe 2: state.player.boosts ist Array", wave6d2Results.hasBoostsField);
+                check("Welle 6.D Etappe 2: addPlayerBoost-Methode existiert", wave6d2Results.hasAddMethod);
+                check("Welle 6.D Etappe 2: tickPlayerBoosts-Methode existiert", wave6d2Results.hasTickMethod);
+                check(
+                    "Welle 6.D Etappe 2: BOOST_EMOTION_TAG-Map mit 6 Emotionen",
+                    wave6d2Results.hasEmotionMap && wave6d2Results.emotionAxisCount === 6
+                );
+                check("Welle 6.D Etappe 2: BOOST_RESONANCE_DELTA-Konstante existiert", wave6d2Results.hasResonanceConst);
+                check("Welle 6.D Etappe 2: addPlayerBoost liefert true", wave6d2Results.addReturnsTrue);
+                check("Welle 6.D Etappe 2: boost wird ins Array geschrieben", wave6d2Results.boostsArrayHasOne);
+                check("Welle 6.D Etappe 2: boost trägt tagDelta + Wert", wave6d2Results.boostHasTagDelta);
+                check(
+                    "Welle 6.D Etappe 2: Diskrimination — wärmeleitung-Boost erhöht staminaMax",
+                    wave6d2Results.staminaIncreased
+                );
+                check(
+                    "Welle 6.D Etappe 2: Diskrimination — wärmeleitung-Boost erhöht heatResist",
+                    wave6d2Results.heatResistIncreased
+                );
+                check("Welle 6.D Etappe 2: gleiche source dedupliziert (nur 1 Eintrag)", wave6d2Results.dedupesBySource);
+                check("Welle 6.D Etappe 2: dedupe ersetzt tagDelta des bestehenden Boosts", wave6d2Results.dedupeReplacesDelta);
+                check("Welle 6.D Etappe 2: tickPlayerBoosts entfernt abgelaufene Boosts", wave6d2Results.expiredRemoved);
+                check("Welle 6.D Etappe 2: Emotion-Trigger — awe>0.7 erzeugt magieleitung-Boost", wave6d2Results.emotionAweTriggered);
+                check("Welle 6.D Etappe 2: Emotion-Boost trägt magieleitung-Delta > 0", wave6d2Results.aweBoostHasMagieleitung);
+                check(
+                    "Welle 6.D Etappe 2: Diskrimination — magieleitung-Boost erhöht magicResist",
+                    wave6d2Results.magicResistIncreased
+                );
+                check(
+                    "Welle 6.D Etappe 2: Welt-Resonanz-Trigger — Nähe zu Signature-Struktur erzeugt resoniert-Boost",
+                    wave6d2Results.resonanceBoostTriggered,
+                    `sig.resoniert=${(wave6d2Results.signatureResonierValue || 0).toFixed(2)} thr=${wave6d2Results.signatureThreshold} dist=${(wave6d2Results.distanceToSig || 0).toFixed(2)}`
+                );
+                check("Welle 6.D Etappe 2: Welt-Resonanz-Boost trägt resoniert-Delta > 0", wave6d2Results.resonanceHasResonierDelta);
+                check(
+                    "Welle 6.D Etappe 2: Negativ-Kontrolle — außerhalb Reichweite KEIN Resonanz-Boost",
+                    wave6d2Results.resonanceNotTriggeredFar
+                );
+            } else if (wave6d2Results && wave6d2Results.error) {
+                check("Welle 6.D Etappe 2: Test-Block lief ohne Exception", false, wave6d2Results.error);
+            }
+
             // ### Welle 6.D Etappe 1.6 — Custom-Seelen via DSL ###
             //
             // Schöpfer kann mit define_soul(name, bodyParts) eigene Charaktere
