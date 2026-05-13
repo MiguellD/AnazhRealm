@@ -3502,6 +3502,92 @@ function startSaveServer() {
                     r._closeWorldFusionDialog();
                     out.dialogClosed = !document.getElementById("world-fusion-dialog").hasAttribute("open");
 
+                    // ### Rename-Cascade-Regression (Reflexions-Bugfund) ###
+                    // Zwei Eltern haben beide einen Bauplan "kollidierer". B
+                    // hat zusätzlich (a) ein Werkzeug das diesen Bauplan
+                    // registriert und (b) einen fraktalen Bauplan der ihn
+                    // referenziert. Nach Fusion: B's "kollidierer" wird zu
+                    // "kollidierer-fusion". Tool.sourceBlueprint und
+                    // fractal.part.refName MÜSSEN mitumbenannt werden, sonst
+                    // dangling.
+                    const cascadeAId = r.createNewWorld({ slug: "cascade-a", inheritPlayer: false, reload: false });
+                    const cascadeBId = r.createNewWorld({ slug: "cascade-b", inheritPlayer: false, reload: false });
+                    const cA = JSON.parse(localStorage.getItem(r.worldStorageKey(cascadeAId)));
+                    cA.blueprints = [
+                        {
+                            name: "kollidierer",
+                            label: "A-Version",
+                            parts: [
+                                {
+                                    shape: "box",
+                                    material: "stein",
+                                    position: { x: 0, y: 0, z: 0 },
+                                    size: { x: 1, y: 1, z: 1 },
+                                },
+                            ],
+                            connections: [],
+                        },
+                    ];
+                    localStorage.setItem(r.worldStorageKey(cascadeAId), JSON.stringify(cA));
+                    const cB = JSON.parse(localStorage.getItem(r.worldStorageKey(cascadeBId)));
+                    cB.blueprints = [
+                        {
+                            name: "kollidierer",
+                            label: "B-Version",
+                            parts: [
+                                {
+                                    shape: "sphere",
+                                    material: "quarz",
+                                    position: { x: 0, y: 0, z: 0 },
+                                    size: { x: 1, y: 1, z: 1 },
+                                },
+                            ],
+                            connections: [],
+                            role: "tool",
+                            toolMeta: { opName: "B-Hammer", opClass: "form_geben" },
+                        },
+                        {
+                            name: "fraktal-B",
+                            label: "Fraktal",
+                            parts: [{ shape: "blueprint", refName: "kollidierer", position: { x: 0, y: 0, z: 0 } }],
+                            connections: [],
+                        },
+                    ];
+                    cB.tools = [
+                        {
+                            name: "b-hammer",
+                            label: "B-Hammer",
+                            opClass: "form_geben",
+                            opName: "smithing",
+                            precisionCap: 0.7,
+                            sourceBlueprint: "kollidierer",
+                        },
+                    ];
+                    localStorage.setItem(r.worldStorageKey(cascadeBId), JSON.stringify(cB));
+                    const cascadeResult = r.fuseWorlds(cascadeAId, cascadeBId, "sequence", { reload: false });
+                    const cascadeSave = cascadeResult.ok
+                        ? JSON.parse(localStorage.getItem(r.worldStorageKey(cascadeResult.worldId)))
+                        : null;
+                    out.cascadeFusionOk = !!cascadeResult.ok;
+                    out.cascadeKeepsAOriginal =
+                        !!cascadeSave &&
+                        cascadeSave.blueprints.some((bp) => bp.name === "kollidierer" && bp.label === "A-Version");
+                    out.cascadeRenamesB =
+                        !!cascadeSave &&
+                        cascadeSave.blueprints.some(
+                            (bp) => bp.name === "kollidierer-fusion" && bp.label === "B-Version"
+                        );
+                    // CASCADE: B's Werkzeug muss jetzt auf "kollidierer-fusion" zeigen
+                    out.cascadeRewiredTool =
+                        !!cascadeSave &&
+                        cascadeSave.tools.some(
+                            (t) => t.name === "b-hammer" && t.sourceBlueprint === "kollidierer-fusion"
+                        );
+                    // CASCADE: B's fraktaler Bauplan muss refName upgedatet haben
+                    const fractal = cascadeSave && cascadeSave.blueprints.find((bp) => bp.name === "fraktal-B");
+                    out.cascadeRewiredRefName =
+                        !!fractal && fractal.parts.some((p) => p.refName === "kollidierer-fusion");
+
                     // Cleanup
                     const keepId = r.state.worldMeta.worldId;
                     for (const e of r.worldsIndexLoad()) {
@@ -3552,6 +3638,17 @@ function startSaveServer() {
                 check("Ring 10: Eltern-B-Dropdown hat Einträge", ring10Results.parentBDropdownHasEntries);
                 check("Ring 10: preselectB markiert die richtige Option", ring10Results.parentBPreselected);
                 check("Ring 10: Fusion-Dialog schließt via _close*", ring10Results.dialogClosed);
+                check("Ring 10 Bugfix: Fusion mit Bauplan-Kollision läuft durch", ring10Results.cascadeFusionOk);
+                check("Ring 10 Bugfix: A's Original-Bauplan behält Namen", ring10Results.cascadeKeepsAOriginal);
+                check("Ring 10 Bugfix: B's Bauplan bekommt -fusion-Suffix", ring10Results.cascadeRenamesB);
+                check(
+                    "Ring 10 Bugfix: Werkzeug.sourceBlueprint folgt Rename (kein dangling tool)",
+                    ring10Results.cascadeRewiredTool
+                );
+                check(
+                    "Ring 10 Bugfix: fraktaler Bauplan.part.refName folgt Rename (kein dangling fractal)",
+                    ring10Results.cascadeRewiredRefName
+                );
             }
 
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###

@@ -7584,7 +7584,12 @@ class AnazhRealm {
     // bekommen `<name>-fusion` (oder `-fusion-2`/...). Built-ins werden
     // ausgelassen, weil sie aus _defaultMaterials/_defaultTools/_defaultBlueprints
     // entstehen — würde Doppel-Listing geben.
-    _mergeOwnNamedItems(arrA, arrB) {
+    //
+    // Wenn `renameMap` mitgegeben wird, wird er mit B-Umbenennungen befüllt
+    // (`{ originalName: neuerName }`). Damit kann der Aufrufer cross-References
+    // (z. B. `sourceBlueprint` in Werkzeugen, `refName` in fraktalen Bauplänen)
+    // korrekt mit-rename — sonst entstehen tote Verweise.
+    _mergeOwnNamedItems(arrA, arrB, renameMap = null) {
         const out = [];
         const seen = new Set();
         const ownA = Array.isArray(arrA) ? arrA.filter((x) => x && !x.builtIn) : [];
@@ -7603,9 +7608,40 @@ class AnazhRealm {
                 while (seen.has(name)) name = `${item.name}-fusion-${n++}`;
             }
             seen.add(name);
+            if (renameMap && name !== item.name) {
+                renameMap[item.name] = name;
+            }
             out.push({ ...item, name });
         }
         return out;
+    }
+
+    // Hilfsfunktion: nach _mergeOwnNamedItems wendet sie die in `renameMap`
+    // notierten Umbenennungen auf eingebettete Querverweise im B-Anteil an.
+    // Sonst zeigte ein B-Werkzeug mit sourceBlueprint="Hammer" weiterhin auf
+    // "Hammer", obwohl die B-Welt's Hammer-Bauplan zu "Hammer-fusion"
+    // umbenannt wurde — das ist eine tote Bindung. Mit dem Fix landet der
+    // Werkzeug-Eintrag mit sourceBlueprint="Hammer-fusion" in der Fusions-Welt.
+    //
+    // Wir mutieren nur B-Anteile (alles ab Index sourceAStart), nicht A's
+    // Originale, weil A keine Konflikte hat (A behält seine Namen).
+    _rewireBlueprintRefs(mergedBlueprints, mergedTools, bpRenameMap) {
+        if (!bpRenameMap || Object.keys(bpRenameMap).length === 0) return;
+        // Cross-Refs in mergedBlueprints (fraktale Baupläne mit refName)
+        for (const bp of mergedBlueprints) {
+            if (!bp || !Array.isArray(bp.parts)) continue;
+            for (const part of bp.parts) {
+                if (part && typeof part.refName === "string" && bpRenameMap[part.refName]) {
+                    part.refName = bpRenameMap[part.refName];
+                }
+            }
+        }
+        // Werkzeug-zu-Bauplan-Bindung (sourceBlueprint)
+        for (const tool of mergedTools) {
+            if (tool && typeof tool.sourceBlueprint === "string" && bpRenameMap[tool.sourceBlueprint]) {
+                tool.sourceBlueprint = bpRenameMap[tool.sourceBlueprint];
+            }
+        }
     }
 
     // Wählt top-K Erinnerungen aus dem Journal: Genesis-Eintrag (Eltern-Geburt)
@@ -7665,10 +7701,25 @@ class AnazhRealm {
         const newSeed = `w-fusion-${newWorldId.replace(/-/g, "").slice(0, 12)}-${Math.random().toString(36).slice(2, 8)}`;
         const bornAt = Date.now();
 
-        // Inventar-Union — gleicher Algo für alle Strategien.
-        const mergedBlueprints = this._mergeOwnNamedItems(saveA.blueprints, saveB.blueprints);
-        const mergedMaterials = this._mergeOwnNamedItems(saveA.materials, saveB.materials);
-        const mergedTools = this._mergeOwnNamedItems(saveA.tools, saveB.tools);
+        // Inventar-Union — gleicher Algo für alle Strategien. Wir tracken
+        // Bauplan-Umbenennungen, damit Querverweise (Werkzeug.sourceBlueprint,
+        // fraktaler-Bauplan.part.refName) anschließend rewired werden können.
+        // Tiefe Kopie via JSON, damit eine spätere Mutation in der Fusions-
+        // Welt nicht in die Eltern-Saves zurückblutet.
+        const blueprintsCloneA = saveA.blueprints ? JSON.parse(JSON.stringify(saveA.blueprints)) : [];
+        const blueprintsCloneB = saveB.blueprints ? JSON.parse(JSON.stringify(saveB.blueprints)) : [];
+        const materialsCloneA = saveA.materials ? JSON.parse(JSON.stringify(saveA.materials)) : [];
+        const materialsCloneB = saveB.materials ? JSON.parse(JSON.stringify(saveB.materials)) : [];
+        const toolsCloneA = saveA.tools ? JSON.parse(JSON.stringify(saveA.tools)) : [];
+        const toolsCloneB = saveB.tools ? JSON.parse(JSON.stringify(saveB.tools)) : [];
+        const bpRenameMap = {};
+        const mergedBlueprints = this._mergeOwnNamedItems(blueprintsCloneA, blueprintsCloneB, bpRenameMap);
+        const mergedMaterials = this._mergeOwnNamedItems(materialsCloneA, materialsCloneB);
+        const mergedTools = this._mergeOwnNamedItems(toolsCloneA, toolsCloneB);
+        // Querverweise rewiren: Werkzeuge die B-Baupläne referenzieren, und
+        // fraktale Baupläne mit refName auf andere B-Baupläne, müssen den
+        // umbenannten Bauplan-Namen mitbekommen.
+        this._rewireBlueprintRefs(mergedBlueprints, mergedTools, bpRenameMap);
 
         // Player-Werkzeug-Liste: Union der besessenen Namen (Starter sind
         // sowieso wieder beim Init verfügbar; nur eigene tragen Namen).
