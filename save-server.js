@@ -5,6 +5,11 @@ const path = require("path");
 const HOST = "127.0.0.1";
 const PORT = 4312;
 const PROJECT_ROOT = __dirname;
+// Ring 8 (Multi-Welt): localStorage hält pro Welt einen eigenen Key, der
+// kanonische Multi-Welt-Speicher liegt also im Browser. Der save-server
+// schreibt weiterhin EINE Datei `anazhRealmState.json` als Backup der
+// AKTUELL AKTIVEN Welt — die Datei ist Komfort, nicht Single-Source. Welt-
+// Wechsel überschreibt sie mit dem neuen aktiven Snapshot.
 const ALLOWED_STATE_FILES = new Set(["anazhRealmState.json"]);
 
 const MIME_TYPES = {

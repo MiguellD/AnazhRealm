@@ -519,7 +519,7 @@ function startSaveServer() {
 
                     // 9. Phase 4: Save-Roundtrip — dslAbilities überleben localStorage
                     r.saveState();
-                    const raw = localStorage.getItem("anazhRealmState");
+                    const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
                     let parsed = null;
                     try {
                         parsed = JSON.parse(raw);
@@ -776,7 +776,7 @@ function startSaveServer() {
                     out.hasRecentKeywords = Array.isArray(r.state.dsl.recentKeywords);
                     out.hasPendingOutcomes = Array.isArray(r.state.dsl.pendingOutcomes);
                     out.historyCap500 = r.state.dsl.historyCap >= 500;
-                    out.schemaVersionIq = /^7\.7[2-9]/.test(r.state.worldMeta.schemaVersion);
+                    out.schemaVersionIq = /^(7\.7[2-9]|8\.0-multiworld)/.test(r.state.worldMeta.schemaVersion);
 
                     // Keyword-Extraktion
                     const kws = r.pathExtractKeywords("Ich liebe den Wald und Wasserfälle hier");
@@ -2512,6 +2512,191 @@ function startSaveServer() {
                 check("Bugfix: Unrelated Tools werden nicht angetastet", bugfixResults.unrelatedToolUntouched);
             }
 
+            // ### Ring 8 — Multi-Welt-Verwaltung ###
+            // Daten-Plane: Index, Per-Welt-Key, createNewWorld, switchToWorld
+            // (ohne Reload — Reload ist UI-Schicht), deleteWorld, Migration,
+            // Player-Übernahme. Wir benutzen reload:false damit wir alle
+            // Pfade in einer Session prüfen können.
+            const ring8Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    // Schema-Version-Bump
+                    out.schemaIsMultiworld = r.state.worldMeta.schemaVersion === "8.0-multiworld-v1";
+
+                    // Aktive Welt ist im Index und als aktiv markiert.
+                    const activeId = r.state.worldMeta.worldId;
+                    out.hasActiveWorldId = typeof activeId === "string" && activeId.length > 0;
+                    const idx1 = r.worldsIndexLoad();
+                    out.activeInIndex = !!idx1.find((e) => e.worldId === activeId);
+                    out.activeWorldPointerSet = r.activeWorldGet() === activeId;
+
+                    // Per-Welt-Save-Key existiert.
+                    out.perWorldSaveExists = !!localStorage.getItem(r.worldStorageKey(activeId));
+
+                    // Legacy-Single-Key wurde nach Migration (falls vorhanden) entfernt.
+                    out.legacyKeyAbsent = localStorage.getItem("anazhRealmState") === null;
+
+                    // createNewWorld (ohne Reload) erzeugt eine neue Welt im Index.
+                    // Ziel: Ring-8-Invarianten ohne page-reload prüfbar.
+                    const beforeCount = r.worldsIndexLoad().length;
+                    const newId = r.createNewWorld({ slug: "test-zweite", inheritPlayer: false, reload: false });
+                    out.newWorldCreated = typeof newId === "string" && newId !== activeId;
+                    const idx2 = r.worldsIndexLoad();
+                    out.indexGrewByOne = idx2.length === beforeCount + 1;
+                    out.newWorldInIndex = !!idx2.find((e) => e.worldId === newId && e.slug === "test-zweite");
+                    out.newWorldSaveExists = !!localStorage.getItem(r.worldStorageKey(newId));
+                    // Active wurde auf die neue Welt umgeleitet — aber state.worldMeta
+                    // bleibt auf der alten (kein Reload). Das ist die Erwartung.
+                    out.activePointerMovedToNew = r.activeWorldGet() === newId;
+                    out.stateWorldMetaUnchanged = r.state.worldMeta.worldId === activeId;
+
+                    // Slug-Unique: weitere Welt mit demselben Slug bekommt Suffix -2.
+                    const newId2 = r.createNewWorld({ slug: "test-zweite", inheritPlayer: false, reload: false });
+                    const idx3 = r.worldsIndexLoad();
+                    const newEntry2 = idx3.find((e) => e.worldId === newId2);
+                    out.slugUniqueWithSuffix = !!newEntry2 && /^test-zweite(-\d+)?$/.test(newEntry2.slug) && newEntry2.slug !== "test-zweite";
+
+                    // Player-Übernahme: aktueller Spieler-Soul + Tools wandern.
+                    r.applyPlayerSoul && r.applyPlayerSoul("phoenix");
+                    // Phantasy-eigenes Tool im player-Inventory damit Übernahme prüfbar
+                    if (!r.state.tools["übernahme-marker"]) {
+                        r.state.tools["übernahme-marker"] = {
+                            name: "übernahme-marker",
+                            label: "Übernahme-Marker",
+                            opClass: "schneiden",
+                            opName: "test",
+                            precisionCap: 0.6,
+                            builtIn: false,
+                            sourceBlueprint: null,
+                        };
+                        r.state.player.tools.push("übernahme-marker");
+                    }
+                    const inheritId = r.createNewWorld({ slug: "test-mit-person", inheritPlayer: true, reload: false });
+                    const inheritSave = JSON.parse(localStorage.getItem(r.worldStorageKey(inheritId)) || "{}");
+                    out.inheritCarriesPlayerSoul = inheritSave.playerSoul === "phoenix";
+                    out.inheritCarriesPlayerTools =
+                        Array.isArray(inheritSave.playerTools) && inheritSave.playerTools.includes("übernahme-marker");
+                    out.inheritCarriesOwnTools =
+                        Array.isArray(inheritSave.tools) &&
+                        inheritSave.tools.some((t) => t && t.name === "übernahme-marker");
+                    // Frische Welt: keine Übernahme = leere Spieler-Tools (nur Starter beim Init aufgesetzt)
+                    const freshId = r.createNewWorld({ slug: "test-fresh", inheritPlayer: false, reload: false });
+                    const freshSave = JSON.parse(localStorage.getItem(r.worldStorageKey(freshId)) || "{}");
+                    out.freshNoInheritedSoul = freshSave.playerSoul === "human";
+                    out.freshNoInheritedTools = Array.isArray(freshSave.playerTools) && freshSave.playerTools.length === 0;
+
+                    // switchToWorld auf eine existierende Welt (ohne Reload):
+                    // active-Pointer wandert, state bleibt (Reload würde state laden).
+                    const switchOk = r.switchToWorld(newId, { reload: false });
+                    out.switchReturnedTrue = switchOk === true;
+                    out.activePointerAfterSwitch = r.activeWorldGet() === newId;
+                    // Switch auf unbekannte Welt scheitert sauber
+                    out.switchToUnknownFails = r.switchToWorld("does-not-exist-123", { reload: false }) === false;
+                    // Switch auf aktive Welt ist noop = true
+                    out.switchToActiveIsNoop = r.switchToWorld(newId, { reload: false }) === true;
+
+                    // deleteWorld entfernt nur Nicht-Aktive
+                    // Stell sicher, dass die aktive Welt nicht freshId ist
+                    r.activeWorldSet(activeId);
+                    out.cantDeleteActive = r.deleteWorld(activeId) === false;
+                    const beforeDelete = r.worldsIndexLoad().length;
+                    const delOk = r.deleteWorld(freshId);
+                    out.deleteReturnedTrue = delOk === true;
+                    const afterDelete = r.worldsIndexLoad();
+                    out.indexShrunkByOne = afterDelete.length === beforeDelete - 1;
+                    out.deletedSaveGone = localStorage.getItem(r.worldStorageKey(freshId)) === null;
+
+                    // Aufräumen: alle Test-Welten weg, active zurück auf Original
+                    r.activeWorldSet(activeId);
+                    for (const e of r.worldsIndexLoad()) {
+                        if (e.worldId !== activeId) r.deleteWorld(e.worldId);
+                    }
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!ring8Results || ring8Results.error) {
+                check("Ring 8: Snapshot erreichbar", false, (ring8Results && ring8Results.error) || "page.evaluate fehlgeschlagen");
+            } else {
+                check("Ring 8: Schema-Version ist 8.0-multiworld-v1", ring8Results.schemaIsMultiworld);
+                check("Ring 8: state.worldMeta.worldId gesetzt", ring8Results.hasActiveWorldId);
+                check("Ring 8: Aktive Welt im worldsIndex registriert", ring8Results.activeInIndex);
+                check("Ring 8: anazhRealmActiveWorld zeigt auf aktive Welt", ring8Results.activeWorldPointerSet);
+                check("Ring 8: Per-Welt-Save-Key existiert", ring8Results.perWorldSaveExists);
+                check("Ring 8: Legacy-Single-Key nach Migration weg", ring8Results.legacyKeyAbsent);
+                check("Ring 8: createNewWorld liefert neue worldId", ring8Results.newWorldCreated);
+                check("Ring 8: Index wächst um eins nach createNewWorld", ring8Results.indexGrewByOne);
+                check("Ring 8: Neue Welt im Index mit slug", ring8Results.newWorldInIndex);
+                check("Ring 8: Per-Welt-Save für neue Welt geschrieben", ring8Results.newWorldSaveExists);
+                check("Ring 8: Aktiv-Pointer auf neue Welt nach create", ring8Results.activePointerMovedToNew);
+                check("Ring 8: state.worldMeta bleibt bis Reload alt", ring8Results.stateWorldMetaUnchanged);
+                check("Ring 8: Slug-Kollision bekommt -N Suffix", ring8Results.slugUniqueWithSuffix);
+                check("Ring 8: Person-Übernahme transportiert Seele", ring8Results.inheritCarriesPlayerSoul);
+                check("Ring 8: Person-Übernahme transportiert player.tools", ring8Results.inheritCarriesPlayerTools);
+                check("Ring 8: Person-Übernahme transportiert eigene Tools", ring8Results.inheritCarriesOwnTools);
+                check("Ring 8: Frische Welt hat default Spieler-Seele", ring8Results.freshNoInheritedSoul);
+                check("Ring 8: Frische Welt hat leeres playerTools", ring8Results.freshNoInheritedTools);
+                check("Ring 8: switchToWorld liefert true", ring8Results.switchReturnedTrue);
+                check("Ring 8: Aktiv-Pointer nach switchToWorld korrekt", ring8Results.activePointerAfterSwitch);
+                check("Ring 8: switchToWorld auf unbekannte ID scheitert sauber", ring8Results.switchToUnknownFails);
+                check("Ring 8: switchToWorld auf aktive Welt ist noop=true", ring8Results.switchToActiveIsNoop);
+                check("Ring 8: deleteWorld lehnt aktive Welt ab", ring8Results.cantDeleteActive);
+                check("Ring 8: deleteWorld liefert true für andere", ring8Results.deleteReturnedTrue);
+                check("Ring 8: Index schrumpft um eins nach delete", ring8Results.indexShrunkByOne);
+                check("Ring 8: Per-Welt-Save nach delete weg", ring8Results.deletedSaveGone);
+            }
+
+            // ### Ring 8 UI ###
+            const ring8UiResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    out.pickerSectionInDom = !!document.getElementById("world-picker-section");
+                    out.pickerListInDom = !!document.getElementById("world-picker-list");
+                    out.newWorldBtnInDom = !!document.getElementById("world-new");
+                    // Rendern mit zwei Test-Welten und prüfen, dass UI sie zeigt
+                    r.createNewWorld({ slug: "test-ui-eins", inheritPlayer: false, reload: false });
+                    r.createNewWorld({ slug: "test-ui-zwei", inheritPlayer: false, reload: false });
+                    r.activeWorldSet(r.state.worldMeta.worldId);
+                    r._renderWorldPicker();
+                    const list = document.getElementById("world-picker-list");
+                    const rows = list ? list.querySelectorAll(".world-picker-row") : [];
+                    out.pickerRendersOthers = rows.length >= 2;
+                    let foundUiEins = false;
+                    let foundUiZwei = false;
+                    for (const row of rows) {
+                        const t = row.textContent || "";
+                        if (t.includes("test-ui-eins")) foundUiEins = true;
+                        if (t.includes("test-ui-zwei")) foundUiZwei = true;
+                    }
+                    out.pickerShowsBothSlugs = foundUiEins && foundUiZwei;
+                    // Aktive Welt ist NICHT in der „Andere Welten"-Liste
+                    out.pickerHidesActive = !Array.from(rows).some((row) =>
+                        (row.textContent || "").includes(r.state.worldMeta.slug)
+                    );
+                    // Cleanup
+                    const activeId = r.state.worldMeta.worldId;
+                    for (const e of r.worldsIndexLoad()) {
+                        if (e.worldId !== activeId) r.deleteWorld(e.worldId);
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!ring8UiResults || ring8UiResults.error) {
+                check("Ring 8 UI: Snapshot erreichbar", false, (ring8UiResults && ring8UiResults.error) || "page.evaluate fehlgeschlagen");
+            } else {
+                check("Ring 8 UI: #world-picker-section im DOM", ring8UiResults.pickerSectionInDom);
+                check("Ring 8 UI: #world-picker-list im DOM", ring8UiResults.pickerListInDom);
+                check("Ring 8 UI: #world-new Button im DOM", ring8UiResults.newWorldBtnInDom);
+                check("Ring 8 UI: Picker rendert andere Welten als Zeilen", ring8UiResults.pickerRendersOthers);
+                check("Ring 8 UI: Beide Slugs sichtbar", ring8UiResults.pickerShowsBothSlugs);
+                check("Ring 8 UI: Aktive Welt nicht in Andere-Welten-Liste", ring8UiResults.pickerHidesActive);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {
@@ -2700,7 +2885,7 @@ function startSaveServer() {
                     r.state.player.emotions.joy = 0.42;
                     r.state.player.emotions.chaos = 0.13;
                     r.saveState();
-                    const raw = localStorage.getItem("anazhRealmState");
+                    const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
                     let parsed = null;
                     try {
                         parsed = JSON.parse(raw);
@@ -3718,7 +3903,7 @@ function startSaveServer() {
                     // Save-Roundtrip
                     r.applyPlayerSoul("phoenix");
                     r.saveState();
-                    const raw = localStorage.getItem("anazhRealmState");
+                    const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
                     let parsed = null;
                     try {
                         parsed = JSON.parse(raw);
@@ -4125,7 +4310,7 @@ function startSaveServer() {
 
                     // (i) Save-Roundtrip
                     r.saveState();
-                    const raw = localStorage.getItem("anazhRealmState");
+                    const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
                     let parsed = null;
                     try {
                         parsed = JSON.parse(raw);
@@ -4514,7 +4699,7 @@ function startSaveServer() {
 
                     // Save-Roundtrip: User-Bauplan überlebt
                     r.saveState();
-                    const raw = localStorage.getItem("anazhRealmState");
+                    const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
                     let parsed = null;
                     try {
                         parsed = JSON.parse(raw);
@@ -4691,7 +4876,7 @@ function startSaveServer() {
                     // Save-Roundtrip
                     r.setHotbarSlot(7, "temple");
                     r.saveState();
-                    const raw = localStorage.getItem("anazhRealmState");
+                    const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
                     let parsed = null;
                     try {
                         parsed = JSON.parse(raw);
@@ -4886,7 +5071,7 @@ function startSaveServer() {
                         size: { x: 3, y: 3, z: 3 },
                     });
                     r.saveState();
-                    const raw = localStorage.getItem("anazhRealmState");
+                    const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
                     const parsed = JSON.parse(raw);
                     const savedBp = parsed.blueprints.find((bp) => bp.name === "ed_test");
                     out.saveContainsCustom =
