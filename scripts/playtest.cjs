@@ -3191,6 +3191,136 @@ function startSaveServer() {
                 check("Ring 8.2: Status-Bar zeigt aktive Welt-Slug", ring82Results.statusSlugShowsActiveWorld);
             }
 
+            // ### Ring 9 — Welt-Tor (Drei-Wahl-Import-Dialog) ###
+            // Reload-basierte UI-Pfade testen wir indirekt via Daten-Methoden:
+            //  - importWorldBeside (datenseitig, ohne Dialog) erzeugt neuen
+            //    Index-Eintrag + Per-Welt-Save mit parentWorlds-Spur.
+            //  - Dialog-Markup ist im DOM (HTML + Buttons + summary).
+            //  - _openWeltTorDialog setzt pendingImport + zeigt Dialog.
+            //  - Esc/cancel räumt pendingImport auf.
+            const ring9Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    // Dialog-Markup im DOM
+                    out.dialogInDom = !!document.getElementById("world-tor-dialog");
+                    out.replaceBtnInDom = !!document.getElementById("world-tor-replace");
+                    out.besideBtnInDom = !!document.getElementById("world-tor-beside");
+                    out.fuseBtnInDom = !!document.getElementById("world-tor-fuse");
+                    out.cancelBtnInDom = !!document.getElementById("world-tor-cancel");
+                    out.summaryInDom = !!document.getElementById("world-tor-summary");
+                    out.fuseBtnDisabled = document.getElementById("world-tor-fuse").disabled === true;
+
+                    // Daten-Pfad: importWorldBeside ohne Reload
+                    const originalSrcId = "src-world-aaaaaaaa";
+                    const importedSnapshot = {
+                        playerPosition: { x: 12, y: 7, z: 34 },
+                        worldMeta: {
+                            worldId: originalSrcId,
+                            slug: "test-fremd",
+                            bornAt: Date.now() - 86400000 * 3,
+                            seed: "fremd-seed-xyz",
+                            parentWorlds: [],
+                            schemaVersion: "8.0-multiworld-v1",
+                        },
+                        worldJournal: {
+                            entries: [
+                                { id: 1, at: Date.now() - 86400000 * 3, tick: 0, type: "genesis", text: "Original" },
+                            ],
+                            seen: { genesis: true },
+                        },
+                        architectures: [],
+                        blueprints: [],
+                        materials: [],
+                        tools: [],
+                        playerTools: [],
+                        playerSoul: "human",
+                    };
+                    const beforeCount = r.worldsIndexLoad().length;
+                    const result = r.importWorldBeside(importedSnapshot, { reload: false });
+                    out.besideReturnedOk = !!(result && result.ok);
+                    out.besideReturnedNewWorldId = result.worldId && result.worldId !== originalSrcId;
+                    out.besideReturnedSlug = result.slug === "test-fremd";
+                    out.indexGrewByOne = r.worldsIndexLoad().length === beforeCount + 1;
+                    // Per-Welt-Save geschrieben
+                    const newSave = JSON.parse(localStorage.getItem(r.worldStorageKey(result.worldId)) || "{}");
+                    out.newSaveHasOwnWorldId = newSave.worldMeta && newSave.worldMeta.worldId === result.worldId;
+                    out.newSaveKeepsSeed = newSave.worldMeta && newSave.worldMeta.seed === "fremd-seed-xyz";
+                    out.newSaveTracksParent =
+                        Array.isArray(newSave.worldMeta.parentWorlds) &&
+                        newSave.worldMeta.parentWorlds.includes(originalSrcId);
+                    out.newSaveSchemaIsTor = newSave.worldMeta.schemaVersion === "9.0-tor-v1";
+                    // Journal hat den Witness-Eintrag
+                    const witnessEntry =
+                        newSave.worldJournal &&
+                        Array.isArray(newSave.worldJournal.entries) &&
+                        newSave.worldJournal.entries.find((e) => e.type === "witness");
+                    out.newSaveHasWitnessEntry = !!witnessEntry && /neben/.test(witnessEntry.text);
+                    out.witnessEntryHasProvenance =
+                        witnessEntry && witnessEntry.ctx && witnessEntry.ctx.fromWorldId === originalSrcId;
+                    // Aktive Welt wurde NICHT umgeleitet
+                    out.activeUnchanged = r.activeWorldGet() === r.state.worldMeta.worldId;
+                    out.activeNotImport = r.activeWorldGet() !== result.worldId;
+
+                    // Slug-Kollision: nochmal mit gleichem Slug importieren
+                    const result2 = r.importWorldBeside(importedSnapshot, { reload: false });
+                    out.collisionResolved =
+                        result2.ok && /^test-fremd(-\d+)?$/.test(result2.slug) && result2.slug !== "test-fremd";
+
+                    // _openWeltTorDialog setzt pendingImport
+                    r._openWeltTorDialog(importedSnapshot, { name: "test.json", size: 100 });
+                    out.pendingImportSet = !!(r.state.pendingImport && r.state.pendingImport.parsed);
+                    // Cancel räumt pendingImport
+                    r._closeWeltTorDialog();
+                    out.pendingClearedAfterCancel = r.state.pendingImport === null;
+
+                    // _weltTorImportBeside ohne pendingImport ist no-op
+                    r.state.pendingImport = null;
+                    r._weltTorImportBeside();
+                    out.besideNoopWithoutPending = true; // sollte nicht crashen
+
+                    // Aufräumen: alle Test-Welten weg
+                    const keepId = r.state.worldMeta.worldId;
+                    for (const e of r.worldsIndexLoad()) {
+                        if (e.worldId !== keepId) r.deleteWorld(e.worldId);
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!ring9Results || ring9Results.error) {
+                check(
+                    "Ring 9: Snapshot erreichbar",
+                    false,
+                    (ring9Results && ring9Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Ring 9: #world-tor-dialog im DOM", ring9Results.dialogInDom);
+                check("Ring 9: Ersetzen-Button im DOM", ring9Results.replaceBtnInDom);
+                check("Ring 9: Daneben-legen-Button im DOM", ring9Results.besideBtnInDom);
+                check("Ring 9: Fusion-Button im DOM", ring9Results.fuseBtnInDom);
+                check("Ring 9: Fusion-Button ist disabled (Ring 10)", ring9Results.fuseBtnDisabled);
+                check("Ring 9: Abbrechen-Button im DOM", ring9Results.cancelBtnInDom);
+                check("Ring 9: #world-tor-summary im DOM", ring9Results.summaryInDom);
+                check("Ring 9: importWorldBeside liefert ok=true", ring9Results.besideReturnedOk);
+                check("Ring 9: importWorldBeside vergibt neue worldId", ring9Results.besideReturnedNewWorldId);
+                check("Ring 9: importWorldBeside behält slug (ohne Kollision)", ring9Results.besideReturnedSlug);
+                check("Ring 9: Index wächst um eins nach besiding", ring9Results.indexGrewByOne);
+                check("Ring 9: Per-Welt-Save hat neue worldId", ring9Results.newSaveHasOwnWorldId);
+                check("Ring 9: Per-Welt-Save behält Source-Seed", ring9Results.newSaveKeepsSeed);
+                check("Ring 9: parentWorlds trägt Original-ID", ring9Results.newSaveTracksParent);
+                check("Ring 9: Save-Schema-Version 9.0-tor-v1", ring9Results.newSaveSchemaIsTor);
+                check("Ring 9: Witness-Journal-Eintrag in importierter Welt", ring9Results.newSaveHasWitnessEntry);
+                check("Ring 9: Witness-Eintrag hat Provenance im ctx", ring9Results.witnessEntryHasProvenance);
+                check("Ring 9: Aktive Welt bleibt nach besiding aktiv", ring9Results.activeUnchanged);
+                check("Ring 9: Importierte Welt ist nicht aktiv geworden", ring9Results.activeNotImport);
+                check("Ring 9: Slug-Kollision wird via -N aufgelöst", ring9Results.collisionResolved);
+                check("Ring 9: _openWeltTorDialog setzt pendingImport", ring9Results.pendingImportSet);
+                check("Ring 9: Cancel räumt pendingImport auf", ring9Results.pendingClearedAfterCancel);
+                check("Ring 9: importBeside ohne pending crasht nicht", ring9Results.besideNoopWithoutPending);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {
