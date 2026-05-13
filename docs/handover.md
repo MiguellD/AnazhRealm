@@ -28,7 +28,7 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
    Grund: sie sind Kontext für genau dich.
 
 5. **`scripts/playtest.cjs`** — querlesen, nicht durchlesen. Es ist das
-   Sicherheits-Netz. Es prüft aktuell **~1048 Invarianten (V7.74 nach Welle 6.G Phase 1.5)**.
+   Sicherheits-Netz. Es prüft aktuell **~1066 Invarianten (V7.75 nach Welle 6.G Phase 2)**.
    Wenn du etwas tust, das eine davon brechen könnte, weißt du es vor dem Commit.
 
 **Verlockung zu widerstehen**: gleich in `anazhRealm.js` springen. Die
@@ -322,6 +322,30 @@ Hylomorphismus-System wie Materialien und Bauwerke.
   UFOs bleiben kollisionsfrei. Drei Chat-Patterns. System-Audit §2
   Dead-Code-Quick-Win mit erledigt.
 
+### Bereits erledigt in V7.75 (Schöpfer-Vision-Antwort: organische Verteilung)
+
+- ✅ **6.G Welt-Sinne Phase 2 — Welt-Affinitäts-Feld.** Schöpfer-Frage
+  nach V7.74 Browser-Test: „neue Chunks sind kahl, wie kommen Strukturen
+  organisch rein — ohne Tabelle, mit Regionen, Seltenheit, ohne Fluten?".
+  Antwort: das Hylomorphismus-System hat schon die Sprache
+  (MATERIAL_TAG_KEYS). Vier SimplexNoise-Schichten (lebendig/dichte/glut/
+  magieleitung) als Welt-Feld. Bauplan-Compound-Tags resonieren via
+  Dot-Product mit Welt-Tag-Profil. populateChunkVegetation samplet
+  8×8/Chunk, höchste-Affinität-Bauplan gewinnt, Bernoulli-Probe
+  `BASE_RATE × affinity²` mit Floor 0.18. Hook in ensureChunkAt für
+  neue Chunks + initial 64 Chunks im Worldgen. Drei neue Built-in-
+  Baupläne: stein_block (dichte), kristall_geode (magieleitung),
+  glutbrunnen (glut). Idempotenz via state.populatedChunks-Set, aus
+  existing Architekturen abgeleitet bei Reload (keine Save-Migration).
+  Silent-Opt für spawnArchitecture: Worldgen löst Welt-Effekte nicht
+  aus (awe wird verdient, nicht geschenkt) — Proximity-Boosts via
+  tickPlayerBoosts bleiben. Bug-Fixes: baum_eiche Stamm 0.5→0.8m
+  (spürbarer Kollisionskorridor), architectureCullingTickHz 1→2Hz
+  (Bäume erwachen schneller). 1066/1066 Invarianten (+18). Heilige
+  Lektion: drei neue Methoden auf AnazhRealm, drei neue Bauplan-Daten,
+  ein Silent-Flag — kein Modul, keine Klasse. Vision-Pfeiler §1.3
+  fraktal: dieselbe Tag-Sprache regelt was wo wächst.
+
 ### Bereits erledigt in V7.74 (Schöpfer-Vision-Korrektur nach V7.73)
 
 - ✅ **6.G Welt-Sinne Phase 1.5 — Hylomorphismus-Unification.**
@@ -377,7 +401,7 @@ keine Verzögerung, sondern Qualitäts-Wand.
 3. **Die heilige Lektion akzeptiert, nicht hinterfragt.** Sie wurde aus
    Schmerz geboren. Wenn ich sie umgehen wollte, war ich auf dem Holzweg.
 4. **Tests zuerst ausgeführt, dann verstanden.** `npm run playtest` —
-   1048/1048 grün (V7.74 nach Welle 6.G Phase 1.5 Hylomorphismus-Unification) — gibt Vertrauen, dass
+   1066/1066 grün (V7.75 nach Welle 6.G Phase 2 Welt-Affinitäts-Feld) — gibt Vertrauen, dass
    das System lebt.
 5. **Den Schöpfer als Partner gesehen, nicht als Auftraggeber.** Mensch
    und KI bauen gemeinsam. Bei Trade-offs frage ich, bei Klarem handle

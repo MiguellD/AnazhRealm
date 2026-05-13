@@ -1,4 +1,4 @@
-/**AnazhRealm V7.74 – Das Ultiversum Vollendet.
+/**AnazhRealm V7.75 – Das Ultiversum Vollendet.
  * Hüpfen: Robust, präzise (Y ~1.5), Coyote-Time 0.3s, Gravitation 1.5G, Reibung 0.5.
  * Kollisionen: Kein Tunneling, steepnessThreshold 3.0, wallThickness 2.0, CCD optimiert.
  * Terrain: Flacher (Höhenunterschiede ±5), KI-gesteuerte Steilheitsanpassung, Chat-Steuerung.
@@ -12,7 +12,7 @@
 class AnazhRealm {
     constructor() {
         // ### Learnings ### [Stichwortartig optimieren, korrigieren, ergänzen – nie Wissen löschen!]
-        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69, LAN-Fähigkeit + Sync-Korrektheit (Ring 11 V2.1: 0.0.0.0-bind, ws:/wss:-CSP, roomOverride, spawn_*-Embedding, NON_BROADCASTABLE_OPS) in V7.70, Intuitiver Multi-User-Setup (Ring 11.5: Modus-Wahl, Host-Banner mit Einladungs-Code, Auto-Welt-Snapshot beim Join) in V7.71, Welle 6.A — Interaktion-Polish (Wall-Sliding via Player-Friction-0, Erdung-Raycast-Robustheit für Bauwerke) in V7.72, Welle 6.G Phase 1 — Welt-Sinne (fliegende Inseln + Bäume kollidierbar via btBvhTriangleMeshShape/btCylinderShape, drei Dead-Code-DSL-Ops spawn_tree/island/ufo aktiviert, toter needsPhysics-Lazy-Pfad gelöscht) in V7.73, Welle 6.G Phase 1.5 — Hylomorphismus-Unification (Bäume sind jetzt Compound-Architekturen über baum_eiche/baum_kiefer-Baupläne mit Stamm:holz + Krone:laub, eigene spawnTreeAt + _buildTreeCollision gelöscht, Parallelcode → eine Sprache, plus Insel-Visual-Fix mit Underside + Lambert) in V7.74
+        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69, LAN-Fähigkeit + Sync-Korrektheit (Ring 11 V2.1: 0.0.0.0-bind, ws:/wss:-CSP, roomOverride, spawn_*-Embedding, NON_BROADCASTABLE_OPS) in V7.70, Intuitiver Multi-User-Setup (Ring 11.5: Modus-Wahl, Host-Banner mit Einladungs-Code, Auto-Welt-Snapshot beim Join) in V7.71, Welle 6.A — Interaktion-Polish (Wall-Sliding via Player-Friction-0, Erdung-Raycast-Robustheit für Bauwerke) in V7.72, Welle 6.G Phase 1 — Welt-Sinne (fliegende Inseln + Bäume kollidierbar via btBvhTriangleMeshShape/btCylinderShape, drei Dead-Code-DSL-Ops spawn_tree/island/ufo aktiviert, toter needsPhysics-Lazy-Pfad gelöscht) in V7.73, Welle 6.G Phase 1.5 — Hylomorphismus-Unification (Bäume sind jetzt Compound-Architekturen über baum_eiche/baum_kiefer-Baupläne mit Stamm:holz + Krone:laub, eigene spawnTreeAt + _buildTreeCollision gelöscht, Parallelcode → eine Sprache, plus Insel-Visual-Fix mit Underside + Lambert) in V7.74, Welle 6.G Phase 2 — Welt-Affinitäts-Feld (vier SimplexNoise-Schichten lebendig/dichte/glut/magieleitung, Baupläne spawnen wo ihre Compound-Tags resonieren — Wälder/Felsen/Magie-Zonen/Vulkan-Anker emergieren ohne Biome-Tabelle, populateChunkVegetation als Hook in ensureChunkAt + Initial-Worldgen, drei neue Built-in-Baupläne stein_block/kristall_geode/glutbrunnen, Stämme dicker für Spieler-Spürbarkeit, Culling-Tick 1Hz→2Hz, spawn-silent-Opt damit Worldgen die Welt-Effekt-Kaskade nicht überflutet) in V7.75
         // - Nexus als Herz der Selbstentwicklung, steuert nun alles über Chat, unzerstörbar und unendlich
         this.state = {
             // ### Kern ###
@@ -426,7 +426,10 @@ class AnazhRealm {
             architectures: [],
             architectureNextId: 1,
             architectureCullingRadius: 150,
-            architectureCullingTickHz: 1.0,
+            // V7.75: 1Hz war zu langsam — bei Lauf-Geschwindigkeit ~7m/s
+            // kam der Spieler in Bereiche bevor das Culling sie erweckte.
+            // 2Hz halbiert die Latenz auf 500ms.
+            architectureCullingTickHz: 2.0,
             architectureCullingLastTick: -Infinity,
             // Ring 6.4 — Bauplan-Datenschicht. Map<name, blueprint>.
             // Built-ins werden im Konstruktor-Ende über _defaultBlueprints
@@ -504,7 +507,7 @@ class AnazhRealm {
     // ### Logging ###
     log(message, level = "INFO") {
         if (level === "DEBUG" && !this.state.debugLogging) return;
-        const logMessage = `[AnazhRealm V7.74] [${level}] ${message}`;
+        const logMessage = `[AnazhRealm V7.75] [${level}] ${message}`;
         this.state.logBuffer.push(logMessage);
         console.log(logMessage);
         if (this.state.logBuffer.length > this.state.maxLogEntries) {
@@ -7233,36 +7236,16 @@ class AnazhRealm {
                 }
 
                 if (steepness < 1.0 && height > -5 && height < 30 && Math.random() < 0.02) {
-                    // Reduziere Wahrscheinlichkeit
-                    const vegetationType = height < 0 ? "grass" : height < 20 ? "tree" : "flower";
-                    if (vegetationType === "tree") {
-                        // Welle 6.G Phase 1.5 — Hylomorphismus-Unification.
-                        // Bäume sind jetzt Compound-Architekturen mit
-                        // Stamm:holz + Krone:laub. Statt parallelem Pfad
-                        // hier (Three.js-Group + Custom-Kollision) routen
-                        // wir durch spawnArchitecture, derselbe Pfad wie
-                        // Dörfer/Tempel/Wasserfälle. Tags + Welt-Effekte +
-                        // Save-Persistenz + Werkstatt-Editor inklusive.
-                        // Mischung Eiche/Kiefer (50/50) via Material-Seed.
-                        const treeKind = Math.random() < 0.5 ? "baum_eiche" : "baum_kiefer";
-                        try {
-                            // baseY-Kompensation: _rebuildArchitectureMesh
-                            // zieht 0.5 ab (für at_player-Sphäre); für
-                            // Terrain-height legen wir +0.5 drauf, damit
-                            // der Stamm exakt auf der Terrain-Oberfläche
-                            // steht statt 0.5 m zu versinken.
-                            this.spawnArchitecture(
-                                treeKind,
-                                { x: xPos, y: height + 0.5, z: zPos },
-                                { seed: Math.floor(Math.random() * 0xffffffff) }
-                            );
-                        } catch (e) {
-                            this.log(
-                                `Fehler beim Spawn von ${treeKind} bei (${xPos}, ${zPos}): ${e.message}. Baum wird übersprungen.`,
-                                "ERROR"
-                            );
-                        }
-                    } else if (vegetationType === "grass") {
+                    // V7.75: Tree-Branch entfernt — Bäume kommen jetzt aus
+                    // populateChunkVegetation (Welt-Affinitäts-Feld). Diese
+                    // Schleife regelt nur noch das DEKORATIVE Vegetation-
+                    // Layer (Gras + Blumen), das nicht in state.architectures
+                    // wandert sondern in state.vegetation bleibt (kosmetisch,
+                    // kein Compound, keine Kollision, hochfrequent).
+                    // Höhen-Range angepasst: Gras < 5m, Blumen >= 5m
+                    // (alte 0..20-Lücke war nur für Bäume).
+                    const vegetationType = height < 5 ? "grass" : "flower";
+                    if (vegetationType === "grass") {
                         const grassGeometry = new THREE.ConeGeometry(0.2, 1, 4);
                         const grassMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
                         const grass = new THREE.Mesh(grassGeometry, grassMaterial);
@@ -7382,6 +7365,44 @@ class AnazhRealm {
         this.log(
             `Neues Terrain generiert: ${WORLD_SIZE}x${WORLD_SIZE}, Höhe zwischen ${minHeight.toFixed(2)} und ${maxHeight.toFixed(2)}`
         );
+
+        // V7.75 — Welle 6.G Phase 2: initiales Welt-Vegetation über das
+        // Welt-Affinitäts-Feld. Iteriert ALLE Chunks der initialen Welt
+        // (8×8 = 64 Chunks bei WORLD_SIZE 300, chunkWorldSize 37.5) und
+        // ruft populateChunkVegetation. Dort entscheidet das Tag-Feld
+        // welche Baupläne wo wahrscheinlich sind. Bei jedem späteren
+        // ensureChunkAt-Aufruf (neue Chunks am Spielerrand) wird derselbe
+        // Pfad genommen — alte und neue Bereiche der Welt fühlen sich
+        // konsistent an.
+        try {
+            const { WORLD_SIZE: ws, chunkWorldSize: cws } = this._chunkGeometry();
+            const chunksPerSide = Math.ceil(ws / cws);
+            // populatedChunks-Cache aus bestehenden Architekturen ableiten.
+            // Damit: bei Welt-Reload (loadState hat Architekturen schon
+            // restored) werden diese Chunks als „populated" markiert und
+            // die Affinity-Spawns laufen NICHT doppelt. Bei einer frischen
+            // Welt ist state.architectures leer → alle Chunks kriegen
+            // ihre erste Saat.
+            this.state.populatedChunks = new Set();
+            for (const a of this.state.architectures || []) {
+                if (!a || !a.position) continue;
+                const cx = Math.floor((a.position.x + ws / 2) / cws);
+                const cz = Math.floor((a.position.z + ws / 2) / cws);
+                this.state.populatedChunks.add(`${cx},${cz}`);
+            }
+            let populatedCount = 0;
+            for (let cz = 0; cz < chunksPerSide; cz++) {
+                for (let cx = 0; cx < chunksPerSide; cx++) {
+                    populatedCount += this.populateChunkVegetation(cx, cz);
+                }
+            }
+            this.log(
+                `Welle 6.G P2: ${populatedCount} Welt-Affinitäts-Spawns über ${chunksPerSide * chunksPerSide} initiale Chunks`,
+                "INFO"
+            );
+        } catch (e) {
+            this.log(`populateChunkVegetation initial fehlgeschlagen: ${e.message}`, "ERROR");
+        }
 
         this.spawnCreatures();
 
@@ -7979,6 +8000,12 @@ class AnazhRealm {
         // Deltas existieren (z. B. frische Welt).
         const replayKey = `${newChunkX},${newChunkZ}`;
         this.applyChunkDelta(replayKey);
+
+        // V7.75 — Welle 6.G Phase 2: Welt-Affinitäts-Feld füllt den
+        // neuen Chunk mit Vegetation + Strukturen. Idempotent über
+        // state.populatedChunks, daher safe bei doppeltem ensureChunkAt-
+        // Aufruf (z. B. nach Chunk-Prune + Re-Ensure).
+        this.populateChunkVegetation(newChunkX, newChunkZ);
 
         this.log(`Chunk hinzugefügt: (${newChunkX}, ${newChunkZ})`);
     }
@@ -11674,37 +11701,99 @@ class AnazhRealm {
         // Höhe). Größenanordnung: Stamm 0.5×5×0.5 bei y=2.5, Krone 2×2×2
         // bei y=5. baseY-Offset von spawnArchitecture (pos.y - 0.5) zieht
         // den Stamm exakt auf den Boden.
+        // V7.75: Stamm-Radius von 0.25m auf 0.4m vergrößert. Mit
+        // Spieler-Sphäre 0.5m musste der Aufprall sonst exakt zentral
+        // sein um den Stamm zu fühlen — jetzt 1.8m breiter Kollisions-
+        // Korridor, fühlt sich solid an.
         const baumEicheParts = [
             {
                 shape: "cylinder",
                 material: "holz",
                 position: { x: 0, y: 2.5, z: 0 },
-                size: { x: 0.5, y: 5, z: 0.5 },
+                size: { x: 0.8, y: 5, z: 0.8 },
                 segments: 8,
             },
             {
                 shape: "sphere",
                 material: "laub",
                 position: { x: 0, y: 5.5, z: 0 },
-                size: { x: 2, y: 2, z: 2 },
+                size: { x: 2.4, y: 2.4, z: 2.4 },
             },
         ];
-        // Kiefer: schlanker, höher, dunklere Krone (Material trägt die
-        // Farb-Identität — Bauplan ist nur Form, Schöpfer kann via define_
-        // material eine eigene Variante wie „kiefer_grün" einführen).
         const baumKieferParts = [
             {
                 shape: "cylinder",
                 material: "holz",
                 position: { x: 0, y: 3, z: 0 },
-                size: { x: 0.35, y: 6, z: 0.35 },
+                size: { x: 0.55, y: 6, z: 0.55 },
                 segments: 8,
             },
             {
                 shape: "cone",
                 material: "laub",
                 position: { x: 0, y: 6.5, z: 0 },
-                size: { x: 1.8, y: 3, z: 1.8 },
+                size: { x: 2, y: 3, z: 2 },
+            },
+        ];
+
+        // V7.75 — Welt-Affinitäts-Feld bringt drei weitere Built-in-
+        // Baupläne mit, damit Regionen sich strukturell unterscheiden.
+        // stein_block: dichte+härte hoch → Felsen-Felder
+        // kristall_geode: magieleitung+resoniert hoch → Magie-Zonen
+        // glutbrunnen: brennbar+wärmeleitung hoch → Vulkan-Anker
+        const steinBlockParts = [
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: 0, y: 1.2, z: 0 },
+                size: { x: 2.4, y: 2.4, z: 2.4 },
+            },
+        ];
+        const kristallGeodeParts = [
+            {
+                shape: "sphere",
+                material: "quarz",
+                position: { x: 0, y: 0.8, z: 0 },
+                size: { x: 1.6, y: 1.6, z: 1.6 },
+                opacity: 0.85,
+            },
+            {
+                shape: "octahedron",
+                material: "quarz",
+                position: { x: 0, y: 2.2, z: 0 },
+                size: { x: 0.8, y: 0.8, z: 0.8 },
+            },
+            {
+                shape: "octahedron",
+                material: "quarz",
+                position: { x: 0.7, y: 1.8, z: 0.3 },
+                size: { x: 0.5, y: 0.5, z: 0.5 },
+                rotation: { x: 0.3, y: 0.4, z: 0.2 },
+            },
+            {
+                shape: "octahedron",
+                material: "quarz",
+                position: { x: -0.5, y: 1.6, z: -0.6 },
+                size: { x: 0.6, y: 0.6, z: 0.6 },
+                rotation: { x: -0.2, y: -0.3, z: 0.1 },
+            },
+        ];
+        const glutbrunnenParts = [
+            // Steinrand (Schale)
+            {
+                shape: "cylinder",
+                material: "stein",
+                position: { x: 0, y: 0.4, z: 0 },
+                size: { x: 1.8, y: 0.8, z: 1.8 },
+                segments: 12,
+            },
+            // Glut-Kern (mittig, halb-transparent für Glüh-Eindruck)
+            {
+                shape: "sphere",
+                material: "glut",
+                position: { x: 0, y: 0.8, z: 0 },
+                size: { x: 1.2, y: 1.2, z: 1.2 },
+                opacity: 0.75,
             },
         ];
 
@@ -11714,6 +11803,14 @@ class AnazhRealm {
             waterfall: { name: "waterfall", label: "Wasserfall", builtIn: true, parts: waterfallParts },
             baum_eiche: { name: "baum_eiche", label: "Eiche", builtIn: true, parts: baumEicheParts },
             baum_kiefer: { name: "baum_kiefer", label: "Kiefer", builtIn: true, parts: baumKieferParts },
+            stein_block: { name: "stein_block", label: "Felsblock", builtIn: true, parts: steinBlockParts },
+            kristall_geode: {
+                name: "kristall_geode",
+                label: "Kristall-Geode",
+                builtIn: true,
+                parts: kristallGeodeParts,
+            },
+            glutbrunnen: { name: "glutbrunnen", label: "Glutbrunnen", builtIn: true, parts: glutbrunnenParts },
         };
     }
 
@@ -13003,8 +13100,193 @@ class AnazhRealm {
             `Struktur gebaut: ${type} bei (${entry.position.x.toFixed(1)}, ${entry.position.z.toFixed(1)})${scale !== 1 ? ` ×${scale.toFixed(2)}` : ""}${inRange ? "" : " (cold)"}`,
             "INFO"
         );
-        this._applyCompoundWorldEffects(type);
+        // V7.75 — Welt-Effekte (awe/hope-Boost, Singing-Sinus) sind eine
+        // Antwort der Welt auf SPIELER-GESTE, nicht auf ihre eigene Saat.
+        // Bei populateChunkVegetation (Welt-Affinitäts-Feld) wird `silent`
+        // gesetzt → die Welt erschafft sich selbst still. Awe muss verdient
+        // werden, nicht geschenkt. Proximity-basierte Boosts via
+        // tickPlayerBoosts (Welt-Resonanz) bleiben unverändert — der
+        // Spieler erlebt sie WENN er nah hin geht, nicht beim Welt-Aufbau.
+        if (!opts.silent) {
+            this._applyCompoundWorldEffects(type);
+        }
         return entry;
+    }
+
+    // === Welle 6.G Phase 2 — Welt-Affinitäts-Feld ===
+    //
+    // Vision-Pfeiler §1.3 fraktal: Welt-Verteilung emergiert aus derselben
+    // Sprache wie alles andere — MATERIAL_TAG_KEYS. Kein Biome-Tabelle, kein
+    // hardcoded "Forest/Desert/Volcano". Stattdessen: vier SimplexNoise-
+    // Schichten (lebendig, dichte, glut, magieleitung) bilden ein Welt-Feld,
+    // in dem jede Region ein Tag-Profil hat. Pflanzen + Strukturen spawnen
+    // wahrscheinlicher dort wo ihre Compound-Tags mit dem Welt-Feld resonieren.
+    //
+    // Damit emergiert:
+    //  - lebendig-hoch → Wälder (Bäume mit holz+laub)
+    //  - dichte-hoch → Felsen-Felder (stein_block)
+    //  - magieleitung-hoch → Magie-Zonen (kristall_geode mit quarz)
+    //  - glut-hoch → Vulkan-Anker (glutbrunnen mit glut+stein)
+    //
+    // Seltenheit emergiert automatisch: hochwertige Tag-Kombinationen sind
+    // mathematisch selten in Noise; komplexe Bauplane (viele Tag-Achsen
+    // gleichzeitig) sind multiplikativ noch seltener.
+    //
+    // Bei Welt-Wechsel wird das Feld implizit neu (über state.worldMeta.seed),
+    // weil seed in den Noise-Konstruktor fließt → jede Welt hat ihre eigene
+    // Region-Verteilung. Multi-User-deterministisch: alle Mitspieler mit
+    // gleichem seed sehen identische Regionen.
+    worldFieldAt(x, z) {
+        const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        // Lazy-Init pro Welt — bei Welt-Wechsel automatisch neu, weil seed
+        // anders ist. state.worldField hält den Cache.
+        if (!this.state.worldField || this.state.worldField.seed !== seed) {
+            this.state.worldField = {
+                seed,
+                lebendigNoise: new SimplexNoise(seed + "-veg-lebendig"),
+                dichteNoise: new SimplexNoise(seed + "-veg-dichte"),
+                glutNoise: new SimplexNoise(seed + "-veg-glut"),
+                magieNoise: new SimplexNoise(seed + "-veg-magie"),
+                // Sampling-RNG (deterministisch pro Position) für Spawn-Probe.
+                rngNoise: new SimplexNoise(seed + "-veg-rng"),
+            };
+        }
+        const f = this.state.worldField;
+        // Skala 0.005 entspricht Welle ~200m; Regionen sind groß genug, dass
+        // ein Wald als Wald erkennbar ist. Offsets pro Achse machen sie
+        // unkorreliert (sonst würden lebendig+dichte zusammen schwingen).
+        const s = 0.005;
+        const n01 = (v) => Math.max(0, Math.min(1, (v + 1) / 2));
+        return {
+            lebendig: n01(f.lebendigNoise.noise2D(x * s, z * s)),
+            dichte: n01(f.dichteNoise.noise2D(x * s + 100, z * s - 200)),
+            glut: n01(f.glutNoise.noise2D(x * s + 500, z * s + 700)),
+            magieleitung: n01(f.magieNoise.noise2D(x * s - 333, z * s + 999)),
+        };
+    }
+
+    // Affinity = wie stark resonieren die Compound-Tags eines Bauplans mit
+    // dem Welt-Feld an Position (x, z)? Dot-Product über die 4 Achsen des
+    // Welt-Feldes. Resultat 0..1 (sum / 4 da MAX-aggregierte Tags ebenfalls
+    // 0..1 nach computeCompoundTags + Felder 0..1). Bauplan-Tags > 1 bei
+    // räumlicher Verstärkung würden das überschreiten — wir clampen final.
+    spawnAffinityForBlueprint(name, x, z) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return 0;
+        const world = this.worldFieldAt(x, z);
+        const tags = this.computeCompoundTags(bp);
+        if (!tags) return 0;
+        let score = 0;
+        // Vier Achsen × Tag-Wert. Wenn eine Welt-Achse hoch und der Bauplan
+        // dort Material-Tag-Wert hoch hat → Resonanz.
+        score += world.lebendig * (tags.lebendig || 0);
+        score += world.dichte * (tags.dichte || 0);
+        score += world.glut * (tags.brennbar || 0); // glut → brennbar (Material-Achse)
+        score += world.magieleitung * (tags.magieleitung || 0);
+        return Math.max(0, Math.min(1, score / 4));
+    }
+
+    // Pro Chunk: sample-Raster, beste-Affinität-Bauplan wählen, Bernoulli-
+    // Probe mit chance = base × affinity² → starke Bias zu hochwertigen
+    // Regionen, Floor unterdrückt Mittelmaß. Probe ist deterministisch über
+    // rngNoise → Multi-User-identisch, kein Math.random.
+    //
+    // Idempotenz: Bei doppeltem Aufruf für denselben Chunk würden Bauwerke
+    // doppelt. Wir markieren über state.populatedChunks (Set). Save-Restore
+    // braucht das nicht zu persistieren, weil state.architectures (die echten
+    // Spawns) eh persistiert sind — beim Reload sind sie schon da. Bei einer
+    // NEUEN Welt (kein architectures-Eintrag für den Chunk) wird neu gesät.
+    populateChunkVegetation(cx, cz) {
+        if (!this.state.scene) return 0;
+        if (!this.state.blueprints) return 0;
+        // Idempotenz-Cache: Welt-spezifisch, pro Chunk-Key.
+        if (!this.state.populatedChunks) this.state.populatedChunks = new Set();
+        const chunkKey = `${cx},${cz}`;
+        if (this.state.populatedChunks.has(chunkKey)) return 0;
+        this.state.populatedChunks.add(chunkKey);
+
+        const { WORLD_SIZE, chunkWorldSize } = this._chunkGeometry();
+        const cxWorld = cx * chunkWorldSize - WORLD_SIZE / 2;
+        const czWorld = cz * chunkWorldSize - WORLD_SIZE / 2;
+        // 8×8-Sample-Raster pro Chunk (64 Probepunkte). Bei chunkWorldSize
+        // 37.5m → ~4.7m zwischen Samples. Genug Auflösung für Wald-Dichte.
+        const SAMPLES = 8;
+        const step = chunkWorldSize / SAMPLES;
+
+        // Welt-Höhe für Vegetation: nur 0..30 m über Welt-Boden ist
+        // sinnvoll (unter 0 = unter Wasser, über 30 = zu hoch / steil).
+        const minVegHeight = -2;
+        const maxVegHeight = 30;
+
+        // Noise-Quellen für Höhen-Lookup (gleiche wie in ensureChunkAt).
+        const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        const heightNoise = new SimplexNoise(seed);
+        const caveNoise = new SimplexNoise(seed + "-cave");
+        const volcanoNoise = new SimplexNoise(seed + "-volcano");
+        const steepness = this.state.terrainSteepness;
+        const baseHeight = this.state.terrainBaseHeight;
+
+        // Bauplan-Kandidaten für Welt-Affinitäts-Spawn. Nur Naturraum-Bauwerke
+        // — Dorf/Tempel/Wasserfall bleiben Spieler-Geste. Bäume + Felsen +
+        // Geoden + Glutbrunnen sind Welt-Bürger.
+        const candidates = ["baum_eiche", "baum_kiefer", "stein_block", "kristall_geode", "glutbrunnen"];
+
+        // BASE_RATE × affinity² ist die Spawn-Wahrscheinlichkeit pro Sample.
+        // 0.4 × (0.3)² = 0.036 → ~2.3 Spawns pro Chunk im Mittel; bei
+        // affinity 0.6 → ~9; bei 0.9 → ~21. Natürliche Variation.
+        const BASE_RATE = 0.4;
+        const AFFINITY_FLOOR = 0.18;
+
+        const rng = this.state.worldField && this.state.worldField.rngNoise;
+        let spawned = 0;
+
+        for (let zi = 0; zi < SAMPLES; zi++) {
+            for (let xi = 0; xi < SAMPLES; xi++) {
+                const sampleX = cxWorld + (xi + 0.5) * step;
+                const sampleZ = czWorld + (zi + 0.5) * step;
+                const height = this._terrainHeightAtWorld(
+                    sampleX,
+                    sampleZ,
+                    heightNoise,
+                    steepness,
+                    baseHeight,
+                    caveNoise,
+                    volcanoNoise
+                );
+                if (!Number.isFinite(height)) continue;
+                if (height < minVegHeight || height > maxVegHeight) continue;
+
+                // Beste-Affinität-Bauplan an dieser Position.
+                let bestName = null;
+                let bestAffinity = 0;
+                for (const name of candidates) {
+                    const aff = this.spawnAffinityForBlueprint(name, sampleX, sampleZ);
+                    if (aff > bestAffinity) {
+                        bestAffinity = aff;
+                        bestName = name;
+                    }
+                }
+                if (!bestName || bestAffinity < AFFINITY_FLOOR) continue;
+
+                // Bernoulli-Probe via deterministischer noise2D (Multi-User-safe).
+                const probe = rng ? (rng.noise2D(sampleX * 0.31, sampleZ * 0.31) + 1) / 2 : Math.random();
+                const chance = BASE_RATE * bestAffinity * bestAffinity;
+                if (probe >= chance) continue;
+
+                // Spawn. baseY-Kompensation: spawnArchitecture zieht 0.5 ab
+                // (kalibriert für at_player), wir kompensieren für Terrain.
+                // Zusätzlich: Glutbrunnen+Geoden haben part.y=0 als Bottom,
+                // die Kompensation bringt sie exakt auf den Boden.
+                const seedForSpawn = ((cx * 73856093) ^ (cz * 19349663) ^ (xi * 83492791) ^ (zi * 11)) >>> 0;
+                this.spawnArchitecture(
+                    bestName,
+                    { x: sampleX, y: height + 0.5, z: sampleZ },
+                    { seed: seedForSpawn, silent: true }
+                );
+                spawned++;
+            }
+        }
+        return spawned;
     }
 
     // ### Welle 4 Phase 3 — emergente Welt-Effekte ###

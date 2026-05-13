@@ -6244,11 +6244,18 @@ function startSaveServer() {
                     out.dedupeReplacesDelta =
                         Math.abs(r.state.player.boosts[0].tagDelta.wärmeleitung - 0.5) < 0.001;
 
-                    // tickPlayerBoosts entfernt abgelaufene
+                    // tickPlayerBoosts entfernt abgelaufene Boosts.
+                    // V7.75: prüfen ob der test:flame-Boost spezifisch
+                    // entfernt wurde (statt "boosts.length===0"). Grund:
+                    // ab V7.75 kann tickPlayerBoosts gleichzeitig einen
+                    // world:resonance-Boost setzen, wenn der Spieler nah
+                    // bei einer hochresonanten Welt-Affinitäts-Architektur
+                    // (kristall_geode, quarz) steht — das ist Vision-treu
+                    // (Welt resoniert mit dem Spieler), nicht der Bug.
                     r.state.player.boosts[0].expiresAt = -100; // bereits abgelaufen
                     r.state.player.boostLastTick = -Infinity; // Throttle umgehen
                     r.tickPlayerBoosts(performance.now() / 1000);
-                    out.expiredRemoved = r.state.player.boosts.length === 0;
+                    out.expiredRemoved = !r.state.player.boosts.some((b) => b.source === "test:flame");
 
                     // Emotion-Trigger: awe hoch → magieleitung-Boost
                     r.state.player.emotions.awe = 0.9;
@@ -6960,6 +6967,211 @@ function startSaveServer() {
                     wave6gResults.chatIslandProg
                 );
                 check("Welle 6.G P1.5: Chat 'rufe ufo hier' → spawn_ufo mit ['at',...]", wave6gResults.chatUfoProg);
+            }
+
+            // ### Welle 6.G Phase 2 — Welt-Affinitäts-Feld ###
+            // Bäume + Strukturen verteilen sich organisch über das Welt-Feld
+            // (4 Noise-Schichten: lebendig/dichte/glut/magieleitung). KEINE
+            // Tabelle — Bauplan-Compound-Tags resonieren mit Welt-Tag-Feld.
+            // Drei neue Baupläne: stein_block (dichte), kristall_geode
+            // (magieleitung), glutbrunnen (glut). Hook in ensureChunkAt
+            // füllt neue Chunks beim Player-Approach.
+            const wave6gP2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    out.hasWorldFieldAt = typeof r.worldFieldAt === "function";
+                    out.hasSpawnAffinity = typeof r.spawnAffinityForBlueprint === "function";
+                    out.hasPopulateChunk = typeof r.populateChunkVegetation === "function";
+                    // Drei neue Baupläne als Built-ins.
+                    const bps = r.state.blueprints || {};
+                    out.hasSteinBlock = !!(bps.stein_block && bps.stein_block.builtIn && bps.stein_block.parts.length >= 1);
+                    out.hasKristallGeode = !!(
+                        bps.kristall_geode &&
+                        bps.kristall_geode.builtIn &&
+                        bps.kristall_geode.parts.length >= 2
+                    );
+                    out.hasGlutbrunnen = !!(bps.glutbrunnen && bps.glutbrunnen.builtIn && bps.glutbrunnen.parts.length >= 2);
+                    // worldFieldAt liefert 4 Tag-Achsen.
+                    if (out.hasWorldFieldAt) {
+                        const sample = r.worldFieldAt(0, 0);
+                        out.fieldHas4Axes = !!(
+                            sample &&
+                            typeof sample.lebendig === "number" &&
+                            typeof sample.dichte === "number" &&
+                            typeof sample.glut === "number" &&
+                            typeof sample.magieleitung === "number"
+                        );
+                        out.fieldValuesInRange =
+                            sample.lebendig >= 0 &&
+                            sample.lebendig <= 1 &&
+                            sample.dichte >= 0 &&
+                            sample.dichte <= 1;
+                    }
+                    // Determinismus: zweimaliger Aufruf an dieselbe Position →
+                    // dieselben Werte. Cross-Welt-Variation: zwei verschiedene
+                    // Positionen → unterschiedliche Werte (mit hoher
+                    // Wahrscheinlichkeit, da Noise nicht-konstant).
+                    if (out.hasWorldFieldAt) {
+                        const a1 = r.worldFieldAt(50, 30);
+                        const a2 = r.worldFieldAt(50, 30);
+                        out.fieldDeterministic =
+                            Math.abs(a1.lebendig - a2.lebendig) < 1e-9 &&
+                            Math.abs(a1.dichte - a2.dichte) < 1e-9;
+                        const b1 = r.worldFieldAt(50, 30);
+                        const b2 = r.worldFieldAt(1000, -1000);
+                        out.fieldVariesBySamplePos =
+                            Math.abs(b1.lebendig - b2.lebendig) > 0.001 ||
+                            Math.abs(b1.dichte - b2.dichte) > 0.001;
+                    }
+                    // spawnAffinityForBlueprint: baum_eiche (holz+laub, hoch
+                    // in lebendig) hat höhere Affinität in einer lebendig-
+                    // hohen Region als ein stein_block (dichte-hoch, lebendig=0).
+                    // Wir suchen empirisch eine lebendig-hohe Position und
+                    // verifizieren das Verhältnis.
+                    if (out.hasSpawnAffinity && out.hasWorldFieldAt) {
+                        // Iteriere Welt-Grid um eine Position mit hohem lebendig
+                        // zu finden.
+                        let bestLebendigSpot = null;
+                        let bestLebendig = 0;
+                        for (let x = -200; x <= 200; x += 25) {
+                            for (let z = -200; z <= 200; z += 25) {
+                                const f = r.worldFieldAt(x, z);
+                                if (f.lebendig > bestLebendig) {
+                                    bestLebendig = f.lebendig;
+                                    bestLebendigSpot = { x, z };
+                                }
+                            }
+                        }
+                        if (bestLebendigSpot && bestLebendig > 0.5) {
+                            const treeAff = r.spawnAffinityForBlueprint(
+                                "baum_eiche",
+                                bestLebendigSpot.x,
+                                bestLebendigSpot.z
+                            );
+                            const steinAff = r.spawnAffinityForBlueprint(
+                                "stein_block",
+                                bestLebendigSpot.x,
+                                bestLebendigSpot.z
+                            );
+                            // In hohem-lebendig-Bereich sollte Baum >> Stein.
+                            out.affinityFavorsTreeInLebendigRegion = treeAff > steinAff * 1.5;
+                        }
+                        // Dasselbe für dichte: in dichte-hoher Region
+                        // sollte stein_block bevorzugt sein.
+                        let bestDichteSpot = null;
+                        let bestDichte = 0;
+                        for (let x = -200; x <= 200; x += 25) {
+                            for (let z = -200; z <= 200; z += 25) {
+                                const f = r.worldFieldAt(x, z);
+                                if (f.dichte > bestDichte) {
+                                    bestDichte = f.dichte;
+                                    bestDichteSpot = { x, z };
+                                }
+                            }
+                        }
+                        if (bestDichteSpot && bestDichte > 0.5) {
+                            const treeAff = r.spawnAffinityForBlueprint(
+                                "baum_eiche",
+                                bestDichteSpot.x,
+                                bestDichteSpot.z
+                            );
+                            const steinAff = r.spawnAffinityForBlueprint(
+                                "stein_block",
+                                bestDichteSpot.x,
+                                bestDichteSpot.z
+                            );
+                            // Wenn die Stelle auch lebendig-hoch ist, könnte
+                            // tree gewinnen. Wir prüfen primär „stein hat
+                            // signifikant > 0", was die Affinity-Anwendung
+                            // bestätigt.
+                            out.steinAffinityNonzeroInDichteRegion = steinAff > 0.05;
+                            // Für klare Diskrimination: an einer wirklich
+                            // dichte-dominanten Position erwarten wir
+                            // stein > tree (wenn lebendig dort low).
+                            const f = r.worldFieldAt(bestDichteSpot.x, bestDichteSpot.z);
+                            if (f.lebendig < 0.4) {
+                                out.affinityFavorsSteinInDichteOnlyRegion = steinAff > treeAff;
+                            }
+                        }
+                    }
+                    // Initial-Worldgen: state.architectures enthält jetzt
+                    // Affinity-gespawnte Strukturen — Bäume + (idealerweise)
+                    // mindestens eine der drei neuen Bauplan-Typen.
+                    const archs = Array.isArray(r.state.architectures) ? r.state.architectures : [];
+                    out.archCount = archs.length;
+                    const typeCounts = {};
+                    for (const a of archs) typeCounts[a.type] = (typeCounts[a.type] || 0) + 1;
+                    out.affinitySpawnTypes = typeCounts;
+                    out.hasInitialTrees = (typeCounts.baum_eiche || 0) + (typeCounts.baum_kiefer || 0) > 0;
+                    // populatedChunks markiert die initialen Chunks als gefüllt.
+                    out.populatedChunksSize = r.state.populatedChunks
+                        ? r.state.populatedChunks.size
+                        : 0;
+                    // Idempotenz: zweiter Aufruf für denselben Chunk
+                    // → spawned=0.
+                    if (typeof r.populateChunkVegetation === "function") {
+                        const before = archs.length;
+                        const secondReturn = r.populateChunkVegetation(2, 3);
+                        const after = r.state.architectures.length;
+                        // Erster Aufruf hat Chunk (2,3) schon befüllt (oder
+                        // nicht — egal). Zweiter Aufruf MUSS 0 zurückgeben
+                        // dank populatedChunks-Cache.
+                        // Plus: keine neuen architectures.
+                        out.populateIdempotent = secondReturn === 0 && after === before;
+                    }
+                    // Architecture-Culling-Rate ist jetzt 2 Hz (V7.75 Bugfix).
+                    out.cullingRateIs2Hz = r.state.architectureCullingTickHz === 2.0;
+                    // Stamm-Radius der Bäume ist größer (V7.75 Bugfix):
+                    // baum_eiche Stamm size.x >= 0.7 (war 0.5 in V7.74).
+                    const eichenStamm = bps.baum_eiche && bps.baum_eiche.parts[0];
+                    out.stammIsThicker = eichenStamm && eichenStamm.size && eichenStamm.size.x >= 0.7;
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6gP2Results && !wave6gP2Results.error) {
+                check("Welle 6.G P2: worldFieldAt-Methode existiert", wave6gP2Results.hasWorldFieldAt);
+                check("Welle 6.G P2: spawnAffinityForBlueprint-Methode existiert", wave6gP2Results.hasSpawnAffinity);
+                check("Welle 6.G P2: populateChunkVegetation-Methode existiert", wave6gP2Results.hasPopulateChunk);
+                check("Welle 6.G P2: Bauplan 'stein_block' existiert als Built-in", wave6gP2Results.hasSteinBlock);
+                check("Welle 6.G P2: Bauplan 'kristall_geode' existiert als Built-in", wave6gP2Results.hasKristallGeode);
+                check("Welle 6.G P2: Bauplan 'glutbrunnen' existiert als Built-in", wave6gP2Results.hasGlutbrunnen);
+                check("Welle 6.G P2: worldFieldAt liefert 4 Tag-Achsen (lebendig/dichte/glut/magie)", wave6gP2Results.fieldHas4Axes);
+                check("Welle 6.G P2: worldFieldAt-Werte im Bereich [0,1]", wave6gP2Results.fieldValuesInRange);
+                check("Welle 6.G P2: worldFieldAt deterministisch (selbe Position → selber Wert)", wave6gP2Results.fieldDeterministic);
+                check("Welle 6.G P2: worldFieldAt variiert mit Position (Noise nicht konstant)", wave6gP2Results.fieldVariesBySamplePos);
+                if (wave6gP2Results.affinityFavorsTreeInLebendigRegion !== undefined) {
+                    check(
+                        "Welle 6.G P2: Baum-Affinity > Stein-Affinity in lebendig-hoher Region",
+                        wave6gP2Results.affinityFavorsTreeInLebendigRegion
+                    );
+                }
+                if (wave6gP2Results.steinAffinityNonzeroInDichteRegion !== undefined) {
+                    check(
+                        "Welle 6.G P2: Stein-Affinity > 0 in dichte-hoher Region",
+                        wave6gP2Results.steinAffinityNonzeroInDichteRegion
+                    );
+                }
+                if (wave6gP2Results.affinityFavorsSteinInDichteOnlyRegion !== undefined) {
+                    check(
+                        "Welle 6.G P2: Stein-Affinity > Baum-Affinity in dichte-only-Region (lebendig<0.4)",
+                        wave6gP2Results.affinityFavorsSteinInDichteOnlyRegion
+                    );
+                }
+                check(
+                    `Welle 6.G P2: Initial-Worldgen hat Architekturen über Affinity gespawnt (n=${wave6gP2Results.archCount})`,
+                    wave6gP2Results.archCount > 0
+                );
+                check("Welle 6.G P2: Initial-Worldgen hat mind. einen Baum gespawnt", wave6gP2Results.hasInitialTrees);
+                check(
+                    `Welle 6.G P2: populatedChunks-Cache befüllt (size=${wave6gP2Results.populatedChunksSize})`,
+                    wave6gP2Results.populatedChunksSize >= 1
+                );
+                check("Welle 6.G P2: populateChunkVegetation idempotent (zweiter Aufruf → 0 spawns)", wave6gP2Results.populateIdempotent);
+                check("Welle 6.G P2: architectureCullingTickHz auf 2.0 angehoben (Bugfix)", wave6gP2Results.cullingRateIs2Hz);
+                check("Welle 6.G P2: baum_eiche Stamm-Radius >= 0.7 (Bugfix V7.75)", wave6gP2Results.stammIsThicker);
             }
 
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
