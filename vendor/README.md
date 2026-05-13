@@ -17,8 +17,12 @@ Drei reasons we host these instead of using a CDN:
 | `three.min.js` | `three@0.134.0` (`build/three.min.js`) | UMD build, exposes `THREE` |
 | `ammo.js` | `ammojs3@0.0.11` (`dist/ammo.wasm.js`) | WASM loader; needs `ammo.wasm.wasm` next to it |
 | `ammo.wasm.wasm` | `ammojs3@0.0.11` (`dist/ammo.wasm.wasm`) | Bullet physics WASM binary |
-| `tf.min.js` | `@tensorflow/tfjs@3.21.0` | UMD build, exposes `tf` |
 | `simplex-noise.js` | `simplex-noise@2.4.0` | Not minified upstream (only ~17 KB) |
+
+TensorFlow.js wurde im Mai 2026 entfernt — `playerMovementModel` trainierte
+in eine Sackgasse (kein Konsument von `predictPlayerMove`). Der Lern-Loop läuft
+heute komplett über die DSL: `state.dsl.history` mit Fitness-V2, Roulette-
+Selektion und Mutation. Ohne TF kann die CSP `'unsafe-eval'` ablehnen.
 
 `index.html` includes them in that order.
 

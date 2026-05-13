@@ -760,6 +760,452 @@ function startSaveServer() {
                 );
             }
 
+            // ### Schicht 1 — IQ-Schicht (Pfad-Buckets, Multi-Dim-Fitness, Pattern-Memory) ###
+            const iqResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    // State-Felder existieren
+                    out.hasPathBuckets =
+                        !!r.state.player.pathBuckets &&
+                        !!r.state.player.pathBuckets.height &&
+                        !!r.state.player.pathBuckets.distance;
+                    out.hasPatternMemory =
+                        r.state.dsl && typeof r.state.dsl.patternMemory === "object";
+                    out.hasRecentKeywords = Array.isArray(r.state.dsl.recentKeywords);
+                    out.hasPendingOutcomes = Array.isArray(r.state.dsl.pendingOutcomes);
+                    out.historyCap500 = r.state.dsl.historyCap >= 500;
+                    out.schemaVersionIq = /^7\.7[2-9]/.test(r.state.worldMeta.schemaVersion);
+
+                    // Keyword-Extraktion
+                    const kws = r.pathExtractKeywords("Ich liebe den Wald und Wasserfälle hier");
+                    out.keywordsExtracted = Array.isArray(kws) && kws.includes("wald") && kws.includes("wasserfälle");
+                    out.keywordsFilterStopwords = !kws.includes("der") && !kws.includes("ich");
+
+                    // rememberChatKeywords füllt den Window
+                    r.state.dsl.recentKeywords.length = 0;
+                    r.rememberChatKeywords("teste mit drachen und feuer", 1000);
+                    out.keywordsRemembered = r.state.dsl.recentKeywords.length >= 2;
+
+                    // pruneRecentKeywords entfernt alte
+                    r.state.dsl.recentKeywords.push({ keyword: "alt", at: 0 });
+                    r.pruneRecentKeywords(120);
+                    out.oldKeywordsPruned = !r.state.dsl.recentKeywords.some((e) => e.keyword === "alt");
+
+                    // Multi-Dim-Fitness: Outcome mit positiver Emotion gibt höhere Fitness
+                    const f1 = r.computeMultiDimFitness({
+                        fpsBefore: 120,
+                        fpsAfter: 120,
+                        emotionsBefore: { joy: 0.1, awe: 0, hope: 0, peace: 0 },
+                        emotionsAfter: { joy: 0.5, awe: 0.3, hope: 0.2, peace: 0.1 },
+                        activityAfter: { moves: 10, chats: 2, jumps: 0 },
+                    });
+                    const f2 = r.computeMultiDimFitness({
+                        fpsBefore: 120,
+                        fpsAfter: 120,
+                        emotionsBefore: { joy: 0.5, awe: 0.5, hope: 0.5, peace: 0.5 },
+                        emotionsAfter: { joy: 0.1, awe: 0.1, hope: 0.1, peace: 0.1 },
+                        activityAfter: { moves: 0, chats: 0, jumps: 0 },
+                    });
+                    out.fitnessRespondsToEmotion = f1 > f2;
+                    out.fitnessBounded = f1 >= 0 && f1 <= 1 && f2 >= 0 && f2 <= 1;
+
+                    // Pattern-Memory: rememberOutcomeAsPattern (high-fitness) speichert
+                    r.state.dsl.patternMemory = {};
+                    r.state.dsl.recentKeywords = [{ keyword: "drache", at: 100 }];
+                    r.rememberOutcomeAsPattern(
+                        { startedAt: 100 },
+                        ["spawn_creature", ["at_player"], 1, "happy"],
+                        0.8,
+                        110
+                    );
+                    out.patternMemoryWritten = Array.isArray(r.state.dsl.patternMemory["drache"]) &&
+                        r.state.dsl.patternMemory["drache"].length === 1;
+                    // Low-fitness Programme werden NICHT geschrieben
+                    r.rememberOutcomeAsPattern(
+                        { startedAt: 100 },
+                        ["weather", "rainy"],
+                        0.3,
+                        110
+                    );
+                    out.lowFitnessIgnored = r.state.dsl.patternMemory["drache"].length === 1;
+
+                    // dslSelectByPattern findet das Programm
+                    let foundByPattern = 0;
+                    for (let i = 0; i < 10; i++) {
+                        const p = r.dslSelectByPattern(Math.random);
+                        if (Array.isArray(p) && p[0] === "spawn_creature") foundByPattern++;
+                    }
+                    out.patternSelectionWorks = foundByPattern === 10;
+
+                    // Pfad-Buckets: samplePathBuckets inkrementiert
+                    const before = { ...r.state.player.pathBuckets.height };
+                    r.state.player.pathLastSample = -Infinity;
+                    r.samplePathBuckets(performance.now() / 1000);
+                    const after = r.state.player.pathBuckets.height;
+                    out.bucketsIncrementing =
+                        (after.low || 0) + (after.mid || 0) + (after.high || 0) >
+                        (before.low || 0) + (before.mid || 0) + (before.high || 0);
+
+                    // dslRun schreibt emotionsBefore + startedAt
+                    const result = r.dslRun(["weather", "sunny"], { source: "test" });
+                    out.outcomeHasEmotionSnapshot =
+                        result.outcome && typeof result.outcome.startedAt === "number" &&
+                        result.outcome.emotionsBefore &&
+                        typeof result.outcome.emotionsBefore.joy === "number";
+
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (!iqResults || iqResults.error) {
+                check("Schicht 1: IQ-Snapshot erreichbar", false, iqResults && iqResults.error || "page.evaluate fehlgeschlagen");
+            } else {
+                check("Schicht 1: pathBuckets-State im player", iqResults.hasPathBuckets);
+                check("Schicht 1: patternMemory-State im dsl", iqResults.hasPatternMemory);
+                check("Schicht 1: recentKeywords + pendingOutcomes", iqResults.hasRecentKeywords && iqResults.hasPendingOutcomes);
+                check("Schicht 1: historyCap auf 500 erhöht", iqResults.historyCap500);
+                check("Schicht 1: schemaVersion auf 7.72-iq-v1 gebumpt", iqResults.schemaVersionIq);
+                check("Schicht 1: pathExtractKeywords liefert echte Tokens", iqResults.keywordsExtracted);
+                check("Schicht 1: Keyword-Filter wirft Stoppwörter raus", iqResults.keywordsFilterStopwords);
+                check("Schicht 1: rememberChatKeywords füllt das Fenster", iqResults.keywordsRemembered);
+                check("Schicht 1: pruneRecentKeywords räumt alte Einträge ab", iqResults.oldKeywordsPruned);
+                check("Schicht 1: Multi-Dim-Fitness reagiert auf Emotion-Delta", iqResults.fitnessRespondsToEmotion);
+                check("Schicht 1: Fitness bleibt in [0..1]", iqResults.fitnessBounded);
+                check("Schicht 1: Pattern-Memory schreibt high-fitness", iqResults.patternMemoryWritten);
+                check("Schicht 1: low-fitness landet nicht im Memory", iqResults.lowFitnessIgnored);
+                check("Schicht 1: dslSelectByPattern findet gespeichertes Programm", iqResults.patternSelectionWorks);
+                check("Schicht 1: samplePathBuckets erhöht Höhen-Bucket", iqResults.bucketsIncrementing);
+                check("Schicht 1: dslRun-Outcome trägt emotionsBefore + startedAt", iqResults.outcomeHasEmotionSnapshot);
+            }
+
+            // ### Welle 1 D — Welt-Journal ###
+            const journalResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    out.hasJournal = r.state.worldJournal && Array.isArray(r.state.worldJournal.entries);
+                    out.genesisWritten = r.state.worldJournal.entries.some((e) => e.type === "genesis");
+                    out.bornAtSet = typeof r.state.worldMeta.bornAt === "number" && r.state.worldMeta.bornAt > 0;
+                    // journalAppend schreibt
+                    const before = r.state.worldJournal.entries.length;
+                    r.journalAppend("test", "Erinnerung-Test");
+                    out.appendIncreases = r.state.worldJournal.entries.length === before + 1;
+                    // Once-Variante schreibt nur ein Mal
+                    r.journalAppendOnce("uniq1", "test", "Einmaliger Eintrag");
+                    r.journalAppendOnce("uniq1", "test", "Doppelt-Versuch");
+                    const uniqCount = r.state.worldJournal.entries.filter((e) => e.text === "Einmaliger Eintrag").length;
+                    out.onceIsIdempotent = uniqCount === 1;
+                    // Auszug für LLM enthält Genesis
+                    const excerpt = r.journalForPrompt();
+                    out.excerptHasGenesis = /genesis/.test(excerpt);
+                    // LLM-System-Prompt erwähnt slug + worldId
+                    const sys = r.llmBuildSystemPrompt();
+                    out.systemPromptIdentity = sys.includes(r.state.worldMeta.slug) && sys.includes(r.state.worldMeta.worldId);
+                    out.systemPromptInventory = /Kreaturen.*Bauwerke.*Baupläne/.test(sys);
+                    out.systemPromptTendency = /Höhe.*Distanz.*Wetter.*Aktivität/.test(sys);
+                    out.systemPromptFirstPerson = /sprich.*ich|in erster Person/i.test(sys);
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (!journalResults || journalResults.error) {
+                check("Welle 1 D: Journal-Snapshot erreichbar", false, journalResults && journalResults.error || "page.evaluate fehlgeschlagen");
+            } else {
+                check("Welle 1 D: state.worldJournal existiert", journalResults.hasJournal);
+                check("Welle 1 D: Genesis-Eintrag wurde beim ersten worldMeta-Init geschrieben", journalResults.genesisWritten);
+                check("Welle 1 D: worldMeta.bornAt gesetzt", journalResults.bornAtSet);
+                check("Welle 1 D: journalAppend hängt Eintrag an", journalResults.appendIncreases);
+                check("Welle 1 D: journalAppendOnce ist idempotent", journalResults.onceIsIdempotent);
+                check("Welle 1 D: journalForPrompt enthält Genesis", journalResults.excerptHasGenesis);
+                check("Welle 1 A: LLM-Prompt trägt slug + worldId", journalResults.systemPromptIdentity);
+                check("Welle 1 A: LLM-Prompt zählt Welt-Inventar", journalResults.systemPromptInventory);
+                check("Welle 1 A: LLM-Prompt benennt Pfad-Tendenz", journalResults.systemPromptTendency);
+                check("Welle 1 A: LLM-Prompt verlangt erste Person", journalResults.systemPromptFirstPerson);
+            }
+
+            // ### Welle 2 B/C — Fraktale Baupläne + Schöpfer-DSL-Ops ###
+            const wave2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    // C — Validation lehnt unbekannte Shape ab
+                    out.rejectsUnknownShape = !r.validateBlueprintParts([{ shape: "alien" }]).ok;
+                    out.rejectsEmpty = !r.validateBlueprintParts([]).ok;
+                    out.acceptsValid = r.validateBlueprintParts([{ shape: "box", color: 0x00ff00 }]).ok;
+                    // C — blueprint-Part validiert refName
+                    out.rejectsInvalidRef = !r.validateBlueprintParts([{ shape: "blueprint", refName: "../etc" }]).ok;
+                    // B — define_blueprint legt eigenen Bauplan an
+                    delete r.state.blueprints["wave2-test"];
+                    const res = r.dslRun([
+                        "define_blueprint", "wave2-test",
+                        [{ shape: "box", color: 0xff0000, size: { x: 2, y: 2, z: 2 } }]
+                    ], { source: "test" });
+                    out.defineBlueprintWorks = res.ok && !!r.state.blueprints["wave2-test"] && !r.state.blueprints["wave2-test"].builtIn;
+                    // B — Built-in lässt sich nicht überschreiben
+                    const builtInBefore = r.state.blueprints.village && r.state.blueprints.village.parts.length;
+                    r.dslRun([
+                        "define_blueprint", "village",
+                        [{ shape: "box" }]
+                    ], { source: "test" });
+                    out.builtInProtected = r.state.blueprints.village && r.state.blueprints.village.parts.length === builtInBefore;
+                    // C — Selbst-Referenz wird verboten
+                    delete r.state.blueprints["self-ref"];
+                    r.dslRun([
+                        "define_blueprint", "self-ref",
+                        [{ shape: "blueprint", refName: "self-ref" }]
+                    ], { source: "test" });
+                    out.selfReferenceBlocked = !r.state.blueprints["self-ref"];
+                    // C — fraktale Verschachtelung baut Sub-Group
+                    delete r.state.blueprints["wave2-outer"];
+                    r.dslRun([
+                        "define_blueprint", "wave2-outer",
+                        [
+                            { shape: "box", color: 0x0000ff },
+                            { shape: "blueprint", refName: "wave2-test", position: { x: 3, y: 0, z: 0 } }
+                        ]
+                    ], { source: "test" });
+                    const outerGroup = r._buildFromBlueprint(r.state.blueprints["wave2-outer"]);
+                    out.nestedGroupHasSubgroup = outerGroup.children.length === 2 &&
+                        outerGroup.children[1].type === "Group";
+                    // C — Tiefen-Cap greift (selbst wenn man programmatisch zyklisch konstruiert)
+                    r.state.blueprints["cycle-a"] = {
+                        name: "cycle-a", label: "a", builtIn: false,
+                        parts: [{ shape: "blueprint", refName: "cycle-b" }]
+                    };
+                    r.state.blueprints["cycle-b"] = {
+                        name: "cycle-b", label: "b", builtIn: false,
+                        parts: [{ shape: "blueprint", refName: "cycle-a" }]
+                    };
+                    const cycleGroup = r._buildFromBlueprint(r.state.blueprints["cycle-a"]);
+                    // Sollte nicht in Endlos-Rekursion gehen
+                    out.cycleHandled = !!cycleGroup;
+                    // B — define_ability mit verbotenem nested define_blueprint
+                    const abilNested = r.dslRun([
+                        "define_ability", "evil",
+                        ["define_blueprint", "x", [{ shape: "box" }]]
+                    ], { source: "test" });
+                    out.nestedDefineBlocked = abilNested.log.some((e) => e.event === "ability_nested_define_forbidden");
+                    // B — define_ability legitim
+                    const abilOk = r.dslRun([
+                        "define_ability", "wave2-dance",
+                        ["weather", "rainy"]
+                    ], { source: "test" });
+                    out.defineAbilityWorks = abilOk.ok &&
+                        (r.state.dsl.abilities || []).some((a) => a.name === "wave2-dance");
+                    // Test-Artefakte sauber entfernen, damit nachfolgende
+                    // Workshop-Invarianten konsistent zählen.
+                    delete r.state.blueprints["wave2-test"];
+                    delete r.state.blueprints["wave2-outer"];
+                    delete r.state.blueprints["cycle-a"];
+                    delete r.state.blueprints["cycle-b"];
+                    r.state.dsl.abilities = (r.state.dsl.abilities || []).filter((a) => a.name !== "wave2-dance");
+                    if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (!wave2Results || wave2Results.error) {
+                check("Welle 2: Snapshot erreichbar", false, wave2Results && wave2Results.error || "page.evaluate fehlgeschlagen");
+            } else {
+                check("Welle 2 C: Validation lehnt unbekannte Shape ab", wave2Results.rejectsUnknownShape);
+                check("Welle 2 C: Validation lehnt leeren Parts-Array ab", wave2Results.rejectsEmpty);
+                check("Welle 2 C: Validation akzeptiert gültige box-Parts", wave2Results.acceptsValid);
+                check("Welle 2 C: refName mit Sonderzeichen abgelehnt", wave2Results.rejectsInvalidRef);
+                check("Welle 2 B: define_blueprint legt eigenen Bauplan an", wave2Results.defineBlueprintWorks);
+                check("Welle 2 B: Built-in bleibt vor Überschreiben geschützt", wave2Results.builtInProtected);
+                check("Welle 2 C: Selbst-Referenz im blueprint-Part blockiert", wave2Results.selfReferenceBlocked);
+                check("Welle 2 C: Verschachtelter Bauplan rendert Sub-Group", wave2Results.nestedGroupHasSubgroup);
+                check("Welle 2 C: Cycle in blueprint-Refs läuft nicht endlos", wave2Results.cycleHandled);
+                check("Welle 2 B: define_ability verbietet nested define_*", wave2Results.nestedDefineBlocked);
+                check("Welle 2 B: define_ability legt neue Fähigkeit an", wave2Results.defineAbilityWorks);
+            }
+
+            // ### Welle 3 E/F — Welt-Initiative + Welt-Tor ###
+            const wave3Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    // E — neue Trigger im pool + triggers-Map
+                    out.hasJournalEventTrigger = !!r.state.grok.triggers.journalEvent;
+                    out.hasEmotionShiftTrigger = !!r.state.grok.triggers.emotionShift;
+                    out.hasJournalEventPool = Array.isArray(r.state.grok.pool.journalEvent) &&
+                        r.state.grok.pool.journalEvent.length > 0;
+                    out.hasEmotionShiftPool = Array.isArray(r.state.grok.pool.emotionShift) &&
+                        r.state.grok.pool.emotionShift.length > 0;
+                    // E — grokSpeakFromJournal existiert
+                    out.hasGrokSpeakFromJournal = typeof r.grokSpeakFromJournal === "function";
+                    // F — Welt-Info-UI im DOM
+                    out.worldInfoInDom = !!document.getElementById("world-info");
+                    out.worldExportInDom = !!document.getElementById("world-export");
+                    out.worldImportInDom = !!document.getElementById("world-import");
+                    // F — updateWorldInfo füllt slug
+                    r.updateWorldInfo();
+                    const infoText = document.getElementById("world-info").textContent;
+                    out.worldInfoShowsSlug = infoText.includes(r.state.worldMeta.slug);
+                    out.worldInfoShowsAge = /Alter:\s*\d+/.test(infoText);
+                    // F — triggerStateDownload akzeptiert suggestedName
+                    let downloadedName = null;
+                    const origCreate = document.createElement;
+                    document.createElement = function (tag) {
+                        const el = origCreate.call(document, tag);
+                        if (tag === "a") {
+                            const origSetAttr = el.setAttribute.bind(el);
+                            el.setAttribute = (k, v) => {
+                                if (k === "download") downloadedName = v;
+                                origSetAttr(k, v);
+                            };
+                            el.click = () => {};
+                        }
+                        return el;
+                    };
+                    r.triggerStateDownload({ test: true }, "anazh-realm-test.json");
+                    document.createElement = origCreate;
+                    out.downloadCustomName = downloadedName === "anazh-realm-test.json";
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (!wave3Results || wave3Results.error) {
+                check("Welle 3: Snapshot erreichbar", false, wave3Results && wave3Results.error || "page.evaluate fehlgeschlagen");
+            } else {
+                check("Welle 3 E: journalEvent-Trigger im Grok-State", wave3Results.hasJournalEventTrigger);
+                check("Welle 3 E: emotionShift-Trigger im Grok-State", wave3Results.hasEmotionShiftTrigger);
+                check("Welle 3 E: journalEvent-Pool gefüllt", wave3Results.hasJournalEventPool);
+                check("Welle 3 E: emotionShift-Pool gefüllt", wave3Results.hasEmotionShiftPool);
+                check("Welle 3 E: grokSpeakFromJournal-Funktion existiert", wave3Results.hasGrokSpeakFromJournal);
+                check("Welle 3 F: #world-info im DOM", wave3Results.worldInfoInDom);
+                check("Welle 3 F: Welt-Export-/Import-Buttons im DOM",
+                    wave3Results.worldExportInDom && wave3Results.worldImportInDom);
+                check("Welle 3 F: Welt-Info zeigt slug", wave3Results.worldInfoShowsSlug);
+                check("Welle 3 F: Welt-Info zeigt Alter in Tagen", wave3Results.worldInfoShowsAge);
+                check("Welle 3 F: triggerStateDownload nutzt suggestedName", wave3Results.downloadCustomName);
+            }
+
+            // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
+            const llmResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    out.hasLlmState = r.state.llm && typeof r.state.llm.enabled === "boolean";
+                    out.hasProviderConfig = !!r.state.llm.providerConfig &&
+                        !!r.state.llm.providerConfig.anthropic &&
+                        !!r.state.llm.providerConfig.google &&
+                        !!r.state.llm.providerConfig.openrouter &&
+                        !!r.state.llm.providerConfig.ollama;
+                    const defs = r.llmProviderDefs();
+                    out.fourProviders = Object.keys(defs).length === 4;
+                    out.providerHasBuildBody = typeof defs.anthropic.buildBody === "function" &&
+                        typeof defs.google.buildBody === "function" &&
+                        typeof defs.openrouter.buildBody === "function" &&
+                        typeof defs.ollama.buildBody === "function";
+
+                    // Endpoint je Provider liefert die erwartete URL.
+                    out.anthropicEndpoint = defs.anthropic.endpoint("m", "k") === "https://api.anthropic.com/v1/messages";
+                    out.googleEndpointGenerateContent = /generativelanguage\.googleapis\.com\/v1beta\/models\/gemini-2\.0-flash:generateContent$/.test(
+                        defs.google.endpoint("gemini-2.0-flash", "KEY")
+                    );
+                    out.googleHeaderHasApiKey = defs.google.buildHeaders("KEY")["x-goog-api-key"] === "KEY";
+                    out.openrouterEndpoint = defs.openrouter.endpoint("m", "k") === "https://openrouter.ai/api/v1/chat/completions";
+                    out.ollamaEndpoint = defs.ollama.endpoint("m", "", { endpoint: "http://localhost:11434" }) === "http://localhost:11434/api/chat";
+                    out.ollamaNoKeyRequired = defs.ollama.requiresKey === false;
+
+                    // Body-Format pro Provider
+                    const sys = "SYS";
+                    const usr = "USR";
+                    const anthBody = defs.anthropic.buildBody("m", sys, usr);
+                    out.anthropicBodyShape = anthBody.system === sys && Array.isArray(anthBody.messages);
+                    const geminiBody = defs.google.buildBody("m", sys, usr);
+                    out.geminiBodyShape = !!geminiBody.systemInstruction && Array.isArray(geminiBody.contents);
+                    const orBody = defs.openrouter.buildBody("m", sys, usr);
+                    out.openrouterBodyShape = Array.isArray(orBody.messages) &&
+                        orBody.messages[0].role === "system" && orBody.messages[1].role === "user";
+                    const olBody = defs.ollama.buildBody("m", sys, usr);
+                    out.ollamaBodyShape = olBody.stream === false && Array.isArray(olBody.messages);
+
+                    // Response-Parser pro Provider
+                    out.anthropicExtract = defs.anthropic.extractText({ content: [{ type: "text", text: "hi" }] }) === "hi";
+                    out.geminiExtract = defs.google.extractText({ candidates: [{ content: { parts: [{ text: "hi" }] } }] }) === "hi";
+                    out.openrouterExtract = defs.openrouter.extractText({ choices: [{ message: { content: "hi" } }] }) === "hi";
+                    out.ollamaExtract = defs.ollama.extractText({ message: { content: "hi" } }) === "hi";
+
+                    // UI: Provider-Selektor + Schlüsselzeile + Endpoint-Zeile (für Ollama)
+                    out.llmUiProvider = !!document.getElementById("llm-provider");
+                    out.llmUiKey = !!document.getElementById("llm-key");
+                    out.llmUiEndpoint = !!document.getElementById("llm-endpoint");
+                    out.llmUiModel = !!document.getElementById("llm-model");
+                    out.llmUiToggle = !!document.getElementById("llm-toggle");
+
+                    // Default-Provider ist anthropic; Provider-Selector trägt alle vier
+                    const sel = document.getElementById("llm-provider");
+                    out.providerSelectorPopulated = sel && sel.options.length === 4;
+
+                    // System-Prompt enthält die DSL-Vertrag-Anweisungen
+                    const sp = r.llmBuildSystemPrompt();
+                    out.systemPromptHasJson = /JSON/i.test(sp) && /say/.test(sp) && /program/.test(sp);
+
+                    // Parser robust gegen Markdown / kaputtes JSON
+                    const ok = r.llmParseResponse('{"say":"Hallo","program":["weather","sunny"]}');
+                    out.parserParsesValidJson = ok.say === "Hallo" && Array.isArray(ok.program);
+                    const fenced = r.llmParseResponse('```json\n{"say":"hi","program":null}\n```');
+                    out.parserStripsFence = fenced.say === "hi" && fenced.program === null;
+                    const broken = r.llmParseResponse("nicht json");
+                    out.parserDetectsError = typeof broken.error === "string";
+
+                    // Disabled-LLM blockt Call ohne Netzwerk-Versuch
+                    r.state.llm.enabled = false;
+                    return new Promise((resolve) => {
+                        r.llmCall("test").then((rep) => {
+                            out.callBlockedWhenDisabled = rep.error === "LLM nicht aktiv";
+                            const meta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+                            const csp = meta ? meta.getAttribute("content") : "";
+                            out.cspAnthropic = /api\.anthropic\.com/.test(csp);
+                            out.cspGoogle = /generativelanguage\.googleapis\.com/.test(csp);
+                            out.cspOpenRouter = /openrouter\.ai/.test(csp);
+                            out.cspOllama = /localhost:11434/.test(csp);
+                            resolve(out);
+                        });
+                    });
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (!llmResults || llmResults.error) {
+                check("Schicht 2: LLM-Snapshot erreichbar", false, llmResults && llmResults.error || "page.evaluate fehlgeschlagen");
+            } else {
+                check("Schicht 2: state.llm + providerConfig komplett", llmResults.hasLlmState && llmResults.hasProviderConfig);
+                check("Schicht 2: vier Provider definiert", llmResults.fourProviders);
+                check("Schicht 2: jeder Provider hat buildBody-Fn", llmResults.providerHasBuildBody);
+                check("Schicht 2: Anthropic-Endpoint korrekt", llmResults.anthropicEndpoint);
+                check("Schicht 2: Gemini-Endpoint auf :generateContent", llmResults.googleEndpointGenerateContent);
+                check("Schicht 2: Gemini-Header trägt x-goog-api-key", llmResults.googleHeaderHasApiKey);
+                check("Schicht 2: OpenRouter-Endpoint korrekt", llmResults.openrouterEndpoint);
+                check("Schicht 2: Ollama-Endpoint nutzt /api/chat", llmResults.ollamaEndpoint);
+                check("Schicht 2: Ollama braucht keinen Key", llmResults.ollamaNoKeyRequired);
+                check("Schicht 2: Anthropic-Body trägt system + messages", llmResults.anthropicBodyShape);
+                check("Schicht 2: Gemini-Body trägt systemInstruction + contents", llmResults.geminiBodyShape);
+                check("Schicht 2: OpenRouter-Body OpenAI-kompatibel", llmResults.openrouterBodyShape);
+                check("Schicht 2: Ollama-Body trägt stream=false + messages", llmResults.ollamaBodyShape);
+                check("Schicht 2: Anthropic-Response extrahiert text-Block", llmResults.anthropicExtract);
+                check("Schicht 2: Gemini-Response extrahiert candidates[0].parts", llmResults.geminiExtract);
+                check("Schicht 2: OpenRouter-Response extrahiert choices[0].message", llmResults.openrouterExtract);
+                check("Schicht 2: Ollama-Response extrahiert message.content", llmResults.ollamaExtract);
+                check("Schicht 2: UI-Felder (Provider/Key/Endpoint/Model/Toggle)",
+                    llmResults.llmUiProvider && llmResults.llmUiKey && llmResults.llmUiEndpoint && llmResults.llmUiModel && llmResults.llmUiToggle);
+                check("Schicht 2: Provider-Selektor mit 4 Optionen befüllt", llmResults.providerSelectorPopulated);
+                check("Schicht 2: System-Prompt trägt DSL-JSON-Vertrag", llmResults.systemPromptHasJson);
+                check("Schicht 2: Parser akzeptiert gültiges JSON", llmResults.parserParsesValidJson);
+                check("Schicht 2: Parser entfernt Markdown-Fences", llmResults.parserStripsFence);
+                check("Schicht 2: Parser meldet Fehler bei kaputtem Input", llmResults.parserDetectsError);
+                check("Schicht 2: Disabled-LLM blockt Call sauber", llmResults.callBlockedWhenDisabled);
+                check("Schicht 2: CSP erlaubt alle vier Provider-Endpoints",
+                    llmResults.cspAnthropic && llmResults.cspGoogle && llmResults.cspOpenRouter && llmResults.cspOllama);
+            }
+
             // ### Ring 3 – Player-Emotionen → Welt ###
             const ring3Results = await page
                 .evaluate(() => {

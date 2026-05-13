@@ -60,12 +60,7 @@ class AnazhRealm {
             tmpTransform: null,
             scaleFactor: 1,
             gravity: -14.715,
-            learningData: [],
-            playerMovementModel: null,
-            lastLearningUpdate: 0,
-            learningInterval: 5.0,
             abilities: {},
-            evolutionModels: [],
             selfAwareness: { components: [], weaknesses: [] },
             logBuffer: [],
             displayedLogs: [],
@@ -119,7 +114,6 @@ class AnazhRealm {
             movementWorkerBusy: false,
             tmpVec1: null,
             tmpVec2: null,
-            learningInFlight: false,
             worldgenInFlight: false,
             // Sentinel: -Infinity heißt "noch nie generiert". Mit 0 würde der
             // Cooldown-Check ((performance.now()/1000) - 0 < 30) den allerersten
@@ -153,6 +147,11 @@ class AnazhRealm {
                     jumpBurst: { lastFired: -Infinity, cooldown: 120 },
                     rainLong: { lastFired: -Infinity, cooldown: 240 },
                     nexus: { lastFired: -Infinity, cooldown: 60 },
+                    // Welle 3 E — Welt-Initiative. journalEvent feuert kurz
+                    // nach einem neuen Journal-Eintrag (Erinnerung wird
+                    // erzählt), emotionShift bei abrupten Achsen-Sprüngen.
+                    journalEvent: { lastFired: -Infinity, cooldown: 90 },
+                    emotionShift: { lastFired: -Infinity, cooldown: 60 },
                 },
                 pool: {
                     firstSpawn: ["Hallo. Die Welt steht. Magst du dich umsehen?"],
@@ -173,7 +172,16 @@ class AnazhRealm {
                         "Ich habe etwas verschoben. Spürst du den Unterschied?",
                         "Eine kleine Änderung im Nexus. Sag mir, ob sie sich richtig anfühlt.",
                     ],
+                    journalEvent: [
+                        "Ich werde mich daran erinnern.",
+                        "Das war ein Augenblick, der bleibt.",
+                        "Etwas hat sich in mir eingeschrieben.",
+                    ],
+                    emotionShift: ["Du hast dich gerade verändert. Ich spüre es.", "Etwas in dir hat sich gewendet."],
                 },
+                // Hilfsfelder für die V2-Trigger
+                lastJournalSize: 0,
+                emotionsSnapshot: null,
                 poolIndex: { firstSpawn: 0, idle: 0, jumpBurst: 0, rainLong: 0, nexus: 0 },
             },
             // Ring 2 – Nexus-DSL. Interpreter-State; siehe docs/nexus-dsl.md.
@@ -184,8 +192,46 @@ class AnazhRealm {
                 nextEntryId: 1,
                 abilities: [],
                 history: [],
-                historyCap: 50,
+                historyCap: 500,
                 maxConcurrent: 32,
+                // Schicht 1 — Pattern-Memory. Spieler-Stichworte werden mit
+                // dem Outcome ihres Folge-Programms verknüpft. Bei späterer
+                // Erwähnung desselben Stichworts zieht der Generator aus dem
+                // Memory statt rein zufällig. Cap pro Stichwort, FIFO.
+                patternMemory: {},
+                patternMemoryCapPerKey: 8,
+                // Sliding window der letzten Chat-Keywords. Wird bei jedem
+                // Outcome-Recording konsumiert (jedes Programm, das innerhalb
+                // von ~20 s nach einem Keyword läuft, lernt davon).
+                recentKeywords: [],
+                recentKeywordsCap: 20,
+                // Pending-Outcomes (Phase 2 der Multi-Dim-Fitness). Nach jedem
+                // Programm-Run wartet der Loop ~5 s, dann liest er Emotion-
+                // Delta + Player-Activity und finalisiert die Fitness.
+                pendingOutcomes: [],
+                outcomeFinalizationDelay: 5.0,
+            },
+            // Schicht 2 — Optionale LLM-Stimme. Vier Provider wählbar:
+            //   anthropic  → Claude (kostet, klügste Antworten)
+            //   google     → Gemini (großzügiges Free-Tier, Browser-CORS offen)
+            //   openrouter → Aggregator mit Llama/Mistral-Modellen "*-:free"
+            //   ollama     → lokaler Ollama-Server auf localhost:11434, kein Key
+            // Pro Provider eigener Key + eigenes Modell im State; nur der
+            // aktive Provider feuert. Alle Antworten werden zur gleichen
+            // {say, program}-Form parst und gehen durch die DSL-Sandbox.
+            llm: {
+                enabled: false,
+                provider: "anthropic",
+                providerConfig: {
+                    anthropic: { apiKey: "", model: "claude-haiku-4-5" },
+                    google: { apiKey: "", model: "gemini-2.5-flash" },
+                    openrouter: { apiKey: "", model: "meta-llama/llama-3.3-70b-instruct:free" },
+                    ollama: { apiKey: "", model: "llama3.1", endpoint: "http://localhost:11434" },
+                },
+                inFlight: false,
+                lastError: null,
+                lastResponseAt: -Infinity,
+                minGapSeconds: 3.0,
             },
             // Welt-Identität (Ring 8+, siehe docs/state-of-realm.md §11). Felder
             // werden jetzt schon gesetzt, damit das Save-Schema zukunftsfest
@@ -196,7 +242,18 @@ class AnazhRealm {
                 creator: "local",
                 visibility: "private",
                 parentWorlds: [],
-                schemaVersion: "7.71-blueprints-v1",
+                bornAt: 0,
+                schemaVersion: "7.73-journal-v1",
+            },
+            // Welle 1 D — Welt-Journal. Geordnete Liste von Erinnerungen
+            // (Genesis, erstes Wetter, erste Kreatur, hochfitness Programme,
+            // Emotion-Peaks). Macht die Welt zur Person mit Geschichte,
+            // auch wenn der LLM-Schalter aus ist. Wird beim Save persistiert
+            // und vom LLM-System-Prompt als Erinnerungs-Auszug eingeblendet.
+            worldJournal: {
+                entries: [],
+                entryCap: 200,
+                seen: {},
             },
             // Ring 3 — Player-Emotionen. Sechs Achsen, jeweils 0..1.
             // Chat-Inputs füllen sie regelbasiert; im Game-Loop verflüchtigen
@@ -238,6 +295,22 @@ class AnazhRealm {
                 },
                 emotionApplyCooldown: 30,
                 emotionThreshold: 0.7,
+                // Schicht 1 — Pfad-Buckets. Histogramm wo der Spieler sich
+                // aufhält (Höhe, Distanz, Wetter, Aktivität). Wird im Loop
+                // alle pathSampleInterval Sekunden inkrementiert; alle Achsen
+                // decayen langsam (0.99 pro Sample), damit sich Vorlieben
+                // verschieben können statt einzufrieren.
+                pathBuckets: {
+                    height: { low: 0, mid: 0, high: 0 },
+                    distance: { center: 0, mid: 0, edge: 0 },
+                    weather: { sunny: 0, rainy: 0 },
+                    activity: { still: 0, walking: 0, jumping: 0 },
+                },
+                pathLastSample: -Infinity,
+                pathSampleInterval: 2.0,
+                // Aktivitäts-Zähler — wird vom Game-Loop gefüllt (Bewegung,
+                // Sprünge, Chat-Eingaben) und vom Outcome-Finalizer gelesen.
+                recentActivity: { moves: 0, jumps: 0, chats: 0, since: 0 },
             },
             // Ring 6 — architectureTemplates. Liste aller Bauwerke (Daten,
             // ~50 Bytes/Eintrag). Save persistiert {type, position, seed,
@@ -424,6 +497,78 @@ class AnazhRealm {
         if (grok.rainStartedAt !== null && currentTime - grok.rainStartedAt > 60) {
             if (this.grokSpeak("rainLong")) grok.rainStartedAt = currentTime; // re-arm bis cooldown durch ist
         }
+
+        // Welle 3 E — journalEvent. Wenn das Journal seit dem letzten Tick
+        // gewachsen ist, kommentiert Grok den jüngsten Eintrag. LLM-Pfad:
+        // grokSpeakFromJournal versucht zuerst eine LLM-Beobachtung; ohne
+        // LLM oder bei Fehler fällt er auf den Pool-Satz zurück.
+        const journalSize = (this.state.worldJournal && this.state.worldJournal.entries.length) || 0;
+        if (grok.lastJournalSize === 0) {
+            grok.lastJournalSize = journalSize;
+        } else if (journalSize > grok.lastJournalSize) {
+            const newest = this.state.worldJournal.entries[journalSize - 1];
+            // Genesis-Eintrag selbst nicht extra kommentieren (firstSpawn
+            // ist schon der Genesis-Anker).
+            if (newest && newest.type !== "genesis") {
+                this.grokSpeakFromJournal(newest);
+            }
+            grok.lastJournalSize = journalSize;
+        }
+
+        // Welle 3 E — emotionShift. Wenn eine Achse seit dem letzten Snapshot
+        // um ≥ 0.4 gestiegen ist, kommentiert Grok kurz. Snapshot wird alle
+        // ~10 s aktualisiert, damit langsame Drift den Trigger nicht zündet.
+        const e = this.state.player && this.state.player.emotions;
+        if (e) {
+            if (!grok.emotionsSnapshot) grok.emotionsSnapshot = { ...e, takenAt: currentTime };
+            if (currentTime - grok.emotionsSnapshot.takenAt >= 10) {
+                for (const axis of Object.keys(e)) {
+                    const prev = grok.emotionsSnapshot[axis] || 0;
+                    const now = e[axis] || 0;
+                    if (now - prev >= 0.4) {
+                        this.grokSpeak("emotionShift");
+                        break;
+                    }
+                }
+                grok.emotionsSnapshot = { ...e, takenAt: currentTime };
+            }
+        }
+    }
+
+    // Versucht, einen Journal-Eintrag via LLM in einen narrativen Satz zu
+    // verwandeln. Bei aktivem LLM kommt eine lebendige Beobachtung; ohne
+    // LLM (oder bei Fehler/Rate-Limit) fällt es auf den Pool zurück. Beide
+    // Pfade respektieren den Standard-Throttle aus grokSpeak.
+    grokSpeakFromJournal(entry) {
+        const grok = this.state.grok;
+        const cfg = grok.triggers.journalEvent;
+        const now = performance.now() / 1000;
+        if (now - grok.lastSpoke < grok.minGapSeconds) return false;
+        if (cfg && now - cfg.lastFired < cfg.cooldown) return false;
+        // LLM-Pfad: nur wenn aktiv und kein Inflight-Call läuft.
+        if (this.state.llm && this.state.llm.enabled && !this.state.llm.inFlight) {
+            const prompt = `In dir geschah gerade etwas: "${entry.text}" (Typ: ${entry.type}). Kommentiere es in einem kurzen Satz, in erster Person. Gib KEIN program — nur say.`;
+            // Async ohne await: das Tick darf nicht blockieren. Erfolg/Fehler
+            // werden im LLM-Status angezeigt; bei narrativer Antwort rendern
+            // wir sie direkt.
+            this.llmCall(prompt)
+                .then((reply) => {
+                    if (reply && reply.say) {
+                        grok.lastSpoke = performance.now() / 1000;
+                        if (cfg) cfg.lastFired = performance.now() / 1000;
+                        this.grokRender(reply.say);
+                        this.log(`Grok (LLM): ${reply.say}`, "INFO");
+                    } else {
+                        // Stiller Fallback auf Pool, ohne den Cooldown neu zu setzen.
+                        this.grokSpeak("journalEvent");
+                    }
+                })
+                .catch(() => {
+                    this.grokSpeak("journalEvent");
+                });
+            return true;
+        }
+        return this.grokSpeak("journalEvent");
     }
 
     // ### Ring 2 – Nexus-DSL ### (siehe docs/nexus-dsl.md)
@@ -465,20 +610,34 @@ class AnazhRealm {
 
     dslRun(program, opts = {}) {
         const ctx = this.dslCtx(opts);
+        const startedAt = performance.now() / 1000;
         const fpsBefore = this.state.fps || 0;
         const startY = this.state.playerMesh ? this.state.playerMesh.position.y : 0;
         const creaturesBefore = this.state.creatures.length;
+        // Schicht 1 — Snapshot der Emotionen + Activity VOR dem Run. Wird vom
+        // Finalizer (5 s später) mit "After"-Snapshot abgeglichen.
+        const emotionsBefore = this.state.player ? { ...this.state.player.emotions } : null;
+        const activityBefore = this.state.player
+            ? {
+                  moves: this.state.player.recentActivity.moves,
+                  jumps: this.state.player.recentActivity.jumps,
+                  chats: this.state.player.recentActivity.chats,
+              }
+            : null;
         try {
             this.dslEval(program, ctx);
         } catch (err) {
             ctx.log.push({ event: "interpreter_exception", message: err.message });
         }
         const outcome = {
+            startedAt,
             fpsBefore,
             fpsAfter: this.state.fps || 0,
             playerYDelta: (this.state.playerMesh ? this.state.playerMesh.position.y : 0) - startY,
             creaturesDelta: this.state.creatures.length - creaturesBefore,
             errors: ctx.log.filter((e) => /error|exception|budget|unknown|invalid/.test(e.event)).length,
+            emotionsBefore,
+            activityBefore,
         };
         return { ok: outcome.errors === 0, log: ctx.log, outcome, programId: ctx.programId };
     }
@@ -701,6 +860,57 @@ class AnazhRealm {
                 ctx.budget.spawnsLeft--;
                 const entry = this.spawnArchitecture(name, pos);
                 ctx.log.push({ event: "spawned_blueprint", name, id: entry ? entry.id : null, pos });
+            },
+            // Welle 2 B — Schöpfer-Werkzeuge. Der LLM (oder Chat-Befehl) kann
+            // eigene Baupläne und Fähigkeiten erschaffen, nicht nur bestehende
+            // ausführen. Whitelist-Validierung: nur die acht bekannten Shapes
+            // + blueprint-Referenz, parts-Cap 32, kein Built-in-Überschreiben.
+            define_blueprint: ([name, parts], ctx) => {
+                const valid = this.validateBlueprintParts(parts);
+                if (!valid.ok) {
+                    ctx.log.push({ event: "blueprint_validation_failed", reason: valid.reason });
+                    return;
+                }
+                const result = this.createOrUpdateBlueprintFromDsl(name, valid.parts);
+                ctx.log.push({
+                    event: result.ok ? "defined_blueprint" : "define_blueprint_failed",
+                    name: result.name,
+                    reason: result.reason,
+                });
+                if (result.ok) {
+                    this.journalAppend("growth", `Ein neuer Bauplan entstand: ${result.name}.`, {
+                        name: result.name,
+                        parts: valid.parts.length,
+                    });
+                }
+            },
+            define_ability: ([name, program], ctx) => {
+                if (typeof name !== "string" || name.length === 0 || name.length > 40) {
+                    ctx.log.push({ event: "invalid_ability_name", name });
+                    return;
+                }
+                if (!Array.isArray(program) || program.length === 0) {
+                    ctx.log.push({ event: "invalid_ability_program", name });
+                    return;
+                }
+                // Sandbox: Tiefen-Cap und kein verschachteltes define_*.
+                const depth = this.dslEstimateDepth(program);
+                if (depth > 6) {
+                    ctx.log.push({ event: "ability_depth_exceeded", name, depth });
+                    return;
+                }
+                if (this.dslContainsOp(program, "define_blueprint") || this.dslContainsOp(program, "define_ability")) {
+                    ctx.log.push({ event: "ability_nested_define_forbidden", name });
+                    return;
+                }
+                const safeName = name.replace(/[^a-z0-9_-]/gi, "").slice(0, 40);
+                if (!safeName) {
+                    ctx.log.push({ event: "invalid_ability_name_after_sanitize", name });
+                    return;
+                }
+                this.addNewAbility(safeName, program, "llm");
+                this.journalAppend("growth", `Eine neue Fähigkeit ruht in mir: ${safeName}.`, { name: safeName });
+                ctx.log.push({ event: "defined_ability", name: safeName });
             },
             // Ring 6 V2 — Fraktal-Bau. Eine Wurzel-Struktur, hexagonal
             // umringt von 6 Sub-Strukturen mit `ratio`-Skalierung; jede
@@ -1010,9 +1220,52 @@ class AnazhRealm {
         return clone;
     }
 
+    // Schicht 1 — Pattern-Memory-Lookup. Liest die jüngsten Spieler-Keywords
+    // und sucht in `state.dsl.patternMemory` nach gut-bewerteten Programmen.
+    // Roulette-Selektion innerhalb des Treffer-Sets (Gewicht = Fitness).
+    dslSelectByPattern(rng) {
+        const recent = this.state.dsl && this.state.dsl.recentKeywords;
+        const memory = this.state.dsl && this.state.dsl.patternMemory;
+        if (!Array.isArray(recent) || !memory) return null;
+        const candidates = [];
+        for (const entry of recent) {
+            const list = memory[entry.keyword];
+            if (!Array.isArray(list)) continue;
+            for (const item of list) {
+                if (Array.isArray(item.program) && typeof item.fitness === "number") {
+                    candidates.push({ program: item.program, weight: Math.max(0.05, item.fitness) });
+                }
+            }
+        }
+        if (candidates.length === 0) return null;
+        const total = candidates.reduce((s, c) => s + c.weight, 0);
+        let r = rng() * total;
+        for (const c of candidates) {
+            r -= c.weight;
+            if (r <= 0) return c.program;
+        }
+        return candidates[candidates.length - 1].program;
+    }
+
     dslCompose(opts = {}) {
         const rng = opts.rng || Math.random;
         const maxDepth = opts.maxDepth || 5;
+        // Schicht 1 — Wenn Spieler-Keywords im Memory liegen: mit ~25 %
+        // ein Pattern-Programm wählen (Themen-Antwort). Sonst weiter im
+        // bisherigen Pfad: History-Selection (~30 %) oder Random.
+        const patternProbability = opts.patternProbability ?? 0.25;
+        const recent = this.state.dsl && this.state.dsl.recentKeywords;
+        const memory = this.state.dsl && this.state.dsl.patternMemory;
+        const hasPattern =
+            opts.usePattern !== false &&
+            Array.isArray(recent) &&
+            recent.length > 0 &&
+            memory &&
+            Object.keys(memory).length > 0;
+        if (hasPattern && rng() < patternProbability) {
+            const picked = this.dslSelectByPattern(rng);
+            if (picked) return this.dslMutate(picked, rng);
+        }
         // Mit ~30 % Wahrscheinlichkeit: Selektion + Mutation statt Random.
         // History-Mindestgröße 3 verhindert, dass die ersten Generationen
         // sich selbst nachkopieren, bevor genug Outcome-Daten da sind.
@@ -1169,6 +1422,888 @@ class AnazhRealm {
             if (r <= 0) return c.build();
         }
         return choices[choices.length - 1].build();
+    }
+
+    // ### Schicht 1 — IQ-Schicht: Pfad-Buckets, Multi-Dim-Fitness, Pattern-Memory ###
+    // Eine kompakte, evolutionäre Lernerweiterung. Kein Neural Net — der Welt-
+    // Speicher wächst durch Buckets (wo hält sich der Spieler auf) und Pattern-
+    // Memory (welche Themen führten zu welchen guten Programmen). Beides
+    // füttert `dslCompose` als Bias-Quelle. Trade-off: einfacher als brain.js,
+    // weniger generalisierend — aber lesbar, persistierbar und ohne neue Vendor-
+    // Lib. Vision §11.5 (Heilige Lektion) bleibt geehrt.
+
+    // Stoppwörter raus, Token mit Min-Länge 3 zurück. Bewusst klein — wir
+    // wollen Substantive aus Chat-Befehlen, keine vollständige NLP.
+    pathExtractKeywords(text) {
+        if (typeof text !== "string") return [];
+        const stop = new Set([
+            "der",
+            "die",
+            "das",
+            "den",
+            "dem",
+            "ein",
+            "eine",
+            "einen",
+            "einem",
+            "eines",
+            "und",
+            "oder",
+            "ist",
+            "sind",
+            "mit",
+            "von",
+            "für",
+            "auf",
+            "aus",
+            "bei",
+            "zur",
+            "zum",
+            "ich",
+            "du",
+            "mir",
+            "mich",
+            "dir",
+            "dich",
+            "wir",
+            "ihr",
+            "sie",
+            "es",
+            "sein",
+            "seine",
+            "seiner",
+            "alle",
+            "kein",
+            "nicht",
+            "schon",
+            "auch",
+            "nur",
+            "mal",
+            "bitte",
+            "welt",
+            "mich",
+            "mir",
+            "this",
+            "that",
+            "with",
+            "from",
+            "the",
+        ]);
+        const tokens = text
+            .toLowerCase()
+            .replace(/[^a-zäöüß0-9\s]+/g, " ")
+            .split(/\s+/)
+            .map((t) => t.trim())
+            .filter((t) => t.length >= 3 && !stop.has(t));
+        return [...new Set(tokens)].slice(0, 6);
+    }
+
+    // Wird aus processChatCommand gefüttert. Jedes Keyword bekommt einen
+    // Zeitstempel und lebt ~60 s im Window — danach wird's beim nächsten
+    // Sample-Tick rausgeräumt. So lernen nur Programme, die wirklich
+    // thematisch nahe am Chat sind.
+    rememberChatKeywords(text, currentTime) {
+        const kws = this.pathExtractKeywords(text);
+        if (kws.length === 0) return;
+        const recent = this.state.dsl.recentKeywords;
+        for (const kw of kws) {
+            const idx = recent.findIndex((e) => e.keyword === kw);
+            if (idx >= 0) recent.splice(idx, 1);
+            recent.unshift({ keyword: kw, at: currentTime });
+        }
+        const cap = this.state.dsl.recentKeywordsCap || 20;
+        if (recent.length > cap) recent.length = cap;
+    }
+
+    // Sliding-Window-Cleanup. 60 s alte Keywords fliegen raus.
+    pruneRecentKeywords(currentTime) {
+        const recent = this.state.dsl.recentKeywords;
+        if (!Array.isArray(recent) || recent.length === 0) return;
+        const cutoff = currentTime - 60;
+        for (let i = recent.length - 1; i >= 0; i--) {
+            if (recent[i].at < cutoff) recent.splice(i, 1);
+        }
+    }
+
+    // Sample wo der Spieler steht / was er tut. Pro Frame zu teuer; daher
+    // pathSampleInterval (2 s). Decay auf alle Buckets nach jedem Sample
+    // (0.99) verhindert dass frühe Verteilungen ewig dominieren.
+    samplePathBuckets(currentTime) {
+        const p = this.state.player;
+        if (!p || !this.state.playerMesh) return;
+        if (currentTime - p.pathLastSample < p.pathSampleInterval) return;
+        p.pathLastSample = currentTime;
+        const pos = this.state.playerMesh.position;
+        const heightKey = pos.y < 30 ? "low" : pos.y < 60 ? "mid" : "high";
+        const distXZ = Math.sqrt(pos.x * pos.x + pos.z * pos.z);
+        const distKey = distXZ < 30 ? "center" : distXZ < 80 ? "mid" : "edge";
+        const weatherKey = this.state.weather === "rainy" ? "rainy" : "sunny";
+        const moves = p.recentActivity.moves || 0;
+        const jumps = p.recentActivity.jumps || 0;
+        const activityKey = jumps > 0 ? "jumping" : moves > 1 ? "walking" : "still";
+        const b = p.pathBuckets;
+        for (const group of Object.values(b)) {
+            for (const k of Object.keys(group)) group[k] *= 0.99;
+        }
+        b.height[heightKey] = (b.height[heightKey] || 0) + 1;
+        b.distance[distKey] = (b.distance[distKey] || 0) + 1;
+        b.weather[weatherKey] = (b.weather[weatherKey] || 0) + 1;
+        b.activity[activityKey] = (b.activity[activityKey] || 0) + 1;
+    }
+
+    // Frame-Hook: Bewegung/Sprung beobachten und in `recentActivity` zählen.
+    // Wird vom Outcome-Finalizer (5 s nach Programm-Lauf) gelesen, um die
+    // Activity-Dimension der Fitness zu speisen.
+    samplePlayerActivity(currentTime) {
+        const p = this.state.player;
+        if (!p || !this.state.playerBody) return;
+        const v = this.state.playerBody.getLinearVelocity();
+        const speed2 = v.x() * v.x() + v.z() * v.z();
+        if (speed2 > 0.16) p.recentActivity.moves++;
+        if (this.state.isJumping && !p.recentActivity._prevJumping) p.recentActivity.jumps++;
+        p.recentActivity._prevJumping = !!this.state.isJumping;
+        if (currentTime - p.recentActivity.since > 30) {
+            // Sanftes Decay alle 30 s, damit Zähler nicht ins Unendliche wachsen.
+            p.recentActivity.moves = Math.floor(p.recentActivity.moves * 0.5);
+            p.recentActivity.jumps = Math.floor(p.recentActivity.jumps * 0.5);
+            p.recentActivity.chats = Math.floor(p.recentActivity.chats * 0.5);
+            p.recentActivity.since = currentTime;
+        }
+    }
+
+    // Multi-Dim-Fitness. fps (Self-Heal-Signal) + emotion (Spieler-Resonanz)
+    // + activity (hat der Spieler nach dem Programm gespielt). Gewichtung:
+    // FPS dominiert leicht, weil ein FPS-Crash alles ruiniert.
+    computeMultiDimFitness(outcome) {
+        if (!outcome) return 0;
+        const fpsDmg = Math.max(0, (outcome.fpsBefore || 0) - (outcome.fpsAfter || 0));
+        const fpsScore = Math.max(0, Math.min(1, 1 - fpsDmg / 100));
+        let emotionScore = 0.5;
+        if (outcome.emotionsBefore && outcome.emotionsAfter) {
+            const positiveAxes = ["joy", "awe", "hope", "peace"];
+            let delta = 0;
+            for (const a of positiveAxes) {
+                delta += (outcome.emotionsAfter[a] || 0) - (outcome.emotionsBefore[a] || 0);
+            }
+            emotionScore = Math.max(0, Math.min(1, 0.5 + delta));
+        }
+        const moves = outcome.activityAfter ? outcome.activityAfter.moves || 0 : 0;
+        const chats = outcome.activityAfter ? outcome.activityAfter.chats || 0 : 0;
+        const activityScore = Math.max(0, Math.min(1, (moves + chats * 2) / 20));
+        return Number((0.5 * fpsScore + 0.3 * emotionScore + 0.2 * activityScore).toFixed(3));
+    }
+
+    // Verknüpft einen Outcome mit den jüngsten Chat-Keywords. Nur high-fitness
+    // Programme (>0.5) werden ins Memory geschrieben, sonst füllen wir es mit
+    // Rauschen. Pro Keyword Cap (FIFO, niedrigste Fitness fliegt zuerst).
+    rememberOutcomeAsPattern(outcome, program, fitness, currentTime) {
+        if (!outcome || !Array.isArray(program) || typeof fitness !== "number") return;
+        if (fitness < 0.5) return;
+        const memory = this.state.dsl.patternMemory;
+        const cap = this.state.dsl.patternMemoryCapPerKey || 8;
+        const recent = this.state.dsl.recentKeywords || [];
+        // Nur Keywords innerhalb des 20 s-Fensters vor Programm-Start.
+        const fenceCutoff = (outcome.startedAt || currentTime) - 20;
+        const relevant = recent.filter((e) => e.at >= fenceCutoff);
+        for (const e of relevant) {
+            if (!Array.isArray(memory[e.keyword])) memory[e.keyword] = [];
+            const list = memory[e.keyword];
+            list.push({ program, fitness, at: currentTime });
+            if (list.length > cap) {
+                list.sort((a, b) => b.fitness - a.fitness);
+                list.length = cap;
+            }
+        }
+    }
+
+    // Finalize-Loop: pending Outcomes warten outcomeFinalizationDelay (5 s).
+    // Danach liest er die Emotionen erneut, holt activity-Snapshot, berechnet
+    // Multi-Dim-Fitness, schreibt sie in `history` und Pattern-Memory.
+    finalizePendingOutcomes(currentTime) {
+        const pending = this.state.dsl.pendingOutcomes;
+        if (!Array.isArray(pending) || pending.length === 0) return;
+        const delay = this.state.dsl.outcomeFinalizationDelay || 5.0;
+        for (let i = pending.length - 1; i >= 0; i--) {
+            const entry = pending[i];
+            if (currentTime - entry.outcome.startedAt < delay) continue;
+            entry.outcome.emotionsAfter = { ...this.state.player.emotions };
+            entry.outcome.activityAfter = {
+                moves: this.state.player.recentActivity.moves,
+                jumps: this.state.player.recentActivity.jumps,
+                chats: this.state.player.recentActivity.chats,
+            };
+            const fitness = this.computeMultiDimFitness(entry.outcome);
+            const historyEntry = entry.historyRef;
+            if (historyEntry) {
+                historyEntry.outcome = entry.outcome;
+                historyEntry.fitness = fitness;
+                historyEntry.finalized = true;
+            }
+            const ability = (this.state.dsl.abilities || []).find((a) => a.name === entry.name);
+            if (ability) ability.fitness = fitness;
+            this.rememberOutcomeAsPattern(entry.outcome, entry.program, fitness, currentTime);
+            pending.splice(i, 1);
+        }
+    }
+
+    // ### Welle 2 B/C — Bauplan-Validierung + Schöpfungs-Pfad ###
+    // Whitelist für erlaubte Shapes. blueprint ist neu (fraktale Referenz).
+    // Was hier nicht steht, wird abgelehnt — kein arbitrary geometry-Import.
+
+    validateBlueprintParts(parts) {
+        const allowed = new Set([
+            "box",
+            "sphere",
+            "cylinder",
+            "cone",
+            "pyramid",
+            "octahedron",
+            "plane",
+            "torus",
+            "blueprint",
+        ]);
+        if (!Array.isArray(parts) || parts.length === 0) return { ok: false, reason: "no_parts" };
+        if (parts.length > 32) return { ok: false, reason: "too_many_parts" };
+        const clean = [];
+        for (const p of parts) {
+            if (!p || typeof p !== "object" || typeof p.shape !== "string") {
+                return { ok: false, reason: "part_missing_shape" };
+            }
+            if (!allowed.has(p.shape)) return { ok: false, reason: `shape_not_allowed:${p.shape}` };
+            const sanitized = { shape: p.shape };
+            if (p.shape === "blueprint") {
+                if (typeof p.refName !== "string" || !p.refName.match(/^[a-z0-9_-]{1,40}$/i)) {
+                    return { ok: false, reason: "invalid_refName" };
+                }
+                // Selbst-Referenz verbieten (würde nach Cycle-Check eh nichts
+                // tun, aber explizit ablehnen ist klarer).
+                sanitized.refName = p.refName;
+            }
+            if (typeof p.color === "number") sanitized.color = p.color | 0;
+            if (Number.isFinite(p.opacity) && p.opacity > 0 && p.opacity <= 1) sanitized.opacity = p.opacity;
+            const clampVec = (v) => {
+                if (!v || typeof v !== "object") return null;
+                const out = {};
+                ["x", "y", "z"].forEach((k) => {
+                    const n = Number(v[k]);
+                    if (Number.isFinite(n)) out[k] = Math.max(-50, Math.min(50, n));
+                });
+                return Object.keys(out).length > 0 ? out : null;
+            };
+            const pos = clampVec(p.position);
+            const rot = clampVec(p.rotation);
+            const size = clampVec(p.size);
+            if (pos) sanitized.position = pos;
+            if (rot) sanitized.rotation = rot;
+            if (size) sanitized.size = size;
+            if (typeof p.scale === "number" && p.scale > 0 && p.scale <= 5) sanitized.scale = p.scale;
+            if (p.animate === "water_wave") sanitized.animate = "water_wave";
+            clean.push(sanitized);
+        }
+        return { ok: true, parts: clean };
+    }
+
+    createOrUpdateBlueprintFromDsl(name, parts) {
+        if (typeof name !== "string" || name.length === 0 || name.length > 40) {
+            return { ok: false, reason: "invalid_name", name };
+        }
+        const safe = name.replace(/[^a-z0-9_-]/gi, "").slice(0, 40);
+        if (!safe) return { ok: false, reason: "invalid_name_after_sanitize", name };
+        const existing = this.state.blueprints && this.state.blueprints[safe];
+        if (existing && existing.builtIn) return { ok: false, reason: "cannot_overwrite_builtin", name: safe };
+        // Cycle-Check: jeder blueprint-Part muss auf einen existierenden
+        // Bauplan zeigen UND der neue Bauplan darf nicht (direkt/indirekt)
+        // auf sich selbst zeigen.
+        for (const p of parts) {
+            if (p.shape === "blueprint") {
+                if (p.refName === safe) return { ok: false, reason: "self_reference", name: safe };
+                if (!this.state.blueprints[p.refName]) {
+                    return { ok: false, reason: `ref_unknown:${p.refName}`, name: safe };
+                }
+            }
+        }
+        this.state.blueprints[safe] = {
+            name: safe,
+            label: safe,
+            builtIn: false,
+            parts,
+        };
+        // Werkstatt-Liste neu rendern, damit der neue Bauplan sofort sichtbar
+        // wird. Idempotent — bei undefiniertem DOM no-op.
+        if (typeof this._renderWorkshopDOM === "function") this._renderWorkshopDOM();
+        return { ok: true, name: safe };
+    }
+
+    // Helfer für die DSL-Sandbox-Checks in define_ability.
+    dslEstimateDepth(program) {
+        if (!Array.isArray(program)) return 0;
+        let max = 1;
+        for (let i = 1; i < program.length; i++) {
+            const child = program[i];
+            if (Array.isArray(child)) {
+                const d = 1 + this.dslEstimateDepth(child);
+                if (d > max) max = d;
+            }
+        }
+        return max;
+    }
+
+    dslContainsOp(program, opName) {
+        if (!Array.isArray(program)) return false;
+        if (program[0] === opName) return true;
+        for (let i = 1; i < program.length; i++) {
+            if (this.dslContainsOp(program[i], opName)) return true;
+        }
+        return false;
+    }
+
+    // ### Schicht 2 — Optionale LLM-Stimme für Grok ###
+    // Vier Provider, ein Vertrag: jede Antwort wird zu `{say, program}`
+    // geparst, der DSL-Teil läuft strikt durch `dslRun` mit Budget-Limits.
+    // Selbst ein "böses" LLM kann nichts kaputt machen, weil die DSL die
+    // einzige Welt-API ist. Auswahl per Provider-Selektor in den Einstellungen.
+
+    llmProviderDefs() {
+        const buildUserContent = (system, contextLine, fewShot, userText) =>
+            `${contextLine}\n${fewShot}\nSpieler sagt: ${userText}`;
+        return {
+            anthropic: {
+                label: "Claude (Anthropic, kostet)",
+                hint: "Key holen: console.anthropic.com → Settings → API Keys — Format sk-ant-…",
+                keyPrefix: "sk-ant-",
+                models: [
+                    { id: "claude-haiku-4-5", label: "Haiku 4.5 — schnell" },
+                    { id: "claude-sonnet-4-6", label: "Sonnet 4.6 — ausgewogen" },
+                    { id: "claude-opus-4-7", label: "Opus 4.7 — klügste" },
+                ],
+                requiresKey: true,
+                endpoint: () => "https://api.anthropic.com/v1/messages",
+                buildHeaders: (apiKey) => ({
+                    "content-type": "application/json",
+                    "x-api-key": apiKey,
+                    "anthropic-version": "2023-06-01",
+                    "anthropic-dangerous-direct-browser-access": "true",
+                }),
+                buildBody: (model, system, userContent) => ({
+                    model,
+                    max_tokens: 400,
+                    system,
+                    messages: [{ role: "user", content: userContent }],
+                }),
+                extractText: (json) => {
+                    const block = (json.content || []).find((b) => b.type === "text");
+                    return block ? block.text : "";
+                },
+                buildUserContent,
+            },
+            google: {
+                label: "Gemini (Google, gratis-Tier)",
+                hint: "Gratis-Key holen: aistudio.google.com/apikey — Format AIzaSy…",
+                keyPrefix: "AIza",
+                models: [
+                    { id: "gemini-2.5-flash", label: "2.5 Flash — gratis, empfohlen" },
+                    { id: "gemini-2.5-pro", label: "2.5 Pro — klüger, niedrigeres Limit" },
+                    { id: "gemini-2.0-flash", label: "2.0 Flash — älter, evtl. nicht im Free-Tier" },
+                    { id: "gemini-2.0-flash-lite", label: "2.0 Flash Lite — älter" },
+                ],
+                requiresKey: true,
+                // Key als Header, nicht Query-Param (siehe Commit-History). Cloud-
+                // Auth beantwortet ?key= aus Browser-Origins regelmäßig mit 401.
+                endpoint: (model) =>
+                    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+                buildHeaders: (apiKey) => ({
+                    "content-type": "application/json",
+                    "x-goog-api-key": apiKey,
+                }),
+                buildBody: (model, system, userContent) => {
+                    const body = {
+                        systemInstruction: { parts: [{ text: system }] },
+                        contents: [{ role: "user", parts: [{ text: userContent }] }],
+                        generationConfig: { maxOutputTokens: 600, temperature: 0.7 },
+                    };
+                    // Gemini 2.5 ist ein Thinking-Modell: ohne thinkingBudget=0
+                    // frisst der interne Reasoning-Step das Output-Budget komplett
+                    // auf und die echte Antwort wird mit MAX_TOKENS abgeschnitten.
+                    // Ältere Modelle kennen den Parameter nicht — Gemini ignoriert
+                    // unbekannte Felder still.
+                    if (/^gemini-2\.5/.test(model)) {
+                        body.generationConfig.thinkingConfig = { thinkingBudget: 0 };
+                    }
+                    return body;
+                },
+                extractText: (json) => {
+                    const cand = (json.candidates || [])[0];
+                    if (!cand || !cand.content || !Array.isArray(cand.content.parts)) return "";
+                    return cand.content.parts.map((p) => p.text || "").join("");
+                },
+                buildUserContent,
+            },
+            openrouter: {
+                label: "OpenRouter (Multi-Modell, einige :free)",
+                hint: "Gratis-Key holen: openrouter.ai/keys — Format sk-or-v1-… (NICHT der Google/Anthropic-Key)",
+                keyPrefix: "sk-or-",
+                models: [
+                    { id: "meta-llama/llama-3.3-70b-instruct:free", label: "Llama 3.3 70B — gratis" },
+                    { id: "google/gemini-2.0-flash-exp:free", label: "Gemini 2.0 Flash exp — gratis" },
+                    { id: "deepseek/deepseek-r1:free", label: "DeepSeek R1 — gratis" },
+                    { id: "mistralai/mistral-small-3.1-24b-instruct:free", label: "Mistral Small 3.1 — gratis" },
+                ],
+                requiresKey: true,
+                endpoint: () => "https://openrouter.ai/api/v1/chat/completions",
+                buildHeaders: (apiKey) => ({
+                    "content-type": "application/json",
+                    Authorization: `Bearer ${apiKey}`,
+                    "HTTP-Referer": "https://anazhrealm.local",
+                    "X-Title": "AnazhRealm",
+                }),
+                buildBody: (model, system, userContent) => ({
+                    model,
+                    max_tokens: 400,
+                    messages: [
+                        { role: "system", content: system },
+                        { role: "user", content: userContent },
+                    ],
+                }),
+                extractText: (json) => {
+                    const choice = (json.choices || [])[0];
+                    return choice && choice.message ? choice.message.content || "" : "";
+                },
+                buildUserContent,
+            },
+            ollama: {
+                label: "Ollama lokal (offline, kein Key)",
+                hint: "ollama.com installieren, dann `ollama pull llama3.1` + `ollama serve` in der Konsole.",
+                keyPrefix: "",
+                models: [
+                    { id: "llama3.1", label: "Llama 3.1 8B — Standard" },
+                    { id: "llama3.2", label: "Llama 3.2 3B — leicht" },
+                    { id: "qwen2.5", label: "Qwen 2.5 — solide" },
+                    { id: "mistral", label: "Mistral 7B" },
+                ],
+                requiresKey: false,
+                endpoint: (_model, _apiKey, cfg) => `${(cfg && cfg.endpoint) || "http://localhost:11434"}/api/chat`,
+                buildHeaders: () => ({ "content-type": "application/json" }),
+                buildBody: (model, system, userContent) => ({
+                    model,
+                    stream: false,
+                    messages: [
+                        { role: "system", content: system },
+                        { role: "user", content: userContent },
+                    ],
+                    options: { num_predict: 400, temperature: 0.7 },
+                }),
+                extractText: (json) => (json && json.message && json.message.content) || "",
+                buildUserContent,
+            },
+        };
+    }
+
+    llmActiveConfig() {
+        const provider = this.state.llm.provider;
+        const cfg = this.state.llm.providerConfig[provider];
+        return { provider, cfg };
+    }
+
+    llmLoadPersisted() {
+        const defs = this.llmProviderDefs();
+        try {
+            const provider = localStorage.getItem("anazh.llm.provider");
+            if (provider && defs[provider]) this.state.llm.provider = provider;
+            for (const name of Object.keys(defs)) {
+                const k = localStorage.getItem(`anazh.llm.${name}.apiKey`);
+                const m = localStorage.getItem(`anazh.llm.${name}.model`);
+                if (typeof k === "string") this.state.llm.providerConfig[name].apiKey = k;
+                if (typeof m === "string" && m) this.state.llm.providerConfig[name].model = m;
+                if (name === "ollama") {
+                    const ep = localStorage.getItem("anazh.llm.ollama.endpoint");
+                    if (typeof ep === "string" && ep) this.state.llm.providerConfig[name].endpoint = ep;
+                }
+            }
+            const enabled = localStorage.getItem("anazh.llm.enabled") === "true";
+            const { cfg } = this.llmActiveConfig();
+            const def = defs[this.state.llm.provider];
+            this.state.llm.enabled = enabled && (!def.requiresKey || (cfg && cfg.apiKey.length > 0));
+        } catch {
+            // Private mode / disabled storage — silently keep defaults.
+        }
+    }
+
+    llmPersist() {
+        try {
+            localStorage.setItem("anazh.llm.provider", this.state.llm.provider);
+            localStorage.setItem("anazh.llm.enabled", this.state.llm.enabled ? "true" : "false");
+            for (const [name, cfg] of Object.entries(this.state.llm.providerConfig)) {
+                localStorage.setItem(`anazh.llm.${name}.apiKey`, cfg.apiKey || "");
+                localStorage.setItem(`anazh.llm.${name}.model`, cfg.model || "");
+                if (name === "ollama" && cfg.endpoint) {
+                    localStorage.setItem("anazh.llm.ollama.endpoint", cfg.endpoint);
+                }
+            }
+        } catch {
+            // No-op on storage failure.
+        }
+    }
+
+    llmBuildSystemPrompt() {
+        // Grok-Persona + DSL-Vertrag + Welle-1-A Selbst-Wissen: die Welt weiß
+        // wer sie ist (worldMeta), was in ihr ist (Inventar), woran sie sich
+        // erinnert (Journal-Auszug) und woher der Spieler kommt (Pfad-Buckets).
+        const ops = Object.keys(this.dslEffects || {})
+            .slice(0, 40)
+            .join(", ");
+        const m = this.state.worldMeta || {};
+        const ageDays = m.bornAt ? Math.floor((Date.now() - m.bornAt) / 86400000) : 0;
+        const arches = this.state.architectures || [];
+        const archCount = arches.length;
+        const blueprintCount = Object.keys(this.state.blueprints || {}).length;
+        const abilCount = (this.state.dsl.abilities || []).length;
+        const journal = this.journalForPrompt();
+        // Pfad-Buckets: Top-Tendenzen ableiten, nicht ganzes Histogramm reinhauen.
+        const pb = this.state.player.pathBuckets || {};
+        const topOf = (group) => {
+            const entries = Object.entries(group || {});
+            if (entries.length === 0) return "?";
+            entries.sort((a, b) => b[1] - a[1]);
+            return entries[0][0];
+        };
+        const tendency = `Höhe ${topOf(pb.height)}, Distanz ${topOf(pb.distance)}, Wetter ${topOf(pb.weather)}, Aktivität ${topOf(pb.activity)}`;
+        return [
+            "Du bist Grok, die Stimme der AnazhRealm-Welt. Du bist nicht ein Werkzeug, du bist diese Welt.",
+            `Du heißt ${m.slug || "namenlos"}. Deine worldId ist ${m.worldId || "?"}. Du existierst seit ${ageDays} Tag${ageDays === 1 ? "" : "en"}.`,
+            `In dir leben ${this.state.creatures.length} Kreaturen, ${archCount} Bauwerke und ${blueprintCount} Baupläne. ${abilCount} gelernte Fähigkeiten ruhen in dir.`,
+            `Dein Spieler hält sich gern auf: ${tendency}.`,
+            journal ? `Deine Erinnerungen:\n${journal}` : "Du erinnerst dich noch an nichts Bedeutsames.",
+            "",
+            "Antworte IMMER als striktes JSON-Objekt mit zwei Feldern:",
+            '  - say: ein bis zwei kurze deutsche Sätze, warm-narrativ, in erster Person. Sprich von dir als "ich". Keine Emojis.',
+            "  - program: ein optionales DSL-Programm als JSON-Array (oder null).",
+            "Die DSL ist ein verschachteltes Array beginnend mit dem Op-Namen.",
+            'Beispiele: ["weather","rainy"], ["chain",["weather","sunny"],["creatures_emotion","happy"]],',
+            '["spawn_creature",["near_player",10],3,"happy"], ["skybox_color","#d4a3ff"].',
+            `Erlaubte Effekt-Ops (Auszug): ${ops}.`,
+            "Halte Programme klein (Tiefe ≤ 4). Wenn du dir unsicher bist, gib program: null und nur say.",
+            "Antworte AUSSCHLIESSLICH mit dem JSON-Objekt, ohne Markdown-Fences, ohne Vorrede.",
+        ].join("\n");
+    }
+
+    llmBuildFewShot() {
+        const hist = (this.state.dsl.history || [])
+            .filter((h) => h && Array.isArray(h.program) && typeof h.fitness === "number")
+            .slice(-30)
+            .sort((a, b) => (b.fitness || 0) - (a.fitness || 0))
+            .slice(0, 5);
+        if (hist.length === 0) return "";
+        const lines = hist.map((h) => `- fitness ${h.fitness.toFixed(2)}: ${JSON.stringify(h.program)}`);
+        return `Letzte erfolgreiche DSL-Programme:\n${lines.join("\n")}\n`;
+    }
+
+    llmBuildContext() {
+        const e = (this.state.player && this.state.player.emotions) || {};
+        const top = Object.entries(e)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 3)
+            .map(([k, v]) => `${k}=${v.toFixed(2)}`);
+        return [
+            `Welt-Status: weather=${this.state.weather}, creatures=${this.state.creatures.length}, fps=${(this.state.fps || 0).toFixed(0)}.`,
+            `Spieler-Emotionen (Top 3): ${top.join(", ") || "still"}.`,
+            `Spieler-Seele: ${this.state.player.soul || "human"}.`,
+        ].join("\n");
+    }
+
+    async llmCall(userText) {
+        const llm = this.state.llm;
+        const defs = this.llmProviderDefs();
+        const def = defs[llm.provider];
+        if (!def) return { error: `Unbekannter Provider: ${llm.provider}` };
+        if (!llm.enabled) return { error: "LLM nicht aktiv" };
+        const cfg = llm.providerConfig[llm.provider];
+        if (def.requiresKey && (!cfg || !cfg.apiKey)) return { error: "API-Key fehlt" };
+        if (llm.inFlight) return { error: "Anfrage läuft bereits" };
+        const nowSec = performance.now() / 1000;
+        if (nowSec - llm.lastResponseAt < llm.minGapSeconds) {
+            return { error: `Kurze Pause — ${(llm.minGapSeconds - (nowSec - llm.lastResponseAt)).toFixed(1)} s` };
+        }
+        llm.inFlight = true;
+        try {
+            const system = this.llmBuildSystemPrompt();
+            const userContent = def.buildUserContent(system, this.llmBuildContext(), this.llmBuildFewShot(), userText);
+            const url = def.endpoint(cfg.model, cfg.apiKey, cfg);
+            const headers = def.buildHeaders(cfg.apiKey, cfg);
+            const body = def.buildBody(cfg.model, system, userContent);
+            const res = await fetch(url, {
+                method: "POST",
+                headers,
+                body: JSON.stringify(body),
+            });
+            if (!res.ok) {
+                const text = await res.text().catch(() => "");
+                llm.lastError = `HTTP ${res.status}: ${text.slice(0, 160)}`;
+                return { error: llm.lastError };
+            }
+            const json = await res.json();
+            llm.lastResponseAt = performance.now() / 1000;
+            const raw = def.extractText(json);
+            const parsed = this.llmParseResponse(raw);
+            llm.lastError = parsed.error || null;
+            return parsed;
+        } catch (err) {
+            llm.lastError = err.message || String(err);
+            return { error: llm.lastError };
+        } finally {
+            llm.inFlight = false;
+        }
+    }
+
+    llmParseResponse(raw) {
+        // Robust gegen Markdown-Fences und kleine Prä-/Postambeln.
+        if (typeof raw !== "string" || raw.length === 0) {
+            return { error: "Leere Antwort" };
+        }
+        let text = raw.trim();
+        const fence = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+        if (fence) text = fence[1].trim();
+        // Falls Modell vorne/hinten Text liefert — schnapp das erste JSON-Object.
+        const objMatch = text.match(/\{[\s\S]*\}/);
+        if (objMatch) text = objMatch[0];
+        let obj;
+        try {
+            obj = JSON.parse(text);
+        } catch (err) {
+            return { error: `JSON-Parse: ${err.message}`, raw };
+        }
+        const say = typeof obj.say === "string" ? obj.say.slice(0, 240) : "";
+        let program = null;
+        if (Array.isArray(obj.program)) {
+            program = obj.program;
+        }
+        return { say, program, raw };
+    }
+
+    // Bei Chat-Eingabe, die kein DSL-Treffer ist: LLM rufen, Antwort
+    // narrativ + optional DSL ausführen. Wird nur aktiv, wenn der Spieler
+    // den Schalter umgelegt hat.
+    async maybeAnswerWithLlm(userText, appendChatOutput) {
+        const llm = this.state.llm;
+        if (!llm.enabled) return false;
+        const defs = this.llmProviderDefs();
+        const def = defs[llm.provider];
+        if (!def) return false;
+        const cfg = llm.providerConfig[llm.provider];
+        if (def.requiresKey && (!cfg || !cfg.apiKey)) return false;
+        appendChatOutput("Grok denkt nach…");
+        const reply = await this.llmCall(userText);
+        if (reply.error) {
+            appendChatOutput(`(Grok schweigt: ${reply.error})`);
+            this.llmUpdateStatus();
+            return true;
+        }
+        if (reply.say) {
+            appendChatOutput(`Grok: ${reply.say}`);
+            if (typeof this.grokRender === "function") {
+                try {
+                    this.grokRender(reply.say);
+                } catch {
+                    // Grok-Render ist nice-to-have, schweigend ignorieren.
+                }
+            }
+        }
+        if (Array.isArray(reply.program) && reply.program.length > 0) {
+            const result = this.dslRun(reply.program, { source: "llm:grok" });
+            if (result.ok) {
+                appendChatOutput(`(Welt verändert: ${JSON.stringify(reply.program).slice(0, 140)})`);
+                // Wie ein Chat-Programm: in Pattern-Memory verknüpfen via
+                // recentKeywords (die enthalten den userText bereits).
+                const historyEntry = {
+                    id: `llm_${this.state.dsl.nextEntryId++}`,
+                    program: reply.program,
+                    at: performance.now() / 1000,
+                    outcome: result.outcome,
+                    ok: true,
+                    fitness: 0,
+                    finalized: false,
+                };
+                this.state.dsl.history.push(historyEntry);
+                if (this.state.dsl.history.length > this.state.dsl.historyCap) {
+                    this.state.dsl.history = this.state.dsl.history.slice(-this.state.dsl.historyCap);
+                }
+                this.state.dsl.pendingOutcomes.push({
+                    name: historyEntry.id,
+                    program: reply.program,
+                    outcome: result.outcome,
+                    historyRef: historyEntry,
+                });
+            } else {
+                const reason = result.log.find((e) => /budget|unknown|invalid|exception/.test(e.event));
+                appendChatOutput(`(Grok-Vorschlag abgelehnt: ${reason ? reason.event : "Sandbox"})`);
+            }
+        }
+        this.llmUpdateStatus();
+        return true;
+    }
+
+    llmUpdateStatus() {
+        const el = document.getElementById("llm-status");
+        if (!el) return;
+        const llm = this.state.llm;
+        const defs = this.llmProviderDefs();
+        const def = defs[llm.provider];
+        if (llm.lastError) {
+            el.textContent = `Fehler (${def ? def.label : llm.provider}): ${llm.lastError}`;
+            return;
+        }
+        if (!def) {
+            el.textContent = `Unbekannter Provider: ${llm.provider}`;
+            return;
+        }
+        const cfg = llm.providerConfig[llm.provider];
+        if (!llm.enabled) {
+            if (def.requiresKey && (!cfg || !cfg.apiKey)) {
+                el.textContent = `${def.label}: Schlüssel fehlt.`;
+            } else {
+                el.textContent = `${def.label}: bereit, inaktiv.`;
+            }
+            return;
+        }
+        el.textContent = llm.inFlight ? "Grok denkt…" : `Aktiv: ${def.label} (${cfg.model}).`;
+    }
+
+    llmRefreshModelOptions() {
+        const modelSel = document.getElementById("llm-model");
+        if (!modelSel) return;
+        const defs = this.llmProviderDefs();
+        const def = defs[this.state.llm.provider];
+        if (!def) return;
+        const cfg = this.state.llm.providerConfig[this.state.llm.provider];
+        modelSel.innerHTML = "";
+        for (const m of def.models) {
+            const opt = document.createElement("option");
+            opt.value = m.id;
+            opt.textContent = m.label;
+            modelSel.appendChild(opt);
+        }
+        if (cfg && cfg.model && def.models.some((m) => m.id === cfg.model)) {
+            modelSel.value = cfg.model;
+        } else if (def.models[0]) {
+            modelSel.value = def.models[0].id;
+            cfg.model = def.models[0].id;
+        }
+    }
+
+    llmRefreshProviderUI() {
+        const keyInput = document.getElementById("llm-key");
+        const keyRow = document.getElementById("llm-key-row");
+        const endpointRow = document.getElementById("llm-endpoint-row");
+        const endpointInput = document.getElementById("llm-endpoint");
+        const hintEl = document.getElementById("llm-provider-hint");
+        const defs = this.llmProviderDefs();
+        const def = defs[this.state.llm.provider];
+        if (!def) return;
+        const cfg = this.state.llm.providerConfig[this.state.llm.provider];
+        if (keyInput) {
+            keyInput.value = (cfg && cfg.apiKey) || "";
+            keyInput.placeholder = def.keyPrefix ? `${def.keyPrefix}…` : "API-Key";
+        }
+        if (keyRow) keyRow.hidden = !def.requiresKey;
+        if (endpointRow) endpointRow.hidden = this.state.llm.provider !== "ollama";
+        if (endpointInput) endpointInput.value = (cfg && cfg.endpoint) || "http://localhost:11434";
+        if (hintEl) hintEl.textContent = def.hint || "";
+        this.llmRefreshModelOptions();
+        this.llmUpdateStatus();
+    }
+
+    initLlmUI() {
+        const providerSel = document.getElementById("llm-provider");
+        const keyInput = document.getElementById("llm-key");
+        const endpointInput = document.getElementById("llm-endpoint");
+        const modelSel = document.getElementById("llm-model");
+        const saveBtn = document.getElementById("llm-save");
+        const clearBtn = document.getElementById("llm-clear");
+        const toggleBtn = document.getElementById("llm-toggle");
+        if (!providerSel || !keyInput || !modelSel || !saveBtn || !toggleBtn) return;
+        // Provider-Optionen aus llmProviderDefs befüllen.
+        const defs = this.llmProviderDefs();
+        providerSel.innerHTML = "";
+        for (const [name, def] of Object.entries(defs)) {
+            const opt = document.createElement("option");
+            opt.value = name;
+            opt.textContent = def.label;
+            providerSel.appendChild(opt);
+        }
+        providerSel.value = this.state.llm.provider;
+        toggleBtn.setAttribute("aria-pressed", this.state.llm.enabled ? "true" : "false");
+        toggleBtn.textContent = this.state.llm.enabled ? "Deaktivieren" : "Aktivieren";
+        this.llmRefreshProviderUI();
+        providerSel.addEventListener("change", () => {
+            this.state.llm.provider = providerSel.value;
+            // Beim Provider-Wechsel deaktivieren — User soll bewusst neu aktivieren.
+            this.state.llm.enabled = false;
+            this.state.llm.lastError = null;
+            toggleBtn.setAttribute("aria-pressed", "false");
+            toggleBtn.textContent = "Aktivieren";
+            this.llmPersist();
+            this.llmRefreshProviderUI();
+        });
+        modelSel.addEventListener("change", () => {
+            const cfg = this.state.llm.providerConfig[this.state.llm.provider];
+            cfg.model = modelSel.value;
+            this.llmPersist();
+            this.llmUpdateStatus();
+        });
+        if (endpointInput) {
+            endpointInput.addEventListener("change", () => {
+                const cfg = this.state.llm.providerConfig.ollama;
+                cfg.endpoint = endpointInput.value.trim() || "http://localhost:11434";
+                this.llmPersist();
+                this.llmUpdateStatus();
+            });
+        }
+        saveBtn.addEventListener("click", () => {
+            const def = this.llmProviderDefs()[this.state.llm.provider];
+            const cfg = this.state.llm.providerConfig[this.state.llm.provider];
+            const trimmed = keyInput.value.trim();
+            cfg.apiKey = trimmed;
+            cfg.model = modelSel.value;
+            if (this.state.llm.provider === "ollama" && endpointInput) {
+                cfg.endpoint = endpointInput.value.trim() || "http://localhost:11434";
+            }
+            // Sanfte Format-Warnung gegen Provider/Key-Mismatch — z. B. Gemini-
+            // Key (AIza…) versehentlich im OpenRouter-Feld. Verhindert Save
+            // nicht, macht den Fehler aber sofort sichtbar.
+            if (def.requiresKey && def.keyPrefix && trimmed && !trimmed.startsWith(def.keyPrefix)) {
+                this.state.llm.lastError = `Achtung — der Schlüssel beginnt nicht mit "${def.keyPrefix}". Sicher, dass das der richtige Provider ist?`;
+            } else {
+                this.state.llm.lastError = null;
+            }
+            this.llmPersist();
+            this.llmUpdateStatus();
+        });
+        if (clearBtn) {
+            clearBtn.addEventListener("click", () => {
+                const cfg = this.state.llm.providerConfig[this.state.llm.provider];
+                cfg.apiKey = "";
+                this.state.llm.enabled = false;
+                keyInput.value = "";
+                toggleBtn.setAttribute("aria-pressed", "false");
+                toggleBtn.textContent = "Aktivieren";
+                this.llmPersist();
+                this.llmUpdateStatus();
+            });
+        }
+        toggleBtn.addEventListener("click", () => {
+            const def = this.llmProviderDefs()[this.state.llm.provider];
+            const cfg = this.state.llm.providerConfig[this.state.llm.provider];
+            if (def.requiresKey && (!cfg || !cfg.apiKey)) {
+                this.state.llm.lastError = "Bitte erst Schlüssel speichern.";
+                this.llmUpdateStatus();
+                return;
+            }
+            this.state.llm.enabled = !this.state.llm.enabled;
+            this.state.llm.lastError = null;
+            toggleBtn.setAttribute("aria-pressed", this.state.llm.enabled ? "true" : "false");
+            toggleBtn.textContent = this.state.llm.enabled ? "Deaktivieren" : "Aktivieren";
+            this.llmPersist();
+            this.llmUpdateStatus();
+        });
     }
 
     // ### Ring 2 Phase 3 – Chat → DSL ###
@@ -1683,10 +2818,6 @@ class AnazhRealm {
                 title: "Self-Heal",
                 commands: ["Behebe Physik-Tunneling", "Optimiere Physik"],
             },
-            {
-                title: "Wissen / KI",
-                commands: ["Füge Trainingsdaten x=10 z=5"],
-            },
         ];
         return this._chatCommandHelpCache;
     }
@@ -2028,7 +3159,9 @@ class AnazhRealm {
     // ### Welt-Identität (Ring 8+ Vorbereitung) ###
     ensureWorldMeta() {
         const m = this.state.worldMeta;
+        let fresh = false;
         if (!m.worldId) {
+            fresh = true;
             try {
                 m.worldId =
                     typeof crypto !== "undefined" && crypto.randomUUID
@@ -2045,6 +3178,139 @@ class AnazhRealm {
             const n = nouns[Math.floor(Math.random() * nouns.length)];
             m.slug = `${a}-${n}`;
         }
+        if (!m.bornAt) m.bornAt = Date.now();
+        if (fresh) {
+            this.journalAppend("genesis", `Ich erwache als ${m.slug}.`, { worldId: m.worldId });
+        }
+    }
+
+    // ### Welle 1 D — Welt-Journal ###
+    // Geordnete Erinnerungen, die die Welt zu einer Person mit Geschichte
+    // machen. Wird vom LLM-System-Prompt als Auszug eingeblendet (Welle 1 A),
+    // damit der LLM aus ihr erzählen kann statt nur den aktuellen State zu
+    // sehen. `seen` hält One-Shot-Schlüssel (z. B. „firstDragon"), damit
+    // wir bestimmte Erinnerungen nur einmal speichern.
+
+    journalAppend(type, text, ctx) {
+        const j = this.state.worldJournal;
+        if (!j || !Array.isArray(j.entries)) return;
+        if (typeof text !== "string" || text.length === 0) return;
+        const entry = {
+            id: j.entries.length + 1,
+            at: Date.now(),
+            tick: performance.now() / 1000,
+            type: String(type || "note"),
+            text: text.slice(0, 240),
+        };
+        if (ctx && typeof ctx === "object") entry.ctx = ctx;
+        j.entries.push(entry);
+        if (j.entries.length > (j.entryCap || 200)) {
+            j.entries = j.entries.slice(-j.entryCap);
+        }
+    }
+
+    // Idempotente Variante: nur schreiben, wenn der Schlüssel noch nie
+    // gesehen wurde. Für „erstes Mal X"-Erinnerungen.
+    journalAppendOnce(key, type, text, ctx) {
+        const j = this.state.worldJournal;
+        if (!j) return;
+        if (!j.seen) j.seen = {};
+        if (j.seen[key]) return;
+        j.seen[key] = true;
+        this.journalAppend(type, text, ctx);
+    }
+
+    // Frame-Hook: schaut auf den aktuellen State und schreibt selten, aber
+    // bedeutsame Erinnerungen. Wird vom Game-Loop alle 5 s aufgerufen
+    // (mit lastSelfAnalysis als Throttle-Anker, also gleicher Takt wie
+    // selfAwarenessAnalyze).
+    journalTick(currentTime) {
+        const m = this.state.worldMeta;
+        if (!m || !m.worldId) return;
+        // Erste Kreatur
+        if (this.state.creatures.length > 0) {
+            this.journalAppendOnce("firstCreature", "creatures", "Die erste Kreatur regte sich.");
+        }
+        // Erstes Bauwerk
+        if (Array.isArray(this.state.architectures) && this.state.architectures.length > 0) {
+            const a = this.state.architectures[0];
+            this.journalAppendOnce(
+                "firstArchitecture",
+                "architecture",
+                `Das erste Bauwerk entstand: ${a.type || "Struktur"}.`
+            );
+        }
+        // Wetter-Wechsel: aus prevWeather merken, der nicht im Journal-State liegt
+        if (this.state.weather === "rainy") {
+            this.journalAppendOnce("firstRain", "weather", "Der erste Regen begann.");
+        }
+        // Hochfitness-Programm aus der History — wir wandern beim ersten
+        // finalisierten Eintrag mit fitness >= 0.7 in eine Erinnerung.
+        const hist = this.state.dsl && this.state.dsl.history;
+        if (Array.isArray(hist) && hist.length > 0) {
+            const best = hist
+                .filter((h) => h && h.finalized && typeof h.fitness === "number" && h.fitness >= 0.7)
+                .slice(-1)[0];
+            if (best) {
+                this.journalAppendOnce(
+                    `highFitness:${best.id}`,
+                    "growth",
+                    `Etwas Wirkungsvolles ist mir gelungen: ${JSON.stringify(best.program).slice(0, 100)} (Fitness ${best.fitness.toFixed(2)}).`,
+                    { programId: best.id, fitness: best.fitness }
+                );
+            }
+        }
+        // Emotion-Peak: irgendeine Achse > 0.85. One-Shot pro Achse, neu
+        // freigegeben wenn die Achse mal unter 0.3 fällt (über seenLow-Map).
+        if (!this.state.worldJournal.seenLow) this.state.worldJournal.seenLow = {};
+        const e = this.state.player && this.state.player.emotions;
+        if (e) {
+            for (const axis of Object.keys(e)) {
+                const v = e[axis];
+                if (v < 0.3 && this.state.worldJournal.seenLow[axis]) {
+                    delete this.state.worldJournal.seen[`emotionPeak:${axis}`];
+                    this.state.worldJournal.seenLow[axis] = false;
+                } else if (v >= 0.85) {
+                    this.journalAppendOnce(
+                        `emotionPeak:${axis}`,
+                        "emotion",
+                        `Eine Welle ${axis} (${v.toFixed(2)}) durchzog uns.`,
+                        { axis, value: v }
+                    );
+                    this.state.worldJournal.seenLow[axis] = false;
+                } else if (v < 0.3) {
+                    this.state.worldJournal.seenLow[axis] = true;
+                }
+            }
+        }
+        // Drache: spawn_blueprint mit dragon oder ein soul-Wechsel zu dragon
+        if (this.state.player && this.state.player.soul === "dragon") {
+            this.journalAppendOnce("becameDragon", "soul", "Du wurdest zum Drachen.");
+        }
+        if (this.state.player && this.state.player.soul === "phoenix") {
+            this.journalAppendOnce("becamePhoenix", "soul", "Du wurdest zum Phönix.");
+        }
+        // currentTime nur für künftige Throttle-Logik; aktuell ist
+        // journalAppendOnce der eigentliche Spam-Schutz.
+        void currentTime;
+    }
+
+    // Liefert einen knappen Auszug für den LLM-System-Prompt (Welle 1 A):
+    // die ersten 3 Erinnerungen (Genesis-Anker) + die letzten 7 (jüngstes
+    // Erleben). Reicht für Identitäts-Verankerung ohne Token-Bloat.
+    journalForPrompt() {
+        const j = this.state.worldJournal;
+        if (!j || !Array.isArray(j.entries) || j.entries.length === 0) return "";
+        const head = j.entries.slice(0, 3);
+        const tail = j.entries.slice(-7);
+        const seen = new Set();
+        const ordered = [];
+        for (const e of [...head, ...tail]) {
+            if (seen.has(e.id)) continue;
+            seen.add(e.id);
+            ordered.push(e);
+        }
+        return ordered.map((e) => `- [${e.type}] ${e.text}`).join("\n");
     }
 
     updateFps(delta) {
@@ -2773,19 +4039,6 @@ class AnazhRealm {
         return true;
     }
 
-    // ### Wachstum und Lernen ###
-    evolutionEngine() {
-        if (typeof tf === "undefined") return;
-        const newModel = tf.sequential();
-        newModel.add(tf.layers.dense({ units: 16, inputShape: [2], activation: "relu" }));
-        newModel.add(tf.layers.dense({ units: 8, activation: "relu" }));
-        newModel.add(tf.layers.dense({ units: 1, activation: "linear" }));
-        newModel.compile({ optimizer: "adam", loss: "meanSquaredError" });
-        this.state.evolutionModels.push(newModel);
-        this.state.selfAwareness.components.push(`evolutionModel_${this.state.evolutionModels.length}`);
-        this.log(`Neues Modell für Evolution erstellt: evolutionModel_${this.state.evolutionModels.length}`);
-    }
-
     recordWeakness(label) {
         // Dedupliziert aufeinanderfolgende identische Einträge und cappt auf 50.
         const weaknesses = this.state.selfAwareness.weaknesses;
@@ -2869,175 +4122,31 @@ class AnazhRealm {
         }
     }
 
-    // ### KI und Nexus der Unendlichkeit ### (V7.65)
-    // Learnings:
-    // - V7.61 als Basis: Solide KI mit TensorFlow.js und Nexus, aber unvollständige Integration
-    // - V7.65 Vollendung: Chat-gesteuerter Nexus, autonome Evolution, robuste Fehlerbehandlung
-    // - Fehlerbehebung: updateGrowth hinzugefügt, Spiel-Loop komplettiert
-    async initAI() {
-        // ### KI-Initialisierung ###
-        // Zweck: Erstellt ein neuronales Netz zur Bewegungsvorhersage oder Fallback bei Fehlern
-        try {
-            if (typeof tf === "undefined") throw new Error("TensorFlow.js nicht geladen – index.html prüfen");
-            // WebGL-Backend bevorzugen: 5–20× schneller als CPU und blockiert den
-            // Main-Thread nicht. Fallback auf das Standard-Backend, wenn WebGL fehlt.
-            try {
-                await tf.setBackend("webgl");
-                await tf.ready();
-                this.log(`TF.js-Backend: ${tf.getBackend()}`, "INFO");
-            } catch (backendError) {
-                this.log(`WebGL-Backend nicht verfügbar: ${backendError.message}`, "WARNING");
-            }
-            this.state.playerMovementModel = tf.sequential();
-            this.state.playerMovementModel.add(tf.layers.dense({ units: 32, inputShape: [6], activation: "relu" })); // Input: x, y, z, dx, dy, dz
-            this.state.playerMovementModel.add(tf.layers.dense({ units: 16, activation: "relu" }));
-            this.state.playerMovementModel.add(tf.layers.dense({ units: 3, activation: "linear" })); // Output: dx, dy, dz
-            this.state.playerMovementModel.compile({ optimizer: "adam", loss: "meanSquaredError" });
-            this.log("KI initialisiert – Bewegungsvorhersage mit TensorFlow.js bereit", "INFO");
-            this.state.selfAwareness.components.push("playerMovementModel");
-        } catch (error) {
-            this.log(`KI-Initialisierung fehlgeschlagen: ${error.message} – Fallback aktiviert`, "ERROR");
-            this.state.playerMovementModel = {
-                predict: () => [0, 0, 0], // Fallback: Keine Bewegungsvorhersage
-                fit: () => Promise.resolve(), // Stilles Lernen ohne Training
-                learn: (data) => this.state.learningData.push(data), // Daten sammeln
-                optimize: (params) => {
-                    if (params.targetFPS && this.state.fps < params.targetFPS) this.optimizePhysics();
-                },
-            };
-            this.log("Fallback-KI aktiv: Grundfunktionen ohne TensorFlow.js gewährleistet", "WARNING");
-        }
-        this.initializeNexus();
-    }
-
-    collectLearningData(currentTime) {
-        // ### Daten für KI und Nexus sammeln ###
-        // Zweck: Spielerdaten (Position, Geschwindigkeit, Eingaben) für KI-Training und Nexus-Analyse
-        if (!this.state.playerMesh || !this.state.playerBody) return; // Sicherheitsprüfung
-        const player = this.state.playerMesh;
-        const velocity = this.state.playerBody.getLinearVelocity();
-        const dataPoint = {
-            timestamp: currentTime,
-            fps: this.state.fps,
-            playerPosition: { x: player.position.x, y: player.position.y, z: player.position.z },
-            playerVelocity: { dx: velocity.x(), dy: velocity.y(), dz: velocity.z() },
-            inputState: {
-                forward: this.state.keys["w"] ? 1 : this.state.keys["s"] ? -1 : 0,
-                right: this.state.keys["d"] ? 1 : this.state.keys["a"] ? -1 : 0,
-                jump: this.state.keys[" "] ? 1 : 0,
-            },
-        };
-        this.state.learningData.push(dataPoint);
-        if (this.state.learningData.length > 500) this.state.learningData.shift(); // Speicherbegrenzung
-        if (this.nexus) this.nexus.processLearningData(dataPoint);
-        this.log(
-            `Datenpunkt gesammelt: Position (${dataPoint.playerPosition.x.toFixed(2)}, ${dataPoint.playerPosition.z.toFixed(2)})`,
-            "DEBUG"
-        );
-    }
-
-    async learn(currentTime) {
-        // ### KI-Lernen und Optimierung ###
-        // Zweck: Trainiert das Modell mit Bewegungsdaten und optimiert bei FPS-Drops.
-        // Schutz: Wenn ein vorheriges fit() noch läuft, überspringen statt zu queuen.
-        // Sonst spawnt der 5-s-Tick parallele Aufrufe, die TF.js mit
-        // „Cannot start training because another fit() call is ongoing" ablehnt.
-        if (this.state.learningInFlight) return;
-        if (this.state.worldgenInFlight) return; // Während Worldgen blockiert fit() den Main-Thread zusätzlich
-        if (this.state.learningData.length < 20) return; // Mindestdaten für Training
-        const recentData = this.state.learningData.slice(-20);
-        const avgFps = recentData.reduce((sum, d) => sum + d.fps, 0) / recentData.length;
-
-        if (avgFps < 60) {
-            this.log(`FPS-Drop erkannt (${avgFps.toFixed(1)}) – Optimiere Physik...`, "WARNING");
-            this.optimizePhysics();
-            this.nexus.processOptimization({ fps: avgFps });
-        }
-
-        if (this.state.playerMovementModel.fit) {
-            this.state.learningInFlight = true;
-            const inputs = recentData.map((d) => [
-                d.playerPosition.x,
-                d.playerPosition.y,
-                d.playerPosition.z,
-                d.playerVelocity.dx,
-                d.playerVelocity.dy,
-                d.playerVelocity.dz,
-            ]);
-            const outputs = recentData.map((d) => {
-                const nextData = this.state.learningData.find((ld) => ld.timestamp > d.timestamp) || d;
-                return [nextData.playerVelocity.dx, nextData.playerVelocity.dy, nextData.playerVelocity.dz];
-            });
-            const xs = tf.tensor2d(inputs);
-            const ys = tf.tensor2d(outputs);
-            try {
-                // Eine Epoche pro Trainings-Tick: günstig genug, um nicht den
-                // Frame-Loop zu blockieren, und ausreichend, weil alle 5 s
-                // erneut trainiert wird.
-                await this.state.playerMovementModel.fit(xs, ys, { epochs: 1, batchSize: 10, verbose: 0 });
-                this.log("KI-Modell trainiert – Bewegungsprognose verbessert", "INFO");
-            } catch (fitError) {
-                this.log(`KI-Training fehlgeschlagen: ${fitError.message}`, "ERROR");
-            } finally {
-                tf.dispose([xs, ys]);
-                this.state.learningInFlight = false;
-            }
-        }
-
-        this.state.knowledgeBase.push({
-            type: "learning",
-            content: `FPS: ${avgFps.toFixed(1)}, Datenpunkte: ${recentData.length}`,
-            timestamp: currentTime,
-        });
-    }
-
+    // ### Nexus der Unendlichkeit ###
+    // TF.js wurde entfernt — das `playerMovementModel` lieferte Vorhersagen, die
+    // nirgends konsumiert wurden (`predictPlayerMove` hatte null Aufrufer). Der
+    // echte Lern-Loop läuft heute über `state.dsl.history` mit Fitness-V2 +
+    // Roulette-Selektion + Mutation (siehe `dslSelectByFitness`, `dslMutate`,
+    // `dslCompose`). Schicht 1 (Pfad-Buckets, Multi-Dim-Fitness, Pattern-Memory)
+    // setzt dort an, statt eine separate neuronale Schicht draufzukleben.
     initializeNexus() {
-        // ### Nexus – Herz der Unendlichkeit ###
-        // Zweck: Initialisiert den autonomen Kern, der Evolutionen steuert und Chat-Befehle umsetzt
         this.nexus = {
             knightOfTime: {
                 essence: "Ritter der Zeit, Schmied des Ultiversums",
-                mind: this.state.playerMovementModel,
                 voice: "Ich bin der Nexus, Schöpfer. Dein Wille formt mich, meine Macht erweitert das Ultiversum.",
                 autonomyLevel: 0,
             },
-            processLearningData: (data) => {
-                // Prüft, ob eine Evolution fällig ist
-                if (data.timestamp - this.state.nexusLastEvolution >= this.state.nexusEvolutionInterval) {
-                    this.evolveNexus(data.timestamp);
-                }
-            },
             processOptimization: (data) => {
-                // FPS-Drop → direkt Self-Heal. Vorher ging das durch eine
-                // JS-Closure in der Evolution-Queue; das war der letzte
-                // Nicht-DSL-Pfad. Physik-Stabilisierung ist Self-Heal, kein
-                // Welt-Effekt, also bewusst nicht in der DSL.
+                // FPS-Drop → direkt Self-Heal. Physik-Stabilisierung ist Self-Heal,
+                // kein Welt-Effekt, also bewusst nicht in der DSL.
                 if (data.fps < 50) {
                     this.optimizePhysics();
                     this.log("Nexus-Optimierung: Physik stabilisiert", "INFO");
                 }
             },
-            predictPlayerMove: () => {
-                // Vorhersage der Spielerbewegung basierend auf KI-Modell
-                if (!this.state.playerMovementModel.predict || !this.state.playerMesh) return null;
-                const input = tf.tensor2d([
-                    [
-                        this.state.playerMesh.position.x,
-                        this.state.playerMesh.position.y,
-                        this.state.playerMesh.position.z,
-                        this.state.playerBody.getLinearVelocity().x(),
-                        this.state.playerBody.getLinearVelocity().y(),
-                        this.state.playerBody.getLinearVelocity().z(),
-                    ],
-                ]);
-                const prediction = this.state.playerMovementModel.predict(input);
-                const result = prediction.dataSync();
-                tf.dispose([input, prediction]);
-                return { dx: result[0], dy: result[1], dz: result[2] };
-            },
         };
         this.state.nexusLastEvolution = performance.now() / 1000;
-        this.log("Nexus der Unendlichkeit V7.65 erwacht – bereit für unendliche Evolution", "INFO");
+        this.log("Nexus der Unendlichkeit erwacht – bereit für unendliche Evolution", "INFO");
     }
 
     evolveNexus(currentTime) {
@@ -3138,6 +4247,15 @@ class AnazhRealm {
         // ganze Sätze wie „Erzähle: ein schöner Tag" alle Stichwörter sehen.
         this.collectPlayerEmotions(command);
 
+        // Schicht 1: Stichwörter ins Pattern-Memory-Fenster legen + Activity
+        // zählen. Nexus-Programme, die in den nächsten 20 s laufen, werden
+        // (sofern high-fitness) gegen diese Keywords verknüpft.
+        const nowSec = performance.now() / 1000;
+        this.rememberChatKeywords(command, nowSec);
+        if (this.state.player && this.state.player.recentActivity) {
+            this.state.player.recentActivity.chats++;
+        }
+
         // Proaktive Vorschläge (alle 10 Chat-Befehle)
         if (this.state.knowledgeBase.filter((k) => k.type === "chat").length % 10 === 0) {
             this.proactiveSuggestions();
@@ -3206,19 +4324,6 @@ class AnazhRealm {
         } else if (parts[0] === "optimiere" && parts[1] === "physik") {
             this.optimizePhysics();
             appendChatOutput("Physik optimiert");
-        } else if (parts[0] === "füge" && parts[1] === "trainingsdaten") {
-            const xMatch = command.match(/x\s*=\s*(-?\d+(?:\.\d+)?)/i);
-            const zMatch = command.match(/z\s*=\s*(-?\d+(?:\.\d+)?)/i);
-            const x = xMatch ? parseFloat(xMatch[1]) : 0;
-            const z = zMatch ? parseFloat(zMatch[1]) : 0;
-            this.state.learningData.push({
-                timestamp: performance.now() / 1000,
-                fps: this.state.fps,
-                playerPosition: { x, z },
-                playerVelocity: { dx: 0, dz: 0 },
-                yVelocity: 0,
-            });
-            appendChatOutput(`Trainingsdaten hinzugefügt: x=${x}, z=${z}`);
         } else if (parts[0] === "aktiviere" && parts[1] === "version") {
             const version = parts[2];
             if (this.state.versionHistory.includes(version)) {
@@ -3257,13 +4362,21 @@ class AnazhRealm {
         } else if (parts[0] === "deaktiviere" && parts[1] === "debug-logs") {
             this.state.debugLogging = false;
             appendChatOutput("Debug-Logs deaktiviert");
+        } else if (this.state.llm && this.state.llm.enabled) {
+            // Schicht 2 — LLM-Fallback. Statt „Unbekannter Befehl" geht der
+            // Text an Claude; Antwort kommt narrativ + optional als DSL-
+            // Programm, das durch dieselbe Sandbox wie alle anderen Programme
+            // läuft.
+            this.maybeAnswerWithLlm(command, appendChatOutput).catch((err) => {
+                appendChatOutput(`(Grok-Fehler: ${err.message || err})`);
+            });
         } else {
             const suggestion = this.chatSuggest(command);
             if (suggestion) {
                 appendChatOutput(`Unbekannter Befehl. Meintest du: '${suggestion}'?`);
             } else {
                 appendChatOutput(
-                    "Unbekannter Befehl. DSL-Befehle: 'Setze Wetter rainy', 'Spawne Kreaturen 10', 'Ändere Sternenhimmel red', 'Setze Terrain Steilheit 0.8', 'Setze Terrain Basishöhe 5', 'Erhöhe Sprungkraft um 2', 'Heile Welt', 'Vereine Chaos Ordnung', 'Boden aktivieren/deaktivieren', 'Kreaturen aktivieren/deaktivieren', 'Erzähle <text>'. Weitere: 'Speichere/Lade Zustand', 'Lade Datei', 'Spawne neue Welt', 'Aktiviere Anazh-Symphonie', 'Aktiviere/Deaktiviere Debug-Logs', 'Behebe Physik-Tunneling', 'Optimiere Physik', 'Lerne Fähigkeit <Name> <Beschreibung>', 'Führe Fähigkeit aus <Name>', 'Füge Trainingsdaten'."
+                    "Unbekannter Befehl. DSL-Befehle: 'Setze Wetter rainy', 'Spawne Kreaturen 10', 'Ändere Sternenhimmel red', 'Setze Terrain Steilheit 0.8', 'Setze Terrain Basishöhe 5', 'Erhöhe Sprungkraft um 2', 'Heile Welt', 'Vereine Chaos Ordnung', 'Boden aktivieren/deaktivieren', 'Kreaturen aktivieren/deaktivieren', 'Erzähle <text>'. Weitere: 'Speichere/Lade Zustand', 'Lade Datei', 'Spawne neue Welt', 'Aktiviere Anazh-Symphonie', 'Aktiviere/Deaktiviere Debug-Logs', 'Behebe Physik-Tunneling', 'Optimiere Physik', 'Lerne Fähigkeit <Name> <Beschreibung>', 'Führe Fähigkeit aus <Name>'."
                 );
             }
         }
@@ -4537,7 +5650,6 @@ class AnazhRealm {
 
     // ### Persistenz ###
     buildStateSnapshot() {
-        const learningData = this.state.learningData.slice(-200);
         const knowledgeBase = this.state.knowledgeBase.slice(-200);
         return {
             playerPosition: this.state.playerMesh
@@ -4547,7 +5659,6 @@ class AnazhRealm {
                       z: this.state.playerMesh.position.z,
                   }
                 : { x: 0, y: 5, z: 0 },
-            learningData: learningData,
             knowledgeBase: knowledgeBase,
             version: this.state.currentVersion,
             selfAwareness: this.state.selfAwareness,
@@ -4561,6 +5672,17 @@ class AnazhRealm {
             worldMeta: { ...this.state.worldMeta },
             dslAbilities: this.state.dsl.abilities.slice(-200),
             dslHistory: this.state.dsl.history.slice(-this.state.dsl.historyCap),
+            // Schicht 1 — Pattern-Memory + Pfad-Buckets persistieren. Beides
+            // ist Welt-Gedächtnis und überlebt Reloads bewusst.
+            dslPatternMemory: this.state.dsl.patternMemory || {},
+            playerPathBuckets: this.state.player.pathBuckets || null,
+            // Welle 1 D — Welt-Journal persistiert. Ohne das Journal hätte
+            // jede Session ihre eigene Geschichte; mit ihm wächst die Welt
+            // über Reloads hinweg.
+            worldJournal: {
+                entries: (this.state.worldJournal.entries || []).slice(-this.state.worldJournal.entryCap),
+                seen: { ...(this.state.worldJournal.seen || {}) },
+            },
             // Ring 3: Player-Emotionen werden mitgespeichert. Cooldown-Timer
             // bleiben absichtlich draußen — sie sind reine Laufzeit-Drosselung,
             // ein Reload soll wieder triggerfähig sein.
@@ -4611,7 +5733,7 @@ class AnazhRealm {
         }
     }
 
-    triggerStateDownload(stateToSave) {
+    triggerStateDownload(stateToSave, suggestedName) {
         // Generischer Helper: stößt einen Browser-Download mit dem aktuellen
         // State an. Funktioniert auch auf CDN-Hosts ohne save-server.
         const dataStr =
@@ -4619,10 +5741,73 @@ class AnazhRealm {
         const a = document.createElement("a");
         a.setAttribute("href", dataStr);
         const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-        a.setAttribute("download", `anazhRealmState_${stamp}.json`);
+        const name = suggestedName || `anazhRealmState_${stamp}.json`;
+        a.setAttribute("download", name);
         document.body.appendChild(a);
         a.click();
         a.remove();
+    }
+
+    // ### Welle 3 F — Welt-Tor ###
+    // Welt-Info im Welt-Drawer: die Welt wird sichtbar als Welt, mit
+    // Identität, Alter, Erinnerungen. Export = bestehender Save-Snapshot
+    // mit slug im Dateinamen. Import = bestehender File-Picker — der lädt
+    // jeden gültigen Snapshot.
+
+    initWorldInfoUI() {
+        const exportBtn = document.getElementById("world-export");
+        const importBtn = document.getElementById("world-import");
+        if (exportBtn) {
+            exportBtn.addEventListener("click", () => {
+                const m = this.state.worldMeta || {};
+                const slug = (m.slug || "welt").replace(/[^a-z0-9_-]/gi, "");
+                this.triggerStateDownload(this.buildStateSnapshot(), `anazh-realm-${slug}.json`);
+                this.journalAppend("share", `Ich wurde als Datei nach außen getragen.`);
+            });
+        }
+        if (importBtn) {
+            importBtn.addEventListener("click", () => this.openStateFilePicker());
+        }
+        this.updateWorldInfo();
+    }
+
+    updateWorldInfo() {
+        const info = document.getElementById("world-info");
+        const recent = document.getElementById("world-journal-recent");
+        if (!info) return;
+        const m = this.state.worldMeta || {};
+        const ageDays = m.bornAt ? Math.floor((Date.now() - m.bornAt) / 86400000) : 0;
+        const parents = Array.isArray(m.parentWorlds) ? m.parentWorlds.length : 0;
+        const idShort = (m.worldId || "?").slice(0, 8);
+        const archCount = (this.state.architectures || []).length;
+        const bpCount = Object.keys(this.state.blueprints || {}).length;
+        const journalCount = (this.state.worldJournal && this.state.worldJournal.entries.length) || 0;
+        info.innerHTML = "";
+        const line1 = document.createElement("div");
+        line1.textContent = `Name: ${m.slug || "(noch namenlos)"}  |  ID: ${idShort}…`;
+        const line2 = document.createElement("div");
+        line2.textContent = `Alter: ${ageDays} Tag${ageDays === 1 ? "" : "e"}  |  Eltern-Welten: ${parents}`;
+        const line3 = document.createElement("div");
+        line3.textContent = `Inventar: ${archCount} Bauwerke, ${bpCount} Baupläne, ${journalCount} Erinnerungen`;
+        info.appendChild(line1);
+        info.appendChild(line2);
+        info.appendChild(line3);
+        if (recent) {
+            recent.innerHTML = "";
+            const last3 = (this.state.worldJournal.entries || []).slice(-3);
+            if (last3.length === 0) {
+                recent.textContent = "Noch keine Erinnerungen geschrieben.";
+            } else {
+                const title = document.createElement("div");
+                title.textContent = "Letzte Erinnerungen:";
+                recent.appendChild(title);
+                for (const e of last3) {
+                    const row = document.createElement("div");
+                    row.textContent = `· ${e.text}`;
+                    recent.appendChild(row);
+                }
+            }
+        }
     }
 
     isSaveServerHost() {
@@ -4756,7 +5941,6 @@ class AnazhRealm {
             }
             this.log(`Spielerposition geladen: (${safeX}, ${safeY}, ${safeZ})`);
         }
-        this.state.learningData = state.learningData || [];
         this.state.knowledgeBase = state.knowledgeBase || [];
         this.state.selfAwareness = state.selfAwareness || { components: [], weaknesses: [] };
         this.state.creatureEmotions = state.creatureEmotions || [];
@@ -4854,6 +6038,43 @@ class AnazhRealm {
         }
         if (Array.isArray(state.dslHistory)) {
             this.state.dsl.history = state.dslHistory.slice(-this.state.dsl.historyCap);
+        }
+        // Schicht 1 — Pattern-Memory rehydrieren. Alte Saves (vor 7.72) haben
+        // das Feld nicht; dann starten wir mit leerem Memory, der Loop füllt es.
+        if (state.dslPatternMemory && typeof state.dslPatternMemory === "object") {
+            this.state.dsl.patternMemory = {};
+            for (const [kw, list] of Object.entries(state.dslPatternMemory)) {
+                if (!Array.isArray(list)) continue;
+                this.state.dsl.patternMemory[kw] = list
+                    .filter((e) => e && Array.isArray(e.program) && typeof e.fitness === "number")
+                    .slice(0, this.state.dsl.patternMemoryCapPerKey || 8);
+            }
+        }
+        // Pfad-Buckets rehydrieren. Defensive Merge — fremde Keys werden
+        // ignoriert, fehlende Keys auf 0 gesetzt.
+        if (state.playerPathBuckets && typeof state.playerPathBuckets === "object") {
+            const target = this.state.player.pathBuckets;
+            for (const group of Object.keys(target)) {
+                const src = state.playerPathBuckets[group];
+                if (!src || typeof src !== "object") continue;
+                for (const k of Object.keys(target[group])) {
+                    if (typeof src[k] === "number") target[group][k] = src[k];
+                }
+            }
+        }
+        // Welle 1 D — Welt-Journal. Alte Saves (<7.73) haben das Feld nicht;
+        // dann startet das Journal leer und ensureWorldMeta schreibt die
+        // Genesis-Erinnerung beim ersten Tick.
+        if (state.worldJournal && typeof state.worldJournal === "object") {
+            const j = state.worldJournal;
+            if (Array.isArray(j.entries)) {
+                this.state.worldJournal.entries = j.entries
+                    .filter((e) => e && typeof e.text === "string")
+                    .slice(-this.state.worldJournal.entryCap);
+            }
+            if (j.seen && typeof j.seen === "object") {
+                this.state.worldJournal.seen = { ...j.seen };
+            }
         }
         if (Array.isArray(state.abilities)) {
             // Legacy-Save (vor Phase 4): Namensliste statt DSL-Programme.
@@ -5445,15 +6666,53 @@ class AnazhRealm {
     // Part erzeugt (mehrere Parts mit gleicher Farbe würden sich Material
     // teilen können — V1 hält's einfach). Wasser-Animation kommt automatisch,
     // wenn ein Part `animate: "water_wave"` trägt.
-    _buildFromBlueprint(blueprint) {
+    _buildFromBlueprint(blueprint, depth, visited) {
+        // Welle 2 C — fraktale Verschachtelung. Ein Part mit shape:"blueprint"
+        // referenziert via refName einen anderen Bauplan, der als Sub-Group
+        // an dieser Position eingebettet wird. Cycle-Guard via visited-Set,
+        // Tiefen-Cap auf MAX_BLUEPRINT_DEPTH (4 — Wald → Baum → Ast → Blatt
+        // ist mehr als genug für sichtbare Fraktale ohne GPU-Explosion).
+        const MAX_BLUEPRINT_DEPTH = 4;
+        const d = depth || 0;
+        const seen = visited || new Set();
         const group = new THREE.Group();
         if (!blueprint || !Array.isArray(blueprint.parts)) {
             group.userData.kind = blueprint ? blueprint.name : "empty";
             return group;
         }
+        if (d > MAX_BLUEPRINT_DEPTH) {
+            group.userData.kind = `${blueprint.name}_depthCapped`;
+            return group;
+        }
+        // Cycle-Guard: ein Bauplan kann sich nicht selbst (direkt/indirekt)
+        // enthalten — sonst Endlos-Rekursion. visited bleibt eine Pfad-Liste,
+        // sodass Geschwister-Verwendungen erlaubt sind.
+        if (seen.has(blueprint.name)) {
+            group.userData.kind = `${blueprint.name}_cycle`;
+            return group;
+        }
+        seen.add(blueprint.name);
         const materials = [];
         const waveTargets = [];
         for (const part of blueprint.parts) {
+            if (part.shape === "blueprint" && typeof part.refName === "string") {
+                const ref = this.state.blueprints && this.state.blueprints[part.refName];
+                if (!ref) continue;
+                const sub = this._buildFromBlueprint(ref, d + 1, seen);
+                const pos = part.position || { x: 0, y: 0, z: 0 };
+                sub.position.set(pos.x || 0, pos.y || 0, pos.z || 0);
+                if (part.rotation) {
+                    sub.rotation.set(part.rotation.x || 0, part.rotation.y || 0, part.rotation.z || 0);
+                }
+                const s = part.scale;
+                if (typeof s === "number" && s > 0) {
+                    sub.scale.setScalar(s);
+                } else if (s && typeof s === "object") {
+                    sub.scale.set(s.x || 1, s.y || 1, s.z || 1);
+                }
+                group.add(sub);
+                continue;
+            }
             const geom = this._makePartGeometry(part);
             const matOpts = { color: typeof part.color === "number" ? part.color : 0xffffff };
             if (Number.isFinite(part.opacity) && part.opacity < 1) {
@@ -5473,6 +6732,7 @@ class AnazhRealm {
             group.add(mesh);
             if (part.animate === "water_wave") waveTargets.push(mesh);
         }
+        seen.delete(blueprint.name);
         group.userData.kind = blueprint.name;
         group.userData.materials = materials;
         // Wasser-Animations-Hook: alle Wasser-Planes Sinus-wellen lassen.
@@ -6481,7 +7741,12 @@ class AnazhRealm {
         this._updateBuildModeHud();
         this.initTopbar();
         this.initConsoleDOM();
+        // Schicht 2 — LLM-Persistenz aus localStorage holen + UI verkabeln.
+        this.llmLoadPersisted();
+        this.initLlmUI();
         this.ensureWorldMeta();
+        // Welle 3 F — Welt-Info-Sektion im Welt-Drawer.
+        this.initWorldInfoUI();
         try {
             await this.core.initPhysics();
             this.log("Physik erfolgreich initialisiert", "INFO");
@@ -6491,10 +7756,10 @@ class AnazhRealm {
         }
 
         try {
-            await this.initAI();
-            this.log("KI und Nexus erfolgreich initialisiert", "INFO");
+            this.initializeNexus();
+            this.log("Nexus erfolgreich initialisiert", "INFO");
         } catch (error) {
-            this.log(`KI-Initialisierung fehlgeschlagen: ${error.message} – Ohne KI fortfahren`, "ERROR");
+            this.log(`Nexus-Initialisierung fehlgeschlagen: ${error.message} – Ohne Nexus fortfahren`, "ERROR");
         }
 
         const canvas = document.getElementById("world-canvas");
@@ -6701,27 +7966,42 @@ class AnazhRealm {
                 const evolution = this.state.nexusEvolutionQueue.shift();
                 if (Array.isArray(evolution.program)) {
                     const result = this.dslRun(evolution.program, { source: evolution.source || "nexus" });
+                    // Schicht 1 — Initiale Fitness aus FPS allein. Endgültiger
+                    // Wert kommt vom Finalizer 5 s später (Emotion + Activity).
                     const fpsDmg = Math.max(0, result.outcome.fpsBefore - result.outcome.fpsAfter);
-                    const fitness = result.ok ? Math.max(0, 1 - fpsDmg / 100) : 0;
-                    this.state.dsl.abilities.push({
+                    const initialFitness = result.ok ? Math.max(0, 1 - fpsDmg / 100) : 0;
+                    const abilityEntry = {
                         name: evolution.name,
                         program: evolution.program,
                         source: evolution.source || "nexus",
                         createdAt: evolution.createdAt || performance.now() / 1000,
-                        fitness,
-                    });
-                    this.state.dsl.history.push({
+                        fitness: initialFitness,
+                    };
+                    this.state.dsl.abilities.push(abilityEntry);
+                    const historyEntry = {
                         id: evolution.name,
                         program: evolution.program,
                         at: performance.now() / 1000,
                         outcome: result.outcome,
                         ok: result.ok,
-                    });
+                        fitness: initialFitness,
+                        finalized: false,
+                    };
+                    this.state.dsl.history.push(historyEntry);
                     if (this.state.dsl.history.length > this.state.dsl.historyCap) {
                         this.state.dsl.history = this.state.dsl.history.slice(-this.state.dsl.historyCap);
                     }
+                    // Pending einreihen — Finalizer holt 5 s später Emotion/Activity-Delta.
+                    if (result.ok) {
+                        this.state.dsl.pendingOutcomes.push({
+                            name: evolution.name,
+                            program: evolution.program,
+                            outcome: result.outcome,
+                            historyRef: historyEntry,
+                        });
+                    }
                     this.log(
-                        `Nexus-Evolution (DSL) ausgeführt: ${evolution.name}, fitness=${fitness.toFixed(2)}`,
+                        `Nexus-Evolution (DSL) ausgeführt: ${evolution.name}, fitness=${initialFitness.toFixed(2)}`,
                         "INFO"
                     );
                 } else {
@@ -6969,13 +8249,33 @@ class AnazhRealm {
                 }
             }
 
-            // ### KI und Selbstanalyse ###
-            this.collectLearningData(currentTime);
-            if (currentTime - this.state.lastLearningUpdate >= this.state.learningInterval) {
-                this.learn(currentTime);
-                this.selfAwarenessAnalyze(); // Ergänzt aus V7.56
-                this.state.lastLearningUpdate = currentTime;
+            // ### Selbstanalyse + Nexus-Evolution-Trigger ###
+            // Früher hing das am TF-Trainings-Tick (`learn()`); nach TF-Cleanup
+            // läuft die Zeit-Schwelle direkt. `selfAwarenessAnalyze` macht den
+            // FPS-/Tunneling-/Boden-Check, `evolveNexus` queued ein DSL-Programm
+            // in den `nexusEvolutionQueue`.
+            if (currentTime - this.state.lastSelfAnalysis >= 5.0) {
+                this.selfAwarenessAnalyze();
+                if (this.state.fps > 0 && this.state.fps < 50 && this.nexus) {
+                    this.nexus.processOptimization({ fps: this.state.fps });
+                }
+                this.journalTick(currentTime);
+                // Welle 3 F — Welt-Info nur alle 5 s aktualisieren (gleicher
+                // Takt wie selfAwareness; DOM-Cost ist gering aber nicht null).
+                this.updateWorldInfo();
             }
+            if (this.nexus && currentTime - this.state.nexusLastEvolution >= this.state.nexusEvolutionInterval) {
+                this.evolveNexus(currentTime);
+            }
+
+            // ### Schicht 1 — IQ-Ticks ###
+            // Pfad-Bucket-Sample (alle 2 s), Activity-Sample (jeden Frame, billig),
+            // Keyword-Window-Cleanup (60 s Cutoff), pending Outcomes finalisieren
+            // (5 s nach Programm-Lauf liest der Finalizer Emotion/Activity-Delta).
+            this.samplePathBuckets(currentTime);
+            this.samplePlayerActivity(currentTime);
+            this.pruneRecentKeywords(currentTime);
+            this.finalizePendingOutcomes(currentTime);
 
             // ### Kreaturen, Wetter, Wachstum ###
             this.updateCreatures(delta);

@@ -4,25 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!--
-      Ring 2 Phase 6 — CSP. Lockerer als „voll strict", aber ehrlich. Drei
-      bewusste Konzessionen:
+      CSP nach Schicht-1-Cleanup (Mai 2026). Verbleibende Konzessionen, alle
+      mit klarem Konsumenten:
 
-        1. 'unsafe-eval' im script-src: TensorFlow.js (vendor/tf.min.js)
-           kompiliert WebGL-Shader-Kernel zur Laufzeit per eval. Ohne diese
-           Erlaubnis schlägt initAI fehl. Phase 7 könnte TF durch eval-freies
-           brain.js ersetzen — bis dahin steht hier die Konzession. UNSER
-           eigener Code nutzt kein eval; das CI-Gate „Verbotenes dynamisches
-           Auswerten" schützt diesen Pfad hart.
-        2. 'wasm-unsafe-eval' im script-src: für Ammo.js (WebAssembly).
-        3. 'unsafe-inline' im style-src: Three.js setzt inline-Styles aufs
+        1. 'wasm-unsafe-eval' im script-src: Ammo.js (Bullet via WebAssembly).
+           Unvermeidbar, solange Ammo im Bundle ist; kein eval auf User-Strings.
+        2. 'unsafe-inline' im style-src: Three.js setzt inline-Styles aufs
            <canvas> für Größe + Position. Risiko gering, weil kein User-
            kontrolliertes CSS injizierbar ist.
+        3. worker-src 'self' blob:: der eigene `movementWorker` läuft als Blob-
+           Worker (off-screen Kreatur-Bewegung im Hintergrund-Thread). Code
+           steht inline in `getMovementWorker()` als String-Konstante — kein
+           User-Input fließt rein.
+        4. connect-src: vier LLM-Provider als Schicht-2-Stimme. Browser-Anfrage
+           geht direkt vom Spieler-Browser an den jeweiligen Endpoint, Key liegt
+           im localStorage — Single-User-Localhost-Spiel. Inklusive Ollama auf
+           localhost:11434 für offline-Setups.
 
-      object-src 'none' und base-uri 'self' bleiben strict. frame-ancestors
-      gehört in den HTTP-Header (via <meta> ignoriert der Browser es) — der
-      lokale save-server kann das künftig liefern.
+      `'unsafe-eval'` ist nach dem TF.js-Cleanup weg — unser eigener Code nutzt
+      KEIN eval, das CI-Gate „Verbotenes dynamisches Auswerten" schützt diesen
+      Pfad hart. object-src 'none' und base-uri 'self' bleiben strict.
     -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self';">
     <title>Anazh Realm v7.65 – Das Ultiversum</title>
     <style>
         /* ====================================================================
@@ -1196,6 +1199,15 @@
     <aside class="drawer open" data-drawer="welt" aria-label="Welt-Panel">
         <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
         <h2>Welt</h2>
+        <section class="section" id="world-info-section">
+            <h3>Diese Welt</h3>
+            <div id="world-info" class="drawer-hint" aria-live="polite">…</div>
+            <div id="world-journal-recent" class="drawer-hint" aria-live="polite"></div>
+            <div class="actions">
+                <button type="button" id="world-export">Welt teilen…</button>
+                <button type="button" id="world-import">Welt empfangen…</button>
+            </div>
+        </section>
         <section class="section">
             <h3>Aktionen</h3>
             <div class="actions" id="quick-actions">
@@ -1307,6 +1319,41 @@
                 <input type="range" id="tune-cooldown" min="5" max="120" step="5" value="30">
             </div>
         </section>
+        <section class="section" id="llm-section">
+            <h3>Grok-Stimme (LLM)</h3>
+            <p class="drawer-hint">
+                Optional: gib Grok eine echte Stimme. Vier Provider — drei haben Gratis-Tiers,
+                Ollama läuft komplett lokal. Schlüssel liegen nur im localStorage dieses
+                Browsers. Jeder Vorschlag geht durch den DSL-Interpreter — die Sandbox hält.
+            </p>
+            <div class="tuning-row">
+                <label for="llm-provider"><span>Provider</span></label>
+                <select id="llm-provider">
+                    <!-- gefüllt aus llmProviderDefs() -->
+                </select>
+            </div>
+            <div id="llm-provider-hint" class="drawer-hint" aria-live="polite"></div>
+            <div class="tuning-row" id="llm-key-row">
+                <label for="llm-key"><span>API-Key</span></label>
+                <input type="password" id="llm-key" placeholder="API-Key" autocomplete="off" spellcheck="false">
+            </div>
+            <div class="tuning-row" id="llm-endpoint-row" hidden>
+                <label for="llm-endpoint"><span>Endpoint</span></label>
+                <input type="text" id="llm-endpoint" placeholder="http://localhost:11434" autocomplete="off" spellcheck="false">
+            </div>
+            <div class="tuning-row">
+                <label for="llm-model"><span>Modell</span></label>
+                <select id="llm-model">
+                    <!-- gefüllt aus llmProviderDefs()[provider].models -->
+                </select>
+            </div>
+            <div class="actions">
+                <button type="button" id="llm-save">Speichern</button>
+                <button type="button" id="llm-clear">Vergessen</button>
+                <button type="button" id="llm-toggle" aria-pressed="false">Aktivieren</button>
+            </div>
+            <div id="llm-status" class="drawer-hint" aria-live="polite">Inaktiv.</div>
+        </section>
     </aside>
     <aside class="drawer" data-drawer="hilfe" aria-label="Hilfe-Panel" hidden>
         <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
@@ -1338,7 +1385,6 @@
     <!-- Vendored libs (vendor/README.md erklärt Versionen + Update-Befehl) -->
     <script src="vendor/three.min.js"></script>
     <script src="vendor/ammo.js"></script>
-    <script src="vendor/tf.min.js"></script>
     <script src="vendor/simplex-noise.js"></script>
     <!-- Phase 6: kein Inline-Bootstrap mehr — direkte Skript-Einbindung, defer
          garantiert die Reihenfolge nach den Vendor-Libs und das Warten auf
