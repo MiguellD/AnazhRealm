@@ -1537,11 +1537,43 @@
                 outline-offset: 1px;
             }
             /* Ring 6.5 — Hotbar-Belegungs-Editor im Spieler-Drawer */
-            /* Welle 6.D Etappe 1 — Stats-Sektion im Spieler-Drawer. */
+            /* Welle 6.D Etappe 1 — Stats-Sektion im Spieler-Drawer.
+               Etappe 1.5 ergänzt Körper-Teile-Liste oberhalb der Stats. */
             .drawer #player-stats {
                 display: flex;
                 flex-direction: column;
                 gap: 2px;
+            }
+            .drawer .body-parts-header {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10px;
+                letter-spacing: 0.06em;
+                color: var(--parch-ink-faded);
+                text-transform: uppercase;
+                margin-bottom: 3px;
+                padding-bottom: 3px;
+                border-bottom: 1px dashed rgba(138, 106, 54, 0.35);
+            }
+            .drawer .body-part-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: baseline;
+                padding: 2px 6px;
+                font-size: 11px;
+            }
+            .drawer .body-part-label {
+                font-family: "IM Fell English", Georgia, serif;
+                color: var(--parch-ink);
+                font-style: italic;
+            }
+            .drawer .body-part-meta {
+                font-family: "JetBrains Mono", monospace;
+                color: var(--parch-ink-faded);
+                font-size: 9.5px;
+            }
+            .drawer .stats-divider {
+                border-top: 1px dashed rgba(138, 106, 54, 0.45);
+                margin: 6px 0 4px;
             }
             .drawer .stat-row {
                 display: flex;

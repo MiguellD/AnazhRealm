@@ -9717,72 +9717,70 @@ class AnazhRealm {
     // - `isMoving`: bool, schaltet zwischen Walk/Trab/Flap-Speed und Idle.
     get playerSoulDefs() {
         if (this._playerSoulDefsCache) return this._playerSoulDefsCache;
-        // Welle 6.D Etappe 1 — Soul-Tag-Profile.
+        // Welle 6.D Etappe 1.5 — Seele = Bauplan aus Körper-Teilen.
         //
-        // Vision-Vertiefung: der Spieler IST ein Compound im Hylomorphismus-
-        // System (wave-6-design §5.1). Die Tag-Profile nutzen exakt dieselben
-        // 10 Achsen wie Materialien — MATERIAL_TAG_KEYS = härte, dichte,
-        // zähigkeit, wärmeleitung, stromleitung, magieleitung, transparent,
-        // brennbar, resoniert, lebendig. Werte: Mensch balanced, Phönix glass-
-        // cannon (low dichte/härte, high wärme/magie/brennbar), Drache tank
-        // (high dichte/härte/zähigkeit, robust). lebendig=1 bei allen drei.
+        // Vision-Korrektur (Schöpfer 13.05.2026): das hardcodete `tags`-Profil
+        // war Re-Verkapselung. Eine Seele entsteht jetzt — wie Bauwerke und
+        // Maschinen — aus einer Liste von Teilen mit Form × Material. Die
+        // Compound-Tags fallen aus `computeCompoundTags` (W4-P2 MAX-Aggregation)
+        // genauso wie bei jeder anderen Struktur in der Welt.
+        //
+        // Drei Built-in-Seelen sind Start-Charaktere; eigene Seelen kommen mit
+        // der DSL-Op `define_soul(name, bodyParts)` in Etappe 1.6. Visuelle
+        // Anim-Pfade (build/animate) bleiben für die Built-ins — Custom-Souls
+        // bekommen einen generischen Atem-Loop (folgt mit Custom-Soul-UI).
         this._playerSoulDefsCache = {
             human: {
                 label: "Mensch",
                 color: 0xff0000,
                 build: () => this._buildHumanGroup(),
                 animate: (g, t, ph, mv) => this._animateHuman(g, t, ph, mv),
-                tags: {
-                    härte: 0.5,
-                    dichte: 0.5,
-                    zähigkeit: 0.6,
-                    wärmeleitung: 0.5,
-                    stromleitung: 0.4,
-                    magieleitung: 0.5,
-                    transparent: 0.0,
-                    brennbar: 0.1,
-                    resoniert: 0.4,
-                    lebendig: 1.0,
-                },
+                bodyParts: [
+                    { shape: "box", material: "fleisch", size: { x: 0.6, y: 1.0, z: 0.4 }, label: "Torso" },
+                    { shape: "sphere", material: "knochen", size: { x: 0.3, y: 0.3, z: 0.3 }, label: "Kopf" },
+                    { shape: "cylinder", material: "fleisch", size: { x: 0.18, y: 0.85, z: 0.18 }, label: "Glieder" },
+                    { shape: "cylinder", material: "knochen", size: { x: 0.2, y: 0.9, z: 0.2 }, label: "Skelett" },
+                ],
             },
             phoenix: {
                 label: "Phönix",
                 color: 0xff7a1a,
                 build: () => this._buildPhoenixGroup(),
                 animate: (g, t, ph, mv) => this._animatePhoenix(g, t, ph, mv),
-                tags: {
-                    härte: 0.3,
-                    dichte: 0.2,
-                    zähigkeit: 0.3,
-                    wärmeleitung: 0.9,
-                    stromleitung: 0.6,
-                    magieleitung: 0.8,
-                    transparent: 0.4,
-                    brennbar: 0.9,
-                    resoniert: 0.7,
-                    lebendig: 1.0,
-                },
+                bodyParts: [
+                    { shape: "box", material: "federn", size: { x: 0.4, y: 0.55, z: 0.35 }, label: "Körper" },
+                    { shape: "plane", material: "federn", size: { x: 1.2, y: 0.6, z: 0.05 }, label: "Flügel" },
+                    { shape: "sphere", material: "glut", size: { x: 0.22, y: 0.22, z: 0.22 }, label: "Inneres Feuer" },
+                    { shape: "cone", material: "federn", size: { x: 0.18, y: 0.8, z: 0.18 }, label: "Schweif" },
+                ],
             },
             dragon: {
                 label: "Drache",
                 color: 0x2d6e3b,
                 build: () => this._buildDragonGroup(),
                 animate: (g, t, ph, mv) => this._animateDragon(g, t, ph, mv),
-                tags: {
-                    härte: 0.9,
-                    dichte: 0.9,
-                    zähigkeit: 0.85,
-                    wärmeleitung: 0.8,
-                    stromleitung: 0.4,
-                    magieleitung: 0.6,
-                    transparent: 0.0,
-                    brennbar: 0.3,
-                    resoniert: 0.5,
-                    lebendig: 1.0,
-                },
+                bodyParts: [
+                    { shape: "box", material: "schuppen", size: { x: 1.2, y: 0.7, z: 0.5 }, label: "Körper" },
+                    { shape: "sphere", material: "schuppen", size: { x: 0.45, y: 0.4, z: 0.4 }, label: "Kopf" },
+                    { shape: "cylinder", material: "knochen", size: { x: 0.22, y: 0.45, z: 0.22 }, label: "Beine" },
+                    { shape: "cylinder", material: "schuppen", size: { x: 0.18, y: 1.4, z: 0.18 }, label: "Schweif" },
+                ],
             },
         };
         return this._playerSoulDefsCache;
+    }
+
+    // Welle 6.D Etappe 1.5 — Compound-Tags der Seele berechnen.
+    //
+    // Identische Aggregations-Mechanik wie `computeCompoundTags(blueprint)` für
+    // Bauwerke: pro Body-Part `computePartTags` (Form × Material), dann MAX über
+    // alle Teile. Damit spricht der Spieler dieselbe Sprache wie Architekturen.
+    // Wer einen leeren `bodyParts`-Eintrag hat, bekommt leere Tags zurück (defensiv).
+    computeSoulCompoundTags(soulDef) {
+        if (!soulDef || !Array.isArray(soulDef.bodyParts) || soulDef.bodyParts.length === 0) {
+            return {};
+        }
+        return this.computeCompoundTags({ parts: soulDef.bodyParts });
     }
 
     // Hilfs-Helper: ein Glied (Arm/Bein) mit Pivot am Joint. Joint-Group
@@ -10058,22 +10056,23 @@ class AnazhRealm {
         return true;
     }
 
-    // Welle 6.D Etappe 1 — Spieler-Stats aus Soul-Tags ableiten.
+    // Welle 6.D Etappe 1.5 — Spieler-Stats aus dem Körper-Bauplan ableiten.
     //
     // Vision-Hebel: dieselbe Tag-Aggregation wie bei Architekturen + Materialien.
-    // V1: finalTags = soul.tags pur. V2 wird Rüstung + Werkzeug + Boosts dazu-
-    // mischen (wave-6-design §5.3+§5.4); die `computePlayerStats`-Signatur ist
-    // bereits darauf vorbereitet (gibt finalTags + finalStats zurück, damit
-    // Aufrufer beide Schichten sehen).
+    // Die Seele liefert eine Liste Körper-Teile (Form × Material), `computeSoul
+    // CompoundTags` macht MAX-Aggregation, und STAT_FROM_TAGS bildet aus den
+    // entstandenen Tag-Werten acht Stats. V2 wird Rüstung + Werkzeug + Boosts
+    // dazumischen (Etappe 2-3).
     computePlayerStats() {
         const soulName = (this.state.player && this.state.player.soul) || "human";
         const soul = this.playerSoulDefs[soulName];
-        const tagsBase = (soul && soul.tags) || {};
-        // Defensiv: fehlende Tags auf 0 — falls Custom-Souls über DSL eines
-        // Tages MATERIAL_TAG_KEYS unvollständig setzen.
+        const compoundTags = this.computeSoulCompoundTags(soul);
+        // Defensiv: alle MATERIAL_TAG_KEYS auf Zahl auflösen, fehlende auf 0.
+        // Werte können bis ~3 reichen (FORM_TAG_ACTIVATION × Material-Tag);
+        // STAT_FROM_TAGS-Formeln tolerieren das (lineare Multiplikatoren).
         const finalTags = {};
         for (const key of AnazhRealm.MATERIAL_TAG_KEYS) {
-            finalTags[key] = Number(tagsBase[key]) || 0;
+            finalTags[key] = Number(compoundTags[key]) || 0;
         }
         const stats = {};
         for (const stat of Object.keys(AnazhRealm.STAT_FROM_TAGS)) {
@@ -10596,6 +10595,55 @@ class AnazhRealm {
                 magieleitung: 0.2,
                 brennbar: 0.7,
                 lebendig: 0.3,
+            }),
+            // Welle 6.D Etappe 1.5 — Körper-Materialien für das Seelen-Bauplan-
+            // System. Lebendig=1 markiert sie als „Körper-fähig"; ansonsten
+            // gleiche MATERIAL_TAG_KEYS-Sprache wie alles andere. Können auch
+            // für Bauwerke verwendet werden (Heilige Lektion: eine Sprache).
+            make("knochen", "Knochen", 0xe8dfc4, {
+                härte: 0.8,
+                dichte: 0.6,
+                zähigkeit: 0.5,
+                resoniert: 0.4,
+                lebendig: 1.0,
+            }),
+            make("fleisch", "Fleisch", 0xb55050, {
+                härte: 0.15,
+                dichte: 0.4,
+                zähigkeit: 0.75,
+                wärmeleitung: 0.45,
+                brennbar: 0.35,
+                lebendig: 1.0,
+            }),
+            make("federn", "Federn", 0xf2c870, {
+                härte: 0.1,
+                dichte: 0.1,
+                zähigkeit: 0.3,
+                wärmeleitung: 0.7,
+                magieleitung: 0.55,
+                brennbar: 0.7,
+                resoniert: 0.5,
+                lebendig: 1.0,
+            }),
+            make("schuppen", "Schuppen", 0x355c3a, {
+                härte: 0.9,
+                dichte: 0.85,
+                zähigkeit: 0.8,
+                wärmeleitung: 0.55,
+                stromleitung: 0.3,
+                magieleitung: 0.45,
+                resoniert: 0.45,
+                lebendig: 1.0,
+            }),
+            make("glut", "Glut", 0xff5a14, {
+                härte: 0.1,
+                dichte: 0.25,
+                zähigkeit: 0.2,
+                wärmeleitung: 0.95,
+                magieleitung: 0.75,
+                brennbar: 1.0,
+                resoniert: 0.65,
+                lebendig: 1.0,
             }),
         ];
         const out = {};
@@ -12744,6 +12792,33 @@ class AnazhRealm {
             empty.textContent = "Stats werden berechnet, wenn die Seele gewählt ist.";
             container.appendChild(empty);
             return;
+        }
+        // Welle 6.D Etappe 1.5 — Körper-Teile-Liste oben, dann Stats darunter.
+        // Damit der Schöpfer SIEHT, woraus seine Seele besteht und wie ihre
+        // Stats daraus entstehen (Form × Material → Compound-Tags → Stats).
+        const soulName = (this.state.player && this.state.player.soul) || "human";
+        const soul = this.playerSoulDefs[soulName];
+        if (soul && Array.isArray(soul.bodyParts) && soul.bodyParts.length > 0) {
+            const bodyHeader = document.createElement("div");
+            bodyHeader.className = "body-parts-header";
+            bodyHeader.textContent = "Körper-Teile (Form × Material → Tags)";
+            container.appendChild(bodyHeader);
+            for (const part of soul.bodyParts) {
+                const row = document.createElement("div");
+                row.className = "body-part-row";
+                const label = document.createElement("span");
+                label.className = "body-part-label";
+                label.textContent = part.label || part.shape;
+                const meta = document.createElement("span");
+                meta.className = "body-part-meta";
+                meta.textContent = `${part.shape} · ${part.material}`;
+                row.appendChild(label);
+                row.appendChild(meta);
+                container.appendChild(row);
+            }
+            const divider = document.createElement("div");
+            divider.className = "stats-divider";
+            container.appendChild(divider);
         }
         const rows = [
             { key: "hpMax", label: "Lebenskraft", fmt: (v) => Math.round(v) },

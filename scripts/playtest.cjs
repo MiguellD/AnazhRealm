@@ -1238,7 +1238,10 @@ function startSaveServer() {
                 check("Welle 4 P1: MATERIAL_TAG_KEYS ist frozen", wave4p1Results.tagKeysFrozen);
                 check("Welle 4 P1: 10 Tag-Achsen", wave4p1Results.tagKeyCount === 10);
                 check("Welle 4 P1: 6 Built-in-Materialien existieren", wave4p1Results.expectedBuiltIns);
-                check("Welle 4 P1: Built-in-Anzahl exakt 6", wave4p1Results.builtInCount === 6);
+                check(
+                    "Welle 4 P1: Built-in-Anzahl exakt 11 (6 Bau + 5 Körper, ergänzt in Welle 6.D 1.5)",
+                    wave4p1Results.builtInCount === 11
+                );
                 check("Welle 4 P1: Alle Tag-Werte 0..1", wave4p1Results.tagsInRange);
                 check(
                     "Welle 4 P1: Quarz hat Signatur-Tags (resoniert/transparent/magieleitung)",
@@ -5391,12 +5394,35 @@ function startSaveServer() {
                     out.hasRecomputeMethod = typeof r.recomputePlayerStats === "function";
                     out.hasRenderMethod = typeof r.renderPlayerStatsUI === "function";
 
-                    // Soul-Tags sind an MATERIAL_TAG_KEYS gebunden — Vision-Treue-Check
+                    // Welle 6.D Etappe 1.5 — Seele = Bauplan aus Körper-Teilen
                     const defs = r.playerSoulDefs;
-                    out.allSoulsHaveTags = ["human", "phoenix", "dragon"].every((s) => defs[s] && defs[s].tags);
-                    out.humanTagsAreMaterialKeys = !!defs.human.tags && C.MATERIAL_TAG_KEYS.every((k) => k in defs.human.tags);
-                    out.phoenixTagsAreMaterialKeys = !!defs.phoenix.tags && C.MATERIAL_TAG_KEYS.every((k) => k in defs.phoenix.tags);
-                    out.dragonTagsAreMaterialKeys = !!defs.dragon.tags && C.MATERIAL_TAG_KEYS.every((k) => k in defs.dragon.tags);
+                    out.allSoulsHaveBodyParts = ["human", "phoenix", "dragon"].every(
+                        (s) => defs[s] && Array.isArray(defs[s].bodyParts) && defs[s].bodyParts.length >= 3
+                    );
+                    out.bodyPartsHaveShapeMaterial = ["human", "phoenix", "dragon"].every((s) =>
+                        defs[s].bodyParts.every((p) => typeof p.shape === "string" && typeof p.material === "string")
+                    );
+                    // Tag-Aggregation: bodyParts liefern Compound-Tags via dieselbe
+                    // MAX-Aggregation wie Architekturen (computeCompoundTags).
+                    out.hasSoulCompoundTagsMethod = typeof r.computeSoulCompoundTags === "function";
+                    const humanCompoundTags = r.computeSoulCompoundTags(defs.human);
+                    out.humanCompoundTagsAreObject = humanCompoundTags && typeof humanCompoundTags === "object";
+                    // Aggregierte Tags sollten echte MATERIAL_TAG_KEYS sein
+                    out.compoundUsesMaterialKeys = Object.keys(humanCompoundTags).every((k) =>
+                        C.MATERIAL_TAG_KEYS.includes(k)
+                    );
+                    // Body-Materialien müssen in state.materials existieren
+                    out.bodyMaterialsExist =
+                        !!r.state.materials.knochen &&
+                        !!r.state.materials.fleisch &&
+                        !!r.state.materials.federn &&
+                        !!r.state.materials.schuppen &&
+                        !!r.state.materials.glut;
+                    out.bodyMaterialsAreLebendig =
+                        (r.state.materials.knochen.tags.lebendig || 0) > 0.9 &&
+                        (r.state.materials.fleisch.tags.lebendig || 0) > 0.9 &&
+                        (r.state.materials.federn.tags.lebendig || 0) > 0.9 &&
+                        (r.state.materials.schuppen.tags.lebendig || 0) > 0.9;
 
                     // computePlayerStats — gibt {tags, stats} zurück
                     const computed = r.computePlayerStats();
@@ -5484,18 +5510,30 @@ function startSaveServer() {
                 check("Welle 6.D: computePlayerStats-Methode existiert", wave6dResults.hasComputeMethod);
                 check("Welle 6.D: recomputePlayerStats-Methode existiert", wave6dResults.hasRecomputeMethod);
                 check("Welle 6.D: renderPlayerStatsUI-Methode existiert", wave6dResults.hasRenderMethod);
-                check("Welle 6.D: alle drei Seelen tragen ein tags-Feld", wave6dResults.allSoulsHaveTags);
+                check("Welle 6.D Etappe 1.5: alle drei Seelen tragen ≥3 bodyParts", wave6dResults.allSoulsHaveBodyParts);
                 check(
-                    "Welle 6.D: Vision-Treue — Mensch-Soul-Tags an MATERIAL_TAG_KEYS gebunden",
-                    wave6dResults.humanTagsAreMaterialKeys
+                    "Welle 6.D Etappe 1.5: jedes bodyPart hat shape + material",
+                    wave6dResults.bodyPartsHaveShapeMaterial
                 );
                 check(
-                    "Welle 6.D: Vision-Treue — Phönix-Soul-Tags an MATERIAL_TAG_KEYS gebunden",
-                    wave6dResults.phoenixTagsAreMaterialKeys
+                    "Welle 6.D Etappe 1.5: computeSoulCompoundTags-Methode existiert",
+                    wave6dResults.hasSoulCompoundTagsMethod
                 );
                 check(
-                    "Welle 6.D: Vision-Treue — Drache-Soul-Tags an MATERIAL_TAG_KEYS gebunden",
-                    wave6dResults.dragonTagsAreMaterialKeys
+                    "Welle 6.D Etappe 1.5: computeSoulCompoundTags liefert ein Tag-Objekt",
+                    wave6dResults.humanCompoundTagsAreObject
+                );
+                check(
+                    "Welle 6.D Etappe 1.5: Vision-Treue — aggregierte Tags nutzen MATERIAL_TAG_KEYS",
+                    wave6dResults.compoundUsesMaterialKeys
+                );
+                check(
+                    "Welle 6.D Etappe 1.5: 5 Körper-Materialien (knochen/fleisch/federn/schuppen/glut) sind in state.materials",
+                    wave6dResults.bodyMaterialsExist
+                );
+                check(
+                    "Welle 6.D Etappe 1.5: alle Körper-Materialien tragen lebendig > 0.9",
+                    wave6dResults.bodyMaterialsAreLebendig
                 );
                 check("Welle 6.D: computePlayerStats liefert {tags, stats}", wave6dResults.computedHasTags && wave6dResults.computedHasStats);
                 check("Welle 6.D: computed.stats hat alle 8 Werte als finite Zahlen", wave6dResults.computedStatsHasAll);
