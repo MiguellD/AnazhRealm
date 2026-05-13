@@ -143,7 +143,11 @@ Letzter Stand: Ring 1-7 + **Welle 1+2+3 + Welle 4 P1-P3 + Welle 5 A+B+C + Editor
 | `vendor/README.md` | Vendor-Libs Versionen + Update-Befehl |
 | `docs/crafting-konzept.md` | **Hylomorphismus-Konzept** — Bausteine, Operationen, Compounds, räumliche Prinzipien (Welle 4-6 Vorlage) |
 | `docs/aktivierungsmatrix.md` | Form-Tag-Aktivierungs-Matrix v2 (9 × 10), Quellcode für `AnazhRealm.FORM_TAG_ACTIVATION` |
-| `scripts/playtest.cjs` | Headless-Playtest mit **432 Invarianten** als CI-Gate |
+| `docs/wave-6-design.md` | **Welle-6-Brainstorm** — sechs Blöcke (A Interaktion, B CAD, C Inventar+Modi, D Stats fraktal, E Lesbarkeit, F Crafting-Mechanik). Stat-System als Hylomorphismus-Erweiterung auf den Spieler. Offene Schöpfer-Fragen. |
+| `scripts/playtest.cjs` | Headless-Playtest mit **711 Invarianten** als CI-Gate |
+| `scripts/smoke-multiuser.cjs` | End-to-End-Test für Ring 11 V1: spawnt signaling-server, öffnet zwei WS-Clients, prüft welcome/peer-join/pos/peer-leave-Flow (`npm run smoke:multiuser`) |
+| `signaling-server.js` | Ring 11 V1 WebSocket-Broker (RFC-6455 von Hand, zero deps), `npm run signaling` startet auf Port 4313 |
+| `start.bat` | Windows-Starter: bootet save-server.js + signaling-server.js + öffnet Browser. Mac/Linux: `npm start` (Save-Server) + `npm run signaling` (separat) |
 | `.claude/commands/audit.md` | `/audit`-Slash-Befehl Definition |
 | `.github/workflows/check.yml` | CI-Definition (zwei Jobs) |
 

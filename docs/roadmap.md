@@ -41,7 +41,7 @@ Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) si
 | 10.5 | Welt-Modifizierbarkeit (pro-Chunk DSL-Delta) | ✅ **live** — `state.worldMeta.chunkDeltas` mit FIFO-Cap 100/Chunk, `modify_terrain(x, z, r, dh)` mit Smoothstep-Falloff, `_rebuildChunkPhysics` aus aktuellen Vertices, `applyChunkDelta` als Hook in `ensureChunkAt`, Chat `grabe loch`/`hebe hügel`, Schema `10.5-chunk-delta-v1` | – | Ring 10 |
 | 11 V1 | Multi-User Position-Sync via WebSocket-Broker | ✅ **live** — `signaling-server.js` (RFC-6455 von Hand, zero deps), `state.p2p` mit peers-Map, 30 Hz pos-Broadcast, Remote-Peer-Avatare als Cone+Sphere-Group (HSL-Hash aus peerId), UI-Toggle in Einstellungen, CSP um ws:// erweitert, Sandbox-Grenze (KEIN p2p-DSL-Op) — KEIN DSL-Sync | – | Ring 10.5 |
 | 11 V2 | DSL-AST-Broadcast für Welt-Synchronisation | 🔴 offen — Chat-Befehle als DSL-AST über WS senden, beide Welten führen aus → konsistenter Zustand. Trust-Boundary: eingehende ASTs durch denselben `dslRun`-Sandbox-Pfad wie eigene. modify_terrain-Sync, Nexus-Programm-IDs für Outcome-Dedup. | 3-5 d | Ring 11 V1 |
-| W6 | **Crafting-Polish + Erweiterung** — visuelle Verbindungen, Brech-Mechanik, Energiequellen, Kreaturen-Körper, Physik-Baukasten, Rüstung, Min-Regel-Entscheidung | 🔴 offen, bewusst nachgelagert | 8-12 Sessions in 7 Teilschritten | W5 + Rings 8-11 V1 |
+| W6 | **Crafting-Polish + UX + Stats** — sechs Sub-Blöcke (A–F), detaillierter Plan in §3 unten + Brainstorm in `docs/wave-6-design.md` | 🔴 offen, bewusst nachgelagert | 12-18 Sessions verteilt auf sechs Themen-Blöcke | W5 + Rings 8-11 V1 |
 
 **Summe verbleibend**: ~30-40 Arbeitstage in fokussierten Sessions. Verteilt auf 2-4 Monate realistisch.
 
@@ -208,7 +208,58 @@ Plus: inline-styles aus `index.html` entfernt (`#fps`, `#state-file-input`), Inl
 
 ---
 
-### Welle 6: Crafting-Polish (Feinschliff, ~2-3 Sessions, bewusst nachgelagert)
+### Welle 6: Crafting-Polish + UX + Stats (sechs Blöcke A–F, bewusst nachgelagert)
+
+**Status**: 🔴 offen — **bewusst nach Ringe 8-11 V1 verschoben** (Entscheidung 13.05.2026, erweitert nach Ring 11 V1). Die Hylomorphismus-Schicht ist mechanisch vollständig (W4 + W5 A+B+C), Ring 11 V1 trägt Multi-User-Position-Sync. Welle 6 ist Polish + Erweiterung, kein Fundament.
+
+**Gesamt-Schätzung**: ~18-22 Sessions, verteilt auf 3-4 Monate Echtzeit, in sechs Blöcken **6.A bis 6.F** organisiert.
+
+**Detaillierte Design-Notizen + Brainstorm** in [`docs/wave-6-design.md`](./wave-6-design.md). Roadmap-Eintrag hier ist die Milestone-Übersicht; die Begründungs- und Konzept-Tiefe lebt im Design-Doc.
+
+#### Sechs Blöcke
+
+| Block | Themen | Aufwand | Vorbedingung |
+|---|---|---|---|
+| **6.A — Interaktion-Polish** | Wall-Sliding (no-stick), Erdung auf Strukturen, Maus-Aktionen LMB/RMB, Bau-Phantom mit Raycast-Place, Stabilitäts-Check beim Platzieren | 3-4 Sessions | – |
+| **6.B — CAD-Werkstatt** | 3D-Preview-Pane, Drag-Items aus Seitenleiste, Snap (Grid/Part/Symmetrie), visuelle Verbindungs-Erzeugung | 3 Sessions | 6.F1 (gemeinsamer Linien-Renderer) |
+| **6.C — Inventar + Modi + Keys** | Erweitertes Inventar mit Tag-Profilen, Spiel-Modi (friedlich/survival/kreativ), Keybindings-UI | 4-5 Sessions | 6.D (Stats für Survival-Modus) |
+| **6.D — Stats fraktal** ⭐ | Soul × Soul-Material → Tags → Stats; Boosts (Konsum + Emotion + Welt-Effekt); Min-Regel-Hybrid | 3-4 Sessions | W5 + 6.F2 |
+| **6.E — Lesbarkeit** | Fähigkeit-Beschreibung (regel- oder LLM-basiert), Intro-Overlay, subtile Tooltips | 2 Sessions | – |
+| **6.F — Original-Crafting (alt 6.1-6.7)** | Visuelle Verbindungs-Linien, Brech-Mechanik, Energiequellen, Kreaturen-Körper als Baukasten, Physik-Constraints (Ammo Hinge/Fixed), Rüstung → in 6.D integriert | 8-10 Sessions | W5 |
+
+**Vision-Hebel der Welle**: Block 6.D macht den Spieler zum **Compound im selben Hylomorphismus-System** wie Materialien und Bauwerke. `STAT_FROM_TAGS`-Matrix analog `FORM_TAG_ACTIVATION`. Wenn das Stat-System ohne Bezug zu `MATERIAL_TAG_KEYS` funktioniert, wurde die Vision verfehlt — explizite Warnung im Design-Doc §9.
+
+**Empfohlene Sequenz** (aus `docs/wave-6-design.md` §8):
+1. 6.A1+A2 (Sliding + Erdung) — kleine Fixes
+2. 6.A4+A5 (Raycast-Place + Stabilität) — bauen wird vorhersehbar
+3. 6.E1+E2 (Ability-Beschreibung + Intro) — Welt wird lesbar
+4. 6.A3 + 6.C3 (Maus + Keybinds) — Konventionen
+5. 6.F1 + 6.F2 (Linien + Brech-Warning) — Crafting sichtbar
+6. 6.D (Stats komplett) — Vision-Pfeiler ⭐
+7. 6.C1 + 6.C2 (Inventar + Modi) — Spielmechanik
+8. 6.B (CAD) — UX-Vertiefung
+9. 6.F3 + 6.F4 + 6.F5 (Energie, Kreaturen, Constraints) — letzter Crafting-Block
+
+**Offene Schöpfer-Fragen vor Start** (siehe `docs/wave-6-design.md` §10): Survival-Modus-Name, Stat-Sichtbarkeit (Zahlen vs. Auren), Tod-Behandlung, CAD-Komplexität, Min-Regel-Hybrid-Bestätigung, Reihenfolge-Anpassung.
+
+**Was beachten (Welle 6 als Ganzes)**:
+1. **Heilige Lektion**: 6.B, 6.C, 6.D sind die Stamm-gefährdenden Blöcke — Reflex „separates Modul" abwehren.
+2. **Schema-Bumps** bei 6.C1, 6.C2, 6.D, 6.F5 — defensive Migration testen.
+3. **Diskriminations-Tests** pro Block (Beispiele in Design-Doc §9.3).
+4. **Reflexions-Pausen** zwischen 6.A→6.E, 6.F1+F2→6.D, Rest.
+5. **Vision-Treue von 6.D** ist nicht-verhandelbar: Spieler-Stats müssen aus Tag-Aggregation kommen, nicht als separates RPG-System danebenstehen.
+
+#### Alt-Plan-Archiv
+
+Der ursprüngliche Welle-6-Plan (sieben Teilschritte 6.1-6.7) ist vollständig in den Block **6.F** überführt. Details siehe `docs/wave-6-design.md` §7. 6.6 (Rüstung) wird Teil von 6.D (Stats), 6.7 (Min-Regel) wird Teil von 6.D §5.5.
+
+---
+
+### Welle 6 ALT — ursprünglicher Plan (jetzt 6.F)
+
+(Bleibt unten zur Referenz, ist aber durch die Sechs-Blöcke-Struktur oben ersetzt. Beim Implementieren ist die Detail-Tiefe der 6.1-6.7-Teilschritte hilfreich — daher nicht gelöscht.)
+
+
 
 **Status**: 🔴 offen — **bewusst nach Ringe 8-10 verschoben** (Entscheidung 13.05.2026). Die Hylomorphismus-Schicht ist mechanisch vollständig (W4 + W5 A+B+C), Welle 6 ist Polish + Erweiterung, kein Fundament. Rings 8-10 (Welten-Ultiversum) ziehen die Vision-Krönung vor; Welle 6 läuft danach als Feinabstimmung.
 
