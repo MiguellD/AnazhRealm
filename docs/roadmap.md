@@ -28,7 +28,7 @@ Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) is
 | UI | Bedien-Oberfläche (Painterly) | ✅ V1+V2 live, V3 optional | 2-3 h Rest | – |
 | 5 | `createPlayerSoul` (Mensch/Phönix/Drache) | 🔴 offen | 1-2 d | – |
 | 6 | `architectureTemplates` V1 (Dörfer, Tempel, Wasserfälle) | 🔴 offen | 2 d | Ring 2 Phase 3 |
-| 7 | `brain.js`-Welt (lernt aus Verhalten + Emotion) | 🔴 offen | 3-4 d | Ring 3 + Ring 2 Phase 3 |
+| 7 | **IQ-Schicht statt brain.js** (lernt aus Verhalten + Emotion + optionale Claude-API) | ✅ Schicht 1+2 live | – | Ring 3 + Ring 2 Phase 3 |
 | 8 | Welt-Identität & Sichtbarkeit | 🟡 Schema bereit, Logik offen | 2-3 d | Ring 2 Phase 4 (Migration) |
 | 9 | Welt-Export/Import | 🔴 offen | 2 d | Ring 8 |
 | 10 | Welt-Fusion (zwei DSL-Programm-Sets mergen) | 🔴 offen | 3-4 d | Ring 9 |

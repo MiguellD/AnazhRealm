@@ -760,6 +760,185 @@ function startSaveServer() {
                 );
             }
 
+            // ### Schicht 1 — IQ-Schicht (Pfad-Buckets, Multi-Dim-Fitness, Pattern-Memory) ###
+            const iqResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    // State-Felder existieren
+                    out.hasPathBuckets =
+                        !!r.state.player.pathBuckets &&
+                        !!r.state.player.pathBuckets.height &&
+                        !!r.state.player.pathBuckets.distance;
+                    out.hasPatternMemory =
+                        r.state.dsl && typeof r.state.dsl.patternMemory === "object";
+                    out.hasRecentKeywords = Array.isArray(r.state.dsl.recentKeywords);
+                    out.hasPendingOutcomes = Array.isArray(r.state.dsl.pendingOutcomes);
+                    out.historyCap500 = r.state.dsl.historyCap >= 500;
+                    out.schemaVersionIq = r.state.worldMeta.schemaVersion === "7.72-iq-v1";
+
+                    // Keyword-Extraktion
+                    const kws = r.pathExtractKeywords("Ich liebe den Wald und Wasserfälle hier");
+                    out.keywordsExtracted = Array.isArray(kws) && kws.includes("wald") && kws.includes("wasserfälle");
+                    out.keywordsFilterStopwords = !kws.includes("der") && !kws.includes("ich");
+
+                    // rememberChatKeywords füllt den Window
+                    r.state.dsl.recentKeywords.length = 0;
+                    r.rememberChatKeywords("teste mit drachen und feuer", 1000);
+                    out.keywordsRemembered = r.state.dsl.recentKeywords.length >= 2;
+
+                    // pruneRecentKeywords entfernt alte
+                    r.state.dsl.recentKeywords.push({ keyword: "alt", at: 0 });
+                    r.pruneRecentKeywords(120);
+                    out.oldKeywordsPruned = !r.state.dsl.recentKeywords.some((e) => e.keyword === "alt");
+
+                    // Multi-Dim-Fitness: Outcome mit positiver Emotion gibt höhere Fitness
+                    const f1 = r.computeMultiDimFitness({
+                        fpsBefore: 120,
+                        fpsAfter: 120,
+                        emotionsBefore: { joy: 0.1, awe: 0, hope: 0, peace: 0 },
+                        emotionsAfter: { joy: 0.5, awe: 0.3, hope: 0.2, peace: 0.1 },
+                        activityAfter: { moves: 10, chats: 2, jumps: 0 },
+                    });
+                    const f2 = r.computeMultiDimFitness({
+                        fpsBefore: 120,
+                        fpsAfter: 120,
+                        emotionsBefore: { joy: 0.5, awe: 0.5, hope: 0.5, peace: 0.5 },
+                        emotionsAfter: { joy: 0.1, awe: 0.1, hope: 0.1, peace: 0.1 },
+                        activityAfter: { moves: 0, chats: 0, jumps: 0 },
+                    });
+                    out.fitnessRespondsToEmotion = f1 > f2;
+                    out.fitnessBounded = f1 >= 0 && f1 <= 1 && f2 >= 0 && f2 <= 1;
+
+                    // Pattern-Memory: rememberOutcomeAsPattern (high-fitness) speichert
+                    r.state.dsl.patternMemory = {};
+                    r.state.dsl.recentKeywords = [{ keyword: "drache", at: 100 }];
+                    r.rememberOutcomeAsPattern(
+                        { startedAt: 100 },
+                        ["spawn_creature", ["at_player"], 1, "happy"],
+                        0.8,
+                        110
+                    );
+                    out.patternMemoryWritten = Array.isArray(r.state.dsl.patternMemory["drache"]) &&
+                        r.state.dsl.patternMemory["drache"].length === 1;
+                    // Low-fitness Programme werden NICHT geschrieben
+                    r.rememberOutcomeAsPattern(
+                        { startedAt: 100 },
+                        ["weather", "rainy"],
+                        0.3,
+                        110
+                    );
+                    out.lowFitnessIgnored = r.state.dsl.patternMemory["drache"].length === 1;
+
+                    // dslSelectByPattern findet das Programm
+                    let foundByPattern = 0;
+                    for (let i = 0; i < 10; i++) {
+                        const p = r.dslSelectByPattern(Math.random);
+                        if (Array.isArray(p) && p[0] === "spawn_creature") foundByPattern++;
+                    }
+                    out.patternSelectionWorks = foundByPattern === 10;
+
+                    // Pfad-Buckets: samplePathBuckets inkrementiert
+                    const before = { ...r.state.player.pathBuckets.height };
+                    r.state.player.pathLastSample = -Infinity;
+                    r.samplePathBuckets(performance.now() / 1000);
+                    const after = r.state.player.pathBuckets.height;
+                    out.bucketsIncrementing =
+                        (after.low || 0) + (after.mid || 0) + (after.high || 0) >
+                        (before.low || 0) + (before.mid || 0) + (before.high || 0);
+
+                    // dslRun schreibt emotionsBefore + startedAt
+                    const result = r.dslRun(["weather", "sunny"], { source: "test" });
+                    out.outcomeHasEmotionSnapshot =
+                        result.outcome && typeof result.outcome.startedAt === "number" &&
+                        result.outcome.emotionsBefore &&
+                        typeof result.outcome.emotionsBefore.joy === "number";
+
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (!iqResults || iqResults.error) {
+                check("Schicht 1: IQ-Snapshot erreichbar", false, iqResults && iqResults.error || "page.evaluate fehlgeschlagen");
+            } else {
+                check("Schicht 1: pathBuckets-State im player", iqResults.hasPathBuckets);
+                check("Schicht 1: patternMemory-State im dsl", iqResults.hasPatternMemory);
+                check("Schicht 1: recentKeywords + pendingOutcomes", iqResults.hasRecentKeywords && iqResults.hasPendingOutcomes);
+                check("Schicht 1: historyCap auf 500 erhöht", iqResults.historyCap500);
+                check("Schicht 1: schemaVersion auf 7.72-iq-v1 gebumpt", iqResults.schemaVersionIq);
+                check("Schicht 1: pathExtractKeywords liefert echte Tokens", iqResults.keywordsExtracted);
+                check("Schicht 1: Keyword-Filter wirft Stoppwörter raus", iqResults.keywordsFilterStopwords);
+                check("Schicht 1: rememberChatKeywords füllt das Fenster", iqResults.keywordsRemembered);
+                check("Schicht 1: pruneRecentKeywords räumt alte Einträge ab", iqResults.oldKeywordsPruned);
+                check("Schicht 1: Multi-Dim-Fitness reagiert auf Emotion-Delta", iqResults.fitnessRespondsToEmotion);
+                check("Schicht 1: Fitness bleibt in [0..1]", iqResults.fitnessBounded);
+                check("Schicht 1: Pattern-Memory schreibt high-fitness", iqResults.patternMemoryWritten);
+                check("Schicht 1: low-fitness landet nicht im Memory", iqResults.lowFitnessIgnored);
+                check("Schicht 1: dslSelectByPattern findet gespeichertes Programm", iqResults.patternSelectionWorks);
+                check("Schicht 1: samplePathBuckets erhöht Höhen-Bucket", iqResults.bucketsIncrementing);
+                check("Schicht 1: dslRun-Outcome trägt emotionsBefore + startedAt", iqResults.outcomeHasEmotionSnapshot);
+            }
+
+            // ### Schicht 2 — Claude-API-Sandbox (UI + Parser, kein echter Call) ###
+            const llmResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    out.hasLlmState = r.state.llm && typeof r.state.llm.enabled === "boolean";
+                    out.endpointAnthropic = r.state.llm.endpoint === "https://api.anthropic.com/v1/messages";
+                    out.defaultModelHaiku = r.state.llm.model === "claude-haiku-4-5";
+
+                    out.llmUiKey = !!document.getElementById("llm-key");
+                    out.llmUiModel = !!document.getElementById("llm-model");
+                    out.llmUiToggle = !!document.getElementById("llm-toggle");
+
+                    // System-Prompt enthält die DSL-Vertrag-Anweisungen
+                    const sys = r.llmBuildSystemPrompt();
+                    out.systemPromptHasJson = /JSON/i.test(sys) && /say/.test(sys) && /program/.test(sys);
+
+                    // Parser: gültiges JSON
+                    const ok = r.llmParseResponse('{"say":"Hallo","program":["weather","sunny"]}');
+                    out.parserParsesValidJson = ok.say === "Hallo" && Array.isArray(ok.program);
+
+                    // Parser: Markdown-Fence-Stripping
+                    const fenced = r.llmParseResponse('```json\n{"say":"hi","program":null}\n```');
+                    out.parserStripsFence = fenced.say === "hi" && fenced.program === null;
+
+                    // Parser: Fehler bei kaputtem JSON
+                    const broken = r.llmParseResponse("nicht json");
+                    out.parserDetectsError = typeof broken.error === "string";
+
+                    // Wenn nicht enabled, kein Call
+                    r.state.llm.enabled = false;
+                    return new Promise((resolve) => {
+                        r.llmCallClaude("test").then((rep) => {
+                            out.callBlockedWhenDisabled = rep.error === "LLM nicht aktiv";
+                            // CSP erlaubt api.anthropic.com im connect-src
+                            const meta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+                            out.cspAllowsAnthropic = /api\.anthropic\.com/.test(meta ? meta.getAttribute("content") : "");
+                            resolve(out);
+                        });
+                    });
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (!llmResults || llmResults.error) {
+                check("Schicht 2: LLM-Snapshot erreichbar", false, llmResults && llmResults.error || "page.evaluate fehlgeschlagen");
+            } else {
+                check("Schicht 2: state.llm-Block existiert", llmResults.hasLlmState);
+                check("Schicht 2: Anthropic-Endpoint gesetzt", llmResults.endpointAnthropic);
+                check("Schicht 2: Default-Modell Haiku 4.5", llmResults.defaultModelHaiku);
+                check("Schicht 2: UI-Eingabefelder im Einstellungen-Drawer", llmResults.llmUiKey && llmResults.llmUiModel && llmResults.llmUiToggle);
+                check("Schicht 2: System-Prompt trägt DSL-JSON-Vertrag", llmResults.systemPromptHasJson);
+                check("Schicht 2: Parser akzeptiert gültiges JSON", llmResults.parserParsesValidJson);
+                check("Schicht 2: Parser entfernt Markdown-Fences", llmResults.parserStripsFence);
+                check("Schicht 2: Parser meldet Fehler bei kaputtem Input", llmResults.parserDetectsError);
+                check("Schicht 2: Disabled-LLM blockt Call sauber", llmResults.callBlockedWhenDisabled);
+                check("Schicht 2: CSP erlaubt api.anthropic.com im connect-src", llmResults.cspAllowsAnthropic);
+            }
+
             // ### Ring 3 – Player-Emotionen → Welt ###
             const ring3Results = await page
                 .evaluate(() => {

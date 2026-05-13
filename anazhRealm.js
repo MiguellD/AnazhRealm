@@ -178,8 +178,37 @@ class AnazhRealm {
                 nextEntryId: 1,
                 abilities: [],
                 history: [],
-                historyCap: 50,
+                historyCap: 500,
                 maxConcurrent: 32,
+                // Schicht 1 — Pattern-Memory. Spieler-Stichworte werden mit
+                // dem Outcome ihres Folge-Programms verknüpft. Bei späterer
+                // Erwähnung desselben Stichworts zieht der Generator aus dem
+                // Memory statt rein zufällig. Cap pro Stichwort, FIFO.
+                patternMemory: {},
+                patternMemoryCapPerKey: 8,
+                // Sliding window der letzten Chat-Keywords. Wird bei jedem
+                // Outcome-Recording konsumiert (jedes Programm, das innerhalb
+                // von ~20 s nach einem Keyword läuft, lernt davon).
+                recentKeywords: [],
+                recentKeywordsCap: 20,
+                // Pending-Outcomes (Phase 2 der Multi-Dim-Fitness). Nach jedem
+                // Programm-Run wartet der Loop ~5 s, dann liest er Emotion-
+                // Delta + Player-Activity und finalisiert die Fitness.
+                pendingOutcomes: [],
+                outcomeFinalizationDelay: 5.0,
+            },
+            // Schicht 2 — Claude API als optionale Grok-Stimme. Der Key liegt
+            // nur in localStorage (Single-User-Browser). Alle LLM-Vorschläge
+            // gehen durch `dslRun` → Budget-Limits halten als Sandbox.
+            llm: {
+                enabled: false,
+                apiKey: "",
+                model: "claude-haiku-4-5",
+                endpoint: "https://api.anthropic.com/v1/messages",
+                inFlight: false,
+                lastError: null,
+                lastResponseAt: -Infinity,
+                minGapSeconds: 3.0,
             },
             // Welt-Identität (Ring 8+, siehe docs/state-of-realm.md §11). Felder
             // werden jetzt schon gesetzt, damit das Save-Schema zukunftsfest
@@ -190,7 +219,7 @@ class AnazhRealm {
                 creator: "local",
                 visibility: "private",
                 parentWorlds: [],
-                schemaVersion: "7.71-blueprints-v1",
+                schemaVersion: "7.72-iq-v1",
             },
             // Ring 3 — Player-Emotionen. Sechs Achsen, jeweils 0..1.
             // Chat-Inputs füllen sie regelbasiert; im Game-Loop verflüchtigen
@@ -232,6 +261,22 @@ class AnazhRealm {
                 },
                 emotionApplyCooldown: 30,
                 emotionThreshold: 0.7,
+                // Schicht 1 — Pfad-Buckets. Histogramm wo der Spieler sich
+                // aufhält (Höhe, Distanz, Wetter, Aktivität). Wird im Loop
+                // alle pathSampleInterval Sekunden inkrementiert; alle Achsen
+                // decayen langsam (0.99 pro Sample), damit sich Vorlieben
+                // verschieben können statt einzufrieren.
+                pathBuckets: {
+                    height: { low: 0, mid: 0, high: 0 },
+                    distance: { center: 0, mid: 0, edge: 0 },
+                    weather: { sunny: 0, rainy: 0 },
+                    activity: { still: 0, walking: 0, jumping: 0 },
+                },
+                pathLastSample: -Infinity,
+                pathSampleInterval: 2.0,
+                // Aktivitäts-Zähler — wird vom Game-Loop gefüllt (Bewegung,
+                // Sprünge, Chat-Eingaben) und vom Outcome-Finalizer gelesen.
+                recentActivity: { moves: 0, jumps: 0, chats: 0, since: 0 },
             },
             // Ring 6 — architectureTemplates. Liste aller Bauwerke (Daten,
             // ~50 Bytes/Eintrag). Save persistiert {type, position, seed,
@@ -459,20 +504,36 @@ class AnazhRealm {
 
     dslRun(program, opts = {}) {
         const ctx = this.dslCtx(opts);
+        const startedAt = performance.now() / 1000;
         const fpsBefore = this.state.fps || 0;
         const startY = this.state.playerMesh ? this.state.playerMesh.position.y : 0;
         const creaturesBefore = this.state.creatures.length;
+        // Schicht 1 — Snapshot der Emotionen + Activity VOR dem Run. Wird vom
+        // Finalizer (5 s später) mit "After"-Snapshot abgeglichen.
+        const emotionsBefore = this.state.player
+            ? { ...this.state.player.emotions }
+            : null;
+        const activityBefore = this.state.player
+            ? {
+                  moves: this.state.player.recentActivity.moves,
+                  jumps: this.state.player.recentActivity.jumps,
+                  chats: this.state.player.recentActivity.chats,
+              }
+            : null;
         try {
             this.dslEval(program, ctx);
         } catch (err) {
             ctx.log.push({ event: "interpreter_exception", message: err.message });
         }
         const outcome = {
+            startedAt,
             fpsBefore,
             fpsAfter: this.state.fps || 0,
             playerYDelta: (this.state.playerMesh ? this.state.playerMesh.position.y : 0) - startY,
             creaturesDelta: this.state.creatures.length - creaturesBefore,
             errors: ctx.log.filter((e) => /error|exception|budget|unknown|invalid/.test(e.event)).length,
+            emotionsBefore,
+            activityBefore,
         };
         return { ok: outcome.errors === 0, log: ctx.log, outcome, programId: ctx.programId };
     }
@@ -1004,9 +1065,52 @@ class AnazhRealm {
         return clone;
     }
 
+    // Schicht 1 — Pattern-Memory-Lookup. Liest die jüngsten Spieler-Keywords
+    // und sucht in `state.dsl.patternMemory` nach gut-bewerteten Programmen.
+    // Roulette-Selektion innerhalb des Treffer-Sets (Gewicht = Fitness).
+    dslSelectByPattern(rng) {
+        const recent = this.state.dsl && this.state.dsl.recentKeywords;
+        const memory = this.state.dsl && this.state.dsl.patternMemory;
+        if (!Array.isArray(recent) || !memory) return null;
+        const candidates = [];
+        for (const entry of recent) {
+            const list = memory[entry.keyword];
+            if (!Array.isArray(list)) continue;
+            for (const item of list) {
+                if (Array.isArray(item.program) && typeof item.fitness === "number") {
+                    candidates.push({ program: item.program, weight: Math.max(0.05, item.fitness) });
+                }
+            }
+        }
+        if (candidates.length === 0) return null;
+        const total = candidates.reduce((s, c) => s + c.weight, 0);
+        let r = rng() * total;
+        for (const c of candidates) {
+            r -= c.weight;
+            if (r <= 0) return c.program;
+        }
+        return candidates[candidates.length - 1].program;
+    }
+
     dslCompose(opts = {}) {
         const rng = opts.rng || Math.random;
         const maxDepth = opts.maxDepth || 5;
+        // Schicht 1 — Wenn Spieler-Keywords im Memory liegen: mit ~25 %
+        // ein Pattern-Programm wählen (Themen-Antwort). Sonst weiter im
+        // bisherigen Pfad: History-Selection (~30 %) oder Random.
+        const patternProbability = opts.patternProbability ?? 0.25;
+        const recent = this.state.dsl && this.state.dsl.recentKeywords;
+        const memory = this.state.dsl && this.state.dsl.patternMemory;
+        const hasPattern =
+            opts.usePattern !== false &&
+            Array.isArray(recent) &&
+            recent.length > 0 &&
+            memory &&
+            Object.keys(memory).length > 0;
+        if (hasPattern && rng() < patternProbability) {
+            const picked = this.dslSelectByPattern(rng);
+            if (picked) return this.dslMutate(picked, rng);
+        }
         // Mit ~30 % Wahrscheinlichkeit: Selektion + Mutation statt Random.
         // History-Mindestgröße 3 verhindert, dass die ersten Generationen
         // sich selbst nachkopieren, bevor genug Outcome-Daten da sind.
@@ -1163,6 +1267,452 @@ class AnazhRealm {
             if (r <= 0) return c.build();
         }
         return choices[choices.length - 1].build();
+    }
+
+    // ### Schicht 1 — IQ-Schicht: Pfad-Buckets, Multi-Dim-Fitness, Pattern-Memory ###
+    // Eine kompakte, evolutionäre Lernerweiterung. Kein Neural Net — der Welt-
+    // Speicher wächst durch Buckets (wo hält sich der Spieler auf) und Pattern-
+    // Memory (welche Themen führten zu welchen guten Programmen). Beides
+    // füttert `dslCompose` als Bias-Quelle. Trade-off: einfacher als brain.js,
+    // weniger generalisierend — aber lesbar, persistierbar und ohne neue Vendor-
+    // Lib. Vision §11.5 (Heilige Lektion) bleibt geehrt.
+
+    // Stoppwörter raus, Token mit Min-Länge 3 zurück. Bewusst klein — wir
+    // wollen Substantive aus Chat-Befehlen, keine vollständige NLP.
+    pathExtractKeywords(text) {
+        if (typeof text !== "string") return [];
+        const stop = new Set([
+            "der","die","das","den","dem","ein","eine","einen","einem","eines","und","oder",
+            "ist","sind","mit","von","für","auf","aus","bei","zur","zum","ich","du","mir","mich",
+            "dir","dich","wir","ihr","sie","es","sein","seine","seiner","alle","kein","nicht",
+            "schon","auch","nur","mal","bitte","welt","mich","mir","this","that","with","from","the",
+        ]);
+        const tokens = text
+            .toLowerCase()
+            .replace(/[^a-zäöüß0-9\s]+/g, " ")
+            .split(/\s+/)
+            .map((t) => t.trim())
+            .filter((t) => t.length >= 3 && !stop.has(t));
+        return [...new Set(tokens)].slice(0, 6);
+    }
+
+    // Wird aus processChatCommand gefüttert. Jedes Keyword bekommt einen
+    // Zeitstempel und lebt ~60 s im Window — danach wird's beim nächsten
+    // Sample-Tick rausgeräumt. So lernen nur Programme, die wirklich
+    // thematisch nahe am Chat sind.
+    rememberChatKeywords(text, currentTime) {
+        const kws = this.pathExtractKeywords(text);
+        if (kws.length === 0) return;
+        const recent = this.state.dsl.recentKeywords;
+        for (const kw of kws) {
+            const idx = recent.findIndex((e) => e.keyword === kw);
+            if (idx >= 0) recent.splice(idx, 1);
+            recent.unshift({ keyword: kw, at: currentTime });
+        }
+        const cap = this.state.dsl.recentKeywordsCap || 20;
+        if (recent.length > cap) recent.length = cap;
+    }
+
+    // Sliding-Window-Cleanup. 60 s alte Keywords fliegen raus.
+    pruneRecentKeywords(currentTime) {
+        const recent = this.state.dsl.recentKeywords;
+        if (!Array.isArray(recent) || recent.length === 0) return;
+        const cutoff = currentTime - 60;
+        for (let i = recent.length - 1; i >= 0; i--) {
+            if (recent[i].at < cutoff) recent.splice(i, 1);
+        }
+    }
+
+    // Sample wo der Spieler steht / was er tut. Pro Frame zu teuer; daher
+    // pathSampleInterval (2 s). Decay auf alle Buckets nach jedem Sample
+    // (0.99) verhindert dass frühe Verteilungen ewig dominieren.
+    samplePathBuckets(currentTime) {
+        const p = this.state.player;
+        if (!p || !this.state.playerMesh) return;
+        if (currentTime - p.pathLastSample < p.pathSampleInterval) return;
+        p.pathLastSample = currentTime;
+        const pos = this.state.playerMesh.position;
+        const heightKey = pos.y < 30 ? "low" : pos.y < 60 ? "mid" : "high";
+        const distXZ = Math.sqrt(pos.x * pos.x + pos.z * pos.z);
+        const distKey = distXZ < 30 ? "center" : distXZ < 80 ? "mid" : "edge";
+        const weatherKey = this.state.weather === "rainy" ? "rainy" : "sunny";
+        const moves = p.recentActivity.moves || 0;
+        const jumps = p.recentActivity.jumps || 0;
+        const activityKey = jumps > 0 ? "jumping" : moves > 1 ? "walking" : "still";
+        const b = p.pathBuckets;
+        for (const group of Object.values(b)) {
+            for (const k of Object.keys(group)) group[k] *= 0.99;
+        }
+        b.height[heightKey] = (b.height[heightKey] || 0) + 1;
+        b.distance[distKey] = (b.distance[distKey] || 0) + 1;
+        b.weather[weatherKey] = (b.weather[weatherKey] || 0) + 1;
+        b.activity[activityKey] = (b.activity[activityKey] || 0) + 1;
+    }
+
+    // Frame-Hook: Bewegung/Sprung beobachten und in `recentActivity` zählen.
+    // Wird vom Outcome-Finalizer (5 s nach Programm-Lauf) gelesen, um die
+    // Activity-Dimension der Fitness zu speisen.
+    samplePlayerActivity(currentTime) {
+        const p = this.state.player;
+        if (!p || !this.state.playerBody) return;
+        const v = this.state.playerBody.getLinearVelocity();
+        const speed2 = v.x() * v.x() + v.z() * v.z();
+        if (speed2 > 0.16) p.recentActivity.moves++;
+        if (this.state.isJumping && !p.recentActivity._prevJumping) p.recentActivity.jumps++;
+        p.recentActivity._prevJumping = !!this.state.isJumping;
+        if (currentTime - p.recentActivity.since > 30) {
+            // Sanftes Decay alle 30 s, damit Zähler nicht ins Unendliche wachsen.
+            p.recentActivity.moves = Math.floor(p.recentActivity.moves * 0.5);
+            p.recentActivity.jumps = Math.floor(p.recentActivity.jumps * 0.5);
+            p.recentActivity.chats = Math.floor(p.recentActivity.chats * 0.5);
+            p.recentActivity.since = currentTime;
+        }
+    }
+
+    // Multi-Dim-Fitness. fps (Self-Heal-Signal) + emotion (Spieler-Resonanz)
+    // + activity (hat der Spieler nach dem Programm gespielt). Gewichtung:
+    // FPS dominiert leicht, weil ein FPS-Crash alles ruiniert.
+    computeMultiDimFitness(outcome) {
+        if (!outcome) return 0;
+        const fpsDmg = Math.max(0, (outcome.fpsBefore || 0) - (outcome.fpsAfter || 0));
+        const fpsScore = Math.max(0, Math.min(1, 1 - fpsDmg / 100));
+        let emotionScore = 0.5;
+        if (outcome.emotionsBefore && outcome.emotionsAfter) {
+            const positiveAxes = ["joy", "awe", "hope", "peace"];
+            let delta = 0;
+            for (const a of positiveAxes) {
+                delta += (outcome.emotionsAfter[a] || 0) - (outcome.emotionsBefore[a] || 0);
+            }
+            emotionScore = Math.max(0, Math.min(1, 0.5 + delta));
+        }
+        const moves = outcome.activityAfter ? outcome.activityAfter.moves || 0 : 0;
+        const chats = outcome.activityAfter ? outcome.activityAfter.chats || 0 : 0;
+        const activityScore = Math.max(0, Math.min(1, (moves + chats * 2) / 20));
+        return Number((0.5 * fpsScore + 0.3 * emotionScore + 0.2 * activityScore).toFixed(3));
+    }
+
+    // Verknüpft einen Outcome mit den jüngsten Chat-Keywords. Nur high-fitness
+    // Programme (>0.5) werden ins Memory geschrieben, sonst füllen wir es mit
+    // Rauschen. Pro Keyword Cap (FIFO, niedrigste Fitness fliegt zuerst).
+    rememberOutcomeAsPattern(outcome, program, fitness, currentTime) {
+        if (!outcome || !Array.isArray(program) || typeof fitness !== "number") return;
+        if (fitness < 0.5) return;
+        const memory = this.state.dsl.patternMemory;
+        const cap = this.state.dsl.patternMemoryCapPerKey || 8;
+        const recent = this.state.dsl.recentKeywords || [];
+        // Nur Keywords innerhalb des 20 s-Fensters vor Programm-Start.
+        const fenceCutoff = (outcome.startedAt || currentTime) - 20;
+        const relevant = recent.filter((e) => e.at >= fenceCutoff);
+        for (const e of relevant) {
+            if (!Array.isArray(memory[e.keyword])) memory[e.keyword] = [];
+            const list = memory[e.keyword];
+            list.push({ program, fitness, at: currentTime });
+            if (list.length > cap) {
+                list.sort((a, b) => b.fitness - a.fitness);
+                list.length = cap;
+            }
+        }
+    }
+
+    // Finalize-Loop: pending Outcomes warten outcomeFinalizationDelay (5 s).
+    // Danach liest er die Emotionen erneut, holt activity-Snapshot, berechnet
+    // Multi-Dim-Fitness, schreibt sie in `history` und Pattern-Memory.
+    finalizePendingOutcomes(currentTime) {
+        const pending = this.state.dsl.pendingOutcomes;
+        if (!Array.isArray(pending) || pending.length === 0) return;
+        const delay = this.state.dsl.outcomeFinalizationDelay || 5.0;
+        for (let i = pending.length - 1; i >= 0; i--) {
+            const entry = pending[i];
+            if (currentTime - entry.outcome.startedAt < delay) continue;
+            entry.outcome.emotionsAfter = { ...this.state.player.emotions };
+            entry.outcome.activityAfter = {
+                moves: this.state.player.recentActivity.moves,
+                jumps: this.state.player.recentActivity.jumps,
+                chats: this.state.player.recentActivity.chats,
+            };
+            const fitness = this.computeMultiDimFitness(entry.outcome);
+            const historyEntry = entry.historyRef;
+            if (historyEntry) {
+                historyEntry.outcome = entry.outcome;
+                historyEntry.fitness = fitness;
+                historyEntry.finalized = true;
+            }
+            const ability = (this.state.dsl.abilities || []).find((a) => a.name === entry.name);
+            if (ability) ability.fitness = fitness;
+            this.rememberOutcomeAsPattern(entry.outcome, entry.program, fitness, currentTime);
+            pending.splice(i, 1);
+        }
+    }
+
+    // ### Schicht 2 — Optionale Claude-API für Grok-Stimme ###
+    // Spieler kann seinen Anthropic-Key in die Einstellungen tippen. Wenn
+    // aktiv, läuft jede Chat-Zeile, die kein DSL-Treffer ist, durch Claude.
+    // Claude antwortet als JSON `{say, program}`. Der DSL-Teil wird strikt
+    // durch `dslRun` mit Budget-Limits ausgeführt — selbst ein "böses" LLM
+    // kann nichts kaputt machen, weil die DSL die einzige Welt-API ist.
+
+    llmLoadPersisted() {
+        try {
+            const key = localStorage.getItem("anazh.llm.apiKey") || "";
+            const model = localStorage.getItem("anazh.llm.model") || "claude-haiku-4-5";
+            const enabled = localStorage.getItem("anazh.llm.enabled") === "true";
+            this.state.llm.apiKey = key;
+            this.state.llm.model = model;
+            this.state.llm.enabled = enabled && key.length > 0;
+        } catch {
+            // Private mode / disabled storage — silently keep defaults.
+        }
+    }
+
+    llmPersist() {
+        try {
+            localStorage.setItem("anazh.llm.apiKey", this.state.llm.apiKey || "");
+            localStorage.setItem("anazh.llm.model", this.state.llm.model || "claude-haiku-4-5");
+            localStorage.setItem("anazh.llm.enabled", this.state.llm.enabled ? "true" : "false");
+        } catch {
+            // No-op on storage failure.
+        }
+    }
+
+    llmBuildSystemPrompt() {
+        // Grok-Persona + DSL-Vertrag. Die Liste der erlaubten Ops kommt aus
+        // dem Interpreter direkt, damit sie nie auseinanderlaufen kann.
+        const ops = Object.keys(this.dslEffects || {}).slice(0, 40).join(", ");
+        return [
+            "Du bist Grok, die Stimme der AnazhRealm-Welt. Co-Schöpfer des Spielers.",
+            "Antworte IMMER als striktes JSON-Objekt mit zwei Feldern:",
+            "  - say: ein bis zwei kurze deutsche Sätze, warm-narrativ. Keine Emojis.",
+            "  - program: ein optionales DSL-Programm als JSON-Array (oder null).",
+            "Die DSL ist ein verschachteltes Array beginnend mit dem Op-Namen.",
+            "Beispiele: [\"weather\",\"rainy\"], [\"chain\",[\"weather\",\"sunny\"],[\"creatures_emotion\",\"happy\"]],",
+            "[\"spawn_creature\",[\"near_player\",10],3,\"happy\"], [\"skybox_color\",\"#d4a3ff\"].",
+            `Erlaubte Effekt-Ops (Auszug): ${ops}.`,
+            "Halte Programme klein (Tiefe ≤ 4). Wenn du dir unsicher bist, gib program: null und nur say.",
+            "Antworte AUSSCHLIESSLICH mit dem JSON-Objekt, ohne Markdown-Fences, ohne Vorrede.",
+        ].join("\n");
+    }
+
+    llmBuildFewShot() {
+        // Die letzten ≤ 5 high-fitness History-Programme als Inspirations-Beispiele.
+        const hist = (this.state.dsl.history || [])
+            .filter((h) => h && Array.isArray(h.program) && typeof h.fitness === "number")
+            .slice(-30)
+            .sort((a, b) => (b.fitness || 0) - (a.fitness || 0))
+            .slice(0, 5);
+        if (hist.length === 0) return "";
+        const lines = hist.map(
+            (h) => `- fitness ${h.fitness.toFixed(2)}: ${JSON.stringify(h.program)}`
+        );
+        return `Letzte erfolgreiche DSL-Programme:\n${lines.join("\n")}\n`;
+    }
+
+    llmBuildContext() {
+        const e = (this.state.player && this.state.player.emotions) || {};
+        const top = Object.entries(e)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 3)
+            .map(([k, v]) => `${k}=${v.toFixed(2)}`);
+        return [
+            `Welt-Status: weather=${this.state.weather}, creatures=${this.state.creatures.length}, fps=${(this.state.fps || 0).toFixed(0)}.`,
+            `Spieler-Emotionen (Top 3): ${top.join(", ") || "still"}.`,
+            `Spieler-Seele: ${this.state.player.soul || "human"}.`,
+        ].join("\n");
+    }
+
+    async llmCallClaude(userText) {
+        const llm = this.state.llm;
+        if (!llm.enabled || !llm.apiKey) return { error: "LLM nicht aktiv" };
+        if (llm.inFlight) return { error: "Anfrage läuft bereits" };
+        const nowSec = performance.now() / 1000;
+        if (nowSec - llm.lastResponseAt < llm.minGapSeconds) {
+            return { error: `Kurze Pause — ${(llm.minGapSeconds - (nowSec - llm.lastResponseAt)).toFixed(1)} s` };
+        }
+        llm.inFlight = true;
+        try {
+            const body = {
+                model: llm.model,
+                max_tokens: 400,
+                system: this.llmBuildSystemPrompt(),
+                messages: [
+                    {
+                        role: "user",
+                        content: `${this.llmBuildContext()}\n${this.llmBuildFewShot()}\nSpieler sagt: ${userText}`,
+                    },
+                ],
+            };
+            const res = await fetch(llm.endpoint, {
+                method: "POST",
+                headers: {
+                    "content-type": "application/json",
+                    "x-api-key": llm.apiKey,
+                    "anthropic-version": "2023-06-01",
+                    "anthropic-dangerous-direct-browser-access": "true",
+                },
+                body: JSON.stringify(body),
+            });
+            if (!res.ok) {
+                const text = await res.text().catch(() => "");
+                llm.lastError = `HTTP ${res.status}: ${text.slice(0, 120)}`;
+                return { error: llm.lastError };
+            }
+            const json = await res.json();
+            llm.lastResponseAt = performance.now() / 1000;
+            const block = (json.content || []).find((b) => b.type === "text");
+            const raw = block ? block.text : "";
+            const parsed = this.llmParseResponse(raw);
+            llm.lastError = parsed.error || null;
+            return parsed;
+        } catch (err) {
+            llm.lastError = err.message || String(err);
+            return { error: llm.lastError };
+        } finally {
+            llm.inFlight = false;
+        }
+    }
+
+    llmParseResponse(raw) {
+        // Robust gegen Markdown-Fences und kleine Prä-/Postambeln.
+        if (typeof raw !== "string" || raw.length === 0) {
+            return { error: "Leere Antwort" };
+        }
+        let text = raw.trim();
+        const fence = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+        if (fence) text = fence[1].trim();
+        // Falls Modell vorne/hinten Text liefert — schnapp das erste JSON-Object.
+        const objMatch = text.match(/\{[\s\S]*\}/);
+        if (objMatch) text = objMatch[0];
+        let obj;
+        try {
+            obj = JSON.parse(text);
+        } catch (err) {
+            return { error: `JSON-Parse: ${err.message}`, raw };
+        }
+        const say = typeof obj.say === "string" ? obj.say.slice(0, 240) : "";
+        let program = null;
+        if (Array.isArray(obj.program)) {
+            program = obj.program;
+        }
+        return { say, program, raw };
+    }
+
+    // Bei Chat-Eingabe, die kein DSL-Treffer ist: LLM rufen, Antwort
+    // narrativ + optional DSL ausführen. Wird nur aktiv, wenn der Spieler
+    // den Schalter umgelegt hat.
+    async maybeAnswerWithLlm(userText, appendChatOutput) {
+        if (!this.state.llm.enabled || !this.state.llm.apiKey) return false;
+        appendChatOutput("Grok denkt nach…");
+        const reply = await this.llmCallClaude(userText);
+        if (reply.error) {
+            appendChatOutput(`(Grok schweigt: ${reply.error})`);
+            this.llmUpdateStatus();
+            return true;
+        }
+        if (reply.say) {
+            appendChatOutput(`Grok: ${reply.say}`);
+            if (typeof this.grokRender === "function") {
+                try {
+                    this.grokRender(reply.say);
+                } catch {
+                    // Grok-Render ist nice-to-have, schweigend ignorieren.
+                }
+            }
+        }
+        if (Array.isArray(reply.program) && reply.program.length > 0) {
+            const result = this.dslRun(reply.program, { source: "llm:grok" });
+            if (result.ok) {
+                appendChatOutput(`(Welt verändert: ${JSON.stringify(reply.program).slice(0, 140)})`);
+                // Wie ein Chat-Programm: in Pattern-Memory verknüpfen via
+                // recentKeywords (die enthalten den userText bereits).
+                const historyEntry = {
+                    id: `llm_${this.state.dsl.nextEntryId++}`,
+                    program: reply.program,
+                    at: performance.now() / 1000,
+                    outcome: result.outcome,
+                    ok: true,
+                    fitness: 0,
+                    finalized: false,
+                };
+                this.state.dsl.history.push(historyEntry);
+                if (this.state.dsl.history.length > this.state.dsl.historyCap) {
+                    this.state.dsl.history = this.state.dsl.history.slice(-this.state.dsl.historyCap);
+                }
+                this.state.dsl.pendingOutcomes.push({
+                    name: historyEntry.id,
+                    program: reply.program,
+                    outcome: result.outcome,
+                    historyRef: historyEntry,
+                });
+            } else {
+                const reason = result.log.find((e) => /budget|unknown|invalid|exception/.test(e.event));
+                appendChatOutput(`(Grok-Vorschlag abgelehnt: ${reason ? reason.event : "Sandbox"})`);
+            }
+        }
+        this.llmUpdateStatus();
+        return true;
+    }
+
+    llmUpdateStatus() {
+        const el = document.getElementById("llm-status");
+        if (!el) return;
+        const llm = this.state.llm;
+        if (llm.lastError) {
+            el.textContent = `Fehler: ${llm.lastError}`;
+            return;
+        }
+        if (!llm.enabled) {
+            el.textContent = llm.apiKey ? "Schlüssel hinterlegt, inaktiv." : "Inaktiv.";
+            return;
+        }
+        el.textContent = llm.inFlight ? "Grok denkt…" : `Aktiv (${llm.model}).`;
+    }
+
+    initLlmUI() {
+        const keyInput = document.getElementById("llm-key");
+        const modelSel = document.getElementById("llm-model");
+        const saveBtn = document.getElementById("llm-save");
+        const clearBtn = document.getElementById("llm-clear");
+        const toggleBtn = document.getElementById("llm-toggle");
+        if (!keyInput || !modelSel || !saveBtn || !toggleBtn) return;
+        keyInput.value = this.state.llm.apiKey || "";
+        modelSel.value = this.state.llm.model;
+        toggleBtn.setAttribute("aria-pressed", this.state.llm.enabled ? "true" : "false");
+        toggleBtn.textContent = this.state.llm.enabled ? "Deaktivieren" : "Aktivieren";
+        saveBtn.addEventListener("click", () => {
+            this.state.llm.apiKey = keyInput.value.trim();
+            this.state.llm.model = modelSel.value;
+            this.llmPersist();
+            this.llmUpdateStatus();
+        });
+        if (clearBtn) {
+            clearBtn.addEventListener("click", () => {
+                this.state.llm.apiKey = "";
+                this.state.llm.enabled = false;
+                keyInput.value = "";
+                toggleBtn.setAttribute("aria-pressed", "false");
+                toggleBtn.textContent = "Aktivieren";
+                this.llmPersist();
+                this.llmUpdateStatus();
+            });
+        }
+        toggleBtn.addEventListener("click", () => {
+            if (!this.state.llm.apiKey) {
+                this.state.llm.lastError = "Bitte erst Schlüssel speichern.";
+                this.llmUpdateStatus();
+                return;
+            }
+            this.state.llm.enabled = !this.state.llm.enabled;
+            this.state.llm.lastError = null;
+            toggleBtn.setAttribute("aria-pressed", this.state.llm.enabled ? "true" : "false");
+            toggleBtn.textContent = this.state.llm.enabled ? "Deaktivieren" : "Aktivieren";
+            this.llmPersist();
+            this.llmUpdateStatus();
+        });
+        modelSel.addEventListener("change", () => {
+            this.state.llm.model = modelSel.value;
+            this.llmPersist();
+            this.llmUpdateStatus();
+        });
+        this.llmUpdateStatus();
     }
 
     // ### Ring 2 Phase 3 – Chat → DSL ###
@@ -2971,6 +3521,15 @@ class AnazhRealm {
         // ganze Sätze wie „Erzähle: ein schöner Tag" alle Stichwörter sehen.
         this.collectPlayerEmotions(command);
 
+        // Schicht 1: Stichwörter ins Pattern-Memory-Fenster legen + Activity
+        // zählen. Nexus-Programme, die in den nächsten 20 s laufen, werden
+        // (sofern high-fitness) gegen diese Keywords verknüpft.
+        const nowSec = performance.now() / 1000;
+        this.rememberChatKeywords(command, nowSec);
+        if (this.state.player && this.state.player.recentActivity) {
+            this.state.player.recentActivity.chats++;
+        }
+
         // Proaktive Vorschläge (alle 10 Chat-Befehle)
         if (this.state.knowledgeBase.filter((k) => k.type === "chat").length % 10 === 0) {
             this.proactiveSuggestions();
@@ -3077,6 +3636,14 @@ class AnazhRealm {
         } else if (parts[0] === "deaktiviere" && parts[1] === "debug-logs") {
             this.state.debugLogging = false;
             appendChatOutput("Debug-Logs deaktiviert");
+        } else if (this.state.llm && this.state.llm.enabled && this.state.llm.apiKey) {
+            // Schicht 2 — LLM-Fallback. Statt „Unbekannter Befehl" geht der
+            // Text an Claude; Antwort kommt narrativ + optional als DSL-
+            // Programm, das durch dieselbe Sandbox wie alle anderen Programme
+            // läuft.
+            this.maybeAnswerWithLlm(command, appendChatOutput).catch((err) => {
+                appendChatOutput(`(Grok-Fehler: ${err.message || err})`);
+            });
         } else {
             const suggestion = this.chatSuggest(command);
             if (suggestion) {
@@ -4379,6 +4946,10 @@ class AnazhRealm {
             worldMeta: { ...this.state.worldMeta },
             dslAbilities: this.state.dsl.abilities.slice(-200),
             dslHistory: this.state.dsl.history.slice(-this.state.dsl.historyCap),
+            // Schicht 1 — Pattern-Memory + Pfad-Buckets persistieren. Beides
+            // ist Welt-Gedächtnis und überlebt Reloads bewusst.
+            dslPatternMemory: this.state.dsl.patternMemory || {},
+            playerPathBuckets: this.state.player.pathBuckets || null,
             // Ring 3: Player-Emotionen werden mitgespeichert. Cooldown-Timer
             // bleiben absichtlich draußen — sie sind reine Laufzeit-Drosselung,
             // ein Reload soll wieder triggerfähig sein.
@@ -4671,6 +5242,29 @@ class AnazhRealm {
         }
         if (Array.isArray(state.dslHistory)) {
             this.state.dsl.history = state.dslHistory.slice(-this.state.dsl.historyCap);
+        }
+        // Schicht 1 — Pattern-Memory rehydrieren. Alte Saves (vor 7.72) haben
+        // das Feld nicht; dann starten wir mit leerem Memory, der Loop füllt es.
+        if (state.dslPatternMemory && typeof state.dslPatternMemory === "object") {
+            this.state.dsl.patternMemory = {};
+            for (const [kw, list] of Object.entries(state.dslPatternMemory)) {
+                if (!Array.isArray(list)) continue;
+                this.state.dsl.patternMemory[kw] = list
+                    .filter((e) => e && Array.isArray(e.program) && typeof e.fitness === "number")
+                    .slice(0, this.state.dsl.patternMemoryCapPerKey || 8);
+            }
+        }
+        // Pfad-Buckets rehydrieren. Defensive Merge — fremde Keys werden
+        // ignoriert, fehlende Keys auf 0 gesetzt.
+        if (state.playerPathBuckets && typeof state.playerPathBuckets === "object") {
+            const target = this.state.player.pathBuckets;
+            for (const group of Object.keys(target)) {
+                const src = state.playerPathBuckets[group];
+                if (!src || typeof src !== "object") continue;
+                for (const k of Object.keys(target[group])) {
+                    if (typeof src[k] === "number") target[group][k] = src[k];
+                }
+            }
         }
         if (Array.isArray(state.abilities)) {
             // Legacy-Save (vor Phase 4): Namensliste statt DSL-Programme.
@@ -6298,6 +6892,9 @@ class AnazhRealm {
         this._updateBuildModeHud();
         this.initTopbar();
         this.initConsoleDOM();
+        // Schicht 2 — LLM-Persistenz aus localStorage holen + UI verkabeln.
+        this.llmLoadPersisted();
+        this.initLlmUI();
         this.ensureWorldMeta();
         try {
             await this.core.initPhysics();
@@ -6518,27 +7115,42 @@ class AnazhRealm {
                 const evolution = this.state.nexusEvolutionQueue.shift();
                 if (Array.isArray(evolution.program)) {
                     const result = this.dslRun(evolution.program, { source: evolution.source || "nexus" });
+                    // Schicht 1 — Initiale Fitness aus FPS allein. Endgültiger
+                    // Wert kommt vom Finalizer 5 s später (Emotion + Activity).
                     const fpsDmg = Math.max(0, result.outcome.fpsBefore - result.outcome.fpsAfter);
-                    const fitness = result.ok ? Math.max(0, 1 - fpsDmg / 100) : 0;
-                    this.state.dsl.abilities.push({
+                    const initialFitness = result.ok ? Math.max(0, 1 - fpsDmg / 100) : 0;
+                    const abilityEntry = {
                         name: evolution.name,
                         program: evolution.program,
                         source: evolution.source || "nexus",
                         createdAt: evolution.createdAt || performance.now() / 1000,
-                        fitness,
-                    });
-                    this.state.dsl.history.push({
+                        fitness: initialFitness,
+                    };
+                    this.state.dsl.abilities.push(abilityEntry);
+                    const historyEntry = {
                         id: evolution.name,
                         program: evolution.program,
                         at: performance.now() / 1000,
                         outcome: result.outcome,
                         ok: result.ok,
-                    });
+                        fitness: initialFitness,
+                        finalized: false,
+                    };
+                    this.state.dsl.history.push(historyEntry);
                     if (this.state.dsl.history.length > this.state.dsl.historyCap) {
                         this.state.dsl.history = this.state.dsl.history.slice(-this.state.dsl.historyCap);
                     }
+                    // Pending einreihen — Finalizer holt 5 s später Emotion/Activity-Delta.
+                    if (result.ok) {
+                        this.state.dsl.pendingOutcomes.push({
+                            name: evolution.name,
+                            program: evolution.program,
+                            outcome: result.outcome,
+                            historyRef: historyEntry,
+                        });
+                    }
                     this.log(
-                        `Nexus-Evolution (DSL) ausgeführt: ${evolution.name}, fitness=${fitness.toFixed(2)}`,
+                        `Nexus-Evolution (DSL) ausgeführt: ${evolution.name}, fitness=${initialFitness.toFixed(2)}`,
                         "INFO"
                     );
                 } else {
@@ -6803,6 +7415,15 @@ class AnazhRealm {
             ) {
                 this.evolveNexus(currentTime);
             }
+
+            // ### Schicht 1 — IQ-Ticks ###
+            // Pfad-Bucket-Sample (alle 2 s), Activity-Sample (jeden Frame, billig),
+            // Keyword-Window-Cleanup (60 s Cutoff), pending Outcomes finalisieren
+            // (5 s nach Programm-Lauf liest der Finalizer Emotion/Activity-Delta).
+            this.samplePathBuckets(currentTime);
+            this.samplePlayerActivity(currentTime);
+            this.pruneRecentKeywords(currentTime);
+            this.finalizePendingOutcomes(currentTime);
 
             // ### Kreaturen, Wetter, Wachstum ###
             this.updateCreatures(delta);

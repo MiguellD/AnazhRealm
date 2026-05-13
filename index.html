@@ -1309,6 +1309,33 @@
                 <input type="range" id="tune-cooldown" min="5" max="120" step="5" value="30">
             </div>
         </section>
+        <section class="section" id="llm-section">
+            <h3>Grok-Stimme (Claude)</h3>
+            <p class="drawer-hint">
+                Optional: dein Anthropic-API-Schlüssel hebt Groks Stimme über die fünf
+                statischen Sätze hinaus. Der Schlüssel liegt nur im localStorage dieses
+                Browsers. Alle Vorschläge gehen durch den DSL-Interpreter — Budget-Limits
+                halten als Sandbox.
+            </p>
+            <div class="tuning-row">
+                <label for="llm-key"><span>API-Key</span></label>
+                <input type="password" id="llm-key" placeholder="sk-ant-…" autocomplete="off" spellcheck="false">
+            </div>
+            <div class="tuning-row">
+                <label for="llm-model"><span>Modell</span></label>
+                <select id="llm-model">
+                    <option value="claude-haiku-4-5">Haiku 4.5 (schnell, günstig)</option>
+                    <option value="claude-sonnet-4-6">Sonnet 4.6 (ausgewogen)</option>
+                    <option value="claude-opus-4-7">Opus 4.7 (klügste)</option>
+                </select>
+            </div>
+            <div class="actions">
+                <button type="button" id="llm-save">Schlüssel speichern</button>
+                <button type="button" id="llm-clear">Vergessen</button>
+                <button type="button" id="llm-toggle" aria-pressed="false">Aktivieren</button>
+            </div>
+            <div id="llm-status" class="drawer-hint" aria-live="polite">Inaktiv.</div>
+        </section>
     </aside>
     <aside class="drawer" data-drawer="hilfe" aria-label="Hilfe-Panel" hidden>
         <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>

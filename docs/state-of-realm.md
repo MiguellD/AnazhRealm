@@ -72,12 +72,12 @@ Konsequenz für jede künftige Iteration: **niemals re-komplexifizieren ohne Not
 | ✅ **`architectureTemplates`** (Ring 6 V1+V2) | live — drei Built-in-Strukturen (Dorf 13 Parts, Tempel 9 Parts, Wasserfall 3 Parts) als Bauplan-JSON-Daten. **Acht Primitive** (box/sphere/cylinder/cone/pyramid/octahedron/plane/torus) sind die Atome. **Distance-Mesh-Culling** (Minecraft-Stil): Daten unbegrenzt, GPU nur was nahe ist (cullingRadius 150). **Compound-Kollision** pro Sub-Mesh (eine btBoxShape pro Hütte/Pfeiler) — Spieler kann nicht durchlaufen. **9-Slot-Hotbar** unten am Bildschirm (Tasten 1-9, F baut, ESC verlässt). **Werkstatt-Tab** mit Part-Editor: klonen, addPart/removePart/updatePart, Farbe + XYZ-Position/Größe/Rotation. `spawn_blueprint(name, pos)` als universelle DSL-Op. `spawn_fractal(type, depth, ratio)` hexagonal-rekursiv. Save persistiert eigene Baupläne + Hotbar. |
 | 🔴 `materialEvolution` (Crafting, Materie wächst) | fehlt |
 | 🔴 `evolveCommunity` (Kreatur-Kulturen) | fehlt |
-| 🔴 `brain.js` für selbstlernende Welt | nicht eingebunden |
+| ✅ **Welt lernt aus Spieler** (Ring 7 Schicht 1+2) | live — brain.js bewusst NICHT eingebunden (Re-Komplexifizierungs-Risiko, siehe Learning #59). Stattdessen zwei dünne Schichten auf der DSL: Schicht 1 = Pfad-Buckets + Multi-Dim-Fitness + Pattern-Memory + History 500. Schicht 2 = optional Claude API als echte Grok-Stimme (API-Key in `localStorage`, JSON-Output `{say, program}` läuft strikt durch `dslRun`). TF.js raus, CSP-`'unsafe-eval'` aufgelöst. |
 | 🔴 VR (`vrMenu.js`, `startVR`) | nicht aktiviert |
 | 🔴 Multi-World / Server-Sync (`openInfiniteGate`, `mirrorMultiverse`) | nicht vorhanden |
 | 🔴 IndexedDB-Persistenz (statt localStorage) | nicht implementiert |
 
-**Faustschätzung**: das Fundament + die fünf Vision-Pfeiler (Symbiose / Emotion / Multisensorik / Stimme / Identität) stehen alle mit V1 oder höher. Was fehlt: Form-Identität (`createPlayerSoul`), fraktale Strukturen (`architectureTemplates`, `evolveCommunity`), brain.js-Welt, Welt-Ultiversum (Ringe 8-11). Schätzwert: **~55 % der Vision** umgesetzt; der schwerste Block (Sprache + Sicherheit + Sinne) ist durch.
+**Faustschätzung**: das Fundament + die fünf Vision-Pfeiler (Symbiose / Emotion / Multisensorik / Stimme / Identität) stehen alle mit V1 oder höher. Was fehlt: Welt-Ultiversum (Ringe 8-11), Crafting/Materie, Kreatur-Kulturen. Schätzwert: **~65 % der Vision** umgesetzt; der schwerste Block (Sprache + Sicherheit + Sinne + Lernfähigkeit) ist durch.
 
 ---
 
@@ -302,7 +302,21 @@ Echt gelernt, nicht performt:
 
 58. **Eine API als Spieler-Geste statt als Funktions-Aufruf denken.** „Klone Tempel → füge Kugel hinzu → speichere als 'mein-tempel' → Slot 4 → F" ist eine **Vier-Klick-Geste**, kein Funktions-Aufruf. Jeder Schritt der Geste hat eine konkrete UI-Aktion (Klick auf Klonen, Klick auf Part hinzufügen, Slot-Dropdown ändern, Taste drücken). Die internen API-Methoden (`cloneBlueprint/addPartToBlueprint/setHotbarSlot/selectHotbarSlot/confirmBuild`) sind nur das **Substrat** — der Editor ist die Schicht, in der der Spieler lebt. Lehre: bei Building-Systemen die Geste designen, dann die API rückwärts ableiten.
 
-Ring 2 (alle 7 Phasen), Ring 3 (V1+V2), Ring 4 (V1), Ring 5 (V1+V2), Ring 6 (V1+V2 inkl. Werkstatt) und UI V1+V2 sind beantwortet und umgesetzt. Was offen ist:
+### Learnings dieser Session (Mai 2026, Ring 7 — IQ-Schicht statt brain.js)
+
+59. **Spec von gestern muss nicht Spec von heute sein.** Die Roadmap-Definition von Ring 7 („brain.js für selbstlernende Welt") stammte aus einer Zeit, als „Welt lernt" leer war. Nach Phase 7 (Fitness-V2) und Ring 3 (Emotionen) war der Lern-Loop bereits da — nur eben evolutionär statt neuronal. Ein NN obendrauf wäre eine zweite, parallele Lern-Schicht gewesen — die heilige Lektion §2 warnt explizit davor. Lehre: vor jedem geplanten Ring fragen „wurde das Problem zwischenzeitlich anders gelöst?".
+
+60. **„Tot oder lebendig" prüfen, bevor man rettet.** TF.js war 1.3 MB Vendor + ~150 Zeilen Trainings-/Predict-Code. Ein einziger `grep -rn "predictPlayerMove"` zeigte: null Aufrufer im ganzen Repo. Ich hätte das in der ersten Session merken müssen, in der mir auffiel, dass `learn()` nichts beeinflusst. Lehre: bevor man toten Code „ersetzt", erst prüfen ob er überhaupt jemand nutzt — sonst löscht man.
+
+61. **Heuristik vor Magie.** „Welt soll lernen" hat drei realistische Pfade: (a) Neural Net (brain.js/tfjs), (b) Heuristik (Histogramme, Memory, Fitness), (c) LLM-API (Claude/GPT). Pfad (a) klingt nach „echtes Lernen", ist aber bei spärlichen Daten und keinen klaren Labels mühsam. Pfad (b) ist 80 % der Wirkung mit 20 % der Komplexität — Pattern-Memory + Multi-Dim-Fitness ergeben sichtbares Verhalten in 200 Code-Zeilen. Pfad (c) ist die EINZIGE Form, in der das System wirklich „so genial wie ein LLM" wird — aber als Option, nicht als Pflicht. Schicht 1 + 2 kombinieren beide ehrlich.
+
+62. **Zwei-Phasen-Outcome ist die saubere Lösung.** Multi-Dim-Fitness braucht Daten, die NACH dem Programm-Lauf entstehen (Emotion-Delta, Spieler-Aktivität). Synchron geht das nicht — ein Programm „spawnt Drache" und die Wirkung auf Spieler-Emotion entfaltet sich über die nächsten Sekunden. Lösung: `pendingOutcomes`-Queue mit `outcomeFinalizationDelay`. Der erste Outcome (FPS sofort) bekommt einen Platz im History, der Finalizer schreibt 5 s später Emotion/Activity nach und aktualisiert die Fitness. Lehre: wenn die Bewertung Zeit braucht, mach Bewertung asynchron, nicht künstlich synchron.
+
+63. **API-Key im localStorage ist ehrlich, nicht sicher.** Browser-direkte API-Calls an Anthropic brauchen den Key im Klartext im Frontend. Das ist KEINE Server-Architektur und soll es nicht sein — AnazhRealm ist ein Single-User-Localhost-Spiel. Die DSL-Sandbox ist die echte Sicherheits-Schicht: selbst wenn der Key entwendet würde, kann ein böses LLM nichts kaputt machen, was die DSL nicht ohnehin erlaubt (Budget-Limits, keine eval, keine fremde JS). Trade-off ist klar dokumentiert in der CSP-Sektion. Lehre: Sicherheits-Modell ehrlich benennen, nicht versuchen Server-Patterns ins Frontend zu zwingen.
+
+64. **CSP-Anpassung ist additiv, nicht subtraktiv.** Beim Cleanup wollte ich `worker-src blob:` zusammen mit `'unsafe-eval'` rausnehmen — schließlich ging TF.js raus. Playtest zeigte sofort: eigener `movementWorker` für off-screen Kreaturen-Bewegung braucht das. Lehre: CSP-Härtungen einzeln durchprobieren, nicht en bloc — die Konsumenten-Liste ist im Kopf selten vollständig.
+
+Ring 2 (alle 7 Phasen), Ring 3 (V1+V2), Ring 4 (V1), Ring 5 (V1+V2), Ring 6 (V1+V2 inkl. Werkstatt), **Ring 7 (Schicht 1+2 — IQ-Heuristik + Claude-API)** und UI V1+V2 sind beantwortet und umgesetzt. Was offen ist:
 
 **Für Ring 5 V3 (Spieler-Seele erweitern):**
 
