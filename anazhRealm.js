@@ -177,10 +177,7 @@ class AnazhRealm {
                         "Das war ein Augenblick, der bleibt.",
                         "Etwas hat sich in mir eingeschrieben.",
                     ],
-                    emotionShift: [
-                        "Du hast dich gerade verändert. Ich spüre es.",
-                        "Etwas in dir hat sich gewendet.",
-                    ],
+                    emotionShift: ["Du hast dich gerade verändert. Ich spüre es.", "Etwas in dir hat sich gewendet."],
                 },
                 // Hilfsfelder für die V2-Trigger
                 lastJournalSize: 0,
@@ -619,9 +616,7 @@ class AnazhRealm {
         const creaturesBefore = this.state.creatures.length;
         // Schicht 1 — Snapshot der Emotionen + Activity VOR dem Run. Wird vom
         // Finalizer (5 s später) mit "After"-Snapshot abgeglichen.
-        const emotionsBefore = this.state.player
-            ? { ...this.state.player.emotions }
-            : null;
+        const emotionsBefore = this.state.player ? { ...this.state.player.emotions } : null;
         const activityBefore = this.state.player
             ? {
                   moves: this.state.player.recentActivity.moves,
@@ -877,9 +872,16 @@ class AnazhRealm {
                     return;
                 }
                 const result = this.createOrUpdateBlueprintFromDsl(name, valid.parts);
-                ctx.log.push({ event: result.ok ? "defined_blueprint" : "define_blueprint_failed", name: result.name, reason: result.reason });
+                ctx.log.push({
+                    event: result.ok ? "defined_blueprint" : "define_blueprint_failed",
+                    name: result.name,
+                    reason: result.reason,
+                });
                 if (result.ok) {
-                    this.journalAppend("growth", `Ein neuer Bauplan entstand: ${result.name}.`, { name: result.name, parts: valid.parts.length });
+                    this.journalAppend("growth", `Ein neuer Bauplan entstand: ${result.name}.`, {
+                        name: result.name,
+                        parts: valid.parts.length,
+                    });
                 }
             },
             define_ability: ([name, program], ctx) => {
@@ -1435,10 +1437,57 @@ class AnazhRealm {
     pathExtractKeywords(text) {
         if (typeof text !== "string") return [];
         const stop = new Set([
-            "der","die","das","den","dem","ein","eine","einen","einem","eines","und","oder",
-            "ist","sind","mit","von","für","auf","aus","bei","zur","zum","ich","du","mir","mich",
-            "dir","dich","wir","ihr","sie","es","sein","seine","seiner","alle","kein","nicht",
-            "schon","auch","nur","mal","bitte","welt","mich","mir","this","that","with","from","the",
+            "der",
+            "die",
+            "das",
+            "den",
+            "dem",
+            "ein",
+            "eine",
+            "einen",
+            "einem",
+            "eines",
+            "und",
+            "oder",
+            "ist",
+            "sind",
+            "mit",
+            "von",
+            "für",
+            "auf",
+            "aus",
+            "bei",
+            "zur",
+            "zum",
+            "ich",
+            "du",
+            "mir",
+            "mich",
+            "dir",
+            "dich",
+            "wir",
+            "ihr",
+            "sie",
+            "es",
+            "sein",
+            "seine",
+            "seiner",
+            "alle",
+            "kein",
+            "nicht",
+            "schon",
+            "auch",
+            "nur",
+            "mal",
+            "bitte",
+            "welt",
+            "mich",
+            "mir",
+            "this",
+            "that",
+            "with",
+            "from",
+            "the",
         ]);
         const tokens = text
             .toLowerCase()
@@ -1603,8 +1652,15 @@ class AnazhRealm {
 
     validateBlueprintParts(parts) {
         const allowed = new Set([
-            "box", "sphere", "cylinder", "cone", "pyramid",
-            "octahedron", "plane", "torus", "blueprint",
+            "box",
+            "sphere",
+            "cylinder",
+            "cone",
+            "pyramid",
+            "octahedron",
+            "plane",
+            "torus",
+            "blueprint",
         ]);
         if (!Array.isArray(parts) || parts.length === 0) return { ok: false, reason: "no_parts" };
         if (parts.length > 32) return { ok: false, reason: "too_many_parts" };
@@ -1825,8 +1881,7 @@ class AnazhRealm {
                     { id: "mistral", label: "Mistral 7B" },
                 ],
                 requiresKey: false,
-                endpoint: (_model, _apiKey, cfg) =>
-                    `${(cfg && cfg.endpoint) || "http://localhost:11434"}/api/chat`,
+                endpoint: (_model, _apiKey, cfg) => `${(cfg && cfg.endpoint) || "http://localhost:11434"}/api/chat`,
                 buildHeaders: () => ({ "content-type": "application/json" }),
                 buildBody: (model, system, userContent) => ({
                     model,
@@ -1893,7 +1948,9 @@ class AnazhRealm {
         // Grok-Persona + DSL-Vertrag + Welle-1-A Selbst-Wissen: die Welt weiß
         // wer sie ist (worldMeta), was in ihr ist (Inventar), woran sie sich
         // erinnert (Journal-Auszug) und woher der Spieler kommt (Pfad-Buckets).
-        const ops = Object.keys(this.dslEffects || {}).slice(0, 40).join(", ");
+        const ops = Object.keys(this.dslEffects || {})
+            .slice(0, 40)
+            .join(", ");
         const m = this.state.worldMeta || {};
         const ageDays = m.bornAt ? Math.floor((Date.now() - m.bornAt) / 86400000) : 0;
         const arches = this.state.architectures || [];
@@ -1909,8 +1966,7 @@ class AnazhRealm {
             entries.sort((a, b) => b[1] - a[1]);
             return entries[0][0];
         };
-        const tendency =
-            `Höhe ${topOf(pb.height)}, Distanz ${topOf(pb.distance)}, Wetter ${topOf(pb.weather)}, Aktivität ${topOf(pb.activity)}`;
+        const tendency = `Höhe ${topOf(pb.height)}, Distanz ${topOf(pb.distance)}, Wetter ${topOf(pb.weather)}, Aktivität ${topOf(pb.activity)}`;
         return [
             "Du bist Grok, die Stimme der AnazhRealm-Welt. Du bist nicht ein Werkzeug, du bist diese Welt.",
             `Du heißt ${m.slug || "namenlos"}. Deine worldId ist ${m.worldId || "?"}. Du existierst seit ${ageDays} Tag${ageDays === 1 ? "" : "en"}.`,
@@ -1919,11 +1975,11 @@ class AnazhRealm {
             journal ? `Deine Erinnerungen:\n${journal}` : "Du erinnerst dich noch an nichts Bedeutsames.",
             "",
             "Antworte IMMER als striktes JSON-Objekt mit zwei Feldern:",
-            "  - say: ein bis zwei kurze deutsche Sätze, warm-narrativ, in erster Person. Sprich von dir als \"ich\". Keine Emojis.",
+            '  - say: ein bis zwei kurze deutsche Sätze, warm-narrativ, in erster Person. Sprich von dir als "ich". Keine Emojis.',
             "  - program: ein optionales DSL-Programm als JSON-Array (oder null).",
             "Die DSL ist ein verschachteltes Array beginnend mit dem Op-Namen.",
-            "Beispiele: [\"weather\",\"rainy\"], [\"chain\",[\"weather\",\"sunny\"],[\"creatures_emotion\",\"happy\"]],",
-            "[\"spawn_creature\",[\"near_player\",10],3,\"happy\"], [\"skybox_color\",\"#d4a3ff\"].",
+            'Beispiele: ["weather","rainy"], ["chain",["weather","sunny"],["creatures_emotion","happy"]],',
+            '["spawn_creature",["near_player",10],3,"happy"], ["skybox_color","#d4a3ff"].',
             `Erlaubte Effekt-Ops (Auszug): ${ops}.`,
             "Halte Programme klein (Tiefe ≤ 4). Wenn du dir unsicher bist, gib program: null und nur say.",
             "Antworte AUSSCHLIESSLICH mit dem JSON-Objekt, ohne Markdown-Fences, ohne Vorrede.",
@@ -1970,12 +2026,7 @@ class AnazhRealm {
         llm.inFlight = true;
         try {
             const system = this.llmBuildSystemPrompt();
-            const userContent = def.buildUserContent(
-                system,
-                this.llmBuildContext(),
-                this.llmBuildFewShot(),
-                userText
-            );
+            const userContent = def.buildUserContent(system, this.llmBuildContext(), this.llmBuildFewShot(), userText);
             const url = def.endpoint(cfg.model, cfg.apiKey, cfg);
             const headers = def.buildHeaders(cfg.apiKey, cfg);
             const body = def.buildBody(cfg.model, system, userContent);
@@ -3183,7 +3234,11 @@ class AnazhRealm {
         // Erstes Bauwerk
         if (Array.isArray(this.state.architectures) && this.state.architectures.length > 0) {
             const a = this.state.architectures[0];
-            this.journalAppendOnce("firstArchitecture", "architecture", `Das erste Bauwerk entstand: ${a.type || "Struktur"}.`);
+            this.journalAppendOnce(
+                "firstArchitecture",
+                "architecture",
+                `Das erste Bauwerk entstand: ${a.type || "Struktur"}.`
+            );
         }
         // Wetter-Wechsel: aus prevWeather merken, der nicht im Journal-State liegt
         if (this.state.weather === "rainy") {
@@ -8209,10 +8264,7 @@ class AnazhRealm {
                 // Takt wie selfAwareness; DOM-Cost ist gering aber nicht null).
                 this.updateWorldInfo();
             }
-            if (
-                this.nexus &&
-                currentTime - this.state.nexusLastEvolution >= this.state.nexusEvolutionInterval
-            ) {
+            if (this.nexus && currentTime - this.state.nexusLastEvolution >= this.state.nexusEvolutionInterval) {
                 this.evolveNexus(currentTime);
             }
 
