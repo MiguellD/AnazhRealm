@@ -351,10 +351,27 @@ class AnazhRealm {
             startEternalLoop: this.startEternalLoop.bind(this),
         };
         this.nexus = null;
+        // Welle 4 Phase 1 — Materialien als Tag-Profile. Built-ins zuerst,
+        // damit Baupläne (die per Part auf Material referenzieren können)
+        // ihre Default-Material-Namen auflösen können. Materialien sind die
+        // Substanz-Schicht des Hylomorphismus-Crafting; die zugehörige
+        // Form-Tag-Aktivierungs-Matrix folgt in Phase 2.
+        this.state.materials = this._defaultMaterials();
         // Ring 6.4 — Built-in-Baupläne als Daten registrieren. Wenn ein
         // Save später User-Baupläne hinzufügt (Editor 6.6), werden sie auf
         // dieses Default-Set draufgemerged.
         this.state.blueprints = this._defaultBlueprints();
+        // Welle 4 Phase 1 — Built-in-Parts ohne Material auf „stein" mappen.
+        // Built-ins behalten ihre Farben (color bleibt); das material-Feld
+        // wird nur retrograd ergänzt, damit Phase-2-Tag-Berechnung greift.
+        for (const bp of Object.values(this.state.blueprints)) {
+            if (!bp || !Array.isArray(bp.parts)) continue;
+            for (const p of bp.parts) {
+                if (p && typeof p === "object" && typeof p.material !== "string") {
+                    p.material = "stein";
+                }
+            }
+        }
     }
 
     // ### Logging ###
@@ -884,6 +901,22 @@ class AnazhRealm {
                     });
                 }
             },
+            // Welle 4 Phase 1 — Schöpfer-Werkzeug für Materialien. Tags werden
+            // in defineMaterial whitelistet + ge-clamp; Built-in-Materialien
+            // bleiben unberührbar. Color ist optional, default grau.
+            define_material: ([name, color, tags], ctx) => {
+                const result = this.defineMaterial(name, color, tags);
+                ctx.log.push({
+                    event: result.ok ? "defined_material" : "define_material_failed",
+                    name: result.name,
+                    reason: result.reason,
+                });
+                if (result.ok) {
+                    this.journalAppend("growth", `Eine neue Substanz wurde benannt: ${result.name}.`, {
+                        name: result.name,
+                    });
+                }
+            },
             define_ability: ([name, program], ctx) => {
                 if (typeof name !== "string" || name.length === 0 || name.length > 40) {
                     ctx.log.push({ event: "invalid_ability_name", name });
@@ -899,7 +932,11 @@ class AnazhRealm {
                     ctx.log.push({ event: "ability_depth_exceeded", name, depth });
                     return;
                 }
-                if (this.dslContainsOp(program, "define_blueprint") || this.dslContainsOp(program, "define_ability")) {
+                if (
+                    this.dslContainsOp(program, "define_blueprint") ||
+                    this.dslContainsOp(program, "define_ability") ||
+                    this.dslContainsOp(program, "define_material")
+                ) {
                     ctx.log.push({ event: "ability_nested_define_forbidden", name });
                     return;
                 }
@@ -1681,6 +1718,15 @@ class AnazhRealm {
             }
             if (typeof p.color === "number") sanitized.color = p.color | 0;
             if (Number.isFinite(p.opacity) && p.opacity > 0 && p.opacity <= 1) sanitized.opacity = p.opacity;
+            // Welle 4 Phase 1 — Material-Referenz. Muss auf eine registrierte
+            // Material-Definition zeigen; unbekannter Name fällt still auf
+            // den Default „stein" zurück (statt den ganzen Bauplan abzulehnen).
+            if (typeof p.material === "string") {
+                const matName = p.material.replace(/[^a-z0-9_-]/gi, "").slice(0, 40);
+                if (matName && this.state.materials && this.state.materials[matName]) {
+                    sanitized.material = matName;
+                }
+            }
             const clampVec = (v) => {
                 if (!v || typeof v !== "object") return null;
                 const out = {};
@@ -5709,6 +5755,17 @@ class AnazhRealm {
                     label: bp.label || bp.name,
                     parts: Array.isArray(bp.parts) ? JSON.parse(JSON.stringify(bp.parts)) : [],
                 })),
+            // Welle 4 Phase 1 — eigene Materialien persistieren. Built-ins
+            // kommen aus _defaultMaterials() im Konstruktor zurück; auch hier
+            // schreiben wir nur, was der Spieler dazugefügt hat.
+            materials: Object.values(this.state.materials || {})
+                .filter((m) => m && !m.builtIn)
+                .map((m) => ({
+                    name: m.name,
+                    label: m.label || m.name,
+                    color: m.color,
+                    tags: { ...m.tags },
+                })),
             // Ring 6.5 — Hotbar-Belegung. Array von 9 Slots mit Bauplan-Name
             // oder null. Default wird beim Init überschrieben.
             hotbar: Array.isArray(this.state.hotbar) ? this.state.hotbar.slice(0, 9) : [],
@@ -6015,6 +6072,18 @@ class AnazhRealm {
         // Ring 6: Bau-Werke wiederherstellen. Bestehende Strukturen werden
         // tief disposed, dann jede aus {type, position, seed} neu gebaut.
         // Idempotent — mehrfaches loadState führt nicht zu Mesh-Verdopplung.
+        // Welle 4 Phase 1 — Materialien VOR Bauplänen restaurieren, damit
+        // Part-Material-Referenzen während validateBlueprintParts auflösen.
+        if (Array.isArray(state.materials)) {
+            let restoredMats = 0;
+            for (const m of state.materials) {
+                if (!m || typeof m.name !== "string") continue;
+                if (this.state.materials[m.name] && this.state.materials[m.name].builtIn) continue;
+                const r = this.defineMaterial(m.name, m.color, m.tags || {});
+                if (r.ok) restoredMats++;
+            }
+            this.log(`Materialien geladen: ${restoredMats} eigene`);
+        }
         // Ring 6.4 — eigene Baupläne ZUERST registrieren, danach die
         // Architekturen rekonstruieren. Sonst wären Strukturen, die einen
         // User-Bauplan referenzieren, nicht renderbar (Builder fehlt).
@@ -6024,11 +6093,18 @@ class AnazhRealm {
                 // Built-in nicht überschreiben — sicherheitshalber prefixen
                 // oder skip wenn Name kollidiert.
                 if (this.state.blueprints[bp.name] && this.state.blueprints[bp.name].builtIn) continue;
+                // Welle 4 Phase 1 — Migration alter Parts: kein material →
+                // Default „stein". Sicheres Default, keine Datenverluste.
+                const migratedParts = bp.parts.map((p) => {
+                    if (!p || typeof p !== "object") return p;
+                    if (typeof p.material === "string" && this.state.materials[p.material]) return p;
+                    return { ...p, material: "stein" };
+                });
                 this.state.blueprints[bp.name] = {
                     name: bp.name,
                     label: bp.label || bp.name,
                     builtIn: false,
-                    parts: bp.parts,
+                    parts: migratedParts,
                 };
             }
             this.log(`Baupläne geladen: ${state.blueprints.length} eigene`);
@@ -6922,6 +6998,109 @@ class AnazhRealm {
         };
     }
 
+    // ### Welle 4 Phase 1 — Materialien als Tag-Profile ###
+    // 6 Built-in-Materialien decken den qualitativen Spannungsbogen von
+    // weich-organisch (leder, holz) über stabil-mineralisch (stein, eisen,
+    // bronze) bis kristallin-arkann (quarz). Wer mehr Vielfalt will, fügt
+    // via DSL-Op `define_material` eigene hinzu. Material-Tag-Werte liegen
+    // im Bereich 0..1 als Potenzial; die Aktivierung pro Form folgt erst
+    // in Phase 2 (FORM_TAG_ACTIVATION-Matrix).
+    _defaultMaterials() {
+        const make = (name, label, color, tags) => ({
+            name,
+            label,
+            builtIn: true,
+            color,
+            tags: { ...AnazhRealm.MATERIAL_TAG_DEFAULTS, ...tags },
+        });
+        const list = [
+            make("stein", "Stein", 0x7a7a7a, {
+                härte: 0.65,
+                dichte: 0.85,
+                zähigkeit: 0.3,
+                wärmeleitung: 0.25,
+                resoniert: 0.3,
+            }),
+            make("holz", "Holz", 0x8b5a2b, {
+                härte: 0.2,
+                dichte: 0.4,
+                zähigkeit: 0.6,
+                wärmeleitung: 0.15,
+                magieleitung: 0.3,
+                brennbar: 0.8,
+                resoniert: 0.5,
+                lebendig: 0.7,
+            }),
+            make("eisen", "Eisen", 0x484850, {
+                härte: 0.75,
+                dichte: 0.9,
+                zähigkeit: 0.65,
+                wärmeleitung: 0.7,
+                stromleitung: 0.85,
+                resoniert: 0.6,
+            }),
+            make("bronze", "Bronze", 0xa97b3c, {
+                härte: 0.55,
+                dichte: 0.88,
+                zähigkeit: 0.7,
+                wärmeleitung: 0.75,
+                stromleitung: 0.7,
+                magieleitung: 0.25,
+                resoniert: 0.75,
+            }),
+            make("quarz", "Quarz", 0xcce6f5, {
+                härte: 0.7,
+                dichte: 0.65,
+                zähigkeit: 0.15,
+                magieleitung: 0.85,
+                transparent: 0.95,
+                resoniert: 0.9,
+            }),
+            make("leder", "Leder", 0xa07050, {
+                härte: 0.15,
+                dichte: 0.35,
+                zähigkeit: 0.75,
+                magieleitung: 0.2,
+                brennbar: 0.7,
+                lebendig: 0.3,
+            }),
+        ];
+        const out = {};
+        for (const m of list) out[m.name] = m;
+        return out;
+    }
+
+    // Mutations-Pfad für eigene Materialien. Whitelist auf MATERIAL_TAG_KEYS,
+    // Werte ge-clamp 0..1, Built-in-Überschreiben verboten, Cap 32 eigene.
+    // Aufrufer: DSL-Op `define_material` und ggf. spätere UI.
+    defineMaterial(name, color, tags) {
+        if (typeof name !== "string" || name.length === 0 || name.length > 40) {
+            return { ok: false, reason: "invalid_name" };
+        }
+        const safe = name.replace(/[^a-z0-9_-]/gi, "").slice(0, 40);
+        if (!safe) return { ok: false, reason: "invalid_name_after_sanitize" };
+        const existing = this.state.materials && this.state.materials[safe];
+        if (existing && existing.builtIn) return { ok: false, reason: "cannot_overwrite_builtin" };
+        const customCount = Object.values(this.state.materials || {}).filter((m) => !m.builtIn).length;
+        if (!existing && customCount >= 32) return { ok: false, reason: "too_many_custom_materials" };
+        if (!tags || typeof tags !== "object") return { ok: false, reason: "tags_not_object" };
+        const cleanTags = { ...AnazhRealm.MATERIAL_TAG_DEFAULTS };
+        for (const key of AnazhRealm.MATERIAL_TAG_KEYS) {
+            const v = Number(tags[key]);
+            if (Number.isFinite(v)) cleanTags[key] = Math.max(0, Math.min(1, v));
+        }
+        const cleanColor = Number.isFinite(color) ? (color | 0) & 0xffffff : 0x888888;
+        this.state.materials[safe] = {
+            name: safe,
+            label: safe,
+            builtIn: false,
+            color: cleanColor,
+            tags: cleanTags,
+        };
+        if (typeof this._renderWorkshopDOM === "function") this._renderWorkshopDOM();
+        return { ok: true, name: safe };
+    }
+
     _architectureBuilders() {
         // Builders kommen jetzt aus state.blueprints — eine Quelle für
         // Built-in + User-Baupläne. Seed wird zur Zeit nicht mehr genutzt
@@ -7448,9 +7627,14 @@ class AnazhRealm {
             return false;
         }
         // Default-Werte für ein neues Part, falls nicht alles übergeben wird.
+        // Welle 4 Phase 1: Default-Material „stein", Color folgt der Material-
+        // Farbe wenn der Caller nichts vorgibt.
+        const defaultMaterial = "stein";
+        const matColor = (this.state.materials[defaultMaterial] || {}).color || 0x888888;
         const defaultPart = {
             shape: "box",
-            color: 0x888888,
+            color: matColor,
+            material: defaultMaterial,
             position: { x: 0, y: 1, z: 0 },
             rotation: { x: 0, y: 0, z: 0 },
             size: { x: 1, y: 1, z: 1 },
@@ -7482,6 +7666,15 @@ class AnazhRealm {
             }
         }
         if (typeof patch.opacity === "number") part.opacity = patch.opacity;
+        // Welle 4 Phase 1: Material-Wechsel. Wenn der Caller `recolor: true`
+        // mitgibt, wird die Part-Farbe auf die Material-Farbe gezogen — das
+        // ist der UI-Pfad beim Material-Dropdown-Change.
+        if (typeof patch.material === "string" && this.state.materials[patch.material]) {
+            part.material = patch.material;
+            if (patch.recolor === true) {
+                part.color = this.state.materials[patch.material].color;
+            }
+        }
         return true;
     }
 
@@ -7572,6 +7765,28 @@ class AnazhRealm {
                 this._renderWorkshopDOM();
             });
             row.appendChild(shapeSelect);
+            // Welle 4 Phase 1 — Material-Dropdown vor dem Color-Picker.
+            // Built-ins zeigen Material read-only; bei eigenen Bauplänen
+            // wechselt die Material-Wahl auch die Default-Farbe (recolor).
+            const materialSelect = document.createElement("select");
+            materialSelect.className = "workshop-material";
+            materialSelect.title = "Material";
+            for (const matName of Object.keys(this.state.materials || {})) {
+                const opt = document.createElement("option");
+                opt.value = matName;
+                opt.textContent = this.state.materials[matName].label || matName;
+                if (matName === (part.material || "stein")) opt.selected = true;
+                materialSelect.appendChild(opt);
+            }
+            materialSelect.disabled = !!selected.builtIn;
+            materialSelect.addEventListener("change", () => {
+                this.updatePartInBlueprint(selected.name, i, {
+                    material: materialSelect.value,
+                    recolor: true,
+                });
+                this._renderWorkshopDOM();
+            });
+            row.appendChild(materialSelect);
             // Color-Input
             const colorInput = document.createElement("input");
             colorInput.type = "color";
@@ -8718,6 +8933,27 @@ class AnazhRealm {
         return addedBoxes;
     }
 }
+// Welle 4 Phase 1 — Material-Tag-Achsen. Zehn Felder aus Konzept §2.2,
+// kondensiert. Alle Werte 0..1. MATERIAL_TAG_DEFAULTS startet jeden Tag
+// auf 0, damit `_defaultMaterials` nur die positiven Felder setzen muss.
+AnazhRealm.MATERIAL_TAG_KEYS = Object.freeze([
+    "härte",
+    "dichte",
+    "zähigkeit",
+    "wärmeleitung",
+    "stromleitung",
+    "magieleitung",
+    "transparent",
+    "brennbar",
+    "resoniert",
+    "lebendig",
+]);
+AnazhRealm.MATERIAL_TAG_DEFAULTS = Object.freeze(
+    AnazhRealm.MATERIAL_TAG_KEYS.reduce((acc, key) => {
+        acc[key] = 0;
+        return acc;
+    }, {})
+);
 const anazhRealm = new AnazhRealm();
 // Globale Referenz für DevTools-Debug und automatisierten Playtest.
 if (typeof window !== "undefined") window.anazhRealm = anazhRealm;

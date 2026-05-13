@@ -1119,6 +1119,144 @@ function startSaveServer() {
                 check("Tagebuch: Signature-Cache verhindert Re-Render", wave3Results.journalSignatureCachesRender);
             }
 
+            // ### Welle 4 Phase 1 — Materialien als Tag-Profile ###
+            const wave4p1Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    // Statisches Tag-Schema
+                    const keys = r.constructor.MATERIAL_TAG_KEYS;
+                    out.tagKeysFrozen = Object.isFrozen(keys);
+                    out.tagKeyCount = Array.isArray(keys) ? keys.length : 0;
+                    // 6 Built-ins, alle markiert
+                    const mats = r.state.materials || {};
+                    const builtIns = Object.values(mats).filter((m) => m.builtIn);
+                    out.builtInCount = builtIns.length;
+                    out.expectedBuiltIns = ["stein", "holz", "eisen", "bronze", "quarz", "leder"].every(
+                        (n) => mats[n] && mats[n].builtIn
+                    );
+                    // Alle Built-in-Tag-Werte sind 0..1
+                    out.tagsInRange = builtIns.every((m) =>
+                        keys.every((k) => {
+                            const v = m.tags[k];
+                            return typeof v === "number" && v >= 0 && v <= 1;
+                        })
+                    );
+                    // Quarz: erwartete Signatur-Werte (resoniert + transparent + magieleitung hoch)
+                    out.quarzSignature =
+                        mats.quarz.tags.resoniert >= 0.8 &&
+                        mats.quarz.tags.transparent >= 0.9 &&
+                        mats.quarz.tags.magieleitung >= 0.8;
+                    // defineMaterial: gültig, dann clamp, dann doppelt erlaubt (update)
+                    const r1 = r.defineMaterial("kupfer", 0xb87333, { stromleitung: 0.95, magieleitung: 0.4 });
+                    out.defineOk = r1.ok && mats.kupfer && !mats.kupfer.builtIn;
+                    const r2 = r.defineMaterial("kupfer", 0xb87333, { stromleitung: 5.0 });
+                    out.defineClampsToOne = r2.ok && mats.kupfer.tags.stromleitung === 1;
+                    // Built-in-Schutz
+                    const r3 = r.defineMaterial("stein", 0xff0000, { härte: 0.1 });
+                    out.builtInProtected = !r3.ok && r3.reason === "cannot_overwrite_builtin";
+                    // Invalid name
+                    const r4 = r.defineMaterial("", 0, {});
+                    out.invalidNameRejected = !r4.ok;
+                    // Validation lehnt Material nicht ab, mappt unbekannt weg
+                    const v1 = r.validateBlueprintParts([
+                        { shape: "box", material: "kupfer", color: 0x111111 },
+                    ]);
+                    out.validationAcceptsKnownMaterial = v1.ok && v1.parts[0].material === "kupfer";
+                    const v2 = r.validateBlueprintParts([
+                        { shape: "box", material: "phlogiston", color: 0x111111 },
+                    ]);
+                    out.validationDropsUnknownMaterial = v2.ok && !v2.parts[0].material;
+                    // DSL-Op define_material
+                    const runRes = r.dslRun(
+                        ["define_material", "schimmer", 0xeeeeee, { magieleitung: 0.7 }],
+                        { source: "test" }
+                    );
+                    out.dslDefineMaterial = !!mats.schimmer && !mats.schimmer.builtIn;
+                    out.dslLogsDefinedEvent = runRes.log.some((e) => e.event === "defined_material");
+                    // Built-in-Bauplan-Parts haben material gesetzt
+                    const villageParts = r.state.blueprints.village.parts;
+                    out.builtInPartsHaveMaterial = villageParts.every(
+                        (p) => typeof p.material === "string" && mats[p.material]
+                    );
+                    // Save-Roundtrip: eigenes Material überlebt
+                    const snap = r.buildStateSnapshot();
+                    out.snapshotHasMaterial =
+                        Array.isArray(snap.materials) &&
+                        snap.materials.some((m) => m.name === "kupfer");
+                    // applySavedState mit altem Save (parts ohne material) →
+                    // Migration auf „stein". Wir simulieren ein altes Schema.
+                    const oldSnap = {
+                        materials: [],
+                        blueprints: [
+                            {
+                                name: "legacy-test",
+                                label: "Legacy",
+                                parts: [{ shape: "box", color: 0x123456 }],
+                            },
+                        ],
+                    };
+                    r.loadState(oldSnap);
+                    out.legacyPartGotDefaultMaterial =
+                        r.state.blueprints["legacy-test"] &&
+                        r.state.blueprints["legacy-test"].parts[0].material === "stein";
+                    // Werkstatt-UI: Material-Dropdown im DOM
+                    r.selectBlueprintForEdit("legacy-test");
+                    const matSelect = document.querySelector(".workshop-material");
+                    out.uiHasMaterialDropdown = !!matSelect;
+                    out.uiDropdownLists6PlusOptions = matSelect && matSelect.options.length >= 6;
+                    // updatePartInBlueprint mit recolor zieht Farbe nach
+                    r.updatePartInBlueprint("legacy-test", 0, { material: "quarz", recolor: true });
+                    out.recolorAppliesMaterialColor =
+                        r.state.blueprints["legacy-test"].parts[0].color === mats.quarz.color;
+                    // define_ability blockiert nested define_material
+                    const runRes2 = r.dslRun(
+                        ["define_ability", "evil-mat", ["define_material", "bad", 0, {}]],
+                        { source: "test" }
+                    );
+                    out.nestedDefineMaterialBlocked = runRes2.log.some(
+                        (e) => e.event === "ability_nested_define_forbidden"
+                    );
+                    // Aufräumen
+                    delete r.state.materials["kupfer"];
+                    delete r.state.materials["schimmer"];
+                    delete r.state.blueprints["legacy-test"];
+                    if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (!wave4p1Results || wave4p1Results.error) {
+                check(
+                    "Welle 4 P1: Snapshot erreichbar",
+                    false,
+                    (wave4p1Results && wave4p1Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Welle 4 P1: MATERIAL_TAG_KEYS ist frozen", wave4p1Results.tagKeysFrozen);
+                check("Welle 4 P1: 10 Tag-Achsen", wave4p1Results.tagKeyCount === 10);
+                check("Welle 4 P1: 6 Built-in-Materialien existieren", wave4p1Results.expectedBuiltIns);
+                check("Welle 4 P1: Built-in-Anzahl exakt 6", wave4p1Results.builtInCount === 6);
+                check("Welle 4 P1: Alle Tag-Werte 0..1", wave4p1Results.tagsInRange);
+                check("Welle 4 P1: Quarz hat Signatur-Tags (resoniert/transparent/magieleitung)", wave4p1Results.quarzSignature);
+                check("Welle 4 P1: defineMaterial legt eigenes Material an", wave4p1Results.defineOk);
+                check("Welle 4 P1: defineMaterial clamped Tag-Werte auf 1", wave4p1Results.defineClampsToOne);
+                check("Welle 4 P1: defineMaterial lehnt Built-in-Override ab", wave4p1Results.builtInProtected);
+                check("Welle 4 P1: defineMaterial lehnt leeren Namen ab", wave4p1Results.invalidNameRejected);
+                check("Welle 4 P1: validateBlueprintParts akzeptiert bekanntes Material", wave4p1Results.validationAcceptsKnownMaterial);
+                check("Welle 4 P1: validateBlueprintParts droppt unbekanntes Material", wave4p1Results.validationDropsUnknownMaterial);
+                check("Welle 4 P1: DSL-Op define_material wirkt", wave4p1Results.dslDefineMaterial);
+                check("Welle 4 P1: DSL-Op loggt defined_material-Event", wave4p1Results.dslLogsDefinedEvent);
+                check("Welle 4 P1: Built-in-Bauplan-Parts tragen material-Feld", wave4p1Results.builtInPartsHaveMaterial);
+                check("Welle 4 P1: Save persistiert eigene Materialien", wave4p1Results.snapshotHasMaterial);
+                check("Welle 4 P1: Migration alter Parts auf stein", wave4p1Results.legacyPartGotDefaultMaterial);
+                check("Welle 4 P1: Werkstatt-UI hat Material-Dropdown", wave4p1Results.uiHasMaterialDropdown);
+                check("Welle 4 P1: Material-Dropdown listet ≥6 Optionen", wave4p1Results.uiDropdownLists6PlusOptions);
+                check("Welle 4 P1: Recolor zieht Material-Farbe", wave4p1Results.recolorAppliesMaterialColor);
+                check("Welle 4 P1: define_ability blockiert nested define_material", wave4p1Results.nestedDefineMaterialBlocked);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {
