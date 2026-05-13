@@ -6685,6 +6685,250 @@ function startSaveServer() {
                 }
             }
 
+            // ### Welle 6.G Phase 1 — Welt-Sinne: Inseln + Bäume + UFOs kollidierbar ###
+            // Aktivierung der drei zuvor toten DSL-Ops (System-Audit §2).
+            // spawn_tree → btCylinderShape am Stamm (Krone bleibt durchlässig).
+            // spawn_island → btBvhTriangleMeshShape aus echten Vertices.
+            // spawn_ufo bleibt kosmetisch (kein Body — fliegende Beobachter).
+            // Plus: retrofit der initialen spawnIslands-Inseln + Terrain-Bäume.
+            const wave6gResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    out.hasIslandHelper = typeof r._buildIslandCollision === "function";
+                    out.hasTreeHelper = typeof r._buildTreeCollision === "function";
+                    out.hasDisposeHelper = typeof r._disposeStaticCollision === "function";
+                    out.hasSpawnTreeAt = typeof r.spawnTreeAt === "function";
+                    out.hasSpawnIslandAt = typeof r.spawnIslandAt === "function";
+                    out.hasSpawnUfoAt = typeof r.spawnUfoAt === "function";
+                    // Initiale Welt enthält bereits Inseln + Terrain-Bäume.
+                    // Retrofit-Test: mindestens eine Insel + ein Baum haben
+                    // jetzt userData.collision (bei spawnIslands + vegetation-
+                    // Schleife geschieht das beim Worldgen).
+                    const initIslands = Array.isArray(r.state.floatingIslands) ? r.state.floatingIslands : [];
+                    // Trees discriminieren: state.vegetation enthält auch Blumen
+                    // (1m-Stengel-CylinderGeometry) — die bekommen bewusst KEINE
+                    // Kollision. Bäume haben Stamm-Höhe >= 2 und Radius >= 0.3.
+                    const initVegTrees = Array.isArray(r.state.vegetation)
+                        ? r.state.vegetation.filter((v) => {
+                              let trunk = null;
+                              v.traverse &&
+                                  v.traverse((n) => {
+                                      if (
+                                          !trunk &&
+                                          n.isMesh &&
+                                          n.geometry &&
+                                          n.geometry.type === "CylinderGeometry" &&
+                                          n.geometry.parameters &&
+                                          n.geometry.parameters.height >= 2 &&
+                                          (n.geometry.parameters.radiusBottom || 0) >= 0.3
+                                      )
+                                          trunk = n;
+                                  });
+                              return !!trunk;
+                          })
+                        : [];
+                    out.initIslandsCount = initIslands.length;
+                    out.initIslandsWithCollision = initIslands.filter(
+                        (i) => i.userData && i.userData.collision && i.userData.collision.body
+                    ).length;
+                    out.initVegTreesCount = initVegTrees.length;
+                    out.initVegTreesWithCollision = initVegTrees.filter(
+                        (v) => v.userData && v.userData.collision && v.userData.collision.body
+                    ).length;
+
+                    // DSL-Op-Tests: spawn_tree, spawn_island, spawn_ufo
+                    const treesBefore = r.state.vegetation ? r.state.vegetation.length : 0;
+                    const islandsBefore = r.state.floatingIslands ? r.state.floatingIslands.length : 0;
+                    const ufosBefore = r.state.ufos ? r.state.ufos.length : 0;
+                    const playerPos = r.state.playerMesh
+                        ? r.state.playerMesh.position
+                        : { x: 0, y: 50, z: 0 };
+                    // Test-Position abseits, damit wir die neuen Spawns
+                    // sicher von Welt-Bestand trennen können.
+                    const tx = playerPos.x + 50;
+                    const ty = playerPos.y;
+                    const tz = playerPos.z + 50;
+
+                    r.dslRun(["spawn_tree", ["at", tx, ty, tz], 1], { source: "test" });
+                    r.dslRun(["spawn_island", ["at", tx + 20, ty, tz + 20], 5, 12345], {
+                        source: "test",
+                    });
+                    r.dslRun(["spawn_ufo", ["at", tx + 40, ty + 10, tz + 40]], { source: "test" });
+
+                    const treesAfter = r.state.vegetation ? r.state.vegetation.length : 0;
+                    const islandsAfter = r.state.floatingIslands ? r.state.floatingIslands.length : 0;
+                    const ufosAfter = r.state.ufos ? r.state.ufos.length : 0;
+                    out.treeSpawned = treesAfter > treesBefore;
+                    out.islandSpawned = islandsAfter > islandsBefore;
+                    out.ufoSpawned = ufosAfter > ufosBefore;
+
+                    // Letztes Spawn-Objekt holen und Kollision prüfen.
+                    const newTree = treesAfter > treesBefore ? r.state.vegetation[treesAfter - 1] : null;
+                    const newIsland =
+                        islandsAfter > islandsBefore
+                            ? r.state.floatingIslands[islandsAfter - 1]
+                            : null;
+                    const newUfo = ufosAfter > ufosBefore ? r.state.ufos[ufosAfter - 1] : null;
+                    out.treeHasCollision = !!(
+                        newTree &&
+                        newTree.userData &&
+                        newTree.userData.collision &&
+                        newTree.userData.collision.body &&
+                        newTree.userData.collision.shape
+                    );
+                    out.islandHasCollision = !!(
+                        newIsland &&
+                        newIsland.userData &&
+                        newIsland.userData.collision &&
+                        newIsland.userData.collision.body &&
+                        newIsland.userData.collision.tmesh
+                    );
+                    // UFO ist bewusst KOLLISIONS-FREI (fliegender Beobachter).
+                    out.ufoHasNoCollision = !!(newUfo && (!newUfo.userData || !newUfo.userData.collision));
+
+                    // Position-Persistenz: DSL-Op hat ["at",tx,ty,tz] gesetzt,
+                    // Tree muss tatsächlich nahe (tx,tz) stehen (kleiner Jitter
+                    // ist bei count=1 auf 0 begrenzt — daher exakt tx/tz).
+                    if (newTree) {
+                        let trunk = null;
+                        newTree.traverse((n) => {
+                            if (!trunk && n.isMesh && n.geometry && n.geometry.type === "CylinderGeometry")
+                                trunk = n;
+                        });
+                        if (trunk) {
+                            const wp = new window.THREE.Vector3();
+                            trunk.getWorldPosition(wp);
+                            out.treePosXMatch = Math.abs(wp.x - tx) < 0.5;
+                            out.treePosZMatch = Math.abs(wp.z - tz) < 0.5;
+                        }
+                    }
+
+                    // Diskrimination: derselbe Seed → dieselben Vertices.
+                    // Ohne diesen Determinismus wäre Multi-User-Sync sinnlos.
+                    const beforeIslandsCount = r.state.floatingIslands.length;
+                    r.dslRun(["spawn_island", ["at", tx + 80, ty, tz], 5, 99999], { source: "test" });
+                    r.dslRun(["spawn_island", ["at", tx + 100, ty, tz], 5, 99999], { source: "test" });
+                    const i1 = r.state.floatingIslands[beforeIslandsCount];
+                    const i2 = r.state.floatingIslands[beforeIslandsCount + 1];
+                    if (i1 && i2 && i1.geometry && i2.geometry) {
+                        const v1 = i1.geometry.attributes.position.array;
+                        const v2 = i2.geometry.attributes.position.array;
+                        out.seedDeterministic =
+                            v1.length === v2.length &&
+                            v1.length > 0 &&
+                            Math.abs(v1[1] - v2[1]) < 0.0001 &&
+                            Math.abs(v1[10] - v2[10]) < 0.0001;
+                    }
+
+                    // Chat-Pattern-Test: „pflanze baum hier" → {program,describe}.
+                    // parseChatToDsl gibt das volle Built-Object zurück, nicht
+                    // nur das Programm — daher .program lesen.
+                    if (typeof r.parseChatToDsl === "function") {
+                        const treeBuilt = r.parseChatToDsl("pflanze baum hier");
+                        const treeProg = treeBuilt && treeBuilt.program;
+                        out.chatTreeProg =
+                            Array.isArray(treeProg) &&
+                            treeProg[0] === "spawn_tree" &&
+                            Array.isArray(treeProg[1]) &&
+                            treeProg[1][0] === "at";
+                        const islandBuilt = r.parseChatToDsl("setze insel hier");
+                        const islandProg = islandBuilt && islandBuilt.program;
+                        out.chatIslandProg =
+                            Array.isArray(islandProg) &&
+                            islandProg[0] === "spawn_island" &&
+                            Array.isArray(islandProg[1]) &&
+                            islandProg[1][0] === "at" &&
+                            Number.isFinite(islandProg[3]); // Seed eingebettet
+                        const ufoBuilt = r.parseChatToDsl("rufe ufo hier");
+                        const ufoProg = ufoBuilt && ufoBuilt.program;
+                        out.chatUfoProg =
+                            Array.isArray(ufoProg) &&
+                            ufoProg[0] === "spawn_ufo" &&
+                            Array.isArray(ufoProg[1]) &&
+                            ufoProg[1][0] === "at";
+                    }
+
+                    // Toter Pfad gelöscht: 'Physik für Insel' kommt nicht mehr
+                    // im Log vor (war Debug-Output des needsPhysics-Pfads).
+                    // Wir können den Source-Code-Check nicht von hier aus
+                    // machen; statt dessen prüfen wir, dass needsPhysics auf
+                    // den initialen Inseln NIE gesetzt ist (kein Anker-Pfad
+                    // mehr) — d. h. die neue Kollision ist der echte Pfad.
+                    out.noNeedsPhysicsLeftover = initIslands.every(
+                        (i) => !i.userData || i.userData.needsPhysics !== true
+                    );
+
+                    // Dispose-Test: _disposeStaticCollision räumt sauber auf.
+                    if (newTree && newTree.userData.collision) {
+                        r._disposeStaticCollision(newTree);
+                        out.disposeClearsCollision = newTree.userData.collision === null;
+                    }
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6gResults && !wave6gResults.error) {
+                check("Welle 6.G P1: _buildIslandCollision-Methode existiert", wave6gResults.hasIslandHelper);
+                check("Welle 6.G P1: _buildTreeCollision-Methode existiert", wave6gResults.hasTreeHelper);
+                check(
+                    "Welle 6.G P1: _disposeStaticCollision-Methode existiert",
+                    wave6gResults.hasDisposeHelper
+                );
+                check("Welle 6.G P1: spawnTreeAt-Methode existiert", wave6gResults.hasSpawnTreeAt);
+                check("Welle 6.G P1: spawnIslandAt-Methode existiert", wave6gResults.hasSpawnIslandAt);
+                check("Welle 6.G P1: spawnUfoAt-Methode existiert", wave6gResults.hasSpawnUfoAt);
+                check(
+                    `Welle 6.G P1: initiale Welt-Inseln (n=${wave6gResults.initIslandsCount}) haben Kollision`,
+                    wave6gResults.initIslandsCount > 0 &&
+                        wave6gResults.initIslandsWithCollision === wave6gResults.initIslandsCount
+                );
+                if (wave6gResults.initVegTreesCount > 0) {
+                    check(
+                        `Welle 6.G P1: initiale Terrain-Bäume (n=${wave6gResults.initVegTreesCount}) haben Stamm-Kollision`,
+                        wave6gResults.initVegTreesWithCollision === wave6gResults.initVegTreesCount
+                    );
+                }
+                check("Welle 6.G P1: spawn_tree DSL-Op fügt Baum zu state.vegetation hinzu", wave6gResults.treeSpawned);
+                check(
+                    "Welle 6.G P1: spawn_island DSL-Op fügt Insel zu state.floatingIslands hinzu",
+                    wave6gResults.islandSpawned
+                );
+                check("Welle 6.G P1: spawn_ufo DSL-Op fügt UFO zu state.ufos hinzu", wave6gResults.ufoSpawned);
+                check("Welle 6.G P1: neu-gespawnter Baum hat btCylinderShape-Kollision", wave6gResults.treeHasCollision);
+                check(
+                    "Welle 6.G P1: neu-gespawnte Insel hat btBvhTriangleMeshShape-Kollision",
+                    wave6gResults.islandHasCollision
+                );
+                check(
+                    "Welle 6.G P1: UFO bleibt bewusst kollisionsfrei (fliegender Beobachter)",
+                    wave6gResults.ufoHasNoCollision
+                );
+                if (wave6gResults.treePosXMatch !== undefined) {
+                    check("Welle 6.G P1: Baum-Stamm steht exakt an ['at',x,y,z]-Position (X)", wave6gResults.treePosXMatch);
+                    check("Welle 6.G P1: Baum-Stamm steht exakt an ['at',x,y,z]-Position (Z)", wave6gResults.treePosZMatch);
+                }
+                check(
+                    "Welle 6.G P1: spawn_island mit gleichem Seed produziert identische Vertices (Multi-User-Sync)",
+                    wave6gResults.seedDeterministic
+                );
+                check("Welle 6.G P1: Chat 'pflanze baum hier' → spawn_tree mit ['at',...]", wave6gResults.chatTreeProg);
+                check(
+                    "Welle 6.G P1: Chat 'setze insel hier' → spawn_island mit ['at',...] + eingebettetem Seed",
+                    wave6gResults.chatIslandProg
+                );
+                check("Welle 6.G P1: Chat 'rufe ufo hier' → spawn_ufo mit ['at',...]", wave6gResults.chatUfoProg);
+                check(
+                    "Welle 6.G P1: toter needsPhysics-Pfad ist weg (keine Insel hat das Flag)",
+                    wave6gResults.noNeedsPhysicsLeftover
+                );
+                check(
+                    "Welle 6.G P1: _disposeStaticCollision setzt userData.collision auf null",
+                    wave6gResults.disposeClearsCollision
+                );
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {

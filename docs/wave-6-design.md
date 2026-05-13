@@ -422,8 +422,8 @@ Für **Verbindungs-Last** (W5-A) und **Compound-Tags** (W5-B): **Min/Max-Aggrega
    - 3a: Tod-Wandlung mit Welt-Trauer + Min-Regel-Hybrid + Werkzeug-Stamina-Kosten + persistente Tod-Wunde
    - 3b: Stat-Stacking (Soul + Armor×0.3 + Tool×0.15 + Boosts − Wound) + Aura-Visual (Sprite + Radial-Gradient + AdditiveBlending)
 7. ✅ **Schöpfer-Reflexions-Fixes** — WASD-Geometrie-Revert (`state.right` ist player-LINKS in Right-Hand-Coords), Drache-Inner-π-Flip (Cone-Tail als wahrgenommene Schnauze in +Z), Aura-Sprite weicher Falloff statt Sphere-Kante
-8. **6.G Welt-Sinne — Phase 1** ← **JETZT OFFEN** (Kollisionen für fliegende Inseln + Bäume). 1-2 Sessions.
-9. **6.C2** (Spiel-Modi frieden/pfad/schöpfer) — nutzt das Stat-System. 1 Session.
+8. ✅ **6.G Welt-Sinne — Phase 1** (V7.73, 13.05.2026) — fliegende Inseln + Bäume kollidierbar. Drei zuvor tote DSL-Ops `spawn_tree`/`spawn_island`/`spawn_ufo` jetzt mit echten Spawn-Pfaden. Inseln bekommen btBvhTriangleMeshShape aus ihren echten Vertices (Visual = Kollision wie Chunks), Bäume bekommen btCylinderShape nur am Stamm (Krone durchlässig — Spieler kann durchs Laub gehen), UFOs bleiben bewusst kollisionsfrei (fliegende Beobachter). Retrofit: alle bei `spawnIslands`/Worldgen-Vegetation erzeugten Objekte bekommen sofort beim Spawn ihre Kollision. Drei Chat-Patterns (`pflanze baum hier`, `setze insel hier`, `rufe ufo hier`) mit Position-Embed + Seed für spawn_island (Multi-User-Determinismus). Toter `needsPhysics`-Lazy-Pfad gelöscht (System-Audit §2 Quick-Win). Schema unverändert. 24 neue Playtest-Invarianten → 1038 total.
+9. **6.C2** ← **JETZT OFFEN** (Spiel-Modi frieden/pfad/schöpfer) — nutzt das Stat-System. 1 Session.
 10. **6.C1 + 6.A-Maus + 6.C3** (Inventar + LMB/RMB-Aktionen + Keybindings-UI). 2-3 Sessions.
 11. **6.B** (CAD-Werkstatt — minimal magic). 2 Sessions.
 12. **6.G Welt-Sinne — Phase 2** (Schatten + Wasser + Höhlen + Sterne). 3-4 Sessions.

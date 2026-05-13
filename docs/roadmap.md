@@ -229,7 +229,7 @@ Plus: inline-styles aus `index.html` entfernt (`#fps`, `#state-file-input`), Inl
 | **6.D — Stats fraktal** ⭐ | Soul × Soul-Material → Tags → Stats; Boosts (Konsum + Emotion + Welt-Effekt); Min-Regel-Hybrid (decay 0.7); Tod = Phönix-Wandlung + Welt-Trauer | 3-4 Sessions | W5 + 6.F2 |
 | **6.E — Lesbarkeit** | Fähigkeit-Beschreibung ✅ (6.E1), Intro-Overlay ✅ (6.E2), subtile Tooltips (6.E3 — wartet) | 2 Sessions, **2/3 erledigt** | – |
 | **6.F — Original-Crafting (alt 6.1-6.7)** | Visuelle Verbindungs-Linien, Brech-Mechanik, Energiequellen, Kreaturen-Körper als Baukasten, Physik-Constraints (Ammo Hinge/Fixed), Rüstung → in 6.D integriert | 8-10 Sessions | W5 |
-| **6.G — Welt-Sinne** (NEU, 13.05.2026) | Fliegende Inseln + Bäume kollidierbar, Schatten, Shader (Höhe-Tint, Wind, Glow), Sterne-Stabilisierung + Variation, Terrain-Höhlen+Überhänge+Klippen, Wasser als Material+Layer mit DSL-Ops | 7-9 Sessions, in 2 Phasen | – (Phase 1) / 6.D (Phase 2) |
+| **6.G — Welt-Sinne** (NEU, 13.05.2026) | **Phase 1 ✅ V7.73** (fliegende Inseln + Bäume kollidierbar, drei Dead-Code-DSL-Ops aktiviert). Phase 2 offen: Schatten, Shader (Höhe-Tint, Wind, Glow), Sterne-Stabilisierung + Variation, Terrain-Höhlen+Überhänge+Klippen, Wasser als Material+Layer mit DSL-Ops | 7-9 Sessions, **Phase 1 erledigt**, Phase 2 = 6-7 Sessions | – (Phase 1) / 6.D (Phase 2) |
 | **6.H — Kreaturen-Aufträge** (NEU, 13.05.2026) | Autonome Co-Schöpfer: Kreaturen bekommen DSL-Programme als Agenda (build_path, gather, build_house, research_blueprint). Kontext-Menü via Maus-Klick. Persistierte tasks. Vision: dritter Schöpfungs-Akteur (Mensch+KI+Kreaturen) | 4-5 Sessions | 6.F4 (Multi-Mesh-Kreaturen) + 6.A4 (Raycast) |
 
 **Vision-Hebel der Welle**: Block 6.D macht den Spieler zum **Compound im selben Hylomorphismus-System** wie Materialien und Bauwerke. `STAT_FROM_TAGS`-Matrix analog `FORM_TAG_ACTIVATION`. Wenn das Stat-System ohne Bezug zu `MATERIAL_TAG_KEYS` funktioniert, wurde die Vision verfehlt — explizite Warnung im Design-Doc §9.
@@ -242,8 +242,8 @@ Plus: inline-styles aus `index.html` entfernt (`#fps`, `#state-file-input`), Inl
 5. 6.F1+F2 (Verbindungs-Linien + Brech-Warning) ✅ V7.72
 6. **6.D Stat-System komplett** (Etappen 1+1.5+1.6+1.7+2+3a+3b) ✅ V7.72 — der Vision-Pfeiler ist live
 7. **Schöpfer-Reflexions-Polish** ✅ V7.72 — sechs Reflexions-Runden in Welle 6.D fanden + behoben: Avatar-Editor-UI (Etappe 1.7), Konsumables aus Compound-Tags (Logik statt Tabelle), Werkzeug-Stamina-Kosten (Anti-Stapeln), persistente Tod-Wunde, Aura-Glow (Sprite + Radial-Gradient), WASD-Geometrie + Drache-Animation-Wahrnehmung, **Sprint-Bug-Fix** (player_speed sync't sprintSpeed), **Tag-Clamp [0,1]** in computePlayerStats für die Stat-Pipe, Speed-Base 6→7
-8. **6.G Welt-Sinne Phase 1** ← jetzt offen (fliegende Inseln + Bäume kollidierbar)
-9. **6.C2** (Spiel-Modi frieden/pfad/schöpfer) — nutzt Stat-System
+8. ✅ **6.G Welt-Sinne Phase 1** V7.73 — fliegende Inseln + Bäume kollidierbar (btBvhTriangleMeshShape für Inseln aus echten Vertices, btCylinderShape am Baumstamm; Krone bleibt durchlässig), drei zuvor tote DSL-Ops (spawn_tree/spawn_island/spawn_ufo) aktiviert mit Position+Seed-Embed im Chat-Pattern (Multi-User-Determinismus), UFOs bleiben bewusst kollisionsfrei (fliegende Beobachter), toter needsPhysics-Lazy-Pfad gelöscht (System-Audit §2 Quick-Win), 24 neue Playtest-Invarianten → 1038 total
+9. **6.C2** ← jetzt offen (Spiel-Modi frieden/pfad/schöpfer) — nutzt 6.D Stat-System
 10. 6.C1 + 6.A-Maus + 6.C3 (Inventar + LMB/RMB + Keybindings-UI)
 11. 6.B (CAD-Werkstatt — minimal magic)
 12. 6.G Phase 2 (Schatten, Wasser, Höhlen, Sterne)

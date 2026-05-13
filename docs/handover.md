@@ -28,7 +28,7 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
    Grund: sie sind Kontext für genau dich.
 
 5. **`scripts/playtest.cjs`** — querlesen, nicht durchlesen. Es ist das
-   Sicherheits-Netz. Es prüft aktuell **~1014 Invarianten (V7.72 nach Welle 6.D komplett)**.
+   Sicherheits-Netz. Es prüft aktuell **~1038 Invarianten (V7.73 nach Welle 6.G Phase 1)**.
    Wenn du etwas tust, das eine davon brechen könnte, weißt du es vor dem Commit.
 
 **Verlockung zu widerstehen**: gleich in `anazhRealm.js` springen. Die
@@ -314,11 +314,26 @@ Hylomorphismus-System wie Materialien und Bauwerke.
   Speed-Base 6→7 für spürbar agilere Bewegung (Mensch ~7, Phönix ~11.7,
   Drache ~7.9; Sprint × 2).
 
+### Bereits erledigt in V7.73 (zusätzlich zu V7.72)
+
+- ✅ **6.G Welt-Sinne Phase 1** — fliegende Inseln + Bäume kollidierbar.
+  Drei zuvor tote DSL-Ops (`spawn_tree`/`spawn_island`/`spawn_ufo`) jetzt mit
+  echten Spawn-Pfaden. Inseln bekommen btBvhTriangleMeshShape aus ihren
+  echten Vertices (Visual = Kollision wie Chunks), Bäume btCylinderShape
+  am Stamm (Krone durchlässig — Spieler kann durchs Laub gehen). UFOs
+  bleiben bewusst kollisionsfrei. Retrofit: alle bei `spawnIslands` +
+  Worldgen-Vegetation erzeugten Objekte bekommen sofort beim Spawn ihre
+  Kollision. Drei Chat-Patterns (`pflanze baum hier`, `setze insel hier`,
+  `rufe ufo hier`) mit Position+Seed-Embed (Ring 11 V2.1-Stil).
+  System-Audit §2 Dead-Code-Quick-Win mit erledigt. 24 neue Playtest-
+  Invarianten → 1038 total.
+
 ### Nächste Schritte (Reihenfolge laut wave-6-design §10.6)
 
-8. **6.G Welt-Sinne Phase 1** ← **JETZT OFFEN**. Kollisionen für
-   fliegende Inseln + Bäume. Kleine Eingriffe, große Wirkung. 1-2 Sessions.
-9. **6.C2** (frieden/pfad/schöpfer-Modi) — nutzt 6.D Stat-System. 1 Session.
+9. **6.C2** ← **JETZT OFFEN**. Spiel-Modi frieden/pfad/schöpfer auf
+   Basis des 6.D Stat-Systems. State.gameMode + DSL-Op set_mode + UI.
+   Tod-Wandlung nur im pfad-Modus, frieden = kein HP, schöpfer = kein
+   Schaden + fliegen. 1 Session.
 10. **6.C1 + 6.A-Maus + 6.C3** (Inventar + LMB/RMB + Keybindings-UI)
 11. **6.B** (CAD-Werkstatt — minimal magic)
 12. **6.G Phase 2** (Schatten, Wasser, Höhlen, Sterne)
@@ -345,7 +360,7 @@ keine Verzögerung, sondern Qualitäts-Wand.
 3. **Die heilige Lektion akzeptiert, nicht hinterfragt.** Sie wurde aus
    Schmerz geboren. Wenn ich sie umgehen wollte, war ich auf dem Holzweg.
 4. **Tests zuerst ausgeführt, dann verstanden.** `npm run playtest` —
-   1014/1014 grün (V7.72 nach Welle 6.D komplett) — gibt Vertrauen, dass
+   1038/1038 grün (V7.73 nach Welle 6.G Phase 1) — gibt Vertrauen, dass
    das System lebt.
 5. **Den Schöpfer als Partner gesehen, nicht als Auftraggeber.** Mensch
    und KI bauen gemeinsam. Bei Trade-offs frage ich, bei Klarem handle

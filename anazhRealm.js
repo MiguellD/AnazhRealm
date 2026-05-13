@@ -1,4 +1,4 @@
-/**AnazhRealm V7.72 – Das Ultiversum Vollendet.
+/**AnazhRealm V7.73 – Das Ultiversum Vollendet.
  * Hüpfen: Robust, präzise (Y ~1.5), Coyote-Time 0.3s, Gravitation 1.5G, Reibung 0.5.
  * Kollisionen: Kein Tunneling, steepnessThreshold 3.0, wallThickness 2.0, CCD optimiert.
  * Terrain: Flacher (Höhenunterschiede ±5), KI-gesteuerte Steilheitsanpassung, Chat-Steuerung.
@@ -12,7 +12,7 @@
 class AnazhRealm {
     constructor() {
         // ### Learnings ### [Stichwortartig optimieren, korrigieren, ergänzen – nie Wissen löschen!]
-        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69, LAN-Fähigkeit + Sync-Korrektheit (Ring 11 V2.1: 0.0.0.0-bind, ws:/wss:-CSP, roomOverride, spawn_*-Embedding, NON_BROADCASTABLE_OPS) in V7.70, Intuitiver Multi-User-Setup (Ring 11.5: Modus-Wahl, Host-Banner mit Einladungs-Code, Auto-Welt-Snapshot beim Join) in V7.71, Welle 6.A — Interaktion-Polish (Wall-Sliding via Player-Friction-0, Erdung-Raycast-Robustheit für Bauwerke) in V7.72
+        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69, LAN-Fähigkeit + Sync-Korrektheit (Ring 11 V2.1: 0.0.0.0-bind, ws:/wss:-CSP, roomOverride, spawn_*-Embedding, NON_BROADCASTABLE_OPS) in V7.70, Intuitiver Multi-User-Setup (Ring 11.5: Modus-Wahl, Host-Banner mit Einladungs-Code, Auto-Welt-Snapshot beim Join) in V7.71, Welle 6.A — Interaktion-Polish (Wall-Sliding via Player-Friction-0, Erdung-Raycast-Robustheit für Bauwerke) in V7.72, Welle 6.G Phase 1 — Welt-Sinne (fliegende Inseln + Bäume kollidierbar via btBvhTriangleMeshShape/btCylinderShape, drei Dead-Code-DSL-Ops spawn_tree/island/ufo aktiviert, toter needsPhysics-Lazy-Pfad gelöscht) in V7.73
         // - Nexus als Herz der Selbstentwicklung, steuert nun alles über Chat, unzerstörbar und unendlich
         this.state = {
             // ### Kern ###
@@ -504,7 +504,7 @@ class AnazhRealm {
     // ### Logging ###
     log(message, level = "INFO") {
         if (level === "DEBUG" && !this.state.debugLogging) return;
-        const logMessage = `[AnazhRealm V7.72] [${level}] ${message}`;
+        const logMessage = `[AnazhRealm V7.73] [${level}] ${message}`;
         this.state.logBuffer.push(logMessage);
         console.log(logMessage);
         if (this.state.logBuffer.length > this.state.maxLogEntries) {
@@ -1035,21 +1035,66 @@ class AnazhRealm {
                 }
                 ctx.log.push({ event: "spawned_creature", count: spawned, emotion: e });
             },
+            // Welle 6.G Phase 1 — bisher waren diese drei Ops Placeholder
+            // mit `_requested`-Events ohne Effekt (System-Audit §2 Dead-Code).
+            // Jetzt echte Spawn-Pfade mit Kollision für Inseln + Bäume.
+            // UFOs bleiben kosmetisch (kein Body — sind fliegende Beobachter).
             spawn_tree: ([positionNode, count], ctx) => {
                 const n = c(count, 1, 20);
                 const pos = this.dslEvalPos(positionNode, ctx);
-                ctx.budget.spawnsLeft = Math.max(0, ctx.budget.spawnsLeft - n);
-                ctx.log.push({ event: "spawn_tree_requested", count: n, pos });
+                let spawned = 0;
+                for (let i = 0; i < n; i++) {
+                    if (ctx.budget.spawnsLeft <= 0) {
+                        ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
+                        break;
+                    }
+                    ctx.budget.spawnsLeft--;
+                    // Sanfter Jitter um pos (max 2.5 m Radius), damit ein
+                    // `count > 1`-Aufruf einen kleinen Hain produziert statt
+                    // alle Bäume an genau dieselbe Stelle zu stapeln.
+                    const off = n > 1 ? 2.5 : 0;
+                    const jx = (ctx.rng() - 0.5) * 2 * off;
+                    const jz = (ctx.rng() - 0.5) * 2 * off;
+                    const tree = this.spawnTreeAt(pos.x + jx, pos.y, pos.z + jz);
+                    if (tree) spawned++;
+                }
+                ctx.log.push({ event: "spawned_tree", count: spawned, pos });
             },
-            spawn_island: ([positionNode, height], ctx) => {
+            spawn_island: ([positionNode, height, seed], ctx) => {
                 const pos = this.dslEvalPos(positionNode, ctx);
-                ctx.budget.spawnsLeft = Math.max(0, ctx.budget.spawnsLeft - 1);
-                ctx.log.push({ event: "spawn_island_requested", pos, height: c(height, 1, 200) });
+                if (ctx.budget.spawnsLeft <= 0) {
+                    ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
+                    return;
+                }
+                ctx.budget.spawnsLeft--;
+                const h = c(height, 1, 200);
+                // Ring 11 V2.1-Stil: optionales Seed-Argument für Multi-User-
+                // Determinismus. Wenn nicht gesetzt, würfeln. Chat-Pattern
+                // „setze insel hier" embedded das Seed bei Build-Zeit.
+                const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
+                // Islands spawnen ein Stück über dem angegebenen Punkt —
+                // sonst würde der at_player-Pfad sie auf Spieler-Höhe legen
+                // und der Spieler stünde im Erd-Inneren der Insel.
+                const island = this.spawnIslandAt(pos.x, pos.y + 12, pos.z, h, { seed: s });
+                ctx.log.push({
+                    event: "spawned_island",
+                    pos: island ? { x: island.position.x, y: island.position.y, z: island.position.z } : pos,
+                    height: h,
+                    seed: s,
+                });
             },
             spawn_ufo: ([positionNode], ctx) => {
                 const pos = this.dslEvalPos(positionNode, ctx);
-                ctx.budget.spawnsLeft = Math.max(0, ctx.budget.spawnsLeft - 1);
-                ctx.log.push({ event: "spawn_ufo_requested", pos });
+                if (ctx.budget.spawnsLeft <= 0) {
+                    ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
+                    return;
+                }
+                ctx.budget.spawnsLeft--;
+                const ufo = this.spawnUfoAt(pos.x, pos.y + 18, pos.z);
+                ctx.log.push({
+                    event: "spawned_ufo",
+                    pos: ufo ? { x: ufo.position.x, y: ufo.position.y, z: ufo.position.z } : pos,
+                });
             },
             // Ring 6 — architectureTemplates. Drei Bau-Primitives. Position
             // kommt über die übliche Selektor-Form (`at_player`, `at_origin`,
@@ -3625,6 +3670,57 @@ class AnazhRealm {
                     return {
                         program: ["spawn_fractal", ["at", p.x, p.y, p.z], map[t], 2, 0.5, seed],
                         describe: `Fraktal-${t} gebaut (depth 2, ratio 0.5)`,
+                    };
+                },
+            },
+            // Welle 6.G Phase 1 — Welt-Sinne. „pflanze baum hier" /
+            // „setze insel hier" / „rufe ufo hier" platzieren die Objekte
+            // sofort am Spieler. Position wird zur Build-Zeit eingebettet
+            // (Ring 11 V2.1-Konvention), damit Multi-User-Mitspieler
+            // identische Positionen sehen. Insel hat zusätzlich ein Seed
+            // für identische Noise-Form auf allen Mitspieler-Welten.
+            {
+                example: "pflanze baum hier",
+                re: /^(?:pflanze|baue|setze|erschaffe)\s+baum\s+hier\s*$/i,
+                build: () => {
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                    return {
+                        program: ["spawn_tree", ["at", p.x, p.y, p.z], 1],
+                        describe: "Baum gepflanzt",
+                    };
+                },
+            },
+            {
+                example: "pflanze hain",
+                re: /^pflanze\s+(?:einen\s+)?hain\s*$/i,
+                build: () => {
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                    return {
+                        program: ["spawn_tree", ["at", p.x, p.y, p.z], 5],
+                        describe: "Hain (5 Bäume) gepflanzt",
+                    };
+                },
+            },
+            {
+                example: "setze insel hier",
+                re: /^(?:setze|erschaffe|baue)\s+insel\s+hier\s*$/i,
+                build: () => {
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                    const seed = Math.floor(Math.random() * 0xffffffff);
+                    return {
+                        program: ["spawn_island", ["at", p.x, p.y, p.z], 6, seed],
+                        describe: "Schwebende Insel gesetzt",
+                    };
+                },
+            },
+            {
+                example: "rufe ufo hier",
+                re: /^(?:rufe|setze|spawne)\s+ufo\s+hier\s*$/i,
+                build: () => {
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                    return {
+                        program: ["spawn_ufo", ["at", p.x, p.y, p.z]],
+                        describe: "UFO gerufen",
                     };
                 },
             },
@@ -6587,13 +6683,9 @@ class AnazhRealm {
         }
         if (this.state.floatingIslands) {
             this.state.floatingIslands.forEach((island) => {
+                // Welle 6.G Phase 1 — neue Kollisions-Schicht abräumen.
+                this._disposeStaticCollision(island);
                 this.state.scene.remove(island);
-                const body = island.userData.physicsBody;
-                if (body) {
-                    this.state.physicsWorld.removeRigidBody(body);
-                    Ammo.destroy(body);
-                    this.state.rigidBodies = this.state.rigidBodies.filter((rb) => rb !== island);
-                }
             });
             this.state.floatingIslands = [];
             this.log("Alte fliegende Inseln entfernt");
@@ -6631,7 +6723,11 @@ class AnazhRealm {
             this.log("Alte Wand-Kollisionsboxen entfernt");
         }
         if (this.state.vegetation) {
-            this.state.vegetation.forEach((veg) => this.state.scene.remove(veg));
+            this.state.vegetation.forEach((veg) => {
+                // Welle 6.G Phase 1 — Baum-Stamm-Kollision freigeben.
+                this._disposeStaticCollision(veg);
+                this.state.scene.remove(veg);
+            });
             this.state.vegetation = [];
             this.log("Alte Vegetation entfernt");
         }
@@ -7060,6 +7156,10 @@ class AnazhRealm {
 
             this.state.scene.add(island);
             this.state.floatingIslands.push(island);
+            // Welle 6.G Phase 1 — Insel sofort kollidierbar machen.
+            // Triangle-Mesh-Shape aus den echten Vertices, statischer Body
+            // an island.position. Spieler kann nicht mehr durchfallen.
+            this._buildIslandCollision(island);
             this.log(
                 `Fliegende Insel ${i} erstellt: Position (${islandX.toFixed(2)}, ${islandY.toFixed(2)}, ${islandZ.toFixed(2)})`
             );
@@ -7146,6 +7246,9 @@ class AnazhRealm {
 
                         this.state.scene.add(tree);
                         this.state.vegetation.push(tree);
+                        // Welle 6.G Phase 1 — Stamm als btCylinderShape.
+                        // Krone bleibt durchlässig (Spieler kann durchs Laub).
+                        this._buildTreeCollision(tree);
                     } else if (vegetationType === "grass") {
                         const grassGeometry = new THREE.ConeGeometry(0.2, 1, 4);
                         const grassMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
@@ -12551,6 +12654,255 @@ class AnazhRealm {
         entry.collision = null;
     }
 
+    // === Welle 6.G Phase 1 — Welt-Sinne (Inseln + Bäume + UFOs) ===
+    // Bisher waren state.floatingIslands + state.vegetation-Bäume rein
+    // kosmetisch (kein physicsBody). Spieler fiel durch jede Insel, ging
+    // durch jeden Stamm. Hier die Kollisions-Schicht: btBvhTriangleMeshShape
+    // für Inseln (Visual = Kollision per Konstruktion wie bei Chunks),
+    // btCylinderShape nur für Baum-Stämme (Krone bleibt durchlässig — der
+    // Spieler kann durchs Laub gehen). UFOs bleiben bewusst kollisionsfrei,
+    // sie sind fliegende Beobachter, kein Hindernis.
+    //
+    // Beide werden als statische Bodies (mass=0) gebaut und NICHT in
+    // state.rigidBodies gepusht — der Sync-Loop würde sonst mesh.position
+    // aus dem Body-Origin überschreiben. Body lebt in obj.userData.collision.
+    _buildIslandCollision(islandMesh) {
+        if (!islandMesh || !islandMesh.geometry || !this.state.physicsWorld) return null;
+        const geo = islandMesh.geometry;
+        const posAttr = geo.attributes && geo.attributes.position;
+        const idx = geo.index;
+        if (!posAttr || !idx) return null;
+        const sf = this.state.scaleFactor || 1;
+        const verts = posAttr.array;
+        const indices = idx.array;
+        try {
+            const tmesh = new Ammo.btTriangleMesh(true, true);
+            const v0 = new Ammo.btVector3(0, 0, 0);
+            const v1 = new Ammo.btVector3(0, 0, 0);
+            const v2 = new Ammo.btVector3(0, 0, 0);
+            let added = 0;
+            for (let i = 0; i + 2 < indices.length; i += 3) {
+                const ai = indices[i] * 3;
+                const bi = indices[i + 1] * 3;
+                const ci = indices[i + 2] * 3;
+                if (!Number.isFinite(verts[ai]) || !Number.isFinite(verts[bi]) || !Number.isFinite(verts[ci])) continue;
+                v0.setValue(verts[ai] / sf, verts[ai + 1] / sf, verts[ai + 2] / sf);
+                v1.setValue(verts[bi] / sf, verts[bi + 1] / sf, verts[bi + 2] / sf);
+                v2.setValue(verts[ci] / sf, verts[ci + 1] / sf, verts[ci + 2] / sf);
+                tmesh.addTriangle(v0, v1, v2);
+                added++;
+            }
+            Ammo.destroy(v0);
+            Ammo.destroy(v1);
+            Ammo.destroy(v2);
+            if (added === 0) {
+                Ammo.destroy(tmesh);
+                return null;
+            }
+            const shape = new Ammo.btBvhTriangleMeshShape(tmesh, true, true);
+            const transform = new Ammo.btTransform();
+            transform.setIdentity();
+            const p = islandMesh.position;
+            const origin = new Ammo.btVector3(p.x / sf, p.y / sf, p.z / sf);
+            transform.setOrigin(origin);
+            const motionState = new Ammo.btDefaultMotionState(transform);
+            const inertia = new Ammo.btVector3(0, 0, 0);
+            const rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, shape, inertia);
+            const body = new Ammo.btRigidBody(rbInfo);
+            body.setFriction(0.8);
+            this.state.physicsWorld.addRigidBody(body);
+            Ammo.destroy(rbInfo);
+            Ammo.destroy(inertia);
+            Ammo.destroy(origin);
+            Ammo.destroy(transform);
+            islandMesh.userData.collision = { body, shape, tmesh, kind: "island" };
+            return body;
+        } catch (err) {
+            this.log(`_buildIslandCollision: ${err.message}`, "ERROR");
+            return null;
+        }
+    }
+
+    _buildTreeCollision(treeGroup) {
+        if (!treeGroup || !this.state.physicsWorld) return null;
+        // Erstes Cylinder-Child suchen = Stamm. Krone (Sphere) bleibt
+        // bewusst kollisions-frei — Spieler soll durchs Laub gehen können.
+        let trunk = null;
+        treeGroup.traverse((node) => {
+            if (trunk) return;
+            if (node.isMesh && node.geometry && node.geometry.type === "CylinderGeometry") {
+                trunk = node;
+            }
+        });
+        if (!trunk) return null;
+        treeGroup.updateMatrixWorld(true);
+        const params = trunk.geometry.parameters || {};
+        const radius = Math.max(0.1, params.radiusBottom || params.radiusTop || 0.4);
+        const height = Math.max(0.5, params.height || 3);
+        const worldPos = new THREE.Vector3();
+        trunk.getWorldPosition(worldPos);
+        if (!Number.isFinite(worldPos.x) || !Number.isFinite(worldPos.y) || !Number.isFinite(worldPos.z)) {
+            return null;
+        }
+        try {
+            const sf = this.state.scaleFactor || 1;
+            const halfExtents = new Ammo.btVector3(radius / sf, height / 2 / sf, radius / sf);
+            const shape = new Ammo.btCylinderShape(halfExtents);
+            Ammo.destroy(halfExtents);
+            const transform = new Ammo.btTransform();
+            transform.setIdentity();
+            const origin = new Ammo.btVector3(worldPos.x / sf, worldPos.y / sf, worldPos.z / sf);
+            transform.setOrigin(origin);
+            const motionState = new Ammo.btDefaultMotionState(transform);
+            const inertia = new Ammo.btVector3(0, 0, 0);
+            const rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, shape, inertia);
+            const body = new Ammo.btRigidBody(rbInfo);
+            body.setFriction(0.8);
+            this.state.physicsWorld.addRigidBody(body);
+            Ammo.destroy(rbInfo);
+            Ammo.destroy(inertia);
+            Ammo.destroy(origin);
+            Ammo.destroy(transform);
+            treeGroup.userData.collision = { body, shape, kind: "tree" };
+            return body;
+        } catch (err) {
+            this.log(`_buildTreeCollision: ${err.message}`, "ERROR");
+            return null;
+        }
+    }
+
+    // Generischer Dispose-Pfad für statische 6.G-Kollisionen (Inseln + Bäume).
+    // Idempotent: zweimal aufrufen ist safe (collision wird auf null gesetzt).
+    _disposeStaticCollision(obj) {
+        if (!obj || !obj.userData || !obj.userData.collision) return;
+        const c = obj.userData.collision;
+        try {
+            if (this.state.physicsWorld && c.body) this.state.physicsWorld.removeRigidBody(c.body);
+        } catch {
+            /* ignore */
+        }
+        try {
+            if (c.body) Ammo.destroy(c.body);
+        } catch {
+            /* ignore */
+        }
+        try {
+            if (c.shape) Ammo.destroy(c.shape);
+        } catch {
+            /* ignore */
+        }
+        try {
+            if (c.tmesh) Ammo.destroy(c.tmesh);
+        } catch {
+            /* ignore */
+        }
+        obj.userData.collision = null;
+    }
+
+    // Schlanke Insel-Geometrie (radialer Kegel-Stumpf mit Rausch-Höhe) für
+    // die DSL-Op spawn_island. Bewusst kleiner + simpler als die initialen
+    // Welt-Inseln (deren Code lebt im Worldgen-Loop). Seed-deterministisch
+    // damit Multi-User-Sync (Ring 11 V2.1-Stil) später möglich ist.
+    spawnIslandAt(x, y, z, height = 6, opts = {}) {
+        if (!this.state.scene) return null;
+        const size = Number.isFinite(opts.size) ? Math.max(6, Math.min(24, opts.size)) : 12;
+        const seedStr = opts.seed != null ? String(opts.seed) : `island-${Date.now()}-${Math.random()}`;
+        const noise = new SimplexNoise(seedStr);
+        const geometry = new THREE.BufferGeometry();
+        const vertices = [];
+        const indices = [];
+        const uvs = [];
+        const N = Math.max(8, Math.min(20, Math.round(size)));
+        for (let zi = 0; zi < N; zi++) {
+            for (let xi = 0; xi < N; xi++) {
+                const xp = xi - N / 2;
+                const zp = zi - N / 2;
+                const distance = Math.sqrt(xp * xp + zp * zp);
+                const maxDist = N / 2;
+                let h = 0;
+                if (distance < maxDist) {
+                    const factor = 1 - distance / maxDist;
+                    const h1 = noise.noise2D(xi * 0.18, zi * 0.18) * 2 * factor;
+                    const h2 = noise.noise2D(xi * 0.5, zi * 0.5) * 1 * factor;
+                    h = Math.max(0, h1 + h2);
+                    h -= (1 - factor) * height;
+                }
+                vertices.push(xp, h, zp);
+                uvs.push(xi / (N - 1), zi / (N - 1));
+            }
+        }
+        for (let zi = 0; zi < N - 1; zi++) {
+            for (let xi = 0; xi < N - 1; xi++) {
+                const a = zi * N + xi;
+                const b = zi * N + (xi + 1);
+                const cc = (zi + 1) * N + xi;
+                const d = (zi + 1) * N + (xi + 1);
+                indices.push(a, b, d, a, d, cc);
+            }
+        }
+        geometry.setIndex(indices);
+        geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+        geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+        geometry.computeVertexNormals();
+        const material = new THREE.MeshBasicMaterial({ color: 0x6b9e4f, side: THREE.DoubleSide });
+        const island = new THREE.Mesh(geometry, material);
+        island.position.set(x, y, z);
+        island.castShadow = true;
+        island.receiveShadow = true;
+        island.userData.sourceOp = "spawn_island";
+        this.state.scene.add(island);
+        if (!Array.isArray(this.state.floatingIslands)) this.state.floatingIslands = [];
+        this.state.floatingIslands.push(island);
+        this._buildIslandCollision(island);
+        return island;
+    }
+
+    // Einzelner Baum als Group (Stamm + Krone). Stamm wird kollidierbar,
+    // Krone bleibt durchlässig. Aufruf aus DSL-Op spawn_tree und als
+    // Retrofit-Pfad für die im Worldgen-Loop erzeugten Bäume.
+    spawnTreeAt(x, y, z, opts = {}) {
+        if (!this.state.scene) return null;
+        const trunkH = Number.isFinite(opts.height) ? Math.max(1.5, Math.min(10, opts.height)) : 5;
+        const trunkR = Number.isFinite(opts.radius) ? Math.max(0.15, Math.min(1.2, opts.radius)) : 0.5;
+        const leavesR = Math.max(0.8, trunkR * 4);
+        const trunkGeo = new THREE.CylinderGeometry(trunkR, trunkR, trunkH, 8);
+        const trunkMat = new THREE.MeshBasicMaterial({ color: 0x8b4513 });
+        const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+        const leavesGeo = new THREE.SphereGeometry(leavesR, 8, 8);
+        const leavesMat = new THREE.MeshBasicMaterial({ color: 0x2e8b3f });
+        const leaves = new THREE.Mesh(leavesGeo, leavesMat);
+        trunk.position.set(x, y + trunkH / 2, z);
+        leaves.position.set(x, y + trunkH + leavesR * 0.6, z);
+        const tree = new THREE.Group();
+        tree.add(trunk);
+        tree.add(leaves);
+        tree.castShadow = true;
+        tree.receiveShadow = true;
+        tree.userData.sourceOp = "spawn_tree";
+        this.state.scene.add(tree);
+        if (!Array.isArray(this.state.vegetation)) this.state.vegetation = [];
+        this.state.vegetation.push(tree);
+        this._buildTreeCollision(tree);
+        return tree;
+    }
+
+    // UFOs sind bewusst kollisionsfrei — fliegende Beobachter, kein
+    // Hindernis. Sanfte Sinus-Hover-Animation wird im Frustum-Loop
+    // angewandt (selber Pfad wie initialer spawnIslands-UFO).
+    spawnUfoAt(x, y, z) {
+        if (!this.state.scene) return null;
+        const geo = new THREE.ConeGeometry(1, 2, 8);
+        const mat = new THREE.MeshBasicMaterial({ color: 0xc0e8ff });
+        const ufo = new THREE.Mesh(geo, mat);
+        ufo.position.set(x, y, z);
+        ufo.visible = true;
+        ufo.userData = { baseY: y, speed: 0.5 + Math.random() * 0.5, sourceOp: "spawn_ufo" };
+        this.state.scene.add(ufo);
+        if (!Array.isArray(this.state.ufos)) this.state.ufos = [];
+        this.state.ufos.push(ufo);
+        return ufo;
+    }
+
     // Mesh disposen, Eintrag bleibt als reine Daten erhalten. Fenster für
     // späteren Wieder-Aufbau wenn der Spieler zurückkehrt.
     _cullArchitectureMesh(entry) {
@@ -14794,49 +15146,12 @@ class AnazhRealm {
                 });
             }
 
-            // ### Physik für fliegende Inseln ###
-            if (this.state.floatingIslands && this.state.playerMesh) {
-                const playerPos = this.state.playerMesh.position;
-                let addedBodies = 0;
-                this.state.floatingIslands.forEach((island) => {
-                    if (island.userData.needsPhysics && addedBodies < 5) {
-                        const distance = playerPos.distanceTo(island.position);
-                        if (distance < 50) {
-                            const islandSize = island.geometry.parameters?.width || 20;
-                            const islandShape = new Ammo.btBoxShape(
-                                new Ammo.btVector3(islandSize / 2, 5 / 2, islandSize / 2)
-                            );
-                            const transform = new Ammo.btTransform();
-                            transform.setIdentity();
-                            transform.setOrigin(
-                                new Ammo.btVector3(
-                                    island.position.x / this.state.scaleFactor,
-                                    island.position.y / this.state.scaleFactor,
-                                    island.position.z / this.state.scaleFactor
-                                )
-                            );
-                            const motionState = new Ammo.btDefaultMotionState(transform);
-                            const localInertia = new Ammo.btVector3(0, 0, 0);
-                            const rbInfo = new Ammo.btRigidBodyConstructionInfo(
-                                0,
-                                motionState,
-                                islandShape,
-                                localInertia
-                            );
-                            const body = new Ammo.btRigidBody(rbInfo);
-                            this.state.physicsWorld.addRigidBody(body);
-                            island.userData.physicsBody = body;
-                            this.state.rigidBodies.push(island);
-                            island.userData.needsPhysics = false;
-                            addedBodies++;
-                            this.log(
-                                `Physik für Insel: (${island.position.x.toFixed(2)}, ${island.position.y.toFixed(2)}, ${island.position.z.toFixed(2)})`,
-                                "INFO"
-                            );
-                        }
-                    }
-                });
-            }
+            // Welle 6.G Phase 1: der frühere lazy-physics-Pfad für
+            // floatingIslands ist hier gelöscht. Inseln bekommen ihre
+            // btBvhTriangleMeshShape-Kollision jetzt sofort beim Spawn
+            // (siehe `_buildIslandCollision`) statt erst beim ersten
+            // Player-Approach. `island.userData.needsPhysics` wurde nie
+            // gesetzt — der Block war tote Schicht (System-Audit §2).
 
             this.updateWallCollisions();
 
