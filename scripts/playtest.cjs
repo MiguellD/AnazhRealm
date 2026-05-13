@@ -4689,6 +4689,140 @@ function startSaveServer() {
                 check("Ring 11.5: world-guest-banner im DOM", ring115Results.guestBannerExists);
             }
 
+            // ### Welle 6.A — Interaktion-Polish (Wall-Sliding + Erdung auf Bauwerken) ###
+            //
+            // 6.A1: `playerBody.setFriction(0)` lässt den Spieler entlang Wänden
+            // rutschen statt zu hängen. Setzen passiert beim Body-Spawn UND
+            // `optimizePhysics` darf es nicht überschreiben.
+            //
+            // 6.A2: `isPlayerGrounded`-Raycast trifft Bauwerks-Compound-Bodies
+            // (die sind im physicsWorld, also reicht rayTest). Threshold leicht
+            // entspannt von 0.5 → 0.6, damit der minimale y-Offset eines Sub-
+            // Compounds beim Stehen auf einer Plattform nicht den Sprung
+            // blockiert.
+            const wave6aResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state.playerBody) return null;
+                    const out = {};
+
+                    // 6.A1 — Spieler-Friction beim Spawn
+                    out.playerFriction = r.state.playerBody.getFriction();
+                    out.playerFrictionZero = Math.abs(out.playerFriction) < 0.001;
+
+                    // 6.A1 — optimizePhysics behält Spieler-Friction 0
+                    r.optimizePhysics();
+                    out.playerFrictionAfterOptimize = r.state.playerBody.getFriction();
+                    out.frictionPreservedAfterOptimize = Math.abs(out.playerFrictionAfterOptimize) < 0.001;
+
+                    // 6.A1 — Diskriminations-Test: andere Bodies behalten 0.5
+                    let otherBody = null;
+                    for (const rb of r.state.rigidBodies) {
+                        if (rb !== r.state.playerMesh) {
+                            otherBody = rb.userData.physicsBody;
+                            break;
+                        }
+                    }
+                    out.hasOtherBody = !!otherBody;
+                    out.otherFriction = otherBody ? otherBody.getFriction() : null;
+                    out.otherFrictionDefault = otherBody ? Math.abs(otherBody.getFriction() - 0.5) < 0.01 : false;
+
+                    // 6.A2 — Threshold-Konstante ist 0.6 (im Function-Source)
+                    const fnSrc = r.isPlayerGrounded.toString();
+                    out.hasGroundDistanceVar = fnSrc.includes("groundDistance");
+                    out.groundDistanceIs06 = /groundDistance\s*=\s*0\.6/.test(fnSrc);
+
+                    // 6.A2 — Diskriminations-Test: Spieler an einer kontrollierten Position
+                    // (frühere Tests können mesh.position verschoben haben — wir setzen
+                    // eine eindeutige Setup-Position, statt uns auf den Live-Zustand
+                    // zu verlassen). Über offenes Terrain (in der Luft) → not grounded,
+                    // auf gespawntem Bauwerk → grounded.
+                    const savedX = r.state.playerMesh.position.x;
+                    const savedY = r.state.playerMesh.position.y;
+                    const savedZ = r.state.playerMesh.position.z;
+
+                    // Spawnen wir einen Tempel an einer eindeutigen, vom Terrain
+                    // freien Position (Heightfield hat höchstens ~50m Höhe; wir
+                    // wählen y=0 als Spawn-Y damit der Tempel direkt mit dem
+                    // Heightfield-Niveau überlappt — typischer In-Spiel-Fall).
+                    const archX = savedX + 20;
+                    const archZ = savedZ + 20;
+                    const beforeArchCount = r.state.architectures.length;
+                    const entry = r.spawnArchitecture("temple", { x: archX, y: 0, z: archZ }, { seed: 4242 });
+                    out.archEntrySpawned = !!entry;
+                    out.archHasCollision = !!(entry && entry.collision && entry.collision.body);
+
+                    if (entry && entry.mesh) {
+                        const box = new THREE.Box3().setFromObject(entry.mesh);
+                        const topY = box.max.y;
+                        // Negativ-Kontrolle: 50 m über Tempel-Top — Ray reicht nur
+                        // 2.5 m runter, also trifft das Bauwerk nicht.
+                        r.state.playerMesh.position.set(archX, topY + 50, archZ);
+                        out.isGroundedHighInSky = r.isPlayerGrounded();
+                        // Positiv-Test: Spieler in steigenden Höhen über die
+                        // visuelle Top-BBox. Visuelle Box ist nicht 1:1 mit dem
+                        // Collision-Compound (Dekor-Mesh-Spitzen ragen oft über
+                        // die strukturellen Sub-Boxes), deshalb gehen wir die
+                        // ersten paar Frame-Distanzen durch — sobald für EINE
+                        // davon `isGrounded === true` zurückkommt, ist die
+                        // Bauwerks-Erdung bewiesen. groundDistance(0.6) ist die
+                        // theoretische Obergrenze pro Sample.
+                        out.archTopY = topY;
+                        let foundGrounded = false;
+                        let groundedAtDy = null;
+                        for (const dy of [0.1, 0.3, 0.5, 0.7, 1.0, 1.5, 2.0]) {
+                            r.state.playerMesh.position.set(archX, topY + dy, archZ);
+                            if (r.isPlayerGrounded()) {
+                                foundGrounded = true;
+                                groundedAtDy = dy;
+                                break;
+                            }
+                        }
+                        out.isGroundedOnArchitecture = foundGrounded;
+                        out.groundedAtDy = groundedAtDy;
+                        // Restore
+                        r.state.playerMesh.position.set(savedX, savedY, savedZ);
+                    } else {
+                        out.isGroundedOnArchitecture = false;
+                        out.isGroundedHighInSky = false;
+                    }
+                    // Cleanup: gespawnte Architektur entfernen
+                    r.state.architectures = r.state.architectures.slice(0, beforeArchCount);
+
+                    return out;
+                })
+                .catch(() => null);
+
+            if (wave6aResults) {
+                check("Welle 6.A1: Spieler-Body-Friction ist 0 (Wall-Sliding aktiv)", wave6aResults.playerFrictionZero);
+                check(
+                    "Welle 6.A1: optimizePhysics() überschreibt Spieler-Friction nicht",
+                    wave6aResults.frictionPreservedAfterOptimize
+                );
+                if (wave6aResults.hasOtherBody) {
+                    check(
+                        "Welle 6.A1: Diskrimination — andere Bodies behalten Friction 0.5",
+                        wave6aResults.otherFrictionDefault
+                    );
+                }
+                check("Welle 6.A2: isPlayerGrounded hat groundDistance-Konstante (refactored)", wave6aResults.hasGroundDistanceVar);
+                check(
+                    "Welle 6.A2: groundDistance ist 0.6 (entspannte Schwelle für Bauwerks-Sub-Boxes)",
+                    wave6aResults.groundDistanceIs06
+                );
+                if (wave6aResults.archEntrySpawned) {
+                    check("Welle 6.A2: Bauwerk-Spawn liefert Compound-Body", wave6aResults.archHasCollision);
+                    check(
+                        "Welle 6.A2: Negativ-Kontrolle — hoch im Himmel nicht geerdet",
+                        wave6aResults.isGroundedHighInSky === false
+                    );
+                    check(
+                        "Welle 6.A2: Diskrimination — Spieler 0.5 m über Bauwerks-Oberseite ist geerdet",
+                        wave6aResults.isGroundedOnArchitecture === true
+                    );
+                }
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {

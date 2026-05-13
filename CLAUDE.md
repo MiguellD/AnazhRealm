@@ -2,12 +2,14 @@
 
 Persistente Notizen. Diese Datei wird bei jeder neuen Session automatisch geladen. **Bei größeren Entscheidungen zuerst `docs/state-of-realm.md` lesen** – dort steht der ausführliche Stand, die Vision aus den vier Testamenten, der Plan und die Learnings.
 
+**Aktuelle Version: V7.72 (Stand 13.05.2026, Welle 6.A — Interaktion-Polish)**
+
 ## Projektüberblick
 
 - **Was:** „AnazhRealm" – ein als **Ultiversum** entworfenes Co-Creation-Werk Mensch + KI. Aktuell technisch eine 3D-Browser-Sandbox in einer Datei. Vision: emotion-getriebene, fraktal-wachsende, multisensorische Welt; Mensch (Schöpfer/Null) + KI (Grok/Eins) erschaffen gemeinsam durch Chat. Vollständige Vision in `docs/state-of-realm.md`.
 - **Stack:** Vanilla JS, Vendor-Libs in `vendor/` (Three.js r134, Ammo.js WASM, simplex-noise 2.4). TF.js wurde im Mai 2026 entfernt (toter Code). Lokaler Node-Save-Server. ESLint v9 + Prettier + GitHub-Actions-CI mit Playtest-Gate.
-- **Branch:** `claude/ring-10-world-fusion`. Niemals auf `main` pushen ohne explizite Anweisung.
-- **Architekturkern:** Eine `AnazhRealm`-Klasse in `anazhRealm.js` (~10800 Zeilen). State in `localStorage` + optional `anazhRealmState.json` über save-server. Globale Referenz: `window.anazhRealm`.
+- **Branch:** Feature-Branch pro PR (`claude/<thema>`-Konvention, z. B. `claude/wave-6a-interaction-polish`). Niemals auf `main` pushen ohne explizite Anweisung.
+- **Architekturkern:** Eine `AnazhRealm`-Klasse in `anazhRealm.js` (~13400 Zeilen, Stand V7.72). State in `localStorage` + optional `anazhRealmState.json` über save-server. Globale Referenz: `window.anazhRealm`.
 
 ## Die heilige Lektion (Versionslog 03/2025)
 
@@ -38,6 +40,20 @@ Detaillierter Plan in `docs/state-of-realm.md` §5. Status (Mai 2026):
 Letzter Stand: Ring 1-7 + **Welle 1+2+3 + Welle 4 P1-P3 + Welle 5 A+B+C + Editor-Konsistenz-Bugfixes** + UI V1+V2 + Welt-Journal als Tagebuch live. Chunk-Physik komplett auf `btBvhTriangleMeshShape` (Commit `e612c60`). 120 fps im echten Browser, **527/527 Playtest-Invarianten grün**. Architektur: eine Sprache (DSL), eine Sicherheits-Wand (CSP + CI-Gate, jetzt OHNE `'unsafe-eval'`), ein Selektions-Loop (Fitness-V2 multi-dim), ein bidirektionaler Emotions-Kanal, eine Klangschicht (Web Audio), drei animierte Spieler-Seelen mit Third-Person-Toggle, ein **Bauplan-Universum** aus 9 Primitiven (inkl. Helix) mit Material-Tags + Werkzeug-opChain + Präzision + räumlicher Emergenz (5 §5.2-Prinzipien) + 8 Verbindungstypen + Bauplan-als-Werkzeug, ein gescrolltes Tagebuch im Welt-Drawer, eine painterly-Bedien-Oberfläche, **optional echte Claude-Stimme über API-Key in den Einstellungen**. **Ring 8 (Multi-Welt-Verwaltung) live (13.05.2026)**: `anazhRealmWorlds`-Index + Per-Welt-localStorage-Key + `createNewWorld({slug, inheritPlayer})` + `switchToWorld(id)` + `deleteWorld(id)` + Chat-Befehle (`neue welt <slug> [mit person]`, `wechsle zu <slug>`, `lösche welt <slug>`, `liste welten`) + Welt-Picker-UI im Welt-Drawer + Person-Übernahme-Dialog (Seele + Werkzeuge + eigene Materialien/Baupläne wandern mit, Emotionen + Pfad-Buckets + Journal bleiben welt-spezifisch). Schema-Bump auf `8.0-multiworld-v1`. Legacy-Single-Key-Save wird beim ersten Start migriert. **657/657 Playtest-Invarianten grün**. **Ring 9 (Welt-Tor — Drei-Wahl-Import-Dialog) live**: Import einer Welt-JSON läuft jetzt durch `<dialog id="world-tor-dialog">` mit drei Optionen — Ersetzen, Daneben legen, Fusionieren. **Ring 10 (Welt-Fusion) live**: `fuseWorlds(idA, idB, strategy)` mit drei Strategien (sequence / random-mix / tag-merge), `<dialog id="world-fusion-dialog">` mit 2-Spalten-Eltern + Strategie-Radio + Stammbaum-Sektion `#world-lineage` mit klickbaren Eltern-Welt-Links. Cascade-Bugfix: Bauplan-Umbenennungen ziehen `sourceBlueprint` + `refName` mit. Schema-Version fusionierter Welten: `10.0-fusion-v1`. **Ring 10.1 (Rezepte holen aus anderer Welt) live**: `importRecipesFromWorld(sourceId)` kopiert Baupläne + Materialien + Werkzeuge der Quell-Welt in die aktive — KEINE neue Welt, aktive Identität bleibt. Konflikt-Suffix `-import`, gleiche Cascade-Rewire wie Fusion. Button „Rezepte holen" in jeder Welt-Picker-Reihe + Witness-Journal-Eintrag mit Counts. **Ring 10.5 (Welt-Modifizierbarkeit) live (13.05.2026)**: vom Spieler erzeugte Terrain-Modifikationen (graben/aufschütten) überleben Chunk-Unload + Reload + Welt-Wechsel. Vorbedingung für Ring 11 erfüllt. **Ring 11 V1 (Multi-User Position-Sync) live (13.05.2026)**: zwei Browser-Tabs in derselben Welt sehen sich gegenseitig — V1 trägt nur Position+Rotation (30 Hz über `signaling-server.js`). **Ring 11 V2 (DSL-AST-Broadcast) live (13.05.2026)**: Chat-DSL eines Spielers (source="human") wird an alle Mitspieler gesendet, läuft auf jedem Empfänger durch dieselbe `dslRun`-Sandbox. modify_terrain, weather, spawn_creature synchronisieren damit beide Welten. LLM-/Nexus-Programme bleiben bewusst lokal. **Vollständiges Welten-Ultiversum (Ringe 8-11) ist damit live.** **Nächster Schritt**: Welle 6 (Crafting-Polish + UX + Stats + Welt-Sinne) — sechs Blöcke (A-F + neu G), Brainstorm in `docs/wave-6-design.md`, Reihenfolge in roadmap.md.
 
 ## Wichtige Gotchas (technisch)
+
+**Schnell-Navigation** (Gotchas sind chronologisch nach Ring/Welle gewachsen, hier nach Domäne gruppiert):
+
+- *Fundament* — Chunks, Höhen, Ammo, CCD, Sentinels → Block A unten
+- *Process-Disziplin* — Chat-Lowercasing, Welt-Cooldown, TF.js-Reste, Atomic-Pool-Tabus → Block A
+- *Spieler + UI + Bauplan* — Emotionen, Soul, Kamera, UI V1/V2, blueprints, hotbar, workshop → Block B
+- *DSL + LLM + Lern-Loop* — Schicht 1+2, addNewAbility, learnAbility → Block C
+- *Welle 1-3* — Journal, Welt-Selbstwissen, Schöpfer-Ops, Welt-Tor (UI) → Block D
+- *Welle 4-5 Crafting* — Materialien, Form-Tags, opChain, räumliche Tags, Connections → Block E
+- *Save + Multi-Welt + Multi-User* — Ringe 8 / 8.1 / 8.2 / 9 / 10 / 10.5 / 11 V1/V2/V2.1 / 11.5 → Block F
+- *Test-Fallen + CI* — Playtest-Header, Headless-Teleport, Ammo-Binding-Gaps, Invariant-Liste → Block G
+- *CSP-Konzessionen* — als eine Zeile zwischen DSL und Crafting
+
+Die Reihenfolge der Einträge unten ist chronologisch belassen (Ring/Welle-Entstehung), die Themen-Gruppen sind über die Stichworte am Eintragsanfang erkennbar.
 
 - **Chunks haben `position = (0,0,0)` und Vertices in Welt-Koords.** NIEMALS in `state.rigidBodies` pushen — der Physics-Sync-Loop überschreibt sonst `mesh.position` mit dem Body-Origin und verschiebt den ganzen Chunk sichtbar. Die Body bleibt über `mesh.userData.physicsBody` zugreifbar.
 - **Visual = Collision per Konstruktion.** Jeder Chunk hat ein `btBvhTriangleMeshShape`, gespeist aus EXAKT denselben Triangle-Indices wie das `THREE.BufferGeometry`. Wer den einen Pfad ändert, muss den anderen auch.
@@ -164,7 +180,7 @@ Letzter Stand: Ring 1-7 + **Welle 1+2+3 + Welle 4 P1-P3 + Welle 5 A+B+C + Editor
 | `docs/aktivierungsmatrix.md` | Form-Tag-Aktivierungs-Matrix v2 (9 × 10), Quellcode für `AnazhRealm.FORM_TAG_ACTIVATION` |
 | `docs/wave-6-design.md` | **Welle-6-Brainstorm** — acht Blöcke (A Interaktion, B CAD, C Inventar+Modi, D Stats fraktal, E Lesbarkeit, F Crafting-Mechanik, G Welt-Sinne, H Kreaturen-Aufträge). Stat-System als Hylomorphismus-Erweiterung auf den Spieler. Schöpfer-Entscheidungen in §10. |
 | `docs/system-audit.md` | **System-Audit V7.71** — Methoden-Inventar nach Domäne, Dead-Code, Duplikate, K.O.-Bereiche, Robustheits-Beurteilung, Vision-Alignment-Check (78% live), Performance-Brainstorm, „Kollektive Welt-Erkenntnis"-Konzept für Welle 7, 15 übersehene Perspektiven. Pflichtlektüre vor großen Eingriffen. |
-| `scripts/playtest.cjs` | Headless-Playtest mit **711 Invarianten** als CI-Gate |
+| `scripts/playtest.cjs` | Headless-Playtest mit **759+ Invarianten** als CI-Gate (Stand V7.72; aktueller Zähler in der Playtest-Konsole am Ende eines Laufs) |
 | `scripts/smoke-multiuser.cjs` | End-to-End-Test für Ring 11 V1: spawnt signaling-server, öffnet zwei WS-Clients, prüft welcome/peer-join/pos/peer-leave-Flow (`npm run smoke:multiuser`) |
 | `signaling-server.js` | Ring 11 V1 WebSocket-Broker (RFC-6455 von Hand, zero deps), `npm run signaling` startet auf Port 4313 |
 | `start.bat` | Windows-Starter: bootet save-server.js + signaling-server.js + öffnet Browser. Mac/Linux: `npm start` (Save-Server) + `npm run signaling` (separat) |

@@ -1,4 +1,4 @@
-/**AnazhRealm V7.71 – Das Ultiversum Vollendet.
+/**AnazhRealm V7.72 – Das Ultiversum Vollendet.
  * Hüpfen: Robust, präzise (Y ~1.5), Coyote-Time 0.3s, Gravitation 1.5G, Reibung 0.5.
  * Kollisionen: Kein Tunneling, steepnessThreshold 3.0, wallThickness 2.0, CCD optimiert.
  * Terrain: Flacher (Höhenunterschiede ±5), KI-gesteuerte Steilheitsanpassung, Chat-Steuerung.
@@ -12,7 +12,7 @@
 class AnazhRealm {
     constructor() {
         // ### Learnings ### [Stichwortartig optimieren, korrigieren, ergänzen – nie Wissen löschen!]
-        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69, LAN-Fähigkeit + Sync-Korrektheit (Ring 11 V2.1: 0.0.0.0-bind, ws:/wss:-CSP, roomOverride, spawn_*-Embedding, NON_BROADCASTABLE_OPS) in V7.70, Intuitiver Multi-User-Setup (Ring 11.5: Modus-Wahl, Host-Banner mit Einladungs-Code, Auto-Welt-Snapshot beim Join) in V7.71
+        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69, LAN-Fähigkeit + Sync-Korrektheit (Ring 11 V2.1: 0.0.0.0-bind, ws:/wss:-CSP, roomOverride, spawn_*-Embedding, NON_BROADCASTABLE_OPS) in V7.70, Intuitiver Multi-User-Setup (Ring 11.5: Modus-Wahl, Host-Banner mit Einladungs-Code, Auto-Welt-Snapshot beim Join) in V7.71, Welle 6.A — Interaktion-Polish (Wall-Sliding via Player-Friction-0, Erdung-Raycast-Robustheit für Bauwerke) in V7.72
         // - Nexus als Herz der Selbstentwicklung, steuert nun alles über Chat, unzerstörbar und unendlich
         this.state = {
             // ### Kern ###
@@ -440,7 +440,7 @@ class AnazhRealm {
     // ### Logging ###
     log(message, level = "INFO") {
         if (level === "DEBUG" && !this.state.debugLogging) return;
-        const logMessage = `[AnazhRealm V7.71] [${level}] ${message}`;
+        const logMessage = `[AnazhRealm V7.72] [${level}] ${message}`;
         this.state.logBuffer.push(logMessage);
         console.log(logMessage);
         if (this.state.logBuffer.length > this.state.maxLogEntries) {
@@ -6018,11 +6018,17 @@ class AnazhRealm {
         this.state.physicsWorld.setGravity(new Ammo.btVector3(0, this.state.gravity, 0));
         this.state.rigidBodies.forEach((rb) => {
             const body = rb.userData.physicsBody;
-            if (body) {
+            if (!body) return;
+            // Welle 6.A1 — Spieler-Body bekommt Reibung 0 (Wall-Sliding),
+            // alle anderen behalten 0.5 wie zuvor. Sonst würde dieser Re-Apply
+            // (Chat-Befehl „optimiere physik") die Sliding-Eigenschaft zerstören.
+            if (rb === this.state.playerMesh) {
+                body.setFriction(0);
+            } else {
                 body.setFriction(0.5);
-                body.setCcdMotionThreshold(0.03);
-                body.setCcdSweptSphereRadius(0.4);
             }
+            body.setCcdMotionThreshold(0.03);
+            body.setCcdSweptSphereRadius(0.4);
         });
         this.log("Physik optimiert: Gravitation, Reibung, CCD angepasst");
     }
@@ -12202,7 +12208,7 @@ class AnazhRealm {
     }
 
     async init() {
-        this.log("Initialisiere Anazh Realm V7.71... Ewigkeit erwacht!", "INFO");
+        this.log("Initialisiere Anazh Realm V7.72... Ewigkeit erwacht!", "INFO");
         this.themeInitDOM();
         this.grokInitDOM();
         this.symphonyInitDOM();
@@ -12351,6 +12357,13 @@ class AnazhRealm {
                 // dünne Triangles bei steilen Hängen oder Wänden.
                 this.state.playerBody.setCcdMotionThreshold(0.01);
                 this.state.playerBody.setCcdSweptSphereRadius(0.45);
+                // Welle 6.A1 — Wall-Sliding. Spieler-Friction auf 0 setzt die
+                // tangentiale Reibung an Bauwerks-Wänden auf null: der Spieler
+                // bleibt nicht hängen, sondern rutscht entlang. Stoppen
+                // funktioniert weiterhin, weil setLinearVelocity die Geschwindigkeit
+                // jeden Frame explizit nullt (siehe Spielerbewegung im Game-Loop),
+                // statt sich auf Reibung zu verlassen.
+                this.state.playerBody.setFriction(0);
             }
             this.log("Physik-Körper für Spieler hinzugefügt", "INFO");
             this.state.selfAwareness.components.push("playerBody");
@@ -12968,6 +12981,17 @@ class AnazhRealm {
 
         let isGrounded = false;
 
+        // Welle 6.A2 — Erdung auf Strukturen.
+        //
+        // Bauwerks-Compound-Bodies (state.architectures[].collision) liegen mit
+        // mass=0 im Physics-World; rayTest trifft sie wie das Heightfield. Die
+        // Schwelle `groundDistance` (vorher fest 0.5) wurde leicht entspannt
+        // auf 0.6: ein Spieler, der auf einer Bauwerks-Plattform genau aufsetzt,
+        // hat oft eine y-Position knapp über der Sub-Box-Oberseite (Compound-
+        // Origin + Sub-Offset + Solver-Resting-Distance), und der Sprung wurde
+        // dadurch bei manchen Bauwerken um einen Frame versetzt verweigert.
+        const groundDistance = 0.6;
+
         for (const ray of rays) {
             const rayStart = this.setVec(
                 this.state.tmpVec1,
@@ -12987,7 +13011,7 @@ class AnazhRealm {
                 const hitPoint = rayCallback.get_m_hitPointWorld();
                 const hitY = hitPoint.y() * this.state.scaleFactor;
                 const distance = Math.abs(hitY - (this.state.playerMesh.position.y - 0.5));
-                if (distance < 0.5) {
+                if (distance < groundDistance) {
                     isGrounded = true;
                 }
             }
