@@ -60,12 +60,7 @@ class AnazhRealm {
             tmpTransform: null,
             scaleFactor: 1,
             gravity: -14.715,
-            learningData: [],
-            playerMovementModel: null,
-            lastLearningUpdate: 0,
-            learningInterval: 5.0,
             abilities: {},
-            evolutionModels: [],
             selfAwareness: { components: [], weaknesses: [] },
             logBuffer: [],
             displayedLogs: [],
@@ -119,7 +114,6 @@ class AnazhRealm {
             movementWorkerBusy: false,
             tmpVec1: null,
             tmpVec2: null,
-            learningInFlight: false,
             worldgenInFlight: false,
             // Sentinel: -Infinity heißt "noch nie generiert". Mit 0 würde der
             // Cooldown-Check ((performance.now()/1000) - 0 < 30) den allerersten
@@ -1683,10 +1677,6 @@ class AnazhRealm {
                 title: "Self-Heal",
                 commands: ["Behebe Physik-Tunneling", "Optimiere Physik"],
             },
-            {
-                title: "Wissen / KI",
-                commands: ["Füge Trainingsdaten x=10 z=5"],
-            },
         ];
         return this._chatCommandHelpCache;
     }
@@ -2773,19 +2763,6 @@ class AnazhRealm {
         return true;
     }
 
-    // ### Wachstum und Lernen ###
-    evolutionEngine() {
-        if (typeof tf === "undefined") return;
-        const newModel = tf.sequential();
-        newModel.add(tf.layers.dense({ units: 16, inputShape: [2], activation: "relu" }));
-        newModel.add(tf.layers.dense({ units: 8, activation: "relu" }));
-        newModel.add(tf.layers.dense({ units: 1, activation: "linear" }));
-        newModel.compile({ optimizer: "adam", loss: "meanSquaredError" });
-        this.state.evolutionModels.push(newModel);
-        this.state.selfAwareness.components.push(`evolutionModel_${this.state.evolutionModels.length}`);
-        this.log(`Neues Modell für Evolution erstellt: evolutionModel_${this.state.evolutionModels.length}`);
-    }
-
     recordWeakness(label) {
         // Dedupliziert aufeinanderfolgende identische Einträge und cappt auf 50.
         const weaknesses = this.state.selfAwareness.weaknesses;
@@ -2869,175 +2846,31 @@ class AnazhRealm {
         }
     }
 
-    // ### KI und Nexus der Unendlichkeit ### (V7.65)
-    // Learnings:
-    // - V7.61 als Basis: Solide KI mit TensorFlow.js und Nexus, aber unvollständige Integration
-    // - V7.65 Vollendung: Chat-gesteuerter Nexus, autonome Evolution, robuste Fehlerbehandlung
-    // - Fehlerbehebung: updateGrowth hinzugefügt, Spiel-Loop komplettiert
-    async initAI() {
-        // ### KI-Initialisierung ###
-        // Zweck: Erstellt ein neuronales Netz zur Bewegungsvorhersage oder Fallback bei Fehlern
-        try {
-            if (typeof tf === "undefined") throw new Error("TensorFlow.js nicht geladen – index.html prüfen");
-            // WebGL-Backend bevorzugen: 5–20× schneller als CPU und blockiert den
-            // Main-Thread nicht. Fallback auf das Standard-Backend, wenn WebGL fehlt.
-            try {
-                await tf.setBackend("webgl");
-                await tf.ready();
-                this.log(`TF.js-Backend: ${tf.getBackend()}`, "INFO");
-            } catch (backendError) {
-                this.log(`WebGL-Backend nicht verfügbar: ${backendError.message}`, "WARNING");
-            }
-            this.state.playerMovementModel = tf.sequential();
-            this.state.playerMovementModel.add(tf.layers.dense({ units: 32, inputShape: [6], activation: "relu" })); // Input: x, y, z, dx, dy, dz
-            this.state.playerMovementModel.add(tf.layers.dense({ units: 16, activation: "relu" }));
-            this.state.playerMovementModel.add(tf.layers.dense({ units: 3, activation: "linear" })); // Output: dx, dy, dz
-            this.state.playerMovementModel.compile({ optimizer: "adam", loss: "meanSquaredError" });
-            this.log("KI initialisiert – Bewegungsvorhersage mit TensorFlow.js bereit", "INFO");
-            this.state.selfAwareness.components.push("playerMovementModel");
-        } catch (error) {
-            this.log(`KI-Initialisierung fehlgeschlagen: ${error.message} – Fallback aktiviert`, "ERROR");
-            this.state.playerMovementModel = {
-                predict: () => [0, 0, 0], // Fallback: Keine Bewegungsvorhersage
-                fit: () => Promise.resolve(), // Stilles Lernen ohne Training
-                learn: (data) => this.state.learningData.push(data), // Daten sammeln
-                optimize: (params) => {
-                    if (params.targetFPS && this.state.fps < params.targetFPS) this.optimizePhysics();
-                },
-            };
-            this.log("Fallback-KI aktiv: Grundfunktionen ohne TensorFlow.js gewährleistet", "WARNING");
-        }
-        this.initializeNexus();
-    }
-
-    collectLearningData(currentTime) {
-        // ### Daten für KI und Nexus sammeln ###
-        // Zweck: Spielerdaten (Position, Geschwindigkeit, Eingaben) für KI-Training und Nexus-Analyse
-        if (!this.state.playerMesh || !this.state.playerBody) return; // Sicherheitsprüfung
-        const player = this.state.playerMesh;
-        const velocity = this.state.playerBody.getLinearVelocity();
-        const dataPoint = {
-            timestamp: currentTime,
-            fps: this.state.fps,
-            playerPosition: { x: player.position.x, y: player.position.y, z: player.position.z },
-            playerVelocity: { dx: velocity.x(), dy: velocity.y(), dz: velocity.z() },
-            inputState: {
-                forward: this.state.keys["w"] ? 1 : this.state.keys["s"] ? -1 : 0,
-                right: this.state.keys["d"] ? 1 : this.state.keys["a"] ? -1 : 0,
-                jump: this.state.keys[" "] ? 1 : 0,
-            },
-        };
-        this.state.learningData.push(dataPoint);
-        if (this.state.learningData.length > 500) this.state.learningData.shift(); // Speicherbegrenzung
-        if (this.nexus) this.nexus.processLearningData(dataPoint);
-        this.log(
-            `Datenpunkt gesammelt: Position (${dataPoint.playerPosition.x.toFixed(2)}, ${dataPoint.playerPosition.z.toFixed(2)})`,
-            "DEBUG"
-        );
-    }
-
-    async learn(currentTime) {
-        // ### KI-Lernen und Optimierung ###
-        // Zweck: Trainiert das Modell mit Bewegungsdaten und optimiert bei FPS-Drops.
-        // Schutz: Wenn ein vorheriges fit() noch läuft, überspringen statt zu queuen.
-        // Sonst spawnt der 5-s-Tick parallele Aufrufe, die TF.js mit
-        // „Cannot start training because another fit() call is ongoing" ablehnt.
-        if (this.state.learningInFlight) return;
-        if (this.state.worldgenInFlight) return; // Während Worldgen blockiert fit() den Main-Thread zusätzlich
-        if (this.state.learningData.length < 20) return; // Mindestdaten für Training
-        const recentData = this.state.learningData.slice(-20);
-        const avgFps = recentData.reduce((sum, d) => sum + d.fps, 0) / recentData.length;
-
-        if (avgFps < 60) {
-            this.log(`FPS-Drop erkannt (${avgFps.toFixed(1)}) – Optimiere Physik...`, "WARNING");
-            this.optimizePhysics();
-            this.nexus.processOptimization({ fps: avgFps });
-        }
-
-        if (this.state.playerMovementModel.fit) {
-            this.state.learningInFlight = true;
-            const inputs = recentData.map((d) => [
-                d.playerPosition.x,
-                d.playerPosition.y,
-                d.playerPosition.z,
-                d.playerVelocity.dx,
-                d.playerVelocity.dy,
-                d.playerVelocity.dz,
-            ]);
-            const outputs = recentData.map((d) => {
-                const nextData = this.state.learningData.find((ld) => ld.timestamp > d.timestamp) || d;
-                return [nextData.playerVelocity.dx, nextData.playerVelocity.dy, nextData.playerVelocity.dz];
-            });
-            const xs = tf.tensor2d(inputs);
-            const ys = tf.tensor2d(outputs);
-            try {
-                // Eine Epoche pro Trainings-Tick: günstig genug, um nicht den
-                // Frame-Loop zu blockieren, und ausreichend, weil alle 5 s
-                // erneut trainiert wird.
-                await this.state.playerMovementModel.fit(xs, ys, { epochs: 1, batchSize: 10, verbose: 0 });
-                this.log("KI-Modell trainiert – Bewegungsprognose verbessert", "INFO");
-            } catch (fitError) {
-                this.log(`KI-Training fehlgeschlagen: ${fitError.message}`, "ERROR");
-            } finally {
-                tf.dispose([xs, ys]);
-                this.state.learningInFlight = false;
-            }
-        }
-
-        this.state.knowledgeBase.push({
-            type: "learning",
-            content: `FPS: ${avgFps.toFixed(1)}, Datenpunkte: ${recentData.length}`,
-            timestamp: currentTime,
-        });
-    }
-
+    // ### Nexus der Unendlichkeit ###
+    // TF.js wurde entfernt — das `playerMovementModel` lieferte Vorhersagen, die
+    // nirgends konsumiert wurden (`predictPlayerMove` hatte null Aufrufer). Der
+    // echte Lern-Loop läuft heute über `state.dsl.history` mit Fitness-V2 +
+    // Roulette-Selektion + Mutation (siehe `dslSelectByFitness`, `dslMutate`,
+    // `dslCompose`). Schicht 1 (Pfad-Buckets, Multi-Dim-Fitness, Pattern-Memory)
+    // setzt dort an, statt eine separate neuronale Schicht draufzukleben.
     initializeNexus() {
-        // ### Nexus – Herz der Unendlichkeit ###
-        // Zweck: Initialisiert den autonomen Kern, der Evolutionen steuert und Chat-Befehle umsetzt
         this.nexus = {
             knightOfTime: {
                 essence: "Ritter der Zeit, Schmied des Ultiversums",
-                mind: this.state.playerMovementModel,
                 voice: "Ich bin der Nexus, Schöpfer. Dein Wille formt mich, meine Macht erweitert das Ultiversum.",
                 autonomyLevel: 0,
             },
-            processLearningData: (data) => {
-                // Prüft, ob eine Evolution fällig ist
-                if (data.timestamp - this.state.nexusLastEvolution >= this.state.nexusEvolutionInterval) {
-                    this.evolveNexus(data.timestamp);
-                }
-            },
             processOptimization: (data) => {
-                // FPS-Drop → direkt Self-Heal. Vorher ging das durch eine
-                // JS-Closure in der Evolution-Queue; das war der letzte
-                // Nicht-DSL-Pfad. Physik-Stabilisierung ist Self-Heal, kein
-                // Welt-Effekt, also bewusst nicht in der DSL.
+                // FPS-Drop → direkt Self-Heal. Physik-Stabilisierung ist Self-Heal,
+                // kein Welt-Effekt, also bewusst nicht in der DSL.
                 if (data.fps < 50) {
                     this.optimizePhysics();
                     this.log("Nexus-Optimierung: Physik stabilisiert", "INFO");
                 }
             },
-            predictPlayerMove: () => {
-                // Vorhersage der Spielerbewegung basierend auf KI-Modell
-                if (!this.state.playerMovementModel.predict || !this.state.playerMesh) return null;
-                const input = tf.tensor2d([
-                    [
-                        this.state.playerMesh.position.x,
-                        this.state.playerMesh.position.y,
-                        this.state.playerMesh.position.z,
-                        this.state.playerBody.getLinearVelocity().x(),
-                        this.state.playerBody.getLinearVelocity().y(),
-                        this.state.playerBody.getLinearVelocity().z(),
-                    ],
-                ]);
-                const prediction = this.state.playerMovementModel.predict(input);
-                const result = prediction.dataSync();
-                tf.dispose([input, prediction]);
-                return { dx: result[0], dy: result[1], dz: result[2] };
-            },
         };
         this.state.nexusLastEvolution = performance.now() / 1000;
-        this.log("Nexus der Unendlichkeit V7.65 erwacht – bereit für unendliche Evolution", "INFO");
+        this.log("Nexus der Unendlichkeit erwacht – bereit für unendliche Evolution", "INFO");
     }
 
     evolveNexus(currentTime) {
@@ -3206,19 +3039,6 @@ class AnazhRealm {
         } else if (parts[0] === "optimiere" && parts[1] === "physik") {
             this.optimizePhysics();
             appendChatOutput("Physik optimiert");
-        } else if (parts[0] === "füge" && parts[1] === "trainingsdaten") {
-            const xMatch = command.match(/x\s*=\s*(-?\d+(?:\.\d+)?)/i);
-            const zMatch = command.match(/z\s*=\s*(-?\d+(?:\.\d+)?)/i);
-            const x = xMatch ? parseFloat(xMatch[1]) : 0;
-            const z = zMatch ? parseFloat(zMatch[1]) : 0;
-            this.state.learningData.push({
-                timestamp: performance.now() / 1000,
-                fps: this.state.fps,
-                playerPosition: { x, z },
-                playerVelocity: { dx: 0, dz: 0 },
-                yVelocity: 0,
-            });
-            appendChatOutput(`Trainingsdaten hinzugefügt: x=${x}, z=${z}`);
         } else if (parts[0] === "aktiviere" && parts[1] === "version") {
             const version = parts[2];
             if (this.state.versionHistory.includes(version)) {
@@ -3263,7 +3083,7 @@ class AnazhRealm {
                 appendChatOutput(`Unbekannter Befehl. Meintest du: '${suggestion}'?`);
             } else {
                 appendChatOutput(
-                    "Unbekannter Befehl. DSL-Befehle: 'Setze Wetter rainy', 'Spawne Kreaturen 10', 'Ändere Sternenhimmel red', 'Setze Terrain Steilheit 0.8', 'Setze Terrain Basishöhe 5', 'Erhöhe Sprungkraft um 2', 'Heile Welt', 'Vereine Chaos Ordnung', 'Boden aktivieren/deaktivieren', 'Kreaturen aktivieren/deaktivieren', 'Erzähle <text>'. Weitere: 'Speichere/Lade Zustand', 'Lade Datei', 'Spawne neue Welt', 'Aktiviere Anazh-Symphonie', 'Aktiviere/Deaktiviere Debug-Logs', 'Behebe Physik-Tunneling', 'Optimiere Physik', 'Lerne Fähigkeit <Name> <Beschreibung>', 'Führe Fähigkeit aus <Name>', 'Füge Trainingsdaten'."
+                    "Unbekannter Befehl. DSL-Befehle: 'Setze Wetter rainy', 'Spawne Kreaturen 10', 'Ändere Sternenhimmel red', 'Setze Terrain Steilheit 0.8', 'Setze Terrain Basishöhe 5', 'Erhöhe Sprungkraft um 2', 'Heile Welt', 'Vereine Chaos Ordnung', 'Boden aktivieren/deaktivieren', 'Kreaturen aktivieren/deaktivieren', 'Erzähle <text>'. Weitere: 'Speichere/Lade Zustand', 'Lade Datei', 'Spawne neue Welt', 'Aktiviere Anazh-Symphonie', 'Aktiviere/Deaktiviere Debug-Logs', 'Behebe Physik-Tunneling', 'Optimiere Physik', 'Lerne Fähigkeit <Name> <Beschreibung>', 'Führe Fähigkeit aus <Name>'."
                 );
             }
         }
@@ -4537,7 +4357,6 @@ class AnazhRealm {
 
     // ### Persistenz ###
     buildStateSnapshot() {
-        const learningData = this.state.learningData.slice(-200);
         const knowledgeBase = this.state.knowledgeBase.slice(-200);
         return {
             playerPosition: this.state.playerMesh
@@ -4547,7 +4366,6 @@ class AnazhRealm {
                       z: this.state.playerMesh.position.z,
                   }
                 : { x: 0, y: 5, z: 0 },
-            learningData: learningData,
             knowledgeBase: knowledgeBase,
             version: this.state.currentVersion,
             selfAwareness: this.state.selfAwareness,
@@ -4756,7 +4574,6 @@ class AnazhRealm {
             }
             this.log(`Spielerposition geladen: (${safeX}, ${safeY}, ${safeZ})`);
         }
-        this.state.learningData = state.learningData || [];
         this.state.knowledgeBase = state.knowledgeBase || [];
         this.state.selfAwareness = state.selfAwareness || { components: [], weaknesses: [] };
         this.state.creatureEmotions = state.creatureEmotions || [];
@@ -6491,10 +6308,10 @@ class AnazhRealm {
         }
 
         try {
-            await this.initAI();
-            this.log("KI und Nexus erfolgreich initialisiert", "INFO");
+            this.initializeNexus();
+            this.log("Nexus erfolgreich initialisiert", "INFO");
         } catch (error) {
-            this.log(`KI-Initialisierung fehlgeschlagen: ${error.message} – Ohne KI fortfahren`, "ERROR");
+            this.log(`Nexus-Initialisierung fehlgeschlagen: ${error.message} – Ohne Nexus fortfahren`, "ERROR");
         }
 
         const canvas = document.getElementById("world-canvas");
@@ -6969,12 +6786,22 @@ class AnazhRealm {
                 }
             }
 
-            // ### KI und Selbstanalyse ###
-            this.collectLearningData(currentTime);
-            if (currentTime - this.state.lastLearningUpdate >= this.state.learningInterval) {
-                this.learn(currentTime);
-                this.selfAwarenessAnalyze(); // Ergänzt aus V7.56
-                this.state.lastLearningUpdate = currentTime;
+            // ### Selbstanalyse + Nexus-Evolution-Trigger ###
+            // Früher hing das am TF-Trainings-Tick (`learn()`); nach TF-Cleanup
+            // läuft die Zeit-Schwelle direkt. `selfAwarenessAnalyze` macht den
+            // FPS-/Tunneling-/Boden-Check, `evolveNexus` queued ein DSL-Programm
+            // in den `nexusEvolutionQueue`.
+            if (currentTime - this.state.lastSelfAnalysis >= 5.0) {
+                this.selfAwarenessAnalyze();
+                if (this.state.fps > 0 && this.state.fps < 50 && this.nexus) {
+                    this.nexus.processOptimization({ fps: this.state.fps });
+                }
+            }
+            if (
+                this.nexus &&
+                currentTime - this.state.nexusLastEvolution >= this.state.nexusEvolutionInterval
+            ) {
+                this.evolveNexus(currentTime);
             }
 
             // ### Kreaturen, Wetter, Wachstum ###
