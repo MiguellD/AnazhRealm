@@ -1,20 +1,21 @@
 {
-  "name": "anazhrealm",
-  "version": "7.66.0",
-  "private": true,
-  "description": "AnazhRealm – 3D-Browser-Sandbox v7.66",
-  "scripts": {
-    "start": "node save-server.js",
-    "lint": "eslint anazhRealm.js save-server.js",
-    "lint:fix": "eslint --fix anazhRealm.js save-server.js",
-    "format": "prettier --write anazhRealm.js save-server.js",
-    "format:check": "prettier --check anazhRealm.js save-server.js",
-    "check": "node --check anazhRealm.js && node --check save-server.js",
-    "playtest": "node scripts/playtest.cjs"
-  },
-  "devDependencies": {
-    "eslint": "^9.18.0",
-    "prettier": "^3.4.2",
-    "puppeteer": "^24.0.0"
-  }
+    "name": "anazhrealm",
+    "version": "7.66.0",
+    "private": true,
+    "description": "AnazhRealm – 3D-Browser-Sandbox v7.66",
+    "scripts": {
+        "start": "node save-server.js",
+        "lint": "eslint anazhRealm.js save-server.js",
+        "lint:fix": "eslint --fix anazhRealm.js save-server.js",
+        "format": "prettier --write anazhRealm.js save-server.js",
+        "format:check": "prettier --check anazhRealm.js save-server.js",
+        "check": "node --check anazhRealm.js && node --check save-server.js",
+        "playtest": "node scripts/playtest.cjs",
+        "verify:ring9": "node scripts/verify-ring9.cjs"
+    },
+    "devDependencies": {
+        "eslint": "^9.18.0",
+        "prettier": "^3.4.2",
+        "puppeteer": "^24.0.0"
+    }
 }

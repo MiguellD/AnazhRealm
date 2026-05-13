@@ -35,7 +35,7 @@ Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) si
 | W4 | **Hylomorphismus atomar** — Materialien + Aktivierungs-Matrix + Werkzeuge | ✅ P1+P2+P3 live | – | Ring 6 + Ring 7 |
 | W5 | **Hylomorphismus räumlich + mechanisch + rekursiv** — Verbindungen (§5.1) + 5 räumliche Prinzipien (§5.2) + Bauplan-als-Werkzeug (§4.3) | ✅ A+B+C live | – | W4 |
 | 8 | Welt-Identität als Multi-Welt-Verwaltung (mehrere worldIds parallel) | ✅ **8 + 8.1 + 8.2 live** — Welt-Index + Per-Welt-Save + Switch/Create/Delete + Person-Übernahme + Per-Welt-Seed + Spieler-Position-Restore + Status-Bar-Welt | – | W3 |
-| 9 | Welt-Export/Import (erweitert) — Drei-Wahl Ersetzen/Daneben/Fusionieren | 🟡 Basic-Export/Import live, Wahl-Dialog offen | 1 d | Ring 8 |
+| 9 | Welt-Export/Import (erweitert) — Drei-Wahl Ersetzen/Daneben/Fusionieren | ✅ **live** — `<dialog>` mit drei Aktionen, `importWorldBeside` mit parentWorlds-Spur + Slug-Kollisions-Auflösung + Witness-Journal, Fusion-Button disabled bis Ring 10 | – | Ring 8 |
 | 10 | Welt-Fusion (zwei DSL-Programm-Sets mergen mit parentWorlds) | 🔴 offen | 3-4 d | Ring 9 |
 | W6 | **Crafting-Polish + Erweiterung** (NACH Ringe 8-10) — visuelle Verbindungen, Brech-Mechanik, Energiequellen, Kreaturen-Körper, Physik-Baukasten, Rüstung, Min-Regel-Entscheidung | 🔴 offen, bewusst nachgelagert | 8-12 Sessions in 7 Teilschritten | W5 + Rings 8-10 |
 | 11 | Multi-User-Sync (P2P / Signaling) | 🔴 offen | 5-7 d | Ring 8 |

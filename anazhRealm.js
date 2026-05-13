@@ -7112,14 +7112,12 @@ class AnazhRealm {
                 if (typeof parsed !== "object" || parsed === null) {
                     throw new Error("JSON-Wurzel muss ein Objekt sein");
                 }
-                this.loadState(parsed);
-                const chatOutput = document.getElementById("chat-output");
-                if (chatOutput) {
-                    const line = document.createElement("div");
-                    line.textContent = `Datei ${file.name} (${file.size} B) erfolgreich importiert`;
-                    chatOutput.appendChild(line);
-                    chatOutput.scrollTop = chatOutput.scrollHeight;
-                }
+                // Ring 9: Import läuft jetzt durch das Welt-Tor — Drei-Wahl-
+                // Dialog. Wir merken uns den geparsten Snapshot in
+                // state.pendingImport und zeigen den Dialog; die Buttons
+                // entscheiden, ob ersetzt, daneben gelegt oder (Ring 10)
+                // fusioniert wird. Schließen des Dialogs verwirft den Import.
+                this._openWeltTorDialog(parsed, file);
             } catch (e) {
                 this.log(`Import fehlgeschlagen (${file.name}): ${e.message}`, "ERROR");
                 const chatOutput = document.getElementById("chat-output");
@@ -7135,6 +7133,238 @@ class AnazhRealm {
             this.log(`FileReader-Fehler beim Lesen von ${file.name}`, "ERROR");
         };
         reader.readAsText(file);
+    }
+
+    // ### Ring 9 — Welt-Tor (Drei-Wahl-Import-Dialog) ###
+    //
+    // Eingehende Welt-JSON-Datei wird in `state.pendingImport` zwischen-
+    // gespeichert; der Dialog präsentiert drei Pfade. Schließen ohne Wahl
+    // verwirft. Ersetzen ist der Pfad, der vor Ring 9 als einziger existierte.
+    // Daneben legen gibt der Welt eine NEUE worldId mit parentWorlds-Spur,
+    // damit beide Welten parallel im Index leben. Fusionieren ist stub für
+    // Ring 10.
+
+    initWeltTorUI() {
+        const dialog = document.getElementById("world-tor-dialog");
+        if (!dialog) return;
+        const replaceBtn = document.getElementById("world-tor-replace");
+        const besideBtn = document.getElementById("world-tor-beside");
+        const fuseBtn = document.getElementById("world-tor-fuse");
+        const cancelBtn = document.getElementById("world-tor-cancel");
+        if (replaceBtn) replaceBtn.addEventListener("click", () => this._weltTorImportReplace());
+        if (besideBtn) besideBtn.addEventListener("click", () => this._weltTorImportBeside());
+        if (fuseBtn) fuseBtn.addEventListener("click", () => this._weltTorImportFuse());
+        if (cancelBtn) cancelBtn.addEventListener("click", () => this._closeWeltTorDialog());
+        // Esc-Key schließt den Dialog (native <dialog>-Verhalten) — wir
+        // verwerfen den pendingImport explizit, damit kein verwaister
+        // Snapshot zurückbleibt.
+        dialog.addEventListener("close", () => {
+            this.state.pendingImport = null;
+        });
+    }
+
+    _openWeltTorDialog(parsed, file) {
+        this.state.pendingImport = { parsed, fileName: (file && file.name) || "unbekannt" };
+        const dialog = document.getElementById("world-tor-dialog");
+        const summary = document.getElementById("world-tor-summary");
+        if (summary) {
+            const m = parsed.worldMeta || {};
+            const slug = m.slug || "(namenlos)";
+            const ageDays = m.bornAt ? Math.floor((Date.now() - m.bornAt) / 86400000) : 0;
+            const idShort = (m.worldId || "?").slice(0, 8);
+            const bp = Array.isArray(parsed.blueprints) ? parsed.blueprints.length : 0;
+            const arch = Array.isArray(parsed.architectures) ? parsed.architectures.length : 0;
+            const journal =
+                parsed.worldJournal && Array.isArray(parsed.worldJournal.entries)
+                    ? parsed.worldJournal.entries.length
+                    : 0;
+            summary.textContent = `„${slug}" (ID ${idShort}…, ${ageDays} Tag${ageDays === 1 ? "" : "e"} alt, ${arch} Bauwerke, ${bp} eigene Baupläne, ${journal} Erinnerungen) klopft an dein Tor. Wie willst du sie empfangen?`;
+        }
+        if (dialog && typeof dialog.showModal === "function") {
+            try {
+                dialog.showModal();
+            } catch {
+                // Bereits offen — kein Drama, der State ist bereits gesetzt.
+            }
+        } else if (dialog) {
+            dialog.setAttribute("open", "open");
+        }
+    }
+
+    _closeWeltTorDialog() {
+        const dialog = document.getElementById("world-tor-dialog");
+        if (dialog && typeof dialog.close === "function") {
+            try {
+                dialog.close();
+            } catch {
+                // ignore
+            }
+        } else if (dialog) {
+            dialog.removeAttribute("open");
+        }
+        this.state.pendingImport = null;
+    }
+
+    _weltTorImportReplace() {
+        const pending = this.state.pendingImport;
+        if (!pending || !pending.parsed) {
+            this._closeWeltTorDialog();
+            return;
+        }
+        const parsed = pending.parsed;
+        const fileName = pending.fileName;
+        // Aktuelle Welt wird überschrieben — der Welt-Drawer trägt ab jetzt
+        // die importierte Identität. loadState(parsed) ist der bisherige
+        // Pfad (vor Ring 9 war das der einzige).
+        this.loadState(parsed);
+        const chatOutput = document.getElementById("chat-output");
+        if (chatOutput) {
+            const line = document.createElement("div");
+            line.textContent = `Datei ${fileName} importiert — aktuelle Welt wurde ersetzt.`;
+            chatOutput.appendChild(line);
+            chatOutput.scrollTop = chatOutput.scrollHeight;
+        }
+        this.journalAppend("witness", "Eine fremde Welt hat mich ersetzt.");
+        this._closeWeltTorDialog();
+    }
+
+    _weltTorImportBeside() {
+        const pending = this.state.pendingImport;
+        if (!pending || !pending.parsed) {
+            this._closeWeltTorDialog();
+            return;
+        }
+        const parsed = pending.parsed;
+        const fileName = pending.fileName;
+        const result = this.importWorldBeside(parsed);
+        const chatOutput = document.getElementById("chat-output");
+        if (chatOutput) {
+            const line = document.createElement("div");
+            if (result.ok) {
+                line.textContent = `Datei ${fileName} liegt nun als „${result.slug}" neben dir (ID ${result.worldId.slice(0, 8)}…).`;
+            } else {
+                line.textContent = `Daneben legen fehlgeschlagen: ${result.reason}`;
+            }
+            chatOutput.appendChild(line);
+            chatOutput.scrollTop = chatOutput.scrollHeight;
+        }
+        if (result.ok) {
+            this.journalAppend("witness", `Eine andere Welt „${result.slug}" liegt nun neben mir.`);
+            this.updateWorldInfo();
+        }
+        this._closeWeltTorDialog();
+    }
+
+    _weltTorImportFuse() {
+        // Stub für Ring 10. Button ist disabled, sollte nicht klickbar sein,
+        // aber wenn doch (z. B. via Tastatur), klare Antwort.
+        const chatOutput = document.getElementById("chat-output");
+        if (chatOutput) {
+            const line = document.createElement("div");
+            line.textContent =
+                "Welt-Fusion kommt in Ring 10 — die zwei Welten verschmelzen dann zu einer dritten mit beiden als Eltern.";
+            chatOutput.appendChild(line);
+            chatOutput.scrollTop = chatOutput.scrollHeight;
+        }
+        this._closeWeltTorDialog();
+    }
+
+    // Datenpfad: importierte Welt bekommt eine NEUE worldId (sonst würde sie
+    // eine existierende mit gleicher ID überschreiben), behält ihren Seed
+    // und Inhalt, und trägt die Original-ID in `parentWorlds` als Provenienz-
+    // Spur. Slug-Kollision wird mit `-2`/`-3`/… aufgelöst, gleiches Schema
+    // wie createNewWorld. Aktive Welt bleibt unverändert — der Spieler kann
+    // später via Welt-Picker wechseln. UI/Test-Aufrufer können `reload`
+    // setzen, um direkt in die importierte Welt zu springen.
+    importWorldBeside(parsed, { reload = false } = {}) {
+        if (!parsed || typeof parsed !== "object") {
+            return { ok: false, reason: "kein gültiger Snapshot" };
+        }
+        const originalMeta = parsed.worldMeta || {};
+        const originalId = typeof originalMeta.worldId === "string" ? originalMeta.worldId : null;
+        const originalSlug = (originalMeta.slug || "import")
+            .toString()
+            .toLowerCase()
+            .replace(/[^a-z0-9_-]/g, "");
+        // Slug-Eindeutigkeit gegen den lokalen Index.
+        const usedSlugs = new Set(this.worldsIndexLoad().map((e) => e.slug));
+        let slug = originalSlug || "import";
+        if (usedSlugs.has(slug)) {
+            let n = 2;
+            while (usedSlugs.has(`${slug}-${n}`)) n++;
+            slug = `${slug}-${n}`;
+        }
+        // Frische worldId — sonst würde ein lokal existierender Eintrag mit
+        // identischer ID stillschweigend überschrieben.
+        let newWorldId;
+        try {
+            newWorldId =
+                typeof crypto !== "undefined" && crypto.randomUUID
+                    ? crypto.randomUUID()
+                    : "w_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+        } catch {
+            newWorldId = "w_" + Math.random().toString(36).slice(2, 10);
+        }
+        const bornAt = Date.now();
+        // Importierter Snapshot wird tief geklont, dann mit neuer Identität
+        // überschrieben. parentWorlds erbt jegliche bestehenden Eltern +
+        // die Original-ID, damit der Stammbaum für Ring 10 ablesbar bleibt.
+        const cloned = JSON.parse(JSON.stringify(parsed));
+        const existingParents = Array.isArray(originalMeta.parentWorlds) ? [...originalMeta.parentWorlds] : [];
+        const newParents = originalId ? [...existingParents, originalId] : existingParents;
+        cloned.worldMeta = {
+            ...originalMeta,
+            worldId: newWorldId,
+            slug,
+            bornAt,
+            parentWorlds: newParents,
+            schemaVersion: "9.0-tor-v1",
+        };
+        // Der Import sollte sich seiner Empfangs-Geschichte bewusst werden —
+        // Witness-Eintrag mit Provenienz. Falls die importierte Welt KEIN
+        // Journal hat (Legacy-Export oder Minimal-Snapshot), legen wir den
+        // Container an, damit der Witness-Akt trotzdem festgehalten wird.
+        // Vor dem Bugfix wurde der Eintrag stillschweigend übersprungen —
+        // eine Welt ohne Quelle-Journal konnte sich an ihr Ankommen nicht
+        // erinnern (gefunden in Verifikation 6.3).
+        if (!cloned.worldJournal || typeof cloned.worldJournal !== "object") {
+            cloned.worldJournal = { entries: [], seen: {} };
+        }
+        if (!Array.isArray(cloned.worldJournal.entries)) {
+            cloned.worldJournal.entries = [];
+        }
+        if (!cloned.worldJournal.seen || typeof cloned.worldJournal.seen !== "object") {
+            cloned.worldJournal.seen = {};
+        }
+        const nextId = cloned.worldJournal.entries.length + 1;
+        cloned.worldJournal.entries.push({
+            id: nextId,
+            at: Date.now(),
+            tick: 0,
+            type: "witness",
+            text: `Ich wurde als „${slug}" neben einer fremden Welt empfangen.`,
+            ctx: { fromWorldId: originalId, asWorldId: newWorldId, asSlug: slug },
+        });
+        try {
+            localStorage.setItem(this.worldStorageKey(newWorldId), JSON.stringify(cloned));
+        } catch (err) {
+            return { ok: false, reason: `Speicher voll: ${err.message}` };
+        }
+        this.worldsIndexUpsert({ worldId: newWorldId, slug, bornAt, lastPlayed: Date.now() });
+        this.log(
+            `Welt „${slug}" als ${newWorldId.slice(0, 8)}… neben uns gelegt (Parent: ${originalId || "keine"})`,
+            "INFO"
+        );
+        if (
+            reload &&
+            typeof window !== "undefined" &&
+            window.location &&
+            typeof window.location.reload === "function"
+        ) {
+            this.activeWorldSet(newWorldId);
+            window.location.reload();
+        }
+        return { ok: true, worldId: newWorldId, slug, parentWorlds: newParents };
     }
 
     loadVersion(version) {
@@ -10010,6 +10240,8 @@ class AnazhRealm {
         this.ensureWorldMeta();
         // Welle 3 F — Welt-Info-Sektion im Welt-Drawer.
         this.initWorldInfoUI();
+        // Ring 9 — Welt-Tor Drei-Wahl-Dialog beim Import.
+        this.initWeltTorUI();
         try {
             await this.core.initPhysics();
             this.log("Physik erfolgreich initialisiert", "INFO");
