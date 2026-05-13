@@ -213,7 +213,7 @@ Plus: inline-styles aus `index.html` entfernt (`#fps`, `#state-file-input`), Inl
 
 ### Welle 6: Crafting-Polish + UX + Stats (sechs Blöcke A–F, bewusst nachgelagert)
 
-**Status**: 🟡 in Arbeit — **Phase 1-3 (V7.72) erledigt**: 6.A1+A2 (Wall-Sliding + Erdung auf Bauwerken), 6.A3 (Slope-Anti-Klebe, neu), 6.A4+A5 (Raycast-Place + Stabilitäts-Visual), 6.E1+E2 (Fähigkeit-Beschreibung + Intro-Overlay). Bauwellen ab V7.71 wurden bewusst nach Ringe 8-11 V1 gelegt (Entscheidung 13.05.2026); Welle 6 läuft jetzt schrittweise nach §10.6.
+**Status**: 🟡 in Arbeit — **Phase 1-6 (V7.72) erledigt**: 6.A komplett (Wall-Sliding, Erdung, Slope-Anti-Klebe, Raycast-Place, Stabilitäts-Visual), 6.E1+E2 (Fähigkeit-Beschreibung + Intro), 6.F1+F2 (Verbindungs-Linien + Brech-Warning), **6.D Stat-System komplett** (Etappen 1+1.5+1.6+1.7+2+3a+3b: STAT_FROM_TAGS-Matrix, Seele-als-Bauplan-aus-Körperteilen, define_soul DSL, visueller Avatar-Editor, Boosts aus 3 Quellen, Phönix-Wandlung + persistente Tod-Wunde, Min-Regel-Hybrid decay 0.7, Werkzeug-Kosten, Rüstung-Stacking, Aura-Glow). **1014 Playtest-Invarianten grün**.
 
 **Gesamt-Schätzung**: ~18-22 Sessions, verteilt auf 3-4 Monate Echtzeit, in sechs Blöcken **6.A bis 6.F** organisiert.
 
@@ -236,10 +236,18 @@ Plus: inline-styles aus `index.html` entfernt (`#fps`, `#state-file-input`), Inl
 
 **Beschlossene Reihenfolge** (Schöpfer hat 13.05.2026 freie Hand gegeben, Entscheidungen in `docs/wave-6-design.md` §10.6):
 1. 6.A1+A2 (Sliding + Erdung) ✅ V7.72
-2. 6.A3 (Slope-Anti-Klebe, ad-hoc ergänzt nach 6.A1) ✅ V7.72
+2. 6.A3 (Slope-Anti-Klebe, ad-hoc) ✅ V7.72
 3. 6.A4+A5 (Raycast-Place + Stabilitäts-Visual) ✅ V7.72
 4. 6.E1+E2 (Ability-Beschreibung + Intro-Overlay) ✅ V7.72
-5. 6.F1+F2 (visuelle Linien + Brech-Warning) ← **jetzt im Bau**
+5. 6.F1+F2 (Verbindungs-Linien + Brech-Warning) ✅ V7.72
+6. **6.D Stat-System komplett** (Etappen 1+1.5+1.6+1.7+2+3a+3b) ✅ V7.72 — der Vision-Pfeiler ist live
+7. **Schöpfer-Reflexion-Fixes** ✅ V7.72 — WASD-Geometrie, Drache-π-Flip, Aura-Sprite-Falloff, Tod-Wunde persistent, Werkzeug-Stamina-Kosten, Konsumables aus Compound-Tags
+8. **6.G Welt-Sinne Phase 1** ← jetzt offen (fliegende Inseln + Bäume kollidierbar)
+9. **6.C2** (Spiel-Modi frieden/pfad/schöpfer) — nutzt Stat-System
+10. 6.C1 + 6.A-Maus + 6.C3 (Inventar + LMB/RMB + Keybindings-UI)
+11. 6.B (CAD-Werkstatt — minimal magic)
+12. 6.G Phase 2 (Schatten, Wasser, Höhlen, Sterne)
+13. 6.F3 + 6.F4 + 6.F5 (Energie + Kreaturen-Körper + Constraints)
 5. **6.D** Stats komplett (Vision-Pfeiler) ⭐
 6. 6.G Phase 1 (Inseln + Bäume kollidierbar)
 7. 6.C2 (Modi frieden/pfad/schöpfer)

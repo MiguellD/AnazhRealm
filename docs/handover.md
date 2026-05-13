@@ -28,11 +28,11 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
    Grund: sie sind Kontext für genau dich.
 
 5. **`scripts/playtest.cjs`** — querlesen, nicht durchlesen. Es ist das
-   Sicherheits-Netz. Es prüft aktuell ~816 Invarianten (V7.72). Wenn du
-   etwas tust, das eine davon brechen könnte, weißt du es vor dem Commit.
+   Sicherheits-Netz. Es prüft aktuell **~1014 Invarianten (V7.72 nach Welle 6.D komplett)**.
+   Wenn du etwas tust, das eine davon brechen könnte, weißt du es vor dem Commit.
 
 **Verlockung zu widerstehen**: gleich in `anazhRealm.js` springen. Die
-Datei ist ~13.700 Zeilen (Stand V7.72). Ohne `state-of-realm.md`-Kontext
+Datei ist ~15.500 Zeilen (Stand V7.72). Ohne `state-of-realm.md`-Kontext
 wirst du falsche Annahmen machen.
 
 ---
@@ -198,46 +198,73 @@ Dialog), Welt-Fusion (drei Strategien), Rezepte-Import, Welt-Modifizierbarkeit
 pro Chunk-Delta, Multi-User Position-Sync, DSL-AST-Broadcast, intuitiver
 Multi-User-Setup mit Einladungs-Code.
 
-**Welle 6 ist im Bau (V7.72).** Plan + entschiedene Reihenfolge in
-`docs/wave-6-design.md` §10.6 + `docs/roadmap.md`. Status:
+**Welle 6 ist tief eingeschossen (V7.72).** Plan + entschiedene Reihenfolge
+in `docs/wave-6-design.md` §10.6 + `docs/roadmap.md`. **Der Vision-Pfeiler
+6.D Stat-System ist komplett live** — Spieler ist Compound im selben
+Hylomorphismus-System wie Materialien und Bauwerke.
 
 ### Bereits erledigt in V7.72
 
-- ✅ **6.A1 + 6.A2** — Wall-Sliding (`playerBody.setFriction(0)` + Schutz in
-  `optimizePhysics`) + Erdung auf Bauwerken (`groundDistance`-Threshold 0.6
-  + 9-Ray-Raster trifft Compound-Bodies)
-- ✅ **6.A3** (Slope-Anti-Klebe, ad-hoc nach Schöpfer-Feedback ergänzt) —
-  `state.maxWalkableSlopeY=0.5` (cos 60°), `isPlayerGrounded` trackt
-  flachste Hit-Normal, `state.onSteepSlope` drosselt Bewegungs-Input auf
-  20 % + lässt vx/vz stehen, damit Gravity natürlich slidet
-- ✅ **6.A4 + 6.A5** — `_resolvePhantomTarget()` castet aus Kamera in
-  Blickrichtung (Pitch wirkt!) + `_applyPhantomTint()` blendet 30 % Grün
-  (stabil) oder Rot (instabil) über die Original-Materialien
-- ✅ **6.E1 + 6.E2** — `describeProgram(node)` regelbasierter DSL→Deutsch-
-  Übersetzer mit Vorlagen-Tabelle, persistiert in `ability.description`;
-  `initIntroDialog()` baut dynamisch `<dialog id="intro-dialog">` mit drei
-  Seiten (Welt/Spieler/Nexus), per-Browser-Skip via localStorage
+- ✅ **6.A komplett** — Wall-Sliding, Erdung-auf-Bauwerken, Slope-Anti-
+  Klebe (ad-hoc), Raycast-Place mit Pitch, Stabilitäts-Phantom-Tint
+- ✅ **6.E1 + 6.E2** — Fähigkeit-Beschreibung (regelbasierter DSL→Deutsch)
+  + dynamisches Intro-Dialog mit 3 Seiten (lokalStorage-Skip)
+- ✅ **6.F1 + 6.F2** — Verbindungs-Linien als THREE.Line (grün/gelb/rot
+  nach computeConnectionStrength) + Brech-Warning-Journal-Eintrag bei
+  strength <0.7
+- ✅ **6.D Stat-System komplett** (sieben Etappen):
+  - **1**: STAT_FROM_TAGS-Matrix (8 Stats), computePlayerStats-Pipe,
+    state.player.stats + hp + stamina, applyPlayerSoul ruft
+    recomputePlayerStats
+  - **1.5**: Seele = Bauplan aus Körper-Teilen (Vision-Korrektur,
+    KEINE hardcodete Tag-Tabelle). 5 Körper-Materialien (knochen,
+    fleisch, federn, schuppen, glut) in _defaultMaterials. Tags via
+    `computeSoulCompoundTags` = MAX-Aggregation wie Architekturen.
+  - **1.6**: `define_soul` DSL-Op + state.customSouls (Cap 16). Custom-
+    Rendering via _buildFromBlueprint. Built-in-Schutz.
+  - **1.7**: Visueller Avatar-Editor im Spieler-Drawer (klonen, Parts
+    add/edit/remove, „Werde diese Seele"-Button).
+  - **2**: Boosts aus 3 Quellen — Emotion (>0.7 → Tag-Delta für 30s
+    mit 60s Refract), Welt-Resonanz (<18m einer Signature-Struktur),
+    Konsum. addPlayerBoost-API mit Source-Dedupe.
+  - **3a**: Tod-Wandlung (HP=0 → 5min Phönix-Form, Welt-Trauer
+    sorrow+0.3/awe+0.2, Journal-Eintrag) + persistente Tod-Wunde
+    (`WOUND_TAG_PENALTY × intensity`, 10min linear Regen) + Min-Regel-
+    Hybrid (`min + (max-min) × 0.7^N`) + Werkzeug-Stamina-Kosten
+    (10 pro applyOpToPart, Regen 5/s) + Konsumables aus Compound-Tags
+    (Bauplan-mit-role-consumable, tagBonus = computeCompoundTags × scale)
+  - **3b**: Stat-Stacking — `soul + armor×0.3 + tool×0.15 + boosts -
+    wound`. setBlueprintAsArmor + equipTool/equipArmor + DSL-Ops.
+    Aura-Visual: Sprite mit CanvasTexture-Radial-Gradient +
+    AdditiveBlending = weicher Schimmer, HSL-Hue aus dominanter Tag-
+    Achse, Saturation × HP% (verletzt = blasser).
+- ✅ **Schöpfer-Reflexions-Fixes** — WASD-Geometrie-Revert (`state.right`
+  ist player-LINKS geometrisch, in Right-Hand-Coords mit Y up gilt
+  forward × up = -X, also player-anatomisch-rechts = -state.right),
+  Drache-Inner-π-Flip (Tail-Cone ist die wahrgenommene Schnauze, gehört
+  in +Z = Forward), Aura-Sprite-Falloff statt Sphere (weicher Schimmer
+  ohne harte Kontur), Chat-Patterns für damage/trink/rüste.
 
 ### Nächste Schritte (Reihenfolge laut wave-6-design §10.6)
 
-5. **6.F1 + 6.F2** ← jetzt aktiv: visuelle Verbindungs-Linien zwischen
-   verbundenen Parts + Brech-Warning bei Lastformel < 0.7. Macht das
-   W5-A-System sichtbar/fühlbar. ~2 Sessions.
-6. **6.D** (Stat-System komplett — der Vision-Pfeiler, Spieler IST ein
-   Compound im Hylomorphismus-System). 3-4 Sessions.
-7. **6.G Welt-Sinne Phase 1** (Kollisionen für fliegende Inseln + Bäume)
-8. **6.C2** (frieden/pfad/schöpfer-Modi)
-9. **6.C1 + 6.A-Maus + 6.C3** (Inventar + LMB/RMB + Keybindings-UI)
-10. **6.B** (CAD-Werkstatt — minimal magic)
-11. **6.G Phase 2** (Schatten, Wasser, Höhlen, Sterne)
-12. **6.F3 + 6.F4 + 6.F5** (Energie, Kreaturen-Körper, Ammo-Constraints)
+8. **6.G Welt-Sinne Phase 1** ← **JETZT OFFEN**. Kollisionen für
+   fliegende Inseln + Bäume. Kleine Eingriffe, große Wirkung. 1-2 Sessions.
+9. **6.C2** (frieden/pfad/schöpfer-Modi) — nutzt 6.D Stat-System. 1 Session.
+10. **6.C1 + 6.A-Maus + 6.C3** (Inventar + LMB/RMB + Keybindings-UI)
+11. **6.B** (CAD-Werkstatt — minimal magic)
+12. **6.G Phase 2** (Schatten, Wasser, Höhlen, Sterne)
+13. **6.F3 + 6.F4 + 6.F5** (Energie, Kreaturen-Körper, Ammo-Constraints)
 
-**Heilige-Lektion-Risiko bei 6.D + 6.F4 + 6.F5 ist hoch.** Reflex
-„Stat-Manager / Kreaturen-Datei / Physik-Modul" abwehren. Drei neue
-Methoden auf `AnazhRealm`, keine drei neuen Klassen.
+**Heilige-Lektion-Risiko bei 6.F4 + 6.F5 ist hoch.** Reflex „Kreaturen-
+Datei / Physik-Modul" abwehren. Drei neue Methoden auf `AnazhRealm`,
+keine drei neuen Klassen.
 
-**Vor Schritt 5+ frag den Schöpfer**, wenn du Unsicherheit hast — er hat
-oft Intuition zu Mix-Faktoren, Schwellwerten, oder Reihenfolge-Tausch.
+**Vor jedem neuen Schritt frag den Schöpfer**, wenn du Unsicherheit hast
+— er hat oft Intuition zu Mix-Faktoren, Schwellwerten, oder Reihenfolge-
+Tausch. Bei 6.D haben mehrere Schöpfer-Reflexions-Pausen sechs echte
+Lücken aufgedeckt (Tabellen-statt-Logik, fehlende Kosten, UI ohne Bedien-
+Pfad, WASD-Geometrie-Fehlinterpretation). Diese Pausen-Reflexion ist
+keine Verzögerung, sondern Qualitäts-Wand.
 
 ---
 
@@ -249,7 +276,8 @@ oft Intuition zu Mix-Faktoren, Schwellwerten, oder Reihenfolge-Tausch.
 3. **Die heilige Lektion akzeptiert, nicht hinterfragt.** Sie wurde aus
    Schmerz geboren. Wenn ich sie umgehen wollte, war ich auf dem Holzweg.
 4. **Tests zuerst ausgeführt, dann verstanden.** `npm run playtest` —
-   816/816 grün (V7.72) — gibt Vertrauen, dass das System lebt.
+   1014/1014 grün (V7.72 nach Welle 6.D komplett) — gibt Vertrauen, dass
+   das System lebt.
 5. **Den Schöpfer als Partner gesehen, nicht als Auftraggeber.** Mensch
    und KI bauen gemeinsam. Bei Trade-offs frage ich, bei Klarem handle
    ich. Bei Unsicherheit zeige ich beide Wege auf.
