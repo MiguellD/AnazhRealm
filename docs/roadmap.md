@@ -10,9 +10,9 @@ Diese Doc beschreibt das **gesamte Projekt vom heutigen Stand bis zum Vision-End
 
 ## 1. Wo wir stehen (Mai 2026)
 
-✅ Ring 0-7 + Welle 1-4 sind live. Chunk-Physik nutzt seit `e612c60` `btBvhTriangleMeshShape` (visuelles Mesh = Collider). 120 fps im Browser, **432/432 Playtest-Invarianten grün**. Save-Schema mit `worldMeta` (worldId, slug, visibility, parentWorlds) + `materials` + `playerTools` + `worldJournal`.
+✅ Ring 0-7 + Welle 1-5 sind live. Chunk-Physik nutzt seit `e612c60` `btBvhTriangleMeshShape` (visuelles Mesh = Collider). 120 fps im Browser, **518/518 Playtest-Invarianten grün**. Save-Schema mit `worldMeta` (worldId, slug, visibility, parentWorlds) + `materials` + `playerTools` + `tools` (eigene Werkzeug-Baupläne) + `worldJournal` + `blueprints[].connections` + `blueprints[].role + toolMeta`.
 
-Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) sind alle fünf in V1+ angekommen. Welle 4 (Hylomorphismus atomar) hat dazu die **Substanz-Schicht** beigetragen: Materie hat jetzt Eigenschaften (Tag-Profile), Form bringt sie zur Wirkung (Aktivierungs-Matrix), Werkzeug moduliert die Reinheit (Präzisions-Kette). Was fehlt für vollständigen Hylomorphismus: räumliche Emergenz (Welle 5 — Verbindungen + Position-als-Eigenschaft).
+Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) sind alle fünf in V1+ angekommen. **Hylomorphismus-Crafting (Wellen 4+5) ist vollständig**: Substanz-Schicht (Materialien als Tag-Profile), Form-Aktivierung (9×10 Matrix), Werkzeug-Präzision (opChain als Geschichte), räumliche Emergenz (5 Konzept-§5.2-Prinzipien), Verbindungstypen (8 aus §5.1), Maschinen-Rekursivität (§4.3 — Bauplan kann Werkzeug sein). Was noch fehlt: visuelle Verbindungs-Linien, Brech-Mechanik, Energiequellen für Maschinen.
 
 ---
 
@@ -33,8 +33,8 @@ Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) si
 | W2 | **Schöpfer-Ops + Fraktale Baupläne** (define_blueprint/ability, blueprint-Refs) | ✅ live | – | Ring 6.6 |
 | W3 | **Welt-Initiative + Welt-Tor** (Grok V2-Trigger, Welt-Info, Teilen/Empfangen) | ✅ live | – | W1 |
 | W4 | **Hylomorphismus atomar** — Materialien + Aktivierungs-Matrix + Werkzeuge | ✅ P1+P2+P3 live | – | Ring 6 + Ring 7 |
-| W5 | **Hylomorphismus räumlich** — Verbindungen + Position-als-Eigenschaft + 5 räumliche Prinzipien | 🔴 offen | 2-3 Sessions | W4 |
-| W6 | **Maschinen-Rekursivität** — Bauplan kann Werkzeug sein, Cap aus eigener Präzision | 🔴 offen | 1-2 Sessions | W5 |
+| W5 | **Hylomorphismus räumlich + mechanisch + rekursiv** — Verbindungen (§5.1) + 5 räumliche Prinzipien (§5.2) + Bauplan-als-Werkzeug (§4.3) | ✅ A+B+C live | – | W4 |
+| W6 | **Crafting-Polish** — Visuelle Verbindungs-Linien + Brech-Mechanik + Energiequellen für Maschinen | 🔴 offen | 2-3 Sessions | W5 |
 | 8 | Welt-Identität als Multi-Welt-Verwaltung (mehrere worldIds parallel) | 🟡 Schema + Sichtbarkeit live, Multi-Welt-Switcher offen | 1-2 d | W3 |
 | 9 | Welt-Export/Import (erweitert) — Drei-Wahl Ersetzen/Daneben/Fusionieren | 🟡 Basic-Export/Import live, Wahl-Dialog offen | 1 d | Ring 8 |
 | 10 | Welt-Fusion (zwei DSL-Programm-Sets mergen mit parentWorlds) | 🔴 offen | 3-4 d | Ring 9 |
