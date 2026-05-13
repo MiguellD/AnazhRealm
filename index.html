@@ -653,6 +653,135 @@
             .world-tor-cancel:hover {
                 background: rgba(150, 110, 60, 0.1);
             }
+            /* Ring 10 — Welt-Fusion-Dialog. Erbt die Pergament/Brass-Optik vom
+           Welt-Tor, fügt eine 2-Spalten-Eltern-Zeile, Strategie-Radio-Gruppe
+           und ein optionales Slug-Feld hinzu. */
+            #world-fusion-dialog {
+                background:
+                    radial-gradient(circle at top left, rgba(255, 245, 220, 0.95) 0%, rgba(240, 220, 180, 0.95) 100%),
+                    var(--parch-1);
+                color: var(--parch-ink);
+                border: 1.5px solid var(--brass-1, #8b6a3f);
+                border-radius: 6px;
+                box-shadow:
+                    0 12px 40px rgba(0, 0, 0, 0.55),
+                    0 0 0 3px rgba(180, 140, 80, 0.18);
+                padding: 1.4em 1.6em;
+                max-width: 560px;
+                font-family: Georgia, serif;
+            }
+            #world-fusion-dialog::backdrop {
+                background: rgba(20, 14, 6, 0.55);
+                backdrop-filter: blur(2px);
+            }
+            #world-fusion-dialog h2 {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 1.25em;
+                margin: 0 0 0.4em;
+                color: var(--parch-ink);
+                letter-spacing: 0.04em;
+            }
+            #world-fusion-summary {
+                margin: 0 0 0.9em;
+                line-height: 1.5;
+                font-style: italic;
+            }
+            .world-fusion-row {
+                display: flex;
+                align-items: center;
+                gap: 0.6em;
+                margin: 0.55em 0;
+            }
+            .world-fusion-row label {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 0.92em;
+                min-width: 9.5em;
+                letter-spacing: 0.02em;
+            }
+            .world-fusion-row select,
+            .world-fusion-row input[type="text"] {
+                flex: 1;
+                padding: 0.35em 0.55em;
+                background: rgba(255, 250, 235, 0.85);
+                border: 1px solid var(--brass-2, #b48c50);
+                border-radius: 3px;
+                color: var(--parch-ink);
+                font-family: inherit;
+            }
+            .world-fusion-strategy {
+                border: 1px solid var(--brass-2, #b48c50);
+                border-radius: 4px;
+                padding: 0.6em 0.9em;
+                margin: 0.9em 0;
+            }
+            .world-fusion-strategy legend {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 0.95em;
+                padding: 0 0.4em;
+                letter-spacing: 0.03em;
+            }
+            .world-fusion-strategy label {
+                display: grid;
+                grid-template-columns: auto 1fr;
+                gap: 0.4em 0.6em;
+                align-items: baseline;
+                padding: 0.4em 0;
+                cursor: pointer;
+                border-bottom: 1px solid var(--parch-edge, rgba(140, 100, 60, 0.15));
+            }
+            .world-fusion-strategy label:last-child {
+                border-bottom: none;
+            }
+            .world-fusion-strategy strong {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 0.95em;
+                grid-column: 2;
+            }
+            .world-fusion-strategy span {
+                font-size: 0.83em;
+                opacity: 0.78;
+                line-height: 1.4;
+                grid-column: 2;
+            }
+            .world-fusion-footer {
+                display: flex;
+                justify-content: flex-end;
+                gap: 0.5em;
+                border-top: 1px solid var(--parch-edge, rgba(140, 100, 60, 0.25));
+                padding-top: 0.7em;
+            }
+            .world-fusion-confirm {
+                background: rgba(180, 140, 80, 0.18);
+                color: var(--parch-ink);
+                border: 1px solid var(--brass-1, #8b6a3f);
+                padding: 0.5em 1.2em;
+                border-radius: 3px;
+                cursor: pointer;
+                font-family: "Cinzel", Georgia, serif;
+                letter-spacing: 0.04em;
+                font-size: 0.95em;
+            }
+            .world-fusion-confirm:hover {
+                background: rgba(180, 140, 80, 0.32);
+            }
+            #world-lineage .lineage-entry {
+                display: flex;
+                gap: 0.4em;
+                align-items: center;
+                padding: 0.25em 0;
+            }
+            #world-lineage .lineage-link {
+                background: none;
+                border: 0;
+                color: var(--parch-ink);
+                font-family: "Cinzel", Georgia, serif;
+                cursor: pointer;
+                padding: 0;
+                text-decoration: underline;
+            }
+            #world-lineage .lineage-link:hover {
+                color: var(--brass-1, #8b6a3f);
+            }
             /* Ring 4.5 — Status-Panel V1: lesbares Fenster auf Welt + Emotionen.
            Rechts unter den Toggles, kompakt, kein Re-Layout pro Frame. */
             /* ====================================================================
@@ -1843,6 +1972,13 @@
                 </div>
                 <div class="actions">
                     <button type="button" id="world-new">Neue Welt…</button>
+                    <button type="button" id="world-fuse-open">Verschmelzen…</button>
+                </div>
+            </section>
+            <section class="section" id="world-lineage-section">
+                <h3>Stammbaum</h3>
+                <div id="world-lineage" class="drawer-hint" aria-live="polite">
+                    Diese Welt ist eigenständig — keine Eltern-Welten.
                 </div>
             </section>
             <section class="section" id="world-journal-section">
@@ -2052,13 +2188,68 @@
                     <strong>Daneben legen</strong>
                     <span>Importierte Welt bekommt eine neue Identität neben deiner aktuellen.</span>
                 </button>
-                <button type="button" id="world-tor-fuse" class="world-tor-btn world-tor-btn-disabled" disabled>
+                <button type="button" id="world-tor-fuse" class="world-tor-btn">
                     <strong>Fusionieren</strong>
-                    <span>Zwei Welten verschmelzen zu einer dritten — kommt in Ring 10.</span>
+                    <span
+                        >Importierte Welt wird zuerst daneben gelegt, dann öffnet sich der Fusions-Dialog mit ihr als
+                        Eltern-B.</span
+                    >
                 </button>
             </div>
             <div class="world-tor-footer">
                 <button type="button" id="world-tor-cancel" class="world-tor-cancel">Abbrechen</button>
+            </div>
+        </dialog>
+        <!-- Ring 10 — Welt-Fusion-Dialog. Zwei Eltern + drei Strategien +
+             optionaler Slug. „Verschmelzen" ruft fuseWorlds mit reload:true. -->
+        <dialog id="world-fusion-dialog">
+            <h2>Welt-Fusion</h2>
+            <p id="world-fusion-summary" class="drawer-hint">
+                Diese Welt verschmilzt mit einer anderen zu einer dritten — beide werden Eltern, eine neue Identität
+                entsteht.
+            </p>
+            <div class="world-fusion-row">
+                <label for="world-fusion-parent-a">Diese Welt:</label>
+                <span id="world-fusion-parent-a-label">—</span>
+            </div>
+            <div class="world-fusion-row">
+                <label for="world-fusion-parent-b">⊕ Andere Welt:</label>
+                <select id="world-fusion-parent-b"></select>
+            </div>
+            <fieldset class="world-fusion-strategy">
+                <legend>Strategie</legend>
+                <label>
+                    <input type="radio" name="fusion-strategy" value="sequence" checked />
+                    <strong>Sequenz</strong>
+                    <span
+                        >DSL-Geschichten hintereinander, Emotionen aus dieser Welt. Die Fusion bewahrt diese Welt
+                        überlagert.</span
+                    >
+                </label>
+                <label>
+                    <input type="radio" name="fusion-strategy" value="random-mix" />
+                    <strong>Zufalls-Mix</strong>
+                    <span
+                        >DSL-Geschichten gemischt, Emotionen gemittelt. Die Fusion ist ein vermischtes Echo
+                        beider.</span
+                    >
+                </label>
+                <label>
+                    <input type="radio" name="fusion-strategy" value="tag-merge" />
+                    <strong>Tag-Verschmelzung</strong>
+                    <span
+                        >Emotionen max-aggregiert (Vereinigung statt Mittelung) — die neue Welt ist von beider
+                        Intensität geprägt.</span
+                    >
+                </label>
+            </fieldset>
+            <div class="world-fusion-row">
+                <label for="world-fusion-slug">Neuer Slug (optional):</label>
+                <input type="text" id="world-fusion-slug" placeholder="automatisch aus Eltern" maxlength="48" />
+            </div>
+            <div class="world-fusion-footer">
+                <button type="button" id="world-fusion-cancel" class="world-tor-cancel">Abbrechen</button>
+                <button type="button" id="world-fusion-confirm" class="world-fusion-confirm">Verschmelzen</button>
             </div>
         </dialog>
         <!-- Vendored libs (vendor/README.md erklärt Versionen + Update-Befehl) -->

@@ -6562,6 +6562,7 @@ class AnazhRealm {
         info.appendChild(line3);
         this.renderWorldJournal();
         this._renderWorldPicker();
+        this._renderWorldLineage();
     }
 
     // Ring 8: Welt-Picker rendert die Liste der anderen Welten im Index.
@@ -7256,17 +7257,181 @@ class AnazhRealm {
     }
 
     _weltTorImportFuse() {
-        // Stub für Ring 10. Button ist disabled, sollte nicht klickbar sein,
-        // aber wenn doch (z. B. via Tastatur), klare Antwort.
-        const chatOutput = document.getElementById("chat-output");
-        if (chatOutput) {
-            const line = document.createElement("div");
-            line.textContent =
-                "Welt-Fusion kommt in Ring 10 — die zwei Welten verschmelzen dann zu einer dritten mit beiden als Eltern.";
-            chatOutput.appendChild(line);
-            chatOutput.scrollTop = chatOutput.scrollHeight;
+        // Ring 10: importierte Welt wird zuerst silent „daneben gelegt"
+        // (damit sie eine worldId im Index hat), dann öffnen wir den Fusions-
+        // Dialog mit ihr als Eltern-B-Vorauswahl. Eine-Klick-UX vom Datei-
+        // Empfang zur Verschmelzung. Vor Ring 10 war dies ein Stub-Pfad.
+        const pending = this.state.pendingImport;
+        if (!pending || !pending.parsed) {
+            this._closeWeltTorDialog();
+            return;
         }
+        const result = this.importWorldBeside(pending.parsed);
         this._closeWeltTorDialog();
+        if (result.ok) {
+            this.updateWorldInfo();
+            this._openWorldFusionDialog({ preselectB: result.worldId });
+        } else {
+            const chatOutput = document.getElementById("chat-output");
+            if (chatOutput) {
+                const line = document.createElement("div");
+                line.textContent = `Fusion-Vorbereitung fehlgeschlagen: ${result.reason}`;
+                chatOutput.appendChild(line);
+                chatOutput.scrollTop = chatOutput.scrollHeight;
+            }
+        }
+    }
+
+    // ### Ring 10 — Fusion-UI ###
+    //
+    // Drei Methoden:
+    //   - initWorldFusionUI()        einmaliges Wiring beim init()
+    //   - _openWorldFusionDialog()   füllt Dropdown + zeigt Dialog
+    //   - _confirmWorldFusion()      liest Form-Werte, ruft fuseWorlds(reload:true)
+
+    initWorldFusionUI() {
+        const openBtn = document.getElementById("world-fuse-open");
+        if (openBtn) openBtn.addEventListener("click", () => this._openWorldFusionDialog());
+        const cancelBtn = document.getElementById("world-fusion-cancel");
+        if (cancelBtn) cancelBtn.addEventListener("click", () => this._closeWorldFusionDialog());
+        const confirmBtn = document.getElementById("world-fusion-confirm");
+        if (confirmBtn) confirmBtn.addEventListener("click", () => this._confirmWorldFusion());
+    }
+
+    _openWorldFusionDialog({ preselectB = null } = {}) {
+        const dialog = document.getElementById("world-fusion-dialog");
+        if (!dialog) return;
+        const parentALabel = document.getElementById("world-fusion-parent-a-label");
+        const parentBSelect = document.getElementById("world-fusion-parent-b");
+        const slugInput = document.getElementById("world-fusion-slug");
+        const activeId = this.state.worldMeta && this.state.worldMeta.worldId;
+        const activeSlug = (this.state.worldMeta && this.state.worldMeta.slug) || "(diese Welt)";
+        if (parentALabel) parentALabel.textContent = activeSlug;
+        if (parentBSelect) {
+            parentBSelect.innerHTML = "";
+            const others = this.worldsIndexLoad().filter((e) => e.worldId !== activeId);
+            if (others.length === 0) {
+                const opt = document.createElement("option");
+                opt.value = "";
+                opt.textContent = "— keine andere Welt im Speicher —";
+                opt.disabled = true;
+                parentBSelect.appendChild(opt);
+            } else {
+                others.sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0));
+                for (const e of others) {
+                    const opt = document.createElement("option");
+                    opt.value = e.worldId;
+                    opt.textContent = `${e.slug || "(namenlos)"} — ID ${e.worldId.slice(0, 8)}…`;
+                    if (preselectB && e.worldId === preselectB) opt.selected = true;
+                    parentBSelect.appendChild(opt);
+                }
+            }
+        }
+        if (slugInput) slugInput.value = "";
+        // Strategie auf Default „sequence"
+        const seqRadio = document.querySelector('input[name="fusion-strategy"][value="sequence"]');
+        if (seqRadio) seqRadio.checked = true;
+        if (typeof dialog.showModal === "function") {
+            try {
+                dialog.showModal();
+            } catch {
+                /* bereits offen */
+            }
+        } else {
+            dialog.setAttribute("open", "open");
+        }
+    }
+
+    _closeWorldFusionDialog() {
+        const dialog = document.getElementById("world-fusion-dialog");
+        if (!dialog) return;
+        if (typeof dialog.close === "function") {
+            try {
+                dialog.close();
+            } catch {
+                /* ignore */
+            }
+        } else {
+            dialog.removeAttribute("open");
+        }
+    }
+
+    _confirmWorldFusion() {
+        const parentBSelect = document.getElementById("world-fusion-parent-b");
+        const slugInput = document.getElementById("world-fusion-slug");
+        const strategyRadio = document.querySelector('input[name="fusion-strategy"]:checked');
+        const activeId = this.state.worldMeta && this.state.worldMeta.worldId;
+        const parentBId = parentBSelect && parentBSelect.value;
+        const strategy = (strategyRadio && strategyRadio.value) || "sequence";
+        const slug = (slugInput && slugInput.value.trim()) || null;
+        const chatOutput = document.getElementById("chat-output");
+        const speak = (text) => {
+            if (chatOutput) {
+                const line = document.createElement("div");
+                line.textContent = text;
+                chatOutput.appendChild(line);
+                chatOutput.scrollTop = chatOutput.scrollHeight;
+            }
+        };
+        if (!activeId) {
+            speak("Fusion verweigert: aktive Welt fehlt.");
+            return;
+        }
+        if (!parentBId) {
+            speak("Fusion verweigert: keine zweite Welt gewählt.");
+            return;
+        }
+        const result = this.fuseWorlds(activeId, parentBId, strategy, { slug, reload: true });
+        if (!result.ok) {
+            speak(`Fusion fehlgeschlagen: ${result.reason}`);
+            this._closeWorldFusionDialog();
+        }
+        // Bei reload:true erreicht uns der Folge-Code nicht — der Browser
+        // navigiert zur neuen Welt. Bei Test-Aufrufen ohne reload macht der
+        // direkte Aufruf von fuseWorlds() die Arbeit.
+    }
+
+    // Stammbaum im Welt-Drawer rendern: Eltern-Welt-Liste mit Klick-Wechsel.
+    _renderWorldLineage() {
+        const list = document.getElementById("world-lineage");
+        if (!list) return;
+        const parents = Array.isArray(this.state.worldMeta && this.state.worldMeta.parentWorlds)
+            ? this.state.worldMeta.parentWorlds
+            : [];
+        list.innerHTML = "";
+        if (parents.length === 0) {
+            list.textContent = "Diese Welt ist eigenständig — keine Eltern-Welten.";
+            return;
+        }
+        const strategy = (this.state.worldMeta && this.state.worldMeta.fusionStrategy) || null;
+        if (strategy) {
+            const head = document.createElement("div");
+            head.style.cssText = "margin-bottom:0.4em; opacity:0.78; font-style:italic;";
+            head.textContent = `Fusion-Strategie: ${strategy}`;
+            list.appendChild(head);
+        }
+        const idx = this.worldsIndexLoad();
+        for (const parentId of parents) {
+            const row = document.createElement("div");
+            row.className = "lineage-entry";
+            const entry = idx.find((e) => e.worldId === parentId);
+            if (entry) {
+                const link = document.createElement("button");
+                link.type = "button";
+                link.className = "lineage-link";
+                link.textContent = entry.slug || "(namenlos)";
+                link.addEventListener("click", () => this.switchToWorld(parentId, { reload: true }));
+                row.appendChild(link);
+                const meta = document.createElement("span");
+                meta.style.cssText = "opacity:0.7; font-size:0.85em;";
+                meta.textContent = `— ID ${parentId.slice(0, 8)}…`;
+                row.appendChild(meta);
+            } else {
+                row.textContent = `(verloren) — ID ${parentId.slice(0, 8)}…`;
+                row.style.opacity = "0.6";
+            }
+            list.appendChild(row);
+        }
     }
 
     // Datenpfad: importierte Welt bekommt eine NEUE worldId (sonst würde sie
@@ -7365,6 +7530,327 @@ class AnazhRealm {
             window.location.reload();
         }
         return { ok: true, worldId: newWorldId, slug, parentWorlds: newParents };
+    }
+
+    // ### Ring 10 — Welt-Fusion ###
+    //
+    // Zwei Welten begegnen sich, eine dritte entsteht mit beiden als Eltern
+    // (Vision §11.3 Krönungsschritt). `parentWorlds = [idA, idB]` ist die
+    // Stammbaum-Spur. Drei Strategien wählbar:
+    //
+    //   - "sequence"      DSL-History ist [A.history, B.history] hintereinander,
+    //                     Emotionen aus A (aktive Welt) übernommen.
+    //   - "random-mix"    DSL-History wird 50:50 interleaved (gemischter Pool),
+    //                     Emotionen Mittelwert beider Eltern.
+    //   - "tag-merge"     DSL-History wie sequence, aber Emotionen sind max
+    //                     (Vereinigung statt Mittelung) — die Fusions-Welt ist
+    //                     anfangs intensiver, nicht abgeflacht.
+    //
+    // Inventar (eigene Materialien / Werkzeuge / Baupläne) wird in allen drei
+    // Strategien als Union gemerged: A-Einträge bleiben, kollidierende B-Einträge
+    // bekommen `-fusion`-Suffix. Architekturen + Kreaturen starten leer
+    // (Konzept §10.6 Option a — die Fusions-Welt ist ein neuer Ort, nicht
+    // beide Eltern übereinandergelegt). Journal trägt einen Genesis-Eintrag
+    // plus top-3 Erinnerungen aus jedem Elternteil mit Source-Marker.
+
+    static FUSION_STRATEGIES = Object.freeze(["sequence", "random-mix", "tag-merge"]);
+
+    // Erzeugt einen Fusions-Slug aus zwei Eltern-Slugs. Bei Kollision mit
+    // existierender Welt wird `-fusion` angehängt, dann `-fusion-2` etc. So
+    // bleibt der Stammbaum auch im Slug nachvollziehbar: „aue-mein-x-hain"
+    // statt einer kryptischen UUID.
+    _generateFusionSlug(slugA, slugB, userOverride) {
+        const usedSlugs = new Set(this.worldsIndexLoad().map((e) => e.slug));
+        const fallback = `${slugA || "welt"}-x-${slugB || "welt"}`.replace(/[^a-z0-9_-]/gi, "").toLowerCase();
+        let base = (userOverride || fallback).toLowerCase().replace(/[^a-z0-9_-]/g, "");
+        if (!base) base = "fusion";
+        let slug = base;
+        if (usedSlugs.has(slug)) {
+            // Erst -fusion versuchen, dann -fusion-2 etc.
+            const withFusion = `${base}-fusion`;
+            if (!usedSlugs.has(withFusion)) {
+                slug = withFusion;
+            } else {
+                let n = 2;
+                while (usedSlugs.has(`${withFusion}-${n}`)) n++;
+                slug = `${withFusion}-${n}`;
+            }
+        }
+        return slug;
+    }
+
+    // Union zweier Map-of-name-Objekte (Materialien, Werkzeuge, Baupläne).
+    // A-Einträge bleiben unverändert; B-Einträge mit kollidierendem Namen
+    // bekommen `<name>-fusion` (oder `-fusion-2`/...). Built-ins werden
+    // ausgelassen, weil sie aus _defaultMaterials/_defaultTools/_defaultBlueprints
+    // entstehen — würde Doppel-Listing geben.
+    _mergeOwnNamedItems(arrA, arrB) {
+        const out = [];
+        const seen = new Set();
+        const ownA = Array.isArray(arrA) ? arrA.filter((x) => x && !x.builtIn) : [];
+        const ownB = Array.isArray(arrB) ? arrB.filter((x) => x && !x.builtIn) : [];
+        for (const item of ownA) {
+            if (!item.name || seen.has(item.name)) continue;
+            seen.add(item.name);
+            out.push(item);
+        }
+        for (const item of ownB) {
+            if (!item.name) continue;
+            let name = item.name;
+            if (seen.has(name)) {
+                name = `${item.name}-fusion`;
+                let n = 2;
+                while (seen.has(name)) name = `${item.name}-fusion-${n++}`;
+            }
+            seen.add(name);
+            out.push({ ...item, name });
+        }
+        return out;
+    }
+
+    // Wählt top-K Erinnerungen aus dem Journal: Genesis-Eintrag (Eltern-Geburt)
+    // plus die jüngsten K-1 Wachstum/Witness-Einträge. Bekommt einen
+    // Source-Marker im ctx, damit das fusionierte Journal lesbar bleibt:
+    // „dieser Eintrag stammt aus A".
+    _selectFusionJournalEntries(journal, source, K = 4) {
+        if (!journal || !Array.isArray(journal.entries)) return [];
+        const entries = journal.entries;
+        const genesis = entries.find((e) => e && e.type === "genesis");
+        const recent = entries.filter((e) => e && e.type !== "genesis").slice(-(K - (genesis ? 1 : 0)));
+        const picks = genesis ? [genesis, ...recent] : recent.slice(-K);
+        return picks.map((e) => ({
+            ...e,
+            ctx: { ...(e.ctx || {}), _fusionSource: source },
+        }));
+    }
+
+    // Hauptpfad. Lädt beide Eltern, baut den fusionierten Snapshot, schreibt
+    // ihn, registriert die neue Welt im Index. `reload:true` springt direkt
+    // in die Fusion; `reload:false` lässt den Aufrufer entscheiden, wann
+    // gewechselt wird (Tests + Vorschau-Workflow).
+    fuseWorlds(idA, idB, strategy, { slug = null, reload = false } = {}) {
+        if (!idA || !idB || idA === idB) {
+            return { ok: false, reason: "zwei verschiedene Eltern-IDs nötig" };
+        }
+        const validStrategy = AnazhRealm.FUSION_STRATEGIES.includes(strategy);
+        if (!validStrategy) {
+            return { ok: false, reason: `unbekannte Strategie: ${strategy}` };
+        }
+        const rawA = localStorage.getItem(this.worldStorageKey(idA));
+        const rawB = localStorage.getItem(this.worldStorageKey(idB));
+        if (!rawA || !rawB) {
+            return { ok: false, reason: "Eltern-Welt nicht im Speicher" };
+        }
+        let saveA, saveB;
+        try {
+            saveA = JSON.parse(rawA);
+            saveB = JSON.parse(rawB);
+        } catch (err) {
+            return { ok: false, reason: `Parent-Save ungültig: ${err.message}` };
+        }
+
+        // Neue Identität
+        let newWorldId;
+        try {
+            newWorldId =
+                typeof crypto !== "undefined" && crypto.randomUUID
+                    ? crypto.randomUUID()
+                    : "w_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+        } catch {
+            newWorldId = "w_" + Math.random().toString(36).slice(2, 10);
+        }
+        const slugA = (saveA.worldMeta && saveA.worldMeta.slug) || "welt-a";
+        const slugB = (saveB.worldMeta && saveB.worldMeta.slug) || "welt-b";
+        const finalSlug = this._generateFusionSlug(slugA, slugB, slug);
+        const newSeed = `w-fusion-${newWorldId.replace(/-/g, "").slice(0, 12)}-${Math.random().toString(36).slice(2, 8)}`;
+        const bornAt = Date.now();
+
+        // Inventar-Union — gleicher Algo für alle Strategien.
+        const mergedBlueprints = this._mergeOwnNamedItems(saveA.blueprints, saveB.blueprints);
+        const mergedMaterials = this._mergeOwnNamedItems(saveA.materials, saveB.materials);
+        const mergedTools = this._mergeOwnNamedItems(saveA.tools, saveB.tools);
+
+        // Player-Werkzeug-Liste: Union der besessenen Namen (Starter sind
+        // sowieso wieder beim Init verfügbar; nur eigene tragen Namen).
+        const playerToolsUnion = Array.from(
+            new Set([
+                ...((Array.isArray(saveA.playerTools) && saveA.playerTools) || []),
+                ...((Array.isArray(saveB.playerTools) && saveB.playerTools) || []),
+            ])
+        );
+
+        // Strategie-abhängige Felder.
+        const emotKeys = ["joy", "awe", "sorrow", "hope", "peace", "chaos"];
+        const emotA = (saveA.playerEmotions && typeof saveA.playerEmotions === "object" && saveA.playerEmotions) || {};
+        const emotB = (saveB.playerEmotions && typeof saveB.playerEmotions === "object" && saveB.playerEmotions) || {};
+        const mergedEmotions = {};
+        for (const k of emotKeys) {
+            const va = Number.isFinite(emotA[k]) ? emotA[k] : 0;
+            const vb = Number.isFinite(emotB[k]) ? emotB[k] : 0;
+            if (strategy === "tag-merge") mergedEmotions[k] = Math.max(va, vb);
+            else if (strategy === "random-mix") mergedEmotions[k] = (va + vb) / 2;
+            else mergedEmotions[k] = va; // sequence: aktive Welt
+        }
+
+        // DSL-History: pro Strategie eine andere Komposition.
+        const histA = Array.isArray(saveA.dslHistory) ? saveA.dslHistory : [];
+        const histB = Array.isArray(saveB.dslHistory) ? saveB.dslHistory : [];
+        let mergedHistory;
+        if (strategy === "random-mix") {
+            // Interleaved + Cap 500. Wir nehmen je 250 jüngste, mischen.
+            const aSlice = histA.slice(-250);
+            const bSlice = histB.slice(-250);
+            const combined = [];
+            const max = Math.max(aSlice.length, bSlice.length);
+            for (let i = 0; i < max; i++) {
+                // Zwei Münzwurf-Verzweigungen: zuerst A oder B?
+                if (Math.random() < 0.5) {
+                    if (i < aSlice.length) combined.push(aSlice[i]);
+                    if (i < bSlice.length) combined.push(bSlice[i]);
+                } else {
+                    if (i < bSlice.length) combined.push(bSlice[i]);
+                    if (i < aSlice.length) combined.push(aSlice[i]);
+                }
+            }
+            mergedHistory = combined.slice(-500);
+        } else {
+            mergedHistory = [...histA.slice(-250), ...histB.slice(-250)];
+        }
+
+        // Pattern-Memory: pro Keyword Listen verschmelzen, cap pro Keyword bei 8.
+        const pmA =
+            (saveA.dslPatternMemory && typeof saveA.dslPatternMemory === "object" && saveA.dslPatternMemory) || {};
+        const pmB =
+            (saveB.dslPatternMemory && typeof saveB.dslPatternMemory === "object" && saveB.dslPatternMemory) || {};
+        const mergedPatternMemory = {};
+        const pmKeys = new Set([...Object.keys(pmA), ...Object.keys(pmB)]);
+        for (const k of pmKeys) {
+            const merged = [...(pmA[k] || []), ...(pmB[k] || [])];
+            // Höchste Fitness zuerst, Cap 8.
+            merged.sort((x, y) => (y.fitness || 0) - (x.fitness || 0));
+            mergedPatternMemory[k] = merged.slice(0, 8);
+        }
+
+        // DSL-Abilities: Union per Name (A gewinnt bei Kollision).
+        const abilA = Array.isArray(saveA.dslAbilities) ? saveA.dslAbilities : [];
+        const abilB = Array.isArray(saveB.dslAbilities) ? saveB.dslAbilities : [];
+        const seenAbilNames = new Set();
+        const mergedAbilities = [];
+        for (const list of [abilA, abilB]) {
+            for (const a of list) {
+                if (!a || typeof a.name !== "string") continue;
+                if (seenAbilNames.has(a.name)) continue;
+                seenAbilNames.add(a.name);
+                mergedAbilities.push(a);
+            }
+        }
+
+        // Pfad-Buckets: Mittelung pro Achse (oder A's wenn B nichts hat).
+        let mergedPathBuckets = null;
+        if (saveA.playerPathBuckets || saveB.playerPathBuckets) {
+            const pbA = saveA.playerPathBuckets || {};
+            const pbB = saveB.playerPathBuckets || {};
+            const allKeys = new Set([...Object.keys(pbA), ...Object.keys(pbB)]);
+            mergedPathBuckets = {};
+            for (const k of allKeys) {
+                const a = pbA[k];
+                const b = pbB[k];
+                if (typeof a === "number" && typeof b === "number") mergedPathBuckets[k] = (a + b) / 2;
+                else if (typeof a === "number") mergedPathBuckets[k] = a;
+                else if (typeof b === "number") mergedPathBuckets[k] = b;
+            }
+        }
+
+        // Terrain-Parameter mitteln, Wetter aus A.
+        const steepness =
+            ((Number.isFinite(saveA.terrainSteepness) ? saveA.terrainSteepness : 1.0) +
+                (Number.isFinite(saveB.terrainSteepness) ? saveB.terrainSteepness : 1.0)) /
+            2;
+        const baseHeight =
+            ((Number.isFinite(saveA.terrainBaseHeight) ? saveA.terrainBaseHeight : 0.0) +
+                (Number.isFinite(saveB.terrainBaseHeight) ? saveB.terrainBaseHeight : 0.0)) /
+            2;
+        const weather = saveA.weather || saveB.weather || "sunny";
+
+        // Genesis-Eintrag + top-Erinnerungen je Elternteil.
+        const genesisEntry = {
+            id: 1,
+            at: bornAt,
+            tick: 0,
+            type: "genesis",
+            text: `Ich erwache aus „${slugA}" und „${slugB}".`,
+            ctx: {
+                worldId: newWorldId,
+                seed: newSeed,
+                parentA: idA,
+                parentB: idB,
+                strategy,
+            },
+        };
+        const journalA = this._selectFusionJournalEntries(saveA.worldJournal, idA, 4);
+        const journalB = this._selectFusionJournalEntries(saveB.worldJournal, idB, 4);
+        const fusedEntries = [genesisEntry, ...journalA, ...journalB].map((e, i) => ({ ...e, id: i + 1 }));
+
+        const snap = {
+            playerPosition: { x: 0, y: 50, z: 0 },
+            knowledgeBase: [
+                ...((Array.isArray(saveA.knowledgeBase) && saveA.knowledgeBase.slice(-100)) || []),
+                ...((Array.isArray(saveB.knowledgeBase) && saveB.knowledgeBase.slice(-100)) || []),
+            ].slice(-200),
+            version: this.state.currentVersion || "7.66",
+            selfAwareness: { components: [], weaknesses: [] },
+            creatures: [],
+            creatureEmotions: [],
+            terrainSteepness: steepness,
+            terrainBaseHeight: baseHeight,
+            weather,
+            worldMeta: {
+                worldId: newWorldId,
+                slug: finalSlug,
+                creator: "local",
+                visibility: "private",
+                parentWorlds: [idA, idB],
+                bornAt,
+                seed: newSeed,
+                fusionStrategy: strategy,
+                schemaVersion: "10.0-fusion-v1",
+            },
+            dslAbilities: mergedAbilities,
+            dslHistory: mergedHistory,
+            dslPatternMemory: mergedPatternMemory,
+            playerPathBuckets: mergedPathBuckets,
+            worldJournal: { entries: fusedEntries, seen: { genesis: true } },
+            playerEmotions: mergedEmotions,
+            playerSoul: saveA.playerSoul || "human",
+            playerTools: playerToolsUnion,
+            architectures: [],
+            blueprints: mergedBlueprints,
+            tools: mergedTools,
+            materials: mergedMaterials,
+            hotbar: Array.isArray(saveA.hotbar) ? saveA.hotbar.slice(0, 9) : [],
+        };
+
+        try {
+            localStorage.setItem(this.worldStorageKey(newWorldId), JSON.stringify(snap));
+        } catch (err) {
+            return { ok: false, reason: `Speicher voll: ${err.message}` };
+        }
+        this.worldsIndexUpsert({ worldId: newWorldId, slug: finalSlug, bornAt, lastPlayed: Date.now() });
+        this.log(
+            `Welt-Fusion: ${slugA} ⊕ ${slugB} → ${finalSlug} (Strategie ${strategy}, ID ${newWorldId.slice(0, 8)}…)`,
+            "INFO"
+        );
+
+        if (
+            reload &&
+            typeof window !== "undefined" &&
+            window.location &&
+            typeof window.location.reload === "function"
+        ) {
+            this.activeWorldSet(newWorldId);
+            window.location.reload();
+        }
+        return { ok: true, worldId: newWorldId, slug: finalSlug, parentWorlds: [idA, idB], strategy };
     }
 
     loadVersion(version) {
@@ -10242,6 +10728,8 @@ class AnazhRealm {
         this.initWorldInfoUI();
         // Ring 9 — Welt-Tor Drei-Wahl-Dialog beim Import.
         this.initWeltTorUI();
+        // Ring 10 — Welt-Fusion-Dialog.
+        this.initWorldFusionUI();
         try {
             await this.core.initPhysics();
             this.log("Physik erfolgreich initialisiert", "INFO");

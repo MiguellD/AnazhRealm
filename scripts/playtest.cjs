@@ -3211,7 +3211,7 @@ function startSaveServer() {
                     out.fuseBtnInDom = !!document.getElementById("world-tor-fuse");
                     out.cancelBtnInDom = !!document.getElementById("world-tor-cancel");
                     out.summaryInDom = !!document.getElementById("world-tor-summary");
-                    out.fuseBtnDisabled = document.getElementById("world-tor-fuse").disabled === true;
+                    out.fuseBtnEnabled = document.getElementById("world-tor-fuse").disabled === false;
 
                     // Daten-Pfad: importWorldBeside ohne Reload
                     const originalSrcId = "src-world-aaaaaaaa";
@@ -3321,7 +3321,7 @@ function startSaveServer() {
                 check("Ring 9: Ersetzen-Button im DOM", ring9Results.replaceBtnInDom);
                 check("Ring 9: Daneben-legen-Button im DOM", ring9Results.besideBtnInDom);
                 check("Ring 9: Fusion-Button im DOM", ring9Results.fuseBtnInDom);
-                check("Ring 9: Fusion-Button ist disabled (Ring 10)", ring9Results.fuseBtnDisabled);
+                check("Ring 9: Fusion-Button ist klickbar (mit Ring 10)", ring9Results.fuseBtnEnabled);
                 check("Ring 9: Abbrechen-Button im DOM", ring9Results.cancelBtnInDom);
                 check("Ring 9: #world-tor-summary im DOM", ring9Results.summaryInDom);
                 check("Ring 9: importWorldBeside liefert ok=true", ring9Results.besideReturnedOk);
@@ -3344,6 +3344,214 @@ function startSaveServer() {
                     "Ring 9: Import ohne worldJournal bekommt trotzdem Witness-Eintrag (Bugfix)",
                     ring9Results.journallessGetsWitness
                 );
+            }
+
+            // ### Ring 10 — Welt-Fusion ###
+            // Diskriminations-Test: zwei Eltern mit JE EINER eindeutigen Sache
+            // (A hat Material X, B hat Bauplan Y, A hat hohe Emotion, B hat
+            // andere Emotion). Drei Strategien fusionieren — die Fusion muss
+            // beide Eindeutigkeiten tragen, und die Strategien müssen
+            // unterscheidbare Emotion-Aggregation zeigen.
+            const ring10Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    // Dialog + Stammbaum-DOM
+                    out.fusionDialogInDom = !!document.getElementById("world-fusion-dialog");
+                    out.fusionConfirmBtnInDom = !!document.getElementById("world-fusion-confirm");
+                    out.fusionStrategyRadios = document.querySelectorAll('input[name="fusion-strategy"]').length === 3;
+                    out.fusionParentBSelectInDom = !!document.getElementById("world-fusion-parent-b");
+                    out.fusionOpenBtnInDom = !!document.getElementById("world-fuse-open");
+                    out.lineageSectionInDom = !!document.getElementById("world-lineage-section");
+                    out.lineageDivInDom = !!document.getElementById("world-lineage");
+                    out.fusionStrategiesArray =
+                        Array.isArray(AnazhRealm.FUSION_STRATEGIES) && AnazhRealm.FUSION_STRATEGIES.length === 3;
+
+                    // Setup: zwei Eltern-Welten mit eindeutigen Inventaren bauen.
+                    const parentAId = r.createNewWorld({
+                        slug: "fusion-parent-a",
+                        inheritPlayer: false,
+                        reload: false,
+                    });
+                    const parentBId = r.createNewWorld({
+                        slug: "fusion-parent-b",
+                        inheritPlayer: false,
+                        reload: false,
+                    });
+                    // Direkt in die Per-Welt-Saves schreiben (ohne reload),
+                    // damit Parent-Saves spezifische Inhalte tragen.
+                    const saveA = JSON.parse(localStorage.getItem(r.worldStorageKey(parentAId)));
+                    saveA.materials = [
+                        { name: "quarz-fein", label: "Quarz fein", color: "#fff", tags: { resoniert: 0.9 } },
+                    ];
+                    saveA.playerEmotions = { joy: 0.9, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
+                    saveA.dslHistory = [{ id: 1, fitness: 0.8, program: ["weather", "sunny"] }];
+                    localStorage.setItem(r.worldStorageKey(parentAId), JSON.stringify(saveA));
+                    const saveB = JSON.parse(localStorage.getItem(r.worldStorageKey(parentBId)));
+                    saveB.blueprints = [
+                        {
+                            name: "tempel-besonderer",
+                            label: "Tempel",
+                            parts: [
+                                {
+                                    shape: "box",
+                                    material: "stein",
+                                    position: { x: 0, y: 0, z: 0 },
+                                    size: { x: 1, y: 1, z: 1 },
+                                },
+                            ],
+                            connections: [],
+                        },
+                    ];
+                    saveB.playerEmotions = { joy: 0, awe: 0.9, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
+                    saveB.dslHistory = [{ id: 1, fitness: 0.7, program: ["weather", "rainy"] }];
+                    localStorage.setItem(r.worldStorageKey(parentBId), JSON.stringify(saveB));
+
+                    // Strategie SEQUENZ
+                    const seqResult = r.fuseWorlds(parentAId, parentBId, "sequence", {
+                        slug: "test-seq",
+                        reload: false,
+                    });
+                    out.seqOk = seqResult.ok;
+                    const seqSave = seqResult.ok
+                        ? JSON.parse(localStorage.getItem(r.worldStorageKey(seqResult.worldId)))
+                        : null;
+                    out.seqHasBothInventories =
+                        !!seqSave &&
+                        seqSave.materials.some((m) => m.name === "quarz-fein") &&
+                        seqSave.blueprints.some((b) => b.name === "tempel-besonderer");
+                    out.seqEmotionFromA =
+                        !!seqSave &&
+                        Math.abs(seqSave.playerEmotions.joy - 0.9) < 0.01 &&
+                        seqSave.playerEmotions.awe === 0;
+                    out.seqHistoryConcatenated = !!seqSave && seqSave.dslHistory.length === 2;
+                    out.seqParentWorlds =
+                        !!seqSave &&
+                        Array.isArray(seqSave.worldMeta.parentWorlds) &&
+                        seqSave.worldMeta.parentWorlds.length === 2 &&
+                        seqSave.worldMeta.parentWorlds.includes(parentAId) &&
+                        seqSave.worldMeta.parentWorlds.includes(parentBId);
+                    out.seqSchemaFusion = !!seqSave && seqSave.worldMeta.schemaVersion === "10.0-fusion-v1";
+                    out.seqGenesisJournal =
+                        !!seqSave &&
+                        seqSave.worldJournal.entries[0] &&
+                        seqSave.worldJournal.entries[0].type === "genesis" &&
+                        /fusion-parent-a.*fusion-parent-b/.test(seqSave.worldJournal.entries[0].text);
+                    out.seqFusionStrategyInMeta = !!seqSave && seqSave.worldMeta.fusionStrategy === "sequence";
+
+                    // Strategie TAG-MERGE
+                    const tagResult = r.fuseWorlds(parentAId, parentBId, "tag-merge", {
+                        slug: "test-tag",
+                        reload: false,
+                    });
+                    out.tagOk = tagResult.ok;
+                    const tagSave = tagResult.ok
+                        ? JSON.parse(localStorage.getItem(r.worldStorageKey(tagResult.worldId)))
+                        : null;
+                    out.tagEmotionUnion =
+                        !!tagSave &&
+                        Math.abs(tagSave.playerEmotions.joy - 0.9) < 0.01 &&
+                        Math.abs(tagSave.playerEmotions.awe - 0.9) < 0.01;
+                    out.tagHasBothInventories =
+                        !!tagSave &&
+                        tagSave.materials.some((m) => m.name === "quarz-fein") &&
+                        tagSave.blueprints.some((b) => b.name === "tempel-besonderer");
+
+                    // Strategie RANDOM-MIX
+                    const mixResult = r.fuseWorlds(parentAId, parentBId, "random-mix", {
+                        slug: "test-mix",
+                        reload: false,
+                    });
+                    out.mixOk = mixResult.ok;
+                    const mixSave = mixResult.ok
+                        ? JSON.parse(localStorage.getItem(r.worldStorageKey(mixResult.worldId)))
+                        : null;
+                    out.mixEmotionAverage =
+                        !!mixSave &&
+                        Math.abs(mixSave.playerEmotions.joy - 0.45) < 0.01 &&
+                        Math.abs(mixSave.playerEmotions.awe - 0.45) < 0.01;
+
+                    // Strategien sind tatsächlich UNTERSCHEIDBAR (sonst wäre der
+                    // Aufwand für drei Pfade umsonst)
+                    out.strategiesDistinguishable =
+                        Math.abs(seqSave.playerEmotions.joy - tagSave.playerEmotions.awe) < 0.01 &&
+                        Math.abs(tagSave.playerEmotions.awe - mixSave.playerEmotions.awe) > 0.1;
+
+                    // Fehlerpfade
+                    const sameId = r.fuseWorlds(parentAId, parentAId, "sequence", { reload: false });
+                    out.rejectsSameId = sameId.ok === false;
+                    const badStrategy = r.fuseWorlds(parentAId, parentBId, "nonsense", { reload: false });
+                    out.rejectsBadStrategy = badStrategy.ok === false;
+                    const missingId = r.fuseWorlds("does-not-exist", parentBId, "sequence", { reload: false });
+                    out.rejectsMissingParent = missingId.ok === false;
+
+                    // Stammbaum-Render-Pfad: aktive Welt hat keine parentWorlds,
+                    // also sollte _renderWorldLineage „eigenständig"-Hinweis zeigen.
+                    r._renderWorldLineage();
+                    const lineageNow = document.getElementById("world-lineage").textContent;
+                    out.lineageShowsStandalone = /eigenständig/.test(lineageNow);
+
+                    // _openWorldFusionDialog mit preselectB füllt Dropdown
+                    r._openWorldFusionDialog({ preselectB: parentBId });
+                    const sel = document.getElementById("world-fusion-parent-b");
+                    out.dialogOpen = document.getElementById("world-fusion-dialog").hasAttribute("open");
+                    out.parentBDropdownHasEntries = sel.options.length >= 2;
+                    out.parentBPreselected = Array.from(sel.options).some((o) => o.value === parentBId && o.selected);
+                    r._closeWorldFusionDialog();
+                    out.dialogClosed = !document.getElementById("world-fusion-dialog").hasAttribute("open");
+
+                    // Cleanup
+                    const keepId = r.state.worldMeta.worldId;
+                    for (const e of r.worldsIndexLoad()) {
+                        if (e.worldId !== keepId) r.deleteWorld(e.worldId);
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!ring10Results || ring10Results.error) {
+                check(
+                    "Ring 10: Snapshot erreichbar",
+                    false,
+                    (ring10Results && ring10Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Ring 10: #world-fusion-dialog im DOM", ring10Results.fusionDialogInDom);
+                check("Ring 10: Verschmelzen-Button im DOM", ring10Results.fusionConfirmBtnInDom);
+                check("Ring 10: Drei Strategie-Radios im DOM", ring10Results.fusionStrategyRadios);
+                check("Ring 10: Eltern-B-Dropdown im DOM", ring10Results.fusionParentBSelectInDom);
+                check("Ring 10: 'Verschmelzen…'-Button im Welt-Drawer", ring10Results.fusionOpenBtnInDom);
+                check("Ring 10: Stammbaum-Sektion im Welt-Drawer", ring10Results.lineageSectionInDom);
+                check("Ring 10: AnazhRealm.FUSION_STRATEGIES (3)", ring10Results.fusionStrategiesArray);
+                check("Ring 10: Sequenz-Fusion liefert ok=true", ring10Results.seqOk);
+                check("Ring 10: Sequenz-Fusion vereint beide Inventare", ring10Results.seqHasBothInventories);
+                check("Ring 10: Sequenz übernimmt Emotion aus A", ring10Results.seqEmotionFromA);
+                check("Ring 10: Sequenz-History konkateniert A+B", ring10Results.seqHistoryConcatenated);
+                check("Ring 10: parentWorlds = [A, B]", ring10Results.seqParentWorlds);
+                check("Ring 10: Schema 10.0-fusion-v1", ring10Results.seqSchemaFusion);
+                check("Ring 10: Genesis-Journal-Eintrag nennt beide Eltern", ring10Results.seqGenesisJournal);
+                check("Ring 10: fusionStrategy in worldMeta gespeichert", ring10Results.seqFusionStrategyInMeta);
+                check("Ring 10: Tag-Merge liefert ok=true", ring10Results.tagOk);
+                check("Ring 10: Tag-Merge bildet Emotion-MAX (Vereinigung)", ring10Results.tagEmotionUnion);
+                check("Ring 10: Tag-Merge vereint beide Inventare", ring10Results.tagHasBothInventories);
+                check("Ring 10: Random-Mix liefert ok=true", ring10Results.mixOk);
+                check("Ring 10: Random-Mix bildet Emotion-Mittel (0.45)", ring10Results.mixEmotionAverage);
+                check(
+                    "Ring 10: Strategien sind unterscheidbar (Diskrimination)",
+                    ring10Results.strategiesDistinguishable
+                );
+                check("Ring 10: gleiche Eltern-ID wird abgewiesen", ring10Results.rejectsSameId);
+                check("Ring 10: unbekannte Strategie wird abgewiesen", ring10Results.rejectsBadStrategy);
+                check("Ring 10: fehlende Eltern-Welt wird abgewiesen", ring10Results.rejectsMissingParent);
+                check(
+                    "Ring 10: Stammbaum zeigt 'eigenständig' wenn keine Eltern",
+                    ring10Results.lineageShowsStandalone
+                );
+                check("Ring 10: Fusion-Dialog öffnet via _open*", ring10Results.dialogOpen);
+                check("Ring 10: Eltern-B-Dropdown hat Einträge", ring10Results.parentBDropdownHasEntries);
+                check("Ring 10: preselectB markiert die richtige Option", ring10Results.parentBPreselected);
+                check("Ring 10: Fusion-Dialog schließt via _close*", ring10Results.dialogClosed);
             }
 
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
