@@ -1,4 +1,4 @@
-# Zustand des Realm — Stand: 12.05.2026 (Abend, nach Chunk-Physik-Refactor)
+# Zustand des Realm — Stand: 12.05.2026 (nach Ring 6 V1+V2 — Bauplan-Universum)
 
 Dieses Dokument ist das gemeinsame Gedächtnis für eine künftige Iteration. Es kondensiert (a) die Vision aus den vier Testamenten, (b) den historischen Weg, (c) den aktuellen Code-Stand, (d) den nächsten Plan und (e) die Learnings aus der bisherigen Session.
 
@@ -67,8 +67,9 @@ Konsequenz für jede künftige Iteration: **niemals re-komplexifizieren ohne Not
 | ✅ **Welt-Identität** (Ring 8+ Schema-Vorbereitung) | live — `worldMeta` mit `worldId` (UUID), `slug`, `creator`, `visibility`, `parentWorlds`, `schemaVersion`. Logik für Sharing/Fusion noch nicht implementiert (Ringe 8-11). |
 | ✅ Spieler-Emotionen (`state.player.emotions`, `collectPlayerEmotions`, Welt-Trigger, Generator-Bias) | V1+V2 live — 6 Achsen vollständig gekoppelt (joy/awe→Skybox, sorrow/hope→Wetter, peace/chaos→Kreatur-Geschwindigkeit), Generator-Bias in `dslComposeAtomic` (joy/sorrow modulieren weather + emotion sanft), DSL-Condition `emotion_above`, Save-Roundtrip. |
 | ✅ Multisensorik / `anazhSymphony` (Web Audio API) | V1 live — drei Schichten (ambient drone + verlässliches LFO, Wetter-Layer als gefiltertes Noise mit Cross-Fade, Kreatur-Pings als emotion-abhängige Sinus-Töne). Toggle-Button auf User-Geste. |
-| 🔴 `createPlayerSoul`, `transformPlayerForm` (Mensch/Phönix/Drache/Riese) | roter Würfel |
-| 🔴 `architectureTemplates` (Dörfer, Tempel, Wasserfälle als Strukturen) | fehlt |
+| ✅ **Bedien-Oberfläche / UI** (V1 + V2 Painterly) | V2 live — vendored Cinzel + IM Fell English + JetBrains Mono, Pergament + Eisen + Messing als Token-Set, Tag/Nacht via `[data-theme]`. Topbar mit sechs Tabs (Welt/Kreaturen/Spieler/Fähigkeiten/Einstellungen/Hilfe) + drei Latch-Toggles, Status-Bar live, Drawer-System (slidet rein bei Tab-Klick), fusioniertes Konsole-Panel (Chat + Logbuch + Input einklappbar), Brass-getintete Custom-Scrollbars. Astrolabium-Live-Element + Custom-Slider-Rail/Knob offen für UI V3. |
+| ✅ **`createPlayerSoul`** (Mensch/Phönix/Drache) | **V2** live — drei wählbare Seelen als Multi-Mesh-`THREE.Group` mit pro-Frame sin/cos-Animation. Mensch (Torso/Kopf/Arme/Beine, Walk-Cycle), Phönix (Körper/2 Flügel/Schweif, Flügel flattern immer), Drache (Körper/Kopf/4 Beine/3-Segment-Schweif, Trab + welliger Schweif). Drawer-Dropdown + Status-Bar-Item, Chat `werde …` → DSL-Op `player_soul`, Save persistiert. Ammo-Box bleibt unverändert (visuelle Höhe ~1.7 > Hitbox 1.0 ist gewollt). **Third-Person-Toggle** in der Topbar (`#camera-mode-toggle`) zeigt den Avatar von hinten — Pitch invertiert, Boden-Clamp gegen Clipping. `playerMesh.rotation.y = state.yaw` jeden Frame, sodass der Drache in Bewegungsrichtung schaut. Stats/Riese/Frei sind V3. |
+| ✅ **`architectureTemplates`** (Ring 6 V1+V2) | live — drei Built-in-Strukturen (Dorf 13 Parts, Tempel 9 Parts, Wasserfall 3 Parts) als Bauplan-JSON-Daten. **Acht Primitive** (box/sphere/cylinder/cone/pyramid/octahedron/plane/torus) sind die Atome. **Distance-Mesh-Culling** (Minecraft-Stil): Daten unbegrenzt, GPU nur was nahe ist (cullingRadius 150). **Compound-Kollision** pro Sub-Mesh (eine btBoxShape pro Hütte/Pfeiler) — Spieler kann nicht durchlaufen. **9-Slot-Hotbar** unten am Bildschirm (Tasten 1-9, F baut, ESC verlässt). **Werkstatt-Tab** mit Part-Editor: klonen, addPart/removePart/updatePart, Farbe + XYZ-Position/Größe/Rotation. `spawn_blueprint(name, pos)` als universelle DSL-Op. `spawn_fractal(type, depth, ratio)` hexagonal-rekursiv. Save persistiert eigene Baupläne + Hotbar. |
 | 🔴 `materialEvolution` (Crafting, Materie wächst) | fehlt |
 | 🔴 `evolveCommunity` (Kreatur-Kulturen) | fehlt |
 | 🔴 `brain.js` für selbstlernende Welt | nicht eingebunden |
@@ -76,7 +77,7 @@ Konsequenz für jede künftige Iteration: **niemals re-komplexifizieren ohne Not
 | 🔴 Multi-World / Server-Sync (`openInfiniteGate`, `mirrorMultiverse`) | nicht vorhanden |
 | 🔴 IndexedDB-Persistenz (statt localStorage) | nicht implementiert |
 
-**Faustschätzung**: das Fundament steht (~40 % der Vision). Die emotionale, akustische, spirituelle Schicht — das eigentliche Ultiversum — fehlt.
+**Faustschätzung**: das Fundament + die fünf Vision-Pfeiler (Symbiose / Emotion / Multisensorik / Stimme / Identität) stehen alle mit V1 oder höher. Was fehlt: Form-Identität (`createPlayerSoul`), fraktale Strukturen (`architectureTemplates`, `evolveCommunity`), brain.js-Welt, Welt-Ultiversum (Ringe 8-11). Schätzwert: **~55 % der Vision** umgesetzt; der schwerste Block (Sprache + Sicherheit + Sinne) ist durch.
 
 ---
 
@@ -129,9 +130,25 @@ Chronologisch, mit Commit-Hash und Kernaussage:
 | 41 | `fd3b32f` | **Ring 3 V1 — Player-Emotionen**: 6-Achsen-Emotion-System (joy/awe/sorrow/hope/peace/chaos) im `state.player`. `collectPlayerEmotions(text)` regelbasiert mit deutschen Stichwörtern, eingehängt in `processChatCommand`. `updatePlayerEmotions(currentTime)` im Hauptloop: 0.005/s Decay, drei Schwellen-Trigger (joy→warm skybox, sorrow→rainy, chaos→Kreaturen schneller) als DSL-Programme via `dslRun`. Neue DSL-Condition `emotion_above`. Save persistiert `playerEmotions`. Sieben neue Playtest-Invarianten. |
 | 42 | `bde1795` | **Hausputz**: schemaVersion bump auf `"7.67-emotions-v1"`, vier ungenutzte Variablen entfernt (Linter: 4→0 Warnings), CLAUDE.md-Gotcha für CSP-`'unsafe-eval'`-Konzession + Verweis auf Ring 7 als Auflösungs-Schritt. |
 | 43 | `1ec6f45` | **Ring 3 V2 — Emotionen schließen sich**: drei stille Achsen (awe→`skybox_color "#d4a3ff"`, hope→`chain(sunny, happy)`, peace→`creatures_speed_mul 0.7`) bekommen Welt-Kopplungen. **Generator-Bias** in `dslComposeAtomic`: joy/sorrow modulieren weather + creatures_emotion (sanft, ±0.3, Clamp 0.05..0.95) — der Nexus färbt seine Komposition emotional, ohne den Spieler zu spiegeln. **Bug nebenbei gefunden**: `skybox_color`-DSL-Op schrieb in nicht existierendes `tintColor`-Uniform (heißt `nebulaColor`), war seit Phase 1 stiller No-Op; jetzt repariert. Fünf neue Playtest-Invarianten verifizieren die V2-Trigger und den Generator-Bias statistisch (1000 Samples, joy 122/37 sunny:rainy, sorrow 118/39 rainy:sunny). |
-| 44 | (dieser) | **Ring 4 V1 — anazhSymphony**: Web Audio API, drei Klangschichten synthesiert ohne Asset-Load. Ambient drone (zwei Sägezahn-Oszillatoren leicht verstimmt + LFO auf Tiefpass-Filter), Wetter-Layer (gefiltertes Noise, Cross-Fade-Gain bei state.weather-Wechsel), Kreatur-Pings (Sinus mit Envelope, Emotion-abhängige Frequenz). Toggle-Button startet AudioContext auf User-Geste; `disposeSymphony` räumt vollständig auf. Acht neue Playtest-Invarianten verifizieren Audio-Graph-Aufbau, Wetter-Reaction, Ping-Counter, Dispose-Reinheit. Puppeteer-Arg `--autoplay-policy=no-user-gesture-required` macht's headless testbar. |
+| 44 | `ef66d50` | **Ring 4 V1 — anazhSymphony**: Web Audio API, drei Klangschichten synthesiert ohne Asset-Load. Ambient drone (zwei Sägezahn-Oszillatoren leicht verstimmt + LFO auf Tiefpass-Filter), Wetter-Layer (gefiltertes Noise, Cross-Fade-Gain bei state.weather-Wechsel), Kreatur-Pings (Sinus mit Envelope, Emotion-abhängige Frequenz). Toggle-Button startet AudioContext auf User-Geste; `disposeSymphony` räumt vollständig auf. Acht neue Playtest-Invarianten. |
+| 45 | `d8dbf6b` | **Reflexion**: Session-Learnings #16-24 in state-of-realm.md, offene Fragen für Ring 5-8 refreshed, Datei-Übersicht aktualisiert. |
+| 46-49 | `32a9f6d` `85f76fa` `e26ca4a` `962d3ac` | **UI V1 — Bedien-Oberfläche** in vier kleinen Schritten: (1) Status-Panel mit Welt-Daten + Emotion-Balken (DOM-Cache + 0.4 s Throttle); (2) Quick-Action-Buttons + Hilfe-Drawer mit allen Chat-Befehlen gruppiert (klick = ausführen); (3) Abilities-Liste mit Source-Tag + Run-Button + Signature-Cache; Save/Load-Aktionen inkl. direkter Export-Download; (4) Live-Tuning-Slider für emotionThreshold/Decay/Cooldown. 28 neue Playtest-Invarianten. |
+| 50 | `36d2364` | **UI V2 #1 — Painterly Identity**: Cinzel + IM Fell English + JetBrains Mono lokal in `vendor/fonts/` (OFL-lizensiert, ~190 KB Latin-Subset), CSS-Color-Tokens (`--parch-*` / `--iron-*` / `--brass-*` / `--violet-*` / Emotion-Farben), Tag/Nacht-Theme via `body[data-theme]` mit localStorage-Persistenz, Pergament-Hintergrund (SVG-Noise) + Eisen-Rahmen mit Eckschrauben für Status-Panel. Acht neue Playtest-Invarianten. |
+| 51 | `2eb6771` | **UI V2 #2 — Topbar + Tabs + Drawer-System**: aus dem langen Status-Panel werden sechs Drawer (Welt / Kreaturen / Spieler / Fähigkeiten / Einstellungen / Hilfe) plus eine Topbar mit Tabs und drei Latch-Toggles plus eine Status-Bar mit Live-Welt-Daten. `initTopbar()` + `closeAllDrawers()` als Steuer-Layer; `state.uiActiveDrawer` trackt den aktiven Tab. Hilfe-Overlay komplett durch den Hilfe-Drawer ersetzt. **Bug nebenbei**: initStatusPanel-Guard auf das jetzt-fehlende `#status-panel` machte die Funktion stillschweigend zum No-Op. 11 neue + 19 angepasste Invarianten. |
+| 52 | `4f638cb` | **UI V2 #3 — Konsole + Custom-Scrollbars**: Chat + Logbuch + Input werden ein einklappbares `#console`-Panel links (Header mit Cinzel-Titel + Latch, Body mit Chat-Output über Log, Footer mit Input). Custom-Scrollbars in Brass-Token (Webkit + Firefox) für alle scrollbaren Container. localStorage merkt sich Collapse-Wahl. Acht neue Invarianten. |
+| 53 | `bd424b3` | **Reflexion**: UI V1+V2 Stand dokumentiert, Plan auf Ring 5/6 + UI V3 refreshed. |
+| 54 | `f20ecdc` | **Ring 5 V1 — createPlayerSoul**: drei Seelen wählbar (`human`/`phoenix`/`dragon`). Rein visuell: `applyPlayerSoul` tauscht `playerMesh.geometry` + `material.color`, lässt Position + Scale + Ammo-Body unangetastet. Chat-Pattern `werde mensch/phönix/phoenix/drache/drachen/dragon` → DSL-Op `player_soul`. UI: `<select id="player-soul-select">` als zweite Sektion im Spieler-Drawer + `#status-soul`-Item in der Status-Bar. Save persistiert `playerSoul` (schemaVersion `"7.68-souls-v1"`). Hilfe-Drawer um „Spieler-Seele"-Gruppe erweitert. Bewusst nicht im `dslComposeAtomic`-Pool. **23 neue Playtest-Invarianten**. |
+| 55 | `305984e` | **Third-Person-Kamera (Ring 5 V2-Vorbereitung)**: ohne 3rd-Person sieht der Spieler die V2-Glieder nicht. `state.cameraMode` mit Topbar-Latch-Button, Render-Loop branched: 1st bleibt unverändert, 3rd setzt Kamera 6 Einheiten hinter+über dem Spieler mit Look-At auf Brust. `playerMesh.rotation.y = state.yaw` jeden Frame, sodass der Drache in Bewegungsrichtung schaut. Persistenz in localStorage (gleicher Vertrag wie Theme). 13 neue Playtest-Invarianten. |
+| 56 | `8d3ebc7` | **Third-Person-Tuning**: Pitch invertiert (`-Math.sin(pitch)*dist` statt `+`) — Maus hoch senkt Kamera (Orbit-Konvention). Boden-Clamp `camY = max(camY, player.y - 0.2)` verhindert Durchtauchen durch Heightfield-Spitzen. Drei neue Invarianten + Helper `setPitchAndRead` (setTimeout INSIDE `page.evaluate` yieldet im Headless nicht zuverlässig an rAF — sequentielle evaluate-wait-evaluate-Triple ist die robuste Form). |
+| 57 | `63dc1ee` | **Ring 5 V2 — Animierte Multi-Mesh-Seelen**: jede Seele ist ein `THREE.Group` mit Sub-Meshes (Glieder/Flügel/Schweif), pro Frame über sin/cos animiert. Mensch (Torso/Kopf/2 Arme/2 Beine, Walk-Cycle ±0.5 rad gegenphasig + Atem-Idle), Phönix (Oktaeder-Body/2 Flügel-Boxen/Cone-Schweif, Flügel flattern immer), Drache (Box-Body/Kopf/4 Beine/3-Segment-Schweif-Kette, Trab + welliger Schweif). `playerSoulDefs[soul] = {label, color, build(), animate()}` — eine Quelle für Form + Animation. `_buildLimb`-Helper baut Joint-Group mit Mesh, das nach -Y hängt (Rotation am Joint, nicht am Mesh-Center). `applyPlayerSoul` rebuildet komplett: kopiert Position/Rotation/Scale, transferiert `userData.physicsBody`, **swappt den `state.rigidBodies`-Eintrag mit** (sonst überschreibt der Sync-Loop den disposed Group), disposed alte Geometrien tief. `animatePlayerSoul(t)` läuft jeden Frame nach Kamera-Update; Walk-Phase nur in Bewegung (>0.4 m/s) akkumuliert. Zwei Jump-Material-Tints entfernt (gab's mit Group eh nicht mehr). 11 neue Playtest-Invarianten + 9 alte umgeschrieben (statt `mesh.geometry.type` jetzt `userData.parts`). |
+| 58 | `20a5818` | **Ring 6 V1 — architectureTemplates**: drei DSL-Primitives `spawn_village/temple/waterfall` plus drei procedural-prozedurale Builder-Funktionen (`_buildVillageGroup` etc.). Save persistiert `{type, position, seed}` — Mesh rekonstruiert sich aus Seed. Hard-Cap 30 mit FIFO-Prune. Nexus-Gewicht je 3. Welt-Drawer-Quick-Actions + Help-Drawer-Eintrag. 24 neue Playtest-Invarianten. |
+| 59 | `3842044` | **Ring 6 V2 (unbounded + Fraktale + Counter + Build-Cursor)** (Background-Iteration): Hard-Cap weg, distance-based Mesh-Culling (`tickArchitectureCulling` 1 Hz), unbegrenzte Daten. `spawn_fractal(pos, type, depth, ratio)` hexagonal-rekursiv (depth 2 + ratio 0.5 = 43 Strukturen). `#status-architectures` Counter „N nah / M gesamt". Drei-Slot-Bau-Cursor mit Tasten 1/2/3 + F. 25 neue Invarianten. |
+| 60 | `70582fa` | **Ring 6.3 — Kollision (Compound-Shape)**: jede Architektur bekommt einen statischen Ammo-Body. **Compound-Shape pro Sub-Mesh, nicht eine einzelne AABB** — eine Dorf-AABB wäre 24×4×24 und würde den Spieler beim Spawn aus der Box katapultieren. Pro Mesh-Child ein `btBoxShape` mit Welt-BBox-Offset. Pushen NICHT in `state.rigidBodies` (statisch → sync-loop würde Group-Position überschreiben). Strikt-Disposal beim Cullen (alle child-shapes + transform + origin + localInertia). Live-Kollisions-Test im Playtest: Spieler mit +Z-Velocity wird vor Tempel-Pfeiler aufgehalten (playerZ < 2.0). Screenshot-Tooling (`scripts/screenshot.cjs` mit sieben benannten Szenen) + flaky Pitch-Test mit `velocity-zero`-Reset gefixed. 8 neue + 1 alte gefixt. |
+| 61 | `720ea3e` | **Ring 6.4 — Bauplan-Datenschicht**: die drei prozeduralen `_buildXyzGroup`-Funktionen werden durch eine einzige `_buildFromBlueprint(bp)` ersetzt. Ein Bauplan ist `{name, label, builtIn, parts: [{shape, color, position, rotation, size, opacity?, animate?}]}`. Acht Primitive unterstützt (box, sphere, cylinder, cone, pyramid, octahedron, plane, torus) via `_makePartGeometry`. Built-ins kommen aus `_defaultBlueprints()` (~25 Parts in Summe), eigene Baupläne werden im Save persistiert (Built-ins nicht — kommen immer aus dem Konstruktor). Wasser-Animation: `animate: "water_wave"`-Marker setzt `userData.animate(t)`-Hook. Neuer DSL-Op `spawn_blueprint(name, pos)` als universeller Pfad. schemaVersion `7.71-blueprints-v1`. **Trade-off bewusst eingegangen**: Seed-Variation der Built-ins (5-8 Hütten zufällig) ist weg, jedes Dorf hat jetzt fix 6 Hütten — der Gewinn an Editierbarkeit überwiegt. 15 neue Invarianten. |
+| 62 | `8df7faa` | **Ring 6.5 — 9-Slot-Hotbar**: aus drei hartcodierten Tasten 1/2/3 wird eine richtige Inventar-Bar mit neun Slots. `state.hotbar = ["village","temple","waterfall",null,...,null]` als Default. `state.buildMode` umgebaut auf `{slotIndex, blueprintName}` statt `type`. `selectHotbarSlot(idx)` ersetzt `setBuildMode(type)`. Painterly-Hotbar am unteren Bildschirmrand (Brass-Border, Slot-Nummer + Label, aktiver Slot mit Violet-Glow). „Hotbar-Belegung"-Sektion im Spieler-Drawer mit neun `<select>`-Reihen (eigene Baupläne aus state.blueprints wählbar). Save persistiert hotbar; loadState validiert gegen blueprint-Registry. 17 neue + 6 alte umgeschrieben. |
+| 63 | `a6b6ad4` | **Ring 6.6 — Werkstatt-Tab + Part-Editor**: der finale Baustein. Neuer 7. Tab „Werkstatt" mit Bauplan-Liste (klickbar, Selected mit Violet-Border) + Part-Editor (Shape-Dropdown, Color-Picker, 3×3 XYZ-Inputs für position/size/rotation, Lösch-Button pro Part). Built-ins read-only (visuelle Disabled-Signale), eigene Baupläne voll editierbar. Aktionen: „Part hinzufügen" (nur eigene), „Klonen" (immer — Built-in → eigen klonen ist DER Weg, sie zu modifizieren), „Löschen" (mit Confirm, kaskadiert auf Hotbar-Slots), „Neuer Bauplan" (Prompt). State-Helper: `createBlueprint/cloneBlueprint/deleteBlueprint/addPart…/removePart…/updatePart…/selectBlueprintForEdit`. 19 neue Invarianten + ein alter Test („6 Tabs" → „7 Tabs"). **Damit ist Ring 6 vollständig**: Mensch + Nexus können beide aus 8 Primitiven beliebige Strukturen bauen und sie als Daten teilen. Pfeiler 3 der Vision (Fraktales Wachstum, Idee → Artefakt) ist eine One-Keystroke-Schleife geworden: Tempel klonen → Kugel obendrauf → speichern → Slot 4 → F. |
 
-Aggregat: **26 weitere Commits** in dieser Session (~+2600/−890 Zeilen netto). Architektur: ein File, ein Chunk-Pfad, eine Höhen-Funktion, eine Collider-Quelle (Triangle-Mesh = Visual-Mesh), **eine Sprache für Welt-Mutation (DSL), kein dynamic-eval im eigenen Bundle, browser-durchgesetzte CSP-Schicht, autonomer Selektions-Loop aus Outcomes, vollständiger bidirektionaler Emotions-Kanal, klingende Welt**. Vier von fünf Vision-Pfeilern haben jetzt eine V1.
+Aggregat: **61 Commits** in dieser Konversations-Serie (von `5df65e3` zu HEAD, ~+8800/−1500 Zeilen netto). Architektur: ein File, ein Chunk-Pfad, eine Höhen-Funktion, eine Collider-Quelle (Triangle-Mesh = Visual-Mesh), **eine Sprache für Welt-Mutation (DSL), kein dynamic-eval im eigenen Bundle, browser-durchgesetzte CSP-Schicht, autonomer Selektions-Loop aus Outcomes, vollständiger bidirektionaler Emotions-Kanal, klingende Welt, drei animierte Spieler-Seelen mit Third-Person-Sicht, Bauplan-Universum aus 8 Primitiven mit Hotbar + Editor, painterly-Bedien-Oberfläche mit Tab-Drawer-System**. **Sechs von sieben Wachstumsringen abgeschlossen** (Ring 7 brain.js noch offen). Der Spieler ist nicht mehr Konsument einer fertigen Welt — er ist Co-Schöpfer von Form (Seele), Atmosphäre (Emotionen), Struktur (Baupläne) und Klang (Symphony).
 
 ---
 
@@ -213,21 +230,91 @@ Echt gelernt, nicht performt:
 
 24. **`new Function`-Cleanup hat eine ehrliche Pyramide.** Phase 4 (Save-Migration) → Phase 5 (Code-Löschung) → Phase 6 (CSP-Header) ist eine Ketten-Abhängigkeit: erst sicherstellen dass alte Saves migrieren können, dann den alten Pfad löschen, dann den Browser einsperren. Reihenfolge falsch = Save-Verlust.
 
----
+### Learnings dieser Session (Mai 2026, UI V1 + V2 — Bedien-Oberfläche)
 
-## 7. Offene Fragen für die nächste Iteration
+25. **Mockup als Inspiration, nicht als Auftrag.** Der UI-Entwurf des Schöpfers war ~3000 Zeilen elaboriertes Pergament-Fantasy-Design. 1:1-Übernahme hätte das funktionale UI V1 weggeworfen und die heilige Lektion verletzt. Stattdessen drei kleinere Adaptions-Schritte: (1) Identität als Tokens-Layer, (2) Struktur als Tab-Drawer-System, (3) Polish als Konsole-Fusion. Lehre: bei großen Vorlagen die *Idee* extrahieren, nicht die Implementation.
 
-Ring 2 (alle 7 Phasen) und Ring 3 (V1+V2) und Ring 4 (V1) sind beantwortet und umgesetzt. Was offen ist:
+26. **CSS-Tokens machen Theme-Wechsel zur Ein-Zeilen-Aktion.** Sechzig Custom-Properties (Pergament, Holz, Eisen, Messing, Portal-Violett, sechs Emotion-Farben) schließen den ganzen Stil in ein Theme. `body[data-theme="nacht"]` wechselt alle Farben nahtlos. Lehre: erst Tokens definieren, dann Komponenten styles — andersrum versteckt man hartcodierte Farben überall.
 
-**Für Ring 5 (`createPlayerSoul`):**
+27. **Mass-Replace mit Trim ist gefährlich.** `#status-panel ` (mit Space) → `.drawer` (ohne) hat 28 chained-class-Bugs erzeugt (`.drawer.emotion` statt `.drawer .emotion`). Lehre: bei strukturellen Selector-Umbenennungen Python-Regex mit expliziter Wortgrenze nutzen, nicht naked-replace.
 
-1. **Welche Formen?** Plan: Mensch / Phönix / Drache / Riese / Frei. Empfehlung: V1 mit drei Formen (Mensch / Phönix / Drache) — Riese bringt Physik-Komplexität (großer Hitbox, Kamera-Höhe), das wäre V2.
-2. **Stat-Spread oder rein visuell?** V1 nur Mesh + Farbe; speed/jump-Modifikationen wären Stat-Pfad — kann zu Balance-Problemen führen, würde Test-Surface vergrößern. Erst rein visuell, Stats später wenn klar ist welches Spielgefühl entstehen soll.
+28. **Tests wandern mit der Architektur — sie sind Architektur-Doku.** UI V1 → V2 hat 19 Invarianten zerbrochen, alle strukturell überholt. Sauberer Weg war nicht „Tests an alte Selektoren anpassen" (das hätte die alte Struktur in den Tests fortgeschrieben) sondern Selektoren systematisch übersetzen (`#status-panel .emotion` → `.drawer[data-drawer=spieler] .emotion`). Tests sind Doku, kein Fundament zum Festhalten.
 
-**Für Ring 6 (`architectureTemplates`):**
+29. **Init-Guards sollten loggen, nicht still aussteigen.** `if (!panel) return;` in `initStatusPanel` wurde zum stillen No-Op, als `#status-panel` umstrukturiert wurde — die ganze Status-Logik tat nichts, ohne dass ein Fehler kam. Lehre: solche Guards entweder mit `this.log(...)` versehen, oder den fehlenden Knoten als echten Fehler werfen.
 
-3. **DSL-Primitives oder direkte Funktion?** Konsistenz mit Ring 2/3 sagt: DSL-Primitive (`spawn_village`, `spawn_temple`, `spawn_waterfall`). Macht sie auch für den Nexus zugänglich (er kann ganze Dörfer komponieren).
-4. **Persistieren wie Chunks oder einmalig?** Ein Dorf, das beim Chunk-Prune verschwindet, ist Verschwendung. Lösung: pro-Chunk-Delta-Liste (§11.3 Ebene B) als Vorbedingung.
+30. **UI ist Live-Tester.** Status-Bar oben (Wetter / Slug / FPS / Position) zeigt Drift sofort visuell. In Sessions ohne UI würde man Bugs erst beim Playtest-Lauf bemerken — mit UI sieht man's am Bildschirm, in dem Moment in dem es passiert. UI ist nicht „nur Komfort", es ist eine zweite Test-Ebene.
+
+31. **Visuelle Identität ist auch Sicherheit.** Native System-Scrollbars (heller Grau-Track) in einem Painterly-Theme wirken wie Fremdkörper aus einer anderen App. Custom-Scrollbar in Brass + Pergament ist nicht Kosmetik — es zieht das gesamte Interface in einen Vertrag mit dem Spieler hinein („das ist alles dieselbe Welt"). 30 Zeilen CSS für einen großen Wahrnehmungsschritt.
+
+### Learnings dieser Session (Mai 2026, Ring 5 V1)
+
+32. **`origin/main` ist nicht „der neueste Stand".** Feature-Branches können schon weiter sein als main. Bei Session-Start NICHT nur main checken, sondern `git branch -r` durchgucken und nach Branches mit neueren Commits suchen. Konkret: ich habe Ring 5 zunächst auf einem zwei-Tage-alten main-Stand gebaut, ohne zu merken dass UI V1+V2 auf `claude/review-project-status-qfb1z` schon live war — 8 Commits, ~2000 Zeilen. Reset + Neuimplementierung im UI-V2-Kontext kostete eine zweite Iteration, die mit einem `git branch -r`-Blick vorne weg hätte entfallen können.
+33. **„Rein visuell" ist eine Disziplin, kein Versehen.** Ring 5 V1 hätte leicht in einen Body-Recreate-Pfad rutschen können (Drache = größere Hitbox, Phönix = leichter). Stattdessen: Geometrie + Farbe wechseln, Ammo-Box bleibt 0.5er Half-Extents, Position bleibt erhalten. Test-Surface klein, Physik kalibriert, Save-Roundtrip trivial. Stats kommen in V2, sobald wir wissen, welches Spielgefühl entstehen soll.
+34. **Identität gehört dem Spieler, nicht dem Nexus.** `player_soul` ist als DSL-Op verfügbar (für Chat, Abilities, künftige Trigger), aber bewusst NICHT im `dslComposeAtomic`-Pool. Eine Playtest-Invariante prüft das mit 2000 Atomic-Calls: keine zufällige Identitäts-Umschreibung durch den Nexus. Symmetrisch zu `terrain_steepness`/`terrain_base_height` — manche Ops sind Werkzeug, kein Spielzeug.
+35. **Alias-Tabellen vor Regex-Casing.** Chat-Pattern matcht `mensch|human|phönix|phoenix|drache|drachen|dragon`, `applyPlayerSoul` kanonisiert intern. Hält das Regex einfach und macht spätere Erweiterung (Synonyme, Englisch) ohne Pattern-Anpassung möglich. UI nutzt direkt die kanonischen Keys.
+36. **UI-V2-Drawer ist die natürliche Heimat neuer Spieler-Optionen.** Mein erster Reflex (extra Toggle-Button in der Topbar) hätte die Painterly-Identität verwässert; im Spieler-Drawer als zweite Sektion über den Emotionen passt es in den bestehenden Vertrag mit dem Spieler („alles über mich an einem Ort"). Lehrsatz: bei UI-Erweiterungen nicht nur „wo passt's", sondern „wo erwartet's der Spieler".
+
+### Learnings dieser Session (Mai 2026, Third-Person + Ring 5 V2)
+
+37. **Spieler-Feedback schlägt Test-Plan.** V1 war disziplinär klein (ein Mesh + Farbe), Tests bestanden. Aber „dachte die Kreaturen haben Körper, mit Glieder, Beine die sich bewegen, Flügel" zeigte den eigentlichen Vision-Gap — *nicht* Code-Qualität, sondern Erwartung. Lehre: technische Tests verifizieren, dass das Gebaute funktioniert, sagen aber nichts darüber, ob das Gebaute richtig ist. Beides braucht es, und Spieler-Augen ersetzen Code-Audits in dieser Frage.
+
+38. **Erst die Sicht, dann das Sichtbare.** Vor V2 (animierte Glieder) musste die Third-Person-Kamera kommen — sonst hätte all die Animations-Arbeit für die unsichtbare Egoperspektive gestaltet werden müssen. Lehrsatz: bei Visualisierungs-Features prüfen, ob der Spieler das Ergebnis überhaupt sehen kann, bevor in Detail-Aufwand investiert wird.
+
+39. **Pitch-Inversion ist Convention, nicht Mathematik.** Im 1st-Person hebt „Maus hoch" den Blick (Welt rutscht runter); im 3rd-Person Orbit erwartet der Spieler, dass die Kamera mit der Maus *mitgeht* (Maus hoch = Kamera höher hinter dem Charakter, also Blick nach unten). Beide sind richtig in ihrem eigenen Modus. Wir mussten beim 3rd-Modus das Vorzeichen drehen — und das war kein Bug-Fix, sondern eine Konventions-Übersetzung.
+
+40. **Boden-Clamp ist eine Sub-Lösung, nicht die Sub-Lösung.** Camera-Y >= player.y - 0.2 fängt die häufige Welt-Spitze hinter dem Spieler. Nicht-gefangen: steile Hügel beim Spieler, durch die die Kamera tauchen kann. Echte Lösung wäre Raycast zwischen Spieler und Kamera — aber das ist V3-Aufwand. Pragma-Regel: 95-%-Lösung in 5 % Code, V2-Markierung im Kommentar.
+
+41. **Mesh ↔ Group-Wechsel ist ein Gotcha-Magnet.** Beim Refactor `playerMesh: Mesh → Group` brach drei Stellen: (a) `material.color.set` in Jump-Code (Group hat kein `material`), (b) `addRigidBody(localVar)` zog noch die alte Mesh-Referenz (vor `applyPlayerSoul`-Swap), (c) `state.rigidBodies`-Array enthielt noch das alte Mesh — Sync-Loop hätte die unsichtbare Geist-Group bewegt statt der echten neuen. Eine Test-Invariante pro Stelle (`physicsBodySwitchedToNewGroup` + `rigidBodiesArrayUpdated`) jetzt im Gate. Lehrsatz: Identitäts-Wechsel von zentralem State zieht eine Liste an Stellen, an denen die alte Identität noch gehalten wird — diese Liste muss explizit gepflegt werden.
+
+42. **Joint-Group statt Mesh-Center für Glieder.** Wenn man ein Bein-Mesh am Mesh-Center rotiert, schwingt es um die Mitte (sieht aus wie Tritt aus dem Bauch). Lösung: Joint-Group am Hüft-Punkt platzieren, Mesh hängt um -length/2 nach unten. Rotation der Joint-Group macht das, was man vom Hüftgelenk erwartet. Alle Glieder folgen diesem Pattern (`_buildLimb`-Helper), so dass kein Joint per Hand verkabelt wird.
+
+43. **Animation-Phase nur in Bewegung akkumulieren.** Wenn `walkPhase += dt * stepHz` jeden Frame läuft, frieren die Beine beim Stop in einer mitten-im-Schritt-Pose ein und beim Start-Stop springen sie chaotisch. Lösung: Phase nur unter `if (isMoving)` akkumulieren, im Idle bleibt sie konstant — dann gibt's saubere Übergänge zur Idle-Pose (Beine bei rotation 0). Triviale Code-Änderung, große Spielgefühl-Differenz.
+
+44. **`isMoving` aus Physik-Velocity, nicht Eingabe.** Wir hätten `isMoving` aus `state.keys.w/a/s/d` ableiten können. Aber: der Spieler kann auf einer rutschigen Fläche driften, vom Wind getragen werden, oder fallen — alles ohne Tasten. Die Physik-Body-Velocity ist die ehrliche Quelle. Schwelle 0.4 m/s filtert Mikro-Drift bei stehender Position.
+
+45. **GPU-Memory-Disziplin beim Group-Wechsel.** Three.js sammelt Geometries + Materials nicht automatisch ein. `_disposeSoulGroup` traversiert den alten Group und ruft `geometry.dispose()` + `material.dispose()` für jeden Knoten — sonst wächst der GPU-Speicher mit jedem Soul-Wechsel. Eine Stelle, einmal richtig gemacht, gilt für alle drei Seelen.
+
+46. **Headless-rAF tickt nicht innerhalb `page.evaluate`.** Drei Pitch-Tests haben False-Positives geliefert (alle drei zeigten den exakt gleichen geclampten Wert), weil setTimeout INSIDE der evaluate nicht zuverlässig an den nächsten requestAnimationFrame-Callback yieldet im Headless-Chromium. Robustes Pattern: state setzen → evaluate beenden → AUSSEN warten → in zweiter evaluate ablesen. Helper `setPitchAndRead` macht das wiederverwendbar. Lehre: wenn ein Test deterministisch denselben falschen Wert liefert, ist nicht die Logik kaputt — es ist die Test-Synchronisation.
+
+### Learnings dieser Session (Mai 2026, Ring 6 V1+V2: vier Commits autonom)
+
+47. **Spieler-Feedback verschiebt den Plan, und das ist gesund.** Mein erster Vorschlag für Ring 6 war „drei Quick-Action-Knöpfe → 3 Strukturen". Der Spieler antwortete: „Bau-Cursor nicht flexibel genug, Inventar mit mehr Plätzen, Fraktale eher Geometrien aus Pyramiden/Würfeln/Kugeln". Aus drei Knöpfen wurde ein 4-Commit-Plan mit Bauplan-Schema + Hotbar + Werkstatt-Editor. Lehre: nicht die erste Skizze verteidigen — der Spieler sieht die Vision oft klarer als die Implementierung.
+
+48. **Compound-Shape statt AABB für verteilte Mesh-Cluster.** Erste Kollisions-Version war eine einzige umschließende AABB pro Architektur. Resultat: ein Dorf mit Hütten auf Radius 8 hat eine 24×4×24-Box, in deren Mitte der Spieler steht — beim Spawn katapultierte ihn die Kollision aus der Box, oft durch den Boden. Refactor: pro Sub-Mesh ein `btBoxShape` in einem `btCompoundShape`. Resultat: zwischen Hütten kann gelaufen werden, jede Hütte ist solide. Lehre: bei Strukturen mit verteilten Sub-Meshes ist Compound-Shape die richtige Granularität, nicht „einfach eine Box".
+
+49. **Daten-Schicht ist die Brücke zwischen Code und Editor.** Solange `_buildVillageGroup(seed)` eine prozedurale JS-Funktion war, konnte der Spieler sie nicht editieren — er hätte den Quellcode anfassen müssen. Refactor zu `{name, parts: [{shape, color, position, size}]}` als JSON öffnete den Editor-Pfad: jetzt ist „Bauplan editieren" einfach „JSON-Liste modifizieren". Lehre: wenn der Spieler ein System erweitern können soll, muss es als Daten existieren, nicht als Funktionen.
+
+50. **Trade-offs sind dokumentationspflichtig.** Beim Refactor von `_buildVillageGroup(seed)` (5–8 zufällige Hütten) zu Bauplan-Daten (fest 6 Hütten) ging Variation verloren. Hätte ich das nicht im Commit-Body explizit erwähnt, wäre die nächste Session vermutlich angerannt: „Warum sind alle Dörfer identisch?" Lehre: bewusste Trade-offs gehören in Commit-Body UND state-of-realm-Eintrag — sonst wirken sie wie Regressionen.
+
+51. **Hard-Caps sind Bug-Verstecke.** Ring 6 V1 hatte ein `architectureCap = 30` FIFO-Prune. Der Spieler antwortete: „Minecraft hat keinen Cap, das ist nicht schön". V2 ersetzte den Cap durch distance-based Mesh-Culling: Daten unbegrenzt, GPU nur was nahe ist. Lehre: ein Hard-Cap ist meistens ein Symptom dafür, dass das eigentliche Problem (Mesh-Speicher) nicht direkt adressiert wurde. Die elegante Lösung liegt im Trennen von Daten und Sicht.
+
+52. **Background-Commits müssen geprüft werden, bevor man weitermacht.** Nach einer User-Pause fand ich `3842044 Ring 6 V2: unbounded + fractals + counter + build cursor` im Git-Log — eine fremde Iteration, die einen Teil meines Plans schon umgesetzt hatte (anders als ich geplant — 3 Slots statt 9, AABB-Pseudo-Compound, kein Editor). Ich musste den Commit-Body lesen, die Unterschiede zur User-Vision identifizieren, und meinen Plan revidieren. Lehre: bei Re-Entry in eine Session IMMER zuerst `git log` lesen und prüfen, was schon da ist — nicht annehmen, dass der Stand identisch zur letzten Session ist.
+
+53. **Setter, die zentralen State refactoren, brauchen einen Sweep.** Beim Umbau von `state.buildMode.type` (string) auf `state.buildMode.blueprintName` + `slotIndex` blieben Tests + UI an alten Feldnamen hängen (`r.setBuildMode("village")` → `r.selectHotbarSlot(0)`). Die Tests waren grün, bis ich den ersten Lauf machte und kaskadiert sechs Tests fixen musste. Lehre: bei API-Umbenennung ALLE Aufruf-Stellen sweepen (`grep -rn "alterName"`) BEVOR der Commit gemacht wird, nicht reaktiv.
+
+54. **Ammo-Bindings haben Lücken — Three-Schichten als Fallback.** `btBoxShape.getHalfExtentsWithMargin()` ist in C++ verfügbar, aber nicht in der JS-Binding-Schicht — der erste Versuch warf „is not a function". Lösung: `THREE.Box3.setFromObject(mesh)` als sekundärer Pfad für Größen-Verifikation. Lehre: bei Ammo nichts annehmen, was die Doku nicht explizit garantiert — verifizieren via Three-Mesh ist binding-frei und robust.
+
+55. **`playerBody.setWorldTransform` deaktiviert den Body, wenn nicht aktiviert.** Im Screenshot-Tooling habe ich versucht, den Spieler an eine bekannte Position zu teleportieren — er fiel danach durch den Boden, weil die Physik den Body als „schlafend" markiert hatte. `body.activate(true)` nach `setWorldTransform` löst es. Für die Screenshots habe ich stattdessen ganz auf Teleport verzichtet und warte 8 s, bis der Spieler natürlich landet. Lehre: Physik-Engines haben Activation-States als implizite Falle, besonders bei Test-Setups.
+
+56. **Visuelle Verifikation zwischen Commits hat ihren Preis.** Ich habe `scripts/screenshot.cjs` mit sieben Szenen gebaut, um nach jedem Commit zu prüfen, ob die Welt noch aussieht wie geplant. Wert: signifikant (Dimensions-Check, UI-Layout-Check). Kosten: Setup-Schmerz (Spieler-Position-Stabilität, Browser-Sync, Kamera-Ausrichtung). Bilanz: für Vier-Commit-Sprints lohnt sich's; für einzelne Tweaks ist Playtest-Grün ausreichend. Lehre: Verifikations-Tools investieren wenn die zu prüfende Oberfläche groß wird (UI, neue Mesh-Strukturen), nicht für jeden Kleinst-Commit.
+
+57. **„Erst die Sicht, dann das Sichtbare" gilt auch für UI.** Ring 6.5 Hotbar wäre unsichtbar ohne `<div id="hotbar">` im HTML; Ring 6.6 Werkstatt wäre unsichtbar ohne 7. Tab. Reihenfolge: Daten-State + JS-Logik FERTIG, dann HTML-Anker, dann CSS-Stil, dann Bind im DOMContentLoaded — sonst rendert man gegen tote Selektoren. Pattern: `_renderXyzDOM()`-Helper sind idempotent (innerHTML='', neu aufbauen), so dass jeder State-Change ein Re-Render auslösen kann.
+
+58. **Eine API als Spieler-Geste statt als Funktions-Aufruf denken.** „Klone Tempel → füge Kugel hinzu → speichere als 'mein-tempel' → Slot 4 → F" ist eine **Vier-Klick-Geste**, kein Funktions-Aufruf. Jeder Schritt der Geste hat eine konkrete UI-Aktion (Klick auf Klonen, Klick auf Part hinzufügen, Slot-Dropdown ändern, Taste drücken). Die internen API-Methoden (`cloneBlueprint/addPartToBlueprint/setHotbarSlot/selectHotbarSlot/confirmBuild`) sind nur das **Substrat** — der Editor ist die Schicht, in der der Spieler lebt. Lehre: bei Building-Systemen die Geste designen, dann die API rückwärts ableiten.
+
+Ring 2 (alle 7 Phasen), Ring 3 (V1+V2), Ring 4 (V1), Ring 5 (V1+V2), Ring 6 (V1+V2 inkl. Werkstatt) und UI V1+V2 sind beantwortet und umgesetzt. Was offen ist:
+
+**Für Ring 5 V3 (Spieler-Seele erweitern):**
+
+1. **Stat-Spread pro Seele?** V2 ist rein visuell + animiert. V3 könnte pro Form `speed`/`jumpPower`-Modifier setzen (Phönix leichter + höher, Drache langsamer + stärker). Voraussetzung: klares Spielgefühl-Ziel, sonst rein kosmetische Balance-Arbeit.
+2. **Riese als vierte Form?** Bringt Physik-Komplexität (größere Hitbox = Body-Recreate, Kamera-Höhe, Kollisions-Test mit Bäumen). V3-Kandidat, sobald wir bereit sind, den Body-Recreate-Pfad zu bauen.
+3. **Spieler-Seele aus dem Werkstatt-Editor?** Da Seelen jetzt schon Multi-Mesh-Groups sind und das Bauplan-System (Ring 6.4) eine generische Daten-Schicht für Multi-Mesh-Konstruktionen ist, könnten Seelen analog als Baupläne ausgedrückt werden. Würde Form-Identität voll in den Editor heben.
+
+**Für Ring 6 V3 (Bauplan-System erweitern):**
+
+4. **Verschachtelte Baupläne = echte Fraktale.** Ein Bauplan-Part könnte statt `shape: "box"` einen `shape: "blueprint", refName: "andere-struktur", scale: 0.5` haben. Damit wird Bauplan-Komposition möglich: „Heiliger Hain" = 1 Tempel + 5 Schreine drumherum, jeder Schrein = eigener Bauplan aus seinen Parts. Selbstreferenz mit Tiefen-Cap für echte Fraktale.
+5. **Per-Chunk-Persistenz statt globaler Liste.** Heute sind Strukturen global; Chunks werden beim Prune unabhängig. Eine pro-Chunk-Delta-Liste (§11.3 Ebene B) würde Strukturen an Chunks binden — sie würden mit dem Chunk entladen, aber als Daten weiterleben. Vorbedingung für Ringe 8-11.
+6. **Editor-Realtime-Preview.** Beim Editieren eines Parts sieht man die Änderung nicht direkt im Welt-Mesh — sie wird erst beim nächsten Spawn aktiv. Ein Live-Preview-Mesh im Werkstatt-Drawer (oder das aktive Phantom auto-rebuilden) wäre der nächste UX-Schritt.
 
 **Für Ring 7 (`brain.js`-Welt):**
 
@@ -240,10 +327,16 @@ Ring 2 (alle 7 Phasen) und Ring 3 (V1+V2) und Ring 4 (V1) sind beantwortet und u
 
 8. **`btBvhTriangleMeshShape` → `btTriangleIndexVertexArray`?** Aktuell 52 fps avg im Headless-Playtest, 120 fps im echten Browser. Falls Performance ein Engpass wird: direkter Pointer-Pfad ist ~2× schneller. Heute nicht nötig.
 
-**Für UI/Komfort (Zwischenschritt vor Ring 5):**
+**Für UI V3 (Polish, optional vor oder nach Ring 5):**
 
-9. **Status-Overlay** — Emotionen als sechs Balken, aktuelle Welt-Metadaten (Wetter, Slug, FPS, Player-Pos). Soll der Spieler die Werte auch *manipulieren* können (Slider) oder nur sehen? V1: lesen + Quick-Action-Buttons für häufige Chat-Befehle.
-10. **Hilfe-Drawer** — alle Chat-Befehle gruppiert (Wetter, Welt, Kreaturen, Emotionen, System). Direkt klickbar = Befehl ausführen.
+9. **Astrolabium-Live-Element** — rotierendes SVG in der Topbar als „Anazh-Stein". Inner ring zeigt Wetter, outer ring zeigt FPS-Pulse, center glow reagiert auf hohe Emotion-Achsen. Schöne Identitäts-Klammer.
+10. **Custom-Slider mit Rail/Knob** statt nativem range — passt zum Painterly-Aesthetic. Drei Slider in Einstellungen + zwei für Terrain.
+11. **Toggle-Cards** mit Icons (Sonne/Regen) für Wetter im Welt-Drawer statt einfacher Buttons.
+
+**Quer-Themen für jede Session:**
+
+12. **Lange Sessions** sind nicht durch Playtest abgedeckt. Test läuft 15-25 s. Memory-Leaks, FPS-Drift, History-Wachstum über 5+ Minuten unbekannt. Ein separater `npm run playtest -- --long 300` wäre eine Option (nicht im CI-Gate).
+13. **`worldMeta.schemaVersion`** ist `"7.67-emotions-v1"`. UI V2 hat das Save-Schema nicht angefasst — bleibt also korrekt. Beim nächsten Schema-Wechsel (z. B. playerSoul oder Welt-Delta-Listen) bumpen.
 
 ---
 
@@ -251,29 +344,34 @@ Ring 2 (alle 7 Phasen) und Ring 3 (V1+V2) und Ring 4 (V1) sind beantwortet und u
 
 ```
 AnazhRealm/
-├── anazhRealm.js              # ~3770 Zeilen, Monolith, „Samen"
-├── index.html                 # Bootstrap + UI-Container
+├── anazhRealm.js              # ~5700 Zeilen, Monolith, „Samen"
+├── index.html                 # Bootstrap + UI-V2-Container (Topbar/Statusbar/Drawer/Konsole)
 ├── save-server.js             # Node-HTTP-Server für anazhRealmState.json
 ├── start.bat                  # Windows-Starter
 ├── anazhRealmState.json       # Persistierter Zustand (auto)
 ├── package.json               # npm, ESLint+Prettier+puppeteer
-├── eslint.config.mjs          # Flat-Config mit Browser-/Ammo-/Three-/Audio-Globalen
+├── eslint.config.mjs          # Flat-Config mit Browser-/Ammo-/Three-/Audio-/HTMLElement-Globalen
 ├── .prettierrc.json           # 4 spaces, printWidth 120
 ├── .gitignore                 # node_modules, package-lock, artifacts
 ├── README.md                  # praktisch leer
 ├── CLAUDE.md                  # ⭐ Session-Memory (kompakt)
-├── vendor/                    # 3.6 MB selbst-gehostete Libs
+├── vendor/                    # ~3.8 MB selbst-gehostete Libs + Fonts
 │   ├── three.min.js           # r134 UMD
 │   ├── ammo.js + ammo.wasm.wasm # WASM-Backend
 │   ├── tf.min.js              # @tensorflow/tfjs 3.21 (löst sich mit Ring 7 → brain.js)
 │   ├── simplex-noise.js       # 2.4.0
-│   └── README.md              # Update-Anleitung
+│   ├── README.md              # Update-Anleitung (Libs + Fonts)
+│   └── fonts/                 # Lokale OFL-Fonts für CSP-strict
+│       ├── Cinzel-Variable.woff2
+│       ├── IMFellEnglish-400-normal.woff2
+│       ├── IMFellEnglish-400-italic.woff2
+│       └── JetBrainsMono-Variable.woff2
 ├── docs/
 │   ├── state-of-realm.md      # ⭐ DIESES Dokument
-│   ├── roadmap.md             # Vollständige Pfad-D-Roadmap (Ringe 0-11+)
+│   ├── roadmap.md             # Vollständige Pfad-D-Roadmap (Ringe 0-11+, UI)
 │   └── nexus-dsl.md           # DSL Design v0.1
 ├── scripts/
-│   └── playtest.cjs           # Headless-Smoketest + CI-Gate (83 Invarianten)
+│   └── playtest.cjs           # Headless-Smoketest + CI-Gate (132 Invarianten)
 ├── .claude/commands/
 │   └── audit.md               # /audit-Slash-Command
 └── .github/workflows/
@@ -287,7 +385,7 @@ AnazhRealm/
 1. `node --check anazhRealm.js` ✓
 2. `npm run format:check` ✓
 3. `npm run lint` ✓ (sollte 0 Warnings sein — Vorbestand wurde Phase-6-Commit aufgeräumt)
-4. `npm run playtest` ✓ (alle Invarianten grün, exit 0; aktuell 83)
+4. `npm run playtest` ✓ (alle Invarianten grün, exit 0; aktuell 285)
 5. CI-Gate „kein `new Function`/`eval`" muss grün bleiben — neuer dynamic-eval-Pfad wäre ein Architektur-Bruch.
 6. Doku im selben Commit: roadmap.md + state-of-realm.md + CLAUDE.md spiegeln den realen Stand.
 
@@ -297,7 +395,7 @@ CI macht 1-4 automatisch; 5+6 sind Disziplin.
 
 ## 10. Wie eine neue Session starten
 
-1. Branch checken: `git status` sollte auf `claude/plan-session-95Ejn` zeigen, working tree clean. Letzter SHA dieser Übergabe ist im Commit-Archiv §4 das letzte Element.
+1. Branch checken: `git status` sollte auf `claude/new-adventure-fetch-branch-NF847` zeigen, working tree clean. Letzter SHA dieser Übergabe ist im Commit-Archiv §4 das letzte Element. **Vor dem Anfangen: `git fetch --all` UND alle Branches durchsehen — `origin/main` ist oft nicht der neueste Stand, weitere Feature-Branches können vorausgehen (siehe Learning #28).**
 2. `CLAUDE.md` ist auto-geladen — sofort verfügbar. Diese Doc (`state-of-realm.md`) gezielt lesen wenn größere Entscheidungen anstehen.
 3. Bei Bedarf `docs/nexus-dsl.md` lesen für Ring 2 Phase 3+ Details.
 4. Falls der Schöpfer fragt „wo stehen wir?" → §3 (Matrix) + §5 (Pfad D Tabelle) zitieren. Stand: Ring 0+1 ✅, Ring 2 Phase 1+2 ✅, Phase 3-7 + Ringe 3-7 + Ringe 8-11 offen.

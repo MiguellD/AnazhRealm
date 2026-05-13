@@ -26,6 +26,7 @@ export default [
                 clearTimeout: "readonly",
                 SpeechSynthesisUtterance: "readonly",
                 AudioContext: "readonly",
+                HTMLElement: "readonly",
                 crypto: "readonly",
                 // CDN-Libs
                 THREE: "readonly",

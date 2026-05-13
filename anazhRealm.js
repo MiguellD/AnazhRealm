@@ -47,6 +47,13 @@ class AnazhRealm {
             pitch: 0,
             mouseSensitivity: 0.002,
             isPointerLocked: false,
+            // Ring 5 V2 Vorbereitung: Kamera-Modus. "first" = Egoperspektive
+            // (Kamera am Spieler-Kopf), "third" = Orbit hinter dem Spieler in
+            // ~6 Einheiten Abstand. Im 3rd-Modus sieht der Spieler endlich
+            // seine eigene Seele (Mesh + spätere Glieder/Animation).
+            cameraMode: "first",
+            cameraThirdDistance: 6,
+            cameraThirdHeight: 2.0,
             physicsWorld: null,
             rigidBodies: [],
             playerBody: null,
@@ -189,7 +196,7 @@ class AnazhRealm {
                 creator: "local",
                 visibility: "private",
                 parentWorlds: [],
-                schemaVersion: "7.67-emotions-v1",
+                schemaVersion: "7.71-blueprints-v1",
             },
             // Ring 3 — Player-Emotionen. Sechs Achsen, jeweils 0..1.
             // Chat-Inputs füllen sie regelbasiert; im Game-Loop verflüchtigen
@@ -209,6 +216,12 @@ class AnazhRealm {
                 creaturePingCount: 0,
             },
             player: {
+                // Ring 5 V2 — Spieler-Seele. Drei Formen (human/phoenix/dragon)
+                // mit Multi-Mesh-Group + sin/cos-Animation. Ammo-Body bleibt
+                // identisch (rein visuell). Default "human".
+                soul: "human",
+                walkPhase: 0,
+                animationLastTick: -Infinity,
                 emotions: { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 },
                 emotionDecayPerSec: 0.005,
                 emotionLastTick: -Infinity,
@@ -226,12 +239,49 @@ class AnazhRealm {
                 emotionApplyCooldown: 30,
                 emotionThreshold: 0.7,
             },
+            // Ring 6 — architectureTemplates. Liste aller Bauwerke (Daten,
+            // ~50 Bytes/Eintrag). Save persistiert {type, position, seed,
+            // scale} — der Mesh wird beim Laden aus dem Seed rekonstruiert.
+            //
+            // V2: kein Hard-Cap mehr. Stattdessen Distance-based Mesh-Culling
+            // (Minecraft-Stil) — nur Strukturen innerhalb cullingRadius haben
+            // einen Mesh im GPU; weiter entfernte sind nur Daten-Einträge.
+            // Pro 1 s rotiert `tickArchitectureCulling` durch die Liste,
+            // baut Meshes nahe Spieler (auf), disposed weite (ab). Save bleibt
+            // unabhängig — Daten sind die Wahrheit, Mesh nur Sicht.
+            architectures: [],
+            architectureNextId: 1,
+            architectureCullingRadius: 150,
+            architectureCullingTickHz: 1.0,
+            architectureCullingLastTick: -Infinity,
+            // Ring 6.4 — Bauplan-Datenschicht. Map<name, blueprint>.
+            // Built-ins werden im Konstruktor-Ende über _defaultBlueprints
+            // gefüllt; eigene Baupläne (Editor 6.6) kommen dazu und werden
+            // persistiert.
+            blueprints: {},
+            // Ring 6.5 — Hotbar (9 Slots) + Bau-Modus. Jeder Slot enthält
+            // entweder einen Bauplan-Namen oder null. Tasten 1-9 wählen den
+            // Slot — leerer Slot lässt den Modus aus, belegter Slot aktiviert
+            // den entsprechenden Bauplan oder toggelt zurück, wenn er
+            // bereits aktiv ist. F baut. ESC verlässt.
+            hotbar: ["village", "temple", "waterfall", null, null, null, null, null, null],
+            buildMode: {
+                active: false,
+                slotIndex: -1,
+                blueprintName: null,
+                phantomMesh: null,
+                phantomDistance: 5,
+            },
         };
         this.core = {
             initPhysics: this.initPhysics.bind(this),
             startEternalLoop: this.startEternalLoop.bind(this),
         };
         this.nexus = null;
+        // Ring 6.4 — Built-in-Baupläne als Daten registrieren. Wenn ein
+        // Save später User-Baupläne hinzufügt (Editor 6.6), werden sie auf
+        // dieses Default-Set draufgemerged.
+        this.state.blueprints = this._defaultBlueprints();
     }
 
     // ### Logging ###
@@ -596,6 +646,103 @@ class AnazhRealm {
                 ctx.budget.spawnsLeft = Math.max(0, ctx.budget.spawnsLeft - 1);
                 ctx.log.push({ event: "spawn_ufo_requested", pos });
             },
+            // Ring 6 — architectureTemplates. Drei Bau-Primitives. Position
+            // kommt über die übliche Selektor-Form (`at_player`, `at_origin`,
+            // `near_player N`). Jeder Bau zählt als 1 Spawn-Budget.
+            spawn_village: ([positionNode], ctx) => {
+                const pos = this.dslEvalPos(positionNode, ctx);
+                if (ctx.budget.spawnsLeft <= 0) {
+                    ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
+                    return;
+                }
+                ctx.budget.spawnsLeft--;
+                const entry = this.spawnArchitecture("village", pos);
+                ctx.log.push({ event: "spawned_village", id: entry ? entry.id : null, pos });
+            },
+            spawn_temple: ([positionNode], ctx) => {
+                const pos = this.dslEvalPos(positionNode, ctx);
+                if (ctx.budget.spawnsLeft <= 0) {
+                    ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
+                    return;
+                }
+                ctx.budget.spawnsLeft--;
+                const entry = this.spawnArchitecture("temple", pos);
+                ctx.log.push({ event: "spawned_temple", id: entry ? entry.id : null, pos });
+            },
+            spawn_waterfall: ([positionNode], ctx) => {
+                const pos = this.dslEvalPos(positionNode, ctx);
+                if (ctx.budget.spawnsLeft <= 0) {
+                    ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
+                    return;
+                }
+                ctx.budget.spawnsLeft--;
+                const entry = this.spawnArchitecture("waterfall", pos);
+                ctx.log.push({ event: "spawned_waterfall", id: entry ? entry.id : null, pos });
+            },
+            // Ring 6.4 — generischer Bauplan-Spawn. Funktioniert mit jedem
+            // Bauplan-Namen (built-in oder eigen): `["spawn_blueprint",
+            // "mein-tempelplatz", ["at_player"]]`. Wird vom Hotbar (6.5)
+            // und Werkstatt (6.6) als universeller Pfad benutzt.
+            spawn_blueprint: ([name, positionNode], ctx) => {
+                if (typeof name !== "string") {
+                    ctx.log.push({ event: "invalid_blueprint_name", name });
+                    return;
+                }
+                const bp = this.state.blueprints && this.state.blueprints[name];
+                if (!bp) {
+                    ctx.log.push({ event: "unknown_blueprint", name });
+                    return;
+                }
+                const pos = this.dslEvalPos(positionNode, ctx);
+                if (ctx.budget.spawnsLeft <= 0) {
+                    ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
+                    return;
+                }
+                ctx.budget.spawnsLeft--;
+                const entry = this.spawnArchitecture(name, pos);
+                ctx.log.push({ event: "spawned_blueprint", name, id: entry ? entry.id : null, pos });
+            },
+            // Ring 6 V2 — Fraktal-Bau. Eine Wurzel-Struktur, hexagonal
+            // umringt von 6 Sub-Strukturen mit `ratio`-Skalierung; jede
+            // Sub-Struktur rekursiv das gleiche bis `depth` 0. Mit
+            // depth=2/ratio=0.5 entstehen 1+6+36 = 43 Strukturen, die
+            // dank Distance-Culling (V2) nicht alle gleichzeitig im GPU
+            // liegen müssen. Pfeiler 3 der Vision (Fraktales Wachstum)
+            // konkret im Code.
+            spawn_fractal: ([positionNode, type, depth, ratio], ctx) => {
+                const pos = this.dslEvalPos(positionNode, ctx);
+                const validTypes = { village: true, temple: true, waterfall: true };
+                const t = typeof type === "string" && validTypes[type] ? type : "temple";
+                const d = c(depth, 0, 3);
+                const r = c(ratio, 0.2, 0.8);
+                let spawned = 0;
+                const visit = (cx, cz, scale, level, parentSeed) => {
+                    if (ctx.budget.spawnsLeft <= 0) {
+                        ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
+                        return;
+                    }
+                    ctx.budget.spawnsLeft--;
+                    spawned++;
+                    // Seed deterministisch aus Parent + Level-Index ableiten,
+                    // damit ein Fraktal-Save reproduzierbar denselben Mesh-
+                    // Aufbau hat (selbe Hütten-Anordnung etc.).
+                    const childSeed = (parentSeed * 16807 + level * 31) >>> 0;
+                    this.spawnArchitecture(t, { x: cx, y: pos.y, z: cz }, { seed: childSeed, scale });
+                    if (level >= d) return;
+                    // Sechs Kinder im Hexagon, Radius proportional zur
+                    // aktuellen Skala (so wachsen Sub-Cluster nicht zu nahe).
+                    const childRadius = 14 * scale;
+                    for (let i = 0; i < 6; i++) {
+                        const angle = (i / 6) * Math.PI * 2;
+                        const ncx = cx + Math.cos(angle) * childRadius;
+                        const ncz = cz + Math.sin(angle) * childRadius;
+                        visit(ncx, ncz, scale * r, level + 1, childSeed + i);
+                    }
+                };
+                const rootSeed = Math.floor(ctx.rng() * 0xffffffff);
+                visit(pos.x, pos.z, 1, 0, rootSeed);
+                ctx.log.push({ event: "spawned_fractal", type: t, depth: d, ratio: r, count: spawned });
+            },
             creatures_color: ([color]) => {
                 if (typeof color !== "string") return;
                 let tint = null;
@@ -635,6 +782,14 @@ class AnazhRealm {
                 if (this.state.playerMesh && this.state.playerMesh.scale) {
                     this.state.playerMesh.scale.multiplyScalar(f);
                 }
+            },
+            player_soul: ([name]) => {
+                // Ring 5: Seele wechseln. Bewusst NICHT im
+                // dslComposeAtomic-Pool (siehe playerSoulDefs-Kommentar) —
+                // der Nexus soll dem Menschen die Identität nicht
+                // umschreiben. Aber als DSL-Op verfügbar, damit Chat,
+                // Abilities und künftige Trigger denselben Pfad nutzen.
+                this.applyPlayerSoul(typeof name === "string" ? name : "");
             },
             set_visible: ([target, visible], ctx) => {
                 // Whitelist hält die Safety-Surface klein: nur grob steuerbare
@@ -937,6 +1092,29 @@ class AnazhRealm {
             { w: 5, build: () => ["time_of_day", Number(rng().toFixed(2))] },
             { w: 4, build: () => ["creatures_speed_mul", Number((0.5 + rng() * 1.5).toFixed(2))] },
             { w: 4, build: () => ["creatures_size_mul", Number((0.7 + rng()).toFixed(2))] },
+            // Ring 6 — architectureTemplates. Niedrige Gewichtung (3 von
+            // ~80), damit der Nexus die Welt mit der Zeit füllt, ohne dass
+            // jeder zweite Trigger ein Dorf produziert. V2: kein Hard-Cap
+            // mehr — Distance-Culling hält die GPU-Last begrenzt.
+            { w: 3, build: () => ["spawn_village", this.dslComposePosition(rng)] },
+            { w: 3, build: () => ["spawn_temple", this.dslComposePosition(rng)] },
+            { w: 3, build: () => ["spawn_waterfall", this.dslComposePosition(rng)] },
+            // Ring 6 V2 — Fraktal als seltenes Nexus-Geschenk (Gewicht 1).
+            // depth=1 hält den Stil sichtbar (1 Wurzel + 6 Kinder = 7
+            // Strukturen), ratio variiert.
+            {
+                w: 1,
+                build: () => {
+                    const types = ["village", "temple", "waterfall"];
+                    return [
+                        "spawn_fractal",
+                        this.dslComposePosition(rng),
+                        types[Math.floor(rng() * types.length)],
+                        1,
+                        Number((0.4 + rng() * 0.3).toFixed(2)),
+                    ];
+                },
+            },
             // ~10 % `say`: Nexus kommentiert seine eigene Evolution. Per
             // §18 Q1 ("Ja, sparsam") gewählt.
             { w: 10, build: () => ["say", this.dslComposeSayMessage(rng)] },
@@ -1111,6 +1289,50 @@ class AnazhRealm {
                     program: ["set_visible", "creatures", false],
                     describe: "Kreaturen deaktiviert",
                 }),
+            },
+            {
+                // Ring 5: "werde mensch|phönix|phoenix|drache|dragon" wechselt
+                // die Seele (visuell). applyPlayerSoul kanonisiert intern auf
+                // {human, phoenix, dragon}.
+                example: "werde phönix",
+                re: /^werde\s+(mensch|human|phönix|phoenix|drache|drachen|dragon)\s*$/i,
+                build: (m) => {
+                    const raw = m[1].toLowerCase();
+                    return {
+                        program: ["player_soul", raw],
+                        describe: `Seele gewechselt: ${raw}`,
+                    };
+                },
+            },
+            {
+                // Ring 6 — architectureTemplates. "baue dorf/tempel/wasserfall hier"
+                // platziert die Struktur am Spieler (`at_player`).
+                example: "baue dorf hier",
+                re: /^baue\s+(dorf|tempel|wasserfall)\s+hier\s*$/i,
+                build: (m) => {
+                    const map = { dorf: "spawn_village", tempel: "spawn_temple", wasserfall: "spawn_waterfall" };
+                    const op = map[m[1].toLowerCase()];
+                    return {
+                        program: [op, ["at_player"]],
+                        describe: `${m[1]} gebaut`,
+                    };
+                },
+            },
+            {
+                // Ring 6 V2 — Fraktal. "baue fraktal tempel" baut einen
+                // hexagonal-rekursiv selbstähnlichen Cluster (depth=2,
+                // ratio=0.5 als sinnvolle Defaults: 43 Strukturen). Type
+                // ist optional, default "tempel".
+                example: "baue fraktal tempel",
+                re: /^baue\s+fraktal(?:\s+(dorf|tempel|wasserfall))?\s*$/i,
+                build: (m) => {
+                    const map = { dorf: "village", tempel: "temple", wasserfall: "waterfall" };
+                    const t = (m[1] || "tempel").toLowerCase();
+                    return {
+                        program: ["spawn_fractal", ["at_player"], map[t], 2, 0.5],
+                        describe: `Fraktal-${t} gebaut (depth 2, ratio 0.5)`,
+                    };
+                },
             },
             {
                 example: "erzähle Drachen leben hier",
@@ -1402,6 +1624,405 @@ class AnazhRealm {
         s.weather.gain.gain.linearRampToValueAtTime(target, now + 1.5);
         s.lastWeather = this.state.weather;
         this.log(`Symphonie: wetter-Layer → ${target.toFixed(2)} (${this.state.weather})`, "DEBUG");
+    }
+
+    // ### Status-Panel (UI V1) ###
+    // Lesbares Fenster auf Welt-Zustand und Spieler-Emotionen. Kein Rebuild
+    // pro Frame: DOM einmal anlegen, Werte alle 0.4 s aktualisieren. Refs
+    // werden gecacht, damit der Tick keine Lookup-Kosten hat.
+    // Liste aller Chat-Befehle, gruppiert. Quelle der Wahrheit für Hilfe-
+    // Drawer und (später) für Befehl-Diff-Tests. DSL-Patterns liefern den
+    // ersten Block automatisch — die Legacy-Befehle stehen hier explizit.
+    get chatCommandHelp() {
+        if (this._chatCommandHelpCache) return this._chatCommandHelpCache;
+        const dslExamples = this.chatDslPatterns.map((p) => p.example);
+        this._chatCommandHelpCache = [
+            { title: "Welt-Effekte (DSL)", commands: dslExamples },
+            {
+                title: "Welt-Triggers",
+                commands: ["Spawne neue Welt", "Boden nicht sichtbar"],
+            },
+            {
+                title: "Fähigkeiten",
+                commands: [
+                    "Lerne Fähigkeit farbwechsel Ändere Farbe von Kreaturen zu blau",
+                    "Führe Fähigkeit aus farbwechsel",
+                ],
+            },
+            {
+                title: "Multisensorik",
+                commands: ["Aktiviere Anazh-Symphonie"],
+            },
+            {
+                title: "Spieler-Seele",
+                commands: ["Werde Mensch", "Werde Phönix", "Werde Drache"],
+            },
+            {
+                title: "Bauwerke (Ring 6)",
+                commands: [
+                    "Baue Dorf hier",
+                    "Baue Tempel hier",
+                    "Baue Wasserfall hier",
+                    "Baue Fraktal Tempel",
+                    "Baue Fraktal Dorf",
+                    "Baue Fraktal Wasserfall",
+                ],
+            },
+            {
+                title: "System / Persistenz",
+                commands: [
+                    "Speichere Zustand",
+                    "Lade Zustand",
+                    "Lade Datei",
+                    "Aktiviere Version 7.65",
+                    "Aktiviere Debug-Logs",
+                    "Deaktiviere Debug-Logs",
+                ],
+            },
+            {
+                title: "Self-Heal",
+                commands: ["Behebe Physik-Tunneling", "Optimiere Physik"],
+            },
+            {
+                title: "Wissen / KI",
+                commands: ["Füge Trainingsdaten x=10 z=5"],
+            },
+        ];
+        return this._chatCommandHelpCache;
+    }
+
+    initStatusPanel() {
+        // UI V2: kein zentrales #status-panel mehr — Sektionen leben in den
+        // sechs Drawer (Welt, Kreaturen, Spieler, Fähigkeiten, Einstellungen,
+        // Hilfe). Wir greifen direkt auf die einzelnen IDs zu.
+        const emotions = document.getElementById("status-emotions");
+        if (!emotions) return;
+        const axes = Object.keys(this.state.player.emotions);
+        emotions.innerHTML = "";
+        const emotionRefs = {};
+        for (const axis of axes) {
+            const row = document.createElement("div");
+            row.className = `emotion ${axis}`;
+            const name = document.createElement("span");
+            name.className = "name";
+            name.textContent = axis;
+            const bar = document.createElement("span");
+            bar.className = "bar";
+            const fill = document.createElement("div");
+            bar.appendChild(fill);
+            const value = document.createElement("span");
+            value.className = "value";
+            value.textContent = "0.00";
+            row.appendChild(name);
+            row.appendChild(bar);
+            row.appendChild(value);
+            emotions.appendChild(row);
+            emotionRefs[axis] = { fill, value };
+        }
+        this._statusRefs = {
+            weather: document.getElementById("status-weather"),
+            slug: document.getElementById("status-slug"),
+            position: document.getElementById("status-position"),
+            fps: document.getElementById("status-fps"),
+            creatures: document.getElementById("status-creatures"),
+            soul: document.getElementById("status-soul"),
+            architectures: document.getElementById("status-architectures"),
+            emotions: emotionRefs,
+            abilities: document.getElementById("status-abilities"),
+            abilitiesSignature: "",
+            lastTick: -Infinity,
+        };
+
+        // Abilities-Container: Event-Delegation für Ausführen-Buttons.
+        const abilitiesContainer = this._statusRefs.abilities;
+        if (abilitiesContainer) {
+            abilitiesContainer.addEventListener("click", (event) => {
+                const target = event.target;
+                if (!(target instanceof HTMLElement)) return;
+                const name = target.getAttribute("data-run-ability");
+                if (name && this.state.abilities[name]) {
+                    this.state.abilities[name]();
+                }
+            });
+        }
+
+        // Export-Button: lokaler Download des aktuellen Zustands ohne Chat-
+        // Umweg, damit man den Status-Snapshot direkt teilen kann.
+        const exportBtn = document.getElementById("action-export-state");
+        if (exportBtn) {
+            exportBtn.addEventListener("click", () => {
+                this.triggerStateDownload(this.buildStateSnapshot());
+            });
+        }
+
+        // Tuning-Slider: drei Werte von state.player direkt manipulierbar.
+        // Slider sind initial mit Defaults aus dem State befüllt; Änderungen
+        // wirken live. Diagnose-Tool — nicht für Persistenz, sondern um
+        // schnell auszuprobieren, wie sich Welt + Trigger anfühlen.
+        const wireTuningSlider = (id, valueId, apply) => {
+            const slider = document.getElementById(id);
+            const valueLabel = document.getElementById(valueId);
+            if (!slider || !valueLabel) return;
+            slider.addEventListener("input", () => {
+                const v = parseFloat(slider.value);
+                if (!Number.isFinite(v)) return;
+                apply(v);
+                valueLabel.textContent = slider.step.includes(".")
+                    ? v.toFixed(slider.step.split(".")[1].length)
+                    : String(v);
+            });
+        };
+        const p = this.state.player;
+        const thresholdSlider = document.getElementById("tune-threshold");
+        if (thresholdSlider) thresholdSlider.value = String(p.emotionThreshold);
+        const decaySlider = document.getElementById("tune-decay");
+        if (decaySlider) decaySlider.value = String(p.emotionDecayPerSec);
+        const cooldownSlider = document.getElementById("tune-cooldown");
+        if (cooldownSlider) cooldownSlider.value = String(p.emotionApplyCooldown);
+        const thresholdValue = document.getElementById("tune-threshold-v");
+        if (thresholdValue) thresholdValue.textContent = p.emotionThreshold.toFixed(2);
+        const decayValue = document.getElementById("tune-decay-v");
+        if (decayValue) decayValue.textContent = p.emotionDecayPerSec.toFixed(3);
+        const cooldownValue = document.getElementById("tune-cooldown-v");
+        if (cooldownValue) cooldownValue.textContent = String(p.emotionApplyCooldown);
+
+        wireTuningSlider("tune-threshold", "tune-threshold-v", (v) => {
+            p.emotionThreshold = v;
+        });
+        wireTuningSlider("tune-decay", "tune-decay-v", (v) => {
+            p.emotionDecayPerSec = v;
+        });
+        wireTuningSlider("tune-cooldown", "tune-cooldown-v", (v) => {
+            p.emotionApplyCooldown = v;
+        });
+
+        // Quick-Action-Buttons: data-cmd-Attribut → processChatCommand
+        const quick = document.getElementById("quick-actions");
+        if (quick) {
+            quick.addEventListener("click", (event) => {
+                const target = event.target;
+                if (!(target instanceof HTMLElement)) return;
+                const cmd = target.getAttribute("data-cmd");
+                if (cmd) this.processChatCommand(cmd);
+            });
+        }
+
+        // Kreatur-Actions teilen denselben Klick-Handler wie Quick-Actions.
+        const creatureActions = document.getElementById("creature-actions");
+        if (creatureActions) {
+            creatureActions.addEventListener("click", (event) => {
+                const target = event.target;
+                if (!(target instanceof HTMLElement)) return;
+                const cmd = target.getAttribute("data-cmd");
+                if (cmd) this.processChatCommand(cmd);
+            });
+        }
+
+        // Ring 6 — Bauwerk-Actions teilen denselben Mechanismus.
+        const architectureActions = document.getElementById("architecture-actions");
+        if (architectureActions) {
+            architectureActions.addEventListener("click", (event) => {
+                const target = event.target;
+                if (!(target instanceof HTMLElement)) return;
+                const cmd = target.getAttribute("data-cmd");
+                if (cmd) this.processChatCommand(cmd);
+            });
+        }
+
+        // Hilfe-Drawer: Befehl-Liste aus chatCommandHelp generieren. Der
+        // Hilfe-Drawer ist einer der sechs Tabs; Anzeige + Schließen läuft
+        // über das Tab-/Drawer-System (siehe initTopbar). Hier nur die
+        // Befehlsliste und der Klick-Delegate.
+        const helpList = document.getElementById("help-list");
+        if (helpList) {
+            for (const group of this.chatCommandHelp) {
+                const h = document.createElement("h3");
+                h.textContent = group.title;
+                helpList.appendChild(h);
+                for (const cmd of group.commands) {
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "cmd";
+                    btn.textContent = cmd;
+                    btn.setAttribute("data-cmd", cmd);
+                    helpList.appendChild(btn);
+                }
+            }
+            helpList.addEventListener("click", (event) => {
+                const target = event.target;
+                if (!(target instanceof HTMLElement)) return;
+                const cmd = target.getAttribute("data-cmd");
+                if (cmd) {
+                    this.processChatCommand(cmd);
+                    this.closeAllDrawers();
+                }
+            });
+        }
+    }
+
+    // Konsole-Panel: einklappbar via #console-collapse. Im eingeklappten
+    // Zustand bleiben Header + Input sichtbar; Chat-Output + Log verschwinden.
+    // localStorage merkt sich die Wahl (anazhRealmConsole = "collapsed"/"open").
+    initConsoleDOM() {
+        const panel = document.getElementById("console");
+        const toggle = document.getElementById("console-collapse");
+        if (!panel || !toggle) return;
+        const setCollapsed = (collapsed) => {
+            panel.classList.toggle("collapsed", collapsed);
+            toggle.setAttribute("aria-pressed", collapsed ? "true" : "false");
+            toggle.textContent = collapsed ? "+" : "−";
+            toggle.setAttribute("aria-label", collapsed ? "Konsole entfalten" : "Konsole einklappen");
+        };
+        const stored = (() => {
+            try {
+                return localStorage.getItem("anazhRealmConsole");
+            } catch {
+                return null;
+            }
+        })();
+        setCollapsed(stored === "collapsed");
+        toggle.addEventListener("click", () => {
+            const next = !panel.classList.contains("collapsed");
+            setCollapsed(next);
+            try {
+                localStorage.setItem("anazhRealmConsole", next ? "collapsed" : "open");
+            } catch {
+                /* Persistenz best-effort. */
+            }
+        });
+    }
+
+    // Tab-System: ein Tab je Drawer. activeTab-Klasse auf dem Knopf,
+    // hidden-Attribut entscheidet welcher Drawer sichtbar slidet.
+    // closeAllDrawers schließt alle (für Help-Klick + ESC).
+    initTopbar() {
+        const tabs = Array.from(document.querySelectorAll("#topbar .tab"));
+        const drawers = Array.from(document.querySelectorAll(".drawer[data-drawer]"));
+        if (tabs.length === 0 || drawers.length === 0) return;
+
+        const openDrawer = (name) => {
+            for (const tab of tabs) {
+                const isActive = tab.getAttribute("data-tab") === name;
+                tab.classList.toggle("active", isActive);
+                tab.setAttribute("aria-selected", isActive ? "true" : "false");
+            }
+            for (const drawer of drawers) {
+                const isThis = drawer.getAttribute("data-drawer") === name;
+                drawer.hidden = !isThis;
+            }
+        };
+        for (const tab of tabs) {
+            tab.addEventListener("click", () => {
+                const name = tab.getAttribute("data-tab");
+                if (name) openDrawer(name);
+            });
+        }
+        // Close-Buttons schließen den eigenen Drawer und entaktivieren den Tab.
+        for (const closeBtn of document.querySelectorAll("[data-drawer-close]")) {
+            closeBtn.addEventListener("click", () => this.closeAllDrawers());
+        }
+        // ESC schließt offene Drawers (außer Welt, der bleibt als Default).
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") this.closeAllDrawers();
+        });
+        // Welt ist Default-aktiv (siehe HTML); state.uiActiveDrawer trackt
+        // den aktuellen Tab, damit Tests + spätere Save-Persistenz darauf
+        // greifen können.
+        this.state.uiActiveDrawer = "welt";
+        // Wir loggen Tab-Klicks indirekt via uiActiveDrawer-Update.
+        for (const tab of tabs) {
+            tab.addEventListener("click", () => {
+                const name = tab.getAttribute("data-tab");
+                if (name) this.state.uiActiveDrawer = name;
+            });
+        }
+    }
+
+    closeAllDrawers() {
+        const tabs = document.querySelectorAll("#topbar .tab");
+        for (const tab of tabs) {
+            tab.classList.remove("active");
+            tab.setAttribute("aria-selected", "false");
+        }
+        for (const drawer of document.querySelectorAll(".drawer[data-drawer]")) {
+            drawer.hidden = true;
+        }
+        this.state.uiActiveDrawer = null;
+    }
+
+    updateStatusPanel(currentTime) {
+        if (!this._statusRefs) return;
+        if (currentTime - this._statusRefs.lastTick < 0.4) return;
+        this._statusRefs.lastTick = currentTime;
+        const r = this._statusRefs;
+        if (r.weather) r.weather.textContent = this.state.weather || "—";
+        if (r.slug) r.slug.textContent = this.state.worldMeta.slug || "—";
+        if (r.position && this.state.playerMesh) {
+            const p = this.state.playerMesh.position;
+            r.position.textContent = `${p.x.toFixed(1)} ${p.y.toFixed(1)} ${p.z.toFixed(1)}`;
+        }
+        if (r.fps) r.fps.textContent = String(this.state.fps || 0);
+        if (r.creatures) r.creatures.textContent = String(this.state.creatures.length);
+        if (r.soul) {
+            const def = this.playerSoulDefs[this.state.player.soul || "human"];
+            r.soul.textContent = (def && def.label) || "—";
+        }
+        if (r.architectures) {
+            const counts = this.countArchitecturesNearPlayer(60);
+            r.architectures.textContent = `${counts.near} nah / ${counts.total}`;
+        }
+        const e = this.state.player.emotions;
+        for (const axis of Object.keys(r.emotions)) {
+            const v = Math.max(0, Math.min(1, e[axis] || 0));
+            r.emotions[axis].fill.style.width = `${(v * 100).toFixed(0)}%`;
+            r.emotions[axis].value.textContent = v.toFixed(2);
+        }
+        this.renderAbilitiesList();
+    }
+
+    // Abilities-Liste re-rendern, aber nur wenn sich Name/Source-Set
+    // tatsächlich geändert hat — Signature-Hash hält den Diff billig.
+    renderAbilitiesList() {
+        const r = this._statusRefs;
+        if (!r || !r.abilities) return;
+        const list = this.state.dsl.abilities;
+        // Length-Prefix sorgt dafür, dass die initiale leere Signature ("")
+        // und ein leeres Array ("0:") unterscheidbar sind — sonst würde der
+        // erste Empty-State-Render durch den Early-Return wegoptimiert.
+        const signature = list.length + ":" + list.map((a) => `${a.name}:${a.source || "?"}`).join("|");
+        if (signature === r.abilitiesSignature) return;
+        r.abilitiesSignature = signature;
+        const container = r.abilities;
+        container.innerHTML = "";
+        if (list.length === 0) {
+            const empty = document.createElement("div");
+            empty.className = "ability-empty";
+            empty.textContent = "Noch keine Fähigkeiten gelernt.";
+            container.appendChild(empty);
+            return;
+        }
+        // Neueste zuerst, max 20 angezeigt (UI-Limit, Save-Array bleibt 200).
+        const recent = list.slice(-20).reverse();
+        for (const ability of recent) {
+            const row = document.createElement("div");
+            const src = ability.source || "unknown";
+            row.className = `ability-row source-${src}`;
+            const name = document.createElement("span");
+            name.className = "name";
+            name.textContent = ability.name;
+            const source = document.createElement("span");
+            source.className = "source";
+            source.textContent = src;
+            const run = document.createElement("button");
+            run.type = "button";
+            run.textContent = "▶";
+            run.setAttribute("data-run-ability", ability.name);
+            run.setAttribute("aria-label", `Fähigkeit ${ability.name} ausführen`);
+            row.appendChild(name);
+            row.appendChild(source);
+            row.appendChild(run);
+            container.appendChild(row);
+        }
     }
 
     // ### Welt-Identität (Ring 8+ Vorbereitung) ###
@@ -3944,6 +4565,31 @@ class AnazhRealm {
             // bleiben absichtlich draußen — sie sind reine Laufzeit-Drosselung,
             // ein Reload soll wieder triggerfähig sein.
             playerEmotions: { ...this.state.player.emotions },
+            // Ring 5: Spieler-Seele (visuelle Form). Beim Load wird sie nach
+            // dem playerMesh-Bau angewandt — kein Body-Recreate.
+            playerSoul: this.state.player.soul || "human",
+            // Ring 6: Bau-Werke. Nur {type, position, seed, scale} — der
+            // Mesh wird beim Laden aus dem Seed rekonstruiert (kein Mesh-
+            // Snapshot). V2 inkludiert scale für fraktale Sub-Strukturen.
+            architectures: (this.state.architectures || []).map((a) => ({
+                type: a.type,
+                position: { x: a.position.x, y: a.position.y, z: a.position.z },
+                seed: a.seed,
+                scale: Number.isFinite(a.scale) ? a.scale : 1,
+            })),
+            // Ring 6.4 — eigene Baupläne (nicht built-in) persistieren. Die
+            // Built-ins werden beim Init aus _defaultBlueprints() erzeugt;
+            // wir speichern nur, was der Spieler dazugefügt hat.
+            blueprints: Object.values(this.state.blueprints || {})
+                .filter((bp) => bp && !bp.builtIn)
+                .map((bp) => ({
+                    name: bp.name,
+                    label: bp.label || bp.name,
+                    parts: Array.isArray(bp.parts) ? JSON.parse(JSON.stringify(bp.parts)) : [],
+                })),
+            // Ring 6.5 — Hotbar-Belegung. Array von 9 Slots mit Bauplan-Name
+            // oder null. Default wird beim Init überschrieben.
+            hotbar: Array.isArray(this.state.hotbar) ? this.state.hotbar.slice(0, 9) : [],
         };
     }
 
@@ -4127,6 +4773,64 @@ class AnazhRealm {
         }
         // Ring 3: Emotionen wiederherstellen. Nur bekannte Achsen übernehmen,
         // damit alte Saves mit Tippfehlern keine fremden Keys einschleusen.
+        // Ring 5: Spieler-Seele wiederherstellen. Wenn das Mesh schon
+        // existiert (loadState wird auch nach Init aufgerufen, z. B. via
+        // "Lade Zustand"), wenden wir die Seele sofort an. Vor dem Mesh-Bau
+        // merkt sich applyPlayerSoul den Namen und der Init-Pfad wendet ihn
+        // nach Mesh-Erstellung an.
+        if (typeof state.playerSoul === "string" && this.playerSoulDefs[state.playerSoul]) {
+            this.applyPlayerSoul(state.playerSoul);
+        }
+        // Ring 6: Bau-Werke wiederherstellen. Bestehende Strukturen werden
+        // tief disposed, dann jede aus {type, position, seed} neu gebaut.
+        // Idempotent — mehrfaches loadState führt nicht zu Mesh-Verdopplung.
+        // Ring 6.4 — eigene Baupläne ZUERST registrieren, danach die
+        // Architekturen rekonstruieren. Sonst wären Strukturen, die einen
+        // User-Bauplan referenzieren, nicht renderbar (Builder fehlt).
+        if (Array.isArray(state.blueprints)) {
+            for (const bp of state.blueprints) {
+                if (!bp || typeof bp.name !== "string" || !Array.isArray(bp.parts)) continue;
+                // Built-in nicht überschreiben — sicherheitshalber prefixen
+                // oder skip wenn Name kollidiert.
+                if (this.state.blueprints[bp.name] && this.state.blueprints[bp.name].builtIn) continue;
+                this.state.blueprints[bp.name] = {
+                    name: bp.name,
+                    label: bp.label || bp.name,
+                    builtIn: false,
+                    parts: bp.parts,
+                };
+            }
+            this.log(`Baupläne geladen: ${state.blueprints.length} eigene`);
+        }
+        if (Array.isArray(state.architectures) && this.state.scene) {
+            for (const old of this.state.architectures) {
+                if (old.mesh) {
+                    this._cullArchitectureMesh(old);
+                }
+            }
+            this.state.architectures = [];
+            for (const a of state.architectures) {
+                if (!a || typeof a.type !== "string" || !a.position) continue;
+                this.spawnArchitecture(a.type, a.position, { seed: a.seed, scale: a.scale });
+            }
+            this.log(`Architekturen geladen: ${state.architectures.length}`);
+        }
+        // Ring 6.5 — Hotbar wiederherstellen. Nur 9 Slots, ungültige Einträge
+        // (Bauplan nicht registriert) auf null fallen lassen.
+        if (Array.isArray(state.hotbar)) {
+            const restored = [];
+            for (let i = 0; i < 9; i++) {
+                const name = state.hotbar[i];
+                if (typeof name === "string" && this.state.blueprints[name]) {
+                    restored.push(name);
+                } else {
+                    restored.push(null);
+                }
+            }
+            this.state.hotbar = restored;
+            this._renderHotbarDOM();
+            this.log(`Hotbar geladen: ${restored.filter((s) => s).length} Slots belegt`);
+        }
         if (state.playerEmotions && typeof state.playerEmotions === "object") {
             for (const axis of Object.keys(this.state.player.emotions)) {
                 const v = Number(state.playerEmotions[axis]);
@@ -4237,6 +4941,38 @@ class AnazhRealm {
     // Learnings:
     // - V7.64 Basis: Stabile Initialisierung mit Physik, Szene, Kamera
     // - V7.65 Ergänzung: Fehlerbehandlung verbessert, Chat/Nexus integriert
+    // Tag/Nacht-Theme: schaltet die CSS-Custom-Properties über
+    // body[data-theme]. localStorage persistiert die Wahl, damit nach Reload
+    // die Stimmung erhalten bleibt.
+    themeInitDOM() {
+        const toggle = document.getElementById("theme-toggle");
+        if (!toggle) return;
+        const body = document.body;
+        const stored = (() => {
+            try {
+                return localStorage.getItem("anazhRealmTheme");
+            } catch {
+                return null;
+            }
+        })();
+        const initial = stored === "nacht" ? "nacht" : "tag";
+        body.setAttribute("data-theme", initial);
+        toggle.setAttribute("aria-pressed", initial === "nacht" ? "true" : "false");
+        toggle.textContent = initial === "nacht" ? "☾ Nacht" : "☀ Tag";
+        toggle.addEventListener("click", () => {
+            const next = body.getAttribute("data-theme") === "tag" ? "nacht" : "tag";
+            body.setAttribute("data-theme", next);
+            toggle.setAttribute("aria-pressed", next === "nacht" ? "true" : "false");
+            toggle.textContent = next === "nacht" ? "☾ Nacht" : "☀ Tag";
+            try {
+                localStorage.setItem("anazhRealmTheme", next);
+            } catch {
+                // Kein Persistenz-Fail-Stop — Theme-Wechsel funktioniert weiter
+                // pro Session.
+            }
+        });
+    }
+
     symphonyInitDOM() {
         // Toggle-Button koppelt User-Geste an AudioContext-Start (Browser-
         // Autoplay-Policy). Beim ersten Klick: initSymphony(); danach
@@ -4261,10 +4997,1490 @@ class AnazhRealm {
         });
     }
 
+    // ### Ring 5 V2 – Spieler-Seele mit animierten Multi-Mesh-Körpern ###
+    //
+    // V1 war ein Mesh + Farbe pro Seele. V2 baut für jede Seele einen
+    // `THREE.Group` aus Sub-Meshes (Torso/Kopf/Glieder/Flügel/Schweif), die
+    // pro Frame über sin/cos animiert werden. Walk-Cycle wenn der Spieler
+    // sich bewegt, Idle-Atem-/Hover-Animation wenn er steht.
+    //
+    // Disziplinen, die V1 schon getragen hat und die V2 nicht aufgibt:
+    //   - Ammo-Body bleibt 0.5er Half-Extent-Box. Visuelle Höhe ~1.7
+    //     Einheiten ist größer als die Collision-Box, das ist gewollt
+    //     (Game-Konvention: Charakter größer als Hitbox = mehr Spielraum).
+    //   - Position + Scale bleiben über Soul-Wechsel hinweg unangetastet.
+    //   - Kein dynamic-eval, kein Asset-Load — alles aus Three.js-Primitives.
+    //   - `player_soul` bleibt aus dem `dslComposeAtomic`-Pool draußen
+    //     (Identität gehört dem Spieler, nicht dem Nexus).
+    //
+    // Animation-Vertrag pro Soul: `animate(group, t, walkPhase, isMoving)`.
+    // - `t`: aktuelle Zeit in Sekunden (für Idle-Schwingungen).
+    // - `walkPhase`: monoton wachsender Phasen-Wert in Radiant, akkumuliert
+    //   nur wenn der Spieler sich bewegt — so springen Glieder nicht beim
+    //   Stop-Start-Wechsel, sondern frieren in der aktuellen Pose ein.
+    // - `isMoving`: bool, schaltet zwischen Walk/Trab/Flap-Speed und Idle.
+    get playerSoulDefs() {
+        if (this._playerSoulDefsCache) return this._playerSoulDefsCache;
+        this._playerSoulDefsCache = {
+            human: {
+                label: "Mensch",
+                color: 0xff0000,
+                build: () => this._buildHumanGroup(),
+                animate: (g, t, ph, mv) => this._animateHuman(g, t, ph, mv),
+            },
+            phoenix: {
+                label: "Phönix",
+                color: 0xff7a1a,
+                build: () => this._buildPhoenixGroup(),
+                animate: (g, t, ph, mv) => this._animatePhoenix(g, t, ph, mv),
+            },
+            dragon: {
+                label: "Drache",
+                color: 0x2d6e3b,
+                build: () => this._buildDragonGroup(),
+                animate: (g, t, ph, mv) => this._animateDragon(g, t, ph, mv),
+            },
+        };
+        return this._playerSoulDefsCache;
+    }
+
+    // Hilfs-Helper: ein Glied (Arm/Bein) mit Pivot am Joint. Joint-Group
+    // sitzt an (jx, jy, jz); das Mesh hängt von der Y-Achse nach unten,
+    // sodass Rotation der Joint-Group am Schulter-/Hüft-Punkt ankert.
+    _buildLimb(material, jx, jy, jz, length, width, depth) {
+        const joint = new THREE.Group();
+        joint.position.set(jx, jy, jz);
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, length, depth), material);
+        mesh.position.y = -length / 2;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        joint.add(mesh);
+        joint.userData.length = length;
+        return joint;
+    }
+
+    _buildHumanGroup() {
+        const group = new THREE.Group();
+        const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        const torso = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.7, 0.3), material);
+        torso.position.y = 0.45;
+        torso.castShadow = true;
+        torso.receiveShadow = true;
+        group.add(torso);
+        const head = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), material);
+        head.position.y = 1.0;
+        head.castShadow = true;
+        group.add(head);
+        const leftArm = this._buildLimb(material, -0.4, 0.8, 0, 0.6, 0.15, 0.15);
+        const rightArm = this._buildLimb(material, 0.4, 0.8, 0, 0.6, 0.15, 0.15);
+        const leftLeg = this._buildLimb(material, -0.15, 0.1, 0, 0.6, 0.2, 0.2);
+        const rightLeg = this._buildLimb(material, 0.15, 0.1, 0, 0.6, 0.2, 0.2);
+        group.add(leftArm, rightArm, leftLeg, rightLeg);
+        group.userData.material = material;
+        group.userData.parts = { torso, head, leftArm, rightArm, leftLeg, rightLeg };
+        return group;
+    }
+
+    _animateHuman(group, t, walkPhase, isMoving) {
+        const p = group.userData.parts;
+        if (isMoving) {
+            // Schritt-Zyklus: Beine ±0.5 rad gegenphasig, Arme ±0.3 entgegen
+            const swing = Math.sin(walkPhase) * 0.5;
+            p.leftLeg.rotation.x = swing;
+            p.rightLeg.rotation.x = -swing;
+            p.leftArm.rotation.x = -swing * 0.6;
+            p.rightArm.rotation.x = swing * 0.6;
+            p.torso.position.y = 0.45 + Math.abs(Math.sin(walkPhase)) * 0.04;
+        } else {
+            // Idle: leichter Atem-Hub + sanftes Arm-Pendel
+            const breath = Math.sin(t * 1.8) * 0.025;
+            p.torso.position.y = 0.45 + breath;
+            p.leftArm.rotation.x = Math.sin(t * 1.2) * 0.05;
+            p.rightArm.rotation.x = -Math.sin(t * 1.2) * 0.05;
+            p.leftLeg.rotation.x = 0;
+            p.rightLeg.rotation.x = 0;
+        }
+    }
+
+    _buildPhoenixGroup() {
+        const group = new THREE.Group();
+        const material = new THREE.MeshBasicMaterial({ color: 0xff7a1a });
+        // Körper: Oktaeder im Brust-Bereich
+        const body = new THREE.Mesh(new THREE.OctahedronGeometry(0.45, 0), material);
+        body.position.y = 0.5;
+        body.castShadow = true;
+        body.receiveShadow = true;
+        group.add(body);
+        // Kopf: kleinerer Oktaeder oben
+        const head = new THREE.Mesh(new THREE.OctahedronGeometry(0.22, 0), material);
+        head.position.set(0, 0.95, 0.05);
+        head.castShadow = true;
+        group.add(head);
+        // Schweif: Kegel nach hinten unten
+        const tail = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.9, 6), material);
+        tail.position.set(0, 0.4, -0.55);
+        tail.rotation.x = Math.PI / 2;
+        tail.castShadow = true;
+        group.add(tail);
+        // Flügel: zwei flache Boxen mit Joint an der Schulter, sodass
+        // Rotation um die Forward-Achse (Z) wie Flügelschlag aussieht.
+        const buildWing = (sign) => {
+            const joint = new THREE.Group();
+            joint.position.set(sign * 0.3, 0.55, 0);
+            const wing = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.04, 0.5), material);
+            wing.position.x = sign * 0.45;
+            wing.castShadow = true;
+            joint.add(wing);
+            return joint;
+        };
+        const leftWing = buildWing(-1);
+        const rightWing = buildWing(1);
+        group.add(leftWing, rightWing);
+        group.userData.material = material;
+        group.userData.parts = { body, head, tail, leftWing, rightWing };
+        return group;
+    }
+
+    _animatePhoenix(group, t, walkPhase, isMoving) {
+        const p = group.userData.parts;
+        // Flügel flattern immer (Phönix ist ein Flugwesen). In Bewegung
+        // schneller, im Idle gemächlich.
+        const flapSpeed = isMoving ? 14 : 7;
+        const flapAmp = isMoving ? 0.85 : 0.55;
+        const flap = Math.sin(t * flapSpeed) * flapAmp;
+        p.leftWing.rotation.z = -flap;
+        p.rightWing.rotation.z = flap;
+        // Hover-Bob für Körper, im Idle stärker als im Walk
+        const bobAmp = isMoving ? 0.04 : 0.07;
+        const bobSpeed = isMoving ? 6 : 1.6;
+        p.body.position.y = 0.5 + Math.sin(t * bobSpeed) * bobAmp;
+        p.head.position.y = 0.95 + Math.sin(t * bobSpeed) * bobAmp * 0.7;
+        // Schweif folgt sanft
+        p.tail.rotation.z = Math.sin(t * 1.2) * 0.1;
+    }
+
+    _buildDragonGroup() {
+        const group = new THREE.Group();
+        const material = new THREE.MeshBasicMaterial({ color: 0x2d6e3b });
+        // Körper: gestreckter Quader entlang Z
+        const body = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.45, 1.2), material);
+        body.position.y = 0.4;
+        body.castShadow = true;
+        body.receiveShadow = true;
+        group.add(body);
+        // Kopf: vorne dran
+        const head = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.38, 0.45), material);
+        head.position.set(0, 0.5, 0.85);
+        head.castShadow = true;
+        group.add(head);
+        // Vier Beine in Box-Eck-Anordnung
+        const legY = 0.18;
+        const legLen = 0.5;
+        const flLeg = this._buildLimb(material, -0.25, legY, 0.35, legLen, 0.15, 0.15);
+        const frLeg = this._buildLimb(material, 0.25, legY, 0.35, legLen, 0.15, 0.15);
+        const blLeg = this._buildLimb(material, -0.25, legY, -0.35, legLen, 0.15, 0.15);
+        const brLeg = this._buildLimb(material, 0.25, legY, -0.35, legLen, 0.15, 0.15);
+        group.add(flLeg, frLeg, blLeg, brLeg);
+        // Schweif: drei Segmente in Kette nach hinten, jedes als Joint
+        // rotiert um den vorherigen — gibt eine wellige Sinus-Welle.
+        const tailJoint = new THREE.Group();
+        tailJoint.position.set(0, 0.4, -0.6);
+        const tailSeg1 = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.28, 0.45), material);
+        tailSeg1.position.z = -0.22;
+        tailSeg1.castShadow = true;
+        tailJoint.add(tailSeg1);
+        const tailJoint2 = new THREE.Group();
+        tailJoint2.position.z = -0.45;
+        const tailSeg2 = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.2, 0.4), material);
+        tailSeg2.position.z = -0.2;
+        tailSeg2.castShadow = true;
+        tailJoint2.add(tailSeg2);
+        const tailJoint3 = new THREE.Group();
+        tailJoint3.position.z = -0.4;
+        const tailSeg3 = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.13, 0.35), material);
+        tailSeg3.position.z = -0.17;
+        tailSeg3.castShadow = true;
+        tailJoint3.add(tailSeg3);
+        tailJoint2.add(tailJoint3);
+        tailJoint.add(tailJoint2);
+        group.add(tailJoint);
+        group.userData.material = material;
+        group.userData.parts = { body, head, flLeg, frLeg, blLeg, brLeg, tailJoint, tailJoint2, tailJoint3 };
+        return group;
+    }
+
+    _animateDragon(group, t, walkPhase, isMoving) {
+        const p = group.userData.parts;
+        if (isMoving) {
+            // Trab: Diagonale Bein-Paare (FL+BR vs FR+BL) gegenphasig
+            const swing = Math.sin(walkPhase) * 0.45;
+            p.flLeg.rotation.x = swing;
+            p.brLeg.rotation.x = swing;
+            p.frLeg.rotation.x = -swing;
+            p.blLeg.rotation.x = -swing;
+            p.body.position.y = 0.4 + Math.abs(Math.sin(walkPhase * 2)) * 0.025;
+        } else {
+            const breath = Math.sin(t * 1.4) * 0.02;
+            p.body.position.y = 0.4 + breath;
+            p.flLeg.rotation.x = 0;
+            p.brLeg.rotation.x = 0;
+            p.frLeg.rotation.x = 0;
+            p.blLeg.rotation.x = 0;
+        }
+        // Schweif wellt sich immer (jedes Segment phasenversetzt)
+        p.tailJoint.rotation.y = Math.sin(t * 2.0) * 0.25;
+        p.tailJoint2.rotation.y = Math.sin(t * 2.0 - 0.6) * 0.35;
+        p.tailJoint3.rotation.y = Math.sin(t * 2.0 - 1.2) * 0.45;
+        // Kopf nickt leicht
+        p.head.position.y = 0.5 + Math.sin(t * 1.6) * 0.02;
+    }
+
+    // Tiefes Disposal eines alten Soul-Group: Geometrien + Materialien
+    // freigeben, damit GPU-Speicher nicht volläuft bei häufigem Wechsel.
+    _disposeSoulGroup(group) {
+        if (!group) return;
+        group.traverse((node) => {
+            if (node.geometry && typeof node.geometry.dispose === "function") {
+                node.geometry.dispose();
+            }
+            if (node.material && typeof node.material.dispose === "function") {
+                node.material.dispose();
+            }
+        });
+    }
+
+    applyPlayerSoul(name) {
+        const defs = this.playerSoulDefs;
+        const key = typeof name === "string" ? name.toLowerCase().trim() : "";
+        // Deutsch + Englisch + Umlaut tolerieren, damit Chat + DSL + Save +
+        // UI alle denselben Kanonisierungs-Pfad nehmen.
+        const alias = {
+            mensch: "human",
+            human: "human",
+            phönix: "phoenix",
+            phoenix: "phoenix",
+            drache: "dragon",
+            drachen: "dragon",
+            dragon: "dragon",
+        };
+        const canonical = alias[key] || (defs[key] ? key : null);
+        if (!canonical) {
+            this.log(`Seele '${name}' unbekannt — bekannt: ${Object.keys(defs).join(", ")}`, "ERROR");
+            return false;
+        }
+        // Vor Mesh-Erstellung (z. B. loadState im frühen Bootstrap): Wahl
+        // merken, init() ruft uns nach Mesh-Bau erneut auf.
+        if (!this.state.scene) {
+            this.state.player.soul = canonical;
+            return false;
+        }
+        const def = defs[canonical];
+        const old = this.state.playerMesh;
+        // Position + Scale + Rotation übernehmen, damit Soul-Wechsel mitten
+        // im Spiel keine Sprünge produziert.
+        const newGroup = def.build();
+        if (old) {
+            newGroup.position.copy(old.position);
+            newGroup.rotation.copy(old.rotation);
+            newGroup.scale.copy(old.scale);
+            newGroup.visible = old.visible;
+            // Physics-Body-Referenz mitnehmen (Sync-Loop liest
+            // mesh.userData.physicsBody) und Eintrag in state.rigidBodies
+            // mitswappen — sonst überschreibt der Sync-Loop die Position
+            // des bereits entfernten alten Group statt des neuen.
+            if (old.userData && old.userData.physicsBody) {
+                newGroup.userData.physicsBody = old.userData.physicsBody;
+            }
+            if (Array.isArray(this.state.rigidBodies)) {
+                const idx = this.state.rigidBodies.indexOf(old);
+                if (idx >= 0) this.state.rigidBodies[idx] = newGroup;
+            }
+            this.state.scene.remove(old);
+            this._disposeSoulGroup(old);
+        }
+        this.state.scene.add(newGroup);
+        this.state.playerMesh = newGroup;
+        this.state.player.soul = canonical;
+        this.log(`Seele gewechselt: ${def.label} (${canonical})`, "INFO");
+        if (typeof document !== "undefined") {
+            const select = document.getElementById("player-soul-select");
+            if (select && select.value !== canonical) select.value = canonical;
+            const status = document.getElementById("status-soul");
+            if (status) status.textContent = def.label;
+        }
+        return true;
+    }
+
+    // Pro-Frame-Animation des aktuellen Soul-Group. Wird im Render-Loop
+    // direkt nach der Kamera aufgerufen — playerMesh.position ist da schon
+    // mit dem Physik-Body synchronisiert.
+    animatePlayerSoul(currentTime) {
+        const mesh = this.state.playerMesh;
+        if (!mesh || !mesh.userData || !mesh.userData.parts) return;
+        const def = this.playerSoulDefs[this.state.player.soul || "human"];
+        if (!def || typeof def.animate !== "function") return;
+        const p = this.state.player;
+        // isMoving aus horizontaler Geschwindigkeit. Schwelle 0.4 m/s
+        // verhindert Mikro-Walk wenn der Spieler steht aber leicht rutscht.
+        let isMoving = false;
+        if (this.state.playerBody && typeof this.state.playerBody.getLinearVelocity === "function") {
+            const v = this.state.playerBody.getLinearVelocity();
+            const speed = Math.hypot(v.x(), v.z());
+            isMoving = speed > 0.4;
+        }
+        // Walk-Phase nur in Bewegung akkumulieren (keine Glieder-Sprünge
+        // beim Stop). Frame-Delta aus animationLastTick.
+        const last = p.animationLastTick;
+        const dt = last > -Infinity ? Math.max(0, currentTime - last) : 0;
+        p.animationLastTick = currentTime;
+        if (isMoving) {
+            const stepHz = this.state.player.soul === "dragon" ? 4.5 : 5.5;
+            p.walkPhase += dt * stepHz;
+        }
+        def.animate(mesh, currentTime, p.walkPhase, isMoving);
+    }
+
+    // ### Ring 6 – architectureTemplates V1 ###
+    //
+    // Drei DSL-Primitives, die je einen THREE.Group aus Three.js-Primitives
+    // bauen: Dorf (Hütten + Lagerplatz), Tempel (Pfeiler + Dach + Altar),
+    // Wasserfall (Vertex-animierte Wasser-Plane + Becken). Jede Struktur
+    // bekommt einen Seed; Save persistiert nur {type, position, seed} und
+    // der Mesh wird beim Laden aus dem Seed neu gebaut — keine Mesh-Daten
+    // im JSON, kleine Save-Dateien.
+    //
+    // Strukturen sind global (nicht pro-Chunk parented). Sie überleben
+    // Chunk-Prune und liegen in `state.architectures`. FIFO-Cap (30) gegen
+    // Mesh-Spam wenn der Nexus mehrmals hintereinander baut.
+    //
+    // Pro-Frame-Animation (z. B. fließendes Wasser) läuft via
+    // `tickArchitectures(t)` — jede Struktur darf eine `userData.animate`-
+    // Funktion mitbringen, die der Tick aufruft. Statische Strukturen
+    // (Hütten, Tempel) brauchen das nicht.
+
+    _seedRng(seed) {
+        let s = (seed | 0) >>> 0 || 1;
+        return () => {
+            s = (s * 1664525 + 1013904223) >>> 0;
+            return s / 4294967296;
+        };
+    }
+
+    // ### Ring 6.4 — Bauplan-Datenschicht ###
+    //
+    // Vorher: drei hartcodierte `_buildVillageGroup/_buildTempleGroup/
+    // _buildWaterfallGroup`-Funktionen mit prozeduraler Logik. Jetzt ist
+    // ein Bauplan eine flache JSON-Liste von Primitiv-Parts (box, sphere,
+    // cylinder, cone, pyramid, octahedron, plane, torus), die `_buildFrom-
+    // Blueprint` zu einem THREE.Group rendert. Vorteile:
+    //   - User kann eigene Baupläne im Editor (6.6) hinzufügen.
+    //   - Save persistiert Strukturen als {blueprint-Name, position, seed}
+    //     plus eigene Baupläne als Daten.
+    //   - Fraktale Verschachtelung (Bauplan referenziert anderen Bauplan)
+    //     wird natürlich aus dem Datenschema heraus möglich (V3).
+    //
+    // Trade-off: Built-in Dörfer/Tempel sind jetzt alle identisch — die
+    // seed-basierte Variation (5-8 Hütten zufällig platziert) ist weg.
+    // Wer Varianten will, speichert sie als verschiedene Baupläne. Der
+    // Gewinn an Editierbarkeit + Saveability schlägt den Verlust an
+    // Prozeduralität bei weitem.
+    //
+    // Part-Format:
+    // ```
+    // {
+    //     shape: "box" | "sphere" | "cylinder" | "cone" | "pyramid" |
+    //            "octahedron" | "plane" | "torus",
+    //     color: 0xRRGGBB,
+    //     position: { x, y, z },
+    //     rotation: { x, y, z }, // optional, in Radiant
+    //     size: { x, y, z },     // Größe je Primitiv-spezifisch interpretiert
+    //     opacity: 0..1,         // optional, < 1 macht transparent
+    //     animate: "water_wave", // optional, Marker für tickArchitectures
+    // }
+    // ```
+    //
+    // Bauplan-Format:
+    // ```
+    // {
+    //     name: "village",
+    //     label: "Dorf",
+    //     builtIn: true,         // false bei User-Baupläne
+    //     parts: [...]
+    // }
+    // ```
+
+    _makePartGeometry(part) {
+        const sx = (part.size && part.size.x) || 1;
+        const sy = (part.size && part.size.y) || sx;
+        const sz = (part.size && part.size.z) || sx;
+        const segments = part.segments || 12;
+        switch (part.shape) {
+            case "sphere":
+                return new THREE.SphereGeometry(sx / 2, segments, Math.max(4, Math.floor(segments * 0.6)));
+            case "cylinder":
+                return new THREE.CylinderGeometry(sx / 2, sz / 2, sy, segments);
+            case "cone":
+                return new THREE.ConeGeometry(sx / 2, sy, segments);
+            case "pyramid":
+                // Vier-seitige Pyramide = Kegel mit 4 Segmenten
+                return new THREE.ConeGeometry(sx / 2, sy, 4);
+            case "octahedron":
+                return new THREE.OctahedronGeometry(sx / 2, 0);
+            case "plane":
+                // Plane: optional segmentiert für Vertex-Animation. Default
+                // 1×1, für animate="water_wave" lieber 6×18.
+                if (part.animate === "water_wave") {
+                    return new THREE.PlaneGeometry(sx, sy, 6, 18);
+                }
+                return new THREE.PlaneGeometry(sx, sy);
+            case "torus":
+                return new THREE.TorusGeometry(sx / 2, Math.max(0.05, sx / 6), 8, segments);
+            case "box":
+            default:
+                return new THREE.BoxGeometry(sx, sy, sz);
+        }
+    }
+
+    // Einen Bauplan in einen THREE.Group rendern. Materialien werden pro
+    // Part erzeugt (mehrere Parts mit gleicher Farbe würden sich Material
+    // teilen können — V1 hält's einfach). Wasser-Animation kommt automatisch,
+    // wenn ein Part `animate: "water_wave"` trägt.
+    _buildFromBlueprint(blueprint) {
+        const group = new THREE.Group();
+        if (!blueprint || !Array.isArray(blueprint.parts)) {
+            group.userData.kind = blueprint ? blueprint.name : "empty";
+            return group;
+        }
+        const materials = [];
+        const waveTargets = [];
+        for (const part of blueprint.parts) {
+            const geom = this._makePartGeometry(part);
+            const matOpts = { color: typeof part.color === "number" ? part.color : 0xffffff };
+            if (Number.isFinite(part.opacity) && part.opacity < 1) {
+                matOpts.transparent = true;
+                matOpts.opacity = part.opacity;
+            }
+            const mat = new THREE.MeshBasicMaterial(matOpts);
+            materials.push(mat);
+            const mesh = new THREE.Mesh(geom, mat);
+            const pos = part.position || { x: 0, y: 0, z: 0 };
+            mesh.position.set(pos.x || 0, pos.y || 0, pos.z || 0);
+            if (part.rotation) {
+                mesh.rotation.set(part.rotation.x || 0, part.rotation.y || 0, part.rotation.z || 0);
+            }
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            group.add(mesh);
+            if (part.animate === "water_wave") waveTargets.push(mesh);
+        }
+        group.userData.kind = blueprint.name;
+        group.userData.materials = materials;
+        // Wasser-Animations-Hook: alle Wasser-Planes Sinus-wellen lassen.
+        // baseY je Mesh cachen damit die Welle relativ zur Ausgangsposition
+        // schwingt statt absolut zur 0.
+        if (waveTargets.length > 0) {
+            const captured = waveTargets.map((mesh) => {
+                const positions = mesh.geometry.attributes.position;
+                const baseY = new Float32Array(positions.count);
+                for (let i = 0; i < positions.count; i++) baseY[i] = positions.getY(i);
+                return { mesh, positions, baseY };
+            });
+            group.userData.animate = (t) => {
+                for (const cap of captured) {
+                    for (let i = 0; i < cap.positions.count; i++) {
+                        const y = cap.baseY[i];
+                        const wave = Math.sin(t * 4.5 + y * 1.5) * 0.12;
+                        cap.positions.setZ(i, wave);
+                    }
+                    cap.positions.needsUpdate = true;
+                }
+            };
+        }
+        return group;
+    }
+
+    // Default-Baupläne als Daten. Drei built-ins, die das ersetzen, was
+    // vorher als JS-Funktionen lebte. Wer Variation will, klont diese und
+    // ändert Parts.
+    _defaultBlueprints() {
+        // Hilfsfunktionen für die Built-in-Generierung. Bauen einen Bauplan
+        // imperativ und liefern flache Part-Listen zurück. Da das nur EINMAL
+        // beim Initialisieren läuft, kostet das nichts.
+        const villageParts = [];
+        const hutCount = 6;
+        for (let i = 0; i < hutCount; i++) {
+            const angle = (i / hutCount) * Math.PI * 2;
+            const radius = 7.5;
+            const hx = Math.cos(angle) * radius;
+            const hz = Math.sin(angle) * radius;
+            // Körper
+            villageParts.push({
+                shape: "box",
+                color: 0x6e3a14,
+                position: { x: hx, y: 0.8, z: hz },
+                rotation: { x: 0, y: -angle + Math.PI, z: 0 },
+                size: { x: 2.0, y: 1.6, z: 2.4 },
+            });
+            // Dach
+            villageParts.push({
+                shape: "pyramid",
+                color: 0x8b2a1e,
+                position: { x: hx, y: 2.2, z: hz },
+                rotation: { x: 0, y: -angle + Math.PI + Math.PI / 4, z: 0 },
+                size: { x: 3.4, y: 1.2, z: 3.4 },
+            });
+        }
+        // Lagerplatz
+        villageParts.push({
+            shape: "cylinder",
+            color: 0x707070,
+            position: { x: 0, y: 0.05, z: 0 },
+            size: { x: 4.4, y: 0.15, z: 4.4 },
+            segments: 12,
+        });
+
+        const templeParts = [];
+        const pillarCount = 6;
+        const pillarRadius = 3.2;
+        const pillarHeight = 4.0;
+        for (let i = 0; i < pillarCount; i++) {
+            const angle = (i / pillarCount) * Math.PI * 2;
+            templeParts.push({
+                shape: "cylinder",
+                color: 0xc8c0a8,
+                position: {
+                    x: Math.cos(angle) * pillarRadius,
+                    y: pillarHeight / 2,
+                    z: Math.sin(angle) * pillarRadius,
+                },
+                size: { x: 0.6, y: pillarHeight, z: 0.7 },
+                segments: 8,
+            });
+        }
+        // Dach
+        templeParts.push({
+            shape: "cylinder",
+            color: 0xc8c0a8,
+            position: { x: 0, y: pillarHeight + 0.2, z: 0 },
+            size: { x: (pillarRadius + 0.6) * 2, y: 0.4, z: (pillarRadius + 0.6) * 2 },
+            segments: 8,
+        });
+        // Altar
+        templeParts.push({
+            shape: "box",
+            color: 0x6a4a8a,
+            position: { x: 0, y: 0.45, z: 0 },
+            size: { x: 1.2, y: 0.9, z: 1.2 },
+        });
+        // Kristall-Spitze
+        templeParts.push({
+            shape: "octahedron",
+            color: 0xd9a3ff,
+            position: { x: 0, y: 1.4, z: 0 },
+            size: { x: 0.9, y: 0.9, z: 0.9 },
+        });
+
+        const waterfallParts = [
+            // Klippe hinten
+            {
+                shape: "box",
+                color: 0x4a4a55,
+                position: { x: 0, y: 4.0, z: -0.6 },
+                size: { x: 4.0, y: 8.0, z: 1.0 },
+            },
+            // Wasser-Plane (segmentiert + animiert)
+            {
+                shape: "plane",
+                color: 0x4ea0d4,
+                position: { x: 0, y: 4.0, z: 0.05 },
+                size: { x: 2.6, y: 7.5, z: 1 },
+                opacity: 0.75,
+                animate: "water_wave",
+            },
+            // Becken am Fuß
+            {
+                shape: "cylinder",
+                color: 0x2a6a8a,
+                position: { x: 0, y: 0.2, z: 0 },
+                size: { x: 5.0, y: 0.4, z: 5.0 },
+                segments: 16,
+                opacity: 0.7,
+            },
+        ];
+
+        return {
+            village: { name: "village", label: "Dorf", builtIn: true, parts: villageParts },
+            temple: { name: "temple", label: "Tempel", builtIn: true, parts: templeParts },
+            waterfall: { name: "waterfall", label: "Wasserfall", builtIn: true, parts: waterfallParts },
+        };
+    }
+
+    _architectureBuilders() {
+        // Builders kommen jetzt aus state.blueprints — eine Quelle für
+        // Built-in + User-Baupläne. Seed wird zur Zeit nicht mehr genutzt
+        // (Built-ins sind deterministisch); bleibt als Parameter, damit die
+        // Aufruf-Stelle gleich bleibt und zukünftige Bauplan-Varianten via
+        // Seed möglich sind.
+        const map = {};
+        const blueprints = this.state.blueprints || {};
+        for (const name of Object.keys(blueprints)) {
+            const bp = blueprints[name];
+            map[name] = () => this._buildFromBlueprint(bp);
+        }
+        return map;
+    }
+
+    // Mesh aus Eintrag (re-)bauen und in die Szene hängen. Trennt Daten von
+    // Sicht: ein Eintrag in `state.architectures` kann jederzeit ohne Mesh
+    // existieren (gepruned, weil zu weit weg) und später wieder einen
+    // bekommen. Determinismus garantiert: gleiches Seed → gleicher Mesh.
+    _rebuildArchitectureMesh(entry) {
+        if (!this.state.scene || !entry) return null;
+        const builders = this._architectureBuilders();
+        const builder = builders[entry.type];
+        if (!builder) return null;
+        const baseY = Number.isFinite(entry.position.y) ? entry.position.y - 0.5 : 0;
+        const group = builder(entry.seed);
+        group.position.set(entry.position.x || 0, baseY, entry.position.z || 0);
+        if (Number.isFinite(entry.scale) && entry.scale !== 1) {
+            group.scale.setScalar(entry.scale);
+        }
+        this.state.scene.add(group);
+        entry.mesh = group;
+        // Ring 6.3 — Kollisions-Body für die Struktur. Statisch (mass=0),
+        // eine umschließende Box rund um die Group. Wir pushen NICHT in
+        // state.rigidBodies, damit der Sync-Loop die Group-Position nicht
+        // anhand des Body-Origin überschreibt — die Position kommt aus
+        // entry.position, der Body ist nur Hitbox.
+        this._buildArchitectureCollision(entry);
+        return group;
+    }
+
+    // Statischer Kollisions-Body um die Architecture-Group als **Compound-
+    // Shape** aus einer btBoxShape pro Sub-Mesh. Eine einzelne umschließende
+    // AABB wäre einfacher, ist aber zu grob: ein Dorf mit Hütten auf
+    // Radius 10 hätte eine 24×4×24-AABB, in deren Mitte der Spieler steht —
+    // er wird beim Spawn aus der Box gepresst, oft durch den Boden. Mit
+    // Compound-Shape ist nur jede einzelne Hütte solide, der Weg zwischen
+    // Hütten frei.
+    _buildArchitectureCollision(entry) {
+        if (!entry || !entry.mesh || !this.state.physicsWorld) return null;
+        entry.mesh.updateMatrixWorld(true);
+        const groupPos = entry.mesh.position;
+        const compound = new Ammo.btCompoundShape();
+        const childShapes = [];
+        let added = 0;
+        entry.mesh.traverse((node) => {
+            if (!node.isMesh || !node.geometry) return;
+            // Welt-BBox des einzelnen Mesh-Child. setFromObject berücksichtigt
+            // alle verschachtelten Group-Transforms.
+            const childBox = new THREE.Box3().setFromObject(node);
+            if (childBox.isEmpty()) return;
+            const size = new THREE.Vector3();
+            childBox.getSize(size);
+            const center = new THREE.Vector3();
+            childBox.getCenter(center);
+            const hx = Math.max(0.05, size.x / 2);
+            const hy = Math.max(0.05, size.y / 2);
+            const hz = Math.max(0.05, size.z / 2);
+            const childShape = new Ammo.btBoxShape(new Ammo.btVector3(hx, hy, hz));
+            const childTransform = new Ammo.btTransform();
+            childTransform.setIdentity();
+            const offset = new Ammo.btVector3(center.x - groupPos.x, center.y - groupPos.y, center.z - groupPos.z);
+            childTransform.setOrigin(offset);
+            compound.addChildShape(childTransform, childShape);
+            childShapes.push(childShape);
+            Ammo.destroy(offset);
+            Ammo.destroy(childTransform);
+            added++;
+        });
+        if (added === 0) {
+            Ammo.destroy(compound);
+            return null;
+        }
+        const transform = new Ammo.btTransform();
+        transform.setIdentity();
+        const origin = new Ammo.btVector3(groupPos.x, groupPos.y, groupPos.z);
+        transform.setOrigin(origin);
+        const motionState = new Ammo.btDefaultMotionState(transform);
+        const localInertia = new Ammo.btVector3(0, 0, 0);
+        const rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, compound, localInertia);
+        const body = new Ammo.btRigidBody(rbInfo);
+        body.setFriction(0.8);
+        this.state.physicsWorld.addRigidBody(body);
+        entry.collision = {
+            body,
+            shape: compound,
+            childShapes,
+            motionState,
+            rbInfo,
+            transform,
+            origin,
+            localInertia,
+        };
+        return body;
+    }
+
+    _disposeArchitectureCollision(entry) {
+        if (!entry || !entry.collision) return;
+        const c = entry.collision;
+        if (this.state.physicsWorld) this.state.physicsWorld.removeRigidBody(c.body);
+        try {
+            Ammo.destroy(c.body);
+        } catch {
+            /* ignore */
+        }
+        try {
+            Ammo.destroy(c.rbInfo);
+        } catch {
+            /* ignore */
+        }
+        try {
+            Ammo.destroy(c.motionState);
+        } catch {
+            /* ignore */
+        }
+        try {
+            Ammo.destroy(c.shape);
+        } catch {
+            /* ignore */
+        }
+        if (Array.isArray(c.childShapes)) {
+            for (const cs of c.childShapes) {
+                try {
+                    Ammo.destroy(cs);
+                } catch {
+                    /* ignore */
+                }
+            }
+        }
+        try {
+            Ammo.destroy(c.transform);
+        } catch {
+            /* ignore */
+        }
+        try {
+            Ammo.destroy(c.origin);
+        } catch {
+            /* ignore */
+        }
+        try {
+            Ammo.destroy(c.localInertia);
+        } catch {
+            /* ignore */
+        }
+        entry.collision = null;
+    }
+
+    // Mesh disposen, Eintrag bleibt als reine Daten erhalten. Fenster für
+    // späteren Wieder-Aufbau wenn der Spieler zurückkehrt.
+    _cullArchitectureMesh(entry) {
+        if (!entry || !entry.mesh) return;
+        // Erst Kollision freigeben, dann Mesh aus der Szene + Geometrien.
+        this._disposeArchitectureCollision(entry);
+        if (this.state.scene) this.state.scene.remove(entry.mesh);
+        this._disposeSoulGroup(entry.mesh);
+        entry.mesh = null;
+    }
+
+    // Eine Struktur zur Welt hinzufügen. Position kommt aus DSL (oder Save-
+    // Restore); centerY wird aus pos.y abgeleitet, mit Boden-Heuristik
+    // (pos.y - 0.5 ≈ Spielerfußhöhe falls at_player benutzt wurde).
+    spawnArchitecture(type, position, opts = {}) {
+        const builders = this._architectureBuilders();
+        if (!builders[type]) {
+            this.log(`spawnArchitecture: unbekannter Typ '${type}'`, "ERROR");
+            return null;
+        }
+        if (!this.state.scene) return null;
+        const seed = Number.isFinite(opts.seed) ? opts.seed : Math.floor(Math.random() * 0xffffffff);
+        const scale = Number.isFinite(opts.scale) && opts.scale > 0 ? opts.scale : 1;
+        const entry = {
+            id: this.state.architectureNextId++,
+            type,
+            position: { x: position.x || 0, y: position.y || 0, z: position.z || 0 },
+            seed,
+            scale,
+            mesh: null,
+        };
+        this.state.architectures.push(entry);
+        // V2: kein Cap mehr — wir bauen den Mesh nur, wenn der Spieler nahe
+        // genug ist. Sonst bleibt der Eintrag „cold" (nur Daten) und der
+        // Culling-Tick baut ihn auf, sobald der Spieler herankommt.
+        const playerPos = this.state.playerMesh ? this.state.playerMesh.position : null;
+        const inRange =
+            !playerPos ||
+            Math.hypot(entry.position.x - playerPos.x, entry.position.z - playerPos.z) <=
+                this.state.architectureCullingRadius;
+        if (inRange) this._rebuildArchitectureMesh(entry);
+        this.log(
+            `Struktur gebaut: ${type} bei (${entry.position.x.toFixed(1)}, ${entry.position.z.toFixed(1)})${scale !== 1 ? ` ×${scale.toFixed(2)}` : ""}${inRange ? "" : " (cold)"}`,
+            "INFO"
+        );
+        return entry;
+    }
+
+    // Pro-Frame-Tick: ruft animate() auf jeder Struktur, die einen Mesh
+    // hat und einen animate-Hook mitbringt (aktuell nur Wasserfälle).
+    // Cold-Einträge (mesh=null) werden übersprungen.
+    tickArchitectures(currentTime) {
+        const list = this.state.architectures;
+        if (!list || list.length === 0) return;
+        for (const entry of list) {
+            if (entry.mesh && entry.mesh.userData && typeof entry.mesh.userData.animate === "function") {
+                entry.mesh.userData.animate(currentTime);
+            }
+        }
+    }
+
+    // Distance-based Mesh-Culling (Minecraft-Stil). Pro Sekunde rotiert
+    // dieser Tick durch die Architektur-Liste:
+    //   - Spieler-Distanz <= cullingRadius + Mesh fehlt  → Mesh bauen
+    //   - Spieler-Distanz >  cullingRadius + Mesh exists → Mesh disposen
+    // Die Daten-Einträge bleiben immer; nur die GPU-Last ist begrenzt.
+    // Damit löst sich das alte Hard-Cap-Problem auf: der Spieler kann
+    // unbegrenzt bauen, solange das nicht alles gleichzeitig in Sicht ist.
+    tickArchitectureCulling(currentTime) {
+        const tickInterval = 1 / Math.max(0.1, this.state.architectureCullingTickHz);
+        if (currentTime - this.state.architectureCullingLastTick < tickInterval) return;
+        this.state.architectureCullingLastTick = currentTime;
+        const playerPos = this.state.playerMesh ? this.state.playerMesh.position : null;
+        if (!playerPos) return;
+        const radius = this.state.architectureCullingRadius;
+        const radiusSq = radius * radius;
+        for (const entry of this.state.architectures) {
+            const dx = entry.position.x - playerPos.x;
+            const dz = entry.position.z - playerPos.z;
+            const distSq = dx * dx + dz * dz;
+            if (distSq <= radiusSq) {
+                if (!entry.mesh) this._rebuildArchitectureMesh(entry);
+            } else {
+                if (entry.mesh) this._cullArchitectureMesh(entry);
+            }
+        }
+    }
+
+    // ### Ring 6 V2 — Bau-Modus (Phantom-Cursor) ###
+    //
+    // Aktivieren: Tasten 1 (Dorf) / 2 (Tempel) / 3 (Wasserfall) — schaltet
+    // die Form an oder wechselt zur neuen. Im Modus schwebt ein halb-
+    // transparentes Phantom 5 m vor dem Spieler (in Yaw-Richtung). F baut
+    // an der Phantom-Position. ESC verlässt den Modus.
+    //
+    // Phantom-Mesh ist ein normaler Builder-Group, dessen Materialien wir
+    // nach dem Bau auf transparent + opacity 0.4 stellen. So sieht's wie
+    // ein Geist der späteren Struktur aus, kostet aber kein Sondermodell.
+
+    // Ring 6.5 — Hotbar-Slot auswählen. slotIndex 0..8. Wenn der Slot leer
+    // ist, wird der Bau-Modus deaktiviert. Wenn der Slot belegt UND derselbe
+    // Slot bereits aktiv ist, toggelt der Modus aus (zweiter 1-Druck =
+    // Modus aus). Sonst wird das Phantom auf den neuen Bauplan umgestellt.
+    selectHotbarSlot(slotIndex) {
+        const bm = this.state.buildMode;
+        const idx = Math.max(0, Math.min(8, slotIndex | 0));
+        const blueprintName = this.state.hotbar[idx];
+        // Toggle: gleicher aktiver Slot → Modus aus.
+        if (bm.active && bm.slotIndex === idx) {
+            this._clearBuildMode();
+            this._updateHotbarHighlight();
+            return;
+        }
+        // Leerer Slot: keinen Modus aktivieren (aber Highlight setzen).
+        if (!blueprintName || !this.state.blueprints[blueprintName]) {
+            this._clearBuildMode();
+            bm.slotIndex = idx;
+            this._updateHotbarHighlight();
+            return;
+        }
+        // Altes Phantom wegräumen, falls Bauplan-Wechsel.
+        if (bm.phantomMesh && this.state.scene) {
+            this.state.scene.remove(bm.phantomMesh);
+            this._disposeSoulGroup(bm.phantomMesh);
+            bm.phantomMesh = null;
+        }
+        bm.active = true;
+        bm.slotIndex = idx;
+        bm.blueprintName = blueprintName;
+        const phantom = this._buildFromBlueprint(this.state.blueprints[blueprintName]);
+        phantom.traverse((node) => {
+            if (node.material) {
+                node.material.transparent = true;
+                node.material.opacity = 0.4;
+            }
+            if (node.castShadow !== undefined) node.castShadow = false;
+        });
+        if (this.state.scene) this.state.scene.add(phantom);
+        bm.phantomMesh = phantom;
+        this._updateBuildModeHud();
+        this._updateHotbarHighlight();
+        this.log(`Bau-Modus: ${blueprintName} (Slot ${idx + 1})`, "INFO");
+    }
+
+    // Bauplan in einen Hotbar-Slot legen. Persistiert sich automatisch via
+    // Save. UI im Spieler-Drawer ruft das auf.
+    setHotbarSlot(slotIndex, blueprintName) {
+        const idx = Math.max(0, Math.min(8, slotIndex | 0));
+        if (blueprintName && !this.state.blueprints[blueprintName]) {
+            this.log(`Hotbar-Slot ${idx + 1}: unbekannter Bauplan '${blueprintName}'`, "ERROR");
+            return false;
+        }
+        this.state.hotbar[idx] = blueprintName || null;
+        this._renderHotbarDOM();
+        // Wenn der aktive Slot geändert wurde, Phantom-Mesh neu bauen.
+        if (this.state.buildMode.slotIndex === idx) {
+            const wasActive = this.state.buildMode.active;
+            this._clearBuildMode();
+            if (wasActive && blueprintName) this.selectHotbarSlot(idx);
+        }
+        return true;
+    }
+
+    _clearBuildMode() {
+        const bm = this.state.buildMode;
+        if (bm.phantomMesh && this.state.scene) {
+            this.state.scene.remove(bm.phantomMesh);
+            this._disposeSoulGroup(bm.phantomMesh);
+        }
+        bm.active = false;
+        bm.blueprintName = null;
+        bm.phantomMesh = null;
+        this._updateBuildModeHud();
+    }
+
+    // Bau ausführen: spawnArchitecture an aktueller Phantom-Position.
+    // Modus bleibt aktiv für Mehrfach-Bau (ESC verlässt explizit).
+    confirmBuild() {
+        const bm = this.state.buildMode;
+        if (!bm.active || !bm.blueprintName || !bm.phantomMesh) return false;
+        const p = bm.phantomMesh.position;
+        const spawnPos = { x: p.x, y: p.y + 0.5, z: p.z };
+        this.spawnArchitecture(bm.blueprintName, spawnPos);
+        return true;
+    }
+
+    // Pro Frame: Phantom 5 m in Yaw-Richtung vor dem Spieler positionieren.
+    tickBuildMode() {
+        const bm = this.state.buildMode;
+        if (!bm.active || !bm.phantomMesh || !this.state.playerMesh) return;
+        const p = this.state.playerMesh.position;
+        const dist = bm.phantomDistance;
+        bm.phantomMesh.position.set(
+            p.x + Math.sin(this.state.yaw) * dist,
+            p.y - 0.5,
+            p.z + Math.cos(this.state.yaw) * dist
+        );
+        bm.phantomMesh.rotation.y = -this.state.yaw;
+    }
+
+    _updateBuildModeHud() {
+        if (typeof document === "undefined") return;
+        const hud = document.getElementById("build-mode-hud");
+        if (!hud) return;
+        const bm = this.state.buildMode;
+        if (bm.active && bm.blueprintName) {
+            const bp = this.state.blueprints[bm.blueprintName];
+            const label = bp && bp.label ? bp.label : bm.blueprintName;
+            hud.textContent = `Bau: ${label} — F bauen, ESC verlassen, 1-9 Slot wählen`;
+            hud.hidden = false;
+        } else {
+            hud.hidden = true;
+            hud.textContent = "";
+        }
+    }
+
+    // Hotbar-DOM neu rendern: 9 Slots mit Label + Slot-Nummer. Wird beim
+    // Init aufgerufen und nach jeder setHotbarSlot-Mutation.
+    _renderHotbarDOM() {
+        if (typeof document === "undefined") return;
+        const bar = document.getElementById("hotbar");
+        if (!bar) return;
+        bar.innerHTML = "";
+        for (let i = 0; i < 9; i++) {
+            const name = this.state.hotbar[i];
+            const slot = document.createElement("button");
+            slot.type = "button";
+            slot.className = "hotbar-slot";
+            slot.setAttribute("data-slot", String(i));
+            const num = document.createElement("span");
+            num.className = "num";
+            num.textContent = String(i + 1);
+            const label = document.createElement("span");
+            label.className = "label";
+            if (name && this.state.blueprints[name]) {
+                const bp = this.state.blueprints[name];
+                label.textContent = bp.label || name;
+                slot.classList.add("filled");
+            } else {
+                label.textContent = "—";
+            }
+            slot.appendChild(num);
+            slot.appendChild(label);
+            slot.addEventListener("click", () => this.selectHotbarSlot(i));
+            bar.appendChild(slot);
+        }
+        this._updateHotbarHighlight();
+        this._renderHotbarConfigDOM();
+    }
+
+    _updateHotbarHighlight() {
+        if (typeof document === "undefined") return;
+        const slots = document.querySelectorAll("#hotbar .hotbar-slot");
+        const bm = this.state.buildMode;
+        slots.forEach((slot, i) => {
+            slot.classList.toggle("active", bm.active && bm.slotIndex === i);
+        });
+    }
+
+    // Hotbar-Belegung im Spieler-Drawer: 9 Reihen mit Slot-Nummer + Dropdown.
+    // Wird aufgerufen, wenn der Spieler-Drawer geöffnet wird (oder beim Init,
+    // dann ist's idempotent).
+    _renderHotbarConfigDOM() {
+        if (typeof document === "undefined") return;
+        const container = document.getElementById("hotbar-config");
+        if (!container) return;
+        container.innerHTML = "";
+        const blueprintNames = Object.keys(this.state.blueprints || {});
+        for (let i = 0; i < 9; i++) {
+            const row = document.createElement("div");
+            row.className = "hotbar-config-row";
+            const num = document.createElement("span");
+            num.className = "num";
+            num.textContent = String(i + 1);
+            const sel = document.createElement("select");
+            sel.setAttribute("data-slot", String(i));
+            const emptyOpt = document.createElement("option");
+            emptyOpt.value = "";
+            emptyOpt.textContent = "— leer —";
+            sel.appendChild(emptyOpt);
+            for (const name of blueprintNames) {
+                const opt = document.createElement("option");
+                opt.value = name;
+                opt.textContent = this.state.blueprints[name].label || name;
+                sel.appendChild(opt);
+            }
+            sel.value = this.state.hotbar[i] || "";
+            sel.addEventListener("change", () => {
+                this.setHotbarSlot(i, sel.value || null);
+            });
+            row.appendChild(num);
+            row.appendChild(sel);
+            container.appendChild(row);
+        }
+    }
+
+    // ### Ring 6.6 — Werkstatt: Bauplan-Editor ###
+    //
+    // Vier State-Mutationspfade. Alle gehen über `state.blueprints` direkt;
+    // Built-ins werden nicht überschrieben (Editor klont sie statt zu
+    // mutieren — sonst gehen sie bei nächstem Reload verloren, weil
+    // _defaultBlueprints() im Konstruktor immer das Original wiederherstellt).
+
+    createBlueprint(name, label) {
+        const cleanName = typeof name === "string" ? name.trim() : "";
+        if (!cleanName) {
+            this.log("createBlueprint: leerer Name", "ERROR");
+            return false;
+        }
+        if (this.state.blueprints[cleanName]) {
+            this.log(`createBlueprint: '${cleanName}' existiert bereits`, "ERROR");
+            return false;
+        }
+        this.state.blueprints[cleanName] = {
+            name: cleanName,
+            label: typeof label === "string" && label.trim() ? label.trim() : cleanName,
+            builtIn: false,
+            parts: [],
+        };
+        this.log(`Bauplan '${cleanName}' angelegt`, "INFO");
+        return true;
+    }
+
+    cloneBlueprint(sourceName, newName) {
+        const source = this.state.blueprints[sourceName];
+        if (!source) {
+            this.log(`cloneBlueprint: '${sourceName}' nicht gefunden`, "ERROR");
+            return false;
+        }
+        const cleanNew = typeof newName === "string" ? newName.trim() : "";
+        if (!cleanNew || this.state.blueprints[cleanNew]) {
+            this.log(`cloneBlueprint: Ziel-Name '${cleanNew}' leer oder schon belegt`, "ERROR");
+            return false;
+        }
+        this.state.blueprints[cleanNew] = {
+            name: cleanNew,
+            label: source.label ? `${source.label} (Kopie)` : cleanNew,
+            builtIn: false,
+            parts: JSON.parse(JSON.stringify(source.parts || [])),
+        };
+        this.log(`Bauplan '${sourceName}' nach '${cleanNew}' geklont`, "INFO");
+        return true;
+    }
+
+    deleteBlueprint(name) {
+        const bp = this.state.blueprints[name];
+        if (!bp) return false;
+        if (bp.builtIn) {
+            this.log(`deleteBlueprint: '${name}' ist Built-in und kann nicht gelöscht werden`, "ERROR");
+            return false;
+        }
+        delete this.state.blueprints[name];
+        // Hotbar-Slots, die diesen Bauplan halten, leeren.
+        for (let i = 0; i < 9; i++) {
+            if (this.state.hotbar[i] === name) this.state.hotbar[i] = null;
+        }
+        this._renderHotbarDOM();
+        this.log(`Bauplan '${name}' gelöscht`, "INFO");
+        return true;
+    }
+
+    addPartToBlueprint(name, part) {
+        const bp = this.state.blueprints[name];
+        if (!bp) return false;
+        if (bp.builtIn) {
+            this.log(`addPart: '${name}' ist Built-in — bitte erst klonen`, "ERROR");
+            return false;
+        }
+        // Default-Werte für ein neues Part, falls nicht alles übergeben wird.
+        const defaultPart = {
+            shape: "box",
+            color: 0x888888,
+            position: { x: 0, y: 1, z: 0 },
+            rotation: { x: 0, y: 0, z: 0 },
+            size: { x: 1, y: 1, z: 1 },
+        };
+        bp.parts.push({ ...defaultPart, ...(part || {}) });
+        return true;
+    }
+
+    removePartFromBlueprint(name, index) {
+        const bp = this.state.blueprints[name];
+        if (!bp || bp.builtIn) return false;
+        if (index < 0 || index >= bp.parts.length) return false;
+        bp.parts.splice(index, 1);
+        return true;
+    }
+
+    updatePartInBlueprint(name, index, patch) {
+        const bp = this.state.blueprints[name];
+        if (!bp || bp.builtIn) return false;
+        if (index < 0 || index >= bp.parts.length) return false;
+        const part = bp.parts[index];
+        // Patch ist ein Teil-Objekt; wir mergen rekursiv für position/size/
+        // rotation, damit man einzelne Koordinaten verändern kann.
+        if (patch.shape) part.shape = patch.shape;
+        if (typeof patch.color === "number") part.color = patch.color;
+        for (const key of ["position", "size", "rotation"]) {
+            if (patch[key]) {
+                part[key] = { ...(part[key] || {}), ...patch[key] };
+            }
+        }
+        if (typeof patch.opacity === "number") part.opacity = patch.opacity;
+        return true;
+    }
+
+    // Werkstatt-State: welchen Bauplan editieren wir gerade?
+    _ensureWorkshopState() {
+        if (!this.state.workshop) {
+            this.state.workshop = { selectedBlueprint: "village" };
+        }
+        return this.state.workshop;
+    }
+
+    selectBlueprintForEdit(name) {
+        const ws = this._ensureWorkshopState();
+        if (!this.state.blueprints[name]) {
+            this.log(`selectBlueprintForEdit: '${name}' nicht gefunden`, "ERROR");
+            return false;
+        }
+        ws.selectedBlueprint = name;
+        this._renderWorkshopDOM();
+        return true;
+    }
+
+    _renderWorkshopDOM() {
+        if (typeof document === "undefined") return;
+        const list = document.getElementById("workshop-list");
+        const editor = document.getElementById("workshop-editor");
+        if (!list || !editor) return;
+        const ws = this._ensureWorkshopState();
+        const blueprintNames = Object.keys(this.state.blueprints);
+        // Liste der Baupläne
+        list.innerHTML = "";
+        for (const name of blueprintNames) {
+            const bp = this.state.blueprints[name];
+            const row = document.createElement("div");
+            row.className = "workshop-list-row" + (name === ws.selectedBlueprint ? " selected" : "");
+            row.setAttribute("data-blueprint", name);
+            const nameSpan = document.createElement("span");
+            nameSpan.className = "name";
+            nameSpan.textContent = bp.label || name;
+            const badge = document.createElement("span");
+            badge.className = "badge";
+            badge.textContent = bp.builtIn ? "fest" : "eigen";
+            row.appendChild(nameSpan);
+            row.appendChild(badge);
+            row.addEventListener("click", () => this.selectBlueprintForEdit(name));
+            list.appendChild(row);
+        }
+        // Editor
+        editor.innerHTML = "";
+        const selected = this.state.blueprints[ws.selectedBlueprint];
+        if (!selected) return;
+        // Header mit Label + Aktionen
+        const header = document.createElement("div");
+        header.className = "workshop-header";
+        const title = document.createElement("h3");
+        title.textContent = selected.label || selected.name;
+        header.appendChild(title);
+        const status = document.createElement("span");
+        status.className = "workshop-status";
+        status.textContent = selected.builtIn ? "Eingebaut — zum Bearbeiten klonen" : `${selected.parts.length} Parts`;
+        header.appendChild(status);
+        editor.appendChild(header);
+        // Parts-Liste — bei Built-ins nur lesbar
+        const partsDiv = document.createElement("div");
+        partsDiv.className = "workshop-parts";
+        if (selected.parts.length === 0) {
+            const empty = document.createElement("div");
+            empty.className = "workshop-empty";
+            empty.textContent = "Noch keine Parts.";
+            partsDiv.appendChild(empty);
+        }
+        for (let i = 0; i < selected.parts.length; i++) {
+            const part = selected.parts[i];
+            const row = document.createElement("div");
+            row.className = "workshop-part-row";
+            // Shape-Dropdown
+            const shapeSelect = document.createElement("select");
+            for (const shape of ["box", "sphere", "cylinder", "cone", "pyramid", "octahedron", "plane", "torus"]) {
+                const opt = document.createElement("option");
+                opt.value = shape;
+                opt.textContent = shape;
+                if (shape === part.shape) opt.selected = true;
+                shapeSelect.appendChild(opt);
+            }
+            shapeSelect.disabled = !!selected.builtIn;
+            shapeSelect.addEventListener("change", () => {
+                this.updatePartInBlueprint(selected.name, i, { shape: shapeSelect.value });
+                this._renderWorkshopDOM();
+            });
+            row.appendChild(shapeSelect);
+            // Color-Input
+            const colorInput = document.createElement("input");
+            colorInput.type = "color";
+            const hex = "#" + (part.color || 0).toString(16).padStart(6, "0");
+            colorInput.value = hex;
+            colorInput.disabled = !!selected.builtIn;
+            colorInput.addEventListener("input", () => {
+                const num = parseInt(colorInput.value.replace("#", ""), 16);
+                this.updatePartInBlueprint(selected.name, i, { color: num });
+            });
+            row.appendChild(colorInput);
+            // Position + Size + Rotation kompakt als 9 Mini-Inputs
+            const xyzGrid = document.createElement("div");
+            xyzGrid.className = "workshop-xyz";
+            const fields = [
+                { label: "Pos X", key: "position", axis: "x" },
+                { label: "Y", key: "position", axis: "y" },
+                { label: "Z", key: "position", axis: "z" },
+                { label: "Größe X", key: "size", axis: "x" },
+                { label: "Y", key: "size", axis: "y" },
+                { label: "Z", key: "size", axis: "z" },
+                { label: "Rot X", key: "rotation", axis: "x" },
+                { label: "Y", key: "rotation", axis: "y" },
+                { label: "Z", key: "rotation", axis: "z" },
+            ];
+            for (const f of fields) {
+                const wrap = document.createElement("label");
+                wrap.className = "workshop-field";
+                const lbl = document.createElement("span");
+                lbl.textContent = f.label;
+                const input = document.createElement("input");
+                input.type = "number";
+                input.step = "0.1";
+                input.value = String((part[f.key] && part[f.key][f.axis]) || 0);
+                input.disabled = !!selected.builtIn;
+                input.addEventListener("change", () => {
+                    const v = parseFloat(input.value);
+                    if (!Number.isFinite(v)) return;
+                    this.updatePartInBlueprint(selected.name, i, {
+                        [f.key]: { [f.axis]: v },
+                    });
+                });
+                wrap.appendChild(lbl);
+                wrap.appendChild(input);
+                xyzGrid.appendChild(wrap);
+            }
+            row.appendChild(xyzGrid);
+            // Entfernen-Button
+            const delBtn = document.createElement("button");
+            delBtn.type = "button";
+            delBtn.className = "workshop-del";
+            delBtn.textContent = "×";
+            delBtn.disabled = !!selected.builtIn;
+            delBtn.addEventListener("click", () => {
+                this.removePartFromBlueprint(selected.name, i);
+                this._renderWorkshopDOM();
+            });
+            row.appendChild(delBtn);
+            partsDiv.appendChild(row);
+        }
+        editor.appendChild(partsDiv);
+        // Aktions-Buttons
+        const actions = document.createElement("div");
+        actions.className = "workshop-actions";
+        // Part hinzufügen (nur eigene Baupläne)
+        if (!selected.builtIn) {
+            const addBtn = document.createElement("button");
+            addBtn.type = "button";
+            addBtn.textContent = "Part hinzufügen";
+            addBtn.addEventListener("click", () => {
+                this.addPartToBlueprint(selected.name);
+                this._renderWorkshopDOM();
+            });
+            actions.appendChild(addBtn);
+        }
+        // Klonen
+        const cloneBtn = document.createElement("button");
+        cloneBtn.type = "button";
+        cloneBtn.textContent = "Klonen";
+        cloneBtn.addEventListener("click", () => {
+            const newName = window.prompt("Name für die Kopie?", `${selected.name}-kopie`);
+            if (!newName) return;
+            if (this.cloneBlueprint(selected.name, newName)) {
+                this.selectBlueprintForEdit(newName);
+            }
+        });
+        actions.appendChild(cloneBtn);
+        // Löschen (nur eigene)
+        if (!selected.builtIn) {
+            const delBtn = document.createElement("button");
+            delBtn.type = "button";
+            delBtn.className = "workshop-danger";
+            delBtn.textContent = "Löschen";
+            delBtn.addEventListener("click", () => {
+                if (!window.confirm(`Bauplan '${selected.name}' wirklich löschen?`)) return;
+                this.deleteBlueprint(selected.name);
+                // Auf einen anderen Bauplan umschalten
+                const remaining = Object.keys(this.state.blueprints);
+                if (remaining.length > 0) this.selectBlueprintForEdit(remaining[0]);
+                else this._renderWorkshopDOM();
+            });
+            actions.appendChild(delBtn);
+        }
+        // Neuer Bauplan (immer verfügbar)
+        const newBtn = document.createElement("button");
+        newBtn.type = "button";
+        newBtn.textContent = "Neuer Bauplan";
+        newBtn.addEventListener("click", () => {
+            const name = window.prompt("Name des neuen Bauplans?");
+            if (!name) return;
+            if (this.createBlueprint(name, name)) this.selectBlueprintForEdit(name);
+        });
+        actions.appendChild(newBtn);
+        editor.appendChild(actions);
+        // Hotbar-Config und alle Phantom-Mesh updaten, falls der aktive
+        // Bauplan editiert wurde.
+        this._renderHotbarConfigDOM();
+        this._renderHotbarDOM();
+        // Phantom in Bau-Modus neu rendern, falls er den editierten Bauplan zeigt
+        const bm = this.state.buildMode;
+        if (bm.active && bm.blueprintName === selected.name) {
+            const idx = bm.slotIndex;
+            this._clearBuildMode();
+            if (idx >= 0 && this.state.hotbar[idx] === selected.name) this.selectHotbarSlot(idx);
+        }
+    }
+
+    // Hilfsmethode für UI/Tests: zählt Architekturen in Spieler-Nähe.
+    countArchitecturesNearPlayer(radius = 60) {
+        const playerPos = this.state.playerMesh ? this.state.playerMesh.position : null;
+        if (!playerPos) return { near: 0, total: this.state.architectures.length };
+        const radiusSq = radius * radius;
+        let near = 0;
+        for (const entry of this.state.architectures) {
+            const dx = entry.position.x - playerPos.x;
+            const dz = entry.position.z - playerPos.z;
+            if (dx * dx + dz * dz <= radiusSq) near++;
+        }
+        return { near, total: this.state.architectures.length };
+    }
+
+    // Ring 5 V2 Vorbereitung — Kamera-Modus (Erst-/Dritte-Person).
+    setCameraMode(mode) {
+        const next = mode === "third" ? "third" : "first";
+        this.state.cameraMode = next;
+        const toggle = typeof document !== "undefined" ? document.getElementById("camera-mode-toggle") : null;
+        if (toggle) {
+            toggle.setAttribute("aria-pressed", next === "third" ? "true" : "false");
+            toggle.textContent = next === "third" ? "Sicht: 3rd" : "Sicht: 1st";
+        }
+        try {
+            localStorage.setItem("anazhRealmCameraMode", next);
+        } catch {
+            // Persistenz nicht hart erforderlich; pro-Session reicht.
+        }
+        this.log(`Kamera-Modus: ${next}`, "INFO");
+    }
+
+    cameraModeInitDOM() {
+        const toggle = document.getElementById("camera-mode-toggle");
+        if (!toggle) return;
+        const stored = (() => {
+            try {
+                return localStorage.getItem("anazhRealmCameraMode");
+            } catch {
+                return null;
+            }
+        })();
+        const initial = stored === "third" ? "third" : "first";
+        this.setCameraMode(initial);
+        toggle.addEventListener("click", () => {
+            this.setCameraMode(this.state.cameraMode === "third" ? "first" : "third");
+        });
+    }
+
+    playerSoulInitDOM() {
+        const select = document.getElementById("player-soul-select");
+        if (!select) return;
+        // Optionen aus den Defs aufbauen, damit Label + Reihenfolge an einer
+        // Stelle leben.
+        const defs = this.playerSoulDefs;
+        select.innerHTML = "";
+        for (const key of Object.keys(defs)) {
+            const opt = document.createElement("option");
+            opt.value = key;
+            opt.textContent = defs[key].label;
+            select.appendChild(opt);
+        }
+        select.value = this.state.player.soul || "human";
+        select.addEventListener("change", () => {
+            this.applyPlayerSoul(select.value);
+        });
+        // Status-Bar mit Default beschriften, falls vorhanden.
+        const status = document.getElementById("status-soul");
+        if (status) {
+            const cur = defs[this.state.player.soul || "human"];
+            status.textContent = (cur && cur.label) || "—";
+        }
+    }
+
     async init() {
         this.log("Initialisiere Anazh Realm V7.65... Ewigkeit erwacht!", "INFO");
+        this.themeInitDOM();
         this.grokInitDOM();
         this.symphonyInitDOM();
+        this.initStatusPanel();
+        this.playerSoulInitDOM();
+        this.cameraModeInitDOM();
+        // Ring 6.5 — Hotbar im DOM rendern. Wird hier einmal aufgesetzt;
+        // setHotbarSlot löst ein Re-Render aus.
+        this._renderHotbarDOM();
+        // Ring 6.6 — Werkstatt-Editor initial mit Default-Bauplan rendern.
+        this._renderWorkshopDOM();
+        this._updateBuildModeHud();
+        this.initTopbar();
+        this.initConsoleDOM();
         this.ensureWorldMeta();
         try {
             await this.core.initPhysics();
@@ -4329,21 +6545,28 @@ class AnazhRealm {
         this.log("Kamera initialisiert", "INFO");
         this.state.selfAwareness.components.push("camera");
 
-        const playerGeometry = new THREE.BoxGeometry(1, 1, 1);
-        const playerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-        const playerMesh = new THREE.Mesh(playerGeometry, playerMaterial);
-        playerMesh.position.set(0, 20, 0);
-        playerMesh.visible = true;
-        playerMesh.castShadow = true;
-        playerMesh.receiveShadow = true;
-        scene.add(playerMesh);
-        this.state.playerMesh = playerMesh;
-        this.log("Spieler erstellt: Position (0, 20, 0), Schatten aktiviert", "INFO");
+        // Ring 5 V2: Spieler-Mesh ist ein THREE.Group (Multi-Mesh + Animation).
+        // Wir starten mit einem leeren Group als Anker (Position + Skalierung)
+        // und lassen applyPlayerSoul ihn sofort mit dem ersten Soul-Aufbau
+        // füllen. So hat der Code danach EINEN Pfad für initialen Bau und
+        // späteren Wechsel.
+        const initialGroup = new THREE.Group();
+        initialGroup.position.set(0, 20, 0);
+        initialGroup.visible = true;
+        scene.add(initialGroup);
+        this.state.playerMesh = initialGroup;
+        const initialSoul =
+            this.state.player.soul && this.playerSoulDefs[this.state.player.soul] ? this.state.player.soul : "human";
+        this.applyPlayerSoul(initialSoul);
+        this.log("Spieler erstellt: Position (0, 20, 0), Soul + Schatten aktiviert", "INFO");
         this.state.selfAwareness.components.push("playerMesh");
 
         if (this.state.physicsWorld) {
             const playerShape = new Ammo.btBoxShape(new Ammo.btVector3(0.5, 0.5, 0.5));
-            this.state.playerBody = this.addRigidBody(playerMesh, 1, playerShape, true);
+            // WICHTIG: state.playerMesh, nicht der lokale `playerMesh` —
+            // applyPlayerSoul oben hat den initialen Group durch das fertige
+            // Soul-Group ersetzt. Local-var wäre stale.
+            this.state.playerBody = this.addRigidBody(this.state.playerMesh, 1, playerShape, true);
             // CCD direkt aktivieren: schützt vor Tunneling durch dünne
             // Heightfield-Cell-Ränder oder Sprung-Landungen genau auf einer
             // Chunk-Naht. Bisher nur per optimizeCollisions nachträglich
@@ -4364,8 +6587,26 @@ class AnazhRealm {
         this.generateNewWorld();
 
         window.addEventListener("keydown", (event) => {
+            // Wenn der Fokus in einem Eingabe-Feld liegt (Chat), keine
+            // Spiel-Aktionen aus den Tasten lösen — sonst tippt der User
+            // "1" und es geht in den Bau-Modus statt in den Chat.
+            const target = event.target;
+            const inInput =
+                target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
             this.state.keys[event.key.toLowerCase()] = true;
-            if (event.key === " ") this.handleJump(performance.now() / 1000);
+            if (event.key === " " && !inInput) this.handleJump(performance.now() / 1000);
+            if (inInput) return;
+            // Ring 6.5 — Hotbar-Tasten 1-9. Slot wird gewählt; bei
+            // belegtem Slot aktiviert Build-Mode für den dort liegenden
+            // Bauplan, bei leerem Slot bleibt Build-Mode aus.
+            if (event.key >= "1" && event.key <= "9") {
+                this.selectHotbarSlot(parseInt(event.key, 10) - 1);
+            } else if (event.key.toLowerCase() === "f") {
+                if (this.confirmBuild()) event.preventDefault();
+            } else if (event.key === "Escape") {
+                if (this.state.buildMode.active) this._clearBuildMode();
+                this._updateHotbarHighlight();
+            }
         });
         window.addEventListener("keyup", (event) => {
             this.state.keys[event.key.toLowerCase()] = false;
@@ -4429,7 +6670,9 @@ class AnazhRealm {
                 );
                 this.state.isJumping = true;
                 this.state.isInAir = true;
-                this.state.playerMesh.material.color.set(0xffa500);
+                // Ring 5 V2: keine Material-Tint mehr beim Sprung — der
+                // Soul-Group hat kein einzelnes Material, und die Sprung-
+                // Animation der Glieder ist die ehrlichere Anzeige.
                 if (currentTime - this.state.lastJumpLog >= this.state.jumpLogInterval) {
                     this.log("Spieler springt!", "INFO");
                     this.state.lastJumpLog = currentTime;
@@ -4498,6 +6741,9 @@ class AnazhRealm {
 
             // ### Symphonie-Wetter-Layer (Ring 4) ###
             this.symphonyTick();
+
+            // ### Status-Panel (UI V1) ###
+            this.updateStatusPanel(currentTime);
 
             // ### Bodenprüfung ###
             if (currentTime - this.state.lastGroundCheck >= this.state.groundCheckInterval) {
@@ -4648,7 +6894,7 @@ class AnazhRealm {
                                 this.state.lastGroundedTime = currentTime;
                                 this.state.isInAir = false;
                                 this.state.isJumping = false;
-                                this.state.playerMesh.material.color.set(0xff0000);
+                                // Ring 5 V2: Material-Tint entfernt (siehe handleJump).
                                 if (currentTime - this.state.lastGroundedLog >= this.state.groundedLogInterval) {
                                     this.log("Spieler geerdet!", "INFO");
                                     this.state.lastGroundedLog = currentTime;
@@ -4822,12 +7068,46 @@ class AnazhRealm {
 
             // ### Kamera ###
             if (player && camera) {
-                camera.position.set(player.position.x, player.position.y + 1.6, player.position.z);
-                camera.lookAt(
-                    player.position.x + Math.sin(this.state.yaw),
-                    player.position.y + 1.6 + Math.sin(this.state.pitch),
-                    player.position.z + Math.cos(this.state.yaw)
-                );
+                // Spieler-Mesh in Yaw-Richtung drehen, damit die Seele in
+                // Bewegungsrichtung schaut — wichtig für asymmetrische Formen
+                // (Drache hat lange Z-Achse) und Vorbereitung für V2-Glieder.
+                player.rotation.y = this.state.yaw;
+                if (this.state.cameraMode === "third") {
+                    // Orbit-Kamera hinter + über dem Spieler. Pitch hebt/senkt
+                    // die Kamera vertikal; Distance bleibt konstant. Look-At
+                    // zielt auf den Brust-Punkt.
+                    //
+                    // Pitch-Vorzeichen ist gegenüber 1st bewusst invertiert:
+                    // im 1st-Modus heißt "nach oben schauen" = Welt nach unten
+                    // sehen; im 3rd-Modus erwartet der Spieler aber, dass die
+                    // Maus-Richtung mit der Kamera-Bewegung mitgeht (Maus hoch
+                    // = Kamera höher um den Charakter herum).
+                    const dist = this.state.cameraThirdDistance;
+                    const height = this.state.cameraThirdHeight;
+                    const cosPitch = Math.cos(this.state.pitch);
+                    let camY = player.position.y + height - Math.sin(this.state.pitch) * dist;
+                    // Boden-Clamp: Kamera darf nicht unter Spieler-Füße. Ohne
+                    // diesen Schutz fährt sie bei steilem Hoch-Schauen durchs
+                    // Terrain und der Spieler sieht das Innere der Welt.
+                    // Player-Box ist 1×1×1, Center auf player.y, Füße bei
+                    // player.y − 0.5; etwas Puffer drüber (0.3) hält die
+                    // Kamera sicher über jeder normalen Heightfield-Spitze.
+                    const minCamY = player.position.y - 0.2;
+                    if (camY < minCamY) camY = minCamY;
+                    camera.position.set(
+                        player.position.x - Math.sin(this.state.yaw) * dist * cosPitch,
+                        camY,
+                        player.position.z - Math.cos(this.state.yaw) * dist * cosPitch
+                    );
+                    camera.lookAt(player.position.x, player.position.y + 1.0, player.position.z);
+                } else {
+                    camera.position.set(player.position.x, player.position.y + 1.6, player.position.z);
+                    camera.lookAt(
+                        player.position.x + Math.sin(this.state.yaw),
+                        player.position.y + 1.6 + Math.sin(this.state.pitch),
+                        player.position.z + Math.cos(this.state.yaw)
+                    );
+                }
                 if (currentTime - this.state.lastCameraLog >= this.state.cameraLogInterval) {
                     this.log(
                         `Kamera: (${camera.position.x.toFixed(2)}, ${camera.position.y.toFixed(2)}, ${camera.position.z.toFixed(2)})`,
@@ -4835,6 +7115,19 @@ class AnazhRealm {
                     );
                 }
             }
+
+            // Ring 5 V2: Soul-Animation. Glieder/Flügel/Schweif werden
+            // jeden Frame über sin/cos relativ zum aktuellen walkPhase
+            // rotiert. Idle-Loop (atmen, hover) läuft auch im Stand.
+            this.animatePlayerSoul(currentTime);
+
+            // Ring 6 V2: Culling-Tick (1 Hz) — baut/disposed Meshes je nach
+            // Spieler-Distanz. Daten-Einträge bleiben immer.
+            this.tickArchitectureCulling(currentTime);
+            // Ring 6 V2: Bau-Modus — Phantom-Position nachziehen wenn aktiv.
+            this.tickBuildMode();
+            // Ring 6: Bau-Werke mit Animations-Hook (nur Wasserfälle aktuell).
+            this.tickArchitectures(currentTime);
 
             this.pruneDistantChunks(playerPos);
 
