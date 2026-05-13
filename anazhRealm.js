@@ -404,6 +404,10 @@ class AnazhRealm {
                 blueprintName: null,
                 phantomMesh: null,
                 phantomDistance: 5,
+                // Welle 6.A5 — wird pro tickBuildMode aus dem Raycast-Hit
+                // gesetzt: true = stabile (begehbare) Oberfläche unter dem
+                // Phantom, false = schwebt frei oder zeigt auf Wand.
+                phantomOnGround: false,
             },
         };
         this.core = {
@@ -11299,18 +11303,93 @@ class AnazhRealm {
         return true;
     }
 
-    // Pro Frame: Phantom 5 m in Yaw-Richtung vor dem Spieler positionieren.
+    // Pro Frame: Phantom-Position aus Kamera-Raycast bestimmen (6.A4),
+    // Stabilität visuell anzeigen (6.A5).
     tickBuildMode() {
         const bm = this.state.buildMode;
         if (!bm.active || !bm.phantomMesh || !this.state.playerMesh) return;
-        const p = this.state.playerMesh.position;
-        const dist = bm.phantomDistance;
-        bm.phantomMesh.position.set(
-            p.x + Math.sin(this.state.yaw) * dist,
-            p.y - 0.5,
-            p.z + Math.cos(this.state.yaw) * dist
-        );
+        const target = this._resolvePhantomTarget();
+        bm.phantomMesh.position.set(target.x, target.y, target.z);
         bm.phantomMesh.rotation.y = -this.state.yaw;
+        bm.phantomOnGround = target.isStable;
+        this._applyPhantomTint(bm.phantomMesh, target.isStable);
+    }
+
+    // Welle 6.A4 — Raycast aus Kamera in Blick-Richtung gegen Physik-Welt.
+    // Erster Treffer in 30 m = Phantom-Position (Vor/Zurück wird damit durch
+    // den Kamera-Pitch gesteuert, nicht mehr durch einen festen Ring um den
+    // Spieler). Ohne Treffer fallen wir zurück auf das alte yaw×distance-
+    // Verhalten, dann ist das Phantom „instabil" markiert (schwebt frei).
+    //
+    // 6.A5 — Stabilität: Hit-Normal-Y > 0.5 entspricht einer begehbaren
+    // Fläche (Slope flacher als ~60°, dieselbe Schwelle wie maxWalkableSlopeY
+    // in 6.A3). Wir geben nur ein Flag zurück; das Block-Verhalten („nicht
+    // bauen wenn instabil") folgt mit den Spiel-Modi (6.C2).
+    _resolvePhantomTarget() {
+        const bm = this.state.buildMode;
+        const p = this.state.playerMesh.position;
+        const sf = this.state.scaleFactor || 1;
+        // Fallback-Position: yaw-Ring vor dem Spieler.
+        const fallbackX = p.x + Math.sin(this.state.yaw) * bm.phantomDistance;
+        const fallbackY = p.y - 0.5;
+        const fallbackZ = p.z + Math.cos(this.state.yaw) * bm.phantomDistance;
+        const fallback = { x: fallbackX, y: fallbackY, z: fallbackZ, isStable: false, hit: false };
+        if (!this.state.physicsWorld || !this.state.camera || typeof Ammo === "undefined") {
+            return fallback;
+        }
+        const cam = this.state.camera;
+        const cp = cam.position;
+        if (!this._tmpCamDir) this._tmpCamDir = new THREE.Vector3();
+        cam.getWorldDirection(this._tmpCamDir);
+        const maxDist = 30;
+        const rayStart = this.setVec(this.state.tmpVec1, cp.x / sf, cp.y / sf, cp.z / sf);
+        const rayEnd = this.setVec(
+            this.state.tmpVec2,
+            (cp.x + this._tmpCamDir.x * maxDist) / sf,
+            (cp.y + this._tmpCamDir.y * maxDist) / sf,
+            (cp.z + this._tmpCamDir.z * maxDist) / sf
+        );
+        const cb = new Ammo.ClosestRayResultCallback(rayStart, rayEnd);
+        this.state.physicsWorld.rayTest(rayStart, rayEnd, cb);
+        let result = fallback;
+        if (cb.hasHit()) {
+            const hit = cb.get_m_hitPointWorld();
+            const nrm = cb.get_m_hitNormalWorld();
+            result = {
+                x: hit.x() * sf,
+                y: hit.y() * sf,
+                z: hit.z() * sf,
+                isStable: nrm.y() > 0.5,
+                hit: true,
+            };
+        }
+        Ammo.destroy(cb);
+        return result;
+    }
+
+    // Welle 6.A5 — Phantom-Tint: grün-blend (0x88ff88) bei stabilem Bodenkontakt,
+    // rot-blend (0xff8888) sonst. 30 % Tint über der originalen Material-Farbe,
+    // damit die Bauplan-Identität erkennbar bleibt. Original-Farbe wird einmal
+    // pro Phantom-Mesh in userData gecached — sonst würde jeder Frame die schon
+    // getintete Farbe als neue Basis lesen und der Tint driften.
+    _applyPhantomTint(phantom, isStable) {
+        if (!phantom) return;
+        const targetColor = isStable ? 0x88ff88 : 0xff8888;
+        const tr = (targetColor >> 16) & 0xff;
+        const tg = (targetColor >> 8) & 0xff;
+        const tb = targetColor & 0xff;
+        phantom.traverse((node) => {
+            if (node.material && node.material.color) {
+                if (node.userData._origColor === undefined) {
+                    node.userData._origColor = node.material.color.getHex();
+                }
+                const orig = node.userData._origColor;
+                const r = (((orig >> 16) & 0xff) * 0.7 + tr * 0.3) | 0;
+                const g = (((orig >> 8) & 0xff) * 0.7 + tg * 0.3) | 0;
+                const b = ((orig & 0xff) * 0.7 + tb * 0.3) | 0;
+                node.material.color.setRGB(r / 255, g / 255, b / 255);
+            }
+        });
     }
 
     _updateBuildModeHud() {

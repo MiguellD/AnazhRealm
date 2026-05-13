@@ -4944,6 +4944,149 @@ function startSaveServer() {
                 );
             }
 
+            // ### Welle 6.A4+6.A5 — Raycast-Place + Stabilitäts-Visual ###
+            //
+            // tickBuildMode delegiert an _resolvePhantomTarget — der castet aus
+            // der Kamera, gibt {x, y, z, isStable, hit} zurück. Phantom-Position
+            // folgt damit der Kamera-Blickrichtung (Pitch wirkt!), Tint färbt
+            // bei stabilem Boden grün, sonst rot.
+            const wave6a45Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    out.hasResolveMethod = typeof r._resolvePhantomTarget === "function";
+                    out.hasTintMethod = typeof r._applyPhantomTint === "function";
+                    out.hasPhantomOnGroundField = "phantomOnGround" in r.state.buildMode;
+
+                    // Source-Checks: tickBuildMode nutzt die neuen Pfade
+                    const tickSrc = r.tickBuildMode.toString();
+                    out.tickUsesResolve = /_resolvePhantomTarget/.test(tickSrc);
+                    out.tickUsesTint = /_applyPhantomTint/.test(tickSrc);
+                    out.tickSetsOnGround = /phantomOnGround\s*=/.test(tickSrc);
+
+                    const resolveSrc = r._resolvePhantomTarget.toString();
+                    out.resolveUsesCamera = /this\.state\.camera/.test(resolveSrc);
+                    out.resolveUsesGetWorldDirection = /getWorldDirection/.test(resolveSrc);
+                    out.resolveUsesRayTest = /rayTest/.test(resolveSrc);
+                    out.resolveReadsNormal = /get_m_hitNormalWorld/.test(resolveSrc);
+                    out.resolveHasFallback = /fallback/.test(resolveSrc);
+                    out.resolveStabilityThreshold = /nrm\.y\(\)\s*>\s*0\.5/.test(resolveSrc);
+
+                    const tintSrc = r._applyPhantomTint.toString();
+                    out.tintCachesOrigColor = /_origColor/.test(tintSrc);
+                    out.tintHasGreenStable = /0x88ff88/.test(tintSrc);
+                    out.tintHasRedUnstable = /0xff8888/.test(tintSrc);
+
+                    // Funktionaler Test: Build-Modus auf "village"-Slot 0 aktivieren,
+                    // Kamera so positionieren dass sie in den Heightfield-Boden
+                    // schaut, tickBuildMode aufrufen, prüfen dass Phantom im
+                    // Treffer-Bereich liegt + isStable=true.
+                    const savedYaw = r.state.yaw;
+                    const savedCamPos = r.state.camera ? r.state.camera.position.clone() : null;
+                    const savedCamQuat = r.state.camera ? r.state.camera.quaternion.clone() : null;
+                    const savedPlayerPos = r.state.playerMesh.position.clone();
+                    const savedBuild = JSON.parse(
+                        JSON.stringify({
+                            active: r.state.buildMode.active,
+                            slotIndex: r.state.buildMode.slotIndex,
+                            blueprintName: r.state.buildMode.blueprintName,
+                        })
+                    );
+
+                    // Garantiert flache Test-Oberfläche: Tempel spawnen,
+                    // Kamera direkt darüber positionieren — die Top-Sub-Box hat
+                    // eine flache Oberseite (Normal-Y ~ 1), zuverlässiger als
+                    // das prozedurale Heightfield (das an manchen Stellen steil ist).
+                    const _spawnArchX = 60;
+                    const _spawnArchZ = 60;
+                    const _beforeArchA45 = r.state.architectures.length;
+                    const _archEntry = r.spawnArchitecture(
+                        "temple",
+                        { x: _spawnArchX, y: 0, z: _spawnArchZ },
+                        { seed: 4711 }
+                    );
+                    out.testArchSpawned = !!_archEntry;
+                    let _archTopY = 0;
+                    if (_archEntry && _archEntry.mesh) {
+                        const _box = new THREE.Box3().setFromObject(_archEntry.mesh);
+                        _archTopY = _box.max.y;
+                    }
+                    r.state.playerMesh.position.set(_spawnArchX, _archTopY + 5, _spawnArchZ);
+                    // Kamera 8m über Bauwerks-Top, blickt steil nach unten auf die Mitte
+                    r.state.camera.position.set(_spawnArchX, _archTopY + 8, _spawnArchZ);
+                    r.state.camera.lookAt(_spawnArchX, _archTopY, _spawnArchZ);
+                    // Build-Modus auf Slot 0 (village in Default-Hotbar)
+                    r.selectHotbarSlot(0);
+                    out.buildModeActive = r.state.buildMode.active;
+                    out.phantomExists = !!r.state.buildMode.phantomMesh;
+                    if (r.state.buildMode.phantomMesh) {
+                        r.tickBuildMode();
+                        const phantomPos = r.state.buildMode.phantomMesh.position;
+                        // Erwartung: Phantom landet auf Bauwerks-Top bei
+                        // _archTopY, alter Fallback wäre playerY-0.5 = _archTopY+4.5.
+                        // Hit-Y ist klar < playerY−1.
+                        out.phantomY = phantomPos.y;
+                        out.phantomYDownward = phantomPos.y < r.state.playerMesh.position.y - 1;
+                        // Stabilität: Boden flache Oberseite → Normal-Y ~ 1 → isStable=true
+                        out.phantomOnGroundAfterTick = r.state.buildMode.phantomOnGround;
+
+                        // Diskrimination 2: Kamera nach oben in den Himmel → kein Hit → fallback
+                        r.state.camera.lookAt(_spawnArchX, _archTopY + 100, _spawnArchZ + 1);
+                        r.tickBuildMode();
+                        out.phantomOnGroundSky = r.state.buildMode.phantomOnGround;
+                    }
+
+                    // Cleanup
+                    r._clearBuildMode();
+                    r.state.architectures = r.state.architectures.slice(0, _beforeArchA45);
+                    if (savedCamPos) r.state.camera.position.copy(savedCamPos);
+                    if (savedCamQuat) r.state.camera.quaternion.copy(savedCamQuat);
+                    r.state.playerMesh.position.copy(savedPlayerPos);
+                    r.state.yaw = savedYaw;
+
+                    return out;
+                })
+                .catch(() => null);
+
+            if (wave6a45Results) {
+                check("Welle 6.A4: _resolvePhantomTarget-Methode existiert", wave6a45Results.hasResolveMethod);
+                check("Welle 6.A5: _applyPhantomTint-Methode existiert", wave6a45Results.hasTintMethod);
+                check("Welle 6.A5: buildMode.phantomOnGround-Feld existiert", wave6a45Results.hasPhantomOnGroundField);
+                check("Welle 6.A4: tickBuildMode delegiert an _resolvePhantomTarget", wave6a45Results.tickUsesResolve);
+                check("Welle 6.A5: tickBuildMode ruft _applyPhantomTint", wave6a45Results.tickUsesTint);
+                check("Welle 6.A5: tickBuildMode setzt phantomOnGround", wave6a45Results.tickSetsOnGround);
+                check("Welle 6.A4: _resolvePhantomTarget liest camera", wave6a45Results.resolveUsesCamera);
+                check(
+                    "Welle 6.A4: _resolvePhantomTarget nutzt getWorldDirection",
+                    wave6a45Results.resolveUsesGetWorldDirection
+                );
+                check("Welle 6.A4: _resolvePhantomTarget nutzt physicsWorld.rayTest", wave6a45Results.resolveUsesRayTest);
+                check(
+                    "Welle 6.A5: _resolvePhantomTarget liest hit-Normal für Stabilität",
+                    wave6a45Results.resolveReadsNormal
+                );
+                check(
+                    "Welle 6.A5: Stabilitäts-Schwelle ist Normal-Y > 0.5 (~60° walkable)",
+                    wave6a45Results.resolveStabilityThreshold
+                );
+                check("Welle 6.A4: _resolvePhantomTarget hat Fallback-Pfad", wave6a45Results.resolveHasFallback);
+                check("Welle 6.A5: _applyPhantomTint cached _origColor (kein Drift)", wave6a45Results.tintCachesOrigColor);
+                check("Welle 6.A5: Tint hat Grün-Code 0x88ff88 für stabil", wave6a45Results.tintHasGreenStable);
+                check("Welle 6.A5: Tint hat Rot-Code 0xff8888 für instabil", wave6a45Results.tintHasRedUnstable);
+                if (wave6a45Results.phantomExists) {
+                    check("Welle 6.A4: Phantom landet auf Hit-Punkt (nicht alter Y-Fallback)", wave6a45Results.phantomYDownward);
+                    check(
+                        "Welle 6.A5: Diskrimination — Kamera auf Boden → phantomOnGround=true",
+                        wave6a45Results.phantomOnGroundAfterTick === true
+                    );
+                    check(
+                        "Welle 6.A5: Diskrimination — Kamera auf Himmel → phantomOnGround=false",
+                        wave6a45Results.phantomOnGroundSky === false
+                    );
+                }
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {
