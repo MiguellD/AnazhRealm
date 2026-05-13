@@ -32,8 +32,9 @@
 
 const http = require("http");
 const crypto = require("crypto");
+const os = require("os");
 
-const HOST = process.env.ANAZH_SIGNALING_HOST || "127.0.0.1";
+const HOST = process.env.ANAZH_SIGNALING_HOST || "0.0.0.0";
 const PORT = Number(process.env.ANAZH_SIGNALING_PORT) || 4313;
 const WS_MAGIC = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
@@ -247,8 +248,34 @@ server.on("upgrade", (req, socket) => {
     });
 });
 
+// Liste der LAN-IPv4-Adressen, damit andere Rechner wissen, wohin
+// sie sich verbinden müssen. Loopback (127.0.0.1) wird separat
+// dokumentiert für den lokalen Browser.
+function listLanIPv4Addresses() {
+    const interfaces = os.networkInterfaces();
+    const out = [];
+    for (const name in interfaces) {
+        for (const iface of interfaces[name] || []) {
+            if (iface.family === "IPv4" && !iface.internal) {
+                out.push({ name, address: iface.address });
+            }
+        }
+    }
+    return out;
+}
+
 server.listen(PORT, HOST, () => {
-    logLine("INFO", `signaling-server lauscht auf ws://${HOST}:${PORT}`);
+    logLine("INFO", `signaling-server lauscht auf ${HOST}:${PORT}`);
+    logLine("INFO", `Lokaler Browser: ws://127.0.0.1:${PORT}`);
+    const lans = listLanIPv4Addresses();
+    if (lans.length === 0) {
+        logLine("INFO", "Keine LAN-IPv4 gefunden — andere Rechner können nicht verbinden.");
+    } else {
+        for (const { name, address } of lans) {
+            logLine("INFO", `Andere Rechner im Netzwerk: ws://${address}:${PORT}  (Interface ${name})`);
+        }
+        logLine("INFO", "Beide Browser müssen DIESELBE Adresse + DIESELBE worldId nutzen.");
+    }
 });
 
 // Export für Tests, falls als Modul geladen (kein Effect bei direct-run).

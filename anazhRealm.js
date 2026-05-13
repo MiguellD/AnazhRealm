@@ -1,4 +1,4 @@
-/**AnazhRealm V7.69 – Das Ultiversum Vollendet.
+/**AnazhRealm V7.70 – Das Ultiversum Vollendet.
  * Hüpfen: Robust, präzise (Y ~1.5), Coyote-Time 0.3s, Gravitation 1.5G, Reibung 0.5.
  * Kollisionen: Kein Tunneling, steepnessThreshold 3.0, wallThickness 2.0, CCD optimiert.
  * Terrain: Flacher (Höhenunterschiede ±5), KI-gesteuerte Steilheitsanpassung, Chat-Steuerung.
@@ -12,7 +12,7 @@
 class AnazhRealm {
     constructor() {
         // ### Learnings ### [Stichwortartig optimieren, korrigieren, ergänzen – nie Wissen löschen!]
-        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69
+        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69, LAN-Fähigkeit + Sync-Korrektheit (Ring 11 V2.1: 0.0.0.0-bind, ws:/wss:-CSP, roomOverride, spawn_*-Embedding, NON_BROADCASTABLE_OPS) in V7.70
         // - Nexus als Herz der Selbstentwicklung, steuert nun alles über Chat, unzerstörbar und unendlich
         this.state = {
             // ### Kern ###
@@ -94,7 +94,7 @@ class AnazhRealm {
             maxVersionHistoryEntries: 50,
             maxCreatures: 120,
             maxLoadedChunks: 196,
-            currentVersion: "7.69",
+            currentVersion: "7.70",
             terrainSteepness: 1.0,
             terrainBaseHeight: 0.0,
             weather: "sunny",
@@ -245,6 +245,12 @@ class AnazhRealm {
                 url: "ws://127.0.0.1:4313",
                 peerId: null,
                 room: null,
+                // Ring 11 V2.1: explizite Raum-Override. Leer/null = aktive
+                // worldId wird genommen (Default). Wer anderswo joinen will
+                // (gemeinsamer Raum für unterschiedliche Welten, oder
+                // mehr-Spieler auf verschiedenen Maschinen mit gleicher
+                // Raum-ID), trägt hier eine eigene ID ein.
+                roomOverride: "",
                 ws: null,
                 peers: new Map(),
                 broadcastIntervalMs: 33,
@@ -421,7 +427,7 @@ class AnazhRealm {
     // ### Logging ###
     log(message, level = "INFO") {
         if (level === "DEBUG" && !this.state.debugLogging) return;
-        const logMessage = `[AnazhRealm V7.69] [${level}] ${message}`;
+        const logMessage = `[AnazhRealm V7.70] [${level}] ${message}`;
         this.state.logBuffer.push(logMessage);
         console.log(logMessage);
         if (this.state.logBuffer.length > this.state.maxLogEntries) {
@@ -706,6 +712,9 @@ class AnazhRealm {
         // weitergeleitet — sonst entstünde eine Endlos-Echo-Schleife. LLM-
         // und Nexus-Programme bleiben lokal (V2-Scope: nur explizite
         // Spieler-Geste, keine maschinellen Effekte).
+        // V2.1: zusätzlich filtern wir Spieler-private Ops (player_*, set_visible)
+        // raus — die ändern intimes State des Empfängers und sind nicht zur
+        // Synchronisation gedacht.
         if (
             outcome.errors === 0 &&
             ctx.source === "human" &&
@@ -718,12 +727,35 @@ class AnazhRealm {
         return { ok: outcome.errors === 0, log: ctx.log, outcome, programId: ctx.programId };
     }
 
-    // Ring 11 V2: Helfer zum DSL-Broadcast. Sendet als {type:"dsl",program},
-    // der Server stempelt peerId und schickt an alle anderen im Raum. Empfänger
-    // routen via p2pHandleMessage → dslRun mit source="remote:<peerId>".
-    // No-op wenn nicht verbunden.
+    // Ring 11 V2: DSL-Ops, die NICHT über P2P gesendet werden — sie ändern
+    // intimes Spieler-State (Speed, Sprung, Seele, Sichtbarkeits-Toggles).
+    // Wenn ein Programm einen dieser Ops irgendwo im Tree enthält, wird der
+    // GANZE Broadcast übersprungen (sonst würde z. B. ["chain", weather,
+    // player_speed] beim Empfänger den Speed mit-ändern).
+    static get NON_BROADCASTABLE_OPS() {
+        return new Set(["player_jump_power", "player_speed", "player_size_mul", "player_soul", "set_visible"]);
+    }
+
+    _dslContainsAnyOp(node, opSet) {
+        if (!Array.isArray(node) || node.length === 0) return false;
+        const head = node[0];
+        if (typeof head === "string" && opSet.has(head)) return true;
+        for (let i = 1; i < node.length; i++) {
+            if (this._dslContainsAnyOp(node[i], opSet)) return true;
+        }
+        return false;
+    }
+
+    // Ring 11 V2.1: Helfer zum DSL-Broadcast. Vorher-Check (skip wenn nicht-
+    // broadcastable Op enthalten). Sendet {type:"dsl", program}; Server
+    // stempelt peerId und broadcastet an alle anderen im Raum. Empfänger
+    // routet via p2pHandleMessage → dslRun mit source="remote:<peerId>".
     p2pBroadcastDsl(program) {
         if (!Array.isArray(program) || program.length === 0) return;
+        if (this._dslContainsAnyOp(program, AnazhRealm.NON_BROADCASTABLE_OPS)) {
+            // Programm enthält Spieler-private Op — bewusst lokal behalten.
+            return;
+        }
         this.p2pSend({ type: "dsl", program });
     }
 
@@ -929,41 +961,49 @@ class AnazhRealm {
             // Ring 6 — architectureTemplates. Drei Bau-Primitives. Position
             // kommt über die übliche Selektor-Form (`at_player`, `at_origin`,
             // `near_player N`). Jeder Bau zählt als 1 Spawn-Budget.
-            spawn_village: ([positionNode], ctx) => {
+            // Ring 11 V2.1: optionales Seed-Argument für deterministisches
+            // Visual bei Multi-User-Sync. Chat-Pattern + Schöpfer können das
+            // Seed explizit setzen, sonst wird wie bisher zufällig erzeugt.
+            // Beim Broadcast embed der Sender das verwendete Seed, damit
+            // der Empfänger DIESELBEN Häuser sieht, nicht eigene.
+            spawn_village: ([positionNode, seed], ctx) => {
                 const pos = this.dslEvalPos(positionNode, ctx);
                 if (ctx.budget.spawnsLeft <= 0) {
                     ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
                     return;
                 }
                 ctx.budget.spawnsLeft--;
-                const entry = this.spawnArchitecture("village", pos);
-                ctx.log.push({ event: "spawned_village", id: entry ? entry.id : null, pos });
+                const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
+                const entry = this.spawnArchitecture("village", pos, { seed: s });
+                ctx.log.push({ event: "spawned_village", id: entry ? entry.id : null, pos, seed: s });
             },
-            spawn_temple: ([positionNode], ctx) => {
+            spawn_temple: ([positionNode, seed], ctx) => {
                 const pos = this.dslEvalPos(positionNode, ctx);
                 if (ctx.budget.spawnsLeft <= 0) {
                     ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
                     return;
                 }
                 ctx.budget.spawnsLeft--;
-                const entry = this.spawnArchitecture("temple", pos);
-                ctx.log.push({ event: "spawned_temple", id: entry ? entry.id : null, pos });
+                const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
+                const entry = this.spawnArchitecture("temple", pos, { seed: s });
+                ctx.log.push({ event: "spawned_temple", id: entry ? entry.id : null, pos, seed: s });
             },
-            spawn_waterfall: ([positionNode], ctx) => {
+            spawn_waterfall: ([positionNode, seed], ctx) => {
                 const pos = this.dslEvalPos(positionNode, ctx);
                 if (ctx.budget.spawnsLeft <= 0) {
                     ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
                     return;
                 }
                 ctx.budget.spawnsLeft--;
-                const entry = this.spawnArchitecture("waterfall", pos);
-                ctx.log.push({ event: "spawned_waterfall", id: entry ? entry.id : null, pos });
+                const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
+                const entry = this.spawnArchitecture("waterfall", pos, { seed: s });
+                ctx.log.push({ event: "spawned_waterfall", id: entry ? entry.id : null, pos, seed: s });
             },
             // Ring 6.4 — generischer Bauplan-Spawn. Funktioniert mit jedem
             // Bauplan-Namen (built-in oder eigen): `["spawn_blueprint",
             // "mein-tempelplatz", ["at_player"]]`. Wird vom Hotbar (6.5)
             // und Werkstatt (6.6) als universeller Pfad benutzt.
-            spawn_blueprint: ([name, positionNode], ctx) => {
+            spawn_blueprint: ([name, positionNode, seed], ctx) => {
                 if (typeof name !== "string") {
                     ctx.log.push({ event: "invalid_blueprint_name", name });
                     return;
@@ -979,8 +1019,9 @@ class AnazhRealm {
                     return;
                 }
                 ctx.budget.spawnsLeft--;
-                const entry = this.spawnArchitecture(name, pos);
-                ctx.log.push({ event: "spawned_blueprint", name, id: entry ? entry.id : null, pos });
+                const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
+                const entry = this.spawnArchitecture(name, pos, { seed: s });
+                ctx.log.push({ event: "spawned_blueprint", name, id: entry ? entry.id : null, pos, seed: s });
             },
             // Welle 2 B — Schöpfer-Werkzeuge. Der LLM (oder Chat-Befehl) kann
             // eigene Baupläne und Fähigkeiten erschaffen, nicht nur bestehende
@@ -1124,7 +1165,7 @@ class AnazhRealm {
             // dank Distance-Culling (V2) nicht alle gleichzeitig im GPU
             // liegen müssen. Pfeiler 3 der Vision (Fraktales Wachstum)
             // konkret im Code.
-            spawn_fractal: ([positionNode, type, depth, ratio], ctx) => {
+            spawn_fractal: ([positionNode, type, depth, ratio, rootSeedArg], ctx) => {
                 const pos = this.dslEvalPos(positionNode, ctx);
                 const validTypes = { village: true, temple: true, waterfall: true };
                 const t = typeof type === "string" && validTypes[type] ? type : "temple";
@@ -1138,14 +1179,9 @@ class AnazhRealm {
                     }
                     ctx.budget.spawnsLeft--;
                     spawned++;
-                    // Seed deterministisch aus Parent + Level-Index ableiten,
-                    // damit ein Fraktal-Save reproduzierbar denselben Mesh-
-                    // Aufbau hat (selbe Hütten-Anordnung etc.).
                     const childSeed = (parentSeed * 16807 + level * 31) >>> 0;
                     this.spawnArchitecture(t, { x: cx, y: pos.y, z: cz }, { seed: childSeed, scale });
                     if (level >= d) return;
-                    // Sechs Kinder im Hexagon, Radius proportional zur
-                    // aktuellen Skala (so wachsen Sub-Cluster nicht zu nahe).
                     const childRadius = 14 * scale;
                     for (let i = 0; i < 6; i++) {
                         const angle = (i / 6) * Math.PI * 2;
@@ -1154,9 +1190,20 @@ class AnazhRealm {
                         visit(ncx, ncz, scale * r, level + 1, childSeed + i);
                     }
                 };
-                const rootSeed = Math.floor(ctx.rng() * 0xffffffff);
+                // Ring 11 V2.1: rootSeed kann explizit gesetzt werden (Multi-
+                // User-Sync). Sonst wie bisher: ctx.rng-basiert.
+                const rootSeed = Number.isFinite(Number(rootSeedArg))
+                    ? Number(rootSeedArg) >>> 0
+                    : Math.floor(ctx.rng() * 0xffffffff);
                 visit(pos.x, pos.z, 1, 0, rootSeed);
-                ctx.log.push({ event: "spawned_fractal", type: t, depth: d, ratio: r, count: spawned });
+                ctx.log.push({
+                    event: "spawned_fractal",
+                    type: t,
+                    depth: d,
+                    ratio: r,
+                    count: spawned,
+                    seed: rootSeed,
+                });
             },
             creatures_color: ([color]) => {
                 if (typeof color !== "string") return;
@@ -2577,8 +2624,14 @@ class AnazhRealm {
         try {
             const enabled = localStorage.getItem("anazh.p2p.enabled");
             const url = localStorage.getItem("anazh.p2p.url");
+            const room = localStorage.getItem("anazh.p2p.room");
             if (typeof enabled === "string") this.state.p2p.enabled = enabled === "true";
             if (typeof url === "string" && url.trim().length > 0) this.state.p2p.url = url.trim();
+            // Ring 11 V2.1: explizite Raum-Override (für ad-hoc-Räume oder
+            // Multi-Maschinen-Setups, wo Spieler unterschiedliche worldIds
+            // haben aber denselben Raum nutzen wollen). Leer = aktive worldId
+            // wird genommen (Default-Verhalten).
+            if (typeof room === "string") this.state.p2p.roomOverride = room.trim();
         } catch {
             /* localStorage kann fehlen */
         }
@@ -2588,6 +2641,7 @@ class AnazhRealm {
         try {
             localStorage.setItem("anazh.p2p.enabled", this.state.p2p.enabled ? "true" : "false");
             localStorage.setItem("anazh.p2p.url", this.state.p2p.url || "");
+            localStorage.setItem("anazh.p2p.room", this.state.p2p.roomOverride || "");
         } catch {
             /* defensive */
         }
@@ -2606,7 +2660,15 @@ class AnazhRealm {
         const p2p = this.state.p2p;
         if (p2p.ws) this.shutdownP2PSync();
         const url = (opts.url || p2p.url || "ws://127.0.0.1:4313").trim();
-        const room = roomId || (this.state.worldMeta && this.state.worldMeta.worldId) || null;
+        // Ring 11 V2.1: Raum-Auflösung — explizites Argument > localStorage-
+        // Override > aktive worldId. Leer-String im Override gilt als
+        // „nicht gesetzt" → Fallback auf worldId.
+        const explicitOverride = (p2p.roomOverride || "").trim();
+        const room =
+            (roomId && String(roomId).trim()) ||
+            explicitOverride ||
+            (this.state.worldMeta && this.state.worldMeta.worldId) ||
+            null;
         if (!room) {
             p2p.lastError = "Keine Raum-ID — Welt nicht initialisiert?";
             this.log("P2P-Init ohne Welt-ID abgewiesen", "WARN");
@@ -2829,10 +2891,13 @@ class AnazhRealm {
     initP2PUI() {
         const toggle = document.getElementById("p2p-toggle");
         const urlInput = document.getElementById("p2p-url");
+        const roomInput = document.getElementById("p2p-room");
+        const roomCopyBtn = document.getElementById("p2p-room-copy");
         const statusEl = document.getElementById("p2p-status");
         if (!toggle || !urlInput || !statusEl) return;
         // UI auf gespeicherten Stand setzen
         urlInput.value = this.state.p2p.url || "ws://127.0.0.1:4313";
+        if (roomInput) roomInput.value = this.state.p2p.roomOverride || "";
         toggle.setAttribute("aria-pressed", this.state.p2p.enabled ? "true" : "false");
         toggle.textContent = this.state.p2p.enabled ? "Deaktivieren" : "Aktivieren";
         this.p2pUpdateStatus();
@@ -2841,6 +2906,35 @@ class AnazhRealm {
             this.p2pPersist();
             this.p2pUpdateStatus();
         });
+        if (roomInput) {
+            roomInput.addEventListener("change", () => {
+                this.state.p2p.roomOverride = roomInput.value.trim();
+                this.p2pPersist();
+                // Wenn aktuell verbunden: neu verbinden mit neuem Raum
+                if (this.state.p2p.enabled) {
+                    this.initP2PSync(null);
+                }
+                this.p2pUpdateStatus();
+            });
+        }
+        if (roomCopyBtn) {
+            roomCopyBtn.addEventListener("click", () => {
+                // Kopiere die AKTUELL VERWENDETE Raum-ID (Override > worldId)
+                const room =
+                    (this.state.p2p.roomOverride || "").trim() ||
+                    (this.state.worldMeta && this.state.worldMeta.worldId) ||
+                    "";
+                if (!room) return;
+                if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(room).catch(() => {
+                        // Fallback: zeige Raum im Status-Text
+                        if (statusEl) statusEl.textContent = `Raum-ID: ${room}`;
+                    });
+                } else if (statusEl) {
+                    statusEl.textContent = `Raum-ID: ${room}`;
+                }
+            });
+        }
         toggle.addEventListener("click", () => {
             if (this.state.p2p.enabled) {
                 this.state.p2p.enabled = false;
@@ -2905,12 +2999,17 @@ class AnazhRealm {
                 }),
             },
             {
+                // Ring 11 V2.1: Position embed bei Build-Zeit (sonst spawnt
+                // der Empfänger Kreaturen an SEINER Spielerposition statt
+                // unserer). spawn_creature selbst hat keinen Seed (Kreaturen
+                // sind sowieso auto-bewegt, Seed-Variation ist akzeptabel).
                 example: "spawne kreaturen 10",
                 re: /^spawne\s+kreaturen\s+(\d+)\s*$/i,
                 build: (m) => {
                     const count = Math.max(1, Math.min(20, parseInt(m[1], 10) || 1));
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 50, z: 0 };
                     return {
-                        program: ["repeat", count, ["spawn_creature", ["at_player"], 1, "happy"]],
+                        program: ["repeat", count, ["spawn_creature", ["at", p.x, p.y, p.z], 1, "happy"]],
                         describe: `${count} Kreaturen gespawnt (am Spieler)`,
                     };
                 },
@@ -3014,30 +3113,34 @@ class AnazhRealm {
             },
             {
                 // Ring 6 — architectureTemplates. "baue dorf/tempel/wasserfall hier"
-                // platziert die Struktur am Spieler (`at_player`).
+                // platziert die Struktur am Spieler. Ring 11 V2.1: Position +
+                // Seed werden hier zur Build-Zeit explizit eingebettet, damit
+                // der DSL-Broadcast deterministisch ist (sonst sähen Mitspieler
+                // an einer anderen Stelle ein anders aussehendes Dorf).
                 example: "baue dorf hier",
                 re: /^baue\s+(dorf|tempel|wasserfall)\s+hier\s*$/i,
                 build: (m) => {
                     const map = { dorf: "spawn_village", tempel: "spawn_temple", wasserfall: "spawn_waterfall" };
                     const op = map[m[1].toLowerCase()];
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                    const seed = Math.floor(Math.random() * 0xffffffff);
                     return {
-                        program: [op, ["at_player"]],
+                        program: [op, ["at", p.x, p.y, p.z], seed],
                         describe: `${m[1]} gebaut`,
                     };
                 },
             },
             {
-                // Ring 6 V2 — Fraktal. "baue fraktal tempel" baut einen
-                // hexagonal-rekursiv selbstähnlichen Cluster (depth=2,
-                // ratio=0.5 als sinnvolle Defaults: 43 Strukturen). Type
-                // ist optional, default "tempel".
+                // Ring 6 V2 — Fraktal. Position + RootSeed embed wie oben.
                 example: "baue fraktal tempel",
                 re: /^baue\s+fraktal(?:\s+(dorf|tempel|wasserfall))?\s*$/i,
                 build: (m) => {
                     const map = { dorf: "village", tempel: "temple", wasserfall: "waterfall" };
                     const t = (m[1] || "tempel").toLowerCase();
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                    const seed = Math.floor(Math.random() * 0xffffffff);
                     return {
-                        program: ["spawn_fractal", ["at_player"], map[t], 2, 0.5],
+                        program: ["spawn_fractal", ["at", p.x, p.y, p.z], map[t], 2, 0.5, seed],
                         describe: `Fraktal-${t} gebaut (depth 2, ratio 0.5)`,
                     };
                 },
@@ -4023,7 +4126,7 @@ class AnazhRealm {
             // sonst auf die zu tiefe Höhe, statt einen Spawn-Fall zu lassen.
             playerPosition: { x: 0, y: 50, z: 0 },
             knowledgeBase: [],
-            version: this.state.currentVersion || "7.69",
+            version: this.state.currentVersion || "7.70",
             selfAwareness: { components: [], weaknesses: [] },
             creatures: [],
             creatureEmotions: [],
@@ -8666,7 +8769,7 @@ class AnazhRealm {
                 ...((Array.isArray(saveA.knowledgeBase) && saveA.knowledgeBase.slice(-100)) || []),
                 ...((Array.isArray(saveB.knowledgeBase) && saveB.knowledgeBase.slice(-100)) || []),
             ].slice(-200),
-            version: this.state.currentVersion || "7.69",
+            version: this.state.currentVersion || "7.70",
             selfAwareness: { components: [], weaknesses: [] },
             creatures: [],
             creatureEmotions: [],
@@ -11569,7 +11672,7 @@ class AnazhRealm {
     }
 
     async init() {
-        this.log("Initialisiere Anazh Realm V7.69... Ewigkeit erwacht!", "INFO");
+        this.log("Initialisiere Anazh Realm V7.70... Ewigkeit erwacht!", "INFO");
         this.themeInitDOM();
         this.grokInitDOM();
         this.symphonyInitDOM();

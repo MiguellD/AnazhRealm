@@ -27,9 +27,9 @@
     -->
         <meta
             http-equiv="Content-Security-Policy"
-            content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 http://127.0.0.1:4313 http://localhost:4313 ws://127.0.0.1:4313 ws://localhost:4313 wss://127.0.0.1:4313 wss://localhost:4313 https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self';"
+            content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self';"
         />
-        <title>Anazh Realm v7.69 – Das Ultiversum</title>
+        <title>Anazh Realm v7.70 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
              zusätzliche Datei. img-src 'self' data: in CSP erlaubt data-URI. -->
         <link
@@ -1898,7 +1898,7 @@
         <header id="topbar" class="hud-frame">
             <div class="topbar-inner">
                 <div class="title">
-                    Anazh Realm <span class="version">v7.69</span> <span class="sub">— Das Ultiversum</span>
+                    Anazh Realm <span class="version">v7.70</span> <span class="sub">— Das Ultiversum</span>
                 </div>
                 <nav class="tabs" role="tablist" aria-label="Hauptansichten">
                     <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">
@@ -2139,20 +2139,35 @@
                 </div>
                 <div id="llm-status" class="drawer-hint" aria-live="polite">Inaktiv.</div>
             </section>
-            <!-- Ring 11 V1 — Multi-User Position-Sync. Toggle + URL-Eingabe.
-                 Aktivieren startet eine WebSocket-Verbindung zum signaling-
-                 server (default ws://127.0.0.1:4313). Spieler in derselben
-                 Welt-ID sehen sich gegenseitig als kleine Kegel-Avatare. -->
+            <!-- Ring 11 V1+V2 — Multi-User Sync. URL + Raum-ID + Toggle.
+                 V1 trägt Position+Rotation (30 Hz). V2 trägt Chat-DSL als
+                 echtes Welt-Sync (modify_terrain, spawn_*, weather, etc.).
+                 Spieler-private Ops (player_*) bleiben lokal. -->
             <section class="settings-section">
-                <h3>Multi-User Sync (Ring 11 V1)</h3>
+                <h3>Multi-User Sync (Ring 11 V1+V2)</h3>
                 <p class="drawer-hint">
-                    Position-Sync mit anderen Spielern in derselben Welt. Braucht den signaling-server
-                    (<code>npm run signaling</code>) lokal oder unter der angegebenen Adresse. V1 trägt nur Position +
-                    Rotation, KEINE Welt-Logik.
+                    Position + Welt-Aktionen mit anderen Spielern teilen. Braucht den signaling-server
+                    (<code>npm run signaling</code>). Beide Spieler müssen die SELBE Adresse + die SELBE Raum-ID
+                    nutzen. Für ein gemeinsames Welt-Erlebnis: ein Spieler exportiert seine Welt
+                    (Welt-Drawer → „Welt teilen") und der andere importiert sie (Welt-Tor) — dann sind beide
+                    in derselben worldId und sehen identische Strukturen.
                 </p>
                 <div class="tuning-row">
                     <label for="p2p-url"><span>Signaling-URL</span></label>
                     <input type="text" id="p2p-url" value="ws://127.0.0.1:4313" autocomplete="off" spellcheck="false" />
+                </div>
+                <div class="tuning-row">
+                    <label for="p2p-room"><span>Raum-ID</span></label>
+                    <input
+                        type="text"
+                        id="p2p-room"
+                        placeholder="(leer = aktive Welt)"
+                        autocomplete="off"
+                        spellcheck="false"
+                    />
+                    <button type="button" id="p2p-room-copy" title="Aktive Raum-ID in die Zwischenablage kopieren">
+                        kopieren
+                    </button>
                 </div>
                 <div class="actions">
                     <button type="button" id="p2p-toggle" aria-pressed="false">Aktivieren</button>

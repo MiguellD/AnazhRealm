@@ -4162,11 +4162,11 @@ function startSaveServer() {
                         typeof r.dslEffects.peer_dsl === "undefined" &&
                         typeof r.dslEffects.remote_run === "undefined";
 
-                    // CSP enthält ws://… einträge
+                    // V2.1: CSP enthält generelle ws:/wss:-Whitelist (statt
+                    // explizite IP-Liste, die LAN-Spieler blockierte).
                     const cspMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
                     const cspContent = cspMeta ? cspMeta.getAttribute("content") : "";
-                    out.cspHasWebSocket =
-                        cspContent.includes("ws://127.0.0.1:4313") && cspContent.includes("ws://localhost:4313");
+                    out.cspHasWebSocket = / ws: /.test(cspContent) && / wss: /.test(cspContent);
                     out.cspKeepsSelf = cspContent.startsWith("default-src 'self';");
 
                     // UI-Elemente vorhanden
@@ -4218,7 +4218,7 @@ function startSaveServer() {
                     "Ring 11 V1: KEIN p2p-/peer_dsl-/remote_run-DSL-Op (Sandbox-Grenze)",
                     ring11Results.noP2PDslOp
                 );
-                check("Ring 11 V1: CSP enthält ws://127.0.0.1:4313 + ws://localhost:4313", ring11Results.cspHasWebSocket);
+                check("Ring 11 V2.1: CSP enthält allgemeines ws:/wss: (LAN-fähig)", ring11Results.cspHasWebSocket);
                 check("Ring 11 V1: CSP bleibt strict (default-src 'self')", ring11Results.cspKeepsSelf);
                 check("Ring 11 V1: UI-Toggle-Element im DOM", ring11Results.uiToggleExists);
                 check("Ring 11 V1: UI-URL-Input im DOM", ring11Results.uiUrlInputExists);
@@ -4357,6 +4357,170 @@ function startSaveServer() {
                 check("Ring 11 V2: dsl mit non-array program crasht nicht", ring11V2Results.nonArrayDslNoCrash);
                 check("Ring 11 V2: Diskrimination — zwei verschiedene Programme → zwei verschiedene Welt-Zustände", ring11V2Results.discriminationHolds);
                 check("Ring 11 V2: Remote modify_terrain wächst lokale chunkDeltas (Vision-Punkt)", ring11V2Results.remoteModifyTerrainGrowsDeltas);
+            }
+
+            // ### Ring 11 V2.1 — LAN-Fähigkeit + Sync-Korrektheit ###
+            // Bug-Fixes nach User-Test mit zwei Maschinen:
+            //   1. signaling-server bind 0.0.0.0 (LAN reachable)
+            //   2. CSP weit (ws:/wss:) — Custom-IPs erlaubt
+            //   3. Raum-Override (state.p2p.roomOverride) für ad-hoc-Räume
+            //   4. spawn_*-Chat-Patterns embedden Position+Seed → Multi-User-
+            //      Sync-Korrektheit (Empfänger spawnt am SENDER-Ort, nicht
+            //      am eigenen)
+            //   5. Non-broadcastable-Filter: player_*-Ops bleiben lokal
+            const ring11V21Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    // 1. Raum-Override: state.p2p.roomOverride existiert + persist
+                    out.hasRoomOverride = typeof r.state.p2p.roomOverride === "string";
+                    r.state.p2p.roomOverride = "test-shared-room-xyz";
+                    r.p2pPersist();
+                    r.state.p2p.roomOverride = "";
+                    r.p2pLoadPersisted();
+                    out.roomOverridePersists = r.state.p2p.roomOverride === "test-shared-room-xyz";
+                    r.state.p2p.roomOverride = "";
+                    r.p2pPersist();
+
+                    // 2. NON_BROADCASTABLE_OPS-Liste vorhanden + sinnvoll
+                    out.hasNonBroadcastSet =
+                        r.constructor.NON_BROADCASTABLE_OPS instanceof Set &&
+                        r.constructor.NON_BROADCASTABLE_OPS.has("player_jump_power") &&
+                        r.constructor.NON_BROADCASTABLE_OPS.has("player_speed") &&
+                        r.constructor.NON_BROADCASTABLE_OPS.has("player_soul") &&
+                        r.constructor.NON_BROADCASTABLE_OPS.has("set_visible");
+
+                    // 3. _dslContainsAnyOp-Helfer findet Op im Tree
+                    out.containsOpFlat = r._dslContainsAnyOp(["player_speed", 5], r.constructor.NON_BROADCASTABLE_OPS);
+                    out.containsOpNested = r._dslContainsAnyOp(
+                        ["chain", ["weather", "rainy"], ["player_speed", 5]],
+                        r.constructor.NON_BROADCASTABLE_OPS
+                    );
+                    out.containsOpClean = !r._dslContainsAnyOp(
+                        ["chain", ["weather", "rainy"], ["modify_terrain", 0, 0, 4, -2]],
+                        r.constructor.NON_BROADCASTABLE_OPS
+                    );
+
+                    // 4. p2pBroadcastDsl skipped wenn non-broadcastable Op enthalten
+                    const sent = [];
+                    const origSend = r.p2pSend;
+                    r.p2pSend = function (obj) {
+                        sent.push(obj);
+                        return true;
+                    };
+                    r.p2pBroadcastDsl(["weather", "rainy"]);
+                    out.cleanProgramBroadcasts = sent.length === 1;
+                    sent.length = 0;
+                    r.p2pBroadcastDsl(["player_speed", 10]);
+                    out.playerOpDoesNotBroadcast = sent.length === 0;
+                    sent.length = 0;
+                    r.p2pBroadcastDsl(["chain", ["weather", "sunny"], ["player_jump_power", 20]]);
+                    out.mixedProgramDoesNotBroadcast = sent.length === 0;
+                    r.p2pSend = origSend;
+
+                    // 5. Chat-Pattern "baue dorf hier" embed jetzt Position+Seed
+                    const dorfPattern = r.parseChatToDsl("baue dorf hier");
+                    out.dorfHasAtNotAtPlayer =
+                        dorfPattern &&
+                        Array.isArray(dorfPattern.program) &&
+                        dorfPattern.program[0] === "spawn_village" &&
+                        Array.isArray(dorfPattern.program[1]) &&
+                        dorfPattern.program[1][0] === "at" &&
+                        Number.isFinite(dorfPattern.program[1][1]) &&
+                        Number.isFinite(dorfPattern.program[1][3]) &&
+                        Number.isInteger(dorfPattern.program[2]);
+
+                    // 6. Chat-Pattern "spawne kreaturen 5" embed Position
+                    const krePattern = r.parseChatToDsl("spawne kreaturen 5");
+                    out.kreatureHasAt =
+                        krePattern &&
+                        Array.isArray(krePattern.program) &&
+                        krePattern.program[0] === "repeat" &&
+                        Array.isArray(krePattern.program[2]) &&
+                        krePattern.program[2][0] === "spawn_creature" &&
+                        Array.isArray(krePattern.program[2][1]) &&
+                        krePattern.program[2][1][0] === "at";
+
+                    // 7. Chat-Pattern "baue fraktal tempel" embed Position+Seed
+                    const fraktal = r.parseChatToDsl("baue fraktal tempel");
+                    out.fraktalHasSeed =
+                        fraktal &&
+                        Array.isArray(fraktal.program) &&
+                        fraktal.program[0] === "spawn_fractal" &&
+                        Array.isArray(fraktal.program[1]) &&
+                        fraktal.program[1][0] === "at" &&
+                        Number.isInteger(fraktal.program[5]);
+
+                    // 8. Diskrimination: spawn_village mit FIXEM Seed → deterministisch
+                    // (zwei Spawn-Aufrufe mit gleichem Seed liefern dieselbe Architektur-Geometrie)
+                    const beforeArchCount = r.state.architectures.length;
+                    r.dslRun(["spawn_village", ["at", 50, 0, 50], 12345], { source: "remote:peerX" });
+                    const arch1 = r.state.architectures[r.state.architectures.length - 1];
+                    r.dslRun(["spawn_village", ["at", 60, 0, 60], 12345], { source: "remote:peerX" });
+                    const arch2 = r.state.architectures[r.state.architectures.length - 1];
+                    out.seedDeterminismHolds =
+                        arch1 && arch2 && arch1.seed === arch2.seed && arch1.seed === 12345;
+                    // Cleanup
+                    r.state.architectures = r.state.architectures.slice(0, beforeArchCount);
+
+                    // 9. spawn_village mit at-Position landet WIRKLICH dort
+                    // (Empfänger spawnt am SENDER-Ort, nicht am eigenen Player)
+                    r.dslRun(["spawn_village", ["at", 77, 0, -33], 999], { source: "remote:peerY" });
+                    const lastArch = r.state.architectures[r.state.architectures.length - 1];
+                    out.atPositionRespected =
+                        lastArch && lastArch.position && lastArch.position.x === 77 && lastArch.position.z === -33;
+                    r.state.architectures = r.state.architectures.slice(0, beforeArchCount);
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!ring11V21Results || ring11V21Results.error) {
+                check(
+                    "Ring 11 V2.1: Snapshot erreichbar",
+                    false,
+                    (ring11V21Results && ring11V21Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Ring 11 V2.1: state.p2p.roomOverride existiert", ring11V21Results.hasRoomOverride);
+                check("Ring 11 V2.1: roomOverride persistiert via localStorage", ring11V21Results.roomOverridePersists);
+                check(
+                    "Ring 11 V2.1: NON_BROADCASTABLE_OPS Set enthält player_*+set_visible",
+                    ring11V21Results.hasNonBroadcastSet
+                );
+                check("Ring 11 V2.1: _dslContainsAnyOp findet Op flat", ring11V21Results.containsOpFlat);
+                check("Ring 11 V2.1: _dslContainsAnyOp findet Op verschachtelt", ring11V21Results.containsOpNested);
+                check("Ring 11 V2.1: _dslContainsAnyOp ignoriert nicht-listed Ops", ring11V21Results.containsOpClean);
+                check("Ring 11 V2.1: clean program (weather) wird gebroadcastet", ring11V21Results.cleanProgramBroadcasts);
+                check(
+                    "Ring 11 V2.1: player_speed (private) wird NICHT gebroadcastet",
+                    ring11V21Results.playerOpDoesNotBroadcast
+                );
+                check(
+                    "Ring 11 V2.1: gemischtes Programm mit player_jump_power skippt komplett",
+                    ring11V21Results.mixedProgramDoesNotBroadcast
+                );
+                check(
+                    "Ring 11 V2.1: Chat 'baue dorf hier' embed at(x,y,z)+seed (Multi-Sync-Fix)",
+                    ring11V21Results.dorfHasAtNotAtPlayer
+                );
+                check(
+                    "Ring 11 V2.1: Chat 'spawne kreaturen N' embed at-Position",
+                    ring11V21Results.kreatureHasAt
+                );
+                check(
+                    "Ring 11 V2.1: Chat 'baue fraktal X' embed at+rootSeed",
+                    ring11V21Results.fraktalHasSeed
+                );
+                check(
+                    "Ring 11 V2.1: spawn_village(seed) ist deterministisch (gleicher Seed → gleicher Wert)",
+                    ring11V21Results.seedDeterminismHolds
+                );
+                check(
+                    "Ring 11 V2.1: at-Position wird respektiert (Empfänger spawnt am SENDER-Ort)",
+                    ring11V21Results.atPositionRespected
+                );
             }
 
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
