@@ -34,10 +34,10 @@ Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) si
 | W3 | **Welt-Initiative + Welt-Tor** (Grok V2-Trigger, Welt-Info, Teilen/Empfangen) | ✅ live | – | W1 |
 | W4 | **Hylomorphismus atomar** — Materialien + Aktivierungs-Matrix + Werkzeuge | ✅ P1+P2+P3 live | – | Ring 6 + Ring 7 |
 | W5 | **Hylomorphismus räumlich + mechanisch + rekursiv** — Verbindungen (§5.1) + 5 räumliche Prinzipien (§5.2) + Bauplan-als-Werkzeug (§4.3) | ✅ A+B+C live | – | W4 |
-| W6 | **Crafting-Polish** — Visuelle Verbindungs-Linien + Brech-Mechanik + Energiequellen für Maschinen | 🔴 offen | 2-3 Sessions | W5 |
 | 8 | Welt-Identität als Multi-Welt-Verwaltung (mehrere worldIds parallel) | 🟡 Schema + Sichtbarkeit live, Multi-Welt-Switcher offen | 1-2 d | W3 |
 | 9 | Welt-Export/Import (erweitert) — Drei-Wahl Ersetzen/Daneben/Fusionieren | 🟡 Basic-Export/Import live, Wahl-Dialog offen | 1 d | Ring 8 |
 | 10 | Welt-Fusion (zwei DSL-Programm-Sets mergen mit parentWorlds) | 🔴 offen | 3-4 d | Ring 9 |
+| W6 | **Crafting-Polish + Erweiterung** (NACH Ringe 8-10) — visuelle Verbindungen, Brech-Mechanik, Energiequellen, Kreaturen-Körper, Physik-Baukasten, Rüstung, Min-Regel-Entscheidung | 🔴 offen, bewusst nachgelagert | 8-12 Sessions in 7 Teilschritten | W5 + Rings 8-10 |
 | 11 | Multi-User-Sync (P2P / Signaling) | 🔴 offen | 5-7 d | Ring 8 |
 
 **Summe verbleibend**: ~30-40 Arbeitstage in fokussierten Sessions. Verteilt auf 2-4 Monate realistisch.
@@ -202,6 +202,117 @@ Plus: inline-styles aus `index.html` entfernt (`#fps`, `#state-file-input`), Inl
 - Test: nach 10 Min Spiel sind die generierten DSL-Programme erkennbar an die Spieler-Vorlieben angepasst (z. B. wenn der Spieler oft springt, kommen mehr Sprungkraft-Buffs)
 
 **Akzeptanz**: messbar — die durchschnittliche Fitness der Generator-Outputs in den letzten 50 Programmen ist >0.7, gegenüber initial ~0.5.
+
+---
+
+### Welle 6: Crafting-Polish (Feinschliff, ~2-3 Sessions, bewusst nachgelagert)
+
+**Status**: 🔴 offen — **bewusst nach Ringe 8-10 verschoben** (Entscheidung 13.05.2026). Die Hylomorphismus-Schicht ist mechanisch vollständig (W4 + W5 A+B+C), Welle 6 ist Polish + Erweiterung, kein Fundament. Rings 8-10 (Welten-Ultiversum) ziehen die Vision-Krönung vor; Welle 6 läuft danach als Feinabstimmung.
+
+**Ziel**: Die Crafting-Schicht visuell + mechanisch + körperlich „atmen" lassen. Heute existieren Verbindungen, Lasten, Tags, Werkzeuge nur als Datenschicht und Stern-Anzeige — Welle 6 macht sie sichtbar, fühlbar und konsequent.
+
+**Teilschritt 6.1 — Visuelle Verbindungs-Linien** (~1 Session)
+
+- Three.js-Tube/Cylinder/Line zwischen `bp.parts[a].position` und `bp.parts[b].position`, gerendert pro Connection in `state.blueprints[].connections`
+- Pro Connection-Type eigener visueller Stil: `lashing` = Tube mit braunem Seil-Material, `pinning` = Cylinder mit Eisen-Material, `welding` = kurze geometrische Naht, `magic_bind` = emissive Linie mit awe-Farbe, `hafting` = keilförmiger Übergang, `gluing` = dünne flache Naht, `masonry` = Mörtel-Streifen, `sewing` = gestrichelte Linie
+- Pro-Spawn-Renderpfad in `_buildFromBlueprint` nach Part-Render, vor Compound-Group-Return
+- Editor-Vorschau: dieselben Linien im Workshop-Mesh-Preview (sobald 6.6 — Realtime-Preview — fertig ist; sonst nur bei gespawntem Compound)
+
+**Caveats:**
+- Linien dürfen **nicht** Kollisionen erzeugen — sie sind rein dekorativ, gehen nicht in den Compound-Body
+- Mesh-Culling muss greifen: bei `tickArchitectureCulling` ebenso disposed wie der Rest
+- Bei W5-A Lastfaktor < 0.7 (heute rötliche Stern-Anzeige) → Linien-Material rötlich tinten als „diese Verbindung trägt nicht"
+
+**Teilschritt 6.2 — Brech-Mechanik bei zu schwacher Last** (~1-2 Sessions)
+
+- Trigger: beim Spawn eines Compounds mit `connection.load < 0.7` (oder konfigurierbar `WORLD_EFFECT_THRESHOLDS.connection_brittle`)
+- Drei Varianten zur Wahl:
+  - **Sanft**: Compound spawnt, aber Part(s) hinter schwacher Verbindung visuell „abgehängt" — leicht ge-offset, halb-transparent, ohne Kollision für den unverbundenen Sub-Tree
+  - **Hart**: Beim ersten Welt-Effekt-Trigger (`_applyCompoundWorldEffects`) zerteilt sich der Compound in N separate dynamische `btRigidBody`s, die mit Schwerkraft fallen
+  - **Editor-Warn-Only**: Stern-Anzeige bleibt + Tooltip „diese Verbindung würde brechen", aber kein Spawn-Effekt — sicherste Variante, behält die heutige Semantik
+- Empfehlung: **6.2 startet mit Editor-Warn-Only** als „opt-out: bauen geht weiter", dann separat-Commit für Spawn-Effekt
+- Journal-Eintrag bei Bruch: `journalAppend("structure_failure", "Die ${name} hielt ihre Last nicht.")` — die Welt erinnert das Versagen
+
+**Caveats:**
+- **Min-Regel-Entscheidung (Learning #95) muss vor 6.2 fallen**. Heute deckelt der schlechteste opChain-Schritt; bei harter Brech-Mechanik wäre das doppelt grausam (schlechte Präzision → schlechte Tags → schwache Last → Bruch). Drei Optionen: (a) min bleibt, Brechen ist UX-Bestrafung; (b) später-poliert hebt (max statt min); (c) Decay-Modell (jeder Op multipliziert mit eigenem Faktor, end-Wert = Produkt). Schöpfer-Entscheidung in einem expliziten Commit dokumentieren.
+- Body-Recreate-Pfad für zerteilte Sub-Bodies ist nicht trivial (Compound→Liste-of-Bodies + 8 Half-Extent-Berechnungen + correct Welt-Position) — Test-First
+
+**Teilschritt 6.3 — Energiequellen für Maschinen** (~1-2 Sessions)
+
+- Konzept §4.1: vier Quellen — `hand` / `wasserrad` / `dampf` / `magisch`
+- Erweitert `state.tools[name]` um `{energySource, energyAvailable}` (default `"hand"` / `1.0` für alle Built-ins)
+- Welt-Effekt: ein Compound mit `tags.fließend ≥ 0.7` + nahem Bauplan mit `toolMeta` → Wasserrad-Bonus, hebt `energyAvailable` von 0.6 auf 1.0 → opChain-Cap multipliziert mit `energyAvailable`
+- DSL-Op `set_energy_source(toolName, source)` für Schöpfer-Hand
+- UI: Energie-Quelle als Auswahl-Feld in der Werkzeug-Liste, neben opClass und precisionCap
+
+**Caveats:**
+- **Nicht im `dslComposeAtomic`-Pool** (gleiche Regel wie `apply_op`, `define_material`) — Nexus darf keine Werkzeuge willkürlich umkonfigurieren
+- Snapshot-Cap-Regel (Welle 5 C) bleibt: `precisionCap` wird beim Register eingefroren, aber `energyAvailable` ist Live-Lookup gegen Welt-Kontext (Wasserrad in der Nähe = ja/nein) — das ist OK, weil es ein Zustand, kein Wert ist
+- Wasser-Animation-Hook in `tickArchitectures` muss „nahe genug" effizient finden — KD-Tree wäre Overkill, einfache Distanz-Schleife reicht bei <50 Architekturen sichtbar
+
+**Teilschritt 6.4 — Kreaturen-Körper als Baukasten** (~2 Sessions)
+
+- Kreaturen sind heute Single-Mesh (Würfel/Kugel mit Farbe). Spieler-Seele V2 hat schon Multi-Mesh-Group mit Walk-Cycle (Mensch/Phönix/Drache). Welle 6 zieht die gleiche Schicht in Kreaturen hoch.
+- `state.creatureSouls` analog `playerSoulDefs` — drei Built-ins (z. B. Pflanzenfresser/Räuber/Geist), jeder mit `build()` + `animate(g, t, ph, mv)` Multi-Mesh
+- DSL-Op `creature_soul(name)` setzt die Standard-Form für neu gespawnte Kreaturen
+- **Bridge zur Bauplan-Schicht**: Kreaturen als Baupläne ausdrücken, wenn man Ring 5 V3 Idee #3 (Spieler-Seele aus Werkstatt) mitnimmt — eine Kreatur ist dann ein Bauplan mit `role: "creature"` + `creatureMeta: {animatePattern, speed, jumpPower}`
+- Material-Tags auf Kreaturen-Compound → Welt-Effekte ähnlich Architekturen (eine Quarz-Kreatur singt, eine Eisen-Kreatur ist robust)
+
+**Caveats:**
+- Performance: heute spawnen wir 10 Kreaturen initial; Multi-Mesh mit Walk-Cycle ist pro Kreatur ~5-10× teurer in Vertex-Count + per-frame `animate`-Hook. Cap evtl. von 50 auf 20 senken, oder LOD (nahe = Multi-Mesh, fern = Single-Mesh-Proxy)
+- Movement-Worker (off-screen Kreaturen) muss Multi-Mesh aushalten — der heutige Worker rechnet nur `position`, das reicht; Animation läuft im Main-Thread bei sichtbaren Kreaturen
+- Bei Bauplan-als-Kreatur muss `spawnArchitecture` vs. `spawnCreature` getrennt bleiben — beide leben in unterschiedlichen Welt-Schichten (Architekturen sind statisch + cullbar, Kreaturen sind bewegt + physikalisch)
+
+**Teilschritt 6.5 — Physik-Baukasten für Compound-Körper** (~2-3 Sessions, anspruchsvoll)
+
+- Heute: Compound-Bodies aus `btBoxShape` pro Sub-Mesh (Architektur) ODER Single-Body (Kreatur, Spieler)
+- Vision: Verbindungen aus W5-A werden zu **echten Ammo-Constraints** — `hafting` → `btFixedConstraint`, `pinning` → `btHingeConstraint` (1 DoF), `lashing` → `btGeneric6DofSpringConstraint` (weich), `magic_bind` → distanz-erhaltendes Constraint
+- Erlaubt physikalische Spielzeuge: Wippe (Achse + Brett mit Pinning), Schaukel (Lashing), Tür (Hinge), Marionetten-Kreaturen
+- Brech-Mechanik (6.2) bekommt damit Substanz: `constraint.setBreakingImpulseThreshold(load * factor)` lässt das echte Solver-System entscheiden, ob die Verbindung hält
+- Pro Bauplan optional `dynamic: true` — dann werden Parts zu separaten dynamischen Bodies, verbunden durch Constraints, statt zu einem Compound
+
+**Caveats:**
+- **Ammo-Constraint-Binding-Lücken** (ähnlich zu `getHalfExtentsWithMargin`-Problem): nicht alle Constraint-Typen sind in der JS-Schicht vollständig erreichbar. Vor Start: Spike mit `btHingeConstraint` + `btFixedConstraint`, sehen was geht.
+- **Performance**: 6 Parts mit 5 Constraints = 6 Bodies + 5 Constraints, der Solver kann bei dichten Compounds (Dorf mit 30 Häusern, je 8 Parts) explodieren. Defaults dynamic=false halten, dynamic nur opt-in pro Bauplan.
+- **Sleep-Falle wie Player-Teleport** (CLAUDE.md): nach Constraint-Erzeugung `body.activate(true)` auf beiden Seiten, sonst hängen die Parts in der Luft
+- Save-Schema: `bp.dynamic` + `bp.constraints` (mit hinge-axis etc.) ergänzen — Schema-Version-Bump fällig
+
+**Teilschritt 6.6 — Rüstung (tragbare Compounds)** (~2 Sessions)
+
+- Bauplan mit `role: "armor"` + `armorMeta: {slot, tagsToPlayer}` — z. B. `slot: "head"`, „helmet"
+- `state.player.armor = {head, body, legs}` — drei Slots, jeder hält einen Bauplan-Namen oder null
+- Material-Tags + räumliche Tags der Rüstung **wirken auf den Spieler**: `magieleitung` → Spell-Schutz, `härte` → Damage-Reduction, `sprödigkeit` → HP-Penalty (Konsequenz statt Bestrafung), `resoniert` + hohe Präzision → Sing-Effekt, der Kreaturen besänftigt
+- **Vorbedingung — Spieler-Stats-System**: heute hat der Spieler nur Bewegung, keine HP/Resistance/Damage. Welle 6.6 muss ein minimales Stat-System einführen: `state.player.stats = {hp, maxHp, defense, magicResist}` + Tick-Damage z. B. bei Lava-Berührung (heute noch nicht modelliert).
+- DSL-Ops `equip_armor(slot, bp)` und `unequip_armor(slot)`
+- Visuell: Rüstungs-Bauplan rendert um die Spieler-Mesh herum, skaliert auf 1.2× Spieler-Größe, folgt yaw
+
+**Caveats:**
+- **Größter Eingriff in Welle 6** — Stat-System ist neuer Welt-Pfeiler, nicht nur Polish. Wenn das zu groß wirkt: 6.6 könnte rein kosmetisch starten (Rüstung visuell tragen, keine Stat-Effekte), dann später Stats nachziehen.
+- Animations-Sync: bei Player-Soul-Wechsel (Mensch ↔ Drache) muss die Rüstung mit-skalieren oder verschwinden — Drache trägt keinen Mensch-Helm sinnvoll
+- Save: `armor` in `playerSoul`-Sektion, mit defensive Migration (alte Saves haben keine Rüstung → `null` pro Slot)
+
+**Teilschritt 6.7 — Min-Regel-Entscheidung dokumentieren** (~0.5 Sessions, in 6.1 oder 6.2 inkludiert)
+
+- Learning #95 als expliziter Commit mit drei dokumentierten Optionen + Schöpfer-Entscheidung
+- Konzept-Doc `docs/crafting-konzept.md` §2.3 aktualisieren (heute „min", evtl. „min mit nachträglich-poliert hebt Stein-für-Stein um 20 %")
+- Test-Invarianten anpassen: heute prüft Welle 4 P3 Diskriminations-Schwelle 0.4 vs. 0.97 — bei neuer Regel evtl. andere Werte
+
+**Akzeptanz Welle 6 gesamt**: 
+- Verbindungen sind im 3D-Bild sichtbar, Connection-Type erkennbar an Look
+- Eine schwach verbundene Konstruktion zeigt Konsequenz (Warnung oder Bruch)
+- Maschinen können energiegekoppelt sein (Wasserrad-Drehbank)
+- Kreaturen haben Multi-Mesh-Körper mit Walk-Cycle
+- Mindestens 2 der 8 Verbindungstypen funktionieren als echtes Constraint
+- Rüstung lässt sich tragen, hat (zumindest visuell) Konsequenz
+- Min-Regel-Diskussion ist mit klarem Commit beendet
+
+**Vorbedingung**: W5 abgeschlossen ✅. Ring 8-10 müssen NICHT fertig sein, aber **wir verschieben Welle 6 bewusst nach 8-10**, um die Welten-Schicht nicht durch Polish zu verzögern.
+
+**Was beachten (Welle 6 als Ganzes):**
+1. **Heilige Lektion**: 6.4 + 6.5 + 6.6 sind die schwersten Brocken — wenn der Reflex „separate Kreaturen-Datei + Physik-Modul + Stat-Manager" auftaucht, ist es ein Smell. Stamm bleibt, Wachstumsringe wachsen IN `anazhRealm.js`.
+2. **Schema-Version bumpen** bei 6.5 (constraints) und 6.6 (armor + stats) — Save-Migration testen mit alten Saves vor dem Commit.
+3. **Diskriminations-Tests** für 6.1 (visuelle Linien) und 6.3 (energy): zwei minimal verschiedene Setups, prüfen dass Welt-Reaktion zwischen ihnen liegt.
+4. **Reflexions-Pause** zwischen 6.3 und 6.4 — der Übergang von Crafting-Mechanik zu Kreaturen/Körper ist konzeptionell groß genug, um nochmal die Vision-Treue zu prüfen.
 
 ---
 

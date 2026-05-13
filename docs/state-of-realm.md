@@ -394,13 +394,21 @@ Ring 2 (alle 7 Phasen), Ring 3 (V1+V2), Ring 4 (V1), Ring 5 (V1+V2), Ring 6 (V1+
 2. **Riese als vierte Form?** Bringt Physik-Komplexität (größere Hitbox = Body-Recreate, Kamera-Höhe, Kollisions-Test mit Bäumen). V3-Kandidat, sobald wir bereit sind, den Body-Recreate-Pfad zu bauen.
 3. **Spieler-Seele aus dem Werkstatt-Editor?** Da Seelen jetzt schon Multi-Mesh-Groups sind und das Bauplan-System (Ring 6.4) eine generische Daten-Schicht für Multi-Mesh-Konstruktionen ist, könnten Seelen analog als Baupläne ausgedrückt werden. Würde Form-Identität voll in den Editor heben.
 
-**Welle 5 (räumliche + mechanische + rekursive Schicht) ist abgeschlossen.** Die nächste Hylomorphismus-Schicht wäre Welle 6:
+**Welle 5 (räumliche + mechanische + rekursive Schicht) ist abgeschlossen.** Welle 6 ist als Crafting-Polish + Erweiterung geplant — **bewusst nach Ringe 8-10 verschoben** (Entscheidung 13.05.2026), damit die Welten-Schicht-Krönung nicht durch Feinabstimmung verzögert wird. Vollständiger Welle-6-Plan in `docs/roadmap.md` (sieben Teilschritte mit Caveats); hier Kurzfassung:
 
-A'. **Visuelle Verbindungs-Linien.** W5-A liefert die Datenschicht für 8 Verbindungstypen + Lastformel + UI, aber Verbindungen sind heute nur als Liste-Eintrag sichtbar, nicht als visuelles Element zwischen zwei Parts. Eine kleine Three.js-Linie (Lashing als Seil-Wickel-Tube, Pinning als Stift-Cylinder, Magic_bind als emissive Linie) würde die mechanische Schicht sichtbar machen. Aufwand: 1 Session.
+| Teil | Inhalt | Aufwand |
+|---|---|---|
+| 6.1 | **Visuelle Verbindungs-Linien** — 8 Connection-Types pro Typ eigener Three.js-Look (Lashing-Tube, Pinning-Cylinder, Magic_bind-Emissive) | ~1 Session |
+| 6.2 | **Brech-Mechanik** — schwache Verbindung führt zu Editor-Warnung (sicher) oder Spawn-Bruch in separate Bodies (hart). Vorbedingung: Min-Regel-Entscheidung | ~1-2 Sessions |
+| 6.3 | **Energiequellen für Maschinen** — `state.tools[name].energySource` (hand/wasserrad/dampf/magisch), moduliert opChain-Cap | ~1-2 Sessions |
+| 6.4 | **Kreaturen-Körper als Baukasten** — Multi-Mesh-Group analog Spieler-Seele V2, optional als Bauplan mit `role: "creature"` | ~2 Sessions |
+| 6.5 | **Physik-Baukasten** — W5-A-Verbindungen werden zu echten Ammo-Constraints (Hinge/Fixed/Spring), Wippen + Schaukeln + Türen physikalisch möglich | ~2-3 Sessions (anspruchsvoll) |
+| 6.6 | **Rüstung** — Bauplan mit `role: "armor"` + Slot (head/body/legs), Material-Tags wirken auf Spieler. Bringt minimales Stat-System mit | ~2 Sessions |
+| 6.7 | **Min-Regel-Entscheidung** (Learning #95) — drei dokumentierte Optionen, expliziter Schöpfer-Commit | ~0.5 Sessions |
 
-B'. **Brech-Mechanik.** W5-A hat keine Konsequenz bei zu schwacher Last: das UI zeigt Stern-Anzeige rötlich, das Compound bleibt aber intakt. Wenn ein Compound mit `_applyCompoundWorldEffects` zur Welt-Wirkung kommt, könnte eine zu schwache Verbindung visuell zerteilen — z. B. Mesh-Group auseinanderdriften lassen, oder den Part komplett fehlen (im Render-Pfad `_buildFromBlueprint` überspringen). Aufwand: 1-2 Sessions.
+**Heilige-Lektion-Warnung**: 6.4 + 6.5 + 6.6 sind die schwersten Brocken — wenn der Reflex „separate Kreaturen-Datei / Physik-Modul / Stat-Manager" auftaucht, ist es ein Smell. Stamm bleibt eine Datei, Welle 6 wächst IN `anazhRealm.js`. Reflexions-Pause zwischen 6.3 und 6.4 als Pflichtschritt eingeplant.
 
-C'. **Energiequellen für Maschinen.** W5-C macht Baupläne zu Werkzeugen, aber alle Tools sind aktuell handgeführt. Konzept §4.1 nennt vier Energie-Quellen: Hand/Wasserrad/Dampf/Magisch. Welle 6 könnte `state.tools[name].energySource` als zusätzliches Feld einführen — eine wasserrad-betriebene Drehbank hat eine Energie-Abhängigkeit, ist aber gleichmäßiger als die Hand-Variante. Aufwand: 1-2 Sessions.
+**Schema-Version-Bumps in Welle 6**: 6.5 (constraints im Bauplan) + 6.6 (armor + stats im player). Defensive Migration für alte Saves.
 
 **Für Ring 6 V3 (Bauplan-System erweitern):**
 
