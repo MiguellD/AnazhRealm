@@ -383,6 +383,14 @@ class AnazhRealm {
                 phoenixDurationSeconds: 300,
                 preDeathSoul: null,
                 deathLastTick: -Infinity,
+                // Welle 6.D Etappe 3a+ (Schöpfer-Feedback 13.05.2026) — Tod-
+                // Wunde bleibt nach der Wandlung als gradueller Tag-Penalty,
+                // der über deathWoundRegenSeconds linear regeneriert. Frisch
+                // tot = 1.0, geheilt = 0.0. WOUND_TAG_PENALTY multipliziert
+                // mit der Intensität fließt in computePlayerStats.
+                deathWoundIntensity: 0,
+                deathWoundRegenSeconds: 600,
+                deathWoundLastTickAt: -Infinity,
                 // Welle 6.D Etappe 3b — Equipped-Slots (Werkzeug + Rüstung).
                 // Werkzeug-Beitrag = sourceBlueprint.compoundTags × toolWeight,
                 // Rüstung-Beitrag = blueprint.compoundTags × armorWeight.
@@ -1137,6 +1145,20 @@ class AnazhRealm {
                 if (ctx && ctx.log) {
                     ctx.log.push({
                         event: result.ok ? "armor_role_set" : "armor_role_failed",
+                        name: blueprintName,
+                        reason: result.reason,
+                    });
+                }
+            },
+            // Welle 6.D Etappe 3a+ — Bauplan als Konsumabel markieren. Wirkung
+            // emergiert aus Compound-Tags × scale (Default 0.2). So entsteht
+            // die Tag-Bonus-Tabelle aus der Komposition (Wasser + Pflanze →
+            // lebendig + magieleitung), nicht aus einer harten Tabelle.
+            set_consumable_role: ([blueprintName, durationSeconds, scale, label], ctx) => {
+                const result = this.setBlueprintAsConsumable(blueprintName, durationSeconds, label, scale);
+                if (ctx && ctx.log) {
+                    ctx.log.push({
+                        event: result.ok ? "consumable_role_set" : "consumable_role_failed",
                         name: blueprintName,
                         reason: result.reason,
                     });
@@ -3636,6 +3658,55 @@ class AnazhRealm {
                     program: ["record_narrative", m[1].trim()],
                     describe: `Narrativ gespeichert: ${m[1].trim()}`,
                 }),
+            },
+            // Welle 6.D Etappe 3a — Schaden-Chat-Pattern. „schade mir 50" /
+            // „verletze mich 30" / „damage 999 test" — Schöpfer-Werkzeug
+            // (Test-Tod-Wandlung) ohne JSON-DSL-Geste.
+            {
+                example: "schade mir 50",
+                re: /^(?:schade\s+mir|verletze\s+mich|damage)\s+(\d+(?:\.\d+)?)(?:\s+(.+))?$/i,
+                build: (m) => ({
+                    program: ["damage", Number(m[1]), (m[2] || "chat").trim()],
+                    describe: `Schaden ${m[1]} (${(m[2] || "chat").trim()})`,
+                }),
+            },
+            // Welle 6.D Etappe 3a — Konsumabel aktivieren via Chat.
+            // „trink trank_des_lichts" / „aktiviere trank_X".
+            {
+                example: "trink trank_des_lichts",
+                re: /^(?:trink|trinke|aktiviere\s+trank)\s+([a-z0-9_-]+)$/i,
+                build: (m) => ({
+                    program: ["apply_boost", m[1]],
+                    describe: `Konsum: ${m[1]}`,
+                }),
+            },
+            // Welle 6.D Etappe 3b — Ausrüstung wechseln via Chat.
+            {
+                example: "rüste werkzeug hammer",
+                re: /^rüste\s+werkzeug\s+([a-z0-9_-]+)$/i,
+                build: (m) => ({
+                    program: ["equip_tool", m[1]],
+                    describe: `Werkzeug: ${m[1]}`,
+                }),
+            },
+            {
+                example: "rüste rüstung eisen_plate",
+                re: /^rüste\s+rüstung\s+([a-z0-9_-]+)$/i,
+                build: (m) => ({
+                    program: ["equip_armor", m[1]],
+                    describe: `Rüstung: ${m[1]}`,
+                }),
+            },
+            {
+                example: "rüste ab werkzeug",
+                re: /^rüste\s+ab\s+(werkzeug|rüstung|tool|armor)$/i,
+                build: (m) => {
+                    const slot = /werkzeug|tool/i.test(m[1]) ? "tool" : "armor";
+                    return {
+                        program: ["unequip", slot],
+                        describe: `Ausrüstung ab: ${slot}`,
+                    };
+                },
             },
         ];
         return this._chatDslPatternsCache;
@@ -10182,6 +10253,9 @@ class AnazhRealm {
             this.state.player.emotions.sorrow = Math.min(1, (this.state.player.emotions.sorrow || 0) + 0.3);
             this.state.player.emotions.awe = Math.min(1, (this.state.player.emotions.awe || 0) + 0.2);
         }
+        // Welle 6.D Etappe 3a+ — Wunde frisch setzen. Bleibt nach Phönix-Phase
+        // bestehen und regeneriert langsam (deathWoundRegenSeconds = 10 min).
+        this.state.player.deathWoundIntensity = 1.0;
         // Phönix-Form aktivieren (recomputePlayerStats läuft automatisch in
         // applyPlayerSoul, HP wird dabei auf neue hpMax gesetzt).
         const oldLabel = this._getSoulDef(oldSoul) ? this._getSoulDef(oldSoul).label : oldSoul;
@@ -10207,7 +10281,25 @@ class AnazhRealm {
     tickPhoenixDeath(currentTime) {
         if (!this.state.player) return;
         if (currentTime - (this.state.player.deathLastTick || -Infinity) < 1.0) return;
+        const dt = Math.max(0.1, Math.min(10, currentTime - this.state.player.deathLastTick));
         this.state.player.deathLastTick = currentTime;
+        // Welle 6.D Etappe 3a+ — Wunde regenerieren UNABHÄNGIG von der
+        // Phönix-Wandlungs-Phase. Die Wandlung heilt HP schnell (5 min), aber
+        // die Stat-Wunde bleibt 10 min als Erinnerung an die Verletzung.
+        const woundIntensity = this.state.player.deathWoundIntensity || 0;
+        if (woundIntensity > 0) {
+            const regenRate = 1 / (this.state.player.deathWoundRegenSeconds || 600);
+            this.state.player.deathWoundIntensity = Math.max(0, woundIntensity - regenRate * dt);
+            this.recomputePlayerStats(); // Stat-Penalty sinkt sichtbar
+        }
+        // Welle 6.D Etappe 3a+ — Stamina-Regen (immer, nicht nur in Wandlung).
+        // Linear bis staminaMax. Verbraucht durch applyOpToPart u. a.
+        const staMax = this.state.player.staminaMax || 100;
+        const sta = this.state.player.stamina || 0;
+        if (sta < staMax) {
+            const rate = AnazhRealm.STAMINA_REGEN_PER_SEC || 5;
+            this.state.player.stamina = Math.min(staMax, sta + rate * dt);
+        }
         const now = performance.now() / 1000;
         const until = this.state.player.phoenixUntil || -Infinity;
         if (until <= -Infinity || until <= 0) return;
@@ -10321,45 +10413,19 @@ class AnazhRealm {
         if (typeof this.renderSoulEditorUI === "function") this.renderSoulEditorUI();
     }
 
-    // Welle 6.D Etappe 3b — Player-Aura: dünner horizontaler Ring auf
-    // Fuß-Höhe um den Spieler. Hue aus dominanter Tag-Achse, Saturation
-    // skaliert mit HP-Prozent. Die Aura ist eigener THREE.Mesh in der Welt-
-    // Szene (nicht als playerMesh-Child, damit applyPlayerSoul ihn nicht
-    // beim Seele-Wechsel disposed). Position wird pro Frame synchronisiert.
-    _ensurePlayerAura() {
-        if (typeof THREE === "undefined" || !this.state.scene) return null;
-        if (this.state.playerAura) return this.state.playerAura;
-        // Dünner Torus: Innen-Radius 0.7, Tube-Radius 0.06 — wirkt wie ein
-        // Lichtkranz um die Füße. Horizontal: rotation.x = π/2.
-        const geom = new THREE.TorusGeometry(0.7, 0.06, 12, 48);
-        const mat = new THREE.MeshBasicMaterial({
-            color: 0xffffff,
-            transparent: true,
-            opacity: 0.55,
-            depthWrite: false,
-        });
-        const ring = new THREE.Mesh(geom, mat);
-        ring.rotation.x = Math.PI / 2;
-        ring.castShadow = false;
-        ring.receiveShadow = false;
-        ring.userData.isPlayerAura = true;
-        this.state.scene.add(ring);
-        this.state.playerAura = ring;
-        return ring;
-    }
-
-    // Aura-Farbe + Position aus Tags + HP berechnen und auf den Mesh anwenden.
-    // Wird im Game-Loop nach updatePlayerEmotions aufgerufen (gleicher Takt
-    // wie die UI-1Hz-Refresh-Ticks wäre overkill; per Frame ist günstig genug,
-    // weil nur ein Mesh + Color-Set).
+    // Welle 6.D Etappe 3b (Schöpfer-Feedback 13.05.2026) — Player-Aura jetzt
+    // AM CHARAKTER, nicht als Boden-Ring. Jeder Sub-Mesh des playerMesh-Group
+    // bekommt einen sanften HSL-Glow-Tint, gemischt aus Original-Material-
+    // Farbe + Aura-Farbe. Helligkeit folgt HP-Prozent (verletzt = matt,
+    // voll-HP = leuchtend). Bei aktivem damage-Hit pulsiert kurz rot-Tint.
+    //
+    // Die Original-Farbe wird einmalig pro Sub-Mesh in userData._auraBaseColor
+    // gecached — sonst würde jeder Frame die schon getintete Farbe als neue
+    // Basis lesen und der Tint exponentiell driften (Lehre aus Welle 6.A5
+    // Phantom-Tint).
     tickPlayerAura() {
         if (!this.state.playerMesh || !this.state.player) return;
-        const ring = this._ensurePlayerAura();
-        if (!ring) return;
-        const p = this.state.playerMesh.position;
-        // Position: knapp über den Füßen (player.y - 0.45). Box-Half-Extent
-        // ist 0.5, also liegt y - 0.45 leicht darüber → kein Z-Fighting.
-        ring.position.set(p.x, p.y - 0.45, p.z);
+        if (typeof THREE === "undefined") return;
         // Dominante Tag-Achse aus den Final-Tags (inkl. Boosts + Equipped).
         const tags = this.state.player.statTags || {};
         let bestKey = "lebendig";
@@ -10373,11 +10439,40 @@ class AnazhRealm {
         }
         const hue = AnazhRealm.AURA_TAG_HUE[bestKey] || 0;
         const hpMax = this.state.player.hpMax || 100;
-        const hpRatio = hpMax > 0 ? Math.max(0.1, Math.min(1, (this.state.player.hp || 0) / hpMax)) : 1;
-        // Saturation aus HP-Prozent: voll bei 100 % HP, blass bei niedrig.
-        const sat = 0.4 + hpRatio * 0.5;
-        const lit = 0.5;
-        ring.material.color.setHSL(hue / 360, sat, lit);
+        const hpRatio = hpMax > 0 ? Math.max(0.05, Math.min(1, (this.state.player.hp || 0) / hpMax)) : 1;
+        // Aura-Intensität: voll bei 100 % HP, blass + dunkel bei niedrig.
+        // Mix-Faktor: 0.0 = pure Original-Farbe, 1.0 = pure Aura-Hue.
+        // Wir mischen 35 % Aura über Original — sichtbar, aber Bauplan-
+        // Identität bleibt lesbar.
+        const auraMix = 0.35;
+        const auraSat = 0.7 * hpRatio;
+        const auraLit = 0.4 + 0.3 * hpRatio;
+        const auraColor = new THREE.Color().setHSL(hue / 360, auraSat, auraLit);
+        this.state.playerMesh.traverse((node) => {
+            if (!node || !node.isMesh || !node.material || !node.material.color) return;
+            if (node.userData._auraBaseColor === undefined) {
+                node.userData._auraBaseColor = node.material.color.getHex();
+            }
+            const base = node.userData._auraBaseColor;
+            const br = ((base >> 16) & 0xff) / 255;
+            const bg = ((base >> 8) & 0xff) / 255;
+            const bb = (base & 0xff) / 255;
+            // Verletzt: zusätzliche Verdunklung (×hpRatio auf die Base-Komponente),
+            // damit voll-HP klar leuchtet und 0-HP fast schwarz wirkt.
+            const darken = 0.5 + 0.5 * hpRatio;
+            const r = br * (1 - auraMix) * darken + auraColor.r * auraMix;
+            const g = bg * (1 - auraMix) * darken + auraColor.g * auraMix;
+            const b = bb * (1 - auraMix) * darken + auraColor.b * auraMix;
+            node.material.color.setRGB(r, g, b);
+        });
+        // Alten Boden-Torus aus Etappe 3b V1 säubern, falls noch da (z. B.
+        // nach Reload aus altem State).
+        if (this.state.playerAura && this.state.scene) {
+            this.state.scene.remove(this.state.playerAura);
+            if (this.state.playerAura.geometry) this.state.playerAura.geometry.dispose();
+            if (this.state.playerAura.material) this.state.playerAura.material.dispose();
+            this.state.playerAura = null;
+        }
     }
 
     // Welle 6.D Etappe 3b — Bauplan als Rüstung markieren. Analog zu
@@ -10462,10 +10557,57 @@ class AnazhRealm {
         return { ok: true, name: safe };
     }
 
+    // Welle 6.D Etappe 3a+ (Schöpfer-Feedback 13.05.2026) — Bauplan als
+    // Konsumabel markieren. Damit kommt die Konsum-Wirkung aus der COMPOSITION:
+    // Bauplan mit Wasser-Part + Pflanze-Part erzeugt Konsumabel mit
+    // tagBonus = computeCompoundTags × scale. Statt einer Wert-Tabelle
+    // entsteht die Wirkung emergent aus dem Compound-System (Hylomorphismus).
+    setBlueprintAsConsumable(name, durationSeconds, label, scale) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.builtIn) return { ok: false, reason: "cannot_modify_builtin" };
+        const dur = Math.max(0.5, Math.min(600, Number(durationSeconds) || 30));
+        const sc = Math.max(0.02, Math.min(1, Number(scale) || 0.2));
+        bp.role = "consumable";
+        bp.consumableMeta = {
+            durationSeconds: dur,
+            scale: sc,
+            label: typeof label === "string" ? label.slice(0, 60) : bp.label || name,
+        };
+        return { ok: true, name };
+    }
+
     // Eine Konsumable aktivieren — addet einen Boost via Etappe-2-System.
     // Source ist `consume:<name>`, sodass Dedupe greift (zwei Doppelklicks
-    // verlängern statt zu duplizieren).
+    // verlängern statt zu duplizieren). Zwei Pfade: zuerst Bauplan-mit-role-
+    // consumable (Compound-Tag-getrieben, vision-treu), dann state.consumables-
+    // Tabellen-Pfad (rückwärtskompatibel).
     activateConsumable(name) {
+        // Pfad 1: Bauplan mit role:"consumable" — tagBonus aus Compound-Tags
+        // emergiert. Skalierung über consumableMeta.scale (Default 0.2)
+        // weil Compound-Tags bis 3 reichen können, Boost-Deltas sollen 0..0.5
+        // bleiben damit der Effekt spürbar aber nicht dominant ist.
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (bp && bp.role === "consumable" && bp.consumableMeta) {
+            const tags = this.computeCompoundTags(bp);
+            const scale = bp.consumableMeta.scale || 0.2;
+            const tagBonus = {};
+            for (const tag of Object.keys(tags)) {
+                const v = tags[tag] * scale;
+                if (Math.abs(v) > 0.001) tagBonus[tag] = Math.max(-1, Math.min(1, v));
+            }
+            if (Object.keys(tagBonus).length === 0) {
+                return { ok: false, reason: "blueprint_has_no_tags" };
+            }
+            const ok = this.addPlayerBoost({
+                source: `consume:${name}`,
+                tagDelta: tagBonus,
+                durationSeconds: bp.consumableMeta.durationSeconds || 30,
+                label: bp.consumableMeta.label || bp.label || name,
+            });
+            return { ok };
+        }
+        // Pfad 2: alte Tabelle (state.consumables) — DSL-direktes Konsumabel
         const c = this.state.consumables && this.state.consumables[name];
         if (!c) return { ok: false, reason: "not_found" };
         const ok = this.addPlayerBoost({
@@ -10852,6 +10994,15 @@ class AnazhRealm {
                     if (!AnazhRealm.MATERIAL_TAG_KEYS.includes(tag)) continue;
                     finalTags[tag] = (finalTags[tag] || 0) + b.tagDelta[tag];
                 }
+            }
+        }
+        // Welle 6.D Etappe 3a+ — Tod-Wunde als negativer Tag-Delta. Wundens-
+        // Intensität (0..1) skaliert WOUND_TAG_PENALTY; bei frischem Tod
+        // voll, regeneriert linear über deathWoundRegenSeconds.
+        const woundI = (this.state.player && this.state.player.deathWoundIntensity) || 0;
+        if (woundI > 0) {
+            for (const tag of Object.keys(AnazhRealm.WOUND_TAG_PENALTY)) {
+                finalTags[tag] = (finalTags[tag] || 0) + AnazhRealm.WOUND_TAG_PENALTY[tag] * woundI;
             }
         }
         const stats = {};
@@ -11599,6 +11750,18 @@ class AnazhRealm {
         if (compat && !compat.includes(tool.opClass)) {
             return { ok: false, reason: "material_op_incompatible" };
         }
+        // Welle 6.D Etappe 3a+ — Stamina-Kosten. Schöpfer-Geste mit Werkzeug
+        // verbraucht Energie. Reicht Stamina nicht, lehnen wir ab — der
+        // Spieler muss warten (Regen via tickPhoenixDeath/tickPlayerVitals)
+        // oder eine Stamina-stärkere Seele wählen. Damit ist „beliebig stapeln"
+        // strukturell ausgeschlossen; Geduld wird zur ECHTEN Kosten, nicht
+        // nur zur Reihenfolge.
+        const cost = AnazhRealm.TOOL_OP_STAMINA_COST || 10;
+        const stamina = (this.state.player && this.state.player.stamina) || 0;
+        if (stamina < cost) {
+            return { ok: false, reason: "not_enough_stamina", staminaNeeded: cost, staminaHave: stamina };
+        }
+        this.state.player.stamina = Math.max(0, stamina - cost);
         if (!Array.isArray(part.opChain)) part.opChain = this._defaultPartOpChain();
         part.opChain.push({
             tool: toolName,
@@ -11606,7 +11769,7 @@ class AnazhRealm {
             cap: tool.precisionCap,
             at: performance.now() / 1000,
         });
-        return { ok: true, precision: this.computePartPrecision(part) };
+        return { ok: true, precision: this.computePartPrecision(part), staminaRemaining: this.state.player.stamina };
     }
 
     // ### Welle 4 Phase 2 — Aktivierte Tag-Stärken ###
@@ -13654,13 +13817,13 @@ class AnazhRealm {
         });
         armorRow.appendChild(armorSel);
         container.appendChild(armorRow);
-        // Markier-Sektion: eigene Baupläne ohne Rolle, mit „Als Rüstung
-        // markieren"-Button. Erlaubt dem Schöpfer, einen Bauplan zur Rüstung
-        // zu erklären ohne extra DSL-Tippen.
+        // Markier-Sektion: eigene Baupläne ohne Rolle bekommen zwei Buttons:
+        // „Als Rüstung" und „Als Konsumabel". So entscheidet der Schöpfer
+        // pro Bauplan, ob er physisch (Rüstung) oder verzehrbar (Trank) ist.
         if (candidateBlueprints.length > 0) {
             const markHeader = document.createElement("div");
             markHeader.className = "equip-mark-header";
-            markHeader.textContent = "Bauplan als Rüstung markieren:";
+            markHeader.textContent = "Bauplan als ... markieren:";
             container.appendChild(markHeader);
             for (const name of candidateBlueprints) {
                 const bp = this.state.blueprints[name];
@@ -13670,15 +13833,77 @@ class AnazhRealm {
                 label.className = "equip-mark-label";
                 label.textContent = bp.label || name;
                 row.appendChild(label);
-                const btn = document.createElement("button");
-                btn.type = "button";
-                btn.textContent = "Als Rüstung";
-                btn.addEventListener("click", () => {
+                const armorBtn = document.createElement("button");
+                armorBtn.type = "button";
+                armorBtn.textContent = "Rüstung";
+                armorBtn.addEventListener("click", () => {
                     const result = this.setBlueprintAsArmor(name);
                     if (!result.ok) this.log(`setBlueprintAsArmor: ${result.reason}`, "ERROR");
                     this.renderPlayerEquipUI();
                 });
-                row.appendChild(btn);
+                row.appendChild(armorBtn);
+                const consBtn = document.createElement("button");
+                consBtn.type = "button";
+                consBtn.textContent = "Konsumabel";
+                consBtn.addEventListener("click", () => {
+                    const result = this.setBlueprintAsConsumable(name, 30, bp.label || name, 0.2);
+                    if (!result.ok) this.log(`setBlueprintAsConsumable: ${result.reason}`, "ERROR");
+                    this.renderPlayerEquipUI();
+                });
+                row.appendChild(consBtn);
+                container.appendChild(row);
+            }
+        }
+        // Konsumables-Liste mit „Trinken"-Button — eigene Baupläne mit
+        // role:"consumable" + alle DSL-Tabellen-Konsumables.
+        const consumableBps = [];
+        for (const name of Object.keys(this.state.blueprints || {})) {
+            const bp = this.state.blueprints[name];
+            if (bp && bp.role === "consumable") consumableBps.push(name);
+        }
+        const tableConsumables = Object.keys(this.state.consumables || {});
+        if (consumableBps.length > 0 || tableConsumables.length > 0) {
+            const consumableHeader = document.createElement("div");
+            consumableHeader.className = "equip-mark-header";
+            consumableHeader.textContent = "Konsumables (trinken):";
+            container.appendChild(consumableHeader);
+            for (const name of consumableBps) {
+                const bp = this.state.blueprints[name];
+                const row = document.createElement("div");
+                row.className = "equip-mark-row";
+                const label = document.createElement("span");
+                label.className = "equip-mark-label";
+                const meta = bp.consumableMeta || {};
+                label.textContent = `${bp.label || name} (${meta.durationSeconds || 30} s, ×${meta.scale || 0.2})`;
+                row.appendChild(label);
+                const drinkBtn = document.createElement("button");
+                drinkBtn.type = "button";
+                drinkBtn.textContent = "Trinken";
+                drinkBtn.addEventListener("click", () => {
+                    const result = this.activateConsumable(name);
+                    if (!result.ok) this.log(`activateConsumable: ${result.reason}`, "ERROR");
+                    if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
+                });
+                row.appendChild(drinkBtn);
+                container.appendChild(row);
+            }
+            for (const name of tableConsumables) {
+                const c = this.state.consumables[name];
+                const row = document.createElement("div");
+                row.className = "equip-mark-row";
+                const label = document.createElement("span");
+                label.className = "equip-mark-label";
+                label.textContent = `${c.label || name} (${c.durationSeconds} s, Tabelle)`;
+                row.appendChild(label);
+                const drinkBtn = document.createElement("button");
+                drinkBtn.type = "button";
+                drinkBtn.textContent = "Trinken";
+                drinkBtn.addEventListener("click", () => {
+                    const result = this.activateConsumable(name);
+                    if (!result.ok) this.log(`activateConsumable: ${result.reason}`, "ERROR");
+                    if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
+                });
+                row.appendChild(drinkBtn);
                 container.appendChild(row);
             }
         }
@@ -14626,8 +14851,12 @@ class AnazhRealm {
             this.state.moveDirection.set(0, 0, 0);
             if (this.state.keys["w"]) this.state.moveDirection.addScaledVector(this.state.forward, 1);
             if (this.state.keys["s"]) this.state.moveDirection.addScaledVector(this.state.forward, -1);
-            if (this.state.keys["a"]) this.state.moveDirection.addScaledVector(this.state.right, 1);
-            if (this.state.keys["d"]) this.state.moveDirection.addScaledVector(this.state.right, -1);
+            // Schöpfer-Bugfund 13.05.2026: A/D waren vertauscht (A=+right,
+            // D=-right). Symmetrische Seelen (Mensch/Phönix) verbargen es;
+            // der asymmetrische Drache machte es sichtbar. Standard-WASD-
+            // Konvention: A strafe-links (-right), D strafe-rechts (+right).
+            if (this.state.keys["a"]) this.state.moveDirection.addScaledVector(this.state.right, -1);
+            if (this.state.keys["d"]) this.state.moveDirection.addScaledVector(this.state.right, 1);
 
             if (this.state.physicsWorld && playerBody) {
                 // Welle 6.A3 — auf zu steilem Slope (onSteepSlope=true via
@@ -15179,6 +15408,24 @@ AnazhRealm.AURA_TAG_HUE = Object.freeze({
 // wave-6-design §5.3).
 AnazhRealm.ARMOR_STAT_WEIGHT = 0.3;
 AnazhRealm.TOOL_STAT_WEIGHT = 0.15;
+
+// Welle 6.D Etappe 3a+ (Schöpfer-Feedback 13.05.2026) — Werkzeug-Anwendung
+// kostet Stamina. Ohne Kosten könnte der Spieler unbegrenzt Polier-Schritte
+// stapeln und Präzision exponentiell hochziehen (Min-Regel-Hybrid 0.7^N geht
+// gegen max für N→∞). Ressourcen-Verbrauch erzwingt Geduld als ECHTE Kosten,
+// nicht nur als Reihenfolge.
+AnazhRealm.TOOL_OP_STAMINA_COST = 10;
+AnazhRealm.STAMINA_REGEN_PER_SEC = 5;
+
+// Welle 6.D Etappe 3a+ (Schöpfer-Feedback 13.05.2026) — Tod-Wunde-Penalty.
+// Der Spieler trägt nach einem Tod eine graduelle Schwächung: Körper-Tags
+// fallen, der Spieler ist sichtbar verwundet bis zur vollen Regeneration.
+// Die Penalty wird mit `deathWoundIntensity` (0..1) multipliziert.
+AnazhRealm.WOUND_TAG_PENALTY = Object.freeze({
+    dichte: -0.3, // Körper schwer + träge
+    lebendig: -0.2, // Aura blass
+    zähigkeit: -0.2, // anfälliger
+});
 
 // Welle 6.D Etappe 3a — Min-Regel-Hybrid-Decay. precision = min + (max−min)
 // × decay^N (siehe computePartPrecision-Doc). 0.7 ist Schöpfer-Wahl; ein

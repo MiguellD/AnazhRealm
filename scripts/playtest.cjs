@@ -5507,6 +5507,174 @@ function startSaveServer() {
                 })
                 .catch(() => null);
 
+            // ### Schöpfer-Reflexions-Fixes (13.05.2026, Welle 6.D Etappe 3a+) ###
+            // Sechs Lücken, die der Schöpfer aufdeckte:
+            //  1. WASD A/D-Swap (Drache-Steuerung „invertiert")
+            //  2. „damage X" als Chat-Pattern (war nur DSL-JSON)
+            //  3. Aura am Charakter statt Boden-Ring
+            //  4. Tod-Wunde persistent + linear regenerierend
+            //  5. Werkzeug-Anwendung kostet Stamina
+            //  6. Konsumables aus Compound-Tags (Logik statt Tabelle)
+            const reflexResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
+                    const out = {};
+
+                    // (1) WASD A/D-Fix: A muss -right ergeben, D +right
+                    const loopSrc = r.startEternalLoop.toString();
+                    out.aPressNegRight = /keys\["a"\][^;]*addScaledVector\(this\.state\.right,\s*-1\)/.test(loopSrc);
+                    out.dPressPosRight = /keys\["d"\][^;]*addScaledVector\(this\.state\.right,\s*1\)/.test(loopSrc);
+
+                    // (2) Chat-Pattern für damage
+                    const dmgPattern = r.parseChatToDsl("schade mir 42");
+                    out.damageChatParses = dmgPattern && dmgPattern.program && dmgPattern.program[0] === "damage" && dmgPattern.program[1] === 42;
+                    const trinkPattern = r.parseChatToDsl("trink trank_lichts");
+                    out.trinkChatParses = trinkPattern && trinkPattern.program[0] === "apply_boost";
+                    const ruestePattern = r.parseChatToDsl("rüste werkzeug hammer");
+                    out.ruesteChatParses = ruestePattern && ruestePattern.program[0] === "equip_tool";
+
+                    // (3) Aura am Charakter: tickPlayerAura tinted Sub-Meshes
+                    r.applyPlayerSoul("human");
+                    // Frisches Mesh → baseColor noch nicht gecached
+                    const sub = r.state.playerMesh.children[0];
+                    out.subMeshExists = !!sub && !!sub.material;
+                    const beforeColor = sub && sub.material ? sub.material.color.getHex() : null;
+                    r.tickPlayerAura();
+                    out.auraBaseColorCached = sub && sub.userData && typeof sub.userData._auraBaseColor === "number";
+                    const afterColor = sub && sub.material ? sub.material.color.getHex() : null;
+                    out.auraTintChangedColor = beforeColor !== afterColor;
+                    // Boden-Ring sollte entfernt sein (war V1, jetzt charakter-glow)
+                    out.boundsRingRemoved = !r.state.playerAura || !r.state.scene.children.includes(r.state.playerAura);
+
+                    // (4) Tod-Wunde persistent + regeneriert
+                    out.hasWoundIntensity = "deathWoundIntensity" in r.state.player;
+                    out.hasWoundPenaltyConst = C.WOUND_TAG_PENALTY && typeof C.WOUND_TAG_PENALTY === "object";
+                    r.state.player.deathWoundIntensity = 0;
+                    r.state.player.phoenixUntil = -Infinity;
+                    const baselineHpMax = r.state.player.hpMax;
+                    r.triggerPhoenixDeath("test");
+                    out.woundSetAt1 = Math.abs(r.state.player.deathWoundIntensity - 1.0) < 0.001;
+                    // Wunde drückt dichte/lebendig/zähigkeit → hpMax sinkt + lebendig-Tag sinkt
+                    const woundedHpMax = r.state.player.hpMax;
+                    out.woundReducesHp = woundedHpMax < baselineHpMax;
+                    // Regen-Tick: nach 60 Sekunden simulierter Zeit Wunde reduziert
+                    r.state.player.deathLastTick = -Infinity;
+                    r.tickPhoenixDeath(performance.now() / 1000);
+                    out.woundRegens = r.state.player.deathWoundIntensity < 1.0;
+
+                    // (5) Werkzeug-Kosten: applyOpToPart braucht Stamina
+                    r.state.player.deathWoundIntensity = 0;
+                    r.applyPlayerSoul("human"); // reset Stats inkl. Stamina-max
+                    out.hasStaminaCostConst = typeof C.TOOL_OP_STAMINA_COST === "number" && C.TOOL_OP_STAMINA_COST > 0;
+                    out.hasStaminaRegenConst = typeof C.STAMINA_REGEN_PER_SEC === "number";
+                    // Setup: einen eigenen Bauplan mit einem Part + Spieler besitzt hammer
+                    r.state.blueprints.wound_test_bp = {
+                        name: "wound_test_bp",
+                        label: "Test",
+                        builtIn: false,
+                        // eisen akzeptiert plastic-Op (hammer-Klasse); stein nur subtractive.
+                        parts: [{ shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } }],
+                    };
+                    if (!r.state.player.tools.includes("hammer")) r.state.player.tools.push("hammer");
+                    const staBefore = r.state.player.stamina;
+                    const applyOk = r.applyOpToPart("wound_test_bp", 0, "hammer");
+                    out.applyOpResult = applyOk;
+                    out.staBefore = staBefore;
+                    out.staAfter = r.state.player.stamina;
+                    out.applyOpOkWithStamina = applyOk && applyOk.ok;
+                    out.staminaWasDeducted = r.state.player.stamina < staBefore;
+                    // Stamina auf 0 → applyOpToPart lehnt ab
+                    r.state.player.stamina = 1; // weniger als cost 10
+                    const applyFail = r.applyOpToPart("wound_test_bp", 0, "hammer");
+                    out.applyOpRejectedNoStamina = !applyFail.ok && applyFail.reason === "not_enough_stamina";
+                    // Cleanup
+                    delete r.state.blueprints.wound_test_bp;
+                    r.state.player.stamina = r.state.player.staminaMax;
+
+                    // (6) Konsumables aus Compound-Tags
+                    out.hasSetBlueprintAsConsumable = typeof r.setBlueprintAsConsumable === "function";
+                    // Setup: Bauplan aus quarz-Helix + glut-Sphere (sollte magieleitung + brennbar hoch)
+                    r.state.blueprints.wave6d_potion = {
+                        name: "wave6d_potion",
+                        label: "Magie-Trank",
+                        builtIn: false,
+                        parts: [
+                            { shape: "helix", material: "quarz", position: { x: 0, y: 0, z: 0 }, size: { x: 0.3, y: 0.5, z: 2 } },
+                            { shape: "sphere", material: "glut", position: { x: 0, y: 0.5, z: 0 }, size: { x: 0.2, y: 0.2, z: 0.2 } },
+                        ],
+                    };
+                    const markRes = r.setBlueprintAsConsumable("wave6d_potion", 45, "Magie-Trank", 0.2);
+                    out.markConsumableOk = markRes && markRes.ok;
+                    out.blueprintGotRoleConsumable = r.state.blueprints.wave6d_potion.role === "consumable";
+                    out.blueprintHasConsumableMeta =
+                        r.state.blueprints.wave6d_potion.consumableMeta &&
+                        r.state.blueprints.wave6d_potion.consumableMeta.durationSeconds === 45;
+                    // Aktivieren → tagBonus aus Compound-Tags emergiert
+                    r.state.player.boosts = [];
+                    const drinkRes = r.activateConsumable("wave6d_potion");
+                    out.drinkOk = drinkRes && drinkRes.ok;
+                    const boost = r.state.player.boosts.find((b) => b.source === "consume:wave6d_potion");
+                    out.boostExists = !!boost;
+                    out.boostTagBonusFromCompound =
+                        boost && boost.tagDelta && (boost.tagDelta.magieleitung || 0) > 0.05;
+                    out.boostUsesBlueprintDuration =
+                        boost && Math.abs(boost.expiresAt - performance.now() / 1000 - 45) < 2;
+                    // Cleanup
+                    delete r.state.blueprints.wave6d_potion;
+                    r.state.player.boosts = [];
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (reflexResults && !reflexResults.error) {
+                // (1) WASD
+                check("Reflex 1: WASD-Bewegung — A drückt -right (strafe-links)", reflexResults.aPressNegRight);
+                check("Reflex 1: WASD-Bewegung — D drückt +right (strafe-rechts)", reflexResults.dPressPosRight);
+                // (2) Chat
+                check("Reflex 2: 'schade mir 42' chat-pattern → DSL ['damage', 42, ...]", reflexResults.damageChatParses);
+                check("Reflex 2: 'trink X' chat-pattern → DSL ['apply_boost', ...]", reflexResults.trinkChatParses);
+                check("Reflex 2: 'rüste werkzeug X' chat-pattern → DSL ['equip_tool', ...]", reflexResults.ruesteChatParses);
+                // (3) Aura
+                check("Reflex 3: tickPlayerAura cached _auraBaseColor auf Sub-Mesh", reflexResults.auraBaseColorCached);
+                check("Reflex 3: tickPlayerAura mischt Aura-Farbe in Material", reflexResults.auraTintChangedColor);
+                check("Reflex 3: Alter Boden-Torus-Ring entfernt", reflexResults.boundsRingRemoved);
+                // (4) Wunde
+                check("Reflex 4: state.player.deathWoundIntensity existiert", reflexResults.hasWoundIntensity);
+                check("Reflex 4: AnazhRealm.WOUND_TAG_PENALTY-Konstante existiert", reflexResults.hasWoundPenaltyConst);
+                check("Reflex 4: triggerPhoenixDeath setzt deathWoundIntensity = 1.0", reflexResults.woundSetAt1);
+                check(
+                    "Reflex 4: Diskrimination — Wunde reduziert hpMax (dichte+härte-Penalty)",
+                    reflexResults.woundReducesHp
+                );
+                check("Reflex 4: tickPhoenixDeath regeneriert Wunde linear", reflexResults.woundRegens);
+                // (5) Werkzeug-Kosten
+                check("Reflex 5: TOOL_OP_STAMINA_COST-Konstante existiert", reflexResults.hasStaminaCostConst);
+                check("Reflex 5: STAMINA_REGEN_PER_SEC-Konstante existiert", reflexResults.hasStaminaRegenConst);
+                check(
+                    "Reflex 5: applyOpToPart läuft mit ausreichend Stamina",
+                    reflexResults.applyOpOkWithStamina,
+                    `result=${JSON.stringify(reflexResults.applyOpResult)} sta ${reflexResults.staBefore}→${reflexResults.staAfter}`
+                );
+                check("Reflex 5: applyOpToPart zieht Stamina ab", reflexResults.staminaWasDeducted);
+                check("Reflex 5: applyOpToPart lehnt ab bei stamina<cost", reflexResults.applyOpRejectedNoStamina);
+                // (6) Konsumables-Logik
+                check("Reflex 6: setBlueprintAsConsumable-Methode existiert", reflexResults.hasSetBlueprintAsConsumable);
+                check("Reflex 6: setBlueprintAsConsumable liefert ok", reflexResults.markConsumableOk);
+                check("Reflex 6: Bauplan bekommt role:'consumable'", reflexResults.blueprintGotRoleConsumable);
+                check("Reflex 6: consumableMeta speichert durationSeconds", reflexResults.blueprintHasConsumableMeta);
+                check("Reflex 6: activateConsumable auf Bauplan emergiert Boost aus Compound-Tags", reflexResults.drinkOk && reflexResults.boostExists);
+                check(
+                    "Reflex 6: Diskrimination — quarz+glut-Bauplan → magieleitung-Boost",
+                    reflexResults.boostTagBonusFromCompound
+                );
+                check("Reflex 6: Boost-Dauer aus consumableMeta.durationSeconds", reflexResults.boostUsesBlueprintDuration);
+            } else if (reflexResults && reflexResults.error) {
+                check("Reflex-Tests Block lief ohne Exception", false, reflexResults.error);
+            }
+
             // ### Welle 6.D Etappe 3b — Equipment + Aura ###
             const wave6d3bResults = await page
                 .evaluate(() => {
@@ -5611,17 +5779,14 @@ function startSaveServer() {
                         snap.playerEquipped.armor === "test_armor_eisen" &&
                         snap.playerEquipped.tool === "hammer";
 
-                    // Aura-Visual
+                    // Aura-Visual (Schöpfer-Feedback: jetzt am Charakter, nicht Boden-Ring)
                     r.tickPlayerAura();
-                    out.auraMeshCreated = !!r.state.playerAura;
-                    if (r.state.playerAura) {
-                        out.auraInScene = r.state.scene.children.indexOf(r.state.playerAura) >= 0;
-                        out.auraHasColor = !!(r.state.playerAura.material && r.state.playerAura.material.color);
-                        // Position folgt Player
-                        const pp = r.state.playerMesh.position;
-                        const ap = r.state.playerAura.position;
-                        out.auraFollowsPlayer = Math.abs(ap.x - pp.x) < 0.01 && Math.abs(ap.z - pp.z) < 0.01;
-                    }
+                    // V2: Aura tinted Sub-Meshes; siehe Reflex-Tests Block oben
+                    const subMesh = r.state.playerMesh.children[0];
+                    out.auraSubMeshTinted =
+                        !!subMesh &&
+                        !!subMesh.userData &&
+                        typeof subMesh.userData._auraBaseColor === "number";
 
                     // Cleanup
                     r.equipArmor(null);
@@ -5688,12 +5853,10 @@ function startSaveServer() {
                     wave6d3bResults.builtinToolNoStatChange
                 );
                 check("Welle 6.D Etappe 3b: buildStateSnapshot persistiert playerEquipped", wave6d3bResults.snapHasEquipped);
-                check("Welle 6.D Etappe 3b: Player-Aura-Mesh nach tickPlayerAura erzeugt", wave6d3bResults.auraMeshCreated);
-                if (wave6d3bResults.auraMeshCreated) {
-                    check("Welle 6.D Etappe 3b: Aura-Mesh in der Welt-Szene", wave6d3bResults.auraInScene);
-                    check("Welle 6.D Etappe 3b: Aura-Material hat Color-Property", wave6d3bResults.auraHasColor);
-                    check("Welle 6.D Etappe 3b: Aura-Position folgt Spieler (x/z)", wave6d3bResults.auraFollowsPlayer);
-                }
+                check(
+                    "Welle 6.D Etappe 3b (V2): Aura tintet Spieler-Sub-Meshes (statt Boden-Ring)",
+                    wave6d3bResults.auraSubMeshTinted
+                );
             } else if (wave6d3bResults && wave6d3bResults.error) {
                 check("Welle 6.D Etappe 3b: Test-Block lief ohne Exception", false, wave6d3bResults.error);
             }
