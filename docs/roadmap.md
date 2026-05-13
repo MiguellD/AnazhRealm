@@ -43,7 +43,8 @@ Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) si
 | 11 V2 | DSL-AST-Broadcast für Welt-Synchronisation | ✅ **live** — Chat-DSL eines Spielers wird via `p2pBroadcastDsl(program)` an alle Mitspieler gesendet, jeder Empfänger ruft `dslRun(program, {source: "remote:<peerId>"})` auf. Drei Loop-Schutz-Schichten (source-Check, peerId-Filter, Server-except-Sender). LLM-/Nexus-DSL bleibt lokal. modify_terrain + weather + spawn_creature synchronisieren beide Welten. | – | Ring 11 V1 |
 | 11 V2.1 | LAN-Fähigkeit + Sync-Korrektheit (Bug-Fixes) | ✅ **live** — signaling-server bind 0.0.0.0 (LAN reachable, LAN-IPs werden geloggt), CSP `connect-src ws: wss:` allgemein (statt enge IP-Whitelist), `state.p2p.roomOverride` für ad-hoc-Räume, spawn_*-Chat-Patterns embedden Position+Seed bei Build-Zeit (Empfänger spawnt am SENDER-Ort, gleicher Seed → gleiche Geometrie), `NON_BROADCASTABLE_OPS`-Set für Spieler-private Ops (player_jump_power, player_speed, player_size_mul, player_soul, set_visible werden NIE gesendet) | – | Ring 11 V2 |
 | 11.5 | Intuitiver Multi-User-Setup (Modus-Wahl + Einladungs-Code) | ✅ **live** — Neue-Welt-Dialog mit Modus (Allein/Mit-anderen) + Rolle (Host/Joinen). Host: Banner mit `anazh://lan-ip:port/worldId` + Copy-Button, Auto-P2P-Start nach Reload. Join: temp-WS sendet `world-request` → empfängt `world-snapshot` vom Host → `_importGuestWorld` schreibt Welt unter host-worldId mit `role:"guest"`+`hostInfo`, Auto-P2P-Start nach Reload. Server: targeted-delivery via `{to: peerId}`, LAN-Adressen im welcome, Frame-Cap 1 MiB. Schema `11.5-multiuser-v1`. | – | Ring 11 V2.1 |
-| W6 | **Crafting-Polish + UX + Stats** — sechs Sub-Blöcke (A–F), detaillierter Plan in §3 unten + Brainstorm in `docs/wave-6-design.md` | 🔴 offen, bewusst nachgelagert | 12-18 Sessions verteilt auf sechs Themen-Blöcke | W5 + Rings 8-11 V1 |
+| W6 | **Crafting-Polish + UX + Stats + Welt-Sinne + Kreaturen-Aufträge** — acht Sub-Blöcke (A–H), Brainstorm + Entscheidungen in `docs/wave-6-design.md` | 🔴 offen, bewusst nachgelagert | 22-28 Sessions verteilt auf acht Themen-Blöcke | W5 + Rings 8-11.5 |
+| W7 | **Kollektive Welt-Erkenntnis (Distributed Compute)** — Skalierungs-Block, vision-treues Modell für Multi-User-Last-Verteilung: Distributed Chunk-Pre-Gen, LLM-Pool über Peers, Shared Compute-Cache, optional Public-Lobby für „join random world" | 🔴 offen — Skizze in `docs/system-audit.md` §7 | 6-8 Sessions | W6 (insb. 6.H Kreaturen-Aufträge) |
 
 **Summe verbleibend**: ~30-40 Arbeitstage in fokussierten Sessions. Verteilt auf 2-4 Monate realistisch.
 
@@ -229,6 +230,7 @@ Plus: inline-styles aus `index.html` entfernt (`#fps`, `#state-file-input`), Inl
 | **6.E — Lesbarkeit** | Fähigkeit-Beschreibung (regel- oder LLM-basiert), Intro-Overlay, subtile Tooltips | 2 Sessions | – |
 | **6.F — Original-Crafting (alt 6.1-6.7)** | Visuelle Verbindungs-Linien, Brech-Mechanik, Energiequellen, Kreaturen-Körper als Baukasten, Physik-Constraints (Ammo Hinge/Fixed), Rüstung → in 6.D integriert | 8-10 Sessions | W5 |
 | **6.G — Welt-Sinne** (NEU, 13.05.2026) | Fliegende Inseln + Bäume kollidierbar, Schatten, Shader (Höhe-Tint, Wind, Glow), Sterne-Stabilisierung + Variation, Terrain-Höhlen+Überhänge+Klippen, Wasser als Material+Layer mit DSL-Ops | 7-9 Sessions, in 2 Phasen | – (Phase 1) / 6.D (Phase 2) |
+| **6.H — Kreaturen-Aufträge** (NEU, 13.05.2026) | Autonome Co-Schöpfer: Kreaturen bekommen DSL-Programme als Agenda (build_path, gather, build_house, research_blueprint). Kontext-Menü via Maus-Klick. Persistierte tasks. Vision: dritter Schöpfungs-Akteur (Mensch+KI+Kreaturen) | 4-5 Sessions | 6.F4 (Multi-Mesh-Kreaturen) + 6.A4 (Raycast) |
 
 **Vision-Hebel der Welle**: Block 6.D macht den Spieler zum **Compound im selben Hylomorphismus-System** wie Materialien und Bauwerke. `STAT_FROM_TAGS`-Matrix analog `FORM_TAG_ACTIVATION`. Wenn das Stat-System ohne Bezug zu `MATERIAL_TAG_KEYS` funktioniert, wurde die Vision verfehlt — explizite Warnung im Design-Doc §9.
 
@@ -243,7 +245,8 @@ Plus: inline-styles aus `index.html` entfernt (`#fps`, `#state-file-input`), Inl
 8. 6.C1 + 6.A3 + 6.C3 (Inventar + Maus + Keybinds)
 9. 6.B (CAD minimal)
 10. 6.G Phase 2 (Schatten + Wasser + Höhlen + Sterne)
-11. 6.F3 + 6.F4 + 6.F5 (Energie + Kreaturen + Constraints)
+11. 6.F3 + 6.F4 + 6.F5 (Energie + Kreaturen-Körper + Constraints)
+12. **6.H** (Kreaturen-Aufträge — autonome Co-Schöpfer)
 
 **Beschlossene Antworten zu §10**:
 - **Modi-Namen**: `frieden` / `pfad` / `schöpfer` statt friedlich/survival/kreativ — antik-modern verschmolzen

@@ -162,7 +162,8 @@ Letzter Stand: Ring 1-7 + **Welle 1+2+3 + Welle 4 P1-P3 + Welle 5 A+B+C + Editor
 | `vendor/README.md` | Vendor-Libs Versionen + Update-Befehl |
 | `docs/crafting-konzept.md` | **Hylomorphismus-Konzept** — Bausteine, Operationen, Compounds, räumliche Prinzipien (Welle 4-6 Vorlage) |
 | `docs/aktivierungsmatrix.md` | Form-Tag-Aktivierungs-Matrix v2 (9 × 10), Quellcode für `AnazhRealm.FORM_TAG_ACTIVATION` |
-| `docs/wave-6-design.md` | **Welle-6-Brainstorm** — sechs Blöcke (A Interaktion, B CAD, C Inventar+Modi, D Stats fraktal, E Lesbarkeit, F Crafting-Mechanik). Stat-System als Hylomorphismus-Erweiterung auf den Spieler. Offene Schöpfer-Fragen. |
+| `docs/wave-6-design.md` | **Welle-6-Brainstorm** — acht Blöcke (A Interaktion, B CAD, C Inventar+Modi, D Stats fraktal, E Lesbarkeit, F Crafting-Mechanik, G Welt-Sinne, H Kreaturen-Aufträge). Stat-System als Hylomorphismus-Erweiterung auf den Spieler. Schöpfer-Entscheidungen in §10. |
+| `docs/system-audit.md` | **System-Audit V7.71** — Methoden-Inventar nach Domäne, Dead-Code, Duplikate, K.O.-Bereiche, Robustheits-Beurteilung, Vision-Alignment-Check (78% live), Performance-Brainstorm, „Kollektive Welt-Erkenntnis"-Konzept für Welle 7, 15 übersehene Perspektiven. Pflichtlektüre vor großen Eingriffen. |
 | `scripts/playtest.cjs` | Headless-Playtest mit **711 Invarianten** als CI-Gate |
 | `scripts/smoke-multiuser.cjs` | End-to-End-Test für Ring 11 V1: spawnt signaling-server, öffnet zwei WS-Clients, prüft welcome/peer-join/pos/peer-leave-Flow (`npm run smoke:multiuser`) |
 | `signaling-server.js` | Ring 11 V1 WebSocket-Broker (RFC-6455 von Hand, zero deps), `npm run signaling` startet auf Port 4313 |

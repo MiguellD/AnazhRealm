@@ -513,3 +513,142 @@ Nachgereicht 13.05.2026 vom Schöpfer. Diese Liste macht die Welt **körperlich 
 ---
 
 
+
+## §12 — Welle 6.H: Kreaturen-Aufträge (autonome Co-Schöpfer)
+
+Hinzugefügt 13.05.2026 vom Schöpfer. **Bevor du dies liest**: Block 6.F4 baut Kreaturen-Körper als Baukasten. Dieser Block (6.H) gibt diesen Körpern **eine eigene Agenda**. Sie wird nach 6.F4 sinnvoll, kann aber auch ohne Multi-Mesh-Bodies funktionieren (Single-Mesh-Kreaturen reichen für V1).
+
+### §12.1 — Konzept: Kreaturen als Hilfsgeister
+
+Heute sind Kreaturen Bewegungs-Dekoration — sie wandern, springen, ändern Farbe nach Wetter. Sie tragen keine eigene Absicht.
+
+**Vision-Erweiterung**: Kreaturen werden zu **autonomen Co-Schöpfern**. Der Spieler gibt ihnen Aufträge (in DSL formuliert), sie führen sie aus mit Pfadfinden + Stamina + Materialhandhabung. **Dritter Schöpfungs-Akteur** neben Mensch (Null) und Nexus (Eins) — Kreaturen sind die `Vielen`.
+
+Vision-Anbindung: Pfeiler §1.5 spricht von „Symbiose Mensch + KI". Kreaturen erweitern das um „Symbiose Mensch + KI + autonome Welt-Wesen".
+
+### §12.2 — Auftrags-Modell
+
+Jeder Auftrag ist ein **DSL-Programm**, das die Kreatur als ihre Agenda übernimmt:
+
+```js
+state.creatures[i].task = {
+    program: ["chain",
+      ["walk_to", ["at", 50, 0, -20]],
+      ["gather", "stein", 3],
+      ["walk_to", ["at_player"]],
+      ["deliver", "stein"]
+    ],
+    status: "running" | "paused" | "complete" | "failed",
+    progress: { stepIndex: 0, gatherCount: 0 },
+    energyLeft: 100,  // Stamina-Decay
+    assignedAt: Date.now(),
+}
+```
+
+**Vier Auftrags-Klassen** (entspricht dem Wunsch des Schöpfers):
+
+**a) Straßen + Wege bauen**:
+```js
+["build_path", ["at", x1, z1], ["at", x2, z2], "stein"]
+```
+- Kreatur läuft den Pfad ab, ruft pro N Meter `modify_terrain(x, z, 1, +0.05)` auf (sanfte Erhöhung), platziert pro M Meter ein flaches Stein-Compound (Bauplan „weg-stein").
+- Konsumiert Stein-Material aus Spieler-Inventar (V1: kostenlos)
+
+**b) Materialien farmen**:
+```js
+["gather_loop", "holz", 10]  // sammle 10 Holz, bring zum Spieler
+```
+- Kreatur sucht Bäume in 30m-Radius, walk_to, animation „hacken" (2s), Material in eigenes Inventar, dann walk_to(at_player) + deliver.
+- Vorbedingung: Bäume müssen abbaubar sein (6.G2 Kollision + 6.F4 dynamic-bodies + neue spawn_tree-Op die NICHT nur ein _requested-Event loggt).
+
+**c) Rezepte forschen**:
+```js
+["research_blueprint", "schwert"]  // versucht einen schwert-Bauplan zu finden
+```
+- Kreatur „grübelt" (sitzt 30s mit pulsierender Aura)
+- Mit Wahrscheinlichkeit p basierend auf Kreaturen-Material-Tags (`magieleitung × resoniert`) entsteht ein neuer Bauplan
+- Vergibt zufällige aber valide `parts[]`-Struktur (1-4 Parts, mit Materialien aus state.materials, Form passend zum Zweck)
+- Übernimmt das Konzept der **Aktivierungsmatrix** umgekehrt: Forschungs-Ziel bestimmt Tag-Profil, Kreatur sucht passende Form+Material
+
+**d) Häuser/Strukturen bauen**:
+```js
+["build_house", ["at", x, z], "hütte"]
+```
+- Kreatur läuft zur Position
+- Konsumiert Material aus Spieler-Inventar (oder eigenem)
+- Spielt Anim "bauen" (10s)
+- Spawnt am Ende `spawn_blueprint("hütte", ["at", x, y, z])`
+
+### §12.3 — Neue DSL-Ops
+
+- `walk_to(positionNode)` — Pfadfinden-Move (gradient descent gegen Heightfield, einfacher A* falls Block 6.F5 Constraints da sind)
+- `gather(material, count)` — Material-Suche + Animation + Inventory-Add
+- `deliver(material, [targetId])` — gibt Material an Spieler oder Ziel-Kreatur
+- `build_path(from, to, material)` — Straßen-Bau
+- `build_house(at, blueprint)` — Compound-Spawn
+- `research_blueprint(category)` — Rezept-Erfindung
+- `assign_task(creatureId, taskProgram)` — Spieler übergibt Auftrag an spezifische Kreatur
+
+### §12.4 — Auftrags-Vergabe-UI
+
+**Maus-Klick auf Kreatur**: kleines Kontext-Menü öffnet sich
+```
+┌─ Kreatur grüße ────────┐
+│ ▸ Sammle Material      │
+│ ▸ Baue Weg              │
+│ ▸ Baue Haus             │
+│ ▸ Forsche Rezept        │
+│ ▸ Folge mir             │
+│ ▸ Pause                 │
+└────────────────────────┘
+```
+Klick auf Option öffnet sub-Dialog für Parameter (Material-Typ, Ziel-Position via map-click, etc.)
+
+Alternativ Chat-Befehle:
+- „kreatur sammelt 10 holz"
+- „kreatur baut weg von hier nach <position>"
+- „kreatur forscht schwert"
+
+### §12.5 — Auftrags-Tick im Game-Loop
+
+`creatureTaskTick()` läuft pro Frame:
+- Für jede Kreatur mit `task.status === "running"`:
+  - Step ausführen: walk_to → bewege ein Stück Richtung Ziel, gather → check Radius nach Material-Source
+  - Bei Step-Abschluss: increment stepIndex
+  - Bei task-Abschluss: status=complete, optional Journal-Eintrag
+
+**Performance**: 50 aktive Kreaturen × jede mit task-tick = 50 Updates pro Frame. Bei einfacher Pfadfindung (gradient descent) <0.5ms. Acceptable.
+
+### §12.6 — Vision-Anbindung (warum das vision-treu ist)
+
+1. **Symbiose-Erweiterung**: Mensch gibt Auftrag, KI (Nexus) hat eigene Aufträge im Auto-Mode, Kreaturen verbinden beides — die Welt füllt sich mit autonomen Wesen, nicht nur reaktiven Bewegungen.
+
+2. **Hylomorphismus-Vertiefung**: Kreaturen-Forschung benutzt die `MATERIAL_TAG_KEYS` + `FORM_TAG_ACTIVATION` umgekehrt — vom Ziel-Tag-Profil aus Form+Material wählen. Schöpft auf demselben System wie alles andere.
+
+3. **Fraktales Wachstum**: einzelne Kreatur sammelt → mehrere Kreaturen koordinieren (V2) → Kreaturen-Kulturen entstehen (V3 §11.4 Welt-Ultiversum).
+
+4. **Emotion-getrieben** (Pfeiler §1.2): hohe `joy` macht Kreaturen schneller bei Aufträgen, hohe `sorrow` lässt sie eigene Aufträge erfinden (Wandern, Trauern), hohe `chaos` lässt sie Aufträge ablehnen.
+
+### §12.7 — Aufwand
+
+**4-5 Sessions** wegen Komplexität (Pfadfinden, Animations-Sync, Auftrags-State-Machine, UI).
+
+Empfohlene Reihenfolge:
+1. Datenmodell + walk_to + gather (Material-spawn vorausgesetzt) — 1 Session
+2. build_path + build_house — 1 Session
+3. research_blueprint + UI Kontext-Menü — 1-2 Sessions
+4. Multi-Kreatur-Koordination + Journal-Integration — 1 Session
+
+**Vorbedingungen**:
+- Welle 6.F4 (Multi-Mesh-Kreaturen) — Anim-Hooks brauchen Glieder
+- Welle 6.A4 (Raycast-Place) — Maus-Klick auf Welt für Auftrags-Ziel
+- 6.G6 (Höhlen) ist optional — Pfadfinden braucht 3D-Topology nicht zwingend
+
+### §12.8 — Was beachten
+
+1. **Heilige Lektion**: NICHT als „CreatureAI-Modul" — bleibt im Stamm. Neue Methoden: `creatureAssignTask`, `creatureTaskTick`, `_creaturePathStep`. ~10 Methoden, alle auf der einen Klasse.
+2. **DSL-Sandbox bleibt**: Kreaturen-Aufträge sind DSL-Programme. Laufen durch dslRun mit Budget-Limits. KEIN eval-Pfad.
+3. **Auftrags-Persistenz**: tasks in state.creatures[i] werden in buildStateSnapshot mitgespeichert. Beim Load: wiederaufnehmen.
+4. **Synchronisation in Multi-User** (V2.x): wenn Spieler A einer Kreatur Auftrag gibt, broadcast als DSL → B's Welt führt aus. Aber: Kreaturen müssen denselben Identifier haben. Lösung: Kreatur-IDs deterministisch aus spawn-Reihenfolge + worldSeed.
+
+---
