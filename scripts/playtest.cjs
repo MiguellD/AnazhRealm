@@ -5522,10 +5522,13 @@ function startSaveServer() {
                     const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
                     const out = {};
 
-                    // (1) WASD A/D-Fix: A muss -right ergeben, D +right
+                    // (1) WASD: Original-Mapping wiederhergestellt. Geometrisch
+                    // ist state.right tatsächlich „player-links" wegen Right-Hand-
+                    // Coords (forward × up = -X). A=+right=player-links, D=-right=
+                    // player-rechts — wie es immer war.
                     const loopSrc = r.startEternalLoop.toString();
-                    out.aPressNegRight = /keys\["a"\][^;]*addScaledVector\(this\.state\.right,\s*-1\)/.test(loopSrc);
-                    out.dPressPosRight = /keys\["d"\][^;]*addScaledVector\(this\.state\.right,\s*1\)/.test(loopSrc);
+                    out.aPressPosRight = /keys\["a"\][^;]*addScaledVector\(this\.state\.right,\s*1\)/.test(loopSrc);
+                    out.dPressNegRight = /keys\["d"\][^;]*addScaledVector\(this\.state\.right,\s*-1\)/.test(loopSrc);
 
                     // (2) Chat-Pattern für damage
                     const dmgPattern = r.parseChatToDsl("schade mir 42");
@@ -5535,9 +5538,8 @@ function startSaveServer() {
                     const ruestePattern = r.parseChatToDsl("rüste werkzeug hammer");
                     out.ruesteChatParses = ruestePattern && ruestePattern.program[0] === "equip_tool";
 
-                    // (3) Aura am Charakter: tickPlayerAura tinted Sub-Meshes
+                    // (3) Aura: ECHTER Glow als Sphere + dezenter Sub-Mesh-Tint
                     r.applyPlayerSoul("human");
-                    // Frisches Mesh → baseColor noch nicht gecached
                     const sub = r.state.playerMesh.children[0];
                     out.subMeshExists = !!sub && !!sub.material;
                     const beforeColor = sub && sub.material ? sub.material.color.getHex() : null;
@@ -5545,8 +5547,20 @@ function startSaveServer() {
                     out.auraBaseColorCached = sub && sub.userData && typeof sub.userData._auraBaseColor === "number";
                     const afterColor = sub && sub.material ? sub.material.color.getHex() : null;
                     out.auraTintChangedColor = beforeColor !== afterColor;
-                    // Boden-Ring sollte entfernt sein (war V1, jetzt charakter-glow)
                     out.boundsRingRemoved = !r.state.playerAura || !r.state.scene.children.includes(r.state.playerAura);
+                    // Echter Glow: Sphere mit AdditiveBlending
+                    out.glowSphereExists = !!r.state.playerAuraGlow;
+                    if (r.state.playerAuraGlow) {
+                        out.glowInScene = r.state.scene.children.includes(r.state.playerAuraGlow);
+                        const mat = r.state.playerAuraGlow.material;
+                        out.glowIsTransparent = !!mat && mat.transparent === true;
+                        out.glowIsAdditive = !!mat && mat.blending === THREE.AdditiveBlending;
+                        out.glowOpacityInRange = !!mat && mat.opacity > 0 && mat.opacity < 1;
+                        // Position folgt Spieler
+                        const pp = r.state.playerMesh.position;
+                        const gp = r.state.playerAuraGlow.position;
+                        out.glowFollowsPlayer = Math.abs(gp.x - pp.x) < 0.01 && Math.abs(gp.z - pp.z) < 0.01;
+                    }
 
                     // (4) Tod-Wunde persistent + regeneriert
                     out.hasWoundIntensity = "deathWoundIntensity" in r.state.player;
@@ -5630,17 +5644,26 @@ function startSaveServer() {
                 .catch((e) => ({ error: String(e) }));
 
             if (reflexResults && !reflexResults.error) {
-                // (1) WASD
-                check("Reflex 1: WASD-Bewegung — A drückt -right (strafe-links)", reflexResults.aPressNegRight);
-                check("Reflex 1: WASD-Bewegung — D drückt +right (strafe-rechts)", reflexResults.dPressPosRight);
+                // (1) WASD (Original-Mapping: state.right ist geometrisch player-links,
+                // weil forward × up = -X im right-handed Coord-System)
+                check("Reflex 1: WASD-Bewegung — A drückt +state.right (= player-links)", reflexResults.aPressPosRight);
+                check("Reflex 1: WASD-Bewegung — D drückt −state.right (= player-rechts)", reflexResults.dPressNegRight);
                 // (2) Chat
                 check("Reflex 2: 'schade mir 42' chat-pattern → DSL ['damage', 42, ...]", reflexResults.damageChatParses);
                 check("Reflex 2: 'trink X' chat-pattern → DSL ['apply_boost', ...]", reflexResults.trinkChatParses);
                 check("Reflex 2: 'rüste werkzeug X' chat-pattern → DSL ['equip_tool', ...]", reflexResults.ruesteChatParses);
-                // (3) Aura
+                // (3) Aura: Glow-Sphere + dezenter Sub-Mesh-Tint
                 check("Reflex 3: tickPlayerAura cached _auraBaseColor auf Sub-Mesh", reflexResults.auraBaseColorCached);
                 check("Reflex 3: tickPlayerAura mischt Aura-Farbe in Material", reflexResults.auraTintChangedColor);
                 check("Reflex 3: Alter Boden-Torus-Ring entfernt", reflexResults.boundsRingRemoved);
+                check("Reflex 3 V3: echter Glow — Sphere-Mesh existiert", reflexResults.glowSphereExists);
+                if (reflexResults.glowSphereExists) {
+                    check("Reflex 3 V3: Glow-Sphere ist in der Welt-Szene", reflexResults.glowInScene);
+                    check("Reflex 3 V3: Glow-Material ist transparent", reflexResults.glowIsTransparent);
+                    check("Reflex 3 V3: Glow nutzt AdditiveBlending (echter Leucht-Effekt)", reflexResults.glowIsAdditive);
+                    check("Reflex 3 V3: Glow-Opacity zwischen 0 und 1", reflexResults.glowOpacityInRange);
+                    check("Reflex 3 V3: Glow-Position folgt Spieler (x/z)", reflexResults.glowFollowsPlayer);
+                }
                 // (4) Wunde
                 check("Reflex 4: state.player.deathWoundIntensity existiert", reflexResults.hasWoundIntensity);
                 check("Reflex 4: AnazhRealm.WOUND_TAG_PENALTY-Konstante existiert", reflexResults.hasWoundPenaltyConst);

@@ -10413,16 +10413,37 @@ class AnazhRealm {
         if (typeof this.renderSoulEditorUI === "function") this.renderSoulEditorUI();
     }
 
-    // Welle 6.D Etappe 3b (Schöpfer-Feedback 13.05.2026) — Player-Aura jetzt
-    // AM CHARAKTER, nicht als Boden-Ring. Jeder Sub-Mesh des playerMesh-Group
-    // bekommt einen sanften HSL-Glow-Tint, gemischt aus Original-Material-
-    // Farbe + Aura-Farbe. Helligkeit folgt HP-Prozent (verletzt = matt,
-    // voll-HP = leuchtend). Bei aktivem damage-Hit pulsiert kurz rot-Tint.
+    // Welle 6.D Etappe 3b V3 (Schöpfer-Feedback 13.05.2026) — Player-Aura
+    // als ECHTER Leucht-Effekt: eine transparente Glow-Sphere um den Avatar
+    // mit AdditiveBlending. Zusätzlich dezente Sub-Mesh-Tint (15 %), damit
+    // die Bauplan-Identität gefärbt rüberkommt, aber das echte Leuchten
+    // entsteht durch die Sphere-Überlagerung (additive Pixel-Helligkeit).
     //
-    // Die Original-Farbe wird einmalig pro Sub-Mesh in userData._auraBaseColor
-    // gecached — sonst würde jeder Frame die schon getintete Farbe als neue
-    // Basis lesen und der Tint exponentiell driften (Lehre aus Welle 6.A5
-    // Phantom-Tint).
+    // _auraGlow ist eigener Mesh in der Welt-Szene (nicht playerMesh-Child,
+    // damit applyPlayerSoul ihn nicht disposed). _auraBaseColor cached pro
+    // Sub-Mesh die Original-Farbe (Anti-Drift wie 6.A5 Phantom-Tint).
+    _ensurePlayerAuraGlow() {
+        if (typeof THREE === "undefined" || !this.state.scene) return null;
+        if (this.state.playerAuraGlow) return this.state.playerAuraGlow;
+        // Sphere etwas größer als der Avatar (~1.2 Radius), AdditiveBlending
+        // damit überlagerte Pixel HELLER werden statt nur transparent.
+        const geom = new THREE.SphereGeometry(1.2, 18, 14);
+        const mat = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.18,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+        });
+        const sphere = new THREE.Mesh(geom, mat);
+        sphere.userData.isPlayerAuraGlow = true;
+        sphere.castShadow = false;
+        sphere.receiveShadow = false;
+        this.state.scene.add(sphere);
+        this.state.playerAuraGlow = sphere;
+        return sphere;
+    }
+
     tickPlayerAura() {
         if (!this.state.playerMesh || !this.state.player) return;
         if (typeof THREE === "undefined") return;
@@ -10440,14 +10461,31 @@ class AnazhRealm {
         const hue = AnazhRealm.AURA_TAG_HUE[bestKey] || 0;
         const hpMax = this.state.player.hpMax || 100;
         const hpRatio = hpMax > 0 ? Math.max(0.05, Math.min(1, (this.state.player.hp || 0) / hpMax)) : 1;
-        // Aura-Intensität: voll bei 100 % HP, blass + dunkel bei niedrig.
-        // Mix-Faktor: 0.0 = pure Original-Farbe, 1.0 = pure Aura-Hue.
-        // Wir mischen 35 % Aura über Original — sichtbar, aber Bauplan-
-        // Identität bleibt lesbar.
-        const auraMix = 0.35;
-        const auraSat = 0.7 * hpRatio;
-        const auraLit = 0.4 + 0.3 * hpRatio;
+        // Aura-Farbe + Helligkeits-Faktor aus HP. Voll-HP = klar leuchtend,
+        // niedrig-HP = blasser + dunkler (Saturation × hpRatio).
+        const auraSat = 0.85 * hpRatio;
+        const auraLit = 0.5;
         const auraColor = new THREE.Color().setHSL(hue / 360, auraSat, auraLit);
+        // (a) Glow-Sphere: ECHTER Leucht-Effekt um den Avatar
+        const glow = this._ensurePlayerAuraGlow();
+        if (glow) {
+            const p = this.state.playerMesh.position;
+            // Y leicht nach oben (Avatar-Mitte, nicht Boden)
+            glow.position.set(p.x, p.y + 0.5, p.z);
+            glow.material.color.copy(auraColor);
+            // Opacity skaliert mit HP UND dominanter Tag-Intensität (stark
+            // ausgeprägter Spieler leuchtet heller). Cap bei 0.4 damit
+            // Avatar erkennbar bleibt.
+            const auraStrength = Math.min(1, bestVal / 1.5);
+            glow.material.opacity = 0.1 + 0.3 * hpRatio * auraStrength;
+            // Sphere atmet leicht (Sin-Modulation 5 % radius), damit es
+            // lebendig wirkt und nicht statisch.
+            const breath = 1 + Math.sin(performance.now() * 0.001) * 0.05;
+            glow.scale.set(breath, breath, breath);
+        }
+        // (b) Sub-Mesh-Tint dezent: 15 % Mix, damit Original-Farbe vorranig
+        // bleibt aber das Leuchten in die Materialien hineinwirkt.
+        const auraMix = 0.15;
         this.state.playerMesh.traverse((node) => {
             if (!node || !node.isMesh || !node.material || !node.material.color) return;
             if (node.userData._auraBaseColor === undefined) {
@@ -10457,16 +10495,14 @@ class AnazhRealm {
             const br = ((base >> 16) & 0xff) / 255;
             const bg = ((base >> 8) & 0xff) / 255;
             const bb = (base & 0xff) / 255;
-            // Verletzt: zusätzliche Verdunklung (×hpRatio auf die Base-Komponente),
-            // damit voll-HP klar leuchtet und 0-HP fast schwarz wirkt.
-            const darken = 0.5 + 0.5 * hpRatio;
+            // Verletzungs-Dimmer auf Original (0.6..1.0).
+            const darken = 0.6 + 0.4 * hpRatio;
             const r = br * (1 - auraMix) * darken + auraColor.r * auraMix;
             const g = bg * (1 - auraMix) * darken + auraColor.g * auraMix;
             const b = bb * (1 - auraMix) * darken + auraColor.b * auraMix;
             node.material.color.setRGB(r, g, b);
         });
-        // Alten Boden-Torus aus Etappe 3b V1 säubern, falls noch da (z. B.
-        // nach Reload aus altem State).
+        // Alten Boden-Torus aus Etappe 3b V1 säubern, falls noch da.
         if (this.state.playerAura && this.state.scene) {
             this.state.scene.remove(this.state.playerAura);
             if (this.state.playerAura.geometry) this.state.playerAura.geometry.dispose();
@@ -14851,12 +14887,15 @@ class AnazhRealm {
             this.state.moveDirection.set(0, 0, 0);
             if (this.state.keys["w"]) this.state.moveDirection.addScaledVector(this.state.forward, 1);
             if (this.state.keys["s"]) this.state.moveDirection.addScaledVector(this.state.forward, -1);
-            // Schöpfer-Bugfund 13.05.2026: A/D waren vertauscht (A=+right,
-            // D=-right). Symmetrische Seelen (Mensch/Phönix) verbargen es;
-            // der asymmetrische Drache machte es sichtbar. Standard-WASD-
-            // Konvention: A strafe-links (-right), D strafe-rechts (+right).
-            if (this.state.keys["a"]) this.state.moveDirection.addScaledVector(this.state.right, -1);
-            if (this.state.keys["d"]) this.state.moveDirection.addScaledVector(this.state.right, 1);
+            // Bewusst NICHT „intuitiv" inverten: `state.right` ist die ARITHMETISCHE
+            // Richtung (cos yaw, 0, −sin yaw), nicht die anatomische Rechts-Seite
+            // des Spielers. In Right-Hand-Coords mit Y up: forward × up = −X,
+            // also ist player-anatomisch-RECHTS = −X = −state.right. Original-Mapping:
+            // A → +state.right (= player-links), D → −state.right (= player-rechts).
+            // (Schöpfer-Hinweis 13.05.2026: vorherige „Fix"-Vertauschung brach das
+            // konsistente Verhalten, jetzt revertiert.)
+            if (this.state.keys["a"]) this.state.moveDirection.addScaledVector(this.state.right, 1);
+            if (this.state.keys["d"]) this.state.moveDirection.addScaledVector(this.state.right, -1);
 
             if (this.state.physicsWorld && playerBody) {
                 // Welle 6.A3 — auf zu steilem Slope (onSteepSlope=true via
