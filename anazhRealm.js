@@ -1447,7 +1447,14 @@ class AnazhRealm {
                 this.state.jumpPower = c(value, 5, 40);
             },
             player_speed: ([value]) => {
+                // Schöpfer-Bug-Fund 13.05.2026: player_speed setzte nur
+                // state.speed, NICHT state.sprintSpeed. Wenn der Nexus
+                // via DSL `player_speed 25` ausführte, blieb sprintSpeed
+                // bei z. B. 12 (vom letzten Soul-Wechsel) — Shift drücken
+                // gab dann LANGSAMERE Geschwindigkeit als gehen. Jetzt
+                // halten wir Sprint = 2× Walk konsistent.
                 this.state.speed = c(value, 1, 30);
+                this.state.sprintSpeed = this.state.speed * 2;
             },
             // Welle 6.D Etappe 3a — Schaden zufügen (DSL-getrieben). Schöpfer-
             // Werkzeug + Test-Hook. Welt-Hazards (6.G) + Kreaturen (6.H) hängen
@@ -10830,29 +10837,25 @@ class AnazhRealm {
 
     _buildDragonGroup() {
         const group = new THREE.Group();
-        // Welle 6.D Etappe 3a+ (Schöpfer-Feedback 13.05.2026) — Drache wirkt
-        // visuell „W/S vertauscht": die drei Schweif-Segmente in -Z formen
-        // optisch eine schmale Spitze, die Spieler als Schnauze wahrnehmen
-        // (Cone-Effekt). Die Kopf-Box in +Z ist dagegen weniger eindeutig als
-        // Front lesbar. Fix: alle Drache-Teile in einer Inner-Group sammeln
-        // und diese um 180° um Y drehen — visuell landet damit der wahr-
-        // genommene „Schnauzen"-Schweif in +Z (Forward), und W bewegt nach
-        // user-perceived-Front. Die Outer-Group bleibt für yaw-Rotation frei.
-        const inner = new THREE.Group();
-        inner.rotation.y = Math.PI;
-        group.add(inner);
         const material = new THREE.MeshBasicMaterial({ color: 0x2d6e3b });
+        // Welle 6.D Etappe 3b — Drache-Orientierung bleibt mit Kopf in +Z
+        // (Forward). Der Schöpfer hatte zwischenzeitlich „W/S vertauscht"
+        // gemeldet; ein π-Inner-Flip-Versuch drehte den Avatar visuell um,
+        // sodass er den Spieler in 3rd-Person anschaute statt von ihm
+        // wegzulaufen. Revertiert: keine Inner-Group-Drehung, Original-
+        // Orientierung wiederhergestellt. Wer hier ändert, prüfe in echter
+        // 3rd-Person-Ansicht, dass die Kopf-Box vom Spieler wegzeigt.
         // Körper: gestreckter Quader entlang Z
         const body = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.45, 1.2), material);
         body.position.y = 0.4;
         body.castShadow = true;
         body.receiveShadow = true;
-        inner.add(body);
+        group.add(body);
         // Kopf: vorne dran
         const head = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.38, 0.45), material);
         head.position.set(0, 0.5, 0.85);
         head.castShadow = true;
-        inner.add(head);
+        group.add(head);
         // Vier Beine in Box-Eck-Anordnung
         const legY = 0.18;
         const legLen = 0.5;
@@ -10860,7 +10863,7 @@ class AnazhRealm {
         const frLeg = this._buildLimb(material, 0.25, legY, 0.35, legLen, 0.15, 0.15);
         const blLeg = this._buildLimb(material, -0.25, legY, -0.35, legLen, 0.15, 0.15);
         const brLeg = this._buildLimb(material, 0.25, legY, -0.35, legLen, 0.15, 0.15);
-        inner.add(flLeg, frLeg, blLeg, brLeg);
+        group.add(flLeg, frLeg, blLeg, brLeg);
         // Schweif: drei Segmente in Kette nach hinten, jedes als Joint
         // rotiert um den vorherigen — gibt eine wellige Sinus-Welle.
         const tailJoint = new THREE.Group();
@@ -10883,7 +10886,7 @@ class AnazhRealm {
         tailJoint3.add(tailSeg3);
         tailJoint2.add(tailJoint3);
         tailJoint.add(tailJoint2);
-        inner.add(tailJoint);
+        group.add(tailJoint);
         group.userData.material = material;
         group.userData.parts = { body, head, flLeg, frLeg, blLeg, brLeg, tailJoint, tailJoint2, tailJoint3 };
         return group;
@@ -11026,12 +11029,18 @@ class AnazhRealm {
         const soulName = (this.state.player && this.state.player.soul) || "human";
         const soul = this._getSoulDef(soulName);
         const compoundTags = this.computeSoulCompoundTags(soul);
-        // Defensiv: alle MATERIAL_TAG_KEYS auf Zahl auflösen, fehlende auf 0.
-        // Werte können bis ~3 reichen (FORM_TAG_ACTIVATION × Material-Tag);
-        // STAT_FROM_TAGS-Formeln tolerieren das (lineare Multiplikatoren).
+        // Welle 6.D Polish (Schöpfer-Feedback 13.05.2026) — Tag-Clamp.
+        // FORM_TAG_ACTIVATION kann Tag-Werte bis ~3 verstärken (z. B.
+        // sphere × knochen × dichte-Aktivierung 3 = 1.8 für den Mensch-Kopf).
+        // STAT_FROM_TAGS.speed-Formel `(1 - dichte) * 5` wird damit negativ,
+        // d. h. der Mensch lief mit speed≈2. Lösung: Soul-Compound-Tags auf
+        // [0, 1] clampen FÜR DIE STAT-PIPE. Boosts + Equipped + Wound-Penalty
+        // dürfen danach drüber/drunter gehen (die wirken als Modifikation).
+        // Compound-Tags >1 leben weiter, nur für Stat-Berechnung normalisiert.
         const finalTags = {};
         for (const key of AnazhRealm.MATERIAL_TAG_KEYS) {
-            finalTags[key] = Number(compoundTags[key]) || 0;
+            const raw = Number(compoundTags[key]) || 0;
+            finalTags[key] = Math.max(0, Math.min(1, raw));
         }
         // Welle 6.D Etappe 3b — Equipped-Stat-Stacking (wave-6-design §5.3).
         //   finalTags[t] = soul[t] + armor.compoundTags[t] × armorWeight
@@ -15458,7 +15467,12 @@ class AnazhRealm {
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,
     damage: (t) => 5 + (t.härte || 0) * 15 + (t.dichte || 0) * 5,
-    speed: (t) => 4 + (1 - (t.dichte || 0)) * 4 + (t.magieleitung || 0) * 1,
+    // Schöpfer-Feedback 13.05.2026 (Welle 6.D Polish): „Mensch extrem
+    // langsam, evt. Basegeschwindigkeit für alle etwas höher". Base 4→6,
+    // Multiplikator (1-dichte) 4→5, magieleitung 1→1.5. Mensch springt
+    // von 6.1 auf ~8.75; Phönix 9.4 auf 11.2; Drache 5.0 auf 7.4. Sprint
+    // = 2× Walk wirkt damit deutlicher.
+    speed: (t) => 7 + (1 - (t.dichte || 0)) * 5 + (t.magieleitung || 0) * 1.5,
     jumpPower: (t) => 8 + (1 - (t.dichte || 0)) * 5 + (t.magieleitung || 0) * 2,
     staminaMax: (t) => 100 + (1 - (t.dichte || 0)) * 60 + (t.wärmeleitung || 0) * 40,
     precision: (t) => 0.5 + (t.magieleitung || 0) * 0.3 + (t.zähigkeit || 0) * 0.2,

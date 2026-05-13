@@ -5564,22 +5564,53 @@ function startSaveServer() {
                         out.glowFollowsPlayer = Math.abs(gp.x - pp.x) < 0.01 && Math.abs(gp.z - pp.z) < 0.01;
                     }
 
-                    // Drache-Flip (Schöpfer-Feedback: W/S vertauscht beim Drache):
-                    // Inner-Group rotation.y = π, sodass die wahrgenommene
-                    // Schnauze (Tail-Cone-Segmente) in +Z (Forward) landet.
+                    // Drache: Original-Orientierung (Head in +Z). Inner-π-Flip
+                    // wurde wieder revertiert, weil er den Drache in 3rd-Person
+                    // visuell zum Spieler hin gespiegelt hat. Kopf-Box bleibt
+                    // bei +0.85 in Z (Forward-Richtung).
                     r.applyPlayerSoul("dragon");
                     const dragonGroup = r.state.playerMesh;
-                    let dragonInnerRotY = null;
+                    let dragonHasInnerFlip = false;
                     if (dragonGroup && dragonGroup.children.length > 0) {
-                        // Erstes Child ist die Inner-Group nach unserem Bau-Pfad.
-                        const firstChild = dragonGroup.children[0];
-                        if (firstChild && firstChild.isGroup) {
-                            dragonInnerRotY = firstChild.rotation.y;
+                        // Prüfen: KEIN Child mit rotation.y ≈ π existiert.
+                        for (const c of dragonGroup.children) {
+                            if (c && c.isGroup && Math.abs((c.rotation.y || 0) - Math.PI) < 0.01) {
+                                dragonHasInnerFlip = true;
+                                break;
+                            }
                         }
                     }
-                    out.dragonInnerRotY = dragonInnerRotY;
-                    out.dragonInnerFlipped = dragonInnerRotY !== null && Math.abs(dragonInnerRotY - Math.PI) < 0.001;
+                    out.dragonNoInnerFlip = !dragonHasInnerFlip;
                     r.applyPlayerSoul("human"); // restore
+
+                    // Welle 6.D Polish — player_speed-DSL-Op setzt jetzt
+                    // sprintSpeed mit (= 2× speed). Vorher konnte ein dsl
+                    // `player_speed 25` state.speed=25 setzen ohne
+                    // sprintSpeed zu aktualisieren → Shift drücken machte
+                    // den Spieler LANGSAMER.
+                    const beforeSprintBug = r.state.sprintSpeed;
+                    r.dslRun(["player_speed", 20], { source: "test" });
+                    out.speedAfterDsl = r.state.speed;
+                    out.sprintAfterDsl = r.state.sprintSpeed;
+                    out.sprintFollowsSpeed = Math.abs(r.state.sprintSpeed - r.state.speed * 2) < 0.001;
+                    out.sprintActuallyFaster = r.state.sprintSpeed > r.state.speed;
+                    // Restore baseline mit explizitem Soul-Reset (frühere Tests
+                    // haben womöglich Boosts/Wunde/Custom-Soul-Reste hinterlassen)
+                    r.state.player.soul = "human";
+                    r.state.player.boosts = [];
+                    r.state.player.deathWoundIntensity = 0;
+                    r.state.player.equipped = { tool: null, armor: null };
+                    r.recomputePlayerStats();
+                    // Höhere Base-Speed (Schöpfer-Wunsch): Mensch sollte ~8-9 sein
+                    const humanResult = r.computePlayerStats();
+                    out.humanSpeed = humanResult.stats.speed;
+                    out.humanTags = JSON.stringify(humanResult.tags);
+                    out.humanWound = r.state.player.deathWoundIntensity;
+                    out.humanBoostCount = r.state.player.boosts.length;
+                    // Mensch ist „balanced" — niedriges magieleitung, hoher dichte
+                    // (durch sphere-Kopf-Aktivierung clamped auf 1). Speed-Base 7
+                    // gibt Mensch genau 7 (= deutlich höher als vorher 6.1).
+                    out.humanSpeedRaised = humanResult.stats.speed >= 7;
 
                     // (4) Tod-Wunde persistent + regeneriert
                     out.hasWoundIntensity = "deathWoundIntensity" in r.state.player;
@@ -5684,11 +5715,26 @@ function startSaveServer() {
                     check("Reflex 3 V4: Glow hat Map-Texture (Radial-Gradient für weichen Falloff)", reflexResults.glowHasTexture);
                     check("Reflex 3 V4: Glow-Position folgt Spieler (x/z)", reflexResults.glowFollowsPlayer);
                 }
-                // Drache-Flip
+                // Drache-Orientierung (Schöpfer-Korrektur 13.05.2026): KEIN
+                // Inner-π-Flip — der Drache schaut wieder vom Spieler weg.
                 check(
-                    "Drache-Flip: Inner-Group rotation.y = π (Tail-Cone als wahrgenommene Schnauze in +Z)",
-                    reflexResults.dragonInnerFlipped,
-                    `inner.rotation.y=${(reflexResults.dragonInnerRotY || 0).toFixed(3)}`
+                    "Drache: kein Inner-π-Flip mehr (Avatar schaut vom Spieler weg in 3rd-Person)",
+                    reflexResults.dragonNoInnerFlip
+                );
+                // Sprint-Bug-Fix: player_speed setzt jetzt sprintSpeed mit
+                check(
+                    "Welle 6.D Polish: player_speed-DSL-Op aktualisiert sprintSpeed = 2× speed",
+                    reflexResults.sprintFollowsSpeed,
+                    `speed=${reflexResults.speedAfterDsl} sprint=${reflexResults.sprintAfterDsl}`
+                );
+                check(
+                    "Welle 6.D Polish: Sprint ist nach player_speed wirklich SCHNELLER als Walk",
+                    reflexResults.sprintActuallyFaster
+                );
+                check(
+                    "Welle 6.D Polish: Mensch-Speed mind. 7 (Base-Erhöhung, war vorher 6.1)",
+                    reflexResults.humanSpeedRaised,
+                    `speed=${(reflexResults.humanSpeed || 0).toFixed(2)}`
                 );
                 // (4) Wunde
                 check("Reflex 4: state.player.deathWoundIntensity existiert", reflexResults.hasWoundIntensity);
