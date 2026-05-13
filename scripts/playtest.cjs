@@ -3126,6 +3126,71 @@ function startSaveServer() {
                 );
             }
 
+            // ### Ring 8.2 — Player-Position-Restore + Status-Bar-Welt ###
+            // Bug-Report: nach Welt-Wechsel landete der Spieler bei (0,50,0)
+            // statt an seiner zuletzt gespeicherten Position. Ursache:
+            // generateNewWorld() prüft `terrainEverGenerated` (state-only,
+            // nicht persistiert) und teleportiert beim FIRST=false-Pfad.
+            // Fix: loadState markiert das Flag, sobald ein Save geladen wurde.
+            const ring82Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    // buildStateSnapshot fängt aktuelle Mesh-Position ein
+                    if (r.state.playerMesh) {
+                        r.state.playerMesh.position.set(42, 7, 23);
+                    }
+                    const snap1 = r.buildStateSnapshot();
+                    out.snapshotCapturesPosition =
+                        snap1.playerPosition &&
+                        Math.abs(snap1.playerPosition.x - 42) < 0.01 &&
+                        Math.abs(snap1.playerPosition.y - 7) < 0.01 &&
+                        Math.abs(snap1.playerPosition.z - 23) < 0.01;
+
+                    // Reset-Szenario: terrainEverGenerated=false, loadState(snap)
+                    // soll Flag setzen UND Position restaurieren.
+                    r.state.terrainEverGenerated = false;
+                    if (r.state.playerMesh) r.state.playerMesh.position.set(99, 99, 99);
+                    r.loadState(snap1);
+                    out.flagSetAfterLoad = r.state.terrainEverGenerated === true;
+                    out.positionRestoredAfterLoad =
+                        r.state.playerMesh &&
+                        Math.abs(r.state.playerMesh.position.x - 42) < 0.5 &&
+                        Math.abs(r.state.playerMesh.position.z - 23) < 0.5;
+
+                    // Status-Bar zeigt aktuelle Welt
+                    const slugEl = document.getElementById("status-slug");
+                    out.statusSlugInDom = !!slugEl;
+                    // Label muss "Welt" sein (umbenannt von "Slug")
+                    const labelText = slugEl ? slugEl.previousElementSibling.textContent : "";
+                    out.statusLabelIsWelt = labelText === "Welt";
+                    // Tick den Status-Panel-Update
+                    r.updateStatusPanel(performance.now() / 1000);
+                    out.statusSlugShowsActiveWorld = slugEl && slugEl.textContent === (r.state.worldMeta.slug || "—");
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!ring82Results || ring82Results.error) {
+                check(
+                    "Ring 8.2: Snapshot erreichbar",
+                    false,
+                    (ring82Results && ring82Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check(
+                    "Ring 8.2: buildStateSnapshot fängt Spieler-Position ein",
+                    ring82Results.snapshotCapturesPosition
+                );
+                check("Ring 8.2: loadState setzt terrainEverGenerated", ring82Results.flagSetAfterLoad);
+                check("Ring 8.2: loadState restauriert Spieler-Position", ring82Results.positionRestoredAfterLoad);
+                check("Ring 8.2: #status-slug im DOM", ring82Results.statusSlugInDom);
+                check("Ring 8.2: Status-Bar-Label heißt 'Welt'", ring82Results.statusLabelIsWelt);
+                check("Ring 8.2: Status-Bar zeigt aktive Welt-Slug", ring82Results.statusSlugShowsActiveWorld);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {

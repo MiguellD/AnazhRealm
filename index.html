@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!--
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <!--
       CSP nach Schicht-1-Cleanup (Mai 2026). Verbleibende Konzessionen, alle
       mit klarem Konsumenten:
 
@@ -25,1696 +25,1920 @@
       KEIN eval, das CI-Gate „Verbotenes dynamisches Auswerten" schützt diesen
       Pfad hart. object-src 'none' und base-uri 'self' bleiben strict.
     -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self';">
-    <title>Anazh Realm v7.66 – Das Ultiversum</title>
-    <style>
-        /* ====================================================================
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self';"
+        />
+        <title>Anazh Realm v7.66 – Das Ultiversum</title>
+        <style>
+            /* ====================================================================
            UI V2 — Painterly High-Fantasy. Pergament, Eisen, Messing. Akzent:
            Portal-Violett. Identität inspiriert vom UI-Mockup-Entwurf des
            Schöpfers. Tag/Nacht via [data-theme].
            Fonts: lokal vendored (vendor/fonts/), keine externen CDN-Aufrufe,
            CSP bleibt strict.
            ==================================================================== */
-        @font-face {
-            font-family: 'Cinzel';
-            font-weight: 400 800;
-            font-style: normal;
-            font-display: swap;
-            src: url('vendor/fonts/Cinzel-Variable.woff2') format('woff2');
-        }
-        @font-face {
-            font-family: 'IM Fell English';
-            font-weight: 400;
-            font-style: normal;
-            font-display: swap;
-            src: url('vendor/fonts/IMFellEnglish-400-normal.woff2') format('woff2');
-        }
-        @font-face {
-            font-family: 'IM Fell English';
-            font-weight: 400;
-            font-style: italic;
-            font-display: swap;
-            src: url('vendor/fonts/IMFellEnglish-400-italic.woff2') format('woff2');
-        }
-        @font-face {
-            font-family: 'JetBrains Mono';
-            font-weight: 400 800;
-            font-style: normal;
-            font-display: swap;
-            src: url('vendor/fonts/JetBrainsMono-Variable.woff2') format('woff2');
-        }
+            @font-face {
+                font-family: "Cinzel";
+                font-weight: 400 800;
+                font-style: normal;
+                font-display: swap;
+                src: url("vendor/fonts/Cinzel-Variable.woff2") format("woff2");
+            }
+            @font-face {
+                font-family: "IM Fell English";
+                font-weight: 400;
+                font-style: normal;
+                font-display: swap;
+                src: url("vendor/fonts/IMFellEnglish-400-normal.woff2") format("woff2");
+            }
+            @font-face {
+                font-family: "IM Fell English";
+                font-weight: 400;
+                font-style: italic;
+                font-display: swap;
+                src: url("vendor/fonts/IMFellEnglish-400-italic.woff2") format("woff2");
+            }
+            @font-face {
+                font-family: "JetBrains Mono";
+                font-weight: 400 800;
+                font-style: normal;
+                font-display: swap;
+                src: url("vendor/fonts/JetBrainsMono-Variable.woff2") format("woff2");
+            }
 
-        :root, [data-theme="tag"] {
-            /* Pergament */
-            --parch-1: #f5e7c4;
-            --parch-2: #e9d49e;
-            --parch-3: #d8b876;
-            --parch-edge: #8a6a36;
-            --parch-ink: #2b1a08;
-            --parch-ink-soft: #5a3f1d;
-            --parch-ink-faded: #7b5a2e;
-            /* Holz */
-            --wood-1: #4a2e17;
-            --wood-2: #321d0c;
-            --wood-3: #25140a;
-            /* Eisen / Messing */
-            --iron-1: #2a2520;
-            --iron-2: #1a1612;
-            --iron-3: #0d0a07;
-            --brass-1: #c69a4a;
-            --brass-2: #8a6322;
-            --brass-3: #5b3f10;
-            /* Akzente */
-            --violet-1: #8a5cff;
-            --violet-2: #c66bff;
-            --violet-glow: rgba(180, 108, 255, 0.55);
-            --moss: #5a7a3a;
-            --honey: #e0a83a;
-            /* Emotion-Farben (Status-Balken behalten ihre Semantik) */
-            --joy: #f7d358;
-            --awe: #d4a3ff;
-            --sorrow: #5ec0eb;
-            --hope: #7bd389;
-            --peace: #88e1e1;
-            --chaos: #e94c89;
-            /* Schatten */
-            --shadow-deep: 0 24px 60px rgba(20, 8, 0, 0.55), 0 6px 14px rgba(20, 8, 0, 0.4);
-        }
-        [data-theme="nacht"] {
-            --parch-1: #c8b794;
-            --parch-2: #a99172;
-            --parch-3: #7c6446;
-            --parch-edge: #3a2a14;
-            --parch-ink: #1a1023;
-            --parch-ink-soft: #3a2e4a;
-            --parch-ink-faded: #5a4a6e;
-            --wood-1: #221830;
-            --wood-2: #150d22;
-            --wood-3: #0a0614;
-            --iron-1: #15131c;
-            --iron-2: #0a080f;
-            --iron-3: #050308;
-            --brass-1: #8a6f3a;
-            --brass-2: #5b4520;
-            --brass-3: #3a2c12;
-            --violet-glow: rgba(190, 120, 255, 0.85);
-            --moss: #4a6a4a;
-            --honey: #c08a3a;
-        }
+            :root,
+            [data-theme="tag"] {
+                /* Pergament */
+                --parch-1: #f5e7c4;
+                --parch-2: #e9d49e;
+                --parch-3: #d8b876;
+                --parch-edge: #8a6a36;
+                --parch-ink: #2b1a08;
+                --parch-ink-soft: #5a3f1d;
+                --parch-ink-faded: #7b5a2e;
+                /* Holz */
+                --wood-1: #4a2e17;
+                --wood-2: #321d0c;
+                --wood-3: #25140a;
+                /* Eisen / Messing */
+                --iron-1: #2a2520;
+                --iron-2: #1a1612;
+                --iron-3: #0d0a07;
+                --brass-1: #c69a4a;
+                --brass-2: #8a6322;
+                --brass-3: #5b3f10;
+                /* Akzente */
+                --violet-1: #8a5cff;
+                --violet-2: #c66bff;
+                --violet-glow: rgba(180, 108, 255, 0.55);
+                --moss: #5a7a3a;
+                --honey: #e0a83a;
+                /* Emotion-Farben (Status-Balken behalten ihre Semantik) */
+                --joy: #f7d358;
+                --awe: #d4a3ff;
+                --sorrow: #5ec0eb;
+                --hope: #7bd389;
+                --peace: #88e1e1;
+                --chaos: #e94c89;
+                /* Schatten */
+                --shadow-deep: 0 24px 60px rgba(20, 8, 0, 0.55), 0 6px 14px rgba(20, 8, 0, 0.4);
+            }
+            [data-theme="nacht"] {
+                --parch-1: #c8b794;
+                --parch-2: #a99172;
+                --parch-3: #7c6446;
+                --parch-edge: #3a2a14;
+                --parch-ink: #1a1023;
+                --parch-ink-soft: #3a2e4a;
+                --parch-ink-faded: #5a4a6e;
+                --wood-1: #221830;
+                --wood-2: #150d22;
+                --wood-3: #0a0614;
+                --iron-1: #15131c;
+                --iron-2: #0a080f;
+                --iron-3: #050308;
+                --brass-1: #8a6f3a;
+                --brass-2: #5b4520;
+                --brass-3: #3a2c12;
+                --violet-glow: rgba(190, 120, 255, 0.85);
+                --moss: #4a6a4a;
+                --honey: #c08a3a;
+            }
 
-        /* Pergament-Helper: Noise-Filter + warme Vignette. ::before liefert
+            /* Pergament-Helper: Noise-Filter + warme Vignette. ::before liefert
            die Faser-Textur, ::after eine weiche Randverdunklung. */
-        .parchment {
-            background:
-                radial-gradient(ellipse 60% 80% at 30% 20%, rgba(255, 250, 220, 0.6), transparent 70%),
-                radial-gradient(ellipse 70% 60% at 75% 85%, rgba(140, 90, 30, 0.18), transparent 70%),
-                linear-gradient(135deg, var(--parch-1) 0%, var(--parch-2) 60%, var(--parch-3) 100%);
-            background-blend-mode: normal, multiply, normal;
-            position: relative;
-            color: var(--parch-ink);
-        }
-        .parchment::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='f'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' seed='3'/><feColorMatrix values='0 0 0 0 0.18 0 0 0 0 0.10 0 0 0 0 0.04 0 0 0 0.22 0'/></filter><rect width='240' height='240' filter='url(%23f)'/></svg>");
-            mix-blend-mode: multiply;
-            opacity: 0.55;
-            pointer-events: none;
-            border-radius: inherit;
-        }
-        .parchment::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(ellipse 90% 80% at 50% 40%, transparent 50%, rgba(80, 40, 10, 0.28) 100%);
-            pointer-events: none;
-            border-radius: inherit;
-        }
-        [data-theme="nacht"] .parchment::after {
-            background: radial-gradient(ellipse 90% 80% at 50% 40%, rgba(255, 220, 160, 0.06) 30%, rgba(30, 20, 40, 0.55) 100%);
-        }
+            .parchment {
+                background:
+                    radial-gradient(ellipse 60% 80% at 30% 20%, rgba(255, 250, 220, 0.6), transparent 70%),
+                    radial-gradient(ellipse 70% 60% at 75% 85%, rgba(140, 90, 30, 0.18), transparent 70%),
+                    linear-gradient(135deg, var(--parch-1) 0%, var(--parch-2) 60%, var(--parch-3) 100%);
+                background-blend-mode: normal, multiply, normal;
+                position: relative;
+                color: var(--parch-ink);
+            }
+            .parchment::before {
+                content: "";
+                position: absolute;
+                inset: 0;
+                background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='f'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' seed='3'/><feColorMatrix values='0 0 0 0 0.18 0 0 0 0 0.10 0 0 0 0 0.04 0 0 0 0.22 0'/></filter><rect width='240' height='240' filter='url(%23f)'/></svg>");
+                mix-blend-mode: multiply;
+                opacity: 0.55;
+                pointer-events: none;
+                border-radius: inherit;
+            }
+            .parchment::after {
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: radial-gradient(ellipse 90% 80% at 50% 40%, transparent 50%, rgba(80, 40, 10, 0.28) 100%);
+                pointer-events: none;
+                border-radius: inherit;
+            }
+            [data-theme="nacht"] .parchment::after {
+                background: radial-gradient(
+                    ellipse 90% 80% at 50% 40%,
+                    rgba(255, 220, 160, 0.06) 30%,
+                    rgba(30, 20, 40, 0.55) 100%
+                );
+            }
 
-        /* Eisen-Rahmen: gerenderte box-shadows als Rand + Messing-Innenkante +
+            /* Eisen-Rahmen: gerenderte box-shadows als Rand + Messing-Innenkante +
            vier Eckschrauben. Erfordert ein .frame-edge-Kind, das Bolts trägt. */
-        .framed {
-            position: relative;
-            border-radius: 12px;
-            box-shadow: var(--shadow-deep);
-            overflow: hidden;
-        }
-        .framed > .frame-edge {
-            position: absolute;
-            inset: 0;
-            border-radius: inherit;
-            pointer-events: none;
-            box-shadow:
-                inset 0 0 0 1px rgba(0, 0, 0, 0.55),
-                inset 0 0 0 5px var(--iron-1),
-                inset 0 0 0 6px rgba(0, 0, 0, 0.55),
-                inset 0 0 0 8px var(--brass-3),
-                inset 0 0 0 9px rgba(0, 0, 0, 0.4);
-            z-index: 2;
-        }
-        .framed > .frame-edge::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            border-radius: inherit;
-            background:
-                radial-gradient(circle 4px at 12px 12px, #1a1410 0 60%, transparent 65%),
-                radial-gradient(circle 4px at calc(100% - 12px) 12px, #1a1410 0 60%, transparent 65%),
-                radial-gradient(circle 4px at 12px calc(100% - 12px), #1a1410 0 60%, transparent 65%),
-                radial-gradient(circle 4px at calc(100% - 12px) calc(100% - 12px), #1a1410 0 60%, transparent 65%);
-        }
+            .framed {
+                position: relative;
+                border-radius: 12px;
+                box-shadow: var(--shadow-deep);
+                overflow: hidden;
+            }
+            .framed > .frame-edge {
+                position: absolute;
+                inset: 0;
+                border-radius: inherit;
+                pointer-events: none;
+                box-shadow:
+                    inset 0 0 0 1px rgba(0, 0, 0, 0.55),
+                    inset 0 0 0 5px var(--iron-1),
+                    inset 0 0 0 6px rgba(0, 0, 0, 0.55),
+                    inset 0 0 0 8px var(--brass-3),
+                    inset 0 0 0 9px rgba(0, 0, 0, 0.4);
+                z-index: 2;
+            }
+            .framed > .frame-edge::before {
+                content: "";
+                position: absolute;
+                inset: 0;
+                border-radius: inherit;
+                background:
+                    radial-gradient(circle 4px at 12px 12px, #1a1410 0 60%, transparent 65%),
+                    radial-gradient(circle 4px at calc(100% - 12px) 12px, #1a1410 0 60%, transparent 65%),
+                    radial-gradient(circle 4px at 12px calc(100% - 12px), #1a1410 0 60%, transparent 65%),
+                    radial-gradient(circle 4px at calc(100% - 12px) calc(100% - 12px), #1a1410 0 60%, transparent 65%);
+            }
 
-        body {
-            margin: 0;
-            overflow: hidden;
-            background-color: #000;
-            color: #fff;
-            font-family: 'Inter', system-ui, sans-serif;
-            /* Firefox: globaler Scrollbar-Stil (Brass auf Pergament-Dunkel). */
-            scrollbar-width: thin;
-            scrollbar-color: var(--brass-2) rgba(40, 25, 10, 0.18);
-        }
+            body {
+                margin: 0;
+                overflow: hidden;
+                background-color: #000;
+                color: #fff;
+                font-family: "Inter", system-ui, sans-serif;
+                /* Firefox: globaler Scrollbar-Stil (Brass auf Pergament-Dunkel). */
+                scrollbar-width: thin;
+                scrollbar-color: var(--brass-2) rgba(40, 25, 10, 0.18);
+            }
 
-        /* Webkit-Scrollbars: schmale Brass-Spur statt heller System-Default.
+            /* Webkit-Scrollbars: schmale Brass-Spur statt heller System-Default.
            Greift auf alle scrollbaren Container (Drawer, Konsole, Listen). */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: rgba(40, 25, 10, 0.18);
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: var(--brass-3);
-            border-radius: 4px;
-            border: 1px solid rgba(0, 0, 0, 0.3);
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--brass-2);
-        }
-        ::-webkit-scrollbar-corner { background: transparent; }
-        /* Pergament-Drawer haben einen helleren Track, damit der Brass-Thumb
+            ::-webkit-scrollbar {
+                width: 8px;
+                height: 8px;
+            }
+            ::-webkit-scrollbar-track {
+                background: rgba(40, 25, 10, 0.18);
+                border-radius: 4px;
+            }
+            ::-webkit-scrollbar-thumb {
+                background: var(--brass-3);
+                border-radius: 4px;
+                border: 1px solid rgba(0, 0, 0, 0.3);
+            }
+            ::-webkit-scrollbar-thumb:hover {
+                background: var(--brass-2);
+            }
+            ::-webkit-scrollbar-corner {
+                background: transparent;
+            }
+            /* Pergament-Drawer haben einen helleren Track, damit der Brass-Thumb
            sich vom Pergament-Boden absetzt. */
-        .drawer::-webkit-scrollbar-track { background: rgba(40, 25, 10, 0.12); }
-        .drawer { scrollbar-color: var(--brass-2) rgba(40, 25, 10, 0.12); }
-        #world-canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
-        /* Konsole — fusioniertes Chat + Log + Input, einklappbar.
+            .drawer::-webkit-scrollbar-track {
+                background: rgba(40, 25, 10, 0.12);
+            }
+            .drawer {
+                scrollbar-color: var(--brass-2) rgba(40, 25, 10, 0.12);
+            }
+            #world-canvas {
+                position: absolute;
+                top: 0;
+                left: 0;
+            }
+            /* Konsole — fusioniertes Chat + Log + Input, einklappbar.
            Links unten, sitzt unter der Status-Bar; bottom: 16px. */
-        /* Alte FPS-Div bleibt versteckt — der Wert lebt jetzt in der Status-Bar.
+            /* Alte FPS-Div bleibt versteckt — der Wert lebt jetzt in der Status-Bar.
            updateFps() schreibt weiter in #fps.innerText, also nicht entfernen. */
-        #fps { display: none; }
+            #fps {
+                display: none;
+            }
 
-        #console {
-            position: absolute;
-            top: 116px;
-            bottom: 16px;
-            left: 16px;
-            width: 420px;
-            display: flex;
-            flex-direction: column;
-            background: rgba(20, 12, 5, 0.85);
-            color: #f4e4b8;
-            border-radius: 6px;
-            z-index: 4;
-            box-shadow: var(--shadow-deep);
-            overflow: hidden;
-        }
-        #console::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            border-radius: inherit;
-            pointer-events: none;
-            box-shadow:
-                inset 0 0 0 1px rgba(0, 0, 0, 0.55),
-                inset 0 0 0 4px var(--iron-1),
-                inset 0 0 0 5px rgba(0, 0, 0, 0.55),
-                inset 0 0 0 7px var(--brass-3),
-                inset 0 0 0 8px rgba(0, 0, 0, 0.4);
-        }
-        #console > * { position: relative; z-index: 1; }
-        #console-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 6px 12px 6px 14px;
-            border-bottom: 1px solid var(--brass-3);
-            background: linear-gradient(180deg, rgba(60, 38, 16, 0.65), rgba(20, 12, 5, 0.4));
-        }
-        #console-header h3 {
-            margin: 0;
-            font-family: 'Cinzel', Georgia, serif;
-            font-size: 11px;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            color: var(--brass-1);
-            font-weight: 600;
-        }
-        #console-collapse {
-            background: transparent;
-            border: 1px solid var(--brass-3);
-            color: var(--brass-1);
-            font-size: 14px;
-            padding: 0 8px;
-            cursor: pointer;
-            border-radius: 2px;
-            line-height: 1.4;
-            font-family: serif;
-        }
-        #console-collapse:hover { color: #fbe9b8; border-color: var(--brass-1); }
-        #console-body {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            padding: 10px 12px 8px 12px;
-            min-height: 0;
-        }
-        #console.collapsed #console-body { display: none; }
-        #console.collapsed { bottom: auto; top: 116px; }
-        #console-chat-section,
-        #console-log-section {
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
-        }
-        #console-chat-section { flex: 1; }
-        #console-log-section { flex: 1; }
-        .console-section-label {
-            font-family: 'IM Fell English', Georgia, serif;
-            font-style: italic;
-            color: var(--brass-2);
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            margin-bottom: 4px;
-        }
-        #chat-output {
-            flex: 1;
-            min-height: 80px;
-            overflow-y: auto;
-            font-size: 12.5px;
-            color: #e8d8a8;
-            font-family: 'IM Fell English', Georgia, serif;
-            line-height: 1.45;
-            padding-right: 4px;
-        }
-        #log {
-            flex: 1;
-            min-height: 80px;
-            overflow-y: auto;
-            font-size: 10.5px;
-            color: var(--brass-1);
-            font-family: 'JetBrains Mono', monospace;
-            padding-right: 4px;
-            line-height: 1.5;
-        }
-        #console-footer {
-            padding: 8px 12px 10px 12px;
-            border-top: 1px solid var(--brass-3);
-            background: linear-gradient(180deg, rgba(20, 12, 5, 0.4), rgba(60, 38, 16, 0.55));
-        }
-        #chat-input {
-            width: 100%;
-            background: rgba(40, 24, 10, 0.65);
-            color: #f4e4b8;
-            border: 1px solid var(--brass-3);
-            padding: 7px 10px;
-            font-size: 13px;
-            font-family: 'IM Fell English', Georgia, serif;
-            font-style: italic;
-            border-radius: 2px;
-            box-sizing: border-box;
-        }
-        #chat-input:focus {
-            outline: none;
-            border-color: var(--brass-1);
-            box-shadow: 0 0 6px rgba(180, 108, 255, 0.3);
-        }
-        #dialogue-box {
-            position: absolute;
-            top: 28px;
-            left: 50%;
-            transform: translateX(-50%);
-            max-width: 60%;
-            padding: 12px 22px;
-            background-color: rgba(20, 12, 5, 0.82);
-            color: #f4e4b8;
-            border: 1px solid var(--brass-3);
-            border-radius: 4px;
-            font-family: 'IM Fell English', Georgia, serif;
-            font-size: 17px;
-            font-style: italic;
-            line-height: 1.45;
-            text-align: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 600ms ease-in-out;
-            z-index: 5;
-            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5), 0 0 14px var(--violet-glow);
-        }
-        #dialogue-box.visible { opacity: 1; }
-        /* Bau-Modus-HUD (Ring 6 V2). Bleibt sichtbar während der Bau-Modus
+            #console {
+                position: absolute;
+                top: 116px;
+                bottom: 16px;
+                left: 16px;
+                width: 420px;
+                display: flex;
+                flex-direction: column;
+                background: rgba(20, 12, 5, 0.85);
+                color: #f4e4b8;
+                border-radius: 6px;
+                z-index: 4;
+                box-shadow: var(--shadow-deep);
+                overflow: hidden;
+            }
+            #console::after {
+                content: "";
+                position: absolute;
+                inset: 0;
+                border-radius: inherit;
+                pointer-events: none;
+                box-shadow:
+                    inset 0 0 0 1px rgba(0, 0, 0, 0.55),
+                    inset 0 0 0 4px var(--iron-1),
+                    inset 0 0 0 5px rgba(0, 0, 0, 0.55),
+                    inset 0 0 0 7px var(--brass-3),
+                    inset 0 0 0 8px rgba(0, 0, 0, 0.4);
+            }
+            #console > * {
+                position: relative;
+                z-index: 1;
+            }
+            #console-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 6px 12px 6px 14px;
+                border-bottom: 1px solid var(--brass-3);
+                background: linear-gradient(180deg, rgba(60, 38, 16, 0.65), rgba(20, 12, 5, 0.4));
+            }
+            #console-header h3 {
+                margin: 0;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 11px;
+                letter-spacing: 0.18em;
+                text-transform: uppercase;
+                color: var(--brass-1);
+                font-weight: 600;
+            }
+            #console-collapse {
+                background: transparent;
+                border: 1px solid var(--brass-3);
+                color: var(--brass-1);
+                font-size: 14px;
+                padding: 0 8px;
+                cursor: pointer;
+                border-radius: 2px;
+                line-height: 1.4;
+                font-family: serif;
+            }
+            #console-collapse:hover {
+                color: #fbe9b8;
+                border-color: var(--brass-1);
+            }
+            #console-body {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                padding: 10px 12px 8px 12px;
+                min-height: 0;
+            }
+            #console.collapsed #console-body {
+                display: none;
+            }
+            #console.collapsed {
+                bottom: auto;
+                top: 116px;
+            }
+            #console-chat-section,
+            #console-log-section {
+                display: flex;
+                flex-direction: column;
+                min-height: 0;
+            }
+            #console-chat-section {
+                flex: 1;
+            }
+            #console-log-section {
+                flex: 1;
+            }
+            .console-section-label {
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                color: var(--brass-2);
+                font-size: 10px;
+                text-transform: uppercase;
+                letter-spacing: 0.12em;
+                margin-bottom: 4px;
+            }
+            #chat-output {
+                flex: 1;
+                min-height: 80px;
+                overflow-y: auto;
+                font-size: 12.5px;
+                color: #e8d8a8;
+                font-family: "IM Fell English", Georgia, serif;
+                line-height: 1.45;
+                padding-right: 4px;
+            }
+            #log {
+                flex: 1;
+                min-height: 80px;
+                overflow-y: auto;
+                font-size: 10.5px;
+                color: var(--brass-1);
+                font-family: "JetBrains Mono", monospace;
+                padding-right: 4px;
+                line-height: 1.5;
+            }
+            #console-footer {
+                padding: 8px 12px 10px 12px;
+                border-top: 1px solid var(--brass-3);
+                background: linear-gradient(180deg, rgba(20, 12, 5, 0.4), rgba(60, 38, 16, 0.55));
+            }
+            #chat-input {
+                width: 100%;
+                background: rgba(40, 24, 10, 0.65);
+                color: #f4e4b8;
+                border: 1px solid var(--brass-3);
+                padding: 7px 10px;
+                font-size: 13px;
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                border-radius: 2px;
+                box-sizing: border-box;
+            }
+            #chat-input:focus {
+                outline: none;
+                border-color: var(--brass-1);
+                box-shadow: 0 0 6px rgba(180, 108, 255, 0.3);
+            }
+            #dialogue-box {
+                position: absolute;
+                top: 28px;
+                left: 50%;
+                transform: translateX(-50%);
+                max-width: 60%;
+                padding: 12px 22px;
+                background-color: rgba(20, 12, 5, 0.82);
+                color: #f4e4b8;
+                border: 1px solid var(--brass-3);
+                border-radius: 4px;
+                font-family: "IM Fell English", Georgia, serif;
+                font-size: 17px;
+                font-style: italic;
+                line-height: 1.45;
+                text-align: center;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 600ms ease-in-out;
+                z-index: 5;
+                box-shadow:
+                    0 4px 18px rgba(0, 0, 0, 0.5),
+                    0 0 14px var(--violet-glow);
+            }
+            #dialogue-box.visible {
+                opacity: 1;
+            }
+            /* Bau-Modus-HUD (Ring 6 V2). Bleibt sichtbar während der Bau-Modus
            aktiv ist; brass-getintetes Pergament-Etikett unter dem dialogue-box. */
-        #build-mode-hud {
-            position: absolute;
-            top: 96px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 6px 14px;
-            background-color: rgba(40, 25, 10, 0.85);
-            color: var(--brass-1);
-            border: 1px solid var(--brass-2);
-            border-radius: 3px;
-            font-family: 'Cinzel', Georgia, serif;
-            font-size: 12px;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            text-align: center;
-            pointer-events: none;
-            z-index: 5;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
-        }
-        #build-mode-hud[hidden] { display: none; }
-        /* Ring 6.5 — Hotbar. Neun Slots am unteren Bildschirmrand, brass-
+            #build-mode-hud {
+                position: absolute;
+                top: 96px;
+                left: 50%;
+                transform: translateX(-50%);
+                padding: 6px 14px;
+                background-color: rgba(40, 25, 10, 0.85);
+                color: var(--brass-1);
+                border: 1px solid var(--brass-2);
+                border-radius: 3px;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 12px;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                text-align: center;
+                pointer-events: none;
+                z-index: 5;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+            }
+            #build-mode-hud[hidden] {
+                display: none;
+            }
+            /* Ring 6.5 — Hotbar. Neun Slots am unteren Bildschirmrand, brass-
            getintet, aktiver Slot mit Violet-Glow markiert. */
-        #hotbar {
-            position: absolute;
-            bottom: 18px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 6px;
-            padding: 6px;
-            background-color: rgba(20, 12, 4, 0.6);
-            border: 1px solid var(--brass-3);
-            border-radius: 6px;
-            z-index: 5;
-            box-shadow: 0 2px 14px rgba(0, 0, 0, 0.5);
-        }
-        .hotbar-slot {
-            width: 64px;
-            height: 56px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: space-between;
-            padding: 4px 2px;
-            background: linear-gradient(180deg, rgba(255, 235, 190, 0.18), rgba(60, 40, 18, 0.4));
-            color: var(--parch-ink-faded);
-            border: 1px solid var(--brass-3);
-            border-radius: 3px;
-            font-family: 'Cinzel', Georgia, serif;
-            cursor: pointer;
-            transition: border-color 120ms ease, box-shadow 120ms ease;
-        }
-        .hotbar-slot .num {
-            font-size: 10px;
-            color: var(--brass-1);
-            font-weight: 600;
-            line-height: 1;
-        }
-        .hotbar-slot .label {
-            font-size: 11px;
-            text-align: center;
-            line-height: 1.1;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            max-width: 60px;
-        }
-        .hotbar-slot.filled {
-            background: linear-gradient(180deg, rgba(255, 235, 190, 0.32), rgba(110, 70, 26, 0.55));
-            color: var(--parch-1);
-            border-color: var(--brass-2);
-        }
-        .hotbar-slot.filled .label { color: var(--parch-1); }
-        .hotbar-slot:hover { border-color: var(--brass-1); }
-        .hotbar-slot.active {
-            border-color: var(--violet-1);
-            box-shadow: 0 0 12px var(--violet-glow), inset 0 0 8px rgba(180, 108, 255, 0.25);
-            color: #fff;
-        }
-        .hotbar-slot.active .label { color: #fff; }
-        /* Topbar-Toggle-Buttons (Theme / Stimme / Klang) als Messing-Latches.
+            #hotbar {
+                position: absolute;
+                bottom: 18px;
+                left: 50%;
+                transform: translateX(-50%);
+                display: flex;
+                gap: 6px;
+                padding: 6px;
+                background-color: rgba(20, 12, 4, 0.6);
+                border: 1px solid var(--brass-3);
+                border-radius: 6px;
+                z-index: 5;
+                box-shadow: 0 2px 14px rgba(0, 0, 0, 0.5);
+            }
+            .hotbar-slot {
+                width: 64px;
+                height: 56px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: space-between;
+                padding: 4px 2px;
+                background: linear-gradient(180deg, rgba(255, 235, 190, 0.18), rgba(60, 40, 18, 0.4));
+                color: var(--parch-ink-faded);
+                border: 1px solid var(--brass-3);
+                border-radius: 3px;
+                font-family: "Cinzel", Georgia, serif;
+                cursor: pointer;
+                transition:
+                    border-color 120ms ease,
+                    box-shadow 120ms ease;
+            }
+            .hotbar-slot .num {
+                font-size: 10px;
+                color: var(--brass-1);
+                font-weight: 600;
+                line-height: 1;
+            }
+            .hotbar-slot .label {
+                font-size: 11px;
+                text-align: center;
+                line-height: 1.1;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                max-width: 60px;
+            }
+            .hotbar-slot.filled {
+                background: linear-gradient(180deg, rgba(255, 235, 190, 0.32), rgba(110, 70, 26, 0.55));
+                color: var(--parch-1);
+                border-color: var(--brass-2);
+            }
+            .hotbar-slot.filled .label {
+                color: var(--parch-1);
+            }
+            .hotbar-slot:hover {
+                border-color: var(--brass-1);
+            }
+            .hotbar-slot.active {
+                border-color: var(--violet-1);
+                box-shadow:
+                    0 0 12px var(--violet-glow),
+                    inset 0 0 8px rgba(180, 108, 255, 0.25);
+                color: #fff;
+            }
+            .hotbar-slot.active .label {
+                color: #fff;
+            }
+            /* Topbar-Toggle-Buttons (Theme / Stimme / Klang) als Messing-Latches.
            Sitzen rechts neben den Tabs in der Topbar — kompakt nebeneinander. */
-        .topbar-toggles {
-            display: flex;
-            gap: 4px;
-            align-items: center;
-            margin-left: 12px;
-        }
-        .latch {
-            background: linear-gradient(180deg, var(--iron-1), var(--iron-3));
-            color: var(--brass-1);
-            border: 1px solid var(--iron-3);
-            box-shadow:
-                inset 0 1px 0 rgba(255, 220, 160, 0.18),
-                0 2px 4px rgba(0, 0, 0, 0.5);
-            padding: 4px 9px;
-            font-size: 10.5px;
-            font-family: 'Cinzel', Georgia, serif;
-            letter-spacing: 0.06em;
-            cursor: pointer;
-            z-index: 6;
-            border-radius: 3px;
-            white-space: nowrap;
-        }
-        .latch:hover {
-            color: #fbe9b8;
-        }
-        .latch[aria-pressed="true"] {
-            color: #ffe8b8;
-            background: linear-gradient(180deg, var(--brass-3), var(--iron-2));
-            box-shadow:
-                inset 0 1px 3px rgba(0, 0, 0, 0.6),
-                0 0 8px var(--violet-glow);
-        }
-        .latch[hidden] { display: none; }
-        #state-file-input { display: none; }
-        /* Ring 4.5 — Status-Panel V1: lesbares Fenster auf Welt + Emotionen.
+            .topbar-toggles {
+                display: flex;
+                gap: 4px;
+                align-items: center;
+                margin-left: 12px;
+            }
+            .latch {
+                background: linear-gradient(180deg, var(--iron-1), var(--iron-3));
+                color: var(--brass-1);
+                border: 1px solid var(--iron-3);
+                box-shadow:
+                    inset 0 1px 0 rgba(255, 220, 160, 0.18),
+                    0 2px 4px rgba(0, 0, 0, 0.5);
+                padding: 4px 9px;
+                font-size: 10.5px;
+                font-family: "Cinzel", Georgia, serif;
+                letter-spacing: 0.06em;
+                cursor: pointer;
+                z-index: 6;
+                border-radius: 3px;
+                white-space: nowrap;
+            }
+            .latch:hover {
+                color: #fbe9b8;
+            }
+            .latch[aria-pressed="true"] {
+                color: #ffe8b8;
+                background: linear-gradient(180deg, var(--brass-3), var(--iron-2));
+                box-shadow:
+                    inset 0 1px 3px rgba(0, 0, 0, 0.6),
+                    0 0 8px var(--violet-glow);
+            }
+            .latch[hidden] {
+                display: none;
+            }
+            #state-file-input {
+                display: none;
+            }
+            /* Ring 4.5 — Status-Panel V1: lesbares Fenster auf Welt + Emotionen.
            Rechts unter den Toggles, kompakt, kein Re-Layout pro Frame. */
-        /* ====================================================================
+            /* ====================================================================
            UI V2 step 2 — Topbar mit Tabs + Status-Bar + Drawer-System.
            Aus einem langen Panel werden sechs Drawer pro Tab. Topbar reitet
            ganz oben, Status-Bar darunter (Welt-Daten kompakt). Drawer slidet
            von rechts rein bei .open, sonst translateX(110%).
            ==================================================================== */
-        #topbar {
-            position: absolute;
-            top: 12px;
-            left: 12px;
-            right: 12px;
-            height: 56px;
-            background: linear-gradient(180deg, var(--wood-1) 0%, var(--wood-2) 50%, var(--wood-3) 100%);
-            border-radius: 10px;
-            box-shadow:
-                var(--shadow-deep),
-                inset 0 0 0 1px rgba(0, 0, 0, 0.55),
-                inset 0 0 0 5px var(--iron-1),
-                inset 0 0 0 6px rgba(0, 0, 0, 0.45),
-                inset 0 0 0 8px var(--brass-3),
-                inset 0 0 0 9px rgba(0, 0, 0, 0.35);
-            z-index: 6;
-            display: flex;
-        }
-        #topbar::before {
-            /* Holz-Faser-Textur */
-            content: '';
-            position: absolute;
-            inset: 0;
-            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='160'><filter id='g'><feTurbulence type='turbulence' baseFrequency='0.012 0.55' numOctaves='3' seed='7'/><feColorMatrix values='0 0 0 0 0.04 0 0 0 0 0.02 0 0 0 0 0.01 0 0 0 0.6 0'/></filter><rect width='400' height='160' filter='url(%23g)'/></svg>");
-            background-size: 800px 200px;
-            mix-blend-mode: multiply;
-            opacity: 0.7;
-            pointer-events: none;
-            border-radius: inherit;
-        }
-        .topbar-inner {
-            position: relative;
-            flex: 1;
-            display: flex;
-            align-items: center;
-            padding: 0 22px;
-            gap: 18px;
-            z-index: 1;
-        }
-        #topbar .title {
-            font-family: 'Cinzel', Georgia, serif;
-            font-weight: 700;
-            color: #f3e2b6;
-            font-size: 18px;
-            letter-spacing: 0.06em;
-            text-shadow: 0 1px 0 rgba(0, 0, 0, 0.7), 0 0 14px rgba(255, 210, 140, 0.2);
-            display: flex;
-            align-items: baseline;
-            gap: 10px;
-            white-space: nowrap;
-        }
-        #topbar .title .version,
-        #topbar .title .sub {
-            font-family: 'IM Fell English', Georgia, serif;
-            font-style: italic;
-            font-size: 12px;
-            color: var(--brass-1);
-            letter-spacing: 0.04em;
-            font-weight: 400;
-        }
-        @media (max-width: 1280px) {
-            #topbar .title .sub { display: none; }
-        }
-        @media (max-width: 1100px) {
-            #topbar .title .version { display: none; }
-        }
-        .tabs {
-            display: flex;
-            gap: 2px;
-            margin-left: auto;
-            align-items: stretch;
-        }
-        .tab {
-            font-family: 'Cinzel', Georgia, serif;
-            font-size: 11px;
-            font-weight: 600;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            color: #d8c08a;
-            background: transparent;
-            border: none;
-            padding: 8px 12px;
-            cursor: pointer;
-            border-radius: 4px;
-            position: relative;
-            white-space: nowrap;
-            transition: color 0.2s ease, background 0.2s ease;
-        }
-        .tab::after {
-            content: '';
-            position: absolute;
-            left: 8px; right: 8px; bottom: 3px;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, var(--brass-1) 30%, var(--brass-1) 70%, transparent);
-            opacity: 0;
-            transition: opacity 0.2s ease;
-        }
-        .tab:hover { color: #fbe9b8; background: rgba(255, 220, 160, 0.06); }
-        .tab:hover::after { opacity: 0.5; }
-        .tab.active { color: #ffe8b8; }
-        .tab.active::after { opacity: 1; }
-        [data-theme="nacht"] .tab.active { text-shadow: 0 0 12px var(--violet-glow); }
+            #topbar {
+                position: absolute;
+                top: 12px;
+                left: 12px;
+                right: 12px;
+                height: 56px;
+                background: linear-gradient(180deg, var(--wood-1) 0%, var(--wood-2) 50%, var(--wood-3) 100%);
+                border-radius: 10px;
+                box-shadow:
+                    var(--shadow-deep),
+                    inset 0 0 0 1px rgba(0, 0, 0, 0.55),
+                    inset 0 0 0 5px var(--iron-1),
+                    inset 0 0 0 6px rgba(0, 0, 0, 0.45),
+                    inset 0 0 0 8px var(--brass-3),
+                    inset 0 0 0 9px rgba(0, 0, 0, 0.35);
+                z-index: 6;
+                display: flex;
+            }
+            #topbar::before {
+                /* Holz-Faser-Textur */
+                content: "";
+                position: absolute;
+                inset: 0;
+                background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='160'><filter id='g'><feTurbulence type='turbulence' baseFrequency='0.012 0.55' numOctaves='3' seed='7'/><feColorMatrix values='0 0 0 0 0.04 0 0 0 0 0.02 0 0 0 0 0.01 0 0 0 0.6 0'/></filter><rect width='400' height='160' filter='url(%23g)'/></svg>");
+                background-size: 800px 200px;
+                mix-blend-mode: multiply;
+                opacity: 0.7;
+                pointer-events: none;
+                border-radius: inherit;
+            }
+            .topbar-inner {
+                position: relative;
+                flex: 1;
+                display: flex;
+                align-items: center;
+                padding: 0 22px;
+                gap: 18px;
+                z-index: 1;
+            }
+            #topbar .title {
+                font-family: "Cinzel", Georgia, serif;
+                font-weight: 700;
+                color: #f3e2b6;
+                font-size: 18px;
+                letter-spacing: 0.06em;
+                text-shadow:
+                    0 1px 0 rgba(0, 0, 0, 0.7),
+                    0 0 14px rgba(255, 210, 140, 0.2);
+                display: flex;
+                align-items: baseline;
+                gap: 10px;
+                white-space: nowrap;
+            }
+            #topbar .title .version,
+            #topbar .title .sub {
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                font-size: 12px;
+                color: var(--brass-1);
+                letter-spacing: 0.04em;
+                font-weight: 400;
+            }
+            @media (max-width: 1280px) {
+                #topbar .title .sub {
+                    display: none;
+                }
+            }
+            @media (max-width: 1100px) {
+                #topbar .title .version {
+                    display: none;
+                }
+            }
+            .tabs {
+                display: flex;
+                gap: 2px;
+                margin-left: auto;
+                align-items: stretch;
+            }
+            .tab {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 11px;
+                font-weight: 600;
+                letter-spacing: 0.1em;
+                text-transform: uppercase;
+                color: #d8c08a;
+                background: transparent;
+                border: none;
+                padding: 8px 12px;
+                cursor: pointer;
+                border-radius: 4px;
+                position: relative;
+                white-space: nowrap;
+                transition:
+                    color 0.2s ease,
+                    background 0.2s ease;
+            }
+            .tab::after {
+                content: "";
+                position: absolute;
+                left: 8px;
+                right: 8px;
+                bottom: 3px;
+                height: 2px;
+                background: linear-gradient(90deg, transparent, var(--brass-1) 30%, var(--brass-1) 70%, transparent);
+                opacity: 0;
+                transition: opacity 0.2s ease;
+            }
+            .tab:hover {
+                color: #fbe9b8;
+                background: rgba(255, 220, 160, 0.06);
+            }
+            .tab:hover::after {
+                opacity: 0.5;
+            }
+            .tab.active {
+                color: #ffe8b8;
+            }
+            .tab.active::after {
+                opacity: 1;
+            }
+            [data-theme="nacht"] .tab.active {
+                text-shadow: 0 0 12px var(--violet-glow);
+            }
 
-        /* Status-Bar: kompakte Welt-Daten unter der Topbar. */
-        #statusbar {
-            position: absolute;
-            top: 76px;
-            left: 12px;
-            right: 12px;
-            height: 32px;
-            background: rgba(20, 12, 5, 0.78);
-            border: 1px solid var(--iron-1);
-            border-radius: 4px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
-            display: flex;
-            align-items: center;
-            padding: 0 14px;
-            gap: 22px;
-            color: var(--brass-1);
-            font-size: 11px;
-            z-index: 5;
-        }
-        #statusbar .status-item {
-            display: inline-flex;
-            align-items: baseline;
-            gap: 6px;
-        }
-        #statusbar .status-item .label {
-            font-family: 'IM Fell English', Georgia, serif;
-            font-style: italic;
-            color: var(--brass-2);
-            font-size: 10.5px;
-        }
-        #statusbar .status-item .value {
-            font-family: 'JetBrains Mono', monospace;
-            color: #f4e4b8;
-            font-size: 11px;
-        }
-        #statusbar .status-item.pos { margin-left: auto; }
+            /* Status-Bar: kompakte Welt-Daten unter der Topbar. */
+            #statusbar {
+                position: absolute;
+                top: 76px;
+                left: 12px;
+                right: 12px;
+                height: 32px;
+                background: rgba(20, 12, 5, 0.78);
+                border: 1px solid var(--iron-1);
+                border-radius: 4px;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+                display: flex;
+                align-items: center;
+                padding: 0 14px;
+                gap: 22px;
+                color: var(--brass-1);
+                font-size: 11px;
+                z-index: 5;
+            }
+            #statusbar .status-item {
+                display: inline-flex;
+                align-items: baseline;
+                gap: 6px;
+            }
+            #statusbar .status-item .label {
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                color: var(--brass-2);
+                font-size: 10.5px;
+            }
+            #statusbar .status-item .value {
+                font-family: "JetBrains Mono", monospace;
+                color: #f4e4b8;
+                font-size: 11px;
+            }
+            #statusbar .status-item.pos {
+                margin-left: auto;
+            }
 
-        /* Drawer: rechte Pergament-Schriftrolle, slidet rein bei .open. */
-        .drawer {
-            position: absolute;
-            top: 116px;
-            right: 12px;
-            width: 300px;
-            max-height: calc(100vh - 140px);
-            overflow-y: auto;
-            font-size: 12px;
-            z-index: 5;
-            border-radius: 12px;
-            box-shadow: var(--shadow-deep);
-            padding: 24px 20px 18px 20px;
-            color: var(--parch-ink);
-            transition: transform 0.32s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.32s ease;
-            transform: translateX(0);
-            opacity: 1;
-        }
-        .drawer[hidden] {
-            display: block !important;
-            transform: translateX(110%);
-            opacity: 0;
-            pointer-events: none;
-        }
-        .drawer::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background:
-                radial-gradient(ellipse 60% 80% at 30% 20%, rgba(255, 250, 220, 0.6), transparent 70%),
-                radial-gradient(ellipse 70% 60% at 75% 85%, rgba(140, 90, 30, 0.18), transparent 70%),
-                linear-gradient(135deg, var(--parch-1) 0%, var(--parch-2) 60%, var(--parch-3) 100%);
-            background-blend-mode: normal, multiply, normal;
-            border-radius: inherit;
-            z-index: -1;
-        }
-        .drawer::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            border-radius: inherit;
-            pointer-events: none;
-            box-shadow:
-                inset 0 0 0 1px rgba(0, 0, 0, 0.55),
-                inset 0 0 0 5px var(--iron-1),
-                inset 0 0 0 6px rgba(0, 0, 0, 0.55),
-                inset 0 0 0 8px var(--brass-3),
-                inset 0 0 0 9px rgba(0, 0, 0, 0.4);
-            background:
-                radial-gradient(circle 4px at 12px 12px, #1a1410 0 60%, transparent 65%),
-                radial-gradient(circle 4px at calc(100% - 12px) 12px, #1a1410 0 60%, transparent 65%),
-                radial-gradient(circle 4px at 12px calc(100% - 12px), #1a1410 0 60%, transparent 65%),
-                radial-gradient(circle 4px at calc(100% - 12px) calc(100% - 12px), #1a1410 0 60%, transparent 65%);
-        }
-        .drawer > * { position: relative; z-index: 1; }
-        .drawer h2 {
-            font-family: 'Cinzel', Georgia, serif;
-            font-size: 17px;
-            font-weight: 700;
-            letter-spacing: 0.06em;
-            color: var(--parch-ink);
-            margin: 0 0 14px 0;
-            padding-bottom: 8px;
-            border-bottom: 1px solid var(--parch-edge);
-            text-shadow: 0 1px 0 rgba(255, 240, 200, 0.5);
-        }
-        .drawer .drawer-hint {
-            font-family: 'IM Fell English', Georgia, serif;
-            font-style: italic;
-            color: var(--parch-ink-soft);
-            font-size: 12px;
-            margin: 0 0 14px 0;
-        }
-        .journal-list {
-            max-height: 280px;
-            overflow-y: auto;
-            background: rgba(40, 25, 10, 0.06);
-            border: 1px solid var(--parch-edge);
-            border-radius: 2px;
-            padding: 6px 10px;
-            margin-bottom: 8px;
-        }
-        .journal-count {
-            font-family: 'Cinzel', Georgia, serif;
-            font-size: 10px;
-            letter-spacing: 0.1em;
-            color: var(--parch-ink-soft);
-            margin-bottom: 6px;
-            text-transform: uppercase;
-        }
-        .journal-entry {
-            font-family: 'IM Fell English', Georgia, serif;
-            font-size: 12px;
-            color: var(--parch-ink);
-            padding: 5px 0;
-            border-bottom: 1px solid rgba(40, 25, 10, 0.08);
-            line-height: 1.45;
-        }
-        .journal-entry:last-child { border-bottom: none; }
-        .journal-type {
-            display: inline-block;
-            font-family: 'Cinzel', Georgia, serif;
-            font-size: 9px;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            color: var(--brass-1);
-            margin-right: 6px;
-            opacity: 0.85;
-        }
-        .journal-age {
-            float: right;
-            font-size: 10px;
-            color: var(--parch-ink-soft);
-            font-style: italic;
-            margin-left: 6px;
-        }
-        .journal-empty {
-            color: var(--parch-ink-soft);
-            font-style: italic;
-            font-size: 12px;
-            text-align: center;
-            padding: 14px 0;
-        }
-        .drawer-close {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            background: var(--iron-2);
-            border: 1px solid var(--brass-3);
-            color: var(--brass-1);
-            font-size: 16px;
-            font-family: serif;
-            padding: 0 8px;
-            cursor: pointer;
-            border-radius: 2px;
-            line-height: 1.5;
-            z-index: 2;
-        }
-        .drawer-close:hover { color: #fbe9b8; }
-        .drawer .section { margin-bottom: 16px; }
-        .drawer .section:last-child { margin-bottom: 0; }
-        .drawer h3 {
-            font-family: 'Cinzel', Georgia, serif;
-            font-size: 11px;
-            margin: 0 0 8px 0;
-            color: var(--parch-ink-soft);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            font-weight: 600;
-            border-bottom: 1px solid var(--parch-edge);
-            padding-bottom: 4px;
-        }
-        .drawer .row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 3px;
-        }
-        .drawer .row .label {
-            color: var(--parch-ink-faded);
-            font-size: 11px;
-            font-family: 'IM Fell English', Georgia, serif;
-            font-style: italic;
-        }
-        .drawer .row .value {
-            color: var(--parch-ink);
-            font-size: 11px;
-            font-family: 'JetBrains Mono', monospace;
-        }
-        .drawer .emotion {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-bottom: 4px;
-        }
-        .drawer .emotion .name {
-            width: 60px;
-            font-size: 10px;
-            color: var(--parch-ink-soft);
-            text-transform: capitalize;
-            font-family: 'IM Fell English', Georgia, serif;
-        }
-        .drawer .emotion .bar {
-            flex: 1;
-            height: 8px;
-            background: rgba(40, 25, 10, 0.18);
-            border-radius: 2px;
-            overflow: hidden;
-            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
-        }
-        .drawer .emotion .bar > div {
-            height: 100%;
-            width: 0%;
-            transition: width 250ms ease-out;
-            box-shadow: 0 0 4px currentColor;
-        }
-        .drawer .emotion .value {
-            width: 30px;
-            text-align: right;
-            font-size: 10px;
-            color: var(--parch-ink-faded);
-            font-family: 'JetBrains Mono', monospace;
-        }
-        .drawer .emotion.joy    .bar > div { background: var(--joy);    color: var(--joy);    }
-        .drawer .emotion.awe    .bar > div { background: var(--awe);    color: var(--awe);    }
-        .drawer .emotion.sorrow .bar > div { background: var(--sorrow); color: var(--sorrow); }
-        .drawer .emotion.hope   .bar > div { background: var(--hope);   color: var(--hope);   }
-        .drawer .emotion.peace  .bar > div { background: var(--peace);  color: var(--peace);  }
-        .drawer .emotion.chaos  .bar > div { background: var(--chaos);  color: var(--chaos);  }
-        .drawer .actions {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 5px;
-        }
-        .drawer .actions button {
-            background: linear-gradient(180deg, rgba(255, 235, 190, 0.4), rgba(180, 140, 80, 0.25));
-            color: var(--parch-ink);
-            border: 1px solid var(--brass-2);
-            padding: 6px 6px;
-            font-size: 11px;
-            font-family: 'Cinzel', Georgia, serif;
-            font-weight: 500;
-            letter-spacing: 0.04em;
-            cursor: pointer;
-            border-radius: 3px;
-            text-align: center;
-            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 240, 200, 0.4);
-        }
-        .drawer .actions button:hover {
-            background: linear-gradient(180deg, rgba(255, 245, 210, 0.6), rgba(200, 160, 100, 0.4));
-            border-color: var(--brass-1);
-        }
-        .drawer .actions button:active {
-            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
-            transform: translateY(1px);
-        }
-        .drawer .ability-row {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-bottom: 3px;
-            padding: 5px 8px;
-            background: rgba(40, 25, 10, 0.08);
-            border: 1px solid rgba(138, 106, 54, 0.4);
-            border-radius: 3px;
-            font-size: 11px;
-        }
-        .drawer .ability-row .name {
-            flex: 1;
-            font-family: 'JetBrains Mono', monospace;
-            color: var(--parch-ink);
-            font-size: 11px;
-        }
-        .drawer .ability-row .source {
-            font-size: 8.5px;
-            color: var(--parch-ink-faded);
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            font-family: 'Cinzel', Georgia, serif;
-        }
-        .drawer .ability-row.source-human    .source { color: var(--moss); }
-        .drawer .ability-row.source-nexus    .source { color: var(--violet-1); }
-        .drawer .ability-row.source-restored .source { color: var(--brass-2); }
-        .drawer .ability-row button {
-            background: linear-gradient(180deg, rgba(255, 235, 190, 0.5), rgba(180, 140, 80, 0.3));
-            color: var(--parch-ink);
-            border: 1px solid var(--brass-2);
-            padding: 1px 8px;
-            font-size: 12px;
-            cursor: pointer;
-            border-radius: 2px;
-            font-family: inherit;
-            line-height: 1;
-        }
-        .drawer .ability-row button:hover {
-            background: linear-gradient(180deg, rgba(255, 245, 210, 0.7), rgba(200, 160, 100, 0.5));
-        }
-        .drawer .ability-empty {
-            font-size: 11px;
-            color: var(--parch-ink-faded);
-            font-style: italic;
-            font-family: 'IM Fell English', Georgia, serif;
-        }
-        .drawer .tuning-row {
-            margin-bottom: 10px;
-        }
-        .drawer .tuning-row label {
-            display: flex;
-            justify-content: space-between;
-            font-size: 10px;
-            color: var(--parch-ink-soft);
-            margin-bottom: 2px;
-            font-family: 'IM Fell English', Georgia, serif;
-        }
-        .drawer .tuning-row label .v {
-            font-family: 'JetBrains Mono', monospace;
-            color: var(--parch-ink);
-        }
-        .drawer .tuning-row input[type="range"] {
-            width: 100%;
-            accent-color: var(--brass-1);
-        }
-        /* Ring 5: Spieler-Seele. Brass-getintetes <select>, passend zum
+            /* Drawer: rechte Pergament-Schriftrolle, slidet rein bei .open. */
+            .drawer {
+                position: absolute;
+                top: 116px;
+                right: 12px;
+                width: 300px;
+                max-height: calc(100vh - 140px);
+                overflow-y: auto;
+                font-size: 12px;
+                z-index: 5;
+                border-radius: 12px;
+                box-shadow: var(--shadow-deep);
+                padding: 24px 20px 18px 20px;
+                color: var(--parch-ink);
+                transition:
+                    transform 0.32s cubic-bezier(0.2, 0.7, 0.2, 1),
+                    opacity 0.32s ease;
+                transform: translateX(0);
+                opacity: 1;
+            }
+            .drawer[hidden] {
+                display: block !important;
+                transform: translateX(110%);
+                opacity: 0;
+                pointer-events: none;
+            }
+            .drawer::before {
+                content: "";
+                position: absolute;
+                inset: 0;
+                background:
+                    radial-gradient(ellipse 60% 80% at 30% 20%, rgba(255, 250, 220, 0.6), transparent 70%),
+                    radial-gradient(ellipse 70% 60% at 75% 85%, rgba(140, 90, 30, 0.18), transparent 70%),
+                    linear-gradient(135deg, var(--parch-1) 0%, var(--parch-2) 60%, var(--parch-3) 100%);
+                background-blend-mode: normal, multiply, normal;
+                border-radius: inherit;
+                z-index: -1;
+            }
+            .drawer::after {
+                content: "";
+                position: absolute;
+                inset: 0;
+                border-radius: inherit;
+                pointer-events: none;
+                box-shadow:
+                    inset 0 0 0 1px rgba(0, 0, 0, 0.55),
+                    inset 0 0 0 5px var(--iron-1),
+                    inset 0 0 0 6px rgba(0, 0, 0, 0.55),
+                    inset 0 0 0 8px var(--brass-3),
+                    inset 0 0 0 9px rgba(0, 0, 0, 0.4);
+                background:
+                    radial-gradient(circle 4px at 12px 12px, #1a1410 0 60%, transparent 65%),
+                    radial-gradient(circle 4px at calc(100% - 12px) 12px, #1a1410 0 60%, transparent 65%),
+                    radial-gradient(circle 4px at 12px calc(100% - 12px), #1a1410 0 60%, transparent 65%),
+                    radial-gradient(circle 4px at calc(100% - 12px) calc(100% - 12px), #1a1410 0 60%, transparent 65%);
+            }
+            .drawer > * {
+                position: relative;
+                z-index: 1;
+            }
+            .drawer h2 {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 17px;
+                font-weight: 700;
+                letter-spacing: 0.06em;
+                color: var(--parch-ink);
+                margin: 0 0 14px 0;
+                padding-bottom: 8px;
+                border-bottom: 1px solid var(--parch-edge);
+                text-shadow: 0 1px 0 rgba(255, 240, 200, 0.5);
+            }
+            .drawer .drawer-hint {
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                color: var(--parch-ink-soft);
+                font-size: 12px;
+                margin: 0 0 14px 0;
+            }
+            .journal-list {
+                max-height: 280px;
+                overflow-y: auto;
+                background: rgba(40, 25, 10, 0.06);
+                border: 1px solid var(--parch-edge);
+                border-radius: 2px;
+                padding: 6px 10px;
+                margin-bottom: 8px;
+            }
+            .journal-count {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10px;
+                letter-spacing: 0.1em;
+                color: var(--parch-ink-soft);
+                margin-bottom: 6px;
+                text-transform: uppercase;
+            }
+            .journal-entry {
+                font-family: "IM Fell English", Georgia, serif;
+                font-size: 12px;
+                color: var(--parch-ink);
+                padding: 5px 0;
+                border-bottom: 1px solid rgba(40, 25, 10, 0.08);
+                line-height: 1.45;
+            }
+            .journal-entry:last-child {
+                border-bottom: none;
+            }
+            .journal-type {
+                display: inline-block;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9px;
+                text-transform: uppercase;
+                letter-spacing: 0.12em;
+                color: var(--brass-1);
+                margin-right: 6px;
+                opacity: 0.85;
+            }
+            .journal-age {
+                float: right;
+                font-size: 10px;
+                color: var(--parch-ink-soft);
+                font-style: italic;
+                margin-left: 6px;
+            }
+            .journal-empty {
+                color: var(--parch-ink-soft);
+                font-style: italic;
+                font-size: 12px;
+                text-align: center;
+                padding: 14px 0;
+            }
+            .drawer-close {
+                position: absolute;
+                top: 8px;
+                right: 8px;
+                background: var(--iron-2);
+                border: 1px solid var(--brass-3);
+                color: var(--brass-1);
+                font-size: 16px;
+                font-family: serif;
+                padding: 0 8px;
+                cursor: pointer;
+                border-radius: 2px;
+                line-height: 1.5;
+                z-index: 2;
+            }
+            .drawer-close:hover {
+                color: #fbe9b8;
+            }
+            .drawer .section {
+                margin-bottom: 16px;
+            }
+            .drawer .section:last-child {
+                margin-bottom: 0;
+            }
+            .drawer h3 {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 11px;
+                margin: 0 0 8px 0;
+                color: var(--parch-ink-soft);
+                text-transform: uppercase;
+                letter-spacing: 2px;
+                font-weight: 600;
+                border-bottom: 1px solid var(--parch-edge);
+                padding-bottom: 4px;
+            }
+            .drawer .row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 3px;
+            }
+            .drawer .row .label {
+                color: var(--parch-ink-faded);
+                font-size: 11px;
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+            }
+            .drawer .row .value {
+                color: var(--parch-ink);
+                font-size: 11px;
+                font-family: "JetBrains Mono", monospace;
+            }
+            .drawer .emotion {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                margin-bottom: 4px;
+            }
+            .drawer .emotion .name {
+                width: 60px;
+                font-size: 10px;
+                color: var(--parch-ink-soft);
+                text-transform: capitalize;
+                font-family: "IM Fell English", Georgia, serif;
+            }
+            .drawer .emotion .bar {
+                flex: 1;
+                height: 8px;
+                background: rgba(40, 25, 10, 0.18);
+                border-radius: 2px;
+                overflow: hidden;
+                box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
+            }
+            .drawer .emotion .bar > div {
+                height: 100%;
+                width: 0%;
+                transition: width 250ms ease-out;
+                box-shadow: 0 0 4px currentColor;
+            }
+            .drawer .emotion .value {
+                width: 30px;
+                text-align: right;
+                font-size: 10px;
+                color: var(--parch-ink-faded);
+                font-family: "JetBrains Mono", monospace;
+            }
+            .drawer .emotion.joy .bar > div {
+                background: var(--joy);
+                color: var(--joy);
+            }
+            .drawer .emotion.awe .bar > div {
+                background: var(--awe);
+                color: var(--awe);
+            }
+            .drawer .emotion.sorrow .bar > div {
+                background: var(--sorrow);
+                color: var(--sorrow);
+            }
+            .drawer .emotion.hope .bar > div {
+                background: var(--hope);
+                color: var(--hope);
+            }
+            .drawer .emotion.peace .bar > div {
+                background: var(--peace);
+                color: var(--peace);
+            }
+            .drawer .emotion.chaos .bar > div {
+                background: var(--chaos);
+                color: var(--chaos);
+            }
+            .drawer .actions {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 5px;
+            }
+            .drawer .actions button {
+                background: linear-gradient(180deg, rgba(255, 235, 190, 0.4), rgba(180, 140, 80, 0.25));
+                color: var(--parch-ink);
+                border: 1px solid var(--brass-2);
+                padding: 6px 6px;
+                font-size: 11px;
+                font-family: "Cinzel", Georgia, serif;
+                font-weight: 500;
+                letter-spacing: 0.04em;
+                cursor: pointer;
+                border-radius: 3px;
+                text-align: center;
+                box-shadow:
+                    0 1px 0 rgba(0, 0, 0, 0.2),
+                    inset 0 1px 0 rgba(255, 240, 200, 0.4);
+            }
+            .drawer .actions button:hover {
+                background: linear-gradient(180deg, rgba(255, 245, 210, 0.6), rgba(200, 160, 100, 0.4));
+                border-color: var(--brass-1);
+            }
+            .drawer .actions button:active {
+                box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+                transform: translateY(1px);
+            }
+            .drawer .ability-row {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                margin-bottom: 3px;
+                padding: 5px 8px;
+                background: rgba(40, 25, 10, 0.08);
+                border: 1px solid rgba(138, 106, 54, 0.4);
+                border-radius: 3px;
+                font-size: 11px;
+            }
+            .drawer .ability-row .name {
+                flex: 1;
+                font-family: "JetBrains Mono", monospace;
+                color: var(--parch-ink);
+                font-size: 11px;
+            }
+            .drawer .ability-row .source {
+                font-size: 8.5px;
+                color: var(--parch-ink-faded);
+                text-transform: uppercase;
+                letter-spacing: 0.8px;
+                font-family: "Cinzel", Georgia, serif;
+            }
+            .drawer .ability-row.source-human .source {
+                color: var(--moss);
+            }
+            .drawer .ability-row.source-nexus .source {
+                color: var(--violet-1);
+            }
+            .drawer .ability-row.source-restored .source {
+                color: var(--brass-2);
+            }
+            .drawer .ability-row button {
+                background: linear-gradient(180deg, rgba(255, 235, 190, 0.5), rgba(180, 140, 80, 0.3));
+                color: var(--parch-ink);
+                border: 1px solid var(--brass-2);
+                padding: 1px 8px;
+                font-size: 12px;
+                cursor: pointer;
+                border-radius: 2px;
+                font-family: inherit;
+                line-height: 1;
+            }
+            .drawer .ability-row button:hover {
+                background: linear-gradient(180deg, rgba(255, 245, 210, 0.7), rgba(200, 160, 100, 0.5));
+            }
+            .drawer .ability-empty {
+                font-size: 11px;
+                color: var(--parch-ink-faded);
+                font-style: italic;
+                font-family: "IM Fell English", Georgia, serif;
+            }
+            .drawer .tuning-row {
+                margin-bottom: 10px;
+            }
+            .drawer .tuning-row label {
+                display: flex;
+                justify-content: space-between;
+                font-size: 10px;
+                color: var(--parch-ink-soft);
+                margin-bottom: 2px;
+                font-family: "IM Fell English", Georgia, serif;
+            }
+            .drawer .tuning-row label .v {
+                font-family: "JetBrains Mono", monospace;
+                color: var(--parch-ink);
+            }
+            .drawer .tuning-row input[type="range"] {
+                width: 100%;
+                accent-color: var(--brass-1);
+            }
+            /* Ring 5: Spieler-Seele. Brass-getintetes <select>, passend zum
            Drawer-Pergament-Look. */
-        .drawer .soul-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 4px;
-        }
-        .drawer .soul-row label {
-            font-family: 'Cinzel', Georgia, serif;
-            font-size: 11px;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: var(--parch-ink-soft);
-            min-width: 44px;
-        }
-        .drawer .soul-row select {
-            flex: 1;
-            background: linear-gradient(180deg, rgba(255, 235, 190, 0.5), rgba(180, 140, 80, 0.3));
-            color: var(--parch-ink);
-            border: 1px solid var(--brass-2);
-            border-radius: 3px;
-            padding: 5px 8px;
-            font-family: 'Cinzel', Georgia, serif;
-            font-size: 12px;
-            letter-spacing: 0.04em;
-            cursor: pointer;
-            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 240, 200, 0.4);
-        }
-        .drawer .soul-row select:hover {
-            background: linear-gradient(180deg, rgba(255, 245, 210, 0.6), rgba(200, 160, 100, 0.4));
-            border-color: var(--brass-1);
-        }
-        .drawer .soul-row select:focus {
-            outline: 1px solid var(--violet-1);
-            outline-offset: 1px;
-        }
-        /* Ring 6.5 — Hotbar-Belegungs-Editor im Spieler-Drawer */
-        .drawer .hotbar-config-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 4px;
-        }
-        .drawer .hotbar-config-row .num {
-            display: inline-block;
-            min-width: 18px;
-            text-align: center;
-            font-family: 'Cinzel', Georgia, serif;
-            color: var(--brass-1);
-            font-weight: 600;
-            font-size: 11px;
-        }
-        .drawer .hotbar-config-row select {
-            flex: 1;
-            background: linear-gradient(180deg, rgba(255, 235, 190, 0.4), rgba(180, 140, 80, 0.25));
-            color: var(--parch-ink);
-            border: 1px solid var(--brass-2);
-            border-radius: 3px;
-            padding: 3px 6px;
-            font-family: 'Cinzel', Georgia, serif;
-            font-size: 11px;
-            cursor: pointer;
-        }
-        .drawer .hotbar-config-row select:hover {
-            border-color: var(--brass-1);
-        }
-        /* Ring 6.6 — Werkstatt-Editor */
-        #workshop-list { display: flex; flex-direction: column; gap: 3px; max-height: 160px; overflow-y: auto; }
-        .workshop-list-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 4px 8px;
-            background: rgba(40, 25, 10, 0.08);
-            border: 1px solid rgba(138, 106, 54, 0.4);
-            border-radius: 3px;
-            cursor: pointer;
-            font-family: 'Cinzel', Georgia, serif;
-            font-size: 11px;
-            color: var(--parch-ink);
-        }
-        .workshop-list-row:hover { background: rgba(40, 25, 10, 0.18); }
-        .workshop-list-row.selected {
-            background: linear-gradient(180deg, rgba(255, 235, 190, 0.5), rgba(180, 140, 80, 0.3));
-            border-color: var(--violet-1);
-        }
-        .workshop-list-row .badge {
-            font-size: 9px;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            color: var(--parch-ink-faded);
-        }
-        .workshop-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
-        .workshop-header h3 { margin: 0; padding: 0; border: none; }
-        .workshop-status { font-size: 10px; color: var(--parch-ink-faded); font-family: 'IM Fell English', Georgia, serif; font-style: italic; }
-        .workshop-parts { max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
-        .workshop-empty { font-size: 11px; color: var(--parch-ink-faded); font-style: italic; padding: 6px 0; }
-        .workshop-part-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr 28px 22px;
-            gap: 4px;
-            align-items: center;
-            padding: 4px;
-            background: rgba(40, 25, 10, 0.06);
-            border: 1px solid rgba(138, 106, 54, 0.3);
-            border-radius: 3px;
-        }
-        .workshop-part-row select,
-        .workshop-part-row input[type="color"] {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 10px;
-            padding: 2px 4px;
-            background: rgba(255, 235, 190, 0.3);
-            border: 1px solid var(--brass-3);
-            border-radius: 2px;
-            min-width: 0;
-        }
-        .workshop-part-row input[type="color"] { width: 28px; height: 22px; padding: 0; cursor: pointer; }
-        .workshop-part-row .workshop-xyz {
-            grid-column: 1 / -1;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 2px 6px;
-        }
-        .workshop-tools {
-            margin: 6px 0 10px 0;
-            padding: 6px 8px;
-            background: rgba(40, 25, 10, 0.05);
-            border: 1px solid var(--parch-edge);
-            border-radius: 2px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
-            align-items: center;
-        }
-        .workshop-tools-title {
-            font-family: 'Cinzel', Georgia, serif;
-            font-size: 9px;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            color: var(--parch-ink-soft);
-            margin-right: 4px;
-        }
-        .workshop-tool-chip {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 10px;
-            padding: 1px 6px;
-            background: rgba(255, 235, 190, 0.3);
-            border: 1px solid var(--brass-3);
-            border-radius: 2px;
-            color: var(--parch-ink);
-        }
-        .workshop-opchain {
-            grid-column: 1 / -1;
-            margin-top: 3px;
-            padding: 4px 6px;
-            background: rgba(40, 25, 10, 0.04);
-            border-top: 1px solid rgba(40, 25, 10, 0.08);
-            font-size: 10px;
-        }
-        .workshop-opchain-header {
-            font-family: 'IM Fell English', Georgia, serif;
-            color: var(--parch-ink-soft);
-            margin-bottom: 3px;
-            font-style: italic;
-        }
-        .workshop-opchain-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 3px;
-            margin-bottom: 4px;
-        }
-        .workshop-op {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 9px;
-            padding: 1px 4px;
-            background: rgba(255, 235, 190, 0.25);
-            border: 1px solid var(--brass-3);
-            border-radius: 2px;
-            color: var(--parch-ink);
-        }
-        .workshop-opchain-apply {
-            display: flex;
-            gap: 4px;
-            align-items: center;
-        }
-        .workshop-op-tool {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 9px;
-            flex: 1;
-            min-width: 0;
-            padding: 1px 3px;
-            background: rgba(255, 235, 190, 0.3);
-            border: 1px solid var(--brass-3);
-            border-radius: 2px;
-        }
-        .workshop-op-apply {
-            font-family: 'Cinzel', Georgia, serif;
-            font-size: 9px;
-            padding: 2px 6px;
-            background: var(--brass-2);
-            color: var(--parch-ink);
-            border: 1px solid var(--brass-3);
-            border-radius: 2px;
-            cursor: pointer;
-        }
-        .workshop-op-apply:hover { background: var(--brass-1); }
-        .workshop-op-empty {
-            font-family: 'IM Fell English', Georgia, serif;
-            font-style: italic;
-            font-size: 10px;
-            color: var(--parch-ink-soft);
-        }
-        .workshop-tags {
-            margin-top: 10px;
-            padding: 8px 10px;
-            background: rgba(40, 25, 10, 0.05);
-            border: 1px solid var(--parch-edge);
-            border-radius: 2px;
-        }
-        .workshop-tags-title {
-            font-family: 'Cinzel', Georgia, serif;
-            font-size: 10px;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            color: var(--parch-ink-soft);
-            margin-bottom: 5px;
-        }
-        .workshop-tag-row {
-            display: grid;
-            grid-template-columns: 1fr 50px 32px;
-            gap: 6px;
-            align-items: center;
-            font-family: 'IM Fell English', Georgia, serif;
-            font-size: 11px;
-            padding: 1px 0;
-            color: var(--parch-ink);
-        }
-        .workshop-tag-bar {
-            color: var(--brass-1);
-            letter-spacing: 0.04em;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 11px;
-        }
-        .workshop-tag-num {
-            color: var(--parch-ink-soft);
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 9px;
-            text-align: right;
-        }
-        .workshop-connections {
-            margin-top: 10px;
-            padding: 8px 10px;
-            background: rgba(40, 25, 10, 0.05);
-            border: 1px solid var(--parch-edge);
-            border-radius: 2px;
-        }
-        .workshop-conn-row {
-            display: grid;
-            grid-template-columns: 1fr 50px 32px 18px;
-            gap: 4px;
-            align-items: center;
-            font-family: 'IM Fell English', Georgia, serif;
-            font-size: 11px;
-            padding: 2px 0;
-            color: var(--parch-ink);
-        }
-        .workshop-conn-label {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 10px;
-        }
-        .workshop-conn-bar {
-            color: var(--brass-1);
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 11px;
-        }
-        .workshop-conn-bar.workshop-conn-weak {
-            color: #b85050;
-        }
-        .workshop-conn-num {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 9px;
-            color: var(--parch-ink-soft);
-            text-align: right;
-        }
-        .workshop-conn-del {
-            font-size: 10px;
-            padding: 0 4px;
-            background: var(--iron-2);
-            color: var(--brass-1);
-            border: 1px solid var(--brass-3);
-            border-radius: 2px;
-            cursor: pointer;
-        }
-        .workshop-conn-add {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr 64px;
-            gap: 4px;
-            margin-top: 6px;
-        }
-        .workshop-conn-type,
-        .workshop-conn-part {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 9px;
-            padding: 2px 4px;
-            background: rgba(255, 235, 190, 0.3);
-            border: 1px solid var(--brass-3);
-            border-radius: 2px;
-        }
-        .workshop-conn-addbtn {
-            font-family: 'Cinzel', Georgia, serif;
-            font-size: 9px;
-            padding: 2px 6px;
-            background: var(--brass-2);
-            color: var(--parch-ink);
-            border: 1px solid var(--brass-3);
-            border-radius: 2px;
-            cursor: pointer;
-        }
-        .workshop-conn-addbtn:hover { background: var(--brass-1); }
-        .workshop-tool-recursion {
-            margin-top: 10px;
-            padding: 8px 10px;
-            background: rgba(40, 25, 10, 0.05);
-            border: 1px solid var(--parch-edge);
-            border-radius: 2px;
-        }
-        .workshop-tool-registered {
-            font-family: 'IM Fell English', Georgia, serif;
-            font-style: italic;
-            font-size: 11px;
-            color: var(--brass-1);
-            padding: 4px 0;
-        }
-        .workshop-tool-form {
-            display: grid;
-            grid-template-columns: 1.4fr 1fr 1.2fr;
-            gap: 4px;
-            margin-top: 6px;
-        }
-        .workshop-tool-opname,
-        .workshop-tool-opclass {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 10px;
-            padding: 2px 4px;
-            background: rgba(255, 235, 190, 0.3);
-            border: 1px solid var(--brass-3);
-            border-radius: 2px;
-        }
-        .workshop-tool-register {
-            font-family: 'Cinzel', Georgia, serif;
-            font-size: 9px;
-            padding: 2px 6px;
-            background: var(--brass-2);
-            color: var(--parch-ink);
-            border: 1px solid var(--brass-3);
-            border-radius: 2px;
-            cursor: pointer;
-        }
-        .workshop-tool-register:hover { background: var(--brass-1); }
-        .workshop-spatial-title {
-            margin-top: 8px;
-            padding-top: 6px;
-            border-top: 1px dashed rgba(40, 25, 10, 0.18);
-            color: var(--violet-1, var(--brass-1));
-        }
-        .workshop-spatial-row .workshop-tag-bar {
-            color: var(--violet-1, var(--brass-1));
-        }
-        .workshop-spatial-row .workshop-tag-num {
-            font-weight: 600;
-        }
-        .workshop-tags-empty {
-            font-family: 'IM Fell English', Georgia, serif;
-            font-style: italic;
-            font-size: 11px;
-            color: var(--parch-ink-soft);
-            padding: 4px 0;
-        }
-        .workshop-tags-hint {
-            margin-top: 6px;
-            padding-top: 6px;
-            border-top: 1px solid rgba(40, 25, 10, 0.1);
-            font-family: 'IM Fell English', Georgia, serif;
-            font-style: italic;
-            font-size: 10px;
-            color: var(--parch-ink-soft);
-            line-height: 1.3;
-        }
-        .workshop-field { display: flex; flex-direction: column; gap: 1px; }
-        .workshop-field span {
-            font-size: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.6px;
-            color: var(--parch-ink-faded);
-            font-family: 'Cinzel', Georgia, serif;
-        }
-        .workshop-field input[type="number"] {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 10px;
-            padding: 1px 4px;
-            background: rgba(255, 235, 190, 0.25);
-            border: 1px solid var(--brass-3);
-            border-radius: 2px;
-            color: var(--parch-ink);
-            min-width: 0;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        .workshop-del {
-            background: rgba(138, 30, 30, 0.4);
-            border: 1px solid #8a2222;
-            color: #f8d8d8;
-            width: 22px;
-            height: 22px;
-            border-radius: 2px;
-            cursor: pointer;
-            font-family: 'Cinzel', Georgia, serif;
-            font-size: 14px;
-            line-height: 1;
-            padding: 0;
-        }
-        .workshop-del:hover { background: rgba(138, 30, 30, 0.7); }
-        .workshop-del:disabled { opacity: 0.3; cursor: not-allowed; }
-        .workshop-actions {
-            display: flex;
-            gap: 4px;
-            margin-top: 8px;
-            flex-wrap: wrap;
-        }
-        .workshop-actions button {
-            background: linear-gradient(180deg, rgba(255, 235, 190, 0.4), rgba(180, 140, 80, 0.25));
-            color: var(--parch-ink);
-            border: 1px solid var(--brass-2);
-            padding: 4px 10px;
-            font-family: 'Cinzel', Georgia, serif;
-            font-size: 10px;
-            letter-spacing: 0.04em;
-            cursor: pointer;
-            border-radius: 2px;
-        }
-        .workshop-actions button:hover { border-color: var(--brass-1); }
-        .workshop-actions button.workshop-danger { background: linear-gradient(180deg, rgba(180, 60, 60, 0.4), rgba(120, 30, 30, 0.5)); border-color: #8a2222; color: #f8d8d8; }
-        /* #help-toggle / #help-overlay sind in V2 weg — Hilfe ist ein Drawer-
+            .drawer .soul-row {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                margin-bottom: 4px;
+            }
+            .drawer .soul-row label {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 11px;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                color: var(--parch-ink-soft);
+                min-width: 44px;
+            }
+            .drawer .soul-row select {
+                flex: 1;
+                background: linear-gradient(180deg, rgba(255, 235, 190, 0.5), rgba(180, 140, 80, 0.3));
+                color: var(--parch-ink);
+                border: 1px solid var(--brass-2);
+                border-radius: 3px;
+                padding: 5px 8px;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 12px;
+                letter-spacing: 0.04em;
+                cursor: pointer;
+                box-shadow:
+                    0 1px 0 rgba(0, 0, 0, 0.2),
+                    inset 0 1px 0 rgba(255, 240, 200, 0.4);
+            }
+            .drawer .soul-row select:hover {
+                background: linear-gradient(180deg, rgba(255, 245, 210, 0.6), rgba(200, 160, 100, 0.4));
+                border-color: var(--brass-1);
+            }
+            .drawer .soul-row select:focus {
+                outline: 1px solid var(--violet-1);
+                outline-offset: 1px;
+            }
+            /* Ring 6.5 — Hotbar-Belegungs-Editor im Spieler-Drawer */
+            .drawer .hotbar-config-row {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 4px;
+            }
+            .drawer .hotbar-config-row .num {
+                display: inline-block;
+                min-width: 18px;
+                text-align: center;
+                font-family: "Cinzel", Georgia, serif;
+                color: var(--brass-1);
+                font-weight: 600;
+                font-size: 11px;
+            }
+            .drawer .hotbar-config-row select {
+                flex: 1;
+                background: linear-gradient(180deg, rgba(255, 235, 190, 0.4), rgba(180, 140, 80, 0.25));
+                color: var(--parch-ink);
+                border: 1px solid var(--brass-2);
+                border-radius: 3px;
+                padding: 3px 6px;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 11px;
+                cursor: pointer;
+            }
+            .drawer .hotbar-config-row select:hover {
+                border-color: var(--brass-1);
+            }
+            /* Ring 6.6 — Werkstatt-Editor */
+            #workshop-list {
+                display: flex;
+                flex-direction: column;
+                gap: 3px;
+                max-height: 160px;
+                overflow-y: auto;
+            }
+            .workshop-list-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 4px 8px;
+                background: rgba(40, 25, 10, 0.08);
+                border: 1px solid rgba(138, 106, 54, 0.4);
+                border-radius: 3px;
+                cursor: pointer;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 11px;
+                color: var(--parch-ink);
+            }
+            .workshop-list-row:hover {
+                background: rgba(40, 25, 10, 0.18);
+            }
+            .workshop-list-row.selected {
+                background: linear-gradient(180deg, rgba(255, 235, 190, 0.5), rgba(180, 140, 80, 0.3));
+                border-color: var(--violet-1);
+            }
+            .workshop-list-row .badge {
+                font-size: 9px;
+                text-transform: uppercase;
+                letter-spacing: 0.8px;
+                color: var(--parch-ink-faded);
+            }
+            .workshop-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: baseline;
+                margin-bottom: 6px;
+            }
+            .workshop-header h3 {
+                margin: 0;
+                padding: 0;
+                border: none;
+            }
+            .workshop-status {
+                font-size: 10px;
+                color: var(--parch-ink-faded);
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+            }
+            .workshop-parts {
+                max-height: 280px;
+                overflow-y: auto;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .workshop-empty {
+                font-size: 11px;
+                color: var(--parch-ink-faded);
+                font-style: italic;
+                padding: 6px 0;
+            }
+            .workshop-part-row {
+                display: grid;
+                grid-template-columns: 1fr 1fr 28px 22px;
+                gap: 4px;
+                align-items: center;
+                padding: 4px;
+                background: rgba(40, 25, 10, 0.06);
+                border: 1px solid rgba(138, 106, 54, 0.3);
+                border-radius: 3px;
+            }
+            .workshop-part-row select,
+            .workshop-part-row input[type="color"] {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 10px;
+                padding: 2px 4px;
+                background: rgba(255, 235, 190, 0.3);
+                border: 1px solid var(--brass-3);
+                border-radius: 2px;
+                min-width: 0;
+            }
+            .workshop-part-row input[type="color"] {
+                width: 28px;
+                height: 22px;
+                padding: 0;
+                cursor: pointer;
+            }
+            .workshop-part-row .workshop-xyz {
+                grid-column: 1 / -1;
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 2px 6px;
+            }
+            .workshop-tools {
+                margin: 6px 0 10px 0;
+                padding: 6px 8px;
+                background: rgba(40, 25, 10, 0.05);
+                border: 1px solid var(--parch-edge);
+                border-radius: 2px;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 4px;
+                align-items: center;
+            }
+            .workshop-tools-title {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9px;
+                letter-spacing: 0.12em;
+                text-transform: uppercase;
+                color: var(--parch-ink-soft);
+                margin-right: 4px;
+            }
+            .workshop-tool-chip {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 10px;
+                padding: 1px 6px;
+                background: rgba(255, 235, 190, 0.3);
+                border: 1px solid var(--brass-3);
+                border-radius: 2px;
+                color: var(--parch-ink);
+            }
+            .workshop-opchain {
+                grid-column: 1 / -1;
+                margin-top: 3px;
+                padding: 4px 6px;
+                background: rgba(40, 25, 10, 0.04);
+                border-top: 1px solid rgba(40, 25, 10, 0.08);
+                font-size: 10px;
+            }
+            .workshop-opchain-header {
+                font-family: "IM Fell English", Georgia, serif;
+                color: var(--parch-ink-soft);
+                margin-bottom: 3px;
+                font-style: italic;
+            }
+            .workshop-opchain-list {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 3px;
+                margin-bottom: 4px;
+            }
+            .workshop-op {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 9px;
+                padding: 1px 4px;
+                background: rgba(255, 235, 190, 0.25);
+                border: 1px solid var(--brass-3);
+                border-radius: 2px;
+                color: var(--parch-ink);
+            }
+            .workshop-opchain-apply {
+                display: flex;
+                gap: 4px;
+                align-items: center;
+            }
+            .workshop-op-tool {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 9px;
+                flex: 1;
+                min-width: 0;
+                padding: 1px 3px;
+                background: rgba(255, 235, 190, 0.3);
+                border: 1px solid var(--brass-3);
+                border-radius: 2px;
+            }
+            .workshop-op-apply {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9px;
+                padding: 2px 6px;
+                background: var(--brass-2);
+                color: var(--parch-ink);
+                border: 1px solid var(--brass-3);
+                border-radius: 2px;
+                cursor: pointer;
+            }
+            .workshop-op-apply:hover {
+                background: var(--brass-1);
+            }
+            .workshop-op-empty {
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                font-size: 10px;
+                color: var(--parch-ink-soft);
+            }
+            .workshop-tags {
+                margin-top: 10px;
+                padding: 8px 10px;
+                background: rgba(40, 25, 10, 0.05);
+                border: 1px solid var(--parch-edge);
+                border-radius: 2px;
+            }
+            .workshop-tags-title {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10px;
+                letter-spacing: 0.12em;
+                text-transform: uppercase;
+                color: var(--parch-ink-soft);
+                margin-bottom: 5px;
+            }
+            .workshop-tag-row {
+                display: grid;
+                grid-template-columns: 1fr 50px 32px;
+                gap: 6px;
+                align-items: center;
+                font-family: "IM Fell English", Georgia, serif;
+                font-size: 11px;
+                padding: 1px 0;
+                color: var(--parch-ink);
+            }
+            .workshop-tag-bar {
+                color: var(--brass-1);
+                letter-spacing: 0.04em;
+                font-family: "JetBrains Mono", monospace;
+                font-size: 11px;
+            }
+            .workshop-tag-num {
+                color: var(--parch-ink-soft);
+                font-family: "JetBrains Mono", monospace;
+                font-size: 9px;
+                text-align: right;
+            }
+            .workshop-connections {
+                margin-top: 10px;
+                padding: 8px 10px;
+                background: rgba(40, 25, 10, 0.05);
+                border: 1px solid var(--parch-edge);
+                border-radius: 2px;
+            }
+            .workshop-conn-row {
+                display: grid;
+                grid-template-columns: 1fr 50px 32px 18px;
+                gap: 4px;
+                align-items: center;
+                font-family: "IM Fell English", Georgia, serif;
+                font-size: 11px;
+                padding: 2px 0;
+                color: var(--parch-ink);
+            }
+            .workshop-conn-label {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 10px;
+            }
+            .workshop-conn-bar {
+                color: var(--brass-1);
+                font-family: "JetBrains Mono", monospace;
+                font-size: 11px;
+            }
+            .workshop-conn-bar.workshop-conn-weak {
+                color: #b85050;
+            }
+            .workshop-conn-num {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 9px;
+                color: var(--parch-ink-soft);
+                text-align: right;
+            }
+            .workshop-conn-del {
+                font-size: 10px;
+                padding: 0 4px;
+                background: var(--iron-2);
+                color: var(--brass-1);
+                border: 1px solid var(--brass-3);
+                border-radius: 2px;
+                cursor: pointer;
+            }
+            .workshop-conn-add {
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr 64px;
+                gap: 4px;
+                margin-top: 6px;
+            }
+            .workshop-conn-type,
+            .workshop-conn-part {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 9px;
+                padding: 2px 4px;
+                background: rgba(255, 235, 190, 0.3);
+                border: 1px solid var(--brass-3);
+                border-radius: 2px;
+            }
+            .workshop-conn-addbtn {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9px;
+                padding: 2px 6px;
+                background: var(--brass-2);
+                color: var(--parch-ink);
+                border: 1px solid var(--brass-3);
+                border-radius: 2px;
+                cursor: pointer;
+            }
+            .workshop-conn-addbtn:hover {
+                background: var(--brass-1);
+            }
+            .workshop-tool-recursion {
+                margin-top: 10px;
+                padding: 8px 10px;
+                background: rgba(40, 25, 10, 0.05);
+                border: 1px solid var(--parch-edge);
+                border-radius: 2px;
+            }
+            .workshop-tool-registered {
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                font-size: 11px;
+                color: var(--brass-1);
+                padding: 4px 0;
+            }
+            .workshop-tool-form {
+                display: grid;
+                grid-template-columns: 1.4fr 1fr 1.2fr;
+                gap: 4px;
+                margin-top: 6px;
+            }
+            .workshop-tool-opname,
+            .workshop-tool-opclass {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 10px;
+                padding: 2px 4px;
+                background: rgba(255, 235, 190, 0.3);
+                border: 1px solid var(--brass-3);
+                border-radius: 2px;
+            }
+            .workshop-tool-register {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9px;
+                padding: 2px 6px;
+                background: var(--brass-2);
+                color: var(--parch-ink);
+                border: 1px solid var(--brass-3);
+                border-radius: 2px;
+                cursor: pointer;
+            }
+            .workshop-tool-register:hover {
+                background: var(--brass-1);
+            }
+            .workshop-spatial-title {
+                margin-top: 8px;
+                padding-top: 6px;
+                border-top: 1px dashed rgba(40, 25, 10, 0.18);
+                color: var(--violet-1, var(--brass-1));
+            }
+            .workshop-spatial-row .workshop-tag-bar {
+                color: var(--violet-1, var(--brass-1));
+            }
+            .workshop-spatial-row .workshop-tag-num {
+                font-weight: 600;
+            }
+            .workshop-tags-empty {
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                font-size: 11px;
+                color: var(--parch-ink-soft);
+                padding: 4px 0;
+            }
+            .workshop-tags-hint {
+                margin-top: 6px;
+                padding-top: 6px;
+                border-top: 1px solid rgba(40, 25, 10, 0.1);
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                font-size: 10px;
+                color: var(--parch-ink-soft);
+                line-height: 1.3;
+            }
+            .workshop-field {
+                display: flex;
+                flex-direction: column;
+                gap: 1px;
+            }
+            .workshop-field span {
+                font-size: 8px;
+                text-transform: uppercase;
+                letter-spacing: 0.6px;
+                color: var(--parch-ink-faded);
+                font-family: "Cinzel", Georgia, serif;
+            }
+            .workshop-field input[type="number"] {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 10px;
+                padding: 1px 4px;
+                background: rgba(255, 235, 190, 0.25);
+                border: 1px solid var(--brass-3);
+                border-radius: 2px;
+                color: var(--parch-ink);
+                min-width: 0;
+                width: 100%;
+                box-sizing: border-box;
+            }
+            .workshop-del {
+                background: rgba(138, 30, 30, 0.4);
+                border: 1px solid #8a2222;
+                color: #f8d8d8;
+                width: 22px;
+                height: 22px;
+                border-radius: 2px;
+                cursor: pointer;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 14px;
+                line-height: 1;
+                padding: 0;
+            }
+            .workshop-del:hover {
+                background: rgba(138, 30, 30, 0.7);
+            }
+            .workshop-del:disabled {
+                opacity: 0.3;
+                cursor: not-allowed;
+            }
+            .workshop-actions {
+                display: flex;
+                gap: 4px;
+                margin-top: 8px;
+                flex-wrap: wrap;
+            }
+            .workshop-actions button {
+                background: linear-gradient(180deg, rgba(255, 235, 190, 0.4), rgba(180, 140, 80, 0.25));
+                color: var(--parch-ink);
+                border: 1px solid var(--brass-2);
+                padding: 4px 10px;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10px;
+                letter-spacing: 0.04em;
+                cursor: pointer;
+                border-radius: 2px;
+            }
+            .workshop-actions button:hover {
+                border-color: var(--brass-1);
+            }
+            .workshop-actions button.workshop-danger {
+                background: linear-gradient(180deg, rgba(180, 60, 60, 0.4), rgba(120, 30, 30, 0.5));
+                border-color: #8a2222;
+                color: #f8d8d8;
+            }
+            /* #help-toggle / #help-overlay sind in V2 weg — Hilfe ist ein Drawer-
            Tab. Selektoren bleiben, falls jemand sie referenziert, sind aber
            im neuen DOM tot. */
-        #help-overlay {
-            position: absolute;
-            top: 5%; left: 50%; transform: translateX(-50%);
-            width: 90%;
-            max-width: 720px;
-            max-height: 85vh;
-            background:
-                radial-gradient(ellipse 60% 80% at 30% 20%, rgba(255, 250, 220, 0.6), transparent 70%),
-                radial-gradient(ellipse 70% 60% at 75% 85%, rgba(140, 90, 30, 0.18), transparent 70%),
-                linear-gradient(135deg, var(--parch-1) 0%, var(--parch-2) 60%, var(--parch-3) 100%);
-            color: var(--parch-ink);
-            z-index: 100;
-            padding: 28px 32px;
-            font-size: 13px;
-            overflow-y: auto;
-            border-radius: 12px;
-            box-shadow: var(--shadow-deep), inset 0 0 0 5px var(--iron-1), inset 0 0 0 7px var(--brass-3);
-        }
-        #help-overlay[hidden] { display: none; }
-        #help-overlay h2 {
-            margin: 0 0 16px 0;
-            font-size: 22px;
-            color: var(--parch-ink);
-            font-family: 'Cinzel', Georgia, serif;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-            text-shadow: 0 1px 0 rgba(255, 240, 200, 0.4);
-        }
-        #help-overlay > p {
-            font-family: 'IM Fell English', Georgia, serif;
-            font-style: italic;
-            color: var(--parch-ink-soft);
-        }
-        #help-overlay h3 {
-            margin: 18px 0 6px 0;
-            font-size: 11px;
-            color: var(--parch-ink-soft);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            font-family: 'Cinzel', Georgia, serif;
-            border-bottom: 1px solid var(--parch-edge);
-            padding-bottom: 3px;
-        }
-        #help-overlay .cmd {
-            display: block;
-            text-align: left;
-            background: rgba(40, 25, 10, 0.06);
-            color: var(--parch-ink);
-            border: 1px solid var(--parch-edge);
-            padding: 6px 12px;
-            margin-bottom: 3px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
-            cursor: pointer;
-            border-radius: 2px;
-            width: 100%;
-            max-width: 100%;
-        }
-        #help-overlay .cmd:hover {
-            background: rgba(40, 25, 10, 0.16);
-            border-color: var(--brass-2);
-        }
-        #help-overlay .close {
-            position: absolute;
-            top: 14px;
-            right: 14px;
-            background: var(--iron-2);
-            border: 1px solid var(--brass-3);
-            color: var(--brass-1);
-            font-size: 18px;
-            padding: 2px 10px;
-            cursor: pointer;
-            border-radius: 2px;
-            font-family: serif;
-        }
-        #help-overlay .close:hover { color: #fbe9b8; }
-    </style>
-</head>
-<body data-theme="tag">
-    <canvas id="world-canvas"></canvas>
-    <div id="fps"></div>
-    <div id="dialogue-box" aria-live="polite"></div>
-    <div id="build-mode-hud" aria-live="polite" hidden></div>
-    <div id="hotbar" role="toolbar" aria-label="Bauplan-Hotbar"></div>
-    <header id="topbar" class="hud-frame">
-        <div class="topbar-inner">
-            <div class="title">Anazh Realm <span class="version">v7.66</span> <span class="sub">— Das Ultiversum</span></div>
-            <nav class="tabs" role="tablist" aria-label="Hauptansichten">
-                <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">Welt</button>
-                <button class="tab" type="button" data-tab="kreaturen" role="tab">Kreaturen</button>
-                <button class="tab" type="button" data-tab="spieler" role="tab">Spieler</button>
-                <button class="tab" type="button" data-tab="faehigkeiten" role="tab">Fähigkeiten</button>
-                <button class="tab" type="button" data-tab="werkstatt" role="tab">Werkstatt</button>
-                <button class="tab" type="button" data-tab="einstellungen" role="tab">Einstellungen</button>
-                <button class="tab" type="button" data-tab="hilfe" role="tab">Hilfe</button>
-            </nav>
-            <div class="topbar-toggles">
-                <button id="theme-toggle" class="latch" type="button" aria-pressed="false" aria-label="Tag / Nacht">☀ Tag</button>
-                <button id="grok-voice-toggle" class="latch" type="button" aria-pressed="false" hidden>Stimme: aus</button>
-                <button id="anazh-symphony-toggle" class="latch" type="button" aria-pressed="false">Klang: aus</button>
-                <button id="camera-mode-toggle" class="latch" type="button" aria-pressed="false" aria-label="Kamera-Modus">Sicht: 1st</button>
+            #help-overlay {
+                position: absolute;
+                top: 5%;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 90%;
+                max-width: 720px;
+                max-height: 85vh;
+                background:
+                    radial-gradient(ellipse 60% 80% at 30% 20%, rgba(255, 250, 220, 0.6), transparent 70%),
+                    radial-gradient(ellipse 70% 60% at 75% 85%, rgba(140, 90, 30, 0.18), transparent 70%),
+                    linear-gradient(135deg, var(--parch-1) 0%, var(--parch-2) 60%, var(--parch-3) 100%);
+                color: var(--parch-ink);
+                z-index: 100;
+                padding: 28px 32px;
+                font-size: 13px;
+                overflow-y: auto;
+                border-radius: 12px;
+                box-shadow:
+                    var(--shadow-deep),
+                    inset 0 0 0 5px var(--iron-1),
+                    inset 0 0 0 7px var(--brass-3);
+            }
+            #help-overlay[hidden] {
+                display: none;
+            }
+            #help-overlay h2 {
+                margin: 0 0 16px 0;
+                font-size: 22px;
+                color: var(--parch-ink);
+                font-family: "Cinzel", Georgia, serif;
+                font-weight: 700;
+                letter-spacing: 0.05em;
+                text-shadow: 0 1px 0 rgba(255, 240, 200, 0.4);
+            }
+            #help-overlay > p {
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                color: var(--parch-ink-soft);
+            }
+            #help-overlay h3 {
+                margin: 18px 0 6px 0;
+                font-size: 11px;
+                color: var(--parch-ink-soft);
+                text-transform: uppercase;
+                letter-spacing: 2px;
+                font-family: "Cinzel", Georgia, serif;
+                border-bottom: 1px solid var(--parch-edge);
+                padding-bottom: 3px;
+            }
+            #help-overlay .cmd {
+                display: block;
+                text-align: left;
+                background: rgba(40, 25, 10, 0.06);
+                color: var(--parch-ink);
+                border: 1px solid var(--parch-edge);
+                padding: 6px 12px;
+                margin-bottom: 3px;
+                font-family: "JetBrains Mono", monospace;
+                font-size: 12px;
+                cursor: pointer;
+                border-radius: 2px;
+                width: 100%;
+                max-width: 100%;
+            }
+            #help-overlay .cmd:hover {
+                background: rgba(40, 25, 10, 0.16);
+                border-color: var(--brass-2);
+            }
+            #help-overlay .close {
+                position: absolute;
+                top: 14px;
+                right: 14px;
+                background: var(--iron-2);
+                border: 1px solid var(--brass-3);
+                color: var(--brass-1);
+                font-size: 18px;
+                padding: 2px 10px;
+                cursor: pointer;
+                border-radius: 2px;
+                font-family: serif;
+            }
+            #help-overlay .close:hover {
+                color: #fbe9b8;
+            }
+        </style>
+    </head>
+    <body data-theme="tag">
+        <canvas id="world-canvas"></canvas>
+        <div id="fps"></div>
+        <div id="dialogue-box" aria-live="polite"></div>
+        <div id="build-mode-hud" aria-live="polite" hidden></div>
+        <div id="hotbar" role="toolbar" aria-label="Bauplan-Hotbar"></div>
+        <header id="topbar" class="hud-frame">
+            <div class="topbar-inner">
+                <div class="title">
+                    Anazh Realm <span class="version">v7.66</span> <span class="sub">— Das Ultiversum</span>
+                </div>
+                <nav class="tabs" role="tablist" aria-label="Hauptansichten">
+                    <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">
+                        Welt
+                    </button>
+                    <button class="tab" type="button" data-tab="kreaturen" role="tab">Kreaturen</button>
+                    <button class="tab" type="button" data-tab="spieler" role="tab">Spieler</button>
+                    <button class="tab" type="button" data-tab="faehigkeiten" role="tab">Fähigkeiten</button>
+                    <button class="tab" type="button" data-tab="werkstatt" role="tab">Werkstatt</button>
+                    <button class="tab" type="button" data-tab="einstellungen" role="tab">Einstellungen</button>
+                    <button class="tab" type="button" data-tab="hilfe" role="tab">Hilfe</button>
+                </nav>
+                <div class="topbar-toggles">
+                    <button id="theme-toggle" class="latch" type="button" aria-pressed="false" aria-label="Tag / Nacht">
+                        ☀ Tag
+                    </button>
+                    <button id="grok-voice-toggle" class="latch" type="button" aria-pressed="false" hidden>
+                        Stimme: aus
+                    </button>
+                    <button id="anazh-symphony-toggle" class="latch" type="button" aria-pressed="false">
+                        Klang: aus
+                    </button>
+                    <button
+                        id="camera-mode-toggle"
+                        class="latch"
+                        type="button"
+                        aria-pressed="false"
+                        aria-label="Kamera-Modus"
+                    >
+                        Sicht: 1st
+                    </button>
+                </div>
             </div>
-        </div>
-    </header>
-    <div id="statusbar" class="hud-frame">
-        <span class="status-item"><span class="label">Wetter</span><span class="value" id="status-weather">—</span></span>
-        <span class="status-item"><span class="label">Slug</span><span class="value" id="status-slug">—</span></span>
-        <span class="status-item"><span class="label">FPS</span><span class="value" id="status-fps">—</span></span>
-        <span class="status-item"><span class="label">Kreaturen</span><span class="value" id="status-creatures">—</span></span>
-        <span class="status-item"><span class="label">Seele</span><span class="value" id="status-soul">—</span></span>
-        <span class="status-item"><span class="label">Bauten</span><span class="value" id="status-architectures">—</span></span>
-        <span class="status-item pos"><span class="label">Position</span><span class="value" id="status-position">—</span></span>
-    </div>
-    <aside class="drawer open" data-drawer="welt" aria-label="Welt-Panel">
-        <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
-        <h2>Welt</h2>
-        <section class="section" id="world-info-section">
-            <h3>Diese Welt</h3>
-            <div id="world-info" class="drawer-hint" aria-live="polite">…</div>
-            <div class="actions">
-                <button type="button" id="world-export">Welt teilen…</button>
-                <button type="button" id="world-import">Welt empfangen…</button>
-            </div>
-        </section>
-        <section class="section" id="world-picker-section">
-            <h3>Andere Welten</h3>
-            <div id="world-picker-list" class="drawer-hint" aria-live="polite">Nur diese eine Welt im Speicher.</div>
-            <div class="actions">
-                <button type="button" id="world-new">Neue Welt…</button>
-            </div>
-        </section>
-        <section class="section" id="world-journal-section">
-            <h3>Tagebuch</h3>
-            <div id="world-journal-count" class="journal-count">—</div>
-            <div id="world-journal-list" class="journal-list" aria-live="polite"></div>
-        </section>
-        <section class="section">
-            <h3>Aktionen</h3>
-            <div class="actions" id="quick-actions">
-                <button type="button" data-cmd="Heile Welt">Heile Welt</button>
-                <button type="button" data-cmd="Vereine Chaos Ordnung">Harmonie</button>
-                <button type="button" data-cmd="Setze Wetter sunny">Sonne</button>
-                <button type="button" data-cmd="Setze Wetter rainy">Regen</button>
-                <button type="button" data-cmd="Spawne neue Welt">Neue Welt</button>
-                <button type="button" data-cmd="Boden aktivieren">Boden an</button>
-                <button type="button" data-cmd="Boden deaktivieren">Boden aus</button>
-            </div>
-        </section>
-        <section class="section">
-            <h3>Bauwerke</h3>
-            <p class="drawer-hint">Strukturen am Spieler platzieren (Ring 6).</p>
-            <div class="actions" id="architecture-actions">
-                <button type="button" data-cmd="Baue Dorf hier">Dorf</button>
-                <button type="button" data-cmd="Baue Tempel hier">Tempel</button>
-                <button type="button" data-cmd="Baue Wasserfall hier">Wasserfall</button>
-                <button type="button" data-cmd="Baue Fraktal Tempel">Fraktal</button>
-            </div>
-        </section>
-    </aside>
-    <aside class="drawer" data-drawer="kreaturen" aria-label="Kreaturen-Panel" hidden>
-        <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
-        <h2>Kreaturen</h2>
-        <section class="section">
-            <h3>Spawnen</h3>
-            <div class="actions" id="creature-actions">
-                <button type="button" data-cmd="Spawne Kreaturen 5">+5</button>
-                <button type="button" data-cmd="Spawne Kreaturen 10">+10</button>
-                <button type="button" data-cmd="Kreaturen aktivieren">Sichtbar</button>
-                <button type="button" data-cmd="Kreaturen deaktivieren">Verbergen</button>
-            </div>
-        </section>
-    </aside>
-    <aside class="drawer" data-drawer="spieler" aria-label="Spieler-Panel" hidden>
-        <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
-        <h2>Spieler</h2>
-        <section class="section">
-            <h3>Seele</h3>
-            <p class="drawer-hint">Form des Spieler-Avatars. Rein visuell — Bewegung und Physik bleiben gleich.</p>
-            <div class="soul-row">
-                <label for="player-soul-select">Form</label>
-                <select id="player-soul-select" aria-label="Spieler-Seele wählen"></select>
-            </div>
-        </section>
-        <section class="section">
-            <h3>Hotbar-Belegung</h3>
-            <p class="drawer-hint">Welcher Bauplan liegt auf welchem Slot (1–9). Tasten 1–9 wählen, F baut.</p>
-            <div id="hotbar-config"></div>
-        </section>
-        <section class="section">
-            <h3>Emotionen</h3>
-            <div id="status-emotions"></div>
-        </section>
-    </aside>
-    <aside class="drawer" data-drawer="faehigkeiten" aria-label="Fähigkeiten-Panel" hidden>
-        <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
-        <h2>Fähigkeiten</h2>
-        <section class="section">
-            <h3>Erlernt + Komponiert</h3>
-            <div id="status-abilities"></div>
-        </section>
-    </aside>
-    <aside class="drawer" data-drawer="werkstatt" aria-label="Werkstatt-Panel" hidden>
-        <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
-        <h2>Werkstatt</h2>
-        <section class="section">
-            <h3>Baupläne</h3>
-            <p class="drawer-hint">Built-in können geklont, eigene voll editiert werden. Parts: 8 Primitive (Würfel, Kugel, Zylinder, Kegel, Pyramide, Oktaeder, Plane, Torus).</p>
-            <div id="workshop-list"></div>
-        </section>
-        <section class="section">
-            <h3>Editor</h3>
-            <div id="workshop-editor"></div>
-        </section>
-    </aside>
-    <aside class="drawer" data-drawer="einstellungen" aria-label="Einstellungen-Panel" hidden>
-        <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
-        <h2>Einstellungen</h2>
-        <section class="section">
-            <h3>Speicher</h3>
-            <div class="actions" id="save-actions">
-                <button type="button" data-cmd="Speichere Zustand">Speichern</button>
-                <button type="button" data-cmd="Lade Zustand">Laden</button>
-                <button type="button" data-cmd="Lade Datei">Datei…</button>
-                <button type="button" id="action-export-state">Export…</button>
-            </div>
-        </section>
-        <section class="section">
-            <h3>Tuning (Emotionen)</h3>
-            <div class="tuning-row">
-                <label for="tune-threshold">
-                    <span>Schwelle</span><span class="v" id="tune-threshold-v">0.70</span>
-                </label>
-                <input type="range" id="tune-threshold" min="0.3" max="1.0" step="0.05" value="0.7">
-            </div>
-            <div class="tuning-row">
-                <label for="tune-decay">
-                    <span>Decay/s</span><span class="v" id="tune-decay-v">0.005</span>
-                </label>
-                <input type="range" id="tune-decay" min="0.001" max="0.05" step="0.001" value="0.005">
-            </div>
-            <div class="tuning-row">
-                <label for="tune-cooldown">
-                    <span>Cooldown (s)</span><span class="v" id="tune-cooldown-v">30</span>
-                </label>
-                <input type="range" id="tune-cooldown" min="5" max="120" step="5" value="30">
-            </div>
-        </section>
-        <section class="section" id="llm-section">
-            <h3>Grok-Stimme (LLM)</h3>
-            <p class="drawer-hint">
-                Optional: gib Grok eine echte Stimme. Vier Provider — drei haben Gratis-Tiers,
-                Ollama läuft komplett lokal. Schlüssel liegen nur im localStorage dieses
-                Browsers. Jeder Vorschlag geht durch den DSL-Interpreter — die Sandbox hält.
-            </p>
-            <div class="tuning-row">
-                <label for="llm-provider"><span>Provider</span></label>
-                <select id="llm-provider">
-                    <!-- gefüllt aus llmProviderDefs() -->
-                </select>
-            </div>
-            <div id="llm-provider-hint" class="drawer-hint" aria-live="polite"></div>
-            <div class="tuning-row" id="llm-key-row">
-                <label for="llm-key"><span>API-Key</span></label>
-                <input type="password" id="llm-key" placeholder="API-Key" autocomplete="off" spellcheck="false">
-            </div>
-            <div class="tuning-row" id="llm-endpoint-row" hidden>
-                <label for="llm-endpoint"><span>Endpoint</span></label>
-                <input type="text" id="llm-endpoint" placeholder="http://localhost:11434" autocomplete="off" spellcheck="false">
-            </div>
-            <div class="tuning-row">
-                <label for="llm-model"><span>Modell</span></label>
-                <select id="llm-model">
-                    <!-- gefüllt aus llmProviderDefs()[provider].models -->
-                </select>
-            </div>
-            <div class="actions">
-                <button type="button" id="llm-save">Speichern</button>
-                <button type="button" id="llm-clear">Vergessen</button>
-                <button type="button" id="llm-toggle" aria-pressed="false">Aktivieren</button>
-            </div>
-            <div id="llm-status" class="drawer-hint" aria-live="polite">Inaktiv.</div>
-        </section>
-    </aside>
-    <aside class="drawer" data-drawer="hilfe" aria-label="Hilfe-Panel" hidden>
-        <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
-        <h2>Alle Chat-Befehle</h2>
-        <p class="drawer-hint">Klick zum Ausführen. Befehle gehen durch denselben Pfad wie der Chat.</p>
-        <div id="help-list"></div>
-    </aside>
-    <aside id="console" aria-label="Konsole">
-        <header id="console-header">
-            <h3>Konsole</h3>
-            <button id="console-collapse" type="button" aria-pressed="false" aria-label="Konsole einklappen">−</button>
         </header>
-        <div id="console-body">
-            <div id="console-chat-section">
-                <div class="console-section-label">Chat</div>
-                <div id="chat-output"></div>
-            </div>
-            <div id="console-log-section">
-                <div class="console-section-label">Logbuch</div>
-                <div id="log"></div>
-            </div>
+        <div id="statusbar" class="hud-frame">
+            <span class="status-item"
+                ><span class="label">Welt</span><span class="value" id="status-slug">—</span></span
+            >
+            <span class="status-item"
+                ><span class="label">Wetter</span><span class="value" id="status-weather">—</span></span
+            >
+            <span class="status-item"><span class="label">FPS</span><span class="value" id="status-fps">—</span></span>
+            <span class="status-item"
+                ><span class="label">Kreaturen</span><span class="value" id="status-creatures">—</span></span
+            >
+            <span class="status-item"
+                ><span class="label">Seele</span><span class="value" id="status-soul">—</span></span
+            >
+            <span class="status-item"
+                ><span class="label">Bauten</span><span class="value" id="status-architectures">—</span></span
+            >
+            <span class="status-item pos"
+                ><span class="label">Position</span><span class="value" id="status-position">—</span></span
+            >
         </div>
-        <div id="console-footer">
-            <input type="text" id="chat-input" placeholder="Befehl eingeben (z. B. 'Ändere Wetter zu Regen')">
-        </div>
-    </aside>
-    <!-- Versteckter File-Picker für 'Lade Datei'-Chat-Befehl. -->
-    <input type="file" id="state-file-input" accept="application/json,.json">
-    <!-- Vendored libs (vendor/README.md erklärt Versionen + Update-Befehl) -->
-    <script src="vendor/three.min.js"></script>
-    <script src="vendor/ammo.js"></script>
-    <script src="vendor/simplex-noise.js"></script>
-    <!-- Phase 6: kein Inline-Bootstrap mehr — direkte Skript-Einbindung, defer
+        <aside class="drawer open" data-drawer="welt" aria-label="Welt-Panel">
+            <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
+            <h2>Welt</h2>
+            <section class="section" id="world-info-section">
+                <h3>Diese Welt</h3>
+                <div id="world-info" class="drawer-hint" aria-live="polite">…</div>
+                <div class="actions">
+                    <button type="button" id="world-export">Welt teilen…</button>
+                    <button type="button" id="world-import">Welt empfangen…</button>
+                </div>
+            </section>
+            <section class="section" id="world-picker-section">
+                <h3>Andere Welten</h3>
+                <div id="world-picker-list" class="drawer-hint" aria-live="polite">
+                    Nur diese eine Welt im Speicher.
+                </div>
+                <div class="actions">
+                    <button type="button" id="world-new">Neue Welt…</button>
+                </div>
+            </section>
+            <section class="section" id="world-journal-section">
+                <h3>Tagebuch</h3>
+                <div id="world-journal-count" class="journal-count">—</div>
+                <div id="world-journal-list" class="journal-list" aria-live="polite"></div>
+            </section>
+            <section class="section">
+                <h3>Aktionen</h3>
+                <div class="actions" id="quick-actions">
+                    <button type="button" data-cmd="Heile Welt">Heile Welt</button>
+                    <button type="button" data-cmd="Vereine Chaos Ordnung">Harmonie</button>
+                    <button type="button" data-cmd="Setze Wetter sunny">Sonne</button>
+                    <button type="button" data-cmd="Setze Wetter rainy">Regen</button>
+                    <button type="button" data-cmd="Spawne neue Welt">Neue Welt</button>
+                    <button type="button" data-cmd="Boden aktivieren">Boden an</button>
+                    <button type="button" data-cmd="Boden deaktivieren">Boden aus</button>
+                </div>
+            </section>
+            <section class="section">
+                <h3>Bauwerke</h3>
+                <p class="drawer-hint">Strukturen am Spieler platzieren (Ring 6).</p>
+                <div class="actions" id="architecture-actions">
+                    <button type="button" data-cmd="Baue Dorf hier">Dorf</button>
+                    <button type="button" data-cmd="Baue Tempel hier">Tempel</button>
+                    <button type="button" data-cmd="Baue Wasserfall hier">Wasserfall</button>
+                    <button type="button" data-cmd="Baue Fraktal Tempel">Fraktal</button>
+                </div>
+            </section>
+        </aside>
+        <aside class="drawer" data-drawer="kreaturen" aria-label="Kreaturen-Panel" hidden>
+            <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
+            <h2>Kreaturen</h2>
+            <section class="section">
+                <h3>Spawnen</h3>
+                <div class="actions" id="creature-actions">
+                    <button type="button" data-cmd="Spawne Kreaturen 5">+5</button>
+                    <button type="button" data-cmd="Spawne Kreaturen 10">+10</button>
+                    <button type="button" data-cmd="Kreaturen aktivieren">Sichtbar</button>
+                    <button type="button" data-cmd="Kreaturen deaktivieren">Verbergen</button>
+                </div>
+            </section>
+        </aside>
+        <aside class="drawer" data-drawer="spieler" aria-label="Spieler-Panel" hidden>
+            <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
+            <h2>Spieler</h2>
+            <section class="section">
+                <h3>Seele</h3>
+                <p class="drawer-hint">Form des Spieler-Avatars. Rein visuell — Bewegung und Physik bleiben gleich.</p>
+                <div class="soul-row">
+                    <label for="player-soul-select">Form</label>
+                    <select id="player-soul-select" aria-label="Spieler-Seele wählen"></select>
+                </div>
+            </section>
+            <section class="section">
+                <h3>Hotbar-Belegung</h3>
+                <p class="drawer-hint">Welcher Bauplan liegt auf welchem Slot (1–9). Tasten 1–9 wählen, F baut.</p>
+                <div id="hotbar-config"></div>
+            </section>
+            <section class="section">
+                <h3>Emotionen</h3>
+                <div id="status-emotions"></div>
+            </section>
+        </aside>
+        <aside class="drawer" data-drawer="faehigkeiten" aria-label="Fähigkeiten-Panel" hidden>
+            <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
+            <h2>Fähigkeiten</h2>
+            <section class="section">
+                <h3>Erlernt + Komponiert</h3>
+                <div id="status-abilities"></div>
+            </section>
+        </aside>
+        <aside class="drawer" data-drawer="werkstatt" aria-label="Werkstatt-Panel" hidden>
+            <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
+            <h2>Werkstatt</h2>
+            <section class="section">
+                <h3>Baupläne</h3>
+                <p class="drawer-hint">
+                    Built-in können geklont, eigene voll editiert werden. Parts: 8 Primitive (Würfel, Kugel, Zylinder,
+                    Kegel, Pyramide, Oktaeder, Plane, Torus).
+                </p>
+                <div id="workshop-list"></div>
+            </section>
+            <section class="section">
+                <h3>Editor</h3>
+                <div id="workshop-editor"></div>
+            </section>
+        </aside>
+        <aside class="drawer" data-drawer="einstellungen" aria-label="Einstellungen-Panel" hidden>
+            <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
+            <h2>Einstellungen</h2>
+            <section class="section">
+                <h3>Speicher</h3>
+                <div class="actions" id="save-actions">
+                    <button type="button" data-cmd="Speichere Zustand">Speichern</button>
+                    <button type="button" data-cmd="Lade Zustand">Laden</button>
+                    <button type="button" data-cmd="Lade Datei">Datei…</button>
+                    <button type="button" id="action-export-state">Export…</button>
+                </div>
+            </section>
+            <section class="section">
+                <h3>Tuning (Emotionen)</h3>
+                <div class="tuning-row">
+                    <label for="tune-threshold">
+                        <span>Schwelle</span><span class="v" id="tune-threshold-v">0.70</span>
+                    </label>
+                    <input type="range" id="tune-threshold" min="0.3" max="1.0" step="0.05" value="0.7" />
+                </div>
+                <div class="tuning-row">
+                    <label for="tune-decay"> <span>Decay/s</span><span class="v" id="tune-decay-v">0.005</span> </label>
+                    <input type="range" id="tune-decay" min="0.001" max="0.05" step="0.001" value="0.005" />
+                </div>
+                <div class="tuning-row">
+                    <label for="tune-cooldown">
+                        <span>Cooldown (s)</span><span class="v" id="tune-cooldown-v">30</span>
+                    </label>
+                    <input type="range" id="tune-cooldown" min="5" max="120" step="5" value="30" />
+                </div>
+            </section>
+            <section class="section" id="llm-section">
+                <h3>Grok-Stimme (LLM)</h3>
+                <p class="drawer-hint">
+                    Optional: gib Grok eine echte Stimme. Vier Provider — drei haben Gratis-Tiers, Ollama läuft komplett
+                    lokal. Schlüssel liegen nur im localStorage dieses Browsers. Jeder Vorschlag geht durch den
+                    DSL-Interpreter — die Sandbox hält.
+                </p>
+                <div class="tuning-row">
+                    <label for="llm-provider"><span>Provider</span></label>
+                    <select id="llm-provider">
+                        <!-- gefüllt aus llmProviderDefs() -->
+                    </select>
+                </div>
+                <div id="llm-provider-hint" class="drawer-hint" aria-live="polite"></div>
+                <div class="tuning-row" id="llm-key-row">
+                    <label for="llm-key"><span>API-Key</span></label>
+                    <input type="password" id="llm-key" placeholder="API-Key" autocomplete="off" spellcheck="false" />
+                </div>
+                <div class="tuning-row" id="llm-endpoint-row" hidden>
+                    <label for="llm-endpoint"><span>Endpoint</span></label>
+                    <input
+                        type="text"
+                        id="llm-endpoint"
+                        placeholder="http://localhost:11434"
+                        autocomplete="off"
+                        spellcheck="false"
+                    />
+                </div>
+                <div class="tuning-row">
+                    <label for="llm-model"><span>Modell</span></label>
+                    <select id="llm-model">
+                        <!-- gefüllt aus llmProviderDefs()[provider].models -->
+                    </select>
+                </div>
+                <div class="actions">
+                    <button type="button" id="llm-save">Speichern</button>
+                    <button type="button" id="llm-clear">Vergessen</button>
+                    <button type="button" id="llm-toggle" aria-pressed="false">Aktivieren</button>
+                </div>
+                <div id="llm-status" class="drawer-hint" aria-live="polite">Inaktiv.</div>
+            </section>
+        </aside>
+        <aside class="drawer" data-drawer="hilfe" aria-label="Hilfe-Panel" hidden>
+            <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
+            <h2>Alle Chat-Befehle</h2>
+            <p class="drawer-hint">Klick zum Ausführen. Befehle gehen durch denselben Pfad wie der Chat.</p>
+            <div id="help-list"></div>
+        </aside>
+        <aside id="console" aria-label="Konsole">
+            <header id="console-header">
+                <h3>Konsole</h3>
+                <button id="console-collapse" type="button" aria-pressed="false" aria-label="Konsole einklappen">
+                    −
+                </button>
+            </header>
+            <div id="console-body">
+                <div id="console-chat-section">
+                    <div class="console-section-label">Chat</div>
+                    <div id="chat-output"></div>
+                </div>
+                <div id="console-log-section">
+                    <div class="console-section-label">Logbuch</div>
+                    <div id="log"></div>
+                </div>
+            </div>
+            <div id="console-footer">
+                <input type="text" id="chat-input" placeholder="Befehl eingeben (z. B. 'Ändere Wetter zu Regen')" />
+            </div>
+        </aside>
+        <!-- Versteckter File-Picker für 'Lade Datei'-Chat-Befehl. -->
+        <input type="file" id="state-file-input" accept="application/json,.json" />
+        <!-- Vendored libs (vendor/README.md erklärt Versionen + Update-Befehl) -->
+        <script src="vendor/three.min.js"></script>
+        <script src="vendor/ammo.js"></script>
+        <script src="vendor/simplex-noise.js"></script>
+        <!-- Phase 6: kein Inline-Bootstrap mehr — direkte Skript-Einbindung, defer
          garantiert die Reihenfolge nach den Vendor-Libs und das Warten auf
          DOMContentLoaded ohne Inline-Listener. -->
-    <script src="anazhRealm.js" defer></script>
-</body>
+        <script src="anazhRealm.js" defer></script>
+    </body>
 </html>

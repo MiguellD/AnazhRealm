@@ -3590,7 +3590,12 @@ class AnazhRealm {
     // gültigen Per-Welt-Save vor und startet die neue Welt mit dieser Basis.
     _buildEmptyWorldSnapshot(worldMeta, inheritPlayer) {
         const snap = {
-            playerPosition: { x: 0, y: 5, z: 0 },
+            // Ring 8.2: Y=50 wie beim allerersten Spawn — der Spieler fällt
+            // sauber aufs Terrain. Y=5 würde ihn in steile Hänge clippen
+            // lassen, weil das Terrain je nach Seed auch 30+ Einheiten hoch
+            // sein kann. Die loadState-Position-Restore-Logik teleportiert
+            // sonst auf die zu tiefe Höhe, statt einen Spawn-Fall zu lassen.
+            playerPosition: { x: 0, y: 50, z: 0 },
             knowledgeBase: [],
             version: this.state.currentVersion || "7.66",
             selfAwareness: { components: [], weaknesses: [] },
@@ -6800,6 +6805,13 @@ class AnazhRealm {
         const safeX = Number.isFinite(playerPosition.x) ? playerPosition.x : 0;
         const safeY = Number.isFinite(playerPosition.y) ? playerPosition.y : 5;
         const safeZ = Number.isFinite(playerPosition.z) ? playerPosition.z : 0;
+        // Ring 8.2: loadState markiert die Welt als „bereits einmal generiert",
+        // damit das auf init() folgende generateNewWorld() den Spieler nicht
+        // auf (0, 50, 0) teleportiert. Die geladene Position bleibt damit
+        // intakt. Brand-neue Welten (loadState findet nichts) lassen das Flag
+        // auf false, und der erste generateNewWorld-Lauf setzt den Spieler
+        // wie bisher auf den Default-Spawn.
+        this.state.terrainEverGenerated = true;
         if (this.state.playerMesh) {
             this.state.playerMesh.position.set(safeX, safeY, safeZ);
             this.state.playerMesh.visible = true;
