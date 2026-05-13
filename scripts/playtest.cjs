@@ -1048,6 +1048,31 @@ function startSaveServer() {
                     const infoText = document.getElementById("world-info").textContent;
                     out.worldInfoShowsSlug = infoText.includes(r.state.worldMeta.slug);
                     out.worldInfoShowsAge = /Alter:\s*\d+/.test(infoText);
+                    // Tagebuch: List-DOM + Count + Erinnerungs-Zeile
+                    out.journalListInDom = !!document.getElementById("world-journal-list");
+                    out.journalCountInDom = !!document.getElementById("world-journal-count");
+                    // Test-Eintrag und Re-Render forcieren (signature ändern)
+                    r.journalAppend("test", "Tagebuch-UI-Probe");
+                    document.getElementById("world-journal-list").dataset.signature = "";
+                    r.renderWorldJournal();
+                    const listEl = document.getElementById("world-journal-list");
+                    out.journalListHasEntries = listEl.querySelectorAll(".journal-entry").length > 0;
+                    out.journalListHasTypePill =
+                        !!listEl.querySelector(".journal-entry .journal-type");
+                    out.journalListHasAge =
+                        !!listEl.querySelector(".journal-entry .journal-age");
+                    out.journalCountReflectsEntries = /Erinnerung/.test(
+                        document.getElementById("world-journal-count").textContent
+                    );
+                    // Jüngste oben: erstes journal-entry enthält den eben
+                    // angehängten Text
+                    const firstEntry = listEl.querySelector(".journal-entry");
+                    out.journalNewestFirst =
+                        !!firstEntry && firstEntry.textContent.includes("Tagebuch-UI-Probe");
+                    // Render mit identischer Signature darf DOM nicht neu bauen
+                    const beforeChildren = listEl.children.length;
+                    r.renderWorldJournal();
+                    out.journalSignatureCachesRender = listEl.children.length === beforeChildren;
                     // F — triggerStateDownload akzeptiert suggestedName
                     let downloadedName = null;
                     const origCreate = document.createElement;
@@ -1084,6 +1109,14 @@ function startSaveServer() {
                 check("Welle 3 F: Welt-Info zeigt slug", wave3Results.worldInfoShowsSlug);
                 check("Welle 3 F: Welt-Info zeigt Alter in Tagen", wave3Results.worldInfoShowsAge);
                 check("Welle 3 F: triggerStateDownload nutzt suggestedName", wave3Results.downloadCustomName);
+                check("Tagebuch: #world-journal-list im DOM", wave3Results.journalListInDom);
+                check("Tagebuch: #world-journal-count im DOM", wave3Results.journalCountInDom);
+                check("Tagebuch: Liste rendert Erinnerungen", wave3Results.journalListHasEntries);
+                check("Tagebuch: Eintrag trägt Type-Pille", wave3Results.journalListHasTypePill);
+                check("Tagebuch: Eintrag zeigt Alter", wave3Results.journalListHasAge);
+                check("Tagebuch: Counter zeigt Erinnerungs-Anzahl", wave3Results.journalCountReflectsEntries);
+                check("Tagebuch: Jüngster Eintrag steht oben", wave3Results.journalNewestFirst);
+                check("Tagebuch: Signature-Cache verhindert Re-Render", wave3Results.journalSignatureCachesRender);
             }
 
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###

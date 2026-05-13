@@ -722,6 +722,56 @@
             font-size: 12px;
             margin: 0 0 14px 0;
         }
+        .journal-list {
+            max-height: 280px;
+            overflow-y: auto;
+            background: rgba(40, 25, 10, 0.06);
+            border: 1px solid var(--parch-edge);
+            border-radius: 2px;
+            padding: 6px 10px;
+            margin-bottom: 8px;
+        }
+        .journal-count {
+            font-family: 'Cinzel', Georgia, serif;
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            color: var(--parch-ink-soft);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+        .journal-entry {
+            font-family: 'IM Fell English', Georgia, serif;
+            font-size: 12px;
+            color: var(--parch-ink);
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(40, 25, 10, 0.08);
+            line-height: 1.45;
+        }
+        .journal-entry:last-child { border-bottom: none; }
+        .journal-type {
+            display: inline-block;
+            font-family: 'Cinzel', Georgia, serif;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--brass-1);
+            margin-right: 6px;
+            opacity: 0.85;
+        }
+        .journal-age {
+            float: right;
+            font-size: 10px;
+            color: var(--parch-ink-soft);
+            font-style: italic;
+            margin-left: 6px;
+        }
+        .journal-empty {
+            color: var(--parch-ink-soft);
+            font-style: italic;
+            font-size: 12px;
+            text-align: center;
+            padding: 14px 0;
+        }
         .drawer-close {
             position: absolute;
             top: 8px;
@@ -1202,11 +1252,15 @@
         <section class="section" id="world-info-section">
             <h3>Diese Welt</h3>
             <div id="world-info" class="drawer-hint" aria-live="polite">…</div>
-            <div id="world-journal-recent" class="drawer-hint" aria-live="polite"></div>
             <div class="actions">
                 <button type="button" id="world-export">Welt teilen…</button>
                 <button type="button" id="world-import">Welt empfangen…</button>
             </div>
+        </section>
+        <section class="section" id="world-journal-section">
+            <h3>Tagebuch</h3>
+            <div id="world-journal-count" class="journal-count">—</div>
+            <div id="world-journal-list" class="journal-list" aria-live="polite"></div>
         </section>
         <section class="section">
             <h3>Aktionen</h3>

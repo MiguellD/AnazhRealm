@@ -5773,7 +5773,6 @@ class AnazhRealm {
 
     updateWorldInfo() {
         const info = document.getElementById("world-info");
-        const recent = document.getElementById("world-journal-recent");
         if (!info) return;
         const m = this.state.worldMeta || {};
         const ageDays = m.bornAt ? Math.floor((Date.now() - m.bornAt) / 86400000) : 0;
@@ -5792,22 +5791,70 @@ class AnazhRealm {
         info.appendChild(line1);
         info.appendChild(line2);
         info.appendChild(line3);
-        if (recent) {
-            recent.innerHTML = "";
-            const last3 = (this.state.worldJournal.entries || []).slice(-3);
-            if (last3.length === 0) {
-                recent.textContent = "Noch keine Erinnerungen geschrieben.";
-            } else {
-                const title = document.createElement("div");
-                title.textContent = "Letzte Erinnerungen:";
-                recent.appendChild(title);
-                for (const e of last3) {
-                    const row = document.createElement("div");
-                    row.textContent = `· ${e.text}`;
-                    recent.appendChild(row);
-                }
-            }
+        this.renderWorldJournal();
+    }
+
+    // Gescrolltes Tagebuch im Welt-Drawer: alle Erinnerungen, jüngste oben.
+    // Wird jeweils komplett neu gerendert; bei entryCap = 200 ist DOM-Cost
+    // gering. Aufruf-Takt = `updateWorldInfo` (5s im Game-Loop).
+    renderWorldJournal() {
+        const list = document.getElementById("world-journal-list");
+        const countEl = document.getElementById("world-journal-count");
+        if (!list) return;
+        const entries = (this.state.worldJournal && this.state.worldJournal.entries) || [];
+        if (countEl) {
+            countEl.textContent =
+                entries.length === 0
+                    ? "Keine Erinnerungen"
+                    : `${entries.length} Erinnerung${entries.length === 1 ? "" : "en"}`;
         }
+        // Cache-Signatur: Anzahl + jüngster Eintrag (Inhalt + Zeit). Wenn
+        // unverändert, DOM nicht anrühren — der Aufruf läuft alle 5s.
+        const lastEntry = entries.length > 0 ? entries[entries.length - 1] : null;
+        const signature = entries.length + ":" + (lastEntry ? `${lastEntry.id}:${lastEntry.at}` : "0");
+        if (list.dataset.signature === signature) return;
+        list.dataset.signature = signature;
+        list.innerHTML = "";
+        if (entries.length === 0) {
+            const empty = document.createElement("div");
+            empty.className = "journal-empty";
+            empty.textContent = "Noch keine Erinnerungen geschrieben.";
+            list.appendChild(empty);
+            return;
+        }
+        const now = Date.now();
+        // Jüngste zuerst — das Tagebuch liest sich rückwärts wie ein
+        // Logbuch. Erste Genesis bleibt aber durch Scrollen erreichbar.
+        for (let i = entries.length - 1; i >= 0; i--) {
+            const e = entries[i];
+            const row = document.createElement("div");
+            row.className = "journal-entry";
+            const type = document.createElement("span");
+            type.className = "journal-type";
+            type.textContent = e.type || "note";
+            const age = document.createElement("span");
+            age.className = "journal-age";
+            age.textContent = this._formatJournalAge(now - (e.at || now));
+            const text = document.createElement("span");
+            text.textContent = e.text || "";
+            row.appendChild(type);
+            row.appendChild(age);
+            row.appendChild(text);
+            list.appendChild(row);
+        }
+    }
+
+    _formatJournalAge(deltaMs) {
+        if (!Number.isFinite(deltaMs) || deltaMs < 0) return "";
+        const s = Math.floor(deltaMs / 1000);
+        if (s < 30) return "eben";
+        if (s < 60) return `vor ${s}s`;
+        const m = Math.floor(s / 60);
+        if (m < 60) return `vor ${m}m`;
+        const h = Math.floor(m / 60);
+        if (h < 24) return `vor ${h}h`;
+        const d = Math.floor(h / 24);
+        return `vor ${d}t`;
     }
 
     isSaveServerHost() {
