@@ -1207,6 +1207,17 @@ class AnazhRealm {
                 const v = tags[tagName] || 0;
                 return v >= Number(threshold);
             },
+            // Welle 5 B — räumlich angereicherte Bedingung. Berücksichtigt
+            // Spitze-Bonus + Kontakt-Übertragung. Wer eine pyramidische Spitze
+            // mit Quarz hat, hat hier mehr magieleitung als in compound_has_tag.
+            compound_has_spatial_tag: ([blueprintName, tagName, threshold]) => {
+                if (typeof blueprintName !== "string" || typeof tagName !== "string") return false;
+                const bp = this.state.blueprints && this.state.blueprints[blueprintName];
+                if (!bp) return false;
+                const tags = this.computeSpatialTags(bp);
+                const v = tags[tagName] || 0;
+                return v >= Number(threshold);
+            },
             not: ([sub], ctx) => !this.dslEvalCond(sub, ctx),
             and: (subs, ctx) => subs.every((s) => this.dslEvalCond(s, ctx)),
             or: (subs, ctx) => subs.some((s) => this.dslEvalCond(s, ctx)),
@@ -7376,6 +7387,177 @@ class AnazhRealm {
         return out;
     }
 
+    // ### Welle 5 B — räumliche Emergenz ###
+    // Konzept §5.2 fünf räumliche Prinzipien. Phase 1 implementiert zwei:
+    //   (1) Spitze richtet nach außen — eine pointed-shape am Compound-Rand
+    //       verstärkt härte + magieleitung (die Wirkrichtung strahlt aus).
+    //   (4) Kontakt überträgt — berührende Parts mit unterschiedlichen Tag-
+    //       Stärken gleichen sich an (Wärme/Strom/Magie/Schwingung fließen).
+    // Prinzipien 2/3/5 (Hohlraum, Symmetrie, Resonanz) folgen in W5-B-Phase-2.
+
+    // Bounding-Box eines Parts in lokalen Compound-Koordinaten. Approximiert:
+    // jedes Part ist eine Box von position - size/2 bis position + size/2.
+    // Für Helix/Cone/Pyramid passt das gut genug, für blueprint-Refs greifen
+    // wir auf scale * 1 zurück (zeigt die ungefähre Position).
+    _partBoundingBox(part) {
+        if (!part || typeof part !== "object") return null;
+        const pos = part.position || { x: 0, y: 0, z: 0 };
+        const size = part.size || { x: 1, y: 1, z: 1 };
+        const sx = Math.max(0.1, Math.abs(size.x || 1));
+        const sy = Math.max(0.1, Math.abs(size.y || sx));
+        const sz = Math.max(0.1, Math.abs(size.z || sx));
+        return {
+            min: { x: pos.x - sx / 2, y: pos.y - sy / 2, z: pos.z - sz / 2 },
+            max: { x: pos.x + sx / 2, y: pos.y + sy / 2, z: pos.z + sz / 2 },
+            center: { x: pos.x, y: pos.y, z: pos.z },
+        };
+    }
+
+    // Compound-Bounding-Box als Union aller Parts. Liefert min/max + Extent
+    // (Größe pro Achse). Wird vom „Spitze richtet"-Pfad gebraucht: ein Part
+    // gilt als Spitze, wenn es nahe dem Compound-Rand liegt (innerhalb 20 %
+    // der jeweiligen Extent-Spanne).
+    _compoundBoundingBox(blueprint) {
+        if (!blueprint || !Array.isArray(blueprint.parts) || blueprint.parts.length === 0) return null;
+        let minX = Infinity,
+            minY = Infinity,
+            minZ = Infinity;
+        let maxX = -Infinity,
+            maxY = -Infinity,
+            maxZ = -Infinity;
+        for (const p of blueprint.parts) {
+            const bb = this._partBoundingBox(p);
+            if (!bb) continue;
+            if (bb.min.x < minX) minX = bb.min.x;
+            if (bb.min.y < minY) minY = bb.min.y;
+            if (bb.min.z < minZ) minZ = bb.min.z;
+            if (bb.max.x > maxX) maxX = bb.max.x;
+            if (bb.max.y > maxY) maxY = bb.max.y;
+            if (bb.max.z > maxZ) maxZ = bb.max.z;
+        }
+        if (minX === Infinity) return null;
+        return {
+            min: { x: minX, y: minY, z: minZ },
+            max: { x: maxX, y: maxY, z: maxZ },
+            extent: { x: maxX - minX, y: maxY - minY, z: maxZ - minZ },
+        };
+    }
+
+    // Klassifiziert Position eines Parts im Compound. Liefert ein Set von
+    // Labels: "at_top"/"at_bottom"/"at_outside"/"central". Ein Part kann
+    // mehrere Labels haben (z. B. Spitze am Rand UND oben). Schwelle 20 %
+    // der Compound-Extent — eng genug, dass nur echte Rand-Parts triggern,
+    // großzügig genug, dass Float-Drift nicht ins Bild läuft.
+    _classifyPartPosition(part, compoundBB) {
+        const labels = new Set();
+        if (!part || !compoundBB) return labels;
+        const pos = part.position || { x: 0, y: 0, z: 0 };
+        const e = compoundBB.extent;
+        // "at_top": nahe maxY innerhalb 20 % der y-Extent
+        if (e.y > 0.1 && pos.y >= compoundBB.max.y - e.y * 0.2) labels.add("at_top");
+        if (e.y > 0.1 && pos.y <= compoundBB.min.y + e.y * 0.2) labels.add("at_bottom");
+        // "at_outside": radial weit vom Zentrum (xz-Distanz > 60 % des
+        // Compound-Radius). Mehrere Achsen kombinieren via Pythagoras.
+        const centerX = (compoundBB.min.x + compoundBB.max.x) / 2;
+        const centerZ = (compoundBB.min.z + compoundBB.max.z) / 2;
+        const radialDist = Math.hypot(pos.x - centerX, pos.z - centerZ);
+        const compoundRadius = Math.hypot(e.x, e.z) / 2;
+        if (compoundRadius > 0.1 && radialDist > compoundRadius * 0.6) labels.add("at_outside");
+        if (labels.size === 0) labels.add("central");
+        return labels;
+    }
+
+    // Zwei Parts „berühren" sich (Prinzip 4: Kontakt überträgt) wenn ihre
+    // Bounding-Boxen überlappen oder weniger als CONTACT_GAP weit auseinander
+    // liegen. Pragma: keine echte Mesh-Kollision (zu teuer für die Anzahl
+    // Compound-Parts, die in den Sekunden-Ticks gelesen wird), sondern AABB-
+    // Approximation — bei den meisten Bauplänen reicht das.
+    _partsAreInContact(partA, partB) {
+        const a = this._partBoundingBox(partA);
+        const b = this._partBoundingBox(partB);
+        if (!a || !b) return false;
+        const gap = 0.15;
+        const dx = Math.max(0, Math.max(a.min.x - b.max.x, b.min.x - a.max.x));
+        const dy = Math.max(0, Math.max(a.min.y - b.max.y, b.min.y - a.max.y));
+        const dz = Math.max(0, Math.max(a.min.z - b.max.z, b.min.z - a.max.z));
+        return dx < gap && dy < gap && dz < gap;
+    }
+
+    // Räumliche Tag-Berechnung: nimmt computeCompoundTags als Basis und
+    // wendet zwei Bonus-Regeln an:
+    //
+    //   Prinzip 1 (Spitze richtet): pointed-shape (cone/pyramid/octahedron/
+    //   helix) am "at_top"/"at_outside" — härte und magieleitung bekommen
+    //   einen Bonus, weil die Wirkrichtung nach außen strahlt. Bonus
+    //   skaliert mit der intrinsischen Aktivierung (computePartTags), damit
+    //   eine Stein-Spitze nicht mehr Magie ausstrahlt als die zugrunde-
+    //   liegende Magieleitung des Steins.
+    //
+    //   Prinzip 4 (Kontakt überträgt): berührende Parts mit asymmetrischen
+    //   Tags (z. B. Kupfer-Spule berührt Stahl-Gehäuse — Stahl-Anteil bekommt
+    //   Stromleitung über Kontakt). Pro Tag wird das Maximum zwischen
+    //   Original und (Kontakt × CONTACT_TRANSFER) genommen.
+    //
+    // Aggregation bleibt MAX (Konzept §9.2 anti-Stat-Matsch), Bonus-Wirkung
+    // wird VOR der MAX-Aggregation pro Part angewandt.
+    computeSpatialTags(blueprint) {
+        if (!blueprint || !Array.isArray(blueprint.parts) || blueprint.parts.length === 0) {
+            return this.computeCompoundTags(blueprint);
+        }
+        const bb = this._compoundBoundingBox(blueprint);
+        const parts = blueprint.parts;
+        const pointed = AnazhRealm.SPATIAL_POINTED_SHAPES;
+        const TIP_BONUS = 0.5; // ★+50 % am Rand für pointed-Shapes
+        const CONTACT_TRANSFER = 0.6; // 60 % der höheren Tag-Stärke fließt über
+        // Schritt 1: pro Part die räumlich-bonusten Tags berechnen
+        const augmentedPartTags = parts.map((part) => {
+            const baseTags = this.computePartTags(part);
+            const labels = this._classifyPartPosition(part, bb);
+            const isTip = pointed.has(part.shape) && (labels.has("at_top") || labels.has("at_outside"));
+            if (isTip) {
+                // Spitze: härte + magieleitung bekommen Bonus aus dem
+                // INTRINSISCHEN Wert (kein freier Bonus, sondern Verstärkung).
+                if (baseTags["härte"]) baseTags["härte"] = baseTags["härte"] * (1 + TIP_BONUS);
+                if (baseTags["magieleitung"]) {
+                    baseTags["magieleitung"] = baseTags["magieleitung"] * (1 + TIP_BONUS);
+                }
+            }
+            return baseTags;
+        });
+        // Schritt 2: Kontakt-Übertragung. Für jedes Paar (i, j) mit Kontakt,
+        // gleiche schwächeren Tag-Wert mit CONTACT_TRANSFER × stärkerem Wert an.
+        for (let i = 0; i < parts.length; i++) {
+            for (let j = i + 1; j < parts.length; j++) {
+                if (!this._partsAreInContact(parts[i], parts[j])) continue;
+                const a = augmentedPartTags[i];
+                const b = augmentedPartTags[j];
+                // Welche Tags werden übertragen (Konzept §5.2 Prinzip 4 nennt
+                // Wärme, Strom, Magie, Schwingung): nicht alle 10 Tags fließen.
+                const transferable = AnazhRealm.SPATIAL_TRANSFERABLE_TAGS;
+                for (const tag of transferable) {
+                    const valA = a[tag] || 0;
+                    const valB = b[tag] || 0;
+                    if (valA > valB) {
+                        const transferred = valA * CONTACT_TRANSFER;
+                        if (transferred > valB) b[tag] = transferred;
+                    } else if (valB > valA) {
+                        const transferred = valB * CONTACT_TRANSFER;
+                        if (transferred > valA) a[tag] = transferred;
+                    }
+                }
+            }
+        }
+        // Schritt 3: Standard-MAX-Aggregation über die augmentierten Parts.
+        const out = {};
+        for (const partTags of augmentedPartTags) {
+            for (const tag of Object.keys(partTags)) {
+                const v = partTags[tag];
+                if (!(tag in out) || v > out[tag]) out[tag] = v;
+            }
+        }
+        return out;
+    }
+
     _architectureBuilders() {
         // Builders kommen jetzt aus state.blueprints — eine Quelle für
         // Built-in + User-Baupläne. Seed wird zur Zeit nicht mehr genutzt
@@ -7592,7 +7774,14 @@ class AnazhRealm {
     _applyCompoundWorldEffects(blueprintName) {
         const bp = this.state.blueprints && this.state.blueprints[blueprintName];
         if (!bp) return;
-        const tags = this.computeCompoundTags(bp);
+        // Welle 5 B — Welt-Effekte nutzen jetzt räumlich angereicherte Tags
+        // statt der atomaren MAX-Aggregation. Eine Quarz-Spitze oben auf
+        // einem Stab strahlt jetzt stärker, weil Prinzip 1 (Spitze richtet)
+        // den Magie-Tag verstärkt; ein Kupfer-Helix-Kern in einem Stahl-
+        // Gehäuse leitet jetzt, weil Prinzip 4 (Kontakt überträgt) den
+        // Stahl-Anteil hochzieht. Atomare computeCompoundTags bleibt für UI/
+        // Tests die ehrliche Basis.
+        const tags = this.computeSpatialTags(bp);
         const avgPrec = this._compoundAvgPrecision(bp);
         const T = AnazhRealm.WORLD_EFFECT_THRESHOLDS;
         // Konzept §6.3 — Präzision moduliert ALLE Effekt-Stärken, nicht nur
@@ -8319,10 +8508,50 @@ class AnazhRealm {
                 tagsSection.appendChild(row);
             }
         }
+        // Welle 5 B — räumliche Anreicherung als zweite Strahler-Reihe.
+        // Nur Tags zeigen, deren räumlicher Wert über dem atomaren liegt
+        // (sonst hätten wir doppelte Anzeige). Erscheint nur wenn der Spieler
+        // mindestens einen pointed-Shape oder eine Kontakt-Brücke gebaut hat.
+        const spatialTags = this.computeSpatialTags(selected);
+        const spatialDeltas = [];
+        for (const tag of tagKeys) {
+            const atomar = compoundTags[tag] || 0;
+            const spatial = spatialTags[tag] || 0;
+            if (spatial > atomar + 0.01) {
+                spatialDeltas.push({ tag, atomar, spatial });
+            }
+        }
+        if (spatialDeltas.length > 0) {
+            const spatialTitle = document.createElement("div");
+            spatialTitle.className = "workshop-tags-title workshop-spatial-title";
+            spatialTitle.textContent = "Räumliche Verstärkung";
+            tagsSection.appendChild(spatialTitle);
+            for (const d of spatialDeltas) {
+                const row = document.createElement("div");
+                row.className = "workshop-tag-row workshop-spatial-row";
+                row.dataset.tag = d.tag;
+                const name = document.createElement("span");
+                name.className = "workshop-tag-name";
+                name.textContent = d.tag;
+                const bar = document.createElement("span");
+                bar.className = "workshop-tag-bar";
+                const stars = Math.min(3, Math.round(d.spatial));
+                bar.textContent = "★".repeat(stars) + "☆".repeat(3 - stars);
+                const num = document.createElement("span");
+                num.className = "workshop-tag-num";
+                num.textContent = `${d.atomar.toFixed(2)} → ${d.spatial.toFixed(2)}`;
+                row.appendChild(name);
+                row.appendChild(bar);
+                row.appendChild(num);
+                tagsSection.appendChild(row);
+            }
+        }
         const tagsHint = document.createElement("div");
         tagsHint.className = "workshop-tags-hint";
         tagsHint.textContent =
-            "Atomare Schicht: pro Part. Räumliche Beziehungen zwischen Parts werden noch nicht gewertet.";
+            spatialDeltas.length > 0
+                ? "Atomar = Form × Material. Räumlich = Spitze richtet + Kontakt überträgt (Konzept §5.2 Prinzip 1+4). Hohlraum/Symmetrie/Resonanz folgen."
+                : "Atomare Schicht: pro Part. Räumliche Verstärkung erscheint, wenn pointed-Shapes am Rand oder Parts in Kontakt stehen.";
         tagsSection.appendChild(tagsHint);
         editor.appendChild(tagsSection);
         // Aktions-Buttons
@@ -9431,6 +9660,16 @@ AnazhRealm.MATERIAL_TAG_DEFAULTS = Object.freeze(
         return acc;
     }, {})
 );
+// Welle 5 B — räumliche Emergenz. Welche Formen wirken als „Spitzen" (Prinzip
+// 1: Spitze richtet). Helix ist drin, weil ihr Ende eine Schraubspitze ist —
+// nicht so scharf wie ein Kegel, aber funktional gerichtet.
+AnazhRealm.SPATIAL_POINTED_SHAPES = Object.freeze(new Set(["cone", "pyramid", "octahedron", "helix"]));
+// Welche Tags fließen über Kontakt (Prinzip 4: Kontakt überträgt). Konzept
+// §5.2 nennt Wärme, Strom, Magie, Schwingung — entsprechen vier von zehn
+// MATERIAL_TAG_KEYS. „Lebendig" überträgt sich nicht (Leben ist nicht
+// kontagiös in dieser Welt-Logik), „brennbar" auch nicht (das wäre Feuer-
+// Ausbreitung — eigener Pfad, falls je nötig).
+AnazhRealm.SPATIAL_TRANSFERABLE_TAGS = Object.freeze(["wärmeleitung", "stromleitung", "magieleitung", "resoniert"]);
 // Welle 4 Phase 3 — Material × Op-Klassen-Kompatibilität aus Konzept §3.2.
 // Bei eigenen Materialien (define_material) wird das via applyOpToPart als
 // „alle vier erlaubt" behandelt — UI/UX-Verfeinerung folgt in einer
