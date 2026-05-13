@@ -1408,6 +1408,224 @@ function startSaveServer() {
                 check("Welle 4 P2: UI Shape-Dropdown enthält helix", wave4p2Results.uiShapeIncludesHelix);
             }
 
+            // ### Welle 4 Phase 3 — Werkzeuge + opChain + Präzision ###
+            const wave4p3Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    // Werkzeug-State + Konstanten
+                    const tools = r.state.tools || {};
+                    out.fiveStarterTools =
+                        ["hände", "feuerstein-knapper", "hammer", "feile", "polierscheibe"].every(
+                            (n) => tools[n] && tools[n].isStarter
+                        );
+                    out.playerOwnsStarters = ["hände", "hammer", "polierscheibe"].every((n) =>
+                        (r.state.player.tools || []).includes(n)
+                    );
+                    out.matCompatFrozen = Object.isFrozen(r.constructor.MATERIAL_OP_COMPATIBILITY);
+                    out.thresholdsFrozen = Object.isFrozen(r.constructor.WORLD_EFFECT_THRESHOLDS);
+                    out.steinSubtractiveOnly =
+                        r.constructor.MATERIAL_OP_COMPATIBILITY.stein.length === 1 &&
+                        r.constructor.MATERIAL_OP_COMPATIBILITY.stein[0] === "subtractive";
+
+                    // computePartPrecision: min, nicht max/avg
+                    const part1 = {
+                        shape: "sphere",
+                        material: "quarz",
+                        opChain: [
+                            { tool: "hände", op: "hand_knap", cap: 0.4 },
+                            { tool: "polierscheibe", op: "polish", cap: 0.97 },
+                        ],
+                    };
+                    out.precisionIsMin = r.computePartPrecision(part1) === 0.4;
+                    const part2 = { shape: "sphere", material: "quarz" }; // no opChain
+                    out.precisionDefaultsTo04 = r.computePartPrecision(part2) === 0.4;
+
+                    // applyOpToPart — Tool-Gating
+                    r.state.blueprints["test-precision"] = {
+                        name: "test-precision",
+                        label: "Test",
+                        builtIn: false,
+                        parts: [{ shape: "cone", material: "eisen", opChain: r._defaultPartOpChain() }],
+                    };
+                    // Hand-Knap auf eisen-cone: OK (subtractive matches)
+                    const ap1 = r.applyOpToPart("test-precision", 0, "feile");
+                    out.applyOpAppends = ap1.ok && r.state.blueprints["test-precision"].parts[0].opChain.length === 2;
+                    // Hammer (plastic) auf stein (subtractive only): FAIL
+                    r.state.blueprints["test-precision-stein"] = {
+                        name: "test-precision-stein",
+                        label: "Stein-Test",
+                        builtIn: false,
+                        parts: [{ shape: "box", material: "stein", opChain: r._defaultPartOpChain() }],
+                    };
+                    const ap2 = r.applyOpToPart("test-precision-stein", 0, "hammer");
+                    out.materialOpIncompat = !ap2.ok && ap2.reason === "material_op_incompatible";
+                    // Tool not owned
+                    r.state.player.tools = r.state.player.tools.filter((t) => t !== "feile");
+                    const ap3 = r.applyOpToPart("test-precision", 0, "feile");
+                    out.toolOwnershipEnforced = !ap3.ok && ap3.reason === "tool_not_owned";
+                    r.state.player.tools.push("feile"); // restore
+                    // Built-in protection
+                    const ap4 = r.applyOpToPart("village", 0, "hammer");
+                    out.builtInBlueprintProtected = !ap4.ok && ap4.reason === "cannot_modify_builtin";
+
+                    // DSL-Op apply_op
+                    const dslRes = r.dslRun(
+                        ["apply_op", "test-precision", 0, "polierscheibe"],
+                        { source: "test" }
+                    );
+                    out.dslApplyOpWorks = dslRes.log.some((e) => e.event === "applied_op");
+
+                    // Diskriminations-Test: zwei Resonanz-Compounds, einer
+                    // hand-roh (precision 0.4), einer poliert (cap 0.97). Welt-
+                    // Effekt-Schwelle precision_high=0.8 muss zwischen ihnen
+                    // liegen — der polierte triggert, der hand-rohe nicht.
+                    r.state.blueprints["raw-orb"] = {
+                        name: "raw-orb",
+                        label: "Rau-Orb",
+                        builtIn: false,
+                        parts: [
+                            { shape: "sphere", material: "quarz", opChain: r._defaultPartOpChain() },
+                        ],
+                    };
+                    r.state.blueprints["polished-orb"] = {
+                        name: "polished-orb",
+                        label: "Polier-Orb",
+                        builtIn: false,
+                        parts: [
+                            {
+                                shape: "sphere",
+                                material: "quarz",
+                                opChain: [{ tool: "polierscheibe", op: "polish", cap: 0.97 }],
+                            },
+                        ],
+                    };
+                    const rawPrec = r._compoundAvgPrecision(r.state.blueprints["raw-orb"]);
+                    const polPrec = r._compoundAvgPrecision(r.state.blueprints["polished-orb"]);
+                    out.precisionDiscriminates =
+                        rawPrec < r.constructor.WORLD_EFFECT_THRESHOLDS.precision_high &&
+                        polPrec >= r.constructor.WORLD_EFFECT_THRESHOLDS.precision_high;
+
+                    // Welt-Effekt: polished-orb sollte einen "singing"-Journal-
+                    // Eintrag schreiben, raw-orb nicht.
+                    const journalBefore = r.state.worldJournal.entries.length;
+                    r._applyCompoundWorldEffects("polished-orb");
+                    const afterPolished = r.state.worldJournal.entries.length;
+                    out.singingEntryWritten =
+                        afterPolished > journalBefore &&
+                        r.state.worldJournal.entries
+                            .slice(-3)
+                            .some((e) => /singt/.test(e.text || ""));
+                    // Idempotent: zweiter Aufruf gleicher Bauplan → kein neuer Eintrag
+                    r._applyCompoundWorldEffects("polished-orb");
+                    out.singingEntryIdempotent = r.state.worldJournal.entries.length === afterPolished;
+                    // Roh-Variante triggert nicht (precision zu niedrig)
+                    const beforeRaw = r.state.worldJournal.entries.length;
+                    r._applyCompoundWorldEffects("raw-orb");
+                    out.rawDoesNotTrigger = r.state.worldJournal.entries.length === beforeRaw;
+
+                    // Magie-Effekt: pyramid+quarz (magieleitung hoch)
+                    r.state.blueprints["mage-pyramid"] = {
+                        name: "mage-pyramid",
+                        label: "Magier-Pyramide",
+                        builtIn: false,
+                        parts: [
+                            {
+                                shape: "pyramid",
+                                material: "quarz",
+                                opChain: [{ tool: "polierscheibe", op: "polish", cap: 0.97 }],
+                            },
+                        ],
+                    };
+                    const aweBefore = r.state.player.emotions.awe;
+                    r._applyCompoundWorldEffects("mage-pyramid");
+                    out.magicLiftsAwe = r.state.player.emotions.awe > aweBefore;
+
+                    // Visible-Precision-Tint: low precision → dimmer color
+                    // Build-Pfad rendert Group; wir verifizieren via Mesh-
+                    // Materials direkt.
+                    const rawGroup = r._buildFromBlueprint(r.state.blueprints["raw-orb"]);
+                    const polGroup = r._buildFromBlueprint(r.state.blueprints["polished-orb"]);
+                    const rawCol = rawGroup.children[0].material.color.getHex();
+                    const polCol = polGroup.children[0].material.color.getHex();
+                    // Same base color (quarz blau-weiß); polished should be brighter
+                    out.precisionVisibleTint = polCol > rawCol;
+                    rawGroup.traverse(
+                        (o) => o.geometry && typeof o.geometry.dispose === "function" && o.geometry.dispose()
+                    );
+                    polGroup.traverse(
+                        (o) => o.geometry && typeof o.geometry.dispose === "function" && o.geometry.dispose()
+                    );
+
+                    // UI: opChain pro Part im Workshop
+                    r.selectBlueprintForEdit("test-precision");
+                    out.uiOpChainSection = !!document.querySelector(".workshop-opchain");
+                    out.uiOpChainHeader = !!document.querySelector(".workshop-opchain-header");
+                    out.uiApplyDropdown = !!document.querySelector(".workshop-op-tool");
+                    out.uiToolsBox = !!document.querySelector(".workshop-tools");
+                    out.uiToolChips = document.querySelectorAll(".workshop-tool-chip").length >= 5;
+
+                    // Save-Roundtrip: playerTools persistiert
+                    const snap = r.buildStateSnapshot();
+                    out.snapshotHasPlayerTools =
+                        Array.isArray(snap.playerTools) && snap.playerTools.includes("hammer");
+
+                    // validateBlueprintParts: opChain wird sanitized
+                    const v = r.validateBlueprintParts([
+                        {
+                            shape: "box",
+                            material: "stein",
+                            opChain: [{ tool: "hände", op: "hand_knap", cap: 1.5 }],
+                        },
+                    ]);
+                    out.opChainCapClamped = v.ok && v.parts[0].opChain[0].cap === 1;
+
+                    // Aufräumen
+                    delete r.state.blueprints["test-precision"];
+                    delete r.state.blueprints["test-precision-stein"];
+                    delete r.state.blueprints["raw-orb"];
+                    delete r.state.blueprints["polished-orb"];
+                    delete r.state.blueprints["mage-pyramid"];
+                    if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (!wave4p3Results || wave4p3Results.error) {
+                check(
+                    "Welle 4 P3: Snapshot erreichbar",
+                    false,
+                    (wave4p3Results && wave4p3Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Welle 4 P3: 5 Starter-Werkzeuge existieren", wave4p3Results.fiveStarterTools);
+                check("Welle 4 P3: Spieler besitzt Starter-Werkzeuge", wave4p3Results.playerOwnsStarters);
+                check("Welle 4 P3: MATERIAL_OP_COMPATIBILITY frozen", wave4p3Results.matCompatFrozen);
+                check("Welle 4 P3: WORLD_EFFECT_THRESHOLDS frozen", wave4p3Results.thresholdsFrozen);
+                check("Welle 4 P3: Stein erlaubt nur subtractive Ops", wave4p3Results.steinSubtractiveOnly);
+                check("Welle 4 P3: computePartPrecision = min(opChain.caps)", wave4p3Results.precisionIsMin);
+                check("Welle 4 P3: Default-Präzision 0.4 ohne opChain", wave4p3Results.precisionDefaultsTo04);
+                check("Welle 4 P3: applyOpToPart hängt Op an", wave4p3Results.applyOpAppends);
+                check("Welle 4 P3: Stein lehnt Hammer (plastic) ab", wave4p3Results.materialOpIncompat);
+                check("Welle 4 P3: Werkzeug-Besitz wird durchgesetzt", wave4p3Results.toolOwnershipEnforced);
+                check("Welle 4 P3: Built-in-Bauplan vor Op-Mutation geschützt", wave4p3Results.builtInBlueprintProtected);
+                check("Welle 4 P3: DSL-Op apply_op wirkt", wave4p3Results.dslApplyOpWorks);
+                check("Welle 4 P3: Präzisions-Diskriminations-Schwelle liegt zwischen roh/poliert", wave4p3Results.precisionDiscriminates);
+                check("Welle 4 P3: Singing-Journal-Eintrag bei Resonanz+Präzision", wave4p3Results.singingEntryWritten);
+                check("Welle 4 P3: Singing-Eintrag idempotent pro Bauplan", wave4p3Results.singingEntryIdempotent);
+                check("Welle 4 P3: Roh-Compound triggert keinen Welt-Effekt", wave4p3Results.rawDoesNotTrigger);
+                check("Welle 4 P3: Magie-Compound hebt awe an", wave4p3Results.magicLiftsAwe);
+                check("Welle 4 P3: Präzision moduliert Part-Farbe sichtbar", wave4p3Results.precisionVisibleTint);
+                check("Welle 4 P3: UI opChain-Sektion im DOM", wave4p3Results.uiOpChainSection);
+                check("Welle 4 P3: UI opChain-Header zeigt Präzision", wave4p3Results.uiOpChainHeader);
+                check("Welle 4 P3: UI Tool-Apply-Dropdown im DOM", wave4p3Results.uiApplyDropdown);
+                check("Welle 4 P3: UI Werkzeug-Box im DOM", wave4p3Results.uiToolsBox);
+                check("Welle 4 P3: UI listet ≥5 Tool-Chips", wave4p3Results.uiToolChips);
+                check("Welle 4 P3: Save persistiert playerTools", wave4p3Results.snapshotHasPlayerTools);
+                check("Welle 4 P3: validateBlueprintParts clamped opChain cap", wave4p3Results.opChainCapClamped);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {

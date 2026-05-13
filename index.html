@@ -1076,6 +1076,95 @@
             grid-template-columns: repeat(3, 1fr);
             gap: 2px 6px;
         }
+        .workshop-tools {
+            margin: 6px 0 10px 0;
+            padding: 6px 8px;
+            background: rgba(40, 25, 10, 0.05);
+            border: 1px solid var(--parch-edge);
+            border-radius: 2px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            align-items: center;
+        }
+        .workshop-tools-title {
+            font-family: 'Cinzel', Georgia, serif;
+            font-size: 9px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--parch-ink-soft);
+            margin-right: 4px;
+        }
+        .workshop-tool-chip {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            padding: 1px 6px;
+            background: rgba(255, 235, 190, 0.3);
+            border: 1px solid var(--brass-3);
+            border-radius: 2px;
+            color: var(--parch-ink);
+        }
+        .workshop-opchain {
+            grid-column: 1 / -1;
+            margin-top: 3px;
+            padding: 4px 6px;
+            background: rgba(40, 25, 10, 0.04);
+            border-top: 1px solid rgba(40, 25, 10, 0.08);
+            font-size: 10px;
+        }
+        .workshop-opchain-header {
+            font-family: 'IM Fell English', Georgia, serif;
+            color: var(--parch-ink-soft);
+            margin-bottom: 3px;
+            font-style: italic;
+        }
+        .workshop-opchain-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3px;
+            margin-bottom: 4px;
+        }
+        .workshop-op {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9px;
+            padding: 1px 4px;
+            background: rgba(255, 235, 190, 0.25);
+            border: 1px solid var(--brass-3);
+            border-radius: 2px;
+            color: var(--parch-ink);
+        }
+        .workshop-opchain-apply {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+        .workshop-op-tool {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9px;
+            flex: 1;
+            min-width: 0;
+            padding: 1px 3px;
+            background: rgba(255, 235, 190, 0.3);
+            border: 1px solid var(--brass-3);
+            border-radius: 2px;
+        }
+        .workshop-op-apply {
+            font-family: 'Cinzel', Georgia, serif;
+            font-size: 9px;
+            padding: 2px 6px;
+            background: var(--brass-2);
+            color: var(--parch-ink);
+            border: 1px solid var(--brass-3);
+            border-radius: 2px;
+            cursor: pointer;
+        }
+        .workshop-op-apply:hover { background: var(--brass-1); }
+        .workshop-op-empty {
+            font-family: 'IM Fell English', Georgia, serif;
+            font-style: italic;
+            font-size: 10px;
+            color: var(--parch-ink-soft);
+        }
         .workshop-tags {
             margin-top: 10px;
             padding: 8px 10px;
