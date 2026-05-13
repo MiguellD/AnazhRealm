@@ -10425,23 +10425,54 @@ class AnazhRealm {
     _ensurePlayerAuraGlow() {
         if (typeof THREE === "undefined" || !this.state.scene) return null;
         if (this.state.playerAuraGlow) return this.state.playerAuraGlow;
-        // Sphere etwas größer als der Avatar (~1.2 Radius), AdditiveBlending
-        // damit überlagerte Pixel HELLER werden statt nur transparent.
-        const geom = new THREE.SphereGeometry(1.2, 18, 14);
-        const mat = new THREE.MeshBasicMaterial({
+        // Welle 6.D Etappe 3b V4 (Schöpfer-Feedback „mehr Schimmern der Haut,
+        // weichere Kanten") — Glow ist jetzt ein Sprite mit CanvasTexture-
+        // Radial-Gradient statt einer Sphere. Sprite-Billboard + radialer
+        // Falloff zentral→transparent gibt ein WEICHES Leuchten ohne harte
+        // Sphere-Kontur. AdditiveBlending sorgt für die echte Pixel-
+        // Helligkeit (überlappende Pixel werden additiv aufgehellt).
+        const tex = this._buildAuraGradientTexture();
+        const mat = new THREE.SpriteMaterial({
+            map: tex,
             color: 0xffffff,
-            transparent: true,
-            opacity: 0.18,
             blending: THREE.AdditiveBlending,
+            transparent: true,
+            opacity: 1.0,
             depthWrite: false,
         });
-        const sphere = new THREE.Mesh(geom, mat);
-        sphere.userData.isPlayerAuraGlow = true;
-        sphere.castShadow = false;
-        sphere.receiveShadow = false;
-        this.state.scene.add(sphere);
-        this.state.playerAuraGlow = sphere;
-        return sphere;
+        const sprite = new THREE.Sprite(mat);
+        sprite.userData.isPlayerAuraGlow = true;
+        sprite.scale.set(3.0, 3.0, 1);
+        this.state.scene.add(sprite);
+        this.state.playerAuraGlow = sprite;
+        return sprite;
+    }
+
+    // Welle 6.D Etappe 3b V4 — Radial-Gradient-Texture für den Aura-Sprite.
+    // Einmalig erzeugt + gecached. 128×128 Canvas mit fünf-Stop-Gradient von
+    // weiß-translucent (Mitte) → komplett transparent (Rand). Im Sprite mit
+    // AdditiveBlending werden die hellen Mitte-Pixel zu echtem Leuchten,
+    // während die transparenten Rand-Pixel sanft verschmelzen — kein
+    // harter Kontur-Cutoff mehr.
+    _buildAuraGradientTexture() {
+        if (this._auraGradientTexture) return this._auraGradientTexture;
+        if (typeof document === "undefined" || typeof THREE === "undefined") return null;
+        const size = 128;
+        const canvas = document.createElement("canvas");
+        canvas.width = canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+        gradient.addColorStop(0.0, "rgba(255,255,255,0.55)");
+        gradient.addColorStop(0.25, "rgba(255,255,255,0.38)");
+        gradient.addColorStop(0.55, "rgba(255,255,255,0.16)");
+        gradient.addColorStop(0.85, "rgba(255,255,255,0.04)");
+        gradient.addColorStop(1.0, "rgba(255,255,255,0.0)");
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, size, size);
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.needsUpdate = true;
+        this._auraGradientTexture = tex;
+        return tex;
     }
 
     tickPlayerAura() {
@@ -10466,22 +10497,24 @@ class AnazhRealm {
         const auraSat = 0.85 * hpRatio;
         const auraLit = 0.5;
         const auraColor = new THREE.Color().setHSL(hue / 360, auraSat, auraLit);
-        // (a) Glow-Sphere: ECHTER Leucht-Effekt um den Avatar
+        // (a) Glow-Sprite (V4): weicher Schimmer um den Avatar.
+        // Sprite ist Billboard (folgt Kamera automatisch). Radius wirkt
+        // physisch über `scale`; die radial-Gradient-Texture sorgt für den
+        // sanften Falloff (keine harte Kontur mehr). Die Material-Color tint
+        // multipliziert mit der Textur, sodass die HSL-Tag-Farbe sichtbar wird.
         const glow = this._ensurePlayerAuraGlow();
         if (glow) {
             const p = this.state.playerMesh.position;
-            // Y leicht nach oben (Avatar-Mitte, nicht Boden)
             glow.position.set(p.x, p.y + 0.5, p.z);
             glow.material.color.copy(auraColor);
-            // Opacity skaliert mit HP UND dominanter Tag-Intensität (stark
-            // ausgeprägter Spieler leuchtet heller). Cap bei 0.4 damit
-            // Avatar erkennbar bleibt.
+            // Sprite-Master-Opacity skaliert mit HP × dominanter Tag-Intensität.
+            // Cap bei 1.0 (Texture-Alpha selbst läuft auf max 0.55 in der Mitte,
+            // Rand 0 — das ist der weiche Verlauf).
             const auraStrength = Math.min(1, bestVal / 1.5);
-            glow.material.opacity = 0.1 + 0.3 * hpRatio * auraStrength;
-            // Sphere atmet leicht (Sin-Modulation 5 % radius), damit es
-            // lebendig wirkt und nicht statisch.
-            const breath = 1 + Math.sin(performance.now() * 0.001) * 0.05;
-            glow.scale.set(breath, breath, breath);
+            glow.material.opacity = 0.55 + 0.45 * hpRatio * auraStrength;
+            // Atem-Animation über Sprite-scale (5 % Modulation).
+            const breath = 3.0 * (1 + Math.sin(performance.now() * 0.001) * 0.05);
+            glow.scale.set(breath, breath, 1);
         }
         // (b) Sub-Mesh-Tint dezent: 15 % Mix, damit Original-Farbe vorranig
         // bleibt aber das Leuchten in die Materialien hineinwirkt.
@@ -10797,18 +10830,29 @@ class AnazhRealm {
 
     _buildDragonGroup() {
         const group = new THREE.Group();
+        // Welle 6.D Etappe 3a+ (Schöpfer-Feedback 13.05.2026) — Drache wirkt
+        // visuell „W/S vertauscht": die drei Schweif-Segmente in -Z formen
+        // optisch eine schmale Spitze, die Spieler als Schnauze wahrnehmen
+        // (Cone-Effekt). Die Kopf-Box in +Z ist dagegen weniger eindeutig als
+        // Front lesbar. Fix: alle Drache-Teile in einer Inner-Group sammeln
+        // und diese um 180° um Y drehen — visuell landet damit der wahr-
+        // genommene „Schnauzen"-Schweif in +Z (Forward), und W bewegt nach
+        // user-perceived-Front. Die Outer-Group bleibt für yaw-Rotation frei.
+        const inner = new THREE.Group();
+        inner.rotation.y = Math.PI;
+        group.add(inner);
         const material = new THREE.MeshBasicMaterial({ color: 0x2d6e3b });
         // Körper: gestreckter Quader entlang Z
         const body = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.45, 1.2), material);
         body.position.y = 0.4;
         body.castShadow = true;
         body.receiveShadow = true;
-        group.add(body);
+        inner.add(body);
         // Kopf: vorne dran
         const head = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.38, 0.45), material);
         head.position.set(0, 0.5, 0.85);
         head.castShadow = true;
-        group.add(head);
+        inner.add(head);
         // Vier Beine in Box-Eck-Anordnung
         const legY = 0.18;
         const legLen = 0.5;
@@ -10816,7 +10860,7 @@ class AnazhRealm {
         const frLeg = this._buildLimb(material, 0.25, legY, 0.35, legLen, 0.15, 0.15);
         const blLeg = this._buildLimb(material, -0.25, legY, -0.35, legLen, 0.15, 0.15);
         const brLeg = this._buildLimb(material, 0.25, legY, -0.35, legLen, 0.15, 0.15);
-        group.add(flLeg, frLeg, blLeg, brLeg);
+        inner.add(flLeg, frLeg, blLeg, brLeg);
         // Schweif: drei Segmente in Kette nach hinten, jedes als Joint
         // rotiert um den vorherigen — gibt eine wellige Sinus-Welle.
         const tailJoint = new THREE.Group();
@@ -10839,7 +10883,7 @@ class AnazhRealm {
         tailJoint3.add(tailSeg3);
         tailJoint2.add(tailJoint3);
         tailJoint.add(tailJoint2);
-        group.add(tailJoint);
+        inner.add(tailJoint);
         group.userData.material = material;
         group.userData.parts = { body, head, flLeg, frLeg, blLeg, brLeg, tailJoint, tailJoint2, tailJoint3 };
         return group;

@@ -5548,19 +5548,38 @@ function startSaveServer() {
                     const afterColor = sub && sub.material ? sub.material.color.getHex() : null;
                     out.auraTintChangedColor = beforeColor !== afterColor;
                     out.boundsRingRemoved = !r.state.playerAura || !r.state.scene.children.includes(r.state.playerAura);
-                    // Echter Glow: Sphere mit AdditiveBlending
-                    out.glowSphereExists = !!r.state.playerAuraGlow;
+                    // Echter Glow V4: Sprite mit AdditiveBlending + CanvasTexture
+                    // (Radial-Gradient für weichen Falloff statt Sphere-Kante)
+                    out.glowSpriteExists = !!r.state.playerAuraGlow;
                     if (r.state.playerAuraGlow) {
                         out.glowInScene = r.state.scene.children.includes(r.state.playerAuraGlow);
+                        out.glowIsSprite = r.state.playerAuraGlow.isSprite === true;
                         const mat = r.state.playerAuraGlow.material;
                         out.glowIsTransparent = !!mat && mat.transparent === true;
                         out.glowIsAdditive = !!mat && mat.blending === THREE.AdditiveBlending;
-                        out.glowOpacityInRange = !!mat && mat.opacity > 0 && mat.opacity < 1;
+                        out.glowHasTexture = !!(mat && mat.map);
                         // Position folgt Spieler
                         const pp = r.state.playerMesh.position;
                         const gp = r.state.playerAuraGlow.position;
                         out.glowFollowsPlayer = Math.abs(gp.x - pp.x) < 0.01 && Math.abs(gp.z - pp.z) < 0.01;
                     }
+
+                    // Drache-Flip (Schöpfer-Feedback: W/S vertauscht beim Drache):
+                    // Inner-Group rotation.y = π, sodass die wahrgenommene
+                    // Schnauze (Tail-Cone-Segmente) in +Z (Forward) landet.
+                    r.applyPlayerSoul("dragon");
+                    const dragonGroup = r.state.playerMesh;
+                    let dragonInnerRotY = null;
+                    if (dragonGroup && dragonGroup.children.length > 0) {
+                        // Erstes Child ist die Inner-Group nach unserem Bau-Pfad.
+                        const firstChild = dragonGroup.children[0];
+                        if (firstChild && firstChild.isGroup) {
+                            dragonInnerRotY = firstChild.rotation.y;
+                        }
+                    }
+                    out.dragonInnerRotY = dragonInnerRotY;
+                    out.dragonInnerFlipped = dragonInnerRotY !== null && Math.abs(dragonInnerRotY - Math.PI) < 0.001;
+                    r.applyPlayerSoul("human"); // restore
 
                     // (4) Tod-Wunde persistent + regeneriert
                     out.hasWoundIntensity = "deathWoundIntensity" in r.state.player;
@@ -5656,14 +5675,21 @@ function startSaveServer() {
                 check("Reflex 3: tickPlayerAura cached _auraBaseColor auf Sub-Mesh", reflexResults.auraBaseColorCached);
                 check("Reflex 3: tickPlayerAura mischt Aura-Farbe in Material", reflexResults.auraTintChangedColor);
                 check("Reflex 3: Alter Boden-Torus-Ring entfernt", reflexResults.boundsRingRemoved);
-                check("Reflex 3 V3: echter Glow — Sphere-Mesh existiert", reflexResults.glowSphereExists);
-                if (reflexResults.glowSphereExists) {
-                    check("Reflex 3 V3: Glow-Sphere ist in der Welt-Szene", reflexResults.glowInScene);
-                    check("Reflex 3 V3: Glow-Material ist transparent", reflexResults.glowIsTransparent);
-                    check("Reflex 3 V3: Glow nutzt AdditiveBlending (echter Leucht-Effekt)", reflexResults.glowIsAdditive);
-                    check("Reflex 3 V3: Glow-Opacity zwischen 0 und 1", reflexResults.glowOpacityInRange);
-                    check("Reflex 3 V3: Glow-Position folgt Spieler (x/z)", reflexResults.glowFollowsPlayer);
+                check("Reflex 3 V4: weicher Glow — Sprite mit Radial-Texture existiert", reflexResults.glowSpriteExists);
+                if (reflexResults.glowSpriteExists) {
+                    check("Reflex 3 V4: Glow-Sprite ist in der Welt-Szene", reflexResults.glowInScene);
+                    check("Reflex 3 V4: Glow ist ein THREE.Sprite (Billboard)", reflexResults.glowIsSprite);
+                    check("Reflex 3 V4: Glow-Material ist transparent", reflexResults.glowIsTransparent);
+                    check("Reflex 3 V4: Glow nutzt AdditiveBlending (echter Leucht-Effekt)", reflexResults.glowIsAdditive);
+                    check("Reflex 3 V4: Glow hat Map-Texture (Radial-Gradient für weichen Falloff)", reflexResults.glowHasTexture);
+                    check("Reflex 3 V4: Glow-Position folgt Spieler (x/z)", reflexResults.glowFollowsPlayer);
                 }
+                // Drache-Flip
+                check(
+                    "Drache-Flip: Inner-Group rotation.y = π (Tail-Cone als wahrgenommene Schnauze in +Z)",
+                    reflexResults.dragonInnerFlipped,
+                    `inner.rotation.y=${(reflexResults.dragonInnerRotY || 0).toFixed(3)}`
+                );
                 // (4) Wunde
                 check("Reflex 4: state.player.deathWoundIntensity existiert", reflexResults.hasWoundIntensity);
                 check("Reflex 4: AnazhRealm.WOUND_TAG_PENALTY-Konstante existiert", reflexResults.hasWoundPenaltyConst);
