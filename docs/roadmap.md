@@ -38,8 +38,10 @@ Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) si
 | 9 | Welt-Export/Import (erweitert) — Drei-Wahl Ersetzen/Daneben/Fusionieren | ✅ **live** — `<dialog>` mit drei Aktionen, `importWorldBeside` mit parentWorlds-Spur + Slug-Kollisions-Auflösung + Witness-Journal, Fusion-Button disabled bis Ring 10 | – | Ring 8 |
 | 10 | Welt-Fusion + Cascade-Rewire (zwei DSL-Programm-Sets mergen mit parentWorlds) | ✅ **live** — drei Strategien (sequence/random-mix/tag-merge), 2-Spalten-Dialog, Stammbaum mit klickbaren Eltern-Welt-Links, Cascade-Bugfix (sourceBlueprint + refName folgen Rename), Schema 10.0-fusion-v1 | – | Ring 9 |
 | 10.1 | Rezepte aus anderer Welt holen (ohne Fusion) | ✅ **live** — `importRecipesFromWorld(srcId)`, 1:1-Inhalt, `-import`-Suffix bei Kollision, Cascade-Rewire wie Fusion, „Rezepte holen"-Button pro Welt-Picker-Reihe | – | Ring 10 |
-| W6 | **Crafting-Polish + Erweiterung** — visuelle Verbindungen, Brech-Mechanik, Energiequellen, Kreaturen-Körper, Physik-Baukasten, Rüstung, Min-Regel-Entscheidung | 🔴 offen, bewusst nachgelagert | 8-12 Sessions in 7 Teilschritten | W5 + Rings 8-10 |
-| 11 | Multi-User-Sync (P2P / Signaling) | 🔴 offen — das letzte Vision-Kapitel | 5-7 d | Ring 8 + Welt-Modifizierbarkeit empfohlen |
+| 10.5 | Welt-Modifizierbarkeit (pro-Chunk DSL-Delta) | ✅ **live** — `state.worldMeta.chunkDeltas` mit FIFO-Cap 100/Chunk, `modify_terrain(x, z, r, dh)` mit Smoothstep-Falloff, `_rebuildChunkPhysics` aus aktuellen Vertices, `applyChunkDelta` als Hook in `ensureChunkAt`, Chat `grabe loch`/`hebe hügel`, Schema `10.5-chunk-delta-v1` | – | Ring 10 |
+| 11 V1 | Multi-User Position-Sync via WebSocket-Broker | ✅ **live** — `signaling-server.js` (RFC-6455 von Hand, zero deps), `state.p2p` mit peers-Map, 30 Hz pos-Broadcast, Remote-Peer-Avatare als Cone+Sphere-Group (HSL-Hash aus peerId), UI-Toggle in Einstellungen, CSP um ws:// erweitert, Sandbox-Grenze (KEIN p2p-DSL-Op) — KEIN DSL-Sync | – | Ring 10.5 |
+| 11 V2 | DSL-AST-Broadcast für Welt-Synchronisation | 🔴 offen — Chat-Befehle als DSL-AST über WS senden, beide Welten führen aus → konsistenter Zustand. Trust-Boundary: eingehende ASTs durch denselben `dslRun`-Sandbox-Pfad wie eigene. modify_terrain-Sync, Nexus-Programm-IDs für Outcome-Dedup. | 3-5 d | Ring 11 V1 |
+| W6 | **Crafting-Polish + Erweiterung** — visuelle Verbindungen, Brech-Mechanik, Energiequellen, Kreaturen-Körper, Physik-Baukasten, Rüstung, Min-Regel-Entscheidung | 🔴 offen, bewusst nachgelagert | 8-12 Sessions in 7 Teilschritten | W5 + Rings 8-11 V1 |
 
 **Summe verbleibend**: ~30-40 Arbeitstage in fokussierten Sessions. Verteilt auf 2-4 Monate realistisch.
 
@@ -368,23 +370,40 @@ Plus: inline-styles aus `index.html` entfernt (`#fps`, `#state-file-input`), Inl
 
 ---
 
-### Ring 11: Multi-User-Sync (~5-7 d)
+### Ring 11: Multi-User-Sync
 
 **Ziel**: zwei Spieler erleben dieselbe Welt zur gleichen Zeit.
 
-- WebRTC (P2P) für die Realtime-Daten — keine zentrale Server-Pflicht
-- Signaling-Server für initial connection: einfacher Node-Server (`signaling-server.js` neben `save-server.js`), nur ICE-Candidates austauschen
-- Sync-Kanal pro Spieler:
-  - Position + Rotation (60 Hz, lossy OK)
-  - Chat-Befehle (sendet als DSL-AST, beide Welten führen aus → eine konsistente Welt)
-  - DSL-Programme vom Nexus (sendet Programm-IDs nach Outcome, nicht das ganze Programm)
-- Public Welten: jeder mit der worldId kann beitreten
-- Private Welten: Schöpfer muss einladen (Token-Link)
-- Test: zwei Browser-Tabs, beide auf der gleichen Welt-URL, beide Spieler sehen sich bewegen
+#### V1 ✅ (13.05.2026, live) — Position-Sync via WebSocket-Broker
 
-**Akzeptanz**: spielbares Mini-Multiplayer-Erlebnis.
+Geliefert in einer Session (in Kombination mit Ring 10.5 für die Vorbedingung):
 
-**Vorbedingung**: Ring 8 (Welt-Identität) + Ring 9 (Export/Import) müssen stabil sein.
+- **`signaling-server.js`**: Mini-WebSocket-Broker (~225 Zeilen, ZERO npm-Dependencies). RFC-6455 Frame-Handling von Hand, Health-Endpoint `/health`, HOST/PORT via env.
+- **Protokoll**: `join { room, peerId }` → `welcome { peers[] }`, `pos { x, y, z, yaw }` wird an alle Mitglieder desselben Raums broadcastet, ohne den Absender.
+- **Client (`state.p2p`)**: `peerId`, `room`, `ws`, `peers: Map<peerId, {x,y,z,yaw,mesh,lastSeen}>`, 30 Hz pos-Broadcast im Game-Loop (intern gedrosselt), Idle-Purge nach >10 s ohne Update.
+- **Remote-Avatare**: THREE.Group aus Cone + Sphere, deterministische HSL-Farbe aus peerId-Hash.
+- **UI**: Toggle + URL-Input + Status-Anzeige im Einstellungen-Drawer. Auto-Connect nach Init wenn `p2p.enabled === true` in localStorage.
+- **CSP**: `connect-src` erweitert um `ws://127.0.0.1:4313` + `ws://localhost:4313` + wss-Varianten.
+- **Trust-Boundary**: KEIN neuer DSL-Op (`p2p_send`/`peer_dsl`/`remote_run`) — V1 trägt strikt nur Position + Rotation. Playtest-Invariante prüft die Abwesenheit explizit.
+- **Heilige-Lektion-Disziplin**: EINE neue Datei (signaling-server.js), zehn Methoden auf der einen `AnazhRealm`, drei Sub-Hooks im Game-Loop. KEIN P2PManager-Modul.
+
+**Ehrliche V1-Grenzen** (V2-Aufgaben):
+- Modifikationen (Ring 10.5 `modify_terrain`, Architekturen, Kreaturen) werden NICHT zwischen Spielern synchronisiert. Jeder erlebt seine eigene Welt-Variante.
+- Avatar ist immer Cone+Sphere, nicht die echte Spieler-Seele (Phönix/Drache).
+- Kein DSL-AST-Broadcast — Chat-Befehle wirken nur lokal.
+
+**Acceptance-Test** (manuell): `npm run signaling` + zwei Browser-Tabs derselben Welt → in Einstellungen Multi-User aktivieren → beide Spieler bewegen sich sichtbar als bunte Kegel.
+
+#### V2 (offen, ~3-5 d): DSL-AST-Broadcast für Welt-Sync
+
+- Chat-Befehle werden als DSL-AST über WebSocket an alle Mitglieder gesendet
+- Eingehender AST läuft durch denselben `dslRun`-Sandbox-Pfad wie eigene Programme (identische Budget-Limits, Op-Whitelist, kein Bypass)
+- `modify_terrain`-Ops werden so synchron — beide Spieler sehen dasselbe Loch
+- Nexus-Programm-IDs (statt ganzem Programm) für Outcome-Dedup
+- Public Welten: `visibility: "public"`, jeder mit der worldId kann beitreten
+- Private Welten: Schöpfer generiert Token-Link
+
+**Vorbedingung**: Ring 11 V1 (Position-Sync stabil) + saubere DSL-Sandbox (existiert seit Ring 7).
 
 ---
 

@@ -1,4 +1,4 @@
-/**AnazhRealm V7.67 – Das Ultiversum Vollendet.
+/**AnazhRealm V7.68 – Das Ultiversum Vollendet.
  * Hüpfen: Robust, präzise (Y ~1.5), Coyote-Time 0.3s, Gravitation 1.5G, Reibung 0.5.
  * Kollisionen: Kein Tunneling, steepnessThreshold 3.0, wallThickness 2.0, CCD optimiert.
  * Terrain: Flacher (Höhenunterschiede ±5), KI-gesteuerte Steilheitsanpassung, Chat-Steuerung.
@@ -12,7 +12,7 @@
 class AnazhRealm {
     constructor() {
         // ### Learnings ### [Stichwortartig optimieren, korrigieren, ergänzen – nie Wissen löschen!]
-        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67
+        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68
         // - Nexus als Herz der Selbstentwicklung, steuert nun alles über Chat, unzerstörbar und unendlich
         this.state = {
             // ### Kern ###
@@ -94,7 +94,7 @@ class AnazhRealm {
             maxVersionHistoryEntries: 50,
             maxCreatures: 120,
             maxLoadedChunks: 196,
-            currentVersion: "7.67",
+            currentVersion: "7.68",
             terrainSteepness: 1.0,
             terrainBaseHeight: 0.0,
             weather: "sunny",
@@ -421,7 +421,7 @@ class AnazhRealm {
     // ### Logging ###
     log(message, level = "INFO") {
         if (level === "DEBUG" && !this.state.debugLogging) return;
-        const logMessage = `[AnazhRealm V7.67] [${level}] ${message}`;
+        const logMessage = `[AnazhRealm V7.68] [${level}] ${message}`;
         this.state.logBuffer.push(logMessage);
         console.log(logMessage);
         if (this.state.logBuffer.length > this.state.maxLogEntries) {
@@ -3981,7 +3981,7 @@ class AnazhRealm {
             // sonst auf die zu tiefe Höhe, statt einen Spawn-Fall zu lassen.
             playerPosition: { x: 0, y: 50, z: 0 },
             knowledgeBase: [],
-            version: this.state.currentVersion || "7.67",
+            version: this.state.currentVersion || "7.68",
             selfAwareness: { components: [], weaknesses: [] },
             creatures: [],
             creatureEmotions: [],
@@ -8624,7 +8624,7 @@ class AnazhRealm {
                 ...((Array.isArray(saveA.knowledgeBase) && saveA.knowledgeBase.slice(-100)) || []),
                 ...((Array.isArray(saveB.knowledgeBase) && saveB.knowledgeBase.slice(-100)) || []),
             ].slice(-200),
-            version: this.state.currentVersion || "7.67",
+            version: this.state.currentVersion || "7.68",
             selfAwareness: { components: [], weaknesses: [] },
             creatures: [],
             creatureEmotions: [],
@@ -11527,7 +11527,7 @@ class AnazhRealm {
     }
 
     async init() {
-        this.log("Initialisiere Anazh Realm V7.67... Ewigkeit erwacht!", "INFO");
+        this.log("Initialisiere Anazh Realm V7.68... Ewigkeit erwacht!", "INFO");
         this.themeInitDOM();
         this.grokInitDOM();
         this.symphonyInitDOM();
