@@ -5501,6 +5501,134 @@ function startSaveServer() {
                 })
                 .catch(() => null);
 
+            // ### Welle 6.D Etappe 1.6 — Custom-Seelen via DSL ###
+            //
+            // Schöpfer kann mit define_soul(name, bodyParts) eigene Charaktere
+            // komponieren — Form × Material via dieselbe Hylomorphismus-Pipe
+            // wie Bauwerke. Vision: „mehr Charaktere, mehr Wachstums-Freiheit
+            // durch simple Regeln".
+            const wave6d16Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    out.hasGetSoulDef = typeof r._getSoulDef === "function";
+                    out.hasCreateMethod = typeof r.createOrUpdateSoulFromDsl === "function";
+                    out.customSoulsContainerExists = r.state.customSouls && typeof r.state.customSouls === "object";
+
+                    // DSL-Op define_soul ist im Interpreter
+                    const ops = r._dslOps || (r.dslOps && r.dslOps()) || null;
+                    out.dslOpRegistered = ops ? typeof ops.define_soul === "function" : false;
+                    // Fallback: prüfen via dslRun
+                    const beforeCount = Object.keys(r.state.customSouls || {}).length;
+                    const testParts = [
+                        { shape: "box", material: "knochen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.5, y: 1.0, z: 0.4 } },
+                        { shape: "helix", material: "quarz", position: { x: 0, y: 0.6, z: 0 }, size: { x: 0.3, y: 0.6, z: 2 } },
+                        { shape: "sphere", material: "glut", position: { x: 0, y: 0.3, z: 0 }, size: { x: 0.25, y: 0.25, z: 0.25 } },
+                    ];
+                    r.dslRun(["define_soul", "kristall_geist", testParts], { source: "test" });
+                    const afterCount = Object.keys(r.state.customSouls || {}).length;
+                    out.customSoulAdded = afterCount === beforeCount + 1;
+                    const created = r.state.customSouls.kristall_geist;
+                    out.customHasBodyParts = !!(created && Array.isArray(created.bodyParts) && created.bodyParts.length === 3);
+                    out.customHasLabel = !!(created && typeof created.label === "string");
+
+                    // _getSoulDef findet die Custom-Seele
+                    const def = r._getSoulDef("kristall_geist");
+                    out.getSoulDefFindsCustom = !!def && def.name === "kristall_geist";
+
+                    // Built-in-Override verboten
+                    r.dslRun(["define_soul", "human", testParts], { source: "test" });
+                    out.builtinProtected = !!r.playerSoulDefs.human && Array.isArray(r.playerSoulDefs.human.bodyParts);
+
+                    // Compound-Tags der Custom-Seele unterscheiden sich von Built-ins
+                    const customTags = r.computeSoulCompoundTags(created);
+                    const humanTags = r.computeSoulCompoundTags(r.playerSoulDefs.human);
+                    out.customTagsExist = customTags && Object.keys(customTags).length > 0;
+                    // kristall_geist hat quarz+glut → hohe magieleitung
+                    out.customMagicHigh = (customTags.magieleitung || 0) > (humanTags.magieleitung || 0);
+
+                    // applyPlayerSoul auf Custom funktioniert
+                    const savedSoul = r.state.player.soul;
+                    const applied = r.applyPlayerSoul("kristall_geist");
+                    out.applyCustomReturnsTrue = applied === true;
+                    out.stateSoulIsCustom = r.state.player.soul === "kristall_geist";
+                    // Stats wurden für die Custom-Seele neu berechnet
+                    out.customStatsComputed = !!(r.state.player.stats && r.state.player.stats.hpMax > 0);
+                    out.customStatsDifferFromHuman = (() => {
+                        r.state.player.soul = "human";
+                        const humanStats = r.computePlayerStats().stats;
+                        r.state.player.soul = "kristall_geist";
+                        const customStats = r.computePlayerStats().stats;
+                        return Math.abs(customStats.magicResist - humanStats.magicResist) > 0.05;
+                    })();
+
+                    // UI-Dropdown enthält die neue Seele
+                    if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
+                    const select = document.getElementById("player-soul-select");
+                    out.dropdownContainsCustom = select && [...select.options].some((o) => o.value === "kristall_geist");
+
+                    // Cap-Test: 16 Custom-Seelen max
+                    let overflowResult = "ok";
+                    for (let i = 0; i < 20; i++) {
+                        const res = r.createOrUpdateSoulFromDsl(`spam_${i}`, testParts);
+                        if (!res.ok && res.reason === "too_many_souls") {
+                            overflowResult = "cap_hit";
+                            break;
+                        }
+                    }
+                    out.capHit = overflowResult === "cap_hit";
+
+                    // Save-Round-Trip vor dem finalen Cleanup
+                    r.state.customSouls = {
+                        save_test: {
+                            name: "save_test",
+                            label: "Save Test",
+                            bodyParts: testParts,
+                            createdAt: 0,
+                        },
+                    };
+                    const snap = r.buildStateSnapshot();
+                    out.snapshotHasCustomSouls = !!(snap.customSouls && snap.customSouls.save_test);
+
+                    // Cleanup — Custom-Seelen entfernen + Dropdown auffrischen,
+                    // damit nachfolgende Tests (Ring 5: Dropdown hat 3 Optionen)
+                    // wieder den Built-in-Standardzustand sehen.
+                    r.state.customSouls = {};
+                    r.state.player.soul = savedSoul;
+                    r.applyPlayerSoul(savedSoul);
+                    if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
+
+                    return out;
+                })
+                .catch(() => null);
+
+            if (wave6d16Results) {
+                check("Welle 6.D Etappe 1.6: _getSoulDef-Helper existiert", wave6d16Results.hasGetSoulDef);
+                check("Welle 6.D Etappe 1.6: createOrUpdateSoulFromDsl-Methode existiert", wave6d16Results.hasCreateMethod);
+                check("Welle 6.D Etappe 1.6: state.customSouls-Container existiert", wave6d16Results.customSoulsContainerExists);
+                check("Welle 6.D Etappe 1.6: define_soul DSL-Op fügt Custom-Seele hinzu", wave6d16Results.customSoulAdded);
+                check("Welle 6.D Etappe 1.6: Custom-Seele hat bodyParts mit 3 Teilen", wave6d16Results.customHasBodyParts);
+                check("Welle 6.D Etappe 1.6: Custom-Seele bekommt einen label", wave6d16Results.customHasLabel);
+                check("Welle 6.D Etappe 1.6: _getSoulDef findet Custom-Seele neben Built-ins", wave6d16Results.getSoulDefFindsCustom);
+                check("Welle 6.D Etappe 1.6: Built-in-Name geschützt (human nicht überschreibbar)", wave6d16Results.builtinProtected);
+                check("Welle 6.D Etappe 1.6: Compound-Tags der Custom-Seele werden berechnet", wave6d16Results.customTagsExist);
+                check(
+                    "Welle 6.D Etappe 1.6: Vision-Diskrimination — quarz+glut-Seele hat höhere magieleitung als Mensch",
+                    wave6d16Results.customMagicHigh
+                );
+                check("Welle 6.D Etappe 1.6: applyPlayerSoul akzeptiert Custom-Namen", wave6d16Results.applyCustomReturnsTrue);
+                check("Welle 6.D Etappe 1.6: state.player.soul ist die Custom-Seele nach apply", wave6d16Results.stateSoulIsCustom);
+                check("Welle 6.D Etappe 1.6: Stats werden für Custom-Seele neu berechnet", wave6d16Results.customStatsComputed);
+                check(
+                    "Welle 6.D Etappe 1.6: Custom-Stats unterscheiden sich von Built-in-Stats (Vision-Diskrimination)",
+                    wave6d16Results.customStatsDifferFromHuman
+                );
+                check("Welle 6.D Etappe 1.6: UI-Dropdown listet Custom-Seelen", wave6d16Results.dropdownContainsCustom);
+                check("Welle 6.D Etappe 1.6: Cap 16 — überzählige werden abgelehnt", wave6d16Results.capHit);
+                check("Welle 6.D Etappe 1.6: buildStateSnapshot persistiert customSouls", wave6d16Results.snapshotHasCustomSouls);
+            }
+
             if (wave6dResults) {
                 check("Welle 6.D: AnazhRealm.STAT_FROM_TAGS-Matrix existiert", wave6dResults.hasStatMatrix);
                 check(
@@ -6563,6 +6691,8 @@ function startSaveServer() {
                     out.statusBarSoulInDom = !!document.getElementById("status-soul");
                     const select = document.getElementById("player-soul-select");
                     out.dropdownHasThreeOptions = select && select.options.length === 3;
+                    out.dropdownOptionCount = select ? select.options.length : -1;
+                    out.dropdownOptionValues = select ? [...select.options].map((o) => o.value).join(",") : "";
 
                     // Cleanup: starte vom Default aus.
                     r.applyPlayerSoul("human");
@@ -6731,7 +6861,11 @@ function startSaveServer() {
             } else {
                 check("Ring 5: Dropdown im Spieler-Drawer", ring5Results.drawerSelectInDom);
                 check("Ring 5: Status-Bar zeigt Seele-Item", ring5Results.statusBarSoulInDom);
-                check("Ring 5: Dropdown hat drei Optionen", ring5Results.dropdownHasThreeOptions);
+                check(
+                    "Ring 5: Dropdown hat drei Optionen (Built-in-Seelen)",
+                    ring5Results.dropdownHasThreeOptions,
+                    `count=${ring5Results.dropdownOptionCount} values=${ring5Results.dropdownOptionValues}`
+                );
                 check("Ring 5: Default-Seele ist 'human'", ring5Results.defaultIsHuman);
                 check("Ring 5: Default-Material-Farbe ist rot (0xff0000)", ring5Results.defaultColorRed);
                 check("Ring 5 V2: Mensch-Group hat torso/head/2 Arme/2 Beine", ring5Results.humanHasAllParts);

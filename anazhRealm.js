@@ -436,6 +436,11 @@ class AnazhRealm {
         // Save später User-Baupläne hinzufügt (Editor 6.6), werden sie auf
         // dieses Default-Set draufgemerged.
         this.state.blueprints = this._defaultBlueprints();
+        // Welle 6.D Etappe 1.6 — Custom-Seelen (vom Schöpfer via DSL erschaffene
+        // Charaktere). Map `name → {name, label, bodyParts, createdAt}`. Cap 16.
+        // Built-in-Seelen liegen weiter in `playerSoulDefs`; Custom-Seelen
+        // werden hier persistiert.
+        this.state.customSouls = {};
         // Welle 4 Phase 1+3 — Built-in-Parts ohne Material auf „stein"
         // mappen; ohne opChain auf eine billige Default-Kette. Built-ins
         // bleiben damit visuell wie vorher; die Tag-Berechnung greift.
@@ -1069,6 +1074,34 @@ class AnazhRealm {
                         name: result.name,
                         parts: valid.parts.length,
                     });
+                }
+            },
+            // Welle 6.D Etappe 1.6 — Schöpfer-Op für eigene Seelen. bodyParts
+            // wird durch `validateBlueprintParts` geprüft (gleiche Whitelist,
+            // gleiche Caps wie Bauwerke — eine Sprache). Der Spieler kann eigene
+            // Charaktere wie Maschinen komponieren: Form × Material → Compound-
+            // Tags → Stats. Bewusst NICHT im `dslComposeAtomic`-Pool, damit der
+            // Nexus keine Charaktere willkürlich erfindet.
+            define_soul: ([name, bodyParts], ctx) => {
+                const valid = this.validateBlueprintParts(bodyParts);
+                if (!valid.ok) {
+                    ctx.log.push({ event: "soul_validation_failed", reason: valid.reason });
+                    return;
+                }
+                const result = this.createOrUpdateSoulFromDsl(name, valid.parts);
+                ctx.log.push({
+                    event: result.ok ? "defined_soul" : "define_soul_failed",
+                    name: result.name,
+                    reason: result.reason,
+                });
+                if (result.ok) {
+                    this.journalAppend("growth", `Eine neue Seele entstand: ${result.name}.`, {
+                        name: result.name,
+                        parts: valid.parts.length,
+                    });
+                    // UI-Dropdown neu rendern (falls offen), damit die neue Seele
+                    // sofort wählbar ist.
+                    if (typeof this.playerSoulInitDOM === "function") this._refreshSoulSelect();
                 }
             },
             // Welle 4 Phase 1 — Schöpfer-Werkzeug für Materialien. Tags werden
@@ -7683,6 +7716,10 @@ class AnazhRealm {
             // Ring 5: Spieler-Seele (visuelle Form). Beim Load wird sie nach
             // dem playerMesh-Bau angewandt — kein Body-Recreate.
             playerSoul: this.state.player.soul || "human",
+            // Welle 6.D Etappe 1.6 — Custom-Seelen persistieren (eigene
+            // Charaktere des Schöpfers). Built-ins sind in playerSoulDefs
+            // verdrahtet und werden NICHT persistiert.
+            customSouls: this.state.customSouls || {},
             // Welle 4 Phase 3: Werkzeug-Besitz. Starter-Werkzeuge werden bei
             // jedem Init wieder verfügbar, aber Persistenz erlaubt zukünftig
             // eigen-geschmiedete (Welle 6) zu überleben.
@@ -8455,8 +8492,31 @@ class AnazhRealm {
         // "Lade Zustand"), wenden wir die Seele sofort an. Vor dem Mesh-Bau
         // merkt sich applyPlayerSoul den Namen und der Init-Pfad wendet ihn
         // nach Mesh-Erstellung an.
-        if (typeof state.playerSoul === "string" && this.playerSoulDefs[state.playerSoul]) {
-            this.applyPlayerSoul(state.playerSoul);
+        // Welle 6.D Etappe 1.6 — Custom-Seelen aus dem Save rekonstruieren
+        // BEVOR applyPlayerSoul aufgerufen wird; sonst würde eine gespeicherte
+        // Custom-Seele als „unbekannt" abgelehnt.
+        if (state.customSouls && typeof state.customSouls === "object") {
+            const restored = {};
+            for (const key of Object.keys(state.customSouls)) {
+                const entry = state.customSouls[key];
+                if (!entry || !Array.isArray(entry.bodyParts)) continue;
+                if (this.playerSoulDefs[key]) continue; // Built-in geschützt
+                const valid = this.validateBlueprintParts(entry.bodyParts);
+                if (!valid.ok) continue;
+                restored[key] = {
+                    name: key,
+                    label: typeof entry.label === "string" ? entry.label : key,
+                    bodyParts: valid.parts,
+                    createdAt: Number(entry.createdAt) || 0,
+                };
+            }
+            this.state.customSouls = restored;
+        }
+        if (typeof state.playerSoul === "string") {
+            const known =
+                this.playerSoulDefs[state.playerSoul] ||
+                (this.state.customSouls && this.state.customSouls[state.playerSoul]);
+            if (known) this.applyPlayerSoul(state.playerSoul);
         }
         // Ring 6: Bau-Werke wiederherstellen. Bestehende Strukturen werden
         // tief disposed, dann jede aus {type, position, seed} neu gebaut.
@@ -9783,6 +9843,41 @@ class AnazhRealm {
         return this.computeCompoundTags({ parts: soulDef.bodyParts });
     }
 
+    // Welle 6.D Etappe 1.6 — Seele auflösen: erst Built-in, dann Custom.
+    // Single-Pfad für alle Lese-Stellen (computePlayerStats, applyPlayerSoul,
+    // renderPlayerStatsUI). Gibt null zurück wenn unbekannt.
+    _getSoulDef(name) {
+        if (!name) return null;
+        if (this.playerSoulDefs[name]) return this.playerSoulDefs[name];
+        if (this.state.customSouls && this.state.customSouls[name]) return this.state.customSouls[name];
+        return null;
+    }
+
+    // Welle 6.D Etappe 1.6 — DSL-Pfad für eigene Seelen.
+    //
+    // Verwendet `validateBlueprintParts` (W2-B, hart sand-gesichert: 9 Shape-
+    // Whitelist, Cap 32 parts, Material muss existieren, Position/Size/Rotation
+    // ge-clamp). Cap 16 Custom-Seelen pro Welt. Built-in-Namen geschützt.
+    createOrUpdateSoulFromDsl(name, bodyParts) {
+        if (typeof name !== "string" || name.length === 0 || name.length > 40) {
+            return { ok: false, reason: "invalid_name" };
+        }
+        const safe = name.replace(/[^a-z0-9_-]/gi, "").slice(0, 40);
+        if (!safe) return { ok: false, reason: "invalid_name_after_sanitize" };
+        if (this.playerSoulDefs[safe]) return { ok: false, reason: "builtin_protected" };
+        if (!this.state.customSouls) this.state.customSouls = {};
+        const existing = this.state.customSouls[safe];
+        const count = Object.keys(this.state.customSouls).length;
+        if (!existing && count >= 16) return { ok: false, reason: "too_many_souls" };
+        this.state.customSouls[safe] = {
+            name: safe,
+            label: safe.replace(/_/g, " "),
+            bodyParts: bodyParts,
+            createdAt: performance.now() / 1000,
+        };
+        return { ok: true, name: safe };
+    }
+
     // Hilfs-Helper: ein Glied (Arm/Bein) mit Pivot am Joint. Joint-Group
     // sitzt an (jx, jy, jz); das Mesh hängt von der Y-Achse nach unten,
     // sodass Rotation der Joint-Group am Schulter-/Hüft-Punkt ankert.
@@ -10002,9 +10097,21 @@ class AnazhRealm {
             drachen: "dragon",
             dragon: "dragon",
         };
-        const canonical = alias[key] || (defs[key] ? key : null);
+        // Welle 6.D Etappe 1.6 — auch Custom-Seelen tolerieren. Alias-Map gilt
+        // weiter für deutsche/englische Built-in-Namen; sonst sanitizen wir den
+        // Namen (lowercase) und akzeptieren, wenn er als Built-in ODER Custom-
+        // Soul existiert.
+        const sanitized = key.replace(/[^a-z0-9_-]/gi, "");
+        const canonical =
+            alias[key] ||
+            (defs[key] && key) ||
+            (defs[sanitized] && sanitized) ||
+            (this.state.customSouls && this.state.customSouls[sanitized] && sanitized) ||
+            null;
         if (!canonical) {
-            this.log(`Seele '${name}' unbekannt — bekannt: ${Object.keys(defs).join(", ")}`, "ERROR");
+            const customNames = this.state.customSouls ? Object.keys(this.state.customSouls) : [];
+            const all = Object.keys(defs).concat(customNames);
+            this.log(`Seele '${name}' unbekannt — bekannt: ${all.join(", ")}`, "ERROR");
             return false;
         }
         // Vor Mesh-Erstellung (z. B. loadState im frühen Bootstrap): Wahl
@@ -10013,11 +10120,17 @@ class AnazhRealm {
             this.state.player.soul = canonical;
             return false;
         }
-        const def = defs[canonical];
+        const def = this._getSoulDef(canonical);
         const old = this.state.playerMesh;
         // Position + Scale + Rotation übernehmen, damit Soul-Wechsel mitten
         // im Spiel keine Sprünge produziert.
-        const newGroup = def.build();
+        // Built-in-Seele: def.build() ist ein eigener Multi-Mesh-Pfad mit
+        // Walk-Cycle. Custom-Seele: über `_buildFromBlueprint` aus bodyParts
+        // — derselbe Render-Pfad wie für Bauwerke.
+        const newGroup =
+            def && typeof def.build === "function"
+                ? def.build()
+                : this._buildFromBlueprint({ name: canonical, parts: def.bodyParts || [] });
         if (old) {
             newGroup.position.copy(old.position);
             newGroup.rotation.copy(old.rotation);
@@ -10065,7 +10178,7 @@ class AnazhRealm {
     // dazumischen (Etappe 2-3).
     computePlayerStats() {
         const soulName = (this.state.player && this.state.player.soul) || "human";
-        const soul = this.playerSoulDefs[soulName];
+        const soul = this._getSoulDef(soulName);
         const compoundTags = this.computeSoulCompoundTags(soul);
         // Defensiv: alle MATERIAL_TAG_KEYS auf Zahl auflösen, fehlende auf 0.
         // Werte können bis ~3 reichen (FORM_TAG_ACTIVATION × Material-Tag);
@@ -12746,30 +12859,53 @@ class AnazhRealm {
     playerSoulInitDOM() {
         const select = document.getElementById("player-soul-select");
         if (!select) return;
-        // Optionen aus den Defs aufbauen, damit Label + Reihenfolge an einer
-        // Stelle leben.
-        const defs = this.playerSoulDefs;
-        select.innerHTML = "";
-        for (const key of Object.keys(defs)) {
-            const opt = document.createElement("option");
-            opt.value = key;
-            opt.textContent = defs[key].label;
-            select.appendChild(opt);
-        }
-        select.value = this.state.player.soul || "human";
+        this._refreshSoulSelect();
         select.addEventListener("change", () => {
             this.applyPlayerSoul(select.value);
         });
         // Status-Bar mit Default beschriften, falls vorhanden.
         const status = document.getElementById("status-soul");
         if (status) {
-            const cur = defs[this.state.player.soul || "human"];
+            const cur = this._getSoulDef(this.state.player.soul || "human");
             status.textContent = (cur && cur.label) || "—";
         }
         // Welle 6.D Etappe 1 — initiale Stats-UI rendern, falls #player-stats
         // schon im DOM ist (HTML statisch vorgegeben). Update läuft danach bei
         // jedem applyPlayerSoul → recomputePlayerStats.
         this.renderPlayerStatsUI();
+    }
+
+    // Welle 6.D Etappe 1.6 — Soul-Select neu befüllen (Built-ins + Custom).
+    // Wird sowohl beim Init aufgerufen als auch nach jedem define_soul, damit
+    // neue Custom-Seelen ohne Reload im Dropdown erscheinen.
+    _refreshSoulSelect() {
+        if (typeof document === "undefined") return;
+        const select = document.getElementById("player-soul-select");
+        if (!select) return;
+        const previous = select.value;
+        select.innerHTML = "";
+        for (const key of Object.keys(this.playerSoulDefs)) {
+            const opt = document.createElement("option");
+            opt.value = key;
+            opt.textContent = this.playerSoulDefs[key].label;
+            select.appendChild(opt);
+        }
+        if (this.state.customSouls) {
+            for (const key of Object.keys(this.state.customSouls)) {
+                const opt = document.createElement("option");
+                opt.value = key;
+                opt.textContent = this.state.customSouls[key].label + " ✦";
+                select.appendChild(opt);
+            }
+        }
+        const desired = previous || this.state.player.soul || "human";
+        // Wenn die zuvor gewählte Option weg ist (z. B. Custom gelöscht),
+        // fall back auf die aktuell aktive Seele.
+        if ([...select.options].some((o) => o.value === desired)) {
+            select.value = desired;
+        } else if (this.state.player.soul) {
+            select.value = this.state.player.soul;
+        }
     }
 
     // Welle 6.D Etappe 1 — Stats-UI im Spieler-Drawer rendern.
