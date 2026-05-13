@@ -6597,6 +6597,34 @@ class AnazhRealm {
             switchBtn.addEventListener("click", () => {
                 this.switchToWorld(entry.worldId, { reload: true });
             });
+            const recipesBtn = document.createElement("button");
+            recipesBtn.type = "button";
+            recipesBtn.textContent = "Rezepte holen";
+            recipesBtn.title = "Baupläne + Materialien + Werkzeuge aus dieser Welt in die aktive importieren";
+            recipesBtn.addEventListener("click", () => {
+                let confirmed = false;
+                try {
+                    confirmed = window.confirm(
+                        `Rezepte aus „${entry.slug}" in deine aktuelle Welt importieren? Konflikte bekommen -import-Suffix.`
+                    );
+                } catch {
+                    confirmed = true;
+                }
+                if (!confirmed) return;
+                const result = this.importRecipesFromWorld(entry.worldId);
+                const chatOutput = document.getElementById("chat-output");
+                if (chatOutput) {
+                    const line = document.createElement("div");
+                    if (result.ok) {
+                        const c = result.counts;
+                        line.textContent = `Aus „${entry.slug}" empfangen: ${c.blueprints} Baupläne, ${c.materials} Materialien, ${c.tools} Werkzeuge.`;
+                    } else {
+                        line.textContent = `Rezept-Import fehlgeschlagen: ${result.reason}`;
+                    }
+                    chatOutput.appendChild(line);
+                    chatOutput.scrollTop = chatOutput.scrollHeight;
+                }
+            });
             const delBtn = document.createElement("button");
             delBtn.type = "button";
             delBtn.textContent = "löschen";
@@ -6616,6 +6644,7 @@ class AnazhRealm {
             });
             row.appendChild(label);
             row.appendChild(switchBtn);
+            row.appendChild(recipesBtn);
             row.appendChild(delBtn);
             list.appendChild(row);
         }
@@ -7664,6 +7693,129 @@ class AnazhRealm {
     // ihn, registriert die neue Welt im Index. `reload:true` springt direkt
     // in die Fusion; `reload:false` lässt den Aufrufer entscheiden, wann
     // gewechselt wird (Tests + Vorschau-Workflow).
+    // Rezepte aus einer anderen Welt in die aktuell aktive importieren.
+    // Anders als Fusion wird KEINE neue Welt erschaffen — die Materialien,
+    // Baupläne und Werkzeuge der Quelle werden direkt in die aktive Welt
+    // kopiert (mit `-import`-Suffix bei Namens-Kollision, gleiches Schema
+    // wie Fusion mit `-fusion`). Aktive Welt-Identität bleibt unangetastet.
+    // Querverweise (Werkzeug.sourceBlueprint, fraktaler-Bauplan.part.refName)
+    // werden mit umbenannt — selbe Logik wie bei Fusion. Schreibt einen
+    // Witness-Journal-Eintrag mit der Quelle.
+    importRecipesFromWorld(sourceWorldId) {
+        if (!sourceWorldId || typeof sourceWorldId !== "string") {
+            return { ok: false, reason: "keine Quell-Welt-ID" };
+        }
+        if (sourceWorldId === (this.state.worldMeta && this.state.worldMeta.worldId)) {
+            return { ok: false, reason: "Quelle = aktive Welt" };
+        }
+        const raw = localStorage.getItem(this.worldStorageKey(sourceWorldId));
+        if (!raw) return { ok: false, reason: "Quelle nicht im Speicher" };
+        let sourceSave;
+        try {
+            sourceSave = JSON.parse(raw);
+        } catch (e) {
+            return { ok: false, reason: `Quell-Save ungültig: ${e.message}` };
+        }
+
+        // Quell-Inventar tief klonen, sonst würden Mutationen in der aktiven
+        // Welt zurück in das Quell-Save bluten.
+        const sourceBPs = Array.isArray(sourceSave.blueprints) ? JSON.parse(JSON.stringify(sourceSave.blueprints)) : [];
+        const sourceMats = Array.isArray(sourceSave.materials) ? JSON.parse(JSON.stringify(sourceSave.materials)) : [];
+        const sourceTools = Array.isArray(sourceSave.tools) ? JSON.parse(JSON.stringify(sourceSave.tools)) : [];
+
+        // Vorhandene Namen in der aktiven Welt sammeln (inkl. Built-ins,
+        // damit ein importierter "village" auch zu "village-import" wird).
+        const existingBPNames = new Set(Object.keys(this.state.blueprints || {}));
+        const existingMatNames = new Set(Object.keys(this.state.materials || {}));
+        const existingToolNames = new Set(Object.keys(this.state.tools || {}));
+
+        const renameMap = {};
+        const addedBPs = [];
+        const addedMats = [];
+        const addedTools = [];
+
+        const resolveName = (origName, taken) => {
+            if (!taken.has(origName)) return origName;
+            let candidate = `${origName}-import`;
+            let n = 2;
+            while (taken.has(candidate)) candidate = `${origName}-import-${n++}`;
+            return candidate;
+        };
+
+        for (const bp of sourceBPs) {
+            if (!bp || typeof bp.name !== "string" || bp.builtIn) continue;
+            const newName = resolveName(bp.name, existingBPNames);
+            existingBPNames.add(newName);
+            if (newName !== bp.name) renameMap[bp.name] = newName;
+            addedBPs.push({ ...bp, name: newName, builtIn: false });
+        }
+        for (const m of sourceMats) {
+            if (!m || typeof m.name !== "string" || m.builtIn) continue;
+            const newName = resolveName(m.name, existingMatNames);
+            existingMatNames.add(newName);
+            addedMats.push({ ...m, name: newName, builtIn: false });
+        }
+        for (const t of sourceTools) {
+            if (!t || typeof t.name !== "string" || t.builtIn) continue;
+            const newName = resolveName(t.name, existingToolNames);
+            existingToolNames.add(newName);
+            addedTools.push({ ...t, name: newName, builtIn: false });
+        }
+
+        // Cascade-Rewire: Werkzeug.sourceBlueprint + fractal.refName folgen
+        // den Bauplan-Umbenennungen. Selbe Logik wie Fusion — kein Drift.
+        this._rewireBlueprintRefs(addedBPs, addedTools, renameMap);
+
+        // Anwenden auf state. Material-Tags füllen wir mit Defaults auf, damit
+        // alte Saves ohne alle Tag-Felder konsistent bleiben.
+        const tagDefaults = AnazhRealm.MATERIAL_TAG_DEFAULTS || {};
+        for (const bp of addedBPs) {
+            this.state.blueprints[bp.name] = bp;
+        }
+        for (const m of addedMats) {
+            this.state.materials[m.name] = {
+                ...m,
+                tags: { ...tagDefaults, ...(m.tags || {}) },
+            };
+        }
+        for (const t of addedTools) {
+            this.state.tools[t.name] = t;
+        }
+
+        const sourceMeta = sourceSave.worldMeta || {};
+        const sourceSlug = sourceMeta.slug || "(unbenannt)";
+        const total = addedBPs.length + addedMats.length + addedTools.length;
+        this.journalAppend(
+            "witness",
+            `Ich habe Rezepte aus „${sourceSlug}" empfangen: ${addedBPs.length} Baupläne, ${addedMats.length} Materialien, ${addedTools.length} Werkzeuge.`,
+            {
+                fromWorldId: sourceWorldId,
+                fromSlug: sourceSlug,
+                counts: { blueprints: addedBPs.length, materials: addedMats.length, tools: addedTools.length },
+                renameMap: { ...renameMap },
+            }
+        );
+
+        // Save + Re-Render
+        try {
+            this.saveState();
+        } catch (err) {
+            this.log(`Save nach Recipe-Import fehlgeschlagen: ${err.message}`, "WARN");
+        }
+        if (typeof this._renderWorkshopDOM === "function") this._renderWorkshopDOM();
+        this.updateWorldInfo();
+
+        this.log(
+            `Rezepte aus ${sourceSlug} importiert: ${total} (Baupläne ${addedBPs.length}, Materialien ${addedMats.length}, Werkzeuge ${addedTools.length})`,
+            "INFO"
+        );
+        return {
+            ok: true,
+            counts: { blueprints: addedBPs.length, materials: addedMats.length, tools: addedTools.length },
+            renameMap,
+        };
+    }
+
     fuseWorlds(idA, idB, strategy, { slug = null, reload = false } = {}) {
         if (!idA || !idB || idA === idB) {
             return { ok: false, reason: "zwei verschiedene Eltern-IDs nötig" };

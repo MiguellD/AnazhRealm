@@ -3651,6 +3651,181 @@ function startSaveServer() {
                 );
             }
 
+            // ### Ring 10.1 — Rezepte aus anderer Welt holen (ohne Fusion) ###
+            // Schöpfer-Wunsch nach Ring-10-Reflexion: B's Rezepte in A
+            // importieren OHNE eine Fusions-Welt zu erschaffen. `import-
+            // RecipesFromWorld(sourceId)` kopiert Baupläne + Materialien +
+            // Werkzeuge der Quelle in die aktive Welt, Konflikte mit
+            // `-import`-Suffix, Cross-Refs (sourceBlueprint, refName) folgen.
+            const recipeResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    const srcId = r.createNewWorld({ slug: "recipe-source", inheritPlayer: false, reload: false });
+                    const srcSave = JSON.parse(localStorage.getItem(r.worldStorageKey(srcId)));
+                    srcSave.blueprints = [
+                        {
+                            name: "fremder-altar",
+                            label: "Fremder Altar",
+                            parts: [
+                                {
+                                    shape: "box",
+                                    material: "stein",
+                                    position: { x: 0, y: 0, z: 0 },
+                                    size: { x: 1, y: 1, z: 1 },
+                                },
+                            ],
+                            connections: [],
+                        },
+                        {
+                            name: "fremder-hammer-bp",
+                            label: "Fremder Hammer (Bauplan)",
+                            parts: [
+                                {
+                                    shape: "cylinder",
+                                    material: "eisen",
+                                    position: { x: 0, y: 0, z: 0 },
+                                    size: { x: 1, y: 1, z: 1 },
+                                },
+                            ],
+                            connections: [],
+                            role: "tool",
+                            toolMeta: { opName: "Fremder-Hammer", opClass: "form_geben" },
+                        },
+                        {
+                            name: "fremder-fraktal",
+                            label: "Fremder Fraktal",
+                            parts: [{ shape: "blueprint", refName: "fremder-altar", position: { x: 2, y: 0, z: 0 } }],
+                            connections: [],
+                        },
+                    ];
+                    srcSave.materials = [
+                        { name: "rosa-quarz", label: "Rosa Quarz", color: "#fbb", tags: { resoniert: 0.8 } },
+                    ];
+                    srcSave.tools = [
+                        {
+                            name: "fremder-hammer",
+                            label: "Fremder Hammer",
+                            opClass: "form_geben",
+                            opName: "smithing",
+                            precisionCap: 0.85,
+                            sourceBlueprint: "fremder-hammer-bp",
+                        },
+                    ];
+                    localStorage.setItem(r.worldStorageKey(srcId), JSON.stringify(srcSave));
+
+                    const beforeBPCount = Object.keys(r.state.blueprints).length;
+                    const beforeMatCount = Object.keys(r.state.materials).length;
+                    const beforeToolCount = Object.keys(r.state.tools).length;
+
+                    const result = r.importRecipesFromWorld(srcId);
+                    out.importOk = result.ok === true;
+                    out.importCounts =
+                        result.ok &&
+                        result.counts.blueprints === 3 &&
+                        result.counts.materials === 1 &&
+                        result.counts.tools === 1;
+                    out.bpAddedToState = !!r.state.blueprints["fremder-altar"];
+                    out.materialAdded = !!r.state.materials["rosa-quarz"];
+                    out.toolAdded = !!r.state.tools["fremder-hammer"];
+                    const altar = r.state.blueprints["fremder-altar"];
+                    out.bpContentPreserved = !!altar && altar.parts.length === 1 && altar.parts[0].shape === "box";
+                    out.activeWorldStillSame = r.state.worldMeta.worldId !== srcId && r.activeWorldGet() !== srcId;
+                    const j = r.state.worldJournal && r.state.worldJournal.entries;
+                    out.witnessEntryWritten =
+                        Array.isArray(j) &&
+                        j.some((e) => e.type === "witness" && e.text && e.text.includes("Rezepte aus „recipe-source"));
+                    out.bpStateGrew = Object.keys(r.state.blueprints).length - beforeBPCount === 3;
+                    out.matStateGrew = Object.keys(r.state.materials).length - beforeMatCount === 1;
+                    out.toolStateGrew = Object.keys(r.state.tools).length - beforeToolCount === 1;
+
+                    const result2 = r.importRecipesFromWorld(srcId);
+                    out.secondImportOk = result2.ok === true;
+                    out.collisionAddsImportSuffix = !!r.state.blueprints["fremder-altar-import"];
+                    const fraktalImport = r.state.blueprints["fremder-fraktal-import"];
+                    out.fractalRefRewired =
+                        !!fraktalImport &&
+                        fraktalImport.parts &&
+                        fraktalImport.parts.some((p) => p.refName === "fremder-altar-import");
+                    const hammerImport = r.state.tools["fremder-hammer-import"];
+                    out.toolRefRewired = !!hammerImport && hammerImport.sourceBlueprint === "fremder-hammer-bp-import";
+
+                    const noId = r.importRecipesFromWorld("");
+                    out.rejectsEmptyId = !noId.ok;
+                    const activeId = r.state.worldMeta.worldId;
+                    const selfImport = r.importRecipesFromWorld(activeId);
+                    out.rejectsSelfImport = !selfImport.ok;
+                    const ghostImport = r.importRecipesFromWorld("does-not-exist-xxx");
+                    out.rejectsGhostId = !ghostImport.ok;
+
+                    r._renderWorldPicker();
+                    const pickerRows = document.querySelectorAll("#world-picker-list .world-picker-row");
+                    let hasRecipesBtn = false;
+                    for (const row of pickerRows) {
+                        for (const b of row.querySelectorAll("button")) {
+                            if (b.textContent === "Rezepte holen") {
+                                hasRecipesBtn = true;
+                                break;
+                            }
+                        }
+                    }
+                    out.uiHasRecipesBtn = hasRecipesBtn;
+
+                    delete r.state.blueprints["fremder-altar"];
+                    delete r.state.blueprints["fremder-altar-import"];
+                    delete r.state.blueprints["fremder-hammer-bp"];
+                    delete r.state.blueprints["fremder-hammer-bp-import"];
+                    delete r.state.blueprints["fremder-fraktal"];
+                    delete r.state.blueprints["fremder-fraktal-import"];
+                    delete r.state.materials["rosa-quarz"];
+                    delete r.state.materials["rosa-quarz-import"];
+                    delete r.state.tools["fremder-hammer"];
+                    delete r.state.tools["fremder-hammer-import"];
+                    // Workshop-DOM neu rendern, damit nachfolgende Tests
+                    // (Ring 6.6) keine Geister-Einträge sehen.
+                    if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+                    const keepId = r.state.worldMeta.worldId;
+                    for (const e of r.worldsIndexLoad()) {
+                        if (e.worldId !== keepId) r.deleteWorld(e.worldId);
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!recipeResults || recipeResults.error) {
+                check(
+                    "Ring 10.1: Snapshot erreichbar",
+                    false,
+                    (recipeResults && recipeResults.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Ring 10.1: importRecipesFromWorld liefert ok=true", recipeResults.importOk);
+                check("Ring 10.1: counts = {3 Baupläne, 1 Material, 1 Werkzeug}", recipeResults.importCounts);
+                check("Ring 10.1: Bauplan in aktiver Welt verfügbar", recipeResults.bpAddedToState);
+                check("Ring 10.1: Material in aktiver Welt verfügbar", recipeResults.materialAdded);
+                check("Ring 10.1: Werkzeug in aktiver Welt verfügbar", recipeResults.toolAdded);
+                check("Ring 10.1: Bauplan-Inhalt 1:1 erhalten (keine Manipulation)", recipeResults.bpContentPreserved);
+                check("Ring 10.1: Aktive Welt-Identität unverändert", recipeResults.activeWorldStillSame);
+                check("Ring 10.1: Witness-Journal-Eintrag geschrieben", recipeResults.witnessEntryWritten);
+                check("Ring 10.1: state.blueprints wächst um 3", recipeResults.bpStateGrew);
+                check("Ring 10.1: state.materials wächst um 1", recipeResults.matStateGrew);
+                check("Ring 10.1: state.tools wächst um 1", recipeResults.toolStateGrew);
+                check("Ring 10.1: Konflikt bekommt -import-Suffix", recipeResults.collisionAddsImportSuffix);
+                check(
+                    "Ring 10.1: Fraktaler refName folgt Rename (kein dangling fractal)",
+                    recipeResults.fractalRefRewired
+                );
+                check(
+                    "Ring 10.1: Werkzeug.sourceBlueprint folgt Rename (kein dangling tool)",
+                    recipeResults.toolRefRewired
+                );
+                check("Ring 10.1: leere ID wird abgewiesen", recipeResults.rejectsEmptyId);
+                check("Ring 10.1: Self-Import wird abgewiesen", recipeResults.rejectsSelfImport);
+                check("Ring 10.1: unbekannte Quell-ID wird abgewiesen", recipeResults.rejectsGhostId);
+                check("Ring 10.1: 'Rezepte holen'-Button im Welt-Picker", recipeResults.uiHasRecipesBtn);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {
