@@ -1257,6 +1257,157 @@ function startSaveServer() {
                 check("Welle 4 P1: define_ability blockiert nested define_material", wave4p1Results.nestedDefineMaterialBlocked);
             }
 
+            // ### Welle 4 Phase 2 — Helix + Form-Tag-Aktivierungs-Matrix ###
+            const wave4p2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    // FORM_TAG_ACTIVATION existiert + frozen
+                    const M = r.constructor.FORM_TAG_ACTIVATION;
+                    out.matrixFrozen = Object.isFrozen(M);
+                    out.matrixHasNineForms =
+                        ["box", "sphere", "cylinder", "cone", "pyramid", "octahedron", "plane", "torus", "helix"].every(
+                            (f) => M[f] && typeof M[f] === "object"
+                        );
+                    // Vollständigkeit: jedes Form × Tag definiert (kein undefined)
+                    const keys = r.constructor.MATERIAL_TAG_KEYS;
+                    let undefCount = 0;
+                    for (const f of Object.keys(M)) {
+                        for (const t of keys) if (typeof M[f][t] !== "number") undefCount++;
+                    }
+                    out.matrixComplete = undefCount === 0;
+                    // Konzept-Konsistenz: jedes Tag hat mindestens eine Signatur (3) — außer lebendig
+                    const tagsWithSignature = keys.filter((t) =>
+                        Object.values(M).some((row) => row[t] === 3)
+                    );
+                    out.allTagsHaveSignatureExceptLebendig =
+                        tagsWithSignature.length === keys.length - 1 &&
+                        !tagsWithSignature.includes("lebendig");
+                    // Keine Form hat mehr als 3 Signaturen (Konzept §8 Anti-Monokultur)
+                    const sigCounts = Object.fromEntries(
+                        Object.entries(M).map(([f, row]) => [
+                            f,
+                            keys.filter((t) => row[t] === 3).length,
+                        ])
+                    );
+                    out.noFormExceeds3Signatures = Object.values(sigCounts).every((c) => c <= 3);
+
+                    // Helix rendert: validateBlueprintParts akzeptiert
+                    const v = r.validateBlueprintParts([
+                        { shape: "helix", material: "bronze", size: { x: 1, y: 4, z: 5 } },
+                    ]);
+                    out.helixValidates = v.ok && v.parts[0].shape === "helix";
+                    // _makePartGeometry liefert echte BufferGeometry
+                    const geom = r._makePartGeometry({
+                        shape: "helix",
+                        size: { x: 1, y: 4, z: 5 },
+                    });
+                    out.helixHasVertices =
+                        geom &&
+                        geom.attributes &&
+                        geom.attributes.position &&
+                        geom.attributes.position.count > 50;
+                    if (geom && typeof geom.dispose === "function") geom.dispose();
+
+                    // computePartTags: Quarz-Kugel hat resoniert ~2.7, transparent ~2.85
+                    const sphereQuarz = { shape: "sphere", material: "quarz" };
+                    const partTags = r.computePartTags(sphereQuarz);
+                    out.quarzSphereResoniert = (partTags.resoniert || 0) > 2.5;
+                    out.quarzSphereTransparent = (partTags.transparent || 0) > 2.7;
+                    // härte ist null bei sphere → soll fehlen oder 0 sein
+                    out.sphereNoHärte = !partTags.härte;
+                    // Stahl-Kegel (cone, eisen): härte hoch (3 × 0.75 = 2.25)
+                    const coneEisen = { shape: "cone", material: "eisen" };
+                    const coneTags = r.computePartTags(coneEisen);
+                    out.coneEisenHärte = (coneTags.härte || 0) > 2.0;
+
+                    // computeCompoundTags: max-Aggregation, nicht sum
+                    const bp1 = {
+                        parts: [
+                            { shape: "sphere", material: "quarz" },
+                            { shape: "box", material: "stein" },
+                        ],
+                    };
+                    const comp = r.computeCompoundTags(bp1);
+                    // dichte: box×stein = 3×0.85 = 2.55, sphere×quarz = 3×0.65 = 1.95 → max 2.55
+                    out.maxAggregationDichte = Math.abs(comp.dichte - 2.55) < 0.01;
+                    // Wenn sum wäre, dichte = 4.50 — schließe das aus
+                    out.notSumAggregation = comp.dichte < 4.0;
+
+                    // DSL-Condition compound_has_tag
+                    r.state.blueprints["test-quarz-orb"] = {
+                        name: "test-quarz-orb",
+                        label: "Quarz-Orb",
+                        builtIn: false,
+                        parts: [{ shape: "sphere", material: "quarz" }],
+                    };
+                    out.condResonatesHigh = r.dslConditions.compound_has_tag.call(
+                        r,
+                        ["test-quarz-orb", "resoniert", 2.5],
+                        { state: r.state }
+                    );
+                    out.condResonatesAboveSig = !r.dslConditions.compound_has_tag.call(
+                        r,
+                        ["test-quarz-orb", "resoniert", 3.5],
+                        { state: r.state }
+                    );
+                    out.condUnknownTagFalse = !r.dslConditions.compound_has_tag.call(
+                        r,
+                        ["test-quarz-orb", "phlogiston", 0.5],
+                        { state: r.state }
+                    );
+
+                    // UI: Tags-Sektion erscheint im Werkstatt-Editor
+                    r.selectBlueprintForEdit("test-quarz-orb");
+                    out.uiTagsSection = !!document.querySelector(".workshop-tags");
+                    out.uiTagsTitle = !!document.querySelector(".workshop-tags-title");
+                    out.uiHasAtomareHint = !!document.querySelector(".workshop-tags-hint");
+                    const tagRows = document.querySelectorAll(".workshop-tag-row");
+                    out.uiTagsHasRows = tagRows.length > 0;
+                    // Werkstatt-Shape-Dropdown enthält helix
+                    const shapeOpts = Array.from(
+                        document.querySelectorAll(".workshop-part-row select option")
+                    ).map((o) => o.value);
+                    out.uiShapeIncludesHelix = shapeOpts.includes("helix");
+
+                    // Aufräumen
+                    delete r.state.blueprints["test-quarz-orb"];
+                    if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (!wave4p2Results || wave4p2Results.error) {
+                check(
+                    "Welle 4 P2: Snapshot erreichbar",
+                    false,
+                    (wave4p2Results && wave4p2Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Welle 4 P2: FORM_TAG_ACTIVATION frozen", wave4p2Results.matrixFrozen);
+                check("Welle 4 P2: Matrix deckt 9 Formen (inkl. helix)", wave4p2Results.matrixHasNineForms);
+                check("Welle 4 P2: Matrix vollständig (keine undefined-Zelle)", wave4p2Results.matrixComplete);
+                check("Welle 4 P2: Alle Tags außer lebendig haben Signatur", wave4p2Results.allTagsHaveSignatureExceptLebendig);
+                check("Welle 4 P2: Keine Form hat >3 Signaturen", wave4p2Results.noFormExceeds3Signatures);
+                check("Welle 4 P2: helix-Shape validiert", wave4p2Results.helixValidates);
+                check("Welle 4 P2: helix-Geometrie hat Vertices", wave4p2Results.helixHasVertices);
+                check("Welle 4 P2: Quarz-Sphäre aktiviert resoniert >2.5", wave4p2Results.quarzSphereResoniert);
+                check("Welle 4 P2: Quarz-Sphäre aktiviert transparent >2.7", wave4p2Results.quarzSphereTransparent);
+                check("Welle 4 P2: Sphäre aktiviert kein härte", wave4p2Results.sphereNoHärte);
+                check("Welle 4 P2: Eisen-Kegel aktiviert härte >2.0", wave4p2Results.coneEisenHärte);
+                check("Welle 4 P2: computeCompoundTags max-aggregiert dichte=2.55", wave4p2Results.maxAggregationDichte);
+                check("Welle 4 P2: Aggregation ist nicht sum (<4.0)", wave4p2Results.notSumAggregation);
+                check("Welle 4 P2: compound_has_tag erkennt hohe Resonanz", wave4p2Results.condResonatesHigh);
+                check("Welle 4 P2: compound_has_tag respektiert Schwellwert", wave4p2Results.condResonatesAboveSig);
+                check("Welle 4 P2: compound_has_tag unbekanntes Tag → false", wave4p2Results.condUnknownTagFalse);
+                check("Welle 4 P2: UI .workshop-tags-Sektion im DOM", wave4p2Results.uiTagsSection);
+                check("Welle 4 P2: UI Tags-Titel im DOM", wave4p2Results.uiTagsTitle);
+                check("Welle 4 P2: UI „atomare Schicht\"-Hint im DOM", wave4p2Results.uiHasAtomareHint);
+                check("Welle 4 P2: UI rendert Tag-Zeilen", wave4p2Results.uiTagsHasRows);
+                check("Welle 4 P2: UI Shape-Dropdown enthält helix", wave4p2Results.uiShapeIncludesHelix);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {

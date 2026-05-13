@@ -1168,6 +1168,19 @@ class AnazhRealm {
                 if (!e || typeof e[name] !== "number") return false;
                 return e[name] > Number(threshold);
             },
+            // Welle 4 Phase 2 — Compound-Tags als DSL-sichtbare Bedingung.
+            // `compound_has_tag(blueprintName, tagName, threshold)`. Aktivierte
+            // Tag-Stärke (Form × Material, max-aggregiert) muss ≥ threshold sein.
+            // Unbekannter Bauplan/Tag → false. Macht emergente Hylomorphismus-
+            // Eigenschaften für den Nexus + LLM bedingungsfähig.
+            compound_has_tag: ([blueprintName, tagName, threshold]) => {
+                if (typeof blueprintName !== "string" || typeof tagName !== "string") return false;
+                const bp = this.state.blueprints && this.state.blueprints[blueprintName];
+                if (!bp) return false;
+                const tags = this.computeCompoundTags(bp);
+                const v = tags[tagName] || 0;
+                return v >= Number(threshold);
+            },
             not: ([sub], ctx) => !this.dslEvalCond(sub, ctx),
             and: (subs, ctx) => subs.every((s) => this.dslEvalCond(s, ctx)),
             or: (subs, ctx) => subs.some((s) => this.dslEvalCond(s, ctx)),
@@ -1697,6 +1710,7 @@ class AnazhRealm {
             "octahedron",
             "plane",
             "torus",
+            "helix",
             "blueprint",
         ]);
         if (!Array.isArray(parts) || parts.length === 0) return { ok: false, reason: "no_parts" };
@@ -6779,6 +6793,28 @@ class AnazhRealm {
                 return new THREE.PlaneGeometry(sx, sy);
             case "torus":
                 return new THREE.TorusGeometry(sx / 2, Math.max(0.05, sx / 6), 8, segments);
+            case "helix": {
+                // Welle 4 Phase 2 — Helix als TubeGeometry über eine
+                // parametrische Kurve. size.x = Radius (Diameter der Wendel),
+                // size.y = Gesamt-Länge, size.z = Anzahl Windungen. Tube-
+                // Radius ist proportional zu sx/12, mindestens 0.05.
+                const helixRadius = Math.max(0.05, sx / 2);
+                const helixLength = Math.max(0.1, sy);
+                const turns = Math.max(0.5, Math.min(20, sz || 3));
+                const tubeRadius = Math.max(0.05, sx / 12);
+                const curve = new THREE.Curve();
+                curve.getPoint = function (t, optionalTarget) {
+                    const target = optionalTarget || new THREE.Vector3();
+                    const angle = t * turns * Math.PI * 2;
+                    return target.set(
+                        Math.cos(angle) * helixRadius,
+                        (t - 0.5) * helixLength,
+                        Math.sin(angle) * helixRadius
+                    );
+                };
+                const tubularSegments = Math.max(20, Math.floor(turns * 16));
+                return new THREE.TubeGeometry(curve, tubularSegments, tubeRadius, 6, false);
+            }
             case "box":
             default:
                 return new THREE.BoxGeometry(sx, sy, sz);
@@ -7099,6 +7135,44 @@ class AnazhRealm {
         };
         if (typeof this._renderWorkshopDOM === "function") this._renderWorkshopDOM();
         return { ok: true, name: safe };
+    }
+
+    // ### Welle 4 Phase 2 — Aktivierte Tag-Stärken ###
+    // computePartTags(part): pro Part die aktivierten Tags (Form × Material).
+    // Werte 0..3, der Bereich aus FORM_TAG_ACTIVATION × MATERIAL_TAG (0..1).
+    // Unbekannte Shape (z. B. "blueprint") oder fehlendes Material → leeres
+    // Objekt. Caller bekommen damit ein Lookup, das pro Tag-Achse einen
+    // Strahler liefert, dessen Größe Material-Wahl + Form-Wahl spiegelt.
+    computePartTags(part) {
+        if (!part || typeof part !== "object") return {};
+        const activation = AnazhRealm.FORM_TAG_ACTIVATION[part.shape];
+        if (!activation) return {};
+        const matName = part.material || "stein";
+        const material = this.state.materials && this.state.materials[matName];
+        if (!material || !material.tags) return {};
+        const out = {};
+        for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
+            const val = (activation[tag] || 0) * (material.tags[tag] || 0);
+            if (val > 0) out[tag] = val;
+        }
+        return out;
+    }
+
+    // computeCompoundTags(blueprint): Aggregation über alle Parts mit MAX
+    // statt SUM. Designprinzip aus Konzept §9.2: Sum führt zu Stat-Matsch
+    // (17-teiliger Quaderturm hätte 17× Trägheit), Max hält die Wirkungen
+    // klar. Pro Tag-Achse erbt der Compound vom kompetentesten Part.
+    computeCompoundTags(blueprint) {
+        const out = {};
+        if (!blueprint || !Array.isArray(blueprint.parts)) return out;
+        for (const part of blueprint.parts) {
+            const partTags = this.computePartTags(part);
+            for (const tag of Object.keys(partTags)) {
+                const v = partTags[tag];
+                if (!(tag in out) || v > out[tag]) out[tag] = v;
+            }
+        }
+        return out;
     }
 
     _architectureBuilders() {
@@ -7752,7 +7826,17 @@ class AnazhRealm {
             row.className = "workshop-part-row";
             // Shape-Dropdown
             const shapeSelect = document.createElement("select");
-            for (const shape of ["box", "sphere", "cylinder", "cone", "pyramid", "octahedron", "plane", "torus"]) {
+            for (const shape of [
+                "box",
+                "sphere",
+                "cylinder",
+                "cone",
+                "pyramid",
+                "octahedron",
+                "plane",
+                "torus",
+                "helix",
+            ]) {
                 const opt = document.createElement("option");
                 opt.value = shape;
                 opt.textContent = shape;
@@ -7848,6 +7932,53 @@ class AnazhRealm {
             partsDiv.appendChild(row);
         }
         editor.appendChild(partsDiv);
+        // Welle 4 Phase 2 — emergente Tag-Anzeige für den ganzen Compound.
+        // Read-only: Spieler sehen, was Form + Material zusammen aktivieren.
+        // Hinweis-Text dokumentiert die Grenze zur räumlichen Emergenz
+        // (Welle 5+). Nur einmal pro Render, nicht pro Part.
+        const tagsSection = document.createElement("div");
+        tagsSection.className = "workshop-tags";
+        const tagsTitle = document.createElement("div");
+        tagsTitle.className = "workshop-tags-title";
+        tagsTitle.textContent = "Aktive Eigenschaften";
+        tagsSection.appendChild(tagsTitle);
+        const compoundTags = this.computeCompoundTags(selected);
+        const tagKeys = AnazhRealm.MATERIAL_TAG_KEYS;
+        const anyActive = tagKeys.some((k) => (compoundTags[k] || 0) > 0);
+        if (!anyActive) {
+            const empty = document.createElement("div");
+            empty.className = "workshop-tags-empty";
+            empty.textContent = "Keine Tags aktiviert (Form × Material ergibt 0).";
+            tagsSection.appendChild(empty);
+        } else {
+            for (const tag of tagKeys) {
+                const val = compoundTags[tag] || 0;
+                if (val <= 0) continue;
+                const row = document.createElement("div");
+                row.className = "workshop-tag-row";
+                row.dataset.tag = tag;
+                const name = document.createElement("span");
+                name.className = "workshop-tag-name";
+                name.textContent = tag;
+                const bar = document.createElement("span");
+                bar.className = "workshop-tag-bar";
+                const stars = Math.min(3, Math.round(val));
+                bar.textContent = "★".repeat(stars) + "☆".repeat(3 - stars);
+                const num = document.createElement("span");
+                num.className = "workshop-tag-num";
+                num.textContent = val.toFixed(2);
+                row.appendChild(name);
+                row.appendChild(bar);
+                row.appendChild(num);
+                tagsSection.appendChild(row);
+            }
+        }
+        const tagsHint = document.createElement("div");
+        tagsHint.className = "workshop-tags-hint";
+        tagsHint.textContent =
+            "Atomare Schicht: pro Part. Räumliche Beziehungen zwischen Parts werden noch nicht gewertet.";
+        tagsSection.appendChild(tagsHint);
+        editor.appendChild(tagsSection);
         // Aktions-Buttons
         const actions = document.createElement("div");
         actions.className = "workshop-actions";
@@ -8954,6 +9085,120 @@ AnazhRealm.MATERIAL_TAG_DEFAULTS = Object.freeze(
         return acc;
     }, {})
 );
+// Welle 4 Phase 2 — Form-Tag-Aktivierungs-Matrix (v2 aus docs).
+// Werte 0..3: 0 = Form schließt das Tag aus, 1 = schwach, 2 = stark,
+// 3 = Signatur. Aktivierte Tag-Stärke = MATRIX × Material-Tag (0..1),
+// finaler Bereich pro Part: 0..3.
+AnazhRealm.FORM_TAG_ACTIVATION = Object.freeze({
+    box: Object.freeze({
+        härte: 1,
+        dichte: 3,
+        zähigkeit: 1,
+        wärmeleitung: 1,
+        stromleitung: 1,
+        magieleitung: 0,
+        transparent: 1,
+        brennbar: 1,
+        resoniert: 0,
+        lebendig: 0,
+    }),
+    sphere: Object.freeze({
+        härte: 0,
+        dichte: 3,
+        zähigkeit: 0,
+        wärmeleitung: 1,
+        stromleitung: 1,
+        magieleitung: 2,
+        transparent: 3,
+        brennbar: 0,
+        resoniert: 3,
+        lebendig: 1,
+    }),
+    cylinder: Object.freeze({
+        härte: 1,
+        dichte: 2,
+        zähigkeit: 2,
+        wärmeleitung: 3,
+        stromleitung: 3,
+        magieleitung: 2,
+        transparent: 2,
+        brennbar: 1,
+        resoniert: 2,
+        lebendig: 2,
+    }),
+    cone: Object.freeze({
+        härte: 3,
+        dichte: 1,
+        zähigkeit: 0,
+        wärmeleitung: 2,
+        stromleitung: 2,
+        magieleitung: 2,
+        transparent: 2,
+        brennbar: 1,
+        resoniert: 1,
+        lebendig: 0,
+    }),
+    pyramid: Object.freeze({
+        härte: 2,
+        dichte: 2,
+        zähigkeit: 0,
+        wärmeleitung: 1,
+        stromleitung: 1,
+        magieleitung: 3,
+        transparent: 1,
+        brennbar: 1,
+        resoniert: 2,
+        lebendig: 0,
+    }),
+    octahedron: Object.freeze({
+        härte: 3,
+        dichte: 2,
+        zähigkeit: 0,
+        wärmeleitung: 2,
+        stromleitung: 1,
+        magieleitung: 3,
+        transparent: 3,
+        brennbar: 0,
+        resoniert: 2,
+        lebendig: 0,
+    }),
+    plane: Object.freeze({
+        härte: 1,
+        dichte: 1,
+        zähigkeit: 3,
+        wärmeleitung: 2,
+        stromleitung: 2,
+        magieleitung: 1,
+        transparent: 3,
+        brennbar: 3,
+        resoniert: 2,
+        lebendig: 2,
+    }),
+    torus: Object.freeze({
+        härte: 1,
+        dichte: 1,
+        zähigkeit: 2,
+        wärmeleitung: 2,
+        stromleitung: 3,
+        magieleitung: 3,
+        transparent: 1,
+        brennbar: 1,
+        resoniert: 3,
+        lebendig: 1,
+    }),
+    helix: Object.freeze({
+        härte: 0,
+        dichte: 0,
+        zähigkeit: 3,
+        wärmeleitung: 2,
+        stromleitung: 3,
+        magieleitung: 3,
+        transparent: 0,
+        brennbar: 2,
+        resoniert: 2,
+        lebendig: 2,
+    }),
+});
 const anazhRealm = new AnazhRealm();
 // Globale Referenz für DevTools-Debug und automatisierten Playtest.
 if (typeof window !== "undefined") window.anazhRealm = anazhRealm;
