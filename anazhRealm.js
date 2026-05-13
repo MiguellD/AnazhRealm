@@ -251,6 +251,13 @@ class AnazhRealm {
                 // Spieler seine erste Welt nicht visuell verliert.
                 seed: null,
                 schemaVersion: "8.0-multiworld-v1",
+                // Ring 10.5: pro-Chunk Delta-Liste für Welt-Modifikationen
+                // (graben/aufschütten). Keyed mit "cx,cz". Jeder Eintrag
+                // {ops: [{type, x, z, r, dh, at}]}. Wird in ensureChunkAt
+                // nach Geometrie-Build replayed; modify_terrain schreibt
+                // Ops in alle vom Radius berührten Chunks. Initial leer,
+                // Cap 100 Ops/Chunk gegen unbegrenzten Wuchs.
+                chunkDeltas: {},
             },
             // Welle 1 D — Welt-Journal. Geordnete Liste von Erinnerungen
             // (Genesis, erstes Wetter, erste Kreatur, hochfitness Programme,
@@ -788,6 +795,42 @@ class AnazhRealm {
             },
             terrain_base_height: ([value]) => {
                 this.state.terrainBaseHeight = c(value, -50, 50);
+            },
+            // Ring 10.5: modify_terrain(x, z, radius, deltaHeight). Hebt oder
+            // senkt das Höhenfeld in einer Scheibe um (x,z). Schreibt ein Op
+            // in alle vom Radius berührten Chunk-Delta-Listen + wendet sofort
+            // an, sofern der Chunk geladen ist. Beim Re-Ensure läuft
+            // applyChunkDelta die gespeicherte Op-Liste durch — der Effekt
+            // überlebt damit Chunk-Unload und Reload. Bewusst NICHT im
+            // dslComposeAtomic-Pool: der Nexus soll Welt-Geometrie unter dem
+            // Spieler nicht willkürlich umpflügen (gleiche Disziplin wie
+            // terrain_steepness/-base_height, siehe CLAUDE.md gotcha).
+            modify_terrain: ([x, z, radius, deltaHeight], ctx) => {
+                const cx = Number(x);
+                const cz = Number(z);
+                if (!Number.isFinite(cx) || !Number.isFinite(cz)) {
+                    ctx.log.push({ event: "modify_terrain_invalid_pos" });
+                    return;
+                }
+                const r = c(radius, 0.5, 15);
+                const dh = c(deltaHeight, -15, 15);
+                const op = { type: "modify_terrain", x: cx, z: cz, r, dh, at: Date.now() };
+                const affected = this._chunksTouchedByDisc(cx, cz, r);
+                let stored = 0;
+                for (const key of affected) {
+                    if (this._appendChunkDeltaOp(key, op)) stored++;
+                    const chunkData = this.state.chunkMap && this.state.chunkMap.get(key);
+                    if (chunkData) this._applyModifyOpToChunk(chunkData, op);
+                }
+                ctx.log.push({
+                    event: "modified_terrain",
+                    x: cx,
+                    z: cz,
+                    r,
+                    dh,
+                    chunks: affected.length,
+                    stored,
+                });
             },
             time_of_day: ([value]) => {
                 this.state.timeOfDay = c(value, 0, 1);
@@ -2643,6 +2686,32 @@ class AnazhRealm {
                 },
             },
             {
+                // Ring 10.5: Welt-Modifizierbarkeit. `grabe loch` / `hebe
+                // hügel` schreibt ein modify_terrain-Op an der aktuellen
+                // Spieler-Position, das per-Chunk persistiert wird und
+                // einen Chunk-Unload + Reload überlebt.
+                example: "grabe loch",
+                re: /^grabe\s+(?:ein\s+)?loch\s*$/i,
+                build: () => {
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, z: 0 };
+                    return {
+                        program: ["modify_terrain", p.x, p.z, 4, -3],
+                        describe: "Loch gegraben",
+                    };
+                },
+            },
+            {
+                example: "hebe hügel",
+                re: /^hebe\s+(?:einen\s+)?hügel\s*$/i,
+                build: () => {
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, z: 0 };
+                    return {
+                        program: ["modify_terrain", p.x, p.z, 5, 4],
+                        describe: "Hügel gehoben",
+                    };
+                },
+            },
+            {
                 example: "erzähle Drachen leben hier",
                 // Erzähle <freier Text> — Text wird in die Knowledge-Base als
                 // Narrativ aufgenommen. Wir matchen das ursprüngliche Casing,
@@ -3611,7 +3680,12 @@ class AnazhRealm {
                 ...this.state.worldMeta,
                 ...worldMeta,
                 parentWorlds: [],
-                schemaVersion: "8.0-multiworld-v1",
+                // Ring 10.5: neue Welten starten mit 10.5-Schema und leerer
+                // Delta-Map. Schema-Bump signalisiert „kennt chunkDeltas",
+                // alte Welten (8.0/9.0/10.0) bleiben kompatibel — der Loader
+                // füllt chunkDeltas defensiv mit `{}` falls fehlend.
+                schemaVersion: "10.5-chunk-delta-v1",
+                chunkDeltas: {},
             },
             dslAbilities: [],
             dslHistory: [],
@@ -6099,6 +6173,230 @@ class AnazhRealm {
         return { CHUNK_SIZE, WIDTH, WORLD_SIZE, chunkWorldSize, vertexStep };
     }
 
+    // Ring 10.5: liefert die Chunk-Keys ("cx,cz"), deren AABB die Scheibe
+    // um (worldX, worldZ) mit Radius r berührt. Wird von modify_terrain
+    // genutzt, um den Op in mehreren Delta-Listen einzutragen, falls die
+    // Scheibe über mehrere Chunks reicht.
+    _chunksTouchedByDisc(worldX, worldZ, r) {
+        const { WORLD_SIZE, chunkWorldSize } = this._chunkGeometry();
+        const halfWorld = WORLD_SIZE / 2;
+        const minCX = Math.floor((worldX - r + halfWorld) / chunkWorldSize);
+        const maxCX = Math.floor((worldX + r + halfWorld) / chunkWorldSize);
+        const minCZ = Math.floor((worldZ - r + halfWorld) / chunkWorldSize);
+        const maxCZ = Math.floor((worldZ + r + halfWorld) / chunkWorldSize);
+        const out = [];
+        for (let cx = minCX; cx <= maxCX; cx++) {
+            for (let cz = minCZ; cz <= maxCZ; cz++) {
+                out.push(`${cx},${cz}`);
+            }
+        }
+        return out;
+    }
+
+    // Ring 10.5: hängt einen Op an die Delta-Liste eines Chunks, mit Cap
+    // gegen unbegrenzten Wuchs. Liefert true, wenn der Op gespeichert wurde,
+    // false, wenn der Cap erreicht ist (ältester Op wird in dem Fall
+    // verworfen statt zu wachsen — der Spieler kann die Welt weiter formen).
+    _appendChunkDeltaOp(chunkKey, op) {
+        if (!this.state.worldMeta) return false;
+        if (!this.state.worldMeta.chunkDeltas) this.state.worldMeta.chunkDeltas = {};
+        const deltas = this.state.worldMeta.chunkDeltas;
+        if (!deltas[chunkKey] || !Array.isArray(deltas[chunkKey].ops)) {
+            deltas[chunkKey] = { ops: [] };
+        }
+        const cap = AnazhRealm.CHUNK_DELTA_OPS_CAP;
+        if (deltas[chunkKey].ops.length >= cap) {
+            deltas[chunkKey].ops.shift();
+        }
+        deltas[chunkKey].ops.push(op);
+        return true;
+    }
+
+    // Ring 10.5: räumt chunkDeltas nach Load auf. Wirft ungültige Einträge,
+    // klammert Felder auf sichere Bereiche, hält den Cap pro Chunk ein.
+    // Alte Saves ohne chunkDeltas bekommen eine leere Map.
+    _sanitizeChunkDeltas() {
+        if (!this.state.worldMeta) return;
+        const raw = this.state.worldMeta.chunkDeltas;
+        if (!raw || typeof raw !== "object") {
+            this.state.worldMeta.chunkDeltas = {};
+            return;
+        }
+        const cap = AnazhRealm.CHUNK_DELTA_OPS_CAP;
+        const clean = {};
+        for (const [key, entry] of Object.entries(raw)) {
+            if (typeof key !== "string" || !/^-?\d+,-?\d+$/.test(key)) continue;
+            if (!entry || !Array.isArray(entry.ops)) continue;
+            const ops = [];
+            for (const op of entry.ops) {
+                if (!op || op.type !== "modify_terrain") continue;
+                const x = Number(op.x);
+                const z = Number(op.z);
+                const r = Number(op.r);
+                const dh = Number(op.dh);
+                if (!Number.isFinite(x) || !Number.isFinite(z)) continue;
+                if (!Number.isFinite(r) || r <= 0 || r > 20) continue;
+                if (!Number.isFinite(dh) || Math.abs(dh) > 20) continue;
+                ops.push({ type: "modify_terrain", x, z, r, dh, at: Number(op.at) || Date.now() });
+            }
+            if (ops.length === 0) continue;
+            clean[key] = { ops: ops.slice(-cap) };
+        }
+        this.state.worldMeta.chunkDeltas = clean;
+    }
+
+    // Ring 10.5: wendet einen einzelnen modify_terrain-Op auf einen
+    // geladenen Chunk an. Update-Pfad: heightData[] mutieren, Mesh-Vertices
+    // im selben Index updaten, Normalen + Bounding-Sphere neu berechnen,
+    // Ammo-Body neu bauen (Visual=Collision-Naht halten). Smoothstep-Falloff
+    // im Radius — Mitte voller dh, Rand 0. No-op wenn der Op den Chunk
+    // räumlich nicht erreicht (z. B. weil eine Scheibe über mehrere Chunks
+    // reichte und nur der Außenrand betroffen war).
+    _applyModifyOpToChunk(chunkData, op) {
+        if (!chunkData || !chunkData.mesh || !chunkData.heightData) return false;
+        if (!op || op.type !== "modify_terrain") return false;
+        const mesh = chunkData.mesh;
+        const heightData = chunkData.heightData;
+        const { CHUNK_SIZE, WORLD_SIZE, chunkWorldSize, vertexStep } = this._chunkGeometry();
+        const VTX = CHUNK_SIZE + 1;
+        const worldStartX = chunkData.chunkX * chunkWorldSize - WORLD_SIZE / 2;
+        const worldStartZ = chunkData.chunkZ * chunkWorldSize - WORLD_SIZE / 2;
+        const cx = Number(op.x);
+        const cz = Number(op.z);
+        const r = Math.max(0.5, Math.min(15, Number(op.r) || 0));
+        const dh = Math.max(-15, Math.min(15, Number(op.dh) || 0));
+        if (!Number.isFinite(cx) || !Number.isFinite(cz)) return false;
+        const r2 = r * r;
+        const posAttr = mesh.geometry.attributes.position;
+        const arr = posAttr.array;
+        let touched = 0;
+        for (let z = 0; z < VTX; z++) {
+            const wz = worldStartZ + z * vertexStep;
+            const dz = wz - cz;
+            const dz2 = dz * dz;
+            if (dz2 > r2) continue;
+            for (let x = 0; x < VTX; x++) {
+                const wx = worldStartX + x * vertexStep;
+                const dx = wx - cx;
+                const d2 = dx * dx + dz2;
+                if (d2 > r2) continue;
+                const t = 1 - Math.sqrt(d2) / r;
+                const falloff = t * t * (3 - 2 * t);
+                const delta = dh * falloff;
+                const idx = z * VTX + x;
+                heightData[idx] += delta;
+                arr[idx * 3 + 1] = heightData[idx];
+                touched++;
+            }
+        }
+        if (touched === 0) return false;
+        posAttr.needsUpdate = true;
+        mesh.geometry.computeVertexNormals();
+        mesh.geometry.computeBoundingSphere();
+        let minH = Infinity;
+        let maxH = -Infinity;
+        for (let i = 0; i < heightData.length; i++) {
+            const h = heightData[i];
+            if (h < minH) minH = h;
+            if (h > maxH) maxH = h;
+        }
+        mesh.userData.minHeight = minH;
+        mesh.userData.maxHeight = maxH;
+        this._rebuildChunkPhysics(chunkData, arr);
+        return true;
+    }
+
+    // Ring 10.5: Ammo-Body neu aus den aktuellen Mesh-Vertices bauen. Alt-Body
+    // + tmesh werden vor dem Rebuild aus der Welt entfernt + destroyed,
+    // sonst hagelt es Phantom-Kollisionen + WASM-Heap-Leaks. Selbe
+    // Triangle-Reihenfolge wie ensureChunkAt — Visual=Kollision bleibt
+    // per Konstruktion identisch (CLAUDE.md Gotcha).
+    _rebuildChunkPhysics(chunkData, vertices) {
+        if (!this.state.physicsWorld || !chunkData.mesh.userData.physicsBody) return;
+        if (typeof Ammo === "undefined") return;
+        const mesh = chunkData.mesh;
+        const sf = this.state.scaleFactor;
+        if (!(sf > 0)) return;
+        const { CHUNK_SIZE } = this._chunkGeometry();
+        const VTX = CHUNK_SIZE + 1;
+        try {
+            const oldBody = mesh.userData.physicsBody;
+            const oldTMesh = mesh.userData.physicsMesh;
+            this.state.physicsWorld.removeRigidBody(oldBody);
+            try {
+                Ammo.destroy(oldBody);
+            } catch {
+                /* defensive */
+            }
+            if (oldTMesh) {
+                try {
+                    Ammo.destroy(oldTMesh);
+                } catch {
+                    /* defensive */
+                }
+            }
+            const tmesh = new Ammo.btTriangleMesh(true, true);
+            const v0 = new Ammo.btVector3(0, 0, 0);
+            const v1 = new Ammo.btVector3(0, 0, 0);
+            const v2 = new Ammo.btVector3(0, 0, 0);
+            for (let z = 0; z < VTX - 1; z++) {
+                for (let x = 0; x < VTX - 1; x++) {
+                    const a = z * VTX + x;
+                    const b = z * VTX + x + 1;
+                    const c2 = (z + 1) * VTX + x;
+                    const d = (z + 1) * VTX + x + 1;
+                    v0.setValue(vertices[a * 3] / sf, vertices[a * 3 + 1] / sf, vertices[a * 3 + 2] / sf);
+                    v1.setValue(vertices[b * 3] / sf, vertices[b * 3 + 1] / sf, vertices[b * 3 + 2] / sf);
+                    v2.setValue(vertices[d * 3] / sf, vertices[d * 3 + 1] / sf, vertices[d * 3 + 2] / sf);
+                    tmesh.addTriangle(v0, v1, v2);
+                    v0.setValue(vertices[a * 3] / sf, vertices[a * 3 + 1] / sf, vertices[a * 3 + 2] / sf);
+                    v1.setValue(vertices[d * 3] / sf, vertices[d * 3 + 1] / sf, vertices[d * 3 + 2] / sf);
+                    v2.setValue(vertices[c2 * 3] / sf, vertices[c2 * 3 + 1] / sf, vertices[c2 * 3 + 2] / sf);
+                    tmesh.addTriangle(v0, v1, v2);
+                }
+            }
+            Ammo.destroy(v0);
+            Ammo.destroy(v1);
+            Ammo.destroy(v2);
+            const shape = new Ammo.btBvhTriangleMeshShape(tmesh, true, true);
+            const transform = new Ammo.btTransform();
+            transform.setIdentity();
+            transform.setOrigin(new Ammo.btVector3(0, 0, 0));
+            const motionState = new Ammo.btDefaultMotionState(transform);
+            const inertia = new Ammo.btVector3(0, 0, 0);
+            const rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, shape, inertia);
+            const body = new Ammo.btRigidBody(rbInfo);
+            this.state.physicsWorld.addRigidBody(body);
+            Ammo.destroy(rbInfo);
+            Ammo.destroy(inertia);
+            mesh.userData.physicsBody = body;
+            mesh.userData.physicsMesh = tmesh;
+        } catch (err) {
+            this.log(
+                `Chunk-Physik-Rebuild fehlgeschlagen (${chunkData.chunkX}, ${chunkData.chunkZ}): ${err.message}`,
+                "ERROR"
+            );
+        }
+    }
+
+    // Ring 10.5: nach ensureChunkAt aufgerufen — replays die für diesen
+    // Chunk gespeicherten Ops. No-op wenn keine Deltas existieren. Idempotent
+    // im Sinne: jede Ensure führt die volle Op-Liste aus (deterministisch,
+    // wir mutieren nicht die ops selbst).
+    applyChunkDelta(chunkKey) {
+        const deltas = this.state.worldMeta && this.state.worldMeta.chunkDeltas;
+        if (!deltas) return 0;
+        const entry = deltas[chunkKey];
+        if (!entry || !Array.isArray(entry.ops) || entry.ops.length === 0) return 0;
+        const chunkData = this.state.chunkMap && this.state.chunkMap.get(chunkKey);
+        if (!chunkData) return 0;
+        let applied = 0;
+        for (const op of entry.ops) {
+            if (this._applyModifyOpToChunk(chunkData, op)) applied++;
+        }
+        return applied;
+    }
+
     extendTerrain(direction) {
         // Legacy direction-API (für Playtest + alte Caller). Berechnet aus den
         // Map-Grenzen einen Außen-Chunk und delegiert an ensureChunkAt.
@@ -6299,6 +6597,13 @@ class AnazhRealm {
         } catch (err) {
             this.log(`ensureChunkAt Physik-Fehler bei (${newChunkX}, ${newChunkZ}): ${err.message}`, "ERROR");
         }
+
+        // Ring 10.5: nach Mesh + Body erfolgreich gebaut → gespeicherte
+        // Welt-Modifikationen für diesen Chunk replayen. Daten überleben
+        // damit Chunk-Unload + Reload + Welt-Wechsel. No-op wenn keine
+        // Deltas existieren (z. B. frische Welt).
+        const replayKey = `${newChunkX},${newChunkZ}`;
+        this.applyChunkDelta(replayKey);
 
         this.log(`Chunk hinzugefügt: (${newChunkX}, ${newChunkZ})`);
     }
@@ -6875,6 +7180,10 @@ class AnazhRealm {
         } else {
             this.log("Save-Migration: kein worldMeta gefunden, generiere neue Welt-Identität", "INFO");
         }
+        // Ring 10.5: chunkDeltas defensiv normalisieren. Alte Saves haben
+        // das Feld nicht → leere Map. Vorhandene Ops werden sanitisiert
+        // (gültiger type, finite Zahlen, Cap pro Chunk eingehalten).
+        this._sanitizeChunkDeltas();
         // Ring 3: Emotionen wiederherstellen. Nur bekannte Achsen übernehmen,
         // damit alte Saves mit Tippfehlern keine fremden Keys einschleusen.
         // Ring 5: Spieler-Seele wiederherstellen. Wenn das Mesh schon
@@ -11987,6 +12296,10 @@ AnazhRealm.WORLD_EFFECT_THRESHOLDS = Object.freeze({
     magic_strong: 1.5,
     precision_high: 0.8,
 });
+// Ring 10.5: harter Cap auf Ops pro Chunk-Delta. Ohne den würde ein
+// Spieler, der 1000-mal denselben Hügel hebt, den Save unbegrenzt
+// aufblähen. Beim Erreichen wird der älteste Op verworfen (FIFO).
+AnazhRealm.CHUNK_DELTA_OPS_CAP = 100;
 // Welle 4 Phase 2 — Form-Tag-Aktivierungs-Matrix (v2 aus docs).
 // Werte 0..3: 0 = Form schließt das Tag aus, 1 = schwach, 2 = stark,
 // 3 = Signatur. Aktivierte Tag-Stärke = MATRIX × Material-Tag (0..1),

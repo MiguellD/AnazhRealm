@@ -3826,6 +3826,227 @@ function startSaveServer() {
                 check("Ring 10.1: 'Rezepte holen'-Button im Welt-Picker", recipeResults.uiHasRecipesBtn);
             }
 
+            // ### Ring 10.5 — Welt-Modifizierbarkeit (pro-Chunk DSL-Delta) ###
+            // Datenmodell: state.worldMeta.chunkDeltas mit Op-Liste pro
+            // Chunk-Key. modify_terrain schreibt Op + applied immediately.
+            // Chunk-Unload + Re-Ensure repliert. Discrimination-Test stellt
+            // sicher, dass die Höhe wirklich messbar unterschiedlich ist.
+            const ring105Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    out.hasChunkDeltas =
+                        r.state.worldMeta &&
+                        r.state.worldMeta.chunkDeltas &&
+                        typeof r.state.worldMeta.chunkDeltas === "object";
+                    out.capStaticExists = r.constructor && r.constructor.CHUNK_DELTA_OPS_CAP === 100;
+                    out.helpersExist =
+                        typeof r._chunksTouchedByDisc === "function" &&
+                        typeof r._appendChunkDeltaOp === "function" &&
+                        typeof r._applyModifyOpToChunk === "function" &&
+                        typeof r._rebuildChunkPhysics === "function" &&
+                        typeof r._sanitizeChunkDeltas === "function" &&
+                        typeof r.applyChunkDelta === "function";
+                    out.dslOpRegistered = typeof r.dslEffects.modify_terrain === "function";
+
+                    const chatParseDig = r.parseChatToDsl("grabe loch");
+                    const chatParseHill = r.parseChatToDsl("hebe hügel");
+                    out.chatDig =
+                        chatParseDig &&
+                        Array.isArray(chatParseDig.program) &&
+                        chatParseDig.program[0] === "modify_terrain" &&
+                        chatParseDig.program[4] === -3;
+                    out.chatHill =
+                        chatParseHill &&
+                        Array.isArray(chatParseHill.program) &&
+                        chatParseHill.program[0] === "modify_terrain" &&
+                        chatParseHill.program[4] === 4;
+
+                    // Frische Welt für isolierten Test, damit andere Tests
+                    // nicht durch hinterlassene Deltas verschmutzt werden.
+                    const wId = r.createNewWorld({ slug: "ring105-test", inheritPlayer: false, reload: false });
+                    out.createdFreshWorld = !!wId;
+                    const wSave = JSON.parse(localStorage.getItem(r.worldStorageKey(wId)));
+                    out.freshSchema = wSave.worldMeta.schemaVersion === "10.5-chunk-delta-v1";
+                    out.freshDeltasEmpty =
+                        wSave.worldMeta.chunkDeltas && Object.keys(wSave.worldMeta.chunkDeltas).length === 0;
+
+                    // Test der Disc-Berechnung. Position (0,0,0) mit r=4 sollte
+                    // den Chunk (4,4) treffen (worldSize/2=150, chunkWorldSize=37.5,
+                    // (-4+150)/37.5 = 3.89, also Chunk 3+4).
+                    const touched = r._chunksTouchedByDisc(0, 0, 4);
+                    out.discReturnsArray = Array.isArray(touched) && touched.length >= 1;
+                    out.discKeysValidFormat = touched.every((k) => /^-?\d+,-?\d+$/.test(k));
+
+                    // Append-Op direkt — Cap-Verhalten testen
+                    const testKey = "999,999";
+                    delete r.state.worldMeta.chunkDeltas[testKey];
+                    for (let i = 0; i < 105; i++) {
+                        r._appendChunkDeltaOp(testKey, { type: "modify_terrain", x: 0, z: 0, r: 1, dh: 0, at: i });
+                    }
+                    out.capEnforced = r.state.worldMeta.chunkDeltas[testKey].ops.length === 100;
+                    out.capFifoOldestDropped = r.state.worldMeta.chunkDeltas[testKey].ops[0].at === 5;
+                    delete r.state.worldMeta.chunkDeltas[testKey];
+
+                    // Sanitize-Test: ungültige Einträge werden verworfen
+                    r.state.worldMeta.chunkDeltas = {
+                        "1,1": { ops: [{ type: "modify_terrain", x: 1, z: 2, r: 3, dh: 4, at: 100 }] },
+                        "bad-key": { ops: [{ type: "modify_terrain", x: 0, z: 0, r: 1, dh: 1, at: 1 }] },
+                        "2,2": { ops: [{ type: "fake_op", x: 0, z: 0, r: 1, dh: 1, at: 1 }] },
+                        "3,3": { ops: [{ type: "modify_terrain", x: NaN, z: 0, r: 1, dh: 1, at: 1 }] },
+                        "4,4": { ops: [{ type: "modify_terrain", x: 0, z: 0, r: 99, dh: 1, at: 1 }] },
+                        "5,5": { ops: [{ type: "modify_terrain", x: 0, z: 0, r: 1, dh: 999, at: 1 }] },
+                        "6,6": { ops: [{ type: "modify_terrain", x: 0, z: 0, r: 1, dh: 1, at: 1 }] },
+                    };
+                    r._sanitizeChunkDeltas();
+                    const cleanKeys = Object.keys(r.state.worldMeta.chunkDeltas).sort();
+                    out.sanitizeKeepsValid = cleanKeys.includes("1,1") && cleanKeys.includes("6,6");
+                    out.sanitizeDropsBadKey = !cleanKeys.includes("bad-key");
+                    out.sanitizeDropsFakeOp = !cleanKeys.includes("2,2");
+                    out.sanitizeDropsNanCoord = !cleanKeys.includes("3,3");
+                    out.sanitizeDropsBigRadius = !cleanKeys.includes("4,4");
+                    out.sanitizeDropsBigDh = !cleanKeys.includes("5,5");
+
+                    // Reset auf saubere Map für den Discrimination-Test
+                    r.state.worldMeta.chunkDeltas = {};
+
+                    // Discrimination: Höhe an einer Position VOR und NACH
+                    // modify muss messbar unterschiedlich sein. Wir nehmen
+                    // EINEN beliebigen geladenen Chunk und modifizieren an
+                    // dessen Welt-Mittelpunkt mit großem Radius, sodass die
+                    // Chunk-Mitte (midIdx) sicher in der Scheibe liegt.
+                    const VTX = r.state.chunkSize + 1;
+                    const midIdx = Math.floor(VTX / 2) * VTX + Math.floor(VTX / 2);
+                    let firstKey = null;
+                    let chunkData = null;
+                    for (const [k, c] of r.state.chunkMap.entries()) {
+                        firstKey = k;
+                        chunkData = c;
+                        break;
+                    }
+                    out.hasLoadedChunk = !!chunkData;
+                    if (chunkData) {
+                        const geom = r._chunkGeometry();
+                        const chunkCenterX =
+                            chunkData.chunkX * geom.chunkWorldSize - geom.WORLD_SIZE / 2 + geom.chunkWorldSize / 2;
+                        const chunkCenterZ =
+                            chunkData.chunkZ * geom.chunkWorldSize - geom.WORLD_SIZE / 2 + geom.chunkWorldSize / 2;
+                        const heightBefore = chunkData.heightData[midIdx];
+
+                        // modify_terrain am Chunk-Zentrum mit Radius 8 → die
+                        // Chunk-Mitte (midIdx) liegt sicher in der Scheibe.
+                        // dh=-5, schaff den Wert weit über das Höhen-Rauschen.
+                        r.dslRun(["modify_terrain", chunkCenterX, chunkCenterZ, 8, -5], { source: "playtest" });
+
+                        const heightAfter = chunkData.heightData[midIdx];
+                        out.heightChanged = Math.abs(heightAfter - heightBefore) > 0.1;
+                        out.heightWentDown = heightAfter < heightBefore; // dh=-5 → Loch
+                        out.deltasRecorded =
+                            r.state.worldMeta.chunkDeltas[firstKey] &&
+                            r.state.worldMeta.chunkDeltas[firstKey].ops.length >= 1;
+                        out.physicsBodyRebuilt = !!chunkData.mesh.userData.physicsBody;
+                        out.physicsMeshRebuilt = !!chunkData.mesh.userData.physicsMesh;
+
+                        // Replay-Test: chunkMap.delete + re-ensure → Modifikation
+                        // muss wieder erscheinen
+                        const [cxRe, czRe] = firstKey.split(",").map(Number);
+                        const oldMesh = chunkData.mesh;
+                        r.state.scene.remove(oldMesh);
+                        if (oldMesh.userData.physicsBody) {
+                            r.state.physicsWorld.removeRigidBody(oldMesh.userData.physicsBody);
+                        }
+                        r.state.chunkMap.delete(firstKey);
+                        r.ensureChunkAt(cxRe, czRe);
+                        const newChunkData = r.state.chunkMap.get(firstKey);
+                        out.chunkReEnsured = !!newChunkData;
+                        if (newChunkData) {
+                            const heightAfterReplay = newChunkData.heightData[midIdx];
+                            out.replayKeptModification = Math.abs(heightAfterReplay - heightBefore) > 0.1;
+                            out.replayHeightSimilar = Math.abs(heightAfterReplay - heightAfter) < 0.5;
+                        }
+                    }
+
+                    // Defensive: invalid pos wird abgelehnt
+                    const invalidResult = r.dslRun(["modify_terrain", NaN, 0, 4, -2], { source: "playtest" });
+                    out.invalidPosLogged =
+                        invalidResult.log && invalidResult.log.some((l) => l.event === "modify_terrain_invalid_pos");
+
+                    // Save-Round-Trip: Snapshot soll chunkDeltas enthalten
+                    const snap = r.buildStateSnapshot();
+                    out.snapshotHasChunkDeltas =
+                        snap.worldMeta && snap.worldMeta.chunkDeltas && typeof snap.worldMeta.chunkDeltas === "object";
+
+                    // Migrations-Test: alter Save ohne chunkDeltas
+                    const migrationProbe = {
+                        ...snap,
+                        worldMeta: { ...snap.worldMeta, schemaVersion: "8.0-multiworld-v1" },
+                    };
+                    delete migrationProbe.worldMeta.chunkDeltas;
+                    r.loadState(migrationProbe);
+                    out.migrationFillsEmpty =
+                        r.state.worldMeta.chunkDeltas && typeof r.state.worldMeta.chunkDeltas === "object";
+
+                    // Cleanup: alte Welten dieser Test-Welt aus Index + localStorage
+                    r.state.worldMeta.chunkDeltas = {};
+                    const keepId = r.state.worldMeta.worldId;
+                    for (const e of r.worldsIndexLoad()) {
+                        if (e.worldId !== keepId) r.deleteWorld(e.worldId);
+                    }
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!ring105Results || ring105Results.error) {
+                check(
+                    "Ring 10.5: Snapshot erreichbar",
+                    false,
+                    (ring105Results && ring105Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Ring 10.5: state.worldMeta.chunkDeltas existiert", ring105Results.hasChunkDeltas);
+                check("Ring 10.5: CHUNK_DELTA_OPS_CAP = 100 statisch verfügbar", ring105Results.capStaticExists);
+                check("Ring 10.5: alle Helfer-Methoden vorhanden", ring105Results.helpersExist);
+                check("Ring 10.5: dslEffects.modify_terrain registriert", ring105Results.dslOpRegistered);
+                check("Ring 10.5: Chat 'grabe loch' → modify_terrain mit dh=-3", ring105Results.chatDig);
+                check("Ring 10.5: Chat 'hebe hügel' → modify_terrain mit dh=+4", ring105Results.chatHill);
+                check("Ring 10.5: createNewWorld liefert worldId", ring105Results.createdFreshWorld);
+                check("Ring 10.5: neue Welt schemaVersion=10.5-chunk-delta-v1", ring105Results.freshSchema);
+                check("Ring 10.5: neue Welt chunkDeltas ist leeres Objekt", ring105Results.freshDeltasEmpty);
+                check("Ring 10.5: _chunksTouchedByDisc liefert Array", ring105Results.discReturnsArray);
+                check("Ring 10.5: ChunkKeys haben Format 'cx,cz'", ring105Results.discKeysValidFormat);
+                check("Ring 10.5: FIFO-Cap nach 105 Ops greift (length === 100)", ring105Results.capEnforced);
+                check("Ring 10.5: FIFO verwirft die ältesten Ops zuerst", ring105Results.capFifoOldestDropped);
+                check("Ring 10.5: Sanitize behält gültige Einträge", ring105Results.sanitizeKeepsValid);
+                check("Ring 10.5: Sanitize verwirft kaputten Key-String", ring105Results.sanitizeDropsBadKey);
+                check("Ring 10.5: Sanitize verwirft unbekannten Op-Type", ring105Results.sanitizeDropsFakeOp);
+                check("Ring 10.5: Sanitize verwirft NaN-Koordinaten", ring105Results.sanitizeDropsNanCoord);
+                check("Ring 10.5: Sanitize verwirft Radius > 20", ring105Results.sanitizeDropsBigRadius);
+                check("Ring 10.5: Sanitize verwirft |dh| > 20", ring105Results.sanitizeDropsBigDh);
+                check("Ring 10.5: Mindestens ein Chunk in der Nähe geladen", ring105Results.hasLoadedChunk);
+                check("Ring 10.5: Höhe ändert sich nach modify_terrain", ring105Results.heightChanged);
+                check("Ring 10.5: Höhe sinkt bei negativem dh (Loch)", ring105Results.heightWentDown);
+                check("Ring 10.5: Op wird in chunkDeltas[key].ops gespeichert", ring105Results.deltasRecorded);
+                check("Ring 10.5: Physik-Body nach modify wieder vorhanden", ring105Results.physicsBodyRebuilt);
+                check("Ring 10.5: Physik-Mesh nach modify wieder vorhanden", ring105Results.physicsMeshRebuilt);
+                check("Ring 10.5: Chunk nach Re-Ensure wieder vorhanden", ring105Results.chunkReEnsured);
+                check(
+                    "Ring 10.5: Replay nach Re-Ensure behält Modifikation (Discrimination)",
+                    ring105Results.replayKeptModification
+                );
+                check(
+                    "Ring 10.5: Replay-Höhe ähnlich Original-Modify (deterministisch)",
+                    ring105Results.replayHeightSimilar
+                );
+                check("Ring 10.5: invalid pos (NaN) wird im Log gemeldet", ring105Results.invalidPosLogged);
+                check("Ring 10.5: buildStateSnapshot enthält chunkDeltas", ring105Results.snapshotHasChunkDeltas);
+                check(
+                    "Ring 10.5: Migrations-Path füllt fehlende chunkDeltas mit {}",
+                    ring105Results.migrationFillsEmpty
+                );
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {
