@@ -197,14 +197,23 @@ class AnazhRealm {
                 pendingOutcomes: [],
                 outcomeFinalizationDelay: 5.0,
             },
-            // Schicht 2 — Claude API als optionale Grok-Stimme. Der Key liegt
-            // nur in localStorage (Single-User-Browser). Alle LLM-Vorschläge
-            // gehen durch `dslRun` → Budget-Limits halten als Sandbox.
+            // Schicht 2 — Optionale LLM-Stimme. Vier Provider wählbar:
+            //   anthropic  → Claude (kostet, klügste Antworten)
+            //   google     → Gemini (großzügiges Free-Tier, Browser-CORS offen)
+            //   openrouter → Aggregator mit Llama/Mistral-Modellen "*-:free"
+            //   ollama     → lokaler Ollama-Server auf localhost:11434, kein Key
+            // Pro Provider eigener Key + eigenes Modell im State; nur der
+            // aktive Provider feuert. Alle Antworten werden zur gleichen
+            // {say, program}-Form parst und gehen durch die DSL-Sandbox.
             llm: {
                 enabled: false,
-                apiKey: "",
-                model: "claude-haiku-4-5",
-                endpoint: "https://api.anthropic.com/v1/messages",
+                provider: "anthropic",
+                providerConfig: {
+                    anthropic: { apiKey: "", model: "claude-haiku-4-5" },
+                    google: { apiKey: "", model: "gemini-2.0-flash" },
+                    openrouter: { apiKey: "", model: "meta-llama/llama-3.3-70b-instruct:free" },
+                    ollama: { apiKey: "", model: "llama3.1", endpoint: "http://localhost:11434" },
+                },
                 inFlight: false,
                 lastError: null,
                 lastResponseAt: -Infinity,
@@ -1444,21 +1453,149 @@ class AnazhRealm {
         }
     }
 
-    // ### Schicht 2 — Optionale Claude-API für Grok-Stimme ###
-    // Spieler kann seinen Anthropic-Key in die Einstellungen tippen. Wenn
-    // aktiv, läuft jede Chat-Zeile, die kein DSL-Treffer ist, durch Claude.
-    // Claude antwortet als JSON `{say, program}`. Der DSL-Teil wird strikt
-    // durch `dslRun` mit Budget-Limits ausgeführt — selbst ein "böses" LLM
-    // kann nichts kaputt machen, weil die DSL die einzige Welt-API ist.
+    // ### Schicht 2 — Optionale LLM-Stimme für Grok ###
+    // Vier Provider, ein Vertrag: jede Antwort wird zu `{say, program}`
+    // geparst, der DSL-Teil läuft strikt durch `dslRun` mit Budget-Limits.
+    // Selbst ein "böses" LLM kann nichts kaputt machen, weil die DSL die
+    // einzige Welt-API ist. Auswahl per Provider-Selektor in den Einstellungen.
+
+    llmProviderDefs() {
+        const buildUserContent = (system, contextLine, fewShot, userText) =>
+            `${contextLine}\n${fewShot}\nSpieler sagt: ${userText}`;
+        return {
+            anthropic: {
+                label: "Claude (Anthropic, kostet)",
+                models: [
+                    { id: "claude-haiku-4-5", label: "Haiku 4.5 — schnell" },
+                    { id: "claude-sonnet-4-6", label: "Sonnet 4.6 — ausgewogen" },
+                    { id: "claude-opus-4-7", label: "Opus 4.7 — klügste" },
+                ],
+                requiresKey: true,
+                endpoint: () => "https://api.anthropic.com/v1/messages",
+                buildHeaders: (apiKey) => ({
+                    "content-type": "application/json",
+                    "x-api-key": apiKey,
+                    "anthropic-version": "2023-06-01",
+                    "anthropic-dangerous-direct-browser-access": "true",
+                }),
+                buildBody: (model, system, userContent) => ({
+                    model,
+                    max_tokens: 400,
+                    system,
+                    messages: [{ role: "user", content: userContent }],
+                }),
+                extractText: (json) => {
+                    const block = (json.content || []).find((b) => b.type === "text");
+                    return block ? block.text : "";
+                },
+                buildUserContent,
+            },
+            google: {
+                label: "Gemini (Google, gratis-Tier)",
+                models: [
+                    { id: "gemini-2.0-flash", label: "2.0 Flash — schnell, gratis" },
+                    { id: "gemini-2.0-flash-lite", label: "2.0 Flash Lite — leichter" },
+                    { id: "gemini-1.5-flash", label: "1.5 Flash — Alt-Fallback" },
+                    { id: "gemini-1.5-pro", label: "1.5 Pro — klüger, niedrigeres Limit" },
+                ],
+                requiresKey: true,
+                endpoint: (model, apiKey) =>
+                    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`,
+                buildHeaders: () => ({ "content-type": "application/json" }),
+                buildBody: (model, system, userContent) => ({
+                    systemInstruction: { parts: [{ text: system }] },
+                    contents: [{ role: "user", parts: [{ text: userContent }] }],
+                    generationConfig: { maxOutputTokens: 400, temperature: 0.7 },
+                }),
+                extractText: (json) => {
+                    const cand = (json.candidates || [])[0];
+                    if (!cand || !cand.content || !Array.isArray(cand.content.parts)) return "";
+                    return cand.content.parts.map((p) => p.text || "").join("");
+                },
+                buildUserContent,
+            },
+            openrouter: {
+                label: "OpenRouter (Multi-Modell, einige :free)",
+                models: [
+                    { id: "meta-llama/llama-3.3-70b-instruct:free", label: "Llama 3.3 70B — gratis" },
+                    { id: "google/gemini-2.0-flash-exp:free", label: "Gemini 2.0 Flash exp — gratis" },
+                    { id: "deepseek/deepseek-r1:free", label: "DeepSeek R1 — gratis" },
+                    { id: "mistralai/mistral-small-3.1-24b-instruct:free", label: "Mistral Small 3.1 — gratis" },
+                ],
+                requiresKey: true,
+                endpoint: () => "https://openrouter.ai/api/v1/chat/completions",
+                buildHeaders: (apiKey) => ({
+                    "content-type": "application/json",
+                    Authorization: `Bearer ${apiKey}`,
+                    "HTTP-Referer": "https://anazhrealm.local",
+                    "X-Title": "AnazhRealm",
+                }),
+                buildBody: (model, system, userContent) => ({
+                    model,
+                    max_tokens: 400,
+                    messages: [
+                        { role: "system", content: system },
+                        { role: "user", content: userContent },
+                    ],
+                }),
+                extractText: (json) => {
+                    const choice = (json.choices || [])[0];
+                    return choice && choice.message ? choice.message.content || "" : "";
+                },
+                buildUserContent,
+            },
+            ollama: {
+                label: "Ollama lokal (offline, kein Key)",
+                models: [
+                    { id: "llama3.1", label: "Llama 3.1 8B — Standard" },
+                    { id: "llama3.2", label: "Llama 3.2 3B — leicht" },
+                    { id: "qwen2.5", label: "Qwen 2.5 — solide" },
+                    { id: "mistral", label: "Mistral 7B" },
+                ],
+                requiresKey: false,
+                endpoint: (_model, _apiKey, cfg) =>
+                    `${(cfg && cfg.endpoint) || "http://localhost:11434"}/api/chat`,
+                buildHeaders: () => ({ "content-type": "application/json" }),
+                buildBody: (model, system, userContent) => ({
+                    model,
+                    stream: false,
+                    messages: [
+                        { role: "system", content: system },
+                        { role: "user", content: userContent },
+                    ],
+                    options: { num_predict: 400, temperature: 0.7 },
+                }),
+                extractText: (json) => (json && json.message && json.message.content) || "",
+                buildUserContent,
+            },
+        };
+    }
+
+    llmActiveConfig() {
+        const provider = this.state.llm.provider;
+        const cfg = this.state.llm.providerConfig[provider];
+        return { provider, cfg };
+    }
 
     llmLoadPersisted() {
+        const defs = this.llmProviderDefs();
         try {
-            const key = localStorage.getItem("anazh.llm.apiKey") || "";
-            const model = localStorage.getItem("anazh.llm.model") || "claude-haiku-4-5";
+            const provider = localStorage.getItem("anazh.llm.provider");
+            if (provider && defs[provider]) this.state.llm.provider = provider;
+            for (const name of Object.keys(defs)) {
+                const k = localStorage.getItem(`anazh.llm.${name}.apiKey`);
+                const m = localStorage.getItem(`anazh.llm.${name}.model`);
+                if (typeof k === "string") this.state.llm.providerConfig[name].apiKey = k;
+                if (typeof m === "string" && m) this.state.llm.providerConfig[name].model = m;
+                if (name === "ollama") {
+                    const ep = localStorage.getItem("anazh.llm.ollama.endpoint");
+                    if (typeof ep === "string" && ep) this.state.llm.providerConfig[name].endpoint = ep;
+                }
+            }
             const enabled = localStorage.getItem("anazh.llm.enabled") === "true";
-            this.state.llm.apiKey = key;
-            this.state.llm.model = model;
-            this.state.llm.enabled = enabled && key.length > 0;
+            const { cfg } = this.llmActiveConfig();
+            const def = defs[this.state.llm.provider];
+            this.state.llm.enabled = enabled && (!def.requiresKey || (cfg && cfg.apiKey.length > 0));
         } catch {
             // Private mode / disabled storage — silently keep defaults.
         }
@@ -1466,9 +1603,15 @@ class AnazhRealm {
 
     llmPersist() {
         try {
-            localStorage.setItem("anazh.llm.apiKey", this.state.llm.apiKey || "");
-            localStorage.setItem("anazh.llm.model", this.state.llm.model || "claude-haiku-4-5");
+            localStorage.setItem("anazh.llm.provider", this.state.llm.provider);
             localStorage.setItem("anazh.llm.enabled", this.state.llm.enabled ? "true" : "false");
+            for (const [name, cfg] of Object.entries(this.state.llm.providerConfig)) {
+                localStorage.setItem(`anazh.llm.${name}.apiKey`, cfg.apiKey || "");
+                localStorage.setItem(`anazh.llm.${name}.model`, cfg.model || "");
+                if (name === "ollama" && cfg.endpoint) {
+                    localStorage.setItem("anazh.llm.ollama.endpoint", cfg.endpoint);
+                }
+            }
         } catch {
             // No-op on storage failure.
         }
@@ -1493,16 +1636,13 @@ class AnazhRealm {
     }
 
     llmBuildFewShot() {
-        // Die letzten ≤ 5 high-fitness History-Programme als Inspirations-Beispiele.
         const hist = (this.state.dsl.history || [])
             .filter((h) => h && Array.isArray(h.program) && typeof h.fitness === "number")
             .slice(-30)
             .sort((a, b) => (b.fitness || 0) - (a.fitness || 0))
             .slice(0, 5);
         if (hist.length === 0) return "";
-        const lines = hist.map(
-            (h) => `- fitness ${h.fitness.toFixed(2)}: ${JSON.stringify(h.program)}`
-        );
+        const lines = hist.map((h) => `- fitness ${h.fitness.toFixed(2)}: ${JSON.stringify(h.program)}`);
         return `Letzte erfolgreiche DSL-Programme:\n${lines.join("\n")}\n`;
     }
 
@@ -1519,9 +1659,14 @@ class AnazhRealm {
         ].join("\n");
     }
 
-    async llmCallClaude(userText) {
+    async llmCall(userText) {
         const llm = this.state.llm;
-        if (!llm.enabled || !llm.apiKey) return { error: "LLM nicht aktiv" };
+        const defs = this.llmProviderDefs();
+        const def = defs[llm.provider];
+        if (!def) return { error: `Unbekannter Provider: ${llm.provider}` };
+        if (!llm.enabled) return { error: "LLM nicht aktiv" };
+        const cfg = llm.providerConfig[llm.provider];
+        if (def.requiresKey && (!cfg || !cfg.apiKey)) return { error: "API-Key fehlt" };
         if (llm.inFlight) return { error: "Anfrage läuft bereits" };
         const nowSec = performance.now() / 1000;
         if (nowSec - llm.lastResponseAt < llm.minGapSeconds) {
@@ -1529,36 +1674,29 @@ class AnazhRealm {
         }
         llm.inFlight = true;
         try {
-            const body = {
-                model: llm.model,
-                max_tokens: 400,
-                system: this.llmBuildSystemPrompt(),
-                messages: [
-                    {
-                        role: "user",
-                        content: `${this.llmBuildContext()}\n${this.llmBuildFewShot()}\nSpieler sagt: ${userText}`,
-                    },
-                ],
-            };
-            const res = await fetch(llm.endpoint, {
+            const system = this.llmBuildSystemPrompt();
+            const userContent = def.buildUserContent(
+                system,
+                this.llmBuildContext(),
+                this.llmBuildFewShot(),
+                userText
+            );
+            const url = def.endpoint(cfg.model, cfg.apiKey, cfg);
+            const headers = def.buildHeaders(cfg.apiKey, cfg);
+            const body = def.buildBody(cfg.model, system, userContent);
+            const res = await fetch(url, {
                 method: "POST",
-                headers: {
-                    "content-type": "application/json",
-                    "x-api-key": llm.apiKey,
-                    "anthropic-version": "2023-06-01",
-                    "anthropic-dangerous-direct-browser-access": "true",
-                },
+                headers,
                 body: JSON.stringify(body),
             });
             if (!res.ok) {
                 const text = await res.text().catch(() => "");
-                llm.lastError = `HTTP ${res.status}: ${text.slice(0, 120)}`;
+                llm.lastError = `HTTP ${res.status}: ${text.slice(0, 160)}`;
                 return { error: llm.lastError };
             }
             const json = await res.json();
             llm.lastResponseAt = performance.now() / 1000;
-            const block = (json.content || []).find((b) => b.type === "text");
-            const raw = block ? block.text : "";
+            const raw = def.extractText(json);
             const parsed = this.llmParseResponse(raw);
             llm.lastError = parsed.error || null;
             return parsed;
@@ -1599,9 +1737,15 @@ class AnazhRealm {
     // narrativ + optional DSL ausführen. Wird nur aktiv, wenn der Spieler
     // den Schalter umgelegt hat.
     async maybeAnswerWithLlm(userText, appendChatOutput) {
-        if (!this.state.llm.enabled || !this.state.llm.apiKey) return false;
+        const llm = this.state.llm;
+        if (!llm.enabled) return false;
+        const defs = this.llmProviderDefs();
+        const def = defs[llm.provider];
+        if (!def) return false;
+        const cfg = llm.providerConfig[llm.provider];
+        if (def.requiresKey && (!cfg || !cfg.apiKey)) return false;
         appendChatOutput("Grok denkt nach…");
-        const reply = await this.llmCallClaude(userText);
+        const reply = await this.llmCall(userText);
         if (reply.error) {
             appendChatOutput(`(Grok schweigt: ${reply.error})`);
             this.llmUpdateStatus();
@@ -1655,37 +1799,131 @@ class AnazhRealm {
         const el = document.getElementById("llm-status");
         if (!el) return;
         const llm = this.state.llm;
+        const defs = this.llmProviderDefs();
+        const def = defs[llm.provider];
         if (llm.lastError) {
-            el.textContent = `Fehler: ${llm.lastError}`;
+            el.textContent = `Fehler (${def ? def.label : llm.provider}): ${llm.lastError}`;
             return;
         }
+        if (!def) {
+            el.textContent = `Unbekannter Provider: ${llm.provider}`;
+            return;
+        }
+        const cfg = llm.providerConfig[llm.provider];
         if (!llm.enabled) {
-            el.textContent = llm.apiKey ? "Schlüssel hinterlegt, inaktiv." : "Inaktiv.";
+            if (def.requiresKey && (!cfg || !cfg.apiKey)) {
+                el.textContent = `${def.label}: Schlüssel fehlt.`;
+            } else {
+                el.textContent = `${def.label}: bereit, inaktiv.`;
+            }
             return;
         }
-        el.textContent = llm.inFlight ? "Grok denkt…" : `Aktiv (${llm.model}).`;
+        el.textContent = llm.inFlight ? "Grok denkt…" : `Aktiv: ${def.label} (${cfg.model}).`;
+    }
+
+    llmRefreshModelOptions() {
+        const modelSel = document.getElementById("llm-model");
+        if (!modelSel) return;
+        const defs = this.llmProviderDefs();
+        const def = defs[this.state.llm.provider];
+        if (!def) return;
+        const cfg = this.state.llm.providerConfig[this.state.llm.provider];
+        modelSel.innerHTML = "";
+        for (const m of def.models) {
+            const opt = document.createElement("option");
+            opt.value = m.id;
+            opt.textContent = m.label;
+            modelSel.appendChild(opt);
+        }
+        if (cfg && cfg.model && def.models.some((m) => m.id === cfg.model)) {
+            modelSel.value = cfg.model;
+        } else if (def.models[0]) {
+            modelSel.value = def.models[0].id;
+            cfg.model = def.models[0].id;
+        }
+    }
+
+    llmRefreshProviderUI() {
+        const keyInput = document.getElementById("llm-key");
+        const keyRow = document.getElementById("llm-key-row");
+        const endpointRow = document.getElementById("llm-endpoint-row");
+        const endpointInput = document.getElementById("llm-endpoint");
+        const defs = this.llmProviderDefs();
+        const def = defs[this.state.llm.provider];
+        if (!def) return;
+        const cfg = this.state.llm.providerConfig[this.state.llm.provider];
+        if (keyInput) {
+            keyInput.value = (cfg && cfg.apiKey) || "";
+            keyInput.placeholder = this.state.llm.provider === "anthropic" ? "sk-ant-…" : "API-Key";
+        }
+        if (keyRow) keyRow.hidden = !def.requiresKey;
+        if (endpointRow) endpointRow.hidden = this.state.llm.provider !== "ollama";
+        if (endpointInput) endpointInput.value = (cfg && cfg.endpoint) || "http://localhost:11434";
+        this.llmRefreshModelOptions();
+        this.llmUpdateStatus();
     }
 
     initLlmUI() {
+        const providerSel = document.getElementById("llm-provider");
         const keyInput = document.getElementById("llm-key");
+        const endpointInput = document.getElementById("llm-endpoint");
         const modelSel = document.getElementById("llm-model");
         const saveBtn = document.getElementById("llm-save");
         const clearBtn = document.getElementById("llm-clear");
         const toggleBtn = document.getElementById("llm-toggle");
-        if (!keyInput || !modelSel || !saveBtn || !toggleBtn) return;
-        keyInput.value = this.state.llm.apiKey || "";
-        modelSel.value = this.state.llm.model;
+        if (!providerSel || !keyInput || !modelSel || !saveBtn || !toggleBtn) return;
+        // Provider-Optionen aus llmProviderDefs befüllen.
+        const defs = this.llmProviderDefs();
+        providerSel.innerHTML = "";
+        for (const [name, def] of Object.entries(defs)) {
+            const opt = document.createElement("option");
+            opt.value = name;
+            opt.textContent = def.label;
+            providerSel.appendChild(opt);
+        }
+        providerSel.value = this.state.llm.provider;
         toggleBtn.setAttribute("aria-pressed", this.state.llm.enabled ? "true" : "false");
         toggleBtn.textContent = this.state.llm.enabled ? "Deaktivieren" : "Aktivieren";
+        this.llmRefreshProviderUI();
+        providerSel.addEventListener("change", () => {
+            this.state.llm.provider = providerSel.value;
+            // Beim Provider-Wechsel deaktivieren — User soll bewusst neu aktivieren.
+            this.state.llm.enabled = false;
+            this.state.llm.lastError = null;
+            toggleBtn.setAttribute("aria-pressed", "false");
+            toggleBtn.textContent = "Aktivieren";
+            this.llmPersist();
+            this.llmRefreshProviderUI();
+        });
+        modelSel.addEventListener("change", () => {
+            const cfg = this.state.llm.providerConfig[this.state.llm.provider];
+            cfg.model = modelSel.value;
+            this.llmPersist();
+            this.llmUpdateStatus();
+        });
+        if (endpointInput) {
+            endpointInput.addEventListener("change", () => {
+                const cfg = this.state.llm.providerConfig.ollama;
+                cfg.endpoint = endpointInput.value.trim() || "http://localhost:11434";
+                this.llmPersist();
+                this.llmUpdateStatus();
+            });
+        }
         saveBtn.addEventListener("click", () => {
-            this.state.llm.apiKey = keyInput.value.trim();
-            this.state.llm.model = modelSel.value;
+            const cfg = this.state.llm.providerConfig[this.state.llm.provider];
+            cfg.apiKey = keyInput.value.trim();
+            cfg.model = modelSel.value;
+            if (this.state.llm.provider === "ollama" && endpointInput) {
+                cfg.endpoint = endpointInput.value.trim() || "http://localhost:11434";
+            }
+            this.state.llm.lastError = null;
             this.llmPersist();
             this.llmUpdateStatus();
         });
         if (clearBtn) {
             clearBtn.addEventListener("click", () => {
-                this.state.llm.apiKey = "";
+                const cfg = this.state.llm.providerConfig[this.state.llm.provider];
+                cfg.apiKey = "";
                 this.state.llm.enabled = false;
                 keyInput.value = "";
                 toggleBtn.setAttribute("aria-pressed", "false");
@@ -1695,7 +1933,9 @@ class AnazhRealm {
             });
         }
         toggleBtn.addEventListener("click", () => {
-            if (!this.state.llm.apiKey) {
+            const def = this.llmProviderDefs()[this.state.llm.provider];
+            const cfg = this.state.llm.providerConfig[this.state.llm.provider];
+            if (def.requiresKey && (!cfg || !cfg.apiKey)) {
                 this.state.llm.lastError = "Bitte erst Schlüssel speichern.";
                 this.llmUpdateStatus();
                 return;
@@ -1707,12 +1947,6 @@ class AnazhRealm {
             this.llmPersist();
             this.llmUpdateStatus();
         });
-        modelSel.addEventListener("change", () => {
-            this.state.llm.model = modelSel.value;
-            this.llmPersist();
-            this.llmUpdateStatus();
-        });
-        this.llmUpdateStatus();
     }
 
     // ### Ring 2 Phase 3 – Chat → DSL ###
@@ -3636,7 +3870,7 @@ class AnazhRealm {
         } else if (parts[0] === "deaktiviere" && parts[1] === "debug-logs") {
             this.state.debugLogging = false;
             appendChatOutput("Debug-Logs deaktiviert");
-        } else if (this.state.llm && this.state.llm.enabled && this.state.llm.apiKey) {
+        } else if (this.state.llm && this.state.llm.enabled) {
             // Schicht 2 — LLM-Fallback. Statt „Unbekannter Befehl" geht der
             // Text an Claude; Antwort kommt narrativ + optional als DSL-
             // Programm, das durch dieselbe Sandbox wie alle anderen Programme

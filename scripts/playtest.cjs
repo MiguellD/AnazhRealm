@@ -880,44 +880,87 @@ function startSaveServer() {
                 check("Schicht 1: dslRun-Outcome trägt emotionsBefore + startedAt", iqResults.outcomeHasEmotionSnapshot);
             }
 
-            // ### Schicht 2 — Claude-API-Sandbox (UI + Parser, kein echter Call) ###
+            // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {
                     const r = window.anazhRealm;
                     if (!r) return null;
                     const out = {};
                     out.hasLlmState = r.state.llm && typeof r.state.llm.enabled === "boolean";
-                    out.endpointAnthropic = r.state.llm.endpoint === "https://api.anthropic.com/v1/messages";
-                    out.defaultModelHaiku = r.state.llm.model === "claude-haiku-4-5";
+                    out.hasProviderConfig = !!r.state.llm.providerConfig &&
+                        !!r.state.llm.providerConfig.anthropic &&
+                        !!r.state.llm.providerConfig.google &&
+                        !!r.state.llm.providerConfig.openrouter &&
+                        !!r.state.llm.providerConfig.ollama;
+                    const defs = r.llmProviderDefs();
+                    out.fourProviders = Object.keys(defs).length === 4;
+                    out.providerHasBuildBody = typeof defs.anthropic.buildBody === "function" &&
+                        typeof defs.google.buildBody === "function" &&
+                        typeof defs.openrouter.buildBody === "function" &&
+                        typeof defs.ollama.buildBody === "function";
 
+                    // Endpoint je Provider liefert die erwartete URL.
+                    out.anthropicEndpoint = defs.anthropic.endpoint("m", "k") === "https://api.anthropic.com/v1/messages";
+                    out.googleEndpointHasKey = /generativelanguage\.googleapis\.com.*key=KEY/.test(
+                        defs.google.endpoint("gemini-2.0-flash", "KEY")
+                    );
+                    out.openrouterEndpoint = defs.openrouter.endpoint("m", "k") === "https://openrouter.ai/api/v1/chat/completions";
+                    out.ollamaEndpoint = defs.ollama.endpoint("m", "", { endpoint: "http://localhost:11434" }) === "http://localhost:11434/api/chat";
+                    out.ollamaNoKeyRequired = defs.ollama.requiresKey === false;
+
+                    // Body-Format pro Provider
+                    const sys = "SYS";
+                    const usr = "USR";
+                    const anthBody = defs.anthropic.buildBody("m", sys, usr);
+                    out.anthropicBodyShape = anthBody.system === sys && Array.isArray(anthBody.messages);
+                    const geminiBody = defs.google.buildBody("m", sys, usr);
+                    out.geminiBodyShape = !!geminiBody.systemInstruction && Array.isArray(geminiBody.contents);
+                    const orBody = defs.openrouter.buildBody("m", sys, usr);
+                    out.openrouterBodyShape = Array.isArray(orBody.messages) &&
+                        orBody.messages[0].role === "system" && orBody.messages[1].role === "user";
+                    const olBody = defs.ollama.buildBody("m", sys, usr);
+                    out.ollamaBodyShape = olBody.stream === false && Array.isArray(olBody.messages);
+
+                    // Response-Parser pro Provider
+                    out.anthropicExtract = defs.anthropic.extractText({ content: [{ type: "text", text: "hi" }] }) === "hi";
+                    out.geminiExtract = defs.google.extractText({ candidates: [{ content: { parts: [{ text: "hi" }] } }] }) === "hi";
+                    out.openrouterExtract = defs.openrouter.extractText({ choices: [{ message: { content: "hi" } }] }) === "hi";
+                    out.ollamaExtract = defs.ollama.extractText({ message: { content: "hi" } }) === "hi";
+
+                    // UI: Provider-Selektor + Schlüsselzeile + Endpoint-Zeile (für Ollama)
+                    out.llmUiProvider = !!document.getElementById("llm-provider");
                     out.llmUiKey = !!document.getElementById("llm-key");
+                    out.llmUiEndpoint = !!document.getElementById("llm-endpoint");
                     out.llmUiModel = !!document.getElementById("llm-model");
                     out.llmUiToggle = !!document.getElementById("llm-toggle");
 
-                    // System-Prompt enthält die DSL-Vertrag-Anweisungen
-                    const sys = r.llmBuildSystemPrompt();
-                    out.systemPromptHasJson = /JSON/i.test(sys) && /say/.test(sys) && /program/.test(sys);
+                    // Default-Provider ist anthropic; Provider-Selector trägt alle vier
+                    const sel = document.getElementById("llm-provider");
+                    out.providerSelectorPopulated = sel && sel.options.length === 4;
 
-                    // Parser: gültiges JSON
+                    // System-Prompt enthält die DSL-Vertrag-Anweisungen
+                    const sp = r.llmBuildSystemPrompt();
+                    out.systemPromptHasJson = /JSON/i.test(sp) && /say/.test(sp) && /program/.test(sp);
+
+                    // Parser robust gegen Markdown / kaputtes JSON
                     const ok = r.llmParseResponse('{"say":"Hallo","program":["weather","sunny"]}');
                     out.parserParsesValidJson = ok.say === "Hallo" && Array.isArray(ok.program);
-
-                    // Parser: Markdown-Fence-Stripping
                     const fenced = r.llmParseResponse('```json\n{"say":"hi","program":null}\n```');
                     out.parserStripsFence = fenced.say === "hi" && fenced.program === null;
-
-                    // Parser: Fehler bei kaputtem JSON
                     const broken = r.llmParseResponse("nicht json");
                     out.parserDetectsError = typeof broken.error === "string";
 
-                    // Wenn nicht enabled, kein Call
+                    // Disabled-LLM blockt Call ohne Netzwerk-Versuch
                     r.state.llm.enabled = false;
                     return new Promise((resolve) => {
-                        r.llmCallClaude("test").then((rep) => {
+                        r.llmCall("test").then((rep) => {
                             out.callBlockedWhenDisabled = rep.error === "LLM nicht aktiv";
-                            // CSP erlaubt api.anthropic.com im connect-src
                             const meta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
-                            out.cspAllowsAnthropic = /api\.anthropic\.com/.test(meta ? meta.getAttribute("content") : "");
+                            const csp = meta ? meta.getAttribute("content") : "";
+                            out.cspAnthropic = /api\.anthropic\.com/.test(csp);
+                            out.cspGoogle = /generativelanguage\.googleapis\.com/.test(csp);
+                            out.cspOpenRouter = /openrouter\.ai/.test(csp);
+                            out.cspOllama = /localhost:11434/.test(csp);
                             resolve(out);
                         });
                     });
@@ -927,16 +970,32 @@ function startSaveServer() {
             if (!llmResults || llmResults.error) {
                 check("Schicht 2: LLM-Snapshot erreichbar", false, llmResults && llmResults.error || "page.evaluate fehlgeschlagen");
             } else {
-                check("Schicht 2: state.llm-Block existiert", llmResults.hasLlmState);
-                check("Schicht 2: Anthropic-Endpoint gesetzt", llmResults.endpointAnthropic);
-                check("Schicht 2: Default-Modell Haiku 4.5", llmResults.defaultModelHaiku);
-                check("Schicht 2: UI-Eingabefelder im Einstellungen-Drawer", llmResults.llmUiKey && llmResults.llmUiModel && llmResults.llmUiToggle);
+                check("Schicht 2: state.llm + providerConfig komplett", llmResults.hasLlmState && llmResults.hasProviderConfig);
+                check("Schicht 2: vier Provider definiert", llmResults.fourProviders);
+                check("Schicht 2: jeder Provider hat buildBody-Fn", llmResults.providerHasBuildBody);
+                check("Schicht 2: Anthropic-Endpoint korrekt", llmResults.anthropicEndpoint);
+                check("Schicht 2: Gemini-Endpoint trägt Key", llmResults.googleEndpointHasKey);
+                check("Schicht 2: OpenRouter-Endpoint korrekt", llmResults.openrouterEndpoint);
+                check("Schicht 2: Ollama-Endpoint nutzt /api/chat", llmResults.ollamaEndpoint);
+                check("Schicht 2: Ollama braucht keinen Key", llmResults.ollamaNoKeyRequired);
+                check("Schicht 2: Anthropic-Body trägt system + messages", llmResults.anthropicBodyShape);
+                check("Schicht 2: Gemini-Body trägt systemInstruction + contents", llmResults.geminiBodyShape);
+                check("Schicht 2: OpenRouter-Body OpenAI-kompatibel", llmResults.openrouterBodyShape);
+                check("Schicht 2: Ollama-Body trägt stream=false + messages", llmResults.ollamaBodyShape);
+                check("Schicht 2: Anthropic-Response extrahiert text-Block", llmResults.anthropicExtract);
+                check("Schicht 2: Gemini-Response extrahiert candidates[0].parts", llmResults.geminiExtract);
+                check("Schicht 2: OpenRouter-Response extrahiert choices[0].message", llmResults.openrouterExtract);
+                check("Schicht 2: Ollama-Response extrahiert message.content", llmResults.ollamaExtract);
+                check("Schicht 2: UI-Felder (Provider/Key/Endpoint/Model/Toggle)",
+                    llmResults.llmUiProvider && llmResults.llmUiKey && llmResults.llmUiEndpoint && llmResults.llmUiModel && llmResults.llmUiToggle);
+                check("Schicht 2: Provider-Selektor mit 4 Optionen befüllt", llmResults.providerSelectorPopulated);
                 check("Schicht 2: System-Prompt trägt DSL-JSON-Vertrag", llmResults.systemPromptHasJson);
                 check("Schicht 2: Parser akzeptiert gültiges JSON", llmResults.parserParsesValidJson);
                 check("Schicht 2: Parser entfernt Markdown-Fences", llmResults.parserStripsFence);
                 check("Schicht 2: Parser meldet Fehler bei kaputtem Input", llmResults.parserDetectsError);
                 check("Schicht 2: Disabled-LLM blockt Call sauber", llmResults.callBlockedWhenDisabled);
-                check("Schicht 2: CSP erlaubt api.anthropic.com im connect-src", llmResults.cspAllowsAnthropic);
+                check("Schicht 2: CSP erlaubt alle vier Provider-Endpoints",
+                    llmResults.cspAnthropic && llmResults.cspGoogle && llmResults.cspOpenRouter && llmResults.cspOllama);
             }
 
             // ### Ring 3 – Player-Emotionen → Welt ###

@@ -16,15 +16,16 @@
            Worker (off-screen Kreatur-Bewegung im Hintergrund-Thread). Code
            steht inline in `getMovementWorker()` als String-Konstante — kein
            User-Input fließt rein.
-        4. connect-src api.anthropic.com: vorbereitet für Schicht 2 (optionale
-           Grok-Stimme via Claude API). Browser-Anfrage geht direkt, der Key
-           liegt im localStorage des Spielers — Single-User-Localhost-Spiel.
+        4. connect-src: vier LLM-Provider als Schicht-2-Stimme. Browser-Anfrage
+           geht direkt vom Spieler-Browser an den jeweiligen Endpoint, Key liegt
+           im localStorage — Single-User-Localhost-Spiel. Inklusive Ollama auf
+           localhost:11434 für offline-Setups.
 
       `'unsafe-eval'` ist nach dem TF.js-Cleanup weg — unser eigener Code nutzt
       KEIN eval, das CI-Gate „Verbotenes dynamisches Auswerten" schützt diesen
       Pfad hart. object-src 'none' und base-uri 'self' bleiben strict.
     -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 https://api.anthropic.com; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self';">
     <title>Anazh Realm v7.65 – Das Ultiversum</title>
     <style>
         /* ====================================================================
@@ -1310,27 +1311,34 @@
             </div>
         </section>
         <section class="section" id="llm-section">
-            <h3>Grok-Stimme (Claude)</h3>
+            <h3>Grok-Stimme (LLM)</h3>
             <p class="drawer-hint">
-                Optional: dein Anthropic-API-Schlüssel hebt Groks Stimme über die fünf
-                statischen Sätze hinaus. Der Schlüssel liegt nur im localStorage dieses
-                Browsers. Alle Vorschläge gehen durch den DSL-Interpreter — Budget-Limits
-                halten als Sandbox.
+                Optional: gib Grok eine echte Stimme. Vier Provider — drei haben Gratis-Tiers,
+                Ollama läuft komplett lokal. Schlüssel liegen nur im localStorage dieses
+                Browsers. Jeder Vorschlag geht durch den DSL-Interpreter — die Sandbox hält.
             </p>
             <div class="tuning-row">
+                <label for="llm-provider"><span>Provider</span></label>
+                <select id="llm-provider">
+                    <!-- gefüllt aus llmProviderDefs() -->
+                </select>
+            </div>
+            <div class="tuning-row" id="llm-key-row">
                 <label for="llm-key"><span>API-Key</span></label>
-                <input type="password" id="llm-key" placeholder="sk-ant-…" autocomplete="off" spellcheck="false">
+                <input type="password" id="llm-key" placeholder="API-Key" autocomplete="off" spellcheck="false">
+            </div>
+            <div class="tuning-row" id="llm-endpoint-row" hidden>
+                <label for="llm-endpoint"><span>Endpoint</span></label>
+                <input type="text" id="llm-endpoint" placeholder="http://localhost:11434" autocomplete="off" spellcheck="false">
             </div>
             <div class="tuning-row">
                 <label for="llm-model"><span>Modell</span></label>
                 <select id="llm-model">
-                    <option value="claude-haiku-4-5">Haiku 4.5 (schnell, günstig)</option>
-                    <option value="claude-sonnet-4-6">Sonnet 4.6 (ausgewogen)</option>
-                    <option value="claude-opus-4-7">Opus 4.7 (klügste)</option>
+                    <!-- gefüllt aus llmProviderDefs()[provider].models -->
                 </select>
             </div>
             <div class="actions">
-                <button type="button" id="llm-save">Schlüssel speichern</button>
+                <button type="button" id="llm-save">Speichern</button>
                 <button type="button" id="llm-clear">Vergessen</button>
                 <button type="button" id="llm-toggle" aria-pressed="false">Aktivieren</button>
             </div>
