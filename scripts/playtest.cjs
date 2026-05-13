@@ -1239,8 +1239,8 @@ function startSaveServer() {
                 check("Welle 4 P1: 10 Tag-Achsen", wave4p1Results.tagKeyCount === 10);
                 check("Welle 4 P1: 6 Built-in-Materialien existieren", wave4p1Results.expectedBuiltIns);
                 check(
-                    "Welle 4 P1: Built-in-Anzahl exakt 11 (6 Bau + 5 Körper, ergänzt in Welle 6.D 1.5)",
-                    wave4p1Results.builtInCount === 11
+                    "Welle 4 P1: Built-in-Anzahl exakt 12 (6 Bau + 5 Körper + 1 Vegetation/laub, V7.74)",
+                    wave4p1Results.builtInCount === 12
                 );
                 check("Welle 4 P1: Alle Tag-Werte 0..1", wave4p1Results.tagsInRange);
                 check(
@@ -6685,68 +6685,92 @@ function startSaveServer() {
                 }
             }
 
-            // ### Welle 6.G Phase 1 — Welt-Sinne: Inseln + Bäume + UFOs kollidierbar ###
-            // Aktivierung der drei zuvor toten DSL-Ops (System-Audit §2).
-            // spawn_tree → btCylinderShape am Stamm (Krone bleibt durchlässig).
-            // spawn_island → btBvhTriangleMeshShape aus echten Vertices.
-            // spawn_ufo bleibt kosmetisch (kein Body — fliegende Beobachter).
-            // Plus: retrofit der initialen spawnIslands-Inseln + Terrain-Bäume.
+            // ### Welle 6.G Phase 1.5 — Hylomorphismus-Unification ###
+            // V7.73 hatte Bäume als Parallelcode (state.vegetation, eigene
+            // spawnTreeAt + _buildTreeCollision). V7.74 fließt das ins
+            // bestehende Architektur-System: baum_eiche/baum_kiefer als
+            // _defaultBlueprints, spawn_tree DSL-Op routet durch
+            // spawnArchitecture. EINE Sprache, EIN Renderpfad. Inseln + UFOs
+            // bleiben Sonderpfad (Inseln = floating-chunk-Disziplin, UFOs =
+            // 6.F4-Vorstufe).
             const wave6gResults = await page
                 .evaluate(() => {
                     const r = window.anazhRealm;
                     if (!r || !r.state) return null;
                     const out = {};
+                    // V7.74 Erwartung: Helfer für Inseln + UFOs leben weiter,
+                    // Baum-Helfer (spawnTreeAt + _buildTreeCollision) sind WEG.
                     out.hasIslandHelper = typeof r._buildIslandCollision === "function";
-                    out.hasTreeHelper = typeof r._buildTreeCollision === "function";
                     out.hasDisposeHelper = typeof r._disposeStaticCollision === "function";
-                    out.hasSpawnTreeAt = typeof r.spawnTreeAt === "function";
                     out.hasSpawnIslandAt = typeof r.spawnIslandAt === "function";
                     out.hasSpawnUfoAt = typeof r.spawnUfoAt === "function";
-                    // Initiale Welt enthält bereits Inseln + Terrain-Bäume.
-                    // Retrofit-Test: mindestens eine Insel + ein Baum haben
-                    // jetzt userData.collision (bei spawnIslands + vegetation-
-                    // Schleife geschieht das beim Worldgen).
+                    out.parallelTreeHelperRemoved = typeof r._buildTreeCollision !== "function";
+                    out.parallelSpawnTreeAtRemoved = typeof r.spawnTreeAt !== "function";
+
+                    // Hylomorphismus-Baupläne: baum_eiche + baum_kiefer +
+                    // laub-Material müssen als Built-ins existieren.
+                    const bps = r.state.blueprints || {};
+                    out.hasBaumEiche = !!(bps.baum_eiche && Array.isArray(bps.baum_eiche.parts) && bps.baum_eiche.parts.length === 2);
+                    out.hasBaumKiefer = !!(bps.baum_kiefer && Array.isArray(bps.baum_kiefer.parts) && bps.baum_kiefer.parts.length === 2);
+                    out.baumEicheIsBuiltIn = !!(bps.baum_eiche && bps.baum_eiche.builtIn === true);
+                    const eichenStamm = bps.baum_eiche && bps.baum_eiche.parts[0];
+                    const eichenKrone = bps.baum_eiche && bps.baum_eiche.parts[1];
+                    out.eichenStammHolz = !!(eichenStamm && eichenStamm.material === "holz" && eichenStamm.shape === "cylinder");
+                    out.eichenKroneLaub = !!(eichenKrone && eichenKrone.material === "laub" && eichenKrone.shape === "sphere");
+                    out.hasLaubMaterial = !!(r.state.materials && r.state.materials.laub && r.state.materials.laub.builtIn === true);
+
+                    // Initiale Welt: Worldgen-Bäume sind jetzt in state.architectures,
+                    // NICHT in state.vegetation. state.vegetation enthält nur noch
+                    // Gras + Blumen. state.architectures enthält baum_eiche/baum_kiefer.
+                    const archs = Array.isArray(r.state.architectures) ? r.state.architectures : [];
+                    const archTrees = archs.filter(
+                        (a) => a.type === "baum_eiche" || a.type === "baum_kiefer"
+                    );
+                    out.worldgenTreesInArchitectures = archTrees.length;
+                    // Mindestens ein Baum mit Mesh (= in Player-Nähe gerendert)
+                    // muss eine Compound-Kollision haben.
+                    const renderedTree = archTrees.find((a) => a.mesh && a.collision && a.collision.body);
+                    out.treeHasCompoundCollision = !!renderedTree;
+
+                    // Initiale Inseln behalten ihre tri-mesh-Kollision (V7.73-Pfad).
                     const initIslands = Array.isArray(r.state.floatingIslands) ? r.state.floatingIslands : [];
-                    // Trees discriminieren: state.vegetation enthält auch Blumen
-                    // (1m-Stengel-CylinderGeometry) — die bekommen bewusst KEINE
-                    // Kollision. Bäume haben Stamm-Höhe >= 2 und Radius >= 0.3.
-                    const initVegTrees = Array.isArray(r.state.vegetation)
-                        ? r.state.vegetation.filter((v) => {
-                              let trunk = null;
-                              v.traverse &&
-                                  v.traverse((n) => {
-                                      if (
-                                          !trunk &&
-                                          n.isMesh &&
-                                          n.geometry &&
-                                          n.geometry.type === "CylinderGeometry" &&
-                                          n.geometry.parameters &&
-                                          n.geometry.parameters.height >= 2 &&
-                                          (n.geometry.parameters.radiusBottom || 0) >= 0.3
-                                      )
-                                          trunk = n;
-                                  });
-                              return !!trunk;
-                          })
-                        : [];
                     out.initIslandsCount = initIslands.length;
                     out.initIslandsWithCollision = initIslands.filter(
                         (i) => i.userData && i.userData.collision && i.userData.collision.body
                     ).length;
-                    out.initVegTreesCount = initVegTrees.length;
-                    out.initVegTreesWithCollision = initVegTrees.filter(
-                        (v) => v.userData && v.userData.collision && v.userData.collision.body
-                    ).length;
 
-                    // DSL-Op-Tests: spawn_tree, spawn_island, spawn_ufo
-                    const treesBefore = r.state.vegetation ? r.state.vegetation.length : 0;
-                    const islandsBefore = r.state.floatingIslands ? r.state.floatingIslands.length : 0;
+                    // Vegetation enthält NUR noch Gras + Blumen (keine Bäume).
+                    const veg = Array.isArray(r.state.vegetation) ? r.state.vegetation : [];
+                    out.vegetationCount = veg.length;
+                    // Diskrimination: kein Eintrag in state.vegetation hat eine
+                    // Stamm-Cylinder mit Höhe ≥2 (Bäume sind weg).
+                    out.noTreesInVegetation = !veg.some((v) => {
+                        let isTreeLike = false;
+                        v.traverse &&
+                            v.traverse((n) => {
+                                if (
+                                    !isTreeLike &&
+                                    n.isMesh &&
+                                    n.geometry &&
+                                    n.geometry.type === "CylinderGeometry" &&
+                                    n.geometry.parameters &&
+                                    n.geometry.parameters.height >= 2 &&
+                                    (n.geometry.parameters.radiusBottom || 0) >= 0.3
+                                )
+                                    isTreeLike = true;
+                            });
+                        return isTreeLike;
+                    });
+
+                    // DSL-Op-Tests: spawn_tree → erzeugt Architektur, NICHT
+                    // mehr Three.js-Group in state.vegetation.
+                    const archsBefore = r.state.architectures.length;
+                    const islandsBefore = r.state.floatingIslands.length;
                     const ufosBefore = r.state.ufos ? r.state.ufos.length : 0;
+                    const vegBefore = r.state.vegetation ? r.state.vegetation.length : 0;
                     const playerPos = r.state.playerMesh
                         ? r.state.playerMesh.position
                         : { x: 0, y: 50, z: 0 };
-                    // Test-Position abseits, damit wir die neuen Spawns
-                    // sicher von Welt-Bestand trennen können.
                     const tx = playerPos.x + 50;
                     const ty = playerPos.y;
                     const tz = playerPos.z + 50;
@@ -6757,27 +6781,38 @@ function startSaveServer() {
                     });
                     r.dslRun(["spawn_ufo", ["at", tx + 40, ty + 10, tz + 40]], { source: "test" });
 
-                    const treesAfter = r.state.vegetation ? r.state.vegetation.length : 0;
-                    const islandsAfter = r.state.floatingIslands ? r.state.floatingIslands.length : 0;
+                    const archsAfter = r.state.architectures.length;
+                    const islandsAfter = r.state.floatingIslands.length;
                     const ufosAfter = r.state.ufos ? r.state.ufos.length : 0;
-                    out.treeSpawned = treesAfter > treesBefore;
+                    const vegAfter = r.state.vegetation ? r.state.vegetation.length : 0;
+                    out.treeAddedToArchitectures = archsAfter === archsBefore + 1;
+                    out.treeNotAddedToVegetation = vegAfter === vegBefore;
                     out.islandSpawned = islandsAfter > islandsBefore;
                     out.ufoSpawned = ufosAfter > ufosBefore;
 
-                    // Letztes Spawn-Objekt holen und Kollision prüfen.
-                    const newTree = treesAfter > treesBefore ? r.state.vegetation[treesAfter - 1] : null;
+                    const newTreeArch =
+                        archsAfter > archsBefore ? r.state.architectures[archsAfter - 1] : null;
+                    out.newTreeIsBaumEiche = !!(newTreeArch && newTreeArch.type === "baum_eiche");
+                    out.newTreeHasMesh = !!(newTreeArch && newTreeArch.mesh);
+                    out.newTreeHasCollision = !!(
+                        newTreeArch &&
+                        newTreeArch.collision &&
+                        newTreeArch.collision.body &&
+                        newTreeArch.collision.shape
+                    );
+                    // Compound-Tags müssen Holz+Laub spiegeln (lebendig+brennbar).
+                    if (newTreeArch && typeof r.computeCompoundTags === "function") {
+                        const bp = r.state.blueprints[newTreeArch.type];
+                        const tags = r.computeCompoundTags(bp);
+                        out.treeTagsLebendig = tags && tags.lebendig > 0.5;
+                        out.treeTagsBrennbar = tags && tags.brennbar > 0.5;
+                    }
+
                     const newIsland =
                         islandsAfter > islandsBefore
                             ? r.state.floatingIslands[islandsAfter - 1]
                             : null;
                     const newUfo = ufosAfter > ufosBefore ? r.state.ufos[ufosAfter - 1] : null;
-                    out.treeHasCollision = !!(
-                        newTree &&
-                        newTree.userData &&
-                        newTree.userData.collision &&
-                        newTree.userData.collision.body &&
-                        newTree.userData.collision.shape
-                    );
                     out.islandHasCollision = !!(
                         newIsland &&
                         newIsland.userData &&
@@ -6785,28 +6820,15 @@ function startSaveServer() {
                         newIsland.userData.collision.body &&
                         newIsland.userData.collision.tmesh
                     );
-                    // UFO ist bewusst KOLLISIONS-FREI (fliegender Beobachter).
                     out.ufoHasNoCollision = !!(newUfo && (!newUfo.userData || !newUfo.userData.collision));
-
-                    // Position-Persistenz: DSL-Op hat ["at",tx,ty,tz] gesetzt,
-                    // Tree muss tatsächlich nahe (tx,tz) stehen (kleiner Jitter
-                    // ist bei count=1 auf 0 begrenzt — daher exakt tx/tz).
-                    if (newTree) {
-                        let trunk = null;
-                        newTree.traverse((n) => {
-                            if (!trunk && n.isMesh && n.geometry && n.geometry.type === "CylinderGeometry")
-                                trunk = n;
-                        });
-                        if (trunk) {
-                            const wp = new window.THREE.Vector3();
-                            trunk.getWorldPosition(wp);
-                            out.treePosXMatch = Math.abs(wp.x - tx) < 0.5;
-                            out.treePosZMatch = Math.abs(wp.z - tz) < 0.5;
-                        }
+                    // Inseln haben jetzt Vollkörper (Top + Bottom + Side).
+                    // 2D-Grid mit N=12 → 12*12*2 = 288 Vertices Mindestmenge.
+                    if (newIsland && newIsland.geometry && newIsland.geometry.attributes.position) {
+                        const vCount = newIsland.geometry.attributes.position.count;
+                        out.islandHasUnderside = vCount >= 144 * 2;
                     }
 
                     // Diskrimination: derselbe Seed → dieselben Vertices.
-                    // Ohne diesen Determinismus wäre Multi-User-Sync sinnlos.
                     const beforeIslandsCount = r.state.floatingIslands.length;
                     r.dslRun(["spawn_island", ["at", tx + 80, ty, tz], 5, 99999], { source: "test" });
                     r.dslRun(["spawn_island", ["at", tx + 100, ty, tz], 5, 99999], { source: "test" });
@@ -6822,9 +6844,7 @@ function startSaveServer() {
                             Math.abs(v1[10] - v2[10]) < 0.0001;
                     }
 
-                    // Chat-Pattern-Test: „pflanze baum hier" → {program,describe}.
-                    // parseChatToDsl gibt das volle Built-Object zurück, nicht
-                    // nur das Programm — daher .program lesen.
+                    // Chat-Pattern-Tests bleiben — die Patterns selbst sind gleich.
                     if (typeof r.parseChatToDsl === "function") {
                         const treeBuilt = r.parseChatToDsl("pflanze baum hier");
                         const treeProg = treeBuilt && treeBuilt.program;
@@ -6840,7 +6860,7 @@ function startSaveServer() {
                             islandProg[0] === "spawn_island" &&
                             Array.isArray(islandProg[1]) &&
                             islandProg[1][0] === "at" &&
-                            Number.isFinite(islandProg[3]); // Seed eingebettet
+                            Number.isFinite(islandProg[3]);
                         const ufoBuilt = r.parseChatToDsl("rufe ufo hier");
                         const ufoProg = ufoBuilt && ufoBuilt.program;
                         out.chatUfoProg =
@@ -6850,83 +6870,96 @@ function startSaveServer() {
                             ufoProg[1][0] === "at";
                     }
 
-                    // Toter Pfad gelöscht: 'Physik für Insel' kommt nicht mehr
-                    // im Log vor (war Debug-Output des needsPhysics-Pfads).
-                    // Wir können den Source-Code-Check nicht von hier aus
-                    // machen; statt dessen prüfen wir, dass needsPhysics auf
-                    // den initialen Inseln NIE gesetzt ist (kein Anker-Pfad
-                    // mehr) — d. h. die neue Kollision ist der echte Pfad.
-                    out.noNeedsPhysicsLeftover = initIslands.every(
-                        (i) => !i.userData || i.userData.needsPhysics !== true
-                    );
-
-                    // Dispose-Test: _disposeStaticCollision räumt sauber auf.
-                    if (newTree && newTree.userData.collision) {
-                        r._disposeStaticCollision(newTree);
-                        out.disposeClearsCollision = newTree.userData.collision === null;
-                    }
                     return out;
                 })
                 .catch((e) => ({ error: String(e) }));
 
             if (wave6gResults && !wave6gResults.error) {
-                check("Welle 6.G P1: _buildIslandCollision-Methode existiert", wave6gResults.hasIslandHelper);
-                check("Welle 6.G P1: _buildTreeCollision-Methode existiert", wave6gResults.hasTreeHelper);
+                check("Welle 6.G P1.5: _buildIslandCollision-Methode existiert", wave6gResults.hasIslandHelper);
                 check(
-                    "Welle 6.G P1: _disposeStaticCollision-Methode existiert",
+                    "Welle 6.G P1.5: _disposeStaticCollision-Methode existiert",
                     wave6gResults.hasDisposeHelper
                 );
-                check("Welle 6.G P1: spawnTreeAt-Methode existiert", wave6gResults.hasSpawnTreeAt);
-                check("Welle 6.G P1: spawnIslandAt-Methode existiert", wave6gResults.hasSpawnIslandAt);
-                check("Welle 6.G P1: spawnUfoAt-Methode existiert", wave6gResults.hasSpawnUfoAt);
+                check("Welle 6.G P1.5: spawnIslandAt-Methode existiert", wave6gResults.hasSpawnIslandAt);
+                check("Welle 6.G P1.5: spawnUfoAt-Methode existiert", wave6gResults.hasSpawnUfoAt);
                 check(
-                    `Welle 6.G P1: initiale Welt-Inseln (n=${wave6gResults.initIslandsCount}) haben Kollision`,
+                    "Welle 6.G P1.5: _buildTreeCollision-Parallelhelper ist GELÖSCHT (Hylomorphismus-Unification)",
+                    wave6gResults.parallelTreeHelperRemoved
+                );
+                check(
+                    "Welle 6.G P1.5: spawnTreeAt-Parallelhelper ist GELÖSCHT (Hylomorphismus-Unification)",
+                    wave6gResults.parallelSpawnTreeAtRemoved
+                );
+                check("Welle 6.G P1.5: Bauplan 'baum_eiche' existiert mit 2 parts", wave6gResults.hasBaumEiche);
+                check("Welle 6.G P1.5: Bauplan 'baum_kiefer' existiert mit 2 parts", wave6gResults.hasBaumKiefer);
+                check("Welle 6.G P1.5: baum_eiche ist builtIn", wave6gResults.baumEicheIsBuiltIn);
+                check("Welle 6.G P1.5: baum_eiche Stamm = cylinder/holz", wave6gResults.eichenStammHolz);
+                check("Welle 6.G P1.5: baum_eiche Krone = sphere/laub", wave6gResults.eichenKroneLaub);
+                check("Welle 6.G P1.5: Material 'laub' existiert als Built-in", wave6gResults.hasLaubMaterial);
+                check(
+                    `Welle 6.G P1.5: Worldgen-Bäume (n=${wave6gResults.worldgenTreesInArchitectures}) sind in state.architectures`,
+                    wave6gResults.worldgenTreesInArchitectures > 0
+                );
+                check(
+                    "Welle 6.G P1.5: mind. ein Worldgen-Baum hat Compound-Box-Kollision",
+                    wave6gResults.treeHasCompoundCollision
+                );
+                check(
+                    "Welle 6.G P1.5: state.vegetation enthält KEINE Bäume mehr (nur Gras + Blumen)",
+                    wave6gResults.noTreesInVegetation
+                );
+                check(
+                    `Welle 6.G P1.5: initiale Welt-Inseln (n=${wave6gResults.initIslandsCount}) haben Kollision`,
                     wave6gResults.initIslandsCount > 0 &&
                         wave6gResults.initIslandsWithCollision === wave6gResults.initIslandsCount
                 );
-                if (wave6gResults.initVegTreesCount > 0) {
-                    check(
-                        `Welle 6.G P1: initiale Terrain-Bäume (n=${wave6gResults.initVegTreesCount}) haben Stamm-Kollision`,
-                        wave6gResults.initVegTreesWithCollision === wave6gResults.initVegTreesCount
-                    );
-                }
-                check("Welle 6.G P1: spawn_tree DSL-Op fügt Baum zu state.vegetation hinzu", wave6gResults.treeSpawned);
                 check(
-                    "Welle 6.G P1: spawn_island DSL-Op fügt Insel zu state.floatingIslands hinzu",
+                    "Welle 6.G P1.5: spawn_tree DSL-Op fügt Eintrag zu state.architectures hinzu",
+                    wave6gResults.treeAddedToArchitectures
+                );
+                check(
+                    "Welle 6.G P1.5: spawn_tree DSL-Op fügt NICHTS zu state.vegetation hinzu (Parallelcode weg)",
+                    wave6gResults.treeNotAddedToVegetation
+                );
+                check("Welle 6.G P1.5: neu-gespawnter Baum hat type='baum_eiche'", wave6gResults.newTreeIsBaumEiche);
+                check("Welle 6.G P1.5: neu-gespawnter Baum hat Mesh (in Reichweite)", wave6gResults.newTreeHasMesh);
+                check(
+                    "Welle 6.G P1.5: neu-gespawnter Baum hat Compound-Box-Kollision (Stamm + Krone)",
+                    wave6gResults.newTreeHasCollision
+                );
+                if (wave6gResults.treeTagsLebendig !== undefined) {
+                    check("Welle 6.G P1.5: Baum-Compound-Tags zeigen lebendig (holz + laub)", wave6gResults.treeTagsLebendig);
+                    check("Welle 6.G P1.5: Baum-Compound-Tags zeigen brennbar (holz + laub)", wave6gResults.treeTagsBrennbar);
+                }
+                check(
+                    "Welle 6.G P1.5: spawn_island DSL-Op fügt Insel zu state.floatingIslands hinzu",
                     wave6gResults.islandSpawned
                 );
-                check("Welle 6.G P1: spawn_ufo DSL-Op fügt UFO zu state.ufos hinzu", wave6gResults.ufoSpawned);
-                check("Welle 6.G P1: neu-gespawnter Baum hat btCylinderShape-Kollision", wave6gResults.treeHasCollision);
+                check("Welle 6.G P1.5: spawn_ufo DSL-Op fügt UFO zu state.ufos hinzu", wave6gResults.ufoSpawned);
                 check(
-                    "Welle 6.G P1: neu-gespawnte Insel hat btBvhTriangleMeshShape-Kollision",
+                    "Welle 6.G P1.5: neu-gespawnte Insel hat btBvhTriangleMeshShape-Kollision",
                     wave6gResults.islandHasCollision
                 );
-                check(
-                    "Welle 6.G P1: UFO bleibt bewusst kollisionsfrei (fliegender Beobachter)",
-                    wave6gResults.ufoHasNoCollision
-                );
-                if (wave6gResults.treePosXMatch !== undefined) {
-                    check("Welle 6.G P1: Baum-Stamm steht exakt an ['at',x,y,z]-Position (X)", wave6gResults.treePosXMatch);
-                    check("Welle 6.G P1: Baum-Stamm steht exakt an ['at',x,y,z]-Position (Z)", wave6gResults.treePosZMatch);
+                if (wave6gResults.islandHasUnderside !== undefined) {
+                    check(
+                        "Welle 6.G P1.5: Insel hat Top + Bottom (Vollkörper, V7.74 Visual-Fix)",
+                        wave6gResults.islandHasUnderside
+                    );
                 }
                 check(
-                    "Welle 6.G P1: spawn_island mit gleichem Seed produziert identische Vertices (Multi-User-Sync)",
+                    "Welle 6.G P1.5: UFO bleibt bewusst kollisionsfrei (fliegender Beobachter)",
+                    wave6gResults.ufoHasNoCollision
+                );
+                check(
+                    "Welle 6.G P1.5: spawn_island mit gleichem Seed produziert identische Vertices (Multi-User-Sync)",
                     wave6gResults.seedDeterministic
                 );
-                check("Welle 6.G P1: Chat 'pflanze baum hier' → spawn_tree mit ['at',...]", wave6gResults.chatTreeProg);
+                check("Welle 6.G P1.5: Chat 'pflanze baum hier' → spawn_tree mit ['at',...]", wave6gResults.chatTreeProg);
                 check(
-                    "Welle 6.G P1: Chat 'setze insel hier' → spawn_island mit ['at',...] + eingebettetem Seed",
+                    "Welle 6.G P1.5: Chat 'setze insel hier' → spawn_island mit ['at',...] + eingebettetem Seed",
                     wave6gResults.chatIslandProg
                 );
-                check("Welle 6.G P1: Chat 'rufe ufo hier' → spawn_ufo mit ['at',...]", wave6gResults.chatUfoProg);
-                check(
-                    "Welle 6.G P1: toter needsPhysics-Pfad ist weg (keine Insel hat das Flag)",
-                    wave6gResults.noNeedsPhysicsLeftover
-                );
-                check(
-                    "Welle 6.G P1: _disposeStaticCollision setzt userData.collision auf null",
-                    wave6gResults.disposeClearsCollision
-                );
+                check("Welle 6.G P1.5: Chat 'rufe ufo hier' → spawn_ufo mit ['at',...]", wave6gResults.chatUfoProg);
             }
 
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###

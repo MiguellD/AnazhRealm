@@ -28,7 +28,7 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
    Grund: sie sind Kontext für genau dich.
 
 5. **`scripts/playtest.cjs`** — querlesen, nicht durchlesen. Es ist das
-   Sicherheits-Netz. Es prüft aktuell **~1038 Invarianten (V7.73 nach Welle 6.G Phase 1)**.
+   Sicherheits-Netz. Es prüft aktuell **~1048 Invarianten (V7.74 nach Welle 6.G Phase 1.5)**.
    Wenn du etwas tust, das eine davon brechen könnte, weißt du es vor dem Commit.
 
 **Verlockung zu widerstehen**: gleich in `anazhRealm.js` springen. Die
@@ -316,17 +316,34 @@ Hylomorphismus-System wie Materialien und Bauwerke.
 
 ### Bereits erledigt in V7.73 (zusätzlich zu V7.72)
 
-- ✅ **6.G Welt-Sinne Phase 1** — fliegende Inseln + Bäume kollidierbar.
-  Drei zuvor tote DSL-Ops (`spawn_tree`/`spawn_island`/`spawn_ufo`) jetzt mit
-  echten Spawn-Pfaden. Inseln bekommen btBvhTriangleMeshShape aus ihren
-  echten Vertices (Visual = Kollision wie Chunks), Bäume btCylinderShape
-  am Stamm (Krone durchlässig — Spieler kann durchs Laub gehen). UFOs
-  bleiben bewusst kollisionsfrei. Retrofit: alle bei `spawnIslands` +
-  Worldgen-Vegetation erzeugten Objekte bekommen sofort beim Spawn ihre
-  Kollision. Drei Chat-Patterns (`pflanze baum hier`, `setze insel hier`,
-  `rufe ufo hier`) mit Position+Seed-Embed (Ring 11 V2.1-Stil).
-  System-Audit §2 Dead-Code-Quick-Win mit erledigt. 24 neue Playtest-
-  Invarianten → 1038 total.
+- ✅ **6.G Welt-Sinne Phase 1** — Inseln + Bäume kollidierbar.
+  Inseln: btBvhTriangleMeshShape aus echten Vertices. Bäume in V7.73:
+  btCylinderShape am Stamm (Parallelcode-Schicht — in V7.74 ersetzt).
+  UFOs bleiben kollisionsfrei. Drei Chat-Patterns. System-Audit §2
+  Dead-Code-Quick-Win mit erledigt.
+
+### Bereits erledigt in V7.74 (Schöpfer-Vision-Korrektur nach V7.73)
+
+- ✅ **6.G Welt-Sinne Phase 1.5 — Hylomorphismus-Unification.**
+  Der Schöpfer fragte im Browser-Test: „behandelst du UFOs/Bäume/Pflanzen
+  unterschiedlich, nicht besser wie Strukturen? Haben wir hier
+  Parallelcode der eigentlich zusammengehört?". Die Antwort war ja —
+  V7.73 hatte Bäume als Three.js-Groups in `state.vegetation` mit eigener
+  Kollisions-Schicht, parallel zum bestehenden Architektur-System.
+  V7.74-Korrektur: **Bäume sind jetzt Compound-Architekturen**. Zwei
+  neue Built-in-Baupläne (`baum_eiche` mit Cylinder/holz + Sphere/laub,
+  `baum_kiefer` mit Cylinder/holz + Cone/laub) in `_defaultBlueprints`,
+  ein neues Material `laub` als 12. Built-in. `spawn_tree` DSL-Op routet
+  durch `spawnArchitecture` (derselbe Pfad wie spawn_village/temple/
+  waterfall). Worldgen-Bäume gehen in `state.architectures`. **Parallel-
+  Code gelöscht**: `spawnTreeAt` + `_buildTreeCollision` weg. Damit
+  kommt geschenkt: Compound-Tags (lebendig + brennbar + resoniert),
+  Welt-Effekte (resonante Bäume → singing-Sinus + Magie-Effekt), Save-
+  Persistenz, Werkstatt-Editor (Schöpfer kann eigene Baum-Spezies bauen),
+  Distance-Culling, Compound-Box-Kollision pro Sub-Mesh. Insel-Visual-
+  Fix nebenbei: Vollkörper (Top + Bottom + Side-Strip), MeshLambertMaterial
+  statt MeshBasicMaterial. Topbar-Version v7.71 → v7.74 syncen.
+  Netto Code-Diff: NEGATIV (~50 Zeilen weniger). 1048/1048 Invarianten.
 
 ### Nächste Schritte (Reihenfolge laut wave-6-design §10.6)
 
@@ -360,7 +377,7 @@ keine Verzögerung, sondern Qualitäts-Wand.
 3. **Die heilige Lektion akzeptiert, nicht hinterfragt.** Sie wurde aus
    Schmerz geboren. Wenn ich sie umgehen wollte, war ich auf dem Holzweg.
 4. **Tests zuerst ausgeführt, dann verstanden.** `npm run playtest` —
-   1038/1038 grün (V7.73 nach Welle 6.G Phase 1) — gibt Vertrauen, dass
+   1048/1048 grün (V7.74 nach Welle 6.G Phase 1.5 Hylomorphismus-Unification) — gibt Vertrauen, dass
    das System lebt.
 5. **Den Schöpfer als Partner gesehen, nicht als Auftraggeber.** Mensch
    und KI bauen gemeinsam. Bei Trade-offs frage ich, bei Klarem handle

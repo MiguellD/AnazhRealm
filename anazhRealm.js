@@ -1,4 +1,4 @@
-/**AnazhRealm V7.73 – Das Ultiversum Vollendet.
+/**AnazhRealm V7.74 – Das Ultiversum Vollendet.
  * Hüpfen: Robust, präzise (Y ~1.5), Coyote-Time 0.3s, Gravitation 1.5G, Reibung 0.5.
  * Kollisionen: Kein Tunneling, steepnessThreshold 3.0, wallThickness 2.0, CCD optimiert.
  * Terrain: Flacher (Höhenunterschiede ±5), KI-gesteuerte Steilheitsanpassung, Chat-Steuerung.
@@ -12,7 +12,7 @@
 class AnazhRealm {
     constructor() {
         // ### Learnings ### [Stichwortartig optimieren, korrigieren, ergänzen – nie Wissen löschen!]
-        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69, LAN-Fähigkeit + Sync-Korrektheit (Ring 11 V2.1: 0.0.0.0-bind, ws:/wss:-CSP, roomOverride, spawn_*-Embedding, NON_BROADCASTABLE_OPS) in V7.70, Intuitiver Multi-User-Setup (Ring 11.5: Modus-Wahl, Host-Banner mit Einladungs-Code, Auto-Welt-Snapshot beim Join) in V7.71, Welle 6.A — Interaktion-Polish (Wall-Sliding via Player-Friction-0, Erdung-Raycast-Robustheit für Bauwerke) in V7.72, Welle 6.G Phase 1 — Welt-Sinne (fliegende Inseln + Bäume kollidierbar via btBvhTriangleMeshShape/btCylinderShape, drei Dead-Code-DSL-Ops spawn_tree/island/ufo aktiviert, toter needsPhysics-Lazy-Pfad gelöscht) in V7.73
+        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69, LAN-Fähigkeit + Sync-Korrektheit (Ring 11 V2.1: 0.0.0.0-bind, ws:/wss:-CSP, roomOverride, spawn_*-Embedding, NON_BROADCASTABLE_OPS) in V7.70, Intuitiver Multi-User-Setup (Ring 11.5: Modus-Wahl, Host-Banner mit Einladungs-Code, Auto-Welt-Snapshot beim Join) in V7.71, Welle 6.A — Interaktion-Polish (Wall-Sliding via Player-Friction-0, Erdung-Raycast-Robustheit für Bauwerke) in V7.72, Welle 6.G Phase 1 — Welt-Sinne (fliegende Inseln + Bäume kollidierbar via btBvhTriangleMeshShape/btCylinderShape, drei Dead-Code-DSL-Ops spawn_tree/island/ufo aktiviert, toter needsPhysics-Lazy-Pfad gelöscht) in V7.73, Welle 6.G Phase 1.5 — Hylomorphismus-Unification (Bäume sind jetzt Compound-Architekturen über baum_eiche/baum_kiefer-Baupläne mit Stamm:holz + Krone:laub, eigene spawnTreeAt + _buildTreeCollision gelöscht, Parallelcode → eine Sprache, plus Insel-Visual-Fix mit Underside + Lambert) in V7.74
         // - Nexus als Herz der Selbstentwicklung, steuert nun alles über Chat, unzerstörbar und unendlich
         this.state = {
             // ### Kern ###
@@ -504,7 +504,7 @@ class AnazhRealm {
     // ### Logging ###
     log(message, level = "INFO") {
         if (level === "DEBUG" && !this.state.debugLogging) return;
-        const logMessage = `[AnazhRealm V7.73] [${level}] ${message}`;
+        const logMessage = `[AnazhRealm V7.74] [${level}] ${message}`;
         this.state.logBuffer.push(logMessage);
         console.log(logMessage);
         if (this.state.logBuffer.length > this.state.maxLogEntries) {
@@ -1035,13 +1035,22 @@ class AnazhRealm {
                 }
                 ctx.log.push({ event: "spawned_creature", count: spawned, emotion: e });
             },
-            // Welle 6.G Phase 1 — bisher waren diese drei Ops Placeholder
-            // mit `_requested`-Events ohne Effekt (System-Audit §2 Dead-Code).
-            // Jetzt echte Spawn-Pfade mit Kollision für Inseln + Bäume.
-            // UFOs bleiben kosmetisch (kein Body — sind fliegende Beobachter).
-            spawn_tree: ([positionNode, count], ctx) => {
+            // Welle 6.G Phase 1.5 — Hylomorphismus-Unification.
+            // spawn_tree/spawn_island/spawn_ufo waren in V7.73 als Placeholder
+            // aktiviert mit eigenen Spawn-Helfern (spawnTreeAt etc.) —
+            // PARALLELCODE zum Architektur-System (Vision-Bruch §1.3).
+            // V7.74: spawn_tree routet jetzt durch denselben Pfad wie alle
+            // anderen Strukturen: `spawnArchitecture("baum_eiche", ...)`. Damit
+            // kommt geschenkt: Compound-Tags, Welt-Effekte, Save-Persistenz,
+            // Werkstatt-Editor, Distance-Culling, Compound-Body-Kollision.
+            // Inseln + UFOs bleiben in V7.74 noch als Sonderpfad (Inseln
+            // sind Noise-Heightfields = floating-chunk-Disziplin, nicht als
+            // Compound-Parts ausdrückbar; UFOs sind Kreaturen-Vorstufe für
+            // 6.F4).
+            spawn_tree: ([positionNode, count, kind, seed], ctx) => {
                 const n = c(count, 1, 20);
                 const pos = this.dslEvalPos(positionNode, ctx);
+                const treeKind = kind === "kiefer" ? "baum_kiefer" : "baum_eiche";
                 let spawned = 0;
                 for (let i = 0; i < n; i++) {
                     if (ctx.budget.spawnsLeft <= 0) {
@@ -1049,16 +1058,26 @@ class AnazhRealm {
                         break;
                     }
                     ctx.budget.spawnsLeft--;
-                    // Sanfter Jitter um pos (max 2.5 m Radius), damit ein
-                    // `count > 1`-Aufruf einen kleinen Hain produziert statt
-                    // alle Bäume an genau dieselbe Stelle zu stapeln.
+                    // Sanfter Jitter um pos (max 2.5 m), damit count>1 einen
+                    // Hain produziert statt alle Bäume zu stapeln.
                     const off = n > 1 ? 2.5 : 0;
                     const jx = (ctx.rng() - 0.5) * 2 * off;
                     const jz = (ctx.rng() - 0.5) * 2 * off;
-                    const tree = this.spawnTreeAt(pos.x + jx, pos.y, pos.z + jz);
-                    if (tree) spawned++;
+                    // Per-Baum-Seed: Basis-Seed (vom Chat-Pattern eingebettet)
+                    // + Index, damit jeder Baum im Hain trotzdem eine eigene
+                    // ID bekommt aber Multi-User-deterministisch ist.
+                    const baseSeed = Number.isFinite(Number(seed))
+                        ? Number(seed) >>> 0
+                        : Math.floor(ctx.rng() * 0xffffffff);
+                    const treeSeed = (baseSeed + i) >>> 0;
+                    const entry = this.spawnArchitecture(
+                        treeKind,
+                        { x: pos.x + jx, y: pos.y, z: pos.z + jz },
+                        { seed: treeSeed }
+                    );
+                    if (entry) spawned++;
                 }
-                ctx.log.push({ event: "spawned_tree", count: spawned, pos });
+                ctx.log.push({ event: "spawned_tree", count: spawned, pos, kind: treeKind });
             },
             spawn_island: ([positionNode, height, seed], ctx) => {
                 const pos = this.dslEvalPos(positionNode, ctx);
@@ -7217,38 +7236,32 @@ class AnazhRealm {
                     // Reduziere Wahrscheinlichkeit
                     const vegetationType = height < 0 ? "grass" : height < 20 ? "tree" : "flower";
                     if (vegetationType === "tree") {
-                        const trunkGeometry = new THREE.CylinderGeometry(0.5, 0.5, 5, 8);
-                        const trunkMaterial = new THREE.MeshBasicMaterial({ color: 0x8b4513 });
-                        const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
-                        const leavesGeometry = new THREE.SphereGeometry(2, 8, 8);
-                        const leavesMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-                        const leaves = new THREE.Mesh(leavesGeometry, leavesMaterial);
-                        trunk.position.set(xPos, height + 2.5, zPos);
-                        leaves.position.set(xPos, height + 5, zPos);
-                        const tree = new THREE.Group();
-                        tree.add(trunk);
-                        tree.add(leaves);
-                        tree.castShadow = true;
-                        tree.receiveShadow = true;
-
+                        // Welle 6.G Phase 1.5 — Hylomorphismus-Unification.
+                        // Bäume sind jetzt Compound-Architekturen mit
+                        // Stamm:holz + Krone:laub. Statt parallelem Pfad
+                        // hier (Three.js-Group + Custom-Kollision) routen
+                        // wir durch spawnArchitecture, derselbe Pfad wie
+                        // Dörfer/Tempel/Wasserfälle. Tags + Welt-Effekte +
+                        // Save-Persistenz + Werkstatt-Editor inklusive.
+                        // Mischung Eiche/Kiefer (50/50) via Material-Seed.
+                        const treeKind = Math.random() < 0.5 ? "baum_eiche" : "baum_kiefer";
                         try {
-                            trunkGeometry.computeBoundingSphere();
-                            trunkGeometry.computeBoundingBox();
-                            leavesGeometry.computeBoundingSphere();
-                            leavesGeometry.computeBoundingBox();
+                            // baseY-Kompensation: _rebuildArchitectureMesh
+                            // zieht 0.5 ab (für at_player-Sphäre); für
+                            // Terrain-height legen wir +0.5 drauf, damit
+                            // der Stamm exakt auf der Terrain-Oberfläche
+                            // steht statt 0.5 m zu versinken.
+                            this.spawnArchitecture(
+                                treeKind,
+                                { x: xPos, y: height + 0.5, z: zPos },
+                                { seed: Math.floor(Math.random() * 0xffffffff) }
+                            );
                         } catch (e) {
                             this.log(
-                                `Fehler beim Berechnen der Bounding Sphere/Box für Baum bei (${xPos}, ${zPos}): ${e.message}. Baum wird übersprungen.`,
+                                `Fehler beim Spawn von ${treeKind} bei (${xPos}, ${zPos}): ${e.message}. Baum wird übersprungen.`,
                                 "ERROR"
                             );
-                            continue;
                         }
-
-                        this.state.scene.add(tree);
-                        this.state.vegetation.push(tree);
-                        // Welle 6.G Phase 1 — Stamm als btCylinderShape.
-                        // Krone bleibt durchlässig (Spieler kann durchs Laub).
-                        this._buildTreeCollision(tree);
                     } else if (vegetationType === "grass") {
                         const grassGeometry = new THREE.ConeGeometry(0.2, 1, 4);
                         const grassMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
@@ -11646,10 +11659,61 @@ class AnazhRealm {
             },
         ];
 
+        // Welle 6.G Phase 1.5 — Bäume als Hylomorphismus-Baupläne. Vorher
+        // waren sie rohe Three.js-Groups in state.vegetation, parallel zum
+        // Architektur-System (Vision-Bruch §1.3 fraktal: alles Materielle ist
+        // Compound aus parts × material × form). Jetzt: Stamm (Cylinder/holz)
+        // + Krone (Sphere/laub) als parts-Liste. Damit kommt geschenkt:
+        // Compound-Tags (computeCompoundTags), Welt-Effekte (resoniert,
+        // brennend), Werkstatt-Editor, Save-Persistenz, Distance-Culling,
+        // Compound-Box-Kollision pro Sub-Mesh (Stamm + Krone werden zwei
+        // btBoxShapes — die Krone ist damit übrigens auch kollidierbar, vs.
+        // V7.73 wo nur der Stamm Body hatte; das ist okay, weil die Box-AABB
+        // der Krone nicht das ganze Volumen blockiert — Spieler-Kollision
+        // bleibt durchlässig genug für „durchs Laub gehen" über die AABB-
+        // Höhe). Größenanordnung: Stamm 0.5×5×0.5 bei y=2.5, Krone 2×2×2
+        // bei y=5. baseY-Offset von spawnArchitecture (pos.y - 0.5) zieht
+        // den Stamm exakt auf den Boden.
+        const baumEicheParts = [
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: 0, y: 2.5, z: 0 },
+                size: { x: 0.5, y: 5, z: 0.5 },
+                segments: 8,
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                position: { x: 0, y: 5.5, z: 0 },
+                size: { x: 2, y: 2, z: 2 },
+            },
+        ];
+        // Kiefer: schlanker, höher, dunklere Krone (Material trägt die
+        // Farb-Identität — Bauplan ist nur Form, Schöpfer kann via define_
+        // material eine eigene Variante wie „kiefer_grün" einführen).
+        const baumKieferParts = [
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: 0, y: 3, z: 0 },
+                size: { x: 0.35, y: 6, z: 0.35 },
+                segments: 8,
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                position: { x: 0, y: 6.5, z: 0 },
+                size: { x: 1.8, y: 3, z: 1.8 },
+            },
+        ];
+
         return {
             village: { name: "village", label: "Dorf", builtIn: true, parts: villageParts },
             temple: { name: "temple", label: "Tempel", builtIn: true, parts: templeParts },
             waterfall: { name: "waterfall", label: "Wasserfall", builtIn: true, parts: waterfallParts },
+            baum_eiche: { name: "baum_eiche", label: "Eiche", builtIn: true, parts: baumEicheParts },
+            baum_kiefer: { name: "baum_kiefer", label: "Kiefer", builtIn: true, parts: baumKieferParts },
         };
     }
 
@@ -11766,6 +11830,22 @@ class AnazhRealm {
                 magieleitung: 0.75,
                 brennbar: 1.0,
                 resoniert: 0.65,
+                lebendig: 1.0,
+            }),
+            // Welle 6.G Phase 1.5 — Hylomorphismus-Unification für Bäume.
+            // Krone braucht ein eigenes Material; vorher gab's nur holz. Laub
+            // ist leicht (dichte 0.1), magieleitend (Baumkronen fangen Licht +
+            // Geist ein), brennend (Feuer-Tag-Resonanz), lebendig (Wald).
+            // Über baum_eiche/baum_kiefer-Baupläne ist es jetzt der einzige
+            // Pfad — kein Parallelcode mehr für Vegetation.
+            make("laub", "Laub", 0x2e8b3f, {
+                härte: 0.05,
+                dichte: 0.1,
+                zähigkeit: 0.4,
+                wärmeleitung: 0.2,
+                magieleitung: 0.35,
+                brennbar: 0.85,
+                resoniert: 0.45,
                 lebendig: 1.0,
             }),
         ];
@@ -12723,55 +12803,12 @@ class AnazhRealm {
         }
     }
 
-    _buildTreeCollision(treeGroup) {
-        if (!treeGroup || !this.state.physicsWorld) return null;
-        // Erstes Cylinder-Child suchen = Stamm. Krone (Sphere) bleibt
-        // bewusst kollisions-frei — Spieler soll durchs Laub gehen können.
-        let trunk = null;
-        treeGroup.traverse((node) => {
-            if (trunk) return;
-            if (node.isMesh && node.geometry && node.geometry.type === "CylinderGeometry") {
-                trunk = node;
-            }
-        });
-        if (!trunk) return null;
-        treeGroup.updateMatrixWorld(true);
-        const params = trunk.geometry.parameters || {};
-        const radius = Math.max(0.1, params.radiusBottom || params.radiusTop || 0.4);
-        const height = Math.max(0.5, params.height || 3);
-        const worldPos = new THREE.Vector3();
-        trunk.getWorldPosition(worldPos);
-        if (!Number.isFinite(worldPos.x) || !Number.isFinite(worldPos.y) || !Number.isFinite(worldPos.z)) {
-            return null;
-        }
-        try {
-            const sf = this.state.scaleFactor || 1;
-            const halfExtents = new Ammo.btVector3(radius / sf, height / 2 / sf, radius / sf);
-            const shape = new Ammo.btCylinderShape(halfExtents);
-            Ammo.destroy(halfExtents);
-            const transform = new Ammo.btTransform();
-            transform.setIdentity();
-            const origin = new Ammo.btVector3(worldPos.x / sf, worldPos.y / sf, worldPos.z / sf);
-            transform.setOrigin(origin);
-            const motionState = new Ammo.btDefaultMotionState(transform);
-            const inertia = new Ammo.btVector3(0, 0, 0);
-            const rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, shape, inertia);
-            const body = new Ammo.btRigidBody(rbInfo);
-            body.setFriction(0.8);
-            this.state.physicsWorld.addRigidBody(body);
-            Ammo.destroy(rbInfo);
-            Ammo.destroy(inertia);
-            Ammo.destroy(origin);
-            Ammo.destroy(transform);
-            treeGroup.userData.collision = { body, shape, kind: "tree" };
-            return body;
-        } catch (err) {
-            this.log(`_buildTreeCollision: ${err.message}`, "ERROR");
-            return null;
-        }
-    }
+    // (V7.74) _buildTreeCollision wurde entfernt — Bäume sind jetzt Compound-
+    // Architekturen über baum_eiche/baum_kiefer-Baupläne. _buildArchitecture-
+    // Collision erzeugt Compound-Box pro Sub-Mesh (Stamm + Krone) durch
+    // denselben Pfad wie alle anderen Strukturen.
 
-    // Generischer Dispose-Pfad für statische 6.G-Kollisionen (Inseln + Bäume).
+    // Generischer Dispose-Pfad für statische 6.G-Kollisionen (jetzt nur noch Inseln).
     // Idempotent: zweimal aufrufen ist safe (collision wird auf null gesetzt).
     _disposeStaticCollision(obj) {
         if (!obj || !obj.userData || !obj.userData.collision) return;
@@ -12799,10 +12836,11 @@ class AnazhRealm {
         obj.userData.collision = null;
     }
 
-    // Schlanke Insel-Geometrie (radialer Kegel-Stumpf mit Rausch-Höhe) für
-    // die DSL-Op spawn_island. Bewusst kleiner + simpler als die initialen
-    // Welt-Inseln (deren Code lebt im Worldgen-Loop). Seed-deterministisch
-    // damit Multi-User-Sync (Ring 11 V2.1-Stil) später möglich ist.
+    // Insel-Geometrie für DSL-Op spawn_island. V7.74: Vollkörper mit
+    // Top + Bottom + Side-Strip (vorher nur Top-Surface → von unten
+    // hohl sichtbar, harte Triangle-Kanten). MeshLambertMaterial nimmt
+    // Szenenlicht an (kein „Papier-Sticker"-Look mehr). Seed-deterministisch
+    // für Multi-User-Sync (Ring 11 V2.1-Stil).
     spawnIslandAt(x, y, z, height = 6, opts = {}) {
         if (!this.state.scene) return null;
         const size = Number.isFinite(opts.size) ? Math.max(6, Math.min(24, opts.size)) : 12;
@@ -12811,26 +12849,35 @@ class AnazhRealm {
         const geometry = new THREE.BufferGeometry();
         const vertices = [];
         const indices = [];
-        const uvs = [];
         const N = Math.max(8, Math.min(20, Math.round(size)));
+        // Top-Vertices (Index 0..N*N-1) — radiale Noise-Höhe, an der Rim h=0.
         for (let zi = 0; zi < N; zi++) {
             for (let xi = 0; xi < N; xi++) {
-                const xp = xi - N / 2;
-                const zp = zi - N / 2;
+                const xp = xi - (N - 1) / 2;
+                const zp = zi - (N - 1) / 2;
                 const distance = Math.sqrt(xp * xp + zp * zp);
-                const maxDist = N / 2;
+                const maxDist = (N - 1) / 2;
                 let h = 0;
-                if (distance < maxDist) {
+                if (distance < maxDist * 0.95) {
                     const factor = 1 - distance / maxDist;
-                    const h1 = noise.noise2D(xi * 0.18, zi * 0.18) * 2 * factor;
-                    const h2 = noise.noise2D(xi * 0.5, zi * 0.5) * 1 * factor;
-                    h = Math.max(0, h1 + h2);
-                    h -= (1 - factor) * height;
+                    const h1 = noise.noise2D(xi * 0.25, zi * 0.25) * 1.5 * factor;
+                    const h2 = noise.noise2D(xi * 0.6, zi * 0.6) * 0.7 * factor;
+                    h = Math.max(0, h1 + h2 + factor * 0.4);
                 }
                 vertices.push(xp, h, zp);
-                uvs.push(xi / (N - 1), zi / (N - 1));
             }
         }
+        // Bottom-Vertices (Index N*N..2*N*N-1) — flache Unterseite, gibt
+        // der Insel sichtbaren Körper. bottomY skaliert mit Wunsch-Höhe.
+        const bottomY = -Math.max(2, height * 0.4);
+        for (let zi = 0; zi < N; zi++) {
+            for (let xi = 0; xi < N; xi++) {
+                const xp = xi - (N - 1) / 2;
+                const zp = zi - (N - 1) / 2;
+                vertices.push(xp, bottomY, zp);
+            }
+        }
+        // Top-Triangles (Winding gegen Uhrzeigersinn → Normal nach oben).
         for (let zi = 0; zi < N - 1; zi++) {
             for (let xi = 0; xi < N - 1; xi++) {
                 const a = zi * N + xi;
@@ -12840,11 +12887,43 @@ class AnazhRealm {
                 indices.push(a, b, d, a, d, cc);
             }
         }
+        // Bottom-Triangles (umgekehrte Winding → Normal nach unten).
+        const bOff = N * N;
+        for (let zi = 0; zi < N - 1; zi++) {
+            for (let xi = 0; xi < N - 1; xi++) {
+                const a = bOff + zi * N + xi;
+                const b = bOff + zi * N + (xi + 1);
+                const cc = bOff + (zi + 1) * N + xi;
+                const d = bOff + (zi + 1) * N + (xi + 1);
+                indices.push(a, d, b, a, cc, d);
+            }
+        }
+        // Side-Strip um die vier Ränder verbindet Top-Rim mit Bottom-Rim.
+        const addQuad = (t1, t2, b1, b2) => {
+            indices.push(t1, b1, t2, t2, b1, b2);
+        };
+        // North-Rand (zi = 0): top zeigt zur Außenseite (-Z)
+        for (let xi = 0; xi < N - 1; xi++) {
+            addQuad(xi + 1, xi, bOff + xi + 1, bOff + xi);
+        }
+        // South-Rand (zi = N-1): top zeigt zur Außenseite (+Z)
+        for (let xi = 0; xi < N - 1; xi++) {
+            const z = N - 1;
+            addQuad(z * N + xi, z * N + xi + 1, bOff + z * N + xi, bOff + z * N + xi + 1);
+        }
+        // West-Rand (xi = 0): top zeigt nach -X
+        for (let zi = 0; zi < N - 1; zi++) {
+            addQuad(zi * N, (zi + 1) * N, bOff + zi * N, bOff + (zi + 1) * N);
+        }
+        // East-Rand (xi = N-1): top zeigt nach +X
+        for (let zi = 0; zi < N - 1; zi++) {
+            const last = N - 1;
+            addQuad((zi + 1) * N + last, zi * N + last, bOff + (zi + 1) * N + last, bOff + zi * N + last);
+        }
         geometry.setIndex(indices);
         geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
-        geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
         geometry.computeVertexNormals();
-        const material = new THREE.MeshBasicMaterial({ color: 0x6b9e4f, side: THREE.DoubleSide });
+        const material = new THREE.MeshLambertMaterial({ color: 0x6b9e4f, side: THREE.FrontSide });
         const island = new THREE.Mesh(geometry, material);
         island.position.set(x, y, z);
         island.castShadow = true;
@@ -12857,34 +12936,10 @@ class AnazhRealm {
         return island;
     }
 
-    // Einzelner Baum als Group (Stamm + Krone). Stamm wird kollidierbar,
-    // Krone bleibt durchlässig. Aufruf aus DSL-Op spawn_tree und als
-    // Retrofit-Pfad für die im Worldgen-Loop erzeugten Bäume.
-    spawnTreeAt(x, y, z, opts = {}) {
-        if (!this.state.scene) return null;
-        const trunkH = Number.isFinite(opts.height) ? Math.max(1.5, Math.min(10, opts.height)) : 5;
-        const trunkR = Number.isFinite(opts.radius) ? Math.max(0.15, Math.min(1.2, opts.radius)) : 0.5;
-        const leavesR = Math.max(0.8, trunkR * 4);
-        const trunkGeo = new THREE.CylinderGeometry(trunkR, trunkR, trunkH, 8);
-        const trunkMat = new THREE.MeshBasicMaterial({ color: 0x8b4513 });
-        const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-        const leavesGeo = new THREE.SphereGeometry(leavesR, 8, 8);
-        const leavesMat = new THREE.MeshBasicMaterial({ color: 0x2e8b3f });
-        const leaves = new THREE.Mesh(leavesGeo, leavesMat);
-        trunk.position.set(x, y + trunkH / 2, z);
-        leaves.position.set(x, y + trunkH + leavesR * 0.6, z);
-        const tree = new THREE.Group();
-        tree.add(trunk);
-        tree.add(leaves);
-        tree.castShadow = true;
-        tree.receiveShadow = true;
-        tree.userData.sourceOp = "spawn_tree";
-        this.state.scene.add(tree);
-        if (!Array.isArray(this.state.vegetation)) this.state.vegetation = [];
-        this.state.vegetation.push(tree);
-        this._buildTreeCollision(tree);
-        return tree;
-    }
+    // (V7.74) spawnTreeAt wurde entfernt — Bäume sind jetzt Hylomorphismus-
+    // Compounds über die baum_eiche/baum_kiefer-Baupläne. spawn_tree DSL-Op
+    // routet durch spawnArchitecture, derselbe Pfad wie spawn_village +
+    // spawn_temple. Eine Sprache, ein Renderpfad, ein Save, ein Editor.
 
     // UFOs sind bewusst kollisionsfrei — fliegende Beobachter, kein
     // Hindernis. Sanfte Sinus-Hover-Animation wird im Frustum-Loop
