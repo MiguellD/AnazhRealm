@@ -5507,6 +5507,197 @@ function startSaveServer() {
                 })
                 .catch(() => null);
 
+            // ### Welle 6.D Etappe 3b — Equipment + Aura ###
+            const wave6d3bResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
+                    const out = {};
+                    // Konstanten + Methoden
+                    out.hasArmorWeight = typeof C.ARMOR_STAT_WEIGHT === "number";
+                    out.hasToolWeight = typeof C.TOOL_STAT_WEIGHT === "number";
+                    out.armorWeight03 = Math.abs(C.ARMOR_STAT_WEIGHT - 0.3) < 0.001;
+                    out.toolWeight015 = Math.abs(C.TOOL_STAT_WEIGHT - 0.15) < 0.001;
+                    out.hasEquipTool = typeof r.equipTool === "function";
+                    out.hasEquipArmor = typeof r.equipArmor === "function";
+                    out.hasSetArmor = typeof r.setBlueprintAsArmor === "function";
+                    out.hasEquippedState =
+                        r.state.player.equipped &&
+                        "tool" in r.state.player.equipped &&
+                        "armor" in r.state.player.equipped;
+                    out.hasAuraHueMap = C.AURA_TAG_HUE && typeof C.AURA_TAG_HUE === "object";
+                    out.auraHueMapHasAllTags = C.MATERIAL_TAG_KEYS.every((k) => k in C.AURA_TAG_HUE);
+                    // NON_BROADCASTABLE
+                    out.equipNonBroadcast =
+                        C.NON_BROADCASTABLE_OPS.has("equip_tool") &&
+                        C.NON_BROADCASTABLE_OPS.has("equip_armor") &&
+                        C.NON_BROADCASTABLE_OPS.has("unequip");
+
+                    // Setup: Custom-Bauplan für Armor + Werkzeug
+                    const savedSoul = r.state.player.soul;
+                    r.applyPlayerSoul("human");
+                    const baselineStats = JSON.parse(JSON.stringify(r.state.player.stats));
+
+                    // Eisen-Rüstung-Bauplan
+                    r.state.blueprints.test_armor_eisen = {
+                        name: "test_armor_eisen",
+                        label: "Eisen-Plate",
+                        builtIn: false,
+                        parts: [
+                            { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                            { shape: "box", material: "eisen", position: { x: 0, y: 1, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                        ],
+                    };
+                    // Markieren als Rüstung
+                    const markResult = r.setBlueprintAsArmor("test_armor_eisen");
+                    out.markArmorOk = markResult.ok;
+                    out.markArmorSetsRole = r.state.blueprints.test_armor_eisen.role === "armor";
+
+                    // Built-in schützen
+                    r.state.blueprints.village.builtIn = true;
+                    const markBuiltinResult = r.setBlueprintAsArmor("village");
+                    out.markBuiltinRejected = !markBuiltinResult.ok && markBuiltinResult.reason === "cannot_modify_builtin";
+
+                    // Equip Rüstung
+                    const equipResult = r.equipArmor("test_armor_eisen");
+                    out.equipArmorOk = equipResult.ok;
+                    out.equippedArmorIs = r.state.player.equipped.armor === "test_armor_eisen";
+                    // Stat-Diskrimination: eisen hat hohe dichte + härte → hpMax steigt
+                    const armoredStats = r.state.player.stats;
+                    out.armorIncreasesHp = armoredStats.hpMax > baselineStats.hpMax + 5;
+                    out.armorIncreasesDamage = armoredStats.damage > baselineStats.damage + 0.5;
+
+                    // Equip auf Rüstung ohne Marker → abgelehnt
+                    r.state.blueprints.test_plain = {
+                        name: "test_plain",
+                        label: "Unmarked",
+                        builtIn: false,
+                        parts: [
+                            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                        ],
+                    };
+                    const equipUnmarkedResult = r.equipArmor("test_plain");
+                    out.unmarkedRejected = !equipUnmarkedResult.ok && equipUnmarkedResult.reason === "not_marked_as_armor";
+
+                    // Unequip
+                    r.equipArmor(null);
+                    out.unequippedRestoresStats = Math.abs(r.state.player.stats.hpMax - baselineStats.hpMax) < 0.01;
+                    out.equippedArmorNull = r.state.player.equipped.armor === null;
+
+                    // Equipped via DSL
+                    r.equipArmor("test_armor_eisen");
+                    r.dslRun(["unequip", "armor"], { source: "test" });
+                    out.dslUnequipWorks = r.state.player.equipped.armor === null;
+
+                    // Werkzeug equippen
+                    r.state.player.tools = r.state.player.tools || [];
+                    if (!r.state.player.tools.includes("hammer")) r.state.player.tools.push("hammer");
+                    const equipToolResult = r.equipTool("hammer");
+                    out.equipBuiltinToolOk = equipToolResult.ok;
+                    out.equippedToolIs = r.state.player.equipped.tool === "hammer";
+                    // Built-in-Werkzeug hat KEINEN sourceBlueprint → trägt kein Tag-Bonus
+                    // (das ist ok: nur Bauplan-Werkzeuge stacken Stats; Built-ins
+                    // sind Präzisions-Modulatoren via opChain).
+                    const toolStats = r.state.player.stats;
+                    out.builtinToolNoStatChange = Math.abs(toolStats.hpMax - baselineStats.hpMax) < 0.01;
+
+                    // Save-Round-Trip
+                    r.equipArmor("test_armor_eisen");
+                    r.equipTool("hammer");
+                    const snap = r.buildStateSnapshot();
+                    out.snapHasEquipped =
+                        snap.playerEquipped &&
+                        snap.playerEquipped.armor === "test_armor_eisen" &&
+                        snap.playerEquipped.tool === "hammer";
+
+                    // Aura-Visual
+                    r.tickPlayerAura();
+                    out.auraMeshCreated = !!r.state.playerAura;
+                    if (r.state.playerAura) {
+                        out.auraInScene = r.state.scene.children.indexOf(r.state.playerAura) >= 0;
+                        out.auraHasColor = !!(r.state.playerAura.material && r.state.playerAura.material.color);
+                        // Position folgt Player
+                        const pp = r.state.playerMesh.position;
+                        const ap = r.state.playerAura.position;
+                        out.auraFollowsPlayer = Math.abs(ap.x - pp.x) < 0.01 && Math.abs(ap.z - pp.z) < 0.01;
+                    }
+
+                    // Cleanup
+                    r.equipArmor(null);
+                    r.equipTool(null);
+                    delete r.state.blueprints.test_armor_eisen;
+                    delete r.state.blueprints.test_plain;
+                    r.applyPlayerSoul(savedSoul);
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6d3bResults && !wave6d3bResults.error) {
+                check("Welle 6.D Etappe 3b: ARMOR_STAT_WEIGHT-Konstante existiert", wave6d3bResults.hasArmorWeight);
+                check("Welle 6.D Etappe 3b: TOOL_STAT_WEIGHT-Konstante existiert", wave6d3bResults.hasToolWeight);
+                check("Welle 6.D Etappe 3b: ARMOR_STAT_WEIGHT == 0.3", wave6d3bResults.armorWeight03);
+                check("Welle 6.D Etappe 3b: TOOL_STAT_WEIGHT == 0.15", wave6d3bResults.toolWeight015);
+                check("Welle 6.D Etappe 3b: equipTool-Methode existiert", wave6d3bResults.hasEquipTool);
+                check("Welle 6.D Etappe 3b: equipArmor-Methode existiert", wave6d3bResults.hasEquipArmor);
+                check("Welle 6.D Etappe 3b: setBlueprintAsArmor-Methode existiert", wave6d3bResults.hasSetArmor);
+                check(
+                    "Welle 6.D Etappe 3b: state.player.equipped = {tool, armor}",
+                    wave6d3bResults.hasEquippedState
+                );
+                check("Welle 6.D Etappe 3b: AURA_TAG_HUE-Map existiert", wave6d3bResults.hasAuraHueMap);
+                check(
+                    "Welle 6.D Etappe 3b: AURA_TAG_HUE-Map deckt alle 10 MATERIAL_TAG_KEYS ab",
+                    wave6d3bResults.auraHueMapHasAllTags
+                );
+                check(
+                    "Welle 6.D Etappe 3b: equip-Ops in NON_BROADCASTABLE_OPS (privat)",
+                    wave6d3bResults.equipNonBroadcast
+                );
+                check("Welle 6.D Etappe 3b: setBlueprintAsArmor liefert ok", wave6d3bResults.markArmorOk);
+                check("Welle 6.D Etappe 3b: setBlueprintAsArmor setzt role:'armor'", wave6d3bResults.markArmorSetsRole);
+                check(
+                    "Welle 6.D Etappe 3b: Built-in-Bauplan kann nicht als Rüstung markiert werden",
+                    wave6d3bResults.markBuiltinRejected
+                );
+                check("Welle 6.D Etappe 3b: equipArmor erfolgreich auf markiertem Bauplan", wave6d3bResults.equipArmorOk);
+                check("Welle 6.D Etappe 3b: state.player.equipped.armor zeigt auf Rüstung", wave6d3bResults.equippedArmorIs);
+                check(
+                    "Welle 6.D Etappe 3b: Diskrimination — Eisen-Rüstung erhöht hpMax (dichte + härte hoch)",
+                    wave6d3bResults.armorIncreasesHp
+                );
+                check(
+                    "Welle 6.D Etappe 3b: Diskrimination — Eisen-Rüstung erhöht damage",
+                    wave6d3bResults.armorIncreasesDamage
+                );
+                check(
+                    "Welle 6.D Etappe 3b: Bauplan ohne role:'armor' wird abgelehnt",
+                    wave6d3bResults.unmarkedRejected
+                );
+                check(
+                    "Welle 6.D Etappe 3b: unequip stellt baseline-Stats wieder her",
+                    wave6d3bResults.unequippedRestoresStats
+                );
+                check("Welle 6.D Etappe 3b: state.player.equipped.armor == null nach unequip", wave6d3bResults.equippedArmorNull);
+                check("Welle 6.D Etappe 3b: DSL-Op unequip(armor) entfernt Rüstung", wave6d3bResults.dslUnequipWorks);
+                check("Welle 6.D Etappe 3b: equipTool akzeptiert Built-in-Werkzeug", wave6d3bResults.equipBuiltinToolOk);
+                check("Welle 6.D Etappe 3b: state.player.equipped.tool ist gesetzt", wave6d3bResults.equippedToolIs);
+                check(
+                    "Welle 6.D Etappe 3b: Built-in-Werkzeug ohne sourceBlueprint → kein Stat-Beitrag (ok)",
+                    wave6d3bResults.builtinToolNoStatChange
+                );
+                check("Welle 6.D Etappe 3b: buildStateSnapshot persistiert playerEquipped", wave6d3bResults.snapHasEquipped);
+                check("Welle 6.D Etappe 3b: Player-Aura-Mesh nach tickPlayerAura erzeugt", wave6d3bResults.auraMeshCreated);
+                if (wave6d3bResults.auraMeshCreated) {
+                    check("Welle 6.D Etappe 3b: Aura-Mesh in der Welt-Szene", wave6d3bResults.auraInScene);
+                    check("Welle 6.D Etappe 3b: Aura-Material hat Color-Property", wave6d3bResults.auraHasColor);
+                    check("Welle 6.D Etappe 3b: Aura-Position folgt Spieler (x/z)", wave6d3bResults.auraFollowsPlayer);
+                }
+            } else if (wave6d3bResults && wave6d3bResults.error) {
+                check("Welle 6.D Etappe 3b: Test-Block lief ohne Exception", false, wave6d3bResults.error);
+            }
+
             // ### Welle 6.D Etappe 3a — Tod, Min-Regel-Hybrid, Konsumables ###
             const wave6d3aResults = await page
                 .evaluate(() => {

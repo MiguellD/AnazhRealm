@@ -383,6 +383,11 @@ class AnazhRealm {
                 phoenixDurationSeconds: 300,
                 preDeathSoul: null,
                 deathLastTick: -Infinity,
+                // Welle 6.D Etappe 3b — Equipped-Slots (Werkzeug + Rüstung).
+                // Werkzeug-Beitrag = sourceBlueprint.compoundTags × toolWeight,
+                // Rüstung-Beitrag = blueprint.compoundTags × armorWeight.
+                // Wirkungen fließen in computePlayerStats vor den Boosts.
+                equipped: { tool: null, armor: null },
                 // Schicht 1 — Pfad-Buckets. Histogramm wo der Spieler sich
                 // aufhält (Höhe, Distanz, Wetter, Aktivität). Wird im Loop
                 // alle pathSampleInterval Sekunden inkrementiert; alle Achsen
@@ -808,6 +813,11 @@ class AnazhRealm {
             // bekommen). Tod-Wandlung läuft lokal.
             "damage",
             "apply_boost",
+            // Welle 6.D Etappe 3b — Equip-Aktionen sind ebenfalls Spieler-privat
+            // (jeder hat sein eigenes Inventar + Ausrüstung).
+            "equip_tool",
+            "equip_armor",
+            "unequip",
         ]);
     }
 
@@ -1118,6 +1128,50 @@ class AnazhRealm {
                     this.journalAppend("growth", `Ein neuer Bauplan entstand: ${result.name}.`, {
                         name: result.name,
                         parts: valid.parts.length,
+                    });
+                }
+            },
+            // Welle 6.D Etappe 3b — Bauplan als Rüstung markieren + Equip-Ops.
+            set_armor_role: ([blueprintName], ctx) => {
+                const result = this.setBlueprintAsArmor(blueprintName);
+                if (ctx && ctx.log) {
+                    ctx.log.push({
+                        event: result.ok ? "armor_role_set" : "armor_role_failed",
+                        name: blueprintName,
+                        reason: result.reason,
+                    });
+                }
+            },
+            equip_tool: ([name], ctx) => {
+                const result = this.equipTool(name);
+                if (ctx && ctx.log) {
+                    ctx.log.push({
+                        event: result.ok ? "tool_equipped" : "tool_equip_failed",
+                        name: name || null,
+                        reason: result.reason,
+                    });
+                }
+            },
+            equip_armor: ([name], ctx) => {
+                const result = this.equipArmor(name);
+                if (ctx && ctx.log) {
+                    ctx.log.push({
+                        event: result.ok ? "armor_equipped" : "armor_equip_failed",
+                        name: name || null,
+                        reason: result.reason,
+                    });
+                }
+            },
+            unequip: ([slot], ctx) => {
+                let result;
+                if (slot === "tool") result = this.equipTool(null);
+                else if (slot === "armor") result = this.equipArmor(null);
+                else result = { ok: false, reason: "unknown_slot" };
+                if (ctx && ctx.log) {
+                    ctx.log.push({
+                        event: result.ok ? "unequipped" : "unequip_failed",
+                        slot,
+                        reason: result.reason,
                     });
                 }
             },
@@ -7805,6 +7859,8 @@ class AnazhRealm {
             customSouls: this.state.customSouls || {},
             // Welle 6.D Etappe 3a — Konsumable-Rezepte persistieren.
             consumables: this.state.consumables || {},
+            // Welle 6.D Etappe 3b — Equipped-Slots persistieren.
+            playerEquipped: (this.state.player && this.state.player.equipped) || { tool: null, armor: null },
             // Welle 4 Phase 3: Werkzeug-Besitz. Starter-Werkzeuge werden bei
             // jedem Init wieder verfügbar, aber Persistenz erlaubt zukünftig
             // eigen-geschmiedete (Welle 6) zu überleben.
@@ -8612,6 +8668,13 @@ class AnazhRealm {
                 if (!c) continue;
                 this.createOrUpdateConsumable(key, c.tagBonus, c.durationSeconds, c.label);
             }
+        }
+        // Welle 6.D Etappe 3b — Equipped-Slots aus Save (defensiv via equipTool/
+        // equipArmor; falls Tool/Armor inzwischen weg ist, schlägt es still
+        // fehl und der Slot bleibt leer).
+        if (state.playerEquipped && typeof state.playerEquipped === "object") {
+            if (state.playerEquipped.tool) this.equipTool(state.playerEquipped.tool);
+            if (state.playerEquipped.armor) this.equipArmor(state.playerEquipped.armor);
         }
         // Ring 6: Bau-Werke wiederherstellen. Bestehende Strukturen werden
         // tief disposed, dann jede aus {type, position, seed} neu gebaut.
@@ -10258,6 +10321,116 @@ class AnazhRealm {
         if (typeof this.renderSoulEditorUI === "function") this.renderSoulEditorUI();
     }
 
+    // Welle 6.D Etappe 3b — Player-Aura: dünner horizontaler Ring auf
+    // Fuß-Höhe um den Spieler. Hue aus dominanter Tag-Achse, Saturation
+    // skaliert mit HP-Prozent. Die Aura ist eigener THREE.Mesh in der Welt-
+    // Szene (nicht als playerMesh-Child, damit applyPlayerSoul ihn nicht
+    // beim Seele-Wechsel disposed). Position wird pro Frame synchronisiert.
+    _ensurePlayerAura() {
+        if (typeof THREE === "undefined" || !this.state.scene) return null;
+        if (this.state.playerAura) return this.state.playerAura;
+        // Dünner Torus: Innen-Radius 0.7, Tube-Radius 0.06 — wirkt wie ein
+        // Lichtkranz um die Füße. Horizontal: rotation.x = π/2.
+        const geom = new THREE.TorusGeometry(0.7, 0.06, 12, 48);
+        const mat = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.55,
+            depthWrite: false,
+        });
+        const ring = new THREE.Mesh(geom, mat);
+        ring.rotation.x = Math.PI / 2;
+        ring.castShadow = false;
+        ring.receiveShadow = false;
+        ring.userData.isPlayerAura = true;
+        this.state.scene.add(ring);
+        this.state.playerAura = ring;
+        return ring;
+    }
+
+    // Aura-Farbe + Position aus Tags + HP berechnen und auf den Mesh anwenden.
+    // Wird im Game-Loop nach updatePlayerEmotions aufgerufen (gleicher Takt
+    // wie die UI-1Hz-Refresh-Ticks wäre overkill; per Frame ist günstig genug,
+    // weil nur ein Mesh + Color-Set).
+    tickPlayerAura() {
+        if (!this.state.playerMesh || !this.state.player) return;
+        const ring = this._ensurePlayerAura();
+        if (!ring) return;
+        const p = this.state.playerMesh.position;
+        // Position: knapp über den Füßen (player.y - 0.45). Box-Half-Extent
+        // ist 0.5, also liegt y - 0.45 leicht darüber → kein Z-Fighting.
+        ring.position.set(p.x, p.y - 0.45, p.z);
+        // Dominante Tag-Achse aus den Final-Tags (inkl. Boosts + Equipped).
+        const tags = this.state.player.statTags || {};
+        let bestKey = "lebendig";
+        let bestVal = 0;
+        for (const k of Object.keys(AnazhRealm.AURA_TAG_HUE)) {
+            const v = tags[k] || 0;
+            if (v > bestVal) {
+                bestVal = v;
+                bestKey = k;
+            }
+        }
+        const hue = AnazhRealm.AURA_TAG_HUE[bestKey] || 0;
+        const hpMax = this.state.player.hpMax || 100;
+        const hpRatio = hpMax > 0 ? Math.max(0.1, Math.min(1, (this.state.player.hp || 0) / hpMax)) : 1;
+        // Saturation aus HP-Prozent: voll bei 100 % HP, blass bei niedrig.
+        const sat = 0.4 + hpRatio * 0.5;
+        const lit = 0.5;
+        ring.material.color.setHSL(hue / 360, sat, lit);
+    }
+
+    // Welle 6.D Etappe 3b — Bauplan als Rüstung markieren. Analog zu
+    // `set_tool_meta`/`register_tool`: ein eigener Bauplan kann mit
+    // role:"armor" markiert werden, danach equipbar via `equipArmor`.
+    setBlueprintAsArmor(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.builtIn) return { ok: false, reason: "cannot_modify_builtin" };
+        bp.role = "armor";
+        return { ok: true, name };
+    }
+
+    // Werkzeug ausrüsten. Akzeptiert null/leer für „abnehmen".
+    equipTool(name) {
+        if (!this.state.player) return { ok: false, reason: "no_player" };
+        if (!name) {
+            this.state.player.equipped = this.state.player.equipped || { tool: null, armor: null };
+            this.state.player.equipped.tool = null;
+            this.recomputePlayerStats();
+            return { ok: true, equipped: null };
+        }
+        if (!this.state.tools || !this.state.tools[name]) {
+            return { ok: false, reason: "tool_unknown" };
+        }
+        if (Array.isArray(this.state.player.tools) && !this.state.player.tools.includes(name)) {
+            return { ok: false, reason: "tool_not_owned" };
+        }
+        this.state.player.equipped = this.state.player.equipped || { tool: null, armor: null };
+        this.state.player.equipped.tool = name;
+        this.recomputePlayerStats();
+        return { ok: true, equipped: name };
+    }
+
+    // Rüstung ausrüsten. Akzeptiert null/leer für „abnehmen". Blueprint muss
+    // mit role:"armor" markiert sein (via setBlueprintAsArmor).
+    equipArmor(name) {
+        if (!this.state.player) return { ok: false, reason: "no_player" };
+        if (!name) {
+            this.state.player.equipped = this.state.player.equipped || { tool: null, armor: null };
+            this.state.player.equipped.armor = null;
+            this.recomputePlayerStats();
+            return { ok: true, equipped: null };
+        }
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.role !== "armor") return { ok: false, reason: "not_marked_as_armor" };
+        this.state.player.equipped = this.state.player.equipped || { tool: null, armor: null };
+        this.state.player.equipped.armor = name;
+        this.recomputePlayerStats();
+        return { ok: true, equipped: name };
+    }
+
     // Welle 6.D Etappe 3a — Konsumable definieren. Validiert tagBonus (nur
     // MATERIAL_TAG_KEYS, ge-clamp ±1), duration (0.5..600 s), Cap 32 eigene.
     createOrUpdateConsumable(name, tagBonus, durationSeconds, label) {
@@ -10638,12 +10811,39 @@ class AnazhRealm {
         for (const key of AnazhRealm.MATERIAL_TAG_KEYS) {
             finalTags[key] = Number(compoundTags[key]) || 0;
         }
-        // Welle 6.D Etappe 2 — aktive Boosts addieren ihre Tag-Deltas auf den
-        // Compound-Soul-Tags. Boosts kommen aus drei Quellen (Emotion, Welt-
-        // Resonanz, Konsum) und decken sich nicht — Summe ist konzeptionell
-        // korrekt (mehrere Wirkungen lagern sich auf). Werte werden NICHT
-        // ge-clamp — STAT_FROM_TAGS toleriert Werte über 1 bereits (würde nur
-        // proportional mehr Stats geben, was die Boosts-Wirkung spürbar macht).
+        // Welle 6.D Etappe 3b — Equipped-Stat-Stacking (wave-6-design §5.3).
+        //   finalTags[t] = soul[t] + armor.compoundTags[t] × armorWeight
+        //                 + tool.compoundTags[t] × toolWeight + boost-Deltas
+        // Werte bewusst NICHT geclamp — STAT_FROM_TAGS-Formeln sind linear,
+        // ein dichter Eisenhelm spürt der Spieler in HP + Schaden, ein leichter
+        // Stab-Werkzeug spürt er in magieleitung. Wer wirklich Caps will, kann
+        // sie in der STAT_FROM_TAGS-Matrix nachschalten.
+        const equipped = (this.state.player && this.state.player.equipped) || {};
+        // Werkzeug-Beitrag (nur wenn Bauplan-Tool)
+        if (equipped.tool && this.state.tools && this.state.tools[equipped.tool]) {
+            const tool = this.state.tools[equipped.tool];
+            if (tool.sourceBlueprint && this.state.blueprints[tool.sourceBlueprint]) {
+                const tags = this.computeCompoundTags(this.state.blueprints[tool.sourceBlueprint]);
+                const w = AnazhRealm.TOOL_STAT_WEIGHT;
+                for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
+                    finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
+                }
+            }
+        }
+        // Rüstung-Beitrag (immer aus Bauplan mit role:"armor")
+        if (equipped.armor && this.state.blueprints[equipped.armor]) {
+            const bp = this.state.blueprints[equipped.armor];
+            if (bp.role === "armor") {
+                const tags = this.computeCompoundTags(bp);
+                const w = AnazhRealm.ARMOR_STAT_WEIGHT;
+                for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
+                    finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
+                }
+            }
+        }
+        // Welle 6.D Etappe 2 — aktive Boosts addieren ihre Tag-Deltas. Boosts
+        // kommen aus drei Quellen (Emotion, Welt-Resonanz, Konsum) und decken
+        // sich nicht; Summe ist konzeptionell korrekt.
         const boosts = (this.state.player && this.state.player.boosts) || [];
         if (Array.isArray(boosts) && boosts.length > 0) {
             for (const b of boosts) {
@@ -13367,6 +13567,129 @@ class AnazhRealm {
         this.renderPlayerStatsUI();
         // Welle 6.D Etappe 1.7 — Avatar-Editor im Drawer initial rendern.
         this.renderSoulEditorUI();
+        // Welle 6.D Etappe 3b — Equipment-Sektion initial rendern.
+        if (typeof this.renderPlayerEquipUI === "function") this.renderPlayerEquipUI();
+    }
+
+    // Welle 6.D Etappe 3b — Equipment-UI: Werkzeug + Rüstung-Slots mit Dropdowns.
+    //
+    // Werkzeug-Slot: alle besessenen Tools (Built-ins + eigen-registrierte).
+    // Rüstung-Slot: alle Baupläne mit role:"armor". Plus „Marker"-Liste:
+    // eigene Baupläne, die noch NICHT als Rüstung markiert sind — bekommen
+    // einen „Als Rüstung markieren"-Button (analog zur Werkzeug-Registrierung
+    // in der Werkstatt).
+    renderPlayerEquipUI() {
+        if (typeof document === "undefined") return;
+        const container = document.getElementById("player-equip");
+        if (!container) return;
+        container.innerHTML = "";
+        const equipped = (this.state.player && this.state.player.equipped) || { tool: null, armor: null };
+        // Werkzeug-Slot
+        const toolRow = document.createElement("div");
+        toolRow.className = "equip-row";
+        const toolLabel = document.createElement("span");
+        toolLabel.className = "equip-slot-label";
+        toolLabel.textContent = "Werkzeug";
+        toolRow.appendChild(toolLabel);
+        const toolSel = document.createElement("select");
+        toolSel.title = "Aktives Werkzeug";
+        const noneTool = document.createElement("option");
+        noneTool.value = "";
+        noneTool.textContent = "— keins —";
+        toolSel.appendChild(noneTool);
+        const ownedTools = Array.isArray(this.state.player && this.state.player.tools) ? this.state.player.tools : [];
+        for (const name of ownedTools) {
+            const t = this.state.tools[name];
+            if (!t) continue;
+            const opt = document.createElement("option");
+            opt.value = name;
+            opt.textContent = t.label || name;
+            if (equipped.tool === name) opt.selected = true;
+            toolSel.appendChild(opt);
+        }
+        toolSel.addEventListener("change", () => {
+            const v = toolSel.value;
+            const result = v ? this.equipTool(v) : this.equipTool(null);
+            if (!result.ok) this.log(`equipTool fehlgeschlagen: ${result.reason}`, "ERROR");
+            this.renderPlayerEquipUI();
+            if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
+        });
+        toolRow.appendChild(toolSel);
+        container.appendChild(toolRow);
+        // Rüstung-Slot
+        const armorRow = document.createElement("div");
+        armorRow.className = "equip-row";
+        const armorLabel = document.createElement("span");
+        armorLabel.className = "equip-slot-label";
+        armorLabel.textContent = "Rüstung";
+        armorRow.appendChild(armorLabel);
+        const armorSel = document.createElement("select");
+        armorSel.title = "Aktive Rüstung";
+        const noneArmor = document.createElement("option");
+        noneArmor.value = "";
+        noneArmor.textContent = "— keine —";
+        armorSel.appendChild(noneArmor);
+        const armorBlueprints = [];
+        const candidateBlueprints = [];
+        for (const name of Object.keys(this.state.blueprints || {})) {
+            const bp = this.state.blueprints[name];
+            if (!bp || bp.builtIn) continue;
+            if (bp.role === "armor") armorBlueprints.push(name);
+            else if (!bp.role) candidateBlueprints.push(name);
+        }
+        for (const name of armorBlueprints) {
+            const bp = this.state.blueprints[name];
+            const opt = document.createElement("option");
+            opt.value = name;
+            opt.textContent = bp.label || name;
+            if (equipped.armor === name) opt.selected = true;
+            armorSel.appendChild(opt);
+        }
+        armorSel.addEventListener("change", () => {
+            const v = armorSel.value;
+            const result = v ? this.equipArmor(v) : this.equipArmor(null);
+            if (!result.ok) this.log(`equipArmor fehlgeschlagen: ${result.reason}`, "ERROR");
+            this.renderPlayerEquipUI();
+            if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
+        });
+        armorRow.appendChild(armorSel);
+        container.appendChild(armorRow);
+        // Markier-Sektion: eigene Baupläne ohne Rolle, mit „Als Rüstung
+        // markieren"-Button. Erlaubt dem Schöpfer, einen Bauplan zur Rüstung
+        // zu erklären ohne extra DSL-Tippen.
+        if (candidateBlueprints.length > 0) {
+            const markHeader = document.createElement("div");
+            markHeader.className = "equip-mark-header";
+            markHeader.textContent = "Bauplan als Rüstung markieren:";
+            container.appendChild(markHeader);
+            for (const name of candidateBlueprints) {
+                const bp = this.state.blueprints[name];
+                const row = document.createElement("div");
+                row.className = "equip-mark-row";
+                const label = document.createElement("span");
+                label.className = "equip-mark-label";
+                label.textContent = bp.label || name;
+                row.appendChild(label);
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.textContent = "Als Rüstung";
+                btn.addEventListener("click", () => {
+                    const result = this.setBlueprintAsArmor(name);
+                    if (!result.ok) this.log(`setBlueprintAsArmor: ${result.reason}`, "ERROR");
+                    this.renderPlayerEquipUI();
+                });
+                row.appendChild(btn);
+                container.appendChild(row);
+            }
+        }
+        // Empty-state-Hinweis wenn keine Optionen verfügbar
+        if (ownedTools.length === 0 && armorBlueprints.length === 0 && candidateBlueprints.length === 0) {
+            const hint = document.createElement("div");
+            hint.className = "equip-empty";
+            hint.textContent =
+                "Noch keine Ausrüstung. Baue einen Bauplan in der Werkstatt und markier ihn dort als Werkzeug, oder hier als Rüstung.";
+            container.appendChild(hint);
+        }
     }
 
     // Welle 6.D Etappe 1.7 — Voller Avatar-Editor im Spieler-Drawer.
@@ -14109,6 +14432,10 @@ class AnazhRealm {
             // HP-Regen während aktiver Wandlung + Ablauf-Detection.
             this.tickPhoenixDeath(currentTime);
 
+            // ### Player-Aura (Welle 6.D Etappe 3b) ###
+            // Position folgt playerMesh, Farbe aus dominanter Tag-Achse + HP%.
+            this.tickPlayerAura();
+
             // ### Symphonie-Wetter-Layer (Ring 4) ###
             this.symphonyTick();
 
@@ -14826,6 +15153,32 @@ AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     magicResist: (t) => (t.magieleitung || 0) * 0.4 + (t.resoniert || 0) * 0.3,
     heatResist: (t) => (t.wärmeleitung || 0) * 0.5 - (t.brennbar || 0) * 0.3,
 });
+
+// Welle 6.D Etappe 3b — Aura-Hue-Map: jede der 10 MATERIAL_TAG_KEYS bekommt
+// einen HSL-Hue (0..360). Die dominanteste Tag-Achse des Spieler-Compounds
+// bestimmt die Aura-Farbe; Saturation skaliert mit HP-Prozent (verletzte
+// Spieler haben blassere Auren). Vision-Treue: Tag-Achsen sind die EINE
+// Welt-Sprache; die Aura macht sie sichtbar ohne Zahlen-Inspect.
+AnazhRealm.AURA_TAG_HUE = Object.freeze({
+    härte: 30, // Erdbraun
+    dichte: 0, // Tief-rot, schwer
+    zähigkeit: 130, // Mossgrün
+    wärmeleitung: 25, // Orange-warm
+    stromleitung: 200, // Stahlblau
+    magieleitung: 270, // Violett
+    transparent: 180, // Eis-cyan
+    brennbar: 15, // Feuer
+    resoniert: 290, // Magenta-Schwingung
+    lebendig: 110, // Frühlingsgrün
+});
+
+// Welle 6.D Etappe 3b — Stat-Stacking-Gewichte. Compound-Tags der ausge-
+// rüsteten Werkzeuge/Rüstung werden zur Soul-Tag-Basis addiert, dann läuft
+// STAT_FROM_TAGS. armorWeight 0.3 = Rüstung trägt spürbar, ersetzt Seele
+// nicht. toolWeight 0.15 = Werkzeug-in-Hand wirkt nur leicht (Werte aus
+// wave-6-design §5.3).
+AnazhRealm.ARMOR_STAT_WEIGHT = 0.3;
+AnazhRealm.TOOL_STAT_WEIGHT = 0.15;
 
 // Welle 6.D Etappe 3a — Min-Regel-Hybrid-Decay. precision = min + (max−min)
 // × decay^N (siehe computePartPrecision-Doc). 0.7 ist Schöpfer-Wahl; ein
