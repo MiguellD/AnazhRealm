@@ -2183,6 +2183,215 @@ function startSaveServer() {
                 check("Welle 5 A: Schwache Verbindung traegt workshop-conn-weak class", wave5aResults.weakClassApplied);
             }
 
+            // ### Welle 5 C — Maschinen-Rekursivitaet (Bauplan als Werkzeug) ###
+            const wave5cResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    out.opClassesFrozen = Object.isFrozen(r.constructor.TOOL_OP_CLASSES);
+                    out.opClassesCount = r.constructor.TOOL_OP_CLASSES.size === 4;
+
+                    // computeBlueprintPrecisionCap: min der Part-Praezisionen
+                    const polishedChain = [
+                        { tool: "polierscheibe", op: "polish", cap: 0.97 },
+                    ];
+                    const roughChain = [{ tool: "hände", op: "hand_knap", cap: 0.4 }];
+                    const mixedBp = {
+                        parts: [
+                            { shape: "box", material: "eisen", opChain: polishedChain },
+                            { shape: "box", material: "eisen", opChain: roughChain },
+                            { shape: "box", material: "eisen", opChain: polishedChain },
+                        ],
+                    };
+                    out.precisionCapIsMin = Math.abs(r.computeBlueprintPrecisionCap(mixedBp) - 0.4) < 0.001;
+
+                    // setBlueprintToolMeta + Validierung
+                    r.state.blueprints["w5c-lathe"] = {
+                        name: "w5c-lathe",
+                        label: "Drehbank",
+                        builtIn: false,
+                        parts: [
+                            { shape: "box", material: "eisen", opChain: polishedChain },
+                            { shape: "cylinder", material: "eisen", opChain: polishedChain },
+                        ],
+                        connections: [],
+                    };
+                    const metaOk = r.setBlueprintToolMeta("w5c-lathe", "lathe", "subtractive");
+                    out.setMetaOk = metaOk.ok && r.state.blueprints["w5c-lathe"].role === "tool";
+                    // Bad opClass
+                    const metaBadClass = r.setBlueprintToolMeta("w5c-lathe", "lathe", "uberklasse");
+                    out.rejectsInvalidClass = !metaBadClass.ok && metaBadClass.reason === "invalid_op_class";
+                    // Bad opName
+                    const metaBadName = r.setBlueprintToolMeta("w5c-lathe", "böser Name!", "plastic");
+                    out.rejectsInvalidName = !metaBadName.ok && metaBadName.reason === "invalid_op_name";
+                    // Built-in protected
+                    const metaBuiltin = r.setBlueprintToolMeta("village", "lathe", "subtractive");
+                    out.builtinProtected = !metaBuiltin.ok && metaBuiltin.reason === "cannot_modify_builtin";
+
+                    // registerBlueprintAsTool
+                    const regOk = r.registerBlueprintAsTool("w5c-lathe");
+                    out.registerOk = regOk.ok && !!r.state.tools["w5c-lathe"];
+                    out.toolCapMatchesBlueprint = Math.abs(r.state.tools["w5c-lathe"].precisionCap - 0.97) < 0.001;
+                    out.toolInPlayerInventory = (r.state.player.tools || []).includes("w5c-lathe");
+                    out.toolSourceMarked = r.state.tools["w5c-lathe"].sourceBlueprint === "w5c-lathe";
+                    out.toolNotBuiltin = r.state.tools["w5c-lathe"].builtIn === false;
+
+                    // Cannot register a non-tool blueprint
+                    r.state.blueprints["w5c-not-a-tool"] = {
+                        name: "w5c-not-a-tool",
+                        label: "Just-a-Box",
+                        builtIn: false,
+                        parts: [{ shape: "box", material: "eisen", opChain: polishedChain }],
+                        connections: [],
+                    };
+                    const regNotMarked = r.registerBlueprintAsTool("w5c-not-a-tool");
+                    out.rejectsUnmarked = !regNotMarked.ok && regNotMarked.reason === "not_marked_as_tool";
+
+                    // Cannot override starter tool name
+                    r.state.blueprints["hammer"] = {
+                        name: "hammer",
+                        label: "Mein Hammer",
+                        builtIn: false,
+                        role: "tool",
+                        toolMeta: { opName: "forge", opClass: "plastic" },
+                        parts: [{ shape: "box", material: "eisen", opChain: polishedChain }],
+                        connections: [],
+                    };
+                    const regHammerOverride = r.registerBlueprintAsTool("hammer");
+                    out.starterProtected = !regHammerOverride.ok && regHammerOverride.reason === "starter_name_protected";
+                    delete r.state.blueprints["hammer"];
+
+                    // Recursive: das neue Werkzeug funktioniert in applyOpToPart
+                    r.state.blueprints["w5c-target"] = {
+                        name: "w5c-target",
+                        label: "Ziel",
+                        builtIn: false,
+                        parts: [{ shape: "cylinder", material: "eisen", opChain: r._defaultPartOpChain() }],
+                        connections: [],
+                    };
+                    const applyR = r.applyOpToPart("w5c-target", 0, "w5c-lathe");
+                    const partAfter = r.state.blueprints["w5c-target"].parts[0];
+                    const lastOp = partAfter.opChain && partAfter.opChain[partAfter.opChain.length - 1];
+                    // Erfolg: Op ist angewandt, letzte Chain-Eintrag zeigt
+                    // auf das eigene Werkzeug. Praezision selbst bleibt 0.4
+                    // (default-Hand-Knap dominiert per min-Regel §2.3).
+                    out.recursiveToolApplies = applyR.ok && lastOp && lastOp.tool === "w5c-lathe" && lastOp.cap === 0.97;
+                    out.opChainGrew = Array.isArray(partAfter.opChain) && partAfter.opChain.length === 2;
+
+                    // Schief gebaute Drehbank → schlechter Cap
+                    r.state.blueprints["w5c-bad-lathe"] = {
+                        name: "w5c-bad-lathe",
+                        label: "Schlechte Drehbank",
+                        builtIn: false,
+                        parts: [
+                            { shape: "box", material: "eisen", opChain: roughChain },
+                            { shape: "cylinder", material: "eisen", opChain: polishedChain },
+                        ],
+                        connections: [],
+                    };
+                    r.setBlueprintToolMeta("w5c-bad-lathe", "bad-lathe", "subtractive");
+                    r.registerBlueprintAsTool("w5c-bad-lathe");
+                    out.badLatheLowerCap = r.state.tools["w5c-bad-lathe"].precisionCap === 0.4;
+                    // Recursive Konzept-Test: eine Box mit dem schlechten Tool
+                    // erreicht keine bessere Praezision als 0.4.
+                    r.state.blueprints["w5c-target2"] = {
+                        name: "w5c-target2",
+                        label: "Ziel 2",
+                        builtIn: false,
+                        parts: [{ shape: "cylinder", material: "eisen", opChain: r._defaultPartOpChain() }],
+                        connections: [],
+                    };
+                    r.applyOpToPart("w5c-target2", 0, "w5c-bad-lathe");
+                    out.recursivePrecisionCascade = r.computePartPrecision(
+                        r.state.blueprints["w5c-target2"].parts[0]
+                    ) === 0.4;
+
+                    // DSL-Ops
+                    r.state.blueprints["w5c-dsl-test"] = {
+                        name: "w5c-dsl-test",
+                        label: "DSL Test",
+                        builtIn: false,
+                        parts: [{ shape: "box", material: "eisen", opChain: polishedChain }],
+                        connections: [],
+                    };
+                    const dslMeta = r.dslRun(
+                        ["set_tool_meta", "w5c-dsl-test", "dsl-tool", "additive"],
+                        { source: "test" }
+                    );
+                    out.dslSetMeta = dslMeta.log.some((e) => e.event === "set_tool_meta");
+                    const dslReg = r.dslRun(["register_tool", "w5c-dsl-test"], { source: "test" });
+                    out.dslRegister = dslReg.log.some((e) => e.event === "registered_tool");
+                    out.dslToolInState = !!r.state.tools["w5c-dsl-test"];
+
+                    // Save-Roundtrip
+                    const snap = r.buildStateSnapshot();
+                    out.snapshotHasToolBp = (snap.blueprints || []).some(
+                        (bp) => bp.name === "w5c-lathe" && bp.role === "tool" && bp.toolMeta && bp.toolMeta.opName === "lathe"
+                    );
+                    out.snapshotHasTool = (snap.tools || []).some(
+                        (t) => t.name === "w5c-lathe" && t.precisionCap === 0.97
+                    );
+
+                    // UI
+                    r.selectBlueprintForEdit("w5c-lathe");
+                    out.uiToolSection = !!document.querySelector(".workshop-tool-recursion");
+                    out.uiRegisteredBadge = !!document.querySelector(".workshop-tool-registered");
+                    out.uiOpNameInput = !!document.querySelector(".workshop-tool-opname");
+
+                    // Cleanup
+                    delete r.state.tools["w5c-lathe"];
+                    delete r.state.tools["w5c-bad-lathe"];
+                    delete r.state.tools["w5c-dsl-test"];
+                    r.state.player.tools = r.state.player.tools.filter(
+                        (t) => !["w5c-lathe", "w5c-bad-lathe", "w5c-dsl-test"].includes(t)
+                    );
+                    delete r.state.blueprints["w5c-lathe"];
+                    delete r.state.blueprints["w5c-bad-lathe"];
+                    delete r.state.blueprints["w5c-target"];
+                    delete r.state.blueprints["w5c-target2"];
+                    delete r.state.blueprints["w5c-not-a-tool"];
+                    delete r.state.blueprints["w5c-dsl-test"];
+                    if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (!wave5cResults || wave5cResults.error) {
+                check(
+                    "Welle 5 C: Snapshot erreichbar",
+                    false,
+                    (wave5cResults && wave5cResults.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Welle 5 C: TOOL_OP_CLASSES frozen", wave5cResults.opClassesFrozen);
+                check("Welle 5 C: TOOL_OP_CLASSES hat 4 Klassen", wave5cResults.opClassesCount);
+                check("Welle 5 C: computeBlueprintPrecisionCap = min(parts)", wave5cResults.precisionCapIsMin);
+                check("Welle 5 C: setBlueprintToolMeta markiert Bauplan", wave5cResults.setMetaOk);
+                check("Welle 5 C: setBlueprintToolMeta lehnt unbekannte opClass ab", wave5cResults.rejectsInvalidClass);
+                check("Welle 5 C: setBlueprintToolMeta lehnt invaliden opName ab", wave5cResults.rejectsInvalidName);
+                check("Welle 5 C: setBlueprintToolMeta lehnt Built-in-Bauplan ab", wave5cResults.builtinProtected);
+                check("Welle 5 C: registerBlueprintAsTool legt Werkzeug an", wave5cResults.registerOk);
+                check("Welle 5 C: Werkzeug-Cap = Bauplan-Praezision", wave5cResults.toolCapMatchesBlueprint);
+                check("Welle 5 C: Werkzeug landet im Player-Inventory", wave5cResults.toolInPlayerInventory);
+                check("Welle 5 C: Werkzeug trägt sourceBlueprint-Marke", wave5cResults.toolSourceMarked);
+                check("Welle 5 C: Eigenes Werkzeug ist nicht builtIn", wave5cResults.toolNotBuiltin);
+                check("Welle 5 C: registerBlueprintAsTool lehnt unmarkierte ab", wave5cResults.rejectsUnmarked);
+                check("Welle 5 C: Starter-Namen vor Override geschuetzt", wave5cResults.starterProtected);
+                check("Welle 5 C: Eigenes Werkzeug funktioniert in applyOpToPart", wave5cResults.recursiveToolApplies);
+                check("Welle 5 C: opChain waechst nach apply mit eigenem Tool", wave5cResults.opChainGrew);
+                check("Welle 5 C: Schlechte Drehbank hat niedrigen Cap", wave5cResults.badLatheLowerCap);
+                check("Welle 5 C: Schlechtes Tool deckelt Ziel-Praezision (§4.3 Kaskade)", wave5cResults.recursivePrecisionCascade);
+                check("Welle 5 C: DSL set_tool_meta wirkt", wave5cResults.dslSetMeta);
+                check("Welle 5 C: DSL register_tool wirkt", wave5cResults.dslRegister);
+                check("Welle 5 C: DSL-Werkzeug landet in state.tools", wave5cResults.dslToolInState);
+                check("Welle 5 C: Save traegt role + toolMeta im Bauplan", wave5cResults.snapshotHasToolBp);
+                check("Welle 5 C: Save traegt eigenes Werkzeug", wave5cResults.snapshotHasTool);
+                check("Welle 5 C: UI .workshop-tool-recursion im DOM", wave5cResults.uiToolSection);
+                check("Welle 5 C: UI Registered-Badge im DOM", wave5cResults.uiRegisteredBadge);
+                check("Welle 5 C: UI opName-Input im DOM", wave5cResults.uiOpNameInput);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {

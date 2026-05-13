@@ -932,6 +932,37 @@ class AnazhRealm {
             // Generator-Pool (dslComposeAtomic), damit der Nexus nicht
             // willkürlich Werkstücke poliert. Pfad: Chat-Befehl/LLM/Spieler-
             // UI. Tool muss im Besitz sein, Material × Op-Klasse muss passen.
+            // Welle 5 C — Bauplan als Werkzeug markieren + registrieren.
+            // Zwei separate Ops, damit der Spieler erst opName/opClass setzt,
+            // dann bewusst „registriere" drückt (Snapshot der aktuellen
+            // Präzision wandert in state.tools). Auch hier NICHT im
+            // dslComposeAtomic-Pool — Werkzeug-Erschaffung ist Schöpfer-Geste.
+            set_tool_meta: ([blueprintName, opName, opClass], ctx) => {
+                const r = this.setBlueprintToolMeta(blueprintName, opName, opClass);
+                ctx.log.push({
+                    event: r.ok ? "set_tool_meta" : "set_tool_meta_failed",
+                    blueprint: blueprintName,
+                    opName,
+                    opClass,
+                    reason: r.reason,
+                });
+            },
+            register_tool: ([blueprintName], ctx) => {
+                const r = this.registerBlueprintAsTool(blueprintName);
+                ctx.log.push({
+                    event: r.ok ? "registered_tool" : "register_tool_failed",
+                    blueprint: blueprintName,
+                    precisionCap: r.precisionCap,
+                    reason: r.reason,
+                });
+                if (r.ok) {
+                    this.journalAppend(
+                        "growth",
+                        `Ein eigenes Werkzeug entstand: ${blueprintName} (Cap ${r.precisionCap.toFixed(2)}).`,
+                        { tool: blueprintName, cap: r.precisionCap }
+                    );
+                }
+            },
             // Welle 5 A — Verbindung zwischen zwei Parts setzen. Auch hier
             // bewusst NICHT im dslComposeAtomic-Pool: Verbindungen sind
             // explizite Geste, kein Zufalls-Brei.
@@ -5843,11 +5874,31 @@ class AnazhRealm {
             // wir speichern nur, was der Spieler dazugefügt hat.
             blueprints: Object.values(this.state.blueprints || {})
                 .filter((bp) => bp && !bp.builtIn)
-                .map((bp) => ({
-                    name: bp.name,
-                    label: bp.label || bp.name,
-                    parts: Array.isArray(bp.parts) ? JSON.parse(JSON.stringify(bp.parts)) : [],
-                    connections: Array.isArray(bp.connections) ? JSON.parse(JSON.stringify(bp.connections)) : [],
+                .map((bp) => {
+                    const out = {
+                        name: bp.name,
+                        label: bp.label || bp.name,
+                        parts: Array.isArray(bp.parts) ? JSON.parse(JSON.stringify(bp.parts)) : [],
+                        connections: Array.isArray(bp.connections) ? JSON.parse(JSON.stringify(bp.connections)) : [],
+                    };
+                    if (bp.role === "tool" && bp.toolMeta) {
+                        out.role = "tool";
+                        out.toolMeta = { opName: bp.toolMeta.opName, opClass: bp.toolMeta.opClass };
+                    }
+                    return out;
+                }),
+            // Welle 5 C — eigene Werkzeuge (aus registrierten Bauplänen)
+            // persistieren. Starter-Werkzeuge entstehen aus _defaultTools()
+            // bei jedem Init, deshalb nur eigene speichern.
+            tools: Object.values(this.state.tools || {})
+                .filter((t) => t && !t.builtIn)
+                .map((t) => ({
+                    name: t.name,
+                    label: t.label,
+                    opClass: t.opClass,
+                    opName: t.opName,
+                    precisionCap: t.precisionCap,
+                    sourceBlueprint: t.sourceBlueprint || null,
                 })),
             // Welle 4 Phase 1 — eigene Materialien persistieren. Built-ins
             // kommen aus _defaultMaterials() im Konstruktor zurück; auch hier
@@ -6203,15 +6254,53 @@ class AnazhRealm {
                 });
                 // Welle 5 A — connections sanitisieren beim Load.
                 const validConnections = this.validateBlueprintConnections(bp.connections || [], migratedParts.length);
-                this.state.blueprints[bp.name] = {
+                const restored = {
                     name: bp.name,
                     label: bp.label || bp.name,
                     builtIn: false,
                     parts: migratedParts,
                     connections: validConnections,
                 };
+                // Welle 5 C — role + toolMeta beim Load wiederherstellen.
+                if (
+                    bp.role === "tool" &&
+                    bp.toolMeta &&
+                    AnazhRealm.TOOL_OP_CLASSES.has(bp.toolMeta.opClass) &&
+                    AnazhRealm.TOOL_OP_NAME_PATTERN.test(String(bp.toolMeta.opName || ""))
+                ) {
+                    restored.role = "tool";
+                    restored.toolMeta = { opName: bp.toolMeta.opName, opClass: bp.toolMeta.opClass };
+                }
+                this.state.blueprints[bp.name] = restored;
             }
             this.log(`Baupläne geladen: ${state.blueprints.length} eigene`);
+        }
+        // Welle 5 C — eigene Werkzeuge wiederherstellen. Validiert opClass +
+        // opName + Schutz vor Override existierender Starter. precisionCap
+        // wird ge-clampt 0..1. Aufruf NACH Bauplänen, damit sourceBlueprint
+        // optional schon existiert.
+        if (Array.isArray(state.tools)) {
+            let restoredTools = 0;
+            for (const t of state.tools) {
+                if (!t || typeof t.name !== "string") continue;
+                if (this.state.tools[t.name] && this.state.tools[t.name].builtIn) continue;
+                if (!AnazhRealm.TOOL_OP_CLASSES.has(t.opClass)) continue;
+                if (!AnazhRealm.TOOL_OP_NAME_PATTERN.test(String(t.opName || ""))) continue;
+                const cap = Number(t.precisionCap);
+                this.state.tools[t.name] = {
+                    name: t.name,
+                    label: t.label || t.name,
+                    opClass: t.opClass,
+                    opName: t.opName,
+                    precisionCap: Number.isFinite(cap) ? Math.max(0, Math.min(1, cap)) : 0.4,
+                    isStarter: false,
+                    builtIn: false,
+                    sourceBlueprint: typeof t.sourceBlueprint === "string" ? t.sourceBlueprint : null,
+                };
+                if (!this.state.player.tools.includes(t.name)) this.state.player.tools.push(t.name);
+                restoredTools++;
+            }
+            if (restoredTools > 0) this.log(`Eigene Werkzeuge geladen: ${restoredTools}`);
         }
         if (Array.isArray(state.architectures) && this.state.scene) {
             for (const old of this.state.architectures) {
@@ -7830,6 +7919,80 @@ class AnazhRealm {
         return true;
     }
 
+    // ### Welle 5 C — Maschinen-Rekursivität ###
+    // Konzept §4.3 wörtlich: „Maschinen sind selbst Compounds. Die Präzision
+    // der Maschine kommt aus der Präzision ihrer Bauteile." Wer hochpräzise
+    // Werkstücke will, baut zuerst eine hochpräzise Drehbank. Wer eine
+    // hochpräzise Drehbank baut, braucht Werkzeuge mittlerer Präzision. Und
+    // so weiter bis zum Faustkeil. Das System schließt sich von selbst.
+
+    // Liefert den effektiven Präzisions-Cap eines Bauplans als Werkzeug:
+    // Minimum aller Part-Präzisionen (eine schief geschmiedete Spindel zieht
+    // die ganze Drehbank runter). Konzept-Kernregel §2.3 vererbt sich von
+    // Part auf Compound.
+    computeBlueprintPrecisionCap(blueprint) {
+        if (!blueprint || !Array.isArray(blueprint.parts) || blueprint.parts.length === 0) return 0;
+        let min = 1;
+        for (const part of blueprint.parts) {
+            const p = this.computePartPrecision(part);
+            if (p < min) min = p;
+        }
+        return min;
+    }
+
+    // Setzt Bauplan-Werkzeug-Meta. Nur eigene Baupläne, nur whitelisted
+    // opClass, nur sanitized opName. Mutiert in-place, idempotent.
+    setBlueprintToolMeta(name, opName, opClass) {
+        const bp = this.state.blueprints[name];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.builtIn) return { ok: false, reason: "cannot_modify_builtin" };
+        if (!AnazhRealm.TOOL_OP_CLASSES.has(opClass)) {
+            return { ok: false, reason: "invalid_op_class" };
+        }
+        const cleanOpName = String(opName || "").toLowerCase();
+        if (!AnazhRealm.TOOL_OP_NAME_PATTERN.test(cleanOpName)) {
+            return { ok: false, reason: "invalid_op_name" };
+        }
+        bp.role = "tool";
+        bp.toolMeta = { opName: cleanOpName, opClass };
+        return { ok: true };
+    }
+
+    // Registriert einen markierten Bauplan als Werkzeug in state.tools. Der
+    // Name ist der Bauplan-Name; ein Starter-Werkzeug mit gleichem Namen ist
+    // geschützt (eigene Werkzeuge können „hammer" nicht überschreiben). Cap
+    // wird beim Registrieren als SNAPSHOT der Bauplan-Präzision gespeichert
+    // — wer den Bauplan später editiert, muss neu registrieren. Das verhindert,
+    // dass ein versehentlicher Edit ein im Besitz befindliches Werkzeug
+    // entkräftet oder unsichtbar verstärkt.
+    registerBlueprintAsTool(name) {
+        const bp = this.state.blueprints[name];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.builtIn) return { ok: false, reason: "cannot_modify_builtin" };
+        if (bp.role !== "tool" || !bp.toolMeta) {
+            return { ok: false, reason: "not_marked_as_tool" };
+        }
+        const existing = this.state.tools[name];
+        if (existing && existing.builtIn) {
+            return { ok: false, reason: "starter_name_protected" };
+        }
+        const precisionCap = this.computeBlueprintPrecisionCap(bp);
+        this.state.tools[name] = {
+            name,
+            label: bp.label || name,
+            opClass: bp.toolMeta.opClass,
+            opName: bp.toolMeta.opName,
+            precisionCap,
+            isStarter: false,
+            builtIn: false,
+            sourceBlueprint: name,
+        };
+        if (!Array.isArray(this.state.player.tools)) this.state.player.tools = [];
+        if (!this.state.player.tools.includes(name)) this.state.player.tools.push(name);
+        if (typeof this._renderWorkshopDOM === "function") this._renderWorkshopDOM();
+        return { ok: true, precisionCap };
+    }
+
     _architectureBuilders() {
         // Builders kommen jetzt aus state.blueprints — eine Quelle für
         // Built-in + User-Baupläne. Seed wird zur Zeit nicht mehr genutzt
@@ -8834,6 +8997,76 @@ class AnazhRealm {
             connectionsSection.appendChild(addRow);
         }
         editor.appendChild(connectionsSection);
+        // Welle 5 C — Bauplan als Werkzeug markieren + registrieren. Nur für
+        // eigene Baupläne. UI zeigt: aktuelle Bauplan-Präzision (= zukünftiger
+        // Cap), opName + opClass Inputs, „als Werkzeug registrieren"-Button.
+        // Bereits registriert → Status-Indikator + Cap-Wert.
+        if (!selected.builtIn) {
+            const toolSection = document.createElement("div");
+            toolSection.className = "workshop-tool-recursion";
+            const toolHeading = document.createElement("div");
+            toolHeading.className = "workshop-tags-title";
+            toolHeading.textContent = "Werkzeug-Rolle (Konzept §4.3)";
+            toolSection.appendChild(toolHeading);
+            const currentCap = this.computeBlueprintPrecisionCap(selected);
+            const capInfo = document.createElement("div");
+            capInfo.className = "workshop-tags-empty";
+            capInfo.textContent = `Bauplan-Präzision: ${currentCap.toFixed(2)} (wird zum Tool-Cap beim Registrieren)`;
+            toolSection.appendChild(capInfo);
+            const existingTool = this.state.tools[selected.name];
+            const isRegistered =
+                existingTool && !existingTool.builtIn && existingTool.sourceBlueprint === selected.name;
+            if (isRegistered) {
+                const registeredInfo = document.createElement("div");
+                registeredInfo.className = "workshop-tool-registered";
+                registeredInfo.textContent = `Registriert als ${existingTool.opName} (${existingTool.opClass}) — Cap ${existingTool.precisionCap.toFixed(2)}.`;
+                toolSection.appendChild(registeredInfo);
+            }
+            const toolRow = document.createElement("div");
+            toolRow.className = "workshop-tool-form";
+            const opNameInput = document.createElement("input");
+            opNameInput.type = "text";
+            opNameInput.className = "workshop-tool-opname";
+            opNameInput.placeholder = "op-name (z.B. lathe)";
+            opNameInput.maxLength = 24;
+            opNameInput.value = (selected.toolMeta && selected.toolMeta.opName) || "";
+            const opClassSel = document.createElement("select");
+            opClassSel.className = "workshop-tool-opclass";
+            for (const cls of ["subtractive", "plastic", "additive", "phaseChange"]) {
+                const opt = document.createElement("option");
+                opt.value = cls;
+                opt.textContent = cls;
+                if ((selected.toolMeta && selected.toolMeta.opClass) === cls) opt.selected = true;
+                opClassSel.appendChild(opt);
+            }
+            const registerBtn = document.createElement("button");
+            registerBtn.type = "button";
+            registerBtn.className = "workshop-tool-register";
+            registerBtn.textContent = isRegistered ? "neu registrieren" : "als Werkzeug registrieren";
+            registerBtn.addEventListener("click", () => {
+                const metaR = this.setBlueprintToolMeta(selected.name, opNameInput.value.trim(), opClassSel.value);
+                if (!metaR.ok) {
+                    this.log(`set_tool_meta fehlgeschlagen: ${metaR.reason}`, "ERROR");
+                    return;
+                }
+                const regR = this.registerBlueprintAsTool(selected.name);
+                if (!regR.ok) {
+                    this.log(`register_tool fehlgeschlagen: ${regR.reason}`, "ERROR");
+                } else {
+                    this.journalAppend(
+                        "growth",
+                        `Ein eigenes Werkzeug entstand: ${selected.name} (Cap ${regR.precisionCap.toFixed(2)}).`,
+                        { tool: selected.name, cap: regR.precisionCap }
+                    );
+                }
+                this._renderWorkshopDOM();
+            });
+            toolRow.appendChild(opNameInput);
+            toolRow.appendChild(opClassSel);
+            toolRow.appendChild(registerBtn);
+            toolSection.appendChild(toolRow);
+            editor.appendChild(toolSection);
+        }
         // Welle 4 Phase 2 — emergente Tag-Anzeige für den ganzen Compound.
         // Read-only: Spieler sehen, was Form + Material zusammen aktivieren.
         // Hinweis-Text dokumentiert die Grenze zur räumlichen Emergenz
@@ -10108,6 +10341,13 @@ AnazhRealm.CONNECTION_TYPES = Object.freeze({
 });
 AnazhRealm.CONNECTION_MAX_PER_BLUEPRINT = 64;
 AnazhRealm.CONNECTION_SOLID_THRESHOLD = 0.7;
+// Welle 5 C — Maschinen-Rekursivität. Vier Op-Klassen aus Konzept §3.1,
+// als Whitelist für eigene Tool-Baupläne. Spieler kann nur diese vier
+// vergeben — sonst kollidieren neue Op-Klassen mit MATERIAL_OP_COMPATIBILITY.
+AnazhRealm.TOOL_OP_CLASSES = Object.freeze(new Set(["subtractive", "plastic", "additive", "phaseChange"]));
+// Op-Name-Whitelist (a-z, -_, max 24 Zeichen) — verhindert injection in
+// state.tools-Keys. Pure Sanitisierung, keine semantische Wertung.
+AnazhRealm.TOOL_OP_NAME_PATTERN = /^[a-z0-9_-]{1,24}$/;
 // Welle 4 Phase 3 — Material × Op-Klassen-Kompatibilität aus Konzept §3.2.
 // Bei eigenen Materialien (define_material) wird das via applyOpToPart als
 // „alle vier erlaubt" behandelt — UI/UX-Verfeinerung folgt in einer
