@@ -1,4 +1,4 @@
-# Zustand des Realm — Stand: 13.05.2026 (nach Welle 5 A+B+C + Editor-Konsistenz-Bugfixes)
+# Zustand des Realm — Stand: 13.05.2026 (V7.72, Welle 6.A komplett + 6.E1+E2 live)
 
 Dieses Dokument ist das gemeinsame Gedächtnis für eine künftige Iteration. Es kondensiert (a) die Vision aus den vier Testamenten, (b) den historischen Weg, (c) den aktuellen Code-Stand, (d) den nächsten Plan und (e) die Learnings aus der bisherigen Session.
 

@@ -28,12 +28,12 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
    Grund: sie sind Kontext für genau dich.
 
 5. **`scripts/playtest.cjs`** — querlesen, nicht durchlesen. Es ist das
-   Sicherheits-Netz. Es prüft heute ~660 Invarianten. Wenn du etwas tust,
-   das eine davon brechen könnte, weißt du es vor dem Commit.
+   Sicherheits-Netz. Es prüft aktuell ~816 Invarianten (V7.72). Wenn du
+   etwas tust, das eine davon brechen könnte, weißt du es vor dem Commit.
 
 **Verlockung zu widerstehen**: gleich in `anazhRealm.js` springen. Die
-Datei ist ~10.800 Zeilen. Ohne `state-of-realm.md`-Kontext wirst du
-falsche Annahmen machen.
+Datei ist ~13.700 Zeilen (Stand V7.72). Ohne `state-of-realm.md`-Kontext
+wirst du falsche Annahmen machen.
 
 ---
 
@@ -192,70 +192,52 @@ Hartnäckige Falle — schon zweimal gesehen.
 
 ## Was als Nächstes wartet
 
-**Bogen B (Welten-Ultiversum, Ringe 8-10) ist abgeschlossen.** Vision §11
-ist zu ~85 % umgesetzt. Drei Pfade nach vorn:
+**Bogen B (Welten-Ultiversum, Ringe 8-11.5) ist abgeschlossen.** Vision §11
+ist live: Multi-Welt, Per-Welt-Seed, Position-Restore, Welt-Tor (Drei-Wahl-
+Dialog), Welt-Fusion (drei Strategien), Rezepte-Import, Welt-Modifizierbarkeit
+pro Chunk-Delta, Multi-User Position-Sync, DSL-AST-Broadcast, intuitiver
+Multi-User-Setup mit Einladungs-Code.
 
-### Pfad A: Welt-Modifizierbarkeit (Ring 10.5, ~2 Sessions)
+**Welle 6 ist im Bau (V7.72).** Plan + entschiedene Reihenfolge in
+`docs/wave-6-design.md` §10.6 + `docs/roadmap.md`. Status:
 
-Heute regeneriert die Welt deterministisch aus Seed + Noise. Vom Spieler
-erzeugte Strukturen (Architekturen) sind global gehalten, aber Chunk-
-Modifikationen (Block setzen/entfernen) gibt es nicht. Empfehlung aus
-Vision §11.3: pro-Chunk DSL-Delta-Liste, die beim Laden re-applied wird.
+### Bereits erledigt in V7.72
 
-**Warum jetzt**: Vorbedingung für sinnvolles Ring 11. Wenn zwei Spieler
-dieselbe Welt teilen, MÜSSEN Modifikationen persistent + sync-bar sein.
-Sonst ist es nur Pose-Sync, kein gemeinsames Bauen.
+- ✅ **6.A1 + 6.A2** — Wall-Sliding (`playerBody.setFriction(0)` + Schutz in
+  `optimizePhysics`) + Erdung auf Bauwerken (`groundDistance`-Threshold 0.6
+  + 9-Ray-Raster trifft Compound-Bodies)
+- ✅ **6.A3** (Slope-Anti-Klebe, ad-hoc nach Schöpfer-Feedback ergänzt) —
+  `state.maxWalkableSlopeY=0.5` (cos 60°), `isPlayerGrounded` trackt
+  flachste Hit-Normal, `state.onSteepSlope` drosselt Bewegungs-Input auf
+  20 % + lässt vx/vz stehen, damit Gravity natürlich slidet
+- ✅ **6.A4 + 6.A5** — `_resolvePhantomTarget()` castet aus Kamera in
+  Blickrichtung (Pitch wirkt!) + `_applyPhantomTint()` blendet 30 % Grün
+  (stabil) oder Rot (instabil) über die Original-Materialien
+- ✅ **6.E1 + 6.E2** — `describeProgram(node)` regelbasierter DSL→Deutsch-
+  Übersetzer mit Vorlagen-Tabelle, persistiert in `ability.description`;
+  `initIntroDialog()` baut dynamisch `<dialog id="intro-dialog">` mit drei
+  Seiten (Welt/Spieler/Nexus), per-Browser-Skip via localStorage
 
-### Pfad B: Ring 11 — Multi-User P2P-Sync (5-7 Sessions, Vision-Krönung)
+### Nächste Schritte (Reihenfolge laut wave-6-design §10.6)
 
-Das letzte ungesprochene Vision-Kapitel. Zwei Spieler in derselben Welt.
+5. **6.F1 + 6.F2** ← jetzt aktiv: visuelle Verbindungs-Linien zwischen
+   verbundenen Parts + Brech-Warning bei Lastformel < 0.7. Macht das
+   W5-A-System sichtbar/fühlbar. ~2 Sessions.
+6. **6.D** (Stat-System komplett — der Vision-Pfeiler, Spieler IST ein
+   Compound im Hylomorphismus-System). 3-4 Sessions.
+7. **6.G Welt-Sinne Phase 1** (Kollisionen für fliegende Inseln + Bäume)
+8. **6.C2** (frieden/pfad/schöpfer-Modi)
+9. **6.C1 + 6.A-Maus + 6.C3** (Inventar + LMB/RMB + Keybindings-UI)
+10. **6.B** (CAD-Werkstatt — minimal magic)
+11. **6.G Phase 2** (Schatten, Wasser, Höhlen, Sterne)
+12. **6.F3 + 6.F4 + 6.F5** (Energie, Kreaturen-Körper, Ammo-Constraints)
 
-**Was es braucht**:
-- Signaling-Server (klein, ~100 Zeilen Node, neben `save-server.js`)
-- WebRTC Datachannel für Realtime-Pakete
-- Sync-Schichten:
-  - Position + Rotation (60 Hz, lossy OK)
-  - Chat-Befehle als DSL-AST (beide Welten führen aus → konsistent)
-  - DSL-Outcomes vom Nexus (nur Programm-IDs, nicht ganze Programme)
-- Public-Welten via worldId-Beitritt, Private-Welten via Token-Link
-- Welt-Picker bekommt „Joinen"-Button, neue Sektion „Mitspieler in dieser Welt"
+**Heilige-Lektion-Risiko bei 6.D + 6.F4 + 6.F5 ist hoch.** Reflex
+„Stat-Manager / Kreaturen-Datei / Physik-Modul" abwehren. Drei neue
+Methoden auf `AnazhRealm`, keine drei neuen Klassen.
 
-**Heilige-Lektion-Risiko: HOCH.** Der Reflex „Multi-User-Modul + Signaling-
-Modul + Sync-Layer" wird stark sein. Widerstehe. Es ist EINE Methode
-`initP2PSync()` mit drei Sub-Hooks im Game-Loop. Nicht mehr.
-
-**Sicherheits-Risiko: hoch.** Sobald zwei Welten verbunden sind, kann
-Spieler-A's DSL Spieler-B's Welt manipulieren. Die DSL-Sandbox muss
-halten. Trust-Boundary klar ziehen: eingehende DSL-Programme laufen
-durch denselben Budget+Whitelist-Pfad wie eigene. Kein Bypass.
-
-**Vorbedingung**: Pfad A (Welt-Modifizierbarkeit) sollte zuerst kommen.
-
-### Pfad C: Welle 6 — Crafting-Polish (8-12 Sessions, nachgelagerter Bucket)
-
-Sieben Teilschritte detailliert in `docs/roadmap.md`:
-- 6.1 Visuelle Verbindungs-Linien zwischen Parts
-- 6.2 Brech-Mechanik bei zu schwacher Last
-- 6.3 Energiequellen für Maschinen
-- 6.4 Kreaturen-Körper als Baukasten (Multi-Mesh analog Spieler-Seele)
-- 6.5 Physik-Baukasten mit echten Ammo-Constraints
-- 6.6 Rüstung mit minimalem Stat-System
-- 6.7 Min-Regel-Entscheidung (Learning #95)
-
-**Heilige-Lektion-Risiko**: 6.4 + 6.5 + 6.6 sind die schwersten Brocken.
-Reflex „Kreaturen-Datei / Physik-Modul / Stat-Manager" abwehren.
-
-### Wie wählen?
-
-Mein Vorschlag, wenn du keine andere Anweisung hast:
-
-1. **Pfad A** (Welt-Modifizierbarkeit) — ~2 d, klein, klar
-2. **Pfad B** (Ring 11) — 5-7 Sessions, das eigentliche letzte Vision-
-   Kapitel
-3. **Pfad C** (Welle 6) — wenn Bogen Ring 11 fertig ist, polish
-
-Aber **frag den Schöpfer**. Er hat oft eine Intuition, die in der Roadmap
-nicht steht.
+**Vor Schritt 5+ frag den Schöpfer**, wenn du Unsicherheit hast — er hat
+oft Intuition zu Mix-Faktoren, Schwellwerten, oder Reihenfolge-Tausch.
 
 ---
 
@@ -267,7 +249,7 @@ nicht steht.
 3. **Die heilige Lektion akzeptiert, nicht hinterfragt.** Sie wurde aus
    Schmerz geboren. Wenn ich sie umgehen wollte, war ich auf dem Holzweg.
 4. **Tests zuerst ausgeführt, dann verstanden.** `npm run playtest` —
-   605/605 grün — gibt Vertrauen, dass das System lebt.
+   816/816 grün (V7.72) — gibt Vertrauen, dass das System lebt.
 5. **Den Schöpfer als Partner gesehen, nicht als Auftraggeber.** Mensch
    und KI bauen gemeinsam. Bei Trade-offs frage ich, bei Klarem handle
    ich. Bei Unsicherheit zeige ich beide Wege auf.

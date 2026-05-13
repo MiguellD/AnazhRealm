@@ -406,17 +406,20 @@ Für **Verbindungs-Last** (W5-A) und **Compound-Tags** (W5-B): **Min/Max-Aggrega
 
 ### §10.6 — Reihenfolge (entschieden)
 
-1. **6.A1 + 6.A2** (Wall-Sliding + Erdung) — kleine Gewinne, große UX-Wirkung. 1 Session.
-2. **6.A4 + 6.A5** (Raycast-Place + Stabilität) — Bauen wird vorhersehbar. 1 Session.
-3. **6.E1 + 6.E2** (Fähigkeit-Beschreibung + Intro) — Welt wird lesbar, Onboarding kommt. 1 Session.
-4. **6.F1 + 6.F2** (visuelle Linien + Brech-Warning) — Crafting wird sichtbar. 2 Sessions.
-5. **6.D** (Stat-System komplett) — **der Vision-Pfeiler**. 3-4 Sessions.
-6. **6.G Welt-Sinne — Phase 1** (siehe §11): Kollisionen für fliegende Inseln + Bäume. 1-2 Sessions.
-7. **6.C2** (Spiel-Modi frieden/pfad/schöpfer) — nutzt das Stat-System. 1 Session.
-8. **6.C1 + 6.A3 + 6.C3** (Inventar + Maus-Aktionen + Keybindings-UI) — Konventions-Block. 2-3 Sessions.
-9. **6.B** (CAD-Werkstatt — minimal magic). 2 Sessions.
-10. **6.G Welt-Sinne — Phase 2** (Schatten + Wasser + Höhlen + Sterne). 3-4 Sessions.
-11. **6.F3 + 6.F4 + 6.F5** (Energie + Kreaturen + Constraints) — Crafting-Tiefe. 4-5 Sessions.
+**Status V7.72 (13.05.2026)**: Schritte 1-3 erledigt, dazu 6.A3 als Ad-hoc-Ergänzung nach Schöpfer-Feedback (Spieler klebte an senkrechten Wänden). 6.F1+F2 jetzt aktiv.
+
+1. ✅ **6.A1 + 6.A2** (Wall-Sliding + Erdung auf Bauwerken) — V7.72, `playerBody.setFriction(0)` + Raycast-Threshold relax + Hit-Normal-Tracking
+2. ✅ **6.A-Slope (neu)** (Slope-Anti-Klebe — `maxWalkableSlopeY=0.5`, Drossel auf 20 % bei >60°, kein vx/vz-Zwangs-Stopp damit Gravity slidet) — V7.72, ergänzt nach Schöpfer-Feedback
+3. ✅ **6.A4 + 6.A5** (Raycast-Place via `_resolvePhantomTarget` + Grün/Rot-Tint via `_applyPhantomTint`) — V7.72
+4. ✅ **6.E1 + 6.E2** (Fähigkeit-Beschreibung via `describeProgram` + dynamisches `<dialog id="intro-dialog">` mit 3 Seiten) — V7.72
+5. ← **6.F1 + 6.F2** (visuelle Linien + Brech-Warning) — Crafting wird sichtbar. 2 Sessions. **JETZT IM BAU.**
+6. **6.D** (Stat-System komplett) — **der Vision-Pfeiler**. 3-4 Sessions.
+7. **6.G Welt-Sinne — Phase 1** (siehe §11): Kollisionen für fliegende Inseln + Bäume. 1-2 Sessions.
+8. **6.C2** (Spiel-Modi frieden/pfad/schöpfer) — nutzt das Stat-System. 1 Session.
+9. **6.C1 + 6.A-Maus + 6.C3** (Inventar + LMB/RMB-Aktionen + Keybindings-UI) — Konventions-Block. 2-3 Sessions.
+10. **6.B** (CAD-Werkstatt — minimal magic). 2 Sessions.
+11. **6.G Welt-Sinne — Phase 2** (Schatten + Wasser + Höhlen + Sterne). 3-4 Sessions.
+12. **6.F3 + 6.F4 + 6.F5** (Energie + Kreaturen + Constraints) — Crafting-Tiefe. 4-5 Sessions.
 
 **Gesamt-Schätzung**: 20-25 Sessions, verteilt auf 4-5 Monate Echtzeit.
 
