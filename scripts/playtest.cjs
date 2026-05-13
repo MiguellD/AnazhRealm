@@ -1024,6 +1024,68 @@ function startSaveServer() {
                 check("Welle 2 B: define_ability legt neue Fähigkeit an", wave2Results.defineAbilityWorks);
             }
 
+            // ### Welle 3 E/F — Welt-Initiative + Welt-Tor ###
+            const wave3Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    // E — neue Trigger im pool + triggers-Map
+                    out.hasJournalEventTrigger = !!r.state.grok.triggers.journalEvent;
+                    out.hasEmotionShiftTrigger = !!r.state.grok.triggers.emotionShift;
+                    out.hasJournalEventPool = Array.isArray(r.state.grok.pool.journalEvent) &&
+                        r.state.grok.pool.journalEvent.length > 0;
+                    out.hasEmotionShiftPool = Array.isArray(r.state.grok.pool.emotionShift) &&
+                        r.state.grok.pool.emotionShift.length > 0;
+                    // E — grokSpeakFromJournal existiert
+                    out.hasGrokSpeakFromJournal = typeof r.grokSpeakFromJournal === "function";
+                    // F — Welt-Info-UI im DOM
+                    out.worldInfoInDom = !!document.getElementById("world-info");
+                    out.worldExportInDom = !!document.getElementById("world-export");
+                    out.worldImportInDom = !!document.getElementById("world-import");
+                    // F — updateWorldInfo füllt slug
+                    r.updateWorldInfo();
+                    const infoText = document.getElementById("world-info").textContent;
+                    out.worldInfoShowsSlug = infoText.includes(r.state.worldMeta.slug);
+                    out.worldInfoShowsAge = /Alter:\s*\d+/.test(infoText);
+                    // F — triggerStateDownload akzeptiert suggestedName
+                    let downloadedName = null;
+                    const origCreate = document.createElement;
+                    document.createElement = function (tag) {
+                        const el = origCreate.call(document, tag);
+                        if (tag === "a") {
+                            const origSetAttr = el.setAttribute.bind(el);
+                            el.setAttribute = (k, v) => {
+                                if (k === "download") downloadedName = v;
+                                origSetAttr(k, v);
+                            };
+                            el.click = () => {};
+                        }
+                        return el;
+                    };
+                    r.triggerStateDownload({ test: true }, "anazh-realm-test.json");
+                    document.createElement = origCreate;
+                    out.downloadCustomName = downloadedName === "anazh-realm-test.json";
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (!wave3Results || wave3Results.error) {
+                check("Welle 3: Snapshot erreichbar", false, wave3Results && wave3Results.error || "page.evaluate fehlgeschlagen");
+            } else {
+                check("Welle 3 E: journalEvent-Trigger im Grok-State", wave3Results.hasJournalEventTrigger);
+                check("Welle 3 E: emotionShift-Trigger im Grok-State", wave3Results.hasEmotionShiftTrigger);
+                check("Welle 3 E: journalEvent-Pool gefüllt", wave3Results.hasJournalEventPool);
+                check("Welle 3 E: emotionShift-Pool gefüllt", wave3Results.hasEmotionShiftPool);
+                check("Welle 3 E: grokSpeakFromJournal-Funktion existiert", wave3Results.hasGrokSpeakFromJournal);
+                check("Welle 3 F: #world-info im DOM", wave3Results.worldInfoInDom);
+                check("Welle 3 F: Welt-Export-/Import-Buttons im DOM",
+                    wave3Results.worldExportInDom && wave3Results.worldImportInDom);
+                check("Welle 3 F: Welt-Info zeigt slug", wave3Results.worldInfoShowsSlug);
+                check("Welle 3 F: Welt-Info zeigt Alter in Tagen", wave3Results.worldInfoShowsAge);
+                check("Welle 3 F: triggerStateDownload nutzt suggestedName", wave3Results.downloadCustomName);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {

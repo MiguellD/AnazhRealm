@@ -147,6 +147,11 @@ class AnazhRealm {
                     jumpBurst: { lastFired: -Infinity, cooldown: 120 },
                     rainLong: { lastFired: -Infinity, cooldown: 240 },
                     nexus: { lastFired: -Infinity, cooldown: 60 },
+                    // Welle 3 E — Welt-Initiative. journalEvent feuert kurz
+                    // nach einem neuen Journal-Eintrag (Erinnerung wird
+                    // erzählt), emotionShift bei abrupten Achsen-Sprüngen.
+                    journalEvent: { lastFired: -Infinity, cooldown: 90 },
+                    emotionShift: { lastFired: -Infinity, cooldown: 60 },
                 },
                 pool: {
                     firstSpawn: ["Hallo. Die Welt steht. Magst du dich umsehen?"],
@@ -167,7 +172,19 @@ class AnazhRealm {
                         "Ich habe etwas verschoben. Spürst du den Unterschied?",
                         "Eine kleine Änderung im Nexus. Sag mir, ob sie sich richtig anfühlt.",
                     ],
+                    journalEvent: [
+                        "Ich werde mich daran erinnern.",
+                        "Das war ein Augenblick, der bleibt.",
+                        "Etwas hat sich in mir eingeschrieben.",
+                    ],
+                    emotionShift: [
+                        "Du hast dich gerade verändert. Ich spüre es.",
+                        "Etwas in dir hat sich gewendet.",
+                    ],
                 },
+                // Hilfsfelder für die V2-Trigger
+                lastJournalSize: 0,
+                emotionsSnapshot: null,
                 poolIndex: { firstSpawn: 0, idle: 0, jumpBurst: 0, rainLong: 0, nexus: 0 },
             },
             // Ring 2 – Nexus-DSL. Interpreter-State; siehe docs/nexus-dsl.md.
@@ -483,6 +500,78 @@ class AnazhRealm {
         if (grok.rainStartedAt !== null && currentTime - grok.rainStartedAt > 60) {
             if (this.grokSpeak("rainLong")) grok.rainStartedAt = currentTime; // re-arm bis cooldown durch ist
         }
+
+        // Welle 3 E — journalEvent. Wenn das Journal seit dem letzten Tick
+        // gewachsen ist, kommentiert Grok den jüngsten Eintrag. LLM-Pfad:
+        // grokSpeakFromJournal versucht zuerst eine LLM-Beobachtung; ohne
+        // LLM oder bei Fehler fällt er auf den Pool-Satz zurück.
+        const journalSize = (this.state.worldJournal && this.state.worldJournal.entries.length) || 0;
+        if (grok.lastJournalSize === 0) {
+            grok.lastJournalSize = journalSize;
+        } else if (journalSize > grok.lastJournalSize) {
+            const newest = this.state.worldJournal.entries[journalSize - 1];
+            // Genesis-Eintrag selbst nicht extra kommentieren (firstSpawn
+            // ist schon der Genesis-Anker).
+            if (newest && newest.type !== "genesis") {
+                this.grokSpeakFromJournal(newest);
+            }
+            grok.lastJournalSize = journalSize;
+        }
+
+        // Welle 3 E — emotionShift. Wenn eine Achse seit dem letzten Snapshot
+        // um ≥ 0.4 gestiegen ist, kommentiert Grok kurz. Snapshot wird alle
+        // ~10 s aktualisiert, damit langsame Drift den Trigger nicht zündet.
+        const e = this.state.player && this.state.player.emotions;
+        if (e) {
+            if (!grok.emotionsSnapshot) grok.emotionsSnapshot = { ...e, takenAt: currentTime };
+            if (currentTime - grok.emotionsSnapshot.takenAt >= 10) {
+                for (const axis of Object.keys(e)) {
+                    const prev = grok.emotionsSnapshot[axis] || 0;
+                    const now = e[axis] || 0;
+                    if (now - prev >= 0.4) {
+                        this.grokSpeak("emotionShift");
+                        break;
+                    }
+                }
+                grok.emotionsSnapshot = { ...e, takenAt: currentTime };
+            }
+        }
+    }
+
+    // Versucht, einen Journal-Eintrag via LLM in einen narrativen Satz zu
+    // verwandeln. Bei aktivem LLM kommt eine lebendige Beobachtung; ohne
+    // LLM (oder bei Fehler/Rate-Limit) fällt es auf den Pool zurück. Beide
+    // Pfade respektieren den Standard-Throttle aus grokSpeak.
+    grokSpeakFromJournal(entry) {
+        const grok = this.state.grok;
+        const cfg = grok.triggers.journalEvent;
+        const now = performance.now() / 1000;
+        if (now - grok.lastSpoke < grok.minGapSeconds) return false;
+        if (cfg && now - cfg.lastFired < cfg.cooldown) return false;
+        // LLM-Pfad: nur wenn aktiv und kein Inflight-Call läuft.
+        if (this.state.llm && this.state.llm.enabled && !this.state.llm.inFlight) {
+            const prompt = `In dir geschah gerade etwas: "${entry.text}" (Typ: ${entry.type}). Kommentiere es in einem kurzen Satz, in erster Person. Gib KEIN program — nur say.`;
+            // Async ohne await: das Tick darf nicht blockieren. Erfolg/Fehler
+            // werden im LLM-Status angezeigt; bei narrativer Antwort rendern
+            // wir sie direkt.
+            this.llmCall(prompt)
+                .then((reply) => {
+                    if (reply && reply.say) {
+                        grok.lastSpoke = performance.now() / 1000;
+                        if (cfg) cfg.lastFired = performance.now() / 1000;
+                        this.grokRender(reply.say);
+                        this.log(`Grok (LLM): ${reply.say}`, "INFO");
+                    } else {
+                        // Stiller Fallback auf Pool, ohne den Cooldown neu zu setzen.
+                        this.grokSpeak("journalEvent");
+                    }
+                })
+                .catch(() => {
+                    this.grokSpeak("journalEvent");
+                });
+            return true;
+        }
+        return this.grokSpeak("journalEvent");
     }
 
     // ### Ring 2 – Nexus-DSL ### (siehe docs/nexus-dsl.md)
@@ -5589,7 +5678,7 @@ class AnazhRealm {
         }
     }
 
-    triggerStateDownload(stateToSave) {
+    triggerStateDownload(stateToSave, suggestedName) {
         // Generischer Helper: stößt einen Browser-Download mit dem aktuellen
         // State an. Funktioniert auch auf CDN-Hosts ohne save-server.
         const dataStr =
@@ -5597,10 +5686,73 @@ class AnazhRealm {
         const a = document.createElement("a");
         a.setAttribute("href", dataStr);
         const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-        a.setAttribute("download", `anazhRealmState_${stamp}.json`);
+        const name = suggestedName || `anazhRealmState_${stamp}.json`;
+        a.setAttribute("download", name);
         document.body.appendChild(a);
         a.click();
         a.remove();
+    }
+
+    // ### Welle 3 F — Welt-Tor ###
+    // Welt-Info im Welt-Drawer: die Welt wird sichtbar als Welt, mit
+    // Identität, Alter, Erinnerungen. Export = bestehender Save-Snapshot
+    // mit slug im Dateinamen. Import = bestehender File-Picker — der lädt
+    // jeden gültigen Snapshot.
+
+    initWorldInfoUI() {
+        const exportBtn = document.getElementById("world-export");
+        const importBtn = document.getElementById("world-import");
+        if (exportBtn) {
+            exportBtn.addEventListener("click", () => {
+                const m = this.state.worldMeta || {};
+                const slug = (m.slug || "welt").replace(/[^a-z0-9_-]/gi, "");
+                this.triggerStateDownload(this.buildStateSnapshot(), `anazh-realm-${slug}.json`);
+                this.journalAppend("share", `Ich wurde als Datei nach außen getragen.`);
+            });
+        }
+        if (importBtn) {
+            importBtn.addEventListener("click", () => this.openStateFilePicker());
+        }
+        this.updateWorldInfo();
+    }
+
+    updateWorldInfo() {
+        const info = document.getElementById("world-info");
+        const recent = document.getElementById("world-journal-recent");
+        if (!info) return;
+        const m = this.state.worldMeta || {};
+        const ageDays = m.bornAt ? Math.floor((Date.now() - m.bornAt) / 86400000) : 0;
+        const parents = Array.isArray(m.parentWorlds) ? m.parentWorlds.length : 0;
+        const idShort = (m.worldId || "?").slice(0, 8);
+        const archCount = (this.state.architectures || []).length;
+        const bpCount = Object.keys(this.state.blueprints || {}).length;
+        const journalCount = (this.state.worldJournal && this.state.worldJournal.entries.length) || 0;
+        info.innerHTML = "";
+        const line1 = document.createElement("div");
+        line1.textContent = `Name: ${m.slug || "(noch namenlos)"}  |  ID: ${idShort}…`;
+        const line2 = document.createElement("div");
+        line2.textContent = `Alter: ${ageDays} Tag${ageDays === 1 ? "" : "e"}  |  Eltern-Welten: ${parents}`;
+        const line3 = document.createElement("div");
+        line3.textContent = `Inventar: ${archCount} Bauwerke, ${bpCount} Baupläne, ${journalCount} Erinnerungen`;
+        info.appendChild(line1);
+        info.appendChild(line2);
+        info.appendChild(line3);
+        if (recent) {
+            recent.innerHTML = "";
+            const last3 = (this.state.worldJournal.entries || []).slice(-3);
+            if (last3.length === 0) {
+                recent.textContent = "Noch keine Erinnerungen geschrieben.";
+            } else {
+                const title = document.createElement("div");
+                title.textContent = "Letzte Erinnerungen:";
+                recent.appendChild(title);
+                for (const e of last3) {
+                    const row = document.createElement("div");
+                    row.textContent = `· ${e.text}`;
+                    recent.appendChild(row);
+                }
+            }
+        }
     }
 
     isSaveServerHost() {
@@ -7538,6 +7690,8 @@ class AnazhRealm {
         this.llmLoadPersisted();
         this.initLlmUI();
         this.ensureWorldMeta();
+        // Welle 3 F — Welt-Info-Sektion im Welt-Drawer.
+        this.initWorldInfoUI();
         try {
             await this.core.initPhysics();
             this.log("Physik erfolgreich initialisiert", "INFO");
@@ -8051,6 +8205,9 @@ class AnazhRealm {
                     this.nexus.processOptimization({ fps: this.state.fps });
                 }
                 this.journalTick(currentTime);
+                // Welle 3 F — Welt-Info nur alle 5 s aktualisieren (gleicher
+                // Takt wie selfAwareness; DOM-Cost ist gering aber nicht null).
+                this.updateWorldInfo();
             }
             if (
                 this.nexus &&
