@@ -329,18 +329,187 @@ Pro Session: 1-2 Teilschritte. Reflexions-Pause zwischen den Blöcken (6.A→6.E
 
 ---
 
-## §10 — Offene Fragen für den Schöpfer
+## §10 — Schöpfer-Entscheidungen (13.05.2026)
 
-Bei Welle-6-Start ehrlich klären:
+Der Schöpfer hat mir bei den sechs offenen Fragen freie Hand gelassen — „entscheide was cool ist, authentisch, antik mit modern verschmelzend". Hier meine Entscheidungen mit kurzer Begründung. Wer das später anders sieht, ändert es bewusst.
 
-1. **Modi**: ist „Survival" wirklich gewünscht, oder soll die Welt grundsätzlich friedlich bleiben (und Survival nur als Sonderfall existieren)? Vision §1 spricht von Co-Creation, nicht Konflikt — vielleicht ist Survival nicht der richtige Modus-Name, sondern eher „Konsequenz-Modus" mit positiveren Folgen statt nur Bestrafung.
+### §10.1 — Spiel-Modi-Namen: `frieden` / `pfad` / `schöpfer`
 
-2. **Stat-Sichtbarkeit**: sollen HP/Speed/Damage als Zahlen sichtbar sein (RPG-Stil), oder nur als Farb-Sättigung / Auren? Letzteres würde besser zur Painterly-UX passen.
+Statt „Friedlich / Survival / Kreativ":
+- **frieden** — keine HP, keine Stamina, Kreaturen freundlich, alle Baupläne verfügbar. (Original „friedlich" verkürzt.)
+- **pfad** — der frühere „Survival". Spieler geht einen Pfad mit Konsequenz: Stamina-Verbrauch, Verletzungen, Inventar-Knappheit, Kreaturen mit eigener Agenda. *Pfad* statt *Survival*, weil der Vibe ist: man wandert, lernt, wird besser — nicht „überlebe".
+- **schöpfer** — das frühere „Kreativ". Voll-Zugang, fliegen toggelbar, kein Schaden, alles instant. Name spiegelt die Vision (Mensch = Null = Schöpfer).
 
-3. **Tod**: in Survival mit HP=0 — was passiert? Respawn an Welt-Genesis-Position? Oder erscheint die Welt mit veränderter Stimmung („sorrow"-Achse +0.5)? Letzteres wäre konsequent vision-treu.
+DSL-Op: `set_mode(frieden|pfad|schöpfer)`. Save: `state.gameMode = "pfad"` (default frieden für neue Welten, weil Welt erst-Begegnung nicht hostil sein soll).
 
-4. **CAD-Komplexität**: soll der Editor wirklich Tinkercad-artig werden, oder ein bisschen einfacher (drag-only, kein Snap, kein Visual-Connection)? Es gibt einen Punkt, an dem 6.B teurer wird als der Wert für eine Sandbox.
+### §10.2 — Stats-Sichtbarkeit: Auren default, Zahlen bei Inspect
 
-5. **Min-Regel** (alt 6.7): muss vor 6.D fallen. Vorschlag: Hybrid (Polier-Verbesserung für Werkzeuge, Min bleibt für Verbindungs-Last) — bestätigen?
+Default-Anzeige: subtile Aura um Spieler-Avatar (HSL-Hue aus dominanter Tag-Achse, Saturation aus HP%/MaxHP). Werkzeug glüht leicht in seiner opClass-Farbe. Rüstung zeigt Material-Tint.
 
-6. **Reihenfolge**: §8 ist mein Vorschlag. Wenn du ihn anders sehen würdest (z. B. 6.D zuerst, weil Stats die Welt grundlegender verändern), explizit sagen.
+Bei Hover über Avatar/Werkzeug/Rüstung-Slot → Tooltip mit nummerischen Werten ("HP 87/120 · Speed 11.4 · Präzision 0.83"). Bei Klick auf Avatar → Inspect-Panel mit voller Stat-Auflistung + Boost-Liste + Quellen-Aufschlüsselung ("HP 120 = 50 base + 60×dichte + 30×härte_durch_Rüstung").
+
+**Antike trifft modern**: Auren = mystisch/antik, Inspect-Zahlen = analytisch/modern. Beide gleichzeitig sichtbar nur bei expliziter Wahl. Default ist gefühlt, nicht gerechnet.
+
+### §10.3 — Tod-Behandlung: Phönix-Wandlung mit Welt-Trauer
+
+**SWOT der vier Optionen**:
+
+| Option | S | W | O | T |
+|---|---|---|---|---|
+| Klassisch Respawn | vertraut, schnell zurück | Vision-fremd | – | „Game Over"-Vibe, RPG-Defaultismus |
+| Welt trauert (sorrow +0.5, Spieler erwacht) | Vision-treu, narrativ, emotional | komplex | Tod wird Welt-Erinnerung, Journal-Eintrag | Spieler verwirrt wenn nicht klar erklärt |
+| Seele wandert (Tod = Phönix-Wechsel) | mythologisch, fraktal | Phönix-Seelen-Spezifizität schwächer | Antik: „Tod ist Verwandlung" | – |
+| Kein Tod (Bewusstlosigkeit + Heilung) | sanft, friedlich | konsequenz-leicht | – | eintönig |
+
+**Entscheidung — Hybrid „Phönix wandelt, Welt trauert"**:
+
+Wenn HP=0 im `pfad`-Modus:
+1. Spieler-Seele wechselt automatisch auf `phönix` für 5 Minuten (Cooldown im Save)
+2. HP regeneriert sich während dieser Zeit langsam zurück
+3. Emotion-Welt-Achsen: `sorrow +0.3` + `awe +0.2` (Wandlung ist beides)
+4. Journal-Eintrag: `Die ${alteSeele} fiel hier. Eine Flamme erhob sich.`
+5. Nach 5 Min: Spieler kann manuell zur ursprünglichen Seele zurück (oder bleibt Phönix wenn ihm das gefällt)
+
+Im `frieden`-Modus: HP existiert nicht, also kein Tod.  
+Im `schöpfer`-Modus: kein Tod, Welt-Trauer trotzdem als optionales narratives Element triggerbar via DSL.
+
+Vision-Anbindung: drei der Tag-Achsen werden hier verwoben — `chaos` (verlust) + `awe` (verwandlung) + `hope` (regeneration). Tod ist nicht Strafe, sondern Welt-Erinnerung + Spieler-Transformation.
+
+### §10.4 — CAD-Komplexität: Min Viable Magic
+
+**Entscheidung — bewusst minimal, drei Kernfeatures**:
+
+1. **3D-Preview-Pane** (300×300px, OrbitControls)
+2. **Drag-Items** aus Shape-Sidebar in Preview → neuer Part am Ursprung
+3. **Grid-Snap auf 0.5-Einheiten** (Toggle G-Taste)
+
+**NICHT in V1**: Boolean-Operationen (Union/Subtract), MultiSelect, Group, Symmetrie-Snap, Part-Snap auf andere Parts, kopieren-einfügen. Wer das braucht, geht zum Code-Editor (anazhRealm.js direkt). Das CAD ist für magisches Stöbern, nicht für CAD-Profis.
+
+**Vision-Anbindung**: das ist ein Sandbox für Kinder-Wunder, nicht für Ingenieure. Wer ein Schwert baut, soll dabei lächeln, nicht stirnrunzeln. Wenig Knöpfe = wenig Hürden zur Magie.
+
+### §10.5 — Min-Regel-Hybrid
+
+**Erklärung der heutigen Min-Regel** (W4-P3): jeder Part hat eine `opChain` (Liste von Werkzeug-Anwendungen). Die Part-Präzision = MIN(Werte der Chain). Wenn man mit Hand grob beginnt (cap 0.4), dann mit Polierscheibe (cap 0.97) feinarbeitet — die Hand zieht den Wert auf 0.4 fest, die Polierscheibe ändert nichts.
+
+**Problem**: kein Spielraum für Lernen + Reparatur. Schlechter erster Schritt = nicht mehr aufholbar.
+
+**Hybrid-Vorschlag (jetzt entschieden)**:
+
+Für **Werkzeug-opChain bei Part-Präzision** (W4-P3):
+- Statt strikt min: **`precision = min + (max − min) × decay^N`** wo N = Schritte unter min, decay = 0.7
+- In Worten: schlechte Anfangsarbeit kann durch 4-5 hochwertige Schritte teilweise gehoben werden, aber nie ganz aufgeholt
+- Beispiel: Hand 0.4 → Hammer 0.7 → Feile 0.85 → Polierscheibe 0.97. Min wäre 0.4. Hybrid: 0.4 + (0.97 − 0.4) × 0.7³ = 0.4 + 0.57 × 0.343 = 0.595. Polieren hat geholfen, aber die initiale Hand-Arbeit prägte das Werk.
+
+Für **Verbindungs-Last** (W5-A) und **Compound-Tags** (W5-B): **Min/Max-Aggregation bleibt streng** — Verbindungen sind physikalisch (Mörtel kann nicht nachträglich verstärkt werden), Tags sind emergent (Spitze richtet, oder nicht).
+
+**Vision-Anbindung**: „der erste Schlag prägt die Form, die letzte Politur prägt den Glanz." Antik-handwerklich. Der Spieler kann durch Sorgfalt + Geduld kompensieren, nicht beliebig. Bestraft Faulheit, belohnt Hingabe.
+
+### §10.6 — Reihenfolge (entschieden)
+
+1. **6.A1 + 6.A2** (Wall-Sliding + Erdung) — kleine Gewinne, große UX-Wirkung. 1 Session.
+2. **6.A4 + 6.A5** (Raycast-Place + Stabilität) — Bauen wird vorhersehbar. 1 Session.
+3. **6.E1 + 6.E2** (Fähigkeit-Beschreibung + Intro) — Welt wird lesbar, Onboarding kommt. 1 Session.
+4. **6.F1 + 6.F2** (visuelle Linien + Brech-Warning) — Crafting wird sichtbar. 2 Sessions.
+5. **6.D** (Stat-System komplett) — **der Vision-Pfeiler**. 3-4 Sessions.
+6. **6.G Welt-Sinne — Phase 1** (siehe §11): Kollisionen für fliegende Inseln + Bäume. 1-2 Sessions.
+7. **6.C2** (Spiel-Modi frieden/pfad/schöpfer) — nutzt das Stat-System. 1 Session.
+8. **6.C1 + 6.A3 + 6.C3** (Inventar + Maus-Aktionen + Keybindings-UI) — Konventions-Block. 2-3 Sessions.
+9. **6.B** (CAD-Werkstatt — minimal magic). 2 Sessions.
+10. **6.G Welt-Sinne — Phase 2** (Schatten + Wasser + Höhlen + Sterne). 3-4 Sessions.
+11. **6.F3 + 6.F4 + 6.F5** (Energie + Kreaturen + Constraints) — Crafting-Tiefe. 4-5 Sessions.
+
+**Gesamt-Schätzung**: 20-25 Sessions, verteilt auf 4-5 Monate Echtzeit.
+
+Logik der Reihenfolge:
+- **Polish zuerst** (1-2): das was heute am meisten stört. Sofort fühlbar.
+- **Lesbarkeit + sichtbares Crafting** (3-4): Spieler versteht, was die Welt tut.
+- **Stat-System (5)** — Vision-Hebel. Nach Lesbarkeit, weil Stats erst sichtbar gemacht werden müssen, um sinnvoll zu sein.
+- **Welt-Sinne Phase 1 (6)** — Kollisionen für Inseln+Bäume sind kleine Eingriffe, große Wirkung.
+- **Modi (7)** — braucht Stats.
+- **Inventar+Keys (8)** — strukturelle UX.
+- **CAD (9)** — UX-Vertiefung, nach Konventionen-Block.
+- **Welt-Sinne Phase 2 (10)** — visuelle Politur, kommt nahe ans Finale.
+- **Crafting-Tiefe (11)** — schwerster Brocken zuletzt, weil andere Schichten als Fundament gebraucht werden.
+
+---
+
+## §11 — Welle 6.G: Welt-Sinne (visuelle + physikalische Politur)
+
+Nachgereicht 13.05.2026 vom Schöpfer. Diese Liste macht die Welt **körperlich vollständig** — heute fehlen ein paar Sinne, die jedes andere 3D-Spiel hat. Polish, aber wichtig fürs Finale.
+
+### 6.G1 — Fliegende Inseln als kollidierbares Terrain (~1 Session)
+
+**Heute**: `spawnIslands` (siehe anazhRealm.js) erstellt schwebende Insel-Meshes als rein dekorativ. Sie haben keine Kollision — Spieler fällt durch.
+
+**Lösung**: jede Insel bekommt ein `btBvhTriangleMeshShape` aus ihren echten Vertices (selbes Muster wie Chunks). Insel-Mesh + Body bleiben gekoppelt, Insel-Position wird im `state.rigidBodies`-NICHT-Set gehalten (Visual = Collision bei Position 0,0,0, Vertices in Welt-Koords — siehe CLAUDE.md Gotcha über Chunks).
+
+**Test**: Spieler springt auf Insel → erwartet `playerMesh.position.y > inselY + 0.5` nach Landung.
+
+### 6.G2 — Bäume mit Kollision (~0.5 Session)
+
+**Heute**: Bäume sind kosmetische Single-Meshes ohne Body.
+
+**Lösung**: pro Baum ein `btCylinderShape` als Stamm-Kollider, Höhe = Baum-Höhe, Radius = 0.4. Krone bleibt kollisionsfrei (Spieler kann durch Blätter).
+
+**Caveat**: bei vielen Bäumen kostet das Physik-Performance. Cap auf sichtbare Bäume + Distance-Culling (analog Architekturen).
+
+### 6.G3 — Schatten (~1-2 Sessions)
+
+**Heute**: keine Schatten, Welt fühlt sich „kontaktlos" an.
+
+**Lösung**: Three.js `DirectionalLight` mit `castShadow=true`, Shadow-Map 1024×1024 (oder 2048 für gehobenere Hardware), PCF-Soft-Shadows. Schatten-Empfänger: alle Architekturen, Bäume, Chunks. Schatten-Werfer: alle Objekte über dem Boden.
+
+**Performance**: Shadow-Maps sind teuer. Toggle in Einstellungen (Standard: an, deaktivierbar). FOV der Shadow-Camera auf sichtbares Umfeld begrenzen (~30 Einheiten Radius um Spieler).
+
+### 6.G4 — Shader-Erweiterungen (~1 Session)
+
+**Heute**: Terrain ist `MeshBasicMaterial` (kein Licht-Effekt), Architekturen ähnlich.
+
+**Lösung-Skizze**: Wechsel auf `MeshLambertMaterial` oder leichtgewichtigen Custom-Shader mit:
+- Subtile Höhe-Tinting (höher = blasser, tiefer = sattier — antik-malerischer Look)
+- Wind-Animation für Bäume (Vertex-Shader-Wackeln)
+- Glüh-Effekt für hochpräzise Compounds (W4 P3 Welt-Effekt visuell verstärken)
+
+**Caveat**: Custom-Shader müssen mit CSP `'unsafe-eval'`-Verbot klarkommen (kein eval). Three.js generiert Shader aus String-Concatenation, das ist OK. Aber MeshBasicMaterial mit modifier callback wäre Vorsicht.
+
+### 6.G5 — Himmel-Sterne stabilisieren + Variation (~0.5 Session)
+
+**Heute**: Galaxie-Skybox flackert beim Bewegen — die Sterne werden offenbar in Welt-Koordinaten gerendert statt in Kamera-Raum.
+
+**Diagnose**: vermutlich der `createGalaxySkybox()`-Pfad. Sterne sollten in Kamera-folgendem Coordinate-Space gerendert werden, nicht in Welt-Koords (die ihre Position relativ zur Kamera ändern → Aliasing).
+
+**Lösung**:
+- Skybox-Mesh hat Position = `camera.position` jeden Frame (folgt mit, statt fest)
+- Sterne-Punkte werden im Vertex-Shader transformiert mit Identity-Translation
+- Variation: 3 verschiedene Stern-Typen (groß/mittel/klein) mit unterschiedlichen Farben (warm/kalt/grünlich) und Helligkeits-Falloff
+
+### 6.G6 — Terrain: Höhlen + Überhänge + Klippen (~2-3 Sessions, anspruchsvoll)
+
+**Heute**: Terrain ist Heightfield (eine Höhe pro X/Z-Koordinate). Höhlen + Überhänge sind topologisch ausgeschlossen.
+
+**Lösung-Skizze**: 
+- 2D-Heightfield bleibt für die Grundebene
+- Höhlen + Überhänge als **modify_terrain-Erweiterung** mit `op.type = "carve_cavity"` — schnitzt einen Hohlraum ins Terrain mit metaball-artigem Falloff
+- Klippen entstehen organisch durch `caveNoise`-Modifier (bereits in `_terrainHeightAtWorld`) — verstärken
+- Pro-Chunk-Delta speichert auch Carve-Ops (gleiche Datenstruktur wie modify_terrain)
+
+**Caveat**: btBvhTriangleMeshShape kann durch Höhlen geometrisch teuer werden (mehr Triangles). Bei wenigen Höhlen pro Chunk akzeptabel; bei massivem Carving evtl. LOD.
+
+**Vision-Anbindung**: Welt wird begehbar in drei Dimensionen. Wer einen Tempel im Berg baut, kann ihn betreten.
+
+### 6.G7 — Wasser (~2 Sessions)
+
+**Heute**: kein Wasser. Wetter `rainy` ändert nur Skybox + Stimmung.
+
+**Lösung**:
+- `state.water` mit pro-Chunk Wasser-Höhe (eigene Layer, analog Heightfield)
+- Animiertes Wasser-Mesh: niedrig-aufgelöste Plane mit Wellen-Vertex-Shader
+- Wasser-Tag-Profile: hohe `fließend`, hohe `magieleitung`, niedrig `dichte`
+- Eintauchen: Spieler unter Wasser-Höhe → Bewegung gedämpft, Stamina verbraucht schneller (`pfad`-Modus), Atem-Anzeige
+- DSL-Ops `fill_water(x, z, r, height)` und `drain_water(x, z, r)` — Wasser ist auch modifizierbar
+
+**Vision-Anbindung**: Wasser ist im Hylomorphismus-System genau wie Stein und Eisen — ein Material mit Tag-Profil, das in Compounds (Brunnen, Aquädukte, Flüsse) verwendbar ist.
+
+---
+
+
