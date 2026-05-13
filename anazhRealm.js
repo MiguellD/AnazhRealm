@@ -373,6 +373,16 @@ class AnazhRealm {
                     "emotion:chaos": -Infinity,
                 },
                 boostLastTick: -Infinity,
+                // Welle 6.D Etappe 3a — Tod-Behandlung („Phönix-Wandlung mit
+                // Welt-Trauer", wave-6-design §10.3). Bei HP=0 wechselt die Seele
+                // für 5 min automatisch auf phoenix, HP regeneriert linear zurück,
+                // Welt fühlt sorrow + awe. `phoenixUntil = -Infinity` heißt:
+                // keine aktive Wandlung. `preDeathSoul` merkt die vorherige Seele
+                // für den Rückwandel.
+                phoenixUntil: -Infinity,
+                phoenixDurationSeconds: 300,
+                preDeathSoul: null,
+                deathLastTick: -Infinity,
                 // Schicht 1 — Pfad-Buckets. Histogramm wo der Spieler sich
                 // aufhält (Höhe, Distanz, Wetter, Aktivität). Wird im Loop
                 // alle pathSampleInterval Sekunden inkrementiert; alle Achsen
@@ -459,6 +469,12 @@ class AnazhRealm {
         // Built-in-Seelen liegen weiter in `playerSoulDefs`; Custom-Seelen
         // werden hier persistiert.
         this.state.customSouls = {};
+        // Welle 6.D Etappe 3a — Konsumables (DSL-definierte „Tränke"). Map
+        // `name → {name, label, tagBonus, durationSeconds, createdAt}`. Cap 32.
+        // Aktivierung via `apply_boost(name)` → fügt einen Boost via Etappe-2-
+        // System hinzu. Kein eigener Inventar-State in V1 — nur Definition +
+        // Aktivierung. Inventar/Schluck-UI folgt mit 6.C1 (Inventar).
+        this.state.consumables = {};
         // Welle 4 Phase 1+3 — Built-in-Parts ohne Material auf „stein"
         // mappen; ohne opChain auf eine billige Default-Kette. Built-ins
         // bleiben damit visuell wie vorher; die Tag-Berechnung greift.
@@ -781,7 +797,18 @@ class AnazhRealm {
     // GANZE Broadcast übersprungen (sonst würde z. B. ["chain", weather,
     // player_speed] beim Empfänger den Speed mit-ändern).
     static get NON_BROADCASTABLE_OPS() {
-        return new Set(["player_jump_power", "player_speed", "player_size_mul", "player_soul", "set_visible"]);
+        return new Set([
+            "player_jump_power",
+            "player_speed",
+            "player_size_mul",
+            "player_soul",
+            "set_visible",
+            // Welle 6.D Etappe 3a — Schaden + Konsum sind Spieler-private Aktionen
+            // (Mitspieler in Multi-User-Welt sollen nicht Schaden vom anderen
+            // bekommen). Tod-Wandlung läuft lokal.
+            "damage",
+            "apply_boost",
+        ]);
     }
 
     _dslContainsAnyOp(node, opSet) {
@@ -1094,6 +1121,36 @@ class AnazhRealm {
                     });
                 }
             },
+            // Welle 6.D Etappe 3a — Konsumable definieren. Spieler kann ein
+            // „Trank-Rezept" anlegen: tagBonus-Map + Dauer in Sekunden.
+            // Aktivierung via apply_boost(name).
+            define_consumable: ([name, tagBonus, durationSeconds, label], ctx) => {
+                const result = this.createOrUpdateConsumable(name, tagBonus, durationSeconds, label);
+                if (ctx && ctx.log) {
+                    ctx.log.push({
+                        event: result.ok ? "defined_consumable" : "define_consumable_failed",
+                        name: result.name,
+                        reason: result.reason,
+                    });
+                }
+                if (result.ok) {
+                    this.journalAppend("growth", `Ein neues Konsumabel entstand: ${result.name}.`, {
+                        name: result.name,
+                    });
+                }
+            },
+            // Welle 6.D Etappe 3a — Konsumable aktivieren. Greift Etappe-2-Boost-
+            // System; source = `consume:<name>` für Dedupe.
+            apply_boost: ([name], ctx) => {
+                const result = this.activateConsumable(name);
+                if (ctx && ctx.log) {
+                    ctx.log.push({
+                        event: result.ok ? "boost_applied" : "apply_boost_failed",
+                        name,
+                        reason: result.reason,
+                    });
+                }
+            },
             // Welle 6.D Etappe 1.6 — Schöpfer-Op für eigene Seelen. bodyParts
             // wird durch `validateBlueprintParts` geprüft (gleiche Whitelist,
             // gleiche Caps wie Bauwerke — eine Sprache). Der Spieler kann eigene
@@ -1315,6 +1372,13 @@ class AnazhRealm {
             },
             player_speed: ([value]) => {
                 this.state.speed = c(value, 1, 30);
+            },
+            // Welle 6.D Etappe 3a — Schaden zufügen (DSL-getrieben). Schöpfer-
+            // Werkzeug + Test-Hook. Welt-Hazards (6.G) + Kreaturen (6.H) hängen
+            // sich später an damagePlayer. Bewusst NICHT im atomic-Pool.
+            damage: ([amount, source], ctx) => {
+                const dealt = this.damagePlayer(c(amount, 0, 1000), source || "dsl");
+                if (ctx && ctx.log) ctx.log.push({ event: dealt ? "player_damaged" : "damage_ignored", amount });
             },
             player_size_mul: ([factor]) => {
                 const f = c(factor, 0.5, 2);
@@ -7739,6 +7803,8 @@ class AnazhRealm {
             // Charaktere des Schöpfers). Built-ins sind in playerSoulDefs
             // verdrahtet und werden NICHT persistiert.
             customSouls: this.state.customSouls || {},
+            // Welle 6.D Etappe 3a — Konsumable-Rezepte persistieren.
+            consumables: this.state.consumables || {},
             // Welle 4 Phase 3: Werkzeug-Besitz. Starter-Werkzeuge werden bei
             // jedem Init wieder verfügbar, aber Persistenz erlaubt zukünftig
             // eigen-geschmiedete (Welle 6) zu überleben.
@@ -8536,6 +8602,16 @@ class AnazhRealm {
                 this.playerSoulDefs[state.playerSoul] ||
                 (this.state.customSouls && this.state.customSouls[state.playerSoul]);
             if (known) this.applyPlayerSoul(state.playerSoul);
+        }
+        // Welle 6.D Etappe 3a — Konsumables aus Save rekonstruieren (defensiv
+        // über createOrUpdateConsumable, das die tagBonus + duration prüft).
+        if (state.consumables && typeof state.consumables === "object") {
+            this.state.consumables = {};
+            for (const key of Object.keys(state.consumables)) {
+                const c = state.consumables[key];
+                if (!c) continue;
+                this.createOrUpdateConsumable(key, c.tagBonus, c.durationSeconds, c.label);
+            }
         }
         // Ring 6: Bau-Werke wiederherstellen. Bestehende Strukturen werden
         // tief disposed, dann jede aus {type, position, seed} neu gebaut.
@@ -9996,6 +10072,102 @@ class AnazhRealm {
         if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
     }
 
+    // Welle 6.D Etappe 3a — Schaden zufügen. Quellen: DSL-Op `damage`,
+    // zukünftige Welt-Hazards (6.G), feindliche Kreaturen (6.H). HP-Reduktion
+    // wird durch heatResist (für Feuer/Hitze-Quellen) gedämpft.
+    damagePlayer(amount, source) {
+        if (!this.state.player || typeof amount !== "number" || !Number.isFinite(amount)) return false;
+        const value = Math.max(0, Math.min(1000, amount));
+        if (value === 0) return false;
+        // Wenn aktuell in Phönix-Wandlung: kein doppelter Tod (Spieler ist
+        // unverwundbar während der Heilungs-Phase, das ist Teil der Mythos).
+        const now = performance.now() / 1000;
+        if (this.state.player.phoenixUntil > now) return false;
+        // Resistenz: feuer/hitze-Quellen werden durch heatResist gedämpft.
+        const stats = this.state.player.stats || {};
+        let scaled = value;
+        if (typeof source === "string" && /heat|fire|feuer|hitze|flame|glut/i.test(source)) {
+            const resist = Math.max(0, Math.min(0.9, stats.heatResist || 0));
+            scaled = value * (1 - resist);
+        }
+        const hpBefore = Number(this.state.player.hp) || 0;
+        const hp = Math.max(0, hpBefore - scaled);
+        this.state.player.hp = hp;
+        this.log(
+            `Schaden ${scaled.toFixed(1)} (${source || "unbekannt"}) → HP ${hp.toFixed(0)}/${stats.hpMax || 0}`,
+            "INFO"
+        );
+        if (hp <= 0) this.triggerPhoenixDeath(source);
+        if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
+        return true;
+    }
+
+    // HP=0 → Phönix-Wandlung. Die alte Seele wird gemerkt, der Spieler-Avatar
+    // wechselt automatisch zur phoenix-Form, HP zurück auf max, Welt fühlt
+    // sorrow + awe. Nach `phoenixDurationSeconds` (Default 5 min) kann der
+    // Spieler manuell zurück (oder bleibt phoenix). Im Frieden-Modus (kommt
+    // mit 6.C2) wird HP nicht erreicht.
+    triggerPhoenixDeath(source) {
+        const now = performance.now() / 1000;
+        const oldSoul = this.state.player.soul;
+        // Doppelt-Trigger-Schutz: wenn bereits aktive Wandlung läuft, ignorieren
+        if (this.state.player.phoenixUntil > now) return;
+        this.state.player.preDeathSoul = oldSoul && oldSoul !== "phoenix" ? oldSoul : null;
+        this.state.player.phoenixUntil = now + (this.state.player.phoenixDurationSeconds || 300);
+        // Welt-Trauer: zwei Achsen schwingen mit, Tod ist Verlust + Wandlung.
+        if (this.state.player.emotions) {
+            this.state.player.emotions.sorrow = Math.min(1, (this.state.player.emotions.sorrow || 0) + 0.3);
+            this.state.player.emotions.awe = Math.min(1, (this.state.player.emotions.awe || 0) + 0.2);
+        }
+        // Phönix-Form aktivieren (recomputePlayerStats läuft automatisch in
+        // applyPlayerSoul, HP wird dabei auf neue hpMax gesetzt).
+        const oldLabel = this._getSoulDef(oldSoul) ? this._getSoulDef(oldSoul).label : oldSoul;
+        if (oldSoul !== "phoenix") this.applyPlayerSoul("phoenix");
+        else this.recomputePlayerStats(); // wenn bereits phoenix, nur HP refreshen
+        // Journal: einmalige Erinnerung pro Welt-Tod. Mehrfach-Tode bekommen
+        // den `seen`-Marker nicht (jeder Tod ist ein Ereignis).
+        this.journalAppend(
+            "loss",
+            `Die ${oldLabel || oldSoul} fiel ${source ? `(${source}) ` : ""}— eine Flamme erhob sich.`,
+            {
+                previousSoul: oldSoul,
+                source: source || null,
+                at: now,
+            }
+        );
+        this.log(`Phönix-Wandlung: ${oldSoul} → phoenix (${source || "Tod"})`, "INFO");
+        if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
+    }
+
+    // 1×/s tick: prüft, ob die Wandlung abgelaufen ist; während der Wandlung
+    // regeneriert HP linear (max in `phoenixDurationSeconds` Sekunden voll).
+    tickPhoenixDeath(currentTime) {
+        if (!this.state.player) return;
+        if (currentTime - (this.state.player.deathLastTick || -Infinity) < 1.0) return;
+        this.state.player.deathLastTick = currentTime;
+        const now = performance.now() / 1000;
+        const until = this.state.player.phoenixUntil || -Infinity;
+        if (until <= -Infinity || until <= 0) return;
+        if (now >= until) {
+            // Wandlungs-Phase vorbei. Spieler bleibt phoenix (er kann manuell
+            // via Dropdown/Chat zurückwechseln) — wer in der Phönix-Form
+            // bleiben möchte, weil ihm das gefällt, darf das.
+            this.state.player.phoenixUntil = -Infinity;
+            this.journalAppendOnce(
+                `phoenix_settled:${Math.floor(now / 60)}`,
+                "growth",
+                "Die Flamme hat sich beruhigt. Was bleibt, ist die Wahl der Form.",
+                { at: now }
+            );
+            return;
+        }
+        // Linear regen: hp += hpMax / duration jede Sekunde
+        const hpMax = this.state.player.hpMax || 100;
+        const duration = this.state.player.phoenixDurationSeconds || 300;
+        const regen = hpMax / duration;
+        this.state.player.hp = Math.min(hpMax, (this.state.player.hp || 0) + regen);
+    }
+
     // Welle 6.D Etappe 1.6 — Seele auflösen: erst Built-in, dann Custom.
     // Single-Pfad für alle Lese-Stellen (computePlayerStats, applyPlayerSoul,
     // renderPlayerStatsUI). Gibt null zurück wenn unbekannt.
@@ -10084,6 +10256,52 @@ class AnazhRealm {
             this.applyPlayerSoul(soulName);
         }
         if (typeof this.renderSoulEditorUI === "function") this.renderSoulEditorUI();
+    }
+
+    // Welle 6.D Etappe 3a — Konsumable definieren. Validiert tagBonus (nur
+    // MATERIAL_TAG_KEYS, ge-clamp ±1), duration (0.5..600 s), Cap 32 eigene.
+    createOrUpdateConsumable(name, tagBonus, durationSeconds, label) {
+        if (typeof name !== "string" || name.length === 0 || name.length > 40) {
+            return { ok: false, reason: "invalid_name" };
+        }
+        const safe = name.replace(/[^a-z0-9_-]/gi, "").slice(0, 40);
+        if (!safe) return { ok: false, reason: "invalid_name_after_sanitize" };
+        const cleanedBonus = {};
+        if (tagBonus && typeof tagBonus === "object") {
+            for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
+                const v = Number(tagBonus[tag]);
+                if (Number.isFinite(v) && v !== 0) cleanedBonus[tag] = Math.max(-1, Math.min(1, v));
+            }
+        }
+        if (Object.keys(cleanedBonus).length === 0) return { ok: false, reason: "no_tag_bonus" };
+        const dur = Math.max(0.5, Math.min(600, Number(durationSeconds) || 30));
+        if (!this.state.consumables) this.state.consumables = {};
+        const existing = this.state.consumables[safe];
+        const count = Object.keys(this.state.consumables).length;
+        if (!existing && count >= 32) return { ok: false, reason: "too_many_consumables" };
+        this.state.consumables[safe] = {
+            name: safe,
+            label: typeof label === "string" ? label.slice(0, 60) : safe.replace(/_/g, " "),
+            tagBonus: cleanedBonus,
+            durationSeconds: dur,
+            createdAt: performance.now() / 1000,
+        };
+        return { ok: true, name: safe };
+    }
+
+    // Eine Konsumable aktivieren — addet einen Boost via Etappe-2-System.
+    // Source ist `consume:<name>`, sodass Dedupe greift (zwei Doppelklicks
+    // verlängern statt zu duplizieren).
+    activateConsumable(name) {
+        const c = this.state.consumables && this.state.consumables[name];
+        if (!c) return { ok: false, reason: "not_found" };
+        const ok = this.addPlayerBoost({
+            source: `consume:${c.name}`,
+            tagDelta: c.tagBonus,
+            durationSeconds: c.durationSeconds,
+            label: c.label,
+        });
+        return { ok };
     }
 
     // Welle 6.D Etappe 1.6 — DSL-Pfad für eigene Seelen.
@@ -11109,19 +11327,44 @@ class AnazhRealm {
         return [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }];
     }
 
-    // Finale Präzision eines Parts: Minimum aller Op-Caps (Konzept §2.3,
-    // Kernregel). Der schlechteste Schritt deckelt das Ganze — eine
-    // Gussform-Kugel (0.5) bleibt 0.5, selbst wenn danach poliert wird,
-    // weil der Politur-Schritt keine Rauheit aus dem Guss entfernt.
+    // Finale Präzision eines Parts: Min-Regel-Hybrid (wave-6-design §10.5,
+    // Welle 6.D Etappe 3a).
+    //
+    // Vor Etappe 3a war es strict Math.min — schlechte Anfangsarbeit war
+    // nicht aufholbar (Konzept §2.3). Das war zu hart: kein Spielraum für
+    // Lernen + Geduld. Schöpfer-Entscheidung 13.05.2026 §10.5: hybrid mit
+    // decay 0.7.
+    //
+    //   precision = min + (max − min) × decay^N
+    //   wo N = Anzahl Schritte UNTERHALB des Min-Eintrags (chain.length − 1)
+    //   decay = PRECISION_DECAY = 0.7
+    //
+    // Beispiel: Hand(0.4) → Hammer(0.7) → Feile(0.85) → Polierscheibe(0.97)
+    //   min=0.4, max=0.97, N=3 → 0.4 + 0.57 × 0.343 = 0.595
+    //
+    // Bedeutung: „der erste Schlag prägt die Form, die letzte Politur den
+    // Glanz." Antik-handwerklich. Sorgfalt + Geduld kompensieren, aber nicht
+    // beliebig. Bestraft Faulheit, belohnt Hingabe. Für N=0 (eine Op) ist
+    // precision = min (kein hybrid-Bonus), wie zuvor. Min/Max-Aggregation
+    // für W5-A Verbindungs-Last + W5-B Compound-Tags bleibt strikt min/max.
     computePartPrecision(part) {
         if (!part || typeof part !== "object") return 0.4;
         if (!Array.isArray(part.opChain) || part.opChain.length === 0) return 0.4;
         let min = 1;
+        let max = 0;
+        let count = 0;
         for (const op of part.opChain) {
             const cap = Number(op && op.cap);
-            if (Number.isFinite(cap) && cap < min) min = cap;
+            if (!Number.isFinite(cap)) continue;
+            if (cap < min) min = cap;
+            if (cap > max) max = cap;
+            count++;
         }
-        return min;
+        if (count === 0) return 0.4;
+        if (count === 1 || max <= min) return min;
+        const decay = AnazhRealm.PRECISION_DECAY || 0.7;
+        const n = count - 1;
+        return min + (max - min) * Math.pow(decay, n);
     }
 
     // Mittlere Präzision eines Compounds (für Welt-Effekt-Schwellen).
@@ -13862,6 +14105,10 @@ class AnazhRealm {
             // 1×/s self-throttled — Emotion-Trigger, Resonance-Trigger, Ablauf.
             this.tickPlayerBoosts(currentTime);
 
+            // ### Phönix-Wandlung-Tick (Welle 6.D Etappe 3a) ###
+            // HP-Regen während aktiver Wandlung + Ablauf-Detection.
+            this.tickPhoenixDeath(currentTime);
+
             // ### Symphonie-Wetter-Layer (Ring 4) ###
             this.symphonyTick();
 
@@ -14579,6 +14826,12 @@ AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     magicResist: (t) => (t.magieleitung || 0) * 0.4 + (t.resoniert || 0) * 0.3,
     heatResist: (t) => (t.wärmeleitung || 0) * 0.5 - (t.brennbar || 0) * 0.3,
 });
+
+// Welle 6.D Etappe 3a — Min-Regel-Hybrid-Decay. precision = min + (max−min)
+// × decay^N (siehe computePartPrecision-Doc). 0.7 ist Schöpfer-Wahl; ein
+// 4-Schritt-Chain liefert ~59 % der Höchst-Präzision, eine reine Hand-Arbeit
+// (1 Schritt) bleibt bei min. Sorgfalt belohnt, aber nicht beliebig.
+AnazhRealm.PRECISION_DECAY = 0.7;
 
 // Welle 6.D Etappe 2 — Emotion-→-Tag-Mapping für Boosts. Jede der 6 Emotionen
 // koppelt an einen MATERIAL_TAG_KEY: hoch genug (>0.7), Welt-Reaktion = Tag-Delta

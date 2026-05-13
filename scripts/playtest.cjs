@@ -1460,7 +1460,10 @@ function startSaveServer() {
                             { tool: "polierscheibe", op: "polish", cap: 0.97 },
                         ],
                     };
-                    out.precisionIsMin = r.computePartPrecision(part1) === 0.4;
+                    // Welle 6.D Etappe 3a — Min-Regel-Hybrid: 2 Schritte (0.4, 0.97)
+                    // → 0.4 + 0.57 × 0.7 = 0.799 (nicht mehr strict min). Der
+                    // alte Pfad (strict min) wurde 13.05.2026 hybridisiert.
+                    out.precisionIsHybrid = Math.abs(r.computePartPrecision(part1) - (0.4 + 0.57 * 0.7)) < 0.01;
                     const part2 = { shape: "sphere", material: "quarz" }; // no opChain
                     out.precisionDefaultsTo04 = r.computePartPrecision(part2) === 0.4;
 
@@ -1618,7 +1621,10 @@ function startSaveServer() {
                 check("Welle 4 P3: MATERIAL_OP_COMPATIBILITY frozen", wave4p3Results.matCompatFrozen);
                 check("Welle 4 P3: WORLD_EFFECT_THRESHOLDS frozen", wave4p3Results.thresholdsFrozen);
                 check("Welle 4 P3: Stein erlaubt nur subtractive Ops", wave4p3Results.steinSubtractiveOnly);
-                check("Welle 4 P3: computePartPrecision = min(opChain.caps)", wave4p3Results.precisionIsMin);
+                check(
+                    "Welle 4 P3 (V7.72): computePartPrecision = Hybrid min+(max−min)×0.7^N (Etappe 3a)",
+                    wave4p3Results.precisionIsHybrid
+                );
                 check("Welle 4 P3: Default-Präzision 0.4 ohne opChain", wave4p3Results.precisionDefaultsTo04);
                 check("Welle 4 P3: applyOpToPart hängt Op an", wave4p3Results.applyOpAppends);
                 check("Welle 4 P3: Stein lehnt Hammer (plastic) ab", wave4p3Results.materialOpIncompat);
@@ -5500,6 +5506,241 @@ function startSaveServer() {
                     return out;
                 })
                 .catch(() => null);
+
+            // ### Welle 6.D Etappe 3a — Tod, Min-Regel-Hybrid, Konsumables ###
+            const wave6d3aResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
+                    const out = {};
+
+                    // --- Tod-Behandlung ---
+                    out.hasDamageMethod = typeof r.damagePlayer === "function";
+                    out.hasTriggerPhoenixMethod = typeof r.triggerPhoenixDeath === "function";
+                    out.hasTickPhoenixMethod = typeof r.tickPhoenixDeath === "function";
+                    out.hasPhoenixState = "phoenixUntil" in r.state.player;
+                    out.damageOpInNonBroadcast = C.NON_BROADCASTABLE_OPS.has("damage");
+
+                    // Setup
+                    const savedSoul = r.state.player.soul;
+                    if (savedSoul !== "human") r.applyPlayerSoul("human");
+                    r.state.player.phoenixUntil = -Infinity;
+
+                    const hpMax = r.state.player.hpMax;
+                    const hpBefore = r.state.player.hp;
+                    r.damagePlayer(20, "test");
+                    out.hpDropped = r.state.player.hp === hpBefore - 20;
+                    // Heat-Quelle: heatResist (Mensch hat ~0.22) dämpft
+                    const hpAfterHeat = r.state.player.hp;
+                    r.damagePlayer(20, "fire-test");
+                    const hpDelta = hpAfterHeat - r.state.player.hp;
+                    out.heatResistReducesDamage = hpDelta < 20 - 1;
+
+                    // Tod-Trigger
+                    r.damagePlayer(99999, "kill-test");
+                    out.killTriggersPhoenix = r.state.player.soul === "phoenix";
+                    out.phoenixUntilSet = r.state.player.phoenixUntil > performance.now() / 1000;
+                    out.preDeathSoulRemembered = r.state.player.preDeathSoul === "human";
+                    out.weltTrauerSorrow = r.state.player.emotions.sorrow > 0.25;
+                    out.weltTrauerAwe = r.state.player.emotions.awe > 0.15;
+                    out.hpRestoredAfterDeath = r.state.player.hp > 0;
+                    // Journal-Eintrag
+                    const journalEntries = r.state.worldJournal && r.state.worldJournal.entries;
+                    out.journalHasLossEntry =
+                        Array.isArray(journalEntries) &&
+                        journalEntries.some((e) => e.type === "loss" && /fiel/.test(e.text || ""));
+
+                    // Doppelt-Tod-Schutz
+                    const hpInPhoenix = r.state.player.hp;
+                    const beforeJournalCount = journalEntries.length;
+                    r.damagePlayer(99999, "kill-test-2");
+                    const afterJournalCount = journalEntries.length;
+                    out.deathDoubleProtected = afterJournalCount === beforeJournalCount;
+                    // (HP sollte nicht weiter sinken weil phoenixUntil > now)
+                    out.hpUntouchedDuringPhoenix = Math.abs(r.state.player.hp - hpInPhoenix) < 1;
+
+                    // tickPhoenixDeath regeneriert HP linear
+                    r.state.player.hp = 10;
+                    r.state.player.deathLastTick = -Infinity;
+                    r.tickPhoenixDeath(performance.now() / 1000);
+                    out.tickRegenerates = r.state.player.hp > 10;
+
+                    // Reset
+                    r.state.player.phoenixUntil = -Infinity;
+                    r.state.player.preDeathSoul = null;
+                    r.state.player.emotions.sorrow = 0;
+                    r.state.player.emotions.awe = 0;
+                    r.state.player.hp = r.state.player.hpMax;
+
+                    // --- Min-Regel-Hybrid ---
+                    out.hasPrecisionDecay = typeof C.PRECISION_DECAY === "number";
+                    out.precisionDecayValue = C.PRECISION_DECAY;
+                    out.precisionDecayIs07 = Math.abs(C.PRECISION_DECAY - 0.7) < 0.001;
+                    // Beispiel aus wave-6-design §10.5
+                    const examplePart = {
+                        shape: "box",
+                        material: "stein",
+                        opChain: [
+                            { tool: "hand", op: "knap", cap: 0.4 },
+                            { tool: "hammer", op: "hammer", cap: 0.7 },
+                            { tool: "feile", op: "file", cap: 0.85 },
+                            { tool: "polierscheibe", op: "polish", cap: 0.97 },
+                        ],
+                    };
+                    const exPrec = r.computePartPrecision(examplePart);
+                    // Erwartung: 0.4 + (0.97-0.4) × 0.7^3 = 0.4 + 0.57 × 0.343 = ~0.595
+                    out.hybridExampleValue = exPrec;
+                    out.hybridMatchesDoc = Math.abs(exPrec - 0.595) < 0.01;
+                    // Edge: 1 Schritt → min (kein Hybrid-Effekt)
+                    const onePart = { shape: "box", material: "stein", opChain: [{ cap: 0.4 }] };
+                    out.oneStepReturnsMin = Math.abs(r.computePartPrecision(onePart) - 0.4) < 0.001;
+                    // Edge: leere Chain → 0.4
+                    const noChainPart = { shape: "box", material: "stein", opChain: [] };
+                    out.emptyChainReturnsDefault = Math.abs(r.computePartPrecision(noChainPart) - 0.4) < 0.001;
+                    // Diskrimination: Hybrid liefert STRIKT MEHR als reine min für ≥2 Schritte
+                    const twoPart = {
+                        shape: "box",
+                        material: "stein",
+                        opChain: [{ cap: 0.4 }, { cap: 0.9 }],
+                    };
+                    const twoPrec = r.computePartPrecision(twoPart);
+                    out.twoStepAboveMin = twoPrec > 0.4 && twoPrec < 0.9;
+
+                    // --- Konsumables ---
+                    out.hasConsumablesContainer =
+                        r.state.consumables && typeof r.state.consumables === "object";
+                    out.hasCreateConsumableMethod = typeof r.createOrUpdateConsumable === "function";
+                    out.hasActivateMethod = typeof r.activateConsumable === "function";
+                    // define_consumable via DSL
+                    r.dslRun(
+                        ["define_consumable", "trank_des_lichts", { magieleitung: 0.3, resoniert: 0.2 }, 60, "Trank des Lichts"],
+                        { source: "test" }
+                    );
+                    const cn = r.state.consumables.trank_des_lichts;
+                    out.consumableDefined = !!cn;
+                    out.consumableTagBonus =
+                        cn && cn.tagBonus && Math.abs(cn.tagBonus.magieleitung - 0.3) < 0.001;
+                    out.consumableDuration = cn && cn.durationSeconds === 60;
+                    out.consumableLabel = cn && cn.label === "Trank des Lichts";
+
+                    // apply_boost via DSL → Boost im Array
+                    r.state.player.boosts = [];
+                    r.dslRun(["apply_boost", "trank_des_lichts"], { source: "test" });
+                    const b = r.state.player.boosts.find((x) => x.source === "consume:trank_des_lichts");
+                    out.applyBoostAddsBoost = !!b;
+                    out.boostTagBonus = b && Math.abs((b.tagDelta.magieleitung || 0) - 0.3) < 0.001;
+
+                    // Dedupe: zweimal apply_boost verlängert statt zu duplizieren
+                    r.dslRun(["apply_boost", "trank_des_lichts"], { source: "test" });
+                    const matching = r.state.player.boosts.filter(
+                        (x) => x.source === "consume:trank_des_lichts"
+                    );
+                    out.consumableDedupes = matching.length === 1;
+
+                    // Unknown name → kein Boost
+                    const beforeBoostCount = r.state.player.boosts.length;
+                    r.dslRun(["apply_boost", "nicht_da"], { source: "test" });
+                    out.unknownRejected = r.state.player.boosts.length === beforeBoostCount;
+
+                    // Non-broadcast: apply_boost ist in NON_BROADCASTABLE_OPS
+                    out.applyBoostNonBroadcast = C.NON_BROADCASTABLE_OPS.has("apply_boost");
+
+                    // Save-Round-Trip
+                    const snap = r.buildStateSnapshot();
+                    out.snapHasConsumables = !!(snap.consumables && snap.consumables.trank_des_lichts);
+
+                    // Cleanup
+                    r.state.consumables = {};
+                    r.state.player.boosts = [];
+                    if (savedSoul !== "phoenix") r.applyPlayerSoul(savedSoul);
+                    r.state.player.phoenixUntil = -Infinity;
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6d3aResults && !wave6d3aResults.error) {
+                // Tod-Behandlung
+                check("Welle 6.D Etappe 3a: damagePlayer-Methode existiert", wave6d3aResults.hasDamageMethod);
+                check("Welle 6.D Etappe 3a: triggerPhoenixDeath-Methode existiert", wave6d3aResults.hasTriggerPhoenixMethod);
+                check("Welle 6.D Etappe 3a: tickPhoenixDeath-Methode existiert", wave6d3aResults.hasTickPhoenixMethod);
+                check("Welle 6.D Etappe 3a: state.player.phoenixUntil existiert", wave6d3aResults.hasPhoenixState);
+                check(
+                    "Welle 6.D Etappe 3a: damage-Op in NON_BROADCASTABLE_OPS (privat)",
+                    wave6d3aResults.damageOpInNonBroadcast
+                );
+                check("Welle 6.D Etappe 3a: damagePlayer reduziert HP", wave6d3aResults.hpDropped);
+                check("Welle 6.D Etappe 3a: heatResist dämpft Feuer-Schaden", wave6d3aResults.heatResistReducesDamage);
+                check("Welle 6.D Etappe 3a: HP=0 → Phönix-Wandlung (soul=phoenix)", wave6d3aResults.killTriggersPhoenix);
+                check("Welle 6.D Etappe 3a: phoenixUntil > now nach Tod", wave6d3aResults.phoenixUntilSet);
+                check(
+                    "Welle 6.D Etappe 3a: preDeathSoul merkt vorherige Seele",
+                    wave6d3aResults.preDeathSoulRemembered
+                );
+                check("Welle 6.D Etappe 3a: Welt-Trauer — sorrow +0.3 nach Tod", wave6d3aResults.weltTrauerSorrow);
+                check("Welle 6.D Etappe 3a: Welt-Trauer — awe +0.2 nach Tod", wave6d3aResults.weltTrauerAwe);
+                check("Welle 6.D Etappe 3a: HP wird in Wandlung auf max gesetzt", wave6d3aResults.hpRestoredAfterDeath);
+                check(
+                    "Welle 6.D Etappe 3a: Journal hat 'loss'-Eintrag mit 'fiel'",
+                    wave6d3aResults.journalHasLossEntry
+                );
+                check(
+                    "Welle 6.D Etappe 3a: Doppelt-Tod-Schutz — zweiter damagePlayer in Wandlung wirkt nicht",
+                    wave6d3aResults.deathDoubleProtected
+                );
+                check(
+                    "Welle 6.D Etappe 3a: HP unangetastet während Wandlung",
+                    wave6d3aResults.hpUntouchedDuringPhoenix
+                );
+                check("Welle 6.D Etappe 3a: tickPhoenixDeath regeneriert HP", wave6d3aResults.tickRegenerates);
+                // Min-Regel-Hybrid
+                check("Welle 6.D Etappe 3a: PRECISION_DECAY-Konstante existiert", wave6d3aResults.hasPrecisionDecay);
+                check(
+                    "Welle 6.D Etappe 3a: PRECISION_DECAY == 0.7",
+                    wave6d3aResults.precisionDecayIs07,
+                    `value=${wave6d3aResults.precisionDecayValue}`
+                );
+                check(
+                    "Welle 6.D Etappe 3a: Hybrid-Beispiel aus Doc — 4 Stufen → ~0.595",
+                    wave6d3aResults.hybridMatchesDoc,
+                    `actual=${(wave6d3aResults.hybridExampleValue || 0).toFixed(3)}`
+                );
+                check("Welle 6.D Etappe 3a: 1 Schritt → reine min (kein Hybrid-Effekt)", wave6d3aResults.oneStepReturnsMin);
+                check(
+                    "Welle 6.D Etappe 3a: leere opChain → Default 0.4",
+                    wave6d3aResults.emptyChainReturnsDefault
+                );
+                check(
+                    "Welle 6.D Etappe 3a: Diskrimination — 2 Stufen liefern Wert zwischen min und max",
+                    wave6d3aResults.twoStepAboveMin
+                );
+                // Konsumables
+                check("Welle 6.D Etappe 3a: state.consumables-Container existiert", wave6d3aResults.hasConsumablesContainer);
+                check("Welle 6.D Etappe 3a: createOrUpdateConsumable-Methode existiert", wave6d3aResults.hasCreateConsumableMethod);
+                check("Welle 6.D Etappe 3a: activateConsumable-Methode existiert", wave6d3aResults.hasActivateMethod);
+                check("Welle 6.D Etappe 3a: define_consumable DSL-Op legt Konsumabel an", wave6d3aResults.consumableDefined);
+                check("Welle 6.D Etappe 3a: Konsumabel speichert tagBonus", wave6d3aResults.consumableTagBonus);
+                check("Welle 6.D Etappe 3a: Konsumabel speichert durationSeconds", wave6d3aResults.consumableDuration);
+                check("Welle 6.D Etappe 3a: Konsumabel speichert label", wave6d3aResults.consumableLabel);
+                check("Welle 6.D Etappe 3a: apply_boost DSL-Op fügt Boost hinzu", wave6d3aResults.applyBoostAddsBoost);
+                check(
+                    "Welle 6.D Etappe 3a: aktiver Boost trägt Konsumabel-tagBonus",
+                    wave6d3aResults.boostTagBonus
+                );
+                check("Welle 6.D Etappe 3a: zweimal apply_boost — Dedupe via consume:<name>", wave6d3aResults.consumableDedupes);
+                check("Welle 6.D Etappe 3a: unbekannter Konsumabel-Name wird abgelehnt", wave6d3aResults.unknownRejected);
+                check(
+                    "Welle 6.D Etappe 3a: apply_boost in NON_BROADCASTABLE_OPS (privat)",
+                    wave6d3aResults.applyBoostNonBroadcast
+                );
+                check(
+                    "Welle 6.D Etappe 3a: buildStateSnapshot persistiert consumables",
+                    wave6d3aResults.snapHasConsumables
+                );
+            } else if (wave6d3aResults && wave6d3aResults.error) {
+                check("Welle 6.D Etappe 3a: Test-Block lief ohne Exception", false, wave6d3aResults.error);
+            }
 
             // ### Welle 6.D Etappe 2 — Boosts (temporäre Tag-Deltas) ###
             //
