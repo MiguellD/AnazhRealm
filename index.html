@@ -1594,6 +1594,139 @@
                 color: var(--parch-ink-faded);
                 font-size: 9.5px;
             }
+            /* Welle 6.D Etappe 1.7 — Avatar-Editor. */
+            .drawer #soul-editor {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+            .drawer .soul-editor-list {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+            }
+            .drawer .soul-editor-empty {
+                font-style: italic;
+                font-size: 11px;
+                color: var(--parch-ink-faded);
+                padding: 4px 0;
+            }
+            .drawer .soul-editor-row {
+                display: flex;
+                align-items: center;
+                gap: 5px;
+                padding: 3px 6px;
+                background: rgba(40, 25, 10, 0.08);
+                border: 1px solid rgba(138, 106, 54, 0.4);
+                border-radius: 3px;
+                font-size: 11px;
+            }
+            .drawer .soul-editor-name {
+                flex: 1;
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                color: var(--parch-ink);
+            }
+            .drawer .soul-editor-row button,
+            .drawer .soul-editor-actions button,
+            .drawer .soul-editor-add,
+            .drawer .soul-editor-apply-row button {
+                background: linear-gradient(180deg, rgba(255, 235, 190, 0.55), rgba(180, 140, 80, 0.35));
+                color: var(--parch-ink);
+                border: 1px solid var(--brass-2, #b48c50);
+                padding: 2px 8px;
+                font-size: 10.5px;
+                cursor: pointer;
+                border-radius: 2px;
+                font-family: "Cinzel", Georgia, serif;
+                letter-spacing: 0.03em;
+            }
+            .drawer .soul-editor-row button:hover,
+            .drawer .soul-editor-actions button:hover,
+            .drawer .soul-editor-add:hover,
+            .drawer .soul-editor-apply-row button:hover {
+                background: linear-gradient(180deg, rgba(255, 248, 215, 0.75), rgba(210, 170, 110, 0.55));
+            }
+            .drawer .soul-editor-danger {
+                color: #a04040 !important;
+                border-color: #a04040 !important;
+            }
+            .drawer .soul-editor-primary {
+                background: linear-gradient(180deg, rgba(200, 180, 230, 0.65), rgba(160, 120, 200, 0.45)) !important;
+            }
+            .drawer .soul-editor-actions {
+                display: flex;
+                gap: 4px;
+                flex-wrap: wrap;
+            }
+            .drawer .soul-editor-pane {
+                margin-top: 5px;
+                padding: 6px;
+                background: rgba(40, 25, 10, 0.04);
+                border: 1px dashed rgba(138, 106, 54, 0.5);
+                border-radius: 3px;
+                display: flex;
+                flex-direction: column;
+                gap: 5px;
+            }
+            .drawer .soul-editor-pane-head {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 11px;
+                letter-spacing: 0.05em;
+                color: var(--parch-ink);
+            }
+            .drawer .soul-part-list {
+                display: flex;
+                flex-direction: column;
+                gap: 3px;
+            }
+            .drawer .soul-part-row {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                flex-wrap: wrap;
+                padding: 3px 5px;
+                background: rgba(255, 248, 220, 0.4);
+                border: 1px solid rgba(138, 106, 54, 0.3);
+                border-radius: 2px;
+                font-size: 10px;
+            }
+            .drawer .soul-part-idx {
+                font-family: "JetBrains Mono", monospace;
+                color: var(--parch-ink-faded);
+                min-width: 18px;
+            }
+            .drawer .soul-part-row select {
+                background: rgba(255, 250, 235, 0.7);
+                color: var(--parch-ink);
+                border: 1px solid var(--brass-2, #b48c50);
+                font-size: 10px;
+                padding: 1px 4px;
+                font-family: "JetBrains Mono", monospace;
+            }
+            .drawer .soul-part-group {
+                display: inline-flex;
+                align-items: center;
+                gap: 2px;
+                color: var(--parch-ink-faded);
+                font-size: 9px;
+                font-family: "Cinzel", Georgia, serif;
+            }
+            .drawer .soul-part-num {
+                width: 38px;
+                font-family: "JetBrains Mono", monospace;
+                font-size: 10px;
+                padding: 1px 3px;
+                background: rgba(255, 252, 240, 0.8);
+                color: var(--parch-ink);
+                border: 1px solid var(--brass-2, #b48c50);
+                border-radius: 2px;
+            }
+            .drawer .soul-editor-apply-row {
+                display: flex;
+                gap: 4px;
+                margin-top: 4px;
+            }
             .drawer .stat-row {
                 display: flex;
                 justify-content: space-between;
@@ -2344,6 +2477,11 @@
             <section class="section">
                 <h3>Stats <span class="section-hint">(aus Soul-Tags abgeleitet)</span></h3>
                 <div id="player-stats" aria-live="polite"></div>
+            </section>
+            <section class="section">
+                <h3>Eigene Seele formen <span class="section-hint">(Bauplan aus Körper-Teilen)</span></h3>
+                <p class="drawer-hint">Wie Bauwerke + Maschinen: Form × Material × Anordnung → Compound-Tags → Stats. Klone eine Built-in oder erschaffe eine neue Komposition.</p>
+                <div id="soul-editor"></div>
             </section>
             <section class="section">
                 <h3>Hotbar-Belegung</h3>

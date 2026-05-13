@@ -5778,6 +5778,126 @@ function startSaveServer() {
                 })
                 .catch(() => null);
 
+            // ### Welle 6.D Etappe 1.7 — Visueller Avatar-Editor ###
+            const wave6d17Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    out.hasRenderMethod = typeof r.renderSoulEditorUI === "function";
+                    out.hasCloneMethod = typeof r.cloneSoulToCustom === "function";
+                    out.hasDeleteMethod = typeof r.deleteCustomSoul === "function";
+                    out.hasAddPartMethod = typeof r.addPartToCustomSoul === "function";
+                    out.hasUpdatePartMethod = typeof r.updatePartInCustomSoul === "function";
+                    out.hasRemovePartMethod = typeof r.removePartFromCustomSoul === "function";
+                    // DOM-Container
+                    out.editorInDom = !!document.getElementById("soul-editor");
+
+                    // Empty state
+                    r.state.customSouls = {};
+                    r.renderSoulEditorUI();
+                    const editor1 = document.getElementById("soul-editor");
+                    out.emptyStateRendered = !!(editor1 && editor1.querySelector(".soul-editor-empty"));
+                    out.hasCloneActionBtn = !!editor1.querySelector(".soul-editor-actions button");
+
+                    // Klonen aus aktiver Seele
+                    const savedSoul = r.state.player.soul;
+                    r.state.player.soul = "human";
+                    const cloneResult = r.cloneSoulToCustom("human", "test_clone_a");
+                    out.cloneReturnsOk = cloneResult && cloneResult.ok;
+                    out.cloneHasBodyParts =
+                        r.state.customSouls.test_clone_a &&
+                        Array.isArray(r.state.customSouls.test_clone_a.bodyParts) &&
+                        r.state.customSouls.test_clone_a.bodyParts.length === 4;
+
+                    // Editor zeigt jetzt die Custom-Seele
+                    r.state.soulEditor = { editingName: "test_clone_a" };
+                    r.renderSoulEditorUI();
+                    const editor2 = document.getElementById("soul-editor");
+                    out.customRowRendered = !!editor2.querySelector(".soul-editor-row");
+                    out.editorPaneRendered = !!editor2.querySelector(".soul-editor-pane");
+                    out.partRowsCount = editor2.querySelectorAll(".soul-part-row").length;
+                    out.editorHasShapeSelect = !!editor2.querySelector(".soul-part-row select");
+
+                    // Add part
+                    const beforeParts = r.state.customSouls.test_clone_a.bodyParts.length;
+                    const addResult = r.addPartToCustomSoul("test_clone_a", {
+                        shape: "torus",
+                        material: "quarz",
+                        position: { x: 0, y: 1, z: 0 },
+                        size: { x: 0.5, y: 0.2, z: 0.5 },
+                    });
+                    out.addReturnsOk = addResult && addResult.ok;
+                    out.addedPart = r.state.customSouls.test_clone_a.bodyParts.length === beforeParts + 1;
+
+                    // Update part
+                    const updateResult = r.updatePartInCustomSoul("test_clone_a", 0, {
+                        material: "schuppen",
+                    });
+                    out.updateReturnsOk = updateResult && updateResult.ok;
+                    out.updateApplied = r.state.customSouls.test_clone_a.bodyParts[0].material === "schuppen";
+
+                    // Remove part
+                    const beforeRm = r.state.customSouls.test_clone_a.bodyParts.length;
+                    const rmResult = r.removePartFromCustomSoul("test_clone_a", 0);
+                    out.removeReturnsOk = rmResult && rmResult.ok;
+                    out.removedPart = r.state.customSouls.test_clone_a.bodyParts.length === beforeRm - 1;
+
+                    // Mindestens-1-Schutz: alle bis auf eins entfernen → letztes lehnt ab
+                    while (r.state.customSouls.test_clone_a.bodyParts.length > 1) {
+                        r.removePartFromCustomSoul("test_clone_a", 0);
+                    }
+                    const lastRmResult = r.removePartFromCustomSoul("test_clone_a", 0);
+                    out.lastPartProtected = !lastRmResult.ok && lastRmResult.reason === "would_be_empty";
+
+                    // applyPlayerSoul auf Custom-Seele rendert tatsächlich ein Mesh
+                    r.applyPlayerSoul("test_clone_a");
+                    out.customSoulRendered =
+                        !!r.state.playerMesh &&
+                        r.state.playerMesh.children &&
+                        r.state.playerMesh.children.length > 0;
+
+                    // Delete: wenn aktive Seele gelöscht → fallback auf "human"
+                    const delResult = r.deleteCustomSoul("test_clone_a");
+                    out.deleteReturnsOk = delResult && delResult.ok;
+                    out.deletedFromMap = !r.state.customSouls.test_clone_a;
+                    out.fallbackToHuman = r.state.player.soul === "human";
+
+                    // Cleanup
+                    r.state.player.soul = savedSoul;
+                    r.applyPlayerSoul(savedSoul);
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6d17Results && !wave6d17Results.error) {
+                check("Welle 6.D Etappe 1.7: renderSoulEditorUI-Methode existiert", wave6d17Results.hasRenderMethod);
+                check("Welle 6.D Etappe 1.7: cloneSoulToCustom-Methode existiert", wave6d17Results.hasCloneMethod);
+                check("Welle 6.D Etappe 1.7: deleteCustomSoul-Methode existiert", wave6d17Results.hasDeleteMethod);
+                check("Welle 6.D Etappe 1.7: addPartToCustomSoul-Methode existiert", wave6d17Results.hasAddPartMethod);
+                check("Welle 6.D Etappe 1.7: updatePartInCustomSoul-Methode existiert", wave6d17Results.hasUpdatePartMethod);
+                check("Welle 6.D Etappe 1.7: removePartFromCustomSoul-Methode existiert", wave6d17Results.hasRemovePartMethod);
+                check("Welle 6.D Etappe 1.7: #soul-editor im DOM (Spieler-Drawer)", wave6d17Results.editorInDom);
+                check("Welle 6.D Etappe 1.7: Empty-State zeigt Hinweis-Text", wave6d17Results.emptyStateRendered);
+                check("Welle 6.D Etappe 1.7: Klonen/Neu-Action-Buttons vorhanden", wave6d17Results.hasCloneActionBtn);
+                check("Welle 6.D Etappe 1.7: Klonen aus aktiver Seele liefert ok", wave6d17Results.cloneReturnsOk);
+                check("Welle 6.D Etappe 1.7: Klon hat alle 4 Body-Parts vom Mensch", wave6d17Results.cloneHasBodyParts);
+                check("Welle 6.D Etappe 1.7: Custom-Row im Editor gerendert", wave6d17Results.customRowRendered);
+                check("Welle 6.D Etappe 1.7: Editor-Pane mit Parts gerendert", wave6d17Results.editorPaneRendered);
+                check("Welle 6.D Etappe 1.7: 4 Part-Rows im Editor", wave6d17Results.partRowsCount === 4);
+                check("Welle 6.D Etappe 1.7: Shape-Select vorhanden", wave6d17Results.editorHasShapeSelect);
+                check("Welle 6.D Etappe 1.7: addPartToCustomSoul fügt Part hinzu", wave6d17Results.addReturnsOk && wave6d17Results.addedPart);
+                check("Welle 6.D Etappe 1.7: updatePartInCustomSoul wendet Patch an", wave6d17Results.updateReturnsOk && wave6d17Results.updateApplied);
+                check("Welle 6.D Etappe 1.7: removePartFromCustomSoul entfernt Part", wave6d17Results.removeReturnsOk && wave6d17Results.removedPart);
+                check("Welle 6.D Etappe 1.7: Mindestens-1-Schutz — letztes Part kann nicht gelöscht werden", wave6d17Results.lastPartProtected);
+                check("Welle 6.D Etappe 1.7: End-to-End — applyPlayerSoul auf Custom rendert Mesh", wave6d17Results.customSoulRendered);
+                check("Welle 6.D Etappe 1.7: deleteCustomSoul entfernt aus Map", wave6d17Results.deleteReturnsOk && wave6d17Results.deletedFromMap);
+                check("Welle 6.D Etappe 1.7: Löschen der aktiven Seele schaltet zurück auf 'human'", wave6d17Results.fallbackToHuman);
+            } else if (wave6d17Results && wave6d17Results.error) {
+                check("Welle 6.D Etappe 1.7: Test-Block lief ohne Exception", false, wave6d17Results.error);
+            }
+
             if (wave6d16Results) {
                 check("Welle 6.D Etappe 1.6: _getSoulDef-Helper existiert", wave6d16Results.hasGetSoulDef);
                 check("Welle 6.D Etappe 1.6: createOrUpdateSoulFromDsl-Methode existiert", wave6d16Results.hasCreateMethod);

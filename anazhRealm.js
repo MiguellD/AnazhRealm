@@ -1117,9 +1117,10 @@ class AnazhRealm {
                         name: result.name,
                         parts: valid.parts.length,
                     });
-                    // UI-Dropdown neu rendern (falls offen), damit die neue Seele
-                    // sofort wählbar ist.
-                    if (typeof this.playerSoulInitDOM === "function") this._refreshSoulSelect();
+                    // UI-Dropdown + Editor neu rendern, damit die neue Seele
+                    // sofort wählbar + editierbar ist.
+                    if (typeof this._refreshSoulSelect === "function") this._refreshSoulSelect();
+                    if (typeof this.renderSoulEditorUI === "function") this.renderSoulEditorUI();
                 }
             },
             // Welle 4 Phase 1 — Schöpfer-Werkzeug für Materialien. Tags werden
@@ -10005,6 +10006,86 @@ class AnazhRealm {
         return null;
     }
 
+    // Welle 6.D Etappe 1.7 — UI-Mutations-Pfade für eigene Seelen.
+    //
+    // Klonen aus aktiver Seele: nimmt die bodyParts und legt eine eigene Kopie
+    // als Custom-Seele an. Die Kopie ist voll editierbar.
+    cloneSoulToCustom(sourceName, newName) {
+        const source = this._getSoulDef(sourceName);
+        if (!source || !Array.isArray(source.bodyParts)) {
+            return { ok: false, reason: "source_unknown" };
+        }
+        // Deep-Copy der bodyParts, damit Edits an der Kopie das Original
+        // (besonders Built-ins!) nicht berühren.
+        const cloned = source.bodyParts.map((p) => JSON.parse(JSON.stringify(p)));
+        return this.createOrUpdateSoulFromDsl(newName, cloned);
+    }
+
+    // Eine Custom-Seele löschen. Wenn der Spieler aktuell diese Seele trägt,
+    // schalten wir zurück auf "human" (Default-Seele).
+    deleteCustomSoul(name) {
+        if (!this.state.customSouls || !this.state.customSouls[name]) {
+            return { ok: false, reason: "not_found" };
+        }
+        delete this.state.customSouls[name];
+        if (this.state.player.soul === name) {
+            this.applyPlayerSoul("human");
+        }
+        if (typeof this._refreshSoulSelect === "function") this._refreshSoulSelect();
+        if (typeof this.renderSoulEditorUI === "function") this.renderSoulEditorUI();
+        return { ok: true };
+    }
+
+    // Ein Body-Part an eine bestehende Custom-Seele anhängen. Wenn der
+    // Spieler aktuell diese Seele trägt, werden Mesh + Stats neu gebaut.
+    addPartToCustomSoul(soulName, part) {
+        const soul = this.state.customSouls && this.state.customSouls[soulName];
+        if (!soul) return { ok: false, reason: "soul_not_found" };
+        const newParts = soul.bodyParts.concat([part]);
+        const valid = this.validateBlueprintParts(newParts);
+        if (!valid.ok) return { ok: false, reason: valid.reason };
+        soul.bodyParts = valid.parts;
+        this._refreshIfWornSoul(soulName);
+        return { ok: true };
+    }
+
+    // Ein Body-Part einer Custom-Seele bearbeiten. `patch` enthält die Felder,
+    // die überschrieben werden sollen (shape/material/position/size).
+    updatePartInCustomSoul(soulName, idx, patch) {
+        const soul = this.state.customSouls && this.state.customSouls[soulName];
+        if (!soul) return { ok: false, reason: "soul_not_found" };
+        if (idx < 0 || idx >= soul.bodyParts.length) return { ok: false, reason: "index_out_of_range" };
+        const next = soul.bodyParts.slice();
+        next[idx] = { ...next[idx], ...patch };
+        const valid = this.validateBlueprintParts(next);
+        if (!valid.ok) return { ok: false, reason: valid.reason };
+        soul.bodyParts = valid.parts;
+        this._refreshIfWornSoul(soulName);
+        return { ok: true };
+    }
+
+    // Ein Body-Part entfernen. Wenn das letzte Part entfernt würde, ablehnen
+    // (eine Seele braucht mindestens einen Körper-Teil).
+    removePartFromCustomSoul(soulName, idx) {
+        const soul = this.state.customSouls && this.state.customSouls[soulName];
+        if (!soul) return { ok: false, reason: "soul_not_found" };
+        if (soul.bodyParts.length <= 1) return { ok: false, reason: "would_be_empty" };
+        if (idx < 0 || idx >= soul.bodyParts.length) return { ok: false, reason: "index_out_of_range" };
+        soul.bodyParts = soul.bodyParts.slice(0, idx).concat(soul.bodyParts.slice(idx + 1));
+        this._refreshIfWornSoul(soulName);
+        return { ok: true };
+    }
+
+    // Wenn der Spieler die geänderte Seele aktuell trägt: Mesh + Stats
+    // refreshen. Sonst nur stille Daten-Mutation.
+    _refreshIfWornSoul(soulName) {
+        if (this.state.player.soul === soulName) {
+            // applyPlayerSoul re-baut Mesh + ruft recomputePlayerStats.
+            this.applyPlayerSoul(soulName);
+        }
+        if (typeof this.renderSoulEditorUI === "function") this.renderSoulEditorUI();
+    }
+
     // Welle 6.D Etappe 1.6 — DSL-Pfad für eigene Seelen.
     //
     // Verwendet `validateBlueprintParts` (W2-B, hart sand-gesichert: 9 Shape-
@@ -13041,6 +13122,254 @@ class AnazhRealm {
         // schon im DOM ist (HTML statisch vorgegeben). Update läuft danach bei
         // jedem applyPlayerSoul → recomputePlayerStats.
         this.renderPlayerStatsUI();
+        // Welle 6.D Etappe 1.7 — Avatar-Editor im Drawer initial rendern.
+        this.renderSoulEditorUI();
+    }
+
+    // Welle 6.D Etappe 1.7 — Voller Avatar-Editor im Spieler-Drawer.
+    //
+    // Drei Bereiche:
+    //   1. Liste der eigenen Seelen mit "Werde diese Seele" + "Löschen"
+    //   2. "Neue Seele aus aktueller klonen" + "Leere Seele anlegen"
+    //   3. Inline-Editor für die ausgewählte (oder aktive Custom-) Seele mit
+    //      Parts-Liste (Shape-Dropdown, Material-Dropdown, Position xyz,
+    //      Size xyz, Löschen) + "Part hinzufügen"
+    //
+    // Daten leben in `state.customSouls`. Mutationen über die in Etappe 1.7
+    // angelegten Methoden (`addPartToCustomSoul`, `updatePartInCustomSoul`,
+    // `removePartFromCustomSoul`, `cloneSoulToCustom`, `deleteCustomSoul`),
+    // damit Validierung + UI-Refresh + Mesh-Rebuild zentral bleiben.
+    renderSoulEditorUI() {
+        if (typeof document === "undefined") return;
+        const container = document.getElementById("soul-editor");
+        if (!container) return;
+        container.innerHTML = "";
+        if (!this.state.soulEditor) this.state.soulEditor = { editingName: null };
+
+        // Section 1 — Liste der eigenen Seelen
+        const customs = this.state.customSouls || {};
+        const customNames = Object.keys(customs);
+        const customList = document.createElement("div");
+        customList.className = "soul-editor-list";
+        if (customNames.length === 0) {
+            const empty = document.createElement("div");
+            empty.className = "soul-editor-empty";
+            empty.textContent = "Du hast noch keine eigene Seele geformt.";
+            customList.appendChild(empty);
+        } else {
+            for (const name of customNames) {
+                const row = document.createElement("div");
+                row.className = "soul-editor-row";
+                const label = document.createElement("span");
+                label.className = "soul-editor-name";
+                label.textContent = customs[name].label + (this.state.player.soul === name ? " (aktiv)" : "");
+                row.appendChild(label);
+                const becomeBtn = document.createElement("button");
+                becomeBtn.type = "button";
+                becomeBtn.textContent = "Werde";
+                becomeBtn.title = `Wechsle zur Seele „${customs[name].label}"`;
+                becomeBtn.addEventListener("click", () => this.applyPlayerSoul(name));
+                row.appendChild(becomeBtn);
+                const editBtn = document.createElement("button");
+                editBtn.type = "button";
+                editBtn.textContent = "Bearbeiten";
+                editBtn.addEventListener("click", () => {
+                    this.state.soulEditor.editingName = name;
+                    this.renderSoulEditorUI();
+                });
+                row.appendChild(editBtn);
+                const delBtn = document.createElement("button");
+                delBtn.type = "button";
+                delBtn.textContent = "✕";
+                delBtn.title = `Lösche „${customs[name].label}"`;
+                delBtn.className = "soul-editor-danger";
+                delBtn.addEventListener("click", () => {
+                    const fn = typeof window !== "undefined" ? window.confirm : null;
+                    if (!fn || fn(`Seele „${customs[name].label}" löschen?`)) {
+                        this.deleteCustomSoul(name);
+                    }
+                });
+                row.appendChild(delBtn);
+                customList.appendChild(row);
+            }
+        }
+        container.appendChild(customList);
+
+        // Section 2 — Klone / Neu anlegen
+        const actions = document.createElement("div");
+        actions.className = "soul-editor-actions";
+        const cloneBtn = document.createElement("button");
+        cloneBtn.type = "button";
+        cloneBtn.textContent = "Aktuelle Seele klonen";
+        cloneBtn.addEventListener("click", () => {
+            const source = this.state.player.soul || "human";
+            const base = `${source}_${Object.keys(customs).length + 1}`;
+            const result = this.cloneSoulToCustom(source, base);
+            if (result.ok) {
+                this.state.soulEditor.editingName = result.name;
+                if (typeof this._refreshSoulSelect === "function") this._refreshSoulSelect();
+                this.renderSoulEditorUI();
+            } else {
+                this.log(`Soul-Clone fehlgeschlagen: ${result.reason}`, "ERROR");
+            }
+        });
+        actions.appendChild(cloneBtn);
+        const newBtn = document.createElement("button");
+        newBtn.type = "button";
+        newBtn.textContent = "Neue leere Seele";
+        newBtn.addEventListener("click", () => {
+            const base = `neue_seele_${Object.keys(customs).length + 1}`;
+            // Eine Seele braucht mindestens einen Körper-Teil; geben wir ein
+            // sinnvolles Start-Teil aus stein vor (Standard-Default-Material).
+            const startPart = {
+                shape: "box",
+                material: "fleisch",
+                position: { x: 0, y: 0, z: 0 },
+                size: { x: 0.5, y: 1.0, z: 0.4 },
+                label: "Torso",
+            };
+            const result = this.createOrUpdateSoulFromDsl(base, [startPart]);
+            if (result.ok) {
+                this.state.soulEditor.editingName = result.name;
+                if (typeof this._refreshSoulSelect === "function") this._refreshSoulSelect();
+                this.renderSoulEditorUI();
+            } else {
+                this.log(`Soul-Erstellung fehlgeschlagen: ${result.reason}`, "ERROR");
+            }
+        });
+        actions.appendChild(newBtn);
+        container.appendChild(actions);
+
+        // Section 3 — Inline-Editor für die ausgewählte Seele
+        const editingName = this.state.soulEditor.editingName;
+        const editing = editingName && customs[editingName];
+        if (editing) {
+            const editor = document.createElement("div");
+            editor.className = "soul-editor-pane";
+            const head = document.createElement("div");
+            head.className = "soul-editor-pane-head";
+            head.textContent = `Edit: ${editing.label}`;
+            editor.appendChild(head);
+            // Parts
+            const partList = document.createElement("div");
+            partList.className = "soul-part-list";
+            const shapes = ["box", "sphere", "cylinder", "cone", "pyramid", "octahedron", "plane", "torus", "helix"];
+            const materials = Object.keys(this.state.materials || {});
+            editing.bodyParts.forEach((part, idx) => {
+                const partRow = document.createElement("div");
+                partRow.className = "soul-part-row";
+                const indexLabel = document.createElement("span");
+                indexLabel.className = "soul-part-idx";
+                indexLabel.textContent = `#${idx + 1}`;
+                partRow.appendChild(indexLabel);
+                // Shape-Select
+                const shapeSel = document.createElement("select");
+                shapeSel.title = "Form";
+                for (const s of shapes) {
+                    const opt = document.createElement("option");
+                    opt.value = s;
+                    opt.textContent = s;
+                    if (s === part.shape) opt.selected = true;
+                    shapeSel.appendChild(opt);
+                }
+                shapeSel.addEventListener("change", () => {
+                    this.updatePartInCustomSoul(editingName, idx, { shape: shapeSel.value });
+                });
+                partRow.appendChild(shapeSel);
+                // Material-Select
+                const matSel = document.createElement("select");
+                matSel.title = "Material";
+                for (const m of materials) {
+                    const opt = document.createElement("option");
+                    opt.value = m;
+                    opt.textContent = this.state.materials[m].label || m;
+                    if (m === part.material) opt.selected = true;
+                    matSel.appendChild(opt);
+                }
+                matSel.addEventListener("change", () => {
+                    this.updatePartInCustomSoul(editingName, idx, { material: matSel.value });
+                });
+                partRow.appendChild(matSel);
+                // Position + Size — kompakte Number-Inputs
+                const makeNumberInput = (val, axis, kind) => {
+                    const inp = document.createElement("input");
+                    inp.type = "number";
+                    inp.step = "0.05";
+                    inp.value = Number(val || 0).toFixed(2);
+                    inp.className = "soul-part-num";
+                    inp.title = `${kind} ${axis}`;
+                    inp.addEventListener("change", () => {
+                        const next = Number(inp.value);
+                        const field = kind === "pos" ? "position" : "size";
+                        const current = part[field] || { x: 0, y: 0, z: 0 };
+                        this.updatePartInCustomSoul(editingName, idx, {
+                            [field]: { ...current, [axis]: next },
+                        });
+                    });
+                    return inp;
+                };
+                const posGrp = document.createElement("span");
+                posGrp.className = "soul-part-group";
+                posGrp.title = "Position x/y/z";
+                posGrp.appendChild(document.createTextNode("Pos"));
+                posGrp.appendChild(makeNumberInput(part.position && part.position.x, "x", "pos"));
+                posGrp.appendChild(makeNumberInput(part.position && part.position.y, "y", "pos"));
+                posGrp.appendChild(makeNumberInput(part.position && part.position.z, "z", "pos"));
+                partRow.appendChild(posGrp);
+                const sizeGrp = document.createElement("span");
+                sizeGrp.className = "soul-part-group";
+                sizeGrp.title = "Größe x/y/z";
+                sizeGrp.appendChild(document.createTextNode("Größe"));
+                sizeGrp.appendChild(makeNumberInput(part.size && part.size.x, "x", "size"));
+                sizeGrp.appendChild(makeNumberInput(part.size && part.size.y, "y", "size"));
+                sizeGrp.appendChild(makeNumberInput(part.size && part.size.z, "z", "size"));
+                partRow.appendChild(sizeGrp);
+                // Remove
+                const rmBtn = document.createElement("button");
+                rmBtn.type = "button";
+                rmBtn.textContent = "✕";
+                rmBtn.className = "soul-editor-danger";
+                rmBtn.title = "Teil entfernen";
+                rmBtn.addEventListener("click", () => this.removePartFromCustomSoul(editingName, idx));
+                partRow.appendChild(rmBtn);
+                partList.appendChild(partRow);
+            });
+            editor.appendChild(partList);
+            // Add-Part-Button
+            const addPartBtn = document.createElement("button");
+            addPartBtn.type = "button";
+            addPartBtn.textContent = "+ Teil hinzufügen";
+            addPartBtn.className = "soul-editor-add";
+            addPartBtn.addEventListener("click", () => {
+                this.addPartToCustomSoul(editingName, {
+                    shape: "sphere",
+                    material: "fleisch",
+                    position: { x: 0, y: 0.5, z: 0 },
+                    size: { x: 0.3, y: 0.3, z: 0.3 },
+                    label: "Neuer Teil",
+                });
+            });
+            editor.appendChild(addPartBtn);
+            // Apply (Become) + Close
+            const applyRow = document.createElement("div");
+            applyRow.className = "soul-editor-apply-row";
+            const becomeNow = document.createElement("button");
+            becomeNow.type = "button";
+            becomeNow.textContent = "Werde diese Seele";
+            becomeNow.className = "soul-editor-primary";
+            becomeNow.addEventListener("click", () => this.applyPlayerSoul(editingName));
+            applyRow.appendChild(becomeNow);
+            const closeEdit = document.createElement("button");
+            closeEdit.type = "button";
+            closeEdit.textContent = "Editor schließen";
+            closeEdit.addEventListener("click", () => {
+                this.state.soulEditor.editingName = null;
+                this.renderSoulEditorUI();
+            });
+            applyRow.appendChild(closeEdit);
+            editor.appendChild(applyRow);
+            container.appendChild(editor);
+        }
     }
 
     // Welle 6.D Etappe 1.6 — Soul-Select neu befüllen (Built-ins + Custom).
