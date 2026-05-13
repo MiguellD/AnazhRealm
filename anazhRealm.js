@@ -210,7 +210,7 @@ class AnazhRealm {
                 provider: "anthropic",
                 providerConfig: {
                     anthropic: { apiKey: "", model: "claude-haiku-4-5" },
-                    google: { apiKey: "", model: "gemini-2.0-flash" },
+                    google: { apiKey: "", model: "gemini-2.5-flash" },
                     openrouter: { apiKey: "", model: "meta-llama/llama-3.3-70b-instruct:free" },
                     ollama: { apiKey: "", model: "llama3.1", endpoint: "http://localhost:11434" },
                 },
@@ -1465,6 +1465,8 @@ class AnazhRealm {
         return {
             anthropic: {
                 label: "Claude (Anthropic, kostet)",
+                hint: "Key holen: console.anthropic.com → Settings → API Keys — Format sk-ant-…",
+                keyPrefix: "sk-ant-",
                 models: [
                     { id: "claude-haiku-4-5", label: "Haiku 4.5 — schnell" },
                     { id: "claude-sonnet-4-6", label: "Sonnet 4.6 — ausgewogen" },
@@ -1492,29 +1494,39 @@ class AnazhRealm {
             },
             google: {
                 label: "Gemini (Google, gratis-Tier)",
+                hint: "Gratis-Key holen: aistudio.google.com/apikey — Format AIzaSy…",
+                keyPrefix: "AIza",
                 models: [
-                    { id: "gemini-2.0-flash", label: "2.0 Flash — schnell, gratis" },
-                    { id: "gemini-2.0-flash-lite", label: "2.0 Flash Lite — leichter" },
-                    { id: "gemini-1.5-flash", label: "1.5 Flash — Alt-Fallback" },
-                    { id: "gemini-1.5-pro", label: "1.5 Pro — klüger, niedrigeres Limit" },
+                    { id: "gemini-2.5-flash", label: "2.5 Flash — gratis, empfohlen" },
+                    { id: "gemini-2.5-pro", label: "2.5 Pro — klüger, niedrigeres Limit" },
+                    { id: "gemini-2.0-flash", label: "2.0 Flash — älter, evtl. nicht im Free-Tier" },
+                    { id: "gemini-2.0-flash-lite", label: "2.0 Flash Lite — älter" },
                 ],
                 requiresKey: true,
-                // Key wird als Header geschickt (`x-goog-api-key`). Google's
-                // Cloud-Auth-Schicht beantwortet ?key=… aus Browser-Origins
-                // seit Anfang 2025 oft mit "Missing Authentication header" —
-                // der Header-Pfad ist die ehrliche Form und hält den Key
-                // außerdem aus Logs/Referer-Headern raus.
+                // Key als Header, nicht Query-Param (siehe Commit-History). Cloud-
+                // Auth beantwortet ?key= aus Browser-Origins regelmäßig mit 401.
                 endpoint: (model) =>
                     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
                 buildHeaders: (apiKey) => ({
                     "content-type": "application/json",
                     "x-goog-api-key": apiKey,
                 }),
-                buildBody: (model, system, userContent) => ({
-                    systemInstruction: { parts: [{ text: system }] },
-                    contents: [{ role: "user", parts: [{ text: userContent }] }],
-                    generationConfig: { maxOutputTokens: 400, temperature: 0.7 },
-                }),
+                buildBody: (model, system, userContent) => {
+                    const body = {
+                        systemInstruction: { parts: [{ text: system }] },
+                        contents: [{ role: "user", parts: [{ text: userContent }] }],
+                        generationConfig: { maxOutputTokens: 600, temperature: 0.7 },
+                    };
+                    // Gemini 2.5 ist ein Thinking-Modell: ohne thinkingBudget=0
+                    // frisst der interne Reasoning-Step das Output-Budget komplett
+                    // auf und die echte Antwort wird mit MAX_TOKENS abgeschnitten.
+                    // Ältere Modelle kennen den Parameter nicht — Gemini ignoriert
+                    // unbekannte Felder still.
+                    if (/^gemini-2\.5/.test(model)) {
+                        body.generationConfig.thinkingConfig = { thinkingBudget: 0 };
+                    }
+                    return body;
+                },
                 extractText: (json) => {
                     const cand = (json.candidates || [])[0];
                     if (!cand || !cand.content || !Array.isArray(cand.content.parts)) return "";
@@ -1524,6 +1536,8 @@ class AnazhRealm {
             },
             openrouter: {
                 label: "OpenRouter (Multi-Modell, einige :free)",
+                hint: "Gratis-Key holen: openrouter.ai/keys — Format sk-or-v1-… (NICHT der Google/Anthropic-Key)",
+                keyPrefix: "sk-or-",
                 models: [
                     { id: "meta-llama/llama-3.3-70b-instruct:free", label: "Llama 3.3 70B — gratis" },
                     { id: "google/gemini-2.0-flash-exp:free", label: "Gemini 2.0 Flash exp — gratis" },
@@ -1554,6 +1568,8 @@ class AnazhRealm {
             },
             ollama: {
                 label: "Ollama lokal (offline, kein Key)",
+                hint: "ollama.com installieren, dann `ollama pull llama3.1` + `ollama serve` in der Konsole.",
+                keyPrefix: "",
                 models: [
                     { id: "llama3.1", label: "Llama 3.1 8B — Standard" },
                     { id: "llama3.2", label: "Llama 3.2 3B — leicht" },
@@ -1856,17 +1872,19 @@ class AnazhRealm {
         const keyRow = document.getElementById("llm-key-row");
         const endpointRow = document.getElementById("llm-endpoint-row");
         const endpointInput = document.getElementById("llm-endpoint");
+        const hintEl = document.getElementById("llm-provider-hint");
         const defs = this.llmProviderDefs();
         const def = defs[this.state.llm.provider];
         if (!def) return;
         const cfg = this.state.llm.providerConfig[this.state.llm.provider];
         if (keyInput) {
             keyInput.value = (cfg && cfg.apiKey) || "";
-            keyInput.placeholder = this.state.llm.provider === "anthropic" ? "sk-ant-…" : "API-Key";
+            keyInput.placeholder = def.keyPrefix ? `${def.keyPrefix}…` : "API-Key";
         }
         if (keyRow) keyRow.hidden = !def.requiresKey;
         if (endpointRow) endpointRow.hidden = this.state.llm.provider !== "ollama";
         if (endpointInput) endpointInput.value = (cfg && cfg.endpoint) || "http://localhost:11434";
+        if (hintEl) hintEl.textContent = def.hint || "";
         this.llmRefreshModelOptions();
         this.llmUpdateStatus();
     }
@@ -1918,13 +1936,22 @@ class AnazhRealm {
             });
         }
         saveBtn.addEventListener("click", () => {
+            const def = this.llmProviderDefs()[this.state.llm.provider];
             const cfg = this.state.llm.providerConfig[this.state.llm.provider];
-            cfg.apiKey = keyInput.value.trim();
+            const trimmed = keyInput.value.trim();
+            cfg.apiKey = trimmed;
             cfg.model = modelSel.value;
             if (this.state.llm.provider === "ollama" && endpointInput) {
                 cfg.endpoint = endpointInput.value.trim() || "http://localhost:11434";
             }
-            this.state.llm.lastError = null;
+            // Sanfte Format-Warnung gegen Provider/Key-Mismatch — z. B. Gemini-
+            // Key (AIza…) versehentlich im OpenRouter-Feld. Verhindert Save
+            // nicht, macht den Fehler aber sofort sichtbar.
+            if (def.requiresKey && def.keyPrefix && trimmed && !trimmed.startsWith(def.keyPrefix)) {
+                this.state.llm.lastError = `Achtung — der Schlüssel beginnt nicht mit "${def.keyPrefix}". Sicher, dass das der richtige Provider ist?`;
+            } else {
+                this.state.llm.lastError = null;
+            }
             this.llmPersist();
             this.llmUpdateStatus();
         });
