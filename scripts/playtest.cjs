@@ -4226,6 +4226,139 @@ function startSaveServer() {
                 check("Ring 11 V1: Toggle-Klick wechselt aria-pressed", ring11Results.toggleFlipsAriaPressed);
             }
 
+            // ### Ring 11 V2 — DSL-AST-Broadcast (Welt-Sync) ###
+            // Sandbox-Pfad: human-dslRun broadcastet via p2pSend wenn enabled+
+            // connected; remote-dslRun (source="remote:*") läuft durch dslRun
+            // OHNE Re-Broadcast (sonst Endlos-Echo). Eingehende dsl-Nachricht
+            // läuft durch dslRun mit normalem Sandbox-Pfad. Welt-Effekte
+            // (modify_terrain) sind damit synchron auf beiden Welten.
+            const ring11V2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    out.broadcastMethodExists = typeof r.p2pBroadcastDsl === "function";
+
+                    // p2pSend mocken, um zu prüfen WAS gesendet würde
+                    const sent = [];
+                    const origSend = r.p2pSend;
+                    r.p2pSend = function (obj) {
+                        sent.push(obj);
+                        return true;
+                    };
+
+                    // p2p in "verbunden"-Zustand simulieren
+                    r.state.p2p.enabled = true;
+                    r.state.p2p.connected = true;
+                    r.state.p2p.peerId = "self-test";
+
+                    // 1) human-DSL → wird gebroadcastet
+                    r.dslRun(["weather", "rainy"], { source: "human" });
+                    out.humanBroadcasts = sent.some(
+                        (m) => m.type === "dsl" && Array.isArray(m.program) && m.program[0] === "weather"
+                    );
+
+                    // 2) remote-DSL → wird NICHT re-gebroadcastet (Loop-Schutz)
+                    const sentLenBefore = sent.length;
+                    r.dslRun(["weather", "sunny"], { source: "remote:peerX" });
+                    out.remoteDoesNotEcho = sent.length === sentLenBefore;
+
+                    // 3) llm-DSL → wird NICHT gebroadcastet (V2-Scope: nur explizite human-Geste)
+                    const sentLenBefore2 = sent.length;
+                    r.dslRun(["weather", "rainy"], { source: "llm:grok" });
+                    out.llmDoesNotBroadcast = sent.length === sentLenBefore2;
+
+                    // 4) nicht-verbunden → kein Broadcast trotz human
+                    r.state.p2p.connected = false;
+                    const sentLenBefore3 = sent.length;
+                    r.dslRun(["weather", "sunny"], { source: "human" });
+                    out.disconnectedSkipsBroadcast = sent.length === sentLenBefore3;
+                    r.state.p2p.connected = true;
+
+                    // 5) eingehende dsl-Nachricht → läuft durch dslRun mit source="remote:*"
+                    // Wir verifizieren via Welt-Effekt: weather wechselt
+                    r.state.weather = "sunny";
+                    r.p2pHandleMessage(
+                        JSON.stringify({ type: "dsl", peerId: "peerRemote", program: ["weather", "rainy"] })
+                    );
+                    out.remoteDslAppliedLocally = r.state.weather === "rainy";
+
+                    // 6) eingehende dsl mit eigener peerId wird ignoriert
+                    r.state.weather = "sunny";
+                    r.p2pHandleMessage(
+                        JSON.stringify({ type: "dsl", peerId: "self-test", program: ["weather", "rainy"] })
+                    );
+                    out.ownPeerDslIgnored = r.state.weather === "sunny";
+
+                    // 7) eingehende dsl mit non-array program wird verworfen
+                    let crashed = false;
+                    try {
+                        r.p2pHandleMessage(
+                            JSON.stringify({ type: "dsl", peerId: "peerX", program: "not-array" })
+                        );
+                    } catch (e) {
+                        crashed = e.message;
+                    }
+                    out.nonArrayDslNoCrash = crashed === false;
+
+                    // 8) Discrimination: zwei minimal verschiedene Programme produzieren
+                    // unterschiedliche Welt-Zustände (echtes Sync, keine Stille)
+                    r.state.weather = "sunny";
+                    r.p2pHandleMessage(
+                        JSON.stringify({ type: "dsl", peerId: "peerX", program: ["weather", "rainy"] })
+                    );
+                    const afterRainy = r.state.weather;
+                    r.state.weather = "sunny";
+                    r.p2pHandleMessage(
+                        JSON.stringify({ type: "dsl", peerId: "peerX", program: ["weather", "sunny"] })
+                    );
+                    const afterSunny = r.state.weather;
+                    out.discriminationHolds = afterRainy === "rainy" && afterSunny === "sunny";
+
+                    // 9) Remote modify_terrain → chunkDeltas wachsen lokal
+                    // (das ist der eigentliche Vision-Punkt von V2)
+                    const deltasBefore = Object.keys(r.state.worldMeta.chunkDeltas).length;
+                    const playerPos = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, z: 0 };
+                    r.p2pHandleMessage(
+                        JSON.stringify({
+                            type: "dsl",
+                            peerId: "peerX",
+                            program: ["modify_terrain", playerPos.x, playerPos.z, 5, -3],
+                        })
+                    );
+                    const deltasAfter = Object.keys(r.state.worldMeta.chunkDeltas).length;
+                    out.remoteModifyTerrainGrowsDeltas = deltasAfter > deltasBefore;
+
+                    // Cleanup
+                    r.p2pSend = origSend;
+                    r.state.p2p.enabled = false;
+                    r.state.p2p.connected = false;
+                    r.state.p2p.peerId = null;
+                    r.state.worldMeta.chunkDeltas = {};
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!ring11V2Results || ring11V2Results.error) {
+                check(
+                    "Ring 11 V2: Snapshot erreichbar",
+                    false,
+                    (ring11V2Results && ring11V2Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Ring 11 V2: p2pBroadcastDsl-Methode existiert", ring11V2Results.broadcastMethodExists);
+                check("Ring 11 V2: human-DSL wird gebroadcastet", ring11V2Results.humanBroadcasts);
+                check("Ring 11 V2: remote-DSL wird NICHT re-gebroadcastet (Loop-Schutz)", ring11V2Results.remoteDoesNotEcho);
+                check("Ring 11 V2: LLM-DSL wird NICHT gebroadcastet (nur explizite human-Geste)", ring11V2Results.llmDoesNotBroadcast);
+                check("Ring 11 V2: nicht-verbundener Client broadcastet nicht", ring11V2Results.disconnectedSkipsBroadcast);
+                check("Ring 11 V2: eingehende dsl-Nachricht wird lokal ausgeführt (weather wechselt)", ring11V2Results.remoteDslAppliedLocally);
+                check("Ring 11 V2: dsl mit eigener peerId wird ignoriert", ring11V2Results.ownPeerDslIgnored);
+                check("Ring 11 V2: dsl mit non-array program crasht nicht", ring11V2Results.nonArrayDslNoCrash);
+                check("Ring 11 V2: Diskrimination — zwei verschiedene Programme → zwei verschiedene Welt-Zustände", ring11V2Results.discriminationHolds);
+                check("Ring 11 V2: Remote modify_terrain wächst lokale chunkDeltas (Vision-Punkt)", ring11V2Results.remoteModifyTerrainGrowsDeltas);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {

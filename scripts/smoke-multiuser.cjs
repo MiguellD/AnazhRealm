@@ -42,35 +42,74 @@ async function run() {
     wsB.send(JSON.stringify({ type: "pos", x: 10, y: 20, z: 30, yaw: 1.5 }));
     await sleep(150);
 
+    // Ring 11 V2: DSL-AST-Broadcast. A sendet modify_terrain → B sollte
+    // dasselbe Programm zugestellt bekommen, mit peerId-Stempel des Servers.
+    const sampleDsl = ["modify_terrain", 4.2, -3.5, 6, -2.5];
+    wsA.send(JSON.stringify({ type: "dsl", program: sampleDsl }));
+    await sleep(150);
+    // Defensive: kaputte dsl-Pakete werden ignoriert (Array-Check + Length-Cap)
+    wsA.send(JSON.stringify({ type: "dsl", program: "not-an-array" }));
+    wsA.send(JSON.stringify({ type: "dsl", program: [] }));
+    wsA.send(JSON.stringify({ type: "dsl", program: new Array(300).fill("over_cap") }));
+    await sleep(150);
+
     console.log("\n=== A received ===");
     for (const e of events.a) console.log(JSON.stringify(e));
     console.log("\n=== B received ===");
     for (const e of events.b) console.log(JSON.stringify(e));
 
-    // Assertions
+    // Assertions Ring 11 V1
     const aSawWelcome = events.a.some((e) => e.type === "welcome");
     const aSawBjoin = events.a.some((e) => e.type === "peer-join" && e.peerId === "peerB");
     const aSawBpos = events.a.some((e) => e.type === "pos" && e.peerId === "peerB" && e.x === 10);
-    const bSawWelcomeWithA = events.b.some((e) => e.type === "welcome" && Array.isArray(e.peers) && e.peers.includes("peerA"));
+    const bSawWelcomeWithA = events.b.some(
+        (e) => e.type === "welcome" && Array.isArray(e.peers) && e.peers.includes("peerA")
+    );
     const bSawApos = events.b.some((e) => e.type === "pos" && e.peerId === "peerA" && e.x === 1.5);
 
+    // Assertions Ring 11 V2
+    const bGotDslFromA = events.b.find(
+        (e) =>
+            e.type === "dsl" &&
+            e.peerId === "peerA" &&
+            Array.isArray(e.program) &&
+            e.program[0] === "modify_terrain" &&
+            e.program[1] === 4.2 &&
+            e.program[4] === -2.5
+    );
+    const aNotEchoedOwnDsl = !events.a.some((e) => e.type === "dsl");
+    const bRejectedBadDsl =
+        events.b.filter((e) => e.type === "dsl").length === 1; // genau das eine gute, keine kaputten
+
     console.log("\n=== Verdict ===");
-    console.log("A welcome:", aSawWelcome);
-    console.log("A sees B-join:", aSawBjoin);
-    console.log("A sees B-pos:", aSawBpos);
-    console.log("B welcome lists A:", bSawWelcomeWithA);
-    console.log("B sees A-pos:", bSawApos);
+    console.log("V1 A welcome:", aSawWelcome);
+    console.log("V1 A sees B-join:", aSawBjoin);
+    console.log("V1 A sees B-pos:", aSawBpos);
+    console.log("V1 B welcome lists A:", bSawWelcomeWithA);
+    console.log("V1 B sees A-pos:", bSawApos);
+    console.log("V2 B receives A's DSL (modify_terrain) with peerId stamp:", !!bGotDslFromA);
+    console.log("V2 A doesn't receive own DSL echo:", aNotEchoedOwnDsl);
+    console.log("V2 Server rejects non-array / empty / oversized DSL:", bRejectedBadDsl);
 
     // B disconnects
     wsB.close();
     await sleep(200);
     const aSawBLeave = events.a.some((e) => e.type === "peer-leave" && e.peerId === "peerB");
-    console.log("A sees B-leave on disconnect:", aSawBLeave);
+    console.log("V1 A sees B-leave on disconnect:", aSawBLeave);
 
     wsA.close();
     await sleep(100);
 
-    const allOk = aSawWelcome && aSawBjoin && aSawBpos && bSawWelcomeWithA && bSawApos && aSawBLeave;
+    const allOk =
+        aSawWelcome &&
+        aSawBjoin &&
+        aSawBpos &&
+        bSawWelcomeWithA &&
+        bSawApos &&
+        aSawBLeave &&
+        !!bGotDslFromA &&
+        aNotEchoedOwnDsl &&
+        bRejectedBadDsl;
     server.kill();
     process.exit(allOk ? 0 : 1);
 }

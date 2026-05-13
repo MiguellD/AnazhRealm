@@ -1,23 +1,29 @@
-// Ring 11 V1: Multi-User Position-Sync — Signaling-Server.
+// Ring 11 V1+V2: Multi-User Sync — Signaling-Server.
 //
-// Mini-WebSocket-Broker neben save-server.js. EIN Zweck: Spieler in
-// derselben "Welt-Raum"-ID erhalten gegenseitig Positions- und Präsenz-
-// Nachrichten. KEIN Persistenz, KEIN Spielerstand, KEIN DSL-Trust:
-// Welt-Daten + DSL-Programme bleiben in V1 strikt lokal pro Browser.
-// V1-Akzeptanz aus docs/roadmap.md: "zwei Browser-Tabs, beide Spieler
-// sehen sich bewegen". DSL-Sync ist explizit Ring 11 V2.
+// Mini-WebSocket-Broker neben save-server.js. Zwei Zwecke:
+//   V1 (Position-Sync): Spieler in derselben "Welt-Raum"-ID erhalten
+//        gegenseitig Position+Rotation-Nachrichten (30 Hz).
+//   V2 (DSL-AST-Broadcast): Chat-Befehle eines Spielers gehen als
+//        DSL-Programm an alle Mitspieler im Raum — jeder Empfänger
+//        lässt sie durch seinen eigenen dslRun-Sandbox-Pfad laufen,
+//        sodass Welt-Modifikationen (modify_terrain, weather, spawn_*)
+//        auf beiden Welten konsistent ausgeführt werden.
+//
+// KEIN Persistenz, KEIN Spielerstand auf dem Server. Vertrauen liegt
+// in der DSL-Sandbox des Clients (Budget-Limits + Op-Whitelist).
 //
 // Protokoll (alle Nachrichten JSON, eine Zeile):
 //   Client → Server   { "type": "join", "room": "<worldId>", "peerId": "<rand>" }
 //   Client → Server   { "type": "pos",  "x": .., "y": .., "z": .., "yaw": .. }
+//   Client → Server   { "type": "dsl",  "program": [...DSL-AST] }
 //   Server → Client   { "type": "welcome", "peers": ["peerA", "peerB"] }
 //   Server → Client   { "type": "peer-join", "peerId": "..." }
 //   Server → Client   { "type": "peer-leave", "peerId": "..." }
 //   Server → Client   { "type": "pos", "peerId": "...", "x":.., "y":.., "z":.., "yaw":.. }
+//   Server → Client   { "type": "dsl", "peerId": "...", "program": [...] }
 //
 // Heilige Lektion: KEIN neues Modul-Geflecht. EINE Datei, ein Server-
-// Objekt, drei Handler. Wer mehr braucht, sollte vorher Ring 11 V2
-// neu denken.
+// Objekt, vier Handler (join/pos/dsl/disconnect).
 //
 // WebSocket-Framing ist hier von Hand implementiert (RFC 6455), damit
 // keine externe Dependency hinzukommt — das Projekt hat bewusst null
@@ -162,6 +168,17 @@ function handleClientMessage(ws, raw) {
         const yaw = Number(msg.yaw);
         if (![x, y, z, yaw].every(Number.isFinite)) return;
         broadcastToRoom(ws.anazh.room, { type: "pos", peerId: ws.anazh.peerId, x, y, z, yaw }, ws);
+        return;
+    }
+    if (msg.type === "dsl") {
+        // Ring 11 V2: DSL-AST-Broadcast. Server forwarded das Programm,
+        // jeder Empfänger lässt es durch seinen eigenen dslRun-Sandbox-
+        // Pfad laufen. Server validiert nicht (Vertrauen liegt im
+        // Sandbox des Clients) — er begrenzt nur per-Frame-Größe via
+        // Decode-Cap (65 KiB) und prüft, dass program ein Array ist.
+        if (!Array.isArray(msg.program)) return;
+        if (msg.program.length === 0 || msg.program.length > 256) return;
+        broadcastToRoom(ws.anazh.room, { type: "dsl", peerId: ws.anazh.peerId, program: msg.program }, ws);
     }
 }
 

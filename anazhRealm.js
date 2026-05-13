@@ -1,4 +1,4 @@
-/**AnazhRealm V7.68 – Das Ultiversum Vollendet.
+/**AnazhRealm V7.69 – Das Ultiversum Vollendet.
  * Hüpfen: Robust, präzise (Y ~1.5), Coyote-Time 0.3s, Gravitation 1.5G, Reibung 0.5.
  * Kollisionen: Kein Tunneling, steepnessThreshold 3.0, wallThickness 2.0, CCD optimiert.
  * Terrain: Flacher (Höhenunterschiede ±5), KI-gesteuerte Steilheitsanpassung, Chat-Steuerung.
@@ -12,7 +12,7 @@
 class AnazhRealm {
     constructor() {
         // ### Learnings ### [Stichwortartig optimieren, korrigieren, ergänzen – nie Wissen löschen!]
-        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68
+        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69
         // - Nexus als Herz der Selbstentwicklung, steuert nun alles über Chat, unzerstörbar und unendlich
         this.state = {
             // ### Kern ###
@@ -94,7 +94,7 @@ class AnazhRealm {
             maxVersionHistoryEntries: 50,
             maxCreatures: 120,
             maxLoadedChunks: 196,
-            currentVersion: "7.68",
+            currentVersion: "7.69",
             terrainSteepness: 1.0,
             terrainBaseHeight: 0.0,
             weather: "sunny",
@@ -421,7 +421,7 @@ class AnazhRealm {
     // ### Logging ###
     log(message, level = "INFO") {
         if (level === "DEBUG" && !this.state.debugLogging) return;
-        const logMessage = `[AnazhRealm V7.68] [${level}] ${message}`;
+        const logMessage = `[AnazhRealm V7.69] [${level}] ${message}`;
         this.state.logBuffer.push(logMessage);
         console.log(logMessage);
         if (this.state.logBuffer.length > this.state.maxLogEntries) {
@@ -700,7 +700,31 @@ class AnazhRealm {
             emotionsBefore,
             activityBefore,
         };
+        // Ring 11 V2: erfolgreiche Spieler-Programme (Chat-DSL, source="human")
+        // werden über P2P an alle Mitspieler im selben Raum gebroadcastet.
+        // Remote-empfangene Programme (source="remote:*") werden NICHT
+        // weitergeleitet — sonst entstünde eine Endlos-Echo-Schleife. LLM-
+        // und Nexus-Programme bleiben lokal (V2-Scope: nur explizite
+        // Spieler-Geste, keine maschinellen Effekte).
+        if (
+            outcome.errors === 0 &&
+            ctx.source === "human" &&
+            this.state.p2p &&
+            this.state.p2p.enabled &&
+            this.state.p2p.connected
+        ) {
+            this.p2pBroadcastDsl(program);
+        }
         return { ok: outcome.errors === 0, log: ctx.log, outcome, programId: ctx.programId };
+    }
+
+    // Ring 11 V2: Helfer zum DSL-Broadcast. Sendet als {type:"dsl",program},
+    // der Server stempelt peerId und schickt an alle anderen im Raum. Empfänger
+    // routen via p2pHandleMessage → dslRun mit source="remote:<peerId>".
+    // No-op wenn nicht verbunden.
+    p2pBroadcastDsl(program) {
+        if (!Array.isArray(program) || program.length === 0) return;
+        this.p2pSend({ type: "dsl", program });
     }
 
     dslEval(program, ctx) {
@@ -2695,6 +2719,24 @@ class AnazhRealm {
             entry.z = z;
             entry.yaw = yaw;
             entry.lastSeen = performance.now() / 1000;
+            return;
+        }
+        if (msg.type === "dsl") {
+            // Ring 11 V2: eingehendes DSL-Programm von einem Peer.
+            // STRENGE Sandbox-Disziplin: läuft durch denselben dslRun-Pfad
+            // wie eigene Programme, mit identischen Budget-Limits und
+            // Op-Whitelist. source="remote:<peerId>" markiert es —
+            // verhindert Re-Broadcast in dslRun (sonst Endlos-Echo).
+            const pid = msg.peerId;
+            if (typeof pid !== "string" || pid === p2p.peerId) return;
+            if (!Array.isArray(msg.program) || msg.program.length === 0) return;
+            // Eigene peerId nicht trauen (Server sollte das schon
+            // entkoppeln, aber doppelt-defensive).
+            try {
+                this.dslRun(msg.program, { source: `remote:${pid}` });
+            } catch (err) {
+                this.log(`P2P-DSL Ausführungsfehler von ${pid}: ${err.message}`, "WARN");
+            }
         }
     }
 
@@ -3981,7 +4023,7 @@ class AnazhRealm {
             // sonst auf die zu tiefe Höhe, statt einen Spawn-Fall zu lassen.
             playerPosition: { x: 0, y: 50, z: 0 },
             knowledgeBase: [],
-            version: this.state.currentVersion || "7.68",
+            version: this.state.currentVersion || "7.69",
             selfAwareness: { components: [], weaknesses: [] },
             creatures: [],
             creatureEmotions: [],
@@ -8624,7 +8666,7 @@ class AnazhRealm {
                 ...((Array.isArray(saveA.knowledgeBase) && saveA.knowledgeBase.slice(-100)) || []),
                 ...((Array.isArray(saveB.knowledgeBase) && saveB.knowledgeBase.slice(-100)) || []),
             ].slice(-200),
-            version: this.state.currentVersion || "7.68",
+            version: this.state.currentVersion || "7.69",
             selfAwareness: { components: [], weaknesses: [] },
             creatures: [],
             creatureEmotions: [],
@@ -11527,7 +11569,7 @@ class AnazhRealm {
     }
 
     async init() {
-        this.log("Initialisiere Anazh Realm V7.68... Ewigkeit erwacht!", "INFO");
+        this.log("Initialisiere Anazh Realm V7.69... Ewigkeit erwacht!", "INFO");
         this.themeInitDOM();
         this.grokInitDOM();
         this.symphonyInitDOM();
