@@ -123,7 +123,8 @@ Letzter Stand: Ring 1-7 + **Welle 1+2+3 + Welle 4 P1-P3 + Welle 5 A+B+C + Editor
 
 | Datei | Was |
 |---|---|
-| `docs/state-of-realm.md` | **Hauptdokument** — Vision, Historie, Stand, Plan, Learnings |
+| `docs/handover.md` | **Für den nächsten Agenten** — Orientierungs-Doku, Reihenfolge zum Lesen, drei heilige Gesetze, der Rhythmus, Muster die ich gelernt habe, nächste Schritte mit Empfehlung. Beim Erwachen ZUERST lesen. |
+| `docs/state-of-realm.md` | **Hauptdokument** — Vision, Historie, Stand, Plan, Learnings (~115) |
 | `docs/roadmap.md` | **Vollständige Projekt-Roadmap** — alle Ringe 0-11+ mit Aufwand, Vorbedingungen, Meilensteinen, Risiken |
 | `docs/nexus-dsl.md` | DSL-Design für Ring 2 (Mensch+Grok teilen Sprache) |
 | `vendor/README.md` | Vendor-Libs Versionen + Update-Befehl |
