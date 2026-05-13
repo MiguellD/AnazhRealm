@@ -28,6 +28,8 @@ export default [
                 AudioContext: "readonly",
                 HTMLElement: "readonly",
                 crypto: "readonly",
+                WebSocket: "readonly",
+                navigator: "readonly",
                 // CDN-Libs
                 THREE: "readonly",
                 Ammo: "readonly",
@@ -43,7 +45,7 @@ export default [
         },
     },
     {
-        files: ["save-server.js"],
+        files: ["save-server.js", "signaling-server.js"],
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: "commonjs",

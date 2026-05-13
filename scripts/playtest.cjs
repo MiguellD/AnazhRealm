@@ -3826,6 +3826,869 @@ function startSaveServer() {
                 check("Ring 10.1: 'Rezepte holen'-Button im Welt-Picker", recipeResults.uiHasRecipesBtn);
             }
 
+            // ### Ring 10.5 — Welt-Modifizierbarkeit (pro-Chunk DSL-Delta) ###
+            // Datenmodell: state.worldMeta.chunkDeltas mit Op-Liste pro
+            // Chunk-Key. modify_terrain schreibt Op + applied immediately.
+            // Chunk-Unload + Re-Ensure repliert. Discrimination-Test stellt
+            // sicher, dass die Höhe wirklich messbar unterschiedlich ist.
+            const ring105Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    out.hasChunkDeltas =
+                        r.state.worldMeta &&
+                        r.state.worldMeta.chunkDeltas &&
+                        typeof r.state.worldMeta.chunkDeltas === "object";
+                    out.capStaticExists = r.constructor && r.constructor.CHUNK_DELTA_OPS_CAP === 100;
+                    out.helpersExist =
+                        typeof r._chunksTouchedByDisc === "function" &&
+                        typeof r._appendChunkDeltaOp === "function" &&
+                        typeof r._applyModifyOpToChunk === "function" &&
+                        typeof r._rebuildChunkPhysics === "function" &&
+                        typeof r._sanitizeChunkDeltas === "function" &&
+                        typeof r.applyChunkDelta === "function";
+                    out.dslOpRegistered = typeof r.dslEffects.modify_terrain === "function";
+
+                    const chatParseDig = r.parseChatToDsl("grabe loch");
+                    const chatParseHill = r.parseChatToDsl("hebe hügel");
+                    out.chatDig =
+                        chatParseDig &&
+                        Array.isArray(chatParseDig.program) &&
+                        chatParseDig.program[0] === "modify_terrain" &&
+                        chatParseDig.program[4] === -3;
+                    out.chatHill =
+                        chatParseHill &&
+                        Array.isArray(chatParseHill.program) &&
+                        chatParseHill.program[0] === "modify_terrain" &&
+                        chatParseHill.program[4] === 4;
+
+                    // Frische Welt für isolierten Test, damit andere Tests
+                    // nicht durch hinterlassene Deltas verschmutzt werden.
+                    const wId = r.createNewWorld({ slug: "ring105-test", inheritPlayer: false, reload: false });
+                    out.createdFreshWorld = !!wId;
+                    const wSave = JSON.parse(localStorage.getItem(r.worldStorageKey(wId)));
+                    out.freshSchema = wSave.worldMeta.schemaVersion === "10.5-chunk-delta-v1";
+                    out.freshDeltasEmpty =
+                        wSave.worldMeta.chunkDeltas && Object.keys(wSave.worldMeta.chunkDeltas).length === 0;
+
+                    // Test der Disc-Berechnung. Position (0,0,0) mit r=4 sollte
+                    // den Chunk (4,4) treffen (worldSize/2=150, chunkWorldSize=37.5,
+                    // (-4+150)/37.5 = 3.89, also Chunk 3+4).
+                    const touched = r._chunksTouchedByDisc(0, 0, 4);
+                    out.discReturnsArray = Array.isArray(touched) && touched.length >= 1;
+                    out.discKeysValidFormat = touched.every((k) => /^-?\d+,-?\d+$/.test(k));
+
+                    // Append-Op direkt — Cap-Verhalten testen
+                    const testKey = "999,999";
+                    delete r.state.worldMeta.chunkDeltas[testKey];
+                    for (let i = 0; i < 105; i++) {
+                        r._appendChunkDeltaOp(testKey, { type: "modify_terrain", x: 0, z: 0, r: 1, dh: 0, at: i });
+                    }
+                    out.capEnforced = r.state.worldMeta.chunkDeltas[testKey].ops.length === 100;
+                    out.capFifoOldestDropped = r.state.worldMeta.chunkDeltas[testKey].ops[0].at === 5;
+                    delete r.state.worldMeta.chunkDeltas[testKey];
+
+                    // Sanitize-Test: ungültige Einträge werden verworfen
+                    r.state.worldMeta.chunkDeltas = {
+                        "1,1": { ops: [{ type: "modify_terrain", x: 1, z: 2, r: 3, dh: 4, at: 100 }] },
+                        "bad-key": { ops: [{ type: "modify_terrain", x: 0, z: 0, r: 1, dh: 1, at: 1 }] },
+                        "2,2": { ops: [{ type: "fake_op", x: 0, z: 0, r: 1, dh: 1, at: 1 }] },
+                        "3,3": { ops: [{ type: "modify_terrain", x: NaN, z: 0, r: 1, dh: 1, at: 1 }] },
+                        "4,4": { ops: [{ type: "modify_terrain", x: 0, z: 0, r: 99, dh: 1, at: 1 }] },
+                        "5,5": { ops: [{ type: "modify_terrain", x: 0, z: 0, r: 1, dh: 999, at: 1 }] },
+                        "6,6": { ops: [{ type: "modify_terrain", x: 0, z: 0, r: 1, dh: 1, at: 1 }] },
+                    };
+                    r._sanitizeChunkDeltas();
+                    const cleanKeys = Object.keys(r.state.worldMeta.chunkDeltas).sort();
+                    out.sanitizeKeepsValid = cleanKeys.includes("1,1") && cleanKeys.includes("6,6");
+                    out.sanitizeDropsBadKey = !cleanKeys.includes("bad-key");
+                    out.sanitizeDropsFakeOp = !cleanKeys.includes("2,2");
+                    out.sanitizeDropsNanCoord = !cleanKeys.includes("3,3");
+                    out.sanitizeDropsBigRadius = !cleanKeys.includes("4,4");
+                    out.sanitizeDropsBigDh = !cleanKeys.includes("5,5");
+
+                    // Reset auf saubere Map für den Discrimination-Test
+                    r.state.worldMeta.chunkDeltas = {};
+
+                    // Discrimination: Höhe an einer Position VOR und NACH
+                    // modify muss messbar unterschiedlich sein. Wir nehmen
+                    // EINEN beliebigen geladenen Chunk und modifizieren an
+                    // dessen Welt-Mittelpunkt mit großem Radius, sodass die
+                    // Chunk-Mitte (midIdx) sicher in der Scheibe liegt.
+                    const VTX = r.state.chunkSize + 1;
+                    const midIdx = Math.floor(VTX / 2) * VTX + Math.floor(VTX / 2);
+                    let firstKey = null;
+                    let chunkData = null;
+                    for (const [k, c] of r.state.chunkMap.entries()) {
+                        firstKey = k;
+                        chunkData = c;
+                        break;
+                    }
+                    out.hasLoadedChunk = !!chunkData;
+                    if (chunkData) {
+                        const geom = r._chunkGeometry();
+                        const chunkCenterX =
+                            chunkData.chunkX * geom.chunkWorldSize - geom.WORLD_SIZE / 2 + geom.chunkWorldSize / 2;
+                        const chunkCenterZ =
+                            chunkData.chunkZ * geom.chunkWorldSize - geom.WORLD_SIZE / 2 + geom.chunkWorldSize / 2;
+                        const heightBefore = chunkData.heightData[midIdx];
+
+                        // modify_terrain am Chunk-Zentrum mit Radius 8 → die
+                        // Chunk-Mitte (midIdx) liegt sicher in der Scheibe.
+                        // dh=-5, schaff den Wert weit über das Höhen-Rauschen.
+                        r.dslRun(["modify_terrain", chunkCenterX, chunkCenterZ, 8, -5], { source: "playtest" });
+
+                        const heightAfter = chunkData.heightData[midIdx];
+                        out.heightChanged = Math.abs(heightAfter - heightBefore) > 0.1;
+                        out.heightWentDown = heightAfter < heightBefore; // dh=-5 → Loch
+                        out.deltasRecorded =
+                            r.state.worldMeta.chunkDeltas[firstKey] &&
+                            r.state.worldMeta.chunkDeltas[firstKey].ops.length >= 1;
+                        out.physicsBodyRebuilt = !!chunkData.mesh.userData.physicsBody;
+                        out.physicsMeshRebuilt = !!chunkData.mesh.userData.physicsMesh;
+
+                        // Replay-Test: chunkMap.delete + re-ensure → Modifikation
+                        // muss wieder erscheinen
+                        const [cxRe, czRe] = firstKey.split(",").map(Number);
+                        const oldMesh = chunkData.mesh;
+                        r.state.scene.remove(oldMesh);
+                        if (oldMesh.userData.physicsBody) {
+                            r.state.physicsWorld.removeRigidBody(oldMesh.userData.physicsBody);
+                        }
+                        r.state.chunkMap.delete(firstKey);
+                        r.ensureChunkAt(cxRe, czRe);
+                        const newChunkData = r.state.chunkMap.get(firstKey);
+                        out.chunkReEnsured = !!newChunkData;
+                        if (newChunkData) {
+                            const heightAfterReplay = newChunkData.heightData[midIdx];
+                            out.replayKeptModification = Math.abs(heightAfterReplay - heightBefore) > 0.1;
+                            out.replayHeightSimilar = Math.abs(heightAfterReplay - heightAfter) < 0.5;
+                        }
+                    }
+
+                    // Defensive: invalid pos wird abgelehnt
+                    const invalidResult = r.dslRun(["modify_terrain", NaN, 0, 4, -2], { source: "playtest" });
+                    out.invalidPosLogged =
+                        invalidResult.log && invalidResult.log.some((l) => l.event === "modify_terrain_invalid_pos");
+
+                    // Save-Round-Trip: Snapshot soll chunkDeltas enthalten
+                    const snap = r.buildStateSnapshot();
+                    out.snapshotHasChunkDeltas =
+                        snap.worldMeta && snap.worldMeta.chunkDeltas && typeof snap.worldMeta.chunkDeltas === "object";
+
+                    // Migrations-Test: alter Save ohne chunkDeltas
+                    const migrationProbe = {
+                        ...snap,
+                        worldMeta: { ...snap.worldMeta, schemaVersion: "8.0-multiworld-v1" },
+                    };
+                    delete migrationProbe.worldMeta.chunkDeltas;
+                    r.loadState(migrationProbe);
+                    out.migrationFillsEmpty =
+                        r.state.worldMeta.chunkDeltas && typeof r.state.worldMeta.chunkDeltas === "object";
+
+                    // Cleanup: alte Welten dieser Test-Welt aus Index + localStorage
+                    r.state.worldMeta.chunkDeltas = {};
+                    const keepId = r.state.worldMeta.worldId;
+                    for (const e of r.worldsIndexLoad()) {
+                        if (e.worldId !== keepId) r.deleteWorld(e.worldId);
+                    }
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!ring105Results || ring105Results.error) {
+                check(
+                    "Ring 10.5: Snapshot erreichbar",
+                    false,
+                    (ring105Results && ring105Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Ring 10.5: state.worldMeta.chunkDeltas existiert", ring105Results.hasChunkDeltas);
+                check("Ring 10.5: CHUNK_DELTA_OPS_CAP = 100 statisch verfügbar", ring105Results.capStaticExists);
+                check("Ring 10.5: alle Helfer-Methoden vorhanden", ring105Results.helpersExist);
+                check("Ring 10.5: dslEffects.modify_terrain registriert", ring105Results.dslOpRegistered);
+                check("Ring 10.5: Chat 'grabe loch' → modify_terrain mit dh=-3", ring105Results.chatDig);
+                check("Ring 10.5: Chat 'hebe hügel' → modify_terrain mit dh=+4", ring105Results.chatHill);
+                check("Ring 10.5: createNewWorld liefert worldId", ring105Results.createdFreshWorld);
+                check("Ring 10.5: neue Welt schemaVersion=10.5-chunk-delta-v1", ring105Results.freshSchema);
+                check("Ring 10.5: neue Welt chunkDeltas ist leeres Objekt", ring105Results.freshDeltasEmpty);
+                check("Ring 10.5: _chunksTouchedByDisc liefert Array", ring105Results.discReturnsArray);
+                check("Ring 10.5: ChunkKeys haben Format 'cx,cz'", ring105Results.discKeysValidFormat);
+                check("Ring 10.5: FIFO-Cap nach 105 Ops greift (length === 100)", ring105Results.capEnforced);
+                check("Ring 10.5: FIFO verwirft die ältesten Ops zuerst", ring105Results.capFifoOldestDropped);
+                check("Ring 10.5: Sanitize behält gültige Einträge", ring105Results.sanitizeKeepsValid);
+                check("Ring 10.5: Sanitize verwirft kaputten Key-String", ring105Results.sanitizeDropsBadKey);
+                check("Ring 10.5: Sanitize verwirft unbekannten Op-Type", ring105Results.sanitizeDropsFakeOp);
+                check("Ring 10.5: Sanitize verwirft NaN-Koordinaten", ring105Results.sanitizeDropsNanCoord);
+                check("Ring 10.5: Sanitize verwirft Radius > 20", ring105Results.sanitizeDropsBigRadius);
+                check("Ring 10.5: Sanitize verwirft |dh| > 20", ring105Results.sanitizeDropsBigDh);
+                check("Ring 10.5: Mindestens ein Chunk in der Nähe geladen", ring105Results.hasLoadedChunk);
+                check("Ring 10.5: Höhe ändert sich nach modify_terrain", ring105Results.heightChanged);
+                check("Ring 10.5: Höhe sinkt bei negativem dh (Loch)", ring105Results.heightWentDown);
+                check("Ring 10.5: Op wird in chunkDeltas[key].ops gespeichert", ring105Results.deltasRecorded);
+                check("Ring 10.5: Physik-Body nach modify wieder vorhanden", ring105Results.physicsBodyRebuilt);
+                check("Ring 10.5: Physik-Mesh nach modify wieder vorhanden", ring105Results.physicsMeshRebuilt);
+                check("Ring 10.5: Chunk nach Re-Ensure wieder vorhanden", ring105Results.chunkReEnsured);
+                check(
+                    "Ring 10.5: Replay nach Re-Ensure behält Modifikation (Discrimination)",
+                    ring105Results.replayKeptModification
+                );
+                check(
+                    "Ring 10.5: Replay-Höhe ähnlich Original-Modify (deterministisch)",
+                    ring105Results.replayHeightSimilar
+                );
+                check("Ring 10.5: invalid pos (NaN) wird im Log gemeldet", ring105Results.invalidPosLogged);
+                check("Ring 10.5: buildStateSnapshot enthält chunkDeltas", ring105Results.snapshotHasChunkDeltas);
+                check(
+                    "Ring 10.5: Migrations-Path füllt fehlende chunkDeltas mit {}",
+                    ring105Results.migrationFillsEmpty
+                );
+            }
+
+            // ### Ring 11 V1 — Multi-User Position-Sync (Daten + UI + Sandbox) ###
+            // V1 trägt nur Position + Rotation, kein DSL-Sync. Tests prüfen
+            // Datenstruktur, Sandbox-Grenze (kein neuer eval-Pfad), CSP-
+            // Erweiterung um ws://, UI-Toggle. Kein echter WebSocket-Connect
+            // im Headless — der signaling-server läuft nicht zwingend; aber
+            // initP2PSync ohne worldId muss sauber ablehnen, mit worldId
+            // muss die Datenstruktur korrekt aufgebaut werden (auch wenn
+            // die Connection scheitert).
+            const ring11Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    out.hasP2PState =
+                        r.state.p2p &&
+                        typeof r.state.p2p.enabled === "boolean" &&
+                        typeof r.state.p2p.url === "string" &&
+                        r.state.p2p.peers instanceof Map;
+                    out.allMethodsPresent =
+                        typeof r.initP2PSync === "function" &&
+                        typeof r.shutdownP2PSync === "function" &&
+                        typeof r.p2pSend === "function" &&
+                        typeof r.p2pHandleMessage === "function" &&
+                        typeof r.p2pTick === "function" &&
+                        typeof r.p2pLoadPersisted === "function" &&
+                        typeof r.p2pPersist === "function" &&
+                        typeof r.p2pGenerateId === "function" &&
+                        typeof r.initP2PUI === "function" &&
+                        typeof r.p2pUpdateStatus === "function";
+
+                    // initP2PSync ohne Welt-ID → sauberer Ablehnung
+                    const savedWorldId = r.state.worldMeta.worldId;
+                    r.state.worldMeta.worldId = null;
+                    const noRoomResult = r.initP2PSync(null);
+                    out.rejectsNoRoom = noRoomResult.ok === false && noRoomResult.reason === "no_room";
+                    r.state.worldMeta.worldId = savedWorldId;
+
+                    // peerId-Generator liefert nicht-leeren String
+                    const pid1 = r.p2pGenerateId();
+                    const pid2 = r.p2pGenerateId();
+                    out.peerIdShape = /^p-[a-z0-9]+-[a-z0-9]+$/.test(pid1);
+                    out.peerIdUnique = pid1 !== pid2;
+
+                    // Persistenz-Pfad: persist + load idempotent
+                    r.state.p2p.url = "ws://example.org:9999";
+                    r.state.p2p.enabled = true;
+                    r.p2pPersist();
+                    r.state.p2p.url = "";
+                    r.state.p2p.enabled = false;
+                    r.p2pLoadPersisted();
+                    out.persistRoundTrip =
+                        r.state.p2p.url === "ws://example.org:9999" && r.state.p2p.enabled === true;
+                    // wieder auf Default
+                    r.state.p2p.url = "ws://127.0.0.1:4313";
+                    r.state.p2p.enabled = false;
+                    r.p2pPersist();
+
+                    // Handle-Message Pfade
+                    r.state.p2p.peerId = "self-test";
+                    r.p2pHandleMessage(JSON.stringify({ type: "welcome", peers: ["peerA", "peerB"] }));
+                    out.welcomeAddsPeers = r.state.p2p.peers.has("peerA") && r.state.p2p.peers.has("peerB");
+
+                    r.p2pHandleMessage(JSON.stringify({ type: "peer-join", peerId: "peerC" }));
+                    out.peerJoinAddsPeer = r.state.p2p.peers.has("peerC");
+
+                    r.p2pHandleMessage(JSON.stringify({ type: "pos", peerId: "peerA", x: 10, y: 5, z: 3, yaw: 1.5 }));
+                    const peerA = r.state.p2p.peers.get("peerA");
+                    out.posUpdatesPeer = peerA && peerA.x === 10 && peerA.y === 5 && peerA.z === 3 && peerA.yaw === 1.5;
+
+                    // Mesh wird angelegt (THREE.Group als Avatar)
+                    out.peerMeshSpawned = peerA && peerA.mesh && peerA.mesh.children && peerA.mesh.children.length === 2;
+
+                    // peer-leave entfernt peer + mesh aus scene
+                    const sceneSizeBefore = r.state.scene.children.length;
+                    r.p2pHandleMessage(JSON.stringify({ type: "peer-leave", peerId: "peerA" }));
+                    out.peerLeaveRemoves = !r.state.p2p.peers.has("peerA");
+                    out.peerLeaveDisposesMesh = r.state.scene.children.length === sceneSizeBefore - 1;
+
+                    // Eigener peerId wird verworfen
+                    r.p2pHandleMessage(JSON.stringify({ type: "pos", peerId: "self-test", x: 1, y: 1, z: 1, yaw: 0 }));
+                    out.ownPeerIgnored = !r.state.p2p.peers.has("self-test");
+
+                    // Invalid pos (NaN) wird verworfen
+                    r.p2pHandleMessage(
+                        JSON.stringify({ type: "pos", peerId: "peerB", x: NaN, y: 0, z: 0, yaw: 0 })
+                    );
+                    const peerB = r.state.p2p.peers.get("peerB");
+                    out.nanPosNotApplied = peerB && peerB.x === 0;
+
+                    // p2pSend ohne open WS liefert false
+                    r.state.p2p.ws = null;
+                    out.sendWithoutWsFalse = r.p2pSend({ type: "ping" }) === false;
+
+                    // p2pTick ohne enabled → no-op (kein Crash)
+                    r.state.p2p.enabled = false;
+                    r.state.p2p.connected = false;
+                    let tickError = null;
+                    try {
+                        r.p2pTick(performance.now());
+                    } catch (e) {
+                        tickError = e.message;
+                    }
+                    out.tickNoOpSafe = tickError === null;
+
+                    // DSL-Sandbox: kein neuer eval-Pfad. Es darf KEINE neue
+                    // dsl-op geben, die das gleich "p2p" oder "sync" heißt
+                    // (V1 trägt KEIN DSL-Sharing). Kontrolliert die Sandbox-
+                    // Grenze: fremde Welten dürfen nicht per DSL-Op die
+                    // eigene manipulieren.
+                    out.noP2PDslOp =
+                        typeof r.dslEffects.p2p_send === "undefined" &&
+                        typeof r.dslEffects.peer_dsl === "undefined" &&
+                        typeof r.dslEffects.remote_run === "undefined";
+
+                    // V2.1: CSP enthält generelle ws:/wss:-Whitelist (statt
+                    // explizite IP-Liste, die LAN-Spieler blockierte).
+                    const cspMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+                    const cspContent = cspMeta ? cspMeta.getAttribute("content") : "";
+                    out.cspHasWebSocket = / ws: /.test(cspContent) && / wss: /.test(cspContent);
+                    out.cspKeepsSelf = cspContent.startsWith("default-src 'self';");
+
+                    // UI-Elemente vorhanden
+                    out.uiToggleExists = !!document.getElementById("p2p-toggle");
+                    out.uiUrlInputExists = !!document.getElementById("p2p-url");
+                    out.uiStatusExists = !!document.getElementById("p2p-status");
+
+                    // Status-UI verkabelt: nach Toggle reagiert aria-pressed
+                    const toggle = document.getElementById("p2p-toggle");
+                    const before = toggle.getAttribute("aria-pressed");
+                    toggle.click();
+                    const after = toggle.getAttribute("aria-pressed");
+                    out.toggleFlipsAriaPressed = before === "false" && after === "true";
+                    // wieder ausschalten, damit kein WebSocket übrig bleibt
+                    toggle.click();
+                    r.state.p2p.enabled = false;
+                    r.shutdownP2PSync();
+
+                    // Cleanup
+                    for (const pid of Array.from(r.state.p2p.peers.keys())) r._p2pRemovePeer(pid);
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!ring11Results || ring11Results.error) {
+                check(
+                    "Ring 11 V1: Snapshot erreichbar",
+                    false,
+                    (ring11Results && ring11Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Ring 11 V1: state.p2p mit allen Pflichtfeldern", ring11Results.hasP2PState);
+                check("Ring 11 V1: alle P2P-Methoden auf der Klasse vorhanden", ring11Results.allMethodsPresent);
+                check("Ring 11 V1: initP2PSync ohne worldId wird abgewiesen", ring11Results.rejectsNoRoom);
+                check("Ring 11 V1: p2pGenerateId liefert 'p-<ts>-<rnd>'-Format", ring11Results.peerIdShape);
+                check("Ring 11 V1: zwei Generator-Aufrufe liefern unterschiedliche IDs", ring11Results.peerIdUnique);
+                check("Ring 11 V1: persist + load liefert dieselbe url + enabled", ring11Results.persistRoundTrip);
+                check("Ring 11 V1: welcome-Nachricht legt alle Peers an", ring11Results.welcomeAddsPeers);
+                check("Ring 11 V1: peer-join Nachricht legt einzelnen Peer an", ring11Results.peerJoinAddsPeer);
+                check("Ring 11 V1: pos-Nachricht aktualisiert peer-Position", ring11Results.posUpdatesPeer);
+                check("Ring 11 V1: neuer Peer bekommt Avatar-Mesh in der Szene", ring11Results.peerMeshSpawned);
+                check("Ring 11 V1: peer-leave entfernt peer aus state.p2p.peers", ring11Results.peerLeaveRemoves);
+                check("Ring 11 V1: peer-leave entfernt mesh aus der Szene", ring11Results.peerLeaveDisposesMesh);
+                check("Ring 11 V1: eigene peerId wird in pos-Nachrichten ignoriert", ring11Results.ownPeerIgnored);
+                check("Ring 11 V1: NaN-Koordinate in pos wird verworfen", ring11Results.nanPosNotApplied);
+                check("Ring 11 V1: p2pSend ohne offene WS liefert false", ring11Results.sendWithoutWsFalse);
+                check("Ring 11 V1: p2pTick ohne enabled ist no-op (kein Crash)", ring11Results.tickNoOpSafe);
+                check(
+                    "Ring 11 V1: KEIN p2p-/peer_dsl-/remote_run-DSL-Op (Sandbox-Grenze)",
+                    ring11Results.noP2PDslOp
+                );
+                check("Ring 11 V2.1: CSP enthält allgemeines ws:/wss: (LAN-fähig)", ring11Results.cspHasWebSocket);
+                check("Ring 11 V1: CSP bleibt strict (default-src 'self')", ring11Results.cspKeepsSelf);
+                check("Ring 11 V1: UI-Toggle-Element im DOM", ring11Results.uiToggleExists);
+                check("Ring 11 V1: UI-URL-Input im DOM", ring11Results.uiUrlInputExists);
+                check("Ring 11 V1: UI-Status-Anzeige im DOM", ring11Results.uiStatusExists);
+                check("Ring 11 V1: Toggle-Klick wechselt aria-pressed", ring11Results.toggleFlipsAriaPressed);
+            }
+
+            // ### Ring 11 V2 — DSL-AST-Broadcast (Welt-Sync) ###
+            // Sandbox-Pfad: human-dslRun broadcastet via p2pSend wenn enabled+
+            // connected; remote-dslRun (source="remote:*") läuft durch dslRun
+            // OHNE Re-Broadcast (sonst Endlos-Echo). Eingehende dsl-Nachricht
+            // läuft durch dslRun mit normalem Sandbox-Pfad. Welt-Effekte
+            // (modify_terrain) sind damit synchron auf beiden Welten.
+            const ring11V2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    out.broadcastMethodExists = typeof r.p2pBroadcastDsl === "function";
+
+                    // p2pSend mocken, um zu prüfen WAS gesendet würde
+                    const sent = [];
+                    const origSend = r.p2pSend;
+                    r.p2pSend = function (obj) {
+                        sent.push(obj);
+                        return true;
+                    };
+
+                    // p2p in "verbunden"-Zustand simulieren
+                    r.state.p2p.enabled = true;
+                    r.state.p2p.connected = true;
+                    r.state.p2p.peerId = "self-test";
+
+                    // 1) human-DSL → wird gebroadcastet
+                    r.dslRun(["weather", "rainy"], { source: "human" });
+                    out.humanBroadcasts = sent.some(
+                        (m) => m.type === "dsl" && Array.isArray(m.program) && m.program[0] === "weather"
+                    );
+
+                    // 2) remote-DSL → wird NICHT re-gebroadcastet (Loop-Schutz)
+                    const sentLenBefore = sent.length;
+                    r.dslRun(["weather", "sunny"], { source: "remote:peerX" });
+                    out.remoteDoesNotEcho = sent.length === sentLenBefore;
+
+                    // 3) llm-DSL → wird NICHT gebroadcastet (V2-Scope: nur explizite human-Geste)
+                    const sentLenBefore2 = sent.length;
+                    r.dslRun(["weather", "rainy"], { source: "llm:grok" });
+                    out.llmDoesNotBroadcast = sent.length === sentLenBefore2;
+
+                    // 4) nicht-verbunden → kein Broadcast trotz human
+                    r.state.p2p.connected = false;
+                    const sentLenBefore3 = sent.length;
+                    r.dslRun(["weather", "sunny"], { source: "human" });
+                    out.disconnectedSkipsBroadcast = sent.length === sentLenBefore3;
+                    r.state.p2p.connected = true;
+
+                    // 5) eingehende dsl-Nachricht → läuft durch dslRun mit source="remote:*"
+                    // Wir verifizieren via Welt-Effekt: weather wechselt
+                    r.state.weather = "sunny";
+                    r.p2pHandleMessage(
+                        JSON.stringify({ type: "dsl", peerId: "peerRemote", program: ["weather", "rainy"] })
+                    );
+                    out.remoteDslAppliedLocally = r.state.weather === "rainy";
+
+                    // 6) eingehende dsl mit eigener peerId wird ignoriert
+                    r.state.weather = "sunny";
+                    r.p2pHandleMessage(
+                        JSON.stringify({ type: "dsl", peerId: "self-test", program: ["weather", "rainy"] })
+                    );
+                    out.ownPeerDslIgnored = r.state.weather === "sunny";
+
+                    // 7) eingehende dsl mit non-array program wird verworfen
+                    let crashed = false;
+                    try {
+                        r.p2pHandleMessage(
+                            JSON.stringify({ type: "dsl", peerId: "peerX", program: "not-array" })
+                        );
+                    } catch (e) {
+                        crashed = e.message;
+                    }
+                    out.nonArrayDslNoCrash = crashed === false;
+
+                    // 8) Discrimination: zwei minimal verschiedene Programme produzieren
+                    // unterschiedliche Welt-Zustände (echtes Sync, keine Stille)
+                    r.state.weather = "sunny";
+                    r.p2pHandleMessage(
+                        JSON.stringify({ type: "dsl", peerId: "peerX", program: ["weather", "rainy"] })
+                    );
+                    const afterRainy = r.state.weather;
+                    r.state.weather = "sunny";
+                    r.p2pHandleMessage(
+                        JSON.stringify({ type: "dsl", peerId: "peerX", program: ["weather", "sunny"] })
+                    );
+                    const afterSunny = r.state.weather;
+                    out.discriminationHolds = afterRainy === "rainy" && afterSunny === "sunny";
+
+                    // 9) Remote modify_terrain → chunkDeltas wachsen lokal
+                    // (das ist der eigentliche Vision-Punkt von V2)
+                    const deltasBefore = Object.keys(r.state.worldMeta.chunkDeltas).length;
+                    const playerPos = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, z: 0 };
+                    r.p2pHandleMessage(
+                        JSON.stringify({
+                            type: "dsl",
+                            peerId: "peerX",
+                            program: ["modify_terrain", playerPos.x, playerPos.z, 5, -3],
+                        })
+                    );
+                    const deltasAfter = Object.keys(r.state.worldMeta.chunkDeltas).length;
+                    out.remoteModifyTerrainGrowsDeltas = deltasAfter > deltasBefore;
+
+                    // Cleanup
+                    r.p2pSend = origSend;
+                    r.state.p2p.enabled = false;
+                    r.state.p2p.connected = false;
+                    r.state.p2p.peerId = null;
+                    r.state.worldMeta.chunkDeltas = {};
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!ring11V2Results || ring11V2Results.error) {
+                check(
+                    "Ring 11 V2: Snapshot erreichbar",
+                    false,
+                    (ring11V2Results && ring11V2Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Ring 11 V2: p2pBroadcastDsl-Methode existiert", ring11V2Results.broadcastMethodExists);
+                check("Ring 11 V2: human-DSL wird gebroadcastet", ring11V2Results.humanBroadcasts);
+                check("Ring 11 V2: remote-DSL wird NICHT re-gebroadcastet (Loop-Schutz)", ring11V2Results.remoteDoesNotEcho);
+                check("Ring 11 V2: LLM-DSL wird NICHT gebroadcastet (nur explizite human-Geste)", ring11V2Results.llmDoesNotBroadcast);
+                check("Ring 11 V2: nicht-verbundener Client broadcastet nicht", ring11V2Results.disconnectedSkipsBroadcast);
+                check("Ring 11 V2: eingehende dsl-Nachricht wird lokal ausgeführt (weather wechselt)", ring11V2Results.remoteDslAppliedLocally);
+                check("Ring 11 V2: dsl mit eigener peerId wird ignoriert", ring11V2Results.ownPeerDslIgnored);
+                check("Ring 11 V2: dsl mit non-array program crasht nicht", ring11V2Results.nonArrayDslNoCrash);
+                check("Ring 11 V2: Diskrimination — zwei verschiedene Programme → zwei verschiedene Welt-Zustände", ring11V2Results.discriminationHolds);
+                check("Ring 11 V2: Remote modify_terrain wächst lokale chunkDeltas (Vision-Punkt)", ring11V2Results.remoteModifyTerrainGrowsDeltas);
+            }
+
+            // ### Ring 11 V2.1 — LAN-Fähigkeit + Sync-Korrektheit ###
+            // Bug-Fixes nach User-Test mit zwei Maschinen:
+            //   1. signaling-server bind 0.0.0.0 (LAN reachable)
+            //   2. CSP weit (ws:/wss:) — Custom-IPs erlaubt
+            //   3. Raum-Override (state.p2p.roomOverride) für ad-hoc-Räume
+            //   4. spawn_*-Chat-Patterns embedden Position+Seed → Multi-User-
+            //      Sync-Korrektheit (Empfänger spawnt am SENDER-Ort, nicht
+            //      am eigenen)
+            //   5. Non-broadcastable-Filter: player_*-Ops bleiben lokal
+            const ring11V21Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    // 1. Raum-Override: state.p2p.roomOverride existiert + persist
+                    out.hasRoomOverride = typeof r.state.p2p.roomOverride === "string";
+                    r.state.p2p.roomOverride = "test-shared-room-xyz";
+                    r.p2pPersist();
+                    r.state.p2p.roomOverride = "";
+                    r.p2pLoadPersisted();
+                    out.roomOverridePersists = r.state.p2p.roomOverride === "test-shared-room-xyz";
+                    r.state.p2p.roomOverride = "";
+                    r.p2pPersist();
+
+                    // 2. NON_BROADCASTABLE_OPS-Liste vorhanden + sinnvoll
+                    out.hasNonBroadcastSet =
+                        r.constructor.NON_BROADCASTABLE_OPS instanceof Set &&
+                        r.constructor.NON_BROADCASTABLE_OPS.has("player_jump_power") &&
+                        r.constructor.NON_BROADCASTABLE_OPS.has("player_speed") &&
+                        r.constructor.NON_BROADCASTABLE_OPS.has("player_soul") &&
+                        r.constructor.NON_BROADCASTABLE_OPS.has("set_visible");
+
+                    // 3. _dslContainsAnyOp-Helfer findet Op im Tree
+                    out.containsOpFlat = r._dslContainsAnyOp(["player_speed", 5], r.constructor.NON_BROADCASTABLE_OPS);
+                    out.containsOpNested = r._dslContainsAnyOp(
+                        ["chain", ["weather", "rainy"], ["player_speed", 5]],
+                        r.constructor.NON_BROADCASTABLE_OPS
+                    );
+                    out.containsOpClean = !r._dslContainsAnyOp(
+                        ["chain", ["weather", "rainy"], ["modify_terrain", 0, 0, 4, -2]],
+                        r.constructor.NON_BROADCASTABLE_OPS
+                    );
+
+                    // 4. p2pBroadcastDsl skipped wenn non-broadcastable Op enthalten
+                    const sent = [];
+                    const origSend = r.p2pSend;
+                    r.p2pSend = function (obj) {
+                        sent.push(obj);
+                        return true;
+                    };
+                    r.p2pBroadcastDsl(["weather", "rainy"]);
+                    out.cleanProgramBroadcasts = sent.length === 1;
+                    sent.length = 0;
+                    r.p2pBroadcastDsl(["player_speed", 10]);
+                    out.playerOpDoesNotBroadcast = sent.length === 0;
+                    sent.length = 0;
+                    r.p2pBroadcastDsl(["chain", ["weather", "sunny"], ["player_jump_power", 20]]);
+                    out.mixedProgramDoesNotBroadcast = sent.length === 0;
+                    r.p2pSend = origSend;
+
+                    // 5. Chat-Pattern "baue dorf hier" embed jetzt Position+Seed
+                    const dorfPattern = r.parseChatToDsl("baue dorf hier");
+                    out.dorfHasAtNotAtPlayer =
+                        dorfPattern &&
+                        Array.isArray(dorfPattern.program) &&
+                        dorfPattern.program[0] === "spawn_village" &&
+                        Array.isArray(dorfPattern.program[1]) &&
+                        dorfPattern.program[1][0] === "at" &&
+                        Number.isFinite(dorfPattern.program[1][1]) &&
+                        Number.isFinite(dorfPattern.program[1][3]) &&
+                        Number.isInteger(dorfPattern.program[2]);
+
+                    // 6. Chat-Pattern "spawne kreaturen 5" embed Position
+                    const krePattern = r.parseChatToDsl("spawne kreaturen 5");
+                    out.kreatureHasAt =
+                        krePattern &&
+                        Array.isArray(krePattern.program) &&
+                        krePattern.program[0] === "repeat" &&
+                        Array.isArray(krePattern.program[2]) &&
+                        krePattern.program[2][0] === "spawn_creature" &&
+                        Array.isArray(krePattern.program[2][1]) &&
+                        krePattern.program[2][1][0] === "at";
+
+                    // 7. Chat-Pattern "baue fraktal tempel" embed Position+Seed
+                    const fraktal = r.parseChatToDsl("baue fraktal tempel");
+                    out.fraktalHasSeed =
+                        fraktal &&
+                        Array.isArray(fraktal.program) &&
+                        fraktal.program[0] === "spawn_fractal" &&
+                        Array.isArray(fraktal.program[1]) &&
+                        fraktal.program[1][0] === "at" &&
+                        Number.isInteger(fraktal.program[5]);
+
+                    // 8. Diskrimination: spawn_village mit FIXEM Seed → deterministisch
+                    // (zwei Spawn-Aufrufe mit gleichem Seed liefern dieselbe Architektur-Geometrie)
+                    const beforeArchCount = r.state.architectures.length;
+                    r.dslRun(["spawn_village", ["at", 50, 0, 50], 12345], { source: "remote:peerX" });
+                    const arch1 = r.state.architectures[r.state.architectures.length - 1];
+                    r.dslRun(["spawn_village", ["at", 60, 0, 60], 12345], { source: "remote:peerX" });
+                    const arch2 = r.state.architectures[r.state.architectures.length - 1];
+                    out.seedDeterminismHolds =
+                        arch1 && arch2 && arch1.seed === arch2.seed && arch1.seed === 12345;
+                    // Cleanup
+                    r.state.architectures = r.state.architectures.slice(0, beforeArchCount);
+
+                    // 9. spawn_village mit at-Position landet WIRKLICH dort
+                    // (Empfänger spawnt am SENDER-Ort, nicht am eigenen Player)
+                    r.dslRun(["spawn_village", ["at", 77, 0, -33], 999], { source: "remote:peerY" });
+                    const lastArch = r.state.architectures[r.state.architectures.length - 1];
+                    out.atPositionRespected =
+                        lastArch && lastArch.position && lastArch.position.x === 77 && lastArch.position.z === -33;
+                    r.state.architectures = r.state.architectures.slice(0, beforeArchCount);
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!ring11V21Results || ring11V21Results.error) {
+                check(
+                    "Ring 11 V2.1: Snapshot erreichbar",
+                    false,
+                    (ring11V21Results && ring11V21Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Ring 11 V2.1: state.p2p.roomOverride existiert", ring11V21Results.hasRoomOverride);
+                check("Ring 11 V2.1: roomOverride persistiert via localStorage", ring11V21Results.roomOverridePersists);
+                check(
+                    "Ring 11 V2.1: NON_BROADCASTABLE_OPS Set enthält player_*+set_visible",
+                    ring11V21Results.hasNonBroadcastSet
+                );
+                check("Ring 11 V2.1: _dslContainsAnyOp findet Op flat", ring11V21Results.containsOpFlat);
+                check("Ring 11 V2.1: _dslContainsAnyOp findet Op verschachtelt", ring11V21Results.containsOpNested);
+                check("Ring 11 V2.1: _dslContainsAnyOp ignoriert nicht-listed Ops", ring11V21Results.containsOpClean);
+                check("Ring 11 V2.1: clean program (weather) wird gebroadcastet", ring11V21Results.cleanProgramBroadcasts);
+                check(
+                    "Ring 11 V2.1: player_speed (private) wird NICHT gebroadcastet",
+                    ring11V21Results.playerOpDoesNotBroadcast
+                );
+                check(
+                    "Ring 11 V2.1: gemischtes Programm mit player_jump_power skippt komplett",
+                    ring11V21Results.mixedProgramDoesNotBroadcast
+                );
+                check(
+                    "Ring 11 V2.1: Chat 'baue dorf hier' embed at(x,y,z)+seed (Multi-Sync-Fix)",
+                    ring11V21Results.dorfHasAtNotAtPlayer
+                );
+                check(
+                    "Ring 11 V2.1: Chat 'spawne kreaturen N' embed at-Position",
+                    ring11V21Results.kreatureHasAt
+                );
+                check(
+                    "Ring 11 V2.1: Chat 'baue fraktal X' embed at+rootSeed",
+                    ring11V21Results.fraktalHasSeed
+                );
+                check(
+                    "Ring 11 V2.1: spawn_village(seed) ist deterministisch (gleicher Seed → gleicher Wert)",
+                    ring11V21Results.seedDeterminismHolds
+                );
+                check(
+                    "Ring 11 V2.1: at-Position wird respektiert (Empfänger spawnt am SENDER-Ort)",
+                    ring11V21Results.atPositionRespected
+                );
+            }
+
+            // ### Ring 11.5 — Intuitives Multi-User-Setup ###
+            // Mode/Rolle im New-World-Dialog, Einladungs-Code, Auto-Host/Guest,
+            // world-snapshot-Empfang nur bei pending=true, role-State in
+            // worldMeta + p2p.
+            const ring115Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    // 1. State: role in worldMeta + p2p
+                    out.hasWorldRole = typeof r.state.worldMeta.role === "string";
+                    out.hasP2PRole = typeof r.state.p2p.role === "string";
+                    out.hasPendingFlag = typeof r.state.p2p.pendingWorldSnapshot === "boolean";
+
+                    // 2. Invitation-Code: encode + decode roundtrip
+                    const codeA = r.makeInvitationCode("ws://192.168.1.42:4313", "w-1k7p-abc123");
+                    out.encodeShape = codeA === "anazh://192.168.1.42:4313/w-1k7p-abc123";
+                    const parsedA = r.parseInvitationCode(codeA);
+                    out.decodeShape =
+                        parsedA &&
+                        parsedA.url === "ws://192.168.1.42:4313" &&
+                        parsedA.roomId === "w-1k7p-abc123";
+
+                    // 3. parseInvitationCode toleriert tolerantes Format
+                    const parsedTolerant = r.parseInvitationCode("192.168.1.42:4313/myroom123");
+                    out.parseTolerant =
+                        parsedTolerant && parsedTolerant.url === "ws://192.168.1.42:4313" && parsedTolerant.roomId === "myroom123";
+
+                    // 4. parseInvitationCode lehnt Müll ab
+                    out.parseRejectsEmpty = r.parseInvitationCode("") === null;
+                    out.parseRejectsBad = r.parseInvitationCode("ho ha") === null;
+                    out.parseRejectsShortRoom = r.parseInvitationCode("anazh://h:4313/ab") === null;
+
+                    // 5. createNewWorld({role: "host"}) setzt role in worldMeta
+                    const hostId = r.createNewWorld({
+                        slug: "host-test-" + Date.now().toString(36),
+                        role: "host",
+                        reload: false,
+                    });
+                    out.hostWorldCreated = !!hostId;
+                    if (hostId) {
+                        const saved = JSON.parse(localStorage.getItem(r.worldStorageKey(hostId)));
+                        out.hostRoleInSavedMeta = saved && saved.worldMeta && saved.worldMeta.role === "host";
+                        r.deleteWorld(hostId);
+                    }
+
+                    // 6. _importGuestWorld erzeugt guest-Welt aus Snapshot
+                    const sampleSnapshot = {
+                        worldMeta: {
+                            worldId: "guest-source-uuid-xxx",
+                            slug: "originalwelt",
+                            seed: "abc-seed",
+                            bornAt: Date.now() - 100000,
+                            schemaVersion: "10.5-chunk-delta-v1",
+                            chunkDeltas: {},
+                            parentWorlds: [],
+                        },
+                        worldJournal: { entries: [], seen: {} },
+                        architectures: [],
+                        blueprints: [],
+                        playerEmotions: { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 },
+                    };
+                    const guestId = r._importGuestWorld(
+                        sampleSnapshot,
+                        { url: "ws://192.168.1.99:4313", roomId: "guest-source-uuid-xxx", peerId: "peer-host" },
+                        "test-guest"
+                    );
+                    out.guestImportOk = guestId === "guest-source-uuid-xxx";
+                    if (guestId) {
+                        const savedGuest = JSON.parse(localStorage.getItem(r.worldStorageKey(guestId)));
+                        out.guestRoleSet = savedGuest && savedGuest.worldMeta && savedGuest.worldMeta.role === "guest";
+                        out.guestHostInfoSet =
+                            savedGuest &&
+                            savedGuest.worldMeta &&
+                            savedGuest.worldMeta.hostInfo &&
+                            savedGuest.worldMeta.hostInfo.url === "ws://192.168.1.99:4313" &&
+                            savedGuest.worldMeta.hostInfo.peerId === "peer-host";
+                        // P2P-Settings für Auto-Connect geschrieben
+                        out.p2pEnabledPersisted = localStorage.getItem("anazh.p2p.enabled") === "true";
+                        out.p2pUrlPersisted = localStorage.getItem("anazh.p2p.url") === "ws://192.168.1.99:4313";
+                        // Cleanup
+                        r.deleteWorld(guestId);
+                        // p2p-flags wieder weg, damit andere Tests nicht beeinflusst werden
+                        localStorage.setItem("anazh.p2p.enabled", "false");
+                        localStorage.setItem("anazh.p2p.url", "ws://127.0.0.1:4313");
+                    }
+
+                    // 7. world-snapshot wird nur bei pending=true akzeptiert
+                    r.state.p2p.peerId = "self-id";
+                    r.state.p2p.pendingWorldSnapshot = false;
+                    const originalRole = r.state.worldMeta.role;
+                    r.p2pHandleMessage(
+                        JSON.stringify({
+                            type: "world-snapshot",
+                            peerId: "evil-peer",
+                            state: { worldMeta: { worldId: "stolen", slug: "evil", role: "host" } },
+                        })
+                    );
+                    // Welt darf nicht überschrieben sein
+                    out.snapshotRejectedWhenNotPending = r.state.worldMeta.role === originalRole;
+
+                    // 8. world-request: nur Host antwortet (mit world-snapshot)
+                    const sentMsgs = [];
+                    const origSend = r.p2pSend;
+                    r.p2pSend = function (m) {
+                        sentMsgs.push(m);
+                        return true;
+                    };
+                    // Guest oder Solo: kein Snapshot raus
+                    r.state.p2p.role = "solo";
+                    r.p2pHandleMessage(JSON.stringify({ type: "world-request", peerId: "asker" }));
+                    out.soloDoesNotAnswerRequest = sentMsgs.length === 0;
+                    // Host: schickt snapshot mit to=asker
+                    r.state.p2p.role = "host";
+                    r.p2pHandleMessage(JSON.stringify({ type: "world-request", peerId: "asker" }));
+                    const sentSnap = sentMsgs.find((m) => m.type === "world-snapshot" && m.to === "asker");
+                    out.hostAnswersRequestWithSnapshot = !!sentSnap && !!sentSnap.state;
+                    r.p2pSend = origSend;
+                    sentMsgs.length = 0;
+                    r.state.p2p.role = "solo";
+
+                    // 9. UI-Elemente vorhanden
+                    out.dialogExists = !!document.getElementById("new-world-dialog");
+                    out.modeRadiosExist = document.querySelectorAll('input[name="new-world-mode"]').length === 2;
+                    out.roleRadiosExist = document.querySelectorAll('input[name="new-world-role"]').length === 2;
+                    out.inviteInputExists = !!document.getElementById("new-world-invite");
+                    out.hostBannerExists = !!document.getElementById("world-host-banner");
+                    out.guestBannerExists = !!document.getElementById("world-guest-banner");
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!ring115Results || ring115Results.error) {
+                check(
+                    "Ring 11.5: Snapshot erreichbar",
+                    false,
+                    (ring115Results && ring115Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Ring 11.5: worldMeta.role-Feld existiert", ring115Results.hasWorldRole);
+                check("Ring 11.5: state.p2p.role-Feld existiert", ring115Results.hasP2PRole);
+                check("Ring 11.5: state.p2p.pendingWorldSnapshot-Feld existiert", ring115Results.hasPendingFlag);
+                check("Ring 11.5: makeInvitationCode liefert anazh://host:port/roomId", ring115Results.encodeShape);
+                check("Ring 11.5: parseInvitationCode dekodiert URL + roomId", ring115Results.decodeShape);
+                check("Ring 11.5: parseInvitationCode toleriert host:port/room ohne Schema", ring115Results.parseTolerant);
+                check("Ring 11.5: parseInvitationCode lehnt leeren Code ab", ring115Results.parseRejectsEmpty);
+                check("Ring 11.5: parseInvitationCode lehnt unsinnigen Code ab", ring115Results.parseRejectsBad);
+                check("Ring 11.5: parseInvitationCode lehnt zu kurze roomId ab", ring115Results.parseRejectsShortRoom);
+                check("Ring 11.5: createNewWorld({role:'host'}) speichert role im worldMeta", ring115Results.hostRoleInSavedMeta);
+                check("Ring 11.5: _importGuestWorld nutzt host-worldId als neue worldId", ring115Results.guestImportOk);
+                check("Ring 11.5: _importGuestWorld setzt worldMeta.role='guest'", ring115Results.guestRoleSet);
+                check("Ring 11.5: _importGuestWorld setzt worldMeta.hostInfo korrekt", ring115Results.guestHostInfoSet);
+                check("Ring 11.5: _importGuestWorld aktiviert P2P-Auto-Connect (localStorage)", ring115Results.p2pEnabledPersisted);
+                check("Ring 11.5: _importGuestWorld speichert host-URL in localStorage", ring115Results.p2pUrlPersisted);
+                check("Ring 11.5: world-snapshot wird ohne pending-Flag verworfen (Sicherheits-Wall)", ring115Results.snapshotRejectedWhenNotPending);
+                check("Ring 11.5: Solo-Spieler antwortet NICHT auf world-request", ring115Results.soloDoesNotAnswerRequest);
+                check("Ring 11.5: Host antwortet auf world-request mit world-snapshot (to=asker)", ring115Results.hostAnswersRequestWithSnapshot);
+                check("Ring 11.5: new-world-dialog im DOM", ring115Results.dialogExists);
+                check("Ring 11.5: Mode-Radios (solo/multi) im DOM", ring115Results.modeRadiosExist);
+                check("Ring 11.5: Role-Radios (host/join) im DOM", ring115Results.roleRadiosExist);
+                check("Ring 11.5: Einladungs-Code-Input im DOM", ring115Results.inviteInputExists);
+                check("Ring 11.5: world-host-banner im DOM", ring115Results.hostBannerExists);
+                check("Ring 11.5: world-guest-banner im DOM", ring115Results.guestBannerExists);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {

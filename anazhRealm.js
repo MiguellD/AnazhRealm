@@ -1,4 +1,4 @@
-/**AnazhRealm V7.66 – Das Ultiversum Vollendet.
+/**AnazhRealm V7.71 – Das Ultiversum Vollendet.
  * Hüpfen: Robust, präzise (Y ~1.5), Coyote-Time 0.3s, Gravitation 1.5G, Reibung 0.5.
  * Kollisionen: Kein Tunneling, steepnessThreshold 3.0, wallThickness 2.0, CCD optimiert.
  * Terrain: Flacher (Höhenunterschiede ±5), KI-gesteuerte Steilheitsanpassung, Chat-Steuerung.
@@ -12,7 +12,7 @@
 class AnazhRealm {
     constructor() {
         // ### Learnings ### [Stichwortartig optimieren, korrigieren, ergänzen – nie Wissen löschen!]
-        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66
+        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69, LAN-Fähigkeit + Sync-Korrektheit (Ring 11 V2.1: 0.0.0.0-bind, ws:/wss:-CSP, roomOverride, spawn_*-Embedding, NON_BROADCASTABLE_OPS) in V7.70, Intuitiver Multi-User-Setup (Ring 11.5: Modus-Wahl, Host-Banner mit Einladungs-Code, Auto-Welt-Snapshot beim Join) in V7.71
         // - Nexus als Herz der Selbstentwicklung, steuert nun alles über Chat, unzerstörbar und unendlich
         this.state = {
             // ### Kern ###
@@ -94,7 +94,7 @@ class AnazhRealm {
             maxVersionHistoryEntries: 50,
             maxCreatures: 120,
             maxLoadedChunks: 196,
-            currentVersion: "7.66",
+            currentVersion: "7.71",
             terrainSteepness: 1.0,
             terrainBaseHeight: 0.0,
             weather: "sunny",
@@ -233,6 +233,39 @@ class AnazhRealm {
                 lastResponseAt: -Infinity,
                 minGapSeconds: 3.0,
             },
+            // Ring 11 V1: Multi-User Position-Sync via WebSocket-Broker
+            // (signaling-server.js). enabled=true startet die Verbindung,
+            // url+roomId steuern wohin verbunden wird. peers ist eine Map
+            // <peerId, {pos, mesh, lastSeen}>. lastBroadcastAt drosselt
+            // Position-Updates auf 30 Hz, sonst würde jeder Frame ein
+            // Paket auslösen. V1 trägt KEIN DSL — fremde Welt-Logik wäre
+            // ein Sandbox-Risiko bevor die Vertrauens-Grenzen klar sind.
+            p2p: {
+                enabled: false,
+                url: "ws://127.0.0.1:4313",
+                peerId: null,
+                room: null,
+                roomOverride: "",
+                ws: null,
+                peers: new Map(),
+                broadcastIntervalMs: 33,
+                lastBroadcastAt: 0,
+                lastError: null,
+                connected: false,
+                // Ring 11.5: Rolle in dieser Welt. "solo" = lokale Welt,
+                // p2p nicht gestartet. "host" = ich habe die Welt
+                // erschaffen, andere joinen zu mir. "guest" = ich bin zu
+                // einem Host gejoint, meine Welt ist eine Kopie. Wird
+                // primär aus state.worldMeta.role gespiegelt; hier nur
+                // Runtime-Convenience.
+                role: "solo",
+                pendingWorldSnapshot: false,
+                // Ring 11.5: LAN-Adressen vom signaling-server (kommt im
+                // welcome-Message). Wird vom Host für die Einladungs-URL
+                // genutzt: nicht ws://127.0.0.1:..., sondern die LAN-IP,
+                // die Mitspieler erreichen können.
+                lanAddresses: [],
+            },
             // Welt-Identität (Ring 8+, siehe docs/state-of-realm.md §11). Felder
             // werden jetzt schon gesetzt, damit das Save-Schema zukunftsfest
             // bleibt; Logik für Sichtbarkeit/Fusion kommt später.
@@ -251,6 +284,18 @@ class AnazhRealm {
                 // Spieler seine erste Welt nicht visuell verliert.
                 seed: null,
                 schemaVersion: "8.0-multiworld-v1",
+                chunkDeltas: {},
+                // Ring 11.5: Welt-Beziehungs-Rolle.
+                //   "solo"  = lokale, private Welt (Default)
+                //   "host"  = ich erschuf diese Welt für Multi-User, lade andere ein
+                //   "guest" = ich bin zu einem Host gejoint, Welt ist eine Kopie
+                // Bei "host" und "guest" startet Multi-User-Sync automatisch
+                // beim Init (statt manueller Toggle-Klick).
+                role: "solo",
+                // Ring 11.5: bei "guest" — wohin verbinden wir uns initial?
+                // null bei solo/host. Wird beim Join-Pfad gefüllt mit
+                // {url, roomId} aus dem Einladungs-Code.
+                hostInfo: null,
             },
             // Welle 1 D — Welt-Journal. Geordnete Liste von Erinnerungen
             // (Genesis, erstes Wetter, erste Kreatur, hochfitness Programme,
@@ -395,7 +440,7 @@ class AnazhRealm {
     // ### Logging ###
     log(message, level = "INFO") {
         if (level === "DEBUG" && !this.state.debugLogging) return;
-        const logMessage = `[AnazhRealm V7.66] [${level}] ${message}`;
+        const logMessage = `[AnazhRealm V7.71] [${level}] ${message}`;
         this.state.logBuffer.push(logMessage);
         console.log(logMessage);
         if (this.state.logBuffer.length > this.state.maxLogEntries) {
@@ -674,7 +719,57 @@ class AnazhRealm {
             emotionsBefore,
             activityBefore,
         };
+        // Ring 11 V2: erfolgreiche Spieler-Programme (Chat-DSL, source="human")
+        // werden über P2P an alle Mitspieler im selben Raum gebroadcastet.
+        // Remote-empfangene Programme (source="remote:*") werden NICHT
+        // weitergeleitet — sonst entstünde eine Endlos-Echo-Schleife. LLM-
+        // und Nexus-Programme bleiben lokal (V2-Scope: nur explizite
+        // Spieler-Geste, keine maschinellen Effekte).
+        // V2.1: zusätzlich filtern wir Spieler-private Ops (player_*, set_visible)
+        // raus — die ändern intimes State des Empfängers und sind nicht zur
+        // Synchronisation gedacht.
+        if (
+            outcome.errors === 0 &&
+            ctx.source === "human" &&
+            this.state.p2p &&
+            this.state.p2p.enabled &&
+            this.state.p2p.connected
+        ) {
+            this.p2pBroadcastDsl(program);
+        }
         return { ok: outcome.errors === 0, log: ctx.log, outcome, programId: ctx.programId };
+    }
+
+    // Ring 11 V2: DSL-Ops, die NICHT über P2P gesendet werden — sie ändern
+    // intimes Spieler-State (Speed, Sprung, Seele, Sichtbarkeits-Toggles).
+    // Wenn ein Programm einen dieser Ops irgendwo im Tree enthält, wird der
+    // GANZE Broadcast übersprungen (sonst würde z. B. ["chain", weather,
+    // player_speed] beim Empfänger den Speed mit-ändern).
+    static get NON_BROADCASTABLE_OPS() {
+        return new Set(["player_jump_power", "player_speed", "player_size_mul", "player_soul", "set_visible"]);
+    }
+
+    _dslContainsAnyOp(node, opSet) {
+        if (!Array.isArray(node) || node.length === 0) return false;
+        const head = node[0];
+        if (typeof head === "string" && opSet.has(head)) return true;
+        for (let i = 1; i < node.length; i++) {
+            if (this._dslContainsAnyOp(node[i], opSet)) return true;
+        }
+        return false;
+    }
+
+    // Ring 11 V2.1: Helfer zum DSL-Broadcast. Vorher-Check (skip wenn nicht-
+    // broadcastable Op enthalten). Sendet {type:"dsl", program}; Server
+    // stempelt peerId und broadcastet an alle anderen im Raum. Empfänger
+    // routet via p2pHandleMessage → dslRun mit source="remote:<peerId>".
+    p2pBroadcastDsl(program) {
+        if (!Array.isArray(program) || program.length === 0) return;
+        if (this._dslContainsAnyOp(program, AnazhRealm.NON_BROADCASTABLE_OPS)) {
+            // Programm enthält Spieler-private Op — bewusst lokal behalten.
+            return;
+        }
+        this.p2pSend({ type: "dsl", program });
     }
 
     dslEval(program, ctx) {
@@ -789,6 +884,42 @@ class AnazhRealm {
             terrain_base_height: ([value]) => {
                 this.state.terrainBaseHeight = c(value, -50, 50);
             },
+            // Ring 10.5: modify_terrain(x, z, radius, deltaHeight). Hebt oder
+            // senkt das Höhenfeld in einer Scheibe um (x,z). Schreibt ein Op
+            // in alle vom Radius berührten Chunk-Delta-Listen + wendet sofort
+            // an, sofern der Chunk geladen ist. Beim Re-Ensure läuft
+            // applyChunkDelta die gespeicherte Op-Liste durch — der Effekt
+            // überlebt damit Chunk-Unload und Reload. Bewusst NICHT im
+            // dslComposeAtomic-Pool: der Nexus soll Welt-Geometrie unter dem
+            // Spieler nicht willkürlich umpflügen (gleiche Disziplin wie
+            // terrain_steepness/-base_height, siehe CLAUDE.md gotcha).
+            modify_terrain: ([x, z, radius, deltaHeight], ctx) => {
+                const cx = Number(x);
+                const cz = Number(z);
+                if (!Number.isFinite(cx) || !Number.isFinite(cz)) {
+                    ctx.log.push({ event: "modify_terrain_invalid_pos" });
+                    return;
+                }
+                const r = c(radius, 0.5, 15);
+                const dh = c(deltaHeight, -15, 15);
+                const op = { type: "modify_terrain", x: cx, z: cz, r, dh, at: Date.now() };
+                const affected = this._chunksTouchedByDisc(cx, cz, r);
+                let stored = 0;
+                for (const key of affected) {
+                    if (this._appendChunkDeltaOp(key, op)) stored++;
+                    const chunkData = this.state.chunkMap && this.state.chunkMap.get(key);
+                    if (chunkData) this._applyModifyOpToChunk(chunkData, op);
+                }
+                ctx.log.push({
+                    event: "modified_terrain",
+                    x: cx,
+                    z: cz,
+                    r,
+                    dh,
+                    chunks: affected.length,
+                    stored,
+                });
+            },
             time_of_day: ([value]) => {
                 this.state.timeOfDay = c(value, 0, 1);
             },
@@ -843,41 +974,49 @@ class AnazhRealm {
             // Ring 6 — architectureTemplates. Drei Bau-Primitives. Position
             // kommt über die übliche Selektor-Form (`at_player`, `at_origin`,
             // `near_player N`). Jeder Bau zählt als 1 Spawn-Budget.
-            spawn_village: ([positionNode], ctx) => {
+            // Ring 11 V2.1: optionales Seed-Argument für deterministisches
+            // Visual bei Multi-User-Sync. Chat-Pattern + Schöpfer können das
+            // Seed explizit setzen, sonst wird wie bisher zufällig erzeugt.
+            // Beim Broadcast embed der Sender das verwendete Seed, damit
+            // der Empfänger DIESELBEN Häuser sieht, nicht eigene.
+            spawn_village: ([positionNode, seed], ctx) => {
                 const pos = this.dslEvalPos(positionNode, ctx);
                 if (ctx.budget.spawnsLeft <= 0) {
                     ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
                     return;
                 }
                 ctx.budget.spawnsLeft--;
-                const entry = this.spawnArchitecture("village", pos);
-                ctx.log.push({ event: "spawned_village", id: entry ? entry.id : null, pos });
+                const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
+                const entry = this.spawnArchitecture("village", pos, { seed: s });
+                ctx.log.push({ event: "spawned_village", id: entry ? entry.id : null, pos, seed: s });
             },
-            spawn_temple: ([positionNode], ctx) => {
+            spawn_temple: ([positionNode, seed], ctx) => {
                 const pos = this.dslEvalPos(positionNode, ctx);
                 if (ctx.budget.spawnsLeft <= 0) {
                     ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
                     return;
                 }
                 ctx.budget.spawnsLeft--;
-                const entry = this.spawnArchitecture("temple", pos);
-                ctx.log.push({ event: "spawned_temple", id: entry ? entry.id : null, pos });
+                const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
+                const entry = this.spawnArchitecture("temple", pos, { seed: s });
+                ctx.log.push({ event: "spawned_temple", id: entry ? entry.id : null, pos, seed: s });
             },
-            spawn_waterfall: ([positionNode], ctx) => {
+            spawn_waterfall: ([positionNode, seed], ctx) => {
                 const pos = this.dslEvalPos(positionNode, ctx);
                 if (ctx.budget.spawnsLeft <= 0) {
                     ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
                     return;
                 }
                 ctx.budget.spawnsLeft--;
-                const entry = this.spawnArchitecture("waterfall", pos);
-                ctx.log.push({ event: "spawned_waterfall", id: entry ? entry.id : null, pos });
+                const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
+                const entry = this.spawnArchitecture("waterfall", pos, { seed: s });
+                ctx.log.push({ event: "spawned_waterfall", id: entry ? entry.id : null, pos, seed: s });
             },
             // Ring 6.4 — generischer Bauplan-Spawn. Funktioniert mit jedem
             // Bauplan-Namen (built-in oder eigen): `["spawn_blueprint",
             // "mein-tempelplatz", ["at_player"]]`. Wird vom Hotbar (6.5)
             // und Werkstatt (6.6) als universeller Pfad benutzt.
-            spawn_blueprint: ([name, positionNode], ctx) => {
+            spawn_blueprint: ([name, positionNode, seed], ctx) => {
                 if (typeof name !== "string") {
                     ctx.log.push({ event: "invalid_blueprint_name", name });
                     return;
@@ -893,8 +1032,9 @@ class AnazhRealm {
                     return;
                 }
                 ctx.budget.spawnsLeft--;
-                const entry = this.spawnArchitecture(name, pos);
-                ctx.log.push({ event: "spawned_blueprint", name, id: entry ? entry.id : null, pos });
+                const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
+                const entry = this.spawnArchitecture(name, pos, { seed: s });
+                ctx.log.push({ event: "spawned_blueprint", name, id: entry ? entry.id : null, pos, seed: s });
             },
             // Welle 2 B — Schöpfer-Werkzeuge. Der LLM (oder Chat-Befehl) kann
             // eigene Baupläne und Fähigkeiten erschaffen, nicht nur bestehende
@@ -1038,7 +1178,7 @@ class AnazhRealm {
             // dank Distance-Culling (V2) nicht alle gleichzeitig im GPU
             // liegen müssen. Pfeiler 3 der Vision (Fraktales Wachstum)
             // konkret im Code.
-            spawn_fractal: ([positionNode, type, depth, ratio], ctx) => {
+            spawn_fractal: ([positionNode, type, depth, ratio, rootSeedArg], ctx) => {
                 const pos = this.dslEvalPos(positionNode, ctx);
                 const validTypes = { village: true, temple: true, waterfall: true };
                 const t = typeof type === "string" && validTypes[type] ? type : "temple";
@@ -1052,14 +1192,9 @@ class AnazhRealm {
                     }
                     ctx.budget.spawnsLeft--;
                     spawned++;
-                    // Seed deterministisch aus Parent + Level-Index ableiten,
-                    // damit ein Fraktal-Save reproduzierbar denselben Mesh-
-                    // Aufbau hat (selbe Hütten-Anordnung etc.).
                     const childSeed = (parentSeed * 16807 + level * 31) >>> 0;
                     this.spawnArchitecture(t, { x: cx, y: pos.y, z: cz }, { seed: childSeed, scale });
                     if (level >= d) return;
-                    // Sechs Kinder im Hexagon, Radius proportional zur
-                    // aktuellen Skala (so wachsen Sub-Cluster nicht zu nahe).
                     const childRadius = 14 * scale;
                     for (let i = 0; i < 6; i++) {
                         const angle = (i / 6) * Math.PI * 2;
@@ -1068,9 +1203,20 @@ class AnazhRealm {
                         visit(ncx, ncz, scale * r, level + 1, childSeed + i);
                     }
                 };
-                const rootSeed = Math.floor(ctx.rng() * 0xffffffff);
+                // Ring 11 V2.1: rootSeed kann explizit gesetzt werden (Multi-
+                // User-Sync). Sonst wie bisher: ctx.rng-basiert.
+                const rootSeed = Number.isFinite(Number(rootSeedArg))
+                    ? Number(rootSeedArg) >>> 0
+                    : Math.floor(ctx.rng() * 0xffffffff);
                 visit(pos.x, pos.z, 1, 0, rootSeed);
-                ctx.log.push({ event: "spawned_fractal", type: t, depth: d, ratio: r, count: spawned });
+                ctx.log.push({
+                    event: "spawned_fractal",
+                    type: t,
+                    depth: d,
+                    ratio: r,
+                    count: spawned,
+                    seed: rootSeed,
+                });
             },
             creatures_color: ([color]) => {
                 if (typeof color !== "string") return;
@@ -2479,6 +2625,626 @@ class AnazhRealm {
         });
     }
 
+    // ### Ring 11 V1 — Multi-User Position-Sync ###
+    // Sehr bewusst klein gehalten: eine Verbindung pro Browser, ein Raum
+    // (per Default = aktive worldId), 30 Hz Position-Broadcast,
+    // Remote-Spieler als simple Cone-Meshes. KEIN DSL-Sync — fremde
+    // Programme würden die Sandbox-Grenze in V1 verletzen. Heilige
+    // Lektion: KEINE neuen Manager-Klassen, KEIN Sync-Layer-Modul. Acht
+    // Methoden auf der einen AnazhRealm, drei Hooks im Game-Loop (Pos-
+    // Broadcast + Peer-Mesh-Update + Idle-Disconnect-Pflege).
+    p2pLoadPersisted() {
+        try {
+            const enabled = localStorage.getItem("anazh.p2p.enabled");
+            const url = localStorage.getItem("anazh.p2p.url");
+            const room = localStorage.getItem("anazh.p2p.room");
+            if (typeof enabled === "string") this.state.p2p.enabled = enabled === "true";
+            if (typeof url === "string" && url.trim().length > 0) this.state.p2p.url = url.trim();
+            // Ring 11 V2.1: explizite Raum-Override (für ad-hoc-Räume oder
+            // Multi-Maschinen-Setups, wo Spieler unterschiedliche worldIds
+            // haben aber denselben Raum nutzen wollen). Leer = aktive worldId
+            // wird genommen (Default-Verhalten).
+            if (typeof room === "string") this.state.p2p.roomOverride = room.trim();
+        } catch {
+            /* localStorage kann fehlen */
+        }
+    }
+
+    p2pPersist() {
+        try {
+            localStorage.setItem("anazh.p2p.enabled", this.state.p2p.enabled ? "true" : "false");
+            localStorage.setItem("anazh.p2p.url", this.state.p2p.url || "");
+            localStorage.setItem("anazh.p2p.room", this.state.p2p.roomOverride || "");
+        } catch {
+            /* defensive */
+        }
+    }
+
+    p2pGenerateId() {
+        // Kurzer, lesbarer Peer-Identifier. Kein crypto-grade UUID nötig —
+        // der Server prüft Eindeutigkeit per Set-Mitgliedschaft, und in V1
+        // läuft die Vertrauens-Grenze ohnehin durch den Browser-Origin.
+        const rnd = Math.random().toString(36).slice(2, 10);
+        const t = Date.now().toString(36).slice(-4);
+        return `p-${t}-${rnd}`;
+    }
+
+    // Ring 11.5: Einladungs-Code-Format `anazh://host:port/roomId`. Kompakt,
+    // copy-paste-freundlich, im Browser klickbar (sobald jemand das
+    // anazh://-Protokoll registriert). Eine Zeile — passt in Chat, Mail, SMS.
+    makeInvitationCode(url, roomId) {
+        if (typeof url !== "string" || typeof roomId !== "string") return null;
+        let host = "";
+        let port = "";
+        try {
+            // WebSocket-URLs (ws:// oder wss://) — URL-Parser kann ws nicht
+            // direkt, also via http-Prefix-Trick.
+            const m = url.trim().match(/^wss?:\/\/([^:/]+)(?::(\d+))?/i);
+            if (!m) return null;
+            host = m[1];
+            port = m[2] || "4313";
+        } catch {
+            return null;
+        }
+        // worldId-Format ist UUID-ähnlich (z. B. "w-1k7p-abcdef..."); wir
+        // nehmen das KOMPLETT, kein Hash — Eindeutigkeit + room-Match nötig.
+        return `anazh://${host}:${port}/${roomId}`;
+    }
+
+    parseInvitationCode(code) {
+        if (typeof code !== "string") return null;
+        const trimmed = code.trim();
+        if (!trimmed) return null;
+        // Format: anazh://host:port/roomId
+        // Auch tolerant für bloßes "host:port/roomId" oder mit ws:// statt anazh://
+        let normalized = trimmed;
+        if (/^anazh:\/\//i.test(normalized)) normalized = normalized.replace(/^anazh:\/\//i, "ws://");
+        else if (!/^wss?:\/\//i.test(normalized)) normalized = "ws://" + normalized;
+        const m = normalized.match(/^(wss?):\/\/([^:/]+)(?::(\d+))?\/(.+)$/i);
+        if (!m) return null;
+        const scheme = m[1].toLowerCase();
+        const host = m[2];
+        const port = m[3] || "4313";
+        const roomId = m[4];
+        if (!roomId || roomId.length < 4 || roomId.length > 80) return null;
+        return { url: `${scheme}://${host}:${port}`, roomId };
+    }
+
+    // Ring 11.5: Join-Flow. Öffnet kurz-lebige WS-Verbindung, sendet join +
+    // world-request, wartet auf world-snapshot, speichert die Welt unter der
+    // host-worldId mit role="guest" + hostInfo, aktiviert die Welt + Reload.
+    // Async — Aufrufer bekommt Promise<{worldId} | null>.
+    async joinWorldFromCode(code, { slugHint = null, timeoutMs = 10000 } = {}) {
+        const parsed = this.parseInvitationCode(code);
+        if (!parsed) {
+            this.log("Einladungs-Code ungültig", "WARN");
+            return { ok: false, reason: "invalid_code" };
+        }
+        if (typeof WebSocket === "undefined") {
+            return { ok: false, reason: "no_websocket" };
+        }
+        const myPeerId = this.p2pGenerateId();
+        return new Promise((resolve) => {
+            let ws;
+            try {
+                ws = new WebSocket(parsed.url);
+            } catch (err) {
+                this.log(`Join-WS-Aufbau gescheitert: ${err.message}`, "ERROR");
+                resolve({ ok: false, reason: "ws_throw" });
+                return;
+            }
+            let done = false;
+            const finish = (result) => {
+                if (done) return;
+                done = true;
+                try {
+                    ws.close();
+                } catch {
+                    /* defensive */
+                }
+                resolve(result);
+            };
+            const timeout = setTimeout(() => {
+                this.log("Join-Timeout — kein world-snapshot vom Host innerhalb " + timeoutMs + " ms", "WARN");
+                finish({ ok: false, reason: "timeout" });
+            }, timeoutMs);
+            ws.addEventListener("open", () => {
+                try {
+                    ws.send(JSON.stringify({ type: "join", room: parsed.roomId, peerId: myPeerId }));
+                } catch {
+                    /* defensive */
+                }
+                // Welcome abwarten ist optional — wir können request direkt
+                // schicken. Server forwarded an alle anderen im Raum (Host).
+                setTimeout(() => {
+                    if (done) return;
+                    try {
+                        ws.send(JSON.stringify({ type: "world-request" }));
+                    } catch {
+                        /* defensive */
+                    }
+                }, 300);
+            });
+            ws.addEventListener("message", (event) => {
+                let msg;
+                try {
+                    msg = JSON.parse(event.data);
+                } catch {
+                    return;
+                }
+                if (!msg || typeof msg !== "object") return;
+                if (msg.type !== "world-snapshot") return;
+                if (!msg.state || typeof msg.state !== "object") return;
+                clearTimeout(timeout);
+                const hostInfo = {
+                    url: parsed.url,
+                    roomId: parsed.roomId,
+                    peerId: typeof msg.peerId === "string" ? msg.peerId : null,
+                };
+                const worldId = this._importGuestWorld(msg.state, hostInfo, slugHint);
+                finish(worldId ? { ok: true, worldId } : { ok: false, reason: "import_failed" });
+            });
+            ws.addEventListener("error", () => {
+                clearTimeout(timeout);
+                this.log("Join-WS-Fehler — läuft der signaling-server am Host?", "ERROR");
+                finish({ ok: false, reason: "ws_error" });
+            });
+        });
+    }
+
+    // Ring 11.5: Welt-Snapshot vom Host → neue lokale Welt mit role="guest".
+    // worldId wird vom Host übernommen, damit beide Spieler standardmäßig
+    // im selben P2P-Raum landen (Raum = worldId, V2.1).
+    _importGuestWorld(snapshot, hostInfo, slugHint) {
+        if (!snapshot || typeof snapshot !== "object") return null;
+        const meta = snapshot.worldMeta || {};
+        const worldId = (meta.worldId && String(meta.worldId)) || `guest-${Date.now()}`;
+        const baseSlug = (slugHint && String(slugHint).trim()) || meta.slug || "geladen";
+        // Slug-Kollisions-Resolution (analog Ring 9 importWorldBeside)
+        let slug =
+            String(baseSlug)
+                .toLowerCase()
+                .replace(/[^a-z0-9-]+/g, "-")
+                .replace(/^-+|-+$/g, "")
+                .slice(0, 40) || "geladen";
+        const existing = this.worldsIndexLoad();
+        let suffix = 2;
+        const slugs = new Set(existing.map((e) => e.slug));
+        const originalSlug = slug;
+        while (slugs.has(slug)) {
+            slug = `${originalSlug}-${suffix++}`;
+        }
+        // Deep clone, role + hostInfo setzen
+        let guestSnap;
+        try {
+            guestSnap = JSON.parse(JSON.stringify(snapshot));
+        } catch (err) {
+            this.log(`Guest-Welt-Clone fehlgeschlagen: ${err.message}`, "ERROR");
+            return null;
+        }
+        if (!guestSnap.worldMeta) guestSnap.worldMeta = {};
+        guestSnap.worldMeta.worldId = worldId;
+        guestSnap.worldMeta.slug = slug;
+        guestSnap.worldMeta.role = "guest";
+        guestSnap.worldMeta.hostInfo = {
+            url: hostInfo.url || null,
+            roomId: hostInfo.roomId || worldId,
+            peerId: hostInfo.peerId || null,
+        };
+        guestSnap.worldMeta.schemaVersion = guestSnap.worldMeta.schemaVersion || "11.5-multiuser-v1";
+        try {
+            localStorage.setItem(this.worldStorageKey(worldId), JSON.stringify(guestSnap));
+        } catch (err) {
+            this.log(`Guest-Welt konnte nicht geschrieben werden: ${err.message}`, "ERROR");
+            return null;
+        }
+        this.worldsIndexUpsert({
+            worldId,
+            slug,
+            bornAt: meta.bornAt || Date.now(),
+            lastPlayed: Date.now(),
+        });
+        // P2P-Settings für Auto-Connect nach Reload schreiben
+        try {
+            localStorage.setItem("anazh.p2p.enabled", "true");
+            localStorage.setItem("anazh.p2p.url", hostInfo.url || "ws://127.0.0.1:4313");
+            localStorage.setItem("anazh.p2p.room", ""); // default = worldId = sync room
+        } catch {
+            /* defensive */
+        }
+        this.activeWorldSet(worldId);
+        this.log(`Guest-Welt importiert: ${slug} (${worldId.slice(0, 8)}…)`, "INFO");
+        return worldId;
+    }
+
+    initP2PSync(roomId, opts = {}) {
+        const p2p = this.state.p2p;
+        if (p2p.ws) this.shutdownP2PSync();
+        const url = (opts.url || p2p.url || "ws://127.0.0.1:4313").trim();
+        // Ring 11 V2.1: Raum-Auflösung — explizites Argument > localStorage-
+        // Override > aktive worldId. Leer-String im Override gilt als
+        // „nicht gesetzt" → Fallback auf worldId.
+        const explicitOverride = (p2p.roomOverride || "").trim();
+        const room =
+            (roomId && String(roomId).trim()) ||
+            explicitOverride ||
+            (this.state.worldMeta && this.state.worldMeta.worldId) ||
+            null;
+        if (!room) {
+            p2p.lastError = "Keine Raum-ID — Welt nicht initialisiert?";
+            this.log("P2P-Init ohne Welt-ID abgewiesen", "WARN");
+            return { ok: false, reason: "no_room" };
+        }
+        if (typeof WebSocket === "undefined") {
+            p2p.lastError = "WebSocket nicht verfügbar in dieser Umgebung";
+            return { ok: false, reason: "no_websocket" };
+        }
+        p2p.peerId = p2p.peerId || this.p2pGenerateId();
+        p2p.room = room;
+        p2p.lastError = null;
+        try {
+            const ws = new WebSocket(url);
+            p2p.ws = ws;
+            ws.addEventListener("open", () => {
+                p2p.connected = true;
+                this.p2pSend({ type: "join", room: p2p.room, peerId: p2p.peerId });
+                this.log(`P2P verbunden mit ${url} (raum=${p2p.room.slice(0, 8)}, peer=${p2p.peerId})`, "INFO");
+                this.p2pUpdateStatus();
+            });
+            ws.addEventListener("message", (event) => {
+                this.p2pHandleMessage(event.data);
+                this.p2pUpdateStatus();
+            });
+            ws.addEventListener("close", () => {
+                p2p.connected = false;
+                this._p2pClearAllPeerMeshes();
+                this.log("P2P-Verbindung beendet", "INFO");
+                this.p2pUpdateStatus();
+            });
+            ws.addEventListener("error", () => {
+                p2p.lastError = "WebSocket-Fehler (signaling-server läuft?)";
+                p2p.connected = false;
+                this.log("P2P-Fehler — signaling-server erreichbar?", "WARN");
+                this.p2pUpdateStatus();
+            });
+            return { ok: true };
+        } catch (err) {
+            p2p.lastError = err && err.message ? err.message : "WebSocket-Aufbau gescheitert";
+            this.log(`P2P-Init Fehler: ${p2p.lastError}`, "ERROR");
+            return { ok: false, reason: "ws_throw" };
+        }
+    }
+
+    shutdownP2PSync() {
+        const p2p = this.state.p2p;
+        if (p2p.ws) {
+            try {
+                p2p.ws.close();
+            } catch {
+                /* defensive */
+            }
+        }
+        p2p.ws = null;
+        p2p.connected = false;
+        p2p.room = null;
+        this._p2pClearAllPeerMeshes();
+    }
+
+    p2pSend(obj) {
+        const ws = this.state.p2p.ws;
+        if (!ws || ws.readyState !== 1) return false;
+        try {
+            ws.send(JSON.stringify(obj));
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    p2pHandleMessage(raw) {
+        let msg;
+        try {
+            msg = JSON.parse(raw);
+        } catch {
+            return;
+        }
+        if (!msg || typeof msg !== "object") return;
+        const p2p = this.state.p2p;
+        if (msg.type === "welcome") {
+            if (Array.isArray(msg.peers)) {
+                for (const pid of msg.peers) {
+                    if (typeof pid === "string" && pid !== p2p.peerId) this._p2pEnsurePeerEntry(pid);
+                }
+            }
+            // Ring 11.5: Server schickt seine LAN-Adressen mit, damit Host-
+            // Clients ihre Einladungs-URL bauen können ohne nach der IP
+            // zu fragen. Bei mehreren Interfaces nehmen wir die erste —
+            // typisch das primäre LAN-Interface.
+            if (Array.isArray(msg.lanAddresses)) {
+                p2p.lanAddresses = msg.lanAddresses.filter((a) => typeof a === "string");
+            }
+            // Falls wir gerade als Host aktiv sind: UI mit Einladungs-Code
+            // neu rendern, sobald wir die LAN-Adressen kennen.
+            if (p2p.role === "host" && typeof this.updateWorldInfo === "function") {
+                this.updateWorldInfo();
+            }
+            return;
+        }
+        if (msg.type === "peer-join") {
+            if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
+                this._p2pEnsurePeerEntry(msg.peerId);
+            }
+            return;
+        }
+        if (msg.type === "peer-leave") {
+            if (typeof msg.peerId === "string") this._p2pRemovePeer(msg.peerId);
+            return;
+        }
+        if (msg.type === "pos") {
+            const pid = msg.peerId;
+            if (typeof pid !== "string" || pid === p2p.peerId) return;
+            const entry = this._p2pEnsurePeerEntry(pid);
+            const x = Number(msg.x);
+            const y = Number(msg.y);
+            const z = Number(msg.z);
+            const yaw = Number(msg.yaw);
+            if (![x, y, z, yaw].every(Number.isFinite)) return;
+            entry.x = x;
+            entry.y = y;
+            entry.z = z;
+            entry.yaw = yaw;
+            entry.lastSeen = performance.now() / 1000;
+            return;
+        }
+        if (msg.type === "dsl") {
+            // Ring 11 V2: eingehendes DSL-Programm von einem Peer.
+            // STRENGE Sandbox-Disziplin: läuft durch denselben dslRun-Pfad
+            // wie eigene Programme, mit identischen Budget-Limits und
+            // Op-Whitelist. source="remote:<peerId>" markiert es —
+            // verhindert Re-Broadcast in dslRun (sonst Endlos-Echo).
+            const pid = msg.peerId;
+            if (typeof pid !== "string" || pid === p2p.peerId) return;
+            if (!Array.isArray(msg.program) || msg.program.length === 0) return;
+            try {
+                this.dslRun(msg.program, { source: `remote:${pid}` });
+            } catch (err) {
+                this.log(`P2P-DSL Ausführungsfehler von ${pid}: ${err.message}`, "WARN");
+            }
+            return;
+        }
+        if (msg.type === "world-request") {
+            // Ring 11.5: ein Peer (frischer Joiner) bittet um Welt-Snapshot.
+            // Nur Hosts antworten — Guests haben selbst eine Kopie, sollen
+            // nicht mehrere snapshots schicken. Solo-Welten sind sowieso
+            // nicht im selben Raum.
+            if (p2p.role !== "host") return;
+            const requesterId = msg.peerId;
+            if (typeof requesterId !== "string" || requesterId === p2p.peerId) return;
+            try {
+                const snapshot = this.buildStateSnapshot();
+                this.p2pSend({ type: "world-snapshot", to: requesterId, state: snapshot });
+                this.log(`Welt-Snapshot an Joiner ${requesterId.slice(0, 8)}… gesendet`, "INFO");
+            } catch (err) {
+                this.log(`Welt-Snapshot konnte nicht erstellt werden: ${err.message}`, "WARN");
+            }
+            return;
+        }
+        if (msg.type === "world-snapshot") {
+            // Ring 11.5: eingehender Welt-Snapshot vom Host. Wird nur
+            // akzeptiert, wenn wir gerade joinen (pendingWorldSnapshot=true)
+            // — sonst könnte ein bösartiger Peer den Spielstand stehlen.
+            if (!p2p.pendingWorldSnapshot) {
+                this.log("world-snapshot empfangen ohne pending-Flag — ignoriert", "WARN");
+                return;
+            }
+            const senderId = msg.peerId;
+            if (typeof senderId !== "string" || senderId === p2p.peerId) return;
+            if (!msg.state || typeof msg.state !== "object") return;
+            // Snapshot übernehmen: setze worldMeta.role = "guest", merke
+            // host-Info, dann loadState. Reload danach via UI-Pfad.
+            try {
+                // worldMeta.role wird durch loadState überschrieben — wir
+                // müssen es NACHHER auf guest setzen + persistieren.
+                this.loadState(msg.state);
+                if (this.state.worldMeta) {
+                    this.state.worldMeta.role = "guest";
+                    this.state.worldMeta.hostInfo = {
+                        url: p2p.url,
+                        roomId: p2p.room,
+                        peerId: senderId,
+                    };
+                }
+                p2p.role = "guest";
+                p2p.pendingWorldSnapshot = false;
+                // Save sofort schreiben, damit Reload die guest-Welt findet
+                try {
+                    this.saveState();
+                } catch (err) {
+                    this.log(`Save nach Welt-Snapshot fehlgeschlagen: ${err.message}`, "WARN");
+                }
+                this.log(`Welt-Snapshot empfangen + geladen, jetzt Guest in ${p2p.room.slice(0, 8)}…`, "INFO");
+                // UI-Banner ggf. updaten
+                this.p2pUpdateStatus();
+                this.updateWorldInfo();
+            } catch (err) {
+                this.log(`Welt-Snapshot konnte nicht geladen werden: ${err.message}`, "ERROR");
+                p2p.pendingWorldSnapshot = false;
+            }
+        }
+    }
+
+    _p2pEnsurePeerEntry(peerId) {
+        const p2p = this.state.p2p;
+        let entry = p2p.peers.get(peerId);
+        if (entry) return entry;
+        entry = {
+            peerId,
+            x: 0,
+            y: 0,
+            z: 0,
+            yaw: 0,
+            mesh: null,
+            lastSeen: performance.now() / 1000,
+        };
+        p2p.peers.set(peerId, entry);
+        if (this.state.scene && typeof THREE !== "undefined") {
+            // Einfacher Markierungs-Mesh: Kegel + Kugel. Farbe deterministisch
+            // aus peerId-Hash, damit derselbe Peer immer dieselbe Farbe hat —
+            // erleichtert Erkennung im Multi-Peer-Fall.
+            let hash = 0;
+            for (let i = 0; i < peerId.length; i++) hash = (hash * 31 + peerId.charCodeAt(i)) >>> 0;
+            const hue = (hash % 360) / 360;
+            const color = new THREE.Color().setHSL(hue, 0.7, 0.55);
+            const group = new THREE.Group();
+            const body = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.4, 8), new THREE.MeshBasicMaterial({ color }));
+            body.position.y = 0.7;
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 8), new THREE.MeshBasicMaterial({ color }));
+            head.position.y = 1.55;
+            group.add(body);
+            group.add(head);
+            this.state.scene.add(group);
+            entry.mesh = group;
+        }
+        return entry;
+    }
+
+    _p2pRemovePeer(peerId) {
+        const p2p = this.state.p2p;
+        const entry = p2p.peers.get(peerId);
+        if (!entry) return;
+        if (entry.mesh) {
+            this.state.scene.remove(entry.mesh);
+            entry.mesh.traverse((obj) => {
+                if (obj.geometry && obj.geometry.dispose) obj.geometry.dispose();
+                if (obj.material && obj.material.dispose) obj.material.dispose();
+            });
+        }
+        p2p.peers.delete(peerId);
+    }
+
+    _p2pClearAllPeerMeshes() {
+        const p2p = this.state.p2p;
+        for (const peerId of Array.from(p2p.peers.keys())) {
+            this._p2pRemovePeer(peerId);
+        }
+    }
+
+    p2pTick(currentTimeMs) {
+        const p2p = this.state.p2p;
+        if (!p2p.enabled || !p2p.connected || !p2p.ws) return;
+        // Position-Broadcast bei 30 Hz. lastBroadcastAt ist in ms,
+        // currentTimeMs sollte performance.now() sein.
+        const playerMesh = this.state.playerMesh;
+        if (playerMesh && currentTimeMs - p2p.lastBroadcastAt > p2p.broadcastIntervalMs) {
+            p2p.lastBroadcastAt = currentTimeMs;
+            this.p2pSend({
+                type: "pos",
+                x: playerMesh.position.x,
+                y: playerMesh.position.y,
+                z: playerMesh.position.z,
+                yaw: this.state.yaw || 0,
+            });
+        }
+        // Peer-Meshes ans aktuelle Position-State angleichen + idle-purge
+        // (kein update >10 s → entfernen, vermutlich verbindungslos).
+        const nowSec = currentTimeMs / 1000;
+        const stale = [];
+        for (const [pid, entry] of p2p.peers) {
+            if (entry.mesh) {
+                entry.mesh.position.set(entry.x, entry.y - 1, entry.z);
+                entry.mesh.rotation.y = entry.yaw;
+            }
+            if (nowSec - entry.lastSeen > 10) stale.push(pid);
+        }
+        for (const pid of stale) this._p2pRemovePeer(pid);
+    }
+
+    initP2PUI() {
+        const toggle = document.getElementById("p2p-toggle");
+        const urlInput = document.getElementById("p2p-url");
+        const roomInput = document.getElementById("p2p-room");
+        const roomCopyBtn = document.getElementById("p2p-room-copy");
+        const statusEl = document.getElementById("p2p-status");
+        if (!toggle || !urlInput || !statusEl) return;
+        // UI auf gespeicherten Stand setzen
+        urlInput.value = this.state.p2p.url || "ws://127.0.0.1:4313";
+        if (roomInput) roomInput.value = this.state.p2p.roomOverride || "";
+        toggle.setAttribute("aria-pressed", this.state.p2p.enabled ? "true" : "false");
+        toggle.textContent = this.state.p2p.enabled ? "Deaktivieren" : "Aktivieren";
+        this.p2pUpdateStatus();
+        urlInput.addEventListener("change", () => {
+            this.state.p2p.url = urlInput.value.trim() || "ws://127.0.0.1:4313";
+            this.p2pPersist();
+            this.p2pUpdateStatus();
+        });
+        if (roomInput) {
+            roomInput.addEventListener("change", () => {
+                this.state.p2p.roomOverride = roomInput.value.trim();
+                this.p2pPersist();
+                // Wenn aktuell verbunden: neu verbinden mit neuem Raum
+                if (this.state.p2p.enabled) {
+                    this.initP2PSync(null);
+                }
+                this.p2pUpdateStatus();
+            });
+        }
+        if (roomCopyBtn) {
+            roomCopyBtn.addEventListener("click", () => {
+                // Kopiere die AKTUELL VERWENDETE Raum-ID (Override > worldId)
+                const room =
+                    (this.state.p2p.roomOverride || "").trim() ||
+                    (this.state.worldMeta && this.state.worldMeta.worldId) ||
+                    "";
+                if (!room) return;
+                if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(room).catch(() => {
+                        // Fallback: zeige Raum im Status-Text
+                        if (statusEl) statusEl.textContent = `Raum-ID: ${room}`;
+                    });
+                } else if (statusEl) {
+                    statusEl.textContent = `Raum-ID: ${room}`;
+                }
+            });
+        }
+        toggle.addEventListener("click", () => {
+            if (this.state.p2p.enabled) {
+                this.state.p2p.enabled = false;
+                this.shutdownP2PSync();
+                toggle.setAttribute("aria-pressed", "false");
+                toggle.textContent = "Aktivieren";
+            } else {
+                this.state.p2p.enabled = true;
+                this.initP2PSync(null);
+                toggle.setAttribute("aria-pressed", "true");
+                toggle.textContent = "Deaktivieren";
+            }
+            this.p2pPersist();
+            this.p2pUpdateStatus();
+        });
+    }
+
+    p2pUpdateStatus() {
+        const statusEl = document.getElementById("p2p-status");
+        if (statusEl) {
+            const p = this.state.p2p;
+            if (!p.enabled) {
+                statusEl.textContent = "Inaktiv.";
+            } else if (p.lastError) {
+                statusEl.textContent = `Fehler: ${p.lastError}`;
+            } else if (!p.connected) {
+                statusEl.textContent = "Verbinde…";
+            } else {
+                const room = p.room ? `${p.room.slice(0, 8)}…` : "—";
+                const peerCount = p.peers.size;
+                statusEl.textContent = `Verbunden (Raum ${room}, ${peerCount} Mitspieler).`;
+            }
+        }
+        // Ring 11.5: Banner mit Connection-Stand aktualisieren (Host:
+        // peerCount, Guest: connected-Indikator).
+        if (typeof this._renderHostBanner === "function") this._renderHostBanner();
+        if (typeof this._renderGuestBanner === "function") this._renderGuestBanner();
+    }
+
     // ### Ring 2 Phase 3 – Chat → DSL ###
     // Regelbasierter Parser. Acht welt-betreffende Befehle gehen jetzt durch
     // dieselbe DSL, die der Nexus spricht. Mensch und Nexus teilen damit eine
@@ -2505,12 +3271,17 @@ class AnazhRealm {
                 }),
             },
             {
+                // Ring 11 V2.1: Position embed bei Build-Zeit (sonst spawnt
+                // der Empfänger Kreaturen an SEINER Spielerposition statt
+                // unserer). spawn_creature selbst hat keinen Seed (Kreaturen
+                // sind sowieso auto-bewegt, Seed-Variation ist akzeptabel).
                 example: "spawne kreaturen 10",
                 re: /^spawne\s+kreaturen\s+(\d+)\s*$/i,
                 build: (m) => {
                     const count = Math.max(1, Math.min(20, parseInt(m[1], 10) || 1));
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 50, z: 0 };
                     return {
-                        program: ["repeat", count, ["spawn_creature", ["at_player"], 1, "happy"]],
+                        program: ["repeat", count, ["spawn_creature", ["at", p.x, p.y, p.z], 1, "happy"]],
                         describe: `${count} Kreaturen gespawnt (am Spieler)`,
                     };
                 },
@@ -2614,31 +3385,61 @@ class AnazhRealm {
             },
             {
                 // Ring 6 — architectureTemplates. "baue dorf/tempel/wasserfall hier"
-                // platziert die Struktur am Spieler (`at_player`).
+                // platziert die Struktur am Spieler. Ring 11 V2.1: Position +
+                // Seed werden hier zur Build-Zeit explizit eingebettet, damit
+                // der DSL-Broadcast deterministisch ist (sonst sähen Mitspieler
+                // an einer anderen Stelle ein anders aussehendes Dorf).
                 example: "baue dorf hier",
                 re: /^baue\s+(dorf|tempel|wasserfall)\s+hier\s*$/i,
                 build: (m) => {
                     const map = { dorf: "spawn_village", tempel: "spawn_temple", wasserfall: "spawn_waterfall" };
                     const op = map[m[1].toLowerCase()];
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                    const seed = Math.floor(Math.random() * 0xffffffff);
                     return {
-                        program: [op, ["at_player"]],
+                        program: [op, ["at", p.x, p.y, p.z], seed],
                         describe: `${m[1]} gebaut`,
                     };
                 },
             },
             {
-                // Ring 6 V2 — Fraktal. "baue fraktal tempel" baut einen
-                // hexagonal-rekursiv selbstähnlichen Cluster (depth=2,
-                // ratio=0.5 als sinnvolle Defaults: 43 Strukturen). Type
-                // ist optional, default "tempel".
+                // Ring 6 V2 — Fraktal. Position + RootSeed embed wie oben.
                 example: "baue fraktal tempel",
                 re: /^baue\s+fraktal(?:\s+(dorf|tempel|wasserfall))?\s*$/i,
                 build: (m) => {
                     const map = { dorf: "village", tempel: "temple", wasserfall: "waterfall" };
                     const t = (m[1] || "tempel").toLowerCase();
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                    const seed = Math.floor(Math.random() * 0xffffffff);
                     return {
-                        program: ["spawn_fractal", ["at_player"], map[t], 2, 0.5],
+                        program: ["spawn_fractal", ["at", p.x, p.y, p.z], map[t], 2, 0.5, seed],
                         describe: `Fraktal-${t} gebaut (depth 2, ratio 0.5)`,
+                    };
+                },
+            },
+            {
+                // Ring 10.5: Welt-Modifizierbarkeit. `grabe loch` / `hebe
+                // hügel` schreibt ein modify_terrain-Op an der aktuellen
+                // Spieler-Position, das per-Chunk persistiert wird und
+                // einen Chunk-Unload + Reload überlebt.
+                example: "grabe loch",
+                re: /^grabe\s+(?:ein\s+)?loch\s*$/i,
+                build: () => {
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, z: 0 };
+                    return {
+                        program: ["modify_terrain", p.x, p.z, 4, -3],
+                        describe: "Loch gegraben",
+                    };
+                },
+            },
+            {
+                example: "hebe hügel",
+                re: /^hebe\s+(?:einen\s+)?hügel\s*$/i,
+                build: () => {
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, z: 0 };
+                    return {
+                        program: ["modify_terrain", p.x, p.z, 5, 4],
+                        describe: "Hügel gehoben",
                     };
                 },
             },
@@ -2982,7 +3783,7 @@ class AnazhRealm {
                     "Speichere Zustand",
                     "Lade Zustand",
                     "Lade Datei",
-                    "Aktiviere Version 7.66",
+                    "Aktiviere Version 7.67",
                     "Aktiviere Debug-Logs",
                     "Deaktiviere Debug-Logs",
                 ],
@@ -3597,7 +4398,7 @@ class AnazhRealm {
             // sonst auf die zu tiefe Höhe, statt einen Spawn-Fall zu lassen.
             playerPosition: { x: 0, y: 50, z: 0 },
             knowledgeBase: [],
-            version: this.state.currentVersion || "7.66",
+            version: this.state.currentVersion || "7.71",
             selfAwareness: { components: [], weaknesses: [] },
             creatures: [],
             creatureEmotions: [],
@@ -3611,7 +4412,12 @@ class AnazhRealm {
                 ...this.state.worldMeta,
                 ...worldMeta,
                 parentWorlds: [],
-                schemaVersion: "8.0-multiworld-v1",
+                // Ring 10.5: neue Welten starten mit 10.5-Schema und leerer
+                // Delta-Map. Schema-Bump signalisiert „kennt chunkDeltas",
+                // alte Welten (8.0/9.0/10.0) bleiben kompatibel — der Loader
+                // füllt chunkDeltas defensiv mit `{}` falls fehlend.
+                schemaVersion: "10.5-chunk-delta-v1",
+                chunkDeltas: {},
             },
             dslAbilities: [],
             dslHistory: [],
@@ -3691,7 +4497,7 @@ class AnazhRealm {
     // standardmäßig aus, damit Tests die Daten-Schicht prüfen können ohne
     // Page-Reload. UI-Aufrufer hängen explizit ein `window.location.reload()`
     // nach erfolgreichem Aufruf an.
-    createNewWorld({ slug = null, inheritPlayer = false, reload = false } = {}) {
+    createNewWorld({ slug = null, inheritPlayer = false, reload = false, role = "solo" } = {}) {
         // Aktuelle Welt zuerst sichern, sonst geht der Stand verloren.
         if (this.state.worldMeta && this.state.worldMeta.worldId) {
             try {
@@ -3702,6 +4508,11 @@ class AnazhRealm {
         }
         const meta = this._generateFreshWorldMeta(slug);
         const snap = this._buildEmptyWorldSnapshot(meta, inheritPlayer);
+        // Ring 11.5: Rolle in worldMeta einsetzen (default "solo"). Bei
+        // "host"/"guest" startet Init nach Reload automatisch Multi-User-Sync.
+        if (role === "host" || role === "guest") {
+            snap.worldMeta.role = role;
+        }
         try {
             localStorage.setItem(this.worldStorageKey(meta.worldId), JSON.stringify(snap));
         } catch (err) {
@@ -6099,6 +6910,230 @@ class AnazhRealm {
         return { CHUNK_SIZE, WIDTH, WORLD_SIZE, chunkWorldSize, vertexStep };
     }
 
+    // Ring 10.5: liefert die Chunk-Keys ("cx,cz"), deren AABB die Scheibe
+    // um (worldX, worldZ) mit Radius r berührt. Wird von modify_terrain
+    // genutzt, um den Op in mehreren Delta-Listen einzutragen, falls die
+    // Scheibe über mehrere Chunks reicht.
+    _chunksTouchedByDisc(worldX, worldZ, r) {
+        const { WORLD_SIZE, chunkWorldSize } = this._chunkGeometry();
+        const halfWorld = WORLD_SIZE / 2;
+        const minCX = Math.floor((worldX - r + halfWorld) / chunkWorldSize);
+        const maxCX = Math.floor((worldX + r + halfWorld) / chunkWorldSize);
+        const minCZ = Math.floor((worldZ - r + halfWorld) / chunkWorldSize);
+        const maxCZ = Math.floor((worldZ + r + halfWorld) / chunkWorldSize);
+        const out = [];
+        for (let cx = minCX; cx <= maxCX; cx++) {
+            for (let cz = minCZ; cz <= maxCZ; cz++) {
+                out.push(`${cx},${cz}`);
+            }
+        }
+        return out;
+    }
+
+    // Ring 10.5: hängt einen Op an die Delta-Liste eines Chunks, mit Cap
+    // gegen unbegrenzten Wuchs. Liefert true, wenn der Op gespeichert wurde,
+    // false, wenn der Cap erreicht ist (ältester Op wird in dem Fall
+    // verworfen statt zu wachsen — der Spieler kann die Welt weiter formen).
+    _appendChunkDeltaOp(chunkKey, op) {
+        if (!this.state.worldMeta) return false;
+        if (!this.state.worldMeta.chunkDeltas) this.state.worldMeta.chunkDeltas = {};
+        const deltas = this.state.worldMeta.chunkDeltas;
+        if (!deltas[chunkKey] || !Array.isArray(deltas[chunkKey].ops)) {
+            deltas[chunkKey] = { ops: [] };
+        }
+        const cap = AnazhRealm.CHUNK_DELTA_OPS_CAP;
+        if (deltas[chunkKey].ops.length >= cap) {
+            deltas[chunkKey].ops.shift();
+        }
+        deltas[chunkKey].ops.push(op);
+        return true;
+    }
+
+    // Ring 10.5: räumt chunkDeltas nach Load auf. Wirft ungültige Einträge,
+    // klammert Felder auf sichere Bereiche, hält den Cap pro Chunk ein.
+    // Alte Saves ohne chunkDeltas bekommen eine leere Map.
+    _sanitizeChunkDeltas() {
+        if (!this.state.worldMeta) return;
+        const raw = this.state.worldMeta.chunkDeltas;
+        if (!raw || typeof raw !== "object") {
+            this.state.worldMeta.chunkDeltas = {};
+            return;
+        }
+        const cap = AnazhRealm.CHUNK_DELTA_OPS_CAP;
+        const clean = {};
+        for (const [key, entry] of Object.entries(raw)) {
+            if (typeof key !== "string" || !/^-?\d+,-?\d+$/.test(key)) continue;
+            if (!entry || !Array.isArray(entry.ops)) continue;
+            const ops = [];
+            for (const op of entry.ops) {
+                if (!op || op.type !== "modify_terrain") continue;
+                const x = Number(op.x);
+                const z = Number(op.z);
+                const r = Number(op.r);
+                const dh = Number(op.dh);
+                if (!Number.isFinite(x) || !Number.isFinite(z)) continue;
+                if (!Number.isFinite(r) || r <= 0 || r > 20) continue;
+                if (!Number.isFinite(dh) || Math.abs(dh) > 20) continue;
+                ops.push({ type: "modify_terrain", x, z, r, dh, at: Number(op.at) || Date.now() });
+            }
+            if (ops.length === 0) continue;
+            clean[key] = { ops: ops.slice(-cap) };
+        }
+        this.state.worldMeta.chunkDeltas = clean;
+    }
+
+    // Ring 10.5: wendet einen einzelnen modify_terrain-Op auf einen
+    // geladenen Chunk an. Update-Pfad: heightData[] mutieren, Mesh-Vertices
+    // im selben Index updaten, Normalen + Bounding-Sphere neu berechnen,
+    // Ammo-Body neu bauen (Visual=Collision-Naht halten). Smoothstep-Falloff
+    // im Radius — Mitte voller dh, Rand 0. No-op wenn der Op den Chunk
+    // räumlich nicht erreicht (z. B. weil eine Scheibe über mehrere Chunks
+    // reichte und nur der Außenrand betroffen war).
+    _applyModifyOpToChunk(chunkData, op) {
+        if (!chunkData || !chunkData.mesh || !chunkData.heightData) return false;
+        if (!op || op.type !== "modify_terrain") return false;
+        const mesh = chunkData.mesh;
+        const heightData = chunkData.heightData;
+        const { CHUNK_SIZE, WORLD_SIZE, chunkWorldSize, vertexStep } = this._chunkGeometry();
+        const VTX = CHUNK_SIZE + 1;
+        const worldStartX = chunkData.chunkX * chunkWorldSize - WORLD_SIZE / 2;
+        const worldStartZ = chunkData.chunkZ * chunkWorldSize - WORLD_SIZE / 2;
+        const cx = Number(op.x);
+        const cz = Number(op.z);
+        const r = Math.max(0.5, Math.min(15, Number(op.r) || 0));
+        const dh = Math.max(-15, Math.min(15, Number(op.dh) || 0));
+        if (!Number.isFinite(cx) || !Number.isFinite(cz)) return false;
+        const r2 = r * r;
+        const posAttr = mesh.geometry.attributes.position;
+        const arr = posAttr.array;
+        let touched = 0;
+        for (let z = 0; z < VTX; z++) {
+            const wz = worldStartZ + z * vertexStep;
+            const dz = wz - cz;
+            const dz2 = dz * dz;
+            if (dz2 > r2) continue;
+            for (let x = 0; x < VTX; x++) {
+                const wx = worldStartX + x * vertexStep;
+                const dx = wx - cx;
+                const d2 = dx * dx + dz2;
+                if (d2 > r2) continue;
+                const t = 1 - Math.sqrt(d2) / r;
+                const falloff = t * t * (3 - 2 * t);
+                const delta = dh * falloff;
+                const idx = z * VTX + x;
+                heightData[idx] += delta;
+                arr[idx * 3 + 1] = heightData[idx];
+                touched++;
+            }
+        }
+        if (touched === 0) return false;
+        posAttr.needsUpdate = true;
+        mesh.geometry.computeVertexNormals();
+        mesh.geometry.computeBoundingSphere();
+        let minH = Infinity;
+        let maxH = -Infinity;
+        for (let i = 0; i < heightData.length; i++) {
+            const h = heightData[i];
+            if (h < minH) minH = h;
+            if (h > maxH) maxH = h;
+        }
+        mesh.userData.minHeight = minH;
+        mesh.userData.maxHeight = maxH;
+        this._rebuildChunkPhysics(chunkData, arr);
+        return true;
+    }
+
+    // Ring 10.5: Ammo-Body neu aus den aktuellen Mesh-Vertices bauen. Alt-Body
+    // + tmesh werden vor dem Rebuild aus der Welt entfernt + destroyed,
+    // sonst hagelt es Phantom-Kollisionen + WASM-Heap-Leaks. Selbe
+    // Triangle-Reihenfolge wie ensureChunkAt — Visual=Kollision bleibt
+    // per Konstruktion identisch (CLAUDE.md Gotcha).
+    _rebuildChunkPhysics(chunkData, vertices) {
+        if (!this.state.physicsWorld || !chunkData.mesh.userData.physicsBody) return;
+        if (typeof Ammo === "undefined") return;
+        const mesh = chunkData.mesh;
+        const sf = this.state.scaleFactor;
+        if (!(sf > 0)) return;
+        const { CHUNK_SIZE } = this._chunkGeometry();
+        const VTX = CHUNK_SIZE + 1;
+        try {
+            const oldBody = mesh.userData.physicsBody;
+            const oldTMesh = mesh.userData.physicsMesh;
+            this.state.physicsWorld.removeRigidBody(oldBody);
+            try {
+                Ammo.destroy(oldBody);
+            } catch {
+                /* defensive */
+            }
+            if (oldTMesh) {
+                try {
+                    Ammo.destroy(oldTMesh);
+                } catch {
+                    /* defensive */
+                }
+            }
+            const tmesh = new Ammo.btTriangleMesh(true, true);
+            const v0 = new Ammo.btVector3(0, 0, 0);
+            const v1 = new Ammo.btVector3(0, 0, 0);
+            const v2 = new Ammo.btVector3(0, 0, 0);
+            for (let z = 0; z < VTX - 1; z++) {
+                for (let x = 0; x < VTX - 1; x++) {
+                    const a = z * VTX + x;
+                    const b = z * VTX + x + 1;
+                    const c2 = (z + 1) * VTX + x;
+                    const d = (z + 1) * VTX + x + 1;
+                    v0.setValue(vertices[a * 3] / sf, vertices[a * 3 + 1] / sf, vertices[a * 3 + 2] / sf);
+                    v1.setValue(vertices[b * 3] / sf, vertices[b * 3 + 1] / sf, vertices[b * 3 + 2] / sf);
+                    v2.setValue(vertices[d * 3] / sf, vertices[d * 3 + 1] / sf, vertices[d * 3 + 2] / sf);
+                    tmesh.addTriangle(v0, v1, v2);
+                    v0.setValue(vertices[a * 3] / sf, vertices[a * 3 + 1] / sf, vertices[a * 3 + 2] / sf);
+                    v1.setValue(vertices[d * 3] / sf, vertices[d * 3 + 1] / sf, vertices[d * 3 + 2] / sf);
+                    v2.setValue(vertices[c2 * 3] / sf, vertices[c2 * 3 + 1] / sf, vertices[c2 * 3 + 2] / sf);
+                    tmesh.addTriangle(v0, v1, v2);
+                }
+            }
+            Ammo.destroy(v0);
+            Ammo.destroy(v1);
+            Ammo.destroy(v2);
+            const shape = new Ammo.btBvhTriangleMeshShape(tmesh, true, true);
+            const transform = new Ammo.btTransform();
+            transform.setIdentity();
+            transform.setOrigin(new Ammo.btVector3(0, 0, 0));
+            const motionState = new Ammo.btDefaultMotionState(transform);
+            const inertia = new Ammo.btVector3(0, 0, 0);
+            const rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, shape, inertia);
+            const body = new Ammo.btRigidBody(rbInfo);
+            this.state.physicsWorld.addRigidBody(body);
+            Ammo.destroy(rbInfo);
+            Ammo.destroy(inertia);
+            mesh.userData.physicsBody = body;
+            mesh.userData.physicsMesh = tmesh;
+        } catch (err) {
+            this.log(
+                `Chunk-Physik-Rebuild fehlgeschlagen (${chunkData.chunkX}, ${chunkData.chunkZ}): ${err.message}`,
+                "ERROR"
+            );
+        }
+    }
+
+    // Ring 10.5: nach ensureChunkAt aufgerufen — replays die für diesen
+    // Chunk gespeicherten Ops. No-op wenn keine Deltas existieren. Idempotent
+    // im Sinne: jede Ensure führt die volle Op-Liste aus (deterministisch,
+    // wir mutieren nicht die ops selbst).
+    applyChunkDelta(chunkKey) {
+        const deltas = this.state.worldMeta && this.state.worldMeta.chunkDeltas;
+        if (!deltas) return 0;
+        const entry = deltas[chunkKey];
+        if (!entry || !Array.isArray(entry.ops) || entry.ops.length === 0) return 0;
+        const chunkData = this.state.chunkMap && this.state.chunkMap.get(chunkKey);
+        if (!chunkData) return 0;
+        let applied = 0;
+        for (const op of entry.ops) {
+            if (this._applyModifyOpToChunk(chunkData, op)) applied++;
+        }
+        return applied;
+    }
+
     extendTerrain(direction) {
         // Legacy direction-API (für Playtest + alte Caller). Berechnet aus den
         // Map-Grenzen einen Außen-Chunk und delegiert an ensureChunkAt.
@@ -6299,6 +7334,13 @@ class AnazhRealm {
         } catch (err) {
             this.log(`ensureChunkAt Physik-Fehler bei (${newChunkX}, ${newChunkZ}): ${err.message}`, "ERROR");
         }
+
+        // Ring 10.5: nach Mesh + Body erfolgreich gebaut → gespeicherte
+        // Welt-Modifikationen für diesen Chunk replayen. Daten überleben
+        // damit Chunk-Unload + Reload + Welt-Wechsel. No-op wenn keine
+        // Deltas existieren (z. B. frische Welt).
+        const replayKey = `${newChunkX},${newChunkZ}`;
+        this.applyChunkDelta(replayKey);
 
         this.log(`Chunk hinzugefügt: (${newChunkX}, ${newChunkZ})`);
     }
@@ -6508,11 +7550,151 @@ class AnazhRealm {
         this.updateWorldInfo();
     }
 
-    // Ring 8: Inline-Dialog für „Neue Welt"-Erschaffung. Bewusst minimal,
-    // kein <dialog>-Element — wir benutzen prompt+confirm, damit das UI keine
-    // neuen Markup-Schichten braucht. Painterly-Polish kann später als
-    // eigener Commit kommen.
+    // Ring 11.5: Welt-Erstellungs-Dialog mit Modus + Rolle. Ersetzt die
+    // alte prompt/confirm-Sequenz aus Ring 8 — UX-Sprung zum Native-<dialog>
+    // mit Painterly-Stil. Drei Pfade:
+    //   1) Allein → klassische private Welt (createNewWorld)
+    //   2) Host → createNewWorld mit role="host", Auto-Start P2P nach Reload,
+    //      Banner zeigt Einladungs-Code
+    //   3) Joinen → joinWorldFromCode (kurze WS-Verbindung, world-request,
+    //      world-snapshot, _importGuestWorld, Reload in die Guest-Welt)
     _openNewWorldDialog() {
+        const dialog = document.getElementById("new-world-dialog");
+        if (!dialog || typeof dialog.showModal !== "function") {
+            // Fallback wenn <dialog> nicht supported (alte Browser, headless?)
+            this._openNewWorldDialogLegacy();
+            return;
+        }
+        const slugInput = document.getElementById("new-world-slug");
+        const modeRadios = dialog.querySelectorAll('input[name="new-world-mode"]');
+        const roleFieldset = dialog.querySelector(".new-world-role");
+        const roleRadios = dialog.querySelectorAll('input[name="new-world-role"]');
+        const joinRow = document.getElementById("new-world-join-row");
+        const inviteInput = document.getElementById("new-world-invite");
+        const inheritInput = document.getElementById("new-world-inherit");
+        const statusEl = document.getElementById("new-world-status");
+        const cancelBtn = document.getElementById("new-world-cancel");
+        const confirmBtn = document.getElementById("new-world-confirm");
+
+        // Reset state bei jedem Öffnen
+        slugInput.value = "";
+        inviteInput.value = "";
+        inheritInput.checked = false;
+        statusEl.textContent = "";
+        confirmBtn.disabled = false;
+        // Mode default auf solo
+        for (const r of modeRadios) r.checked = r.value === "solo";
+        for (const r of roleRadios) r.checked = r.value === "host";
+        roleFieldset.hidden = true;
+        joinRow.hidden = true;
+
+        const updateConditionals = () => {
+            const mode = dialog.querySelector('input[name="new-world-mode"]:checked').value;
+            const role = dialog.querySelector('input[name="new-world-role"]:checked').value;
+            roleFieldset.hidden = mode !== "multi";
+            joinRow.hidden = !(mode === "multi" && role === "join");
+        };
+        for (const r of modeRadios) r.addEventListener("change", updateConditionals);
+        for (const r of roleRadios) r.addEventListener("change", updateConditionals);
+
+        const cleanup = () => {
+            // Listener entfernen verhindert doppelte Bindings bei Re-Open
+            for (const r of modeRadios) r.removeEventListener("change", updateConditionals);
+            for (const r of roleRadios) r.removeEventListener("change", updateConditionals);
+            cancelBtn.removeEventListener("click", onCancel);
+            confirmBtn.removeEventListener("click", onConfirm);
+        };
+
+        const onCancel = () => {
+            cleanup();
+            dialog.close();
+        };
+
+        const onConfirm = async () => {
+            const mode = dialog.querySelector('input[name="new-world-mode"]:checked').value;
+            const slug = slugInput.value.trim();
+            const inherit = !!inheritInput.checked;
+            confirmBtn.disabled = true;
+            statusEl.textContent = "";
+
+            if (mode === "solo") {
+                const id = this.createNewWorld({
+                    slug: slug || null,
+                    inheritPlayer: inherit,
+                    reload: true,
+                    role: "solo",
+                });
+                if (!id) statusEl.textContent = "Welt konnte nicht erschaffen werden — siehe Konsole.";
+                cleanup();
+                if (id) dialog.close();
+                else confirmBtn.disabled = false;
+                return;
+            }
+
+            const role = dialog.querySelector('input[name="new-world-role"]:checked').value;
+            if (role === "host") {
+                const id = this.createNewWorld({
+                    slug: slug || null,
+                    inheritPlayer: inherit,
+                    reload: true,
+                    role: "host",
+                });
+                if (!id) {
+                    statusEl.textContent = "Welt konnte nicht erschaffen werden.";
+                    confirmBtn.disabled = false;
+                    return;
+                }
+                cleanup();
+                dialog.close();
+                return;
+            }
+
+            // role === "join"
+            const code = inviteInput.value.trim();
+            if (!code) {
+                statusEl.textContent = "Bitte Einladungs-Code eingeben.";
+                confirmBtn.disabled = false;
+                return;
+            }
+            statusEl.textContent = "Verbinde mit Host…";
+            const result = await this.joinWorldFromCode(code, { slugHint: slug || null });
+            if (!result.ok) {
+                const reason = {
+                    invalid_code: "Einladungs-Code ist ungültig. Erwartet: anazh://host:port/raumId",
+                    timeout: "Timeout — Host antwortet nicht. Läuft der signaling-server beim Host?",
+                    ws_error: "Verbindung gescheitert — IP + Port + Firewall prüfen.",
+                    ws_throw: "WebSocket konnte nicht geöffnet werden.",
+                    import_failed: "Welt-Snapshot konnte nicht importiert werden.",
+                    no_websocket: "Dieser Browser unterstützt WebSocket nicht.",
+                };
+                statusEl.textContent = reason[result.reason] || `Fehler: ${result.reason}`;
+                confirmBtn.disabled = false;
+                return;
+            }
+            statusEl.textContent = "Welt empfangen — lade…";
+            cleanup();
+            dialog.close();
+            // Reload in die Guest-Welt
+            try {
+                window.location.reload();
+            } catch {
+                /* headless */
+            }
+        };
+
+        cancelBtn.addEventListener("click", onCancel);
+        confirmBtn.addEventListener("click", onConfirm);
+        try {
+            dialog.showModal();
+        } catch {
+            // Fallback bei modal-Konflikten
+            this._openNewWorldDialogLegacy();
+        }
+    }
+
+    // Legacy-Fallback (prompt/confirm) für Umgebungen ohne <dialog>-Support
+    // oder bei UI-Fehlern. Ring 8 Original-Pfad.
+    _openNewWorldDialogLegacy() {
         let slugRaw = "";
         try {
             slugRaw = window.prompt("Wie soll die neue Welt heißen? (leer = automatisch)", "") || "";
@@ -6535,7 +7717,7 @@ class AnazhRealm {
             try {
                 window.alert("Neue Welt konnte nicht erschaffen werden. Siehe Konsole.");
             } catch {
-                // headless: kein alert
+                /* headless */
             }
         }
     }
@@ -6563,6 +7745,119 @@ class AnazhRealm {
         this.renderWorldJournal();
         this._renderWorldPicker();
         this._renderWorldLineage();
+        this._renderHostBanner();
+        this._renderGuestBanner();
+    }
+
+    // Ring 11.5: Host-Banner. Sichtbar nur wenn worldMeta.role === "host".
+    // Zeigt den Einladungs-Code, den der Host an Mitspieler weitergibt.
+    // URL wird aus den LAN-Adressen des signaling-servers gewählt (im
+    // welcome-Message vom Server gesendet). Fallback: aktuelle p2p.url.
+    _renderHostBanner() {
+        const banner = document.getElementById("world-host-banner");
+        if (!banner) return;
+        const role = this.state.worldMeta && this.state.worldMeta.role;
+        if (role !== "host") {
+            banner.hidden = true;
+            banner.innerHTML = "";
+            return;
+        }
+        const worldId = this.state.worldMeta.worldId;
+        if (!worldId) {
+            banner.hidden = true;
+            return;
+        }
+        // Bevorzuge LAN-Adresse, wenn vorhanden — sonst was im URL-Feld steht.
+        const lanAddrs = (this.state.p2p && this.state.p2p.lanAddresses) || [];
+        let inviteUrl;
+        if (lanAddrs.length > 0) {
+            inviteUrl = `ws://${lanAddrs[0]}`;
+        } else {
+            inviteUrl = (this.state.p2p && this.state.p2p.url) || "ws://127.0.0.1:4313";
+        }
+        const code = this.makeInvitationCode(inviteUrl, worldId) || "(Code-Erzeugung fehlgeschlagen)";
+        const connected = this.state.p2p && this.state.p2p.connected;
+        const peerCount = (this.state.p2p && this.state.p2p.peers && this.state.p2p.peers.size) || 0;
+        banner.hidden = false;
+        banner.innerHTML = "";
+        const line1 = document.createElement("div");
+        line1.innerHTML = `<strong>Du hostest diese Welt.</strong> Status: ${
+            connected ? "Bereit für Mitspieler" : "Verbinde…"
+        }${peerCount > 0 ? ` (${peerCount} verbunden)` : ""}`;
+        const line2 = document.createElement("div");
+        line2.style.marginTop = "0.35em";
+        line2.textContent = "Einladungs-Code für Mitspieler:";
+        const codeRow = document.createElement("div");
+        codeRow.style.marginTop = "0.3em";
+        codeRow.style.display = "flex";
+        codeRow.style.alignItems = "center";
+        codeRow.style.flexWrap = "wrap";
+        codeRow.style.gap = "0.4em";
+        const codeEl = document.createElement("code");
+        codeEl.textContent = code;
+        codeRow.appendChild(codeEl);
+        const copyBtn = document.createElement("button");
+        copyBtn.type = "button";
+        copyBtn.className = "invite-copy-btn";
+        copyBtn.textContent = "kopieren";
+        copyBtn.addEventListener("click", () => {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(code).then(
+                    () => {
+                        copyBtn.textContent = "kopiert!";
+                        setTimeout(() => (copyBtn.textContent = "kopieren"), 1500);
+                    },
+                    () => {
+                        copyBtn.textContent = "Code: " + code;
+                    }
+                );
+            } else {
+                copyBtn.textContent = "Code: " + code;
+            }
+        });
+        codeRow.appendChild(copyBtn);
+        banner.appendChild(line1);
+        banner.appendChild(line2);
+        banner.appendChild(codeRow);
+        if (lanAddrs.length === 0) {
+            const hint = document.createElement("div");
+            hint.style.marginTop = "0.4em";
+            hint.style.fontSize = "0.85em";
+            hint.style.opacity = "0.8";
+            hint.textContent =
+                "Hinweis: Server hat noch keine LAN-Adresse zurückgemeldet. Der Code zeigt deine eingestellte URL — falls 127.0.0.1, müssen Mitspieler die Lan-IP manuell ersetzen.";
+            banner.appendChild(hint);
+        }
+    }
+
+    // Ring 11.5: Guest-Banner. Sichtbar wenn worldMeta.role === "guest".
+    // Zeigt die Host-Verbindungs-Info als Orientierung.
+    _renderGuestBanner() {
+        const banner = document.getElementById("world-guest-banner");
+        if (!banner) return;
+        const role = this.state.worldMeta && this.state.worldMeta.role;
+        if (role !== "guest") {
+            banner.hidden = true;
+            banner.innerHTML = "";
+            return;
+        }
+        const hostInfo = this.state.worldMeta.hostInfo || {};
+        const connected = this.state.p2p && this.state.p2p.connected;
+        const peerCount = (this.state.p2p && this.state.p2p.peers && this.state.p2p.peers.size) || 0;
+        banner.hidden = false;
+        banner.innerHTML = "";
+        const line1 = document.createElement("div");
+        line1.innerHTML = `<strong>Du bist Gast in dieser Welt.</strong> Status: ${
+            connected ? "Verbunden" : "Verbinde…"
+        }${peerCount > 0 ? ` (${peerCount} im Raum)` : ""}`;
+        const line2 = document.createElement("div");
+        line2.style.marginTop = "0.35em";
+        line2.style.fontSize = "0.88em";
+        const url = hostInfo.url || "?";
+        const room = hostInfo.roomId ? hostInfo.roomId.slice(0, 8) + "…" : "?";
+        line2.textContent = `Host: ${url} · Raum: ${room}`;
+        banner.appendChild(line1);
+        banner.appendChild(line2);
     }
 
     // Ring 8: Welt-Picker rendert die Liste der anderen Welten im Index.
@@ -6875,6 +8170,10 @@ class AnazhRealm {
         } else {
             this.log("Save-Migration: kein worldMeta gefunden, generiere neue Welt-Identität", "INFO");
         }
+        // Ring 10.5: chunkDeltas defensiv normalisieren. Alte Saves haben
+        // das Feld nicht → leere Map. Vorhandene Ops werden sanitisiert
+        // (gültiger type, finite Zahlen, Cap pro Chunk eingehalten).
+        this._sanitizeChunkDeltas();
         // Ring 3: Emotionen wiederherstellen. Nur bekannte Achsen übernehmen,
         // damit alte Saves mit Tippfehlern keine fremden Keys einschleusen.
         // Ring 5: Spieler-Seele wiederherstellen. Wenn das Mesh schon
@@ -8000,7 +9299,7 @@ class AnazhRealm {
                 ...((Array.isArray(saveA.knowledgeBase) && saveA.knowledgeBase.slice(-100)) || []),
                 ...((Array.isArray(saveB.knowledgeBase) && saveB.knowledgeBase.slice(-100)) || []),
             ].slice(-200),
-            version: this.state.currentVersion || "7.66",
+            version: this.state.currentVersion || "7.71",
             selfAwareness: { components: [], weaknesses: [] },
             creatures: [],
             creatureEmotions: [],
@@ -10903,7 +12202,7 @@ class AnazhRealm {
     }
 
     async init() {
-        this.log("Initialisiere Anazh Realm V7.66... Ewigkeit erwacht!", "INFO");
+        this.log("Initialisiere Anazh Realm V7.71... Ewigkeit erwacht!", "INFO");
         this.themeInitDOM();
         this.grokInitDOM();
         this.symphonyInitDOM();
@@ -10921,6 +12220,11 @@ class AnazhRealm {
         // Schicht 2 — LLM-Persistenz aus localStorage holen + UI verkabeln.
         this.llmLoadPersisted();
         this.initLlmUI();
+        // Ring 11 V1 — P2P-Persistenz aus localStorage + UI-Verkabelung.
+        // Auto-Connect erst nach ensureWorldMeta (sonst hätten wir keine
+        // worldId als default-Raum).
+        this.p2pLoadPersisted();
+        this.initP2PUI();
         // Ring 8: aktive Welt-Identität VOR ensureWorldMeta laden, sonst
         // würde fresh=true triggern (UUID neu + Genesis-Eintrag), obwohl
         // diese Welt bereits existiert. Migriert nebenbei einen Legacy-
@@ -10933,6 +12237,24 @@ class AnazhRealm {
         this.initWeltTorUI();
         // Ring 10 — Welt-Fusion-Dialog.
         this.initWorldFusionUI();
+        // Ring 11 V1 — Auto-Connect, falls Spieler die Verbindung letztes
+        // Mal aktiv gelassen hat. ensureWorldMeta lief eben, also gibt es
+        // jetzt eine worldId als Raum-Default.
+        // Ring 11.5: zusätzlich Auto-Connect, wenn worldMeta.role === "host"
+        // oder "guest" — der Modus ist welt-intrinsisch (im Dialog gewählt),
+        // soll nicht beim Reload jedes Mal manuell aktiviert werden müssen.
+        if (this.state.worldMeta) {
+            const role = this.state.worldMeta.role;
+            if (role === "host" || role === "guest") {
+                this.state.p2p.enabled = true;
+                this.state.p2p.role = role;
+                // Guests bekamen vom Importer hostInfo.url ins localStorage
+                // gespeichert; p2pLoadPersisted oben hat das schon aufgenommen.
+            }
+        }
+        if (this.state.p2p.enabled) {
+            this.initP2PSync(null);
+        }
         try {
             await this.core.initPhysics();
             this.log("Physik erfolgreich initialisiert", "INFO");
@@ -11210,6 +12532,11 @@ class AnazhRealm {
 
             // ### Status-Panel (UI V1) ###
             this.updateStatusPanel(currentTime);
+
+            // ### Ring 11 V1 — Multi-User Position-Sync ###
+            // Broadcast (30 Hz Drosselung intern) + Peer-Mesh-Update + Idle-
+            // Purge. No-op wenn p2p.enabled === false oder nicht verbunden.
+            this.p2pTick(performance.now());
 
             // ### Bodenprüfung ###
             if (currentTime - this.state.lastGroundCheck >= this.state.groundCheckInterval) {
@@ -11987,6 +13314,10 @@ AnazhRealm.WORLD_EFFECT_THRESHOLDS = Object.freeze({
     magic_strong: 1.5,
     precision_high: 0.8,
 });
+// Ring 10.5: harter Cap auf Ops pro Chunk-Delta. Ohne den würde ein
+// Spieler, der 1000-mal denselben Hügel hebt, den Save unbegrenzt
+// aufblähen. Beim Erreichen wird der älteste Op verworfen (FIFO).
+AnazhRealm.CHUNK_DELTA_OPS_CAP = 100;
 // Welle 4 Phase 2 — Form-Tag-Aktivierungs-Matrix (v2 aus docs).
 // Werte 0..3: 0 = Form schließt das Tag aus, 1 = schwach, 2 = stark,
 // 3 = Signatur. Aktivierte Tag-Stärke = MATRIX × Material-Tag (0..1),

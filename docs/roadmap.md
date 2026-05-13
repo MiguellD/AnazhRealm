@@ -38,8 +38,13 @@ Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) si
 | 9 | Welt-Export/Import (erweitert) — Drei-Wahl Ersetzen/Daneben/Fusionieren | ✅ **live** — `<dialog>` mit drei Aktionen, `importWorldBeside` mit parentWorlds-Spur + Slug-Kollisions-Auflösung + Witness-Journal, Fusion-Button disabled bis Ring 10 | – | Ring 8 |
 | 10 | Welt-Fusion + Cascade-Rewire (zwei DSL-Programm-Sets mergen mit parentWorlds) | ✅ **live** — drei Strategien (sequence/random-mix/tag-merge), 2-Spalten-Dialog, Stammbaum mit klickbaren Eltern-Welt-Links, Cascade-Bugfix (sourceBlueprint + refName folgen Rename), Schema 10.0-fusion-v1 | – | Ring 9 |
 | 10.1 | Rezepte aus anderer Welt holen (ohne Fusion) | ✅ **live** — `importRecipesFromWorld(srcId)`, 1:1-Inhalt, `-import`-Suffix bei Kollision, Cascade-Rewire wie Fusion, „Rezepte holen"-Button pro Welt-Picker-Reihe | – | Ring 10 |
-| W6 | **Crafting-Polish + Erweiterung** — visuelle Verbindungen, Brech-Mechanik, Energiequellen, Kreaturen-Körper, Physik-Baukasten, Rüstung, Min-Regel-Entscheidung | 🔴 offen, bewusst nachgelagert | 8-12 Sessions in 7 Teilschritten | W5 + Rings 8-10 |
-| 11 | Multi-User-Sync (P2P / Signaling) | 🔴 offen — das letzte Vision-Kapitel | 5-7 d | Ring 8 + Welt-Modifizierbarkeit empfohlen |
+| 10.5 | Welt-Modifizierbarkeit (pro-Chunk DSL-Delta) | ✅ **live** — `state.worldMeta.chunkDeltas` mit FIFO-Cap 100/Chunk, `modify_terrain(x, z, r, dh)` mit Smoothstep-Falloff, `_rebuildChunkPhysics` aus aktuellen Vertices, `applyChunkDelta` als Hook in `ensureChunkAt`, Chat `grabe loch`/`hebe hügel`, Schema `10.5-chunk-delta-v1` | – | Ring 10 |
+| 11 V1 | Multi-User Position-Sync via WebSocket-Broker | ✅ **live** — `signaling-server.js` (RFC-6455 von Hand, zero deps), `state.p2p` mit peers-Map, 30 Hz pos-Broadcast, Remote-Peer-Avatare als Cone+Sphere-Group (HSL-Hash aus peerId), UI-Toggle in Einstellungen, CSP um ws:// erweitert, Sandbox-Grenze (KEIN p2p-DSL-Op) — KEIN DSL-Sync | – | Ring 10.5 |
+| 11 V2 | DSL-AST-Broadcast für Welt-Synchronisation | ✅ **live** — Chat-DSL eines Spielers wird via `p2pBroadcastDsl(program)` an alle Mitspieler gesendet, jeder Empfänger ruft `dslRun(program, {source: "remote:<peerId>"})` auf. Drei Loop-Schutz-Schichten (source-Check, peerId-Filter, Server-except-Sender). LLM-/Nexus-DSL bleibt lokal. modify_terrain + weather + spawn_creature synchronisieren beide Welten. | – | Ring 11 V1 |
+| 11 V2.1 | LAN-Fähigkeit + Sync-Korrektheit (Bug-Fixes) | ✅ **live** — signaling-server bind 0.0.0.0 (LAN reachable, LAN-IPs werden geloggt), CSP `connect-src ws: wss:` allgemein (statt enge IP-Whitelist), `state.p2p.roomOverride` für ad-hoc-Räume, spawn_*-Chat-Patterns embedden Position+Seed bei Build-Zeit (Empfänger spawnt am SENDER-Ort, gleicher Seed → gleiche Geometrie), `NON_BROADCASTABLE_OPS`-Set für Spieler-private Ops (player_jump_power, player_speed, player_size_mul, player_soul, set_visible werden NIE gesendet) | – | Ring 11 V2 |
+| 11.5 | Intuitiver Multi-User-Setup (Modus-Wahl + Einladungs-Code) | ✅ **live** — Neue-Welt-Dialog mit Modus (Allein/Mit-anderen) + Rolle (Host/Joinen). Host: Banner mit `anazh://lan-ip:port/worldId` + Copy-Button, Auto-P2P-Start nach Reload. Join: temp-WS sendet `world-request` → empfängt `world-snapshot` vom Host → `_importGuestWorld` schreibt Welt unter host-worldId mit `role:"guest"`+`hostInfo`, Auto-P2P-Start nach Reload. Server: targeted-delivery via `{to: peerId}`, LAN-Adressen im welcome, Frame-Cap 1 MiB. Schema `11.5-multiuser-v1`. | – | Ring 11 V2.1 |
+| W6 | **Crafting-Polish + UX + Stats + Welt-Sinne + Kreaturen-Aufträge** — acht Sub-Blöcke (A–H), Brainstorm + Entscheidungen in `docs/wave-6-design.md` | 🔴 offen, bewusst nachgelagert | 22-28 Sessions verteilt auf acht Themen-Blöcke | W5 + Rings 8-11.5 |
+| W7 | **Kollektive Welt-Erkenntnis (Distributed Compute)** — Skalierungs-Block, vision-treues Modell für Multi-User-Last-Verteilung: Distributed Chunk-Pre-Gen, LLM-Pool über Peers, Shared Compute-Cache, optional Public-Lobby für „join random world" | 🔴 offen — Skizze in `docs/system-audit.md` §7 | 6-8 Sessions | W6 (insb. 6.H Kreaturen-Aufträge) |
 
 **Summe verbleibend**: ~30-40 Arbeitstage in fokussierten Sessions. Verteilt auf 2-4 Monate realistisch.
 
@@ -206,7 +211,69 @@ Plus: inline-styles aus `index.html` entfernt (`#fps`, `#state-file-input`), Inl
 
 ---
 
-### Welle 6: Crafting-Polish (Feinschliff, ~2-3 Sessions, bewusst nachgelagert)
+### Welle 6: Crafting-Polish + UX + Stats (sechs Blöcke A–F, bewusst nachgelagert)
+
+**Status**: 🔴 offen — **bewusst nach Ringe 8-11 V1 verschoben** (Entscheidung 13.05.2026, erweitert nach Ring 11 V1). Die Hylomorphismus-Schicht ist mechanisch vollständig (W4 + W5 A+B+C), Ring 11 V1 trägt Multi-User-Position-Sync. Welle 6 ist Polish + Erweiterung, kein Fundament.
+
+**Gesamt-Schätzung**: ~18-22 Sessions, verteilt auf 3-4 Monate Echtzeit, in sechs Blöcken **6.A bis 6.F** organisiert.
+
+**Detaillierte Design-Notizen + Brainstorm** in [`docs/wave-6-design.md`](./wave-6-design.md). Roadmap-Eintrag hier ist die Milestone-Übersicht; die Begründungs- und Konzept-Tiefe lebt im Design-Doc.
+
+#### Sechs Blöcke
+
+| Block | Themen | Aufwand | Vorbedingung |
+|---|---|---|---|
+| **6.A — Interaktion-Polish** | Wall-Sliding (no-stick), Erdung auf Strukturen, Maus-Aktionen LMB/RMB, Bau-Phantom mit Raycast-Place, Stabilitäts-Check beim Platzieren | 3-4 Sessions | – |
+| **6.B — CAD-Werkstatt** (minimal magic) | 3D-Preview-Pane, Drag-Items aus Seitenleiste, Grid-Snap. **Kein** Boolean, kein MultiSelect — bewusst klein gehalten. | 2 Sessions | 6.F1 (Linien-Renderer) |
+| **6.C — Inventar + Modi + Keys** | Erweitertes Inventar mit Tag-Profilen, **frieden/pfad/schöpfer**-Modi, Keybindings-UI | 4 Sessions | 6.D (Stats für pfad-Modus) |
+| **6.D — Stats fraktal** ⭐ | Soul × Soul-Material → Tags → Stats; Boosts (Konsum + Emotion + Welt-Effekt); Min-Regel-Hybrid (decay 0.7); Tod = Phönix-Wandlung + Welt-Trauer | 3-4 Sessions | W5 + 6.F2 |
+| **6.E — Lesbarkeit** | Fähigkeit-Beschreibung (regel- oder LLM-basiert), Intro-Overlay, subtile Tooltips | 2 Sessions | – |
+| **6.F — Original-Crafting (alt 6.1-6.7)** | Visuelle Verbindungs-Linien, Brech-Mechanik, Energiequellen, Kreaturen-Körper als Baukasten, Physik-Constraints (Ammo Hinge/Fixed), Rüstung → in 6.D integriert | 8-10 Sessions | W5 |
+| **6.G — Welt-Sinne** (NEU, 13.05.2026) | Fliegende Inseln + Bäume kollidierbar, Schatten, Shader (Höhe-Tint, Wind, Glow), Sterne-Stabilisierung + Variation, Terrain-Höhlen+Überhänge+Klippen, Wasser als Material+Layer mit DSL-Ops | 7-9 Sessions, in 2 Phasen | – (Phase 1) / 6.D (Phase 2) |
+| **6.H — Kreaturen-Aufträge** (NEU, 13.05.2026) | Autonome Co-Schöpfer: Kreaturen bekommen DSL-Programme als Agenda (build_path, gather, build_house, research_blueprint). Kontext-Menü via Maus-Klick. Persistierte tasks. Vision: dritter Schöpfungs-Akteur (Mensch+KI+Kreaturen) | 4-5 Sessions | 6.F4 (Multi-Mesh-Kreaturen) + 6.A4 (Raycast) |
+
+**Vision-Hebel der Welle**: Block 6.D macht den Spieler zum **Compound im selben Hylomorphismus-System** wie Materialien und Bauwerke. `STAT_FROM_TAGS`-Matrix analog `FORM_TAG_ACTIVATION`. Wenn das Stat-System ohne Bezug zu `MATERIAL_TAG_KEYS` funktioniert, wurde die Vision verfehlt — explizite Warnung im Design-Doc §9.
+
+**Beschlossene Reihenfolge** (Schöpfer hat 13.05.2026 freie Hand gegeben, Entscheidungen in `docs/wave-6-design.md` §10.6):
+1. 6.A1+A2 (Sliding + Erdung)
+2. 6.A4+A5 (Raycast-Place + Stabilität)
+3. 6.E1+E2 (Ability-Beschreibung + Intro)
+4. 6.F1+F2 (visuelle Linien + Brech-Warning)
+5. **6.D** Stats komplett (Vision-Pfeiler) ⭐
+6. 6.G Phase 1 (Inseln + Bäume kollidierbar)
+7. 6.C2 (Modi frieden/pfad/schöpfer)
+8. 6.C1 + 6.A3 + 6.C3 (Inventar + Maus + Keybinds)
+9. 6.B (CAD minimal)
+10. 6.G Phase 2 (Schatten + Wasser + Höhlen + Sterne)
+11. 6.F3 + 6.F4 + 6.F5 (Energie + Kreaturen-Körper + Constraints)
+12. **6.H** (Kreaturen-Aufträge — autonome Co-Schöpfer)
+
+**Beschlossene Antworten zu §10**:
+- **Modi-Namen**: `frieden` / `pfad` / `schöpfer` statt friedlich/survival/kreativ — antik-modern verschmolzen
+- **Stats-Sichtbarkeit**: Auren default, Zahlen bei Hover/Inspect (Inspect-Panel)
+- **Tod im pfad-Modus**: Phönix-Wandlung (5 min) + Welt-Trauer (sorrow +0.3, awe +0.2) + Journal-Eintrag; im frieden/schöpfer kein Tod
+- **CAD-Komplexität**: Min Viable Magic — 3D-Preview + Drag + Grid-Snap. KEIN Boolean/MultiSelect/Symmetrie. Wer mehr will, geht zum Code-Editor
+- **Min-Regel-Hybrid**: für Werkzeug-Präzision `min + (max-min) × 0.7^N`-Decay (poliert kann teilweise heben), für Verbindungs-Last + Compound-Tags bleibt min/max streng
+- **6.G Welt-Sinne** als eigener Block (fliegende Inseln + Bäume kollidierbar, Schatten, Shader, Sterne, Höhlen, Wasser) — siehe Design-Doc §11
+
+**Was beachten (Welle 6 als Ganzes)**:
+1. **Heilige Lektion**: 6.B, 6.C, 6.D sind die Stamm-gefährdenden Blöcke — Reflex „separates Modul" abwehren.
+2. **Schema-Bumps** bei 6.C1, 6.C2, 6.D, 6.F5 — defensive Migration testen.
+3. **Diskriminations-Tests** pro Block (Beispiele in Design-Doc §9.3).
+4. **Reflexions-Pausen** zwischen 6.A→6.E, 6.F1+F2→6.D, Rest.
+5. **Vision-Treue von 6.D** ist nicht-verhandelbar: Spieler-Stats müssen aus Tag-Aggregation kommen, nicht als separates RPG-System danebenstehen.
+
+#### Alt-Plan-Archiv
+
+Der ursprüngliche Welle-6-Plan (sieben Teilschritte 6.1-6.7) ist vollständig in den Block **6.F** überführt. Details siehe `docs/wave-6-design.md` §7. 6.6 (Rüstung) wird Teil von 6.D (Stats), 6.7 (Min-Regel) wird Teil von 6.D §5.5.
+
+---
+
+### Welle 6 ALT — ursprünglicher Plan (jetzt 6.F)
+
+(Bleibt unten zur Referenz, ist aber durch die Sechs-Blöcke-Struktur oben ersetzt. Beim Implementieren ist die Detail-Tiefe der 6.1-6.7-Teilschritte hilfreich — daher nicht gelöscht.)
+
+
 
 **Status**: 🔴 offen — **bewusst nach Ringe 8-10 verschoben** (Entscheidung 13.05.2026). Die Hylomorphismus-Schicht ist mechanisch vollständig (W4 + W5 A+B+C), Welle 6 ist Polish + Erweiterung, kein Fundament. Rings 8-10 (Welten-Ultiversum) ziehen die Vision-Krönung vor; Welle 6 läuft danach als Feinabstimmung.
 
@@ -368,23 +435,40 @@ Plus: inline-styles aus `index.html` entfernt (`#fps`, `#state-file-input`), Inl
 
 ---
 
-### Ring 11: Multi-User-Sync (~5-7 d)
+### Ring 11: Multi-User-Sync
 
 **Ziel**: zwei Spieler erleben dieselbe Welt zur gleichen Zeit.
 
-- WebRTC (P2P) für die Realtime-Daten — keine zentrale Server-Pflicht
-- Signaling-Server für initial connection: einfacher Node-Server (`signaling-server.js` neben `save-server.js`), nur ICE-Candidates austauschen
-- Sync-Kanal pro Spieler:
-  - Position + Rotation (60 Hz, lossy OK)
-  - Chat-Befehle (sendet als DSL-AST, beide Welten führen aus → eine konsistente Welt)
-  - DSL-Programme vom Nexus (sendet Programm-IDs nach Outcome, nicht das ganze Programm)
-- Public Welten: jeder mit der worldId kann beitreten
-- Private Welten: Schöpfer muss einladen (Token-Link)
-- Test: zwei Browser-Tabs, beide auf der gleichen Welt-URL, beide Spieler sehen sich bewegen
+#### V1 ✅ (13.05.2026, live) — Position-Sync via WebSocket-Broker
 
-**Akzeptanz**: spielbares Mini-Multiplayer-Erlebnis.
+Geliefert in einer Session (in Kombination mit Ring 10.5 für die Vorbedingung):
 
-**Vorbedingung**: Ring 8 (Welt-Identität) + Ring 9 (Export/Import) müssen stabil sein.
+- **`signaling-server.js`**: Mini-WebSocket-Broker (~225 Zeilen, ZERO npm-Dependencies). RFC-6455 Frame-Handling von Hand, Health-Endpoint `/health`, HOST/PORT via env.
+- **Protokoll**: `join { room, peerId }` → `welcome { peers[] }`, `pos { x, y, z, yaw }` wird an alle Mitglieder desselben Raums broadcastet, ohne den Absender.
+- **Client (`state.p2p`)**: `peerId`, `room`, `ws`, `peers: Map<peerId, {x,y,z,yaw,mesh,lastSeen}>`, 30 Hz pos-Broadcast im Game-Loop (intern gedrosselt), Idle-Purge nach >10 s ohne Update.
+- **Remote-Avatare**: THREE.Group aus Cone + Sphere, deterministische HSL-Farbe aus peerId-Hash.
+- **UI**: Toggle + URL-Input + Status-Anzeige im Einstellungen-Drawer. Auto-Connect nach Init wenn `p2p.enabled === true` in localStorage.
+- **CSP**: `connect-src` erweitert um `ws://127.0.0.1:4313` + `ws://localhost:4313` + wss-Varianten.
+- **Trust-Boundary**: KEIN neuer DSL-Op (`p2p_send`/`peer_dsl`/`remote_run`) — V1 trägt strikt nur Position + Rotation. Playtest-Invariante prüft die Abwesenheit explizit.
+- **Heilige-Lektion-Disziplin**: EINE neue Datei (signaling-server.js), zehn Methoden auf der einen `AnazhRealm`, drei Sub-Hooks im Game-Loop. KEIN P2PManager-Modul.
+
+**Ehrliche V1-Grenzen** (V2-Aufgaben):
+- Modifikationen (Ring 10.5 `modify_terrain`, Architekturen, Kreaturen) werden NICHT zwischen Spielern synchronisiert. Jeder erlebt seine eigene Welt-Variante.
+- Avatar ist immer Cone+Sphere, nicht die echte Spieler-Seele (Phönix/Drache).
+- Kein DSL-AST-Broadcast — Chat-Befehle wirken nur lokal.
+
+**Acceptance-Test** (manuell): `npm run signaling` + zwei Browser-Tabs derselben Welt → in Einstellungen Multi-User aktivieren → beide Spieler bewegen sich sichtbar als bunte Kegel.
+
+#### V2 (offen, ~3-5 d): DSL-AST-Broadcast für Welt-Sync
+
+- Chat-Befehle werden als DSL-AST über WebSocket an alle Mitglieder gesendet
+- Eingehender AST läuft durch denselben `dslRun`-Sandbox-Pfad wie eigene Programme (identische Budget-Limits, Op-Whitelist, kein Bypass)
+- `modify_terrain`-Ops werden so synchron — beide Spieler sehen dasselbe Loch
+- Nexus-Programm-IDs (statt ganzem Programm) für Outcome-Dedup
+- Public Welten: `visibility: "public"`, jeder mit der worldId kann beitreten
+- Private Welten: Schöpfer generiert Token-Link
+
+**Vorbedingung**: Ring 11 V1 (Position-Sync stabil) + saubere DSL-Sandbox (existiert seit Ring 7).
 
 ---
 
