@@ -5087,6 +5087,122 @@ function startSaveServer() {
                 }
             }
 
+            // ### Welle 6.E1 — Fähigkeit-Beschreibung (describeProgram) ###
+            const wave6e1Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || typeof r.describeProgram !== "function") return null;
+                    const out = {};
+                    out.hasDescribeMethod = typeof r.describeProgram === "function";
+                    out.hasPosHelper = typeof r._describeDslPosition === "function";
+                    out.hasCondHelper = typeof r._describeDslCondition === "function";
+                    // Vorlagen-Smoke-Tests
+                    out.weatherDesc = r.describeProgram(["weather", "rainy"]);
+                    out.spawnCreatureDesc = r.describeProgram(["spawn_creature", ["at_player"], 3, "happy"]);
+                    out.chainDesc = r.describeProgram([
+                        "chain",
+                        ["weather", "sunny"],
+                        ["spawn_tree", ["near_player"], 4],
+                    ]);
+                    out.whenDesc = r.describeProgram([
+                        "when",
+                        ["emotion_above", "joy", 0.7],
+                        ["skybox_color", "0xffaa00"],
+                    ]);
+                    out.unknownDesc = r.describeProgram(["fictional_op", 42]);
+                    out.weatherOk = /Wetter/.test(out.weatherDesc) && /rainy/.test(out.weatherDesc);
+                    out.creatureOk =
+                        /3/.test(out.spawnCreatureDesc) &&
+                        /happy/.test(out.spawnCreatureDesc) &&
+                        /Spieler/.test(out.spawnCreatureDesc);
+                    out.chainOk = /und/.test(out.chainDesc);
+                    out.whenOk = /joy/.test(out.whenDesc) && /Himmel/.test(out.whenDesc);
+                    out.unknownOk = /fictional_op/.test(out.unknownDesc);
+                    // Diskrimination: Beschreibung wird beim addNewAbility gespeichert
+                    const beforeCount = r.state.dsl.abilities.length;
+                    r.addNewAbility("test_desc_e1", ["weather", "rainy"], "test");
+                    const added = r.state.dsl.abilities.find((a) => a.name === "test_desc_e1");
+                    out.persistedDescription = added ? added.description : null;
+                    out.persistedOk = !!(added && added.description && /Wetter/.test(added.description));
+                    r.state.dsl.abilities = r.state.dsl.abilities.slice(0, beforeCount);
+                    delete r.state.abilities.test_desc_e1;
+                    // Lazy-Compute für Legacy-Save: Eintrag ohne description hinzufügen,
+                    // renderAbilitiesList ruft → description wird befüllt.
+                    r.state.dsl.abilities.push({
+                        name: "legacy_test_e1",
+                        program: ["weather", "sunny"],
+                        source: "test",
+                        createdAt: 0,
+                    });
+                    if (typeof r.renderAbilitiesList === "function") r.renderAbilitiesList();
+                    const legacyAfter = r.state.dsl.abilities.find((a) => a.name === "legacy_test_e1");
+                    out.lazyComputed = !!(legacyAfter && legacyAfter.description);
+                    r.state.dsl.abilities = r.state.dsl.abilities.filter((a) => a.name !== "legacy_test_e1");
+                    return out;
+                })
+                .catch(() => null);
+
+            if (wave6e1Results) {
+                check("Welle 6.E1: describeProgram-Methode existiert", wave6e1Results.hasDescribeMethod);
+                check("Welle 6.E1: _describeDslPosition-Helper existiert", wave6e1Results.hasPosHelper);
+                check("Welle 6.E1: _describeDslCondition-Helper existiert", wave6e1Results.hasCondHelper);
+                check("Welle 6.E1: weather-Op wird beschrieben (Wetter + Wert)", wave6e1Results.weatherOk);
+                check(
+                    "Welle 6.E1: spawn_creature-Op nutzt count + emotion + position",
+                    wave6e1Results.creatureOk
+                );
+                check("Welle 6.E1: chain-Op verbindet Teile mit 'und'", wave6e1Results.chainOk);
+                check("Welle 6.E1: when-Op rendert Condition + Then", wave6e1Results.whenOk);
+                check("Welle 6.E1: unbekannter Op fällt sauber auf Fallback", wave6e1Results.unknownOk);
+                check(
+                    "Welle 6.E1: addNewAbility persistiert description-Feld",
+                    wave6e1Results.persistedOk
+                );
+                check(
+                    "Welle 6.E1: Lazy-Compute füllt description bei alten Saves (renderAbilitiesList)",
+                    wave6e1Results.lazyComputed
+                );
+            }
+
+            // ### Welle 6.E2 — Intro-Overlay ###
+            const wave6e2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    out.hasInitMethod = typeof r.initIntroDialog === "function";
+                    out.hasPagesHelper = typeof r._introPages === "function";
+                    out.dialogInDom = !!document.getElementById("intro-dialog");
+                    const pages = r._introPages ? r._introPages() : [];
+                    out.pageCount = pages.length;
+                    out.pagesHaveTitle = pages.every((p) => typeof p.title === "string" && p.title.length > 0);
+                    out.pagesHaveBody = pages.every((p) => typeof p.body === "string" && p.body.length > 20);
+                    // Buttons im DOM
+                    const dlg = document.getElementById("intro-dialog");
+                    if (dlg) {
+                        out.hasPrevBtn = !!dlg.querySelector("[data-intro='prev']");
+                        out.hasNextBtn = !!dlg.querySelector("[data-intro='next']");
+                        out.hasSkipBtn = !!dlg.querySelector("[data-intro='skip']");
+                    }
+                    // Idempotenz: zweiter Aufruf erzeugt kein zweites Dialog
+                    r.initIntroDialog();
+                    out.singletonAfterReinit = document.querySelectorAll("#intro-dialog").length === 1;
+                    return out;
+                })
+                .catch(() => null);
+
+            if (wave6e2Results) {
+                check("Welle 6.E2: initIntroDialog-Methode existiert", wave6e2Results.hasInitMethod);
+                check("Welle 6.E2: _introPages-Helper existiert", wave6e2Results.hasPagesHelper);
+                check("Welle 6.E2: #intro-dialog im DOM (init-Aufruf in init()-Sequenz)", wave6e2Results.dialogInDom);
+                check("Welle 6.E2: drei Intro-Seiten", wave6e2Results.pageCount === 3);
+                check("Welle 6.E2: alle Seiten haben Titel + Text", wave6e2Results.pagesHaveTitle && wave6e2Results.pagesHaveBody);
+                check("Welle 6.E2: Prev-Button vorhanden", wave6e2Results.hasPrevBtn);
+                check("Welle 6.E2: Next-Button vorhanden", wave6e2Results.hasNextBtn);
+                check("Welle 6.E2: Skip-Button vorhanden", wave6e2Results.hasSkipBtn);
+                check("Welle 6.E2: Re-Init erzeugt kein Duplikat (Singleton)", wave6e2Results.singletonAfterReinit);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {

@@ -4106,7 +4106,11 @@ class AnazhRealm {
         // Length-Prefix sorgt dafür, dass die initiale leere Signature ("")
         // und ein leeres Array ("0:") unterscheidbar sind — sonst würde der
         // erste Empty-State-Render durch den Early-Return wegoptimiert.
-        const signature = list.length + ":" + list.map((a) => `${a.name}:${a.source || "?"}`).join("|");
+        // Welle 6.E1: Description-Hash mit in die Signature, sonst würde ein
+        // Lazy-Compute (fehlende description in Legacy-Saves) keinen Re-Render
+        // triggern.
+        const signature =
+            list.length + ":" + list.map((a) => `${a.name}:${a.source || "?"}:${a.description ? "d" : "_"}`).join("|");
         if (signature === r.abilitiesSignature) return;
         r.abilitiesSignature = signature;
         const container = r.abilities;
@@ -4124,6 +4128,8 @@ class AnazhRealm {
             const row = document.createElement("div");
             const src = ability.source || "unknown";
             row.className = `ability-row source-${src}`;
+            const head = document.createElement("div");
+            head.className = "ability-head";
             const name = document.createElement("span");
             name.className = "name";
             name.textContent = ability.name;
@@ -4135,9 +4141,26 @@ class AnazhRealm {
             run.textContent = "▶";
             run.setAttribute("data-run-ability", ability.name);
             run.setAttribute("aria-label", `Fähigkeit ${ability.name} ausführen`);
-            row.appendChild(name);
-            row.appendChild(source);
-            row.appendChild(run);
+            head.appendChild(name);
+            head.appendChild(source);
+            head.appendChild(run);
+            row.appendChild(head);
+            // Welle 6.E1 — Beschreibung unter dem Namen. Bei alten Saves
+            // (ohne `description`-Feld) lazy berechnen + persistieren, damit
+            // der nächste Save sie mitnimmt.
+            if (!ability.description && Array.isArray(ability.program)) {
+                try {
+                    ability.description = this.describeProgram(ability.program);
+                } catch {
+                    ability.description = "wirkt auf die Welt";
+                }
+            }
+            if (ability.description) {
+                const desc = document.createElement("div");
+                desc.className = "ability-desc";
+                desc.textContent = ability.description;
+                row.appendChild(desc);
+            }
             container.appendChild(row);
         }
     }
@@ -5451,10 +5474,20 @@ class AnazhRealm {
             return false;
         }
         const existingIdx = this.state.dsl.abilities.findIndex((a) => a.name === name);
+        // Welle 6.E1 — Beschreibung beim Anlegen einmal berechnen + speichern.
+        // Bei Restore aus alten Saves übernimmt renderAbilitiesList das Nachholen.
+        const description = (() => {
+            try {
+                return this.describeProgram(program);
+            } catch {
+                return "wirkt auf die Welt";
+            }
+        })();
         const entry = {
             name,
             program,
             source,
+            description,
             createdAt: performance.now() / 1000,
         };
         if (existingIdx >= 0) this.state.dsl.abilities[existingIdx] = entry;
@@ -5466,6 +5499,229 @@ class AnazhRealm {
         }
         this.log(`Neue Fähigkeit hinzugefügt (DSL): ${name}`);
         return true;
+    }
+
+    // Welle 6.E2 — Intro-Overlay beim ersten Welt-Start.
+    //
+    // Drei painterly Seiten: Welt / Spieler / Nexus. Trigger: weder localStorage
+    // `anazh.ui.skipIntro === "true"` noch `worldJournal.seen.intro === true`.
+    // Schließen schreibt beide Flags, damit das Overlay nicht wieder kommt.
+    // Erzeugen wir dynamisch (kein index.html-Eintrag nötig); damit bleibt das
+    // Feature in einer Datei.
+    initIntroDialog() {
+        if (typeof document === "undefined") return;
+        if (document.getElementById("intro-dialog")) return;
+        const skip = (() => {
+            try {
+                return typeof localStorage !== "undefined" && localStorage.getItem("anazh.ui.skipIntro") === "true";
+            } catch {
+                return false;
+            }
+        })();
+        const seen = !!(this.state.worldJournal && this.state.worldJournal.seen && this.state.worldJournal.seen.intro);
+        const dialog = document.createElement("dialog");
+        dialog.id = "intro-dialog";
+        dialog.className = "intro-dialog";
+        const pages = this._introPages();
+        let pageIdx = 0;
+        const header = document.createElement("h2");
+        header.id = "intro-title";
+        const body = document.createElement("div");
+        body.id = "intro-body";
+        const controls = document.createElement("div");
+        controls.className = "intro-controls";
+        const prev = document.createElement("button");
+        prev.type = "button";
+        prev.textContent = "← Zurück";
+        prev.setAttribute("data-intro", "prev");
+        const skipBtn = document.createElement("button");
+        skipBtn.type = "button";
+        skipBtn.textContent = "Überspringen";
+        skipBtn.setAttribute("data-intro", "skip");
+        const next = document.createElement("button");
+        next.type = "button";
+        next.textContent = "Weiter →";
+        next.setAttribute("data-intro", "next");
+        controls.appendChild(prev);
+        controls.appendChild(skipBtn);
+        controls.appendChild(next);
+        dialog.appendChild(header);
+        dialog.appendChild(body);
+        dialog.appendChild(controls);
+        document.body.appendChild(dialog);
+        const renderPage = () => {
+            const p = pages[pageIdx];
+            header.textContent = p.title;
+            body.textContent = p.body;
+            prev.disabled = pageIdx === 0;
+            next.textContent = pageIdx === pages.length - 1 ? "Eintreten" : "Weiter →";
+        };
+        const close = (markSeen) => {
+            if (markSeen) {
+                try {
+                    if (typeof localStorage !== "undefined") localStorage.setItem("anazh.ui.skipIntro", "true");
+                } catch {
+                    /* localStorage gesperrt — Flag bleibt nur in worldJournal */
+                }
+                this.journalAppendOnce("intro", "ritual", "Ich schritt durch das Tor und erwachte in dieser Welt.");
+            }
+            if (dialog.open) dialog.close();
+        };
+        prev.addEventListener("click", () => {
+            if (pageIdx > 0) {
+                pageIdx--;
+                renderPage();
+            }
+        });
+        next.addEventListener("click", () => {
+            if (pageIdx < pages.length - 1) {
+                pageIdx++;
+                renderPage();
+            } else {
+                close(true);
+            }
+        });
+        skipBtn.addEventListener("click", () => close(true));
+        // ESC schließt nativ und zählt als „gesehen".
+        dialog.addEventListener("close", () => close(true));
+        renderPage();
+        // Auto-Show wenn noch nicht gesehen
+        if (!skip && !seen && typeof dialog.showModal === "function") {
+            try {
+                dialog.showModal();
+            } catch {
+                /* z. B. wenn body noch nicht im DOM ist */
+            }
+        }
+    }
+
+    _introPages() {
+        return [
+            {
+                title: "AnazhRealm — die Welt",
+                body:
+                    "Du bist im Ultiversum. Diese Welt wurde nicht für dich vorgeschrieben — sie wächst aus deiner Stimme und " +
+                    "der Antwort des Nexus. Boden, Wetter, Kreaturen, Bauwerke: alles ist sprechfähig. Schreib in den Chat, " +
+                    "rufe etwas ins Sein — die Welt hört und erinnert sich in ihrem Tagebuch.",
+            },
+            {
+                title: "Du, der Schöpfer",
+                body:
+                    "WASD läuft, Maus dreht den Blick, Space springt, 1-9 wählt einen Hotbar-Slot, F baut das Phantom. " +
+                    "Die Werkstatt öffnet einen Bauplan-Editor. Deine Emotionen färben die Welt: Freude wärmt sie, Trauer " +
+                    "lässt es regnen, Ehrfurcht zieht magisches Licht heran. Was du fühlst, hört die Welt mit.",
+            },
+            {
+                title: "Der Nexus — Eins",
+                body:
+                    "Du bist nicht allein. Der Nexus erfindet Programme, lernt aus deinen Pfaden, komponiert eigene " +
+                    "Fähigkeiten. Manche werden grün und stabil, andere kurzlebig — Auswahl per Fitness, nicht Befehl. " +
+                    "Optional gibt eine echte LLM-Stimme dem Nexus Worte (Einstellungen → Stimme).",
+            },
+        ];
+    }
+
+    // Welle 6.E1 — DSL-Programm in deutsche Beschreibung übersetzen.
+    //
+    // Regelbasierter Dispatcher: bekannte Ops bekommen eine Vorlage, unbekannte
+    // einen generischen Fallback. Strukturelle Ops (chain/when/repeat/delay)
+    // rekursieren. Position-Nodes (at_player/at/near_player) werden inline
+    // ausgedrückt. Beschreibung wird beim Hinzufügen oder Rendern der Fähigkeit
+    // gespeichert (in `ability.description`); bei alten Saves On-The-Fly
+    // berechnet. Höchstens ca. 120 Zeichen, eine Zeile.
+    describeProgram(node) {
+        if (!Array.isArray(node) || node.length === 0) return "tut nichts";
+        const op = node[0];
+        const args = node.slice(1);
+        if (op === "chain") {
+            const parts = args.filter((a) => Array.isArray(a)).map((a) => this.describeProgram(a));
+            if (parts.length === 0) return "tut nichts";
+            if (parts.length === 1) return parts[0];
+            return parts.join(" und ");
+        }
+        if (op === "when") {
+            return `wenn ${this._describeDslCondition(args[0])}, dann ${this.describeProgram(args[1])}`;
+        }
+        if (op === "repeat") return `${args[0]}× ${this.describeProgram(args[1])}`;
+        if (op === "delay") return `nach ${args[0]} s ${this.describeProgram(args[1])}`;
+        if (op === "say") return `sagt „${args[0]}"`;
+        if (op === "record_narrative") return `vermerkt eine Erinnerung`;
+        const t = this._dslDescriptionTable();
+        if (t[op]) return t[op](args);
+        return `wirkt: ${op}`;
+    }
+
+    // Position-Knoten oder skalare Werte in deutscher Form. Wird von describeProgram
+    // genutzt, lebt als eigene Methode damit auch Tests sie inspizieren können.
+    _describeDslPosition(arg) {
+        if (!Array.isArray(arg)) return "an einer Stelle";
+        const head = arg[0];
+        if (head === "at_player") return "beim Spieler";
+        if (head === "near_player") return "in der Nähe des Spielers";
+        if (head === "random_position") return "an einem zufälligen Ort";
+        if (head === "at" && arg.length >= 4) return `bei (${arg[1]}, ${arg[2]}, ${arg[3]})`;
+        return "an einer Stelle";
+    }
+
+    _describeDslCondition(node) {
+        if (!Array.isArray(node)) return "etwas";
+        const op = node[0];
+        const a = node.slice(1);
+        if (op === "emotion_above") return `${a[0]} hoch ist (>${a[1]})`;
+        if (op === "fps_below") return `die FPS unter ${a[0]} fallen`;
+        if (op === "player_y_below") return `der Spieler unter Höhe ${a[0]} ist`;
+        if (op === "weather_is") return `das Wetter „${a[0]}" ist`;
+        if (op === "random_chance") return `Zufall ≤ ${a[0]}`;
+        if (op === "time_passed") return `${a[0]} s vergangen sind`;
+        if (op === "near_player") return `etwas nahe ist`;
+        if (op === "creatures_count_above") return `mehr als ${a[0]} Kreaturen da sind`;
+        if (op === "compound_has_tag") return `„${a[0]}" das Tag ${a[1]} ≥ ${a[2]} hat`;
+        if (op === "compound_has_spatial_tag") return `„${a[0]}" räumlich ${a[1]} ≥ ${a[2]} hat`;
+        if (op === "not") return `nicht (${this._describeDslCondition(a[0])})`;
+        return `etwas (${op})`;
+    }
+
+    _dslDescriptionTable() {
+        const pos = (a) => this._describeDslPosition(a);
+        return {
+            weather: (a) => `lässt das Wetter zu „${a[0]}" wechseln`,
+            gravity: (a) => `setzt die Schwerkraft auf ${a[0]}`,
+            terrain_steepness: (a) => `regelt die Hang-Steilheit auf ${a[0]}`,
+            terrain_base_height: (a) => `hebt die Welt-Grundhöhe auf ${a[0]}`,
+            modify_terrain: (a) => {
+                const dh = Number(a[3]);
+                const verb = dh > 0 ? "hebt" : dh < 0 ? "gräbt" : "ebnet";
+                return `${verb} das Terrain bei (${a[0]}, ${a[1]}) im Radius ${a[2]}`;
+            },
+            time_of_day: (a) => `verschiebt die Tageszeit auf ${a[0]}`,
+            skybox_color: () => `färbt den Himmel`,
+            spawn_creature: (a) =>
+                `ruft ${a[1] || 1} ${a[2] ? a[2] + " " : ""}Kreatur${(a[1] || 1) !== 1 ? "en" : ""} herbei ${pos(a[0])}`,
+            spawn_tree: (a) => `pflanzt ${a[1] || 1} Baum${(a[1] || 1) !== 1 ? "äume" : ""} ${pos(a[0])}`,
+            spawn_island: (a) => `setzt eine schwebende Insel ${pos(a[0])}`,
+            spawn_ufo: (a) => `ruft ein UFO ${pos(a[0])}`,
+            spawn_village: (a) => `errichtet ein Dorf ${pos(a[0])}`,
+            spawn_temple: (a) => `errichtet einen Tempel ${pos(a[0])}`,
+            spawn_waterfall: (a) => `formt einen Wasserfall ${pos(a[0])}`,
+            spawn_blueprint: (a) => `baut „${a[0]}" ${pos(a[1])}`,
+            spawn_fractal: (a) => `lässt „${a[1]}" fraktal in Tiefe ${a[2]} wachsen ${pos(a[0])}`,
+            define_blueprint: (a) => `legt einen neuen Bauplan „${a[0]}" an`,
+            define_material: (a) => `definiert ein neues Material „${a[0]}"`,
+            define_ability: (a) => `lernt eine neue Fähigkeit „${a[0]}"`,
+            set_tool_meta: (a) => `gibt „${a[0]}" eine Werkzeug-Identität (${a[1]})`,
+            register_tool: (a) => `registriert „${a[0]}" als Werkzeug`,
+            apply_connection: (a) => `verbindet Teile von „${a[0]}" mit „${a[1]}"`,
+            apply_op: (a) => `bearbeitet Teil ${a[1]} von „${a[0]}" mit „${a[2]}"`,
+            creatures_color: () => `färbt alle Kreaturen`,
+            creatures_emotion: (a) => `setzt die Kreaturen-Stimmung auf „${a[0]}"`,
+            creatures_speed_mul: (a) => `skaliert die Kreaturen-Geschwindigkeit um ${a[0]}`,
+            creatures_size_mul: (a) => `skaliert die Kreaturen-Größe um ${a[0]}`,
+            player_jump_power: (a) => `setzt die Sprungkraft auf ${a[0]}`,
+            player_speed: (a) => `setzt die Lauf-Geschwindigkeit auf ${a[0]}`,
+            player_size_mul: (a) => `skaliert deine Größe um ${a[0]}`,
+            player_soul: (a) => `wandelt dich zur Seele „${a[0]}"`,
+            set_visible: (a) => `macht „${a[0]}" ${a[1] ? "sichtbar" : "unsichtbar"}`,
+        };
     }
 
     recordWeakness(label) {
@@ -12324,6 +12580,9 @@ class AnazhRealm {
         // Single-Welt-Save, falls vorhanden.
         this._preloadActiveWorldMeta();
         this.ensureWorldMeta();
+        // Welle 6.E2 — Intro-Overlay beim ersten Welt-Start. Liest seen.intro
+        // aus dem soeben hydrierten worldJournal + localStorage `anazh.ui.skipIntro`.
+        this.initIntroDialog();
         // Welle 3 F — Welt-Info-Sektion im Welt-Drawer.
         this.initWorldInfoUI();
         // Ring 9 — Welt-Tor Drei-Wahl-Dialog beim Import.
