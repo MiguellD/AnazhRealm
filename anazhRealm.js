@@ -777,6 +777,50 @@ class AnazhRealm {
                 const entry = this.spawnArchitecture(name, pos);
                 ctx.log.push({ event: "spawned_blueprint", name, id: entry ? entry.id : null, pos });
             },
+            // Welle 2 B — Schöpfer-Werkzeuge. Der LLM (oder Chat-Befehl) kann
+            // eigene Baupläne und Fähigkeiten erschaffen, nicht nur bestehende
+            // ausführen. Whitelist-Validierung: nur die acht bekannten Shapes
+            // + blueprint-Referenz, parts-Cap 32, kein Built-in-Überschreiben.
+            define_blueprint: ([name, parts], ctx) => {
+                const valid = this.validateBlueprintParts(parts);
+                if (!valid.ok) {
+                    ctx.log.push({ event: "blueprint_validation_failed", reason: valid.reason });
+                    return;
+                }
+                const result = this.createOrUpdateBlueprintFromDsl(name, valid.parts);
+                ctx.log.push({ event: result.ok ? "defined_blueprint" : "define_blueprint_failed", name: result.name, reason: result.reason });
+                if (result.ok) {
+                    this.journalAppend("growth", `Ein neuer Bauplan entstand: ${result.name}.`, { name: result.name, parts: valid.parts.length });
+                }
+            },
+            define_ability: ([name, program], ctx) => {
+                if (typeof name !== "string" || name.length === 0 || name.length > 40) {
+                    ctx.log.push({ event: "invalid_ability_name", name });
+                    return;
+                }
+                if (!Array.isArray(program) || program.length === 0) {
+                    ctx.log.push({ event: "invalid_ability_program", name });
+                    return;
+                }
+                // Sandbox: Tiefen-Cap und kein verschachteltes define_*.
+                const depth = this.dslEstimateDepth(program);
+                if (depth > 6) {
+                    ctx.log.push({ event: "ability_depth_exceeded", name, depth });
+                    return;
+                }
+                if (this.dslContainsOp(program, "define_blueprint") || this.dslContainsOp(program, "define_ability")) {
+                    ctx.log.push({ event: "ability_nested_define_forbidden", name });
+                    return;
+                }
+                const safeName = name.replace(/[^a-z0-9_-]/gi, "").slice(0, 40);
+                if (!safeName) {
+                    ctx.log.push({ event: "invalid_ability_name_after_sanitize", name });
+                    return;
+                }
+                this.addNewAbility(safeName, program, "llm");
+                this.journalAppend("growth", `Eine neue Fähigkeit ruht in mir: ${safeName}.`, { name: safeName });
+                ctx.log.push({ event: "defined_ability", name: safeName });
+            },
             // Ring 6 V2 — Fraktal-Bau. Eine Wurzel-Struktur, hexagonal
             // umringt von 6 Sub-Strukturen mit `ratio`-Skalierung; jede
             // Sub-Struktur rekursiv das gleiche bis `depth` 0. Mit
@@ -1462,6 +1506,110 @@ class AnazhRealm {
             this.rememberOutcomeAsPattern(entry.outcome, entry.program, fitness, currentTime);
             pending.splice(i, 1);
         }
+    }
+
+    // ### Welle 2 B/C — Bauplan-Validierung + Schöpfungs-Pfad ###
+    // Whitelist für erlaubte Shapes. blueprint ist neu (fraktale Referenz).
+    // Was hier nicht steht, wird abgelehnt — kein arbitrary geometry-Import.
+
+    validateBlueprintParts(parts) {
+        const allowed = new Set([
+            "box", "sphere", "cylinder", "cone", "pyramid",
+            "octahedron", "plane", "torus", "blueprint",
+        ]);
+        if (!Array.isArray(parts) || parts.length === 0) return { ok: false, reason: "no_parts" };
+        if (parts.length > 32) return { ok: false, reason: "too_many_parts" };
+        const clean = [];
+        for (const p of parts) {
+            if (!p || typeof p !== "object" || typeof p.shape !== "string") {
+                return { ok: false, reason: "part_missing_shape" };
+            }
+            if (!allowed.has(p.shape)) return { ok: false, reason: `shape_not_allowed:${p.shape}` };
+            const sanitized = { shape: p.shape };
+            if (p.shape === "blueprint") {
+                if (typeof p.refName !== "string" || !p.refName.match(/^[a-z0-9_-]{1,40}$/i)) {
+                    return { ok: false, reason: "invalid_refName" };
+                }
+                // Selbst-Referenz verbieten (würde nach Cycle-Check eh nichts
+                // tun, aber explizit ablehnen ist klarer).
+                sanitized.refName = p.refName;
+            }
+            if (typeof p.color === "number") sanitized.color = p.color | 0;
+            if (Number.isFinite(p.opacity) && p.opacity > 0 && p.opacity <= 1) sanitized.opacity = p.opacity;
+            const clampVec = (v) => {
+                if (!v || typeof v !== "object") return null;
+                const out = {};
+                ["x", "y", "z"].forEach((k) => {
+                    const n = Number(v[k]);
+                    if (Number.isFinite(n)) out[k] = Math.max(-50, Math.min(50, n));
+                });
+                return Object.keys(out).length > 0 ? out : null;
+            };
+            const pos = clampVec(p.position);
+            const rot = clampVec(p.rotation);
+            const size = clampVec(p.size);
+            if (pos) sanitized.position = pos;
+            if (rot) sanitized.rotation = rot;
+            if (size) sanitized.size = size;
+            if (typeof p.scale === "number" && p.scale > 0 && p.scale <= 5) sanitized.scale = p.scale;
+            if (p.animate === "water_wave") sanitized.animate = "water_wave";
+            clean.push(sanitized);
+        }
+        return { ok: true, parts: clean };
+    }
+
+    createOrUpdateBlueprintFromDsl(name, parts) {
+        if (typeof name !== "string" || name.length === 0 || name.length > 40) {
+            return { ok: false, reason: "invalid_name", name };
+        }
+        const safe = name.replace(/[^a-z0-9_-]/gi, "").slice(0, 40);
+        if (!safe) return { ok: false, reason: "invalid_name_after_sanitize", name };
+        const existing = this.state.blueprints && this.state.blueprints[safe];
+        if (existing && existing.builtIn) return { ok: false, reason: "cannot_overwrite_builtin", name: safe };
+        // Cycle-Check: jeder blueprint-Part muss auf einen existierenden
+        // Bauplan zeigen UND der neue Bauplan darf nicht (direkt/indirekt)
+        // auf sich selbst zeigen.
+        for (const p of parts) {
+            if (p.shape === "blueprint") {
+                if (p.refName === safe) return { ok: false, reason: "self_reference", name: safe };
+                if (!this.state.blueprints[p.refName]) {
+                    return { ok: false, reason: `ref_unknown:${p.refName}`, name: safe };
+                }
+            }
+        }
+        this.state.blueprints[safe] = {
+            name: safe,
+            label: safe,
+            builtIn: false,
+            parts,
+        };
+        // Werkstatt-Liste neu rendern, damit der neue Bauplan sofort sichtbar
+        // wird. Idempotent — bei undefiniertem DOM no-op.
+        if (typeof this._renderWorkshopDOM === "function") this._renderWorkshopDOM();
+        return { ok: true, name: safe };
+    }
+
+    // Helfer für die DSL-Sandbox-Checks in define_ability.
+    dslEstimateDepth(program) {
+        if (!Array.isArray(program)) return 0;
+        let max = 1;
+        for (let i = 1; i < program.length; i++) {
+            const child = program[i];
+            if (Array.isArray(child)) {
+                const d = 1 + this.dslEstimateDepth(child);
+                if (d > max) max = d;
+            }
+        }
+        return max;
+    }
+
+    dslContainsOp(program, opName) {
+        if (!Array.isArray(program)) return false;
+        if (program[0] === opName) return true;
+        for (let i = 1; i < program.length; i++) {
+            if (this.dslContainsOp(program[i], opName)) return true;
+        }
+        return false;
     }
 
     // ### Schicht 2 — Optionale LLM-Stimme für Grok ###
@@ -6311,15 +6459,53 @@ class AnazhRealm {
     // Part erzeugt (mehrere Parts mit gleicher Farbe würden sich Material
     // teilen können — V1 hält's einfach). Wasser-Animation kommt automatisch,
     // wenn ein Part `animate: "water_wave"` trägt.
-    _buildFromBlueprint(blueprint) {
+    _buildFromBlueprint(blueprint, depth, visited) {
+        // Welle 2 C — fraktale Verschachtelung. Ein Part mit shape:"blueprint"
+        // referenziert via refName einen anderen Bauplan, der als Sub-Group
+        // an dieser Position eingebettet wird. Cycle-Guard via visited-Set,
+        // Tiefen-Cap auf MAX_BLUEPRINT_DEPTH (4 — Wald → Baum → Ast → Blatt
+        // ist mehr als genug für sichtbare Fraktale ohne GPU-Explosion).
+        const MAX_BLUEPRINT_DEPTH = 4;
+        const d = depth || 0;
+        const seen = visited || new Set();
         const group = new THREE.Group();
         if (!blueprint || !Array.isArray(blueprint.parts)) {
             group.userData.kind = blueprint ? blueprint.name : "empty";
             return group;
         }
+        if (d > MAX_BLUEPRINT_DEPTH) {
+            group.userData.kind = `${blueprint.name}_depthCapped`;
+            return group;
+        }
+        // Cycle-Guard: ein Bauplan kann sich nicht selbst (direkt/indirekt)
+        // enthalten — sonst Endlos-Rekursion. visited bleibt eine Pfad-Liste,
+        // sodass Geschwister-Verwendungen erlaubt sind.
+        if (seen.has(blueprint.name)) {
+            group.userData.kind = `${blueprint.name}_cycle`;
+            return group;
+        }
+        seen.add(blueprint.name);
         const materials = [];
         const waveTargets = [];
         for (const part of blueprint.parts) {
+            if (part.shape === "blueprint" && typeof part.refName === "string") {
+                const ref = this.state.blueprints && this.state.blueprints[part.refName];
+                if (!ref) continue;
+                const sub = this._buildFromBlueprint(ref, d + 1, seen);
+                const pos = part.position || { x: 0, y: 0, z: 0 };
+                sub.position.set(pos.x || 0, pos.y || 0, pos.z || 0);
+                if (part.rotation) {
+                    sub.rotation.set(part.rotation.x || 0, part.rotation.y || 0, part.rotation.z || 0);
+                }
+                const s = part.scale;
+                if (typeof s === "number" && s > 0) {
+                    sub.scale.setScalar(s);
+                } else if (s && typeof s === "object") {
+                    sub.scale.set(s.x || 1, s.y || 1, s.z || 1);
+                }
+                group.add(sub);
+                continue;
+            }
             const geom = this._makePartGeometry(part);
             const matOpts = { color: typeof part.color === "number" ? part.color : 0xffffff };
             if (Number.isFinite(part.opacity) && part.opacity < 1) {
@@ -6339,6 +6525,7 @@ class AnazhRealm {
             group.add(mesh);
             if (part.animate === "water_wave") waveTargets.push(mesh);
         }
+        seen.delete(blueprint.name);
         group.userData.kind = blueprint.name;
         group.userData.materials = materials;
         // Wasser-Animations-Hook: alle Wasser-Planes Sinus-wellen lassen.

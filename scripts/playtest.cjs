@@ -926,6 +926,104 @@ function startSaveServer() {
                 check("Welle 1 A: LLM-Prompt verlangt erste Person", journalResults.systemPromptFirstPerson);
             }
 
+            // ### Welle 2 B/C — Fraktale Baupläne + Schöpfer-DSL-Ops ###
+            const wave2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    // C — Validation lehnt unbekannte Shape ab
+                    out.rejectsUnknownShape = !r.validateBlueprintParts([{ shape: "alien" }]).ok;
+                    out.rejectsEmpty = !r.validateBlueprintParts([]).ok;
+                    out.acceptsValid = r.validateBlueprintParts([{ shape: "box", color: 0x00ff00 }]).ok;
+                    // C — blueprint-Part validiert refName
+                    out.rejectsInvalidRef = !r.validateBlueprintParts([{ shape: "blueprint", refName: "../etc" }]).ok;
+                    // B — define_blueprint legt eigenen Bauplan an
+                    delete r.state.blueprints["wave2-test"];
+                    const res = r.dslRun([
+                        "define_blueprint", "wave2-test",
+                        [{ shape: "box", color: 0xff0000, size: { x: 2, y: 2, z: 2 } }]
+                    ], { source: "test" });
+                    out.defineBlueprintWorks = res.ok && !!r.state.blueprints["wave2-test"] && !r.state.blueprints["wave2-test"].builtIn;
+                    // B — Built-in lässt sich nicht überschreiben
+                    const builtInBefore = r.state.blueprints.village && r.state.blueprints.village.parts.length;
+                    r.dslRun([
+                        "define_blueprint", "village",
+                        [{ shape: "box" }]
+                    ], { source: "test" });
+                    out.builtInProtected = r.state.blueprints.village && r.state.blueprints.village.parts.length === builtInBefore;
+                    // C — Selbst-Referenz wird verboten
+                    delete r.state.blueprints["self-ref"];
+                    r.dslRun([
+                        "define_blueprint", "self-ref",
+                        [{ shape: "blueprint", refName: "self-ref" }]
+                    ], { source: "test" });
+                    out.selfReferenceBlocked = !r.state.blueprints["self-ref"];
+                    // C — fraktale Verschachtelung baut Sub-Group
+                    delete r.state.blueprints["wave2-outer"];
+                    r.dslRun([
+                        "define_blueprint", "wave2-outer",
+                        [
+                            { shape: "box", color: 0x0000ff },
+                            { shape: "blueprint", refName: "wave2-test", position: { x: 3, y: 0, z: 0 } }
+                        ]
+                    ], { source: "test" });
+                    const outerGroup = r._buildFromBlueprint(r.state.blueprints["wave2-outer"]);
+                    out.nestedGroupHasSubgroup = outerGroup.children.length === 2 &&
+                        outerGroup.children[1].type === "Group";
+                    // C — Tiefen-Cap greift (selbst wenn man programmatisch zyklisch konstruiert)
+                    r.state.blueprints["cycle-a"] = {
+                        name: "cycle-a", label: "a", builtIn: false,
+                        parts: [{ shape: "blueprint", refName: "cycle-b" }]
+                    };
+                    r.state.blueprints["cycle-b"] = {
+                        name: "cycle-b", label: "b", builtIn: false,
+                        parts: [{ shape: "blueprint", refName: "cycle-a" }]
+                    };
+                    const cycleGroup = r._buildFromBlueprint(r.state.blueprints["cycle-a"]);
+                    // Sollte nicht in Endlos-Rekursion gehen
+                    out.cycleHandled = !!cycleGroup;
+                    // B — define_ability mit verbotenem nested define_blueprint
+                    const abilNested = r.dslRun([
+                        "define_ability", "evil",
+                        ["define_blueprint", "x", [{ shape: "box" }]]
+                    ], { source: "test" });
+                    out.nestedDefineBlocked = abilNested.log.some((e) => e.event === "ability_nested_define_forbidden");
+                    // B — define_ability legitim
+                    const abilOk = r.dslRun([
+                        "define_ability", "wave2-dance",
+                        ["weather", "rainy"]
+                    ], { source: "test" });
+                    out.defineAbilityWorks = abilOk.ok &&
+                        (r.state.dsl.abilities || []).some((a) => a.name === "wave2-dance");
+                    // Test-Artefakte sauber entfernen, damit nachfolgende
+                    // Workshop-Invarianten konsistent zählen.
+                    delete r.state.blueprints["wave2-test"];
+                    delete r.state.blueprints["wave2-outer"];
+                    delete r.state.blueprints["cycle-a"];
+                    delete r.state.blueprints["cycle-b"];
+                    r.state.dsl.abilities = (r.state.dsl.abilities || []).filter((a) => a.name !== "wave2-dance");
+                    if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (!wave2Results || wave2Results.error) {
+                check("Welle 2: Snapshot erreichbar", false, wave2Results && wave2Results.error || "page.evaluate fehlgeschlagen");
+            } else {
+                check("Welle 2 C: Validation lehnt unbekannte Shape ab", wave2Results.rejectsUnknownShape);
+                check("Welle 2 C: Validation lehnt leeren Parts-Array ab", wave2Results.rejectsEmpty);
+                check("Welle 2 C: Validation akzeptiert gültige box-Parts", wave2Results.acceptsValid);
+                check("Welle 2 C: refName mit Sonderzeichen abgelehnt", wave2Results.rejectsInvalidRef);
+                check("Welle 2 B: define_blueprint legt eigenen Bauplan an", wave2Results.defineBlueprintWorks);
+                check("Welle 2 B: Built-in bleibt vor Überschreiben geschützt", wave2Results.builtInProtected);
+                check("Welle 2 C: Selbst-Referenz im blueprint-Part blockiert", wave2Results.selfReferenceBlocked);
+                check("Welle 2 C: Verschachtelter Bauplan rendert Sub-Group", wave2Results.nestedGroupHasSubgroup);
+                check("Welle 2 C: Cycle in blueprint-Refs läuft nicht endlos", wave2Results.cycleHandled);
+                check("Welle 2 B: define_ability verbietet nested define_*", wave2Results.nestedDefineBlocked);
+                check("Welle 2 B: define_ability legt neue Fähigkeit an", wave2Results.defineAbilityWorks);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {
