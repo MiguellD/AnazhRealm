@@ -1,4 +1,4 @@
-/**AnazhRealm V7.65 – Das Ultiversum Vollendet.
+/**AnazhRealm V7.66 – Das Ultiversum Vollendet.
  * Hüpfen: Robust, präzise (Y ~1.5), Coyote-Time 0.3s, Gravitation 1.5G, Reibung 0.5.
  * Kollisionen: Kein Tunneling, steepnessThreshold 3.0, wallThickness 2.0, CCD optimiert.
  * Terrain: Flacher (Höhenunterschiede ±5), KI-gesteuerte Steilheitsanpassung, Chat-Steuerung.
@@ -12,7 +12,7 @@
 class AnazhRealm {
     constructor() {
         // ### Learnings ### [Stichwortartig optimieren, korrigieren, ergänzen – nie Wissen löschen!]
-        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.65
+        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66
         // - Nexus als Herz der Selbstentwicklung, steuert nun alles über Chat, unzerstörbar und unendlich
         this.state = {
             // ### Kern ###
@@ -94,7 +94,7 @@ class AnazhRealm {
             maxVersionHistoryEntries: 50,
             maxCreatures: 120,
             maxLoadedChunks: 196,
-            currentVersion: "7.65",
+            currentVersion: "7.66",
             terrainSteepness: 1.0,
             terrainBaseHeight: 0.0,
             weather: "sunny",
@@ -388,7 +388,7 @@ class AnazhRealm {
     // ### Logging ###
     log(message, level = "INFO") {
         if (level === "DEBUG" && !this.state.debugLogging) return;
-        const logMessage = `[AnazhRealm V7.65] [${level}] ${message}`;
+        const logMessage = `[AnazhRealm V7.66] [${level}] ${message}`;
         this.state.logBuffer.push(logMessage);
         console.log(logMessage);
         if (this.state.logBuffer.length > this.state.maxLogEntries) {
@@ -2975,7 +2975,7 @@ class AnazhRealm {
                     "Speichere Zustand",
                     "Lade Zustand",
                     "Lade Datei",
-                    "Aktiviere Version 7.65",
+                    "Aktiviere Version 7.66",
                     "Aktiviere Debug-Logs",
                     "Deaktiviere Debug-Logs",
                 ],
@@ -5431,7 +5431,7 @@ class AnazhRealm {
         // - Alle Funktionen (Vegetation, Wasserfälle, Inseln) bleiben erhalten.
         // - Seed in SimplexNoise sorgt für konsistente Höhen über Chunks hinweg.
     }
-    // ### Chunk-Generierung ### V7.65
+    // ### Chunk-Generierung ### V7.66
     generateChunk(chunkX, chunkZ, heightData, width, depth, material) {
         // ### Konstanten ###
         const CHUNK_SIZE = this.state.chunkSize;
@@ -6481,10 +6481,10 @@ class AnazhRealm {
         this.log(`Lade Version ${version} – Platzhalter für Versionsmanagement`);
     }
 
-    // ### Initialisierung V7.65 ###
+    // ### Initialisierung V7.66 ###
     // Learnings:
     // - V7.64 Basis: Stabile Initialisierung mit Physik, Szene, Kamera
-    // - V7.65 Ergänzung: Fehlerbehandlung verbessert, Chat/Nexus integriert
+    // - V7.66 Ergänzung: Fehlerbehandlung verbessert, Chat/Nexus integriert
     // Tag/Nacht-Theme: schaltet die CSS-Custom-Properties über
     // body[data-theme]. localStorage persistiert die Wahl, damit nach Reload
     // die Stimmung erhalten bleibt.
@@ -9324,7 +9324,7 @@ class AnazhRealm {
     }
 
     async init() {
-        this.log("Initialisiere Anazh Realm V7.65... Ewigkeit erwacht!", "INFO");
+        this.log("Initialisiere Anazh Realm V7.66... Ewigkeit erwacht!", "INFO");
         this.themeInitDOM();
         this.grokInitDOM();
         this.symphonyInitDOM();
@@ -9545,11 +9545,11 @@ class AnazhRealm {
     }
 
     startEternalLoop() {
-        // ### Spiel-Loop V7.65 ###
+        // ### Spiel-Loop V7.66 ###
         // Learnings:
         // - V7.56 als Basis: Stabiler Loop mit Physik, Bewegung, Frustum Culling
         // - V7.64 Fehler: Unvollständig (fehlende selfAwarenessAnalyze), updateGrowth undefiniert
-        // - V7.65 Vollendung: Alle Funktionen integriert, Fehler behoben, Kommentare ergänzt
+        // - V7.66 Vollendung: Alle Funktionen integriert, Fehler behoben, Kommentare ergänzt
         let lastTime = performance.now();
         const loop = (time) => {
             const delta = Math.max(0.001, (time - lastTime) / 1000);
@@ -10192,7 +10192,7 @@ class AnazhRealm {
     updateGrowth() {
         // ### Wachstum aktualisieren ###
         // Zweck: Dynamisches Wachstum von Kreaturen oder Terrain
-        // Learnings: Fehlte in V7.61, hinzugefügt für V7.65 zur Vollständigkeit
+        // Learnings: Fehlte in V7.61, hinzugefügt für V7.66 zur Vollständigkeit
         if (this.state.creatures.length > 0) {
             this.state.creatures.forEach((creature, index) => {
                 if (Math.random() < 0.05) {
