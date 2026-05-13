@@ -932,6 +932,24 @@ class AnazhRealm {
             // Generator-Pool (dslComposeAtomic), damit der Nexus nicht
             // willkürlich Werkstücke poliert. Pfad: Chat-Befehl/LLM/Spieler-
             // UI. Tool muss im Besitz sein, Material × Op-Klasse muss passen.
+            // Welle 5 A — Verbindung zwischen zwei Parts setzen. Auch hier
+            // bewusst NICHT im dslComposeAtomic-Pool: Verbindungen sind
+            // explizite Geste, kein Zufalls-Brei.
+            apply_connection: ([blueprintName, type, partA, partB], ctx) => {
+                const result = this.addConnectionToBlueprint(blueprintName, {
+                    type,
+                    partA: Number(partA),
+                    partB: Number(partB),
+                });
+                ctx.log.push({
+                    event: result.ok ? "applied_connection" : "apply_connection_failed",
+                    blueprint: blueprintName,
+                    type,
+                    partA,
+                    partB,
+                    reason: result.reason,
+                });
+            },
             apply_op: ([blueprintName, partIndex, toolName], ctx) => {
                 const result = this.applyOpToPart(blueprintName, Number(partIndex), toolName);
                 ctx.log.push({
@@ -5829,6 +5847,7 @@ class AnazhRealm {
                     name: bp.name,
                     label: bp.label || bp.name,
                     parts: Array.isArray(bp.parts) ? JSON.parse(JSON.stringify(bp.parts)) : [],
+                    connections: Array.isArray(bp.connections) ? JSON.parse(JSON.stringify(bp.connections)) : [],
                 })),
             // Welle 4 Phase 1 — eigene Materialien persistieren. Built-ins
             // kommen aus _defaultMaterials() im Konstruktor zurück; auch hier
@@ -6182,11 +6201,14 @@ class AnazhRealm {
                     }
                     return out;
                 });
+                // Welle 5 A — connections sanitisieren beim Load.
+                const validConnections = this.validateBlueprintConnections(bp.connections || [], migratedParts.length);
                 this.state.blueprints[bp.name] = {
                     name: bp.name,
                     label: bp.label || bp.name,
                     builtIn: false,
                     parts: migratedParts,
+                    connections: validConnections,
                 };
             }
             this.log(`Baupläne geladen: ${state.blueprints.length} eigene`);
@@ -7707,6 +7729,107 @@ class AnazhRealm {
         return out;
     }
 
+    // ### Welle 5 A — Verbindungstypen mit Lastformel ###
+    // Eine Verbindung in `blueprint.connections` referenziert zwei Parts via
+    // Indizes und einen Typ aus CONNECTION_TYPES. Lastformel bringt
+    // Geometrie + Material + Typ zusammen, ohne dass der Spieler Physiker
+    // sein muss — die Werte fallen aus den schon-bekannten Tags raus.
+
+    // Kontaktfläche zwischen zwei Parts: AABB-Überschneidung in den ZWEI
+    // größeren Dimensionen, multipliziert. Wenn Parts entlang Z überlappen
+    // aber in X/Y weit auseinander sind, ist die Kontaktfläche klein. Wenn
+    // sie sich auf einer großen Fläche treffen, ist sie groß.
+    _partsContactArea(partA, partB) {
+        const a = this._partBoundingBox(partA);
+        const b = this._partBoundingBox(partB);
+        if (!a || !b) return 0;
+        // Pro Achse signed gap: negativ bei Overlap, positiv bei Trennung.
+        const gapX = Math.max(a.min.x - b.max.x, b.min.x - a.max.x);
+        const gapY = Math.max(a.min.y - b.max.y, b.min.y - a.max.y);
+        const gapZ = Math.max(a.min.z - b.max.z, b.min.z - a.max.z);
+        // Wenn EINE Achse weiter als TOUCH getrennt ist, sind die Parts nicht
+        // in Kontakt — kein Bruch mehr durch additive TOUCH-Faktoren wie in
+        // der Vorgänger-Version, die positive Fläche für weit-entfernte Parts
+        // ausgespuckt hat. TOUCH = 0.05 erlaubt bündiges Sitzen.
+        const TOUCH = 0.05;
+        if (Math.max(gapX, gapY, gapZ) > TOUCH) return 0;
+        // Sort aufsteigend: [tiefster Overlap, mittel, dünnster Overlap].
+        // Die zwei tieferen Overlaps spannen die Kontaktfläche auf; der
+        // dünnste ist die Kontakt-Normale.
+        const sorted = [gapX, gapY, gapZ].sort((p, q) => p - q);
+        const overlapA = Math.max(0, -sorted[0]);
+        const overlapB = Math.max(0, -sorted[1]);
+        return overlapA * overlapB;
+    }
+
+    // Liefert die Lastfähigkeit einer Verbindung, 0..3 in derselben Skala wie
+    // die Tag-Strahler — vergleichbar mit `compound_has_tag`-Werten.
+    computeConnectionStrength(connection, blueprint) {
+        if (!connection || !blueprint) return 0;
+        const type = AnazhRealm.CONNECTION_TYPES[connection.type];
+        if (!type) return 0;
+        const parts = blueprint.parts || [];
+        const a = parts[connection.partA];
+        const b = parts[connection.partB];
+        if (!a || !b) return 0;
+        const materials = this.state.materials || {};
+        const matA = materials[a.material || "stein"];
+        const matB = materials[b.material || "stein"];
+        if (!matA || !matB) return 0;
+        let tagSum = 0;
+        for (const tag of type.strongTags) {
+            tagSum += ((matA.tags[tag] || 0) + (matB.tags[tag] || 0)) / 2;
+        }
+        const avgTag = tagSum / type.strongTags.length;
+        // Kontakt-Fläche normalisiert auf 1.0 (eine 1×1-Box-Begegnung = 1).
+        // Größer ≥ 1 gibt vollen Faktor, kleiner skaliert linear.
+        const contact = Math.min(1, this._partsContactArea(a, b));
+        return type.typeStrength * avgTag * 3 * Math.max(0.1, contact);
+    }
+
+    // Validiert eine Connection-Liste für Save/DSL-Eingang. Whitelist auf
+    // CONNECTION_TYPES, Indizes müssen in parts-Range liegen, max 64 pro
+    // Bauplan. Sanitisiert in einen neuen sauberen Array — kein Mutieren
+    // der Eingabe.
+    validateBlueprintConnections(connections, partsLength) {
+        if (!Array.isArray(connections)) return [];
+        const clean = [];
+        for (const c of connections.slice(0, AnazhRealm.CONNECTION_MAX_PER_BLUEPRINT)) {
+            if (!c || typeof c !== "object") continue;
+            if (!AnazhRealm.CONNECTION_TYPES[c.type]) continue;
+            const partA = Number(c.partA);
+            const partB = Number(c.partB);
+            if (!Number.isInteger(partA) || !Number.isInteger(partB)) continue;
+            if (partA === partB) continue;
+            if (partA < 0 || partA >= partsLength) continue;
+            if (partB < 0 || partB >= partsLength) continue;
+            clean.push({ type: c.type, partA, partB });
+        }
+        return clean;
+    }
+
+    addConnectionToBlueprint(name, connection) {
+        const bp = this.state.blueprints[name];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.builtIn) return { ok: false, reason: "cannot_modify_builtin" };
+        if (!Array.isArray(bp.connections)) bp.connections = [];
+        if (bp.connections.length >= AnazhRealm.CONNECTION_MAX_PER_BLUEPRINT) {
+            return { ok: false, reason: "too_many_connections" };
+        }
+        const valid = this.validateBlueprintConnections([connection], bp.parts.length);
+        if (valid.length === 0) return { ok: false, reason: "invalid_connection" };
+        bp.connections.push(valid[0]);
+        return { ok: true, index: bp.connections.length - 1 };
+    }
+
+    removeConnectionFromBlueprint(name, index) {
+        const bp = this.state.blueprints[name];
+        if (!bp || bp.builtIn) return false;
+        if (!Array.isArray(bp.connections) || index < 0 || index >= bp.connections.length) return false;
+        bp.connections.splice(index, 1);
+        return true;
+    }
+
     _architectureBuilders() {
         // Builders kommen jetzt aus state.blueprints — eine Quelle für
         // Built-in + User-Baupläne. Seed wird zur Zeit nicht mehr genutzt
@@ -8616,6 +8739,101 @@ class AnazhRealm {
             partsDiv.appendChild(row);
         }
         editor.appendChild(partsDiv);
+        // Welle 5 A — Verbindungen zwischen Parts. Acht Typen aus Konzept
+        // §5.1, jede mit eigener Last-Formel (Material-Tags × Kontaktfläche
+        // × Typ-Multiplier). Built-ins read-only.
+        const connectionsSection = document.createElement("div");
+        connectionsSection.className = "workshop-connections";
+        const connTitle = document.createElement("div");
+        connTitle.className = "workshop-tags-title";
+        connTitle.textContent = "Verbindungen";
+        connectionsSection.appendChild(connTitle);
+        const connections = Array.isArray(selected.connections) ? selected.connections : [];
+        if (connections.length === 0) {
+            const empty = document.createElement("div");
+            empty.className = "workshop-tags-empty";
+            empty.textContent = "Keine Verbindungen — Parts sitzen lose im Compound.";
+            connectionsSection.appendChild(empty);
+        } else {
+            for (let ci = 0; ci < connections.length; ci++) {
+                const conn = connections[ci];
+                const ctype = AnazhRealm.CONNECTION_TYPES[conn.type];
+                const strength = this.computeConnectionStrength(conn, selected);
+                const row = document.createElement("div");
+                row.className = "workshop-conn-row";
+                const label = document.createElement("span");
+                label.className = "workshop-conn-label";
+                label.textContent = `${ctype ? ctype.label : conn.type}: #${conn.partA} ↔ #${conn.partB}`;
+                const bar = document.createElement("span");
+                bar.className = "workshop-conn-bar";
+                const stars = Math.max(0, Math.min(3, Math.round(strength)));
+                bar.textContent = "★".repeat(stars) + "☆".repeat(3 - stars);
+                if (strength < AnazhRealm.CONNECTION_SOLID_THRESHOLD) bar.classList.add("workshop-conn-weak");
+                const num = document.createElement("span");
+                num.className = "workshop-conn-num";
+                num.textContent = strength.toFixed(2);
+                row.appendChild(label);
+                row.appendChild(bar);
+                row.appendChild(num);
+                if (!selected.builtIn) {
+                    const delConnBtn = document.createElement("button");
+                    delConnBtn.type = "button";
+                    delConnBtn.className = "workshop-conn-del";
+                    delConnBtn.textContent = "×";
+                    delConnBtn.addEventListener("click", () => {
+                        this.removeConnectionFromBlueprint(selected.name, ci);
+                        this._renderWorkshopDOM();
+                    });
+                    row.appendChild(delConnBtn);
+                }
+                connectionsSection.appendChild(row);
+            }
+        }
+        if (!selected.builtIn && selected.parts.length >= 2) {
+            const addRow = document.createElement("div");
+            addRow.className = "workshop-conn-add";
+            const typeSel = document.createElement("select");
+            typeSel.className = "workshop-conn-type";
+            for (const tname of Object.keys(AnazhRealm.CONNECTION_TYPES)) {
+                const opt = document.createElement("option");
+                opt.value = tname;
+                opt.textContent = AnazhRealm.CONNECTION_TYPES[tname].label;
+                opt.title = AnazhRealm.CONNECTION_TYPES[tname].description;
+                typeSel.appendChild(opt);
+            }
+            const aSel = document.createElement("select");
+            aSel.className = "workshop-conn-part";
+            const bSel = document.createElement("select");
+            bSel.className = "workshop-conn-part";
+            for (let pi = 0; pi < selected.parts.length; pi++) {
+                const optA = document.createElement("option");
+                optA.value = String(pi);
+                optA.textContent = `#${pi} ${selected.parts[pi].shape}`;
+                aSel.appendChild(optA);
+                const optB = optA.cloneNode(true);
+                bSel.appendChild(optB);
+            }
+            if (selected.parts.length > 1) bSel.value = "1";
+            const addBtn = document.createElement("button");
+            addBtn.type = "button";
+            addBtn.className = "workshop-conn-addbtn";
+            addBtn.textContent = "verbinden";
+            addBtn.addEventListener("click", () => {
+                const r = this.addConnectionToBlueprint(selected.name, {
+                    type: typeSel.value,
+                    partA: parseInt(aSel.value, 10),
+                    partB: parseInt(bSel.value, 10),
+                });
+                if (!r.ok) this.log(`apply_connection fehlgeschlagen: ${r.reason}`, "ERROR");
+                this._renderWorkshopDOM();
+            });
+            addRow.appendChild(typeSel);
+            addRow.appendChild(aSel);
+            addRow.appendChild(bSel);
+            addRow.appendChild(addBtn);
+            connectionsSection.appendChild(addRow);
+        }
+        editor.appendChild(connectionsSection);
         // Welle 4 Phase 2 — emergente Tag-Anzeige für den ganzen Compound.
         // Read-only: Spieler sehen, was Form + Material zusammen aktivieren.
         // Hinweis-Text dokumentiert die Grenze zur räumlichen Emergenz
@@ -9831,6 +10049,65 @@ AnazhRealm.SPATIAL_HOLLOW_SHAPES = Object.freeze(new Set(["sphere", "torus"]));
 AnazhRealm.SPATIAL_HOLLOW_BONUS = 0.3; // +30 % auf resoniert für beide Parts
 AnazhRealm.SPATIAL_AXIS_BONUS = 0.3; // +30 % auf magieleitung + stromleitung
 AnazhRealm.SPATIAL_ARRAY_BONUS = 0.4; // +40 % auf resoniert + magieleitung
+// Welle 5 A — Verbindungstypen aus Konzept §5.1. Acht Typen, jeder mit
+// `typeStrength` (Basis-Belastbarkeit 0..1), `strongTags` (welche Material-
+// Eigenschaften die Verbindung tragen — Hafting will härte+dichte, Lashing
+// will zähigkeit). Final-Strength einer Verbindung in einem Compound:
+//   strength = typeStrength × avg(strongTags von Material A + B) × min(1, kontaktfläche)
+// Liefert Wert 0..3-Skala wie die Tag-Strahler. Schwelle für „solide" liegt
+// bei ~0.7; darunter ist die Verbindung sichtbar fragil.
+AnazhRealm.CONNECTION_TYPES = Object.freeze({
+    hafting: Object.freeze({
+        label: "Hafting",
+        description: "Stiel in Loch — Reibschluss",
+        strongTags: Object.freeze(["härte", "dichte"]),
+        typeStrength: 0.8,
+    }),
+    lashing: Object.freeze({
+        label: "Lashing",
+        description: "Umwicklung — Zugfest",
+        strongTags: Object.freeze(["zähigkeit"]),
+        typeStrength: 0.6,
+    }),
+    pinning: Object.freeze({
+        label: "Pinning",
+        description: "Stift durch Loch — Scherung",
+        strongTags: Object.freeze(["härte"]),
+        typeStrength: 0.75,
+    }),
+    welding: Object.freeze({
+        label: "Schweißen",
+        description: "Atomar verschmolzen",
+        strongTags: Object.freeze(["härte", "wärmeleitung"]),
+        typeStrength: 0.95,
+    }),
+    gluing: Object.freeze({
+        label: "Kleben",
+        description: "Adhäsion — Schubfest",
+        strongTags: Object.freeze(["zähigkeit"]),
+        typeStrength: 0.55,
+    }),
+    masonry: Object.freeze({
+        label: "Mauern",
+        description: "Druckschluss + Mörtel",
+        strongTags: Object.freeze(["dichte"]),
+        typeStrength: 0.7,
+    }),
+    sewing: Object.freeze({
+        label: "Nähen",
+        description: "Garn durch Material",
+        strongTags: Object.freeze(["zähigkeit"]),
+        typeStrength: 0.5,
+    }),
+    magic_bind: Object.freeze({
+        label: "Magisch",
+        description: "Tag-Resonanz",
+        strongTags: Object.freeze(["magieleitung", "resoniert"]),
+        typeStrength: 0.85,
+    }),
+});
+AnazhRealm.CONNECTION_MAX_PER_BLUEPRINT = 64;
+AnazhRealm.CONNECTION_SOLID_THRESHOLD = 0.7;
 // Welle 4 Phase 3 — Material × Op-Klassen-Kompatibilität aus Konzept §3.2.
 // Bei eigenen Materialien (define_material) wird das via applyOpToPart als
 // „alle vier erlaubt" behandelt — UI/UX-Verfeinerung folgt in einer

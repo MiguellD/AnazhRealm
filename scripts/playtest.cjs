@@ -2000,6 +2000,189 @@ function startSaveServer() {
                 check("Welle 5 B P2: Glockenspiel-Combo (Hohlraum + Array) maximiert Resonanz", wave5bp2Results.glockenspielMaxResonance);
             }
 
+            // ### Welle 5 A — Verbindungstypen mit Lastformel ###
+            const wave5aResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    // Konstanten
+                    out.connectionTypesFrozen = Object.isFrozen(r.constructor.CONNECTION_TYPES);
+                    const types = r.constructor.CONNECTION_TYPES;
+                    const expectedTypes = [
+                        "hafting", "lashing", "pinning", "welding",
+                        "gluing", "masonry", "sewing", "magic_bind",
+                    ];
+                    out.eightTypes = expectedTypes.every((t) => types[t]);
+                    out.eachTypeHasStrongTags = expectedTypes.every(
+                        (t) => Array.isArray(types[t].strongTags) && types[t].strongTags.length >= 1
+                    );
+                    out.eachTypeHasStrength = expectedTypes.every(
+                        (t) => typeof types[t].typeStrength === "number" && types[t].typeStrength > 0 && types[t].typeStrength <= 1
+                    );
+
+                    // _partsContactArea: zwei berührende 1×1×1-Würfel
+                    const a = { shape: "box", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } };
+                    const b = { shape: "box", position: { x: 1, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } };
+                    const area = r._partsContactArea(a, b);
+                    out.contactAreaNonZero = area > 0.5;
+                    // Weit weg: keine Fläche
+                    const c = { shape: "box", position: { x: 10, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } };
+                    out.farContactZero = r._partsContactArea(a, c) === 0;
+
+                    // computeConnectionStrength: hafting zwischen zwei harten Materialien
+                    r.state.blueprints["w5a-test"] = {
+                        name: "w5a-test",
+                        label: "W5A Test",
+                        builtIn: false,
+                        parts: [
+                            { shape: "cylinder", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                            { shape: "box", material: "eisen", position: { x: 0.95, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                        ],
+                        connections: [],
+                    };
+                    const haftStrength = r.computeConnectionStrength(
+                        { type: "hafting", partA: 0, partB: 1 },
+                        r.state.blueprints["w5a-test"]
+                    );
+                    out.haftingStrengthOk = haftStrength > 1.0 && haftStrength < 3.0;
+
+                    // Weichere Materialien → schwächere hafting
+                    r.state.blueprints["w5a-soft"] = {
+                        name: "w5a-soft",
+                        label: "W5A Soft",
+                        builtIn: false,
+                        parts: [
+                            { shape: "cylinder", material: "leder", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                            { shape: "box", material: "leder", position: { x: 0.95, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                        ],
+                        connections: [],
+                    };
+                    const softStrength = r.computeConnectionStrength(
+                        { type: "hafting", partA: 0, partB: 1 },
+                        r.state.blueprints["w5a-soft"]
+                    );
+                    out.softHaftingWeaker = softStrength < haftStrength;
+                    // Aber lashing (zähigkeit) ist auf leder STÄRKER als hafting auf leder
+                    const lashSoftStrength = r.computeConnectionStrength(
+                        { type: "lashing", partA: 0, partB: 1 },
+                        r.state.blueprints["w5a-soft"]
+                    );
+                    out.lashingFitsLeather = lashSoftStrength > softStrength;
+
+                    // Validation
+                    const v1 = r.validateBlueprintConnections(
+                        [{ type: "hafting", partA: 0, partB: 1 }],
+                        2
+                    );
+                    out.validAcceptsGood = v1.length === 1;
+                    // Unknown type
+                    const v2 = r.validateBlueprintConnections(
+                        [{ type: "schmusen", partA: 0, partB: 1 }],
+                        2
+                    );
+                    out.validRejectsUnknownType = v2.length === 0;
+                    // Out-of-range index
+                    const v3 = r.validateBlueprintConnections(
+                        [{ type: "hafting", partA: 0, partB: 99 }],
+                        2
+                    );
+                    out.validRejectsBadIndex = v3.length === 0;
+                    // Self-reference
+                    const v4 = r.validateBlueprintConnections(
+                        [{ type: "hafting", partA: 1, partB: 1 }],
+                        2
+                    );
+                    out.validRejectsSelfRef = v4.length === 0;
+
+                    // addConnectionToBlueprint
+                    const addR = r.addConnectionToBlueprint("w5a-test", { type: "welding", partA: 0, partB: 1 });
+                    out.addConnectionOk = addR.ok && r.state.blueprints["w5a-test"].connections.length === 1;
+                    // Built-in protection
+                    const addBuiltin = r.addConnectionToBlueprint("village", { type: "welding", partA: 0, partB: 1 });
+                    out.builtinBlocked = !addBuiltin.ok && addBuiltin.reason === "cannot_modify_builtin";
+                    // remove
+                    const rmR = r.removeConnectionFromBlueprint("w5a-test", 0);
+                    out.removeOk = rmR && r.state.blueprints["w5a-test"].connections.length === 0;
+
+                    // DSL-Op apply_connection
+                    const dslRes = r.dslRun(
+                        ["apply_connection", "w5a-test", "magic_bind", 0, 1],
+                        { source: "test" }
+                    );
+                    out.dslApplyConnection = dslRes.log.some((e) => e.event === "applied_connection");
+                    out.dslConnectionPersisted = r.state.blueprints["w5a-test"].connections.length === 1;
+
+                    // Save-Roundtrip
+                    const snap = r.buildStateSnapshot();
+                    const ourSavedBp = (snap.blueprints || []).find((bp) => bp.name === "w5a-test");
+                    out.saveCarriesConnections =
+                        ourSavedBp && Array.isArray(ourSavedBp.connections) && ourSavedBp.connections.length === 1;
+
+                    // UI: Verbindungs-Sektion erscheint
+                    r.selectBlueprintForEdit("w5a-test");
+                    out.uiConnectionsSection = !!document.querySelector(".workshop-connections");
+                    out.uiConnRow = !!document.querySelector(".workshop-conn-row");
+                    out.uiAddRow = !!document.querySelector(".workshop-conn-add");
+                    out.uiTypeDropdown = !!document.querySelector(".workshop-conn-type");
+
+                    // Solid-Threshold: schwache Verbindung hat workshop-conn-weak class
+                    r.state.blueprints["w5a-weak"] = {
+                        name: "w5a-weak",
+                        label: "W5A Weak",
+                        builtIn: false,
+                        parts: [
+                            { shape: "cylinder", material: "holz", position: { x: 0, y: 0, z: 0 }, size: { x: 0.2, y: 0.2, z: 0.2 } },
+                            { shape: "box", material: "holz", position: { x: 0.18, y: 0, z: 0 }, size: { x: 0.2, y: 0.2, z: 0.2 } },
+                        ],
+                        connections: [{ type: "sewing", partA: 0, partB: 1 }],
+                    };
+                    r.selectBlueprintForEdit("w5a-weak");
+                    const weakBar = document.querySelector(".workshop-conn-bar");
+                    out.weakClassApplied = weakBar && weakBar.classList.contains("workshop-conn-weak");
+
+                    // Aufräumen
+                    delete r.state.blueprints["w5a-test"];
+                    delete r.state.blueprints["w5a-soft"];
+                    delete r.state.blueprints["w5a-weak"];
+                    if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (!wave5aResults || wave5aResults.error) {
+                check(
+                    "Welle 5 A: Snapshot erreichbar",
+                    false,
+                    (wave5aResults && wave5aResults.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Welle 5 A: CONNECTION_TYPES frozen", wave5aResults.connectionTypesFrozen);
+                check("Welle 5 A: Acht Verbindungstypen definiert", wave5aResults.eightTypes);
+                check("Welle 5 A: Jeder Typ hat strongTags", wave5aResults.eachTypeHasStrongTags);
+                check("Welle 5 A: Jeder Typ hat typeStrength 0..1", wave5aResults.eachTypeHasStrength);
+                check("Welle 5 A: _partsContactArea liefert positive Flaeche bei Beruehrung", wave5aResults.contactAreaNonZero);
+                check("Welle 5 A: _partsContactArea = 0 bei weit-entfernten Parts", wave5aResults.farContactZero);
+                check("Welle 5 A: Hafting auf Eisen liefert mittlere bis hohe Staerke", wave5aResults.haftingStrengthOk);
+                check("Welle 5 A: Hafting auf Leder ist schwaecher als auf Eisen", wave5aResults.softHaftingWeaker);
+                check("Welle 5 A: Lashing passt zu Leder besser als Hafting", wave5aResults.lashingFitsLeather);
+                check("Welle 5 A: validateConnections akzeptiert gueltige", wave5aResults.validAcceptsGood);
+                check("Welle 5 A: validateConnections lehnt unbekannten Typ ab", wave5aResults.validRejectsUnknownType);
+                check("Welle 5 A: validateConnections lehnt Out-of-Range-Index ab", wave5aResults.validRejectsBadIndex);
+                check("Welle 5 A: validateConnections lehnt Self-Reference ab", wave5aResults.validRejectsSelfRef);
+                check("Welle 5 A: addConnectionToBlueprint haengt an", wave5aResults.addConnectionOk);
+                check("Welle 5 A: Built-in-Bauplan vor Connection-Mutation geschuetzt", wave5aResults.builtinBlocked);
+                check("Welle 5 A: removeConnectionFromBlueprint entfernt", wave5aResults.removeOk);
+                check("Welle 5 A: DSL apply_connection wirkt", wave5aResults.dslApplyConnection);
+                check("Welle 5 A: DSL-Connection persistiert in state", wave5aResults.dslConnectionPersisted);
+                check("Welle 5 A: Save traegt connections im Snapshot", wave5aResults.saveCarriesConnections);
+                check("Welle 5 A: UI .workshop-connections im DOM", wave5aResults.uiConnectionsSection);
+                check("Welle 5 A: UI .workshop-conn-row im DOM", wave5aResults.uiConnRow);
+                check("Welle 5 A: UI .workshop-conn-add im DOM", wave5aResults.uiAddRow);
+                check("Welle 5 A: UI Typ-Dropdown im DOM", wave5aResults.uiTypeDropdown);
+                check("Welle 5 A: Schwache Verbindung traegt workshop-conn-weak class", wave5aResults.weakClassApplied);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {
