@@ -241,7 +241,7 @@ Plus: inline-styles aus `index.html` entfernt (`#fps`, `#state-file-input`), Inl
 4. 6.E1+E2 (Ability-Beschreibung + Intro-Overlay) ✅ V7.72
 5. 6.F1+F2 (Verbindungs-Linien + Brech-Warning) ✅ V7.72
 6. **6.D Stat-System komplett** (Etappen 1+1.5+1.6+1.7+2+3a+3b) ✅ V7.72 — der Vision-Pfeiler ist live
-7. **Schöpfer-Reflexion-Fixes** ✅ V7.72 — WASD-Geometrie, Drache-π-Flip, Aura-Sprite-Falloff, Tod-Wunde persistent, Werkzeug-Stamina-Kosten, Konsumables aus Compound-Tags
+7. **Schöpfer-Reflexions-Polish** ✅ V7.72 — sechs Reflexions-Runden in Welle 6.D fanden + behoben: Avatar-Editor-UI (Etappe 1.7), Konsumables aus Compound-Tags (Logik statt Tabelle), Werkzeug-Stamina-Kosten (Anti-Stapeln), persistente Tod-Wunde, Aura-Glow (Sprite + Radial-Gradient), WASD-Geometrie + Drache-Animation-Wahrnehmung, **Sprint-Bug-Fix** (player_speed sync't sprintSpeed), **Tag-Clamp [0,1]** in computePlayerStats für die Stat-Pipe, Speed-Base 6→7
 8. **6.G Welt-Sinne Phase 1** ← jetzt offen (fliegende Inseln + Bäume kollidierbar)
 9. **6.C2** (Spiel-Modi frieden/pfad/schöpfer) — nutzt Stat-System
 10. 6.C1 + 6.A-Maus + 6.C3 (Inventar + LMB/RMB + Keybindings-UI)

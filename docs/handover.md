@@ -190,6 +190,67 @@ Hartnäckige Falle — schon zweimal gesehen.
 
 ---
 
+## Schöpfer-Reflexions-Muster (aus Welle 6.D, 11 Sub-Runden)
+
+Während Welle 6.D (Stat-System) gab es **sechs Schöpfer-Reflexions-Runden**.
+JEDE fand echte Lücken, die Tests grün liessen. Diese Muster sammle ich
+für nächste Sessions — wenn dir eine davon bekannt vorkommt, ist es ein
+Indikator für „durchatmen, prüfen".
+
+1. **„Wo ist das Menü?"** — UI-Bedien-Pfad-Test fehlt. Wenn ich Daten +
+   DSL-Pfad fertig habe, aber kein Bedienen-UI: Feature ist NICHT live.
+   Frag dich vor Commit: „kann der Schöpfer das ohne Console öffnen?"
+
+2. **„Tabelle oder Logik?"** — Bei jedem Werte-System (Konsumables, Boosts,
+   Stats) fragen: „werden die Werte definiert oder emergieren sie aus
+   Compound-Tags?". Wenn Definition: Hylomorphismus-Bruch, vermutlich
+   Vision-fremd.
+
+3. **„Was kostet das?"** — Mechanismen die Ressourcen erzeugen (Präzision,
+   HP, Boosts) müssen Ressourcen verbrauchen (Stamina, Material, Zeit).
+   Sonst kann der Spieler beliebig stapeln. Geduld als Mechanik braucht
+   ECHTE Kosten.
+
+4. **„Asymmetrische Form als Test"** — Drache > Phönix > Mensch in
+   visueller Asymmetrie. Wenn ein Refactor mit Animation/Geometrie
+   beim Mensch korrekt aussieht aber beim Drache falsch, ist es ein
+   Bug. Bei jedem Geometrie-Refactor mit Drache testen.
+
+5. **„Variablen-Name vs. Geometrie"** — `state.right` ist geometrisch
+   das Player-LINKS (Right-Hand-Rule: `forward × up = -X`). Vertraue
+   dem Namen nicht. Im Zweifel cross-product nachrechnen.
+
+6. **„Pixel-Helligkeit vs. Material-Tint"** — Glow/Aura braucht echte
+   Pixel-Addition (AdditiveBlending) + radial-Falloff (Texture-Gradient),
+   nicht statische Farbverschiebung. „Schimmern der Haut" = additiv,
+   weich, lebendig.
+
+7. **„Angrenzende Pfade"** — Bei Refactor das KOMPLETTE System
+   durchspielen. `player_speed`-DSL-Op existierte Pre-V7.72, sync'te
+   `sprintSpeed` nicht. Mein Stat-System hat den Bug aktiviert. Bei
+   jeder Methode fragen: „welche anderen Methoden setzen denselben State?"
+
+8. **„Wertebereich beider Seiten"** — Tags können 0..3 sein (FORM_TAG_
+   ACTIVATION × Material). Stat-Formel `(1-dichte)*5` wird negativ bei
+   dichte=1.8. Bei Stat-Formeln IMMER Wertebereich beider Operanden
+   dokumentieren + clampen wo nötig.
+
+9. **„Form-Wahrnehmung ≠ Mesh-Namen"** — Cone = spitz = Schnauze (visuell),
+   selbst wenn der Variable im Code „tail" heißt. Bei perceptual Feedback
+   ehrlich diagnostizieren — manchmal ist die Wahrnehmung anders als der
+   Code-Name suggeriert.
+
+10. **„Schöpfer-Frage als Audit-Tool"** — Verständnis-Fragen sind keine
+    Verzögerung, sondern Audit-Verstärker. Bei „kannst du erklären wie X
+    funktioniert?" zuerst durchlesen statt antworten. Oft fallen Funde
+    raus.
+
+11. **„Reflexion vor Merge"** — Tests grün heißt mechanisch sicher, nicht
+    vision-treu oder spürbar gut. Schöpfer-Spiel-Sitzung VOR PR ist die
+    letzte Wand. Akzeptiere Korrekturen ohne Defense.
+
+---
+
 ## Was als Nächstes wartet
 
 **Bogen B (Welten-Ultiversum, Ringe 8-11.5) ist abgeschlossen.** Vision §11
@@ -238,12 +299,20 @@ Hylomorphismus-System wie Materialien und Bauwerke.
     Aura-Visual: Sprite mit CanvasTexture-Radial-Gradient +
     AdditiveBlending = weicher Schimmer, HSL-Hue aus dominanter Tag-
     Achse, Saturation × HP% (verletzt = blasser).
-- ✅ **Schöpfer-Reflexions-Fixes** — WASD-Geometrie-Revert (`state.right`
-  ist player-LINKS geometrisch, in Right-Hand-Coords mit Y up gilt
-  forward × up = -X, also player-anatomisch-rechts = -state.right),
-  Drache-Inner-π-Flip (Tail-Cone ist die wahrgenommene Schnauze, gehört
-  in +Z = Forward), Aura-Sprite-Falloff statt Sphere (weicher Schimmer
-  ohne harte Kontur), Chat-Patterns für damage/trink/rüste.
+- ✅ **Schöpfer-Reflexions-Polish (V7.72 Schluss)** — WASD-Geometrie-
+  Revert auf Original (state.right ist geometrisch player-LINKS),
+  Drache-π-Flip-Revert (Original-Orientierung mit Kopf in +Z war richtig;
+  „W/S vertauscht"-Wahrnehmung kam von Animation, nicht Body-Translation),
+  Aura V4 (Sprite + CanvasTexture-Radial-Gradient + AdditiveBlending =
+  weicher Schimmer ohne harte Kontur), Chat-Patterns für damage/trink/
+  rüste, **Sprint-Bug-Fix** (player_speed-DSL-Op sync't jetzt
+  sprintSpeed = speed × 2 — vorher konnte ein DSL-`player_speed 25` den
+  Spieler beim Sprint langsamer machen), **Tag-Clamp [0,1]** in
+  computePlayerStats für die Stat-Pipe (FORM_TAG_ACTIVATION konnte
+  Werte bis 3 verstärken → Speed-Formel wurde negativ → Mensch lief mit
+  2.0 m/s. Boosts + Equipped + Wound dürfen weiter drüber/drunter),
+  Speed-Base 6→7 für spürbar agilere Bewegung (Mensch ~7, Phönix ~11.7,
+  Drache ~7.9; Sprint × 2).
 
 ### Nächste Schritte (Reihenfolge laut wave-6-design §10.6)
 
