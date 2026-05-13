@@ -5368,6 +5368,172 @@ function startSaveServer() {
                 check("Welle 6.F2: Diskrimination — starker Bauplan löst KEINE weak-Warning aus", wave6fResults.strongNoWarning);
             }
 
+            // ### Welle 6.D Etappe 1 — Soul-Tags + STAT_FROM_TAGS + Stat-Berechnung ###
+            //
+            // Vision-Pfeiler-Test: der Spieler ist ein Compound im selben
+            // Hylomorphismus-System wie Architekturen + Materialien. Die 10
+            // MATERIAL_TAG_KEYS sind die EINE Sprache; Soul-Tags + Material-Tags
+            // sind beide an dieselbe Achsen-Liste gebunden. STAT_FROM_TAGS-Formeln
+            // sind reine Funktionen — Diskriminations-Tests prüfen Verhältnisse
+            // (Phönix schneller als Drache, Drache mehr HP als Phönix).
+            const wave6dResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    // AnazhRealm-Klasse ist global im Script-Scope; page.evaluate
+                    // sieht sie direkt (kein window-Prefix nötig).
+                    const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
+                    if (!C || !C.STAT_FROM_TAGS) return null;
+                    const out = {};
+                    out.hasStatMatrix = typeof C.STAT_FROM_TAGS === "object";
+                    out.statKeys = Object.keys(C.STAT_FROM_TAGS).sort().join(",");
+                    out.hasComputeMethod = typeof r.computePlayerStats === "function";
+                    out.hasRecomputeMethod = typeof r.recomputePlayerStats === "function";
+                    out.hasRenderMethod = typeof r.renderPlayerStatsUI === "function";
+
+                    // Soul-Tags sind an MATERIAL_TAG_KEYS gebunden — Vision-Treue-Check
+                    const defs = r.playerSoulDefs;
+                    out.allSoulsHaveTags = ["human", "phoenix", "dragon"].every((s) => defs[s] && defs[s].tags);
+                    out.humanTagsAreMaterialKeys = !!defs.human.tags && C.MATERIAL_TAG_KEYS.every((k) => k in defs.human.tags);
+                    out.phoenixTagsAreMaterialKeys = !!defs.phoenix.tags && C.MATERIAL_TAG_KEYS.every((k) => k in defs.phoenix.tags);
+                    out.dragonTagsAreMaterialKeys = !!defs.dragon.tags && C.MATERIAL_TAG_KEYS.every((k) => k in defs.dragon.tags);
+
+                    // computePlayerStats — gibt {tags, stats} zurück
+                    const computed = r.computePlayerStats();
+                    out.computedHasTags = computed && typeof computed.tags === "object";
+                    out.computedHasStats = computed && typeof computed.stats === "object";
+                    out.computedStatsHasAll = computed && computed.stats &&
+                        ["hpMax", "damage", "speed", "jumpPower", "staminaMax", "precision", "magicResist", "heatResist"].every(
+                            (k) => typeof computed.stats[k] === "number" && Number.isFinite(computed.stats[k])
+                        );
+
+                    // Diskriminations-Test: drei Seelen → drei verschiedene Stat-Profile
+                    const savedSoul = r.state.player.soul;
+                    r.state.player.soul = "human";
+                    const humanStats = r.computePlayerStats().stats;
+                    r.state.player.soul = "phoenix";
+                    const phoenixStats = r.computePlayerStats().stats;
+                    r.state.player.soul = "dragon";
+                    const dragonStats = r.computePlayerStats().stats;
+                    r.state.player.soul = savedSoul;
+
+                    out.humanStats = humanStats;
+                    out.phoenixStats = phoenixStats;
+                    out.dragonStats = dragonStats;
+
+                    // Vision-Treue: Phönix = glass cannon (schneller, weniger HP)
+                    out.phoenixFasterThanDragon = phoenixStats.speed > dragonStats.speed;
+                    out.phoenixJumpsHigherThanDragon = phoenixStats.jumpPower > dragonStats.jumpPower;
+                    out.dragonHasMoreHpThanPhoenix = dragonStats.hpMax > phoenixStats.hpMax;
+                    out.dragonHasMoreDamageThanPhoenix = dragonStats.damage > phoenixStats.damage;
+                    out.phoenixHasMoreMagicResistThanDragon = phoenixStats.magicResist > dragonStats.magicResist;
+                    // Phönix brennbar=0.9, wärme=0.9: -0.9*0.3 + 0.9*0.5 = 0.18.
+                    // Drache brennbar=0.3, wärme=0.8: -0.3*0.3 + 0.8*0.5 = 0.31. Drache mehr Hitze-Resistenz.
+                    out.dragonHasMoreHeatResistThanPhoenix = dragonStats.heatResist > phoenixStats.heatResist;
+                    // Mensch ist balanced (zwischen den anderen beiden bei HP)
+                    out.humanHpBetweenPhoenixAndDragon =
+                        humanStats.hpMax > phoenixStats.hpMax && humanStats.hpMax < dragonStats.hpMax;
+
+                    // recomputePlayerStats — applies to state
+                    r.state.player.soul = "phoenix";
+                    r.recomputePlayerStats();
+                    out.stateSpeedMatches = Math.abs(r.state.speed - phoenixStats.speed) < 0.001;
+                    out.stateJumpPowerMatches = Math.abs(r.state.jumpPower - phoenixStats.jumpPower) < 0.001;
+                    out.stateSprintIsDoubleSpeed = Math.abs(r.state.sprintSpeed - phoenixStats.speed * 2) < 0.001;
+                    out.statePlayerStatsCached = r.state.player.stats && r.state.player.stats.hpMax === phoenixStats.hpMax;
+                    out.statePlayerHasHpAndStamina =
+                        typeof r.state.player.hp === "number" &&
+                        typeof r.state.player.hpMax === "number" &&
+                        typeof r.state.player.stamina === "number" &&
+                        typeof r.state.player.staminaMax === "number" &&
+                        r.state.player.hp === r.state.player.hpMax;
+                    // Restore
+                    r.state.player.soul = savedSoul;
+                    r.recomputePlayerStats();
+
+                    // applyPlayerSoul ruft recompute auf
+                    const applySrc = r.applyPlayerSoul.toString();
+                    out.applyCallsRecompute = /recomputePlayerStats/.test(applySrc);
+
+                    // UI im DOM
+                    out.statsContainerInDom = !!document.getElementById("player-stats");
+                    // Render-Methode arbeitet ohne Crash
+                    let renderOk = false;
+                    try {
+                        r.renderPlayerStatsUI();
+                        renderOk = true;
+                    } catch (e) {
+                        out.renderError = String(e);
+                    }
+                    out.renderOk = renderOk;
+                    if (renderOk) {
+                        const dom = document.getElementById("player-stats");
+                        out.statRowsCount = dom ? dom.querySelectorAll(".stat-row").length : 0;
+                        out.hasTagLine = dom ? !!dom.querySelector(".stat-tags") : false;
+                    }
+                    return out;
+                })
+                .catch(() => null);
+
+            if (wave6dResults) {
+                check("Welle 6.D: AnazhRealm.STAT_FROM_TAGS-Matrix existiert", wave6dResults.hasStatMatrix);
+                check(
+                    "Welle 6.D: STAT_FROM_TAGS hat 8 Stats (hpMax + damage + speed + jumpPower + stamina + precision + 2× Resist)",
+                    wave6dResults.statKeys === "damage,heatResist,hpMax,jumpPower,magicResist,precision,speed,staminaMax"
+                );
+                check("Welle 6.D: computePlayerStats-Methode existiert", wave6dResults.hasComputeMethod);
+                check("Welle 6.D: recomputePlayerStats-Methode existiert", wave6dResults.hasRecomputeMethod);
+                check("Welle 6.D: renderPlayerStatsUI-Methode existiert", wave6dResults.hasRenderMethod);
+                check("Welle 6.D: alle drei Seelen tragen ein tags-Feld", wave6dResults.allSoulsHaveTags);
+                check(
+                    "Welle 6.D: Vision-Treue — Mensch-Soul-Tags an MATERIAL_TAG_KEYS gebunden",
+                    wave6dResults.humanTagsAreMaterialKeys
+                );
+                check(
+                    "Welle 6.D: Vision-Treue — Phönix-Soul-Tags an MATERIAL_TAG_KEYS gebunden",
+                    wave6dResults.phoenixTagsAreMaterialKeys
+                );
+                check(
+                    "Welle 6.D: Vision-Treue — Drache-Soul-Tags an MATERIAL_TAG_KEYS gebunden",
+                    wave6dResults.dragonTagsAreMaterialKeys
+                );
+                check("Welle 6.D: computePlayerStats liefert {tags, stats}", wave6dResults.computedHasTags && wave6dResults.computedHasStats);
+                check("Welle 6.D: computed.stats hat alle 8 Werte als finite Zahlen", wave6dResults.computedStatsHasAll);
+                // Vision-Diskrimination
+                check("Welle 6.D: Diskrimination — Phönix schneller als Drache (low dichte)", wave6dResults.phoenixFasterThanDragon);
+                check("Welle 6.D: Diskrimination — Phönix springt höher als Drache", wave6dResults.phoenixJumpsHigherThanDragon);
+                check("Welle 6.D: Diskrimination — Drache mehr HP als Phönix (tank)", wave6dResults.dragonHasMoreHpThanPhoenix);
+                check("Welle 6.D: Diskrimination — Drache mehr Schaden als Phönix", wave6dResults.dragonHasMoreDamageThanPhoenix);
+                check(
+                    "Welle 6.D: Diskrimination — Phönix mehr Magie-Resistenz als Drache (magieleitung hoch)",
+                    wave6dResults.phoenixHasMoreMagicResistThanDragon
+                );
+                check(
+                    "Welle 6.D: Diskrimination — Drache mehr Hitze-Resistenz als Phönix (brennbar niedrig)",
+                    wave6dResults.dragonHasMoreHeatResistThanPhoenix
+                );
+                check(
+                    "Welle 6.D: Diskrimination — Mensch HP zwischen Phönix + Drache (balanced)",
+                    wave6dResults.humanHpBetweenPhoenixAndDragon
+                );
+                // State-Anwendung
+                check("Welle 6.D: recomputePlayerStats setzt state.speed", wave6dResults.stateSpeedMatches);
+                check("Welle 6.D: recomputePlayerStats setzt state.jumpPower", wave6dResults.stateJumpPowerMatches);
+                check("Welle 6.D: state.sprintSpeed = 2 × state.speed", wave6dResults.stateSprintIsDoubleSpeed);
+                check("Welle 6.D: state.player.stats wird gecached", wave6dResults.statePlayerStatsCached);
+                check(
+                    "Welle 6.D: state.player.hp + hpMax + stamina + staminaMax existieren (hp=hpMax)",
+                    wave6dResults.statePlayerHasHpAndStamina
+                );
+                check("Welle 6.D: applyPlayerSoul ruft recomputePlayerStats auf", wave6dResults.applyCallsRecompute);
+                check("Welle 6.D: #player-stats im DOM (Spieler-Drawer)", wave6dResults.statsContainerInDom);
+                check("Welle 6.D: renderPlayerStatsUI läuft ohne Crash", wave6dResults.renderOk);
+                if (wave6dResults.renderOk) {
+                    check("Welle 6.D: 8 stat-row-Einträge im DOM", wave6dResults.statRowsCount === 8);
+                    check("Welle 6.D: stat-tags-Zeile (dominante Achsen) im DOM", wave6dResults.hasTagLine);
+                }
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {
@@ -6674,7 +6840,12 @@ function startSaveServer() {
                         r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec2, 0, 0, 0));
                     }
                 }, pitch);
-                await new Promise((r) => setTimeout(r, 350));
+                // 500 ms statt 350 ms — der dichte Test-Cluster davor (Welle 6.A4+A5
+                // spawnt Architekturen + teleportiert Spieler+Kamera) kann den
+                // Loop-Tick verzögern; 350 ms war Headless-zu-knapp, vereinzelt
+                // landete der clamp (cam-y = player-0.2) in der Antwort. 500 ms
+                // gibt mehrere Frames Puffer zum Stabilisieren.
+                await new Promise((r) => setTimeout(r, 500));
                 return await page.evaluate(() => {
                     const r = window.anazhRealm;
                     return r.state.camera.position.y - r.state.playerMesh.position.y;

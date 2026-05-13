@@ -1537,6 +1537,54 @@
                 outline-offset: 1px;
             }
             /* Ring 6.5 — Hotbar-Belegungs-Editor im Spieler-Drawer */
+            /* Welle 6.D Etappe 1 — Stats-Sektion im Spieler-Drawer. */
+            .drawer #player-stats {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+            }
+            .drawer .stat-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 2px 6px;
+                background: rgba(40, 25, 10, 0.06);
+                border-left: 2px solid var(--brass-2, #b48c50);
+                font-family: "JetBrains Mono", monospace;
+                font-size: 11px;
+            }
+            .drawer .stat-label {
+                color: var(--parch-ink);
+                font-family: "IM Fell English", Georgia, serif;
+                font-size: 11px;
+                font-style: italic;
+            }
+            .drawer .stat-value {
+                color: var(--parch-ink);
+                font-weight: 600;
+            }
+            .drawer .stat-tags {
+                margin-top: 6px;
+                padding: 4px 6px;
+                font-size: 10px;
+                color: var(--parch-ink-faded);
+                font-family: "Cinzel", Georgia, serif;
+                letter-spacing: 0.04em;
+                border-top: 1px dashed rgba(138, 106, 54, 0.35);
+            }
+            .drawer .stats-empty {
+                font-size: 11px;
+                font-style: italic;
+                color: var(--parch-ink-faded);
+            }
+            .drawer .section-hint {
+                font-size: 0.78em;
+                color: var(--parch-ink-faded);
+                font-weight: normal;
+                font-style: italic;
+                margin-left: 4px;
+            }
+
             .drawer .hotbar-config-row {
                 display: flex;
                 align-items: center;
@@ -2236,11 +2284,15 @@
             <h2>Spieler</h2>
             <section class="section">
                 <h3>Seele</h3>
-                <p class="drawer-hint">Form des Spieler-Avatars. Rein visuell — Bewegung und Physik bleiben gleich.</p>
+                <p class="drawer-hint">Form des Spieler-Avatars. Welle 6.D: jede Seele trägt ein Material-Tag-Profil, daraus folgen Stats (Mensch balanced, Phönix schnell/fragil, Drache zäh/langsam).</p>
                 <div class="soul-row">
                     <label for="player-soul-select">Form</label>
                     <select id="player-soul-select" aria-label="Spieler-Seele wählen"></select>
                 </div>
+            </section>
+            <section class="section">
+                <h3>Stats <span class="section-hint">(aus Soul-Tags abgeleitet)</span></h3>
+                <div id="player-stats" aria-live="polite"></div>
             </section>
             <section class="section">
                 <h3>Hotbar-Belegung</h3>

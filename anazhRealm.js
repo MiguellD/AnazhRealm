@@ -9717,24 +9717,69 @@ class AnazhRealm {
     // - `isMoving`: bool, schaltet zwischen Walk/Trab/Flap-Speed und Idle.
     get playerSoulDefs() {
         if (this._playerSoulDefsCache) return this._playerSoulDefsCache;
+        // Welle 6.D Etappe 1 — Soul-Tag-Profile.
+        //
+        // Vision-Vertiefung: der Spieler IST ein Compound im Hylomorphismus-
+        // System (wave-6-design §5.1). Die Tag-Profile nutzen exakt dieselben
+        // 10 Achsen wie Materialien — MATERIAL_TAG_KEYS = härte, dichte,
+        // zähigkeit, wärmeleitung, stromleitung, magieleitung, transparent,
+        // brennbar, resoniert, lebendig. Werte: Mensch balanced, Phönix glass-
+        // cannon (low dichte/härte, high wärme/magie/brennbar), Drache tank
+        // (high dichte/härte/zähigkeit, robust). lebendig=1 bei allen drei.
         this._playerSoulDefsCache = {
             human: {
                 label: "Mensch",
                 color: 0xff0000,
                 build: () => this._buildHumanGroup(),
                 animate: (g, t, ph, mv) => this._animateHuman(g, t, ph, mv),
+                tags: {
+                    härte: 0.5,
+                    dichte: 0.5,
+                    zähigkeit: 0.6,
+                    wärmeleitung: 0.5,
+                    stromleitung: 0.4,
+                    magieleitung: 0.5,
+                    transparent: 0.0,
+                    brennbar: 0.1,
+                    resoniert: 0.4,
+                    lebendig: 1.0,
+                },
             },
             phoenix: {
                 label: "Phönix",
                 color: 0xff7a1a,
                 build: () => this._buildPhoenixGroup(),
                 animate: (g, t, ph, mv) => this._animatePhoenix(g, t, ph, mv),
+                tags: {
+                    härte: 0.3,
+                    dichte: 0.2,
+                    zähigkeit: 0.3,
+                    wärmeleitung: 0.9,
+                    stromleitung: 0.6,
+                    magieleitung: 0.8,
+                    transparent: 0.4,
+                    brennbar: 0.9,
+                    resoniert: 0.7,
+                    lebendig: 1.0,
+                },
             },
             dragon: {
                 label: "Drache",
                 color: 0x2d6e3b,
                 build: () => this._buildDragonGroup(),
                 animate: (g, t, ph, mv) => this._animateDragon(g, t, ph, mv),
+                tags: {
+                    härte: 0.9,
+                    dichte: 0.9,
+                    zähigkeit: 0.85,
+                    wärmeleitung: 0.8,
+                    stromleitung: 0.4,
+                    magieleitung: 0.6,
+                    transparent: 0.0,
+                    brennbar: 0.3,
+                    resoniert: 0.5,
+                    lebendig: 1.0,
+                },
             },
         };
         return this._playerSoulDefsCache;
@@ -10004,7 +10049,62 @@ class AnazhRealm {
             const status = document.getElementById("status-soul");
             if (status) status.textContent = def.label;
         }
+        // Welle 6.D Etappe 1 — Stats neu berechnen + anwenden. Der Spieler ist
+        // ein Compound; bei Seelen-Wechsel werden die Tag-Profile getauscht,
+        // damit ändern sich automatisch HP-Max, Speed, Sprungkraft, Ausdauer
+        // und Resistenzen. DSL-Tuning via player_speed/player_jump_power
+        // überschreibt danach frei, bleibt aber bis zum nächsten Soul-Wechsel.
+        this.recomputePlayerStats();
         return true;
+    }
+
+    // Welle 6.D Etappe 1 — Spieler-Stats aus Soul-Tags ableiten.
+    //
+    // Vision-Hebel: dieselbe Tag-Aggregation wie bei Architekturen + Materialien.
+    // V1: finalTags = soul.tags pur. V2 wird Rüstung + Werkzeug + Boosts dazu-
+    // mischen (wave-6-design §5.3+§5.4); die `computePlayerStats`-Signatur ist
+    // bereits darauf vorbereitet (gibt finalTags + finalStats zurück, damit
+    // Aufrufer beide Schichten sehen).
+    computePlayerStats() {
+        const soulName = (this.state.player && this.state.player.soul) || "human";
+        const soul = this.playerSoulDefs[soulName];
+        const tagsBase = (soul && soul.tags) || {};
+        // Defensiv: fehlende Tags auf 0 — falls Custom-Souls über DSL eines
+        // Tages MATERIAL_TAG_KEYS unvollständig setzen.
+        const finalTags = {};
+        for (const key of AnazhRealm.MATERIAL_TAG_KEYS) {
+            finalTags[key] = Number(tagsBase[key]) || 0;
+        }
+        const stats = {};
+        for (const stat of Object.keys(AnazhRealm.STAT_FROM_TAGS)) {
+            stats[stat] = AnazhRealm.STAT_FROM_TAGS[stat](finalTags);
+        }
+        return { tags: finalTags, stats };
+    }
+
+    // Stats berechnen + auf state anwenden (Soul-Wechsel-Pfad). HP+Stamina
+    // werden bei Wechsel auf max gesetzt (Phönix-Wandlung in Etappe 3 nutzt
+    // diesen Pfad bewusst — Wandlung heilt). DSL-Ops player_speed +
+    // player_jump_power dürfen state.speed/jumpPower danach frei überschreiben.
+    recomputePlayerStats() {
+        const computed = this.computePlayerStats();
+        if (!this.state.player) return computed;
+        this.state.player.stats = computed.stats;
+        this.state.player.statTags = computed.tags;
+        // Anwendung auf die Live-Bewegungs-Werte. Sprint = 2× speed (heutige
+        // Konvention: speed=6, sprintSpeed=12).
+        this.state.speed = computed.stats.speed;
+        this.state.sprintSpeed = computed.stats.speed * 2;
+        this.state.jumpPower = computed.stats.jumpPower;
+        // HP + Stamina als Lebens-Werte (V1 noch ohne Schadens-System; werden
+        // mit 6.C2 pfad-Modus aktiv). Auf MAX setzen bei jedem Soul-Wechsel.
+        this.state.player.hpMax = computed.stats.hpMax;
+        this.state.player.hp = computed.stats.hpMax;
+        this.state.player.staminaMax = computed.stats.staminaMax;
+        this.state.player.stamina = computed.stats.staminaMax;
+        // UI-Render anstoßen, falls Spieler-Drawer offen ist.
+        if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
+        return computed;
     }
 
     // Pro-Frame-Animation des aktuellen Soul-Group. Wird im Render-Loop
@@ -12618,6 +12718,67 @@ class AnazhRealm {
             const cur = defs[this.state.player.soul || "human"];
             status.textContent = (cur && cur.label) || "—";
         }
+        // Welle 6.D Etappe 1 — initiale Stats-UI rendern, falls #player-stats
+        // schon im DOM ist (HTML statisch vorgegeben). Update läuft danach bei
+        // jedem applyPlayerSoul → recomputePlayerStats.
+        this.renderPlayerStatsUI();
+    }
+
+    // Welle 6.D Etappe 1 — Stats-UI im Spieler-Drawer rendern.
+    //
+    // Acht Zeilen (HP, Damage, Speed, Sprungkraft, Ausdauer, Präzision,
+    // MagicResist, HeatResist). Werte aus state.player.stats; Tag-Profile
+    // aus state.player.statTags (klein darunter, damit der Schöpfer sieht
+    // welches Tag den Stat dominiert). Throttle ist nicht nötig — wird nur
+    // bei Soul-Wechsel + initial gerufen.
+    renderPlayerStatsUI() {
+        if (typeof document === "undefined") return;
+        const container = document.getElementById("player-stats");
+        if (!container) return;
+        const stats = (this.state.player && this.state.player.stats) || null;
+        const tags = (this.state.player && this.state.player.statTags) || null;
+        container.innerHTML = "";
+        if (!stats) {
+            const empty = document.createElement("div");
+            empty.className = "stats-empty";
+            empty.textContent = "Stats werden berechnet, wenn die Seele gewählt ist.";
+            container.appendChild(empty);
+            return;
+        }
+        const rows = [
+            { key: "hpMax", label: "Lebenskraft", fmt: (v) => Math.round(v) },
+            { key: "damage", label: "Schaden", fmt: (v) => v.toFixed(1) },
+            { key: "speed", label: "Lauf-Geschwindigkeit", fmt: (v) => v.toFixed(2) },
+            { key: "jumpPower", label: "Sprungkraft", fmt: (v) => v.toFixed(2) },
+            { key: "staminaMax", label: "Ausdauer", fmt: (v) => Math.round(v) },
+            { key: "precision", label: "Präzision", fmt: (v) => v.toFixed(2) },
+            { key: "magicResist", label: "Magie-Resistenz", fmt: (v) => v.toFixed(2) },
+            { key: "heatResist", label: "Hitze-Resistenz", fmt: (v) => v.toFixed(2) },
+        ];
+        for (const row of rows) {
+            const div = document.createElement("div");
+            div.className = "stat-row";
+            const label = document.createElement("span");
+            label.className = "stat-label";
+            label.textContent = row.label;
+            const value = document.createElement("span");
+            value.className = "stat-value";
+            value.textContent = row.fmt(stats[row.key] || 0);
+            div.appendChild(label);
+            div.appendChild(value);
+            container.appendChild(div);
+        }
+        // Tag-Profil dezent unten — die zwei dominantesten Achsen zeigen.
+        if (tags) {
+            const sorted = Object.keys(tags)
+                .map((k) => ({ k, v: tags[k] }))
+                .sort((a, b) => b.v - a.v)
+                .slice(0, 3);
+            const tagLine = document.createElement("div");
+            tagLine.className = "stat-tags";
+            tagLine.textContent = "Stark: " + sorted.map((s) => `${s.k} ${s.v.toFixed(2)}`).join(" · ");
+            container.appendChild(tagLine);
+        }
     }
 
     async init() {
@@ -13653,6 +13814,27 @@ class AnazhRealm {
 // Welle 4 Phase 1 — Material-Tag-Achsen. Zehn Felder aus Konzept §2.2,
 // kondensiert. Alle Werte 0..1. MATERIAL_TAG_DEFAULTS startet jeden Tag
 // auf 0, damit `_defaultMaterials` nur die positiven Felder setzen muss.
+// Welle 6.D Etappe 1 — Stat-Ableitung aus Tag-Profil. Sechs Spieler-Stats
+// (HP-Max, Damage, Speed, JumpPower, Stamina-Max, Präzision) + zwei Resistenzen
+// (MagicResist, HeatResist). Jede Formel nimmt das `tags`-Objekt und gibt
+// eine Zahl zurück. Konstanten sind so gewählt, dass Mensch sich nahe an
+// den heutigen Default-Werten (speed=6, jumpPower=12) bewegt, Phönix
+// schneller+höher aber fragiler, Drache zäher aber langsamer.
+//
+// Wenn Du diese Werte tunen willst: dieselben Formeln bleiben, nur die
+// Multiplikatoren ändern. Test-Setup (Welle 6.D Diskrimination) prüft die
+// Verhältnisse, nicht die absoluten Zahlen.
+AnazhRealm.STAT_FROM_TAGS = Object.freeze({
+    hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,
+    damage: (t) => 5 + (t.härte || 0) * 15 + (t.dichte || 0) * 5,
+    speed: (t) => 4 + (1 - (t.dichte || 0)) * 4 + (t.magieleitung || 0) * 1,
+    jumpPower: (t) => 8 + (1 - (t.dichte || 0)) * 5 + (t.magieleitung || 0) * 2,
+    staminaMax: (t) => 100 + (1 - (t.dichte || 0)) * 60 + (t.wärmeleitung || 0) * 40,
+    precision: (t) => 0.5 + (t.magieleitung || 0) * 0.3 + (t.zähigkeit || 0) * 0.2,
+    magicResist: (t) => (t.magieleitung || 0) * 0.4 + (t.resoniert || 0) * 0.3,
+    heatResist: (t) => (t.wärmeleitung || 0) * 0.5 - (t.brennbar || 0) * 0.3,
+});
+
 AnazhRealm.MATERIAL_TAG_KEYS = Object.freeze([
     "härte",
     "dichte",
