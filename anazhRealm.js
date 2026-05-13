@@ -7388,12 +7388,16 @@ class AnazhRealm {
     }
 
     // ### Welle 5 B — räumliche Emergenz ###
-    // Konzept §5.2 fünf räumliche Prinzipien. Phase 1 implementiert zwei:
-    //   (1) Spitze richtet nach außen — eine pointed-shape am Compound-Rand
-    //       verstärkt härte + magieleitung (die Wirkrichtung strahlt aus).
-    //   (4) Kontakt überträgt — berührende Parts mit unterschiedlichen Tag-
-    //       Stärken gleichen sich an (Wärme/Strom/Magie/Schwingung fließen).
-    // Prinzipien 2/3/5 (Hohlraum, Symmetrie, Resonanz) folgen in W5-B-Phase-2.
+    // Konzept §5.2 fünf räumliche Prinzipien:
+    //   (1) Spitze richtet nach außen — Phase 1 (this commit + W5-B-1).
+    //   (2) Hohlraum enthält, dämpft, verstärkt — Phase 2.
+    //   (3) Symmetrieachsen tragen Alignment — Phase 2.
+    //   (4) Kontakt überträgt Tags — Phase 1.
+    //   (5) Abstände erzeugen Resonanz oder Interferenz — Phase 2.
+    // Alle drei Phase-2-Prinzipien sind COMPOUND-Bonusse (im Gegensatz zu
+    // Phase 1, die per-Part wirkt). Sie werden auf der MAX-Aggregation
+    // angewandt — multiplikativ, damit sie schon-aktivierte Tags verstärken
+    // statt freie Werte aufzuaddieren.
 
     // Bounding-Box eines Parts in lokalen Compound-Koordinaten. Approximiert:
     // jedes Part ist eine Box von position - size/2 bis position + size/2.
@@ -7467,6 +7471,116 @@ class AnazhRealm {
         return labels;
     }
 
+    // Prinzip 2: Hohlraum enthält. Sphere oder Torus mit einer Bounding-Box,
+    // die das Zentrum eines anderen Parts enthält, formen einen Hohlraum.
+    // Container UND Inhalt bekommen einen Resonanz-Bonus (eine Glocke ist
+    // resonant durch ihre Form; Glocke + Klöppel verstärken einander).
+    // Pragma: AABB-Containment statt echter geometrischer Hülle — eine
+    // Torus-Box ist deutlich größer als der echte Ring, aber für die
+    // Compound-Logik („gibt es einen Hohlraum, der Resonanz trägt?")
+    // ist das die richtige Granularität.
+    _findHollowPairs(blueprint) {
+        const pairs = [];
+        const parts = blueprint.parts || [];
+        const partBBs = parts.map((p) => this._partBoundingBox(p));
+        const partVolumes = partBBs.map((bb) => {
+            if (!bb) return 0;
+            return Math.max(0, (bb.max.x - bb.min.x) * (bb.max.y - bb.min.y) * (bb.max.z - bb.min.z));
+        });
+        for (let i = 0; i < parts.length; i++) {
+            const outer = parts[i];
+            if (!AnazhRealm.SPATIAL_HOLLOW_SHAPES.has(outer.shape)) continue;
+            const outerBB = partBBs[i];
+            if (!outerBB) continue;
+            for (let j = 0; j < parts.length; j++) {
+                if (i === j) continue;
+                // Konzeptionelle Asymmetrie: nur das größere Volumen ist
+                // Container. Sonst gilt bei zwei konzentrischen Sphären jeder
+                // als Container für den anderen (Center-in-BB ist symmetrisch).
+                if (partVolumes[i] <= partVolumes[j]) continue;
+                const inner = parts[j];
+                const innerPos = inner.position || { x: 0, y: 0, z: 0 };
+                if (
+                    innerPos.x > outerBB.min.x &&
+                    innerPos.x < outerBB.max.x &&
+                    innerPos.y > outerBB.min.y &&
+                    innerPos.y < outerBB.max.y &&
+                    innerPos.z > outerBB.min.z &&
+                    innerPos.z < outerBB.max.z
+                ) {
+                    pairs.push({ outer: i, inner: j });
+                }
+            }
+        }
+        return pairs;
+    }
+
+    // Prinzip 3: Symmetrieachsen tragen Alignment. Wir prüfen Drehsymmetrie
+    // um die Y-Achse (die natürliche „Stab-Achse"): wenn alle Parts ungefähr
+    // dieselbe (x, z)-Position teilen (Streuung klein relativ zur Compound-
+    // Größe), trägt der Compound einen Alignment-Bonus auf magieleitung +
+    // stromleitung. Schwelle: Standardabweichung der xz-Distanz vom Zentrum
+    // <= 30 % der Compound-Extent in xz.
+    _hasYAxisSymmetry(blueprint) {
+        const parts = blueprint.parts || [];
+        if (parts.length < 2) return false;
+        const bb = this._compoundBoundingBox(blueprint);
+        if (!bb) return false;
+        const xzExtent = Math.max(bb.extent.x, bb.extent.z);
+        if (xzExtent < 0.5) return true; // sehr dünn → zählt als achssymmetrisch
+        const centerX = (bb.min.x + bb.max.x) / 2;
+        const centerZ = (bb.min.z + bb.max.z) / 2;
+        let maxDist = 0;
+        for (const p of parts) {
+            const pos = p.position || { x: 0, y: 0, z: 0 };
+            const d = Math.hypot(pos.x - centerX, pos.z - centerZ);
+            if (d > maxDist) maxDist = d;
+        }
+        // Wenn die maximale xz-Distanz vom Zentrum klein ist gegenüber der
+        // xz-Extent, sind alle Parts auf der Achse — Compound ist „Stab".
+        return maxDist <= xzExtent * 0.25;
+    }
+
+    // Prinzip 5: Abstände erzeugen Resonanz. Wenn drei oder mehr Parts der
+    // gleichen Shape auf etwa demselben Radius um das Compound-Zentrum
+    // sitzen, bilden sie ein Array — Glockenspiel, Kristall-Kreis, Anti-
+    // Magie-Käfig. Bonus auf resoniert + magieleitung.
+    _hasResonantArray(blueprint) {
+        const parts = blueprint.parts || [];
+        if (parts.length < 3) return false;
+        // Schwerpunkt der Part-Positionen statt BB-Center — BB ist geometrisch
+        // verzerrt, wenn die Parts unregelmäßig verteilt sind (eine extreme
+        // Position zieht das BB-Center, aber nicht den Schwerpunkt).
+        let sumX = 0;
+        let sumZ = 0;
+        for (const p of parts) {
+            const pos = p.position || { x: 0, y: 0, z: 0 };
+            sumX += pos.x;
+            sumZ += pos.z;
+        }
+        const centerX = sumX / parts.length;
+        const centerZ = sumZ / parts.length;
+        const byShape = {};
+        for (const p of parts) {
+            const pos = p.position || { x: 0, y: 0, z: 0 };
+            const dist = Math.hypot(pos.x - centerX, pos.z - centerZ);
+            if (dist < 0.1) continue; // zentrale Parts zählen nicht zum Array
+            (byShape[p.shape] = byShape[p.shape] || []).push(dist);
+        }
+        for (const shape of Object.keys(byShape)) {
+            const distances = byShape[shape];
+            if (distances.length < 3) continue;
+            const avg = distances.reduce((a, b) => a + b, 0) / distances.length;
+            if (avg < 0.5) continue;
+            // Alle Distanzen müssen innerhalb 12 % vom Mittelwert liegen.
+            // 15 % war grenzwertig: drei Parts auf grob-ähnlichen Radien aber
+            // ohne echte Kreis-Anordnung fielen durch. 12 % filtert das raus.
+            const maxDev = distances.reduce((m, d) => Math.max(m, Math.abs(d - avg)), 0);
+            if (maxDev <= avg * 0.12) return true;
+        }
+        return false;
+    }
+
     // Zwei Parts „berühren" sich (Prinzip 4: Kontakt überträgt) wenn ihre
     // Bounding-Boxen überlappen oder weniger als CONTACT_GAP weit auseinander
     // liegen. Pragma: keine echte Mesh-Kollision (zu teuer für die Anzahl
@@ -7524,7 +7638,23 @@ class AnazhRealm {
             }
             return baseTags;
         });
-        // Schritt 2: Kontakt-Übertragung. Für jedes Paar (i, j) mit Kontakt,
+        // Schritt 2: Prinzip 2 — Hohlraum enthält. Container UND Inhalt
+        // bekommen Resonanz-Bonus. Pro Paar wird der Bonus EINMAL auf jedes
+        // beteiligte Part angewandt — auch wenn ein Container mehrere Inhalte
+        // enthält, werden alle Beteiligten verstärkt.
+        const hollowPairs = this._findHollowPairs(blueprint);
+        const hollowBoosted = new Set();
+        for (const pair of hollowPairs) {
+            for (const idx of [pair.outer, pair.inner]) {
+                if (hollowBoosted.has(idx)) continue;
+                hollowBoosted.add(idx);
+                const tags = augmentedPartTags[idx];
+                if (tags["resoniert"]) {
+                    tags["resoniert"] = tags["resoniert"] * (1 + AnazhRealm.SPATIAL_HOLLOW_BONUS);
+                }
+            }
+        }
+        // Schritt 3: Kontakt-Übertragung. Für jedes Paar (i, j) mit Kontakt,
         // gleiche schwächeren Tag-Wert mit CONTACT_TRANSFER × stärkerem Wert an.
         for (let i = 0; i < parts.length; i++) {
             for (let j = i + 1; j < parts.length; j++) {
@@ -7547,12 +7677,31 @@ class AnazhRealm {
                 }
             }
         }
-        // Schritt 3: Standard-MAX-Aggregation über die augmentierten Parts.
+        // Schritt 4: Standard-MAX-Aggregation über die augmentierten Parts.
         const out = {};
         for (const partTags of augmentedPartTags) {
             for (const tag of Object.keys(partTags)) {
                 const v = partTags[tag];
                 if (!(tag in out) || v > out[tag]) out[tag] = v;
+            }
+        }
+        // Schritt 5: Compound-Bonusse aus Prinzip 3 + 5. Werden NACH der
+        // Aggregation angewandt, weil sie Eigenschaften des Compounds als
+        // Ganzes sind, nicht einzelner Parts.
+        if (this._hasYAxisSymmetry(blueprint)) {
+            if (out["magieleitung"]) {
+                out["magieleitung"] = out["magieleitung"] * (1 + AnazhRealm.SPATIAL_AXIS_BONUS);
+            }
+            if (out["stromleitung"]) {
+                out["stromleitung"] = out["stromleitung"] * (1 + AnazhRealm.SPATIAL_AXIS_BONUS);
+            }
+        }
+        if (this._hasResonantArray(blueprint)) {
+            if (out["resoniert"]) {
+                out["resoniert"] = out["resoniert"] * (1 + AnazhRealm.SPATIAL_ARRAY_BONUS);
+            }
+            if (out["magieleitung"]) {
+                out["magieleitung"] = out["magieleitung"] * (1 + AnazhRealm.SPATIAL_ARRAY_BONUS);
             }
         }
         return out;
@@ -8550,8 +8699,8 @@ class AnazhRealm {
         tagsHint.className = "workshop-tags-hint";
         tagsHint.textContent =
             spatialDeltas.length > 0
-                ? "Atomar = Form × Material. Räumlich = Spitze richtet + Kontakt überträgt (Konzept §5.2 Prinzip 1+4). Hohlraum/Symmetrie/Resonanz folgen."
-                : "Atomare Schicht: pro Part. Räumliche Verstärkung erscheint, wenn pointed-Shapes am Rand oder Parts in Kontakt stehen.";
+                ? "Atomar = Form × Material. Räumlich = fünf Prinzipien (§5.2): Spitze richtet, Hohlraum enthält, Symmetrieachse trägt, Kontakt überträgt, Abstände resonieren."
+                : "Atomare Schicht: pro Part. Räumliche Verstärkung erscheint bei pointed-Spitzen am Rand, Hohlraum-Paaren (Sphere/Torus mit Inhalt), Y-Achsen-Symmetrie oder Resonanz-Arrays (≥3 gleiche Shape auf gleichem Radius).";
         tagsSection.appendChild(tagsHint);
         editor.appendChild(tagsSection);
         // Aktions-Buttons
@@ -9670,6 +9819,18 @@ AnazhRealm.SPATIAL_POINTED_SHAPES = Object.freeze(new Set(["cone", "pyramid", "o
 // kontagiös in dieser Welt-Logik), „brennbar" auch nicht (das wäre Feuer-
 // Ausbreitung — eigener Pfad, falls je nötig).
 AnazhRealm.SPATIAL_TRANSFERABLE_TAGS = Object.freeze(["wärmeleitung", "stromleitung", "magieleitung", "resoniert"]);
+// Welche Formen bilden einen Hohlraum (Prinzip 2: Hohlraum enthält). Sphere
+// (Glocke, Kristallkugel) und Torus (Ring, Singing Bowl) sind die zwei
+// natürlichen Container — beide haben ein klares Innen-vs-Außen.
+AnazhRealm.SPATIAL_HOLLOW_SHAPES = Object.freeze(new Set(["sphere", "torus"]));
+// Compound-Bonus-Faktoren (Phase 2): multiplikativ auf die aggregierten
+// Compound-Tags nach Standard-MAX. Konservativ kalibriert — der größere
+// Effekt entsteht aus der Kombination (eine Glocke ist nicht nur sphere
+// mit Hohlraum-Bonus, sondern sphere am Top mit Tip-Bonus, mit Klöppel im
+// Hohlraum, und einer Resonanz-Array von 4 Glocken im Kreis).
+AnazhRealm.SPATIAL_HOLLOW_BONUS = 0.3; // +30 % auf resoniert für beide Parts
+AnazhRealm.SPATIAL_AXIS_BONUS = 0.3; // +30 % auf magieleitung + stromleitung
+AnazhRealm.SPATIAL_ARRAY_BONUS = 0.4; // +40 % auf resoniert + magieleitung
 // Welle 4 Phase 3 — Material × Op-Klassen-Kompatibilität aus Konzept §3.2.
 // Bei eigenen Materialien (define_material) wird das via applyOpToPart als
 // „alle vier erlaubt" behandelt — UI/UX-Verfeinerung folgt in einer

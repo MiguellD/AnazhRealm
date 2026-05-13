@@ -1680,20 +1680,21 @@ function startSaveServer() {
                     const atomar = r.computeCompoundTags(tipBp);
                     const spatial = r.computeSpatialTags(tipBp);
                     out.tipBoostsMagic = spatial.magieleitung > atomar.magieleitung + 0.1;
-                    // Pyramide unten: KEIN Boost (nicht at_top)
+                    // Pyramide unten + LATERAL versetzt (sonst greift in
+                    // Phase 2 der Y-Symmetrie-Bonus und überdeckt die at_top-
+                    // Logik). Hier prüfen wir nur: pointed-at-bottom kriegt
+                    // NICHT den Spitze-Bonus aus Prinzip 1.
                     const noTipBp = {
                         parts: [
                             { shape: "cylinder", material: "holz", position: { x: 0, y: 2, z: 0 }, size: { x: 0.3, y: 3, z: 0.3 } },
-                            { shape: "pyramid", material: "quarz", position: { x: 0, y: 0, z: 0 }, size: { x: 0.5, y: 1, z: 0.5 } },
+                            { shape: "pyramid", material: "quarz", position: { x: 2, y: 0, z: 0 }, size: { x: 0.5, y: 1, z: 0.5 } },
                         ],
                     };
-                    const atomarNoTip = r.computeCompoundTags(noTipBp);
-                    const spatialNoTip = r.computeSpatialTags(noTipBp);
-                    // Bei tipBp ist Pyramide oben (at_top), bei noTipBp ist sie unten (at_bottom).
-                    // Beide sind labels — Spitze gilt aktuell für at_top ODER at_outside, NICHT at_bottom.
-                    // Also: noTipBp sollte KEINEN Top-Bonus haben.
-                    out.bottomNoTipBoost =
-                        Math.abs(spatialNoTip.magieleitung - atomarNoTip.magieleitung) < 0.01;
+                    const labelsBottomPyr = r._classifyPartPosition(
+                        noTipBp.parts[1],
+                        r._compoundBoundingBox(noTipBp)
+                    );
+                    out.bottomNoTipBoost = !labelsBottomPyr.has("at_top");
 
                     // Kontakt-Transfer: Kupfer-Helix berührt Stein-Block →
                     // Stein bekommt Strom über Kontakt.
@@ -1856,6 +1857,147 @@ function startSaveServer() {
                 check("Welle 5 B: DSL compound_has_spatial_tag erkennt verstärkte Magie", wave5bResults.dslSpatialCondHigh);
                 check("Welle 5 B: Tip-Compound triggert Magie-Welt-Effekt (awe)", wave5bResults.tipTriggersMagic);
                 check("Welle 5 B: Magie tip-oben > Magie tip-unten (Diskrimination)", wave5bResults.tipMagicExceedsBottom);
+            }
+
+            // ### Welle 5 B Phase 2 — Hohlraum + Symmetrieachse + Resonanz-Array ###
+            const wave5bp2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    out.hollowShapesFrozen = Object.isFrozen(r.constructor.SPATIAL_HOLLOW_SHAPES);
+                    out.hollowHasSphere = r.constructor.SPATIAL_HOLLOW_SHAPES.has("sphere");
+                    out.hollowHasTorus = r.constructor.SPATIAL_HOLLOW_SHAPES.has("torus");
+                    out.hollowNoBox = !r.constructor.SPATIAL_HOLLOW_SHAPES.has("box");
+
+                    // Prinzip 2: Sphere mit Inhalt → Resonanz-Bonus
+                    const bellBp = {
+                        parts: [
+                            // große Quarz-Glocke
+                            { shape: "sphere", material: "quarz", position: { x: 0, y: 1, z: 0 }, size: { x: 3, y: 3, z: 3 } },
+                            // kleiner Bronze-Klöppel im Inneren
+                            { shape: "sphere", material: "bronze", position: { x: 0, y: 1, z: 0 }, size: { x: 0.4, y: 0.4, z: 0.4 } },
+                        ],
+                    };
+                    const pairs = r._findHollowPairs(bellBp);
+                    out.hollowPairDetected = pairs.length === 1 && pairs[0].outer === 0 && pairs[0].inner === 1;
+                    const bellAtomar = r.computeCompoundTags(bellBp);
+                    const bellSpatial = r.computeSpatialTags(bellBp);
+                    out.hollowBoostsResonance = bellSpatial.resoniert > bellAtomar.resoniert + 0.1;
+
+                    // Negativ-Test: zwei sphere nebeneinander, KEIN Hohlraum
+                    const sideBySideBp = {
+                        parts: [
+                            { shape: "sphere", material: "quarz", position: { x: -2, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                            { shape: "sphere", material: "bronze", position: { x: 2, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                        ],
+                    };
+                    out.noHollowWhenSeparate = r._findHollowPairs(sideBySideBp).length === 0;
+
+                    // Prinzip 3: Y-Achsen-Symmetrie. Stab aus 3 Zylindern entlang Y.
+                    const staffBp = {
+                        parts: [
+                            { shape: "cylinder", material: "holz", position: { x: 0, y: 0, z: 0 }, size: { x: 0.3, y: 1, z: 0.3 } },
+                            { shape: "cylinder", material: "holz", position: { x: 0, y: 1, z: 0 }, size: { x: 0.3, y: 1, z: 0.3 } },
+                            { shape: "cylinder", material: "holz", position: { x: 0, y: 2, z: 0 }, size: { x: 0.3, y: 1, z: 0.3 } },
+                        ],
+                    };
+                    out.staffHasSymmetry = r._hasYAxisSymmetry(staffBp);
+                    const staffAtomar = r.computeCompoundTags(staffBp);
+                    const staffSpatial = r.computeSpatialTags(staffBp);
+                    out.symmetryBoostsMagic = staffSpatial.magieleitung > staffAtomar.magieleitung + 0.1;
+                    // Negativ-Test: zwei Zylinder weit auseinander → keine Symmetrie
+                    const wideBp = {
+                        parts: [
+                            { shape: "cylinder", material: "holz", position: { x: -5, y: 0, z: 0 }, size: { x: 0.3, y: 1, z: 0.3 } },
+                            { shape: "cylinder", material: "holz", position: { x: 5, y: 0, z: 0 }, size: { x: 0.3, y: 1, z: 0.3 } },
+                        ],
+                    };
+                    out.wideNoSymmetry = !r._hasYAxisSymmetry(wideBp);
+
+                    // Prinzip 5: Resonanz-Array — 4 Pyramiden auf einem Kreis um die Mitte
+                    const arrayBp = {
+                        parts: [
+                            { shape: "pyramid", material: "quarz", position: { x: 2, y: 0, z: 0 }, size: { x: 0.5, y: 1, z: 0.5 } },
+                            { shape: "pyramid", material: "quarz", position: { x: -2, y: 0, z: 0 }, size: { x: 0.5, y: 1, z: 0.5 } },
+                            { shape: "pyramid", material: "quarz", position: { x: 0, y: 0, z: 2 }, size: { x: 0.5, y: 1, z: 0.5 } },
+                            { shape: "pyramid", material: "quarz", position: { x: 0, y: 0, z: -2 }, size: { x: 0.5, y: 1, z: 0.5 } },
+                        ],
+                    };
+                    out.arrayDetected = r._hasResonantArray(arrayBp);
+                    const arrayAtomar = r.computeCompoundTags(arrayBp);
+                    const arraySpatial = r.computeSpatialTags(arrayBp);
+                    out.arrayBoostsResonance = arraySpatial.resoniert > arrayAtomar.resoniert + 0.1;
+                    out.arrayBoostsMagic = arraySpatial.magieleitung > arrayAtomar.magieleitung + 0.1;
+                    // Negativ-Test: nur 2 Pyramiden → kein Array
+                    const twoBp = {
+                        parts: [
+                            { shape: "pyramid", material: "quarz", position: { x: 2, y: 0, z: 0 }, size: { x: 0.5, y: 1, z: 0.5 } },
+                            { shape: "pyramid", material: "quarz", position: { x: -2, y: 0, z: 0 }, size: { x: 0.5, y: 1, z: 0.5 } },
+                        ],
+                    };
+                    out.twoNoArray = !r._hasResonantArray(twoBp);
+                    // Negativ-Test: 3 Pyramiden auf unterschiedlichen Radien
+                    const unevenBp = {
+                        parts: [
+                            { shape: "pyramid", material: "quarz", position: { x: 2, y: 0, z: 0 }, size: { x: 0.5, y: 1, z: 0.5 } },
+                            { shape: "pyramid", material: "quarz", position: { x: -5, y: 0, z: 0 }, size: { x: 0.5, y: 1, z: 0.5 } },
+                            { shape: "pyramid", material: "quarz", position: { x: 0, y: 0, z: 8 }, size: { x: 0.5, y: 1, z: 0.5 } },
+                        ],
+                    };
+                    out.unevenNoArray = !r._hasResonantArray(unevenBp);
+
+                    // Kombinations-Test: ein Glockenspiel = 4 Quarz-Glocken
+                    // im Kreis (Array) + jede Glocke mit Bronze-Klöppel
+                    // (Hohlraum). Sollte den höchsten Resonanz-Wert ergeben.
+                    const glockenspielBp = {
+                        parts: [],
+                    };
+                    for (const [cx, cz] of [[2, 0], [-2, 0], [0, 2], [0, -2]]) {
+                        glockenspielBp.parts.push({
+                            shape: "sphere",
+                            material: "quarz",
+                            position: { x: cx, y: 1, z: cz },
+                            size: { x: 1.2, y: 1.2, z: 1.2 },
+                        });
+                        glockenspielBp.parts.push({
+                            shape: "sphere",
+                            material: "bronze",
+                            position: { x: cx, y: 1, z: cz },
+                            size: { x: 0.3, y: 0.3, z: 0.3 },
+                        });
+                    }
+                    const glockAtomar = r.computeCompoundTags(glockenspielBp);
+                    const glockSpatial = r.computeSpatialTags(glockenspielBp);
+                    out.glockenspielMaxResonance = glockSpatial.resoniert > glockAtomar.resoniert + 0.5;
+
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (!wave5bp2Results || wave5bp2Results.error) {
+                check(
+                    "Welle 5 B P2: Snapshot erreichbar",
+                    false,
+                    (wave5bp2Results && wave5bp2Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Welle 5 B P2: SPATIAL_HOLLOW_SHAPES frozen", wave5bp2Results.hollowShapesFrozen);
+                check("Welle 5 B P2: sphere ist hollow-Shape", wave5bp2Results.hollowHasSphere);
+                check("Welle 5 B P2: torus ist hollow-Shape", wave5bp2Results.hollowHasTorus);
+                check("Welle 5 B P2: box ist KEIN hollow-Shape", wave5bp2Results.hollowNoBox);
+                check("Welle 5 B P2: Sphere-mit-Inhalt liefert Hohlraum-Paar", wave5bp2Results.hollowPairDetected);
+                check("Welle 5 B P2: Hohlraum-Bonus auf resoniert", wave5bp2Results.hollowBoostsResonance);
+                check("Welle 5 B P2: Zwei separate Spheres → kein Hohlraum", wave5bp2Results.noHollowWhenSeparate);
+                check("Welle 5 B P2: Stab aus 3 Zylindern hat Y-Symmetrie", wave5bp2Results.staffHasSymmetry);
+                check("Welle 5 B P2: Symmetrie-Bonus auf magieleitung", wave5bp2Results.symmetryBoostsMagic);
+                check("Welle 5 B P2: Zylinder weit auseinander hat KEINE Y-Symmetrie", wave5bp2Results.wideNoSymmetry);
+                check("Welle 5 B P2: 4 Pyramiden auf Kreis sind Resonanz-Array", wave5bp2Results.arrayDetected);
+                check("Welle 5 B P2: Array-Bonus auf resoniert", wave5bp2Results.arrayBoostsResonance);
+                check("Welle 5 B P2: Array-Bonus auf magieleitung", wave5bp2Results.arrayBoostsMagic);
+                check("Welle 5 B P2: 2 Pyramiden bilden KEIN Array", wave5bp2Results.twoNoArray);
+                check("Welle 5 B P2: 3 Pyramiden auf ungleichen Radien sind KEIN Array", wave5bp2Results.unevenNoArray);
+                check("Welle 5 B P2: Glockenspiel-Combo (Hohlraum + Array) maximiert Resonanz", wave5bp2Results.glockenspielMaxResonance);
             }
 
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
