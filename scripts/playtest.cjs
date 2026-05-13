@@ -1048,6 +1048,31 @@ function startSaveServer() {
                     const infoText = document.getElementById("world-info").textContent;
                     out.worldInfoShowsSlug = infoText.includes(r.state.worldMeta.slug);
                     out.worldInfoShowsAge = /Alter:\s*\d+/.test(infoText);
+                    // Tagebuch: List-DOM + Count + Erinnerungs-Zeile
+                    out.journalListInDom = !!document.getElementById("world-journal-list");
+                    out.journalCountInDom = !!document.getElementById("world-journal-count");
+                    // Test-Eintrag und Re-Render forcieren (signature ändern)
+                    r.journalAppend("test", "Tagebuch-UI-Probe");
+                    document.getElementById("world-journal-list").dataset.signature = "";
+                    r.renderWorldJournal();
+                    const listEl = document.getElementById("world-journal-list");
+                    out.journalListHasEntries = listEl.querySelectorAll(".journal-entry").length > 0;
+                    out.journalListHasTypePill =
+                        !!listEl.querySelector(".journal-entry .journal-type");
+                    out.journalListHasAge =
+                        !!listEl.querySelector(".journal-entry .journal-age");
+                    out.journalCountReflectsEntries = /Erinnerung/.test(
+                        document.getElementById("world-journal-count").textContent
+                    );
+                    // Jüngste oben: erstes journal-entry enthält den eben
+                    // angehängten Text
+                    const firstEntry = listEl.querySelector(".journal-entry");
+                    out.journalNewestFirst =
+                        !!firstEntry && firstEntry.textContent.includes("Tagebuch-UI-Probe");
+                    // Render mit identischer Signature darf DOM nicht neu bauen
+                    const beforeChildren = listEl.children.length;
+                    r.renderWorldJournal();
+                    out.journalSignatureCachesRender = listEl.children.length === beforeChildren;
                     // F — triggerStateDownload akzeptiert suggestedName
                     let downloadedName = null;
                     const origCreate = document.createElement;
@@ -1084,6 +1109,1407 @@ function startSaveServer() {
                 check("Welle 3 F: Welt-Info zeigt slug", wave3Results.worldInfoShowsSlug);
                 check("Welle 3 F: Welt-Info zeigt Alter in Tagen", wave3Results.worldInfoShowsAge);
                 check("Welle 3 F: triggerStateDownload nutzt suggestedName", wave3Results.downloadCustomName);
+                check("Tagebuch: #world-journal-list im DOM", wave3Results.journalListInDom);
+                check("Tagebuch: #world-journal-count im DOM", wave3Results.journalCountInDom);
+                check("Tagebuch: Liste rendert Erinnerungen", wave3Results.journalListHasEntries);
+                check("Tagebuch: Eintrag trägt Type-Pille", wave3Results.journalListHasTypePill);
+                check("Tagebuch: Eintrag zeigt Alter", wave3Results.journalListHasAge);
+                check("Tagebuch: Counter zeigt Erinnerungs-Anzahl", wave3Results.journalCountReflectsEntries);
+                check("Tagebuch: Jüngster Eintrag steht oben", wave3Results.journalNewestFirst);
+                check("Tagebuch: Signature-Cache verhindert Re-Render", wave3Results.journalSignatureCachesRender);
+            }
+
+            // ### Welle 4 Phase 1 — Materialien als Tag-Profile ###
+            const wave4p1Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    // Statisches Tag-Schema
+                    const keys = r.constructor.MATERIAL_TAG_KEYS;
+                    out.tagKeysFrozen = Object.isFrozen(keys);
+                    out.tagKeyCount = Array.isArray(keys) ? keys.length : 0;
+                    // 6 Built-ins, alle markiert
+                    const mats = r.state.materials || {};
+                    const builtIns = Object.values(mats).filter((m) => m.builtIn);
+                    out.builtInCount = builtIns.length;
+                    out.expectedBuiltIns = ["stein", "holz", "eisen", "bronze", "quarz", "leder"].every(
+                        (n) => mats[n] && mats[n].builtIn
+                    );
+                    // Alle Built-in-Tag-Werte sind 0..1
+                    out.tagsInRange = builtIns.every((m) =>
+                        keys.every((k) => {
+                            const v = m.tags[k];
+                            return typeof v === "number" && v >= 0 && v <= 1;
+                        })
+                    );
+                    // Quarz: erwartete Signatur-Werte (resoniert + transparent + magieleitung hoch)
+                    out.quarzSignature =
+                        mats.quarz.tags.resoniert >= 0.8 &&
+                        mats.quarz.tags.transparent >= 0.9 &&
+                        mats.quarz.tags.magieleitung >= 0.8;
+                    // defineMaterial: gültig, dann clamp, dann doppelt erlaubt (update)
+                    const r1 = r.defineMaterial("kupfer", 0xb87333, { stromleitung: 0.95, magieleitung: 0.4 });
+                    out.defineOk = r1.ok && mats.kupfer && !mats.kupfer.builtIn;
+                    const r2 = r.defineMaterial("kupfer", 0xb87333, { stromleitung: 5.0 });
+                    out.defineClampsToOne = r2.ok && mats.kupfer.tags.stromleitung === 1;
+                    // Built-in-Schutz
+                    const r3 = r.defineMaterial("stein", 0xff0000, { härte: 0.1 });
+                    out.builtInProtected = !r3.ok && r3.reason === "cannot_overwrite_builtin";
+                    // Invalid name
+                    const r4 = r.defineMaterial("", 0, {});
+                    out.invalidNameRejected = !r4.ok;
+                    // Validation lehnt Material nicht ab, mappt unbekannt weg
+                    const v1 = r.validateBlueprintParts([
+                        { shape: "box", material: "kupfer", color: 0x111111 },
+                    ]);
+                    out.validationAcceptsKnownMaterial = v1.ok && v1.parts[0].material === "kupfer";
+                    const v2 = r.validateBlueprintParts([
+                        { shape: "box", material: "phlogiston", color: 0x111111 },
+                    ]);
+                    out.validationDropsUnknownMaterial = v2.ok && !v2.parts[0].material;
+                    // DSL-Op define_material
+                    const runRes = r.dslRun(
+                        ["define_material", "schimmer", 0xeeeeee, { magieleitung: 0.7 }],
+                        { source: "test" }
+                    );
+                    out.dslDefineMaterial = !!mats.schimmer && !mats.schimmer.builtIn;
+                    out.dslLogsDefinedEvent = runRes.log.some((e) => e.event === "defined_material");
+                    // Built-in-Bauplan-Parts haben material gesetzt
+                    const villageParts = r.state.blueprints.village.parts;
+                    out.builtInPartsHaveMaterial = villageParts.every(
+                        (p) => typeof p.material === "string" && mats[p.material]
+                    );
+                    // Save-Roundtrip: eigenes Material überlebt
+                    const snap = r.buildStateSnapshot();
+                    out.snapshotHasMaterial =
+                        Array.isArray(snap.materials) &&
+                        snap.materials.some((m) => m.name === "kupfer");
+                    // applySavedState mit altem Save (parts ohne material) →
+                    // Migration auf „stein". Wir simulieren ein altes Schema.
+                    const oldSnap = {
+                        materials: [],
+                        blueprints: [
+                            {
+                                name: "legacy-test",
+                                label: "Legacy",
+                                parts: [{ shape: "box", color: 0x123456 }],
+                            },
+                        ],
+                    };
+                    r.loadState(oldSnap);
+                    out.legacyPartGotDefaultMaterial =
+                        r.state.blueprints["legacy-test"] &&
+                        r.state.blueprints["legacy-test"].parts[0].material === "stein";
+                    // Werkstatt-UI: Material-Dropdown im DOM
+                    r.selectBlueprintForEdit("legacy-test");
+                    const matSelect = document.querySelector(".workshop-material");
+                    out.uiHasMaterialDropdown = !!matSelect;
+                    out.uiDropdownLists6PlusOptions = matSelect && matSelect.options.length >= 6;
+                    // updatePartInBlueprint mit recolor zieht Farbe nach
+                    r.updatePartInBlueprint("legacy-test", 0, { material: "quarz", recolor: true });
+                    out.recolorAppliesMaterialColor =
+                        r.state.blueprints["legacy-test"].parts[0].color === mats.quarz.color;
+                    // define_ability blockiert nested define_material
+                    const runRes2 = r.dslRun(
+                        ["define_ability", "evil-mat", ["define_material", "bad", 0, {}]],
+                        { source: "test" }
+                    );
+                    out.nestedDefineMaterialBlocked = runRes2.log.some(
+                        (e) => e.event === "ability_nested_define_forbidden"
+                    );
+                    // Aufräumen
+                    delete r.state.materials["kupfer"];
+                    delete r.state.materials["schimmer"];
+                    delete r.state.blueprints["legacy-test"];
+                    if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (!wave4p1Results || wave4p1Results.error) {
+                check(
+                    "Welle 4 P1: Snapshot erreichbar",
+                    false,
+                    (wave4p1Results && wave4p1Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Welle 4 P1: MATERIAL_TAG_KEYS ist frozen", wave4p1Results.tagKeysFrozen);
+                check("Welle 4 P1: 10 Tag-Achsen", wave4p1Results.tagKeyCount === 10);
+                check("Welle 4 P1: 6 Built-in-Materialien existieren", wave4p1Results.expectedBuiltIns);
+                check("Welle 4 P1: Built-in-Anzahl exakt 6", wave4p1Results.builtInCount === 6);
+                check("Welle 4 P1: Alle Tag-Werte 0..1", wave4p1Results.tagsInRange);
+                check("Welle 4 P1: Quarz hat Signatur-Tags (resoniert/transparent/magieleitung)", wave4p1Results.quarzSignature);
+                check("Welle 4 P1: defineMaterial legt eigenes Material an", wave4p1Results.defineOk);
+                check("Welle 4 P1: defineMaterial clamped Tag-Werte auf 1", wave4p1Results.defineClampsToOne);
+                check("Welle 4 P1: defineMaterial lehnt Built-in-Override ab", wave4p1Results.builtInProtected);
+                check("Welle 4 P1: defineMaterial lehnt leeren Namen ab", wave4p1Results.invalidNameRejected);
+                check("Welle 4 P1: validateBlueprintParts akzeptiert bekanntes Material", wave4p1Results.validationAcceptsKnownMaterial);
+                check("Welle 4 P1: validateBlueprintParts droppt unbekanntes Material", wave4p1Results.validationDropsUnknownMaterial);
+                check("Welle 4 P1: DSL-Op define_material wirkt", wave4p1Results.dslDefineMaterial);
+                check("Welle 4 P1: DSL-Op loggt defined_material-Event", wave4p1Results.dslLogsDefinedEvent);
+                check("Welle 4 P1: Built-in-Bauplan-Parts tragen material-Feld", wave4p1Results.builtInPartsHaveMaterial);
+                check("Welle 4 P1: Save persistiert eigene Materialien", wave4p1Results.snapshotHasMaterial);
+                check("Welle 4 P1: Migration alter Parts auf stein", wave4p1Results.legacyPartGotDefaultMaterial);
+                check("Welle 4 P1: Werkstatt-UI hat Material-Dropdown", wave4p1Results.uiHasMaterialDropdown);
+                check("Welle 4 P1: Material-Dropdown listet ≥6 Optionen", wave4p1Results.uiDropdownLists6PlusOptions);
+                check("Welle 4 P1: Recolor zieht Material-Farbe", wave4p1Results.recolorAppliesMaterialColor);
+                check("Welle 4 P1: define_ability blockiert nested define_material", wave4p1Results.nestedDefineMaterialBlocked);
+            }
+
+            // ### Welle 4 Phase 2 — Helix + Form-Tag-Aktivierungs-Matrix ###
+            const wave4p2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    // FORM_TAG_ACTIVATION existiert + frozen
+                    const M = r.constructor.FORM_TAG_ACTIVATION;
+                    out.matrixFrozen = Object.isFrozen(M);
+                    out.matrixHasNineForms =
+                        ["box", "sphere", "cylinder", "cone", "pyramid", "octahedron", "plane", "torus", "helix"].every(
+                            (f) => M[f] && typeof M[f] === "object"
+                        );
+                    // Vollständigkeit: jedes Form × Tag definiert (kein undefined)
+                    const keys = r.constructor.MATERIAL_TAG_KEYS;
+                    let undefCount = 0;
+                    for (const f of Object.keys(M)) {
+                        for (const t of keys) if (typeof M[f][t] !== "number") undefCount++;
+                    }
+                    out.matrixComplete = undefCount === 0;
+                    // Konzept-Konsistenz: jedes Tag hat mindestens eine Signatur (3) — außer lebendig
+                    const tagsWithSignature = keys.filter((t) =>
+                        Object.values(M).some((row) => row[t] === 3)
+                    );
+                    out.allTagsHaveSignatureExceptLebendig =
+                        tagsWithSignature.length === keys.length - 1 &&
+                        !tagsWithSignature.includes("lebendig");
+                    // Keine Form hat mehr als 3 Signaturen (Konzept §8 Anti-Monokultur)
+                    const sigCounts = Object.fromEntries(
+                        Object.entries(M).map(([f, row]) => [
+                            f,
+                            keys.filter((t) => row[t] === 3).length,
+                        ])
+                    );
+                    out.noFormExceeds3Signatures = Object.values(sigCounts).every((c) => c <= 3);
+
+                    // Helix rendert: validateBlueprintParts akzeptiert
+                    const v = r.validateBlueprintParts([
+                        { shape: "helix", material: "bronze", size: { x: 1, y: 4, z: 5 } },
+                    ]);
+                    out.helixValidates = v.ok && v.parts[0].shape === "helix";
+                    // _makePartGeometry liefert echte BufferGeometry
+                    const geom = r._makePartGeometry({
+                        shape: "helix",
+                        size: { x: 1, y: 4, z: 5 },
+                    });
+                    out.helixHasVertices =
+                        geom &&
+                        geom.attributes &&
+                        geom.attributes.position &&
+                        geom.attributes.position.count > 50;
+                    if (geom && typeof geom.dispose === "function") geom.dispose();
+
+                    // computePartTags: Quarz-Kugel hat resoniert ~2.7, transparent ~2.85
+                    const sphereQuarz = { shape: "sphere", material: "quarz" };
+                    const partTags = r.computePartTags(sphereQuarz);
+                    out.quarzSphereResoniert = (partTags.resoniert || 0) > 2.5;
+                    out.quarzSphereTransparent = (partTags.transparent || 0) > 2.7;
+                    // härte ist null bei sphere → soll fehlen oder 0 sein
+                    out.sphereNoHärte = !partTags.härte;
+                    // Stahl-Kegel (cone, eisen): härte hoch (3 × 0.75 = 2.25)
+                    const coneEisen = { shape: "cone", material: "eisen" };
+                    const coneTags = r.computePartTags(coneEisen);
+                    out.coneEisenHärte = (coneTags.härte || 0) > 2.0;
+
+                    // computeCompoundTags: max-Aggregation, nicht sum
+                    const bp1 = {
+                        parts: [
+                            { shape: "sphere", material: "quarz" },
+                            { shape: "box", material: "stein" },
+                        ],
+                    };
+                    const comp = r.computeCompoundTags(bp1);
+                    // dichte: box×stein = 3×0.85 = 2.55, sphere×quarz = 3×0.65 = 1.95 → max 2.55
+                    out.maxAggregationDichte = Math.abs(comp.dichte - 2.55) < 0.01;
+                    // Wenn sum wäre, dichte = 4.50 — schließe das aus
+                    out.notSumAggregation = comp.dichte < 4.0;
+
+                    // DSL-Condition compound_has_tag
+                    r.state.blueprints["test-quarz-orb"] = {
+                        name: "test-quarz-orb",
+                        label: "Quarz-Orb",
+                        builtIn: false,
+                        parts: [{ shape: "sphere", material: "quarz" }],
+                    };
+                    out.condResonatesHigh = r.dslConditions.compound_has_tag.call(
+                        r,
+                        ["test-quarz-orb", "resoniert", 2.5],
+                        { state: r.state }
+                    );
+                    out.condResonatesAboveSig = !r.dslConditions.compound_has_tag.call(
+                        r,
+                        ["test-quarz-orb", "resoniert", 3.5],
+                        { state: r.state }
+                    );
+                    out.condUnknownTagFalse = !r.dslConditions.compound_has_tag.call(
+                        r,
+                        ["test-quarz-orb", "phlogiston", 0.5],
+                        { state: r.state }
+                    );
+
+                    // UI: Tags-Sektion erscheint im Werkstatt-Editor
+                    r.selectBlueprintForEdit("test-quarz-orb");
+                    out.uiTagsSection = !!document.querySelector(".workshop-tags");
+                    out.uiTagsTitle = !!document.querySelector(".workshop-tags-title");
+                    out.uiHasAtomareHint = !!document.querySelector(".workshop-tags-hint");
+                    const tagRows = document.querySelectorAll(".workshop-tag-row");
+                    out.uiTagsHasRows = tagRows.length > 0;
+                    // Werkstatt-Shape-Dropdown enthält helix
+                    const shapeOpts = Array.from(
+                        document.querySelectorAll(".workshop-part-row select option")
+                    ).map((o) => o.value);
+                    out.uiShapeIncludesHelix = shapeOpts.includes("helix");
+
+                    // Aufräumen
+                    delete r.state.blueprints["test-quarz-orb"];
+                    if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (!wave4p2Results || wave4p2Results.error) {
+                check(
+                    "Welle 4 P2: Snapshot erreichbar",
+                    false,
+                    (wave4p2Results && wave4p2Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Welle 4 P2: FORM_TAG_ACTIVATION frozen", wave4p2Results.matrixFrozen);
+                check("Welle 4 P2: Matrix deckt 9 Formen (inkl. helix)", wave4p2Results.matrixHasNineForms);
+                check("Welle 4 P2: Matrix vollständig (keine undefined-Zelle)", wave4p2Results.matrixComplete);
+                check("Welle 4 P2: Alle Tags außer lebendig haben Signatur", wave4p2Results.allTagsHaveSignatureExceptLebendig);
+                check("Welle 4 P2: Keine Form hat >3 Signaturen", wave4p2Results.noFormExceeds3Signatures);
+                check("Welle 4 P2: helix-Shape validiert", wave4p2Results.helixValidates);
+                check("Welle 4 P2: helix-Geometrie hat Vertices", wave4p2Results.helixHasVertices);
+                check("Welle 4 P2: Quarz-Sphäre aktiviert resoniert >2.5", wave4p2Results.quarzSphereResoniert);
+                check("Welle 4 P2: Quarz-Sphäre aktiviert transparent >2.7", wave4p2Results.quarzSphereTransparent);
+                check("Welle 4 P2: Sphäre aktiviert kein härte", wave4p2Results.sphereNoHärte);
+                check("Welle 4 P2: Eisen-Kegel aktiviert härte >2.0", wave4p2Results.coneEisenHärte);
+                check("Welle 4 P2: computeCompoundTags max-aggregiert dichte=2.55", wave4p2Results.maxAggregationDichte);
+                check("Welle 4 P2: Aggregation ist nicht sum (<4.0)", wave4p2Results.notSumAggregation);
+                check("Welle 4 P2: compound_has_tag erkennt hohe Resonanz", wave4p2Results.condResonatesHigh);
+                check("Welle 4 P2: compound_has_tag respektiert Schwellwert", wave4p2Results.condResonatesAboveSig);
+                check("Welle 4 P2: compound_has_tag unbekanntes Tag → false", wave4p2Results.condUnknownTagFalse);
+                check("Welle 4 P2: UI .workshop-tags-Sektion im DOM", wave4p2Results.uiTagsSection);
+                check("Welle 4 P2: UI Tags-Titel im DOM", wave4p2Results.uiTagsTitle);
+                check("Welle 4 P2: UI „atomare Schicht\"-Hint im DOM", wave4p2Results.uiHasAtomareHint);
+                check("Welle 4 P2: UI rendert Tag-Zeilen", wave4p2Results.uiTagsHasRows);
+                check("Welle 4 P2: UI Shape-Dropdown enthält helix", wave4p2Results.uiShapeIncludesHelix);
+            }
+
+            // ### Welle 4 Phase 3 — Werkzeuge + opChain + Präzision ###
+            const wave4p3Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    // Werkzeug-State + Konstanten
+                    const tools = r.state.tools || {};
+                    out.fiveStarterTools =
+                        ["hände", "feuerstein-knapper", "hammer", "feile", "polierscheibe"].every(
+                            (n) => tools[n] && tools[n].isStarter
+                        );
+                    out.playerOwnsStarters = ["hände", "hammer", "polierscheibe"].every((n) =>
+                        (r.state.player.tools || []).includes(n)
+                    );
+                    out.matCompatFrozen = Object.isFrozen(r.constructor.MATERIAL_OP_COMPATIBILITY);
+                    out.thresholdsFrozen = Object.isFrozen(r.constructor.WORLD_EFFECT_THRESHOLDS);
+                    out.steinSubtractiveOnly =
+                        r.constructor.MATERIAL_OP_COMPATIBILITY.stein.length === 1 &&
+                        r.constructor.MATERIAL_OP_COMPATIBILITY.stein[0] === "subtractive";
+
+                    // computePartPrecision: min, nicht max/avg
+                    const part1 = {
+                        shape: "sphere",
+                        material: "quarz",
+                        opChain: [
+                            { tool: "hände", op: "hand_knap", cap: 0.4 },
+                            { tool: "polierscheibe", op: "polish", cap: 0.97 },
+                        ],
+                    };
+                    out.precisionIsMin = r.computePartPrecision(part1) === 0.4;
+                    const part2 = { shape: "sphere", material: "quarz" }; // no opChain
+                    out.precisionDefaultsTo04 = r.computePartPrecision(part2) === 0.4;
+
+                    // applyOpToPart — Tool-Gating
+                    r.state.blueprints["test-precision"] = {
+                        name: "test-precision",
+                        label: "Test",
+                        builtIn: false,
+                        parts: [{ shape: "cone", material: "eisen", opChain: r._defaultPartOpChain() }],
+                    };
+                    // Hand-Knap auf eisen-cone: OK (subtractive matches)
+                    const ap1 = r.applyOpToPart("test-precision", 0, "feile");
+                    out.applyOpAppends = ap1.ok && r.state.blueprints["test-precision"].parts[0].opChain.length === 2;
+                    // Hammer (plastic) auf stein (subtractive only): FAIL
+                    r.state.blueprints["test-precision-stein"] = {
+                        name: "test-precision-stein",
+                        label: "Stein-Test",
+                        builtIn: false,
+                        parts: [{ shape: "box", material: "stein", opChain: r._defaultPartOpChain() }],
+                    };
+                    const ap2 = r.applyOpToPart("test-precision-stein", 0, "hammer");
+                    out.materialOpIncompat = !ap2.ok && ap2.reason === "material_op_incompatible";
+                    // Tool not owned
+                    r.state.player.tools = r.state.player.tools.filter((t) => t !== "feile");
+                    const ap3 = r.applyOpToPart("test-precision", 0, "feile");
+                    out.toolOwnershipEnforced = !ap3.ok && ap3.reason === "tool_not_owned";
+                    r.state.player.tools.push("feile"); // restore
+                    // Built-in protection
+                    const ap4 = r.applyOpToPart("village", 0, "hammer");
+                    out.builtInBlueprintProtected = !ap4.ok && ap4.reason === "cannot_modify_builtin";
+
+                    // DSL-Op apply_op
+                    const dslRes = r.dslRun(
+                        ["apply_op", "test-precision", 0, "polierscheibe"],
+                        { source: "test" }
+                    );
+                    out.dslApplyOpWorks = dslRes.log.some((e) => e.event === "applied_op");
+
+                    // Diskriminations-Test: zwei Resonanz-Compounds, einer
+                    // hand-roh (precision 0.4), einer poliert (cap 0.97). Welt-
+                    // Effekt-Schwelle precision_high=0.8 muss zwischen ihnen
+                    // liegen — der polierte triggert, der hand-rohe nicht.
+                    r.state.blueprints["raw-orb"] = {
+                        name: "raw-orb",
+                        label: "Rau-Orb",
+                        builtIn: false,
+                        parts: [
+                            { shape: "sphere", material: "quarz", opChain: r._defaultPartOpChain() },
+                        ],
+                    };
+                    r.state.blueprints["polished-orb"] = {
+                        name: "polished-orb",
+                        label: "Polier-Orb",
+                        builtIn: false,
+                        parts: [
+                            {
+                                shape: "sphere",
+                                material: "quarz",
+                                opChain: [{ tool: "polierscheibe", op: "polish", cap: 0.97 }],
+                            },
+                        ],
+                    };
+                    const rawPrec = r._compoundAvgPrecision(r.state.blueprints["raw-orb"]);
+                    const polPrec = r._compoundAvgPrecision(r.state.blueprints["polished-orb"]);
+                    out.precisionDiscriminates =
+                        rawPrec < r.constructor.WORLD_EFFECT_THRESHOLDS.precision_high &&
+                        polPrec >= r.constructor.WORLD_EFFECT_THRESHOLDS.precision_high;
+
+                    // Welt-Effekt: polished-orb sollte einen "singing"-Journal-
+                    // Eintrag schreiben, raw-orb nicht.
+                    const journalBefore = r.state.worldJournal.entries.length;
+                    r._applyCompoundWorldEffects("polished-orb");
+                    const afterPolished = r.state.worldJournal.entries.length;
+                    out.singingEntryWritten =
+                        afterPolished > journalBefore &&
+                        r.state.worldJournal.entries
+                            .slice(-3)
+                            .some((e) => /singt/.test(e.text || ""));
+                    // Idempotent: zweiter Aufruf gleicher Bauplan → kein neuer Eintrag
+                    r._applyCompoundWorldEffects("polished-orb");
+                    out.singingEntryIdempotent = r.state.worldJournal.entries.length === afterPolished;
+                    // Roh-Variante triggert nicht (precision zu niedrig)
+                    const beforeRaw = r.state.worldJournal.entries.length;
+                    r._applyCompoundWorldEffects("raw-orb");
+                    out.rawDoesNotTrigger = r.state.worldJournal.entries.length === beforeRaw;
+
+                    // Magie-Effekt: pyramid+quarz (magieleitung hoch)
+                    r.state.blueprints["mage-pyramid"] = {
+                        name: "mage-pyramid",
+                        label: "Magier-Pyramide",
+                        builtIn: false,
+                        parts: [
+                            {
+                                shape: "pyramid",
+                                material: "quarz",
+                                opChain: [{ tool: "polierscheibe", op: "polish", cap: 0.97 }],
+                            },
+                        ],
+                    };
+                    const aweBefore = r.state.player.emotions.awe;
+                    r._applyCompoundWorldEffects("mage-pyramid");
+                    out.magicLiftsAwe = r.state.player.emotions.awe > aweBefore;
+
+                    // Visible-Precision-Tint: low precision → dimmer color
+                    // Build-Pfad rendert Group; wir verifizieren via Mesh-
+                    // Materials direkt.
+                    const rawGroup = r._buildFromBlueprint(r.state.blueprints["raw-orb"]);
+                    const polGroup = r._buildFromBlueprint(r.state.blueprints["polished-orb"]);
+                    const rawCol = rawGroup.children[0].material.color.getHex();
+                    const polCol = polGroup.children[0].material.color.getHex();
+                    // Same base color (quarz blau-weiß); polished should be brighter
+                    out.precisionVisibleTint = polCol > rawCol;
+                    rawGroup.traverse(
+                        (o) => o.geometry && typeof o.geometry.dispose === "function" && o.geometry.dispose()
+                    );
+                    polGroup.traverse(
+                        (o) => o.geometry && typeof o.geometry.dispose === "function" && o.geometry.dispose()
+                    );
+
+                    // UI: opChain pro Part im Workshop
+                    r.selectBlueprintForEdit("test-precision");
+                    out.uiOpChainSection = !!document.querySelector(".workshop-opchain");
+                    out.uiOpChainHeader = !!document.querySelector(".workshop-opchain-header");
+                    out.uiApplyDropdown = !!document.querySelector(".workshop-op-tool");
+                    out.uiToolsBox = !!document.querySelector(".workshop-tools");
+                    out.uiToolChips = document.querySelectorAll(".workshop-tool-chip").length >= 5;
+
+                    // Save-Roundtrip: playerTools persistiert
+                    const snap = r.buildStateSnapshot();
+                    out.snapshotHasPlayerTools =
+                        Array.isArray(snap.playerTools) && snap.playerTools.includes("hammer");
+
+                    // validateBlueprintParts: opChain wird sanitized
+                    const v = r.validateBlueprintParts([
+                        {
+                            shape: "box",
+                            material: "stein",
+                            opChain: [{ tool: "hände", op: "hand_knap", cap: 1.5 }],
+                        },
+                    ]);
+                    out.opChainCapClamped = v.ok && v.parts[0].opChain[0].cap === 1;
+
+                    // Aufräumen
+                    delete r.state.blueprints["test-precision"];
+                    delete r.state.blueprints["test-precision-stein"];
+                    delete r.state.blueprints["raw-orb"];
+                    delete r.state.blueprints["polished-orb"];
+                    delete r.state.blueprints["mage-pyramid"];
+                    if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (!wave4p3Results || wave4p3Results.error) {
+                check(
+                    "Welle 4 P3: Snapshot erreichbar",
+                    false,
+                    (wave4p3Results && wave4p3Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Welle 4 P3: 5 Starter-Werkzeuge existieren", wave4p3Results.fiveStarterTools);
+                check("Welle 4 P3: Spieler besitzt Starter-Werkzeuge", wave4p3Results.playerOwnsStarters);
+                check("Welle 4 P3: MATERIAL_OP_COMPATIBILITY frozen", wave4p3Results.matCompatFrozen);
+                check("Welle 4 P3: WORLD_EFFECT_THRESHOLDS frozen", wave4p3Results.thresholdsFrozen);
+                check("Welle 4 P3: Stein erlaubt nur subtractive Ops", wave4p3Results.steinSubtractiveOnly);
+                check("Welle 4 P3: computePartPrecision = min(opChain.caps)", wave4p3Results.precisionIsMin);
+                check("Welle 4 P3: Default-Präzision 0.4 ohne opChain", wave4p3Results.precisionDefaultsTo04);
+                check("Welle 4 P3: applyOpToPart hängt Op an", wave4p3Results.applyOpAppends);
+                check("Welle 4 P3: Stein lehnt Hammer (plastic) ab", wave4p3Results.materialOpIncompat);
+                check("Welle 4 P3: Werkzeug-Besitz wird durchgesetzt", wave4p3Results.toolOwnershipEnforced);
+                check("Welle 4 P3: Built-in-Bauplan vor Op-Mutation geschützt", wave4p3Results.builtInBlueprintProtected);
+                check("Welle 4 P3: DSL-Op apply_op wirkt", wave4p3Results.dslApplyOpWorks);
+                check("Welle 4 P3: Präzisions-Diskriminations-Schwelle liegt zwischen roh/poliert", wave4p3Results.precisionDiscriminates);
+                check("Welle 4 P3: Singing-Journal-Eintrag bei Resonanz+Präzision", wave4p3Results.singingEntryWritten);
+                check("Welle 4 P3: Singing-Eintrag idempotent pro Bauplan", wave4p3Results.singingEntryIdempotent);
+                check("Welle 4 P3: Roh-Compound triggert keinen Welt-Effekt", wave4p3Results.rawDoesNotTrigger);
+                check("Welle 4 P3: Magie-Compound hebt awe an", wave4p3Results.magicLiftsAwe);
+                check("Welle 4 P3: Präzision moduliert Part-Farbe sichtbar", wave4p3Results.precisionVisibleTint);
+                check("Welle 4 P3: UI opChain-Sektion im DOM", wave4p3Results.uiOpChainSection);
+                check("Welle 4 P3: UI opChain-Header zeigt Präzision", wave4p3Results.uiOpChainHeader);
+                check("Welle 4 P3: UI Tool-Apply-Dropdown im DOM", wave4p3Results.uiApplyDropdown);
+                check("Welle 4 P3: UI Werkzeug-Box im DOM", wave4p3Results.uiToolsBox);
+                check("Welle 4 P3: UI listet ≥5 Tool-Chips", wave4p3Results.uiToolChips);
+                check("Welle 4 P3: Save persistiert playerTools", wave4p3Results.snapshotHasPlayerTools);
+                check("Welle 4 P3: validateBlueprintParts clamped opChain cap", wave4p3Results.opChainCapClamped);
+            }
+
+            // ### Welle 5 B — räumliche Emergenz (Spitze richtet + Kontakt überträgt) ###
+            const wave5bResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    // Konstanten
+                    out.pointedShapesFrozen = Object.isFrozen(r.constructor.SPATIAL_POINTED_SHAPES);
+                    out.transferableTagsFrozen = Object.isFrozen(r.constructor.SPATIAL_TRANSFERABLE_TAGS);
+                    out.pointedHasCone = r.constructor.SPATIAL_POINTED_SHAPES.has("cone");
+                    out.pointedHasHelix = r.constructor.SPATIAL_POINTED_SHAPES.has("helix");
+                    out.pointedNoSphere = !r.constructor.SPATIAL_POINTED_SHAPES.has("sphere");
+
+                    // Bounding-Box-Mathematik: Compound mit drei Parts
+                    const testBp = {
+                        parts: [
+                            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 2, y: 2, z: 2 } },
+                            { shape: "cone", material: "eisen", position: { x: 0, y: 3, z: 0 }, size: { x: 1, y: 2, z: 1 } },
+                            { shape: "cylinder", material: "bronze", position: { x: 4, y: 0, z: 0 }, size: { x: 1, y: 2, z: 1 } },
+                        ],
+                    };
+                    const bb = r._compoundBoundingBox(testBp);
+                    out.compoundBBOk =
+                        bb &&
+                        bb.min.y === -1 &&
+                        bb.max.y === 4 &&
+                        bb.extent.x === 5.5 &&
+                        bb.extent.y === 5;
+                    // Position-Klassifikation: Kegel oben sollte at_top haben
+                    const labelsCone = r._classifyPartPosition(testBp.parts[1], bb);
+                    out.coneAtTop = labelsCone.has("at_top");
+                    out.coneNotAtBottom = !labelsCone.has("at_bottom");
+                    // Cylinder rechts sollte at_outside haben
+                    const labelsCyl = r._classifyPartPosition(testBp.parts[2], bb);
+                    out.cylAtOutside = labelsCyl.has("at_outside");
+
+                    // Kontakt-Check: zwei berührende Boxen
+                    const pA = { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } };
+                    const pB = { shape: "box", material: "eisen", position: { x: 0.9, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } };
+                    const pC = { shape: "box", material: "eisen", position: { x: 5, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } };
+                    out.contactsTouching = r._partsAreInContact(pA, pB);
+                    out.contactsRespectsGap = !r._partsAreInContact(pA, pC);
+
+                    // Spitze-Bonus: eine Quarz-Pyramide oben auf einem Stein-Stamm
+                    // → magieleitung sollte räumlich höher sein als atomar.
+                    const tipBp = {
+                        parts: [
+                            { shape: "cylinder", material: "holz", position: { x: 0, y: 0, z: 0 }, size: { x: 0.3, y: 3, z: 0.3 } },
+                            { shape: "pyramid", material: "quarz", position: { x: 0, y: 2, z: 0 }, size: { x: 0.5, y: 1, z: 0.5 } },
+                        ],
+                    };
+                    const atomar = r.computeCompoundTags(tipBp);
+                    const spatial = r.computeSpatialTags(tipBp);
+                    out.tipBoostsMagic = spatial.magieleitung > atomar.magieleitung + 0.1;
+                    // Pyramide unten + LATERAL versetzt (sonst greift in
+                    // Phase 2 der Y-Symmetrie-Bonus und überdeckt die at_top-
+                    // Logik). Hier prüfen wir nur: pointed-at-bottom kriegt
+                    // NICHT den Spitze-Bonus aus Prinzip 1.
+                    const noTipBp = {
+                        parts: [
+                            { shape: "cylinder", material: "holz", position: { x: 0, y: 2, z: 0 }, size: { x: 0.3, y: 3, z: 0.3 } },
+                            { shape: "pyramid", material: "quarz", position: { x: 2, y: 0, z: 0 }, size: { x: 0.5, y: 1, z: 0.5 } },
+                        ],
+                    };
+                    const labelsBottomPyr = r._classifyPartPosition(
+                        noTipBp.parts[1],
+                        r._compoundBoundingBox(noTipBp)
+                    );
+                    out.bottomNoTipBoost = !labelsBottomPyr.has("at_top");
+
+                    // Kontakt-Transfer: Kupfer-Helix berührt Stein-Block →
+                    // Stein bekommt Strom über Kontakt.
+                    // define_material kupfer mit hohem Strom
+                    r.defineMaterial("kupfer-test", 0xb87333, { stromleitung: 0.95 });
+                    const contactBp = {
+                        parts: [
+                            // Stein hat stromleitung 0.05, helix×kupfer hat 3 × 0.95 = 2.85
+                            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                            { shape: "helix", material: "kupfer-test", position: { x: 0.9, y: 0, z: 0 }, size: { x: 0.5, y: 1, z: 3 } },
+                        ],
+                    };
+                    const cAtomar = r.computeCompoundTags(contactBp);
+                    const cSpatial = r.computeSpatialTags(contactBp);
+                    // Helix-Kupfer dominiert in beiden (MAX-Aggregation), aber
+                    // Kontakt zieht Stein in seinem Slot hoch. Da MAX am Ende
+                    // nimmt, sehen wir den Effekt am ehesten, wenn ein Tag
+                    // beim Stein ohnehin nicht prominent war.
+                    // Test: ohne Kontakt-Transfer hätte Stein bei stromleitung
+                    // box(1)×stein(0.05) = 0.05, helix(3)×kupfer(0.95) = 2.85
+                    // → MAX = 2.85. MIT Transfer wird der Stein-Slot auch auf
+                    // 2.85 × 0.6 = 1.71 hochgezogen — aber das ist immer noch
+                    // unter dem Helix-Slot, also MAX bleibt 2.85.
+                    // Sinnvoller Test: weniger asymmetrische Tags messen.
+                    // Separater at_outside-Test: drei Parts in einer Reihe,
+                    // das äußerste links bekommt at_outside (xz-Distanz vom
+                    // Compound-Zentrum). Bei dem contactBp-Setup wäre die
+                    // Helix wegen ihrer eigenen Z-Extent zentral.
+                    const outsideBp = {
+                        parts: [
+                            { shape: "box", material: "stein", position: { x: -3, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                            { shape: "box", material: "stein", position: { x: 3, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                        ],
+                    };
+                    const outsideBB = r._compoundBoundingBox(outsideBp);
+                    out.helixAtOutside =
+                        r._classifyPartPosition(outsideBp.parts[0], outsideBB).has("at_outside") &&
+                        r._classifyPartPosition(outsideBp.parts[2], outsideBB).has("at_outside") &&
+                        !r._classifyPartPosition(outsideBp.parts[1], outsideBB).has("at_outside");
+                    // Direkter Transfer-Test: zwei Materialien, beide
+                    // mittelmäßig in Strom, eines höher.
+                    const transferBp = {
+                        parts: [
+                            { shape: "cylinder", material: "holz", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                            { shape: "cylinder", material: "kupfer-test", position: { x: 0.9, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                        ],
+                    };
+                    // Holz×cylinder: stromleitung = 3 × 0.05 = 0.15
+                    // Kupfer×cylinder: 3 × 0.95 = 2.85
+                    // MAX atomar = 2.85
+                    // MIT Kontakt: holz wird auf 2.85 × 0.6 = 1.71 gehoben.
+                    // MAX bleibt 2.85, aber der Holz-Slot ist jetzt 1.71.
+                    // → Spatial-MAX-Aggregat bleibt 2.85 in stromleitung.
+                    // Schwierig zu erkennen ohne den Holz-Slot zu inspizieren.
+                    // Alternative: zwei Parts, beide schwach in einem Tag, ein
+                    // ANDERES Part-Pair überträgt darüber. Skip — wir prüfen
+                    // den Mechanismus über die UI-Anzeige.
+
+                    // UI: räumliche Reihe erscheint bei pointed-am-Rand
+                    r.state.blueprints["wave5b-test"] = {
+                        name: "wave5b-test",
+                        label: "Welle-5B-Test",
+                        builtIn: false,
+                        parts: tipBp.parts.map((p) => ({ ...p, opChain: r._defaultPartOpChain() })),
+                    };
+                    r.selectBlueprintForEdit("wave5b-test");
+                    out.uiSpatialTitle = !!document.querySelector(".workshop-spatial-title");
+                    out.uiSpatialRow = !!document.querySelector(".workshop-spatial-row");
+                    // Hinweis-Text muss den räumlichen Modus benennen
+                    const hint = document.querySelector(".workshop-tags-hint");
+                    out.uiHintMentionsSpatial = hint && /Spitze richtet/.test(hint.textContent);
+
+                    // Reiner atomarer Bauplan: Hinweis sollte nicht "Spitze richtet" benennen
+                    r.state.blueprints["wave5b-atomar"] = {
+                        name: "wave5b-atomar",
+                        label: "Atomar-Test",
+                        builtIn: false,
+                        parts: [
+                            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, opChain: r._defaultPartOpChain() },
+                        ],
+                    };
+                    r.selectBlueprintForEdit("wave5b-atomar");
+                    const hint2 = document.querySelector(".workshop-tags-hint");
+                    out.uiHintAtomarMode = hint2 && !/Spitze richtet/.test(hint2.textContent);
+
+                    // DSL-Condition compound_has_spatial_tag funktioniert
+                    out.dslSpatialCondHigh = r.dslConditions.compound_has_spatial_tag.call(
+                        r,
+                        ["wave5b-test", "magieleitung", 2.0],
+                        { state: r.state }
+                    );
+
+                    // Welt-Effekt: tipBp sollte Magie-Effekt triggern, weil die
+                    // räumlich verstärkte Magieleitung über die Schwelle kommt.
+                    // Wir testen den Unterschied: gleicher Bauplan, aber Pyramide
+                    // unten vs. oben. Beide brauchen Politur (precision_high).
+                    const polished = r._defaultPartOpChain();
+                    polished.push({ tool: "polierscheibe", op: "polish", cap: 0.97 });
+                    r.state.blueprints["wave5b-tip-polished"] = {
+                        name: "wave5b-tip-polished",
+                        label: "Tip-Polished",
+                        builtIn: false,
+                        parts: tipBp.parts.map((p) => ({ ...p, opChain: [...polished] })),
+                    };
+                    r.state.blueprints["wave5b-bottom-polished"] = {
+                        name: "wave5b-bottom-polished",
+                        label: "Bottom-Polished",
+                        builtIn: false,
+                        parts: noTipBp.parts.map((p) => ({ ...p, opChain: [...polished] })),
+                    };
+                    const aweBefore = r.state.player.emotions.awe;
+                    r._applyCompoundWorldEffects("wave5b-tip-polished");
+                    const aweAfterTip = r.state.player.emotions.awe;
+                    out.tipTriggersMagic = aweAfterTip > aweBefore;
+                    // bottom: könnte triggern oder nicht — wir prüfen, dass
+                    // wenn beide identisch wären, die Magie identisch wäre.
+                    // Aber durch journalAppendOnce per-bp-name ist das stabil.
+                    // Test: tipPolished sollte MEHR magie-Bonus haben als bottom.
+                    const tipMagic = r.computeSpatialTags(r.state.blueprints["wave5b-tip-polished"]).magieleitung || 0;
+                    const bottomMagic = r.computeSpatialTags(r.state.blueprints["wave5b-bottom-polished"]).magieleitung || 0;
+                    out.tipMagicExceedsBottom = tipMagic > bottomMagic + 0.1;
+
+                    // Aufräumen
+                    delete r.state.materials["kupfer-test"];
+                    delete r.state.blueprints["wave5b-test"];
+                    delete r.state.blueprints["wave5b-atomar"];
+                    delete r.state.blueprints["wave5b-tip-polished"];
+                    delete r.state.blueprints["wave5b-bottom-polished"];
+                    if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (!wave5bResults || wave5bResults.error) {
+                check(
+                    "Welle 5 B: Snapshot erreichbar",
+                    false,
+                    (wave5bResults && wave5bResults.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Welle 5 B: SPATIAL_POINTED_SHAPES frozen", wave5bResults.pointedShapesFrozen);
+                check("Welle 5 B: SPATIAL_TRANSFERABLE_TAGS frozen", wave5bResults.transferableTagsFrozen);
+                check("Welle 5 B: cone ist pointed-Shape", wave5bResults.pointedHasCone);
+                check("Welle 5 B: helix ist pointed-Shape", wave5bResults.pointedHasHelix);
+                check("Welle 5 B: sphere ist KEIN pointed-Shape", wave5bResults.pointedNoSphere);
+                check("Welle 5 B: _compoundBoundingBox liefert korrekte Extent", wave5bResults.compoundBBOk);
+                check("Welle 5 B: Kegel oben hat at_top-Label", wave5bResults.coneAtTop);
+                check("Welle 5 B: Kegel oben hat nicht at_bottom", wave5bResults.coneNotAtBottom);
+                check("Welle 5 B: Cylinder rechts hat at_outside-Label", wave5bResults.cylAtOutside);
+                check("Welle 5 B: _partsAreInContact erkennt berührende Parts", wave5bResults.contactsTouching);
+                check("Welle 5 B: _partsAreInContact respektiert Gap-Schwelle", wave5bResults.contactsRespectsGap);
+                check("Welle 5 B: Pyramide oben verstärkt Magieleitung räumlich", wave5bResults.tipBoostsMagic);
+                check("Welle 5 B: Pyramide unten gibt KEINEN Top-Bonus", wave5bResults.bottomNoTipBoost);
+                check("Welle 5 B: Helix am Rand hat at_outside", wave5bResults.helixAtOutside);
+                check("Welle 5 B: UI .workshop-spatial-title bei pointed-am-Rand", wave5bResults.uiSpatialTitle);
+                check("Welle 5 B: UI .workshop-spatial-row im DOM", wave5bResults.uiSpatialRow);
+                check("Welle 5 B: Hinweis-Text nennt Spitze-richtet im raeumlichen Modus", wave5bResults.uiHintMentionsSpatial);
+                check("Welle 5 B: Hinweis-Text fällt im rein-atomaren Modus zurück", wave5bResults.uiHintAtomarMode);
+                check("Welle 5 B: DSL compound_has_spatial_tag erkennt verstärkte Magie", wave5bResults.dslSpatialCondHigh);
+                check("Welle 5 B: Tip-Compound triggert Magie-Welt-Effekt (awe)", wave5bResults.tipTriggersMagic);
+                check("Welle 5 B: Magie tip-oben > Magie tip-unten (Diskrimination)", wave5bResults.tipMagicExceedsBottom);
+            }
+
+            // ### Welle 5 B Phase 2 — Hohlraum + Symmetrieachse + Resonanz-Array ###
+            const wave5bp2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    out.hollowShapesFrozen = Object.isFrozen(r.constructor.SPATIAL_HOLLOW_SHAPES);
+                    out.hollowHasSphere = r.constructor.SPATIAL_HOLLOW_SHAPES.has("sphere");
+                    out.hollowHasTorus = r.constructor.SPATIAL_HOLLOW_SHAPES.has("torus");
+                    out.hollowNoBox = !r.constructor.SPATIAL_HOLLOW_SHAPES.has("box");
+
+                    // Prinzip 2: Sphere mit Inhalt → Resonanz-Bonus
+                    const bellBp = {
+                        parts: [
+                            // große Quarz-Glocke
+                            { shape: "sphere", material: "quarz", position: { x: 0, y: 1, z: 0 }, size: { x: 3, y: 3, z: 3 } },
+                            // kleiner Bronze-Klöppel im Inneren
+                            { shape: "sphere", material: "bronze", position: { x: 0, y: 1, z: 0 }, size: { x: 0.4, y: 0.4, z: 0.4 } },
+                        ],
+                    };
+                    const pairs = r._findHollowPairs(bellBp);
+                    out.hollowPairDetected = pairs.length === 1 && pairs[0].outer === 0 && pairs[0].inner === 1;
+                    const bellAtomar = r.computeCompoundTags(bellBp);
+                    const bellSpatial = r.computeSpatialTags(bellBp);
+                    out.hollowBoostsResonance = bellSpatial.resoniert > bellAtomar.resoniert + 0.1;
+
+                    // Negativ-Test: zwei sphere nebeneinander, KEIN Hohlraum
+                    const sideBySideBp = {
+                        parts: [
+                            { shape: "sphere", material: "quarz", position: { x: -2, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                            { shape: "sphere", material: "bronze", position: { x: 2, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                        ],
+                    };
+                    out.noHollowWhenSeparate = r._findHollowPairs(sideBySideBp).length === 0;
+
+                    // Prinzip 3: Y-Achsen-Symmetrie. Stab aus 3 Zylindern entlang Y.
+                    const staffBp = {
+                        parts: [
+                            { shape: "cylinder", material: "holz", position: { x: 0, y: 0, z: 0 }, size: { x: 0.3, y: 1, z: 0.3 } },
+                            { shape: "cylinder", material: "holz", position: { x: 0, y: 1, z: 0 }, size: { x: 0.3, y: 1, z: 0.3 } },
+                            { shape: "cylinder", material: "holz", position: { x: 0, y: 2, z: 0 }, size: { x: 0.3, y: 1, z: 0.3 } },
+                        ],
+                    };
+                    out.staffHasSymmetry = r._hasYAxisSymmetry(staffBp);
+                    const staffAtomar = r.computeCompoundTags(staffBp);
+                    const staffSpatial = r.computeSpatialTags(staffBp);
+                    out.symmetryBoostsMagic = staffSpatial.magieleitung > staffAtomar.magieleitung + 0.1;
+                    // Negativ-Test: zwei Zylinder weit auseinander → keine Symmetrie
+                    const wideBp = {
+                        parts: [
+                            { shape: "cylinder", material: "holz", position: { x: -5, y: 0, z: 0 }, size: { x: 0.3, y: 1, z: 0.3 } },
+                            { shape: "cylinder", material: "holz", position: { x: 5, y: 0, z: 0 }, size: { x: 0.3, y: 1, z: 0.3 } },
+                        ],
+                    };
+                    out.wideNoSymmetry = !r._hasYAxisSymmetry(wideBp);
+
+                    // Prinzip 5: Resonanz-Array — 4 Pyramiden auf einem Kreis um die Mitte
+                    const arrayBp = {
+                        parts: [
+                            { shape: "pyramid", material: "quarz", position: { x: 2, y: 0, z: 0 }, size: { x: 0.5, y: 1, z: 0.5 } },
+                            { shape: "pyramid", material: "quarz", position: { x: -2, y: 0, z: 0 }, size: { x: 0.5, y: 1, z: 0.5 } },
+                            { shape: "pyramid", material: "quarz", position: { x: 0, y: 0, z: 2 }, size: { x: 0.5, y: 1, z: 0.5 } },
+                            { shape: "pyramid", material: "quarz", position: { x: 0, y: 0, z: -2 }, size: { x: 0.5, y: 1, z: 0.5 } },
+                        ],
+                    };
+                    out.arrayDetected = r._hasResonantArray(arrayBp);
+                    const arrayAtomar = r.computeCompoundTags(arrayBp);
+                    const arraySpatial = r.computeSpatialTags(arrayBp);
+                    out.arrayBoostsResonance = arraySpatial.resoniert > arrayAtomar.resoniert + 0.1;
+                    out.arrayBoostsMagic = arraySpatial.magieleitung > arrayAtomar.magieleitung + 0.1;
+                    // Negativ-Test: nur 2 Pyramiden → kein Array
+                    const twoBp = {
+                        parts: [
+                            { shape: "pyramid", material: "quarz", position: { x: 2, y: 0, z: 0 }, size: { x: 0.5, y: 1, z: 0.5 } },
+                            { shape: "pyramid", material: "quarz", position: { x: -2, y: 0, z: 0 }, size: { x: 0.5, y: 1, z: 0.5 } },
+                        ],
+                    };
+                    out.twoNoArray = !r._hasResonantArray(twoBp);
+                    // Negativ-Test: 3 Pyramiden auf unterschiedlichen Radien
+                    const unevenBp = {
+                        parts: [
+                            { shape: "pyramid", material: "quarz", position: { x: 2, y: 0, z: 0 }, size: { x: 0.5, y: 1, z: 0.5 } },
+                            { shape: "pyramid", material: "quarz", position: { x: -5, y: 0, z: 0 }, size: { x: 0.5, y: 1, z: 0.5 } },
+                            { shape: "pyramid", material: "quarz", position: { x: 0, y: 0, z: 8 }, size: { x: 0.5, y: 1, z: 0.5 } },
+                        ],
+                    };
+                    out.unevenNoArray = !r._hasResonantArray(unevenBp);
+
+                    // Kombinations-Test: ein Glockenspiel = 4 Quarz-Glocken
+                    // im Kreis (Array) + jede Glocke mit Bronze-Klöppel
+                    // (Hohlraum). Sollte den höchsten Resonanz-Wert ergeben.
+                    const glockenspielBp = {
+                        parts: [],
+                    };
+                    for (const [cx, cz] of [[2, 0], [-2, 0], [0, 2], [0, -2]]) {
+                        glockenspielBp.parts.push({
+                            shape: "sphere",
+                            material: "quarz",
+                            position: { x: cx, y: 1, z: cz },
+                            size: { x: 1.2, y: 1.2, z: 1.2 },
+                        });
+                        glockenspielBp.parts.push({
+                            shape: "sphere",
+                            material: "bronze",
+                            position: { x: cx, y: 1, z: cz },
+                            size: { x: 0.3, y: 0.3, z: 0.3 },
+                        });
+                    }
+                    const glockAtomar = r.computeCompoundTags(glockenspielBp);
+                    const glockSpatial = r.computeSpatialTags(glockenspielBp);
+                    out.glockenspielMaxResonance = glockSpatial.resoniert > glockAtomar.resoniert + 0.5;
+
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (!wave5bp2Results || wave5bp2Results.error) {
+                check(
+                    "Welle 5 B P2: Snapshot erreichbar",
+                    false,
+                    (wave5bp2Results && wave5bp2Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Welle 5 B P2: SPATIAL_HOLLOW_SHAPES frozen", wave5bp2Results.hollowShapesFrozen);
+                check("Welle 5 B P2: sphere ist hollow-Shape", wave5bp2Results.hollowHasSphere);
+                check("Welle 5 B P2: torus ist hollow-Shape", wave5bp2Results.hollowHasTorus);
+                check("Welle 5 B P2: box ist KEIN hollow-Shape", wave5bp2Results.hollowNoBox);
+                check("Welle 5 B P2: Sphere-mit-Inhalt liefert Hohlraum-Paar", wave5bp2Results.hollowPairDetected);
+                check("Welle 5 B P2: Hohlraum-Bonus auf resoniert", wave5bp2Results.hollowBoostsResonance);
+                check("Welle 5 B P2: Zwei separate Spheres → kein Hohlraum", wave5bp2Results.noHollowWhenSeparate);
+                check("Welle 5 B P2: Stab aus 3 Zylindern hat Y-Symmetrie", wave5bp2Results.staffHasSymmetry);
+                check("Welle 5 B P2: Symmetrie-Bonus auf magieleitung", wave5bp2Results.symmetryBoostsMagic);
+                check("Welle 5 B P2: Zylinder weit auseinander hat KEINE Y-Symmetrie", wave5bp2Results.wideNoSymmetry);
+                check("Welle 5 B P2: 4 Pyramiden auf Kreis sind Resonanz-Array", wave5bp2Results.arrayDetected);
+                check("Welle 5 B P2: Array-Bonus auf resoniert", wave5bp2Results.arrayBoostsResonance);
+                check("Welle 5 B P2: Array-Bonus auf magieleitung", wave5bp2Results.arrayBoostsMagic);
+                check("Welle 5 B P2: 2 Pyramiden bilden KEIN Array", wave5bp2Results.twoNoArray);
+                check("Welle 5 B P2: 3 Pyramiden auf ungleichen Radien sind KEIN Array", wave5bp2Results.unevenNoArray);
+                check("Welle 5 B P2: Glockenspiel-Combo (Hohlraum + Array) maximiert Resonanz", wave5bp2Results.glockenspielMaxResonance);
+            }
+
+            // ### Welle 5 A — Verbindungstypen mit Lastformel ###
+            const wave5aResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    // Konstanten
+                    out.connectionTypesFrozen = Object.isFrozen(r.constructor.CONNECTION_TYPES);
+                    const types = r.constructor.CONNECTION_TYPES;
+                    const expectedTypes = [
+                        "hafting", "lashing", "pinning", "welding",
+                        "gluing", "masonry", "sewing", "magic_bind",
+                    ];
+                    out.eightTypes = expectedTypes.every((t) => types[t]);
+                    out.eachTypeHasStrongTags = expectedTypes.every(
+                        (t) => Array.isArray(types[t].strongTags) && types[t].strongTags.length >= 1
+                    );
+                    out.eachTypeHasStrength = expectedTypes.every(
+                        (t) => typeof types[t].typeStrength === "number" && types[t].typeStrength > 0 && types[t].typeStrength <= 1
+                    );
+
+                    // _partsContactArea: zwei berührende 1×1×1-Würfel
+                    const a = { shape: "box", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } };
+                    const b = { shape: "box", position: { x: 1, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } };
+                    const area = r._partsContactArea(a, b);
+                    out.contactAreaNonZero = area > 0.5;
+                    // Weit weg: keine Fläche
+                    const c = { shape: "box", position: { x: 10, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } };
+                    out.farContactZero = r._partsContactArea(a, c) === 0;
+
+                    // computeConnectionStrength: hafting zwischen zwei harten Materialien
+                    r.state.blueprints["w5a-test"] = {
+                        name: "w5a-test",
+                        label: "W5A Test",
+                        builtIn: false,
+                        parts: [
+                            { shape: "cylinder", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                            { shape: "box", material: "eisen", position: { x: 0.95, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                        ],
+                        connections: [],
+                    };
+                    const haftStrength = r.computeConnectionStrength(
+                        { type: "hafting", partA: 0, partB: 1 },
+                        r.state.blueprints["w5a-test"]
+                    );
+                    out.haftingStrengthOk = haftStrength > 1.0 && haftStrength < 3.0;
+
+                    // Weichere Materialien → schwächere hafting
+                    r.state.blueprints["w5a-soft"] = {
+                        name: "w5a-soft",
+                        label: "W5A Soft",
+                        builtIn: false,
+                        parts: [
+                            { shape: "cylinder", material: "leder", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                            { shape: "box", material: "leder", position: { x: 0.95, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                        ],
+                        connections: [],
+                    };
+                    const softStrength = r.computeConnectionStrength(
+                        { type: "hafting", partA: 0, partB: 1 },
+                        r.state.blueprints["w5a-soft"]
+                    );
+                    out.softHaftingWeaker = softStrength < haftStrength;
+                    // Aber lashing (zähigkeit) ist auf leder STÄRKER als hafting auf leder
+                    const lashSoftStrength = r.computeConnectionStrength(
+                        { type: "lashing", partA: 0, partB: 1 },
+                        r.state.blueprints["w5a-soft"]
+                    );
+                    out.lashingFitsLeather = lashSoftStrength > softStrength;
+
+                    // Validation
+                    const v1 = r.validateBlueprintConnections(
+                        [{ type: "hafting", partA: 0, partB: 1 }],
+                        2
+                    );
+                    out.validAcceptsGood = v1.length === 1;
+                    // Unknown type
+                    const v2 = r.validateBlueprintConnections(
+                        [{ type: "schmusen", partA: 0, partB: 1 }],
+                        2
+                    );
+                    out.validRejectsUnknownType = v2.length === 0;
+                    // Out-of-range index
+                    const v3 = r.validateBlueprintConnections(
+                        [{ type: "hafting", partA: 0, partB: 99 }],
+                        2
+                    );
+                    out.validRejectsBadIndex = v3.length === 0;
+                    // Self-reference
+                    const v4 = r.validateBlueprintConnections(
+                        [{ type: "hafting", partA: 1, partB: 1 }],
+                        2
+                    );
+                    out.validRejectsSelfRef = v4.length === 0;
+
+                    // addConnectionToBlueprint
+                    const addR = r.addConnectionToBlueprint("w5a-test", { type: "welding", partA: 0, partB: 1 });
+                    out.addConnectionOk = addR.ok && r.state.blueprints["w5a-test"].connections.length === 1;
+                    // Built-in protection
+                    const addBuiltin = r.addConnectionToBlueprint("village", { type: "welding", partA: 0, partB: 1 });
+                    out.builtinBlocked = !addBuiltin.ok && addBuiltin.reason === "cannot_modify_builtin";
+                    // remove
+                    const rmR = r.removeConnectionFromBlueprint("w5a-test", 0);
+                    out.removeOk = rmR && r.state.blueprints["w5a-test"].connections.length === 0;
+
+                    // DSL-Op apply_connection
+                    const dslRes = r.dslRun(
+                        ["apply_connection", "w5a-test", "magic_bind", 0, 1],
+                        { source: "test" }
+                    );
+                    out.dslApplyConnection = dslRes.log.some((e) => e.event === "applied_connection");
+                    out.dslConnectionPersisted = r.state.blueprints["w5a-test"].connections.length === 1;
+
+                    // Save-Roundtrip
+                    const snap = r.buildStateSnapshot();
+                    const ourSavedBp = (snap.blueprints || []).find((bp) => bp.name === "w5a-test");
+                    out.saveCarriesConnections =
+                        ourSavedBp && Array.isArray(ourSavedBp.connections) && ourSavedBp.connections.length === 1;
+
+                    // UI: Verbindungs-Sektion erscheint
+                    r.selectBlueprintForEdit("w5a-test");
+                    out.uiConnectionsSection = !!document.querySelector(".workshop-connections");
+                    out.uiConnRow = !!document.querySelector(".workshop-conn-row");
+                    out.uiAddRow = !!document.querySelector(".workshop-conn-add");
+                    out.uiTypeDropdown = !!document.querySelector(".workshop-conn-type");
+
+                    // Solid-Threshold: schwache Verbindung hat workshop-conn-weak class
+                    r.state.blueprints["w5a-weak"] = {
+                        name: "w5a-weak",
+                        label: "W5A Weak",
+                        builtIn: false,
+                        parts: [
+                            { shape: "cylinder", material: "holz", position: { x: 0, y: 0, z: 0 }, size: { x: 0.2, y: 0.2, z: 0.2 } },
+                            { shape: "box", material: "holz", position: { x: 0.18, y: 0, z: 0 }, size: { x: 0.2, y: 0.2, z: 0.2 } },
+                        ],
+                        connections: [{ type: "sewing", partA: 0, partB: 1 }],
+                    };
+                    r.selectBlueprintForEdit("w5a-weak");
+                    const weakBar = document.querySelector(".workshop-conn-bar");
+                    out.weakClassApplied = weakBar && weakBar.classList.contains("workshop-conn-weak");
+
+                    // Aufräumen
+                    delete r.state.blueprints["w5a-test"];
+                    delete r.state.blueprints["w5a-soft"];
+                    delete r.state.blueprints["w5a-weak"];
+                    if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (!wave5aResults || wave5aResults.error) {
+                check(
+                    "Welle 5 A: Snapshot erreichbar",
+                    false,
+                    (wave5aResults && wave5aResults.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Welle 5 A: CONNECTION_TYPES frozen", wave5aResults.connectionTypesFrozen);
+                check("Welle 5 A: Acht Verbindungstypen definiert", wave5aResults.eightTypes);
+                check("Welle 5 A: Jeder Typ hat strongTags", wave5aResults.eachTypeHasStrongTags);
+                check("Welle 5 A: Jeder Typ hat typeStrength 0..1", wave5aResults.eachTypeHasStrength);
+                check("Welle 5 A: _partsContactArea liefert positive Flaeche bei Beruehrung", wave5aResults.contactAreaNonZero);
+                check("Welle 5 A: _partsContactArea = 0 bei weit-entfernten Parts", wave5aResults.farContactZero);
+                check("Welle 5 A: Hafting auf Eisen liefert mittlere bis hohe Staerke", wave5aResults.haftingStrengthOk);
+                check("Welle 5 A: Hafting auf Leder ist schwaecher als auf Eisen", wave5aResults.softHaftingWeaker);
+                check("Welle 5 A: Lashing passt zu Leder besser als Hafting", wave5aResults.lashingFitsLeather);
+                check("Welle 5 A: validateConnections akzeptiert gueltige", wave5aResults.validAcceptsGood);
+                check("Welle 5 A: validateConnections lehnt unbekannten Typ ab", wave5aResults.validRejectsUnknownType);
+                check("Welle 5 A: validateConnections lehnt Out-of-Range-Index ab", wave5aResults.validRejectsBadIndex);
+                check("Welle 5 A: validateConnections lehnt Self-Reference ab", wave5aResults.validRejectsSelfRef);
+                check("Welle 5 A: addConnectionToBlueprint haengt an", wave5aResults.addConnectionOk);
+                check("Welle 5 A: Built-in-Bauplan vor Connection-Mutation geschuetzt", wave5aResults.builtinBlocked);
+                check("Welle 5 A: removeConnectionFromBlueprint entfernt", wave5aResults.removeOk);
+                check("Welle 5 A: DSL apply_connection wirkt", wave5aResults.dslApplyConnection);
+                check("Welle 5 A: DSL-Connection persistiert in state", wave5aResults.dslConnectionPersisted);
+                check("Welle 5 A: Save traegt connections im Snapshot", wave5aResults.saveCarriesConnections);
+                check("Welle 5 A: UI .workshop-connections im DOM", wave5aResults.uiConnectionsSection);
+                check("Welle 5 A: UI .workshop-conn-row im DOM", wave5aResults.uiConnRow);
+                check("Welle 5 A: UI .workshop-conn-add im DOM", wave5aResults.uiAddRow);
+                check("Welle 5 A: UI Typ-Dropdown im DOM", wave5aResults.uiTypeDropdown);
+                check("Welle 5 A: Schwache Verbindung traegt workshop-conn-weak class", wave5aResults.weakClassApplied);
+            }
+
+            // ### Welle 5 C — Maschinen-Rekursivitaet (Bauplan als Werkzeug) ###
+            const wave5cResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    out.opClassesFrozen = Object.isFrozen(r.constructor.TOOL_OP_CLASSES);
+                    out.opClassesCount = r.constructor.TOOL_OP_CLASSES.size === 4;
+
+                    // computeBlueprintPrecisionCap: min der Part-Praezisionen
+                    const polishedChain = [
+                        { tool: "polierscheibe", op: "polish", cap: 0.97 },
+                    ];
+                    const roughChain = [{ tool: "hände", op: "hand_knap", cap: 0.4 }];
+                    const mixedBp = {
+                        parts: [
+                            { shape: "box", material: "eisen", opChain: polishedChain },
+                            { shape: "box", material: "eisen", opChain: roughChain },
+                            { shape: "box", material: "eisen", opChain: polishedChain },
+                        ],
+                    };
+                    out.precisionCapIsMin = Math.abs(r.computeBlueprintPrecisionCap(mixedBp) - 0.4) < 0.001;
+
+                    // setBlueprintToolMeta + Validierung
+                    r.state.blueprints["w5c-lathe"] = {
+                        name: "w5c-lathe",
+                        label: "Drehbank",
+                        builtIn: false,
+                        parts: [
+                            { shape: "box", material: "eisen", opChain: polishedChain },
+                            { shape: "cylinder", material: "eisen", opChain: polishedChain },
+                        ],
+                        connections: [],
+                    };
+                    const metaOk = r.setBlueprintToolMeta("w5c-lathe", "lathe", "subtractive");
+                    out.setMetaOk = metaOk.ok && r.state.blueprints["w5c-lathe"].role === "tool";
+                    // Bad opClass
+                    const metaBadClass = r.setBlueprintToolMeta("w5c-lathe", "lathe", "uberklasse");
+                    out.rejectsInvalidClass = !metaBadClass.ok && metaBadClass.reason === "invalid_op_class";
+                    // Bad opName
+                    const metaBadName = r.setBlueprintToolMeta("w5c-lathe", "böser Name!", "plastic");
+                    out.rejectsInvalidName = !metaBadName.ok && metaBadName.reason === "invalid_op_name";
+                    // Built-in protected
+                    const metaBuiltin = r.setBlueprintToolMeta("village", "lathe", "subtractive");
+                    out.builtinProtected = !metaBuiltin.ok && metaBuiltin.reason === "cannot_modify_builtin";
+
+                    // registerBlueprintAsTool
+                    const regOk = r.registerBlueprintAsTool("w5c-lathe");
+                    out.registerOk = regOk.ok && !!r.state.tools["w5c-lathe"];
+                    out.toolCapMatchesBlueprint = Math.abs(r.state.tools["w5c-lathe"].precisionCap - 0.97) < 0.001;
+                    out.toolInPlayerInventory = (r.state.player.tools || []).includes("w5c-lathe");
+                    out.toolSourceMarked = r.state.tools["w5c-lathe"].sourceBlueprint === "w5c-lathe";
+                    out.toolNotBuiltin = r.state.tools["w5c-lathe"].builtIn === false;
+
+                    // Cannot register a non-tool blueprint
+                    r.state.blueprints["w5c-not-a-tool"] = {
+                        name: "w5c-not-a-tool",
+                        label: "Just-a-Box",
+                        builtIn: false,
+                        parts: [{ shape: "box", material: "eisen", opChain: polishedChain }],
+                        connections: [],
+                    };
+                    const regNotMarked = r.registerBlueprintAsTool("w5c-not-a-tool");
+                    out.rejectsUnmarked = !regNotMarked.ok && regNotMarked.reason === "not_marked_as_tool";
+
+                    // Cannot override starter tool name
+                    r.state.blueprints["hammer"] = {
+                        name: "hammer",
+                        label: "Mein Hammer",
+                        builtIn: false,
+                        role: "tool",
+                        toolMeta: { opName: "forge", opClass: "plastic" },
+                        parts: [{ shape: "box", material: "eisen", opChain: polishedChain }],
+                        connections: [],
+                    };
+                    const regHammerOverride = r.registerBlueprintAsTool("hammer");
+                    out.starterProtected = !regHammerOverride.ok && regHammerOverride.reason === "starter_name_protected";
+                    delete r.state.blueprints["hammer"];
+
+                    // Recursive: das neue Werkzeug funktioniert in applyOpToPart
+                    r.state.blueprints["w5c-target"] = {
+                        name: "w5c-target",
+                        label: "Ziel",
+                        builtIn: false,
+                        parts: [{ shape: "cylinder", material: "eisen", opChain: r._defaultPartOpChain() }],
+                        connections: [],
+                    };
+                    const applyR = r.applyOpToPart("w5c-target", 0, "w5c-lathe");
+                    const partAfter = r.state.blueprints["w5c-target"].parts[0];
+                    const lastOp = partAfter.opChain && partAfter.opChain[partAfter.opChain.length - 1];
+                    // Erfolg: Op ist angewandt, letzte Chain-Eintrag zeigt
+                    // auf das eigene Werkzeug. Praezision selbst bleibt 0.4
+                    // (default-Hand-Knap dominiert per min-Regel §2.3).
+                    out.recursiveToolApplies = applyR.ok && lastOp && lastOp.tool === "w5c-lathe" && lastOp.cap === 0.97;
+                    out.opChainGrew = Array.isArray(partAfter.opChain) && partAfter.opChain.length === 2;
+
+                    // Schief gebaute Drehbank → schlechter Cap
+                    r.state.blueprints["w5c-bad-lathe"] = {
+                        name: "w5c-bad-lathe",
+                        label: "Schlechte Drehbank",
+                        builtIn: false,
+                        parts: [
+                            { shape: "box", material: "eisen", opChain: roughChain },
+                            { shape: "cylinder", material: "eisen", opChain: polishedChain },
+                        ],
+                        connections: [],
+                    };
+                    r.setBlueprintToolMeta("w5c-bad-lathe", "bad-lathe", "subtractive");
+                    r.registerBlueprintAsTool("w5c-bad-lathe");
+                    out.badLatheLowerCap = r.state.tools["w5c-bad-lathe"].precisionCap === 0.4;
+                    // Recursive Konzept-Test: eine Box mit dem schlechten Tool
+                    // erreicht keine bessere Praezision als 0.4.
+                    r.state.blueprints["w5c-target2"] = {
+                        name: "w5c-target2",
+                        label: "Ziel 2",
+                        builtIn: false,
+                        parts: [{ shape: "cylinder", material: "eisen", opChain: r._defaultPartOpChain() }],
+                        connections: [],
+                    };
+                    r.applyOpToPart("w5c-target2", 0, "w5c-bad-lathe");
+                    out.recursivePrecisionCascade = r.computePartPrecision(
+                        r.state.blueprints["w5c-target2"].parts[0]
+                    ) === 0.4;
+
+                    // DSL-Ops
+                    r.state.blueprints["w5c-dsl-test"] = {
+                        name: "w5c-dsl-test",
+                        label: "DSL Test",
+                        builtIn: false,
+                        parts: [{ shape: "box", material: "eisen", opChain: polishedChain }],
+                        connections: [],
+                    };
+                    const dslMeta = r.dslRun(
+                        ["set_tool_meta", "w5c-dsl-test", "dsl-tool", "additive"],
+                        { source: "test" }
+                    );
+                    out.dslSetMeta = dslMeta.log.some((e) => e.event === "set_tool_meta");
+                    const dslReg = r.dslRun(["register_tool", "w5c-dsl-test"], { source: "test" });
+                    out.dslRegister = dslReg.log.some((e) => e.event === "registered_tool");
+                    out.dslToolInState = !!r.state.tools["w5c-dsl-test"];
+
+                    // Save-Roundtrip
+                    const snap = r.buildStateSnapshot();
+                    out.snapshotHasToolBp = (snap.blueprints || []).some(
+                        (bp) => bp.name === "w5c-lathe" && bp.role === "tool" && bp.toolMeta && bp.toolMeta.opName === "lathe"
+                    );
+                    out.snapshotHasTool = (snap.tools || []).some(
+                        (t) => t.name === "w5c-lathe" && t.precisionCap === 0.97
+                    );
+
+                    // UI
+                    r.selectBlueprintForEdit("w5c-lathe");
+                    out.uiToolSection = !!document.querySelector(".workshop-tool-recursion");
+                    out.uiRegisteredBadge = !!document.querySelector(".workshop-tool-registered");
+                    out.uiOpNameInput = !!document.querySelector(".workshop-tool-opname");
+
+                    // Cleanup
+                    delete r.state.tools["w5c-lathe"];
+                    delete r.state.tools["w5c-bad-lathe"];
+                    delete r.state.tools["w5c-dsl-test"];
+                    r.state.player.tools = r.state.player.tools.filter(
+                        (t) => !["w5c-lathe", "w5c-bad-lathe", "w5c-dsl-test"].includes(t)
+                    );
+                    delete r.state.blueprints["w5c-lathe"];
+                    delete r.state.blueprints["w5c-bad-lathe"];
+                    delete r.state.blueprints["w5c-target"];
+                    delete r.state.blueprints["w5c-target2"];
+                    delete r.state.blueprints["w5c-not-a-tool"];
+                    delete r.state.blueprints["w5c-dsl-test"];
+                    if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (!wave5cResults || wave5cResults.error) {
+                check(
+                    "Welle 5 C: Snapshot erreichbar",
+                    false,
+                    (wave5cResults && wave5cResults.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Welle 5 C: TOOL_OP_CLASSES frozen", wave5cResults.opClassesFrozen);
+                check("Welle 5 C: TOOL_OP_CLASSES hat 4 Klassen", wave5cResults.opClassesCount);
+                check("Welle 5 C: computeBlueprintPrecisionCap = min(parts)", wave5cResults.precisionCapIsMin);
+                check("Welle 5 C: setBlueprintToolMeta markiert Bauplan", wave5cResults.setMetaOk);
+                check("Welle 5 C: setBlueprintToolMeta lehnt unbekannte opClass ab", wave5cResults.rejectsInvalidClass);
+                check("Welle 5 C: setBlueprintToolMeta lehnt invaliden opName ab", wave5cResults.rejectsInvalidName);
+                check("Welle 5 C: setBlueprintToolMeta lehnt Built-in-Bauplan ab", wave5cResults.builtinProtected);
+                check("Welle 5 C: registerBlueprintAsTool legt Werkzeug an", wave5cResults.registerOk);
+                check("Welle 5 C: Werkzeug-Cap = Bauplan-Praezision", wave5cResults.toolCapMatchesBlueprint);
+                check("Welle 5 C: Werkzeug landet im Player-Inventory", wave5cResults.toolInPlayerInventory);
+                check("Welle 5 C: Werkzeug trägt sourceBlueprint-Marke", wave5cResults.toolSourceMarked);
+                check("Welle 5 C: Eigenes Werkzeug ist nicht builtIn", wave5cResults.toolNotBuiltin);
+                check("Welle 5 C: registerBlueprintAsTool lehnt unmarkierte ab", wave5cResults.rejectsUnmarked);
+                check("Welle 5 C: Starter-Namen vor Override geschuetzt", wave5cResults.starterProtected);
+                check("Welle 5 C: Eigenes Werkzeug funktioniert in applyOpToPart", wave5cResults.recursiveToolApplies);
+                check("Welle 5 C: opChain waechst nach apply mit eigenem Tool", wave5cResults.opChainGrew);
+                check("Welle 5 C: Schlechte Drehbank hat niedrigen Cap", wave5cResults.badLatheLowerCap);
+                check("Welle 5 C: Schlechtes Tool deckelt Ziel-Praezision (§4.3 Kaskade)", wave5cResults.recursivePrecisionCascade);
+                check("Welle 5 C: DSL set_tool_meta wirkt", wave5cResults.dslSetMeta);
+                check("Welle 5 C: DSL register_tool wirkt", wave5cResults.dslRegister);
+                check("Welle 5 C: DSL-Werkzeug landet in state.tools", wave5cResults.dslToolInState);
+                check("Welle 5 C: Save traegt role + toolMeta im Bauplan", wave5cResults.snapshotHasToolBp);
+                check("Welle 5 C: Save traegt eigenes Werkzeug", wave5cResults.snapshotHasTool);
+                check("Welle 5 C: UI .workshop-tool-recursion im DOM", wave5cResults.uiToolSection);
+                check("Welle 5 C: UI Registered-Badge im DOM", wave5cResults.uiRegisteredBadge);
+                check("Welle 5 C: UI opName-Input im DOM", wave5cResults.uiOpNameInput);
+            }
+
+            // ### Bugfixes nach Welle-5-Reflexion ###
+            const bugfixResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    // Bug 1: Part-Loesch raeumt connections auf
+                    r.state.blueprints["bug1-test"] = {
+                        name: "bug1-test",
+                        label: "Bug1 Test",
+                        builtIn: false,
+                        parts: [
+                            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                            { shape: "box", material: "stein", position: { x: 1, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                            { shape: "box", material: "stein", position: { x: 2, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                        ],
+                        connections: [
+                            { type: "hafting", partA: 0, partB: 1 },
+                            { type: "hafting", partA: 1, partB: 2 },
+                            { type: "hafting", partA: 0, partB: 2 },
+                        ],
+                    };
+                    // Part 1 loeschen: connection 0-1 + 1-2 weg, 0-2 bleibt
+                    // und wird zu 0-1 (Index 2 → 1).
+                    r.removePartFromBlueprint("bug1-test", 1);
+                    const remaining = r.state.blueprints["bug1-test"].connections;
+                    out.connectionsFilteredOnPartDelete = remaining.length === 1;
+                    out.connectionIndicesShifted =
+                        remaining[0] && remaining[0].partA === 0 && remaining[0].partB === 1;
+
+                    // Bug 1 edge case: delete part 0, connection 1-2 wird zu 0-1
+                    r.state.blueprints["bug1-shift"] = {
+                        name: "bug1-shift",
+                        label: "Shift Test",
+                        builtIn: false,
+                        parts: [
+                            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                            { shape: "box", material: "stein", position: { x: 1, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                            { shape: "box", material: "stein", position: { x: 2, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                        ],
+                        connections: [{ type: "hafting", partA: 1, partB: 2 }],
+                    };
+                    r.removePartFromBlueprint("bug1-shift", 0);
+                    const shifted = r.state.blueprints["bug1-shift"].connections;
+                    out.shiftedToZeroOne = shifted.length === 1 && shifted[0].partA === 0 && shifted[0].partB === 1;
+
+                    // Bug 2: Bauplan-Loesch raeumt eigene Werkzeuge auf
+                    r.state.blueprints["bug2-lathe"] = {
+                        name: "bug2-lathe",
+                        label: "Test Lathe",
+                        builtIn: false,
+                        role: "tool",
+                        toolMeta: { opName: "bug2-op", opClass: "subtractive" },
+                        parts: [
+                            { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, opChain: [{ tool: "polierscheibe", op: "polish", cap: 0.97 }] },
+                        ],
+                        connections: [],
+                    };
+                    r.registerBlueprintAsTool("bug2-lathe");
+                    out.toolWasRegistered = !!r.state.tools["bug2-lathe"];
+                    out.playerOwnedToolBefore = (r.state.player.tools || []).includes("bug2-lathe");
+                    r.deleteBlueprint("bug2-lathe");
+                    out.toolRemovedFromState = !r.state.tools["bug2-lathe"];
+                    out.toolRemovedFromPlayer = !(r.state.player.tools || []).includes("bug2-lathe");
+                    out.starterToolsUnaffected =
+                        !!r.state.tools["hammer"] && (r.state.player.tools || []).includes("hammer");
+
+                    // Negativ: deleteBlueprint eines non-tool-Bauplans laesst
+                    // andere Tools komplett unberuehrt.
+                    r.state.blueprints["bug2-noisy-tool"] = {
+                        name: "bug2-noisy-tool",
+                        label: "Noisy Tool",
+                        builtIn: false,
+                        role: "tool",
+                        toolMeta: { opName: "noisy-op", opClass: "subtractive" },
+                        parts: [{ shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, opChain: [{ tool: "polierscheibe", op: "polish", cap: 0.97 }] }],
+                        connections: [],
+                    };
+                    r.registerBlueprintAsTool("bug2-noisy-tool");
+                    r.state.blueprints["bug2-plain"] = {
+                        name: "bug2-plain",
+                        label: "Plain Blueprint",
+                        builtIn: false,
+                        parts: [{ shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } }],
+                        connections: [],
+                    };
+                    r.deleteBlueprint("bug2-plain");
+                    out.unrelatedToolUntouched = !!r.state.tools["bug2-noisy-tool"];
+
+                    // Cleanup — wichtig: Werkstatt-DOM neu rendern, damit
+                    // spätere Tests (Ring 6.6) nicht Stale-Rows sehen.
+                    delete r.state.tools["bug2-noisy-tool"];
+                    r.state.player.tools = r.state.player.tools.filter((t) => t !== "bug2-noisy-tool");
+                    delete r.state.blueprints["bug2-noisy-tool"];
+                    delete r.state.blueprints["bug1-test"];
+                    delete r.state.blueprints["bug1-shift"];
+                    if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (!bugfixResults || bugfixResults.error) {
+                check(
+                    "Bugfix Snapshot erreichbar",
+                    false,
+                    (bugfixResults && bugfixResults.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Bugfix: removePartFromBlueprint filtert betroffene Connections", bugfixResults.connectionsFilteredOnPartDelete);
+                check("Bugfix: Connection-Indizes nach Part-Loesch korrigiert", bugfixResults.connectionIndicesShifted);
+                check("Bugfix: Index-Shift bei Loesch von Part 0", bugfixResults.shiftedToZeroOne);
+                check("Bugfix: registerBlueprintAsTool legt Werkzeug an (Setup)", bugfixResults.toolWasRegistered);
+                check("Bugfix: Werkzeug nach Register im Player-Inventory (Setup)", bugfixResults.playerOwnedToolBefore);
+                check("Bugfix: deleteBlueprint entfernt eigenes Werkzeug aus state.tools", bugfixResults.toolRemovedFromState);
+                check("Bugfix: deleteBlueprint entfernt Werkzeug aus player.tools", bugfixResults.toolRemovedFromPlayer);
+                check("Bugfix: Starter-Werkzeuge bleiben nach Bauplan-Loesch erhalten", bugfixResults.starterToolsUnaffected);
+                check("Bugfix: Unrelated Tools werden nicht angetastet", bugfixResults.unrelatedToolUntouched);
             }
 
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###

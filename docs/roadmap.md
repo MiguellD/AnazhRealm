@@ -10,9 +10,9 @@ Diese Doc beschreibt das **gesamte Projekt vom heutigen Stand bis zum Vision-End
 
 ## 1. Wo wir stehen (Mai 2026)
 
-✅ Ring 0 (Fundament) + Ring 1 (Grok-Stimme) + Ring 2 Phase 1+2 (DSL Interpreter + Generator) sind live. Chunk-Physik nutzt seit `e612c60` `btBvhTriangleMeshShape` (visuelles Mesh = Collider). 120 fps im Browser, 36/36 Playtest-Invarianten grün. Save-Schema bereits zukunftsfest mit `worldMeta` (worldId, slug, visibility, parentWorlds).
+✅ Ring 0-7 + Welle 1-5 + Editor-Konsistenz-Bugfixes sind live. Chunk-Physik nutzt seit `e612c60` `btBvhTriangleMeshShape` (visuelles Mesh = Collider). 120 fps im Browser, **527/527 Playtest-Invarianten grün**. Save-Schema mit `worldMeta` (worldId, slug, visibility, parentWorlds) + `materials` + `playerTools` + `tools` (eigene Werkzeug-Baupläne) + `worldJournal` + `blueprints[].connections` + `blueprints[].role + toolMeta`.
 
-Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) ist Pfeiler 5 (Stimme) zu ~30 % umgesetzt, Pfeiler 1 (Symbiose) zu ~50 % (DSL existiert, aber Mensch+Nexus teilen Sprache erst nach Phase 3). Pfeiler 2/3/4 stehen noch aus.
+Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) sind alle fünf in V1+ angekommen. **Hylomorphismus-Crafting (Wellen 4+5) ist vollständig**: Substanz-Schicht (Materialien als Tag-Profile), Form-Aktivierung (9×10 Matrix), Werkzeug-Präzision (opChain als Geschichte), räumliche Emergenz (5 Konzept-§5.2-Prinzipien), Verbindungstypen (8 aus §5.1), Maschinen-Rekursivität (§4.3 — Bauplan kann Werkzeug sein). Was noch fehlt: visuelle Verbindungs-Linien, Brech-Mechanik, Energiequellen für Maschinen.
 
 ---
 
@@ -27,11 +27,14 @@ Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) is
 | 4 | `anazhSymphony` V1 (Web Audio) | ✅ V1 live | – | – |
 | UI | Bedien-Oberfläche (Painterly) | ✅ V1+V2 live, V3 optional | 2-3 h Rest | – |
 | 5 | `createPlayerSoul` (Mensch/Phönix/Drache) | 🔴 offen | 1-2 d | – |
-| 6 | `architectureTemplates` V1 (Dörfer, Tempel, Wasserfälle) | 🔴 offen | 2 d | Ring 2 Phase 3 |
+| 6 | `architectureTemplates` V1+V2 (Bauplan-Universum mit Hotbar + Werkstatt) | ✅ V1+V2 live | – | Ring 2 Phase 3 |
 | 7 | **IQ-Schicht statt brain.js** (lernt aus Verhalten + Emotion + 4 LLM-Provider) | ✅ Schicht 1+2 live | – | Ring 3 + Ring 2 Phase 3 |
 | W1 | **Welt-Journal + LLM-Selbstwissen** (Welt erinnert, weiß wer sie ist) | ✅ live | – | Ring 7 |
 | W2 | **Schöpfer-Ops + Fraktale Baupläne** (define_blueprint/ability, blueprint-Refs) | ✅ live | – | Ring 6.6 |
 | W3 | **Welt-Initiative + Welt-Tor** (Grok V2-Trigger, Welt-Info, Teilen/Empfangen) | ✅ live | – | W1 |
+| W4 | **Hylomorphismus atomar** — Materialien + Aktivierungs-Matrix + Werkzeuge | ✅ P1+P2+P3 live | – | Ring 6 + Ring 7 |
+| W5 | **Hylomorphismus räumlich + mechanisch + rekursiv** — Verbindungen (§5.1) + 5 räumliche Prinzipien (§5.2) + Bauplan-als-Werkzeug (§4.3) | ✅ A+B+C live | – | W4 |
+| W6 | **Crafting-Polish** — Visuelle Verbindungs-Linien + Brech-Mechanik + Energiequellen für Maschinen | 🔴 offen | 2-3 Sessions | W5 |
 | 8 | Welt-Identität als Multi-Welt-Verwaltung (mehrere worldIds parallel) | 🟡 Schema + Sichtbarkeit live, Multi-Welt-Switcher offen | 1-2 d | W3 |
 | 9 | Welt-Export/Import (erweitert) — Drei-Wahl Ersetzen/Daneben/Fusionieren | 🟡 Basic-Export/Import live, Wahl-Dialog offen | 1 d | Ring 8 |
 | 10 | Welt-Fusion (zwei DSL-Programm-Sets mergen mit parentWorlds) | 🔴 offen | 3-4 d | Ring 9 |

@@ -1,4 +1,4 @@
-/**AnazhRealm V7.65 – Das Ultiversum Vollendet.
+/**AnazhRealm V7.66 – Das Ultiversum Vollendet.
  * Hüpfen: Robust, präzise (Y ~1.5), Coyote-Time 0.3s, Gravitation 1.5G, Reibung 0.5.
  * Kollisionen: Kein Tunneling, steepnessThreshold 3.0, wallThickness 2.0, CCD optimiert.
  * Terrain: Flacher (Höhenunterschiede ±5), KI-gesteuerte Steilheitsanpassung, Chat-Steuerung.
@@ -12,7 +12,7 @@
 class AnazhRealm {
     constructor() {
         // ### Learnings ### [Stichwortartig optimieren, korrigieren, ergänzen – nie Wissen löschen!]
-        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.65
+        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66
         // - Nexus als Herz der Selbstentwicklung, steuert nun alles über Chat, unzerstörbar und unendlich
         this.state = {
             // ### Kern ###
@@ -94,7 +94,7 @@ class AnazhRealm {
             maxVersionHistoryEntries: 50,
             maxCreatures: 120,
             maxLoadedChunks: 196,
-            currentVersion: "7.65",
+            currentVersion: "7.66",
             terrainSteepness: 1.0,
             terrainBaseHeight: 0.0,
             weather: "sunny",
@@ -351,16 +351,44 @@ class AnazhRealm {
             startEternalLoop: this.startEternalLoop.bind(this),
         };
         this.nexus = null;
+        // Welle 4 Phase 1 — Materialien als Tag-Profile. Built-ins zuerst,
+        // damit Baupläne (die per Part auf Material referenzieren können)
+        // ihre Default-Material-Namen auflösen können. Materialien sind die
+        // Substanz-Schicht des Hylomorphismus-Crafting; die zugehörige
+        // Form-Tag-Aktivierungs-Matrix folgt in Phase 2.
+        this.state.materials = this._defaultMaterials();
+        // Welle 4 Phase 3 — Werkzeuge mit Präzisions-Caps. Jede Op braucht
+        // ein Werkzeug, das sie ausführt; das Werkzeug liefert den Cap.
+        // Starter-Tools sind beim Spieler ab Init im Besitz; eigene Werk-
+        // zeuge (z. B. aus geschmiedeten Bauplänen — Welle 6) kämen via
+        // späterer applyOp dazu, nicht aus dem DSL-Generator-Pool.
+        this.state.tools = this._defaultTools();
+        if (!this.state.player.tools) {
+            this.state.player.tools = Object.values(this.state.tools)
+                .filter((t) => t.isStarter)
+                .map((t) => t.name);
+        }
         // Ring 6.4 — Built-in-Baupläne als Daten registrieren. Wenn ein
         // Save später User-Baupläne hinzufügt (Editor 6.6), werden sie auf
         // dieses Default-Set draufgemerged.
         this.state.blueprints = this._defaultBlueprints();
+        // Welle 4 Phase 1+3 — Built-in-Parts ohne Material auf „stein"
+        // mappen; ohne opChain auf eine billige Default-Kette. Built-ins
+        // bleiben damit visuell wie vorher; die Tag-Berechnung greift.
+        for (const bp of Object.values(this.state.blueprints)) {
+            if (!bp || !Array.isArray(bp.parts)) continue;
+            for (const p of bp.parts) {
+                if (!p || typeof p !== "object") continue;
+                if (typeof p.material !== "string") p.material = "stein";
+                if (!Array.isArray(p.opChain)) p.opChain = this._defaultPartOpChain();
+            }
+        }
     }
 
     // ### Logging ###
     log(message, level = "INFO") {
         if (level === "DEBUG" && !this.state.debugLogging) return;
-        const logMessage = `[AnazhRealm V7.65] [${level}] ${message}`;
+        const logMessage = `[AnazhRealm V7.66] [${level}] ${message}`;
         this.state.logBuffer.push(logMessage);
         console.log(logMessage);
         if (this.state.logBuffer.length > this.state.maxLogEntries) {
@@ -884,6 +912,86 @@ class AnazhRealm {
                     });
                 }
             },
+            // Welle 4 Phase 1 — Schöpfer-Werkzeug für Materialien. Tags werden
+            // in defineMaterial whitelistet + ge-clamp; Built-in-Materialien
+            // bleiben unberührbar. Color ist optional, default grau.
+            define_material: ([name, color, tags], ctx) => {
+                const result = this.defineMaterial(name, color, tags);
+                ctx.log.push({
+                    event: result.ok ? "defined_material" : "define_material_failed",
+                    name: result.name,
+                    reason: result.reason,
+                });
+                if (result.ok) {
+                    this.journalAppend("growth", `Eine neue Substanz wurde benannt: ${result.name}.`, {
+                        name: result.name,
+                    });
+                }
+            },
+            // Welle 4 Phase 3 — opChain via Werkzeug. Bewusst NICHT im
+            // Generator-Pool (dslComposeAtomic), damit der Nexus nicht
+            // willkürlich Werkstücke poliert. Pfad: Chat-Befehl/LLM/Spieler-
+            // UI. Tool muss im Besitz sein, Material × Op-Klasse muss passen.
+            // Welle 5 C — Bauplan als Werkzeug markieren + registrieren.
+            // Zwei separate Ops, damit der Spieler erst opName/opClass setzt,
+            // dann bewusst „registriere" drückt (Snapshot der aktuellen
+            // Präzision wandert in state.tools). Auch hier NICHT im
+            // dslComposeAtomic-Pool — Werkzeug-Erschaffung ist Schöpfer-Geste.
+            set_tool_meta: ([blueprintName, opName, opClass], ctx) => {
+                const r = this.setBlueprintToolMeta(blueprintName, opName, opClass);
+                ctx.log.push({
+                    event: r.ok ? "set_tool_meta" : "set_tool_meta_failed",
+                    blueprint: blueprintName,
+                    opName,
+                    opClass,
+                    reason: r.reason,
+                });
+            },
+            register_tool: ([blueprintName], ctx) => {
+                const r = this.registerBlueprintAsTool(blueprintName);
+                ctx.log.push({
+                    event: r.ok ? "registered_tool" : "register_tool_failed",
+                    blueprint: blueprintName,
+                    precisionCap: r.precisionCap,
+                    reason: r.reason,
+                });
+                if (r.ok) {
+                    this.journalAppend(
+                        "growth",
+                        `Ein eigenes Werkzeug entstand: ${blueprintName} (Cap ${r.precisionCap.toFixed(2)}).`,
+                        { tool: blueprintName, cap: r.precisionCap }
+                    );
+                }
+            },
+            // Welle 5 A — Verbindung zwischen zwei Parts setzen. Auch hier
+            // bewusst NICHT im dslComposeAtomic-Pool: Verbindungen sind
+            // explizite Geste, kein Zufalls-Brei.
+            apply_connection: ([blueprintName, type, partA, partB], ctx) => {
+                const result = this.addConnectionToBlueprint(blueprintName, {
+                    type,
+                    partA: Number(partA),
+                    partB: Number(partB),
+                });
+                ctx.log.push({
+                    event: result.ok ? "applied_connection" : "apply_connection_failed",
+                    blueprint: blueprintName,
+                    type,
+                    partA,
+                    partB,
+                    reason: result.reason,
+                });
+            },
+            apply_op: ([blueprintName, partIndex, toolName], ctx) => {
+                const result = this.applyOpToPart(blueprintName, Number(partIndex), toolName);
+                ctx.log.push({
+                    event: result.ok ? "applied_op" : "apply_op_failed",
+                    blueprint: blueprintName,
+                    partIndex,
+                    tool: toolName,
+                    reason: result.reason,
+                    precision: result.precision,
+                });
+            },
             define_ability: ([name, program], ctx) => {
                 if (typeof name !== "string" || name.length === 0 || name.length > 40) {
                     ctx.log.push({ event: "invalid_ability_name", name });
@@ -899,7 +1007,11 @@ class AnazhRealm {
                     ctx.log.push({ event: "ability_depth_exceeded", name, depth });
                     return;
                 }
-                if (this.dslContainsOp(program, "define_blueprint") || this.dslContainsOp(program, "define_ability")) {
+                if (
+                    this.dslContainsOp(program, "define_blueprint") ||
+                    this.dslContainsOp(program, "define_ability") ||
+                    this.dslContainsOp(program, "define_material")
+                ) {
                     ctx.log.push({ event: "ability_nested_define_forbidden", name });
                     return;
                 }
@@ -1130,6 +1242,30 @@ class AnazhRealm {
                 const e = ctx.state.player && ctx.state.player.emotions;
                 if (!e || typeof e[name] !== "number") return false;
                 return e[name] > Number(threshold);
+            },
+            // Welle 4 Phase 2 — Compound-Tags als DSL-sichtbare Bedingung.
+            // `compound_has_tag(blueprintName, tagName, threshold)`. Aktivierte
+            // Tag-Stärke (Form × Material, max-aggregiert) muss ≥ threshold sein.
+            // Unbekannter Bauplan/Tag → false. Macht emergente Hylomorphismus-
+            // Eigenschaften für den Nexus + LLM bedingungsfähig.
+            compound_has_tag: ([blueprintName, tagName, threshold]) => {
+                if (typeof blueprintName !== "string" || typeof tagName !== "string") return false;
+                const bp = this.state.blueprints && this.state.blueprints[blueprintName];
+                if (!bp) return false;
+                const tags = this.computeCompoundTags(bp);
+                const v = tags[tagName] || 0;
+                return v >= Number(threshold);
+            },
+            // Welle 5 B — räumlich angereicherte Bedingung. Berücksichtigt
+            // Spitze-Bonus + Kontakt-Übertragung. Wer eine pyramidische Spitze
+            // mit Quarz hat, hat hier mehr magieleitung als in compound_has_tag.
+            compound_has_spatial_tag: ([blueprintName, tagName, threshold]) => {
+                if (typeof blueprintName !== "string" || typeof tagName !== "string") return false;
+                const bp = this.state.blueprints && this.state.blueprints[blueprintName];
+                if (!bp) return false;
+                const tags = this.computeSpatialTags(bp);
+                const v = tags[tagName] || 0;
+                return v >= Number(threshold);
             },
             not: ([sub], ctx) => !this.dslEvalCond(sub, ctx),
             and: (subs, ctx) => subs.every((s) => this.dslEvalCond(s, ctx)),
@@ -1660,6 +1796,7 @@ class AnazhRealm {
             "octahedron",
             "plane",
             "torus",
+            "helix",
             "blueprint",
         ]);
         if (!Array.isArray(parts) || parts.length === 0) return { ok: false, reason: "no_parts" };
@@ -1681,6 +1818,35 @@ class AnazhRealm {
             }
             if (typeof p.color === "number") sanitized.color = p.color | 0;
             if (Number.isFinite(p.opacity) && p.opacity > 0 && p.opacity <= 1) sanitized.opacity = p.opacity;
+            // Welle 4 Phase 1 — Material-Referenz. Muss auf eine registrierte
+            // Material-Definition zeigen; unbekannter Name fällt still auf
+            // den Default „stein" zurück (statt den ganzen Bauplan abzulehnen).
+            if (typeof p.material === "string") {
+                const matName = p.material.replace(/[^a-z0-9_-]/gi, "").slice(0, 40);
+                if (matName && this.state.materials && this.state.materials[matName]) {
+                    sanitized.material = matName;
+                }
+            }
+            // Welle 4 Phase 3 — opChain validieren. Nur bekannte Tools, Cap
+            // ge-clamp 0..1, „at" ge-clamp ≥0. Cap 32 Ops pro Part, damit
+            // ein bösartiger Snapshot keine Riesen-Historie schiebt.
+            if (Array.isArray(p.opChain)) {
+                const cleanOps = [];
+                for (const op of p.opChain.slice(0, 32)) {
+                    if (!op || typeof op !== "object") continue;
+                    const tool = typeof op.tool === "string" ? op.tool.replace(/[^a-z0-9_-]/gi, "").slice(0, 40) : null;
+                    const opName = typeof op.op === "string" ? op.op.replace(/[^a-z0-9_-]/gi, "").slice(0, 40) : null;
+                    const cap = Number(op.cap);
+                    if (!Number.isFinite(cap)) continue;
+                    cleanOps.push({
+                        tool: tool || "hände",
+                        op: opName || "hand_knap",
+                        cap: Math.max(0, Math.min(1, cap)),
+                        at: Number.isFinite(op.at) ? Math.max(0, op.at) : 0,
+                    });
+                }
+                if (cleanOps.length > 0) sanitized.opChain = cleanOps;
+            }
             const clampVec = (v) => {
                 if (!v || typeof v !== "object") return null;
                 const out = {};
@@ -2809,7 +2975,7 @@ class AnazhRealm {
                     "Speichere Zustand",
                     "Lade Zustand",
                     "Lade Datei",
-                    "Aktiviere Version 7.65",
+                    "Aktiviere Version 7.66",
                     "Aktiviere Debug-Logs",
                     "Deaktiviere Debug-Logs",
                 ],
@@ -5265,7 +5431,7 @@ class AnazhRealm {
         // - Alle Funktionen (Vegetation, Wasserfälle, Inseln) bleiben erhalten.
         // - Seed in SimplexNoise sorgt für konsistente Höhen über Chunks hinweg.
     }
-    // ### Chunk-Generierung ### V7.65
+    // ### Chunk-Generierung ### V7.66
     generateChunk(chunkX, chunkZ, heightData, width, depth, material) {
         // ### Konstanten ###
         const CHUNK_SIZE = this.state.chunkSize;
@@ -5690,6 +5856,10 @@ class AnazhRealm {
             // Ring 5: Spieler-Seele (visuelle Form). Beim Load wird sie nach
             // dem playerMesh-Bau angewandt — kein Body-Recreate.
             playerSoul: this.state.player.soul || "human",
+            // Welle 4 Phase 3: Werkzeug-Besitz. Starter-Werkzeuge werden bei
+            // jedem Init wieder verfügbar, aber Persistenz erlaubt zukünftig
+            // eigen-geschmiedete (Welle 6) zu überleben.
+            playerTools: Array.isArray(this.state.player.tools) ? [...this.state.player.tools] : [],
             // Ring 6: Bau-Werke. Nur {type, position, seed, scale} — der
             // Mesh wird beim Laden aus dem Seed rekonstruiert (kein Mesh-
             // Snapshot). V2 inkludiert scale für fraktale Sub-Strukturen.
@@ -5704,10 +5874,42 @@ class AnazhRealm {
             // wir speichern nur, was der Spieler dazugefügt hat.
             blueprints: Object.values(this.state.blueprints || {})
                 .filter((bp) => bp && !bp.builtIn)
-                .map((bp) => ({
-                    name: bp.name,
-                    label: bp.label || bp.name,
-                    parts: Array.isArray(bp.parts) ? JSON.parse(JSON.stringify(bp.parts)) : [],
+                .map((bp) => {
+                    const out = {
+                        name: bp.name,
+                        label: bp.label || bp.name,
+                        parts: Array.isArray(bp.parts) ? JSON.parse(JSON.stringify(bp.parts)) : [],
+                        connections: Array.isArray(bp.connections) ? JSON.parse(JSON.stringify(bp.connections)) : [],
+                    };
+                    if (bp.role === "tool" && bp.toolMeta) {
+                        out.role = "tool";
+                        out.toolMeta = { opName: bp.toolMeta.opName, opClass: bp.toolMeta.opClass };
+                    }
+                    return out;
+                }),
+            // Welle 5 C — eigene Werkzeuge (aus registrierten Bauplänen)
+            // persistieren. Starter-Werkzeuge entstehen aus _defaultTools()
+            // bei jedem Init, deshalb nur eigene speichern.
+            tools: Object.values(this.state.tools || {})
+                .filter((t) => t && !t.builtIn)
+                .map((t) => ({
+                    name: t.name,
+                    label: t.label,
+                    opClass: t.opClass,
+                    opName: t.opName,
+                    precisionCap: t.precisionCap,
+                    sourceBlueprint: t.sourceBlueprint || null,
+                })),
+            // Welle 4 Phase 1 — eigene Materialien persistieren. Built-ins
+            // kommen aus _defaultMaterials() im Konstruktor zurück; auch hier
+            // schreiben wir nur, was der Spieler dazugefügt hat.
+            materials: Object.values(this.state.materials || {})
+                .filter((m) => m && !m.builtIn)
+                .map((m) => ({
+                    name: m.name,
+                    label: m.label || m.name,
+                    color: m.color,
+                    tags: { ...m.tags },
                 })),
             // Ring 6.5 — Hotbar-Belegung. Array von 9 Slots mit Bauplan-Name
             // oder null. Default wird beim Init überschrieben.
@@ -5773,7 +5975,6 @@ class AnazhRealm {
 
     updateWorldInfo() {
         const info = document.getElementById("world-info");
-        const recent = document.getElementById("world-journal-recent");
         if (!info) return;
         const m = this.state.worldMeta || {};
         const ageDays = m.bornAt ? Math.floor((Date.now() - m.bornAt) / 86400000) : 0;
@@ -5792,22 +5993,70 @@ class AnazhRealm {
         info.appendChild(line1);
         info.appendChild(line2);
         info.appendChild(line3);
-        if (recent) {
-            recent.innerHTML = "";
-            const last3 = (this.state.worldJournal.entries || []).slice(-3);
-            if (last3.length === 0) {
-                recent.textContent = "Noch keine Erinnerungen geschrieben.";
-            } else {
-                const title = document.createElement("div");
-                title.textContent = "Letzte Erinnerungen:";
-                recent.appendChild(title);
-                for (const e of last3) {
-                    const row = document.createElement("div");
-                    row.textContent = `· ${e.text}`;
-                    recent.appendChild(row);
-                }
-            }
+        this.renderWorldJournal();
+    }
+
+    // Gescrolltes Tagebuch im Welt-Drawer: alle Erinnerungen, jüngste oben.
+    // Wird jeweils komplett neu gerendert; bei entryCap = 200 ist DOM-Cost
+    // gering. Aufruf-Takt = `updateWorldInfo` (5s im Game-Loop).
+    renderWorldJournal() {
+        const list = document.getElementById("world-journal-list");
+        const countEl = document.getElementById("world-journal-count");
+        if (!list) return;
+        const entries = (this.state.worldJournal && this.state.worldJournal.entries) || [];
+        if (countEl) {
+            countEl.textContent =
+                entries.length === 0
+                    ? "Keine Erinnerungen"
+                    : `${entries.length} Erinnerung${entries.length === 1 ? "" : "en"}`;
         }
+        // Cache-Signatur: Anzahl + jüngster Eintrag (Inhalt + Zeit). Wenn
+        // unverändert, DOM nicht anrühren — der Aufruf läuft alle 5s.
+        const lastEntry = entries.length > 0 ? entries[entries.length - 1] : null;
+        const signature = entries.length + ":" + (lastEntry ? `${lastEntry.id}:${lastEntry.at}` : "0");
+        if (list.dataset.signature === signature) return;
+        list.dataset.signature = signature;
+        list.innerHTML = "";
+        if (entries.length === 0) {
+            const empty = document.createElement("div");
+            empty.className = "journal-empty";
+            empty.textContent = "Noch keine Erinnerungen geschrieben.";
+            list.appendChild(empty);
+            return;
+        }
+        const now = Date.now();
+        // Jüngste zuerst — das Tagebuch liest sich rückwärts wie ein
+        // Logbuch. Erste Genesis bleibt aber durch Scrollen erreichbar.
+        for (let i = entries.length - 1; i >= 0; i--) {
+            const e = entries[i];
+            const row = document.createElement("div");
+            row.className = "journal-entry";
+            const type = document.createElement("span");
+            type.className = "journal-type";
+            type.textContent = e.type || "note";
+            const age = document.createElement("span");
+            age.className = "journal-age";
+            age.textContent = this._formatJournalAge(now - (e.at || now));
+            const text = document.createElement("span");
+            text.textContent = e.text || "";
+            row.appendChild(type);
+            row.appendChild(age);
+            row.appendChild(text);
+            list.appendChild(row);
+        }
+    }
+
+    _formatJournalAge(deltaMs) {
+        if (!Number.isFinite(deltaMs) || deltaMs < 0) return "";
+        const s = Math.floor(deltaMs / 1000);
+        if (s < 30) return "eben";
+        if (s < 60) return `vor ${s}s`;
+        const m = Math.floor(s / 60);
+        if (m < 60) return `vor ${m}m`;
+        const h = Math.floor(m / 60);
+        if (h < 24) return `vor ${h}h`;
+        const d = Math.floor(h / 24);
+        return `vor ${d}t`;
     }
 
     isSaveServerHost() {
@@ -5968,6 +6217,18 @@ class AnazhRealm {
         // Ring 6: Bau-Werke wiederherstellen. Bestehende Strukturen werden
         // tief disposed, dann jede aus {type, position, seed} neu gebaut.
         // Idempotent — mehrfaches loadState führt nicht zu Mesh-Verdopplung.
+        // Welle 4 Phase 1 — Materialien VOR Bauplänen restaurieren, damit
+        // Part-Material-Referenzen während validateBlueprintParts auflösen.
+        if (Array.isArray(state.materials)) {
+            let restoredMats = 0;
+            for (const m of state.materials) {
+                if (!m || typeof m.name !== "string") continue;
+                if (this.state.materials[m.name] && this.state.materials[m.name].builtIn) continue;
+                const r = this.defineMaterial(m.name, m.color, m.tags || {});
+                if (r.ok) restoredMats++;
+            }
+            this.log(`Materialien geladen: ${restoredMats} eigene`);
+        }
         // Ring 6.4 — eigene Baupläne ZUERST registrieren, danach die
         // Architekturen rekonstruieren. Sonst wären Strukturen, die einen
         // User-Bauplan referenzieren, nicht renderbar (Builder fehlt).
@@ -5977,14 +6238,69 @@ class AnazhRealm {
                 // Built-in nicht überschreiben — sicherheitshalber prefixen
                 // oder skip wenn Name kollidiert.
                 if (this.state.blueprints[bp.name] && this.state.blueprints[bp.name].builtIn) continue;
-                this.state.blueprints[bp.name] = {
+                // Welle 4 Phase 1+3 — Migration alter Parts: kein material →
+                // Default „stein", keine opChain → Default-Kette. Sicheres
+                // Default, keine Datenverluste.
+                const migratedParts = bp.parts.map((p) => {
+                    if (!p || typeof p !== "object") return p;
+                    const out = { ...p };
+                    if (typeof out.material !== "string" || !this.state.materials[out.material]) {
+                        out.material = "stein";
+                    }
+                    if (!Array.isArray(out.opChain) || out.opChain.length === 0) {
+                        out.opChain = this._defaultPartOpChain();
+                    }
+                    return out;
+                });
+                // Welle 5 A — connections sanitisieren beim Load.
+                const validConnections = this.validateBlueprintConnections(bp.connections || [], migratedParts.length);
+                const restored = {
                     name: bp.name,
                     label: bp.label || bp.name,
                     builtIn: false,
-                    parts: bp.parts,
+                    parts: migratedParts,
+                    connections: validConnections,
                 };
+                // Welle 5 C — role + toolMeta beim Load wiederherstellen.
+                if (
+                    bp.role === "tool" &&
+                    bp.toolMeta &&
+                    AnazhRealm.TOOL_OP_CLASSES.has(bp.toolMeta.opClass) &&
+                    AnazhRealm.TOOL_OP_NAME_PATTERN.test(String(bp.toolMeta.opName || ""))
+                ) {
+                    restored.role = "tool";
+                    restored.toolMeta = { opName: bp.toolMeta.opName, opClass: bp.toolMeta.opClass };
+                }
+                this.state.blueprints[bp.name] = restored;
             }
             this.log(`Baupläne geladen: ${state.blueprints.length} eigene`);
+        }
+        // Welle 5 C — eigene Werkzeuge wiederherstellen. Validiert opClass +
+        // opName + Schutz vor Override existierender Starter. precisionCap
+        // wird ge-clampt 0..1. Aufruf NACH Bauplänen, damit sourceBlueprint
+        // optional schon existiert.
+        if (Array.isArray(state.tools)) {
+            let restoredTools = 0;
+            for (const t of state.tools) {
+                if (!t || typeof t.name !== "string") continue;
+                if (this.state.tools[t.name] && this.state.tools[t.name].builtIn) continue;
+                if (!AnazhRealm.TOOL_OP_CLASSES.has(t.opClass)) continue;
+                if (!AnazhRealm.TOOL_OP_NAME_PATTERN.test(String(t.opName || ""))) continue;
+                const cap = Number(t.precisionCap);
+                this.state.tools[t.name] = {
+                    name: t.name,
+                    label: t.label || t.name,
+                    opClass: t.opClass,
+                    opName: t.opName,
+                    precisionCap: Number.isFinite(cap) ? Math.max(0, Math.min(1, cap)) : 0.4,
+                    isStarter: false,
+                    builtIn: false,
+                    sourceBlueprint: typeof t.sourceBlueprint === "string" ? t.sourceBlueprint : null,
+                };
+                if (!this.state.player.tools.includes(t.name)) this.state.player.tools.push(t.name);
+                restoredTools++;
+            }
+            if (restoredTools > 0) this.log(`Eigene Werkzeuge geladen: ${restoredTools}`);
         }
         if (Array.isArray(state.architectures) && this.state.scene) {
             for (const old of this.state.architectures) {
@@ -6014,6 +6330,13 @@ class AnazhRealm {
             this.state.hotbar = restored;
             this._renderHotbarDOM();
             this.log(`Hotbar geladen: ${restored.filter((s) => s).length} Slots belegt`);
+        }
+        // Welle 4 Phase 3 — Werkzeug-Besitz wiederherstellen. Starter bleiben
+        // immer drin (sie kommen aus _defaultTools), eigene werden zugefügt.
+        if (Array.isArray(state.playerTools)) {
+            const valid = state.playerTools.filter((n) => typeof n === "string" && this.state.tools[n]);
+            const set = new Set([...(this.state.player.tools || []), ...valid]);
+            this.state.player.tools = Array.from(set);
         }
         if (state.playerEmotions && typeof state.playerEmotions === "object") {
             for (const axis of Object.keys(this.state.player.emotions)) {
@@ -6158,10 +6481,10 @@ class AnazhRealm {
         this.log(`Lade Version ${version} – Platzhalter für Versionsmanagement`);
     }
 
-    // ### Initialisierung V7.65 ###
+    // ### Initialisierung V7.66 ###
     // Learnings:
     // - V7.64 Basis: Stabile Initialisierung mit Physik, Szene, Kamera
-    // - V7.65 Ergänzung: Fehlerbehandlung verbessert, Chat/Nexus integriert
+    // - V7.66 Ergänzung: Fehlerbehandlung verbessert, Chat/Nexus integriert
     // Tag/Nacht-Theme: schaltet die CSS-Custom-Properties über
     // body[data-theme]. localStorage persistiert die Wahl, damit nach Reload
     // die Stimmung erhalten bleibt.
@@ -6656,6 +6979,28 @@ class AnazhRealm {
                 return new THREE.PlaneGeometry(sx, sy);
             case "torus":
                 return new THREE.TorusGeometry(sx / 2, Math.max(0.05, sx / 6), 8, segments);
+            case "helix": {
+                // Welle 4 Phase 2 — Helix als TubeGeometry über eine
+                // parametrische Kurve. size.x = Radius (Diameter der Wendel),
+                // size.y = Gesamt-Länge, size.z = Anzahl Windungen. Tube-
+                // Radius ist proportional zu sx/12, mindestens 0.05.
+                const helixRadius = Math.max(0.05, sx / 2);
+                const helixLength = Math.max(0.1, sy);
+                const turns = Math.max(0.5, Math.min(20, sz || 3));
+                const tubeRadius = Math.max(0.05, sx / 12);
+                const curve = new THREE.Curve();
+                curve.getPoint = function (t, optionalTarget) {
+                    const target = optionalTarget || new THREE.Vector3();
+                    const angle = t * turns * Math.PI * 2;
+                    return target.set(
+                        Math.cos(angle) * helixRadius,
+                        (t - 0.5) * helixLength,
+                        Math.sin(angle) * helixRadius
+                    );
+                };
+                const tubularSegments = Math.max(20, Math.floor(turns * 16));
+                return new THREE.TubeGeometry(curve, tubularSegments, tubeRadius, 6, false);
+            }
             case "box":
             default:
                 return new THREE.BoxGeometry(sx, sy, sz);
@@ -6714,7 +7059,22 @@ class AnazhRealm {
                 continue;
             }
             const geom = this._makePartGeometry(part);
-            const matOpts = { color: typeof part.color === "number" ? part.color : 0xffffff };
+            // Welle 4 Phase 3 — Präzision moduliert Helligkeit. MeshBasic
+            // bringt kein PBR-Roughness mit; statt MeshStandardMaterial
+            // einzuführen (kostspielig), skalieren wir die Farbe sichtbar:
+            // 0.4 Präzision → 76%, 0.97 → 98.8%. Eine lumpige Hand-Kugel
+            // wirkt damit grau-matt, eine polierte hat ihre volle Farbe.
+            const baseColor = typeof part.color === "number" ? part.color : 0xffffff;
+            const precision = this.computePartPrecision(part);
+            const brightness = 0.6 + 0.4 * Math.max(0, Math.min(1, precision));
+            const r8 = (baseColor >> 16) & 0xff;
+            const g8 = (baseColor >> 8) & 0xff;
+            const b8 = baseColor & 0xff;
+            const tintedColor =
+                ((Math.round(r8 * brightness) & 0xff) << 16) |
+                ((Math.round(g8 * brightness) & 0xff) << 8) |
+                (Math.round(b8 * brightness) & 0xff);
+            const matOpts = { color: tintedColor };
             if (Number.isFinite(part.opacity) && part.opacity < 1) {
                 matOpts.transparent = true;
                 matOpts.opacity = part.opacity;
@@ -6873,6 +7233,764 @@ class AnazhRealm {
             temple: { name: "temple", label: "Tempel", builtIn: true, parts: templeParts },
             waterfall: { name: "waterfall", label: "Wasserfall", builtIn: true, parts: waterfallParts },
         };
+    }
+
+    // ### Welle 4 Phase 1 — Materialien als Tag-Profile ###
+    // 6 Built-in-Materialien decken den qualitativen Spannungsbogen von
+    // weich-organisch (leder, holz) über stabil-mineralisch (stein, eisen,
+    // bronze) bis kristallin-arkann (quarz). Wer mehr Vielfalt will, fügt
+    // via DSL-Op `define_material` eigene hinzu. Material-Tag-Werte liegen
+    // im Bereich 0..1 als Potenzial; die Aktivierung pro Form folgt erst
+    // in Phase 2 (FORM_TAG_ACTIVATION-Matrix).
+    _defaultMaterials() {
+        const make = (name, label, color, tags) => ({
+            name,
+            label,
+            builtIn: true,
+            color,
+            tags: { ...AnazhRealm.MATERIAL_TAG_DEFAULTS, ...tags },
+        });
+        const list = [
+            make("stein", "Stein", 0x7a7a7a, {
+                härte: 0.65,
+                dichte: 0.85,
+                zähigkeit: 0.3,
+                wärmeleitung: 0.25,
+                resoniert: 0.3,
+            }),
+            make("holz", "Holz", 0x8b5a2b, {
+                härte: 0.2,
+                dichte: 0.4,
+                zähigkeit: 0.6,
+                wärmeleitung: 0.15,
+                magieleitung: 0.3,
+                brennbar: 0.8,
+                resoniert: 0.5,
+                lebendig: 0.7,
+            }),
+            make("eisen", "Eisen", 0x484850, {
+                härte: 0.75,
+                dichte: 0.9,
+                zähigkeit: 0.65,
+                wärmeleitung: 0.7,
+                stromleitung: 0.85,
+                resoniert: 0.6,
+            }),
+            make("bronze", "Bronze", 0xa97b3c, {
+                härte: 0.55,
+                dichte: 0.88,
+                zähigkeit: 0.7,
+                wärmeleitung: 0.75,
+                stromleitung: 0.7,
+                magieleitung: 0.25,
+                resoniert: 0.75,
+            }),
+            make("quarz", "Quarz", 0xcce6f5, {
+                härte: 0.7,
+                dichte: 0.65,
+                zähigkeit: 0.15,
+                magieleitung: 0.85,
+                transparent: 0.95,
+                resoniert: 0.9,
+            }),
+            make("leder", "Leder", 0xa07050, {
+                härte: 0.15,
+                dichte: 0.35,
+                zähigkeit: 0.75,
+                magieleitung: 0.2,
+                brennbar: 0.7,
+                lebendig: 0.3,
+            }),
+        ];
+        const out = {};
+        for (const m of list) out[m.name] = m;
+        return out;
+    }
+
+    // Mutations-Pfad für eigene Materialien. Whitelist auf MATERIAL_TAG_KEYS,
+    // Werte ge-clamp 0..1, Built-in-Überschreiben verboten, Cap 32 eigene.
+    // Aufrufer: DSL-Op `define_material` und ggf. spätere UI.
+    defineMaterial(name, color, tags) {
+        if (typeof name !== "string" || name.length === 0 || name.length > 40) {
+            return { ok: false, reason: "invalid_name" };
+        }
+        const safe = name.replace(/[^a-z0-9_-]/gi, "").slice(0, 40);
+        if (!safe) return { ok: false, reason: "invalid_name_after_sanitize" };
+        const existing = this.state.materials && this.state.materials[safe];
+        if (existing && existing.builtIn) return { ok: false, reason: "cannot_overwrite_builtin" };
+        const customCount = Object.values(this.state.materials || {}).filter((m) => !m.builtIn).length;
+        if (!existing && customCount >= 32) return { ok: false, reason: "too_many_custom_materials" };
+        if (!tags || typeof tags !== "object") return { ok: false, reason: "tags_not_object" };
+        const cleanTags = { ...AnazhRealm.MATERIAL_TAG_DEFAULTS };
+        for (const key of AnazhRealm.MATERIAL_TAG_KEYS) {
+            const v = Number(tags[key]);
+            if (Number.isFinite(v)) cleanTags[key] = Math.max(0, Math.min(1, v));
+        }
+        const cleanColor = Number.isFinite(color) ? (color | 0) & 0xffffff : 0x888888;
+        this.state.materials[safe] = {
+            name: safe,
+            label: safe,
+            builtIn: false,
+            color: cleanColor,
+            tags: cleanTags,
+        };
+        if (typeof this._renderWorkshopDOM === "function") this._renderWorkshopDOM();
+        return { ok: true, name: safe };
+    }
+
+    // ### Welle 4 Phase 3 — Werkzeuge + opChain + Präzision ###
+    // Werkzeuge sind Datensätze; das Werkzeug bringt den Cap mit, nicht eine
+    // hardcoded Op-Tabelle. Damit lässt sich die Rekursivität aus Konzept
+    // §4.3 (Maschinen sind aus dem System gebaut → Maschinen-Cap kommt aus
+    // ihrer eigenen Präzision) später in Welle 6 anhängen, ohne die op-
+    // Chain-Datenstruktur zu ändern.
+    _defaultTools() {
+        const list = [
+            {
+                name: "hände",
+                label: "Hände",
+                opClass: "subtractive",
+                opName: "hand_knap",
+                precisionCap: 0.4,
+                isStarter: true,
+                builtIn: true,
+            },
+            {
+                name: "feuerstein-knapper",
+                label: "Feuerstein-Knapper",
+                opClass: "subtractive",
+                opName: "hand_knap",
+                precisionCap: 0.5,
+                isStarter: true,
+                builtIn: true,
+            },
+            {
+                name: "hammer",
+                label: "Hammer",
+                opClass: "plastic",
+                opName: "forge",
+                precisionCap: 0.7,
+                isStarter: true,
+                builtIn: true,
+            },
+            {
+                name: "feile",
+                label: "Feile",
+                opClass: "subtractive",
+                opName: "file",
+                precisionCap: 0.85,
+                isStarter: true,
+                builtIn: true,
+            },
+            {
+                name: "polierscheibe",
+                label: "Polierscheibe",
+                opClass: "subtractive",
+                opName: "polish",
+                precisionCap: 0.97,
+                isStarter: true,
+                builtIn: true,
+            },
+        ];
+        const out = {};
+        for (const t of list) out[t.name] = t;
+        return out;
+    }
+
+    // Default-opChain für neue Parts. Hand_knap mit cap 0.4 — alles ist am
+    // Anfang grob. Spieler hebt das Dach durch weitere Ops (feile, polier).
+    _defaultPartOpChain() {
+        return [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }];
+    }
+
+    // Finale Präzision eines Parts: Minimum aller Op-Caps (Konzept §2.3,
+    // Kernregel). Der schlechteste Schritt deckelt das Ganze — eine
+    // Gussform-Kugel (0.5) bleibt 0.5, selbst wenn danach poliert wird,
+    // weil der Politur-Schritt keine Rauheit aus dem Guss entfernt.
+    computePartPrecision(part) {
+        if (!part || typeof part !== "object") return 0.4;
+        if (!Array.isArray(part.opChain) || part.opChain.length === 0) return 0.4;
+        let min = 1;
+        for (const op of part.opChain) {
+            const cap = Number(op && op.cap);
+            if (Number.isFinite(cap) && cap < min) min = cap;
+        }
+        return min;
+    }
+
+    // Mittlere Präzision eines Compounds (für Welt-Effekt-Schwellen).
+    _compoundAvgPrecision(blueprint) {
+        if (!blueprint || !Array.isArray(blueprint.parts) || blueprint.parts.length === 0) return 0;
+        let sum = 0;
+        for (const p of blueprint.parts) sum += this.computePartPrecision(p);
+        return sum / blueprint.parts.length;
+    }
+
+    // Mutationspfad: Werkzeug auf Part anwenden. Validiert Tool-Besitz +
+    // Material × Op-Klassen-Kompatibilität (Konzept §3.2). Operationen
+    // werden ANGEHÄNGT, nicht ersetzt — die opChain ist Geschichte, nicht
+    // Auswahl. Built-in-Baupläne bleiben unberührbar.
+    applyOpToPart(blueprintName, partIndex, toolName) {
+        const bp = this.state.blueprints && this.state.blueprints[blueprintName];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.builtIn) return { ok: false, reason: "cannot_modify_builtin" };
+        if (!Array.isArray(bp.parts) || partIndex < 0 || partIndex >= bp.parts.length) {
+            return { ok: false, reason: "invalid_part_index" };
+        }
+        const tool = this.state.tools && this.state.tools[toolName];
+        if (!tool) return { ok: false, reason: "tool_unknown" };
+        const owned = Array.isArray(this.state.player.tools) && this.state.player.tools.includes(toolName);
+        if (!owned) return { ok: false, reason: "tool_not_owned" };
+        const part = bp.parts[partIndex];
+        const matName = part.material || "stein";
+        const compat = AnazhRealm.MATERIAL_OP_COMPATIBILITY[matName];
+        // Eigene Materialien sind dem Konzept-Mapping nicht bekannt — wir
+        // erlauben dort alle vier Op-Klassen, statt sie zu blockieren. Wer
+        // genauer kalibrieren will, definiert das Compat-Profil später.
+        if (compat && !compat.includes(tool.opClass)) {
+            return { ok: false, reason: "material_op_incompatible" };
+        }
+        if (!Array.isArray(part.opChain)) part.opChain = this._defaultPartOpChain();
+        part.opChain.push({
+            tool: toolName,
+            op: tool.opName,
+            cap: tool.precisionCap,
+            at: performance.now() / 1000,
+        });
+        return { ok: true, precision: this.computePartPrecision(part) };
+    }
+
+    // ### Welle 4 Phase 2 — Aktivierte Tag-Stärken ###
+    // computePartTags(part): pro Part die aktivierten Tags (Form × Material).
+    // Werte 0..3, der Bereich aus FORM_TAG_ACTIVATION × MATERIAL_TAG (0..1).
+    // Unbekannte Shape (z. B. "blueprint") oder fehlendes Material → leeres
+    // Objekt. Caller bekommen damit ein Lookup, das pro Tag-Achse einen
+    // Strahler liefert, dessen Größe Material-Wahl + Form-Wahl spiegelt.
+    computePartTags(part) {
+        if (!part || typeof part !== "object") return {};
+        const activation = AnazhRealm.FORM_TAG_ACTIVATION[part.shape];
+        if (!activation) return {};
+        const matName = part.material || "stein";
+        const material = this.state.materials && this.state.materials[matName];
+        if (!material || !material.tags) return {};
+        const out = {};
+        for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
+            const val = (activation[tag] || 0) * (material.tags[tag] || 0);
+            if (val > 0) out[tag] = val;
+        }
+        return out;
+    }
+
+    // computeCompoundTags(blueprint): Aggregation über alle Parts mit MAX
+    // statt SUM. Designprinzip aus Konzept §9.2: Sum führt zu Stat-Matsch
+    // (17-teiliger Quaderturm hätte 17× Trägheit), Max hält die Wirkungen
+    // klar. Pro Tag-Achse erbt der Compound vom kompetentesten Part.
+    computeCompoundTags(blueprint) {
+        const out = {};
+        if (!blueprint || !Array.isArray(blueprint.parts)) return out;
+        for (const part of blueprint.parts) {
+            const partTags = this.computePartTags(part);
+            for (const tag of Object.keys(partTags)) {
+                const v = partTags[tag];
+                if (!(tag in out) || v > out[tag]) out[tag] = v;
+            }
+        }
+        return out;
+    }
+
+    // ### Welle 5 B — räumliche Emergenz ###
+    // Konzept §5.2 fünf räumliche Prinzipien:
+    //   (1) Spitze richtet nach außen — Phase 1 (this commit + W5-B-1).
+    //   (2) Hohlraum enthält, dämpft, verstärkt — Phase 2.
+    //   (3) Symmetrieachsen tragen Alignment — Phase 2.
+    //   (4) Kontakt überträgt Tags — Phase 1.
+    //   (5) Abstände erzeugen Resonanz oder Interferenz — Phase 2.
+    // Alle drei Phase-2-Prinzipien sind COMPOUND-Bonusse (im Gegensatz zu
+    // Phase 1, die per-Part wirkt). Sie werden auf der MAX-Aggregation
+    // angewandt — multiplikativ, damit sie schon-aktivierte Tags verstärken
+    // statt freie Werte aufzuaddieren.
+
+    // Bounding-Box eines Parts in lokalen Compound-Koordinaten. Approximiert:
+    // jedes Part ist eine Box von position - size/2 bis position + size/2.
+    // Für Helix/Cone/Pyramid passt das gut genug, für blueprint-Refs greifen
+    // wir auf scale * 1 zurück (zeigt die ungefähre Position).
+    _partBoundingBox(part) {
+        if (!part || typeof part !== "object") return null;
+        const pos = part.position || { x: 0, y: 0, z: 0 };
+        const size = part.size || { x: 1, y: 1, z: 1 };
+        const sx = Math.max(0.1, Math.abs(size.x || 1));
+        const sy = Math.max(0.1, Math.abs(size.y || sx));
+        const sz = Math.max(0.1, Math.abs(size.z || sx));
+        return {
+            min: { x: pos.x - sx / 2, y: pos.y - sy / 2, z: pos.z - sz / 2 },
+            max: { x: pos.x + sx / 2, y: pos.y + sy / 2, z: pos.z + sz / 2 },
+            center: { x: pos.x, y: pos.y, z: pos.z },
+        };
+    }
+
+    // Compound-Bounding-Box als Union aller Parts. Liefert min/max + Extent
+    // (Größe pro Achse). Wird vom „Spitze richtet"-Pfad gebraucht: ein Part
+    // gilt als Spitze, wenn es nahe dem Compound-Rand liegt (innerhalb 20 %
+    // der jeweiligen Extent-Spanne).
+    _compoundBoundingBox(blueprint) {
+        if (!blueprint || !Array.isArray(blueprint.parts) || blueprint.parts.length === 0) return null;
+        let minX = Infinity,
+            minY = Infinity,
+            minZ = Infinity;
+        let maxX = -Infinity,
+            maxY = -Infinity,
+            maxZ = -Infinity;
+        for (const p of blueprint.parts) {
+            const bb = this._partBoundingBox(p);
+            if (!bb) continue;
+            if (bb.min.x < minX) minX = bb.min.x;
+            if (bb.min.y < minY) minY = bb.min.y;
+            if (bb.min.z < minZ) minZ = bb.min.z;
+            if (bb.max.x > maxX) maxX = bb.max.x;
+            if (bb.max.y > maxY) maxY = bb.max.y;
+            if (bb.max.z > maxZ) maxZ = bb.max.z;
+        }
+        if (minX === Infinity) return null;
+        return {
+            min: { x: minX, y: minY, z: minZ },
+            max: { x: maxX, y: maxY, z: maxZ },
+            extent: { x: maxX - minX, y: maxY - minY, z: maxZ - minZ },
+        };
+    }
+
+    // Klassifiziert Position eines Parts im Compound. Liefert ein Set von
+    // Labels: "at_top"/"at_bottom"/"at_outside"/"central". Ein Part kann
+    // mehrere Labels haben (z. B. Spitze am Rand UND oben). Schwelle 20 %
+    // der Compound-Extent — eng genug, dass nur echte Rand-Parts triggern,
+    // großzügig genug, dass Float-Drift nicht ins Bild läuft.
+    _classifyPartPosition(part, compoundBB) {
+        const labels = new Set();
+        if (!part || !compoundBB) return labels;
+        const pos = part.position || { x: 0, y: 0, z: 0 };
+        const e = compoundBB.extent;
+        // "at_top": nahe maxY innerhalb 20 % der y-Extent
+        if (e.y > 0.1 && pos.y >= compoundBB.max.y - e.y * 0.2) labels.add("at_top");
+        if (e.y > 0.1 && pos.y <= compoundBB.min.y + e.y * 0.2) labels.add("at_bottom");
+        // "at_outside": radial weit vom Zentrum (xz-Distanz > 60 % des
+        // Compound-Radius). Mehrere Achsen kombinieren via Pythagoras.
+        const centerX = (compoundBB.min.x + compoundBB.max.x) / 2;
+        const centerZ = (compoundBB.min.z + compoundBB.max.z) / 2;
+        const radialDist = Math.hypot(pos.x - centerX, pos.z - centerZ);
+        const compoundRadius = Math.hypot(e.x, e.z) / 2;
+        if (compoundRadius > 0.1 && radialDist > compoundRadius * 0.6) labels.add("at_outside");
+        if (labels.size === 0) labels.add("central");
+        return labels;
+    }
+
+    // Prinzip 2: Hohlraum enthält. Sphere oder Torus mit einer Bounding-Box,
+    // die das Zentrum eines anderen Parts enthält, formen einen Hohlraum.
+    // Container UND Inhalt bekommen einen Resonanz-Bonus (eine Glocke ist
+    // resonant durch ihre Form; Glocke + Klöppel verstärken einander).
+    // Pragma: AABB-Containment statt echter geometrischer Hülle — eine
+    // Torus-Box ist deutlich größer als der echte Ring, aber für die
+    // Compound-Logik („gibt es einen Hohlraum, der Resonanz trägt?")
+    // ist das die richtige Granularität.
+    _findHollowPairs(blueprint) {
+        const pairs = [];
+        const parts = blueprint.parts || [];
+        const partBBs = parts.map((p) => this._partBoundingBox(p));
+        const partVolumes = partBBs.map((bb) => {
+            if (!bb) return 0;
+            return Math.max(0, (bb.max.x - bb.min.x) * (bb.max.y - bb.min.y) * (bb.max.z - bb.min.z));
+        });
+        for (let i = 0; i < parts.length; i++) {
+            const outer = parts[i];
+            if (!AnazhRealm.SPATIAL_HOLLOW_SHAPES.has(outer.shape)) continue;
+            const outerBB = partBBs[i];
+            if (!outerBB) continue;
+            for (let j = 0; j < parts.length; j++) {
+                if (i === j) continue;
+                // Konzeptionelle Asymmetrie: nur das größere Volumen ist
+                // Container. Sonst gilt bei zwei konzentrischen Sphären jeder
+                // als Container für den anderen (Center-in-BB ist symmetrisch).
+                if (partVolumes[i] <= partVolumes[j]) continue;
+                const inner = parts[j];
+                const innerPos = inner.position || { x: 0, y: 0, z: 0 };
+                if (
+                    innerPos.x > outerBB.min.x &&
+                    innerPos.x < outerBB.max.x &&
+                    innerPos.y > outerBB.min.y &&
+                    innerPos.y < outerBB.max.y &&
+                    innerPos.z > outerBB.min.z &&
+                    innerPos.z < outerBB.max.z
+                ) {
+                    pairs.push({ outer: i, inner: j });
+                }
+            }
+        }
+        return pairs;
+    }
+
+    // Prinzip 3: Symmetrieachsen tragen Alignment. Wir prüfen Drehsymmetrie
+    // um die Y-Achse (die natürliche „Stab-Achse"): wenn alle Parts ungefähr
+    // dieselbe (x, z)-Position teilen (Streuung klein relativ zur Compound-
+    // Größe), trägt der Compound einen Alignment-Bonus auf magieleitung +
+    // stromleitung. Schwelle: Standardabweichung der xz-Distanz vom Zentrum
+    // <= 30 % der Compound-Extent in xz.
+    _hasYAxisSymmetry(blueprint) {
+        const parts = blueprint.parts || [];
+        if (parts.length < 2) return false;
+        const bb = this._compoundBoundingBox(blueprint);
+        if (!bb) return false;
+        const xzExtent = Math.max(bb.extent.x, bb.extent.z);
+        if (xzExtent < 0.5) return true; // sehr dünn → zählt als achssymmetrisch
+        const centerX = (bb.min.x + bb.max.x) / 2;
+        const centerZ = (bb.min.z + bb.max.z) / 2;
+        let maxDist = 0;
+        for (const p of parts) {
+            const pos = p.position || { x: 0, y: 0, z: 0 };
+            const d = Math.hypot(pos.x - centerX, pos.z - centerZ);
+            if (d > maxDist) maxDist = d;
+        }
+        // Wenn die maximale xz-Distanz vom Zentrum klein ist gegenüber der
+        // xz-Extent, sind alle Parts auf der Achse — Compound ist „Stab".
+        return maxDist <= xzExtent * 0.25;
+    }
+
+    // Prinzip 5: Abstände erzeugen Resonanz. Wenn drei oder mehr Parts der
+    // gleichen Shape auf etwa demselben Radius um das Compound-Zentrum
+    // sitzen, bilden sie ein Array — Glockenspiel, Kristall-Kreis, Anti-
+    // Magie-Käfig. Bonus auf resoniert + magieleitung.
+    _hasResonantArray(blueprint) {
+        const parts = blueprint.parts || [];
+        if (parts.length < 3) return false;
+        // Schwerpunkt der Part-Positionen statt BB-Center — BB ist geometrisch
+        // verzerrt, wenn die Parts unregelmäßig verteilt sind (eine extreme
+        // Position zieht das BB-Center, aber nicht den Schwerpunkt).
+        let sumX = 0;
+        let sumZ = 0;
+        for (const p of parts) {
+            const pos = p.position || { x: 0, y: 0, z: 0 };
+            sumX += pos.x;
+            sumZ += pos.z;
+        }
+        const centerX = sumX / parts.length;
+        const centerZ = sumZ / parts.length;
+        const byShape = {};
+        for (const p of parts) {
+            const pos = p.position || { x: 0, y: 0, z: 0 };
+            const dist = Math.hypot(pos.x - centerX, pos.z - centerZ);
+            if (dist < 0.1) continue; // zentrale Parts zählen nicht zum Array
+            (byShape[p.shape] = byShape[p.shape] || []).push(dist);
+        }
+        for (const shape of Object.keys(byShape)) {
+            const distances = byShape[shape];
+            if (distances.length < 3) continue;
+            const avg = distances.reduce((a, b) => a + b, 0) / distances.length;
+            if (avg < 0.5) continue;
+            // Alle Distanzen müssen innerhalb 12 % vom Mittelwert liegen.
+            // 15 % war grenzwertig: drei Parts auf grob-ähnlichen Radien aber
+            // ohne echte Kreis-Anordnung fielen durch. 12 % filtert das raus.
+            const maxDev = distances.reduce((m, d) => Math.max(m, Math.abs(d - avg)), 0);
+            if (maxDev <= avg * 0.12) return true;
+        }
+        return false;
+    }
+
+    // Zwei Parts „berühren" sich (Prinzip 4: Kontakt überträgt) wenn ihre
+    // Bounding-Boxen überlappen oder weniger als CONTACT_GAP weit auseinander
+    // liegen. Pragma: keine echte Mesh-Kollision (zu teuer für die Anzahl
+    // Compound-Parts, die in den Sekunden-Ticks gelesen wird), sondern AABB-
+    // Approximation — bei den meisten Bauplänen reicht das.
+    _partsAreInContact(partA, partB) {
+        const a = this._partBoundingBox(partA);
+        const b = this._partBoundingBox(partB);
+        if (!a || !b) return false;
+        const gap = 0.15;
+        const dx = Math.max(0, Math.max(a.min.x - b.max.x, b.min.x - a.max.x));
+        const dy = Math.max(0, Math.max(a.min.y - b.max.y, b.min.y - a.max.y));
+        const dz = Math.max(0, Math.max(a.min.z - b.max.z, b.min.z - a.max.z));
+        return dx < gap && dy < gap && dz < gap;
+    }
+
+    // Räumliche Tag-Berechnung: nimmt computeCompoundTags als Basis und
+    // wendet zwei Bonus-Regeln an:
+    //
+    //   Prinzip 1 (Spitze richtet): pointed-shape (cone/pyramid/octahedron/
+    //   helix) am "at_top"/"at_outside" — härte und magieleitung bekommen
+    //   einen Bonus, weil die Wirkrichtung nach außen strahlt. Bonus
+    //   skaliert mit der intrinsischen Aktivierung (computePartTags), damit
+    //   eine Stein-Spitze nicht mehr Magie ausstrahlt als die zugrunde-
+    //   liegende Magieleitung des Steins.
+    //
+    //   Prinzip 4 (Kontakt überträgt): berührende Parts mit asymmetrischen
+    //   Tags (z. B. Kupfer-Spule berührt Stahl-Gehäuse — Stahl-Anteil bekommt
+    //   Stromleitung über Kontakt). Pro Tag wird das Maximum zwischen
+    //   Original und (Kontakt × CONTACT_TRANSFER) genommen.
+    //
+    // Aggregation bleibt MAX (Konzept §9.2 anti-Stat-Matsch), Bonus-Wirkung
+    // wird VOR der MAX-Aggregation pro Part angewandt.
+    computeSpatialTags(blueprint) {
+        if (!blueprint || !Array.isArray(blueprint.parts) || blueprint.parts.length === 0) {
+            return this.computeCompoundTags(blueprint);
+        }
+        const bb = this._compoundBoundingBox(blueprint);
+        const parts = blueprint.parts;
+        const pointed = AnazhRealm.SPATIAL_POINTED_SHAPES;
+        const TIP_BONUS = 0.5; // ★+50 % am Rand für pointed-Shapes
+        const CONTACT_TRANSFER = 0.6; // 60 % der höheren Tag-Stärke fließt über
+        // Schritt 1: pro Part die räumlich-bonusten Tags berechnen
+        const augmentedPartTags = parts.map((part) => {
+            const baseTags = this.computePartTags(part);
+            const labels = this._classifyPartPosition(part, bb);
+            const isTip = pointed.has(part.shape) && (labels.has("at_top") || labels.has("at_outside"));
+            if (isTip) {
+                // Spitze: härte + magieleitung bekommen Bonus aus dem
+                // INTRINSISCHEN Wert (kein freier Bonus, sondern Verstärkung).
+                if (baseTags["härte"]) baseTags["härte"] = baseTags["härte"] * (1 + TIP_BONUS);
+                if (baseTags["magieleitung"]) {
+                    baseTags["magieleitung"] = baseTags["magieleitung"] * (1 + TIP_BONUS);
+                }
+            }
+            return baseTags;
+        });
+        // Schritt 2: Prinzip 2 — Hohlraum enthält. Container UND Inhalt
+        // bekommen Resonanz-Bonus. Pro Paar wird der Bonus EINMAL auf jedes
+        // beteiligte Part angewandt — auch wenn ein Container mehrere Inhalte
+        // enthält, werden alle Beteiligten verstärkt.
+        const hollowPairs = this._findHollowPairs(blueprint);
+        const hollowBoosted = new Set();
+        for (const pair of hollowPairs) {
+            for (const idx of [pair.outer, pair.inner]) {
+                if (hollowBoosted.has(idx)) continue;
+                hollowBoosted.add(idx);
+                const tags = augmentedPartTags[idx];
+                if (tags["resoniert"]) {
+                    tags["resoniert"] = tags["resoniert"] * (1 + AnazhRealm.SPATIAL_HOLLOW_BONUS);
+                }
+            }
+        }
+        // Schritt 3: Kontakt-Übertragung. Für jedes Paar (i, j) mit Kontakt,
+        // gleiche schwächeren Tag-Wert mit CONTACT_TRANSFER × stärkerem Wert an.
+        for (let i = 0; i < parts.length; i++) {
+            for (let j = i + 1; j < parts.length; j++) {
+                if (!this._partsAreInContact(parts[i], parts[j])) continue;
+                const a = augmentedPartTags[i];
+                const b = augmentedPartTags[j];
+                // Welche Tags werden übertragen (Konzept §5.2 Prinzip 4 nennt
+                // Wärme, Strom, Magie, Schwingung): nicht alle 10 Tags fließen.
+                const transferable = AnazhRealm.SPATIAL_TRANSFERABLE_TAGS;
+                for (const tag of transferable) {
+                    const valA = a[tag] || 0;
+                    const valB = b[tag] || 0;
+                    if (valA > valB) {
+                        const transferred = valA * CONTACT_TRANSFER;
+                        if (transferred > valB) b[tag] = transferred;
+                    } else if (valB > valA) {
+                        const transferred = valB * CONTACT_TRANSFER;
+                        if (transferred > valA) a[tag] = transferred;
+                    }
+                }
+            }
+        }
+        // Schritt 4: Standard-MAX-Aggregation über die augmentierten Parts.
+        const out = {};
+        for (const partTags of augmentedPartTags) {
+            for (const tag of Object.keys(partTags)) {
+                const v = partTags[tag];
+                if (!(tag in out) || v > out[tag]) out[tag] = v;
+            }
+        }
+        // Schritt 5: Compound-Bonusse aus Prinzip 3 + 5. Werden NACH der
+        // Aggregation angewandt, weil sie Eigenschaften des Compounds als
+        // Ganzes sind, nicht einzelner Parts.
+        if (this._hasYAxisSymmetry(blueprint)) {
+            if (out["magieleitung"]) {
+                out["magieleitung"] = out["magieleitung"] * (1 + AnazhRealm.SPATIAL_AXIS_BONUS);
+            }
+            if (out["stromleitung"]) {
+                out["stromleitung"] = out["stromleitung"] * (1 + AnazhRealm.SPATIAL_AXIS_BONUS);
+            }
+        }
+        if (this._hasResonantArray(blueprint)) {
+            if (out["resoniert"]) {
+                out["resoniert"] = out["resoniert"] * (1 + AnazhRealm.SPATIAL_ARRAY_BONUS);
+            }
+            if (out["magieleitung"]) {
+                out["magieleitung"] = out["magieleitung"] * (1 + AnazhRealm.SPATIAL_ARRAY_BONUS);
+            }
+        }
+        return out;
+    }
+
+    // ### Welle 5 A — Verbindungstypen mit Lastformel ###
+    // Eine Verbindung in `blueprint.connections` referenziert zwei Parts via
+    // Indizes und einen Typ aus CONNECTION_TYPES. Lastformel bringt
+    // Geometrie + Material + Typ zusammen, ohne dass der Spieler Physiker
+    // sein muss — die Werte fallen aus den schon-bekannten Tags raus.
+
+    // Kontaktfläche zwischen zwei Parts: AABB-Überschneidung in den ZWEI
+    // größeren Dimensionen, multipliziert. Wenn Parts entlang Z überlappen
+    // aber in X/Y weit auseinander sind, ist die Kontaktfläche klein. Wenn
+    // sie sich auf einer großen Fläche treffen, ist sie groß.
+    _partsContactArea(partA, partB) {
+        const a = this._partBoundingBox(partA);
+        const b = this._partBoundingBox(partB);
+        if (!a || !b) return 0;
+        // Pro Achse signed gap: negativ bei Overlap, positiv bei Trennung.
+        const gapX = Math.max(a.min.x - b.max.x, b.min.x - a.max.x);
+        const gapY = Math.max(a.min.y - b.max.y, b.min.y - a.max.y);
+        const gapZ = Math.max(a.min.z - b.max.z, b.min.z - a.max.z);
+        // Wenn EINE Achse weiter als TOUCH getrennt ist, sind die Parts nicht
+        // in Kontakt — kein Bruch mehr durch additive TOUCH-Faktoren wie in
+        // der Vorgänger-Version, die positive Fläche für weit-entfernte Parts
+        // ausgespuckt hat. TOUCH = 0.05 erlaubt bündiges Sitzen.
+        const TOUCH = 0.05;
+        if (Math.max(gapX, gapY, gapZ) > TOUCH) return 0;
+        // Sort aufsteigend: [tiefster Overlap, mittel, dünnster Overlap].
+        // Die zwei tieferen Overlaps spannen die Kontaktfläche auf; der
+        // dünnste ist die Kontakt-Normale.
+        const sorted = [gapX, gapY, gapZ].sort((p, q) => p - q);
+        const overlapA = Math.max(0, -sorted[0]);
+        const overlapB = Math.max(0, -sorted[1]);
+        return overlapA * overlapB;
+    }
+
+    // Liefert die Lastfähigkeit einer Verbindung, 0..3 in derselben Skala wie
+    // die Tag-Strahler — vergleichbar mit `compound_has_tag`-Werten.
+    computeConnectionStrength(connection, blueprint) {
+        if (!connection || !blueprint) return 0;
+        const type = AnazhRealm.CONNECTION_TYPES[connection.type];
+        if (!type) return 0;
+        const parts = blueprint.parts || [];
+        const a = parts[connection.partA];
+        const b = parts[connection.partB];
+        if (!a || !b) return 0;
+        const materials = this.state.materials || {};
+        const matA = materials[a.material || "stein"];
+        const matB = materials[b.material || "stein"];
+        if (!matA || !matB) return 0;
+        let tagSum = 0;
+        for (const tag of type.strongTags) {
+            tagSum += ((matA.tags[tag] || 0) + (matB.tags[tag] || 0)) / 2;
+        }
+        const avgTag = tagSum / type.strongTags.length;
+        // Kontakt-Fläche normalisiert auf 1.0 (eine 1×1-Box-Begegnung = 1).
+        // Größer ≥ 1 gibt vollen Faktor, kleiner skaliert linear.
+        const contact = Math.min(1, this._partsContactArea(a, b));
+        return type.typeStrength * avgTag * 3 * Math.max(0.1, contact);
+    }
+
+    // Validiert eine Connection-Liste für Save/DSL-Eingang. Whitelist auf
+    // CONNECTION_TYPES, Indizes müssen in parts-Range liegen, max 64 pro
+    // Bauplan. Sanitisiert in einen neuen sauberen Array — kein Mutieren
+    // der Eingabe.
+    validateBlueprintConnections(connections, partsLength) {
+        if (!Array.isArray(connections)) return [];
+        const clean = [];
+        for (const c of connections.slice(0, AnazhRealm.CONNECTION_MAX_PER_BLUEPRINT)) {
+            if (!c || typeof c !== "object") continue;
+            if (!AnazhRealm.CONNECTION_TYPES[c.type]) continue;
+            const partA = Number(c.partA);
+            const partB = Number(c.partB);
+            if (!Number.isInteger(partA) || !Number.isInteger(partB)) continue;
+            if (partA === partB) continue;
+            if (partA < 0 || partA >= partsLength) continue;
+            if (partB < 0 || partB >= partsLength) continue;
+            clean.push({ type: c.type, partA, partB });
+        }
+        return clean;
+    }
+
+    addConnectionToBlueprint(name, connection) {
+        const bp = this.state.blueprints[name];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.builtIn) return { ok: false, reason: "cannot_modify_builtin" };
+        if (!Array.isArray(bp.connections)) bp.connections = [];
+        if (bp.connections.length >= AnazhRealm.CONNECTION_MAX_PER_BLUEPRINT) {
+            return { ok: false, reason: "too_many_connections" };
+        }
+        const valid = this.validateBlueprintConnections([connection], bp.parts.length);
+        if (valid.length === 0) return { ok: false, reason: "invalid_connection" };
+        bp.connections.push(valid[0]);
+        return { ok: true, index: bp.connections.length - 1 };
+    }
+
+    removeConnectionFromBlueprint(name, index) {
+        const bp = this.state.blueprints[name];
+        if (!bp || bp.builtIn) return false;
+        if (!Array.isArray(bp.connections) || index < 0 || index >= bp.connections.length) return false;
+        bp.connections.splice(index, 1);
+        return true;
+    }
+
+    // ### Welle 5 C — Maschinen-Rekursivität ###
+    // Konzept §4.3 wörtlich: „Maschinen sind selbst Compounds. Die Präzision
+    // der Maschine kommt aus der Präzision ihrer Bauteile." Wer hochpräzise
+    // Werkstücke will, baut zuerst eine hochpräzise Drehbank. Wer eine
+    // hochpräzise Drehbank baut, braucht Werkzeuge mittlerer Präzision. Und
+    // so weiter bis zum Faustkeil. Das System schließt sich von selbst.
+
+    // Liefert den effektiven Präzisions-Cap eines Bauplans als Werkzeug:
+    // Minimum aller Part-Präzisionen (eine schief geschmiedete Spindel zieht
+    // die ganze Drehbank runter). Konzept-Kernregel §2.3 vererbt sich von
+    // Part auf Compound.
+    computeBlueprintPrecisionCap(blueprint) {
+        if (!blueprint || !Array.isArray(blueprint.parts) || blueprint.parts.length === 0) return 0;
+        let min = 1;
+        for (const part of blueprint.parts) {
+            const p = this.computePartPrecision(part);
+            if (p < min) min = p;
+        }
+        return min;
+    }
+
+    // Setzt Bauplan-Werkzeug-Meta. Nur eigene Baupläne, nur whitelisted
+    // opClass, nur sanitized opName. Mutiert in-place, idempotent.
+    setBlueprintToolMeta(name, opName, opClass) {
+        const bp = this.state.blueprints[name];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.builtIn) return { ok: false, reason: "cannot_modify_builtin" };
+        if (!AnazhRealm.TOOL_OP_CLASSES.has(opClass)) {
+            return { ok: false, reason: "invalid_op_class" };
+        }
+        const cleanOpName = String(opName || "").toLowerCase();
+        if (!AnazhRealm.TOOL_OP_NAME_PATTERN.test(cleanOpName)) {
+            return { ok: false, reason: "invalid_op_name" };
+        }
+        bp.role = "tool";
+        bp.toolMeta = { opName: cleanOpName, opClass };
+        return { ok: true };
+    }
+
+    // Registriert einen markierten Bauplan als Werkzeug in state.tools. Der
+    // Name ist der Bauplan-Name; ein Starter-Werkzeug mit gleichem Namen ist
+    // geschützt (eigene Werkzeuge können „hammer" nicht überschreiben). Cap
+    // wird beim Registrieren als SNAPSHOT der Bauplan-Präzision gespeichert
+    // — wer den Bauplan später editiert, muss neu registrieren. Das verhindert,
+    // dass ein versehentlicher Edit ein im Besitz befindliches Werkzeug
+    // entkräftet oder unsichtbar verstärkt.
+    registerBlueprintAsTool(name) {
+        const bp = this.state.blueprints[name];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.builtIn) return { ok: false, reason: "cannot_modify_builtin" };
+        if (bp.role !== "tool" || !bp.toolMeta) {
+            return { ok: false, reason: "not_marked_as_tool" };
+        }
+        const existing = this.state.tools[name];
+        if (existing && existing.builtIn) {
+            return { ok: false, reason: "starter_name_protected" };
+        }
+        const precisionCap = this.computeBlueprintPrecisionCap(bp);
+        this.state.tools[name] = {
+            name,
+            label: bp.label || name,
+            opClass: bp.toolMeta.opClass,
+            opName: bp.toolMeta.opName,
+            precisionCap,
+            isStarter: false,
+            builtIn: false,
+            sourceBlueprint: name,
+        };
+        if (!Array.isArray(this.state.player.tools)) this.state.player.tools = [];
+        if (!this.state.player.tools.includes(name)) this.state.player.tools.push(name);
+        if (typeof this._renderWorkshopDOM === "function") this._renderWorkshopDOM();
+        return { ok: true, precisionCap };
     }
 
     _architectureBuilders() {
@@ -7077,7 +8195,78 @@ class AnazhRealm {
             `Struktur gebaut: ${type} bei (${entry.position.x.toFixed(1)}, ${entry.position.z.toFixed(1)})${scale !== 1 ? ` ×${scale.toFixed(2)}` : ""}${inRange ? "" : " (cold)"}`,
             "INFO"
         );
+        this._applyCompoundWorldEffects(type);
         return entry;
+    }
+
+    // ### Welle 4 Phase 3 — emergente Welt-Effekte ###
+    // Erste echte Hylomorphismus-Konsequenz: ein gebauter Compound mit hoher
+    // Resonanz + hoher Präzision lässt die Welt klingen + erinnert sich.
+    // Ein Compound mit hoher Magieleitung wirft eine kleine Emotion-Welle
+    // (awe + hope). Beide Effekte one-shot pro Bauplan, damit ein Spieler
+    // nicht durch wiederholtes Spawnen Spam erzeugt. Schwellen aus
+    // WORLD_EFFECT_THRESHOLDS — zentral, damit Tuning ohne Code-Suche geht.
+    _applyCompoundWorldEffects(blueprintName) {
+        const bp = this.state.blueprints && this.state.blueprints[blueprintName];
+        if (!bp) return;
+        // Welle 5 B — Welt-Effekte nutzen jetzt räumlich angereicherte Tags
+        // statt der atomaren MAX-Aggregation. Eine Quarz-Spitze oben auf
+        // einem Stab strahlt jetzt stärker, weil Prinzip 1 (Spitze richtet)
+        // den Magie-Tag verstärkt; ein Kupfer-Helix-Kern in einem Stahl-
+        // Gehäuse leitet jetzt, weil Prinzip 4 (Kontakt überträgt) den
+        // Stahl-Anteil hochzieht. Atomare computeCompoundTags bleibt für UI/
+        // Tests die ehrliche Basis.
+        const tags = this.computeSpatialTags(bp);
+        const avgPrec = this._compoundAvgPrecision(bp);
+        const T = AnazhRealm.WORLD_EFFECT_THRESHOLDS;
+        // Konzept §6.3 — Präzision moduliert ALLE Effekt-Stärken, nicht nur
+        // den Resonanz-Effekt. Eine 0.4-Präzisions-Pyramide leitet Magie
+        // schwächer als eine 0.97-Präzisions-Pyramide aus demselben Material.
+        // Min-Faktor 0.3 — auch raue Arbeit trägt etwas Wirkung, bricht aber
+        // unter Schwelle ab.
+        const precisionFactor = Math.max(0.3, avgPrec);
+        const resonates = (tags.resoniert || 0) >= T.resonance_strong;
+        const magicConducts = (tags.magieleitung || 0) * precisionFactor >= T.magic_strong;
+        const isPrecise = avgPrec >= T.precision_high;
+
+        if (resonates && isPrecise) {
+            this.journalAppendOnce(
+                `singing:${blueprintName}`,
+                "growth",
+                `Eine Form singt: ${bp.label || blueprintName} schwingt rein im Klang.`,
+                { blueprint: blueprintName, resonance: tags.resoniert, precision: avgPrec }
+            );
+            // Eine reine Sinus-Welle, frequenz folgt Resonanz-Stärke (300-700 Hz)
+            if (this.state.symphony && this.state.symphony.ctx && this.state.symphony.enabled) {
+                try {
+                    const ctx = this.state.symphony.ctx;
+                    const freq = 300 + (tags.resoniert / 3) * 400;
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = "sine";
+                    osc.frequency.value = freq;
+                    gain.gain.value = 0;
+                    gain.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 0.05);
+                    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 1.2);
+                    osc.connect(gain).connect(ctx.destination);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 1.3);
+                } catch {
+                    // Audio-Context evtl. nicht bereit — still ignorieren.
+                }
+            }
+        }
+
+        if (magicConducts && this.state.player && this.state.player.emotions) {
+            this.state.player.emotions.awe = Math.min(1, (this.state.player.emotions.awe || 0) + 0.1);
+            this.state.player.emotions.hope = Math.min(1, (this.state.player.emotions.hope || 0) + 0.1);
+            this.journalAppendOnce(
+                `magic_compound:${blueprintName}`,
+                "growth",
+                `Etwas Magisches in der Luft, als ${bp.label || blueprintName} entstand.`,
+                { blueprint: blueprintName, magic: tags.magieleitung }
+            );
+        }
     }
 
     // Pro-Frame-Tick: ruft animate() auf jeder Struktur, die einen Mesh
@@ -7388,6 +8577,22 @@ class AnazhRealm {
         for (let i = 0; i < 9; i++) {
             if (this.state.hotbar[i] === name) this.state.hotbar[i] = null;
         }
+        // Welle 5 C — wenn der Bauplan als eigenes Werkzeug registriert war,
+        // räumen wir das Werkzeug ebenfalls weg. Sonst bliebe ein Geist-Tool
+        // in state.tools mit sourceBlueprint auf den jetzt-leeren Namen — UI
+        // andere Baupläne würden es weiter im Apply-Dropdown anbieten,
+        // applyOpToPart würde scheinbar funktionieren obwohl die Substanz fehlt.
+        if (this.state.tools) {
+            for (const toolName of Object.keys(this.state.tools)) {
+                const t = this.state.tools[toolName];
+                if (t && !t.builtIn && t.sourceBlueprint === name) {
+                    delete this.state.tools[toolName];
+                    if (Array.isArray(this.state.player.tools)) {
+                        this.state.player.tools = this.state.player.tools.filter((tn) => tn !== toolName);
+                    }
+                }
+            }
+        }
         this._renderHotbarDOM();
         this.log(`Bauplan '${name}' gelöscht`, "INFO");
         return true;
@@ -7401,12 +8606,18 @@ class AnazhRealm {
             return false;
         }
         // Default-Werte für ein neues Part, falls nicht alles übergeben wird.
+        // Welle 4 Phase 1: Default-Material „stein", Color folgt der Material-
+        // Farbe wenn der Caller nichts vorgibt.
+        const defaultMaterial = "stein";
+        const matColor = (this.state.materials[defaultMaterial] || {}).color || 0x888888;
         const defaultPart = {
             shape: "box",
-            color: 0x888888,
+            color: matColor,
+            material: defaultMaterial,
             position: { x: 0, y: 1, z: 0 },
             rotation: { x: 0, y: 0, z: 0 },
             size: { x: 1, y: 1, z: 1 },
+            opChain: this._defaultPartOpChain(),
         };
         bp.parts.push({ ...defaultPart, ...(part || {}) });
         return true;
@@ -7417,6 +8628,20 @@ class AnazhRealm {
         if (!bp || bp.builtIn) return false;
         if (index < 0 || index >= bp.parts.length) return false;
         bp.parts.splice(index, 1);
+        // Welle 5 A — Connections referenzieren Part-Indizes. Beim Lösch:
+        //   (a) Connections, die den gelöschten Part berühren, verschwinden.
+        //   (b) Indizes > index werden um 1 nach unten korrigiert.
+        // Ohne das blieben Connections auf den falschen Part oder zeigten
+        // out-of-range — UI-Anzeige würde Geist-Stern-Werte berechnen.
+        if (Array.isArray(bp.connections)) {
+            bp.connections = bp.connections
+                .filter((c) => c.partA !== index && c.partB !== index)
+                .map((c) => ({
+                    type: c.type,
+                    partA: c.partA > index ? c.partA - 1 : c.partA,
+                    partB: c.partB > index ? c.partB - 1 : c.partB,
+                }));
+        }
         return true;
     }
 
@@ -7435,6 +8660,15 @@ class AnazhRealm {
             }
         }
         if (typeof patch.opacity === "number") part.opacity = patch.opacity;
+        // Welle 4 Phase 1: Material-Wechsel. Wenn der Caller `recolor: true`
+        // mitgibt, wird die Part-Farbe auf die Material-Farbe gezogen — das
+        // ist der UI-Pfad beim Material-Dropdown-Change.
+        if (typeof patch.material === "string" && this.state.materials[patch.material]) {
+            part.material = patch.material;
+            if (patch.recolor === true) {
+                part.color = this.state.materials[patch.material].color;
+            }
+        }
         return true;
     }
 
@@ -7497,6 +8731,26 @@ class AnazhRealm {
         status.textContent = selected.builtIn ? "Eingebaut — zum Bearbeiten klonen" : `${selected.parts.length} Parts`;
         header.appendChild(status);
         editor.appendChild(header);
+        // Welle 4 Phase 3 — Werkzeug-Sammlung. Eine Liste der besessenen
+        // Tools mit ihrem Cap. Sichtbarmacht, womit Spieler aktuell arbeiten
+        // kann. Read-only in Phase 3 (eigene Werkzeuge gehen in Welle 6 auf).
+        const toolsBox = document.createElement("div");
+        toolsBox.className = "workshop-tools";
+        const toolsTitle = document.createElement("div");
+        toolsTitle.className = "workshop-tools-title";
+        toolsTitle.textContent = "Werkzeuge";
+        toolsBox.appendChild(toolsTitle);
+        const owned = this.state.player.tools || [];
+        for (const tn of owned) {
+            const t = this.state.tools[tn];
+            if (!t) continue;
+            const chip = document.createElement("span");
+            chip.className = "workshop-tool-chip";
+            chip.textContent = `${t.label} ${t.precisionCap.toFixed(2)}`;
+            chip.title = `${t.opName} (${t.opClass})`;
+            toolsBox.appendChild(chip);
+        }
+        editor.appendChild(toolsBox);
         // Parts-Liste — bei Built-ins nur lesbar
         const partsDiv = document.createElement("div");
         partsDiv.className = "workshop-parts";
@@ -7512,7 +8766,17 @@ class AnazhRealm {
             row.className = "workshop-part-row";
             // Shape-Dropdown
             const shapeSelect = document.createElement("select");
-            for (const shape of ["box", "sphere", "cylinder", "cone", "pyramid", "octahedron", "plane", "torus"]) {
+            for (const shape of [
+                "box",
+                "sphere",
+                "cylinder",
+                "cone",
+                "pyramid",
+                "octahedron",
+                "plane",
+                "torus",
+                "helix",
+            ]) {
                 const opt = document.createElement("option");
                 opt.value = shape;
                 opt.textContent = shape;
@@ -7525,6 +8789,28 @@ class AnazhRealm {
                 this._renderWorkshopDOM();
             });
             row.appendChild(shapeSelect);
+            // Welle 4 Phase 1 — Material-Dropdown vor dem Color-Picker.
+            // Built-ins zeigen Material read-only; bei eigenen Bauplänen
+            // wechselt die Material-Wahl auch die Default-Farbe (recolor).
+            const materialSelect = document.createElement("select");
+            materialSelect.className = "workshop-material";
+            materialSelect.title = "Material";
+            for (const matName of Object.keys(this.state.materials || {})) {
+                const opt = document.createElement("option");
+                opt.value = matName;
+                opt.textContent = this.state.materials[matName].label || matName;
+                if (matName === (part.material || "stein")) opt.selected = true;
+                materialSelect.appendChild(opt);
+            }
+            materialSelect.disabled = !!selected.builtIn;
+            materialSelect.addEventListener("change", () => {
+                this.updatePartInBlueprint(selected.name, i, {
+                    material: materialSelect.value,
+                    recolor: true,
+                });
+                this._renderWorkshopDOM();
+            });
+            row.appendChild(materialSelect);
             // Color-Input
             const colorInput = document.createElement("input");
             colorInput.type = "color";
@@ -7582,10 +8868,322 @@ class AnazhRealm {
                 this.removePartFromBlueprint(selected.name, i);
                 this._renderWorkshopDOM();
             });
+            // Welle 4 Phase 3 — opChain pro Part: Liste der bisherigen Ops +
+            // Apply-Dropdown der besessenen, kompatiblen Werkzeuge. Built-in-
+            // Baupläne sind read-only (keine Apply-Buttons).
+            const opChainDiv = document.createElement("div");
+            opChainDiv.className = "workshop-opchain";
+            const precision = this.computePartPrecision(part);
+            const precHeader = document.createElement("div");
+            precHeader.className = "workshop-opchain-header";
+            precHeader.textContent = `Präzision ${precision.toFixed(2)} — Op-Kette:`;
+            opChainDiv.appendChild(precHeader);
+            const chainList = document.createElement("div");
+            chainList.className = "workshop-opchain-list";
+            const chain = Array.isArray(part.opChain) ? part.opChain : [];
+            for (const op of chain) {
+                const opRow = document.createElement("span");
+                opRow.className = "workshop-op";
+                opRow.textContent = `${op.op}(${(op.cap || 0).toFixed(2)})`;
+                opRow.title = `Werkzeug: ${op.tool}`;
+                chainList.appendChild(opRow);
+            }
+            opChainDiv.appendChild(chainList);
+            if (!selected.builtIn) {
+                const applyRow = document.createElement("div");
+                applyRow.className = "workshop-opchain-apply";
+                const toolSelect = document.createElement("select");
+                toolSelect.className = "workshop-op-tool";
+                const matName = part.material || "stein";
+                const compat = AnazhRealm.MATERIAL_OP_COMPATIBILITY[matName];
+                const ownedTools = (this.state.player.tools || [])
+                    .map((tn) => this.state.tools[tn])
+                    .filter((t) => t && (!compat || compat.includes(t.opClass)));
+                if (ownedTools.length === 0) {
+                    const noTool = document.createElement("span");
+                    noTool.textContent = "(kein passendes Werkzeug)";
+                    noTool.className = "workshop-op-empty";
+                    applyRow.appendChild(noTool);
+                } else {
+                    for (const t of ownedTools) {
+                        const opt = document.createElement("option");
+                        opt.value = t.name;
+                        opt.textContent = `${t.label} → ${t.opName} (${t.precisionCap.toFixed(2)})`;
+                        toolSelect.appendChild(opt);
+                    }
+                    const applyBtn = document.createElement("button");
+                    applyBtn.type = "button";
+                    applyBtn.className = "workshop-op-apply";
+                    applyBtn.textContent = "anwenden";
+                    applyBtn.addEventListener("click", () => {
+                        const r = this.applyOpToPart(selected.name, i, toolSelect.value);
+                        if (!r.ok) {
+                            this.log(`apply_op fehlgeschlagen: ${r.reason}`, "ERROR");
+                        }
+                        this._renderWorkshopDOM();
+                    });
+                    applyRow.appendChild(toolSelect);
+                    applyRow.appendChild(applyBtn);
+                }
+                opChainDiv.appendChild(applyRow);
+            }
+            row.appendChild(opChainDiv);
             row.appendChild(delBtn);
             partsDiv.appendChild(row);
         }
         editor.appendChild(partsDiv);
+        // Welle 5 A — Verbindungen zwischen Parts. Acht Typen aus Konzept
+        // §5.1, jede mit eigener Last-Formel (Material-Tags × Kontaktfläche
+        // × Typ-Multiplier). Built-ins read-only.
+        const connectionsSection = document.createElement("div");
+        connectionsSection.className = "workshop-connections";
+        const connTitle = document.createElement("div");
+        connTitle.className = "workshop-tags-title";
+        connTitle.textContent = "Verbindungen";
+        connectionsSection.appendChild(connTitle);
+        const connections = Array.isArray(selected.connections) ? selected.connections : [];
+        if (connections.length === 0) {
+            const empty = document.createElement("div");
+            empty.className = "workshop-tags-empty";
+            empty.textContent = "Keine Verbindungen — Parts sitzen lose im Compound.";
+            connectionsSection.appendChild(empty);
+        } else {
+            for (let ci = 0; ci < connections.length; ci++) {
+                const conn = connections[ci];
+                const ctype = AnazhRealm.CONNECTION_TYPES[conn.type];
+                const strength = this.computeConnectionStrength(conn, selected);
+                const row = document.createElement("div");
+                row.className = "workshop-conn-row";
+                const label = document.createElement("span");
+                label.className = "workshop-conn-label";
+                label.textContent = `${ctype ? ctype.label : conn.type}: #${conn.partA} ↔ #${conn.partB}`;
+                const bar = document.createElement("span");
+                bar.className = "workshop-conn-bar";
+                const stars = Math.max(0, Math.min(3, Math.round(strength)));
+                bar.textContent = "★".repeat(stars) + "☆".repeat(3 - stars);
+                if (strength < AnazhRealm.CONNECTION_SOLID_THRESHOLD) bar.classList.add("workshop-conn-weak");
+                const num = document.createElement("span");
+                num.className = "workshop-conn-num";
+                num.textContent = strength.toFixed(2);
+                row.appendChild(label);
+                row.appendChild(bar);
+                row.appendChild(num);
+                if (!selected.builtIn) {
+                    const delConnBtn = document.createElement("button");
+                    delConnBtn.type = "button";
+                    delConnBtn.className = "workshop-conn-del";
+                    delConnBtn.textContent = "×";
+                    delConnBtn.addEventListener("click", () => {
+                        this.removeConnectionFromBlueprint(selected.name, ci);
+                        this._renderWorkshopDOM();
+                    });
+                    row.appendChild(delConnBtn);
+                }
+                connectionsSection.appendChild(row);
+            }
+        }
+        if (!selected.builtIn && selected.parts.length >= 2) {
+            const addRow = document.createElement("div");
+            addRow.className = "workshop-conn-add";
+            const typeSel = document.createElement("select");
+            typeSel.className = "workshop-conn-type";
+            for (const tname of Object.keys(AnazhRealm.CONNECTION_TYPES)) {
+                const opt = document.createElement("option");
+                opt.value = tname;
+                opt.textContent = AnazhRealm.CONNECTION_TYPES[tname].label;
+                opt.title = AnazhRealm.CONNECTION_TYPES[tname].description;
+                typeSel.appendChild(opt);
+            }
+            const aSel = document.createElement("select");
+            aSel.className = "workshop-conn-part";
+            const bSel = document.createElement("select");
+            bSel.className = "workshop-conn-part";
+            for (let pi = 0; pi < selected.parts.length; pi++) {
+                const optA = document.createElement("option");
+                optA.value = String(pi);
+                optA.textContent = `#${pi} ${selected.parts[pi].shape}`;
+                aSel.appendChild(optA);
+                const optB = optA.cloneNode(true);
+                bSel.appendChild(optB);
+            }
+            if (selected.parts.length > 1) bSel.value = "1";
+            const addBtn = document.createElement("button");
+            addBtn.type = "button";
+            addBtn.className = "workshop-conn-addbtn";
+            addBtn.textContent = "verbinden";
+            addBtn.addEventListener("click", () => {
+                const r = this.addConnectionToBlueprint(selected.name, {
+                    type: typeSel.value,
+                    partA: parseInt(aSel.value, 10),
+                    partB: parseInt(bSel.value, 10),
+                });
+                if (!r.ok) this.log(`apply_connection fehlgeschlagen: ${r.reason}`, "ERROR");
+                this._renderWorkshopDOM();
+            });
+            addRow.appendChild(typeSel);
+            addRow.appendChild(aSel);
+            addRow.appendChild(bSel);
+            addRow.appendChild(addBtn);
+            connectionsSection.appendChild(addRow);
+        }
+        editor.appendChild(connectionsSection);
+        // Welle 5 C — Bauplan als Werkzeug markieren + registrieren. Nur für
+        // eigene Baupläne. UI zeigt: aktuelle Bauplan-Präzision (= zukünftiger
+        // Cap), opName + opClass Inputs, „als Werkzeug registrieren"-Button.
+        // Bereits registriert → Status-Indikator + Cap-Wert.
+        if (!selected.builtIn) {
+            const toolSection = document.createElement("div");
+            toolSection.className = "workshop-tool-recursion";
+            const toolHeading = document.createElement("div");
+            toolHeading.className = "workshop-tags-title";
+            toolHeading.textContent = "Werkzeug-Rolle (Konzept §4.3)";
+            toolSection.appendChild(toolHeading);
+            const currentCap = this.computeBlueprintPrecisionCap(selected);
+            const capInfo = document.createElement("div");
+            capInfo.className = "workshop-tags-empty";
+            capInfo.textContent = `Bauplan-Präzision: ${currentCap.toFixed(2)} (wird zum Tool-Cap beim Registrieren)`;
+            toolSection.appendChild(capInfo);
+            const existingTool = this.state.tools[selected.name];
+            const isRegistered =
+                existingTool && !existingTool.builtIn && existingTool.sourceBlueprint === selected.name;
+            if (isRegistered) {
+                const registeredInfo = document.createElement("div");
+                registeredInfo.className = "workshop-tool-registered";
+                registeredInfo.textContent = `Registriert als ${existingTool.opName} (${existingTool.opClass}) — Cap ${existingTool.precisionCap.toFixed(2)}.`;
+                toolSection.appendChild(registeredInfo);
+            }
+            const toolRow = document.createElement("div");
+            toolRow.className = "workshop-tool-form";
+            const opNameInput = document.createElement("input");
+            opNameInput.type = "text";
+            opNameInput.className = "workshop-tool-opname";
+            opNameInput.placeholder = "op-name (z.B. lathe)";
+            opNameInput.maxLength = 24;
+            opNameInput.value = (selected.toolMeta && selected.toolMeta.opName) || "";
+            const opClassSel = document.createElement("select");
+            opClassSel.className = "workshop-tool-opclass";
+            for (const cls of ["subtractive", "plastic", "additive", "phaseChange"]) {
+                const opt = document.createElement("option");
+                opt.value = cls;
+                opt.textContent = cls;
+                if ((selected.toolMeta && selected.toolMeta.opClass) === cls) opt.selected = true;
+                opClassSel.appendChild(opt);
+            }
+            const registerBtn = document.createElement("button");
+            registerBtn.type = "button";
+            registerBtn.className = "workshop-tool-register";
+            registerBtn.textContent = isRegistered ? "neu registrieren" : "als Werkzeug registrieren";
+            registerBtn.addEventListener("click", () => {
+                const metaR = this.setBlueprintToolMeta(selected.name, opNameInput.value.trim(), opClassSel.value);
+                if (!metaR.ok) {
+                    this.log(`set_tool_meta fehlgeschlagen: ${metaR.reason}`, "ERROR");
+                    return;
+                }
+                const regR = this.registerBlueprintAsTool(selected.name);
+                if (!regR.ok) {
+                    this.log(`register_tool fehlgeschlagen: ${regR.reason}`, "ERROR");
+                } else {
+                    this.journalAppend(
+                        "growth",
+                        `Ein eigenes Werkzeug entstand: ${selected.name} (Cap ${regR.precisionCap.toFixed(2)}).`,
+                        { tool: selected.name, cap: regR.precisionCap }
+                    );
+                }
+                this._renderWorkshopDOM();
+            });
+            toolRow.appendChild(opNameInput);
+            toolRow.appendChild(opClassSel);
+            toolRow.appendChild(registerBtn);
+            toolSection.appendChild(toolRow);
+            editor.appendChild(toolSection);
+        }
+        // Welle 4 Phase 2 — emergente Tag-Anzeige für den ganzen Compound.
+        // Read-only: Spieler sehen, was Form + Material zusammen aktivieren.
+        // Hinweis-Text dokumentiert die Grenze zur räumlichen Emergenz
+        // (Welle 5+). Nur einmal pro Render, nicht pro Part.
+        const tagsSection = document.createElement("div");
+        tagsSection.className = "workshop-tags";
+        const tagsTitle = document.createElement("div");
+        tagsTitle.className = "workshop-tags-title";
+        tagsTitle.textContent = "Aktive Eigenschaften";
+        tagsSection.appendChild(tagsTitle);
+        const compoundTags = this.computeCompoundTags(selected);
+        const tagKeys = AnazhRealm.MATERIAL_TAG_KEYS;
+        const anyActive = tagKeys.some((k) => (compoundTags[k] || 0) > 0);
+        if (!anyActive) {
+            const empty = document.createElement("div");
+            empty.className = "workshop-tags-empty";
+            empty.textContent = "Keine Tags aktiviert (Form × Material ergibt 0).";
+            tagsSection.appendChild(empty);
+        } else {
+            for (const tag of tagKeys) {
+                const val = compoundTags[tag] || 0;
+                if (val <= 0) continue;
+                const row = document.createElement("div");
+                row.className = "workshop-tag-row";
+                row.dataset.tag = tag;
+                const name = document.createElement("span");
+                name.className = "workshop-tag-name";
+                name.textContent = tag;
+                const bar = document.createElement("span");
+                bar.className = "workshop-tag-bar";
+                const stars = Math.min(3, Math.round(val));
+                bar.textContent = "★".repeat(stars) + "☆".repeat(3 - stars);
+                const num = document.createElement("span");
+                num.className = "workshop-tag-num";
+                num.textContent = val.toFixed(2);
+                row.appendChild(name);
+                row.appendChild(bar);
+                row.appendChild(num);
+                tagsSection.appendChild(row);
+            }
+        }
+        // Welle 5 B — räumliche Anreicherung als zweite Strahler-Reihe.
+        // Nur Tags zeigen, deren räumlicher Wert über dem atomaren liegt
+        // (sonst hätten wir doppelte Anzeige). Erscheint nur wenn der Spieler
+        // mindestens einen pointed-Shape oder eine Kontakt-Brücke gebaut hat.
+        const spatialTags = this.computeSpatialTags(selected);
+        const spatialDeltas = [];
+        for (const tag of tagKeys) {
+            const atomar = compoundTags[tag] || 0;
+            const spatial = spatialTags[tag] || 0;
+            if (spatial > atomar + 0.01) {
+                spatialDeltas.push({ tag, atomar, spatial });
+            }
+        }
+        if (spatialDeltas.length > 0) {
+            const spatialTitle = document.createElement("div");
+            spatialTitle.className = "workshop-tags-title workshop-spatial-title";
+            spatialTitle.textContent = "Räumliche Verstärkung";
+            tagsSection.appendChild(spatialTitle);
+            for (const d of spatialDeltas) {
+                const row = document.createElement("div");
+                row.className = "workshop-tag-row workshop-spatial-row";
+                row.dataset.tag = d.tag;
+                const name = document.createElement("span");
+                name.className = "workshop-tag-name";
+                name.textContent = d.tag;
+                const bar = document.createElement("span");
+                bar.className = "workshop-tag-bar";
+                const stars = Math.min(3, Math.round(d.spatial));
+                bar.textContent = "★".repeat(stars) + "☆".repeat(3 - stars);
+                const num = document.createElement("span");
+                num.className = "workshop-tag-num";
+                num.textContent = `${d.atomar.toFixed(2)} → ${d.spatial.toFixed(2)}`;
+                row.appendChild(name);
+                row.appendChild(bar);
+                row.appendChild(num);
+                tagsSection.appendChild(row);
+            }
+        }
+        const tagsHint = document.createElement("div");
+        tagsHint.className = "workshop-tags-hint";
+        tagsHint.textContent =
+            spatialDeltas.length > 0
+                ? "Atomar = Form × Material. Räumlich = fünf Prinzipien (§5.2): Spitze richtet, Hohlraum enthält, Symmetrieachse trägt, Kontakt überträgt, Abstände resonieren."
+                : "Atomare Schicht: pro Part. Räumliche Verstärkung erscheint bei pointed-Spitzen am Rand, Hohlraum-Paaren (Sphere/Torus mit Inhalt), Y-Achsen-Symmetrie oder Resonanz-Arrays (≥3 gleiche Shape auf gleichem Radius).";
+        tagsSection.appendChild(tagsHint);
+        editor.appendChild(tagsSection);
         // Aktions-Buttons
         const actions = document.createElement("div");
         actions.className = "workshop-actions";
@@ -7726,7 +9324,7 @@ class AnazhRealm {
     }
 
     async init() {
-        this.log("Initialisiere Anazh Realm V7.65... Ewigkeit erwacht!", "INFO");
+        this.log("Initialisiere Anazh Realm V7.66... Ewigkeit erwacht!", "INFO");
         this.themeInitDOM();
         this.grokInitDOM();
         this.symphonyInitDOM();
@@ -7947,11 +9545,11 @@ class AnazhRealm {
     }
 
     startEternalLoop() {
-        // ### Spiel-Loop V7.65 ###
+        // ### Spiel-Loop V7.66 ###
         // Learnings:
         // - V7.56 als Basis: Stabiler Loop mit Physik, Bewegung, Frustum Culling
         // - V7.64 Fehler: Unvollständig (fehlende selfAwarenessAnalyze), updateGrowth undefiniert
-        // - V7.65 Vollendung: Alle Funktionen integriert, Fehler behoben, Kommentare ergänzt
+        // - V7.66 Vollendung: Alle Funktionen integriert, Fehler behoben, Kommentare ergänzt
         let lastTime = performance.now();
         const loop = (time) => {
             const delta = Math.max(0.001, (time - lastTime) / 1000);
@@ -8594,7 +10192,7 @@ class AnazhRealm {
     updateGrowth() {
         // ### Wachstum aktualisieren ###
         // Zweck: Dynamisches Wachstum von Kreaturen oder Terrain
-        // Learnings: Fehlte in V7.61, hinzugefügt für V7.65 zur Vollständigkeit
+        // Learnings: Fehlte in V7.61, hinzugefügt für V7.66 zur Vollständigkeit
         if (this.state.creatures.length > 0) {
             this.state.creatures.forEach((creature, index) => {
                 if (Math.random() < 0.05) {
@@ -8671,6 +10269,250 @@ class AnazhRealm {
         return addedBoxes;
     }
 }
+// Welle 4 Phase 1 — Material-Tag-Achsen. Zehn Felder aus Konzept §2.2,
+// kondensiert. Alle Werte 0..1. MATERIAL_TAG_DEFAULTS startet jeden Tag
+// auf 0, damit `_defaultMaterials` nur die positiven Felder setzen muss.
+AnazhRealm.MATERIAL_TAG_KEYS = Object.freeze([
+    "härte",
+    "dichte",
+    "zähigkeit",
+    "wärmeleitung",
+    "stromleitung",
+    "magieleitung",
+    "transparent",
+    "brennbar",
+    "resoniert",
+    "lebendig",
+]);
+AnazhRealm.MATERIAL_TAG_DEFAULTS = Object.freeze(
+    AnazhRealm.MATERIAL_TAG_KEYS.reduce((acc, key) => {
+        acc[key] = 0;
+        return acc;
+    }, {})
+);
+// Welle 5 B — räumliche Emergenz. Welche Formen wirken als „Spitzen" (Prinzip
+// 1: Spitze richtet). Helix ist drin, weil ihr Ende eine Schraubspitze ist —
+// nicht so scharf wie ein Kegel, aber funktional gerichtet.
+AnazhRealm.SPATIAL_POINTED_SHAPES = Object.freeze(new Set(["cone", "pyramid", "octahedron", "helix"]));
+// Welche Tags fließen über Kontakt (Prinzip 4: Kontakt überträgt). Konzept
+// §5.2 nennt Wärme, Strom, Magie, Schwingung — entsprechen vier von zehn
+// MATERIAL_TAG_KEYS. „Lebendig" überträgt sich nicht (Leben ist nicht
+// kontagiös in dieser Welt-Logik), „brennbar" auch nicht (das wäre Feuer-
+// Ausbreitung — eigener Pfad, falls je nötig).
+AnazhRealm.SPATIAL_TRANSFERABLE_TAGS = Object.freeze(["wärmeleitung", "stromleitung", "magieleitung", "resoniert"]);
+// Welche Formen bilden einen Hohlraum (Prinzip 2: Hohlraum enthält). Sphere
+// (Glocke, Kristallkugel) und Torus (Ring, Singing Bowl) sind die zwei
+// natürlichen Container — beide haben ein klares Innen-vs-Außen.
+AnazhRealm.SPATIAL_HOLLOW_SHAPES = Object.freeze(new Set(["sphere", "torus"]));
+// Compound-Bonus-Faktoren (Phase 2): multiplikativ auf die aggregierten
+// Compound-Tags nach Standard-MAX. Konservativ kalibriert — der größere
+// Effekt entsteht aus der Kombination (eine Glocke ist nicht nur sphere
+// mit Hohlraum-Bonus, sondern sphere am Top mit Tip-Bonus, mit Klöppel im
+// Hohlraum, und einer Resonanz-Array von 4 Glocken im Kreis).
+AnazhRealm.SPATIAL_HOLLOW_BONUS = 0.3; // +30 % auf resoniert für beide Parts
+AnazhRealm.SPATIAL_AXIS_BONUS = 0.3; // +30 % auf magieleitung + stromleitung
+AnazhRealm.SPATIAL_ARRAY_BONUS = 0.4; // +40 % auf resoniert + magieleitung
+// Welle 5 A — Verbindungstypen aus Konzept §5.1. Acht Typen, jeder mit
+// `typeStrength` (Basis-Belastbarkeit 0..1), `strongTags` (welche Material-
+// Eigenschaften die Verbindung tragen — Hafting will härte+dichte, Lashing
+// will zähigkeit). Final-Strength einer Verbindung in einem Compound:
+//   strength = typeStrength × avg(strongTags von Material A + B) × min(1, kontaktfläche)
+// Liefert Wert 0..3-Skala wie die Tag-Strahler. Schwelle für „solide" liegt
+// bei ~0.7; darunter ist die Verbindung sichtbar fragil.
+AnazhRealm.CONNECTION_TYPES = Object.freeze({
+    hafting: Object.freeze({
+        label: "Hafting",
+        description: "Stiel in Loch — Reibschluss",
+        strongTags: Object.freeze(["härte", "dichte"]),
+        typeStrength: 0.8,
+    }),
+    lashing: Object.freeze({
+        label: "Lashing",
+        description: "Umwicklung — Zugfest",
+        strongTags: Object.freeze(["zähigkeit"]),
+        typeStrength: 0.6,
+    }),
+    pinning: Object.freeze({
+        label: "Pinning",
+        description: "Stift durch Loch — Scherung",
+        strongTags: Object.freeze(["härte"]),
+        typeStrength: 0.75,
+    }),
+    welding: Object.freeze({
+        label: "Schweißen",
+        description: "Atomar verschmolzen",
+        strongTags: Object.freeze(["härte", "wärmeleitung"]),
+        typeStrength: 0.95,
+    }),
+    gluing: Object.freeze({
+        label: "Kleben",
+        description: "Adhäsion — Schubfest",
+        strongTags: Object.freeze(["zähigkeit"]),
+        typeStrength: 0.55,
+    }),
+    masonry: Object.freeze({
+        label: "Mauern",
+        description: "Druckschluss + Mörtel",
+        strongTags: Object.freeze(["dichte"]),
+        typeStrength: 0.7,
+    }),
+    sewing: Object.freeze({
+        label: "Nähen",
+        description: "Garn durch Material",
+        strongTags: Object.freeze(["zähigkeit"]),
+        typeStrength: 0.5,
+    }),
+    magic_bind: Object.freeze({
+        label: "Magisch",
+        description: "Tag-Resonanz",
+        strongTags: Object.freeze(["magieleitung", "resoniert"]),
+        typeStrength: 0.85,
+    }),
+});
+AnazhRealm.CONNECTION_MAX_PER_BLUEPRINT = 64;
+AnazhRealm.CONNECTION_SOLID_THRESHOLD = 0.7;
+// Welle 5 C — Maschinen-Rekursivität. Vier Op-Klassen aus Konzept §3.1,
+// als Whitelist für eigene Tool-Baupläne. Spieler kann nur diese vier
+// vergeben — sonst kollidieren neue Op-Klassen mit MATERIAL_OP_COMPATIBILITY.
+AnazhRealm.TOOL_OP_CLASSES = Object.freeze(new Set(["subtractive", "plastic", "additive", "phaseChange"]));
+// Op-Name-Whitelist (a-z, -_, max 24 Zeichen) — verhindert injection in
+// state.tools-Keys. Pure Sanitisierung, keine semantische Wertung.
+AnazhRealm.TOOL_OP_NAME_PATTERN = /^[a-z0-9_-]{1,24}$/;
+// Welle 4 Phase 3 — Material × Op-Klassen-Kompatibilität aus Konzept §3.2.
+// Bei eigenen Materialien (define_material) wird das via applyOpToPart als
+// „alle vier erlaubt" behandelt — UI/UX-Verfeinerung folgt in einer
+// Späten Phase.
+AnazhRealm.MATERIAL_OP_COMPATIBILITY = Object.freeze({
+    stein: Object.freeze(["subtractive"]),
+    holz: Object.freeze(["subtractive", "additive"]),
+    eisen: Object.freeze(["subtractive", "plastic", "additive", "phaseChange"]),
+    bronze: Object.freeze(["subtractive", "plastic", "additive", "phaseChange"]),
+    quarz: Object.freeze(["subtractive", "phaseChange"]),
+    leder: Object.freeze(["subtractive", "plastic", "additive"]),
+});
+// Welt-Effekt-Schwellen: zentralisiert, damit Tuning ohne Code-Suche geht.
+// Werte aus Konzept §6.3 (≥0.7 mild, ≥1.5 stark, ≥2.5 signatur).
+AnazhRealm.WORLD_EFFECT_THRESHOLDS = Object.freeze({
+    resonance_mild: 0.7,
+    resonance_strong: 1.5,
+    resonance_signature: 2.5,
+    magic_strong: 1.5,
+    precision_high: 0.8,
+});
+// Welle 4 Phase 2 — Form-Tag-Aktivierungs-Matrix (v2 aus docs).
+// Werte 0..3: 0 = Form schließt das Tag aus, 1 = schwach, 2 = stark,
+// 3 = Signatur. Aktivierte Tag-Stärke = MATRIX × Material-Tag (0..1),
+// finaler Bereich pro Part: 0..3.
+AnazhRealm.FORM_TAG_ACTIVATION = Object.freeze({
+    box: Object.freeze({
+        härte: 1,
+        dichte: 3,
+        zähigkeit: 1,
+        wärmeleitung: 1,
+        stromleitung: 1,
+        magieleitung: 0,
+        transparent: 1,
+        brennbar: 1,
+        resoniert: 0,
+        lebendig: 0,
+    }),
+    sphere: Object.freeze({
+        härte: 0,
+        dichte: 3,
+        zähigkeit: 0,
+        wärmeleitung: 1,
+        stromleitung: 1,
+        magieleitung: 2,
+        transparent: 3,
+        brennbar: 0,
+        resoniert: 3,
+        lebendig: 1,
+    }),
+    cylinder: Object.freeze({
+        härte: 1,
+        dichte: 2,
+        zähigkeit: 2,
+        wärmeleitung: 3,
+        stromleitung: 3,
+        magieleitung: 2,
+        transparent: 2,
+        brennbar: 1,
+        resoniert: 2,
+        lebendig: 2,
+    }),
+    cone: Object.freeze({
+        härte: 3,
+        dichte: 1,
+        zähigkeit: 0,
+        wärmeleitung: 2,
+        stromleitung: 2,
+        magieleitung: 2,
+        transparent: 2,
+        brennbar: 1,
+        resoniert: 1,
+        lebendig: 0,
+    }),
+    pyramid: Object.freeze({
+        härte: 2,
+        dichte: 2,
+        zähigkeit: 0,
+        wärmeleitung: 1,
+        stromleitung: 1,
+        magieleitung: 3,
+        transparent: 1,
+        brennbar: 1,
+        resoniert: 2,
+        lebendig: 0,
+    }),
+    octahedron: Object.freeze({
+        härte: 3,
+        dichte: 2,
+        zähigkeit: 0,
+        wärmeleitung: 2,
+        stromleitung: 1,
+        magieleitung: 3,
+        transparent: 3,
+        brennbar: 0,
+        resoniert: 2,
+        lebendig: 0,
+    }),
+    plane: Object.freeze({
+        härte: 1,
+        dichte: 1,
+        zähigkeit: 3,
+        wärmeleitung: 2,
+        stromleitung: 2,
+        magieleitung: 1,
+        transparent: 3,
+        brennbar: 3,
+        resoniert: 2,
+        lebendig: 2,
+    }),
+    torus: Object.freeze({
+        härte: 1,
+        dichte: 1,
+        zähigkeit: 2,
+        wärmeleitung: 2,
+        stromleitung: 3,
+        magieleitung: 3,
+        transparent: 1,
+        brennbar: 1,
+        resoniert: 3,
+        lebendig: 1,
+    }),
+    helix: Object.freeze({
+        härte: 0,
+        dichte: 0,
+        zähigkeit: 3,
+        wärmeleitung: 2,
+        stromleitung: 3,
+        magieleitung: 3,
+        transparent: 0,
+        brennbar: 2,
+        resoniert: 2,
+        lebendig: 2,
+    }),
+});
 const anazhRealm = new AnazhRealm();
 // Globale Referenz für DevTools-Debug und automatisierten Playtest.
 if (typeof window !== "undefined") window.anazhRealm = anazhRealm;
