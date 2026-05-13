@@ -30,6 +30,13 @@
             content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self';"
         />
         <title>Anazh Realm v7.66 – Das Ultiversum</title>
+        <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
+             zusätzliche Datei. img-src 'self' data: in CSP erlaubt data-URI. -->
+        <link
+            rel="icon"
+            type="image/png"
+            href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+        />
         <style>
             /* ====================================================================
            UI V2 — Painterly High-Fantasy. Pergament, Eisen, Messing. Akzent:

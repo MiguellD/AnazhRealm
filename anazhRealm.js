@@ -7321,21 +7321,30 @@ class AnazhRealm {
             schemaVersion: "9.0-tor-v1",
         };
         // Der Import sollte sich seiner Empfangs-Geschichte bewusst werden —
-        // Journal-Eintrag mit Quelle. Wir nutzen den nächsten freien id.
-        if (cloned.worldJournal && Array.isArray(cloned.worldJournal.entries)) {
-            const nextId = cloned.worldJournal.entries.length + 1;
-            cloned.worldJournal.entries.push({
-                id: nextId,
-                at: Date.now(),
-                tick: 0,
-                type: "witness",
-                text: `Ich wurde als „${slug}" neben einer fremden Welt empfangen.`,
-                ctx: { fromWorldId: originalId, asWorldId: newWorldId, asSlug: slug },
-            });
-            if (!cloned.worldJournal.seen || typeof cloned.worldJournal.seen !== "object") {
-                cloned.worldJournal.seen = {};
-            }
+        // Witness-Eintrag mit Provenienz. Falls die importierte Welt KEIN
+        // Journal hat (Legacy-Export oder Minimal-Snapshot), legen wir den
+        // Container an, damit der Witness-Akt trotzdem festgehalten wird.
+        // Vor dem Bugfix wurde der Eintrag stillschweigend übersprungen —
+        // eine Welt ohne Quelle-Journal konnte sich an ihr Ankommen nicht
+        // erinnern (gefunden in Verifikation 6.3).
+        if (!cloned.worldJournal || typeof cloned.worldJournal !== "object") {
+            cloned.worldJournal = { entries: [], seen: {} };
         }
+        if (!Array.isArray(cloned.worldJournal.entries)) {
+            cloned.worldJournal.entries = [];
+        }
+        if (!cloned.worldJournal.seen || typeof cloned.worldJournal.seen !== "object") {
+            cloned.worldJournal.seen = {};
+        }
+        const nextId = cloned.worldJournal.entries.length + 1;
+        cloned.worldJournal.entries.push({
+            id: nextId,
+            at: Date.now(),
+            tick: 0,
+            type: "witness",
+            text: `Ich wurde als „${slug}" neben einer fremden Welt empfangen.`,
+            ctx: { fromWorldId: originalId, asWorldId: newWorldId, asSlug: slug },
+        });
         try {
             localStorage.setItem(this.worldStorageKey(newWorldId), JSON.stringify(cloned));
         } catch (err) {

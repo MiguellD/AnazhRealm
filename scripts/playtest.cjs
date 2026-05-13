@@ -3281,6 +3281,27 @@ function startSaveServer() {
                     r._weltTorImportBeside();
                     out.besideNoopWithoutPending = true; // sollte nicht crashen
 
+                    // Edge-Bug-Regression (gefunden in verify-ring9.cjs):
+                    // Eine importierte Welt OHNE worldJournal soll trotzdem
+                    // einen Witness-Eintrag bekommen. Vor dem Fix wurde der
+                    // Eintrag still übersprungen, wenn cloned.worldJournal
+                    // fehlte.
+                    const journalless = {
+                        worldMeta: { worldId: "no-journal-src", slug: "test-stumm", bornAt: Date.now() },
+                    };
+                    const journallessResult = r.importWorldBeside(journalless, { reload: false });
+                    if (journallessResult.ok) {
+                        const noJsSave = JSON.parse(
+                            localStorage.getItem(r.worldStorageKey(journallessResult.worldId)) || "{}"
+                        );
+                        out.journallessGetsWitness =
+                            noJsSave.worldJournal &&
+                            Array.isArray(noJsSave.worldJournal.entries) &&
+                            noJsSave.worldJournal.entries.some((e) => e.type === "witness");
+                    } else {
+                        out.journallessGetsWitness = false;
+                    }
+
                     // Aufräumen: alle Test-Welten weg
                     const keepId = r.state.worldMeta.worldId;
                     for (const e of r.worldsIndexLoad()) {
@@ -3319,6 +3340,10 @@ function startSaveServer() {
                 check("Ring 9: _openWeltTorDialog setzt pendingImport", ring9Results.pendingImportSet);
                 check("Ring 9: Cancel räumt pendingImport auf", ring9Results.pendingClearedAfterCancel);
                 check("Ring 9: importBeside ohne pending crasht nicht", ring9Results.besideNoopWithoutPending);
+                check(
+                    "Ring 9: Import ohne worldJournal bekommt trotzdem Witness-Eintrag (Bugfix)",
+                    ring9Results.journallessGetsWitness
+                );
             }
 
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
