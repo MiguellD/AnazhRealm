@@ -901,9 +901,10 @@ function startSaveServer() {
 
                     // Endpoint je Provider liefert die erwartete URL.
                     out.anthropicEndpoint = defs.anthropic.endpoint("m", "k") === "https://api.anthropic.com/v1/messages";
-                    out.googleEndpointHasKey = /generativelanguage\.googleapis\.com.*key=KEY/.test(
+                    out.googleEndpointGenerateContent = /generativelanguage\.googleapis\.com\/v1beta\/models\/gemini-2\.0-flash:generateContent$/.test(
                         defs.google.endpoint("gemini-2.0-flash", "KEY")
                     );
+                    out.googleHeaderHasApiKey = defs.google.buildHeaders("KEY")["x-goog-api-key"] === "KEY";
                     out.openrouterEndpoint = defs.openrouter.endpoint("m", "k") === "https://openrouter.ai/api/v1/chat/completions";
                     out.ollamaEndpoint = defs.ollama.endpoint("m", "", { endpoint: "http://localhost:11434" }) === "http://localhost:11434/api/chat";
                     out.ollamaNoKeyRequired = defs.ollama.requiresKey === false;
@@ -974,7 +975,8 @@ function startSaveServer() {
                 check("Schicht 2: vier Provider definiert", llmResults.fourProviders);
                 check("Schicht 2: jeder Provider hat buildBody-Fn", llmResults.providerHasBuildBody);
                 check("Schicht 2: Anthropic-Endpoint korrekt", llmResults.anthropicEndpoint);
-                check("Schicht 2: Gemini-Endpoint trägt Key", llmResults.googleEndpointHasKey);
+                check("Schicht 2: Gemini-Endpoint auf :generateContent", llmResults.googleEndpointGenerateContent);
+                check("Schicht 2: Gemini-Header trägt x-goog-api-key", llmResults.googleHeaderHasApiKey);
                 check("Schicht 2: OpenRouter-Endpoint korrekt", llmResults.openrouterEndpoint);
                 check("Schicht 2: Ollama-Endpoint nutzt /api/chat", llmResults.ollamaEndpoint);
                 check("Schicht 2: Ollama braucht keinen Key", llmResults.ollamaNoKeyRequired);

@@ -1499,9 +1499,17 @@ class AnazhRealm {
                     { id: "gemini-1.5-pro", label: "1.5 Pro — klüger, niedrigeres Limit" },
                 ],
                 requiresKey: true,
-                endpoint: (model, apiKey) =>
-                    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`,
-                buildHeaders: () => ({ "content-type": "application/json" }),
+                // Key wird als Header geschickt (`x-goog-api-key`). Google's
+                // Cloud-Auth-Schicht beantwortet ?key=… aus Browser-Origins
+                // seit Anfang 2025 oft mit "Missing Authentication header" —
+                // der Header-Pfad ist die ehrliche Form und hält den Key
+                // außerdem aus Logs/Referer-Headern raus.
+                endpoint: (model) =>
+                    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+                buildHeaders: (apiKey) => ({
+                    "content-type": "application/json",
+                    "x-goog-api-key": apiKey,
+                }),
                 buildBody: (model, system, userContent) => ({
                     systemInstruction: { parts: [{ text: system }] },
                     contents: [{ role: "user", parts: [{ text: userContent }] }],
