@@ -406,17 +406,28 @@ Für **Verbindungs-Last** (W5-A) und **Compound-Tags** (W5-B): **Min/Max-Aggrega
 
 ### §10.6 — Reihenfolge (entschieden)
 
-1. **6.A1 + 6.A2** (Wall-Sliding + Erdung) — kleine Gewinne, große UX-Wirkung. 1 Session.
-2. **6.A4 + 6.A5** (Raycast-Place + Stabilität) — Bauen wird vorhersehbar. 1 Session.
-3. **6.E1 + 6.E2** (Fähigkeit-Beschreibung + Intro) — Welt wird lesbar, Onboarding kommt. 1 Session.
-4. **6.F1 + 6.F2** (visuelle Linien + Brech-Warning) — Crafting wird sichtbar. 2 Sessions.
-5. **6.D** (Stat-System komplett) — **der Vision-Pfeiler**. 3-4 Sessions.
-6. **6.G Welt-Sinne — Phase 1** (siehe §11): Kollisionen für fliegende Inseln + Bäume. 1-2 Sessions.
-7. **6.C2** (Spiel-Modi frieden/pfad/schöpfer) — nutzt das Stat-System. 1 Session.
-8. **6.C1 + 6.A3 + 6.C3** (Inventar + Maus-Aktionen + Keybindings-UI) — Konventions-Block. 2-3 Sessions.
-9. **6.B** (CAD-Werkstatt — minimal magic). 2 Sessions.
-10. **6.G Welt-Sinne — Phase 2** (Schatten + Wasser + Höhlen + Sterne). 3-4 Sessions.
-11. **6.F3 + 6.F4 + 6.F5** (Energie + Kreaturen + Constraints) — Crafting-Tiefe. 4-5 Sessions.
+**Status V7.72 (13.05.2026)**: Schritte 1-6 erledigt + Schöpfer-Reflexions-Fixes. 6.D ist der Vision-Pfeiler — komplett in 7 Etappen umgesetzt.
+
+1. ✅ **6.A1 + 6.A2** (Wall-Sliding + Erdung auf Bauwerken) — V7.72
+2. ✅ **6.A-Slope (neu, ad-hoc)** (Slope-Anti-Klebe — `maxWalkableSlopeY=0.5`, Drossel auf 20 % bei >60°) — V7.72
+3. ✅ **6.A4 + 6.A5** (Raycast-Place + Grün/Rot-Phantom-Tint) — V7.72
+4. ✅ **6.E1 + 6.E2** (Fähigkeit-Beschreibung + dynamisches Intro-Dialog) — V7.72
+5. ✅ **6.F1 + 6.F2** (Verbindungs-Linien + Brech-Warning bei strength <0.7) — V7.72
+6. ✅ **6.D Stat-System komplett** — der Vision-Pfeiler. Sieben Etappen:
+   - 1: STAT_FROM_TAGS-Matrix + state.player.stats + applyPlayerSoul→recomputePlayerStats-Pipe
+   - 1.5: Seele = Bauplan aus Körper-Teilen (Vision-Korrektur: keine hardcodete Tabelle)
+   - 1.6: `define_soul` DSL-Op + state.customSouls + Custom-Rendering via _buildFromBlueprint
+   - 1.7: Visueller Avatar-Editor im Spieler-Drawer (klonen/edit/parts add+remove+update)
+   - 2: Boosts aus 3 Quellen (Emotion / Welt-Resonanz / Konsum)
+   - 3a: Tod-Wandlung mit Welt-Trauer + Min-Regel-Hybrid + Werkzeug-Stamina-Kosten + persistente Tod-Wunde
+   - 3b: Stat-Stacking (Soul + Armor×0.3 + Tool×0.15 + Boosts − Wound) + Aura-Visual (Sprite + Radial-Gradient + AdditiveBlending)
+7. ✅ **Schöpfer-Reflexions-Fixes** — WASD-Geometrie-Revert (`state.right` ist player-LINKS in Right-Hand-Coords), Drache-Inner-π-Flip (Cone-Tail als wahrgenommene Schnauze in +Z), Aura-Sprite weicher Falloff statt Sphere-Kante
+8. **6.G Welt-Sinne — Phase 1** ← **JETZT OFFEN** (Kollisionen für fliegende Inseln + Bäume). 1-2 Sessions.
+9. **6.C2** (Spiel-Modi frieden/pfad/schöpfer) — nutzt das Stat-System. 1 Session.
+10. **6.C1 + 6.A-Maus + 6.C3** (Inventar + LMB/RMB-Aktionen + Keybindings-UI). 2-3 Sessions.
+11. **6.B** (CAD-Werkstatt — minimal magic). 2 Sessions.
+12. **6.G Welt-Sinne — Phase 2** (Schatten + Wasser + Höhlen + Sterne). 3-4 Sessions.
+13. **6.F3 + 6.F4 + 6.F5** (Energie + Kreaturen-Körper + Ammo-Constraints). 4-5 Sessions.
 
 **Gesamt-Schätzung**: 20-25 Sessions, verteilt auf 4-5 Monate Echtzeit.
 

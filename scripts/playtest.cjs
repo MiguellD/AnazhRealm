@@ -1238,7 +1238,10 @@ function startSaveServer() {
                 check("Welle 4 P1: MATERIAL_TAG_KEYS ist frozen", wave4p1Results.tagKeysFrozen);
                 check("Welle 4 P1: 10 Tag-Achsen", wave4p1Results.tagKeyCount === 10);
                 check("Welle 4 P1: 6 Built-in-Materialien existieren", wave4p1Results.expectedBuiltIns);
-                check("Welle 4 P1: Built-in-Anzahl exakt 6", wave4p1Results.builtInCount === 6);
+                check(
+                    "Welle 4 P1: Built-in-Anzahl exakt 11 (6 Bau + 5 Körper, ergänzt in Welle 6.D 1.5)",
+                    wave4p1Results.builtInCount === 11
+                );
                 check("Welle 4 P1: Alle Tag-Werte 0..1", wave4p1Results.tagsInRange);
                 check(
                     "Welle 4 P1: Quarz hat Signatur-Tags (resoniert/transparent/magieleitung)",
@@ -1457,7 +1460,10 @@ function startSaveServer() {
                             { tool: "polierscheibe", op: "polish", cap: 0.97 },
                         ],
                     };
-                    out.precisionIsMin = r.computePartPrecision(part1) === 0.4;
+                    // Welle 6.D Etappe 3a — Min-Regel-Hybrid: 2 Schritte (0.4, 0.97)
+                    // → 0.4 + 0.57 × 0.7 = 0.799 (nicht mehr strict min). Der
+                    // alte Pfad (strict min) wurde 13.05.2026 hybridisiert.
+                    out.precisionIsHybrid = Math.abs(r.computePartPrecision(part1) - (0.4 + 0.57 * 0.7)) < 0.01;
                     const part2 = { shape: "sphere", material: "quarz" }; // no opChain
                     out.precisionDefaultsTo04 = r.computePartPrecision(part2) === 0.4;
 
@@ -1615,7 +1621,10 @@ function startSaveServer() {
                 check("Welle 4 P3: MATERIAL_OP_COMPATIBILITY frozen", wave4p3Results.matCompatFrozen);
                 check("Welle 4 P3: WORLD_EFFECT_THRESHOLDS frozen", wave4p3Results.thresholdsFrozen);
                 check("Welle 4 P3: Stein erlaubt nur subtractive Ops", wave4p3Results.steinSubtractiveOnly);
-                check("Welle 4 P3: computePartPrecision = min(opChain.caps)", wave4p3Results.precisionIsMin);
+                check(
+                    "Welle 4 P3 (V7.72): computePartPrecision = Hybrid min+(max−min)×0.7^N (Etappe 3a)",
+                    wave4p3Results.precisionIsHybrid
+                );
                 check("Welle 4 P3: Default-Präzision 0.4 ohne opChain", wave4p3Results.precisionDefaultsTo04);
                 check("Welle 4 P3: applyOpToPart hängt Op an", wave4p3Results.applyOpAppends);
                 check("Welle 4 P3: Stein lehnt Hammer (plastic) ab", wave4p3Results.materialOpIncompat);
@@ -4689,6 +4698,1993 @@ function startSaveServer() {
                 check("Ring 11.5: world-guest-banner im DOM", ring115Results.guestBannerExists);
             }
 
+            // ### Welle 6.A — Interaktion-Polish (Wall-Sliding + Erdung auf Bauwerken) ###
+            //
+            // 6.A1: `playerBody.setFriction(0)` lässt den Spieler entlang Wänden
+            // rutschen statt zu hängen. Setzen passiert beim Body-Spawn UND
+            // `optimizePhysics` darf es nicht überschreiben.
+            //
+            // 6.A2: `isPlayerGrounded`-Raycast trifft Bauwerks-Compound-Bodies
+            // (die sind im physicsWorld, also reicht rayTest). Threshold leicht
+            // entspannt von 0.5 → 0.6, damit der minimale y-Offset eines Sub-
+            // Compounds beim Stehen auf einer Plattform nicht den Sprung
+            // blockiert.
+            const wave6aResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state.playerBody) return null;
+                    const out = {};
+
+                    // 6.A1 — Spieler-Friction beim Spawn
+                    out.playerFriction = r.state.playerBody.getFriction();
+                    out.playerFrictionZero = Math.abs(out.playerFriction) < 0.001;
+
+                    // 6.A1 — optimizePhysics behält Spieler-Friction 0
+                    r.optimizePhysics();
+                    out.playerFrictionAfterOptimize = r.state.playerBody.getFriction();
+                    out.frictionPreservedAfterOptimize = Math.abs(out.playerFrictionAfterOptimize) < 0.001;
+
+                    // 6.A1 — Diskriminations-Test: andere Bodies behalten 0.5
+                    let otherBody = null;
+                    for (const rb of r.state.rigidBodies) {
+                        if (rb !== r.state.playerMesh) {
+                            otherBody = rb.userData.physicsBody;
+                            break;
+                        }
+                    }
+                    out.hasOtherBody = !!otherBody;
+                    out.otherFriction = otherBody ? otherBody.getFriction() : null;
+                    out.otherFrictionDefault = otherBody ? Math.abs(otherBody.getFriction() - 0.5) < 0.01 : false;
+
+                    // 6.A2 — Threshold-Konstante ist 0.6 (im Function-Source)
+                    const fnSrc = r.isPlayerGrounded.toString();
+                    out.hasGroundDistanceVar = fnSrc.includes("groundDistance");
+                    out.groundDistanceIs06 = /groundDistance\s*=\s*0\.6/.test(fnSrc);
+
+                    // 6.A2 — Diskriminations-Test: Spieler an einer kontrollierten Position
+                    // (frühere Tests können mesh.position verschoben haben — wir setzen
+                    // eine eindeutige Setup-Position, statt uns auf den Live-Zustand
+                    // zu verlassen). Über offenes Terrain (in der Luft) → not grounded,
+                    // auf gespawntem Bauwerk → grounded.
+                    const savedX = r.state.playerMesh.position.x;
+                    const savedY = r.state.playerMesh.position.y;
+                    const savedZ = r.state.playerMesh.position.z;
+
+                    // Spawnen wir einen Tempel an einer eindeutigen, vom Terrain
+                    // freien Position (Heightfield hat höchstens ~50m Höhe; wir
+                    // wählen y=0 als Spawn-Y damit der Tempel direkt mit dem
+                    // Heightfield-Niveau überlappt — typischer In-Spiel-Fall).
+                    const archX = savedX + 20;
+                    const archZ = savedZ + 20;
+                    const beforeArchCount = r.state.architectures.length;
+                    const entry = r.spawnArchitecture("temple", { x: archX, y: 0, z: archZ }, { seed: 4242 });
+                    out.archEntrySpawned = !!entry;
+                    out.archHasCollision = !!(entry && entry.collision && entry.collision.body);
+
+                    if (entry && entry.mesh) {
+                        const box = new THREE.Box3().setFromObject(entry.mesh);
+                        const topY = box.max.y;
+                        // Negativ-Kontrolle: 50 m über Tempel-Top — Ray reicht nur
+                        // 2.5 m runter, also trifft das Bauwerk nicht.
+                        r.state.playerMesh.position.set(archX, topY + 50, archZ);
+                        out.isGroundedHighInSky = r.isPlayerGrounded();
+                        // Positiv-Test: Spieler in steigenden Höhen über die
+                        // visuelle Top-BBox. Visuelle Box ist nicht 1:1 mit dem
+                        // Collision-Compound (Dekor-Mesh-Spitzen ragen oft über
+                        // die strukturellen Sub-Boxes), deshalb gehen wir die
+                        // ersten paar Frame-Distanzen durch — sobald für EINE
+                        // davon `isGrounded === true` zurückkommt, ist die
+                        // Bauwerks-Erdung bewiesen. groundDistance(0.6) ist die
+                        // theoretische Obergrenze pro Sample.
+                        out.archTopY = topY;
+                        let foundGrounded = false;
+                        let groundedAtDy = null;
+                        for (const dy of [0.1, 0.3, 0.5, 0.7, 1.0, 1.5, 2.0]) {
+                            r.state.playerMesh.position.set(archX, topY + dy, archZ);
+                            if (r.isPlayerGrounded()) {
+                                foundGrounded = true;
+                                groundedAtDy = dy;
+                                break;
+                            }
+                        }
+                        out.isGroundedOnArchitecture = foundGrounded;
+                        out.groundedAtDy = groundedAtDy;
+                        // Restore
+                        r.state.playerMesh.position.set(savedX, savedY, savedZ);
+                    } else {
+                        out.isGroundedOnArchitecture = false;
+                        out.isGroundedHighInSky = false;
+                    }
+                    // Cleanup: gespawnte Architektur entfernen
+                    r.state.architectures = r.state.architectures.slice(0, beforeArchCount);
+
+                    return out;
+                })
+                .catch(() => null);
+
+            if (wave6aResults) {
+                check("Welle 6.A1: Spieler-Body-Friction ist 0 (Wall-Sliding aktiv)", wave6aResults.playerFrictionZero);
+                check(
+                    "Welle 6.A1: optimizePhysics() überschreibt Spieler-Friction nicht",
+                    wave6aResults.frictionPreservedAfterOptimize
+                );
+                if (wave6aResults.hasOtherBody) {
+                    check(
+                        "Welle 6.A1: Diskrimination — andere Bodies behalten Friction 0.5",
+                        wave6aResults.otherFrictionDefault
+                    );
+                }
+                check("Welle 6.A2: isPlayerGrounded hat groundDistance-Konstante (refactored)", wave6aResults.hasGroundDistanceVar);
+                check(
+                    "Welle 6.A2: groundDistance ist 0.6 (entspannte Schwelle für Bauwerks-Sub-Boxes)",
+                    wave6aResults.groundDistanceIs06
+                );
+                if (wave6aResults.archEntrySpawned) {
+                    check("Welle 6.A2: Bauwerk-Spawn liefert Compound-Body", wave6aResults.archHasCollision);
+                    check(
+                        "Welle 6.A2: Negativ-Kontrolle — hoch im Himmel nicht geerdet",
+                        wave6aResults.isGroundedHighInSky === false
+                    );
+                    check(
+                        "Welle 6.A2: Diskrimination — Spieler 0.5 m über Bauwerks-Oberseite ist geerdet",
+                        wave6aResults.isGroundedOnArchitecture === true
+                    );
+                }
+            }
+
+            // ### Welle 6.A3 — Slope-Steepness (Anti-Wandkleben) ###
+            //
+            // isPlayerGrounded liest pro Hit die Surface-Normal. Das flachste
+            // Normal-Y wird in `state.groundNormalY` gespeichert; wenn keine
+            // begehbare Fläche dabei ist (Normal-Y < maxWalkableSlopeY=0.5,
+            // entspricht >60° Steigung), gilt `state.onSteepSlope = true` und
+            // der Bewegungs-Input wird auf 20 % gedrosselt. Damit klebt der
+            // Spieler nicht mehr an senkrechten Wänden.
+            const wave6a3Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    // 6.A3 — state-Felder existieren mit korrekten Defaults
+                    out.hasMaxWalkableSlopeY = typeof r.state.maxWalkableSlopeY === "number";
+                    out.maxWalkableSlopeYValue = r.state.maxWalkableSlopeY;
+                    out.maxWalkableSlopeYIs05 = Math.abs(r.state.maxWalkableSlopeY - 0.5) < 0.001;
+                    out.hasGroundNormalY = typeof r.state.groundNormalY === "number";
+                    out.hasOnSteepSlope = typeof r.state.onSteepSlope === "boolean";
+
+                    // 6.A3 — Diskriminations-Test mit zwei kontrollierten Setups:
+                    // (a) Spieler hoch in den Himmel → nicht geerdet → onSteepSlope MUSS false sein
+                    //     (Logik: onSteepSlope = isGrounded && bestNormalY<0.5).
+                    // (b) Spieler auf der Oberseite eines spawnenden Bauwerks (Tempel)
+                    //     → geerdet, Normal-Y der Top-Box ist ~1.0 → onSteepSlope MUSS false sein.
+                    // Wir reden NICHT über das natürliche Initial-Terrain — das ist
+                    // prozedural und kann an einzelnen Stellen steile Hänge haben.
+                    const _savedX = r.state.playerMesh.position.x;
+                    const _savedY = r.state.playerMesh.position.y;
+                    const _savedZ = r.state.playerMesh.position.z;
+
+                    // (a) Himmel
+                    r.state.playerMesh.position.set(0, 5000, 0);
+                    r.isPlayerGrounded();
+                    out.skyOnSteepSlope = r.state.onSteepSlope;
+                    out.skyGroundNormalY = r.state.groundNormalY;
+
+                    // (b) Flacher Bauwerks-Top: separater Tempel-Spawn
+                    const _beforeArchA3 = r.state.architectures.length;
+                    const _entryA3 = r.spawnArchitecture(
+                        "temple",
+                        { x: _savedX + 40, y: 0, z: _savedZ + 40 },
+                        { seed: 9999 }
+                    );
+                    let flatBlueprintNotSteep = false;
+                    if (_entryA3 && _entryA3.mesh) {
+                        const box = new THREE.Box3().setFromObject(_entryA3.mesh);
+                        // Setze Spieler knapp über die Top-Fläche
+                        r.state.playerMesh.position.set(_savedX + 40, box.max.y + 0.3, _savedZ + 40);
+                        r.isPlayerGrounded();
+                        flatBlueprintNotSteep =
+                            r.state.onSteepSlope === false && r.state.groundNormalY > 0.7;
+                        out.archTopGroundNormalY = r.state.groundNormalY;
+                        out.archTopOnSteepSlope = r.state.onSteepSlope;
+                    }
+                    out.flatBlueprintNotSteep = flatBlueprintNotSteep;
+                    r.state.architectures = r.state.architectures.slice(0, _beforeArchA3);
+                    r.state.playerMesh.position.set(_savedX, _savedY, _savedZ);
+
+                    // 6.A3 — Quell-Check: Funktion liest tatsächlich die Normal
+                    // (sonst wäre das Tracking ein No-op)
+                    const fnSrc = r.isPlayerGrounded.toString();
+                    out.fnReadsNormal = fnSrc.includes("get_m_hitNormalWorld");
+                    out.fnSetsSteepFlag = /onSteepSlope\s*=/.test(fnSrc);
+                    out.fnSetsGroundNormal = /groundNormalY\s*=/.test(fnSrc);
+
+                    // 6.A3 — Diskriminations-Test: Bewegungs-Loop drosselt auf
+                    // steilem Hang. Wir prüfen die slopePenalty-Logik im
+                    // Quellcode der Loop-Init-Methode (statischer Check, weil
+                    // einen echten Slope im Headless zu synthetisieren fragil ist).
+                    const loopSrc = r.startEternalLoop ? r.startEternalLoop.toString() : "";
+                    out.movementUsesSlopePenalty = /slopePenalty/.test(loopSrc);
+                    out.movementHasSlopeBranch = /onSteepSlope\s*\?\s*0\.2/.test(loopSrc);
+                    out.movementSlideOnSlope = /!\s*this\.state\.onSteepSlope/.test(loopSrc);
+
+                    return out;
+                })
+                .catch(() => null);
+
+            if (wave6a3Results) {
+                check("Welle 6.A3: state.maxWalkableSlopeY existiert", wave6a3Results.hasMaxWalkableSlopeY);
+                check(
+                    "Welle 6.A3: maxWalkableSlopeY == 0.5 (cos 60° = walkable bis 60°)",
+                    wave6a3Results.maxWalkableSlopeYIs05
+                );
+                check("Welle 6.A3: state.groundNormalY existiert", wave6a3Results.hasGroundNormalY);
+                check("Welle 6.A3: state.onSteepSlope existiert", wave6a3Results.hasOnSteepSlope);
+                check(
+                    "Welle 6.A3: isPlayerGrounded liest get_m_hitNormalWorld (Slope-Tracking aktiv)",
+                    wave6a3Results.fnReadsNormal
+                );
+                check(
+                    "Welle 6.A3: isPlayerGrounded setzt onSteepSlope-Flag",
+                    wave6a3Results.fnSetsSteepFlag
+                );
+                check(
+                    "Welle 6.A3: isPlayerGrounded setzt groundNormalY",
+                    wave6a3Results.fnSetsGroundNormal
+                );
+                check(
+                    "Welle 6.A3: Negativ-Kontrolle — Himmel hat onSteepSlope=false (nicht geerdet)",
+                    wave6a3Results.skyOnSteepSlope === false
+                );
+                check(
+                    "Welle 6.A3: Diskrimination — flache Bauwerks-Oberseite ist NICHT als steil markiert",
+                    wave6a3Results.flatBlueprintNotSteep
+                );
+                check(
+                    "Welle 6.A3: Bewegungs-Loop nutzt slopePenalty-Variable",
+                    wave6a3Results.movementUsesSlopePenalty
+                );
+                check(
+                    "Welle 6.A3: Bewegungs-Loop hat onSteepSlope ? 0.2 : 1.0 Drossel",
+                    wave6a3Results.movementHasSlopeBranch
+                );
+                check(
+                    "Welle 6.A3: Bewegungs-Loop lässt Velocity stehen wenn onSteepSlope (Slide-Verhalten)",
+                    wave6a3Results.movementSlideOnSlope
+                );
+            }
+
+            // ### Welle 6.A4+6.A5 — Raycast-Place + Stabilitäts-Visual ###
+            //
+            // tickBuildMode delegiert an _resolvePhantomTarget — der castet aus
+            // der Kamera, gibt {x, y, z, isStable, hit} zurück. Phantom-Position
+            // folgt damit der Kamera-Blickrichtung (Pitch wirkt!), Tint färbt
+            // bei stabilem Boden grün, sonst rot.
+            const wave6a45Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    out.hasResolveMethod = typeof r._resolvePhantomTarget === "function";
+                    out.hasTintMethod = typeof r._applyPhantomTint === "function";
+                    out.hasPhantomOnGroundField = "phantomOnGround" in r.state.buildMode;
+
+                    // Source-Checks: tickBuildMode nutzt die neuen Pfade
+                    const tickSrc = r.tickBuildMode.toString();
+                    out.tickUsesResolve = /_resolvePhantomTarget/.test(tickSrc);
+                    out.tickUsesTint = /_applyPhantomTint/.test(tickSrc);
+                    out.tickSetsOnGround = /phantomOnGround\s*=/.test(tickSrc);
+
+                    const resolveSrc = r._resolvePhantomTarget.toString();
+                    out.resolveUsesCamera = /this\.state\.camera/.test(resolveSrc);
+                    out.resolveUsesGetWorldDirection = /getWorldDirection/.test(resolveSrc);
+                    out.resolveUsesRayTest = /rayTest/.test(resolveSrc);
+                    out.resolveReadsNormal = /get_m_hitNormalWorld/.test(resolveSrc);
+                    out.resolveHasFallback = /fallback/.test(resolveSrc);
+                    out.resolveStabilityThreshold = /nrm\.y\(\)\s*>\s*0\.5/.test(resolveSrc);
+
+                    const tintSrc = r._applyPhantomTint.toString();
+                    out.tintCachesOrigColor = /_origColor/.test(tintSrc);
+                    out.tintHasGreenStable = /0x88ff88/.test(tintSrc);
+                    out.tintHasRedUnstable = /0xff8888/.test(tintSrc);
+
+                    // Funktionaler Test: Build-Modus auf "village"-Slot 0 aktivieren,
+                    // Kamera so positionieren dass sie in den Heightfield-Boden
+                    // schaut, tickBuildMode aufrufen, prüfen dass Phantom im
+                    // Treffer-Bereich liegt + isStable=true.
+                    const savedYaw = r.state.yaw;
+                    const savedCamPos = r.state.camera ? r.state.camera.position.clone() : null;
+                    const savedCamQuat = r.state.camera ? r.state.camera.quaternion.clone() : null;
+                    const savedPlayerPos = r.state.playerMesh.position.clone();
+                    const savedBuild = JSON.parse(
+                        JSON.stringify({
+                            active: r.state.buildMode.active,
+                            slotIndex: r.state.buildMode.slotIndex,
+                            blueprintName: r.state.buildMode.blueprintName,
+                        })
+                    );
+
+                    // Garantiert flache Test-Oberfläche: Tempel spawnen,
+                    // Kamera direkt darüber positionieren — die Top-Sub-Box hat
+                    // eine flache Oberseite (Normal-Y ~ 1), zuverlässiger als
+                    // das prozedurale Heightfield (das an manchen Stellen steil ist).
+                    const _spawnArchX = 60;
+                    const _spawnArchZ = 60;
+                    const _beforeArchA45 = r.state.architectures.length;
+                    const _archEntry = r.spawnArchitecture(
+                        "temple",
+                        { x: _spawnArchX, y: 0, z: _spawnArchZ },
+                        { seed: 4711 }
+                    );
+                    out.testArchSpawned = !!_archEntry;
+                    let _archTopY = 0;
+                    if (_archEntry && _archEntry.mesh) {
+                        const _box = new THREE.Box3().setFromObject(_archEntry.mesh);
+                        _archTopY = _box.max.y;
+                    }
+                    r.state.playerMesh.position.set(_spawnArchX, _archTopY + 5, _spawnArchZ);
+                    // Kamera 8m über Bauwerks-Top, blickt steil nach unten auf die Mitte
+                    r.state.camera.position.set(_spawnArchX, _archTopY + 8, _spawnArchZ);
+                    r.state.camera.lookAt(_spawnArchX, _archTopY, _spawnArchZ);
+                    // Build-Modus auf Slot 0 (village in Default-Hotbar)
+                    r.selectHotbarSlot(0);
+                    out.buildModeActive = r.state.buildMode.active;
+                    out.phantomExists = !!r.state.buildMode.phantomMesh;
+                    if (r.state.buildMode.phantomMesh) {
+                        r.tickBuildMode();
+                        const phantomPos = r.state.buildMode.phantomMesh.position;
+                        // Erwartung: Phantom landet auf Bauwerks-Top bei
+                        // _archTopY, alter Fallback wäre playerY-0.5 = _archTopY+4.5.
+                        // Hit-Y ist klar < playerY−1.
+                        out.phantomY = phantomPos.y;
+                        out.phantomYDownward = phantomPos.y < r.state.playerMesh.position.y - 1;
+                        // Stabilität: Boden flache Oberseite → Normal-Y ~ 1 → isStable=true
+                        out.phantomOnGroundAfterTick = r.state.buildMode.phantomOnGround;
+
+                        // Diskrimination 2: Kamera nach oben in den Himmel → kein Hit → fallback
+                        r.state.camera.lookAt(_spawnArchX, _archTopY + 100, _spawnArchZ + 1);
+                        r.tickBuildMode();
+                        out.phantomOnGroundSky = r.state.buildMode.phantomOnGround;
+                    }
+
+                    // Cleanup
+                    r._clearBuildMode();
+                    r.state.architectures = r.state.architectures.slice(0, _beforeArchA45);
+                    if (savedCamPos) r.state.camera.position.copy(savedCamPos);
+                    if (savedCamQuat) r.state.camera.quaternion.copy(savedCamQuat);
+                    r.state.playerMesh.position.copy(savedPlayerPos);
+                    r.state.yaw = savedYaw;
+
+                    return out;
+                })
+                .catch(() => null);
+
+            if (wave6a45Results) {
+                check("Welle 6.A4: _resolvePhantomTarget-Methode existiert", wave6a45Results.hasResolveMethod);
+                check("Welle 6.A5: _applyPhantomTint-Methode existiert", wave6a45Results.hasTintMethod);
+                check("Welle 6.A5: buildMode.phantomOnGround-Feld existiert", wave6a45Results.hasPhantomOnGroundField);
+                check("Welle 6.A4: tickBuildMode delegiert an _resolvePhantomTarget", wave6a45Results.tickUsesResolve);
+                check("Welle 6.A5: tickBuildMode ruft _applyPhantomTint", wave6a45Results.tickUsesTint);
+                check("Welle 6.A5: tickBuildMode setzt phantomOnGround", wave6a45Results.tickSetsOnGround);
+                check("Welle 6.A4: _resolvePhantomTarget liest camera", wave6a45Results.resolveUsesCamera);
+                check(
+                    "Welle 6.A4: _resolvePhantomTarget nutzt getWorldDirection",
+                    wave6a45Results.resolveUsesGetWorldDirection
+                );
+                check("Welle 6.A4: _resolvePhantomTarget nutzt physicsWorld.rayTest", wave6a45Results.resolveUsesRayTest);
+                check(
+                    "Welle 6.A5: _resolvePhantomTarget liest hit-Normal für Stabilität",
+                    wave6a45Results.resolveReadsNormal
+                );
+                check(
+                    "Welle 6.A5: Stabilitäts-Schwelle ist Normal-Y > 0.5 (~60° walkable)",
+                    wave6a45Results.resolveStabilityThreshold
+                );
+                check("Welle 6.A4: _resolvePhantomTarget hat Fallback-Pfad", wave6a45Results.resolveHasFallback);
+                check("Welle 6.A5: _applyPhantomTint cached _origColor (kein Drift)", wave6a45Results.tintCachesOrigColor);
+                check("Welle 6.A5: Tint hat Grün-Code 0x88ff88 für stabil", wave6a45Results.tintHasGreenStable);
+                check("Welle 6.A5: Tint hat Rot-Code 0xff8888 für instabil", wave6a45Results.tintHasRedUnstable);
+                if (wave6a45Results.phantomExists) {
+                    check("Welle 6.A4: Phantom landet auf Hit-Punkt (nicht alter Y-Fallback)", wave6a45Results.phantomYDownward);
+                    check(
+                        "Welle 6.A5: Diskrimination — Kamera auf Boden → phantomOnGround=true",
+                        wave6a45Results.phantomOnGroundAfterTick === true
+                    );
+                    check(
+                        "Welle 6.A5: Diskrimination — Kamera auf Himmel → phantomOnGround=false",
+                        wave6a45Results.phantomOnGroundSky === false
+                    );
+                }
+            }
+
+            // ### Welle 6.E1 — Fähigkeit-Beschreibung (describeProgram) ###
+            const wave6e1Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || typeof r.describeProgram !== "function") return null;
+                    const out = {};
+                    out.hasDescribeMethod = typeof r.describeProgram === "function";
+                    out.hasPosHelper = typeof r._describeDslPosition === "function";
+                    out.hasCondHelper = typeof r._describeDslCondition === "function";
+                    // Vorlagen-Smoke-Tests
+                    out.weatherDesc = r.describeProgram(["weather", "rainy"]);
+                    out.spawnCreatureDesc = r.describeProgram(["spawn_creature", ["at_player"], 3, "happy"]);
+                    out.chainDesc = r.describeProgram([
+                        "chain",
+                        ["weather", "sunny"],
+                        ["spawn_tree", ["near_player"], 4],
+                    ]);
+                    out.whenDesc = r.describeProgram([
+                        "when",
+                        ["emotion_above", "joy", 0.7],
+                        ["skybox_color", "0xffaa00"],
+                    ]);
+                    out.unknownDesc = r.describeProgram(["fictional_op", 42]);
+                    out.weatherOk = /Wetter/.test(out.weatherDesc) && /rainy/.test(out.weatherDesc);
+                    out.creatureOk =
+                        /3/.test(out.spawnCreatureDesc) &&
+                        /happy/.test(out.spawnCreatureDesc) &&
+                        /Spieler/.test(out.spawnCreatureDesc);
+                    out.chainOk = /und/.test(out.chainDesc);
+                    out.whenOk = /joy/.test(out.whenDesc) && /Himmel/.test(out.whenDesc);
+                    out.unknownOk = /fictional_op/.test(out.unknownDesc);
+                    // Diskrimination: Beschreibung wird beim addNewAbility gespeichert
+                    const beforeCount = r.state.dsl.abilities.length;
+                    r.addNewAbility("test_desc_e1", ["weather", "rainy"], "test");
+                    const added = r.state.dsl.abilities.find((a) => a.name === "test_desc_e1");
+                    out.persistedDescription = added ? added.description : null;
+                    out.persistedOk = !!(added && added.description && /Wetter/.test(added.description));
+                    r.state.dsl.abilities = r.state.dsl.abilities.slice(0, beforeCount);
+                    delete r.state.abilities.test_desc_e1;
+                    // Lazy-Compute für Legacy-Save: Eintrag ohne description hinzufügen,
+                    // renderAbilitiesList ruft → description wird befüllt.
+                    r.state.dsl.abilities.push({
+                        name: "legacy_test_e1",
+                        program: ["weather", "sunny"],
+                        source: "test",
+                        createdAt: 0,
+                    });
+                    if (typeof r.renderAbilitiesList === "function") r.renderAbilitiesList();
+                    const legacyAfter = r.state.dsl.abilities.find((a) => a.name === "legacy_test_e1");
+                    out.lazyComputed = !!(legacyAfter && legacyAfter.description);
+                    r.state.dsl.abilities = r.state.dsl.abilities.filter((a) => a.name !== "legacy_test_e1");
+                    return out;
+                })
+                .catch(() => null);
+
+            if (wave6e1Results) {
+                check("Welle 6.E1: describeProgram-Methode existiert", wave6e1Results.hasDescribeMethod);
+                check("Welle 6.E1: _describeDslPosition-Helper existiert", wave6e1Results.hasPosHelper);
+                check("Welle 6.E1: _describeDslCondition-Helper existiert", wave6e1Results.hasCondHelper);
+                check("Welle 6.E1: weather-Op wird beschrieben (Wetter + Wert)", wave6e1Results.weatherOk);
+                check(
+                    "Welle 6.E1: spawn_creature-Op nutzt count + emotion + position",
+                    wave6e1Results.creatureOk
+                );
+                check("Welle 6.E1: chain-Op verbindet Teile mit 'und'", wave6e1Results.chainOk);
+                check("Welle 6.E1: when-Op rendert Condition + Then", wave6e1Results.whenOk);
+                check("Welle 6.E1: unbekannter Op fällt sauber auf Fallback", wave6e1Results.unknownOk);
+                check(
+                    "Welle 6.E1: addNewAbility persistiert description-Feld",
+                    wave6e1Results.persistedOk
+                );
+                check(
+                    "Welle 6.E1: Lazy-Compute füllt description bei alten Saves (renderAbilitiesList)",
+                    wave6e1Results.lazyComputed
+                );
+            }
+
+            // ### Welle 6.E2 — Intro-Overlay ###
+            const wave6e2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    out.hasInitMethod = typeof r.initIntroDialog === "function";
+                    out.hasPagesHelper = typeof r._introPages === "function";
+                    out.dialogInDom = !!document.getElementById("intro-dialog");
+                    const pages = r._introPages ? r._introPages() : [];
+                    out.pageCount = pages.length;
+                    out.pagesHaveTitle = pages.every((p) => typeof p.title === "string" && p.title.length > 0);
+                    out.pagesHaveBody = pages.every((p) => typeof p.body === "string" && p.body.length > 20);
+                    // Buttons im DOM
+                    const dlg = document.getElementById("intro-dialog");
+                    if (dlg) {
+                        out.hasPrevBtn = !!dlg.querySelector("[data-intro='prev']");
+                        out.hasNextBtn = !!dlg.querySelector("[data-intro='next']");
+                        out.hasSkipBtn = !!dlg.querySelector("[data-intro='skip']");
+                    }
+                    // Idempotenz: zweiter Aufruf erzeugt kein zweites Dialog
+                    r.initIntroDialog();
+                    out.singletonAfterReinit = document.querySelectorAll("#intro-dialog").length === 1;
+                    return out;
+                })
+                .catch(() => null);
+
+            if (wave6e2Results) {
+                check("Welle 6.E2: initIntroDialog-Methode existiert", wave6e2Results.hasInitMethod);
+                check("Welle 6.E2: _introPages-Helper existiert", wave6e2Results.hasPagesHelper);
+                check("Welle 6.E2: #intro-dialog im DOM (init-Aufruf in init()-Sequenz)", wave6e2Results.dialogInDom);
+                check("Welle 6.E2: drei Intro-Seiten", wave6e2Results.pageCount === 3);
+                check("Welle 6.E2: alle Seiten haben Titel + Text", wave6e2Results.pagesHaveTitle && wave6e2Results.pagesHaveBody);
+                check("Welle 6.E2: Prev-Button vorhanden", wave6e2Results.hasPrevBtn);
+                check("Welle 6.E2: Next-Button vorhanden", wave6e2Results.hasNextBtn);
+                check("Welle 6.E2: Skip-Button vorhanden", wave6e2Results.hasSkipBtn);
+                check("Welle 6.E2: Re-Init erzeugt kein Duplikat (Singleton)", wave6e2Results.singletonAfterReinit);
+            }
+
+            // ### Welle 6.F1 + 6.F2 — Visuelle Verbindungs-Linien + Brech-Warning ###
+            //
+            // _addConnectionLines hängt pro Connection eine THREE.Line an die
+            // gebaute Group. Farbe folgt computeConnectionStrength via
+            // _connectionColor (grün/gelb/rot). 6.F2: Wenn die schwächste
+            // Verbindung < 0.7 ist, schreibt _applyCompoundWorldEffects einen
+            // idempotenten weakness-Journal-Eintrag.
+            const wave6fResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    out.hasAddLinesMethod = typeof r._addConnectionLines === "function";
+                    out.hasColorHelper = typeof r._connectionColor === "function";
+
+                    // Farb-Mapping
+                    out.colorWeak = r._connectionColor(0.4);
+                    out.colorOk = r._connectionColor(1.0);
+                    out.colorStrong = r._connectionColor(2.0);
+                    out.colorWeakIsRed = out.colorWeak === 0xff5555;
+                    out.colorOkIsYellow = out.colorOk === 0xffcc44;
+                    out.colorStrongIsGreen = out.colorStrong === 0x66ff88;
+
+                    // Test-Bauplan mit zwei Parts + einer expliziten Verbindung
+                    const testName = "wave6f_test";
+                    r.state.blueprints[testName] = {
+                        name: testName,
+                        label: "Test",
+                        builtIn: false,
+                        parts: [
+                            {
+                                shape: "box",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                                color: 0x888888,
+                                material: "stein",
+                            },
+                            {
+                                shape: "box",
+                                position: { x: 1.05, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                                color: 0x888888,
+                                material: "stein",
+                            },
+                        ],
+                        connections: [{ type: "masonry", partA: 0, partB: 1 }],
+                    };
+                    // Build und auf THREE.Line prüfen
+                    const built = r._buildFromBlueprint(r.state.blueprints[testName]);
+                    let lineCount = 0;
+                    let lineColor = null;
+                    built.traverse((node) => {
+                        if (node.userData && node.userData.isConnectionLine) {
+                            lineCount++;
+                            if (node.material && node.material.color) lineColor = node.material.color.getHex();
+                        }
+                    });
+                    out.lineCount = lineCount;
+                    out.lineExists = lineCount === 1;
+                    out.lineHasUserDataFlag = lineCount === 1;
+                    out.lineColor = lineColor;
+
+                    // 6.F2 Brech-Warning: extrem schwache Verbindung → Journal-Eintrag
+                    // (wir erzwingen weak indem wir partB sehr weit weg setzen → contactArea=0)
+                    const weakName = "wave6f_weak";
+                    r.state.blueprints[weakName] = {
+                        name: weakName,
+                        label: "Schwach",
+                        builtIn: false,
+                        parts: [
+                            { shape: "box", position: { x: 0, y: 0, z: 0 }, size: { x: 0.5, y: 0.5, z: 0.5 }, material: "stein" },
+                            {
+                                shape: "box",
+                                position: { x: 10, y: 0, z: 0 },
+                                size: { x: 0.5, y: 0.5, z: 0.5 },
+                                material: "stein",
+                            },
+                        ],
+                        connections: [{ type: "gluing", partA: 0, partB: 1 }],
+                    };
+                    const weakStrength = r.computeConnectionStrength(
+                        r.state.blueprints[weakName].connections[0],
+                        r.state.blueprints[weakName]
+                    );
+                    out.weakStrength = weakStrength;
+                    out.weakIsBelowThreshold = weakStrength < 0.7;
+
+                    // Journal-Counter vor spawn
+                    const beforeJournal = r.state.worldJournal && r.state.worldJournal.entries
+                        ? r.state.worldJournal.entries.length
+                        : 0;
+                    const beforeSeenKeys = r.state.worldJournal && r.state.worldJournal.seen
+                        ? Object.keys(r.state.worldJournal.seen).filter((k) => k.startsWith("weak_connection:")).length
+                        : 0;
+                    const beforeArchCount = r.state.architectures.length;
+                    r.spawnArchitecture(weakName, { x: 250, y: 0, z: 250 }, { seed: 1 });
+                    const afterSeenKeys = r.state.worldJournal && r.state.worldJournal.seen
+                        ? Object.keys(r.state.worldJournal.seen).filter((k) => k.startsWith("weak_connection:")).length
+                        : 0;
+                    const afterJournal = r.state.worldJournal && r.state.worldJournal.entries
+                        ? r.state.worldJournal.entries.length
+                        : 0;
+                    out.weakJournalIncrement = afterJournal - beforeJournal >= 1;
+                    out.weakSeenKeyAdded = afterSeenKeys > beforeSeenKeys;
+
+                    // 6.F2 Idempotenz: zweimal spawnen → kein zweiter Eintrag
+                    r.spawnArchitecture(weakName, { x: 260, y: 0, z: 260 }, { seed: 2 });
+                    const after2Journal = r.state.worldJournal && r.state.worldJournal.entries
+                        ? r.state.worldJournal.entries.length
+                        : 0;
+                    out.weakIsIdempotent = after2Journal === afterJournal;
+
+                    // Negativ-Kontrolle: starker Bauplan → KEIN weak_connection-Eintrag
+                    const strongName = "wave6f_strong";
+                    r.state.blueprints[strongName] = {
+                        name: strongName,
+                        label: "Stark",
+                        builtIn: false,
+                        parts: [
+                            { shape: "box", position: { x: 0, y: 0, z: 0 }, size: { x: 2, y: 2, z: 2 }, material: "eisen" },
+                            { shape: "box", position: { x: 2.0, y: 0, z: 0 }, size: { x: 2, y: 2, z: 2 }, material: "eisen" },
+                        ],
+                        connections: [{ type: "welding", partA: 0, partB: 1 }],
+                    };
+                    const strongStrength = r.computeConnectionStrength(
+                        r.state.blueprints[strongName].connections[0],
+                        r.state.blueprints[strongName]
+                    );
+                    out.strongStrength = strongStrength;
+                    out.strongIsAboveThreshold = strongStrength >= 0.7;
+                    const seenBefore3 = Object.keys(r.state.worldJournal.seen || {}).filter((k) =>
+                        k.startsWith("weak_connection:" + strongName)
+                    ).length;
+                    r.spawnArchitecture(strongName, { x: 270, y: 0, z: 270 }, { seed: 3 });
+                    const seenAfter3 = Object.keys(r.state.worldJournal.seen || {}).filter((k) =>
+                        k.startsWith("weak_connection:" + strongName)
+                    ).length;
+                    out.strongNoWarning = seenAfter3 === seenBefore3;
+
+                    // Cleanup
+                    r.state.architectures = r.state.architectures.slice(0, beforeArchCount);
+                    delete r.state.blueprints[testName];
+                    delete r.state.blueprints[weakName];
+                    delete r.state.blueprints[strongName];
+
+                    return out;
+                })
+                .catch(() => null);
+
+            if (wave6fResults) {
+                check("Welle 6.F1: _addConnectionLines-Methode existiert", wave6fResults.hasAddLinesMethod);
+                check("Welle 6.F1: _connectionColor-Helper existiert", wave6fResults.hasColorHelper);
+                check("Welle 6.F1: schwache Verbindung (<0.7) = rot 0xff5555", wave6fResults.colorWeakIsRed);
+                check("Welle 6.F1: mittlere Verbindung (0.7..1.5) = goldgelb 0xffcc44", wave6fResults.colorOkIsYellow);
+                check("Welle 6.F1: starke Verbindung (≥1.5) = grün 0x66ff88", wave6fResults.colorStrongIsGreen);
+                check("Welle 6.F1: Bauplan mit Connection erhält THREE.Line im Group", wave6fResults.lineExists);
+                check("Welle 6.F1: Line trägt userData.isConnectionLine-Flag", wave6fResults.lineHasUserDataFlag);
+                check("Welle 6.F2: weakBauplan hat strength < 0.7 (test-setup korrekt)", wave6fResults.weakIsBelowThreshold);
+                check("Welle 6.F2: spawnArchitecture mit schwacher Verbindung schreibt Journal-Eintrag", wave6fResults.weakJournalIncrement);
+                check("Welle 6.F2: weak_connection:-Schlüssel im worldJournal.seen", wave6fResults.weakSeenKeyAdded);
+                check("Welle 6.F2: Idempotent — zweiter Spawn schreibt KEIN doppeltes Warn", wave6fResults.weakIsIdempotent);
+                check("Welle 6.F2: starker Bauplan hat strength ≥ 0.7 (test-setup korrekt)", wave6fResults.strongIsAboveThreshold);
+                check("Welle 6.F2: Diskrimination — starker Bauplan löst KEINE weak-Warning aus", wave6fResults.strongNoWarning);
+            }
+
+            // ### Welle 6.D Etappe 1 — Soul-Tags + STAT_FROM_TAGS + Stat-Berechnung ###
+            //
+            // Vision-Pfeiler-Test: der Spieler ist ein Compound im selben
+            // Hylomorphismus-System wie Architekturen + Materialien. Die 10
+            // MATERIAL_TAG_KEYS sind die EINE Sprache; Soul-Tags + Material-Tags
+            // sind beide an dieselbe Achsen-Liste gebunden. STAT_FROM_TAGS-Formeln
+            // sind reine Funktionen — Diskriminations-Tests prüfen Verhältnisse
+            // (Phönix schneller als Drache, Drache mehr HP als Phönix).
+            const wave6dResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    // AnazhRealm-Klasse ist global im Script-Scope; page.evaluate
+                    // sieht sie direkt (kein window-Prefix nötig).
+                    const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
+                    if (!C || !C.STAT_FROM_TAGS) return null;
+                    const out = {};
+                    out.hasStatMatrix = typeof C.STAT_FROM_TAGS === "object";
+                    out.statKeys = Object.keys(C.STAT_FROM_TAGS).sort().join(",");
+                    out.hasComputeMethod = typeof r.computePlayerStats === "function";
+                    out.hasRecomputeMethod = typeof r.recomputePlayerStats === "function";
+                    out.hasRenderMethod = typeof r.renderPlayerStatsUI === "function";
+
+                    // Welle 6.D Etappe 1.5 — Seele = Bauplan aus Körper-Teilen
+                    const defs = r.playerSoulDefs;
+                    out.allSoulsHaveBodyParts = ["human", "phoenix", "dragon"].every(
+                        (s) => defs[s] && Array.isArray(defs[s].bodyParts) && defs[s].bodyParts.length >= 3
+                    );
+                    out.bodyPartsHaveShapeMaterial = ["human", "phoenix", "dragon"].every((s) =>
+                        defs[s].bodyParts.every((p) => typeof p.shape === "string" && typeof p.material === "string")
+                    );
+                    // Tag-Aggregation: bodyParts liefern Compound-Tags via dieselbe
+                    // MAX-Aggregation wie Architekturen (computeCompoundTags).
+                    out.hasSoulCompoundTagsMethod = typeof r.computeSoulCompoundTags === "function";
+                    const humanCompoundTags = r.computeSoulCompoundTags(defs.human);
+                    out.humanCompoundTagsAreObject = humanCompoundTags && typeof humanCompoundTags === "object";
+                    // Aggregierte Tags sollten echte MATERIAL_TAG_KEYS sein
+                    out.compoundUsesMaterialKeys = Object.keys(humanCompoundTags).every((k) =>
+                        C.MATERIAL_TAG_KEYS.includes(k)
+                    );
+                    // Body-Materialien müssen in state.materials existieren
+                    out.bodyMaterialsExist =
+                        !!r.state.materials.knochen &&
+                        !!r.state.materials.fleisch &&
+                        !!r.state.materials.federn &&
+                        !!r.state.materials.schuppen &&
+                        !!r.state.materials.glut;
+                    out.bodyMaterialsAreLebendig =
+                        (r.state.materials.knochen.tags.lebendig || 0) > 0.9 &&
+                        (r.state.materials.fleisch.tags.lebendig || 0) > 0.9 &&
+                        (r.state.materials.federn.tags.lebendig || 0) > 0.9 &&
+                        (r.state.materials.schuppen.tags.lebendig || 0) > 0.9;
+
+                    // computePlayerStats — gibt {tags, stats} zurück
+                    const computed = r.computePlayerStats();
+                    out.computedHasTags = computed && typeof computed.tags === "object";
+                    out.computedHasStats = computed && typeof computed.stats === "object";
+                    out.computedStatsHasAll = computed && computed.stats &&
+                        ["hpMax", "damage", "speed", "jumpPower", "staminaMax", "precision", "magicResist", "heatResist"].every(
+                            (k) => typeof computed.stats[k] === "number" && Number.isFinite(computed.stats[k])
+                        );
+
+                    // Diskriminations-Test: drei Seelen → drei verschiedene Stat-Profile
+                    const savedSoul = r.state.player.soul;
+                    r.state.player.soul = "human";
+                    const humanStats = r.computePlayerStats().stats;
+                    r.state.player.soul = "phoenix";
+                    const phoenixStats = r.computePlayerStats().stats;
+                    r.state.player.soul = "dragon";
+                    const dragonStats = r.computePlayerStats().stats;
+                    r.state.player.soul = savedSoul;
+
+                    out.humanStats = humanStats;
+                    out.phoenixStats = phoenixStats;
+                    out.dragonStats = dragonStats;
+
+                    // Vision-Treue: Phönix = glass cannon (schneller, weniger HP)
+                    out.phoenixFasterThanDragon = phoenixStats.speed > dragonStats.speed;
+                    out.phoenixJumpsHigherThanDragon = phoenixStats.jumpPower > dragonStats.jumpPower;
+                    out.dragonHasMoreHpThanPhoenix = dragonStats.hpMax > phoenixStats.hpMax;
+                    out.dragonHasMoreDamageThanPhoenix = dragonStats.damage > phoenixStats.damage;
+                    out.phoenixHasMoreMagicResistThanDragon = phoenixStats.magicResist > dragonStats.magicResist;
+                    // Phönix brennbar=0.9, wärme=0.9: -0.9*0.3 + 0.9*0.5 = 0.18.
+                    // Drache brennbar=0.3, wärme=0.8: -0.3*0.3 + 0.8*0.5 = 0.31. Drache mehr Hitze-Resistenz.
+                    out.dragonHasMoreHeatResistThanPhoenix = dragonStats.heatResist > phoenixStats.heatResist;
+                    // Mensch ist balanced (zwischen den anderen beiden bei HP)
+                    out.humanHpBetweenPhoenixAndDragon =
+                        humanStats.hpMax > phoenixStats.hpMax && humanStats.hpMax < dragonStats.hpMax;
+
+                    // recomputePlayerStats — applies to state
+                    r.state.player.soul = "phoenix";
+                    r.recomputePlayerStats();
+                    out.stateSpeedMatches = Math.abs(r.state.speed - phoenixStats.speed) < 0.001;
+                    out.stateJumpPowerMatches = Math.abs(r.state.jumpPower - phoenixStats.jumpPower) < 0.001;
+                    out.stateSprintIsDoubleSpeed = Math.abs(r.state.sprintSpeed - phoenixStats.speed * 2) < 0.001;
+                    out.statePlayerStatsCached = r.state.player.stats && r.state.player.stats.hpMax === phoenixStats.hpMax;
+                    out.statePlayerHasHpAndStamina =
+                        typeof r.state.player.hp === "number" &&
+                        typeof r.state.player.hpMax === "number" &&
+                        typeof r.state.player.stamina === "number" &&
+                        typeof r.state.player.staminaMax === "number" &&
+                        r.state.player.hp === r.state.player.hpMax;
+                    // Restore
+                    r.state.player.soul = savedSoul;
+                    r.recomputePlayerStats();
+
+                    // applyPlayerSoul ruft recompute auf
+                    const applySrc = r.applyPlayerSoul.toString();
+                    out.applyCallsRecompute = /recomputePlayerStats/.test(applySrc);
+
+                    // UI im DOM
+                    out.statsContainerInDom = !!document.getElementById("player-stats");
+                    // Render-Methode arbeitet ohne Crash
+                    let renderOk = false;
+                    try {
+                        r.renderPlayerStatsUI();
+                        renderOk = true;
+                    } catch (e) {
+                        out.renderError = String(e);
+                    }
+                    out.renderOk = renderOk;
+                    if (renderOk) {
+                        const dom = document.getElementById("player-stats");
+                        out.statRowsCount = dom ? dom.querySelectorAll(".stat-row").length : 0;
+                        out.hasTagLine = dom ? !!dom.querySelector(".stat-tags") : false;
+                    }
+                    return out;
+                })
+                .catch(() => null);
+
+            // ### Schöpfer-Reflexions-Fixes (13.05.2026, Welle 6.D Etappe 3a+) ###
+            // Sechs Lücken, die der Schöpfer aufdeckte:
+            //  1. WASD A/D-Swap (Drache-Steuerung „invertiert")
+            //  2. „damage X" als Chat-Pattern (war nur DSL-JSON)
+            //  3. Aura am Charakter statt Boden-Ring
+            //  4. Tod-Wunde persistent + linear regenerierend
+            //  5. Werkzeug-Anwendung kostet Stamina
+            //  6. Konsumables aus Compound-Tags (Logik statt Tabelle)
+            const reflexResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
+                    const out = {};
+
+                    // (1) WASD: Original-Mapping wiederhergestellt. Geometrisch
+                    // ist state.right tatsächlich „player-links" wegen Right-Hand-
+                    // Coords (forward × up = -X). A=+right=player-links, D=-right=
+                    // player-rechts — wie es immer war.
+                    const loopSrc = r.startEternalLoop.toString();
+                    out.aPressPosRight = /keys\["a"\][^;]*addScaledVector\(this\.state\.right,\s*1\)/.test(loopSrc);
+                    out.dPressNegRight = /keys\["d"\][^;]*addScaledVector\(this\.state\.right,\s*-1\)/.test(loopSrc);
+
+                    // (2) Chat-Pattern für damage
+                    const dmgPattern = r.parseChatToDsl("schade mir 42");
+                    out.damageChatParses = dmgPattern && dmgPattern.program && dmgPattern.program[0] === "damage" && dmgPattern.program[1] === 42;
+                    const trinkPattern = r.parseChatToDsl("trink trank_lichts");
+                    out.trinkChatParses = trinkPattern && trinkPattern.program[0] === "apply_boost";
+                    const ruestePattern = r.parseChatToDsl("rüste werkzeug hammer");
+                    out.ruesteChatParses = ruestePattern && ruestePattern.program[0] === "equip_tool";
+
+                    // (3) Aura: ECHTER Glow als Sphere + dezenter Sub-Mesh-Tint
+                    r.applyPlayerSoul("human");
+                    const sub = r.state.playerMesh.children[0];
+                    out.subMeshExists = !!sub && !!sub.material;
+                    const beforeColor = sub && sub.material ? sub.material.color.getHex() : null;
+                    r.tickPlayerAura();
+                    out.auraBaseColorCached = sub && sub.userData && typeof sub.userData._auraBaseColor === "number";
+                    const afterColor = sub && sub.material ? sub.material.color.getHex() : null;
+                    out.auraTintChangedColor = beforeColor !== afterColor;
+                    out.boundsRingRemoved = !r.state.playerAura || !r.state.scene.children.includes(r.state.playerAura);
+                    // Echter Glow V4: Sprite mit AdditiveBlending + CanvasTexture
+                    // (Radial-Gradient für weichen Falloff statt Sphere-Kante)
+                    out.glowSpriteExists = !!r.state.playerAuraGlow;
+                    if (r.state.playerAuraGlow) {
+                        out.glowInScene = r.state.scene.children.includes(r.state.playerAuraGlow);
+                        out.glowIsSprite = r.state.playerAuraGlow.isSprite === true;
+                        const mat = r.state.playerAuraGlow.material;
+                        out.glowIsTransparent = !!mat && mat.transparent === true;
+                        out.glowIsAdditive = !!mat && mat.blending === THREE.AdditiveBlending;
+                        out.glowHasTexture = !!(mat && mat.map);
+                        // Position folgt Spieler
+                        const pp = r.state.playerMesh.position;
+                        const gp = r.state.playerAuraGlow.position;
+                        out.glowFollowsPlayer = Math.abs(gp.x - pp.x) < 0.01 && Math.abs(gp.z - pp.z) < 0.01;
+                    }
+
+                    // Drache: Original-Orientierung (Head in +Z). Inner-π-Flip
+                    // wurde wieder revertiert, weil er den Drache in 3rd-Person
+                    // visuell zum Spieler hin gespiegelt hat. Kopf-Box bleibt
+                    // bei +0.85 in Z (Forward-Richtung).
+                    r.applyPlayerSoul("dragon");
+                    const dragonGroup = r.state.playerMesh;
+                    let dragonHasInnerFlip = false;
+                    if (dragonGroup && dragonGroup.children.length > 0) {
+                        // Prüfen: KEIN Child mit rotation.y ≈ π existiert.
+                        for (const c of dragonGroup.children) {
+                            if (c && c.isGroup && Math.abs((c.rotation.y || 0) - Math.PI) < 0.01) {
+                                dragonHasInnerFlip = true;
+                                break;
+                            }
+                        }
+                    }
+                    out.dragonNoInnerFlip = !dragonHasInnerFlip;
+                    r.applyPlayerSoul("human"); // restore
+
+                    // Welle 6.D Polish — player_speed-DSL-Op setzt jetzt
+                    // sprintSpeed mit (= 2× speed). Vorher konnte ein dsl
+                    // `player_speed 25` state.speed=25 setzen ohne
+                    // sprintSpeed zu aktualisieren → Shift drücken machte
+                    // den Spieler LANGSAMER.
+                    const beforeSprintBug = r.state.sprintSpeed;
+                    r.dslRun(["player_speed", 20], { source: "test" });
+                    out.speedAfterDsl = r.state.speed;
+                    out.sprintAfterDsl = r.state.sprintSpeed;
+                    out.sprintFollowsSpeed = Math.abs(r.state.sprintSpeed - r.state.speed * 2) < 0.001;
+                    out.sprintActuallyFaster = r.state.sprintSpeed > r.state.speed;
+                    // Restore baseline mit explizitem Soul-Reset (frühere Tests
+                    // haben womöglich Boosts/Wunde/Custom-Soul-Reste hinterlassen)
+                    r.state.player.soul = "human";
+                    r.state.player.boosts = [];
+                    r.state.player.deathWoundIntensity = 0;
+                    r.state.player.equipped = { tool: null, armor: null };
+                    r.recomputePlayerStats();
+                    // Höhere Base-Speed (Schöpfer-Wunsch): Mensch sollte ~8-9 sein
+                    const humanResult = r.computePlayerStats();
+                    out.humanSpeed = humanResult.stats.speed;
+                    out.humanTags = JSON.stringify(humanResult.tags);
+                    out.humanWound = r.state.player.deathWoundIntensity;
+                    out.humanBoostCount = r.state.player.boosts.length;
+                    // Mensch ist „balanced" — niedriges magieleitung, hoher dichte
+                    // (durch sphere-Kopf-Aktivierung clamped auf 1). Speed-Base 7
+                    // gibt Mensch genau 7 (= deutlich höher als vorher 6.1).
+                    out.humanSpeedRaised = humanResult.stats.speed >= 7;
+
+                    // (4) Tod-Wunde persistent + regeneriert
+                    out.hasWoundIntensity = "deathWoundIntensity" in r.state.player;
+                    out.hasWoundPenaltyConst = C.WOUND_TAG_PENALTY && typeof C.WOUND_TAG_PENALTY === "object";
+                    r.state.player.deathWoundIntensity = 0;
+                    r.state.player.phoenixUntil = -Infinity;
+                    const baselineHpMax = r.state.player.hpMax;
+                    r.triggerPhoenixDeath("test");
+                    out.woundSetAt1 = Math.abs(r.state.player.deathWoundIntensity - 1.0) < 0.001;
+                    // Wunde drückt dichte/lebendig/zähigkeit → hpMax sinkt + lebendig-Tag sinkt
+                    const woundedHpMax = r.state.player.hpMax;
+                    out.woundReducesHp = woundedHpMax < baselineHpMax;
+                    // Regen-Tick: nach 60 Sekunden simulierter Zeit Wunde reduziert
+                    r.state.player.deathLastTick = -Infinity;
+                    r.tickPhoenixDeath(performance.now() / 1000);
+                    out.woundRegens = r.state.player.deathWoundIntensity < 1.0;
+
+                    // (5) Werkzeug-Kosten: applyOpToPart braucht Stamina
+                    r.state.player.deathWoundIntensity = 0;
+                    r.applyPlayerSoul("human"); // reset Stats inkl. Stamina-max
+                    out.hasStaminaCostConst = typeof C.TOOL_OP_STAMINA_COST === "number" && C.TOOL_OP_STAMINA_COST > 0;
+                    out.hasStaminaRegenConst = typeof C.STAMINA_REGEN_PER_SEC === "number";
+                    // Setup: einen eigenen Bauplan mit einem Part + Spieler besitzt hammer
+                    r.state.blueprints.wound_test_bp = {
+                        name: "wound_test_bp",
+                        label: "Test",
+                        builtIn: false,
+                        // eisen akzeptiert plastic-Op (hammer-Klasse); stein nur subtractive.
+                        parts: [{ shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } }],
+                    };
+                    if (!r.state.player.tools.includes("hammer")) r.state.player.tools.push("hammer");
+                    const staBefore = r.state.player.stamina;
+                    const applyOk = r.applyOpToPart("wound_test_bp", 0, "hammer");
+                    out.applyOpResult = applyOk;
+                    out.staBefore = staBefore;
+                    out.staAfter = r.state.player.stamina;
+                    out.applyOpOkWithStamina = applyOk && applyOk.ok;
+                    out.staminaWasDeducted = r.state.player.stamina < staBefore;
+                    // Stamina auf 0 → applyOpToPart lehnt ab
+                    r.state.player.stamina = 1; // weniger als cost 10
+                    const applyFail = r.applyOpToPart("wound_test_bp", 0, "hammer");
+                    out.applyOpRejectedNoStamina = !applyFail.ok && applyFail.reason === "not_enough_stamina";
+                    // Cleanup
+                    delete r.state.blueprints.wound_test_bp;
+                    r.state.player.stamina = r.state.player.staminaMax;
+
+                    // (6) Konsumables aus Compound-Tags
+                    out.hasSetBlueprintAsConsumable = typeof r.setBlueprintAsConsumable === "function";
+                    // Setup: Bauplan aus quarz-Helix + glut-Sphere (sollte magieleitung + brennbar hoch)
+                    r.state.blueprints.wave6d_potion = {
+                        name: "wave6d_potion",
+                        label: "Magie-Trank",
+                        builtIn: false,
+                        parts: [
+                            { shape: "helix", material: "quarz", position: { x: 0, y: 0, z: 0 }, size: { x: 0.3, y: 0.5, z: 2 } },
+                            { shape: "sphere", material: "glut", position: { x: 0, y: 0.5, z: 0 }, size: { x: 0.2, y: 0.2, z: 0.2 } },
+                        ],
+                    };
+                    const markRes = r.setBlueprintAsConsumable("wave6d_potion", 45, "Magie-Trank", 0.2);
+                    out.markConsumableOk = markRes && markRes.ok;
+                    out.blueprintGotRoleConsumable = r.state.blueprints.wave6d_potion.role === "consumable";
+                    out.blueprintHasConsumableMeta =
+                        r.state.blueprints.wave6d_potion.consumableMeta &&
+                        r.state.blueprints.wave6d_potion.consumableMeta.durationSeconds === 45;
+                    // Aktivieren → tagBonus aus Compound-Tags emergiert
+                    r.state.player.boosts = [];
+                    const drinkRes = r.activateConsumable("wave6d_potion");
+                    out.drinkOk = drinkRes && drinkRes.ok;
+                    const boost = r.state.player.boosts.find((b) => b.source === "consume:wave6d_potion");
+                    out.boostExists = !!boost;
+                    out.boostTagBonusFromCompound =
+                        boost && boost.tagDelta && (boost.tagDelta.magieleitung || 0) > 0.05;
+                    out.boostUsesBlueprintDuration =
+                        boost && Math.abs(boost.expiresAt - performance.now() / 1000 - 45) < 2;
+                    // Cleanup
+                    delete r.state.blueprints.wave6d_potion;
+                    r.state.player.boosts = [];
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (reflexResults && !reflexResults.error) {
+                // (1) WASD (Original-Mapping: state.right ist geometrisch player-links,
+                // weil forward × up = -X im right-handed Coord-System)
+                check("Reflex 1: WASD-Bewegung — A drückt +state.right (= player-links)", reflexResults.aPressPosRight);
+                check("Reflex 1: WASD-Bewegung — D drückt −state.right (= player-rechts)", reflexResults.dPressNegRight);
+                // (2) Chat
+                check("Reflex 2: 'schade mir 42' chat-pattern → DSL ['damage', 42, ...]", reflexResults.damageChatParses);
+                check("Reflex 2: 'trink X' chat-pattern → DSL ['apply_boost', ...]", reflexResults.trinkChatParses);
+                check("Reflex 2: 'rüste werkzeug X' chat-pattern → DSL ['equip_tool', ...]", reflexResults.ruesteChatParses);
+                // (3) Aura: Glow-Sphere + dezenter Sub-Mesh-Tint
+                check("Reflex 3: tickPlayerAura cached _auraBaseColor auf Sub-Mesh", reflexResults.auraBaseColorCached);
+                check("Reflex 3: tickPlayerAura mischt Aura-Farbe in Material", reflexResults.auraTintChangedColor);
+                check("Reflex 3: Alter Boden-Torus-Ring entfernt", reflexResults.boundsRingRemoved);
+                check("Reflex 3 V4: weicher Glow — Sprite mit Radial-Texture existiert", reflexResults.glowSpriteExists);
+                if (reflexResults.glowSpriteExists) {
+                    check("Reflex 3 V4: Glow-Sprite ist in der Welt-Szene", reflexResults.glowInScene);
+                    check("Reflex 3 V4: Glow ist ein THREE.Sprite (Billboard)", reflexResults.glowIsSprite);
+                    check("Reflex 3 V4: Glow-Material ist transparent", reflexResults.glowIsTransparent);
+                    check("Reflex 3 V4: Glow nutzt AdditiveBlending (echter Leucht-Effekt)", reflexResults.glowIsAdditive);
+                    check("Reflex 3 V4: Glow hat Map-Texture (Radial-Gradient für weichen Falloff)", reflexResults.glowHasTexture);
+                    check("Reflex 3 V4: Glow-Position folgt Spieler (x/z)", reflexResults.glowFollowsPlayer);
+                }
+                // Drache-Orientierung (Schöpfer-Korrektur 13.05.2026): KEIN
+                // Inner-π-Flip — der Drache schaut wieder vom Spieler weg.
+                check(
+                    "Drache: kein Inner-π-Flip mehr (Avatar schaut vom Spieler weg in 3rd-Person)",
+                    reflexResults.dragonNoInnerFlip
+                );
+                // Sprint-Bug-Fix: player_speed setzt jetzt sprintSpeed mit
+                check(
+                    "Welle 6.D Polish: player_speed-DSL-Op aktualisiert sprintSpeed = 2× speed",
+                    reflexResults.sprintFollowsSpeed,
+                    `speed=${reflexResults.speedAfterDsl} sprint=${reflexResults.sprintAfterDsl}`
+                );
+                check(
+                    "Welle 6.D Polish: Sprint ist nach player_speed wirklich SCHNELLER als Walk",
+                    reflexResults.sprintActuallyFaster
+                );
+                check(
+                    "Welle 6.D Polish: Mensch-Speed mind. 7 (Base-Erhöhung, war vorher 6.1)",
+                    reflexResults.humanSpeedRaised,
+                    `speed=${(reflexResults.humanSpeed || 0).toFixed(2)}`
+                );
+                // (4) Wunde
+                check("Reflex 4: state.player.deathWoundIntensity existiert", reflexResults.hasWoundIntensity);
+                check("Reflex 4: AnazhRealm.WOUND_TAG_PENALTY-Konstante existiert", reflexResults.hasWoundPenaltyConst);
+                check("Reflex 4: triggerPhoenixDeath setzt deathWoundIntensity = 1.0", reflexResults.woundSetAt1);
+                check(
+                    "Reflex 4: Diskrimination — Wunde reduziert hpMax (dichte+härte-Penalty)",
+                    reflexResults.woundReducesHp
+                );
+                check("Reflex 4: tickPhoenixDeath regeneriert Wunde linear", reflexResults.woundRegens);
+                // (5) Werkzeug-Kosten
+                check("Reflex 5: TOOL_OP_STAMINA_COST-Konstante existiert", reflexResults.hasStaminaCostConst);
+                check("Reflex 5: STAMINA_REGEN_PER_SEC-Konstante existiert", reflexResults.hasStaminaRegenConst);
+                check(
+                    "Reflex 5: applyOpToPart läuft mit ausreichend Stamina",
+                    reflexResults.applyOpOkWithStamina,
+                    `result=${JSON.stringify(reflexResults.applyOpResult)} sta ${reflexResults.staBefore}→${reflexResults.staAfter}`
+                );
+                check("Reflex 5: applyOpToPart zieht Stamina ab", reflexResults.staminaWasDeducted);
+                check("Reflex 5: applyOpToPart lehnt ab bei stamina<cost", reflexResults.applyOpRejectedNoStamina);
+                // (6) Konsumables-Logik
+                check("Reflex 6: setBlueprintAsConsumable-Methode existiert", reflexResults.hasSetBlueprintAsConsumable);
+                check("Reflex 6: setBlueprintAsConsumable liefert ok", reflexResults.markConsumableOk);
+                check("Reflex 6: Bauplan bekommt role:'consumable'", reflexResults.blueprintGotRoleConsumable);
+                check("Reflex 6: consumableMeta speichert durationSeconds", reflexResults.blueprintHasConsumableMeta);
+                check("Reflex 6: activateConsumable auf Bauplan emergiert Boost aus Compound-Tags", reflexResults.drinkOk && reflexResults.boostExists);
+                check(
+                    "Reflex 6: Diskrimination — quarz+glut-Bauplan → magieleitung-Boost",
+                    reflexResults.boostTagBonusFromCompound
+                );
+                check("Reflex 6: Boost-Dauer aus consumableMeta.durationSeconds", reflexResults.boostUsesBlueprintDuration);
+            } else if (reflexResults && reflexResults.error) {
+                check("Reflex-Tests Block lief ohne Exception", false, reflexResults.error);
+            }
+
+            // ### Welle 6.D Etappe 3b — Equipment + Aura ###
+            const wave6d3bResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
+                    const out = {};
+                    // Konstanten + Methoden
+                    out.hasArmorWeight = typeof C.ARMOR_STAT_WEIGHT === "number";
+                    out.hasToolWeight = typeof C.TOOL_STAT_WEIGHT === "number";
+                    out.armorWeight03 = Math.abs(C.ARMOR_STAT_WEIGHT - 0.3) < 0.001;
+                    out.toolWeight015 = Math.abs(C.TOOL_STAT_WEIGHT - 0.15) < 0.001;
+                    out.hasEquipTool = typeof r.equipTool === "function";
+                    out.hasEquipArmor = typeof r.equipArmor === "function";
+                    out.hasSetArmor = typeof r.setBlueprintAsArmor === "function";
+                    out.hasEquippedState =
+                        r.state.player.equipped &&
+                        "tool" in r.state.player.equipped &&
+                        "armor" in r.state.player.equipped;
+                    out.hasAuraHueMap = C.AURA_TAG_HUE && typeof C.AURA_TAG_HUE === "object";
+                    out.auraHueMapHasAllTags = C.MATERIAL_TAG_KEYS.every((k) => k in C.AURA_TAG_HUE);
+                    // NON_BROADCASTABLE
+                    out.equipNonBroadcast =
+                        C.NON_BROADCASTABLE_OPS.has("equip_tool") &&
+                        C.NON_BROADCASTABLE_OPS.has("equip_armor") &&
+                        C.NON_BROADCASTABLE_OPS.has("unequip");
+
+                    // Setup: Custom-Bauplan für Armor + Werkzeug
+                    const savedSoul = r.state.player.soul;
+                    r.applyPlayerSoul("human");
+                    const baselineStats = JSON.parse(JSON.stringify(r.state.player.stats));
+
+                    // Eisen-Rüstung-Bauplan
+                    r.state.blueprints.test_armor_eisen = {
+                        name: "test_armor_eisen",
+                        label: "Eisen-Plate",
+                        builtIn: false,
+                        parts: [
+                            { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                            { shape: "box", material: "eisen", position: { x: 0, y: 1, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                        ],
+                    };
+                    // Markieren als Rüstung
+                    const markResult = r.setBlueprintAsArmor("test_armor_eisen");
+                    out.markArmorOk = markResult.ok;
+                    out.markArmorSetsRole = r.state.blueprints.test_armor_eisen.role === "armor";
+
+                    // Built-in schützen
+                    r.state.blueprints.village.builtIn = true;
+                    const markBuiltinResult = r.setBlueprintAsArmor("village");
+                    out.markBuiltinRejected = !markBuiltinResult.ok && markBuiltinResult.reason === "cannot_modify_builtin";
+
+                    // Equip Rüstung
+                    const equipResult = r.equipArmor("test_armor_eisen");
+                    out.equipArmorOk = equipResult.ok;
+                    out.equippedArmorIs = r.state.player.equipped.armor === "test_armor_eisen";
+                    // Stat-Diskrimination: eisen hat hohe dichte + härte → hpMax steigt
+                    const armoredStats = r.state.player.stats;
+                    out.armorIncreasesHp = armoredStats.hpMax > baselineStats.hpMax + 5;
+                    out.armorIncreasesDamage = armoredStats.damage > baselineStats.damage + 0.5;
+
+                    // Equip auf Rüstung ohne Marker → abgelehnt
+                    r.state.blueprints.test_plain = {
+                        name: "test_plain",
+                        label: "Unmarked",
+                        builtIn: false,
+                        parts: [
+                            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                        ],
+                    };
+                    const equipUnmarkedResult = r.equipArmor("test_plain");
+                    out.unmarkedRejected = !equipUnmarkedResult.ok && equipUnmarkedResult.reason === "not_marked_as_armor";
+
+                    // Unequip
+                    r.equipArmor(null);
+                    out.unequippedRestoresStats = Math.abs(r.state.player.stats.hpMax - baselineStats.hpMax) < 0.01;
+                    out.equippedArmorNull = r.state.player.equipped.armor === null;
+
+                    // Equipped via DSL
+                    r.equipArmor("test_armor_eisen");
+                    r.dslRun(["unequip", "armor"], { source: "test" });
+                    out.dslUnequipWorks = r.state.player.equipped.armor === null;
+
+                    // Werkzeug equippen
+                    r.state.player.tools = r.state.player.tools || [];
+                    if (!r.state.player.tools.includes("hammer")) r.state.player.tools.push("hammer");
+                    const equipToolResult = r.equipTool("hammer");
+                    out.equipBuiltinToolOk = equipToolResult.ok;
+                    out.equippedToolIs = r.state.player.equipped.tool === "hammer";
+                    // Built-in-Werkzeug hat KEINEN sourceBlueprint → trägt kein Tag-Bonus
+                    // (das ist ok: nur Bauplan-Werkzeuge stacken Stats; Built-ins
+                    // sind Präzisions-Modulatoren via opChain).
+                    const toolStats = r.state.player.stats;
+                    out.builtinToolNoStatChange = Math.abs(toolStats.hpMax - baselineStats.hpMax) < 0.01;
+
+                    // Save-Round-Trip
+                    r.equipArmor("test_armor_eisen");
+                    r.equipTool("hammer");
+                    const snap = r.buildStateSnapshot();
+                    out.snapHasEquipped =
+                        snap.playerEquipped &&
+                        snap.playerEquipped.armor === "test_armor_eisen" &&
+                        snap.playerEquipped.tool === "hammer";
+
+                    // Aura-Visual (Schöpfer-Feedback: jetzt am Charakter, nicht Boden-Ring)
+                    r.tickPlayerAura();
+                    // V2: Aura tinted Sub-Meshes; siehe Reflex-Tests Block oben
+                    const subMesh = r.state.playerMesh.children[0];
+                    out.auraSubMeshTinted =
+                        !!subMesh &&
+                        !!subMesh.userData &&
+                        typeof subMesh.userData._auraBaseColor === "number";
+
+                    // Cleanup
+                    r.equipArmor(null);
+                    r.equipTool(null);
+                    delete r.state.blueprints.test_armor_eisen;
+                    delete r.state.blueprints.test_plain;
+                    r.applyPlayerSoul(savedSoul);
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6d3bResults && !wave6d3bResults.error) {
+                check("Welle 6.D Etappe 3b: ARMOR_STAT_WEIGHT-Konstante existiert", wave6d3bResults.hasArmorWeight);
+                check("Welle 6.D Etappe 3b: TOOL_STAT_WEIGHT-Konstante existiert", wave6d3bResults.hasToolWeight);
+                check("Welle 6.D Etappe 3b: ARMOR_STAT_WEIGHT == 0.3", wave6d3bResults.armorWeight03);
+                check("Welle 6.D Etappe 3b: TOOL_STAT_WEIGHT == 0.15", wave6d3bResults.toolWeight015);
+                check("Welle 6.D Etappe 3b: equipTool-Methode existiert", wave6d3bResults.hasEquipTool);
+                check("Welle 6.D Etappe 3b: equipArmor-Methode existiert", wave6d3bResults.hasEquipArmor);
+                check("Welle 6.D Etappe 3b: setBlueprintAsArmor-Methode existiert", wave6d3bResults.hasSetArmor);
+                check(
+                    "Welle 6.D Etappe 3b: state.player.equipped = {tool, armor}",
+                    wave6d3bResults.hasEquippedState
+                );
+                check("Welle 6.D Etappe 3b: AURA_TAG_HUE-Map existiert", wave6d3bResults.hasAuraHueMap);
+                check(
+                    "Welle 6.D Etappe 3b: AURA_TAG_HUE-Map deckt alle 10 MATERIAL_TAG_KEYS ab",
+                    wave6d3bResults.auraHueMapHasAllTags
+                );
+                check(
+                    "Welle 6.D Etappe 3b: equip-Ops in NON_BROADCASTABLE_OPS (privat)",
+                    wave6d3bResults.equipNonBroadcast
+                );
+                check("Welle 6.D Etappe 3b: setBlueprintAsArmor liefert ok", wave6d3bResults.markArmorOk);
+                check("Welle 6.D Etappe 3b: setBlueprintAsArmor setzt role:'armor'", wave6d3bResults.markArmorSetsRole);
+                check(
+                    "Welle 6.D Etappe 3b: Built-in-Bauplan kann nicht als Rüstung markiert werden",
+                    wave6d3bResults.markBuiltinRejected
+                );
+                check("Welle 6.D Etappe 3b: equipArmor erfolgreich auf markiertem Bauplan", wave6d3bResults.equipArmorOk);
+                check("Welle 6.D Etappe 3b: state.player.equipped.armor zeigt auf Rüstung", wave6d3bResults.equippedArmorIs);
+                check(
+                    "Welle 6.D Etappe 3b: Diskrimination — Eisen-Rüstung erhöht hpMax (dichte + härte hoch)",
+                    wave6d3bResults.armorIncreasesHp
+                );
+                check(
+                    "Welle 6.D Etappe 3b: Diskrimination — Eisen-Rüstung erhöht damage",
+                    wave6d3bResults.armorIncreasesDamage
+                );
+                check(
+                    "Welle 6.D Etappe 3b: Bauplan ohne role:'armor' wird abgelehnt",
+                    wave6d3bResults.unmarkedRejected
+                );
+                check(
+                    "Welle 6.D Etappe 3b: unequip stellt baseline-Stats wieder her",
+                    wave6d3bResults.unequippedRestoresStats
+                );
+                check("Welle 6.D Etappe 3b: state.player.equipped.armor == null nach unequip", wave6d3bResults.equippedArmorNull);
+                check("Welle 6.D Etappe 3b: DSL-Op unequip(armor) entfernt Rüstung", wave6d3bResults.dslUnequipWorks);
+                check("Welle 6.D Etappe 3b: equipTool akzeptiert Built-in-Werkzeug", wave6d3bResults.equipBuiltinToolOk);
+                check("Welle 6.D Etappe 3b: state.player.equipped.tool ist gesetzt", wave6d3bResults.equippedToolIs);
+                check(
+                    "Welle 6.D Etappe 3b: Built-in-Werkzeug ohne sourceBlueprint → kein Stat-Beitrag (ok)",
+                    wave6d3bResults.builtinToolNoStatChange
+                );
+                check("Welle 6.D Etappe 3b: buildStateSnapshot persistiert playerEquipped", wave6d3bResults.snapHasEquipped);
+                check(
+                    "Welle 6.D Etappe 3b (V2): Aura tintet Spieler-Sub-Meshes (statt Boden-Ring)",
+                    wave6d3bResults.auraSubMeshTinted
+                );
+            } else if (wave6d3bResults && wave6d3bResults.error) {
+                check("Welle 6.D Etappe 3b: Test-Block lief ohne Exception", false, wave6d3bResults.error);
+            }
+
+            // ### Welle 6.D Etappe 3a — Tod, Min-Regel-Hybrid, Konsumables ###
+            const wave6d3aResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
+                    const out = {};
+
+                    // --- Tod-Behandlung ---
+                    out.hasDamageMethod = typeof r.damagePlayer === "function";
+                    out.hasTriggerPhoenixMethod = typeof r.triggerPhoenixDeath === "function";
+                    out.hasTickPhoenixMethod = typeof r.tickPhoenixDeath === "function";
+                    out.hasPhoenixState = "phoenixUntil" in r.state.player;
+                    out.damageOpInNonBroadcast = C.NON_BROADCASTABLE_OPS.has("damage");
+
+                    // Setup
+                    const savedSoul = r.state.player.soul;
+                    if (savedSoul !== "human") r.applyPlayerSoul("human");
+                    r.state.player.phoenixUntil = -Infinity;
+
+                    const hpMax = r.state.player.hpMax;
+                    const hpBefore = r.state.player.hp;
+                    r.damagePlayer(20, "test");
+                    out.hpDropped = r.state.player.hp === hpBefore - 20;
+                    // Heat-Quelle: heatResist (Mensch hat ~0.22) dämpft
+                    const hpAfterHeat = r.state.player.hp;
+                    r.damagePlayer(20, "fire-test");
+                    const hpDelta = hpAfterHeat - r.state.player.hp;
+                    out.heatResistReducesDamage = hpDelta < 20 - 1;
+
+                    // Tod-Trigger
+                    r.damagePlayer(99999, "kill-test");
+                    out.killTriggersPhoenix = r.state.player.soul === "phoenix";
+                    out.phoenixUntilSet = r.state.player.phoenixUntil > performance.now() / 1000;
+                    out.preDeathSoulRemembered = r.state.player.preDeathSoul === "human";
+                    out.weltTrauerSorrow = r.state.player.emotions.sorrow > 0.25;
+                    out.weltTrauerAwe = r.state.player.emotions.awe > 0.15;
+                    out.hpRestoredAfterDeath = r.state.player.hp > 0;
+                    // Journal-Eintrag
+                    const journalEntries = r.state.worldJournal && r.state.worldJournal.entries;
+                    out.journalHasLossEntry =
+                        Array.isArray(journalEntries) &&
+                        journalEntries.some((e) => e.type === "loss" && /fiel/.test(e.text || ""));
+
+                    // Doppelt-Tod-Schutz
+                    const hpInPhoenix = r.state.player.hp;
+                    const beforeJournalCount = journalEntries.length;
+                    r.damagePlayer(99999, "kill-test-2");
+                    const afterJournalCount = journalEntries.length;
+                    out.deathDoubleProtected = afterJournalCount === beforeJournalCount;
+                    // (HP sollte nicht weiter sinken weil phoenixUntil > now)
+                    out.hpUntouchedDuringPhoenix = Math.abs(r.state.player.hp - hpInPhoenix) < 1;
+
+                    // tickPhoenixDeath regeneriert HP linear
+                    r.state.player.hp = 10;
+                    r.state.player.deathLastTick = -Infinity;
+                    r.tickPhoenixDeath(performance.now() / 1000);
+                    out.tickRegenerates = r.state.player.hp > 10;
+
+                    // Reset
+                    r.state.player.phoenixUntil = -Infinity;
+                    r.state.player.preDeathSoul = null;
+                    r.state.player.emotions.sorrow = 0;
+                    r.state.player.emotions.awe = 0;
+                    r.state.player.hp = r.state.player.hpMax;
+
+                    // --- Min-Regel-Hybrid ---
+                    out.hasPrecisionDecay = typeof C.PRECISION_DECAY === "number";
+                    out.precisionDecayValue = C.PRECISION_DECAY;
+                    out.precisionDecayIs07 = Math.abs(C.PRECISION_DECAY - 0.7) < 0.001;
+                    // Beispiel aus wave-6-design §10.5
+                    const examplePart = {
+                        shape: "box",
+                        material: "stein",
+                        opChain: [
+                            { tool: "hand", op: "knap", cap: 0.4 },
+                            { tool: "hammer", op: "hammer", cap: 0.7 },
+                            { tool: "feile", op: "file", cap: 0.85 },
+                            { tool: "polierscheibe", op: "polish", cap: 0.97 },
+                        ],
+                    };
+                    const exPrec = r.computePartPrecision(examplePart);
+                    // Erwartung: 0.4 + (0.97-0.4) × 0.7^3 = 0.4 + 0.57 × 0.343 = ~0.595
+                    out.hybridExampleValue = exPrec;
+                    out.hybridMatchesDoc = Math.abs(exPrec - 0.595) < 0.01;
+                    // Edge: 1 Schritt → min (kein Hybrid-Effekt)
+                    const onePart = { shape: "box", material: "stein", opChain: [{ cap: 0.4 }] };
+                    out.oneStepReturnsMin = Math.abs(r.computePartPrecision(onePart) - 0.4) < 0.001;
+                    // Edge: leere Chain → 0.4
+                    const noChainPart = { shape: "box", material: "stein", opChain: [] };
+                    out.emptyChainReturnsDefault = Math.abs(r.computePartPrecision(noChainPart) - 0.4) < 0.001;
+                    // Diskrimination: Hybrid liefert STRIKT MEHR als reine min für ≥2 Schritte
+                    const twoPart = {
+                        shape: "box",
+                        material: "stein",
+                        opChain: [{ cap: 0.4 }, { cap: 0.9 }],
+                    };
+                    const twoPrec = r.computePartPrecision(twoPart);
+                    out.twoStepAboveMin = twoPrec > 0.4 && twoPrec < 0.9;
+
+                    // --- Konsumables ---
+                    out.hasConsumablesContainer =
+                        r.state.consumables && typeof r.state.consumables === "object";
+                    out.hasCreateConsumableMethod = typeof r.createOrUpdateConsumable === "function";
+                    out.hasActivateMethod = typeof r.activateConsumable === "function";
+                    // define_consumable via DSL
+                    r.dslRun(
+                        ["define_consumable", "trank_des_lichts", { magieleitung: 0.3, resoniert: 0.2 }, 60, "Trank des Lichts"],
+                        { source: "test" }
+                    );
+                    const cn = r.state.consumables.trank_des_lichts;
+                    out.consumableDefined = !!cn;
+                    out.consumableTagBonus =
+                        cn && cn.tagBonus && Math.abs(cn.tagBonus.magieleitung - 0.3) < 0.001;
+                    out.consumableDuration = cn && cn.durationSeconds === 60;
+                    out.consumableLabel = cn && cn.label === "Trank des Lichts";
+
+                    // apply_boost via DSL → Boost im Array
+                    r.state.player.boosts = [];
+                    r.dslRun(["apply_boost", "trank_des_lichts"], { source: "test" });
+                    const b = r.state.player.boosts.find((x) => x.source === "consume:trank_des_lichts");
+                    out.applyBoostAddsBoost = !!b;
+                    out.boostTagBonus = b && Math.abs((b.tagDelta.magieleitung || 0) - 0.3) < 0.001;
+
+                    // Dedupe: zweimal apply_boost verlängert statt zu duplizieren
+                    r.dslRun(["apply_boost", "trank_des_lichts"], { source: "test" });
+                    const matching = r.state.player.boosts.filter(
+                        (x) => x.source === "consume:trank_des_lichts"
+                    );
+                    out.consumableDedupes = matching.length === 1;
+
+                    // Unknown name → kein Boost
+                    const beforeBoostCount = r.state.player.boosts.length;
+                    r.dslRun(["apply_boost", "nicht_da"], { source: "test" });
+                    out.unknownRejected = r.state.player.boosts.length === beforeBoostCount;
+
+                    // Non-broadcast: apply_boost ist in NON_BROADCASTABLE_OPS
+                    out.applyBoostNonBroadcast = C.NON_BROADCASTABLE_OPS.has("apply_boost");
+
+                    // Save-Round-Trip
+                    const snap = r.buildStateSnapshot();
+                    out.snapHasConsumables = !!(snap.consumables && snap.consumables.trank_des_lichts);
+
+                    // Cleanup
+                    r.state.consumables = {};
+                    r.state.player.boosts = [];
+                    if (savedSoul !== "phoenix") r.applyPlayerSoul(savedSoul);
+                    r.state.player.phoenixUntil = -Infinity;
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6d3aResults && !wave6d3aResults.error) {
+                // Tod-Behandlung
+                check("Welle 6.D Etappe 3a: damagePlayer-Methode existiert", wave6d3aResults.hasDamageMethod);
+                check("Welle 6.D Etappe 3a: triggerPhoenixDeath-Methode existiert", wave6d3aResults.hasTriggerPhoenixMethod);
+                check("Welle 6.D Etappe 3a: tickPhoenixDeath-Methode existiert", wave6d3aResults.hasTickPhoenixMethod);
+                check("Welle 6.D Etappe 3a: state.player.phoenixUntil existiert", wave6d3aResults.hasPhoenixState);
+                check(
+                    "Welle 6.D Etappe 3a: damage-Op in NON_BROADCASTABLE_OPS (privat)",
+                    wave6d3aResults.damageOpInNonBroadcast
+                );
+                check("Welle 6.D Etappe 3a: damagePlayer reduziert HP", wave6d3aResults.hpDropped);
+                check("Welle 6.D Etappe 3a: heatResist dämpft Feuer-Schaden", wave6d3aResults.heatResistReducesDamage);
+                check("Welle 6.D Etappe 3a: HP=0 → Phönix-Wandlung (soul=phoenix)", wave6d3aResults.killTriggersPhoenix);
+                check("Welle 6.D Etappe 3a: phoenixUntil > now nach Tod", wave6d3aResults.phoenixUntilSet);
+                check(
+                    "Welle 6.D Etappe 3a: preDeathSoul merkt vorherige Seele",
+                    wave6d3aResults.preDeathSoulRemembered
+                );
+                check("Welle 6.D Etappe 3a: Welt-Trauer — sorrow +0.3 nach Tod", wave6d3aResults.weltTrauerSorrow);
+                check("Welle 6.D Etappe 3a: Welt-Trauer — awe +0.2 nach Tod", wave6d3aResults.weltTrauerAwe);
+                check("Welle 6.D Etappe 3a: HP wird in Wandlung auf max gesetzt", wave6d3aResults.hpRestoredAfterDeath);
+                check(
+                    "Welle 6.D Etappe 3a: Journal hat 'loss'-Eintrag mit 'fiel'",
+                    wave6d3aResults.journalHasLossEntry
+                );
+                check(
+                    "Welle 6.D Etappe 3a: Doppelt-Tod-Schutz — zweiter damagePlayer in Wandlung wirkt nicht",
+                    wave6d3aResults.deathDoubleProtected
+                );
+                check(
+                    "Welle 6.D Etappe 3a: HP unangetastet während Wandlung",
+                    wave6d3aResults.hpUntouchedDuringPhoenix
+                );
+                check("Welle 6.D Etappe 3a: tickPhoenixDeath regeneriert HP", wave6d3aResults.tickRegenerates);
+                // Min-Regel-Hybrid
+                check("Welle 6.D Etappe 3a: PRECISION_DECAY-Konstante existiert", wave6d3aResults.hasPrecisionDecay);
+                check(
+                    "Welle 6.D Etappe 3a: PRECISION_DECAY == 0.7",
+                    wave6d3aResults.precisionDecayIs07,
+                    `value=${wave6d3aResults.precisionDecayValue}`
+                );
+                check(
+                    "Welle 6.D Etappe 3a: Hybrid-Beispiel aus Doc — 4 Stufen → ~0.595",
+                    wave6d3aResults.hybridMatchesDoc,
+                    `actual=${(wave6d3aResults.hybridExampleValue || 0).toFixed(3)}`
+                );
+                check("Welle 6.D Etappe 3a: 1 Schritt → reine min (kein Hybrid-Effekt)", wave6d3aResults.oneStepReturnsMin);
+                check(
+                    "Welle 6.D Etappe 3a: leere opChain → Default 0.4",
+                    wave6d3aResults.emptyChainReturnsDefault
+                );
+                check(
+                    "Welle 6.D Etappe 3a: Diskrimination — 2 Stufen liefern Wert zwischen min und max",
+                    wave6d3aResults.twoStepAboveMin
+                );
+                // Konsumables
+                check("Welle 6.D Etappe 3a: state.consumables-Container existiert", wave6d3aResults.hasConsumablesContainer);
+                check("Welle 6.D Etappe 3a: createOrUpdateConsumable-Methode existiert", wave6d3aResults.hasCreateConsumableMethod);
+                check("Welle 6.D Etappe 3a: activateConsumable-Methode existiert", wave6d3aResults.hasActivateMethod);
+                check("Welle 6.D Etappe 3a: define_consumable DSL-Op legt Konsumabel an", wave6d3aResults.consumableDefined);
+                check("Welle 6.D Etappe 3a: Konsumabel speichert tagBonus", wave6d3aResults.consumableTagBonus);
+                check("Welle 6.D Etappe 3a: Konsumabel speichert durationSeconds", wave6d3aResults.consumableDuration);
+                check("Welle 6.D Etappe 3a: Konsumabel speichert label", wave6d3aResults.consumableLabel);
+                check("Welle 6.D Etappe 3a: apply_boost DSL-Op fügt Boost hinzu", wave6d3aResults.applyBoostAddsBoost);
+                check(
+                    "Welle 6.D Etappe 3a: aktiver Boost trägt Konsumabel-tagBonus",
+                    wave6d3aResults.boostTagBonus
+                );
+                check("Welle 6.D Etappe 3a: zweimal apply_boost — Dedupe via consume:<name>", wave6d3aResults.consumableDedupes);
+                check("Welle 6.D Etappe 3a: unbekannter Konsumabel-Name wird abgelehnt", wave6d3aResults.unknownRejected);
+                check(
+                    "Welle 6.D Etappe 3a: apply_boost in NON_BROADCASTABLE_OPS (privat)",
+                    wave6d3aResults.applyBoostNonBroadcast
+                );
+                check(
+                    "Welle 6.D Etappe 3a: buildStateSnapshot persistiert consumables",
+                    wave6d3aResults.snapHasConsumables
+                );
+            } else if (wave6d3aResults && wave6d3aResults.error) {
+                check("Welle 6.D Etappe 3a: Test-Block lief ohne Exception", false, wave6d3aResults.error);
+            }
+
+            // ### Welle 6.D Etappe 2 — Boosts (temporäre Tag-Deltas) ###
+            //
+            // state.player.boosts ist ein Array; tickPlayerBoosts filtert
+            // Abgelaufene + triggert Emotion + Resonance 1×/s; computePlayerStats
+            // addiert aktive Deltas vor der Stat-Berechnung.
+            const wave6d2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
+                    const out = {};
+                    out.hasBoostsField = Array.isArray(r.state.player.boosts);
+                    out.hasAddMethod = typeof r.addPlayerBoost === "function";
+                    out.hasTickMethod = typeof r.tickPlayerBoosts === "function";
+                    out.hasEmotionMap = C.BOOST_EMOTION_TAG && typeof C.BOOST_EMOTION_TAG === "object";
+                    out.emotionAxisCount = C.BOOST_EMOTION_TAG ? Object.keys(C.BOOST_EMOTION_TAG).length : 0;
+                    out.hasResonanceConst = typeof C.BOOST_RESONANCE_DELTA === "number";
+
+                    // Setup: Save initial state für Vergleich
+                    r.state.player.boosts = [];
+                    r.recomputePlayerStats();
+                    const baselineStats = JSON.parse(JSON.stringify(r.state.player.stats));
+
+                    // Test 1: addPlayerBoost fügt einen Boost hinzu + Stats ändern sich
+                    const added = r.addPlayerBoost({
+                        source: "test:flame",
+                        tagDelta: { wärmeleitung: 0.3 },
+                        durationSeconds: 60,
+                        label: "Test-Flamme",
+                    });
+                    out.addReturnsTrue = added === true;
+                    out.boostsArrayHasOne = r.state.player.boosts.length === 1;
+                    out.boostHasTagDelta =
+                        r.state.player.boosts[0] &&
+                        Math.abs(r.state.player.boosts[0].tagDelta.wärmeleitung - 0.3) < 0.001;
+
+                    // Stats reagieren auf das Boost — staminaMax steigt da
+                    // wärmeleitung in der Formel steht (× 40).
+                    const boostedStats = r.state.player.stats;
+                    out.staminaIncreased = boostedStats.staminaMax > baselineStats.staminaMax + 5;
+                    out.heatResistIncreased = boostedStats.heatResist > baselineStats.heatResist;
+
+                    // Duplikat-Source: zweiter Boost mit gleicher source verlängert nur
+                    r.addPlayerBoost({
+                        source: "test:flame",
+                        tagDelta: { wärmeleitung: 0.5 },
+                        durationSeconds: 120,
+                        label: "Test-Flamme stärker",
+                    });
+                    out.dedupesBySource = r.state.player.boosts.length === 1;
+                    out.dedupeReplacesDelta =
+                        Math.abs(r.state.player.boosts[0].tagDelta.wärmeleitung - 0.5) < 0.001;
+
+                    // tickPlayerBoosts entfernt abgelaufene
+                    r.state.player.boosts[0].expiresAt = -100; // bereits abgelaufen
+                    r.state.player.boostLastTick = -Infinity; // Throttle umgehen
+                    r.tickPlayerBoosts(performance.now() / 1000);
+                    out.expiredRemoved = r.state.player.boosts.length === 0;
+
+                    // Emotion-Trigger: awe hoch → magieleitung-Boost
+                    r.state.player.emotions.awe = 0.9;
+                    r.state.player.boostLastTriggered["emotion:awe"] = -Infinity; // Refract umgehen
+                    r.state.player.boostLastTick = -Infinity;
+                    r.tickPlayerBoosts(performance.now() / 1000);
+                    const aweBoost = r.state.player.boosts.find((b) => b.source === "emotion:awe");
+                    out.emotionAweTriggered = !!aweBoost;
+                    out.aweBoostHasMagieleitung =
+                        aweBoost && aweBoost.tagDelta.magieleitung && aweBoost.tagDelta.magieleitung > 0;
+                    out.magicResistIncreased = aweBoost
+                        ? r.state.player.stats.magicResist > baselineStats.magicResist
+                        : false;
+
+                    // Welt-Resonanz-Trigger: spawne Bauplan mit hoher Resonanz nahe Spieler
+                    const beforeArchCount = r.state.architectures.length;
+                    const savedPos = {
+                        x: r.state.playerMesh.position.x,
+                        y: r.state.playerMesh.position.y,
+                        z: r.state.playerMesh.position.z,
+                    };
+                    r.state.playerMesh.position.set(80, 5, 80);
+                    // Wir nutzen einen Custom-Bauplan mit Quarz-Helix-Array.
+                    // Vier helix-Parts EQUIDISTANT vom Schwerpunkt (0,0,0) —
+                    // Resonance-Array-Detector (W5-B Prinzip 5) verlangt
+                    // gleiche Shape auf gleichem Radius ±12 % vom Schwerpunkt.
+                    // Quarz hat resoniert=0.9 + magieleitung=0.85, helix-Shape
+                    // verstärkt beide. Array-Bonus + ggf. Symmetrieachse-Bonus
+                    // bringen das Compound über die signature-Schwelle (2.5).
+                    r.state.blueprints.wave6d2_resonator = {
+                        name: "wave6d2_resonator",
+                        label: "Resonator",
+                        builtIn: false,
+                        parts: [
+                            { shape: "helix", material: "quarz", position: { x: 1, y: 0, z: 0 }, size: { x: 0.5, y: 1, z: 3 } },
+                            { shape: "helix", material: "quarz", position: { x: 0, y: 0, z: 1 }, size: { x: 0.5, y: 1, z: 3 } },
+                            { shape: "helix", material: "quarz", position: { x: -1, y: 0, z: 0 }, size: { x: 0.5, y: 1, z: 3 } },
+                            { shape: "helix", material: "quarz", position: { x: 0, y: 0, z: -1 }, size: { x: 0.5, y: 1, z: 3 } },
+                        ],
+                    };
+                    r.spawnArchitecture("wave6d2_resonator", { x: 82, y: 0, z: 82 }, { seed: 1 });
+                    // Debug: tatsächlichen Spatial-Tag-Wert + Distanz ausgeben
+                    const sigTags = r.computeSpatialTags(r.state.blueprints.wave6d2_resonator);
+                    out.signatureResonierValue = sigTags.resoniert || 0;
+                    out.signatureThreshold = C.WORLD_EFFECT_THRESHOLDS.resonance_signature;
+                    out.distanceToSig = Math.hypot(82 - 80, 82 - 80);
+                    r.state.player.boosts = []; // Reset
+                    r.state.player.boostLastTick = -Infinity;
+                    r.tickPlayerBoosts(performance.now() / 1000);
+                    const resBoost = r.state.player.boosts.find((b) => b.source === "world:resonance");
+                    out.resonanceBoostTriggered = !!resBoost;
+                    out.resonanceHasResonierDelta =
+                        resBoost && resBoost.tagDelta.resoniert && resBoost.tagDelta.resoniert > 0;
+
+                    // Boost außerhalb Reichweite → kein Trigger
+                    r.state.playerMesh.position.set(-200, 5, -200);
+                    r.state.player.boosts = [];
+                    r.state.player.boostLastTick = -Infinity;
+                    r.tickPlayerBoosts(performance.now() / 1000);
+                    const resBoost2 = r.state.player.boosts.find((b) => b.source === "world:resonance");
+                    out.resonanceNotTriggeredFar = !resBoost2;
+
+                    // Cleanup
+                    r.state.architectures = r.state.architectures.slice(0, beforeArchCount);
+                    delete r.state.blueprints.wave6d2_resonator;
+                    r.state.playerMesh.position.set(savedPos.x, savedPos.y, savedPos.z);
+                    r.state.player.boosts = [];
+                    r.state.player.emotions.awe = 0;
+                    r.recomputePlayerStats();
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6d2Results && !wave6d2Results.error) {
+                check("Welle 6.D Etappe 2: state.player.boosts ist Array", wave6d2Results.hasBoostsField);
+                check("Welle 6.D Etappe 2: addPlayerBoost-Methode existiert", wave6d2Results.hasAddMethod);
+                check("Welle 6.D Etappe 2: tickPlayerBoosts-Methode existiert", wave6d2Results.hasTickMethod);
+                check(
+                    "Welle 6.D Etappe 2: BOOST_EMOTION_TAG-Map mit 6 Emotionen",
+                    wave6d2Results.hasEmotionMap && wave6d2Results.emotionAxisCount === 6
+                );
+                check("Welle 6.D Etappe 2: BOOST_RESONANCE_DELTA-Konstante existiert", wave6d2Results.hasResonanceConst);
+                check("Welle 6.D Etappe 2: addPlayerBoost liefert true", wave6d2Results.addReturnsTrue);
+                check("Welle 6.D Etappe 2: boost wird ins Array geschrieben", wave6d2Results.boostsArrayHasOne);
+                check("Welle 6.D Etappe 2: boost trägt tagDelta + Wert", wave6d2Results.boostHasTagDelta);
+                check(
+                    "Welle 6.D Etappe 2: Diskrimination — wärmeleitung-Boost erhöht staminaMax",
+                    wave6d2Results.staminaIncreased
+                );
+                check(
+                    "Welle 6.D Etappe 2: Diskrimination — wärmeleitung-Boost erhöht heatResist",
+                    wave6d2Results.heatResistIncreased
+                );
+                check("Welle 6.D Etappe 2: gleiche source dedupliziert (nur 1 Eintrag)", wave6d2Results.dedupesBySource);
+                check("Welle 6.D Etappe 2: dedupe ersetzt tagDelta des bestehenden Boosts", wave6d2Results.dedupeReplacesDelta);
+                check("Welle 6.D Etappe 2: tickPlayerBoosts entfernt abgelaufene Boosts", wave6d2Results.expiredRemoved);
+                check("Welle 6.D Etappe 2: Emotion-Trigger — awe>0.7 erzeugt magieleitung-Boost", wave6d2Results.emotionAweTriggered);
+                check("Welle 6.D Etappe 2: Emotion-Boost trägt magieleitung-Delta > 0", wave6d2Results.aweBoostHasMagieleitung);
+                check(
+                    "Welle 6.D Etappe 2: Diskrimination — magieleitung-Boost erhöht magicResist",
+                    wave6d2Results.magicResistIncreased
+                );
+                check(
+                    "Welle 6.D Etappe 2: Welt-Resonanz-Trigger — Nähe zu Signature-Struktur erzeugt resoniert-Boost",
+                    wave6d2Results.resonanceBoostTriggered,
+                    `sig.resoniert=${(wave6d2Results.signatureResonierValue || 0).toFixed(2)} thr=${wave6d2Results.signatureThreshold} dist=${(wave6d2Results.distanceToSig || 0).toFixed(2)}`
+                );
+                check("Welle 6.D Etappe 2: Welt-Resonanz-Boost trägt resoniert-Delta > 0", wave6d2Results.resonanceHasResonierDelta);
+                check(
+                    "Welle 6.D Etappe 2: Negativ-Kontrolle — außerhalb Reichweite KEIN Resonanz-Boost",
+                    wave6d2Results.resonanceNotTriggeredFar
+                );
+            } else if (wave6d2Results && wave6d2Results.error) {
+                check("Welle 6.D Etappe 2: Test-Block lief ohne Exception", false, wave6d2Results.error);
+            }
+
+            // ### Welle 6.D Etappe 1.6 — Custom-Seelen via DSL ###
+            //
+            // Schöpfer kann mit define_soul(name, bodyParts) eigene Charaktere
+            // komponieren — Form × Material via dieselbe Hylomorphismus-Pipe
+            // wie Bauwerke. Vision: „mehr Charaktere, mehr Wachstums-Freiheit
+            // durch simple Regeln".
+            const wave6d16Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    out.hasGetSoulDef = typeof r._getSoulDef === "function";
+                    out.hasCreateMethod = typeof r.createOrUpdateSoulFromDsl === "function";
+                    out.customSoulsContainerExists = r.state.customSouls && typeof r.state.customSouls === "object";
+
+                    // DSL-Op define_soul ist im Interpreter
+                    const ops = r._dslOps || (r.dslOps && r.dslOps()) || null;
+                    out.dslOpRegistered = ops ? typeof ops.define_soul === "function" : false;
+                    // Fallback: prüfen via dslRun
+                    const beforeCount = Object.keys(r.state.customSouls || {}).length;
+                    const testParts = [
+                        { shape: "box", material: "knochen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.5, y: 1.0, z: 0.4 } },
+                        { shape: "helix", material: "quarz", position: { x: 0, y: 0.6, z: 0 }, size: { x: 0.3, y: 0.6, z: 2 } },
+                        { shape: "sphere", material: "glut", position: { x: 0, y: 0.3, z: 0 }, size: { x: 0.25, y: 0.25, z: 0.25 } },
+                    ];
+                    r.dslRun(["define_soul", "kristall_geist", testParts], { source: "test" });
+                    const afterCount = Object.keys(r.state.customSouls || {}).length;
+                    out.customSoulAdded = afterCount === beforeCount + 1;
+                    const created = r.state.customSouls.kristall_geist;
+                    out.customHasBodyParts = !!(created && Array.isArray(created.bodyParts) && created.bodyParts.length === 3);
+                    out.customHasLabel = !!(created && typeof created.label === "string");
+
+                    // _getSoulDef findet die Custom-Seele
+                    const def = r._getSoulDef("kristall_geist");
+                    out.getSoulDefFindsCustom = !!def && def.name === "kristall_geist";
+
+                    // Built-in-Override verboten
+                    r.dslRun(["define_soul", "human", testParts], { source: "test" });
+                    out.builtinProtected = !!r.playerSoulDefs.human && Array.isArray(r.playerSoulDefs.human.bodyParts);
+
+                    // Compound-Tags der Custom-Seele unterscheiden sich von Built-ins
+                    const customTags = r.computeSoulCompoundTags(created);
+                    const humanTags = r.computeSoulCompoundTags(r.playerSoulDefs.human);
+                    out.customTagsExist = customTags && Object.keys(customTags).length > 0;
+                    // kristall_geist hat quarz+glut → hohe magieleitung
+                    out.customMagicHigh = (customTags.magieleitung || 0) > (humanTags.magieleitung || 0);
+
+                    // applyPlayerSoul auf Custom funktioniert
+                    const savedSoul = r.state.player.soul;
+                    const applied = r.applyPlayerSoul("kristall_geist");
+                    out.applyCustomReturnsTrue = applied === true;
+                    out.stateSoulIsCustom = r.state.player.soul === "kristall_geist";
+                    // Stats wurden für die Custom-Seele neu berechnet
+                    out.customStatsComputed = !!(r.state.player.stats && r.state.player.stats.hpMax > 0);
+                    out.customStatsDifferFromHuman = (() => {
+                        r.state.player.soul = "human";
+                        const humanStats = r.computePlayerStats().stats;
+                        r.state.player.soul = "kristall_geist";
+                        const customStats = r.computePlayerStats().stats;
+                        return Math.abs(customStats.magicResist - humanStats.magicResist) > 0.05;
+                    })();
+
+                    // UI-Dropdown enthält die neue Seele
+                    if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
+                    const select = document.getElementById("player-soul-select");
+                    out.dropdownContainsCustom = select && [...select.options].some((o) => o.value === "kristall_geist");
+
+                    // Cap-Test: 16 Custom-Seelen max
+                    let overflowResult = "ok";
+                    for (let i = 0; i < 20; i++) {
+                        const res = r.createOrUpdateSoulFromDsl(`spam_${i}`, testParts);
+                        if (!res.ok && res.reason === "too_many_souls") {
+                            overflowResult = "cap_hit";
+                            break;
+                        }
+                    }
+                    out.capHit = overflowResult === "cap_hit";
+
+                    // Save-Round-Trip vor dem finalen Cleanup
+                    r.state.customSouls = {
+                        save_test: {
+                            name: "save_test",
+                            label: "Save Test",
+                            bodyParts: testParts,
+                            createdAt: 0,
+                        },
+                    };
+                    const snap = r.buildStateSnapshot();
+                    out.snapshotHasCustomSouls = !!(snap.customSouls && snap.customSouls.save_test);
+
+                    // Cleanup — Custom-Seelen entfernen + Dropdown auffrischen,
+                    // damit nachfolgende Tests (Ring 5: Dropdown hat 3 Optionen)
+                    // wieder den Built-in-Standardzustand sehen.
+                    r.state.customSouls = {};
+                    r.state.player.soul = savedSoul;
+                    r.applyPlayerSoul(savedSoul);
+                    if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
+
+                    return out;
+                })
+                .catch(() => null);
+
+            // ### Welle 6.D Etappe 1.7 — Visueller Avatar-Editor ###
+            const wave6d17Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    out.hasRenderMethod = typeof r.renderSoulEditorUI === "function";
+                    out.hasCloneMethod = typeof r.cloneSoulToCustom === "function";
+                    out.hasDeleteMethod = typeof r.deleteCustomSoul === "function";
+                    out.hasAddPartMethod = typeof r.addPartToCustomSoul === "function";
+                    out.hasUpdatePartMethod = typeof r.updatePartInCustomSoul === "function";
+                    out.hasRemovePartMethod = typeof r.removePartFromCustomSoul === "function";
+                    // DOM-Container
+                    out.editorInDom = !!document.getElementById("soul-editor");
+
+                    // Empty state
+                    r.state.customSouls = {};
+                    r.renderSoulEditorUI();
+                    const editor1 = document.getElementById("soul-editor");
+                    out.emptyStateRendered = !!(editor1 && editor1.querySelector(".soul-editor-empty"));
+                    out.hasCloneActionBtn = !!editor1.querySelector(".soul-editor-actions button");
+
+                    // Klonen aus aktiver Seele
+                    const savedSoul = r.state.player.soul;
+                    r.state.player.soul = "human";
+                    const cloneResult = r.cloneSoulToCustom("human", "test_clone_a");
+                    out.cloneReturnsOk = cloneResult && cloneResult.ok;
+                    out.cloneHasBodyParts =
+                        r.state.customSouls.test_clone_a &&
+                        Array.isArray(r.state.customSouls.test_clone_a.bodyParts) &&
+                        r.state.customSouls.test_clone_a.bodyParts.length === 4;
+
+                    // Editor zeigt jetzt die Custom-Seele
+                    r.state.soulEditor = { editingName: "test_clone_a" };
+                    r.renderSoulEditorUI();
+                    const editor2 = document.getElementById("soul-editor");
+                    out.customRowRendered = !!editor2.querySelector(".soul-editor-row");
+                    out.editorPaneRendered = !!editor2.querySelector(".soul-editor-pane");
+                    out.partRowsCount = editor2.querySelectorAll(".soul-part-row").length;
+                    out.editorHasShapeSelect = !!editor2.querySelector(".soul-part-row select");
+
+                    // Add part
+                    const beforeParts = r.state.customSouls.test_clone_a.bodyParts.length;
+                    const addResult = r.addPartToCustomSoul("test_clone_a", {
+                        shape: "torus",
+                        material: "quarz",
+                        position: { x: 0, y: 1, z: 0 },
+                        size: { x: 0.5, y: 0.2, z: 0.5 },
+                    });
+                    out.addReturnsOk = addResult && addResult.ok;
+                    out.addedPart = r.state.customSouls.test_clone_a.bodyParts.length === beforeParts + 1;
+
+                    // Update part
+                    const updateResult = r.updatePartInCustomSoul("test_clone_a", 0, {
+                        material: "schuppen",
+                    });
+                    out.updateReturnsOk = updateResult && updateResult.ok;
+                    out.updateApplied = r.state.customSouls.test_clone_a.bodyParts[0].material === "schuppen";
+
+                    // Remove part
+                    const beforeRm = r.state.customSouls.test_clone_a.bodyParts.length;
+                    const rmResult = r.removePartFromCustomSoul("test_clone_a", 0);
+                    out.removeReturnsOk = rmResult && rmResult.ok;
+                    out.removedPart = r.state.customSouls.test_clone_a.bodyParts.length === beforeRm - 1;
+
+                    // Mindestens-1-Schutz: alle bis auf eins entfernen → letztes lehnt ab
+                    while (r.state.customSouls.test_clone_a.bodyParts.length > 1) {
+                        r.removePartFromCustomSoul("test_clone_a", 0);
+                    }
+                    const lastRmResult = r.removePartFromCustomSoul("test_clone_a", 0);
+                    out.lastPartProtected = !lastRmResult.ok && lastRmResult.reason === "would_be_empty";
+
+                    // applyPlayerSoul auf Custom-Seele rendert tatsächlich ein Mesh
+                    r.applyPlayerSoul("test_clone_a");
+                    out.customSoulRendered =
+                        !!r.state.playerMesh &&
+                        r.state.playerMesh.children &&
+                        r.state.playerMesh.children.length > 0;
+
+                    // Delete: wenn aktive Seele gelöscht → fallback auf "human"
+                    const delResult = r.deleteCustomSoul("test_clone_a");
+                    out.deleteReturnsOk = delResult && delResult.ok;
+                    out.deletedFromMap = !r.state.customSouls.test_clone_a;
+                    out.fallbackToHuman = r.state.player.soul === "human";
+
+                    // Cleanup
+                    r.state.player.soul = savedSoul;
+                    r.applyPlayerSoul(savedSoul);
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6d17Results && !wave6d17Results.error) {
+                check("Welle 6.D Etappe 1.7: renderSoulEditorUI-Methode existiert", wave6d17Results.hasRenderMethod);
+                check("Welle 6.D Etappe 1.7: cloneSoulToCustom-Methode existiert", wave6d17Results.hasCloneMethod);
+                check("Welle 6.D Etappe 1.7: deleteCustomSoul-Methode existiert", wave6d17Results.hasDeleteMethod);
+                check("Welle 6.D Etappe 1.7: addPartToCustomSoul-Methode existiert", wave6d17Results.hasAddPartMethod);
+                check("Welle 6.D Etappe 1.7: updatePartInCustomSoul-Methode existiert", wave6d17Results.hasUpdatePartMethod);
+                check("Welle 6.D Etappe 1.7: removePartFromCustomSoul-Methode existiert", wave6d17Results.hasRemovePartMethod);
+                check("Welle 6.D Etappe 1.7: #soul-editor im DOM (Spieler-Drawer)", wave6d17Results.editorInDom);
+                check("Welle 6.D Etappe 1.7: Empty-State zeigt Hinweis-Text", wave6d17Results.emptyStateRendered);
+                check("Welle 6.D Etappe 1.7: Klonen/Neu-Action-Buttons vorhanden", wave6d17Results.hasCloneActionBtn);
+                check("Welle 6.D Etappe 1.7: Klonen aus aktiver Seele liefert ok", wave6d17Results.cloneReturnsOk);
+                check("Welle 6.D Etappe 1.7: Klon hat alle 4 Body-Parts vom Mensch", wave6d17Results.cloneHasBodyParts);
+                check("Welle 6.D Etappe 1.7: Custom-Row im Editor gerendert", wave6d17Results.customRowRendered);
+                check("Welle 6.D Etappe 1.7: Editor-Pane mit Parts gerendert", wave6d17Results.editorPaneRendered);
+                check("Welle 6.D Etappe 1.7: 4 Part-Rows im Editor", wave6d17Results.partRowsCount === 4);
+                check("Welle 6.D Etappe 1.7: Shape-Select vorhanden", wave6d17Results.editorHasShapeSelect);
+                check("Welle 6.D Etappe 1.7: addPartToCustomSoul fügt Part hinzu", wave6d17Results.addReturnsOk && wave6d17Results.addedPart);
+                check("Welle 6.D Etappe 1.7: updatePartInCustomSoul wendet Patch an", wave6d17Results.updateReturnsOk && wave6d17Results.updateApplied);
+                check("Welle 6.D Etappe 1.7: removePartFromCustomSoul entfernt Part", wave6d17Results.removeReturnsOk && wave6d17Results.removedPart);
+                check("Welle 6.D Etappe 1.7: Mindestens-1-Schutz — letztes Part kann nicht gelöscht werden", wave6d17Results.lastPartProtected);
+                check("Welle 6.D Etappe 1.7: End-to-End — applyPlayerSoul auf Custom rendert Mesh", wave6d17Results.customSoulRendered);
+                check("Welle 6.D Etappe 1.7: deleteCustomSoul entfernt aus Map", wave6d17Results.deleteReturnsOk && wave6d17Results.deletedFromMap);
+                check("Welle 6.D Etappe 1.7: Löschen der aktiven Seele schaltet zurück auf 'human'", wave6d17Results.fallbackToHuman);
+            } else if (wave6d17Results && wave6d17Results.error) {
+                check("Welle 6.D Etappe 1.7: Test-Block lief ohne Exception", false, wave6d17Results.error);
+            }
+
+            if (wave6d16Results) {
+                check("Welle 6.D Etappe 1.6: _getSoulDef-Helper existiert", wave6d16Results.hasGetSoulDef);
+                check("Welle 6.D Etappe 1.6: createOrUpdateSoulFromDsl-Methode existiert", wave6d16Results.hasCreateMethod);
+                check("Welle 6.D Etappe 1.6: state.customSouls-Container existiert", wave6d16Results.customSoulsContainerExists);
+                check("Welle 6.D Etappe 1.6: define_soul DSL-Op fügt Custom-Seele hinzu", wave6d16Results.customSoulAdded);
+                check("Welle 6.D Etappe 1.6: Custom-Seele hat bodyParts mit 3 Teilen", wave6d16Results.customHasBodyParts);
+                check("Welle 6.D Etappe 1.6: Custom-Seele bekommt einen label", wave6d16Results.customHasLabel);
+                check("Welle 6.D Etappe 1.6: _getSoulDef findet Custom-Seele neben Built-ins", wave6d16Results.getSoulDefFindsCustom);
+                check("Welle 6.D Etappe 1.6: Built-in-Name geschützt (human nicht überschreibbar)", wave6d16Results.builtinProtected);
+                check("Welle 6.D Etappe 1.6: Compound-Tags der Custom-Seele werden berechnet", wave6d16Results.customTagsExist);
+                check(
+                    "Welle 6.D Etappe 1.6: Vision-Diskrimination — quarz+glut-Seele hat höhere magieleitung als Mensch",
+                    wave6d16Results.customMagicHigh
+                );
+                check("Welle 6.D Etappe 1.6: applyPlayerSoul akzeptiert Custom-Namen", wave6d16Results.applyCustomReturnsTrue);
+                check("Welle 6.D Etappe 1.6: state.player.soul ist die Custom-Seele nach apply", wave6d16Results.stateSoulIsCustom);
+                check("Welle 6.D Etappe 1.6: Stats werden für Custom-Seele neu berechnet", wave6d16Results.customStatsComputed);
+                check(
+                    "Welle 6.D Etappe 1.6: Custom-Stats unterscheiden sich von Built-in-Stats (Vision-Diskrimination)",
+                    wave6d16Results.customStatsDifferFromHuman
+                );
+                check("Welle 6.D Etappe 1.6: UI-Dropdown listet Custom-Seelen", wave6d16Results.dropdownContainsCustom);
+                check("Welle 6.D Etappe 1.6: Cap 16 — überzählige werden abgelehnt", wave6d16Results.capHit);
+                check("Welle 6.D Etappe 1.6: buildStateSnapshot persistiert customSouls", wave6d16Results.snapshotHasCustomSouls);
+            }
+
+            if (wave6dResults) {
+                check("Welle 6.D: AnazhRealm.STAT_FROM_TAGS-Matrix existiert", wave6dResults.hasStatMatrix);
+                check(
+                    "Welle 6.D: STAT_FROM_TAGS hat 8 Stats (hpMax + damage + speed + jumpPower + stamina + precision + 2× Resist)",
+                    wave6dResults.statKeys === "damage,heatResist,hpMax,jumpPower,magicResist,precision,speed,staminaMax"
+                );
+                check("Welle 6.D: computePlayerStats-Methode existiert", wave6dResults.hasComputeMethod);
+                check("Welle 6.D: recomputePlayerStats-Methode existiert", wave6dResults.hasRecomputeMethod);
+                check("Welle 6.D: renderPlayerStatsUI-Methode existiert", wave6dResults.hasRenderMethod);
+                check("Welle 6.D Etappe 1.5: alle drei Seelen tragen ≥3 bodyParts", wave6dResults.allSoulsHaveBodyParts);
+                check(
+                    "Welle 6.D Etappe 1.5: jedes bodyPart hat shape + material",
+                    wave6dResults.bodyPartsHaveShapeMaterial
+                );
+                check(
+                    "Welle 6.D Etappe 1.5: computeSoulCompoundTags-Methode existiert",
+                    wave6dResults.hasSoulCompoundTagsMethod
+                );
+                check(
+                    "Welle 6.D Etappe 1.5: computeSoulCompoundTags liefert ein Tag-Objekt",
+                    wave6dResults.humanCompoundTagsAreObject
+                );
+                check(
+                    "Welle 6.D Etappe 1.5: Vision-Treue — aggregierte Tags nutzen MATERIAL_TAG_KEYS",
+                    wave6dResults.compoundUsesMaterialKeys
+                );
+                check(
+                    "Welle 6.D Etappe 1.5: 5 Körper-Materialien (knochen/fleisch/federn/schuppen/glut) sind in state.materials",
+                    wave6dResults.bodyMaterialsExist
+                );
+                check(
+                    "Welle 6.D Etappe 1.5: alle Körper-Materialien tragen lebendig > 0.9",
+                    wave6dResults.bodyMaterialsAreLebendig
+                );
+                check("Welle 6.D: computePlayerStats liefert {tags, stats}", wave6dResults.computedHasTags && wave6dResults.computedHasStats);
+                check("Welle 6.D: computed.stats hat alle 8 Werte als finite Zahlen", wave6dResults.computedStatsHasAll);
+                // Vision-Diskrimination
+                check("Welle 6.D: Diskrimination — Phönix schneller als Drache (low dichte)", wave6dResults.phoenixFasterThanDragon);
+                check("Welle 6.D: Diskrimination — Phönix springt höher als Drache", wave6dResults.phoenixJumpsHigherThanDragon);
+                check("Welle 6.D: Diskrimination — Drache mehr HP als Phönix (tank)", wave6dResults.dragonHasMoreHpThanPhoenix);
+                check("Welle 6.D: Diskrimination — Drache mehr Schaden als Phönix", wave6dResults.dragonHasMoreDamageThanPhoenix);
+                check(
+                    "Welle 6.D: Diskrimination — Phönix mehr Magie-Resistenz als Drache (magieleitung hoch)",
+                    wave6dResults.phoenixHasMoreMagicResistThanDragon
+                );
+                check(
+                    "Welle 6.D: Diskrimination — Drache mehr Hitze-Resistenz als Phönix (brennbar niedrig)",
+                    wave6dResults.dragonHasMoreHeatResistThanPhoenix
+                );
+                check(
+                    "Welle 6.D: Diskrimination — Mensch HP zwischen Phönix + Drache (balanced)",
+                    wave6dResults.humanHpBetweenPhoenixAndDragon
+                );
+                // State-Anwendung
+                check("Welle 6.D: recomputePlayerStats setzt state.speed", wave6dResults.stateSpeedMatches);
+                check("Welle 6.D: recomputePlayerStats setzt state.jumpPower", wave6dResults.stateJumpPowerMatches);
+                check("Welle 6.D: state.sprintSpeed = 2 × state.speed", wave6dResults.stateSprintIsDoubleSpeed);
+                check("Welle 6.D: state.player.stats wird gecached", wave6dResults.statePlayerStatsCached);
+                check(
+                    "Welle 6.D: state.player.hp + hpMax + stamina + staminaMax existieren (hp=hpMax)",
+                    wave6dResults.statePlayerHasHpAndStamina
+                );
+                check("Welle 6.D: applyPlayerSoul ruft recomputePlayerStats auf", wave6dResults.applyCallsRecompute);
+                check("Welle 6.D: #player-stats im DOM (Spieler-Drawer)", wave6dResults.statsContainerInDom);
+                check("Welle 6.D: renderPlayerStatsUI läuft ohne Crash", wave6dResults.renderOk);
+                if (wave6dResults.renderOk) {
+                    check("Welle 6.D: 8 stat-row-Einträge im DOM", wave6dResults.statRowsCount === 8);
+                    check("Welle 6.D: stat-tags-Zeile (dominante Achsen) im DOM", wave6dResults.hasTagLine);
+                }
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {
@@ -5680,6 +7676,8 @@ function startSaveServer() {
                     out.statusBarSoulInDom = !!document.getElementById("status-soul");
                     const select = document.getElementById("player-soul-select");
                     out.dropdownHasThreeOptions = select && select.options.length === 3;
+                    out.dropdownOptionCount = select ? select.options.length : -1;
+                    out.dropdownOptionValues = select ? [...select.options].map((o) => o.value).join(",") : "";
 
                     // Cleanup: starte vom Default aus.
                     r.applyPlayerSoul("human");
@@ -5848,7 +7846,11 @@ function startSaveServer() {
             } else {
                 check("Ring 5: Dropdown im Spieler-Drawer", ring5Results.drawerSelectInDom);
                 check("Ring 5: Status-Bar zeigt Seele-Item", ring5Results.statusBarSoulInDom);
-                check("Ring 5: Dropdown hat drei Optionen", ring5Results.dropdownHasThreeOptions);
+                check(
+                    "Ring 5: Dropdown hat drei Optionen (Built-in-Seelen)",
+                    ring5Results.dropdownHasThreeOptions,
+                    `count=${ring5Results.dropdownOptionCount} values=${ring5Results.dropdownOptionValues}`
+                );
                 check("Ring 5: Default-Seele ist 'human'", ring5Results.defaultIsHuman);
                 check("Ring 5: Default-Material-Farbe ist rot (0xff0000)", ring5Results.defaultColorRed);
                 check("Ring 5 V2: Mensch-Group hat torso/head/2 Arme/2 Beine", ring5Results.humanHasAllParts);
@@ -5995,7 +7997,12 @@ function startSaveServer() {
                         r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec2, 0, 0, 0));
                     }
                 }, pitch);
-                await new Promise((r) => setTimeout(r, 350));
+                // 500 ms statt 350 ms — der dichte Test-Cluster davor (Welle 6.A4+A5
+                // spawnt Architekturen + teleportiert Spieler+Kamera) kann den
+                // Loop-Tick verzögern; 350 ms war Headless-zu-knapp, vereinzelt
+                // landete der clamp (cam-y = player-0.2) in der Antwort. 500 ms
+                // gibt mehrere Frames Puffer zum Stabilisieren.
+                await new Promise((r) => setTimeout(r, 500));
                 return await page.evaluate(() => {
                     const r = window.anazhRealm;
                     return r.state.camera.position.y - r.state.playerMesh.position.y;

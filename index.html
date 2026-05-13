@@ -563,6 +563,63 @@
            Cinzel für die Aktions-Labels, Brass-Border. Native <dialog> wird
            per ::backdrop-Selector verdunkelt, damit die Welt im Hintergrund
            nicht ablenkt. */
+            /* Welle 6.E2 — Intro-Overlay: drei painterly Seiten beim ersten Welt-Start. */
+            #intro-dialog {
+                background:
+                    radial-gradient(circle at top left, rgba(255, 248, 225, 0.97) 0%, rgba(232, 210, 168, 0.97) 100%),
+                    var(--parch-1);
+                color: var(--parch-ink);
+                border: 1.5px solid var(--brass-1, #8b6a3f);
+                border-radius: 6px;
+                box-shadow:
+                    0 14px 50px rgba(0, 0, 0, 0.6),
+                    0 0 0 3px rgba(180, 140, 80, 0.2);
+                padding: 1.6em 1.8em;
+                max-width: 540px;
+                font-family: "IM Fell English", Georgia, serif;
+            }
+            #intro-dialog::backdrop {
+                background: rgba(20, 14, 6, 0.7);
+                backdrop-filter: blur(3px);
+            }
+            #intro-dialog #intro-title {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 1.35em;
+                margin: 0 0 0.5em;
+                color: var(--parch-ink);
+                letter-spacing: 0.05em;
+                text-align: center;
+            }
+            #intro-dialog #intro-body {
+                line-height: 1.6;
+                font-size: 1.02em;
+                margin-bottom: 1.4em;
+                min-height: 8em;
+            }
+            #intro-dialog .intro-controls {
+                display: flex;
+                justify-content: space-between;
+                gap: 0.6em;
+            }
+            #intro-dialog .intro-controls button {
+                background: linear-gradient(180deg, rgba(255, 240, 200, 0.7), rgba(190, 150, 90, 0.4));
+                color: var(--parch-ink);
+                border: 1px solid var(--brass-2, #b48c50);
+                padding: 0.45em 1em;
+                border-radius: 3px;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 0.92em;
+                cursor: pointer;
+                letter-spacing: 0.04em;
+            }
+            #intro-dialog .intro-controls button:hover:not(:disabled) {
+                background: linear-gradient(180deg, rgba(255, 248, 215, 0.85), rgba(210, 170, 110, 0.55));
+            }
+            #intro-dialog .intro-controls button:disabled {
+                opacity: 0.35;
+                cursor: not-allowed;
+            }
+
             #world-tor-dialog {
                 background:
                     radial-gradient(circle at top left, rgba(255, 245, 220, 0.95) 0%, rgba(240, 220, 180, 0.95) 100%),
@@ -1357,14 +1414,27 @@
             }
             .drawer .ability-row {
                 display: flex;
-                align-items: center;
-                gap: 6px;
+                flex-direction: column;
+                gap: 3px;
                 margin-bottom: 3px;
                 padding: 5px 8px;
                 background: rgba(40, 25, 10, 0.08);
                 border: 1px solid rgba(138, 106, 54, 0.4);
                 border-radius: 3px;
                 font-size: 11px;
+            }
+            .drawer .ability-row .ability-head {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            .drawer .ability-row .ability-desc {
+                font-size: 10.5px;
+                color: var(--parch-ink-faded);
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                line-height: 1.35;
+                padding-left: 2px;
             }
             .drawer .ability-row .name {
                 flex: 1;
@@ -1467,6 +1537,306 @@
                 outline-offset: 1px;
             }
             /* Ring 6.5 — Hotbar-Belegungs-Editor im Spieler-Drawer */
+            /* Welle 6.D Etappe 1 — Stats-Sektion im Spieler-Drawer.
+               Etappe 1.5 ergänzt Körper-Teile-Liste oberhalb der Stats. */
+            .drawer #player-stats {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+            }
+            .drawer .body-parts-header {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10px;
+                letter-spacing: 0.06em;
+                color: var(--parch-ink-faded);
+                text-transform: uppercase;
+                margin-bottom: 3px;
+                padding-bottom: 3px;
+                border-bottom: 1px dashed rgba(138, 106, 54, 0.35);
+            }
+            .drawer .body-part-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: baseline;
+                padding: 2px 6px;
+                font-size: 11px;
+            }
+            .drawer .body-part-label {
+                font-family: "IM Fell English", Georgia, serif;
+                color: var(--parch-ink);
+                font-style: italic;
+            }
+            .drawer .body-part-meta {
+                font-family: "JetBrains Mono", monospace;
+                color: var(--parch-ink-faded);
+                font-size: 9.5px;
+            }
+            .drawer .stats-divider {
+                border-top: 1px dashed rgba(138, 106, 54, 0.45);
+                margin: 6px 0 4px;
+            }
+            .drawer .boost-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: baseline;
+                padding: 2px 6px;
+                font-size: 10.5px;
+                background: rgba(184, 138, 80, 0.08);
+                border-left: 2px solid var(--violet-1, #8a4fb5);
+            }
+            .drawer .boost-label {
+                font-family: "IM Fell English", Georgia, serif;
+                color: var(--parch-ink);
+                font-style: italic;
+            }
+            .drawer .boost-remaining {
+                font-family: "JetBrains Mono", monospace;
+                color: var(--parch-ink-faded);
+                font-size: 9.5px;
+            }
+            /* Welle 6.D Etappe 1.7 — Avatar-Editor. */
+            .drawer #soul-editor {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+            .drawer .soul-editor-list {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+            }
+            .drawer .soul-editor-empty {
+                font-style: italic;
+                font-size: 11px;
+                color: var(--parch-ink-faded);
+                padding: 4px 0;
+            }
+            .drawer .soul-editor-row {
+                display: flex;
+                align-items: center;
+                gap: 5px;
+                padding: 3px 6px;
+                background: rgba(40, 25, 10, 0.08);
+                border: 1px solid rgba(138, 106, 54, 0.4);
+                border-radius: 3px;
+                font-size: 11px;
+            }
+            .drawer .soul-editor-name {
+                flex: 1;
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                color: var(--parch-ink);
+            }
+            .drawer .soul-editor-row button,
+            .drawer .soul-editor-actions button,
+            .drawer .soul-editor-add,
+            .drawer .soul-editor-apply-row button {
+                background: linear-gradient(180deg, rgba(255, 235, 190, 0.55), rgba(180, 140, 80, 0.35));
+                color: var(--parch-ink);
+                border: 1px solid var(--brass-2, #b48c50);
+                padding: 2px 8px;
+                font-size: 10.5px;
+                cursor: pointer;
+                border-radius: 2px;
+                font-family: "Cinzel", Georgia, serif;
+                letter-spacing: 0.03em;
+            }
+            .drawer .soul-editor-row button:hover,
+            .drawer .soul-editor-actions button:hover,
+            .drawer .soul-editor-add:hover,
+            .drawer .soul-editor-apply-row button:hover {
+                background: linear-gradient(180deg, rgba(255, 248, 215, 0.75), rgba(210, 170, 110, 0.55));
+            }
+            .drawer .soul-editor-danger {
+                color: #a04040 !important;
+                border-color: #a04040 !important;
+            }
+            .drawer .soul-editor-primary {
+                background: linear-gradient(180deg, rgba(200, 180, 230, 0.65), rgba(160, 120, 200, 0.45)) !important;
+            }
+            .drawer .soul-editor-actions {
+                display: flex;
+                gap: 4px;
+                flex-wrap: wrap;
+            }
+            .drawer .soul-editor-pane {
+                margin-top: 5px;
+                padding: 6px;
+                background: rgba(40, 25, 10, 0.04);
+                border: 1px dashed rgba(138, 106, 54, 0.5);
+                border-radius: 3px;
+                display: flex;
+                flex-direction: column;
+                gap: 5px;
+            }
+            .drawer .soul-editor-pane-head {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 11px;
+                letter-spacing: 0.05em;
+                color: var(--parch-ink);
+            }
+            .drawer .soul-part-list {
+                display: flex;
+                flex-direction: column;
+                gap: 3px;
+            }
+            .drawer .soul-part-row {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                flex-wrap: wrap;
+                padding: 3px 5px;
+                background: rgba(255, 248, 220, 0.4);
+                border: 1px solid rgba(138, 106, 54, 0.3);
+                border-radius: 2px;
+                font-size: 10px;
+            }
+            .drawer .soul-part-idx {
+                font-family: "JetBrains Mono", monospace;
+                color: var(--parch-ink-faded);
+                min-width: 18px;
+            }
+            .drawer .soul-part-row select {
+                background: rgba(255, 250, 235, 0.7);
+                color: var(--parch-ink);
+                border: 1px solid var(--brass-2, #b48c50);
+                font-size: 10px;
+                padding: 1px 4px;
+                font-family: "JetBrains Mono", monospace;
+            }
+            .drawer .soul-part-group {
+                display: inline-flex;
+                align-items: center;
+                gap: 2px;
+                color: var(--parch-ink-faded);
+                font-size: 9px;
+                font-family: "Cinzel", Georgia, serif;
+            }
+            .drawer .soul-part-num {
+                width: 38px;
+                font-family: "JetBrains Mono", monospace;
+                font-size: 10px;
+                padding: 1px 3px;
+                background: rgba(255, 252, 240, 0.8);
+                color: var(--parch-ink);
+                border: 1px solid var(--brass-2, #b48c50);
+                border-radius: 2px;
+            }
+            .drawer .soul-editor-apply-row {
+                display: flex;
+                gap: 4px;
+                margin-top: 4px;
+            }
+            /* Welle 6.D Etappe 3b — Equipment-UI. */
+            .drawer #player-equip {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .drawer .equip-row {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 3px 6px;
+                background: rgba(184, 138, 80, 0.06);
+                border: 1px solid rgba(138, 106, 54, 0.4);
+                border-radius: 3px;
+            }
+            .drawer .equip-slot-label {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10.5px;
+                color: var(--parch-ink-faded);
+                letter-spacing: 0.04em;
+                min-width: 60px;
+            }
+            .drawer .equip-row select {
+                flex: 1;
+                background: rgba(255, 250, 235, 0.7);
+                color: var(--parch-ink);
+                border: 1px solid var(--brass-2, #b48c50);
+                font-family: "JetBrains Mono", monospace;
+                font-size: 10.5px;
+                padding: 2px 4px;
+            }
+            .drawer .equip-mark-header {
+                font-size: 10px;
+                color: var(--parch-ink-faded);
+                font-family: "Cinzel", Georgia, serif;
+                letter-spacing: 0.05em;
+                margin-top: 4px;
+                padding-top: 4px;
+                border-top: 1px dashed rgba(138, 106, 54, 0.35);
+            }
+            .drawer .equip-mark-row {
+                display: flex;
+                align-items: center;
+                gap: 5px;
+                padding: 2px 6px;
+                font-size: 10.5px;
+            }
+            .drawer .equip-mark-label {
+                flex: 1;
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+            }
+            .drawer .equip-mark-row button {
+                background: linear-gradient(180deg, rgba(255, 235, 190, 0.55), rgba(180, 140, 80, 0.35));
+                color: var(--parch-ink);
+                border: 1px solid var(--brass-2, #b48c50);
+                padding: 1px 8px;
+                font-size: 10px;
+                cursor: pointer;
+                border-radius: 2px;
+                font-family: "Cinzel", Georgia, serif;
+            }
+            .drawer .equip-empty {
+                font-style: italic;
+                font-size: 10.5px;
+                color: var(--parch-ink-faded);
+                padding: 4px 0;
+            }
+            .drawer .stat-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 2px 6px;
+                background: rgba(40, 25, 10, 0.06);
+                border-left: 2px solid var(--brass-2, #b48c50);
+                font-family: "JetBrains Mono", monospace;
+                font-size: 11px;
+            }
+            .drawer .stat-label {
+                color: var(--parch-ink);
+                font-family: "IM Fell English", Georgia, serif;
+                font-size: 11px;
+                font-style: italic;
+            }
+            .drawer .stat-value {
+                color: var(--parch-ink);
+                font-weight: 600;
+            }
+            .drawer .stat-tags {
+                margin-top: 6px;
+                padding: 4px 6px;
+                font-size: 10px;
+                color: var(--parch-ink-faded);
+                font-family: "Cinzel", Georgia, serif;
+                letter-spacing: 0.04em;
+                border-top: 1px dashed rgba(138, 106, 54, 0.35);
+            }
+            .drawer .stats-empty {
+                font-size: 11px;
+                font-style: italic;
+                color: var(--parch-ink-faded);
+            }
+            .drawer .section-hint {
+                font-size: 0.78em;
+                color: var(--parch-ink-faded);
+                font-weight: normal;
+                font-style: italic;
+                margin-left: 4px;
+            }
+
             .drawer .hotbar-config-row {
                 display: flex;
                 align-items: center;
@@ -2166,11 +2536,25 @@
             <h2>Spieler</h2>
             <section class="section">
                 <h3>Seele</h3>
-                <p class="drawer-hint">Form des Spieler-Avatars. Rein visuell — Bewegung und Physik bleiben gleich.</p>
+                <p class="drawer-hint">Form des Spieler-Avatars. Welle 6.D: jede Seele trägt ein Material-Tag-Profil, daraus folgen Stats (Mensch balanced, Phönix schnell/fragil, Drache zäh/langsam).</p>
                 <div class="soul-row">
                     <label for="player-soul-select">Form</label>
                     <select id="player-soul-select" aria-label="Spieler-Seele wählen"></select>
                 </div>
+            </section>
+            <section class="section">
+                <h3>Stats <span class="section-hint">(aus Soul-Tags abgeleitet)</span></h3>
+                <div id="player-stats" aria-live="polite"></div>
+            </section>
+            <section class="section">
+                <h3>Eigene Seele formen <span class="section-hint">(Bauplan aus Körper-Teilen)</span></h3>
+                <p class="drawer-hint">Wie Bauwerke + Maschinen: Form × Material × Anordnung → Compound-Tags → Stats. Klone eine Built-in oder erschaffe eine neue Komposition.</p>
+                <div id="soul-editor"></div>
+            </section>
+            <section class="section">
+                <h3>Ausrüstung <span class="section-hint">(Werkzeug × 0.15 + Rüstung × 0.3)</span></h3>
+                <p class="drawer-hint">Werkzeug + Rüstung tragen ihre Compound-Tags in die Stat-Rechnung. Rüstung wirkt stärker als Werkzeug.</p>
+                <div id="player-equip"></div>
             </section>
             <section class="section">
                 <h3>Hotbar-Belegung</h3>

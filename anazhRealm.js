@@ -1,4 +1,4 @@
-/**AnazhRealm V7.71 – Das Ultiversum Vollendet.
+/**AnazhRealm V7.72 – Das Ultiversum Vollendet.
  * Hüpfen: Robust, präzise (Y ~1.5), Coyote-Time 0.3s, Gravitation 1.5G, Reibung 0.5.
  * Kollisionen: Kein Tunneling, steepnessThreshold 3.0, wallThickness 2.0, CCD optimiert.
  * Terrain: Flacher (Höhenunterschiede ±5), KI-gesteuerte Steilheitsanpassung, Chat-Steuerung.
@@ -12,7 +12,7 @@
 class AnazhRealm {
     constructor() {
         // ### Learnings ### [Stichwortartig optimieren, korrigieren, ergänzen – nie Wissen löschen!]
-        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69, LAN-Fähigkeit + Sync-Korrektheit (Ring 11 V2.1: 0.0.0.0-bind, ws:/wss:-CSP, roomOverride, spawn_*-Embedding, NON_BROADCASTABLE_OPS) in V7.70, Intuitiver Multi-User-Setup (Ring 11.5: Modus-Wahl, Host-Banner mit Einladungs-Code, Auto-Welt-Snapshot beim Join) in V7.71
+        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69, LAN-Fähigkeit + Sync-Korrektheit (Ring 11 V2.1: 0.0.0.0-bind, ws:/wss:-CSP, roomOverride, spawn_*-Embedding, NON_BROADCASTABLE_OPS) in V7.70, Intuitiver Multi-User-Setup (Ring 11.5: Modus-Wahl, Host-Banner mit Einladungs-Code, Auto-Welt-Snapshot beim Join) in V7.71, Welle 6.A — Interaktion-Polish (Wall-Sliding via Player-Friction-0, Erdung-Raycast-Robustheit für Bauwerke) in V7.72
         // - Nexus als Herz der Selbstentwicklung, steuert nun alles über Chat, unzerstörbar und unendlich
         this.state = {
             // ### Kern ###
@@ -75,6 +75,14 @@ class AnazhRealm {
             lastGroundedTime: 0,
             coyoteTime: 0.3,
             isInAir: false,
+            // Welle 6.A3 — Slope-Steepness. `maxWalkableSlopeY` ist cos(maxAngle):
+            // 0.5 = cos(60°), das heißt Slopes bis ~60° gelten als begehbar. Steiler
+            // → `onSteepSlope=true`, Bewegungs-Input wird gedrosselt + Gravity
+            // schiebt den Spieler hinab (Friction=0 ist die Voraussetzung dafür).
+            // `groundNormalY` ist 1.0 wenn nicht geerdet (sentinel-flat).
+            maxWalkableSlopeY: 0.5,
+            groundNormalY: 1.0,
+            onSteepSlope: false,
             frameCount: 0,
             lastFpsUpdate: 0,
             fps: 0,
@@ -347,6 +355,47 @@ class AnazhRealm {
                 },
                 emotionApplyCooldown: 30,
                 emotionThreshold: 0.7,
+                // Welle 6.D Etappe 2 — Boosts: temporäre Tag-Modifikationen.
+                // Drei Quellen:
+                //   - Emotion (>0.7 auf einer Achse → Tag-Delta für 30 s)
+                //   - Welt-Resonanz (in der Nähe einer Signature-Struktur)
+                //   - Konsum (DSL-Op `consume`/`apply_boost`, Etappe 3)
+                // `boosts[i] = {source, tagDelta, expiresAt, label}`. `tickPlayerBoosts`
+                // filtert Abgelaufene + triggert neue 1×/s. `computePlayerStats`
+                // addiert aktive Deltas vor der Stat-Berechnung.
+                boosts: [],
+                boostLastTriggered: {
+                    "emotion:joy": -Infinity,
+                    "emotion:awe": -Infinity,
+                    "emotion:sorrow": -Infinity,
+                    "emotion:hope": -Infinity,
+                    "emotion:peace": -Infinity,
+                    "emotion:chaos": -Infinity,
+                },
+                boostLastTick: -Infinity,
+                // Welle 6.D Etappe 3a — Tod-Behandlung („Phönix-Wandlung mit
+                // Welt-Trauer", wave-6-design §10.3). Bei HP=0 wechselt die Seele
+                // für 5 min automatisch auf phoenix, HP regeneriert linear zurück,
+                // Welt fühlt sorrow + awe. `phoenixUntil = -Infinity` heißt:
+                // keine aktive Wandlung. `preDeathSoul` merkt die vorherige Seele
+                // für den Rückwandel.
+                phoenixUntil: -Infinity,
+                phoenixDurationSeconds: 300,
+                preDeathSoul: null,
+                deathLastTick: -Infinity,
+                // Welle 6.D Etappe 3a+ (Schöpfer-Feedback 13.05.2026) — Tod-
+                // Wunde bleibt nach der Wandlung als gradueller Tag-Penalty,
+                // der über deathWoundRegenSeconds linear regeneriert. Frisch
+                // tot = 1.0, geheilt = 0.0. WOUND_TAG_PENALTY multipliziert
+                // mit der Intensität fließt in computePlayerStats.
+                deathWoundIntensity: 0,
+                deathWoundRegenSeconds: 600,
+                deathWoundLastTickAt: -Infinity,
+                // Welle 6.D Etappe 3b — Equipped-Slots (Werkzeug + Rüstung).
+                // Werkzeug-Beitrag = sourceBlueprint.compoundTags × toolWeight,
+                // Rüstung-Beitrag = blueprint.compoundTags × armorWeight.
+                // Wirkungen fließen in computePlayerStats vor den Boosts.
+                equipped: { tool: null, armor: null },
                 // Schicht 1 — Pfad-Buckets. Histogramm wo der Spieler sich
                 // aufhält (Höhe, Distanz, Wetter, Aktivität). Wird im Loop
                 // alle pathSampleInterval Sekunden inkrementiert; alle Achsen
@@ -396,6 +445,10 @@ class AnazhRealm {
                 blueprintName: null,
                 phantomMesh: null,
                 phantomDistance: 5,
+                // Welle 6.A5 — wird pro tickBuildMode aus dem Raycast-Hit
+                // gesetzt: true = stabile (begehbare) Oberfläche unter dem
+                // Phantom, false = schwebt frei oder zeigt auf Wand.
+                phantomOnGround: false,
             },
         };
         this.core = {
@@ -424,6 +477,17 @@ class AnazhRealm {
         // Save später User-Baupläne hinzufügt (Editor 6.6), werden sie auf
         // dieses Default-Set draufgemerged.
         this.state.blueprints = this._defaultBlueprints();
+        // Welle 6.D Etappe 1.6 — Custom-Seelen (vom Schöpfer via DSL erschaffene
+        // Charaktere). Map `name → {name, label, bodyParts, createdAt}`. Cap 16.
+        // Built-in-Seelen liegen weiter in `playerSoulDefs`; Custom-Seelen
+        // werden hier persistiert.
+        this.state.customSouls = {};
+        // Welle 6.D Etappe 3a — Konsumables (DSL-definierte „Tränke"). Map
+        // `name → {name, label, tagBonus, durationSeconds, createdAt}`. Cap 32.
+        // Aktivierung via `apply_boost(name)` → fügt einen Boost via Etappe-2-
+        // System hinzu. Kein eigener Inventar-State in V1 — nur Definition +
+        // Aktivierung. Inventar/Schluck-UI folgt mit 6.C1 (Inventar).
+        this.state.consumables = {};
         // Welle 4 Phase 1+3 — Built-in-Parts ohne Material auf „stein"
         // mappen; ohne opChain auf eine billige Default-Kette. Built-ins
         // bleiben damit visuell wie vorher; die Tag-Berechnung greift.
@@ -440,7 +504,7 @@ class AnazhRealm {
     // ### Logging ###
     log(message, level = "INFO") {
         if (level === "DEBUG" && !this.state.debugLogging) return;
-        const logMessage = `[AnazhRealm V7.71] [${level}] ${message}`;
+        const logMessage = `[AnazhRealm V7.72] [${level}] ${message}`;
         this.state.logBuffer.push(logMessage);
         console.log(logMessage);
         if (this.state.logBuffer.length > this.state.maxLogEntries) {
@@ -746,7 +810,23 @@ class AnazhRealm {
     // GANZE Broadcast übersprungen (sonst würde z. B. ["chain", weather,
     // player_speed] beim Empfänger den Speed mit-ändern).
     static get NON_BROADCASTABLE_OPS() {
-        return new Set(["player_jump_power", "player_speed", "player_size_mul", "player_soul", "set_visible"]);
+        return new Set([
+            "player_jump_power",
+            "player_speed",
+            "player_size_mul",
+            "player_soul",
+            "set_visible",
+            // Welle 6.D Etappe 3a — Schaden + Konsum sind Spieler-private Aktionen
+            // (Mitspieler in Multi-User-Welt sollen nicht Schaden vom anderen
+            // bekommen). Tod-Wandlung läuft lokal.
+            "damage",
+            "apply_boost",
+            // Welle 6.D Etappe 3b — Equip-Aktionen sind ebenfalls Spieler-privat
+            // (jeder hat sein eigenes Inventar + Ausrüstung).
+            "equip_tool",
+            "equip_armor",
+            "unequip",
+        ]);
     }
 
     _dslContainsAnyOp(node, opSet) {
@@ -1059,6 +1139,123 @@ class AnazhRealm {
                     });
                 }
             },
+            // Welle 6.D Etappe 3b — Bauplan als Rüstung markieren + Equip-Ops.
+            set_armor_role: ([blueprintName], ctx) => {
+                const result = this.setBlueprintAsArmor(blueprintName);
+                if (ctx && ctx.log) {
+                    ctx.log.push({
+                        event: result.ok ? "armor_role_set" : "armor_role_failed",
+                        name: blueprintName,
+                        reason: result.reason,
+                    });
+                }
+            },
+            // Welle 6.D Etappe 3a+ — Bauplan als Konsumabel markieren. Wirkung
+            // emergiert aus Compound-Tags × scale (Default 0.2). So entsteht
+            // die Tag-Bonus-Tabelle aus der Komposition (Wasser + Pflanze →
+            // lebendig + magieleitung), nicht aus einer harten Tabelle.
+            set_consumable_role: ([blueprintName, durationSeconds, scale, label], ctx) => {
+                const result = this.setBlueprintAsConsumable(blueprintName, durationSeconds, label, scale);
+                if (ctx && ctx.log) {
+                    ctx.log.push({
+                        event: result.ok ? "consumable_role_set" : "consumable_role_failed",
+                        name: blueprintName,
+                        reason: result.reason,
+                    });
+                }
+            },
+            equip_tool: ([name], ctx) => {
+                const result = this.equipTool(name);
+                if (ctx && ctx.log) {
+                    ctx.log.push({
+                        event: result.ok ? "tool_equipped" : "tool_equip_failed",
+                        name: name || null,
+                        reason: result.reason,
+                    });
+                }
+            },
+            equip_armor: ([name], ctx) => {
+                const result = this.equipArmor(name);
+                if (ctx && ctx.log) {
+                    ctx.log.push({
+                        event: result.ok ? "armor_equipped" : "armor_equip_failed",
+                        name: name || null,
+                        reason: result.reason,
+                    });
+                }
+            },
+            unequip: ([slot], ctx) => {
+                let result;
+                if (slot === "tool") result = this.equipTool(null);
+                else if (slot === "armor") result = this.equipArmor(null);
+                else result = { ok: false, reason: "unknown_slot" };
+                if (ctx && ctx.log) {
+                    ctx.log.push({
+                        event: result.ok ? "unequipped" : "unequip_failed",
+                        slot,
+                        reason: result.reason,
+                    });
+                }
+            },
+            // Welle 6.D Etappe 3a — Konsumable definieren. Spieler kann ein
+            // „Trank-Rezept" anlegen: tagBonus-Map + Dauer in Sekunden.
+            // Aktivierung via apply_boost(name).
+            define_consumable: ([name, tagBonus, durationSeconds, label], ctx) => {
+                const result = this.createOrUpdateConsumable(name, tagBonus, durationSeconds, label);
+                if (ctx && ctx.log) {
+                    ctx.log.push({
+                        event: result.ok ? "defined_consumable" : "define_consumable_failed",
+                        name: result.name,
+                        reason: result.reason,
+                    });
+                }
+                if (result.ok) {
+                    this.journalAppend("growth", `Ein neues Konsumabel entstand: ${result.name}.`, {
+                        name: result.name,
+                    });
+                }
+            },
+            // Welle 6.D Etappe 3a — Konsumable aktivieren. Greift Etappe-2-Boost-
+            // System; source = `consume:<name>` für Dedupe.
+            apply_boost: ([name], ctx) => {
+                const result = this.activateConsumable(name);
+                if (ctx && ctx.log) {
+                    ctx.log.push({
+                        event: result.ok ? "boost_applied" : "apply_boost_failed",
+                        name,
+                        reason: result.reason,
+                    });
+                }
+            },
+            // Welle 6.D Etappe 1.6 — Schöpfer-Op für eigene Seelen. bodyParts
+            // wird durch `validateBlueprintParts` geprüft (gleiche Whitelist,
+            // gleiche Caps wie Bauwerke — eine Sprache). Der Spieler kann eigene
+            // Charaktere wie Maschinen komponieren: Form × Material → Compound-
+            // Tags → Stats. Bewusst NICHT im `dslComposeAtomic`-Pool, damit der
+            // Nexus keine Charaktere willkürlich erfindet.
+            define_soul: ([name, bodyParts], ctx) => {
+                const valid = this.validateBlueprintParts(bodyParts);
+                if (!valid.ok) {
+                    ctx.log.push({ event: "soul_validation_failed", reason: valid.reason });
+                    return;
+                }
+                const result = this.createOrUpdateSoulFromDsl(name, valid.parts);
+                ctx.log.push({
+                    event: result.ok ? "defined_soul" : "define_soul_failed",
+                    name: result.name,
+                    reason: result.reason,
+                });
+                if (result.ok) {
+                    this.journalAppend("growth", `Eine neue Seele entstand: ${result.name}.`, {
+                        name: result.name,
+                        parts: valid.parts.length,
+                    });
+                    // UI-Dropdown + Editor neu rendern, damit die neue Seele
+                    // sofort wählbar + editierbar ist.
+                    if (typeof this._refreshSoulSelect === "function") this._refreshSoulSelect();
+                    if (typeof this.renderSoulEditorUI === "function") this.renderSoulEditorUI();
+                }
+            },
             // Welle 4 Phase 1 — Schöpfer-Werkzeug für Materialien. Tags werden
             // in defineMaterial whitelistet + ge-clamp; Built-in-Materialien
             // bleiben unberührbar. Color ist optional, default grau.
@@ -1250,7 +1447,21 @@ class AnazhRealm {
                 this.state.jumpPower = c(value, 5, 40);
             },
             player_speed: ([value]) => {
+                // Schöpfer-Bug-Fund 13.05.2026: player_speed setzte nur
+                // state.speed, NICHT state.sprintSpeed. Wenn der Nexus
+                // via DSL `player_speed 25` ausführte, blieb sprintSpeed
+                // bei z. B. 12 (vom letzten Soul-Wechsel) — Shift drücken
+                // gab dann LANGSAMERE Geschwindigkeit als gehen. Jetzt
+                // halten wir Sprint = 2× Walk konsistent.
                 this.state.speed = c(value, 1, 30);
+                this.state.sprintSpeed = this.state.speed * 2;
+            },
+            // Welle 6.D Etappe 3a — Schaden zufügen (DSL-getrieben). Schöpfer-
+            // Werkzeug + Test-Hook. Welt-Hazards (6.G) + Kreaturen (6.H) hängen
+            // sich später an damagePlayer. Bewusst NICHT im atomic-Pool.
+            damage: ([amount, source], ctx) => {
+                const dealt = this.damagePlayer(c(amount, 0, 1000), source || "dsl");
+                if (ctx && ctx.log) ctx.log.push({ event: dealt ? "player_damaged" : "damage_ignored", amount });
             },
             player_size_mul: ([factor]) => {
                 const f = c(factor, 0.5, 2);
@@ -3455,6 +3666,55 @@ class AnazhRealm {
                     describe: `Narrativ gespeichert: ${m[1].trim()}`,
                 }),
             },
+            // Welle 6.D Etappe 3a — Schaden-Chat-Pattern. „schade mir 50" /
+            // „verletze mich 30" / „damage 999 test" — Schöpfer-Werkzeug
+            // (Test-Tod-Wandlung) ohne JSON-DSL-Geste.
+            {
+                example: "schade mir 50",
+                re: /^(?:schade\s+mir|verletze\s+mich|damage)\s+(\d+(?:\.\d+)?)(?:\s+(.+))?$/i,
+                build: (m) => ({
+                    program: ["damage", Number(m[1]), (m[2] || "chat").trim()],
+                    describe: `Schaden ${m[1]} (${(m[2] || "chat").trim()})`,
+                }),
+            },
+            // Welle 6.D Etappe 3a — Konsumabel aktivieren via Chat.
+            // „trink trank_des_lichts" / „aktiviere trank_X".
+            {
+                example: "trink trank_des_lichts",
+                re: /^(?:trink|trinke|aktiviere\s+trank)\s+([a-z0-9_-]+)$/i,
+                build: (m) => ({
+                    program: ["apply_boost", m[1]],
+                    describe: `Konsum: ${m[1]}`,
+                }),
+            },
+            // Welle 6.D Etappe 3b — Ausrüstung wechseln via Chat.
+            {
+                example: "rüste werkzeug hammer",
+                re: /^rüste\s+werkzeug\s+([a-z0-9_-]+)$/i,
+                build: (m) => ({
+                    program: ["equip_tool", m[1]],
+                    describe: `Werkzeug: ${m[1]}`,
+                }),
+            },
+            {
+                example: "rüste rüstung eisen_plate",
+                re: /^rüste\s+rüstung\s+([a-z0-9_-]+)$/i,
+                build: (m) => ({
+                    program: ["equip_armor", m[1]],
+                    describe: `Rüstung: ${m[1]}`,
+                }),
+            },
+            {
+                example: "rüste ab werkzeug",
+                re: /^rüste\s+ab\s+(werkzeug|rüstung|tool|armor)$/i,
+                build: (m) => {
+                    const slot = /werkzeug|tool/i.test(m[1]) ? "tool" : "armor";
+                    return {
+                        program: ["unequip", slot],
+                        describe: `Ausrüstung ab: ${slot}`,
+                    };
+                },
+            },
         ];
         return this._chatDslPatternsCache;
     }
@@ -4094,7 +4354,11 @@ class AnazhRealm {
         // Length-Prefix sorgt dafür, dass die initiale leere Signature ("")
         // und ein leeres Array ("0:") unterscheidbar sind — sonst würde der
         // erste Empty-State-Render durch den Early-Return wegoptimiert.
-        const signature = list.length + ":" + list.map((a) => `${a.name}:${a.source || "?"}`).join("|");
+        // Welle 6.E1: Description-Hash mit in die Signature, sonst würde ein
+        // Lazy-Compute (fehlende description in Legacy-Saves) keinen Re-Render
+        // triggern.
+        const signature =
+            list.length + ":" + list.map((a) => `${a.name}:${a.source || "?"}:${a.description ? "d" : "_"}`).join("|");
         if (signature === r.abilitiesSignature) return;
         r.abilitiesSignature = signature;
         const container = r.abilities;
@@ -4112,6 +4376,8 @@ class AnazhRealm {
             const row = document.createElement("div");
             const src = ability.source || "unknown";
             row.className = `ability-row source-${src}`;
+            const head = document.createElement("div");
+            head.className = "ability-head";
             const name = document.createElement("span");
             name.className = "name";
             name.textContent = ability.name;
@@ -4123,9 +4389,26 @@ class AnazhRealm {
             run.textContent = "▶";
             run.setAttribute("data-run-ability", ability.name);
             run.setAttribute("aria-label", `Fähigkeit ${ability.name} ausführen`);
-            row.appendChild(name);
-            row.appendChild(source);
-            row.appendChild(run);
+            head.appendChild(name);
+            head.appendChild(source);
+            head.appendChild(run);
+            row.appendChild(head);
+            // Welle 6.E1 — Beschreibung unter dem Namen. Bei alten Saves
+            // (ohne `description`-Feld) lazy berechnen + persistieren, damit
+            // der nächste Save sie mitnimmt.
+            if (!ability.description && Array.isArray(ability.program)) {
+                try {
+                    ability.description = this.describeProgram(ability.program);
+                } catch {
+                    ability.description = "wirkt auf die Welt";
+                }
+            }
+            if (ability.description) {
+                const desc = document.createElement("div");
+                desc.className = "ability-desc";
+                desc.textContent = ability.description;
+                row.appendChild(desc);
+            }
             container.appendChild(row);
         }
     }
@@ -5439,10 +5722,20 @@ class AnazhRealm {
             return false;
         }
         const existingIdx = this.state.dsl.abilities.findIndex((a) => a.name === name);
+        // Welle 6.E1 — Beschreibung beim Anlegen einmal berechnen + speichern.
+        // Bei Restore aus alten Saves übernimmt renderAbilitiesList das Nachholen.
+        const description = (() => {
+            try {
+                return this.describeProgram(program);
+            } catch {
+                return "wirkt auf die Welt";
+            }
+        })();
         const entry = {
             name,
             program,
             source,
+            description,
             createdAt: performance.now() / 1000,
         };
         if (existingIdx >= 0) this.state.dsl.abilities[existingIdx] = entry;
@@ -5454,6 +5747,229 @@ class AnazhRealm {
         }
         this.log(`Neue Fähigkeit hinzugefügt (DSL): ${name}`);
         return true;
+    }
+
+    // Welle 6.E2 — Intro-Overlay beim ersten Welt-Start.
+    //
+    // Drei painterly Seiten: Welt / Spieler / Nexus. Trigger: weder localStorage
+    // `anazh.ui.skipIntro === "true"` noch `worldJournal.seen.intro === true`.
+    // Schließen schreibt beide Flags, damit das Overlay nicht wieder kommt.
+    // Erzeugen wir dynamisch (kein index.html-Eintrag nötig); damit bleibt das
+    // Feature in einer Datei.
+    initIntroDialog() {
+        if (typeof document === "undefined") return;
+        if (document.getElementById("intro-dialog")) return;
+        const skip = (() => {
+            try {
+                return typeof localStorage !== "undefined" && localStorage.getItem("anazh.ui.skipIntro") === "true";
+            } catch {
+                return false;
+            }
+        })();
+        const seen = !!(this.state.worldJournal && this.state.worldJournal.seen && this.state.worldJournal.seen.intro);
+        const dialog = document.createElement("dialog");
+        dialog.id = "intro-dialog";
+        dialog.className = "intro-dialog";
+        const pages = this._introPages();
+        let pageIdx = 0;
+        const header = document.createElement("h2");
+        header.id = "intro-title";
+        const body = document.createElement("div");
+        body.id = "intro-body";
+        const controls = document.createElement("div");
+        controls.className = "intro-controls";
+        const prev = document.createElement("button");
+        prev.type = "button";
+        prev.textContent = "← Zurück";
+        prev.setAttribute("data-intro", "prev");
+        const skipBtn = document.createElement("button");
+        skipBtn.type = "button";
+        skipBtn.textContent = "Überspringen";
+        skipBtn.setAttribute("data-intro", "skip");
+        const next = document.createElement("button");
+        next.type = "button";
+        next.textContent = "Weiter →";
+        next.setAttribute("data-intro", "next");
+        controls.appendChild(prev);
+        controls.appendChild(skipBtn);
+        controls.appendChild(next);
+        dialog.appendChild(header);
+        dialog.appendChild(body);
+        dialog.appendChild(controls);
+        document.body.appendChild(dialog);
+        const renderPage = () => {
+            const p = pages[pageIdx];
+            header.textContent = p.title;
+            body.textContent = p.body;
+            prev.disabled = pageIdx === 0;
+            next.textContent = pageIdx === pages.length - 1 ? "Eintreten" : "Weiter →";
+        };
+        const close = (markSeen) => {
+            if (markSeen) {
+                try {
+                    if (typeof localStorage !== "undefined") localStorage.setItem("anazh.ui.skipIntro", "true");
+                } catch {
+                    /* localStorage gesperrt — Flag bleibt nur in worldJournal */
+                }
+                this.journalAppendOnce("intro", "ritual", "Ich schritt durch das Tor und erwachte in dieser Welt.");
+            }
+            if (dialog.open) dialog.close();
+        };
+        prev.addEventListener("click", () => {
+            if (pageIdx > 0) {
+                pageIdx--;
+                renderPage();
+            }
+        });
+        next.addEventListener("click", () => {
+            if (pageIdx < pages.length - 1) {
+                pageIdx++;
+                renderPage();
+            } else {
+                close(true);
+            }
+        });
+        skipBtn.addEventListener("click", () => close(true));
+        // ESC schließt nativ und zählt als „gesehen".
+        dialog.addEventListener("close", () => close(true));
+        renderPage();
+        // Auto-Show wenn noch nicht gesehen
+        if (!skip && !seen && typeof dialog.showModal === "function") {
+            try {
+                dialog.showModal();
+            } catch {
+                /* z. B. wenn body noch nicht im DOM ist */
+            }
+        }
+    }
+
+    _introPages() {
+        return [
+            {
+                title: "AnazhRealm — die Welt",
+                body:
+                    "Du bist im Ultiversum. Diese Welt wurde nicht für dich vorgeschrieben — sie wächst aus deiner Stimme und " +
+                    "der Antwort des Nexus. Boden, Wetter, Kreaturen, Bauwerke: alles ist sprechfähig. Schreib in den Chat, " +
+                    "rufe etwas ins Sein — die Welt hört und erinnert sich in ihrem Tagebuch.",
+            },
+            {
+                title: "Du, der Schöpfer",
+                body:
+                    "WASD läuft, Maus dreht den Blick, Space springt, 1-9 wählt einen Hotbar-Slot, F baut das Phantom. " +
+                    "Die Werkstatt öffnet einen Bauplan-Editor. Deine Emotionen färben die Welt: Freude wärmt sie, Trauer " +
+                    "lässt es regnen, Ehrfurcht zieht magisches Licht heran. Was du fühlst, hört die Welt mit.",
+            },
+            {
+                title: "Der Nexus — Eins",
+                body:
+                    "Du bist nicht allein. Der Nexus erfindet Programme, lernt aus deinen Pfaden, komponiert eigene " +
+                    "Fähigkeiten. Manche werden grün und stabil, andere kurzlebig — Auswahl per Fitness, nicht Befehl. " +
+                    "Optional gibt eine echte LLM-Stimme dem Nexus Worte (Einstellungen → Stimme).",
+            },
+        ];
+    }
+
+    // Welle 6.E1 — DSL-Programm in deutsche Beschreibung übersetzen.
+    //
+    // Regelbasierter Dispatcher: bekannte Ops bekommen eine Vorlage, unbekannte
+    // einen generischen Fallback. Strukturelle Ops (chain/when/repeat/delay)
+    // rekursieren. Position-Nodes (at_player/at/near_player) werden inline
+    // ausgedrückt. Beschreibung wird beim Hinzufügen oder Rendern der Fähigkeit
+    // gespeichert (in `ability.description`); bei alten Saves On-The-Fly
+    // berechnet. Höchstens ca. 120 Zeichen, eine Zeile.
+    describeProgram(node) {
+        if (!Array.isArray(node) || node.length === 0) return "tut nichts";
+        const op = node[0];
+        const args = node.slice(1);
+        if (op === "chain") {
+            const parts = args.filter((a) => Array.isArray(a)).map((a) => this.describeProgram(a));
+            if (parts.length === 0) return "tut nichts";
+            if (parts.length === 1) return parts[0];
+            return parts.join(" und ");
+        }
+        if (op === "when") {
+            return `wenn ${this._describeDslCondition(args[0])}, dann ${this.describeProgram(args[1])}`;
+        }
+        if (op === "repeat") return `${args[0]}× ${this.describeProgram(args[1])}`;
+        if (op === "delay") return `nach ${args[0]} s ${this.describeProgram(args[1])}`;
+        if (op === "say") return `sagt „${args[0]}"`;
+        if (op === "record_narrative") return `vermerkt eine Erinnerung`;
+        const t = this._dslDescriptionTable();
+        if (t[op]) return t[op](args);
+        return `wirkt: ${op}`;
+    }
+
+    // Position-Knoten oder skalare Werte in deutscher Form. Wird von describeProgram
+    // genutzt, lebt als eigene Methode damit auch Tests sie inspizieren können.
+    _describeDslPosition(arg) {
+        if (!Array.isArray(arg)) return "an einer Stelle";
+        const head = arg[0];
+        if (head === "at_player") return "beim Spieler";
+        if (head === "near_player") return "in der Nähe des Spielers";
+        if (head === "random_position") return "an einem zufälligen Ort";
+        if (head === "at" && arg.length >= 4) return `bei (${arg[1]}, ${arg[2]}, ${arg[3]})`;
+        return "an einer Stelle";
+    }
+
+    _describeDslCondition(node) {
+        if (!Array.isArray(node)) return "etwas";
+        const op = node[0];
+        const a = node.slice(1);
+        if (op === "emotion_above") return `${a[0]} hoch ist (>${a[1]})`;
+        if (op === "fps_below") return `die FPS unter ${a[0]} fallen`;
+        if (op === "player_y_below") return `der Spieler unter Höhe ${a[0]} ist`;
+        if (op === "weather_is") return `das Wetter „${a[0]}" ist`;
+        if (op === "random_chance") return `Zufall ≤ ${a[0]}`;
+        if (op === "time_passed") return `${a[0]} s vergangen sind`;
+        if (op === "near_player") return `etwas nahe ist`;
+        if (op === "creatures_count_above") return `mehr als ${a[0]} Kreaturen da sind`;
+        if (op === "compound_has_tag") return `„${a[0]}" das Tag ${a[1]} ≥ ${a[2]} hat`;
+        if (op === "compound_has_spatial_tag") return `„${a[0]}" räumlich ${a[1]} ≥ ${a[2]} hat`;
+        if (op === "not") return `nicht (${this._describeDslCondition(a[0])})`;
+        return `etwas (${op})`;
+    }
+
+    _dslDescriptionTable() {
+        const pos = (a) => this._describeDslPosition(a);
+        return {
+            weather: (a) => `lässt das Wetter zu „${a[0]}" wechseln`,
+            gravity: (a) => `setzt die Schwerkraft auf ${a[0]}`,
+            terrain_steepness: (a) => `regelt die Hang-Steilheit auf ${a[0]}`,
+            terrain_base_height: (a) => `hebt die Welt-Grundhöhe auf ${a[0]}`,
+            modify_terrain: (a) => {
+                const dh = Number(a[3]);
+                const verb = dh > 0 ? "hebt" : dh < 0 ? "gräbt" : "ebnet";
+                return `${verb} das Terrain bei (${a[0]}, ${a[1]}) im Radius ${a[2]}`;
+            },
+            time_of_day: (a) => `verschiebt die Tageszeit auf ${a[0]}`,
+            skybox_color: () => `färbt den Himmel`,
+            spawn_creature: (a) =>
+                `ruft ${a[1] || 1} ${a[2] ? a[2] + " " : ""}Kreatur${(a[1] || 1) !== 1 ? "en" : ""} herbei ${pos(a[0])}`,
+            spawn_tree: (a) => `pflanzt ${a[1] || 1} Baum${(a[1] || 1) !== 1 ? "äume" : ""} ${pos(a[0])}`,
+            spawn_island: (a) => `setzt eine schwebende Insel ${pos(a[0])}`,
+            spawn_ufo: (a) => `ruft ein UFO ${pos(a[0])}`,
+            spawn_village: (a) => `errichtet ein Dorf ${pos(a[0])}`,
+            spawn_temple: (a) => `errichtet einen Tempel ${pos(a[0])}`,
+            spawn_waterfall: (a) => `formt einen Wasserfall ${pos(a[0])}`,
+            spawn_blueprint: (a) => `baut „${a[0]}" ${pos(a[1])}`,
+            spawn_fractal: (a) => `lässt „${a[1]}" fraktal in Tiefe ${a[2]} wachsen ${pos(a[0])}`,
+            define_blueprint: (a) => `legt einen neuen Bauplan „${a[0]}" an`,
+            define_material: (a) => `definiert ein neues Material „${a[0]}"`,
+            define_ability: (a) => `lernt eine neue Fähigkeit „${a[0]}"`,
+            set_tool_meta: (a) => `gibt „${a[0]}" eine Werkzeug-Identität (${a[1]})`,
+            register_tool: (a) => `registriert „${a[0]}" als Werkzeug`,
+            apply_connection: (a) => `verbindet Teile von „${a[0]}" mit „${a[1]}"`,
+            apply_op: (a) => `bearbeitet Teil ${a[1]} von „${a[0]}" mit „${a[2]}"`,
+            creatures_color: () => `färbt alle Kreaturen`,
+            creatures_emotion: (a) => `setzt die Kreaturen-Stimmung auf „${a[0]}"`,
+            creatures_speed_mul: (a) => `skaliert die Kreaturen-Geschwindigkeit um ${a[0]}`,
+            creatures_size_mul: (a) => `skaliert die Kreaturen-Größe um ${a[0]}`,
+            player_jump_power: (a) => `setzt die Sprungkraft auf ${a[0]}`,
+            player_speed: (a) => `setzt die Lauf-Geschwindigkeit auf ${a[0]}`,
+            player_size_mul: (a) => `skaliert deine Größe um ${a[0]}`,
+            player_soul: (a) => `wandelt dich zur Seele „${a[0]}"`,
+            set_visible: (a) => `macht „${a[0]}" ${a[1] ? "sichtbar" : "unsichtbar"}`,
+        };
     }
 
     recordWeakness(label) {
@@ -6018,11 +6534,17 @@ class AnazhRealm {
         this.state.physicsWorld.setGravity(new Ammo.btVector3(0, this.state.gravity, 0));
         this.state.rigidBodies.forEach((rb) => {
             const body = rb.userData.physicsBody;
-            if (body) {
+            if (!body) return;
+            // Welle 6.A1 — Spieler-Body bekommt Reibung 0 (Wall-Sliding),
+            // alle anderen behalten 0.5 wie zuvor. Sonst würde dieser Re-Apply
+            // (Chat-Befehl „optimiere physik") die Sliding-Eigenschaft zerstören.
+            if (rb === this.state.playerMesh) {
+                body.setFriction(0);
+            } else {
                 body.setFriction(0.5);
-                body.setCcdMotionThreshold(0.03);
-                body.setCcdSweptSphereRadius(0.4);
             }
+            body.setCcdMotionThreshold(0.03);
+            body.setCcdSweptSphereRadius(0.4);
         });
         this.log("Physik optimiert: Gravitation, Reibung, CCD angepasst");
     }
@@ -7409,6 +7931,14 @@ class AnazhRealm {
             // Ring 5: Spieler-Seele (visuelle Form). Beim Load wird sie nach
             // dem playerMesh-Bau angewandt — kein Body-Recreate.
             playerSoul: this.state.player.soul || "human",
+            // Welle 6.D Etappe 1.6 — Custom-Seelen persistieren (eigene
+            // Charaktere des Schöpfers). Built-ins sind in playerSoulDefs
+            // verdrahtet und werden NICHT persistiert.
+            customSouls: this.state.customSouls || {},
+            // Welle 6.D Etappe 3a — Konsumable-Rezepte persistieren.
+            consumables: this.state.consumables || {},
+            // Welle 6.D Etappe 3b — Equipped-Slots persistieren.
+            playerEquipped: (this.state.player && this.state.player.equipped) || { tool: null, armor: null },
             // Welle 4 Phase 3: Werkzeug-Besitz. Starter-Werkzeuge werden bei
             // jedem Init wieder verfügbar, aber Persistenz erlaubt zukünftig
             // eigen-geschmiedete (Welle 6) zu überleben.
@@ -8181,8 +8711,48 @@ class AnazhRealm {
         // "Lade Zustand"), wenden wir die Seele sofort an. Vor dem Mesh-Bau
         // merkt sich applyPlayerSoul den Namen und der Init-Pfad wendet ihn
         // nach Mesh-Erstellung an.
-        if (typeof state.playerSoul === "string" && this.playerSoulDefs[state.playerSoul]) {
-            this.applyPlayerSoul(state.playerSoul);
+        // Welle 6.D Etappe 1.6 — Custom-Seelen aus dem Save rekonstruieren
+        // BEVOR applyPlayerSoul aufgerufen wird; sonst würde eine gespeicherte
+        // Custom-Seele als „unbekannt" abgelehnt.
+        if (state.customSouls && typeof state.customSouls === "object") {
+            const restored = {};
+            for (const key of Object.keys(state.customSouls)) {
+                const entry = state.customSouls[key];
+                if (!entry || !Array.isArray(entry.bodyParts)) continue;
+                if (this.playerSoulDefs[key]) continue; // Built-in geschützt
+                const valid = this.validateBlueprintParts(entry.bodyParts);
+                if (!valid.ok) continue;
+                restored[key] = {
+                    name: key,
+                    label: typeof entry.label === "string" ? entry.label : key,
+                    bodyParts: valid.parts,
+                    createdAt: Number(entry.createdAt) || 0,
+                };
+            }
+            this.state.customSouls = restored;
+        }
+        if (typeof state.playerSoul === "string") {
+            const known =
+                this.playerSoulDefs[state.playerSoul] ||
+                (this.state.customSouls && this.state.customSouls[state.playerSoul]);
+            if (known) this.applyPlayerSoul(state.playerSoul);
+        }
+        // Welle 6.D Etappe 3a — Konsumables aus Save rekonstruieren (defensiv
+        // über createOrUpdateConsumable, das die tagBonus + duration prüft).
+        if (state.consumables && typeof state.consumables === "object") {
+            this.state.consumables = {};
+            for (const key of Object.keys(state.consumables)) {
+                const c = state.consumables[key];
+                if (!c) continue;
+                this.createOrUpdateConsumable(key, c.tagBonus, c.durationSeconds, c.label);
+            }
+        }
+        // Welle 6.D Etappe 3b — Equipped-Slots aus Save (defensiv via equipTool/
+        // equipArmor; falls Tool/Armor inzwischen weg ist, schlägt es still
+        // fehl und der Slot bleibt leer).
+        if (state.playerEquipped && typeof state.playerEquipped === "object") {
+            if (state.playerEquipped.tool) this.equipTool(state.playerEquipped.tool);
+            if (state.playerEquipped.armor) this.equipArmor(state.playerEquipped.armor);
         }
         // Ring 6: Bau-Werke wiederherstellen. Bestehende Strukturen werden
         // tief disposed, dann jede aus {type, position, seed} neu gebaut.
@@ -9443,27 +10013,711 @@ class AnazhRealm {
     // - `isMoving`: bool, schaltet zwischen Walk/Trab/Flap-Speed und Idle.
     get playerSoulDefs() {
         if (this._playerSoulDefsCache) return this._playerSoulDefsCache;
+        // Welle 6.D Etappe 1.5 — Seele = Bauplan aus Körper-Teilen.
+        //
+        // Vision-Korrektur (Schöpfer 13.05.2026): das hardcodete `tags`-Profil
+        // war Re-Verkapselung. Eine Seele entsteht jetzt — wie Bauwerke und
+        // Maschinen — aus einer Liste von Teilen mit Form × Material. Die
+        // Compound-Tags fallen aus `computeCompoundTags` (W4-P2 MAX-Aggregation)
+        // genauso wie bei jeder anderen Struktur in der Welt.
+        //
+        // Drei Built-in-Seelen sind Start-Charaktere; eigene Seelen kommen mit
+        // der DSL-Op `define_soul(name, bodyParts)` in Etappe 1.6. Visuelle
+        // Anim-Pfade (build/animate) bleiben für die Built-ins — Custom-Souls
+        // bekommen einen generischen Atem-Loop (folgt mit Custom-Soul-UI).
         this._playerSoulDefsCache = {
             human: {
                 label: "Mensch",
                 color: 0xff0000,
                 build: () => this._buildHumanGroup(),
                 animate: (g, t, ph, mv) => this._animateHuman(g, t, ph, mv),
+                bodyParts: [
+                    { shape: "box", material: "fleisch", size: { x: 0.6, y: 1.0, z: 0.4 }, label: "Torso" },
+                    { shape: "sphere", material: "knochen", size: { x: 0.3, y: 0.3, z: 0.3 }, label: "Kopf" },
+                    { shape: "cylinder", material: "fleisch", size: { x: 0.18, y: 0.85, z: 0.18 }, label: "Glieder" },
+                    { shape: "cylinder", material: "knochen", size: { x: 0.2, y: 0.9, z: 0.2 }, label: "Skelett" },
+                ],
             },
             phoenix: {
                 label: "Phönix",
                 color: 0xff7a1a,
                 build: () => this._buildPhoenixGroup(),
                 animate: (g, t, ph, mv) => this._animatePhoenix(g, t, ph, mv),
+                bodyParts: [
+                    { shape: "box", material: "federn", size: { x: 0.4, y: 0.55, z: 0.35 }, label: "Körper" },
+                    { shape: "plane", material: "federn", size: { x: 1.2, y: 0.6, z: 0.05 }, label: "Flügel" },
+                    { shape: "sphere", material: "glut", size: { x: 0.22, y: 0.22, z: 0.22 }, label: "Inneres Feuer" },
+                    { shape: "cone", material: "federn", size: { x: 0.18, y: 0.8, z: 0.18 }, label: "Schweif" },
+                ],
             },
             dragon: {
                 label: "Drache",
                 color: 0x2d6e3b,
                 build: () => this._buildDragonGroup(),
                 animate: (g, t, ph, mv) => this._animateDragon(g, t, ph, mv),
+                bodyParts: [
+                    { shape: "box", material: "schuppen", size: { x: 1.2, y: 0.7, z: 0.5 }, label: "Körper" },
+                    { shape: "sphere", material: "schuppen", size: { x: 0.45, y: 0.4, z: 0.4 }, label: "Kopf" },
+                    { shape: "cylinder", material: "knochen", size: { x: 0.22, y: 0.45, z: 0.22 }, label: "Beine" },
+                    { shape: "cylinder", material: "schuppen", size: { x: 0.18, y: 1.4, z: 0.18 }, label: "Schweif" },
+                ],
             },
         };
         return this._playerSoulDefsCache;
+    }
+
+    // Welle 6.D Etappe 1.5 — Compound-Tags der Seele berechnen.
+    //
+    // Identische Aggregations-Mechanik wie `computeCompoundTags(blueprint)` für
+    // Bauwerke: pro Body-Part `computePartTags` (Form × Material), dann MAX über
+    // alle Teile. Damit spricht der Spieler dieselbe Sprache wie Architekturen.
+    // Wer einen leeren `bodyParts`-Eintrag hat, bekommt leere Tags zurück (defensiv).
+    computeSoulCompoundTags(soulDef) {
+        if (!soulDef || !Array.isArray(soulDef.bodyParts) || soulDef.bodyParts.length === 0) {
+            return {};
+        }
+        return this.computeCompoundTags({ parts: soulDef.bodyParts });
+    }
+
+    // Welle 6.D Etappe 2 — Boost-Management.
+    //
+    // API: addPlayerBoost({source, tagDelta, durationSeconds, label}). Sources:
+    //   - "emotion:<axis>" (auto-Trigger via tickPlayerBoosts)
+    //   - "world:resonance" (auto-Trigger via tickPlayerBoosts)
+    //   - "consume:<name>" (manuell via DSL-Op `apply_boost`, Etappe 3)
+    // Duplikate (gleiche source): expiresAt wird verlängert statt zweiter Eintrag.
+    addPlayerBoost(spec) {
+        if (!spec || typeof spec !== "object") return false;
+        const source = String(spec.source || "").slice(0, 60);
+        if (!source) return false;
+        const tagDelta = {};
+        const inputDelta = spec.tagDelta || {};
+        for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
+            const v = Number(inputDelta[tag]);
+            if (Number.isFinite(v) && v !== 0) tagDelta[tag] = Math.max(-1, Math.min(1, v));
+        }
+        if (Object.keys(tagDelta).length === 0) return false;
+        const duration = Math.max(0.5, Math.min(600, Number(spec.durationSeconds) || 30));
+        const now = performance.now() / 1000;
+        const expiresAt = now + duration;
+        const label = String(spec.label || source).slice(0, 80);
+        if (!Array.isArray(this.state.player.boosts)) this.state.player.boosts = [];
+        const existing = this.state.player.boosts.find((b) => b.source === source);
+        if (existing) {
+            existing.expiresAt = expiresAt;
+            existing.tagDelta = tagDelta;
+            existing.label = label;
+        } else {
+            this.state.player.boosts.push({ source, tagDelta, expiresAt, label });
+        }
+        this.recomputePlayerStats();
+        return true;
+    }
+
+    // 1×/s aufgerufen aus dem Game-Loop. Drei Schritte:
+    //   1. Abgelaufene Boosts entfernen
+    //   2. Emotion-Trigger: Achsen >0.7 → entsprechendes Tag-Delta
+    //   3. Welt-Resonanz-Trigger: nahe Signature-Struktur → resoniert-Bonus
+    // Wenn sich etwas geändert hat, rufen wir `recomputePlayerStats` einmal auf
+    // (statt mehrfach pro Sub-Schritt).
+    tickPlayerBoosts(currentTime) {
+        if (!this.state.player) return;
+        if (currentTime - (this.state.player.boostLastTick || -Infinity) < 1.0) return;
+        this.state.player.boostLastTick = currentTime;
+        const now = performance.now() / 1000;
+        let changed = false;
+        if (!Array.isArray(this.state.player.boosts)) this.state.player.boosts = [];
+
+        // (1) Ablauf
+        const kept = this.state.player.boosts.filter((b) => b.expiresAt > now);
+        if (kept.length !== this.state.player.boosts.length) {
+            this.state.player.boosts = kept;
+            changed = true;
+        }
+
+        // (2) Emotion-Trigger
+        const emotions = this.state.player.emotions || {};
+        const threshold = this.state.player.emotionThreshold || 0.7;
+        const lastTrig = this.state.player.boostLastTriggered || {};
+        for (const axis of Object.keys(AnazhRealm.BOOST_EMOTION_TAG)) {
+            const value = Number(emotions[axis]) || 0;
+            const source = `emotion:${axis}`;
+            const active = this.state.player.boosts.find((b) => b.source === source);
+            if (value >= threshold && !active) {
+                // Refract-Pause: nach Ablauf 60 s warten, bevor wir neu auslösen
+                const lastEnded = lastTrig[source] || -Infinity;
+                if (now - lastEnded < AnazhRealm.BOOST_EMOTION_REFRACT) continue;
+                const def = AnazhRealm.BOOST_EMOTION_TAG[axis];
+                this.state.player.boosts.push({
+                    source,
+                    tagDelta: { [def.tag]: def.delta },
+                    expiresAt: now + AnazhRealm.BOOST_EMOTION_DURATION,
+                    label: def.label,
+                });
+                changed = true;
+            } else if (!active && lastTrig[source] === undefined) {
+                // Initial-Mark für Refract — sonst würde lastEnded = -Infinity und
+                // sofort wieder triggern können. Mark only on first see.
+                lastTrig[source] = -Infinity;
+            }
+        }
+        // Refract-Stempel setzen für gerade abgelaufene Boosts
+        for (const b of kept) {
+            if (b.expiresAt <= now && b.source.startsWith("emotion:")) {
+                lastTrig[b.source] = now;
+            }
+        }
+
+        // (3) Welt-Resonanz: in der Nähe einer Architektur mit
+        // computeSpatialTags.resoniert >= WORLD_EFFECT_THRESHOLDS.resonance_signature.
+        const playerPos = this.state.playerMesh ? this.state.playerMesh.position : null;
+        let resonant = false;
+        if (playerPos && Array.isArray(this.state.architectures)) {
+            const T = AnazhRealm.WORLD_EFFECT_THRESHOLDS;
+            const radiusSq = AnazhRealm.BOOST_RESONANCE_RADIUS * AnazhRealm.BOOST_RESONANCE_RADIUS;
+            for (const entry of this.state.architectures) {
+                if (!entry || !entry.position) continue;
+                const dx = entry.position.x - playerPos.x;
+                const dz = entry.position.z - playerPos.z;
+                if (dx * dx + dz * dz > radiusSq) continue;
+                const bp = this.state.blueprints && this.state.blueprints[entry.type];
+                if (!bp) continue;
+                const sTags = this.computeSpatialTags ? this.computeSpatialTags(bp) : this.computeCompoundTags(bp);
+                if ((sTags.resoniert || 0) >= T.resonance_signature) {
+                    resonant = true;
+                    break;
+                }
+            }
+        }
+        const activeRes = this.state.player.boosts.find((b) => b.source === "world:resonance");
+        if (resonant) {
+            // Refresh-while-in-range: jede Sekunde 3 s in die Zukunft setzen.
+            if (activeRes) {
+                activeRes.expiresAt = now + 3;
+            } else {
+                this.state.player.boosts.push({
+                    source: "world:resonance",
+                    tagDelta: { resoniert: AnazhRealm.BOOST_RESONANCE_DELTA },
+                    expiresAt: now + 3,
+                    label: AnazhRealm.BOOST_RESONANCE_LABEL,
+                });
+                changed = true;
+            }
+        }
+
+        if (changed) {
+            this.recomputePlayerStats();
+        }
+        // UI 1×/s refreshen, damit die Boost-Restzeit sichtbar tickt — auch
+        // wenn sich an Boost-Bestand selbst nichts geändert hat (Counter läuft).
+        if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
+    }
+
+    // Welle 6.D Etappe 3a — Schaden zufügen. Quellen: DSL-Op `damage`,
+    // zukünftige Welt-Hazards (6.G), feindliche Kreaturen (6.H). HP-Reduktion
+    // wird durch heatResist (für Feuer/Hitze-Quellen) gedämpft.
+    damagePlayer(amount, source) {
+        if (!this.state.player || typeof amount !== "number" || !Number.isFinite(amount)) return false;
+        const value = Math.max(0, Math.min(1000, amount));
+        if (value === 0) return false;
+        // Wenn aktuell in Phönix-Wandlung: kein doppelter Tod (Spieler ist
+        // unverwundbar während der Heilungs-Phase, das ist Teil der Mythos).
+        const now = performance.now() / 1000;
+        if (this.state.player.phoenixUntil > now) return false;
+        // Resistenz: feuer/hitze-Quellen werden durch heatResist gedämpft.
+        const stats = this.state.player.stats || {};
+        let scaled = value;
+        if (typeof source === "string" && /heat|fire|feuer|hitze|flame|glut/i.test(source)) {
+            const resist = Math.max(0, Math.min(0.9, stats.heatResist || 0));
+            scaled = value * (1 - resist);
+        }
+        const hpBefore = Number(this.state.player.hp) || 0;
+        const hp = Math.max(0, hpBefore - scaled);
+        this.state.player.hp = hp;
+        this.log(
+            `Schaden ${scaled.toFixed(1)} (${source || "unbekannt"}) → HP ${hp.toFixed(0)}/${stats.hpMax || 0}`,
+            "INFO"
+        );
+        if (hp <= 0) this.triggerPhoenixDeath(source);
+        if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
+        return true;
+    }
+
+    // HP=0 → Phönix-Wandlung. Die alte Seele wird gemerkt, der Spieler-Avatar
+    // wechselt automatisch zur phoenix-Form, HP zurück auf max, Welt fühlt
+    // sorrow + awe. Nach `phoenixDurationSeconds` (Default 5 min) kann der
+    // Spieler manuell zurück (oder bleibt phoenix). Im Frieden-Modus (kommt
+    // mit 6.C2) wird HP nicht erreicht.
+    triggerPhoenixDeath(source) {
+        const now = performance.now() / 1000;
+        const oldSoul = this.state.player.soul;
+        // Doppelt-Trigger-Schutz: wenn bereits aktive Wandlung läuft, ignorieren
+        if (this.state.player.phoenixUntil > now) return;
+        this.state.player.preDeathSoul = oldSoul && oldSoul !== "phoenix" ? oldSoul : null;
+        this.state.player.phoenixUntil = now + (this.state.player.phoenixDurationSeconds || 300);
+        // Welt-Trauer: zwei Achsen schwingen mit, Tod ist Verlust + Wandlung.
+        if (this.state.player.emotions) {
+            this.state.player.emotions.sorrow = Math.min(1, (this.state.player.emotions.sorrow || 0) + 0.3);
+            this.state.player.emotions.awe = Math.min(1, (this.state.player.emotions.awe || 0) + 0.2);
+        }
+        // Welle 6.D Etappe 3a+ — Wunde frisch setzen. Bleibt nach Phönix-Phase
+        // bestehen und regeneriert langsam (deathWoundRegenSeconds = 10 min).
+        this.state.player.deathWoundIntensity = 1.0;
+        // Phönix-Form aktivieren (recomputePlayerStats läuft automatisch in
+        // applyPlayerSoul, HP wird dabei auf neue hpMax gesetzt).
+        const oldLabel = this._getSoulDef(oldSoul) ? this._getSoulDef(oldSoul).label : oldSoul;
+        if (oldSoul !== "phoenix") this.applyPlayerSoul("phoenix");
+        else this.recomputePlayerStats(); // wenn bereits phoenix, nur HP refreshen
+        // Journal: einmalige Erinnerung pro Welt-Tod. Mehrfach-Tode bekommen
+        // den `seen`-Marker nicht (jeder Tod ist ein Ereignis).
+        this.journalAppend(
+            "loss",
+            `Die ${oldLabel || oldSoul} fiel ${source ? `(${source}) ` : ""}— eine Flamme erhob sich.`,
+            {
+                previousSoul: oldSoul,
+                source: source || null,
+                at: now,
+            }
+        );
+        this.log(`Phönix-Wandlung: ${oldSoul} → phoenix (${source || "Tod"})`, "INFO");
+        if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
+    }
+
+    // 1×/s tick: prüft, ob die Wandlung abgelaufen ist; während der Wandlung
+    // regeneriert HP linear (max in `phoenixDurationSeconds` Sekunden voll).
+    tickPhoenixDeath(currentTime) {
+        if (!this.state.player) return;
+        if (currentTime - (this.state.player.deathLastTick || -Infinity) < 1.0) return;
+        const dt = Math.max(0.1, Math.min(10, currentTime - this.state.player.deathLastTick));
+        this.state.player.deathLastTick = currentTime;
+        // Welle 6.D Etappe 3a+ — Wunde regenerieren UNABHÄNGIG von der
+        // Phönix-Wandlungs-Phase. Die Wandlung heilt HP schnell (5 min), aber
+        // die Stat-Wunde bleibt 10 min als Erinnerung an die Verletzung.
+        const woundIntensity = this.state.player.deathWoundIntensity || 0;
+        if (woundIntensity > 0) {
+            const regenRate = 1 / (this.state.player.deathWoundRegenSeconds || 600);
+            this.state.player.deathWoundIntensity = Math.max(0, woundIntensity - regenRate * dt);
+            this.recomputePlayerStats(); // Stat-Penalty sinkt sichtbar
+        }
+        // Welle 6.D Etappe 3a+ — Stamina-Regen (immer, nicht nur in Wandlung).
+        // Linear bis staminaMax. Verbraucht durch applyOpToPart u. a.
+        const staMax = this.state.player.staminaMax || 100;
+        const sta = this.state.player.stamina || 0;
+        if (sta < staMax) {
+            const rate = AnazhRealm.STAMINA_REGEN_PER_SEC || 5;
+            this.state.player.stamina = Math.min(staMax, sta + rate * dt);
+        }
+        const now = performance.now() / 1000;
+        const until = this.state.player.phoenixUntil || -Infinity;
+        if (until <= -Infinity || until <= 0) return;
+        if (now >= until) {
+            // Wandlungs-Phase vorbei. Spieler bleibt phoenix (er kann manuell
+            // via Dropdown/Chat zurückwechseln) — wer in der Phönix-Form
+            // bleiben möchte, weil ihm das gefällt, darf das.
+            this.state.player.phoenixUntil = -Infinity;
+            this.journalAppendOnce(
+                `phoenix_settled:${Math.floor(now / 60)}`,
+                "growth",
+                "Die Flamme hat sich beruhigt. Was bleibt, ist die Wahl der Form.",
+                { at: now }
+            );
+            return;
+        }
+        // Linear regen: hp += hpMax / duration jede Sekunde
+        const hpMax = this.state.player.hpMax || 100;
+        const duration = this.state.player.phoenixDurationSeconds || 300;
+        const regen = hpMax / duration;
+        this.state.player.hp = Math.min(hpMax, (this.state.player.hp || 0) + regen);
+    }
+
+    // Welle 6.D Etappe 1.6 — Seele auflösen: erst Built-in, dann Custom.
+    // Single-Pfad für alle Lese-Stellen (computePlayerStats, applyPlayerSoul,
+    // renderPlayerStatsUI). Gibt null zurück wenn unbekannt.
+    _getSoulDef(name) {
+        if (!name) return null;
+        if (this.playerSoulDefs[name]) return this.playerSoulDefs[name];
+        if (this.state.customSouls && this.state.customSouls[name]) return this.state.customSouls[name];
+        return null;
+    }
+
+    // Welle 6.D Etappe 1.7 — UI-Mutations-Pfade für eigene Seelen.
+    //
+    // Klonen aus aktiver Seele: nimmt die bodyParts und legt eine eigene Kopie
+    // als Custom-Seele an. Die Kopie ist voll editierbar.
+    cloneSoulToCustom(sourceName, newName) {
+        const source = this._getSoulDef(sourceName);
+        if (!source || !Array.isArray(source.bodyParts)) {
+            return { ok: false, reason: "source_unknown" };
+        }
+        // Deep-Copy der bodyParts, damit Edits an der Kopie das Original
+        // (besonders Built-ins!) nicht berühren.
+        const cloned = source.bodyParts.map((p) => JSON.parse(JSON.stringify(p)));
+        return this.createOrUpdateSoulFromDsl(newName, cloned);
+    }
+
+    // Eine Custom-Seele löschen. Wenn der Spieler aktuell diese Seele trägt,
+    // schalten wir zurück auf "human" (Default-Seele).
+    deleteCustomSoul(name) {
+        if (!this.state.customSouls || !this.state.customSouls[name]) {
+            return { ok: false, reason: "not_found" };
+        }
+        delete this.state.customSouls[name];
+        if (this.state.player.soul === name) {
+            this.applyPlayerSoul("human");
+        }
+        if (typeof this._refreshSoulSelect === "function") this._refreshSoulSelect();
+        if (typeof this.renderSoulEditorUI === "function") this.renderSoulEditorUI();
+        return { ok: true };
+    }
+
+    // Ein Body-Part an eine bestehende Custom-Seele anhängen. Wenn der
+    // Spieler aktuell diese Seele trägt, werden Mesh + Stats neu gebaut.
+    addPartToCustomSoul(soulName, part) {
+        const soul = this.state.customSouls && this.state.customSouls[soulName];
+        if (!soul) return { ok: false, reason: "soul_not_found" };
+        const newParts = soul.bodyParts.concat([part]);
+        const valid = this.validateBlueprintParts(newParts);
+        if (!valid.ok) return { ok: false, reason: valid.reason };
+        soul.bodyParts = valid.parts;
+        this._refreshIfWornSoul(soulName);
+        return { ok: true };
+    }
+
+    // Ein Body-Part einer Custom-Seele bearbeiten. `patch` enthält die Felder,
+    // die überschrieben werden sollen (shape/material/position/size).
+    updatePartInCustomSoul(soulName, idx, patch) {
+        const soul = this.state.customSouls && this.state.customSouls[soulName];
+        if (!soul) return { ok: false, reason: "soul_not_found" };
+        if (idx < 0 || idx >= soul.bodyParts.length) return { ok: false, reason: "index_out_of_range" };
+        const next = soul.bodyParts.slice();
+        next[idx] = { ...next[idx], ...patch };
+        const valid = this.validateBlueprintParts(next);
+        if (!valid.ok) return { ok: false, reason: valid.reason };
+        soul.bodyParts = valid.parts;
+        this._refreshIfWornSoul(soulName);
+        return { ok: true };
+    }
+
+    // Ein Body-Part entfernen. Wenn das letzte Part entfernt würde, ablehnen
+    // (eine Seele braucht mindestens einen Körper-Teil).
+    removePartFromCustomSoul(soulName, idx) {
+        const soul = this.state.customSouls && this.state.customSouls[soulName];
+        if (!soul) return { ok: false, reason: "soul_not_found" };
+        if (soul.bodyParts.length <= 1) return { ok: false, reason: "would_be_empty" };
+        if (idx < 0 || idx >= soul.bodyParts.length) return { ok: false, reason: "index_out_of_range" };
+        soul.bodyParts = soul.bodyParts.slice(0, idx).concat(soul.bodyParts.slice(idx + 1));
+        this._refreshIfWornSoul(soulName);
+        return { ok: true };
+    }
+
+    // Wenn der Spieler die geänderte Seele aktuell trägt: Mesh + Stats
+    // refreshen. Sonst nur stille Daten-Mutation.
+    _refreshIfWornSoul(soulName) {
+        if (this.state.player.soul === soulName) {
+            // applyPlayerSoul re-baut Mesh + ruft recomputePlayerStats.
+            this.applyPlayerSoul(soulName);
+        }
+        if (typeof this.renderSoulEditorUI === "function") this.renderSoulEditorUI();
+    }
+
+    // Welle 6.D Etappe 3b V3 (Schöpfer-Feedback 13.05.2026) — Player-Aura
+    // als ECHTER Leucht-Effekt: eine transparente Glow-Sphere um den Avatar
+    // mit AdditiveBlending. Zusätzlich dezente Sub-Mesh-Tint (15 %), damit
+    // die Bauplan-Identität gefärbt rüberkommt, aber das echte Leuchten
+    // entsteht durch die Sphere-Überlagerung (additive Pixel-Helligkeit).
+    //
+    // _auraGlow ist eigener Mesh in der Welt-Szene (nicht playerMesh-Child,
+    // damit applyPlayerSoul ihn nicht disposed). _auraBaseColor cached pro
+    // Sub-Mesh die Original-Farbe (Anti-Drift wie 6.A5 Phantom-Tint).
+    _ensurePlayerAuraGlow() {
+        if (typeof THREE === "undefined" || !this.state.scene) return null;
+        if (this.state.playerAuraGlow) return this.state.playerAuraGlow;
+        // Welle 6.D Etappe 3b V4 (Schöpfer-Feedback „mehr Schimmern der Haut,
+        // weichere Kanten") — Glow ist jetzt ein Sprite mit CanvasTexture-
+        // Radial-Gradient statt einer Sphere. Sprite-Billboard + radialer
+        // Falloff zentral→transparent gibt ein WEICHES Leuchten ohne harte
+        // Sphere-Kontur. AdditiveBlending sorgt für die echte Pixel-
+        // Helligkeit (überlappende Pixel werden additiv aufgehellt).
+        const tex = this._buildAuraGradientTexture();
+        const mat = new THREE.SpriteMaterial({
+            map: tex,
+            color: 0xffffff,
+            blending: THREE.AdditiveBlending,
+            transparent: true,
+            opacity: 1.0,
+            depthWrite: false,
+        });
+        const sprite = new THREE.Sprite(mat);
+        sprite.userData.isPlayerAuraGlow = true;
+        sprite.scale.set(3.0, 3.0, 1);
+        this.state.scene.add(sprite);
+        this.state.playerAuraGlow = sprite;
+        return sprite;
+    }
+
+    // Welle 6.D Etappe 3b V4 — Radial-Gradient-Texture für den Aura-Sprite.
+    // Einmalig erzeugt + gecached. 128×128 Canvas mit fünf-Stop-Gradient von
+    // weiß-translucent (Mitte) → komplett transparent (Rand). Im Sprite mit
+    // AdditiveBlending werden die hellen Mitte-Pixel zu echtem Leuchten,
+    // während die transparenten Rand-Pixel sanft verschmelzen — kein
+    // harter Kontur-Cutoff mehr.
+    _buildAuraGradientTexture() {
+        if (this._auraGradientTexture) return this._auraGradientTexture;
+        if (typeof document === "undefined" || typeof THREE === "undefined") return null;
+        const size = 128;
+        const canvas = document.createElement("canvas");
+        canvas.width = canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+        gradient.addColorStop(0.0, "rgba(255,255,255,0.55)");
+        gradient.addColorStop(0.25, "rgba(255,255,255,0.38)");
+        gradient.addColorStop(0.55, "rgba(255,255,255,0.16)");
+        gradient.addColorStop(0.85, "rgba(255,255,255,0.04)");
+        gradient.addColorStop(1.0, "rgba(255,255,255,0.0)");
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, size, size);
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.needsUpdate = true;
+        this._auraGradientTexture = tex;
+        return tex;
+    }
+
+    tickPlayerAura() {
+        if (!this.state.playerMesh || !this.state.player) return;
+        if (typeof THREE === "undefined") return;
+        // Dominante Tag-Achse aus den Final-Tags (inkl. Boosts + Equipped).
+        const tags = this.state.player.statTags || {};
+        let bestKey = "lebendig";
+        let bestVal = 0;
+        for (const k of Object.keys(AnazhRealm.AURA_TAG_HUE)) {
+            const v = tags[k] || 0;
+            if (v > bestVal) {
+                bestVal = v;
+                bestKey = k;
+            }
+        }
+        const hue = AnazhRealm.AURA_TAG_HUE[bestKey] || 0;
+        const hpMax = this.state.player.hpMax || 100;
+        const hpRatio = hpMax > 0 ? Math.max(0.05, Math.min(1, (this.state.player.hp || 0) / hpMax)) : 1;
+        // Aura-Farbe + Helligkeits-Faktor aus HP. Voll-HP = klar leuchtend,
+        // niedrig-HP = blasser + dunkler (Saturation × hpRatio).
+        const auraSat = 0.85 * hpRatio;
+        const auraLit = 0.5;
+        const auraColor = new THREE.Color().setHSL(hue / 360, auraSat, auraLit);
+        // (a) Glow-Sprite (V4): weicher Schimmer um den Avatar.
+        // Sprite ist Billboard (folgt Kamera automatisch). Radius wirkt
+        // physisch über `scale`; die radial-Gradient-Texture sorgt für den
+        // sanften Falloff (keine harte Kontur mehr). Die Material-Color tint
+        // multipliziert mit der Textur, sodass die HSL-Tag-Farbe sichtbar wird.
+        const glow = this._ensurePlayerAuraGlow();
+        if (glow) {
+            const p = this.state.playerMesh.position;
+            glow.position.set(p.x, p.y + 0.5, p.z);
+            glow.material.color.copy(auraColor);
+            // Sprite-Master-Opacity skaliert mit HP × dominanter Tag-Intensität.
+            // Cap bei 1.0 (Texture-Alpha selbst läuft auf max 0.55 in der Mitte,
+            // Rand 0 — das ist der weiche Verlauf).
+            const auraStrength = Math.min(1, bestVal / 1.5);
+            glow.material.opacity = 0.55 + 0.45 * hpRatio * auraStrength;
+            // Atem-Animation über Sprite-scale (5 % Modulation).
+            const breath = 3.0 * (1 + Math.sin(performance.now() * 0.001) * 0.05);
+            glow.scale.set(breath, breath, 1);
+        }
+        // (b) Sub-Mesh-Tint dezent: 15 % Mix, damit Original-Farbe vorranig
+        // bleibt aber das Leuchten in die Materialien hineinwirkt.
+        const auraMix = 0.15;
+        this.state.playerMesh.traverse((node) => {
+            if (!node || !node.isMesh || !node.material || !node.material.color) return;
+            if (node.userData._auraBaseColor === undefined) {
+                node.userData._auraBaseColor = node.material.color.getHex();
+            }
+            const base = node.userData._auraBaseColor;
+            const br = ((base >> 16) & 0xff) / 255;
+            const bg = ((base >> 8) & 0xff) / 255;
+            const bb = (base & 0xff) / 255;
+            // Verletzungs-Dimmer auf Original (0.6..1.0).
+            const darken = 0.6 + 0.4 * hpRatio;
+            const r = br * (1 - auraMix) * darken + auraColor.r * auraMix;
+            const g = bg * (1 - auraMix) * darken + auraColor.g * auraMix;
+            const b = bb * (1 - auraMix) * darken + auraColor.b * auraMix;
+            node.material.color.setRGB(r, g, b);
+        });
+        // Alten Boden-Torus aus Etappe 3b V1 säubern, falls noch da.
+        if (this.state.playerAura && this.state.scene) {
+            this.state.scene.remove(this.state.playerAura);
+            if (this.state.playerAura.geometry) this.state.playerAura.geometry.dispose();
+            if (this.state.playerAura.material) this.state.playerAura.material.dispose();
+            this.state.playerAura = null;
+        }
+    }
+
+    // Welle 6.D Etappe 3b — Bauplan als Rüstung markieren. Analog zu
+    // `set_tool_meta`/`register_tool`: ein eigener Bauplan kann mit
+    // role:"armor" markiert werden, danach equipbar via `equipArmor`.
+    setBlueprintAsArmor(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.builtIn) return { ok: false, reason: "cannot_modify_builtin" };
+        bp.role = "armor";
+        return { ok: true, name };
+    }
+
+    // Werkzeug ausrüsten. Akzeptiert null/leer für „abnehmen".
+    equipTool(name) {
+        if (!this.state.player) return { ok: false, reason: "no_player" };
+        if (!name) {
+            this.state.player.equipped = this.state.player.equipped || { tool: null, armor: null };
+            this.state.player.equipped.tool = null;
+            this.recomputePlayerStats();
+            return { ok: true, equipped: null };
+        }
+        if (!this.state.tools || !this.state.tools[name]) {
+            return { ok: false, reason: "tool_unknown" };
+        }
+        if (Array.isArray(this.state.player.tools) && !this.state.player.tools.includes(name)) {
+            return { ok: false, reason: "tool_not_owned" };
+        }
+        this.state.player.equipped = this.state.player.equipped || { tool: null, armor: null };
+        this.state.player.equipped.tool = name;
+        this.recomputePlayerStats();
+        return { ok: true, equipped: name };
+    }
+
+    // Rüstung ausrüsten. Akzeptiert null/leer für „abnehmen". Blueprint muss
+    // mit role:"armor" markiert sein (via setBlueprintAsArmor).
+    equipArmor(name) {
+        if (!this.state.player) return { ok: false, reason: "no_player" };
+        if (!name) {
+            this.state.player.equipped = this.state.player.equipped || { tool: null, armor: null };
+            this.state.player.equipped.armor = null;
+            this.recomputePlayerStats();
+            return { ok: true, equipped: null };
+        }
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.role !== "armor") return { ok: false, reason: "not_marked_as_armor" };
+        this.state.player.equipped = this.state.player.equipped || { tool: null, armor: null };
+        this.state.player.equipped.armor = name;
+        this.recomputePlayerStats();
+        return { ok: true, equipped: name };
+    }
+
+    // Welle 6.D Etappe 3a — Konsumable definieren. Validiert tagBonus (nur
+    // MATERIAL_TAG_KEYS, ge-clamp ±1), duration (0.5..600 s), Cap 32 eigene.
+    createOrUpdateConsumable(name, tagBonus, durationSeconds, label) {
+        if (typeof name !== "string" || name.length === 0 || name.length > 40) {
+            return { ok: false, reason: "invalid_name" };
+        }
+        const safe = name.replace(/[^a-z0-9_-]/gi, "").slice(0, 40);
+        if (!safe) return { ok: false, reason: "invalid_name_after_sanitize" };
+        const cleanedBonus = {};
+        if (tagBonus && typeof tagBonus === "object") {
+            for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
+                const v = Number(tagBonus[tag]);
+                if (Number.isFinite(v) && v !== 0) cleanedBonus[tag] = Math.max(-1, Math.min(1, v));
+            }
+        }
+        if (Object.keys(cleanedBonus).length === 0) return { ok: false, reason: "no_tag_bonus" };
+        const dur = Math.max(0.5, Math.min(600, Number(durationSeconds) || 30));
+        if (!this.state.consumables) this.state.consumables = {};
+        const existing = this.state.consumables[safe];
+        const count = Object.keys(this.state.consumables).length;
+        if (!existing && count >= 32) return { ok: false, reason: "too_many_consumables" };
+        this.state.consumables[safe] = {
+            name: safe,
+            label: typeof label === "string" ? label.slice(0, 60) : safe.replace(/_/g, " "),
+            tagBonus: cleanedBonus,
+            durationSeconds: dur,
+            createdAt: performance.now() / 1000,
+        };
+        return { ok: true, name: safe };
+    }
+
+    // Welle 6.D Etappe 3a+ (Schöpfer-Feedback 13.05.2026) — Bauplan als
+    // Konsumabel markieren. Damit kommt die Konsum-Wirkung aus der COMPOSITION:
+    // Bauplan mit Wasser-Part + Pflanze-Part erzeugt Konsumabel mit
+    // tagBonus = computeCompoundTags × scale. Statt einer Wert-Tabelle
+    // entsteht die Wirkung emergent aus dem Compound-System (Hylomorphismus).
+    setBlueprintAsConsumable(name, durationSeconds, label, scale) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.builtIn) return { ok: false, reason: "cannot_modify_builtin" };
+        const dur = Math.max(0.5, Math.min(600, Number(durationSeconds) || 30));
+        const sc = Math.max(0.02, Math.min(1, Number(scale) || 0.2));
+        bp.role = "consumable";
+        bp.consumableMeta = {
+            durationSeconds: dur,
+            scale: sc,
+            label: typeof label === "string" ? label.slice(0, 60) : bp.label || name,
+        };
+        return { ok: true, name };
+    }
+
+    // Eine Konsumable aktivieren — addet einen Boost via Etappe-2-System.
+    // Source ist `consume:<name>`, sodass Dedupe greift (zwei Doppelklicks
+    // verlängern statt zu duplizieren). Zwei Pfade: zuerst Bauplan-mit-role-
+    // consumable (Compound-Tag-getrieben, vision-treu), dann state.consumables-
+    // Tabellen-Pfad (rückwärtskompatibel).
+    activateConsumable(name) {
+        // Pfad 1: Bauplan mit role:"consumable" — tagBonus aus Compound-Tags
+        // emergiert. Skalierung über consumableMeta.scale (Default 0.2)
+        // weil Compound-Tags bis 3 reichen können, Boost-Deltas sollen 0..0.5
+        // bleiben damit der Effekt spürbar aber nicht dominant ist.
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (bp && bp.role === "consumable" && bp.consumableMeta) {
+            const tags = this.computeCompoundTags(bp);
+            const scale = bp.consumableMeta.scale || 0.2;
+            const tagBonus = {};
+            for (const tag of Object.keys(tags)) {
+                const v = tags[tag] * scale;
+                if (Math.abs(v) > 0.001) tagBonus[tag] = Math.max(-1, Math.min(1, v));
+            }
+            if (Object.keys(tagBonus).length === 0) {
+                return { ok: false, reason: "blueprint_has_no_tags" };
+            }
+            const ok = this.addPlayerBoost({
+                source: `consume:${name}`,
+                tagDelta: tagBonus,
+                durationSeconds: bp.consumableMeta.durationSeconds || 30,
+                label: bp.consumableMeta.label || bp.label || name,
+            });
+            return { ok };
+        }
+        // Pfad 2: alte Tabelle (state.consumables) — DSL-direktes Konsumabel
+        const c = this.state.consumables && this.state.consumables[name];
+        if (!c) return { ok: false, reason: "not_found" };
+        const ok = this.addPlayerBoost({
+            source: `consume:${c.name}`,
+            tagDelta: c.tagBonus,
+            durationSeconds: c.durationSeconds,
+            label: c.label,
+        });
+        return { ok };
+    }
+
+    // Welle 6.D Etappe 1.6 — DSL-Pfad für eigene Seelen.
+    //
+    // Verwendet `validateBlueprintParts` (W2-B, hart sand-gesichert: 9 Shape-
+    // Whitelist, Cap 32 parts, Material muss existieren, Position/Size/Rotation
+    // ge-clamp). Cap 16 Custom-Seelen pro Welt. Built-in-Namen geschützt.
+    createOrUpdateSoulFromDsl(name, bodyParts) {
+        if (typeof name !== "string" || name.length === 0 || name.length > 40) {
+            return { ok: false, reason: "invalid_name" };
+        }
+        const safe = name.replace(/[^a-z0-9_-]/gi, "").slice(0, 40);
+        if (!safe) return { ok: false, reason: "invalid_name_after_sanitize" };
+        if (this.playerSoulDefs[safe]) return { ok: false, reason: "builtin_protected" };
+        if (!this.state.customSouls) this.state.customSouls = {};
+        const existing = this.state.customSouls[safe];
+        const count = Object.keys(this.state.customSouls).length;
+        if (!existing && count >= 16) return { ok: false, reason: "too_many_souls" };
+        this.state.customSouls[safe] = {
+            name: safe,
+            label: safe.replace(/_/g, " "),
+            bodyParts: bodyParts,
+            createdAt: performance.now() / 1000,
+        };
+        return { ok: true, name: safe };
     }
 
     // Hilfs-Helper: ein Glied (Arm/Bein) mit Pivot am Joint. Joint-Group
@@ -9584,6 +10838,13 @@ class AnazhRealm {
     _buildDragonGroup() {
         const group = new THREE.Group();
         const material = new THREE.MeshBasicMaterial({ color: 0x2d6e3b });
+        // Welle 6.D Etappe 3b — Drache-Orientierung bleibt mit Kopf in +Z
+        // (Forward). Der Schöpfer hatte zwischenzeitlich „W/S vertauscht"
+        // gemeldet; ein π-Inner-Flip-Versuch drehte den Avatar visuell um,
+        // sodass er den Spieler in 3rd-Person anschaute statt von ihm
+        // wegzulaufen. Revertiert: keine Inner-Group-Drehung, Original-
+        // Orientierung wiederhergestellt. Wer hier ändert, prüfe in echter
+        // 3rd-Person-Ansicht, dass die Kopf-Box vom Spieler wegzeigt.
         // Körper: gestreckter Quader entlang Z
         const body = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.45, 1.2), material);
         body.position.y = 0.4;
@@ -9685,9 +10946,21 @@ class AnazhRealm {
             drachen: "dragon",
             dragon: "dragon",
         };
-        const canonical = alias[key] || (defs[key] ? key : null);
+        // Welle 6.D Etappe 1.6 — auch Custom-Seelen tolerieren. Alias-Map gilt
+        // weiter für deutsche/englische Built-in-Namen; sonst sanitizen wir den
+        // Namen (lowercase) und akzeptieren, wenn er als Built-in ODER Custom-
+        // Soul existiert.
+        const sanitized = key.replace(/[^a-z0-9_-]/gi, "");
+        const canonical =
+            alias[key] ||
+            (defs[key] && key) ||
+            (defs[sanitized] && sanitized) ||
+            (this.state.customSouls && this.state.customSouls[sanitized] && sanitized) ||
+            null;
         if (!canonical) {
-            this.log(`Seele '${name}' unbekannt — bekannt: ${Object.keys(defs).join(", ")}`, "ERROR");
+            const customNames = this.state.customSouls ? Object.keys(this.state.customSouls) : [];
+            const all = Object.keys(defs).concat(customNames);
+            this.log(`Seele '${name}' unbekannt — bekannt: ${all.join(", ")}`, "ERROR");
             return false;
         }
         // Vor Mesh-Erstellung (z. B. loadState im frühen Bootstrap): Wahl
@@ -9696,11 +10969,17 @@ class AnazhRealm {
             this.state.player.soul = canonical;
             return false;
         }
-        const def = defs[canonical];
+        const def = this._getSoulDef(canonical);
         const old = this.state.playerMesh;
         // Position + Scale + Rotation übernehmen, damit Soul-Wechsel mitten
         // im Spiel keine Sprünge produziert.
-        const newGroup = def.build();
+        // Built-in-Seele: def.build() ist ein eigener Multi-Mesh-Pfad mit
+        // Walk-Cycle. Custom-Seele: über `_buildFromBlueprint` aus bodyParts
+        // — derselbe Render-Pfad wie für Bauwerke.
+        const newGroup =
+            def && typeof def.build === "function"
+                ? def.build()
+                : this._buildFromBlueprint({ name: canonical, parts: def.bodyParts || [] });
         if (old) {
             newGroup.position.copy(old.position);
             newGroup.rotation.copy(old.rotation);
@@ -9730,7 +11009,121 @@ class AnazhRealm {
             const status = document.getElementById("status-soul");
             if (status) status.textContent = def.label;
         }
+        // Welle 6.D Etappe 1 — Stats neu berechnen + anwenden. Der Spieler ist
+        // ein Compound; bei Seelen-Wechsel werden die Tag-Profile getauscht,
+        // damit ändern sich automatisch HP-Max, Speed, Sprungkraft, Ausdauer
+        // und Resistenzen. DSL-Tuning via player_speed/player_jump_power
+        // überschreibt danach frei, bleibt aber bis zum nächsten Soul-Wechsel.
+        this.recomputePlayerStats();
         return true;
+    }
+
+    // Welle 6.D Etappe 1.5 — Spieler-Stats aus dem Körper-Bauplan ableiten.
+    //
+    // Vision-Hebel: dieselbe Tag-Aggregation wie bei Architekturen + Materialien.
+    // Die Seele liefert eine Liste Körper-Teile (Form × Material), `computeSoul
+    // CompoundTags` macht MAX-Aggregation, und STAT_FROM_TAGS bildet aus den
+    // entstandenen Tag-Werten acht Stats. V2 wird Rüstung + Werkzeug + Boosts
+    // dazumischen (Etappe 2-3).
+    computePlayerStats() {
+        const soulName = (this.state.player && this.state.player.soul) || "human";
+        const soul = this._getSoulDef(soulName);
+        const compoundTags = this.computeSoulCompoundTags(soul);
+        // Welle 6.D Polish (Schöpfer-Feedback 13.05.2026) — Tag-Clamp.
+        // FORM_TAG_ACTIVATION kann Tag-Werte bis ~3 verstärken (z. B.
+        // sphere × knochen × dichte-Aktivierung 3 = 1.8 für den Mensch-Kopf).
+        // STAT_FROM_TAGS.speed-Formel `(1 - dichte) * 5` wird damit negativ,
+        // d. h. der Mensch lief mit speed≈2. Lösung: Soul-Compound-Tags auf
+        // [0, 1] clampen FÜR DIE STAT-PIPE. Boosts + Equipped + Wound-Penalty
+        // dürfen danach drüber/drunter gehen (die wirken als Modifikation).
+        // Compound-Tags >1 leben weiter, nur für Stat-Berechnung normalisiert.
+        const finalTags = {};
+        for (const key of AnazhRealm.MATERIAL_TAG_KEYS) {
+            const raw = Number(compoundTags[key]) || 0;
+            finalTags[key] = Math.max(0, Math.min(1, raw));
+        }
+        // Welle 6.D Etappe 3b — Equipped-Stat-Stacking (wave-6-design §5.3).
+        //   finalTags[t] = soul[t] + armor.compoundTags[t] × armorWeight
+        //                 + tool.compoundTags[t] × toolWeight + boost-Deltas
+        // Werte bewusst NICHT geclamp — STAT_FROM_TAGS-Formeln sind linear,
+        // ein dichter Eisenhelm spürt der Spieler in HP + Schaden, ein leichter
+        // Stab-Werkzeug spürt er in magieleitung. Wer wirklich Caps will, kann
+        // sie in der STAT_FROM_TAGS-Matrix nachschalten.
+        const equipped = (this.state.player && this.state.player.equipped) || {};
+        // Werkzeug-Beitrag (nur wenn Bauplan-Tool)
+        if (equipped.tool && this.state.tools && this.state.tools[equipped.tool]) {
+            const tool = this.state.tools[equipped.tool];
+            if (tool.sourceBlueprint && this.state.blueprints[tool.sourceBlueprint]) {
+                const tags = this.computeCompoundTags(this.state.blueprints[tool.sourceBlueprint]);
+                const w = AnazhRealm.TOOL_STAT_WEIGHT;
+                for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
+                    finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
+                }
+            }
+        }
+        // Rüstung-Beitrag (immer aus Bauplan mit role:"armor")
+        if (equipped.armor && this.state.blueprints[equipped.armor]) {
+            const bp = this.state.blueprints[equipped.armor];
+            if (bp.role === "armor") {
+                const tags = this.computeCompoundTags(bp);
+                const w = AnazhRealm.ARMOR_STAT_WEIGHT;
+                for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
+                    finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
+                }
+            }
+        }
+        // Welle 6.D Etappe 2 — aktive Boosts addieren ihre Tag-Deltas. Boosts
+        // kommen aus drei Quellen (Emotion, Welt-Resonanz, Konsum) und decken
+        // sich nicht; Summe ist konzeptionell korrekt.
+        const boosts = (this.state.player && this.state.player.boosts) || [];
+        if (Array.isArray(boosts) && boosts.length > 0) {
+            for (const b of boosts) {
+                if (!b || !b.tagDelta) continue;
+                for (const tag of Object.keys(b.tagDelta)) {
+                    if (!AnazhRealm.MATERIAL_TAG_KEYS.includes(tag)) continue;
+                    finalTags[tag] = (finalTags[tag] || 0) + b.tagDelta[tag];
+                }
+            }
+        }
+        // Welle 6.D Etappe 3a+ — Tod-Wunde als negativer Tag-Delta. Wundens-
+        // Intensität (0..1) skaliert WOUND_TAG_PENALTY; bei frischem Tod
+        // voll, regeneriert linear über deathWoundRegenSeconds.
+        const woundI = (this.state.player && this.state.player.deathWoundIntensity) || 0;
+        if (woundI > 0) {
+            for (const tag of Object.keys(AnazhRealm.WOUND_TAG_PENALTY)) {
+                finalTags[tag] = (finalTags[tag] || 0) + AnazhRealm.WOUND_TAG_PENALTY[tag] * woundI;
+            }
+        }
+        const stats = {};
+        for (const stat of Object.keys(AnazhRealm.STAT_FROM_TAGS)) {
+            stats[stat] = AnazhRealm.STAT_FROM_TAGS[stat](finalTags);
+        }
+        return { tags: finalTags, stats };
+    }
+
+    // Stats berechnen + auf state anwenden (Soul-Wechsel-Pfad). HP+Stamina
+    // werden bei Wechsel auf max gesetzt (Phönix-Wandlung in Etappe 3 nutzt
+    // diesen Pfad bewusst — Wandlung heilt). DSL-Ops player_speed +
+    // player_jump_power dürfen state.speed/jumpPower danach frei überschreiben.
+    recomputePlayerStats() {
+        const computed = this.computePlayerStats();
+        if (!this.state.player) return computed;
+        this.state.player.stats = computed.stats;
+        this.state.player.statTags = computed.tags;
+        // Anwendung auf die Live-Bewegungs-Werte. Sprint = 2× speed (heutige
+        // Konvention: speed=6, sprintSpeed=12).
+        this.state.speed = computed.stats.speed;
+        this.state.sprintSpeed = computed.stats.speed * 2;
+        this.state.jumpPower = computed.stats.jumpPower;
+        // HP + Stamina als Lebens-Werte (V1 noch ohne Schadens-System; werden
+        // mit 6.C2 pfad-Modus aktiv). Auf MAX setzen bei jedem Soul-Wechsel.
+        this.state.player.hpMax = computed.stats.hpMax;
+        this.state.player.hp = computed.stats.hpMax;
+        this.state.player.staminaMax = computed.stats.staminaMax;
+        this.state.player.stamina = computed.stats.staminaMax;
+        // UI-Render anstoßen, falls Spieler-Drawer offen ist.
+        if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
+        return computed;
     }
 
     // Pro-Frame-Animation des aktuellen Soul-Group. Wird im Render-Loop
@@ -9994,7 +11387,51 @@ class AnazhRealm {
                 }
             };
         }
+        // Welle 6.F1 — Verbindungs-Linien zwischen verbundenen Parts. Nur am
+        // Top-Level rendern (nicht für nested Blueprint-Referenzen), sonst
+        // doppelt sich der Render bei Fraktal-Bauplänen. Farbe + Opacity
+        // folgen der Lastformel (W5-A): stark = grün, ok = goldgelb, schwach
+        // = rot (= Brech-Warning, V1 nur visuell).
+        if (!depth && Array.isArray(blueprint.connections) && blueprint.connections.length > 0) {
+            this._addConnectionLines(group, blueprint);
+        }
         return group;
+    }
+
+    // Welle 6.F1 — Verbindungs-Linien an einen Bauplan-Group anhängen.
+    _addConnectionLines(group, blueprint) {
+        const conns = blueprint.connections || [];
+        const parts = blueprint.parts || [];
+        for (const c of conns) {
+            const a = parts[c.partA];
+            const b = parts[c.partB];
+            if (!a || !b) continue;
+            const pa = a.position || { x: 0, y: 0, z: 0 };
+            const pb = b.position || { x: 0, y: 0, z: 0 };
+            const geom = new THREE.BufferGeometry();
+            geom.setAttribute(
+                "position",
+                new THREE.Float32BufferAttribute([pa.x || 0, pa.y || 0, pa.z || 0, pb.x || 0, pb.y || 0, pb.z || 0], 3)
+            );
+            const strength = this.computeConnectionStrength(c, blueprint);
+            const color = this._connectionColor(strength);
+            // Opacity 0.75 lässt die Linie sichtbar ohne dass sie den Bauplan dominiert.
+            const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.75 });
+            const line = new THREE.Line(geom, mat);
+            line.userData.isConnectionLine = true;
+            line.userData.connectionStrength = strength;
+            line.userData.connectionType = c.type;
+            group.add(line);
+        }
+    }
+
+    // Welle 6.F1+F2 — Farb-Mapping aus Verbindungs-Stärke (0..3-Skala der
+    // computeConnectionStrength-Lastformel). <0.7 = Brech-Risiko (rot),
+    // 0.7..1.5 = ok (goldgelb), ≥1.5 = stark (grün).
+    _connectionColor(strength) {
+        if (strength < 0.7) return 0xff5555;
+        if (strength < 1.5) return 0xffcc44;
+        return 0x66ff88;
     }
 
     // Default-Baupläne als Daten. Drei built-ins, die das ersetzen, was
@@ -10179,6 +11616,55 @@ class AnazhRealm {
                 brennbar: 0.7,
                 lebendig: 0.3,
             }),
+            // Welle 6.D Etappe 1.5 — Körper-Materialien für das Seelen-Bauplan-
+            // System. Lebendig=1 markiert sie als „Körper-fähig"; ansonsten
+            // gleiche MATERIAL_TAG_KEYS-Sprache wie alles andere. Können auch
+            // für Bauwerke verwendet werden (Heilige Lektion: eine Sprache).
+            make("knochen", "Knochen", 0xe8dfc4, {
+                härte: 0.8,
+                dichte: 0.6,
+                zähigkeit: 0.5,
+                resoniert: 0.4,
+                lebendig: 1.0,
+            }),
+            make("fleisch", "Fleisch", 0xb55050, {
+                härte: 0.15,
+                dichte: 0.4,
+                zähigkeit: 0.75,
+                wärmeleitung: 0.45,
+                brennbar: 0.35,
+                lebendig: 1.0,
+            }),
+            make("federn", "Federn", 0xf2c870, {
+                härte: 0.1,
+                dichte: 0.1,
+                zähigkeit: 0.3,
+                wärmeleitung: 0.7,
+                magieleitung: 0.55,
+                brennbar: 0.7,
+                resoniert: 0.5,
+                lebendig: 1.0,
+            }),
+            make("schuppen", "Schuppen", 0x355c3a, {
+                härte: 0.9,
+                dichte: 0.85,
+                zähigkeit: 0.8,
+                wärmeleitung: 0.55,
+                stromleitung: 0.3,
+                magieleitung: 0.45,
+                resoniert: 0.45,
+                lebendig: 1.0,
+            }),
+            make("glut", "Glut", 0xff5a14, {
+                härte: 0.1,
+                dichte: 0.25,
+                zähigkeit: 0.2,
+                wärmeleitung: 0.95,
+                magieleitung: 0.75,
+                brennbar: 1.0,
+                resoniert: 0.65,
+                lebendig: 1.0,
+            }),
         ];
         const out = {};
         for (const m of list) out[m.name] = m;
@@ -10281,19 +11767,44 @@ class AnazhRealm {
         return [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }];
     }
 
-    // Finale Präzision eines Parts: Minimum aller Op-Caps (Konzept §2.3,
-    // Kernregel). Der schlechteste Schritt deckelt das Ganze — eine
-    // Gussform-Kugel (0.5) bleibt 0.5, selbst wenn danach poliert wird,
-    // weil der Politur-Schritt keine Rauheit aus dem Guss entfernt.
+    // Finale Präzision eines Parts: Min-Regel-Hybrid (wave-6-design §10.5,
+    // Welle 6.D Etappe 3a).
+    //
+    // Vor Etappe 3a war es strict Math.min — schlechte Anfangsarbeit war
+    // nicht aufholbar (Konzept §2.3). Das war zu hart: kein Spielraum für
+    // Lernen + Geduld. Schöpfer-Entscheidung 13.05.2026 §10.5: hybrid mit
+    // decay 0.7.
+    //
+    //   precision = min + (max − min) × decay^N
+    //   wo N = Anzahl Schritte UNTERHALB des Min-Eintrags (chain.length − 1)
+    //   decay = PRECISION_DECAY = 0.7
+    //
+    // Beispiel: Hand(0.4) → Hammer(0.7) → Feile(0.85) → Polierscheibe(0.97)
+    //   min=0.4, max=0.97, N=3 → 0.4 + 0.57 × 0.343 = 0.595
+    //
+    // Bedeutung: „der erste Schlag prägt die Form, die letzte Politur den
+    // Glanz." Antik-handwerklich. Sorgfalt + Geduld kompensieren, aber nicht
+    // beliebig. Bestraft Faulheit, belohnt Hingabe. Für N=0 (eine Op) ist
+    // precision = min (kein hybrid-Bonus), wie zuvor. Min/Max-Aggregation
+    // für W5-A Verbindungs-Last + W5-B Compound-Tags bleibt strikt min/max.
     computePartPrecision(part) {
         if (!part || typeof part !== "object") return 0.4;
         if (!Array.isArray(part.opChain) || part.opChain.length === 0) return 0.4;
         let min = 1;
+        let max = 0;
+        let count = 0;
         for (const op of part.opChain) {
             const cap = Number(op && op.cap);
-            if (Number.isFinite(cap) && cap < min) min = cap;
+            if (!Number.isFinite(cap)) continue;
+            if (cap < min) min = cap;
+            if (cap > max) max = cap;
+            count++;
         }
-        return min;
+        if (count === 0) return 0.4;
+        if (count === 1 || max <= min) return min;
+        const decay = AnazhRealm.PRECISION_DECAY || 0.7;
+        const n = count - 1;
+        return min + (max - min) * Math.pow(decay, n);
     }
 
     // Mittlere Präzision eines Compounds (für Welt-Effekt-Schwellen).
@@ -10328,6 +11839,18 @@ class AnazhRealm {
         if (compat && !compat.includes(tool.opClass)) {
             return { ok: false, reason: "material_op_incompatible" };
         }
+        // Welle 6.D Etappe 3a+ — Stamina-Kosten. Schöpfer-Geste mit Werkzeug
+        // verbraucht Energie. Reicht Stamina nicht, lehnen wir ab — der
+        // Spieler muss warten (Regen via tickPhoenixDeath/tickPlayerVitals)
+        // oder eine Stamina-stärkere Seele wählen. Damit ist „beliebig stapeln"
+        // strukturell ausgeschlossen; Geduld wird zur ECHTEN Kosten, nicht
+        // nur zur Reihenfolge.
+        const cost = AnazhRealm.TOOL_OP_STAMINA_COST || 10;
+        const stamina = (this.state.player && this.state.player.stamina) || 0;
+        if (stamina < cost) {
+            return { ok: false, reason: "not_enough_stamina", staminaNeeded: cost, staminaHave: stamina };
+        }
+        this.state.player.stamina = Math.max(0, stamina - cost);
         if (!Array.isArray(part.opChain)) part.opChain = this._defaultPartOpChain();
         part.opChain.push({
             tool: toolName,
@@ -10335,7 +11858,7 @@ class AnazhRealm {
             cap: tool.precisionCap,
             at: performance.now() / 1000,
         });
-        return { ok: true, precision: this.computePartPrecision(part) };
+        return { ok: true, precision: this.computePartPrecision(part), staminaRemaining: this.state.player.stamina };
     }
 
     // ### Welle 4 Phase 2 — Aktivierte Tag-Stärken ###
@@ -11145,6 +12668,32 @@ class AnazhRealm {
                 { blueprint: blueprintName, magic: tags.magieleitung }
             );
         }
+
+        // Welle 6.F2 — Brech-Warning. Wenn IRGENDEINE Verbindung des Bauplans
+        // unter der Schwelle 0.7 liegt, gibt es einen einmaligen Journal-
+        // Eintrag (idempotent pro Bauplan-Name). Die rote Linie aus 6.F1 ist
+        // das visuelle Pendant. Echtes Auseinanderbrechen folgt mit 6.F5
+        // (Ammo-Constraints) — V1 ist Warnung, nicht Konsequenz.
+        if (Array.isArray(bp.connections) && bp.connections.length > 0) {
+            let weakest = Infinity;
+            let weakestType = null;
+            for (const c of bp.connections) {
+                const s = this.computeConnectionStrength(c, bp);
+                if (s < weakest) {
+                    weakest = s;
+                    weakestType = c.type;
+                }
+            }
+            if (weakest < 0.7 && weakestType) {
+                this.journalAppendOnce(
+                    `weak_connection:${blueprintName}`,
+                    "weakness",
+                    `Eine ${weakestType}-Verbindung in „${bp.label || blueprintName}" trägt knapp ` +
+                        `(Last ${weakest.toFixed(2)}).`,
+                    { blueprint: blueprintName, weakest: weakest, type: weakestType }
+                );
+            }
+        }
     }
 
     // Pro-Frame-Tick: ruft animate() auf jeder Struktur, die einen Mesh
@@ -11285,18 +12834,93 @@ class AnazhRealm {
         return true;
     }
 
-    // Pro Frame: Phantom 5 m in Yaw-Richtung vor dem Spieler positionieren.
+    // Pro Frame: Phantom-Position aus Kamera-Raycast bestimmen (6.A4),
+    // Stabilität visuell anzeigen (6.A5).
     tickBuildMode() {
         const bm = this.state.buildMode;
         if (!bm.active || !bm.phantomMesh || !this.state.playerMesh) return;
-        const p = this.state.playerMesh.position;
-        const dist = bm.phantomDistance;
-        bm.phantomMesh.position.set(
-            p.x + Math.sin(this.state.yaw) * dist,
-            p.y - 0.5,
-            p.z + Math.cos(this.state.yaw) * dist
-        );
+        const target = this._resolvePhantomTarget();
+        bm.phantomMesh.position.set(target.x, target.y, target.z);
         bm.phantomMesh.rotation.y = -this.state.yaw;
+        bm.phantomOnGround = target.isStable;
+        this._applyPhantomTint(bm.phantomMesh, target.isStable);
+    }
+
+    // Welle 6.A4 — Raycast aus Kamera in Blick-Richtung gegen Physik-Welt.
+    // Erster Treffer in 30 m = Phantom-Position (Vor/Zurück wird damit durch
+    // den Kamera-Pitch gesteuert, nicht mehr durch einen festen Ring um den
+    // Spieler). Ohne Treffer fallen wir zurück auf das alte yaw×distance-
+    // Verhalten, dann ist das Phantom „instabil" markiert (schwebt frei).
+    //
+    // 6.A5 — Stabilität: Hit-Normal-Y > 0.5 entspricht einer begehbaren
+    // Fläche (Slope flacher als ~60°, dieselbe Schwelle wie maxWalkableSlopeY
+    // in 6.A3). Wir geben nur ein Flag zurück; das Block-Verhalten („nicht
+    // bauen wenn instabil") folgt mit den Spiel-Modi (6.C2).
+    _resolvePhantomTarget() {
+        const bm = this.state.buildMode;
+        const p = this.state.playerMesh.position;
+        const sf = this.state.scaleFactor || 1;
+        // Fallback-Position: yaw-Ring vor dem Spieler.
+        const fallbackX = p.x + Math.sin(this.state.yaw) * bm.phantomDistance;
+        const fallbackY = p.y - 0.5;
+        const fallbackZ = p.z + Math.cos(this.state.yaw) * bm.phantomDistance;
+        const fallback = { x: fallbackX, y: fallbackY, z: fallbackZ, isStable: false, hit: false };
+        if (!this.state.physicsWorld || !this.state.camera || typeof Ammo === "undefined") {
+            return fallback;
+        }
+        const cam = this.state.camera;
+        const cp = cam.position;
+        if (!this._tmpCamDir) this._tmpCamDir = new THREE.Vector3();
+        cam.getWorldDirection(this._tmpCamDir);
+        const maxDist = 30;
+        const rayStart = this.setVec(this.state.tmpVec1, cp.x / sf, cp.y / sf, cp.z / sf);
+        const rayEnd = this.setVec(
+            this.state.tmpVec2,
+            (cp.x + this._tmpCamDir.x * maxDist) / sf,
+            (cp.y + this._tmpCamDir.y * maxDist) / sf,
+            (cp.z + this._tmpCamDir.z * maxDist) / sf
+        );
+        const cb = new Ammo.ClosestRayResultCallback(rayStart, rayEnd);
+        this.state.physicsWorld.rayTest(rayStart, rayEnd, cb);
+        let result = fallback;
+        if (cb.hasHit()) {
+            const hit = cb.get_m_hitPointWorld();
+            const nrm = cb.get_m_hitNormalWorld();
+            result = {
+                x: hit.x() * sf,
+                y: hit.y() * sf,
+                z: hit.z() * sf,
+                isStable: nrm.y() > 0.5,
+                hit: true,
+            };
+        }
+        Ammo.destroy(cb);
+        return result;
+    }
+
+    // Welle 6.A5 — Phantom-Tint: grün-blend (0x88ff88) bei stabilem Bodenkontakt,
+    // rot-blend (0xff8888) sonst. 30 % Tint über der originalen Material-Farbe,
+    // damit die Bauplan-Identität erkennbar bleibt. Original-Farbe wird einmal
+    // pro Phantom-Mesh in userData gecached — sonst würde jeder Frame die schon
+    // getintete Farbe als neue Basis lesen und der Tint driften.
+    _applyPhantomTint(phantom, isStable) {
+        if (!phantom) return;
+        const targetColor = isStable ? 0x88ff88 : 0xff8888;
+        const tr = (targetColor >> 16) & 0xff;
+        const tg = (targetColor >> 8) & 0xff;
+        const tb = targetColor & 0xff;
+        phantom.traverse((node) => {
+            if (node.material && node.material.color) {
+                if (node.userData._origColor === undefined) {
+                    node.userData._origColor = node.material.color.getHex();
+                }
+                const orig = node.userData._origColor;
+                const r = (((orig >> 16) & 0xff) * 0.7 + tr * 0.3) | 0;
+                const g = (((orig >> 8) & 0xff) * 0.7 + tg * 0.3) | 0;
+                const b = ((orig & 0xff) * 0.7 + tb * 0.3) | 0;
+                node.material.color.setRGB(r / 255, g / 255, b / 255);
+            }
+        });
     }
 
     _updateBuildModeHud() {
@@ -12179,30 +13803,607 @@ class AnazhRealm {
     playerSoulInitDOM() {
         const select = document.getElementById("player-soul-select");
         if (!select) return;
-        // Optionen aus den Defs aufbauen, damit Label + Reihenfolge an einer
-        // Stelle leben.
-        const defs = this.playerSoulDefs;
-        select.innerHTML = "";
-        for (const key of Object.keys(defs)) {
-            const opt = document.createElement("option");
-            opt.value = key;
-            opt.textContent = defs[key].label;
-            select.appendChild(opt);
-        }
-        select.value = this.state.player.soul || "human";
+        this._refreshSoulSelect();
         select.addEventListener("change", () => {
             this.applyPlayerSoul(select.value);
         });
         // Status-Bar mit Default beschriften, falls vorhanden.
         const status = document.getElementById("status-soul");
         if (status) {
-            const cur = defs[this.state.player.soul || "human"];
+            const cur = this._getSoulDef(this.state.player.soul || "human");
             status.textContent = (cur && cur.label) || "—";
+        }
+        // Welle 6.D Etappe 1 — initiale Stats-UI rendern, falls #player-stats
+        // schon im DOM ist (HTML statisch vorgegeben). Update läuft danach bei
+        // jedem applyPlayerSoul → recomputePlayerStats.
+        this.renderPlayerStatsUI();
+        // Welle 6.D Etappe 1.7 — Avatar-Editor im Drawer initial rendern.
+        this.renderSoulEditorUI();
+        // Welle 6.D Etappe 3b — Equipment-Sektion initial rendern.
+        if (typeof this.renderPlayerEquipUI === "function") this.renderPlayerEquipUI();
+    }
+
+    // Welle 6.D Etappe 3b — Equipment-UI: Werkzeug + Rüstung-Slots mit Dropdowns.
+    //
+    // Werkzeug-Slot: alle besessenen Tools (Built-ins + eigen-registrierte).
+    // Rüstung-Slot: alle Baupläne mit role:"armor". Plus „Marker"-Liste:
+    // eigene Baupläne, die noch NICHT als Rüstung markiert sind — bekommen
+    // einen „Als Rüstung markieren"-Button (analog zur Werkzeug-Registrierung
+    // in der Werkstatt).
+    renderPlayerEquipUI() {
+        if (typeof document === "undefined") return;
+        const container = document.getElementById("player-equip");
+        if (!container) return;
+        container.innerHTML = "";
+        const equipped = (this.state.player && this.state.player.equipped) || { tool: null, armor: null };
+        // Werkzeug-Slot
+        const toolRow = document.createElement("div");
+        toolRow.className = "equip-row";
+        const toolLabel = document.createElement("span");
+        toolLabel.className = "equip-slot-label";
+        toolLabel.textContent = "Werkzeug";
+        toolRow.appendChild(toolLabel);
+        const toolSel = document.createElement("select");
+        toolSel.title = "Aktives Werkzeug";
+        const noneTool = document.createElement("option");
+        noneTool.value = "";
+        noneTool.textContent = "— keins —";
+        toolSel.appendChild(noneTool);
+        const ownedTools = Array.isArray(this.state.player && this.state.player.tools) ? this.state.player.tools : [];
+        for (const name of ownedTools) {
+            const t = this.state.tools[name];
+            if (!t) continue;
+            const opt = document.createElement("option");
+            opt.value = name;
+            opt.textContent = t.label || name;
+            if (equipped.tool === name) opt.selected = true;
+            toolSel.appendChild(opt);
+        }
+        toolSel.addEventListener("change", () => {
+            const v = toolSel.value;
+            const result = v ? this.equipTool(v) : this.equipTool(null);
+            if (!result.ok) this.log(`equipTool fehlgeschlagen: ${result.reason}`, "ERROR");
+            this.renderPlayerEquipUI();
+            if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
+        });
+        toolRow.appendChild(toolSel);
+        container.appendChild(toolRow);
+        // Rüstung-Slot
+        const armorRow = document.createElement("div");
+        armorRow.className = "equip-row";
+        const armorLabel = document.createElement("span");
+        armorLabel.className = "equip-slot-label";
+        armorLabel.textContent = "Rüstung";
+        armorRow.appendChild(armorLabel);
+        const armorSel = document.createElement("select");
+        armorSel.title = "Aktive Rüstung";
+        const noneArmor = document.createElement("option");
+        noneArmor.value = "";
+        noneArmor.textContent = "— keine —";
+        armorSel.appendChild(noneArmor);
+        const armorBlueprints = [];
+        const candidateBlueprints = [];
+        for (const name of Object.keys(this.state.blueprints || {})) {
+            const bp = this.state.blueprints[name];
+            if (!bp || bp.builtIn) continue;
+            if (bp.role === "armor") armorBlueprints.push(name);
+            else if (!bp.role) candidateBlueprints.push(name);
+        }
+        for (const name of armorBlueprints) {
+            const bp = this.state.blueprints[name];
+            const opt = document.createElement("option");
+            opt.value = name;
+            opt.textContent = bp.label || name;
+            if (equipped.armor === name) opt.selected = true;
+            armorSel.appendChild(opt);
+        }
+        armorSel.addEventListener("change", () => {
+            const v = armorSel.value;
+            const result = v ? this.equipArmor(v) : this.equipArmor(null);
+            if (!result.ok) this.log(`equipArmor fehlgeschlagen: ${result.reason}`, "ERROR");
+            this.renderPlayerEquipUI();
+            if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
+        });
+        armorRow.appendChild(armorSel);
+        container.appendChild(armorRow);
+        // Markier-Sektion: eigene Baupläne ohne Rolle bekommen zwei Buttons:
+        // „Als Rüstung" und „Als Konsumabel". So entscheidet der Schöpfer
+        // pro Bauplan, ob er physisch (Rüstung) oder verzehrbar (Trank) ist.
+        if (candidateBlueprints.length > 0) {
+            const markHeader = document.createElement("div");
+            markHeader.className = "equip-mark-header";
+            markHeader.textContent = "Bauplan als ... markieren:";
+            container.appendChild(markHeader);
+            for (const name of candidateBlueprints) {
+                const bp = this.state.blueprints[name];
+                const row = document.createElement("div");
+                row.className = "equip-mark-row";
+                const label = document.createElement("span");
+                label.className = "equip-mark-label";
+                label.textContent = bp.label || name;
+                row.appendChild(label);
+                const armorBtn = document.createElement("button");
+                armorBtn.type = "button";
+                armorBtn.textContent = "Rüstung";
+                armorBtn.addEventListener("click", () => {
+                    const result = this.setBlueprintAsArmor(name);
+                    if (!result.ok) this.log(`setBlueprintAsArmor: ${result.reason}`, "ERROR");
+                    this.renderPlayerEquipUI();
+                });
+                row.appendChild(armorBtn);
+                const consBtn = document.createElement("button");
+                consBtn.type = "button";
+                consBtn.textContent = "Konsumabel";
+                consBtn.addEventListener("click", () => {
+                    const result = this.setBlueprintAsConsumable(name, 30, bp.label || name, 0.2);
+                    if (!result.ok) this.log(`setBlueprintAsConsumable: ${result.reason}`, "ERROR");
+                    this.renderPlayerEquipUI();
+                });
+                row.appendChild(consBtn);
+                container.appendChild(row);
+            }
+        }
+        // Konsumables-Liste mit „Trinken"-Button — eigene Baupläne mit
+        // role:"consumable" + alle DSL-Tabellen-Konsumables.
+        const consumableBps = [];
+        for (const name of Object.keys(this.state.blueprints || {})) {
+            const bp = this.state.blueprints[name];
+            if (bp && bp.role === "consumable") consumableBps.push(name);
+        }
+        const tableConsumables = Object.keys(this.state.consumables || {});
+        if (consumableBps.length > 0 || tableConsumables.length > 0) {
+            const consumableHeader = document.createElement("div");
+            consumableHeader.className = "equip-mark-header";
+            consumableHeader.textContent = "Konsumables (trinken):";
+            container.appendChild(consumableHeader);
+            for (const name of consumableBps) {
+                const bp = this.state.blueprints[name];
+                const row = document.createElement("div");
+                row.className = "equip-mark-row";
+                const label = document.createElement("span");
+                label.className = "equip-mark-label";
+                const meta = bp.consumableMeta || {};
+                label.textContent = `${bp.label || name} (${meta.durationSeconds || 30} s, ×${meta.scale || 0.2})`;
+                row.appendChild(label);
+                const drinkBtn = document.createElement("button");
+                drinkBtn.type = "button";
+                drinkBtn.textContent = "Trinken";
+                drinkBtn.addEventListener("click", () => {
+                    const result = this.activateConsumable(name);
+                    if (!result.ok) this.log(`activateConsumable: ${result.reason}`, "ERROR");
+                    if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
+                });
+                row.appendChild(drinkBtn);
+                container.appendChild(row);
+            }
+            for (const name of tableConsumables) {
+                const c = this.state.consumables[name];
+                const row = document.createElement("div");
+                row.className = "equip-mark-row";
+                const label = document.createElement("span");
+                label.className = "equip-mark-label";
+                label.textContent = `${c.label || name} (${c.durationSeconds} s, Tabelle)`;
+                row.appendChild(label);
+                const drinkBtn = document.createElement("button");
+                drinkBtn.type = "button";
+                drinkBtn.textContent = "Trinken";
+                drinkBtn.addEventListener("click", () => {
+                    const result = this.activateConsumable(name);
+                    if (!result.ok) this.log(`activateConsumable: ${result.reason}`, "ERROR");
+                    if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
+                });
+                row.appendChild(drinkBtn);
+                container.appendChild(row);
+            }
+        }
+        // Empty-state-Hinweis wenn keine Optionen verfügbar
+        if (ownedTools.length === 0 && armorBlueprints.length === 0 && candidateBlueprints.length === 0) {
+            const hint = document.createElement("div");
+            hint.className = "equip-empty";
+            hint.textContent =
+                "Noch keine Ausrüstung. Baue einen Bauplan in der Werkstatt und markier ihn dort als Werkzeug, oder hier als Rüstung.";
+            container.appendChild(hint);
+        }
+    }
+
+    // Welle 6.D Etappe 1.7 — Voller Avatar-Editor im Spieler-Drawer.
+    //
+    // Drei Bereiche:
+    //   1. Liste der eigenen Seelen mit "Werde diese Seele" + "Löschen"
+    //   2. "Neue Seele aus aktueller klonen" + "Leere Seele anlegen"
+    //   3. Inline-Editor für die ausgewählte (oder aktive Custom-) Seele mit
+    //      Parts-Liste (Shape-Dropdown, Material-Dropdown, Position xyz,
+    //      Size xyz, Löschen) + "Part hinzufügen"
+    //
+    // Daten leben in `state.customSouls`. Mutationen über die in Etappe 1.7
+    // angelegten Methoden (`addPartToCustomSoul`, `updatePartInCustomSoul`,
+    // `removePartFromCustomSoul`, `cloneSoulToCustom`, `deleteCustomSoul`),
+    // damit Validierung + UI-Refresh + Mesh-Rebuild zentral bleiben.
+    renderSoulEditorUI() {
+        if (typeof document === "undefined") return;
+        const container = document.getElementById("soul-editor");
+        if (!container) return;
+        container.innerHTML = "";
+        if (!this.state.soulEditor) this.state.soulEditor = { editingName: null };
+
+        // Section 1 — Liste der eigenen Seelen
+        const customs = this.state.customSouls || {};
+        const customNames = Object.keys(customs);
+        const customList = document.createElement("div");
+        customList.className = "soul-editor-list";
+        if (customNames.length === 0) {
+            const empty = document.createElement("div");
+            empty.className = "soul-editor-empty";
+            empty.textContent = "Du hast noch keine eigene Seele geformt.";
+            customList.appendChild(empty);
+        } else {
+            for (const name of customNames) {
+                const row = document.createElement("div");
+                row.className = "soul-editor-row";
+                const label = document.createElement("span");
+                label.className = "soul-editor-name";
+                label.textContent = customs[name].label + (this.state.player.soul === name ? " (aktiv)" : "");
+                row.appendChild(label);
+                const becomeBtn = document.createElement("button");
+                becomeBtn.type = "button";
+                becomeBtn.textContent = "Werde";
+                becomeBtn.title = `Wechsle zur Seele „${customs[name].label}"`;
+                becomeBtn.addEventListener("click", () => this.applyPlayerSoul(name));
+                row.appendChild(becomeBtn);
+                const editBtn = document.createElement("button");
+                editBtn.type = "button";
+                editBtn.textContent = "Bearbeiten";
+                editBtn.addEventListener("click", () => {
+                    this.state.soulEditor.editingName = name;
+                    this.renderSoulEditorUI();
+                });
+                row.appendChild(editBtn);
+                const delBtn = document.createElement("button");
+                delBtn.type = "button";
+                delBtn.textContent = "✕";
+                delBtn.title = `Lösche „${customs[name].label}"`;
+                delBtn.className = "soul-editor-danger";
+                delBtn.addEventListener("click", () => {
+                    const fn = typeof window !== "undefined" ? window.confirm : null;
+                    if (!fn || fn(`Seele „${customs[name].label}" löschen?`)) {
+                        this.deleteCustomSoul(name);
+                    }
+                });
+                row.appendChild(delBtn);
+                customList.appendChild(row);
+            }
+        }
+        container.appendChild(customList);
+
+        // Section 2 — Klone / Neu anlegen
+        const actions = document.createElement("div");
+        actions.className = "soul-editor-actions";
+        const cloneBtn = document.createElement("button");
+        cloneBtn.type = "button";
+        cloneBtn.textContent = "Aktuelle Seele klonen";
+        cloneBtn.addEventListener("click", () => {
+            const source = this.state.player.soul || "human";
+            const base = `${source}_${Object.keys(customs).length + 1}`;
+            const result = this.cloneSoulToCustom(source, base);
+            if (result.ok) {
+                this.state.soulEditor.editingName = result.name;
+                if (typeof this._refreshSoulSelect === "function") this._refreshSoulSelect();
+                this.renderSoulEditorUI();
+            } else {
+                this.log(`Soul-Clone fehlgeschlagen: ${result.reason}`, "ERROR");
+            }
+        });
+        actions.appendChild(cloneBtn);
+        const newBtn = document.createElement("button");
+        newBtn.type = "button";
+        newBtn.textContent = "Neue leere Seele";
+        newBtn.addEventListener("click", () => {
+            const base = `neue_seele_${Object.keys(customs).length + 1}`;
+            // Eine Seele braucht mindestens einen Körper-Teil; geben wir ein
+            // sinnvolles Start-Teil aus stein vor (Standard-Default-Material).
+            const startPart = {
+                shape: "box",
+                material: "fleisch",
+                position: { x: 0, y: 0, z: 0 },
+                size: { x: 0.5, y: 1.0, z: 0.4 },
+                label: "Torso",
+            };
+            const result = this.createOrUpdateSoulFromDsl(base, [startPart]);
+            if (result.ok) {
+                this.state.soulEditor.editingName = result.name;
+                if (typeof this._refreshSoulSelect === "function") this._refreshSoulSelect();
+                this.renderSoulEditorUI();
+            } else {
+                this.log(`Soul-Erstellung fehlgeschlagen: ${result.reason}`, "ERROR");
+            }
+        });
+        actions.appendChild(newBtn);
+        container.appendChild(actions);
+
+        // Section 3 — Inline-Editor für die ausgewählte Seele
+        const editingName = this.state.soulEditor.editingName;
+        const editing = editingName && customs[editingName];
+        if (editing) {
+            const editor = document.createElement("div");
+            editor.className = "soul-editor-pane";
+            const head = document.createElement("div");
+            head.className = "soul-editor-pane-head";
+            head.textContent = `Edit: ${editing.label}`;
+            editor.appendChild(head);
+            // Parts
+            const partList = document.createElement("div");
+            partList.className = "soul-part-list";
+            const shapes = ["box", "sphere", "cylinder", "cone", "pyramid", "octahedron", "plane", "torus", "helix"];
+            const materials = Object.keys(this.state.materials || {});
+            editing.bodyParts.forEach((part, idx) => {
+                const partRow = document.createElement("div");
+                partRow.className = "soul-part-row";
+                const indexLabel = document.createElement("span");
+                indexLabel.className = "soul-part-idx";
+                indexLabel.textContent = `#${idx + 1}`;
+                partRow.appendChild(indexLabel);
+                // Shape-Select
+                const shapeSel = document.createElement("select");
+                shapeSel.title = "Form";
+                for (const s of shapes) {
+                    const opt = document.createElement("option");
+                    opt.value = s;
+                    opt.textContent = s;
+                    if (s === part.shape) opt.selected = true;
+                    shapeSel.appendChild(opt);
+                }
+                shapeSel.addEventListener("change", () => {
+                    this.updatePartInCustomSoul(editingName, idx, { shape: shapeSel.value });
+                });
+                partRow.appendChild(shapeSel);
+                // Material-Select
+                const matSel = document.createElement("select");
+                matSel.title = "Material";
+                for (const m of materials) {
+                    const opt = document.createElement("option");
+                    opt.value = m;
+                    opt.textContent = this.state.materials[m].label || m;
+                    if (m === part.material) opt.selected = true;
+                    matSel.appendChild(opt);
+                }
+                matSel.addEventListener("change", () => {
+                    this.updatePartInCustomSoul(editingName, idx, { material: matSel.value });
+                });
+                partRow.appendChild(matSel);
+                // Position + Size — kompakte Number-Inputs
+                const makeNumberInput = (val, axis, kind) => {
+                    const inp = document.createElement("input");
+                    inp.type = "number";
+                    inp.step = "0.05";
+                    inp.value = Number(val || 0).toFixed(2);
+                    inp.className = "soul-part-num";
+                    inp.title = `${kind} ${axis}`;
+                    inp.addEventListener("change", () => {
+                        const next = Number(inp.value);
+                        const field = kind === "pos" ? "position" : "size";
+                        const current = part[field] || { x: 0, y: 0, z: 0 };
+                        this.updatePartInCustomSoul(editingName, idx, {
+                            [field]: { ...current, [axis]: next },
+                        });
+                    });
+                    return inp;
+                };
+                const posGrp = document.createElement("span");
+                posGrp.className = "soul-part-group";
+                posGrp.title = "Position x/y/z";
+                posGrp.appendChild(document.createTextNode("Pos"));
+                posGrp.appendChild(makeNumberInput(part.position && part.position.x, "x", "pos"));
+                posGrp.appendChild(makeNumberInput(part.position && part.position.y, "y", "pos"));
+                posGrp.appendChild(makeNumberInput(part.position && part.position.z, "z", "pos"));
+                partRow.appendChild(posGrp);
+                const sizeGrp = document.createElement("span");
+                sizeGrp.className = "soul-part-group";
+                sizeGrp.title = "Größe x/y/z";
+                sizeGrp.appendChild(document.createTextNode("Größe"));
+                sizeGrp.appendChild(makeNumberInput(part.size && part.size.x, "x", "size"));
+                sizeGrp.appendChild(makeNumberInput(part.size && part.size.y, "y", "size"));
+                sizeGrp.appendChild(makeNumberInput(part.size && part.size.z, "z", "size"));
+                partRow.appendChild(sizeGrp);
+                // Remove
+                const rmBtn = document.createElement("button");
+                rmBtn.type = "button";
+                rmBtn.textContent = "✕";
+                rmBtn.className = "soul-editor-danger";
+                rmBtn.title = "Teil entfernen";
+                rmBtn.addEventListener("click", () => this.removePartFromCustomSoul(editingName, idx));
+                partRow.appendChild(rmBtn);
+                partList.appendChild(partRow);
+            });
+            editor.appendChild(partList);
+            // Add-Part-Button
+            const addPartBtn = document.createElement("button");
+            addPartBtn.type = "button";
+            addPartBtn.textContent = "+ Teil hinzufügen";
+            addPartBtn.className = "soul-editor-add";
+            addPartBtn.addEventListener("click", () => {
+                this.addPartToCustomSoul(editingName, {
+                    shape: "sphere",
+                    material: "fleisch",
+                    position: { x: 0, y: 0.5, z: 0 },
+                    size: { x: 0.3, y: 0.3, z: 0.3 },
+                    label: "Neuer Teil",
+                });
+            });
+            editor.appendChild(addPartBtn);
+            // Apply (Become) + Close
+            const applyRow = document.createElement("div");
+            applyRow.className = "soul-editor-apply-row";
+            const becomeNow = document.createElement("button");
+            becomeNow.type = "button";
+            becomeNow.textContent = "Werde diese Seele";
+            becomeNow.className = "soul-editor-primary";
+            becomeNow.addEventListener("click", () => this.applyPlayerSoul(editingName));
+            applyRow.appendChild(becomeNow);
+            const closeEdit = document.createElement("button");
+            closeEdit.type = "button";
+            closeEdit.textContent = "Editor schließen";
+            closeEdit.addEventListener("click", () => {
+                this.state.soulEditor.editingName = null;
+                this.renderSoulEditorUI();
+            });
+            applyRow.appendChild(closeEdit);
+            editor.appendChild(applyRow);
+            container.appendChild(editor);
+        }
+    }
+
+    // Welle 6.D Etappe 1.6 — Soul-Select neu befüllen (Built-ins + Custom).
+    // Wird sowohl beim Init aufgerufen als auch nach jedem define_soul, damit
+    // neue Custom-Seelen ohne Reload im Dropdown erscheinen.
+    _refreshSoulSelect() {
+        if (typeof document === "undefined") return;
+        const select = document.getElementById("player-soul-select");
+        if (!select) return;
+        const previous = select.value;
+        select.innerHTML = "";
+        for (const key of Object.keys(this.playerSoulDefs)) {
+            const opt = document.createElement("option");
+            opt.value = key;
+            opt.textContent = this.playerSoulDefs[key].label;
+            select.appendChild(opt);
+        }
+        if (this.state.customSouls) {
+            for (const key of Object.keys(this.state.customSouls)) {
+                const opt = document.createElement("option");
+                opt.value = key;
+                opt.textContent = this.state.customSouls[key].label + " ✦";
+                select.appendChild(opt);
+            }
+        }
+        const desired = previous || this.state.player.soul || "human";
+        // Wenn die zuvor gewählte Option weg ist (z. B. Custom gelöscht),
+        // fall back auf die aktuell aktive Seele.
+        if ([...select.options].some((o) => o.value === desired)) {
+            select.value = desired;
+        } else if (this.state.player.soul) {
+            select.value = this.state.player.soul;
+        }
+    }
+
+    // Welle 6.D Etappe 1 — Stats-UI im Spieler-Drawer rendern.
+    //
+    // Acht Zeilen (HP, Damage, Speed, Sprungkraft, Ausdauer, Präzision,
+    // MagicResist, HeatResist). Werte aus state.player.stats; Tag-Profile
+    // aus state.player.statTags (klein darunter, damit der Schöpfer sieht
+    // welches Tag den Stat dominiert). Throttle ist nicht nötig — wird nur
+    // bei Soul-Wechsel + initial gerufen.
+    renderPlayerStatsUI() {
+        if (typeof document === "undefined") return;
+        const container = document.getElementById("player-stats");
+        if (!container) return;
+        const stats = (this.state.player && this.state.player.stats) || null;
+        const tags = (this.state.player && this.state.player.statTags) || null;
+        container.innerHTML = "";
+        if (!stats) {
+            const empty = document.createElement("div");
+            empty.className = "stats-empty";
+            empty.textContent = "Stats werden berechnet, wenn die Seele gewählt ist.";
+            container.appendChild(empty);
+            return;
+        }
+        // Welle 6.D Etappe 1.5 — Körper-Teile-Liste oben, dann Stats darunter.
+        // Damit der Schöpfer SIEHT, woraus seine Seele besteht und wie ihre
+        // Stats daraus entstehen (Form × Material → Compound-Tags → Stats).
+        const soulName = (this.state.player && this.state.player.soul) || "human";
+        const soul = this.playerSoulDefs[soulName];
+        if (soul && Array.isArray(soul.bodyParts) && soul.bodyParts.length > 0) {
+            const bodyHeader = document.createElement("div");
+            bodyHeader.className = "body-parts-header";
+            bodyHeader.textContent = "Körper-Teile (Form × Material → Tags)";
+            container.appendChild(bodyHeader);
+            for (const part of soul.bodyParts) {
+                const row = document.createElement("div");
+                row.className = "body-part-row";
+                const label = document.createElement("span");
+                label.className = "body-part-label";
+                label.textContent = part.label || part.shape;
+                const meta = document.createElement("span");
+                meta.className = "body-part-meta";
+                meta.textContent = `${part.shape} · ${part.material}`;
+                row.appendChild(label);
+                row.appendChild(meta);
+                container.appendChild(row);
+            }
+            const divider = document.createElement("div");
+            divider.className = "stats-divider";
+            container.appendChild(divider);
+        }
+        const rows = [
+            { key: "hpMax", label: "Lebenskraft", fmt: (v) => Math.round(v) },
+            { key: "damage", label: "Schaden", fmt: (v) => v.toFixed(1) },
+            { key: "speed", label: "Lauf-Geschwindigkeit", fmt: (v) => v.toFixed(2) },
+            { key: "jumpPower", label: "Sprungkraft", fmt: (v) => v.toFixed(2) },
+            { key: "staminaMax", label: "Ausdauer", fmt: (v) => Math.round(v) },
+            { key: "precision", label: "Präzision", fmt: (v) => v.toFixed(2) },
+            { key: "magicResist", label: "Magie-Resistenz", fmt: (v) => v.toFixed(2) },
+            { key: "heatResist", label: "Hitze-Resistenz", fmt: (v) => v.toFixed(2) },
+        ];
+        for (const row of rows) {
+            const div = document.createElement("div");
+            div.className = "stat-row";
+            const label = document.createElement("span");
+            label.className = "stat-label";
+            label.textContent = row.label;
+            const value = document.createElement("span");
+            value.className = "stat-value";
+            value.textContent = row.fmt(stats[row.key] || 0);
+            div.appendChild(label);
+            div.appendChild(value);
+            container.appendChild(div);
+        }
+        // Tag-Profil dezent unten — die drei dominantesten Achsen zeigen.
+        if (tags) {
+            const sorted = Object.keys(tags)
+                .map((k) => ({ k, v: tags[k] }))
+                .sort((a, b) => b.v - a.v)
+                .slice(0, 3);
+            const tagLine = document.createElement("div");
+            tagLine.className = "stat-tags";
+            tagLine.textContent = "Stark: " + sorted.map((s) => `${s.k} ${s.v.toFixed(2)}`).join(" · ");
+            container.appendChild(tagLine);
+        }
+        // Welle 6.D Etappe 2 — Aktive Boosts unten anzeigen. Label + Tag-Delta
+        // links, Restzeit rechts. Wenn keine aktiv: nichts (clean state).
+        const boosts = (this.state.player && this.state.player.boosts) || [];
+        if (Array.isArray(boosts) && boosts.length > 0) {
+            const now = performance.now() / 1000;
+            const active = boosts.filter((b) => b.expiresAt > now);
+            if (active.length > 0) {
+                const divider = document.createElement("div");
+                divider.className = "stats-divider";
+                container.appendChild(divider);
+                const header = document.createElement("div");
+                header.className = "body-parts-header";
+                header.textContent = "Aktive Boosts";
+                container.appendChild(header);
+                for (const b of active) {
+                    const row = document.createElement("div");
+                    row.className = "boost-row";
+                    const left = document.createElement("span");
+                    left.className = "boost-label";
+                    const tagSummary = Object.keys(b.tagDelta || {})
+                        .map((t) => `+${b.tagDelta[t].toFixed(2)} ${t}`)
+                        .join(", ");
+                    left.textContent = `${b.label} · ${tagSummary}`;
+                    const right = document.createElement("span");
+                    right.className = "boost-remaining";
+                    const rem = Math.max(0, b.expiresAt - now);
+                    right.textContent = `${rem.toFixed(0)} s`;
+                    row.appendChild(left);
+                    row.appendChild(right);
+                    container.appendChild(row);
+                }
+            }
         }
     }
 
     async init() {
-        this.log("Initialisiere Anazh Realm V7.71... Ewigkeit erwacht!", "INFO");
+        this.log("Initialisiere Anazh Realm V7.72... Ewigkeit erwacht!", "INFO");
         this.themeInitDOM();
         this.grokInitDOM();
         this.symphonyInitDOM();
@@ -12231,6 +14432,9 @@ class AnazhRealm {
         // Single-Welt-Save, falls vorhanden.
         this._preloadActiveWorldMeta();
         this.ensureWorldMeta();
+        // Welle 6.E2 — Intro-Overlay beim ersten Welt-Start. Liest seen.intro
+        // aus dem soeben hydrierten worldJournal + localStorage `anazh.ui.skipIntro`.
+        this.initIntroDialog();
         // Welle 3 F — Welt-Info-Sektion im Welt-Drawer.
         this.initWorldInfoUI();
         // Ring 9 — Welt-Tor Drei-Wahl-Dialog beim Import.
@@ -12351,6 +14555,13 @@ class AnazhRealm {
                 // dünne Triangles bei steilen Hängen oder Wänden.
                 this.state.playerBody.setCcdMotionThreshold(0.01);
                 this.state.playerBody.setCcdSweptSphereRadius(0.45);
+                // Welle 6.A1 — Wall-Sliding. Spieler-Friction auf 0 setzt die
+                // tangentiale Reibung an Bauwerks-Wänden auf null: der Spieler
+                // bleibt nicht hängen, sondern rutscht entlang. Stoppen
+                // funktioniert weiterhin, weil setLinearVelocity die Geschwindigkeit
+                // jeden Frame explizit nullt (siehe Spielerbewegung im Game-Loop),
+                // statt sich auf Reibung zu verlassen.
+                this.state.playerBody.setFriction(0);
             }
             this.log("Physik-Körper für Spieler hinzugefügt", "INFO");
             this.state.selfAwareness.components.push("playerBody");
@@ -12526,6 +14737,18 @@ class AnazhRealm {
 
             // ### Player-Emotionen (Ring 3) ###
             this.updatePlayerEmotions(currentTime);
+
+            // ### Player-Boosts (Welle 6.D Etappe 2) ###
+            // 1×/s self-throttled — Emotion-Trigger, Resonance-Trigger, Ablauf.
+            this.tickPlayerBoosts(currentTime);
+
+            // ### Phönix-Wandlung-Tick (Welle 6.D Etappe 3a) ###
+            // HP-Regen während aktiver Wandlung + Ablauf-Detection.
+            this.tickPhoenixDeath(currentTime);
+
+            // ### Player-Aura (Welle 6.D Etappe 3b) ###
+            // Position folgt playerMesh, Farbe aus dominanter Tag-Achse + HP%.
+            this.tickPlayerAura();
 
             // ### Symphonie-Wetter-Layer (Ring 4) ###
             this.symphonyTick();
@@ -12717,22 +14940,40 @@ class AnazhRealm {
             this.state.moveDirection.set(0, 0, 0);
             if (this.state.keys["w"]) this.state.moveDirection.addScaledVector(this.state.forward, 1);
             if (this.state.keys["s"]) this.state.moveDirection.addScaledVector(this.state.forward, -1);
+            // Bewusst NICHT „intuitiv" inverten: `state.right` ist die ARITHMETISCHE
+            // Richtung (cos yaw, 0, −sin yaw), nicht die anatomische Rechts-Seite
+            // des Spielers. In Right-Hand-Coords mit Y up: forward × up = −X,
+            // also ist player-anatomisch-RECHTS = −X = −state.right. Original-Mapping:
+            // A → +state.right (= player-links), D → −state.right (= player-rechts).
+            // (Schöpfer-Hinweis 13.05.2026: vorherige „Fix"-Vertauschung brach das
+            // konsistente Verhalten, jetzt revertiert.)
             if (this.state.keys["a"]) this.state.moveDirection.addScaledVector(this.state.right, 1);
             if (this.state.keys["d"]) this.state.moveDirection.addScaledVector(this.state.right, -1);
 
             if (this.state.physicsWorld && playerBody) {
+                // Welle 6.A3 — auf zu steilem Slope (onSteepSlope=true via
+                // isPlayerGrounded) wird der Bewegungs-Input auf 20 % gedrosselt.
+                // 0 wäre zu hart (gar keine Kontrolle), 1 wäre der heutige Bug
+                // (Spieler klettert senkrechte Wände). 0.2 lässt seitliches
+                // Rauslenken zu, blockiert aber Voll-Vorwärts-Klettern.
+                const slopePenalty = this.state.onSteepSlope ? 0.2 : 1.0;
                 if (this.state.moveDirection.length() > 0) {
                     this.state.moveDirection.normalize();
                     playerBody.setLinearVelocity(
                         this.setVec(
                             this.state.tmpVec1,
-                            this.state.moveDirection.x * currentSpeed,
+                            this.state.moveDirection.x * currentSpeed * slopePenalty,
                             playerBody.getLinearVelocity().y(),
-                            this.state.moveDirection.z * currentSpeed
+                            this.state.moveDirection.z * currentSpeed * slopePenalty
                         )
                     );
                     playerBody.forceActivationState(1);
-                } else {
+                } else if (!this.state.onSteepSlope) {
+                    // Auf flachem Boden: ohne Eingabe vx + vz auf 0 zwingen
+                    // (Standard-Stopp-Verhalten). Auf steilem Hang lassen wir
+                    // die existierende Velocity stehen — Gravitation + Slope-
+                    // Kontakt erzeugen so eine natürliche Rutsch-Bewegung
+                    // (Voraussetzung: Player-Friction 0 aus 6.A1).
                     playerBody.setLinearVelocity(
                         this.setVec(this.state.tmpVec1, 0, playerBody.getLinearVelocity().y(), 0)
                     );
@@ -12968,6 +15209,23 @@ class AnazhRealm {
 
         let isGrounded = false;
 
+        // Welle 6.A2 — Erdung auf Strukturen.
+        //
+        // Bauwerks-Compound-Bodies (state.architectures[].collision) liegen mit
+        // mass=0 im Physics-World; rayTest trifft sie wie das Heightfield. Die
+        // Schwelle `groundDistance` (vorher fest 0.5) wurde leicht entspannt
+        // auf 0.6: ein Spieler, der auf einer Bauwerks-Plattform genau aufsetzt,
+        // hat oft eine y-Position knapp über der Sub-Box-Oberseite (Compound-
+        // Origin + Sub-Offset + Solver-Resting-Distance), und der Sprung wurde
+        // dadurch bei manchen Bauwerken um einen Frame versetzt verweigert.
+        const groundDistance = 0.6;
+
+        // Welle 6.A3 — Slope-Steepness. Pro Hit lesen wir die Surface-Normal,
+        // tracken die FLACHSTE (höchstes Normal-Y). Wenn keine der getroffenen
+        // Flächen einen Normal-Y > maxWalkableSlopeY hat, gilt der Spieler als
+        // „auf steilem Hang" — Bewegung wird gedrosselt + Gravity schiebt ab.
+        let bestNormalY = 0;
+
         for (const ray of rays) {
             const rayStart = this.setVec(
                 this.state.tmpVec1,
@@ -12987,12 +15245,21 @@ class AnazhRealm {
                 const hitPoint = rayCallback.get_m_hitPointWorld();
                 const hitY = hitPoint.y() * this.state.scaleFactor;
                 const distance = Math.abs(hitY - (this.state.playerMesh.position.y - 0.5));
-                if (distance < 0.5) {
+                if (distance < groundDistance) {
                     isGrounded = true;
+                    // Normal aufsammeln — flachste (höchstes y) gewinnt: wenn
+                    // ein Ray auf eine flache Sub-Fläche trifft (Treppe, kleine
+                    // Plattform), zählt der Spieler als „begehbar geerdet".
+                    const hitNormal = rayCallback.get_m_hitNormalWorld();
+                    const ny = hitNormal.y();
+                    if (ny > bestNormalY) bestNormalY = ny;
                 }
             }
             Ammo.destroy(rayCallback);
         }
+
+        this.state.groundNormalY = isGrounded ? bestNormalY : 1.0;
+        this.state.onSteepSlope = isGrounded && bestNormalY < this.state.maxWalkableSlopeY;
 
         // Entferne manuelle Korrekturen, da Ammo.btHeightfieldTerrainShape die Kollisionen übernimmt
         return isGrounded;
@@ -13187,6 +15454,100 @@ class AnazhRealm {
 // Welle 4 Phase 1 — Material-Tag-Achsen. Zehn Felder aus Konzept §2.2,
 // kondensiert. Alle Werte 0..1. MATERIAL_TAG_DEFAULTS startet jeden Tag
 // auf 0, damit `_defaultMaterials` nur die positiven Felder setzen muss.
+// Welle 6.D Etappe 1 — Stat-Ableitung aus Tag-Profil. Sechs Spieler-Stats
+// (HP-Max, Damage, Speed, JumpPower, Stamina-Max, Präzision) + zwei Resistenzen
+// (MagicResist, HeatResist). Jede Formel nimmt das `tags`-Objekt und gibt
+// eine Zahl zurück. Konstanten sind so gewählt, dass Mensch sich nahe an
+// den heutigen Default-Werten (speed=6, jumpPower=12) bewegt, Phönix
+// schneller+höher aber fragiler, Drache zäher aber langsamer.
+//
+// Wenn Du diese Werte tunen willst: dieselben Formeln bleiben, nur die
+// Multiplikatoren ändern. Test-Setup (Welle 6.D Diskrimination) prüft die
+// Verhältnisse, nicht die absoluten Zahlen.
+AnazhRealm.STAT_FROM_TAGS = Object.freeze({
+    hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,
+    damage: (t) => 5 + (t.härte || 0) * 15 + (t.dichte || 0) * 5,
+    // Schöpfer-Feedback 13.05.2026 (Welle 6.D Polish): „Mensch extrem
+    // langsam, evt. Basegeschwindigkeit für alle etwas höher". Base 4→6,
+    // Multiplikator (1-dichte) 4→5, magieleitung 1→1.5. Mensch springt
+    // von 6.1 auf ~8.75; Phönix 9.4 auf 11.2; Drache 5.0 auf 7.4. Sprint
+    // = 2× Walk wirkt damit deutlicher.
+    speed: (t) => 7 + (1 - (t.dichte || 0)) * 5 + (t.magieleitung || 0) * 1.5,
+    jumpPower: (t) => 8 + (1 - (t.dichte || 0)) * 5 + (t.magieleitung || 0) * 2,
+    staminaMax: (t) => 100 + (1 - (t.dichte || 0)) * 60 + (t.wärmeleitung || 0) * 40,
+    precision: (t) => 0.5 + (t.magieleitung || 0) * 0.3 + (t.zähigkeit || 0) * 0.2,
+    magicResist: (t) => (t.magieleitung || 0) * 0.4 + (t.resoniert || 0) * 0.3,
+    heatResist: (t) => (t.wärmeleitung || 0) * 0.5 - (t.brennbar || 0) * 0.3,
+});
+
+// Welle 6.D Etappe 3b — Aura-Hue-Map: jede der 10 MATERIAL_TAG_KEYS bekommt
+// einen HSL-Hue (0..360). Die dominanteste Tag-Achse des Spieler-Compounds
+// bestimmt die Aura-Farbe; Saturation skaliert mit HP-Prozent (verletzte
+// Spieler haben blassere Auren). Vision-Treue: Tag-Achsen sind die EINE
+// Welt-Sprache; die Aura macht sie sichtbar ohne Zahlen-Inspect.
+AnazhRealm.AURA_TAG_HUE = Object.freeze({
+    härte: 30, // Erdbraun
+    dichte: 0, // Tief-rot, schwer
+    zähigkeit: 130, // Mossgrün
+    wärmeleitung: 25, // Orange-warm
+    stromleitung: 200, // Stahlblau
+    magieleitung: 270, // Violett
+    transparent: 180, // Eis-cyan
+    brennbar: 15, // Feuer
+    resoniert: 290, // Magenta-Schwingung
+    lebendig: 110, // Frühlingsgrün
+});
+
+// Welle 6.D Etappe 3b — Stat-Stacking-Gewichte. Compound-Tags der ausge-
+// rüsteten Werkzeuge/Rüstung werden zur Soul-Tag-Basis addiert, dann läuft
+// STAT_FROM_TAGS. armorWeight 0.3 = Rüstung trägt spürbar, ersetzt Seele
+// nicht. toolWeight 0.15 = Werkzeug-in-Hand wirkt nur leicht (Werte aus
+// wave-6-design §5.3).
+AnazhRealm.ARMOR_STAT_WEIGHT = 0.3;
+AnazhRealm.TOOL_STAT_WEIGHT = 0.15;
+
+// Welle 6.D Etappe 3a+ (Schöpfer-Feedback 13.05.2026) — Werkzeug-Anwendung
+// kostet Stamina. Ohne Kosten könnte der Spieler unbegrenzt Polier-Schritte
+// stapeln und Präzision exponentiell hochziehen (Min-Regel-Hybrid 0.7^N geht
+// gegen max für N→∞). Ressourcen-Verbrauch erzwingt Geduld als ECHTE Kosten,
+// nicht nur als Reihenfolge.
+AnazhRealm.TOOL_OP_STAMINA_COST = 10;
+AnazhRealm.STAMINA_REGEN_PER_SEC = 5;
+
+// Welle 6.D Etappe 3a+ (Schöpfer-Feedback 13.05.2026) — Tod-Wunde-Penalty.
+// Der Spieler trägt nach einem Tod eine graduelle Schwächung: Körper-Tags
+// fallen, der Spieler ist sichtbar verwundet bis zur vollen Regeneration.
+// Die Penalty wird mit `deathWoundIntensity` (0..1) multipliziert.
+AnazhRealm.WOUND_TAG_PENALTY = Object.freeze({
+    dichte: -0.3, // Körper schwer + träge
+    lebendig: -0.2, // Aura blass
+    zähigkeit: -0.2, // anfälliger
+});
+
+// Welle 6.D Etappe 3a — Min-Regel-Hybrid-Decay. precision = min + (max−min)
+// × decay^N (siehe computePartPrecision-Doc). 0.7 ist Schöpfer-Wahl; ein
+// 4-Schritt-Chain liefert ~59 % der Höchst-Präzision, eine reine Hand-Arbeit
+// (1 Schritt) bleibt bei min. Sorgfalt belohnt, aber nicht beliebig.
+AnazhRealm.PRECISION_DECAY = 0.7;
+
+// Welle 6.D Etappe 2 — Emotion-→-Tag-Mapping für Boosts. Jede der 6 Emotionen
+// koppelt an einen MATERIAL_TAG_KEY: hoch genug (>0.7), Welt-Reaktion = Tag-Delta
+// auf den Spieler-Compound. Werte ge-tunet damit die Wirkung spürbar aber nicht
+// dominant ist (Stat-Steigerung ~10-15 %).
+AnazhRealm.BOOST_EMOTION_TAG = Object.freeze({
+    joy: { tag: "wärmeleitung", delta: 0.15, label: "Freude wärmt" },
+    awe: { tag: "magieleitung", delta: 0.15, label: "Ehrfurcht öffnet" },
+    sorrow: { tag: "resoniert", delta: 0.15, label: "Trauer schwingt tief" },
+    hope: { tag: "lebendig", delta: 0.1, label: "Hoffnung belebt" },
+    peace: { tag: "zähigkeit", delta: 0.1, label: "Friede härtet leise" },
+    chaos: { tag: "stromleitung", delta: 0.15, label: "Chaos sprüht Funken" },
+});
+AnazhRealm.BOOST_EMOTION_DURATION = 30; // s, läuft mit Emotion mit
+AnazhRealm.BOOST_EMOTION_REFRACT = 60; // s Pause nach Ablauf, sonst Endlos-Pulsen
+AnazhRealm.BOOST_RESONANCE_RADIUS = 18; // m, in deren Nähe das Welt-Effekt-Boost greift
+AnazhRealm.BOOST_RESONANCE_DELTA = 0.15; // +0.15 resoniert auf Spieler-Compound
+AnazhRealm.BOOST_RESONANCE_LABEL = "Welt-Resonanz";
+
 AnazhRealm.MATERIAL_TAG_KEYS = Object.freeze([
     "härte",
     "dichte",

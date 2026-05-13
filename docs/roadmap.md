@@ -213,7 +213,7 @@ Plus: inline-styles aus `index.html` entfernt (`#fps`, `#state-file-input`), Inl
 
 ### Welle 6: Crafting-Polish + UX + Stats (sechs Blöcke A–F, bewusst nachgelagert)
 
-**Status**: 🔴 offen — **bewusst nach Ringe 8-11 V1 verschoben** (Entscheidung 13.05.2026, erweitert nach Ring 11 V1). Die Hylomorphismus-Schicht ist mechanisch vollständig (W4 + W5 A+B+C), Ring 11 V1 trägt Multi-User-Position-Sync. Welle 6 ist Polish + Erweiterung, kein Fundament.
+**Status**: 🟡 in Arbeit — **Phase 1-6 (V7.72) erledigt**: 6.A komplett (Wall-Sliding, Erdung, Slope-Anti-Klebe, Raycast-Place, Stabilitäts-Visual), 6.E1+E2 (Fähigkeit-Beschreibung + Intro), 6.F1+F2 (Verbindungs-Linien + Brech-Warning), **6.D Stat-System komplett** (Etappen 1+1.5+1.6+1.7+2+3a+3b: STAT_FROM_TAGS-Matrix, Seele-als-Bauplan-aus-Körperteilen, define_soul DSL, visueller Avatar-Editor, Boosts aus 3 Quellen, Phönix-Wandlung + persistente Tod-Wunde, Min-Regel-Hybrid decay 0.7, Werkzeug-Kosten, Rüstung-Stacking, Aura-Glow). **1014 Playtest-Invarianten grün**.
 
 **Gesamt-Schätzung**: ~18-22 Sessions, verteilt auf 3-4 Monate Echtzeit, in sechs Blöcken **6.A bis 6.F** organisiert.
 
@@ -223,11 +223,11 @@ Plus: inline-styles aus `index.html` entfernt (`#fps`, `#state-file-input`), Inl
 
 | Block | Themen | Aufwand | Vorbedingung |
 |---|---|---|---|
-| **6.A — Interaktion-Polish** | Wall-Sliding (no-stick), Erdung auf Strukturen, Maus-Aktionen LMB/RMB, Bau-Phantom mit Raycast-Place, Stabilitäts-Check beim Platzieren | 3-4 Sessions | – |
+| **6.A — Interaktion-Polish** | Wall-Sliding (no-stick) ✅, Erdung auf Strukturen ✅, **Slope-Anti-Klebe ✅** (6.A3 neu), Bau-Phantom mit Raycast-Place ✅, Stabilitäts-Visual ✅ (6.A5), Maus-Aktionen LMB/RMB (6.A3 alt — wartet) | 3-4 Sessions, **5/6 erledigt** | – |
 | **6.B — CAD-Werkstatt** (minimal magic) | 3D-Preview-Pane, Drag-Items aus Seitenleiste, Grid-Snap. **Kein** Boolean, kein MultiSelect — bewusst klein gehalten. | 2 Sessions | 6.F1 (Linien-Renderer) |
 | **6.C — Inventar + Modi + Keys** | Erweitertes Inventar mit Tag-Profilen, **frieden/pfad/schöpfer**-Modi, Keybindings-UI | 4 Sessions | 6.D (Stats für pfad-Modus) |
 | **6.D — Stats fraktal** ⭐ | Soul × Soul-Material → Tags → Stats; Boosts (Konsum + Emotion + Welt-Effekt); Min-Regel-Hybrid (decay 0.7); Tod = Phönix-Wandlung + Welt-Trauer | 3-4 Sessions | W5 + 6.F2 |
-| **6.E — Lesbarkeit** | Fähigkeit-Beschreibung (regel- oder LLM-basiert), Intro-Overlay, subtile Tooltips | 2 Sessions | – |
+| **6.E — Lesbarkeit** | Fähigkeit-Beschreibung ✅ (6.E1), Intro-Overlay ✅ (6.E2), subtile Tooltips (6.E3 — wartet) | 2 Sessions, **2/3 erledigt** | – |
 | **6.F — Original-Crafting (alt 6.1-6.7)** | Visuelle Verbindungs-Linien, Brech-Mechanik, Energiequellen, Kreaturen-Körper als Baukasten, Physik-Constraints (Ammo Hinge/Fixed), Rüstung → in 6.D integriert | 8-10 Sessions | W5 |
 | **6.G — Welt-Sinne** (NEU, 13.05.2026) | Fliegende Inseln + Bäume kollidierbar, Schatten, Shader (Höhe-Tint, Wind, Glow), Sterne-Stabilisierung + Variation, Terrain-Höhlen+Überhänge+Klippen, Wasser als Material+Layer mit DSL-Ops | 7-9 Sessions, in 2 Phasen | – (Phase 1) / 6.D (Phase 2) |
 | **6.H — Kreaturen-Aufträge** (NEU, 13.05.2026) | Autonome Co-Schöpfer: Kreaturen bekommen DSL-Programme als Agenda (build_path, gather, build_house, research_blueprint). Kontext-Menü via Maus-Klick. Persistierte tasks. Vision: dritter Schöpfungs-Akteur (Mensch+KI+Kreaturen) | 4-5 Sessions | 6.F4 (Multi-Mesh-Kreaturen) + 6.A4 (Raycast) |
@@ -235,10 +235,19 @@ Plus: inline-styles aus `index.html` entfernt (`#fps`, `#state-file-input`), Inl
 **Vision-Hebel der Welle**: Block 6.D macht den Spieler zum **Compound im selben Hylomorphismus-System** wie Materialien und Bauwerke. `STAT_FROM_TAGS`-Matrix analog `FORM_TAG_ACTIVATION`. Wenn das Stat-System ohne Bezug zu `MATERIAL_TAG_KEYS` funktioniert, wurde die Vision verfehlt — explizite Warnung im Design-Doc §9.
 
 **Beschlossene Reihenfolge** (Schöpfer hat 13.05.2026 freie Hand gegeben, Entscheidungen in `docs/wave-6-design.md` §10.6):
-1. 6.A1+A2 (Sliding + Erdung)
-2. 6.A4+A5 (Raycast-Place + Stabilität)
-3. 6.E1+E2 (Ability-Beschreibung + Intro)
-4. 6.F1+F2 (visuelle Linien + Brech-Warning)
+1. 6.A1+A2 (Sliding + Erdung) ✅ V7.72
+2. 6.A3 (Slope-Anti-Klebe, ad-hoc) ✅ V7.72
+3. 6.A4+A5 (Raycast-Place + Stabilitäts-Visual) ✅ V7.72
+4. 6.E1+E2 (Ability-Beschreibung + Intro-Overlay) ✅ V7.72
+5. 6.F1+F2 (Verbindungs-Linien + Brech-Warning) ✅ V7.72
+6. **6.D Stat-System komplett** (Etappen 1+1.5+1.6+1.7+2+3a+3b) ✅ V7.72 — der Vision-Pfeiler ist live
+7. **Schöpfer-Reflexions-Polish** ✅ V7.72 — sechs Reflexions-Runden in Welle 6.D fanden + behoben: Avatar-Editor-UI (Etappe 1.7), Konsumables aus Compound-Tags (Logik statt Tabelle), Werkzeug-Stamina-Kosten (Anti-Stapeln), persistente Tod-Wunde, Aura-Glow (Sprite + Radial-Gradient), WASD-Geometrie + Drache-Animation-Wahrnehmung, **Sprint-Bug-Fix** (player_speed sync't sprintSpeed), **Tag-Clamp [0,1]** in computePlayerStats für die Stat-Pipe, Speed-Base 6→7
+8. **6.G Welt-Sinne Phase 1** ← jetzt offen (fliegende Inseln + Bäume kollidierbar)
+9. **6.C2** (Spiel-Modi frieden/pfad/schöpfer) — nutzt Stat-System
+10. 6.C1 + 6.A-Maus + 6.C3 (Inventar + LMB/RMB + Keybindings-UI)
+11. 6.B (CAD-Werkstatt — minimal magic)
+12. 6.G Phase 2 (Schatten, Wasser, Höhlen, Sterne)
+13. 6.F3 + 6.F4 + 6.F5 (Energie + Kreaturen-Körper + Constraints)
 5. **6.D** Stats komplett (Vision-Pfeiler) ⭐
 6. 6.G Phase 1 (Inseln + Bäume kollidierbar)
 7. 6.C2 (Modi frieden/pfad/schöpfer)

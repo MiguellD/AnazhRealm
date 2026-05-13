@@ -28,12 +28,12 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
    Grund: sie sind Kontext für genau dich.
 
 5. **`scripts/playtest.cjs`** — querlesen, nicht durchlesen. Es ist das
-   Sicherheits-Netz. Es prüft heute ~660 Invarianten. Wenn du etwas tust,
-   das eine davon brechen könnte, weißt du es vor dem Commit.
+   Sicherheits-Netz. Es prüft aktuell **~1014 Invarianten (V7.72 nach Welle 6.D komplett)**.
+   Wenn du etwas tust, das eine davon brechen könnte, weißt du es vor dem Commit.
 
 **Verlockung zu widerstehen**: gleich in `anazhRealm.js` springen. Die
-Datei ist ~10.800 Zeilen. Ohne `state-of-realm.md`-Kontext wirst du
-falsche Annahmen machen.
+Datei ist ~15.500 Zeilen (Stand V7.72). Ohne `state-of-realm.md`-Kontext
+wirst du falsche Annahmen machen.
 
 ---
 
@@ -190,72 +190,150 @@ Hartnäckige Falle — schon zweimal gesehen.
 
 ---
 
+## Schöpfer-Reflexions-Muster (aus Welle 6.D, 11 Sub-Runden)
+
+Während Welle 6.D (Stat-System) gab es **sechs Schöpfer-Reflexions-Runden**.
+JEDE fand echte Lücken, die Tests grün liessen. Diese Muster sammle ich
+für nächste Sessions — wenn dir eine davon bekannt vorkommt, ist es ein
+Indikator für „durchatmen, prüfen".
+
+1. **„Wo ist das Menü?"** — UI-Bedien-Pfad-Test fehlt. Wenn ich Daten +
+   DSL-Pfad fertig habe, aber kein Bedienen-UI: Feature ist NICHT live.
+   Frag dich vor Commit: „kann der Schöpfer das ohne Console öffnen?"
+
+2. **„Tabelle oder Logik?"** — Bei jedem Werte-System (Konsumables, Boosts,
+   Stats) fragen: „werden die Werte definiert oder emergieren sie aus
+   Compound-Tags?". Wenn Definition: Hylomorphismus-Bruch, vermutlich
+   Vision-fremd.
+
+3. **„Was kostet das?"** — Mechanismen die Ressourcen erzeugen (Präzision,
+   HP, Boosts) müssen Ressourcen verbrauchen (Stamina, Material, Zeit).
+   Sonst kann der Spieler beliebig stapeln. Geduld als Mechanik braucht
+   ECHTE Kosten.
+
+4. **„Asymmetrische Form als Test"** — Drache > Phönix > Mensch in
+   visueller Asymmetrie. Wenn ein Refactor mit Animation/Geometrie
+   beim Mensch korrekt aussieht aber beim Drache falsch, ist es ein
+   Bug. Bei jedem Geometrie-Refactor mit Drache testen.
+
+5. **„Variablen-Name vs. Geometrie"** — `state.right` ist geometrisch
+   das Player-LINKS (Right-Hand-Rule: `forward × up = -X`). Vertraue
+   dem Namen nicht. Im Zweifel cross-product nachrechnen.
+
+6. **„Pixel-Helligkeit vs. Material-Tint"** — Glow/Aura braucht echte
+   Pixel-Addition (AdditiveBlending) + radial-Falloff (Texture-Gradient),
+   nicht statische Farbverschiebung. „Schimmern der Haut" = additiv,
+   weich, lebendig.
+
+7. **„Angrenzende Pfade"** — Bei Refactor das KOMPLETTE System
+   durchspielen. `player_speed`-DSL-Op existierte Pre-V7.72, sync'te
+   `sprintSpeed` nicht. Mein Stat-System hat den Bug aktiviert. Bei
+   jeder Methode fragen: „welche anderen Methoden setzen denselben State?"
+
+8. **„Wertebereich beider Seiten"** — Tags können 0..3 sein (FORM_TAG_
+   ACTIVATION × Material). Stat-Formel `(1-dichte)*5` wird negativ bei
+   dichte=1.8. Bei Stat-Formeln IMMER Wertebereich beider Operanden
+   dokumentieren + clampen wo nötig.
+
+9. **„Form-Wahrnehmung ≠ Mesh-Namen"** — Cone = spitz = Schnauze (visuell),
+   selbst wenn der Variable im Code „tail" heißt. Bei perceptual Feedback
+   ehrlich diagnostizieren — manchmal ist die Wahrnehmung anders als der
+   Code-Name suggeriert.
+
+10. **„Schöpfer-Frage als Audit-Tool"** — Verständnis-Fragen sind keine
+    Verzögerung, sondern Audit-Verstärker. Bei „kannst du erklären wie X
+    funktioniert?" zuerst durchlesen statt antworten. Oft fallen Funde
+    raus.
+
+11. **„Reflexion vor Merge"** — Tests grün heißt mechanisch sicher, nicht
+    vision-treu oder spürbar gut. Schöpfer-Spiel-Sitzung VOR PR ist die
+    letzte Wand. Akzeptiere Korrekturen ohne Defense.
+
+---
+
 ## Was als Nächstes wartet
 
-**Bogen B (Welten-Ultiversum, Ringe 8-10) ist abgeschlossen.** Vision §11
-ist zu ~85 % umgesetzt. Drei Pfade nach vorn:
+**Bogen B (Welten-Ultiversum, Ringe 8-11.5) ist abgeschlossen.** Vision §11
+ist live: Multi-Welt, Per-Welt-Seed, Position-Restore, Welt-Tor (Drei-Wahl-
+Dialog), Welt-Fusion (drei Strategien), Rezepte-Import, Welt-Modifizierbarkeit
+pro Chunk-Delta, Multi-User Position-Sync, DSL-AST-Broadcast, intuitiver
+Multi-User-Setup mit Einladungs-Code.
 
-### Pfad A: Welt-Modifizierbarkeit (Ring 10.5, ~2 Sessions)
+**Welle 6 ist tief eingeschossen (V7.72).** Plan + entschiedene Reihenfolge
+in `docs/wave-6-design.md` §10.6 + `docs/roadmap.md`. **Der Vision-Pfeiler
+6.D Stat-System ist komplett live** — Spieler ist Compound im selben
+Hylomorphismus-System wie Materialien und Bauwerke.
 
-Heute regeneriert die Welt deterministisch aus Seed + Noise. Vom Spieler
-erzeugte Strukturen (Architekturen) sind global gehalten, aber Chunk-
-Modifikationen (Block setzen/entfernen) gibt es nicht. Empfehlung aus
-Vision §11.3: pro-Chunk DSL-Delta-Liste, die beim Laden re-applied wird.
+### Bereits erledigt in V7.72
 
-**Warum jetzt**: Vorbedingung für sinnvolles Ring 11. Wenn zwei Spieler
-dieselbe Welt teilen, MÜSSEN Modifikationen persistent + sync-bar sein.
-Sonst ist es nur Pose-Sync, kein gemeinsames Bauen.
+- ✅ **6.A komplett** — Wall-Sliding, Erdung-auf-Bauwerken, Slope-Anti-
+  Klebe (ad-hoc), Raycast-Place mit Pitch, Stabilitäts-Phantom-Tint
+- ✅ **6.E1 + 6.E2** — Fähigkeit-Beschreibung (regelbasierter DSL→Deutsch)
+  + dynamisches Intro-Dialog mit 3 Seiten (lokalStorage-Skip)
+- ✅ **6.F1 + 6.F2** — Verbindungs-Linien als THREE.Line (grün/gelb/rot
+  nach computeConnectionStrength) + Brech-Warning-Journal-Eintrag bei
+  strength <0.7
+- ✅ **6.D Stat-System komplett** (sieben Etappen):
+  - **1**: STAT_FROM_TAGS-Matrix (8 Stats), computePlayerStats-Pipe,
+    state.player.stats + hp + stamina, applyPlayerSoul ruft
+    recomputePlayerStats
+  - **1.5**: Seele = Bauplan aus Körper-Teilen (Vision-Korrektur,
+    KEINE hardcodete Tag-Tabelle). 5 Körper-Materialien (knochen,
+    fleisch, federn, schuppen, glut) in _defaultMaterials. Tags via
+    `computeSoulCompoundTags` = MAX-Aggregation wie Architekturen.
+  - **1.6**: `define_soul` DSL-Op + state.customSouls (Cap 16). Custom-
+    Rendering via _buildFromBlueprint. Built-in-Schutz.
+  - **1.7**: Visueller Avatar-Editor im Spieler-Drawer (klonen, Parts
+    add/edit/remove, „Werde diese Seele"-Button).
+  - **2**: Boosts aus 3 Quellen — Emotion (>0.7 → Tag-Delta für 30s
+    mit 60s Refract), Welt-Resonanz (<18m einer Signature-Struktur),
+    Konsum. addPlayerBoost-API mit Source-Dedupe.
+  - **3a**: Tod-Wandlung (HP=0 → 5min Phönix-Form, Welt-Trauer
+    sorrow+0.3/awe+0.2, Journal-Eintrag) + persistente Tod-Wunde
+    (`WOUND_TAG_PENALTY × intensity`, 10min linear Regen) + Min-Regel-
+    Hybrid (`min + (max-min) × 0.7^N`) + Werkzeug-Stamina-Kosten
+    (10 pro applyOpToPart, Regen 5/s) + Konsumables aus Compound-Tags
+    (Bauplan-mit-role-consumable, tagBonus = computeCompoundTags × scale)
+  - **3b**: Stat-Stacking — `soul + armor×0.3 + tool×0.15 + boosts -
+    wound`. setBlueprintAsArmor + equipTool/equipArmor + DSL-Ops.
+    Aura-Visual: Sprite mit CanvasTexture-Radial-Gradient +
+    AdditiveBlending = weicher Schimmer, HSL-Hue aus dominanter Tag-
+    Achse, Saturation × HP% (verletzt = blasser).
+- ✅ **Schöpfer-Reflexions-Polish (V7.72 Schluss)** — WASD-Geometrie-
+  Revert auf Original (state.right ist geometrisch player-LINKS),
+  Drache-π-Flip-Revert (Original-Orientierung mit Kopf in +Z war richtig;
+  „W/S vertauscht"-Wahrnehmung kam von Animation, nicht Body-Translation),
+  Aura V4 (Sprite + CanvasTexture-Radial-Gradient + AdditiveBlending =
+  weicher Schimmer ohne harte Kontur), Chat-Patterns für damage/trink/
+  rüste, **Sprint-Bug-Fix** (player_speed-DSL-Op sync't jetzt
+  sprintSpeed = speed × 2 — vorher konnte ein DSL-`player_speed 25` den
+  Spieler beim Sprint langsamer machen), **Tag-Clamp [0,1]** in
+  computePlayerStats für die Stat-Pipe (FORM_TAG_ACTIVATION konnte
+  Werte bis 3 verstärken → Speed-Formel wurde negativ → Mensch lief mit
+  2.0 m/s. Boosts + Equipped + Wound dürfen weiter drüber/drunter),
+  Speed-Base 6→7 für spürbar agilere Bewegung (Mensch ~7, Phönix ~11.7,
+  Drache ~7.9; Sprint × 2).
 
-### Pfad B: Ring 11 — Multi-User P2P-Sync (5-7 Sessions, Vision-Krönung)
+### Nächste Schritte (Reihenfolge laut wave-6-design §10.6)
 
-Das letzte ungesprochene Vision-Kapitel. Zwei Spieler in derselben Welt.
+8. **6.G Welt-Sinne Phase 1** ← **JETZT OFFEN**. Kollisionen für
+   fliegende Inseln + Bäume. Kleine Eingriffe, große Wirkung. 1-2 Sessions.
+9. **6.C2** (frieden/pfad/schöpfer-Modi) — nutzt 6.D Stat-System. 1 Session.
+10. **6.C1 + 6.A-Maus + 6.C3** (Inventar + LMB/RMB + Keybindings-UI)
+11. **6.B** (CAD-Werkstatt — minimal magic)
+12. **6.G Phase 2** (Schatten, Wasser, Höhlen, Sterne)
+13. **6.F3 + 6.F4 + 6.F5** (Energie, Kreaturen-Körper, Ammo-Constraints)
 
-**Was es braucht**:
-- Signaling-Server (klein, ~100 Zeilen Node, neben `save-server.js`)
-- WebRTC Datachannel für Realtime-Pakete
-- Sync-Schichten:
-  - Position + Rotation (60 Hz, lossy OK)
-  - Chat-Befehle als DSL-AST (beide Welten führen aus → konsistent)
-  - DSL-Outcomes vom Nexus (nur Programm-IDs, nicht ganze Programme)
-- Public-Welten via worldId-Beitritt, Private-Welten via Token-Link
-- Welt-Picker bekommt „Joinen"-Button, neue Sektion „Mitspieler in dieser Welt"
+**Heilige-Lektion-Risiko bei 6.F4 + 6.F5 ist hoch.** Reflex „Kreaturen-
+Datei / Physik-Modul" abwehren. Drei neue Methoden auf `AnazhRealm`,
+keine drei neuen Klassen.
 
-**Heilige-Lektion-Risiko: HOCH.** Der Reflex „Multi-User-Modul + Signaling-
-Modul + Sync-Layer" wird stark sein. Widerstehe. Es ist EINE Methode
-`initP2PSync()` mit drei Sub-Hooks im Game-Loop. Nicht mehr.
-
-**Sicherheits-Risiko: hoch.** Sobald zwei Welten verbunden sind, kann
-Spieler-A's DSL Spieler-B's Welt manipulieren. Die DSL-Sandbox muss
-halten. Trust-Boundary klar ziehen: eingehende DSL-Programme laufen
-durch denselben Budget+Whitelist-Pfad wie eigene. Kein Bypass.
-
-**Vorbedingung**: Pfad A (Welt-Modifizierbarkeit) sollte zuerst kommen.
-
-### Pfad C: Welle 6 — Crafting-Polish (8-12 Sessions, nachgelagerter Bucket)
-
-Sieben Teilschritte detailliert in `docs/roadmap.md`:
-- 6.1 Visuelle Verbindungs-Linien zwischen Parts
-- 6.2 Brech-Mechanik bei zu schwacher Last
-- 6.3 Energiequellen für Maschinen
-- 6.4 Kreaturen-Körper als Baukasten (Multi-Mesh analog Spieler-Seele)
-- 6.5 Physik-Baukasten mit echten Ammo-Constraints
-- 6.6 Rüstung mit minimalem Stat-System
-- 6.7 Min-Regel-Entscheidung (Learning #95)
-
-**Heilige-Lektion-Risiko**: 6.4 + 6.5 + 6.6 sind die schwersten Brocken.
-Reflex „Kreaturen-Datei / Physik-Modul / Stat-Manager" abwehren.
-
-### Wie wählen?
-
-Mein Vorschlag, wenn du keine andere Anweisung hast:
-
-1. **Pfad A** (Welt-Modifizierbarkeit) — ~2 d, klein, klar
-2. **Pfad B** (Ring 11) — 5-7 Sessions, das eigentliche letzte Vision-
-   Kapitel
-3. **Pfad C** (Welle 6) — wenn Bogen Ring 11 fertig ist, polish
-
-Aber **frag den Schöpfer**. Er hat oft eine Intuition, die in der Roadmap
-nicht steht.
+**Vor jedem neuen Schritt frag den Schöpfer**, wenn du Unsicherheit hast
+— er hat oft Intuition zu Mix-Faktoren, Schwellwerten, oder Reihenfolge-
+Tausch. Bei 6.D haben mehrere Schöpfer-Reflexions-Pausen sechs echte
+Lücken aufgedeckt (Tabellen-statt-Logik, fehlende Kosten, UI ohne Bedien-
+Pfad, WASD-Geometrie-Fehlinterpretation). Diese Pausen-Reflexion ist
+keine Verzögerung, sondern Qualitäts-Wand.
 
 ---
 
@@ -267,7 +345,8 @@ nicht steht.
 3. **Die heilige Lektion akzeptiert, nicht hinterfragt.** Sie wurde aus
    Schmerz geboren. Wenn ich sie umgehen wollte, war ich auf dem Holzweg.
 4. **Tests zuerst ausgeführt, dann verstanden.** `npm run playtest` —
-   605/605 grün — gibt Vertrauen, dass das System lebt.
+   1014/1014 grün (V7.72 nach Welle 6.D komplett) — gibt Vertrauen, dass
+   das System lebt.
 5. **Den Schöpfer als Partner gesehen, nicht als Auftraggeber.** Mensch
    und KI bauen gemeinsam. Bei Trade-offs frage ich, bei Klarem handle
    ich. Bei Unsicherheit zeige ich beide Wege auf.
