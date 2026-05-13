@@ -4523,6 +4523,172 @@ function startSaveServer() {
                 );
             }
 
+            // ### Ring 11.5 — Intuitives Multi-User-Setup ###
+            // Mode/Rolle im New-World-Dialog, Einladungs-Code, Auto-Host/Guest,
+            // world-snapshot-Empfang nur bei pending=true, role-State in
+            // worldMeta + p2p.
+            const ring115Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    // 1. State: role in worldMeta + p2p
+                    out.hasWorldRole = typeof r.state.worldMeta.role === "string";
+                    out.hasP2PRole = typeof r.state.p2p.role === "string";
+                    out.hasPendingFlag = typeof r.state.p2p.pendingWorldSnapshot === "boolean";
+
+                    // 2. Invitation-Code: encode + decode roundtrip
+                    const codeA = r.makeInvitationCode("ws://192.168.1.42:4313", "w-1k7p-abc123");
+                    out.encodeShape = codeA === "anazh://192.168.1.42:4313/w-1k7p-abc123";
+                    const parsedA = r.parseInvitationCode(codeA);
+                    out.decodeShape =
+                        parsedA &&
+                        parsedA.url === "ws://192.168.1.42:4313" &&
+                        parsedA.roomId === "w-1k7p-abc123";
+
+                    // 3. parseInvitationCode toleriert tolerantes Format
+                    const parsedTolerant = r.parseInvitationCode("192.168.1.42:4313/myroom123");
+                    out.parseTolerant =
+                        parsedTolerant && parsedTolerant.url === "ws://192.168.1.42:4313" && parsedTolerant.roomId === "myroom123";
+
+                    // 4. parseInvitationCode lehnt Müll ab
+                    out.parseRejectsEmpty = r.parseInvitationCode("") === null;
+                    out.parseRejectsBad = r.parseInvitationCode("ho ha") === null;
+                    out.parseRejectsShortRoom = r.parseInvitationCode("anazh://h:4313/ab") === null;
+
+                    // 5. createNewWorld({role: "host"}) setzt role in worldMeta
+                    const hostId = r.createNewWorld({
+                        slug: "host-test-" + Date.now().toString(36),
+                        role: "host",
+                        reload: false,
+                    });
+                    out.hostWorldCreated = !!hostId;
+                    if (hostId) {
+                        const saved = JSON.parse(localStorage.getItem(r.worldStorageKey(hostId)));
+                        out.hostRoleInSavedMeta = saved && saved.worldMeta && saved.worldMeta.role === "host";
+                        r.deleteWorld(hostId);
+                    }
+
+                    // 6. _importGuestWorld erzeugt guest-Welt aus Snapshot
+                    const sampleSnapshot = {
+                        worldMeta: {
+                            worldId: "guest-source-uuid-xxx",
+                            slug: "originalwelt",
+                            seed: "abc-seed",
+                            bornAt: Date.now() - 100000,
+                            schemaVersion: "10.5-chunk-delta-v1",
+                            chunkDeltas: {},
+                            parentWorlds: [],
+                        },
+                        worldJournal: { entries: [], seen: {} },
+                        architectures: [],
+                        blueprints: [],
+                        playerEmotions: { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 },
+                    };
+                    const guestId = r._importGuestWorld(
+                        sampleSnapshot,
+                        { url: "ws://192.168.1.99:4313", roomId: "guest-source-uuid-xxx", peerId: "peer-host" },
+                        "test-guest"
+                    );
+                    out.guestImportOk = guestId === "guest-source-uuid-xxx";
+                    if (guestId) {
+                        const savedGuest = JSON.parse(localStorage.getItem(r.worldStorageKey(guestId)));
+                        out.guestRoleSet = savedGuest && savedGuest.worldMeta && savedGuest.worldMeta.role === "guest";
+                        out.guestHostInfoSet =
+                            savedGuest &&
+                            savedGuest.worldMeta &&
+                            savedGuest.worldMeta.hostInfo &&
+                            savedGuest.worldMeta.hostInfo.url === "ws://192.168.1.99:4313" &&
+                            savedGuest.worldMeta.hostInfo.peerId === "peer-host";
+                        // P2P-Settings für Auto-Connect geschrieben
+                        out.p2pEnabledPersisted = localStorage.getItem("anazh.p2p.enabled") === "true";
+                        out.p2pUrlPersisted = localStorage.getItem("anazh.p2p.url") === "ws://192.168.1.99:4313";
+                        // Cleanup
+                        r.deleteWorld(guestId);
+                        // p2p-flags wieder weg, damit andere Tests nicht beeinflusst werden
+                        localStorage.setItem("anazh.p2p.enabled", "false");
+                        localStorage.setItem("anazh.p2p.url", "ws://127.0.0.1:4313");
+                    }
+
+                    // 7. world-snapshot wird nur bei pending=true akzeptiert
+                    r.state.p2p.peerId = "self-id";
+                    r.state.p2p.pendingWorldSnapshot = false;
+                    const originalRole = r.state.worldMeta.role;
+                    r.p2pHandleMessage(
+                        JSON.stringify({
+                            type: "world-snapshot",
+                            peerId: "evil-peer",
+                            state: { worldMeta: { worldId: "stolen", slug: "evil", role: "host" } },
+                        })
+                    );
+                    // Welt darf nicht überschrieben sein
+                    out.snapshotRejectedWhenNotPending = r.state.worldMeta.role === originalRole;
+
+                    // 8. world-request: nur Host antwortet (mit world-snapshot)
+                    const sentMsgs = [];
+                    const origSend = r.p2pSend;
+                    r.p2pSend = function (m) {
+                        sentMsgs.push(m);
+                        return true;
+                    };
+                    // Guest oder Solo: kein Snapshot raus
+                    r.state.p2p.role = "solo";
+                    r.p2pHandleMessage(JSON.stringify({ type: "world-request", peerId: "asker" }));
+                    out.soloDoesNotAnswerRequest = sentMsgs.length === 0;
+                    // Host: schickt snapshot mit to=asker
+                    r.state.p2p.role = "host";
+                    r.p2pHandleMessage(JSON.stringify({ type: "world-request", peerId: "asker" }));
+                    const sentSnap = sentMsgs.find((m) => m.type === "world-snapshot" && m.to === "asker");
+                    out.hostAnswersRequestWithSnapshot = !!sentSnap && !!sentSnap.state;
+                    r.p2pSend = origSend;
+                    sentMsgs.length = 0;
+                    r.state.p2p.role = "solo";
+
+                    // 9. UI-Elemente vorhanden
+                    out.dialogExists = !!document.getElementById("new-world-dialog");
+                    out.modeRadiosExist = document.querySelectorAll('input[name="new-world-mode"]').length === 2;
+                    out.roleRadiosExist = document.querySelectorAll('input[name="new-world-role"]').length === 2;
+                    out.inviteInputExists = !!document.getElementById("new-world-invite");
+                    out.hostBannerExists = !!document.getElementById("world-host-banner");
+                    out.guestBannerExists = !!document.getElementById("world-guest-banner");
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!ring115Results || ring115Results.error) {
+                check(
+                    "Ring 11.5: Snapshot erreichbar",
+                    false,
+                    (ring115Results && ring115Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Ring 11.5: worldMeta.role-Feld existiert", ring115Results.hasWorldRole);
+                check("Ring 11.5: state.p2p.role-Feld existiert", ring115Results.hasP2PRole);
+                check("Ring 11.5: state.p2p.pendingWorldSnapshot-Feld existiert", ring115Results.hasPendingFlag);
+                check("Ring 11.5: makeInvitationCode liefert anazh://host:port/roomId", ring115Results.encodeShape);
+                check("Ring 11.5: parseInvitationCode dekodiert URL + roomId", ring115Results.decodeShape);
+                check("Ring 11.5: parseInvitationCode toleriert host:port/room ohne Schema", ring115Results.parseTolerant);
+                check("Ring 11.5: parseInvitationCode lehnt leeren Code ab", ring115Results.parseRejectsEmpty);
+                check("Ring 11.5: parseInvitationCode lehnt unsinnigen Code ab", ring115Results.parseRejectsBad);
+                check("Ring 11.5: parseInvitationCode lehnt zu kurze roomId ab", ring115Results.parseRejectsShortRoom);
+                check("Ring 11.5: createNewWorld({role:'host'}) speichert role im worldMeta", ring115Results.hostRoleInSavedMeta);
+                check("Ring 11.5: _importGuestWorld nutzt host-worldId als neue worldId", ring115Results.guestImportOk);
+                check("Ring 11.5: _importGuestWorld setzt worldMeta.role='guest'", ring115Results.guestRoleSet);
+                check("Ring 11.5: _importGuestWorld setzt worldMeta.hostInfo korrekt", ring115Results.guestHostInfoSet);
+                check("Ring 11.5: _importGuestWorld aktiviert P2P-Auto-Connect (localStorage)", ring115Results.p2pEnabledPersisted);
+                check("Ring 11.5: _importGuestWorld speichert host-URL in localStorage", ring115Results.p2pUrlPersisted);
+                check("Ring 11.5: world-snapshot wird ohne pending-Flag verworfen (Sicherheits-Wall)", ring115Results.snapshotRejectedWhenNotPending);
+                check("Ring 11.5: Solo-Spieler antwortet NICHT auf world-request", ring115Results.soloDoesNotAnswerRequest);
+                check("Ring 11.5: Host antwortet auf world-request mit world-snapshot (to=asker)", ring115Results.hostAnswersRequestWithSnapshot);
+                check("Ring 11.5: new-world-dialog im DOM", ring115Results.dialogExists);
+                check("Ring 11.5: Mode-Radios (solo/multi) im DOM", ring115Results.modeRadiosExist);
+                check("Ring 11.5: Role-Radios (host/join) im DOM", ring115Results.roleRadiosExist);
+                check("Ring 11.5: Einladungs-Code-Input im DOM", ring115Results.inviteInputExists);
+                check("Ring 11.5: world-host-banner im DOM", ring115Results.hostBannerExists);
+                check("Ring 11.5: world-guest-banner im DOM", ring115Results.guestBannerExists);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {

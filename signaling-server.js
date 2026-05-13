@@ -16,11 +16,15 @@
 //   Client → Server   { "type": "join", "room": "<worldId>", "peerId": "<rand>" }
 //   Client → Server   { "type": "pos",  "x": .., "y": .., "z": .., "yaw": .. }
 //   Client → Server   { "type": "dsl",  "program": [...DSL-AST] }
+//   Client → Server   { "type": "world-request", "to": "<hostPeerId>" }   (V2.2 / Ring 11.5)
+//   Client → Server   { "type": "world-snapshot", "to": "<guestPeerId>", "state": {...} }
 //   Server → Client   { "type": "welcome", "peers": ["peerA", "peerB"] }
 //   Server → Client   { "type": "peer-join", "peerId": "..." }
 //   Server → Client   { "type": "peer-leave", "peerId": "..." }
 //   Server → Client   { "type": "pos", "peerId": "...", "x":.., "y":.., "z":.., "yaw":.. }
 //   Server → Client   { "type": "dsl", "peerId": "...", "program": [...] }
+//   Server → Client   { "type": "world-request", "peerId": "..." }   (forwarded)
+//   Server → Client   { "type": "world-snapshot", "peerId": "...", "state": {...} }
 //
 // Heilige Lektion: KEIN neues Modul-Geflecht. EINE Datei, ein Server-
 // Objekt, vier Handler (join/pos/dsl/disconnect).
@@ -95,7 +99,10 @@ function tryDecodeFrame(buf) {
     } else if (len === 127) {
         if (buf.length < 10) return null;
         const big = buf.readBigUInt64BE(2);
-        if (big > 65536n) return { error: "frame_too_big" };
+        // V2.2 (Ring 11.5): Cap bei 1 MiB statt 64 KiB, damit Welt-
+        // Snapshots beim Join-Flow durchpassen (typisch 50-200 KiB,
+        // headroom für Welten mit vielen Architekturen).
+        if (big > 1048576n) return { error: "frame_too_big" };
         len = Number(big);
         offset = 10;
     }
@@ -156,7 +163,7 @@ function handleClientMessage(ws, raw) {
             .map((p) => p.anazh && p.anazh.peerId)
             .filter(Boolean);
         set.add(ws);
-        sendTo(ws, { type: "welcome", peers });
+        sendTo(ws, { type: "welcome", peers, lanAddresses: LAN_ADDRESSES });
         broadcastToRoom(room, { type: "peer-join", peerId }, ws);
         logLine("INFO", `join room=${room} peer=${peerId} size=${set.size}`);
         return;
@@ -176,10 +183,46 @@ function handleClientMessage(ws, raw) {
         // jeder Empfänger lässt es durch seinen eigenen dslRun-Sandbox-
         // Pfad laufen. Server validiert nicht (Vertrauen liegt im
         // Sandbox des Clients) — er begrenzt nur per-Frame-Größe via
-        // Decode-Cap (65 KiB) und prüft, dass program ein Array ist.
+        // Decode-Cap (1 MiB) und prüft, dass program ein Array ist.
         if (!Array.isArray(msg.program)) return;
         if (msg.program.length === 0 || msg.program.length > 256) return;
         broadcastToRoom(ws.anazh.room, { type: "dsl", peerId: ws.anazh.peerId, program: msg.program }, ws);
+        return;
+    }
+    if (msg.type === "world-request" || msg.type === "world-snapshot") {
+        // Ring 11.5: Welt-Snapshot-Transfer beim Multi-User-Join. Wer
+        // joinen will, sendet world-request (broadcast → Host antwortet);
+        // Host sendet world-snapshot mit `to: <guestPeerId>` zurück
+        // (targeted delivery, nur dieser eine Peer erhält es). Server
+        // validiert hier nicht — Sandbox + loadState-Validation des
+        // Clients sind die Vertrauens-Wand.
+        const target = typeof msg.to === "string" ? msg.to.slice(0, 64) : null;
+        const out = { type: msg.type, peerId: ws.anazh.peerId };
+        if (target) out.to = target;
+        if (msg.type === "world-request") {
+            // world-request hat keine state-payload, nur Aufforderung
+        } else if (msg.type === "world-snapshot") {
+            // world-snapshot trägt den Welt-Snapshot. Server prüft NUR
+            // dass es ein Objekt ist; der Joiner-Client führt loadState
+            // mit den üblichen Validierungs-Pfaden aus.
+            if (!msg.state || typeof msg.state !== "object") return;
+            out.state = msg.state;
+        }
+        if (target) {
+            // Targeted: nur an den expliziten Empfänger schicken
+            const set = rooms.get(ws.anazh.room);
+            if (!set) return;
+            for (const peer of set) {
+                if (peer.anazh && peer.anazh.peerId === target) {
+                    sendTo(peer, out);
+                    break;
+                }
+            }
+        } else {
+            // Broadcast (default für world-request — wir wissen nicht im
+            // Voraus, welcher Peer Host ist)
+            broadcastToRoom(ws.anazh.room, out, ws);
+        }
     }
 }
 
@@ -263,6 +306,12 @@ function listLanIPv4Addresses() {
     }
     return out;
 }
+
+// Ring 11.5: Cache der LAN-Adressen für welcome-Messages. Damit Host-
+// Clients ihre Einladungs-URL bauen können, ohne den User nach der
+// IP zu fragen. Wird einmal beim Start berechnet — Interfaces ändern
+// sich selten zur Laufzeit.
+const LAN_ADDRESSES = listLanIPv4Addresses().map((iface) => `${iface.address}:${PORT}`);
 
 server.listen(PORT, HOST, () => {
     logLine("INFO", `signaling-server lauscht auf ${HOST}:${PORT}`);

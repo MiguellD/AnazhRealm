@@ -29,6 +29,7 @@ export default [
                 HTMLElement: "readonly",
                 crypto: "readonly",
                 WebSocket: "readonly",
+                navigator: "readonly",
                 // CDN-Libs
                 THREE: "readonly",
                 Ammo: "readonly",

@@ -1,4 +1,4 @@
-/**AnazhRealm V7.70 – Das Ultiversum Vollendet.
+/**AnazhRealm V7.71 – Das Ultiversum Vollendet.
  * Hüpfen: Robust, präzise (Y ~1.5), Coyote-Time 0.3s, Gravitation 1.5G, Reibung 0.5.
  * Kollisionen: Kein Tunneling, steepnessThreshold 3.0, wallThickness 2.0, CCD optimiert.
  * Terrain: Flacher (Höhenunterschiede ±5), KI-gesteuerte Steilheitsanpassung, Chat-Steuerung.
@@ -12,7 +12,7 @@
 class AnazhRealm {
     constructor() {
         // ### Learnings ### [Stichwortartig optimieren, korrigieren, ergänzen – nie Wissen löschen!]
-        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69, LAN-Fähigkeit + Sync-Korrektheit (Ring 11 V2.1: 0.0.0.0-bind, ws:/wss:-CSP, roomOverride, spawn_*-Embedding, NON_BROADCASTABLE_OPS) in V7.70
+        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69, LAN-Fähigkeit + Sync-Korrektheit (Ring 11 V2.1: 0.0.0.0-bind, ws:/wss:-CSP, roomOverride, spawn_*-Embedding, NON_BROADCASTABLE_OPS) in V7.70, Intuitiver Multi-User-Setup (Ring 11.5: Modus-Wahl, Host-Banner mit Einladungs-Code, Auto-Welt-Snapshot beim Join) in V7.71
         // - Nexus als Herz der Selbstentwicklung, steuert nun alles über Chat, unzerstörbar und unendlich
         this.state = {
             // ### Kern ###
@@ -94,7 +94,7 @@ class AnazhRealm {
             maxVersionHistoryEntries: 50,
             maxCreatures: 120,
             maxLoadedChunks: 196,
-            currentVersion: "7.70",
+            currentVersion: "7.71",
             terrainSteepness: 1.0,
             terrainBaseHeight: 0.0,
             weather: "sunny",
@@ -245,11 +245,6 @@ class AnazhRealm {
                 url: "ws://127.0.0.1:4313",
                 peerId: null,
                 room: null,
-                // Ring 11 V2.1: explizite Raum-Override. Leer/null = aktive
-                // worldId wird genommen (Default). Wer anderswo joinen will
-                // (gemeinsamer Raum für unterschiedliche Welten, oder
-                // mehr-Spieler auf verschiedenen Maschinen mit gleicher
-                // Raum-ID), trägt hier eine eigene ID ein.
                 roomOverride: "",
                 ws: null,
                 peers: new Map(),
@@ -257,6 +252,19 @@ class AnazhRealm {
                 lastBroadcastAt: 0,
                 lastError: null,
                 connected: false,
+                // Ring 11.5: Rolle in dieser Welt. "solo" = lokale Welt,
+                // p2p nicht gestartet. "host" = ich habe die Welt
+                // erschaffen, andere joinen zu mir. "guest" = ich bin zu
+                // einem Host gejoint, meine Welt ist eine Kopie. Wird
+                // primär aus state.worldMeta.role gespiegelt; hier nur
+                // Runtime-Convenience.
+                role: "solo",
+                pendingWorldSnapshot: false,
+                // Ring 11.5: LAN-Adressen vom signaling-server (kommt im
+                // welcome-Message). Wird vom Host für die Einladungs-URL
+                // genutzt: nicht ws://127.0.0.1:..., sondern die LAN-IP,
+                // die Mitspieler erreichen können.
+                lanAddresses: [],
             },
             // Welt-Identität (Ring 8+, siehe docs/state-of-realm.md §11). Felder
             // werden jetzt schon gesetzt, damit das Save-Schema zukunftsfest
@@ -276,13 +284,18 @@ class AnazhRealm {
                 // Spieler seine erste Welt nicht visuell verliert.
                 seed: null,
                 schemaVersion: "8.0-multiworld-v1",
-                // Ring 10.5: pro-Chunk Delta-Liste für Welt-Modifikationen
-                // (graben/aufschütten). Keyed mit "cx,cz". Jeder Eintrag
-                // {ops: [{type, x, z, r, dh, at}]}. Wird in ensureChunkAt
-                // nach Geometrie-Build replayed; modify_terrain schreibt
-                // Ops in alle vom Radius berührten Chunks. Initial leer,
-                // Cap 100 Ops/Chunk gegen unbegrenzten Wuchs.
                 chunkDeltas: {},
+                // Ring 11.5: Welt-Beziehungs-Rolle.
+                //   "solo"  = lokale, private Welt (Default)
+                //   "host"  = ich erschuf diese Welt für Multi-User, lade andere ein
+                //   "guest" = ich bin zu einem Host gejoint, Welt ist eine Kopie
+                // Bei "host" und "guest" startet Multi-User-Sync automatisch
+                // beim Init (statt manueller Toggle-Klick).
+                role: "solo",
+                // Ring 11.5: bei "guest" — wohin verbinden wir uns initial?
+                // null bei solo/host. Wird beim Join-Pfad gefüllt mit
+                // {url, roomId} aus dem Einladungs-Code.
+                hostInfo: null,
             },
             // Welle 1 D — Welt-Journal. Geordnete Liste von Erinnerungen
             // (Genesis, erstes Wetter, erste Kreatur, hochfitness Programme,
@@ -427,7 +440,7 @@ class AnazhRealm {
     // ### Logging ###
     log(message, level = "INFO") {
         if (level === "DEBUG" && !this.state.debugLogging) return;
-        const logMessage = `[AnazhRealm V7.70] [${level}] ${message}`;
+        const logMessage = `[AnazhRealm V7.71] [${level}] ${message}`;
         this.state.logBuffer.push(logMessage);
         console.log(logMessage);
         if (this.state.logBuffer.length > this.state.maxLogEntries) {
@@ -2656,6 +2669,194 @@ class AnazhRealm {
         return `p-${t}-${rnd}`;
     }
 
+    // Ring 11.5: Einladungs-Code-Format `anazh://host:port/roomId`. Kompakt,
+    // copy-paste-freundlich, im Browser klickbar (sobald jemand das
+    // anazh://-Protokoll registriert). Eine Zeile — passt in Chat, Mail, SMS.
+    makeInvitationCode(url, roomId) {
+        if (typeof url !== "string" || typeof roomId !== "string") return null;
+        let host = "";
+        let port = "";
+        try {
+            // WebSocket-URLs (ws:// oder wss://) — URL-Parser kann ws nicht
+            // direkt, also via http-Prefix-Trick.
+            const m = url.trim().match(/^wss?:\/\/([^:/]+)(?::(\d+))?/i);
+            if (!m) return null;
+            host = m[1];
+            port = m[2] || "4313";
+        } catch {
+            return null;
+        }
+        // worldId-Format ist UUID-ähnlich (z. B. "w-1k7p-abcdef..."); wir
+        // nehmen das KOMPLETT, kein Hash — Eindeutigkeit + room-Match nötig.
+        return `anazh://${host}:${port}/${roomId}`;
+    }
+
+    parseInvitationCode(code) {
+        if (typeof code !== "string") return null;
+        const trimmed = code.trim();
+        if (!trimmed) return null;
+        // Format: anazh://host:port/roomId
+        // Auch tolerant für bloßes "host:port/roomId" oder mit ws:// statt anazh://
+        let normalized = trimmed;
+        if (/^anazh:\/\//i.test(normalized)) normalized = normalized.replace(/^anazh:\/\//i, "ws://");
+        else if (!/^wss?:\/\//i.test(normalized)) normalized = "ws://" + normalized;
+        const m = normalized.match(/^(wss?):\/\/([^:/]+)(?::(\d+))?\/(.+)$/i);
+        if (!m) return null;
+        const scheme = m[1].toLowerCase();
+        const host = m[2];
+        const port = m[3] || "4313";
+        const roomId = m[4];
+        if (!roomId || roomId.length < 4 || roomId.length > 80) return null;
+        return { url: `${scheme}://${host}:${port}`, roomId };
+    }
+
+    // Ring 11.5: Join-Flow. Öffnet kurz-lebige WS-Verbindung, sendet join +
+    // world-request, wartet auf world-snapshot, speichert die Welt unter der
+    // host-worldId mit role="guest" + hostInfo, aktiviert die Welt + Reload.
+    // Async — Aufrufer bekommt Promise<{worldId} | null>.
+    async joinWorldFromCode(code, { slugHint = null, timeoutMs = 10000 } = {}) {
+        const parsed = this.parseInvitationCode(code);
+        if (!parsed) {
+            this.log("Einladungs-Code ungültig", "WARN");
+            return { ok: false, reason: "invalid_code" };
+        }
+        if (typeof WebSocket === "undefined") {
+            return { ok: false, reason: "no_websocket" };
+        }
+        const myPeerId = this.p2pGenerateId();
+        return new Promise((resolve) => {
+            let ws;
+            try {
+                ws = new WebSocket(parsed.url);
+            } catch (err) {
+                this.log(`Join-WS-Aufbau gescheitert: ${err.message}`, "ERROR");
+                resolve({ ok: false, reason: "ws_throw" });
+                return;
+            }
+            let done = false;
+            const finish = (result) => {
+                if (done) return;
+                done = true;
+                try {
+                    ws.close();
+                } catch {
+                    /* defensive */
+                }
+                resolve(result);
+            };
+            const timeout = setTimeout(() => {
+                this.log("Join-Timeout — kein world-snapshot vom Host innerhalb " + timeoutMs + " ms", "WARN");
+                finish({ ok: false, reason: "timeout" });
+            }, timeoutMs);
+            ws.addEventListener("open", () => {
+                try {
+                    ws.send(JSON.stringify({ type: "join", room: parsed.roomId, peerId: myPeerId }));
+                } catch {
+                    /* defensive */
+                }
+                // Welcome abwarten ist optional — wir können request direkt
+                // schicken. Server forwarded an alle anderen im Raum (Host).
+                setTimeout(() => {
+                    if (done) return;
+                    try {
+                        ws.send(JSON.stringify({ type: "world-request" }));
+                    } catch {
+                        /* defensive */
+                    }
+                }, 300);
+            });
+            ws.addEventListener("message", (event) => {
+                let msg;
+                try {
+                    msg = JSON.parse(event.data);
+                } catch {
+                    return;
+                }
+                if (!msg || typeof msg !== "object") return;
+                if (msg.type !== "world-snapshot") return;
+                if (!msg.state || typeof msg.state !== "object") return;
+                clearTimeout(timeout);
+                const hostInfo = {
+                    url: parsed.url,
+                    roomId: parsed.roomId,
+                    peerId: typeof msg.peerId === "string" ? msg.peerId : null,
+                };
+                const worldId = this._importGuestWorld(msg.state, hostInfo, slugHint);
+                finish(worldId ? { ok: true, worldId } : { ok: false, reason: "import_failed" });
+            });
+            ws.addEventListener("error", () => {
+                clearTimeout(timeout);
+                this.log("Join-WS-Fehler — läuft der signaling-server am Host?", "ERROR");
+                finish({ ok: false, reason: "ws_error" });
+            });
+        });
+    }
+
+    // Ring 11.5: Welt-Snapshot vom Host → neue lokale Welt mit role="guest".
+    // worldId wird vom Host übernommen, damit beide Spieler standardmäßig
+    // im selben P2P-Raum landen (Raum = worldId, V2.1).
+    _importGuestWorld(snapshot, hostInfo, slugHint) {
+        if (!snapshot || typeof snapshot !== "object") return null;
+        const meta = snapshot.worldMeta || {};
+        const worldId = (meta.worldId && String(meta.worldId)) || `guest-${Date.now()}`;
+        const baseSlug = (slugHint && String(slugHint).trim()) || meta.slug || "geladen";
+        // Slug-Kollisions-Resolution (analog Ring 9 importWorldBeside)
+        let slug =
+            String(baseSlug)
+                .toLowerCase()
+                .replace(/[^a-z0-9-]+/g, "-")
+                .replace(/^-+|-+$/g, "")
+                .slice(0, 40) || "geladen";
+        const existing = this.worldsIndexLoad();
+        let suffix = 2;
+        const slugs = new Set(existing.map((e) => e.slug));
+        const originalSlug = slug;
+        while (slugs.has(slug)) {
+            slug = `${originalSlug}-${suffix++}`;
+        }
+        // Deep clone, role + hostInfo setzen
+        let guestSnap;
+        try {
+            guestSnap = JSON.parse(JSON.stringify(snapshot));
+        } catch (err) {
+            this.log(`Guest-Welt-Clone fehlgeschlagen: ${err.message}`, "ERROR");
+            return null;
+        }
+        if (!guestSnap.worldMeta) guestSnap.worldMeta = {};
+        guestSnap.worldMeta.worldId = worldId;
+        guestSnap.worldMeta.slug = slug;
+        guestSnap.worldMeta.role = "guest";
+        guestSnap.worldMeta.hostInfo = {
+            url: hostInfo.url || null,
+            roomId: hostInfo.roomId || worldId,
+            peerId: hostInfo.peerId || null,
+        };
+        guestSnap.worldMeta.schemaVersion = guestSnap.worldMeta.schemaVersion || "11.5-multiuser-v1";
+        try {
+            localStorage.setItem(this.worldStorageKey(worldId), JSON.stringify(guestSnap));
+        } catch (err) {
+            this.log(`Guest-Welt konnte nicht geschrieben werden: ${err.message}`, "ERROR");
+            return null;
+        }
+        this.worldsIndexUpsert({
+            worldId,
+            slug,
+            bornAt: meta.bornAt || Date.now(),
+            lastPlayed: Date.now(),
+        });
+        // P2P-Settings für Auto-Connect nach Reload schreiben
+        try {
+            localStorage.setItem("anazh.p2p.enabled", "true");
+            localStorage.setItem("anazh.p2p.url", hostInfo.url || "ws://127.0.0.1:4313");
+            localStorage.setItem("anazh.p2p.room", ""); // default = worldId = sync room
+        } catch {
+            /* defensive */
+        }
+        this.activeWorldSet(worldId);
+        this.log(`Guest-Welt importiert: ${slug} (${worldId.slice(0, 8)}…)`, "INFO");
+        return worldId;
+    }
+
     initP2PSync(roomId, opts = {}) {
         const p2p = this.state.p2p;
         if (p2p.ws) this.shutdownP2PSync();
@@ -2755,6 +2956,18 @@ class AnazhRealm {
                     if (typeof pid === "string" && pid !== p2p.peerId) this._p2pEnsurePeerEntry(pid);
                 }
             }
+            // Ring 11.5: Server schickt seine LAN-Adressen mit, damit Host-
+            // Clients ihre Einladungs-URL bauen können ohne nach der IP
+            // zu fragen. Bei mehreren Interfaces nehmen wir die erste —
+            // typisch das primäre LAN-Interface.
+            if (Array.isArray(msg.lanAddresses)) {
+                p2p.lanAddresses = msg.lanAddresses.filter((a) => typeof a === "string");
+            }
+            // Falls wir gerade als Host aktiv sind: UI mit Einladungs-Code
+            // neu rendern, sobald wir die LAN-Adressen kennen.
+            if (p2p.role === "host" && typeof this.updateWorldInfo === "function") {
+                this.updateWorldInfo();
+            }
             return;
         }
         if (msg.type === "peer-join") {
@@ -2792,12 +3005,70 @@ class AnazhRealm {
             const pid = msg.peerId;
             if (typeof pid !== "string" || pid === p2p.peerId) return;
             if (!Array.isArray(msg.program) || msg.program.length === 0) return;
-            // Eigene peerId nicht trauen (Server sollte das schon
-            // entkoppeln, aber doppelt-defensive).
             try {
                 this.dslRun(msg.program, { source: `remote:${pid}` });
             } catch (err) {
                 this.log(`P2P-DSL Ausführungsfehler von ${pid}: ${err.message}`, "WARN");
+            }
+            return;
+        }
+        if (msg.type === "world-request") {
+            // Ring 11.5: ein Peer (frischer Joiner) bittet um Welt-Snapshot.
+            // Nur Hosts antworten — Guests haben selbst eine Kopie, sollen
+            // nicht mehrere snapshots schicken. Solo-Welten sind sowieso
+            // nicht im selben Raum.
+            if (p2p.role !== "host") return;
+            const requesterId = msg.peerId;
+            if (typeof requesterId !== "string" || requesterId === p2p.peerId) return;
+            try {
+                const snapshot = this.buildStateSnapshot();
+                this.p2pSend({ type: "world-snapshot", to: requesterId, state: snapshot });
+                this.log(`Welt-Snapshot an Joiner ${requesterId.slice(0, 8)}… gesendet`, "INFO");
+            } catch (err) {
+                this.log(`Welt-Snapshot konnte nicht erstellt werden: ${err.message}`, "WARN");
+            }
+            return;
+        }
+        if (msg.type === "world-snapshot") {
+            // Ring 11.5: eingehender Welt-Snapshot vom Host. Wird nur
+            // akzeptiert, wenn wir gerade joinen (pendingWorldSnapshot=true)
+            // — sonst könnte ein bösartiger Peer den Spielstand stehlen.
+            if (!p2p.pendingWorldSnapshot) {
+                this.log("world-snapshot empfangen ohne pending-Flag — ignoriert", "WARN");
+                return;
+            }
+            const senderId = msg.peerId;
+            if (typeof senderId !== "string" || senderId === p2p.peerId) return;
+            if (!msg.state || typeof msg.state !== "object") return;
+            // Snapshot übernehmen: setze worldMeta.role = "guest", merke
+            // host-Info, dann loadState. Reload danach via UI-Pfad.
+            try {
+                // worldMeta.role wird durch loadState überschrieben — wir
+                // müssen es NACHHER auf guest setzen + persistieren.
+                this.loadState(msg.state);
+                if (this.state.worldMeta) {
+                    this.state.worldMeta.role = "guest";
+                    this.state.worldMeta.hostInfo = {
+                        url: p2p.url,
+                        roomId: p2p.room,
+                        peerId: senderId,
+                    };
+                }
+                p2p.role = "guest";
+                p2p.pendingWorldSnapshot = false;
+                // Save sofort schreiben, damit Reload die guest-Welt findet
+                try {
+                    this.saveState();
+                } catch (err) {
+                    this.log(`Save nach Welt-Snapshot fehlgeschlagen: ${err.message}`, "WARN");
+                }
+                this.log(`Welt-Snapshot empfangen + geladen, jetzt Guest in ${p2p.room.slice(0, 8)}…`, "INFO");
+                // UI-Banner ggf. updaten
+                this.p2pUpdateStatus();
+                this.updateWorldInfo();
+            } catch (err) {
+                this.log(`Welt-Snapshot konnte nicht geladen werden: ${err.message}`, "ERROR");
+                p2p.pendingWorldSnapshot = false;
             }
         }
     }
@@ -2954,23 +3225,24 @@ class AnazhRealm {
 
     p2pUpdateStatus() {
         const statusEl = document.getElementById("p2p-status");
-        if (!statusEl) return;
-        const p = this.state.p2p;
-        if (!p.enabled) {
-            statusEl.textContent = "Inaktiv.";
-            return;
+        if (statusEl) {
+            const p = this.state.p2p;
+            if (!p.enabled) {
+                statusEl.textContent = "Inaktiv.";
+            } else if (p.lastError) {
+                statusEl.textContent = `Fehler: ${p.lastError}`;
+            } else if (!p.connected) {
+                statusEl.textContent = "Verbinde…";
+            } else {
+                const room = p.room ? `${p.room.slice(0, 8)}…` : "—";
+                const peerCount = p.peers.size;
+                statusEl.textContent = `Verbunden (Raum ${room}, ${peerCount} Mitspieler).`;
+            }
         }
-        if (p.lastError) {
-            statusEl.textContent = `Fehler: ${p.lastError}`;
-            return;
-        }
-        if (!p.connected) {
-            statusEl.textContent = "Verbinde…";
-            return;
-        }
-        const room = p.room ? `${p.room.slice(0, 8)}…` : "—";
-        const peerCount = p.peers.size;
-        statusEl.textContent = `Verbunden (Raum ${room}, ${peerCount} Mitspieler).`;
+        // Ring 11.5: Banner mit Connection-Stand aktualisieren (Host:
+        // peerCount, Guest: connected-Indikator).
+        if (typeof this._renderHostBanner === "function") this._renderHostBanner();
+        if (typeof this._renderGuestBanner === "function") this._renderGuestBanner();
     }
 
     // ### Ring 2 Phase 3 – Chat → DSL ###
@@ -4126,7 +4398,7 @@ class AnazhRealm {
             // sonst auf die zu tiefe Höhe, statt einen Spawn-Fall zu lassen.
             playerPosition: { x: 0, y: 50, z: 0 },
             knowledgeBase: [],
-            version: this.state.currentVersion || "7.70",
+            version: this.state.currentVersion || "7.71",
             selfAwareness: { components: [], weaknesses: [] },
             creatures: [],
             creatureEmotions: [],
@@ -4225,7 +4497,7 @@ class AnazhRealm {
     // standardmäßig aus, damit Tests die Daten-Schicht prüfen können ohne
     // Page-Reload. UI-Aufrufer hängen explizit ein `window.location.reload()`
     // nach erfolgreichem Aufruf an.
-    createNewWorld({ slug = null, inheritPlayer = false, reload = false } = {}) {
+    createNewWorld({ slug = null, inheritPlayer = false, reload = false, role = "solo" } = {}) {
         // Aktuelle Welt zuerst sichern, sonst geht der Stand verloren.
         if (this.state.worldMeta && this.state.worldMeta.worldId) {
             try {
@@ -4236,6 +4508,11 @@ class AnazhRealm {
         }
         const meta = this._generateFreshWorldMeta(slug);
         const snap = this._buildEmptyWorldSnapshot(meta, inheritPlayer);
+        // Ring 11.5: Rolle in worldMeta einsetzen (default "solo"). Bei
+        // "host"/"guest" startet Init nach Reload automatisch Multi-User-Sync.
+        if (role === "host" || role === "guest") {
+            snap.worldMeta.role = role;
+        }
         try {
             localStorage.setItem(this.worldStorageKey(meta.worldId), JSON.stringify(snap));
         } catch (err) {
@@ -7273,11 +7550,151 @@ class AnazhRealm {
         this.updateWorldInfo();
     }
 
-    // Ring 8: Inline-Dialog für „Neue Welt"-Erschaffung. Bewusst minimal,
-    // kein <dialog>-Element — wir benutzen prompt+confirm, damit das UI keine
-    // neuen Markup-Schichten braucht. Painterly-Polish kann später als
-    // eigener Commit kommen.
+    // Ring 11.5: Welt-Erstellungs-Dialog mit Modus + Rolle. Ersetzt die
+    // alte prompt/confirm-Sequenz aus Ring 8 — UX-Sprung zum Native-<dialog>
+    // mit Painterly-Stil. Drei Pfade:
+    //   1) Allein → klassische private Welt (createNewWorld)
+    //   2) Host → createNewWorld mit role="host", Auto-Start P2P nach Reload,
+    //      Banner zeigt Einladungs-Code
+    //   3) Joinen → joinWorldFromCode (kurze WS-Verbindung, world-request,
+    //      world-snapshot, _importGuestWorld, Reload in die Guest-Welt)
     _openNewWorldDialog() {
+        const dialog = document.getElementById("new-world-dialog");
+        if (!dialog || typeof dialog.showModal !== "function") {
+            // Fallback wenn <dialog> nicht supported (alte Browser, headless?)
+            this._openNewWorldDialogLegacy();
+            return;
+        }
+        const slugInput = document.getElementById("new-world-slug");
+        const modeRadios = dialog.querySelectorAll('input[name="new-world-mode"]');
+        const roleFieldset = dialog.querySelector(".new-world-role");
+        const roleRadios = dialog.querySelectorAll('input[name="new-world-role"]');
+        const joinRow = document.getElementById("new-world-join-row");
+        const inviteInput = document.getElementById("new-world-invite");
+        const inheritInput = document.getElementById("new-world-inherit");
+        const statusEl = document.getElementById("new-world-status");
+        const cancelBtn = document.getElementById("new-world-cancel");
+        const confirmBtn = document.getElementById("new-world-confirm");
+
+        // Reset state bei jedem Öffnen
+        slugInput.value = "";
+        inviteInput.value = "";
+        inheritInput.checked = false;
+        statusEl.textContent = "";
+        confirmBtn.disabled = false;
+        // Mode default auf solo
+        for (const r of modeRadios) r.checked = r.value === "solo";
+        for (const r of roleRadios) r.checked = r.value === "host";
+        roleFieldset.hidden = true;
+        joinRow.hidden = true;
+
+        const updateConditionals = () => {
+            const mode = dialog.querySelector('input[name="new-world-mode"]:checked').value;
+            const role = dialog.querySelector('input[name="new-world-role"]:checked').value;
+            roleFieldset.hidden = mode !== "multi";
+            joinRow.hidden = !(mode === "multi" && role === "join");
+        };
+        for (const r of modeRadios) r.addEventListener("change", updateConditionals);
+        for (const r of roleRadios) r.addEventListener("change", updateConditionals);
+
+        const cleanup = () => {
+            // Listener entfernen verhindert doppelte Bindings bei Re-Open
+            for (const r of modeRadios) r.removeEventListener("change", updateConditionals);
+            for (const r of roleRadios) r.removeEventListener("change", updateConditionals);
+            cancelBtn.removeEventListener("click", onCancel);
+            confirmBtn.removeEventListener("click", onConfirm);
+        };
+
+        const onCancel = () => {
+            cleanup();
+            dialog.close();
+        };
+
+        const onConfirm = async () => {
+            const mode = dialog.querySelector('input[name="new-world-mode"]:checked').value;
+            const slug = slugInput.value.trim();
+            const inherit = !!inheritInput.checked;
+            confirmBtn.disabled = true;
+            statusEl.textContent = "";
+
+            if (mode === "solo") {
+                const id = this.createNewWorld({
+                    slug: slug || null,
+                    inheritPlayer: inherit,
+                    reload: true,
+                    role: "solo",
+                });
+                if (!id) statusEl.textContent = "Welt konnte nicht erschaffen werden — siehe Konsole.";
+                cleanup();
+                if (id) dialog.close();
+                else confirmBtn.disabled = false;
+                return;
+            }
+
+            const role = dialog.querySelector('input[name="new-world-role"]:checked').value;
+            if (role === "host") {
+                const id = this.createNewWorld({
+                    slug: slug || null,
+                    inheritPlayer: inherit,
+                    reload: true,
+                    role: "host",
+                });
+                if (!id) {
+                    statusEl.textContent = "Welt konnte nicht erschaffen werden.";
+                    confirmBtn.disabled = false;
+                    return;
+                }
+                cleanup();
+                dialog.close();
+                return;
+            }
+
+            // role === "join"
+            const code = inviteInput.value.trim();
+            if (!code) {
+                statusEl.textContent = "Bitte Einladungs-Code eingeben.";
+                confirmBtn.disabled = false;
+                return;
+            }
+            statusEl.textContent = "Verbinde mit Host…";
+            const result = await this.joinWorldFromCode(code, { slugHint: slug || null });
+            if (!result.ok) {
+                const reason = {
+                    invalid_code: "Einladungs-Code ist ungültig. Erwartet: anazh://host:port/raumId",
+                    timeout: "Timeout — Host antwortet nicht. Läuft der signaling-server beim Host?",
+                    ws_error: "Verbindung gescheitert — IP + Port + Firewall prüfen.",
+                    ws_throw: "WebSocket konnte nicht geöffnet werden.",
+                    import_failed: "Welt-Snapshot konnte nicht importiert werden.",
+                    no_websocket: "Dieser Browser unterstützt WebSocket nicht.",
+                };
+                statusEl.textContent = reason[result.reason] || `Fehler: ${result.reason}`;
+                confirmBtn.disabled = false;
+                return;
+            }
+            statusEl.textContent = "Welt empfangen — lade…";
+            cleanup();
+            dialog.close();
+            // Reload in die Guest-Welt
+            try {
+                window.location.reload();
+            } catch {
+                /* headless */
+            }
+        };
+
+        cancelBtn.addEventListener("click", onCancel);
+        confirmBtn.addEventListener("click", onConfirm);
+        try {
+            dialog.showModal();
+        } catch {
+            // Fallback bei modal-Konflikten
+            this._openNewWorldDialogLegacy();
+        }
+    }
+
+    // Legacy-Fallback (prompt/confirm) für Umgebungen ohne <dialog>-Support
+    // oder bei UI-Fehlern. Ring 8 Original-Pfad.
+    _openNewWorldDialogLegacy() {
         let slugRaw = "";
         try {
             slugRaw = window.prompt("Wie soll die neue Welt heißen? (leer = automatisch)", "") || "";
@@ -7300,7 +7717,7 @@ class AnazhRealm {
             try {
                 window.alert("Neue Welt konnte nicht erschaffen werden. Siehe Konsole.");
             } catch {
-                // headless: kein alert
+                /* headless */
             }
         }
     }
@@ -7328,6 +7745,119 @@ class AnazhRealm {
         this.renderWorldJournal();
         this._renderWorldPicker();
         this._renderWorldLineage();
+        this._renderHostBanner();
+        this._renderGuestBanner();
+    }
+
+    // Ring 11.5: Host-Banner. Sichtbar nur wenn worldMeta.role === "host".
+    // Zeigt den Einladungs-Code, den der Host an Mitspieler weitergibt.
+    // URL wird aus den LAN-Adressen des signaling-servers gewählt (im
+    // welcome-Message vom Server gesendet). Fallback: aktuelle p2p.url.
+    _renderHostBanner() {
+        const banner = document.getElementById("world-host-banner");
+        if (!banner) return;
+        const role = this.state.worldMeta && this.state.worldMeta.role;
+        if (role !== "host") {
+            banner.hidden = true;
+            banner.innerHTML = "";
+            return;
+        }
+        const worldId = this.state.worldMeta.worldId;
+        if (!worldId) {
+            banner.hidden = true;
+            return;
+        }
+        // Bevorzuge LAN-Adresse, wenn vorhanden — sonst was im URL-Feld steht.
+        const lanAddrs = (this.state.p2p && this.state.p2p.lanAddresses) || [];
+        let inviteUrl;
+        if (lanAddrs.length > 0) {
+            inviteUrl = `ws://${lanAddrs[0]}`;
+        } else {
+            inviteUrl = (this.state.p2p && this.state.p2p.url) || "ws://127.0.0.1:4313";
+        }
+        const code = this.makeInvitationCode(inviteUrl, worldId) || "(Code-Erzeugung fehlgeschlagen)";
+        const connected = this.state.p2p && this.state.p2p.connected;
+        const peerCount = (this.state.p2p && this.state.p2p.peers && this.state.p2p.peers.size) || 0;
+        banner.hidden = false;
+        banner.innerHTML = "";
+        const line1 = document.createElement("div");
+        line1.innerHTML = `<strong>Du hostest diese Welt.</strong> Status: ${
+            connected ? "Bereit für Mitspieler" : "Verbinde…"
+        }${peerCount > 0 ? ` (${peerCount} verbunden)` : ""}`;
+        const line2 = document.createElement("div");
+        line2.style.marginTop = "0.35em";
+        line2.textContent = "Einladungs-Code für Mitspieler:";
+        const codeRow = document.createElement("div");
+        codeRow.style.marginTop = "0.3em";
+        codeRow.style.display = "flex";
+        codeRow.style.alignItems = "center";
+        codeRow.style.flexWrap = "wrap";
+        codeRow.style.gap = "0.4em";
+        const codeEl = document.createElement("code");
+        codeEl.textContent = code;
+        codeRow.appendChild(codeEl);
+        const copyBtn = document.createElement("button");
+        copyBtn.type = "button";
+        copyBtn.className = "invite-copy-btn";
+        copyBtn.textContent = "kopieren";
+        copyBtn.addEventListener("click", () => {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(code).then(
+                    () => {
+                        copyBtn.textContent = "kopiert!";
+                        setTimeout(() => (copyBtn.textContent = "kopieren"), 1500);
+                    },
+                    () => {
+                        copyBtn.textContent = "Code: " + code;
+                    }
+                );
+            } else {
+                copyBtn.textContent = "Code: " + code;
+            }
+        });
+        codeRow.appendChild(copyBtn);
+        banner.appendChild(line1);
+        banner.appendChild(line2);
+        banner.appendChild(codeRow);
+        if (lanAddrs.length === 0) {
+            const hint = document.createElement("div");
+            hint.style.marginTop = "0.4em";
+            hint.style.fontSize = "0.85em";
+            hint.style.opacity = "0.8";
+            hint.textContent =
+                "Hinweis: Server hat noch keine LAN-Adresse zurückgemeldet. Der Code zeigt deine eingestellte URL — falls 127.0.0.1, müssen Mitspieler die Lan-IP manuell ersetzen.";
+            banner.appendChild(hint);
+        }
+    }
+
+    // Ring 11.5: Guest-Banner. Sichtbar wenn worldMeta.role === "guest".
+    // Zeigt die Host-Verbindungs-Info als Orientierung.
+    _renderGuestBanner() {
+        const banner = document.getElementById("world-guest-banner");
+        if (!banner) return;
+        const role = this.state.worldMeta && this.state.worldMeta.role;
+        if (role !== "guest") {
+            banner.hidden = true;
+            banner.innerHTML = "";
+            return;
+        }
+        const hostInfo = this.state.worldMeta.hostInfo || {};
+        const connected = this.state.p2p && this.state.p2p.connected;
+        const peerCount = (this.state.p2p && this.state.p2p.peers && this.state.p2p.peers.size) || 0;
+        banner.hidden = false;
+        banner.innerHTML = "";
+        const line1 = document.createElement("div");
+        line1.innerHTML = `<strong>Du bist Gast in dieser Welt.</strong> Status: ${
+            connected ? "Verbunden" : "Verbinde…"
+        }${peerCount > 0 ? ` (${peerCount} im Raum)` : ""}`;
+        const line2 = document.createElement("div");
+        line2.style.marginTop = "0.35em";
+        line2.style.fontSize = "0.88em";
+        const url = hostInfo.url || "?";
+        const room = hostInfo.roomId ? hostInfo.roomId.slice(0, 8) + "…" : "?";
+        line2.textContent = `Host: ${url} · Raum: ${room}`;
+        banner.appendChild(line1);
+        banner.appendChild(line2);
     }
 
     // Ring 8: Welt-Picker rendert die Liste der anderen Welten im Index.
@@ -8769,7 +9299,7 @@ class AnazhRealm {
                 ...((Array.isArray(saveA.knowledgeBase) && saveA.knowledgeBase.slice(-100)) || []),
                 ...((Array.isArray(saveB.knowledgeBase) && saveB.knowledgeBase.slice(-100)) || []),
             ].slice(-200),
-            version: this.state.currentVersion || "7.70",
+            version: this.state.currentVersion || "7.71",
             selfAwareness: { components: [], weaknesses: [] },
             creatures: [],
             creatureEmotions: [],
@@ -11672,7 +12202,7 @@ class AnazhRealm {
     }
 
     async init() {
-        this.log("Initialisiere Anazh Realm V7.70... Ewigkeit erwacht!", "INFO");
+        this.log("Initialisiere Anazh Realm V7.71... Ewigkeit erwacht!", "INFO");
         this.themeInitDOM();
         this.grokInitDOM();
         this.symphonyInitDOM();
@@ -11710,6 +12240,18 @@ class AnazhRealm {
         // Ring 11 V1 — Auto-Connect, falls Spieler die Verbindung letztes
         // Mal aktiv gelassen hat. ensureWorldMeta lief eben, also gibt es
         // jetzt eine worldId als Raum-Default.
+        // Ring 11.5: zusätzlich Auto-Connect, wenn worldMeta.role === "host"
+        // oder "guest" — der Modus ist welt-intrinsisch (im Dialog gewählt),
+        // soll nicht beim Reload jedes Mal manuell aktiviert werden müssen.
+        if (this.state.worldMeta) {
+            const role = this.state.worldMeta.role;
+            if (role === "host" || role === "guest") {
+                this.state.p2p.enabled = true;
+                this.state.p2p.role = role;
+                // Guests bekamen vom Importer hostInfo.url ins localStorage
+                // gespeichert; p2pLoadPersisted oben hat das schon aufgenommen.
+            }
+        }
         if (this.state.p2p.enabled) {
             this.initP2PSync(null);
         }

@@ -29,7 +29,7 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self';"
         />
-        <title>Anazh Realm v7.70 – Das Ultiversum</title>
+        <title>Anazh Realm v7.71 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
              zusätzliche Datei. img-src 'self' data: in CSP erlaubt data-URI. -->
         <link
@@ -762,6 +762,139 @@
                 font-size: 0.95em;
             }
             .world-fusion-confirm:hover {
+                background: rgba(180, 140, 80, 0.32);
+            }
+            /* Ring 11.5 — Neue-Welt-Dialog. Selbes Painterly-Schema wie Fusion. */
+            #new-world-dialog {
+                background:
+                    radial-gradient(circle at top left, rgba(255, 245, 220, 0.95) 0%, rgba(240, 220, 180, 0.95) 100%),
+                    var(--parch-1);
+                color: var(--parch-ink);
+                border: 1.5px solid var(--brass-1, #8b6a3f);
+                border-radius: 6px;
+                box-shadow:
+                    0 12px 40px rgba(0, 0, 0, 0.55),
+                    0 0 0 3px rgba(180, 140, 80, 0.18);
+                padding: 1.4em 1.6em;
+                max-width: 540px;
+                font-family: Georgia, serif;
+            }
+            #new-world-dialog::backdrop {
+                background: rgba(20, 14, 6, 0.55);
+                backdrop-filter: blur(2px);
+            }
+            #new-world-dialog h2 {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 1.25em;
+                margin: 0 0 0.4em;
+                color: var(--parch-ink);
+                letter-spacing: 0.04em;
+            }
+            #new-world-summary {
+                margin: 0 0 0.9em;
+                line-height: 1.5;
+                font-style: italic;
+            }
+            .new-world-row {
+                display: flex;
+                align-items: center;
+                gap: 0.6em;
+                margin: 0.55em 0;
+            }
+            .new-world-row label {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 0.92em;
+                letter-spacing: 0.02em;
+            }
+            .new-world-row input[type="text"] {
+                flex: 1;
+                padding: 0.35em 0.55em;
+                background: rgba(255, 250, 235, 0.85);
+                border: 1px solid var(--brass-2, #b48c50);
+                border-radius: 3px;
+                color: var(--parch-ink);
+                font-family: inherit;
+            }
+            .new-world-mode,
+            .new-world-role {
+                border: 1px solid var(--brass-2, #b48c50);
+                border-radius: 4px;
+                padding: 0.6em 0.9em;
+                margin: 0.9em 0;
+            }
+            .new-world-mode legend,
+            .new-world-role legend {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 0.95em;
+                padding: 0 0.4em;
+                letter-spacing: 0.03em;
+            }
+            .new-world-mode label,
+            .new-world-role label {
+                display: flex;
+                gap: 0.5em;
+                align-items: baseline;
+                padding: 0.4em 0;
+                cursor: pointer;
+                line-height: 1.5;
+            }
+            .new-world-footer {
+                display: flex;
+                justify-content: flex-end;
+                gap: 0.5em;
+                border-top: 1px solid var(--parch-edge, rgba(140, 100, 60, 0.25));
+                padding-top: 0.7em;
+                margin-top: 0.8em;
+            }
+            .new-world-footer button {
+                background: rgba(180, 140, 80, 0.18);
+                color: var(--parch-ink);
+                border: 1px solid var(--brass-1, #8b6a3f);
+                padding: 0.5em 1.2em;
+                border-radius: 3px;
+                cursor: pointer;
+                font-family: "Cinzel", Georgia, serif;
+                letter-spacing: 0.04em;
+                font-size: 0.95em;
+            }
+            .new-world-footer button:hover {
+                background: rgba(180, 140, 80, 0.32);
+            }
+            #new-world-status {
+                margin-top: 0.5em;
+                font-style: italic;
+                min-height: 1.3em;
+            }
+            #world-host-banner,
+            #world-guest-banner {
+                margin-top: 0.6em;
+                padding: 0.5em 0.7em;
+                background: rgba(180, 140, 80, 0.10);
+                border-left: 3px solid var(--brass-1, #8b6a3f);
+                border-radius: 0 3px 3px 0;
+                font-size: 0.9em;
+                line-height: 1.4;
+            }
+            #world-host-banner code,
+            #world-guest-banner code {
+                background: rgba(255, 250, 235, 0.85);
+                padding: 0.15em 0.4em;
+                border-radius: 2px;
+                font-family: "JetBrains Mono", monospace;
+                font-size: 0.85em;
+                word-break: break-all;
+            }
+            .invite-copy-btn {
+                margin-left: 0.5em;
+                padding: 0.2em 0.6em;
+                font-size: 0.85em;
+                cursor: pointer;
+                background: rgba(180, 140, 80, 0.18);
+                border: 1px solid var(--brass-1, #8b6a3f);
+                border-radius: 3px;
+                color: var(--parch-ink);
+            }
+            .invite-copy-btn:hover {
                 background: rgba(180, 140, 80, 0.32);
             }
             #world-lineage .lineage-entry {
@@ -1898,7 +2031,7 @@
         <header id="topbar" class="hud-frame">
             <div class="topbar-inner">
                 <div class="title">
-                    Anazh Realm <span class="version">v7.70</span> <span class="sub">— Das Ultiversum</span>
+                    Anazh Realm <span class="version">v7.71</span> <span class="sub">— Das Ultiversum</span>
                 </div>
                 <nav class="tabs" role="tablist" aria-label="Hauptansichten">
                     <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">
@@ -1960,6 +2093,12 @@
             <section class="section" id="world-info-section">
                 <h3>Diese Welt</h3>
                 <div id="world-info" class="drawer-hint" aria-live="polite">…</div>
+                <!-- Ring 11.5: Host-Banner. Sichtbar nur wenn worldMeta.role === "host".
+                     Zeigt den Einladungs-Code, den der Host an Mitspieler weitergibt. -->
+                <div id="world-host-banner" class="drawer-hint" hidden></div>
+                <!-- Ring 11.5: Guest-Banner. Sichtbar nur wenn worldMeta.role === "guest".
+                     Zeigt die host-Verbindungs-Info zur Orientierung. -->
+                <div id="world-guest-banner" class="drawer-hint" hidden></div>
                 <div class="actions">
                     <button type="button" id="world-export">Welt teilen…</button>
                     <button type="button" id="world-import">Welt empfangen…</button>
@@ -2285,6 +2424,70 @@
             <div class="world-fusion-footer">
                 <button type="button" id="world-fusion-cancel" class="world-tor-cancel">Abbrechen</button>
                 <button type="button" id="world-fusion-confirm" class="world-fusion-confirm">Verschmelzen</button>
+            </div>
+        </dialog>
+        <!-- Ring 11.5 — Neue-Welt-Dialog mit Modus-Wahl. Ersetzt die alte
+             prompt/confirm-Pop-up-Sequenz. Drei Pfade:
+               1) Allein: klassische private Welt
+               2) Host: Multi-User, ich starte + teile Einladungs-Code
+               3) Joinen: Multi-User, ich gebe Einladungs-Code ein -->
+        <dialog id="new-world-dialog">
+            <h2>Neue Welt</h2>
+            <p id="new-world-summary" class="drawer-hint">
+                Eine neue Welt erwacht — wähle ihre Beziehungs-Form.
+            </p>
+            <div class="new-world-row">
+                <label for="new-world-slug">Name:</label>
+                <input
+                    type="text"
+                    id="new-world-slug"
+                    placeholder="(leer = automatisch)"
+                    autocomplete="off"
+                    spellcheck="false"
+                />
+            </div>
+            <fieldset class="new-world-mode">
+                <legend>Modus</legend>
+                <label>
+                    <input type="radio" name="new-world-mode" value="solo" checked />
+                    <strong>Allein</strong> — eine private Welt nur für dich
+                </label>
+                <label>
+                    <input type="radio" name="new-world-mode" value="multi" />
+                    <strong>Mit anderen</strong> — Symbiose zu mehrt
+                </label>
+            </fieldset>
+            <fieldset class="new-world-role" hidden>
+                <legend>Rolle</legend>
+                <label>
+                    <input type="radio" name="new-world-role" value="host" checked />
+                    <strong>Host</strong> — ich erschaffe die Welt + lade andere ein
+                </label>
+                <label>
+                    <input type="radio" name="new-world-role" value="join" />
+                    <strong>Joinen</strong> — ich komme zu einem Host
+                </label>
+            </fieldset>
+            <div id="new-world-join-row" class="new-world-row" hidden>
+                <label for="new-world-invite">Einladungs-Code:</label>
+                <input
+                    type="text"
+                    id="new-world-invite"
+                    placeholder="anazh://192.168.1.42:4313/&lt;raumId&gt;"
+                    autocomplete="off"
+                    spellcheck="false"
+                />
+            </div>
+            <div class="new-world-row">
+                <label>
+                    <input type="checkbox" id="new-world-inherit" />
+                    Bisherige Person übernehmen (Seele + Werkzeuge + eigene Materialien/Baupläne)
+                </label>
+            </div>
+            <div id="new-world-status" class="drawer-hint" aria-live="polite"></div>
+            <div class="new-world-footer">
+                <button type="button" id="new-world-cancel">Abbrechen</button>
+                <button type="button" id="new-world-confirm">Erschaffen</button>
             </div>
         </dialog>
         <!-- Vendored libs (vendor/README.md erklärt Versionen + Update-Befehl) -->

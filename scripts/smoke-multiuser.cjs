@@ -53,6 +53,16 @@ async function run() {
     wsA.send(JSON.stringify({ type: "dsl", program: new Array(300).fill("over_cap") }));
     await sleep(150);
 
+    // Ring 11.5: world-request (broadcast) + world-snapshot (targeted).
+    // B sendet world-request → A bekommt es → A antwortet mit world-snapshot
+    // to=peerB. Server forwarded zielgerichtet — andere Peers (hier nur A
+    // und B) sehen den Snapshot nicht doppelt.
+    wsB.send(JSON.stringify({ type: "world-request" }));
+    await sleep(150);
+    // A simuliert Host-Antwort: snapshot mit to=peerB
+    wsA.send(JSON.stringify({ type: "world-snapshot", to: "peerB", state: { hello: "world", v: 1 } }));
+    await sleep(200);
+
     console.log("\n=== A received ===");
     for (const e of events.a) console.log(JSON.stringify(e));
     console.log("\n=== B received ===");
@@ -81,6 +91,21 @@ async function run() {
     const bRejectedBadDsl =
         events.b.filter((e) => e.type === "dsl").length === 1; // genau das eine gute, keine kaputten
 
+    // Ring 11.5 Assertions
+    const aGotWorldRequest = events.a.some(
+        (e) => e.type === "world-request" && e.peerId === "peerB"
+    );
+    const bGotWorldSnapshot = events.b.some(
+        (e) => e.type === "world-snapshot" && e.peerId === "peerA" && e.state && e.state.hello === "world"
+    );
+    const aNotEchoedOwnRequest = !events.a.some((e) => e.type === "world-request" && e.peerId === "peerA");
+    // Targeted-delivery: A sollte sein EIGENES world-snapshot NICHT zurückbekommen
+    const aNotEchoedOwnSnapshot = !events.a.some((e) => e.type === "world-snapshot");
+    // lanAddresses im welcome-Message (Ring 11.5)
+    const welcomeHasLanAddresses = events.a.some(
+        (e) => e.type === "welcome" && Array.isArray(e.lanAddresses)
+    );
+
     console.log("\n=== Verdict ===");
     console.log("V1 A welcome:", aSawWelcome);
     console.log("V1 A sees B-join:", aSawBjoin);
@@ -90,6 +115,11 @@ async function run() {
     console.log("V2 B receives A's DSL (modify_terrain) with peerId stamp:", !!bGotDslFromA);
     console.log("V2 A doesn't receive own DSL echo:", aNotEchoedOwnDsl);
     console.log("V2 Server rejects non-array / empty / oversized DSL:", bRejectedBadDsl);
+    console.log("V2.2 welcome enthält lanAddresses Array:", welcomeHasLanAddresses);
+    console.log("V2.2 A bekommt world-request (broadcast):", aGotWorldRequest);
+    console.log("V2.2 A bekommt eigenen world-request NICHT zurück:", aNotEchoedOwnRequest);
+    console.log("V2.2 B bekommt world-snapshot targeted:", bGotWorldSnapshot);
+    console.log("V2.2 A bekommt eigenen world-snapshot NICHT zurück:", aNotEchoedOwnSnapshot);
 
     // B disconnects
     wsB.close();
@@ -109,7 +139,12 @@ async function run() {
         aSawBLeave &&
         !!bGotDslFromA &&
         aNotEchoedOwnDsl &&
-        bRejectedBadDsl;
+        bRejectedBadDsl &&
+        welcomeHasLanAddresses &&
+        aGotWorldRequest &&
+        aNotEchoedOwnRequest &&
+        !!bGotWorldSnapshot &&
+        aNotEchoedOwnSnapshot;
     server.kill();
     process.exit(allOk ? 0 : 1);
 }
