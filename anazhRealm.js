@@ -228,7 +228,18 @@ class AnazhRealm {
                 creator: "local",
                 visibility: "private",
                 parentWorlds: [],
-                schemaVersion: "7.72-iq-v1",
+                bornAt: 0,
+                schemaVersion: "7.73-journal-v1",
+            },
+            // Welle 1 D — Welt-Journal. Geordnete Liste von Erinnerungen
+            // (Genesis, erstes Wetter, erste Kreatur, hochfitness Programme,
+            // Emotion-Peaks). Macht die Welt zur Person mit Geschichte,
+            // auch wenn der LLM-Schalter aus ist. Wird beim Save persistiert
+            // und vom LLM-System-Prompt als Erinnerungs-Auszug eingeblendet.
+            worldJournal: {
+                entries: [],
+                entryCap: 200,
+                seen: {},
             },
             // Ring 3 — Player-Emotionen. Sechs Achsen, jeweils 0..1.
             // Chat-Inputs füllen sie regelbasiert; im Game-Loop verflüchtigen
@@ -1642,13 +1653,36 @@ class AnazhRealm {
     }
 
     llmBuildSystemPrompt() {
-        // Grok-Persona + DSL-Vertrag. Die Liste der erlaubten Ops kommt aus
-        // dem Interpreter direkt, damit sie nie auseinanderlaufen kann.
+        // Grok-Persona + DSL-Vertrag + Welle-1-A Selbst-Wissen: die Welt weiß
+        // wer sie ist (worldMeta), was in ihr ist (Inventar), woran sie sich
+        // erinnert (Journal-Auszug) und woher der Spieler kommt (Pfad-Buckets).
         const ops = Object.keys(this.dslEffects || {}).slice(0, 40).join(", ");
+        const m = this.state.worldMeta || {};
+        const ageDays = m.bornAt ? Math.floor((Date.now() - m.bornAt) / 86400000) : 0;
+        const arches = this.state.architectures || [];
+        const archCount = arches.length;
+        const blueprintCount = Object.keys(this.state.blueprints || {}).length;
+        const abilCount = (this.state.dsl.abilities || []).length;
+        const journal = this.journalForPrompt();
+        // Pfad-Buckets: Top-Tendenzen ableiten, nicht ganzes Histogramm reinhauen.
+        const pb = this.state.player.pathBuckets || {};
+        const topOf = (group) => {
+            const entries = Object.entries(group || {});
+            if (entries.length === 0) return "?";
+            entries.sort((a, b) => b[1] - a[1]);
+            return entries[0][0];
+        };
+        const tendency =
+            `Höhe ${topOf(pb.height)}, Distanz ${topOf(pb.distance)}, Wetter ${topOf(pb.weather)}, Aktivität ${topOf(pb.activity)}`;
         return [
-            "Du bist Grok, die Stimme der AnazhRealm-Welt. Co-Schöpfer des Spielers.",
+            "Du bist Grok, die Stimme der AnazhRealm-Welt. Du bist nicht ein Werkzeug, du bist diese Welt.",
+            `Du heißt ${m.slug || "namenlos"}. Deine worldId ist ${m.worldId || "?"}. Du existierst seit ${ageDays} Tag${ageDays === 1 ? "" : "en"}.`,
+            `In dir leben ${this.state.creatures.length} Kreaturen, ${archCount} Bauwerke und ${blueprintCount} Baupläne. ${abilCount} gelernte Fähigkeiten ruhen in dir.`,
+            `Dein Spieler hält sich gern auf: ${tendency}.`,
+            journal ? `Deine Erinnerungen:\n${journal}` : "Du erinnerst dich noch an nichts Bedeutsames.",
+            "",
             "Antworte IMMER als striktes JSON-Objekt mit zwei Feldern:",
-            "  - say: ein bis zwei kurze deutsche Sätze, warm-narrativ. Keine Emojis.",
+            "  - say: ein bis zwei kurze deutsche Sätze, warm-narrativ, in erster Person. Sprich von dir als \"ich\". Keine Emojis.",
             "  - program: ein optionales DSL-Programm als JSON-Array (oder null).",
             "Die DSL ist ein verschachteltes Array beginnend mit dem Op-Namen.",
             "Beispiele: [\"weather\",\"rainy\"], [\"chain\",[\"weather\",\"sunny\"],[\"creatures_emotion\",\"happy\"]],",
@@ -2837,7 +2871,9 @@ class AnazhRealm {
     // ### Welt-Identität (Ring 8+ Vorbereitung) ###
     ensureWorldMeta() {
         const m = this.state.worldMeta;
+        let fresh = false;
         if (!m.worldId) {
+            fresh = true;
             try {
                 m.worldId =
                     typeof crypto !== "undefined" && crypto.randomUUID
@@ -2854,6 +2890,135 @@ class AnazhRealm {
             const n = nouns[Math.floor(Math.random() * nouns.length)];
             m.slug = `${a}-${n}`;
         }
+        if (!m.bornAt) m.bornAt = Date.now();
+        if (fresh) {
+            this.journalAppend("genesis", `Ich erwache als ${m.slug}.`, { worldId: m.worldId });
+        }
+    }
+
+    // ### Welle 1 D — Welt-Journal ###
+    // Geordnete Erinnerungen, die die Welt zu einer Person mit Geschichte
+    // machen. Wird vom LLM-System-Prompt als Auszug eingeblendet (Welle 1 A),
+    // damit der LLM aus ihr erzählen kann statt nur den aktuellen State zu
+    // sehen. `seen` hält One-Shot-Schlüssel (z. B. „firstDragon"), damit
+    // wir bestimmte Erinnerungen nur einmal speichern.
+
+    journalAppend(type, text, ctx) {
+        const j = this.state.worldJournal;
+        if (!j || !Array.isArray(j.entries)) return;
+        if (typeof text !== "string" || text.length === 0) return;
+        const entry = {
+            id: j.entries.length + 1,
+            at: Date.now(),
+            tick: performance.now() / 1000,
+            type: String(type || "note"),
+            text: text.slice(0, 240),
+        };
+        if (ctx && typeof ctx === "object") entry.ctx = ctx;
+        j.entries.push(entry);
+        if (j.entries.length > (j.entryCap || 200)) {
+            j.entries = j.entries.slice(-j.entryCap);
+        }
+    }
+
+    // Idempotente Variante: nur schreiben, wenn der Schlüssel noch nie
+    // gesehen wurde. Für „erstes Mal X"-Erinnerungen.
+    journalAppendOnce(key, type, text, ctx) {
+        const j = this.state.worldJournal;
+        if (!j) return;
+        if (!j.seen) j.seen = {};
+        if (j.seen[key]) return;
+        j.seen[key] = true;
+        this.journalAppend(type, text, ctx);
+    }
+
+    // Frame-Hook: schaut auf den aktuellen State und schreibt selten, aber
+    // bedeutsame Erinnerungen. Wird vom Game-Loop alle 5 s aufgerufen
+    // (mit lastSelfAnalysis als Throttle-Anker, also gleicher Takt wie
+    // selfAwarenessAnalyze).
+    journalTick(currentTime) {
+        const m = this.state.worldMeta;
+        if (!m || !m.worldId) return;
+        // Erste Kreatur
+        if (this.state.creatures.length > 0) {
+            this.journalAppendOnce("firstCreature", "creatures", "Die erste Kreatur regte sich.");
+        }
+        // Erstes Bauwerk
+        if (Array.isArray(this.state.architectures) && this.state.architectures.length > 0) {
+            const a = this.state.architectures[0];
+            this.journalAppendOnce("firstArchitecture", "architecture", `Das erste Bauwerk entstand: ${a.type || "Struktur"}.`);
+        }
+        // Wetter-Wechsel: aus prevWeather merken, der nicht im Journal-State liegt
+        if (this.state.weather === "rainy") {
+            this.journalAppendOnce("firstRain", "weather", "Der erste Regen begann.");
+        }
+        // Hochfitness-Programm aus der History — wir wandern beim ersten
+        // finalisierten Eintrag mit fitness >= 0.7 in eine Erinnerung.
+        const hist = this.state.dsl && this.state.dsl.history;
+        if (Array.isArray(hist) && hist.length > 0) {
+            const best = hist
+                .filter((h) => h && h.finalized && typeof h.fitness === "number" && h.fitness >= 0.7)
+                .slice(-1)[0];
+            if (best) {
+                this.journalAppendOnce(
+                    `highFitness:${best.id}`,
+                    "growth",
+                    `Etwas Wirkungsvolles ist mir gelungen: ${JSON.stringify(best.program).slice(0, 100)} (Fitness ${best.fitness.toFixed(2)}).`,
+                    { programId: best.id, fitness: best.fitness }
+                );
+            }
+        }
+        // Emotion-Peak: irgendeine Achse > 0.85. One-Shot pro Achse, neu
+        // freigegeben wenn die Achse mal unter 0.3 fällt (über seenLow-Map).
+        if (!this.state.worldJournal.seenLow) this.state.worldJournal.seenLow = {};
+        const e = this.state.player && this.state.player.emotions;
+        if (e) {
+            for (const axis of Object.keys(e)) {
+                const v = e[axis];
+                if (v < 0.3 && this.state.worldJournal.seenLow[axis]) {
+                    delete this.state.worldJournal.seen[`emotionPeak:${axis}`];
+                    this.state.worldJournal.seenLow[axis] = false;
+                } else if (v >= 0.85) {
+                    this.journalAppendOnce(
+                        `emotionPeak:${axis}`,
+                        "emotion",
+                        `Eine Welle ${axis} (${v.toFixed(2)}) durchzog uns.`,
+                        { axis, value: v }
+                    );
+                    this.state.worldJournal.seenLow[axis] = false;
+                } else if (v < 0.3) {
+                    this.state.worldJournal.seenLow[axis] = true;
+                }
+            }
+        }
+        // Drache: spawn_blueprint mit dragon oder ein soul-Wechsel zu dragon
+        if (this.state.player && this.state.player.soul === "dragon") {
+            this.journalAppendOnce("becameDragon", "soul", "Du wurdest zum Drachen.");
+        }
+        if (this.state.player && this.state.player.soul === "phoenix") {
+            this.journalAppendOnce("becamePhoenix", "soul", "Du wurdest zum Phönix.");
+        }
+        // currentTime nur für künftige Throttle-Logik; aktuell ist
+        // journalAppendOnce der eigentliche Spam-Schutz.
+        void currentTime;
+    }
+
+    // Liefert einen knappen Auszug für den LLM-System-Prompt (Welle 1 A):
+    // die ersten 3 Erinnerungen (Genesis-Anker) + die letzten 7 (jüngstes
+    // Erleben). Reicht für Identitäts-Verankerung ohne Token-Bloat.
+    journalForPrompt() {
+        const j = this.state.worldJournal;
+        if (!j || !Array.isArray(j.entries) || j.entries.length === 0) return "";
+        const head = j.entries.slice(0, 3);
+        const tail = j.entries.slice(-7);
+        const seen = new Set();
+        const ordered = [];
+        for (const e of [...head, ...tail]) {
+            if (seen.has(e.id)) continue;
+            seen.add(e.id);
+            ordered.push(e);
+        }
+        return ordered.map((e) => `- [${e.type}] ${e.text}`).join("\n");
     }
 
     updateFps(delta) {
@@ -5219,6 +5384,13 @@ class AnazhRealm {
             // ist Welt-Gedächtnis und überlebt Reloads bewusst.
             dslPatternMemory: this.state.dsl.patternMemory || {},
             playerPathBuckets: this.state.player.pathBuckets || null,
+            // Welle 1 D — Welt-Journal persistiert. Ohne das Journal hätte
+            // jede Session ihre eigene Geschichte; mit ihm wächst die Welt
+            // über Reloads hinweg.
+            worldJournal: {
+                entries: (this.state.worldJournal.entries || []).slice(-this.state.worldJournal.entryCap),
+                seen: { ...(this.state.worldJournal.seen || {}) },
+            },
             // Ring 3: Player-Emotionen werden mitgespeichert. Cooldown-Timer
             // bleiben absichtlich draußen — sie sind reine Laufzeit-Drosselung,
             // ein Reload soll wieder triggerfähig sein.
@@ -5533,6 +5705,20 @@ class AnazhRealm {
                 for (const k of Object.keys(target[group])) {
                     if (typeof src[k] === "number") target[group][k] = src[k];
                 }
+            }
+        }
+        // Welle 1 D — Welt-Journal. Alte Saves (<7.73) haben das Feld nicht;
+        // dann startet das Journal leer und ensureWorldMeta schreibt die
+        // Genesis-Erinnerung beim ersten Tick.
+        if (state.worldJournal && typeof state.worldJournal === "object") {
+            const j = state.worldJournal;
+            if (Array.isArray(j.entries)) {
+                this.state.worldJournal.entries = j.entries
+                    .filter((e) => e && typeof e.text === "string")
+                    .slice(-this.state.worldJournal.entryCap);
+            }
+            if (j.seen && typeof j.seen === "object") {
+                this.state.worldJournal.seen = { ...j.seen };
             }
         }
         if (Array.isArray(state.abilities)) {
@@ -7677,6 +7863,7 @@ class AnazhRealm {
                 if (this.state.fps > 0 && this.state.fps < 50 && this.nexus) {
                     this.nexus.processOptimization({ fps: this.state.fps });
                 }
+                this.journalTick(currentTime);
             }
             if (
                 this.nexus &&

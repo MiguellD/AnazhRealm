@@ -776,7 +776,7 @@ function startSaveServer() {
                     out.hasRecentKeywords = Array.isArray(r.state.dsl.recentKeywords);
                     out.hasPendingOutcomes = Array.isArray(r.state.dsl.pendingOutcomes);
                     out.historyCap500 = r.state.dsl.historyCap >= 500;
-                    out.schemaVersionIq = r.state.worldMeta.schemaVersion === "7.72-iq-v1";
+                    out.schemaVersionIq = /^7\.7[2-9]/.test(r.state.worldMeta.schemaVersion);
 
                     // Keyword-Extraktion
                     const kws = r.pathExtractKeywords("Ich liebe den Wald und Wasserfälle hier");
@@ -878,6 +878,52 @@ function startSaveServer() {
                 check("Schicht 1: dslSelectByPattern findet gespeichertes Programm", iqResults.patternSelectionWorks);
                 check("Schicht 1: samplePathBuckets erhöht Höhen-Bucket", iqResults.bucketsIncrementing);
                 check("Schicht 1: dslRun-Outcome trägt emotionsBefore + startedAt", iqResults.outcomeHasEmotionSnapshot);
+            }
+
+            // ### Welle 1 D — Welt-Journal ###
+            const journalResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    out.hasJournal = r.state.worldJournal && Array.isArray(r.state.worldJournal.entries);
+                    out.genesisWritten = r.state.worldJournal.entries.some((e) => e.type === "genesis");
+                    out.bornAtSet = typeof r.state.worldMeta.bornAt === "number" && r.state.worldMeta.bornAt > 0;
+                    // journalAppend schreibt
+                    const before = r.state.worldJournal.entries.length;
+                    r.journalAppend("test", "Erinnerung-Test");
+                    out.appendIncreases = r.state.worldJournal.entries.length === before + 1;
+                    // Once-Variante schreibt nur ein Mal
+                    r.journalAppendOnce("uniq1", "test", "Einmaliger Eintrag");
+                    r.journalAppendOnce("uniq1", "test", "Doppelt-Versuch");
+                    const uniqCount = r.state.worldJournal.entries.filter((e) => e.text === "Einmaliger Eintrag").length;
+                    out.onceIsIdempotent = uniqCount === 1;
+                    // Auszug für LLM enthält Genesis
+                    const excerpt = r.journalForPrompt();
+                    out.excerptHasGenesis = /genesis/.test(excerpt);
+                    // LLM-System-Prompt erwähnt slug + worldId
+                    const sys = r.llmBuildSystemPrompt();
+                    out.systemPromptIdentity = sys.includes(r.state.worldMeta.slug) && sys.includes(r.state.worldMeta.worldId);
+                    out.systemPromptInventory = /Kreaturen.*Bauwerke.*Baupläne/.test(sys);
+                    out.systemPromptTendency = /Höhe.*Distanz.*Wetter.*Aktivität/.test(sys);
+                    out.systemPromptFirstPerson = /sprich.*ich|in erster Person/i.test(sys);
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (!journalResults || journalResults.error) {
+                check("Welle 1 D: Journal-Snapshot erreichbar", false, journalResults && journalResults.error || "page.evaluate fehlgeschlagen");
+            } else {
+                check("Welle 1 D: state.worldJournal existiert", journalResults.hasJournal);
+                check("Welle 1 D: Genesis-Eintrag wurde beim ersten worldMeta-Init geschrieben", journalResults.genesisWritten);
+                check("Welle 1 D: worldMeta.bornAt gesetzt", journalResults.bornAtSet);
+                check("Welle 1 D: journalAppend hängt Eintrag an", journalResults.appendIncreases);
+                check("Welle 1 D: journalAppendOnce ist idempotent", journalResults.onceIsIdempotent);
+                check("Welle 1 D: journalForPrompt enthält Genesis", journalResults.excerptHasGenesis);
+                check("Welle 1 A: LLM-Prompt trägt slug + worldId", journalResults.systemPromptIdentity);
+                check("Welle 1 A: LLM-Prompt zählt Welt-Inventar", journalResults.systemPromptInventory);
+                check("Welle 1 A: LLM-Prompt benennt Pfad-Tendenz", journalResults.systemPromptTendency);
+                check("Welle 1 A: LLM-Prompt verlangt erste Person", journalResults.systemPromptFirstPerson);
             }
 
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
