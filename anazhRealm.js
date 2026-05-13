@@ -10268,7 +10268,51 @@ class AnazhRealm {
                 }
             };
         }
+        // Welle 6.F1 — Verbindungs-Linien zwischen verbundenen Parts. Nur am
+        // Top-Level rendern (nicht für nested Blueprint-Referenzen), sonst
+        // doppelt sich der Render bei Fraktal-Bauplänen. Farbe + Opacity
+        // folgen der Lastformel (W5-A): stark = grün, ok = goldgelb, schwach
+        // = rot (= Brech-Warning, V1 nur visuell).
+        if (!depth && Array.isArray(blueprint.connections) && blueprint.connections.length > 0) {
+            this._addConnectionLines(group, blueprint);
+        }
         return group;
+    }
+
+    // Welle 6.F1 — Verbindungs-Linien an einen Bauplan-Group anhängen.
+    _addConnectionLines(group, blueprint) {
+        const conns = blueprint.connections || [];
+        const parts = blueprint.parts || [];
+        for (const c of conns) {
+            const a = parts[c.partA];
+            const b = parts[c.partB];
+            if (!a || !b) continue;
+            const pa = a.position || { x: 0, y: 0, z: 0 };
+            const pb = b.position || { x: 0, y: 0, z: 0 };
+            const geom = new THREE.BufferGeometry();
+            geom.setAttribute(
+                "position",
+                new THREE.Float32BufferAttribute([pa.x || 0, pa.y || 0, pa.z || 0, pb.x || 0, pb.y || 0, pb.z || 0], 3)
+            );
+            const strength = this.computeConnectionStrength(c, blueprint);
+            const color = this._connectionColor(strength);
+            // Opacity 0.75 lässt die Linie sichtbar ohne dass sie den Bauplan dominiert.
+            const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.75 });
+            const line = new THREE.Line(geom, mat);
+            line.userData.isConnectionLine = true;
+            line.userData.connectionStrength = strength;
+            line.userData.connectionType = c.type;
+            group.add(line);
+        }
+    }
+
+    // Welle 6.F1+F2 — Farb-Mapping aus Verbindungs-Stärke (0..3-Skala der
+    // computeConnectionStrength-Lastformel). <0.7 = Brech-Risiko (rot),
+    // 0.7..1.5 = ok (goldgelb), ≥1.5 = stark (grün).
+    _connectionColor(strength) {
+        if (strength < 0.7) return 0xff5555;
+        if (strength < 1.5) return 0xffcc44;
+        return 0x66ff88;
     }
 
     // Default-Baupläne als Daten. Drei built-ins, die das ersetzen, was
@@ -11418,6 +11462,32 @@ class AnazhRealm {
                 `Etwas Magisches in der Luft, als ${bp.label || blueprintName} entstand.`,
                 { blueprint: blueprintName, magic: tags.magieleitung }
             );
+        }
+
+        // Welle 6.F2 — Brech-Warning. Wenn IRGENDEINE Verbindung des Bauplans
+        // unter der Schwelle 0.7 liegt, gibt es einen einmaligen Journal-
+        // Eintrag (idempotent pro Bauplan-Name). Die rote Linie aus 6.F1 ist
+        // das visuelle Pendant. Echtes Auseinanderbrechen folgt mit 6.F5
+        // (Ammo-Constraints) — V1 ist Warnung, nicht Konsequenz.
+        if (Array.isArray(bp.connections) && bp.connections.length > 0) {
+            let weakest = Infinity;
+            let weakestType = null;
+            for (const c of bp.connections) {
+                const s = this.computeConnectionStrength(c, bp);
+                if (s < weakest) {
+                    weakest = s;
+                    weakestType = c.type;
+                }
+            }
+            if (weakest < 0.7 && weakestType) {
+                this.journalAppendOnce(
+                    `weak_connection:${blueprintName}`,
+                    "weakness",
+                    `Eine ${weakestType}-Verbindung in „${bp.label || blueprintName}" trägt knapp ` +
+                        `(Last ${weakest.toFixed(2)}).`,
+                    { blueprint: blueprintName, weakest: weakest, type: weakestType }
+                );
+            }
         }
     }
 

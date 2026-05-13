@@ -5203,6 +5203,171 @@ function startSaveServer() {
                 check("Welle 6.E2: Re-Init erzeugt kein Duplikat (Singleton)", wave6e2Results.singletonAfterReinit);
             }
 
+            // ### Welle 6.F1 + 6.F2 — Visuelle Verbindungs-Linien + Brech-Warning ###
+            //
+            // _addConnectionLines hängt pro Connection eine THREE.Line an die
+            // gebaute Group. Farbe folgt computeConnectionStrength via
+            // _connectionColor (grün/gelb/rot). 6.F2: Wenn die schwächste
+            // Verbindung < 0.7 ist, schreibt _applyCompoundWorldEffects einen
+            // idempotenten weakness-Journal-Eintrag.
+            const wave6fResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    out.hasAddLinesMethod = typeof r._addConnectionLines === "function";
+                    out.hasColorHelper = typeof r._connectionColor === "function";
+
+                    // Farb-Mapping
+                    out.colorWeak = r._connectionColor(0.4);
+                    out.colorOk = r._connectionColor(1.0);
+                    out.colorStrong = r._connectionColor(2.0);
+                    out.colorWeakIsRed = out.colorWeak === 0xff5555;
+                    out.colorOkIsYellow = out.colorOk === 0xffcc44;
+                    out.colorStrongIsGreen = out.colorStrong === 0x66ff88;
+
+                    // Test-Bauplan mit zwei Parts + einer expliziten Verbindung
+                    const testName = "wave6f_test";
+                    r.state.blueprints[testName] = {
+                        name: testName,
+                        label: "Test",
+                        builtIn: false,
+                        parts: [
+                            {
+                                shape: "box",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                                color: 0x888888,
+                                material: "stein",
+                            },
+                            {
+                                shape: "box",
+                                position: { x: 1.05, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                                color: 0x888888,
+                                material: "stein",
+                            },
+                        ],
+                        connections: [{ type: "masonry", partA: 0, partB: 1 }],
+                    };
+                    // Build und auf THREE.Line prüfen
+                    const built = r._buildFromBlueprint(r.state.blueprints[testName]);
+                    let lineCount = 0;
+                    let lineColor = null;
+                    built.traverse((node) => {
+                        if (node.userData && node.userData.isConnectionLine) {
+                            lineCount++;
+                            if (node.material && node.material.color) lineColor = node.material.color.getHex();
+                        }
+                    });
+                    out.lineCount = lineCount;
+                    out.lineExists = lineCount === 1;
+                    out.lineHasUserDataFlag = lineCount === 1;
+                    out.lineColor = lineColor;
+
+                    // 6.F2 Brech-Warning: extrem schwache Verbindung → Journal-Eintrag
+                    // (wir erzwingen weak indem wir partB sehr weit weg setzen → contactArea=0)
+                    const weakName = "wave6f_weak";
+                    r.state.blueprints[weakName] = {
+                        name: weakName,
+                        label: "Schwach",
+                        builtIn: false,
+                        parts: [
+                            { shape: "box", position: { x: 0, y: 0, z: 0 }, size: { x: 0.5, y: 0.5, z: 0.5 }, material: "stein" },
+                            {
+                                shape: "box",
+                                position: { x: 10, y: 0, z: 0 },
+                                size: { x: 0.5, y: 0.5, z: 0.5 },
+                                material: "stein",
+                            },
+                        ],
+                        connections: [{ type: "gluing", partA: 0, partB: 1 }],
+                    };
+                    const weakStrength = r.computeConnectionStrength(
+                        r.state.blueprints[weakName].connections[0],
+                        r.state.blueprints[weakName]
+                    );
+                    out.weakStrength = weakStrength;
+                    out.weakIsBelowThreshold = weakStrength < 0.7;
+
+                    // Journal-Counter vor spawn
+                    const beforeJournal = r.state.worldJournal && r.state.worldJournal.entries
+                        ? r.state.worldJournal.entries.length
+                        : 0;
+                    const beforeSeenKeys = r.state.worldJournal && r.state.worldJournal.seen
+                        ? Object.keys(r.state.worldJournal.seen).filter((k) => k.startsWith("weak_connection:")).length
+                        : 0;
+                    const beforeArchCount = r.state.architectures.length;
+                    r.spawnArchitecture(weakName, { x: 250, y: 0, z: 250 }, { seed: 1 });
+                    const afterSeenKeys = r.state.worldJournal && r.state.worldJournal.seen
+                        ? Object.keys(r.state.worldJournal.seen).filter((k) => k.startsWith("weak_connection:")).length
+                        : 0;
+                    const afterJournal = r.state.worldJournal && r.state.worldJournal.entries
+                        ? r.state.worldJournal.entries.length
+                        : 0;
+                    out.weakJournalIncrement = afterJournal - beforeJournal >= 1;
+                    out.weakSeenKeyAdded = afterSeenKeys > beforeSeenKeys;
+
+                    // 6.F2 Idempotenz: zweimal spawnen → kein zweiter Eintrag
+                    r.spawnArchitecture(weakName, { x: 260, y: 0, z: 260 }, { seed: 2 });
+                    const after2Journal = r.state.worldJournal && r.state.worldJournal.entries
+                        ? r.state.worldJournal.entries.length
+                        : 0;
+                    out.weakIsIdempotent = after2Journal === afterJournal;
+
+                    // Negativ-Kontrolle: starker Bauplan → KEIN weak_connection-Eintrag
+                    const strongName = "wave6f_strong";
+                    r.state.blueprints[strongName] = {
+                        name: strongName,
+                        label: "Stark",
+                        builtIn: false,
+                        parts: [
+                            { shape: "box", position: { x: 0, y: 0, z: 0 }, size: { x: 2, y: 2, z: 2 }, material: "eisen" },
+                            { shape: "box", position: { x: 2.0, y: 0, z: 0 }, size: { x: 2, y: 2, z: 2 }, material: "eisen" },
+                        ],
+                        connections: [{ type: "welding", partA: 0, partB: 1 }],
+                    };
+                    const strongStrength = r.computeConnectionStrength(
+                        r.state.blueprints[strongName].connections[0],
+                        r.state.blueprints[strongName]
+                    );
+                    out.strongStrength = strongStrength;
+                    out.strongIsAboveThreshold = strongStrength >= 0.7;
+                    const seenBefore3 = Object.keys(r.state.worldJournal.seen || {}).filter((k) =>
+                        k.startsWith("weak_connection:" + strongName)
+                    ).length;
+                    r.spawnArchitecture(strongName, { x: 270, y: 0, z: 270 }, { seed: 3 });
+                    const seenAfter3 = Object.keys(r.state.worldJournal.seen || {}).filter((k) =>
+                        k.startsWith("weak_connection:" + strongName)
+                    ).length;
+                    out.strongNoWarning = seenAfter3 === seenBefore3;
+
+                    // Cleanup
+                    r.state.architectures = r.state.architectures.slice(0, beforeArchCount);
+                    delete r.state.blueprints[testName];
+                    delete r.state.blueprints[weakName];
+                    delete r.state.blueprints[strongName];
+
+                    return out;
+                })
+                .catch(() => null);
+
+            if (wave6fResults) {
+                check("Welle 6.F1: _addConnectionLines-Methode existiert", wave6fResults.hasAddLinesMethod);
+                check("Welle 6.F1: _connectionColor-Helper existiert", wave6fResults.hasColorHelper);
+                check("Welle 6.F1: schwache Verbindung (<0.7) = rot 0xff5555", wave6fResults.colorWeakIsRed);
+                check("Welle 6.F1: mittlere Verbindung (0.7..1.5) = goldgelb 0xffcc44", wave6fResults.colorOkIsYellow);
+                check("Welle 6.F1: starke Verbindung (≥1.5) = grün 0x66ff88", wave6fResults.colorStrongIsGreen);
+                check("Welle 6.F1: Bauplan mit Connection erhält THREE.Line im Group", wave6fResults.lineExists);
+                check("Welle 6.F1: Line trägt userData.isConnectionLine-Flag", wave6fResults.lineHasUserDataFlag);
+                check("Welle 6.F2: weakBauplan hat strength < 0.7 (test-setup korrekt)", wave6fResults.weakIsBelowThreshold);
+                check("Welle 6.F2: spawnArchitecture mit schwacher Verbindung schreibt Journal-Eintrag", wave6fResults.weakJournalIncrement);
+                check("Welle 6.F2: weak_connection:-Schlüssel im worldJournal.seen", wave6fResults.weakSeenKeyAdded);
+                check("Welle 6.F2: Idempotent — zweiter Spawn schreibt KEIN doppeltes Warn", wave6fResults.weakIsIdempotent);
+                check("Welle 6.F2: starker Bauplan hat strength ≥ 0.7 (test-setup korrekt)", wave6fResults.strongIsAboveThreshold);
+                check("Welle 6.F2: Diskrimination — starker Bauplan löst KEINE weak-Warning aus", wave6fResults.strongNoWarning);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {
