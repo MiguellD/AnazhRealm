@@ -28,10 +28,13 @@ Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) is
 | UI | Bedien-Oberfläche (Painterly) | ✅ V1+V2 live, V3 optional | 2-3 h Rest | – |
 | 5 | `createPlayerSoul` (Mensch/Phönix/Drache) | 🔴 offen | 1-2 d | – |
 | 6 | `architectureTemplates` V1 (Dörfer, Tempel, Wasserfälle) | 🔴 offen | 2 d | Ring 2 Phase 3 |
-| 7 | **IQ-Schicht statt brain.js** (lernt aus Verhalten + Emotion + optionale Claude-API) | ✅ Schicht 1+2 live | – | Ring 3 + Ring 2 Phase 3 |
-| 8 | Welt-Identität & Sichtbarkeit | 🟡 Schema bereit, Logik offen | 2-3 d | Ring 2 Phase 4 (Migration) |
-| 9 | Welt-Export/Import | 🔴 offen | 2 d | Ring 8 |
-| 10 | Welt-Fusion (zwei DSL-Programm-Sets mergen) | 🔴 offen | 3-4 d | Ring 9 |
+| 7 | **IQ-Schicht statt brain.js** (lernt aus Verhalten + Emotion + 4 LLM-Provider) | ✅ Schicht 1+2 live | – | Ring 3 + Ring 2 Phase 3 |
+| W1 | **Welt-Journal + LLM-Selbstwissen** (Welt erinnert, weiß wer sie ist) | ✅ live | – | Ring 7 |
+| W2 | **Schöpfer-Ops + Fraktale Baupläne** (define_blueprint/ability, blueprint-Refs) | ✅ live | – | Ring 6.6 |
+| W3 | **Welt-Initiative + Welt-Tor** (Grok V2-Trigger, Welt-Info, Teilen/Empfangen) | ✅ live | – | W1 |
+| 8 | Welt-Identität als Multi-Welt-Verwaltung (mehrere worldIds parallel) | 🟡 Schema + Sichtbarkeit live, Multi-Welt-Switcher offen | 1-2 d | W3 |
+| 9 | Welt-Export/Import (erweitert) — Drei-Wahl Ersetzen/Daneben/Fusionieren | 🟡 Basic-Export/Import live, Wahl-Dialog offen | 1 d | Ring 8 |
+| 10 | Welt-Fusion (zwei DSL-Programm-Sets mergen mit parentWorlds) | 🔴 offen | 3-4 d | Ring 9 |
 | 11 | Multi-User-Sync (P2P / Signaling) | 🔴 offen | 5-7 d | Ring 8 |
 
 **Summe verbleibend**: ~30-40 Arbeitstage in fokussierten Sessions. Verteilt auf 2-4 Monate realistisch.
