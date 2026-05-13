@@ -4047,6 +4047,185 @@ function startSaveServer() {
                 );
             }
 
+            // ### Ring 11 V1 — Multi-User Position-Sync (Daten + UI + Sandbox) ###
+            // V1 trägt nur Position + Rotation, kein DSL-Sync. Tests prüfen
+            // Datenstruktur, Sandbox-Grenze (kein neuer eval-Pfad), CSP-
+            // Erweiterung um ws://, UI-Toggle. Kein echter WebSocket-Connect
+            // im Headless — der signaling-server läuft nicht zwingend; aber
+            // initP2PSync ohne worldId muss sauber ablehnen, mit worldId
+            // muss die Datenstruktur korrekt aufgebaut werden (auch wenn
+            // die Connection scheitert).
+            const ring11Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    out.hasP2PState =
+                        r.state.p2p &&
+                        typeof r.state.p2p.enabled === "boolean" &&
+                        typeof r.state.p2p.url === "string" &&
+                        r.state.p2p.peers instanceof Map;
+                    out.allMethodsPresent =
+                        typeof r.initP2PSync === "function" &&
+                        typeof r.shutdownP2PSync === "function" &&
+                        typeof r.p2pSend === "function" &&
+                        typeof r.p2pHandleMessage === "function" &&
+                        typeof r.p2pTick === "function" &&
+                        typeof r.p2pLoadPersisted === "function" &&
+                        typeof r.p2pPersist === "function" &&
+                        typeof r.p2pGenerateId === "function" &&
+                        typeof r.initP2PUI === "function" &&
+                        typeof r.p2pUpdateStatus === "function";
+
+                    // initP2PSync ohne Welt-ID → sauberer Ablehnung
+                    const savedWorldId = r.state.worldMeta.worldId;
+                    r.state.worldMeta.worldId = null;
+                    const noRoomResult = r.initP2PSync(null);
+                    out.rejectsNoRoom = noRoomResult.ok === false && noRoomResult.reason === "no_room";
+                    r.state.worldMeta.worldId = savedWorldId;
+
+                    // peerId-Generator liefert nicht-leeren String
+                    const pid1 = r.p2pGenerateId();
+                    const pid2 = r.p2pGenerateId();
+                    out.peerIdShape = /^p-[a-z0-9]+-[a-z0-9]+$/.test(pid1);
+                    out.peerIdUnique = pid1 !== pid2;
+
+                    // Persistenz-Pfad: persist + load idempotent
+                    r.state.p2p.url = "ws://example.org:9999";
+                    r.state.p2p.enabled = true;
+                    r.p2pPersist();
+                    r.state.p2p.url = "";
+                    r.state.p2p.enabled = false;
+                    r.p2pLoadPersisted();
+                    out.persistRoundTrip =
+                        r.state.p2p.url === "ws://example.org:9999" && r.state.p2p.enabled === true;
+                    // wieder auf Default
+                    r.state.p2p.url = "ws://127.0.0.1:4313";
+                    r.state.p2p.enabled = false;
+                    r.p2pPersist();
+
+                    // Handle-Message Pfade
+                    r.state.p2p.peerId = "self-test";
+                    r.p2pHandleMessage(JSON.stringify({ type: "welcome", peers: ["peerA", "peerB"] }));
+                    out.welcomeAddsPeers = r.state.p2p.peers.has("peerA") && r.state.p2p.peers.has("peerB");
+
+                    r.p2pHandleMessage(JSON.stringify({ type: "peer-join", peerId: "peerC" }));
+                    out.peerJoinAddsPeer = r.state.p2p.peers.has("peerC");
+
+                    r.p2pHandleMessage(JSON.stringify({ type: "pos", peerId: "peerA", x: 10, y: 5, z: 3, yaw: 1.5 }));
+                    const peerA = r.state.p2p.peers.get("peerA");
+                    out.posUpdatesPeer = peerA && peerA.x === 10 && peerA.y === 5 && peerA.z === 3 && peerA.yaw === 1.5;
+
+                    // Mesh wird angelegt (THREE.Group als Avatar)
+                    out.peerMeshSpawned = peerA && peerA.mesh && peerA.mesh.children && peerA.mesh.children.length === 2;
+
+                    // peer-leave entfernt peer + mesh aus scene
+                    const sceneSizeBefore = r.state.scene.children.length;
+                    r.p2pHandleMessage(JSON.stringify({ type: "peer-leave", peerId: "peerA" }));
+                    out.peerLeaveRemoves = !r.state.p2p.peers.has("peerA");
+                    out.peerLeaveDisposesMesh = r.state.scene.children.length === sceneSizeBefore - 1;
+
+                    // Eigener peerId wird verworfen
+                    r.p2pHandleMessage(JSON.stringify({ type: "pos", peerId: "self-test", x: 1, y: 1, z: 1, yaw: 0 }));
+                    out.ownPeerIgnored = !r.state.p2p.peers.has("self-test");
+
+                    // Invalid pos (NaN) wird verworfen
+                    r.p2pHandleMessage(
+                        JSON.stringify({ type: "pos", peerId: "peerB", x: NaN, y: 0, z: 0, yaw: 0 })
+                    );
+                    const peerB = r.state.p2p.peers.get("peerB");
+                    out.nanPosNotApplied = peerB && peerB.x === 0;
+
+                    // p2pSend ohne open WS liefert false
+                    r.state.p2p.ws = null;
+                    out.sendWithoutWsFalse = r.p2pSend({ type: "ping" }) === false;
+
+                    // p2pTick ohne enabled → no-op (kein Crash)
+                    r.state.p2p.enabled = false;
+                    r.state.p2p.connected = false;
+                    let tickError = null;
+                    try {
+                        r.p2pTick(performance.now());
+                    } catch (e) {
+                        tickError = e.message;
+                    }
+                    out.tickNoOpSafe = tickError === null;
+
+                    // DSL-Sandbox: kein neuer eval-Pfad. Es darf KEINE neue
+                    // dsl-op geben, die das gleich "p2p" oder "sync" heißt
+                    // (V1 trägt KEIN DSL-Sharing). Kontrolliert die Sandbox-
+                    // Grenze: fremde Welten dürfen nicht per DSL-Op die
+                    // eigene manipulieren.
+                    out.noP2PDslOp =
+                        typeof r.dslEffects.p2p_send === "undefined" &&
+                        typeof r.dslEffects.peer_dsl === "undefined" &&
+                        typeof r.dslEffects.remote_run === "undefined";
+
+                    // CSP enthält ws://… einträge
+                    const cspMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+                    const cspContent = cspMeta ? cspMeta.getAttribute("content") : "";
+                    out.cspHasWebSocket =
+                        cspContent.includes("ws://127.0.0.1:4313") && cspContent.includes("ws://localhost:4313");
+                    out.cspKeepsSelf = cspContent.startsWith("default-src 'self';");
+
+                    // UI-Elemente vorhanden
+                    out.uiToggleExists = !!document.getElementById("p2p-toggle");
+                    out.uiUrlInputExists = !!document.getElementById("p2p-url");
+                    out.uiStatusExists = !!document.getElementById("p2p-status");
+
+                    // Status-UI verkabelt: nach Toggle reagiert aria-pressed
+                    const toggle = document.getElementById("p2p-toggle");
+                    const before = toggle.getAttribute("aria-pressed");
+                    toggle.click();
+                    const after = toggle.getAttribute("aria-pressed");
+                    out.toggleFlipsAriaPressed = before === "false" && after === "true";
+                    // wieder ausschalten, damit kein WebSocket übrig bleibt
+                    toggle.click();
+                    r.state.p2p.enabled = false;
+                    r.shutdownP2PSync();
+
+                    // Cleanup
+                    for (const pid of Array.from(r.state.p2p.peers.keys())) r._p2pRemovePeer(pid);
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!ring11Results || ring11Results.error) {
+                check(
+                    "Ring 11 V1: Snapshot erreichbar",
+                    false,
+                    (ring11Results && ring11Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Ring 11 V1: state.p2p mit allen Pflichtfeldern", ring11Results.hasP2PState);
+                check("Ring 11 V1: alle P2P-Methoden auf der Klasse vorhanden", ring11Results.allMethodsPresent);
+                check("Ring 11 V1: initP2PSync ohne worldId wird abgewiesen", ring11Results.rejectsNoRoom);
+                check("Ring 11 V1: p2pGenerateId liefert 'p-<ts>-<rnd>'-Format", ring11Results.peerIdShape);
+                check("Ring 11 V1: zwei Generator-Aufrufe liefern unterschiedliche IDs", ring11Results.peerIdUnique);
+                check("Ring 11 V1: persist + load liefert dieselbe url + enabled", ring11Results.persistRoundTrip);
+                check("Ring 11 V1: welcome-Nachricht legt alle Peers an", ring11Results.welcomeAddsPeers);
+                check("Ring 11 V1: peer-join Nachricht legt einzelnen Peer an", ring11Results.peerJoinAddsPeer);
+                check("Ring 11 V1: pos-Nachricht aktualisiert peer-Position", ring11Results.posUpdatesPeer);
+                check("Ring 11 V1: neuer Peer bekommt Avatar-Mesh in der Szene", ring11Results.peerMeshSpawned);
+                check("Ring 11 V1: peer-leave entfernt peer aus state.p2p.peers", ring11Results.peerLeaveRemoves);
+                check("Ring 11 V1: peer-leave entfernt mesh aus der Szene", ring11Results.peerLeaveDisposesMesh);
+                check("Ring 11 V1: eigene peerId wird in pos-Nachrichten ignoriert", ring11Results.ownPeerIgnored);
+                check("Ring 11 V1: NaN-Koordinate in pos wird verworfen", ring11Results.nanPosNotApplied);
+                check("Ring 11 V1: p2pSend ohne offene WS liefert false", ring11Results.sendWithoutWsFalse);
+                check("Ring 11 V1: p2pTick ohne enabled ist no-op (kein Crash)", ring11Results.tickNoOpSafe);
+                check(
+                    "Ring 11 V1: KEIN p2p-/peer_dsl-/remote_run-DSL-Op (Sandbox-Grenze)",
+                    ring11Results.noP2PDslOp
+                );
+                check("Ring 11 V1: CSP enthält ws://127.0.0.1:4313 + ws://localhost:4313", ring11Results.cspHasWebSocket);
+                check("Ring 11 V1: CSP bleibt strict (default-src 'self')", ring11Results.cspKeepsSelf);
+                check("Ring 11 V1: UI-Toggle-Element im DOM", ring11Results.uiToggleExists);
+                check("Ring 11 V1: UI-URL-Input im DOM", ring11Results.uiUrlInputExists);
+                check("Ring 11 V1: UI-Status-Anzeige im DOM", ring11Results.uiStatusExists);
+                check("Ring 11 V1: Toggle-Klick wechselt aria-pressed", ring11Results.toggleFlipsAriaPressed);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {

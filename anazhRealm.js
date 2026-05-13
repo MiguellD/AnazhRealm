@@ -233,6 +233,25 @@ class AnazhRealm {
                 lastResponseAt: -Infinity,
                 minGapSeconds: 3.0,
             },
+            // Ring 11 V1: Multi-User Position-Sync via WebSocket-Broker
+            // (signaling-server.js). enabled=true startet die Verbindung,
+            // url+roomId steuern wohin verbunden wird. peers ist eine Map
+            // <peerId, {pos, mesh, lastSeen}>. lastBroadcastAt drosselt
+            // Position-Updates auf 30 Hz, sonst würde jeder Frame ein
+            // Paket auslösen. V1 trägt KEIN DSL — fremde Welt-Logik wäre
+            // ein Sandbox-Risiko bevor die Vertrauens-Grenzen klar sind.
+            p2p: {
+                enabled: false,
+                url: "ws://127.0.0.1:4313",
+                peerId: null,
+                room: null,
+                ws: null,
+                peers: new Map(),
+                broadcastIntervalMs: 33,
+                lastBroadcastAt: 0,
+                lastError: null,
+                connected: false,
+            },
             // Welt-Identität (Ring 8+, siehe docs/state-of-realm.md §11). Felder
             // werden jetzt schon gesetzt, damit das Save-Schema zukunftsfest
             // bleibt; Logik für Sichtbarkeit/Fusion kommt später.
@@ -2520,6 +2539,302 @@ class AnazhRealm {
             this.llmPersist();
             this.llmUpdateStatus();
         });
+    }
+
+    // ### Ring 11 V1 — Multi-User Position-Sync ###
+    // Sehr bewusst klein gehalten: eine Verbindung pro Browser, ein Raum
+    // (per Default = aktive worldId), 30 Hz Position-Broadcast,
+    // Remote-Spieler als simple Cone-Meshes. KEIN DSL-Sync — fremde
+    // Programme würden die Sandbox-Grenze in V1 verletzen. Heilige
+    // Lektion: KEINE neuen Manager-Klassen, KEIN Sync-Layer-Modul. Acht
+    // Methoden auf der einen AnazhRealm, drei Hooks im Game-Loop (Pos-
+    // Broadcast + Peer-Mesh-Update + Idle-Disconnect-Pflege).
+    p2pLoadPersisted() {
+        try {
+            const enabled = localStorage.getItem("anazh.p2p.enabled");
+            const url = localStorage.getItem("anazh.p2p.url");
+            if (typeof enabled === "string") this.state.p2p.enabled = enabled === "true";
+            if (typeof url === "string" && url.trim().length > 0) this.state.p2p.url = url.trim();
+        } catch {
+            /* localStorage kann fehlen */
+        }
+    }
+
+    p2pPersist() {
+        try {
+            localStorage.setItem("anazh.p2p.enabled", this.state.p2p.enabled ? "true" : "false");
+            localStorage.setItem("anazh.p2p.url", this.state.p2p.url || "");
+        } catch {
+            /* defensive */
+        }
+    }
+
+    p2pGenerateId() {
+        // Kurzer, lesbarer Peer-Identifier. Kein crypto-grade UUID nötig —
+        // der Server prüft Eindeutigkeit per Set-Mitgliedschaft, und in V1
+        // läuft die Vertrauens-Grenze ohnehin durch den Browser-Origin.
+        const rnd = Math.random().toString(36).slice(2, 10);
+        const t = Date.now().toString(36).slice(-4);
+        return `p-${t}-${rnd}`;
+    }
+
+    initP2PSync(roomId, opts = {}) {
+        const p2p = this.state.p2p;
+        if (p2p.ws) this.shutdownP2PSync();
+        const url = (opts.url || p2p.url || "ws://127.0.0.1:4313").trim();
+        const room = roomId || (this.state.worldMeta && this.state.worldMeta.worldId) || null;
+        if (!room) {
+            p2p.lastError = "Keine Raum-ID — Welt nicht initialisiert?";
+            this.log("P2P-Init ohne Welt-ID abgewiesen", "WARN");
+            return { ok: false, reason: "no_room" };
+        }
+        if (typeof WebSocket === "undefined") {
+            p2p.lastError = "WebSocket nicht verfügbar in dieser Umgebung";
+            return { ok: false, reason: "no_websocket" };
+        }
+        p2p.peerId = p2p.peerId || this.p2pGenerateId();
+        p2p.room = room;
+        p2p.lastError = null;
+        try {
+            const ws = new WebSocket(url);
+            p2p.ws = ws;
+            ws.addEventListener("open", () => {
+                p2p.connected = true;
+                this.p2pSend({ type: "join", room: p2p.room, peerId: p2p.peerId });
+                this.log(`P2P verbunden mit ${url} (raum=${p2p.room.slice(0, 8)}, peer=${p2p.peerId})`, "INFO");
+                this.p2pUpdateStatus();
+            });
+            ws.addEventListener("message", (event) => {
+                this.p2pHandleMessage(event.data);
+                this.p2pUpdateStatus();
+            });
+            ws.addEventListener("close", () => {
+                p2p.connected = false;
+                this._p2pClearAllPeerMeshes();
+                this.log("P2P-Verbindung beendet", "INFO");
+                this.p2pUpdateStatus();
+            });
+            ws.addEventListener("error", () => {
+                p2p.lastError = "WebSocket-Fehler (signaling-server läuft?)";
+                p2p.connected = false;
+                this.log("P2P-Fehler — signaling-server erreichbar?", "WARN");
+                this.p2pUpdateStatus();
+            });
+            return { ok: true };
+        } catch (err) {
+            p2p.lastError = err && err.message ? err.message : "WebSocket-Aufbau gescheitert";
+            this.log(`P2P-Init Fehler: ${p2p.lastError}`, "ERROR");
+            return { ok: false, reason: "ws_throw" };
+        }
+    }
+
+    shutdownP2PSync() {
+        const p2p = this.state.p2p;
+        if (p2p.ws) {
+            try {
+                p2p.ws.close();
+            } catch {
+                /* defensive */
+            }
+        }
+        p2p.ws = null;
+        p2p.connected = false;
+        p2p.room = null;
+        this._p2pClearAllPeerMeshes();
+    }
+
+    p2pSend(obj) {
+        const ws = this.state.p2p.ws;
+        if (!ws || ws.readyState !== 1) return false;
+        try {
+            ws.send(JSON.stringify(obj));
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    p2pHandleMessage(raw) {
+        let msg;
+        try {
+            msg = JSON.parse(raw);
+        } catch {
+            return;
+        }
+        if (!msg || typeof msg !== "object") return;
+        const p2p = this.state.p2p;
+        if (msg.type === "welcome") {
+            if (Array.isArray(msg.peers)) {
+                for (const pid of msg.peers) {
+                    if (typeof pid === "string" && pid !== p2p.peerId) this._p2pEnsurePeerEntry(pid);
+                }
+            }
+            return;
+        }
+        if (msg.type === "peer-join") {
+            if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
+                this._p2pEnsurePeerEntry(msg.peerId);
+            }
+            return;
+        }
+        if (msg.type === "peer-leave") {
+            if (typeof msg.peerId === "string") this._p2pRemovePeer(msg.peerId);
+            return;
+        }
+        if (msg.type === "pos") {
+            const pid = msg.peerId;
+            if (typeof pid !== "string" || pid === p2p.peerId) return;
+            const entry = this._p2pEnsurePeerEntry(pid);
+            const x = Number(msg.x);
+            const y = Number(msg.y);
+            const z = Number(msg.z);
+            const yaw = Number(msg.yaw);
+            if (![x, y, z, yaw].every(Number.isFinite)) return;
+            entry.x = x;
+            entry.y = y;
+            entry.z = z;
+            entry.yaw = yaw;
+            entry.lastSeen = performance.now() / 1000;
+        }
+    }
+
+    _p2pEnsurePeerEntry(peerId) {
+        const p2p = this.state.p2p;
+        let entry = p2p.peers.get(peerId);
+        if (entry) return entry;
+        entry = {
+            peerId,
+            x: 0,
+            y: 0,
+            z: 0,
+            yaw: 0,
+            mesh: null,
+            lastSeen: performance.now() / 1000,
+        };
+        p2p.peers.set(peerId, entry);
+        if (this.state.scene && typeof THREE !== "undefined") {
+            // Einfacher Markierungs-Mesh: Kegel + Kugel. Farbe deterministisch
+            // aus peerId-Hash, damit derselbe Peer immer dieselbe Farbe hat —
+            // erleichtert Erkennung im Multi-Peer-Fall.
+            let hash = 0;
+            for (let i = 0; i < peerId.length; i++) hash = (hash * 31 + peerId.charCodeAt(i)) >>> 0;
+            const hue = (hash % 360) / 360;
+            const color = new THREE.Color().setHSL(hue, 0.7, 0.55);
+            const group = new THREE.Group();
+            const body = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.4, 8), new THREE.MeshBasicMaterial({ color }));
+            body.position.y = 0.7;
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 8), new THREE.MeshBasicMaterial({ color }));
+            head.position.y = 1.55;
+            group.add(body);
+            group.add(head);
+            this.state.scene.add(group);
+            entry.mesh = group;
+        }
+        return entry;
+    }
+
+    _p2pRemovePeer(peerId) {
+        const p2p = this.state.p2p;
+        const entry = p2p.peers.get(peerId);
+        if (!entry) return;
+        if (entry.mesh) {
+            this.state.scene.remove(entry.mesh);
+            entry.mesh.traverse((obj) => {
+                if (obj.geometry && obj.geometry.dispose) obj.geometry.dispose();
+                if (obj.material && obj.material.dispose) obj.material.dispose();
+            });
+        }
+        p2p.peers.delete(peerId);
+    }
+
+    _p2pClearAllPeerMeshes() {
+        const p2p = this.state.p2p;
+        for (const peerId of Array.from(p2p.peers.keys())) {
+            this._p2pRemovePeer(peerId);
+        }
+    }
+
+    p2pTick(currentTimeMs) {
+        const p2p = this.state.p2p;
+        if (!p2p.enabled || !p2p.connected || !p2p.ws) return;
+        // Position-Broadcast bei 30 Hz. lastBroadcastAt ist in ms,
+        // currentTimeMs sollte performance.now() sein.
+        const playerMesh = this.state.playerMesh;
+        if (playerMesh && currentTimeMs - p2p.lastBroadcastAt > p2p.broadcastIntervalMs) {
+            p2p.lastBroadcastAt = currentTimeMs;
+            this.p2pSend({
+                type: "pos",
+                x: playerMesh.position.x,
+                y: playerMesh.position.y,
+                z: playerMesh.position.z,
+                yaw: this.state.yaw || 0,
+            });
+        }
+        // Peer-Meshes ans aktuelle Position-State angleichen + idle-purge
+        // (kein update >10 s → entfernen, vermutlich verbindungslos).
+        const nowSec = currentTimeMs / 1000;
+        const stale = [];
+        for (const [pid, entry] of p2p.peers) {
+            if (entry.mesh) {
+                entry.mesh.position.set(entry.x, entry.y - 1, entry.z);
+                entry.mesh.rotation.y = entry.yaw;
+            }
+            if (nowSec - entry.lastSeen > 10) stale.push(pid);
+        }
+        for (const pid of stale) this._p2pRemovePeer(pid);
+    }
+
+    initP2PUI() {
+        const toggle = document.getElementById("p2p-toggle");
+        const urlInput = document.getElementById("p2p-url");
+        const statusEl = document.getElementById("p2p-status");
+        if (!toggle || !urlInput || !statusEl) return;
+        // UI auf gespeicherten Stand setzen
+        urlInput.value = this.state.p2p.url || "ws://127.0.0.1:4313";
+        toggle.setAttribute("aria-pressed", this.state.p2p.enabled ? "true" : "false");
+        toggle.textContent = this.state.p2p.enabled ? "Deaktivieren" : "Aktivieren";
+        this.p2pUpdateStatus();
+        urlInput.addEventListener("change", () => {
+            this.state.p2p.url = urlInput.value.trim() || "ws://127.0.0.1:4313";
+            this.p2pPersist();
+            this.p2pUpdateStatus();
+        });
+        toggle.addEventListener("click", () => {
+            if (this.state.p2p.enabled) {
+                this.state.p2p.enabled = false;
+                this.shutdownP2PSync();
+                toggle.setAttribute("aria-pressed", "false");
+                toggle.textContent = "Aktivieren";
+            } else {
+                this.state.p2p.enabled = true;
+                this.initP2PSync(null);
+                toggle.setAttribute("aria-pressed", "true");
+                toggle.textContent = "Deaktivieren";
+            }
+            this.p2pPersist();
+            this.p2pUpdateStatus();
+        });
+    }
+
+    p2pUpdateStatus() {
+        const statusEl = document.getElementById("p2p-status");
+        if (!statusEl) return;
+        const p = this.state.p2p;
+        if (!p.enabled) {
+            statusEl.textContent = "Inaktiv.";
+            return;
+        }
+        if (p.lastError) {
+            statusEl.textContent = `Fehler: ${p.lastError}`;
+            return;
+        }
+        if (!p.connected) {
+            statusEl.textContent = "Verbinde…";
+            return;
+        }
+        const room = p.room ? `${p.room.slice(0, 8)}…` : "—";
+        const peerCount = p.peers.size;
+        statusEl.textContent = `Verbunden (Raum ${room}, ${peerCount} Mitspieler).`;
     }
 
     // ### Ring 2 Phase 3 – Chat → DSL ###
@@ -11230,6 +11545,11 @@ class AnazhRealm {
         // Schicht 2 — LLM-Persistenz aus localStorage holen + UI verkabeln.
         this.llmLoadPersisted();
         this.initLlmUI();
+        // Ring 11 V1 — P2P-Persistenz aus localStorage + UI-Verkabelung.
+        // Auto-Connect erst nach ensureWorldMeta (sonst hätten wir keine
+        // worldId als default-Raum).
+        this.p2pLoadPersisted();
+        this.initP2PUI();
         // Ring 8: aktive Welt-Identität VOR ensureWorldMeta laden, sonst
         // würde fresh=true triggern (UUID neu + Genesis-Eintrag), obwohl
         // diese Welt bereits existiert. Migriert nebenbei einen Legacy-
@@ -11242,6 +11562,12 @@ class AnazhRealm {
         this.initWeltTorUI();
         // Ring 10 — Welt-Fusion-Dialog.
         this.initWorldFusionUI();
+        // Ring 11 V1 — Auto-Connect, falls Spieler die Verbindung letztes
+        // Mal aktiv gelassen hat. ensureWorldMeta lief eben, also gibt es
+        // jetzt eine worldId als Raum-Default.
+        if (this.state.p2p.enabled) {
+            this.initP2PSync(null);
+        }
         try {
             await this.core.initPhysics();
             this.log("Physik erfolgreich initialisiert", "INFO");
@@ -11519,6 +11845,11 @@ class AnazhRealm {
 
             // ### Status-Panel (UI V1) ###
             this.updateStatusPanel(currentTime);
+
+            // ### Ring 11 V1 — Multi-User Position-Sync ###
+            // Broadcast (30 Hz Drosselung intern) + Peer-Mesh-Update + Idle-
+            // Purge. No-op wenn p2p.enabled === false oder nicht verbunden.
+            this.p2pTick(performance.now());
 
             // ### Bodenprüfung ###
             if (currentTime - this.state.lastGroundCheck >= this.state.groundCheckInterval) {
