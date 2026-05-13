@@ -243,7 +243,14 @@ class AnazhRealm {
                 visibility: "private",
                 parentWorlds: [],
                 bornAt: 0,
-                schemaVersion: "7.73-journal-v1",
+                // Ring 8.1: jede Welt trägt ihren eigenen Terrain-Seed in
+                // worldMeta. SimplexNoise(seed) macht ihn zur einzigen
+                // Quelle der Welt-Geometrie. Bei neuen Welten zufällig,
+                // bei der allerersten (Legacy-Migration) fallen wir auf
+                // den historischen Default "anazh-realm-seed", damit der
+                // Spieler seine erste Welt nicht visuell verliert.
+                seed: null,
+                schemaVersion: "8.0-multiworld-v1",
             },
             // Welle 1 D — Welt-Journal. Geordnete Liste von Erinnerungen
             // (Genesis, erstes Wetter, erste Kreatur, hochfitness Programme,
@@ -3345,9 +3352,442 @@ class AnazhRealm {
             m.slug = `${a}-${n}`;
         }
         if (!m.bornAt) m.bornAt = Date.now();
+        // Ring 8.1: Seed-Strategie. ensureWorldMeta wird nur dann mit
+        // fehlendem Seed aufgerufen, wenn (a) ein brandneuer Spieler ohne
+        // localStorage startet ODER (b) eine Legacy-Welt vor Ring 8.1
+        // migriert wird. In BEIDEN Fällen ist die Wahl des Schöpfers, dass
+        // diese „erste Welt" wie eh und je aussieht — Eingangs-Welt-Gefühl,
+        // identisch für alle, Lehrling-freundlich. Eigene Welten mit
+        // randomisiertem Seed entstehen erst durch ausdrücklichen Akt
+        // (createNewWorld → _generateFreshWorldMeta).
+        if (typeof m.seed !== "string" || m.seed.length === 0) {
+            m.seed = "anazh-realm-seed";
+        }
         if (fresh) {
             this.journalAppend("genesis", `Ich erwache als ${m.slug}.`, { worldId: m.worldId });
+            // Ring 8: frische Welt im Index registrieren. Reload-Migration
+            // (legacy single-key) ruft ensureWorldMeta nach Pre-Load auf;
+            // dort ist worldId schon gesetzt und dieser Pfad bleibt aus.
+            this.worldsIndexUpsert({
+                worldId: m.worldId,
+                slug: m.slug,
+                bornAt: m.bornAt,
+                lastPlayed: Date.now(),
+            });
+            try {
+                localStorage.setItem("anazhRealmActiveWorld", m.worldId);
+            } catch {
+                // localStorage voll/blockiert: aktiver Welt-Zeiger bleibt aus,
+                // nächster Reload startet wieder fresh. Kein Drama.
+            }
         }
+    }
+
+    // ### Ring 8 — Multi-Welt-Verwaltung ###
+    //
+    // Drei localStorage-Keys spannen das Multi-Welt-System:
+    //   - `anazhRealmWorlds`             — JSON-Array `[{worldId, slug, bornAt, lastPlayed}]`
+    //   - `anazhRealmState_<worldId>`    — pro Welt ein voller Snapshot (wie alt `anazhRealmState`)
+    //   - `anazhRealmActiveWorld`        — `<worldId>` der zuletzt aktiven Welt
+    //
+    // Legacy-Schlüssel `anazhRealmState` (single-world Pfad) wird beim ersten
+    // Lauf migriert: worldId aus seinem `worldMeta` (oder neu generiert),
+    // umgeschrieben auf `anazhRealmState_<id>`, in den Index aufgenommen,
+    // als aktive Welt gesetzt, dann der alte Key gelöscht. Einmaliger Pfad
+    // in `_migrateLegacySingleWorld`.
+    //
+    // Welt-Wechsel ist reload-basiert: `saveState()` schreibt den aktuellen
+    // Stand in den per-Welt-Key, `activeWorldSet(target)` zeigt auf die neue
+    // Welt, `window.location.reload()` startet den vollen Init-Pfad neu.
+    // Begründung: in-place Welt-Tausch würde tiefen Dispose-Pfad (Chunks,
+    // Architekturen, Kreaturen, Physik-Bodies, Symphony-Audio, Renderer-
+    // Caches) brauchen und ist Bug-Reservoir; Reload garantiert sauberen
+    // Start ohne State-Leak. UX-Kosten: ~2 s Ladezeit beim Wechsel.
+
+    worldStorageKey(worldId) {
+        return `anazhRealmState_${worldId}`;
+    }
+
+    activeWorldGet() {
+        try {
+            return localStorage.getItem("anazhRealmActiveWorld") || null;
+        } catch {
+            return null;
+        }
+    }
+
+    activeWorldSet(worldId) {
+        try {
+            if (worldId) localStorage.setItem("anazhRealmActiveWorld", worldId);
+            else localStorage.removeItem("anazhRealmActiveWorld");
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    worldsIndexLoad() {
+        try {
+            const raw = localStorage.getItem("anazhRealmWorlds");
+            if (!raw) return [];
+            const arr = JSON.parse(raw);
+            return Array.isArray(arr) ? arr.filter((e) => e && typeof e.worldId === "string") : [];
+        } catch {
+            return [];
+        }
+    }
+
+    worldsIndexSave(arr) {
+        try {
+            localStorage.setItem("anazhRealmWorlds", JSON.stringify(Array.isArray(arr) ? arr : []));
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    // Idempotent: legt einen Eintrag an oder aktualisiert slug/lastPlayed.
+    // Felder bornAt/parentWorlds/visibility nur beim Neu-Anlegen setzen,
+    // sonst würde ein Save später ein verändertes bornAt überschreiben.
+    worldsIndexUpsert(meta) {
+        if (!meta || typeof meta.worldId !== "string") return false;
+        const idx = this.worldsIndexLoad();
+        const existing = idx.find((e) => e.worldId === meta.worldId);
+        if (existing) {
+            if (typeof meta.slug === "string" && meta.slug) existing.slug = meta.slug;
+            if (Number.isFinite(meta.lastPlayed)) existing.lastPlayed = meta.lastPlayed;
+        } else {
+            idx.push({
+                worldId: meta.worldId,
+                slug: meta.slug || "",
+                bornAt: Number.isFinite(meta.bornAt) ? meta.bornAt : Date.now(),
+                lastPlayed: Number.isFinite(meta.lastPlayed) ? meta.lastPlayed : Date.now(),
+            });
+        }
+        return this.worldsIndexSave(idx);
+    }
+
+    worldsIndexRemove(worldId) {
+        const idx = this.worldsIndexLoad();
+        const filtered = idx.filter((e) => e.worldId !== worldId);
+        if (filtered.length === idx.length) return false;
+        return this.worldsIndexSave(filtered);
+    }
+
+    // Liest die zur aktiven Welt-ID passende worldMeta-Sektion AUS DEM SAVE,
+    // ohne den vollen loadState() zu fahren. Wird in init() vor ensure-
+    // WorldMeta aufgerufen, damit der „frische Welt"-Pfad (UUID-Erzeugung +
+    // Genesis-Journal-Eintrag) nicht versehentlich für eine bereits
+    // existierende Welt feuert. Kein UI, kein Mesh-Eingriff — rein Lesen.
+    _preloadActiveWorldMeta() {
+        const active = this.activeWorldGet();
+        if (!active) {
+            // Vielleicht hat der User einen Legacy-Save → erst Migration
+            // versuchen, dann erneut Pre-Load.
+            const migrated = this._migrateLegacySingleWorld();
+            if (!migrated) return false;
+        }
+        const id = this.activeWorldGet();
+        if (!id) return false;
+        try {
+            const raw = localStorage.getItem(this.worldStorageKey(id));
+            if (!raw) return false;
+            const parsed = JSON.parse(raw);
+            if (parsed && parsed.worldMeta && typeof parsed.worldMeta === "object") {
+                this.state.worldMeta = { ...this.state.worldMeta, ...parsed.worldMeta };
+                return true;
+            }
+        } catch (err) {
+            this.log(`Welt-Vorlade fehlgeschlagen: ${err.message}`, "WARN");
+        }
+        return false;
+    }
+
+    // Einmalige Migration: alter Single-Key `anazhRealmState` bekommt eine
+    // worldId (aus seinem eigenen worldMeta, oder neu), wird auf den Multi-
+    // Key umgeschrieben, in den Index aufgenommen, als aktiv markiert. Der
+    // alte Key wird danach gelöscht, damit beim nächsten Start kein doppelter
+    // Pfad existiert. Gibt true zurück, wenn migriert wurde.
+    _migrateLegacySingleWorld() {
+        try {
+            const legacy = localStorage.getItem("anazhRealmState");
+            if (!legacy) return false;
+            const parsed = JSON.parse(legacy);
+            if (!parsed || typeof parsed !== "object") return false;
+            // worldId entscheiden: Save hat eine, oder wir generieren eine.
+            let worldId = parsed.worldMeta && parsed.worldMeta.worldId;
+            if (!worldId) {
+                try {
+                    worldId =
+                        typeof crypto !== "undefined" && crypto.randomUUID
+                            ? crypto.randomUUID()
+                            : "w_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+                } catch {
+                    worldId = "w_" + Math.random().toString(36).slice(2, 10);
+                }
+                parsed.worldMeta = { ...(parsed.worldMeta || {}), worldId };
+            }
+            const slug = (parsed.worldMeta && parsed.worldMeta.slug) || "";
+            const bornAt = (parsed.worldMeta && parsed.worldMeta.bornAt) || Date.now();
+            localStorage.setItem(this.worldStorageKey(worldId), JSON.stringify(parsed));
+            this.worldsIndexUpsert({ worldId, slug, bornAt, lastPlayed: Date.now() });
+            this.activeWorldSet(worldId);
+            localStorage.removeItem("anazhRealmState");
+            this.log(
+                `Welt-Migration: alter Single-Welt-Save → Multi-Welt-Index (worldId=${worldId.slice(0, 8)}…)`,
+                "INFO"
+            );
+            return true;
+        } catch (err) {
+            this.log(`Welt-Migration fehlgeschlagen: ${err.message}`, "ERROR");
+            return false;
+        }
+    }
+
+    // Generator-Helfer: erzeugt einen frischen worldMeta-Block (UUID + slug
+    // + bornAt). Nicht idempotent — jeder Aufruf eine neue ID. Wird von
+    // createNewWorld genutzt.
+    _generateFreshWorldMeta(slug) {
+        let worldId;
+        try {
+            worldId =
+                typeof crypto !== "undefined" && crypto.randomUUID
+                    ? crypto.randomUUID()
+                    : "w_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+        } catch {
+            worldId = "w_" + Math.random().toString(36).slice(2, 10);
+        }
+        let finalSlug = (slug || "")
+            .toString()
+            .toLowerCase()
+            .replace(/[^a-z0-9_-]/g, "");
+        if (!finalSlug) {
+            const adjectives = ["still", "weite", "klare", "dunkle", "warme", "leise", "wache"];
+            const nouns = ["aue", "feld", "ufer", "saum", "weiher", "halde", "hain"];
+            const a = adjectives[Math.floor(Math.random() * adjectives.length)];
+            const n = nouns[Math.floor(Math.random() * nouns.length)];
+            finalSlug = `${a}-${n}`;
+        }
+        // Slug-Eindeutigkeit: wenn ein Index-Eintrag denselben slug hat,
+        // hängen wir `-2`/`-3`/… an, bis frei.
+        const usedSlugs = new Set(this.worldsIndexLoad().map((e) => e.slug));
+        if (usedSlugs.has(finalSlug)) {
+            let n = 2;
+            while (usedSlugs.has(`${finalSlug}-${n}`)) n++;
+            finalSlug = `${finalSlug}-${n}`;
+        }
+        // Ring 8.1: jeder neue Welt-Akt erzeugt einen eigenen Terrain-Seed.
+        // Mensch + UUID-Fragment bilden eine kurze, lesbare Quelle; SimplexNoise
+        // hasht das intern. Der Seed bleibt für die gesamte Welt-Lebensdauer
+        // konstant (in worldMeta persistiert).
+        const seed = `w-${worldId.replace(/-/g, "").slice(0, 12)}-${Math.random().toString(36).slice(2, 8)}`;
+        return { worldId, slug: finalSlug, bornAt: Date.now(), seed };
+    }
+
+    // Snapshot einer „leeren" Welt mit gegebenem worldMeta. Optional bekommt
+    // die Welt einen Player-Snapshot (für „bisherige Person übernehmen").
+    // Wird vor dem Reload geschrieben — der Reload-Init-Pfad findet einen
+    // gültigen Per-Welt-Save vor und startet die neue Welt mit dieser Basis.
+    _buildEmptyWorldSnapshot(worldMeta, inheritPlayer) {
+        const snap = {
+            // Ring 8.2: Y=50 wie beim allerersten Spawn — der Spieler fällt
+            // sauber aufs Terrain. Y=5 würde ihn in steile Hänge clippen
+            // lassen, weil das Terrain je nach Seed auch 30+ Einheiten hoch
+            // sein kann. Die loadState-Position-Restore-Logik teleportiert
+            // sonst auf die zu tiefe Höhe, statt einen Spawn-Fall zu lassen.
+            playerPosition: { x: 0, y: 50, z: 0 },
+            knowledgeBase: [],
+            version: this.state.currentVersion || "7.66",
+            selfAwareness: { components: [], weaknesses: [] },
+            creatures: [],
+            creatureEmotions: [],
+            terrainSteepness: 1.0,
+            terrainBaseHeight: 0.0,
+            weather: "sunny",
+            // Eine neue Welt erbt KEINE parentWorlds — sie ist eigenständig
+            // (Fusion mit parentWorlds folgt in Ring 10). visibility/creator
+            // bleiben aus der Schöpfer-Wahl (Default „private"/„local").
+            worldMeta: {
+                ...this.state.worldMeta,
+                ...worldMeta,
+                parentWorlds: [],
+                schemaVersion: "8.0-multiworld-v1",
+            },
+            dslAbilities: [],
+            dslHistory: [],
+            dslPatternMemory: {},
+            playerPathBuckets: null,
+            // Ring 8.1: neue Welt bekommt sofort einen Genesis-Eintrag —
+            // ensureWorldMeta würde ihn nach dem Reload nicht mehr setzen
+            // (worldId ist dann schon im Save). Stattdessen schreiben wir
+            // ihn beim Anlegen mit, mit „genesis"-Schlüssel im seen-Map,
+            // damit kein Duplikat möglich ist.
+            worldJournal: {
+                entries: [
+                    {
+                        id: 1,
+                        at: Date.now(),
+                        tick: 0,
+                        type: "genesis",
+                        text: `Ich erwache als ${worldMeta.slug}.`,
+                        ctx: {
+                            worldId: worldMeta.worldId,
+                            seed: worldMeta.seed || null,
+                            inheritedPlayer: !!inheritPlayer,
+                        },
+                    },
+                ],
+                seen: { genesis: true },
+            },
+            playerEmotions: { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 },
+            playerSoul: "human",
+            playerTools: [],
+            architectures: [],
+            blueprints: [],
+            tools: [],
+            materials: [],
+            hotbar: [],
+        };
+        if (inheritPlayer) {
+            // Person-Übernahme: Werkzeug-Besitz + Seele werden mitgenommen,
+            // aber Pfad-Buckets, Emotionen, Journal bleiben welt-spezifisch
+            // (eine andere Welt = ein neues Gemüt, eine neue Geschichte).
+            snap.playerSoul = this.state.player.soul || "human";
+            snap.playerTools = Array.isArray(this.state.player.tools) ? [...this.state.player.tools] : [];
+            // Auch eigene Materialien und Werkzeuge (aus state.materials /
+            // state.tools, jeweils nicht-builtIn) wandern mit, weil sie an
+            // den Spieler-Schöpfer gebunden sind, nicht an die Welt.
+            snap.materials = Object.values(this.state.materials || {})
+                .filter((m) => m && !m.builtIn)
+                .map((m) => ({ name: m.name, label: m.label || m.name, color: m.color, tags: { ...m.tags } }));
+            snap.tools = Object.values(this.state.tools || {})
+                .filter((t) => t && !t.builtIn)
+                .map((t) => ({
+                    name: t.name,
+                    label: t.label,
+                    opClass: t.opClass,
+                    opName: t.opName,
+                    precisionCap: t.precisionCap,
+                    sourceBlueprint: t.sourceBlueprint || null,
+                }));
+            // Eigene Baupläne ebenfalls — sie sind Schöpfer-Wissen, kein
+            // Welt-Erlebnis. Hotbar bleibt leer (Welt-spezifisch).
+            snap.blueprints = Object.values(this.state.blueprints || {})
+                .filter((bp) => bp && !bp.builtIn)
+                .map((bp) => ({
+                    name: bp.name,
+                    label: bp.label || bp.name,
+                    parts: Array.isArray(bp.parts) ? JSON.parse(JSON.stringify(bp.parts)) : [],
+                    connections: Array.isArray(bp.connections) ? JSON.parse(JSON.stringify(bp.connections)) : [],
+                    ...(bp.role === "tool" && bp.toolMeta
+                        ? { role: "tool", toolMeta: { opName: bp.toolMeta.opName, opClass: bp.toolMeta.opClass } }
+                        : {}),
+                }));
+        }
+        return snap;
+    }
+
+    // Hauptpfad: neue Welt anlegen, schreiben, aktiv setzen. Reload-Trigger
+    // standardmäßig aus, damit Tests die Daten-Schicht prüfen können ohne
+    // Page-Reload. UI-Aufrufer hängen explizit ein `window.location.reload()`
+    // nach erfolgreichem Aufruf an.
+    createNewWorld({ slug = null, inheritPlayer = false, reload = false } = {}) {
+        // Aktuelle Welt zuerst sichern, sonst geht der Stand verloren.
+        if (this.state.worldMeta && this.state.worldMeta.worldId) {
+            try {
+                this.saveState();
+            } catch (err) {
+                this.log(`Save vor New-World fehlgeschlagen: ${err.message}`, "WARN");
+            }
+        }
+        const meta = this._generateFreshWorldMeta(slug);
+        const snap = this._buildEmptyWorldSnapshot(meta, inheritPlayer);
+        try {
+            localStorage.setItem(this.worldStorageKey(meta.worldId), JSON.stringify(snap));
+        } catch (err) {
+            this.log(`Neue Welt konnte nicht geschrieben werden: ${err.message}`, "ERROR");
+            return null;
+        }
+        this.worldsIndexUpsert({
+            worldId: meta.worldId,
+            slug: meta.slug,
+            bornAt: meta.bornAt,
+            lastPlayed: Date.now(),
+        });
+        this.activeWorldSet(meta.worldId);
+        this.log(
+            `Neue Welt erschaffen: ${meta.slug} (${meta.worldId.slice(0, 8)}…, inheritPlayer=${inheritPlayer})`,
+            "INFO"
+        );
+        if (
+            reload &&
+            typeof window !== "undefined" &&
+            window.location &&
+            typeof window.location.reload === "function"
+        ) {
+            window.location.reload();
+        }
+        return meta.worldId;
+    }
+
+    // Wechsel zu einer existierenden Welt. Sichert aktuelle, setzt aktiv,
+    // optional Reload. Gibt false zurück, wenn die Ziel-Welt nicht im
+    // Speicher existiert (Index-Eintrag ohne Save-Datei wäre ein Bug).
+    switchToWorld(worldId, { reload = false } = {}) {
+        if (!worldId || typeof worldId !== "string") return false;
+        if (worldId === (this.state.worldMeta && this.state.worldMeta.worldId)) {
+            // Bereits aktiv, kein Wechsel nötig.
+            return true;
+        }
+        const targetRaw = localStorage.getItem(this.worldStorageKey(worldId));
+        if (!targetRaw) {
+            this.log(`Welt-Wechsel verweigert: kein Save für ${worldId.slice(0, 8)}…`, "ERROR");
+            return false;
+        }
+        // Aktuelle Welt sichern.
+        if (this.state.worldMeta && this.state.worldMeta.worldId) {
+            try {
+                this.saveState();
+            } catch (err) {
+                this.log(`Save vor Welt-Wechsel fehlgeschlagen: ${err.message}`, "WARN");
+            }
+        }
+        // Index-lastPlayed der Ziel-Welt aktualisieren.
+        const idx = this.worldsIndexLoad();
+        const target = idx.find((e) => e.worldId === worldId);
+        if (target) {
+            target.lastPlayed = Date.now();
+            this.worldsIndexSave(idx);
+        }
+        this.activeWorldSet(worldId);
+        this.log(`Welt-Wechsel: aktiv ist nun ${worldId.slice(0, 8)}…`, "INFO");
+        if (
+            reload &&
+            typeof window !== "undefined" &&
+            window.location &&
+            typeof window.location.reload === "function"
+        ) {
+            window.location.reload();
+        }
+        return true;
+    }
+
+    // Welt löschen. Aktuelle Welt darf nicht gelöscht werden — der Spieler
+    // muss erst wechseln. Save-Datei + Index-Eintrag werden entfernt.
+    deleteWorld(worldId) {
+        if (!worldId || typeof worldId !== "string") return false;
+        if (worldId === (this.state.worldMeta && this.state.worldMeta.worldId)) {
+            this.log("Welt-Löschung verweigert: aktive Welt kann nicht gelöscht werden.", "WARN");
+            return false;
+        }
+        try {
+            localStorage.removeItem(this.worldStorageKey(worldId));
+        } catch {
+            // ignorieren — Index trotzdem bereinigen, damit der UI-Picker stimmt.
+        }
+        this.worldsIndexRemove(worldId);
+        this.log(`Welt gelöscht: ${worldId.slice(0, 8)}…`, "INFO");
+        return true;
     }
 
     // ### Welle 1 D — Welt-Journal ###
@@ -4484,6 +4924,71 @@ class AnazhRealm {
         } else if (parts[0] === "spawne" && parts[1] === "neue" && parts[2] === "welt") {
             this.generateNewWorld();
             appendChatOutput("Neue Welt generiert");
+        } else if ((parts[0] === "erschaffe" && parts[1] === "welt") || (parts[0] === "neue" && parts[1] === "welt")) {
+            // Ring 8: neue eigenständige Welt mit eigener worldId. Optional
+            // „mit person" am Ende → bisherige Spieler-Identität übernehmen.
+            // Slug ist alles zwischen dem Verb-Paar und einem optionalen Trailer.
+            const inherit = / mit person$/i.test(command) || / mit übernahme$/i.test(command);
+            let slug = "";
+            const headLen = parts[0] === "erschaffe" ? 2 : 2;
+            const rest = parts.slice(headLen).join(" ").trim();
+            slug = rest
+                .replace(/ mit person$/i, "")
+                .replace(/ mit übernahme$/i, "")
+                .trim();
+            const newId = this.createNewWorld({ slug: slug || null, inheritPlayer: inherit, reload: true });
+            if (newId) {
+                appendChatOutput(`Neue Welt erschaffen (lade neu, Person ${inherit ? "übernommen" : "neu"}…)`);
+            } else {
+                appendChatOutput("Neue Welt konnte nicht erschaffen werden — siehe Log.");
+            }
+        } else if (parts[0] === "wechsle" && (parts[1] === "zu" || parts[1] === "zur") && parts.length >= 3) {
+            // Ring 8: Wechsel zu einer existierenden Welt via slug. Wir
+            // suchen den Index, finden den passenden Eintrag (genauer Match
+            // oder Präfix), und triggern den Reload.
+            const targetSlug = parts
+                .slice(parts[2] === "welt" ? 3 : 2)
+                .join(" ")
+                .trim();
+            const idx = this.worldsIndexLoad();
+            const exact = idx.find((e) => e.slug === targetSlug);
+            const prefix = exact || idx.find((e) => e.slug && e.slug.startsWith(targetSlug));
+            if (!prefix) {
+                appendChatOutput(`Welt „${targetSlug}" nicht gefunden. Befehl „liste welten" zeigt verfügbare.`);
+            } else {
+                const ok = this.switchToWorld(prefix.worldId, { reload: true });
+                if (ok) appendChatOutput(`Wechsle zu ${prefix.slug}…`);
+                else appendChatOutput("Welt-Wechsel verweigert (siehe Log).");
+            }
+        } else if (parts[0] === "lösche" && parts[1] === "welt" && parts.length >= 3) {
+            const targetSlug = parts.slice(2).join(" ").trim();
+            const idx = this.worldsIndexLoad();
+            const entry = idx.find((e) => e.slug === targetSlug);
+            if (!entry) {
+                appendChatOutput(`Welt „${targetSlug}" nicht gefunden.`);
+            } else if (entry.worldId === this.state.worldMeta.worldId) {
+                appendChatOutput("Die aktive Welt kann nicht gelöscht werden. Wechsle erst zu einer anderen.");
+            } else {
+                this.deleteWorld(entry.worldId);
+                appendChatOutput(`Welt „${entry.slug}" gelöscht.`);
+                this.updateWorldInfo();
+            }
+        } else if ((parts[0] === "liste" || parts[0] === "zeige") && parts[1] === "welten") {
+            const idx = this.worldsIndexLoad();
+            if (idx.length === 0) {
+                appendChatOutput("Nur diese eine Welt im Speicher.");
+            } else {
+                const lines = idx
+                    .slice()
+                    .sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0))
+                    .map((e) => {
+                        const ageDays = e.bornAt ? Math.floor((Date.now() - e.bornAt) / 86400000) : 0;
+                        const isActive = e.worldId === this.state.worldMeta.worldId;
+                        return `${isActive ? "★ " : "  "}${e.slug} — ${ageDays}d alt, ID ${e.worldId.slice(0, 8)}…`;
+                    });
+                appendChatOutput(`Welten im Speicher (${idx.length}):`);
+                for (const l of lines) appendChatOutput(l);
+            }
         } else if (parts[0] === "behebe" && parts[1] === "physik-tunneling") {
             this.optimizeCollisions();
             appendChatOutput("Physik-Tunneling behoben: CCD angepasst");
@@ -4840,9 +5345,13 @@ class AnazhRealm {
         let maxHeight = -Infinity;
 
         if (typeof SimplexNoise !== "undefined") {
-            const noise = new SimplexNoise(this.state.seed || "anazh-realm-seed");
-            const caveNoise = new SimplexNoise((this.state.seed || "anazh-realm-seed") + "-cave");
-            const volcanoNoise = new SimplexNoise((this.state.seed || "anazh-realm-seed") + "-volcano");
+            const noise = new SimplexNoise((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed");
+            const caveNoise = new SimplexNoise(
+                ((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed") + "-cave"
+            );
+            const volcanoNoise = new SimplexNoise(
+                ((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed") + "-volcano"
+            );
 
             for (let i = 0; i < WIDTH * DEPTH; i++) {
                 const x = (i % WIDTH) * (WORLD_SIZE / (WIDTH - 1)) - WORLD_SIZE / 2;
@@ -5046,7 +5555,9 @@ class AnazhRealm {
             const indices = [];
             const uvs = [];
 
-            const islandNoise = new SimplexNoise((this.state.seed || "anazh-realm-seed") + `-island-${i}`);
+            const islandNoise = new SimplexNoise(
+                ((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed") + `-island-${i}`
+            );
             const points = [];
             for (let z = 0; z < islandSize; z++) {
                 const row = [];
@@ -5647,7 +6158,7 @@ class AnazhRealm {
         const worldStartX = newChunkX * chunkWorldSize - WORLD_SIZE / 2;
         const worldStartZ = newChunkZ * chunkWorldSize - WORLD_SIZE / 2;
 
-        const seed = this.state.seed || "anazh-realm-seed";
+        const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
         const noise = new SimplexNoise(seed);
         const caveNoise = new SimplexNoise(seed + "-cave");
         const volcanoNoise = new SimplexNoise(seed + "-volcano");
@@ -5919,8 +6430,25 @@ class AnazhRealm {
 
     saveState() {
         const stateToSave = this.buildStateSnapshot();
+        // Ring 8: Multi-Welt-Pfad. Pro Welt eigener Key, Index-Eintrag mit
+        // lastPlayed aktualisieren. Wenn aus irgendeinem Grund keine
+        // worldId existiert (sollte nach ensureWorldMeta nie passieren),
+        // fallen wir auf den Legacy-Key zurück, damit der Spieler nicht
+        // still verliert.
+        const worldId = this.state.worldMeta && this.state.worldMeta.worldId;
         try {
-            localStorage.setItem("anazhRealmState", JSON.stringify(stateToSave));
+            if (worldId) {
+                localStorage.setItem(this.worldStorageKey(worldId), JSON.stringify(stateToSave));
+                this.worldsIndexUpsert({
+                    worldId,
+                    slug: this.state.worldMeta.slug || "",
+                    bornAt: this.state.worldMeta.bornAt || Date.now(),
+                    lastPlayed: Date.now(),
+                });
+                this.activeWorldSet(worldId);
+            } else {
+                localStorage.setItem("anazhRealmState", JSON.stringify(stateToSave));
+            }
             const lastVersion = this.state.versionHistory[this.state.versionHistory.length - 1];
             if (lastVersion !== this.state.currentVersion) {
                 this.state.versionHistory.push(this.state.currentVersion);
@@ -5970,7 +6498,46 @@ class AnazhRealm {
         if (importBtn) {
             importBtn.addEventListener("click", () => this.openStateFilePicker());
         }
+        // Ring 8: Welt-Picker. „Neue Welt" öffnet einen Inline-Dialog für slug
+        // + Person-Übernahme. Die Liste anderer Welten wird in updateWorldInfo
+        // gerendert; pro Eintrag ein „wechseln"-Button + „löschen"-Button.
+        const newBtn = document.getElementById("world-new");
+        if (newBtn) {
+            newBtn.addEventListener("click", () => this._openNewWorldDialog());
+        }
         this.updateWorldInfo();
+    }
+
+    // Ring 8: Inline-Dialog für „Neue Welt"-Erschaffung. Bewusst minimal,
+    // kein <dialog>-Element — wir benutzen prompt+confirm, damit das UI keine
+    // neuen Markup-Schichten braucht. Painterly-Polish kann später als
+    // eigener Commit kommen.
+    _openNewWorldDialog() {
+        let slugRaw = "";
+        try {
+            slugRaw = window.prompt("Wie soll die neue Welt heißen? (leer = automatisch)", "") || "";
+        } catch {
+            slugRaw = "";
+        }
+        const slug = slugRaw.trim();
+        let inherit = false;
+        try {
+            inherit = window.confirm(
+                "Bisherige Person übernehmen?\n\n" +
+                    "OK: deine Werkzeuge, Seele, eigene Materialien + Baupläne wandern mit.\n" +
+                    "Abbrechen: frische Person in der neuen Welt."
+            );
+        } catch {
+            inherit = false;
+        }
+        const newId = this.createNewWorld({ slug: slug || null, inheritPlayer: inherit, reload: true });
+        if (!newId) {
+            try {
+                window.alert("Neue Welt konnte nicht erschaffen werden. Siehe Konsole.");
+            } catch {
+                // headless: kein alert
+            }
+        }
     }
 
     updateWorldInfo() {
@@ -5994,6 +6561,63 @@ class AnazhRealm {
         info.appendChild(line2);
         info.appendChild(line3);
         this.renderWorldJournal();
+        this._renderWorldPicker();
+    }
+
+    // Ring 8: Welt-Picker rendert die Liste der anderen Welten im Index.
+    // Pro Eintrag ein Container mit slug + Alter + zwei Buttons (wechseln /
+    // löschen). Die aktive Welt wird ausgeblendet (sie steht oben in
+    // „Diese Welt").
+    _renderWorldPicker() {
+        const list = document.getElementById("world-picker-list");
+        if (!list) return;
+        const idx = this.worldsIndexLoad();
+        const activeId = (this.state.worldMeta && this.state.worldMeta.worldId) || null;
+        const others = idx.filter((e) => e.worldId !== activeId);
+        list.innerHTML = "";
+        if (others.length === 0) {
+            list.textContent = "Nur diese eine Welt im Speicher.";
+            return;
+        }
+        // Frisch sortieren: zuletzt gespielt zuerst.
+        others.sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0));
+        for (const entry of others) {
+            const row = document.createElement("div");
+            row.className = "world-picker-row";
+            row.style.cssText =
+                "display:flex; align-items:center; gap:0.5em; margin:0.3em 0; padding:0.3em 0; border-bottom:1px solid var(--brass-faint, rgba(160,120,60,0.18));";
+            const label = document.createElement("div");
+            label.style.cssText = "flex:1; min-width:0;";
+            const ageDays = entry.bornAt ? Math.floor((Date.now() - entry.bornAt) / 86400000) : 0;
+            label.textContent = `${entry.slug || "(namenlos)"} — ${ageDays}d, ID ${entry.worldId.slice(0, 8)}…`;
+            const switchBtn = document.createElement("button");
+            switchBtn.type = "button";
+            switchBtn.textContent = "wechseln";
+            switchBtn.addEventListener("click", () => {
+                this.switchToWorld(entry.worldId, { reload: true });
+            });
+            const delBtn = document.createElement("button");
+            delBtn.type = "button";
+            delBtn.textContent = "löschen";
+            delBtn.addEventListener("click", () => {
+                let confirmed = false;
+                try {
+                    confirmed = window.confirm(
+                        `Welt „${entry.slug}" wirklich löschen? Das kann nicht rückgängig gemacht werden.`
+                    );
+                } catch {
+                    confirmed = true;
+                }
+                if (confirmed) {
+                    this.deleteWorld(entry.worldId);
+                    this._renderWorldPicker();
+                }
+            });
+            row.appendChild(label);
+            row.appendChild(switchBtn);
+            row.appendChild(delBtn);
+            list.appendChild(row);
+        }
     }
 
     // Gescrolltes Tagebuch im Welt-Drawer: alle Erinnerungen, jüngste oben.
@@ -6155,9 +6779,19 @@ class AnazhRealm {
     loadState(externalState = null) {
         // Drei Quellen werden unterstützt: localStorage (Default), externes
         // Objekt (z. B. aus File-Upload), oder gar nichts (frühes init()).
+        // Ring 8: localStorage-Pfad geht über die aktive worldId, fällt
+        // notfalls auf den Legacy-Single-Key zurück (Migration ist beim
+        // Pre-Load passiert, aber Defensive bleibt drin).
         let state = externalState;
         if (!state) {
-            const savedState = localStorage.getItem("anazhRealmState");
+            const activeId = this.activeWorldGet();
+            let savedState = null;
+            if (activeId) {
+                savedState = localStorage.getItem(this.worldStorageKey(activeId));
+            }
+            if (!savedState) {
+                savedState = localStorage.getItem("anazhRealmState");
+            }
             if (!savedState) return false;
             try {
                 state = JSON.parse(savedState);
@@ -6171,6 +6805,13 @@ class AnazhRealm {
         const safeX = Number.isFinite(playerPosition.x) ? playerPosition.x : 0;
         const safeY = Number.isFinite(playerPosition.y) ? playerPosition.y : 5;
         const safeZ = Number.isFinite(playerPosition.z) ? playerPosition.z : 0;
+        // Ring 8.2: loadState markiert die Welt als „bereits einmal generiert",
+        // damit das auf init() folgende generateNewWorld() den Spieler nicht
+        // auf (0, 50, 0) teleportiert. Die geladene Position bleibt damit
+        // intakt. Brand-neue Welten (loadState findet nichts) lassen das Flag
+        // auf false, und der erste generateNewWorld-Lauf setzt den Spieler
+        // wie bisher auf den Default-Spawn.
+        this.state.terrainEverGenerated = true;
         if (this.state.playerMesh) {
             this.state.playerMesh.position.set(safeX, safeY, safeZ);
             this.state.playerMesh.visible = true;
@@ -6413,10 +7054,29 @@ class AnazhRealm {
             if (restored > 0) this.log(`Legacy-Fähigkeiten migriert: ${restored}`);
         }
         // Bei externer Quelle: in localStorage spiegeln, damit ein Reload
-        // den importierten Stand behält.
+        // den importierten Stand behält. Ring 8: Per-Welt-Key + Index, sonst
+        // Legacy-Fallback. Externe Quelle kann eine fremde worldId tragen —
+        // wir nehmen sie an, registrieren sie und setzen sie als aktiv.
         if (externalState) {
             try {
-                localStorage.setItem("anazhRealmState", JSON.stringify(externalState));
+                const m = externalState.worldMeta;
+                const targetId =
+                    (m && typeof m.worldId === "string" && m.worldId) ||
+                    (this.state.worldMeta && this.state.worldMeta.worldId) ||
+                    null;
+                if (targetId) {
+                    localStorage.setItem(this.worldStorageKey(targetId), JSON.stringify(externalState));
+                    this.worldsIndexUpsert({
+                        worldId: targetId,
+                        slug: (m && m.slug) || (this.state.worldMeta && this.state.worldMeta.slug) || "",
+                        bornAt: (m && m.bornAt) || Date.now(),
+                        lastPlayed: Date.now(),
+                    });
+                    this.activeWorldSet(targetId);
+                } else {
+                    // Fallback nur, wenn weder externe noch aktive worldId existiert.
+                    localStorage.setItem("anazhRealmState", JSON.stringify(externalState));
+                }
             } catch (e) {
                 this.log(`localStorage-Persistenz nach Import fehlgeschlagen: ${e.message}`, "WARNING");
             }
@@ -9342,6 +10002,11 @@ class AnazhRealm {
         // Schicht 2 — LLM-Persistenz aus localStorage holen + UI verkabeln.
         this.llmLoadPersisted();
         this.initLlmUI();
+        // Ring 8: aktive Welt-Identität VOR ensureWorldMeta laden, sonst
+        // würde fresh=true triggern (UUID neu + Genesis-Eintrag), obwohl
+        // diese Welt bereits existiert. Migriert nebenbei einen Legacy-
+        // Single-Welt-Save, falls vorhanden.
+        this._preloadActiveWorldMeta();
         this.ensureWorldMeta();
         // Welle 3 F — Welt-Info-Sektion im Welt-Drawer.
         this.initWorldInfoUI();

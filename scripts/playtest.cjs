@@ -489,14 +489,13 @@ function startSaveServer() {
                     r.processChatCommand("Erzähle Drachen leben hier");
                     const narratives = r.state.knowledgeBase.filter((k) => k.type === "narrative");
                     out.narrativeRecorded =
-                        narratives.length === kbBefore + 1 && narratives[narratives.length - 1].content === "Drachen leben hier";
+                        narratives.length === kbBefore + 1 &&
+                        narratives[narratives.length - 1].content === "Drachen leben hier";
 
                     // 6. Phase 3b: set_visible mit unbekanntem Target wird abgelehnt
                     const beforeLog = r.state.dsl.lastUserOutcome ? r.state.dsl.lastUserOutcome.errors : 0;
                     const badResult = r.dslRun(["set_visible", "mond", true]);
-                    out.invalidTargetRejected = badResult.log.some(
-                        (e) => e.event === "invalid_set_visible_target"
-                    );
+                    out.invalidTargetRejected = badResult.log.some((e) => e.event === "invalid_set_visible_target");
                     void beforeLog;
 
                     // 7. Phase 5: "Lerne Fähigkeit" speichert DSL-Programm
@@ -519,7 +518,7 @@ function startSaveServer() {
 
                     // 9. Phase 4: Save-Roundtrip — dslAbilities überleben localStorage
                     r.saveState();
-                    const raw = localStorage.getItem("anazhRealmState");
+                    const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
                     let parsed = null;
                     try {
                         parsed = JSON.parse(raw);
@@ -547,40 +546,25 @@ function startSaveServer() {
                 check("Phase-3-Snapshot erreichbar", false, "page.evaluate fehlgeschlagen");
             } else {
                 check("Chat→DSL: 'Setze Wetter rainy' → ['weather','rainy']", phase3Results.parseWeatherOk);
-                check(
-                    "Chat→DSL: 'Spawne Kreaturen 3' → repeat+spawn_creature",
-                    phase3Results.parseSpawnOk
-                );
-                check(
-                    "Chat→DSL: unbekannter Befehl liefert null (kein Match)",
-                    phase3Results.parseUnknownReturnsNull
-                );
+                check("Chat→DSL: 'Spawne Kreaturen 3' → repeat+spawn_creature", phase3Results.parseSpawnOk);
+                check("Chat→DSL: unbekannter Befehl liefert null (kein Match)", phase3Results.parseUnknownReturnsNull);
                 check(
                     "processChatCommand routet Welt-Befehl auf dslRun",
                     phase3Results.chatRoutedToDsl,
                     "state.dsl.lastUserProgram gesetzt"
                 );
-                check(
-                    "DSL-Pfad mutiert tatsächlich state.weather",
-                    phase3Results.weatherActuallyChanged
-                );
+                check("DSL-Pfad mutiert tatsächlich state.weather", phase3Results.weatherActuallyChanged);
                 check(
                     "chatSuggest schlägt korrigierten Befehl bei Tippfehler vor",
                     phase3Results.suggestionForTypo,
                     "'setze wettr rainy' → 'setze wetter rainy'"
                 );
-                check(
-                    "Phase 3b: 'Boden deaktivieren' via DSL versteckt Terrain",
-                    phase3Results.terrainHiddenViaDsl
-                );
+                check("Phase 3b: 'Boden deaktivieren' via DSL versteckt Terrain", phase3Results.terrainHiddenViaDsl);
                 check(
                     "Phase 3b: 'Boden aktivieren' via DSL macht Terrain wieder sichtbar",
                     phase3Results.terrainShownViaDsl
                 );
-                check(
-                    "Phase 3b: 'Erzähle ...' schreibt Narrativ in Knowledge-Base",
-                    phase3Results.narrativeRecorded
-                );
+                check("Phase 3b: 'Erzähle ...' schreibt Narrativ in Knowledge-Base", phase3Results.narrativeRecorded);
                 check(
                     "Phase 3b: set_visible mit ungültigem Target wird abgelehnt",
                     phase3Results.invalidTargetRejected
@@ -593,10 +577,7 @@ function startSaveServer() {
                     "Phase 5: 'Führe Fähigkeit aus' ruft dslRun und mutiert Welt",
                     phase3Results.abilityExecutedMutatesWorld
                 );
-                check(
-                    "Phase 4: Save persistiert dslAbilities",
-                    phase3Results.savedDslAbilitiesPresent
-                );
+                check("Phase 4: Save persistiert dslAbilities", phase3Results.savedDslAbilitiesPresent);
                 check(
                     "Phase 4: Save enthält keine Legacy-abilities-Namensliste mehr",
                     phase3Results.savedNoLegacyAbilitiesList
@@ -626,18 +607,13 @@ function startSaveServer() {
                 })
                 .catch(() => null);
 
-            const cspViolationLogs = logs.filter((l) =>
-                /Content Security Policy directive/i.test(l.text)
-            );
+            const cspViolationLogs = logs.filter((l) => /Content Security Policy directive/i.test(l.text));
 
             if (!cspResults) {
                 check("Phase 6: CSP-Meta-Snapshot erreichbar", false, "page.evaluate fehlgeschlagen");
             } else {
                 check("Phase 6: CSP-Meta-Tag vorhanden", cspResults.metaPresent);
-                check(
-                    "Phase 6: script-src 'self' gesetzt (Skripte nur lokal)",
-                    cspResults.hasScriptSrc
-                );
+                check("Phase 6: script-src 'self' gesetzt (Skripte nur lokal)", cspResults.hasScriptSrc);
                 check("Phase 6: object-src 'none' (Flash/Plugins blockiert)", cspResults.hasObjectNone);
                 check("Phase 6: base-uri 'self' (URL-Manipulation blockiert)", cspResults.hasBaseUriSelf);
                 check("Phase 6: default-src 'self' (alles per Default lokal)", cspResults.hasDefaultSrc);
@@ -771,12 +747,11 @@ function startSaveServer() {
                         !!r.state.player.pathBuckets &&
                         !!r.state.player.pathBuckets.height &&
                         !!r.state.player.pathBuckets.distance;
-                    out.hasPatternMemory =
-                        r.state.dsl && typeof r.state.dsl.patternMemory === "object";
+                    out.hasPatternMemory = r.state.dsl && typeof r.state.dsl.patternMemory === "object";
                     out.hasRecentKeywords = Array.isArray(r.state.dsl.recentKeywords);
                     out.hasPendingOutcomes = Array.isArray(r.state.dsl.pendingOutcomes);
                     out.historyCap500 = r.state.dsl.historyCap >= 500;
-                    out.schemaVersionIq = /^7\.7[2-9]/.test(r.state.worldMeta.schemaVersion);
+                    out.schemaVersionIq = /^(7\.7[2-9]|8\.0-multiworld)/.test(r.state.worldMeta.schemaVersion);
 
                     // Keyword-Extraktion
                     const kws = r.pathExtractKeywords("Ich liebe den Wald und Wasserfälle hier");
@@ -820,15 +795,11 @@ function startSaveServer() {
                         0.8,
                         110
                     );
-                    out.patternMemoryWritten = Array.isArray(r.state.dsl.patternMemory["drache"]) &&
+                    out.patternMemoryWritten =
+                        Array.isArray(r.state.dsl.patternMemory["drache"]) &&
                         r.state.dsl.patternMemory["drache"].length === 1;
                     // Low-fitness Programme werden NICHT geschrieben
-                    r.rememberOutcomeAsPattern(
-                        { startedAt: 100 },
-                        ["weather", "rainy"],
-                        0.3,
-                        110
-                    );
+                    r.rememberOutcomeAsPattern({ startedAt: 100 }, ["weather", "rainy"], 0.3, 110);
                     out.lowFitnessIgnored = r.state.dsl.patternMemory["drache"].length === 1;
 
                     // dslSelectByPattern findet das Programm
@@ -851,7 +822,8 @@ function startSaveServer() {
                     // dslRun schreibt emotionsBefore + startedAt
                     const result = r.dslRun(["weather", "sunny"], { source: "test" });
                     out.outcomeHasEmotionSnapshot =
-                        result.outcome && typeof result.outcome.startedAt === "number" &&
+                        result.outcome &&
+                        typeof result.outcome.startedAt === "number" &&
                         result.outcome.emotionsBefore &&
                         typeof result.outcome.emotionsBefore.joy === "number";
 
@@ -860,11 +832,18 @@ function startSaveServer() {
                 .catch((err) => ({ error: err.message }));
 
             if (!iqResults || iqResults.error) {
-                check("Schicht 1: IQ-Snapshot erreichbar", false, iqResults && iqResults.error || "page.evaluate fehlgeschlagen");
+                check(
+                    "Schicht 1: IQ-Snapshot erreichbar",
+                    false,
+                    (iqResults && iqResults.error) || "page.evaluate fehlgeschlagen"
+                );
             } else {
                 check("Schicht 1: pathBuckets-State im player", iqResults.hasPathBuckets);
                 check("Schicht 1: patternMemory-State im dsl", iqResults.hasPatternMemory);
-                check("Schicht 1: recentKeywords + pendingOutcomes", iqResults.hasRecentKeywords && iqResults.hasPendingOutcomes);
+                check(
+                    "Schicht 1: recentKeywords + pendingOutcomes",
+                    iqResults.hasRecentKeywords && iqResults.hasPendingOutcomes
+                );
                 check("Schicht 1: historyCap auf 500 erhöht", iqResults.historyCap500);
                 check("Schicht 1: schemaVersion auf 7.72-iq-v1 gebumpt", iqResults.schemaVersionIq);
                 check("Schicht 1: pathExtractKeywords liefert echte Tokens", iqResults.keywordsExtracted);
@@ -877,7 +856,10 @@ function startSaveServer() {
                 check("Schicht 1: low-fitness landet nicht im Memory", iqResults.lowFitnessIgnored);
                 check("Schicht 1: dslSelectByPattern findet gespeichertes Programm", iqResults.patternSelectionWorks);
                 check("Schicht 1: samplePathBuckets erhöht Höhen-Bucket", iqResults.bucketsIncrementing);
-                check("Schicht 1: dslRun-Outcome trägt emotionsBefore + startedAt", iqResults.outcomeHasEmotionSnapshot);
+                check(
+                    "Schicht 1: dslRun-Outcome trägt emotionsBefore + startedAt",
+                    iqResults.outcomeHasEmotionSnapshot
+                );
             }
 
             // ### Welle 1 D — Welt-Journal ###
@@ -896,14 +878,17 @@ function startSaveServer() {
                     // Once-Variante schreibt nur ein Mal
                     r.journalAppendOnce("uniq1", "test", "Einmaliger Eintrag");
                     r.journalAppendOnce("uniq1", "test", "Doppelt-Versuch");
-                    const uniqCount = r.state.worldJournal.entries.filter((e) => e.text === "Einmaliger Eintrag").length;
+                    const uniqCount = r.state.worldJournal.entries.filter(
+                        (e) => e.text === "Einmaliger Eintrag"
+                    ).length;
                     out.onceIsIdempotent = uniqCount === 1;
                     // Auszug für LLM enthält Genesis
                     const excerpt = r.journalForPrompt();
                     out.excerptHasGenesis = /genesis/.test(excerpt);
                     // LLM-System-Prompt erwähnt slug + worldId
                     const sys = r.llmBuildSystemPrompt();
-                    out.systemPromptIdentity = sys.includes(r.state.worldMeta.slug) && sys.includes(r.state.worldMeta.worldId);
+                    out.systemPromptIdentity =
+                        sys.includes(r.state.worldMeta.slug) && sys.includes(r.state.worldMeta.worldId);
                     out.systemPromptInventory = /Kreaturen.*Bauwerke.*Baupläne/.test(sys);
                     out.systemPromptTendency = /Höhe.*Distanz.*Wetter.*Aktivität/.test(sys);
                     out.systemPromptFirstPerson = /sprich.*ich|in erster Person/i.test(sys);
@@ -912,10 +897,17 @@ function startSaveServer() {
                 .catch((err) => ({ error: err.message }));
 
             if (!journalResults || journalResults.error) {
-                check("Welle 1 D: Journal-Snapshot erreichbar", false, journalResults && journalResults.error || "page.evaluate fehlgeschlagen");
+                check(
+                    "Welle 1 D: Journal-Snapshot erreichbar",
+                    false,
+                    (journalResults && journalResults.error) || "page.evaluate fehlgeschlagen"
+                );
             } else {
                 check("Welle 1 D: state.worldJournal existiert", journalResults.hasJournal);
-                check("Welle 1 D: Genesis-Eintrag wurde beim ersten worldMeta-Init geschrieben", journalResults.genesisWritten);
+                check(
+                    "Welle 1 D: Genesis-Eintrag wurde beim ersten worldMeta-Init geschrieben",
+                    journalResults.genesisWritten
+                );
                 check("Welle 1 D: worldMeta.bornAt gesetzt", journalResults.bornAtSet);
                 check("Welle 1 D: journalAppend hängt Eintrag an", journalResults.appendIncreases);
                 check("Welle 1 D: journalAppendOnce ist idempotent", journalResults.onceIsIdempotent);
@@ -940,62 +932,71 @@ function startSaveServer() {
                     out.rejectsInvalidRef = !r.validateBlueprintParts([{ shape: "blueprint", refName: "../etc" }]).ok;
                     // B — define_blueprint legt eigenen Bauplan an
                     delete r.state.blueprints["wave2-test"];
-                    const res = r.dslRun([
-                        "define_blueprint", "wave2-test",
-                        [{ shape: "box", color: 0xff0000, size: { x: 2, y: 2, z: 2 } }]
-                    ], { source: "test" });
-                    out.defineBlueprintWorks = res.ok && !!r.state.blueprints["wave2-test"] && !r.state.blueprints["wave2-test"].builtIn;
+                    const res = r.dslRun(
+                        [
+                            "define_blueprint",
+                            "wave2-test",
+                            [{ shape: "box", color: 0xff0000, size: { x: 2, y: 2, z: 2 } }],
+                        ],
+                        { source: "test" }
+                    );
+                    out.defineBlueprintWorks =
+                        res.ok && !!r.state.blueprints["wave2-test"] && !r.state.blueprints["wave2-test"].builtIn;
                     // B — Built-in lässt sich nicht überschreiben
                     const builtInBefore = r.state.blueprints.village && r.state.blueprints.village.parts.length;
-                    r.dslRun([
-                        "define_blueprint", "village",
-                        [{ shape: "box" }]
-                    ], { source: "test" });
-                    out.builtInProtected = r.state.blueprints.village && r.state.blueprints.village.parts.length === builtInBefore;
+                    r.dslRun(["define_blueprint", "village", [{ shape: "box" }]], { source: "test" });
+                    out.builtInProtected =
+                        r.state.blueprints.village && r.state.blueprints.village.parts.length === builtInBefore;
                     // C — Selbst-Referenz wird verboten
                     delete r.state.blueprints["self-ref"];
-                    r.dslRun([
-                        "define_blueprint", "self-ref",
-                        [{ shape: "blueprint", refName: "self-ref" }]
-                    ], { source: "test" });
+                    r.dslRun(["define_blueprint", "self-ref", [{ shape: "blueprint", refName: "self-ref" }]], {
+                        source: "test",
+                    });
                     out.selfReferenceBlocked = !r.state.blueprints["self-ref"];
                     // C — fraktale Verschachtelung baut Sub-Group
                     delete r.state.blueprints["wave2-outer"];
-                    r.dslRun([
-                        "define_blueprint", "wave2-outer",
+                    r.dslRun(
                         [
-                            { shape: "box", color: 0x0000ff },
-                            { shape: "blueprint", refName: "wave2-test", position: { x: 3, y: 0, z: 0 } }
-                        ]
-                    ], { source: "test" });
+                            "define_blueprint",
+                            "wave2-outer",
+                            [
+                                { shape: "box", color: 0x0000ff },
+                                { shape: "blueprint", refName: "wave2-test", position: { x: 3, y: 0, z: 0 } },
+                            ],
+                        ],
+                        { source: "test" }
+                    );
                     const outerGroup = r._buildFromBlueprint(r.state.blueprints["wave2-outer"]);
-                    out.nestedGroupHasSubgroup = outerGroup.children.length === 2 &&
-                        outerGroup.children[1].type === "Group";
+                    out.nestedGroupHasSubgroup =
+                        outerGroup.children.length === 2 && outerGroup.children[1].type === "Group";
                     // C — Tiefen-Cap greift (selbst wenn man programmatisch zyklisch konstruiert)
                     r.state.blueprints["cycle-a"] = {
-                        name: "cycle-a", label: "a", builtIn: false,
-                        parts: [{ shape: "blueprint", refName: "cycle-b" }]
+                        name: "cycle-a",
+                        label: "a",
+                        builtIn: false,
+                        parts: [{ shape: "blueprint", refName: "cycle-b" }],
                     };
                     r.state.blueprints["cycle-b"] = {
-                        name: "cycle-b", label: "b", builtIn: false,
-                        parts: [{ shape: "blueprint", refName: "cycle-a" }]
+                        name: "cycle-b",
+                        label: "b",
+                        builtIn: false,
+                        parts: [{ shape: "blueprint", refName: "cycle-a" }],
                     };
                     const cycleGroup = r._buildFromBlueprint(r.state.blueprints["cycle-a"]);
                     // Sollte nicht in Endlos-Rekursion gehen
                     out.cycleHandled = !!cycleGroup;
                     // B — define_ability mit verbotenem nested define_blueprint
-                    const abilNested = r.dslRun([
-                        "define_ability", "evil",
-                        ["define_blueprint", "x", [{ shape: "box" }]]
-                    ], { source: "test" });
+                    const abilNested = r.dslRun(
+                        ["define_ability", "evil", ["define_blueprint", "x", [{ shape: "box" }]]],
+                        { source: "test" }
+                    );
                     out.nestedDefineBlocked = abilNested.log.some((e) => e.event === "ability_nested_define_forbidden");
                     // B — define_ability legitim
-                    const abilOk = r.dslRun([
-                        "define_ability", "wave2-dance",
-                        ["weather", "rainy"]
-                    ], { source: "test" });
-                    out.defineAbilityWorks = abilOk.ok &&
-                        (r.state.dsl.abilities || []).some((a) => a.name === "wave2-dance");
+                    const abilOk = r.dslRun(["define_ability", "wave2-dance", ["weather", "rainy"]], {
+                        source: "test",
+                    });
+                    out.defineAbilityWorks =
+                        abilOk.ok && (r.state.dsl.abilities || []).some((a) => a.name === "wave2-dance");
                     // Test-Artefakte sauber entfernen, damit nachfolgende
                     // Workshop-Invarianten konsistent zählen.
                     delete r.state.blueprints["wave2-test"];
@@ -1009,7 +1010,11 @@ function startSaveServer() {
                 .catch((err) => ({ error: err.message }));
 
             if (!wave2Results || wave2Results.error) {
-                check("Welle 2: Snapshot erreichbar", false, wave2Results && wave2Results.error || "page.evaluate fehlgeschlagen");
+                check(
+                    "Welle 2: Snapshot erreichbar",
+                    false,
+                    (wave2Results && wave2Results.error) || "page.evaluate fehlgeschlagen"
+                );
             } else {
                 check("Welle 2 C: Validation lehnt unbekannte Shape ab", wave2Results.rejectsUnknownShape);
                 check("Welle 2 C: Validation lehnt leeren Parts-Array ab", wave2Results.rejectsEmpty);
@@ -1033,10 +1038,10 @@ function startSaveServer() {
                     // E — neue Trigger im pool + triggers-Map
                     out.hasJournalEventTrigger = !!r.state.grok.triggers.journalEvent;
                     out.hasEmotionShiftTrigger = !!r.state.grok.triggers.emotionShift;
-                    out.hasJournalEventPool = Array.isArray(r.state.grok.pool.journalEvent) &&
-                        r.state.grok.pool.journalEvent.length > 0;
-                    out.hasEmotionShiftPool = Array.isArray(r.state.grok.pool.emotionShift) &&
-                        r.state.grok.pool.emotionShift.length > 0;
+                    out.hasJournalEventPool =
+                        Array.isArray(r.state.grok.pool.journalEvent) && r.state.grok.pool.journalEvent.length > 0;
+                    out.hasEmotionShiftPool =
+                        Array.isArray(r.state.grok.pool.emotionShift) && r.state.grok.pool.emotionShift.length > 0;
                     // E — grokSpeakFromJournal existiert
                     out.hasGrokSpeakFromJournal = typeof r.grokSpeakFromJournal === "function";
                     // F — Welt-Info-UI im DOM
@@ -1057,18 +1062,15 @@ function startSaveServer() {
                     r.renderWorldJournal();
                     const listEl = document.getElementById("world-journal-list");
                     out.journalListHasEntries = listEl.querySelectorAll(".journal-entry").length > 0;
-                    out.journalListHasTypePill =
-                        !!listEl.querySelector(".journal-entry .journal-type");
-                    out.journalListHasAge =
-                        !!listEl.querySelector(".journal-entry .journal-age");
+                    out.journalListHasTypePill = !!listEl.querySelector(".journal-entry .journal-type");
+                    out.journalListHasAge = !!listEl.querySelector(".journal-entry .journal-age");
                     out.journalCountReflectsEntries = /Erinnerung/.test(
                         document.getElementById("world-journal-count").textContent
                     );
                     // Jüngste oben: erstes journal-entry enthält den eben
                     // angehängten Text
                     const firstEntry = listEl.querySelector(".journal-entry");
-                    out.journalNewestFirst =
-                        !!firstEntry && firstEntry.textContent.includes("Tagebuch-UI-Probe");
+                    out.journalNewestFirst = !!firstEntry && firstEntry.textContent.includes("Tagebuch-UI-Probe");
                     // Render mit identischer Signature darf DOM nicht neu bauen
                     const beforeChildren = listEl.children.length;
                     r.renderWorldJournal();
@@ -1096,7 +1098,11 @@ function startSaveServer() {
                 .catch((err) => ({ error: err.message }));
 
             if (!wave3Results || wave3Results.error) {
-                check("Welle 3: Snapshot erreichbar", false, wave3Results && wave3Results.error || "page.evaluate fehlgeschlagen");
+                check(
+                    "Welle 3: Snapshot erreichbar",
+                    false,
+                    (wave3Results && wave3Results.error) || "page.evaluate fehlgeschlagen"
+                );
             } else {
                 check("Welle 3 E: journalEvent-Trigger im Grok-State", wave3Results.hasJournalEventTrigger);
                 check("Welle 3 E: emotionShift-Trigger im Grok-State", wave3Results.hasEmotionShiftTrigger);
@@ -1104,8 +1110,10 @@ function startSaveServer() {
                 check("Welle 3 E: emotionShift-Pool gefüllt", wave3Results.hasEmotionShiftPool);
                 check("Welle 3 E: grokSpeakFromJournal-Funktion existiert", wave3Results.hasGrokSpeakFromJournal);
                 check("Welle 3 F: #world-info im DOM", wave3Results.worldInfoInDom);
-                check("Welle 3 F: Welt-Export-/Import-Buttons im DOM",
-                    wave3Results.worldExportInDom && wave3Results.worldImportInDom);
+                check(
+                    "Welle 3 F: Welt-Export-/Import-Buttons im DOM",
+                    wave3Results.worldExportInDom && wave3Results.worldImportInDom
+                );
                 check("Welle 3 F: Welt-Info zeigt slug", wave3Results.worldInfoShowsSlug);
                 check("Welle 3 F: Welt-Info zeigt Alter in Tagen", wave3Results.worldInfoShowsAge);
                 check("Welle 3 F: triggerStateDownload nutzt suggestedName", wave3Results.downloadCustomName);
@@ -1160,19 +1168,14 @@ function startSaveServer() {
                     const r4 = r.defineMaterial("", 0, {});
                     out.invalidNameRejected = !r4.ok;
                     // Validation lehnt Material nicht ab, mappt unbekannt weg
-                    const v1 = r.validateBlueprintParts([
-                        { shape: "box", material: "kupfer", color: 0x111111 },
-                    ]);
+                    const v1 = r.validateBlueprintParts([{ shape: "box", material: "kupfer", color: 0x111111 }]);
                     out.validationAcceptsKnownMaterial = v1.ok && v1.parts[0].material === "kupfer";
-                    const v2 = r.validateBlueprintParts([
-                        { shape: "box", material: "phlogiston", color: 0x111111 },
-                    ]);
+                    const v2 = r.validateBlueprintParts([{ shape: "box", material: "phlogiston", color: 0x111111 }]);
                     out.validationDropsUnknownMaterial = v2.ok && !v2.parts[0].material;
                     // DSL-Op define_material
-                    const runRes = r.dslRun(
-                        ["define_material", "schimmer", 0xeeeeee, { magieleitung: 0.7 }],
-                        { source: "test" }
-                    );
+                    const runRes = r.dslRun(["define_material", "schimmer", 0xeeeeee, { magieleitung: 0.7 }], {
+                        source: "test",
+                    });
                     out.dslDefineMaterial = !!mats.schimmer && !mats.schimmer.builtIn;
                     out.dslLogsDefinedEvent = runRes.log.some((e) => e.event === "defined_material");
                     // Built-in-Bauplan-Parts haben material gesetzt
@@ -1183,8 +1186,7 @@ function startSaveServer() {
                     // Save-Roundtrip: eigenes Material überlebt
                     const snap = r.buildStateSnapshot();
                     out.snapshotHasMaterial =
-                        Array.isArray(snap.materials) &&
-                        snap.materials.some((m) => m.name === "kupfer");
+                        Array.isArray(snap.materials) && snap.materials.some((m) => m.name === "kupfer");
                     // applySavedState mit altem Save (parts ohne material) →
                     // Migration auf „stein". Wir simulieren ein altes Schema.
                     const oldSnap = {
@@ -1211,10 +1213,9 @@ function startSaveServer() {
                     out.recolorAppliesMaterialColor =
                         r.state.blueprints["legacy-test"].parts[0].color === mats.quarz.color;
                     // define_ability blockiert nested define_material
-                    const runRes2 = r.dslRun(
-                        ["define_ability", "evil-mat", ["define_material", "bad", 0, {}]],
-                        { source: "test" }
-                    );
+                    const runRes2 = r.dslRun(["define_ability", "evil-mat", ["define_material", "bad", 0, {}]], {
+                        source: "test",
+                    });
                     out.nestedDefineMaterialBlocked = runRes2.log.some(
                         (e) => e.event === "ability_nested_define_forbidden"
                     );
@@ -1239,22 +1240,37 @@ function startSaveServer() {
                 check("Welle 4 P1: 6 Built-in-Materialien existieren", wave4p1Results.expectedBuiltIns);
                 check("Welle 4 P1: Built-in-Anzahl exakt 6", wave4p1Results.builtInCount === 6);
                 check("Welle 4 P1: Alle Tag-Werte 0..1", wave4p1Results.tagsInRange);
-                check("Welle 4 P1: Quarz hat Signatur-Tags (resoniert/transparent/magieleitung)", wave4p1Results.quarzSignature);
+                check(
+                    "Welle 4 P1: Quarz hat Signatur-Tags (resoniert/transparent/magieleitung)",
+                    wave4p1Results.quarzSignature
+                );
                 check("Welle 4 P1: defineMaterial legt eigenes Material an", wave4p1Results.defineOk);
                 check("Welle 4 P1: defineMaterial clamped Tag-Werte auf 1", wave4p1Results.defineClampsToOne);
                 check("Welle 4 P1: defineMaterial lehnt Built-in-Override ab", wave4p1Results.builtInProtected);
                 check("Welle 4 P1: defineMaterial lehnt leeren Namen ab", wave4p1Results.invalidNameRejected);
-                check("Welle 4 P1: validateBlueprintParts akzeptiert bekanntes Material", wave4p1Results.validationAcceptsKnownMaterial);
-                check("Welle 4 P1: validateBlueprintParts droppt unbekanntes Material", wave4p1Results.validationDropsUnknownMaterial);
+                check(
+                    "Welle 4 P1: validateBlueprintParts akzeptiert bekanntes Material",
+                    wave4p1Results.validationAcceptsKnownMaterial
+                );
+                check(
+                    "Welle 4 P1: validateBlueprintParts droppt unbekanntes Material",
+                    wave4p1Results.validationDropsUnknownMaterial
+                );
                 check("Welle 4 P1: DSL-Op define_material wirkt", wave4p1Results.dslDefineMaterial);
                 check("Welle 4 P1: DSL-Op loggt defined_material-Event", wave4p1Results.dslLogsDefinedEvent);
-                check("Welle 4 P1: Built-in-Bauplan-Parts tragen material-Feld", wave4p1Results.builtInPartsHaveMaterial);
+                check(
+                    "Welle 4 P1: Built-in-Bauplan-Parts tragen material-Feld",
+                    wave4p1Results.builtInPartsHaveMaterial
+                );
                 check("Welle 4 P1: Save persistiert eigene Materialien", wave4p1Results.snapshotHasMaterial);
                 check("Welle 4 P1: Migration alter Parts auf stein", wave4p1Results.legacyPartGotDefaultMaterial);
                 check("Welle 4 P1: Werkstatt-UI hat Material-Dropdown", wave4p1Results.uiHasMaterialDropdown);
                 check("Welle 4 P1: Material-Dropdown listet ≥6 Optionen", wave4p1Results.uiDropdownLists6PlusOptions);
                 check("Welle 4 P1: Recolor zieht Material-Farbe", wave4p1Results.recolorAppliesMaterialColor);
-                check("Welle 4 P1: define_ability blockiert nested define_material", wave4p1Results.nestedDefineMaterialBlocked);
+                check(
+                    "Welle 4 P1: define_ability blockiert nested define_material",
+                    wave4p1Results.nestedDefineMaterialBlocked
+                );
             }
 
             // ### Welle 4 Phase 2 — Helix + Form-Tag-Aktivierungs-Matrix ###
@@ -1266,10 +1282,17 @@ function startSaveServer() {
                     // FORM_TAG_ACTIVATION existiert + frozen
                     const M = r.constructor.FORM_TAG_ACTIVATION;
                     out.matrixFrozen = Object.isFrozen(M);
-                    out.matrixHasNineForms =
-                        ["box", "sphere", "cylinder", "cone", "pyramid", "octahedron", "plane", "torus", "helix"].every(
-                            (f) => M[f] && typeof M[f] === "object"
-                        );
+                    out.matrixHasNineForms = [
+                        "box",
+                        "sphere",
+                        "cylinder",
+                        "cone",
+                        "pyramid",
+                        "octahedron",
+                        "plane",
+                        "torus",
+                        "helix",
+                    ].every((f) => M[f] && typeof M[f] === "object");
                     // Vollständigkeit: jedes Form × Tag definiert (kein undefined)
                     const keys = r.constructor.MATERIAL_TAG_KEYS;
                     let undefCount = 0;
@@ -1278,18 +1301,12 @@ function startSaveServer() {
                     }
                     out.matrixComplete = undefCount === 0;
                     // Konzept-Konsistenz: jedes Tag hat mindestens eine Signatur (3) — außer lebendig
-                    const tagsWithSignature = keys.filter((t) =>
-                        Object.values(M).some((row) => row[t] === 3)
-                    );
+                    const tagsWithSignature = keys.filter((t) => Object.values(M).some((row) => row[t] === 3));
                     out.allTagsHaveSignatureExceptLebendig =
-                        tagsWithSignature.length === keys.length - 1 &&
-                        !tagsWithSignature.includes("lebendig");
+                        tagsWithSignature.length === keys.length - 1 && !tagsWithSignature.includes("lebendig");
                     // Keine Form hat mehr als 3 Signaturen (Konzept §8 Anti-Monokultur)
                     const sigCounts = Object.fromEntries(
-                        Object.entries(M).map(([f, row]) => [
-                            f,
-                            keys.filter((t) => row[t] === 3).length,
-                        ])
+                        Object.entries(M).map(([f, row]) => [f, keys.filter((t) => row[t] === 3).length])
                     );
                     out.noFormExceeds3Signatures = Object.values(sigCounts).every((c) => c <= 3);
 
@@ -1304,10 +1321,7 @@ function startSaveServer() {
                         size: { x: 1, y: 4, z: 5 },
                     });
                     out.helixHasVertices =
-                        geom &&
-                        geom.attributes &&
-                        geom.attributes.position &&
-                        geom.attributes.position.count > 50;
+                        geom && geom.attributes && geom.attributes.position && geom.attributes.position.count > 50;
                     if (geom && typeof geom.dispose === "function") geom.dispose();
 
                     // computePartTags: Quarz-Kugel hat resoniert ~2.7, transparent ~2.85
@@ -1366,9 +1380,9 @@ function startSaveServer() {
                     const tagRows = document.querySelectorAll(".workshop-tag-row");
                     out.uiTagsHasRows = tagRows.length > 0;
                     // Werkstatt-Shape-Dropdown enthält helix
-                    const shapeOpts = Array.from(
-                        document.querySelectorAll(".workshop-part-row select option")
-                    ).map((o) => o.value);
+                    const shapeOpts = Array.from(document.querySelectorAll(".workshop-part-row select option")).map(
+                        (o) => o.value
+                    );
                     out.uiShapeIncludesHelix = shapeOpts.includes("helix");
 
                     // Aufräumen
@@ -1388,7 +1402,10 @@ function startSaveServer() {
                 check("Welle 4 P2: FORM_TAG_ACTIVATION frozen", wave4p2Results.matrixFrozen);
                 check("Welle 4 P2: Matrix deckt 9 Formen (inkl. helix)", wave4p2Results.matrixHasNineForms);
                 check("Welle 4 P2: Matrix vollständig (keine undefined-Zelle)", wave4p2Results.matrixComplete);
-                check("Welle 4 P2: Alle Tags außer lebendig haben Signatur", wave4p2Results.allTagsHaveSignatureExceptLebendig);
+                check(
+                    "Welle 4 P2: Alle Tags außer lebendig haben Signatur",
+                    wave4p2Results.allTagsHaveSignatureExceptLebendig
+                );
                 check("Welle 4 P2: Keine Form hat >3 Signaturen", wave4p2Results.noFormExceeds3Signatures);
                 check("Welle 4 P2: helix-Shape validiert", wave4p2Results.helixValidates);
                 check("Welle 4 P2: helix-Geometrie hat Vertices", wave4p2Results.helixHasVertices);
@@ -1396,14 +1413,17 @@ function startSaveServer() {
                 check("Welle 4 P2: Quarz-Sphäre aktiviert transparent >2.7", wave4p2Results.quarzSphereTransparent);
                 check("Welle 4 P2: Sphäre aktiviert kein härte", wave4p2Results.sphereNoHärte);
                 check("Welle 4 P2: Eisen-Kegel aktiviert härte >2.0", wave4p2Results.coneEisenHärte);
-                check("Welle 4 P2: computeCompoundTags max-aggregiert dichte=2.55", wave4p2Results.maxAggregationDichte);
+                check(
+                    "Welle 4 P2: computeCompoundTags max-aggregiert dichte=2.55",
+                    wave4p2Results.maxAggregationDichte
+                );
                 check("Welle 4 P2: Aggregation ist nicht sum (<4.0)", wave4p2Results.notSumAggregation);
                 check("Welle 4 P2: compound_has_tag erkennt hohe Resonanz", wave4p2Results.condResonatesHigh);
                 check("Welle 4 P2: compound_has_tag respektiert Schwellwert", wave4p2Results.condResonatesAboveSig);
                 check("Welle 4 P2: compound_has_tag unbekanntes Tag → false", wave4p2Results.condUnknownTagFalse);
                 check("Welle 4 P2: UI .workshop-tags-Sektion im DOM", wave4p2Results.uiTagsSection);
                 check("Welle 4 P2: UI Tags-Titel im DOM", wave4p2Results.uiTagsTitle);
-                check("Welle 4 P2: UI „atomare Schicht\"-Hint im DOM", wave4p2Results.uiHasAtomareHint);
+                check('Welle 4 P2: UI „atomare Schicht"-Hint im DOM', wave4p2Results.uiHasAtomareHint);
                 check("Welle 4 P2: UI rendert Tag-Zeilen", wave4p2Results.uiTagsHasRows);
                 check("Welle 4 P2: UI Shape-Dropdown enthält helix", wave4p2Results.uiShapeIncludesHelix);
             }
@@ -1416,10 +1436,9 @@ function startSaveServer() {
                     const out = {};
                     // Werkzeug-State + Konstanten
                     const tools = r.state.tools || {};
-                    out.fiveStarterTools =
-                        ["hände", "feuerstein-knapper", "hammer", "feile", "polierscheibe"].every(
-                            (n) => tools[n] && tools[n].isStarter
-                        );
+                    out.fiveStarterTools = ["hände", "feuerstein-knapper", "hammer", "feile", "polierscheibe"].every(
+                        (n) => tools[n] && tools[n].isStarter
+                    );
                     out.playerOwnsStarters = ["hände", "hammer", "polierscheibe"].every((n) =>
                         (r.state.player.tools || []).includes(n)
                     );
@@ -1471,10 +1490,7 @@ function startSaveServer() {
                     out.builtInBlueprintProtected = !ap4.ok && ap4.reason === "cannot_modify_builtin";
 
                     // DSL-Op apply_op
-                    const dslRes = r.dslRun(
-                        ["apply_op", "test-precision", 0, "polierscheibe"],
-                        { source: "test" }
-                    );
+                    const dslRes = r.dslRun(["apply_op", "test-precision", 0, "polierscheibe"], { source: "test" });
                     out.dslApplyOpWorks = dslRes.log.some((e) => e.event === "applied_op");
 
                     // Diskriminations-Test: zwei Resonanz-Compounds, einer
@@ -1485,9 +1501,7 @@ function startSaveServer() {
                         name: "raw-orb",
                         label: "Rau-Orb",
                         builtIn: false,
-                        parts: [
-                            { shape: "sphere", material: "quarz", opChain: r._defaultPartOpChain() },
-                        ],
+                        parts: [{ shape: "sphere", material: "quarz", opChain: r._defaultPartOpChain() }],
                     };
                     r.state.blueprints["polished-orb"] = {
                         name: "polished-orb",
@@ -1514,9 +1528,7 @@ function startSaveServer() {
                     const afterPolished = r.state.worldJournal.entries.length;
                     out.singingEntryWritten =
                         afterPolished > journalBefore &&
-                        r.state.worldJournal.entries
-                            .slice(-3)
-                            .some((e) => /singt/.test(e.text || ""));
+                        r.state.worldJournal.entries.slice(-3).some((e) => /singt/.test(e.text || ""));
                     // Idempotent: zweiter Aufruf gleicher Bauplan → kein neuer Eintrag
                     r._applyCompoundWorldEffects("polished-orb");
                     out.singingEntryIdempotent = r.state.worldJournal.entries.length === afterPolished;
@@ -1568,8 +1580,7 @@ function startSaveServer() {
 
                     // Save-Roundtrip: playerTools persistiert
                     const snap = r.buildStateSnapshot();
-                    out.snapshotHasPlayerTools =
-                        Array.isArray(snap.playerTools) && snap.playerTools.includes("hammer");
+                    out.snapshotHasPlayerTools = Array.isArray(snap.playerTools) && snap.playerTools.includes("hammer");
 
                     // validateBlueprintParts: opChain wird sanitized
                     const v = r.validateBlueprintParts([
@@ -1609,9 +1620,15 @@ function startSaveServer() {
                 check("Welle 4 P3: applyOpToPart hängt Op an", wave4p3Results.applyOpAppends);
                 check("Welle 4 P3: Stein lehnt Hammer (plastic) ab", wave4p3Results.materialOpIncompat);
                 check("Welle 4 P3: Werkzeug-Besitz wird durchgesetzt", wave4p3Results.toolOwnershipEnforced);
-                check("Welle 4 P3: Built-in-Bauplan vor Op-Mutation geschützt", wave4p3Results.builtInBlueprintProtected);
+                check(
+                    "Welle 4 P3: Built-in-Bauplan vor Op-Mutation geschützt",
+                    wave4p3Results.builtInBlueprintProtected
+                );
                 check("Welle 4 P3: DSL-Op apply_op wirkt", wave4p3Results.dslApplyOpWorks);
-                check("Welle 4 P3: Präzisions-Diskriminations-Schwelle liegt zwischen roh/poliert", wave4p3Results.precisionDiscriminates);
+                check(
+                    "Welle 4 P3: Präzisions-Diskriminations-Schwelle liegt zwischen roh/poliert",
+                    wave4p3Results.precisionDiscriminates
+                );
                 check("Welle 4 P3: Singing-Journal-Eintrag bei Resonanz+Präzision", wave4p3Results.singingEntryWritten);
                 check("Welle 4 P3: Singing-Eintrag idempotent pro Bauplan", wave4p3Results.singingEntryIdempotent);
                 check("Welle 4 P3: Roh-Compound triggert keinen Welt-Effekt", wave4p3Results.rawDoesNotTrigger);
@@ -1642,18 +1659,29 @@ function startSaveServer() {
                     // Bounding-Box-Mathematik: Compound mit drei Parts
                     const testBp = {
                         parts: [
-                            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 2, y: 2, z: 2 } },
-                            { shape: "cone", material: "eisen", position: { x: 0, y: 3, z: 0 }, size: { x: 1, y: 2, z: 1 } },
-                            { shape: "cylinder", material: "bronze", position: { x: 4, y: 0, z: 0 }, size: { x: 1, y: 2, z: 1 } },
+                            {
+                                shape: "box",
+                                material: "stein",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 2, y: 2, z: 2 },
+                            },
+                            {
+                                shape: "cone",
+                                material: "eisen",
+                                position: { x: 0, y: 3, z: 0 },
+                                size: { x: 1, y: 2, z: 1 },
+                            },
+                            {
+                                shape: "cylinder",
+                                material: "bronze",
+                                position: { x: 4, y: 0, z: 0 },
+                                size: { x: 1, y: 2, z: 1 },
+                            },
                         ],
                     };
                     const bb = r._compoundBoundingBox(testBp);
                     out.compoundBBOk =
-                        bb &&
-                        bb.min.y === -1 &&
-                        bb.max.y === 4 &&
-                        bb.extent.x === 5.5 &&
-                        bb.extent.y === 5;
+                        bb && bb.min.y === -1 && bb.max.y === 4 && bb.extent.x === 5.5 && bb.extent.y === 5;
                     // Position-Klassifikation: Kegel oben sollte at_top haben
                     const labelsCone = r._classifyPartPosition(testBp.parts[1], bb);
                     out.coneAtTop = labelsCone.has("at_top");
@@ -1663,9 +1691,24 @@ function startSaveServer() {
                     out.cylAtOutside = labelsCyl.has("at_outside");
 
                     // Kontakt-Check: zwei berührende Boxen
-                    const pA = { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } };
-                    const pB = { shape: "box", material: "eisen", position: { x: 0.9, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } };
-                    const pC = { shape: "box", material: "eisen", position: { x: 5, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } };
+                    const pA = {
+                        shape: "box",
+                        material: "stein",
+                        position: { x: 0, y: 0, z: 0 },
+                        size: { x: 1, y: 1, z: 1 },
+                    };
+                    const pB = {
+                        shape: "box",
+                        material: "eisen",
+                        position: { x: 0.9, y: 0, z: 0 },
+                        size: { x: 1, y: 1, z: 1 },
+                    };
+                    const pC = {
+                        shape: "box",
+                        material: "eisen",
+                        position: { x: 5, y: 0, z: 0 },
+                        size: { x: 1, y: 1, z: 1 },
+                    };
                     out.contactsTouching = r._partsAreInContact(pA, pB);
                     out.contactsRespectsGap = !r._partsAreInContact(pA, pC);
 
@@ -1673,8 +1716,18 @@ function startSaveServer() {
                     // → magieleitung sollte räumlich höher sein als atomar.
                     const tipBp = {
                         parts: [
-                            { shape: "cylinder", material: "holz", position: { x: 0, y: 0, z: 0 }, size: { x: 0.3, y: 3, z: 0.3 } },
-                            { shape: "pyramid", material: "quarz", position: { x: 0, y: 2, z: 0 }, size: { x: 0.5, y: 1, z: 0.5 } },
+                            {
+                                shape: "cylinder",
+                                material: "holz",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 0.3, y: 3, z: 0.3 },
+                            },
+                            {
+                                shape: "pyramid",
+                                material: "quarz",
+                                position: { x: 0, y: 2, z: 0 },
+                                size: { x: 0.5, y: 1, z: 0.5 },
+                            },
                         ],
                     };
                     const atomar = r.computeCompoundTags(tipBp);
@@ -1686,14 +1739,21 @@ function startSaveServer() {
                     // NICHT den Spitze-Bonus aus Prinzip 1.
                     const noTipBp = {
                         parts: [
-                            { shape: "cylinder", material: "holz", position: { x: 0, y: 2, z: 0 }, size: { x: 0.3, y: 3, z: 0.3 } },
-                            { shape: "pyramid", material: "quarz", position: { x: 2, y: 0, z: 0 }, size: { x: 0.5, y: 1, z: 0.5 } },
+                            {
+                                shape: "cylinder",
+                                material: "holz",
+                                position: { x: 0, y: 2, z: 0 },
+                                size: { x: 0.3, y: 3, z: 0.3 },
+                            },
+                            {
+                                shape: "pyramid",
+                                material: "quarz",
+                                position: { x: 2, y: 0, z: 0 },
+                                size: { x: 0.5, y: 1, z: 0.5 },
+                            },
                         ],
                     };
-                    const labelsBottomPyr = r._classifyPartPosition(
-                        noTipBp.parts[1],
-                        r._compoundBoundingBox(noTipBp)
-                    );
+                    const labelsBottomPyr = r._classifyPartPosition(noTipBp.parts[1], r._compoundBoundingBox(noTipBp));
                     out.bottomNoTipBoost = !labelsBottomPyr.has("at_top");
 
                     // Kontakt-Transfer: Kupfer-Helix berührt Stein-Block →
@@ -1703,8 +1763,18 @@ function startSaveServer() {
                     const contactBp = {
                         parts: [
                             // Stein hat stromleitung 0.05, helix×kupfer hat 3 × 0.95 = 2.85
-                            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
-                            { shape: "helix", material: "kupfer-test", position: { x: 0.9, y: 0, z: 0 }, size: { x: 0.5, y: 1, z: 3 } },
+                            {
+                                shape: "box",
+                                material: "stein",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                            },
+                            {
+                                shape: "helix",
+                                material: "kupfer-test",
+                                position: { x: 0.9, y: 0, z: 0 },
+                                size: { x: 0.5, y: 1, z: 3 },
+                            },
                         ],
                     };
                     const cAtomar = r.computeCompoundTags(contactBp);
@@ -1725,9 +1795,24 @@ function startSaveServer() {
                     // Helix wegen ihrer eigenen Z-Extent zentral.
                     const outsideBp = {
                         parts: [
-                            { shape: "box", material: "stein", position: { x: -3, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
-                            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
-                            { shape: "box", material: "stein", position: { x: 3, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                            {
+                                shape: "box",
+                                material: "stein",
+                                position: { x: -3, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                            },
+                            {
+                                shape: "box",
+                                material: "stein",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                            },
+                            {
+                                shape: "box",
+                                material: "stein",
+                                position: { x: 3, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                            },
                         ],
                     };
                     const outsideBB = r._compoundBoundingBox(outsideBp);
@@ -1739,8 +1824,18 @@ function startSaveServer() {
                     // mittelmäßig in Strom, eines höher.
                     const transferBp = {
                         parts: [
-                            { shape: "cylinder", material: "holz", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
-                            { shape: "cylinder", material: "kupfer-test", position: { x: 0.9, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                            {
+                                shape: "cylinder",
+                                material: "holz",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                            },
+                            {
+                                shape: "cylinder",
+                                material: "kupfer-test",
+                                position: { x: 0.9, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                            },
                         ],
                     };
                     // Holz×cylinder: stromleitung = 3 × 0.05 = 0.15
@@ -1774,7 +1869,13 @@ function startSaveServer() {
                         label: "Atomar-Test",
                         builtIn: false,
                         parts: [
-                            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, opChain: r._defaultPartOpChain() },
+                            {
+                                shape: "box",
+                                material: "stein",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                                opChain: r._defaultPartOpChain(),
+                            },
                         ],
                     };
                     r.selectBlueprintForEdit("wave5b-atomar");
@@ -1815,7 +1916,8 @@ function startSaveServer() {
                     // Aber durch journalAppendOnce per-bp-name ist das stabil.
                     // Test: tipPolished sollte MEHR magie-Bonus haben als bottom.
                     const tipMagic = r.computeSpatialTags(r.state.blueprints["wave5b-tip-polished"]).magieleitung || 0;
-                    const bottomMagic = r.computeSpatialTags(r.state.blueprints["wave5b-bottom-polished"]).magieleitung || 0;
+                    const bottomMagic =
+                        r.computeSpatialTags(r.state.blueprints["wave5b-bottom-polished"]).magieleitung || 0;
                     out.tipMagicExceedsBottom = tipMagic > bottomMagic + 0.1;
 
                     // Aufräumen
@@ -1852,11 +1954,20 @@ function startSaveServer() {
                 check("Welle 5 B: Helix am Rand hat at_outside", wave5bResults.helixAtOutside);
                 check("Welle 5 B: UI .workshop-spatial-title bei pointed-am-Rand", wave5bResults.uiSpatialTitle);
                 check("Welle 5 B: UI .workshop-spatial-row im DOM", wave5bResults.uiSpatialRow);
-                check("Welle 5 B: Hinweis-Text nennt Spitze-richtet im raeumlichen Modus", wave5bResults.uiHintMentionsSpatial);
+                check(
+                    "Welle 5 B: Hinweis-Text nennt Spitze-richtet im raeumlichen Modus",
+                    wave5bResults.uiHintMentionsSpatial
+                );
                 check("Welle 5 B: Hinweis-Text fällt im rein-atomaren Modus zurück", wave5bResults.uiHintAtomarMode);
-                check("Welle 5 B: DSL compound_has_spatial_tag erkennt verstärkte Magie", wave5bResults.dslSpatialCondHigh);
+                check(
+                    "Welle 5 B: DSL compound_has_spatial_tag erkennt verstärkte Magie",
+                    wave5bResults.dslSpatialCondHigh
+                );
                 check("Welle 5 B: Tip-Compound triggert Magie-Welt-Effekt (awe)", wave5bResults.tipTriggersMagic);
-                check("Welle 5 B: Magie tip-oben > Magie tip-unten (Diskrimination)", wave5bResults.tipMagicExceedsBottom);
+                check(
+                    "Welle 5 B: Magie tip-oben > Magie tip-unten (Diskrimination)",
+                    wave5bResults.tipMagicExceedsBottom
+                );
             }
 
             // ### Welle 5 B Phase 2 — Hohlraum + Symmetrieachse + Resonanz-Array ###
@@ -1874,9 +1985,19 @@ function startSaveServer() {
                     const bellBp = {
                         parts: [
                             // große Quarz-Glocke
-                            { shape: "sphere", material: "quarz", position: { x: 0, y: 1, z: 0 }, size: { x: 3, y: 3, z: 3 } },
+                            {
+                                shape: "sphere",
+                                material: "quarz",
+                                position: { x: 0, y: 1, z: 0 },
+                                size: { x: 3, y: 3, z: 3 },
+                            },
                             // kleiner Bronze-Klöppel im Inneren
-                            { shape: "sphere", material: "bronze", position: { x: 0, y: 1, z: 0 }, size: { x: 0.4, y: 0.4, z: 0.4 } },
+                            {
+                                shape: "sphere",
+                                material: "bronze",
+                                position: { x: 0, y: 1, z: 0 },
+                                size: { x: 0.4, y: 0.4, z: 0.4 },
+                            },
                         ],
                     };
                     const pairs = r._findHollowPairs(bellBp);
@@ -1888,8 +2009,18 @@ function startSaveServer() {
                     // Negativ-Test: zwei sphere nebeneinander, KEIN Hohlraum
                     const sideBySideBp = {
                         parts: [
-                            { shape: "sphere", material: "quarz", position: { x: -2, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
-                            { shape: "sphere", material: "bronze", position: { x: 2, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                            {
+                                shape: "sphere",
+                                material: "quarz",
+                                position: { x: -2, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                            },
+                            {
+                                shape: "sphere",
+                                material: "bronze",
+                                position: { x: 2, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                            },
                         ],
                     };
                     out.noHollowWhenSeparate = r._findHollowPairs(sideBySideBp).length === 0;
@@ -1897,9 +2028,24 @@ function startSaveServer() {
                     // Prinzip 3: Y-Achsen-Symmetrie. Stab aus 3 Zylindern entlang Y.
                     const staffBp = {
                         parts: [
-                            { shape: "cylinder", material: "holz", position: { x: 0, y: 0, z: 0 }, size: { x: 0.3, y: 1, z: 0.3 } },
-                            { shape: "cylinder", material: "holz", position: { x: 0, y: 1, z: 0 }, size: { x: 0.3, y: 1, z: 0.3 } },
-                            { shape: "cylinder", material: "holz", position: { x: 0, y: 2, z: 0 }, size: { x: 0.3, y: 1, z: 0.3 } },
+                            {
+                                shape: "cylinder",
+                                material: "holz",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 0.3, y: 1, z: 0.3 },
+                            },
+                            {
+                                shape: "cylinder",
+                                material: "holz",
+                                position: { x: 0, y: 1, z: 0 },
+                                size: { x: 0.3, y: 1, z: 0.3 },
+                            },
+                            {
+                                shape: "cylinder",
+                                material: "holz",
+                                position: { x: 0, y: 2, z: 0 },
+                                size: { x: 0.3, y: 1, z: 0.3 },
+                            },
                         ],
                     };
                     out.staffHasSymmetry = r._hasYAxisSymmetry(staffBp);
@@ -1909,8 +2055,18 @@ function startSaveServer() {
                     // Negativ-Test: zwei Zylinder weit auseinander → keine Symmetrie
                     const wideBp = {
                         parts: [
-                            { shape: "cylinder", material: "holz", position: { x: -5, y: 0, z: 0 }, size: { x: 0.3, y: 1, z: 0.3 } },
-                            { shape: "cylinder", material: "holz", position: { x: 5, y: 0, z: 0 }, size: { x: 0.3, y: 1, z: 0.3 } },
+                            {
+                                shape: "cylinder",
+                                material: "holz",
+                                position: { x: -5, y: 0, z: 0 },
+                                size: { x: 0.3, y: 1, z: 0.3 },
+                            },
+                            {
+                                shape: "cylinder",
+                                material: "holz",
+                                position: { x: 5, y: 0, z: 0 },
+                                size: { x: 0.3, y: 1, z: 0.3 },
+                            },
                         ],
                     };
                     out.wideNoSymmetry = !r._hasYAxisSymmetry(wideBp);
@@ -1918,10 +2074,30 @@ function startSaveServer() {
                     // Prinzip 5: Resonanz-Array — 4 Pyramiden auf einem Kreis um die Mitte
                     const arrayBp = {
                         parts: [
-                            { shape: "pyramid", material: "quarz", position: { x: 2, y: 0, z: 0 }, size: { x: 0.5, y: 1, z: 0.5 } },
-                            { shape: "pyramid", material: "quarz", position: { x: -2, y: 0, z: 0 }, size: { x: 0.5, y: 1, z: 0.5 } },
-                            { shape: "pyramid", material: "quarz", position: { x: 0, y: 0, z: 2 }, size: { x: 0.5, y: 1, z: 0.5 } },
-                            { shape: "pyramid", material: "quarz", position: { x: 0, y: 0, z: -2 }, size: { x: 0.5, y: 1, z: 0.5 } },
+                            {
+                                shape: "pyramid",
+                                material: "quarz",
+                                position: { x: 2, y: 0, z: 0 },
+                                size: { x: 0.5, y: 1, z: 0.5 },
+                            },
+                            {
+                                shape: "pyramid",
+                                material: "quarz",
+                                position: { x: -2, y: 0, z: 0 },
+                                size: { x: 0.5, y: 1, z: 0.5 },
+                            },
+                            {
+                                shape: "pyramid",
+                                material: "quarz",
+                                position: { x: 0, y: 0, z: 2 },
+                                size: { x: 0.5, y: 1, z: 0.5 },
+                            },
+                            {
+                                shape: "pyramid",
+                                material: "quarz",
+                                position: { x: 0, y: 0, z: -2 },
+                                size: { x: 0.5, y: 1, z: 0.5 },
+                            },
                         ],
                     };
                     out.arrayDetected = r._hasResonantArray(arrayBp);
@@ -1932,17 +2108,42 @@ function startSaveServer() {
                     // Negativ-Test: nur 2 Pyramiden → kein Array
                     const twoBp = {
                         parts: [
-                            { shape: "pyramid", material: "quarz", position: { x: 2, y: 0, z: 0 }, size: { x: 0.5, y: 1, z: 0.5 } },
-                            { shape: "pyramid", material: "quarz", position: { x: -2, y: 0, z: 0 }, size: { x: 0.5, y: 1, z: 0.5 } },
+                            {
+                                shape: "pyramid",
+                                material: "quarz",
+                                position: { x: 2, y: 0, z: 0 },
+                                size: { x: 0.5, y: 1, z: 0.5 },
+                            },
+                            {
+                                shape: "pyramid",
+                                material: "quarz",
+                                position: { x: -2, y: 0, z: 0 },
+                                size: { x: 0.5, y: 1, z: 0.5 },
+                            },
                         ],
                     };
                     out.twoNoArray = !r._hasResonantArray(twoBp);
                     // Negativ-Test: 3 Pyramiden auf unterschiedlichen Radien
                     const unevenBp = {
                         parts: [
-                            { shape: "pyramid", material: "quarz", position: { x: 2, y: 0, z: 0 }, size: { x: 0.5, y: 1, z: 0.5 } },
-                            { shape: "pyramid", material: "quarz", position: { x: -5, y: 0, z: 0 }, size: { x: 0.5, y: 1, z: 0.5 } },
-                            { shape: "pyramid", material: "quarz", position: { x: 0, y: 0, z: 8 }, size: { x: 0.5, y: 1, z: 0.5 } },
+                            {
+                                shape: "pyramid",
+                                material: "quarz",
+                                position: { x: 2, y: 0, z: 0 },
+                                size: { x: 0.5, y: 1, z: 0.5 },
+                            },
+                            {
+                                shape: "pyramid",
+                                material: "quarz",
+                                position: { x: -5, y: 0, z: 0 },
+                                size: { x: 0.5, y: 1, z: 0.5 },
+                            },
+                            {
+                                shape: "pyramid",
+                                material: "quarz",
+                                position: { x: 0, y: 0, z: 8 },
+                                size: { x: 0.5, y: 1, z: 0.5 },
+                            },
                         ],
                     };
                     out.unevenNoArray = !r._hasResonantArray(unevenBp);
@@ -1953,7 +2154,12 @@ function startSaveServer() {
                     const glockenspielBp = {
                         parts: [],
                     };
-                    for (const [cx, cz] of [[2, 0], [-2, 0], [0, 2], [0, -2]]) {
+                    for (const [cx, cz] of [
+                        [2, 0],
+                        [-2, 0],
+                        [0, 2],
+                        [0, -2],
+                    ]) {
                         glockenspielBp.parts.push({
                             shape: "sphere",
                             material: "quarz",
@@ -1997,7 +2203,10 @@ function startSaveServer() {
                 check("Welle 5 B P2: Array-Bonus auf magieleitung", wave5bp2Results.arrayBoostsMagic);
                 check("Welle 5 B P2: 2 Pyramiden bilden KEIN Array", wave5bp2Results.twoNoArray);
                 check("Welle 5 B P2: 3 Pyramiden auf ungleichen Radien sind KEIN Array", wave5bp2Results.unevenNoArray);
-                check("Welle 5 B P2: Glockenspiel-Combo (Hohlraum + Array) maximiert Resonanz", wave5bp2Results.glockenspielMaxResonance);
+                check(
+                    "Welle 5 B P2: Glockenspiel-Combo (Hohlraum + Array) maximiert Resonanz",
+                    wave5bp2Results.glockenspielMaxResonance
+                );
             }
 
             // ### Welle 5 A — Verbindungstypen mit Lastformel ###
@@ -2010,15 +2219,24 @@ function startSaveServer() {
                     out.connectionTypesFrozen = Object.isFrozen(r.constructor.CONNECTION_TYPES);
                     const types = r.constructor.CONNECTION_TYPES;
                     const expectedTypes = [
-                        "hafting", "lashing", "pinning", "welding",
-                        "gluing", "masonry", "sewing", "magic_bind",
+                        "hafting",
+                        "lashing",
+                        "pinning",
+                        "welding",
+                        "gluing",
+                        "masonry",
+                        "sewing",
+                        "magic_bind",
                     ];
                     out.eightTypes = expectedTypes.every((t) => types[t]);
                     out.eachTypeHasStrongTags = expectedTypes.every(
                         (t) => Array.isArray(types[t].strongTags) && types[t].strongTags.length >= 1
                     );
                     out.eachTypeHasStrength = expectedTypes.every(
-                        (t) => typeof types[t].typeStrength === "number" && types[t].typeStrength > 0 && types[t].typeStrength <= 1
+                        (t) =>
+                            typeof types[t].typeStrength === "number" &&
+                            types[t].typeStrength > 0 &&
+                            types[t].typeStrength <= 1
                     );
 
                     // _partsContactArea: zwei berührende 1×1×1-Würfel
@@ -2036,8 +2254,18 @@ function startSaveServer() {
                         label: "W5A Test",
                         builtIn: false,
                         parts: [
-                            { shape: "cylinder", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
-                            { shape: "box", material: "eisen", position: { x: 0.95, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                            {
+                                shape: "cylinder",
+                                material: "eisen",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                            },
+                            {
+                                shape: "box",
+                                material: "eisen",
+                                position: { x: 0.95, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                            },
                         ],
                         connections: [],
                     };
@@ -2053,8 +2281,18 @@ function startSaveServer() {
                         label: "W5A Soft",
                         builtIn: false,
                         parts: [
-                            { shape: "cylinder", material: "leder", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
-                            { shape: "box", material: "leder", position: { x: 0.95, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                            {
+                                shape: "cylinder",
+                                material: "leder",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                            },
+                            {
+                                shape: "box",
+                                material: "leder",
+                                position: { x: 0.95, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                            },
                         ],
                         connections: [],
                     };
@@ -2071,28 +2309,16 @@ function startSaveServer() {
                     out.lashingFitsLeather = lashSoftStrength > softStrength;
 
                     // Validation
-                    const v1 = r.validateBlueprintConnections(
-                        [{ type: "hafting", partA: 0, partB: 1 }],
-                        2
-                    );
+                    const v1 = r.validateBlueprintConnections([{ type: "hafting", partA: 0, partB: 1 }], 2);
                     out.validAcceptsGood = v1.length === 1;
                     // Unknown type
-                    const v2 = r.validateBlueprintConnections(
-                        [{ type: "schmusen", partA: 0, partB: 1 }],
-                        2
-                    );
+                    const v2 = r.validateBlueprintConnections([{ type: "schmusen", partA: 0, partB: 1 }], 2);
                     out.validRejectsUnknownType = v2.length === 0;
                     // Out-of-range index
-                    const v3 = r.validateBlueprintConnections(
-                        [{ type: "hafting", partA: 0, partB: 99 }],
-                        2
-                    );
+                    const v3 = r.validateBlueprintConnections([{ type: "hafting", partA: 0, partB: 99 }], 2);
                     out.validRejectsBadIndex = v3.length === 0;
                     // Self-reference
-                    const v4 = r.validateBlueprintConnections(
-                        [{ type: "hafting", partA: 1, partB: 1 }],
-                        2
-                    );
+                    const v4 = r.validateBlueprintConnections([{ type: "hafting", partA: 1, partB: 1 }], 2);
                     out.validRejectsSelfRef = v4.length === 0;
 
                     // addConnectionToBlueprint
@@ -2106,10 +2332,7 @@ function startSaveServer() {
                     out.removeOk = rmR && r.state.blueprints["w5a-test"].connections.length === 0;
 
                     // DSL-Op apply_connection
-                    const dslRes = r.dslRun(
-                        ["apply_connection", "w5a-test", "magic_bind", 0, 1],
-                        { source: "test" }
-                    );
+                    const dslRes = r.dslRun(["apply_connection", "w5a-test", "magic_bind", 0, 1], { source: "test" });
                     out.dslApplyConnection = dslRes.log.some((e) => e.event === "applied_connection");
                     out.dslConnectionPersisted = r.state.blueprints["w5a-test"].connections.length === 1;
 
@@ -2132,8 +2355,18 @@ function startSaveServer() {
                         label: "W5A Weak",
                         builtIn: false,
                         parts: [
-                            { shape: "cylinder", material: "holz", position: { x: 0, y: 0, z: 0 }, size: { x: 0.2, y: 0.2, z: 0.2 } },
-                            { shape: "box", material: "holz", position: { x: 0.18, y: 0, z: 0 }, size: { x: 0.2, y: 0.2, z: 0.2 } },
+                            {
+                                shape: "cylinder",
+                                material: "holz",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 0.2, y: 0.2, z: 0.2 },
+                            },
+                            {
+                                shape: "box",
+                                material: "holz",
+                                position: { x: 0.18, y: 0, z: 0 },
+                                size: { x: 0.2, y: 0.2, z: 0.2 },
+                            },
                         ],
                         connections: [{ type: "sewing", partA: 0, partB: 1 }],
                     };
@@ -2161,9 +2394,15 @@ function startSaveServer() {
                 check("Welle 5 A: Acht Verbindungstypen definiert", wave5aResults.eightTypes);
                 check("Welle 5 A: Jeder Typ hat strongTags", wave5aResults.eachTypeHasStrongTags);
                 check("Welle 5 A: Jeder Typ hat typeStrength 0..1", wave5aResults.eachTypeHasStrength);
-                check("Welle 5 A: _partsContactArea liefert positive Flaeche bei Beruehrung", wave5aResults.contactAreaNonZero);
+                check(
+                    "Welle 5 A: _partsContactArea liefert positive Flaeche bei Beruehrung",
+                    wave5aResults.contactAreaNonZero
+                );
                 check("Welle 5 A: _partsContactArea = 0 bei weit-entfernten Parts", wave5aResults.farContactZero);
-                check("Welle 5 A: Hafting auf Eisen liefert mittlere bis hohe Staerke", wave5aResults.haftingStrengthOk);
+                check(
+                    "Welle 5 A: Hafting auf Eisen liefert mittlere bis hohe Staerke",
+                    wave5aResults.haftingStrengthOk
+                );
                 check("Welle 5 A: Hafting auf Leder ist schwaecher als auf Eisen", wave5aResults.softHaftingWeaker);
                 check("Welle 5 A: Lashing passt zu Leder besser als Hafting", wave5aResults.lashingFitsLeather);
                 check("Welle 5 A: validateConnections akzeptiert gueltige", wave5aResults.validAcceptsGood);
@@ -2193,9 +2432,7 @@ function startSaveServer() {
                     out.opClassesCount = r.constructor.TOOL_OP_CLASSES.size === 4;
 
                     // computeBlueprintPrecisionCap: min der Part-Praezisionen
-                    const polishedChain = [
-                        { tool: "polierscheibe", op: "polish", cap: 0.97 },
-                    ];
+                    const polishedChain = [{ tool: "polierscheibe", op: "polish", cap: 0.97 }];
                     const roughChain = [{ tool: "hände", op: "hand_knap", cap: 0.4 }];
                     const mixedBp = {
                         parts: [
@@ -2259,7 +2496,8 @@ function startSaveServer() {
                         connections: [],
                     };
                     const regHammerOverride = r.registerBlueprintAsTool("hammer");
-                    out.starterProtected = !regHammerOverride.ok && regHammerOverride.reason === "starter_name_protected";
+                    out.starterProtected =
+                        !regHammerOverride.ok && regHammerOverride.reason === "starter_name_protected";
                     delete r.state.blueprints["hammer"];
 
                     // Recursive: das neue Werkzeug funktioniert in applyOpToPart
@@ -2276,7 +2514,8 @@ function startSaveServer() {
                     // Erfolg: Op ist angewandt, letzte Chain-Eintrag zeigt
                     // auf das eigene Werkzeug. Praezision selbst bleibt 0.4
                     // (default-Hand-Knap dominiert per min-Regel §2.3).
-                    out.recursiveToolApplies = applyR.ok && lastOp && lastOp.tool === "w5c-lathe" && lastOp.cap === 0.97;
+                    out.recursiveToolApplies =
+                        applyR.ok && lastOp && lastOp.tool === "w5c-lathe" && lastOp.cap === 0.97;
                     out.opChainGrew = Array.isArray(partAfter.opChain) && partAfter.opChain.length === 2;
 
                     // Schief gebaute Drehbank → schlechter Cap
@@ -2303,9 +2542,8 @@ function startSaveServer() {
                         connections: [],
                     };
                     r.applyOpToPart("w5c-target2", 0, "w5c-bad-lathe");
-                    out.recursivePrecisionCascade = r.computePartPrecision(
-                        r.state.blueprints["w5c-target2"].parts[0]
-                    ) === 0.4;
+                    out.recursivePrecisionCascade =
+                        r.computePartPrecision(r.state.blueprints["w5c-target2"].parts[0]) === 0.4;
 
                     // DSL-Ops
                     r.state.blueprints["w5c-dsl-test"] = {
@@ -2315,10 +2553,9 @@ function startSaveServer() {
                         parts: [{ shape: "box", material: "eisen", opChain: polishedChain }],
                         connections: [],
                     };
-                    const dslMeta = r.dslRun(
-                        ["set_tool_meta", "w5c-dsl-test", "dsl-tool", "additive"],
-                        { source: "test" }
-                    );
+                    const dslMeta = r.dslRun(["set_tool_meta", "w5c-dsl-test", "dsl-tool", "additive"], {
+                        source: "test",
+                    });
                     out.dslSetMeta = dslMeta.log.some((e) => e.event === "set_tool_meta");
                     const dslReg = r.dslRun(["register_tool", "w5c-dsl-test"], { source: "test" });
                     out.dslRegister = dslReg.log.some((e) => e.event === "registered_tool");
@@ -2327,7 +2564,11 @@ function startSaveServer() {
                     // Save-Roundtrip
                     const snap = r.buildStateSnapshot();
                     out.snapshotHasToolBp = (snap.blueprints || []).some(
-                        (bp) => bp.name === "w5c-lathe" && bp.role === "tool" && bp.toolMeta && bp.toolMeta.opName === "lathe"
+                        (bp) =>
+                            bp.name === "w5c-lathe" &&
+                            bp.role === "tool" &&
+                            bp.toolMeta &&
+                            bp.toolMeta.opName === "lathe"
                     );
                     out.snapshotHasTool = (snap.tools || []).some(
                         (t) => t.name === "w5c-lathe" && t.precisionCap === 0.97
@@ -2381,7 +2622,10 @@ function startSaveServer() {
                 check("Welle 5 C: Eigenes Werkzeug funktioniert in applyOpToPart", wave5cResults.recursiveToolApplies);
                 check("Welle 5 C: opChain waechst nach apply mit eigenem Tool", wave5cResults.opChainGrew);
                 check("Welle 5 C: Schlechte Drehbank hat niedrigen Cap", wave5cResults.badLatheLowerCap);
-                check("Welle 5 C: Schlechtes Tool deckelt Ziel-Praezision (§4.3 Kaskade)", wave5cResults.recursivePrecisionCascade);
+                check(
+                    "Welle 5 C: Schlechtes Tool deckelt Ziel-Praezision (§4.3 Kaskade)",
+                    wave5cResults.recursivePrecisionCascade
+                );
                 check("Welle 5 C: DSL set_tool_meta wirkt", wave5cResults.dslSetMeta);
                 check("Welle 5 C: DSL register_tool wirkt", wave5cResults.dslRegister);
                 check("Welle 5 C: DSL-Werkzeug landet in state.tools", wave5cResults.dslToolInState);
@@ -2405,9 +2649,24 @@ function startSaveServer() {
                         label: "Bug1 Test",
                         builtIn: false,
                         parts: [
-                            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
-                            { shape: "box", material: "stein", position: { x: 1, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
-                            { shape: "box", material: "stein", position: { x: 2, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                            {
+                                shape: "box",
+                                material: "stein",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                            },
+                            {
+                                shape: "box",
+                                material: "stein",
+                                position: { x: 1, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                            },
+                            {
+                                shape: "box",
+                                material: "stein",
+                                position: { x: 2, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                            },
                         ],
                         connections: [
                             { type: "hafting", partA: 0, partB: 1 },
@@ -2420,8 +2679,7 @@ function startSaveServer() {
                     r.removePartFromBlueprint("bug1-test", 1);
                     const remaining = r.state.blueprints["bug1-test"].connections;
                     out.connectionsFilteredOnPartDelete = remaining.length === 1;
-                    out.connectionIndicesShifted =
-                        remaining[0] && remaining[0].partA === 0 && remaining[0].partB === 1;
+                    out.connectionIndicesShifted = remaining[0] && remaining[0].partA === 0 && remaining[0].partB === 1;
 
                     // Bug 1 edge case: delete part 0, connection 1-2 wird zu 0-1
                     r.state.blueprints["bug1-shift"] = {
@@ -2429,9 +2687,24 @@ function startSaveServer() {
                         label: "Shift Test",
                         builtIn: false,
                         parts: [
-                            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
-                            { shape: "box", material: "stein", position: { x: 1, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
-                            { shape: "box", material: "stein", position: { x: 2, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                            {
+                                shape: "box",
+                                material: "stein",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                            },
+                            {
+                                shape: "box",
+                                material: "stein",
+                                position: { x: 1, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                            },
+                            {
+                                shape: "box",
+                                material: "stein",
+                                position: { x: 2, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                            },
                         ],
                         connections: [{ type: "hafting", partA: 1, partB: 2 }],
                     };
@@ -2447,7 +2720,13 @@ function startSaveServer() {
                         role: "tool",
                         toolMeta: { opName: "bug2-op", opClass: "subtractive" },
                         parts: [
-                            { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, opChain: [{ tool: "polierscheibe", op: "polish", cap: 0.97 }] },
+                            {
+                                shape: "box",
+                                material: "eisen",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                                opChain: [{ tool: "polierscheibe", op: "polish", cap: 0.97 }],
+                            },
                         ],
                         connections: [],
                     };
@@ -2468,7 +2747,15 @@ function startSaveServer() {
                         builtIn: false,
                         role: "tool",
                         toolMeta: { opName: "noisy-op", opClass: "subtractive" },
-                        parts: [{ shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, opChain: [{ tool: "polierscheibe", op: "polish", cap: 0.97 }] }],
+                        parts: [
+                            {
+                                shape: "box",
+                                material: "eisen",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                                opChain: [{ tool: "polierscheibe", op: "polish", cap: 0.97 }],
+                            },
+                        ],
                         connections: [],
                     };
                     r.registerBlueprintAsTool("bug2-noisy-tool");
@@ -2476,7 +2763,14 @@ function startSaveServer() {
                         name: "bug2-plain",
                         label: "Plain Blueprint",
                         builtIn: false,
-                        parts: [{ shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } }],
+                        parts: [
+                            {
+                                shape: "box",
+                                material: "stein",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                            },
+                        ],
                         connections: [],
                     };
                     r.deleteBlueprint("bug2-plain");
@@ -2501,15 +2795,400 @@ function startSaveServer() {
                     (bugfixResults && bugfixResults.error) || "page.evaluate fehlgeschlagen"
                 );
             } else {
-                check("Bugfix: removePartFromBlueprint filtert betroffene Connections", bugfixResults.connectionsFilteredOnPartDelete);
+                check(
+                    "Bugfix: removePartFromBlueprint filtert betroffene Connections",
+                    bugfixResults.connectionsFilteredOnPartDelete
+                );
                 check("Bugfix: Connection-Indizes nach Part-Loesch korrigiert", bugfixResults.connectionIndicesShifted);
                 check("Bugfix: Index-Shift bei Loesch von Part 0", bugfixResults.shiftedToZeroOne);
                 check("Bugfix: registerBlueprintAsTool legt Werkzeug an (Setup)", bugfixResults.toolWasRegistered);
-                check("Bugfix: Werkzeug nach Register im Player-Inventory (Setup)", bugfixResults.playerOwnedToolBefore);
-                check("Bugfix: deleteBlueprint entfernt eigenes Werkzeug aus state.tools", bugfixResults.toolRemovedFromState);
-                check("Bugfix: deleteBlueprint entfernt Werkzeug aus player.tools", bugfixResults.toolRemovedFromPlayer);
-                check("Bugfix: Starter-Werkzeuge bleiben nach Bauplan-Loesch erhalten", bugfixResults.starterToolsUnaffected);
+                check(
+                    "Bugfix: Werkzeug nach Register im Player-Inventory (Setup)",
+                    bugfixResults.playerOwnedToolBefore
+                );
+                check(
+                    "Bugfix: deleteBlueprint entfernt eigenes Werkzeug aus state.tools",
+                    bugfixResults.toolRemovedFromState
+                );
+                check(
+                    "Bugfix: deleteBlueprint entfernt Werkzeug aus player.tools",
+                    bugfixResults.toolRemovedFromPlayer
+                );
+                check(
+                    "Bugfix: Starter-Werkzeuge bleiben nach Bauplan-Loesch erhalten",
+                    bugfixResults.starterToolsUnaffected
+                );
                 check("Bugfix: Unrelated Tools werden nicht angetastet", bugfixResults.unrelatedToolUntouched);
+            }
+
+            // ### Ring 8 — Multi-Welt-Verwaltung ###
+            // Daten-Plane: Index, Per-Welt-Key, createNewWorld, switchToWorld
+            // (ohne Reload — Reload ist UI-Schicht), deleteWorld, Migration,
+            // Player-Übernahme. Wir benutzen reload:false damit wir alle
+            // Pfade in einer Session prüfen können.
+            const ring8Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    // Schema-Version-Bump
+                    out.schemaIsMultiworld = r.state.worldMeta.schemaVersion === "8.0-multiworld-v1";
+
+                    // Aktive Welt ist im Index und als aktiv markiert.
+                    const activeId = r.state.worldMeta.worldId;
+                    out.hasActiveWorldId = typeof activeId === "string" && activeId.length > 0;
+                    const idx1 = r.worldsIndexLoad();
+                    out.activeInIndex = !!idx1.find((e) => e.worldId === activeId);
+                    out.activeWorldPointerSet = r.activeWorldGet() === activeId;
+
+                    // Per-Welt-Save-Key existiert.
+                    out.perWorldSaveExists = !!localStorage.getItem(r.worldStorageKey(activeId));
+
+                    // Legacy-Single-Key wurde nach Migration (falls vorhanden) entfernt.
+                    out.legacyKeyAbsent = localStorage.getItem("anazhRealmState") === null;
+
+                    // createNewWorld (ohne Reload) erzeugt eine neue Welt im Index.
+                    // Ziel: Ring-8-Invarianten ohne page-reload prüfbar.
+                    const beforeCount = r.worldsIndexLoad().length;
+                    const newId = r.createNewWorld({ slug: "test-zweite", inheritPlayer: false, reload: false });
+                    out.newWorldCreated = typeof newId === "string" && newId !== activeId;
+                    const idx2 = r.worldsIndexLoad();
+                    out.indexGrewByOne = idx2.length === beforeCount + 1;
+                    out.newWorldInIndex = !!idx2.find((e) => e.worldId === newId && e.slug === "test-zweite");
+                    out.newWorldSaveExists = !!localStorage.getItem(r.worldStorageKey(newId));
+                    // Active wurde auf die neue Welt umgeleitet — aber state.worldMeta
+                    // bleibt auf der alten (kein Reload). Das ist die Erwartung.
+                    out.activePointerMovedToNew = r.activeWorldGet() === newId;
+                    out.stateWorldMetaUnchanged = r.state.worldMeta.worldId === activeId;
+
+                    // Slug-Unique: weitere Welt mit demselben Slug bekommt Suffix -2.
+                    const newId2 = r.createNewWorld({ slug: "test-zweite", inheritPlayer: false, reload: false });
+                    const idx3 = r.worldsIndexLoad();
+                    const newEntry2 = idx3.find((e) => e.worldId === newId2);
+                    out.slugUniqueWithSuffix =
+                        !!newEntry2 && /^test-zweite(-\d+)?$/.test(newEntry2.slug) && newEntry2.slug !== "test-zweite";
+
+                    // Player-Übernahme: aktueller Spieler-Soul + Tools wandern.
+                    r.applyPlayerSoul && r.applyPlayerSoul("phoenix");
+                    // Phantasy-eigenes Tool im player-Inventory damit Übernahme prüfbar
+                    if (!r.state.tools["übernahme-marker"]) {
+                        r.state.tools["übernahme-marker"] = {
+                            name: "übernahme-marker",
+                            label: "Übernahme-Marker",
+                            opClass: "schneiden",
+                            opName: "test",
+                            precisionCap: 0.6,
+                            builtIn: false,
+                            sourceBlueprint: null,
+                        };
+                        r.state.player.tools.push("übernahme-marker");
+                    }
+                    const inheritId = r.createNewWorld({ slug: "test-mit-person", inheritPlayer: true, reload: false });
+                    const inheritSave = JSON.parse(localStorage.getItem(r.worldStorageKey(inheritId)) || "{}");
+                    out.inheritCarriesPlayerSoul = inheritSave.playerSoul === "phoenix";
+                    out.inheritCarriesPlayerTools =
+                        Array.isArray(inheritSave.playerTools) && inheritSave.playerTools.includes("übernahme-marker");
+                    out.inheritCarriesOwnTools =
+                        Array.isArray(inheritSave.tools) &&
+                        inheritSave.tools.some((t) => t && t.name === "übernahme-marker");
+                    // Frische Welt: keine Übernahme = leere Spieler-Tools (nur Starter beim Init aufgesetzt)
+                    const freshId = r.createNewWorld({ slug: "test-fresh", inheritPlayer: false, reload: false });
+                    const freshSave = JSON.parse(localStorage.getItem(r.worldStorageKey(freshId)) || "{}");
+                    out.freshNoInheritedSoul = freshSave.playerSoul === "human";
+                    out.freshNoInheritedTools =
+                        Array.isArray(freshSave.playerTools) && freshSave.playerTools.length === 0;
+
+                    // switchToWorld auf eine existierende Welt (ohne Reload):
+                    // active-Pointer wandert, state bleibt (Reload würde state laden).
+                    const switchOk = r.switchToWorld(newId, { reload: false });
+                    out.switchReturnedTrue = switchOk === true;
+                    out.activePointerAfterSwitch = r.activeWorldGet() === newId;
+                    // Switch auf unbekannte Welt scheitert sauber
+                    out.switchToUnknownFails = r.switchToWorld("does-not-exist-123", { reload: false }) === false;
+                    // Switch auf aktive Welt ist noop = true
+                    out.switchToActiveIsNoop = r.switchToWorld(newId, { reload: false }) === true;
+
+                    // deleteWorld entfernt nur Nicht-Aktive
+                    // Stell sicher, dass die aktive Welt nicht freshId ist
+                    r.activeWorldSet(activeId);
+                    out.cantDeleteActive = r.deleteWorld(activeId) === false;
+                    const beforeDelete = r.worldsIndexLoad().length;
+                    const delOk = r.deleteWorld(freshId);
+                    out.deleteReturnedTrue = delOk === true;
+                    const afterDelete = r.worldsIndexLoad();
+                    out.indexShrunkByOne = afterDelete.length === beforeDelete - 1;
+                    out.deletedSaveGone = localStorage.getItem(r.worldStorageKey(freshId)) === null;
+
+                    // Aufräumen: alle Test-Welten weg, active zurück auf Original
+                    r.activeWorldSet(activeId);
+                    for (const e of r.worldsIndexLoad()) {
+                        if (e.worldId !== activeId) r.deleteWorld(e.worldId);
+                    }
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!ring8Results || ring8Results.error) {
+                check(
+                    "Ring 8: Snapshot erreichbar",
+                    false,
+                    (ring8Results && ring8Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Ring 8: Schema-Version ist 8.0-multiworld-v1", ring8Results.schemaIsMultiworld);
+                check("Ring 8: state.worldMeta.worldId gesetzt", ring8Results.hasActiveWorldId);
+                check("Ring 8: Aktive Welt im worldsIndex registriert", ring8Results.activeInIndex);
+                check("Ring 8: anazhRealmActiveWorld zeigt auf aktive Welt", ring8Results.activeWorldPointerSet);
+                check("Ring 8: Per-Welt-Save-Key existiert", ring8Results.perWorldSaveExists);
+                check("Ring 8: Legacy-Single-Key nach Migration weg", ring8Results.legacyKeyAbsent);
+                check("Ring 8: createNewWorld liefert neue worldId", ring8Results.newWorldCreated);
+                check("Ring 8: Index wächst um eins nach createNewWorld", ring8Results.indexGrewByOne);
+                check("Ring 8: Neue Welt im Index mit slug", ring8Results.newWorldInIndex);
+                check("Ring 8: Per-Welt-Save für neue Welt geschrieben", ring8Results.newWorldSaveExists);
+                check("Ring 8: Aktiv-Pointer auf neue Welt nach create", ring8Results.activePointerMovedToNew);
+                check("Ring 8: state.worldMeta bleibt bis Reload alt", ring8Results.stateWorldMetaUnchanged);
+                check("Ring 8: Slug-Kollision bekommt -N Suffix", ring8Results.slugUniqueWithSuffix);
+                check("Ring 8: Person-Übernahme transportiert Seele", ring8Results.inheritCarriesPlayerSoul);
+                check("Ring 8: Person-Übernahme transportiert player.tools", ring8Results.inheritCarriesPlayerTools);
+                check("Ring 8: Person-Übernahme transportiert eigene Tools", ring8Results.inheritCarriesOwnTools);
+                check("Ring 8: Frische Welt hat default Spieler-Seele", ring8Results.freshNoInheritedSoul);
+                check("Ring 8: Frische Welt hat leeres playerTools", ring8Results.freshNoInheritedTools);
+                check("Ring 8: switchToWorld liefert true", ring8Results.switchReturnedTrue);
+                check("Ring 8: Aktiv-Pointer nach switchToWorld korrekt", ring8Results.activePointerAfterSwitch);
+                check("Ring 8: switchToWorld auf unbekannte ID scheitert sauber", ring8Results.switchToUnknownFails);
+                check("Ring 8: switchToWorld auf aktive Welt ist noop=true", ring8Results.switchToActiveIsNoop);
+                check("Ring 8: deleteWorld lehnt aktive Welt ab", ring8Results.cantDeleteActive);
+                check("Ring 8: deleteWorld liefert true für andere", ring8Results.deleteReturnedTrue);
+                check("Ring 8: Index schrumpft um eins nach delete", ring8Results.indexShrunkByOne);
+                check("Ring 8: Per-Welt-Save nach delete weg", ring8Results.deletedSaveGone);
+            }
+
+            // ### Ring 8 UI ###
+            const ring8UiResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    out.pickerSectionInDom = !!document.getElementById("world-picker-section");
+                    out.pickerListInDom = !!document.getElementById("world-picker-list");
+                    out.newWorldBtnInDom = !!document.getElementById("world-new");
+                    // Rendern mit zwei Test-Welten und prüfen, dass UI sie zeigt
+                    r.createNewWorld({ slug: "test-ui-eins", inheritPlayer: false, reload: false });
+                    r.createNewWorld({ slug: "test-ui-zwei", inheritPlayer: false, reload: false });
+                    r.activeWorldSet(r.state.worldMeta.worldId);
+                    r._renderWorldPicker();
+                    const list = document.getElementById("world-picker-list");
+                    const rows = list ? list.querySelectorAll(".world-picker-row") : [];
+                    out.pickerRendersOthers = rows.length >= 2;
+                    let foundUiEins = false;
+                    let foundUiZwei = false;
+                    for (const row of rows) {
+                        const t = row.textContent || "";
+                        if (t.includes("test-ui-eins")) foundUiEins = true;
+                        if (t.includes("test-ui-zwei")) foundUiZwei = true;
+                    }
+                    out.pickerShowsBothSlugs = foundUiEins && foundUiZwei;
+                    // Aktive Welt ist NICHT in der „Andere Welten"-Liste
+                    out.pickerHidesActive = !Array.from(rows).some((row) =>
+                        (row.textContent || "").includes(r.state.worldMeta.slug)
+                    );
+                    // Cleanup
+                    const activeId = r.state.worldMeta.worldId;
+                    for (const e of r.worldsIndexLoad()) {
+                        if (e.worldId !== activeId) r.deleteWorld(e.worldId);
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!ring8UiResults || ring8UiResults.error) {
+                check(
+                    "Ring 8 UI: Snapshot erreichbar",
+                    false,
+                    (ring8UiResults && ring8UiResults.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Ring 8 UI: #world-picker-section im DOM", ring8UiResults.pickerSectionInDom);
+                check("Ring 8 UI: #world-picker-list im DOM", ring8UiResults.pickerListInDom);
+                check("Ring 8 UI: #world-new Button im DOM", ring8UiResults.newWorldBtnInDom);
+                check("Ring 8 UI: Picker rendert andere Welten als Zeilen", ring8UiResults.pickerRendersOthers);
+                check("Ring 8 UI: Beide Slugs sichtbar", ring8UiResults.pickerShowsBothSlugs);
+                check("Ring 8 UI: Aktive Welt nicht in Andere-Welten-Liste", ring8UiResults.pickerHidesActive);
+            }
+
+            // ### Ring 8.1 — Per-Welt-Seed ###
+            // Vor Ring 8.1 nutzten alle Welten den gleichen Default-Seed; das
+            // Terrain einer „neuen" Welt sah identisch zur alten aus. Jetzt
+            // trägt jede Welt ihren eigenen Seed in worldMeta. SimplexNoise
+            // wird mit worldMeta.seed gefüttert; verschiedene Welten liefern
+            // damit verschiedene Geometrien.
+            const ring81Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    const oldSeed = r.state.worldMeta.seed;
+                    out.activeHasSeed = typeof oldSeed === "string" && oldSeed.length > 0;
+
+                    // Zwei neue Welten parallel anlegen, ohne Reload, und ihre
+                    // gespeicherten Seeds aus dem Per-Welt-Save lesen.
+                    const aId = r.createNewWorld({ slug: "seed-a", inheritPlayer: false, reload: false });
+                    const bId = r.createNewWorld({ slug: "seed-b", inheritPlayer: false, reload: false });
+                    const aSave = JSON.parse(localStorage.getItem(r.worldStorageKey(aId)) || "{}");
+                    const bSave = JSON.parse(localStorage.getItem(r.worldStorageKey(bId)) || "{}");
+                    const seedA = aSave.worldMeta && aSave.worldMeta.seed;
+                    const seedB = bSave.worldMeta && bSave.worldMeta.seed;
+                    out.newWorldAHasSeed = typeof seedA === "string" && seedA.length > 0;
+                    out.newWorldBHasSeed = typeof seedB === "string" && seedB.length > 0;
+                    out.seedsAreDifferent = seedA !== seedB;
+                    out.newWorldsDifferFromActive = seedA !== oldSeed && seedB !== oldSeed;
+                    out.newWorldSeedShape = /^w-[a-z0-9]+-[a-z0-9]+$/.test(seedA || "");
+
+                    // parentWorlds bleibt leer (Ring 10 erst)
+                    out.newWorldHasNoParents =
+                        Array.isArray(aSave.worldMeta.parentWorlds) && aSave.worldMeta.parentWorlds.length === 0;
+
+                    // Genesis-Journal-Eintrag wurde beim Anlegen geschrieben
+                    out.newWorldHasGenesisJournal =
+                        aSave.worldJournal &&
+                        Array.isArray(aSave.worldJournal.entries) &&
+                        aSave.worldJournal.entries[0] &&
+                        aSave.worldJournal.entries[0].type === "genesis" &&
+                        aSave.worldJournal.entries[0].text &&
+                        aSave.worldJournal.entries[0].text.includes("seed-a");
+                    out.genesisCtxHasSeed =
+                        aSave.worldJournal.entries[0].ctx && typeof aSave.worldJournal.entries[0].ctx.seed === "string";
+
+                    // Architekturen sind im neuen Save leer (keine Übernahme!)
+                    out.newWorldArchitecturesEmpty =
+                        Array.isArray(aSave.architectures) && aSave.architectures.length === 0;
+                    out.newWorldCreaturesEmpty = Array.isArray(aSave.creatures) && aSave.creatures.length === 0;
+                    out.newWorldDslHistoryEmpty = Array.isArray(aSave.dslHistory) && aSave.dslHistory.length === 0;
+                    out.newWorldPathBucketsEmpty = aSave.playerPathBuckets === null;
+                    out.newWorldEmotionsZero =
+                        aSave.playerEmotions && Object.values(aSave.playerEmotions).every((v) => v === 0);
+
+                    // SimplexNoise nutzt worldMeta.seed: wir prüfen über
+                    // MEHRERE Sample-Punkte, dass mindestens einer differiert.
+                    // Beide Welten haben dieselbe steepness/baseHeight, der
+                    // Unterschied liegt AUSSCHLIESSLICH am Seed.
+                    if (typeof SimplexNoise === "function") {
+                        const nA = new SimplexNoise(seedA);
+                        const nB = new SimplexNoise(seedB);
+                        let anyDiffers = false;
+                        for (let i = 0; i < 8 && !anyDiffers; i++) {
+                            const x = (i + 1) * 3.7;
+                            const z = (i + 1) * 5.1;
+                            if (Math.abs(nA.noise2D(x, z) - nB.noise2D(x, z)) > 1e-6) anyDiffers = true;
+                        }
+                        out.noiseSamplesDiffer = anyDiffers;
+                    } else {
+                        out.noiseSamplesDiffer = "SimplexNoise nicht verfügbar";
+                    }
+
+                    // Aufräumen
+                    const keepId = r.state.worldMeta.worldId;
+                    r.activeWorldSet(keepId);
+                    for (const e of r.worldsIndexLoad()) {
+                        if (e.worldId !== keepId) r.deleteWorld(e.worldId);
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!ring81Results || ring81Results.error) {
+                check(
+                    "Ring 8.1: Snapshot erreichbar",
+                    false,
+                    (ring81Results && ring81Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Ring 8.1: Aktive Welt trägt einen Seed", ring81Results.activeHasSeed);
+                check("Ring 8.1: Neue Welt A hat eigenen Seed", ring81Results.newWorldAHasSeed);
+                check("Ring 8.1: Neue Welt B hat eigenen Seed", ring81Results.newWorldBHasSeed);
+                check("Ring 8.1: Zwei neue Welten haben verschiedene Seeds", ring81Results.seedsAreDifferent);
+                check("Ring 8.1: Neue Welt-Seeds differieren vom aktiven", ring81Results.newWorldsDifferFromActive);
+                check("Ring 8.1: Neuer Seed im Format w-<id>-<rand>", ring81Results.newWorldSeedShape);
+                check("Ring 8.1: Neue Welt parentWorlds = []", ring81Results.newWorldHasNoParents);
+                check(
+                    "Ring 8.1: Neue Welt hat Genesis-Journal-Eintrag mit slug",
+                    ring81Results.newWorldHasGenesisJournal
+                );
+                check("Ring 8.1: Genesis-ctx trägt Seed", ring81Results.genesisCtxHasSeed);
+                check("Ring 8.1: Neue Welt hat keine Architekturen", ring81Results.newWorldArchitecturesEmpty);
+                check("Ring 8.1: Neue Welt hat keine Kreaturen", ring81Results.newWorldCreaturesEmpty);
+                check("Ring 8.1: Neue Welt hat leere DSL-History", ring81Results.newWorldDslHistoryEmpty);
+                check("Ring 8.1: Neue Welt hat keine Pfad-Buckets", ring81Results.newWorldPathBucketsEmpty);
+                check("Ring 8.1: Neue Welt hat Emotionen auf 0", ring81Results.newWorldEmotionsZero);
+                check(
+                    "Ring 8.1: SimplexNoise(seedA) ≠ SimplexNoise(seedB) (Terrain differiert)",
+                    ring81Results.noiseSamplesDiffer === true
+                );
+            }
+
+            // ### Ring 8.2 — Player-Position-Restore + Status-Bar-Welt ###
+            // Bug-Report: nach Welt-Wechsel landete der Spieler bei (0,50,0)
+            // statt an seiner zuletzt gespeicherten Position. Ursache:
+            // generateNewWorld() prüft `terrainEverGenerated` (state-only,
+            // nicht persistiert) und teleportiert beim FIRST=false-Pfad.
+            // Fix: loadState markiert das Flag, sobald ein Save geladen wurde.
+            const ring82Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    // buildStateSnapshot fängt aktuelle Mesh-Position ein
+                    if (r.state.playerMesh) {
+                        r.state.playerMesh.position.set(42, 7, 23);
+                    }
+                    const snap1 = r.buildStateSnapshot();
+                    out.snapshotCapturesPosition =
+                        snap1.playerPosition &&
+                        Math.abs(snap1.playerPosition.x - 42) < 0.01 &&
+                        Math.abs(snap1.playerPosition.y - 7) < 0.01 &&
+                        Math.abs(snap1.playerPosition.z - 23) < 0.01;
+
+                    // Reset-Szenario: terrainEverGenerated=false, loadState(snap)
+                    // soll Flag setzen UND Position restaurieren.
+                    r.state.terrainEverGenerated = false;
+                    if (r.state.playerMesh) r.state.playerMesh.position.set(99, 99, 99);
+                    r.loadState(snap1);
+                    out.flagSetAfterLoad = r.state.terrainEverGenerated === true;
+                    out.positionRestoredAfterLoad =
+                        r.state.playerMesh &&
+                        Math.abs(r.state.playerMesh.position.x - 42) < 0.5 &&
+                        Math.abs(r.state.playerMesh.position.z - 23) < 0.5;
+
+                    // Status-Bar zeigt aktuelle Welt
+                    const slugEl = document.getElementById("status-slug");
+                    out.statusSlugInDom = !!slugEl;
+                    // Label muss "Welt" sein (umbenannt von "Slug")
+                    const labelText = slugEl ? slugEl.previousElementSibling.textContent : "";
+                    out.statusLabelIsWelt = labelText === "Welt";
+                    // Tick den Status-Panel-Update
+                    r.updateStatusPanel(performance.now() / 1000);
+                    out.statusSlugShowsActiveWorld = slugEl && slugEl.textContent === (r.state.worldMeta.slug || "—");
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!ring82Results || ring82Results.error) {
+                check(
+                    "Ring 8.2: Snapshot erreichbar",
+                    false,
+                    (ring82Results && ring82Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check(
+                    "Ring 8.2: buildStateSnapshot fängt Spieler-Position ein",
+                    ring82Results.snapshotCapturesPosition
+                );
+                check("Ring 8.2: loadState setzt terrainEverGenerated", ring82Results.flagSetAfterLoad);
+                check("Ring 8.2: loadState restauriert Spieler-Position", ring82Results.positionRestoredAfterLoad);
+                check("Ring 8.2: #status-slug im DOM", ring82Results.statusSlugInDom);
+                check("Ring 8.2: Status-Bar-Label heißt 'Welt'", ring82Results.statusLabelIsWelt);
+                check("Ring 8.2: Status-Bar zeigt aktive Welt-Slug", ring82Results.statusSlugShowsActiveWorld);
             }
 
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
@@ -2519,26 +3198,33 @@ function startSaveServer() {
                     if (!r) return null;
                     const out = {};
                     out.hasLlmState = r.state.llm && typeof r.state.llm.enabled === "boolean";
-                    out.hasProviderConfig = !!r.state.llm.providerConfig &&
+                    out.hasProviderConfig =
+                        !!r.state.llm.providerConfig &&
                         !!r.state.llm.providerConfig.anthropic &&
                         !!r.state.llm.providerConfig.google &&
                         !!r.state.llm.providerConfig.openrouter &&
                         !!r.state.llm.providerConfig.ollama;
                     const defs = r.llmProviderDefs();
                     out.fourProviders = Object.keys(defs).length === 4;
-                    out.providerHasBuildBody = typeof defs.anthropic.buildBody === "function" &&
+                    out.providerHasBuildBody =
+                        typeof defs.anthropic.buildBody === "function" &&
                         typeof defs.google.buildBody === "function" &&
                         typeof defs.openrouter.buildBody === "function" &&
                         typeof defs.ollama.buildBody === "function";
 
                     // Endpoint je Provider liefert die erwartete URL.
-                    out.anthropicEndpoint = defs.anthropic.endpoint("m", "k") === "https://api.anthropic.com/v1/messages";
-                    out.googleEndpointGenerateContent = /generativelanguage\.googleapis\.com\/v1beta\/models\/gemini-2\.0-flash:generateContent$/.test(
-                        defs.google.endpoint("gemini-2.0-flash", "KEY")
-                    );
+                    out.anthropicEndpoint =
+                        defs.anthropic.endpoint("m", "k") === "https://api.anthropic.com/v1/messages";
+                    out.googleEndpointGenerateContent =
+                        /generativelanguage\.googleapis\.com\/v1beta\/models\/gemini-2\.0-flash:generateContent$/.test(
+                            defs.google.endpoint("gemini-2.0-flash", "KEY")
+                        );
                     out.googleHeaderHasApiKey = defs.google.buildHeaders("KEY")["x-goog-api-key"] === "KEY";
-                    out.openrouterEndpoint = defs.openrouter.endpoint("m", "k") === "https://openrouter.ai/api/v1/chat/completions";
-                    out.ollamaEndpoint = defs.ollama.endpoint("m", "", { endpoint: "http://localhost:11434" }) === "http://localhost:11434/api/chat";
+                    out.openrouterEndpoint =
+                        defs.openrouter.endpoint("m", "k") === "https://openrouter.ai/api/v1/chat/completions";
+                    out.ollamaEndpoint =
+                        defs.ollama.endpoint("m", "", { endpoint: "http://localhost:11434" }) ===
+                        "http://localhost:11434/api/chat";
                     out.ollamaNoKeyRequired = defs.ollama.requiresKey === false;
 
                     // Body-Format pro Provider
@@ -2549,15 +3235,20 @@ function startSaveServer() {
                     const geminiBody = defs.google.buildBody("m", sys, usr);
                     out.geminiBodyShape = !!geminiBody.systemInstruction && Array.isArray(geminiBody.contents);
                     const orBody = defs.openrouter.buildBody("m", sys, usr);
-                    out.openrouterBodyShape = Array.isArray(orBody.messages) &&
-                        orBody.messages[0].role === "system" && orBody.messages[1].role === "user";
+                    out.openrouterBodyShape =
+                        Array.isArray(orBody.messages) &&
+                        orBody.messages[0].role === "system" &&
+                        orBody.messages[1].role === "user";
                     const olBody = defs.ollama.buildBody("m", sys, usr);
                     out.ollamaBodyShape = olBody.stream === false && Array.isArray(olBody.messages);
 
                     // Response-Parser pro Provider
-                    out.anthropicExtract = defs.anthropic.extractText({ content: [{ type: "text", text: "hi" }] }) === "hi";
-                    out.geminiExtract = defs.google.extractText({ candidates: [{ content: { parts: [{ text: "hi" }] } }] }) === "hi";
-                    out.openrouterExtract = defs.openrouter.extractText({ choices: [{ message: { content: "hi" } }] }) === "hi";
+                    out.anthropicExtract =
+                        defs.anthropic.extractText({ content: [{ type: "text", text: "hi" }] }) === "hi";
+                    out.geminiExtract =
+                        defs.google.extractText({ candidates: [{ content: { parts: [{ text: "hi" }] } }] }) === "hi";
+                    out.openrouterExtract =
+                        defs.openrouter.extractText({ choices: [{ message: { content: "hi" } }] }) === "hi";
                     out.ollamaExtract = defs.ollama.extractText({ message: { content: "hi" } }) === "hi";
 
                     // UI: Provider-Selektor + Schlüsselzeile + Endpoint-Zeile (für Ollama)
@@ -2601,9 +3292,16 @@ function startSaveServer() {
                 .catch((err) => ({ error: err.message }));
 
             if (!llmResults || llmResults.error) {
-                check("Schicht 2: LLM-Snapshot erreichbar", false, llmResults && llmResults.error || "page.evaluate fehlgeschlagen");
+                check(
+                    "Schicht 2: LLM-Snapshot erreichbar",
+                    false,
+                    (llmResults && llmResults.error) || "page.evaluate fehlgeschlagen"
+                );
             } else {
-                check("Schicht 2: state.llm + providerConfig komplett", llmResults.hasLlmState && llmResults.hasProviderConfig);
+                check(
+                    "Schicht 2: state.llm + providerConfig komplett",
+                    llmResults.hasLlmState && llmResults.hasProviderConfig
+                );
                 check("Schicht 2: vier Provider definiert", llmResults.fourProviders);
                 check("Schicht 2: jeder Provider hat buildBody-Fn", llmResults.providerHasBuildBody);
                 check("Schicht 2: Anthropic-Endpoint korrekt", llmResults.anthropicEndpoint);
@@ -2620,16 +3318,24 @@ function startSaveServer() {
                 check("Schicht 2: Gemini-Response extrahiert candidates[0].parts", llmResults.geminiExtract);
                 check("Schicht 2: OpenRouter-Response extrahiert choices[0].message", llmResults.openrouterExtract);
                 check("Schicht 2: Ollama-Response extrahiert message.content", llmResults.ollamaExtract);
-                check("Schicht 2: UI-Felder (Provider/Key/Endpoint/Model/Toggle)",
-                    llmResults.llmUiProvider && llmResults.llmUiKey && llmResults.llmUiEndpoint && llmResults.llmUiModel && llmResults.llmUiToggle);
+                check(
+                    "Schicht 2: UI-Felder (Provider/Key/Endpoint/Model/Toggle)",
+                    llmResults.llmUiProvider &&
+                        llmResults.llmUiKey &&
+                        llmResults.llmUiEndpoint &&
+                        llmResults.llmUiModel &&
+                        llmResults.llmUiToggle
+                );
                 check("Schicht 2: Provider-Selektor mit 4 Optionen befüllt", llmResults.providerSelectorPopulated);
                 check("Schicht 2: System-Prompt trägt DSL-JSON-Vertrag", llmResults.systemPromptHasJson);
                 check("Schicht 2: Parser akzeptiert gültiges JSON", llmResults.parserParsesValidJson);
                 check("Schicht 2: Parser entfernt Markdown-Fences", llmResults.parserStripsFence);
                 check("Schicht 2: Parser meldet Fehler bei kaputtem Input", llmResults.parserDetectsError);
                 check("Schicht 2: Disabled-LLM blockt Call sauber", llmResults.callBlockedWhenDisabled);
-                check("Schicht 2: CSP erlaubt alle vier Provider-Endpoints",
-                    llmResults.cspAnthropic && llmResults.cspGoogle && llmResults.cspOpenRouter && llmResults.cspOllama);
+                check(
+                    "Schicht 2: CSP erlaubt alle vier Provider-Endpoints",
+                    llmResults.cspAnthropic && llmResults.cspGoogle && llmResults.cspOpenRouter && llmResults.cspOllama
+                );
             }
 
             // ### Ring 3 – Player-Emotionen → Welt ###
@@ -2700,7 +3406,7 @@ function startSaveServer() {
                     r.state.player.emotions.joy = 0.42;
                     r.state.player.emotions.chaos = 0.13;
                     r.saveState();
-                    const raw = localStorage.getItem("anazhRealmState");
+                    const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
                     let parsed = null;
                     try {
                         parsed = JSON.parse(raw);
@@ -2735,22 +3441,10 @@ function startSaveServer() {
                     ring3Results.decayLowered,
                     `joy 0.5 → ${ring3Results.joyAfterDecay.toFixed(3)} nach 10s`
                 );
-                check(
-                    "Ring 3: sorrow > 0.7 triggert state.weather = 'rainy'",
-                    ring3Results.sorrowTriggersRain
-                );
-                check(
-                    "Ring 3: Trigger respektiert Cooldown (kein Wiederfeuern <30s)",
-                    ring3Results.cooldownRespected
-                );
-                check(
-                    "Ring 3: DSL-Condition emotion_above evaluiert korrekt",
-                    ring3Results.dslConditionJoyAbove
-                );
-                check(
-                    "Ring 3: Save persistiert playerEmotions",
-                    ring3Results.savedEmotions
-                );
+                check("Ring 3: sorrow > 0.7 triggert state.weather = 'rainy'", ring3Results.sorrowTriggersRain);
+                check("Ring 3: Trigger respektiert Cooldown (kein Wiederfeuern <30s)", ring3Results.cooldownRespected);
+                check("Ring 3: DSL-Condition emotion_above evaluiert korrekt", ring3Results.dslConditionJoyAbove);
+                check("Ring 3: Save persistiert playerEmotions", ring3Results.savedEmotions);
             }
 
             // ### Ring 3 V2 — Achsen-Vollabdeckung + Generator-Modulation ###
@@ -2806,9 +3500,7 @@ function startSaveServer() {
                     r.updatePlayerEmotions(500);
                     const allSlowed =
                         r.state.creatures.length > 0 &&
-                        r.state.creatures.every(
-                            (cr) => cr.userData && Math.abs(cr.userData.speedMul - 0.7) < 1e-6
-                        );
+                        r.state.creatures.every((cr) => cr.userData && Math.abs(cr.userData.speedMul - 0.7) < 1e-6);
                     out.peaceTriggersSlowdown = allSlowed;
 
                     // (d) Generator-Modulation: hoher joy → mehr "sunny" als "rainy"
@@ -2855,14 +3547,8 @@ function startSaveServer() {
             if (!ring3v2Results) {
                 check("Ring 3 V2: Snapshot erreichbar", false, "page.evaluate fehlgeschlagen");
             } else {
-                check(
-                    "Ring 3 V2: awe > 0.7 triggert Skybox-Farbe",
-                    ring3v2Results.aweTriggersSkybox
-                );
-                check(
-                    "Ring 3 V2: hope > 0.7 triggert chain(sunny, happy)",
-                    ring3v2Results.hopeTriggersSunnyHappy
-                );
+                check("Ring 3 V2: awe > 0.7 triggert Skybox-Farbe", ring3v2Results.aweTriggersSkybox);
+                check("Ring 3 V2: hope > 0.7 triggert chain(sunny, happy)", ring3v2Results.hopeTriggersSunnyHappy);
                 check(
                     "Ring 3 V2: peace > 0.7 verlangsamt Kreaturen (speedMul=0.7)",
                     ring3v2Results.peaceTriggersSlowdown
@@ -2891,11 +3577,7 @@ function startSaveServer() {
                     const s = r.state.symphony;
                     out.initOk = initOk === true && s.enabled === true && !!s.ctx;
                     out.hasAmbient =
-                        !!s.ambient &&
-                        !!s.ambient.osc1 &&
-                        !!s.ambient.osc2 &&
-                        !!s.ambient.lfo &&
-                        !!s.ambient.filter;
+                        !!s.ambient && !!s.ambient.osc1 && !!s.ambient.osc2 && !!s.ambient.lfo && !!s.ambient.filter;
                     out.hasWeather = !!s.weather && !!s.weather.noise && !!s.weather.gain;
 
                     // (b) Wetter-Layer-Gain folgt state.weather
@@ -2947,28 +3629,16 @@ function startSaveServer() {
                 );
             } else {
                 check("Ring 4: initSymphony aktiviert Audio-Pipeline", ring4Results.initOk);
-                check(
-                    "Ring 4: Ambient-Layer hat alle Nodes (osc1+osc2+lfo+filter)",
-                    ring4Results.hasAmbient
-                );
+                check("Ring 4: Ambient-Layer hat alle Nodes (osc1+osc2+lfo+filter)", ring4Results.hasAmbient);
                 check("Ring 4: Wetter-Layer hat Noise-Source + Gain", ring4Results.hasWeather);
-                check(
-                    "Ring 4: symphonyTick ist idempotent bei gleichem Wetter",
-                    ring4Results.weatherTickIdempotent
-                );
+                check("Ring 4: symphonyTick ist idempotent bei gleichem Wetter", ring4Results.weatherTickIdempotent);
                 check(
                     "Ring 4: symphonyTick schaltet Wetter-Layer um (sunny→rainy)",
                     ring4Results.weatherSwitchedToRainy
                 );
-                check(
-                    "Ring 4: playCreaturePing erhöht Zähler",
-                    ring4Results.pingCounterRose
-                );
+                check("Ring 4: playCreaturePing erhöht Zähler", ring4Results.pingCounterRose);
                 check("Ring 4: masterGain im plausiblen Bereich (0..1)", ring4Results.masterGainSane);
-                check(
-                    "Ring 4: disposeSymphony räumt Audio-Graph komplett auf",
-                    ring4Results.disposeClears
-                );
+                check("Ring 4: disposeSymphony räumt Audio-Graph komplett auf", ring4Results.disposeClears);
             }
 
             // ### UI V2 — Topbar + Status-Bar + Drawer-System ###
@@ -2985,9 +3655,7 @@ function startSaveServer() {
                     out.spielerDrawerInDom = !!spielerDrawer;
 
                     // Emotion-Rows leben jetzt im Spieler-Drawer
-                    const rows = spielerDrawer
-                        ? spielerDrawer.querySelectorAll("#status-emotions .emotion")
-                        : [];
+                    const rows = spielerDrawer ? spielerDrawer.querySelectorAll("#status-emotions .emotion") : [];
                     out.emotionRowCount = rows.length;
                     out.allSixAxes = rows.length === 6;
 
@@ -3000,12 +3668,8 @@ function startSaveServer() {
                     if (r._statusRefs) r._statusRefs.lastTick = -Infinity;
                     r.updateStatusPanel(1000);
 
-                    const joyFill = spielerDrawer
-                        ? spielerDrawer.querySelector(".emotion.joy .bar > div")
-                        : null;
-                    const chaosFill = spielerDrawer
-                        ? spielerDrawer.querySelector(".emotion.chaos .bar > div")
-                        : null;
+                    const joyFill = spielerDrawer ? spielerDrawer.querySelector(".emotion.joy .bar > div") : null;
+                    const chaosFill = spielerDrawer ? spielerDrawer.querySelector(".emotion.chaos .bar > div") : null;
                     out.joyBarWidth = joyFill ? joyFill.style.width : "";
                     out.chaosBarWidth = chaosFill ? chaosFill.style.width : "";
                     out.barReflectsValue = out.joyBarWidth === "50%" && out.chaosBarWidth === "80%";
@@ -3026,16 +3690,12 @@ function startSaveServer() {
                     // Throttle: zweiter Aufruf direkt danach ändert nichts
                     r.state.player.emotions.joy = 0.9;
                     r.updateStatusPanel(1000.1);
-                    const joyFill2 = spielerDrawer
-                        ? spielerDrawer.querySelector(".emotion.joy .bar > div")
-                        : null;
+                    const joyFill2 = spielerDrawer ? spielerDrawer.querySelector(".emotion.joy .bar > div") : null;
                     out.throttleHolds = joyFill2 ? joyFill2.style.width === "50%" : false;
 
                     // Nach 0.4s wieder durchlassend
                     r.updateStatusPanel(1000.5);
-                    const joyFill3 = spielerDrawer
-                        ? spielerDrawer.querySelector(".emotion.joy .bar > div")
-                        : null;
+                    const joyFill3 = spielerDrawer ? spielerDrawer.querySelector(".emotion.joy .bar > div") : null;
                     out.throttleReleases = joyFill3 ? joyFill3.style.width === "90%" : false;
 
                     // Tab-System
@@ -3083,14 +3743,8 @@ function startSaveServer() {
                     uiResults.statusValuesPopulated,
                     `weather=${uiResults.weatherText}, slug=${uiResults.slugText}, creatures=${uiResults.creaturesText}`
                 );
-                check(
-                    "UI V2: updateStatusPanel ist throttled (Aufruf <0.4s ignoriert)",
-                    uiResults.throttleHolds
-                );
-                check(
-                    "UI V2: updateStatusPanel lässt nach 0.4s wieder durch",
-                    uiResults.throttleReleases
-                );
+                check("UI V2: updateStatusPanel ist throttled (Aufruf <0.4s ignoriert)", uiResults.throttleHolds);
+                check("UI V2: updateStatusPanel lässt nach 0.4s wieder durch", uiResults.throttleReleases);
                 check(
                     "UI V2: sieben Tabs im Topbar (inkl. Werkstatt)",
                     uiResults.allTabsPresent,
@@ -3115,9 +3769,7 @@ function startSaveServer() {
 
                     // (b) Klick auf einen Quick-Button feuert processChatCommand
                     r.state.weather = "sunny";
-                    const rainyBtn = qa
-                        ? qa.querySelector('button[data-cmd="Setze Wetter rainy"]')
-                        : null;
+                    const rainyBtn = qa ? qa.querySelector('button[data-cmd="Setze Wetter rainy"]') : null;
                     if (rainyBtn) rainyBtn.click();
                     out.quickButtonRoutesToChat = r.state.weather === "rainy";
 
@@ -3150,9 +3802,7 @@ function startSaveServer() {
 
                     // (g) Drawer wieder öffnen, dann Close-Button schließt
                     if (hilfeTab) hilfeTab.click();
-                    const closeBtn = hilfeDrawer
-                        ? hilfeDrawer.querySelector("[data-drawer-close]")
-                        : null;
+                    const closeBtn = hilfeDrawer ? hilfeDrawer.querySelector("[data-drawer-close]") : null;
                     if (closeBtn) closeBtn.click();
                     out.closeButtonHidesDrawer = hilfeDrawer && hilfeDrawer.hidden === true;
 
@@ -3168,9 +3818,7 @@ function startSaveServer() {
                 check(
                     "UI V2: Quick/Help-Snapshot erreichbar",
                     false,
-                    uiActionsResults && uiActionsResults.error
-                        ? uiActionsResults.error
-                        : "page.evaluate fehlgeschlagen"
+                    uiActionsResults && uiActionsResults.error ? uiActionsResults.error : "page.evaluate fehlgeschlagen"
                 );
             } else {
                 check(
@@ -3182,14 +3830,8 @@ function startSaveServer() {
                     "UI V2: Quick-Button-Klick routet durch processChatCommand",
                     uiActionsResults.quickButtonRoutesToChat
                 );
-                check(
-                    "UI V2: Hilfe-Drawer initial versteckt",
-                    uiActionsResults.hilfeDrawerInitiallyHidden
-                );
-                check(
-                    "UI V2: Tab-Klick auf Hilfe öffnet Hilfe-Drawer",
-                    uiActionsResults.hilfeDrawerOpensOnTab
-                );
+                check("UI V2: Hilfe-Drawer initial versteckt", uiActionsResults.hilfeDrawerInitiallyHidden);
+                check("UI V2: Tab-Klick auf Hilfe öffnet Hilfe-Drawer", uiActionsResults.hilfeDrawerOpensOnTab);
                 check(
                     "UI V2: andere Drawer werden versteckt wenn neuer Tab aktiv",
                     uiActionsResults.otherDrawersHidden
@@ -3199,18 +3841,9 @@ function startSaveServer() {
                     uiActionsResults.helpHasButtons,
                     `count=${uiActionsResults.helpButtonCount}`
                 );
-                check(
-                    "UI V2: Klick auf Befehl im Drawer führt aus",
-                    uiActionsResults.helpClickExecutes
-                );
-                check(
-                    "UI V2: Klick auf Befehl schließt Drawer automatisch",
-                    uiActionsResults.helpClickClosesDrawer
-                );
-                check(
-                    "UI V2: Drawer-Close-Button schließt Drawer",
-                    uiActionsResults.closeButtonHidesDrawer
-                );
+                check("UI V2: Klick auf Befehl im Drawer führt aus", uiActionsResults.helpClickExecutes);
+                check("UI V2: Klick auf Befehl schließt Drawer automatisch", uiActionsResults.helpClickClosesDrawer);
+                check("UI V2: Drawer-Close-Button schließt Drawer", uiActionsResults.closeButtonHidesDrawer);
             }
 
             // ### UI V1 — Abilities-Liste + Save/Load ###
@@ -3243,10 +3876,8 @@ function startSaveServer() {
                     const rows = container ? container.querySelectorAll(".ability-row") : [];
                     out.rowCountAfterAdd = rows.length;
                     out.rowAppears = rows.length === 1;
-                    out.rowHasName =
-                        rows[0] && rows[0].querySelector(".name").textContent === "uiAbilityTest";
-                    out.rowHasSourceClass =
-                        rows[0] && rows[0].classList.contains("source-human");
+                    out.rowHasName = rows[0] && rows[0].querySelector(".name").textContent === "uiAbilityTest";
+                    out.rowHasSourceClass = rows[0] && rows[0].classList.contains("source-human");
 
                     // (c) Run-Button klicken → ability läuft, Welt-Effekt
                     if (r.state.creatures[0]) r.state.creatures[0].material.color.setHex(0xff0000);
@@ -3262,8 +3893,7 @@ function startSaveServer() {
                     if (r._statusRefs) r._statusRefs.lastTick = -Infinity;
                     r.updateStatusPanel(3002);
                     const rowAgain = container ? container.querySelector(".ability-row") : null;
-                    out.signatureCachePreserves =
-                        rowAgain && rowAgain.getAttribute("data-test-marker") === "preserved";
+                    out.signatureCachePreserves = rowAgain && rowAgain.getAttribute("data-test-marker") === "preserved";
 
                     // (e) Export-Button löst Download aus → wir prüfen, dass
                     //     ein <a>-Element mit JSON-Data-URL angelegt UND wieder
@@ -3291,9 +3921,7 @@ function startSaveServer() {
 
                     // Cleanup: Test-Ability wieder rausnehmen, damit andere
                     //         Snapshots sauber sind.
-                    r.state.dsl.abilities = r.state.dsl.abilities.filter(
-                        (a) => a.name !== "uiAbilityTest"
-                    );
+                    r.state.dsl.abilities = r.state.dsl.abilities.filter((a) => a.name !== "uiAbilityTest");
                     delete r.state.abilities.uiAbilityTest;
                     if (r._statusRefs) {
                         r._statusRefs.abilitiesSignature = "";
@@ -3314,14 +3942,8 @@ function startSaveServer() {
                         : "page.evaluate fehlgeschlagen"
                 );
             } else {
-                check(
-                    "UI: Abilities-Container ist im DOM",
-                    uiAbilitiesResults.containerInDom
-                );
-                check(
-                    "UI: Leerer State zeigt Hinweis-Text",
-                    uiAbilitiesResults.emptyStateShown
-                );
+                check("UI: Abilities-Container ist im DOM", uiAbilitiesResults.containerInDom);
+                check("UI: Leerer State zeigt Hinweis-Text", uiAbilitiesResults.emptyStateShown);
                 check(
                     "UI: Hinzugefügte Ability erscheint als Row",
                     uiAbilitiesResults.rowAppears,
@@ -3339,14 +3961,8 @@ function startSaveServer() {
                     "UI: Signature-Cache verhindert DOM-Rebuild bei gleichem Stand",
                     uiAbilitiesResults.signatureCachePreserves
                 );
-                check(
-                    "UI: Export-Button erzeugt JSON-Data-URL",
-                    uiAbilitiesResults.exportHrefStarts
-                );
-                check(
-                    "UI: Export-Payload enthält playerEmotions",
-                    uiAbilitiesResults.exportContainsPlayerEmotions
-                );
+                check("UI: Export-Button erzeugt JSON-Data-URL", uiAbilitiesResults.exportHrefStarts);
+                check("UI: Export-Payload enthält playerEmotions", uiAbilitiesResults.exportContainsPlayerEmotions);
             }
 
             // ### UI V1 — Live-Tuning Slider ###
@@ -3406,15 +4022,10 @@ function startSaveServer() {
                 check(
                     "UI: Tuning-Snapshot erreichbar",
                     false,
-                    uiTuningResults && uiTuningResults.error
-                        ? uiTuningResults.error
-                        : "page.evaluate fehlgeschlagen"
+                    uiTuningResults && uiTuningResults.error ? uiTuningResults.error : "page.evaluate fehlgeschlagen"
                 );
             } else {
-                check(
-                    "UI: Alle drei Tuning-Slider sind im DOM",
-                    uiTuningResults.allSlidersPresent
-                );
+                check("UI: Alle drei Tuning-Slider sind im DOM", uiTuningResults.allSlidersPresent);
                 check(
                     "UI: Initialer Slider-Wert spiegelt state.player-Default",
                     uiTuningResults.initialMatchesState,
@@ -3425,18 +4036,9 @@ function startSaveServer() {
                     uiTuningResults.thresholdUpdatesState,
                     `value=${uiTuningResults.thresholdAfterMove}`
                 );
-                check(
-                    "UI: Value-Label spiegelt Slider-Wert ('0.50')",
-                    uiTuningResults.thresholdLabelMatches
-                );
-                check(
-                    "UI: Decay-Slider mutiert emotionDecayPerSec",
-                    uiTuningResults.decayUpdatesState
-                );
-                check(
-                    "UI: Cooldown-Slider mutiert emotionApplyCooldown",
-                    uiTuningResults.cooldownUpdatesState
-                );
+                check("UI: Value-Label spiegelt Slider-Wert ('0.50')", uiTuningResults.thresholdLabelMatches);
+                check("UI: Decay-Slider mutiert emotionDecayPerSec", uiTuningResults.decayUpdatesState);
+                check("UI: Cooldown-Slider mutiert emotionApplyCooldown", uiTuningResults.cooldownUpdatesState);
             }
 
             // ### UI V2 — Identity (Tokens + Theme + Fonts) ###
@@ -3468,19 +4070,15 @@ function startSaveServer() {
 
                     // (f) Latch-Klasse haftet an allen drei Topbar-Toggles
                     // (Help ist in UI V2 ein Drawer-Tab, kein Latch mehr.)
-                    out.allTogglesLatched = [
-                        "grok-voice-toggle",
-                        "anazh-symphony-toggle",
-                        "theme-toggle",
-                    ].every((id) => {
-                        const el = document.getElementById(id);
-                        return el && el.classList.contains("latch");
-                    });
+                    out.allTogglesLatched = ["grok-voice-toggle", "anazh-symphony-toggle", "theme-toggle"].every(
+                        (id) => {
+                            const el = document.getElementById(id);
+                            return el && el.classList.contains("latch");
+                        }
+                    );
 
                     // (g) Cinzel-Font ist registriert (über @font-face)
-                    out.fontsRegistered = Array.from(document.fonts).some(
-                        (f) => f.family === "Cinzel"
-                    );
+                    out.fontsRegistered = Array.from(document.fonts).some((f) => f.family === "Cinzel");
 
                     // Cleanup: zurück auf "tag" damit andere Tests konsistent sind
                     if (toggle) toggle.click();
@@ -3493,28 +4091,17 @@ function startSaveServer() {
                 check(
                     "UI V2: Identity-Snapshot erreichbar",
                     false,
-                    uiV2Results && uiV2Results.error
-                        ? uiV2Results.error
-                        : "page.evaluate fehlgeschlagen"
+                    uiV2Results && uiV2Results.error ? uiV2Results.error : "page.evaluate fehlgeschlagen"
                 );
             } else {
                 check("UI V2: body[data-theme=tag] initial gesetzt", uiV2Results.bodyHasThemeTag);
                 check("UI V2: Pergament-Tokens geladen (--parch-1)", uiV2Results.parchTokenLoaded);
                 check("UI V2: Theme-Toggle wechselt zu nacht", uiV2Results.themeSwitchedToNight);
-                check(
-                    "UI V2: Theme-Toggle aria-pressed reflektiert State",
-                    uiV2Results.toggleArrayAfterSwitch
-                );
+                check("UI V2: Theme-Toggle aria-pressed reflektiert State", uiV2Results.toggleArrayAfterSwitch);
                 check("UI V2: Token-Werte ändern sich pro Theme", uiV2Results.tokenChangesPerTheme);
                 check("UI V2: Theme-Wahl in localStorage persistiert", uiV2Results.themePersisted);
-                check(
-                    "UI V2: alle Toggle-Buttons tragen .latch-Klasse",
-                    uiV2Results.allTogglesLatched
-                );
-                check(
-                    "UI V2: Cinzel-Font ist via @font-face registriert",
-                    uiV2Results.fontsRegistered
-                );
+                check("UI V2: alle Toggle-Buttons tragen .latch-Klasse", uiV2Results.allTogglesLatched);
+                check("UI V2: Cinzel-Font ist via @font-face registriert", uiV2Results.fontsRegistered);
             }
 
             // ### UI V2 — Konsole (fusioniertes Chat + Log) ###
@@ -3523,11 +4110,9 @@ function startSaveServer() {
                     const out = {};
                     const panel = document.getElementById("console");
                     out.consoleInDom = !!panel;
-                    out.chatOutputInside =
-                        panel && panel.querySelector("#chat-output") !== null;
+                    out.chatOutputInside = panel && panel.querySelector("#chat-output") !== null;
                     out.logInside = panel && panel.querySelector("#log") !== null;
-                    out.chatInputInside =
-                        panel && panel.querySelector("#chat-input") !== null;
+                    out.chatInputInside = panel && panel.querySelector("#chat-input") !== null;
 
                     // Collapse-Toggle
                     const toggle = document.getElementById("console-collapse");
@@ -3535,17 +4120,14 @@ function startSaveServer() {
                     out.initiallyOpen = panel && !panel.classList.contains("collapsed");
 
                     if (toggle) toggle.click();
-                    out.afterFirstClickCollapsed =
-                        panel && panel.classList.contains("collapsed");
+                    out.afterFirstClickCollapsed = panel && panel.classList.contains("collapsed");
                     out.toggleLabelChanged = toggle && toggle.textContent === "+";
 
                     if (toggle) toggle.click();
-                    out.afterSecondClickOpen =
-                        panel && !panel.classList.contains("collapsed");
+                    out.afterSecondClickOpen = panel && !panel.classList.contains("collapsed");
 
                     // Persistenz: localStorage hat Wahl
-                    out.localStorageOpen =
-                        localStorage.getItem("anazhRealmConsole") === "open";
+                    out.localStorageOpen = localStorage.getItem("anazhRealmConsole") === "open";
 
                     return out;
                 })
@@ -3555,36 +4137,20 @@ function startSaveServer() {
                 check(
                     "UI V2: Konsole-Snapshot erreichbar",
                     false,
-                    consoleResults && consoleResults.error
-                        ? consoleResults.error
-                        : "page.evaluate fehlgeschlagen"
+                    consoleResults && consoleResults.error ? consoleResults.error : "page.evaluate fehlgeschlagen"
                 );
             } else {
                 check("UI V2: #console im DOM", consoleResults.consoleInDom);
                 check(
                     "UI V2: #chat-output, #log, #chat-input leben in der Konsole",
-                    consoleResults.chatOutputInside &&
-                        consoleResults.logInside &&
-                        consoleResults.chatInputInside
+                    consoleResults.chatOutputInside && consoleResults.logInside && consoleResults.chatInputInside
                 );
                 check("UI V2: Collapse-Toggle vorhanden", consoleResults.toggleInDom);
                 check("UI V2: Konsole startet aufgeklappt", consoleResults.initiallyOpen);
-                check(
-                    "UI V2: Erster Klick klappt ein",
-                    consoleResults.afterFirstClickCollapsed
-                );
-                check(
-                    "UI V2: Toggle-Label wechselt zu '+'",
-                    consoleResults.toggleLabelChanged
-                );
-                check(
-                    "UI V2: Zweiter Klick klappt wieder auf",
-                    consoleResults.afterSecondClickOpen
-                );
-                check(
-                    "UI V2: Konsole-Status in localStorage persistiert",
-                    consoleResults.localStorageOpen
-                );
+                check("UI V2: Erster Klick klappt ein", consoleResults.afterFirstClickCollapsed);
+                check("UI V2: Toggle-Label wechselt zu '+'", consoleResults.toggleLabelChanged);
+                check("UI V2: Zweiter Klick klappt wieder auf", consoleResults.afterSecondClickOpen);
+                check("UI V2: Konsole-Status in localStorage persistiert", consoleResults.localStorageOpen);
             }
 
             // ### Ring 5 — createPlayerSoul V1 ###
@@ -3658,11 +4224,9 @@ function startSaveServer() {
                     out.dropdownSyncsToPhoenix = select && select.value === "phoenix";
 
                     // Physics-Body bleibt + bezieht sich auf den NEUEN Group
-                    out.physicsBodySwitchedToNewGroup =
-                        currentMesh().userData && !!currentMesh().userData.physicsBody;
+                    out.physicsBodySwitchedToNewGroup = currentMesh().userData && !!currentMesh().userData.physicsBody;
                     out.rigidBodiesArrayUpdated =
-                        Array.isArray(r.state.rigidBodies) &&
-                        r.state.rigidBodies.indexOf(currentMesh()) >= 0;
+                        Array.isArray(r.state.rigidBodies) && r.state.rigidBodies.indexOf(currentMesh()) >= 0;
 
                     // Chat-Pattern: "werde drache"
                     r.processChatCommand("werde drache");
@@ -3718,7 +4282,7 @@ function startSaveServer() {
                     // Save-Roundtrip
                     r.applyPlayerSoul("phoenix");
                     r.saveState();
-                    const raw = localStorage.getItem("anazhRealmState");
+                    const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
                     let parsed = null;
                     try {
                         parsed = JSON.parse(raw);
@@ -3751,8 +4315,7 @@ function startSaveServer() {
                     const def = r.playerSoulDefs.human;
                     def.animate(humanGroup, 0, Math.PI / 2, true);
                     const leftLegRotMoving = humanGroup.userData.parts.leftLeg.rotation.x;
-                    out.humanWalkAnimationMoves =
-                        Math.abs(leftLegRotMoving - leftLegRotInitial) > 0.1;
+                    out.humanWalkAnimationMoves = Math.abs(leftLegRotMoving - leftLegRotInitial) > 0.1;
 
                     // Phönix-Flügel flattern auch im Idle
                     r.applyPlayerSoul("phoenix");
@@ -3790,21 +4353,12 @@ function startSaveServer() {
                 check("Ring 5: Dropdown hat drei Optionen", ring5Results.dropdownHasThreeOptions);
                 check("Ring 5: Default-Seele ist 'human'", ring5Results.defaultIsHuman);
                 check("Ring 5: Default-Material-Farbe ist rot (0xff0000)", ring5Results.defaultColorRed);
-                check(
-                    "Ring 5 V2: Mensch-Group hat torso/head/2 Arme/2 Beine",
-                    ring5Results.humanHasAllParts
-                );
+                check("Ring 5 V2: Mensch-Group hat torso/head/2 Arme/2 Beine", ring5Results.humanHasAllParts);
                 check("Ring 5: applyPlayerSoul('phoenix') liefert true", ring5Results.applyReturnsTrue);
                 check("Ring 5: Phönix setzt state.player.soul = 'phoenix'", ring5Results.phoenixSoulSet);
                 check("Ring 5: Phönix-Material-Farbe ist 0xff7a1a", ring5Results.phoenixColor);
-                check(
-                    "Ring 5 V2: Phönix-Group hat body/2 Flügel/Schweif",
-                    ring5Results.phoenixHasWingsAndTail
-                );
-                check(
-                    "Ring 5: Seelen-Wechsel erhält Spieler-Position",
-                    ring5Results.positionPreserved
-                );
+                check("Ring 5 V2: Phönix-Group hat body/2 Flügel/Schweif", ring5Results.phoenixHasWingsAndTail);
+                check("Ring 5: Seelen-Wechsel erhält Spieler-Position", ring5Results.positionPreserved);
                 check(
                     "Ring 5 V2: Physics-Body wandert mit dem neuen Soul-Group mit",
                     ring5Results.physicsBodySwitchedToNewGroup
@@ -3813,20 +4367,11 @@ function startSaveServer() {
                     "Ring 5 V2: rigidBodies-Array enthält den neuen Group (nicht den alten)",
                     ring5Results.rigidBodiesArrayUpdated
                 );
-                check(
-                    "Ring 5: Dropdown synchronisiert sich (UI ↔ State)",
-                    ring5Results.dropdownSyncsToPhoenix
-                );
-                check(
-                    "Ring 5: Chat 'werde drache' routet auf DSL player_soul",
-                    ring5Results.chatRoutedToDsl
-                );
+                check("Ring 5: Dropdown synchronisiert sich (UI ↔ State)", ring5Results.dropdownSyncsToPhoenix);
+                check("Ring 5: Chat 'werde drache' routet auf DSL player_soul", ring5Results.chatRoutedToDsl);
                 check("Ring 5: Chat 'werde drache' setzt Seele auf dragon", ring5Results.dragonSoulSet);
                 check("Ring 5: Drache-Material-Farbe ist 0x2d6e3b", ring5Results.dragonColor);
-                check(
-                    "Ring 5 V2: Drache-Group hat 4 Beine + Schweif-Joint",
-                    ring5Results.dragonHasFourLegs
-                );
+                check("Ring 5 V2: Drache-Group hat 4 Beine + Schweif-Joint", ring5Results.dragonHasFourLegs);
                 check("Ring 5: Umlaut-Alias 'phönix' kanonisiert auf phoenix", ring5Results.umlautAliasWorks);
                 check("Ring 5: Englisches Alias 'dragon' kanonisiert auf dragon", ring5Results.englishAliasWorks);
                 check("Ring 5: Unbekannte Seele wird abgelehnt", ring5Results.unknownRejected);
@@ -3982,7 +4527,10 @@ function startSaveServer() {
                 check("Ring 5 V2-Prep: Label wechselt zu '3rd'", cameraResults.labelAfterSet);
                 check("Ring 5 V2-Prep: aria-pressed='true' im 3rd-Modus", cameraResults.ariaPressedAfterSet);
                 check("Ring 5 V2-Prep: Modus persistiert in localStorage", cameraResults.persistedThird);
-                check("Ring 5 V2-Prep: Rotation-Logik bereit (yaw + rotation existieren)", cameraResults.rotationLogicReady);
+                check(
+                    "Ring 5 V2-Prep: Rotation-Logik bereit (yaw + rotation existieren)",
+                    cameraResults.rotationLogicReady
+                );
                 check("Ring 5 V2-Prep: setCameraMode('first') zurück", cameraResults.modeBackToFirst);
                 check("Ring 5 V2-Prep: Label zurück auf '1st'", cameraResults.labelBackToFirst);
                 check("Ring 5 V2-Prep: Persistenz aktualisiert sich", cameraResults.persistedFirst);
@@ -4072,8 +4620,7 @@ function startSaveServer() {
                     const beforeChat = r.state.architectures.length;
                     r.processChatCommand("Baue Tempel hier");
                     out.chatRoutesToDsl =
-                        Array.isArray(r.state.dsl.lastUserProgram) &&
-                        r.state.dsl.lastUserProgram[0] === "spawn_temple";
+                        Array.isArray(r.state.dsl.lastUserProgram) && r.state.dsl.lastUserProgram[0] === "spawn_temple";
                     out.chatActuallySpawned = r.state.architectures.length === beforeChat + 1;
 
                     // (f) V2: KEIN Cap mehr — 50 Strukturen können koexistieren.
@@ -4111,9 +4658,7 @@ function startSaveServer() {
                     // Position muss innerhalb cullingRadius (150) liegen,
                     // sonst ist mesh null (cold) und der Test crasht.
                     const wf = r.spawnArchitecture("waterfall", { x: 50, y: 5, z: 50 }, { seed: 1 });
-                    const waterMesh = wf.mesh.children.find(
-                        (c) => c.geometry && c.geometry.type === "PlaneGeometry"
-                    );
+                    const waterMesh = wf.mesh.children.find((c) => c.geometry && c.geometry.type === "PlaneGeometry");
                     if (waterMesh) {
                         const z0 = waterMesh.geometry.attributes.position.getZ(5);
                         r.tickArchitectures(0.5);
@@ -4125,7 +4670,7 @@ function startSaveServer() {
 
                     // (i) Save-Roundtrip
                     r.saveState();
-                    const raw = localStorage.getItem("anazhRealmState");
+                    const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
                     let parsed = null;
                     try {
                         parsed = JSON.parse(raw);
@@ -4133,9 +4678,7 @@ function startSaveServer() {
                         void e;
                     }
                     out.saveContainsArchitectures =
-                        !!parsed &&
-                        Array.isArray(parsed.architectures) &&
-                        parsed.architectures.length > 0;
+                        !!parsed && Array.isArray(parsed.architectures) && parsed.architectures.length > 0;
                     // Gespeicherte Einträge haben nur {type, position, seed}, kein mesh
                     out.saveOmitsMesh =
                         !!parsed &&
@@ -4153,11 +4696,9 @@ function startSaveServer() {
                     r.loadState(loadInput);
                     out.loadRebuildsCount = r.state.architectures.length === 2;
                     out.loadRebuildsTypes =
-                        r.state.architectures[0].type === "village" &&
-                        r.state.architectures[1].type === "temple";
+                        r.state.architectures[0].type === "village" && r.state.architectures[1].type === "temple";
                     out.loadRebuildsSeeds =
-                        r.state.architectures[0].seed === 12345 &&
-                        r.state.architectures[1].seed === 67890;
+                        r.state.architectures[0].seed === 12345 && r.state.architectures[1].seed === 67890;
 
                     // Cleanup
                     for (const a of r.state.architectures) {
@@ -4191,19 +4732,10 @@ function startSaveServer() {
                     ring6Results.architectureCountAfterThree
                 );
                 check("Ring 6: Architecture-IDs sind eindeutig", ring6Results.idsAreUnique);
-                check(
-                    "Ring 6: DSL-Op spawn_village wirkt + emit spawned_village",
-                    ring6Results.dslSpawnVillageOk
-                );
-                check(
-                    "Ring 6: Chat 'Baue Tempel hier' routet auf DSL spawn_temple",
-                    ring6Results.chatRoutesToDsl
-                );
+                check("Ring 6: DSL-Op spawn_village wirkt + emit spawned_village", ring6Results.dslSpawnVillageOk);
+                check("Ring 6: Chat 'Baue Tempel hier' routet auf DSL spawn_temple", ring6Results.chatRoutesToDsl);
                 check("Ring 6: Chat-Routing spawnt tatsächlich", ring6Results.chatActuallySpawned);
-                check(
-                    "Ring 6 V2: 50+ Strukturen koexistieren ohne Cap",
-                    ring6Results.unboundedSpawn
-                );
+                check("Ring 6 V2: 50+ Strukturen koexistieren ohne Cap", ring6Results.unboundedSpawn);
                 check(
                     "Ring 6 V2: Weite Strukturen (>cullingRadius) sind 'cold' (mesh=null)",
                     ring6Results.farStructuresAreCold
@@ -4216,18 +4748,9 @@ function startSaveServer() {
                 check("Ring 6: spawn_waterfall ist im atomic-Pool", ring6Results.waterfallInAtomicPool);
                 check("Ring 6: tickArchitectures animiert Wasserfall-Vertices", ring6Results.waterfallTickAnimates);
                 check("Ring 6: saveState persistiert architectures", ring6Results.saveContainsArchitectures);
-                check(
-                    "Ring 6: Save enthält nur {type, position, seed} (kein mesh)",
-                    ring6Results.saveOmitsMesh
-                );
-                check(
-                    "Ring 6: loadState rekonstruiert Anzahl",
-                    ring6Results.loadRebuildsCount
-                );
-                check(
-                    "Ring 6: loadState rekonstruiert Typen",
-                    ring6Results.loadRebuildsTypes
-                );
+                check("Ring 6: Save enthält nur {type, position, seed} (kein mesh)", ring6Results.saveOmitsMesh);
+                check("Ring 6: loadState rekonstruiert Anzahl", ring6Results.loadRebuildsCount);
+                check("Ring 6: loadState rekonstruiert Typen", ring6Results.loadRebuildsTypes);
                 check(
                     "Ring 6: loadState rekonstruiert Seeds (deterministische Wiederherstellung)",
                     ring6Results.loadRebuildsSeeds
@@ -4311,11 +4834,7 @@ function startSaveServer() {
                     out.afterRebuildCollisionExists = !!entry.collision && !!entry.collision.body;
 
                     // Strukturen ohne Mesh haben kein collision.body (cold)
-                    const coldEntry = r.spawnArchitecture(
-                        "village",
-                        { x: 10000, y: 5, z: 10000 },
-                        { seed: 1 }
-                    );
+                    const coldEntry = r.spawnArchitecture("village", { x: 10000, y: 5, z: 10000 }, { seed: 1 });
                     out.coldHasNoMesh = coldEntry && coldEntry.mesh === null;
                     out.coldHasNoCollision = coldEntry && !coldEntry.collision;
 
@@ -4332,9 +4851,7 @@ function startSaveServer() {
                 check(
                     "Ring 6.3: Kollisions-Snapshot erreichbar",
                     false,
-                    ring63Results && ring63Results.error
-                        ? ring63Results.error
-                        : "page.evaluate fehlgeschlagen"
+                    ring63Results && ring63Results.error ? ring63Results.error : "page.evaluate fehlgeschlagen"
                 );
             } else {
                 check("Ring 6.3: Architektur hat Mesh nach Spawn", ring63Results.entryHasMesh);
@@ -4429,27 +4946,16 @@ function startSaveServer() {
                     out.hasVillage = !!r.state.blueprints && !!r.state.blueprints.village;
                     out.hasTemple = !!r.state.blueprints && !!r.state.blueprints.temple;
                     out.hasWaterfall = !!r.state.blueprints && !!r.state.blueprints.waterfall;
-                    out.villageBuiltIn =
-                        r.state.blueprints.village && r.state.blueprints.village.builtIn === true;
+                    out.villageBuiltIn = r.state.blueprints.village && r.state.blueprints.village.builtIn === true;
                     out.villagePartsArray = Array.isArray(r.state.blueprints.village.parts);
-                    out.villageHasParts =
-                        r.state.blueprints.village.parts.length >= 10; // 6 huts × 2 + plaza
+                    out.villageHasParts = r.state.blueprints.village.parts.length >= 10; // 6 huts × 2 + plaza
                     out.templeHasParts = r.state.blueprints.temple.parts.length >= 9;
                     out.waterfallHasParts = r.state.blueprints.waterfall.parts.length === 3;
 
                     // 8 Primitive renderbar — wir bauen einen Test-Bauplan
                     // mit allen 8 Shapes und prüfen, dass jede einen Mesh
                     // produziert.
-                    const allShapes = [
-                        "box",
-                        "sphere",
-                        "cylinder",
-                        "cone",
-                        "pyramid",
-                        "octahedron",
-                        "plane",
-                        "torus",
-                    ];
+                    const allShapes = ["box", "sphere", "cylinder", "cone", "pyramid", "octahedron", "plane", "torus"];
                     const testBp = {
                         name: "_test_all_shapes",
                         parts: allShapes.map((s, i) => ({
@@ -4461,8 +4967,7 @@ function startSaveServer() {
                     };
                     const testGroup = r._buildFromBlueprint(testBp);
                     out.allShapesRender =
-                        testGroup && testGroup.children.length === 8 &&
-                        testGroup.children.every((c) => !!c.geometry);
+                        testGroup && testGroup.children.length === 8 && testGroup.children.every((c) => !!c.geometry);
 
                     // Erstellung via JSON: User-Bauplan registrieren + spawnen
                     r.state.blueprints["test_hut"] = {
@@ -4488,13 +4993,8 @@ function startSaveServer() {
                         if (a.mesh) r._cullArchitectureMesh(a);
                     }
                     r.state.architectures = [];
-                    const userEntry = r.spawnArchitecture(
-                        "test_hut",
-                        { x: 0, y: 5, z: 5 },
-                        { seed: 1 }
-                    );
-                    out.userBlueprintBuilds =
-                        !!userEntry && !!userEntry.mesh && userEntry.mesh.children.length === 2;
+                    const userEntry = r.spawnArchitecture("test_hut", { x: 0, y: 5, z: 5 }, { seed: 1 });
+                    out.userBlueprintBuilds = !!userEntry && !!userEntry.mesh && userEntry.mesh.children.length === 2;
 
                     // DSL-Op spawn_blueprint funktioniert
                     for (const a of r.state.architectures.slice()) {
@@ -4514,7 +5014,7 @@ function startSaveServer() {
 
                     // Save-Roundtrip: User-Bauplan überlebt
                     r.saveState();
-                    const raw = localStorage.getItem("anazhRealmState");
+                    const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
                     let parsed = null;
                     try {
                         parsed = JSON.parse(raw);
@@ -4565,9 +5065,7 @@ function startSaveServer() {
                 check(
                     "Ring 6.4: Bauplan-Snapshot erreichbar",
                     false,
-                    ring64Results && ring64Results.error
-                        ? ring64Results.error
-                        : "page.evaluate fehlgeschlagen"
+                    ring64Results && ring64Results.error ? ring64Results.error : "page.evaluate fehlgeschlagen"
                 );
             } else {
                 check("Ring 6.4: Built-in Dorf-Bauplan vorhanden", ring64Results.hasVillage);
@@ -4576,30 +5074,24 @@ function startSaveServer() {
                 check("Ring 6.4: Dorf ist als builtIn markiert", ring64Results.villageBuiltIn);
                 check("Ring 6.4: parts ist Array", ring64Results.villagePartsArray);
                 check("Ring 6.4: Dorf hat ≥10 Parts (6 Hütten + Plaza)", ring64Results.villageHasParts);
-                check("Ring 6.4: Tempel hat ≥9 Parts (6 Pfeiler + Dach + Altar + Spitze)", ring64Results.templeHasParts);
+                check(
+                    "Ring 6.4: Tempel hat ≥9 Parts (6 Pfeiler + Dach + Altar + Spitze)",
+                    ring64Results.templeHasParts
+                );
                 check("Ring 6.4: Wasserfall hat 3 Parts", ring64Results.waterfallHasParts);
                 check(
                     "Ring 6.4: Alle 8 Primitive (box/sphere/cylinder/cone/pyramid/octahedron/plane/torus) renderbar",
                     ring64Results.allShapesRender
                 );
                 check("Ring 6.4: User-Bauplan als Daten spawnt korrekt Mesh", ring64Results.userBlueprintBuilds);
-                check(
-                    "Ring 6.4: DSL-Op spawn_blueprint(name, pos) funktioniert",
-                    ring64Results.dslSpawnBlueprintOk
-                );
-                check(
-                    "Ring 6.4: Unbekannter Bauplan-Name wird abgelehnt",
-                    ring64Results.unknownBlueprintRejected
-                );
+                check("Ring 6.4: DSL-Op spawn_blueprint(name, pos) funktioniert", ring64Results.dslSpawnBlueprintOk);
+                check("Ring 6.4: Unbekannter Bauplan-Name wird abgelehnt", ring64Results.unknownBlueprintRejected);
                 check("Ring 6.4: saveState persistiert eigene Baupläne", ring64Results.saveContainsUserBlueprint);
                 check(
                     "Ring 6.4: Save lässt Built-in-Baupläne aus (kommen aus _defaultBlueprints)",
                     ring64Results.saveOmitsBuiltIn
                 );
-                check(
-                    "Ring 6.4: loadState rekonstruiert eigene Baupläne",
-                    ring64Results.loadRestoresUserBlueprint
-                );
+                check("Ring 6.4: loadState rekonstruiert eigene Baupläne", ring64Results.loadRestoresUserBlueprint);
             }
 
             // ### Ring 6.5 — Hotbar mit 9 Slots ###
@@ -4610,8 +5102,7 @@ function startSaveServer() {
                     // DOM-Hotbar
                     const bar = document.getElementById("hotbar");
                     out.hotbarInDom = !!bar;
-                    out.hotbarHasNineSlots =
-                        bar && bar.querySelectorAll(".hotbar-slot").length === 9;
+                    out.hotbarHasNineSlots = bar && bar.querySelectorAll(".hotbar-slot").length === 9;
                     out.defaultHotbar =
                         Array.isArray(r.state.hotbar) &&
                         r.state.hotbar.length === 9 &&
@@ -4638,16 +5129,14 @@ function startSaveServer() {
                         ],
                     };
                     const setOk = r.setHotbarSlot(5, "test_hotbar_bp");
-                    out.setHotbarOk =
-                        setOk === true && r.state.hotbar[5] === "test_hotbar_bp";
+                    out.setHotbarOk = setOk === true && r.state.hotbar[5] === "test_hotbar_bp";
                     // DOM hat label aktualisiert
                     const slot5Label = bar.querySelector('.hotbar-slot[data-slot="5"] .label');
                     out.hotbarDomReflectsSet = slot5Label && slot5Label.textContent === "Test-Bp";
 
                     // Unbekannter Bauplan-Name wird abgelehnt
                     const setBad = r.setHotbarSlot(5, "definitiv_nicht_da");
-                    out.setHotbarRejectsUnknown =
-                        setBad === false && r.state.hotbar[5] === "test_hotbar_bp";
+                    out.setHotbarRejectsUnknown = setBad === false && r.state.hotbar[5] === "test_hotbar_bp";
 
                     // selectHotbarSlot(idx) auf belegten Slot aktiviert Build-Modus
                     r.selectHotbarSlot(5);
@@ -4679,19 +5168,17 @@ function startSaveServer() {
                     r.setHotbarSlot(5, null);
                     out.clearedSlotIsNull = r.state.hotbar[5] === null;
                     const slot5LabelAfter = bar.querySelector('.hotbar-slot[data-slot="5"] .label');
-                    out.clearedDomShowsEmpty =
-                        slot5LabelAfter && slot5LabelAfter.textContent === "—";
+                    out.clearedDomShowsEmpty = slot5LabelAfter && slot5LabelAfter.textContent === "—";
 
                     // Hotbar-Config-Drawer hat 9 Reihen
                     const config = document.getElementById("hotbar-config");
                     out.hotbarConfigInDom = !!config;
-                    out.hotbarConfigHasNineRows =
-                        config && config.querySelectorAll(".hotbar-config-row").length === 9;
+                    out.hotbarConfigHasNineRows = config && config.querySelectorAll(".hotbar-config-row").length === 9;
 
                     // Save-Roundtrip
                     r.setHotbarSlot(7, "temple");
                     r.saveState();
-                    const raw = localStorage.getItem("anazhRealmState");
+                    const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
                     let parsed = null;
                     try {
                         parsed = JSON.parse(raw);
@@ -4707,8 +5194,7 @@ function startSaveServer() {
                     // loadState restauriert hotbar
                     r.state.hotbar = [null, null, null, null, null, null, null, null, null];
                     r.loadState({ hotbar: ["temple", null, "village", null, null, null, null, null, null] });
-                    out.loadRestoresHotbar =
-                        r.state.hotbar[0] === "temple" && r.state.hotbar[2] === "village";
+                    out.loadRestoresHotbar = r.state.hotbar[0] === "temple" && r.state.hotbar[2] === "village";
 
                     // Cleanup
                     delete r.state.blueprints["test_hotbar_bp"];
@@ -4727,42 +5213,28 @@ function startSaveServer() {
                 check(
                     "Ring 6.5: Hotbar-Snapshot erreichbar",
                     false,
-                    ring65Results && ring65Results.error
-                        ? ring65Results.error
-                        : "page.evaluate fehlgeschlagen"
+                    ring65Results && ring65Results.error ? ring65Results.error : "page.evaluate fehlgeschlagen"
                 );
             } else {
                 check("Ring 6.5: #hotbar im DOM", ring65Results.hotbarInDom);
                 check("Ring 6.5: Hotbar hat 9 Slots", ring65Results.hotbarHasNineSlots);
-                check(
-                    "Ring 6.5: Default-Hotbar [village, temple, waterfall, ..., null]",
-                    ring65Results.defaultHotbar
-                );
+                check("Ring 6.5: Default-Hotbar [village, temple, waterfall, ..., null]", ring65Results.defaultHotbar);
                 check("Ring 6.5: Slot-Label folgt Bauplan-Label", ring65Results.firstSlotShowsLabel);
                 check("Ring 6.5: setHotbarSlot setzt Eintrag", ring65Results.setHotbarOk);
                 check("Ring 6.5: Hotbar-DOM aktualisiert sich nach setHotbarSlot", ring65Results.hotbarDomReflectsSet);
-                check(
-                    "Ring 6.5: setHotbarSlot lehnt unbekannte Baupläne ab",
-                    ring65Results.setHotbarRejectsUnknown
-                );
+                check("Ring 6.5: setHotbarSlot lehnt unbekannte Baupläne ab", ring65Results.setHotbarRejectsUnknown);
                 check(
                     "Ring 6.5: selectHotbarSlot aktiviert Bau-Modus mit korrektem Bauplan",
                     ring65Results.selectActivatesMode
                 );
                 check("Ring 6.5: aktiver Slot bekommt .active-Class", ring65Results.highlightActiveSlot);
-                check(
-                    "Ring 6.5: leerer Slot deaktiviert Bau-Modus",
-                    ring65Results.emptySlotDeactivates
-                );
+                check("Ring 6.5: leerer Slot deaktiviert Bau-Modus", ring65Results.emptySlotDeactivates);
                 check(
                     "Ring 6.5: confirmBuild im Hotbar-Modus spawnt richtigen Bauplan",
                     ring65Results.confirmBuildSpawnsCorrectBp
                 );
                 check("Ring 6.5: setHotbarSlot(idx, null) leert den Slot", ring65Results.clearedSlotIsNull);
-                check(
-                    "Ring 6.5: Leerer Slot zeigt — als Label",
-                    ring65Results.clearedDomShowsEmpty
-                );
+                check("Ring 6.5: Leerer Slot zeigt — als Label", ring65Results.clearedDomShowsEmpty);
                 check("Ring 6.5: #hotbar-config-Container im Spieler-Drawer", ring65Results.hotbarConfigInDom);
                 check("Ring 6.5: Hotbar-Config hat 9 Reihen", ring65Results.hotbarConfigHasNineRows);
                 check("Ring 6.5: saveState persistiert Hotbar", ring65Results.saveContainsHotbar);
@@ -4784,8 +5256,8 @@ function startSaveServer() {
                     // Liste hat einen Eintrag pro Bauplan
                     const list = document.getElementById("workshop-list");
                     out.listShowsAllBlueprints =
-                        list && list.querySelectorAll(".workshop-list-row").length ===
-                            Object.keys(r.state.blueprints).length;
+                        list &&
+                        list.querySelectorAll(".workshop-list-row").length === Object.keys(r.state.blueprints).length;
 
                     // createBlueprint
                     const beforeCount = Object.keys(r.state.blueprints).length;
@@ -4819,33 +5291,27 @@ function startSaveServer() {
                     });
                     const p = r.state.blueprints["test_hut"].parts[0];
                     out.updatePartMerges =
-                        p.color === 0x00ff00 &&
-                        p.position.y === 2.5 &&
-                        p.position.x === 0 &&
-                        p.position.z === 0;
+                        p.color === 0x00ff00 && p.position.y === 2.5 && p.position.x === 0 && p.position.z === 0;
 
                     // removePartFromBlueprint
                     r.addPartToBlueprint("test_hut", { shape: "cone" });
                     r.addPartToBlueprint("test_hut", { shape: "sphere" });
                     const beforeRm = r.state.blueprints["test_hut"].parts.length;
                     r.removePartFromBlueprint("test_hut", 1);
-                    out.removePartShrinks =
-                        r.state.blueprints["test_hut"].parts.length === beforeRm - 1;
+                    out.removePartShrinks = r.state.blueprints["test_hut"].parts.length === beforeRm - 1;
 
                     // cloneBlueprint (Built-in → eigen)
                     const okClone = r.cloneBlueprint("temple", "my_temple");
                     out.cloneBlueprintOk =
                         okClone === true &&
                         r.state.blueprints["my_temple"].builtIn === false &&
-                        r.state.blueprints["my_temple"].parts.length ===
-                            r.state.blueprints["temple"].parts.length;
+                        r.state.blueprints["my_temple"].parts.length === r.state.blueprints["temple"].parts.length;
 
                     // Klone können editiert werden
                     const okClonePart = r.removePartFromBlueprint("my_temple", 0);
                     out.cloneIsEditable =
                         okClonePart === true &&
-                        r.state.blueprints["my_temple"].parts.length ===
-                            r.state.blueprints["temple"].parts.length - 1;
+                        r.state.blueprints["my_temple"].parts.length === r.state.blueprints["temple"].parts.length - 1;
 
                     // deleteBlueprint (eigen)
                     const beforeDel = Object.keys(r.state.blueprints).length;
@@ -4857,8 +5323,7 @@ function startSaveServer() {
 
                     // deleteBlueprint Built-in wird abgelehnt
                     const okDelBuiltIn = r.deleteBlueprint("village");
-                    out.builtInProtectedFromDelete =
-                        okDelBuiltIn === false && !!r.state.blueprints["village"];
+                    out.builtInProtectedFromDelete = okDelBuiltIn === false && !!r.state.blueprints["village"];
 
                     // delete räumt Hotbar-Slots auf, die diesen Bauplan halten
                     r.state.hotbar[4] = "my_temple";
@@ -4868,15 +5333,11 @@ function startSaveServer() {
                     // selectBlueprintForEdit + DOM update
                     r.createBlueprint("ed_test", "Editier-Test");
                     r.selectBlueprintForEdit("ed_test");
-                    out.selectUpdatesWorkshop =
-                        r.state.workshop.selectedBlueprint === "ed_test";
+                    out.selectUpdatesWorkshop = r.state.workshop.selectedBlueprint === "ed_test";
 
                     // Editor zeigt Selected-Status
-                    const selectedRow = document.querySelector(
-                        '.workshop-list-row[data-blueprint="ed_test"]'
-                    );
-                    out.selectedRowHasClass =
-                        selectedRow && selectedRow.classList.contains("selected");
+                    const selectedRow = document.querySelector('.workshop-list-row[data-blueprint="ed_test"]');
+                    out.selectedRowHasClass = selectedRow && selectedRow.classList.contains("selected");
 
                     // Save-Roundtrip: eigene Baupläne werden serialisiert
                     r.addPartToBlueprint("ed_test", {
@@ -4886,13 +5347,11 @@ function startSaveServer() {
                         size: { x: 3, y: 3, z: 3 },
                     });
                     r.saveState();
-                    const raw = localStorage.getItem("anazhRealmState");
+                    const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
                     const parsed = JSON.parse(raw);
                     const savedBp = parsed.blueprints.find((bp) => bp.name === "ed_test");
                     out.saveContainsCustom =
-                        !!savedBp &&
-                        savedBp.parts.length === 1 &&
-                        savedBp.parts[0].shape === "sphere";
+                        !!savedBp && savedBp.parts.length === 1 && savedBp.parts[0].shape === "sphere";
 
                     // Cleanup
                     r.deleteBlueprint("ed_test");
@@ -4905,41 +5364,24 @@ function startSaveServer() {
                 check(
                     "Ring 6.6: Werkstatt-Snapshot erreichbar",
                     false,
-                    ring66Results && ring66Results.error
-                        ? ring66Results.error
-                        : "page.evaluate fehlgeschlagen"
+                    ring66Results && ring66Results.error ? ring66Results.error : "page.evaluate fehlgeschlagen"
                 );
             } else {
                 check("Ring 6.6: Werkstatt-Tab in Topbar", ring66Results.workshopTabInDom);
                 check("Ring 6.6: Werkstatt-Drawer im DOM", ring66Results.workshopDrawerInDom);
                 check("Ring 6.6: #workshop-list im DOM", ring66Results.workshopListInDom);
                 check("Ring 6.6: #workshop-editor im DOM", ring66Results.workshopEditorInDom);
-                check(
-                    "Ring 6.6: Liste zeigt einen Eintrag pro Bauplan",
-                    ring66Results.listShowsAllBlueprints
-                );
+                check("Ring 6.6: Liste zeigt einen Eintrag pro Bauplan", ring66Results.listShowsAllBlueprints);
                 check("Ring 6.6: createBlueprint legt neuen eigenen Bauplan an", ring66Results.createBlueprintOk);
                 check("Ring 6.6: createBlueprint lehnt doppelte Namen ab", ring66Results.duplicateNameRejected);
                 check("Ring 6.6: addPartToBlueprint hängt Part an", ring66Results.addPartOk);
-                check(
-                    "Ring 6.6: addPartToBlueprint lehnt Built-in ab",
-                    ring66Results.builtInRejectsAddPart
-                );
-                check(
-                    "Ring 6.6: updatePartInBlueprint merget Patch in Bestand",
-                    ring66Results.updatePartMerges
-                );
+                check("Ring 6.6: addPartToBlueprint lehnt Built-in ab", ring66Results.builtInRejectsAddPart);
+                check("Ring 6.6: updatePartInBlueprint merget Patch in Bestand", ring66Results.updatePartMerges);
                 check("Ring 6.6: removePartFromBlueprint verkleinert parts", ring66Results.removePartShrinks);
-                check(
-                    "Ring 6.6: cloneBlueprint erzeugt eigene Kopie eines Built-in",
-                    ring66Results.cloneBlueprintOk
-                );
+                check("Ring 6.6: cloneBlueprint erzeugt eigene Kopie eines Built-in", ring66Results.cloneBlueprintOk);
                 check("Ring 6.6: Klone sind voll editierbar", ring66Results.cloneIsEditable);
                 check("Ring 6.6: deleteBlueprint entfernt eigene Baupläne", ring66Results.deleteBlueprintOk);
-                check(
-                    "Ring 6.6: Built-in vor Löschung geschützt",
-                    ring66Results.builtInProtectedFromDelete
-                );
+                check("Ring 6.6: Built-in vor Löschung geschützt", ring66Results.builtInProtectedFromDelete);
                 check(
                     "Ring 6.6: deleteBlueprint räumt referenzierte Hotbar-Slots auf",
                     ring66Results.deleteCascadesHotbar
@@ -4948,14 +5390,8 @@ function startSaveServer() {
                     "Ring 6.6: selectBlueprintForEdit setzt state.workshop.selectedBlueprint",
                     ring66Results.selectUpdatesWorkshop
                 );
-                check(
-                    "Ring 6.6: Selected-Row trägt .selected-Class im DOM",
-                    ring66Results.selectedRowHasClass
-                );
-                check(
-                    "Ring 6.6: Save persistiert eigene Baupläne inkl. Parts",
-                    ring66Results.saveContainsCustom
-                );
+                check("Ring 6.6: Selected-Row trägt .selected-Class im DOM", ring66Results.selectedRowHasClass);
+                check("Ring 6.6: Save persistiert eigene Baupläne inkl. Parts", ring66Results.saveContainsCustom);
             }
 
             // ### Ring 6 V2 — Distance-Culling, Fraktal, Counter, Bau-Cursor ###
@@ -5026,8 +5462,7 @@ function startSaveServer() {
                         Math.hypot(e.position.x - rootEntry.position.x, e.position.z - rootEntry.position.z)
                     );
                     out.fractalChildrenAreHexagonal =
-                        childRadii.length === 6 &&
-                        childRadii.every((rad) => Math.abs(rad - childRadii[0]) < 0.5);
+                        childRadii.length === 6 && childRadii.every((rad) => Math.abs(rad - childRadii[0]) < 0.5);
                     // Scale-Hierarchie: Root=1, direkte Kinder=0.5, Grand-Children=0.25
                     const grandChildren = r.state.architectures
                         .slice(before)
@@ -5053,7 +5488,8 @@ function startSaveServer() {
                     r.state.architectures = [];
                     r.state.playerMesh.position.set(0, 20, 0);
                     for (let i = 0; i < 3; i++) r.spawnArchitecture("temple", { x: i * 10, y: 5, z: 0 }, { seed: i });
-                    for (let i = 0; i < 5; i++) r.spawnArchitecture("village", { x: 300 + i * 5, y: 5, z: 0 }, { seed: i });
+                    for (let i = 0; i < 5; i++)
+                        r.spawnArchitecture("village", { x: 300 + i * 5, y: 5, z: 0 }, { seed: i });
                     const counts = r.countArchitecturesNearPlayer(60);
                     out.counterNear = counts.near === 3;
                     out.counterTotal = counts.total === 8;
@@ -5070,8 +5506,7 @@ function startSaveServer() {
                     // Ring 6.5: Hotbar-API ersetzt setBuildMode. Slot 0 = village.
                     r.selectHotbarSlot(0);
                     out.modeActiveAfterSet =
-                        r.state.buildMode.active === true &&
-                        r.state.buildMode.blueprintName === "village";
+                        r.state.buildMode.active === true && r.state.buildMode.blueprintName === "village";
                     out.phantomInScene =
                         r.state.buildMode.phantomMesh &&
                         r.state.scene.children.indexOf(r.state.buildMode.phantomMesh) >= 0;
@@ -5124,10 +5559,7 @@ function startSaveServer() {
                     "Ring 6 V2: Culling-Tick disposed Mesh wenn Spieler weggeht",
                     ring6v2Results.nearCulledAfterWalkAway
                 );
-                check(
-                    "Ring 6 V2: Culling-Tick baut Mesh wenn Spieler hingeht",
-                    ring6v2Results.farRebuiltAfterApproach
-                );
+                check("Ring 6 V2: Culling-Tick baut Mesh wenn Spieler hingeht", ring6v2Results.farRebuiltAfterApproach);
                 check(
                     "Ring 6 V2: Culling-Tick baut Mesh wieder auf nach Rückkehr",
                     ring6v2Results.nearRebuiltAfterReturn
@@ -5137,10 +5569,7 @@ function startSaveServer() {
                     "Ring 6 V2: spawn_fractal(depth=2, ratio=0.5) → 1+6+36 = 43 Strukturen",
                     ring6v2Results.fractalSpawnsExpected
                 );
-                check(
-                    "Ring 6 V2: spawned_fractal-Event emittiert mit count=43",
-                    ring6v2Results.fractalEventEmitted
-                );
+                check("Ring 6 V2: spawned_fractal-Event emittiert mit count=43", ring6v2Results.fractalEventEmitted);
                 check(
                     "Ring 6 V2: 6 Kinder im Hexagon (gleicher Radius um Root)",
                     ring6v2Results.fractalChildrenAreHexagonal
@@ -5149,18 +5578,12 @@ function startSaveServer() {
                     "Ring 6 V2: Scale-Hierarchie — Kinder bei ratio (0.5), Root bei 1",
                     ring6v2Results.fractalScalesShrink
                 );
-                check(
-                    "Ring 6 V2: Chat 'baue fraktal wasserfall' routet korrekt",
-                    ring6v2Results.chatFractalRoutes
-                );
+                check("Ring 6 V2: Chat 'baue fraktal wasserfall' routet korrekt", ring6v2Results.chatFractalRoutes);
                 // Counter
                 check("Ring 6 V2: countArchitecturesNearPlayer nah = 3", ring6v2Results.counterNear);
                 check("Ring 6 V2: countArchitecturesNearPlayer total = 8", ring6v2Results.counterTotal);
                 check("Ring 6 V2: #status-architectures im DOM", ring6v2Results.statusBarItemInDom);
-                check(
-                    "Ring 6 V2: Status-Bar zeigt 'N nah / M' Format",
-                    ring6v2Results.statusBarShowsCount
-                );
+                check("Ring 6 V2: Status-Bar zeigt 'N nah / M' Format", ring6v2Results.statusBarShowsCount);
                 // Bau-Cursor
                 check("Ring 6 V2: #build-mode-hud im DOM", ring6v2Results.hudInDom);
                 check("Ring 6 V2: HUD initial versteckt", ring6v2Results.hudInitiallyHidden);
@@ -5171,10 +5594,7 @@ function startSaveServer() {
                 check("Ring 6.5: Selber Slot nochmal → Toggle off", ring6v2Results.toggleOffSameForm);
                 check("Ring 6.5: Slot-Wechsel ändert aktiven Bauplan", ring6v2Results.switchFormChanges);
                 check("Ring 6 V2: confirmBuild spawnt echte Struktur", ring6v2Results.confirmBuildSpawns);
-                check(
-                    "Ring 6 V2: confirmBuild lässt Modus aktiv (Mehrfach-Bau)",
-                    ring6v2Results.confirmBuildKeepsMode
-                );
+                check("Ring 6 V2: confirmBuild lässt Modus aktiv (Mehrfach-Bau)", ring6v2Results.confirmBuildKeepsMode);
                 check("Ring 6 V2: _clearBuildMode beendet Modus + räumt Phantom", ring6v2Results.clearEndsMode);
             }
         }
