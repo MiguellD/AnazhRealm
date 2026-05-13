@@ -243,6 +243,13 @@ class AnazhRealm {
                 visibility: "private",
                 parentWorlds: [],
                 bornAt: 0,
+                // Ring 8.1: jede Welt trägt ihren eigenen Terrain-Seed in
+                // worldMeta. SimplexNoise(seed) macht ihn zur einzigen
+                // Quelle der Welt-Geometrie. Bei neuen Welten zufällig,
+                // bei der allerersten (Legacy-Migration) fallen wir auf
+                // den historischen Default "anazh-realm-seed", damit der
+                // Spieler seine erste Welt nicht visuell verliert.
+                seed: null,
                 schemaVersion: "8.0-multiworld-v1",
             },
             // Welle 1 D — Welt-Journal. Geordnete Liste von Erinnerungen
@@ -3345,6 +3352,17 @@ class AnazhRealm {
             m.slug = `${a}-${n}`;
         }
         if (!m.bornAt) m.bornAt = Date.now();
+        // Ring 8.1: Seed-Strategie. ensureWorldMeta wird nur dann mit
+        // fehlendem Seed aufgerufen, wenn (a) ein brandneuer Spieler ohne
+        // localStorage startet ODER (b) eine Legacy-Welt vor Ring 8.1
+        // migriert wird. In BEIDEN Fällen ist die Wahl des Schöpfers, dass
+        // diese „erste Welt" wie eh und je aussieht — Eingangs-Welt-Gefühl,
+        // identisch für alle, Lehrling-freundlich. Eigene Welten mit
+        // randomisiertem Seed entstehen erst durch ausdrücklichen Akt
+        // (createNewWorld → _generateFreshWorldMeta).
+        if (typeof m.seed !== "string" || m.seed.length === 0) {
+            m.seed = "anazh-realm-seed";
+        }
         if (fresh) {
             this.journalAppend("genesis", `Ich erwache als ${m.slug}.`, { worldId: m.worldId });
             // Ring 8: frische Welt im Index registrieren. Reload-Migration
@@ -3558,7 +3576,12 @@ class AnazhRealm {
             while (usedSlugs.has(`${finalSlug}-${n}`)) n++;
             finalSlug = `${finalSlug}-${n}`;
         }
-        return { worldId, slug: finalSlug, bornAt: Date.now() };
+        // Ring 8.1: jeder neue Welt-Akt erzeugt einen eigenen Terrain-Seed.
+        // Mensch + UUID-Fragment bilden eine kurze, lesbare Quelle; SimplexNoise
+        // hasht das intern. Der Seed bleibt für die gesamte Welt-Lebensdauer
+        // konstant (in worldMeta persistiert).
+        const seed = `w-${worldId.replace(/-/g, "").slice(0, 12)}-${Math.random().toString(36).slice(2, 8)}`;
+        return { worldId, slug: finalSlug, bornAt: Date.now(), seed };
     }
 
     // Snapshot einer „leeren" Welt mit gegebenem worldMeta. Optional bekommt
@@ -3576,12 +3599,41 @@ class AnazhRealm {
             terrainSteepness: 1.0,
             terrainBaseHeight: 0.0,
             weather: "sunny",
-            worldMeta: { ...this.state.worldMeta, ...worldMeta, schemaVersion: "8.0-multiworld-v1" },
+            // Eine neue Welt erbt KEINE parentWorlds — sie ist eigenständig
+            // (Fusion mit parentWorlds folgt in Ring 10). visibility/creator
+            // bleiben aus der Schöpfer-Wahl (Default „private"/„local").
+            worldMeta: {
+                ...this.state.worldMeta,
+                ...worldMeta,
+                parentWorlds: [],
+                schemaVersion: "8.0-multiworld-v1",
+            },
             dslAbilities: [],
             dslHistory: [],
             dslPatternMemory: {},
             playerPathBuckets: null,
-            worldJournal: { entries: [], seen: {} },
+            // Ring 8.1: neue Welt bekommt sofort einen Genesis-Eintrag —
+            // ensureWorldMeta würde ihn nach dem Reload nicht mehr setzen
+            // (worldId ist dann schon im Save). Stattdessen schreiben wir
+            // ihn beim Anlegen mit, mit „genesis"-Schlüssel im seen-Map,
+            // damit kein Duplikat möglich ist.
+            worldJournal: {
+                entries: [
+                    {
+                        id: 1,
+                        at: Date.now(),
+                        tick: 0,
+                        type: "genesis",
+                        text: `Ich erwache als ${worldMeta.slug}.`,
+                        ctx: {
+                            worldId: worldMeta.worldId,
+                            seed: worldMeta.seed || null,
+                            inheritedPlayer: !!inheritPlayer,
+                        },
+                    },
+                ],
+                seen: { genesis: true },
+            },
             playerEmotions: { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 },
             playerSoul: "human",
             playerTools: [],
@@ -5288,9 +5340,13 @@ class AnazhRealm {
         let maxHeight = -Infinity;
 
         if (typeof SimplexNoise !== "undefined") {
-            const noise = new SimplexNoise(this.state.seed || "anazh-realm-seed");
-            const caveNoise = new SimplexNoise((this.state.seed || "anazh-realm-seed") + "-cave");
-            const volcanoNoise = new SimplexNoise((this.state.seed || "anazh-realm-seed") + "-volcano");
+            const noise = new SimplexNoise((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed");
+            const caveNoise = new SimplexNoise(
+                ((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed") + "-cave"
+            );
+            const volcanoNoise = new SimplexNoise(
+                ((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed") + "-volcano"
+            );
 
             for (let i = 0; i < WIDTH * DEPTH; i++) {
                 const x = (i % WIDTH) * (WORLD_SIZE / (WIDTH - 1)) - WORLD_SIZE / 2;
@@ -5494,7 +5550,9 @@ class AnazhRealm {
             const indices = [];
             const uvs = [];
 
-            const islandNoise = new SimplexNoise((this.state.seed || "anazh-realm-seed") + `-island-${i}`);
+            const islandNoise = new SimplexNoise(
+                ((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed") + `-island-${i}`
+            );
             const points = [];
             for (let z = 0; z < islandSize; z++) {
                 const row = [];
@@ -6095,7 +6153,7 @@ class AnazhRealm {
         const worldStartX = newChunkX * chunkWorldSize - WORLD_SIZE / 2;
         const worldStartZ = newChunkZ * chunkWorldSize - WORLD_SIZE / 2;
 
-        const seed = this.state.seed || "anazh-realm-seed";
+        const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
         const noise = new SimplexNoise(seed);
         const caveNoise = new SimplexNoise(seed + "-cave");
         const volcanoNoise = new SimplexNoise(seed + "-volcano");
