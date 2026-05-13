@@ -4823,6 +4823,127 @@ function startSaveServer() {
                 }
             }
 
+            // ### Welle 6.A3 — Slope-Steepness (Anti-Wandkleben) ###
+            //
+            // isPlayerGrounded liest pro Hit die Surface-Normal. Das flachste
+            // Normal-Y wird in `state.groundNormalY` gespeichert; wenn keine
+            // begehbare Fläche dabei ist (Normal-Y < maxWalkableSlopeY=0.5,
+            // entspricht >60° Steigung), gilt `state.onSteepSlope = true` und
+            // der Bewegungs-Input wird auf 20 % gedrosselt. Damit klebt der
+            // Spieler nicht mehr an senkrechten Wänden.
+            const wave6a3Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    // 6.A3 — state-Felder existieren mit korrekten Defaults
+                    out.hasMaxWalkableSlopeY = typeof r.state.maxWalkableSlopeY === "number";
+                    out.maxWalkableSlopeYValue = r.state.maxWalkableSlopeY;
+                    out.maxWalkableSlopeYIs05 = Math.abs(r.state.maxWalkableSlopeY - 0.5) < 0.001;
+                    out.hasGroundNormalY = typeof r.state.groundNormalY === "number";
+                    out.hasOnSteepSlope = typeof r.state.onSteepSlope === "boolean";
+
+                    // 6.A3 — Diskriminations-Test mit zwei kontrollierten Setups:
+                    // (a) Spieler hoch in den Himmel → nicht geerdet → onSteepSlope MUSS false sein
+                    //     (Logik: onSteepSlope = isGrounded && bestNormalY<0.5).
+                    // (b) Spieler auf der Oberseite eines spawnenden Bauwerks (Tempel)
+                    //     → geerdet, Normal-Y der Top-Box ist ~1.0 → onSteepSlope MUSS false sein.
+                    // Wir reden NICHT über das natürliche Initial-Terrain — das ist
+                    // prozedural und kann an einzelnen Stellen steile Hänge haben.
+                    const _savedX = r.state.playerMesh.position.x;
+                    const _savedY = r.state.playerMesh.position.y;
+                    const _savedZ = r.state.playerMesh.position.z;
+
+                    // (a) Himmel
+                    r.state.playerMesh.position.set(0, 5000, 0);
+                    r.isPlayerGrounded();
+                    out.skyOnSteepSlope = r.state.onSteepSlope;
+                    out.skyGroundNormalY = r.state.groundNormalY;
+
+                    // (b) Flacher Bauwerks-Top: separater Tempel-Spawn
+                    const _beforeArchA3 = r.state.architectures.length;
+                    const _entryA3 = r.spawnArchitecture(
+                        "temple",
+                        { x: _savedX + 40, y: 0, z: _savedZ + 40 },
+                        { seed: 9999 }
+                    );
+                    let flatBlueprintNotSteep = false;
+                    if (_entryA3 && _entryA3.mesh) {
+                        const box = new THREE.Box3().setFromObject(_entryA3.mesh);
+                        // Setze Spieler knapp über die Top-Fläche
+                        r.state.playerMesh.position.set(_savedX + 40, box.max.y + 0.3, _savedZ + 40);
+                        r.isPlayerGrounded();
+                        flatBlueprintNotSteep =
+                            r.state.onSteepSlope === false && r.state.groundNormalY > 0.7;
+                        out.archTopGroundNormalY = r.state.groundNormalY;
+                        out.archTopOnSteepSlope = r.state.onSteepSlope;
+                    }
+                    out.flatBlueprintNotSteep = flatBlueprintNotSteep;
+                    r.state.architectures = r.state.architectures.slice(0, _beforeArchA3);
+                    r.state.playerMesh.position.set(_savedX, _savedY, _savedZ);
+
+                    // 6.A3 — Quell-Check: Funktion liest tatsächlich die Normal
+                    // (sonst wäre das Tracking ein No-op)
+                    const fnSrc = r.isPlayerGrounded.toString();
+                    out.fnReadsNormal = fnSrc.includes("get_m_hitNormalWorld");
+                    out.fnSetsSteepFlag = /onSteepSlope\s*=/.test(fnSrc);
+                    out.fnSetsGroundNormal = /groundNormalY\s*=/.test(fnSrc);
+
+                    // 6.A3 — Diskriminations-Test: Bewegungs-Loop drosselt auf
+                    // steilem Hang. Wir prüfen die slopePenalty-Logik im
+                    // Quellcode der Loop-Init-Methode (statischer Check, weil
+                    // einen echten Slope im Headless zu synthetisieren fragil ist).
+                    const loopSrc = r.startEternalLoop ? r.startEternalLoop.toString() : "";
+                    out.movementUsesSlopePenalty = /slopePenalty/.test(loopSrc);
+                    out.movementHasSlopeBranch = /onSteepSlope\s*\?\s*0\.2/.test(loopSrc);
+                    out.movementSlideOnSlope = /!\s*this\.state\.onSteepSlope/.test(loopSrc);
+
+                    return out;
+                })
+                .catch(() => null);
+
+            if (wave6a3Results) {
+                check("Welle 6.A3: state.maxWalkableSlopeY existiert", wave6a3Results.hasMaxWalkableSlopeY);
+                check(
+                    "Welle 6.A3: maxWalkableSlopeY == 0.5 (cos 60° = walkable bis 60°)",
+                    wave6a3Results.maxWalkableSlopeYIs05
+                );
+                check("Welle 6.A3: state.groundNormalY existiert", wave6a3Results.hasGroundNormalY);
+                check("Welle 6.A3: state.onSteepSlope existiert", wave6a3Results.hasOnSteepSlope);
+                check(
+                    "Welle 6.A3: isPlayerGrounded liest get_m_hitNormalWorld (Slope-Tracking aktiv)",
+                    wave6a3Results.fnReadsNormal
+                );
+                check(
+                    "Welle 6.A3: isPlayerGrounded setzt onSteepSlope-Flag",
+                    wave6a3Results.fnSetsSteepFlag
+                );
+                check(
+                    "Welle 6.A3: isPlayerGrounded setzt groundNormalY",
+                    wave6a3Results.fnSetsGroundNormal
+                );
+                check(
+                    "Welle 6.A3: Negativ-Kontrolle — Himmel hat onSteepSlope=false (nicht geerdet)",
+                    wave6a3Results.skyOnSteepSlope === false
+                );
+                check(
+                    "Welle 6.A3: Diskrimination — flache Bauwerks-Oberseite ist NICHT als steil markiert",
+                    wave6a3Results.flatBlueprintNotSteep
+                );
+                check(
+                    "Welle 6.A3: Bewegungs-Loop nutzt slopePenalty-Variable",
+                    wave6a3Results.movementUsesSlopePenalty
+                );
+                check(
+                    "Welle 6.A3: Bewegungs-Loop hat onSteepSlope ? 0.2 : 1.0 Drossel",
+                    wave6a3Results.movementHasSlopeBranch
+                );
+                check(
+                    "Welle 6.A3: Bewegungs-Loop lässt Velocity stehen wenn onSteepSlope (Slide-Verhalten)",
+                    wave6a3Results.movementSlideOnSlope
+                );
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {

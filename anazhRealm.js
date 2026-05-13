@@ -75,6 +75,14 @@ class AnazhRealm {
             lastGroundedTime: 0,
             coyoteTime: 0.3,
             isInAir: false,
+            // Welle 6.A3 — Slope-Steepness. `maxWalkableSlopeY` ist cos(maxAngle):
+            // 0.5 = cos(60°), das heißt Slopes bis ~60° gelten als begehbar. Steiler
+            // → `onSteepSlope=true`, Bewegungs-Input wird gedrosselt + Gravity
+            // schiebt den Spieler hinab (Friction=0 ist die Voraussetzung dafür).
+            // `groundNormalY` ist 1.0 wenn nicht geerdet (sentinel-flat).
+            maxWalkableSlopeY: 0.5,
+            groundNormalY: 1.0,
+            onSteepSlope: false,
             frameCount: 0,
             lastFpsUpdate: 0,
             fps: 0,
@@ -12734,18 +12742,29 @@ class AnazhRealm {
             if (this.state.keys["d"]) this.state.moveDirection.addScaledVector(this.state.right, -1);
 
             if (this.state.physicsWorld && playerBody) {
+                // Welle 6.A3 — auf zu steilem Slope (onSteepSlope=true via
+                // isPlayerGrounded) wird der Bewegungs-Input auf 20 % gedrosselt.
+                // 0 wäre zu hart (gar keine Kontrolle), 1 wäre der heutige Bug
+                // (Spieler klettert senkrechte Wände). 0.2 lässt seitliches
+                // Rauslenken zu, blockiert aber Voll-Vorwärts-Klettern.
+                const slopePenalty = this.state.onSteepSlope ? 0.2 : 1.0;
                 if (this.state.moveDirection.length() > 0) {
                     this.state.moveDirection.normalize();
                     playerBody.setLinearVelocity(
                         this.setVec(
                             this.state.tmpVec1,
-                            this.state.moveDirection.x * currentSpeed,
+                            this.state.moveDirection.x * currentSpeed * slopePenalty,
                             playerBody.getLinearVelocity().y(),
-                            this.state.moveDirection.z * currentSpeed
+                            this.state.moveDirection.z * currentSpeed * slopePenalty
                         )
                     );
                     playerBody.forceActivationState(1);
-                } else {
+                } else if (!this.state.onSteepSlope) {
+                    // Auf flachem Boden: ohne Eingabe vx + vz auf 0 zwingen
+                    // (Standard-Stopp-Verhalten). Auf steilem Hang lassen wir
+                    // die existierende Velocity stehen — Gravitation + Slope-
+                    // Kontakt erzeugen so eine natürliche Rutsch-Bewegung
+                    // (Voraussetzung: Player-Friction 0 aus 6.A1).
                     playerBody.setLinearVelocity(
                         this.setVec(this.state.tmpVec1, 0, playerBody.getLinearVelocity().y(), 0)
                     );
@@ -12992,6 +13011,12 @@ class AnazhRealm {
         // dadurch bei manchen Bauwerken um einen Frame versetzt verweigert.
         const groundDistance = 0.6;
 
+        // Welle 6.A3 — Slope-Steepness. Pro Hit lesen wir die Surface-Normal,
+        // tracken die FLACHSTE (höchstes Normal-Y). Wenn keine der getroffenen
+        // Flächen einen Normal-Y > maxWalkableSlopeY hat, gilt der Spieler als
+        // „auf steilem Hang" — Bewegung wird gedrosselt + Gravity schiebt ab.
+        let bestNormalY = 0;
+
         for (const ray of rays) {
             const rayStart = this.setVec(
                 this.state.tmpVec1,
@@ -13013,10 +13038,19 @@ class AnazhRealm {
                 const distance = Math.abs(hitY - (this.state.playerMesh.position.y - 0.5));
                 if (distance < groundDistance) {
                     isGrounded = true;
+                    // Normal aufsammeln — flachste (höchstes y) gewinnt: wenn
+                    // ein Ray auf eine flache Sub-Fläche trifft (Treppe, kleine
+                    // Plattform), zählt der Spieler als „begehbar geerdet".
+                    const hitNormal = rayCallback.get_m_hitNormalWorld();
+                    const ny = hitNormal.y();
+                    if (ny > bestNormalY) bestNormalY = ny;
                 }
             }
             Ammo.destroy(rayCallback);
         }
+
+        this.state.groundNormalY = isGrounded ? bestNormalY : 1.0;
+        this.state.onSteepSlope = isGrounded && bestNormalY < this.state.maxWalkableSlopeY;
 
         // Entferne manuelle Korrekturen, da Ammo.btHeightfieldTerrainShape die Kollisionen übernimmt
         return isGrounded;
