@@ -8577,6 +8577,22 @@ class AnazhRealm {
         for (let i = 0; i < 9; i++) {
             if (this.state.hotbar[i] === name) this.state.hotbar[i] = null;
         }
+        // Welle 5 C — wenn der Bauplan als eigenes Werkzeug registriert war,
+        // räumen wir das Werkzeug ebenfalls weg. Sonst bliebe ein Geist-Tool
+        // in state.tools mit sourceBlueprint auf den jetzt-leeren Namen — UI
+        // andere Baupläne würden es weiter im Apply-Dropdown anbieten,
+        // applyOpToPart würde scheinbar funktionieren obwohl die Substanz fehlt.
+        if (this.state.tools) {
+            for (const toolName of Object.keys(this.state.tools)) {
+                const t = this.state.tools[toolName];
+                if (t && !t.builtIn && t.sourceBlueprint === name) {
+                    delete this.state.tools[toolName];
+                    if (Array.isArray(this.state.player.tools)) {
+                        this.state.player.tools = this.state.player.tools.filter((tn) => tn !== toolName);
+                    }
+                }
+            }
+        }
         this._renderHotbarDOM();
         this.log(`Bauplan '${name}' gelöscht`, "INFO");
         return true;
@@ -8612,6 +8628,20 @@ class AnazhRealm {
         if (!bp || bp.builtIn) return false;
         if (index < 0 || index >= bp.parts.length) return false;
         bp.parts.splice(index, 1);
+        // Welle 5 A — Connections referenzieren Part-Indizes. Beim Lösch:
+        //   (a) Connections, die den gelöschten Part berühren, verschwinden.
+        //   (b) Indizes > index werden um 1 nach unten korrigiert.
+        // Ohne das blieben Connections auf den falschen Part oder zeigten
+        // out-of-range — UI-Anzeige würde Geist-Stern-Werte berechnen.
+        if (Array.isArray(bp.connections)) {
+            bp.connections = bp.connections
+                .filter((c) => c.partA !== index && c.partB !== index)
+                .map((c) => ({
+                    type: c.type,
+                    partA: c.partA > index ? c.partA - 1 : c.partA,
+                    partB: c.partB > index ? c.partB - 1 : c.partB,
+                }));
+        }
         return true;
     }
 

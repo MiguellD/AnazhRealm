@@ -10,7 +10,7 @@ Diese Doc beschreibt das **gesamte Projekt vom heutigen Stand bis zum Vision-End
 
 ## 1. Wo wir stehen (Mai 2026)
 
-✅ Ring 0-7 + Welle 1-5 sind live. Chunk-Physik nutzt seit `e612c60` `btBvhTriangleMeshShape` (visuelles Mesh = Collider). 120 fps im Browser, **518/518 Playtest-Invarianten grün**. Save-Schema mit `worldMeta` (worldId, slug, visibility, parentWorlds) + `materials` + `playerTools` + `tools` (eigene Werkzeug-Baupläne) + `worldJournal` + `blueprints[].connections` + `blueprints[].role + toolMeta`.
+✅ Ring 0-7 + Welle 1-5 + Editor-Konsistenz-Bugfixes sind live. Chunk-Physik nutzt seit `e612c60` `btBvhTriangleMeshShape` (visuelles Mesh = Collider). 120 fps im Browser, **527/527 Playtest-Invarianten grün**. Save-Schema mit `worldMeta` (worldId, slug, visibility, parentWorlds) + `materials` + `playerTools` + `tools` (eigene Werkzeug-Baupläne) + `worldJournal` + `blueprints[].connections` + `blueprints[].role + toolMeta`.
 
 Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) sind alle fünf in V1+ angekommen. **Hylomorphismus-Crafting (Wellen 4+5) ist vollständig**: Substanz-Schicht (Materialien als Tag-Profile), Form-Aktivierung (9×10 Matrix), Werkzeug-Präzision (opChain als Geschichte), räumliche Emergenz (5 Konzept-§5.2-Prinzipien), Verbindungstypen (8 aus §5.1), Maschinen-Rekursivität (§4.3 — Bauplan kann Werkzeug sein). Was noch fehlt: visuelle Verbindungs-Linien, Brech-Mechanik, Energiequellen für Maschinen.
 

@@ -2392,6 +2392,126 @@ function startSaveServer() {
                 check("Welle 5 C: UI opName-Input im DOM", wave5cResults.uiOpNameInput);
             }
 
+            // ### Bugfixes nach Welle-5-Reflexion ###
+            const bugfixResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    // Bug 1: Part-Loesch raeumt connections auf
+                    r.state.blueprints["bug1-test"] = {
+                        name: "bug1-test",
+                        label: "Bug1 Test",
+                        builtIn: false,
+                        parts: [
+                            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                            { shape: "box", material: "stein", position: { x: 1, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                            { shape: "box", material: "stein", position: { x: 2, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                        ],
+                        connections: [
+                            { type: "hafting", partA: 0, partB: 1 },
+                            { type: "hafting", partA: 1, partB: 2 },
+                            { type: "hafting", partA: 0, partB: 2 },
+                        ],
+                    };
+                    // Part 1 loeschen: connection 0-1 + 1-2 weg, 0-2 bleibt
+                    // und wird zu 0-1 (Index 2 → 1).
+                    r.removePartFromBlueprint("bug1-test", 1);
+                    const remaining = r.state.blueprints["bug1-test"].connections;
+                    out.connectionsFilteredOnPartDelete = remaining.length === 1;
+                    out.connectionIndicesShifted =
+                        remaining[0] && remaining[0].partA === 0 && remaining[0].partB === 1;
+
+                    // Bug 1 edge case: delete part 0, connection 1-2 wird zu 0-1
+                    r.state.blueprints["bug1-shift"] = {
+                        name: "bug1-shift",
+                        label: "Shift Test",
+                        builtIn: false,
+                        parts: [
+                            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                            { shape: "box", material: "stein", position: { x: 1, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                            { shape: "box", material: "stein", position: { x: 2, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                        ],
+                        connections: [{ type: "hafting", partA: 1, partB: 2 }],
+                    };
+                    r.removePartFromBlueprint("bug1-shift", 0);
+                    const shifted = r.state.blueprints["bug1-shift"].connections;
+                    out.shiftedToZeroOne = shifted.length === 1 && shifted[0].partA === 0 && shifted[0].partB === 1;
+
+                    // Bug 2: Bauplan-Loesch raeumt eigene Werkzeuge auf
+                    r.state.blueprints["bug2-lathe"] = {
+                        name: "bug2-lathe",
+                        label: "Test Lathe",
+                        builtIn: false,
+                        role: "tool",
+                        toolMeta: { opName: "bug2-op", opClass: "subtractive" },
+                        parts: [
+                            { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, opChain: [{ tool: "polierscheibe", op: "polish", cap: 0.97 }] },
+                        ],
+                        connections: [],
+                    };
+                    r.registerBlueprintAsTool("bug2-lathe");
+                    out.toolWasRegistered = !!r.state.tools["bug2-lathe"];
+                    out.playerOwnedToolBefore = (r.state.player.tools || []).includes("bug2-lathe");
+                    r.deleteBlueprint("bug2-lathe");
+                    out.toolRemovedFromState = !r.state.tools["bug2-lathe"];
+                    out.toolRemovedFromPlayer = !(r.state.player.tools || []).includes("bug2-lathe");
+                    out.starterToolsUnaffected =
+                        !!r.state.tools["hammer"] && (r.state.player.tools || []).includes("hammer");
+
+                    // Negativ: deleteBlueprint eines non-tool-Bauplans laesst
+                    // andere Tools komplett unberuehrt.
+                    r.state.blueprints["bug2-noisy-tool"] = {
+                        name: "bug2-noisy-tool",
+                        label: "Noisy Tool",
+                        builtIn: false,
+                        role: "tool",
+                        toolMeta: { opName: "noisy-op", opClass: "subtractive" },
+                        parts: [{ shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, opChain: [{ tool: "polierscheibe", op: "polish", cap: 0.97 }] }],
+                        connections: [],
+                    };
+                    r.registerBlueprintAsTool("bug2-noisy-tool");
+                    r.state.blueprints["bug2-plain"] = {
+                        name: "bug2-plain",
+                        label: "Plain Blueprint",
+                        builtIn: false,
+                        parts: [{ shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } }],
+                        connections: [],
+                    };
+                    r.deleteBlueprint("bug2-plain");
+                    out.unrelatedToolUntouched = !!r.state.tools["bug2-noisy-tool"];
+
+                    // Cleanup — wichtig: Werkstatt-DOM neu rendern, damit
+                    // spätere Tests (Ring 6.6) nicht Stale-Rows sehen.
+                    delete r.state.tools["bug2-noisy-tool"];
+                    r.state.player.tools = r.state.player.tools.filter((t) => t !== "bug2-noisy-tool");
+                    delete r.state.blueprints["bug2-noisy-tool"];
+                    delete r.state.blueprints["bug1-test"];
+                    delete r.state.blueprints["bug1-shift"];
+                    if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (!bugfixResults || bugfixResults.error) {
+                check(
+                    "Bugfix Snapshot erreichbar",
+                    false,
+                    (bugfixResults && bugfixResults.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Bugfix: removePartFromBlueprint filtert betroffene Connections", bugfixResults.connectionsFilteredOnPartDelete);
+                check("Bugfix: Connection-Indizes nach Part-Loesch korrigiert", bugfixResults.connectionIndicesShifted);
+                check("Bugfix: Index-Shift bei Loesch von Part 0", bugfixResults.shiftedToZeroOne);
+                check("Bugfix: registerBlueprintAsTool legt Werkzeug an (Setup)", bugfixResults.toolWasRegistered);
+                check("Bugfix: Werkzeug nach Register im Player-Inventory (Setup)", bugfixResults.playerOwnedToolBefore);
+                check("Bugfix: deleteBlueprint entfernt eigenes Werkzeug aus state.tools", bugfixResults.toolRemovedFromState);
+                check("Bugfix: deleteBlueprint entfernt Werkzeug aus player.tools", bugfixResults.toolRemovedFromPlayer);
+                check("Bugfix: Starter-Werkzeuge bleiben nach Bauplan-Loesch erhalten", bugfixResults.starterToolsUnaffected);
+                check("Bugfix: Unrelated Tools werden nicht angetastet", bugfixResults.unrelatedToolUntouched);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {
