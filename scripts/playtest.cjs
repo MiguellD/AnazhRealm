@@ -3211,7 +3211,7 @@ function startSaveServer() {
                     out.fuseBtnInDom = !!document.getElementById("world-tor-fuse");
                     out.cancelBtnInDom = !!document.getElementById("world-tor-cancel");
                     out.summaryInDom = !!document.getElementById("world-tor-summary");
-                    out.fuseBtnDisabled = document.getElementById("world-tor-fuse").disabled === true;
+                    out.fuseBtnEnabled = document.getElementById("world-tor-fuse").disabled === false;
 
                     // Daten-Pfad: importWorldBeside ohne Reload
                     const originalSrcId = "src-world-aaaaaaaa";
@@ -3321,7 +3321,7 @@ function startSaveServer() {
                 check("Ring 9: Ersetzen-Button im DOM", ring9Results.replaceBtnInDom);
                 check("Ring 9: Daneben-legen-Button im DOM", ring9Results.besideBtnInDom);
                 check("Ring 9: Fusion-Button im DOM", ring9Results.fuseBtnInDom);
-                check("Ring 9: Fusion-Button ist disabled (Ring 10)", ring9Results.fuseBtnDisabled);
+                check("Ring 9: Fusion-Button ist klickbar (mit Ring 10)", ring9Results.fuseBtnEnabled);
                 check("Ring 9: Abbrechen-Button im DOM", ring9Results.cancelBtnInDom);
                 check("Ring 9: #world-tor-summary im DOM", ring9Results.summaryInDom);
                 check("Ring 9: importWorldBeside liefert ok=true", ring9Results.besideReturnedOk);
@@ -3344,6 +3344,486 @@ function startSaveServer() {
                     "Ring 9: Import ohne worldJournal bekommt trotzdem Witness-Eintrag (Bugfix)",
                     ring9Results.journallessGetsWitness
                 );
+            }
+
+            // ### Ring 10 — Welt-Fusion ###
+            // Diskriminations-Test: zwei Eltern mit JE EINER eindeutigen Sache
+            // (A hat Material X, B hat Bauplan Y, A hat hohe Emotion, B hat
+            // andere Emotion). Drei Strategien fusionieren — die Fusion muss
+            // beide Eindeutigkeiten tragen, und die Strategien müssen
+            // unterscheidbare Emotion-Aggregation zeigen.
+            const ring10Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    // Dialog + Stammbaum-DOM
+                    out.fusionDialogInDom = !!document.getElementById("world-fusion-dialog");
+                    out.fusionConfirmBtnInDom = !!document.getElementById("world-fusion-confirm");
+                    out.fusionStrategyRadios = document.querySelectorAll('input[name="fusion-strategy"]').length === 3;
+                    out.fusionParentBSelectInDom = !!document.getElementById("world-fusion-parent-b");
+                    out.fusionOpenBtnInDom = !!document.getElementById("world-fuse-open");
+                    out.lineageSectionInDom = !!document.getElementById("world-lineage-section");
+                    out.lineageDivInDom = !!document.getElementById("world-lineage");
+                    out.fusionStrategiesArray =
+                        Array.isArray(AnazhRealm.FUSION_STRATEGIES) && AnazhRealm.FUSION_STRATEGIES.length === 3;
+
+                    // Setup: zwei Eltern-Welten mit eindeutigen Inventaren bauen.
+                    const parentAId = r.createNewWorld({
+                        slug: "fusion-parent-a",
+                        inheritPlayer: false,
+                        reload: false,
+                    });
+                    const parentBId = r.createNewWorld({
+                        slug: "fusion-parent-b",
+                        inheritPlayer: false,
+                        reload: false,
+                    });
+                    // Direkt in die Per-Welt-Saves schreiben (ohne reload),
+                    // damit Parent-Saves spezifische Inhalte tragen.
+                    const saveA = JSON.parse(localStorage.getItem(r.worldStorageKey(parentAId)));
+                    saveA.materials = [
+                        { name: "quarz-fein", label: "Quarz fein", color: "#fff", tags: { resoniert: 0.9 } },
+                    ];
+                    saveA.playerEmotions = { joy: 0.9, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
+                    saveA.dslHistory = [{ id: 1, fitness: 0.8, program: ["weather", "sunny"] }];
+                    localStorage.setItem(r.worldStorageKey(parentAId), JSON.stringify(saveA));
+                    const saveB = JSON.parse(localStorage.getItem(r.worldStorageKey(parentBId)));
+                    saveB.blueprints = [
+                        {
+                            name: "tempel-besonderer",
+                            label: "Tempel",
+                            parts: [
+                                {
+                                    shape: "box",
+                                    material: "stein",
+                                    position: { x: 0, y: 0, z: 0 },
+                                    size: { x: 1, y: 1, z: 1 },
+                                },
+                            ],
+                            connections: [],
+                        },
+                    ];
+                    saveB.playerEmotions = { joy: 0, awe: 0.9, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
+                    saveB.dslHistory = [{ id: 1, fitness: 0.7, program: ["weather", "rainy"] }];
+                    localStorage.setItem(r.worldStorageKey(parentBId), JSON.stringify(saveB));
+
+                    // Strategie SEQUENZ
+                    const seqResult = r.fuseWorlds(parentAId, parentBId, "sequence", {
+                        slug: "test-seq",
+                        reload: false,
+                    });
+                    out.seqOk = seqResult.ok;
+                    const seqSave = seqResult.ok
+                        ? JSON.parse(localStorage.getItem(r.worldStorageKey(seqResult.worldId)))
+                        : null;
+                    out.seqHasBothInventories =
+                        !!seqSave &&
+                        seqSave.materials.some((m) => m.name === "quarz-fein") &&
+                        seqSave.blueprints.some((b) => b.name === "tempel-besonderer");
+                    out.seqEmotionFromA =
+                        !!seqSave &&
+                        Math.abs(seqSave.playerEmotions.joy - 0.9) < 0.01 &&
+                        seqSave.playerEmotions.awe === 0;
+                    out.seqHistoryConcatenated = !!seqSave && seqSave.dslHistory.length === 2;
+                    out.seqParentWorlds =
+                        !!seqSave &&
+                        Array.isArray(seqSave.worldMeta.parentWorlds) &&
+                        seqSave.worldMeta.parentWorlds.length === 2 &&
+                        seqSave.worldMeta.parentWorlds.includes(parentAId) &&
+                        seqSave.worldMeta.parentWorlds.includes(parentBId);
+                    out.seqSchemaFusion = !!seqSave && seqSave.worldMeta.schemaVersion === "10.0-fusion-v1";
+                    out.seqGenesisJournal =
+                        !!seqSave &&
+                        seqSave.worldJournal.entries[0] &&
+                        seqSave.worldJournal.entries[0].type === "genesis" &&
+                        /fusion-parent-a.*fusion-parent-b/.test(seqSave.worldJournal.entries[0].text);
+                    out.seqFusionStrategyInMeta = !!seqSave && seqSave.worldMeta.fusionStrategy === "sequence";
+
+                    // Strategie TAG-MERGE
+                    const tagResult = r.fuseWorlds(parentAId, parentBId, "tag-merge", {
+                        slug: "test-tag",
+                        reload: false,
+                    });
+                    out.tagOk = tagResult.ok;
+                    const tagSave = tagResult.ok
+                        ? JSON.parse(localStorage.getItem(r.worldStorageKey(tagResult.worldId)))
+                        : null;
+                    out.tagEmotionUnion =
+                        !!tagSave &&
+                        Math.abs(tagSave.playerEmotions.joy - 0.9) < 0.01 &&
+                        Math.abs(tagSave.playerEmotions.awe - 0.9) < 0.01;
+                    out.tagHasBothInventories =
+                        !!tagSave &&
+                        tagSave.materials.some((m) => m.name === "quarz-fein") &&
+                        tagSave.blueprints.some((b) => b.name === "tempel-besonderer");
+
+                    // Strategie RANDOM-MIX
+                    const mixResult = r.fuseWorlds(parentAId, parentBId, "random-mix", {
+                        slug: "test-mix",
+                        reload: false,
+                    });
+                    out.mixOk = mixResult.ok;
+                    const mixSave = mixResult.ok
+                        ? JSON.parse(localStorage.getItem(r.worldStorageKey(mixResult.worldId)))
+                        : null;
+                    out.mixEmotionAverage =
+                        !!mixSave &&
+                        Math.abs(mixSave.playerEmotions.joy - 0.45) < 0.01 &&
+                        Math.abs(mixSave.playerEmotions.awe - 0.45) < 0.01;
+
+                    // Strategien sind tatsächlich UNTERSCHEIDBAR (sonst wäre der
+                    // Aufwand für drei Pfade umsonst)
+                    out.strategiesDistinguishable =
+                        Math.abs(seqSave.playerEmotions.joy - tagSave.playerEmotions.awe) < 0.01 &&
+                        Math.abs(tagSave.playerEmotions.awe - mixSave.playerEmotions.awe) > 0.1;
+
+                    // Fehlerpfade
+                    const sameId = r.fuseWorlds(parentAId, parentAId, "sequence", { reload: false });
+                    out.rejectsSameId = sameId.ok === false;
+                    const badStrategy = r.fuseWorlds(parentAId, parentBId, "nonsense", { reload: false });
+                    out.rejectsBadStrategy = badStrategy.ok === false;
+                    const missingId = r.fuseWorlds("does-not-exist", parentBId, "sequence", { reload: false });
+                    out.rejectsMissingParent = missingId.ok === false;
+
+                    // Stammbaum-Render-Pfad: aktive Welt hat keine parentWorlds,
+                    // also sollte _renderWorldLineage „eigenständig"-Hinweis zeigen.
+                    r._renderWorldLineage();
+                    const lineageNow = document.getElementById("world-lineage").textContent;
+                    out.lineageShowsStandalone = /eigenständig/.test(lineageNow);
+
+                    // _openWorldFusionDialog mit preselectB füllt Dropdown
+                    r._openWorldFusionDialog({ preselectB: parentBId });
+                    const sel = document.getElementById("world-fusion-parent-b");
+                    out.dialogOpen = document.getElementById("world-fusion-dialog").hasAttribute("open");
+                    out.parentBDropdownHasEntries = sel.options.length >= 2;
+                    out.parentBPreselected = Array.from(sel.options).some((o) => o.value === parentBId && o.selected);
+                    r._closeWorldFusionDialog();
+                    out.dialogClosed = !document.getElementById("world-fusion-dialog").hasAttribute("open");
+
+                    // ### Rename-Cascade-Regression (Reflexions-Bugfund) ###
+                    // Zwei Eltern haben beide einen Bauplan "kollidierer". B
+                    // hat zusätzlich (a) ein Werkzeug das diesen Bauplan
+                    // registriert und (b) einen fraktalen Bauplan der ihn
+                    // referenziert. Nach Fusion: B's "kollidierer" wird zu
+                    // "kollidierer-fusion". Tool.sourceBlueprint und
+                    // fractal.part.refName MÜSSEN mitumbenannt werden, sonst
+                    // dangling.
+                    const cascadeAId = r.createNewWorld({ slug: "cascade-a", inheritPlayer: false, reload: false });
+                    const cascadeBId = r.createNewWorld({ slug: "cascade-b", inheritPlayer: false, reload: false });
+                    const cA = JSON.parse(localStorage.getItem(r.worldStorageKey(cascadeAId)));
+                    cA.blueprints = [
+                        {
+                            name: "kollidierer",
+                            label: "A-Version",
+                            parts: [
+                                {
+                                    shape: "box",
+                                    material: "stein",
+                                    position: { x: 0, y: 0, z: 0 },
+                                    size: { x: 1, y: 1, z: 1 },
+                                },
+                            ],
+                            connections: [],
+                        },
+                    ];
+                    localStorage.setItem(r.worldStorageKey(cascadeAId), JSON.stringify(cA));
+                    const cB = JSON.parse(localStorage.getItem(r.worldStorageKey(cascadeBId)));
+                    cB.blueprints = [
+                        {
+                            name: "kollidierer",
+                            label: "B-Version",
+                            parts: [
+                                {
+                                    shape: "sphere",
+                                    material: "quarz",
+                                    position: { x: 0, y: 0, z: 0 },
+                                    size: { x: 1, y: 1, z: 1 },
+                                },
+                            ],
+                            connections: [],
+                            role: "tool",
+                            toolMeta: { opName: "B-Hammer", opClass: "form_geben" },
+                        },
+                        {
+                            name: "fraktal-B",
+                            label: "Fraktal",
+                            parts: [{ shape: "blueprint", refName: "kollidierer", position: { x: 0, y: 0, z: 0 } }],
+                            connections: [],
+                        },
+                    ];
+                    cB.tools = [
+                        {
+                            name: "b-hammer",
+                            label: "B-Hammer",
+                            opClass: "form_geben",
+                            opName: "smithing",
+                            precisionCap: 0.7,
+                            sourceBlueprint: "kollidierer",
+                        },
+                    ];
+                    localStorage.setItem(r.worldStorageKey(cascadeBId), JSON.stringify(cB));
+                    const cascadeResult = r.fuseWorlds(cascadeAId, cascadeBId, "sequence", { reload: false });
+                    const cascadeSave = cascadeResult.ok
+                        ? JSON.parse(localStorage.getItem(r.worldStorageKey(cascadeResult.worldId)))
+                        : null;
+                    out.cascadeFusionOk = !!cascadeResult.ok;
+                    out.cascadeKeepsAOriginal =
+                        !!cascadeSave &&
+                        cascadeSave.blueprints.some((bp) => bp.name === "kollidierer" && bp.label === "A-Version");
+                    out.cascadeRenamesB =
+                        !!cascadeSave &&
+                        cascadeSave.blueprints.some(
+                            (bp) => bp.name === "kollidierer-fusion" && bp.label === "B-Version"
+                        );
+                    // CASCADE: B's Werkzeug muss jetzt auf "kollidierer-fusion" zeigen
+                    out.cascadeRewiredTool =
+                        !!cascadeSave &&
+                        cascadeSave.tools.some(
+                            (t) => t.name === "b-hammer" && t.sourceBlueprint === "kollidierer-fusion"
+                        );
+                    // CASCADE: B's fraktaler Bauplan muss refName upgedatet haben
+                    const fractal = cascadeSave && cascadeSave.blueprints.find((bp) => bp.name === "fraktal-B");
+                    out.cascadeRewiredRefName =
+                        !!fractal && fractal.parts.some((p) => p.refName === "kollidierer-fusion");
+
+                    // Cleanup
+                    const keepId = r.state.worldMeta.worldId;
+                    for (const e of r.worldsIndexLoad()) {
+                        if (e.worldId !== keepId) r.deleteWorld(e.worldId);
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!ring10Results || ring10Results.error) {
+                check(
+                    "Ring 10: Snapshot erreichbar",
+                    false,
+                    (ring10Results && ring10Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Ring 10: #world-fusion-dialog im DOM", ring10Results.fusionDialogInDom);
+                check("Ring 10: Verschmelzen-Button im DOM", ring10Results.fusionConfirmBtnInDom);
+                check("Ring 10: Drei Strategie-Radios im DOM", ring10Results.fusionStrategyRadios);
+                check("Ring 10: Eltern-B-Dropdown im DOM", ring10Results.fusionParentBSelectInDom);
+                check("Ring 10: 'Verschmelzen…'-Button im Welt-Drawer", ring10Results.fusionOpenBtnInDom);
+                check("Ring 10: Stammbaum-Sektion im Welt-Drawer", ring10Results.lineageSectionInDom);
+                check("Ring 10: AnazhRealm.FUSION_STRATEGIES (3)", ring10Results.fusionStrategiesArray);
+                check("Ring 10: Sequenz-Fusion liefert ok=true", ring10Results.seqOk);
+                check("Ring 10: Sequenz-Fusion vereint beide Inventare", ring10Results.seqHasBothInventories);
+                check("Ring 10: Sequenz übernimmt Emotion aus A", ring10Results.seqEmotionFromA);
+                check("Ring 10: Sequenz-History konkateniert A+B", ring10Results.seqHistoryConcatenated);
+                check("Ring 10: parentWorlds = [A, B]", ring10Results.seqParentWorlds);
+                check("Ring 10: Schema 10.0-fusion-v1", ring10Results.seqSchemaFusion);
+                check("Ring 10: Genesis-Journal-Eintrag nennt beide Eltern", ring10Results.seqGenesisJournal);
+                check("Ring 10: fusionStrategy in worldMeta gespeichert", ring10Results.seqFusionStrategyInMeta);
+                check("Ring 10: Tag-Merge liefert ok=true", ring10Results.tagOk);
+                check("Ring 10: Tag-Merge bildet Emotion-MAX (Vereinigung)", ring10Results.tagEmotionUnion);
+                check("Ring 10: Tag-Merge vereint beide Inventare", ring10Results.tagHasBothInventories);
+                check("Ring 10: Random-Mix liefert ok=true", ring10Results.mixOk);
+                check("Ring 10: Random-Mix bildet Emotion-Mittel (0.45)", ring10Results.mixEmotionAverage);
+                check(
+                    "Ring 10: Strategien sind unterscheidbar (Diskrimination)",
+                    ring10Results.strategiesDistinguishable
+                );
+                check("Ring 10: gleiche Eltern-ID wird abgewiesen", ring10Results.rejectsSameId);
+                check("Ring 10: unbekannte Strategie wird abgewiesen", ring10Results.rejectsBadStrategy);
+                check("Ring 10: fehlende Eltern-Welt wird abgewiesen", ring10Results.rejectsMissingParent);
+                check(
+                    "Ring 10: Stammbaum zeigt 'eigenständig' wenn keine Eltern",
+                    ring10Results.lineageShowsStandalone
+                );
+                check("Ring 10: Fusion-Dialog öffnet via _open*", ring10Results.dialogOpen);
+                check("Ring 10: Eltern-B-Dropdown hat Einträge", ring10Results.parentBDropdownHasEntries);
+                check("Ring 10: preselectB markiert die richtige Option", ring10Results.parentBPreselected);
+                check("Ring 10: Fusion-Dialog schließt via _close*", ring10Results.dialogClosed);
+                check("Ring 10 Bugfix: Fusion mit Bauplan-Kollision läuft durch", ring10Results.cascadeFusionOk);
+                check("Ring 10 Bugfix: A's Original-Bauplan behält Namen", ring10Results.cascadeKeepsAOriginal);
+                check("Ring 10 Bugfix: B's Bauplan bekommt -fusion-Suffix", ring10Results.cascadeRenamesB);
+                check(
+                    "Ring 10 Bugfix: Werkzeug.sourceBlueprint folgt Rename (kein dangling tool)",
+                    ring10Results.cascadeRewiredTool
+                );
+                check(
+                    "Ring 10 Bugfix: fraktaler Bauplan.part.refName folgt Rename (kein dangling fractal)",
+                    ring10Results.cascadeRewiredRefName
+                );
+            }
+
+            // ### Ring 10.1 — Rezepte aus anderer Welt holen (ohne Fusion) ###
+            // Schöpfer-Wunsch nach Ring-10-Reflexion: B's Rezepte in A
+            // importieren OHNE eine Fusions-Welt zu erschaffen. `import-
+            // RecipesFromWorld(sourceId)` kopiert Baupläne + Materialien +
+            // Werkzeuge der Quelle in die aktive Welt, Konflikte mit
+            // `-import`-Suffix, Cross-Refs (sourceBlueprint, refName) folgen.
+            const recipeResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    const srcId = r.createNewWorld({ slug: "recipe-source", inheritPlayer: false, reload: false });
+                    const srcSave = JSON.parse(localStorage.getItem(r.worldStorageKey(srcId)));
+                    srcSave.blueprints = [
+                        {
+                            name: "fremder-altar",
+                            label: "Fremder Altar",
+                            parts: [
+                                {
+                                    shape: "box",
+                                    material: "stein",
+                                    position: { x: 0, y: 0, z: 0 },
+                                    size: { x: 1, y: 1, z: 1 },
+                                },
+                            ],
+                            connections: [],
+                        },
+                        {
+                            name: "fremder-hammer-bp",
+                            label: "Fremder Hammer (Bauplan)",
+                            parts: [
+                                {
+                                    shape: "cylinder",
+                                    material: "eisen",
+                                    position: { x: 0, y: 0, z: 0 },
+                                    size: { x: 1, y: 1, z: 1 },
+                                },
+                            ],
+                            connections: [],
+                            role: "tool",
+                            toolMeta: { opName: "Fremder-Hammer", opClass: "form_geben" },
+                        },
+                        {
+                            name: "fremder-fraktal",
+                            label: "Fremder Fraktal",
+                            parts: [{ shape: "blueprint", refName: "fremder-altar", position: { x: 2, y: 0, z: 0 } }],
+                            connections: [],
+                        },
+                    ];
+                    srcSave.materials = [
+                        { name: "rosa-quarz", label: "Rosa Quarz", color: "#fbb", tags: { resoniert: 0.8 } },
+                    ];
+                    srcSave.tools = [
+                        {
+                            name: "fremder-hammer",
+                            label: "Fremder Hammer",
+                            opClass: "form_geben",
+                            opName: "smithing",
+                            precisionCap: 0.85,
+                            sourceBlueprint: "fremder-hammer-bp",
+                        },
+                    ];
+                    localStorage.setItem(r.worldStorageKey(srcId), JSON.stringify(srcSave));
+
+                    const beforeBPCount = Object.keys(r.state.blueprints).length;
+                    const beforeMatCount = Object.keys(r.state.materials).length;
+                    const beforeToolCount = Object.keys(r.state.tools).length;
+
+                    const result = r.importRecipesFromWorld(srcId);
+                    out.importOk = result.ok === true;
+                    out.importCounts =
+                        result.ok &&
+                        result.counts.blueprints === 3 &&
+                        result.counts.materials === 1 &&
+                        result.counts.tools === 1;
+                    out.bpAddedToState = !!r.state.blueprints["fremder-altar"];
+                    out.materialAdded = !!r.state.materials["rosa-quarz"];
+                    out.toolAdded = !!r.state.tools["fremder-hammer"];
+                    const altar = r.state.blueprints["fremder-altar"];
+                    out.bpContentPreserved = !!altar && altar.parts.length === 1 && altar.parts[0].shape === "box";
+                    out.activeWorldStillSame = r.state.worldMeta.worldId !== srcId && r.activeWorldGet() !== srcId;
+                    const j = r.state.worldJournal && r.state.worldJournal.entries;
+                    out.witnessEntryWritten =
+                        Array.isArray(j) &&
+                        j.some((e) => e.type === "witness" && e.text && e.text.includes("Rezepte aus „recipe-source"));
+                    out.bpStateGrew = Object.keys(r.state.blueprints).length - beforeBPCount === 3;
+                    out.matStateGrew = Object.keys(r.state.materials).length - beforeMatCount === 1;
+                    out.toolStateGrew = Object.keys(r.state.tools).length - beforeToolCount === 1;
+
+                    const result2 = r.importRecipesFromWorld(srcId);
+                    out.secondImportOk = result2.ok === true;
+                    out.collisionAddsImportSuffix = !!r.state.blueprints["fremder-altar-import"];
+                    const fraktalImport = r.state.blueprints["fremder-fraktal-import"];
+                    out.fractalRefRewired =
+                        !!fraktalImport &&
+                        fraktalImport.parts &&
+                        fraktalImport.parts.some((p) => p.refName === "fremder-altar-import");
+                    const hammerImport = r.state.tools["fremder-hammer-import"];
+                    out.toolRefRewired = !!hammerImport && hammerImport.sourceBlueprint === "fremder-hammer-bp-import";
+
+                    const noId = r.importRecipesFromWorld("");
+                    out.rejectsEmptyId = !noId.ok;
+                    const activeId = r.state.worldMeta.worldId;
+                    const selfImport = r.importRecipesFromWorld(activeId);
+                    out.rejectsSelfImport = !selfImport.ok;
+                    const ghostImport = r.importRecipesFromWorld("does-not-exist-xxx");
+                    out.rejectsGhostId = !ghostImport.ok;
+
+                    r._renderWorldPicker();
+                    const pickerRows = document.querySelectorAll("#world-picker-list .world-picker-row");
+                    let hasRecipesBtn = false;
+                    for (const row of pickerRows) {
+                        for (const b of row.querySelectorAll("button")) {
+                            if (b.textContent === "Rezepte holen") {
+                                hasRecipesBtn = true;
+                                break;
+                            }
+                        }
+                    }
+                    out.uiHasRecipesBtn = hasRecipesBtn;
+
+                    delete r.state.blueprints["fremder-altar"];
+                    delete r.state.blueprints["fremder-altar-import"];
+                    delete r.state.blueprints["fremder-hammer-bp"];
+                    delete r.state.blueprints["fremder-hammer-bp-import"];
+                    delete r.state.blueprints["fremder-fraktal"];
+                    delete r.state.blueprints["fremder-fraktal-import"];
+                    delete r.state.materials["rosa-quarz"];
+                    delete r.state.materials["rosa-quarz-import"];
+                    delete r.state.tools["fremder-hammer"];
+                    delete r.state.tools["fremder-hammer-import"];
+                    // Workshop-DOM neu rendern, damit nachfolgende Tests
+                    // (Ring 6.6) keine Geister-Einträge sehen.
+                    if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+                    const keepId = r.state.worldMeta.worldId;
+                    for (const e of r.worldsIndexLoad()) {
+                        if (e.worldId !== keepId) r.deleteWorld(e.worldId);
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!recipeResults || recipeResults.error) {
+                check(
+                    "Ring 10.1: Snapshot erreichbar",
+                    false,
+                    (recipeResults && recipeResults.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Ring 10.1: importRecipesFromWorld liefert ok=true", recipeResults.importOk);
+                check("Ring 10.1: counts = {3 Baupläne, 1 Material, 1 Werkzeug}", recipeResults.importCounts);
+                check("Ring 10.1: Bauplan in aktiver Welt verfügbar", recipeResults.bpAddedToState);
+                check("Ring 10.1: Material in aktiver Welt verfügbar", recipeResults.materialAdded);
+                check("Ring 10.1: Werkzeug in aktiver Welt verfügbar", recipeResults.toolAdded);
+                check("Ring 10.1: Bauplan-Inhalt 1:1 erhalten (keine Manipulation)", recipeResults.bpContentPreserved);
+                check("Ring 10.1: Aktive Welt-Identität unverändert", recipeResults.activeWorldStillSame);
+                check("Ring 10.1: Witness-Journal-Eintrag geschrieben", recipeResults.witnessEntryWritten);
+                check("Ring 10.1: state.blueprints wächst um 3", recipeResults.bpStateGrew);
+                check("Ring 10.1: state.materials wächst um 1", recipeResults.matStateGrew);
+                check("Ring 10.1: state.tools wächst um 1", recipeResults.toolStateGrew);
+                check("Ring 10.1: Konflikt bekommt -import-Suffix", recipeResults.collisionAddsImportSuffix);
+                check(
+                    "Ring 10.1: Fraktaler refName folgt Rename (kein dangling fractal)",
+                    recipeResults.fractalRefRewired
+                );
+                check(
+                    "Ring 10.1: Werkzeug.sourceBlueprint folgt Rename (kein dangling tool)",
+                    recipeResults.toolRefRewired
+                );
+                check("Ring 10.1: leere ID wird abgewiesen", recipeResults.rejectsEmptyId);
+                check("Ring 10.1: Self-Import wird abgewiesen", recipeResults.rejectsSelfImport);
+                check("Ring 10.1: unbekannte Quell-ID wird abgewiesen", recipeResults.rejectsGhostId);
+                check("Ring 10.1: 'Rezepte holen'-Button im Welt-Picker", recipeResults.uiHasRecipesBtn);
             }
 
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
