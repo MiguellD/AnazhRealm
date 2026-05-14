@@ -5506,10 +5506,16 @@ class AnazhRealm {
         // greifen können.
         this.state.uiActiveDrawer = "welt";
         // Wir loggen Tab-Klicks indirekt via uiActiveDrawer-Update.
+        // Welle 6.B Phase 1: jeder Tab-Klick informiert die Werkstatt, damit
+        // sie den Preview-Renderer aktiviert (wenn Werkstatt offen) oder
+        // pausiert (wenn ein anderer Tab offen ist).
         for (const tab of tabs) {
             tab.addEventListener("click", () => {
                 const name = tab.getAttribute("data-tab");
                 if (name) this.state.uiActiveDrawer = name;
+                if (typeof this._workshopHandleDrawerChange === "function") {
+                    this._workshopHandleDrawerChange(name);
+                }
             });
         }
     }
@@ -5524,6 +5530,11 @@ class AnazhRealm {
             drawer.hidden = true;
         }
         this.state.uiActiveDrawer = null;
+        // Welle 6.B Phase 1: Werkstatt-Preview pausieren (Renderer bleibt
+        // alloziert für schnelles Re-Open, aber RAF-Loop stoppt).
+        if (typeof this._workshopHandleDrawerChange === "function") {
+            this._workshopHandleDrawerChange(null);
+        }
     }
 
     updateStatusPanel(currentTime) {
@@ -17887,9 +17898,17 @@ class AnazhRealm {
     }
 
     // Werkstatt-State: welchen Bauplan editieren wir gerade?
+    // Welle 6.B Phase 1: selectedPartIdx (für Selection-Highlight) +
+    // preview (lazy-init, runtime-only, NICHT persistiert).
     _ensureWorkshopState() {
         if (!this.state.workshop) {
             this.state.workshop = { selectedBlueprint: "village" };
+        }
+        if (typeof this.state.workshop.selectedPartIdx === "undefined") {
+            this.state.workshop.selectedPartIdx = null;
+        }
+        if (typeof this.state.workshop.preview === "undefined") {
+            this.state.workshop.preview = null;
         }
         return this.state.workshop;
     }
@@ -17901,7 +17920,14 @@ class AnazhRealm {
             return false;
         }
         ws.selectedBlueprint = name;
+        // Welle 6.B Phase 1 — Selection zurücksetzen beim Bauplan-Wechsel
+        ws.selectedPartIdx = null;
         this._renderWorkshopDOM();
+        // Preview-Mesh neu bauen (falls Preview existiert — defensive für DSL-Pfade
+        // die selectBlueprintForEdit aus Headless aufrufen).
+        if (typeof this._workshopRebuildPreviewMesh === "function") {
+            this._workshopRebuildPreviewMesh();
+        }
         return true;
     }
 
@@ -17977,7 +18003,16 @@ class AnazhRealm {
         for (let i = 0; i < selected.parts.length; i++) {
             const part = selected.parts[i];
             const row = document.createElement("div");
-            row.className = "workshop-part-row";
+            const isSelected = ws.selectedPartIdx === i;
+            row.className = "workshop-part-row" + (isSelected ? " selected" : "");
+            row.setAttribute("data-part-idx", String(i));
+            // Welle 6.B Phase 1 — Klick auf Row (außerhalb der Inputs) wechselt
+            // die Part-Selektion. Inputs müssen frei klickbar bleiben für ihre
+            // eigenen Edit-Gesten.
+            row.addEventListener("mousedown", (event) => {
+                if (event.target.closest("input, select, button")) return;
+                this._workshopSetSelection(i);
+            });
             // Shape-Dropdown
             const shapeSelect = document.createElement("select");
             for (const shape of [
@@ -18461,6 +18496,354 @@ class AnazhRealm {
             const idx = bm.slotIndex;
             this._clearBuildMode();
             if (idx >= 0 && this.state.hotbar[idx] === selected.name) this.selectHotbarSlot(idx);
+        }
+        // Welle 6.B Phase 1 — Preview-Mesh synchron halten mit DOM.
+        // Defensive: Methode kann fehlen wenn (sehr selten) Welle 6.B noch
+        // nicht geladen ist.
+        if (typeof this._workshopRebuildPreviewMesh === "function") {
+            this._workshopRebuildPreviewMesh();
+        }
+    }
+
+    // ============================================================
+    // ### Welle 6.B Phase 1 — CAD-Werkstatt 3D-Preview ###
+    // Lazy-init beim Drawer-Open. Eigene THREE.Scene + Camera + Renderer +
+    // RAF-Loop. Rendert state.blueprints[selectedBlueprint] über den
+    // bestehenden _buildFromBlueprint-Pfad (eine Render-Pipeline für alle
+    // Compound-Visuals, Hylomorphismus-Symbiose).
+    // Klick → Raycast → selectedPartIdx → Highlight in Liste + Mesh-Tint.
+    // Phase 2 ergänzt Manipulator-Gizmos für Move/Rotate/Scale.
+    // ============================================================
+
+    // Lazy-init: ruft beim ersten Drawer-Open Renderer + Scene + Camera +
+    // Listener auf. Idempotent — zweiter Aufruf liefert dieselbe Instanz.
+    _workshopEnsurePreview() {
+        if (typeof document === "undefined" || typeof THREE === "undefined") return null;
+        const ws = this._ensureWorkshopState();
+        if (ws.preview) return ws.preview;
+        const canvas = document.getElementById("workshop-preview-canvas");
+        if (!canvas) return null;
+
+        const size = 320;
+        canvas.width = size;
+        canvas.height = size;
+        let renderer;
+        try {
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+        } catch {
+            this.log("Workshop-Preview: WebGL-Renderer fehlgeschlagen — Preview deaktiviert", "ERROR");
+            return null;
+        }
+        renderer.setSize(size, size, false);
+        renderer.setPixelRatio(window.devicePixelRatio || 1);
+        renderer.setClearColor(0x1a140a, 1);
+
+        const scene = new THREE.Scene();
+        const amb = new THREE.AmbientLight(0xffffff, 0.55);
+        scene.add(amb);
+        const key = new THREE.DirectionalLight(0xffe8c2, 0.85);
+        key.position.set(4, 6, 5);
+        scene.add(key);
+        const fill = new THREE.DirectionalLight(0x88aaff, 0.35);
+        fill.position.set(-4, -2, -3);
+        scene.add(fill);
+
+        const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
+
+        const preview = {
+            canvas,
+            renderer,
+            scene,
+            camera,
+            currentMesh: null,
+            partMeshes: new Map(), // sub-Mesh → partIdx
+            origColors: new Map(), // sub-Mesh → original color (uint)
+            orbit: {
+                yaw: 0.6,
+                pitch: 0.32,
+                dist: 6.0,
+                target: new THREE.Vector3(0, 0, 0),
+            },
+            raycaster: new THREE.Raycaster(),
+            drag: null,
+            rafId: null,
+            dirty: true,
+            active: false,
+            listenersInstalled: false,
+        };
+        ws.preview = preview;
+        this._workshopInstallPreviewListeners();
+        this._workshopRebuildPreviewMesh();
+        return preview;
+    }
+
+    // Tab-Wechsel-Hook: aktiv wenn Werkstatt-Drawer offen, sonst pausiert.
+    _workshopHandleDrawerChange(activeName) {
+        const ws = this._ensureWorkshopState();
+        if (activeName === "werkstatt") {
+            const preview = this._workshopEnsurePreview();
+            if (!preview) return;
+            preview.active = true;
+            preview.dirty = true;
+            this._workshopStartRAF();
+        } else if (ws.preview) {
+            ws.preview.active = false;
+            this._workshopStopRAF();
+        }
+    }
+
+    _workshopStartRAF() {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview || ws.preview.rafId !== null) return;
+        const tick = () => {
+            const p = ws.preview;
+            if (!p || !p.active) {
+                if (p) p.rafId = null;
+                return;
+            }
+            if (p.dirty || p.drag) {
+                this._workshopRender();
+                p.dirty = false;
+            }
+            p.rafId = requestAnimationFrame(tick);
+        };
+        ws.preview.rafId = requestAnimationFrame(tick);
+    }
+
+    _workshopStopRAF() {
+        const ws = this._ensureWorkshopState();
+        if (ws.preview && ws.preview.rafId !== null) {
+            cancelAnimationFrame(ws.preview.rafId);
+            ws.preview.rafId = null;
+        }
+    }
+
+    // Baut das Mesh aus dem aktiven Bauplan neu, populiert die
+    // partMeshes-Map (sub-Mesh → partIdx) für Raycasting, cached die
+    // ursprüngliche Farbe pro sub-Mesh damit die Selection-Tint reversibel ist.
+    _workshopRebuildPreviewMesh() {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview) return;
+        const p = ws.preview;
+        // Alten Mesh disposen (geometrien + materialien tief)
+        if (p.currentMesh) {
+            p.scene.remove(p.currentMesh);
+            p.currentMesh.traverse((obj) => {
+                if (obj.isMesh) {
+                    if (obj.geometry) obj.geometry.dispose();
+                    if (obj.material) {
+                        if (Array.isArray(obj.material)) obj.material.forEach((m) => m.dispose());
+                        else obj.material.dispose();
+                    }
+                }
+            });
+            p.currentMesh = null;
+        }
+        p.partMeshes.clear();
+        p.origColors.clear();
+
+        const bp = this.state.blueprints[ws.selectedBlueprint];
+        if (!bp || !Array.isArray(bp.parts)) {
+            p.dirty = true;
+            return;
+        }
+        const group = this._buildFromBlueprint(bp);
+        // Top-level-Children korrespondieren 1:1 zu bp.parts (in Reihenfolge).
+        // _buildFromBlueprint fügt pro Part entweder einen Mesh oder eine Sub-Group
+        // (für fraktale blueprint-Refs) hinzu. Wir markieren nur Mesh-Children
+        // für Selection — fraktale Refs sind in Phase 1 als ganze Compound
+        // selektierbar via Sub-Mesh-Hit.
+        let idx = 0;
+        for (const child of group.children) {
+            child.userData.partIdx = idx;
+            if (child.isMesh) {
+                p.partMeshes.set(child, idx);
+                const col = child.material && child.material.color ? child.material.color.getHex() : 0xffffff;
+                p.origColors.set(child, col);
+            } else if (child.children && child.children.length > 0) {
+                // Fraktale Sub-Group: jeder Innen-Mesh-Hit zählt als Hit auf den Part.
+                child.traverse((sub) => {
+                    if (sub.isMesh) {
+                        p.partMeshes.set(sub, idx);
+                        const col = sub.material && sub.material.color ? sub.material.color.getHex() : 0xffffff;
+                        p.origColors.set(sub, col);
+                    }
+                });
+            }
+            idx++;
+        }
+        p.currentMesh = group;
+        p.scene.add(group);
+
+        // Auto-center: Kamera-Target auf Bauplan-Center, Distanz aus Diagonale
+        const bbox = new THREE.Box3().setFromObject(group);
+        if (!bbox.isEmpty()) {
+            bbox.getCenter(p.orbit.target);
+            const size = new THREE.Vector3();
+            bbox.getSize(size);
+            const maxDim = Math.max(size.x, size.y, size.z);
+            if (maxDim > 0) {
+                // Distanz so dass Bauplan komfortabel im Frame steht
+                const targetDist = Math.max(3, maxDim * 2.2);
+                // Nur initial setzen (orbit.dist === 6.0 default); spätere
+                // Spieler-Zooms überschreiben wir nicht.
+                if (!p._distInitialized || Math.abs(p.orbit.dist - 6.0) < 0.001) {
+                    p.orbit.dist = targetDist;
+                    p._distInitialized = true;
+                }
+            }
+        }
+        p.dirty = true;
+    }
+
+    // Render ein einzelnes Frame: Kamera aus orbit-Werten, Selection-Tint
+    // anwenden, dann renderer.render.
+    _workshopRender() {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview) return;
+        const p = ws.preview;
+        // Kamera-Pose berechnen
+        const cosP = Math.cos(p.orbit.pitch);
+        p.camera.position.set(
+            p.orbit.target.x + p.orbit.dist * cosP * Math.cos(p.orbit.yaw),
+            p.orbit.target.y + p.orbit.dist * Math.sin(p.orbit.pitch),
+            p.orbit.target.z + p.orbit.dist * cosP * Math.sin(p.orbit.yaw)
+        );
+        p.camera.lookAt(p.orbit.target);
+        // Selection-Tint: violett-Mischung 50:50 mit Original-Farbe.
+        // Alle anderen Parts zurück auf Original (idempotent).
+        const selIdx = ws.selectedPartIdx;
+        for (const [mesh, idx] of p.partMeshes) {
+            const orig = p.origColors.get(mesh);
+            if (typeof orig !== "number") continue;
+            if (!mesh.material || !mesh.material.color) continue;
+            if (idx === selIdx) {
+                const r1 = (orig >> 16) & 0xff;
+                const g1 = (orig >> 8) & 0xff;
+                const b1 = orig & 0xff;
+                const r2 = 0xb0,
+                    g2 = 0x6a,
+                    b2 = 0xd9;
+                const rB = Math.round(r1 * 0.5 + r2 * 0.5);
+                const gB = Math.round(g1 * 0.5 + g2 * 0.5);
+                const bB = Math.round(b1 * 0.5 + b2 * 0.5);
+                mesh.material.color.setHex((rB << 16) | (gB << 8) | bB);
+            } else {
+                mesh.material.color.setHex(orig);
+            }
+        }
+        p.renderer.render(p.scene, p.camera);
+    }
+
+    // Listener-Installation: Maus-Down/-Move/-Up/-Wheel auf der Preview-Canvas.
+    // Drag = Orbit, Klick (< 5px Bewegung + < 300 ms) = Selection-Raycast.
+    _workshopInstallPreviewListeners() {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview || ws.preview.listenersInstalled) return;
+        const p = ws.preview;
+        const onDown = (event) => {
+            event.preventDefault();
+            p.drag = {
+                startX: event.clientX,
+                startY: event.clientY,
+                startTime: typeof performance !== "undefined" ? performance.now() : Date.now(),
+                startYaw: p.orbit.yaw,
+                startPitch: p.orbit.pitch,
+                moved: false,
+                button: event.button,
+            };
+        };
+        const onMove = (event) => {
+            if (!p.drag) return;
+            const dx = event.clientX - p.drag.startX;
+            const dy = event.clientY - p.drag.startY;
+            if (!p.drag.moved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
+                p.drag.moved = true;
+            }
+            if (p.drag.moved && p.drag.button === 0) {
+                // Orbit (links-Drag): yaw aus horizontaler, pitch aus vertikaler Maus-Bewegung
+                p.orbit.yaw = p.drag.startYaw - dx * 0.01;
+                p.orbit.pitch = Math.max(-1.4, Math.min(1.4, p.drag.startPitch + dy * 0.01));
+                p.dirty = true;
+            }
+        };
+        const onUp = (event) => {
+            if (!p.drag) return;
+            const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+            const wasClick = !p.drag.moved && now - p.drag.startTime < 300;
+            if (wasClick && p.drag.button === 0) {
+                this._workshopRaycastSelection(event.clientX, event.clientY);
+            }
+            p.drag = null;
+        };
+        const onWheel = (event) => {
+            event.preventDefault();
+            const factor = event.deltaY > 0 ? 1.12 : 0.89;
+            p.orbit.dist = Math.max(1.5, Math.min(60, p.orbit.dist * factor));
+            p.dirty = true;
+        };
+        p.canvas.addEventListener("mousedown", onDown);
+        window.addEventListener("mousemove", onMove);
+        window.addEventListener("mouseup", onUp);
+        p.canvas.addEventListener("wheel", onWheel, { passive: false });
+        p.canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+        p.listenersInstalled = true;
+    }
+
+    // Raycast: Bildschirm-Koordinaten → NDC → Three.js-Raycaster → erstes
+    // getroffenes Sub-Mesh → partIdx via partMeshes-Map.
+    _workshopRaycastSelection(clientX, clientY) {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview || !ws.preview.currentMesh) return;
+        const p = ws.preview;
+        const rect = p.canvas.getBoundingClientRect();
+        const ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
+        const ndcY = -((clientY - rect.top) / rect.height) * 2 + 1;
+        p.raycaster.setFromCamera({ x: ndcX, y: ndcY }, p.camera);
+        const meshes = Array.from(p.partMeshes.keys());
+        if (meshes.length === 0) return;
+        const hits = p.raycaster.intersectObjects(meshes, false);
+        if (hits.length > 0) {
+            const hitMesh = hits[0].object;
+            const idx = p.partMeshes.get(hitMesh);
+            if (typeof idx === "number") {
+                this._workshopSetSelection(idx);
+                return;
+            }
+        }
+        // Kein Hit → Selection lösen
+        this._workshopSetSelection(null);
+    }
+
+    // Mutations-Pfad: setzt selectedPartIdx + triggert Re-Render des DOM
+    // (Part-Row-Highlight) + Re-Render der Preview (Mesh-Tint).
+    _workshopSetSelection(idx) {
+        const ws = this._ensureWorkshopState();
+        // Validierung: idx muss null oder gültig sein
+        if (idx !== null) {
+            const bp = this.state.blueprints[ws.selectedBlueprint];
+            if (!bp || !Array.isArray(bp.parts) || idx < 0 || idx >= bp.parts.length) {
+                idx = null;
+            }
+        }
+        if (ws.selectedPartIdx === idx) return;
+        ws.selectedPartIdx = idx;
+        if (ws.preview) ws.preview.dirty = true;
+        // DOM neu rendern (für .selected-Klasse auf Part-Row).
+        // ABER: nur wenn DOM existiert — Headless-Pfad könnte _workshopSetSelection
+        // via Test-Code aufrufen.
+        if (typeof document !== "undefined") {
+            const editor = document.getElementById("workshop-editor");
+            if (editor) {
+                // Wir rendern nur die Part-Rows neu, das volle _renderWorkshopDOM
+                // wäre teuer und würde scroll-Position reset. Spar-Refresh:
+                // alle .workshop-part-row durchlaufen, .selected toggeln.
+                const rows = editor.querySelectorAll(".workshop-part-row");
+                rows.forEach((row) => {
+                    const rowIdx = parseInt(row.getAttribute("data-part-idx") || "-1", 10);
+                    row.classList.toggle("selected", rowIdx === idx);
+                });
+            }
         }
     }
 

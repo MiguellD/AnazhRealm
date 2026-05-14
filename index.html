@@ -2581,6 +2581,51 @@
             .workshop-conn-addbtn:hover {
                 background: var(--brass-1);
             }
+            /* Welle 6.B Phase 1 — CAD-Werkstatt Preview-Canvas */
+            #workshop-preview-wrapper {
+                margin: 4px 0 6px 0;
+                padding: 6px;
+                background: rgba(20, 14, 6, 0.55);
+                border: 1px solid var(--brass-3);
+                border-radius: 3px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 4px;
+            }
+            #workshop-preview-canvas {
+                display: block;
+                width: 100%;
+                max-width: 320px;
+                aspect-ratio: 1 / 1;
+                background: #1a140a;
+                border: 1px solid var(--parch-edge);
+                border-radius: 2px;
+                cursor: grab;
+                touch-action: none;
+            }
+            #workshop-preview-canvas:active {
+                cursor: grabbing;
+            }
+            .workshop-preview-hint {
+                margin: 0;
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                font-size: 10px;
+                color: var(--parch-ink-faded);
+                text-align: center;
+            }
+            .workshop-preview-selected {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10px;
+                color: var(--violet-1);
+                letter-spacing: 0.5px;
+            }
+            .workshop-part-row.selected {
+                background: linear-gradient(180deg, rgba(176, 106, 217, 0.18), rgba(176, 106, 217, 0.08));
+                border-color: var(--violet-1);
+                box-shadow: 0 0 0 1px var(--violet-1) inset;
+            }
             .workshop-tool-recursion {
                 margin-top: 10px;
                 padding: 8px 10px;
@@ -3113,6 +3158,13 @@
                     Kegel, Pyramide, Oktaeder, Plane, Torus).
                 </p>
                 <div id="workshop-list"></div>
+            </section>
+            <section class="section">
+                <h3>3D-Vorschau</h3>
+                <div id="workshop-preview-wrapper">
+                    <canvas id="workshop-preview-canvas"></canvas>
+                    <p class="workshop-preview-hint">Klick: Part wählen · Drag: rotieren · Rad: zoom</p>
+                </div>
             </section>
             <section class="section">
                 <h3>Editor</h3>
