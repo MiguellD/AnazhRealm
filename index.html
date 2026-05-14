@@ -29,7 +29,7 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self';"
         />
-        <title>Anazh Realm v7.77 – Das Ultiversum</title>
+        <title>Anazh Realm v7.78 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
              zusätzliche Datei. img-src 'self' data: in CSP erlaubt data-URI. -->
         <link
@@ -1656,6 +1656,52 @@
                 width: 100%;
                 accent-color: var(--brass-1);
             }
+            /* Welle 6.C3 — Keybindings-Liste. Label links, „Ändern"-Button rechts.
+               Im Rebind-Modus pulsiert der Button (brass-Schimmer). */
+            #keybindings-section #keybindings-list {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                margin-bottom: 8px;
+            }
+            .keybind-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                font-size: 11px;
+                font-family: "IM Fell English", Georgia, serif;
+                color: var(--parch-ink-soft);
+                padding: 4px 6px;
+                border-bottom: 1px dotted var(--parch-line, #b09d7c);
+            }
+            .keybind-label {
+                flex: 1;
+            }
+            .keybind-rebind {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 10px;
+                padding: 3px 8px;
+                min-width: 110px;
+                text-align: center;
+                background: var(--parch-bg, #ece1c5);
+                border: 1px solid var(--brass-2, #9d8456);
+                color: var(--parch-ink, #2a2018);
+                cursor: pointer;
+                transition: all 0.15s ease;
+            }
+            .keybind-rebind:hover {
+                background: var(--brass-3, #d8c188);
+                border-color: var(--brass-1, #8a6f3e);
+            }
+            .keybind-rebind.rebinding {
+                background: var(--brass-1, #8a6f3e);
+                color: var(--parch-bg, #ece1c5);
+                animation: keybind-pulse 0.9s ease-in-out infinite;
+            }
+            @keyframes keybind-pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.6; }
+            }
             /* Ring 5: Spieler-Seele. Brass-getintetes <select>, passend zum
            Drawer-Pergament-Look. */
             .drawer .soul-row {
@@ -2574,7 +2620,7 @@
         <header id="topbar" class="hud-frame">
             <div class="topbar-inner">
                 <div class="title">
-                    Anazh Realm <span class="version">v7.77</span> <span class="sub">— Das Ultiversum</span>
+                    Anazh Realm <span class="version">v7.78</span> <span class="sub">— Das Ultiversum</span>
                 </div>
                 <nav class="tabs" role="tablist" aria-label="Hauptansichten">
                     <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">
@@ -2798,6 +2844,21 @@
                         <input type="radio" name="game-mode-radio" value="schöpfer" />
                         <span>schöpfer</span>
                     </label>
+                </div>
+            </section>
+            <!-- Welle 6.C3 — Tastenbelegung. Sechs Aktionen rebindable; Defaults
+                 sind Minecraft-Konvention (LMB abbauen / RMB platzieren). 1-9
+                 (Hotbar-Slots) und WASD (Bewegung) bleiben hardcoded. -->
+            <section class="section" id="keybindings-section">
+                <h3>Tastenbelegung</h3>
+                <p class="drawer-hint">
+                    Klick „Ändern" und drücke dann die gewünschte Taste oder Maustaste. Esc bricht ab. WASD und 1-9
+                    sind Konvention und bleiben fest. <strong>Abbauen</strong> entfernt Architekturen am Fadenkreuz —
+                    trifft keine, wird ein Loch ins Terrain gegraben.
+                </p>
+                <div id="keybindings-list"></div>
+                <div class="actions">
+                    <button type="button" id="keybindings-reset">Standard wiederherstellen</button>
                 </div>
             </section>
             <section class="section">

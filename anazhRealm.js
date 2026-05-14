@@ -1,4 +1,4 @@
-/**AnazhRealm V7.77 – Das Ultiversum Vollendet.
+/**AnazhRealm V7.78 – Das Ultiversum Vollendet.
  * Hüpfen: Robust, präzise (Y ~1.5), Coyote-Time 0.3s, Gravitation 1.5G, Reibung 0.5.
  * Kollisionen: Kein Tunneling, steepnessThreshold 3.0, wallThickness 2.0, CCD optimiert.
  * Terrain: Flacher (Höhenunterschiede ±5), KI-gesteuerte Steilheitsanpassung, Chat-Steuerung.
@@ -12,7 +12,7 @@
 class AnazhRealm {
     constructor() {
         // ### Learnings ### [Stichwortartig optimieren, korrigieren, ergänzen – nie Wissen löschen!]
-        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69, LAN-Fähigkeit + Sync-Korrektheit (Ring 11 V2.1: 0.0.0.0-bind, ws:/wss:-CSP, roomOverride, spawn_*-Embedding, NON_BROADCASTABLE_OPS) in V7.70, Intuitiver Multi-User-Setup (Ring 11.5: Modus-Wahl, Host-Banner mit Einladungs-Code, Auto-Welt-Snapshot beim Join) in V7.71, Welle 6.A — Interaktion-Polish (Wall-Sliding via Player-Friction-0, Erdung-Raycast-Robustheit für Bauwerke) in V7.72, Welle 6.G Phase 1 — Welt-Sinne (fliegende Inseln + Bäume kollidierbar via btBvhTriangleMeshShape/btCylinderShape, drei Dead-Code-DSL-Ops spawn_tree/island/ufo aktiviert, toter needsPhysics-Lazy-Pfad gelöscht) in V7.73, Welle 6.G Phase 1.5 — Hylomorphismus-Unification (Bäume sind jetzt Compound-Architekturen über baum_eiche/baum_kiefer-Baupläne mit Stamm:holz + Krone:laub, eigene spawnTreeAt + _buildTreeCollision gelöscht, Parallelcode → eine Sprache, plus Insel-Visual-Fix mit Underside + Lambert) in V7.74, Welle 6.G Phase 2 — Welt-Affinitäts-Feld (vier SimplexNoise-Schichten lebendig/dichte/glut/magieleitung, Baupläne spawnen wo ihre Compound-Tags resonieren — Wälder/Felsen/Magie-Zonen/Vulkan-Anker emergieren ohne Biome-Tabelle, populateChunkVegetation als Hook in ensureChunkAt + Initial-Worldgen, drei neue Built-in-Baupläne stein_block/kristall_geode/glutbrunnen, Stämme dicker für Spieler-Spürbarkeit, Culling-Tick 1Hz→2Hz, spawn-silent-Opt damit Worldgen die Welt-Effekt-Kaskade nicht überflutet) in V7.75, Welle 6.C2 — Spielmodi (frieden/pfad/schöpfer als Welt-Beziehungs-Schalter, frieden umarmt + pfad verhandelt + schöpfer gehorcht, damagePlayer + applyOpToPart-Stamina modus-gated, set_mode DSL-Op in NON_BROADCASTABLE_OPS, UI-Radio in Einstellungen + Status-Bar #status-mode, worldMeta.gameMode persistiert pro-Welt) in V7.76, Welle 6.C1 — Hylomorphismus-Inventar (27-Slot-Overlay mit Tab-Toggle, Tag-Resonanz emergiert aus Compound-Tags — resoniert summt + brennend glüht + magieleitung schimmert + lebendig sprießt, Audio-Hover-Ping via state.symphony, addToInventory stackt bei gleichem Bauplan-Namen, Inventar-Slot wählen → Hotbar-Slot Klick weist zu, add_to_inventory DSL-Op in NON_BROADCASTABLE_OPS, state.player.inventory[27] persistiert in buildStateSnapshot) in V7.77
+        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69, LAN-Fähigkeit + Sync-Korrektheit (Ring 11 V2.1: 0.0.0.0-bind, ws:/wss:-CSP, roomOverride, spawn_*-Embedding, NON_BROADCASTABLE_OPS) in V7.70, Intuitiver Multi-User-Setup (Ring 11.5: Modus-Wahl, Host-Banner mit Einladungs-Code, Auto-Welt-Snapshot beim Join) in V7.71, Welle 6.A — Interaktion-Polish (Wall-Sliding via Player-Friction-0, Erdung-Raycast-Robustheit für Bauwerke) in V7.72, Welle 6.G Phase 1 — Welt-Sinne (fliegende Inseln + Bäume kollidierbar via btBvhTriangleMeshShape/btCylinderShape, drei Dead-Code-DSL-Ops spawn_tree/island/ufo aktiviert, toter needsPhysics-Lazy-Pfad gelöscht) in V7.73, Welle 6.G Phase 1.5 — Hylomorphismus-Unification (Bäume sind jetzt Compound-Architekturen über baum_eiche/baum_kiefer-Baupläne mit Stamm:holz + Krone:laub, eigene spawnTreeAt + _buildTreeCollision gelöscht, Parallelcode → eine Sprache, plus Insel-Visual-Fix mit Underside + Lambert) in V7.74, Welle 6.G Phase 2 — Welt-Affinitäts-Feld (vier SimplexNoise-Schichten lebendig/dichte/glut/magieleitung, Baupläne spawnen wo ihre Compound-Tags resonieren — Wälder/Felsen/Magie-Zonen/Vulkan-Anker emergieren ohne Biome-Tabelle, populateChunkVegetation als Hook in ensureChunkAt + Initial-Worldgen, drei neue Built-in-Baupläne stein_block/kristall_geode/glutbrunnen, Stämme dicker für Spieler-Spürbarkeit, Culling-Tick 1Hz→2Hz, spawn-silent-Opt damit Worldgen die Welt-Effekt-Kaskade nicht überflutet) in V7.75, Welle 6.C2 — Spielmodi (frieden/pfad/schöpfer als Welt-Beziehungs-Schalter, frieden umarmt + pfad verhandelt + schöpfer gehorcht, damagePlayer + applyOpToPart-Stamina modus-gated, set_mode DSL-Op in NON_BROADCASTABLE_OPS, UI-Radio in Einstellungen + Status-Bar #status-mode, worldMeta.gameMode persistiert pro-Welt) in V7.76, Welle 6.C1 — Hylomorphismus-Inventar (27-Slot-Overlay mit Tab-Toggle, Tag-Resonanz emergiert aus Compound-Tags — resoniert summt + brennend glüht + magieleitung schimmert + lebendig sprießt, Audio-Hover-Ping via state.symphony, addToInventory stackt bei gleichem Bauplan-Namen, Inventar-Slot wählen → Hotbar-Slot Klick weist zu, add_to_inventory DSL-Op in NON_BROADCASTABLE_OPS, state.player.inventory[27] persistiert in buildStateSnapshot) in V7.77, Welle 6.A6 + 6.C3 — Maus-Aktionen + Keybindings (LMB abbauen Architektur am Raycast / kein Treffer → modify_terrain-Loch, RMB platzieren = confirmBuild im aktiven Bau-Modus, beide modus-gated mit MOUSE_ACTION_STAMINA_COST=5 in pfad / kostenlos in frieden+schöpfer, DEFAULT_KEYBINDINGS frozen mit 6 Aktionen break/place/confirmBuild/inventory/cancelBuild/jump, Konflikt-Auflösung als Swap statt Leerung, _eventToBindingCode unterstützt KeyboardEvent.code + Mouse0/1/2, Rebind-Capture-Workflow mit Escape-Abbruch, UI-Sektion in Einstellungen-Drawer mit „Ändern"-Button + Standard-Reset, alle 6 Listener konsultieren state.keybindings über _actionForBindingCode, Tab-Listener gated auf !keybindRebind damit Rebind nicht versehentlich Inventar toggelt) in V7.78
         // - Nexus als Herz der Selbstentwicklung, steuert nun alles über Chat, unzerstörbar und unendlich
         this.state = {
             // ### Kern ###
@@ -528,7 +528,7 @@ class AnazhRealm {
     // ### Logging ###
     log(message, level = "INFO") {
         if (level === "DEBUG" && !this.state.debugLogging) return;
-        const logMessage = `[AnazhRealm V7.77] [${level}] ${message}`;
+        const logMessage = `[AnazhRealm V7.78] [${level}] ${message}`;
         this.state.logBuffer.push(logMessage);
         console.log(logMessage);
         if (this.state.logBuffer.length > this.state.maxLogEntries) {
@@ -13814,6 +13814,258 @@ class AnazhRealm {
         });
     }
 
+    // === Welle 6.A6 — Maus-Aktionen (abbauen + platzieren) ===
+    //
+    // LMB (Default) → tryMouseBreak: Architektur am Kamera-Raycast wird
+    // entfernt; trifft kein Architektur-Mesh, wird ein Loch ins Terrain
+    // gegraben (modify_terrain mit -1 m / Radius 1.5 m am Boden-Hit).
+    // RMB (Default) → tryMousePlace: spawnArchitecture an Phantom-Position
+    // im aktiven Bau-Modus (selber Pfad wie F-Taste/confirmBuild).
+    //
+    // Modus-Gate (gleicher Pfad wie applyOpToPart 6.C2): in pfad-Modus
+    // zieht jede Aktion MOUSE_ACTION_STAMINA_COST=5 Stamina ab, ungenug
+    // → verweigern. In frieden + schöpfer kostenlos.
+    //
+    // Beide Aktionen sind über 6.C3-Keybindings rebindable. Der Default
+    // ist Minecraft-Konvention; der Spieler darf LMB/RMB tauschen oder
+    // auf andere Tasten legen.
+    //
+    // Architektur-Pick nutzt THREE.Raycaster gegen Architektur-Meshes —
+    // nur sichtbare (in-range gecullte) Meshes sind trefferbar. Wer aus
+    // weiter Distanz abbauen will, muss erst nahe rangehen damit das
+    // Mesh aufgebaut ist. Das ist die natürliche Reichweite-Begrenzung.
+    _pickArchitectureAtCrosshair() {
+        if (!this.state.scene || !this.state.camera || !Array.isArray(this.state.architectures)) {
+            return null;
+        }
+        if (!this._tmpCamDir) this._tmpCamDir = new THREE.Vector3();
+        this.state.camera.getWorldDirection(this._tmpCamDir);
+        const meshes = [];
+        const entryByMesh = new Map();
+        for (const e of this.state.architectures) {
+            if (!e || !e.mesh) continue;
+            e.mesh.traverse((node) => {
+                if (node.isMesh) {
+                    meshes.push(node);
+                    entryByMesh.set(node, e);
+                }
+            });
+        }
+        if (!meshes.length) return null;
+        if (!this._tmpRaycaster) this._tmpRaycaster = new THREE.Raycaster();
+        const cp = this.state.camera.position;
+        this._tmpRaycaster.set(cp, this._tmpCamDir);
+        this._tmpRaycaster.far = 30;
+        const intersects = this._tmpRaycaster.intersectObjects(meshes, false);
+        if (!intersects.length) return null;
+        let node = intersects[0].object;
+        while (node && !entryByMesh.has(node)) node = node.parent;
+        const entry = node ? entryByMesh.get(node) : null;
+        return entry ? { entry, point: intersects[0].point } : null;
+    }
+
+    removeArchitecture(entry) {
+        if (!entry) return false;
+        const idx = this.state.architectures.indexOf(entry);
+        if (idx < 0) return false;
+        this._cullArchitectureMesh(entry);
+        this.state.architectures.splice(idx, 1);
+        if (typeof this.journalAppend === "function") {
+            this.journalAppend("loss", `Eine ${entry.type}-Struktur wurde abgebaut.`, {
+                type: entry.type,
+                id: entry.id,
+            });
+        }
+        if (typeof this.saveState === "function") this.saveState();
+        return true;
+    }
+
+    // Pfad analog _resolvePhantomTarget, aber ohne Phantom-Logik. Liefert
+    // den ersten Ammo-Raycast-Hit in Kamera-Blickrichtung — für tryMouseBreak
+    // wenn keine Architektur getroffen wurde (Terrain-Loch-Pfad).
+    _raycastWorldHit(maxDist = 30) {
+        const sf = this.state.scaleFactor || 1;
+        const fallback = { hit: false, x: 0, y: 0, z: 0 };
+        if (!this.state.physicsWorld || !this.state.camera || typeof Ammo === "undefined") {
+            return fallback;
+        }
+        if (!this._tmpCamDir) this._tmpCamDir = new THREE.Vector3();
+        const cam = this.state.camera;
+        cam.getWorldDirection(this._tmpCamDir);
+        const cp = cam.position;
+        const rayStart = this.setVec(this.state.tmpVec1, cp.x / sf, cp.y / sf, cp.z / sf);
+        const rayEnd = this.setVec(
+            this.state.tmpVec2,
+            (cp.x + this._tmpCamDir.x * maxDist) / sf,
+            (cp.y + this._tmpCamDir.y * maxDist) / sf,
+            (cp.z + this._tmpCamDir.z * maxDist) / sf
+        );
+        const cb = new Ammo.ClosestRayResultCallback(rayStart, rayEnd);
+        this.state.physicsWorld.rayTest(rayStart, rayEnd, cb);
+        let result = fallback;
+        if (cb.hasHit()) {
+            const p = cb.get_m_hitPointWorld();
+            result = { hit: true, x: p.x() * sf, y: p.y() * sf, z: p.z() * sf };
+        }
+        Ammo.destroy(cb);
+        return result;
+    }
+
+    _mouseActionStaminaGate() {
+        const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
+        if (mode !== "pfad") return { ok: true, mode };
+        const cost = AnazhRealm.MOUSE_ACTION_STAMINA_COST;
+        const have = (this.state.player && this.state.player.stamina) || 0;
+        return have >= cost ? { ok: true, mode, cost } : { ok: false, mode, cost, have };
+    }
+
+    _consumeMouseStamina() {
+        const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
+        if (mode !== "pfad") return;
+        const cost = AnazhRealm.MOUSE_ACTION_STAMINA_COST;
+        const have = (this.state.player && this.state.player.stamina) || 0;
+        this.state.player.stamina = Math.max(0, have - cost);
+    }
+
+    tryMouseBreak() {
+        const gate = this._mouseActionStaminaGate();
+        if (!gate.ok) {
+            this.log(`Abbauen: zu wenig Stamina (${gate.have}/${gate.cost}).`, "INFO");
+            return false;
+        }
+        const pick = this._pickArchitectureAtCrosshair();
+        if (pick && pick.entry) {
+            this._consumeMouseStamina();
+            const type = pick.entry.type;
+            this.removeArchitecture(pick.entry);
+            this.log(`Abgebaut: ${type}`, "INFO");
+            return true;
+        }
+        const target = this._raycastWorldHit(30);
+        if (!target.hit) return false;
+        this._consumeMouseStamina();
+        const r = 1.5;
+        const dh = -1.0;
+        if (typeof this.dslRun === "function") {
+            this.dslRun(["modify_terrain", target.x, target.z, r, dh], { source: "human" });
+        }
+        return true;
+    }
+
+    tryMousePlace() {
+        if (!this.state.buildMode || !this.state.buildMode.active) return false;
+        const gate = this._mouseActionStaminaGate();
+        if (!gate.ok) {
+            this.log(`Platzieren: zu wenig Stamina (${gate.have}/${gate.cost}).`, "INFO");
+            return false;
+        }
+        if (this.confirmBuild()) {
+            this._consumeMouseStamina();
+            return true;
+        }
+        return false;
+    }
+
+    // === Welle 6.C3 — Keybindings (Datenmodell + Persistenz) ===
+    _loadKeybindings() {
+        const defaults = { ...AnazhRealm.DEFAULT_KEYBINDINGS };
+        if (typeof localStorage === "undefined") return defaults;
+        try {
+            const raw = localStorage.getItem("anazh.keybindings");
+            if (!raw) return defaults;
+            const parsed = JSON.parse(raw);
+            if (!parsed || typeof parsed !== "object") return defaults;
+            for (const action of AnazhRealm.KEYBINDING_ACTIONS) {
+                if (typeof parsed[action] === "string" && parsed[action].length > 0) {
+                    defaults[action] = parsed[action];
+                }
+            }
+        } catch {
+            /* corrupt JSON → defaults */
+        }
+        return defaults;
+    }
+
+    _saveKeybindings() {
+        if (typeof localStorage === "undefined" || !this.state.keybindings) return;
+        try {
+            localStorage.setItem("anazh.keybindings", JSON.stringify(this.state.keybindings));
+        } catch {
+            /* quota / private-mode */
+        }
+    }
+
+    setKeybinding(action, code) {
+        if (!action || !this.state.keybindings || !(action in this.state.keybindings)) return false;
+        if (typeof code !== "string" || code.length === 0) return false;
+        // Konflikt-Schutz: wer denselben Code für eine andere Aktion belegt,
+        // bekommt das alte Binding der hier neu gebundenen Aktion zurück
+        // (Swap). Das vermeidet sowohl tote Bindings als auch versehentlich
+        // unbelegte Aktionen — alle bleiben immer auf einem Code.
+        const oldCode = this.state.keybindings[action];
+        for (const k of AnazhRealm.KEYBINDING_ACTIONS) {
+            if (k !== action && this.state.keybindings[k] === code) {
+                this.state.keybindings[k] = oldCode;
+            }
+        }
+        this.state.keybindings[action] = code;
+        this._saveKeybindings();
+        if (typeof this._renderKeybindingsUI === "function") this._renderKeybindingsUI();
+        return true;
+    }
+
+    resetKeybindings() {
+        this.state.keybindings = { ...AnazhRealm.DEFAULT_KEYBINDINGS };
+        this._saveKeybindings();
+        if (typeof this._renderKeybindingsUI === "function") this._renderKeybindingsUI();
+        return true;
+    }
+
+    _eventToBindingCode(event) {
+        if (!event) return null;
+        // MouseEvent: button 0=LMB, 1=Middle, 2=RMB.
+        if (event.type === "mousedown" || event.type === "mouseup" || event.type === "click") {
+            if (typeof event.button === "number") return "Mouse" + event.button;
+            return null;
+        }
+        // KeyboardEvent: event.code ist Layout-unabhängig (Empfohlen ggü.
+        // event.key, das z. B. „F" auf F-Taste aber „f" auf deutscher
+        // Tastatur liefert; event.code ist immer „KeyF").
+        if (typeof event.code === "string" && event.code.length > 0) return event.code;
+        return null;
+    }
+
+    _actionForBindingCode(code) {
+        if (!code || !this.state.keybindings) return null;
+        for (const action of AnazhRealm.KEYBINDING_ACTIONS) {
+            if (this.state.keybindings[action] === code) return action;
+        }
+        return null;
+    }
+
+    beginKeybindRebind(action) {
+        if (!action || !this.state.keybindings || !(action in this.state.keybindings)) return false;
+        this.state.keybindRebind = { action, startedAt: performance.now() };
+        if (typeof this._renderKeybindingsUI === "function") this._renderKeybindingsUI();
+        return true;
+    }
+
+    _completeKeybindRebind(code) {
+        const rb = this.state.keybindRebind;
+        if (!rb || !rb.action) return false;
+        this.state.keybindRebind = null;
+        if (code === "Escape") {
+            if (typeof this._renderKeybindingsUI === "function") this._renderKeybindingsUI();
+            return false;
+        }
+        return this.setKeybinding(rb.action, code);
+    }
+
+    cancelKeybindRebind() {
+        this.state.keybindRebind = null;
+        if (typeof this._renderKeybindingsUI === "function") this._renderKeybindingsUI();
+    }
+
     _updateBuildModeHud() {
         if (typeof document === "undefined") return;
         const hud = document.getElementById("build-mode-hud");
@@ -13822,7 +14074,7 @@ class AnazhRealm {
         if (bm.active && bm.blueprintName) {
             const bp = this.state.blueprints[bm.blueprintName];
             const label = bp && bp.label ? bp.label : bm.blueprintName;
-            hud.textContent = `Bau: ${label} — F bauen, ESC verlassen, 1-9 Slot wählen`;
+            hud.textContent = `Bau: ${label} — F/RMB bauen, ESC verlassen, 1-9 Slot wählen, LMB abbauen`;
             hud.hidden = false;
         } else {
             hud.hidden = true;
@@ -14059,20 +14311,17 @@ class AnazhRealm {
 
     inventoryInitDOM() {
         if (typeof document === "undefined") return;
-        // Tab-Taste toggelt Overlay UNCONDITIONAL — kein Input-Bypass mehr.
-        // Vorher: aus Chat-Input-Focus durfte Tab durchgereicht werden, damit
-        // der Spieler „aus dem Feld tabben" kann. In der Praxis aber:
-        //   - User klickt Chat-Input → Tab wechselt zum nächsten focusable
-        //     Element = erster Hotbar-Slot, sieht aus wie „Tab cycelt durch
-        //     Hotbar". Inventory öffnet nie. Fehlerhaft.
-        //   - Convention für Verlassen eines Feldes ist Esc oder
-        //     Klick-Außen, nicht Tab.
-        // Jetzt: Tab → preventDefault + blur(activeElement) + toggle.
-        // Capture-Phase damit der Listener VOR allem anderen fired.
+        // Welle 6.C1 — Inventar-Toggle. Default-Bindung ist Tab (Capture-
+        // Phase damit der Listener VOR allem anderen fired), aber Welle 6.C3
+        // erlaubt Rebind: der Listener konsultiert keybindings.inventory.
+        // Rebind-Capture hat Vorfahrt — sonst würde ein "Tab" während
+        // Rebind unbeabsichtigt das Inventar öffnen.
         window.addEventListener(
             "keydown",
             (event) => {
-                if (event.key !== "Tab") return;
+                if (this.state.keybindRebind) return; // Rebind-Listener im main keydown übernimmt
+                const code = this._eventToBindingCode(event);
+                if (this._actionForBindingCode(code) !== "inventory") return;
                 event.preventDefault();
                 event.stopPropagation();
                 const active = document.activeElement;
@@ -15136,6 +15385,83 @@ class AnazhRealm {
         this._renderGameModeUI();
     }
 
+    // Welle 6.C3 — Keybindings-UI: pro Aktion eine Zeile mit Label, aktueller
+    // Taste und „Ändern"-Button. Klick → Rebind-Capture-Modus, der nächste
+    // Tastendruck oder Maus-Button bindet. Reset-Button stellt Defaults wieder
+    // her. Im rebind-Modus zeigt der jeweilige Button „Drücke Taste…".
+    keybindingsInitDOM() {
+        if (typeof document === "undefined") return;
+        const section = document.getElementById("keybindings-section");
+        if (!section) return;
+        const list = section.querySelector("#keybindings-list");
+        const resetBtn = section.querySelector("#keybindings-reset");
+        if (!list) return;
+        list.innerHTML = "";
+        for (const action of AnazhRealm.KEYBINDING_ACTIONS) {
+            const row = document.createElement("div");
+            row.className = "keybind-row";
+            row.dataset.action = action;
+            const label = document.createElement("span");
+            label.className = "keybind-label";
+            label.textContent = AnazhRealm.KEYBINDING_LABELS[action] || action;
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "keybind-rebind";
+            btn.dataset.action = action;
+            btn.addEventListener("click", () => {
+                if (this.state.keybindRebind && this.state.keybindRebind.action === action) {
+                    this.cancelKeybindRebind();
+                } else {
+                    this.beginKeybindRebind(action);
+                }
+            });
+            row.appendChild(label);
+            row.appendChild(btn);
+            list.appendChild(row);
+        }
+        if (resetBtn) {
+            resetBtn.addEventListener("click", () => {
+                this.resetKeybindings();
+            });
+        }
+        this._renderKeybindingsUI();
+    }
+
+    // Pretty-Format eines Codes für Anzeige im Button. „KeyF" → „F",
+    // „Mouse0" → „Linke Maustaste", „Space" → „Leertaste", etc.
+    _formatBindingCode(code) {
+        if (!code) return "—";
+        if (code === "Mouse0") return "Linke Maustaste";
+        if (code === "Mouse1") return "Mittlere Maustaste";
+        if (code === "Mouse2") return "Rechte Maustaste";
+        if (code === "Space") return "Leertaste";
+        if (code === "Tab") return "Tab";
+        if (code === "Escape") return "Esc";
+        if (code.startsWith("Key")) return code.slice(3);
+        if (code.startsWith("Digit")) return code.slice(5);
+        if (code.startsWith("Arrow"))
+            return "↑↓←→".charAt(["Up", "Down", "Left", "Right"].indexOf(code.slice(5))) || code;
+        return code;
+    }
+
+    _renderKeybindingsUI() {
+        if (typeof document === "undefined" || !this.state.keybindings) return;
+        const section = document.getElementById("keybindings-section");
+        if (!section) return;
+        const rb = this.state.keybindRebind;
+        for (const action of AnazhRealm.KEYBINDING_ACTIONS) {
+            const btn = section.querySelector(`button.keybind-rebind[data-action="${action}"]`);
+            if (!btn) continue;
+            if (rb && rb.action === action) {
+                btn.textContent = "Drücke Taste…";
+                btn.classList.add("rebinding");
+            } else {
+                btn.textContent = this._formatBindingCode(this.state.keybindings[action]);
+                btn.classList.remove("rebinding");
+            }
+        }
+    }
+
     cameraModeInitDOM() {
         const toggle = document.getElementById("camera-mode-toggle");
         if (!toggle) return;
@@ -15756,7 +16082,11 @@ class AnazhRealm {
     }
 
     async init() {
-        this.log("Initialisiere Anazh Realm V7.77... Ewigkeit erwacht!", "INFO");
+        this.log("Initialisiere Anazh Realm V7.78... Ewigkeit erwacht!", "INFO");
+        // Welle 6.C3 — Keybindings VOR allen DOM-Listenern laden. State muss
+        // existieren bevor das Settings-Panel rendert (sonst zeigt es leer).
+        this.state.keybindings = this._loadKeybindings();
+        this.state.keybindRebind = null;
         this.themeInitDOM();
         this.grokInitDOM();
         this.symphonyInitDOM();
@@ -15764,6 +16094,7 @@ class AnazhRealm {
         this.playerSoulInitDOM();
         this.cameraModeInitDOM();
         this.gameModeInitDOM();
+        this.keybindingsInitDOM();
         this.inventoryInitDOM();
         // Ring 6.5 — Hotbar im DOM rendern. Wird hier einmal aufgesetzt;
         // setHotbarSlot löst ein Re-Render aus.
@@ -15942,17 +16273,34 @@ class AnazhRealm {
                 event.preventDefault();
                 return;
             }
+            // Welle 6.C3 — Rebind-Capture. Spieler hat in den Einstellungen
+            // „Ändern" gedrückt; die nächste Taste wird gefangen. Escape
+            // bricht ab (sacred convention), alle anderen Codes setzen das
+            // Binding via _completeKeybindRebind.
+            if (this.state.keybindRebind && !inInput) {
+                const code = this._eventToBindingCode(event);
+                if (code) {
+                    this._completeKeybindRebind(code);
+                    event.preventDefault();
+                }
+                return;
+            }
             this.state.keys[event.key.toLowerCase()] = true;
-            if (event.key === " " && !inInput) this.handleJump(performance.now() / 1000);
             if (inInput) return;
-            // Ring 6.5 — Hotbar-Tasten 1-9. Slot wird gewählt; bei
-            // belegtem Slot aktiviert Build-Mode für den dort liegenden
-            // Bauplan, bei leerem Slot bleibt Build-Mode aus.
+            // Welle 6.C3 — Aktionen über Keybindings (event.code = Layout-
+            // unabhängiger Code, z. B. "KeyF" statt "f"). 1-9 bleiben hard-
+            // coded (Slot-Indizes, keine Aktion). Escape bleibt zusätzlich
+            // immer ein Bau-Modus-Verlasser, selbst wenn cancelBuild neu
+            // gebunden wurde — Spieler darf nie in einem Modus gefangen sein.
+            const action = this._actionForBindingCode(event.code);
+            if (action === "jump") {
+                this.handleJump(performance.now() / 1000);
+            }
             if (event.key >= "1" && event.key <= "9") {
                 this.selectHotbarSlot(parseInt(event.key, 10) - 1);
-            } else if (event.key.toLowerCase() === "f") {
+            } else if (action === "confirmBuild") {
                 if (this.confirmBuild()) event.preventDefault();
-            } else if (event.key === "Escape") {
+            } else if (action === "cancelBuild" || event.key === "Escape") {
                 if (this.state.buildMode.active) this._clearBuildMode();
                 this._updateHotbarHighlight();
             }
@@ -15968,6 +16316,32 @@ class AnazhRealm {
             // Pointer-Lock wieder aktivieren und Drag&Drop tot machen.
             if (this.state.inventoryOpen) return;
             canvas.requestPointerLock();
+        });
+        // Welle 6.A6 — Maus-Aktionen (abbauen/platzieren). Nur wenn der
+        // Pointer-Lock aktiv ist (Spieler ist „im Spiel", nicht im UI) und
+        // das Inventar nicht offen ist (Drag&Drop hat eigene Listener).
+        // Rebind-Capture: erster Maus-Button im Capture-Modus bindet die
+        // Aktion und schließt — denselben Pfad wie der Keydown-Capture.
+        canvas.addEventListener("mousedown", (event) => {
+            if (this.state.inventoryOpen) return;
+            if (this.state.keybindRebind) {
+                const code = this._eventToBindingCode(event);
+                if (code) {
+                    this._completeKeybindRebind(code);
+                    event.preventDefault();
+                }
+                return;
+            }
+            if (!this.state.isPointerLocked) return;
+            const code = this._eventToBindingCode(event);
+            const action = this._actionForBindingCode(code);
+            if (action === "break") {
+                this.tryMouseBreak();
+                event.preventDefault();
+            } else if (action === "place") {
+                this.tryMousePlace();
+                event.preventDefault();
+            }
         });
         document.addEventListener("pointerlockchange", () => {
             this.state.isPointerLocked = document.pointerLockElement === canvas;
@@ -16847,6 +17221,35 @@ AnazhRealm.TOOL_STAT_WEIGHT = 0.15;
 // nicht nur als Reihenfolge.
 AnazhRealm.TOOL_OP_STAMINA_COST = 10;
 AnazhRealm.STAMINA_REGEN_PER_SEC = 5;
+
+// Welle 6.A6 — Maus-Aktionen (abbauen/platzieren). Eigener Kosten-Satz,
+// niedriger als TOOL_OP weil Bauen/Abbauen häufiger und niederschwelliger
+// als Polier-Schritte sind. Modus-Gate (frieden+schöpfer: 0, pfad: 5).
+AnazhRealm.MOUSE_ACTION_STAMINA_COST = 5;
+
+// Welle 6.C3 — Keybindings. Default-Map (Aktion → Code). KeyboardEvent.code
+// für Tasten (Layout-unabhängig, z. B. "KeyF" statt "f"), "Mouse0"/"Mouse1"/
+// "Mouse2" für Maus-Buttons. Spieler kann pro Aktion neu binden, persistiert
+// in localStorage "anazh.keybindings". Bewusst eine kleine Menge — WASD und
+// Zifferntasten 1-9 bleiben hardcoded (Konventionen, die in einer Web-
+// Sandbox niemand rebindet).
+AnazhRealm.DEFAULT_KEYBINDINGS = Object.freeze({
+    break: "Mouse0",
+    place: "Mouse2",
+    confirmBuild: "KeyF",
+    inventory: "Tab",
+    cancelBuild: "Escape",
+    jump: "Space",
+});
+AnazhRealm.KEYBINDING_ACTIONS = Object.freeze(Object.keys(AnazhRealm.DEFAULT_KEYBINDINGS));
+AnazhRealm.KEYBINDING_LABELS = Object.freeze({
+    break: "Abbauen (Architektur / Terrain)",
+    place: "Platzieren (Bau-Modus)",
+    confirmBuild: "Bauen bestätigen",
+    inventory: "Inventar öffnen",
+    cancelBuild: "Bau-Modus verlassen",
+    jump: "Springen",
+});
 
 // Welle 6.D Etappe 3a+ (Schöpfer-Feedback 13.05.2026) — Tod-Wunde-Penalty.
 // Der Spieler trägt nach einem Tod eine graduelle Schwächung: Körper-Tags

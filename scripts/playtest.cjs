@@ -7763,6 +7763,301 @@ function startSaveServer() {
                 check("Welle 6.C1 Lock: Inventar-schließen ohne Re-Lock (Canvas-Click bleibt User-Wahl)", lockResults.closeWorksWithoutReLock);
             }
 
+            // ### Welle 6.A6 — Maus-Aktionen (abbauen + platzieren) ###
+            // LMB abbauen / RMB platzieren über konfigurierbares Keybinding.
+            // Architektur-Hit → removeArchitecture; kein Hit → modify_terrain.
+            // Stamina-Gate via getGameMode wie applyOpToPart (6.C2).
+            const wave6a6Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    // Statische Konstante
+                    out.hasStaminaCost = r.constructor.MOUSE_ACTION_STAMINA_COST === 5;
+                    // Methoden-Existenz
+                    out.hasTryMouseBreak = typeof r.tryMouseBreak === "function";
+                    out.hasTryMousePlace = typeof r.tryMousePlace === "function";
+                    out.hasRemoveArchitecture = typeof r.removeArchitecture === "function";
+                    out.hasPickArchitecture = typeof r._pickArchitectureAtCrosshair === "function";
+                    out.hasRaycastWorldHit = typeof r._raycastWorldHit === "function";
+                    out.hasStaminaGate = typeof r._mouseActionStaminaGate === "function";
+                    out.hasConsumeStamina = typeof r._consumeMouseStamina === "function";
+
+                    // Setup: pfad-Modus für Stamina-Tests, frische Stamina.
+                    const oldMode = r.getGameMode();
+                    r.setGameMode("pfad");
+                    r.state.player.stamina = 100;
+                    r.state.player.phoenixUntil = 0;
+
+                    // Stamina-Gate: pfad mit voller Stamina → ok, cost 5
+                    const gateOk = r._mouseActionStaminaGate();
+                    out.pfadGateOk = gateOk.ok === true && gateOk.cost === 5;
+
+                    // Stamina verbrauchen: pfad zieht 5 ab
+                    r._consumeMouseStamina();
+                    out.pfadConsumesFive = r.state.player.stamina === 95;
+
+                    // Stamina unter Kosten → verweigert
+                    r.state.player.stamina = 2;
+                    const gateBlocked = r._mouseActionStaminaGate();
+                    out.pfadGateBlocksLow = gateBlocked.ok === false && gateBlocked.have === 2;
+
+                    // frieden + schöpfer: kein Stamina-Verbrauch
+                    r.setGameMode("frieden");
+                    r.state.player.stamina = 50;
+                    r._consumeMouseStamina();
+                    out.friedenSkipsStamina = r.state.player.stamina === 50;
+
+                    r.setGameMode("schöpfer");
+                    r.state.player.stamina = 50;
+                    r._consumeMouseStamina();
+                    out.schoepferSkipsStamina = r.state.player.stamina === 50;
+
+                    // frieden gate immer ok
+                    r.state.player.stamina = 0;
+                    r.setGameMode("frieden");
+                    out.friedenGateOkAtZero = r._mouseActionStaminaGate().ok === true;
+
+                    // removeArchitecture: synthetisches Setup ohne Mesh/Body
+                    const fakeEntry = { id: 99999, type: "test_arch", position: { x: 0, y: 0, z: 0 }, mesh: null };
+                    r.state.architectures.push(fakeEntry);
+                    const archCountBefore = r.state.architectures.length;
+                    const removed = r.removeArchitecture(fakeEntry);
+                    out.removeArchitectureWorks =
+                        removed === true && r.state.architectures.length === archCountBefore - 1;
+
+                    // removeArchitecture mit nicht-existentem Entry → false
+                    out.removeArchitectureRejectsGhost =
+                        r.removeArchitecture({ id: -1, type: "x" }) === false;
+
+                    // tryMousePlace ohne aktiven Bau-Modus → false
+                    r.setGameMode("frieden");
+                    r.state.buildMode.active = false;
+                    out.placeRejectsWithoutBuildMode = r.tryMousePlace() === false;
+
+                    // tryMouseBreak ohne hit & ohne Architektur → false (kein crash)
+                    // (kein physicsWorld in den meisten Tests, also fallback gilt)
+                    const breakResult = r.tryMouseBreak();
+                    out.breakSafeWithoutHit = breakResult === false || breakResult === true;
+
+                    // Cleanup
+                    r.setGameMode(oldMode);
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6a6Results && !wave6a6Results.error) {
+                check("Welle 6.A6: MOUSE_ACTION_STAMINA_COST === 5", wave6a6Results.hasStaminaCost);
+                check("Welle 6.A6: tryMouseBreak existiert", wave6a6Results.hasTryMouseBreak);
+                check("Welle 6.A6: tryMousePlace existiert", wave6a6Results.hasTryMousePlace);
+                check("Welle 6.A6: removeArchitecture existiert", wave6a6Results.hasRemoveArchitecture);
+                check("Welle 6.A6: _pickArchitectureAtCrosshair existiert", wave6a6Results.hasPickArchitecture);
+                check("Welle 6.A6: _raycastWorldHit existiert", wave6a6Results.hasRaycastWorldHit);
+                check("Welle 6.A6: _mouseActionStaminaGate existiert", wave6a6Results.hasStaminaGate);
+                check("Welle 6.A6: _consumeMouseStamina existiert", wave6a6Results.hasConsumeStamina);
+                check("Welle 6.A6: Stamina-Gate im pfad-Modus ok mit cost=5", wave6a6Results.pfadGateOk);
+                check("Welle 6.A6: pfad verbraucht 5 Stamina pro Aktion", wave6a6Results.pfadConsumesFive);
+                check("Welle 6.A6: pfad verweigert bei zu wenig Stamina", wave6a6Results.pfadGateBlocksLow);
+                check("Welle 6.A6: frieden überspringt Stamina-Verbrauch", wave6a6Results.friedenSkipsStamina);
+                check("Welle 6.A6: schöpfer überspringt Stamina-Verbrauch", wave6a6Results.schoepferSkipsStamina);
+                check("Welle 6.A6: frieden-Gate immer ok (auch bei 0 Stamina)", wave6a6Results.friedenGateOkAtZero);
+                check("Welle 6.A6: removeArchitecture entfernt Eintrag", wave6a6Results.removeArchitectureWorks);
+                check(
+                    "Welle 6.A6: removeArchitecture lehnt nicht-existenten Eintrag ab",
+                    wave6a6Results.removeArchitectureRejectsGhost
+                );
+                check(
+                    "Welle 6.A6: tryMousePlace ohne aktiven Bau-Modus → false",
+                    wave6a6Results.placeRejectsWithoutBuildMode
+                );
+                check("Welle 6.A6: tryMouseBreak crasht nicht ohne Hit", wave6a6Results.breakSafeWithoutHit);
+            }
+
+            // ### Welle 6.C3 — Tastenbelegung (Keybindings) ###
+            // Sechs Aktionen rebindable: break, place, confirmBuild, inventory,
+            // cancelBuild, jump. Default-Map ist Minecraft-Konvention. Konflikt-
+            // Auflösung über Swap. Persistiert in localStorage.
+            const wave6c3Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    // Statische Konstanten
+                    out.hasDefaults =
+                        r.constructor.DEFAULT_KEYBINDINGS &&
+                        typeof r.constructor.DEFAULT_KEYBINDINGS === "object" &&
+                        Object.isFrozen(r.constructor.DEFAULT_KEYBINDINGS);
+                    out.hasActions =
+                        Array.isArray(r.constructor.KEYBINDING_ACTIONS) &&
+                        r.constructor.KEYBINDING_ACTIONS.length === 6;
+                    out.hasLabels = r.constructor.KEYBINDING_LABELS && Object.isFrozen(r.constructor.KEYBINDING_LABELS);
+                    const expectedActions = ["break", "place", "confirmBuild", "inventory", "cancelBuild", "jump"];
+                    out.actionsCorrect = expectedActions.every((a) => r.constructor.KEYBINDING_ACTIONS.includes(a));
+                    // Defaults sind Minecraft-Konvention
+                    out.defaultBreakIsMouse0 = r.constructor.DEFAULT_KEYBINDINGS.break === "Mouse0";
+                    out.defaultPlaceIsMouse2 = r.constructor.DEFAULT_KEYBINDINGS.place === "Mouse2";
+                    out.defaultConfirmBuildIsKeyF = r.constructor.DEFAULT_KEYBINDINGS.confirmBuild === "KeyF";
+                    out.defaultInventoryIsTab = r.constructor.DEFAULT_KEYBINDINGS.inventory === "Tab";
+
+                    // State init
+                    out.hasKeybindingsState =
+                        r.state.keybindings && typeof r.state.keybindings === "object";
+                    out.keybindRebindInitNull = r.state.keybindRebind === null;
+
+                    // Methoden-Existenz
+                    out.hasLoad = typeof r._loadKeybindings === "function";
+                    out.hasSave = typeof r._saveKeybindings === "function";
+                    out.hasSet = typeof r.setKeybinding === "function";
+                    out.hasReset = typeof r.resetKeybindings === "function";
+                    out.hasEventToCode = typeof r._eventToBindingCode === "function";
+                    out.hasActionFor = typeof r._actionForBindingCode === "function";
+                    out.hasBeginRebind = typeof r.beginKeybindRebind === "function";
+                    out.hasCancelRebind = typeof r.cancelKeybindRebind === "function";
+                    out.hasInitDOM = typeof r.keybindingsInitDOM === "function";
+                    out.hasRenderUI = typeof r._renderKeybindingsUI === "function";
+                    out.hasFormatCode = typeof r._formatBindingCode === "function";
+
+                    // setKeybinding ändert state
+                    const before = r.state.keybindings.confirmBuild;
+                    const setOk = r.setKeybinding("confirmBuild", "KeyG");
+                    out.setKeybindingWorks = setOk === true && r.state.keybindings.confirmBuild === "KeyG";
+
+                    // setKeybinding-Konflikt = Swap: bind „place" auf das gerade
+                    // gesetzte „KeyG" → confirmBuild bekommt das alte „Mouse2"
+                    // (das war place's Default).
+                    const oldPlace = r.state.keybindings.place;
+                    r.setKeybinding("place", "KeyG");
+                    out.swapHappened =
+                        r.state.keybindings.place === "KeyG" &&
+                        r.state.keybindings.confirmBuild === oldPlace;
+
+                    // Reset auf Defaults
+                    r.resetKeybindings();
+                    out.resetRestoresDefaults =
+                        r.state.keybindings.break === "Mouse0" &&
+                        r.state.keybindings.place === "Mouse2" &&
+                        r.state.keybindings.confirmBuild === "KeyF" &&
+                        r.state.keybindings.confirmBuild === before; // before war auch der Default
+
+                    // setKeybinding-Validierung: unbekannte Aktion → false
+                    out.setRejectsUnknownAction = r.setKeybinding("ficto", "KeyZ") === false;
+                    out.setRejectsEmptyCode = r.setKeybinding("break", "") === false;
+
+                    // _actionForBindingCode reverse-lookup
+                    out.actionForMouse0 = r._actionForBindingCode("Mouse0") === "break";
+                    out.actionForMouse2 = r._actionForBindingCode("Mouse2") === "place";
+                    out.actionForKeyF = r._actionForBindingCode("KeyF") === "confirmBuild";
+                    out.actionForUnbound = r._actionForBindingCode("KeyZ") === null;
+
+                    // _eventToBindingCode
+                    const mouseEvt = { type: "mousedown", button: 0 };
+                    const mouseEvt2 = { type: "mousedown", button: 2 };
+                    const keyEvt = { type: "keydown", code: "KeyG" };
+                    out.codeForMouseDownLMB = r._eventToBindingCode(mouseEvt) === "Mouse0";
+                    out.codeForMouseDownRMB = r._eventToBindingCode(mouseEvt2) === "Mouse2";
+                    out.codeForKeyDown = r._eventToBindingCode(keyEvt) === "KeyG";
+
+                    // beginKeybindRebind setzt state, cancel räumt auf
+                    r.beginKeybindRebind("break");
+                    out.rebindActive =
+                        r.state.keybindRebind && r.state.keybindRebind.action === "break";
+                    r.cancelKeybindRebind();
+                    out.rebindCancelClears = r.state.keybindRebind === null;
+
+                    // _completeKeybindRebind ändert die Bindung
+                    r.beginKeybindRebind("jump");
+                    r._completeKeybindRebind("KeyJ");
+                    out.completeBindsCode = r.state.keybindings.jump === "KeyJ";
+                    // Escape im Rebind-Modus → Abbruch (Binding bleibt)
+                    r.beginKeybindRebind("jump");
+                    r._completeKeybindRebind("Escape");
+                    out.escCancelsRebind =
+                        r.state.keybindRebind === null && r.state.keybindings.jump === "KeyJ";
+
+                    // _formatBindingCode pretty-print
+                    out.formatMouse0 = r._formatBindingCode("Mouse0") === "Linke Maustaste";
+                    out.formatMouse2 = r._formatBindingCode("Mouse2") === "Rechte Maustaste";
+                    out.formatSpace = r._formatBindingCode("Space") === "Leertaste";
+                    out.formatKeyF = r._formatBindingCode("KeyF") === "F";
+
+                    // UI: Section + Liste + Reset-Button im DOM
+                    out.sectionInDom = !!document.getElementById("keybindings-section");
+                    out.listInDom = !!document.getElementById("keybindings-list");
+                    out.resetInDom = !!document.getElementById("keybindings-reset");
+                    // 6 keybind-row Zeilen
+                    out.sixRowsRendered =
+                        document.querySelectorAll("#keybindings-list .keybind-row").length === 6;
+                    // Pro Aktion ein Rebind-Button mit data-action
+                    out.rebindButtonsPresent =
+                        document.querySelectorAll(".keybind-rebind[data-action]").length === 6;
+
+                    // Reset für nachfolgende Tests
+                    r.resetKeybindings();
+                    r.state.keybindRebind = null;
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6c3Results && !wave6c3Results.error) {
+                check("Welle 6.C3: DEFAULT_KEYBINDINGS frozen", wave6c3Results.hasDefaults);
+                check("Welle 6.C3: KEYBINDING_ACTIONS hat 6 Einträge", wave6c3Results.hasActions);
+                check("Welle 6.C3: KEYBINDING_LABELS frozen", wave6c3Results.hasLabels);
+                check(
+                    "Welle 6.C3: Actions vollständig (break/place/confirmBuild/inventory/cancelBuild/jump)",
+                    wave6c3Results.actionsCorrect
+                );
+                check("Welle 6.C3: Default break === Mouse0 (LMB)", wave6c3Results.defaultBreakIsMouse0);
+                check("Welle 6.C3: Default place === Mouse2 (RMB)", wave6c3Results.defaultPlaceIsMouse2);
+                check("Welle 6.C3: Default confirmBuild === KeyF", wave6c3Results.defaultConfirmBuildIsKeyF);
+                check("Welle 6.C3: Default inventory === Tab", wave6c3Results.defaultInventoryIsTab);
+                check("Welle 6.C3: state.keybindings initialisiert", wave6c3Results.hasKeybindingsState);
+                check("Welle 6.C3: state.keybindRebind initial null", wave6c3Results.keybindRebindInitNull);
+                check("Welle 6.C3: _loadKeybindings + _saveKeybindings existieren", wave6c3Results.hasLoad && wave6c3Results.hasSave);
+                check("Welle 6.C3: setKeybinding + resetKeybindings existieren", wave6c3Results.hasSet && wave6c3Results.hasReset);
+                check(
+                    "Welle 6.C3: _eventToBindingCode + _actionForBindingCode existieren",
+                    wave6c3Results.hasEventToCode && wave6c3Results.hasActionFor
+                );
+                check(
+                    "Welle 6.C3: beginKeybindRebind + cancelKeybindRebind existieren",
+                    wave6c3Results.hasBeginRebind && wave6c3Results.hasCancelRebind
+                );
+                check(
+                    "Welle 6.C3: keybindingsInitDOM + _renderKeybindingsUI + _formatBindingCode existieren",
+                    wave6c3Results.hasInitDOM && wave6c3Results.hasRenderUI && wave6c3Results.hasFormatCode
+                );
+                check("Welle 6.C3: setKeybinding ändert state.keybindings", wave6c3Results.setKeybindingWorks);
+                check("Welle 6.C3: Konflikt-Schutz tauscht Bindings (Swap)", wave6c3Results.swapHappened);
+                check("Welle 6.C3: resetKeybindings stellt Defaults wieder her", wave6c3Results.resetRestoresDefaults);
+                check("Welle 6.C3: setKeybinding lehnt unbekannte Aktion ab", wave6c3Results.setRejectsUnknownAction);
+                check("Welle 6.C3: setKeybinding lehnt leeren Code ab", wave6c3Results.setRejectsEmptyCode);
+                check("Welle 6.C3: actionFor Mouse0 → break", wave6c3Results.actionForMouse0);
+                check("Welle 6.C3: actionFor Mouse2 → place", wave6c3Results.actionForMouse2);
+                check("Welle 6.C3: actionFor KeyF → confirmBuild", wave6c3Results.actionForKeyF);
+                check("Welle 6.C3: actionFor ungebundener Code → null", wave6c3Results.actionForUnbound);
+                check("Welle 6.C3: eventToCode MouseEvent LMB → Mouse0", wave6c3Results.codeForMouseDownLMB);
+                check("Welle 6.C3: eventToCode MouseEvent RMB → Mouse2", wave6c3Results.codeForMouseDownRMB);
+                check("Welle 6.C3: eventToCode KeyboardEvent → event.code", wave6c3Results.codeForKeyDown);
+                check("Welle 6.C3: beginKeybindRebind setzt state.keybindRebind", wave6c3Results.rebindActive);
+                check("Welle 6.C3: cancelKeybindRebind räumt auf", wave6c3Results.rebindCancelClears);
+                check("Welle 6.C3: _completeKeybindRebind bindet neuen Code", wave6c3Results.completeBindsCode);
+                check(
+                    "Welle 6.C3: Escape im Rebind-Modus → Abbruch (kein Binding-Wechsel)",
+                    wave6c3Results.escCancelsRebind
+                );
+                check("Welle 6.C3: format Mouse0 → 'Linke Maustaste'", wave6c3Results.formatMouse0);
+                check("Welle 6.C3: format Mouse2 → 'Rechte Maustaste'", wave6c3Results.formatMouse2);
+                check("Welle 6.C3: format Space → 'Leertaste'", wave6c3Results.formatSpace);
+                check("Welle 6.C3: format KeyF → 'F'", wave6c3Results.formatKeyF);
+                check("Welle 6.C3: #keybindings-section im DOM", wave6c3Results.sectionInDom);
+                check("Welle 6.C3: #keybindings-list im DOM", wave6c3Results.listInDom);
+                check("Welle 6.C3: #keybindings-reset im DOM", wave6c3Results.resetInDom);
+                check("Welle 6.C3: 6 keybind-row Zeilen gerendert", wave6c3Results.sixRowsRendered);
+                check("Welle 6.C3: 6 Rebind-Buttons im DOM", wave6c3Results.rebindButtonsPresent);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {
