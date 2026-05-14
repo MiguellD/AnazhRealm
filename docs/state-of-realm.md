@@ -562,7 +562,7 @@ AnazhRealm/
 ├── index.html                 # Bootstrap + UI-V2-Container (Topbar/Statusbar/Drawer/Konsole)
 ├── save-server.js             # Node-HTTP-Server für anazhRealmState.json
 ├── start.bat                  # Windows-Starter
-├── anazhRealmState.json       # Persistierter Zustand (auto)
+├── anazhRealmState.json       # Lokales Komfort-Backup (NICHT in git, .gitignore)
 ├── package.json               # npm, ESLint+Prettier+puppeteer
 ├── eslint.config.mjs          # Flat-Config mit Browser-/Ammo-/Three-/Audio-/HTMLElement-Globalen
 ├── .prettierrc.json           # 4 spaces, printWidth 120

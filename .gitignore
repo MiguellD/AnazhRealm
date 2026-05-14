@@ -3,3 +3,13 @@ package-lock.json
 .DS_Store
 *.log
 artifacts/
+
+# Runtime-Save-Artefakt vom save-server. Wird bei jedem saveState neu
+# geschrieben (write-only via fs.writeFile in save-server.js), die App
+# liest sie NIE automatisch — nur expliziter "Lade Datei"-Pick. Im Repo
+# zu tracken hätte zwei Probleme: jeder Playtest erzeugte einen Diff,
+# und neue Cloner würden mit MEINEM Save-State in fremder Welt erwachen
+# statt frisch eine eigene zu erschaffen (Ring 8 Multi-Welt-Disziplin).
+# Lokal überlebt sie als Komfort-Backup der aktuell aktiven Welt; die
+# kanonische Persistenz liegt in localStorage (anazhRealmState_<worldId>).
+anazhRealmState.json
