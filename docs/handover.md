@@ -360,28 +360,37 @@ Hylomorphismus-System wie Materialien und Bauwerke.
   playerInventory in buildStateSnapshot. 127 Invarianten für 6.C1
   + Drag-System → 1153 total.
 
-### Was als Nächstes wartet (V7.78 +)
+### V7.78 — Welle 6.A6 + 6.C3 live (14.05.2026)
 
-**Nächster Bogen: 6.A-Maus + 6.C3 Keybindings-UI (1-2 Sessions)**
+- **6.A6 Maus-Aktionen** live: LMB abbauen (Architektur am
+  THREE.Raycaster → `removeArchitecture` mit `_cullArchitectureMesh`-
+  Dispose-Pfad / kein Treffer → `modify_terrain` mit -1 m und 1.5 m
+  Radius am Ammo-Raycast-Hit), RMB platzieren (delegiert an
+  `confirmBuild`, selbe Geste wie F). Stamina-Gate analog 6.C2:
+  `MOUSE_ACTION_STAMINA_COST=5` in pfad, kostenlos in
+  frieden+schöpfer. Reichweite emergiert aus Distance-Culling
+  (cold-Strukturen sind nicht trefferbar; raycaster.far = 30 als Cap).
+- **6.C3 Keybindings** live: 6 Aktionen rebindable
+  (`break, place, confirmBuild, inventory, cancelBuild, jump`),
+  Default Minecraft-Konvention (`Mouse0/Mouse2/KeyF/Tab/Escape/Space`).
+  `state.keybindings` + `state.keybindRebind`, Persistenz in
+  `localStorage["anazh.keybindings"]`. Konflikt → **Swap** statt
+  Leerung (jede Aktion bleibt immer gebunden). UI-Sektion in
+  Einstellungen-Drawer mit „Ändern"-Button (pulsiert im Rebind-Modus)
+  und „Standard wiederherstellen"-Reset. Alle vier Eingangs-Listener
+  konsultieren `_actionForBindingCode(event.code)` — keydown
+  (confirmBuild/cancelBuild/jump), Tab-Capture (inventory, gated auf
+  `!keybindRebind`), Canvas mousedown (break/place, Pointer-Lock-
+  Gate). Escape bleibt zusätzlich immer ein Bau-Modus-Verlasser.
 
-- **6.A3 Maus-Aktionen**: konventionelle LMB/RMB-Bedienung
-  - LMB im Bau-Modus → abbauen (Raycast auf Architektur, dispose)
-  - RMB im Bau-Modus → platzieren (heutiges F-Verhalten als Geste)
-  - LMB ohne Bau-Modus → schlagen (apply damage in pfad-Modus, ggf. Werkzeug-Op auf Welt-Architektur in schöpfer/pfad)
-  - RMB ohne Bau-Modus → aufheben/interagieren
-  - F bleibt als Tastatur-Alternative (Aria-Compliance, Touch-Devices)
-  - Caveat: Pointer-Lock-State berücksichtigen — nur LMB+RMB im Canvas
-    locked, nicht über Inventar-Overlay
+**59 neue Invarianten** (18 für 6.A6, 41 für 6.C3) → **1212/1212
+grün**. Browser-Smoke via screenshot.cjs bestätigt Settings-Drawer-
+Sektion rendert mit den Brass-getinteten Rebind-Buttons im painterly
+Stil.
 
-- **6.C3 Keybindings-UI**: Sektion „Tasten" in Einstellungen-Drawer
-  - state.keybindings = {move_forward: "w", build_confirm: "f", ...}
-  - Klick auf Aktion → „Drücke neue Taste" → rebind, localStorage-
-    Persistenz (`anazh.keybindings.<action>`)
-  - Konflikt-Warnung wenn zwei Aktionen auf derselben Taste
-  - Reset-Button pro Aktion
-  - Reservierte Tasten: F11 (Vollbild), Browser-Shortcuts
+### Was als Nächstes wartet (V7.79 +)
 
-**Folgepläne nach 6.A+6.C3**:
+**Folgepläne**:
 - 12. **6.B CAD-Werkstatt** (2 Sessions) — 3D-Preview-Pane + Drag-Items
   + Grid-Snap. Minimal Magic: kein Boolean/MultiSelect.
 - 13. **6.G Phase 3** (4-5 Sessions) — Schatten + Wasser + Wind +
