@@ -5537,6 +5537,127 @@ class AnazhRealm {
         }
     }
 
+    // V8.00 — Resize-Handles für Konsole + Drawer.
+    // Konsole bekommt einen unten-rechts-Griff (wächst nach rechts+unten),
+    // jeder Drawer einen unten-links-Griff (wächst nach links+unten, weil
+    // Drawer am rechten Bildschirmrand verankert sind).
+    // Größen persistieren in localStorage (Key `anazh.resize.<id>`),
+    // Doppelklick auf Handle resettet auf Default.
+    installResizeHandles() {
+        if (typeof document === "undefined") return;
+        const consoleEl = document.getElementById("console");
+        if (consoleEl) this._installResizeHandle(consoleEl, "br");
+        const drawers = document.querySelectorAll(".drawer[data-drawer]");
+        drawers.forEach((d) => this._installResizeHandle(d, "bl"));
+    }
+
+    _installResizeHandle(container, corner) {
+        if (!container) return;
+        if (container.querySelector(":scope > .resize-handle")) return; // idempotent
+        const handle = document.createElement("div");
+        handle.className = `resize-handle resize-${corner}`;
+        handle.setAttribute("title", "Größe ändern · Doppelklick: Default");
+        handle.setAttribute("aria-label", "Größe ändern");
+        container.appendChild(handle);
+
+        // Container-ID für Persistence (entweder #id oder data-drawer)
+        const cid = container.id || container.getAttribute("data-drawer") || "container";
+        const storageKey = `anazh.resize.${cid}`;
+
+        // Gespeicherte Größe wiederherstellen
+        const restoreSavedSize = () => {
+            const raw = typeof localStorage !== "undefined" ? localStorage.getItem(storageKey) : null;
+            if (!raw) return;
+            try {
+                const saved = JSON.parse(raw);
+                if (saved && typeof saved.width === "number" && saved.width > 0) {
+                    container.style.width = `${saved.width}px`;
+                }
+                if (saved && typeof saved.height === "number" && saved.height > 0) {
+                    container.style.height = `${saved.height}px`;
+                    container.style.maxHeight = "none";
+                    // Konsole hat default `bottom:16px`; mit explizitem height
+                    // muss bottom auf auto damit height wirkt.
+                    if (container.id === "console") {
+                        container.style.bottom = "auto";
+                    }
+                }
+            } catch {
+                /* ignore */
+            }
+        };
+        restoreSavedSize();
+
+        // Drag-State
+        let drag = null;
+        const onDown = (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const rect = container.getBoundingClientRect();
+            drag = {
+                startX: event.clientX,
+                startY: event.clientY,
+                startW: rect.width,
+                startH: rect.height,
+            };
+        };
+        const onMove = (event) => {
+            if (!drag) return;
+            const dx = event.clientX - drag.startX;
+            const dy = event.clientY - drag.startY;
+            let newW;
+            if (corner === "br") {
+                // Wächst nach rechts → +dx
+                newW = drag.startW + dx;
+            } else {
+                // resize-bl: wächst nach links → -dx
+                newW = drag.startW - dx;
+            }
+            const newH = drag.startH + dy;
+            // Clamp: sinnvolle Min + Max (Viewport-Abstand)
+            const clampedW = Math.max(220, Math.min(window.innerWidth - 40, newW));
+            const clampedH = Math.max(180, Math.min(window.innerHeight - 140, newH));
+            container.style.width = `${clampedW}px`;
+            container.style.height = `${clampedH}px`;
+            container.style.maxHeight = "none";
+            if (container.id === "console") {
+                container.style.bottom = "auto";
+            }
+        };
+        const onUp = () => {
+            if (!drag) return;
+            // Persist
+            try {
+                const w = parseInt(container.style.width, 10) || 0;
+                const h = parseInt(container.style.height, 10) || 0;
+                if (typeof localStorage !== "undefined") {
+                    localStorage.setItem(storageKey, JSON.stringify({ width: w, height: h }));
+                }
+            } catch {
+                /* ignore */
+            }
+            drag = null;
+        };
+        handle.addEventListener("mousedown", onDown);
+        window.addEventListener("mousemove", onMove);
+        window.addEventListener("mouseup", onUp);
+
+        // Doppelklick → Reset auf Default (CSS-Werte greifen wieder)
+        handle.addEventListener("dblclick", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            container.style.width = "";
+            container.style.height = "";
+            container.style.maxHeight = "";
+            if (container.id === "console") container.style.bottom = "";
+            try {
+                if (typeof localStorage !== "undefined") localStorage.removeItem(storageKey);
+            } catch {
+                /* ignore */
+            }
+        });
+    }
+
     updateStatusPanel(currentTime) {
         if (!this._statusRefs) return;
         if (currentTime - this._statusRefs.lastTick < 0.4) return;
@@ -20343,6 +20464,8 @@ class AnazhRealm {
         this._updateBuildModeHud();
         this.initTopbar();
         this.initConsoleDOM();
+        // V8.00 — Resize-Handles für Konsole + alle Drawer (idempotent).
+        this.installResizeHandles();
         // Schicht 2 — LLM-Persistenz aus localStorage holen + UI verkabeln.
         this.llmLoadPersisted();
         this.initLlmUI();

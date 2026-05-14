@@ -1290,7 +1290,29 @@
                 font-size: 12px;
                 z-index: 5;
                 border-radius: 12px;
-                box-shadow: var(--shadow-deep);
+                /* V8.00 Bug-Fix — Background direkt am Element (statt via
+                   ::before mit inset:0). Bei overflow-y:auto scrollte das
+                   ::before mit dem Inhalt weg; das Element selbst behält
+                   Background fix beim Scroll (CSS-Standard). Plus Corner-
+                   Dots als zusätzliche background-image-Layer. */
+                background:
+                    radial-gradient(circle 4px at 12px 12px, #1a1410 0 60%, transparent 65%),
+                    radial-gradient(circle 4px at calc(100% - 12px) 12px, #1a1410 0 60%, transparent 65%),
+                    radial-gradient(circle 4px at 12px calc(100% - 12px), #1a1410 0 60%, transparent 65%),
+                    radial-gradient(circle 4px at calc(100% - 12px) calc(100% - 12px), #1a1410 0 60%, transparent 65%),
+                    radial-gradient(ellipse 60% 80% at 30% 20%, rgba(255, 250, 220, 0.6), transparent 70%),
+                    radial-gradient(ellipse 70% 60% at 75% 85%, rgba(140, 90, 30, 0.18), transparent 70%),
+                    linear-gradient(135deg, var(--parch-1) 0%, var(--parch-2) 60%, var(--parch-3) 100%);
+                background-blend-mode: normal, normal, normal, normal, normal, multiply, normal;
+                /* Border-Ringe direkt als inset box-shadow — bleibt fest am
+                   Element, nicht im scroll-flow. */
+                box-shadow:
+                    var(--shadow-deep),
+                    inset 0 0 0 1px rgba(0, 0, 0, 0.55),
+                    inset 0 0 0 5px var(--iron-1),
+                    inset 0 0 0 6px rgba(0, 0, 0, 0.55),
+                    inset 0 0 0 8px var(--brass-3),
+                    inset 0 0 0 9px rgba(0, 0, 0, 0.4);
                 padding: 24px 20px 18px 20px;
                 color: var(--parch-ink);
                 transition:
@@ -1305,39 +1327,52 @@
                 opacity: 0;
                 pointer-events: none;
             }
-            .drawer::before {
-                content: "";
-                position: absolute;
-                inset: 0;
-                background:
-                    radial-gradient(ellipse 60% 80% at 30% 20%, rgba(255, 250, 220, 0.6), transparent 70%),
-                    radial-gradient(ellipse 70% 60% at 75% 85%, rgba(140, 90, 30, 0.18), transparent 70%),
-                    linear-gradient(135deg, var(--parch-1) 0%, var(--parch-2) 60%, var(--parch-3) 100%);
-                background-blend-mode: normal, multiply, normal;
-                border-radius: inherit;
-                z-index: -1;
-            }
-            .drawer::after {
-                content: "";
-                position: absolute;
-                inset: 0;
-                border-radius: inherit;
-                pointer-events: none;
-                box-shadow:
-                    inset 0 0 0 1px rgba(0, 0, 0, 0.55),
-                    inset 0 0 0 5px var(--iron-1),
-                    inset 0 0 0 6px rgba(0, 0, 0, 0.55),
-                    inset 0 0 0 8px var(--brass-3),
-                    inset 0 0 0 9px rgba(0, 0, 0, 0.4);
-                background:
-                    radial-gradient(circle 4px at 12px 12px, #1a1410 0 60%, transparent 65%),
-                    radial-gradient(circle 4px at calc(100% - 12px) 12px, #1a1410 0 60%, transparent 65%),
-                    radial-gradient(circle 4px at 12px calc(100% - 12px), #1a1410 0 60%, transparent 65%),
-                    radial-gradient(circle 4px at calc(100% - 12px) calc(100% - 12px), #1a1410 0 60%, transparent 65%);
-            }
             .drawer > * {
                 position: relative;
                 z-index: 1;
+            }
+            /* V8.00 — Resize-Handle für Konsole + Drawer.
+               Konsole: unten-rechts (resize-br, nwse-cursor)
+               Drawer: unten-links (resize-bl, nesw-cursor) — wächst nach
+               links + unten, weil Drawer am rechten Bildschirmrand fix. */
+            .resize-handle {
+                position: absolute;
+                width: 18px;
+                height: 18px;
+                z-index: 50;
+                background: linear-gradient(
+                    135deg,
+                    transparent 30%,
+                    rgba(40, 25, 10, 0.55) 30%,
+                    rgba(40, 25, 10, 0.55) 36%,
+                    transparent 36%,
+                    transparent 50%,
+                    var(--brass-2) 50%,
+                    var(--brass-2) 56%,
+                    transparent 56%,
+                    transparent 70%,
+                    var(--brass-2) 70%,
+                    var(--brass-2) 76%,
+                    transparent 76%
+                );
+                opacity: 0.85;
+                transition: opacity 0.15s ease;
+                user-select: none;
+                -webkit-user-select: none;
+            }
+            .resize-handle:hover {
+                opacity: 1;
+            }
+            .resize-handle.resize-br {
+                bottom: 2px;
+                right: 2px;
+                cursor: nwse-resize;
+            }
+            .resize-handle.resize-bl {
+                bottom: 2px;
+                left: 2px;
+                cursor: nesw-resize;
+                transform: scaleX(-1);
             }
             .drawer h2 {
                 font-family: "Cinzel", Georgia, serif;

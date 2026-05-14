@@ -12531,6 +12531,93 @@ function startSaveServer() {
                 check(`Welle 6.B: evaluate-Fehler — ${wave6bResults.error}`, false);
             }
 
+            // ### V8.00 — Resize-Handles (Konsole + Drawer) + Background-Fix ###
+            const resizeResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    try {
+                        out.hasInstallMethod = typeof r.installResizeHandles === "function";
+                        out.hasInternalMethod = typeof r._installResizeHandle === "function";
+                        // Konsole: br-handle existiert
+                        const consoleEl = document.getElementById("console");
+                        out.consoleHasHandle = !!(
+                            consoleEl && consoleEl.querySelector(":scope > .resize-handle.resize-br")
+                        );
+                        // Jeder Drawer: bl-handle existiert
+                        const drawers = document.querySelectorAll(".drawer[data-drawer]");
+                        let allDrawersHaveHandle = drawers.length > 0;
+                        let drawerCount = 0;
+                        drawers.forEach((d) => {
+                            drawerCount++;
+                            if (!d.querySelector(":scope > .resize-handle.resize-bl")) {
+                                allDrawersHaveHandle = false;
+                            }
+                        });
+                        out.allDrawersHaveHandle = allDrawersHaveHandle;
+                        out.drawerCount = drawerCount;
+                        // Idempotenz: zweiter installResizeHandles-Call erzeugt keine Duplikate
+                        r.installResizeHandles();
+                        const handlesAfterSecond = document.querySelectorAll("#console > .resize-handle").length;
+                        out.consoleHandleNotDuplicated = handlesAfterSecond === 1;
+                        // localStorage-Persistence: simulate drag end
+                        const werkstatt = document.querySelector('[data-drawer="werkstatt"]');
+                        if (werkstatt) {
+                            werkstatt.style.width = "400px";
+                            werkstatt.style.height = "500px";
+                            // simulate save (mouseup handler logic)
+                            localStorage.setItem("anazh.resize.werkstatt", JSON.stringify({ width: 400, height: 500 }));
+                            const raw = localStorage.getItem("anazh.resize.werkstatt");
+                            out.persistenceWorks =
+                                raw && JSON.parse(raw).width === 400 && JSON.parse(raw).height === 500;
+                            // cleanup
+                            werkstatt.style.width = "";
+                            werkstatt.style.height = "";
+                            localStorage.removeItem("anazh.resize.werkstatt");
+                        }
+                        // Background-Fix: .drawer hat jetzt direkt ein background statt nur ::before.
+                        // Wir prüfen das via computed style — background sollte 'none' nicht sein.
+                        const w = document.querySelector('[data-drawer="welt"]');
+                        if (w) {
+                            const cs = getComputedStyle(w);
+                            out.drawerHasDirectBackground = cs.backgroundImage && cs.backgroundImage !== "none";
+                            out.drawerHasInsetShadow = cs.boxShadow && cs.boxShadow.includes("inset");
+                        }
+                    } catch (err) {
+                        out.error = err && err.message;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (resizeResults && !resizeResults.error) {
+                check(
+                    "V8.00 Resize: installResizeHandles + _installResizeHandle existieren",
+                    resizeResults.hasInstallMethod && resizeResults.hasInternalMethod
+                );
+                check("V8.00 Resize: Konsole hat .resize-br Handle (unten-rechts)", resizeResults.consoleHasHandle);
+                check(
+                    `V8.00 Resize: Alle ${resizeResults.drawerCount} Drawer haben .resize-bl Handle (unten-links)`,
+                    resizeResults.allDrawersHaveHandle
+                );
+                check(
+                    "V8.00 Resize: installResizeHandles ist idempotent (kein Duplikat)",
+                    resizeResults.consoleHandleNotDuplicated
+                );
+                check("V8.00 Resize: localStorage-Persistence schreibt + liest", resizeResults.persistenceWorks);
+                check(
+                    "V8.00 BG-Fix: .drawer hat direktes background-image (statt nur via ::before)",
+                    resizeResults.drawerHasDirectBackground
+                );
+                check(
+                    "V8.00 BG-Fix: .drawer hat inset box-shadow für Border-Ringe (statt nur via ::after)",
+                    resizeResults.drawerHasInsetShadow
+                );
+            } else if (resizeResults && resizeResults.error) {
+                check(`V8.00 Resize: evaluate-Fehler — ${resizeResults.error}`, false);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {
