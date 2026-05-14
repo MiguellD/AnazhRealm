@@ -8669,7 +8669,7 @@ function startSaveServer() {
                     // Statische Konstanten
                     out.hasTasks =
                         Array.isArray(r.constructor.CREATURE_TASKS) &&
-                        r.constructor.CREATURE_TASKS.length === 3 &&
+                        r.constructor.CREATURE_TASKS.length >= 3 &&
                         r.constructor.CREATURE_TASKS.includes("wander") &&
                         r.constructor.CREATURE_TASKS.includes("follow_player") &&
                         r.constructor.CREATURE_TASKS.includes("wait");
@@ -8823,7 +8823,7 @@ function startSaveServer() {
                 .catch((e) => ({ error: String(e) }));
 
             if (wave6hResults && !wave6hResults.error) {
-                check("Welle 6.H Phase 1: CREATURE_TASKS frozen mit 3 Aufträgen", wave6hResults.hasTasks);
+                check("Welle 6.H Phase 1: CREATURE_TASKS frozen mit ≥3 Aufträgen", wave6hResults.hasTasks);
                 check(
                     "Welle 6.H Phase 1: CREATURE_TASK_AURA_HUE map (follow=120/wait=40/wander=null)",
                     wave6hResults.hasAuraHueMap
@@ -9275,6 +9275,236 @@ function startSaveServer() {
                 check("Welle 6.H P2A: Task-Wechsel triggert Liste-Refresh", wave6hP2aResults.taskCellUpdates);
                 check("Welle 6.H P2A: removeCreature entfernt Group aus scene", wave6hP2aResults.sceneAfterRemove);
                 check("Welle 6.H P2A: Leere Liste zeigt '—'", wave6hP2aResults.emptyListDash);
+            }
+
+            // ### Welle 6.H Phase 2B.1 — Kreaturen sammeln + erinnern ###
+            // gather-Task mit args.material findet nächste Architektur mit
+            // diesem Material in den Parts, läuft hin, erntet bei haltDist
+            // = 1.5m → entfernt Architektur + addToInventory + memory.
+            const wave6hP2bResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 3) return null;
+                    const out = {};
+                    out.tasksHasGather = r.constructor.CREATURE_TASKS.includes("gather");
+                    out.auraHueGather = r.constructor.CREATURE_TASK_AURA_HUE.gather === 200;
+                    out.pingFreqGather = r.constructor.CREATURE_TASK_PING_FREQ.gather === 392;
+                    out.haltDist = r.constructor.CREATURE_GATHER_HALT_DIST;
+                    out.speed = r.constructor.CREATURE_GATHER_SPEED;
+                    out.memCap = r.constructor.CREATURE_MEMORY_CAP === 30;
+                    out.hasRemember = typeof r._creatureRemember === "function";
+                    out.hasFindArch = typeof r._findNearestArchitectureWithMaterial === "function";
+                    out.hasBuildArgs = typeof r._buildCreatureTaskArgs === "function";
+                    out.hasDescribeArg = typeof r._describeCreatureTaskArg === "function";
+
+                    // Memory + FIFO-Cap
+                    const c0 = r.state.creatures[0];
+                    c0.userData.memory = [];
+                    for (let i = 0; i < 35; i++) r._creatureRemember(c0, "found", { idx: i });
+                    out.memCapEnforced = c0.userData.memory.length === 30;
+                    out.memFifoCorrect =
+                        c0.userData.memory[0].content.idx === 5 && c0.userData.memory[29].content.idx === 34;
+                    out.memHasTimestamp = typeof c0.userData.memory[0].at === "number";
+
+                    // _findNearestArchitectureWithMaterial
+                    const p = r.state.playerMesh.position;
+                    const woodTarget = r._findNearestArchitectureWithMaterial(p, "holz");
+                    out.findsHolz = !!woodTarget;
+                    if (woodTarget) {
+                        out.holzPartConfirmed =
+                            woodTarget.type &&
+                            r.state.blueprints[woodTarget.type] &&
+                            r.state.blueprints[woodTarget.type].parts.some((part) => part && part.material === "holz");
+                    }
+                    out.findsFictionalNull = r._findNearestArchitectureWithMaterial(p, "fictional_xyz") === null;
+
+                    // _buildCreatureTaskArgs context-dependent
+                    out.gatherStringArg = r._buildCreatureTaskArgs("gather", "holz").material === "holz";
+                    out.followNumberArg = r._buildCreatureTaskArgs("follow_player", 1.5).distance === 1.5;
+                    out.waitEmptyArg = Object.keys(r._buildCreatureTaskArgs("wait", "x")).length === 0;
+                    out.gatherWithNumberDrops = !r._buildCreatureTaskArgs("gather", 5).material;
+
+                    // Gather-Direction: läuft zum Ziel
+                    const target = r.spawnArchitecture("baum_eiche", { x: p.x + 10, y: p.y, z: p.z });
+                    c0.position.set(p.x, p.y, p.z);
+                    r.assignCreatureTask(c0, "gather", { material: "holz" }, { silent: true });
+                    const task = r._getCreatureTask(c0);
+                    const dir = r._tickCreatureTaskDirection(c0, task, "happy");
+                    out.gatherDirNonZero = dir && Math.abs(dir.x) + Math.abs(dir.z) > 0;
+                    out.gatherDirTargetsX = dir && dir.x > 0;
+                    out.targetCached = !!task.args._target;
+
+                    // Gather-Ernte bei haltDist
+                    const tempArch = r.spawnArchitecture("stein_block", { x: p.x + 50, y: p.y, z: p.z + 50 });
+                    c0.position.set(p.x + 50.5, p.y, p.z + 50);
+                    r.state.player.inventory = new Array(27).fill(null);
+                    r.assignCreatureTask(c0, "gather", { material: "stein" }, { silent: true });
+                    const archCountBefore = r.state.architectures.length;
+                    const t2 = r._getCreatureTask(c0);
+                    r._tickCreatureTaskDirection(c0, t2, "happy");
+                    out.archRemovedOnHarvest = r.state.architectures.length === archCountBefore - 1;
+                    out.inventoryHasHarvested = r.state.player.inventory.some(
+                        (s) => s && s.blueprintName === "stein_block"
+                    );
+                    out.memoryHasGathered =
+                        c0.userData.memory &&
+                        c0.userData.memory.some(
+                            (m) => m.type === "gathered" && m.content && m.content.blueprint === "stein_block"
+                        );
+                    void tempArch;
+
+                    // Unknown Material → wander-Fallback
+                    r.assignCreatureTask(c0, "wander", {}, { silent: true });
+                    r.assignCreatureTask(c0, "gather", { material: "fictional_xyz" }, { silent: true });
+                    const t3 = r._getCreatureTask(c0);
+                    r._tickCreatureTaskDirection(c0, t3, "happy");
+                    const tAfter = r._getCreatureTask(c0);
+                    out.unknownReturnsToWander = tAfter.name === "wander";
+                    out.memoryHasNoMaterial = c0.userData.memory.some(
+                        (m) => m.type === "no_material" && m.content && m.content.material === "fictional_xyz"
+                    );
+
+                    // DSL-Op + Chat
+                    r.assignCreatureTask(r.state.creatures[1], "wander", {}, { silent: true });
+                    r.state.creatures[1].position.set(p.x + 1, p.y, p.z + 1);
+                    r.dslRun(["creature_task", 1, "gather", "holz"], { source: "test" });
+                    const dt = r._getCreatureTask(r.state.creatures[1]);
+                    out.dslGatherWorks = dt && dt.name === "gather" && dt.args.material === "holz";
+
+                    const cases = [
+                        ["sammle holz", "creature_task_nearest", "gather", "holz"],
+                        ["bring quarz", "creature_task_nearest", "gather", "quarz"],
+                        ["alle sammeln eisen", "creature_task_all", "gather", "eisen"],
+                    ];
+                    out.chatPatterns = cases.every(([text, op, tn, mat]) => {
+                        const parsed = r.parseChatToDsl(text);
+                        return (
+                            parsed && parsed.program[0] === op && parsed.program[1] === tn && parsed.program[2] === mat
+                        );
+                    });
+
+                    // NON_BROADCASTABLE_OPS bleibt
+                    const set = r.constructor.NON_BROADCASTABLE_OPS;
+                    out.nonBroadcastable =
+                        set.has("creature_task") && set.has("creature_task_nearest") && set.has("creature_task_all");
+
+                    // Status-Bar
+                    r.assignTaskToAllCreatures("wander", {}, { silent: true });
+                    r.assignCreatureTask(r.state.creatures[0], "gather", { material: "holz" }, { silent: true });
+                    r.assignCreatureTask(r.state.creatures[1], "gather", { material: "holz" }, { silent: true });
+                    r.assignCreatureTask(r.state.creatures[2], "follow_player", {}, { silent: true });
+                    r._renderTaskStatusUI();
+                    const stext = document.getElementById("status-tasks").textContent;
+                    out.statusShowsGather = /2 sammeln/.test(stext);
+                    out.statusShowsFollow = /1 folgen/.test(stext);
+
+                    // describeProgram
+                    const d1 = r.describeProgram(["creature_task_nearest", "gather", "holz"]);
+                    out.descShowsMaterial = /Material/.test(d1) && /holz/.test(d1);
+
+                    // Liste zeigt 'sammelt holz'
+                    r._renderCreatureListUI();
+                    const list = document.getElementById("creature-list");
+                    const firstTask = list && list.querySelector(".creature-row .creature-task");
+                    out.listShowsSammelt = firstTask && /sammelt/.test(firstTask.textContent);
+                    out.listTaskHasGatherClass = firstTask && firstTask.classList.contains("gather");
+
+                    // UI-Sammeln-Sektion
+                    out.hasGatherSelect = !!document.getElementById("creature-gather-select");
+                    out.gatherSelectHasMaterials =
+                        document.querySelectorAll("#creature-gather-select option").length >= 10;
+                    out.hasNearestGatherBtn = !!document.querySelector('[data-creature-gather="nearest"]');
+                    out.hasAllGatherBtn = !!document.querySelector('[data-creature-gather="all"]');
+
+                    // Cleanup für nachfolgende Tests
+                    r.assignTaskToAllCreatures("wander", {}, { silent: true });
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6hP2bResults && !wave6hP2bResults.error) {
+                check("Welle 6.H P2B.1: CREATURE_TASKS enthält 'gather'", wave6hP2bResults.tasksHasGather);
+                check("Welle 6.H P2B.1: AURA_HUE.gather === 200 (cyan)", wave6hP2bResults.auraHueGather);
+                check("Welle 6.H P2B.1: PING_FREQ.gather === 392 (G4)", wave6hP2bResults.pingFreqGather);
+                check(
+                    "Welle 6.H P2B.1: HALT_DIST/SPEED/MEM_CAP=30 als Konstanten",
+                    Number.isFinite(wave6hP2bResults.haltDist) &&
+                        Number.isFinite(wave6hP2bResults.speed) &&
+                        wave6hP2bResults.memCap
+                );
+                check(
+                    "Welle 6.H P2B.1: alle 4 Methoden existieren (_creatureRemember/_findNearestArchitectureWithMaterial/_buildCreatureTaskArgs/_describeCreatureTaskArg)",
+                    wave6hP2bResults.hasRemember &&
+                        wave6hP2bResults.hasFindArch &&
+                        wave6hP2bResults.hasBuildArgs &&
+                        wave6hP2bResults.hasDescribeArg
+                );
+                check(
+                    "Welle 6.H P2B.1: memory[] FIFO-Cap=30 nach 35 Pushes",
+                    wave6hP2bResults.memCapEnforced && wave6hP2bResults.memFifoCorrect
+                );
+                check("Welle 6.H P2B.1: memory-Eintrag hat at-Timestamp", wave6hP2bResults.memHasTimestamp);
+                check(
+                    "Welle 6.H P2B.1: _findNearestArchitectureWithMaterial(holz) findet Baum",
+                    wave6hP2bResults.findsHolz
+                );
+                check(
+                    "Welle 6.H P2B.1: gefundene Architektur trägt material im Part",
+                    wave6hP2bResults.holzPartConfirmed
+                );
+                check("Welle 6.H P2B.1: Unknown Material → null", wave6hP2bResults.findsFictionalNull);
+                check(
+                    "Welle 6.H P2B.1: _buildCreatureTaskArgs context-aware (gather→material, follow→distance, wait→leer, gather+number droppt)",
+                    wave6hP2bResults.gatherStringArg &&
+                        wave6hP2bResults.followNumberArg &&
+                        wave6hP2bResults.waitEmptyArg &&
+                        wave6hP2bResults.gatherWithNumberDrops
+                );
+                check(
+                    "Welle 6.H P2B.1: gather-Tick Direction zeigt zum Ziel",
+                    wave6hP2bResults.gatherDirNonZero && wave6hP2bResults.gatherDirTargetsX
+                );
+                check("Welle 6.H P2B.1: Ziel wird in task.args._target gecached", wave6hP2bResults.targetCached);
+                check(
+                    "Welle 6.H P2B.1: bei haltDist → Architektur entfernt + Inventar gefüllt + memory 'gathered'",
+                    wave6hP2bResults.archRemovedOnHarvest &&
+                        wave6hP2bResults.inventoryHasHarvested &&
+                        wave6hP2bResults.memoryHasGathered
+                );
+                check(
+                    "Welle 6.H P2B.1: gather mit unbekanntem Material → Task fällt auf wander",
+                    wave6hP2bResults.unknownReturnsToWander
+                );
+                check("Welle 6.H P2B.1: 'no_material'-Erinnerung gespeichert", wave6hP2bResults.memoryHasNoMaterial);
+                check(
+                    "Welle 6.H P2B.1: DSL creature_task(idx, gather, material) wirkt",
+                    wave6hP2bResults.dslGatherWorks
+                );
+                check(
+                    "Welle 6.H P2B.1: Chat 'sammle/bring/alle sammeln' Patterns routen korrekt",
+                    wave6hP2bResults.chatPatterns
+                );
+                check(
+                    "Welle 6.H P2B.1: gather-DSL-Ops bleiben in NON_BROADCASTABLE_OPS",
+                    wave6hP2bResults.nonBroadcastable
+                );
+                check(
+                    "Welle 6.H P2B.1: Status-Bar zeigt 'N sammeln' bei gather-Tasks",
+                    wave6hP2bResults.statusShowsGather && wave6hP2bResults.statusShowsFollow
+                );
+                check("Welle 6.H P2B.1: describeProgram zeigt Material", wave6hP2bResults.descShowsMaterial);
+                check(
+                    "Welle 6.H P2B.1: Liste zeigt 'sammelt' + .gather-Class",
+                    wave6hP2bResults.listShowsSammelt && wave6hP2bResults.listTaskHasGatherClass
+                );
+                check(
+                    "Welle 6.H P2B.1: #creature-gather-select im DOM mit ≥10 Optionen",
+                    wave6hP2bResults.hasGatherSelect && wave6hP2bResults.gatherSelectHasMaterials
+                );
+                check(
+                    "Welle 6.H P2B.1: 'Nächste sammelt' + 'Alle sammeln' Buttons im DOM",
+                    wave6hP2bResults.hasNearestGatherBtn && wave6hP2bResults.hasAllGatherBtn
+                );
             }
 
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###

@@ -29,7 +29,7 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self';"
         />
-        <title>Anazh Realm v7.80 – Das Ultiversum</title>
+        <title>Anazh Realm v7.81 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
              zusätzliche Datei. img-src 'self' data: in CSP erlaubt data-URI. -->
         <link
@@ -1742,6 +1742,9 @@
             .creature-list .creature-task.wait {
                 color: #b48a3c;
             }
+            .creature-list .creature-task.gather {
+                color: #4aa6c0;
+            }
             /* Ring 5: Spieler-Seele. Brass-getintetes <select>, passend zum
            Drawer-Pergament-Look. */
             .drawer .soul-row {
@@ -2660,7 +2663,7 @@
         <header id="topbar" class="hud-frame">
             <div class="topbar-inner">
                 <div class="title">
-                    Anazh Realm <span class="version">v7.80</span> <span class="sub">— Das Ultiversum</span>
+                    Anazh Realm <span class="version">v7.81</span> <span class="sub">— Das Ultiversum</span>
                 </div>
                 <nav class="tabs" role="tablist" aria-label="Hauptansichten">
                     <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">
@@ -2803,6 +2806,38 @@
                 <div class="actions">
                     <button type="button" data-cmd="alle folgt mir">Alle folgen</button>
                     <button type="button" data-cmd="alle warten">Alle warten</button>
+                </div>
+            </section>
+            <!-- Welle 6.H Phase 2B.1 — Sammeln-Sektion. Kreatur findet die
+                 nächste Architektur mit dem gewählten Material, baut sie ab
+                 und legt sie ins Spieler-Inventar (6.C1). Dropdown trägt
+                 die 12 Built-in-Materialien. -->
+            <section class="section">
+                <h3>Sammeln</h3>
+                <p class="drawer-hint">
+                    Die nächste Kreatur sucht eine Architektur mit dem gewählten Material, bringt sie ins
+                    Inventar und merkt sich was sie fand.
+                </p>
+                <div class="soul-row">
+                    <label for="creature-gather-select">Material</label>
+                    <select id="creature-gather-select" aria-label="Material wählen">
+                        <option value="holz">Holz</option>
+                        <option value="stein">Stein</option>
+                        <option value="quarz">Quarz</option>
+                        <option value="laub">Laub</option>
+                        <option value="eisen">Eisen</option>
+                        <option value="bronze">Bronze</option>
+                        <option value="leder">Leder</option>
+                        <option value="glut">Glut</option>
+                        <option value="knochen">Knochen</option>
+                        <option value="fleisch">Fleisch</option>
+                        <option value="federn">Federn</option>
+                        <option value="schuppen">Schuppen</option>
+                    </select>
+                </div>
+                <div class="actions" id="creature-gather-actions">
+                    <button type="button" data-creature-gather="nearest">Nächste sammelt</button>
+                    <button type="button" data-creature-gather="all">Alle sammeln</button>
                 </div>
             </section>
             <section class="section">
