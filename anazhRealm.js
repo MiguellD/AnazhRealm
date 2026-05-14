@@ -17937,6 +17937,11 @@ class AnazhRealm {
         if (typeof this._workshopRebuildPreviewMesh === "function") {
             this._workshopRebuildPreviewMesh();
         }
+        // Welle 6.B Phase 2 Bug-Fix — Manipulator-UI sync (Read-only-Banner +
+        // Mode-Bar disable) muss bei jedem Bauplan-Wechsel aktualisiert werden.
+        if (typeof this._workshopUpdateManipulatorButtons === "function") {
+            this._workshopUpdateManipulatorButtons();
+        }
         return true;
     }
 
@@ -19028,25 +19033,47 @@ class AnazhRealm {
         root.renderOrder = 999;
         root.visible = false; // versteckt bis Selection da ist
 
-        // --- Translate-Gizmo: drei Achs-Pfeile ---
+        // Picker-Material: unsichtbar aber für Raycast trefferbar. Klassisches
+        // Three.js TransformControls-Muster — schlanke Visuals + großzügige
+        // Hit-Boxen drumherum, damit Klick auf einen 3-Pixel-Pfeil nicht
+        // nervt. colorWrite:false sorgt dafür, dass die Picker auch bei
+        // depthTest:false nicht zu Farbe oder Depth-Buffer beitragen.
+        const matPicker = () =>
+            new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                visible: false,
+                depthTest: false,
+                depthWrite: false,
+                transparent: true,
+                opacity: 0,
+            });
+
+        // --- Translate-Gizmo: drei Achs-Pfeile mit großzügigen Pickern ---
         const tGroup = new THREE.Group();
         tGroup.name = "translate";
         const buildArrow = (color, axis) => {
             const grp = new THREE.Group();
-            const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.7, 12), matFor(color));
+            const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.7, 12), matFor(color));
             shaft.position.y = 0.45;
-            const tip = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.22, 16), matFor(color));
-            tip.position.y = 0.91;
+            const tip = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.26, 16), matFor(color));
+            tip.position.y = 0.93;
+            // Picker: viel dicker (radius 0.14), umschließt Schaft + Spitze
+            const picker = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 1.1, 8), matPicker());
+            picker.position.y = 0.55;
             grp.add(shaft);
             grp.add(tip);
+            grp.add(picker);
             // Achsen-Rotation: Cylinder ist default Y-up, also Y-Pfeil OK.
             if (axis === "x") grp.rotation.z = -Math.PI / 2;
             else if (axis === "z") grp.rotation.x = Math.PI / 2;
-            grp.userData.gizmo = { mode: "translate", axis };
-            shaft.userData.gizmo = { mode: "translate", axis };
-            tip.userData.gizmo = { mode: "translate", axis };
-            p.gizmoMeshes.set(shaft, { mode: "translate", axis });
-            p.gizmoMeshes.set(tip, { mode: "translate", axis });
+            const info = { mode: "translate", axis };
+            grp.userData.gizmo = info;
+            shaft.userData.gizmo = info;
+            tip.userData.gizmo = info;
+            picker.userData.gizmo = info;
+            p.gizmoMeshes.set(shaft, info);
+            p.gizmoMeshes.set(tip, info);
+            p.gizmoMeshes.set(picker, info);
             tGroup.add(grp);
             return grp;
         };
@@ -19055,33 +19082,52 @@ class AnazhRealm {
         buildArrow(COLORS.z, "z");
         root.add(tGroup);
 
-        // --- Rotate-Gizmo: drei Torus-Ringe ---
+        // --- Rotate-Gizmo: drei Torus-Ringe mit großzügigen Pickern ---
         const rGroup = new THREE.Group();
         rGroup.name = "rotate";
         const buildRing = (color, axis) => {
-            const ring = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.022, 8, 48), matFor(color));
-            if (axis === "x") ring.rotation.y = Math.PI / 2;
-            else if (axis === "y") ring.rotation.x = Math.PI / 2;
+            const ring = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.03, 8, 48), matFor(color));
+            // Picker: Torus mit deutlich dickerem Tube-Radius (0.09)
+            const picker = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.09, 6, 32), matPicker());
+            if (axis === "x") {
+                ring.rotation.y = Math.PI / 2;
+                picker.rotation.y = Math.PI / 2;
+            } else if (axis === "y") {
+                ring.rotation.x = Math.PI / 2;
+                picker.rotation.x = Math.PI / 2;
+            }
             // Z: Default-Lage des Torus (in xy-Ebene)
-            ring.userData.gizmo = { mode: "rotate", axis };
-            p.gizmoMeshes.set(ring, { mode: "rotate", axis });
+            const info = { mode: "rotate", axis };
+            ring.userData.gizmo = info;
+            picker.userData.gizmo = info;
+            p.gizmoMeshes.set(ring, info);
+            p.gizmoMeshes.set(picker, info);
             rGroup.add(ring);
+            rGroup.add(picker);
         };
         buildRing(COLORS.x, "x");
         buildRing(COLORS.y, "y");
         buildRing(COLORS.z, "z");
         root.add(rGroup);
 
-        // --- Scale-Gizmo: drei Achs-Würfel + Zentral-Würfel ---
+        // --- Scale-Gizmo: drei Achs-Würfel + Zentral-Würfel mit Pickern ---
         const sGroup = new THREE.Group();
         sGroup.name = "scale";
         const buildCube = (color, axis) => {
-            const cube = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.13, 0.13), matFor(color));
-            if (axis === "x") cube.position.x = 0.7;
-            else if (axis === "y") cube.position.y = 0.7;
-            else if (axis === "z") cube.position.z = 0.7;
+            const cube = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, 0.15), matFor(color));
+            const picker = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.26, 0.26), matPicker());
+            if (axis === "x") {
+                cube.position.x = 0.7;
+                picker.position.x = 0.7;
+            } else if (axis === "y") {
+                cube.position.y = 0.7;
+                picker.position.y = 0.7;
+            } else if (axis === "z") {
+                cube.position.z = 0.7;
+                picker.position.z = 0.7;
+            }
             // Schaft als dünner Cylinder vom Center bis zum Würfel (Visual-Anker)
-            const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.7, 8), matFor(color));
+            const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.7, 8), matFor(color));
             shaft.position.set(0, 0.35, 0);
             if (axis === "x") {
                 shaft.rotation.z = -Math.PI / 2;
@@ -19090,21 +19136,30 @@ class AnazhRealm {
                 shaft.rotation.x = Math.PI / 2;
                 shaft.position.set(0, 0, 0.35);
             }
-            cube.userData.gizmo = { mode: "scale", axis };
-            shaft.userData.gizmo = { mode: "scale", axis };
-            p.gizmoMeshes.set(cube, { mode: "scale", axis });
-            p.gizmoMeshes.set(shaft, { mode: "scale", axis });
+            const info = { mode: "scale", axis };
+            cube.userData.gizmo = info;
+            shaft.userData.gizmo = info;
+            picker.userData.gizmo = info;
+            p.gizmoMeshes.set(cube, info);
+            p.gizmoMeshes.set(shaft, info);
+            p.gizmoMeshes.set(picker, info);
             sGroup.add(cube);
             sGroup.add(shaft);
+            sGroup.add(picker);
         };
         buildCube(COLORS.x, "x");
         buildCube(COLORS.y, "y");
         buildCube(COLORS.z, "z");
         // Zentral-Würfel = uniform-scale (axis === "uniform")
-        const center = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.17, 0.17), matFor(COLORS.center));
-        center.userData.gizmo = { mode: "scale", axis: "uniform" };
-        p.gizmoMeshes.set(center, { mode: "scale", axis: "uniform" });
+        const center = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), matFor(COLORS.center));
+        const centerPicker = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.3), matPicker());
+        const uniformInfo = { mode: "scale", axis: "uniform" };
+        center.userData.gizmo = uniformInfo;
+        centerPicker.userData.gizmo = uniformInfo;
+        p.gizmoMeshes.set(center, uniformInfo);
+        p.gizmoMeshes.set(centerPicker, uniformInfo);
         sGroup.add(center);
+        sGroup.add(centerPicker);
         root.add(sGroup);
 
         p.scene.add(root);
@@ -19121,6 +19176,15 @@ class AnazhRealm {
         const bp = this.state.blueprints[ws.selectedBlueprint];
         const idx = ws.selectedPartIdx;
         if (!bp || idx === null || idx < 0 || idx >= bp.parts.length) {
+            p.gizmo.visible = false;
+            return;
+        }
+        // Welle 6.B Phase 2 Bug-Fix — Built-in-Baupläne sind read-only.
+        // Wir VERSTECKEN das Gizmo komplett (statt es zu zeigen aber den Drag
+        // intern abzulehnen): sonst sieht der Spieler das Gizmo, packt es,
+        // nichts greift, Drag fällt auf Orbit durch — unsichtbar verwirrend.
+        // Mit Hide ist die Welt ehrlich: kein sichtbarer Griff = kein Edit.
+        if (bp.builtIn) {
             p.gizmo.visible = false;
             return;
         }
@@ -19396,6 +19460,19 @@ class AnazhRealm {
         if (snapBtn) {
             snapBtn.classList.toggle("active", ws.snapEnabled);
             snapBtn.textContent = ws.snapEnabled ? "Snap" : "frei";
+        }
+        // Read-only-Banner: sichtbar bei Built-in-Bauplan, sonst versteckt.
+        // Plus Mode-Bar disable wenn Built-in (visuell + klick-wirkungslos).
+        const banner = document.getElementById("workshop-readonly-banner");
+        const bp = this.state.blueprints[ws.selectedBlueprint];
+        const isBuiltIn = bp && bp.builtIn === true;
+        if (banner) banner.hidden = !isBuiltIn;
+        if (modeBar) {
+            const allBtns = modeBar.querySelectorAll("button");
+            allBtns.forEach((btn) => {
+                btn.disabled = isBuiltIn;
+                btn.style.opacity = isBuiltIn ? "0.4" : "";
+            });
         }
     }
 

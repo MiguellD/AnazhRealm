@@ -1062,7 +1062,7 @@
             #world-guest-banner {
                 margin-top: 0.6em;
                 padding: 0.5em 0.7em;
-                background: rgba(180, 140, 80, 0.10);
+                background: rgba(180, 140, 80, 0.1);
                 border-left: 3px solid var(--brass-1, #8b6a3f);
                 border-radius: 0 3px 3px 0;
                 font-size: 0.9em;
@@ -1699,8 +1699,13 @@
                 animation: keybind-pulse 0.9s ease-in-out infinite;
             }
             @keyframes keybind-pulse {
-                0%, 100% { opacity: 1; }
-                50% { opacity: 0.6; }
+                0%,
+                100% {
+                    opacity: 1;
+                }
+                50% {
+                    opacity: 0.6;
+                }
             }
             /* Welle 6.H Phase 2A — Kreatur-Liste im Kreaturen-Drawer.
                Eine Zeile pro Kreatur: Name + Form + aktueller Task. */
@@ -2656,6 +2661,20 @@
                 border-color: var(--brass-1);
                 color: var(--parch-bg);
             }
+            #workshop-readonly-banner {
+                width: 100%;
+                margin: 2px 0 0 0;
+                padding: 4px 8px;
+                background: linear-gradient(180deg, rgba(180, 130, 70, 0.25), rgba(120, 80, 30, 0.18));
+                border: 1px solid var(--brass-3);
+                border-radius: 2px;
+                font-family: "IM Fell English", Georgia, serif;
+                font-size: 11px;
+                font-style: italic;
+                color: var(--parch-ink-faded);
+                text-align: center;
+                box-sizing: border-box;
+            }
             .workshop-part-row.selected {
                 background: linear-gradient(180deg, rgba(176, 106, 217, 0.18), rgba(176, 106, 217, 0.08));
                 border-color: var(--violet-1);
@@ -3066,8 +3085,8 @@
             <section class="section">
                 <h3>Sammeln</h3>
                 <p class="drawer-hint">
-                    Die nächste Kreatur sucht eine Architektur mit dem gewählten Material, bringt sie ins
-                    Inventar und merkt sich was sie fand.
+                    Die nächste Kreatur sucht eine Architektur mit dem gewählten Material, bringt sie ins Inventar und
+                    merkt sich was sie fand.
                 </p>
                 <div class="soul-row">
                     <label for="creature-gather-select">Material</label>
@@ -3099,8 +3118,8 @@
             <section class="section">
                 <h3>Bauen lassen</h3>
                 <p class="drawer-hint">
-                    Die nächste Kreatur kommt zum Schöpfer, nimmt das nötige Material und erschafft daraus
-                    eine Architektur ein paar Schritte entfernt. Spiegel zu „Sammeln".
+                    Die nächste Kreatur kommt zum Schöpfer, nimmt das nötige Material und erschafft daraus eine
+                    Architektur ein paar Schritte entfernt. Spiegel zu „Sammeln".
                 </p>
                 <div class="soul-row">
                     <label for="creature-build-select">Bauplan</label>
@@ -3133,9 +3152,8 @@
             <section class="section">
                 <h3>Wesen in der Welt</h3>
                 <p class="drawer-hint">
-                    Identität ist ein Name (Vision §1.1 — Co-Schöpfer-Beziehung). Tag-Profil emergiert aus
-                    Form × Material — eine Sprite ist magie-leitend, ein Wesen dichte/lebendig, ein Geist
-                    ätherisch.
+                    Identität ist ein Name (Vision §1.1 — Co-Schöpfer-Beziehung). Tag-Profil emergiert aus Form ×
+                    Material — eine Sprite ist magie-leitend, ein Wesen dichte/lebendig, ein Geist ätherisch.
                 </p>
                 <div id="creature-list" class="creature-list" aria-live="polite">—</div>
             </section>
@@ -3145,7 +3163,10 @@
             <h2>Spieler</h2>
             <section class="section">
                 <h3>Seele</h3>
-                <p class="drawer-hint">Form des Spieler-Avatars. Welle 6.D: jede Seele trägt ein Material-Tag-Profil, daraus folgen Stats (Mensch balanced, Phönix schnell/fragil, Drache zäh/langsam).</p>
+                <p class="drawer-hint">
+                    Form des Spieler-Avatars. Welle 6.D: jede Seele trägt ein Material-Tag-Profil, daraus folgen Stats
+                    (Mensch balanced, Phönix schnell/fragil, Drache zäh/langsam).
+                </p>
                 <div class="soul-row">
                     <label for="player-soul-select">Form</label>
                     <select id="player-soul-select" aria-label="Spieler-Seele wählen"></select>
@@ -3157,12 +3178,18 @@
             </section>
             <section class="section">
                 <h3>Eigene Seele formen <span class="section-hint">(Bauplan aus Körper-Teilen)</span></h3>
-                <p class="drawer-hint">Wie Bauwerke + Maschinen: Form × Material × Anordnung → Compound-Tags → Stats. Klone eine Built-in oder erschaffe eine neue Komposition.</p>
+                <p class="drawer-hint">
+                    Wie Bauwerke + Maschinen: Form × Material × Anordnung → Compound-Tags → Stats. Klone eine Built-in
+                    oder erschaffe eine neue Komposition.
+                </p>
                 <div id="soul-editor"></div>
             </section>
             <section class="section">
                 <h3>Ausrüstung <span class="section-hint">(Werkzeug × 0.15 + Rüstung × 0.3)</span></h3>
-                <p class="drawer-hint">Werkzeug + Rüstung tragen ihre Compound-Tags in die Stat-Rechnung. Rüstung wirkt stärker als Werkzeug.</p>
+                <p class="drawer-hint">
+                    Werkzeug + Rüstung tragen ihre Compound-Tags in die Stat-Rechnung. Rüstung wirkt stärker als
+                    Werkzeug.
+                </p>
                 <div id="player-equip"></div>
             </section>
             <section class="section">
@@ -3198,13 +3225,40 @@
                 <h3>3D-Vorschau</h3>
                 <div id="workshop-preview-wrapper">
                     <canvas id="workshop-preview-canvas"></canvas>
+                    <div id="workshop-readonly-banner" hidden>Eingebaut — zum Bearbeiten klonen</div>
                     <div id="workshop-mode-bar" role="group" aria-label="Manipulator-Modus">
-                        <button type="button" class="workshop-mode-btn active" data-workshop-mode="translate" title="Verschieben (W)">Move</button>
-                        <button type="button" class="workshop-mode-btn" data-workshop-mode="rotate" title="Drehen (E)">Rotate</button>
-                        <button type="button" class="workshop-mode-btn" data-workshop-mode="scale" title="Skalieren (R)">Scale</button>
-                        <button type="button" id="workshop-snap-toggle" class="workshop-snap-btn active" title="Grid-Snap (G)">Snap</button>
+                        <button
+                            type="button"
+                            class="workshop-mode-btn active"
+                            data-workshop-mode="translate"
+                            title="Verschieben (W)"
+                        >
+                            Move
+                        </button>
+                        <button type="button" class="workshop-mode-btn" data-workshop-mode="rotate" title="Drehen (E)">
+                            Rotate
+                        </button>
+                        <button
+                            type="button"
+                            class="workshop-mode-btn"
+                            data-workshop-mode="scale"
+                            title="Skalieren (R)"
+                        >
+                            Scale
+                        </button>
+                        <button
+                            type="button"
+                            id="workshop-snap-toggle"
+                            class="workshop-snap-btn active"
+                            title="Grid-Snap (G)"
+                        >
+                            Snap
+                        </button>
                     </div>
-                    <p class="workshop-preview-hint">Klick: Part wählen · Drag: rotieren · Rad: zoom · W/E/R wechselt Modus · G snap</p>
+                    <p class="workshop-preview-hint">
+                        Klick: Part wählen · Drag-Achse: Part bewegen · Drag leer: rotieren · Rad: zoom · W/E/R Modus ·
+                        G snap
+                    </p>
                 </div>
             </section>
             <section class="section">
@@ -3253,8 +3307,8 @@
             <section class="section" id="creature-speech-section">
                 <h3>Kreaturen-Stimmen</h3>
                 <p class="drawer-hint">
-                    Kreaturen sprechen von selbst bei wichtigen Ereignissen — Level-Up, Trank-Wirkung, fehlendes Material.
-                    Sanft gedrosselt (60s/Wesen, 8s gesamt), damit der Chat ruhig bleibt.
+                    Kreaturen sprechen von selbst bei wichtigen Ereignissen — Level-Up, Trank-Wirkung, fehlendes
+                    Material. Sanft gedrosselt (60s/Wesen, 8s gesamt), damit der Chat ruhig bleibt.
                 </p>
                 <label class="radio-label">
                     <input type="checkbox" id="creature-speech-toggle" checked />
@@ -3267,9 +3321,9 @@
             <section class="section" id="keybindings-section">
                 <h3>Tastenbelegung</h3>
                 <p class="drawer-hint">
-                    Klick „Ändern" und drücke dann die gewünschte Taste oder Maustaste. Esc bricht ab. WASD und 1-9
-                    sind Konvention und bleiben fest. <strong>Abbauen</strong> entfernt Architekturen am Fadenkreuz —
-                    trifft keine, wird ein Loch ins Terrain gegraben.
+                    Klick „Ändern" und drücke dann die gewünschte Taste oder Maustaste. Esc bricht ab. WASD und 1-9 sind
+                    Konvention und bleiben fest. <strong>Abbauen</strong> entfernt Architekturen am Fadenkreuz — trifft
+                    keine, wird ein Loch ins Terrain gegraben.
                 </p>
                 <div id="keybindings-list"></div>
                 <div class="actions">
@@ -3326,8 +3380,10 @@
                 </div>
                 <div class="drawer-hint" style="font-size: 11px; opacity: 0.75; margin-top: -6px">
                     Endpoint kann eine Basis-URL sein (z.B. <code>http://localhost:11434</code> →
-                    <code>/api/chat</code> wird angehängt) oder eine vollständige URL inklusive Pfad
-                    (<code>https://ollama.com/api/chat</code> oder <code>https://provider/v1/chat/completions</code>
+                    <code>/api/chat</code> wird angehängt) oder eine vollständige URL inklusive Pfad (<code
+                        >https://ollama.com/api/chat</code
+                    >
+                    oder <code>https://provider/v1/chat/completions</code>
                     für OpenAI-kompatible Cloud-Hoster).
                 </div>
                 <!-- V7.96 — Proxy-Toggle: Ollama Cloud (ollama.com etc.) sendet KEINE
@@ -3339,12 +3395,18 @@
                         <span>Cloud über save-server-Proxy (löst CORS)</span>
                     </label>
                 </div>
-                <div class="drawer-hint" id="llm-proxy-hint" hidden style="font-size: 11px; opacity: 0.75; margin-top: -6px">
+                <div
+                    class="drawer-hint"
+                    id="llm-proxy-hint"
+                    hidden
+                    style="font-size: 11px; opacity: 0.75; margin-top: -6px"
+                >
                     Aktiviere wenn Cloud-Setup mit CORS-Fehler scheitert (typisch bei
-                    <code>ollama.com</code>). Request läuft über <code>localhost:4312/api/proxy/llm</code> —
-                    braucht laufenden <code>npm run dev</code>. CORS-freundliche Provider die ohne Proxy laufen:
+                    <code>ollama.com</code>). Request läuft über <code>localhost:4312/api/proxy/llm</code> — braucht
+                    laufenden <code>npm run dev</code>. CORS-freundliche Provider die ohne Proxy laufen:
                     <strong>Groq</strong> (<code>https://api.groq.com/openai/v1/chat/completions</code>),
-                    <strong>Together AI</strong>, <strong>Cerebras</strong>, <strong>Gemini</strong>, <strong>OpenRouter</strong>.
+                    <strong>Together AI</strong>, <strong>Cerebras</strong>, <strong>Gemini</strong>,
+                    <strong>OpenRouter</strong>.
                 </div>
                 <!-- V7.97 — Modell als Free-Text-Input mit datalist-Vorschlägen.
                      Ollama-User haben oft Custom-Modelle (qwen3.5:cloud, gpt-oss,
@@ -3382,11 +3444,11 @@
             <section class="settings-section">
                 <h3>Multi-User Sync (Ring 11 V1+V2)</h3>
                 <p class="drawer-hint">
-                    Position + Welt-Aktionen mit anderen Spielern teilen. Braucht den signaling-server
-                    (<code>npm run signaling</code>). Beide Spieler müssen die SELBE Adresse + die SELBE Raum-ID
-                    nutzen. Für ein gemeinsames Welt-Erlebnis: ein Spieler exportiert seine Welt
-                    (Welt-Drawer → „Welt teilen") und der andere importiert sie (Welt-Tor) — dann sind beide
-                    in derselben worldId und sehen identische Strukturen.
+                    Position + Welt-Aktionen mit anderen Spielern teilen. Braucht den signaling-server (<code
+                        >npm run signaling</code
+                    >). Beide Spieler müssen die SELBE Adresse + die SELBE Raum-ID nutzen. Für ein gemeinsames
+                    Welt-Erlebnis: ein Spieler exportiert seine Welt (Welt-Drawer → „Welt teilen") und der andere
+                    importiert sie (Welt-Tor) — dann sind beide in derselben worldId und sehen identische Strukturen.
                 </p>
                 <div class="tuning-row">
                     <label for="p2p-url"><span>Signaling-URL</span></label>
@@ -3435,7 +3497,11 @@
                 </div>
             </div>
             <div id="console-footer">
-                <input type="text" id="chat-input" placeholder="Befehl oder '@Name was hast du gesehen?' (Kreatur ansprechen)" />
+                <input
+                    type="text"
+                    id="chat-input"
+                    placeholder="Befehl oder '@Name was hast du gesehen?' (Kreatur ansprechen)"
+                />
             </div>
         </aside>
         <!-- Versteckter File-Picker für 'Lade Datei'-Chat-Befehl. -->
@@ -3530,9 +3596,7 @@
                3) Joinen: Multi-User, ich gebe Einladungs-Code ein -->
         <dialog id="new-world-dialog">
             <h2>Neue Welt</h2>
-            <p id="new-world-summary" class="drawer-hint">
-                Eine neue Welt erwacht — wähle ihre Beziehungs-Form.
-            </p>
+            <p id="new-world-summary" class="drawer-hint">Eine neue Welt erwacht — wähle ihre Beziehungs-Form.</p>
             <div class="new-world-row">
                 <label for="new-world-slug">Name:</label>
                 <input

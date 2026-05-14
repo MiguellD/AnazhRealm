@@ -12353,6 +12353,37 @@ function startSaveServer() {
                             out.gizmoHasTranslateMeshes = tCount >= 3;
                             out.gizmoHasRotateMeshes = rCount >= 3;
                             out.gizmoHasScaleMeshes = sCount >= 4; // 3 axes + 1 uniform
+                            // V7.99 Bug-Fix: Picker-Meshes erhöhen die Mesh-
+                            // Anzahl pro Modus (visual + picker pro Handle).
+                            // translate: 3 × (shaft + tip + picker) = 9
+                            // rotate: 3 × (ring + picker) = 6
+                            // scale: 3 × (cube + shaft + picker) + 2 × (center + picker) = 11
+                            out.gizmoHasPickers = tCount >= 9 && rCount >= 6 && sCount >= 8;
+
+                            // --- Bug-Fix V7.99: Gizmo-Sichtbarkeit bei Built-in vs. eigen ---
+                            // Bauplan ist aktuell village (Built-in). Sync rufen
+                            // und prüfen dass Gizmo versteckt ist.
+                            r.selectBlueprintForEdit("village");
+                            r._workshopSetSelection(0);
+                            r._workshopSyncGizmo();
+                            out.gizmoHiddenOnBuiltIn = pre.gizmo.visible === false;
+                            // Banner sichtbar?
+                            const banner = document.getElementById("workshop-readonly-banner");
+                            out.readonlyBannerVisibleOnBuiltIn = banner && banner.hidden === false;
+                            // Mode-Bar disabled?
+                            const firstModeBtn = document.querySelector("#workshop-mode-bar [data-workshop-mode]");
+                            out.modeBarDisabledOnBuiltIn = firstModeBtn && firstModeBtn.disabled === true;
+                            // Jetzt mit eigenem Bauplan: Klone + Selection + Sync
+                            r.cloneBlueprint("village", "test_visibility");
+                            r.selectBlueprintForEdit("test_visibility");
+                            r._workshopSetSelection(0);
+                            r._workshopSyncGizmo();
+                            out.gizmoVisibleOnCustom = pre.gizmo.visible === true;
+                            out.readonlyBannerHiddenOnCustom = banner && banner.hidden === true;
+                            out.modeBarEnabledOnCustom = firstModeBtn && firstModeBtn.disabled === false;
+                            r.deleteBlueprint("test_visibility");
+                            r.selectBlueprintForEdit("village");
+                            r._renderWorkshopDOM();
                         }
                     } catch (err) {
                         out.error = err && err.message;
@@ -12467,6 +12498,34 @@ function startSaveServer() {
                 check(
                     "Welle 6.B P2: Scale-Gizmo hat ≥4 Handle-Meshes (3 Achsen + 1 uniform-Center)",
                     wave6bResults.gizmoHasScaleMeshes
+                );
+                check(
+                    "Welle 6.B P2 Bug-Fix V7.99: Picker-Meshes pro Mode (translate≥9, rotate≥6, scale≥8 — Klick-Toleranz)",
+                    wave6bResults.gizmoHasPickers
+                );
+                check(
+                    "Welle 6.B P2 Bug-Fix V7.99: Gizmo VERSTECKT bei Built-in (verhindert Geist-Drag-Bug)",
+                    wave6bResults.gizmoHiddenOnBuiltIn
+                );
+                check(
+                    "Welle 6.B P2 Bug-Fix V7.99: Read-only-Banner sichtbar bei Built-in",
+                    wave6bResults.readonlyBannerVisibleOnBuiltIn
+                );
+                check(
+                    "Welle 6.B P2 Bug-Fix V7.99: Mode-Bar Buttons disabled bei Built-in",
+                    wave6bResults.modeBarDisabledOnBuiltIn
+                );
+                check(
+                    "Welle 6.B P2 Bug-Fix V7.99: Gizmo SICHTBAR bei eigenem Bauplan + Selection",
+                    wave6bResults.gizmoVisibleOnCustom
+                );
+                check(
+                    "Welle 6.B P2 Bug-Fix V7.99: Banner versteckt bei eigenem Bauplan",
+                    wave6bResults.readonlyBannerHiddenOnCustom
+                );
+                check(
+                    "Welle 6.B P2 Bug-Fix V7.99: Mode-Bar Buttons enabled bei eigenem Bauplan",
+                    wave6bResults.modeBarEnabledOnCustom
                 );
             } else if (wave6bResults && wave6bResults.error) {
                 check(`Welle 6.B: evaluate-Fehler — ${wave6bResults.error}`, false);
