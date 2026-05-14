@@ -360,6 +360,52 @@ Hylomorphismus-System wie Materialien und Bauwerke.
   playerInventory in buildStateSnapshot. 127 Invarianten für 6.C1
   + Drag-System → 1153 total.
 
+### V7.87 — Welle 6.H Phase 2F.1 live (14.05.2026): Kreatur-Stats wie Spieler
+
+**Schöpfer-Vision §1.3 fraktal vollendet.** V7.86 (P2D.1) machte Identität
+persistent. V7.87 (P2F.1) gibt Kreaturen Stats — dieselbe Pipeline wie
+beim Spieler. Compound × Material × Form → Tags → Stats. Eine Sprache.
+
+**`computeCreatureStats(creature)`**: liefert `{tags, stats}` analog
+`computePlayerStats()`. Body-Tags via `computeCreatureCompoundTags`
+(existing). Tag-Clamp [0, 1] für die Pipe (selbe Disziplin wie Player —
+6.D Polish-Lehre). Spec-Bonus auf magieleitung (+0.01/Level — Wissen
+leitet wie Strom, poetisch). `STAT_FROM_TAGS`-Map (DIESELBE wie Player)
+liefert 8 Stats: hpMax, damage, speed, jumpPower, staminaMax, precision,
+magicResist, heatResist.
+
+**`_creatureBodySpeedMultiplier(c)`**: stats.speed/7 (STAT_FROM_TAGS-Base).
+Sprite ≈1.2 (leicht+magisch), Wesen ≈1.0 (Base), Geist ≈1.1.
+
+**`_creatureTaskSpeedMultiplier` bleibt pure-Spec** (1 + level × 0.15).
+Tick multipliziert `BASE × specMul × bodyMul` in allen 3 Pfaden.
+Separation erlaubt Tests die nur Spec prüfen stabil zu halten.
+
+**UI-Tooltip auf creature-row**: `title="HP X · DMG Y · SPD Z · …"` mit
+allen 8 Stats kompakt. Hover offenbart ohne Liste zu fluten.
+
+**Keine neue Persistenz** — Stats sind live computed aus Body-Soul +
+Specs (persistenzfrei) + nichts sonst. 2F.2 wird Equipped persistieren.
+
+**Test-Anpassungen**: 2 P2B.2-Speed-Tests umgestellt auf body-toleranten
+Bereich `BUILD_SPEED × [0.5, 2.0]` statt `=== BUILD_SPEED`. Body-
+Modulation IST P2F.1's Beitrag — ältere Tests müssen das anerkennen.
+
+**14 permanente Tests grün. 1464 → 1478/1478 invariants.**
+
+**Plan vor uns:**
+
+- **Phase 2F.2 (Equipped tool + armor für Kreatur)** — Hylomorphismus
+  weiter: `creature.userData.equipped = {tool, armor}`, persistent
+  über 2D.1-Snapshot-Erweiterung, beeinflusst computeCreatureStats
+  über existing Player-Pattern (ARMOR_STAT_WEIGHT + TOOL_STAT_WEIGHT).
+  ~1-2 Sessions.
+- **Phase 2F.3 (Kreatur-Boosts via Konsumables)** — apply_boost-Op,
+  Kreatur kann Trank trinken. ~1 Session.
+- **Phase 2E V1 (LLM-Persona)** — Stats + Specs + Memory + bornAt als
+  Identitäts-Anker im System-Prompt. „die Holz-Spezialistin Nira mit
+  HP 95 und Speed 8.3" hat eine konkrete Persona-Bedeutung. ~2 Sessions.
+
 ### V7.86 — Welle 6.H Phase 2D.1 live (14.05.2026): Identität überlebt Reload
 
 **Schöpfer-Vision-Erweiterung: Kreaturen sind Personen mit Geschichte.**

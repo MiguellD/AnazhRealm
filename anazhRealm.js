@@ -5990,6 +5990,62 @@ class AnazhRealm {
         return this.computeCompoundTags({ parts: soul.bodyParts });
     }
 
+    // === Welle 6.H Phase 2F.1 — Kreatur-Stats wie Spieler ===
+    //
+    // Vision §1.3 fraktal vollendet: Kreaturen ≡ Spieler ≡ Architektur sind
+    // alle Compound(parts × Material × Form). Stats emergieren aus derselben
+    // Pipeline (STAT_FROM_TAGS) wie für den Spieler. Damit hat eine Kreatur
+    // hpMax, damage, speed, jumpPower, staminaMax, precision, magicResist,
+    // heatResist — dieselben 8 Stats wie der Spieler.
+    //
+    // Equipped (tool + armor) und Boosts (Konsum, Emotion, Welt-Resonanz)
+    // kommen in 2F.2 + 2F.3. V1 nur Body-Tags + Spec-Schicht.
+    //
+    // Specs werden als kleiner positiver Bonus auf magieleitung gemappt —
+    // ein erfahrener Bauer/Sammler hat Hand-Wissen, das in der Tag-Sprache
+    // als "magie-leitend" steht (Wissen leitet wie Strom). Pro Top-Spec
+    // +0.05 auf magieleitung (max +0.5 bei 10 Top-Specs theoretisch, in
+    // Praxis ≤2 Top-Specs ≤ +0.1).
+    computeCreatureStats(creature) {
+        if (!creature) return { tags: {}, stats: {} };
+        // Body-Tags via existing pipeline.
+        const compoundTags = this.computeCreatureCompoundTags(creature);
+        // Tag-Clamp [0, 1] für die Stat-Pipe (selbe Disziplin wie Player,
+        // siehe Lehre Welle 6.D Polish — STAT_FROM_TAGS-Formeln brauchen
+        // normalisierte Werte, sonst werden Speed/HP negativ).
+        const finalTags = {};
+        for (const key of AnazhRealm.MATERIAL_TAG_KEYS) {
+            const raw = Number(compoundTags[key]) || 0;
+            finalTags[key] = Math.max(0, Math.min(1, raw));
+        }
+        // Spec-Bonus auf magieleitung (Wissen leitet wie Strom — vision-
+        // poetische Tag-Wahl). Pro Top-Spec +0.05; deckt die Hand-Wissen-
+        // Schicht ab ohne neue Stat-Achse zu öffnen.
+        if (typeof this._creatureTopSpecializations === "function") {
+            const tops = this._creatureTopSpecializations(creature, 5);
+            const specBonus = tops.reduce((sum, s) => sum + (s.level || 0) * 0.01, 0);
+            finalTags.magieleitung = (finalTags.magieleitung || 0) + specBonus;
+        }
+        // STAT_FROM_TAGS-Formeln auf finalTags. Selbe Map wie Spieler —
+        // Vision §1.3 fraktal: eine Sprache, eine Berechnung, zwei Anwendungen.
+        const stats = {};
+        for (const stat of Object.keys(AnazhRealm.STAT_FROM_TAGS)) {
+            stats[stat] = AnazhRealm.STAT_FROM_TAGS[stat](finalTags);
+        }
+        return { tags: finalTags, stats };
+    }
+
+    // Wenn keine Stats-Cache nötig (live-computed pro Tick analog Specs in
+    // P2D), aber wir cachen optional auf userData.stats für UI-Display.
+    // Wer Performance braucht, kann hier später einen pro-Frame-Cache
+    // einziehen — aktuell nicht nötig (O(MATERIAL_TAG_KEYS=10) pro Aufruf).
+    _refreshCreatureStatsCache(creature) {
+        if (!creature || !creature.userData) return;
+        const computed = this.computeCreatureStats(creature);
+        creature.userData.stats = computed.stats;
+        creature.userData.statTags = computed.tags;
+    }
+
     // === Welle 6.H Phase 2B.1 — Helper: context-dependentes Args-Mapping ===
     //
     // creature_task akzeptiert ein drittes Arg (paramArg). Je nach Task-Name
@@ -6133,7 +6189,7 @@ class AnazhRealm {
         return all.slice(0, Math.max(0, n));
     }
 
-    // Speed-Multiplikator für die aktuelle Task. Liefert 1.0 ohne Spezialisierung
+    // Speed-Multiplikator aus Spezialisierungen. Liefert 1.0 ohne Spezialisierung
     // (kein Bonus, kein Malus). Wird in _tickCreatureTaskDirection genutzt.
     _creatureTaskSpeedMultiplier(creature, taskName, args) {
         if (!creature || !args) return 1;
@@ -6147,6 +6203,19 @@ class AnazhRealm {
             return 1 + lvl * bonus;
         }
         return 1;
+    }
+
+    // Welle 6.H Phase 2F.1 — Body-Speed-Modulator aus computeCreatureStats.
+    // stats.speed wird auf das STAT_FROM_TAGS-Base (7) normalisiert.
+    // Sprite (dichte≈0, magieleitung hoch) hat speed≈8.5 → Mul ≈1.21;
+    // Wesen (dichte≈1) hat speed≈7 → Mul ≈1.0; Geist (dichte≈0.5) ≈ 1.1.
+    // Body × Spec multiplizieren sich im Tick (Geschichte vertieft Körper).
+    _creatureBodySpeedMultiplier(creature) {
+        if (!creature || typeof this.computeCreatureStats !== "function") return 1;
+        const stats = this.computeCreatureStats(creature).stats;
+        const base = 7; // STAT_FROM_TAGS.speed-Base
+        if (!Number.isFinite(stats.speed) || stats.speed <= 0) return 1;
+        return stats.speed / base;
     }
 
     // Level-Up-Antwort: Audio-Ping (höher als alle Task-Pings, bedeutet
@@ -6520,9 +6589,11 @@ class AnazhRealm {
                     if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
                     return new THREE.Vector3(0, 0, 0);
                 }
-                // Welle 6.H Phase 2D — Spezialisierungs-Speed-Bonus für gather.
+                // Welle 6.H Phase 2D + 2F.1 — Spec × Body Speed-Modulation.
                 const speed =
-                    AnazhRealm.CREATURE_GATHER_SPEED * this._creatureTaskSpeedMultiplier(creature, "gather", task.args);
+                    AnazhRealm.CREATURE_GATHER_SPEED *
+                    this._creatureTaskSpeedMultiplier(creature, "gather", task.args) *
+                    this._creatureBodySpeedMultiplier(creature);
                 return new THREE.Vector3((dxp / distp) * speed, 0, (dzp / distp) * speed);
             }
             // ERNTE-PHASE: Ziel suchen, hingehen, harvesten.
@@ -6572,9 +6643,11 @@ class AnazhRealm {
                 if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
                 return new THREE.Vector3(0, 0, 0); // diesen Tick stehen, nächster sucht neues Ziel
             }
-            // Welle 6.H Phase 2D — Spezialisierungs-Speed-Bonus für gather (Such-Phase).
+            // Welle 6.H Phase 2D + 2F.1 — Spec × Body Speed-Modulation (Such-Phase).
             const speed =
-                AnazhRealm.CREATURE_GATHER_SPEED * this._creatureTaskSpeedMultiplier(creature, "gather", task.args);
+                AnazhRealm.CREATURE_GATHER_SPEED *
+                this._creatureTaskSpeedMultiplier(creature, "gather", task.args) *
+                this._creatureBodySpeedMultiplier(creature);
             const nx = dx / dist;
             const nz = dz / dist;
             return new THREE.Vector3(nx * speed, 0, nz * speed);
@@ -6606,9 +6679,11 @@ class AnazhRealm {
             const carrying = creature.userData && creature.userData.carrying;
             const player = this.state.playerMesh ? this.state.playerMesh.position : null;
             if (!player) return new THREE.Vector3(0, 0, 0);
-            // Welle 6.H Phase 2D — Spezialisierungs-Speed-Bonus für build (alle Phasen).
+            // Welle 6.H Phase 2D + 2F.1 — Spec × Body Speed-Modulation (alle build-Phasen).
             const buildSpeed =
-                AnazhRealm.CREATURE_BUILD_SPEED * this._creatureTaskSpeedMultiplier(creature, "build", task.args);
+                AnazhRealm.CREATURE_BUILD_SPEED *
+                this._creatureTaskSpeedMultiplier(creature, "build", task.args) *
+                this._creatureBodySpeedMultiplier(creature);
             if (!carrying) {
                 // TAKE-PHASE: zum Spieler laufen, Material entnehmen.
                 const dxp = player.x - creature.position.x;
@@ -15942,6 +16017,20 @@ class AnazhRealm {
         for (const c of creatures) {
             const row = document.createElement("div");
             row.className = "creature-row";
+            // Welle 6.H Phase 2F.1 — Stats als Hover-Tooltip auf der Row.
+            // Sichtbar machen ohne UI zu fluten: kompakt im title-Attribut.
+            if (typeof this.computeCreatureStats === "function") {
+                try {
+                    const cs = this.computeCreatureStats(c).stats;
+                    const fmt = (n) => (Number.isFinite(n) ? n.toFixed(1) : "—");
+                    row.title =
+                        `HP ${fmt(cs.hpMax)} · DMG ${fmt(cs.damage)} · SPD ${fmt(cs.speed)} · ` +
+                        `JMP ${fmt(cs.jumpPower)} · STA ${fmt(cs.staminaMax)} · ` +
+                        `PRC ${fmt(cs.precision)} · MR ${fmt(cs.magicResist)} · HR ${fmt(cs.heatResist)}`;
+                } catch {
+                    /* Stats-Render darf nie hart blockieren */
+                }
+            }
             const nameEl = document.createElement("span");
             nameEl.className = "creature-name";
             nameEl.textContent = (c.userData && c.userData.name) || "?";

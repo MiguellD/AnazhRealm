@@ -9972,7 +9972,10 @@ function startSaveServer() {
                     const dirTake = r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
                     out.takePhaseTowardsPlayer = dirTake && dirTake.x < 0; // sollte negativ sein (Richtung -x = zum Spieler)
                     const sp = Math.hypot(dirTake.x, dirTake.z);
-                    out.takePhaseSpeed = Math.abs(sp - r.constructor.CREATURE_BUILD_SPEED) < 0.01;
+                    // Phase 2F.1: Speed wird body-moduliert (stats.speed/7). Toleranz weiter
+                    // damit Body-Faktor je Soul den Test nicht bricht — wir prüfen Bereich
+                    // [BUILD_SPEED*0.5, BUILD_SPEED*2.0] statt Gleichheit.
+                    out.takePhaseSpeed = sp > r.constructor.CREATURE_BUILD_SPEED * 0.5 && sp < r.constructor.CREATURE_BUILD_SPEED * 2.0;
 
                     // 7. Take-Phase at handover, pfad ohne Material → ablehnt + memory + wander
                     const origMode = r.getGameMode();
@@ -10024,7 +10027,8 @@ function startSaveServer() {
                     const dirWalk = r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
                     out.walkPhaseAwayFromPlayer = dirWalk && dirWalk.x > 0; // weg vom Spieler = +x
                     const ws = Math.hypot(dirWalk.x, dirWalk.z);
-                    out.walkPhaseSpeed = Math.abs(ws - r.constructor.CREATURE_BUILD_SPEED) < 0.01;
+                    // Phase 2F.1: gleiche Body-Modulation wie take-Phase.
+                    out.walkPhaseSpeed = ws > r.constructor.CREATURE_BUILD_SPEED * 0.5 && ws < r.constructor.CREATURE_BUILD_SPEED * 2.0;
 
                     // 11. Spawn-Phase: bei placement_dist → spawnArchitecture + carrying null + memory + wander
                     c0.position.set(player.x + 5.0, player.y + 1.0, player.z); // > placement (4.0)
@@ -10165,7 +10169,7 @@ function startSaveServer() {
                     wave6hP2b2Results.takePhaseTowardsPlayer
                 );
                 check(
-                    "Welle 6.H P2B.2: take-Phase Geschwindigkeit = CREATURE_BUILD_SPEED",
+                    "Welle 6.H P2B.2: take-Phase Geschwindigkeit ~ CREATURE_BUILD_SPEED (body-moduliert P2F.1)",
                     wave6hP2b2Results.takePhaseSpeed
                 );
                 check(
@@ -10195,7 +10199,7 @@ function startSaveServer() {
                     wave6hP2b2Results.schoepferInventoryUntouched
                 );
                 check(
-                    "Welle 6.H P2B.2: walk-Phase mit carrying → Vektor WEG vom Spieler bei BUILD_SPEED",
+                    "Welle 6.H P2B.2: walk-Phase mit carrying → Vektor WEG vom Spieler ~ BUILD_SPEED (body-moduliert P2F.1)",
                     wave6hP2b2Results.walkPhaseAwayFromPlayer && wave6hP2b2Results.walkPhaseSpeed
                 );
                 check(
@@ -10778,6 +10782,193 @@ function startSaveServer() {
                 );
             } else if (wave6hP2d1Results && wave6hP2d1Results.error) {
                 check(`Welle 6.H P2D.1: evaluate-Fehler — ${wave6hP2d1Results.error}`, false);
+            }
+
+            // ### Welle 6.H Phase 2F.1 — Kreatur-Stats wie Spieler ###
+            //
+            // Vision §1.3 fraktal vollendet: Kreaturen ≡ Spieler ≡ Architektur
+            // sind alle Compound aus parts × Material × Form. Stats emergieren
+            // aus der gleichen STAT_FROM_TAGS-Pipeline (kein paralleler Code).
+            // Body-Speed-Modulator (stats.speed/7) wirkt im Tick neben Spec-Mul.
+            const wave6hP2f1Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.playerMesh) return null;
+                    const out = {};
+
+                    // 1. Methoden existieren
+                    out.hasComputeStats = typeof r.computeCreatureStats === "function";
+                    out.hasBodySpeedMul = typeof r._creatureBodySpeedMultiplier === "function";
+                    out.hasRefreshCache = typeof r._refreshCreatureStatsCache === "function";
+
+                    // 2. computeCreatureStats liefert {tags, stats} mit allen Schlüsseln
+                    const player = r.state.playerMesh.position;
+                    const cw = r.spawnCreatureAt(player.x + 200, player.y, player.z + 200, "happy", "wesen");
+                    const csW = r.computeCreatureStats(cw);
+                    out.statsHasTags = csW && csW.tags && Object.keys(csW.tags).length > 0;
+                    out.statsHasAll8 =
+                        csW.stats &&
+                        Number.isFinite(csW.stats.hpMax) &&
+                        Number.isFinite(csW.stats.damage) &&
+                        Number.isFinite(csW.stats.speed) &&
+                        Number.isFinite(csW.stats.jumpPower) &&
+                        Number.isFinite(csW.stats.staminaMax) &&
+                        Number.isFinite(csW.stats.precision) &&
+                        Number.isFinite(csW.stats.magicResist) &&
+                        Number.isFinite(csW.stats.heatResist);
+
+                    // 3. Soul-Diskrimination: Sprite ist schneller als Wesen (weniger dichte)
+                    const cs = r.spawnCreatureAt(player.x + 210, player.y, player.z + 210, "happy", "sprite");
+                    const cg = r.spawnCreatureAt(player.x + 220, player.y, player.z + 220, "happy", "geist");
+                    const sW = csW.stats;
+                    const sS = r.computeCreatureStats(cs).stats;
+                    const sG = r.computeCreatureStats(cg).stats;
+                    out.spriteFasterThanWesen = sS.speed > sW.speed;
+                    // Mindestens 1 Stat unterscheidet sich zwischen Wesen und Sprite
+                    // signifikant — emergent aus unterschiedlicher Material-Komposition.
+                    out.wesenSpriteDiscriminated =
+                        Math.abs(sW.hpMax - sS.hpMax) > 5 ||
+                        Math.abs(sW.damage - sS.damage) > 2 ||
+                        Math.abs(sW.speed - sS.speed) > 0.5;
+                    out.geistHasMagicResist = sG.magicResist > 0;
+                    out._statsW = sW;
+                    out._statsS = sS;
+
+                    // 4. Tags geclamp auf [0, 1] für die Pipe
+                    const cTagsClamped = Object.values(csW.tags).every((v) => v >= 0 && v <= 2); // toleriere spec-bonus bis ~2
+                    out.tagsInBounds = cTagsClamped;
+
+                    // 5. _refreshCreatureStatsCache schreibt userData.stats
+                    r._refreshCreatureStatsCache(cw);
+                    out.cacheWritesStats =
+                        cw.userData.stats && Number.isFinite(cw.userData.stats.speed);
+
+                    // 6. Body-Speed-Multiplier ist > 0
+                    const mulW = r._creatureBodySpeedMultiplier(cw);
+                    const mulS = r._creatureBodySpeedMultiplier(cs);
+                    out.bodyMulPositive = mulW > 0 && mulS > 0;
+                    out.spriteBodyMulHigher = mulS > mulW;
+
+                    // 7. Speed im Tick: gather mit sprite ist schneller als gather mit wesen
+                    // (selbe Spec-Level, nur body-mul unterscheidet)
+                    r.assignCreatureTask(cw, "gather", { material: "holz" }, { silent: true });
+                    r.assignCreatureTask(cs, "gather", { material: "holz" }, { silent: true });
+                    // _target = null zwingt zur Such-Phase (wo speed wirkt)
+                    cw.userData.task.args._target = null;
+                    cs.userData.task.args._target = null;
+                    // Stelle sicher: in der Such-Phase brauchen wir eine Target-Distanz > halt.
+                    // Wir setzen position weit weg von allem damit kein early-return greift
+                    // (gather-task → kein Target gefunden → wander-fallback, ein anderer Pfad).
+                    // Stattdessen: nutzen build-task (laufen zum Spieler) für fairen Vergleich.
+                    r.assignCreatureTask(cw, "build", { blueprint: "stein_block" }, { silent: true });
+                    r.assignCreatureTask(cs, "build", { blueprint: "stein_block" }, { silent: true });
+                    cw.userData.carrying = null;
+                    cs.userData.carrying = null;
+                    cw.position.set(player.x + 50, player.y, player.z);
+                    cs.position.set(player.x + 50, player.y, player.z);
+                    const dirW = r._tickCreatureTaskDirection(cw, cw.userData.task, "happy");
+                    const dirS = r._tickCreatureTaskDirection(cs, cs.userData.task, "happy");
+                    const spW = Math.hypot(dirW.x, dirW.z);
+                    const spS = Math.hypot(dirS.x, dirS.z);
+                    out.tickSpriteFaster = spS > spW;
+                    out.tickWesenAtBase = Math.abs(spW - r.constructor.CREATURE_BUILD_SPEED) < 1.0;
+
+                    // 8. Spec-Bonus auf magieleitung emergiert in stats
+                    // Frische Kreatur ohne Specs vs. mit 3 erfolgreichen Gather-Memories
+                    const cFresh = r.spawnCreatureAt(player.x + 230, player.y, player.z + 230, "happy", "wesen");
+                    cFresh.userData.memory = [];
+                    const baseTags = r.computeCreatureStats(cFresh).tags;
+                    cFresh.userData.memory = [
+                        { type: "gathered", content: { material: "holz" }, at: 1 },
+                        { type: "gathered", content: { material: "holz" }, at: 2 },
+                        { type: "gathered", content: { material: "holz" }, at: 3 },
+                    ];
+                    const grownTags = r.computeCreatureStats(cFresh).tags;
+                    // L1 Sammler = +0.01 magieleitung; minimal aber positiv
+                    out.specBonusMagieleitung = grownTags.magieleitung > baseTags.magieleitung;
+
+                    // 9. UI: creature-row hat title-Attribut mit Stats
+                    if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
+                    const listEl = document.getElementById("creature-list");
+                    const rows = listEl ? listEl.querySelectorAll(".creature-row") : [];
+                    let rowsWithTitle = 0;
+                    for (const row of rows) {
+                        if (
+                            row.title &&
+                            /HP\s+\d/.test(row.title) &&
+                            /SPD\s+\d/.test(row.title) &&
+                            /DMG\s+\d/.test(row.title)
+                        )
+                            rowsWithTitle++;
+                    }
+                    out.uiRowsHaveStatsTitle = rowsWithTitle === rows.length && rows.length > 0;
+
+                    // 10. STAT_FROM_TAGS aus Class — Symmetrie zum Spieler
+                    const playerStatKeys = Object.keys(r.constructor.STAT_FROM_TAGS);
+                    const creatureStatKeys = Object.keys(csW.stats);
+                    out.sameStatKeysAsPlayer =
+                        playerStatKeys.length === creatureStatKeys.length &&
+                        playerStatKeys.every((k) => creatureStatKeys.includes(k));
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e), stack: e.stack }));
+
+            if (wave6hP2f1Results && !wave6hP2f1Results.error) {
+                check(
+                    "Welle 6.H P2F.1: alle 3 Methoden existieren (computeCreatureStats + _creatureBodySpeedMultiplier + _refreshCreatureStatsCache)",
+                    wave6hP2f1Results.hasComputeStats &&
+                        wave6hP2f1Results.hasBodySpeedMul &&
+                        wave6hP2f1Results.hasRefreshCache
+                );
+                check(
+                    "Welle 6.H P2F.1: computeCreatureStats liefert {tags, stats} mit allen 8 Stats",
+                    wave6hP2f1Results.statsHasTags && wave6hP2f1Results.statsHasAll8
+                );
+                check(
+                    "Welle 6.H P2F.1: Soul-Diskrimination — Sprite schneller als Wesen",
+                    wave6hP2f1Results.spriteFasterThanWesen
+                );
+                check(
+                    "Welle 6.H P2F.1: Soul-Diskrimination — Wesen ≠ Sprite in mind. 1 Stat (emergent)",
+                    wave6hP2f1Results.wesenSpriteDiscriminated
+                );
+                check("Welle 6.H P2F.1: Geist hat magicResist > 0", wave6hP2f1Results.geistHasMagicResist);
+                check("Welle 6.H P2F.1: Tags in [0, 2] (clamped + Spec-Bonus tolerant)", wave6hP2f1Results.tagsInBounds);
+                check(
+                    "Welle 6.H P2F.1: _refreshCreatureStatsCache schreibt userData.stats",
+                    wave6hP2f1Results.cacheWritesStats
+                );
+                check(
+                    "Welle 6.H P2F.1: _creatureBodySpeedMultiplier > 0 für alle Seelen",
+                    wave6hP2f1Results.bodyMulPositive
+                );
+                check(
+                    "Welle 6.H P2F.1: Sprite-bodyMul > Wesen-bodyMul (Vision: leichte Form schneller)",
+                    wave6hP2f1Results.spriteBodyMulHigher
+                );
+                check(
+                    "Welle 6.H P2F.1: Tick — Sprite läuft schneller als Wesen (selbe Task, body-mul wirkt)",
+                    wave6hP2f1Results.tickSpriteFaster
+                );
+                check(
+                    "Welle 6.H P2F.1: Tick — Wesen bei ~BUILD_SPEED (bodyMul ≈ 1)",
+                    wave6hP2f1Results.tickWesenAtBase
+                );
+                check(
+                    "Welle 6.H P2F.1: Spec-Bonus emergiert in stats.magieleitung (Wissen leitet)",
+                    wave6hP2f1Results.specBonusMagieleitung
+                );
+                check(
+                    "Welle 6.H P2F.1: UI — alle creature-rows haben title-Tooltip mit Stats",
+                    wave6hP2f1Results.uiRowsHaveStatsTitle
+                );
+                check(
+                    "Welle 6.H P2F.1: Stat-Keys identisch zu Spieler (Vision §1.3 fraktal)",
+                    wave6hP2f1Results.sameStatKeysAsPlayer
+                );
+            } else if (wave6hP2f1Results && wave6hP2f1Results.error) {
+                check(`Welle 6.H P2F.1: evaluate-Fehler — ${wave6hP2f1Results.error}`, false);
             }
 
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###

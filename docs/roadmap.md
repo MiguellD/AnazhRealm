@@ -1,6 +1,6 @@
 # AnazhRealm Roadmap — Vollumfänglich
 
-Stand: 14.05.2026 (V7.86, Welle 6.H Phase 2D.1 live — Kreatur-Identität persistiert über Reload).
+Stand: 14.05.2026 (V7.87, Welle 6.H Phase 2F.1 live — Kreatur-Stats wie Spieler, Vision §1.3 fraktal vollendet).
 
 Diese Doc beschreibt das **gesamte Projekt vom heutigen Stand bis zum Vision-Endziel** (Welten-Ultiversum). Sie ergänzt `state-of-realm.md` (Was/Warum) um eine puren Plan-Sicht (Wann/Wie). Aufwandsschätzungen sind realistische Tage für eine fokussierte Claude-Session pro Ring/Phase; gerechnet wird linear, ohne Puffer.
 
