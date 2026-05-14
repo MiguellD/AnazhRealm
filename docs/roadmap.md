@@ -1,6 +1,6 @@
 # AnazhRealm Roadmap — Vollumfänglich
 
-Stand: 14.05.2026 (V7.88, Welle 6.H Phase 2F.2 live — Kreatur-Equipped tool+armor wie Spieler).
+Stand: 14.05.2026 (V7.89, Welle 6.H Phase 2F.3 live — Kreatur-Boosts via Konsumables HYLOMORPH).
 
 Diese Doc beschreibt das **gesamte Projekt vom heutigen Stand bis zum Vision-Endziel** (Welten-Ultiversum). Sie ergänzt `state-of-realm.md` (Was/Warum) um eine puren Plan-Sicht (Wann/Wie). Aufwandsschätzungen sind realistische Tage für eine fokussierte Claude-Session pro Ring/Phase; gerechnet wird linear, ohne Puffer.
 

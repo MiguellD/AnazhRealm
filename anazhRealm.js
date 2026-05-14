@@ -871,6 +871,9 @@ class AnazhRealm {
             "creature_equip_tool",
             "creature_equip_armor",
             "creature_unequip",
+            // Welle 6.H Phase 2F.3 — Konsumable-Übergabe an Kreatur ist
+            // Spieler-private Geste (er „gibt" der Kreatur den Trank).
+            "creature_apply_boost",
         ]);
     }
 
@@ -1403,6 +1406,27 @@ class AnazhRealm {
                         event: result.ok ? "creature_unequipped" : "creature_unequip_failed",
                         index: idx,
                         slot: slot || null,
+                        reason: result.reason,
+                    });
+                }
+            },
+            // Welle 6.H Phase 2F.3 — Konsumable auf Kreatur anwenden. Bauplan
+            // muss role:"consumable" tragen; tagBonus emergiert aus
+            // computeCompoundTags(bp) × scale (kein Hardcode). KEIN Inventar-
+            // Konsum hier — der RMB-Pfad macht das, DSL ist die DIREKTE
+            // Aktivierung (z. B. für Schöpfer-Modus oder zukünftige Mechaniken).
+            creature_apply_boost: ([indexOrId, blueprintName], ctx) => {
+                const idx = Number(indexOrId);
+                if (!Number.isInteger(idx) || idx < 0 || idx >= this.state.creatures.length) {
+                    if (ctx && ctx.log) ctx.log.push({ event: "creature_boost_index_oob", index: idx });
+                    return;
+                }
+                const result = this.activateCreatureConsumable(this.state.creatures[idx], String(blueprintName || ""));
+                if (ctx && ctx.log) {
+                    ctx.log.push({
+                        event: result.ok ? "creature_boost_applied" : "creature_boost_failed",
+                        index: idx,
+                        blueprint: blueprintName || null,
                         reason: result.reason,
                     });
                 }
@@ -5935,6 +5959,10 @@ class AnazhRealm {
         // wird via equipCreatureTool/equipCreatureArmor mutiert. Persistent
         // über _serializeCreature → snap.equipped.
         group.userData.equipped = { tool: null, armor: null };
+        // Welle 6.H Phase 2F.3 — Boost-Container. Initial leer; via
+        // applyCreatureBoost gefüllt, via tickCreatureBoosts gesäubert.
+        // KEINE Persistenz — Boosts sind „Geste lebt im Moment".
+        group.userData.boosts = [];
         if (this.state.scene) this.state.scene.add(group);
         this.state.creatures.push(group);
         this.state.creatureEmotions.push(emotion === "sad" ? "sad" : "happy");
@@ -6094,6 +6122,107 @@ class AnazhRealm {
         if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
     }
 
+    // === Welle 6.H Phase 2F.3 — Kreatur-Boosts via Konsumables ===
+    //
+    // Vision §1.3 fraktal weiter: Kreatur erhält temporäre Tag-Boosts durch
+    // Konsum eines Bauplans mit `role:"consumable"`. Der Boost-Effekt
+    // EMERGIERT aus `computeCompoundTags(blueprint) × scale` — keine Tabelle,
+    // kein Hardcode. Symmetrisch zu Player `activateConsumable`.
+    //
+    // Drei Zustände im userData:
+    //   creature.userData.boosts = [{source, tagDelta, expiresAt, label}]
+    //   creature.userData.boostLastTick = number (1-Hz throttle)
+    //
+    // Lifecycle:
+    //   apply → push (oder verlängern bei selber source)
+    //   tick (1 Hz aus Game-Loop) → expired entfernen + _afterCreatureEquipChange
+    //   computeCreatureStats → boosts.tagDelta summiert in finalTags
+    //
+    // KEINE Persistenz — Boosts sind „Geste lebt im Moment" (Vision §1.1
+    // umgedeutet, P2D.1-Differenzierung). Reload startet ohne aktive Boosts.
+
+    applyCreatureBoost(creature, spec) {
+        if (!creature || !creature.userData) return false;
+        if (!spec || typeof spec !== "object") return false;
+        const source = String(spec.source || "").slice(0, 60);
+        if (!source) return false;
+        const tagDelta = {};
+        const inputDelta = spec.tagDelta || {};
+        for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
+            const v = Number(inputDelta[tag]);
+            if (Number.isFinite(v) && v !== 0) tagDelta[tag] = Math.max(-1, Math.min(1, v));
+        }
+        if (Object.keys(tagDelta).length === 0) return false;
+        const duration = Math.max(0.5, Math.min(600, Number(spec.durationSeconds) || 30));
+        const now = performance.now() / 1000;
+        const expiresAt = now + duration;
+        const label = String(spec.label || source).slice(0, 80);
+        if (!Array.isArray(creature.userData.boosts)) creature.userData.boosts = [];
+        const existing = creature.userData.boosts.find((b) => b.source === source);
+        if (existing) {
+            // Selbe Quelle erneut → expiresAt verlängern, tagDelta + label
+            // aktualisieren (Konsumable könnte sich zwischen Aktivierungen
+            // verändert haben). Selbe Disziplin wie Player.addPlayerBoost.
+            existing.expiresAt = expiresAt;
+            existing.tagDelta = tagDelta;
+            existing.label = label;
+        } else {
+            creature.userData.boosts.push({ source, tagDelta, expiresAt, label });
+        }
+        this._afterCreatureEquipChange(creature);
+        return true;
+    }
+
+    // 1 Hz Tick — säubert abgelaufene Boosts. Wird aus Game-Loop aufgerufen
+    // (analog tickPlayerBoosts). Iteriert alle Kreaturen — günstig genug bei
+    // ≤120 Kreaturen × O(boostsCount) Filter pro Sekunde.
+    tickCreatureBoosts(currentTime) {
+        if (!Array.isArray(this.state.creatures)) return;
+        const now = performance.now() / 1000;
+        for (const c of this.state.creatures) {
+            if (!c || !c.userData) continue;
+            if (currentTime - (c.userData.boostLastTick || -Infinity) < 1.0) continue;
+            c.userData.boostLastTick = currentTime;
+            if (!Array.isArray(c.userData.boosts) || c.userData.boosts.length === 0) continue;
+            const kept = c.userData.boosts.filter((b) => b.expiresAt > now);
+            if (kept.length !== c.userData.boosts.length) {
+                c.userData.boosts = kept;
+                // Stats-Cache + UI refreshen (selber Hook wie equip).
+                this._afterCreatureEquipChange(c);
+            }
+        }
+    }
+
+    // Aktiviert einen Konsumable-Bauplan auf einer Kreatur. Bauplan-Pfad
+    // EMERGIERT der tagBonus aus computeCompoundTags(bp) × scale — kein
+    // Hardcode, keine Tabelle. scale=0.2 als Default damit Compound-Tags
+    // bis ~3 in Boost-Deltas 0..0.5 landen (spürbar aber nicht dominant).
+    activateCreatureConsumable(creature, blueprintName) {
+        if (!creature) return { ok: false, reason: "no_creature" };
+        const bp = this.state.blueprints && this.state.blueprints[blueprintName];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.role !== "consumable" || !bp.consumableMeta) {
+            return { ok: false, reason: "not_marked_as_consumable" };
+        }
+        const tags = this.computeCompoundTags(bp);
+        const scale = bp.consumableMeta.scale || 0.2;
+        const tagBonus = {};
+        for (const tag of Object.keys(tags)) {
+            const v = tags[tag] * scale;
+            if (Math.abs(v) > 0.001) tagBonus[tag] = Math.max(-1, Math.min(1, v));
+        }
+        if (Object.keys(tagBonus).length === 0) {
+            return { ok: false, reason: "blueprint_has_no_tags" };
+        }
+        const ok = this.applyCreatureBoost(creature, {
+            source: `consume:${blueprintName}`,
+            tagDelta: tagBonus,
+            durationSeconds: bp.consumableMeta.durationSeconds || 30,
+            label: bp.consumableMeta.label || bp.label || blueprintName,
+        });
+        return ok ? { ok: true, tagBonus } : { ok: false, reason: "boost_apply_failed" };
+    }
+
     _pickCreatureSoulName(requested) {
         const souls = AnazhRealm.CREATURE_SOUL_NAMES;
         if (typeof requested === "string" && souls.includes(requested)) return requested;
@@ -6207,6 +6336,21 @@ class AnazhRealm {
                 const w = AnazhRealm.ARMOR_STAT_WEIGHT;
                 for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
                     finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
+                }
+            }
+        }
+        // Welle 6.H Phase 2F.3 — Aktive Boosts addieren ihre tagDeltas.
+        // Selber Pfad wie computePlayerStats Etappe 2: jeder Boost trägt eine
+        // Tag-Map, die direkt in finalTags fließt. Konsumable-Tränke,
+        // perspektivisch Welt-Resonanz, Memory-Echo — alle gehen über diese
+        // EINE Schicht.
+        const boosts = (creature.userData && creature.userData.boosts) || [];
+        if (Array.isArray(boosts) && boosts.length > 0) {
+            for (const b of boosts) {
+                if (!b || !b.tagDelta) continue;
+                for (const tag of Object.keys(b.tagDelta)) {
+                    if (!AnazhRealm.MATERIAL_TAG_KEYS.includes(tag)) continue;
+                    finalTags[tag] = (finalTags[tag] || 0) + b.tagDelta[tag];
                 }
             }
         }
@@ -7767,6 +7911,7 @@ class AnazhRealm {
             creature_equip_armor: (a) =>
                 a[1] ? `rüstet Kreatur #${a[0]} mit Rüstung „${a[1]}" aus` : `nimmt Kreatur #${a[0]} die Rüstung ab`,
             creature_unequip: (a) => `nimmt Kreatur #${a[0]} den Slot „${a[1]}" ab`,
+            creature_apply_boost: (a) => `gibt Kreatur #${a[0]} den Trank „${a[1]}"`,
             creatures_color: () => `färbt alle Kreaturen`,
             creatures_emotion: (a) => `setzt die Kreaturen-Stimmung auf „${a[0]}"`,
             creatures_speed_mul: (a) => `skaliert die Kreaturen-Geschwindigkeit um ${a[0]}`,
@@ -15696,12 +15841,100 @@ class AnazhRealm {
         return true;
     }
 
+    // Welle 6.H Phase 2F.3 — Raycast-Picker für Kreaturen (analog
+    // _pickArchitectureAtCrosshair). Iteriert state.creatures, traverse
+    // pro Group → Mesh-Liste. Reverse-Map über Map<Mesh, Creature>.
+    _pickCreatureAtCrosshair() {
+        if (!this.state.scene || !this.state.camera || !Array.isArray(this.state.creatures)) {
+            return null;
+        }
+        if (!this._tmpCamDir) this._tmpCamDir = new THREE.Vector3();
+        this.state.camera.getWorldDirection(this._tmpCamDir);
+        const meshes = [];
+        const creatureByMesh = new Map();
+        for (const c of this.state.creatures) {
+            if (!c) continue;
+            c.traverse((node) => {
+                if (node.isMesh) {
+                    meshes.push(node);
+                    creatureByMesh.set(node, c);
+                }
+            });
+        }
+        if (!meshes.length) return null;
+        if (!this._tmpRaycaster) this._tmpRaycaster = new THREE.Raycaster();
+        const cp = this.state.camera.position;
+        this._tmpRaycaster.set(cp, this._tmpCamDir);
+        this._tmpRaycaster.far = 30;
+        const intersects = this._tmpRaycaster.intersectObjects(meshes, false);
+        if (!intersects.length) return null;
+        let node = intersects[0].object;
+        while (node && !creatureByMesh.has(node)) node = node.parent;
+        const creature = node ? creatureByMesh.get(node) : null;
+        return creature ? { creature, point: intersects[0].point } : null;
+    }
+
+    // Welle 6.H Phase 2F.3 — Inventar-Konsum für Konsumables. Findet ersten
+    // Blueprint-Slot mit `kind:"blueprint"` + matching Name + count > 0, ziehe
+    // 1 ab. Slot wird null bei count=0. Liefert true bei Erfolg, false sonst.
+    _consumeBlueprintFromInventory(blueprintName) {
+        const inv = this.state.player && this.state.player.inventory;
+        if (!Array.isArray(inv)) return false;
+        for (let i = 0; i < inv.length; i++) {
+            const slot = inv[i];
+            if (slot && slot.kind === "blueprint" && slot.blueprintName === blueprintName && (slot.count || 0) > 0) {
+                slot.count = (slot.count || 0) - 1;
+                if (slot.count <= 0) inv[i] = null;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Welle 6.H Phase 2F.3 — Modus-Gate für Konsumable-Übergabe an Kreatur.
+    // pfad: muss aus Inventar verbraucht werden. frieden/schöpfer: kostenlos.
+    _consumableInventoryGate(blueprintName) {
+        const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
+        if (mode !== "pfad") return { ok: true, free: true };
+        const consumed = this._consumeBlueprintFromInventory(blueprintName);
+        return consumed ? { ok: true, free: false } : { ok: false, reason: "no_potion_in_inventory" };
+    }
+
     tryMousePlace() {
         if (!this.state.buildMode || !this.state.buildMode.active) return false;
         const gate = this._mouseActionStaminaGate();
         if (!gate.ok) {
             this.log(`Platzieren: zu wenig Stamina (${gate.have}/${gate.cost}).`, "INFO");
             return false;
+        }
+        // Welle 6.H Phase 2F.3 — Konsumable-Pfad: wenn der aktive Bauplan
+        // role:"consumable" hat UND der RMB-Raycast eine Kreatur trifft,
+        // wechseln wir vom Bau-Pfad zum Trank-Übergabe-Pfad. Phantom + Bau-
+        // Modus bleiben aktiv (Spieler kann weiter andere Wesen treffen);
+        // erst ESC oder Slot-Wechsel verlässt den Modus.
+        const bpName = this.state.buildMode.blueprintName;
+        const bp = bpName && this.state.blueprints && this.state.blueprints[bpName];
+        if (bp && bp.role === "consumable" && bp.consumableMeta) {
+            const hit = this._pickCreatureAtCrosshair();
+            if (!hit || !hit.creature) {
+                this.log(`Übergabe: keine Kreatur am Fadenkreuz.`, "INFO");
+                return false;
+            }
+            const invGate = this._consumableInventoryGate(bpName);
+            if (!invGate.ok) {
+                this.log(`Übergabe: kein „${bpName}" im Inventar.`, "INFO");
+                return false;
+            }
+            const result = this.activateCreatureConsumable(hit.creature, bpName);
+            if (!result.ok) {
+                this.log(`Übergabe fehlgeschlagen: ${result.reason || "unbekannt"}`, "INFO");
+                return false;
+            }
+            const cname = (hit.creature.userData && hit.creature.userData.name) || "Kreatur";
+            this.log(`Gabst „${bpName}" an ${cname}.`, "INFO");
+            this._consumeMouseStamina();
+            if (typeof this.renderInventoryUI === "function") this.renderInventoryUI();
+            return true;
         }
         if (this.confirmBuild()) {
             this._consumeMouseStamina();
@@ -16271,6 +16504,27 @@ class AnazhRealm {
                     equippedWrap.appendChild(pill);
                 }
             }
+            // Welle 6.H Phase 2F.3 — Boost-Pills. Aktive Konsumable-Boosts mit
+            // verbleibender Sekunden-Anzeige. Hover-Tooltip zeigt tagDelta-Detail.
+            const boostList = (c.userData && c.userData.boosts) || [];
+            let boostsWrap = null;
+            if (Array.isArray(boostList) && boostList.length > 0) {
+                const nowSec = performance.now() / 1000;
+                boostsWrap = document.createElement("span");
+                boostsWrap.className = "creature-boosts";
+                for (const b of boostList) {
+                    if (!b || !b.tagDelta) continue;
+                    const remaining = Math.max(0, Math.round(b.expiresAt - nowSec));
+                    const pill = document.createElement("span");
+                    pill.className = "creature-boost";
+                    pill.textContent = `✺ ${b.label || b.source}·${remaining}s`;
+                    const detail = Object.entries(b.tagDelta)
+                        .map(([t, v]) => `${t}+${v.toFixed(2)}`)
+                        .join(", ");
+                    pill.title = `${b.source} → ${detail}`;
+                    boostsWrap.appendChild(pill);
+                }
+            }
             const taskEl = document.createElement("span");
             taskEl.className = "creature-task";
             const task = this._getCreatureTask(c);
@@ -16295,6 +16549,7 @@ class AnazhRealm {
             row.appendChild(soulEl);
             if (specsWrap) row.appendChild(specsWrap);
             if (equippedWrap) row.appendChild(equippedWrap);
+            if (boostsWrap) row.appendChild(boostsWrap);
             row.appendChild(taskEl);
             list.appendChild(row);
         }
@@ -18482,6 +18737,10 @@ class AnazhRealm {
             // ### Player-Boosts (Welle 6.D Etappe 2) ###
             // 1×/s self-throttled — Emotion-Trigger, Resonance-Trigger, Ablauf.
             this.tickPlayerBoosts(currentTime);
+
+            // ### Kreatur-Boosts (Welle 6.H Phase 2F.3) ###
+            // 1×/s per-creature self-throttled — säubert abgelaufene Konsumable-Boosts.
+            this.tickCreatureBoosts(currentTime);
 
             // ### Phönix-Wandlung-Tick (Welle 6.D Etappe 3a) ###
             // HP-Regen während aktiver Wandlung + Ablauf-Detection.

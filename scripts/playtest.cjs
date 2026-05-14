@@ -11206,6 +11206,274 @@ function startSaveServer() {
                 check(`Welle 6.H P2F.2: evaluate-Fehler — ${wave6hP2f2Results.error}`, false);
             }
 
+            // ### Welle 6.H Phase 2F.3 — Kreatur-Boosts via Konsumables (HYLOMORPHISMUS) ###
+            //
+            // Vision §1.3 fraktal weiter: Boost emergiert aus
+            // `computeCompoundTags(consumableBp) × scale` — KEIN Hardcode,
+            // KEINE Tabelle. Bauplan mit role:"consumable" UND
+            // consumableMeta. RMB+Hotbar-Konsumable+Raycast-Kreatur = Übergabe.
+            const wave6hP2f3Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.playerMesh) return null;
+                    const out = {};
+                    const Class = r.constructor;
+
+                    // 1. Methoden existieren
+                    out.hasApplyBoost = typeof r.applyCreatureBoost === "function";
+                    out.hasTickBoosts = typeof r.tickCreatureBoosts === "function";
+                    out.hasActivate = typeof r.activateCreatureConsumable === "function";
+                    out.hasPickCreature = typeof r._pickCreatureAtCrosshair === "function";
+                    out.hasConsumeInv = typeof r._consumeBlueprintFromInventory === "function";
+                    out.hasInvGate = typeof r._consumableInventoryGate === "function";
+
+                    // 2. Neu gespawnte Kreatur hat boosts = []
+                    const player = r.state.playerMesh.position;
+                    const c = r.spawnCreatureAt(player.x + 400, player.y, player.z + 400, "happy", "wesen");
+                    out.initialBoostsEmpty = Array.isArray(c.userData.boosts) && c.userData.boosts.length === 0;
+
+                    // 3. applyCreatureBoost mit gültigem tagDelta
+                    const okApply = r.applyCreatureBoost(c, {
+                        source: "test:manual",
+                        tagDelta: { magieleitung: 0.3, dichte: 0.2 },
+                        durationSeconds: 60,
+                        label: "Test-Boost",
+                    });
+                    out.applyOk = okApply === true;
+                    out.boostsListed = c.userData.boosts.length === 1;
+                    out.boostHasSource = c.userData.boosts[0].source === "test:manual";
+
+                    // 4. applyCreatureBoost mit leerem tagDelta → lehnt ab
+                    const noBoost = r.applyCreatureBoost(c, { source: "empty", tagDelta: {} });
+                    out.emptyBoostRejected = noBoost === false;
+
+                    // 5. Selbe source nochmal → verlängert statt zweiter Eintrag
+                    r.applyCreatureBoost(c, {
+                        source: "test:manual",
+                        tagDelta: { magieleitung: 0.5 },
+                        durationSeconds: 30,
+                        label: "Test-Boost-2",
+                    });
+                    out.dedupeBySource = c.userData.boosts.length === 1;
+                    out.deltaUpdated = c.userData.boosts[0].tagDelta.magieleitung === 0.5;
+
+                    // 6. Stats-Stacking: Boost erhöht computeCreatureStats
+                    const c2 = r.spawnCreatureAt(player.x + 410, player.y, player.z + 410, "happy", "wesen");
+                    const baseStats = r.computeCreatureStats(c2).stats;
+                    r.applyCreatureBoost(c2, {
+                        source: "test:hp",
+                        tagDelta: { dichte: 0.5, härte: 0.5 },
+                        durationSeconds: 60,
+                        label: "HP-Boost",
+                    });
+                    const boostedStats = r.computeCreatureStats(c2).stats;
+                    out.hpBoosted = boostedStats.hpMax > baseStats.hpMax + 10;
+
+                    // 7. HYLOMORPHISMUS-EMERGENZ: Konsumable-Bauplan-Tags wirken als Boost
+                    // Wir erstellen einen Trank aus stein_block (hoch dichte+härte) und
+                    // prüfen dass die Compound-Tags SICH ALS BOOST MANIFESTIEREN.
+                    const tonicName = "test_tonic_p2f3";
+                    if (r.cloneBlueprint("stein_block", tonicName)) {
+                        const meta =
+                            typeof r.setBlueprintAsConsumable === "function"
+                                ? r.setBlueprintAsConsumable(tonicName, 30, "Stein-Tonic", 0.2)
+                                : null;
+                        out.consumableMarkOk = !!(meta && meta.ok);
+                        // Trank-Compound-Tags lesen (kontrolle)
+                        const tonicTags = r.computeCompoundTags(r.state.blueprints[tonicName]);
+                        out.tonicHasDichte = (tonicTags.dichte || 0) > 0.1;
+
+                        // Frische Kreatur, base stats messen, dann Trank aktivieren
+                        const c3 = r.spawnCreatureAt(player.x + 420, player.y, player.z + 420, "happy", "wesen");
+                        const before = r.computeCreatureStats(c3).stats;
+                        const result = r.activateCreatureConsumable(c3, tonicName);
+                        out.activateOk = result.ok === true;
+                        // tagBonus emergiert aus den Tags (kein Hardcode!)
+                        out.tagBonusEmerged =
+                            result.tagBonus && Object.keys(result.tagBonus).length > 0;
+                        out.tagBonusHasDichte =
+                            result.tagBonus && result.tagBonus.dichte > 0;
+                        // Boost ist auf der Kreatur
+                        out.boostOnCreature =
+                            Array.isArray(c3.userData.boosts) &&
+                            c3.userData.boosts.some((b) => b.source === `consume:${tonicName}`);
+                        // Stats sind erhöht (dichte-Boost → HP+)
+                        const after = r.computeCreatureStats(c3).stats;
+                        out.consumableLiftsStats = after.hpMax > before.hpMax + 5;
+                    }
+
+                    // 8. nicht-consumable Bauplan → activate lehnt ab
+                    const notConsumable = r.activateCreatureConsumable(c, "stein_block");
+                    out.nonConsumableRejected =
+                        notConsumable.ok === false && notConsumable.reason === "not_marked_as_consumable";
+
+                    // 9. tickCreatureBoosts entfernt abgelaufene Boosts
+                    const c4 = r.spawnCreatureAt(player.x + 430, player.y, player.z + 430, "happy", "wesen");
+                    // Manuell abgelaufenen Boost setzen (expiresAt in der Vergangenheit)
+                    c4.userData.boosts = [
+                        {
+                            source: "test:expired",
+                            tagDelta: { dichte: 0.3 },
+                            expiresAt: performance.now() / 1000 - 10,
+                            label: "Expired",
+                        },
+                    ];
+                    c4.userData.boostLastTick = -Infinity;
+                    r.tickCreatureBoosts(performance.now() / 1000);
+                    out.expiredCleaned = c4.userData.boosts.length === 0;
+
+                    // 10. DSL-Op creature_apply_boost
+                    const cDsl = r.spawnCreatureAt(player.x + 440, player.y, player.z + 440, "happy", "wesen");
+                    const dslIdx = r.state.creatures.indexOf(cDsl);
+                    r.dslRun(["creature_apply_boost", dslIdx, tonicName], { source: "test" });
+                    out.dslAppliedBoost =
+                        Array.isArray(cDsl.userData.boosts) && cDsl.userData.boosts.length === 1;
+
+                    // 11. NON_BROADCASTABLE-Mitgliedschaft
+                    out.opNonBroadcast = Class.NON_BROADCASTABLE_OPS.has("creature_apply_boost");
+
+                    // 12. describeProgram
+                    const desc = r.describeProgram(["creature_apply_boost", 0, tonicName]);
+                    out.descShowsBp = /Trank/.test(desc) && desc.includes(tonicName);
+
+                    // 13. Inventar-Konsum: _consumeBlueprintFromInventory
+                    if (Array.isArray(r.state.player.inventory)) {
+                        r.state.player.inventory[0] = {
+                            kind: "blueprint",
+                            blueprintName: tonicName,
+                            count: 3,
+                        };
+                        const consumed = r._consumeBlueprintFromInventory(tonicName);
+                        out.consumeReducesCount = consumed === true && r.state.player.inventory[0].count === 2;
+                        // Bei count=0 → null
+                        r.state.player.inventory[0].count = 1;
+                        r._consumeBlueprintFromInventory(tonicName);
+                        out.consumeNullsSlotAt0 = r.state.player.inventory[0] === null;
+                        // Wenn nicht im Inventar → false
+                        const noStock = r._consumeBlueprintFromInventory(tonicName);
+                        out.noStockReturnsFalse = noStock === false;
+                    }
+
+                    // 14. Modus-Gate: pfad konsumiert Inventar, schöpfer/frieden kostenlos
+                    const origMode = r.getGameMode();
+                    r.setGameMode("schöpfer");
+                    const freeGate = r._consumableInventoryGate(tonicName);
+                    out.schoepferFree = freeGate.ok === true && freeGate.free === true;
+                    r.setGameMode("pfad");
+                    // Inventar leer → pfad lehnt ab
+                    r.state.player.inventory = new Array(27).fill(null);
+                    const pfadEmpty = r._consumableInventoryGate(tonicName);
+                    out.pfadRejectsWithoutPotion = pfadEmpty.ok === false;
+                    // Inventar gefüllt → pfad konsumiert
+                    r.state.player.inventory[0] = {
+                        kind: "blueprint",
+                        blueprintName: tonicName,
+                        count: 1,
+                    };
+                    const pfadOk = r._consumableInventoryGate(tonicName);
+                    out.pfadConsumes = pfadOk.ok === true && r.state.player.inventory[0] === null;
+                    r.setGameMode(origMode || "frieden");
+
+                    // 15. UI: .creature-boost Pills bei Kreatur mit aktivem Boost
+                    if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
+                    const listEl = document.getElementById("creature-list");
+                    const boostPills = listEl ? listEl.querySelectorAll(".creature-boost") : [];
+                    out.uiHasBoostPills = boostPills.length > 0;
+
+                    // Cleanup
+                    if (typeof r.deleteBlueprint === "function") r.deleteBlueprint(tonicName);
+                    if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e), stack: e.stack }));
+
+            if (wave6hP2f3Results && !wave6hP2f3Results.error) {
+                check(
+                    "Welle 6.H P2F.3: alle 6 Methoden existieren (applyCreatureBoost + tickCreatureBoosts + activateCreatureConsumable + _pickCreatureAtCrosshair + _consumeBlueprintFromInventory + _consumableInventoryGate)",
+                    wave6hP2f3Results.hasApplyBoost &&
+                        wave6hP2f3Results.hasTickBoosts &&
+                        wave6hP2f3Results.hasActivate &&
+                        wave6hP2f3Results.hasPickCreature &&
+                        wave6hP2f3Results.hasConsumeInv &&
+                        wave6hP2f3Results.hasInvGate
+                );
+                check(
+                    "Welle 6.H P2F.3: spawnCreatureAt initialisiert boosts = []",
+                    wave6hP2f3Results.initialBoostsEmpty
+                );
+                check(
+                    "Welle 6.H P2F.3: applyCreatureBoost legt Boost mit source + tagDelta + expiresAt an",
+                    wave6hP2f3Results.applyOk && wave6hP2f3Results.boostsListed && wave6hP2f3Results.boostHasSource
+                );
+                check(
+                    "Welle 6.H P2F.3: applyCreatureBoost mit leerem tagDelta → lehnt ab",
+                    wave6hP2f3Results.emptyBoostRejected
+                );
+                check(
+                    "Welle 6.H P2F.3: Selbe source dedupliziert (verlängert + tagDelta-Update)",
+                    wave6hP2f3Results.dedupeBySource && wave6hP2f3Results.deltaUpdated
+                );
+                check(
+                    "Welle 6.H P2F.3: Boost-tagDelta fließt in computeCreatureStats (HP+)",
+                    wave6hP2f3Results.hpBoosted
+                );
+                check(
+                    "Welle 6.H P2F.3: setBlueprintAsConsumable markiert Bauplan",
+                    wave6hP2f3Results.consumableMarkOk
+                );
+                check(
+                    "Welle 6.H P2F.3: HYLOMORPHISMUS — Konsumable-Compound-Tags emergieren als Boost",
+                    wave6hP2f3Results.tagBonusEmerged && wave6hP2f3Results.tagBonusHasDichte
+                );
+                check(
+                    "Welle 6.H P2F.3: activateCreatureConsumable wendet emergenten Boost auf Kreatur an",
+                    wave6hP2f3Results.activateOk && wave6hP2f3Results.boostOnCreature
+                );
+                check(
+                    "Welle 6.H P2F.3: Konsumable hebt Kreatur-Stats sichtbar (HP+ via dichte-Boost)",
+                    wave6hP2f3Results.consumableLiftsStats
+                );
+                check(
+                    "Welle 6.H P2F.3: nicht-consumable Bauplan → activate lehnt ab (not_marked_as_consumable)",
+                    wave6hP2f3Results.nonConsumableRejected
+                );
+                check(
+                    "Welle 6.H P2F.3: tickCreatureBoosts entfernt abgelaufene Boosts",
+                    wave6hP2f3Results.expiredCleaned
+                );
+                check(
+                    "Welle 6.H P2F.3: DSL creature_apply_boost wendet Konsumable an",
+                    wave6hP2f3Results.dslAppliedBoost
+                );
+                check(
+                    "Welle 6.H P2F.3: creature_apply_boost in NON_BROADCASTABLE_OPS (Spieler-private Geste)",
+                    wave6hP2f3Results.opNonBroadcast
+                );
+                check(
+                    "Welle 6.H P2F.3: describeProgram zeigt Trank-Namen",
+                    wave6hP2f3Results.descShowsBp
+                );
+                check(
+                    "Welle 6.H P2F.3: _consumeBlueprintFromInventory zieht 1 ab + nulled Slot bei count=0",
+                    wave6hP2f3Results.consumeReducesCount &&
+                        wave6hP2f3Results.consumeNullsSlotAt0 &&
+                        wave6hP2f3Results.noStockReturnsFalse
+                );
+                check(
+                    "Welle 6.H P2F.3: Modus-Gate — schöpfer kostenlos, pfad konsumiert Inventar oder lehnt ab",
+                    wave6hP2f3Results.schoepferFree &&
+                        wave6hP2f3Results.pfadRejectsWithoutPotion &&
+                        wave6hP2f3Results.pfadConsumes
+                );
+                check(
+                    "Welle 6.H P2F.3: UI — .creature-boost Pills in der Liste bei aktiven Boosts",
+                    wave6hP2f3Results.uiHasBoostPills
+                );
+            } else if (wave6hP2f3Results && wave6hP2f3Results.error) {
+                check(`Welle 6.H P2F.3: evaluate-Fehler — ${wave6hP2f3Results.error}`, false);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {

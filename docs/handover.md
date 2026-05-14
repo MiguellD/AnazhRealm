@@ -360,6 +360,63 @@ Hylomorphismus-System wie Materialien und Bauwerke.
   playerInventory in buildStateSnapshot. 127 Invarianten für 6.C1
   + Drag-System → 1153 total.
 
+### V7.89 — Welle 6.H Phase 2F.3 live (14.05.2026): Kreatur-Boosts (Hylomorphismus pur)
+
+**Schöpfer-Direktive: „kein Hardcode, Hylomorphismus bei boosts, wie bei
+allem".** Der Boost-Effekt EMERGIERT aus `computeCompoundTags(consumableBp)
+× scale`. Eine Tabelle gibt es nicht. Ein Trank IST ein Bauplan.
+
+**Sechs neue Foundation-Methoden:**
+- `applyCreatureBoost(c, spec)` — analog addPlayerBoost (Dedup über source)
+- `tickCreatureBoosts(currentTime)` — 1-Hz Cleanup im Game-Loop
+- `activateCreatureConsumable(c, bpName)` — Bauplan→Compound→tagBonus
+- `_pickCreatureAtCrosshair()` — Raycast gegen Kreatur-Sub-Meshes
+- `_consumeBlueprintFromInventory(bpName)` — Inventar-Slot-Konsum
+- `_consumableInventoryGate(bpName)` — Modus-Gate (pfad konsumiert)
+
+**Datenmodell:** `creature.userData.boosts = []` initial in spawnCreatureAt.
+KEINE Persistenz (Vision §1.1 „Geste lebt im Moment").
+
+**Stats-Integration:** `computeCreatureStats` extended um Boost-Block.
+Vier Schichten jetzt: Body + Specs + Equipped + Boosts. Selber Pfad,
+selbe STAT_FROM_TAGS-Map.
+
+**UX-Geste (Schöpfer-Wunsch):**
+- Trank in aktivem Hotbar-Slot → RMB auf Kreatur → Übergabe
+- tryMousePlace erkennt `bp.role==='consumable'`, routet zu Trank-Pfad
+- KEIN Chat-Befehl, KEIN DSL-Aufruf nötig
+- Modus-Gate: pfad konsumiert Inventar, schöpfer kostenlos
+
+**DSL-Op** `creature_apply_boost(idx, bpName)` in NON_BROADCASTABLE_OPS.
+DIREKTER Aktivierungs-Pfad, KEIN Inventar-Konsum (das macht RMB).
+
+**UI:** `.creature-boost` Pills `✺ label·Xs` mit Magenta-Akzent.
+Hover-Tooltip zeigt tagDelta-Detail.
+
+**18 Tests grün. 1494 → 1512/1512 invariants.**
+
+**6.H V2 Status: 11/13 Sub-Phasen erledigt:**
+
+| Phase | Status | Was |
+|---|---|---|
+| 1 | ✅ | wander/follow/wait |
+| 2A | ✅ | Kreaturen-Hylomorphismus |
+| 2B.1 | ✅ | gather + memory |
+| 2B.2 | ✅ | build-Task |
+| 2B.5 | ✅ | harvestArchitecture-Wurzel |
+| 2C | ✅ | computeBuildCost |
+| 2D | ✅ | Spezialisierung aus Memory |
+| 2D.1 | ✅ | Identitäts-Persistenz |
+| 2F.1 | ✅ | Stats-Foundation |
+| 2F.2 | ✅ | Equipped tool+armor |
+| **2F.3** | ✅ | **Boosts via Konsumables** |
+| 2E V1 | 🔴 | LLM-Persona (nächstes — voller Identitäts-Anker) |
+| 2E V2+V3 | 🔴 | Proaktive Sprache + DSL-Output |
+
+**Phase 2E V1** ist jetzt reif — die Persona-System-Prompt-Erweiterung
+kann auf BORN + NAME + SOUL + STATS + SPECS + EQUIPPED + BOOSTS + MEMORY
+zugreifen. Eine reichere Persona-Beschreibung ist möglich als je zuvor.
+
 ### V7.88 — Welle 6.H Phase 2F.2 live (14.05.2026): Kreatur-Equipped tool+armor
 
 **Schöpfer-Vision §1.3 fraktal-Erweiterung.** V7.87 (P2F.1) baute Stats-

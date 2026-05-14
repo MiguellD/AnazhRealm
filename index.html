@@ -29,7 +29,7 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self';"
         />
-        <title>Anazh Realm v7.88 – Das Ultiversum</title>
+        <title>Anazh Realm v7.89 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
              zusätzliche Datei. img-src 'self' data: in CSP erlaubt data-URI. -->
         <link
@@ -1804,6 +1804,26 @@
                 color: #9aaeb8;
                 border-color: rgba(154, 174, 184, 0.55);
             }
+            /* Welle 6.H Phase 2F.3 — Boost-Pills (Konsumable-Effekte). Magenta-
+               Funken-Akzent damit sie sich von Equipped (warm) + Specs (cyan/
+               violett) klar abheben. Hover zeigt tagDelta-Detail. */
+            .creature-list .creature-boosts {
+                display: inline-flex;
+                gap: 4px;
+                margin-left: 4px;
+            }
+            .creature-list .creature-boost {
+                display: inline-block;
+                padding: 1px 6px;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9px;
+                letter-spacing: 0.04em;
+                border-radius: 3px;
+                background: rgba(0, 0, 0, 0.18);
+                border: 1px solid rgba(217, 106, 195, 0.55);
+                color: #e08adc;
+                white-space: nowrap;
+            }
             /* Ring 5: Spieler-Seele. Brass-getintetes <select>, passend zum
            Drawer-Pergament-Look. */
             .drawer .soul-row {
@@ -2722,7 +2742,7 @@
         <header id="topbar" class="hud-frame">
             <div class="topbar-inner">
                 <div class="title">
-                    Anazh Realm <span class="version">v7.88</span> <span class="sub">— Das Ultiversum</span>
+                    Anazh Realm <span class="version">v7.89</span> <span class="sub">— Das Ultiversum</span>
                 </div>
                 <nav class="tabs" role="tablist" aria-label="Hauptansichten">
                     <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">
