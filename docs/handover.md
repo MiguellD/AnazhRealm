@@ -382,7 +382,25 @@ Hylomorphismus-System wie Materialien und Bauwerke.
   erneute Geste wiederaufgebaut.
 
 **Playthrough vor dem Push**: 43/43 Szenarien grün. **32 permanente
-Playtest-Invarianten**. Gesamt: 1259/1259.
+Playtest-Invarianten** für Phase 1.
+
+**V2-Schließungen nach Schöpfer-Selbstaudit (zweiter Audit-Lauf,
+12 Szenarien)**: 7 Lücken gefunden + alle gefixt:
+- **Audio-Ping bei Task-Wechsel** (Vision §1.2). Frequenzen
+  follow_player=494 Hz / wait=294 Hz / wander=null (Lösen ist still).
+- **Welt-Journal `relationship`-Eintrag** bei jedem echten Wechsel
+  (Vision §1.1). `silent`-Option für Spawn-Defaults damit Init nicht
+  flutet.
+- **Leerschlag-Feedback**: assignTaskToNearest bei null schreibt
+  Chat-Output „Keine Kreatur in der Nähe" + `reach`-Journal-Eintrag.
+- **Texture-Cache** für Aura: `_getCreatureTaskAuraTexture` reusiert
+  eine einzige CanvasTexture statt pro Wechsel neu zu erzeugen.
+- **Status-Bar `#status-tasks`**: zeigt „N folgen · M warten" bzw
+  „—" wenn alle wandern.
+- **describeProgram-Distanz**: distance-Arg erscheint im Text wenn
+  gesetzt.
+
+**+21 permanente Playtest-Invarianten** V2. Gesamt: **1280/1280**.
 
 ### V7.78 — Welle 6.A6 + 6.C3 live (14.05.2026)
 
