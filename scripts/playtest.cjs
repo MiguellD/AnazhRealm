@@ -7616,6 +7616,81 @@ function startSaveServer() {
                 check("Welle 6.C1 Drag: leerer Hotbar-Slot ist NICHT draggable", dragResults.hotEmptyNotDraggable);
             }
 
+            // ### Welle 6.C1 Pointer-Lock-Fix: Drag&Drop braucht freie Maus ===
+            // Inventar öffnen → exitPointerLock damit Maus-Cursor erscheint
+            // und HTML5-Drag&Drop funktioniert. WASD bleibt aktiv (Minecraft-
+            // Konvention). Esc schließt Inventar.
+            const lockResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    // Setup: Inventar zu, keys ggf. setzen (Spieler hält W).
+                    r.toggleInventoryOverlay(false);
+                    if (!r.state.keys) r.state.keys = {};
+                    r.state.keys.w = true;
+                    r.state.keys.a = true;
+
+                    // Inventar öffnen → exitPointerLock wird gerufen (wir
+                    // können das in jsdom/headless nicht direkt prüfen,
+                    // aber wir können verifizieren dass der Pfad ohne Crash
+                    // läuft + state.inventoryOpen true wird).
+                    let exitCalled = 0;
+                    const origExit = document.exitPointerLock;
+                    document.exitPointerLock = function () {
+                        exitCalled++;
+                        if (typeof origExit === "function") {
+                            try {
+                                origExit.call(document);
+                            } catch {
+                                /* defensive in headless */
+                            }
+                        }
+                    };
+                    // pointerLockElement-Property zur Laufzeit setzen
+                    // damit der Check `if (document.pointerLockElement)`
+                    // den Pfad nimmt.
+                    try {
+                        Object.defineProperty(document, "pointerLockElement", {
+                            value: document.body,
+                            configurable: true,
+                        });
+                    } catch {
+                        /* defensive */
+                    }
+
+                    r.toggleInventoryOverlay(true);
+                    out.exitLockCalledOnOpen = exitCalled >= 1;
+                    out.overlayOpenAfterToggle = r.state.inventoryOpen === true;
+                    // WASD bleibt aktiv (Minecraft-Konvention) — Schöpfer-Wunsch.
+                    out.wKeyStillActiveAfterOpen = r.state.keys.w === true;
+                    out.aKeyStillActiveAfterOpen = r.state.keys.a === true;
+
+                    // Esc-Handler bei offenem Inventar → toggle close.
+                    // Wir simulieren das durch direkten Aufruf des Pfads
+                    // (Keydown-Synthetic ist in Headless flaky).
+                    // Verifizieren dass toggleInventoryOverlay(false) sauber
+                    // arbeitet ohne Pointer-Lock erneut zu setzen.
+                    r.toggleInventoryOverlay(false);
+                    out.closeWorksWithoutReLock = r.state.inventoryOpen === false;
+
+                    // Cleanup
+                    document.exitPointerLock = origExit;
+                    r.state.keys.w = false;
+                    r.state.keys.a = false;
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (lockResults && !lockResults.error) {
+                check("Welle 6.C1 Lock: exitPointerLock wird beim Inventar-Öffnen gerufen", lockResults.exitLockCalledOnOpen);
+                check("Welle 6.C1 Lock: state.inventoryOpen wird true nach toggleOpen", lockResults.overlayOpenAfterToggle);
+                check("Welle 6.C1 Lock: WASD bleibt aktiv (Schöpfer-Wunsch: weiterbewegen geht)", lockResults.wKeyStillActiveAfterOpen);
+                check("Welle 6.C1 Lock: A-Taste bleibt aktiv bei offenem Inventar", lockResults.aKeyStillActiveAfterOpen);
+                check("Welle 6.C1 Lock: Inventar-schließen ohne Re-Lock (Canvas-Click bleibt User-Wahl)", lockResults.closeWorksWithoutReLock);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {

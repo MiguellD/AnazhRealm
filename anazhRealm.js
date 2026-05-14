@@ -14033,10 +14033,27 @@ class AnazhRealm {
             el.removeAttribute("hidden");
             this.state.inventoryOpen = true;
             this.renderInventoryUI();
+            // === UX-Konvention wie Minecraft / jedes Survival-Spiel ===
+            // Inventar offen → Pointer-Lock raus, damit der Maus-Cursor
+            // erscheint und Drag&Drop funktioniert. HTML5-Drag&Drop ist
+            // mit Pointer-Lock INKOMPATIBEL: Drag braucht absolute
+            // Maus-Koordinaten, Lock liefert nur relative deltas →
+            // dragstart feuert nicht zuverlässig. Esc-Workaround war
+            // schlechte UX (zwei Tasten für eine Aktion).
+            try {
+                if (document.pointerLockElement) document.exitPointerLock();
+            } catch {
+                /* defensive */
+            }
+            // KEINE keys-Clear — Minecraft-Konvention: WASD bleibt aktiv,
+            // Spieler bewegt sich auch mit offenem Inventar weiter. Nur
+            // die Maus-Look-Steuerung ist über exitPointerLock gesperrt.
         } else {
             el.setAttribute("hidden", "");
             this.state.inventoryOpen = false;
             this.state.inventorySelected = null;
+            // Bewusst KEIN re-lock — Spieler klickt Canvas um wieder
+            // in Blick-Steuerung zu gehen (Minecraft-Konvention).
         }
     }
 
@@ -15880,6 +15897,16 @@ class AnazhRealm {
             const target = event.target;
             const inInput =
                 target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
+            // Welle 6.C1 Drag-Fix: Inventar offen + Esc → Inventar schließen.
+            // WASD/Space/Hotbar laufen normal durch (Minecraft-Konvention:
+            // Spieler kann sich mit offenem Inventar weiterbewegen, NUR die
+            // Maus-Look-Steuerung ist gesperrt — was über exitPointerLock
+            // beim Inventar-Öffnen automatisch geschieht).
+            if (this.state.inventoryOpen && event.key === "Escape") {
+                this.toggleInventoryOverlay(false);
+                event.preventDefault();
+                return;
+            }
             this.state.keys[event.key.toLowerCase()] = true;
             if (event.key === " " && !inInput) this.handleJump(performance.now() / 1000);
             if (inInput) return;
@@ -15900,7 +15927,13 @@ class AnazhRealm {
         });
         this.log("Tastatureingaben initialisiert: WASD, Space, Shift", "INFO");
 
-        canvas.addEventListener("click", () => canvas.requestPointerLock());
+        canvas.addEventListener("click", () => {
+            // Welle 6.C1 Drag-Fix: Inventar offen → Canvas-Click NICHT
+            // re-locken. Sonst würde ein Klick neben das Overlay den
+            // Pointer-Lock wieder aktivieren und Drag&Drop tot machen.
+            if (this.state.inventoryOpen) return;
+            canvas.requestPointerLock();
+        });
         document.addEventListener("pointerlockchange", () => {
             this.state.isPointerLocked = document.pointerLockElement === canvas;
             this.log(`Pointer-Lock: ${this.state.isPointerLocked ? "Aktiv" : "Inaktiv"}`, "INFO");
