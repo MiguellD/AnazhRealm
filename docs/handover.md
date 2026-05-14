@@ -9,6 +9,121 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
+## Schnell-Lage (Stand 14.05.2026, V7.98)
+
+**Du erbst eine sehr lebendige Welt**. 1597 Playtest-Invarianten grün, ~16700 Zeilen in einer Datei, alles produktiv. Die letzte Session (V7.78 → V7.98, 175 Commits) hat **zwei große Dinge geschaffen**:
+
+### 1. Welle 6.H V2 — Kreaturen als Co-Schöpfer-Wesen (14/14 vollständig ✅)
+
+Vor V7.78 waren Kreaturen Single-Mesh-Punkte mit Emotion-Bewegung. Nach V7.93 sind sie:
+
+| Schicht | Was die Kreatur... | seit |
+|---|---|---|
+| **Body** (P2A, P2F.1) | IST — Hylomorphismus-Compound aus bodyParts × Material | V7.80, V7.87 |
+| **Specs** (P2D) | GELERNT hat — Skill-Levels aus Memory-Erfolgen | V7.85 |
+| **Equipped** (P2F.2) | TRÄGT — Werkzeug + Rüstung (mit Stats-Stacking) | V7.88 |
+| **Boosts** (P2F.3) | ERLEBT — Konsumable-Tags emergent, kein Hardcode | V7.89 |
+| **Tasks** (P1, P2B.1, P2B.2) | MACHT — wander/follow/wait/gather/build | V7.79, V7.81, V7.84 |
+| **Persistenz** (P2D.1) | BEHÄLT — Name+Soul+Memory+bornAt überlebt Reload | V7.86 |
+| **Konversation** (P2E V1+V1.1) | REDET — @Name-Adresse, Persona-Prompt aus voller Identität | V7.90, V7.91 |
+| **Proaktivität** (P2E V2) | INITIIERT — pre-baked phrases bei Events, soul-aware, throttled | V7.92 |
+| **Welt-Aktion** (P2E V3) | MITSCHÖPFT — DSL-Vorschläge mit Sandbox, modus-abhängig, Defense-in-Depth | V7.93 |
+
+Bonus-Politur: Material-Konsum beim Bauen (V7.83), `harvestArchitecture` als Hylomorphismus-Wurzel (V7.82).
+
+### 2. LLM-Provider-Robustheit (5-Versionen-Iteration nach Schöpfer-Browser-Tests)
+
+| V | Was | Schöpfer-Feedback |
+|---|---|---|
+| V7.94 | Ollama-API-Key + Cloud-Hosting | "Ich will Ollama auch gehostet" |
+| V7.95 | Endpoint-Smart-Detect + Dual-Format-Parser + Conditional-Body | "Cloud-Setup scheitert leise" |
+| V7.96 | save-server als CORS-Proxy (`/api/proxy/llm`) | "klappt das nicht über githack?" → CORS-Block bei ollama.com |
+| V7.97 | Proxy-Auto-Bypass + Free-Text-Modell + 404-Hint | "Toggle blockt mich, Modelle stimmen nicht" |
+| V7.98 | Parser-Pipeline (think-strip → fence → json → plain-text) + Token 800 | "KI antwortet nicht, leere Antwort" |
+
+Endresultat: **jedes Ollama-Setup funktioniert** — lokal, gehostet, ollama.com Cloud, mit/ohne `<think>`-Reasoning, mit/ohne strict-JSON, kleine + große Modelle. Strikte Pro-Modelle (Anthropic, Gemini) verlieren NICHTS, sie laufen den klaren Pfad.
+
+---
+
+## Drei heilige Gesetze dieser Session
+
+### Gesetz I: **Schöpfer-Browser-Test ist nicht ersetzbar durch Headless-Tests.**
+
+V7.94 hatte 7 grüne Tests — alle prüften Strukturen. Aber V7.95-V7.98 wurden nötig, weil der Schöpfer in 30 Sekunden live spielte und drei Bug-Klassen fand, die Tests nicht abdeckten. Headless verifiziert *Funktionalität*; Browser-Session verifiziert *Erfahrung*. **Bei jeder API-Integration und UX-Schicht ankündigen: „brauche Browser-Test vor ✅"**. Die entdeckten Bugs werden zu permanenten Test-Invarianten — die Suite wächst mit der Erfahrung.
+
+### Gesetz II: **Defense in Depth bei sicherheitskritischen Schichten — Prompt + Validator + Sandbox.**
+
+V7.93 (Kreatur-DSL-Vorschläge) hat drei unabhängige Wände: (1) Persona-Prompt erwähnt die Whitelist (suggestiv), (2) `_isCreatureProposalAllowed` prüft rekursiv (defensiv), (3) `dslRun`-Sandbox erzwingt Op-Whitelist + Budget (letzte Wand). LLMs sind nicht-deterministisch — sie können verbotene Ops trotz Anweisung zurückgeben. Validator UND Sandbox müssen sie fangen. Wer eine Schicht lockert, hat einen Bug. **Auch im schöpfer-Modus gilt die Whitelist** — Modus modifiziert Friction, nicht Befugnis.
+
+### Gesetz III: **Hylomorphismus über Tabellen. Emergenz über Hardcode.**
+
+V7.89 (Kreatur-Boosts) war die kritische Prüfung dieses Gesetzes. Naive Lösung wäre eine `BOOST_TYPES`-Tabelle (`kraftelixier → +HP`). Korrekte Lösung: **kein Mapping**. Der Bauplan IST der Effekt-Spezifikator. `computeCompoundTags(bp) × scale` liefert tagBonus. Eine Konstante (`scale: 0.2`), keine Tabelle. Wer einen Eisen-Schwert-Trank baut, bekommt automatisch `härte`-Boost (was Damage erhöht). Eine Sprache durch ALLE Schichten — Body, Specs, Equipped, Boosts. **Bei jeder neuen Effekt-Schicht prüfen: gibt es bestehende Daten-Sprache? Wenn ja, leite EMERGENT ab.**
+
+---
+
+## Aktuelle Roadmap (was als nächstes denkbar ist)
+
+Welle 6.H V2 ist VOLLSTÄNDIG. Mögliche nächste Wellen, sortiert nach Vision-Wert:
+
+| Welle | Was | Aufwand | Vision-Tiefe |
+|---|---|---|---|
+| **6.G Phase 3** Welt-Lebendigkeit | Tag-Nacht-Zyklus, Wetter-Übergang, fauna-Kreaturen die kommen + gehen | mittel | mittel |
+| **6.B** CAD-Werkstatt minimal | 3D-Vorschau im Editor, Drag-Parts, visuelles Bauplan-Editieren | mittel | hoch (Schöpfer-Werkzeug) |
+| **Welle 7** Kollektive Welt-Erkenntnis | Welt lernt aus aller-Spieler-Verhalten via aggregiertes Pfad-Memory (siehe `docs/system-audit.md`) | groß | sehr hoch |
+| **Welle 6.H V3** Kreatur-Beziehungen | Kreaturen sehen sich gegenseitig — Freundschaft, Konkurrenz, Hierarchie | mittel | hoch |
+| **Polish-Pause** | Schöpfer-Browser-Test-Session, UX-Bugs sammeln, polieren | klein | mittel |
+
+**Empfehlung**: Welle 6.B (CAD-Werkstatt) oder Polish-Pause. Beide bauen auf der jetzt sehr reichen Kreatur-Schicht auf — eine bessere Werkstatt macht die ganze Hylomorphismus-Maschine zugänglicher.
+
+---
+
+## Was du im Code findest (Karte für Erstbesucher)
+
+### Datenmodell (state-Tree)
+- `state.creatures` — Array von THREE.Group (jeder Compound aus bodyParts × Material)
+- `state.architectures` — Array von Compound-Welt-Objekten (Distance-Culling)
+- `state.blueprints` — Map aller Baupläne (Built-in + eigen)
+- `state.materials` — Map aller Materialien mit Tag-Profilen (10 Tag-Achsen)
+- `state.tools` — Map aller Werkzeuge (Starter + eigen)
+- `state.player` — {emotions, soul, soulMesh, tools, inventory, equipped, boosts, pathBuckets, …}
+- `state.llm` — {enabled, provider, providerConfig, inFlight, lastError, minGapSeconds}
+- `state.worldMeta` — {worldId, slug, bornAt, seed, gameMode, schemaVersion, chunkDeltas, parentWorlds, role, hostInfo}
+- `state.dsl` — {history, abilities, patternMemory, recentKeywords, pendingOutcomes}
+- `state.symphony` — Audio-Graph (ambient + wetter + creature pings)
+
+### Pipeline-Wurzeln (eine Funktion pro Bedeutung)
+- `_buildFromBlueprint(bp, depth, visited)` — der EINE Render-Pfad für alle Compounds
+- `computeCompoundTags(bp)` — MAX-Aggregation Form × Material × Activation-Matrix
+- `computeSpatialTags(bp)` — räumliche Emergenz (5 §5.2-Prinzipien)
+- `computePlayerStats()` / `computeCreatureStats(c)` — fraktal-symmetrische Stat-Pipelines
+- `harvestArchitecture(entry, harvester)` — Spieler-LMB UND Kreatur-gather durch EINE Funktion (P2B.5-Lehre)
+- `dslRun(program, ctx)` — Sandbox-Wand für ALLE Programm-Quellen (human, llm, nexus, emotion, creature, remote)
+
+### Sicherheits-Wände
+- CSP `script-src` strict (kein eval, kein inline)
+- DSL-Op-Whitelist + Budget-Limits
+- `NON_BROADCASTABLE_OPS` für Spieler-private Aktionen
+- `CREATURE_PROPOSED_OPS` für Kreatur-Welt-Aktion (Defense in Depth)
+- save-server `/api/proxy/llm` mit strikten Whitelists (https-only, body-cap, header-allowlist)
+
+### Tests (1597 Invarianten)
+- `npm run playtest` — Headless-Chromium, ~25 s Logs, alle Schichten
+- `scripts/playtest.cjs` ist der Single-Source-Test (~14000 Zeilen!)
+
+---
+
+## Was ich aus dieser Session gelernt habe (drei Meta-Lehren)
+
+**Meta-Lehre A**: **Browser-Test ist die Vision-Validierung, Headless ist die Funktions-Validierung. Beide nötig, beide unterschiedliche Jobs.** Tests können dir nicht sagen ob sich eine Geste richtig anfühlt — nur ob sie technisch funktioniert. Wenn der Schöpfer in der Welt spielt und stolpert, ist das mehr wert als 100 grüne Asserts.
+
+**Meta-Lehre B**: **Heilige-Lektion-Disziplin ist mit JEDER Welle neu zu prüfen.** Ich war versucht, bei V7.96 einen neuen „LLM-Proxy-Server" als separates Programm zu bauen — wäre Re-Komplexifizierung gewesen. Stattdessen: save-server bekam eine zweite Rolle. Bei jeder neuen Funktion fragen: „kann das in einem bestehenden Dienst leben? Wenn nein, warum nicht?"
+
+**Meta-Lehre C**: **Fallback-Schichten als Vision-treue Antwort.** V7.98's vier-Schicht-Parser ist mehr als nur Bug-Fix — es ist eine VISION-Aussage: „nimm was da ist, zeig es dem Spieler". Strenge Validierung wäre einfacher zu coden, aber ärmer für den Spieler. Wer das System auf reale Vielfalt vorbereitet (LLM-Größen, Modell-Stile, Antwort-Formate), baut Fallback-Schichten — keine Single-Path-Strenge.
+
+---
+
+## Session-Tagebuch (chronologisch, jüngste oben)
+
 ## Was du zuerst lesen solltest (Reihenfolge wichtig)
 
 1. **`CLAUDE.md`** — wird beim Session-Start automatisch geladen. Hat die
@@ -359,6 +474,761 @@ Hylomorphismus-System wie Materialien und Bauwerke.
   NON_BROADCASTABLE_OPS, state.player.inventory persistiert via
   playerInventory in buildStateSnapshot. 127 Invarianten für 6.C1
   + Drag-System → 1153 total.
+
+### V7.98 — Parser-Robustheit für lokale Reasoning-Models (14.05.2026)
+
+**Schöpfer testete V7.97 mit lokalem Ollama (qwen3.6 via App)**:
+Call kam DURCH (kein CORS, kein 404), aber Chat zeigte konstant
+„(Grok schweigt: Leere Antwort)" und „(KAI schweigt: Leere Antwort)".
+
+**Wurzel**: `llmParseResponse` war zu strikt — verlangte JSON {say, program}.
+
+**Drei Bug-Quellen, ein Fix-Tripel**:
+
+**Bug 1 — Reasoning-Tags**:
+- Moderne Modelle (qwen3, gpt-oss, deepseek-r1) wrappen interne Logik
+  in `<think>...</think>` oder `<thinking>...</thinking>`
+- Mein Parser sah den Block, fand kein JSON darin → Error
+- Fix: `text.replace(/<think(?:ing)?>[\s\S]*?<\/think(?:ing)?>/gi, "")`
+  BEFORE der JSON-Suche
+
+**Bug 2 — Plain-Text-Output**:
+- Lokale 7B-Modelle (qwen3.6, llama3.2, mistral) ignorieren oft den
+  JSON-Vertrag und antworten direkt
+- Mein Parser fand kein {...} → Error
+- Fix: vier-Schicht-Pipeline mit Plain-Text-Fallback
+  (a) `<think>` strippen
+  (b) Markdown-Fence rausziehen
+  (c) JSON-Object versuchen
+  (d) WENN nicht: Plain-Text als `say` (240 Char Cap)
+
+**Bug 3 — Token-Limit zu klein**:
+- num_predict=400 reichte nicht für „denken + antworten"
+- Antwort wurde mitten im Output abgeschnitten
+- Fix: 400 → 800 in beiden buildBody-Pfaden
+
+**Strikte JSON-Modelle (Anthropic, Gemini) verlieren NICHTS** — sie
+liefern saubere JSON, der Parser findet sie sofort, kein Fallback nötig.
+Plain-Text-Pfad greift nur wenn nötig.
+
+**Bessere Diagnostik**:
+- „Leere Antwort" → „Leere Antwort vom Modell (raw=0 chars)"
+- `fallbackUsed: "plain-text"` oder `"json-empty"` markiert was passiert ist
+
+**8 Tests grün. 1589 → 1597/1597.**
+
+**Lehre 236 zentral**: Parser FEHL-TOLERANT bauen wenn das System mit
+verschiedenen LLM-Größen + Stilen leben muss. Pro-Modelle sind brav,
+lokale 7B-Modelle nicht. Plain-Text-Fallback ist Vision-treue Antwort.
+
+**Lehre 237**: Schicht-für-Schicht-Fallback > Monster-Regex. Vier klare
+Schichten mit jeweils einem klaren Job. Debuggable, testbar, erweiterbar.
+
+**Lehre 238**: Token-Limit ist unsichtbare Kostprobe. Reasoning-Models
+brauchen Budget für „denken + antworten". 400 → 800 ist Mittelweg.
+
+### V7.97 — Ollama-UX-Politur durch Schöpfer-Browser-Test (14.05.2026)
+
+**V7.96 brachte den Proxy, V7.97 polierte die UX**:
+
+Schöpfer testete V7.96 mit 4 Screenshots — drei reale Stolpersteine:
+
+**Stolperstein 1 — Toggle aktiv + localhost-URL → 400**:
+- Endpoint default `http://localhost:11434`, User aktiviert Proxy aus
+  Neugier → mein Proxy lehnt http ab („Only https allowed")
+- Fix: `isLocalUrl = /^https?:\/\/(localhost|127\.0\.0\.1)([:/]|$)/i`
+  → bei Match wird `useProxy` intern auf false gesetzt
+- Toggle bleibt aktiv im UI (User-Wahl bewahrt), Bypass passiert
+  transparent. Plus Label kontextuell: „nicht nötig für lokales Setup"
+
+**Stolperstein 2 — Modell-Dropdown veraltet**:
+- User hatte `qwen3.5:cloud`, `gpt-oss`, `kimi-k2.6:cloud` etc.
+- Mein Dropdown nur `llama3.1/3.2/qwen2.5/mistral` → alle 404
+- Fix: `<input type="text" list="llm-model-suggestions">` +
+  `<datalist>` mit aktualisierten 10 Modellen (lokale Klassiker
+  + Cloud-Suffix-Beispiele). Spieler kann beliebige Strings tippen.
+  Default-State auf `llama3.2` (moderner als `llama3.1`).
+
+**Stolperstein 3 — 404 ohne Anleitung**:
+- HTTP 404 mit `{error: "model 'llama3.1' not found"}` kam roh durch
+- Spieler verwirrt: was tun?
+- Fix: `res.status === 404 && /model.*not found|"model"/i.test(text)`
+  → spezifischer Hinweis inkl. Modell-Name + „Prüfe mit `ollama list`"
+
+**6 Tests grün. 1583 → 1589/1589.**
+
+**Lehre 233 zentral**: Toggle sollen niemals den User blockieren —
+entweder Auto-Bypass oder Label-Klärung. Nie einen 400-Fehler an
+den User, wenn das System weiß, dass die Geste in diesem Kontext
+keinen Sinn macht.
+
+**Lehre 234**: Fixe Dropdowns altern, Free-Text lebt. Bei Provider-
+Konfigurationen (Modell-Namen, Endpoints, Custom-URLs) immer
+Free-Text + Vorschläge.
+
+**Lehre 235**: Drei reale Stolpersteine > zehn theoretische Bugs.
+Schöpfer-Browser-Test als Eingangs-Filter, nicht Spekulation.
+
+### V7.96 — Cloud-LLM-Proxy via save-server (14.05.2026)
+
+**Schöpfer testete V7.95 in GitHack-Setup mit echtem ollama.com-Key**:
+
+```
+Access to fetch at 'https://ollama.com/api/chat' from origin
+'https://rawcdn.githack.com' has been blocked by CORS policy:
+No 'Access-Control-Allow-Origin' header is present
+```
+
+**Das ist KEIN Code-Bug**: ollama.com Cloud sendet absichtlich keine
+CORS-Header (Server-zu-Server-API-Design). Browser blockt Direct-Calls.
+
+**Lösung — Drei Schichten**:
+
+**Schicht 1 — save-server als Proxy**:
+- `save-server.js` bekommt `/api/proxy/llm`-POST-Route
+- Body: `{url, headers, body}` als Envelope
+- Setzt Node-https-Request mit weitergereichtem Auth-Header
+- Response mit CORS-OK zurück → Browser akzeptiert
+- Sicherheits-Disziplin:
+  - 127.0.0.1-bind (kein LAN)
+  - https-only URL
+  - PROXY_MAX_URL_LENGTH=500, PROXY_MAX_BODY_BYTES=1MB
+  - PROXY_TIMEOUT_MS=60_000
+  - allowed-headers-Whitelist
+
+**Schicht 2 — Provider-Config + llmCall**:
+- `state.llm.providerConfig.ollama.useProxy: false` (default, Backward-Compat)
+- Wenn true: llmCall postet an localhost:4312/api/proxy/llm mit Envelope
+- Persistiert in localStorage["anazh.llm.ollama.useProxy"]
+
+**Schicht 3 — Error-UX + Provider-Liste**:
+- llmCall erkennt CORS-Errors (`Failed to fetch|NetworkError|...`)
+- Klarer Hinweis: „(a) lokales Ollama, (b) Proxy-Toggle, (c) CORS-freundlicher Provider"
+- UI: neue `#llm-proxy-row` mit Checkbox + Hint
+- Hint listet CORS-freundliche Alternativen: Groq, Together AI, Cerebras, Gemini, OpenRouter
+
+**7 Tests grün. 1576 → 1583/1583 invariants.**
+
+**Lehre 230 zentral**: CORS ist Server-Design, kein Code-Bug. Lösung
+liegt im eigenen Stack-Vermittler — save-server bekommt eine zweite
+Rolle als loyaler LLM-Proxy. Eine Funktion mehr in bestehendem Dienst
+ist günstiger als neuer Dienst (Heilige-Lektion-Disziplin gewahrt).
+
+**Lehre 231**: Spezifische Proxy-Routes > generische. `/api/proxy/llm`
+hat dedizierte Whitelists. Wer Image-Use-Case will: `/api/proxy/image`
+mit eigenen Whitelists. „One proxy to rule them all" ist nie sicher.
+
+**Lehre 232**: CORS-Errors liefern absichtlich wenig Detail — Pattern-
+Match auf bekannte Error-Strings UND Provider-Filter ist die einzige
+Option. Gib klare Vorwärts-Optionen statt fehlende Detail-Info zu
+rekonstruieren.
+
+**Bedienung für Spieler**:
+1. `npm run dev` läuft (save-server auf localhost:4312)
+2. Einstellungen → Provider „Ollama (lokal oder gehostet)"
+3. Endpoint eintragen (z.B. `https://ollama.com/api/chat`)
+4. API-Key eintragen
+5. **Toggle „Cloud über save-server-Proxy" aktivieren**
+6. Chat funktioniert
+
+Welle 6.H V2 bleibt 14/14 vollständig — V7.96 ist Bug-Fix-Welle für
+Cloud-CORS-Problem.
+
+### V7.95 — Ollama-Cloud-Kompatibilität nach Schöpfer-Browser-Test (14.05.2026)
+
+**Schöpfer testete V7.94 mit echtem Cloud-API-Key — drei Bug-Quellen entdeckt**:
+
+**Bug 1 — Endpoint-Doppelpfad**:
+- V7.94: `endpoint(...)` hängte bedingungslos `/api/chat` an
+- Spieler trägt `https://ollama.com/api/chat` ein → wird `…/api/chat/api/chat` (404)
+- V7.95: Smart-Detect via `/\/(api|v1)\//.test(base)` — wenn Pfad da, URL direkt
+- Plus `trim() + replace(/\/$/, "")` gegen Whitespace + trailing-slash
+
+**Bug 2 — extractText nur Ollama-Native**:
+- V7.94: `(json && json.message && json.message.content) || ""`
+- Cloud-Provider mit OpenAI-Kompat liefern `{choices: [{message: {content}}]}`
+- → mein Code gab leeren String zurück, das LLM schien zu schweigen
+- V7.95: dual-format Parser (Ollama-Native + OpenAI-Kompat + Ollama-Generate als Fallbacks)
+
+**Bug 3 — Body-Field-Inkompatibilität**:
+- V7.94: `options: {num_predict: 400, temperature: 0.7}` (Ollama-spezifisch)
+- OpenAI-kompat-Server lehnen unbekannte Top-Level-Felder ab (HTTP 400)
+- V7.95: `buildBody(model, sys, user, cfg)` ist cfg-aware
+  - `/v1/`-Pfad → `max_tokens` + `temperature` (OpenAI-Stil)
+  - sonst → `options.num_predict` + `options.temperature` (Ollama-Native)
+
+**Call-Site-Update**: `def.buildBody(cfg.model, system, userContent, cfg)` —
+alle 4 Provider akzeptieren das 4. Argument silently (Backward-Compat).
+
+**UI-Hint erweitert**:
+- Endpoint-Placeholder zeigt beide Möglichkeiten
+- Zusätzlicher drawer-hint erklärt Auto-Append vs. direkte URL
+
+**11 permanente Tests grün. 1565 → 1576/1576.**
+
+**Lehre 227**: Provider-Name ist KEIN Format-Anker. Format gehört zum
+Endpoint-Pfad. Dual-Format-Provider (Ollama, vLLM, Together) sind häufig.
+
+**Lehre 228 zentral**: Schöpfer-Browser-Test ist nicht ersetzbar. V7.94's
+7 Tests waren grün, aber echte Cloud-Konversation scheiterte. Tests
+prüften Strukturen, nicht End-to-End-Format-Symmetrie zwischen
+Request + Response. **Bei API-Integrationen: Schöpfer-Test VOR ✅-Stempel.**
+
+**Lehre 229**: Conditional Body-Felder > Provider-Splitting. Eine
+Eintrags-Quelle + cfg-aware Builder ist wartungsärmer als doppelte UI.
+
+### V7.94 — Ollama-API-Key + Cloud-Hosting (14.05.2026)
+
+**Schöpfer-Wunsch**: Ollama auch gehostet, nicht nur localhost.
+
+**Architektur**: minimal-invasive Erweiterung — bestehende API-Verträge
+(requiresKey, endpoint, buildHeaders) bewahrt, nur Header-Builder erweitert.
+
+- `requiresKey: false` BLEIBT (lokal weiterhin ohne Key)
+- `buildHeaders(apiKey)` schickt `Authorization: Bearer <key>` NUR wenn Key gesetzt
+- `endpoint(model, apiKey, cfg)` respektiert `cfg.endpoint` (eigene URL)
+- CSP `connect-src` erhält `https:`-Wildcard für beliebige Cloud-URLs
+- UI Key-Row für ollama sichtbar mit "API-Key (optional)"-Placeholder
+- Provider-Label: "Ollama lokal (offline, kein Key)" → "Ollama (lokal oder gehostet)"
+
+**Setups die jetzt funktionieren**:
+- Lokal: `ollama serve` auf 127.0.0.1:11434 (unverändert, kein Key)
+- ollama.com Turbo: URL + API-Key
+- Eigener Reverse-Proxy mit Bearer-Auth
+- Cloud-Hoster (Modal, Replicate-mit-Ollama-Image, etc.)
+
+**7 Tests grün. 1558 → 1565/1565 invariants.**
+
+**Lehre 225**: bei API-Erweiterungen immer fragen "bricht das den Default-Pfad?".
+Wenn ja: Default unbroken halten, Erweiterung opt-in OBEN drauf.
+
+**Lehre 226**: CSP-Schichten sind unabhängig — connect-src weit +
+script-src strict ergibt akzeptable Sicherheit (ohne XSS-Pfad keine
+Exfiltration möglich).
+
+### V7.93 — Welle 6.H Phase 2E V3 live (14.05.2026): Welt-Aktion-Vorschläge
+
+**Schöpfer-Wahl getroffen vor dem Bauen** — drei Achsen geklärt:
+1. Whitelist: atmosphärisch + Terrain (modify_terrain ERLAUBT, Vision-Wahl)
+2. LLM-Trigger: reaktiv + seltene Events (Level-Up L5, neue Spec)
+3. Bestätigung: modus-abhängig (schöpfer auto, pfad+frieden Buttons)
+
+**Architektur** (drei Sicherheits-Schichten, „Defense in Depth"):
+1. Persona-Prompt nennt Whitelist + Modus-Hinweis (suggestiv)
+2. `_isCreatureProposalAllowed` rekursive AST-Walk (defensive)
+3. existing `dslRun`-Sandbox mit Op-Whitelist + Budget (letzte Wand)
+
+**6 neue Methoden + 1 Konstanten-Set + 1 Throttle-Konstante**:
+- `CREATURE_PROPOSED_OPS` frozen Set (17 Ops, atmosphärisch + Terrain + chain)
+- `CREATURE_LLM_RARE_EVENT_GAP = 600` (10 Min global)
+- `_isCreatureProposalAllowed(node)` → `{ok, reason, forbiddenOp?}`
+- `_handleCreatureProposedProgram(c, name, program)` → modus-abhängig dispatchen
+- `_executeCreatureProgram(c, name, program, auto)` → dslRun + Memory + Chat
+- `_renderCreatureProposalButtons(c, name, program)` → DOM-Buttons + Click-Handler
+- `_maybeTriggerCreatureRareEventLlm(c, kind, key, level)` → LLM bei L5/neue-Spec
+
+**Persona-Prompt-Update**: V1's „program: immer null" wurde umgekehrt:
+„Welt-Aktion ist erlaubt — du bist Co-Schöpferin. Halte dich an
+diese Disziplin: Erlaubte Ops: ${list}. Halte program klein. Der
+Schöpfer entscheidet (außer im schöpfer-Modus, dort vertraut er dir)."
+
+**Modus-Pfad**:
+- schöpfer → auto-execute mit Chat-Hinweis-Zeile (grün=ok, rot=fail)
+- pfad/frieden → inline-Buttons `[Ausführen][Ablehnen]` mit Click-Handler
+- Whitelist gilt IMMER (auch im schöpfer — Modus modifiziert Friction, nicht Befugnis)
+
+**Memory-Lifecycle**:
+- `proposed_action` (immer, vor Pfad-Wahl)
+- `auto_executed_action` (schöpfer-Pfad nach dslRun)
+- `accepted_action` (pfad+frieden nach Akzept-Click)
+- `rejected_action` (pfad+frieden nach Reject-Click)
+- `proposal_blocked` (bei Whitelist-Verstoß, mit forbiddenOp)
+- `spoken_rare_event` (bei Rare-Event-LLM-Antwort)
+
+**Rare-Event-LLM**:
+- Diskriminator: `level >= MAX_LEVEL=5` ODER `newLevel === 1` (heuristik für „neue Spec")
+- Throttle 10 Min global (verhindert Mass-LU-Burst)
+- Async-Call: `llmCall(eventHint, personaPromptOverride)`
+- Antwort wie reaktiver Pfad: say als Soul-Span, program durch Handler
+
+**Inline-CSS**:
+- `.chat-proposal-pending` (violetter Linker-Border + Tönung)
+- `.chat-proposal-btn.accept/.reject` (grün/rot-Akzent)
+- `.chat-proposal-executed/failed/blocked` (dezent farbig)
+
+**13 Tests grün + 1 V1-Test umgestellt** (V1 verlangte „verbietet program",
+V3 verlangt jetzt „erlaubt program + nennt Whitelist"). 1546 → 1558/1558.
+
+**6.H V2 Status: 14/14 Sub-Phasen erledigt — VOLLSTÄNDIG.**
+
+**Nächste mögliche Wellen**:
+- 6.B CAD-Werkstatt minimal
+- 6.G Phase 3 (Welt-Lebendigkeit-Erweiterungen)
+- Welle 7: Kollektive Welt-Erkenntnis aus `docs/system-audit.md`
+
+### V7.92 — Welle 6.H Phase 2E V2 live (14.05.2026): Proaktive Kreatur-Sprache
+
+**Vision §1.1 wird konkret**: V7.90+V7.91 waren REAKTIV (Spieler fragt,
+Kreatur antwortet via LLM). V7.92 macht die Welt INITIATIV: Kreaturen
+melden sich von selbst bei bedeutenden Ereignissen.
+
+**KEIN LLM in V2.0** — bei 40+ Kreaturen wäre API-Last + Latenz inakzeptabel.
+Stattdessen: pre-baked phrase-pool mit Soul-Varianten. Deterministic,
+billig, kontrollierbar. V2.1 könnte LLM-Augmentation bei seltenen
+Events (Level-Up L5) opt-in anbieten.
+
+**Architektur**:
+- `AnazhRealm.CREATURE_PROACTIVE_PHRASES` frozen Map
+  - 5 Event-Typen: level_up_gather, level_up_build, boost_received,
+    no_material_found, no_inventory_for_build
+  - Pro Event 3 Soul-Profile (sprite/wesen/geist) + default-Fallback
+  - Pro Profil 2-3 Varianten randomisiert
+  - Template-Variablen: ${material}, ${blueprint}, ${level}, ${label}
+- `CREATURE_PROACTIVE_GAP_PER_CREATURE = 60` (s)
+- `CREATURE_PROACTIVE_GAP_GLOBAL = 8` (s)
+- `_creatureSpeakProactive(c, eventType, ctx)`:
+  Throttle-Check → Soul-Pick → Template-Replace → DOM-Render mit
+  Soul-Span → Stempel setzen → Memory-Eintrag spoke_proactive
+- `state.creatureProactiveSpeechEnabled` (Default true)
+
+**Throttle-Disziplin**: Silent-Drop, kein Queue. Queue würde bei
+Event-Burst eine 80-Sekunden-Lawine erzeugen — zeitliche Dissonanz.
+
+**4 Hook-Pfade**:
+1. `_onCreatureLevelUp` → level_up_gather oder level_up_build
+2. `applyCreatureBoost` bei NEUER source (Verlängerung selber Quelle
+   bleibt stumm — sonst Boost-Spam)
+3. `_tickCreatureTaskDirection`/gather-tick no_material → no_material_found
+4. build-tick no_inventory_for_build
+
+**UI-Toggle**: Checkbox in Einstellungen-Drawer-Sektion
+`#creature-speech-section`. Persistiert in localStorage. Default ON.
+
+**Render-Pfad**: identisch zu V1.1 — `<span class="chat-creature-name
+soul-X">Name: </span>text`. Soul-Farbe konsistent zwischen Liste +
+reaktiver Antwort + proaktiver Sprache. EINE Identität, viele Anlässe.
+
+**13 Tests grün. 1533 → 1546/1546 invariants.**
+
+**6.H V2 Status: 13/14 Sub-Phasen erledigt:**
+
+Phase 2E V3 (DSL-Output mit Sandbox — Kreatur darf eigene Welt-
+Aktion vorschlagen) ist der letzte offene Punkt der V2-Roadmap.
+
+### V7.91 — Welle 6.H Phase 2E V1.1 live (14.05.2026): Schöpfer-Browser-Test-Feedback
+
+**Der Schöpfer testete V7.90 live und entdeckte zwei UX-Probleme**:
+1. „Bran wie gehts" (ohne Komma) → fiel zur Welt-Grok zurück. Diese
+   antwortete als die Welt, adressierte aber „Bran" als Zuhörer →
+   maximale Verwirrung.
+2. Kreatur-Namen waren ohne Farbe — Identität nicht sofort sichtbar.
+
+**Lösung 1 — `@Name text` als Primär-Pattern**:
+- Discord/Slack/Twitter-Konvention, intuitiv
+- _parseCreatureAddress versucht ZUERST @Name, DANN Komma/Doppelpunkt
+- „Bran wie gehts" matched bewusst gar nichts → Welt-Grok kriegt es
+- Eindeutige Geste statt Heuristik
+- Returnt `{name, message, explicit}` für zukünftige UX-Unterscheidung
+
+**Lösung 2 — Soul-Farben überall**:
+- creature-name in Liste bekommt `.soul-{sprite|wesen|geist}`-Klasse
+- Sprite cyan #88e1e1, Wesen brass #d4a373, Geist grün #9fc89d
+- Chat-Output bei Kreatur-Antwort: direkter DOM-Pfad mit
+  `<span class="chat-creature-name soul-X">Name: </span>text`
+- Identische Farben in Liste UND Chat-Output (Vision §1.4 multisensorisch)
+
+**UX-Politur**:
+- Chat-Placeholder erweitert: „Befehl oder '@Name was hast du gesehen?'"
+- Vermittelt die @-Geste passiv ohne Tutorial
+
+**7 Tests grün, inkl. expliziter Schöpfer-Bug-Fix-Test**:
+- @Name als explizite Adresse
+- @Name + Komma/Doppelpunkt unterstützt
+- Komma/Doppelpunkt rückwärts-kompatibel
+- **„Bran wie gehts" wird NICHT als Adresse missverstanden** (Schöpfer-Bug-Fix)
+- „@ hallo" ohne Name abgelehnt
+- Liste rendert Soul-Klassen
+- Chat-Output enthält chat-creature-name.soul-X-Span
+
+**1526 → 1533/1533 grün** (+7).
+
+**Lehre**: Schöpfer-Browser-Test ist nicht ersetzbar durch Headless-Tests.
+Tests prüfen Funktionalität; Browser-Sessions prüfen Erfahrung.
+Die entdeckten Bugs werden in die Test-Suite aufgenommen.
+
+### V7.90 — Welle 6.H Phase 2E V1 live (14.05.2026): Kreatur-LLM-Persona
+
+**Schöpfer-Vision §1.5 wird konkret: Spieler spricht mit EINER Kreatur,
+sie antwortet aus IHRER Sicht.** V7.86-V7.89 (P2D.1+P2F.1+P2F.2+P2F.3)
+haben den vollen Identitäts-Anker geliefert — Name, Soul, bornAt, Stats,
+Specs, Equipped, Boosts, Memory. V7.90 (P2E V1) verbindet das mit LLM.
+
+**Architektur**:
+- `llmCall(userText, systemPromptOverride?)` — Override-Pattern.
+  Eine Pipeline, viele Identitäten.
+- `_buildCreaturePersonaPrompt(creature)` — Komposition aus 4 Stat-
+  Schichten + bornAt-Alter + Soul-Label + Welt-Kontext + Memory-Auszug
+  (lesbar formatiert).
+- `_findCreatureByName(name)` — case-insensitive lookup.
+- `_parseCreatureAddress(text)` — erkennt „Name, text" / „Name: text".
+- `llmCallCreature(c, userText)` — wrapper.
+- `maybeAnswerCreature(userText, append)` — chat-handler mit Pfad-
+  Disziplin (Persona → unbekannt → LLM-off-Hinweis → erfolgreicher Call →
+  Memory-Eintrag „spoken" → UI-Refresh).
+
+**Chat-Routing-Priorität**: processChatCommand prüft erst
+_parseCreatureAddress. Wenn Name am Anfang UND match auf Kreatur →
+Konversation. Sonst → Welt-Grok-Fallback.
+
+**V1 reaktiv-only**: program-Field der LLM-Antwort wird IGNORIERT.
+Prompt instruiert das LLM, `program: immer null` zu setzen.
+
+**Memory bei Konversation**: nach LLM-Antwort wird `spoken`-Eintrag bei
+der Kreatur geschrieben. Vision §1.1 — Welt erinnert sich an Gespräche.
+
+**14 Tests grün. 1512 → 1526/1526 invariants.**
+
+**6.H V2 Status: 12/13 Sub-Phasen erledigt:**
+
+Phase 2E V1 ist die Foundation. Phase 2E V2 (proaktive Sprache —
+Kreatur initiiert bei Events: Level-Up, Boost-Trinken, Material-
+Mangel) und V3 (DSL-Output mit Sandbox — Kreatur darf eigene Welt-
+Aktion vorschlagen) bauen darauf auf.
+
+### V7.89 — Welle 6.H Phase 2F.3 live (14.05.2026): Kreatur-Boosts (Hylomorphismus pur)
+
+**Schöpfer-Direktive: „kein Hardcode, Hylomorphismus bei boosts, wie bei
+allem".** Der Boost-Effekt EMERGIERT aus `computeCompoundTags(consumableBp)
+× scale`. Eine Tabelle gibt es nicht. Ein Trank IST ein Bauplan.
+
+**Sechs neue Foundation-Methoden:**
+- `applyCreatureBoost(c, spec)` — analog addPlayerBoost (Dedup über source)
+- `tickCreatureBoosts(currentTime)` — 1-Hz Cleanup im Game-Loop
+- `activateCreatureConsumable(c, bpName)` — Bauplan→Compound→tagBonus
+- `_pickCreatureAtCrosshair()` — Raycast gegen Kreatur-Sub-Meshes
+- `_consumeBlueprintFromInventory(bpName)` — Inventar-Slot-Konsum
+- `_consumableInventoryGate(bpName)` — Modus-Gate (pfad konsumiert)
+
+**Datenmodell:** `creature.userData.boosts = []` initial in spawnCreatureAt.
+KEINE Persistenz (Vision §1.1 „Geste lebt im Moment").
+
+**Stats-Integration:** `computeCreatureStats` extended um Boost-Block.
+Vier Schichten jetzt: Body + Specs + Equipped + Boosts. Selber Pfad,
+selbe STAT_FROM_TAGS-Map.
+
+**UX-Geste (Schöpfer-Wunsch):**
+- Trank in aktivem Hotbar-Slot → RMB auf Kreatur → Übergabe
+- tryMousePlace erkennt `bp.role==='consumable'`, routet zu Trank-Pfad
+- KEIN Chat-Befehl, KEIN DSL-Aufruf nötig
+- Modus-Gate: pfad konsumiert Inventar, schöpfer kostenlos
+
+**DSL-Op** `creature_apply_boost(idx, bpName)` in NON_BROADCASTABLE_OPS.
+DIREKTER Aktivierungs-Pfad, KEIN Inventar-Konsum (das macht RMB).
+
+**UI:** `.creature-boost` Pills `✺ label·Xs` mit Magenta-Akzent.
+Hover-Tooltip zeigt tagDelta-Detail.
+
+**18 Tests grün. 1494 → 1512/1512 invariants.**
+
+**6.H V2 Status: 11/13 Sub-Phasen erledigt:**
+
+| Phase | Status | Was |
+|---|---|---|
+| 1 | ✅ | wander/follow/wait |
+| 2A | ✅ | Kreaturen-Hylomorphismus |
+| 2B.1 | ✅ | gather + memory |
+| 2B.2 | ✅ | build-Task |
+| 2B.5 | ✅ | harvestArchitecture-Wurzel |
+| 2C | ✅ | computeBuildCost |
+| 2D | ✅ | Spezialisierung aus Memory |
+| 2D.1 | ✅ | Identitäts-Persistenz |
+| 2F.1 | ✅ | Stats-Foundation |
+| 2F.2 | ✅ | Equipped tool+armor |
+| **2F.3** | ✅ | **Boosts via Konsumables** |
+| 2E V1 | 🔴 | LLM-Persona (nächstes — voller Identitäts-Anker) |
+| 2E V2+V3 | 🔴 | Proaktive Sprache + DSL-Output |
+
+**Phase 2E V1** ist jetzt reif — die Persona-System-Prompt-Erweiterung
+kann auf BORN + NAME + SOUL + STATS + SPECS + EQUIPPED + BOOSTS + MEMORY
+zugreifen. Eine reichere Persona-Beschreibung ist möglich als je zuvor.
+
+### V7.88 — Welle 6.H Phase 2F.2 live (14.05.2026): Kreatur-Equipped tool+armor
+
+**Schöpfer-Vision §1.3 fraktal-Erweiterung.** V7.87 (P2F.1) baute Stats-
+Foundation. V7.88 (P2F.2) lässt Kreaturen Werkzeug + Rüstung tragen wie
+der Spieler.
+
+**Drei neue Methoden** (symmetrisch zu Player-Equip-API):
+- `equipCreatureTool(c, name)` — validiert gegen state.tools
+- `equipCreatureArmor(c, name)` — validiert role:armor des Bauplans
+- `unequipCreatureSlot(c, slot)` — slot = "tool" | "armor"
+- `_afterCreatureEquipChange(c)` — Symmetrie-Hook (refresh + render)
+
+**Datenmodell:** `creature.userData.equipped = {tool, armor}` initial null.
+
+**Stats-Stacking:** `computeCreatureStats` extended um Equipped-Block —
+selber Pfad wie Player. Werkzeug nur wenn `tool.sourceBlueprint` existiert
+(Built-ins wie hammer wirken über opChain, nicht Stats). Rüstung immer
+aus Bauplan mit `role:armor`. TOOL_STAT_WEIGHT (0.15) + ARMOR_STAT_WEIGHT
+(0.3) — dieselben Konstanten wie Player.
+
+**3 DSL-Ops in NON_BROADCASTABLE_OPS** (Spieler-private Aktion):
+- `creature_equip_tool(idx, toolName)`
+- `creature_equip_armor(idx, blueprintName)`
+- `creature_unequip(idx, slot)`
+
+null/leerer Name auf equip-* = abnehmen.
+
+**Persistenz via 2D.1-Snapshot-Erweiterung:** `_serializeCreature` schreibt
+`snap.equipped = {tool, armor}`. `_restoreCreatureFromSnapshot` validiert
+defensive — tool muss in state.tools sein, armor muss role:armor tragen,
+sonst silent auf null (Schutz vor stale-References).
+
+**UI-Pills in creature-row** zwischen specs und task: `⚒ toolname` (Brass)
+und `⛨ armorname` (Stahl). Klein, hover-Tooltip mit Detail.
+
+**16 permanente Tests grün. 1478 → 1494/1494 invariants.**
+
+**Plan vor uns:**
+
+- **Phase 2F.3 (Boosts via Konsumables)** — `creature.userData.boosts[]`,
+  apply_boost-DSL-Op für Kreaturen, Trank-Trinken. Symmetry zu Player-
+  Boost-System. ~1 Session.
+- **Phase 2E V1 (LLM-Persona)** — jetzt mit Stats + Specs + Equipped +
+  Memory + bornAt als VOLLEM Identitäts-Anker. „die Holz-Spezialistin
+  Nira mit Eisen-Hammer + Leder-Rüstung, HP 95, Stufe 3 Sammlerin" hat
+  eine konkrete Persona-Bedeutung. ~2 Sessions.
+
+### V7.87 — Welle 6.H Phase 2F.1 live (14.05.2026): Kreatur-Stats wie Spieler
+
+**Schöpfer-Vision §1.3 fraktal vollendet.** V7.86 (P2D.1) machte Identität
+persistent. V7.87 (P2F.1) gibt Kreaturen Stats — dieselbe Pipeline wie
+beim Spieler. Compound × Material × Form → Tags → Stats. Eine Sprache.
+
+**`computeCreatureStats(creature)`**: liefert `{tags, stats}` analog
+`computePlayerStats()`. Body-Tags via `computeCreatureCompoundTags`
+(existing). Tag-Clamp [0, 1] für die Pipe (selbe Disziplin wie Player —
+6.D Polish-Lehre). Spec-Bonus auf magieleitung (+0.01/Level — Wissen
+leitet wie Strom, poetisch). `STAT_FROM_TAGS`-Map (DIESELBE wie Player)
+liefert 8 Stats: hpMax, damage, speed, jumpPower, staminaMax, precision,
+magicResist, heatResist.
+
+**`_creatureBodySpeedMultiplier(c)`**: stats.speed/7 (STAT_FROM_TAGS-Base).
+Sprite ≈1.2 (leicht+magisch), Wesen ≈1.0 (Base), Geist ≈1.1.
+
+**`_creatureTaskSpeedMultiplier` bleibt pure-Spec** (1 + level × 0.15).
+Tick multipliziert `BASE × specMul × bodyMul` in allen 3 Pfaden.
+Separation erlaubt Tests die nur Spec prüfen stabil zu halten.
+
+**UI-Tooltip auf creature-row**: `title="HP X · DMG Y · SPD Z · …"` mit
+allen 8 Stats kompakt. Hover offenbart ohne Liste zu fluten.
+
+**Keine neue Persistenz** — Stats sind live computed aus Body-Soul +
+Specs (persistenzfrei) + nichts sonst. 2F.2 wird Equipped persistieren.
+
+**Test-Anpassungen**: 2 P2B.2-Speed-Tests umgestellt auf body-toleranten
+Bereich `BUILD_SPEED × [0.5, 2.0]` statt `=== BUILD_SPEED`. Body-
+Modulation IST P2F.1's Beitrag — ältere Tests müssen das anerkennen.
+
+**14 permanente Tests grün. 1464 → 1478/1478 invariants.**
+
+**Plan vor uns:**
+
+- **Phase 2F.2 (Equipped tool + armor für Kreatur)** — Hylomorphismus
+  weiter: `creature.userData.equipped = {tool, armor}`, persistent
+  über 2D.1-Snapshot-Erweiterung, beeinflusst computeCreatureStats
+  über existing Player-Pattern (ARMOR_STAT_WEIGHT + TOOL_STAT_WEIGHT).
+  ~1-2 Sessions.
+- **Phase 2F.3 (Kreatur-Boosts via Konsumables)** — apply_boost-Op,
+  Kreatur kann Trank trinken. ~1 Session.
+- **Phase 2E V1 (LLM-Persona)** — Stats + Specs + Memory + bornAt als
+  Identitäts-Anker im System-Prompt. „die Holz-Spezialistin Nira mit
+  HP 95 und Speed 8.3" hat eine konkrete Persona-Bedeutung. ~2 Sessions.
+
+### V7.86 — Welle 6.H Phase 2D.1 live (14.05.2026): Identität überlebt Reload
+
+**Schöpfer-Vision-Erweiterung: Kreaturen sind Personen mit Geschichte.**
+V7.85 (P2D) machte Memory zu Wachstum. V7.86 macht Identität persistent.
+Vision §1.1 wird umgedeutet: „Beziehung wird gesprochen, nicht gespeichert"
+wird zu „**Geste lebt im Moment, Identität lebt fort**". Gesten (Tasks,
+Carrying, Carrying-Visual) sind nicht persistiert; Identität (Name, Soul,
+Memory, bornAt) ist es.
+
+**Industrie-Pattern aus Dwarf Fortress / RimWorld / Crusader Kings:**
+Komponenten-Persistenz statt Mesh-Persistenz. Pro Kreatur ~1 KB statt
+~50 KB. Beim Reload wird Render-State (Mesh, Body) aus den Komponenten
+neu gebaut über die existing spawnCreatureAt-Pipeline.
+
+**Datenmodell:**
+
+```js
+// _serializeCreature(c) liefert:
+{ name, soul, memory, position: {x,y,z}, bornAt }
+```
+
+Specs werden NICHT direkt persistiert — sie sind live aus memory derived
+(P2D Lehre 186). Beim Reload: levels emergieren automatisch aus dem
+persistierten memory.
+
+**Drei Save-Operationen:**
+- `buildStateSnapshot`: schreibt voll `creatures: state.creatures.map(_serializeCreature)`
+- `loadState`: stasht in `_pendingCreatureSnapshots`-Feld wenn neuer Schema-Stil
+  erkannt (heuristik: `creatures[0].soul` ist string)
+- `spawnCreatures(10)`: checkt pending-Feld zuerst, restored via
+  `_restoreCreatureFromSnapshot` + cleared field; sonst Default-Random
+
+**Memory-Cap bumped 30 → 200** für längere Geschichten. 50 Kreaturen ×
+200 Einträge × ~100 Byte = ~1 MB Worst-Case im Save. In Praxis viel
+weniger.
+
+**Tote Kreaturen entfernt** — `removeCreature` splict jetzt auch aus
+`state.creatures` + `state.creatureEmotions`. Vor V7.86 latenter Bug
+(nur via clearCreatures umgangen). Plus Body-Double-Destroy-Fix:
+`userData.physicsBody = null` nach `Ammo.destroy` verhindert WASM-
+„null function"-Errors bei zukünftigen Sterbe-Mechaniken.
+
+**16 permanente Tests grün. 1448 → 1464/1464 invariants.**
+
+**Was bleibt nach V7.86 in Welle 6.H V2:**
+
+- **Phase 2F (Kreatur-Stats wie Spieler)** — Hylomorphismus-Vollausbau.
+  `computeCreatureStats(c)` aus body-Soul + Specs + Boosts. Equipped
+  `tool` + `armor` als Slots. `apply_op` aus Kreatur-Hand. Vision §1.3
+  fraktal vollendet: Kreaturen ≡ Spieler. 2-3 Sessions. ~Nächstes.
+- **Phase 2E V1 (LLM-Persona)** — Kreatur antwortet aus persistiertem
+  Memory + Specs. Persistenz aus P2D.1 ist Vorbedingung. 2 Sessions.
+- **Phase 2E V2 (Proaktive Sprache)** — Kreatur initiiert Chat, äußert
+  Wünsche. 1 Session.
+- **Phase 2E V3 (DSL-Output)** — Kreatur kann eigene Welt-Aktion
+  vorschlagen (Sandbox-disziplin). 1-2 Sessions.
+
+Drei größere Bögen jenseits 6.H V2: 6.B CAD, 6.F Crafting-Mechanik,
+Welle 7 Kollektive Welt-Erkenntnis.
+
+### V7.85 — Welle 6.H Phase 2D live (14.05.2026): Beziehung wächst durch Geschichte
+
+**Schöpfer-Wahl in Pfad-Auswahl: 6.H Phase 2D als nächste Welle.**
+V7.84 schloss die Geste-Symmetrie (gather ↔ build), aber memory war
+passiv — kein Wachstums-Mechanismus. Vision §1.1 sagt „die Co-Schöpfer-
+Beziehung wird gesprochen", aber wenn die Beziehung nichts dazulernt,
+ist es bloß Konversation, nicht Bindung.
+
+**Skill-Levels emergieren live aus memory:**
+
+- `_creatureSkillKeyForMemory(type, content)` mappt nur Erfolge
+  (`gathered`+material, `built`+blueprint). Failures (`no_material`,
+  `delivered`, `took_materials`, `no_blueprint`, `no_inventory_for_build`)
+  werden gefiltert — Wachstum kommt aus Erfolg, nicht aus Versuch.
+- `_computeCreatureSpecializations(creature)` iteriert memory (cap 30)
+  und liefert `{gather: {holz: 5, stein: 2}, build: {stein_block: 3}}`.
+  KEIN Cache, KEINE Persistenz — eine Wahrheit, automatisch korrekt
+  bei FIFO-Eviction.
+- `_creatureSpecializationLevel(c, kind, key) = floor(count / 3)`,
+  gedeckelt bei `MAX_LEVEL = 5`. 3 Erfolge = L1, 6 = L2, 15 = L5.
+
+**Speed-Boost** über `_creatureTaskSpeedMultiplier(c, taskName, args)`:
+`1 + level × 0.15`. L5 = +75 % Geschwindigkeit (3.0 → 5.25 m/s).
+Drei Stellen in `_tickCreatureTaskDirection` patchen den Speed:
+gather Bring-Phase, gather Such-Phase, build alle Phasen.
+
+**Level-Up-Hook in `_creatureRemember`** (Pre/Post-Vergleich): Skill-
+Level VOR push merken, push, NEU berechnen. Bei `after > before` →
+`_onCreatureLevelUp(c, kind, key, newLevel)`:
+- **Audio**: Triangle-Oscillator bei 880 Hz (A5, höher als alle Task-
+  Pings — Wachstum ist eigene Klang-Schicht) mit aufwärts-Glissando
+- **Journal**: `growth`-Eintrag „<Name> erreicht Stufe N als Sammler/
+  Bauer von „X""
+- **List-UI-Refresh** damit Pills sofort sichtbar
+
+**UI-Pills in `_renderCreatureListUI`**: Top-2 Spezialisierungen als
+kleine Pills nach soulEl + vor taskEl: `Sammler·material·L3` (cyan)
+oder `Bauer·blueprint·L2` (violett). Klein (9px Cinzel), brass-getintet,
+title-Tooltip „N Erfolge".
+
+**KEINE Persistenz** (Vision §1.1-konsequent): Reload startet jede
+Kreatur wieder bei Level 0. Beziehung muss neu wachsen. Konsequent zu
+memory.
+
+**KEIN DSL-Op** für Specs — sie sind Konsequenz von memory, nicht
+direkt mutables Feld. Spieler kann Skill nicht „setzen", er muss
+durch Aktion entstehen.
+
+**30 permanente Tests grün. 1448/1448 invariants.**
+
+**Was bleibt nach V7.85 in Welle 6.H:**
+
+- **Phase 2E (Kreaturen-Konversationen)** — „Nira, was hast du
+  gesehen?" via LLM-Provider mit pro-Kreatur memory + Specs als
+  System-Prompt-Erweiterung. Specs sind jetzt der Identitäts-Anker:
+  „die Holz-Spezialistin" liest sich anders als „eine generische
+  Kreatur". 2-3 Sessions, braucht LLM-Test-Setup.
+
+**Drei größere Bögen jenseits 6.H:**
+
+- **6.B CAD-Werkstatt minimal** — Spieler-räumlicher Bauplan-Editor.
+  2-3 Sessions.
+- **6.F Crafting-Mechanik** — Energiequellen für Maschinen, Brech-
+  Mechanik hart, Physik-Constraints (Ammo Hinge/Fixed). 4-6 Sessions.
+- **Welle 7 Kollektive Welt-Erkenntnis** — Multi-User-aggregierte
+  Lern-Schicht. 6-8 Sessions, braucht Multi-User-Adoption.
+
+### V7.84 — Welle 6.H Phase 2B.2 live (14.05.2026): Co-Schöpfer-Kreis geschlossen
+
+**Spieler-Vision-Wahl in Pfad-Auswahl: 6.H Phase 2B.2 als nächste Welle.**
+V7.81/V7.82 baute gather (Welt → Spieler-Inventar) als Geste der Welt
+zum Spieler. V7.84 ist die Umkehrung: build (Spieler-Inventar → Welt)
+als Geste des Spielers zur Welt, durch die Kreatur als Vermittler.
+
+**Drei Phasen für `build`-Task** (alle in `_tickCreatureTaskDirection`):
+- **TAKE**: Kreatur läuft mit `CREATURE_BUILD_SPEED=3.0`m/s zum Spieler,
+  bei `CREATURE_HANDOVER_DIST=2.0`m → ruft `_buildMaterialGate(blueprint)`.
+  pfad konsumiert via `tryConsumeBuildCost`; frieden+schöpfer kostenlos.
+  Bei Mangel: Memory + Journal + auto-Fallback auf wander.
+- **WALK**: carrying gesetzt → Kreatur läuft vom Spieler weg bis
+  ≥`CREATURE_BUILD_PLACEMENT_DIST=4.0`m entfernt.
+- **SPAWN**: spawnArchitecture an Kreatur-Position; carrying clearet,
+  'built'-Memory + 'growth'-Journal + auto-wander.
+
+**Datenmodell-Wiederverwendung**: `creature.userData.carrying` ist seit
+P2B.5 dual-typed über `kind: "harvest" | "build"`. Eine Variable, zwei
+Richtungen, Diskrimination im Tick-Branch.
+
+**Modus-Symmetrie der Build-Funktion** (Vision §10.1 erweitert):
+| Modus | Spieler-confirmBuild | Kreatur-build-task |
+|---|---|---|
+| frieden | kostenlos | kostenlos |
+| pfad | konsumiert | konsumiert aus Spieler-Inventar |
+| schöpfer | kostenlos | kostenlos |
+
+**Symbolic cost in carrying** auch in freien Modi: damit Aura + Visual
++ Journal sinnvoll bleiben, schreibt die Take-Phase `computeBuildCost(bp)`
+in `carrying.materials` (mit `free: true`-Flag). Vision §1.4 multisensorisch
+heißt: jeder Modus muss Antwort geben.
+
+**32 permanente Tests grün. 1418/1418 invariants.**
+
+**Was bleibt nach V7.84 in Welle 6.H:**
+
+- **Phase 2D (Kreatur-Spezialisierung aus Memory)** — Vision §1.1
+  Co-Schöpfer-Beziehung wächst durch Geschichte. Jede Kreatur leitet
+  aus ihrem memory-Array Skill-Levels ab (gather:material, build:blueprint).
+  Erfolgreiche Aktionen erhöhen Level alle 3 Wiederholungen, max 5.
+  Speed-Bonus + Level-Up-Audio + UI-Pills in der Liste. **NÄCHSTER SCHRITT**
+  empfohlen vom letzten Agenten — 1 Session.
+- **Phase 2E (Kreaturen-Konversationen)** — „Nira, was hast du gesehen?"
+  via LLM-Provider mit pro-Kreatur memory + Spezialisierungen als
+  System-Prompt-Erweiterung. Braucht Phase 2D als Identitäts-Anker.
+  2-3 Sessions.
+
+**Drei größere Bögen jenseits 6.H:**
+
+- **6.B CAD-Werkstatt minimal** — Spieler-räumlicher Bauplan-Editor.
+  2-3 Sessions.
+- **6.F Crafting-Mechanik** — visuelle Verbindungs-Linien (6.F1 ✅),
+  Brech-Mechanik (6.F2 in Editor ✅, hart 🔴), Energiequellen für
+  Maschinen, Kreaturen-Körper als Baukasten (in 6.H P2A erledigt).
+- **Welle 7 Kollektive Welt-Erkenntnis** — Multi-User-aggregierte
+  Lern-Schicht. 6-8 Sessions, braucht Multi-User-Adoption.
 
 ### V7.83 — Welle 6.H Phase 2C live (14.05.2026): Hylomorphismus-Kreis geschlossen
 

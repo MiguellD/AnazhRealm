@@ -1,6 +1,6 @@
 # AnazhRealm Roadmap — Vollumfänglich
 
-Stand: 12.05.2026 (nach Chunk-Physik-Refactor `e612c60`).
+Stand: 14.05.2026 (V7.98, Welle 6.H V2 vollständig 14/14 + LLM-Provider-Robustheit maximal nach 5-Versionen-Iteration V7.94-V7.98).
 
 Diese Doc beschreibt das **gesamte Projekt vom heutigen Stand bis zum Vision-Endziel** (Welten-Ultiversum). Sie ergänzt `state-of-realm.md` (Was/Warum) um eine puren Plan-Sicht (Wann/Wie). Aufwandsschätzungen sind realistische Tage für eine fokussierte Claude-Session pro Ring/Phase; gerechnet wird linear, ohne Puffer.
 
@@ -8,11 +8,15 @@ Diese Doc beschreibt das **gesamte Projekt vom heutigen Stand bis zum Vision-End
 
 ---
 
-## 1. Wo wir stehen (Mai 2026)
+## 1. Wo wir stehen (Mai 2026, V7.98)
 
-✅ Ring 0-7 + Welle 1-5 + Editor-Konsistenz-Bugfixes sind live. Chunk-Physik nutzt seit `e612c60` `btBvhTriangleMeshShape` (visuelles Mesh = Collider). 120 fps im Browser, **527/527 Playtest-Invarianten grün**. Save-Schema mit `worldMeta` (worldId, slug, visibility, parentWorlds) + `materials` + `playerTools` + `tools` (eigene Werkzeug-Baupläne) + `worldJournal` + `blueprints[].connections` + `blueprints[].role + toolMeta`.
+✅ Ring 0-11 + Welle 1-5 + Welle 6.A6/6.C1/6.C2/6.C3/6.D/6.E/6.F1/6.F2/6.G1/6.G1.5/6.G2/6.H V1+V2 (14/14) sind live. Chunk-Physik nutzt `btBvhTriangleMeshShape` (visuelles Mesh = Collider). 120 fps im Browser, **1597/1597 Playtest-Invarianten grün** (V7.98). Save-Schema mit `worldMeta` (worldId, slug, visibility, parentWorlds, gameMode, chunkDeltas, role, hostInfo, seed) + `materials` + `playerTools` + `tools` + `worldJournal` + `blueprints[].connections` + `blueprints[].role + toolMeta` + `playerInventory` (27 Material/Blueprint-Slots) + `creatures[].snapshot` (name+soul+memory+bornAt+equipped persistent über Reload).
 
-Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) sind alle fünf in V1+ angekommen. **Hylomorphismus-Crafting (Wellen 4+5) ist vollständig**: Substanz-Schicht (Materialien als Tag-Profile), Form-Aktivierung (9×10 Matrix), Werkzeug-Präzision (opChain als Geschichte), räumliche Emergenz (5 Konzept-§5.2-Prinzipien), Verbindungstypen (8 aus §5.1), Maschinen-Rekursivität (§4.3 — Bauplan kann Werkzeug sein). Was noch fehlt: visuelle Verbindungs-Linien, Brech-Mechanik, Energiequellen für Maschinen.
+**Welle 6.H V2 vollendet (14/14 Sub-Phasen)**: Kreaturen sind jetzt vollwertige Co-Schöpfer-Wesen mit 9 Identitäts-Schichten — Body+Specs+Equipped+Boosts (alle hylomorph aus computeCompoundTags), Tasks (5: wander/follow/wait/gather/build), Memory+Persistenz, Konversation (LLM-Persona aus voller Identität, @-Adresse, Soul-Farben), Proaktivität (pre-baked phrases bei Events, soul-aware, throttled), Welt-Aktion-Vorschläge (DSL via Sandbox, modus-abhängig, Defense in Depth).
+
+**LLM-Provider-System maximal robust (V7.94-V7.98)**: jedes Ollama-Setup funktioniert — lokal, gehostet, ollama.com Cloud, mit/ohne `<think>`-Reasoning, mit/ohne strict-JSON. CORS-Lösung via save-server `/api/proxy/llm` als loyaler Vermittler. Parser-Pipeline (think-strip → fence → json → plain-text-fallback) macht auch lokale 7B-Modelle nutzbar.
+
+Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) sind alle in V2+ angekommen. **Hylomorphismus-Crafting (Wellen 4+5) ist vollständig**. **Co-Schöpfer-Kreis (Welle 6.H V2) ist geschlossen**. **Was noch offen** für nächste Wellen: 6.B CAD-Werkstatt minimal (3D-Bau-Editor mit Drag-Parts), 6.G Phase 3 (Welt-Lebendigkeit: Tag-Nacht-Zyklus, Wetter-Übergang, fauna-Lifecycle), Welle 7 (Kollektive Welt-Erkenntnis aus `docs/system-audit.md`), oder Polish-Pause für UX-Browser-Test-Session.
 
 ---
 
@@ -230,7 +234,7 @@ Plus: inline-styles aus `index.html` entfernt (`#fps`, `#state-file-input`), Inl
 | **6.E — Lesbarkeit** | Fähigkeit-Beschreibung ✅ (6.E1), Intro-Overlay ✅ (6.E2), subtile Tooltips (6.E3 — wartet) | 2 Sessions, **2/3 erledigt** | – |
 | **6.F — Original-Crafting (alt 6.1-6.7)** | Visuelle Verbindungs-Linien, Brech-Mechanik, Energiequellen, Kreaturen-Körper als Baukasten, Physik-Constraints (Ammo Hinge/Fixed), Rüstung → in 6.D integriert | 8-10 Sessions | W5 |
 | **6.G — Welt-Sinne** (NEU, 13.05.2026) | **Phase 1 ✅ V7.73** + **Phase 1.5 ✅ V7.74** + **Phase 2 ✅ V7.75** (Welt-Affinitäts-Feld — 4 SimplexNoise-Schichten als Tag-Sprache, populateChunkVegetation füllt Chunks via Affinity-Resonanz, drei neue Baupläne stein_block/kristall_geode/glutbrunnen, organische Region-Emergenz ohne Biome-Tabelle, Schöpfer-Vision „wie kommt Welt-Leben rein" beantwortet). Phase 3 offen: Schatten, Shader (Höhe-Tint, Wind, Glow), Sterne-Stabilisierung + Variation, Terrain-Höhlen+Überhänge+Klippen, Wasser als Material+Layer mit DSL-Ops | 7-9 Sessions, **Phase 1+1.5+2 erledigt**, Phase 3 = 4-5 Sessions | – (Phase 1+2) / 6.D (Phase 3) |
-| **6.H — Kreaturen-Aufträge** (NEU, 13.05.2026) | Autonome Co-Schöpfer: Kreaturen bekommen DSL-Programme als Agenda (build_path, gather, build_house, research_blueprint). Kontext-Menü via Maus-Klick. Persistierte tasks. Vision: dritter Schöpfungs-Akteur (Mensch+KI+Kreaturen) | 4-5 Sessions | 6.F4 (Multi-Mesh-Kreaturen) + 6.A4 (Raycast) |
+| **6.H — Kreaturen-Aufträge** (NEU, 13.05.2026) | Autonome Co-Schöpfer. **Phase 1 ✅ V7.79** (wander/follow_player/wait + Aura + Audio + Journal). **Phase 2A ✅ V7.80** (Hylomorphismus — Kreaturen sind Compounds aus bodyParts×Material wie Spieler+Architektur). **Phase 2B.1 ✅ V7.81** (gather + memory). **Phase 2B.5 ✅ V7.82** (harvestArchitecture als Wurzel-Funktion + Material-Inventar + carrying-Bring-Phase). **Phase 2C ✅ V7.83** (computeBuildCost als wertneutrale Spiegelung, modus-symmetrisch). **Phase 2B.2 ✅ V7.84** (Kreatur baut für Spieler — Geste-Umkehrung zu gather: take→walk→spawn). **Phase 2D ✅ V7.85** (Spezialisierung aus Memory: gather:material und build:blueprint je 3 Erfolge ein Level, max 5; Speed-Bonus +15 %/Level; Audio + Journal bei Level-Up; UI-Pills Sammler/Bauer in Liste; KEINE Persistenz — Vision §1.1 konsequent). **Phase 2E 🔴 offen** (Konversationen — „Nira, was hast du gesehen?" via LLM-Provider mit pro-Kreatur memory + Specs als System-Prompt-Erweiterung; Specs sind jetzt Identitäts-Anker). 4-5 Sessions Original-Schätzung; aktuell 7 Sessions investiert (V7.79-V7.85) — bewusst tiefer als Plan, weil Hylomorphismus-Wurzel sich beim Bauen offenbarte | original 4-5 Sessions, jetzt 7/8 erledigt | 6.F4 (Multi-Mesh-Kreaturen, in 6.H P2A integriert) + 6.A4 (Raycast, in 6.A6 erledigt) |
 
 **Vision-Hebel der Welle**: Block 6.D macht den Spieler zum **Compound im selben Hylomorphismus-System** wie Materialien und Bauwerke. `STAT_FROM_TAGS`-Matrix analog `FORM_TAG_ACTIVATION`. Wenn das Stat-System ohne Bezug zu `MATERIAL_TAG_KEYS` funktioniert, wurde die Vision verfehlt — explizite Warnung im Design-Doc §9.
 

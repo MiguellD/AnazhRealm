@@ -27,9 +27,9 @@
     -->
         <meta
             http-equiv="Content-Security-Policy"
-            content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self';"
+            content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self';"
         />
-        <title>Anazh Realm v7.83 – Das Ultiversum</title>
+        <title>Anazh Realm v7.98 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
              zusätzliche Datei. img-src 'self' data: in CSP erlaubt data-URI. -->
         <link
@@ -1723,6 +1723,98 @@
                 border-bottom: 1px dotted var(--parch-line, #b09d7c);
                 align-items: center;
             }
+            /* Welle 6.H Phase 2E V1.1 — Soul-spezifische Namensfarben.
+               Sprite (Magie · Quarz) → cyan; Wesen (Solid · Stein+Holz) → erdig brass;
+               Geist (Ätherisch · Laub+Leder) → grünlich. Macht Identität sofort
+               sichtbar — Spieler erkennt am Namen den Charakter-Typ. */
+            .creature-list .creature-name.soul-sprite {
+                color: #88e1e1;
+                text-shadow: 0 0 4px rgba(136, 225, 225, 0.35);
+            }
+            .creature-list .creature-name.soul-wesen {
+                color: #d4a373;
+                text-shadow: 0 0 4px rgba(212, 163, 115, 0.25);
+            }
+            .creature-list .creature-name.soul-geist {
+                color: #9fc89d;
+                text-shadow: 0 0 4px rgba(159, 200, 157, 0.25);
+            }
+            /* Welle 6.H Phase 2E V1.1 — Chat-Antwort einer Kreatur mit
+               Soul-farbigem Namen. Identische Farben wie in der Liste,
+               damit Spieler den selben Anker beim Sprechen + Lesen hat. */
+            .chat-creature-name {
+                font-weight: bold;
+            }
+            .chat-creature-name.soul-sprite {
+                color: #88e1e1;
+            }
+            .chat-creature-name.soul-wesen {
+                color: #d4a373;
+            }
+            .chat-creature-name.soul-geist {
+                color: #9fc89d;
+            }
+            /* Welle 6.H Phase 2E V3 — Kreatur-Vorschlag-Buttons inline im Chat.
+               Spieler bestätigt/lehnt direkt in der Zeile. Auto-Hinweis-Zeilen
+               sind dezent getintet damit sie sich von Spieler-Befehlen abheben. */
+            .chat-proposal-pending {
+                margin: 4px 0;
+                padding: 3px 6px;
+                background: rgba(176, 106, 217, 0.08);
+                border-left: 2px solid rgba(176, 106, 217, 0.5);
+                font-style: italic;
+            }
+            .chat-proposal-btn {
+                display: inline-block;
+                margin-left: 6px;
+                padding: 2px 10px;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10px;
+                letter-spacing: 0.05em;
+                background: var(--parch-mid, #2c2418);
+                color: var(--parch-ink, #d4c8a8);
+                border: 1px solid var(--brass-mid, #8a6f3c);
+                border-radius: 3px;
+                cursor: pointer;
+                font-style: normal;
+            }
+            .chat-proposal-btn:hover {
+                background: var(--brass-mid, #8a6f3c);
+                color: #1a1408;
+            }
+            .chat-proposal-btn.accept {
+                border-color: rgba(120, 200, 120, 0.7);
+            }
+            .chat-proposal-btn.accept:hover {
+                background: rgba(120, 200, 120, 0.4);
+            }
+            .chat-proposal-btn.reject {
+                border-color: rgba(229, 123, 108, 0.6);
+            }
+            .chat-proposal-btn.reject:hover {
+                background: rgba(229, 123, 108, 0.35);
+            }
+            .chat-proposal-executed,
+            .chat-proposal-failed,
+            .chat-proposal-blocked {
+                margin: 2px 0;
+                padding: 1px 6px;
+                font-style: italic;
+                font-size: 11px;
+                opacity: 0.78;
+            }
+            .chat-proposal-executed {
+                color: #8fc28e;
+            }
+            .chat-proposal-failed,
+            .chat-proposal-blocked {
+                color: #d99a8a;
+            }
+            .chat-proposal-rejected-tag {
+                color: #d99a8a;
+                opacity: 0.75;
+                margin-left: 4px;
+            }
             .creature-list .creature-name {
                 font-family: "Cinzel", Georgia, serif;
                 color: var(--parch-ink, #2a2018);
@@ -1744,6 +1836,85 @@
             }
             .creature-list .creature-task.gather {
                 color: #4aa6c0;
+            }
+            .creature-list .creature-task.build {
+                color: #b06ad9;
+            }
+            /* Welle 6.H Phase 2D — Spezialisierungs-Pills. Top-2 Skills pro
+               Kreatur (gather/build, jeweils material/blueprint, Level 1-5).
+               Klein, brass-getintet, mit kind-spezifischer Akzentfarbe. */
+            .creature-list .creature-specs {
+                display: inline-flex;
+                gap: 4px;
+                margin-left: 4px;
+            }
+            .creature-list .creature-spec {
+                display: inline-block;
+                padding: 1px 6px;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9px;
+                letter-spacing: 0.04em;
+                border-radius: 3px;
+                background: rgba(0, 0, 0, 0.18);
+                border: 1px solid rgba(212, 163, 115, 0.35);
+                color: var(--parch-ink-soft);
+                white-space: nowrap;
+            }
+            .creature-list .creature-spec.creature-spec-gather {
+                color: #4aa6c0;
+                border-color: rgba(74, 166, 192, 0.5);
+            }
+            .creature-list .creature-spec.creature-spec-build {
+                color: #b06ad9;
+                border-color: rgba(176, 106, 217, 0.5);
+            }
+            /* Welle 6.H Phase 2F.2 — Equipped-Pills. Visuelle Symmetrie zu
+               Spezialisierungen aber mit warmen Brass-Tönen (Werkzeug) +
+               kühlem Stahl (Rüstung). */
+            .creature-list .creature-equipped {
+                display: inline-flex;
+                gap: 4px;
+                margin-left: 4px;
+            }
+            .creature-list .creature-equip {
+                display: inline-block;
+                padding: 1px 6px;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9px;
+                letter-spacing: 0.04em;
+                border-radius: 3px;
+                background: rgba(0, 0, 0, 0.18);
+                border: 1px solid rgba(212, 163, 115, 0.35);
+                color: var(--parch-ink-soft);
+                white-space: nowrap;
+            }
+            .creature-list .creature-equip.creature-equip-tool {
+                color: #d4a373;
+                border-color: rgba(212, 163, 115, 0.55);
+            }
+            .creature-list .creature-equip.creature-equip-armor {
+                color: #9aaeb8;
+                border-color: rgba(154, 174, 184, 0.55);
+            }
+            /* Welle 6.H Phase 2F.3 — Boost-Pills (Konsumable-Effekte). Magenta-
+               Funken-Akzent damit sie sich von Equipped (warm) + Specs (cyan/
+               violett) klar abheben. Hover zeigt tagDelta-Detail. */
+            .creature-list .creature-boosts {
+                display: inline-flex;
+                gap: 4px;
+                margin-left: 4px;
+            }
+            .creature-list .creature-boost {
+                display: inline-block;
+                padding: 1px 6px;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9px;
+                letter-spacing: 0.04em;
+                border-radius: 3px;
+                background: rgba(0, 0, 0, 0.18);
+                border: 1px solid rgba(217, 106, 195, 0.55);
+                color: #e08adc;
+                white-space: nowrap;
             }
             /* Ring 5: Spieler-Seele. Brass-getintetes <select>, passend zum
            Drawer-Pergament-Look. */
@@ -2663,7 +2834,7 @@
         <header id="topbar" class="hud-frame">
             <div class="topbar-inner">
                 <div class="title">
-                    Anazh Realm <span class="version">v7.83</span> <span class="sub">— Das Ultiversum</span>
+                    Anazh Realm <span class="version">v7.98</span> <span class="sub">— Das Ultiversum</span>
                 </div>
                 <nav class="tabs" role="tablist" aria-label="Hauptansichten">
                     <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">
@@ -2840,6 +3011,26 @@
                     <button type="button" data-creature-gather="all">Alle sammeln</button>
                 </div>
             </section>
+            <!-- Welle 6.H Phase 2B.2 — Bauen lassen. Geste-Umkehrung zu Sammeln:
+                 Spieler ist Material-Quelle, Kreatur erschafft daraus eine
+                 Architektur. In pfad zieht Material aus Inventar (lehnt bei
+                 Mangel ab); in frieden+schöpfer kostenlos. Dropdown wird beim
+                 Drawer-Init aus state.blueprints gefüllt. -->
+            <section class="section">
+                <h3>Bauen lassen</h3>
+                <p class="drawer-hint">
+                    Die nächste Kreatur kommt zum Schöpfer, nimmt das nötige Material und erschafft daraus
+                    eine Architektur ein paar Schritte entfernt. Spiegel zu „Sammeln".
+                </p>
+                <div class="soul-row">
+                    <label for="creature-build-select">Bauplan</label>
+                    <select id="creature-build-select" aria-label="Bauplan wählen"></select>
+                </div>
+                <div class="actions" id="creature-build-actions">
+                    <button type="button" data-creature-build="nearest">Nächste baut</button>
+                    <button type="button" data-creature-build="all">Alle bauen</button>
+                </div>
+            </section>
             <section class="section">
                 <h3>Spawnen</h3>
                 <div class="soul-row">
@@ -2962,6 +3153,21 @@
                     </label>
                 </div>
             </section>
+            <!-- Welle 6.H Phase 2E V2 — proaktive Kreatur-Sprache.
+                 Kreaturen melden sich bei Level-Up, Boost-Empfang, Material-
+                 Mangel etc. von selbst. Throttle 60s/Kreatur + 8s global.
+                 Default ON — wer Ruhe will, deaktiviert. -->
+            <section class="section" id="creature-speech-section">
+                <h3>Kreaturen-Stimmen</h3>
+                <p class="drawer-hint">
+                    Kreaturen sprechen von selbst bei wichtigen Ereignissen — Level-Up, Trank-Wirkung, fehlendes Material.
+                    Sanft gedrosselt (60s/Wesen, 8s gesamt), damit der Chat ruhig bleibt.
+                </p>
+                <label class="radio-label">
+                    <input type="checkbox" id="creature-speech-toggle" checked />
+                    <span>Proaktive Sprache aktiv</span>
+                </label>
+            </section>
             <!-- Welle 6.C3 — Tastenbelegung. Sechs Aktionen rebindable; Defaults
                  sind Minecraft-Konvention (LMB abbauen / RMB platzieren). 1-9
                  (Hotbar-Slots) und WASD (Bewegung) bleiben hardcoded. -->
@@ -2999,9 +3205,10 @@
             <section class="section" id="llm-section">
                 <h3>Grok-Stimme (LLM)</h3>
                 <p class="drawer-hint">
-                    Optional: gib Grok eine echte Stimme. Vier Provider — drei haben Gratis-Tiers, Ollama läuft komplett
-                    lokal. Schlüssel liegen nur im localStorage dieses Browsers. Jeder Vorschlag geht durch den
-                    DSL-Interpreter — die Sandbox hält.
+                    Optional: gib Grok eine echte Stimme. Vier Provider — drei haben Gratis-Tiers, Ollama läuft entweder
+                    lokal (kein Key nötig) oder gehostet (eigene URL + optional Bearer-Token, z.B. ollama.com Turbo,
+                    Reverse-Proxy mit Auth). Schlüssel liegen nur im localStorage dieses Browsers. Jeder Vorschlag geht
+                    durch den DSL-Interpreter — die Sandbox hält.
                 </p>
                 <div class="tuning-row">
                     <label for="llm-provider"><span>Provider</span></label>
@@ -3019,16 +3226,54 @@
                     <input
                         type="text"
                         id="llm-endpoint"
-                        placeholder="http://localhost:11434"
+                        placeholder="http://localhost:11434  oder  https://ollama.com/api/chat"
                         autocomplete="off"
                         spellcheck="false"
                     />
                 </div>
+                <div class="drawer-hint" style="font-size: 11px; opacity: 0.75; margin-top: -6px">
+                    Endpoint kann eine Basis-URL sein (z.B. <code>http://localhost:11434</code> →
+                    <code>/api/chat</code> wird angehängt) oder eine vollständige URL inklusive Pfad
+                    (<code>https://ollama.com/api/chat</code> oder <code>https://provider/v1/chat/completions</code>
+                    für OpenAI-kompatible Cloud-Hoster).
+                </div>
+                <!-- V7.96 — Proxy-Toggle: Ollama Cloud (ollama.com etc.) sendet KEINE
+                     CORS-Header, der Browser blockt Direct-Calls. Toggle leitet
+                     Request über save-server (localhost:4312) — braucht `npm run dev`. -->
+                <div class="tuning-row" id="llm-proxy-row" hidden>
+                    <label class="radio-label" style="margin: 0">
+                        <input type="checkbox" id="llm-use-proxy" />
+                        <span>Cloud über save-server-Proxy (löst CORS)</span>
+                    </label>
+                </div>
+                <div class="drawer-hint" id="llm-proxy-hint" hidden style="font-size: 11px; opacity: 0.75; margin-top: -6px">
+                    Aktiviere wenn Cloud-Setup mit CORS-Fehler scheitert (typisch bei
+                    <code>ollama.com</code>). Request läuft über <code>localhost:4312/api/proxy/llm</code> —
+                    braucht laufenden <code>npm run dev</code>. CORS-freundliche Provider die ohne Proxy laufen:
+                    <strong>Groq</strong> (<code>https://api.groq.com/openai/v1/chat/completions</code>),
+                    <strong>Together AI</strong>, <strong>Cerebras</strong>, <strong>Gemini</strong>, <strong>OpenRouter</strong>.
+                </div>
+                <!-- V7.97 — Modell als Free-Text-Input mit datalist-Vorschlägen.
+                     Ollama-User haben oft Custom-Modelle (qwen3.5:cloud, gpt-oss,
+                     myllama:7b-quant, etc.) — eine fixe Dropdown-Liste wird nie
+                     komplett sein. Datalist erlaubt Tippen + Vorschläge zugleich. -->
                 <div class="tuning-row">
                     <label for="llm-model"><span>Modell</span></label>
-                    <select id="llm-model">
+                    <input
+                        type="text"
+                        id="llm-model"
+                        list="llm-model-suggestions"
+                        autocomplete="off"
+                        spellcheck="false"
+                        placeholder="z.B. llama3.2, qwen3, gpt-oss:20b"
+                    />
+                    <datalist id="llm-model-suggestions">
                         <!-- gefüllt aus llmProviderDefs()[provider].models -->
-                    </select>
+                    </datalist>
+                </div>
+                <div class="drawer-hint" style="font-size: 11px; opacity: 0.75; margin-top: -6px">
+                    Trag den Modell-Namen ein wie er bei dir verfügbar ist. Lokal: <code>ollama list</code> zeigt deine
+                    Modelle. Cloud-Hoster: prüfe deren Modell-Liste. Vorschläge unten als Tipp-Hilfe.
                 </div>
                 <div class="actions">
                     <button type="button" id="llm-save">Speichern</button>
@@ -3097,7 +3342,7 @@
                 </div>
             </div>
             <div id="console-footer">
-                <input type="text" id="chat-input" placeholder="Befehl eingeben (z. B. 'Ändere Wetter zu Regen')" />
+                <input type="text" id="chat-input" placeholder="Befehl oder '@Name was hast du gesehen?' (Kreatur ansprechen)" />
             </div>
         </aside>
         <!-- Versteckter File-Picker für 'Lade Datei'-Chat-Befehl. -->

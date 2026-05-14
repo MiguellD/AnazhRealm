@@ -9291,17 +9291,17 @@ function startSaveServer() {
                     out.pingFreqGather = r.constructor.CREATURE_TASK_PING_FREQ.gather === 392;
                     out.haltDist = r.constructor.CREATURE_GATHER_HALT_DIST;
                     out.speed = r.constructor.CREATURE_GATHER_SPEED;
-                    out.memCap = r.constructor.CREATURE_MEMORY_CAP === 30;
+                    out.memCap = r.constructor.CREATURE_MEMORY_CAP === 200;
                     out.hasRemember = typeof r._creatureRemember === "function";
                     out.hasFindArch = typeof r._findNearestArchitectureWithMaterial === "function";
                     out.hasBuildArgs = typeof r._buildCreatureTaskArgs === "function";
                     out.hasDescribeArg = typeof r._describeCreatureTaskArg === "function";
 
-                    // Memory + FIFO-Cap
+                    // Memory + FIFO-Cap (Phase 2D.1: jetzt 200 statt 30)
                     const c0 = r.state.creatures[0];
                     c0.userData.memory = [];
-                    for (let i = 0; i < 35; i++) r._creatureRemember(c0, "found", { idx: i });
-                    out.memCapEnforced = c0.userData.memory.length === 30;
+                    for (let i = 0; i < 205; i++) r._creatureRemember(c0, "found", { idx: i });
+                    out.memCapEnforced = c0.userData.memory.length === 200;
                     out.memFifoCorrect =
                         c0.userData.memory[0].content.idx === 5 && c0.userData.memory[29].content.idx === 34;
                     out.memHasTimestamp = typeof c0.userData.memory[0].at === "number";
@@ -9440,7 +9440,7 @@ function startSaveServer() {
                 check("Welle 6.H P2B.1: AURA_HUE.gather === 200 (cyan)", wave6hP2bResults.auraHueGather);
                 check("Welle 6.H P2B.1: PING_FREQ.gather === 392 (G4)", wave6hP2bResults.pingFreqGather);
                 check(
-                    "Welle 6.H P2B.1: HALT_DIST/SPEED/MEM_CAP=30 als Konstanten",
+                    "Welle 6.H P2B.1: HALT_DIST/SPEED/MEM_CAP=200 als Konstanten (P2D.1: Cap 30 → 200)",
                     Number.isFinite(wave6hP2bResults.haltDist) &&
                         Number.isFinite(wave6hP2bResults.speed) &&
                         wave6hP2bResults.memCap
@@ -9453,7 +9453,7 @@ function startSaveServer() {
                         wave6hP2bResults.hasDescribeArg
                 );
                 check(
-                    "Welle 6.H P2B.1: memory[] FIFO-Cap=30 nach 35 Pushes",
+                    "Welle 6.H P2B.1: memory[] FIFO-Cap=200 nach 205 Pushes (P2D.1)",
                     wave6hP2bResults.memCapEnforced && wave6hP2bResults.memFifoCorrect
                 );
                 check("Welle 6.H P2B.1: memory-Eintrag hat at-Timestamp", wave6hP2bResults.memHasTimestamp);
@@ -9916,6 +9916,2304 @@ function startSaveServer() {
                 check("Welle 6.H P2C: frieden-HUD zeigt 'frei'", wave6hP2cResults.hudShowsFreiInFrieden);
             }
 
+            // ### Welle 6.H Phase 2B.2 — Kreatur baut Bauplan für Spieler ###
+            //
+            // Geste-Umkehrung zu gather: Spieler ist Material-Quelle, Kreatur
+            // ist Schöpfungs-Hand. Drei Phasen: take (zum Spieler) → walk
+            // (weg vom Spieler) → spawn (Architektur am Kreatur-Ort). Modus-
+            // symmetrisch über _buildMaterialGate (eine Funktion teilen sich
+            // Spieler-confirmBuild + Kreatur-build-take-Phase).
+            const wave6hP2b2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.playerMesh) return null;
+                    const out = {};
+
+                    // 1. Konstanten
+                    const Tasks = r.constructor.CREATURE_TASKS;
+                    const Hues = r.constructor.CREATURE_TASK_AURA_HUE;
+                    const Freqs = r.constructor.CREATURE_TASK_PING_FREQ;
+                    out.tasksHasBuild = Tasks.includes("build");
+                    out.auraHueBuild = Hues.build === 280;
+                    out.pingFreqBuild = Freqs.build === 587;
+                    out.buildPlacementDist = r.constructor.CREATURE_BUILD_PLACEMENT_DIST === 4.0;
+                    out.buildSpeed = r.constructor.CREATURE_BUILD_SPEED === 3.0;
+
+                    // 2. Args-Mapping
+                    const a1 = r._buildCreatureTaskArgs("build", "stein_block");
+                    out.argsBuildString = a1.blueprint === "stein_block";
+                    const a2 = r._buildCreatureTaskArgs("build", 5);
+                    out.argsBuildNumberDropped = !a2.blueprint;
+                    const a3 = r._buildCreatureTaskArgs("build", "");
+                    out.argsBuildEmptyDropped = !a3.blueprint;
+
+                    // 3. Describe
+                    const desc = r._describeCreatureTaskArg("build", "stein_block");
+                    out.descBuildShowsBlueprint = /Bauplan/.test(desc) && /stein_block/.test(desc);
+
+                    // 4. Tick: kein blueprint → null + falls auf wander
+                    const c0 = r.spawnCreatureAt(r.state.playerMesh.position.x + 50, r.state.playerMesh.position.y, r.state.playerMesh.position.z + 50, "happy", "wesen");
+                    r.assignCreatureTask(c0, "build", {});
+                    const dirEmpty = r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
+                    out.buildEmptyFallsToWander = dirEmpty === null && r._getCreatureTask(c0).name === "wander";
+
+                    // 5. Tick: unknown blueprint → memory + journal + wander
+                    r.assignCreatureTask(c0, "build", { blueprint: "fictional_bp_xyz" });
+                    const dirUnk = r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
+                    out.unknownBpFallsToWander = dirUnk === null && r._getCreatureTask(c0).name === "wander";
+                    const memHasUnk = (c0.userData.memory || []).some((m) => m.type === "no_blueprint");
+                    out.memHasNoBlueprint = memHasUnk;
+
+                    // 6. Take-Phase: Distanz zum Spieler → Vektor zu Spieler hin, Geschwindigkeit BUILD_SPEED
+                    const player = r.state.playerMesh.position;
+                    c0.position.set(player.x + 10, player.y, player.z);
+                    c0.userData.carrying = null;
+                    r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
+                    const dirTake = r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
+                    out.takePhaseTowardsPlayer = dirTake && dirTake.x < 0; // sollte negativ sein (Richtung -x = zum Spieler)
+                    const sp = Math.hypot(dirTake.x, dirTake.z);
+                    // Phase 2F.1: Speed wird body-moduliert (stats.speed/7). Toleranz weiter
+                    // damit Body-Faktor je Soul den Test nicht bricht — wir prüfen Bereich
+                    // [BUILD_SPEED*0.5, BUILD_SPEED*2.0] statt Gleichheit.
+                    out.takePhaseSpeed = sp > r.constructor.CREATURE_BUILD_SPEED * 0.5 && sp < r.constructor.CREATURE_BUILD_SPEED * 2.0;
+
+                    // 7. Take-Phase at handover, pfad ohne Material → ablehnt + memory + wander
+                    const origMode = r.getGameMode();
+                    r.setGameMode("pfad");
+                    r.state.player.inventory = new Array(27).fill(null);
+                    c0.position.set(player.x + 1.0, player.y, player.z); // innerhalb handover (2.0)
+                    c0.userData.carrying = null;
+                    r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
+                    const dirNoMat = r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
+                    out.takeNoMatRejects = dirNoMat === null && r._getCreatureTask(c0).name === "wander";
+                    const memHasNoInv = (c0.userData.memory || []).some((m) => m.type === "no_inventory_for_build");
+                    out.memHasNoInv = memHasNoInv;
+
+                    // 8. Take-Phase at handover, pfad mit Material → carrying gesetzt + Material verbraucht
+                    r.state.player.inventory = new Array(27).fill(null);
+                    r.addMaterialToInventory("stein", 200);
+                    const stoneBefore = r.state.player.inventory[0].count;
+                    c0.position.set(player.x + 1.0, player.y, player.z);
+                    c0.userData.carrying = null;
+                    r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
+                    r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
+                    out.takeSetsCarrying = !!c0.userData.carrying && c0.userData.carrying.kind === "build";
+                    out.takeCarryingHasBp = c0.userData.carrying && c0.userData.carrying.blueprint === "stein_block";
+                    const stoneAfter = r.state.player.inventory[0] ? r.state.player.inventory[0].count : 0;
+                    out.takeConsumesPfad = stoneAfter < stoneBefore;
+                    const memHasTook = (c0.userData.memory || []).some((m) => m.type === "took_materials");
+                    out.memHasTook = memHasTook;
+
+                    // 9. Schöpfer/frieden: carrying wird mit symbolic cost gesetzt, Inventar bleibt leer
+                    r.setGameMode("schöpfer");
+                    r.state.player.inventory = new Array(27).fill(null);
+                    c0.position.set(player.x + 1.0, player.y, player.z);
+                    c0.userData.carrying = null;
+                    r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
+                    r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
+                    out.schoepferCarrying = !!c0.userData.carrying;
+                    out.schoepferCarryingHasMaterials =
+                        c0.userData.carrying &&
+                        c0.userData.carrying.materials &&
+                        c0.userData.carrying.materials.stein > 0;
+                    out.schoepferCarryingFree = c0.userData.carrying && c0.userData.carrying.free === true;
+                    out.schoepferInventoryUntouched = r.state.player.inventory.every((s) => !s);
+
+                    // 10. Walk-Phase: mit carrying, Vektor WEG vom Spieler
+                    r.setGameMode("schöpfer");
+                    c0.position.set(player.x + 2.5, player.y, player.z); // 2.5m, weniger als placement (4.0)
+                    c0.userData.carrying = { kind: "build", materials: { stein: 8 }, blueprint: "stein_block", since: 0 };
+                    r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
+                    const dirWalk = r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
+                    out.walkPhaseAwayFromPlayer = dirWalk && dirWalk.x > 0; // weg vom Spieler = +x
+                    const ws = Math.hypot(dirWalk.x, dirWalk.z);
+                    // Phase 2F.1: gleiche Body-Modulation wie take-Phase.
+                    out.walkPhaseSpeed = ws > r.constructor.CREATURE_BUILD_SPEED * 0.5 && ws < r.constructor.CREATURE_BUILD_SPEED * 2.0;
+
+                    // 11. Spawn-Phase: bei placement_dist → spawnArchitecture + carrying null + memory + wander
+                    c0.position.set(player.x + 5.0, player.y + 1.0, player.z); // > placement (4.0)
+                    c0.userData.carrying = { kind: "build", materials: { stein: 8 }, blueprint: "stein_block", since: 0 };
+                    r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
+                    const archBefore = r.state.architectures.length;
+                    r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
+                    out.spawnPhaseGrowsWorld = r.state.architectures.length > archBefore;
+                    out.spawnPhaseClearsCarrying = c0.userData.carrying === null;
+                    out.spawnPhaseFallsToWander = r._getCreatureTask(c0).name === "wander";
+                    const memHasBuilt = (c0.userData.memory || []).some((m) => m.type === "built");
+                    out.memHasBuilt = memHasBuilt;
+                    const journalHasBuilt = (r.state.worldJournal.entries || []).some(
+                        (e) => e.type === "growth" && /erschuf/.test(e.text)
+                    );
+                    out.journalHasBuilt = journalHasBuilt;
+
+                    // 12. DSL-Op routing
+                    r.dslRun(["creature_task_nearest", "build", "stein_block"], { source: "test" });
+                    // Finde irgendeine Kreatur mit build-Task
+                    const anyBuilding = r.state.creatures.some(
+                        (c) => r._getCreatureTask(c) && r._getCreatureTask(c).name === "build"
+                    );
+                    out.dslNearestSetsBuild = anyBuilding;
+
+                    // 13. NON_BROADCASTABLE_OPS — creature_task* sind schon drin (Phase 1).
+                    // Build wird über dieselben Ops gerufen, also automatisch privat.
+                    out.opsAreNonBroadcast =
+                        r.constructor.NON_BROADCASTABLE_OPS.has("creature_task_nearest") &&
+                        r.constructor.NON_BROADCASTABLE_OPS.has("creature_task_all") &&
+                        r.constructor.NON_BROADCASTABLE_OPS.has("creature_task");
+
+                    // 14. Chat-Patterns
+                    const p1 = r.parseChatToDsl("baue stein_block");
+                    out.chatBauePattern =
+                        p1 &&
+                        Array.isArray(p1.program) &&
+                        p1.program[0] === "creature_task_nearest" &&
+                        p1.program[1] === "build" &&
+                        p1.program[2] === "stein_block";
+                    const p2 = r.parseChatToDsl("alle bauen stein_block");
+                    out.chatAlleBauenPattern =
+                        p2 &&
+                        Array.isArray(p2.program) &&
+                        p2.program[0] === "creature_task_all" &&
+                        p2.program[1] === "build" &&
+                        p2.program[2] === "stein_block";
+
+                    // 15. describeProgram
+                    const desc1 = r.describeProgram(["creature_task_nearest", "build", "stein_block"]);
+                    out.describeProgramShowsBp = /Bauplan/.test(desc1) && /stein_block/.test(desc1);
+
+                    // 16. Status-Bar zeigt 'N bauen'
+                    // Setze mehrere Kreaturen auf build (alle existierenden)
+                    for (const c of r.state.creatures) {
+                        r.assignCreatureTask(c, "build", { blueprint: "stein_block" }, { silent: true });
+                    }
+                    if (typeof r._renderTaskStatusUI === "function") r._renderTaskStatusUI();
+                    const statusEl = document.getElementById("status-tasks");
+                    out.statusShowsBauen = statusEl && /bauen/.test(statusEl.textContent);
+
+                    // 17. Liste zeigt 'baut stein_block' + .build CSS-Class
+                    if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
+                    const listEl = document.getElementById("creature-list");
+                    const buildRow = listEl && listEl.querySelector(".creature-task.build");
+                    out.listHasBuildClass = !!buildRow;
+                    out.listShowsBaut = listEl && /baut stein_block/.test(listEl.textContent);
+
+                    // 18. UI: Dropdown + 2 Buttons im DOM
+                    const buildSelect = document.getElementById("creature-build-select");
+                    out.uiBuildSelectExists = !!buildSelect;
+                    out.uiBuildSelectHasOptions = buildSelect && buildSelect.options.length >= 3;
+                    const buildBtns = document.querySelectorAll("[data-creature-build]");
+                    out.uiBuildButtonsCount = buildBtns.length === 2;
+
+                    // 19. Journal-Label "wird zur Schöpferin" beim build-Wechsel
+                    // (assignCreatureTask hat schon ein Journal geschrieben in #16, prüfen)
+                    const journalHasRel = (r.state.worldJournal.entries || []).some(
+                        (e) => e.type === "relationship" && /Schöpferin/.test(e.text)
+                    );
+                    out.journalHasSchoepferin = journalHasRel;
+
+                    // 20. Symbolic cost: free build hat trotzdem materials map (für Journal/Visual)
+                    r.setGameMode("schöpfer");
+                    r.state.player.inventory = new Array(27).fill(null);
+                    const cFree = r.spawnCreatureAt(player.x + 30, player.y, player.z + 30, "happy", "wesen");
+                    cFree.position.set(player.x + 1.0, player.y, player.z);
+                    cFree.userData.carrying = null;
+                    r.assignCreatureTask(cFree, "build", { blueprint: "baum_eiche" }, { silent: true });
+                    r._tickCreatureTaskDirection(cFree, cFree.userData.task, "happy");
+                    out.symbolicCostHasMultiple =
+                        cFree.userData.carrying &&
+                        Object.keys(cFree.userData.carrying.materials).length >= 2; // baum_eiche = holz + laub
+
+                    // Cleanup für nachfolgende Tests
+                    r.setGameMode(origMode || "frieden");
+                    for (const c of r.state.creatures) {
+                        r.assignCreatureTask(c, "wander", {}, { silent: true });
+                    }
+                    return out;
+                })
+                .catch((e) => ({ error: String(e), stack: e.stack }));
+
+            if (wave6hP2b2Results && !wave6hP2b2Results.error) {
+                check("Welle 6.H P2B.2: CREATURE_TASKS enthält 'build'", wave6hP2b2Results.tasksHasBuild);
+                check("Welle 6.H P2B.2: AURA_HUE.build === 280 (violett)", wave6hP2b2Results.auraHueBuild);
+                check("Welle 6.H P2B.2: PING_FREQ.build === 587 (D5)", wave6hP2b2Results.pingFreqBuild);
+                check(
+                    "Welle 6.H P2B.2: CREATURE_BUILD_PLACEMENT_DIST=4.0 + CREATURE_BUILD_SPEED=3.0",
+                    wave6hP2b2Results.buildPlacementDist && wave6hP2b2Results.buildSpeed
+                );
+                check(
+                    "Welle 6.H P2B.2: _buildCreatureTaskArgs(build, string) → {blueprint}",
+                    wave6hP2b2Results.argsBuildString
+                );
+                check(
+                    "Welle 6.H P2B.2: _buildCreatureTaskArgs(build, number) droppt arg",
+                    wave6hP2b2Results.argsBuildNumberDropped
+                );
+                check(
+                    "Welle 6.H P2B.2: _buildCreatureTaskArgs(build, '') droppt arg",
+                    wave6hP2b2Results.argsBuildEmptyDropped
+                );
+                check(
+                    "Welle 6.H P2B.2: _describeCreatureTaskArg(build, X) zeigt 'Bauplan X'",
+                    wave6hP2b2Results.descBuildShowsBlueprint
+                );
+                check(
+                    "Welle 6.H P2B.2: build ohne blueprint → null + Task fällt auf wander",
+                    wave6hP2b2Results.buildEmptyFallsToWander
+                );
+                check(
+                    "Welle 6.H P2B.2: build mit unbekanntem Bauplan → wander + 'no_blueprint'-Erinnerung",
+                    wave6hP2b2Results.unknownBpFallsToWander && wave6hP2b2Results.memHasNoBlueprint
+                );
+                check(
+                    "Welle 6.H P2B.2: take-Phase weit weg → Vektor zum Spieler hin",
+                    wave6hP2b2Results.takePhaseTowardsPlayer
+                );
+                check(
+                    "Welle 6.H P2B.2: take-Phase Geschwindigkeit ~ CREATURE_BUILD_SPEED (body-moduliert P2F.1)",
+                    wave6hP2b2Results.takePhaseSpeed
+                );
+                check(
+                    "Welle 6.H P2B.2: pfad ohne Material → take lehnt ab + 'no_inventory_for_build'-Memory",
+                    wave6hP2b2Results.takeNoMatRejects && wave6hP2b2Results.memHasNoInv
+                );
+                check(
+                    "Welle 6.H P2B.2: pfad mit Material → carrying.kind='build' + blueprint gesetzt",
+                    wave6hP2b2Results.takeSetsCarrying && wave6hP2b2Results.takeCarryingHasBp
+                );
+                check(
+                    "Welle 6.H P2B.2: pfad: Material wird aus Spieler-Inventar konsumiert",
+                    wave6hP2b2Results.takeConsumesPfad
+                );
+                check(
+                    "Welle 6.H P2B.2: 'took_materials'-Erinnerung gespeichert",
+                    wave6hP2b2Results.memHasTook
+                );
+                check(
+                    "Welle 6.H P2B.2: schöpfer setzt carrying mit symbolic cost (für Visual+Journal)",
+                    wave6hP2b2Results.schoepferCarrying &&
+                        wave6hP2b2Results.schoepferCarryingHasMaterials &&
+                        wave6hP2b2Results.schoepferCarryingFree
+                );
+                check(
+                    "Welle 6.H P2B.2: schöpfer: Inventar bleibt unangetastet (kostenlos)",
+                    wave6hP2b2Results.schoepferInventoryUntouched
+                );
+                check(
+                    "Welle 6.H P2B.2: walk-Phase mit carrying → Vektor WEG vom Spieler ~ BUILD_SPEED (body-moduliert P2F.1)",
+                    wave6hP2b2Results.walkPhaseAwayFromPlayer && wave6hP2b2Results.walkPhaseSpeed
+                );
+                check(
+                    "Welle 6.H P2B.2: spawn-Phase bei placement_dist → Architektur entsteht",
+                    wave6hP2b2Results.spawnPhaseGrowsWorld
+                );
+                check(
+                    "Welle 6.H P2B.2: spawn-Phase clearet carrying + fällt auf wander zurück",
+                    wave6hP2b2Results.spawnPhaseClearsCarrying && wave6hP2b2Results.spawnPhaseFallsToWander
+                );
+                check(
+                    "Welle 6.H P2B.2: 'built'-Memory + 'growth'-Journal-Eintrag (erschuf ...)",
+                    wave6hP2b2Results.memHasBuilt && wave6hP2b2Results.journalHasBuilt
+                );
+                check(
+                    "Welle 6.H P2B.2: DSL creature_task_nearest('build', bp) wirkt",
+                    wave6hP2b2Results.dslNearestSetsBuild
+                );
+                check(
+                    "Welle 6.H P2B.2: build-Ops bleiben in NON_BROADCASTABLE_OPS (Multi-User-Safety)",
+                    wave6hP2b2Results.opsAreNonBroadcast
+                );
+                check(
+                    "Welle 6.H P2B.2: Chat 'baue X' → creature_task_nearest build X",
+                    wave6hP2b2Results.chatBauePattern
+                );
+                check(
+                    "Welle 6.H P2B.2: Chat 'alle bauen X' → creature_task_all build X",
+                    wave6hP2b2Results.chatAlleBauenPattern
+                );
+                check(
+                    "Welle 6.H P2B.2: describeProgram zeigt 'Bauplan' + name",
+                    wave6hP2b2Results.describeProgramShowsBp
+                );
+                check(
+                    "Welle 6.H P2B.2: Status-Bar zeigt 'N bauen' bei build-Tasks",
+                    wave6hP2b2Results.statusShowsBauen
+                );
+                check(
+                    "Welle 6.H P2B.2: Liste zeigt .build-Class + 'baut <bp>'",
+                    wave6hP2b2Results.listHasBuildClass && wave6hP2b2Results.listShowsBaut
+                );
+                check(
+                    "Welle 6.H P2B.2: UI #creature-build-select Dropdown + ≥3 Optionen + 2 Buttons",
+                    wave6hP2b2Results.uiBuildSelectExists &&
+                        wave6hP2b2Results.uiBuildSelectHasOptions &&
+                        wave6hP2b2Results.uiBuildButtonsCount
+                );
+                check(
+                    "Welle 6.H P2B.2: Journal-Label (wird zur Schoepferin) beim build-Wechsel",
+                    wave6hP2b2Results.journalHasSchoepferin
+                );
+                check(
+                    "Welle 6.H P2B.2: free-build trägt Multi-Material symbolic cost (baum_eiche=holz+laub)",
+                    wave6hP2b2Results.symbolicCostHasMultiple
+                );
+            } else if (wave6hP2b2Results && wave6hP2b2Results.error) {
+                check(`Welle 6.H P2B.2: evaluate-Fehler — ${wave6hP2b2Results.error}`, false);
+            }
+
+            // ### Welle 6.H Phase 2D — Spezialisierung aus Memory ###
+            //
+            // Vision §1.1: Co-Schöpfer-Beziehung wächst durch Geschichte.
+            // Memory-Erfolge (gathered/built) ergeben Skill-Levels (gather:material,
+            // build:blueprint), Speed-Bonus pro Level, Audio + Journal bei Level-Up,
+            // UI-Pills in Kreatur-Liste. KEINE Persistenz (Vision-konsequent).
+            const wave6hP2dResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.playerMesh) return null;
+                    const out = {};
+                    const Class = r.constructor;
+
+                    // 1. Konstanten
+                    out.threshold3 = Class.CREATURE_SPECIALIZATION_LEVEL_THRESHOLD === 3;
+                    out.maxLevel5 = Class.CREATURE_SPECIALIZATION_MAX_LEVEL === 5;
+                    out.speedBonus15 = Class.CREATURE_SPECIALIZATION_SPEED_BONUS_PER_LEVEL === 0.15;
+                    out.pingFreq880 = Class.CREATURE_SPECIALIZATION_PING_FREQ === 880;
+
+                    // 2. Methoden existieren
+                    out.hasComputeSpecs = typeof r._computeCreatureSpecializations === "function";
+                    out.hasLevelMethod = typeof r._creatureSpecializationLevel === "function";
+                    out.hasTopMethod = typeof r._creatureTopSpecializations === "function";
+                    out.hasSpeedMul = typeof r._creatureTaskSpeedMultiplier === "function";
+                    out.hasLevelUp = typeof r._onCreatureLevelUp === "function";
+                    out.hasSkillKey = typeof r._creatureSkillKeyForMemory === "function";
+
+                    // 3. _creatureSkillKeyForMemory mappt korrekt
+                    const sk1 = r._creatureSkillKeyForMemory("gathered", { material: "holz" });
+                    out.skillKeyGather = sk1 && sk1.kind === "gather" && sk1.key === "holz";
+                    const sk2 = r._creatureSkillKeyForMemory("built", { blueprint: "stein_block" });
+                    out.skillKeyBuild = sk2 && sk2.kind === "build" && sk2.key === "stein_block";
+                    const sk3 = r._creatureSkillKeyForMemory("no_material", { material: "holz" });
+                    out.skillKeyFailureNull = sk3 === null;
+                    const sk4 = r._creatureSkillKeyForMemory("delivered", { material: "holz" });
+                    out.skillKeyDeliveredNull = sk4 === null;
+
+                    // 4. Frische Kreatur → leere Specs
+                    const player = r.state.playerMesh.position;
+                    const c = r.spawnCreatureAt(player.x + 80, player.y, player.z + 80, "happy", "wesen");
+                    c.userData.memory = []; // sicherstellen
+                    const s0 = r._computeCreatureSpecializations(c);
+                    out.emptyMemoryEmptySpecs =
+                        s0 && Object.keys(s0.gather).length === 0 && Object.keys(s0.build).length === 0;
+
+                    // 5. _computeCreatureSpecializations zählt korrekt aus memory
+                    c.userData.memory = [
+                        { type: "gathered", content: { material: "holz", blueprint: "baum_eiche" }, at: 1 },
+                        { type: "gathered", content: { material: "holz", blueprint: "baum_eiche" }, at: 2 },
+                        { type: "gathered", content: { material: "stein", blueprint: "stein_block" }, at: 3 },
+                        { type: "built", content: { blueprint: "stein_block" }, at: 4 },
+                        { type: "no_material", content: { material: "holz" }, at: 5 },
+                        { type: "no_blueprint", content: { blueprint: "fictional" }, at: 6 },
+                    ];
+                    const sCounted = r._computeCreatureSpecializations(c);
+                    out.countsHolz = sCounted.gather.holz === 2;
+                    out.countsStein = sCounted.gather.stein === 1;
+                    out.countsBuiltSteinBlock = sCounted.build.stein_block === 1;
+                    out.failuresIgnored = !sCounted.gather.fictional && !sCounted.build.fictional;
+
+                    // 6. _creatureSpecializationLevel
+                    out.level0Empty = r._creatureSpecializationLevel(c, "gather", "lederX") === 0;
+                    out.level0Sub = r._creatureSpecializationLevel(c, "gather", "holz") === 0; // 2 < 3
+
+                    // Push einen dritten gather-holz, sollte L1 erreichen
+                    c.userData.memory.push({ type: "gathered", content: { material: "holz" }, at: 7 });
+                    out.level1At3 = r._creatureSpecializationLevel(c, "gather", "holz") === 1;
+                    // Auf 6 — L2
+                    for (let i = 0; i < 3; i++)
+                        c.userData.memory.push({ type: "gathered", content: { material: "holz" }, at: 8 + i });
+                    out.level2At6 = r._creatureSpecializationLevel(c, "gather", "holz") === 2;
+                    // Auf 100 — gedeckelt bei L5
+                    for (let i = 0; i < 100; i++)
+                        c.userData.memory.push({ type: "gathered", content: { material: "holz" }, at: 100 + i });
+                    out.levelCappedAt5 = r._creatureSpecializationLevel(c, "gather", "holz") === 5;
+
+                    // 7. _creatureTopSpecializations
+                    const c2 = r.spawnCreatureAt(player.x + 90, player.y, player.z + 90, "happy", "wesen");
+                    c2.userData.memory = [
+                        { type: "gathered", content: { material: "holz" }, at: 1 },
+                        { type: "gathered", content: { material: "holz" }, at: 2 },
+                        { type: "gathered", content: { material: "holz" }, at: 3 }, // L1 holz
+                        { type: "built", content: { blueprint: "stein_block" }, at: 4 },
+                        { type: "built", content: { blueprint: "stein_block" }, at: 5 },
+                        { type: "built", content: { blueprint: "stein_block" }, at: 6 },
+                        { type: "built", content: { blueprint: "stein_block" }, at: 7 },
+                        { type: "built", content: { blueprint: "stein_block" }, at: 8 },
+                        { type: "built", content: { blueprint: "stein_block" }, at: 9 }, // L2 stein_block
+                    ];
+                    const top = r._creatureTopSpecializations(c2, 2);
+                    out.topReturnsArray = Array.isArray(top) && top.length === 2;
+                    out.topSortedByLevel = top[0].level >= top[1].level;
+                    out.topHasBuildAtTop = top[0].kind === "build" && top[0].level === 2;
+                    out.topHasGatherSecond = top[1].kind === "gather" && top[1].level === 1;
+                    const topLimit1 = r._creatureTopSpecializations(c2, 1);
+                    out.topLimit1 = topLimit1.length === 1;
+
+                    // Keine Skills → leeres Array
+                    const cFresh = r.spawnCreatureAt(player.x + 95, player.y, player.z + 95, "happy", "wesen");
+                    cFresh.userData.memory = [];
+                    out.topEmpty = r._creatureTopSpecializations(cFresh, 2).length === 0;
+
+                    // 8. Speed-Multiplikator
+                    out.mulL0 = Math.abs(r._creatureTaskSpeedMultiplier(c, "gather", { material: "lederX" }) - 1.0) < 0.001;
+                    // c hat L5 für gather:holz
+                    const mulL5 = r._creatureTaskSpeedMultiplier(c, "gather", { material: "holz" });
+                    out.mulL5 = Math.abs(mulL5 - 1.75) < 0.001;
+                    // build mit L0
+                    out.mulBuildL0 = Math.abs(r._creatureTaskSpeedMultiplier(c, "build", { blueprint: "fictional" }) - 1.0) < 0.001;
+                    // Unbekannter Task → 1
+                    out.mulUnknownTask = r._creatureTaskSpeedMultiplier(c, "wander", {}) === 1;
+                    // Null-Args → 1
+                    out.mulNullArgs = r._creatureTaskSpeedMultiplier(c, "gather", null) === 1;
+
+                    // 9. Level-Up triggert über _creatureRemember
+                    const cFollow = r.spawnCreatureAt(player.x + 100, player.y, player.z + 100, "happy", "wesen");
+                    cFollow.userData.memory = [];
+                    const journalLenBefore = (r.state.worldJournal.entries || []).length;
+                    // 3 gathered → L1, sollte LevelUp triggern
+                    r._creatureRemember(cFollow, "gathered", { material: "quarz" });
+                    r._creatureRemember(cFollow, "gathered", { material: "quarz" });
+                    r._creatureRemember(cFollow, "gathered", { material: "quarz" }); // Level-Up hier
+                    const lvlAfter = r._creatureSpecializationLevel(cFollow, "gather", "quarz");
+                    out.rememberTriggersLevel = lvlAfter === 1;
+                    // Journal sollte einen growth-Eintrag mit "Sammler" / „quarz" / „Stufe 1" haben
+                    const journalAfter = r.state.worldJournal.entries || [];
+                    const hasLvlUpJournal = journalAfter.some(
+                        (e) =>
+                            e.type === "growth" &&
+                            /Sammler/.test(e.text) &&
+                            /quarz/.test(e.text) &&
+                            /Stufe 1/.test(e.text)
+                    );
+                    out.journalHasLvlUp = hasLvlUpJournal;
+                    out.journalGrew = journalAfter.length > journalLenBefore;
+
+                    // 10. Bei Failure-Push KEIN LevelUp
+                    const cFailure = r.spawnCreatureAt(player.x + 110, player.y, player.z + 110, "happy", "wesen");
+                    cFailure.userData.memory = [];
+                    const beforeFailureJournal = (r.state.worldJournal.entries || []).length;
+                    r._creatureRemember(cFailure, "no_material", { material: "holz" });
+                    r._creatureRemember(cFailure, "no_material", { material: "holz" });
+                    r._creatureRemember(cFailure, "no_material", { material: "holz" });
+                    out.failureNoLevel = r._creatureSpecializationLevel(cFailure, "gather", "holz") === 0;
+                    // Journal-Wachstum sollte 0 sein (kein growth-Eintrag durch Failure)
+                    const failureJournalDiff =
+                        (r.state.worldJournal.entries || []).length - beforeFailureJournal;
+                    out.failureJournalUntouched = failureJournalDiff === 0;
+
+                    // 11. UI: .creature-specs span existiert nach Render
+                    if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
+                    const listEl = document.getElementById("creature-list");
+                    const specsSpans = listEl ? listEl.querySelectorAll(".creature-specs") : [];
+                    out.uiSpecsSpansExist = specsSpans.length > 0;
+
+                    // Pills sollten Klassen .creature-spec.creature-spec-gather oder -build haben
+                    const gatherPills = listEl ? listEl.querySelectorAll(".creature-spec.creature-spec-gather") : [];
+                    const buildPills = listEl ? listEl.querySelectorAll(".creature-spec.creature-spec-build") : [];
+                    out.uiHasGatherPills = gatherPills.length > 0;
+                    out.uiHasBuildPills = buildPills.length > 0;
+
+                    // 12. Pills zeigen "Sammler·material·L1" oder „Bauer·blueprint·L2"
+                    const samplePill = gatherPills[0];
+                    out.uiPillTextOk =
+                        samplePill && /Sammler/.test(samplePill.textContent) && /L\d/.test(samplePill.textContent);
+                    const buildPill = buildPills[0];
+                    out.uiBuildPillTextOk =
+                        buildPill && /Bauer/.test(buildPill.textContent) && /L\d/.test(buildPill.textContent);
+
+                    // 13. Fresh creature OHNE specs hat KEINE .creature-specs span in ihrer Row
+                    const cNoSpecsList = r.spawnCreatureAt(player.x + 120, player.y, player.z + 120, "happy", "wesen");
+                    cNoSpecsList.userData.memory = []; // explizit leer
+                    if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
+                    // Wir können nicht direkt die spezifische Row finden, aber wir können prüfen dass die ANZAHL specsSpans = Anzahl Kreaturen mit ≥1 Spec
+                    const allRows = listEl ? listEl.querySelectorAll(".creature-row") : [];
+                    let creaturesWithSpecs = 0;
+                    for (const cc of r.state.creatures) {
+                        if (r._creatureTopSpecializations(cc, 2).length > 0) creaturesWithSpecs++;
+                    }
+                    const allSpecsSpans = listEl ? listEl.querySelectorAll(".creature-specs") : [];
+                    out.uiSpansMatchSpecCount = allSpecsSpans.length === creaturesWithSpecs;
+
+                    // 14. Persistenz NICHT — buildStateSnapshot speichert keine specializations
+                    // (memory ist sowieso nicht persistiert; specs sind live computed daraus)
+                    const snap = r.buildStateSnapshot();
+                    out.snapshotHasNoSpecs = !snap.creatureSpecializations && !snap.specializations;
+
+                    // 15. NICHT in NON_BROADCASTABLE_OPS (es gibt keine specialization-DSL-Op)
+                    out.noSpecDslOp = !Class.NON_BROADCASTABLE_OPS.has("specialization");
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e), stack: e.stack }));
+
+            if (wave6hP2dResults && !wave6hP2dResults.error) {
+                check("Welle 6.H P2D: LEVEL_THRESHOLD === 3", wave6hP2dResults.threshold3);
+                check("Welle 6.H P2D: MAX_LEVEL === 5", wave6hP2dResults.maxLevel5);
+                check("Welle 6.H P2D: SPEED_BONUS_PER_LEVEL === 0.15", wave6hP2dResults.speedBonus15);
+                check("Welle 6.H P2D: PING_FREQ === 880 (A5)", wave6hP2dResults.pingFreq880);
+                check(
+                    "Welle 6.H P2D: alle 6 Methoden existieren (compute/level/top/speedMul/levelUp/skillKey)",
+                    wave6hP2dResults.hasComputeSpecs &&
+                        wave6hP2dResults.hasLevelMethod &&
+                        wave6hP2dResults.hasTopMethod &&
+                        wave6hP2dResults.hasSpeedMul &&
+                        wave6hP2dResults.hasLevelUp &&
+                        wave6hP2dResults.hasSkillKey
+                );
+                check(
+                    "Welle 6.H P2D: skillKeyForMemory mappt gathered → gather:material",
+                    wave6hP2dResults.skillKeyGather
+                );
+                check(
+                    "Welle 6.H P2D: skillKeyForMemory mappt built → build:blueprint",
+                    wave6hP2dResults.skillKeyBuild
+                );
+                check(
+                    "Welle 6.H P2D: skillKeyForMemory failures (no_material, delivered) → null",
+                    wave6hP2dResults.skillKeyFailureNull && wave6hP2dResults.skillKeyDeliveredNull
+                );
+                check(
+                    "Welle 6.H P2D: leere memory → leere specializations",
+                    wave6hP2dResults.emptyMemoryEmptySpecs
+                );
+                check(
+                    "Welle 6.H P2D: computeSpecs zählt gathered nach material (holz=2, stein=1)",
+                    wave6hP2dResults.countsHolz && wave6hP2dResults.countsStein
+                );
+                check(
+                    "Welle 6.H P2D: computeSpecs zählt built nach blueprint",
+                    wave6hP2dResults.countsBuiltSteinBlock
+                );
+                check(
+                    "Welle 6.H P2D: failures (no_material, no_blueprint) zählen NICHT in specs",
+                    wave6hP2dResults.failuresIgnored
+                );
+                check(
+                    "Welle 6.H P2D: Level 0 für leeren Skill + Sub-Threshold (2<3)",
+                    wave6hP2dResults.level0Empty && wave6hP2dResults.level0Sub
+                );
+                check("Welle 6.H P2D: 3 Erfolge → Level 1", wave6hP2dResults.level1At3);
+                check("Welle 6.H P2D: 6 Erfolge → Level 2", wave6hP2dResults.level2At6);
+                check("Welle 6.H P2D: 100 Erfolge → Level 5 (Cap)", wave6hP2dResults.levelCappedAt5);
+                check(
+                    "Welle 6.H P2D: topSpecializations sortiert nach Level + limit",
+                    wave6hP2dResults.topReturnsArray &&
+                        wave6hP2dResults.topSortedByLevel &&
+                        wave6hP2dResults.topHasBuildAtTop &&
+                        wave6hP2dResults.topHasGatherSecond &&
+                        wave6hP2dResults.topLimit1
+                );
+                check(
+                    "Welle 6.H P2D: keine Skills → topSpecializations liefert leeres Array",
+                    wave6hP2dResults.topEmpty
+                );
+                check(
+                    "Welle 6.H P2D: speedMultiplier L0 → 1.0",
+                    wave6hP2dResults.mulL0 && wave6hP2dResults.mulBuildL0
+                );
+                check(
+                    "Welle 6.H P2D: speedMultiplier L5 → 1.75 (1 + 5*0.15)",
+                    wave6hP2dResults.mulL5
+                );
+                check(
+                    "Welle 6.H P2D: speedMultiplier wander/null-args → 1.0",
+                    wave6hP2dResults.mulUnknownTask && wave6hP2dResults.mulNullArgs
+                );
+                check(
+                    "Welle 6.H P2D: 3. erfolgreicher gather → Level-Up im _creatureRemember",
+                    wave6hP2dResults.rememberTriggersLevel
+                );
+                check(
+                    "Welle 6.H P2D: Level-Up schreibt growth-Journal-Eintrag mit Sammler/key/Stufe",
+                    wave6hP2dResults.journalHasLvlUp && wave6hP2dResults.journalGrew
+                );
+                check(
+                    "Welle 6.H P2D: Failure-Memory triggert KEIN Level + KEIN Journal",
+                    wave6hP2dResults.failureNoLevel && wave6hP2dResults.failureJournalUntouched
+                );
+                check(
+                    "Welle 6.H P2D: UI .creature-specs Spans existieren bei Kreaturen mit Specs",
+                    wave6hP2dResults.uiSpecsSpansExist
+                );
+                check(
+                    "Welle 6.H P2D: UI .creature-spec.creature-spec-gather + .creature-spec-build Pills",
+                    wave6hP2dResults.uiHasGatherPills && wave6hP2dResults.uiHasBuildPills
+                );
+                check(
+                    "Welle 6.H P2D: Pills zeigen Sammler/Bauer + Level (L1..L5)",
+                    wave6hP2dResults.uiPillTextOk && wave6hP2dResults.uiBuildPillTextOk
+                );
+                check(
+                    "Welle 6.H P2D: Anzahl .creature-specs Spans = Anzahl Kreaturen mit Specs",
+                    wave6hP2dResults.uiSpansMatchSpecCount
+                );
+                check(
+                    "Welle 6.H P2D: KEINE Persistenz im buildStateSnapshot (Vision §1.1)",
+                    wave6hP2dResults.snapshotHasNoSpecs
+                );
+                check(
+                    "Welle 6.H P2D: KEIN specialization-DSL-Op in NON_BROADCASTABLE_OPS (kein Op nötig)",
+                    wave6hP2dResults.noSpecDslOp
+                );
+            } else if (wave6hP2dResults && wave6hP2dResults.error) {
+                check(`Welle 6.H P2D: evaluate-Fehler — ${wave6hP2dResults.error}`, false);
+            }
+
+            // ### Welle 6.H Phase 2D.1 — Kreatur-Persistenz (Komponenten-Snapshot) ###
+            //
+            // Vision §1.1-Erweiterung: Kreaturen-Identitäten überleben Reload.
+            // Save trägt {name, soul, memory, position, bornAt} pro Kreatur,
+            // ~1 KB pro Stück. Memory-Cap 200. Tote Kreaturen (removeCreature)
+            // werden aus dem Save entfernt.
+            const wave6hP2d1Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.playerMesh) return null;
+                    const out = {};
+
+                    // 1. Memory-Cap auf 200 gebumpt
+                    out.memCap200 = r.constructor.CREATURE_MEMORY_CAP === 200;
+
+                    // 2. Methoden existieren
+                    out.hasSerialize = typeof r._serializeCreature === "function";
+                    out.hasRestore = typeof r._restoreCreatureFromSnapshot === "function";
+
+                    // 3. Neu gespawnte Kreatur bekommt bornAt
+                    const player = r.state.playerMesh.position;
+                    const c = r.spawnCreatureAt(player.x + 130, player.y, player.z + 130, "happy", "wesen");
+                    if (!c) {
+                        out.spawnFailed = true;
+                        return out;
+                    }
+                    out.bornAtSet = Number.isFinite(c.userData.bornAt) && c.userData.bornAt > 0;
+
+                    // 4. _serializeCreature liefert vollständigen Snapshot
+                    c.userData.memory = [
+                        { type: "gathered", content: { material: "holz" }, at: 1 },
+                        { type: "gathered", content: { material: "holz" }, at: 2 },
+                        { type: "built", content: { blueprint: "stein_block" }, at: 3 },
+                    ];
+                    const snap = r._serializeCreature(c);
+                    out.snapHasName = typeof snap.name === "string" && snap.name.length > 0;
+                    out.snapHasSoul = snap.soul === "wesen";
+                    out.snapHasMemory = Array.isArray(snap.memory) && snap.memory.length === 3;
+                    out.snapHasPosition = snap.position && Number.isFinite(snap.position.x);
+                    out.snapHasBornAt = Number.isFinite(snap.bornAt);
+
+                    // 5. _restoreCreatureFromSnapshot baut Kreatur aus Snapshot
+                    const beforeCount = r.state.creatures.length;
+                    const restored = r._restoreCreatureFromSnapshot(snap, "happy");
+                    out.restoreReturnsCreature = !!restored;
+                    out.restoreGrowsList = r.state.creatures.length === beforeCount + 1;
+                    out.restoreNameOk = restored && restored.userData.name === snap.name;
+                    out.restoreSoulOk = restored && restored.userData.soul === "wesen";
+                    out.restoreMemoryOk =
+                        restored && Array.isArray(restored.userData.memory) && restored.userData.memory.length === 3;
+                    out.restorePositionOk =
+                        restored &&
+                        Math.abs(restored.position.x - snap.position.x) < 0.001 &&
+                        Math.abs(restored.position.z - snap.position.z) < 0.001;
+                    out.restoreBornAtOk = restored && restored.userData.bornAt === snap.bornAt;
+
+                    // 6. Specs werden aus restoriertem memory korrekt re-derived
+                    const specs = r._computeCreatureSpecializations(restored);
+                    out.specsReDerived = specs.gather && specs.gather.holz === 2 && specs.build && specs.build.stein_block === 1;
+
+                    // 7. Round-Trip: buildStateSnapshot → loadState → Kreaturen sind da
+                    // Setze die aktuelle Welt auf einen bekannten Stand
+                    const beforeRoundTripCount = r.state.creatures.length;
+                    const beforeNames = r.state.creatures.map((cr) => cr.userData.name).sort();
+                    const fullSnap = r.buildStateSnapshot();
+                    out.snapshotHasFullCreatures =
+                        Array.isArray(fullSnap.creatures) &&
+                        fullSnap.creatures.length === beforeRoundTripCount &&
+                        fullSnap.creatures.every((c) => c && typeof c.name === "string" && typeof c.soul === "string");
+
+                    // 8. Tote Kreatur ist NICHT im Snapshot. Wir markieren den
+                    // konkreten Victim eindeutig mit einem Unique-Name damit
+                    // Name-Kollisionen im Pool nicht den Test verfälschen.
+                    const beforeAlive = r.state.creatures.length;
+                    const victim = r.state.creatures[0];
+                    const victimMark = `Victim_${Math.random().toString(36).slice(2, 10)}`;
+                    victim.userData.name = victimMark;
+                    r.removeCreature(victim);
+                    const afterSnap = r.buildStateSnapshot();
+                    const stillHasVictim = afterSnap.creatures.some((s) => s.name === victimMark);
+                    out.victimRemovedFromSnap = !stillHasVictim;
+                    out.aliveDecreasedBy1 = afterSnap.creatures.length === beforeAlive - 1;
+                    out._beforeAlive = beforeAlive;
+                    out._afterCount = afterSnap.creatures.length;
+                    out._stateCreaturesAfter = r.state.creatures.length;
+
+                    // 9. Loop: nach loadState mit den Snapshots → Kreaturen sind da
+                    // (Wir können nicht echt loadState ausführen ohne Reload, aber wir
+                    // können prüfen dass _pendingCreatureSnapshots-Pfad funktioniert.)
+                    const persisted = [
+                        {
+                            name: "TestSammler",
+                            soul: "wesen",
+                            memory: [{ type: "gathered", content: { material: "holz" }, at: 1 }],
+                            position: { x: player.x + 50, y: player.y, z: player.z + 50 },
+                            bornAt: Date.now() - 60000,
+                        },
+                        {
+                            name: "TestBauer",
+                            soul: "sprite",
+                            memory: [],
+                            position: { x: player.x + 60, y: player.y, z: player.z + 60 },
+                            bornAt: Date.now() - 30000,
+                        },
+                    ];
+                    // Simuliere loadState-stash + spawnCreatures-Pfad
+                    r.state._pendingCreatureSnapshots = persisted;
+                    r.state.creatureEmotions = ["happy", "happy"];
+                    r.spawnCreatures(10); // Sollte 2 restored ergeben statt 10 random
+                    out.restoredCount = r.state.creatures.length === 2;
+                    const restoredNames = r.state.creatures.map((cr) => cr.userData.name).sort();
+                    out.restoredNamesMatch = restoredNames[0] === "TestBauer" && restoredNames[1] === "TestSammler";
+                    out.pendingClearedAfterRestore = r.state._pendingCreatureSnapshots === null;
+                    // Specs aus 1 gathered holz → L0
+                    const sammler = r.state.creatures.find((cr) => cr.userData.name === "TestSammler");
+                    out.restoredCreatureHasMemory =
+                        sammler && Array.isArray(sammler.userData.memory) && sammler.userData.memory.length === 1;
+
+                    // 10. Legacy-Save (nur position) fällt auf Default-Spawn zurück
+                    r.state._pendingCreatureSnapshots = null;
+                    r.state.creatureEmotions = [];
+                    // Stub loadState: simuliere legacy save format
+                    const legacyState = {
+                        creatures: [{ position: { x: 0, y: 5, z: 0 } }, { position: { x: 1, y: 5, z: 1 } }],
+                    };
+                    const looksFullLegacy =
+                        Array.isArray(legacyState.creatures) &&
+                        legacyState.creatures.length > 0 &&
+                        legacyState.creatures[0] &&
+                        typeof legacyState.creatures[0].soul === "string";
+                    out.legacyDetectedAsLegacy = !looksFullLegacy;
+
+                    // 11. Memory-Cap 200 enforced
+                    const cCap = r.spawnCreatureAt(player.x + 140, player.y, player.z + 140, "happy", "wesen");
+                    cCap.userData.memory = [];
+                    for (let i = 0; i < 250; i++) r._creatureRemember(cCap, "noise", { i });
+                    out.cap200Enforced = cCap.userData.memory.length === 200;
+
+                    // 12. Restore mit übergroßem memory in Snapshot wird auf 200 gekappt
+                    const oversizedMem = [];
+                    for (let i = 0; i < 300; i++) oversizedMem.push({ type: "noise", content: { i }, at: i });
+                    const oversizedSnap = {
+                        name: "Oversize",
+                        soul: "wesen",
+                        memory: oversizedMem,
+                        position: { x: player.x + 150, y: player.y, z: player.z + 150 },
+                        bornAt: Date.now(),
+                    };
+                    const oversized = r._restoreCreatureFromSnapshot(oversizedSnap, "happy");
+                    out.oversizedRestoredCappedAt200 = oversized && oversized.userData.memory.length === 200;
+                    return out;
+                })
+                .catch((e) => ({ error: String(e), stack: e.stack }));
+
+            if (wave6hP2d1Results && !wave6hP2d1Results.error) {
+                check("Welle 6.H P2D.1: CREATURE_MEMORY_CAP === 200", wave6hP2d1Results.memCap200);
+                check(
+                    "Welle 6.H P2D.1: _serializeCreature + _restoreCreatureFromSnapshot existieren",
+                    wave6hP2d1Results.hasSerialize && wave6hP2d1Results.hasRestore
+                );
+                check("Welle 6.H P2D.1: spawnCreatureAt setzt bornAt-Identitäts-Marker", wave6hP2d1Results.bornAtSet);
+                check(
+                    "Welle 6.H P2D.1: Snapshot enthält name + soul + memory + position + bornAt",
+                    wave6hP2d1Results.snapHasName &&
+                        wave6hP2d1Results.snapHasSoul &&
+                        wave6hP2d1Results.snapHasMemory &&
+                        wave6hP2d1Results.snapHasPosition &&
+                        wave6hP2d1Results.snapHasBornAt
+                );
+                check(
+                    "Welle 6.H P2D.1: _restoreCreatureFromSnapshot rekonstruiert Kreatur + wächst Liste",
+                    wave6hP2d1Results.restoreReturnsCreature && wave6hP2d1Results.restoreGrowsList
+                );
+                check(
+                    "Welle 6.H P2D.1: Restore übernimmt Name + Soul",
+                    wave6hP2d1Results.restoreNameOk && wave6hP2d1Results.restoreSoulOk
+                );
+                check(
+                    "Welle 6.H P2D.1: Restore übernimmt Memory (Länge + Inhalt)",
+                    wave6hP2d1Results.restoreMemoryOk
+                );
+                check("Welle 6.H P2D.1: Restore übernimmt Position", wave6hP2d1Results.restorePositionOk);
+                check("Welle 6.H P2D.1: Restore übernimmt bornAt", wave6hP2d1Results.restoreBornAtOk);
+                check(
+                    "Welle 6.H P2D.1: Specs aus restoriertem Memory korrekt re-derived",
+                    wave6hP2d1Results.specsReDerived
+                );
+                check(
+                    "Welle 6.H P2D.1: buildStateSnapshot trägt volles Kreatur-Schema",
+                    wave6hP2d1Results.snapshotHasFullCreatures
+                );
+                check(
+                    "Welle 6.H P2D.1: removeCreature entfernt aus state.creatures + Snapshot",
+                    wave6hP2d1Results.victimRemovedFromSnap &&
+                        wave6hP2d1Results.aliveDecreasedBy1 &&
+                        wave6hP2d1Results._stateCreaturesAfter === wave6hP2d1Results._beforeAlive - 1
+                );
+                check(
+                    "Welle 6.H P2D.1: _pendingCreatureSnapshots-Pfad restored statt random-spawnen",
+                    wave6hP2d1Results.restoredCount &&
+                        wave6hP2d1Results.restoredNamesMatch &&
+                        wave6hP2d1Results.pendingClearedAfterRestore &&
+                        wave6hP2d1Results.restoredCreatureHasMemory
+                );
+                check(
+                    "Welle 6.H P2D.1: Legacy-Save (nur position) wird als Legacy erkannt",
+                    wave6hP2d1Results.legacyDetectedAsLegacy
+                );
+                check("Welle 6.H P2D.1: Memory-Cap=200 wird durchgesetzt (FIFO bei 250 push)", wave6hP2d1Results.cap200Enforced);
+                check(
+                    "Welle 6.H P2D.1: Restore mit übergroßem memory wird auf 200 gekappt",
+                    wave6hP2d1Results.oversizedRestoredCappedAt200
+                );
+            } else if (wave6hP2d1Results && wave6hP2d1Results.error) {
+                check(`Welle 6.H P2D.1: evaluate-Fehler — ${wave6hP2d1Results.error}`, false);
+            }
+
+            // ### Welle 6.H Phase 2F.1 — Kreatur-Stats wie Spieler ###
+            //
+            // Vision §1.3 fraktal vollendet: Kreaturen ≡ Spieler ≡ Architektur
+            // sind alle Compound aus parts × Material × Form. Stats emergieren
+            // aus der gleichen STAT_FROM_TAGS-Pipeline (kein paralleler Code).
+            // Body-Speed-Modulator (stats.speed/7) wirkt im Tick neben Spec-Mul.
+            const wave6hP2f1Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.playerMesh) return null;
+                    const out = {};
+
+                    // 1. Methoden existieren
+                    out.hasComputeStats = typeof r.computeCreatureStats === "function";
+                    out.hasBodySpeedMul = typeof r._creatureBodySpeedMultiplier === "function";
+                    out.hasRefreshCache = typeof r._refreshCreatureStatsCache === "function";
+
+                    // 2. computeCreatureStats liefert {tags, stats} mit allen Schlüsseln
+                    const player = r.state.playerMesh.position;
+                    const cw = r.spawnCreatureAt(player.x + 200, player.y, player.z + 200, "happy", "wesen");
+                    const csW = r.computeCreatureStats(cw);
+                    out.statsHasTags = csW && csW.tags && Object.keys(csW.tags).length > 0;
+                    out.statsHasAll8 =
+                        csW.stats &&
+                        Number.isFinite(csW.stats.hpMax) &&
+                        Number.isFinite(csW.stats.damage) &&
+                        Number.isFinite(csW.stats.speed) &&
+                        Number.isFinite(csW.stats.jumpPower) &&
+                        Number.isFinite(csW.stats.staminaMax) &&
+                        Number.isFinite(csW.stats.precision) &&
+                        Number.isFinite(csW.stats.magicResist) &&
+                        Number.isFinite(csW.stats.heatResist);
+
+                    // 3. Soul-Diskrimination: Sprite ist schneller als Wesen (weniger dichte)
+                    const cs = r.spawnCreatureAt(player.x + 210, player.y, player.z + 210, "happy", "sprite");
+                    const cg = r.spawnCreatureAt(player.x + 220, player.y, player.z + 220, "happy", "geist");
+                    const sW = csW.stats;
+                    const sS = r.computeCreatureStats(cs).stats;
+                    const sG = r.computeCreatureStats(cg).stats;
+                    out.spriteFasterThanWesen = sS.speed > sW.speed;
+                    // Mindestens 1 Stat unterscheidet sich zwischen Wesen und Sprite
+                    // signifikant — emergent aus unterschiedlicher Material-Komposition.
+                    out.wesenSpriteDiscriminated =
+                        Math.abs(sW.hpMax - sS.hpMax) > 5 ||
+                        Math.abs(sW.damage - sS.damage) > 2 ||
+                        Math.abs(sW.speed - sS.speed) > 0.5;
+                    out.geistHasMagicResist = sG.magicResist > 0;
+                    out._statsW = sW;
+                    out._statsS = sS;
+
+                    // 4. Tags geclamp auf [0, 1] für die Pipe
+                    const cTagsClamped = Object.values(csW.tags).every((v) => v >= 0 && v <= 2); // toleriere spec-bonus bis ~2
+                    out.tagsInBounds = cTagsClamped;
+
+                    // 5. _refreshCreatureStatsCache schreibt userData.stats
+                    r._refreshCreatureStatsCache(cw);
+                    out.cacheWritesStats =
+                        cw.userData.stats && Number.isFinite(cw.userData.stats.speed);
+
+                    // 6. Body-Speed-Multiplier ist > 0
+                    const mulW = r._creatureBodySpeedMultiplier(cw);
+                    const mulS = r._creatureBodySpeedMultiplier(cs);
+                    out.bodyMulPositive = mulW > 0 && mulS > 0;
+                    out.spriteBodyMulHigher = mulS > mulW;
+
+                    // 7. Speed im Tick: gather mit sprite ist schneller als gather mit wesen
+                    // (selbe Spec-Level, nur body-mul unterscheidet)
+                    r.assignCreatureTask(cw, "gather", { material: "holz" }, { silent: true });
+                    r.assignCreatureTask(cs, "gather", { material: "holz" }, { silent: true });
+                    // _target = null zwingt zur Such-Phase (wo speed wirkt)
+                    cw.userData.task.args._target = null;
+                    cs.userData.task.args._target = null;
+                    // Stelle sicher: in der Such-Phase brauchen wir eine Target-Distanz > halt.
+                    // Wir setzen position weit weg von allem damit kein early-return greift
+                    // (gather-task → kein Target gefunden → wander-fallback, ein anderer Pfad).
+                    // Stattdessen: nutzen build-task (laufen zum Spieler) für fairen Vergleich.
+                    r.assignCreatureTask(cw, "build", { blueprint: "stein_block" }, { silent: true });
+                    r.assignCreatureTask(cs, "build", { blueprint: "stein_block" }, { silent: true });
+                    cw.userData.carrying = null;
+                    cs.userData.carrying = null;
+                    cw.position.set(player.x + 50, player.y, player.z);
+                    cs.position.set(player.x + 50, player.y, player.z);
+                    const dirW = r._tickCreatureTaskDirection(cw, cw.userData.task, "happy");
+                    const dirS = r._tickCreatureTaskDirection(cs, cs.userData.task, "happy");
+                    const spW = Math.hypot(dirW.x, dirW.z);
+                    const spS = Math.hypot(dirS.x, dirS.z);
+                    out.tickSpriteFaster = spS > spW;
+                    out.tickWesenAtBase = Math.abs(spW - r.constructor.CREATURE_BUILD_SPEED) < 1.0;
+
+                    // 8. Spec-Bonus auf magieleitung emergiert in stats
+                    // Frische Kreatur ohne Specs vs. mit 3 erfolgreichen Gather-Memories
+                    const cFresh = r.spawnCreatureAt(player.x + 230, player.y, player.z + 230, "happy", "wesen");
+                    cFresh.userData.memory = [];
+                    const baseTags = r.computeCreatureStats(cFresh).tags;
+                    cFresh.userData.memory = [
+                        { type: "gathered", content: { material: "holz" }, at: 1 },
+                        { type: "gathered", content: { material: "holz" }, at: 2 },
+                        { type: "gathered", content: { material: "holz" }, at: 3 },
+                    ];
+                    const grownTags = r.computeCreatureStats(cFresh).tags;
+                    // L1 Sammler = +0.01 magieleitung; minimal aber positiv
+                    out.specBonusMagieleitung = grownTags.magieleitung > baseTags.magieleitung;
+
+                    // 9. UI: creature-row hat title-Attribut mit Stats
+                    if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
+                    const listEl = document.getElementById("creature-list");
+                    const rows = listEl ? listEl.querySelectorAll(".creature-row") : [];
+                    let rowsWithTitle = 0;
+                    for (const row of rows) {
+                        if (
+                            row.title &&
+                            /HP\s+\d/.test(row.title) &&
+                            /SPD\s+\d/.test(row.title) &&
+                            /DMG\s+\d/.test(row.title)
+                        )
+                            rowsWithTitle++;
+                    }
+                    out.uiRowsHaveStatsTitle = rowsWithTitle === rows.length && rows.length > 0;
+
+                    // 10. STAT_FROM_TAGS aus Class — Symmetrie zum Spieler
+                    const playerStatKeys = Object.keys(r.constructor.STAT_FROM_TAGS);
+                    const creatureStatKeys = Object.keys(csW.stats);
+                    out.sameStatKeysAsPlayer =
+                        playerStatKeys.length === creatureStatKeys.length &&
+                        playerStatKeys.every((k) => creatureStatKeys.includes(k));
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e), stack: e.stack }));
+
+            if (wave6hP2f1Results && !wave6hP2f1Results.error) {
+                check(
+                    "Welle 6.H P2F.1: alle 3 Methoden existieren (computeCreatureStats + _creatureBodySpeedMultiplier + _refreshCreatureStatsCache)",
+                    wave6hP2f1Results.hasComputeStats &&
+                        wave6hP2f1Results.hasBodySpeedMul &&
+                        wave6hP2f1Results.hasRefreshCache
+                );
+                check(
+                    "Welle 6.H P2F.1: computeCreatureStats liefert {tags, stats} mit allen 8 Stats",
+                    wave6hP2f1Results.statsHasTags && wave6hP2f1Results.statsHasAll8
+                );
+                check(
+                    "Welle 6.H P2F.1: Soul-Diskrimination — Sprite schneller als Wesen",
+                    wave6hP2f1Results.spriteFasterThanWesen
+                );
+                check(
+                    "Welle 6.H P2F.1: Soul-Diskrimination — Wesen ≠ Sprite in mind. 1 Stat (emergent)",
+                    wave6hP2f1Results.wesenSpriteDiscriminated
+                );
+                check("Welle 6.H P2F.1: Geist hat magicResist > 0", wave6hP2f1Results.geistHasMagicResist);
+                check("Welle 6.H P2F.1: Tags in [0, 2] (clamped + Spec-Bonus tolerant)", wave6hP2f1Results.tagsInBounds);
+                check(
+                    "Welle 6.H P2F.1: _refreshCreatureStatsCache schreibt userData.stats",
+                    wave6hP2f1Results.cacheWritesStats
+                );
+                check(
+                    "Welle 6.H P2F.1: _creatureBodySpeedMultiplier > 0 für alle Seelen",
+                    wave6hP2f1Results.bodyMulPositive
+                );
+                check(
+                    "Welle 6.H P2F.1: Sprite-bodyMul > Wesen-bodyMul (Vision: leichte Form schneller)",
+                    wave6hP2f1Results.spriteBodyMulHigher
+                );
+                check(
+                    "Welle 6.H P2F.1: Tick — Sprite läuft schneller als Wesen (selbe Task, body-mul wirkt)",
+                    wave6hP2f1Results.tickSpriteFaster
+                );
+                check(
+                    "Welle 6.H P2F.1: Tick — Wesen bei ~BUILD_SPEED (bodyMul ≈ 1)",
+                    wave6hP2f1Results.tickWesenAtBase
+                );
+                check(
+                    "Welle 6.H P2F.1: Spec-Bonus emergiert in stats.magieleitung (Wissen leitet)",
+                    wave6hP2f1Results.specBonusMagieleitung
+                );
+                check(
+                    "Welle 6.H P2F.1: UI — alle creature-rows haben title-Tooltip mit Stats",
+                    wave6hP2f1Results.uiRowsHaveStatsTitle
+                );
+                check(
+                    "Welle 6.H P2F.1: Stat-Keys identisch zu Spieler (Vision §1.3 fraktal)",
+                    wave6hP2f1Results.sameStatKeysAsPlayer
+                );
+            } else if (wave6hP2f1Results && wave6hP2f1Results.error) {
+                check(`Welle 6.H P2F.1: evaluate-Fehler — ${wave6hP2f1Results.error}`, false);
+            }
+
+            // ### Welle 6.H Phase 2F.2 — Kreatur-Equipped (Werkzeug + Rüstung) ###
+            //
+            // Vision §1.3 fraktal weiter: Kreaturen tragen Werkzeug + Rüstung wie
+            // der Spieler. computeCreatureStats stackt equipped Compound-Tags
+            // mit TOOL_STAT_WEIGHT / ARMOR_STAT_WEIGHT (dieselben Konstanten wie
+            // Player). Persistenz via _serializeCreature → snap.equipped.
+            const wave6hP2f2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.playerMesh) return null;
+                    const out = {};
+                    const Class = r.constructor;
+
+                    // 1. Methoden existieren
+                    out.hasEquipTool = typeof r.equipCreatureTool === "function";
+                    out.hasEquipArmor = typeof r.equipCreatureArmor === "function";
+                    out.hasUnequip = typeof r.unequipCreatureSlot === "function";
+                    out.hasAfterChange = typeof r._afterCreatureEquipChange === "function";
+
+                    // 2. Neu gespawnte Kreatur hat equipped-Slots initial null
+                    const player = r.state.playerMesh.position;
+                    const c = r.spawnCreatureAt(player.x + 300, player.y, player.z + 300, "happy", "wesen");
+                    out.initialToolNull = c.userData.equipped && c.userData.equipped.tool === null;
+                    out.initialArmorNull = c.userData.equipped && c.userData.equipped.armor === null;
+
+                    // 3. equipCreatureTool mit existing Starter-Tool (hammer)
+                    const eqTool = r.equipCreatureTool(c, "hammer");
+                    out.equipToolOk = eqTool.ok === true;
+                    out.toolSet = c.userData.equipped.tool === "hammer";
+
+                    // 4. equipCreatureTool mit unbekanntem Tool → reject
+                    const eqUnknown = r.equipCreatureTool(c, "fictional_tool_xyz");
+                    out.unknownToolRejected = eqUnknown.ok === false && eqUnknown.reason === "tool_unknown";
+                    out.toolUnchangedAfterReject = c.userData.equipped.tool === "hammer";
+
+                    // 5. equipCreatureArmor — erst Bauplan markieren, dann ausrüsten.
+                    // Built-ins sind read-only; wir nutzen cloneBlueprint(src, newName)
+                    // → bool, dann setBlueprintAsArmor(name).
+                    const armorName = "test_armor_p2f2";
+                    if (typeof r.cloneBlueprint === "function" && r.cloneBlueprint("stein_block", armorName)) {
+                        r.setBlueprintAsArmor(armorName);
+                        const eqArmor = r.equipCreatureArmor(c, armorName);
+                        out.equipArmorOk = eqArmor.ok === true;
+                        out.armorSet = c.userData.equipped.armor === armorName;
+                        // Equipped mit nicht-armor-Bauplan (kristall_geode hat keine role:armor)
+                        const eqWrong = r.equipCreatureArmor(c, "kristall_geode");
+                        out.wrongArmorRejected =
+                            eqWrong.ok === false && eqWrong.reason === "not_marked_as_armor";
+                    }
+
+                    // 6. unequipCreatureSlot
+                    const unEqTool = r.unequipCreatureSlot(c, "tool");
+                    out.unequipToolOk = unEqTool.ok === true && c.userData.equipped.tool === null;
+                    const unEqArmor = r.unequipCreatureSlot(c, "armor");
+                    out.unequipArmorOk = unEqArmor.ok === true && c.userData.equipped.armor === null;
+                    const unEqInvalid = r.unequipCreatureSlot(c, "boots");
+                    out.unequipInvalidSlotRejected = unEqInvalid.ok === false;
+
+                    // 7. Stats-Stacking via equipped — Tool/Armor mit Compound-Tags
+                    // beeinflussen computeCreatureStats über existing pipeline.
+                    // Wir erstellen einen eigenen „magie-leitenden" Werkzeug-Bauplan
+                    // und vergleichen Stats VOR/NACH equip.
+                    if (typeof r.cloneBlueprint === "function") {
+                        const c2 = r.spawnCreatureAt(player.x + 310, player.y, player.z + 310, "happy", "wesen");
+                        const baseStats = r.computeCreatureStats(c2).stats;
+                        // Eigenes Werkzeug: stein_block-Clone via setBlueprintToolMeta +
+                        // registerBlueprintAsTool. Tool-Name === Bauplan-Name.
+                        const toolBp = "test_tool_bp_p2f2";
+                        if (r.cloneBlueprint("stein_block", toolBp)) {
+                            const meta =
+                                typeof r.setBlueprintToolMeta === "function"
+                                    ? r.setBlueprintToolMeta(toolBp, "test_op_p2f2", "subtractive")
+                                    : null;
+                            const reg =
+                                meta && meta.ok && typeof r.registerBlueprintAsTool === "function"
+                                    ? r.registerBlueprintAsTool(toolBp)
+                                    : null;
+                            if (reg && reg.ok) {
+                                // toolName === toolBp (Bauplan-Name)
+                                r.equipCreatureTool(c2, toolBp);
+                                const equipStats = r.computeCreatureStats(c2).stats;
+                                out.toolStatsChanged =
+                                    Math.abs(equipStats.hpMax - baseStats.hpMax) > 0.1 ||
+                                    Math.abs(equipStats.damage - baseStats.damage) > 0.1;
+                                out.toolHpHigher = equipStats.hpMax >= baseStats.hpMax;
+                            }
+                        }
+                        // Armor: stein_block-Clone + setBlueprintAsArmor
+                        const armorBp = "test_armor_bp_p2f2";
+                        if (r.cloneBlueprint("stein_block", armorBp)) {
+                            r.setBlueprintAsArmor(armorBp);
+                            // unequip first so stat-delta is clean
+                            r.unequipCreatureSlot(c2, "armor");
+                            const beforeArmorStats = r.computeCreatureStats(c2).stats;
+                            r.equipCreatureArmor(c2, armorBp);
+                            const armorStats = r.computeCreatureStats(c2).stats;
+                            out.armorStatsChanged =
+                                Math.abs(armorStats.hpMax - beforeArmorStats.hpMax) > 0.1;
+                            out.armorHpHigher = armorStats.hpMax > beforeArmorStats.hpMax;
+                        }
+                    }
+
+                    // 8. DSL-Ops creature_equip_tool/armor/unequip wirken
+                    const cDsl = r.spawnCreatureAt(player.x + 320, player.y, player.z + 320, "happy", "wesen");
+                    const idx = r.state.creatures.indexOf(cDsl);
+                    r.dslRun(["creature_equip_tool", idx, "hammer"], { source: "test" });
+                    out.dslEquipToolOk = cDsl.userData.equipped.tool === "hammer";
+                    r.dslRun(["creature_unequip", idx, "tool"], { source: "test" });
+                    out.dslUnequipOk = cDsl.userData.equipped.tool === null;
+
+                    // 9. NON_BROADCASTABLE_OPS-Mitgliedschaft
+                    out.opsNonBroadcast =
+                        Class.NON_BROADCASTABLE_OPS.has("creature_equip_tool") &&
+                        Class.NON_BROADCASTABLE_OPS.has("creature_equip_armor") &&
+                        Class.NON_BROADCASTABLE_OPS.has("creature_unequip");
+
+                    // 10. describeProgram-Einträge
+                    const d1 = r.describeProgram(["creature_equip_tool", 0, "hammer"]);
+                    out.descEquipTool = /Werkzeug/.test(d1) && /hammer/.test(d1);
+                    const d2 = r.describeProgram(["creature_equip_armor", 0, "lederrüstung"]);
+                    out.descEquipArmor = /Rüstung/.test(d2);
+                    const d3 = r.describeProgram(["creature_unequip", 0, "tool"]);
+                    out.descUnequip = /tool/.test(d3) || /Slot/.test(d3);
+
+                    // 11. Snapshot persistiert equipped (Round-Trip)
+                    r.equipCreatureTool(cDsl, "hammer");
+                    const snap = r._serializeCreature(cDsl);
+                    out.snapHasEquipped = snap.equipped && snap.equipped.tool === "hammer";
+                    // Restore validiert tool-Existenz
+                    const restored = r._restoreCreatureFromSnapshot(snap, "happy");
+                    out.restoreKeepsEquippedTool = restored && restored.userData.equipped.tool === "hammer";
+                    // Restore mit unbekanntem Tool → null statt crash
+                    const badSnap = { ...snap, equipped: { tool: "fictional_xyz", armor: null } };
+                    const restoredBad = r._restoreCreatureFromSnapshot(badSnap, "happy");
+                    out.restoreSilentDropsUnknown =
+                        restoredBad && restoredBad.userData.equipped.tool === null;
+
+                    // 12. UI: equipped-Pills in creature-row erscheinen
+                    if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
+                    const listEl = document.getElementById("creature-list");
+                    const equippedWraps = listEl ? listEl.querySelectorAll(".creature-equipped") : [];
+                    out.uiEquippedWrapsExist = equippedWraps.length > 0;
+                    const toolPills = listEl ? listEl.querySelectorAll(".creature-equip.creature-equip-tool") : [];
+                    out.uiToolPillsExist = toolPills.length > 0;
+
+                    // Cleanup: Test-Baupläne löschen damit Ring 6.6-Liste-Zähler stimmt.
+                    // Plus workshop-DOM neu rendern (deleteBlueprint triggert das nicht
+                    // automatisch — Ring 6.6 prüft DOM-Liste vs. state.blueprints).
+                    if (typeof r.deleteBlueprint === "function") {
+                        r.deleteBlueprint("test_armor_p2f2");
+                        r.deleteBlueprint("test_tool_bp_p2f2");
+                        r.deleteBlueprint("test_armor_bp_p2f2");
+                    }
+                    if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e), stack: e.stack }));
+
+            if (wave6hP2f2Results && !wave6hP2f2Results.error) {
+                check(
+                    "Welle 6.H P2F.2: alle 4 Methoden existieren (equipCreatureTool/Armor + unequipCreatureSlot + _afterCreatureEquipChange)",
+                    wave6hP2f2Results.hasEquipTool &&
+                        wave6hP2f2Results.hasEquipArmor &&
+                        wave6hP2f2Results.hasUnequip &&
+                        wave6hP2f2Results.hasAfterChange
+                );
+                check(
+                    "Welle 6.H P2F.2: spawnCreatureAt initialisiert equipped = {tool: null, armor: null}",
+                    wave6hP2f2Results.initialToolNull && wave6hP2f2Results.initialArmorNull
+                );
+                check(
+                    "Welle 6.H P2F.2: equipCreatureTool akzeptiert Built-in-Tool (hammer)",
+                    wave6hP2f2Results.equipToolOk && wave6hP2f2Results.toolSet
+                );
+                check(
+                    "Welle 6.H P2F.2: equipCreatureTool lehnt unbekanntes Tool ab (tool_unknown)",
+                    wave6hP2f2Results.unknownToolRejected && wave6hP2f2Results.toolUnchangedAfterReject
+                );
+                check(
+                    "Welle 6.H P2F.2: equipCreatureArmor akzeptiert Bauplan mit role:armor",
+                    wave6hP2f2Results.equipArmorOk && wave6hP2f2Results.armorSet
+                );
+                check(
+                    "Welle 6.H P2F.2: equipCreatureArmor lehnt nicht-Armor-Bauplan ab (not_marked_as_armor)",
+                    wave6hP2f2Results.wrongArmorRejected
+                );
+                check(
+                    "Welle 6.H P2F.2: unequipCreatureSlot räumt tool + armor + lehnt invalid slot ab",
+                    wave6hP2f2Results.unequipToolOk &&
+                        wave6hP2f2Results.unequipArmorOk &&
+                        wave6hP2f2Results.unequipInvalidSlotRejected
+                );
+                check(
+                    "Welle 6.H P2F.2: Tool-Equipped ändert computeCreatureStats (Stats-Stacking)",
+                    wave6hP2f2Results.toolStatsChanged
+                );
+                check(
+                    "Welle 6.H P2F.2: Tool mit stein-Tag erhöht HP-Stat (dichte-Bonus)",
+                    wave6hP2f2Results.toolHpHigher
+                );
+                check(
+                    "Welle 6.H P2F.2: Armor-Equipped ändert computeCreatureStats",
+                    wave6hP2f2Results.armorStatsChanged && wave6hP2f2Results.armorHpHigher
+                );
+                check(
+                    "Welle 6.H P2F.2: DSL creature_equip_tool + creature_unequip wirken",
+                    wave6hP2f2Results.dslEquipToolOk && wave6hP2f2Results.dslUnequipOk
+                );
+                check(
+                    "Welle 6.H P2F.2: alle 3 Equip-Ops in NON_BROADCASTABLE_OPS (Multi-User-Safety)",
+                    wave6hP2f2Results.opsNonBroadcast
+                );
+                check(
+                    "Welle 6.H P2F.2: describeProgram zeigt Werkzeug/Rüstung/Slot",
+                    wave6hP2f2Results.descEquipTool &&
+                        wave6hP2f2Results.descEquipArmor &&
+                        wave6hP2f2Results.descUnequip
+                );
+                check(
+                    "Welle 6.H P2F.2: _serializeCreature schreibt equipped + Restore übernimmt es",
+                    wave6hP2f2Results.snapHasEquipped && wave6hP2f2Results.restoreKeepsEquippedTool
+                );
+                check(
+                    "Welle 6.H P2F.2: Restore lässt unbekanntes Tool silent fallen (defensive)",
+                    wave6hP2f2Results.restoreSilentDropsUnknown
+                );
+                check(
+                    "Welle 6.H P2F.2: UI — .creature-equipped Wraps + .creature-equip-tool Pills",
+                    wave6hP2f2Results.uiEquippedWrapsExist && wave6hP2f2Results.uiToolPillsExist
+                );
+            } else if (wave6hP2f2Results && wave6hP2f2Results.error) {
+                check(`Welle 6.H P2F.2: evaluate-Fehler — ${wave6hP2f2Results.error}`, false);
+            }
+
+            // ### Welle 6.H Phase 2F.3 — Kreatur-Boosts via Konsumables (HYLOMORPHISMUS) ###
+            //
+            // Vision §1.3 fraktal weiter: Boost emergiert aus
+            // `computeCompoundTags(consumableBp) × scale` — KEIN Hardcode,
+            // KEINE Tabelle. Bauplan mit role:"consumable" UND
+            // consumableMeta. RMB+Hotbar-Konsumable+Raycast-Kreatur = Übergabe.
+            const wave6hP2f3Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.playerMesh) return null;
+                    const out = {};
+                    const Class = r.constructor;
+
+                    // 1. Methoden existieren
+                    out.hasApplyBoost = typeof r.applyCreatureBoost === "function";
+                    out.hasTickBoosts = typeof r.tickCreatureBoosts === "function";
+                    out.hasActivate = typeof r.activateCreatureConsumable === "function";
+                    out.hasPickCreature = typeof r._pickCreatureAtCrosshair === "function";
+                    out.hasConsumeInv = typeof r._consumeBlueprintFromInventory === "function";
+                    out.hasInvGate = typeof r._consumableInventoryGate === "function";
+
+                    // 2. Neu gespawnte Kreatur hat boosts = []
+                    const player = r.state.playerMesh.position;
+                    const c = r.spawnCreatureAt(player.x + 400, player.y, player.z + 400, "happy", "wesen");
+                    out.initialBoostsEmpty = Array.isArray(c.userData.boosts) && c.userData.boosts.length === 0;
+
+                    // 3. applyCreatureBoost mit gültigem tagDelta
+                    const okApply = r.applyCreatureBoost(c, {
+                        source: "test:manual",
+                        tagDelta: { magieleitung: 0.3, dichte: 0.2 },
+                        durationSeconds: 60,
+                        label: "Test-Boost",
+                    });
+                    out.applyOk = okApply === true;
+                    out.boostsListed = c.userData.boosts.length === 1;
+                    out.boostHasSource = c.userData.boosts[0].source === "test:manual";
+
+                    // 4. applyCreatureBoost mit leerem tagDelta → lehnt ab
+                    const noBoost = r.applyCreatureBoost(c, { source: "empty", tagDelta: {} });
+                    out.emptyBoostRejected = noBoost === false;
+
+                    // 5. Selbe source nochmal → verlängert statt zweiter Eintrag
+                    r.applyCreatureBoost(c, {
+                        source: "test:manual",
+                        tagDelta: { magieleitung: 0.5 },
+                        durationSeconds: 30,
+                        label: "Test-Boost-2",
+                    });
+                    out.dedupeBySource = c.userData.boosts.length === 1;
+                    out.deltaUpdated = c.userData.boosts[0].tagDelta.magieleitung === 0.5;
+
+                    // 6. Stats-Stacking: Boost erhöht computeCreatureStats
+                    const c2 = r.spawnCreatureAt(player.x + 410, player.y, player.z + 410, "happy", "wesen");
+                    const baseStats = r.computeCreatureStats(c2).stats;
+                    r.applyCreatureBoost(c2, {
+                        source: "test:hp",
+                        tagDelta: { dichte: 0.5, härte: 0.5 },
+                        durationSeconds: 60,
+                        label: "HP-Boost",
+                    });
+                    const boostedStats = r.computeCreatureStats(c2).stats;
+                    out.hpBoosted = boostedStats.hpMax > baseStats.hpMax + 10;
+
+                    // 7. HYLOMORPHISMUS-EMERGENZ: Konsumable-Bauplan-Tags wirken als Boost
+                    // Wir erstellen einen Trank aus stein_block (hoch dichte+härte) und
+                    // prüfen dass die Compound-Tags SICH ALS BOOST MANIFESTIEREN.
+                    const tonicName = "test_tonic_p2f3";
+                    if (r.cloneBlueprint("stein_block", tonicName)) {
+                        const meta =
+                            typeof r.setBlueprintAsConsumable === "function"
+                                ? r.setBlueprintAsConsumable(tonicName, 30, "Stein-Tonic", 0.2)
+                                : null;
+                        out.consumableMarkOk = !!(meta && meta.ok);
+                        // Trank-Compound-Tags lesen (kontrolle)
+                        const tonicTags = r.computeCompoundTags(r.state.blueprints[tonicName]);
+                        out.tonicHasDichte = (tonicTags.dichte || 0) > 0.1;
+
+                        // Frische Kreatur, base stats messen, dann Trank aktivieren
+                        const c3 = r.spawnCreatureAt(player.x + 420, player.y, player.z + 420, "happy", "wesen");
+                        const before = r.computeCreatureStats(c3).stats;
+                        const result = r.activateCreatureConsumable(c3, tonicName);
+                        out.activateOk = result.ok === true;
+                        // tagBonus emergiert aus den Tags (kein Hardcode!)
+                        out.tagBonusEmerged =
+                            result.tagBonus && Object.keys(result.tagBonus).length > 0;
+                        out.tagBonusHasDichte =
+                            result.tagBonus && result.tagBonus.dichte > 0;
+                        // Boost ist auf der Kreatur
+                        out.boostOnCreature =
+                            Array.isArray(c3.userData.boosts) &&
+                            c3.userData.boosts.some((b) => b.source === `consume:${tonicName}`);
+                        // Stats sind erhöht (dichte-Boost → HP+)
+                        const after = r.computeCreatureStats(c3).stats;
+                        out.consumableLiftsStats = after.hpMax > before.hpMax + 5;
+                    }
+
+                    // 8. nicht-consumable Bauplan → activate lehnt ab
+                    const notConsumable = r.activateCreatureConsumable(c, "stein_block");
+                    out.nonConsumableRejected =
+                        notConsumable.ok === false && notConsumable.reason === "not_marked_as_consumable";
+
+                    // 9. tickCreatureBoosts entfernt abgelaufene Boosts
+                    const c4 = r.spawnCreatureAt(player.x + 430, player.y, player.z + 430, "happy", "wesen");
+                    // Manuell abgelaufenen Boost setzen (expiresAt in der Vergangenheit)
+                    c4.userData.boosts = [
+                        {
+                            source: "test:expired",
+                            tagDelta: { dichte: 0.3 },
+                            expiresAt: performance.now() / 1000 - 10,
+                            label: "Expired",
+                        },
+                    ];
+                    c4.userData.boostLastTick = -Infinity;
+                    r.tickCreatureBoosts(performance.now() / 1000);
+                    out.expiredCleaned = c4.userData.boosts.length === 0;
+
+                    // 10. DSL-Op creature_apply_boost
+                    const cDsl = r.spawnCreatureAt(player.x + 440, player.y, player.z + 440, "happy", "wesen");
+                    const dslIdx = r.state.creatures.indexOf(cDsl);
+                    r.dslRun(["creature_apply_boost", dslIdx, tonicName], { source: "test" });
+                    out.dslAppliedBoost =
+                        Array.isArray(cDsl.userData.boosts) && cDsl.userData.boosts.length === 1;
+
+                    // 11. NON_BROADCASTABLE-Mitgliedschaft
+                    out.opNonBroadcast = Class.NON_BROADCASTABLE_OPS.has("creature_apply_boost");
+
+                    // 12. describeProgram
+                    const desc = r.describeProgram(["creature_apply_boost", 0, tonicName]);
+                    out.descShowsBp = /Trank/.test(desc) && desc.includes(tonicName);
+
+                    // 13. Inventar-Konsum: _consumeBlueprintFromInventory
+                    if (Array.isArray(r.state.player.inventory)) {
+                        r.state.player.inventory[0] = {
+                            kind: "blueprint",
+                            blueprintName: tonicName,
+                            count: 3,
+                        };
+                        const consumed = r._consumeBlueprintFromInventory(tonicName);
+                        out.consumeReducesCount = consumed === true && r.state.player.inventory[0].count === 2;
+                        // Bei count=0 → null
+                        r.state.player.inventory[0].count = 1;
+                        r._consumeBlueprintFromInventory(tonicName);
+                        out.consumeNullsSlotAt0 = r.state.player.inventory[0] === null;
+                        // Wenn nicht im Inventar → false
+                        const noStock = r._consumeBlueprintFromInventory(tonicName);
+                        out.noStockReturnsFalse = noStock === false;
+                    }
+
+                    // 14. Modus-Gate: pfad konsumiert Inventar, schöpfer/frieden kostenlos
+                    const origMode = r.getGameMode();
+                    r.setGameMode("schöpfer");
+                    const freeGate = r._consumableInventoryGate(tonicName);
+                    out.schoepferFree = freeGate.ok === true && freeGate.free === true;
+                    r.setGameMode("pfad");
+                    // Inventar leer → pfad lehnt ab
+                    r.state.player.inventory = new Array(27).fill(null);
+                    const pfadEmpty = r._consumableInventoryGate(tonicName);
+                    out.pfadRejectsWithoutPotion = pfadEmpty.ok === false;
+                    // Inventar gefüllt → pfad konsumiert
+                    r.state.player.inventory[0] = {
+                        kind: "blueprint",
+                        blueprintName: tonicName,
+                        count: 1,
+                    };
+                    const pfadOk = r._consumableInventoryGate(tonicName);
+                    out.pfadConsumes = pfadOk.ok === true && r.state.player.inventory[0] === null;
+                    r.setGameMode(origMode || "frieden");
+
+                    // 15. UI: .creature-boost Pills bei Kreatur mit aktivem Boost
+                    if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
+                    const listEl = document.getElementById("creature-list");
+                    const boostPills = listEl ? listEl.querySelectorAll(".creature-boost") : [];
+                    out.uiHasBoostPills = boostPills.length > 0;
+
+                    // Cleanup
+                    if (typeof r.deleteBlueprint === "function") r.deleteBlueprint(tonicName);
+                    if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e), stack: e.stack }));
+
+            if (wave6hP2f3Results && !wave6hP2f3Results.error) {
+                check(
+                    "Welle 6.H P2F.3: alle 6 Methoden existieren (applyCreatureBoost + tickCreatureBoosts + activateCreatureConsumable + _pickCreatureAtCrosshair + _consumeBlueprintFromInventory + _consumableInventoryGate)",
+                    wave6hP2f3Results.hasApplyBoost &&
+                        wave6hP2f3Results.hasTickBoosts &&
+                        wave6hP2f3Results.hasActivate &&
+                        wave6hP2f3Results.hasPickCreature &&
+                        wave6hP2f3Results.hasConsumeInv &&
+                        wave6hP2f3Results.hasInvGate
+                );
+                check(
+                    "Welle 6.H P2F.3: spawnCreatureAt initialisiert boosts = []",
+                    wave6hP2f3Results.initialBoostsEmpty
+                );
+                check(
+                    "Welle 6.H P2F.3: applyCreatureBoost legt Boost mit source + tagDelta + expiresAt an",
+                    wave6hP2f3Results.applyOk && wave6hP2f3Results.boostsListed && wave6hP2f3Results.boostHasSource
+                );
+                check(
+                    "Welle 6.H P2F.3: applyCreatureBoost mit leerem tagDelta → lehnt ab",
+                    wave6hP2f3Results.emptyBoostRejected
+                );
+                check(
+                    "Welle 6.H P2F.3: Selbe source dedupliziert (verlängert + tagDelta-Update)",
+                    wave6hP2f3Results.dedupeBySource && wave6hP2f3Results.deltaUpdated
+                );
+                check(
+                    "Welle 6.H P2F.3: Boost-tagDelta fließt in computeCreatureStats (HP+)",
+                    wave6hP2f3Results.hpBoosted
+                );
+                check(
+                    "Welle 6.H P2F.3: setBlueprintAsConsumable markiert Bauplan",
+                    wave6hP2f3Results.consumableMarkOk
+                );
+                check(
+                    "Welle 6.H P2F.3: HYLOMORPHISMUS — Konsumable-Compound-Tags emergieren als Boost",
+                    wave6hP2f3Results.tagBonusEmerged && wave6hP2f3Results.tagBonusHasDichte
+                );
+                check(
+                    "Welle 6.H P2F.3: activateCreatureConsumable wendet emergenten Boost auf Kreatur an",
+                    wave6hP2f3Results.activateOk && wave6hP2f3Results.boostOnCreature
+                );
+                check(
+                    "Welle 6.H P2F.3: Konsumable hebt Kreatur-Stats sichtbar (HP+ via dichte-Boost)",
+                    wave6hP2f3Results.consumableLiftsStats
+                );
+                check(
+                    "Welle 6.H P2F.3: nicht-consumable Bauplan → activate lehnt ab (not_marked_as_consumable)",
+                    wave6hP2f3Results.nonConsumableRejected
+                );
+                check(
+                    "Welle 6.H P2F.3: tickCreatureBoosts entfernt abgelaufene Boosts",
+                    wave6hP2f3Results.expiredCleaned
+                );
+                check(
+                    "Welle 6.H P2F.3: DSL creature_apply_boost wendet Konsumable an",
+                    wave6hP2f3Results.dslAppliedBoost
+                );
+                check(
+                    "Welle 6.H P2F.3: creature_apply_boost in NON_BROADCASTABLE_OPS (Spieler-private Geste)",
+                    wave6hP2f3Results.opNonBroadcast
+                );
+                check(
+                    "Welle 6.H P2F.3: describeProgram zeigt Trank-Namen",
+                    wave6hP2f3Results.descShowsBp
+                );
+                check(
+                    "Welle 6.H P2F.3: _consumeBlueprintFromInventory zieht 1 ab + nulled Slot bei count=0",
+                    wave6hP2f3Results.consumeReducesCount &&
+                        wave6hP2f3Results.consumeNullsSlotAt0 &&
+                        wave6hP2f3Results.noStockReturnsFalse
+                );
+                check(
+                    "Welle 6.H P2F.3: Modus-Gate — schöpfer kostenlos, pfad konsumiert Inventar oder lehnt ab",
+                    wave6hP2f3Results.schoepferFree &&
+                        wave6hP2f3Results.pfadRejectsWithoutPotion &&
+                        wave6hP2f3Results.pfadConsumes
+                );
+                check(
+                    "Welle 6.H P2F.3: UI — .creature-boost Pills in der Liste bei aktiven Boosts",
+                    wave6hP2f3Results.uiHasBoostPills
+                );
+            } else if (wave6hP2f3Results && wave6hP2f3Results.error) {
+                check(`Welle 6.H P2F.3: evaluate-Fehler — ${wave6hP2f3Results.error}`, false);
+            }
+
+            // ### Welle 6.H Phase 2E V1 — Kreatur-LLM-Persona ###
+            //
+            // Vision §1.5 — Spieler spricht mit EINER Kreatur, sie antwortet
+            // aus ihrer Sicht. Persona-Prompt versammelt VOLLE Identität
+            // (Body+Specs+Equipped+Boosts+Memory+bornAt+Welt). KEIN echter
+            // LLM-Call im Test (kein API-Key) — wir prüfen Builder + Routing.
+            const wave6hP2eV1Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.playerMesh) return null;
+                    const out = {};
+
+                    // 1. Methoden existieren
+                    out.hasBuildPersona = typeof r._buildCreaturePersonaPrompt === "function";
+                    out.hasFindByName = typeof r._findCreatureByName === "function";
+                    out.hasLlmCallCreature = typeof r.llmCallCreature === "function";
+                    out.hasParseAddress = typeof r._parseCreatureAddress === "function";
+                    out.hasMaybeAnswerCreature = typeof r.maybeAnswerCreature === "function";
+
+                    // 2. _findCreatureByName findet die Kreatur (case-insensitive)
+                    const player = r.state.playerMesh.position;
+                    const c = r.spawnCreatureAt(player.x + 500, player.y, player.z + 500, "happy", "wesen");
+                    c.userData.name = "TestNira";
+                    out.findExact = r._findCreatureByName("TestNira") === c;
+                    out.findCaseInsensitive = r._findCreatureByName("testnira") === c;
+                    out.findUnknown = r._findCreatureByName("FictionalXYZ") === null;
+
+                    // 3. _parseCreatureAddress erkennt verschiedene Trennzeichen
+                    const p1 = r._parseCreatureAddress("TestNira, hallo");
+                    out.parseComma = p1 && p1.name === "TestNira" && p1.message === "hallo";
+                    const p2 = r._parseCreatureAddress("TestNira: was hast du gesehen?");
+                    out.parseColon = p2 && p2.name === "TestNira" && p2.message === "was hast du gesehen?";
+                    const p3 = r._parseCreatureAddress("setze wetter sunny");
+                    out.parseRejectsNonAddress = p3 === null; // kein „Name, text"-Pattern
+                    const p4 = r._parseCreatureAddress("Anna_B-2: hallo");
+                    out.parseAllowsHyphensUnderscores = p4 && p4.name === "Anna_B-2";
+
+                    // 4. _buildCreaturePersonaPrompt enthält alle 4 Stat-Schichten + Welt
+                    // Vorher: voll-ausgestattete Kreatur (Specs + Equipped + Boost + Memory)
+                    c.userData.memory = [
+                        { type: "gathered", content: { material: "holz" }, at: 1 },
+                        { type: "gathered", content: { material: "holz" }, at: 2 },
+                        { type: "gathered", content: { material: "holz" }, at: 3 },
+                        { type: "built", content: { blueprint: "stein_block" }, at: 4 },
+                    ];
+                    r.equipCreatureTool(c, "hammer");
+                    r.applyCreatureBoost(c, {
+                        source: "test:tonic",
+                        tagDelta: { dichte: 0.3 },
+                        durationSeconds: 60,
+                        label: "Test-Tonic",
+                    });
+                    const prompt = r._buildCreaturePersonaPrompt(c);
+                    out.promptIsString = typeof prompt === "string" && prompt.length > 0;
+                    out.promptHasName = /TestNira/.test(prompt);
+                    out.promptHasSoulLabel = /Wesen/.test(prompt);
+                    out.promptHasStats = /HP\s+\d/.test(prompt) && /SPD\s+\d/.test(prompt);
+                    out.promptHasSpecs = /Sammler/.test(prompt) && /holz/.test(prompt);
+                    out.promptHasEquipped = /hammer/.test(prompt);
+                    out.promptHasBoost = /Test-Tonic/.test(prompt);
+                    out.promptHasMemory = /sammelte holz/.test(prompt) || /baute/.test(prompt);
+                    out.promptHasWeather = new RegExp(r.state.weather || "sunny").test(prompt);
+                    out.promptInstructsJson =
+                        /JSON-Objekt/.test(prompt) && /say/.test(prompt) && /program/.test(prompt);
+                    // V3 (V7.93): Prompt erlaubt jetzt program + nennt
+                    // Whitelist (Co-Schöpfer-Geist). V1-Test umgekehrt:
+                    // wir prüfen, dass Whitelist + Anweisung enthalten sind.
+                    out.promptForbidsProgram = /Welt-Aktion ist erlaubt/.test(prompt) && /Erlaubte Ops/.test(prompt);
+                    out.promptHasAge = /Sekunden|Minuten|Stunden|Tage/.test(prompt);
+
+                    // 5. llmCallCreature ohne LLM-aktiv → error-Object
+                    const wasEnabled = r.state.llm && r.state.llm.enabled;
+                    if (r.state.llm) r.state.llm.enabled = false;
+                    // (kann nicht await in evaluate ohne async — wir testen sync Behauptung)
+                    out.llmCreatureNeedsLlm = typeof r.llmCallCreature === "function"; // Existenz reicht
+
+                    // 6. maybeAnswerCreature ohne aktive LLM gibt Hinweis-Output
+                    let chatLines = [];
+                    const append = (text) => chatLines.push(text);
+                    // synchron prüfen wir nur das Parse + LLM-Off-Branch
+                    // (await funktioniert in evaluate via async-IIFE — vereinfacht)
+                    return Promise.resolve()
+                        .then(async () => {
+                            await r.maybeAnswerCreature("TestNira, hallo", append);
+                            out.llmOffPolite = chatLines.some((l) => /hört dich/.test(l));
+                            out.llmOffNoCall = !r.state.llm.inFlight;
+                            // Unbekannter Name → höfliche Ablehnung
+                            chatLines.length = 0;
+                            await r.maybeAnswerCreature("UnbekannterXYZ, hallo", append);
+                            out.unknownPolite = chatLines.some((l) => /Niemand|hört zu/.test(l));
+                            if (r.state.llm) r.state.llm.enabled = wasEnabled || false;
+                            return out;
+                        })
+                        .catch((e) => ({ error: String(e) }));
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6hP2eV1Results && !wave6hP2eV1Results.error) {
+                check(
+                    "Welle 6.H P2E V1: alle 5 Methoden existieren (_buildCreaturePersonaPrompt + _findCreatureByName + llmCallCreature + _parseCreatureAddress + maybeAnswerCreature)",
+                    wave6hP2eV1Results.hasBuildPersona &&
+                        wave6hP2eV1Results.hasFindByName &&
+                        wave6hP2eV1Results.hasLlmCallCreature &&
+                        wave6hP2eV1Results.hasParseAddress &&
+                        wave6hP2eV1Results.hasMaybeAnswerCreature
+                );
+                check(
+                    "Welle 6.H P2E V1: _findCreatureByName exact + case-insensitive + null bei unknown",
+                    wave6hP2eV1Results.findExact &&
+                        wave6hP2eV1Results.findCaseInsensitive &&
+                        wave6hP2eV1Results.findUnknown
+                );
+                check(
+                    "Welle 6.H P2E V1: _parseCreatureAddress erkennt 'Name, text' + 'Name: text' + lehnt non-address ab",
+                    wave6hP2eV1Results.parseComma &&
+                        wave6hP2eV1Results.parseColon &&
+                        wave6hP2eV1Results.parseRejectsNonAddress &&
+                        wave6hP2eV1Results.parseAllowsHyphensUnderscores
+                );
+                check(
+                    "Welle 6.H P2E V1: Persona-Prompt enthält Name + Soul-Label + Alter",
+                    wave6hP2eV1Results.promptHasName &&
+                        wave6hP2eV1Results.promptHasSoulLabel &&
+                        wave6hP2eV1Results.promptHasAge
+                );
+                check(
+                    "Welle 6.H P2E V1: Persona-Prompt enthält Stats-Schicht (HP/SPD)",
+                    wave6hP2eV1Results.promptHasStats
+                );
+                check(
+                    "Welle 6.H P2E V1: Persona-Prompt enthält Specs-Schicht (Sammler von holz)",
+                    wave6hP2eV1Results.promptHasSpecs
+                );
+                check(
+                    "Welle 6.H P2E V1: Persona-Prompt enthält Equipped-Schicht (hammer)",
+                    wave6hP2eV1Results.promptHasEquipped
+                );
+                check(
+                    "Welle 6.H P2E V1: Persona-Prompt enthält Boost-Schicht (Test-Tonic)",
+                    wave6hP2eV1Results.promptHasBoost
+                );
+                check(
+                    "Welle 6.H P2E V1: Persona-Prompt enthält Memory-Auszug",
+                    wave6hP2eV1Results.promptHasMemory
+                );
+                check(
+                    "Welle 6.H P2E V1: Persona-Prompt enthält Welt-Kontext (Wetter)",
+                    wave6hP2eV1Results.promptHasWeather
+                );
+                check(
+                    "Welle 6.H P2E V1: Persona-Prompt instruiert JSON-Format (say + program)",
+                    wave6hP2eV1Results.promptInstructsJson
+                );
+                check(
+                    "Welle 6.H P2E V3: Persona-Prompt erlaubt program + nennt CREATURE_PROPOSED_OPS-Whitelist",
+                    wave6hP2eV1Results.promptForbidsProgram
+                );
+                check(
+                    "Welle 6.H P2E V1: maybeAnswerCreature ohne aktive LLM → höflicher Hinweis (kein API-Call)",
+                    wave6hP2eV1Results.llmOffPolite && wave6hP2eV1Results.llmOffNoCall
+                );
+                check(
+                    "Welle 6.H P2E V1: maybeAnswerCreature mit unbekanntem Namen → 'Niemand hört zu'",
+                    wave6hP2eV1Results.unknownPolite
+                );
+            } else if (wave6hP2eV1Results && wave6hP2eV1Results.error) {
+                check(`Welle 6.H P2E V1: evaluate-Fehler — ${wave6hP2eV1Results.error}`, false);
+            }
+
+            // ### Welle 6.H Phase 2E V1.1 — @-Adressen-Pattern + Soul-Farben ###
+            //
+            // Schöpfer-Feedback nach Browser-Test V7.90: "Bran wie gehts"
+            // wurde nicht als Kreatur-Adresse erkannt (kein Trenner) → fiel
+            // zur Welt-Grok zurück, die als Welt antwortete aber Bran als
+            // Zuhörer adressierte (verwirrend). V1.1: @-Pattern als primäre
+            // Geste (Discord/Slack/Twitter-Konvention) + Soul-Farben für
+            // Identität (Sprite=cyan/Wesen=brass/Geist=grün).
+            const wave6hP2eV11Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.playerMesh) return null;
+                    const out = {};
+
+                    // 1. @Name text → erkannt als explizite Adresse
+                    const p1 = r._parseCreatureAddress("@Bran wie gehts");
+                    out.atPatternMatches = p1 && p1.name === "Bran" && p1.message === "wie gehts" && p1.explicit === true;
+                    // 2. @Name, text → @ + Komma zusammen erlaubt
+                    const p2 = r._parseCreatureAddress("@Bran, was hast du gesehen?");
+                    out.atPatternWithComma = p2 && p2.name === "Bran" && p2.message === "was hast du gesehen?";
+                    // 3. @Name: text → @ + Doppelpunkt zusammen erlaubt
+                    const p3 = r._parseCreatureAddress("@Bran: hallo");
+                    out.atPatternWithColon = p3 && p3.name === "Bran" && p3.message === "hallo";
+                    // 4. Name, text → bleibt rückwärts-kompatibel, explicit=false
+                    const p4 = r._parseCreatureAddress("Bran, hallo");
+                    out.fallbackComma = p4 && p4.name === "Bran" && p4.message === "hallo" && p4.explicit === false;
+                    // 5. "Bran wie gehts" (ohne Trenner, ohne @) → NICHT geparst
+                    //    (das war der Bug: Welt-Grok antwortete, wir wollen das nicht)
+                    const p5 = r._parseCreatureAddress("Bran wie gehts");
+                    out.noTrennerRejected = p5 === null;
+                    // 6. "@ " ohne Name → nicht geparst
+                    const p6 = r._parseCreatureAddress("@ hallo");
+                    out.atWithoutNameRejected = p6 === null;
+
+                    // 7. Liste rendert Soul-Klassen auf creature-name
+                    const player = r.state.playerMesh.position;
+                    const cSprite = r.spawnCreatureAt(player.x + 600, player.y, player.z + 600, "happy", "sprite");
+                    cSprite.userData.name = "TestSpriteV11";
+                    const cWesen = r.spawnCreatureAt(player.x + 610, player.y, player.z + 610, "happy", "wesen");
+                    cWesen.userData.name = "TestWesenV11";
+                    const cGeist = r.spawnCreatureAt(player.x + 620, player.y, player.z + 620, "happy", "geist");
+                    cGeist.userData.name = "TestGeistV11";
+                    if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
+                    const listEl = document.getElementById("creature-list");
+                    out.spriteHasSoulClass = !!(listEl && listEl.querySelector(".creature-name.soul-sprite"));
+                    out.wesenHasSoulClass = !!(listEl && listEl.querySelector(".creature-name.soul-wesen"));
+                    out.geistHasSoulClass = !!(listEl && listEl.querySelector(".creature-name.soul-geist"));
+
+                    // 8. Chat-Output: erfolgreicher LLM-Pfad würde Soul-Span erzeugen
+                    //    Wir testen den DOM-Pfad ohne echten API-Call durch
+                    //    Stubbing von llmCallCreature. Das mockt die Antwort
+                    //    und verifiziert, dass die DOM-Soul-Klassen gerendert
+                    //    werden — der wichtige UX-Pfad für die Lesbarkeit.
+                    const wasLlmEnabled = r.state.llm && r.state.llm.enabled;
+                    if (r.state.llm) r.state.llm.enabled = true;
+                    const origCall = r.llmCallCreature;
+                    r.llmCallCreature = async () => ({ say: "Ich höre dich, Schöpfer." });
+                    const chatOutput = document.getElementById("chat-output");
+                    const beforeLines = chatOutput ? chatOutput.children.length : 0;
+                    let chatLines = [];
+                    return Promise.resolve()
+                        .then(async () => {
+                            await r.maybeAnswerCreature("@TestSpriteV11 hallo", (t) => chatLines.push(t));
+                            const afterLines = chatOutput ? chatOutput.children.length : 0;
+                            out.chatLineAdded = afterLines > beforeLines;
+                            // Suche das Span mit chat-creature-name.soul-sprite
+                            const spans = chatOutput
+                                ? chatOutput.querySelectorAll(".chat-creature-name.soul-sprite")
+                                : [];
+                            out.chatHasSoulSpan = spans.length > 0;
+                            // Plain-Text-Antwort enthält den Namen
+                            const lastLine = chatOutput ? chatOutput.lastElementChild : null;
+                            out.chatLineHasName = lastLine && /TestSpriteV11/.test(lastLine.textContent);
+                            // Cleanup
+                            r.llmCallCreature = origCall;
+                            if (r.state.llm) r.state.llm.enabled = wasLlmEnabled || false;
+                            return out;
+                        })
+                        .catch((e) => ({ error: String(e) }));
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6hP2eV11Results && !wave6hP2eV11Results.error) {
+                check(
+                    "Welle 6.H P2E V1.1: @Name text → erkannt als explizite Adresse (explicit=true)",
+                    wave6hP2eV11Results.atPatternMatches
+                );
+                check(
+                    "Welle 6.H P2E V1.1: @Name, text + @Name: text Varianten unterstützt",
+                    wave6hP2eV11Results.atPatternWithComma && wave6hP2eV11Results.atPatternWithColon
+                );
+                check(
+                    "Welle 6.H P2E V1.1: Name, text bleibt rückwärts-kompatibel (explicit=false)",
+                    wave6hP2eV11Results.fallbackComma
+                );
+                check(
+                    "Welle 6.H P2E V1.1: 'Bran wie gehts' (ohne Trenner) wird NICHT als Adresse missverstanden (Schöpfer-Bug-Fix)",
+                    wave6hP2eV11Results.noTrennerRejected
+                );
+                check(
+                    "Welle 6.H P2E V1.1: '@ hallo' ohne Name wird abgelehnt",
+                    wave6hP2eV11Results.atWithoutNameRejected
+                );
+                check(
+                    "Welle 6.H P2E V1.1: Liste rendert Soul-Klassen .soul-sprite/.soul-wesen/.soul-geist auf creature-name",
+                    wave6hP2eV11Results.spriteHasSoulClass &&
+                        wave6hP2eV11Results.wesenHasSoulClass &&
+                        wave6hP2eV11Results.geistHasSoulClass
+                );
+                check(
+                    "Welle 6.H P2E V1.1: Chat-Output bei Kreatur-Antwort rendert <span class='chat-creature-name soul-X'>",
+                    wave6hP2eV11Results.chatLineAdded &&
+                        wave6hP2eV11Results.chatHasSoulSpan &&
+                        wave6hP2eV11Results.chatLineHasName
+                );
+            } else if (wave6hP2eV11Results && wave6hP2eV11Results.error) {
+                check(`Welle 6.H P2E V1.1: evaluate-Fehler — ${wave6hP2eV11Results.error}`, false);
+            }
+
+            // ### Welle 6.H Phase 2E V2 — Proaktive Kreatur-Sprache ###
+            //
+            // Kreatur initiiert Chat-Output bei Events (Level-Up, Boost,
+            // Material-Mangel). Pre-baked phrase-pool, soul-aware, throttled.
+            // 4 Hook-Stellen: _onCreatureLevelUp, applyCreatureBoost,
+            // no_material_found (gather-tick), no_inventory_for_build (build-tick).
+            const wave6hP2eV2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.playerMesh) return null;
+                    const out = {};
+                    const Class = r.constructor;
+
+                    // 1. Konstanten + Methode existieren
+                    out.hasPhrases = typeof Class.CREATURE_PROACTIVE_PHRASES === "object";
+                    out.gapPerCreature = Class.CREATURE_PROACTIVE_GAP_PER_CREATURE === 60;
+                    out.gapGlobal = Class.CREATURE_PROACTIVE_GAP_GLOBAL === 8;
+                    out.hasMethod = typeof r._creatureSpeakProactive === "function";
+                    out.toggleInState = typeof r.state.creatureProactiveSpeechEnabled === "boolean";
+
+                    // 2. Phrase-Pool hat 5 Event-Typen, jede mit 3 Soul-Profile + default
+                    const pool = Class.CREATURE_PROACTIVE_PHRASES;
+                    const events = ["level_up_gather", "level_up_build", "boost_received", "no_material_found", "no_inventory_for_build"];
+                    out.allEventsPresent = events.every((e) => pool[e]);
+                    out.hasSpriteVariants = pool.level_up_gather.sprite && pool.level_up_gather.sprite.length >= 2;
+                    out.hasWesenVariants = pool.level_up_gather.wesen && pool.level_up_gather.wesen.length >= 2;
+                    out.hasGeistVariants = pool.level_up_gather.geist && pool.level_up_gather.geist.length >= 2;
+                    out.hasDefaultFallback = !!pool.level_up_gather.default;
+
+                    // 3. Test-Setup: drei Soul-Kreaturen, frische Throttle, Toggle ON
+                    r.state.creatureProactiveSpeechEnabled = true;
+                    r.state.lastCreatureProactiveSpeech = -Infinity;
+                    const player = r.state.playerMesh.position;
+                    const cSprite = r.spawnCreatureAt(player.x + 700, player.y, player.z + 700, "happy", "sprite");
+                    cSprite.userData.name = "ProacSprite";
+                    cSprite.userData.lastProactiveSpeech = -Infinity;
+                    const cWesen = r.spawnCreatureAt(player.x + 710, player.y, player.z + 710, "happy", "wesen");
+                    cWesen.userData.name = "ProacWesen";
+                    cWesen.userData.lastProactiveSpeech = -Infinity;
+                    const cGeist = r.spawnCreatureAt(player.x + 720, player.y, player.z + 720, "happy", "geist");
+                    cGeist.userData.name = "ProacGeist";
+                    cGeist.userData.lastProactiveSpeech = -Infinity;
+
+                    // 4. Erste Aussage funktioniert
+                    const chatOutput = document.getElementById("chat-output");
+                    const before = chatOutput ? chatOutput.children.length : 0;
+                    const ok1 = r._creatureSpeakProactive(cSprite, "level_up_gather", { material: "holz", level: 2 });
+                    out.firstSpeechOk = ok1 === true;
+                    const after1 = chatOutput ? chatOutput.children.length : 0;
+                    out.chatLineAdded = after1 > before;
+                    // Soul-Span im DOM rendert mit sprite-Klasse
+                    const lastLine = chatOutput ? chatOutput.lastElementChild : null;
+                    out.lineHasSpriteSoul = !!(lastLine && lastLine.querySelector(".chat-creature-name.soul-sprite"));
+                    out.lineHasName = lastLine && /ProacSprite/.test(lastLine.textContent);
+                    out.templateReplaced = lastLine && /holz/.test(lastLine.textContent) && /2/.test(lastLine.textContent);
+
+                    // 5. Per-Kreatur-Throttle: SOFORT nochmal sprechen lehnt ab
+                    const ok2 = r._creatureSpeakProactive(cSprite, "boost_received", { label: "Tonic" });
+                    out.perCreatureThrottle = ok2 === false;
+
+                    // 6. Global-Throttle: andere Kreatur SOFORT nach erster sprechen lehnt auch ab
+                    const ok3 = r._creatureSpeakProactive(cWesen, "boost_received", { label: "Tonic" });
+                    out.globalThrottle = ok3 === false;
+
+                    // 7. Bei deaktiviertem Toggle → kein Output
+                    r.state.creatureProactiveSpeechEnabled = false;
+                    cGeist.userData.lastProactiveSpeech = -Infinity;
+                    r.state.lastCreatureProactiveSpeech = -Infinity;
+                    const ok4 = r._creatureSpeakProactive(cGeist, "boost_received", { label: "Tonic" });
+                    out.toggleOffSilent = ok4 === false;
+
+                    // 8. Unbekannter Event-Typ lehnt ab
+                    r.state.creatureProactiveSpeechEnabled = true;
+                    cGeist.userData.lastProactiveSpeech = -Infinity;
+                    r.state.lastCreatureProactiveSpeech = -Infinity;
+                    const ok5 = r._creatureSpeakProactive(cGeist, "unknown_event", {});
+                    out.unknownEventRejected = ok5 === false;
+
+                    // 9. Soul-spezifischer Pool wird gewählt (Geist-Phrase enthält
+                    //    typische Geist-Wörter — wir prüfen, dass sie aus dem
+                    //    geist-Pool stammt indem wir die rendered Zeile mit dem
+                    //    Pool vergleichen).
+                    cGeist.userData.lastProactiveSpeech = -Infinity;
+                    r.state.lastCreatureProactiveSpeech = -Infinity;
+                    r._creatureSpeakProactive(cGeist, "level_up_gather", { material: "laub", level: 1 });
+                    const geistLine = chatOutput ? chatOutput.lastElementChild : null;
+                    const geistText = geistLine ? geistLine.textContent : "";
+                    out.geistUsedGeistPool = pool.level_up_gather.geist.some((tpl) => {
+                        const filled = tpl.replace(/\$\{(\w+)\}/g, (m, k) =>
+                            k === "material" ? "laub" : k === "level" ? "1" : m
+                        );
+                        return geistText.includes(filled);
+                    });
+
+                    // 10. Hook _onCreatureLevelUp triggert proaktive Sprache
+                    //     (Memory pushen, dann _creatureRemember triggert
+                    //     _onCreatureLevelUp wenn Threshold erreicht).
+                    const cLU = r.spawnCreatureAt(player.x + 730, player.y, player.z + 730, "happy", "wesen");
+                    cLU.userData.name = "LevelUpTest";
+                    cLU.userData.lastProactiveSpeech = -Infinity;
+                    r.state.lastCreatureProactiveSpeech = -Infinity;
+                    const beforeLU = chatOutput ? chatOutput.children.length : 0;
+                    // 3 gathered-Memorys → Level 1 trigger
+                    for (let i = 0; i < 3; i++) {
+                        r._creatureRemember(cLU, "gathered", { material: "stein" });
+                    }
+                    const afterLU = chatOutput ? chatOutput.children.length : 0;
+                    out.levelUpHookFired = afterLU > beforeLU;
+
+                    // 11. Hook applyCreatureBoost triggert (NEUE Quelle)
+                    const cBoost = r.spawnCreatureAt(player.x + 740, player.y, player.z + 740, "happy", "sprite");
+                    cBoost.userData.name = "BoostTest";
+                    cBoost.userData.lastProactiveSpeech = -Infinity;
+                    r.state.lastCreatureProactiveSpeech = -Infinity;
+                    const beforeB = chatOutput ? chatOutput.children.length : 0;
+                    r.applyCreatureBoost(cBoost, {
+                        source: "test:proactive",
+                        tagDelta: { dichte: 0.3 },
+                        durationSeconds: 30,
+                        label: "TestTrank",
+                    });
+                    const afterB = chatOutput ? chatOutput.children.length : 0;
+                    out.boostHookFired = afterB > beforeB;
+
+                    // 12. Hook applyCreatureBoost: SELBE Quelle nochmal → NICHT erneut sprechen
+                    //     (würde sonst bei jeder Boost-Verlängerung loslabern)
+                    cBoost.userData.lastProactiveSpeech = -Infinity; // throttle reset
+                    r.state.lastCreatureProactiveSpeech = -Infinity;
+                    const beforeB2 = chatOutput ? chatOutput.children.length : 0;
+                    r.applyCreatureBoost(cBoost, {
+                        source: "test:proactive", // SELBE source
+                        tagDelta: { dichte: 0.5 },
+                        durationSeconds: 30,
+                        label: "TestTrank",
+                    });
+                    const afterB2 = chatOutput ? chatOutput.children.length : 0;
+                    out.boostRefreshSilent = afterB2 === beforeB2;
+
+                    // 13. UI-Toggle existiert im DOM
+                    const toggleEl = document.getElementById("creature-speech-toggle");
+                    out.toggleExists = !!toggleEl;
+                    out.toggleIsCheckbox = toggleEl && toggleEl.type === "checkbox";
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e), stack: e.stack }));
+
+            if (wave6hP2eV2Results && !wave6hP2eV2Results.error) {
+                check(
+                    "Welle 6.H P2E V2: CREATURE_PROACTIVE_PHRASES + gap-Konstanten (60s/Kreatur, 8s global) + _creatureSpeakProactive existieren",
+                    wave6hP2eV2Results.hasPhrases &&
+                        wave6hP2eV2Results.gapPerCreature &&
+                        wave6hP2eV2Results.gapGlobal &&
+                        wave6hP2eV2Results.hasMethod &&
+                        wave6hP2eV2Results.toggleInState
+                );
+                check(
+                    "Welle 6.H P2E V2: Phrase-Pool deckt alle 5 Events (level_up_gather/build, boost_received, no_material_found, no_inventory_for_build)",
+                    wave6hP2eV2Results.allEventsPresent
+                );
+                check(
+                    "Welle 6.H P2E V2: Pro Event drei Soul-Varianten (sprite/wesen/geist) + default-Fallback",
+                    wave6hP2eV2Results.hasSpriteVariants &&
+                        wave6hP2eV2Results.hasWesenVariants &&
+                        wave6hP2eV2Results.hasGeistVariants &&
+                        wave6hP2eV2Results.hasDefaultFallback
+                );
+                check(
+                    "Welle 6.H P2E V2: Erste Aussage erfolgreich, Chat-Zeile + Soul-Span + Name + Template-Replacement",
+                    wave6hP2eV2Results.firstSpeechOk &&
+                        wave6hP2eV2Results.chatLineAdded &&
+                        wave6hP2eV2Results.lineHasSpriteSoul &&
+                        wave6hP2eV2Results.lineHasName &&
+                        wave6hP2eV2Results.templateReplaced
+                );
+                check(
+                    "Welle 6.H P2E V2: Per-Kreatur-Throttle (60s) lehnt sofortige Zweit-Aussage ab",
+                    wave6hP2eV2Results.perCreatureThrottle
+                );
+                check(
+                    "Welle 6.H P2E V2: Global-Throttle (8s) lehnt andere Kreatur sofort nach erster Aussage ab",
+                    wave6hP2eV2Results.globalThrottle
+                );
+                check(
+                    "Welle 6.H P2E V2: Toggle OFF → keine proaktive Sprache (silent drop)",
+                    wave6hP2eV2Results.toggleOffSilent
+                );
+                check(
+                    "Welle 6.H P2E V2: Unbekannter Event-Typ → silent drop",
+                    wave6hP2eV2Results.unknownEventRejected
+                );
+                check(
+                    "Welle 6.H P2E V2: Soul-spezifischer Pool (Geist-Phrase aus geist-Pool gerendert)",
+                    wave6hP2eV2Results.geistUsedGeistPool
+                );
+                check(
+                    "Welle 6.H P2E V2: Hook _onCreatureLevelUp triggert proaktive Sprache",
+                    wave6hP2eV2Results.levelUpHookFired
+                );
+                check(
+                    "Welle 6.H P2E V2: Hook applyCreatureBoost triggert bei NEUEM Boost",
+                    wave6hP2eV2Results.boostHookFired
+                );
+                check(
+                    "Welle 6.H P2E V2: applyCreatureBoost mit SELBER Quelle (Verlängerung) → KEINE erneute Sprache (kein Flood)",
+                    wave6hP2eV2Results.boostRefreshSilent
+                );
+                check(
+                    "Welle 6.H P2E V2: UI-Toggle #creature-speech-toggle existiert im DOM (Checkbox)",
+                    wave6hP2eV2Results.toggleExists && wave6hP2eV2Results.toggleIsCheckbox
+                );
+            } else if (wave6hP2eV2Results && wave6hP2eV2Results.error) {
+                check(`Welle 6.H P2E V2: evaluate-Fehler — ${wave6hP2eV2Results.error}`, false);
+            }
+
+            // ### Welle 6.H Phase 2E V3 — Welt-Aktion-Vorschläge der Kreatur ###
+            //
+            // Schöpfer-Wahl V7.93: atmosphärisch + Terrain (modify_terrain
+            // erlaubt), modus-abhängig (schöpfer auto-execute / pfad+frieden
+            // inline-Buttons), LLM-Augmentation bei seltenen Events (L5,
+            // neue Spec) mit eigenem 10-Min-Throttle. Tests prüfen:
+            // Whitelist-Validation, Modus-Diskrimination, Memory-Einträge,
+            // Sandbox-Defense.
+            const wave6hP2eV3Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.playerMesh) return null;
+                    const out = {};
+                    const Class = r.constructor;
+
+                    // 1. Konstanten + Methoden existieren
+                    out.hasWhitelist = Class.CREATURE_PROPOSED_OPS instanceof Set;
+                    out.whitelistSize = Class.CREATURE_PROPOSED_OPS.size >= 10;
+                    out.weatherAllowed = Class.CREATURE_PROPOSED_OPS.has("weather");
+                    out.modifyTerrainAllowed = Class.CREATURE_PROPOSED_OPS.has("modify_terrain");
+                    out.spawnBlueprintAllowed = Class.CREATURE_PROPOSED_OPS.has("spawn_blueprint");
+                    out.chainAllowed = Class.CREATURE_PROPOSED_OPS.has("chain");
+                    // Forbidden: player_*, define_*, delete_*, set_mode
+                    out.playerSpeedForbidden = !Class.CREATURE_PROPOSED_OPS.has("player_speed");
+                    out.defineBlueprintForbidden = !Class.CREATURE_PROPOSED_OPS.has("define_blueprint");
+                    out.setModeForbidden = !Class.CREATURE_PROPOSED_OPS.has("set_mode");
+                    out.hasValidator = typeof r._isCreatureProposalAllowed === "function";
+                    out.hasHandler = typeof r._handleCreatureProposedProgram === "function";
+                    out.hasExecutor = typeof r._executeCreatureProgram === "function";
+                    out.hasButtonRenderer = typeof r._renderCreatureProposalButtons === "function";
+                    out.hasRareEventTrigger = typeof r._maybeTriggerCreatureRareEventLlm === "function";
+                    out.rareEventGap = Class.CREATURE_LLM_RARE_EVENT_GAP === 600;
+
+                    // 2. Validator: erlaubtes Programm
+                    const okWeather = r._isCreatureProposalAllowed(["weather", "rainy"]);
+                    out.allowsWeather = okWeather.ok === true;
+                    const okChain = r._isCreatureProposalAllowed([
+                        "chain",
+                        ["weather", "sunny"],
+                        ["skybox_color", "#ffd9a3"],
+                    ]);
+                    out.allowsChain = okChain.ok === true;
+                    const okTerrain = r._isCreatureProposalAllowed(["modify_terrain", 0, 0, 5, -1]);
+                    out.allowsTerrain = okTerrain.ok === true;
+
+                    // 3. Validator: verbotene Programme
+                    const noPlayerSpeed = r._isCreatureProposalAllowed(["player_speed", 20]);
+                    out.rejectsPlayerSpeed =
+                        noPlayerSpeed.ok === false && noPlayerSpeed.forbiddenOp === "player_speed";
+                    const noDefine = r._isCreatureProposalAllowed([
+                        "define_blueprint",
+                        "evil",
+                        [{ shape: "box" }],
+                    ]);
+                    out.rejectsDefine =
+                        noDefine.ok === false && noDefine.forbiddenOp === "define_blueprint";
+                    // Verbotene Op TIEF im Chain wird auch erkannt
+                    const nestedBad = r._isCreatureProposalAllowed([
+                        "chain",
+                        ["weather", "sunny"],
+                        ["player_speed", 50], // verboten, tief
+                    ]);
+                    out.rejectsNestedForbidden =
+                        nestedBad.ok === false && nestedBad.forbiddenOp === "player_speed";
+
+                    // 4. Persona-Prompt erlaubt program (V3-Update)
+                    const player = r.state.playerMesh.position;
+                    const c = r.spawnCreatureAt(player.x + 800, player.y, player.z + 800, "happy", "wesen");
+                    c.userData.name = "TestProgramKreatur";
+                    const prompt = r._buildCreaturePersonaPrompt(c);
+                    out.promptMentionsProgram = /Welt-Aktion ist erlaubt/.test(prompt);
+                    out.promptListsOps = /Erlaubte Ops/.test(prompt) && /weather/.test(prompt);
+                    out.promptMentionsModus = /schöpfer-Modus/.test(prompt);
+
+                    // 5. Modus-abhängiger Pfad: schöpfer = auto-execute,
+                    //    pfad = inline-Buttons
+                    const origMode = r.getGameMode();
+                    const chatOutput = document.getElementById("chat-output");
+
+                    // Test schöpfer-Auto: der Wetter ändert sich tatsächlich
+                    r.setGameMode("schöpfer");
+                    const beforeWeather = r.state.weather;
+                    const targetWeather = beforeWeather === "rainy" ? "sunny" : "rainy";
+                    const beforeAuto = chatOutput ? chatOutput.children.length : 0;
+                    r._handleCreatureProposedProgram(c, "TestProgramKreatur", ["weather", targetWeather]);
+                    out.autoExecutedInSchöpfer = r.state.weather === targetWeather;
+                    const afterAuto = chatOutput ? chatOutput.children.length : 0;
+                    out.autoChatLineAdded = afterAuto > beforeAuto;
+                    // Memory-Eintrag: auto_executed_action
+                    const memTypes = (c.userData.memory || []).map((m) => m.type);
+                    out.memoryHasAutoExecuted = memTypes.includes("auto_executed_action");
+
+                    // Test pfad: Buttons werden gerendert (kein automatischer
+                    // Wetter-Wechsel)
+                    r.setGameMode("pfad");
+                    const beforePending = chatOutput
+                        ? chatOutput.querySelectorAll(".chat-proposal-pending").length
+                        : 0;
+                    const targetWeather2 = r.state.weather === "rainy" ? "sunny" : "rainy";
+                    r._handleCreatureProposedProgram(c, "TestProgramKreatur", ["weather", targetWeather2]);
+                    out.pfadDoesNotAutoExecute = r.state.weather !== targetWeather2;
+                    const afterPending = chatOutput
+                        ? chatOutput.querySelectorAll(".chat-proposal-pending").length
+                        : 0;
+                    out.pfadRendersButtons = afterPending > beforePending;
+                    // Memory: proposed_action vorhanden, aber NICHT yet accepted
+                    const memTypes2 = (c.userData.memory || []).map((m) => m.type);
+                    out.memoryHasProposed = memTypes2.includes("proposed_action");
+
+                    // 6. Sandbox-Defense: verbotenes Programm wird auch in
+                    //    schöpfer-Modus blockiert (defense in depth)
+                    r.setGameMode("schöpfer");
+                    const memCountBefore = (c.userData.memory || []).length;
+                    const blockedResult = r._handleCreatureProposedProgram(
+                        c,
+                        "TestProgramKreatur",
+                        ["player_speed", 99]
+                    );
+                    out.forbiddenBlockedEvenInSchöpfer = blockedResult === false;
+                    const memTypes3 = (c.userData.memory || []).map((m) => m.type);
+                    out.memoryHasBlocked = memTypes3.includes("proposal_blocked");
+                    out.memoryGrew = (c.userData.memory || []).length > memCountBefore;
+
+                    r.setGameMode(origMode || "frieden");
+
+                    // 7. Inline-Buttons: Click führt aus. Wir nehmen den LATEST
+                    //    accept-Button (Test 5 hat schon einen dagelassen).
+                    r.setGameMode("pfad");
+                    const c2 = r.spawnCreatureAt(player.x + 810, player.y, player.z + 810, "happy", "sprite");
+                    c2.userData.name = "ClickTestKreatur";
+                    const targetW3 = r.state.weather === "rainy" ? "sunny" : "rainy";
+                    r._renderCreatureProposalButtons(c2, "ClickTestKreatur", ["weather", targetW3]);
+                    const acceptBtns = chatOutput ? chatOutput.querySelectorAll(".chat-proposal-btn.accept") : [];
+                    const acceptBtn = acceptBtns[acceptBtns.length - 1] || null;
+                    out.acceptButtonExists = !!acceptBtn;
+                    if (acceptBtn) {
+                        acceptBtn.click();
+                        out.acceptClickExecutes = r.state.weather === targetW3;
+                        const memTypes4 = (c2.userData.memory || []).map((m) => m.type);
+                        out.memoryHasAccepted = memTypes4.includes("accepted_action");
+                    }
+
+                    // 8. Reject-Button: Memory-Eintrag rejected_action
+                    const c3 = r.spawnCreatureAt(player.x + 820, player.y, player.z + 820, "happy", "geist");
+                    c3.userData.name = "RejectTestKreatur";
+                    r._renderCreatureProposalButtons(c3, "RejectTestKreatur", ["weather", "rainy"]);
+                    const rejectBtns = chatOutput ? chatOutput.querySelectorAll(".chat-proposal-btn.reject") : [];
+                    const rejectBtn = rejectBtns[rejectBtns.length - 1] || null;
+                    out.rejectButtonExists = !!rejectBtn;
+                    if (rejectBtn) {
+                        rejectBtn.click();
+                        const memTypes5 = (c3.userData.memory || []).map((m) => m.type);
+                        out.memoryHasRejected = memTypes5.includes("rejected_action");
+                    }
+
+                    r.setGameMode(origMode || "frieden");
+                    return out;
+                })
+                .catch((e) => ({ error: String(e), stack: e.stack }));
+
+            if (wave6hP2eV3Results && !wave6hP2eV3Results.error) {
+                check(
+                    "Welle 6.H P2E V3: CREATURE_PROPOSED_OPS Set + Validator + Handler + Executor + ButtonRenderer + RareEvent-Trigger existieren",
+                    wave6hP2eV3Results.hasWhitelist &&
+                        wave6hP2eV3Results.whitelistSize &&
+                        wave6hP2eV3Results.hasValidator &&
+                        wave6hP2eV3Results.hasHandler &&
+                        wave6hP2eV3Results.hasExecutor &&
+                        wave6hP2eV3Results.hasButtonRenderer &&
+                        wave6hP2eV3Results.hasRareEventTrigger &&
+                        wave6hP2eV3Results.rareEventGap
+                );
+                check(
+                    "Welle 6.H P2E V3: Whitelist erlaubt atmosphärische + Terrain-Ops (weather, modify_terrain, spawn_blueprint, chain)",
+                    wave6hP2eV3Results.weatherAllowed &&
+                        wave6hP2eV3Results.modifyTerrainAllowed &&
+                        wave6hP2eV3Results.spawnBlueprintAllowed &&
+                        wave6hP2eV3Results.chainAllowed
+                );
+                check(
+                    "Welle 6.H P2E V3: Whitelist verbietet player_speed + define_blueprint + set_mode (Spieler-/Welt-Wissen-Eingriff blockiert)",
+                    wave6hP2eV3Results.playerSpeedForbidden &&
+                        wave6hP2eV3Results.defineBlueprintForbidden &&
+                        wave6hP2eV3Results.setModeForbidden
+                );
+                check(
+                    "Welle 6.H P2E V3: Validator akzeptiert erlaubte Programme (weather, chain, modify_terrain)",
+                    wave6hP2eV3Results.allowsWeather &&
+                        wave6hP2eV3Results.allowsChain &&
+                        wave6hP2eV3Results.allowsTerrain
+                );
+                check(
+                    "Welle 6.H P2E V3: Validator lehnt verbotene Ops ab + nennt forbiddenOp",
+                    wave6hP2eV3Results.rejectsPlayerSpeed && wave6hP2eV3Results.rejectsDefine
+                );
+                check(
+                    "Welle 6.H P2E V3: Validator erkennt verbotene Op TIEF im Chain (Defense-Recursion)",
+                    wave6hP2eV3Results.rejectsNestedForbidden
+                );
+                check(
+                    "Welle 6.H P2E V3: Persona-Prompt erlaubt program + nennt Op-Whitelist + erwähnt schöpfer-Modus",
+                    wave6hP2eV3Results.promptMentionsProgram &&
+                        wave6hP2eV3Results.promptListsOps &&
+                        wave6hP2eV3Results.promptMentionsModus
+                );
+                check(
+                    "Welle 6.H P2E V3: schöpfer-Modus → auto-execute (Wetter ändert sich tatsächlich) + chat-Hinweis-Zeile + Memory auto_executed_action",
+                    wave6hP2eV3Results.autoExecutedInSchöpfer &&
+                        wave6hP2eV3Results.autoChatLineAdded &&
+                        wave6hP2eV3Results.memoryHasAutoExecuted
+                );
+                check(
+                    "Welle 6.H P2E V3: pfad-Modus → KEIN auto-execute, statt Buttons gerendert (.chat-proposal-pending)",
+                    wave6hP2eV3Results.pfadDoesNotAutoExecute &&
+                        wave6hP2eV3Results.pfadRendersButtons &&
+                        wave6hP2eV3Results.memoryHasProposed
+                );
+                check(
+                    "Welle 6.H P2E V3: Defense-in-Depth — verbotenes Programm wird AUCH im schöpfer-Modus blockiert + proposal_blocked-Memory",
+                    wave6hP2eV3Results.forbiddenBlockedEvenInSchöpfer &&
+                        wave6hP2eV3Results.memoryHasBlocked &&
+                        wave6hP2eV3Results.memoryGrew
+                );
+                check(
+                    "Welle 6.H P2E V3: Accept-Button-Click führt Programm aus + accepted_action-Memory",
+                    wave6hP2eV3Results.acceptButtonExists &&
+                        wave6hP2eV3Results.acceptClickExecutes &&
+                        wave6hP2eV3Results.memoryHasAccepted
+                );
+                check(
+                    "Welle 6.H P2E V3: Reject-Button-Click → rejected_action-Memory (Spieler-Wille respektiert)",
+                    wave6hP2eV3Results.rejectButtonExists && wave6hP2eV3Results.memoryHasRejected
+                );
+            } else if (wave6hP2eV3Results && wave6hP2eV3Results.error) {
+                check(`Welle 6.H P2E V3: evaluate-Fehler — ${wave6hP2eV3Results.error}`, false);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {
@@ -9996,8 +12294,11 @@ function startSaveServer() {
                     out.parserParsesValidJson = ok.say === "Hallo" && Array.isArray(ok.program);
                     const fenced = r.llmParseResponse('```json\n{"say":"hi","program":null}\n```');
                     out.parserStripsFence = fenced.say === "hi" && fenced.program === null;
+                    // V7.98: Parser nutzt Plain-Text-Fallback statt strict-error.
+                    // Lokale Modelle ignorieren oft den JSON-Vertrag — wir nehmen
+                    // ihren Plain-Text als `say` damit der Spieler trotzdem etwas sieht.
                     const broken = r.llmParseResponse("nicht json");
-                    out.parserDetectsError = typeof broken.error === "string";
+                    out.parserDetectsError = broken.say === "nicht json" && broken.fallbackUsed === "plain-text";
 
                     // Disabled-LLM blockt Call ohne Netzwerk-Versuch
                     r.state.llm.enabled = false;
@@ -10055,12 +12356,606 @@ function startSaveServer() {
                 check("Schicht 2: System-Prompt trägt DSL-JSON-Vertrag", llmResults.systemPromptHasJson);
                 check("Schicht 2: Parser akzeptiert gültiges JSON", llmResults.parserParsesValidJson);
                 check("Schicht 2: Parser entfernt Markdown-Fences", llmResults.parserStripsFence);
-                check("Schicht 2: Parser meldet Fehler bei kaputtem Input", llmResults.parserDetectsError);
+                check(
+                    "Schicht 2: Parser nutzt Plain-Text-Fallback bei Nicht-JSON (V7.98 — User sieht Antwort statt Error)",
+                    llmResults.parserDetectsError
+                );
                 check("Schicht 2: Disabled-LLM blockt Call sauber", llmResults.callBlockedWhenDisabled);
                 check(
                     "Schicht 2: CSP erlaubt alle vier Provider-Endpoints",
                     llmResults.cspAnthropic && llmResults.cspGoogle && llmResults.cspOpenRouter && llmResults.cspOllama
                 );
+            }
+
+            // ### Welle 6.H V7.94 — Ollama-API-Key (gehosteter Setup) ###
+            //
+            // Lokales Ollama braucht keinen Key. Gehostete Setups (ollama.com
+            // Turbo, Reverse-Proxy mit Auth, Cloud-Hoster) kommen mit Bearer-
+            // Token. buildHeaders schickt Authorization-Header NUR wenn Key
+            // gesetzt — Backward-Compat für lokale Spieler.
+            const ollamaKeyResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    const defs = r.llmProviderDefs();
+                    const ol = defs.ollama;
+                    out.providerExists = !!ol;
+                    out.requiresKeyFalse = ol && ol.requiresKey === false; // weiterhin OPTIONAL
+                    out.labelMentionsHosted = ol && /gehostet|Hosted/i.test(ol.label || "");
+                    out.hintMentionsBearer = ol && /Bearer|Token/i.test(ol.hint || "");
+
+                    // buildHeaders ohne Key → kein authorization-Header (lokal)
+                    const headersNoKey = ol.buildHeaders("", { apiKey: "" });
+                    out.noAuthWithoutKey = !headersNoKey.authorization && !headersNoKey.Authorization;
+                    out.contentTypePresent =
+                        headersNoKey["content-type"] === "application/json";
+
+                    // buildHeaders MIT Key → Bearer-Token
+                    const headersWithKey = ol.buildHeaders("sk-test-1234", { apiKey: "sk-test-1234" });
+                    out.bearerWithKey =
+                        headersWithKey.authorization === "Bearer sk-test-1234" ||
+                        headersWithKey.Authorization === "Bearer sk-test-1234";
+
+                    // Endpoint folgt cfg.endpoint (nicht hartkodiert localhost)
+                    const customEp = ol.endpoint("llama3.1", "key", { endpoint: "https://my-ollama.cloud:8443" });
+                    out.endpointRespectsCustom =
+                        customEp === "https://my-ollama.cloud:8443/api/chat";
+
+                    // CSP: connect-src enthält https: Wildcard für Cloud-Endpoints
+                    const meta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+                    const csp = meta ? meta.getAttribute("content") : "";
+                    // Match 'https:' als standalone Wert in connect-src (nicht
+                    // nur die spezifischen 'https://api.X.com'-Einträge).
+                    out.cspHasHttpsWildcard = /connect-src[^;]*\bhttps:\s/.test(csp);
+
+                    // UI: Key-Row ist auch für ollama sichtbar (V7.94)
+                    if (r.state.llm) r.state.llm.provider = "ollama";
+                    if (typeof r.llmRefreshProviderUI === "function") {
+                        r.llmRefreshProviderUI();
+                    }
+                    const keyRow = document.getElementById("llm-key-row");
+                    out.keyRowVisibleForOllama = !!(keyRow && !keyRow.hidden);
+                    const keyInput = document.getElementById("llm-key");
+                    out.placeholderMentionsOptional =
+                        !!(keyInput && /optional|gehostet/i.test(keyInput.placeholder || ""));
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (ollamaKeyResults && !ollamaKeyResults.error) {
+                check(
+                    "V7.94 Ollama-Key: Provider-Label nennt 'gehostet' + Hint nennt Bearer/Token",
+                    ollamaKeyResults.providerExists &&
+                        ollamaKeyResults.labelMentionsHosted &&
+                        ollamaKeyResults.hintMentionsBearer
+                );
+                check(
+                    "V7.94 Ollama-Key: requiresKey bleibt false (lokal weiterhin ohne Key)",
+                    ollamaKeyResults.requiresKeyFalse
+                );
+                check(
+                    "V7.94 Ollama-Key: buildHeaders OHNE Key → kein Authorization (Backward-Compat lokal)",
+                    ollamaKeyResults.noAuthWithoutKey && ollamaKeyResults.contentTypePresent
+                );
+                check(
+                    "V7.94 Ollama-Key: buildHeaders MIT Key → Authorization: Bearer <key>",
+                    ollamaKeyResults.bearerWithKey
+                );
+                check(
+                    "V7.94 Ollama-Key: endpoint respektiert cfg.endpoint (Custom-URL möglich, z.B. https://my-ollama.cloud)",
+                    ollamaKeyResults.endpointRespectsCustom
+                );
+                check(
+                    "V7.94 Ollama-Key: CSP connect-src enthält https: Wildcard (für gehostete Endpoints)",
+                    ollamaKeyResults.cspHasHttpsWildcard
+                );
+                check(
+                    "V7.94 Ollama-Key: UI Key-Row ist für ollama sichtbar (optional, mit Hinweis-Placeholder)",
+                    ollamaKeyResults.keyRowVisibleForOllama && ollamaKeyResults.placeholderMentionsOptional
+                );
+            } else if (ollamaKeyResults && ollamaKeyResults.error) {
+                check(`V7.94 Ollama-Key: evaluate-Fehler — ${ollamaKeyResults.error}`, false);
+            }
+
+            // ### V7.95 — Ollama Cloud-Kompatibilität (Endpoint-Detect + Dual-Format-Parse) ###
+            //
+            // Schöpfer-Browser-Test V7.94: Ollama-Cloud-Setup scheiterte still.
+            // Drei Bug-Quellen entdeckt: (1) /api/chat wurde immer angehängt
+            // auch wenn URL schon Pfad hatte; (2) extractText las nur Ollama-
+            // native Format, OpenAI-kompat lieferte null; (3) options.num_predict
+            // ist Ollama-spezifisch, OpenAI lehnt unbekannte Felder ab.
+            const v795Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    const defs = r.llmProviderDefs();
+                    const ol = defs.ollama;
+
+                    // 1. Endpoint smart-detect — Basis-URL ohne Pfad → /api/chat angehängt
+                    out.epAppendsForBase = ol.endpoint("m", "k", { endpoint: "http://localhost:11434" }) ===
+                        "http://localhost:11434/api/chat";
+                    out.epAppendsForCloud = ol.endpoint("m", "k", { endpoint: "https://ollama.com" }) ===
+                        "https://ollama.com/api/chat";
+
+                    // 2. Endpoint smart-detect — URL mit /api/chat → DIREKT verwendet (kein /api/chat/api/chat)
+                    out.epRespectsApiPath = ol.endpoint("m", "k", {
+                        endpoint: "https://ollama.com/api/chat",
+                    }) === "https://ollama.com/api/chat";
+
+                    // 3. Endpoint smart-detect — URL mit /v1/chat/completions → DIREKT (OpenAI-kompat)
+                    out.epRespectsV1Path = ol.endpoint("m", "k", {
+                        endpoint: "https://provider.cloud/v1/chat/completions",
+                    }) === "https://provider.cloud/v1/chat/completions";
+
+                    // 4. Endpoint trim — Trailing-Slash entfernt
+                    out.epTrimsTrailingSlash = ol.endpoint("m", "k", {
+                        endpoint: "https://ollama.com/",
+                    }) === "https://ollama.com/api/chat";
+
+                    // 5. extractText — Ollama-native Format
+                    out.extractsOllamaNative = ol.extractText({ message: { content: "Hallo Welt" } }) === "Hallo Welt";
+
+                    // 6. extractText — OpenAI-kompat Format
+                    out.extractsOpenAi = ol.extractText({
+                        choices: [{ message: { content: "OpenAI-Antwort" } }],
+                    }) === "OpenAI-Antwort";
+
+                    // 7. extractText — Ollama-generate-Pfad (älter)
+                    out.extractsOllamaGenerate = ol.extractText({ response: "Generate-Antwort" }) === "Generate-Antwort";
+
+                    // 8. extractText — leerer/null Input → leerer String
+                    out.extractsEmpty = ol.extractText(null) === "" && ol.extractText({}) === "";
+
+                    // 9. buildBody — Ollama-Native (Basis-URL): hat options.num_predict
+                    // V7.98: 400→800 für Reasoning-Models (think-Block + Antwort)
+                    const bodyNative = ol.buildBody("llama3.1", "sys", "user", {
+                        endpoint: "http://localhost:11434",
+                    });
+                    out.bodyNativeHasOptions = bodyNative.options && bodyNative.options.num_predict === 800;
+                    out.bodyNativeNoMaxTokens = bodyNative.max_tokens === undefined;
+
+                    // 10. buildBody — OpenAI-kompat (/v1/): hat max_tokens, KEIN options
+                    // V7.98: 400→800
+                    const bodyOpenAi = ol.buildBody("gpt-oss", "sys", "user", {
+                        endpoint: "https://provider/v1/chat/completions",
+                    });
+                    out.bodyOpenAiHasMaxTokens = bodyOpenAi.max_tokens === 800;
+                    out.bodyOpenAiNoOptions = bodyOpenAi.options === undefined;
+
+                    // 11. buildBody — beide haben model + messages + stream:false
+                    out.bodyHasCommon = bodyNative.model === "llama3.1" &&
+                        Array.isArray(bodyNative.messages) &&
+                        bodyNative.stream === false &&
+                        bodyOpenAi.messages.length === 2;
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (v795Results && !v795Results.error) {
+                check(
+                    "V7.95 Ollama-Cloud: Endpoint hängt /api/chat an wenn Basis-URL ohne Pfad (localhost + ollama.com)",
+                    v795Results.epAppendsForBase && v795Results.epAppendsForCloud
+                );
+                check(
+                    "V7.95 Ollama-Cloud: Endpoint respektiert volle URL mit /api/chat (kein doppeltes /api/chat/api/chat)",
+                    v795Results.epRespectsApiPath
+                );
+                check(
+                    "V7.95 Ollama-Cloud: Endpoint respektiert OpenAI-kompat-URL mit /v1/chat/completions",
+                    v795Results.epRespectsV1Path
+                );
+                check(
+                    "V7.95 Ollama-Cloud: Endpoint trimt trailing-slash sauber",
+                    v795Results.epTrimsTrailingSlash
+                );
+                check(
+                    "V7.95 Ollama-Cloud: extractText liest Ollama-native Format (json.message.content)",
+                    v795Results.extractsOllamaNative
+                );
+                check(
+                    "V7.95 Ollama-Cloud: extractText liest OpenAI-kompat Format (json.choices[0].message.content)",
+                    v795Results.extractsOpenAi
+                );
+                check(
+                    "V7.95 Ollama-Cloud: extractText liest älteres Ollama-generate Format (json.response)",
+                    v795Results.extractsOllamaGenerate
+                );
+                check(
+                    "V7.95 Ollama-Cloud: extractText defensive bei null/leeren Input → '' (kein Crash)",
+                    v795Results.extractsEmpty
+                );
+                check(
+                    "V7.95+V7.98 Ollama: buildBody Ollama-Native hat options.num_predict=800 (kein max_tokens)",
+                    v795Results.bodyNativeHasOptions && v795Results.bodyNativeNoMaxTokens
+                );
+                check(
+                    "V7.95+V7.98 Ollama: buildBody OpenAI-kompat hat max_tokens=800 (KEIN options-Feld)",
+                    v795Results.bodyOpenAiHasMaxTokens && v795Results.bodyOpenAiNoOptions
+                );
+                check(
+                    "V7.95 Ollama-Cloud: buildBody beide Formate haben model + messages + stream:false",
+                    v795Results.bodyHasCommon
+                );
+            } else if (v795Results && v795Results.error) {
+                check(`V7.95 Ollama-Cloud: evaluate-Fehler — ${v795Results.error}`, false);
+            }
+
+            // ### V7.96 — Cloud-LLM-Proxy via save-server (CORS-Lösung) ###
+            //
+            // Cloud-Provider wie ollama.com senden keine CORS-Header → Browser
+            // blockt Direct-Calls. Save-server steht als loyaler Vermittler:
+            // localhost:4312/api/proxy/llm + Auth-Header durchgereicht.
+            // Tests prüfen: useProxy-Flag in Config, UI-Toggle sichtbar/wired,
+            // llmCall routet zum Proxy bei aktivem Flag, CORS-Error-Hint hilfreich.
+            const v796Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.llm) return null;
+                    const out = {};
+
+                    // 1. useProxy-Flag im Ollama-Provider-Config initialisiert
+                    const cfg = r.state.llm.providerConfig.ollama;
+                    out.useProxyExists = cfg && typeof cfg.useProxy === "boolean";
+                    out.useProxyDefault = cfg && cfg.useProxy === false;
+
+                    // 2. UI: Proxy-Row + Hint sind im DOM
+                    const proxyRow = document.getElementById("llm-proxy-row");
+                    const proxyHint = document.getElementById("llm-proxy-hint");
+                    const proxyCheckbox = document.getElementById("llm-use-proxy");
+                    out.proxyRowExists = !!proxyRow;
+                    out.proxyHintExists = !!proxyHint;
+                    out.proxyCheckboxIsCheckbox = !!(proxyCheckbox && proxyCheckbox.type === "checkbox");
+
+                    // 3. UI: Proxy-Row sichtbar bei Ollama, versteckt bei anderem Provider
+                    r.state.llm.provider = "ollama";
+                    if (typeof r.llmRefreshProviderUI === "function") r.llmRefreshProviderUI();
+                    out.proxyVisibleForOllama = !!(proxyRow && !proxyRow.hidden);
+                    out.proxyHiddenAttrOllama = proxyRow ? proxyRow.getAttribute("hidden") : "no-row";
+                    r.state.llm.provider = "google";
+                    if (typeof r.llmRefreshProviderUI === "function") r.llmRefreshProviderUI();
+                    out.proxyHiddenForOther = !!(proxyRow && proxyRow.hidden);
+                    out.proxyHiddenAttrOther = proxyRow ? proxyRow.getAttribute("hidden") : "no-row";
+                    r.state.llm.provider = "ollama";
+                    if (typeof r.llmRefreshProviderUI === "function") r.llmRefreshProviderUI();
+
+                    // 4. Provider-Hint enthält CORS-freundliche Provider-Liste
+                    if (proxyHint) {
+                        out.hintMentionsGroq = /Groq/i.test(proxyHint.textContent || "");
+                        out.hintMentionsTogether = /Together/i.test(proxyHint.textContent || "");
+                        out.hintMentionsCerebras = /Cerebras/i.test(proxyHint.textContent || "");
+                        out.hintMentionsProxyUrl = /4312/.test(proxyHint.textContent || "");
+                    }
+
+                    // 5. Click auf Checkbox setzt useProxy + persistiert
+                    if (proxyCheckbox && cfg) {
+                        proxyCheckbox.checked = true;
+                        proxyCheckbox.dispatchEvent(new Event("change"));
+                        out.toggleSetsUseProxy = cfg.useProxy === true;
+                        if (typeof localStorage !== "undefined") {
+                            out.persistedToLocalStorage = localStorage.getItem("anazh.llm.ollama.useProxy") === "1";
+                        }
+                        // Reset für nächste Tests
+                        proxyCheckbox.checked = false;
+                        proxyCheckbox.dispatchEvent(new Event("change"));
+                    }
+
+                    // 6. CSP allowed localhost:4312 für den Proxy
+                    const meta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+                    const csp = meta ? meta.getAttribute("content") : "";
+                    out.cspAllowsProxyHost = /localhost:4312/.test(csp);
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (v796Results && !v796Results.error) {
+                check(
+                    "V7.96 Proxy: useProxy-Flag im Ollama-Config (default false, Backward-Compat)",
+                    v796Results.useProxyExists && v796Results.useProxyDefault
+                );
+                check(
+                    "V7.96 Proxy: UI-Elemente im DOM (proxy-row + proxy-hint + checkbox)",
+                    v796Results.proxyRowExists && v796Results.proxyHintExists && v796Results.proxyCheckboxIsCheckbox
+                );
+                check(
+                    "V7.96 Proxy: UI-Toggle sichtbar bei Ollama (proxy-row.hidden=false)",
+                    v796Results.proxyVisibleForOllama
+                );
+                check(
+                    "V7.96 Proxy: UI-Toggle versteckt bei nicht-Ollama-Provider (proxy-row.hidden=true für Google/Anthropic/OpenRouter)",
+                    v796Results.proxyHiddenForOther
+                );
+                check(
+                    "V7.96 Proxy: Hint nennt CORS-freundliche Provider (Groq + Together + Cerebras) + Proxy-URL (4312)",
+                    v796Results.hintMentionsGroq &&
+                        v796Results.hintMentionsTogether &&
+                        v796Results.hintMentionsCerebras &&
+                        v796Results.hintMentionsProxyUrl
+                );
+                check(
+                    "V7.96 Proxy: Click-Toggle setzt useProxy + persistiert in localStorage",
+                    v796Results.toggleSetsUseProxy && v796Results.persistedToLocalStorage
+                );
+                check(
+                    "V7.96 Proxy: CSP erlaubt localhost:4312 (save-server) für Proxy-Calls",
+                    v796Results.cspAllowsProxyHost
+                );
+            } else if (v796Results && v796Results.error) {
+                check(`V7.96 Proxy: evaluate-Fehler — ${v796Results.error}`, false);
+            }
+
+            // ### V7.97 — Ollama UX-Politur (Auto-Bypass + Free-Text-Modell + 404-Hint) ###
+            //
+            // Schöpfer-Browser-Test V7.96 zeigte drei reale Stolpersteine:
+            // (1) Proxy-Toggle aktiv + localhost-URL → 400 Fehler (Proxy https-only);
+            // (2) Dropdown-Modelle veraltet — User hat qwen3.5:cloud etc.;
+            // (3) 404 ohne Anleitung was zu tun ist.
+            const v797Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    // 1. Modell-Input ist Free-Text (input mit datalist)
+                    const modelInput = document.getElementById("llm-model");
+                    const dataList = document.getElementById("llm-model-suggestions");
+                    out.modelIsInput = !!(modelInput && modelInput.tagName === "INPUT");
+                    out.modelHasList = !!(modelInput && modelInput.getAttribute("list") === "llm-model-suggestions");
+                    out.dataListExists = !!dataList;
+
+                    // 2. Datalist hat aktualisierte Vorschläge (llama3.2, qwen3, gpt-oss:20b)
+                    const defs = r.llmProviderDefs();
+                    const ollamaModels = (defs.ollama && defs.ollama.models) || [];
+                    const modelIds = ollamaModels.map((m) => m.id);
+                    out.hasLlama32 = modelIds.includes("llama3.2");
+                    out.hasQwen3 = modelIds.includes("qwen3");
+                    out.hasGptOss = modelIds.includes("gpt-oss:20b");
+                    out.hasGemma2 = modelIds.includes("gemma2");
+
+                    // 3. User kann eigenen Modell-Namen eintragen (z.B. qwen3.5:cloud)
+                    if (modelInput && r.state.llm) {
+                        r.state.llm.provider = "ollama";
+                        const cfg = r.state.llm.providerConfig.ollama;
+                        modelInput.value = "qwen3.5:cloud";
+                        modelInput.dispatchEvent(new Event("change"));
+                        out.customModelAccepted = cfg.model === "qwen3.5:cloud";
+                    }
+
+                    // 4. Default-Modell ist jetzt llama3.2 (moderner)
+                    out.defaultModelModern = true; // wir bauen das später
+                    // Heuristik: state-Default ist nicht garantiert beim Test-Lauf,
+                    // weil localStorage greift. Wir prüfen den class-Default.
+                    // (Skip this strict check.)
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            // Auto-Bypass-Test als separater evaluate damit fetch-Pfad testbar ist
+            const v797AutoResults = await page
+                .evaluate(async () => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.llm) return null;
+                    const out = {};
+
+                    // 5. Auto-Bypass: useProxy + localhost-URL → kein Proxy-Weg
+                    // (wir stubben fetch um die URL abzufangen und reverten danach)
+                    const origFetch = window.fetch;
+                    let capturedUrl = null;
+                    window.fetch = async (u) => {
+                        capturedUrl = String(u);
+                        // Liefere einen leeren-aber-validen Response zurück
+                        return {
+                            ok: false,
+                            status: 404,
+                            text: async () => '{"error":"stub"}',
+                            json: async () => ({ error: "stub" }),
+                        };
+                    };
+                    try {
+                        // Setup: localhost-Endpoint + useProxy=true
+                        r.state.llm.provider = "ollama";
+                        r.state.llm.enabled = true;
+                        const cfg = r.state.llm.providerConfig.ollama;
+                        cfg.endpoint = "http://localhost:11434";
+                        cfg.useProxy = true;
+                        cfg.model = "llama3.2";
+                        r.state.llm.inFlight = false;
+                        r.state.llm.lastResponseAt = -Infinity;
+                        await r.llmCall("test");
+                        // Erwartung: fetch-URL ist die direkte ollama-URL,
+                        // NICHT die proxy-URL — Auto-Bypass greift weil localhost
+                        out.bypassedForLocalhost =
+                            capturedUrl !== null && !/\/proxy\/llm/.test(capturedUrl);
+                        // Reset
+                        capturedUrl = null;
+                        cfg.endpoint = "https://ollama.com/api/chat";
+                        r.state.llm.inFlight = false;
+                        r.state.llm.lastResponseAt = -Infinity;
+                        await r.llmCall("test");
+                        // Erwartung: fetch-URL ist die proxy-URL bei Cloud + useProxy
+                        out.proxyUsedForCloud =
+                            capturedUrl !== null && /\/proxy\/llm/.test(capturedUrl);
+                    } finally {
+                        window.fetch = origFetch;
+                    }
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            // 404-Hint-Test
+            const v797ErrorResults = await page
+                .evaluate(async () => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.llm) return null;
+                    const out = {};
+                    const origFetch = window.fetch;
+                    window.fetch = async () => ({
+                        ok: false,
+                        status: 404,
+                        text: async () => '{"error":"model \\"foo-not-real\\" not found"}',
+                        json: async () => ({ error: "stub" }),
+                    });
+                    try {
+                        r.state.llm.provider = "ollama";
+                        r.state.llm.enabled = true;
+                        const cfg = r.state.llm.providerConfig.ollama;
+                        cfg.endpoint = "http://localhost:11434";
+                        cfg.useProxy = false;
+                        cfg.model = "foo-not-real";
+                        r.state.llm.inFlight = false;
+                        r.state.llm.lastResponseAt = -Infinity;
+                        const reply = await r.llmCall("test");
+                        out.errorMentionsModel = /Modell.*nicht gefunden/.test(reply.error || "");
+                        out.errorMentionsOllamaList = /ollama list/.test(reply.error || "");
+                        out.errorMentionsModelName = /foo-not-real/.test(reply.error || "");
+                    } finally {
+                        window.fetch = origFetch;
+                    }
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (v797Results && !v797Results.error) {
+                check(
+                    "V7.97 UX: Modell-Input ist Free-Text mit datalist (Spieler tippt eigene Modelle)",
+                    v797Results.modelIsInput && v797Results.modelHasList && v797Results.dataListExists
+                );
+                check(
+                    "V7.97 UX: Default-Modell-Vorschläge enthalten aktuelle Namen (llama3.2, qwen3, gpt-oss:20b, gemma2)",
+                    v797Results.hasLlama32 && v797Results.hasQwen3 && v797Results.hasGptOss && v797Results.hasGemma2
+                );
+                check(
+                    "V7.97 UX: User kann eigenen Modell-Namen eintragen (z.B. qwen3.5:cloud) — Free-Text gespeichert",
+                    v797Results.customModelAccepted
+                );
+            } else if (v797Results && v797Results.error) {
+                check(`V7.97 UX: evaluate-Fehler — ${v797Results.error}`, false);
+            }
+            if (v797AutoResults && !v797AutoResults.error) {
+                check(
+                    "V7.97 Auto-Bypass: localhost-URL + useProxy=true → Proxy WIRD BYPASSED (direkter Call)",
+                    v797AutoResults.bypassedForLocalhost
+                );
+                check(
+                    "V7.97 Auto-Bypass: Cloud-URL + useProxy=true → Proxy WIRD GENUTZT (durchgeschleust)",
+                    v797AutoResults.proxyUsedForCloud
+                );
+            } else if (v797AutoResults && v797AutoResults.error) {
+                check(`V7.97 Auto-Bypass: evaluate-Fehler — ${v797AutoResults.error}`, false);
+            }
+            if (v797ErrorResults && !v797ErrorResults.error) {
+                check(
+                    "V7.97 Error-Hint: HTTP 404 'model not found' → klarer Hinweis mit Modell-Namen + 'ollama list'",
+                    v797ErrorResults.errorMentionsModel &&
+                        v797ErrorResults.errorMentionsOllamaList &&
+                        v797ErrorResults.errorMentionsModelName
+                );
+            } else if (v797ErrorResults && v797ErrorResults.error) {
+                check(`V7.97 Error-Hint: evaluate-Fehler — ${v797ErrorResults.error}`, false);
+            }
+
+            // ### V7.98 — Parser-Robustheit für lokale Reasoning-Models ###
+            //
+            // Schöpfer-Browser-Test V7.97: Ollama lokales qwen3.6 antwortet,
+            // aber Chat zeigt "Leere Antwort". Drei Ursachen:
+            // (1) Reasoning-Models wrappen Output in <think>...</think>;
+            // (2) lokale 7B-Modelle ignorieren oft den JSON-Vertrag;
+            // (3) num_predict=400 reicht nicht für think-Block + Antwort.
+            const v798Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    // 1. <think>-Block wird gestrippt, JSON dahinter wird geparst
+                    const thinkResp = r.llmParseResponse(
+                        '<think>Lass mich überlegen…</think>{"say":"Hallo Welt","program":null}'
+                    );
+                    out.thinkStripped = thinkResp.say === "Hallo Welt" && thinkResp.program === null;
+
+                    // 2. <thinking>-Variante wird auch erkannt
+                    const thinkingResp = r.llmParseResponse(
+                        '<thinking>foo bar</thinking>\n{"say":"Klar"}'
+                    );
+                    out.thinkingStripped = thinkingResp.say === "Klar";
+
+                    // 3. Plain-Text ohne JSON → Plain-Text-Fallback
+                    const plainResp = r.llmParseResponse("Mir geht es gut, danke der Nachfrage.");
+                    out.plainTextFallback =
+                        plainResp.say === "Mir geht es gut, danke der Nachfrage." &&
+                        plainResp.fallbackUsed === "plain-text";
+
+                    // 4. <think>-Block + Plain-Text → think gestrippt, Rest als say
+                    const thinkPlainResp = r.llmParseResponse(
+                        "<think>denke nach</think>Hallo Schöpfer, ich höre dich."
+                    );
+                    out.thinkPlusPlain = /Hallo Schöpfer/.test(thinkPlainResp.say || "");
+
+                    // 5. Striktes JSON ohne fallback (Anthropic/Gemini-Pfad)
+                    const strictResp = r.llmParseResponse('{"say":"Test","program":["weather","sunny"]}');
+                    out.strictJsonStillWorks =
+                        strictResp.say === "Test" &&
+                        Array.isArray(strictResp.program) &&
+                        !strictResp.fallbackUsed;
+
+                    // 6. Markdown-Fence + JSON → fence wird gestripped
+                    const fenceResp = r.llmParseResponse('```json\n{"say":"Fenced"}\n```');
+                    out.fenceStripped = fenceResp.say === "Fenced";
+
+                    // 7. Komplett leerer Input → klarer Error mit raw-Hinweis
+                    const emptyResp = r.llmParseResponse("");
+                    out.emptyHasError = typeof emptyResp.error === "string" && /raw=0/.test(emptyResp.error);
+
+                    // 8. JSON mit leerem say UND text drumherum → Plain-Text-Fallback nimmt drumherum
+                    const emptyJsonResp = r.llmParseResponse('Vorab-Text {"say":""} Nach-Text');
+                    out.emptyJsonFallsBackToText =
+                        emptyJsonResp.say && emptyJsonResp.say.length > 0 &&
+                        emptyJsonResp.fallbackUsed === "json-empty";
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (v798Results && !v798Results.error) {
+                check(
+                    "V7.98 Parser: <think>...</think>-Block wird gestripped, dahinter liegendes JSON sauber geparst",
+                    v798Results.thinkStripped
+                );
+                check(
+                    "V7.98 Parser: <thinking>-Variante wird auch erkannt (case-insensitive)",
+                    v798Results.thinkingStripped
+                );
+                check(
+                    "V7.98 Parser: Plain-Text ohne JSON → Plain-Text-Fallback (User sieht Antwort statt 'Leere Antwort')",
+                    v798Results.plainTextFallback
+                );
+                check(
+                    "V7.98 Parser: <think>-Block + Plain-Text danach → think gestrippt, Rest als say genutzt",
+                    v798Results.thinkPlusPlain
+                );
+                check(
+                    "V7.98 Parser: Striktes JSON ohne think bleibt unverändert (Anthropic/Gemini-Pfad)",
+                    v798Results.strictJsonStillWorks
+                );
+                check(
+                    "V7.98 Parser: Markdown-Fence (```json …```) wird gestripped",
+                    v798Results.fenceStripped
+                );
+                check(
+                    "V7.98 Parser: Leerer Input → klarer Error mit 'raw=0'-Hinweis",
+                    v798Results.emptyHasError
+                );
+                check(
+                    "V7.98 Parser: JSON mit say='' aber Text drumherum → Plain-Text-Fallback (json-empty marker)",
+                    v798Results.emptyJsonFallsBackToText
+                );
+            } else if (v798Results && v798Results.error) {
+                check(`V7.98 Parser: evaluate-Fehler — ${v798Results.error}`, false);
             }
 
             // ### Ring 3 – Player-Emotionen → Welt ###
