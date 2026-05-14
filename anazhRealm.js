@@ -14173,10 +14173,34 @@ class AnazhRealm {
             this.state.player.inventory[src.index] = b;
             this.state.player.inventory[targetIndex] = a;
         } else if (src.kind === "inv" && targetKind === "hot") {
-            // Inventory → Hotbar: Hotbar-Slot bekommt den Bauplan-Namen.
-            // Inventar-Slot bleibt unverändert (Inventar ist Bauplan-
-            // Sammlung, kein verbrauchbarer Stack).
-            this.state.hotbar[targetIndex] = src.name;
+            // Inventory → Hotbar: Move-Semantik (Schöpfer-Wunsch V7.77+:
+            // „nicht kopieren, sondern verschieben wie beim drag innerhalb
+            // der hotbar"). Sub-Fälle:
+            //   - Hot leer  → Inv count -= 1 (null bei 0), Hot = src.name
+            //   - Hot gleicher Bauplan → no-op (Hot zeigt schon)
+            //   - Hot anderer Bauplan + Inv count=1 → SWAP (verlustfrei)
+            //   - Hot anderer Bauplan + Inv count>1 → no-op (Schutz vor
+            //     Daten-Verlust: Hotbar trägt nur Namen, beim Swap würde
+            //     der Inv-Count auf 1 reduziert und der überschüssige
+            //     Stack verschwinden).
+            const srcSlot = this.state.player.inventory[src.index];
+            const oldHotName = this.state.hotbar[targetIndex];
+            if (!srcSlot) {
+                /* defensive: drag-source bereits weg */
+            } else if (!oldHotName) {
+                // Hot leer → Move-by-1
+                this.state.hotbar[targetIndex] = src.name;
+                srcSlot.count = (srcSlot.count || 1) - 1;
+                if (srcSlot.count <= 0) this.state.player.inventory[src.index] = null;
+            } else if (oldHotName === src.name) {
+                // Hot zeigt schon den Bauplan → no-op
+            } else if ((srcSlot.count || 1) === 1) {
+                // Anderer Bauplan im Hot + Inv-Slot hat genau 1 → Swap
+                // ist verlustfrei (Inv-Slot wird {oldHotName, 1}).
+                this.state.player.inventory[src.index] = { blueprintName: oldHotName, count: 1 };
+                this.state.hotbar[targetIndex] = src.name;
+            }
+            // else: Inv count > 1 + anderer Bauplan → no-op (Daten-Schutz).
         } else if (src.kind === "hot" && targetKind === "hot") {
             // Hotbar ↔ Hotbar: Slots tauschen.
             const a = this.state.hotbar[src.index];
