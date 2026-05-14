@@ -3099,6 +3099,66 @@ class AnazhRealm {
         return null;
     }
 
+    // === Welle 6.H Phase 2E V2 — Proaktive Sprache (pre-baked phrases) ===
+    //
+    // Kreatur initiiert Chat-Output bei Events. Throttle-Disziplin: 60 s pro
+    // Kreatur + 8 s global. Bei Throttle-Verletzung silent drop (kein Queue
+    // → keine verzögerte Lawine).
+    //
+    // Default-Toggle ON: das Leben der Welt soll sichtbar sein. Wer Ruhe
+    // will, kann via Einstellungen-Drawer deaktivieren (state.creatureProactive
+    // SpeechEnabled).
+    //
+    // Render-Pfad: identisch zu maybeAnswerCreature V1.1 — direkter DOM-Pfad
+    // mit Soul-Span. So sieht der Spieler proaktive Aussagen mit derselben
+    // Identitäts-Farbe wie reaktive Antworten. Eine Identität, viele Anlässe.
+    _creatureSpeakProactive(creature, eventType, ctx = {}) {
+        if (!creature || !creature.userData) return false;
+        if (this.state.creatureProactiveSpeechEnabled === false) return false;
+        const pool = AnazhRealm.CREATURE_PROACTIVE_PHRASES[eventType];
+        if (!pool) return false;
+        // Throttle: per-Kreatur + global. Beide müssen erfüllt sein.
+        const now = performance.now() / 1000;
+        const lastSelf = creature.userData.lastProactiveSpeech || -Infinity;
+        if (now - lastSelf < AnazhRealm.CREATURE_PROACTIVE_GAP_PER_CREATURE) return false;
+        const lastGlobal = this.state.lastCreatureProactiveSpeech || -Infinity;
+        if (now - lastGlobal < AnazhRealm.CREATURE_PROACTIVE_GAP_GLOBAL) return false;
+        // Soul-spezifische Phrasen wählen, mit default-Fallback.
+        const soulName = creature.userData.soul || "default";
+        const phrases = pool[soulName] || pool.default || pool.wesen || [];
+        if (phrases.length === 0) return false;
+        const tpl = phrases[Math.floor(Math.random() * phrases.length)];
+        // Template-Variablen ersetzen. Unbekannte Variablen bleiben drin
+        // (helfen beim Debug-Erkennen).
+        const text = tpl.replace(/\$\{(\w+)\}/g, (m, key) => {
+            const v = ctx[key];
+            return v !== undefined && v !== null ? String(v) : m;
+        });
+        const name = creature.userData.name || "Wesen";
+        // Direkter DOM-Pfad (analog maybeAnswerCreature V1.1 Soul-Span).
+        const chatOutput = typeof document !== "undefined" ? document.getElementById("chat-output") : null;
+        if (chatOutput) {
+            const line = document.createElement("div");
+            line.className = "chat-proactive-line";
+            const nameSpan = document.createElement("span");
+            nameSpan.className = `chat-creature-name soul-${soulName}`;
+            nameSpan.textContent = `${name}: `;
+            line.appendChild(nameSpan);
+            line.appendChild(document.createTextNode(text));
+            chatOutput.appendChild(line);
+            chatOutput.scrollTop = chatOutput.scrollHeight;
+        }
+        // Throttle-Stempel setzen — erst NACH erfolgreichem Render.
+        creature.userData.lastProactiveSpeech = now;
+        this.state.lastCreatureProactiveSpeech = now;
+        // Memory-Eintrag (Vision §1.1 — die Kreatur erinnert sich an
+        // ihre Aussagen). Spec-Filter zählt das NICHT als Skill.
+        if (typeof this._creatureRemember === "function") {
+            this._creatureRemember(creature, "spoke_proactive", { event: eventType, said: text.slice(0, 120) });
+        }
+        return true;
+    }
+
     async maybeAnswerCreature(userText, appendChatOutput) {
         const parsed = this._parseCreatureAddress(userText);
         if (!parsed) return false;
@@ -6396,6 +6456,7 @@ class AnazhRealm {
         const label = String(spec.label || source).slice(0, 80);
         if (!Array.isArray(creature.userData.boosts)) creature.userData.boosts = [];
         const existing = creature.userData.boosts.find((b) => b.source === source);
+        const isNewBoost = !existing;
         if (existing) {
             // Selbe Quelle erneut → expiresAt verlängern, tagDelta + label
             // aktualisieren (Konsumable könnte sich zwischen Aktivierungen
@@ -6407,6 +6468,13 @@ class AnazhRealm {
             creature.userData.boosts.push({ source, tagDelta, expiresAt, label });
         }
         this._afterCreatureEquipChange(creature);
+        // Welle 6.H Phase 2E V2 — proaktive Sprache bei NEUEM Boost (nicht
+        // beim Verlängern selber Quelle — sonst spräche die Kreatur jedes
+        // Tick wieder). Throttle in _creatureSpeakProactive ist die zweite
+        // Verteidigungslinie gegen Flood.
+        if (isNewBoost && typeof this._creatureSpeakProactive === "function") {
+            this._creatureSpeakProactive(creature, "boost_received", { label });
+        }
         return true;
     }
 
@@ -6828,6 +6896,14 @@ class AnazhRealm {
         }
         // List-UI-Refresh damit die neue Pill sofort sichtbar wird.
         if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
+        // Welle 6.H Phase 2E V2 — proaktive Sprache bei Level-Up.
+        // Event-Typ je nach Skill-Art: gather/build. Throttle in
+        // _creatureSpeakProactive verhindert Flood bei Mehr-Level-Bursts.
+        if (typeof this._creatureSpeakProactive === "function") {
+            const eventType = kind === "gather" ? "level_up_gather" : "level_up_build";
+            const ctx = kind === "gather" ? { material: key, level: newLevel } : { blueprint: key, level: newLevel };
+            this._creatureSpeakProactive(creature, eventType, ctx);
+        }
     }
 
     // Findet die nächste Architektur deren Bauplan mindestens einen Part mit
@@ -6929,6 +7005,107 @@ class AnazhRealm {
     }
     static get CREATURE_BUILD_SPEED() {
         return 3.0; // m/s — analog gather (3.0), sichtbar-aktiv aber ohne Hetze
+    }
+    // === Welle 6.H Phase 2E V2 — Proaktive Sprache ===
+    //
+    // Kreatur initiiert Chat-Output bei bestimmten Events (Level-Up, Boost,
+    // Material-Mangel, etc.). Pre-baked phrase-pool pro Event-Typ × Soul-
+    // Profil (Sprite poetisch-leicht / Wesen erdig-fest / Geist ätherisch).
+    // KEIN LLM-Call in V2.0 (würde bei 40+ Kreaturen Flood + API-Last
+    // erzeugen). V2.1 könnte optional LLM-Trigger bei seltenen Events
+    // (Level-Up L5, neue Spec) anbieten.
+    //
+    // Throttle-Disziplin: 60 s pro Kreatur + 8 s global. Bei Verletzung →
+    // silent drop (kein Queue, sonst entstünde verzögerte Lawine).
+    // Template-Vars: ${material}, ${blueprint}, ${level}, ${label} werden
+    // pre-replace ersetzt.
+    static get CREATURE_PROACTIVE_GAP_PER_CREATURE() {
+        return 60; // s — Mindest-Abstand zwischen zwei Aussagen DERSELBEN Kreatur
+    }
+    static get CREATURE_PROACTIVE_GAP_GLOBAL() {
+        return 8; // s — Mindest-Abstand zwischen ALLEN Kreatur-Aussagen
+    }
+    static get CREATURE_PROACTIVE_PHRASES() {
+        // [eventType][soulName] → Array von Phrase-Templates.
+        // soulName "default" wirkt als Fallback wenn ein neuer Soul-Typ
+        // hinzukommt ohne spezifische Phrasen.
+        return Object.freeze({
+            level_up_gather: {
+                sprite: Object.freeze([
+                    "Mein Funken für ${material} leuchtet heller. Stufe ${level}.",
+                    "Ich tanze leichter, wenn ${material} ruft. Stufe ${level}.",
+                    "${material} singt in mir auf neuer Höhe — Stufe ${level}.",
+                ]),
+                wesen: Object.freeze([
+                    "Mein Boden trägt ${material} jetzt fester. Stufe ${level}.",
+                    "Ich kenne ${material} tiefer. Stufe ${level} in mir.",
+                    "${material} wird zu meinem Hand-Wissen — Stufe ${level}.",
+                ]),
+                geist: Object.freeze([
+                    "Ich gleite durch ${material} klarer. Stufe ${level}.",
+                    "Mein Sehen für ${material} reift — Stufe ${level}.",
+                    "${material} hat keine Geheimnisse mehr vor mir. Stufe ${level}.",
+                ]),
+                default: Object.freeze(["Ich werde besser im Sammeln von ${material}. Stufe ${level}."]),
+            },
+            level_up_build: {
+                sprite: Object.freeze([
+                    "Mein Funke formt ${blueprint} heller. Stufe ${level}.",
+                    "${blueprint} entsteht in mir wie Licht. Stufe ${level}.",
+                ]),
+                wesen: Object.freeze([
+                    "Ich baue ${blueprint} jetzt mit ruhigerer Hand. Stufe ${level}.",
+                    "${blueprint} wird Teil meines Wesens — Stufe ${level}.",
+                ]),
+                geist: Object.freeze([
+                    "Ich erinnere ${blueprint} jetzt ganz. Stufe ${level}.",
+                    "${blueprint} fließt durch mich — Stufe ${level}.",
+                ]),
+                default: Object.freeze(["Ich verstehe ${blueprint} jetzt tiefer. Stufe ${level}."]),
+            },
+            boost_received: {
+                sprite: Object.freeze(["${label} kribbelt wie Sterne in mir!", "Der Trank ${label} hebt mich an."]),
+                wesen: Object.freeze([
+                    "${label} setzt sich warm in mein Innerstes.",
+                    "Ich fühle ${label} durch meine Glieder gehen.",
+                ]),
+                geist: Object.freeze([
+                    "${label} weht durch mich wie Wind.",
+                    "Ich nehme ${label} an — es klingt in mir nach.",
+                ]),
+                default: Object.freeze(["Der Trank ${label} wirkt in mir."]),
+            },
+            no_material_found: {
+                sprite: Object.freeze([
+                    "Mein Funke findet kein ${material} mehr.",
+                    "Wo ist ${material}? Es ruft nicht mehr nach mir.",
+                ]),
+                wesen: Object.freeze([
+                    "${material} ist nirgends in Reichweite.",
+                    "Ich finde kein ${material}. Soll ich anderes suchen?",
+                ]),
+                geist: Object.freeze([
+                    "${material} verschwindet aus meiner Sicht.",
+                    "Kein ${material} mehr — die Welt ist hier still.",
+                ]),
+                default: Object.freeze(["Ich finde kein ${material} mehr."]),
+            },
+            no_inventory_for_build: {
+                sprite: Object.freeze([
+                    "Schöpfer, mir fehlt Material für ${blueprint}.",
+                    "Für ${blueprint} brauche ich von dir Material.",
+                ]),
+                wesen: Object.freeze([
+                    "Du hast kein Material für ${blueprint} bei dir.",
+                    "Mir fehlt für ${blueprint} der Stoff aus deiner Hand.",
+                ]),
+                geist: Object.freeze([
+                    "${blueprint} kann ich ohne deinen Stoff nicht weben.",
+                    "Für ${blueprint} reicht mir nichts — du musst geben.",
+                ]),
+                default: Object.freeze(["Mir fehlt Material für ${blueprint}."]),
+            },
+        });
     }
     // Welle 6.H Phase 2D — Spezialisierung aus Memory. Skill-Levels
     // emergieren aus pro-Kreatur memory: alle THRESHOLD erfolgreiche
@@ -7168,6 +7345,10 @@ class AnazhRealm {
                 target = this._findNearestArchitectureWithMaterial(creature.position, material);
                 if (!target) {
                     this._creatureRemember(creature, "no_material", { material });
+                    // Welle 6.H Phase 2E V2 — proaktive Sprache bei Material-Mangel.
+                    if (typeof this._creatureSpeakProactive === "function") {
+                        this._creatureSpeakProactive(creature, "no_material_found", { material });
+                    }
                     if (typeof this.journalAppend === "function") {
                         this.journalAppend("reach", `Eine Kreatur findet kein „${material}" in der Nähe.`, {
                             material,
@@ -7267,6 +7448,10 @@ class AnazhRealm {
                             blueprint,
                             missing: gate.missing,
                         });
+                        // Welle 6.H Phase 2E V2 — proaktive Sprache bei Material-Mangel beim Bauen.
+                        if (typeof this._creatureSpeakProactive === "function") {
+                            this._creatureSpeakProactive(creature, "no_inventory_for_build", { blueprint });
+                        }
                         if (typeof this.journalAppend === "function") {
                             this.journalAppend(
                                 "reach",
@@ -17889,6 +18074,35 @@ class AnazhRealm {
         this._renderGameModeUI();
     }
 
+    // Welle 6.H Phase 2E V2 — Proaktive-Sprache-Toggle. localStorage als
+    // Wahrheit (überlebt Reload + Welt-Wechsel); state-Spiegel für Runtime-
+    // Checks. Default ON (das Leben der Welt soll sichtbar sein).
+    creatureSpeechInitDOM() {
+        if (typeof document === "undefined") return;
+        // Initial-Wert aus localStorage, sonst true.
+        let enabled = true;
+        if (typeof localStorage !== "undefined") {
+            const raw = localStorage.getItem("anazh.creatureProactiveSpeech");
+            if (raw === "0" || raw === "false") enabled = false;
+        }
+        this.state.creatureProactiveSpeechEnabled = enabled;
+        const cb = document.getElementById("creature-speech-toggle");
+        if (cb) {
+            cb.checked = enabled;
+            cb.addEventListener("change", () => {
+                this.state.creatureProactiveSpeechEnabled = !!cb.checked;
+                if (typeof localStorage !== "undefined") {
+                    try {
+                        localStorage.setItem("anazh.creatureProactiveSpeech", cb.checked ? "1" : "0");
+                    } catch {
+                        /* quota / private mode → silent */
+                    }
+                }
+                this.log(cb.checked ? "Kreaturen-Stimmen aktiv" : "Kreaturen-Stimmen ruhen", "INFO");
+            });
+        }
+    }
+
     // Welle 6.C3 — Keybindings-UI: pro Aktion eine Zeile mit Label, aktueller
     // Taste und „Ändern"-Button. Klick → Rebind-Capture-Modus, der nächste
     // Tastendruck oder Maus-Button bindet. Reset-Button stellt Defaults wieder
@@ -18598,6 +18812,8 @@ class AnazhRealm {
         this.playerSoulInitDOM();
         this.cameraModeInitDOM();
         this.gameModeInitDOM();
+        // Welle 6.H Phase 2E V2 — proaktive-Sprache-Toggle aufsetzen.
+        this.creatureSpeechInitDOM();
         this.keybindingsInitDOM();
         this.inventoryInitDOM();
         this.creatureDrawerInitDOM();

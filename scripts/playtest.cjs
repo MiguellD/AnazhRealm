@@ -11759,6 +11759,221 @@ function startSaveServer() {
                 check(`Welle 6.H P2E V1.1: evaluate-Fehler — ${wave6hP2eV11Results.error}`, false);
             }
 
+            // ### Welle 6.H Phase 2E V2 — Proaktive Kreatur-Sprache ###
+            //
+            // Kreatur initiiert Chat-Output bei Events (Level-Up, Boost,
+            // Material-Mangel). Pre-baked phrase-pool, soul-aware, throttled.
+            // 4 Hook-Stellen: _onCreatureLevelUp, applyCreatureBoost,
+            // no_material_found (gather-tick), no_inventory_for_build (build-tick).
+            const wave6hP2eV2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.playerMesh) return null;
+                    const out = {};
+                    const Class = r.constructor;
+
+                    // 1. Konstanten + Methode existieren
+                    out.hasPhrases = typeof Class.CREATURE_PROACTIVE_PHRASES === "object";
+                    out.gapPerCreature = Class.CREATURE_PROACTIVE_GAP_PER_CREATURE === 60;
+                    out.gapGlobal = Class.CREATURE_PROACTIVE_GAP_GLOBAL === 8;
+                    out.hasMethod = typeof r._creatureSpeakProactive === "function";
+                    out.toggleInState = typeof r.state.creatureProactiveSpeechEnabled === "boolean";
+
+                    // 2. Phrase-Pool hat 5 Event-Typen, jede mit 3 Soul-Profile + default
+                    const pool = Class.CREATURE_PROACTIVE_PHRASES;
+                    const events = ["level_up_gather", "level_up_build", "boost_received", "no_material_found", "no_inventory_for_build"];
+                    out.allEventsPresent = events.every((e) => pool[e]);
+                    out.hasSpriteVariants = pool.level_up_gather.sprite && pool.level_up_gather.sprite.length >= 2;
+                    out.hasWesenVariants = pool.level_up_gather.wesen && pool.level_up_gather.wesen.length >= 2;
+                    out.hasGeistVariants = pool.level_up_gather.geist && pool.level_up_gather.geist.length >= 2;
+                    out.hasDefaultFallback = !!pool.level_up_gather.default;
+
+                    // 3. Test-Setup: drei Soul-Kreaturen, frische Throttle, Toggle ON
+                    r.state.creatureProactiveSpeechEnabled = true;
+                    r.state.lastCreatureProactiveSpeech = -Infinity;
+                    const player = r.state.playerMesh.position;
+                    const cSprite = r.spawnCreatureAt(player.x + 700, player.y, player.z + 700, "happy", "sprite");
+                    cSprite.userData.name = "ProacSprite";
+                    cSprite.userData.lastProactiveSpeech = -Infinity;
+                    const cWesen = r.spawnCreatureAt(player.x + 710, player.y, player.z + 710, "happy", "wesen");
+                    cWesen.userData.name = "ProacWesen";
+                    cWesen.userData.lastProactiveSpeech = -Infinity;
+                    const cGeist = r.spawnCreatureAt(player.x + 720, player.y, player.z + 720, "happy", "geist");
+                    cGeist.userData.name = "ProacGeist";
+                    cGeist.userData.lastProactiveSpeech = -Infinity;
+
+                    // 4. Erste Aussage funktioniert
+                    const chatOutput = document.getElementById("chat-output");
+                    const before = chatOutput ? chatOutput.children.length : 0;
+                    const ok1 = r._creatureSpeakProactive(cSprite, "level_up_gather", { material: "holz", level: 2 });
+                    out.firstSpeechOk = ok1 === true;
+                    const after1 = chatOutput ? chatOutput.children.length : 0;
+                    out.chatLineAdded = after1 > before;
+                    // Soul-Span im DOM rendert mit sprite-Klasse
+                    const lastLine = chatOutput ? chatOutput.lastElementChild : null;
+                    out.lineHasSpriteSoul = !!(lastLine && lastLine.querySelector(".chat-creature-name.soul-sprite"));
+                    out.lineHasName = lastLine && /ProacSprite/.test(lastLine.textContent);
+                    out.templateReplaced = lastLine && /holz/.test(lastLine.textContent) && /2/.test(lastLine.textContent);
+
+                    // 5. Per-Kreatur-Throttle: SOFORT nochmal sprechen lehnt ab
+                    const ok2 = r._creatureSpeakProactive(cSprite, "boost_received", { label: "Tonic" });
+                    out.perCreatureThrottle = ok2 === false;
+
+                    // 6. Global-Throttle: andere Kreatur SOFORT nach erster sprechen lehnt auch ab
+                    const ok3 = r._creatureSpeakProactive(cWesen, "boost_received", { label: "Tonic" });
+                    out.globalThrottle = ok3 === false;
+
+                    // 7. Bei deaktiviertem Toggle → kein Output
+                    r.state.creatureProactiveSpeechEnabled = false;
+                    cGeist.userData.lastProactiveSpeech = -Infinity;
+                    r.state.lastCreatureProactiveSpeech = -Infinity;
+                    const ok4 = r._creatureSpeakProactive(cGeist, "boost_received", { label: "Tonic" });
+                    out.toggleOffSilent = ok4 === false;
+
+                    // 8. Unbekannter Event-Typ lehnt ab
+                    r.state.creatureProactiveSpeechEnabled = true;
+                    cGeist.userData.lastProactiveSpeech = -Infinity;
+                    r.state.lastCreatureProactiveSpeech = -Infinity;
+                    const ok5 = r._creatureSpeakProactive(cGeist, "unknown_event", {});
+                    out.unknownEventRejected = ok5 === false;
+
+                    // 9. Soul-spezifischer Pool wird gewählt (Geist-Phrase enthält
+                    //    typische Geist-Wörter — wir prüfen, dass sie aus dem
+                    //    geist-Pool stammt indem wir die rendered Zeile mit dem
+                    //    Pool vergleichen).
+                    cGeist.userData.lastProactiveSpeech = -Infinity;
+                    r.state.lastCreatureProactiveSpeech = -Infinity;
+                    r._creatureSpeakProactive(cGeist, "level_up_gather", { material: "laub", level: 1 });
+                    const geistLine = chatOutput ? chatOutput.lastElementChild : null;
+                    const geistText = geistLine ? geistLine.textContent : "";
+                    out.geistUsedGeistPool = pool.level_up_gather.geist.some((tpl) => {
+                        const filled = tpl.replace(/\$\{(\w+)\}/g, (m, k) =>
+                            k === "material" ? "laub" : k === "level" ? "1" : m
+                        );
+                        return geistText.includes(filled);
+                    });
+
+                    // 10. Hook _onCreatureLevelUp triggert proaktive Sprache
+                    //     (Memory pushen, dann _creatureRemember triggert
+                    //     _onCreatureLevelUp wenn Threshold erreicht).
+                    const cLU = r.spawnCreatureAt(player.x + 730, player.y, player.z + 730, "happy", "wesen");
+                    cLU.userData.name = "LevelUpTest";
+                    cLU.userData.lastProactiveSpeech = -Infinity;
+                    r.state.lastCreatureProactiveSpeech = -Infinity;
+                    const beforeLU = chatOutput ? chatOutput.children.length : 0;
+                    // 3 gathered-Memorys → Level 1 trigger
+                    for (let i = 0; i < 3; i++) {
+                        r._creatureRemember(cLU, "gathered", { material: "stein" });
+                    }
+                    const afterLU = chatOutput ? chatOutput.children.length : 0;
+                    out.levelUpHookFired = afterLU > beforeLU;
+
+                    // 11. Hook applyCreatureBoost triggert (NEUE Quelle)
+                    const cBoost = r.spawnCreatureAt(player.x + 740, player.y, player.z + 740, "happy", "sprite");
+                    cBoost.userData.name = "BoostTest";
+                    cBoost.userData.lastProactiveSpeech = -Infinity;
+                    r.state.lastCreatureProactiveSpeech = -Infinity;
+                    const beforeB = chatOutput ? chatOutput.children.length : 0;
+                    r.applyCreatureBoost(cBoost, {
+                        source: "test:proactive",
+                        tagDelta: { dichte: 0.3 },
+                        durationSeconds: 30,
+                        label: "TestTrank",
+                    });
+                    const afterB = chatOutput ? chatOutput.children.length : 0;
+                    out.boostHookFired = afterB > beforeB;
+
+                    // 12. Hook applyCreatureBoost: SELBE Quelle nochmal → NICHT erneut sprechen
+                    //     (würde sonst bei jeder Boost-Verlängerung loslabern)
+                    cBoost.userData.lastProactiveSpeech = -Infinity; // throttle reset
+                    r.state.lastCreatureProactiveSpeech = -Infinity;
+                    const beforeB2 = chatOutput ? chatOutput.children.length : 0;
+                    r.applyCreatureBoost(cBoost, {
+                        source: "test:proactive", // SELBE source
+                        tagDelta: { dichte: 0.5 },
+                        durationSeconds: 30,
+                        label: "TestTrank",
+                    });
+                    const afterB2 = chatOutput ? chatOutput.children.length : 0;
+                    out.boostRefreshSilent = afterB2 === beforeB2;
+
+                    // 13. UI-Toggle existiert im DOM
+                    const toggleEl = document.getElementById("creature-speech-toggle");
+                    out.toggleExists = !!toggleEl;
+                    out.toggleIsCheckbox = toggleEl && toggleEl.type === "checkbox";
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e), stack: e.stack }));
+
+            if (wave6hP2eV2Results && !wave6hP2eV2Results.error) {
+                check(
+                    "Welle 6.H P2E V2: CREATURE_PROACTIVE_PHRASES + gap-Konstanten (60s/Kreatur, 8s global) + _creatureSpeakProactive existieren",
+                    wave6hP2eV2Results.hasPhrases &&
+                        wave6hP2eV2Results.gapPerCreature &&
+                        wave6hP2eV2Results.gapGlobal &&
+                        wave6hP2eV2Results.hasMethod &&
+                        wave6hP2eV2Results.toggleInState
+                );
+                check(
+                    "Welle 6.H P2E V2: Phrase-Pool deckt alle 5 Events (level_up_gather/build, boost_received, no_material_found, no_inventory_for_build)",
+                    wave6hP2eV2Results.allEventsPresent
+                );
+                check(
+                    "Welle 6.H P2E V2: Pro Event drei Soul-Varianten (sprite/wesen/geist) + default-Fallback",
+                    wave6hP2eV2Results.hasSpriteVariants &&
+                        wave6hP2eV2Results.hasWesenVariants &&
+                        wave6hP2eV2Results.hasGeistVariants &&
+                        wave6hP2eV2Results.hasDefaultFallback
+                );
+                check(
+                    "Welle 6.H P2E V2: Erste Aussage erfolgreich, Chat-Zeile + Soul-Span + Name + Template-Replacement",
+                    wave6hP2eV2Results.firstSpeechOk &&
+                        wave6hP2eV2Results.chatLineAdded &&
+                        wave6hP2eV2Results.lineHasSpriteSoul &&
+                        wave6hP2eV2Results.lineHasName &&
+                        wave6hP2eV2Results.templateReplaced
+                );
+                check(
+                    "Welle 6.H P2E V2: Per-Kreatur-Throttle (60s) lehnt sofortige Zweit-Aussage ab",
+                    wave6hP2eV2Results.perCreatureThrottle
+                );
+                check(
+                    "Welle 6.H P2E V2: Global-Throttle (8s) lehnt andere Kreatur sofort nach erster Aussage ab",
+                    wave6hP2eV2Results.globalThrottle
+                );
+                check(
+                    "Welle 6.H P2E V2: Toggle OFF → keine proaktive Sprache (silent drop)",
+                    wave6hP2eV2Results.toggleOffSilent
+                );
+                check(
+                    "Welle 6.H P2E V2: Unbekannter Event-Typ → silent drop",
+                    wave6hP2eV2Results.unknownEventRejected
+                );
+                check(
+                    "Welle 6.H P2E V2: Soul-spezifischer Pool (Geist-Phrase aus geist-Pool gerendert)",
+                    wave6hP2eV2Results.geistUsedGeistPool
+                );
+                check(
+                    "Welle 6.H P2E V2: Hook _onCreatureLevelUp triggert proaktive Sprache",
+                    wave6hP2eV2Results.levelUpHookFired
+                );
+                check(
+                    "Welle 6.H P2E V2: Hook applyCreatureBoost triggert bei NEUEM Boost",
+                    wave6hP2eV2Results.boostHookFired
+                );
+                check(
+                    "Welle 6.H P2E V2: applyCreatureBoost mit SELBER Quelle (Verlängerung) → KEINE erneute Sprache (kein Flood)",
+                    wave6hP2eV2Results.boostRefreshSilent
+                );
+                check(
+                    "Welle 6.H P2E V2: UI-Toggle #creature-speech-toggle existiert im DOM (Checkbox)",
+                    wave6hP2eV2Results.toggleExists && wave6hP2eV2Results.toggleIsCheckbox
+                );
+            } else if (wave6hP2eV2Results && wave6hP2eV2Results.error) {
+                check(`Welle 6.H P2E V2: evaluate-Fehler — ${wave6hP2eV2Results.error}`, false);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {

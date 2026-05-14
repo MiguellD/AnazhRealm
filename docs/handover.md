@@ -360,6 +360,55 @@ Hylomorphismus-System wie Materialien und Bauwerke.
   playerInventory in buildStateSnapshot. 127 Invarianten für 6.C1
   + Drag-System → 1153 total.
 
+### V7.92 — Welle 6.H Phase 2E V2 live (14.05.2026): Proaktive Kreatur-Sprache
+
+**Vision §1.1 wird konkret**: V7.90+V7.91 waren REAKTIV (Spieler fragt,
+Kreatur antwortet via LLM). V7.92 macht die Welt INITIATIV: Kreaturen
+melden sich von selbst bei bedeutenden Ereignissen.
+
+**KEIN LLM in V2.0** — bei 40+ Kreaturen wäre API-Last + Latenz inakzeptabel.
+Stattdessen: pre-baked phrase-pool mit Soul-Varianten. Deterministic,
+billig, kontrollierbar. V2.1 könnte LLM-Augmentation bei seltenen
+Events (Level-Up L5) opt-in anbieten.
+
+**Architektur**:
+- `AnazhRealm.CREATURE_PROACTIVE_PHRASES` frozen Map
+  - 5 Event-Typen: level_up_gather, level_up_build, boost_received,
+    no_material_found, no_inventory_for_build
+  - Pro Event 3 Soul-Profile (sprite/wesen/geist) + default-Fallback
+  - Pro Profil 2-3 Varianten randomisiert
+  - Template-Variablen: ${material}, ${blueprint}, ${level}, ${label}
+- `CREATURE_PROACTIVE_GAP_PER_CREATURE = 60` (s)
+- `CREATURE_PROACTIVE_GAP_GLOBAL = 8` (s)
+- `_creatureSpeakProactive(c, eventType, ctx)`:
+  Throttle-Check → Soul-Pick → Template-Replace → DOM-Render mit
+  Soul-Span → Stempel setzen → Memory-Eintrag spoke_proactive
+- `state.creatureProactiveSpeechEnabled` (Default true)
+
+**Throttle-Disziplin**: Silent-Drop, kein Queue. Queue würde bei
+Event-Burst eine 80-Sekunden-Lawine erzeugen — zeitliche Dissonanz.
+
+**4 Hook-Pfade**:
+1. `_onCreatureLevelUp` → level_up_gather oder level_up_build
+2. `applyCreatureBoost` bei NEUER source (Verlängerung selber Quelle
+   bleibt stumm — sonst Boost-Spam)
+3. `_tickCreatureTaskDirection`/gather-tick no_material → no_material_found
+4. build-tick no_inventory_for_build
+
+**UI-Toggle**: Checkbox in Einstellungen-Drawer-Sektion
+`#creature-speech-section`. Persistiert in localStorage. Default ON.
+
+**Render-Pfad**: identisch zu V1.1 — `<span class="chat-creature-name
+soul-X">Name: </span>text`. Soul-Farbe konsistent zwischen Liste +
+reaktiver Antwort + proaktiver Sprache. EINE Identität, viele Anlässe.
+
+**13 Tests grün. 1533 → 1546/1546 invariants.**
+
+**6.H V2 Status: 13/14 Sub-Phasen erledigt:**
+
+Phase 2E V3 (DSL-Output mit Sandbox — Kreatur darf eigene Welt-
+Aktion vorschlagen) ist der letzte offene Punkt der V2-Roadmap.
+
 ### V7.91 — Welle 6.H Phase 2E V1.1 live (14.05.2026): Schöpfer-Browser-Test-Feedback
 
 **Der Schöpfer testete V7.90 live und entdeckte zwei UX-Probleme**:

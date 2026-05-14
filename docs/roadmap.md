@@ -1,6 +1,6 @@
 # AnazhRealm Roadmap — Vollumfänglich
 
-Stand: 14.05.2026 (V7.91, Welle 6.H Phase 2E V1.1 live — Schöpfer-Browser-Test-Feedback: @Name als eindeutige Adresse + Soul-Farben).
+Stand: 14.05.2026 (V7.92, Welle 6.H Phase 2E V2 live — Proaktive Kreatur-Sprache via pre-baked phrase-pool, soul-aware, throttled).
 
 Diese Doc beschreibt das **gesamte Projekt vom heutigen Stand bis zum Vision-Endziel** (Welten-Ultiversum). Sie ergänzt `state-of-realm.md` (Was/Warum) um eine puren Plan-Sicht (Wann/Wie). Aufwandsschätzungen sind realistische Tage für eine fokussierte Claude-Session pro Ring/Phase; gerechnet wird linear, ohne Puffer.
 
