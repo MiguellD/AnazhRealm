@@ -28,7 +28,7 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
    Grund: sie sind Kontext für genau dich.
 
 5. **`scripts/playtest.cjs`** — querlesen, nicht durchlesen. Es ist das
-   Sicherheits-Netz. Es prüft aktuell **~1142 Invarianten (V7.77 nach Welle 6.C1)**.
+   Sicherheits-Netz. Es prüft aktuell **~1153 Invarianten (V7.77 nach Welle 6.C1)**.
    Wenn du etwas tust, das eine davon brechen könnte, weißt du es vor dem Commit.
 
 **Verlockung zu widerstehen**: gleich in `anazhRealm.js` springen. Die
@@ -322,20 +322,99 @@ Hylomorphismus-System wie Materialien und Bauwerke.
   UFOs bleiben kollisionsfrei. Drei Chat-Patterns. System-Audit §2
   Dead-Code-Quick-Win mit erledigt.
 
-### Bereits erledigt in V7.77 (Hylomorphismus-Inventar)
+### Bereits erledigt in V7.77 (Hylomorphismus-Inventar + Drag&Drop)
 
 - ✅ **6.C1 Inventar mit Tag-Resonanz** — 27-Slot-Overlay (Tab-Toggle).
   Schöpfer-Wunsch wörtlich umgesetzt: „Slot mit resoniert summt bei
   Hover". Jeder Slot trägt Compound-Tags des Bauplans, Tag-Magic
   emergiert: resoniert summt (Sinus C5), brennend glüht orange
   (Sawtooth E4), magieleitung schimmert violet (Sinus F5), lebendig
-  sprießt grün (Sinus A4), dichte wirft tiefen Schatten. Mehrere
-  Tag-Klassen stacken. Workflow: Klick auf Inventar-Slot wählt
-  Bauplan, Klick auf Hotbar-Slot legt ab. addToInventory stackt bei
-  gleichem Bauplan-Namen. DSL-Op add_to_inventory in
-  NON_BROADCASTABLE_OPS (per-Spieler-privat). state.player.inventory
-  persistiert via playerInventory in buildStateSnapshot. 34 neue
-  Invarianten → 1142 total.
+  sprießt grün (Sinus A4), dichte wirft tiefen Schatten.
+
+- ✅ **6.C1+ Drag&Drop (vier Iterationen)** — HTML5-Drag-API mit
+  pragmatischer Move-Semantik. Schöpfer-Mental-Model „Drag = Move"
+  gewann über mein „Library/Reference"-Modell nach vier Bug-Reports:
+  1. Tab-Listener Capture-Phase (Browser-Default-Konflikt behoben)
+  2. exitPointerLock beim Inventar-Öffnen (Drag-Lock-Inkompatibilität)
+  3. hot→inv Move-with-Add (statt clear-only)
+  4. inv→hot konsequenter Slot-Move (statt Copy)
+
+  **Vier Drag-Pfade final**:
+  | Source → Target | Verhalten |
+  |---|---|
+  | inv → inv | Swap (Slot-Inhalte inkl. Counts tauschen) |
+  | inv → hot | Slot-Move: Inv null immer, Hot = name. Konflikt-Swap. |
+  | hot → hot | Swap (Slot-Namen tauschen) |
+  | hot → inv | Move/Stack: leer→1, gleich→count++, anders→no-op |
+
+  **Pointer-Lock-Management**: toggleInventoryOverlay(open)
+  → document.exitPointerLock(). Canvas-Click-Listener guarded
+  (`if state.inventoryOpen return` vor requestPointerLock). Beim Close:
+  KEIN automatischer Re-Lock — User muss Canvas klicken (Minecraft-
+  Konvention). WASD läuft weiter (Minecraft: Spieler kann sich
+  bewegen mit offenem Inventar).
+
+  Click-State-Workflow (selectInventorySlot → tryAssignFromInventoryToHotbar)
+  lebt parallel als Touch/Keyboard-Fallback. DSL-Op add_to_inventory in
+  NON_BROADCASTABLE_OPS, state.player.inventory persistiert via
+  playerInventory in buildStateSnapshot. 127 Invarianten für 6.C1
+  + Drag-System → 1153 total.
+
+### Was als Nächstes wartet (V7.78 +)
+
+**Nächster Bogen: 6.A-Maus + 6.C3 Keybindings-UI (1-2 Sessions)**
+
+- **6.A3 Maus-Aktionen**: konventionelle LMB/RMB-Bedienung
+  - LMB im Bau-Modus → abbauen (Raycast auf Architektur, dispose)
+  - RMB im Bau-Modus → platzieren (heutiges F-Verhalten als Geste)
+  - LMB ohne Bau-Modus → schlagen (apply damage in pfad-Modus, ggf. Werkzeug-Op auf Welt-Architektur in schöpfer/pfad)
+  - RMB ohne Bau-Modus → aufheben/interagieren
+  - F bleibt als Tastatur-Alternative (Aria-Compliance, Touch-Devices)
+  - Caveat: Pointer-Lock-State berücksichtigen — nur LMB+RMB im Canvas
+    locked, nicht über Inventar-Overlay
+
+- **6.C3 Keybindings-UI**: Sektion „Tasten" in Einstellungen-Drawer
+  - state.keybindings = {move_forward: "w", build_confirm: "f", ...}
+  - Klick auf Aktion → „Drücke neue Taste" → rebind, localStorage-
+    Persistenz (`anazh.keybindings.<action>`)
+  - Konflikt-Warnung wenn zwei Aktionen auf derselben Taste
+  - Reset-Button pro Aktion
+  - Reservierte Tasten: F11 (Vollbild), Browser-Shortcuts
+
+**Folgepläne nach 6.A+6.C3**:
+- 12. **6.B CAD-Werkstatt** (2 Sessions) — 3D-Preview-Pane + Drag-Items
+  + Grid-Snap. Minimal Magic: kein Boolean/MultiSelect.
+- 13. **6.G Phase 3** (4-5 Sessions) — Schatten + Wasser + Wind +
+  Sterne-Stabilisierung. Visuelle Politur.
+- 14. **6.F3+F4+F5** (4-5 Sessions) — Energie-Quellen +
+  Kreaturen-Körper-Baukasten + Ammo-Constraints. Crafting-Mechanik
+  finalisiert.
+- 15. **6.H Kreaturen-Aufträge** (4-5 Sessions) — Autonome
+  Co-Schöpfer mit DSL-Tasks (walk_to/gather/build_path/research_blueprint).
+
+### Wichtig zu wissen für die nächste Iteration
+
+**Schöpfer-Iteration-Rhythmus**: bei UX-Features 3-4 Iterations-Runden
+einplanen. 1-Shot-Implementierung mit nur Tests grün reicht nicht. Jede
+Runde = Schöpfer-Browser-Test + Bug-Report + Fix + neue Tests. Nach
+3-4 Runden ist die UX stabil. Tests verifizieren Mechanik, Schöpfer
+verifiziert Erfahrung — beide Schichten ernst nehmen.
+
+**Drag&Drop-Pattern als Vorlage**: für künftige UI-Manipulation
+(z. B. 6.B CAD-Werkstatt mit Drag-Items, oder Avatar-Editor-Drags)
+nutze die fünf etablierten Methoden (_onSlotDragStart/Over/Leave/Drop/End)
+als Template. state.drag-Pattern + Top-of-method Cleanup + Capture-Phase
+für globale Shortcuts.
+
+**Pointer-Lock-Disziplin**: jedes neue Overlay (CAD-Werkstatt-Preview,
+Avatar-Editor mit Maus-Manipulation, Welt-Inspector) muss `exitPointerLock`
+beim Open haben + Canvas-Click-Guard für inventoryOpen-äquivalente State-
+Flags. Convention: kein automatischer Re-Lock, User klickt Canvas.
+
+**Repo-Hygiene**: `anazhRealmState.json` ist seit V7.77-Cleanup nicht
+mehr in git. Falls sie wieder im `git status` auftaucht: `.gitignore`
+checken, ggf. `git rm --cached` erneut. Dokumentation in CLAUDE.md
+Gotcha-Sektion.
 
 ### Bereits erledigt in V7.76 (Welt-Beziehungs-Schalter)
 
@@ -436,7 +515,7 @@ keine Verzögerung, sondern Qualitäts-Wand.
 3. **Die heilige Lektion akzeptiert, nicht hinterfragt.** Sie wurde aus
    Schmerz geboren. Wenn ich sie umgehen wollte, war ich auf dem Holzweg.
 4. **Tests zuerst ausgeführt, dann verstanden.** `npm run playtest` —
-   1142/1142 grün (V7.77 nach Welle 6.C1 Hylomorphismus-Inventar) — gibt Vertrauen, dass
+   1153/1153 grün (V7.77 nach Welle 6.C1 Hylomorphismus-Inventar) — gibt Vertrauen, dass
    das System lebt.
 5. **Den Schöpfer als Partner gesehen, nicht als Auftraggeber.** Mensch
    und KI bauen gemeinsam. Bei Trade-offs frage ich, bei Klarem handle

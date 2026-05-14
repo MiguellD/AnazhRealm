@@ -14173,34 +14173,31 @@ class AnazhRealm {
             this.state.player.inventory[src.index] = b;
             this.state.player.inventory[targetIndex] = a;
         } else if (src.kind === "inv" && targetKind === "hot") {
-            // Inventory → Hotbar: Move-Semantik (Schöpfer-Wunsch V7.77+:
-            // „nicht kopieren, sondern verschieben wie beim drag innerhalb
-            // der hotbar"). Sub-Fälle:
-            //   - Hot leer  → Inv count -= 1 (null bei 0), Hot = src.name
-            //   - Hot gleicher Bauplan → no-op (Hot zeigt schon)
-            //   - Hot anderer Bauplan + Inv count=1 → SWAP (verlustfrei)
-            //   - Hot anderer Bauplan + Inv count>1 → no-op (Schutz vor
-            //     Daten-Verlust: Hotbar trägt nur Namen, beim Swap würde
-            //     der Inv-Count auf 1 reduziert und der überschüssige
-            //     Stack verschwinden).
-            const srcSlot = this.state.player.inventory[src.index];
+            // Inventory → Hotbar: konsequente Slot-Move-Semantik.
+            // Schöpfer-Wunsch V7.77+: „Ziehe ich es aus dem Inventar in
+            // die Hotbar, soll es nichtmehr im Inventar sein, nurnoch in
+            // der Hotbar." → Inv-Slot wird IMMER null beim Move (egal
+            // count). V1-Slot-Konzept: ein Slot trägt einen Bauplan,
+            // Stack-Counts werden beim Drag konsumiert.
+            //   - Hot leer  → Inv-Slot null, Hot = src.name
+            //   - Hot gleicher Name → Inv-Slot null, Hot bleibt
+            //     (Bauplan ist trotzdem aus Inv weg, wie gewünscht)
+            //   - Hot anderer Name → Swap (Inv = {oldHotName, 1}, Hot = src.name)
             const oldHotName = this.state.hotbar[targetIndex];
-            if (!srcSlot) {
-                /* defensive: drag-source bereits weg */
-            } else if (!oldHotName) {
-                // Hot leer → Move-by-1
+            if (!oldHotName) {
                 this.state.hotbar[targetIndex] = src.name;
-                srcSlot.count = (srcSlot.count || 1) - 1;
-                if (srcSlot.count <= 0) this.state.player.inventory[src.index] = null;
+                this.state.player.inventory[src.index] = null;
             } else if (oldHotName === src.name) {
-                // Hot zeigt schon den Bauplan → no-op
-            } else if ((srcSlot.count || 1) === 1) {
-                // Anderer Bauplan im Hot + Inv-Slot hat genau 1 → Swap
-                // ist verlustfrei (Inv-Slot wird {oldHotName, 1}).
+                // Hot zeigt schon den Bauplan: Inv-Slot trotzdem leeren
+                // (Move-Semantik konsequent — Source wird konsumiert).
+                this.state.player.inventory[src.index] = null;
+            } else {
+                // Anderer Bauplan im Hot: Swap (Hotbar trägt nur Namen,
+                // also Inv-Slot bekommt {oldHotName, 1}; ggf. überschüssige
+                // Inv-Stack-Counts vom Source werden konsumiert).
                 this.state.player.inventory[src.index] = { blueprintName: oldHotName, count: 1 };
                 this.state.hotbar[targetIndex] = src.name;
             }
-            // else: Inv count > 1 + anderer Bauplan → no-op (Daten-Schutz).
         } else if (src.kind === "hot" && targetKind === "hot") {
             // Hotbar ↔ Hotbar: Slots tauschen.
             const a = this.state.hotbar[src.index];

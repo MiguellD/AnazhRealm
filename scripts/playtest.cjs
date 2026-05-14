@@ -7537,60 +7537,44 @@ function startSaveServer() {
                     r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 1 };
                     r.state.player.inventory[5] = null;
 
-                    // (2) inv → hot mit leerem Hot + Inv-count=1: Move-by-1.
-                    // Schöpfer-Wunsch V7.77+: „nicht kopieren, sondern
-                    // verschieben". Erwartung: Hot bekommt Bauplan, Inv-Slot
-                    // wird null (count war 1).
+                    // (2) inv → hot mit leerem Hot + Inv-count=1: konsequenter
+                    // Slot-Move (Schöpfer-Wunsch V7.77+: „soll nichtmehr im
+                    // Inventar sein, nurnoch in der Hotbar"). Inv-Slot wird
+                    // null, Hot = name.
                     r.state.drag = { kind: "inv", index: 0, name: "baum_eiche" };
                     r._onSlotDrop(mkEvent(), "hot", 3);
                     out.invToHotPlaces = r.state.hotbar[3] === "baum_eiche";
-                    out.invToHotMovesEmptiesInvSlot = r.state.player.inventory[0] === null;
+                    out.invToHotEmptiesInvSlot = r.state.player.inventory[0] === null;
 
-                    // (2b) inv → hot mit leerem Hot + Inv-count=5: Move-by-1.
-                    // Erwartung: Inv-count -= 1 (= 4), Hot = name.
+                    // (2b) inv → hot mit leerem Hot + Inv-count=5: Slot wird
+                    // KOMPLETT null (egal count). Stack wird konsumiert.
                     r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 5 };
                     r.state.hotbar[4] = null;
                     r.state.drag = { kind: "inv", index: 0, name: "baum_eiche" };
                     r._onSlotDrop(mkEvent(), "hot", 4);
-                    out.invToHotMoveByOne =
-                        r.state.hotbar[4] === "baum_eiche" &&
-                        r.state.player.inventory[0] &&
-                        r.state.player.inventory[0].count === 4;
+                    out.invToHotEmptiesIgnoresCount =
+                        r.state.hotbar[4] === "baum_eiche" && r.state.player.inventory[0] === null;
 
-                    // (2c) inv → hot mit gleichem Bauplan in Hot: no-op
-                    // (Hot zeigt schon, kein Sinn was zu ändern).
+                    // (2c) inv → hot mit gleichem Bauplan in Hot: Inv-Slot
+                    // wird TROTZDEM leer (Schöpfer-Wunsch: konsequenter Move,
+                    // Bauplan ist aus Inv weg, in Hot war er schon).
                     r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 3 };
                     r.state.hotbar[4] = "baum_eiche";
                     r.state.drag = { kind: "inv", index: 0, name: "baum_eiche" };
                     r._onSlotDrop(mkEvent(), "hot", 4);
-                    out.invToHotSameNameNoOp =
-                        r.state.hotbar[4] === "baum_eiche" &&
-                        r.state.player.inventory[0] &&
-                        r.state.player.inventory[0].count === 3;
+                    out.invToHotSameNameStillEmpties =
+                        r.state.hotbar[4] === "baum_eiche" && r.state.player.inventory[0] === null;
 
-                    // (2d) inv → hot mit anderem Bauplan + Inv-count=1: Swap.
+                    // (2d) inv → hot mit anderem Bauplan: Swap.
                     r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 1 };
                     r.state.hotbar[4] = "village";
                     r.state.drag = { kind: "inv", index: 0, name: "baum_eiche" };
                     r._onSlotDrop(mkEvent(), "hot", 4);
-                    out.invToHotSwapWhenCountOne =
+                    out.invToHotSwap =
                         r.state.hotbar[4] === "baum_eiche" &&
                         r.state.player.inventory[0] &&
                         r.state.player.inventory[0].blueprintName === "village" &&
                         r.state.player.inventory[0].count === 1;
-
-                    // (2e) inv → hot mit anderem Bauplan + Inv-count>1: no-op
-                    // (Daten-Schutz: Swap würde überflüssige Inv-Stack-Counts
-                    // verschlucken, weil Hotbar nur Namen trägt).
-                    r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 3 };
-                    r.state.hotbar[4] = "village";
-                    r.state.drag = { kind: "inv", index: 0, name: "baum_eiche" };
-                    r._onSlotDrop(mkEvent(), "hot", 4);
-                    out.invToHotOtherCountManyNoOp =
-                        r.state.hotbar[4] === "village" &&
-                        r.state.player.inventory[0] &&
-                        r.state.player.inventory[0].blueprintName === "baum_eiche" &&
-                        r.state.player.inventory[0].count === 3;
 
                     // Reset
                     r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 1 };
@@ -7687,11 +7671,10 @@ function startSaveServer() {
                 check("Welle 6.C1 Drag: _onSlotDragLeave existiert", dragResults.hasDragLeave);
                 check("Welle 6.C1 Drag: inv→inv tauscht Slot-Inhalte", dragResults.invToInvSwap);
                 check("Welle 6.C1 Drag: inv→hot legt Bauplan in Hotbar", dragResults.invToHotPlaces);
-                check("Welle 6.C1 Drag: inv→hot mit Inv-count=1 leert Inv-Slot (Move)", dragResults.invToHotMovesEmptiesInvSlot);
-                check("Welle 6.C1 Drag: inv→hot mit Inv-count=5 reduziert Count um 1 (Move-by-1)", dragResults.invToHotMoveByOne);
-                check("Welle 6.C1 Drag: inv→hot mit gleichem Bauplan in Hot ist no-op", dragResults.invToHotSameNameNoOp);
-                check("Welle 6.C1 Drag: inv→hot mit anderem + count=1 swappt verlustfrei", dragResults.invToHotSwapWhenCountOne);
-                check("Welle 6.C1 Drag: inv→hot mit anderem + count>1 ist no-op (Daten-Schutz)", dragResults.invToHotOtherCountManyNoOp);
+                check("Welle 6.C1 Drag: inv→hot leert Inv-Slot (count=1, konsequenter Move)", dragResults.invToHotEmptiesInvSlot);
+                check("Welle 6.C1 Drag: inv→hot leert Inv-Slot auch bei count=5 (Stack konsumiert)", dragResults.invToHotEmptiesIgnoresCount);
+                check("Welle 6.C1 Drag: inv→hot mit gleichem Bauplan im Hot leert Inv-Slot trotzdem", dragResults.invToHotSameNameStillEmpties);
+                check("Welle 6.C1 Drag: inv→hot mit anderem Bauplan im Hot ist Swap", dragResults.invToHotSwap);
                 check("Welle 6.C1 Drag: hot→hot tauscht Hotbar-Slots", dragResults.hotToHotSwap);
                 check("Welle 6.C1 Drag: hot→inv räumt Hotbar-Slot (zu null)", dragResults.hotToInvClearsHotbar);
                 check("Welle 6.C1 Drag: hot→inv füllt leeren Inv-Slot mit {name, count:1}", dragResults.hotToInvFillsInvSlot);

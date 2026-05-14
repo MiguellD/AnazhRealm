@@ -496,6 +496,38 @@ Echt gelernt, nicht performt:
 
 136. **baseY-Offset-Konvention verstecken sich in Helfer-Funktionen.** `_rebuildArchitectureMesh` zieht stillschweigend 0.5 von `entry.position.y` ab — kalibriert auf `at_player` (player.y = Sphäre-Mitte ≈ ground + 0.5, also baseY = ground). Für Worldgen-Bäume die direkt `terrain_height` als y verwenden, sinkt der Stamm 0.5 m. **Lehre: bei jedem Migrationsschritt der einen Pfad in einen anderen routet, die Höhen-Konvention beider Pfade durchspielen. Ein kommentarbefriedeter Pre-existing-Offset kann beim Refactor zur stillen Klippe werden.**
 
+### Learnings dieser Session (Mai 2026, Welle 6.C1 Inventar + Drag&Drop — vier Iterationen bis Schöpfer-Move-Mental-Model getroffen war)
+
+143. **User-Mental-Model > architektonische Schönheit.** Mein V7.77-Inventar-Design hatte ein „Library/Reference"-Modell: Inventar = Bauplan-Sammlung, Hotbar = Referenz darauf. Architektonisch sauber. **Aber der Schöpfer-Mental-Model war Minecraft: Drag = Move zwischen Containern.** Vier Iterationen waren nötig, bis ich den User-Erwartung wirklich folgte (clear-only → move-with-add → move-by-1 → konsequenter Slot-Move). Tests waren alle grün, aber das User-Erlebnis stimmte erst beim vierten Versuch. **Lehre: Architektur folgt User-Intuition, nicht umgekehrt. Wenn der Schöpfer beim Testen wiederholt das gleiche Symptom meldet, ist mein Design-Modell falsch — nicht sein Erwartung.**
+
+144. **HTML5-Drag&Drop ist mit Pointer-Lock inkompatibel.** Drag braucht ABSOLUTE Maus-Koordinaten, Pointer-Lock liefert nur relative deltas — `dragstart` feuert in den meisten Browsern nicht zuverlässig, `drop` nie. UX-Konvention von Minecraft: Inventar offen → `document.exitPointerLock()` automatisch. Schließen → KEIN automatischer Re-Lock, User muss Canvas klicken (sonst springt Look-Steuerung unbeabsichtigt zurück). Plus: Canvas-Click-Listener muss `if (state.inventoryOpen) return` haben, sonst re-locked ein Daneben-Klick die Maus → Drag wird wieder tot. **Lehre: HTML5-Drag-Adoption in Spielen mit Pointer-Lock erfordert explizite Lock-Management-Schicht. Diese Schicht ist drei Listener-Stellen: Toggle-Open (exit), Canvas-Click (guard), Keydown (Esc-Bypass).**
+
+145. **Tab-Listener auf Capture-Phase erzwingt Prioritäts-Reihenfolge.** Mein V7.77-Erstversuch hatte den Tab-Listener auf Bubble-Phase mit Input-Bypass „damit Spieler aus Chat-Feld tabben kann". Funktionierte nicht: Browser-Default für Tab im Chat-Input ist „nächstes focusable Element" = erster Hotbar-Slot. Schöpfer sah Focus durch Hotbar wandern, Inventar öffnete nie. Fix: `addEventListener(..., true)` (Capture) + `preventDefault + stopPropagation + activeElement.blur()` + unconditional Toggle. Convention zum Verlassen eines Felds ist Esc oder Klick-Außen, nicht Tab. **Lehre: bei globalen Keyboard-Shortcuts (Tab/Esc/etc.) Capture-Phase nutzen — sonst kämpft man gegen Browser-Defaults.**
+
+146. **Drag-State im Memory statt dataTransfer-API.** HTML5 dataTransfer.setData/getData ist für Cross-Window-Drags gedacht und in manchen Browsern bei programmatischer Manipulation flaky. Für in-Window-Drag&Drop ist ein eigener state-Slot (`state.drag = {kind, index, name}`) robuster + einfacher: kein JSON-Roundtrip, direkter Type-safe Zugriff. **Lehre: dataTransfer ist eine Cross-Window-Schnittstelle. Für in-Window-UI nutze direkten state. dataTransfer.setData muss trotzdem gerufen werden (Firefox-Anforderung), aber nur als Dummy-Marker.**
+
+147. **state.drag IMMER ganz oben in _onSlotDrop nullen.** Drei Pfade können early-return: no-op (src===target), kein src, validation-fail. Wenn state.drag nur am Ende des erfolgreichen Pfads genullt wird, hängt es bei diesen Early-Exits in der state — nächster Drag bekommt verstale Daten. Erste Zeile nach `event.preventDefault()` muss `this.state.drag = null` sein. **Lehre: bei State-Cleanup in Multi-Pfad-Methoden den Reset GANZ OBEN machen (try/finally-Stil), nicht im Erfolgs-Pfad am Ende.**
+
+148. **Test-Cleanup-Disziplin verhindert Folge-Tests umfallen.** Mein 6.C1-Test mutierte state.hotbar (tryAssign-Pfad), state.player.inventory (drag-Tests), state.drag (drag-Tests). Pre-existing Ring-6.5-Default-Hotbar-Test erwartete `["village", "temple", "waterfall", null, ...]`. Ohne Cleanup-Block am Ende meines Tests → Ring 6.5 umgefallen. **Pattern**: am Ende jedes State-mutierenden Tests:
+```js
+r.state.hotbar = ["village", "temple", "waterfall", null, null, null, null, null, null];
+r.state.player.inventory = new Array(27).fill(null);
+r._renderHotbarDOM();
+r.renderInventoryUI();
+```
+**Lehre: jeder Test ist eine Isolations-Verantwortung. State-Mutationen am Ende explizit zurücksetzen, auch wenn der eigene Test dort schon erfolgreich war — die Nachfahren-Tests müssen ihre Annahmen finden.**
+
+149. **Schöpfer-Iteration-Rhythmus: 4 Schritte für 1 Feature.** Welle 6.C1 Drag&Drop ging durch vier Bug-Reports + vier Fixes:
+1. „Tab cycelt durch Hotbar, öffnet nie Inventar" → Capture-Phase + Input-Bypass weg
+2. „Maus ist gelockt, Drag funktioniert nicht" → exitPointerLock beim Toggle
+3. „Hot → Inv lässt Bauplan verschwinden" → Move-with-add statt clear-only
+4. „Inv → Hot ist Copy, nicht Move" → konsequenter Slot-Move
+
+Jeder Schritt hat 3-16 neue Tests beigetragen. Tests grün NACH JEDEM Schritt — aber Schöpfer-Testen fand die Lücken die Tests nicht sahen. **Lehre: bei neuen UX-Features ist 1-Shot-Implementation unrealistisch. Plane 3-4 Iterations-Runden ein. Jede Runde produziert ein Sub-Fix + neue Tests; nach 3-4 Runden ist die UX stabil. Tests verifizieren Mechanik; Schöpfer verifiziert Erfahrung — beide Schichten gleichermaßen ernst nehmen (Learning #126 bestätigt).**
+
+150. **Repo-Hygiene: Runtime-Artefakte gehören nicht in git.** `anazhRealmState.json` wurde 4853 Zeilen lang im Repo getrackt (Pre-Ring-8-Schema). Stop-Hook nervte nach jedem Playtest. Wurzel-Fix: `.gitignore` + `git rm --cached`. **Lehre: nachhaltige Repo-Hygiene ist kein Hack-around. Bei „revert + nervt halt manchmal" → zur Wurzel gehen, nicht das Symptom kratzen. Die Frage ist: warum landet das überhaupt im git, und welche Disziplin schützt zukünftige Iterationen davor (`.gitignore` + Gotcha-Doku).**
+
+
 Ring 2 (alle 7 Phasen), Ring 3 (V1+V2), Ring 4 (V1), Ring 5 (V1+V2), Ring 6 (V1+V2 inkl. Werkstatt), **Ring 7 (Schicht 1+2 — IQ-Heuristik + 4 LLM-Provider)**, **Welle 1+2+3 (Welt-Journal + Schöpfer-Ops + Welt-Initiative + Welt-Tor)**, **Welle 4 P1+P2+P3 (Hylomorphismus atomar — Materialien + Matrix + Werkzeuge)**, **Welle 5 A+B+C (Hylomorphismus räumlich + mechanisch + rekursiv — Verbindungen + 5 §5.2-Prinzipien + Maschinen-Rekursivität §4.3)**, **Welle 6.A+6.E+6.F+6.D komplett (Interaktion-Polish + Lesbarkeit + Crafting-Sichtbarkeit + Stat-System fraktal)** und UI V1+V2 sind beantwortet und umgesetzt. Was offen ist:
 
 **Für Ring 5 V3 (Spieler-Seele erweitern):**
