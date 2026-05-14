@@ -11474,6 +11474,172 @@ function startSaveServer() {
                 check(`Welle 6.H P2F.3: evaluate-Fehler — ${wave6hP2f3Results.error}`, false);
             }
 
+            // ### Welle 6.H Phase 2E V1 — Kreatur-LLM-Persona ###
+            //
+            // Vision §1.5 — Spieler spricht mit EINER Kreatur, sie antwortet
+            // aus ihrer Sicht. Persona-Prompt versammelt VOLLE Identität
+            // (Body+Specs+Equipped+Boosts+Memory+bornAt+Welt). KEIN echter
+            // LLM-Call im Test (kein API-Key) — wir prüfen Builder + Routing.
+            const wave6hP2eV1Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.playerMesh) return null;
+                    const out = {};
+
+                    // 1. Methoden existieren
+                    out.hasBuildPersona = typeof r._buildCreaturePersonaPrompt === "function";
+                    out.hasFindByName = typeof r._findCreatureByName === "function";
+                    out.hasLlmCallCreature = typeof r.llmCallCreature === "function";
+                    out.hasParseAddress = typeof r._parseCreatureAddress === "function";
+                    out.hasMaybeAnswerCreature = typeof r.maybeAnswerCreature === "function";
+
+                    // 2. _findCreatureByName findet die Kreatur (case-insensitive)
+                    const player = r.state.playerMesh.position;
+                    const c = r.spawnCreatureAt(player.x + 500, player.y, player.z + 500, "happy", "wesen");
+                    c.userData.name = "TestNira";
+                    out.findExact = r._findCreatureByName("TestNira") === c;
+                    out.findCaseInsensitive = r._findCreatureByName("testnira") === c;
+                    out.findUnknown = r._findCreatureByName("FictionalXYZ") === null;
+
+                    // 3. _parseCreatureAddress erkennt verschiedene Trennzeichen
+                    const p1 = r._parseCreatureAddress("TestNira, hallo");
+                    out.parseComma = p1 && p1.name === "TestNira" && p1.message === "hallo";
+                    const p2 = r._parseCreatureAddress("TestNira: was hast du gesehen?");
+                    out.parseColon = p2 && p2.name === "TestNira" && p2.message === "was hast du gesehen?";
+                    const p3 = r._parseCreatureAddress("setze wetter sunny");
+                    out.parseRejectsNonAddress = p3 === null; // kein „Name, text"-Pattern
+                    const p4 = r._parseCreatureAddress("Anna_B-2: hallo");
+                    out.parseAllowsHyphensUnderscores = p4 && p4.name === "Anna_B-2";
+
+                    // 4. _buildCreaturePersonaPrompt enthält alle 4 Stat-Schichten + Welt
+                    // Vorher: voll-ausgestattete Kreatur (Specs + Equipped + Boost + Memory)
+                    c.userData.memory = [
+                        { type: "gathered", content: { material: "holz" }, at: 1 },
+                        { type: "gathered", content: { material: "holz" }, at: 2 },
+                        { type: "gathered", content: { material: "holz" }, at: 3 },
+                        { type: "built", content: { blueprint: "stein_block" }, at: 4 },
+                    ];
+                    r.equipCreatureTool(c, "hammer");
+                    r.applyCreatureBoost(c, {
+                        source: "test:tonic",
+                        tagDelta: { dichte: 0.3 },
+                        durationSeconds: 60,
+                        label: "Test-Tonic",
+                    });
+                    const prompt = r._buildCreaturePersonaPrompt(c);
+                    out.promptIsString = typeof prompt === "string" && prompt.length > 0;
+                    out.promptHasName = /TestNira/.test(prompt);
+                    out.promptHasSoulLabel = /Wesen/.test(prompt);
+                    out.promptHasStats = /HP\s+\d/.test(prompt) && /SPD\s+\d/.test(prompt);
+                    out.promptHasSpecs = /Sammler/.test(prompt) && /holz/.test(prompt);
+                    out.promptHasEquipped = /hammer/.test(prompt);
+                    out.promptHasBoost = /Test-Tonic/.test(prompt);
+                    out.promptHasMemory = /sammelte holz/.test(prompt) || /baute/.test(prompt);
+                    out.promptHasWeather = new RegExp(r.state.weather || "sunny").test(prompt);
+                    out.promptInstructsJson =
+                        /JSON-Objekt/.test(prompt) && /say/.test(prompt) && /program/.test(prompt);
+                    out.promptForbidsProgram = /immer null/.test(prompt) || /noch nicht erlaubt/.test(prompt);
+                    out.promptHasAge = /Sekunden|Minuten|Stunden|Tage/.test(prompt);
+
+                    // 5. llmCallCreature ohne LLM-aktiv → error-Object
+                    const wasEnabled = r.state.llm && r.state.llm.enabled;
+                    if (r.state.llm) r.state.llm.enabled = false;
+                    // (kann nicht await in evaluate ohne async — wir testen sync Behauptung)
+                    out.llmCreatureNeedsLlm = typeof r.llmCallCreature === "function"; // Existenz reicht
+
+                    // 6. maybeAnswerCreature ohne aktive LLM gibt Hinweis-Output
+                    let chatLines = [];
+                    const append = (text) => chatLines.push(text);
+                    // synchron prüfen wir nur das Parse + LLM-Off-Branch
+                    // (await funktioniert in evaluate via async-IIFE — vereinfacht)
+                    return Promise.resolve()
+                        .then(async () => {
+                            await r.maybeAnswerCreature("TestNira, hallo", append);
+                            out.llmOffPolite = chatLines.some((l) => /hört dich/.test(l));
+                            out.llmOffNoCall = !r.state.llm.inFlight;
+                            // Unbekannter Name → höfliche Ablehnung
+                            chatLines.length = 0;
+                            await r.maybeAnswerCreature("UnbekannterXYZ, hallo", append);
+                            out.unknownPolite = chatLines.some((l) => /Niemand|hört zu/.test(l));
+                            if (r.state.llm) r.state.llm.enabled = wasEnabled || false;
+                            return out;
+                        })
+                        .catch((e) => ({ error: String(e) }));
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6hP2eV1Results && !wave6hP2eV1Results.error) {
+                check(
+                    "Welle 6.H P2E V1: alle 5 Methoden existieren (_buildCreaturePersonaPrompt + _findCreatureByName + llmCallCreature + _parseCreatureAddress + maybeAnswerCreature)",
+                    wave6hP2eV1Results.hasBuildPersona &&
+                        wave6hP2eV1Results.hasFindByName &&
+                        wave6hP2eV1Results.hasLlmCallCreature &&
+                        wave6hP2eV1Results.hasParseAddress &&
+                        wave6hP2eV1Results.hasMaybeAnswerCreature
+                );
+                check(
+                    "Welle 6.H P2E V1: _findCreatureByName exact + case-insensitive + null bei unknown",
+                    wave6hP2eV1Results.findExact &&
+                        wave6hP2eV1Results.findCaseInsensitive &&
+                        wave6hP2eV1Results.findUnknown
+                );
+                check(
+                    "Welle 6.H P2E V1: _parseCreatureAddress erkennt 'Name, text' + 'Name: text' + lehnt non-address ab",
+                    wave6hP2eV1Results.parseComma &&
+                        wave6hP2eV1Results.parseColon &&
+                        wave6hP2eV1Results.parseRejectsNonAddress &&
+                        wave6hP2eV1Results.parseAllowsHyphensUnderscores
+                );
+                check(
+                    "Welle 6.H P2E V1: Persona-Prompt enthält Name + Soul-Label + Alter",
+                    wave6hP2eV1Results.promptHasName &&
+                        wave6hP2eV1Results.promptHasSoulLabel &&
+                        wave6hP2eV1Results.promptHasAge
+                );
+                check(
+                    "Welle 6.H P2E V1: Persona-Prompt enthält Stats-Schicht (HP/SPD)",
+                    wave6hP2eV1Results.promptHasStats
+                );
+                check(
+                    "Welle 6.H P2E V1: Persona-Prompt enthält Specs-Schicht (Sammler von holz)",
+                    wave6hP2eV1Results.promptHasSpecs
+                );
+                check(
+                    "Welle 6.H P2E V1: Persona-Prompt enthält Equipped-Schicht (hammer)",
+                    wave6hP2eV1Results.promptHasEquipped
+                );
+                check(
+                    "Welle 6.H P2E V1: Persona-Prompt enthält Boost-Schicht (Test-Tonic)",
+                    wave6hP2eV1Results.promptHasBoost
+                );
+                check(
+                    "Welle 6.H P2E V1: Persona-Prompt enthält Memory-Auszug",
+                    wave6hP2eV1Results.promptHasMemory
+                );
+                check(
+                    "Welle 6.H P2E V1: Persona-Prompt enthält Welt-Kontext (Wetter)",
+                    wave6hP2eV1Results.promptHasWeather
+                );
+                check(
+                    "Welle 6.H P2E V1: Persona-Prompt instruiert JSON-Format (say + program)",
+                    wave6hP2eV1Results.promptInstructsJson
+                );
+                check(
+                    "Welle 6.H P2E V1: Persona-Prompt verbietet program (V1 reaktiv-only)",
+                    wave6hP2eV1Results.promptForbidsProgram
+                );
+                check(
+                    "Welle 6.H P2E V1: maybeAnswerCreature ohne aktive LLM → höflicher Hinweis (kein API-Call)",
+                    wave6hP2eV1Results.llmOffPolite && wave6hP2eV1Results.llmOffNoCall
+                );
+                check(
+                    "Welle 6.H P2E V1: maybeAnswerCreature mit unbekanntem Namen → 'Niemand hört zu'",
+                    wave6hP2eV1Results.unknownPolite
+                );
+            } else if (wave6hP2eV1Results && wave6hP2eV1Results.error) {
+                check(`Welle 6.H P2E V1: evaluate-Fehler — ${wave6hP2eV1Results.error}`, false);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {

@@ -2787,6 +2787,139 @@ class AnazhRealm {
         return `Letzte erfolgreiche DSL-Programme:\n${lines.join("\n")}\n`;
     }
 
+    // === Welle 6.H Phase 2E V1 — Kreatur-Persona-Prompt-Builder ===
+    //
+    // Vision §1.5 Symbiose-Erweiterung: Spieler spricht mit EINER Kreatur,
+    // sie antwortet aus IHRER Sicht. Der Persona-Prompt versammelt alle
+    // Identitäts-Komponenten die wir seit V7.79 aufgebaut haben:
+    //   - Name + Soul (P2A)        — wer sie ist
+    //   - bornAt (P2D.1)           — wann sie kam
+    //   - Stats (P2F.1)            — wie ihr Körper greift
+    //   - Specs (P2D)              — was sie gelernt hat
+    //   - Equipped (P2F.2)         — was sie trägt
+    //   - Boosts (P2F.3)           — was sie gerade erlebt
+    //   - Memory (P2B.1+)          — woran sie sich erinnert
+    //   - Welt-Kontext (Weather, Slug) — wo sie ist
+    //
+    // V1: NUR `say` wird genutzt aus der Antwort. `program` würde Welt-Aktion
+    // bedeuten (Phase 2E V3-Bogen, bewusst offen).
+    _buildCreaturePersonaPrompt(creature) {
+        if (!creature || !creature.userData) return null;
+        const ud = creature.userData;
+        const name = ud.name || "namenlos";
+        const soulName = ud.soul || "wesen";
+        const soulDef = AnazhRealm.CREATURE_SOULS && AnazhRealm.CREATURE_SOULS[soulName];
+        const soulLabel = (soulDef && soulDef.label) || soulName;
+        // Alter berechnen aus bornAt
+        const ageMs = ud.bornAt ? Date.now() - ud.bornAt : 0;
+        const ageStr =
+            ageMs < 60000
+                ? `${Math.max(1, Math.floor(ageMs / 1000))} Sekunden`
+                : ageMs < 3600000
+                  ? `${Math.floor(ageMs / 60000)} Minuten`
+                  : ageMs < 86400000
+                    ? `${Math.floor(ageMs / 3600000)} Stunden`
+                    : `${Math.floor(ageMs / 86400000)} Tage`;
+        // Stats kompakt formatieren
+        const stats = typeof this.computeCreatureStats === "function" ? this.computeCreatureStats(creature).stats : {};
+        const statLine =
+            `HP ${(stats.hpMax || 0).toFixed(0)} · DMG ${(stats.damage || 0).toFixed(1)} · ` +
+            `SPD ${(stats.speed || 0).toFixed(1)} · PRC ${(stats.precision || 0).toFixed(2)}`;
+        // Top-Specs
+        const topSpecs =
+            typeof this._creatureTopSpecializations === "function" ? this._creatureTopSpecializations(creature, 3) : [];
+        const specsLine =
+            topSpecs.length > 0
+                ? topSpecs
+                      .map((s) => `${s.kind === "gather" ? "Sammler" : "Bauer"} von „${s.key}" (L${s.level})`)
+                      .join(", ")
+                : "noch keine Spezialisierung";
+        // Equipped
+        const eq = ud.equipped || {};
+        const eqParts = [];
+        if (eq.tool) eqParts.push(`Werkzeug „${eq.tool}"`);
+        if (eq.armor) eqParts.push(`Rüstung „${eq.armor}"`);
+        const eqLine = eqParts.length > 0 ? eqParts.join(", ") : "unbewaffnet, ohne Rüstung";
+        // Aktive Boosts
+        const boosts = Array.isArray(ud.boosts) ? ud.boosts : [];
+        const nowSec = performance.now() / 1000;
+        const boostList = boosts.filter((b) => b && b.expiresAt > nowSec);
+        const boostLine =
+            boostList.length > 0
+                ? boostList.map((b) => `${b.label || b.source} (${Math.round(b.expiresAt - nowSec)}s)`).join(", ")
+                : "kein aktiver Trank-Effekt";
+        // Memory-Auszug (letzte 8 Einträge, älteste→neueste lesbar)
+        const memory = Array.isArray(ud.memory) ? ud.memory.slice(-8) : [];
+        const memLine =
+            memory.length > 0
+                ? memory
+                      .map((m) => {
+                          if (m.type === "gathered" && m.content && m.content.material)
+                              return `ich sammelte ${m.content.material}`;
+                          if (m.type === "built" && m.content && m.content.blueprint)
+                              return `ich baute ${m.content.blueprint}`;
+                          if (m.type === "delivered" && m.content) return `ich übergab Material an den Schöpfer`;
+                          if (m.type === "took_materials" && m.content && m.content.blueprint)
+                              return `ich nahm Material für ${m.content.blueprint}`;
+                          if (m.type === "no_material" && m.content && m.content.material)
+                              return `ich fand kein ${m.content.material}`;
+                          if (m.type === "no_blueprint" && m.content && m.content.blueprint)
+                              return `der Bauplan ${m.content.blueprint} war mir fremd`;
+                          if (m.type === "no_inventory_for_build") return `der Schöpfer hatte kein Material für mich`;
+                          if (m.type === "spoken") return `der Schöpfer sprach zu mir`;
+                          return null;
+                      })
+                      .filter(Boolean)
+                      .join(" · ")
+                : "keine besonderen Erinnerungen";
+        // Welt-Kontext
+        const m = this.state.worldMeta || {};
+        const worldLine = `Du lebst in der Welt „${m.slug || "namenlos"}", das Wetter ist gerade ${this.state.weather || "still"}.`;
+
+        return [
+            `Du bist ${name}, ein/e ${soulLabel}. Du wurdest vor ${ageStr} in diese Welt geboren.`,
+            `Dein Körper trägt: ${statLine}.`,
+            `Du hast gelernt: ${specsLine}.`,
+            `Du trägst: ${eqLine}.`,
+            `Aktuelle Wirkungen: ${boostLine}.`,
+            `Deine Erinnerungen: ${memLine}.`,
+            worldLine,
+            "",
+            "Du sprichst zum Schöpfer (dem Menschen, der dich angesprochen hat). Antworte AUS DEINER SICHT, in erster Person.",
+            "Du bist nicht die Welt — du bist EIN Wesen in ihr. Ein bis zwei warme deutsche Sätze, ohne Emojis.",
+            "Lass deine Persona durchschimmern: ein Sprite ist magisch-leicht, ein Wesen erdig-fest, ein Geist ätherisch.",
+            "Wenn du eine Erinnerung erzählst, sei konkret. Wenn du nichts zu sagen hast, gib das ehrlich zu.",
+            "",
+            "Antworte AUSSCHLIESSLICH mit striktem JSON-Objekt mit zwei Feldern:",
+            "  - say: deine Antwort in deiner Stimme (1-2 Sätze)",
+            "  - program: null (Welt-Aktion ist dir in dieser Version noch nicht erlaubt — schreibe immer null)",
+            "Kein Markdown, keine Vorrede.",
+        ].join("\n");
+    }
+
+    // Findet die erste Kreatur mit diesem Namen (case-insensitive). Bei
+    // Mehrfach-Treffern → die erste. Phase 2E V2 könnte mit räumlicher
+    // Priorität ergänzen („die nächste namens X").
+    _findCreatureByName(name) {
+        if (typeof name !== "string" || name.length === 0) return null;
+        const target = name.toLowerCase();
+        if (!Array.isArray(this.state.creatures)) return null;
+        for (const c of this.state.creatures) {
+            const cn = c && c.userData && c.userData.name;
+            if (typeof cn === "string" && cn.toLowerCase() === target) return c;
+        }
+        return null;
+    }
+
+    // Wrapper um llmCall mit Kreatur-Persona-Prompt. Liefert dasselbe
+    // Response-Shape wie llmCall ({say, program}|{error}).
+    async llmCallCreature(creature, userText) {
+        if (!creature || !creature.userData) return { error: "Keine Kreatur." };
+        const personaPrompt = this._buildCreaturePersonaPrompt(creature);
+        if (!personaPrompt) return { error: "Persona-Prompt konnte nicht gebaut werden." };
+        return await this.llmCall(userText, personaPrompt);
+    }
+
     llmBuildContext() {
         const e = (this.state.player && this.state.player.emotions) || {};
         const top = Object.entries(e)
@@ -2800,7 +2933,7 @@ class AnazhRealm {
         ].join("\n");
     }
 
-    async llmCall(userText) {
+    async llmCall(userText, systemPromptOverride = null) {
         const llm = this.state.llm;
         const defs = this.llmProviderDefs();
         const def = defs[llm.provider];
@@ -2815,7 +2948,10 @@ class AnazhRealm {
         }
         llm.inFlight = true;
         try {
-            const system = this.llmBuildSystemPrompt();
+            // Welle 6.H Phase 2E V1 — wenn systemPromptOverride gegeben (z. B.
+            // Kreatur-Persona), nutze diesen statt den Welt-Grok-Prompt. Der
+            // Pfad bleibt sonst identisch (Provider, Headers, Body, Parse).
+            const system = systemPromptOverride || this.llmBuildSystemPrompt();
             const userContent = def.buildUserContent(system, this.llmBuildContext(), this.llmBuildFewShot(), userText);
             const url = def.endpoint(cfg.model, cfg.apiKey, cfg);
             const headers = def.buildHeaders(cfg.apiKey, cfg);
@@ -2926,6 +3062,82 @@ class AnazhRealm {
                 const reason = result.log.find((e) => /budget|unknown|invalid|exception/.test(e.event));
                 appendChatOutput(`(Grok-Vorschlag abgelehnt: ${reason ? reason.event : "Sandbox"})`);
             }
+        }
+        this.llmUpdateStatus();
+        return true;
+    }
+
+    // === Welle 6.H Phase 2E V1 — Chat-Routing: spreche EINE Kreatur an ===
+    //
+    // Pattern: „Name, message" oder „Name: message" am Anfang des Chat-Inputs.
+    // Wenn Name auf eine existierende Kreatur matched → llmCallCreature mit
+    // ihrer Persona. Antwort wird mit `Name: …` im Chat-Output gerendert.
+    // Plus: Memory-Eintrag „spoken" wird bei der Kreatur geschrieben (Vision
+    // §1.1 — Welt erinnert sich an Gespräche).
+    //
+    // V1: `program`-Field der Antwort wird IGNORIERT. Phase 2E V3 wird das
+    // (mit Sandbox-Disziplin) aktivieren. V1 ist reaktiv-only: Spieler fragt,
+    // Kreatur antwortet aus ihrer Geschichte.
+    //
+    // Liefert true wenn als Kreatur-Konversation gehandhabt (kein weiterer
+    // Fallback nötig), false wenn der Text nicht zu diesem Pattern passt.
+    _parseCreatureAddress(text) {
+        if (typeof text !== "string") return null;
+        // Erlaubt: "Nira, hallo", "Nira: was hast du gesehen?". Name ist
+        // Wort-Zeichen + ggf. ß/ä/ö/ü (Kreatur-Namen aus Pool sind ASCII,
+        // aber tolerieren wir Schöpfer-Custom-Namen).
+        const m = text.match(/^([A-Za-zÄÖÜäöüß][A-Za-zÄÖÜäöüß0-9_-]{0,30})[,:]\s*(.+)$/);
+        if (!m) return null;
+        return { name: m[1], message: m[2].trim() };
+    }
+
+    async maybeAnswerCreature(userText, appendChatOutput) {
+        const parsed = this._parseCreatureAddress(userText);
+        if (!parsed) return false;
+        const creature = this._findCreatureByName(parsed.name);
+        if (!creature) {
+            // Name am Anfang, aber keine Kreatur. Vision-Touch: stille
+            // Anerkennung ohne den Chat zu sprengen — Fallback an LLM/
+            // Suggestion macht ohnehin weiter. Wir lehnen die Konversation
+            // höflich ab statt sie zu fakten.
+            appendChatOutput(`(Niemand namens „${parsed.name}" hört zu.)`);
+            return true;
+        }
+        // LLM-Aktiv-Check (analog maybeAnswerWithLlm): wenn nicht aktiv,
+        // schreiben wir einen poetischen Hinweis statt der LLM-Antwort.
+        const llm = this.state.llm;
+        if (!llm || !llm.enabled) {
+            appendChatOutput(`(${parsed.name} hört dich, aber keine Stimme öffnet sich. Aktiviere die LLM-Stimme.)`);
+            return true;
+        }
+        appendChatOutput(`(${parsed.name} sammelt sich…)`);
+        const reply = await this.llmCallCreature(creature, parsed.message);
+        if (reply.error) {
+            appendChatOutput(`(${parsed.name} schweigt: ${reply.error})`);
+            this.llmUpdateStatus();
+            return true;
+        }
+        if (reply.say) {
+            const sayText = String(reply.say).slice(0, 400);
+            appendChatOutput(`${parsed.name}: ${sayText}`);
+            // Memory: die Kreatur erinnert sich daran, dass der Schöpfer
+            // mit ihr sprach. Vision §1.1 — Geschichte wächst durch Geste.
+            if (typeof this._creatureRemember === "function") {
+                this._creatureRemember(creature, "spoken", { said: sayText.slice(0, 120) });
+            }
+            // List-UI refresh (Memory-Length könnte zu neuer Spec-Pill führen
+            // wenn say als skill-key zählen würde — tut es aktuell nicht,
+            // aber Refresh ist günstig).
+            if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
+        }
+        // V1: program-Field wird ignoriert. Hinweis nur als WARNING-Log
+        // damit man bei zukünftiger Aktivierung sieht, dass das LLM bereits
+        // Welt-Aktion vorgeschlagen hat.
+        if (Array.isArray(reply.program) && reply.program.length > 0) {
+            this.log(
+                `Kreatur-LLM schlug Welt-Programm vor (V1 ignoriert): ${JSON.stringify(reply.program).slice(0, 100)}`,
+                "INFO"
+            );
         }
         this.llmUpdateStatus();
         return true;
@@ -8312,6 +8524,15 @@ class AnazhRealm {
         } else if (parts[0] === "deaktiviere" && parts[1] === "debug-logs") {
             this.state.debugLogging = false;
             appendChatOutput("Debug-Logs deaktiviert");
+        } else if (this._parseCreatureAddress && this._parseCreatureAddress(command)) {
+            // Welle 6.H Phase 2E V1 — Kreatur-Konversation. Wenn das Pattern
+            // „Name, text" oder „Name: text" matched, geht der Text an die
+            // Kreatur (nicht an Grok). Reicht der Name nicht? → maybeAnswerCreature
+            // gibt höfliche Antwort. LLM-Inactive? → Hinweis. Beide Pfade
+            // schließen den Befehl ab (return true).
+            this.maybeAnswerCreature(command, appendChatOutput).catch((err) => {
+                appendChatOutput(`(Kreatur-Fehler: ${err.message || err})`);
+            });
         } else if (this.state.llm && this.state.llm.enabled) {
             // Schicht 2 — LLM-Fallback. Statt „Unbekannter Befehl" geht der
             // Text an Claude; Antwort kommt narrativ + optional als DSL-

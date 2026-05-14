@@ -360,6 +360,45 @@ Hylomorphismus-System wie Materialien und Bauwerke.
   playerInventory in buildStateSnapshot. 127 Invarianten für 6.C1
   + Drag-System → 1153 total.
 
+### V7.90 — Welle 6.H Phase 2E V1 live (14.05.2026): Kreatur-LLM-Persona
+
+**Schöpfer-Vision §1.5 wird konkret: Spieler spricht mit EINER Kreatur,
+sie antwortet aus IHRER Sicht.** V7.86-V7.89 (P2D.1+P2F.1+P2F.2+P2F.3)
+haben den vollen Identitäts-Anker geliefert — Name, Soul, bornAt, Stats,
+Specs, Equipped, Boosts, Memory. V7.90 (P2E V1) verbindet das mit LLM.
+
+**Architektur**:
+- `llmCall(userText, systemPromptOverride?)` — Override-Pattern.
+  Eine Pipeline, viele Identitäten.
+- `_buildCreaturePersonaPrompt(creature)` — Komposition aus 4 Stat-
+  Schichten + bornAt-Alter + Soul-Label + Welt-Kontext + Memory-Auszug
+  (lesbar formatiert).
+- `_findCreatureByName(name)` — case-insensitive lookup.
+- `_parseCreatureAddress(text)` — erkennt „Name, text" / „Name: text".
+- `llmCallCreature(c, userText)` — wrapper.
+- `maybeAnswerCreature(userText, append)` — chat-handler mit Pfad-
+  Disziplin (Persona → unbekannt → LLM-off-Hinweis → erfolgreicher Call →
+  Memory-Eintrag „spoken" → UI-Refresh).
+
+**Chat-Routing-Priorität**: processChatCommand prüft erst
+_parseCreatureAddress. Wenn Name am Anfang UND match auf Kreatur →
+Konversation. Sonst → Welt-Grok-Fallback.
+
+**V1 reaktiv-only**: program-Field der LLM-Antwort wird IGNORIERT.
+Prompt instruiert das LLM, `program: immer null` zu setzen.
+
+**Memory bei Konversation**: nach LLM-Antwort wird `spoken`-Eintrag bei
+der Kreatur geschrieben. Vision §1.1 — Welt erinnert sich an Gespräche.
+
+**14 Tests grün. 1512 → 1526/1526 invariants.**
+
+**6.H V2 Status: 12/13 Sub-Phasen erledigt:**
+
+Phase 2E V1 ist die Foundation. Phase 2E V2 (proaktive Sprache —
+Kreatur initiiert bei Events: Level-Up, Boost-Trinken, Material-
+Mangel) und V3 (DSL-Output mit Sandbox — Kreatur darf eigene Welt-
+Aktion vorschlagen) bauen darauf auf.
+
 ### V7.89 — Welle 6.H Phase 2F.3 live (14.05.2026): Kreatur-Boosts (Hylomorphismus pur)
 
 **Schöpfer-Direktive: „kein Hardcode, Hylomorphismus bei boosts, wie bei
