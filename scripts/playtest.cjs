@@ -9334,18 +9334,25 @@ function startSaveServer() {
                     out.gatherDirTargetsX = dir && dir.x > 0;
                     out.targetCached = !!task.args._target;
 
-                    // Gather-Ernte bei haltDist
+                    // Gather-Ernte bei haltDist — Phase 2B.5: Ernte landet in
+                    // carrying (nicht direkt Inventar; Bring-Phase folgt).
+                    // c0 weit weg vom Spieler positionieren damit nicht sofort
+                    // Übergabe ausgelöst wird.
                     const tempArch = r.spawnArchitecture("stein_block", { x: p.x + 50, y: p.y, z: p.z + 50 });
                     c0.position.set(p.x + 50.5, p.y, p.z + 50);
+                    c0.userData.carrying = null;
                     r.state.player.inventory = new Array(27).fill(null);
                     r.assignCreatureTask(c0, "gather", { material: "stein" }, { silent: true });
                     const archCountBefore = r.state.architectures.length;
                     const t2 = r._getCreatureTask(c0);
                     r._tickCreatureTaskDirection(c0, t2, "happy");
                     out.archRemovedOnHarvest = r.state.architectures.length === archCountBefore - 1;
-                    out.inventoryHasHarvested = r.state.player.inventory.some(
-                        (s) => s && s.blueprintName === "stein_block"
-                    );
+                    // P2B.5: jetzt landet die Ernte in carrying, das Inventar wird
+                    // erst bei Übergabe gefüllt. carrying-State prüfen.
+                    out.inventoryHasHarvested =
+                        c0.userData.carrying &&
+                        c0.userData.carrying.materials &&
+                        (c0.userData.carrying.materials.stein || 0) > 0;
                     out.memoryHasGathered =
                         c0.userData.memory &&
                         c0.userData.memory.some(
@@ -9353,7 +9360,13 @@ function startSaveServer() {
                         );
                     void tempArch;
 
-                    // Unknown Material → wander-Fallback
+                    // Unknown Material → wander-Fallback (carrying muss leer sein,
+                    // sonst greift Bring-Phase statt Sucher-Phase).
+                    c0.userData.carrying = null;
+                    if (c0.userData.carryingSprite) {
+                        r.state.scene.remove(c0.userData.carryingSprite);
+                        c0.userData.carryingSprite = null;
+                    }
                     r.assignCreatureTask(c0, "wander", {}, { silent: true });
                     r.assignCreatureTask(c0, "gather", { material: "fictional_xyz" }, { silent: true });
                     const t3 = r._getCreatureTask(c0);
@@ -9504,6 +9517,199 @@ function startSaveServer() {
                 check(
                     "Welle 6.H P2B.1: 'Nächste sammelt' + 'Alle sammeln' Buttons im DOM",
                     wave6hP2bResults.hasNearestGatherBtn && wave6hP2bResults.hasAllGatherBtn
+                );
+            }
+
+            // ### Welle 6.H Phase 2B.5 — harvestArchitecture + Material-Inventar + Bring-Phase ###
+            // EINE Funktion für Spieler-LMB UND Kreatur-gather: Hylomorphismus-
+            // Wurzel. Architekturen lösen sich in Material-Map auf (volumen-
+            // basiert). Inventar dual-typed: {kind:'material'} | {kind:'blueprint'}.
+            // Kreaturen tragen Ernte in carrying, bringen sie zum Spieler.
+            const wave6hP2b5Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 2) return null;
+                    const out = {};
+                    out.hasHarvest = typeof r.harvestArchitecture === "function";
+                    out.hasAddMaterial = typeof r.addMaterialToInventory === "function";
+                    out.hasVolumeConst = r.constructor.HARVEST_VOLUME_TO_UNITS === 4;
+                    out.hasHandoverDist = r.constructor.CREATURE_HANDOVER_DIST === 2.0;
+                    out.hasCarryingVisual = typeof r._refreshCreatureCarryingVisual === "function";
+
+                    const p = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 5, z: 0 };
+
+                    // Material-Map aus parts × Volumen
+                    const stoneBlock = r.spawnArchitecture("stein_block", { x: p.x + 30, y: p.y, z: p.z + 30 });
+                    const h1 = r.harvestArchitecture(stoneBlock, "test");
+                    out.steinBlockHasStein = h1 && h1.materials && h1.materials.stein >= 10;
+                    out.steinHasBlueprintName = h1 && h1.blueprint === "stein_block";
+
+                    const oak = r.spawnArchitecture("baum_eiche", { x: p.x + 35, y: p.y, z: p.z + 30 });
+                    const h2 = r.harvestArchitecture(oak, "test");
+                    out.oakHasHolzAndLaub = h2 && h2.materials && h2.materials.holz > 0 && h2.materials.laub > 0;
+                    out.oakHasNoStein = h2 && (!h2.materials.stein || h2.materials.stein === 0);
+
+                    // Diskrimination: größerer Bauplan = mehr Material
+                    r.state.blueprints._test_small = {
+                        name: "_test_small",
+                        label: "Small",
+                        builtIn: false,
+                        parts: [{ shape: "box", material: "stein", size: { x: 1, y: 1, z: 1 } }],
+                    };
+                    r.state.blueprints._test_big = {
+                        name: "_test_big",
+                        label: "Big",
+                        builtIn: false,
+                        parts: [{ shape: "box", material: "stein", size: { x: 2, y: 2, z: 2 } }],
+                    };
+                    const s = r.spawnArchitecture("_test_small", { x: p.x + 60, y: p.y, z: p.z });
+                    const b = r.spawnArchitecture("_test_big", { x: p.x + 65, y: p.y, z: p.z });
+                    const hs = r.harvestArchitecture(s);
+                    const hb = r.harvestArchitecture(b);
+                    out.volumeDiscrimination = hb.materials.stein > hs.materials.stein;
+                    delete r.state.blueprints._test_small;
+                    delete r.state.blueprints._test_big;
+
+                    // addMaterialToInventory + Schema
+                    r.state.player.inventory = new Array(27).fill(null);
+                    const ok1 = r.addMaterialToInventory("holz", 5);
+                    const ok2 = r.addMaterialToInventory("holz", 3);
+                    const ok3 = r.addMaterialToInventory("stein", 4);
+                    const okBad = r.addMaterialToInventory("fictional_xyz", 1);
+                    out.matAddOk = ok1 && ok2 && ok3;
+                    out.matStacks =
+                        r.state.player.inventory[0] &&
+                        r.state.player.inventory[0].count === 8 &&
+                        r.state.player.inventory[0].kind === "material";
+                    out.matNewSlot = r.state.player.inventory[1] && r.state.player.inventory[1].material === "stein";
+                    out.matRejectsUnknown = okBad === false;
+
+                    // Spieler-LMB nutzt harvestArchitecture (EINE Funktion)
+                    r.state.player.inventory = new Array(27).fill(null);
+                    const target = r.spawnArchitecture("stein_block", { x: p.x, y: p.y, z: p.z + 3 });
+                    void target;
+                    r.state.yaw = 0;
+                    r.state.pitch = -0.1;
+                    if (r.state.camera) {
+                        r.state.camera.lookAt(p.x, p.y, p.z + 3);
+                        r.state.camera.updateMatrixWorld(true);
+                    }
+                    if (typeof r.tickArchitectureCulling === "function") r.tickArchitectureCulling();
+                    const archBeforeLmb = r.state.architectures.length;
+                    r.tryMouseBreak();
+                    out.lmbShrunkArch = r.state.architectures.length < archBeforeLmb;
+                    out.lmbFilledInventory = r.state.player.inventory.some(
+                        (sl) => sl && sl.kind === "material" && sl.material === "stein" && sl.count >= 1
+                    );
+
+                    // Kreatur-gather: zwei-Phasen mit carrying
+                    r.state.player.inventory = new Array(27).fill(null);
+                    r.spawnArchitecture("stein_block", { x: p.x + 30, y: p.y, z: p.z });
+                    const c = r.state.creatures[0];
+                    c.position.set(p.x + 29.5, p.y, p.z);
+                    c.userData.carrying = null;
+                    r.assignCreatureTask(c, "gather", { material: "stein" }, { silent: true });
+                    r._tickCreatureTaskDirection(c, r._getCreatureTask(c), "happy");
+                    out.creatureCarryingSet = !!(c.userData.carrying && c.userData.carrying.materials);
+                    out.inventoryStillEmptyAfterHarvest = r.state.player.inventory.every((sl) => !sl);
+                    out.carryingSpriteCreated = !!c.userData.carryingSprite;
+
+                    // Kreatur zum Spieler bewegen → Übergabe
+                    c.position.set(p.x + 1.5, p.y, p.z);
+                    r._tickCreatureTaskDirection(c, r._getCreatureTask(c), "happy");
+                    out.carryingClearedAfterDelivery = c.userData.carrying === null;
+                    out.playerHasMaterialAfterDelivery = r.state.player.inventory.some(
+                        (sl) => sl && sl.kind === "material" && sl.material === "stein" && sl.count >= 1
+                    );
+                    out.memoryHasDelivered = c.userData.memory && c.userData.memory.some((m) => m.type === "delivered");
+
+                    // Inventar-UI rendert Material-Slot mit Klasse
+                    r.state.player.inventory = new Array(27).fill(null);
+                    r.addMaterialToInventory("holz", 7);
+                    r.renderInventoryUI();
+                    const slot = document.querySelector('[data-inv-slot="0"]');
+                    out.uiHasMaterialClass = slot && slot.classList.contains("material-slot");
+                    const label = slot && slot.querySelector(".slot-label");
+                    out.uiShowsMaterialName = label && /holz/i.test(label.textContent);
+
+                    // Cleanup für nachfolgende Tests
+                    r.spawnCreatures(10);
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6hP2b5Results && !wave6hP2b5Results.error) {
+                check("Welle 6.H P2B.5: harvestArchitecture-Methode existiert", wave6hP2b5Results.hasHarvest);
+                check("Welle 6.H P2B.5: addMaterialToInventory-Methode existiert", wave6hP2b5Results.hasAddMaterial);
+                check("Welle 6.H P2B.5: HARVEST_VOLUME_TO_UNITS===4", wave6hP2b5Results.hasVolumeConst);
+                check("Welle 6.H P2B.5: CREATURE_HANDOVER_DIST===2.0", wave6hP2b5Results.hasHandoverDist);
+                check(
+                    "Welle 6.H P2B.5: _refreshCreatureCarryingVisual-Methode existiert",
+                    wave6hP2b5Results.hasCarryingVisual
+                );
+                check(
+                    "Welle 6.H P2B.5: stein_block-Harvest liefert ≥10 Stein (volumen-basiert)",
+                    wave6hP2b5Results.steinBlockHasStein
+                );
+                check(
+                    "Welle 6.H P2B.5: Rückgabe-Objekt trägt blueprint-Namen",
+                    wave6hP2b5Results.steinHasBlueprintName
+                );
+                check(
+                    "Welle 6.H P2B.5: baum_eiche → holz UND laub (Compound-Diskrimination)",
+                    wave6hP2b5Results.oakHasHolzAndLaub
+                );
+                check(
+                    "Welle 6.H P2B.5: baum_eiche enthält KEIN stein (Negativ-Kontrolle)",
+                    wave6hP2b5Results.oakHasNoStein
+                );
+                check(
+                    "Welle 6.H P2B.5: Diskrimination — 2×2×2-Box liefert mehr als 1×1×1",
+                    wave6hP2b5Results.volumeDiscrimination
+                );
+                check(
+                    "Welle 6.H P2B.5: addMaterialToInventory akzeptiert bekanntes Material",
+                    wave6hP2b5Results.matAddOk
+                );
+                check("Welle 6.H P2B.5: Material-Slots stacken (5+3=8), kind='material'", wave6hP2b5Results.matStacks);
+                check("Welle 6.H P2B.5: Unterschiedliche Materialien in neuen Slots", wave6hP2b5Results.matNewSlot);
+                check("Welle 6.H P2B.5: addMaterialToInventory lehnt Unknown ab", wave6hP2b5Results.matRejectsUnknown);
+                check(
+                    "Welle 6.H P2B.5: Spieler-LMB entfernt Architektur (eine Funktion)",
+                    wave6hP2b5Results.lmbShrunkArch
+                );
+                check(
+                    "Welle 6.H P2B.5: Spieler-LMB füllt Material-Slots (Vision-Inkonsistenz behoben)",
+                    wave6hP2b5Results.lmbFilledInventory
+                );
+                check(
+                    "Welle 6.H P2B.5: Kreatur-Ernte setzt userData.carrying (statt direkt Inventar)",
+                    wave6hP2b5Results.creatureCarryingSet
+                );
+                check(
+                    "Welle 6.H P2B.5: Spieler-Inventar bleibt LEER bis Bring-Phase abgeschlossen",
+                    wave6hP2b5Results.inventoryStillEmptyAfterHarvest
+                );
+                check(
+                    "Welle 6.H P2B.5: Carrying-Sprite wird beim Harvest erzeugt",
+                    wave6hP2b5Results.carryingSpriteCreated
+                );
+                check(
+                    "Welle 6.H P2B.5: Bei <2m zum Spieler: carrying wird geclearet",
+                    wave6hP2b5Results.carryingClearedAfterDelivery
+                );
+                check(
+                    "Welle 6.H P2B.5: Materialien gehen ins Spieler-Inventar bei Übergabe",
+                    wave6hP2b5Results.playerHasMaterialAfterDelivery
+                );
+                check("Welle 6.H P2B.5: 'delivered'-Memory-Eintrag bei Übergabe", wave6hP2b5Results.memoryHasDelivered);
+                check(
+                    "Welle 6.H P2B.5: Material-Slot trägt .material-slot CSS-Klasse",
+                    wave6hP2b5Results.uiHasMaterialClass
+                );
+                check(
+                    "Welle 6.H P2B.5: Material-Slot-Label zeigt Material-Namen",
+                    wave6hP2b5Results.uiShowsMaterialName
                 );
             }
 

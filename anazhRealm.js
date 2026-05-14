@@ -1,4 +1,4 @@
-/**AnazhRealm V7.81 – Das Ultiversum Vollendet.
+/**AnazhRealm V7.82 – Das Ultiversum Vollendet.
  * Hüpfen: Robust, präzise (Y ~1.5), Coyote-Time 0.3s, Gravitation 1.5G, Reibung 0.5.
  * Kollisionen: Kein Tunneling, steepnessThreshold 3.0, wallThickness 2.0, CCD optimiert.
  * Terrain: Flacher (Höhenunterschiede ±5), KI-gesteuerte Steilheitsanpassung, Chat-Steuerung.
@@ -12,7 +12,7 @@
 class AnazhRealm {
     constructor() {
         // ### Learnings ### [Stichwortartig optimieren, korrigieren, ergänzen – nie Wissen löschen!]
-        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69, LAN-Fähigkeit + Sync-Korrektheit (Ring 11 V2.1: 0.0.0.0-bind, ws:/wss:-CSP, roomOverride, spawn_*-Embedding, NON_BROADCASTABLE_OPS) in V7.70, Intuitiver Multi-User-Setup (Ring 11.5: Modus-Wahl, Host-Banner mit Einladungs-Code, Auto-Welt-Snapshot beim Join) in V7.71, Welle 6.A — Interaktion-Polish (Wall-Sliding via Player-Friction-0, Erdung-Raycast-Robustheit für Bauwerke) in V7.72, Welle 6.G Phase 1 — Welt-Sinne (fliegende Inseln + Bäume kollidierbar via btBvhTriangleMeshShape/btCylinderShape, drei Dead-Code-DSL-Ops spawn_tree/island/ufo aktiviert, toter needsPhysics-Lazy-Pfad gelöscht) in V7.73, Welle 6.G Phase 1.5 — Hylomorphismus-Unification (Bäume sind jetzt Compound-Architekturen über baum_eiche/baum_kiefer-Baupläne mit Stamm:holz + Krone:laub, eigene spawnTreeAt + _buildTreeCollision gelöscht, Parallelcode → eine Sprache, plus Insel-Visual-Fix mit Underside + Lambert) in V7.74, Welle 6.G Phase 2 — Welt-Affinitäts-Feld (vier SimplexNoise-Schichten lebendig/dichte/glut/magieleitung, Baupläne spawnen wo ihre Compound-Tags resonieren — Wälder/Felsen/Magie-Zonen/Vulkan-Anker emergieren ohne Biome-Tabelle, populateChunkVegetation als Hook in ensureChunkAt + Initial-Worldgen, drei neue Built-in-Baupläne stein_block/kristall_geode/glutbrunnen, Stämme dicker für Spieler-Spürbarkeit, Culling-Tick 1Hz→2Hz, spawn-silent-Opt damit Worldgen die Welt-Effekt-Kaskade nicht überflutet) in V7.75, Welle 6.C2 — Spielmodi (frieden/pfad/schöpfer als Welt-Beziehungs-Schalter, frieden umarmt + pfad verhandelt + schöpfer gehorcht, damagePlayer + applyOpToPart-Stamina modus-gated, set_mode DSL-Op in NON_BROADCASTABLE_OPS, UI-Radio in Einstellungen + Status-Bar #status-mode, worldMeta.gameMode persistiert pro-Welt) in V7.76, Welle 6.C1 — Hylomorphismus-Inventar (27-Slot-Overlay mit Tab-Toggle, Tag-Resonanz emergiert aus Compound-Tags — resoniert summt + brennend glüht + magieleitung schimmert + lebendig sprießt, Audio-Hover-Ping via state.symphony, addToInventory stackt bei gleichem Bauplan-Namen, Inventar-Slot wählen → Hotbar-Slot Klick weist zu, add_to_inventory DSL-Op in NON_BROADCASTABLE_OPS, state.player.inventory[27] persistiert in buildStateSnapshot) in V7.77, Welle 6.A6 + 6.C3 — Maus-Aktionen + Keybindings (LMB abbauen Architektur am Raycast / kein Treffer → modify_terrain-Loch, RMB platzieren = confirmBuild im aktiven Bau-Modus, beide modus-gated mit MOUSE_ACTION_STAMINA_COST=5 in pfad / kostenlos in frieden+schöpfer, DEFAULT_KEYBINDINGS frozen mit 6 Aktionen break/place/confirmBuild/inventory/cancelBuild/jump, Konflikt-Auflösung als Swap statt Leerung, _eventToBindingCode unterstützt KeyboardEvent.code + Mouse0/1/2, Rebind-Capture-Workflow mit Escape-Abbruch, UI-Sektion in Einstellungen-Drawer mit „Ändern"-Button + Standard-Reset, alle 6 Listener konsultieren state.keybindings über _actionForBindingCode, Tab-Listener gated auf !keybindRebind damit Rebind nicht versehentlich Inventar toggelt, plus Vision-§1.2-Schließung _playArchitectureFarewellPing: abklingender Sinus-Ping beim Abbauen einer resoniert≥resonance_mild-Architektur — selber Audio-Graph wie Spawn-Singing, zeitlich gespiegelt; Stein-Block stumm als Vision-Disziplin, plus HUD dynamisch aus _formatBindingCode statt hartkodierte F/RMB/LMB-Strings, setKeybinding + resetKeybindings triggern automatisch HUD-Refresh) in V7.78, Welle 6.H Phase 1 — Kreaturen-Aufträge (drei Tasks wander/follow_player/wait als Beziehungs-Gesten zwischen Spieler und Kreatur, creature.userData.task-Datenmodell, assignCreatureTask als einziger Mutations-Pfad mit Aura-Trigger, _tickCreatureTaskDirection-Schicht in updateCreatures-Loop mit null-Fallback auf heutige Emotion-Logik bei wander, additives CanvasTexture-Aura-Sprite über der Kreatur in HSL-Hue je Task — grünlich für follow / bernstein für wait, drei DSL-Ops creature_task/creature_task_nearest/creature_task_all in NON_BROADCASTABLE_OPS, sechs Chat-Patterns folge mir/komm her/warte/erkunde/alle folgt mir/alle warten, Aura-Lifecycle via _refreshCreatureTaskAura mit Disposal in removeCreature, bewusst KEINE Save-Persistenz — Vision §1.1 Co-Schöpfer-Beziehung wird gesprochen nicht gespeichert, plus V2-Schließungen nach Schöpfer-Selbstaudit: _playCreatureTaskPing mit CREATURE_TASK_PING_FREQ je Task — follow_player=494Hz hell, wait=294Hz ruhig, wander=null stumm (Lösen der Bindung darf still sein), _journalCreatureTask schreibt relationship-Eintrag bei echtem Wechsel mit silent-Option für Spawn-Defaults, assignTaskToNearestCreature bei Leerschlag schreibt Chat-Output 'Keine Kreatur in der Nähe' + reach-Journal-Eintrag, _getCreatureTaskAuraTexture cached geteilte CanvasTexture analog 6.D Player-Aura statt pro Wechsel neu zu erzeugen, _renderTaskStatusUI füllt #status-tasks mit 'N folgen · M warten' bzw '—', describeProgram zeigt distance-Arg wenn gesetzt) in V7.79, Welle 6.H Phase 2A — Kreaturen-Hylomorphismus + Tab-UX (Kreaturen sind jetzt Multi-Mesh-Compounds aus bodyParts × Material — selbe Sprache wie Spieler-Seele 6.D und Architekturen 6.G P1.5; CREATURE_SOULS frozen mit drei Built-in-Identitäten sprite/wesen/geist; applyCreatureSoul-Mutations-Pfad baut Group + tauscht in state.creatures + state.rigidBodies, computeCreatureCompoundTags emergent aus parts via existing computeCompoundTags-Pipeline, Random-Name aus Pool als Identity-Anker, Kreaturen-Drawer UI komplett überarbeitet — Befehl-Buttons folge/komm her/warte/erkunde/alle folgt+warten als data-cmd plus Form-Dropdown vor Spawn-Buttons plus Kreatur-Liste mit Name+Form+Task+Aura-Hint, removeCreature dispoSed nun ganze Group sauber, color-lerp-Pfad in updateCreatures defensive für Groups) in V7.80, Welle 6.H Phase 2B.1 — Kreaturen sammeln + erinnern (Task `gather` mit args.material findet die nächste Architektur mit material in ihren Parts via _findNearestArchitectureWithMaterial, bewegt sich hin, entfernt sie bei haltDist=1.5m und legt sie ins Spieler-Inventar via existing addToInventory — eine Sprache; pro-Kreatur memory[]-Array mit Cap 30 + _creatureRemember-Helper trägt 'gathered'-Einträge mit material+blueprintName+timestamp; CREATURE_TASKS um 'gather' erweitert plus Aura-Hue cyan/200 + Ping-Freq G4/392Hz + describeProgram zeigt material; Chat-Pattern 'sammle <material>' für die 12 Built-in-Materialien plus generic-Pattern; creature_task-DSL-Op akzeptiert string-3rd-arg als material wenn taskName='gather'; gather-Task auto-zu-wander nach material erschöpft mit '_no_material'-memory-Eintrag; Kreatur-Liste zeigt 'sammelt <material>' als Task) in V7.81
+        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69, LAN-Fähigkeit + Sync-Korrektheit (Ring 11 V2.1: 0.0.0.0-bind, ws:/wss:-CSP, roomOverride, spawn_*-Embedding, NON_BROADCASTABLE_OPS) in V7.70, Intuitiver Multi-User-Setup (Ring 11.5: Modus-Wahl, Host-Banner mit Einladungs-Code, Auto-Welt-Snapshot beim Join) in V7.71, Welle 6.A — Interaktion-Polish (Wall-Sliding via Player-Friction-0, Erdung-Raycast-Robustheit für Bauwerke) in V7.72, Welle 6.G Phase 1 — Welt-Sinne (fliegende Inseln + Bäume kollidierbar via btBvhTriangleMeshShape/btCylinderShape, drei Dead-Code-DSL-Ops spawn_tree/island/ufo aktiviert, toter needsPhysics-Lazy-Pfad gelöscht) in V7.73, Welle 6.G Phase 1.5 — Hylomorphismus-Unification (Bäume sind jetzt Compound-Architekturen über baum_eiche/baum_kiefer-Baupläne mit Stamm:holz + Krone:laub, eigene spawnTreeAt + _buildTreeCollision gelöscht, Parallelcode → eine Sprache, plus Insel-Visual-Fix mit Underside + Lambert) in V7.74, Welle 6.G Phase 2 — Welt-Affinitäts-Feld (vier SimplexNoise-Schichten lebendig/dichte/glut/magieleitung, Baupläne spawnen wo ihre Compound-Tags resonieren — Wälder/Felsen/Magie-Zonen/Vulkan-Anker emergieren ohne Biome-Tabelle, populateChunkVegetation als Hook in ensureChunkAt + Initial-Worldgen, drei neue Built-in-Baupläne stein_block/kristall_geode/glutbrunnen, Stämme dicker für Spieler-Spürbarkeit, Culling-Tick 1Hz→2Hz, spawn-silent-Opt damit Worldgen die Welt-Effekt-Kaskade nicht überflutet) in V7.75, Welle 6.C2 — Spielmodi (frieden/pfad/schöpfer als Welt-Beziehungs-Schalter, frieden umarmt + pfad verhandelt + schöpfer gehorcht, damagePlayer + applyOpToPart-Stamina modus-gated, set_mode DSL-Op in NON_BROADCASTABLE_OPS, UI-Radio in Einstellungen + Status-Bar #status-mode, worldMeta.gameMode persistiert pro-Welt) in V7.76, Welle 6.C1 — Hylomorphismus-Inventar (27-Slot-Overlay mit Tab-Toggle, Tag-Resonanz emergiert aus Compound-Tags — resoniert summt + brennend glüht + magieleitung schimmert + lebendig sprießt, Audio-Hover-Ping via state.symphony, addToInventory stackt bei gleichem Bauplan-Namen, Inventar-Slot wählen → Hotbar-Slot Klick weist zu, add_to_inventory DSL-Op in NON_BROADCASTABLE_OPS, state.player.inventory[27] persistiert in buildStateSnapshot) in V7.77, Welle 6.A6 + 6.C3 — Maus-Aktionen + Keybindings (LMB abbauen Architektur am Raycast / kein Treffer → modify_terrain-Loch, RMB platzieren = confirmBuild im aktiven Bau-Modus, beide modus-gated mit MOUSE_ACTION_STAMINA_COST=5 in pfad / kostenlos in frieden+schöpfer, DEFAULT_KEYBINDINGS frozen mit 6 Aktionen break/place/confirmBuild/inventory/cancelBuild/jump, Konflikt-Auflösung als Swap statt Leerung, _eventToBindingCode unterstützt KeyboardEvent.code + Mouse0/1/2, Rebind-Capture-Workflow mit Escape-Abbruch, UI-Sektion in Einstellungen-Drawer mit „Ändern"-Button + Standard-Reset, alle 6 Listener konsultieren state.keybindings über _actionForBindingCode, Tab-Listener gated auf !keybindRebind damit Rebind nicht versehentlich Inventar toggelt, plus Vision-§1.2-Schließung _playArchitectureFarewellPing: abklingender Sinus-Ping beim Abbauen einer resoniert≥resonance_mild-Architektur — selber Audio-Graph wie Spawn-Singing, zeitlich gespiegelt; Stein-Block stumm als Vision-Disziplin, plus HUD dynamisch aus _formatBindingCode statt hartkodierte F/RMB/LMB-Strings, setKeybinding + resetKeybindings triggern automatisch HUD-Refresh) in V7.78, Welle 6.H Phase 1 — Kreaturen-Aufträge (drei Tasks wander/follow_player/wait als Beziehungs-Gesten zwischen Spieler und Kreatur, creature.userData.task-Datenmodell, assignCreatureTask als einziger Mutations-Pfad mit Aura-Trigger, _tickCreatureTaskDirection-Schicht in updateCreatures-Loop mit null-Fallback auf heutige Emotion-Logik bei wander, additives CanvasTexture-Aura-Sprite über der Kreatur in HSL-Hue je Task — grünlich für follow / bernstein für wait, drei DSL-Ops creature_task/creature_task_nearest/creature_task_all in NON_BROADCASTABLE_OPS, sechs Chat-Patterns folge mir/komm her/warte/erkunde/alle folgt mir/alle warten, Aura-Lifecycle via _refreshCreatureTaskAura mit Disposal in removeCreature, bewusst KEINE Save-Persistenz — Vision §1.1 Co-Schöpfer-Beziehung wird gesprochen nicht gespeichert, plus V2-Schließungen nach Schöpfer-Selbstaudit: _playCreatureTaskPing mit CREATURE_TASK_PING_FREQ je Task — follow_player=494Hz hell, wait=294Hz ruhig, wander=null stumm (Lösen der Bindung darf still sein), _journalCreatureTask schreibt relationship-Eintrag bei echtem Wechsel mit silent-Option für Spawn-Defaults, assignTaskToNearestCreature bei Leerschlag schreibt Chat-Output 'Keine Kreatur in der Nähe' + reach-Journal-Eintrag, _getCreatureTaskAuraTexture cached geteilte CanvasTexture analog 6.D Player-Aura statt pro Wechsel neu zu erzeugen, _renderTaskStatusUI füllt #status-tasks mit 'N folgen · M warten' bzw '—', describeProgram zeigt distance-Arg wenn gesetzt) in V7.79, Welle 6.H Phase 2A — Kreaturen-Hylomorphismus + Tab-UX (Kreaturen sind jetzt Multi-Mesh-Compounds aus bodyParts × Material — selbe Sprache wie Spieler-Seele 6.D und Architekturen 6.G P1.5; CREATURE_SOULS frozen mit drei Built-in-Identitäten sprite/wesen/geist; applyCreatureSoul-Mutations-Pfad baut Group + tauscht in state.creatures + state.rigidBodies, computeCreatureCompoundTags emergent aus parts via existing computeCompoundTags-Pipeline, Random-Name aus Pool als Identity-Anker, Kreaturen-Drawer UI komplett überarbeitet — Befehl-Buttons folge/komm her/warte/erkunde/alle folgt+warten als data-cmd plus Form-Dropdown vor Spawn-Buttons plus Kreatur-Liste mit Name+Form+Task+Aura-Hint, removeCreature dispoSed nun ganze Group sauber, color-lerp-Pfad in updateCreatures defensive für Groups) in V7.80, Welle 6.H Phase 2B.1 — Kreaturen sammeln + erinnern (Task `gather` mit args.material findet die nächste Architektur mit material in ihren Parts via _findNearestArchitectureWithMaterial, bewegt sich hin, entfernt sie bei haltDist=1.5m und legt sie ins Spieler-Inventar via existing addToInventory — eine Sprache; pro-Kreatur memory[]-Array mit Cap 30 + _creatureRemember-Helper trägt 'gathered'-Einträge mit material+blueprintName+timestamp; CREATURE_TASKS um 'gather' erweitert plus Aura-Hue cyan/200 + Ping-Freq G4/392Hz + describeProgram zeigt material; Chat-Pattern 'sammle <material>' für die 12 Built-in-Materialien plus generic-Pattern; creature_task-DSL-Op akzeptiert string-3rd-arg als material wenn taskName='gather'; gather-Task auto-zu-wander nach material erschöpft mit '_no_material'-memory-Eintrag; Kreatur-Liste zeigt 'sammelt <material>' als Task) in V7.82
         // - Nexus als Herz der Selbstentwicklung, steuert nun alles über Chat, unzerstörbar und unendlich
         this.state = {
             // ### Kern ###
@@ -528,7 +528,7 @@ class AnazhRealm {
     // ### Logging ###
     log(message, level = "INFO") {
         if (level === "DEBUG" && !this.state.debugLogging) return;
-        const logMessage = `[AnazhRealm V7.81] [${level}] ${message}`;
+        const logMessage = `[AnazhRealm V7.82] [${level}] ${message}`;
         this.state.logBuffer.push(logMessage);
         console.log(logMessage);
         if (this.state.logBuffer.length > this.state.maxLogEntries) {
@@ -1592,7 +1592,7 @@ class AnazhRealm {
                     return;
                 }
                 // Welle 6.H P2A — Kreatur ist Group; tinten via traverse über
-                // alle Sub-Mesh-Materialien. Pre-V7.81-Mesh-Pfad (cr.material)
+                // alle Sub-Mesh-Materialien. Pre-V7.82-Mesh-Pfad (cr.material)
                 // bleibt als Fallback für Legacy-Test-Setups.
                 for (const cr of this.state.creatures) {
                     if (cr.material && cr.material.color) {
@@ -4324,7 +4324,11 @@ class AnazhRealm {
         const bp = this.state.blueprints && this.state.blueprints[blueprintName];
         if (!bp) return false;
         // Erster Stack mit demselben Bauplan-Namen: count erhöhen.
-        const existingIdx = inv.findIndex((s) => s && s.blueprintName === blueprintName);
+        // Welle 6.H P2B.5 — Schema-Erweiterung: Material-Slots haben kind:"material",
+        // Bauplan-Slots haben kind:"blueprint" (oder kein kind = legacy blueprint).
+        const existingIdx = inv.findIndex(
+            (s) => s && s.blueprintName === blueprintName && (s.kind === "blueprint" || !s.kind)
+        );
         if (existingIdx >= 0) {
             inv[existingIdx].count = (inv[existingIdx].count || 0) + count;
             return true;
@@ -4332,7 +4336,28 @@ class AnazhRealm {
         // Erster leerer Slot.
         const emptyIdx = inv.findIndex((s) => !s);
         if (emptyIdx < 0) return false; // Inventar voll
-        inv[emptyIdx] = { blueprintName, count };
+        inv[emptyIdx] = { kind: "blueprint", blueprintName, count };
+        return true;
+    }
+
+    // Welle 6.H Phase 2B.5 — Material-Slot ins Inventar. Hylomorphismus-Wurzel:
+    // beim Abbauen einer Architektur löst sich Compound in Rohmaterial auf.
+    // Stackt bei selbem material-Namen, sonst neuer Slot. material muss in
+    // state.materials existieren (Built-in oder eigen via define_material).
+    addMaterialToInventory(material, count = 1) {
+        if (!this.state.player || !Array.isArray(this.state.player.inventory)) return false;
+        if (typeof material !== "string" || material.length === 0) return false;
+        if (!this.state.materials || !this.state.materials[material]) return false;
+        const inv = this.state.player.inventory;
+        const n = Math.max(1, Math.floor(Number(count) || 1));
+        const existingIdx = inv.findIndex((s) => s && s.kind === "material" && s.material === material);
+        if (existingIdx >= 0) {
+            inv[existingIdx].count = (inv[existingIdx].count || 0) + n;
+            return true;
+        }
+        const emptyIdx = inv.findIndex((s) => !s);
+        if (emptyIdx < 0) return false;
+        inv[emptyIdx] = { kind: "material", material, count: n };
         return true;
     }
 
@@ -5764,6 +5789,13 @@ class AnazhRealm {
             if (aura.material) aura.material.dispose();
             creature.userData.taskAura = null;
         }
+        // Welle 6.H P2B.5 — Carrying-Sprite analog disposen.
+        const carrySprite = creature.userData && creature.userData.carryingSprite;
+        if (carrySprite) {
+            if (this.state.scene) this.state.scene.remove(carrySprite);
+            if (carrySprite.material) carrySprite.material.dispose();
+            creature.userData.carryingSprite = null;
+        }
         this.state.scene.remove(creature);
         // Welle 6.H Phase 2A — Kreatur ist jetzt eine Group; tiefes Disposal
         // wie bei Soul-Wechsel, sonst leakt jede Sub-Mesh-Geometrie.
@@ -5803,7 +5835,7 @@ class AnazhRealm {
         this.state.creatures.push(group);
         this.state.creatureEmotions.push(emotion === "sad" ? "sad" : "happy");
         if (this.state.physicsWorld) {
-            // Hitbox bleibt bewusst kompakt (0.5×0.5×0.5 wie pre-V7.81) — die
+            // Hitbox bleibt bewusst kompakt (0.5×0.5×0.5 wie pre-V7.82) — die
             // Visual-Höhe variiert je Seele, aber Kollision soll vorhersagbar
             // sein. Selbe Disziplin wie Spieler-Seele (0.5er Hitbox, Visual 1.7m).
             const creatureShape = new Ammo.btBoxShape(new Ammo.btVector3(0.25, 0.25, 0.25));
@@ -5991,6 +6023,10 @@ class AnazhRealm {
     static get CREATURE_MEMORY_CAP() {
         return 30; // Erinnerungen pro Kreatur — FIFO bei Überlauf
     }
+    // Welle 6.H Phase 2B.5 — Zwei-Phasen-gather Konstanten.
+    static get CREATURE_HANDOVER_DIST() {
+        return 2.0; // m — bei dieser Distanz zum Spieler übergibt Kreatur Ernte
+    }
     static get CREATURE_FOLLOW_DISTANCE() {
         return 3.5; // m — Standard-Halte-Abstand für follow_player
     }
@@ -6160,22 +6196,58 @@ class AnazhRealm {
             return new THREE.Vector3(nx * speed, 0, nz * speed);
         }
         if (task.name === "gather") {
-            // Welle 6.H Phase 2B.1 — Kreatur sucht das Material, läuft hin,
-            // erntet bei haltDist. Cache des Ziels in task.args._target um
-            // nicht jeden Tick die ganze Liste zu scannen.
+            // Welle 6.H Phase 2B.5 — zwei-Phasen-gather (Vision §1.1
+            // Beziehungs-Geste): Phase 1 = sucht Material + erntet (cyan-Aura);
+            // Phase 2 = trägt Ernte zum Spieler + übergibt (purple-Aura via
+            // _refreshCreatureCarryingVisual).
             const material = task.args && task.args.material;
             if (typeof material !== "string" || material.length === 0) {
-                // Ungültiger gather-Task → zurück zu wander, kein Material zu suchen.
                 this.assignCreatureTask(creature, "wander", {}, { silent: true });
                 return null;
             }
+            const carrying = creature.userData && creature.userData.carrying;
+            if (carrying) {
+                // BRING-PHASE: zurück zum Spieler, dann übergeben.
+                const player = this.state.playerMesh ? this.state.playerMesh.position : null;
+                if (!player) return new THREE.Vector3(0, 0, 0);
+                const dxp = player.x - creature.position.x;
+                const dzp = player.z - creature.position.z;
+                const distp = Math.hypot(dxp, dzp);
+                const handover = AnazhRealm.CREATURE_HANDOVER_DIST || 2.0;
+                if (distp <= handover) {
+                    // Übergabe: jedes Material aus carrying ins Spieler-Inventar.
+                    const summary = [];
+                    for (const [mat, n] of Object.entries(carrying.materials || {})) {
+                        if (this.addMaterialToInventory(mat, n)) {
+                            summary.push(`${n}× ${mat}`);
+                        }
+                    }
+                    this._creatureRemember(creature, "delivered", {
+                        materials: carrying.materials,
+                        blueprint: carrying.blueprint,
+                    });
+                    if (typeof this.journalAppend === "function" && summary.length > 0) {
+                        this.journalAppend("growth", `Eine Kreatur übergab dem Schöpfer: ${summary.join(", ")}.`, {
+                            materials: carrying.materials,
+                            blueprint: carrying.blueprint,
+                        });
+                    }
+                    creature.userData.carrying = null;
+                    if (typeof this._refreshCreatureCarryingVisual === "function") {
+                        this._refreshCreatureCarryingVisual(creature);
+                    }
+                    if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
+                    return new THREE.Vector3(0, 0, 0);
+                }
+                const speed = AnazhRealm.CREATURE_GATHER_SPEED;
+                return new THREE.Vector3((dxp / distp) * speed, 0, (dzp / distp) * speed);
+            }
+            // ERNTE-PHASE: Ziel suchen, hingehen, harvesten.
             let target = task.args._target;
-            // Target prüfen: existiert es noch in state.architectures + hat Mesh?
             const targetGone = !target || !this.state.architectures.includes(target) || !target.mesh;
             if (targetGone) {
                 target = this._findNearestArchitectureWithMaterial(creature.position, material);
                 if (!target) {
-                    // Kein Material erreichbar → Erinnerung + auf wander zurück.
                     this._creatureRemember(creature, "no_material", { material });
                     if (typeof this.journalAppend === "function") {
                         this.journalAppend("reach", `Eine Kreatur findet kein „${material}" in der Nähe.`, {
@@ -6192,20 +6264,26 @@ class AnazhRealm {
             const dz = target.position.z - creature.position.z;
             const dist = Math.hypot(dx, dz);
             if (dist <= AnazhRealm.CREATURE_GATHER_HALT_DIST) {
-                // Angekommen — ernten: Architektur entfernen, Inventar füllen,
-                // Erinnerung schreiben. Architektur-Removal nutzt den existing
-                // V7.78-Pfad (inkl. Farewell-Ping bei resonierenden Strukturen).
-                const harvestType = target.type;
-                this.removeArchitecture(target);
+                // Angekommen — ernten via harvestArchitecture (EINE Funktion,
+                // Spieler-LMB nutzt dieselbe). Materialien gehen in carrying,
+                // nicht direkt ins Spieler-Inventar — Bring-Phase folgt.
+                const harvesterName = (creature.userData && creature.userData.name) || "Kreatur";
+                const harvest = this.harvestArchitecture(target, `creature:${harvesterName}`);
                 task.args._target = null;
-                if (typeof this.addToInventory === "function") {
-                    this.addToInventory(harvestType, 1);
-                }
-                this._creatureRemember(creature, "gathered", { material, blueprint: harvestType });
-                if (typeof this.journalAppend === "function") {
-                    this.journalAppend("growth", `Eine Kreatur sammelte „${harvestType}" für den Schöpfer.`, {
+                if (harvest && harvest.materials && Object.keys(harvest.materials).length > 0) {
+                    creature.userData = creature.userData || {};
+                    creature.userData.carrying = {
+                        materials: { ...harvest.materials },
+                        blueprint: harvest.blueprint,
+                        since: performance.now() / 1000,
+                    };
+                    if (typeof this._refreshCreatureCarryingVisual === "function") {
+                        this._refreshCreatureCarryingVisual(creature);
+                    }
+                    this._creatureRemember(creature, "gathered", {
                         material,
-                        blueprint: harvestType,
+                        blueprint: harvest.blueprint,
+                        materials: harvest.materials,
                     });
                 }
                 if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
@@ -6280,6 +6358,57 @@ class AnazhRealm {
         if (this.state.scene) this.state.scene.add(sprite);
         creature.userData = creature.userData || {};
         creature.userData.taskAura = sprite;
+    }
+
+    // Welle 6.H P2B.5 — Carrying-Visual: kleines Sprite über der Kreatur
+    // in der Farbe des getragenen Materials. Lifecycle wie taskAura (lazy,
+    // disposed in removeCreature, Position-Update pro Frame).
+    _refreshCreatureCarryingVisual(creature) {
+        if (!creature) return;
+        const ud = creature.userData || {};
+        const carrying = ud.carrying;
+        const oldSprite = ud.carryingSprite;
+        if (!carrying) {
+            // Kein Träger-State → Sprite entfernen.
+            if (oldSprite) {
+                if (this.state.scene) this.state.scene.remove(oldSprite);
+                if (oldSprite.material) oldSprite.material.dispose();
+                ud.carryingSprite = null;
+            }
+            return;
+        }
+        // Material-Farbe ermitteln — dominantes Material aus carrying.materials.
+        let dominantMat = null;
+        let dominantCount = 0;
+        for (const [m, n] of Object.entries(carrying.materials || {})) {
+            if (n > dominantCount) {
+                dominantCount = n;
+                dominantMat = m;
+            }
+        }
+        const mat = dominantMat && this.state.materials && this.state.materials[dominantMat];
+        const colorHex = (mat && mat.color) || 0xcccccc;
+        if (oldSprite && oldSprite.material && oldSprite.material.color) {
+            oldSprite.material.color.setHex(colorHex);
+            return;
+        }
+        if (typeof THREE === "undefined") return;
+        const texture = this._getCreatureTaskAuraTexture();
+        if (!texture) return;
+        const spriteMat = new THREE.SpriteMaterial({
+            map: texture,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            transparent: true,
+        });
+        spriteMat.color.setHex(colorHex);
+        const sprite = new THREE.Sprite(spriteMat);
+        sprite.scale.set(0.7, 0.7, 1);
+        const offY = (this._creatureAuraOffsetY ? this._creatureAuraOffsetY(creature) : 0.9) + 0.5;
+        sprite.position.set(creature.position.x, creature.position.y + offY, creature.position.z);
+        if (this.state.scene) this.state.scene.add(sprite);
+        creature.userData = creature.userData || {};
+        creature.userData.carryingSprite = sprite;
     }
 
     // Welle 6.H V2 — UX: Status-Bar zeigt aktive Aufträge auf einen Blick.
@@ -6450,6 +6579,15 @@ class AnazhRealm {
                 aura.position.set(
                     creature.position.x,
                     creature.position.y + this._creatureAuraOffsetY(creature),
+                    creature.position.z
+                );
+            }
+            // Welle 6.H P2B.5 — Carrying-Sprite folgt der Kreatur darüber.
+            const carrySprite = creature.userData && creature.userData.carryingSprite;
+            if (carrySprite) {
+                carrySprite.position.set(
+                    creature.position.x,
+                    creature.position.y + this._creatureAuraOffsetY(creature) + 0.5,
                     creature.position.z
                 );
             }
@@ -14545,6 +14683,53 @@ class AnazhRealm {
         return entry ? { entry, point: intersects[0].point } : null;
     }
 
+    // === Welle 6.H Phase 2B.5 — Hylomorphismus-Wurzel: harvestArchitecture ===
+    //
+    // EINE Funktion, beide Pfade (Spieler-LMB 6.A6 + Kreatur-gather 6.H P2B.1).
+    // Eine Architektur ist Compound(parts × Material × Form) — beim Abbauen
+    // löst sie sich in ihre Materialien auf, NICHT in „1 Bauplan-Slot". Mengen
+    // sind volumen-basiert: pro Part `units = max(1, round(size.x×size.y×size.z
+    // × HARVEST_VOLUME_TO_UNITS))`. Großer Pfeiler bringt mehr Stein als kleiner.
+    //
+    // Liefert eine Material-Map `{holz: 3, laub: 1}` zurück + entfernt die
+    // Architektur (über existing _cullArchitectureMesh-Pfad mit Farewell-Ping).
+    // Caller entscheidet wohin: Spieler-LMB → direkt addMaterialToInventory;
+    // Kreatur-gather → erst in creature.userData.carrying, dann beim Bring-
+    // Übergabe-Schritt ins Spieler-Inventar.
+    harvestArchitecture(entry, harvester = "player") {
+        if (!entry) return null;
+        const bp = this.state.blueprints && this.state.blueprints[entry.type];
+        const materials = {};
+        let totalParts = 0;
+        if (bp && Array.isArray(bp.parts)) {
+            const k = AnazhRealm.HARVEST_VOLUME_TO_UNITS || 4;
+            for (const part of bp.parts) {
+                if (!part || typeof part.material !== "string") continue;
+                const sx = Math.abs((part.size && part.size.x) || 1);
+                const sy = Math.abs((part.size && part.size.y) || 1);
+                const sz = Math.abs((part.size && part.size.z) || 1);
+                const volume = sx * sy * sz;
+                const units = Math.max(1, Math.round(volume * k));
+                materials[part.material] = (materials[part.material] || 0) + units;
+                totalParts++;
+            }
+        }
+        const blueprintName = entry.type;
+        const removed = this.removeArchitecture(entry);
+        if (!removed) return null;
+        if (typeof this.journalAppend === "function" && totalParts > 0) {
+            const matSummary = Object.entries(materials)
+                .map(([m, n]) => `${n}× ${m}`)
+                .join(", ");
+            this.journalAppend("growth", `${harvester} erntete „${blueprintName}" → ${matSummary}.`, {
+                blueprint: blueprintName,
+                materials,
+                harvester,
+            });
+        }
+        return { materials, blueprint: blueprintName, parts: totalParts };
+    }
+
     removeArchitecture(entry) {
         if (!entry) return false;
         const idx = this.state.architectures.indexOf(entry);
@@ -14666,9 +14851,19 @@ class AnazhRealm {
         const pick = this._pickArchitectureAtCrosshair();
         if (pick && pick.entry) {
             this._consumeMouseStamina();
-            const type = pick.entry.type;
-            this.removeArchitecture(pick.entry);
-            this.log(`Abgebaut: ${type}`, "INFO");
+            // Welle 6.H P2B.5 — harvestArchitecture statt nur removeArchitecture.
+            // Die Materialien des Bauplans fließen ins Spieler-Inventar. Eine
+            // Sprache für Spieler-LMB + Kreatur-gather: beide ernten gleich.
+            const harvest = this.harvestArchitecture(pick.entry, "player");
+            if (harvest && harvest.materials) {
+                const parts = [];
+                for (const [mat, n] of Object.entries(harvest.materials)) {
+                    if (this.addMaterialToInventory(mat, n)) {
+                        parts.push(`${n}× ${mat}`);
+                    }
+                }
+                this.log(`Abgebaut: ${harvest.blueprint} → ${parts.join(", ") || "(kein Material)"}`, "INFO");
+            }
             return true;
         }
         const target = this._raycastWorldHit(30);
@@ -14906,10 +15101,28 @@ class AnazhRealm {
                 grid.appendChild(el);
                 continue;
             }
-            const bp = this.state.blueprints && this.state.blueprints[slot.blueprintName];
+            // Welle 6.H P2B.5 — Material-Slot vs. Bauplan-Slot.
+            // Material-Slot zeigt Material-Name + Count, mit Material-Farbe als
+            // Hintergrund-Tint und Tag-Klassen aus state.materials[name].tags.
+            const isMaterialSlot = slot.kind === "material" && typeof slot.material === "string";
+            const matDef = isMaterialSlot && this.state.materials && this.state.materials[slot.material];
+            const bp = !isMaterialSlot && this.state.blueprints && this.state.blueprints[slot.blueprintName];
             const label = document.createElement("span");
             label.className = "slot-label";
-            label.textContent = bp ? bp.label || slot.blueprintName : slot.blueprintName;
+            if (isMaterialSlot) {
+                label.textContent = matDef && matDef.label ? matDef.label : slot.material;
+                el.classList.add("material-slot");
+                if (matDef && Number.isFinite(matDef.color)) {
+                    // Material-Farbe als sanfter Hintergrund-Tint.
+                    const hex = matDef.color;
+                    const r = (hex >> 16) & 0xff;
+                    const g = (hex >> 8) & 0xff;
+                    const b = hex & 0xff;
+                    el.style.boxShadow = `inset 0 0 14px rgba(${r},${g},${b},0.35)`;
+                }
+            } else {
+                label.textContent = bp ? bp.label || slot.blueprintName : slot.blueprintName;
+            }
             el.appendChild(label);
             if (slot.count > 1) {
                 const count = document.createElement("span");
@@ -14918,7 +15131,23 @@ class AnazhRealm {
                 el.appendChild(count);
             }
             // Tag-Magic: dominante Achsen als CSS-Klasse + ARIA-Label.
-            if (bp && typeof this.computeCompoundTags === "function") {
+            // Material-Slot nutzt material.tags direkt; Bauplan-Slot rechnet
+            // computeCompoundTags aus den Parts.
+            if (isMaterialSlot && matDef && matDef.tags) {
+                const t = matDef.tags;
+                if ((t.resoniert || 0) >= 0.5) el.classList.add("tag-resoniert");
+                if ((t.brennbar || 0) >= 0.5) el.classList.add("tag-brennend");
+                if ((t.magieleitung || 0) >= 0.5) el.classList.add("tag-magieleitung");
+                if ((t.lebendig || 0) >= 0.5) el.classList.add("tag-lebendig");
+                if ((t.dichte || 0) >= 0.7) el.classList.add("tag-dichte");
+                el.setAttribute(
+                    "aria-label",
+                    `${label.textContent}${slot.count > 1 ? ` ×${slot.count}` : ""} (Rohmaterial)`
+                );
+                el.addEventListener("mouseenter", () => {
+                    this.playInventoryHoverPing(t);
+                });
+            } else if (bp && typeof this.computeCompoundTags === "function") {
                 const tags = this.computeCompoundTags(bp) || {};
                 const activeTags = [];
                 if ((tags.resoniert || 0) >= 0.5) {
@@ -16912,7 +17141,7 @@ class AnazhRealm {
     }
 
     async init() {
-        this.log("Initialisiere Anazh Realm V7.81... Ewigkeit erwacht!", "INFO");
+        this.log("Initialisiere Anazh Realm V7.82... Ewigkeit erwacht!", "INFO");
         // Welle 6.C3 — Keybindings VOR allen DOM-Listenern laden. State muss
         // existieren bevor das Settings-Panel rendert (sonst zeigt es leer).
         this.state.keybindings = this._loadKeybindings();
@@ -18170,6 +18399,14 @@ AnazhRealm.CREATURE_SOUL_NAMES = Object.freeze(Object.keys(AnazhRealm.CREATURE_S
 // aus diesem Pool — Vision-Pfeiler §1.1 Co-Schöpfer-Beziehung wird auf
 // Identität gehängt, nicht auf Index. Phase 2B wird Konversationen darauf
 // stützen ("Nina, was hast du gesehen?").
+// Welle 6.H Phase 2B.5 — Volumen-zu-Material-Einheiten-Skalierung für
+// harvestArchitecture. Bei k=4: 1×1×1-Box → 4 Einheiten, 0.5×0.5×0.5
+// → 1 Einheit (geclampt min 1). Tempel mit 6 Stein-Pfeilern (cylinder
+// 0.5×3×0.5 ≈ 0.75 V × 4 ≈ 3 Einheiten je Pfeiler) liefert ~18 Stein,
+// plus Dach + Altar + Spitze. Skalierung über Konstante damit Balancing
+// später kein Refactor braucht.
+AnazhRealm.HARVEST_VOLUME_TO_UNITS = 4;
+
 AnazhRealm.CREATURE_NAME_POOL = Object.freeze([
     "Nira",
     "Vex",
