@@ -8898,6 +8898,200 @@ function startSaveServer() {
                 );
             }
 
+            // ### Welle 6.H V2 — Vision-/UX-/Performance-Schließungen ###
+            // Nach Schöpfer-Audit: Audio-Antwort bei Task-Wechsel (§1.2),
+            // Journal-Eintrag bei Geste (§1.1), Leerschlag-Feedback (UX),
+            // Status-Bar-Zähler (UX), Texture-Cache (Performance),
+            // describeProgram-Distanz (UX).
+            const wave6hV2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 3) return null;
+                    const out = {};
+
+                    // === Audio-Antwort bei Task-Wechsel (Vision §1.2) ===
+                    out.hasTaskPingMethod = typeof r._playCreatureTaskPing === "function";
+                    out.hasPingFreq =
+                        r.constructor.CREATURE_TASK_PING_FREQ &&
+                        r.constructor.CREATURE_TASK_PING_FREQ.follow_player === 494 &&
+                        r.constructor.CREATURE_TASK_PING_FREQ.wait === 294 &&
+                        r.constructor.CREATURE_TASK_PING_FREQ.wander === null;
+
+                    if (typeof r.initSymphony === "function") r.initSymphony();
+                    const symReady = r.state.symphony && r.state.symphony.enabled && r.state.symphony.ctx;
+                    out.symphonyReady = !!symReady;
+
+                    if (symReady) {
+                        const ctx = r.state.symphony.ctx;
+                        const orig = ctx.createOscillator.bind(ctx);
+                        const c = r.state.creatures[0];
+                        // Wechsel wander → follow_player → Ping
+                        r.assignCreatureTask(c, "wander", {}, { silent: true });
+                        let n = 0;
+                        ctx.createOscillator = function () {
+                            n++;
+                            return orig();
+                        };
+                        r.assignCreatureTask(c, "follow_player");
+                        out.followPings = n >= 1;
+                        n = 0;
+                        r.assignCreatureTask(c, "wait");
+                        out.waitPings = n >= 1;
+                        // Wechsel zu wander → KEIN Ping (Lösen der Bindung ist still)
+                        n = 0;
+                        r.assignCreatureTask(c, "wander");
+                        out.wanderIsSilent = n === 0;
+                        ctx.createOscillator = orig;
+                    }
+
+                    // === Journal-Eintrag bei Beziehungs-Geste (Vision §1.1) ===
+                    out.hasJournalMethod = typeof r._journalCreatureTask === "function";
+                    const c1 = r.state.creatures[1];
+                    r.assignCreatureTask(c1, "wander", {}, { silent: true });
+                    const jBefore = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
+                    r.assignCreatureTask(c1, "follow_player");
+                    const jAfter = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
+                    out.journalGrows = jAfter > jBefore;
+                    // Eintrag trägt type=relationship
+                    const lastEntry =
+                        r.state.worldJournal && r.state.worldJournal.entries[r.state.worldJournal.entries.length - 1];
+                    out.journalTypeIsRelationship = lastEntry && lastEntry.type === "relationship";
+
+                    // === silent-Option unterdrückt Audio + Journal ===
+                    const c2 = r.state.creatures[2];
+                    r.assignCreatureTask(c2, "wander", {}, { silent: true });
+                    const jPre = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
+                    r.assignCreatureTask(c2, "wait", {}, { silent: true });
+                    const jPost = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
+                    out.silentSuppressesJournal = jPost === jPre;
+
+                    // === Leerschlag-Feedback (UX + Vision §1.1) ===
+                    // Alle Kreaturen weit weg, dann Auftrag mit maxDist=60
+                    const pPos = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
+                    for (const c of r.state.creatures) c.position.set(pPos.x + 500, pPos.y, pPos.z + 500);
+                    const chatOutput = document.getElementById("chat-output");
+                    const chatBefore = chatOutput ? chatOutput.children.length : 0;
+                    const journalBefore = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
+                    const result = r.assignTaskToNearestCreature(pPos, "follow_player", {}, 60);
+                    const chatAfter = chatOutput ? chatOutput.children.length : 0;
+                    const journalAfter = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
+                    const lastLine = chatOutput && chatOutput.lastChild ? chatOutput.lastChild.textContent : "";
+                    out.leerschlagReturnsNull = result === null;
+                    out.leerschlagWritesChat = chatAfter > chatBefore && /Keine Kreatur/.test(lastLine);
+                    out.leerschlagWritesJournal = journalAfter > journalBefore;
+                    out.leerschlagJournalTypeReach =
+                        r.state.worldJournal.entries[r.state.worldJournal.entries.length - 1].type === "reach";
+
+                    // === Texture-Cache (Performance) ===
+                    out.hasCacheMethod = typeof r._getCreatureTaskAuraTexture === "function";
+                    const firstTexture = r._getCreatureTaskAuraTexture();
+                    const secondTexture = r._getCreatureTaskAuraTexture();
+                    out.textureCacheReusesInstance = firstTexture === secondTexture;
+                    // 10 Task-Wechsel sollten dieselbe Map nutzen
+                    const c3 = r.state.creatures[0];
+                    c3.position.set(pPos.x + 1, pPos.y, pPos.z + 1); // wieder nah
+                    const uniqueMaps = new Set();
+                    for (let i = 0; i < 10; i++) {
+                        r.assignCreatureTask(c3, "follow_player", {}, { silent: true });
+                        if (c3.userData.taskAura && c3.userData.taskAura.material.map) {
+                            uniqueMaps.add(c3.userData.taskAura.material.map);
+                        }
+                        r.assignCreatureTask(c3, "wander", {}, { silent: true });
+                    }
+                    out.textureSharedAcross10Cycles = uniqueMaps.size === 1;
+
+                    // === Status-Bar Task-Zähler (UX) ===
+                    out.hasRenderTaskStatus = typeof r._renderTaskStatusUI === "function";
+                    out.statusTasksInDom = !!document.getElementById("status-tasks");
+                    r.assignTaskToAllCreatures("wander");
+                    r.assignCreatureTask(r.state.creatures[0], "follow_player", {}, { silent: true });
+                    r.assignCreatureTask(r.state.creatures[1], "follow_player", {}, { silent: true });
+                    r.assignCreatureTask(r.state.creatures[2], "wait", {}, { silent: true });
+                    r._renderTaskStatusUI();
+                    const taskEl = document.getElementById("status-tasks");
+                    const taskText = taskEl ? taskEl.textContent : "";
+                    out.statusShowsCounts = /2 folgen/.test(taskText) && /1 warten/.test(taskText);
+                    // Alle wander → "—"
+                    r.assignTaskToAllCreatures("wander");
+                    r._renderTaskStatusUI();
+                    const taskText2 = taskEl ? taskEl.textContent : "";
+                    out.statusEmptyDash = taskText2 === "—";
+
+                    // === describeProgram zeigt Distanz ===
+                    const descWithDist = r.describeProgram(["creature_task_nearest", "follow_player", 1.5]);
+                    const descWithoutDist = r.describeProgram(["creature_task_nearest", "follow_player"]);
+                    out.descShowsDistance = /1\.5m|Distanz/i.test(descWithDist);
+                    out.descNoDistanceWhenNotGiven = !/1\.5/.test(descWithoutDist);
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6hV2Results && !wave6hV2Results.error) {
+                check("Welle 6.H V2: _playCreatureTaskPing existiert", wave6hV2Results.hasTaskPingMethod);
+                check(
+                    "Welle 6.H V2: CREATURE_TASK_PING_FREQ map (follow=494/wait=294/wander=null)",
+                    wave6hV2Results.hasPingFreq
+                );
+                check("Welle 6.H V2: Symphony initialisierbar im Headless", wave6hV2Results.symphonyReady);
+                if (wave6hV2Results.symphonyReady) {
+                    check(
+                        "Welle 6.H V2: Wechsel zu follow_player erzeugt Audio-Ping (Vision §1.2)",
+                        wave6hV2Results.followPings
+                    );
+                    check("Welle 6.H V2: Wechsel zu wait erzeugt Audio-Ping (Vision §1.2)", wave6hV2Results.waitPings);
+                    check(
+                        "Welle 6.H V2: Wechsel zu wander bleibt STUMM (Disziplin: Lösen tönt nicht)",
+                        wave6hV2Results.wanderIsSilent
+                    );
+                }
+                check("Welle 6.H V2: _journalCreatureTask existiert", wave6hV2Results.hasJournalMethod);
+                check(
+                    "Welle 6.H V2: Task-Wechsel schreibt ins Welt-Journal (Vision §1.1)",
+                    wave6hV2Results.journalGrows
+                );
+                check(
+                    "Welle 6.H V2: Journal-Eintrag trägt type='relationship'",
+                    wave6hV2Results.journalTypeIsRelationship
+                );
+                check(
+                    "Welle 6.H V2: silent-Option unterdrückt Audio + Journal (Spawn-Defaults bleiben still)",
+                    wave6hV2Results.silentSuppressesJournal
+                );
+                check(
+                    "Welle 6.H V2: Leerschlag-Geste schreibt Chat-Output 'Keine Kreatur in der Nähe'",
+                    wave6hV2Results.leerschlagWritesChat
+                );
+                check(
+                    "Welle 6.H V2: Leerschlag-Geste schreibt 'reach'-Journal-Eintrag",
+                    wave6hV2Results.leerschlagWritesJournal && wave6hV2Results.leerschlagJournalTypeReach
+                );
+                check(
+                    "Welle 6.H V2: assignTaskToNearest returnt null bei Leerschlag",
+                    wave6hV2Results.leerschlagReturnsNull
+                );
+                check(
+                    "Welle 6.H V2: _getCreatureTaskAuraTexture existiert + cached",
+                    wave6hV2Results.hasCacheMethod && wave6hV2Results.textureCacheReusesInstance
+                );
+                check(
+                    "Welle 6.H V2: 10 Task-Wechsel teilen sich EINE Textur (kein Memory-Churn)",
+                    wave6hV2Results.textureSharedAcross10Cycles
+                );
+                check("Welle 6.H V2: _renderTaskStatusUI existiert", wave6hV2Results.hasRenderTaskStatus);
+                check("Welle 6.H V2: #status-tasks-Item im DOM", wave6hV2Results.statusTasksInDom);
+                check(
+                    "Welle 6.H V2: Status-Bar zeigt '2 folgen · 1 warten' nach Setup",
+                    wave6hV2Results.statusShowsCounts
+                );
+                check("Welle 6.H V2: Status-Bar zeigt '—' wenn alle wander", wave6hV2Results.statusEmptyDash);
+                check("Welle 6.H V2: describeProgram zeigt Distanz wenn gesetzt", wave6hV2Results.descShowsDistance);
+                check(
+                    "Welle 6.H V2: describeProgram zeigt keine Distanz wenn nicht gesetzt",
+                    wave6hV2Results.descNoDistanceWhenNotGiven
+                );
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {

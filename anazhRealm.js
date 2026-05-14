@@ -12,7 +12,7 @@
 class AnazhRealm {
     constructor() {
         // ### Learnings ### [Stichwortartig optimieren, korrigieren, ergänzen – nie Wissen löschen!]
-        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69, LAN-Fähigkeit + Sync-Korrektheit (Ring 11 V2.1: 0.0.0.0-bind, ws:/wss:-CSP, roomOverride, spawn_*-Embedding, NON_BROADCASTABLE_OPS) in V7.70, Intuitiver Multi-User-Setup (Ring 11.5: Modus-Wahl, Host-Banner mit Einladungs-Code, Auto-Welt-Snapshot beim Join) in V7.71, Welle 6.A — Interaktion-Polish (Wall-Sliding via Player-Friction-0, Erdung-Raycast-Robustheit für Bauwerke) in V7.72, Welle 6.G Phase 1 — Welt-Sinne (fliegende Inseln + Bäume kollidierbar via btBvhTriangleMeshShape/btCylinderShape, drei Dead-Code-DSL-Ops spawn_tree/island/ufo aktiviert, toter needsPhysics-Lazy-Pfad gelöscht) in V7.73, Welle 6.G Phase 1.5 — Hylomorphismus-Unification (Bäume sind jetzt Compound-Architekturen über baum_eiche/baum_kiefer-Baupläne mit Stamm:holz + Krone:laub, eigene spawnTreeAt + _buildTreeCollision gelöscht, Parallelcode → eine Sprache, plus Insel-Visual-Fix mit Underside + Lambert) in V7.74, Welle 6.G Phase 2 — Welt-Affinitäts-Feld (vier SimplexNoise-Schichten lebendig/dichte/glut/magieleitung, Baupläne spawnen wo ihre Compound-Tags resonieren — Wälder/Felsen/Magie-Zonen/Vulkan-Anker emergieren ohne Biome-Tabelle, populateChunkVegetation als Hook in ensureChunkAt + Initial-Worldgen, drei neue Built-in-Baupläne stein_block/kristall_geode/glutbrunnen, Stämme dicker für Spieler-Spürbarkeit, Culling-Tick 1Hz→2Hz, spawn-silent-Opt damit Worldgen die Welt-Effekt-Kaskade nicht überflutet) in V7.75, Welle 6.C2 — Spielmodi (frieden/pfad/schöpfer als Welt-Beziehungs-Schalter, frieden umarmt + pfad verhandelt + schöpfer gehorcht, damagePlayer + applyOpToPart-Stamina modus-gated, set_mode DSL-Op in NON_BROADCASTABLE_OPS, UI-Radio in Einstellungen + Status-Bar #status-mode, worldMeta.gameMode persistiert pro-Welt) in V7.76, Welle 6.C1 — Hylomorphismus-Inventar (27-Slot-Overlay mit Tab-Toggle, Tag-Resonanz emergiert aus Compound-Tags — resoniert summt + brennend glüht + magieleitung schimmert + lebendig sprießt, Audio-Hover-Ping via state.symphony, addToInventory stackt bei gleichem Bauplan-Namen, Inventar-Slot wählen → Hotbar-Slot Klick weist zu, add_to_inventory DSL-Op in NON_BROADCASTABLE_OPS, state.player.inventory[27] persistiert in buildStateSnapshot) in V7.77, Welle 6.A6 + 6.C3 — Maus-Aktionen + Keybindings (LMB abbauen Architektur am Raycast / kein Treffer → modify_terrain-Loch, RMB platzieren = confirmBuild im aktiven Bau-Modus, beide modus-gated mit MOUSE_ACTION_STAMINA_COST=5 in pfad / kostenlos in frieden+schöpfer, DEFAULT_KEYBINDINGS frozen mit 6 Aktionen break/place/confirmBuild/inventory/cancelBuild/jump, Konflikt-Auflösung als Swap statt Leerung, _eventToBindingCode unterstützt KeyboardEvent.code + Mouse0/1/2, Rebind-Capture-Workflow mit Escape-Abbruch, UI-Sektion in Einstellungen-Drawer mit „Ändern"-Button + Standard-Reset, alle 6 Listener konsultieren state.keybindings über _actionForBindingCode, Tab-Listener gated auf !keybindRebind damit Rebind nicht versehentlich Inventar toggelt, plus Vision-§1.2-Schließung _playArchitectureFarewellPing: abklingender Sinus-Ping beim Abbauen einer resoniert≥resonance_mild-Architektur — selber Audio-Graph wie Spawn-Singing, zeitlich gespiegelt; Stein-Block stumm als Vision-Disziplin, plus HUD dynamisch aus _formatBindingCode statt hartkodierte F/RMB/LMB-Strings, setKeybinding + resetKeybindings triggern automatisch HUD-Refresh) in V7.78, Welle 6.H Phase 1 — Kreaturen-Aufträge (drei Tasks wander/follow_player/wait als Beziehungs-Gesten zwischen Spieler und Kreatur, creature.userData.task-Datenmodell, assignCreatureTask als einziger Mutations-Pfad mit Aura-Trigger, _tickCreatureTaskDirection-Schicht in updateCreatures-Loop mit null-Fallback auf heutige Emotion-Logik bei wander, additives CanvasTexture-Aura-Sprite über der Kreatur in HSL-Hue je Task — grünlich für follow / bernstein für wait, drei DSL-Ops creature_task/creature_task_nearest/creature_task_all in NON_BROADCASTABLE_OPS, sechs Chat-Patterns folge mir/komm her/warte/erkunde/alle folgt mir/alle warten, Aura-Lifecycle via _refreshCreatureTaskAura mit Disposal in removeCreature, bewusst KEINE Save-Persistenz — Vision §1.1 Co-Schöpfer-Beziehung wird gesprochen nicht gespeichert) in V7.79
+        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69, LAN-Fähigkeit + Sync-Korrektheit (Ring 11 V2.1: 0.0.0.0-bind, ws:/wss:-CSP, roomOverride, spawn_*-Embedding, NON_BROADCASTABLE_OPS) in V7.70, Intuitiver Multi-User-Setup (Ring 11.5: Modus-Wahl, Host-Banner mit Einladungs-Code, Auto-Welt-Snapshot beim Join) in V7.71, Welle 6.A — Interaktion-Polish (Wall-Sliding via Player-Friction-0, Erdung-Raycast-Robustheit für Bauwerke) in V7.72, Welle 6.G Phase 1 — Welt-Sinne (fliegende Inseln + Bäume kollidierbar via btBvhTriangleMeshShape/btCylinderShape, drei Dead-Code-DSL-Ops spawn_tree/island/ufo aktiviert, toter needsPhysics-Lazy-Pfad gelöscht) in V7.73, Welle 6.G Phase 1.5 — Hylomorphismus-Unification (Bäume sind jetzt Compound-Architekturen über baum_eiche/baum_kiefer-Baupläne mit Stamm:holz + Krone:laub, eigene spawnTreeAt + _buildTreeCollision gelöscht, Parallelcode → eine Sprache, plus Insel-Visual-Fix mit Underside + Lambert) in V7.74, Welle 6.G Phase 2 — Welt-Affinitäts-Feld (vier SimplexNoise-Schichten lebendig/dichte/glut/magieleitung, Baupläne spawnen wo ihre Compound-Tags resonieren — Wälder/Felsen/Magie-Zonen/Vulkan-Anker emergieren ohne Biome-Tabelle, populateChunkVegetation als Hook in ensureChunkAt + Initial-Worldgen, drei neue Built-in-Baupläne stein_block/kristall_geode/glutbrunnen, Stämme dicker für Spieler-Spürbarkeit, Culling-Tick 1Hz→2Hz, spawn-silent-Opt damit Worldgen die Welt-Effekt-Kaskade nicht überflutet) in V7.75, Welle 6.C2 — Spielmodi (frieden/pfad/schöpfer als Welt-Beziehungs-Schalter, frieden umarmt + pfad verhandelt + schöpfer gehorcht, damagePlayer + applyOpToPart-Stamina modus-gated, set_mode DSL-Op in NON_BROADCASTABLE_OPS, UI-Radio in Einstellungen + Status-Bar #status-mode, worldMeta.gameMode persistiert pro-Welt) in V7.76, Welle 6.C1 — Hylomorphismus-Inventar (27-Slot-Overlay mit Tab-Toggle, Tag-Resonanz emergiert aus Compound-Tags — resoniert summt + brennend glüht + magieleitung schimmert + lebendig sprießt, Audio-Hover-Ping via state.symphony, addToInventory stackt bei gleichem Bauplan-Namen, Inventar-Slot wählen → Hotbar-Slot Klick weist zu, add_to_inventory DSL-Op in NON_BROADCASTABLE_OPS, state.player.inventory[27] persistiert in buildStateSnapshot) in V7.77, Welle 6.A6 + 6.C3 — Maus-Aktionen + Keybindings (LMB abbauen Architektur am Raycast / kein Treffer → modify_terrain-Loch, RMB platzieren = confirmBuild im aktiven Bau-Modus, beide modus-gated mit MOUSE_ACTION_STAMINA_COST=5 in pfad / kostenlos in frieden+schöpfer, DEFAULT_KEYBINDINGS frozen mit 6 Aktionen break/place/confirmBuild/inventory/cancelBuild/jump, Konflikt-Auflösung als Swap statt Leerung, _eventToBindingCode unterstützt KeyboardEvent.code + Mouse0/1/2, Rebind-Capture-Workflow mit Escape-Abbruch, UI-Sektion in Einstellungen-Drawer mit „Ändern"-Button + Standard-Reset, alle 6 Listener konsultieren state.keybindings über _actionForBindingCode, Tab-Listener gated auf !keybindRebind damit Rebind nicht versehentlich Inventar toggelt, plus Vision-§1.2-Schließung _playArchitectureFarewellPing: abklingender Sinus-Ping beim Abbauen einer resoniert≥resonance_mild-Architektur — selber Audio-Graph wie Spawn-Singing, zeitlich gespiegelt; Stein-Block stumm als Vision-Disziplin, plus HUD dynamisch aus _formatBindingCode statt hartkodierte F/RMB/LMB-Strings, setKeybinding + resetKeybindings triggern automatisch HUD-Refresh) in V7.78, Welle 6.H Phase 1 — Kreaturen-Aufträge (drei Tasks wander/follow_player/wait als Beziehungs-Gesten zwischen Spieler und Kreatur, creature.userData.task-Datenmodell, assignCreatureTask als einziger Mutations-Pfad mit Aura-Trigger, _tickCreatureTaskDirection-Schicht in updateCreatures-Loop mit null-Fallback auf heutige Emotion-Logik bei wander, additives CanvasTexture-Aura-Sprite über der Kreatur in HSL-Hue je Task — grünlich für follow / bernstein für wait, drei DSL-Ops creature_task/creature_task_nearest/creature_task_all in NON_BROADCASTABLE_OPS, sechs Chat-Patterns folge mir/komm her/warte/erkunde/alle folgt mir/alle warten, Aura-Lifecycle via _refreshCreatureTaskAura mit Disposal in removeCreature, bewusst KEINE Save-Persistenz — Vision §1.1 Co-Schöpfer-Beziehung wird gesprochen nicht gespeichert, plus V2-Schließungen nach Schöpfer-Selbstaudit: _playCreatureTaskPing mit CREATURE_TASK_PING_FREQ je Task — follow_player=494Hz hell, wait=294Hz ruhig, wander=null stumm (Lösen der Bindung darf still sein), _journalCreatureTask schreibt relationship-Eintrag bei echtem Wechsel mit silent-Option für Spawn-Defaults, assignTaskToNearestCreature bei Leerschlag schreibt Chat-Output 'Keine Kreatur in der Nähe' + reach-Journal-Eintrag, _getCreatureTaskAuraTexture cached geteilte CanvasTexture analog 6.D Player-Aura statt pro Wechsel neu zu erzeugen, _renderTaskStatusUI füllt #status-tasks mit 'N folgen · M warten' bzw '—', describeProgram zeigt distance-Arg wenn gesetzt) in V7.79
         // - Nexus als Herz der Selbstentwicklung, steuert nun alles über Chat, unzerstörbar und unendlich
         this.state = {
             // ### Kern ###
@@ -5722,15 +5722,14 @@ class AnazhRealm {
     // ### Kreaturen ### V7.42
     removeCreature(creature) {
         if (!creature) return;
-        // Welle 6.H — Task-Aura mit disposen, sonst bleibt das Sprite + die
-        // Canvas-Texture als Geisteraufzeichnung im WebGL-Heap.
+        // Welle 6.H — Task-Aura mit disposen, sonst bleibt das Sprite als
+        // Geist im WebGL-Heap. Textur ist seit V2 shared (siehe
+        // _getCreatureTaskAuraTexture) → nur das Material disposen, nicht
+        // die Map. Lebensdauer der Textur ist die der Realm-Klasse.
         const aura = creature.userData && creature.userData.taskAura;
         if (aura) {
             if (this.state.scene) this.state.scene.remove(aura);
-            if (aura.material) {
-                if (aura.material.map) aura.material.map.dispose();
-                aura.material.dispose();
-            }
+            if (aura.material) aura.material.dispose();
             creature.userData.taskAura = null;
         }
         this.state.scene.remove(creature);
@@ -5740,6 +5739,7 @@ class AnazhRealm {
             Ammo.destroy(body);
         }
         this.state.rigidBodies = this.state.rigidBodies.filter((rb) => rb !== creature);
+        if (typeof this._renderTaskStatusUI === "function") this._renderTaskStatusUI();
     }
 
     clearCreatures() {
@@ -5804,6 +5804,16 @@ class AnazhRealm {
             wait: 40, // bernsteinfarben, "ich harre"
         });
     }
+    // Vision §1.2 — Audio-Antwort auf Beziehungs-Geste. Frequenz je Task:
+    // follow_player hell (Begrüßung), wait tiefer (Ruhe), wander null
+    // (Übergang ins Stumme — das Lösen der Bindung darf still sein).
+    static get CREATURE_TASK_PING_FREQ() {
+        return Object.freeze({
+            wander: null,
+            follow_player: 494, // ~B4, helle Antwort
+            wait: 294, // ~D4, ruhige Antwort
+        });
+    }
     static get CREATURE_FOLLOW_DISTANCE() {
         return 3.5; // m — Standard-Halte-Abstand für follow_player
     }
@@ -5820,12 +5830,14 @@ class AnazhRealm {
         return task;
     }
 
-    assignCreatureTask(creature, taskName, args = {}) {
+    assignCreatureTask(creature, taskName, args = {}, options = {}) {
         if (!creature) return false;
         if (!AnazhRealm.CREATURE_TASKS.includes(taskName)) {
             this.log(`assignCreatureTask: unbekannter Task '${taskName}'`, "WARNING");
             return false;
         }
+        const prev = this._getCreatureTask(creature);
+        const prevName = prev && prev.name;
         creature.userData = creature.userData || {};
         creature.userData.task = {
             name: taskName,
@@ -5833,12 +5845,90 @@ class AnazhRealm {
             since: performance.now() / 1000,
         };
         this._refreshCreatureTaskAura(creature);
+        // Welle 6.H V2 — Vision-Antwort bei echtem Task-Wechsel. `silent` ist
+        // für Spawn-Defaults + Test-Reset, damit das Init nicht 10 Pings
+        // hagelt und das Journal nicht mit Default-Wechseln flutet.
+        if (!options.silent && prevName && prevName !== taskName) {
+            this._playCreatureTaskPing(taskName);
+            this._journalCreatureTask(creature, taskName, prevName);
+        }
+        if (typeof this._renderTaskStatusUI === "function") this._renderTaskStatusUI();
         return true;
+    }
+
+    // Vision §1.2 — kurzer Sinus-Ping bei Beziehungs-Geste. Stumm für
+    // wander (das Lösen der Bindung tönt nicht). Symphony deaktiviert →
+    // kein Ping, kein Fehler. Audio-Graph analog Spawn-Singing.
+    _playCreatureTaskPing(taskName) {
+        const sym = this.state.symphony;
+        if (!sym || !sym.enabled || !sym.ctx) return;
+        const freq = AnazhRealm.CREATURE_TASK_PING_FREQ[taskName];
+        if (!freq) return;
+        try {
+            const ctx = sym.ctx;
+            const now = ctx.currentTime;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(freq, now);
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.linearRampToValueAtTime(0.08, now + 0.03);
+            gain.gain.exponentialRampToValueAtTime(0.0005, now + 0.4);
+            const dest = sym.masterGain || ctx.destination;
+            osc.connect(gain).connect(dest);
+            osc.start(now);
+            osc.stop(now + 0.45);
+        } catch {
+            /* Audio darf nie hart blockieren */
+        }
+    }
+
+    // Vision §1.1 — Welt erinnert sich an die Beziehungs-Geste. Pro echtem
+    // Task-Wechsel ein „relationship"-Journal-Eintrag. NICHT idempotent —
+    // jeder Ruf „folge mir" ist eine eigene Geste, das Journal trägt jede.
+    _journalCreatureTask(creature, taskName, prevName) {
+        if (typeof this.journalAppend !== "function") return;
+        const labels = {
+            wander: "streift wieder frei",
+            follow_player: "schließt sich an",
+            wait: "harrt",
+        };
+        const text = `Eine Kreatur ${labels[taskName] || "ändert ihren Auftrag"}.`;
+        this.journalAppend("relationship", text, {
+            task: taskName,
+            from: prevName,
+            creatures_total: this.state.creatures.length,
+        });
     }
 
     assignTaskToNearestCreature(toPos, taskName, args = {}, maxDist = 60) {
         const target = this.findNearestCreature(toPos, maxDist);
-        if (!target) return null;
+        if (!target) {
+            // Welle 6.H V2 — UX-Schwäche aus Audit: stumme Leerschläge.
+            // Spieler erfährt jetzt warum die Geste leer blieb — via
+            // Chat-Output (sofort sichtbar) UND Welt-Journal (die Welt
+            // erinnert sich auch an Gesten, die ins Leere gehen).
+            if (typeof document !== "undefined") {
+                const chatOutput = document.getElementById("chat-output");
+                if (chatOutput) {
+                    const line = document.createElement("div");
+                    line.textContent = "(Keine Kreatur in der Nähe.)";
+                    line.style.opacity = "0.65";
+                    chatOutput.appendChild(line);
+                    chatOutput.scrollTop = chatOutput.scrollHeight;
+                }
+            }
+            if (typeof this.log === "function") {
+                this.log("Keine Kreatur in Reichweite für Auftrag", "INFO");
+            }
+            if (typeof this.journalAppend === "function") {
+                this.journalAppend("reach", `Ein Auftrag „${taskName}" verhallte ohne Hörer.`, {
+                    task: taskName,
+                    maxDist,
+                });
+            }
+            return null;
+        }
         if (this.assignCreatureTask(target, taskName, args)) return target;
         return null;
     }
@@ -5894,33 +5984,12 @@ class AnazhRealm {
         return null;
     }
 
-    // Aura-Sprite über der Kreatur. Lazy-erstellt beim ersten non-wander-
-    // Task, disposed bei Rückkehr zu wander. Sprite-Position wird im
-    // updateCreatures-Loop nachgeführt (Y-Offset über dem Mesh).
-    _refreshCreatureTaskAura(creature) {
-        if (!creature) return;
-        const task = this._getCreatureTask(creature);
-        const hue = task ? AnazhRealm.CREATURE_TASK_AURA_HUE[task.name] : null;
-        const aura = creature.userData && creature.userData.taskAura;
-        if (hue === null || hue === undefined) {
-            // Task wander → Aura entfernen
-            if (aura) {
-                if (this.state.scene) this.state.scene.remove(aura);
-                if (aura.material) {
-                    if (aura.material.map) aura.material.map.dispose();
-                    aura.material.dispose();
-                }
-                creature.userData.taskAura = null;
-            }
-            return;
-        }
-        // Aura existiert → nur Hue aktualisieren über Material-Color-Setter
-        if (aura && aura.material && aura.material.color) {
-            aura.material.color.setHSL(hue / 360, 0.6, 0.65);
-            return;
-        }
-        // Aura neu erstellen — kleines additives Sprite über der Kreatur
-        if (typeof THREE === "undefined") return;
+    // Welle 6.H V2 — geteilte Gradient-Textur als Cache (analog 6.D
+    // Player-Aura). Ein einziges Canvas-Bild, jede Aura tintet via
+    // material.color. 20 Task-Wechsel = 1 Textur statt 20.
+    _getCreatureTaskAuraTexture() {
+        if (this._creatureAuraTextureCache) return this._creatureAuraTextureCache;
+        if (typeof document === "undefined" || typeof THREE === "undefined") return null;
         const canvas = document.createElement("canvas");
         canvas.width = 64;
         canvas.height = 64;
@@ -5931,7 +6000,37 @@ class AnazhRealm {
         g.addColorStop(1, "rgba(255,255,255,0)");
         cx.fillStyle = g;
         cx.fillRect(0, 0, 64, 64);
-        const texture = new THREE.CanvasTexture(canvas);
+        this._creatureAuraTextureCache = new THREE.CanvasTexture(canvas);
+        return this._creatureAuraTextureCache;
+    }
+
+    // Aura-Sprite über der Kreatur. Lazy-erstellt beim ersten non-wander-
+    // Task, disposed bei Rückkehr zu wander. Sprite-Position wird im
+    // updateCreatures-Loop nachgeführt (Y-Offset über dem Mesh). Textur
+    // ist shared (V2-Fix) — nur das SpriteMaterial wird pro Aura erzeugt.
+    _refreshCreatureTaskAura(creature) {
+        if (!creature) return;
+        const task = this._getCreatureTask(creature);
+        const hue = task ? AnazhRealm.CREATURE_TASK_AURA_HUE[task.name] : null;
+        const aura = creature.userData && creature.userData.taskAura;
+        if (hue === null || hue === undefined) {
+            // Task wander → Aura entfernen. Textur NICHT disposen (shared).
+            if (aura) {
+                if (this.state.scene) this.state.scene.remove(aura);
+                if (aura.material) aura.material.dispose();
+                creature.userData.taskAura = null;
+            }
+            return;
+        }
+        // Aura existiert → nur Hue aktualisieren über Material-Color-Setter
+        if (aura && aura.material && aura.material.color) {
+            aura.material.color.setHSL(hue / 360, 0.6, 0.65);
+            return;
+        }
+        // Aura neu erstellen — Textur kommt aus shared cache (V2-Fix gegen Memory-Churn).
+        if (typeof THREE === "undefined") return;
+        const texture = this._getCreatureTaskAuraTexture();
+        if (!texture) return;
         const mat = new THREE.SpriteMaterial({
             map: texture,
             blending: THREE.AdditiveBlending,
@@ -5945,6 +6044,29 @@ class AnazhRealm {
         if (this.state.scene) this.state.scene.add(sprite);
         creature.userData = creature.userData || {};
         creature.userData.taskAura = sprite;
+    }
+
+    // Welle 6.H V2 — UX: Status-Bar zeigt aktive Aufträge auf einen Blick.
+    // „2 folgen · 1 warten" / „—" wenn alle wandern. Update kommt aus
+    // assignCreatureTask + removeCreature + spawnCreatures (Lifecycle-Events).
+    _renderTaskStatusUI() {
+        if (typeof document === "undefined") return;
+        const el = document.getElementById("status-tasks");
+        if (!el) return;
+        let follow = 0;
+        let wait = 0;
+        if (Array.isArray(this.state.creatures)) {
+            for (const c of this.state.creatures) {
+                const t = this._getCreatureTask(c);
+                if (!t) continue;
+                if (t.name === "follow_player") follow++;
+                else if (t.name === "wait") wait++;
+            }
+        }
+        const parts = [];
+        if (follow > 0) parts.push(`${follow} folgen`);
+        if (wait > 0) parts.push(`${wait} warten`);
+        el.textContent = parts.length ? parts.join(" · ") : "—";
     }
 
     spawnCreatures(count = 10) {
@@ -6554,9 +6676,18 @@ class AnazhRealm {
             apply_op: (a) => `bearbeitet Teil ${a[1]} von „${a[0]}" mit „${a[2]}"`,
             set_mode: (a) => `wechselt die Welt-Beziehung auf „${a[0]}"`,
             add_to_inventory: (a) => `legt ${a[1] || 1}× „${a[0]}" ins Inventar`,
-            creature_task: (a) => `gibt Kreatur #${a[0]} den Auftrag „${a[1]}"`,
-            creature_task_nearest: (a) => `gibt der nächsten Kreatur den Auftrag „${a[0]}"`,
-            creature_task_all: (a) => `gibt allen Kreaturen den Auftrag „${a[0]}"`,
+            creature_task: (a) => {
+                const dist = Number.isFinite(a[2]) ? ` (Distanz ${a[2]}m)` : "";
+                return `gibt Kreatur #${a[0]} den Auftrag „${a[1]}"${dist}`;
+            },
+            creature_task_nearest: (a) => {
+                const dist = Number.isFinite(a[1]) ? ` (Distanz ${a[1]}m)` : "";
+                return `gibt der nächsten Kreatur den Auftrag „${a[0]}"${dist}`;
+            },
+            creature_task_all: (a) => {
+                const dist = Number.isFinite(a[1]) ? ` (Distanz ${a[1]}m)` : "";
+                return `gibt allen Kreaturen den Auftrag „${a[0]}"${dist}`;
+            },
             creatures_color: () => `färbt alle Kreaturen`,
             creatures_emotion: (a) => `setzt die Kreaturen-Stimmung auf „${a[0]}"`,
             creatures_speed_mul: (a) => `skaliert die Kreaturen-Geschwindigkeit um ${a[0]}`,
