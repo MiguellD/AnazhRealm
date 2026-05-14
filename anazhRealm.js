@@ -14019,17 +14019,34 @@ class AnazhRealm {
 
     inventoryInitDOM() {
         if (typeof document === "undefined") return;
-        // Tab-Taste toggelt Overlay. Im Chat-Input-Focus wird die Taste
-        // an den Browser durchgereicht (Tab = Feld-Wechsel) — gleicher
-        // Pfad wie bei anderen Game-Keys.
-        window.addEventListener("keydown", (event) => {
-            if (event.key !== "Tab") return;
-            const active = document.activeElement;
-            if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.isContentEditable))
-                return;
-            event.preventDefault();
-            this.toggleInventoryOverlay();
-        });
+        // Tab-Taste toggelt Overlay UNCONDITIONAL — kein Input-Bypass mehr.
+        // Vorher: aus Chat-Input-Focus durfte Tab durchgereicht werden, damit
+        // der Spieler „aus dem Feld tabben" kann. In der Praxis aber:
+        //   - User klickt Chat-Input → Tab wechselt zum nächsten focusable
+        //     Element = erster Hotbar-Slot, sieht aus wie „Tab cycelt durch
+        //     Hotbar". Inventory öffnet nie. Fehlerhaft.
+        //   - Convention für Verlassen eines Feldes ist Esc oder
+        //     Klick-Außen, nicht Tab.
+        // Jetzt: Tab → preventDefault + blur(activeElement) + toggle.
+        // Capture-Phase damit der Listener VOR allem anderen fired.
+        window.addEventListener(
+            "keydown",
+            (event) => {
+                if (event.key !== "Tab") return;
+                event.preventDefault();
+                event.stopPropagation();
+                const active = document.activeElement;
+                if (active && typeof active.blur === "function" && active !== document.body) {
+                    try {
+                        active.blur();
+                    } catch {
+                        /* defensive */
+                    }
+                }
+                this.toggleInventoryOverlay();
+            },
+            true
+        );
         // Initiales Render (leeres Inventar = leere Slots).
         this.renderInventoryUI();
     }
