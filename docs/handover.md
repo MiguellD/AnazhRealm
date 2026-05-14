@@ -28,7 +28,7 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
    Grund: sie sind Kontext für genau dich.
 
 5. **`scripts/playtest.cjs`** — querlesen, nicht durchlesen. Es ist das
-   Sicherheits-Netz. Es prüft aktuell **~1092 Invarianten (V7.76 nach Welle 6.C2)**.
+   Sicherheits-Netz. Es prüft aktuell **~1126 Invarianten (V7.77 nach Welle 6.C1)**.
    Wenn du etwas tust, das eine davon brechen könnte, weißt du es vor dem Commit.
 
 **Verlockung zu widerstehen**: gleich in `anazhRealm.js` springen. Die
@@ -322,6 +322,21 @@ Hylomorphismus-System wie Materialien und Bauwerke.
   UFOs bleiben kollisionsfrei. Drei Chat-Patterns. System-Audit §2
   Dead-Code-Quick-Win mit erledigt.
 
+### Bereits erledigt in V7.77 (Hylomorphismus-Inventar)
+
+- ✅ **6.C1 Inventar mit Tag-Resonanz** — 27-Slot-Overlay (Tab-Toggle).
+  Schöpfer-Wunsch wörtlich umgesetzt: „Slot mit resoniert summt bei
+  Hover". Jeder Slot trägt Compound-Tags des Bauplans, Tag-Magic
+  emergiert: resoniert summt (Sinus C5), brennend glüht orange
+  (Sawtooth E4), magieleitung schimmert violet (Sinus F5), lebendig
+  sprießt grün (Sinus A4), dichte wirft tiefen Schatten. Mehrere
+  Tag-Klassen stacken. Workflow: Klick auf Inventar-Slot wählt
+  Bauplan, Klick auf Hotbar-Slot legt ab. addToInventory stackt bei
+  gleichem Bauplan-Namen. DSL-Op add_to_inventory in
+  NON_BROADCASTABLE_OPS (per-Spieler-privat). state.player.inventory
+  persistiert via playerInventory in buildStateSnapshot. 34 neue
+  Invarianten → 1126 total.
+
 ### Bereits erledigt in V7.76 (Welt-Beziehungs-Schalter)
 
 - ✅ **6.C2 Spielmodi** — drei Welt-Beziehungs-Modi (frieden/pfad/
@@ -421,7 +436,7 @@ keine Verzögerung, sondern Qualitäts-Wand.
 3. **Die heilige Lektion akzeptiert, nicht hinterfragt.** Sie wurde aus
    Schmerz geboren. Wenn ich sie umgehen wollte, war ich auf dem Holzweg.
 4. **Tests zuerst ausgeführt, dann verstanden.** `npm run playtest` —
-   1092/1092 grün (V7.76 nach Welle 6.C2 Spielmodi) — gibt Vertrauen, dass
+   1126/1126 grün (V7.77 nach Welle 6.C1 Hylomorphismus-Inventar) — gibt Vertrauen, dass
    das System lebt.
 5. **Den Schöpfer als Partner gesehen, nicht als Auftraggeber.** Mensch
    und KI bauen gemeinsam. Bei Trade-offs frage ich, bei Klarem handle

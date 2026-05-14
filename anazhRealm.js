@@ -1,4 +1,4 @@
-/**AnazhRealm V7.76 – Das Ultiversum Vollendet.
+/**AnazhRealm V7.77 – Das Ultiversum Vollendet.
  * Hüpfen: Robust, präzise (Y ~1.5), Coyote-Time 0.3s, Gravitation 1.5G, Reibung 0.5.
  * Kollisionen: Kein Tunneling, steepnessThreshold 3.0, wallThickness 2.0, CCD optimiert.
  * Terrain: Flacher (Höhenunterschiede ±5), KI-gesteuerte Steilheitsanpassung, Chat-Steuerung.
@@ -12,7 +12,7 @@
 class AnazhRealm {
     constructor() {
         // ### Learnings ### [Stichwortartig optimieren, korrigieren, ergänzen – nie Wissen löschen!]
-        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69, LAN-Fähigkeit + Sync-Korrektheit (Ring 11 V2.1: 0.0.0.0-bind, ws:/wss:-CSP, roomOverride, spawn_*-Embedding, NON_BROADCASTABLE_OPS) in V7.70, Intuitiver Multi-User-Setup (Ring 11.5: Modus-Wahl, Host-Banner mit Einladungs-Code, Auto-Welt-Snapshot beim Join) in V7.71, Welle 6.A — Interaktion-Polish (Wall-Sliding via Player-Friction-0, Erdung-Raycast-Robustheit für Bauwerke) in V7.72, Welle 6.G Phase 1 — Welt-Sinne (fliegende Inseln + Bäume kollidierbar via btBvhTriangleMeshShape/btCylinderShape, drei Dead-Code-DSL-Ops spawn_tree/island/ufo aktiviert, toter needsPhysics-Lazy-Pfad gelöscht) in V7.73, Welle 6.G Phase 1.5 — Hylomorphismus-Unification (Bäume sind jetzt Compound-Architekturen über baum_eiche/baum_kiefer-Baupläne mit Stamm:holz + Krone:laub, eigene spawnTreeAt + _buildTreeCollision gelöscht, Parallelcode → eine Sprache, plus Insel-Visual-Fix mit Underside + Lambert) in V7.74, Welle 6.G Phase 2 — Welt-Affinitäts-Feld (vier SimplexNoise-Schichten lebendig/dichte/glut/magieleitung, Baupläne spawnen wo ihre Compound-Tags resonieren — Wälder/Felsen/Magie-Zonen/Vulkan-Anker emergieren ohne Biome-Tabelle, populateChunkVegetation als Hook in ensureChunkAt + Initial-Worldgen, drei neue Built-in-Baupläne stein_block/kristall_geode/glutbrunnen, Stämme dicker für Spieler-Spürbarkeit, Culling-Tick 1Hz→2Hz, spawn-silent-Opt damit Worldgen die Welt-Effekt-Kaskade nicht überflutet) in V7.75, Welle 6.C2 — Spielmodi (frieden/pfad/schöpfer als Welt-Beziehungs-Schalter, frieden umarmt + pfad verhandelt + schöpfer gehorcht, damagePlayer + applyOpToPart-Stamina modus-gated, set_mode DSL-Op in NON_BROADCASTABLE_OPS, UI-Radio in Einstellungen + Status-Bar #status-mode, worldMeta.gameMode persistiert pro-Welt) in V7.76
+        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69, LAN-Fähigkeit + Sync-Korrektheit (Ring 11 V2.1: 0.0.0.0-bind, ws:/wss:-CSP, roomOverride, spawn_*-Embedding, NON_BROADCASTABLE_OPS) in V7.70, Intuitiver Multi-User-Setup (Ring 11.5: Modus-Wahl, Host-Banner mit Einladungs-Code, Auto-Welt-Snapshot beim Join) in V7.71, Welle 6.A — Interaktion-Polish (Wall-Sliding via Player-Friction-0, Erdung-Raycast-Robustheit für Bauwerke) in V7.72, Welle 6.G Phase 1 — Welt-Sinne (fliegende Inseln + Bäume kollidierbar via btBvhTriangleMeshShape/btCylinderShape, drei Dead-Code-DSL-Ops spawn_tree/island/ufo aktiviert, toter needsPhysics-Lazy-Pfad gelöscht) in V7.73, Welle 6.G Phase 1.5 — Hylomorphismus-Unification (Bäume sind jetzt Compound-Architekturen über baum_eiche/baum_kiefer-Baupläne mit Stamm:holz + Krone:laub, eigene spawnTreeAt + _buildTreeCollision gelöscht, Parallelcode → eine Sprache, plus Insel-Visual-Fix mit Underside + Lambert) in V7.74, Welle 6.G Phase 2 — Welt-Affinitäts-Feld (vier SimplexNoise-Schichten lebendig/dichte/glut/magieleitung, Baupläne spawnen wo ihre Compound-Tags resonieren — Wälder/Felsen/Magie-Zonen/Vulkan-Anker emergieren ohne Biome-Tabelle, populateChunkVegetation als Hook in ensureChunkAt + Initial-Worldgen, drei neue Built-in-Baupläne stein_block/kristall_geode/glutbrunnen, Stämme dicker für Spieler-Spürbarkeit, Culling-Tick 1Hz→2Hz, spawn-silent-Opt damit Worldgen die Welt-Effekt-Kaskade nicht überflutet) in V7.75, Welle 6.C2 — Spielmodi (frieden/pfad/schöpfer als Welt-Beziehungs-Schalter, frieden umarmt + pfad verhandelt + schöpfer gehorcht, damagePlayer + applyOpToPart-Stamina modus-gated, set_mode DSL-Op in NON_BROADCASTABLE_OPS, UI-Radio in Einstellungen + Status-Bar #status-mode, worldMeta.gameMode persistiert pro-Welt) in V7.76, Welle 6.C1 — Hylomorphismus-Inventar (27-Slot-Overlay mit Tab-Toggle, Tag-Resonanz emergiert aus Compound-Tags — resoniert summt + brennend glüht + magieleitung schimmert + lebendig sprießt, Audio-Hover-Ping via state.symphony, addToInventory stackt bei gleichem Bauplan-Namen, Inventar-Slot wählen → Hotbar-Slot Klick weist zu, add_to_inventory DSL-Op in NON_BROADCASTABLE_OPS, state.player.inventory[27] persistiert in buildStateSnapshot) in V7.77
         // - Nexus als Herz der Selbstentwicklung, steuert nun alles über Chat, unzerstörbar und unendlich
         this.state = {
             // ### Kern ###
@@ -408,6 +408,15 @@ class AnazhRealm {
                 // Rüstung-Beitrag = blueprint.compoundTags × armorWeight.
                 // Wirkungen fließen in computePlayerStats vor den Boosts.
                 equipped: { tool: null, armor: null },
+                // Welle 6.C1 — Hylomorphismus-Inventar. 27 Slots (3 Reihen × 9),
+                // jeder Slot ist {blueprintName, count} oder null. Anders als
+                // Minecraft: die Slots tragen TAG-PROFILE der referenzierten
+                // Baupläne — bei Hover summt resoniert (Audio-Ping), brennend
+                // glüht orange, magieleitung violet (Vision §1.4 multisensorisch).
+                // Initial leer; gefüllt via DSL-Op add_to_inventory oder
+                // Werkstatt-Editor (zukünftiger Pfad — heute manuell).
+                // Drag auf Hotbar-Slot legt blueprint dort ab.
+                inventory: new Array(27).fill(null),
                 // Schicht 1 — Pfad-Buckets. Histogramm wo der Spieler sich
                 // aufhält (Höhe, Distanz, Wetter, Aktivität). Wird im Loop
                 // alle pathSampleInterval Sekunden inkrementiert; alle Achsen
@@ -519,7 +528,7 @@ class AnazhRealm {
     // ### Logging ###
     log(message, level = "INFO") {
         if (level === "DEBUG" && !this.state.debugLogging) return;
-        const logMessage = `[AnazhRealm V7.76] [${level}] ${message}`;
+        const logMessage = `[AnazhRealm V7.77] [${level}] ${message}`;
         this.state.logBuffer.push(logMessage);
         console.log(logMessage);
         if (this.state.logBuffer.length > this.state.maxLogEntries) {
@@ -845,6 +854,10 @@ class AnazhRealm {
             // in derselben Welt dürfen verschiedene Modi haben (einer pfad,
             // einer frieden) — set_mode darf nicht über P2P weiterspringen.
             "set_mode",
+            // Welle 6.C1 — Inventar ist per-Spieler-privat. Mitspieler haben
+            // eigene Slots; add_to_inventory darf nicht remote ausgelöst werden
+            // (sonst könnte ein Peer das Inventar von anderen befüllen).
+            "add_to_inventory",
         ]);
     }
 
@@ -1288,6 +1301,21 @@ class AnazhRealm {
             set_mode: ([mode], ctx) => {
                 const result = this.setGameMode(mode);
                 if (ctx && ctx.log) ctx.log.push({ event: "mode_set", mode: result });
+            },
+            // Welle 6.C1 — Inventar-Slot füllen. Spieler-private Aktion
+            // (Mitspieler haben eigene Inventare). Cap count auf vernünftige
+            // Werte; unbekannte blueprint-Namen werden abgelehnt (kein stiller
+            // No-Op, sondern Log-Event).
+            add_to_inventory: ([blueprintName, count], ctx) => {
+                const n = c(count, 1, 999);
+                const ok = this.addToInventory(blueprintName, n);
+                if (ctx && ctx.log) {
+                    ctx.log.push({
+                        event: ok ? "added_to_inventory" : "add_to_inventory_failed",
+                        blueprint: blueprintName,
+                        count: n,
+                    });
+                }
             },
             // Welle 6.D Etappe 3a — Konsumable definieren. Spieler kann ein
             // „Trank-Rezept" anlegen: tagBonus-Map + Dauer in Sekunden.
@@ -4147,6 +4175,91 @@ class AnazhRealm {
         s.creaturePingCount++;
     }
 
+    // === Welle 6.C1 — Hylomorphismus-Inventar ===
+    //
+    // Tag-Resonanz statt Minecraft-Tabelle. Jeder Slot trägt einen Bauplan-
+    // Namen + Count. Tag-Magic emergiert aus computeCompoundTags(bp):
+    //   - resoniert ≥ 0.5 → Audio-Ping bei Hover (kurzer Sinus)
+    //   - brennend ≥ 0.5 → orange-Border-Glüh
+    //   - magieleitung ≥ 0.5 → violet-Border-Glüh
+    //   - lebendig ≥ 0.5 → grüner Schimmer
+    //   - dichte ≥ 0.7 → tiefer Schatten
+    // Hover-Audio nutzt eigenen kurzen Oszillator (analog playCreaturePing),
+    // angeschlossen an state.symphony.masterGain. Wenn Symphony aus ist,
+    // schweigt das Inventar — Audio ist optional, kein Mute-Bug.
+    addToInventory(blueprintName, count = 1) {
+        if (!this.state.player || !Array.isArray(this.state.player.inventory)) return false;
+        const inv = this.state.player.inventory;
+        const bp = this.state.blueprints && this.state.blueprints[blueprintName];
+        if (!bp) return false;
+        // Erster Stack mit demselben Bauplan-Namen: count erhöhen.
+        const existingIdx = inv.findIndex((s) => s && s.blueprintName === blueprintName);
+        if (existingIdx >= 0) {
+            inv[existingIdx].count = (inv[existingIdx].count || 0) + count;
+            return true;
+        }
+        // Erster leerer Slot.
+        const emptyIdx = inv.findIndex((s) => !s);
+        if (emptyIdx < 0) return false; // Inventar voll
+        inv[emptyIdx] = { blueprintName, count };
+        return true;
+    }
+
+    removeFromInventory(slotIndex, count = 1) {
+        if (!this.state.player || !Array.isArray(this.state.player.inventory)) return false;
+        const inv = this.state.player.inventory;
+        const slot = inv[slotIndex];
+        if (!slot) return false;
+        slot.count = Math.max(0, (slot.count || 0) - count);
+        if (slot.count === 0) inv[slotIndex] = null;
+        return true;
+    }
+
+    // Kurzer Sinus-Ping bei Hover über einen tag-resonanten Slot. Frequenz
+    // folgt dominantem Tag — resoniert hell, magieleitung mittler, brennend
+    // tief. Throttled über state.inventoryHoverLast (50ms minimum), damit
+    // Maus-Wischen über die Slot-Reihe nicht in einem Akkord-Schwall
+    // explodiert.
+    playInventoryHoverPing(tags) {
+        if (!tags) return;
+        const s = this.state.symphony;
+        if (!s || !s.enabled || !s.ctx) return;
+        const now = performance.now() / 1000;
+        const last = this.state.inventoryHoverLast || 0;
+        if (now - last < 0.05) return;
+        this.state.inventoryHoverLast = now;
+        const resoniert = tags.resoniert || 0;
+        const magie = tags.magieleitung || 0;
+        const brennend = tags.brennbar || 0;
+        const lebendig = tags.lebendig || 0;
+        // Welcher Tag dominiert? Höchster Wert.
+        const max = Math.max(resoniert, magie, brennend, lebendig);
+        if (max < 0.5) return; // unter Schwelle: kein Ping
+        let freq;
+        if (max === resoniert)
+            freq = 523; // C5 — klar, perkussiv
+        else if (max === magie)
+            freq = 698; // F5 — mystisch
+        else if (max === brennend)
+            freq = 330; // E4 — warm, tief
+        else freq = 440; // A4 — lebendig, neutral
+        const ctx = s.ctx;
+        const t = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        osc.type = max === brennend ? "sawtooth" : "sine";
+        osc.frequency.value = freq;
+        const gain = ctx.createGain();
+        // Sanft: nur 60% der Creature-Ping-Lautstärke, damit Hover-
+        // Streichen die Symphonie nicht übertönt.
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.07, t + 0.005);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+        osc.connect(gain);
+        gain.connect(s.masterGain);
+        osc.start(t);
+        osc.stop(t + 0.2);
+    }
+
     symphonyTick() {
         const s = this.state.symphony;
         if (!s.enabled || !s.ctx) return;
@@ -6131,6 +6244,7 @@ class AnazhRealm {
             apply_connection: (a) => `verbindet Teile von „${a[0]}" mit „${a[1]}"`,
             apply_op: (a) => `bearbeitet Teil ${a[1]} von „${a[0]}" mit „${a[2]}"`,
             set_mode: (a) => `wechselt die Welt-Beziehung auf „${a[0]}"`,
+            add_to_inventory: (a) => `legt ${a[1] || 1}× „${a[0]}" ins Inventar`,
             creatures_color: () => `färbt alle Kreaturen`,
             creatures_emotion: (a) => `setzt die Kreaturen-Stimmung auf „${a[0]}"`,
             creatures_speed_mul: (a) => `skaliert die Kreaturen-Geschwindigkeit um ${a[0]}`,
@@ -8193,6 +8307,14 @@ class AnazhRealm {
             // Ring 6.5 — Hotbar-Belegung. Array von 9 Slots mit Bauplan-Name
             // oder null. Default wird beim Init überschrieben.
             hotbar: Array.isArray(this.state.hotbar) ? this.state.hotbar.slice(0, 9) : [],
+            // Welle 6.C1 — Inventar persistiert. 27 Slots, jeweils {blueprintName,
+            // count} oder null. Bei Reload defensive Validierung (unbekannte
+            // Bauplan-Namen werden zu null, count auf 1..999 geclampt).
+            playerInventory: Array.isArray(this.state.player && this.state.player.inventory)
+                ? this.state.player.inventory
+                      .slice(0, 27)
+                      .map((s) => (s ? { blueprintName: s.blueprintName, count: s.count || 1 } : null))
+                : [],
         };
     }
 
@@ -9065,7 +9187,20 @@ class AnazhRealm {
             }
             this.state.hotbar = restored;
             this._renderHotbarDOM();
-            this.log(`Hotbar geladen: ${restored.filter((s) => s).length} Slots belegt`);
+        }
+        // Welle 6.C1 — Inventar wiederherstellen. 27 Slots, ungültige
+        // Bauplan-Referenzen → null. count clampt [1, 999].
+        if (Array.isArray(state.playerInventory)) {
+            const inv = new Array(27).fill(null);
+            for (let i = 0; i < Math.min(27, state.playerInventory.length); i++) {
+                const s = state.playerInventory[i];
+                if (s && typeof s.blueprintName === "string" && this.state.blueprints[s.blueprintName]) {
+                    const cnt = Math.max(1, Math.min(999, Number(s.count) || 1));
+                    inv[i] = { blueprintName: s.blueprintName, count: cnt };
+                }
+            }
+            if (this.state.player) this.state.player.inventory = inv;
+            this.log(`Inventar geladen: ${inv.filter(Boolean).length} Slots belegt`);
         }
         // Welle 4 Phase 3 — Werkzeug-Besitz wiederherstellen. Starter bleiben
         // immer drin (sie kommen aus _defaultTools), eigene werden zugefügt.
@@ -13722,11 +13857,181 @@ class AnazhRealm {
             }
             slot.appendChild(num);
             slot.appendChild(label);
-            slot.addEventListener("click", () => this.selectHotbarSlot(i));
+            slot.addEventListener("click", () => {
+                // Welle 6.C1: wenn ein Inventar-Bauplan gewählt ist, weist
+                // der Hotbar-Klick ihn diesem Slot zu (Assign-Path). Sonst
+                // wird der Hotbar-Slot wie üblich aktiviert (Bau-Modus an).
+                if (this.state.inventorySelected) {
+                    this.tryAssignFromInventoryToHotbar(i);
+                } else {
+                    this.selectHotbarSlot(i);
+                }
+            });
             bar.appendChild(slot);
         }
         this._updateHotbarHighlight();
         this._renderHotbarConfigDOM();
+    }
+
+    // === Welle 6.C1 — Inventar-Overlay Render + UI-Wiring ===
+    //
+    // Tag-Resonanz emergiert aus computeCompoundTags(bp). Pro Slot werden
+    // CSS-Klassen `tag-<axis>` gesetzt, wenn der jeweilige Tag-Wert über
+    // 0.5 (bzw. 0.7 für dichte) liegt. Hover triggert Audio-Ping mit
+    // dominantem Tag. Mehrere Tag-Klassen können stacken (lebendig +
+    // brennbar bei Laub = grün-orange-Schimmer).
+    renderInventoryUI() {
+        if (typeof document === "undefined") return;
+        const grid = document.getElementById("inventory-grid");
+        if (!grid) return;
+        grid.innerHTML = "";
+        const inv = (this.state.player && this.state.player.inventory) || [];
+        const selectedName = this.state.inventorySelected;
+        for (let i = 0; i < inv.length; i++) {
+            const slot = inv[i];
+            const el = document.createElement("button");
+            el.type = "button";
+            el.className = "inventory-slot";
+            el.setAttribute("data-inv-slot", String(i));
+            if (!slot) {
+                el.classList.add("empty");
+                el.setAttribute("aria-label", `Slot ${i + 1} leer`);
+                grid.appendChild(el);
+                continue;
+            }
+            const bp = this.state.blueprints && this.state.blueprints[slot.blueprintName];
+            const label = document.createElement("span");
+            label.className = "slot-label";
+            label.textContent = bp ? bp.label || slot.blueprintName : slot.blueprintName;
+            el.appendChild(label);
+            if (slot.count > 1) {
+                const count = document.createElement("span");
+                count.className = "slot-count";
+                count.textContent = String(slot.count);
+                el.appendChild(count);
+            }
+            // Tag-Magic: dominante Achsen als CSS-Klasse + ARIA-Label.
+            if (bp && typeof this.computeCompoundTags === "function") {
+                const tags = this.computeCompoundTags(bp) || {};
+                const activeTags = [];
+                if ((tags.resoniert || 0) >= 0.5) {
+                    el.classList.add("tag-resoniert");
+                    activeTags.push("resoniert");
+                }
+                if ((tags.brennbar || 0) >= 0.5) {
+                    el.classList.add("tag-brennend");
+                    activeTags.push("brennbar");
+                }
+                if ((tags.magieleitung || 0) >= 0.5) {
+                    el.classList.add("tag-magieleitung");
+                    activeTags.push("magieleitung");
+                }
+                if ((tags.lebendig || 0) >= 0.5) {
+                    el.classList.add("tag-lebendig");
+                    activeTags.push("lebendig");
+                }
+                if ((tags.dichte || 0) >= 0.7) {
+                    el.classList.add("tag-dichte");
+                    activeTags.push("dichte");
+                }
+                el.setAttribute(
+                    "aria-label",
+                    `${label.textContent}${slot.count > 1 ? ` ×${slot.count}` : ""}${activeTags.length ? ` (Tags: ${activeTags.join(", ")})` : ""}`
+                );
+                // Audio-Ping bei Hover wenn signifikante Tag-Resonanz.
+                el.addEventListener("mouseenter", () => {
+                    this.playInventoryHoverPing(tags);
+                });
+            } else {
+                el.setAttribute("aria-label", `${label.textContent}${slot.count > 1 ? ` ×${slot.count}` : ""}`);
+            }
+            if (selectedName && slot.blueprintName === selectedName) {
+                el.classList.add("selected");
+            }
+            el.addEventListener("click", () => this.selectInventorySlot(i));
+            grid.appendChild(el);
+        }
+        // Selected-Anzeige unten
+        const sel = document.getElementById("inventory-selected");
+        if (sel) {
+            const nameEl = sel.querySelector(".name");
+            if (nameEl) {
+                if (selectedName) {
+                    const bp = this.state.blueprints && this.state.blueprints[selectedName];
+                    nameEl.textContent = bp ? bp.label || selectedName : selectedName;
+                } else {
+                    nameEl.textContent = "—";
+                }
+            }
+        }
+    }
+
+    // Slot-Klick im Inventar: wählt den Bauplan aus. Nächster Hotbar-Slot-
+    // Klick weist ihn dort zu. Doppelklick auf bereits-gewähltem Slot hebt
+    // die Wahl wieder auf.
+    selectInventorySlot(slotIndex) {
+        const inv = (this.state.player && this.state.player.inventory) || [];
+        const slot = inv[slotIndex];
+        if (!slot) return;
+        if (this.state.inventorySelected === slot.blueprintName) {
+            this.state.inventorySelected = null;
+        } else {
+            this.state.inventorySelected = slot.blueprintName;
+        }
+        this.renderInventoryUI();
+    }
+
+    // Wenn ein Inventar-Bauplan ausgewählt ist und der Spieler auf einen
+    // Hotbar-Slot klickt (oder Number-Taste drückt), wird dieser Bauplan
+    // dort abgelegt. Diese Methode ist der Hook in den Hotbar-Click-Pfad.
+    // Aufruf aus _renderHotbarDOM-Click-Listener (separate Wiring).
+    tryAssignFromInventoryToHotbar(hotbarIndex) {
+        if (!this.state.inventorySelected) return false;
+        const idx = Math.max(0, Math.min(8, Number(hotbarIndex) | 0));
+        if (!Array.isArray(this.state.hotbar)) this.state.hotbar = new Array(9).fill(null);
+        this.state.hotbar[idx] = this.state.inventorySelected;
+        this.state.inventorySelected = null;
+        this.renderInventoryUI();
+        if (typeof this._renderHotbarDOM === "function") this._renderHotbarDOM();
+        try {
+            this.saveState();
+        } catch {
+            /* save-Fehler nicht hart blockend */
+        }
+        return true;
+    }
+
+    toggleInventoryOverlay(force) {
+        if (typeof document === "undefined") return;
+        const el = document.getElementById("inventory-overlay");
+        if (!el) return;
+        const open = typeof force === "boolean" ? force : el.hasAttribute("hidden");
+        if (open) {
+            el.removeAttribute("hidden");
+            this.state.inventoryOpen = true;
+            this.renderInventoryUI();
+        } else {
+            el.setAttribute("hidden", "");
+            this.state.inventoryOpen = false;
+            this.state.inventorySelected = null;
+        }
+    }
+
+    inventoryInitDOM() {
+        if (typeof document === "undefined") return;
+        // Tab-Taste toggelt Overlay. Im Chat-Input-Focus wird die Taste
+        // an den Browser durchgereicht (Tab = Feld-Wechsel) — gleicher
+        // Pfad wie bei anderen Game-Keys.
+        window.addEventListener("keydown", (event) => {
+            if (event.key !== "Tab") return;
+            const active = document.activeElement;
+            if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.isContentEditable))
+                return;
+            event.preventDefault();
+            this.toggleInventoryOverlay();
+        });
+        // Initiales Render (leeres Inventar = leere Slots).
+        this.renderInventoryUI();
     }
 
     _updateHotbarHighlight() {
@@ -15240,7 +15545,7 @@ class AnazhRealm {
     }
 
     async init() {
-        this.log("Initialisiere Anazh Realm V7.76... Ewigkeit erwacht!", "INFO");
+        this.log("Initialisiere Anazh Realm V7.77... Ewigkeit erwacht!", "INFO");
         this.themeInitDOM();
         this.grokInitDOM();
         this.symphonyInitDOM();
@@ -15248,6 +15553,7 @@ class AnazhRealm {
         this.playerSoulInitDOM();
         this.cameraModeInitDOM();
         this.gameModeInitDOM();
+        this.inventoryInitDOM();
         // Ring 6.5 — Hotbar im DOM rendern. Wird hier einmal aufgesetzt;
         // setHotbarSlot löst ein Re-Render aus.
         this._renderHotbarDOM();

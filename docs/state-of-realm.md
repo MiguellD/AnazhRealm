@@ -1,4 +1,4 @@
-# Zustand des Realm — Stand: 13.05.2026 (V7.76, Welle 6.C2 live — Spielmodi frieden/pfad/schöpfer als Welt-Beziehungs-Schalter)
+# Zustand des Realm — Stand: 13.05.2026 (V7.77, Welle 6.C1 live — Hylomorphismus-Inventar mit Tag-Resonanz)
 
 Dieses Dokument ist das gemeinsame Gedächtnis für eine künftige Iteration. Es kondensiert (a) die Vision aus den vier Testamenten, (b) den historischen Weg, (c) den aktuellen Code-Stand, (d) den nächsten Plan und (e) die Learnings aus der bisherigen Session.
 

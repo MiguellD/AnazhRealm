@@ -7336,6 +7336,167 @@ function startSaveServer() {
                 check("Welle 6.C2: Radio-Button reflektiert aktuellen Modus", wave6c2Results.radioReflectsMode);
             }
 
+            // ### Welle 6.C1 — Hylomorphismus-Inventar ===
+            // 27 Slots mit Tag-Resonanz statt Minecraft-Tabelle. Tag-Profile
+            // emergieren aus computeCompoundTags(blueprint). Drag-Click-Pfad:
+            // Inventar-Slot wählen → Hotbar-Slot klicken → Bauplan abgelegt.
+            const wave6c1Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    // Datenmodell
+                    out.hasInventoryArray = Array.isArray(r.state.player && r.state.player.inventory);
+                    out.inventorySize = r.state.player.inventory.length;
+                    out.inventoryHas27Slots = r.state.player.inventory.length === 27;
+                    out.initiallyEmpty = r.state.player.inventory.every((s) => s === null);
+
+                    // Methoden
+                    out.hasAddToInventory = typeof r.addToInventory === "function";
+                    out.hasRemoveFromInventory = typeof r.removeFromInventory === "function";
+                    out.hasRenderInventoryUI = typeof r.renderInventoryUI === "function";
+                    out.hasSelectInventorySlot = typeof r.selectInventorySlot === "function";
+                    out.hasTryAssign = typeof r.tryAssignFromInventoryToHotbar === "function";
+                    out.hasToggleOverlay = typeof r.toggleInventoryOverlay === "function";
+                    out.hasPlayPing = typeof r.playInventoryHoverPing === "function";
+                    out.hasInventoryInitDOM = typeof r.inventoryInitDOM === "function";
+
+                    // addToInventory: ein bekannter Bauplan → erster leerer Slot
+                    const okAdd = r.addToInventory("baum_eiche", 3);
+                    out.addedToInventory = okAdd === true;
+                    out.slot0HasBaum = r.state.player.inventory[0]
+                        && r.state.player.inventory[0].blueprintName === "baum_eiche"
+                        && r.state.player.inventory[0].count === 3;
+                    // Zweiter Add desselben Bauplans: count kumuliert
+                    r.addToInventory("baum_eiche", 2);
+                    out.stacksCount =
+                        r.state.player.inventory[0] && r.state.player.inventory[0].count === 5;
+                    // Unbekannter Bauplan → false
+                    out.addRejectsUnknown = r.addToInventory("fictional_bp", 1) === false;
+
+                    // removeFromInventory: 5 → 3
+                    r.removeFromInventory(0, 2);
+                    out.removeWorks = r.state.player.inventory[0].count === 3;
+                    // Komplett entfernen → null
+                    r.removeFromInventory(0, 99);
+                    out.fullRemoveClearsSlot = r.state.player.inventory[0] === null;
+
+                    // DSL-Op add_to_inventory
+                    if (typeof r.dslRun === "function") {
+                        r.dslRun(["add_to_inventory", "village", 1], { source: "test" });
+                        const has = r.state.player.inventory.some(
+                            (s) => s && s.blueprintName === "village"
+                        );
+                        out.dslOpWorks = has;
+                    }
+
+                    // NON_BROADCASTABLE
+                    out.addToInventoryNonBroadcastable =
+                        r.constructor.NON_BROADCASTABLE_OPS &&
+                        r.constructor.NON_BROADCASTABLE_OPS.has("add_to_inventory");
+
+                    // describeProgram-Eintrag
+                    if (typeof r.describeProgram === "function") {
+                        const d = r.describeProgram(["add_to_inventory", "baum_eiche", 5]);
+                        out.describeWorks =
+                            typeof d === "string" && /Inventar|baum_eiche|5/.test(d);
+                    }
+
+                    // UI: Overlay-Element + Grid + Selected-Display
+                    out.overlayInDom = !!document.getElementById("inventory-overlay");
+                    out.gridInDom = !!document.getElementById("inventory-grid");
+                    out.selectedInDom = !!document.getElementById("inventory-selected");
+                    // Initial hidden
+                    const overlay = document.getElementById("inventory-overlay");
+                    out.initiallyHidden = overlay && overlay.hasAttribute("hidden");
+
+                    // Toggle öffnet + rendert 27 Slots
+                    r.toggleInventoryOverlay(true);
+                    const slots = document.querySelectorAll("#inventory-grid .inventory-slot");
+                    out.gridRendered27 = slots.length === 27;
+                    out.overlayVisibleAfterToggle = !overlay.hasAttribute("hidden");
+
+                    // Tag-Magic-Test: kristall_geode (quarz, magieleitung 0.85)
+                    // sollte die magie-Klasse bekommen. baum_eiche (laub,
+                    // lebendig 1.0) → lebendig-Klasse.
+                    r.state.player.inventory[0] = { blueprintName: "kristall_geode", count: 1 };
+                    r.state.player.inventory[1] = { blueprintName: "baum_eiche", count: 1 };
+                    r.renderInventoryUI();
+                    const slot0 = document.querySelector('#inventory-grid [data-inv-slot="0"]');
+                    const slot1 = document.querySelector('#inventory-grid [data-inv-slot="1"]');
+                    out.geodeHasMagieClass = slot0 && slot0.classList.contains("tag-magieleitung");
+                    out.baumHasLebendigClass = slot1 && slot1.classList.contains("tag-lebendig");
+                    // baum_eiche hat laub → brennbar 0.85 hoch
+                    out.baumHasBrennendClass = slot1 && slot1.classList.contains("tag-brennend");
+
+                    // Click → selectInventorySlot setzt inventorySelected
+                    r.selectInventorySlot(0);
+                    out.selectionWorks = r.state.inventorySelected === "kristall_geode";
+                    // Zweiter Klick auf gleichen → toggelt aus
+                    r.selectInventorySlot(0);
+                    out.selectionTogglesOff = r.state.inventorySelected === null;
+                    r.selectInventorySlot(0);
+
+                    // tryAssignFromInventoryToHotbar legt in Hotbar ab
+                    const hotbarBefore = r.state.hotbar.slice();
+                    const assignOk = r.tryAssignFromInventoryToHotbar(3);
+                    out.assignWorks = assignOk === true && r.state.hotbar[3] === "kristall_geode";
+                    out.assignClearsSelection = r.state.inventorySelected === null;
+
+                    // Toggle close
+                    r.toggleInventoryOverlay(false);
+                    out.toggleCloseHides = overlay.hasAttribute("hidden");
+                    out.toggleCloseClearsSelected = r.state.inventorySelected === null;
+
+                    // Test-Cleanup: Hotbar + Inventar zurück auf Defaults,
+                    // damit nachfolgende Tests (Ring 6.5 Default-Hotbar etc.)
+                    // nicht von Test-Verschmutzung verletzt werden.
+                    r.state.hotbar = ["village", "temple", "waterfall", null, null, null, null, null, null];
+                    r.state.player.inventory = new Array(27).fill(null);
+                    if (typeof r._renderHotbarDOM === "function") r._renderHotbarDOM();
+                    if (typeof r.renderInventoryUI === "function") r.renderInventoryUI();
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6c1Results && !wave6c1Results.error) {
+                check("Welle 6.C1: state.player.inventory ist Array", wave6c1Results.hasInventoryArray);
+                check("Welle 6.C1: Inventar hat exakt 27 Slots", wave6c1Results.inventoryHas27Slots);
+                check("Welle 6.C1: Inventar initial leer (alle 27 null)", wave6c1Results.initiallyEmpty);
+                check("Welle 6.C1: addToInventory-Methode existiert", wave6c1Results.hasAddToInventory);
+                check("Welle 6.C1: removeFromInventory-Methode existiert", wave6c1Results.hasRemoveFromInventory);
+                check("Welle 6.C1: renderInventoryUI-Methode existiert", wave6c1Results.hasRenderInventoryUI);
+                check("Welle 6.C1: selectInventorySlot-Methode existiert", wave6c1Results.hasSelectInventorySlot);
+                check("Welle 6.C1: tryAssignFromInventoryToHotbar existiert", wave6c1Results.hasTryAssign);
+                check("Welle 6.C1: toggleInventoryOverlay-Methode existiert", wave6c1Results.hasToggleOverlay);
+                check("Welle 6.C1: playInventoryHoverPing-Methode existiert", wave6c1Results.hasPlayPing);
+                check("Welle 6.C1: inventoryInitDOM-Methode existiert", wave6c1Results.hasInventoryInitDOM);
+                check("Welle 6.C1: addToInventory legt Eintrag in ersten leeren Slot", wave6c1Results.slot0HasBaum);
+                check("Welle 6.C1: addToInventory stackt bei gleichem Bauplan-Namen", wave6c1Results.stacksCount);
+                check("Welle 6.C1: addToInventory lehnt unbekannten Bauplan ab", wave6c1Results.addRejectsUnknown);
+                check("Welle 6.C1: removeFromInventory reduziert count", wave6c1Results.removeWorks);
+                check("Welle 6.C1: removeFromInventory(>count) clear Slot zu null", wave6c1Results.fullRemoveClearsSlot);
+                check("Welle 6.C1: DSL-Op add_to_inventory funktioniert", wave6c1Results.dslOpWorks);
+                check("Welle 6.C1: add_to_inventory in NON_BROADCASTABLE_OPS", wave6c1Results.addToInventoryNonBroadcastable);
+                check("Welle 6.C1: describeProgram nennt Inventar/Bauplan/Count", wave6c1Results.describeWorks);
+                check("Welle 6.C1: #inventory-overlay im DOM", wave6c1Results.overlayInDom);
+                check("Welle 6.C1: #inventory-grid im DOM", wave6c1Results.gridInDom);
+                check("Welle 6.C1: #inventory-selected im DOM", wave6c1Results.selectedInDom);
+                check("Welle 6.C1: Overlay initial versteckt", wave6c1Results.initiallyHidden);
+                check("Welle 6.C1: toggleInventoryOverlay(true) öffnet Overlay", wave6c1Results.overlayVisibleAfterToggle);
+                check("Welle 6.C1: Grid rendert 27 Slot-Elemente", wave6c1Results.gridRendered27);
+                check("Welle 6.C1: kristall_geode-Slot bekommt tag-magieleitung Klasse", wave6c1Results.geodeHasMagieClass);
+                check("Welle 6.C1: baum_eiche-Slot bekommt tag-lebendig Klasse", wave6c1Results.baumHasLebendigClass);
+                check("Welle 6.C1: baum_eiche-Slot bekommt tag-brennend Klasse (laub)", wave6c1Results.baumHasBrennendClass);
+                check("Welle 6.C1: selectInventorySlot setzt inventorySelected", wave6c1Results.selectionWorks);
+                check("Welle 6.C1: zweiter Klick auf gleichen Slot toggelt aus", wave6c1Results.selectionTogglesOff);
+                check("Welle 6.C1: tryAssignFromInventoryToHotbar legt in Hotbar ab", wave6c1Results.assignWorks);
+                check("Welle 6.C1: Assign löscht inventorySelected", wave6c1Results.assignClearsSelection);
+                check("Welle 6.C1: toggleInventoryOverlay(false) versteckt + räumt", wave6c1Results.toggleCloseHides);
+                check("Welle 6.C1: Schließen räumt inventorySelected", wave6c1Results.toggleCloseClearsSelected);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {
