@@ -14535,12 +14535,111 @@ class AnazhRealm {
 
     // Bau ausführen: spawnArchitecture an aktueller Phantom-Position.
     // Modus bleibt aktiv für Mehrfach-Bau (ESC verlässt explizit).
+    // === Welle 6.H Phase 2C — Material-Konsum beim Bauen (Spiegel zu harvest) ===
+    //
+    // Vision §1.5 Schöpfer-darf-frei-erschaffen + §10.1 Modus-Symmetrie: harvest
+    // ist die Materialien-IN-Quelle, build ist die Materialien-OUT-Senke. In
+    // pfad-Modus quantifiziert (Spielmechanik), in frieden+schöpfer kostenlos
+    // (Vision: Erstbegegnung umarmt, Schöpfer gehorcht). Die Kosten emergieren
+    // aus blueprint.parts via DERSELBEN Volumen-Formel wie harvestArchitecture
+    // (HARVEST_VOLUME_TO_UNITS=4). Eine Konstante, beide Richtungen — bauen
+    // einer 2.4³-stein_block kostet ~55 Stein und liefert beim harvest dieselben
+    // ~55 zurück. Wertneutral.
+    computeBuildCost(blueprintName) {
+        const bp = this.state.blueprints && this.state.blueprints[blueprintName];
+        if (!bp || !Array.isArray(bp.parts)) return {};
+        const cost = {};
+        const k = AnazhRealm.HARVEST_VOLUME_TO_UNITS || 4;
+        for (const part of bp.parts) {
+            if (!part || typeof part.material !== "string") continue;
+            const sx = Math.abs((part.size && part.size.x) || 1);
+            const sy = Math.abs((part.size && part.size.y) || 1);
+            const sz = Math.abs((part.size && part.size.z) || 1);
+            const volume = sx * sy * sz;
+            const units = Math.max(1, Math.round(volume * k));
+            cost[part.material] = (cost[part.material] || 0) + units;
+        }
+        return cost;
+    }
+
+    // Liefert {ok, missing} ohne Mutation. missing zeigt was fehlt (für UI
+    // + Chat-Output). Inventar-Summen pro Material gehen über alle Slots
+    // (Stacking ist bereits geregelt, aber defensiv summiert).
+    checkBuildCost(blueprintName) {
+        const cost = this.computeBuildCost(blueprintName);
+        const inv = (this.state.player && this.state.player.inventory) || [];
+        const have = {};
+        for (const slot of inv) {
+            if (slot && slot.kind === "material" && typeof slot.material === "string") {
+                have[slot.material] = (have[slot.material] || 0) + (slot.count || 0);
+            }
+        }
+        const missing = {};
+        for (const [mat, need] of Object.entries(cost)) {
+            const has = have[mat] || 0;
+            if (has < need) missing[mat] = need - has;
+        }
+        return { ok: Object.keys(missing).length === 0, cost, have, missing };
+    }
+
+    // Atomar konsumieren: erst prüfen, dann ALLE Materialien abziehen. Wenn
+    // einer fehlt, wird gar nichts abgezogen (keine halben Kosten). Slots
+    // werden in Reihenfolge geleert, leere Slots werden auf null gesetzt
+    // (selbe Disziplin wie removeFromInventory).
+    tryConsumeBuildCost(blueprintName) {
+        const check = this.checkBuildCost(blueprintName);
+        if (!check.ok) return check;
+        const inv = this.state.player.inventory;
+        for (const [mat, need] of Object.entries(check.cost)) {
+            let remaining = need;
+            for (let i = 0; i < inv.length && remaining > 0; i++) {
+                const slot = inv[i];
+                if (!slot || slot.kind !== "material" || slot.material !== mat) continue;
+                const take = Math.min(remaining, slot.count || 0);
+                slot.count = (slot.count || 0) - take;
+                remaining -= take;
+                if (slot.count <= 0) inv[i] = null;
+            }
+        }
+        return check;
+    }
+
+    // Gate für confirmBuild + tryMousePlace: nur pfad-Modus konsumiert.
+    // frieden + schöpfer bauen kostenlos (Vision §1.5 + §10.1). Liefert
+    // dasselbe {ok, missing}-Shape wie checkBuildCost; im Free-Modus immer
+    // ok=true ohne Konsum.
+    _buildMaterialGate(blueprintName) {
+        const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
+        if (mode !== "pfad") return { ok: true, cost: {}, missing: {}, free: true };
+        return this.tryConsumeBuildCost(blueprintName);
+    }
+
     confirmBuild() {
         const bm = this.state.buildMode;
         if (!bm.active || !bm.blueprintName || !bm.phantomMesh) return false;
+        // Material-Gate (modus-abhängig): pfad zieht Materialien ab oder
+        // lehnt bei Mangel ab; frieden + schöpfer bauen kostenlos.
+        const gate = this._buildMaterialGate(bm.blueprintName);
+        if (!gate.ok) {
+            const missingStr = Object.entries(gate.missing)
+                .map(([m, n]) => `${n}× ${m}`)
+                .join(", ");
+            this.log(`Bauen: nicht genug Material (fehlt: ${missingStr}).`, "INFO");
+            this._renderBuildModeHud && this._renderBuildModeHud();
+            return false;
+        }
         const p = bm.phantomMesh.position;
         const spawnPos = { x: p.x, y: p.y + 0.5, z: p.z };
         this.spawnArchitecture(bm.blueprintName, spawnPos);
+        // Inventar-UI + HUD nach Konsum aktualisieren (pfad).
+        if (!gate.free) {
+            this.renderInventoryUI && this.renderInventoryUI();
+            this._renderBuildModeHud && this._renderBuildModeHud();
+            const consumedStr = Object.entries(gate.cost)
+                .map(([m, n]) => `${n}× ${m}`)
+                .join(", ");
+            this.log(`Gebaut: ${bm.blueprintName} (verbraucht ${consumedStr}).`, "INFO");
+        }
         return true;
     }
 
@@ -15007,14 +15106,41 @@ class AnazhRealm {
             // initialisiert ist (Test-Edge-Cases).
             const kb = this.state.keybindings || AnazhRealm.DEFAULT_KEYBINDINGS;
             const fmt = (code) => this._formatBindingCode(code);
-            hud.textContent =
+            // Welle 6.H Phase 2C — Material-Kosten + Verfügbarkeit. Nur in
+            // pfad-Modus angezeigt (frieden + schöpfer bauen frei und sollen
+            // die HUD nicht mit Zahlen zumüllen). Fehlende Materialien sind
+            // rot getintet, ausreichende sind brass-warm.
+            const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
+            let costLine = "";
+            if (mode === "pfad" && typeof this.checkBuildCost === "function") {
+                const check = this.checkBuildCost(bm.blueprintName);
+                const parts = Object.entries(check.cost).map(([m, n]) => {
+                    const have = check.have[m] || 0;
+                    const ok = have >= n;
+                    const color = ok ? "#d4a373" : "#e57b6c";
+                    return `<span style="color:${color}">${n}× ${m} (${have})</span>`;
+                });
+                if (parts.length > 0) {
+                    costLine = ` · ${parts.join(", ")}`;
+                }
+            } else if (mode === "schöpfer" || mode === "frieden") {
+                costLine = ` · <span style="color:#a8c8ff">${mode === "schöpfer" ? "Schöpfer" : "Frieden"}: frei</span>`;
+            }
+            hud.innerHTML =
                 `Bau: ${label} — ${fmt(kb.confirmBuild)}/${fmt(kb.place)} bauen, ` +
-                `${fmt(kb.cancelBuild)} verlassen, 1-9 Slot, ${fmt(kb.break)} abbauen`;
+                `${fmt(kb.cancelBuild)} verlassen, 1-9 Slot, ${fmt(kb.break)} abbauen${costLine}`;
             hud.hidden = false;
         } else {
             hud.hidden = true;
             hud.textContent = "";
         }
+    }
+
+    // Alias damit Aufrufer beide Namen nutzen können (interne Konsistenz —
+    // setGameMode/setKeybinding rufen _updateBuildModeHud, confirmBuild ruft
+    // _renderBuildModeHud; beide zeigen auf denselben Render-Pfad).
+    _renderBuildModeHud() {
+        this._updateBuildModeHud();
     }
 
     // Hotbar-DOM neu rendern: 9 Slots mit Label + Slot-Nummer. Wird beim
@@ -16391,6 +16517,10 @@ class AnazhRealm {
         // bringt seinen Zustand mit (Vision: Welt-Beziehung ändert sich,
         // nicht der Spieler).
         this._renderGameModeUI();
+        // Welle 6.H Phase 2C — Bau-HUD muss bei Modus-Wechsel mit: aus
+        // pfad raus → Kosten-Zeile verschwindet; in pfad rein → Kosten-Zeile
+        // erscheint. Defensiv (Test-Edge-Cases vor Init).
+        if (typeof this._updateBuildModeHud === "function") this._updateBuildModeHud();
         try {
             this.saveState();
         } catch {

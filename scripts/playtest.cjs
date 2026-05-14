@@ -9713,6 +9713,209 @@ function startSaveServer() {
                 );
             }
 
+            // ### Welle 6.H Phase 2C — Material-Konsum beim Bauen (modus-symmetrisch) ###
+            // Vision §1.5 Schöpfer-darf-frei-erschaffen + Modus-Symmetrie zu
+            // damagePlayer/applyOpToPart-Stamina: pfad konsumiert, frieden +
+            // schöpfer kostenlos. computeBuildCost ≡ harvestArchitecture
+            // (Wertneutralität — bauen einer Box kostet das was harvest
+            // zurückliefert).
+            const wave6hP2cResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.playerMesh) return null;
+                    const out = {};
+                    out.hasComputeBuildCost = typeof r.computeBuildCost === "function";
+                    out.hasCheckBuildCost = typeof r.checkBuildCost === "function";
+                    out.hasTryConsumeBuildCost = typeof r.tryConsumeBuildCost === "function";
+                    out.hasBuildMaterialGate = typeof r._buildMaterialGate === "function";
+
+                    // Wertneutralität: build-cost ≡ harvest-return.
+                    const p = r.state.playerMesh.position;
+                    const cost = r.computeBuildCost("stein_block");
+                    const arch = r.spawnArchitecture("stein_block", {
+                        x: p.x + 120,
+                        y: p.y,
+                        z: p.z + 120,
+                    });
+                    const harvest = r.harvestArchitecture(arch, "test");
+                    out.symmetryHarvest = harvest && harvest.materials.stein === cost.stein;
+                    out.steinBlockOnlyStein = Object.keys(cost).length === 1 && cost.stein > 0;
+
+                    // Compound-Diskrimination
+                    const oakCost = r.computeBuildCost("baum_eiche");
+                    out.oakHasHolzAndLaub = oakCost.holz > 0 && oakCost.laub > 0;
+                    out.oakHasNoStein = !oakCost.stein || oakCost.stein === 0;
+
+                    // checkBuildCost ok/missing
+                    const origMode = r.getGameMode();
+                    r.setGameMode("pfad");
+                    r.state.player.inventory = new Array(27).fill(null);
+                    const c1 = r.checkBuildCost("stein_block");
+                    out.checkEmptyInventoryRejected = !c1.ok && c1.missing.stein > 0;
+                    r.addMaterialToInventory("stein", 200);
+                    const c2 = r.checkBuildCost("stein_block");
+                    out.checkSufficientOk = c2.ok && Object.keys(c2.missing).length === 0;
+
+                    // Atomarer Konsum + Atomarität bei Mangel
+                    r.state.player.inventory = new Array(27).fill(null);
+                    r.addMaterialToInventory("stein", 100);
+                    const beforeConsume = r.state.player.inventory[0].count;
+                    const consumed = r.tryConsumeBuildCost("stein_block");
+                    const afterConsume = r.state.player.inventory[0] ? r.state.player.inventory[0].count : 0;
+                    out.consumesExactly = consumed.ok && beforeConsume - afterConsume === consumed.cost.stein;
+
+                    r.state.player.inventory = new Array(27).fill(null);
+                    r.addMaterialToInventory("holz", 100);
+                    const beforeAtomic = r.state.player.inventory[0].count;
+                    const atomicResult = r.tryConsumeBuildCost("baum_eiche");
+                    const afterAtomic = r.state.player.inventory[0].count;
+                    out.atomicAtomicityOnFail = !atomicResult.ok && beforeAtomic === afterAtomic;
+                    out.atomicReportsMissing = atomicResult.missing && atomicResult.missing.laub > 0;
+
+                    // confirmBuild pfad mit Material
+                    r.setGameMode("pfad");
+                    r.state.player.inventory = new Array(27).fill(null);
+                    r.addMaterialToInventory("stein", 200);
+                    r._clearBuildMode && r._clearBuildMode();
+                    r.setHotbarSlot(0, "stein_block");
+                    r.selectHotbarSlot(0);
+                    const archBeforePfad = r.state.architectures.length;
+                    const stoneBeforePfad = r.state.player.inventory[0].count;
+                    const builtPfad = r.confirmBuild();
+                    const stoneAfterPfad = r.state.player.inventory[0] ? r.state.player.inventory[0].count : 0;
+                    out.pfadBuildsWithMaterial = builtPfad === true;
+                    out.pfadConsumesMaterial = stoneBeforePfad > stoneAfterPfad;
+                    out.pfadGrowsWorld = r.state.architectures.length > archBeforePfad;
+
+                    // confirmBuild pfad ohne Material → ablehnung
+                    r.state.player.inventory = new Array(27).fill(null);
+                    r._clearBuildMode && r._clearBuildMode();
+                    r.setHotbarSlot(0, "stein_block");
+                    r.selectHotbarSlot(0);
+                    const archBeforeNoMat = r.state.architectures.length;
+                    const builtNoMat = r.confirmBuild();
+                    out.pfadRejectsWithoutMaterial = builtNoMat === false;
+                    out.pfadNoArchOnReject = r.state.architectures.length === archBeforeNoMat;
+
+                    // confirmBuild schöpfer ohne Material → baut frei
+                    r.setGameMode("schöpfer");
+                    r.state.player.inventory = new Array(27).fill(null);
+                    r._clearBuildMode && r._clearBuildMode();
+                    r.setHotbarSlot(0, "stein_block");
+                    r.selectHotbarSlot(0);
+                    const archBeforeSchoepfer = r.state.architectures.length;
+                    const builtSchoepfer = r.confirmBuild();
+                    out.schoepferBuildsFree = builtSchoepfer === true;
+                    out.schoepferEmptyAfter = r.state.player.inventory.every((s) => !s);
+                    out.schoepferGrows = r.state.architectures.length > archBeforeSchoepfer;
+
+                    // confirmBuild frieden ohne Material → baut frei
+                    r.setGameMode("frieden");
+                    r.state.player.inventory = new Array(27).fill(null);
+                    r._clearBuildMode && r._clearBuildMode();
+                    r.setHotbarSlot(0, "stein_block");
+                    r.selectHotbarSlot(0);
+                    const builtFrieden = r.confirmBuild();
+                    out.friedenBuildsFree = builtFrieden === true;
+                    out.friedenEmptyAfter = r.state.player.inventory.every((s) => !s);
+
+                    // HUD-Reflexion
+                    r.setGameMode("pfad");
+                    r.state.player.inventory = new Array(27).fill(null);
+                    r.addMaterialToInventory("stein", 30);
+                    r._clearBuildMode && r._clearBuildMode();
+                    r.setHotbarSlot(0, "stein_block");
+                    r.selectHotbarSlot(0);
+                    const hud = document.getElementById("build-mode-hud");
+                    const hudHtml = hud && hud.innerHTML;
+                    out.hudShowsCostInPfad = hudHtml && /stein/.test(hudHtml) && /\(30\)/.test(hudHtml);
+
+                    r.setGameMode("schöpfer");
+                    const hudSchoepfer = document.getElementById("build-mode-hud").innerHTML;
+                    out.hudShowsFreiInSchoepfer = /frei/i.test(hudSchoepfer);
+
+                    r.setGameMode("frieden");
+                    const hudFrieden = document.getElementById("build-mode-hud").innerHTML;
+                    out.hudShowsFreiInFrieden = /frei/i.test(hudFrieden);
+
+                    // Cleanup: zurück auf frieden + Hotbar-Defaults für nachfolgende Tests.
+                    // Default-Hotbar (Ring 6.5): [village, temple, waterfall, null×6].
+                    r._clearBuildMode && r._clearBuildMode();
+                    r.setHotbarSlot(0, "village");
+                    r.setHotbarSlot(1, "temple");
+                    r.setHotbarSlot(2, "waterfall");
+                    for (let i = 3; i < 9; i++) r.setHotbarSlot(i, null);
+                    r.setGameMode(origMode || "frieden");
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6hP2cResults && !wave6hP2cResults.error) {
+                check("Welle 6.H P2C: computeBuildCost existiert", wave6hP2cResults.hasComputeBuildCost);
+                check("Welle 6.H P2C: checkBuildCost existiert", wave6hP2cResults.hasCheckBuildCost);
+                check("Welle 6.H P2C: tryConsumeBuildCost existiert", wave6hP2cResults.hasTryConsumeBuildCost);
+                check("Welle 6.H P2C: _buildMaterialGate existiert", wave6hP2cResults.hasBuildMaterialGate);
+                check(
+                    "Welle 6.H P2C: computeBuildCost ≡ harvestArchitecture (Wertneutralität)",
+                    wave6hP2cResults.symmetryHarvest
+                );
+                check("Welle 6.H P2C: stein_block-Kosten enthalten NUR stein", wave6hP2cResults.steinBlockOnlyStein);
+                check("Welle 6.H P2C: baum_eiche-Kosten enthalten holz UND laub", wave6hP2cResults.oakHasHolzAndLaub);
+                check(
+                    "Welle 6.H P2C: baum_eiche-Kosten enthalten KEIN stein (Diskrimination)",
+                    wave6hP2cResults.oakHasNoStein
+                );
+                check(
+                    "Welle 6.H P2C: pfad + leeres Inventar → checkBuildCost.ok=false",
+                    wave6hP2cResults.checkEmptyInventoryRejected
+                );
+                check(
+                    "Welle 6.H P2C: pfad + ausreichend Material → checkBuildCost.ok=true",
+                    wave6hP2cResults.checkSufficientOk
+                );
+                check("Welle 6.H P2C: tryConsumeBuildCost zieht genau die Kosten ab", wave6hP2cResults.consumesExactly);
+                check(
+                    "Welle 6.H P2C: Atomarität — bei Mangel wird NICHTS abgezogen",
+                    wave6hP2cResults.atomicAtomicityOnFail
+                );
+                check("Welle 6.H P2C: missing-Map zeigt fehlendes Sub-Material", wave6hP2cResults.atomicReportsMissing);
+                check(
+                    "Welle 6.H P2C: pfad + Material → confirmBuild liefert true + spawnt",
+                    wave6hP2cResults.pfadBuildsWithMaterial && wave6hP2cResults.pfadGrowsWorld
+                );
+                check(
+                    "Welle 6.H P2C: pfad-Modus konsumiert Material aus Inventar",
+                    wave6hP2cResults.pfadConsumesMaterial
+                );
+                check(
+                    "Welle 6.H P2C: pfad ohne Material → confirmBuild lehnt ab",
+                    wave6hP2cResults.pfadRejectsWithoutMaterial
+                );
+                check(
+                    "Welle 6.H P2C: pfad-Ablehnung → keine Architektur entsteht",
+                    wave6hP2cResults.pfadNoArchOnReject
+                );
+                check(
+                    "Welle 6.H P2C: schöpfer-Modus baut ohne Material (Vision §1.5)",
+                    wave6hP2cResults.schoepferBuildsFree && wave6hP2cResults.schoepferGrows
+                );
+                check(
+                    "Welle 6.H P2C: schöpfer-Modus: Inventar bleibt leer (unbegrenzt)",
+                    wave6hP2cResults.schoepferEmptyAfter
+                );
+                check(
+                    "Welle 6.H P2C: frieden-Modus baut ohne Material (Erstbegegnung umarmt)",
+                    wave6hP2cResults.friedenBuildsFree
+                );
+                check("Welle 6.H P2C: frieden-Modus: Inventar bleibt leer", wave6hP2cResults.friedenEmptyAfter);
+                check(
+                    "Welle 6.H P2C: pfad-HUD zeigt Material-Kosten + verfügbare Menge",
+                    wave6hP2cResults.hudShowsCostInPfad
+                );
+                check("Welle 6.H P2C: schöpfer-HUD zeigt 'frei'", wave6hP2cResults.hudShowsFreiInSchoepfer);
+                check("Welle 6.H P2C: frieden-HUD zeigt 'frei'", wave6hP2cResults.hudShowsFreiInFrieden);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {
