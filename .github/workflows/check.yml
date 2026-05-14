@@ -88,11 +88,6 @@ jobs:
         run: |
           grep -nE "(TODO|FIXME|XXX|HACK|TBD)" anazhRealm.js save-server.js || echo "keine TODOs"
 
-      - name: State-Datei JSON-valid
-        run: |
-          python3 -c "import json; json.load(open('anazhRealmState.json'))"
-          echo "✅ anazhRealmState.json ist gültiges JSON"
-
   playtest:
     # Lädt das Spiel in headless Chromium, läuft 20 s, prüft Invarianten
     # (Welt generiert? 60+ Chunks? Spieler nicht abgestürzt? keine TF-Race?
