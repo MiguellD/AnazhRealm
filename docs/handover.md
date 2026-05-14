@@ -360,6 +360,53 @@ Hylomorphismus-System wie Materialien und Bauwerke.
   playerInventory in buildStateSnapshot. 127 Invarianten für 6.C1
   + Drag-System → 1153 total.
 
+### V7.88 — Welle 6.H Phase 2F.2 live (14.05.2026): Kreatur-Equipped tool+armor
+
+**Schöpfer-Vision §1.3 fraktal-Erweiterung.** V7.87 (P2F.1) baute Stats-
+Foundation. V7.88 (P2F.2) lässt Kreaturen Werkzeug + Rüstung tragen wie
+der Spieler.
+
+**Drei neue Methoden** (symmetrisch zu Player-Equip-API):
+- `equipCreatureTool(c, name)` — validiert gegen state.tools
+- `equipCreatureArmor(c, name)` — validiert role:armor des Bauplans
+- `unequipCreatureSlot(c, slot)` — slot = "tool" | "armor"
+- `_afterCreatureEquipChange(c)` — Symmetrie-Hook (refresh + render)
+
+**Datenmodell:** `creature.userData.equipped = {tool, armor}` initial null.
+
+**Stats-Stacking:** `computeCreatureStats` extended um Equipped-Block —
+selber Pfad wie Player. Werkzeug nur wenn `tool.sourceBlueprint` existiert
+(Built-ins wie hammer wirken über opChain, nicht Stats). Rüstung immer
+aus Bauplan mit `role:armor`. TOOL_STAT_WEIGHT (0.15) + ARMOR_STAT_WEIGHT
+(0.3) — dieselben Konstanten wie Player.
+
+**3 DSL-Ops in NON_BROADCASTABLE_OPS** (Spieler-private Aktion):
+- `creature_equip_tool(idx, toolName)`
+- `creature_equip_armor(idx, blueprintName)`
+- `creature_unequip(idx, slot)`
+
+null/leerer Name auf equip-* = abnehmen.
+
+**Persistenz via 2D.1-Snapshot-Erweiterung:** `_serializeCreature` schreibt
+`snap.equipped = {tool, armor}`. `_restoreCreatureFromSnapshot` validiert
+defensive — tool muss in state.tools sein, armor muss role:armor tragen,
+sonst silent auf null (Schutz vor stale-References).
+
+**UI-Pills in creature-row** zwischen specs und task: `⚒ toolname` (Brass)
+und `⛨ armorname` (Stahl). Klein, hover-Tooltip mit Detail.
+
+**16 permanente Tests grün. 1478 → 1494/1494 invariants.**
+
+**Plan vor uns:**
+
+- **Phase 2F.3 (Boosts via Konsumables)** — `creature.userData.boosts[]`,
+  apply_boost-DSL-Op für Kreaturen, Trank-Trinken. Symmetry zu Player-
+  Boost-System. ~1 Session.
+- **Phase 2E V1 (LLM-Persona)** — jetzt mit Stats + Specs + Equipped +
+  Memory + bornAt als VOLLEM Identitäts-Anker. „die Holz-Spezialistin
+  Nira mit Eisen-Hammer + Leder-Rüstung, HP 95, Stufe 3 Sammlerin" hat
+  eine konkrete Persona-Bedeutung. ~2 Sessions.
+
 ### V7.87 — Welle 6.H Phase 2F.1 live (14.05.2026): Kreatur-Stats wie Spieler
 
 **Schöpfer-Vision §1.3 fraktal vollendet.** V7.86 (P2D.1) machte Identität

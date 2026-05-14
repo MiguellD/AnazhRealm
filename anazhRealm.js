@@ -865,6 +865,12 @@ class AnazhRealm {
             "creature_task",
             "creature_task_nearest",
             "creature_task_all",
+            // Welle 6.H Phase 2F.2 — Kreatur-Equipped ist Spieler-private
+            // Aktion in Multi-User (jeder Spieler stattet seine eigenen
+            // Kreaturen aus, gleiche Disziplin wie creature_task).
+            "creature_equip_tool",
+            "creature_equip_armor",
+            "creature_unequip",
         ]);
     }
 
@@ -1348,6 +1354,57 @@ class AnazhRealm {
                 const count = this.assignTaskToAllCreatures(String(taskName), args);
                 if (ctx && ctx.log) {
                     ctx.log.push({ event: "creature_task_assigned_all", task: String(taskName), count });
+                }
+            },
+            // Welle 6.H Phase 2F.2 — Kreatur-Equipped Ops. Drei pro Slot:
+            // equip-tool, equip-armor, unequip. Index-basiert (creatureIdx),
+            // null/leerer Name auf equip-* nimmt ab. Alle in NON_BROADCASTABLE.
+            creature_equip_tool: ([indexOrId, toolName], ctx) => {
+                const idx = Number(indexOrId);
+                if (!Number.isInteger(idx) || idx < 0 || idx >= this.state.creatures.length) {
+                    if (ctx && ctx.log) ctx.log.push({ event: "creature_equip_index_oob", index: idx });
+                    return;
+                }
+                const result = this.equipCreatureTool(this.state.creatures[idx], toolName ? String(toolName) : null);
+                if (ctx && ctx.log) {
+                    ctx.log.push({
+                        event: result.ok ? "creature_equipped_tool" : "creature_equip_failed",
+                        index: idx,
+                        tool: toolName || null,
+                        reason: result.reason,
+                    });
+                }
+            },
+            creature_equip_armor: ([indexOrId, armorName], ctx) => {
+                const idx = Number(indexOrId);
+                if (!Number.isInteger(idx) || idx < 0 || idx >= this.state.creatures.length) {
+                    if (ctx && ctx.log) ctx.log.push({ event: "creature_equip_index_oob", index: idx });
+                    return;
+                }
+                const result = this.equipCreatureArmor(this.state.creatures[idx], armorName ? String(armorName) : null);
+                if (ctx && ctx.log) {
+                    ctx.log.push({
+                        event: result.ok ? "creature_equipped_armor" : "creature_equip_failed",
+                        index: idx,
+                        armor: armorName || null,
+                        reason: result.reason,
+                    });
+                }
+            },
+            creature_unequip: ([indexOrId, slot], ctx) => {
+                const idx = Number(indexOrId);
+                if (!Number.isInteger(idx) || idx < 0 || idx >= this.state.creatures.length) {
+                    if (ctx && ctx.log) ctx.log.push({ event: "creature_equip_index_oob", index: idx });
+                    return;
+                }
+                const result = this.unequipCreatureSlot(this.state.creatures[idx], String(slot));
+                if (ctx && ctx.log) {
+                    ctx.log.push({
+                        event: result.ok ? "creature_unequipped" : "creature_unequip_failed",
+                        index: idx,
+                        slot: slot || null,
+                        reason: result.reason,
+                    });
                 }
             },
             // Welle 6.C1 — Inventar-Slot füllen. Spieler-private Aktion
@@ -5874,6 +5931,10 @@ class AnazhRealm {
         // aktuellen Zeitstempel. Vision §1.1: die Welt erinnert sich, wann
         // diese Person zum ersten Mal kam.
         group.userData.bornAt = Date.now();
+        // Welle 6.H Phase 2F.2 — Equipped-Slots wie Spieler. Initial leer;
+        // wird via equipCreatureTool/equipCreatureArmor mutiert. Persistent
+        // über _serializeCreature → snap.equipped.
+        group.userData.equipped = { tool: null, armor: null };
         if (this.state.scene) this.state.scene.add(group);
         this.state.creatures.push(group);
         this.state.creatureEmotions.push(emotion === "sad" ? "sad" : "happy");
@@ -5915,6 +5976,13 @@ class AnazhRealm {
                 z: creature.position ? creature.position.z : 0,
             },
             bornAt: Number.isFinite(ud.bornAt) ? ud.bornAt : Date.now(),
+            // Welle 6.H Phase 2F.2 — Equipped-Slots persistieren. Tasks +
+            // carrying bleiben weiterhin Geste (nicht persistiert), aber
+            // Werkzeug + Rüstung sind Identitäts-Komponenten wie Memory.
+            equipped: {
+                tool: ud.equipped && typeof ud.equipped.tool === "string" ? ud.equipped.tool : null,
+                armor: ud.equipped && typeof ud.equipped.armor === "string" ? ud.equipped.armor : null,
+            },
         };
     }
 
@@ -5936,7 +6004,94 @@ class AnazhRealm {
         if (Number.isFinite(snap.bornAt)) {
             c.userData.bornAt = snap.bornAt;
         }
+        // Welle 6.H Phase 2F.2 — Equipped-Slots restoren. Defensive Validierung:
+        // tool muss in state.tools existieren, armor muss role:"armor" sein —
+        // sonst silent auf null setzen (Welt könnte sich zwischen Save+Load
+        // geändert haben, z. B. Werkstatt hat Bauplan gelöscht).
+        if (snap.equipped && typeof snap.equipped === "object") {
+            c.userData.equipped = c.userData.equipped || { tool: null, armor: null };
+            const tn = snap.equipped.tool;
+            if (typeof tn === "string" && this.state.tools && this.state.tools[tn]) {
+                c.userData.equipped.tool = tn;
+            }
+            const an = snap.equipped.armor;
+            if (
+                typeof an === "string" &&
+                this.state.blueprints &&
+                this.state.blueprints[an] &&
+                this.state.blueprints[an].role === "armor"
+            ) {
+                c.userData.equipped.armor = an;
+            }
+        }
         return c;
+    }
+
+    // === Welle 6.H Phase 2F.2 — Kreatur-Equipped (Werkzeug + Rüstung) ===
+    //
+    // Vision §1.3 fraktal weiter: Kreaturen tragen Werkzeug + Rüstung wie
+    // der Spieler. Identische API-Struktur (equipTool/equipArmor/unequip)
+    // mit dem Unterschied, dass die Kreatur explizit übergeben wird (sie hat
+    // keinen `state.creature.activeCreature`-Singleton). state.tools ist
+    // Welt-Wissen (jeder kann jedes Werkzeug nutzen — kein Kreatur-Tool-Inventar
+    // wie player.tools, weil das wäre vision-fluten).
+    //
+    // Effekt: Equipped fließt in `computeCreatureStats` über bestehende
+    // TOOL_STAT_WEIGHT (0.15) + ARMOR_STAT_WEIGHT (0.3) → eine Kreatur mit
+    // Eisen-Helm bekommt +dichte → +HP. Dieselbe Pipeline wie Spieler.
+    //
+    // null/leerer Name = abnehmen. Validierung wie beim Spieler (tool muss in
+    // state.tools sein, armor-Bauplan muss role:"armor" tragen).
+
+    equipCreatureTool(creature, name) {
+        if (!creature || !creature.userData) return { ok: false, reason: "no_creature" };
+        creature.userData.equipped = creature.userData.equipped || { tool: null, armor: null };
+        if (!name) {
+            creature.userData.equipped.tool = null;
+            this._afterCreatureEquipChange(creature);
+            return { ok: true, equipped: null };
+        }
+        if (!this.state.tools || !this.state.tools[name]) {
+            return { ok: false, reason: "tool_unknown" };
+        }
+        creature.userData.equipped.tool = name;
+        this._afterCreatureEquipChange(creature);
+        return { ok: true, equipped: name };
+    }
+
+    equipCreatureArmor(creature, name) {
+        if (!creature || !creature.userData) return { ok: false, reason: "no_creature" };
+        creature.userData.equipped = creature.userData.equipped || { tool: null, armor: null };
+        if (!name) {
+            creature.userData.equipped.armor = null;
+            this._afterCreatureEquipChange(creature);
+            return { ok: true, equipped: null };
+        }
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.role !== "armor") return { ok: false, reason: "not_marked_as_armor" };
+        creature.userData.equipped.armor = name;
+        this._afterCreatureEquipChange(creature);
+        return { ok: true, equipped: name };
+    }
+
+    unequipCreatureSlot(creature, slot) {
+        if (!creature || !creature.userData) return { ok: false, reason: "no_creature" };
+        if (slot !== "tool" && slot !== "armor") return { ok: false, reason: "invalid_slot" };
+        creature.userData.equipped = creature.userData.equipped || { tool: null, armor: null };
+        creature.userData.equipped[slot] = null;
+        this._afterCreatureEquipChange(creature);
+        return { ok: true, slot };
+    }
+
+    // Equip-Change-Hook: Stats neu cachen + Liste re-rendern damit Tooltip
+    // + Pills sofort die neuen Werte zeigen. Symmetrie zu Player-
+    // recomputePlayerStats das renderPlayerStatsUI aufruft.
+    _afterCreatureEquipChange(creature) {
+        if (typeof this._refreshCreatureStatsCache === "function") {
+            this._refreshCreatureStatsCache(creature);
+        }
+        if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
     }
 
     _pickCreatureSoulName(requested) {
@@ -6025,6 +6180,35 @@ class AnazhRealm {
             const tops = this._creatureTopSpecializations(creature, 5);
             const specBonus = tops.reduce((sum, s) => sum + (s.level || 0) * 0.01, 0);
             finalTags.magieleitung = (finalTags.magieleitung || 0) + specBonus;
+        }
+        // Welle 6.H Phase 2F.2 — Equipped-Stat-Stacking (selber Pfad wie
+        // computePlayerStats). Werkzeug + Rüstung addieren ihre Compound-Tags
+        // mit dem Player-TOOL_STAT_WEIGHT/ARMOR_STAT_WEIGHT als Multiplikator.
+        // Vision §1.3 fraktal: dieselbe Stacking-Disziplin für beide Spezies.
+        const equipped = (creature.userData && creature.userData.equipped) || {};
+        // Werkzeug-Beitrag — nur Bauplan-Werkzeuge (sourceBlueprint), nicht
+        // Starter-Built-ins (die wirken über opChain-Präzision, nicht Stats —
+        // gleiche Disziplin wie Player Etappe 3b).
+        if (equipped.tool && this.state.tools && this.state.tools[equipped.tool]) {
+            const tool = this.state.tools[equipped.tool];
+            if (tool.sourceBlueprint && this.state.blueprints[tool.sourceBlueprint]) {
+                const tags = this.computeCompoundTags(this.state.blueprints[tool.sourceBlueprint]) || {};
+                const w = AnazhRealm.TOOL_STAT_WEIGHT;
+                for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
+                    finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
+                }
+            }
+        }
+        // Rüstung-Beitrag (immer aus Bauplan mit role:"armor")
+        if (equipped.armor && this.state.blueprints[equipped.armor]) {
+            const bp = this.state.blueprints[equipped.armor];
+            if (bp.role === "armor") {
+                const tags = this.computeCompoundTags(bp) || {};
+                const w = AnazhRealm.ARMOR_STAT_WEIGHT;
+                for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
+                    finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
+                }
+            }
         }
         // STAT_FROM_TAGS-Formeln auf finalTags. Selbe Map wie Spieler —
         // Vision §1.3 fraktal: eine Sprache, eine Berechnung, zwei Anwendungen.
@@ -7578,6 +7762,11 @@ class AnazhRealm {
                 const extra = this._describeCreatureTaskArg(a[0], a[1]);
                 return `gibt allen Kreaturen den Auftrag „${a[0]}"${extra}`;
             },
+            creature_equip_tool: (a) =>
+                a[1] ? `rüstet Kreatur #${a[0]} mit Werkzeug „${a[1]}" aus` : `nimmt Kreatur #${a[0]} das Werkzeug ab`,
+            creature_equip_armor: (a) =>
+                a[1] ? `rüstet Kreatur #${a[0]} mit Rüstung „${a[1]}" aus` : `nimmt Kreatur #${a[0]} die Rüstung ab`,
+            creature_unequip: (a) => `nimmt Kreatur #${a[0]} den Slot „${a[1]}" ab`,
             creatures_color: () => `färbt alle Kreaturen`,
             creatures_emotion: (a) => `setzt die Kreaturen-Stimmung auf „${a[0]}"`,
             creatures_speed_mul: (a) => `skaliert die Kreaturen-Geschwindigkeit um ${a[0]}`,
@@ -16059,6 +16248,29 @@ class AnazhRealm {
                     specsWrap.appendChild(pill);
                 }
             }
+            // Welle 6.H Phase 2F.2 — Equipped-Pills. Zeigt Werkzeug + Rüstung
+            // wenn ausgerüstet (visuelle Symmetrie zu Spezialisierungen). Klein,
+            // brass-getintet mit Slot-spezifischer Akzentfarbe.
+            const equipped = (c.userData && c.userData.equipped) || {};
+            let equippedWrap = null;
+            if (equipped.tool || equipped.armor) {
+                equippedWrap = document.createElement("span");
+                equippedWrap.className = "creature-equipped";
+                if (equipped.tool) {
+                    const pill = document.createElement("span");
+                    pill.className = "creature-equip creature-equip-tool";
+                    pill.textContent = `⚒ ${equipped.tool}`;
+                    pill.title = `Werkzeug: ${equipped.tool}`;
+                    equippedWrap.appendChild(pill);
+                }
+                if (equipped.armor) {
+                    const pill = document.createElement("span");
+                    pill.className = "creature-equip creature-equip-armor";
+                    pill.textContent = `⛨ ${equipped.armor}`;
+                    pill.title = `Rüstung: ${equipped.armor}`;
+                    equippedWrap.appendChild(pill);
+                }
+            }
             const taskEl = document.createElement("span");
             taskEl.className = "creature-task";
             const task = this._getCreatureTask(c);
@@ -16082,6 +16294,7 @@ class AnazhRealm {
             row.appendChild(nameEl);
             row.appendChild(soulEl);
             if (specsWrap) row.appendChild(specsWrap);
+            if (equippedWrap) row.appendChild(equippedWrap);
             row.appendChild(taskEl);
             list.appendChild(row);
         }

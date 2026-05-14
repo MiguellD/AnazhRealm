@@ -10971,6 +10971,241 @@ function startSaveServer() {
                 check(`Welle 6.H P2F.1: evaluate-Fehler — ${wave6hP2f1Results.error}`, false);
             }
 
+            // ### Welle 6.H Phase 2F.2 — Kreatur-Equipped (Werkzeug + Rüstung) ###
+            //
+            // Vision §1.3 fraktal weiter: Kreaturen tragen Werkzeug + Rüstung wie
+            // der Spieler. computeCreatureStats stackt equipped Compound-Tags
+            // mit TOOL_STAT_WEIGHT / ARMOR_STAT_WEIGHT (dieselben Konstanten wie
+            // Player). Persistenz via _serializeCreature → snap.equipped.
+            const wave6hP2f2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.playerMesh) return null;
+                    const out = {};
+                    const Class = r.constructor;
+
+                    // 1. Methoden existieren
+                    out.hasEquipTool = typeof r.equipCreatureTool === "function";
+                    out.hasEquipArmor = typeof r.equipCreatureArmor === "function";
+                    out.hasUnequip = typeof r.unequipCreatureSlot === "function";
+                    out.hasAfterChange = typeof r._afterCreatureEquipChange === "function";
+
+                    // 2. Neu gespawnte Kreatur hat equipped-Slots initial null
+                    const player = r.state.playerMesh.position;
+                    const c = r.spawnCreatureAt(player.x + 300, player.y, player.z + 300, "happy", "wesen");
+                    out.initialToolNull = c.userData.equipped && c.userData.equipped.tool === null;
+                    out.initialArmorNull = c.userData.equipped && c.userData.equipped.armor === null;
+
+                    // 3. equipCreatureTool mit existing Starter-Tool (hammer)
+                    const eqTool = r.equipCreatureTool(c, "hammer");
+                    out.equipToolOk = eqTool.ok === true;
+                    out.toolSet = c.userData.equipped.tool === "hammer";
+
+                    // 4. equipCreatureTool mit unbekanntem Tool → reject
+                    const eqUnknown = r.equipCreatureTool(c, "fictional_tool_xyz");
+                    out.unknownToolRejected = eqUnknown.ok === false && eqUnknown.reason === "tool_unknown";
+                    out.toolUnchangedAfterReject = c.userData.equipped.tool === "hammer";
+
+                    // 5. equipCreatureArmor — erst Bauplan markieren, dann ausrüsten.
+                    // Built-ins sind read-only; wir nutzen cloneBlueprint(src, newName)
+                    // → bool, dann setBlueprintAsArmor(name).
+                    const armorName = "test_armor_p2f2";
+                    if (typeof r.cloneBlueprint === "function" && r.cloneBlueprint("stein_block", armorName)) {
+                        r.setBlueprintAsArmor(armorName);
+                        const eqArmor = r.equipCreatureArmor(c, armorName);
+                        out.equipArmorOk = eqArmor.ok === true;
+                        out.armorSet = c.userData.equipped.armor === armorName;
+                        // Equipped mit nicht-armor-Bauplan (kristall_geode hat keine role:armor)
+                        const eqWrong = r.equipCreatureArmor(c, "kristall_geode");
+                        out.wrongArmorRejected =
+                            eqWrong.ok === false && eqWrong.reason === "not_marked_as_armor";
+                    }
+
+                    // 6. unequipCreatureSlot
+                    const unEqTool = r.unequipCreatureSlot(c, "tool");
+                    out.unequipToolOk = unEqTool.ok === true && c.userData.equipped.tool === null;
+                    const unEqArmor = r.unequipCreatureSlot(c, "armor");
+                    out.unequipArmorOk = unEqArmor.ok === true && c.userData.equipped.armor === null;
+                    const unEqInvalid = r.unequipCreatureSlot(c, "boots");
+                    out.unequipInvalidSlotRejected = unEqInvalid.ok === false;
+
+                    // 7. Stats-Stacking via equipped — Tool/Armor mit Compound-Tags
+                    // beeinflussen computeCreatureStats über existing pipeline.
+                    // Wir erstellen einen eigenen „magie-leitenden" Werkzeug-Bauplan
+                    // und vergleichen Stats VOR/NACH equip.
+                    if (typeof r.cloneBlueprint === "function") {
+                        const c2 = r.spawnCreatureAt(player.x + 310, player.y, player.z + 310, "happy", "wesen");
+                        const baseStats = r.computeCreatureStats(c2).stats;
+                        // Eigenes Werkzeug: stein_block-Clone via setBlueprintToolMeta +
+                        // registerBlueprintAsTool. Tool-Name === Bauplan-Name.
+                        const toolBp = "test_tool_bp_p2f2";
+                        if (r.cloneBlueprint("stein_block", toolBp)) {
+                            const meta =
+                                typeof r.setBlueprintToolMeta === "function"
+                                    ? r.setBlueprintToolMeta(toolBp, "test_op_p2f2", "subtractive")
+                                    : null;
+                            const reg =
+                                meta && meta.ok && typeof r.registerBlueprintAsTool === "function"
+                                    ? r.registerBlueprintAsTool(toolBp)
+                                    : null;
+                            if (reg && reg.ok) {
+                                // toolName === toolBp (Bauplan-Name)
+                                r.equipCreatureTool(c2, toolBp);
+                                const equipStats = r.computeCreatureStats(c2).stats;
+                                out.toolStatsChanged =
+                                    Math.abs(equipStats.hpMax - baseStats.hpMax) > 0.1 ||
+                                    Math.abs(equipStats.damage - baseStats.damage) > 0.1;
+                                out.toolHpHigher = equipStats.hpMax >= baseStats.hpMax;
+                            }
+                        }
+                        // Armor: stein_block-Clone + setBlueprintAsArmor
+                        const armorBp = "test_armor_bp_p2f2";
+                        if (r.cloneBlueprint("stein_block", armorBp)) {
+                            r.setBlueprintAsArmor(armorBp);
+                            // unequip first so stat-delta is clean
+                            r.unequipCreatureSlot(c2, "armor");
+                            const beforeArmorStats = r.computeCreatureStats(c2).stats;
+                            r.equipCreatureArmor(c2, armorBp);
+                            const armorStats = r.computeCreatureStats(c2).stats;
+                            out.armorStatsChanged =
+                                Math.abs(armorStats.hpMax - beforeArmorStats.hpMax) > 0.1;
+                            out.armorHpHigher = armorStats.hpMax > beforeArmorStats.hpMax;
+                        }
+                    }
+
+                    // 8. DSL-Ops creature_equip_tool/armor/unequip wirken
+                    const cDsl = r.spawnCreatureAt(player.x + 320, player.y, player.z + 320, "happy", "wesen");
+                    const idx = r.state.creatures.indexOf(cDsl);
+                    r.dslRun(["creature_equip_tool", idx, "hammer"], { source: "test" });
+                    out.dslEquipToolOk = cDsl.userData.equipped.tool === "hammer";
+                    r.dslRun(["creature_unequip", idx, "tool"], { source: "test" });
+                    out.dslUnequipOk = cDsl.userData.equipped.tool === null;
+
+                    // 9. NON_BROADCASTABLE_OPS-Mitgliedschaft
+                    out.opsNonBroadcast =
+                        Class.NON_BROADCASTABLE_OPS.has("creature_equip_tool") &&
+                        Class.NON_BROADCASTABLE_OPS.has("creature_equip_armor") &&
+                        Class.NON_BROADCASTABLE_OPS.has("creature_unequip");
+
+                    // 10. describeProgram-Einträge
+                    const d1 = r.describeProgram(["creature_equip_tool", 0, "hammer"]);
+                    out.descEquipTool = /Werkzeug/.test(d1) && /hammer/.test(d1);
+                    const d2 = r.describeProgram(["creature_equip_armor", 0, "lederrüstung"]);
+                    out.descEquipArmor = /Rüstung/.test(d2);
+                    const d3 = r.describeProgram(["creature_unequip", 0, "tool"]);
+                    out.descUnequip = /tool/.test(d3) || /Slot/.test(d3);
+
+                    // 11. Snapshot persistiert equipped (Round-Trip)
+                    r.equipCreatureTool(cDsl, "hammer");
+                    const snap = r._serializeCreature(cDsl);
+                    out.snapHasEquipped = snap.equipped && snap.equipped.tool === "hammer";
+                    // Restore validiert tool-Existenz
+                    const restored = r._restoreCreatureFromSnapshot(snap, "happy");
+                    out.restoreKeepsEquippedTool = restored && restored.userData.equipped.tool === "hammer";
+                    // Restore mit unbekanntem Tool → null statt crash
+                    const badSnap = { ...snap, equipped: { tool: "fictional_xyz", armor: null } };
+                    const restoredBad = r._restoreCreatureFromSnapshot(badSnap, "happy");
+                    out.restoreSilentDropsUnknown =
+                        restoredBad && restoredBad.userData.equipped.tool === null;
+
+                    // 12. UI: equipped-Pills in creature-row erscheinen
+                    if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
+                    const listEl = document.getElementById("creature-list");
+                    const equippedWraps = listEl ? listEl.querySelectorAll(".creature-equipped") : [];
+                    out.uiEquippedWrapsExist = equippedWraps.length > 0;
+                    const toolPills = listEl ? listEl.querySelectorAll(".creature-equip.creature-equip-tool") : [];
+                    out.uiToolPillsExist = toolPills.length > 0;
+
+                    // Cleanup: Test-Baupläne löschen damit Ring 6.6-Liste-Zähler stimmt.
+                    // Plus workshop-DOM neu rendern (deleteBlueprint triggert das nicht
+                    // automatisch — Ring 6.6 prüft DOM-Liste vs. state.blueprints).
+                    if (typeof r.deleteBlueprint === "function") {
+                        r.deleteBlueprint("test_armor_p2f2");
+                        r.deleteBlueprint("test_tool_bp_p2f2");
+                        r.deleteBlueprint("test_armor_bp_p2f2");
+                    }
+                    if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e), stack: e.stack }));
+
+            if (wave6hP2f2Results && !wave6hP2f2Results.error) {
+                check(
+                    "Welle 6.H P2F.2: alle 4 Methoden existieren (equipCreatureTool/Armor + unequipCreatureSlot + _afterCreatureEquipChange)",
+                    wave6hP2f2Results.hasEquipTool &&
+                        wave6hP2f2Results.hasEquipArmor &&
+                        wave6hP2f2Results.hasUnequip &&
+                        wave6hP2f2Results.hasAfterChange
+                );
+                check(
+                    "Welle 6.H P2F.2: spawnCreatureAt initialisiert equipped = {tool: null, armor: null}",
+                    wave6hP2f2Results.initialToolNull && wave6hP2f2Results.initialArmorNull
+                );
+                check(
+                    "Welle 6.H P2F.2: equipCreatureTool akzeptiert Built-in-Tool (hammer)",
+                    wave6hP2f2Results.equipToolOk && wave6hP2f2Results.toolSet
+                );
+                check(
+                    "Welle 6.H P2F.2: equipCreatureTool lehnt unbekanntes Tool ab (tool_unknown)",
+                    wave6hP2f2Results.unknownToolRejected && wave6hP2f2Results.toolUnchangedAfterReject
+                );
+                check(
+                    "Welle 6.H P2F.2: equipCreatureArmor akzeptiert Bauplan mit role:armor",
+                    wave6hP2f2Results.equipArmorOk && wave6hP2f2Results.armorSet
+                );
+                check(
+                    "Welle 6.H P2F.2: equipCreatureArmor lehnt nicht-Armor-Bauplan ab (not_marked_as_armor)",
+                    wave6hP2f2Results.wrongArmorRejected
+                );
+                check(
+                    "Welle 6.H P2F.2: unequipCreatureSlot räumt tool + armor + lehnt invalid slot ab",
+                    wave6hP2f2Results.unequipToolOk &&
+                        wave6hP2f2Results.unequipArmorOk &&
+                        wave6hP2f2Results.unequipInvalidSlotRejected
+                );
+                check(
+                    "Welle 6.H P2F.2: Tool-Equipped ändert computeCreatureStats (Stats-Stacking)",
+                    wave6hP2f2Results.toolStatsChanged
+                );
+                check(
+                    "Welle 6.H P2F.2: Tool mit stein-Tag erhöht HP-Stat (dichte-Bonus)",
+                    wave6hP2f2Results.toolHpHigher
+                );
+                check(
+                    "Welle 6.H P2F.2: Armor-Equipped ändert computeCreatureStats",
+                    wave6hP2f2Results.armorStatsChanged && wave6hP2f2Results.armorHpHigher
+                );
+                check(
+                    "Welle 6.H P2F.2: DSL creature_equip_tool + creature_unequip wirken",
+                    wave6hP2f2Results.dslEquipToolOk && wave6hP2f2Results.dslUnequipOk
+                );
+                check(
+                    "Welle 6.H P2F.2: alle 3 Equip-Ops in NON_BROADCASTABLE_OPS (Multi-User-Safety)",
+                    wave6hP2f2Results.opsNonBroadcast
+                );
+                check(
+                    "Welle 6.H P2F.2: describeProgram zeigt Werkzeug/Rüstung/Slot",
+                    wave6hP2f2Results.descEquipTool &&
+                        wave6hP2f2Results.descEquipArmor &&
+                        wave6hP2f2Results.descUnequip
+                );
+                check(
+                    "Welle 6.H P2F.2: _serializeCreature schreibt equipped + Restore übernimmt es",
+                    wave6hP2f2Results.snapHasEquipped && wave6hP2f2Results.restoreKeepsEquippedTool
+                );
+                check(
+                    "Welle 6.H P2F.2: Restore lässt unbekanntes Tool silent fallen (defensive)",
+                    wave6hP2f2Results.restoreSilentDropsUnknown
+                );
+                check(
+                    "Welle 6.H P2F.2: UI — .creature-equipped Wraps + .creature-equip-tool Pills",
+                    wave6hP2f2Results.uiEquippedWrapsExist && wave6hP2f2Results.uiToolPillsExist
+                );
+            } else if (wave6hP2f2Results && wave6hP2f2Results.error) {
+                check(`Welle 6.H P2F.2: evaluate-Fehler — ${wave6hP2f2Results.error}`, false);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {
