@@ -9952,7 +9952,13 @@ function startSaveServer() {
                     out.descBuildShowsBlueprint = /Bauplan/.test(desc) && /stein_block/.test(desc);
 
                     // 4. Tick: kein blueprint → null + falls auf wander
-                    const c0 = r.spawnCreatureAt(r.state.playerMesh.position.x + 50, r.state.playerMesh.position.y, r.state.playerMesh.position.z + 50, "happy", "wesen");
+                    const c0 = r.spawnCreatureAt(
+                        r.state.playerMesh.position.x + 50,
+                        r.state.playerMesh.position.y,
+                        r.state.playerMesh.position.z + 50,
+                        "happy",
+                        "wesen"
+                    );
                     r.assignCreatureTask(c0, "build", {});
                     const dirEmpty = r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
                     out.buildEmptyFallsToWander = dirEmpty === null && r._getCreatureTask(c0).name === "wander";
@@ -9975,7 +9981,8 @@ function startSaveServer() {
                     // Phase 2F.1: Speed wird body-moduliert (stats.speed/7). Toleranz weiter
                     // damit Body-Faktor je Soul den Test nicht bricht — wir prüfen Bereich
                     // [BUILD_SPEED*0.5, BUILD_SPEED*2.0] statt Gleichheit.
-                    out.takePhaseSpeed = sp > r.constructor.CREATURE_BUILD_SPEED * 0.5 && sp < r.constructor.CREATURE_BUILD_SPEED * 2.0;
+                    out.takePhaseSpeed =
+                        sp > r.constructor.CREATURE_BUILD_SPEED * 0.5 && sp < r.constructor.CREATURE_BUILD_SPEED * 2.0;
 
                     // 7. Take-Phase at handover, pfad ohne Material → ablehnt + memory + wander
                     const origMode = r.getGameMode();
@@ -10022,17 +10029,28 @@ function startSaveServer() {
                     // 10. Walk-Phase: mit carrying, Vektor WEG vom Spieler
                     r.setGameMode("schöpfer");
                     c0.position.set(player.x + 2.5, player.y, player.z); // 2.5m, weniger als placement (4.0)
-                    c0.userData.carrying = { kind: "build", materials: { stein: 8 }, blueprint: "stein_block", since: 0 };
+                    c0.userData.carrying = {
+                        kind: "build",
+                        materials: { stein: 8 },
+                        blueprint: "stein_block",
+                        since: 0,
+                    };
                     r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
                     const dirWalk = r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
                     out.walkPhaseAwayFromPlayer = dirWalk && dirWalk.x > 0; // weg vom Spieler = +x
                     const ws = Math.hypot(dirWalk.x, dirWalk.z);
                     // Phase 2F.1: gleiche Body-Modulation wie take-Phase.
-                    out.walkPhaseSpeed = ws > r.constructor.CREATURE_BUILD_SPEED * 0.5 && ws < r.constructor.CREATURE_BUILD_SPEED * 2.0;
+                    out.walkPhaseSpeed =
+                        ws > r.constructor.CREATURE_BUILD_SPEED * 0.5 && ws < r.constructor.CREATURE_BUILD_SPEED * 2.0;
 
                     // 11. Spawn-Phase: bei placement_dist → spawnArchitecture + carrying null + memory + wander
                     c0.position.set(player.x + 5.0, player.y + 1.0, player.z); // > placement (4.0)
-                    c0.userData.carrying = { kind: "build", materials: { stein: 8 }, blueprint: "stein_block", since: 0 };
+                    c0.userData.carrying = {
+                        kind: "build",
+                        materials: { stein: 8 },
+                        blueprint: "stein_block",
+                        since: 0,
+                    };
                     r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
                     const archBefore = r.state.architectures.length;
                     r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
@@ -10120,8 +10138,7 @@ function startSaveServer() {
                     r.assignCreatureTask(cFree, "build", { blueprint: "baum_eiche" }, { silent: true });
                     r._tickCreatureTaskDirection(cFree, cFree.userData.task, "happy");
                     out.symbolicCostHasMultiple =
-                        cFree.userData.carrying &&
-                        Object.keys(cFree.userData.carrying.materials).length >= 2; // baum_eiche = holz + laub
+                        cFree.userData.carrying && Object.keys(cFree.userData.carrying.materials).length >= 2; // baum_eiche = holz + laub
 
                     // Cleanup für nachfolgende Tests
                     r.setGameMode(origMode || "frieden");
@@ -10184,10 +10201,7 @@ function startSaveServer() {
                     "Welle 6.H P2B.2: pfad: Material wird aus Spieler-Inventar konsumiert",
                     wave6hP2b2Results.takeConsumesPfad
                 );
-                check(
-                    "Welle 6.H P2B.2: 'took_materials'-Erinnerung gespeichert",
-                    wave6hP2b2Results.memHasTook
-                );
+                check("Welle 6.H P2B.2: 'took_materials'-Erinnerung gespeichert", wave6hP2b2Results.memHasTook);
                 check(
                     "Welle 6.H P2B.2: schöpfer setzt carrying mit symbolic cost (für Visual+Journal)",
                     wave6hP2b2Results.schoepferCarrying &&
@@ -10363,12 +10377,14 @@ function startSaveServer() {
                     out.topEmpty = r._creatureTopSpecializations(cFresh, 2).length === 0;
 
                     // 8. Speed-Multiplikator
-                    out.mulL0 = Math.abs(r._creatureTaskSpeedMultiplier(c, "gather", { material: "lederX" }) - 1.0) < 0.001;
+                    out.mulL0 =
+                        Math.abs(r._creatureTaskSpeedMultiplier(c, "gather", { material: "lederX" }) - 1.0) < 0.001;
                     // c hat L5 für gather:holz
                     const mulL5 = r._creatureTaskSpeedMultiplier(c, "gather", { material: "holz" });
                     out.mulL5 = Math.abs(mulL5 - 1.75) < 0.001;
                     // build mit L0
-                    out.mulBuildL0 = Math.abs(r._creatureTaskSpeedMultiplier(c, "build", { blueprint: "fictional" }) - 1.0) < 0.001;
+                    out.mulBuildL0 =
+                        Math.abs(r._creatureTaskSpeedMultiplier(c, "build", { blueprint: "fictional" }) - 1.0) < 0.001;
                     // Unbekannter Task → 1
                     out.mulUnknownTask = r._creatureTaskSpeedMultiplier(c, "wander", {}) === 1;
                     // Null-Args → 1
@@ -10405,8 +10421,7 @@ function startSaveServer() {
                     r._creatureRemember(cFailure, "no_material", { material: "holz" });
                     out.failureNoLevel = r._creatureSpecializationLevel(cFailure, "gather", "holz") === 0;
                     // Journal-Wachstum sollte 0 sein (kein growth-Eintrag durch Failure)
-                    const failureJournalDiff =
-                        (r.state.worldJournal.entries || []).length - beforeFailureJournal;
+                    const failureJournalDiff = (r.state.worldJournal.entries || []).length - beforeFailureJournal;
                     out.failureJournalUntouched = failureJournalDiff === 0;
 
                     // 11. UI: .creature-specs span existiert nach Render
@@ -10472,26 +10487,17 @@ function startSaveServer() {
                     "Welle 6.H P2D: skillKeyForMemory mappt gathered → gather:material",
                     wave6hP2dResults.skillKeyGather
                 );
-                check(
-                    "Welle 6.H P2D: skillKeyForMemory mappt built → build:blueprint",
-                    wave6hP2dResults.skillKeyBuild
-                );
+                check("Welle 6.H P2D: skillKeyForMemory mappt built → build:blueprint", wave6hP2dResults.skillKeyBuild);
                 check(
                     "Welle 6.H P2D: skillKeyForMemory failures (no_material, delivered) → null",
                     wave6hP2dResults.skillKeyFailureNull && wave6hP2dResults.skillKeyDeliveredNull
                 );
-                check(
-                    "Welle 6.H P2D: leere memory → leere specializations",
-                    wave6hP2dResults.emptyMemoryEmptySpecs
-                );
+                check("Welle 6.H P2D: leere memory → leere specializations", wave6hP2dResults.emptyMemoryEmptySpecs);
                 check(
                     "Welle 6.H P2D: computeSpecs zählt gathered nach material (holz=2, stein=1)",
                     wave6hP2dResults.countsHolz && wave6hP2dResults.countsStein
                 );
-                check(
-                    "Welle 6.H P2D: computeSpecs zählt built nach blueprint",
-                    wave6hP2dResults.countsBuiltSteinBlock
-                );
+                check("Welle 6.H P2D: computeSpecs zählt built nach blueprint", wave6hP2dResults.countsBuiltSteinBlock);
                 check(
                     "Welle 6.H P2D: failures (no_material, no_blueprint) zählen NICHT in specs",
                     wave6hP2dResults.failuresIgnored
@@ -10515,14 +10521,8 @@ function startSaveServer() {
                     "Welle 6.H P2D: keine Skills → topSpecializations liefert leeres Array",
                     wave6hP2dResults.topEmpty
                 );
-                check(
-                    "Welle 6.H P2D: speedMultiplier L0 → 1.0",
-                    wave6hP2dResults.mulL0 && wave6hP2dResults.mulBuildL0
-                );
-                check(
-                    "Welle 6.H P2D: speedMultiplier L5 → 1.75 (1 + 5*0.15)",
-                    wave6hP2dResults.mulL5
-                );
+                check("Welle 6.H P2D: speedMultiplier L0 → 1.0", wave6hP2dResults.mulL0 && wave6hP2dResults.mulBuildL0);
+                check("Welle 6.H P2D: speedMultiplier L5 → 1.75 (1 + 5*0.15)", wave6hP2dResults.mulL5);
                 check(
                     "Welle 6.H P2D: speedMultiplier wander/null-args → 1.0",
                     wave6hP2dResults.mulUnknownTask && wave6hP2dResults.mulNullArgs
@@ -10625,7 +10625,8 @@ function startSaveServer() {
 
                     // 6. Specs werden aus restoriertem memory korrekt re-derived
                     const specs = r._computeCreatureSpecializations(restored);
-                    out.specsReDerived = specs.gather && specs.gather.holz === 2 && specs.build && specs.build.stein_block === 1;
+                    out.specsReDerived =
+                        specs.gather && specs.gather.holz === 2 && specs.build && specs.build.stein_block === 1;
 
                     // 7. Round-Trip: buildStateSnapshot → loadState → Kreaturen sind da
                     // Setze die aktuelle Welt auf einen bekannten Stand
@@ -10744,10 +10745,7 @@ function startSaveServer() {
                     "Welle 6.H P2D.1: Restore übernimmt Name + Soul",
                     wave6hP2d1Results.restoreNameOk && wave6hP2d1Results.restoreSoulOk
                 );
-                check(
-                    "Welle 6.H P2D.1: Restore übernimmt Memory (Länge + Inhalt)",
-                    wave6hP2d1Results.restoreMemoryOk
-                );
+                check("Welle 6.H P2D.1: Restore übernimmt Memory (Länge + Inhalt)", wave6hP2d1Results.restoreMemoryOk);
                 check("Welle 6.H P2D.1: Restore übernimmt Position", wave6hP2d1Results.restorePositionOk);
                 check("Welle 6.H P2D.1: Restore übernimmt bornAt", wave6hP2d1Results.restoreBornAtOk);
                 check(
@@ -10775,7 +10773,10 @@ function startSaveServer() {
                     "Welle 6.H P2D.1: Legacy-Save (nur position) wird als Legacy erkannt",
                     wave6hP2d1Results.legacyDetectedAsLegacy
                 );
-                check("Welle 6.H P2D.1: Memory-Cap=200 wird durchgesetzt (FIFO bei 250 push)", wave6hP2d1Results.cap200Enforced);
+                check(
+                    "Welle 6.H P2D.1: Memory-Cap=200 wird durchgesetzt (FIFO bei 250 push)",
+                    wave6hP2d1Results.cap200Enforced
+                );
                 check(
                     "Welle 6.H P2D.1: Restore mit übergroßem memory wird auf 200 gekappt",
                     wave6hP2d1Results.oversizedRestoredCappedAt200
@@ -10840,8 +10841,7 @@ function startSaveServer() {
 
                     // 5. _refreshCreatureStatsCache schreibt userData.stats
                     r._refreshCreatureStatsCache(cw);
-                    out.cacheWritesStats =
-                        cw.userData.stats && Number.isFinite(cw.userData.stats.speed);
+                    out.cacheWritesStats = cw.userData.stats && Number.isFinite(cw.userData.stats.speed);
 
                     // 6. Body-Speed-Multiplier ist > 0
                     const mulW = r._creatureBodySpeedMultiplier(cw);
@@ -10934,7 +10934,10 @@ function startSaveServer() {
                     wave6hP2f1Results.wesenSpriteDiscriminated
                 );
                 check("Welle 6.H P2F.1: Geist hat magicResist > 0", wave6hP2f1Results.geistHasMagicResist);
-                check("Welle 6.H P2F.1: Tags in [0, 2] (clamped + Spec-Bonus tolerant)", wave6hP2f1Results.tagsInBounds);
+                check(
+                    "Welle 6.H P2F.1: Tags in [0, 2] (clamped + Spec-Bonus tolerant)",
+                    wave6hP2f1Results.tagsInBounds
+                );
                 check(
                     "Welle 6.H P2F.1: _refreshCreatureStatsCache schreibt userData.stats",
                     wave6hP2f1Results.cacheWritesStats
@@ -11017,8 +11020,7 @@ function startSaveServer() {
                         out.armorSet = c.userData.equipped.armor === armorName;
                         // Equipped mit nicht-armor-Bauplan (kristall_geode hat keine role:armor)
                         const eqWrong = r.equipCreatureArmor(c, "kristall_geode");
-                        out.wrongArmorRejected =
-                            eqWrong.ok === false && eqWrong.reason === "not_marked_as_armor";
+                        out.wrongArmorRejected = eqWrong.ok === false && eqWrong.reason === "not_marked_as_armor";
                     }
 
                     // 6. unequipCreatureSlot
@@ -11067,8 +11069,7 @@ function startSaveServer() {
                             const beforeArmorStats = r.computeCreatureStats(c2).stats;
                             r.equipCreatureArmor(c2, armorBp);
                             const armorStats = r.computeCreatureStats(c2).stats;
-                            out.armorStatsChanged =
-                                Math.abs(armorStats.hpMax - beforeArmorStats.hpMax) > 0.1;
+                            out.armorStatsChanged = Math.abs(armorStats.hpMax - beforeArmorStats.hpMax) > 0.1;
                             out.armorHpHigher = armorStats.hpMax > beforeArmorStats.hpMax;
                         }
                     }
@@ -11105,8 +11106,7 @@ function startSaveServer() {
                     // Restore mit unbekanntem Tool → null statt crash
                     const badSnap = { ...snap, equipped: { tool: "fictional_xyz", armor: null } };
                     const restoredBad = r._restoreCreatureFromSnapshot(badSnap, "happy");
-                    out.restoreSilentDropsUnknown =
-                        restoredBad && restoredBad.userData.equipped.tool === null;
+                    out.restoreSilentDropsUnknown = restoredBad && restoredBad.userData.equipped.tool === null;
 
                     // 12. UI: equipped-Pills in creature-row erscheinen
                     if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
@@ -11186,9 +11186,7 @@ function startSaveServer() {
                 );
                 check(
                     "Welle 6.H P2F.2: describeProgram zeigt Werkzeug/Rüstung/Slot",
-                    wave6hP2f2Results.descEquipTool &&
-                        wave6hP2f2Results.descEquipArmor &&
-                        wave6hP2f2Results.descUnequip
+                    wave6hP2f2Results.descEquipTool && wave6hP2f2Results.descEquipArmor && wave6hP2f2Results.descUnequip
                 );
                 check(
                     "Welle 6.H P2F.2: _serializeCreature schreibt equipped + Restore übernimmt es",
@@ -11289,10 +11287,8 @@ function startSaveServer() {
                         const result = r.activateCreatureConsumable(c3, tonicName);
                         out.activateOk = result.ok === true;
                         // tagBonus emergiert aus den Tags (kein Hardcode!)
-                        out.tagBonusEmerged =
-                            result.tagBonus && Object.keys(result.tagBonus).length > 0;
-                        out.tagBonusHasDichte =
-                            result.tagBonus && result.tagBonus.dichte > 0;
+                        out.tagBonusEmerged = result.tagBonus && Object.keys(result.tagBonus).length > 0;
+                        out.tagBonusHasDichte = result.tagBonus && result.tagBonus.dichte > 0;
                         // Boost ist auf der Kreatur
                         out.boostOnCreature =
                             Array.isArray(c3.userData.boosts) &&
@@ -11326,8 +11322,7 @@ function startSaveServer() {
                     const cDsl = r.spawnCreatureAt(player.x + 440, player.y, player.z + 440, "happy", "wesen");
                     const dslIdx = r.state.creatures.indexOf(cDsl);
                     r.dslRun(["creature_apply_boost", dslIdx, tonicName], { source: "test" });
-                    out.dslAppliedBoost =
-                        Array.isArray(cDsl.userData.boosts) && cDsl.userData.boosts.length === 1;
+                    out.dslAppliedBoost = Array.isArray(cDsl.userData.boosts) && cDsl.userData.boosts.length === 1;
 
                     // 11. NON_BROADCASTABLE-Mitgliedschaft
                     out.opNonBroadcast = Class.NON_BROADCASTABLE_OPS.has("creature_apply_boost");
@@ -11418,10 +11413,7 @@ function startSaveServer() {
                     "Welle 6.H P2F.3: Boost-tagDelta fließt in computeCreatureStats (HP+)",
                     wave6hP2f3Results.hpBoosted
                 );
-                check(
-                    "Welle 6.H P2F.3: setBlueprintAsConsumable markiert Bauplan",
-                    wave6hP2f3Results.consumableMarkOk
-                );
+                check("Welle 6.H P2F.3: setBlueprintAsConsumable markiert Bauplan", wave6hP2f3Results.consumableMarkOk);
                 check(
                     "Welle 6.H P2F.3: HYLOMORPHISMUS — Konsumable-Compound-Tags emergieren als Boost",
                     wave6hP2f3Results.tagBonusEmerged && wave6hP2f3Results.tagBonusHasDichte
@@ -11450,10 +11442,7 @@ function startSaveServer() {
                     "Welle 6.H P2F.3: creature_apply_boost in NON_BROADCASTABLE_OPS (Spieler-private Geste)",
                     wave6hP2f3Results.opNonBroadcast
                 );
-                check(
-                    "Welle 6.H P2F.3: describeProgram zeigt Trank-Namen",
-                    wave6hP2f3Results.descShowsBp
-                );
+                check("Welle 6.H P2F.3: describeProgram zeigt Trank-Namen", wave6hP2f3Results.descShowsBp);
                 check(
                     "Welle 6.H P2F.3: _consumeBlueprintFromInventory zieht 1 ab + nulled Slot bei count=0",
                     wave6hP2f3Results.consumeReducesCount &&
@@ -11615,10 +11604,7 @@ function startSaveServer() {
                     "Welle 6.H P2E V1: Persona-Prompt enthält Boost-Schicht (Test-Tonic)",
                     wave6hP2eV1Results.promptHasBoost
                 );
-                check(
-                    "Welle 6.H P2E V1: Persona-Prompt enthält Memory-Auszug",
-                    wave6hP2eV1Results.promptHasMemory
-                );
+                check("Welle 6.H P2E V1: Persona-Prompt enthält Memory-Auszug", wave6hP2eV1Results.promptHasMemory);
                 check(
                     "Welle 6.H P2E V1: Persona-Prompt enthält Welt-Kontext (Wetter)",
                     wave6hP2eV1Results.promptHasWeather
@@ -11659,7 +11645,8 @@ function startSaveServer() {
 
                     // 1. @Name text → erkannt als explizite Adresse
                     const p1 = r._parseCreatureAddress("@Bran wie gehts");
-                    out.atPatternMatches = p1 && p1.name === "Bran" && p1.message === "wie gehts" && p1.explicit === true;
+                    out.atPatternMatches =
+                        p1 && p1.name === "Bran" && p1.message === "wie gehts" && p1.explicit === true;
                     // 2. @Name, text → @ + Komma zusammen erlaubt
                     const p2 = r._parseCreatureAddress("@Bran, was hast du gesehen?");
                     out.atPatternWithComma = p2 && p2.name === "Bran" && p2.message === "was hast du gesehen?";
@@ -11784,7 +11771,13 @@ function startSaveServer() {
 
                     // 2. Phrase-Pool hat 5 Event-Typen, jede mit 3 Soul-Profile + default
                     const pool = Class.CREATURE_PROACTIVE_PHRASES;
-                    const events = ["level_up_gather", "level_up_build", "boost_received", "no_material_found", "no_inventory_for_build"];
+                    const events = [
+                        "level_up_gather",
+                        "level_up_build",
+                        "boost_received",
+                        "no_material_found",
+                        "no_inventory_for_build",
+                    ];
                     out.allEventsPresent = events.every((e) => pool[e]);
                     out.hasSpriteVariants = pool.level_up_gather.sprite && pool.level_up_gather.sprite.length >= 2;
                     out.hasWesenVariants = pool.level_up_gather.wesen && pool.level_up_gather.wesen.length >= 2;
@@ -11816,7 +11809,8 @@ function startSaveServer() {
                     const lastLine = chatOutput ? chatOutput.lastElementChild : null;
                     out.lineHasSpriteSoul = !!(lastLine && lastLine.querySelector(".chat-creature-name.soul-sprite"));
                     out.lineHasName = lastLine && /ProacSprite/.test(lastLine.textContent);
-                    out.templateReplaced = lastLine && /holz/.test(lastLine.textContent) && /2/.test(lastLine.textContent);
+                    out.templateReplaced =
+                        lastLine && /holz/.test(lastLine.textContent) && /2/.test(lastLine.textContent);
 
                     // 5. Per-Kreatur-Throttle: SOFORT nochmal sprechen lehnt ab
                     const ok2 = r._creatureSpeakProactive(cSprite, "boost_received", { label: "Tonic" });
@@ -11949,10 +11943,7 @@ function startSaveServer() {
                     "Welle 6.H P2E V2: Toggle OFF → keine proaktive Sprache (silent drop)",
                     wave6hP2eV2Results.toggleOffSilent
                 );
-                check(
-                    "Welle 6.H P2E V2: Unbekannter Event-Typ → silent drop",
-                    wave6hP2eV2Results.unknownEventRejected
-                );
+                check("Welle 6.H P2E V2: Unbekannter Event-Typ → silent drop", wave6hP2eV2Results.unknownEventRejected);
                 check(
                     "Welle 6.H P2E V2: Soul-spezifischer Pool (Geist-Phrase aus geist-Pool gerendert)",
                     wave6hP2eV2Results.geistUsedGeistPool
@@ -12024,23 +12015,16 @@ function startSaveServer() {
 
                     // 3. Validator: verbotene Programme
                     const noPlayerSpeed = r._isCreatureProposalAllowed(["player_speed", 20]);
-                    out.rejectsPlayerSpeed =
-                        noPlayerSpeed.ok === false && noPlayerSpeed.forbiddenOp === "player_speed";
-                    const noDefine = r._isCreatureProposalAllowed([
-                        "define_blueprint",
-                        "evil",
-                        [{ shape: "box" }],
-                    ]);
-                    out.rejectsDefine =
-                        noDefine.ok === false && noDefine.forbiddenOp === "define_blueprint";
+                    out.rejectsPlayerSpeed = noPlayerSpeed.ok === false && noPlayerSpeed.forbiddenOp === "player_speed";
+                    const noDefine = r._isCreatureProposalAllowed(["define_blueprint", "evil", [{ shape: "box" }]]);
+                    out.rejectsDefine = noDefine.ok === false && noDefine.forbiddenOp === "define_blueprint";
                     // Verbotene Op TIEF im Chain wird auch erkannt
                     const nestedBad = r._isCreatureProposalAllowed([
                         "chain",
                         ["weather", "sunny"],
                         ["player_speed", 50], // verboten, tief
                     ]);
-                    out.rejectsNestedForbidden =
-                        nestedBad.ok === false && nestedBad.forbiddenOp === "player_speed";
+                    out.rejectsNestedForbidden = nestedBad.ok === false && nestedBad.forbiddenOp === "player_speed";
 
                     // 4. Persona-Prompt erlaubt program (V3-Update)
                     const player = r.state.playerMesh.position;
@@ -12072,15 +12056,11 @@ function startSaveServer() {
                     // Test pfad: Buttons werden gerendert (kein automatischer
                     // Wetter-Wechsel)
                     r.setGameMode("pfad");
-                    const beforePending = chatOutput
-                        ? chatOutput.querySelectorAll(".chat-proposal-pending").length
-                        : 0;
+                    const beforePending = chatOutput ? chatOutput.querySelectorAll(".chat-proposal-pending").length : 0;
                     const targetWeather2 = r.state.weather === "rainy" ? "sunny" : "rainy";
                     r._handleCreatureProposedProgram(c, "TestProgramKreatur", ["weather", targetWeather2]);
                     out.pfadDoesNotAutoExecute = r.state.weather !== targetWeather2;
-                    const afterPending = chatOutput
-                        ? chatOutput.querySelectorAll(".chat-proposal-pending").length
-                        : 0;
+                    const afterPending = chatOutput ? chatOutput.querySelectorAll(".chat-proposal-pending").length : 0;
                     out.pfadRendersButtons = afterPending > beforePending;
                     // Memory: proposed_action vorhanden, aber NICHT yet accepted
                     const memTypes2 = (c.userData.memory || []).map((m) => m.type);
@@ -12090,11 +12070,10 @@ function startSaveServer() {
                     //    schöpfer-Modus blockiert (defense in depth)
                     r.setGameMode("schöpfer");
                     const memCountBefore = (c.userData.memory || []).length;
-                    const blockedResult = r._handleCreatureProposedProgram(
-                        c,
-                        "TestProgramKreatur",
-                        ["player_speed", 99]
-                    );
+                    const blockedResult = r._handleCreatureProposedProgram(c, "TestProgramKreatur", [
+                        "player_speed",
+                        99,
+                    ]);
                     out.forbiddenBlockedEvenInSchöpfer = blockedResult === false;
                     const memTypes3 = (c.userData.memory || []).map((m) => m.type);
                     out.memoryHasBlocked = memTypes3.includes("proposal_blocked");
@@ -12212,6 +12191,285 @@ function startSaveServer() {
                 );
             } else if (wave6hP2eV3Results && wave6hP2eV3Results.error) {
                 check(`Welle 6.H P2E V3: evaluate-Fehler — ${wave6hP2eV3Results.error}`, false);
+            }
+
+            // ### Welle 6.B Phase 1+2 — CAD-Werkstatt (3D-Preview + Manipulator-Gizmo) ###
+            const wave6bResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    try {
+                        // --- Phase 1: State-Schema ---
+                        const ws = r._ensureWorkshopState();
+                        out.hasSelectedPartIdxField = "selectedPartIdx" in ws;
+                        out.hasPreviewField = "preview" in ws;
+                        out.hasManipulatorModeField = typeof ws.manipulatorMode === "string";
+                        out.hasSnapEnabledField = typeof ws.snapEnabled === "boolean";
+                        out.defaultManipulatorMode = ws.manipulatorMode;
+                        out.defaultSnapEnabled = ws.snapEnabled;
+
+                        // --- Phase 1: DOM-Elemente ---
+                        out.canvasInDom = !!document.getElementById("workshop-preview-canvas");
+                        out.previewWrapperInDom = !!document.getElementById("workshop-preview-wrapper");
+
+                        // --- Phase 2: Konstanten ---
+                        const AR = r.constructor;
+                        out.gizmoColorsFrozen =
+                            !!AR.WORKSHOP_GIZMO_COLORS &&
+                            Object.isFrozen(AR.WORKSHOP_GIZMO_COLORS) &&
+                            typeof AR.WORKSHOP_GIZMO_COLORS.x === "number" &&
+                            typeof AR.WORKSHOP_GIZMO_COLORS.y === "number" &&
+                            typeof AR.WORKSHOP_GIZMO_COLORS.z === "number";
+                        out.snapTranslate = AR.WORKSHOP_SNAP_TRANSLATE;
+                        out.snapRotate = AR.WORKSHOP_SNAP_ROTATE;
+                        out.snapScale = AR.WORKSHOP_SNAP_SCALE;
+                        out.minPartSize = AR.WORKSHOP_MIN_PART_SIZE;
+
+                        // --- Phase 2: Public API ---
+                        out.modeSetTranslate = r.setWorkshopManipulatorMode("translate");
+                        out.modeAfterTranslate = ws.manipulatorMode === "translate";
+                        out.modeSetRotate = r.setWorkshopManipulatorMode("rotate");
+                        out.modeAfterRotate = ws.manipulatorMode === "rotate";
+                        out.modeSetScale = r.setWorkshopManipulatorMode("scale");
+                        out.modeAfterScale = ws.manipulatorMode === "scale";
+                        out.modeRejectInvalid = r.setWorkshopManipulatorMode("nonsense") === false;
+                        r.setWorkshopManipulatorMode("translate"); // reset
+
+                        const snapBefore = ws.snapEnabled;
+                        const snapAfter1 = r.toggleWorkshopSnap();
+                        out.snapTogglesOff = snapBefore === true && snapAfter1 === false;
+                        const snapAfter2 = r.toggleWorkshopSnap();
+                        out.snapTogglesBack = snapAfter2 === true;
+                        // Explizites Argument: true setzt + liefert true, false setzt + liefert false
+                        out.snapExplicitTrue = r.toggleWorkshopSnap(true) === true;
+                        out.snapExplicitFalseReturns = r.toggleWorkshopSnap(false) === false;
+                        r.toggleWorkshopSnap(true); // reset
+
+                        // --- Phase 2: Snap-Helper ---
+                        ws.snapEnabled = true;
+                        out.snapTranslateRound = r._workshopApplySnap(1.7, "translate") === 1.5;
+                        out.snapTranslateRoundUp = r._workshopApplySnap(1.8, "translate") === 2.0;
+                        out.snapScaleRound = Math.abs(r._workshopApplySnap(1.23, "scale") - 1.2) < 0.0001;
+                        ws.snapEnabled = false;
+                        out.snapInactivePassthrough = r._workshopApplySnap(1.7, "translate") === 1.7;
+                        ws.snapEnabled = true;
+
+                        // --- Phase 2: Helper-Methoden ---
+                        const vx = r._workshopAxisToVec3("x");
+                        out.axisToVecX = vx && vx.x === 1 && vx.y === 0 && vx.z === 0;
+                        const vy = r._workshopAxisToVec3("y");
+                        out.axisToVecY = vy && vy.x === 0 && vy.y === 1 && vy.z === 0;
+                        const vz = r._workshopAxisToVec3("z");
+                        out.axisToVecZ = vz && vz.x === 0 && vz.y === 0 && vz.z === 1;
+                        const perpY = r._workshopAxisPerpendicular(vy);
+                        out.axisPerpDot = perpY && Math.abs(perpY.dot(vy)) < 0.001;
+
+                        // --- Phase 1: Selection-Pfad (ohne Preview, headless-safe) ---
+                        // Bauplan auswählen: braucht selectBlueprintForEdit auf existing built-in
+                        r.selectBlueprintForEdit("village");
+                        out.selectedSetToVillage = ws.selectedBlueprint === "village";
+                        // selectedPartIdx wurde zurückgesetzt
+                        out.selectionResetOnBlueprintSwitch = ws.selectedPartIdx === null;
+                        // Manuelle Selection setzen (ohne Klick)
+                        r._workshopSetSelection(0);
+                        out.selectionSetTo0 = ws.selectedPartIdx === 0;
+                        // Out-of-range wird abgelehnt
+                        r._workshopSetSelection(9999);
+                        out.selectionRejectsOOB = ws.selectedPartIdx === null;
+                        r._workshopSetSelection(null); // reset
+
+                        // --- Phase 2: Manipulator-Drag auf Built-in lehnt ab ---
+                        // village ist built-in → kein Drag
+                        out.builtInRejected = true;
+                        try {
+                            r._workshopSetSelection(0);
+                            // Wir können _workshopBeginManipulation aufrufen, aber es sollte
+                            // intern wegen builtIn früh aussteigen (kein dragManipulator gesetzt).
+                            // Wir können das nur prüfen wenn preview existiert.
+                            r._workshopEnsurePreview();
+                            const pre = r.state.workshop.preview;
+                            if (pre) {
+                                r._workshopBeginManipulation("translate", "x", 100, 100);
+                                out.builtInRejected = pre.dragManipulator === null;
+                            }
+                        } catch {
+                            out.builtInRejected = false;
+                        }
+
+                        // --- Phase 2: Manipulator auf eigenem Bauplan ---
+                        // Klone village zu test_wave6b
+                        const cloneOk = r.cloneBlueprint("village", "test_wave6b");
+                        out.cloneOk = cloneOk;
+                        if (cloneOk) {
+                            r.selectBlueprintForEdit("test_wave6b");
+                            r._workshopSetSelection(0);
+                            const partBefore = JSON.parse(JSON.stringify(r.state.blueprints.test_wave6b.parts[0]));
+                            out.posBefore = partBefore.position.x;
+                            // Drag begin auf eigenem Bauplan
+                            r._workshopEnsurePreview();
+                            const pre = r.state.workshop.preview;
+                            if (pre) {
+                                r._workshopBeginManipulation("translate", "x", 100, 100);
+                                out.dragManipulatorSet = pre.dragManipulator !== null;
+                                if (pre.dragManipulator) {
+                                    out.dragModeIsTranslate = pre.dragManipulator.mode === "translate";
+                                    out.dragAxisIsX = pre.dragManipulator.axis === "x";
+                                }
+                                // End-Pfad räumt auf
+                                r._workshopEndManipulation();
+                                out.dragManipulatorCleared = pre.dragManipulator === null;
+                            }
+                            // Aufräumen: deleteBlueprint allein refreshed nicht die
+                            // Workshop-DOM-Liste — wir müssen das explizit nachziehen,
+                            // sonst sieht der nachfolgende Ring-6.6-Test eine Liste,
+                            // die 1 Eintrag länger ist als state.blueprints.
+                            r.deleteBlueprint("test_wave6b");
+                            r.selectBlueprintForEdit("village");
+                            r._renderWorkshopDOM();
+                        }
+
+                        // --- Phase 2: UI-Elemente ---
+                        out.modeBarInDom = !!document.getElementById("workshop-mode-bar");
+                        const modeBtns = document.querySelectorAll("#workshop-mode-bar [data-workshop-mode]");
+                        out.threeModeButtons = modeBtns.length === 3;
+                        out.snapToggleInDom = !!document.getElementById("workshop-snap-toggle");
+
+                        // --- Phase 2: Gizmo-Aufbau ---
+                        r._workshopEnsurePreview();
+                        const pre = r.state.workshop.preview;
+                        if (pre && pre.gizmo) {
+                            out.gizmoBuilt = true;
+                            out.gizmoChildren = pre.gizmo.children.length === 3; // translate/rotate/scale
+                            // Pro Modus ein paar Mesh-Einträge in gizmoMeshes
+                            let tCount = 0,
+                                rCount = 0,
+                                sCount = 0;
+                            for (const info of pre.gizmoMeshes.values()) {
+                                if (info.mode === "translate") tCount++;
+                                else if (info.mode === "rotate") rCount++;
+                                else if (info.mode === "scale") sCount++;
+                            }
+                            out.gizmoHasTranslateMeshes = tCount >= 3;
+                            out.gizmoHasRotateMeshes = rCount >= 3;
+                            out.gizmoHasScaleMeshes = sCount >= 4; // 3 axes + 1 uniform
+                        }
+                    } catch (err) {
+                        out.error = err && err.message;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (wave6bResults && !wave6bResults.error) {
+                check("Welle 6.B P1: state.workshop hat selectedPartIdx-Feld", wave6bResults.hasSelectedPartIdxField);
+                check("Welle 6.B P1: state.workshop hat preview-Feld (lazy)", wave6bResults.hasPreviewField);
+                check("Welle 6.B P1: #workshop-preview-canvas im DOM", wave6bResults.canvasInDom);
+                check("Welle 6.B P1: #workshop-preview-wrapper im DOM", wave6bResults.previewWrapperInDom);
+                check(
+                    "Welle 6.B P1: selectBlueprintForEdit setzt selectedBlueprint",
+                    wave6bResults.selectedSetToVillage
+                );
+                check(
+                    "Welle 6.B P1: Bauplan-Wechsel resettet selectedPartIdx auf null",
+                    wave6bResults.selectionResetOnBlueprintSwitch
+                );
+                check("Welle 6.B P1: _workshopSetSelection(0) setzt selectedPartIdx", wave6bResults.selectionSetTo0);
+                check(
+                    "Welle 6.B P1: _workshopSetSelection lehnt out-of-range (idx=null bei OOB)",
+                    wave6bResults.selectionRejectsOOB
+                );
+                check(
+                    "Welle 6.B P2: manipulatorMode-Feld + Default 'translate'",
+                    wave6bResults.hasManipulatorModeField && wave6bResults.defaultManipulatorMode === "translate"
+                );
+                check(
+                    "Welle 6.B P2: snapEnabled-Feld + Default true",
+                    wave6bResults.hasSnapEnabledField && wave6bResults.defaultSnapEnabled === true
+                );
+                check(
+                    "Welle 6.B P2: WORKSHOP_GIZMO_COLORS frozen mit x/y/z (uint Farben)",
+                    wave6bResults.gizmoColorsFrozen
+                );
+                check("Welle 6.B P2: WORKSHOP_SNAP_TRANSLATE === 0.5", wave6bResults.snapTranslate === 0.5);
+                check(
+                    "Welle 6.B P2: WORKSHOP_SNAP_ROTATE === π/12 (15°)",
+                    Math.abs(wave6bResults.snapRotate - Math.PI / 12) < 0.0001
+                );
+                check("Welle 6.B P2: WORKSHOP_SNAP_SCALE === 0.1", wave6bResults.snapScale === 0.1);
+                check("Welle 6.B P2: WORKSHOP_MIN_PART_SIZE === 0.05", wave6bResults.minPartSize === 0.05);
+                check(
+                    "Welle 6.B P2: setWorkshopManipulatorMode wechselt durch alle 3 Modi (translate/rotate/scale)",
+                    wave6bResults.modeSetTranslate &&
+                        wave6bResults.modeAfterTranslate &&
+                        wave6bResults.modeSetRotate &&
+                        wave6bResults.modeAfterRotate &&
+                        wave6bResults.modeSetScale &&
+                        wave6bResults.modeAfterScale
+                );
+                check(
+                    "Welle 6.B P2: setWorkshopManipulatorMode lehnt ungültige Modi ab",
+                    wave6bResults.modeRejectInvalid
+                );
+                check(
+                    "Welle 6.B P2: toggleWorkshopSnap toggelt true→false→true",
+                    wave6bResults.snapTogglesOff && wave6bResults.snapTogglesBack
+                );
+                check(
+                    "Welle 6.B P2: toggleWorkshopSnap akzeptiert explizites Argument (true/false)",
+                    wave6bResults.snapExplicitTrue && wave6bResults.snapExplicitFalseReturns
+                );
+                check(
+                    "Welle 6.B P2: _workshopApplySnap aktiv rundet 1.7 → 1.5 (translate-step 0.5)",
+                    wave6bResults.snapTranslateRound
+                );
+                check("Welle 6.B P2: _workshopApplySnap aktiv rundet 1.8 → 2.0", wave6bResults.snapTranslateRoundUp);
+                check("Welle 6.B P2: _workshopApplySnap scale 1.23 → 1.2 (step 0.1)", wave6bResults.snapScaleRound);
+                check(
+                    "Welle 6.B P2: _workshopApplySnap inaktiv → Wert unverändert",
+                    wave6bResults.snapInactivePassthrough
+                );
+                check(
+                    "Welle 6.B P2: _workshopAxisToVec3 liefert korrekte Welt-Achsen (X/Y/Z)",
+                    wave6bResults.axisToVecX && wave6bResults.axisToVecY && wave6bResults.axisToVecZ
+                );
+                check(
+                    "Welle 6.B P2: _workshopAxisPerpendicular liefert senkrechte Achse (dot ≈ 0)",
+                    wave6bResults.axisPerpDot
+                );
+                check(
+                    "Welle 6.B P2: _workshopBeginManipulation auf Built-in setzt KEINEN dragManipulator (read-only-Schutz)",
+                    wave6bResults.builtInRejected
+                );
+                check("Welle 6.B P2: cloneBlueprint(village → test_wave6b) erfolgreich", wave6bResults.cloneOk);
+                check(
+                    "Welle 6.B P2: _workshopBeginManipulation auf eigenem Bauplan setzt dragManipulator",
+                    wave6bResults.dragManipulatorSet
+                );
+                check(
+                    "Welle 6.B P2: dragManipulator trägt korrekte mode+axis (translate/x)",
+                    wave6bResults.dragModeIsTranslate && wave6bResults.dragAxisIsX
+                );
+                check(
+                    "Welle 6.B P2: _workshopEndManipulation räumt dragManipulator auf",
+                    wave6bResults.dragManipulatorCleared
+                );
+                check("Welle 6.B P2: #workshop-mode-bar im DOM", wave6bResults.modeBarInDom);
+                check("Welle 6.B P2: 3 Mode-Buttons (translate/rotate/scale) im DOM", wave6bResults.threeModeButtons);
+                check("Welle 6.B P2: #workshop-snap-toggle im DOM", wave6bResults.snapToggleInDom);
+                check("Welle 6.B P2: Gizmo-Group gebaut (preview.gizmo nicht null)", wave6bResults.gizmoBuilt);
+                check("Welle 6.B P2: Gizmo hat 3 Sub-Groups (translate/rotate/scale)", wave6bResults.gizmoChildren);
+                check(
+                    "Welle 6.B P2: Translate-Gizmo hat ≥3 Handle-Meshes (Pfeile)",
+                    wave6bResults.gizmoHasTranslateMeshes
+                );
+                check("Welle 6.B P2: Rotate-Gizmo hat ≥3 Handle-Meshes (Ringe)", wave6bResults.gizmoHasRotateMeshes);
+                check(
+                    "Welle 6.B P2: Scale-Gizmo hat ≥4 Handle-Meshes (3 Achsen + 1 uniform-Center)",
+                    wave6bResults.gizmoHasScaleMeshes
+                );
+            } else if (wave6bResults && wave6bResults.error) {
+                check(`Welle 6.B: evaluate-Fehler — ${wave6bResults.error}`, false);
             }
 
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
@@ -12388,8 +12646,7 @@ function startSaveServer() {
                     // buildHeaders ohne Key → kein authorization-Header (lokal)
                     const headersNoKey = ol.buildHeaders("", { apiKey: "" });
                     out.noAuthWithoutKey = !headersNoKey.authorization && !headersNoKey.Authorization;
-                    out.contentTypePresent =
-                        headersNoKey["content-type"] === "application/json";
+                    out.contentTypePresent = headersNoKey["content-type"] === "application/json";
 
                     // buildHeaders MIT Key → Bearer-Token
                     const headersWithKey = ol.buildHeaders("sk-test-1234", { apiKey: "sk-test-1234" });
@@ -12399,8 +12656,7 @@ function startSaveServer() {
 
                     // Endpoint folgt cfg.endpoint (nicht hartkodiert localhost)
                     const customEp = ol.endpoint("llama3.1", "key", { endpoint: "https://my-ollama.cloud:8443" });
-                    out.endpointRespectsCustom =
-                        customEp === "https://my-ollama.cloud:8443/api/chat";
+                    out.endpointRespectsCustom = customEp === "https://my-ollama.cloud:8443/api/chat";
 
                     // CSP: connect-src enthält https: Wildcard für Cloud-Endpoints
                     const meta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
@@ -12417,8 +12673,9 @@ function startSaveServer() {
                     const keyRow = document.getElementById("llm-key-row");
                     out.keyRowVisibleForOllama = !!(keyRow && !keyRow.hidden);
                     const keyInput = document.getElementById("llm-key");
-                    out.placeholderMentionsOptional =
-                        !!(keyInput && /optional|gehostet/i.test(keyInput.placeholder || ""));
+                    out.placeholderMentionsOptional = !!(
+                        keyInput && /optional|gehostet/i.test(keyInput.placeholder || "")
+                    );
 
                     return out;
                 })
@@ -12475,36 +12732,42 @@ function startSaveServer() {
                     const ol = defs.ollama;
 
                     // 1. Endpoint smart-detect — Basis-URL ohne Pfad → /api/chat angehängt
-                    out.epAppendsForBase = ol.endpoint("m", "k", { endpoint: "http://localhost:11434" }) ===
+                    out.epAppendsForBase =
+                        ol.endpoint("m", "k", { endpoint: "http://localhost:11434" }) ===
                         "http://localhost:11434/api/chat";
-                    out.epAppendsForCloud = ol.endpoint("m", "k", { endpoint: "https://ollama.com" }) ===
-                        "https://ollama.com/api/chat";
+                    out.epAppendsForCloud =
+                        ol.endpoint("m", "k", { endpoint: "https://ollama.com" }) === "https://ollama.com/api/chat";
 
                     // 2. Endpoint smart-detect — URL mit /api/chat → DIREKT verwendet (kein /api/chat/api/chat)
-                    out.epRespectsApiPath = ol.endpoint("m", "k", {
-                        endpoint: "https://ollama.com/api/chat",
-                    }) === "https://ollama.com/api/chat";
+                    out.epRespectsApiPath =
+                        ol.endpoint("m", "k", {
+                            endpoint: "https://ollama.com/api/chat",
+                        }) === "https://ollama.com/api/chat";
 
                     // 3. Endpoint smart-detect — URL mit /v1/chat/completions → DIREKT (OpenAI-kompat)
-                    out.epRespectsV1Path = ol.endpoint("m", "k", {
-                        endpoint: "https://provider.cloud/v1/chat/completions",
-                    }) === "https://provider.cloud/v1/chat/completions";
+                    out.epRespectsV1Path =
+                        ol.endpoint("m", "k", {
+                            endpoint: "https://provider.cloud/v1/chat/completions",
+                        }) === "https://provider.cloud/v1/chat/completions";
 
                     // 4. Endpoint trim — Trailing-Slash entfernt
-                    out.epTrimsTrailingSlash = ol.endpoint("m", "k", {
-                        endpoint: "https://ollama.com/",
-                    }) === "https://ollama.com/api/chat";
+                    out.epTrimsTrailingSlash =
+                        ol.endpoint("m", "k", {
+                            endpoint: "https://ollama.com/",
+                        }) === "https://ollama.com/api/chat";
 
                     // 5. extractText — Ollama-native Format
                     out.extractsOllamaNative = ol.extractText({ message: { content: "Hallo Welt" } }) === "Hallo Welt";
 
                     // 6. extractText — OpenAI-kompat Format
-                    out.extractsOpenAi = ol.extractText({
-                        choices: [{ message: { content: "OpenAI-Antwort" } }],
-                    }) === "OpenAI-Antwort";
+                    out.extractsOpenAi =
+                        ol.extractText({
+                            choices: [{ message: { content: "OpenAI-Antwort" } }],
+                        }) === "OpenAI-Antwort";
 
                     // 7. extractText — Ollama-generate-Pfad (älter)
-                    out.extractsOllamaGenerate = ol.extractText({ response: "Generate-Antwort" }) === "Generate-Antwort";
+                    out.extractsOllamaGenerate =
+                        ol.extractText({ response: "Generate-Antwort" }) === "Generate-Antwort";
 
                     // 8. extractText — leerer/null Input → leerer String
                     out.extractsEmpty = ol.extractText(null) === "" && ol.extractText({}) === "";
@@ -12526,7 +12789,8 @@ function startSaveServer() {
                     out.bodyOpenAiNoOptions = bodyOpenAi.options === undefined;
 
                     // 11. buildBody — beide haben model + messages + stream:false
-                    out.bodyHasCommon = bodyNative.model === "llama3.1" &&
+                    out.bodyHasCommon =
+                        bodyNative.model === "llama3.1" &&
                         Array.isArray(bodyNative.messages) &&
                         bodyNative.stream === false &&
                         bodyOpenAi.messages.length === 2;
@@ -12548,10 +12812,7 @@ function startSaveServer() {
                     "V7.95 Ollama-Cloud: Endpoint respektiert OpenAI-kompat-URL mit /v1/chat/completions",
                     v795Results.epRespectsV1Path
                 );
-                check(
-                    "V7.95 Ollama-Cloud: Endpoint trimt trailing-slash sauber",
-                    v795Results.epTrimsTrailingSlash
-                );
+                check("V7.95 Ollama-Cloud: Endpoint trimt trailing-slash sauber", v795Results.epTrimsTrailingSlash);
                 check(
                     "V7.95 Ollama-Cloud: extractText liest Ollama-native Format (json.message.content)",
                     v795Results.extractsOllamaNative
@@ -12769,8 +13030,7 @@ function startSaveServer() {
                         await r.llmCall("test");
                         // Erwartung: fetch-URL ist die direkte ollama-URL,
                         // NICHT die proxy-URL — Auto-Bypass greift weil localhost
-                        out.bypassedForLocalhost =
-                            capturedUrl !== null && !/\/proxy\/llm/.test(capturedUrl);
+                        out.bypassedForLocalhost = capturedUrl !== null && !/\/proxy\/llm/.test(capturedUrl);
                         // Reset
                         capturedUrl = null;
                         cfg.endpoint = "https://ollama.com/api/chat";
@@ -12778,8 +13038,7 @@ function startSaveServer() {
                         r.state.llm.lastResponseAt = -Infinity;
                         await r.llmCall("test");
                         // Erwartung: fetch-URL ist die proxy-URL bei Cloud + useProxy
-                        out.proxyUsedForCloud =
-                            capturedUrl !== null && /\/proxy\/llm/.test(capturedUrl);
+                        out.proxyUsedForCloud = capturedUrl !== null && /\/proxy\/llm/.test(capturedUrl);
                     } finally {
                         window.fetch = origFetch;
                     }
@@ -12879,9 +13138,7 @@ function startSaveServer() {
                     out.thinkStripped = thinkResp.say === "Hallo Welt" && thinkResp.program === null;
 
                     // 2. <thinking>-Variante wird auch erkannt
-                    const thinkingResp = r.llmParseResponse(
-                        '<thinking>foo bar</thinking>\n{"say":"Klar"}'
-                    );
+                    const thinkingResp = r.llmParseResponse('<thinking>foo bar</thinking>\n{"say":"Klar"}');
                     out.thinkingStripped = thinkingResp.say === "Klar";
 
                     // 3. Plain-Text ohne JSON → Plain-Text-Fallback
@@ -12899,9 +13156,7 @@ function startSaveServer() {
                     // 5. Striktes JSON ohne fallback (Anthropic/Gemini-Pfad)
                     const strictResp = r.llmParseResponse('{"say":"Test","program":["weather","sunny"]}');
                     out.strictJsonStillWorks =
-                        strictResp.say === "Test" &&
-                        Array.isArray(strictResp.program) &&
-                        !strictResp.fallbackUsed;
+                        strictResp.say === "Test" && Array.isArray(strictResp.program) && !strictResp.fallbackUsed;
 
                     // 6. Markdown-Fence + JSON → fence wird gestripped
                     const fenceResp = r.llmParseResponse('```json\n{"say":"Fenced"}\n```');
@@ -12914,7 +13169,8 @@ function startSaveServer() {
                     // 8. JSON mit leerem say UND text drumherum → Plain-Text-Fallback nimmt drumherum
                     const emptyJsonResp = r.llmParseResponse('Vorab-Text {"say":""} Nach-Text');
                     out.emptyJsonFallsBackToText =
-                        emptyJsonResp.say && emptyJsonResp.say.length > 0 &&
+                        emptyJsonResp.say &&
+                        emptyJsonResp.say.length > 0 &&
                         emptyJsonResp.fallbackUsed === "json-empty";
 
                     return out;
@@ -12942,14 +13198,8 @@ function startSaveServer() {
                     "V7.98 Parser: Striktes JSON ohne think bleibt unverändert (Anthropic/Gemini-Pfad)",
                     v798Results.strictJsonStillWorks
                 );
-                check(
-                    "V7.98 Parser: Markdown-Fence (```json …```) wird gestripped",
-                    v798Results.fenceStripped
-                );
-                check(
-                    "V7.98 Parser: Leerer Input → klarer Error mit 'raw=0'-Hinweis",
-                    v798Results.emptyHasError
-                );
+                check("V7.98 Parser: Markdown-Fence (```json …```) wird gestripped", v798Results.fenceStripped);
+                check("V7.98 Parser: Leerer Input → klarer Error mit 'raw=0'-Hinweis", v798Results.emptyHasError);
                 check(
                     "V7.98 Parser: JSON mit say='' aber Text drumherum → Plain-Text-Fallback (json-empty marker)",
                     v798Results.emptyJsonFallsBackToText

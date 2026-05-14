@@ -17900,6 +17900,8 @@ class AnazhRealm {
     // Werkstatt-State: welchen Bauplan editieren wir gerade?
     // Welle 6.B Phase 1: selectedPartIdx (für Selection-Highlight) +
     // preview (lazy-init, runtime-only, NICHT persistiert).
+    // Welle 6.B Phase 2: manipulatorMode (translate/rotate/scale) + snapEnabled.
+    // Beides Session-State; Defaults translate + snap an.
     _ensureWorkshopState() {
         if (!this.state.workshop) {
             this.state.workshop = { selectedBlueprint: "village" };
@@ -17909,6 +17911,13 @@ class AnazhRealm {
         }
         if (typeof this.state.workshop.preview === "undefined") {
             this.state.workshop.preview = null;
+        }
+        const validModes = ["translate", "rotate", "scale"];
+        if (!validModes.includes(this.state.workshop.manipulatorMode)) {
+            this.state.workshop.manipulatorMode = "translate";
+        }
+        if (typeof this.state.workshop.snapEnabled !== "boolean") {
+            this.state.workshop.snapEnabled = true;
         }
         return this.state.workshop;
     }
@@ -18570,11 +18579,80 @@ class AnazhRealm {
             dirty: true,
             active: false,
             listenersInstalled: false,
+            // Welle 6.B Phase 2 — Manipulator-Gizmo. gizmo ist eine THREE.Group
+            // mit drei Sub-Groups (translate/rotate/scale), pro Achse drei
+            // Handle-Meshes. gizmoMeshes ist die Reverse-Map für Raycast-
+            // Identifikation: Mesh → {mode, axis}. dragManipulator hält den
+            // laufenden Drag-State (orthogonal zum orbit-drag).
+            gizmo: null,
+            gizmoMeshes: new Map(),
+            dragManipulator: null,
+            hoveredAxis: null,
         };
         ws.preview = preview;
         this._workshopInstallPreviewListeners();
+        this._workshopBuildGizmo();
+        this._workshopInstallUIListeners();
+        this._workshopUpdateManipulatorButtons();
         this._workshopRebuildPreviewMesh();
         return preview;
+    }
+
+    // Welle 6.B Phase 2 — Button-Click-Handler für Mode-Bar + Keyboard-Listener
+    // für W/E/R/G. Idempotent: zweiter Aufruf macht nichts. Keyboard wird nur
+    // dann gefangen wenn Werkstatt-Drawer offen, pointer NICHT gelockt
+    // (heißt: Spieler ist nicht im aktiven Game-Modus mit WASD-Bewegung), und
+    // kein Input-Feld fokussiert ist.
+    _workshopInstallUIListeners() {
+        if (typeof document === "undefined") return;
+        const ws = this._ensureWorkshopState();
+        if (ws._uiListenersInstalled) return;
+        ws._uiListenersInstalled = true;
+        const modeBar = document.getElementById("workshop-mode-bar");
+        if (modeBar) {
+            modeBar.querySelectorAll("[data-workshop-mode]").forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    const mode = btn.getAttribute("data-workshop-mode");
+                    if (mode) this.setWorkshopManipulatorMode(mode);
+                });
+            });
+        }
+        const snapBtn = document.getElementById("workshop-snap-toggle");
+        if (snapBtn) {
+            snapBtn.addEventListener("click", () => this.toggleWorkshopSnap());
+        }
+        document.addEventListener("keydown", (event) => {
+            // Nur aktiv wenn Werkstatt-Drawer offen
+            if (this.state.uiActiveDrawer !== "werkstatt") return;
+            // Nicht stören wenn Spieler in Pointer-Lock (Game-Movement) ist
+            if (typeof document !== "undefined" && document.pointerLockElement) return;
+            // Nicht stören wenn Input-Feld fokussiert
+            const active = document.activeElement;
+            if (
+                active &&
+                (active.tagName === "INPUT" ||
+                    active.tagName === "TEXTAREA" ||
+                    active.tagName === "SELECT" ||
+                    active.isContentEditable)
+            )
+                return;
+            // Nicht stören während Keybinding-Rebind (6.C3)
+            if (this.state.keybindRebind) return;
+            const key = (event.key || "").toLowerCase();
+            if (key === "w") {
+                this.setWorkshopManipulatorMode("translate");
+                event.preventDefault();
+            } else if (key === "e") {
+                this.setWorkshopManipulatorMode("rotate");
+                event.preventDefault();
+            } else if (key === "r") {
+                this.setWorkshopManipulatorMode("scale");
+                event.preventDefault();
+            } else if (key === "g") {
+                this.toggleWorkshopSnap();
+                event.preventDefault();
+            }
+        });
     }
 
     // Tab-Wechsel-Hook: aktiv wenn Werkstatt-Drawer offen, sonst pausiert.
@@ -18732,17 +18810,30 @@ class AnazhRealm {
                 mesh.material.color.setHex(orig);
             }
         }
+        // Welle 6.B Phase 2 — Gizmo synchronisieren (Position + Distance-
+        // Scale + Mode-Visibility) VOR dem Render.
+        this._workshopSyncGizmo();
         p.renderer.render(p.scene, p.camera);
     }
 
     // Listener-Installation: Maus-Down/-Move/-Up/-Wheel auf der Preview-Canvas.
-    // Drag = Orbit, Klick (< 5px Bewegung + < 300 ms) = Selection-Raycast.
+    // Drei Drag-Pfade in Priorität: (1) Gizmo-Handle → Manipulator-Drag,
+    // (2) leerer Klick → Orbit-Drag oder Selection bei kurzem Klick,
+    // (3) Wheel → Zoom. Welle 6.B Phase 2 erweitert (1) — Gizmo-Hit hat
+    // strikten Vorrang vor Orbit.
     _workshopInstallPreviewListeners() {
         const ws = this._ensureWorkshopState();
         if (!ws.preview || ws.preview.listenersInstalled) return;
         const p = ws.preview;
         const onDown = (event) => {
             event.preventDefault();
+            // (1) Gizmo-Hit? Pure Manipulator-Drag, kein Orbit, keine Selection.
+            const gizmoHit = this._workshopRaycastGizmo(event.clientX, event.clientY);
+            if (gizmoHit) {
+                this._workshopBeginManipulation(gizmoHit.mode, gizmoHit.axis, event.clientX, event.clientY);
+                return;
+            }
+            // (2) Normaler Drag: Orbit / Selection
             p.drag = {
                 startX: event.clientX,
                 startY: event.clientY,
@@ -18754,6 +18845,12 @@ class AnazhRealm {
             };
         };
         const onMove = (event) => {
+            // (1) Manipulator-Drag aktiv? Dann nur Manipulator anwenden.
+            if (p.dragManipulator) {
+                this._workshopApplyManipulation(event.clientX, event.clientY);
+                return;
+            }
+            // (2) Orbit-Drag aktiv?
             if (!p.drag) return;
             const dx = event.clientX - p.drag.startX;
             const dy = event.clientY - p.drag.startY;
@@ -18768,6 +18865,10 @@ class AnazhRealm {
             }
         };
         const onUp = (event) => {
+            if (p.dragManipulator) {
+                this._workshopEndManipulation();
+                return;
+            }
             if (!p.drag) return;
             const now = typeof performance !== "undefined" ? performance.now() : Date.now();
             const wasClick = !p.drag.moved && now - p.drag.startTime < 300;
@@ -18788,6 +18889,32 @@ class AnazhRealm {
         p.canvas.addEventListener("wheel", onWheel, { passive: false });
         p.canvas.addEventListener("contextmenu", (e) => e.preventDefault());
         p.listenersInstalled = true;
+    }
+
+    // Raycast gegen Gizmo-Handles. Liefert {mode, axis} bei Hit, sonst null.
+    // Wird nur ausgewertet wenn Gizmo sichtbar ist (Selection vorhanden + Mode-
+    // Sub-Group aktiv).
+    _workshopRaycastGizmo(clientX, clientY) {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview || !ws.preview.gizmo || !ws.preview.gizmo.visible) return null;
+        const p = ws.preview;
+        const bp = this.state.blueprints[ws.selectedBlueprint];
+        if (!bp || bp.builtIn) return null; // Built-ins haben kein nutzbares Gizmo
+        const rect = p.canvas.getBoundingClientRect();
+        const ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
+        const ndcY = -((clientY - rect.top) / rect.height) * 2 + 1;
+        p.raycaster.setFromCamera({ x: ndcX, y: ndcY }, p.camera);
+        // Nur die Meshes der aktiven Mode-Sub-Group raycasten
+        const mode = ws.manipulatorMode;
+        const candidates = [];
+        for (const [mesh, info] of p.gizmoMeshes) {
+            if (info.mode === mode) candidates.push(mesh);
+        }
+        if (candidates.length === 0) return null;
+        const hits = p.raycaster.intersectObjects(candidates, false);
+        if (hits.length === 0) return null;
+        const info = p.gizmoMeshes.get(hits[0].object);
+        return info ? { mode: info.mode, axis: info.axis } : null;
     }
 
     // Raycast: Bildschirm-Koordinaten → NDC → Three.js-Raycaster → erstes
@@ -18844,6 +18971,431 @@ class AnazhRealm {
                     row.classList.toggle("selected", rowIdx === idx);
                 });
             }
+        }
+    }
+
+    // ============================================================
+    // ### Welle 6.B Phase 2 — Manipulator-Gizmo + Drag ###
+    // Drei Modi: translate (Pfeile) · rotate (Ringe) · scale (Würfel).
+    // Klick auf Achse → Drag → Part-Mutation (in Welt-Achsen-Koord).
+    // Grid-Snap (§10.4): translate 0.5, rotate 15°, scale 0.1.
+    // Tasten W/E/R wechseln Modus, G toggelt Snap (Blender-Konvention).
+    // Eigene 1D-Achsen-Projektion via Drag-Plane (eigene Implementation
+    // statt Three.js TransformControls — examples/jsm ist nicht im Bundle).
+    // ============================================================
+
+    // Konstanten für Gizmo-Aufbau. Farben sind kontrastreich gegen den
+    // dunklen Preview-Hintergrund (#1a140a). Achsen-Konvention: X=rot,
+    // Y=grün, Z=blau (Standard 3D-Editor + Three.js AxesHelper).
+    static get WORKSHOP_GIZMO_COLORS() {
+        return Object.freeze({ x: 0xff5566, y: 0x66dd77, z: 0x5599ff, center: 0xffe066 });
+    }
+    static get WORKSHOP_SNAP_TRANSLATE() {
+        return 0.5;
+    }
+    static get WORKSHOP_SNAP_ROTATE() {
+        return Math.PI / 12;
+    } // 15°
+    static get WORKSHOP_SNAP_SCALE() {
+        return 0.1;
+    }
+    static get WORKSHOP_MIN_PART_SIZE() {
+        return 0.05;
+    }
+
+    // Baut die Gizmo-Hierarchie einmalig. Drei Sub-Groups (translate /
+    // rotate / scale), jeweils mit drei Achs-Handles. Die Group selbst
+    // wird in _workshopSyncGizmo positioniert + skaliert + Sub-Group-
+    // Visibility gesetzt.
+    _workshopBuildGizmo() {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview) return;
+        const p = ws.preview;
+        if (p.gizmo) return; // idempotent
+
+        const COLORS = AnazhRealm.WORKSHOP_GIZMO_COLORS;
+        const matFor = (color) =>
+            new THREE.MeshBasicMaterial({
+                color,
+                depthTest: false,
+                depthWrite: false,
+                transparent: true,
+                opacity: 0.95,
+                side: THREE.DoubleSide,
+            });
+
+        const root = new THREE.Group();
+        root.renderOrder = 999;
+        root.visible = false; // versteckt bis Selection da ist
+
+        // --- Translate-Gizmo: drei Achs-Pfeile ---
+        const tGroup = new THREE.Group();
+        tGroup.name = "translate";
+        const buildArrow = (color, axis) => {
+            const grp = new THREE.Group();
+            const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.7, 12), matFor(color));
+            shaft.position.y = 0.45;
+            const tip = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.22, 16), matFor(color));
+            tip.position.y = 0.91;
+            grp.add(shaft);
+            grp.add(tip);
+            // Achsen-Rotation: Cylinder ist default Y-up, also Y-Pfeil OK.
+            if (axis === "x") grp.rotation.z = -Math.PI / 2;
+            else if (axis === "z") grp.rotation.x = Math.PI / 2;
+            grp.userData.gizmo = { mode: "translate", axis };
+            shaft.userData.gizmo = { mode: "translate", axis };
+            tip.userData.gizmo = { mode: "translate", axis };
+            p.gizmoMeshes.set(shaft, { mode: "translate", axis });
+            p.gizmoMeshes.set(tip, { mode: "translate", axis });
+            tGroup.add(grp);
+            return grp;
+        };
+        buildArrow(COLORS.x, "x");
+        buildArrow(COLORS.y, "y");
+        buildArrow(COLORS.z, "z");
+        root.add(tGroup);
+
+        // --- Rotate-Gizmo: drei Torus-Ringe ---
+        const rGroup = new THREE.Group();
+        rGroup.name = "rotate";
+        const buildRing = (color, axis) => {
+            const ring = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.022, 8, 48), matFor(color));
+            if (axis === "x") ring.rotation.y = Math.PI / 2;
+            else if (axis === "y") ring.rotation.x = Math.PI / 2;
+            // Z: Default-Lage des Torus (in xy-Ebene)
+            ring.userData.gizmo = { mode: "rotate", axis };
+            p.gizmoMeshes.set(ring, { mode: "rotate", axis });
+            rGroup.add(ring);
+        };
+        buildRing(COLORS.x, "x");
+        buildRing(COLORS.y, "y");
+        buildRing(COLORS.z, "z");
+        root.add(rGroup);
+
+        // --- Scale-Gizmo: drei Achs-Würfel + Zentral-Würfel ---
+        const sGroup = new THREE.Group();
+        sGroup.name = "scale";
+        const buildCube = (color, axis) => {
+            const cube = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.13, 0.13), matFor(color));
+            if (axis === "x") cube.position.x = 0.7;
+            else if (axis === "y") cube.position.y = 0.7;
+            else if (axis === "z") cube.position.z = 0.7;
+            // Schaft als dünner Cylinder vom Center bis zum Würfel (Visual-Anker)
+            const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.7, 8), matFor(color));
+            shaft.position.set(0, 0.35, 0);
+            if (axis === "x") {
+                shaft.rotation.z = -Math.PI / 2;
+                shaft.position.set(0.35, 0, 0);
+            } else if (axis === "z") {
+                shaft.rotation.x = Math.PI / 2;
+                shaft.position.set(0, 0, 0.35);
+            }
+            cube.userData.gizmo = { mode: "scale", axis };
+            shaft.userData.gizmo = { mode: "scale", axis };
+            p.gizmoMeshes.set(cube, { mode: "scale", axis });
+            p.gizmoMeshes.set(shaft, { mode: "scale", axis });
+            sGroup.add(cube);
+            sGroup.add(shaft);
+        };
+        buildCube(COLORS.x, "x");
+        buildCube(COLORS.y, "y");
+        buildCube(COLORS.z, "z");
+        // Zentral-Würfel = uniform-scale (axis === "uniform")
+        const center = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.17, 0.17), matFor(COLORS.center));
+        center.userData.gizmo = { mode: "scale", axis: "uniform" };
+        p.gizmoMeshes.set(center, { mode: "scale", axis: "uniform" });
+        sGroup.add(center);
+        root.add(sGroup);
+
+        p.scene.add(root);
+        p.gizmo = root;
+    }
+
+    // Sync vor jedem Render: Position auf selected part (oder hide wenn keine
+    // Selection), Distance-Scale damit Gizmo konstant ~10% Canvas-Höhe bleibt,
+    // Sub-Group-Sichtbarkeit aus manipulatorMode.
+    _workshopSyncGizmo() {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview || !ws.preview.gizmo) return;
+        const p = ws.preview;
+        const bp = this.state.blueprints[ws.selectedBlueprint];
+        const idx = ws.selectedPartIdx;
+        if (!bp || idx === null || idx < 0 || idx >= bp.parts.length) {
+            p.gizmo.visible = false;
+            return;
+        }
+        const part = bp.parts[idx];
+        if (!part || !part.position) {
+            p.gizmo.visible = false;
+            return;
+        }
+        p.gizmo.visible = true;
+        p.gizmo.position.set(part.position.x || 0, part.position.y || 0, part.position.z || 0);
+        // Distance-Scale: orbit.dist * 0.18 ergibt ~0.18 bei dist 1, ~1.0 bei dist ~5.5
+        const s = Math.max(0.4, p.orbit.dist * 0.18);
+        p.gizmo.scale.setScalar(s);
+        // Sub-Group-Visibility nach Mode
+        const mode = ws.manipulatorMode;
+        for (const child of p.gizmo.children) {
+            child.visible = child.name === mode;
+        }
+    }
+
+    // Drag-Start auf einem Gizmo-Handle. Capture initial Part-State + 3D-
+    // Maus-Position (auf der Drag-Plane). Setzt dragManipulator-State.
+    _workshopBeginManipulation(mode, axis, clientX, clientY) {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview) return;
+        const p = ws.preview;
+        const idx = ws.selectedPartIdx;
+        if (idx === null) return;
+        const bp = this.state.blueprints[ws.selectedBlueprint];
+        if (!bp || bp.builtIn) return; // Built-ins read-only
+        const part = bp.parts[idx];
+        if (!part) return;
+
+        // Snapshot des Part-State vor Drag (für inkrementelle Anwendung)
+        const startPart = {
+            position: { x: part.position.x || 0, y: part.position.y || 0, z: part.position.z || 0 },
+            rotation: {
+                x: (part.rotation && part.rotation.x) || 0,
+                y: (part.rotation && part.rotation.y) || 0,
+                z: (part.rotation && part.rotation.z) || 0,
+            },
+            size: {
+                x: (part.size && part.size.x) || 1,
+                y: (part.size && part.size.y) || 1,
+                z: (part.size && part.size.z) || 1,
+            },
+        };
+
+        // Drag-Plane: für translate + scale ist Pivot = Part-Position, Normale
+        // wird kameranah gewählt (siehe _workshopAxisDragPlaneNormal). Für
+        // rotate ist Pivot = Part-Position, Normale = die rotierte Achse.
+        const pivot = new THREE.Vector3(startPart.position.x, startPart.position.y, startPart.position.z);
+        const axisVec = this._workshopAxisToVec3(axis);
+        let planeNormal;
+        if (mode === "rotate") {
+            planeNormal = axisVec.clone(); // Rotation passiert IN der Ebene senkrecht zur Achse
+        } else {
+            planeNormal = this._workshopAxisDragPlaneNormal(axisVec, p.camera);
+        }
+        const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(planeNormal, pivot);
+
+        const startIntersect = this._workshopRaycastPlane(clientX, clientY, plane);
+        if (!startIntersect) return; // Kamera-Ray parallel zur Ebene — selten
+
+        // Für rotate: Start-Winkel um Pivot
+        let startAngle = 0;
+        if (mode === "rotate") {
+            const v = startIntersect.clone().sub(pivot);
+            // Project on plane perpendicular to axisVec → use two reference axes
+            const refU = this._workshopAxisPerpendicular(axisVec);
+            const refV = axisVec.clone().cross(refU).normalize();
+            startAngle = Math.atan2(v.dot(refV), v.dot(refU));
+        }
+
+        p.dragManipulator = {
+            mode,
+            axis,
+            startPart,
+            pivot,
+            axisVec,
+            plane,
+            startIntersect,
+            startAngle,
+            startClientX: clientX,
+            startClientY: clientY,
+        };
+    }
+
+    // Drag-Frame: berechne Delta entlang Achse + wende auf Part an.
+    // Live-Mesh-Update OHNE Rebuild (Geometrie bleibt, mesh.position/scale
+    // werden direkt gesetzt). Volle Rebuild kommt im End-Pfad.
+    _workshopApplyManipulation(clientX, clientY) {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview || !ws.preview.dragManipulator) return;
+        const p = ws.preview;
+        const m = p.dragManipulator;
+        const bp = this.state.blueprints[ws.selectedBlueprint];
+        if (!bp) return;
+        const part = bp.parts[ws.selectedPartIdx];
+        if (!part) return;
+        const intersect = this._workshopRaycastPlane(clientX, clientY, m.plane);
+        if (!intersect) return;
+
+        if (m.mode === "translate") {
+            const delta = intersect.clone().sub(m.startIntersect);
+            const along = delta.dot(m.axisVec); // signed Welt-Einheiten entlang Achse
+            let newVal = m.startPart.position[m.axis] + along;
+            newVal = this._workshopApplySnap(newVal, "translate");
+            part.position[m.axis] = newVal;
+        } else if (m.mode === "rotate") {
+            const v = intersect.clone().sub(m.pivot);
+            const refU = this._workshopAxisPerpendicular(m.axisVec);
+            const refV = m.axisVec.clone().cross(refU).normalize();
+            const curAngle = Math.atan2(v.dot(refV), v.dot(refU));
+            let delta = curAngle - m.startAngle;
+            // Winkel-Normalisierung (kein 360°-Sprung)
+            while (delta > Math.PI) delta -= 2 * Math.PI;
+            while (delta < -Math.PI) delta += 2 * Math.PI;
+            let newVal = m.startPart.rotation[m.axis] + delta;
+            newVal = this._workshopApplySnap(newVal, "rotate");
+            part.rotation[m.axis] = newVal;
+        } else if (m.mode === "scale") {
+            if (m.axis === "uniform") {
+                // Center-Würfel: Delta entlang der Bildschirm-Y-Achse als
+                // intuitive Scale-Geste (hoch=größer, runter=kleiner).
+                const dy = m.startClientY - clientY;
+                const factor = Math.max(0.05, 1 + dy * 0.01);
+                for (const ax of ["x", "y", "z"]) {
+                    let v = m.startPart.size[ax] * factor;
+                    v = Math.max(AnazhRealm.WORKSHOP_MIN_PART_SIZE, v);
+                    v = this._workshopApplySnap(v, "scale");
+                    part.size[ax] = v;
+                }
+            } else {
+                const delta = intersect.clone().sub(m.startIntersect);
+                const along = delta.dot(m.axisVec);
+                let v = m.startPart.size[m.axis] + along;
+                v = Math.max(AnazhRealm.WORKSHOP_MIN_PART_SIZE, v);
+                v = this._workshopApplySnap(v, "scale");
+                part.size[m.axis] = v;
+            }
+        }
+
+        // Live-Mesh-Update: für translate + rotate genügt mesh.position/rotation
+        // setzen. Für scale müssen wir die Geometrie skalieren (relativ zum
+        // start), weil _makePartGeometry die size in die Geometrie baked.
+        const sub = this._workshopFindMeshForPartIdx(ws.selectedPartIdx);
+        if (sub) {
+            if (part.position) sub.position.set(part.position.x, part.position.y, part.position.z);
+            if (part.rotation) sub.rotation.set(part.rotation.x, part.rotation.y, part.rotation.z);
+            if (m.mode === "scale") {
+                // Approximation: mesh.scale relativ zu Start-Size.
+                const sx = part.size.x / m.startPart.size.x;
+                const sy = part.size.y / m.startPart.size.y;
+                const sz = part.size.z / m.startPart.size.z;
+                sub.scale.set(sx, sy, sz);
+            }
+        }
+        p.dirty = true;
+    }
+
+    // Drag-Ende: voller Rebuild für saubere Geometrie + DOM-Inputs syncen.
+    _workshopEndManipulation() {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview || !ws.preview.dragManipulator) return;
+        ws.preview.dragManipulator = null;
+        // Mesh + Number-Inputs sind möglicherweise out-of-sync (Live-Update war
+        // approximativ). Volle Rebuild + DOM-Render: kostet einmalig, lohnt sich.
+        this._renderWorkshopDOM();
+    }
+
+    // Snap-Helper: rundet Wert auf nächstes Snap-Multiple je Mode.
+    _workshopApplySnap(value, mode) {
+        const ws = this._ensureWorkshopState();
+        if (!ws.snapEnabled) return value;
+        let step;
+        if (mode === "translate") step = AnazhRealm.WORKSHOP_SNAP_TRANSLATE;
+        else if (mode === "rotate") step = AnazhRealm.WORKSHOP_SNAP_ROTATE;
+        else if (mode === "scale") step = AnazhRealm.WORKSHOP_SNAP_SCALE;
+        else return value;
+        return Math.round(value / step) * step;
+    }
+
+    // Helper: Achs-Name → Welt-Vektor
+    _workshopAxisToVec3(axis) {
+        if (axis === "x") return new THREE.Vector3(1, 0, 0);
+        if (axis === "y") return new THREE.Vector3(0, 1, 0);
+        if (axis === "z") return new THREE.Vector3(0, 0, 1);
+        return new THREE.Vector3(1, 0, 0);
+    }
+
+    // Helper: irgendeine Achse senkrecht zur gegebenen (für Rotation-Polar-Koord)
+    _workshopAxisPerpendicular(axisVec) {
+        // Y-Achse als Default-Ref, außer wenn axis ≈ Y → Z nehmen.
+        const ref = Math.abs(axisVec.y) > 0.9 ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(0, 1, 0);
+        return ref
+            .clone()
+            .sub(axisVec.clone().multiplyScalar(ref.dot(axisVec)))
+            .normalize();
+    }
+
+    // Helper: gute Drag-Plane-Normale für eine Welt-Achse. Wir nehmen die
+    // Camera-Forward-Komponente, die senkrecht zur Achse liegt — so steht die
+    // Drag-Ebene am steilsten zur Camera und Maus-Bewegung mapped natürlich.
+    _workshopAxisDragPlaneNormal(axisVec, camera) {
+        const camForward = new THREE.Vector3();
+        camera.getWorldDirection(camForward);
+        // Projektion auf Ebene senkrecht zur Achse
+        const proj = camForward.clone().sub(axisVec.clone().multiplyScalar(camForward.dot(axisVec)));
+        if (proj.lengthSq() < 0.001) {
+            // Camera schaut direkt entlang der Achse — degeneriert. Fallback.
+            return Math.abs(axisVec.y) > 0.9 ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(0, 1, 0);
+        }
+        return proj.normalize();
+    }
+
+    // Helper: Raycast in NDC → Plane-Intersect (3D).
+    _workshopRaycastPlane(clientX, clientY, plane) {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview) return null;
+        const p = ws.preview;
+        const rect = p.canvas.getBoundingClientRect();
+        const ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
+        const ndcY = -((clientY - rect.top) / rect.height) * 2 + 1;
+        p.raycaster.setFromCamera({ x: ndcX, y: ndcY }, p.camera);
+        const target = new THREE.Vector3();
+        const hit = p.raycaster.ray.intersectPlane(plane, target);
+        return hit;
+    }
+
+    // Helper: finde Sub-Mesh für gegebene partIdx (reverse-lookup in partMeshes-Map).
+    _workshopFindMeshForPartIdx(idx) {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview) return null;
+        for (const [mesh, i] of ws.preview.partMeshes) {
+            if (i === idx) return mesh;
+        }
+        return null;
+    }
+
+    // Public: Mode wechseln (translate/rotate/scale).
+    setWorkshopManipulatorMode(mode) {
+        if (!["translate", "rotate", "scale"].includes(mode)) return false;
+        const ws = this._ensureWorkshopState();
+        if (ws.manipulatorMode === mode) return true;
+        ws.manipulatorMode = mode;
+        if (ws.preview) ws.preview.dirty = true;
+        this._workshopUpdateManipulatorButtons();
+        return true;
+    }
+
+    // Public: Snap-Toggle.
+    toggleWorkshopSnap(enabled) {
+        const ws = this._ensureWorkshopState();
+        ws.snapEnabled = typeof enabled === "boolean" ? enabled : !ws.snapEnabled;
+        this._workshopUpdateManipulatorButtons();
+        return ws.snapEnabled;
+    }
+
+    // UI-Sync: Modus-Buttons + Snap-Toggle in der Werkstatt.
+    _workshopUpdateManipulatorButtons() {
+        if (typeof document === "undefined") return;
+        const ws = this._ensureWorkshopState();
+        const modeBar = document.getElementById("workshop-mode-bar");
+        if (modeBar) {
+            const buttons = modeBar.querySelectorAll("[data-workshop-mode]");
+            buttons.forEach((btn) => {
+                const mode = btn.getAttribute("data-workshop-mode");
+                btn.classList.toggle("active", mode === ws.manipulatorMode);
+            });
+        }
+        const snapBtn = document.getElementById("workshop-snap-toggle");
+        if (snapBtn) {
+            snapBtn.classList.toggle("active", ws.snapEnabled);
+            snapBtn.textContent = ws.snapEnabled ? "Snap" : "frei";
         }
     }
 

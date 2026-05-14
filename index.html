@@ -2621,6 +2621,41 @@
                 color: var(--violet-1);
                 letter-spacing: 0.5px;
             }
+            /* Welle 6.B Phase 2 — Manipulator-Modus-Bar */
+            #workshop-mode-bar {
+                display: flex;
+                gap: 4px;
+                margin: 4px 0 2px 0;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            .workshop-mode-btn,
+            .workshop-snap-btn {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10px;
+                padding: 3px 10px;
+                background: rgba(40, 25, 10, 0.18);
+                color: var(--parch-ink);
+                border: 1px solid var(--brass-3);
+                border-radius: 3px;
+                cursor: pointer;
+                letter-spacing: 0.5px;
+            }
+            .workshop-mode-btn:hover,
+            .workshop-snap-btn:hover {
+                background: rgba(40, 25, 10, 0.3);
+                border-color: var(--brass-1);
+            }
+            .workshop-mode-btn.active {
+                background: linear-gradient(180deg, rgba(176, 106, 217, 0.5), rgba(120, 60, 180, 0.35));
+                border-color: var(--violet-1);
+                color: var(--parch-bg);
+            }
+            .workshop-snap-btn.active {
+                background: linear-gradient(180deg, rgba(212, 163, 115, 0.5), rgba(160, 110, 70, 0.35));
+                border-color: var(--brass-1);
+                color: var(--parch-bg);
+            }
             .workshop-part-row.selected {
                 background: linear-gradient(180deg, rgba(176, 106, 217, 0.18), rgba(176, 106, 217, 0.08));
                 border-color: var(--violet-1);
@@ -3163,7 +3198,13 @@
                 <h3>3D-Vorschau</h3>
                 <div id="workshop-preview-wrapper">
                     <canvas id="workshop-preview-canvas"></canvas>
-                    <p class="workshop-preview-hint">Klick: Part wählen · Drag: rotieren · Rad: zoom</p>
+                    <div id="workshop-mode-bar" role="group" aria-label="Manipulator-Modus">
+                        <button type="button" class="workshop-mode-btn active" data-workshop-mode="translate" title="Verschieben (W)">Move</button>
+                        <button type="button" class="workshop-mode-btn" data-workshop-mode="rotate" title="Drehen (E)">Rotate</button>
+                        <button type="button" class="workshop-mode-btn" data-workshop-mode="scale" title="Skalieren (R)">Scale</button>
+                        <button type="button" id="workshop-snap-toggle" class="workshop-snap-btn active" title="Grid-Snap (G)">Snap</button>
+                    </div>
+                    <p class="workshop-preview-hint">Klick: Part wählen · Drag: rotieren · Rad: zoom · W/E/R wechselt Modus · G snap</p>
                 </div>
             </section>
             <section class="section">
