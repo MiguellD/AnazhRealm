@@ -234,7 +234,7 @@ class AnazhRealm {
                     anthropic: { apiKey: "", model: "claude-haiku-4-5" },
                     google: { apiKey: "", model: "gemini-2.5-flash" },
                     openrouter: { apiKey: "", model: "meta-llama/llama-3.3-70b-instruct:free" },
-                    ollama: { apiKey: "", model: "llama3.1", endpoint: "http://localhost:11434" },
+                    ollama: { apiKey: "", model: "llama3.1", endpoint: "http://localhost:11434", useProxy: false },
                 },
                 inFlight: false,
                 lastError: null,
@@ -2775,6 +2775,11 @@ class AnazhRealm {
                 if (name === "ollama") {
                     const ep = localStorage.getItem("anazh.llm.ollama.endpoint");
                     if (typeof ep === "string" && ep) this.state.llm.providerConfig[name].endpoint = ep;
+                    // V7.96 — useProxy-Flag persistiert. Bei aktivem Toggle
+                    // werden Cloud-Calls über save-server (localhost:4312)
+                    // geroutet, was CORS-Header setzt.
+                    const useProxy = localStorage.getItem("anazh.llm.ollama.useProxy");
+                    this.state.llm.providerConfig[name].useProxy = useProxy === "1";
                 }
             }
             const enabled = localStorage.getItem("anazh.llm.enabled") === "true";
@@ -2793,8 +2798,9 @@ class AnazhRealm {
             for (const [name, cfg] of Object.entries(this.state.llm.providerConfig)) {
                 localStorage.setItem(`anazh.llm.${name}.apiKey`, cfg.apiKey || "");
                 localStorage.setItem(`anazh.llm.${name}.model`, cfg.model || "");
-                if (name === "ollama" && cfg.endpoint) {
-                    localStorage.setItem("anazh.llm.ollama.endpoint", cfg.endpoint);
+                if (name === "ollama") {
+                    if (cfg.endpoint) localStorage.setItem("anazh.llm.ollama.endpoint", cfg.endpoint);
+                    localStorage.setItem("anazh.llm.ollama.useProxy", cfg.useProxy ? "1" : "0");
                 }
             }
         } catch {
@@ -3033,10 +3039,18 @@ class AnazhRealm {
             // V7.95 — cfg als 4. Argument für Provider die OpenAI-kompat-
             // Detection brauchen (Ollama Cloud). Andere Provider ignorieren es.
             const body = def.buildBody(cfg.model, system, userContent, cfg);
-            const res = await fetch(url, {
+            // V7.96 — useProxy-Flag (Ollama Cloud-Mode): Request wird über
+            // localhost:4312/api/proxy/llm geroutet damit der Browser nicht
+            // an CORS scheitert. Save-server setzt CORS-Header, leitet weiter.
+            // Funktioniert nur bei `npm run dev` (lokaler save-server).
+            const useProxy = !!(cfg && cfg.useProxy);
+            const fetchUrl = useProxy ? "http://localhost:4312/api/proxy/llm" : url;
+            const fetchBody = useProxy ? JSON.stringify({ url, headers, body }) : JSON.stringify(body);
+            const fetchHeaders = useProxy ? { "content-type": "application/json" } : headers;
+            const res = await fetch(fetchUrl, {
                 method: "POST",
-                headers,
-                body: JSON.stringify(body),
+                headers: fetchHeaders,
+                body: fetchBody,
             });
             if (!res.ok) {
                 const text = await res.text().catch(() => "");
@@ -3050,7 +3064,26 @@ class AnazhRealm {
             llm.lastError = parsed.error || null;
             return parsed;
         } catch (err) {
-            llm.lastError = err.message || String(err);
+            // V7.96 — CORS- und Netzwerk-Fehler erkennen + dem Spieler einen
+            // klaren Hinweis geben. „Failed to fetch" ist der typische
+            // Browser-Fehler bei CORS-Block + Netzwerk-Down.
+            const rawMsg = err.message || String(err);
+            const isCorsLikely = /Failed to fetch|NetworkError|TypeError|CORS|preflight/i.test(rawMsg);
+            if (isCorsLikely && this.state.llm.provider === "ollama") {
+                const cfg2 = this.state.llm.providerConfig.ollama;
+                const usingProxy = !!(cfg2 && cfg2.useProxy);
+                if (usingProxy) {
+                    llm.lastError = "Proxy nicht erreichbar (läuft 'npm run dev' / save-server auf Port 4312?).";
+                } else {
+                    llm.lastError =
+                        "Cloud blockt Browser-Direct-Call (CORS). Optionen: " +
+                        "(a) lokales Ollama auf localhost:11434, " +
+                        "(b) aktiviere 'Proxy über save-server' im Einstellungen-Drawer (braucht `npm run dev`), " +
+                        "(c) Provider mit CORS-Header (Groq, Gemini, OpenRouter).";
+                }
+            } else {
+                llm.lastError = rawMsg;
+            }
             return { error: llm.lastError };
         } finally {
             llm.inFlight = false;
@@ -3529,6 +3562,14 @@ class AnazhRealm {
         if (keyRow) keyRow.hidden = !def.requiresKey && this.state.llm.provider !== "ollama";
         if (endpointRow) endpointRow.hidden = this.state.llm.provider !== "ollama";
         if (endpointInput) endpointInput.value = (cfg && cfg.endpoint) || "http://localhost:11434";
+        // V7.96 — Proxy-Toggle nur bei Ollama sichtbar (andere Provider haben CORS).
+        const proxyRow = document.getElementById("llm-proxy-row");
+        const proxyHint = document.getElementById("llm-proxy-hint");
+        const proxyCheckbox = document.getElementById("llm-use-proxy");
+        const isOllama = this.state.llm.provider === "ollama";
+        if (proxyRow) proxyRow.hidden = !isOllama;
+        if (proxyHint) proxyHint.hidden = !isOllama;
+        if (proxyCheckbox) proxyCheckbox.checked = !!(cfg && cfg.useProxy);
         if (hintEl) hintEl.textContent = def.hint || "";
         this.llmRefreshModelOptions();
         this.llmUpdateStatus();
@@ -3572,6 +3613,18 @@ class AnazhRealm {
             this.llmPersist();
             this.llmUpdateStatus();
         });
+        // V7.96 — Proxy-Toggle wire-up. Bei Klick: useProxy in Config setzen
+        // + persistieren. Beim Aktivieren des Toggles wird im Hint klargemacht
+        // dass der save-server laufen muss; UI fängt das nicht ab.
+        const proxyCheckbox = document.getElementById("llm-use-proxy");
+        if (proxyCheckbox) {
+            proxyCheckbox.addEventListener("change", () => {
+                const cfg = this.state.llm.providerConfig.ollama;
+                if (cfg) cfg.useProxy = !!proxyCheckbox.checked;
+                this.llmPersist();
+                this.llmUpdateStatus();
+            });
+        }
         if (endpointInput) {
             endpointInput.addEventListener("change", () => {
                 const cfg = this.state.llm.providerConfig.ollama;

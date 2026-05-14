@@ -360,6 +360,71 @@ Hylomorphismus-System wie Materialien und Bauwerke.
   playerInventory in buildStateSnapshot. 127 Invarianten für 6.C1
   + Drag-System → 1153 total.
 
+### V7.96 — Cloud-LLM-Proxy via save-server (14.05.2026)
+
+**Schöpfer testete V7.95 in GitHack-Setup mit echtem ollama.com-Key**:
+
+```
+Access to fetch at 'https://ollama.com/api/chat' from origin
+'https://rawcdn.githack.com' has been blocked by CORS policy:
+No 'Access-Control-Allow-Origin' header is present
+```
+
+**Das ist KEIN Code-Bug**: ollama.com Cloud sendet absichtlich keine
+CORS-Header (Server-zu-Server-API-Design). Browser blockt Direct-Calls.
+
+**Lösung — Drei Schichten**:
+
+**Schicht 1 — save-server als Proxy**:
+- `save-server.js` bekommt `/api/proxy/llm`-POST-Route
+- Body: `{url, headers, body}` als Envelope
+- Setzt Node-https-Request mit weitergereichtem Auth-Header
+- Response mit CORS-OK zurück → Browser akzeptiert
+- Sicherheits-Disziplin:
+  - 127.0.0.1-bind (kein LAN)
+  - https-only URL
+  - PROXY_MAX_URL_LENGTH=500, PROXY_MAX_BODY_BYTES=1MB
+  - PROXY_TIMEOUT_MS=60_000
+  - allowed-headers-Whitelist
+
+**Schicht 2 — Provider-Config + llmCall**:
+- `state.llm.providerConfig.ollama.useProxy: false` (default, Backward-Compat)
+- Wenn true: llmCall postet an localhost:4312/api/proxy/llm mit Envelope
+- Persistiert in localStorage["anazh.llm.ollama.useProxy"]
+
+**Schicht 3 — Error-UX + Provider-Liste**:
+- llmCall erkennt CORS-Errors (`Failed to fetch|NetworkError|...`)
+- Klarer Hinweis: „(a) lokales Ollama, (b) Proxy-Toggle, (c) CORS-freundlicher Provider"
+- UI: neue `#llm-proxy-row` mit Checkbox + Hint
+- Hint listet CORS-freundliche Alternativen: Groq, Together AI, Cerebras, Gemini, OpenRouter
+
+**7 Tests grün. 1576 → 1583/1583 invariants.**
+
+**Lehre 230 zentral**: CORS ist Server-Design, kein Code-Bug. Lösung
+liegt im eigenen Stack-Vermittler — save-server bekommt eine zweite
+Rolle als loyaler LLM-Proxy. Eine Funktion mehr in bestehendem Dienst
+ist günstiger als neuer Dienst (Heilige-Lektion-Disziplin gewahrt).
+
+**Lehre 231**: Spezifische Proxy-Routes > generische. `/api/proxy/llm`
+hat dedizierte Whitelists. Wer Image-Use-Case will: `/api/proxy/image`
+mit eigenen Whitelists. „One proxy to rule them all" ist nie sicher.
+
+**Lehre 232**: CORS-Errors liefern absichtlich wenig Detail — Pattern-
+Match auf bekannte Error-Strings UND Provider-Filter ist die einzige
+Option. Gib klare Vorwärts-Optionen statt fehlende Detail-Info zu
+rekonstruieren.
+
+**Bedienung für Spieler**:
+1. `npm run dev` läuft (save-server auf localhost:4312)
+2. Einstellungen → Provider „Ollama (lokal oder gehostet)"
+3. Endpoint eintragen (z.B. `https://ollama.com/api/chat`)
+4. API-Key eintragen
+5. **Toggle „Cloud über save-server-Proxy" aktivieren**
+6. Chat funktioniert
+
+Welle 6.H V2 bleibt 14/14 vollständig — V7.96 ist Bug-Fix-Welle für
+Cloud-CORS-Problem.
+
 ### V7.95 — Ollama-Cloud-Kompatibilität nach Schöpfer-Browser-Test (14.05.2026)
 
 **Schöpfer testete V7.94 mit echtem Cloud-API-Key — drei Bug-Quellen entdeckt**:

@@ -12576,6 +12576,110 @@ function startSaveServer() {
                 check(`V7.95 Ollama-Cloud: evaluate-Fehler — ${v795Results.error}`, false);
             }
 
+            // ### V7.96 — Cloud-LLM-Proxy via save-server (CORS-Lösung) ###
+            //
+            // Cloud-Provider wie ollama.com senden keine CORS-Header → Browser
+            // blockt Direct-Calls. Save-server steht als loyaler Vermittler:
+            // localhost:4312/api/proxy/llm + Auth-Header durchgereicht.
+            // Tests prüfen: useProxy-Flag in Config, UI-Toggle sichtbar/wired,
+            // llmCall routet zum Proxy bei aktivem Flag, CORS-Error-Hint hilfreich.
+            const v796Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.llm) return null;
+                    const out = {};
+
+                    // 1. useProxy-Flag im Ollama-Provider-Config initialisiert
+                    const cfg = r.state.llm.providerConfig.ollama;
+                    out.useProxyExists = cfg && typeof cfg.useProxy === "boolean";
+                    out.useProxyDefault = cfg && cfg.useProxy === false;
+
+                    // 2. UI: Proxy-Row + Hint sind im DOM
+                    const proxyRow = document.getElementById("llm-proxy-row");
+                    const proxyHint = document.getElementById("llm-proxy-hint");
+                    const proxyCheckbox = document.getElementById("llm-use-proxy");
+                    out.proxyRowExists = !!proxyRow;
+                    out.proxyHintExists = !!proxyHint;
+                    out.proxyCheckboxIsCheckbox = !!(proxyCheckbox && proxyCheckbox.type === "checkbox");
+
+                    // 3. UI: Proxy-Row sichtbar bei Ollama, versteckt bei anderem Provider
+                    r.state.llm.provider = "ollama";
+                    if (typeof r.llmRefreshProviderUI === "function") r.llmRefreshProviderUI();
+                    out.proxyVisibleForOllama = !!(proxyRow && !proxyRow.hidden);
+                    out.proxyHiddenAttrOllama = proxyRow ? proxyRow.getAttribute("hidden") : "no-row";
+                    r.state.llm.provider = "google";
+                    if (typeof r.llmRefreshProviderUI === "function") r.llmRefreshProviderUI();
+                    out.proxyHiddenForOther = !!(proxyRow && proxyRow.hidden);
+                    out.proxyHiddenAttrOther = proxyRow ? proxyRow.getAttribute("hidden") : "no-row";
+                    r.state.llm.provider = "ollama";
+                    if (typeof r.llmRefreshProviderUI === "function") r.llmRefreshProviderUI();
+
+                    // 4. Provider-Hint enthält CORS-freundliche Provider-Liste
+                    if (proxyHint) {
+                        out.hintMentionsGroq = /Groq/i.test(proxyHint.textContent || "");
+                        out.hintMentionsTogether = /Together/i.test(proxyHint.textContent || "");
+                        out.hintMentionsCerebras = /Cerebras/i.test(proxyHint.textContent || "");
+                        out.hintMentionsProxyUrl = /4312/.test(proxyHint.textContent || "");
+                    }
+
+                    // 5. Click auf Checkbox setzt useProxy + persistiert
+                    if (proxyCheckbox && cfg) {
+                        proxyCheckbox.checked = true;
+                        proxyCheckbox.dispatchEvent(new Event("change"));
+                        out.toggleSetsUseProxy = cfg.useProxy === true;
+                        if (typeof localStorage !== "undefined") {
+                            out.persistedToLocalStorage = localStorage.getItem("anazh.llm.ollama.useProxy") === "1";
+                        }
+                        // Reset für nächste Tests
+                        proxyCheckbox.checked = false;
+                        proxyCheckbox.dispatchEvent(new Event("change"));
+                    }
+
+                    // 6. CSP allowed localhost:4312 für den Proxy
+                    const meta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+                    const csp = meta ? meta.getAttribute("content") : "";
+                    out.cspAllowsProxyHost = /localhost:4312/.test(csp);
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (v796Results && !v796Results.error) {
+                check(
+                    "V7.96 Proxy: useProxy-Flag im Ollama-Config (default false, Backward-Compat)",
+                    v796Results.useProxyExists && v796Results.useProxyDefault
+                );
+                check(
+                    "V7.96 Proxy: UI-Elemente im DOM (proxy-row + proxy-hint + checkbox)",
+                    v796Results.proxyRowExists && v796Results.proxyHintExists && v796Results.proxyCheckboxIsCheckbox
+                );
+                check(
+                    "V7.96 Proxy: UI-Toggle sichtbar bei Ollama (proxy-row.hidden=false)",
+                    v796Results.proxyVisibleForOllama
+                );
+                check(
+                    "V7.96 Proxy: UI-Toggle versteckt bei nicht-Ollama-Provider (proxy-row.hidden=true für Google/Anthropic/OpenRouter)",
+                    v796Results.proxyHiddenForOther
+                );
+                check(
+                    "V7.96 Proxy: Hint nennt CORS-freundliche Provider (Groq + Together + Cerebras) + Proxy-URL (4312)",
+                    v796Results.hintMentionsGroq &&
+                        v796Results.hintMentionsTogether &&
+                        v796Results.hintMentionsCerebras &&
+                        v796Results.hintMentionsProxyUrl
+                );
+                check(
+                    "V7.96 Proxy: Click-Toggle setzt useProxy + persistiert in localStorage",
+                    v796Results.toggleSetsUseProxy && v796Results.persistedToLocalStorage
+                );
+                check(
+                    "V7.96 Proxy: CSP erlaubt localhost:4312 (save-server) für Proxy-Calls",
+                    v796Results.cspAllowsProxyHost
+                );
+            } else if (v796Results && v796Results.error) {
+                check(`V7.96 Proxy: evaluate-Fehler — ${v796Results.error}`, false);
+            }
+
             // ### Ring 3 – Player-Emotionen → Welt ###
             const ring3Results = await page
                 .evaluate(() => {

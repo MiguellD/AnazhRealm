@@ -1,4 +1,6 @@
 const http = require("http");
+const https = require("https");
+const { URL } = require("url");
 const fs = require("fs");
 const path = require("path");
 
@@ -29,9 +31,148 @@ function sendJson(res, statusCode, data) {
         "Content-Type": "application/json; charset=utf-8",
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Headers": "Content-Type,Authorization",
     });
     res.end(JSON.stringify(data));
+}
+
+// V7.96 — LLM-Proxy für Cloud-Provider die KEINE CORS-Header senden
+// (z.B. ollama.com Cloud). Browser-Direct-Calls werden vom Browser
+// geblockt — der save-server steht als loyaler Vermittler dazwischen.
+//
+// Sicherheits-Disziplin:
+//   - Server bindet bereits auf 127.0.0.1 → kein LAN-Zugriff
+//   - URL muss https:-Schema haben (kein arbitrary HTTP-Forward)
+//   - Max URL-Länge 500 Zeichen
+//   - Body-Cap 1 MB (request + response)
+//   - Timeout 60 Sekunden
+//   - Allowed methods: nur POST (LLMs sind POST)
+//   - Forwarded headers gefiltert: nur application-content + authorization
+//
+// Wer den Proxy für andere Use-Cases nutzen will (z.B. Image-API): neue
+// Route hinzufügen statt /proxy/llm zu generalisieren. Spezifische Routes
+// bewahren die Sicherheits-Disziplin.
+const PROXY_MAX_URL_LENGTH = 500;
+const PROXY_MAX_BODY_BYTES = 1024 * 1024; // 1 MB
+const PROXY_TIMEOUT_MS = 60_000;
+const PROXY_ALLOWED_HEADER_PREFIXES = [
+    "content-type",
+    "authorization",
+    "x-api-key",
+    "anthropic-version",
+    "anthropic-dangerous-direct-browser-access",
+];
+
+function handleLlmProxy(req, res) {
+    let rawBody = "";
+    let aborted = false;
+    req.on("data", (chunk) => {
+        if (aborted) return;
+        rawBody += chunk;
+        if (rawBody.length > PROXY_MAX_BODY_BYTES) {
+            aborted = true;
+            sendJson(res, 413, { error: "Request body too large" });
+            req.destroy();
+        }
+    });
+    req.on("end", () => {
+        if (aborted) return;
+        let parsed;
+        try {
+            parsed = JSON.parse(rawBody || "{}");
+        } catch (e) {
+            sendJson(res, 400, { error: "Invalid JSON envelope", details: e.message });
+            return;
+        }
+        const targetUrl = parsed.url;
+        const headersIn = parsed.headers || {};
+        const bodyIn = parsed.body;
+        if (typeof targetUrl !== "string" || targetUrl.length === 0) {
+            sendJson(res, 400, { error: "Missing 'url' in proxy envelope" });
+            return;
+        }
+        if (targetUrl.length > PROXY_MAX_URL_LENGTH) {
+            sendJson(res, 400, { error: "URL too long" });
+            return;
+        }
+        let parsedUrl;
+        try {
+            parsedUrl = new URL(targetUrl);
+        } catch {
+            sendJson(res, 400, { error: "Invalid URL" });
+            return;
+        }
+        if (parsedUrl.protocol !== "https:") {
+            sendJson(res, 400, {
+                error: "Only https: URLs allowed (HTTP-Forward blockt aus Sicherheit)",
+            });
+            return;
+        }
+        const safeHeaders = { "content-type": "application/json" };
+        for (const key of Object.keys(headersIn)) {
+            const lc = key.toLowerCase();
+            if (PROXY_ALLOWED_HEADER_PREFIXES.some((allowed) => lc === allowed || lc.startsWith(allowed))) {
+                safeHeaders[lc] = String(headersIn[key]);
+            }
+        }
+        const bodyStr = typeof bodyIn === "string" ? bodyIn : JSON.stringify(bodyIn || {});
+        if (bodyStr.length > PROXY_MAX_BODY_BYTES) {
+            sendJson(res, 413, { error: "Forwarded body too large" });
+            return;
+        }
+        const requestOptions = {
+            method: "POST",
+            hostname: parsedUrl.hostname,
+            port: parsedUrl.port || 443,
+            path: parsedUrl.pathname + parsedUrl.search,
+            headers: {
+                ...safeHeaders,
+                "content-length": Buffer.byteLength(bodyStr),
+            },
+        };
+        const proxyReq = https.request(requestOptions, (proxyRes) => {
+            let respBody = "";
+            let respAborted = false;
+            proxyRes.on("data", (chunk) => {
+                if (respAborted) return;
+                respBody += chunk;
+                if (respBody.length > PROXY_MAX_BODY_BYTES) {
+                    respAborted = true;
+                    proxyRes.destroy();
+                }
+            });
+            proxyRes.on("end", () => {
+                if (respAborted) {
+                    sendJson(res, 502, { error: "Upstream response too large" });
+                    return;
+                }
+                // Antwort weiterleiten — Status + Body, mit CORS-Headern für
+                // den Browser. Content-Type vom Upstream wenn vorhanden.
+                const contentType = proxyRes.headers["content-type"] || "application/json; charset=utf-8";
+                res.writeHead(proxyRes.statusCode || 502, {
+                    "Content-Type": contentType,
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "POST,OPTIONS",
+                    "Access-Control-Allow-Headers": "Content-Type,Authorization",
+                });
+                res.end(respBody);
+            });
+            proxyRes.on("error", (err) => {
+                sendJson(res, 502, { error: "Upstream stream error", details: err.message });
+            });
+        });
+        proxyReq.setTimeout(PROXY_TIMEOUT_MS, () => {
+            proxyReq.destroy(new Error("Upstream timeout"));
+        });
+        proxyReq.on("error", (err) => {
+            sendJson(res, 502, { error: "Upstream request failed", details: err.message });
+        });
+        proxyReq.write(bodyStr);
+        proxyReq.end();
+    });
+    req.on("error", (err) => {
+        if (!aborted) sendJson(res, 400, { error: "Request stream error", details: err.message });
+    });
 }
 
 function sendStaticFile(req, res) {
@@ -103,7 +244,7 @@ const server = http.createServer((req, res) => {
         res.writeHead(204, {
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type",
+            "Access-Control-Allow-Headers": "Content-Type,Authorization",
         });
         res.end();
         return;
@@ -111,6 +252,14 @@ const server = http.createServer((req, res) => {
 
     if (req.method === "POST" && req.url === "/api/save-state") {
         handleSaveState(req, res);
+        return;
+    }
+
+    // V7.96 — Cloud-LLM-Proxy. Browser → save-server → Cloud-Endpoint.
+    // CORS-Header werden vom save-server gesetzt (Browser akzeptiert),
+    // Upstream-Response wird durchgereicht.
+    if (req.method === "POST" && req.url === "/api/proxy/llm") {
+        handleLlmProxy(req, res);
         return;
     }
 
