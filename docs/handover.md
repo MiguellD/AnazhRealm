@@ -360,6 +360,48 @@ Hylomorphismus-System wie Materialien und Bauwerke.
   playerInventory in buildStateSnapshot. 127 Invarianten für 6.C1
   + Drag-System → 1153 total.
 
+### V7.82 — Welle 6.H Phase 2B.5 live (14.05.2026)
+
+**Hylomorphismus-Wurzel-Vereinheitlichung.** Schöpfer-Vision-Audit-
+Frage „warum hat Spieler-LMB ein anderes Verhalten als Kreatur-gather?"
+hat eine Heilige-Lektion-Verletzung aufgedeckt, die drei Versionen
+übersehen wurde. V7.82 baut die EINE Wurzel-Funktion:
+
+**`harvestArchitecture(entry, harvester)`** — die einzige Funktion zum
+Abbauen einer Architektur. Berechnet Material-Map aus `parts × Volumen`
+(`size.x × size.y × size.z × HARVEST_VOLUME_TO_UNITS=4`). Liefert
+`{materials, blueprint, parts}`. Beide Pfade (Spieler-LMB + Kreatur-
+gather) rufen sie auf.
+
+**Material-Inventar-Schicht.** Inventar-Slots sind dual-typed:
+`{kind:'material', material, count}` oder `{kind:'blueprint', name, count}`.
+`addMaterialToInventory(material, count)` stackt bei selber Material-
+Bezeichnung. Material-Slots haben Material-Farbe als Hintergrund-Tint
+und Tag-Klassen aus `material.tags` (statt computeCompoundTags).
+
+**Zwei-Phasen-gather mit carrying.** Kreatur-Ernte landet jetzt in
+`creature.userData.carrying = {materials, blueprint, since}`, NICHT
+direkt im Spieler-Inventar. Bring-Phase: Kreatur läuft zurück zum
+Spieler, bei `CREATURE_HANDOVER_DIST=2.0` Übergabe →
+`addMaterialToInventory` für jedes Material + `delivered`-Memory-
+Eintrag. Visuell: zweites Sprite über der Kreatur in der Farbe des
+dominanten Materials.
+
+**Volumen-Diskrimination:** 2×2×2-Box liefert 8× mehr Material als
+1×1×1. Tempel mit 6 Stein-Pfeilern + Dach + Altar + Spitze → ~60+
+Stein-Einheiten. Mengen emergieren aus existing Geometrie.
+
+**35/35 Audit-Szenarien vor Push. 24 permanente Tests. 3 P2B.1-Tests
+auf carrying-Pfad umgestellt. 1361/1361 grün.**
+
+**Phase 2B-Restbestand jetzt:**
+- **Phase 2B.2 (build)** — Kreatur baut Bauplan für Spieler, verbraucht
+  Material aus Spieler-Inventar. 1 Session.
+- **Phase 2C (Werkstatt-Material)** — Werkstatt-Spawn verbraucht
+  Material aus Inventar. Material-Engpass als Spielmechanik. 1 Session.
+- **Phase 2D (Kreaturen-Konversationen)** — „Nira, was hast du
+  gesehen?" via LLM aus memory. 2-3 Sessions.
+
 ### V7.81 — Welle 6.H Phase 2B.1 live (14.05.2026)
 
 **Erste konkrete Co-Schöpfer-Geste (§1.1):** Kreatur tut etwas FÜR den
