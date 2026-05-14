@@ -5825,8 +5825,25 @@ class AnazhRealm {
         if (body && this.state.physicsWorld) {
             this.state.physicsWorld.removeRigidBody(body);
             Ammo.destroy(body);
+            // Welle 6.H Phase 2D.1 — body-Ref nullen damit ein zweiter
+            // removeCreature-Call (z. B. aus clearCreatures + paralleler
+            // Test-Mutation) nicht erneut Ammo.destroy auf einen bereits
+            // freigegebenen Pointer wirft (WASM RuntimeError: null function).
+            creature.userData.physicsBody = null;
         }
         this.state.rigidBodies = this.state.rigidBodies.filter((rb) => rb !== creature);
+        // Welle 6.H Phase 2D.1 — removeCreature splict jetzt auch aus
+        // state.creatures + state.creatureEmotions (parallel-Arrays). Vor V7.86
+        // hatte clearCreatures das in einem Schritt gemacht (forEach +
+        // state.creatures=[]), aber Einzel-Aufrufe (z. B. aus Tests, künftigen
+        // Sterbe-Mechaniken) ließen die tote Referenz im Save zurück.
+        const idx = this.state.creatures.indexOf(creature);
+        if (idx !== -1) {
+            this.state.creatures.splice(idx, 1);
+            if (Array.isArray(this.state.creatureEmotions) && idx < this.state.creatureEmotions.length) {
+                this.state.creatureEmotions.splice(idx, 1);
+            }
+        }
         if (typeof this._renderTaskStatusUI === "function") this._renderTaskStatusUI();
         if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
     }
@@ -5852,6 +5869,11 @@ class AnazhRealm {
         group.userData.soul = chosenSoul;
         group.userData.name = this._pickCreatureName();
         group.userData.task = { name: "wander", args: {}, since: performance.now() / 1000 };
+        // Welle 6.H Phase 2D.1 — bornAt als Identitäts-Marker. Persistierte
+        // Kreaturen überleben Reload mit demselben bornAt; neue bekommen den
+        // aktuellen Zeitstempel. Vision §1.1: die Welt erinnert sich, wann
+        // diese Person zum ersten Mal kam.
+        group.userData.bornAt = Date.now();
         if (this.state.scene) this.state.scene.add(group);
         this.state.creatures.push(group);
         this.state.creatureEmotions.push(emotion === "sad" ? "sad" : "happy");
@@ -5866,6 +5888,55 @@ class AnazhRealm {
         // spawnCreatures mit `silent`) bleibt still, sonst hagelt es 10 Pings.
         this.playCreaturePing(emotion === "sad" ? "sad" : "happy");
         return group;
+    }
+
+    // === Welle 6.H Phase 2D.1 — Komponenten-Persistenz für Kreaturen ===
+    //
+    // Vision §1.1-Erweiterung nach V7.85: Kreaturen sind Personen mit
+    // Geschichte (Name + Soul + Memory + Specs). Phase 2D.1 macht diese
+    // Identität persistent über Reload. Komponenten-Snapshot statt Mesh-
+    // Persistenz (Dwarf-Fortress-Pattern): minimaler Daten-Schnitt
+    // {name, soul, memory, position, bornAt} pro Kreatur, ~1 KB/Stück.
+    //
+    // Specs werden NICHT persistiert — sie sind live aus memory derived
+    // (Vision-konsequent mit P2D-Lehre 186). Tasks + carrying werden NICHT
+    // persistiert (Vision §1.1: Beziehung wird gesprochen, nicht gespeichert —
+    // konkrete Geste lebt im Moment, Identität lebt fort).
+    _serializeCreature(creature) {
+        if (!creature || !creature.userData) return null;
+        const ud = creature.userData;
+        return {
+            name: typeof ud.name === "string" ? ud.name : null,
+            soul: typeof ud.soul === "string" ? ud.soul : null,
+            memory: Array.isArray(ud.memory) ? ud.memory.slice() : [],
+            position: {
+                x: creature.position ? creature.position.x : 0,
+                y: creature.position ? creature.position.y : 5,
+                z: creature.position ? creature.position.z : 0,
+            },
+            bornAt: Number.isFinite(ud.bornAt) ? ud.bornAt : Date.now(),
+        };
+    }
+
+    // Wiederherstellung: spawnt am alten Ort mit alter Seele, überschreibt
+    // den auto-gepickten Namen mit dem persistierten, restored memory.
+    // Specs werden nicht direkt gesetzt — sie sind aus memory live-computed.
+    // Liefert die wiederhergestellte THREE.Group oder null.
+    _restoreCreatureFromSnapshot(snap, emotion = "happy") {
+        if (!snap || !snap.position) return null;
+        const c = this.spawnCreatureAt(snap.position.x, snap.position.y, snap.position.z, emotion, snap.soul);
+        if (!c) return null;
+        if (typeof snap.name === "string" && snap.name.length > 0) {
+            c.userData.name = snap.name;
+        }
+        if (Array.isArray(snap.memory)) {
+            const cap = AnazhRealm.CREATURE_MEMORY_CAP;
+            c.userData.memory = snap.memory.slice(-cap);
+        }
+        if (Number.isFinite(snap.bornAt)) {
+            c.userData.bornAt = snap.bornAt;
+        }
+        return c;
     }
 
     _pickCreatureSoulName(requested) {
@@ -6203,7 +6274,7 @@ class AnazhRealm {
         return 3.0; // m/s — etwas langsamer als follow (4.0) damit Sammeln sichtbar bleibt
     }
     static get CREATURE_MEMORY_CAP() {
-        return 30; // Erinnerungen pro Kreatur — FIFO bei Überlauf
+        return 200; // Erinnerungen pro Kreatur — Phase 2D.1 (V7.86): von 30 → 200 für persistente Identitäten mit Geschichte. Cap bleibt FIFO bei Überlauf. 50 Kreaturen × 200 Einträge × ~100 Byte = ~1 MB im Save-Worst-Case; in Praxis viel weniger weil Failures + alte Einträge selten sind.
     }
     // Welle 6.H Phase 2B.5 — Zwei-Phasen-gather Konstanten.
     static get CREATURE_HANDOVER_DIST() {
@@ -6787,6 +6858,29 @@ class AnazhRealm {
         // Spawn-Defaults UND DSL-Spawns denselben Hylomorphismus-Pfad nehmen.
         // Optional soulName fixiert alle Initial-Spawns auf eine Seele
         // (für Tests + Multi-Sprite-Welten); sonst Random je Kreatur.
+        //
+        // Welle 6.H Phase 2D.1 — Restore-Branch: wenn loadState persistierte
+        // Snapshots gestasht hat (_pendingCreatureSnapshots), restoriere die
+        // statt zufällig zu spawnen. Identität (Name+Soul+Memory) überlebt
+        // Reload. Vision §1.1 erweitert: Beziehung wächst über Sessions.
+        const pending = this.state._pendingCreatureSnapshots;
+        if (Array.isArray(pending) && pending.length > 0) {
+            this.clearCreatures();
+            const symBefore = this.state.symphony && this.state.symphony.enabled;
+            if (this.state.symphony) this.state.symphony.enabled = false;
+            const emotions = Array.isArray(this.state.creatureEmotions) ? this.state.creatureEmotions : [];
+            let restored = 0;
+            for (let i = 0; i < pending.length; i++) {
+                const emotion = emotions[i] || "happy";
+                if (this._restoreCreatureFromSnapshot(pending[i], emotion)) restored++;
+            }
+            if (this.state.symphony) this.state.symphony.enabled = symBefore;
+            this.state._pendingCreatureSnapshots = null;
+            this.log(`Kreaturen wiederhergestellt: ${restored} aus persistiertem Save`, "INFO");
+            if (typeof this._renderTaskStatusUI === "function") this._renderTaskStatusUI();
+            if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
+            return;
+        }
         this.clearCreatures();
         const safeCount = Math.max(0, Math.min(count, this.state.maxCreatures));
         if (safeCount !== count) {
@@ -9377,9 +9471,13 @@ class AnazhRealm {
             knowledgeBase: knowledgeBase,
             version: this.state.currentVersion,
             selfAwareness: this.state.selfAwareness,
-            creatures: this.state.creatures.map((creature) => ({
-                position: { x: creature.position.x, y: creature.position.y, z: creature.position.z },
-            })),
+            // Welle 6.H Phase 2D.1 — volle Komponenten-Persistenz pro Kreatur.
+            // Vor V7.86 nur position; jetzt Name+Soul+Memory+bornAt+position.
+            // Specs live-computed aus memory (kein Cache). Tasks + carrying
+            // bewusst NICHT persistiert (Vision §1.1: Gesten leben im Moment,
+            // Identität lebt fort). Tote Kreaturen sind durch removeCreature
+            // bereits aus state.creatures entfernt → erscheinen nicht im Save.
+            creatures: this.state.creatures.map((c) => this._serializeCreature(c)).filter((s) => s),
             creatureEmotions: this.state.creatureEmotions,
             terrainSteepness: this.state.terrainSteepness,
             terrainBaseHeight: this.state.terrainBaseHeight,
@@ -10171,6 +10269,19 @@ class AnazhRealm {
         this.state.knowledgeBase = state.knowledgeBase || [];
         this.state.selfAwareness = state.selfAwareness || { components: [], weaknesses: [] };
         this.state.creatureEmotions = state.creatureEmotions || [];
+        // Welle 6.H Phase 2D.1 — Kreaturen-Snapshots stashen. spawnCreatures()
+        // im generateNewWorld-Pfad checkt _pendingCreatureSnapshots zuerst
+        // und restored statt zufällig zu spawnen. Legacy-Saves (vor V7.86,
+        // nur {position} pro Eintrag) werden NICHT als persistente Snapshots
+        // betrachtet — sie fallen auf Default-Spawn zurück. Heuristik:
+        // hasName+hasSoul zeigt das neue Schema an.
+        const incoming = Array.isArray(state.creatures) ? state.creatures : [];
+        const looksLikeFullSnapshots =
+            incoming.length > 0 &&
+            incoming[0] &&
+            typeof incoming[0] === "object" &&
+            typeof incoming[0].soul === "string";
+        this.state._pendingCreatureSnapshots = looksLikeFullSnapshots ? incoming : null;
         this.state.terrainSteepness = state.terrainSteepness || 1.0;
         this.state.terrainBaseHeight = state.terrainBaseHeight || 0.0;
         this.state.weather = state.weather || "sunny";

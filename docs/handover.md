@@ -360,6 +360,66 @@ Hylomorphismus-System wie Materialien und Bauwerke.
   playerInventory in buildStateSnapshot. 127 Invarianten für 6.C1
   + Drag-System → 1153 total.
 
+### V7.86 — Welle 6.H Phase 2D.1 live (14.05.2026): Identität überlebt Reload
+
+**Schöpfer-Vision-Erweiterung: Kreaturen sind Personen mit Geschichte.**
+V7.85 (P2D) machte Memory zu Wachstum. V7.86 macht Identität persistent.
+Vision §1.1 wird umgedeutet: „Beziehung wird gesprochen, nicht gespeichert"
+wird zu „**Geste lebt im Moment, Identität lebt fort**". Gesten (Tasks,
+Carrying, Carrying-Visual) sind nicht persistiert; Identität (Name, Soul,
+Memory, bornAt) ist es.
+
+**Industrie-Pattern aus Dwarf Fortress / RimWorld / Crusader Kings:**
+Komponenten-Persistenz statt Mesh-Persistenz. Pro Kreatur ~1 KB statt
+~50 KB. Beim Reload wird Render-State (Mesh, Body) aus den Komponenten
+neu gebaut über die existing spawnCreatureAt-Pipeline.
+
+**Datenmodell:**
+
+```js
+// _serializeCreature(c) liefert:
+{ name, soul, memory, position: {x,y,z}, bornAt }
+```
+
+Specs werden NICHT direkt persistiert — sie sind live aus memory derived
+(P2D Lehre 186). Beim Reload: levels emergieren automatisch aus dem
+persistierten memory.
+
+**Drei Save-Operationen:**
+- `buildStateSnapshot`: schreibt voll `creatures: state.creatures.map(_serializeCreature)`
+- `loadState`: stasht in `_pendingCreatureSnapshots`-Feld wenn neuer Schema-Stil
+  erkannt (heuristik: `creatures[0].soul` ist string)
+- `spawnCreatures(10)`: checkt pending-Feld zuerst, restored via
+  `_restoreCreatureFromSnapshot` + cleared field; sonst Default-Random
+
+**Memory-Cap bumped 30 → 200** für längere Geschichten. 50 Kreaturen ×
+200 Einträge × ~100 Byte = ~1 MB Worst-Case im Save. In Praxis viel
+weniger.
+
+**Tote Kreaturen entfernt** — `removeCreature` splict jetzt auch aus
+`state.creatures` + `state.creatureEmotions`. Vor V7.86 latenter Bug
+(nur via clearCreatures umgangen). Plus Body-Double-Destroy-Fix:
+`userData.physicsBody = null` nach `Ammo.destroy` verhindert WASM-
+„null function"-Errors bei zukünftigen Sterbe-Mechaniken.
+
+**16 permanente Tests grün. 1448 → 1464/1464 invariants.**
+
+**Was bleibt nach V7.86 in Welle 6.H V2:**
+
+- **Phase 2F (Kreatur-Stats wie Spieler)** — Hylomorphismus-Vollausbau.
+  `computeCreatureStats(c)` aus body-Soul + Specs + Boosts. Equipped
+  `tool` + `armor` als Slots. `apply_op` aus Kreatur-Hand. Vision §1.3
+  fraktal vollendet: Kreaturen ≡ Spieler. 2-3 Sessions. ~Nächstes.
+- **Phase 2E V1 (LLM-Persona)** — Kreatur antwortet aus persistiertem
+  Memory + Specs. Persistenz aus P2D.1 ist Vorbedingung. 2 Sessions.
+- **Phase 2E V2 (Proaktive Sprache)** — Kreatur initiiert Chat, äußert
+  Wünsche. 1 Session.
+- **Phase 2E V3 (DSL-Output)** — Kreatur kann eigene Welt-Aktion
+  vorschlagen (Sandbox-disziplin). 1-2 Sessions.
+
+Drei größere Bögen jenseits 6.H V2: 6.B CAD, 6.F Crafting-Mechanik,
+Welle 7 Kollektive Welt-Erkenntnis.
+
 ### V7.85 — Welle 6.H Phase 2D live (14.05.2026): Beziehung wächst durch Geschichte
 
 **Schöpfer-Wahl in Pfad-Auswahl: 6.H Phase 2D als nächste Welle.**

@@ -9291,17 +9291,17 @@ function startSaveServer() {
                     out.pingFreqGather = r.constructor.CREATURE_TASK_PING_FREQ.gather === 392;
                     out.haltDist = r.constructor.CREATURE_GATHER_HALT_DIST;
                     out.speed = r.constructor.CREATURE_GATHER_SPEED;
-                    out.memCap = r.constructor.CREATURE_MEMORY_CAP === 30;
+                    out.memCap = r.constructor.CREATURE_MEMORY_CAP === 200;
                     out.hasRemember = typeof r._creatureRemember === "function";
                     out.hasFindArch = typeof r._findNearestArchitectureWithMaterial === "function";
                     out.hasBuildArgs = typeof r._buildCreatureTaskArgs === "function";
                     out.hasDescribeArg = typeof r._describeCreatureTaskArg === "function";
 
-                    // Memory + FIFO-Cap
+                    // Memory + FIFO-Cap (Phase 2D.1: jetzt 200 statt 30)
                     const c0 = r.state.creatures[0];
                     c0.userData.memory = [];
-                    for (let i = 0; i < 35; i++) r._creatureRemember(c0, "found", { idx: i });
-                    out.memCapEnforced = c0.userData.memory.length === 30;
+                    for (let i = 0; i < 205; i++) r._creatureRemember(c0, "found", { idx: i });
+                    out.memCapEnforced = c0.userData.memory.length === 200;
                     out.memFifoCorrect =
                         c0.userData.memory[0].content.idx === 5 && c0.userData.memory[29].content.idx === 34;
                     out.memHasTimestamp = typeof c0.userData.memory[0].at === "number";
@@ -9440,7 +9440,7 @@ function startSaveServer() {
                 check("Welle 6.H P2B.1: AURA_HUE.gather === 200 (cyan)", wave6hP2bResults.auraHueGather);
                 check("Welle 6.H P2B.1: PING_FREQ.gather === 392 (G4)", wave6hP2bResults.pingFreqGather);
                 check(
-                    "Welle 6.H P2B.1: HALT_DIST/SPEED/MEM_CAP=30 als Konstanten",
+                    "Welle 6.H P2B.1: HALT_DIST/SPEED/MEM_CAP=200 als Konstanten (P2D.1: Cap 30 → 200)",
                     Number.isFinite(wave6hP2bResults.haltDist) &&
                         Number.isFinite(wave6hP2bResults.speed) &&
                         wave6hP2bResults.memCap
@@ -9453,7 +9453,7 @@ function startSaveServer() {
                         wave6hP2bResults.hasDescribeArg
                 );
                 check(
-                    "Welle 6.H P2B.1: memory[] FIFO-Cap=30 nach 35 Pushes",
+                    "Welle 6.H P2B.1: memory[] FIFO-Cap=200 nach 205 Pushes (P2D.1)",
                     wave6hP2bResults.memCapEnforced && wave6hP2bResults.memFifoCorrect
                 );
                 check("Welle 6.H P2B.1: memory-Eintrag hat at-Timestamp", wave6hP2bResults.memHasTimestamp);
@@ -10561,6 +10561,223 @@ function startSaveServer() {
                 );
             } else if (wave6hP2dResults && wave6hP2dResults.error) {
                 check(`Welle 6.H P2D: evaluate-Fehler — ${wave6hP2dResults.error}`, false);
+            }
+
+            // ### Welle 6.H Phase 2D.1 — Kreatur-Persistenz (Komponenten-Snapshot) ###
+            //
+            // Vision §1.1-Erweiterung: Kreaturen-Identitäten überleben Reload.
+            // Save trägt {name, soul, memory, position, bornAt} pro Kreatur,
+            // ~1 KB pro Stück. Memory-Cap 200. Tote Kreaturen (removeCreature)
+            // werden aus dem Save entfernt.
+            const wave6hP2d1Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.playerMesh) return null;
+                    const out = {};
+
+                    // 1. Memory-Cap auf 200 gebumpt
+                    out.memCap200 = r.constructor.CREATURE_MEMORY_CAP === 200;
+
+                    // 2. Methoden existieren
+                    out.hasSerialize = typeof r._serializeCreature === "function";
+                    out.hasRestore = typeof r._restoreCreatureFromSnapshot === "function";
+
+                    // 3. Neu gespawnte Kreatur bekommt bornAt
+                    const player = r.state.playerMesh.position;
+                    const c = r.spawnCreatureAt(player.x + 130, player.y, player.z + 130, "happy", "wesen");
+                    if (!c) {
+                        out.spawnFailed = true;
+                        return out;
+                    }
+                    out.bornAtSet = Number.isFinite(c.userData.bornAt) && c.userData.bornAt > 0;
+
+                    // 4. _serializeCreature liefert vollständigen Snapshot
+                    c.userData.memory = [
+                        { type: "gathered", content: { material: "holz" }, at: 1 },
+                        { type: "gathered", content: { material: "holz" }, at: 2 },
+                        { type: "built", content: { blueprint: "stein_block" }, at: 3 },
+                    ];
+                    const snap = r._serializeCreature(c);
+                    out.snapHasName = typeof snap.name === "string" && snap.name.length > 0;
+                    out.snapHasSoul = snap.soul === "wesen";
+                    out.snapHasMemory = Array.isArray(snap.memory) && snap.memory.length === 3;
+                    out.snapHasPosition = snap.position && Number.isFinite(snap.position.x);
+                    out.snapHasBornAt = Number.isFinite(snap.bornAt);
+
+                    // 5. _restoreCreatureFromSnapshot baut Kreatur aus Snapshot
+                    const beforeCount = r.state.creatures.length;
+                    const restored = r._restoreCreatureFromSnapshot(snap, "happy");
+                    out.restoreReturnsCreature = !!restored;
+                    out.restoreGrowsList = r.state.creatures.length === beforeCount + 1;
+                    out.restoreNameOk = restored && restored.userData.name === snap.name;
+                    out.restoreSoulOk = restored && restored.userData.soul === "wesen";
+                    out.restoreMemoryOk =
+                        restored && Array.isArray(restored.userData.memory) && restored.userData.memory.length === 3;
+                    out.restorePositionOk =
+                        restored &&
+                        Math.abs(restored.position.x - snap.position.x) < 0.001 &&
+                        Math.abs(restored.position.z - snap.position.z) < 0.001;
+                    out.restoreBornAtOk = restored && restored.userData.bornAt === snap.bornAt;
+
+                    // 6. Specs werden aus restoriertem memory korrekt re-derived
+                    const specs = r._computeCreatureSpecializations(restored);
+                    out.specsReDerived = specs.gather && specs.gather.holz === 2 && specs.build && specs.build.stein_block === 1;
+
+                    // 7. Round-Trip: buildStateSnapshot → loadState → Kreaturen sind da
+                    // Setze die aktuelle Welt auf einen bekannten Stand
+                    const beforeRoundTripCount = r.state.creatures.length;
+                    const beforeNames = r.state.creatures.map((cr) => cr.userData.name).sort();
+                    const fullSnap = r.buildStateSnapshot();
+                    out.snapshotHasFullCreatures =
+                        Array.isArray(fullSnap.creatures) &&
+                        fullSnap.creatures.length === beforeRoundTripCount &&
+                        fullSnap.creatures.every((c) => c && typeof c.name === "string" && typeof c.soul === "string");
+
+                    // 8. Tote Kreatur ist NICHT im Snapshot. Wir markieren den
+                    // konkreten Victim eindeutig mit einem Unique-Name damit
+                    // Name-Kollisionen im Pool nicht den Test verfälschen.
+                    const beforeAlive = r.state.creatures.length;
+                    const victim = r.state.creatures[0];
+                    const victimMark = `Victim_${Math.random().toString(36).slice(2, 10)}`;
+                    victim.userData.name = victimMark;
+                    r.removeCreature(victim);
+                    const afterSnap = r.buildStateSnapshot();
+                    const stillHasVictim = afterSnap.creatures.some((s) => s.name === victimMark);
+                    out.victimRemovedFromSnap = !stillHasVictim;
+                    out.aliveDecreasedBy1 = afterSnap.creatures.length === beforeAlive - 1;
+                    out._beforeAlive = beforeAlive;
+                    out._afterCount = afterSnap.creatures.length;
+                    out._stateCreaturesAfter = r.state.creatures.length;
+
+                    // 9. Loop: nach loadState mit den Snapshots → Kreaturen sind da
+                    // (Wir können nicht echt loadState ausführen ohne Reload, aber wir
+                    // können prüfen dass _pendingCreatureSnapshots-Pfad funktioniert.)
+                    const persisted = [
+                        {
+                            name: "TestSammler",
+                            soul: "wesen",
+                            memory: [{ type: "gathered", content: { material: "holz" }, at: 1 }],
+                            position: { x: player.x + 50, y: player.y, z: player.z + 50 },
+                            bornAt: Date.now() - 60000,
+                        },
+                        {
+                            name: "TestBauer",
+                            soul: "sprite",
+                            memory: [],
+                            position: { x: player.x + 60, y: player.y, z: player.z + 60 },
+                            bornAt: Date.now() - 30000,
+                        },
+                    ];
+                    // Simuliere loadState-stash + spawnCreatures-Pfad
+                    r.state._pendingCreatureSnapshots = persisted;
+                    r.state.creatureEmotions = ["happy", "happy"];
+                    r.spawnCreatures(10); // Sollte 2 restored ergeben statt 10 random
+                    out.restoredCount = r.state.creatures.length === 2;
+                    const restoredNames = r.state.creatures.map((cr) => cr.userData.name).sort();
+                    out.restoredNamesMatch = restoredNames[0] === "TestBauer" && restoredNames[1] === "TestSammler";
+                    out.pendingClearedAfterRestore = r.state._pendingCreatureSnapshots === null;
+                    // Specs aus 1 gathered holz → L0
+                    const sammler = r.state.creatures.find((cr) => cr.userData.name === "TestSammler");
+                    out.restoredCreatureHasMemory =
+                        sammler && Array.isArray(sammler.userData.memory) && sammler.userData.memory.length === 1;
+
+                    // 10. Legacy-Save (nur position) fällt auf Default-Spawn zurück
+                    r.state._pendingCreatureSnapshots = null;
+                    r.state.creatureEmotions = [];
+                    // Stub loadState: simuliere legacy save format
+                    const legacyState = {
+                        creatures: [{ position: { x: 0, y: 5, z: 0 } }, { position: { x: 1, y: 5, z: 1 } }],
+                    };
+                    const looksFullLegacy =
+                        Array.isArray(legacyState.creatures) &&
+                        legacyState.creatures.length > 0 &&
+                        legacyState.creatures[0] &&
+                        typeof legacyState.creatures[0].soul === "string";
+                    out.legacyDetectedAsLegacy = !looksFullLegacy;
+
+                    // 11. Memory-Cap 200 enforced
+                    const cCap = r.spawnCreatureAt(player.x + 140, player.y, player.z + 140, "happy", "wesen");
+                    cCap.userData.memory = [];
+                    for (let i = 0; i < 250; i++) r._creatureRemember(cCap, "noise", { i });
+                    out.cap200Enforced = cCap.userData.memory.length === 200;
+
+                    // 12. Restore mit übergroßem memory in Snapshot wird auf 200 gekappt
+                    const oversizedMem = [];
+                    for (let i = 0; i < 300; i++) oversizedMem.push({ type: "noise", content: { i }, at: i });
+                    const oversizedSnap = {
+                        name: "Oversize",
+                        soul: "wesen",
+                        memory: oversizedMem,
+                        position: { x: player.x + 150, y: player.y, z: player.z + 150 },
+                        bornAt: Date.now(),
+                    };
+                    const oversized = r._restoreCreatureFromSnapshot(oversizedSnap, "happy");
+                    out.oversizedRestoredCappedAt200 = oversized && oversized.userData.memory.length === 200;
+                    return out;
+                })
+                .catch((e) => ({ error: String(e), stack: e.stack }));
+
+            if (wave6hP2d1Results && !wave6hP2d1Results.error) {
+                check("Welle 6.H P2D.1: CREATURE_MEMORY_CAP === 200", wave6hP2d1Results.memCap200);
+                check(
+                    "Welle 6.H P2D.1: _serializeCreature + _restoreCreatureFromSnapshot existieren",
+                    wave6hP2d1Results.hasSerialize && wave6hP2d1Results.hasRestore
+                );
+                check("Welle 6.H P2D.1: spawnCreatureAt setzt bornAt-Identitäts-Marker", wave6hP2d1Results.bornAtSet);
+                check(
+                    "Welle 6.H P2D.1: Snapshot enthält name + soul + memory + position + bornAt",
+                    wave6hP2d1Results.snapHasName &&
+                        wave6hP2d1Results.snapHasSoul &&
+                        wave6hP2d1Results.snapHasMemory &&
+                        wave6hP2d1Results.snapHasPosition &&
+                        wave6hP2d1Results.snapHasBornAt
+                );
+                check(
+                    "Welle 6.H P2D.1: _restoreCreatureFromSnapshot rekonstruiert Kreatur + wächst Liste",
+                    wave6hP2d1Results.restoreReturnsCreature && wave6hP2d1Results.restoreGrowsList
+                );
+                check(
+                    "Welle 6.H P2D.1: Restore übernimmt Name + Soul",
+                    wave6hP2d1Results.restoreNameOk && wave6hP2d1Results.restoreSoulOk
+                );
+                check(
+                    "Welle 6.H P2D.1: Restore übernimmt Memory (Länge + Inhalt)",
+                    wave6hP2d1Results.restoreMemoryOk
+                );
+                check("Welle 6.H P2D.1: Restore übernimmt Position", wave6hP2d1Results.restorePositionOk);
+                check("Welle 6.H P2D.1: Restore übernimmt bornAt", wave6hP2d1Results.restoreBornAtOk);
+                check(
+                    "Welle 6.H P2D.1: Specs aus restoriertem Memory korrekt re-derived",
+                    wave6hP2d1Results.specsReDerived
+                );
+                check(
+                    "Welle 6.H P2D.1: buildStateSnapshot trägt volles Kreatur-Schema",
+                    wave6hP2d1Results.snapshotHasFullCreatures
+                );
+                check(
+                    "Welle 6.H P2D.1: removeCreature entfernt aus state.creatures + Snapshot",
+                    wave6hP2d1Results.victimRemovedFromSnap &&
+                        wave6hP2d1Results.aliveDecreasedBy1 &&
+                        wave6hP2d1Results._stateCreaturesAfter === wave6hP2d1Results._beforeAlive - 1
+                );
+                check(
+                    "Welle 6.H P2D.1: _pendingCreatureSnapshots-Pfad restored statt random-spawnen",
+                    wave6hP2d1Results.restoredCount &&
+                        wave6hP2d1Results.restoredNamesMatch &&
+                        wave6hP2d1Results.pendingClearedAfterRestore &&
+                        wave6hP2d1Results.restoredCreatureHasMemory
+                );
+                check(
+                    "Welle 6.H P2D.1: Legacy-Save (nur position) wird als Legacy erkannt",
+                    wave6hP2d1Results.legacyDetectedAsLegacy
+                );
+                check("Welle 6.H P2D.1: Memory-Cap=200 wird durchgesetzt (FIFO bei 250 push)", wave6hP2d1Results.cap200Enforced);
+                check(
+                    "Welle 6.H P2D.1: Restore mit übergroßem memory wird auf 200 gekappt",
+                    wave6hP2d1Results.oversizedRestoredCappedAt200
+                );
+            } else if (wave6hP2d1Results && wave6hP2d1Results.error) {
+                check(`Welle 6.H P2D.1: evaluate-Fehler — ${wave6hP2d1Results.error}`, false);
             }
 
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###

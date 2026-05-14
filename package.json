@@ -1,8 +1,8 @@
 {
     "name": "anazhrealm",
-    "version": "7.85.0",
+    "version": "7.86.0",
     "private": true,
-    "description": "AnazhRealm – 3D-Browser-Sandbox v7.85",
+    "description": "AnazhRealm – 3D-Browser-Sandbox v7.86",
     "scripts": {
         "start": "node save-server.js",
         "signaling": "node signaling-server.js",
