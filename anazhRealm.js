@@ -1,4 +1,4 @@
-/**AnazhRealm V7.72 – Das Ultiversum Vollendet.
+/**AnazhRealm V7.77 – Das Ultiversum Vollendet.
  * Hüpfen: Robust, präzise (Y ~1.5), Coyote-Time 0.3s, Gravitation 1.5G, Reibung 0.5.
  * Kollisionen: Kein Tunneling, steepnessThreshold 3.0, wallThickness 2.0, CCD optimiert.
  * Terrain: Flacher (Höhenunterschiede ±5), KI-gesteuerte Steilheitsanpassung, Chat-Steuerung.
@@ -12,7 +12,7 @@
 class AnazhRealm {
     constructor() {
         // ### Learnings ### [Stichwortartig optimieren, korrigieren, ergänzen – nie Wissen löschen!]
-        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69, LAN-Fähigkeit + Sync-Korrektheit (Ring 11 V2.1: 0.0.0.0-bind, ws:/wss:-CSP, roomOverride, spawn_*-Embedding, NON_BROADCASTABLE_OPS) in V7.70, Intuitiver Multi-User-Setup (Ring 11.5: Modus-Wahl, Host-Banner mit Einladungs-Code, Auto-Welt-Snapshot beim Join) in V7.71, Welle 6.A — Interaktion-Polish (Wall-Sliding via Player-Friction-0, Erdung-Raycast-Robustheit für Bauwerke) in V7.72
+        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69, LAN-Fähigkeit + Sync-Korrektheit (Ring 11 V2.1: 0.0.0.0-bind, ws:/wss:-CSP, roomOverride, spawn_*-Embedding, NON_BROADCASTABLE_OPS) in V7.70, Intuitiver Multi-User-Setup (Ring 11.5: Modus-Wahl, Host-Banner mit Einladungs-Code, Auto-Welt-Snapshot beim Join) in V7.71, Welle 6.A — Interaktion-Polish (Wall-Sliding via Player-Friction-0, Erdung-Raycast-Robustheit für Bauwerke) in V7.72, Welle 6.G Phase 1 — Welt-Sinne (fliegende Inseln + Bäume kollidierbar via btBvhTriangleMeshShape/btCylinderShape, drei Dead-Code-DSL-Ops spawn_tree/island/ufo aktiviert, toter needsPhysics-Lazy-Pfad gelöscht) in V7.73, Welle 6.G Phase 1.5 — Hylomorphismus-Unification (Bäume sind jetzt Compound-Architekturen über baum_eiche/baum_kiefer-Baupläne mit Stamm:holz + Krone:laub, eigene spawnTreeAt + _buildTreeCollision gelöscht, Parallelcode → eine Sprache, plus Insel-Visual-Fix mit Underside + Lambert) in V7.74, Welle 6.G Phase 2 — Welt-Affinitäts-Feld (vier SimplexNoise-Schichten lebendig/dichte/glut/magieleitung, Baupläne spawnen wo ihre Compound-Tags resonieren — Wälder/Felsen/Magie-Zonen/Vulkan-Anker emergieren ohne Biome-Tabelle, populateChunkVegetation als Hook in ensureChunkAt + Initial-Worldgen, drei neue Built-in-Baupläne stein_block/kristall_geode/glutbrunnen, Stämme dicker für Spieler-Spürbarkeit, Culling-Tick 1Hz→2Hz, spawn-silent-Opt damit Worldgen die Welt-Effekt-Kaskade nicht überflutet) in V7.75, Welle 6.C2 — Spielmodi (frieden/pfad/schöpfer als Welt-Beziehungs-Schalter, frieden umarmt + pfad verhandelt + schöpfer gehorcht, damagePlayer + applyOpToPart-Stamina modus-gated, set_mode DSL-Op in NON_BROADCASTABLE_OPS, UI-Radio in Einstellungen + Status-Bar #status-mode, worldMeta.gameMode persistiert pro-Welt) in V7.76, Welle 6.C1 — Hylomorphismus-Inventar (27-Slot-Overlay mit Tab-Toggle, Tag-Resonanz emergiert aus Compound-Tags — resoniert summt + brennend glüht + magieleitung schimmert + lebendig sprießt, Audio-Hover-Ping via state.symphony, addToInventory stackt bei gleichem Bauplan-Namen, Inventar-Slot wählen → Hotbar-Slot Klick weist zu, add_to_inventory DSL-Op in NON_BROADCASTABLE_OPS, state.player.inventory[27] persistiert in buildStateSnapshot) in V7.77
         // - Nexus als Herz der Selbstentwicklung, steuert nun alles über Chat, unzerstörbar und unendlich
         this.state = {
             // ### Kern ###
@@ -304,6 +304,18 @@ class AnazhRealm {
                 // null bei solo/host. Wird beim Join-Pfad gefüllt mit
                 // {url, roomId} aus dem Einladungs-Code.
                 hostInfo: null,
+                // Welle 6.C2 — Welt-Beziehungs-Modus. Drei Ausprägungen:
+                //   "frieden" — Welt umarmt: kein HP, kein Tod, keine Stamina-
+                //               Kosten. Default für neue Welten (Erstbegegnung
+                //               soll nicht hostil sein).
+                //   "pfad"    — Welt verhandelt: HP/Stamina/Tod-Wandlung aktiv.
+                //               Werkzeug-Anwendung kostet Stamina. Tod →
+                //               5min Phönix + Welt-Trauer (sorrow+0.3, awe+0.2).
+                //   "schöpfer" — Welt gehorcht: kein Schaden, voller Zugang.
+                //                Mensch=Null=Schöpfer (Vision §1.5).
+                // Persistiert pro Welt (nicht global) — jede Welt darf ihren
+                // eigenen Beziehungs-Schalter haben.
+                gameMode: "frieden",
             },
             // Welle 1 D — Welt-Journal. Geordnete Liste von Erinnerungen
             // (Genesis, erstes Wetter, erste Kreatur, hochfitness Programme,
@@ -396,6 +408,15 @@ class AnazhRealm {
                 // Rüstung-Beitrag = blueprint.compoundTags × armorWeight.
                 // Wirkungen fließen in computePlayerStats vor den Boosts.
                 equipped: { tool: null, armor: null },
+                // Welle 6.C1 — Hylomorphismus-Inventar. 27 Slots (3 Reihen × 9),
+                // jeder Slot ist {blueprintName, count} oder null. Anders als
+                // Minecraft: die Slots tragen TAG-PROFILE der referenzierten
+                // Baupläne — bei Hover summt resoniert (Audio-Ping), brennend
+                // glüht orange, magieleitung violet (Vision §1.4 multisensorisch).
+                // Initial leer; gefüllt via DSL-Op add_to_inventory oder
+                // Werkstatt-Editor (zukünftiger Pfad — heute manuell).
+                // Drag auf Hotbar-Slot legt blueprint dort ab.
+                inventory: new Array(27).fill(null),
                 // Schicht 1 — Pfad-Buckets. Histogramm wo der Spieler sich
                 // aufhält (Höhe, Distanz, Wetter, Aktivität). Wird im Loop
                 // alle pathSampleInterval Sekunden inkrementiert; alle Achsen
@@ -426,7 +447,10 @@ class AnazhRealm {
             architectures: [],
             architectureNextId: 1,
             architectureCullingRadius: 150,
-            architectureCullingTickHz: 1.0,
+            // V7.75: 1Hz war zu langsam — bei Lauf-Geschwindigkeit ~7m/s
+            // kam der Spieler in Bereiche bevor das Culling sie erweckte.
+            // 2Hz halbiert die Latenz auf 500ms.
+            architectureCullingTickHz: 2.0,
             architectureCullingLastTick: -Infinity,
             // Ring 6.4 — Bauplan-Datenschicht. Map<name, blueprint>.
             // Built-ins werden im Konstruktor-Ende über _defaultBlueprints
@@ -504,7 +528,7 @@ class AnazhRealm {
     // ### Logging ###
     log(message, level = "INFO") {
         if (level === "DEBUG" && !this.state.debugLogging) return;
-        const logMessage = `[AnazhRealm V7.72] [${level}] ${message}`;
+        const logMessage = `[AnazhRealm V7.77] [${level}] ${message}`;
         this.state.logBuffer.push(logMessage);
         console.log(logMessage);
         if (this.state.logBuffer.length > this.state.maxLogEntries) {
@@ -826,6 +850,14 @@ class AnazhRealm {
             "equip_tool",
             "equip_armor",
             "unequip",
+            // Welle 6.C2 — Spielmodus ist Welt-Beziehung pro Spieler. Mitspieler
+            // in derselben Welt dürfen verschiedene Modi haben (einer pfad,
+            // einer frieden) — set_mode darf nicht über P2P weiterspringen.
+            "set_mode",
+            // Welle 6.C1 — Inventar ist per-Spieler-privat. Mitspieler haben
+            // eigene Slots; add_to_inventory darf nicht remote ausgelöst werden
+            // (sonst könnte ein Peer das Inventar von anderen befüllen).
+            "add_to_inventory",
         ]);
     }
 
@@ -1035,21 +1067,85 @@ class AnazhRealm {
                 }
                 ctx.log.push({ event: "spawned_creature", count: spawned, emotion: e });
             },
-            spawn_tree: ([positionNode, count], ctx) => {
+            // Welle 6.G Phase 1.5 — Hylomorphismus-Unification.
+            // spawn_tree/spawn_island/spawn_ufo waren in V7.73 als Placeholder
+            // aktiviert mit eigenen Spawn-Helfern (spawnTreeAt etc.) —
+            // PARALLELCODE zum Architektur-System (Vision-Bruch §1.3).
+            // V7.74: spawn_tree routet jetzt durch denselben Pfad wie alle
+            // anderen Strukturen: `spawnArchitecture("baum_eiche", ...)`. Damit
+            // kommt geschenkt: Compound-Tags, Welt-Effekte, Save-Persistenz,
+            // Werkstatt-Editor, Distance-Culling, Compound-Body-Kollision.
+            // Inseln + UFOs bleiben in V7.74 noch als Sonderpfad (Inseln
+            // sind Noise-Heightfields = floating-chunk-Disziplin, nicht als
+            // Compound-Parts ausdrückbar; UFOs sind Kreaturen-Vorstufe für
+            // 6.F4).
+            spawn_tree: ([positionNode, count, kind, seed], ctx) => {
                 const n = c(count, 1, 20);
                 const pos = this.dslEvalPos(positionNode, ctx);
-                ctx.budget.spawnsLeft = Math.max(0, ctx.budget.spawnsLeft - n);
-                ctx.log.push({ event: "spawn_tree_requested", count: n, pos });
+                const treeKind = kind === "kiefer" ? "baum_kiefer" : "baum_eiche";
+                let spawned = 0;
+                for (let i = 0; i < n; i++) {
+                    if (ctx.budget.spawnsLeft <= 0) {
+                        ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
+                        break;
+                    }
+                    ctx.budget.spawnsLeft--;
+                    // Sanfter Jitter um pos (max 2.5 m), damit count>1 einen
+                    // Hain produziert statt alle Bäume zu stapeln.
+                    const off = n > 1 ? 2.5 : 0;
+                    const jx = (ctx.rng() - 0.5) * 2 * off;
+                    const jz = (ctx.rng() - 0.5) * 2 * off;
+                    // Per-Baum-Seed: Basis-Seed (vom Chat-Pattern eingebettet)
+                    // + Index, damit jeder Baum im Hain trotzdem eine eigene
+                    // ID bekommt aber Multi-User-deterministisch ist.
+                    const baseSeed = Number.isFinite(Number(seed))
+                        ? Number(seed) >>> 0
+                        : Math.floor(ctx.rng() * 0xffffffff);
+                    const treeSeed = (baseSeed + i) >>> 0;
+                    const entry = this.spawnArchitecture(
+                        treeKind,
+                        { x: pos.x + jx, y: pos.y, z: pos.z + jz },
+                        { seed: treeSeed }
+                    );
+                    if (entry) spawned++;
+                }
+                ctx.log.push({ event: "spawned_tree", count: spawned, pos, kind: treeKind });
             },
-            spawn_island: ([positionNode, height], ctx) => {
+            spawn_island: ([positionNode, height, seed], ctx) => {
                 const pos = this.dslEvalPos(positionNode, ctx);
-                ctx.budget.spawnsLeft = Math.max(0, ctx.budget.spawnsLeft - 1);
-                ctx.log.push({ event: "spawn_island_requested", pos, height: c(height, 1, 200) });
+                if (ctx.budget.spawnsLeft <= 0) {
+                    ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
+                    return;
+                }
+                ctx.budget.spawnsLeft--;
+                const h = c(height, 1, 200);
+                // Ring 11 V2.1-Stil: optionales Seed-Argument für Multi-User-
+                // Determinismus. Wenn nicht gesetzt, würfeln. Chat-Pattern
+                // „setze insel hier" embedded das Seed bei Build-Zeit.
+                const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
+                // Islands spawnen ein Stück über dem angegebenen Punkt —
+                // sonst würde der at_player-Pfad sie auf Spieler-Höhe legen
+                // und der Spieler stünde im Erd-Inneren der Insel.
+                const island = this.spawnIslandAt(pos.x, pos.y + 12, pos.z, h, { seed: s });
+                ctx.log.push({
+                    event: "spawned_island",
+                    pos: island ? { x: island.position.x, y: island.position.y, z: island.position.z } : pos,
+                    height: h,
+                    seed: s,
+                });
             },
             spawn_ufo: ([positionNode], ctx) => {
                 const pos = this.dslEvalPos(positionNode, ctx);
-                ctx.budget.spawnsLeft = Math.max(0, ctx.budget.spawnsLeft - 1);
-                ctx.log.push({ event: "spawn_ufo_requested", pos });
+                if (ctx.budget.spawnsLeft <= 0) {
+                    ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
+                    return;
+                }
+                ctx.budget.spawnsLeft--;
+                const ufo = this.spawnUfoAt(pos.x, pos.y + 18, pos.z);
+                ctx.log.push({
+                    event: "spawned_ufo",
+                    pos: ufo ? { x: ufo.position.x, y: ufo.position.y, z: ufo.position.z } : pos,
+                });
             },
             // Ring 6 — architectureTemplates. Drei Bau-Primitives. Position
             // kommt über die übliche Selektor-Form (`at_player`, `at_origin`,
@@ -1194,6 +1290,30 @@ class AnazhRealm {
                         event: result.ok ? "unequipped" : "unequip_failed",
                         slot,
                         reason: result.reason,
+                    });
+                }
+            },
+            // Welle 6.C2 — Welt-Beziehungs-Modus wechseln. frieden/pfad/
+            // schöpfer aus AnazhRealm.GAME_MODES. Sandbox-validiert (unbekannte
+            // Werte → frieden-Default in setGameMode). In NON_BROADCASTABLE_OPS,
+            // weil Modus pro-Spieler-pro-Welt ist (Multi-User: zwei Spieler in
+            // derselben Welt dürfen verschiedene Beziehungen haben).
+            set_mode: ([mode], ctx) => {
+                const result = this.setGameMode(mode);
+                if (ctx && ctx.log) ctx.log.push({ event: "mode_set", mode: result });
+            },
+            // Welle 6.C1 — Inventar-Slot füllen. Spieler-private Aktion
+            // (Mitspieler haben eigene Inventare). Cap count auf vernünftige
+            // Werte; unbekannte blueprint-Namen werden abgelehnt (kein stiller
+            // No-Op, sondern Log-Event).
+            add_to_inventory: ([blueprintName, count], ctx) => {
+                const n = c(count, 1, 999);
+                const ok = this.addToInventory(blueprintName, n);
+                if (ctx && ctx.log) {
+                    ctx.log.push({
+                        event: ok ? "added_to_inventory" : "add_to_inventory_failed",
+                        blueprint: blueprintName,
+                        count: n,
                     });
                 }
             },
@@ -3628,6 +3748,57 @@ class AnazhRealm {
                     };
                 },
             },
+            // Welle 6.G Phase 1 — Welt-Sinne. „pflanze baum hier" /
+            // „setze insel hier" / „rufe ufo hier" platzieren die Objekte
+            // sofort am Spieler. Position wird zur Build-Zeit eingebettet
+            // (Ring 11 V2.1-Konvention), damit Multi-User-Mitspieler
+            // identische Positionen sehen. Insel hat zusätzlich ein Seed
+            // für identische Noise-Form auf allen Mitspieler-Welten.
+            {
+                example: "pflanze baum hier",
+                re: /^(?:pflanze|baue|setze|erschaffe)\s+baum\s+hier\s*$/i,
+                build: () => {
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                    return {
+                        program: ["spawn_tree", ["at", p.x, p.y, p.z], 1],
+                        describe: "Baum gepflanzt",
+                    };
+                },
+            },
+            {
+                example: "pflanze hain",
+                re: /^pflanze\s+(?:einen\s+)?hain\s*$/i,
+                build: () => {
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                    return {
+                        program: ["spawn_tree", ["at", p.x, p.y, p.z], 5],
+                        describe: "Hain (5 Bäume) gepflanzt",
+                    };
+                },
+            },
+            {
+                example: "setze insel hier",
+                re: /^(?:setze|erschaffe|baue)\s+insel\s+hier\s*$/i,
+                build: () => {
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                    const seed = Math.floor(Math.random() * 0xffffffff);
+                    return {
+                        program: ["spawn_island", ["at", p.x, p.y, p.z], 6, seed],
+                        describe: "Schwebende Insel gesetzt",
+                    };
+                },
+            },
+            {
+                example: "rufe ufo hier",
+                re: /^(?:rufe|setze|spawne)\s+ufo\s+hier\s*$/i,
+                build: () => {
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                    return {
+                        program: ["spawn_ufo", ["at", p.x, p.y, p.z]],
+                        describe: "UFO gerufen",
+                    };
+                },
+            },
             {
                 // Ring 10.5: Welt-Modifizierbarkeit. `grabe loch` / `hebe
                 // hügel` schreibt ein modify_terrain-Op an der aktuellen
@@ -3712,6 +3883,29 @@ class AnazhRealm {
                     return {
                         program: ["unequip", slot],
                         describe: `Ausrüstung ab: ${slot}`,
+                    };
+                },
+            },
+            // Welle 6.C2 — Spielmodus wechseln per Chat. Akzeptiert die drei
+            // kanonischen Namen + zwei deutsche Aliase (peace/creative).
+            {
+                example: "setze modus frieden",
+                re: /^(?:setze\s+)?modus\s+(frieden|peace|pfad|survival|schöpfer|schoepfer|creative)$/i,
+                build: (m) => {
+                    const raw = m[1].toLowerCase();
+                    const map = {
+                        frieden: "frieden",
+                        peace: "frieden",
+                        pfad: "pfad",
+                        survival: "pfad",
+                        schöpfer: "schöpfer",
+                        schoepfer: "schöpfer",
+                        creative: "schöpfer",
+                    };
+                    const mode = map[raw] || "frieden";
+                    return {
+                        program: ["set_mode", mode],
+                        describe: `Welt-Beziehung: ${mode}`,
                     };
                 },
             },
@@ -3979,6 +4173,91 @@ class AnazhRealm {
         osc.start(t);
         osc.stop(t + 0.3);
         s.creaturePingCount++;
+    }
+
+    // === Welle 6.C1 — Hylomorphismus-Inventar ===
+    //
+    // Tag-Resonanz statt Minecraft-Tabelle. Jeder Slot trägt einen Bauplan-
+    // Namen + Count. Tag-Magic emergiert aus computeCompoundTags(bp):
+    //   - resoniert ≥ 0.5 → Audio-Ping bei Hover (kurzer Sinus)
+    //   - brennend ≥ 0.5 → orange-Border-Glüh
+    //   - magieleitung ≥ 0.5 → violet-Border-Glüh
+    //   - lebendig ≥ 0.5 → grüner Schimmer
+    //   - dichte ≥ 0.7 → tiefer Schatten
+    // Hover-Audio nutzt eigenen kurzen Oszillator (analog playCreaturePing),
+    // angeschlossen an state.symphony.masterGain. Wenn Symphony aus ist,
+    // schweigt das Inventar — Audio ist optional, kein Mute-Bug.
+    addToInventory(blueprintName, count = 1) {
+        if (!this.state.player || !Array.isArray(this.state.player.inventory)) return false;
+        const inv = this.state.player.inventory;
+        const bp = this.state.blueprints && this.state.blueprints[blueprintName];
+        if (!bp) return false;
+        // Erster Stack mit demselben Bauplan-Namen: count erhöhen.
+        const existingIdx = inv.findIndex((s) => s && s.blueprintName === blueprintName);
+        if (existingIdx >= 0) {
+            inv[existingIdx].count = (inv[existingIdx].count || 0) + count;
+            return true;
+        }
+        // Erster leerer Slot.
+        const emptyIdx = inv.findIndex((s) => !s);
+        if (emptyIdx < 0) return false; // Inventar voll
+        inv[emptyIdx] = { blueprintName, count };
+        return true;
+    }
+
+    removeFromInventory(slotIndex, count = 1) {
+        if (!this.state.player || !Array.isArray(this.state.player.inventory)) return false;
+        const inv = this.state.player.inventory;
+        const slot = inv[slotIndex];
+        if (!slot) return false;
+        slot.count = Math.max(0, (slot.count || 0) - count);
+        if (slot.count === 0) inv[slotIndex] = null;
+        return true;
+    }
+
+    // Kurzer Sinus-Ping bei Hover über einen tag-resonanten Slot. Frequenz
+    // folgt dominantem Tag — resoniert hell, magieleitung mittler, brennend
+    // tief. Throttled über state.inventoryHoverLast (50ms minimum), damit
+    // Maus-Wischen über die Slot-Reihe nicht in einem Akkord-Schwall
+    // explodiert.
+    playInventoryHoverPing(tags) {
+        if (!tags) return;
+        const s = this.state.symphony;
+        if (!s || !s.enabled || !s.ctx) return;
+        const now = performance.now() / 1000;
+        const last = this.state.inventoryHoverLast || 0;
+        if (now - last < 0.05) return;
+        this.state.inventoryHoverLast = now;
+        const resoniert = tags.resoniert || 0;
+        const magie = tags.magieleitung || 0;
+        const brennend = tags.brennbar || 0;
+        const lebendig = tags.lebendig || 0;
+        // Welcher Tag dominiert? Höchster Wert.
+        const max = Math.max(resoniert, magie, brennend, lebendig);
+        if (max < 0.5) return; // unter Schwelle: kein Ping
+        let freq;
+        if (max === resoniert)
+            freq = 523; // C5 — klar, perkussiv
+        else if (max === magie)
+            freq = 698; // F5 — mystisch
+        else if (max === brennend)
+            freq = 330; // E4 — warm, tief
+        else freq = 440; // A4 — lebendig, neutral
+        const ctx = s.ctx;
+        const t = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        osc.type = max === brennend ? "sawtooth" : "sine";
+        osc.frequency.value = freq;
+        const gain = ctx.createGain();
+        // Sanft: nur 60% der Creature-Ping-Lautstärke, damit Hover-
+        // Streichen die Symphonie nicht übertönt.
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.07, t + 0.005);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+        osc.connect(gain);
+        gain.connect(s.masterGain);
+        osc.start(t);
+        osc.stop(t + 0.2);
     }
 
     symphonyTick() {
@@ -4701,6 +4980,10 @@ class AnazhRealm {
                 // füllt chunkDeltas defensiv mit `{}` falls fehlend.
                 schemaVersion: "10.5-chunk-delta-v1",
                 chunkDeltas: {},
+                // Welle 6.C2: jede neue Welt startet im frieden-Modus —
+                // Erstbegegnung soll nicht hostil sein. Wer pfad/schöpfer
+                // will, schaltet bewusst über setze modus oder UI.
+                gameMode: "frieden",
             },
             dslAbilities: [],
             dslHistory: [],
@@ -5960,6 +6243,8 @@ class AnazhRealm {
             register_tool: (a) => `registriert „${a[0]}" als Werkzeug`,
             apply_connection: (a) => `verbindet Teile von „${a[0]}" mit „${a[1]}"`,
             apply_op: (a) => `bearbeitet Teil ${a[1]} von „${a[0]}" mit „${a[2]}"`,
+            set_mode: (a) => `wechselt die Welt-Beziehung auf „${a[0]}"`,
+            add_to_inventory: (a) => `legt ${a[1] || 1}× „${a[0]}" ins Inventar`,
             creatures_color: () => `färbt alle Kreaturen`,
             creatures_emotion: (a) => `setzt die Kreaturen-Stimmung auf „${a[0]}"`,
             creatures_speed_mul: (a) => `skaliert die Kreaturen-Geschwindigkeit um ${a[0]}`,
@@ -6587,13 +6872,9 @@ class AnazhRealm {
         }
         if (this.state.floatingIslands) {
             this.state.floatingIslands.forEach((island) => {
+                // Welle 6.G Phase 1 — neue Kollisions-Schicht abräumen.
+                this._disposeStaticCollision(island);
                 this.state.scene.remove(island);
-                const body = island.userData.physicsBody;
-                if (body) {
-                    this.state.physicsWorld.removeRigidBody(body);
-                    Ammo.destroy(body);
-                    this.state.rigidBodies = this.state.rigidBodies.filter((rb) => rb !== island);
-                }
             });
             this.state.floatingIslands = [];
             this.log("Alte fliegende Inseln entfernt");
@@ -6631,7 +6912,11 @@ class AnazhRealm {
             this.log("Alte Wand-Kollisionsboxen entfernt");
         }
         if (this.state.vegetation) {
-            this.state.vegetation.forEach((veg) => this.state.scene.remove(veg));
+            this.state.vegetation.forEach((veg) => {
+                // Welle 6.G Phase 1 — Baum-Stamm-Kollision freigeben.
+                this._disposeStaticCollision(veg);
+                this.state.scene.remove(veg);
+            });
             this.state.vegetation = [];
             this.log("Alte Vegetation entfernt");
         }
@@ -7060,6 +7345,10 @@ class AnazhRealm {
 
             this.state.scene.add(island);
             this.state.floatingIslands.push(island);
+            // Welle 6.G Phase 1 — Insel sofort kollidierbar machen.
+            // Triangle-Mesh-Shape aus den echten Vertices, statischer Body
+            // an island.position. Spieler kann nicht mehr durchfallen.
+            this._buildIslandCollision(island);
             this.log(
                 `Fliegende Insel ${i} erstellt: Position (${islandX.toFixed(2)}, ${islandY.toFixed(2)}, ${islandZ.toFixed(2)})`
             );
@@ -7114,39 +7403,16 @@ class AnazhRealm {
                 }
 
                 if (steepness < 1.0 && height > -5 && height < 30 && Math.random() < 0.02) {
-                    // Reduziere Wahrscheinlichkeit
-                    const vegetationType = height < 0 ? "grass" : height < 20 ? "tree" : "flower";
-                    if (vegetationType === "tree") {
-                        const trunkGeometry = new THREE.CylinderGeometry(0.5, 0.5, 5, 8);
-                        const trunkMaterial = new THREE.MeshBasicMaterial({ color: 0x8b4513 });
-                        const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
-                        const leavesGeometry = new THREE.SphereGeometry(2, 8, 8);
-                        const leavesMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-                        const leaves = new THREE.Mesh(leavesGeometry, leavesMaterial);
-                        trunk.position.set(xPos, height + 2.5, zPos);
-                        leaves.position.set(xPos, height + 5, zPos);
-                        const tree = new THREE.Group();
-                        tree.add(trunk);
-                        tree.add(leaves);
-                        tree.castShadow = true;
-                        tree.receiveShadow = true;
-
-                        try {
-                            trunkGeometry.computeBoundingSphere();
-                            trunkGeometry.computeBoundingBox();
-                            leavesGeometry.computeBoundingSphere();
-                            leavesGeometry.computeBoundingBox();
-                        } catch (e) {
-                            this.log(
-                                `Fehler beim Berechnen der Bounding Sphere/Box für Baum bei (${xPos}, ${zPos}): ${e.message}. Baum wird übersprungen.`,
-                                "ERROR"
-                            );
-                            continue;
-                        }
-
-                        this.state.scene.add(tree);
-                        this.state.vegetation.push(tree);
-                    } else if (vegetationType === "grass") {
+                    // V7.75: Tree-Branch entfernt — Bäume kommen jetzt aus
+                    // populateChunkVegetation (Welt-Affinitäts-Feld). Diese
+                    // Schleife regelt nur noch das DEKORATIVE Vegetation-
+                    // Layer (Gras + Blumen), das nicht in state.architectures
+                    // wandert sondern in state.vegetation bleibt (kosmetisch,
+                    // kein Compound, keine Kollision, hochfrequent).
+                    // Höhen-Range angepasst: Gras < 5m, Blumen >= 5m
+                    // (alte 0..20-Lücke war nur für Bäume).
+                    const vegetationType = height < 5 ? "grass" : "flower";
+                    if (vegetationType === "grass") {
                         const grassGeometry = new THREE.ConeGeometry(0.2, 1, 4);
                         const grassMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
                         const grass = new THREE.Mesh(grassGeometry, grassMaterial);
@@ -7266,6 +7532,44 @@ class AnazhRealm {
         this.log(
             `Neues Terrain generiert: ${WORLD_SIZE}x${WORLD_SIZE}, Höhe zwischen ${minHeight.toFixed(2)} und ${maxHeight.toFixed(2)}`
         );
+
+        // V7.75 — Welle 6.G Phase 2: initiales Welt-Vegetation über das
+        // Welt-Affinitäts-Feld. Iteriert ALLE Chunks der initialen Welt
+        // (8×8 = 64 Chunks bei WORLD_SIZE 300, chunkWorldSize 37.5) und
+        // ruft populateChunkVegetation. Dort entscheidet das Tag-Feld
+        // welche Baupläne wo wahrscheinlich sind. Bei jedem späteren
+        // ensureChunkAt-Aufruf (neue Chunks am Spielerrand) wird derselbe
+        // Pfad genommen — alte und neue Bereiche der Welt fühlen sich
+        // konsistent an.
+        try {
+            const { WORLD_SIZE: ws, chunkWorldSize: cws } = this._chunkGeometry();
+            const chunksPerSide = Math.ceil(ws / cws);
+            // populatedChunks-Cache aus bestehenden Architekturen ableiten.
+            // Damit: bei Welt-Reload (loadState hat Architekturen schon
+            // restored) werden diese Chunks als „populated" markiert und
+            // die Affinity-Spawns laufen NICHT doppelt. Bei einer frischen
+            // Welt ist state.architectures leer → alle Chunks kriegen
+            // ihre erste Saat.
+            this.state.populatedChunks = new Set();
+            for (const a of this.state.architectures || []) {
+                if (!a || !a.position) continue;
+                const cx = Math.floor((a.position.x + ws / 2) / cws);
+                const cz = Math.floor((a.position.z + ws / 2) / cws);
+                this.state.populatedChunks.add(`${cx},${cz}`);
+            }
+            let populatedCount = 0;
+            for (let cz = 0; cz < chunksPerSide; cz++) {
+                for (let cx = 0; cx < chunksPerSide; cx++) {
+                    populatedCount += this.populateChunkVegetation(cx, cz);
+                }
+            }
+            this.log(
+                `Welle 6.G P2: ${populatedCount} Welt-Affinitäts-Spawns über ${chunksPerSide * chunksPerSide} initiale Chunks`,
+                "INFO"
+            );
+        } catch (e) {
+            this.log(`populateChunkVegetation initial fehlgeschlagen: ${e.message}`, "ERROR");
+        }
 
         this.spawnCreatures();
 
@@ -7864,6 +8168,12 @@ class AnazhRealm {
         const replayKey = `${newChunkX},${newChunkZ}`;
         this.applyChunkDelta(replayKey);
 
+        // V7.75 — Welle 6.G Phase 2: Welt-Affinitäts-Feld füllt den
+        // neuen Chunk mit Vegetation + Strukturen. Idempotent über
+        // state.populatedChunks, daher safe bei doppeltem ensureChunkAt-
+        // Aufruf (z. B. nach Chunk-Prune + Re-Ensure).
+        this.populateChunkVegetation(newChunkX, newChunkZ);
+
         this.log(`Chunk hinzugefügt: (${newChunkX}, ${newChunkZ})`);
     }
 
@@ -7997,6 +8307,14 @@ class AnazhRealm {
             // Ring 6.5 — Hotbar-Belegung. Array von 9 Slots mit Bauplan-Name
             // oder null. Default wird beim Init überschrieben.
             hotbar: Array.isArray(this.state.hotbar) ? this.state.hotbar.slice(0, 9) : [],
+            // Welle 6.C1 — Inventar persistiert. 27 Slots, jeweils {blueprintName,
+            // count} oder null. Bei Reload defensive Validierung (unbekannte
+            // Bauplan-Namen werden zu null, count auf 1..999 geclampt).
+            playerInventory: Array.isArray(this.state.player && this.state.player.inventory)
+                ? this.state.player.inventory
+                      .slice(0, 27)
+                      .map((s) => (s ? { blueprintName: s.blueprintName, count: s.count || 1 } : null))
+                : [],
         };
     }
 
@@ -8869,7 +9187,20 @@ class AnazhRealm {
             }
             this.state.hotbar = restored;
             this._renderHotbarDOM();
-            this.log(`Hotbar geladen: ${restored.filter((s) => s).length} Slots belegt`);
+        }
+        // Welle 6.C1 — Inventar wiederherstellen. 27 Slots, ungültige
+        // Bauplan-Referenzen → null. count clampt [1, 999].
+        if (Array.isArray(state.playerInventory)) {
+            const inv = new Array(27).fill(null);
+            for (let i = 0; i < Math.min(27, state.playerInventory.length); i++) {
+                const s = state.playerInventory[i];
+                if (s && typeof s.blueprintName === "string" && this.state.blueprints[s.blueprintName]) {
+                    const cnt = Math.max(1, Math.min(999, Number(s.count) || 1));
+                    inv[i] = { blueprintName: s.blueprintName, count: cnt };
+                }
+            }
+            if (this.state.player) this.state.player.inventory = inv;
+            this.log(`Inventar geladen: ${inv.filter(Boolean).length} Slots belegt`);
         }
         // Welle 4 Phase 3 — Werkzeug-Besitz wiederherstellen. Starter bleiben
         // immer drin (sie kommen aus _defaultTools), eigene werden zugefügt.
@@ -10220,6 +10551,12 @@ class AnazhRealm {
         if (!this.state.player || typeof amount !== "number" || !Number.isFinite(amount)) return false;
         const value = Math.max(0, Math.min(1000, amount));
         if (value === 0) return false;
+        // Welle 6.C2 — Modus-Gate. Im frieden-Modus existiert HP nicht als
+        // Konsequenz; im schöpfer-Modus gehört die Welt dem Spieler und sie
+        // versehrt ihn nicht. Schaden wird stumm verworfen (kein Log-Spam),
+        // hp + Phönix-Wandlung bleiben unangefasst.
+        const mode = this.getGameMode ? this.getGameMode() : "frieden";
+        if (mode !== "pfad") return false;
         // Wenn aktuell in Phönix-Wandlung: kein doppelter Tod (Spieler ist
         // unverwundbar während der Heilungs-Phase, das ist Teil der Mythos).
         const now = performance.now() / 1000;
@@ -11543,10 +11880,131 @@ class AnazhRealm {
             },
         ];
 
+        // Welle 6.G Phase 1.5 — Bäume als Hylomorphismus-Baupläne. Vorher
+        // waren sie rohe Three.js-Groups in state.vegetation, parallel zum
+        // Architektur-System (Vision-Bruch §1.3 fraktal: alles Materielle ist
+        // Compound aus parts × material × form). Jetzt: Stamm (Cylinder/holz)
+        // + Krone (Sphere/laub) als parts-Liste. Damit kommt geschenkt:
+        // Compound-Tags (computeCompoundTags), Welt-Effekte (resoniert,
+        // brennend), Werkstatt-Editor, Save-Persistenz, Distance-Culling,
+        // Compound-Box-Kollision pro Sub-Mesh (Stamm + Krone werden zwei
+        // btBoxShapes — die Krone ist damit übrigens auch kollidierbar, vs.
+        // V7.73 wo nur der Stamm Body hatte; das ist okay, weil die Box-AABB
+        // der Krone nicht das ganze Volumen blockiert — Spieler-Kollision
+        // bleibt durchlässig genug für „durchs Laub gehen" über die AABB-
+        // Höhe). Größenanordnung: Stamm 0.5×5×0.5 bei y=2.5, Krone 2×2×2
+        // bei y=5. baseY-Offset von spawnArchitecture (pos.y - 0.5) zieht
+        // den Stamm exakt auf den Boden.
+        // V7.75: Stamm-Radius von 0.25m auf 0.4m vergrößert. Mit
+        // Spieler-Sphäre 0.5m musste der Aufprall sonst exakt zentral
+        // sein um den Stamm zu fühlen — jetzt 1.8m breiter Kollisions-
+        // Korridor, fühlt sich solid an.
+        const baumEicheParts = [
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: 0, y: 2.5, z: 0 },
+                size: { x: 0.8, y: 5, z: 0.8 },
+                segments: 8,
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                position: { x: 0, y: 5.5, z: 0 },
+                size: { x: 2.4, y: 2.4, z: 2.4 },
+            },
+        ];
+        const baumKieferParts = [
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: 0, y: 3, z: 0 },
+                size: { x: 0.55, y: 6, z: 0.55 },
+                segments: 8,
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                position: { x: 0, y: 6.5, z: 0 },
+                size: { x: 2, y: 3, z: 2 },
+            },
+        ];
+
+        // V7.75 — Welt-Affinitäts-Feld bringt drei weitere Built-in-
+        // Baupläne mit, damit Regionen sich strukturell unterscheiden.
+        // stein_block: dichte+härte hoch → Felsen-Felder
+        // kristall_geode: magieleitung+resoniert hoch → Magie-Zonen
+        // glutbrunnen: brennbar+wärmeleitung hoch → Vulkan-Anker
+        const steinBlockParts = [
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: 0, y: 1.2, z: 0 },
+                size: { x: 2.4, y: 2.4, z: 2.4 },
+            },
+        ];
+        const kristallGeodeParts = [
+            {
+                shape: "sphere",
+                material: "quarz",
+                position: { x: 0, y: 0.8, z: 0 },
+                size: { x: 1.6, y: 1.6, z: 1.6 },
+                opacity: 0.85,
+            },
+            {
+                shape: "octahedron",
+                material: "quarz",
+                position: { x: 0, y: 2.2, z: 0 },
+                size: { x: 0.8, y: 0.8, z: 0.8 },
+            },
+            {
+                shape: "octahedron",
+                material: "quarz",
+                position: { x: 0.7, y: 1.8, z: 0.3 },
+                size: { x: 0.5, y: 0.5, z: 0.5 },
+                rotation: { x: 0.3, y: 0.4, z: 0.2 },
+            },
+            {
+                shape: "octahedron",
+                material: "quarz",
+                position: { x: -0.5, y: 1.6, z: -0.6 },
+                size: { x: 0.6, y: 0.6, z: 0.6 },
+                rotation: { x: -0.2, y: -0.3, z: 0.1 },
+            },
+        ];
+        const glutbrunnenParts = [
+            // Steinrand (Schale)
+            {
+                shape: "cylinder",
+                material: "stein",
+                position: { x: 0, y: 0.4, z: 0 },
+                size: { x: 1.8, y: 0.8, z: 1.8 },
+                segments: 12,
+            },
+            // Glut-Kern (mittig, halb-transparent für Glüh-Eindruck)
+            {
+                shape: "sphere",
+                material: "glut",
+                position: { x: 0, y: 0.8, z: 0 },
+                size: { x: 1.2, y: 1.2, z: 1.2 },
+                opacity: 0.75,
+            },
+        ];
+
         return {
             village: { name: "village", label: "Dorf", builtIn: true, parts: villageParts },
             temple: { name: "temple", label: "Tempel", builtIn: true, parts: templeParts },
             waterfall: { name: "waterfall", label: "Wasserfall", builtIn: true, parts: waterfallParts },
+            baum_eiche: { name: "baum_eiche", label: "Eiche", builtIn: true, parts: baumEicheParts },
+            baum_kiefer: { name: "baum_kiefer", label: "Kiefer", builtIn: true, parts: baumKieferParts },
+            stein_block: { name: "stein_block", label: "Felsblock", builtIn: true, parts: steinBlockParts },
+            kristall_geode: {
+                name: "kristall_geode",
+                label: "Kristall-Geode",
+                builtIn: true,
+                parts: kristallGeodeParts,
+            },
+            glutbrunnen: { name: "glutbrunnen", label: "Glutbrunnen", builtIn: true, parts: glutbrunnenParts },
         };
     }
 
@@ -11663,6 +12121,22 @@ class AnazhRealm {
                 magieleitung: 0.75,
                 brennbar: 1.0,
                 resoniert: 0.65,
+                lebendig: 1.0,
+            }),
+            // Welle 6.G Phase 1.5 — Hylomorphismus-Unification für Bäume.
+            // Krone braucht ein eigenes Material; vorher gab's nur holz. Laub
+            // ist leicht (dichte 0.1), magieleitend (Baumkronen fangen Licht +
+            // Geist ein), brennend (Feuer-Tag-Resonanz), lebendig (Wald).
+            // Über baum_eiche/baum_kiefer-Baupläne ist es jetzt der einzige
+            // Pfad — kein Parallelcode mehr für Vegetation.
+            make("laub", "Laub", 0x2e8b3f, {
+                härte: 0.05,
+                dichte: 0.1,
+                zähigkeit: 0.4,
+                wärmeleitung: 0.2,
+                magieleitung: 0.35,
+                brennbar: 0.85,
+                resoniert: 0.45,
                 lebendig: 1.0,
             }),
         ];
@@ -11845,12 +12319,20 @@ class AnazhRealm {
         // oder eine Stamina-stärkere Seele wählen. Damit ist „beliebig stapeln"
         // strukturell ausgeschlossen; Geduld wird zur ECHTEN Kosten, nicht
         // nur zur Reihenfolge.
-        const cost = AnazhRealm.TOOL_OP_STAMINA_COST || 10;
-        const stamina = (this.state.player && this.state.player.stamina) || 0;
-        if (stamina < cost) {
-            return { ok: false, reason: "not_enough_stamina", staminaNeeded: cost, staminaHave: stamina };
+        //
+        // Welle 6.C2 — Modus-Gate. Nur im pfad-Modus verbrauchen Werkzeuge
+        // Stamina. Im frieden-Modus (Erstbegegnung) + schöpfer-Modus (voller
+        // Zugang) ist Schöpfen reibungsfrei — Vision §1.5: Mensch=Null=
+        // Schöpfer darf ohne Geduld-Kosten erschaffen.
+        const mode = this.getGameMode ? this.getGameMode() : "frieden";
+        if (mode === "pfad") {
+            const cost = AnazhRealm.TOOL_OP_STAMINA_COST || 10;
+            const stamina = (this.state.player && this.state.player.stamina) || 0;
+            if (stamina < cost) {
+                return { ok: false, reason: "not_enough_stamina", staminaNeeded: cost, staminaHave: stamina };
+            }
+            this.state.player.stamina = Math.max(0, stamina - cost);
         }
-        this.state.player.stamina = Math.max(0, stamina - cost);
         if (!Array.isArray(part.opChain)) part.opChain = this._defaultPartOpChain();
         part.opChain.push({
             tool: toolName,
@@ -12551,6 +13033,230 @@ class AnazhRealm {
         entry.collision = null;
     }
 
+    // === Welle 6.G Phase 1 — Welt-Sinne (Inseln + Bäume + UFOs) ===
+    // Bisher waren state.floatingIslands + state.vegetation-Bäume rein
+    // kosmetisch (kein physicsBody). Spieler fiel durch jede Insel, ging
+    // durch jeden Stamm. Hier die Kollisions-Schicht: btBvhTriangleMeshShape
+    // für Inseln (Visual = Kollision per Konstruktion wie bei Chunks),
+    // btCylinderShape nur für Baum-Stämme (Krone bleibt durchlässig — der
+    // Spieler kann durchs Laub gehen). UFOs bleiben bewusst kollisionsfrei,
+    // sie sind fliegende Beobachter, kein Hindernis.
+    //
+    // Beide werden als statische Bodies (mass=0) gebaut und NICHT in
+    // state.rigidBodies gepusht — der Sync-Loop würde sonst mesh.position
+    // aus dem Body-Origin überschreiben. Body lebt in obj.userData.collision.
+    _buildIslandCollision(islandMesh) {
+        if (!islandMesh || !islandMesh.geometry || !this.state.physicsWorld) return null;
+        const geo = islandMesh.geometry;
+        const posAttr = geo.attributes && geo.attributes.position;
+        const idx = geo.index;
+        if (!posAttr || !idx) return null;
+        const sf = this.state.scaleFactor || 1;
+        const verts = posAttr.array;
+        const indices = idx.array;
+        try {
+            const tmesh = new Ammo.btTriangleMesh(true, true);
+            const v0 = new Ammo.btVector3(0, 0, 0);
+            const v1 = new Ammo.btVector3(0, 0, 0);
+            const v2 = new Ammo.btVector3(0, 0, 0);
+            let added = 0;
+            for (let i = 0; i + 2 < indices.length; i += 3) {
+                const ai = indices[i] * 3;
+                const bi = indices[i + 1] * 3;
+                const ci = indices[i + 2] * 3;
+                if (!Number.isFinite(verts[ai]) || !Number.isFinite(verts[bi]) || !Number.isFinite(verts[ci])) continue;
+                v0.setValue(verts[ai] / sf, verts[ai + 1] / sf, verts[ai + 2] / sf);
+                v1.setValue(verts[bi] / sf, verts[bi + 1] / sf, verts[bi + 2] / sf);
+                v2.setValue(verts[ci] / sf, verts[ci + 1] / sf, verts[ci + 2] / sf);
+                tmesh.addTriangle(v0, v1, v2);
+                added++;
+            }
+            Ammo.destroy(v0);
+            Ammo.destroy(v1);
+            Ammo.destroy(v2);
+            if (added === 0) {
+                Ammo.destroy(tmesh);
+                return null;
+            }
+            const shape = new Ammo.btBvhTriangleMeshShape(tmesh, true, true);
+            const transform = new Ammo.btTransform();
+            transform.setIdentity();
+            const p = islandMesh.position;
+            const origin = new Ammo.btVector3(p.x / sf, p.y / sf, p.z / sf);
+            transform.setOrigin(origin);
+            const motionState = new Ammo.btDefaultMotionState(transform);
+            const inertia = new Ammo.btVector3(0, 0, 0);
+            const rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, shape, inertia);
+            const body = new Ammo.btRigidBody(rbInfo);
+            body.setFriction(0.8);
+            this.state.physicsWorld.addRigidBody(body);
+            Ammo.destroy(rbInfo);
+            Ammo.destroy(inertia);
+            Ammo.destroy(origin);
+            Ammo.destroy(transform);
+            islandMesh.userData.collision = { body, shape, tmesh, kind: "island" };
+            return body;
+        } catch (err) {
+            this.log(`_buildIslandCollision: ${err.message}`, "ERROR");
+            return null;
+        }
+    }
+
+    // (V7.74) _buildTreeCollision wurde entfernt — Bäume sind jetzt Compound-
+    // Architekturen über baum_eiche/baum_kiefer-Baupläne. _buildArchitecture-
+    // Collision erzeugt Compound-Box pro Sub-Mesh (Stamm + Krone) durch
+    // denselben Pfad wie alle anderen Strukturen.
+
+    // Generischer Dispose-Pfad für statische 6.G-Kollisionen (jetzt nur noch Inseln).
+    // Idempotent: zweimal aufrufen ist safe (collision wird auf null gesetzt).
+    _disposeStaticCollision(obj) {
+        if (!obj || !obj.userData || !obj.userData.collision) return;
+        const c = obj.userData.collision;
+        try {
+            if (this.state.physicsWorld && c.body) this.state.physicsWorld.removeRigidBody(c.body);
+        } catch {
+            /* ignore */
+        }
+        try {
+            if (c.body) Ammo.destroy(c.body);
+        } catch {
+            /* ignore */
+        }
+        try {
+            if (c.shape) Ammo.destroy(c.shape);
+        } catch {
+            /* ignore */
+        }
+        try {
+            if (c.tmesh) Ammo.destroy(c.tmesh);
+        } catch {
+            /* ignore */
+        }
+        obj.userData.collision = null;
+    }
+
+    // Insel-Geometrie für DSL-Op spawn_island. V7.74: Vollkörper mit
+    // Top + Bottom + Side-Strip (vorher nur Top-Surface → von unten
+    // hohl sichtbar, harte Triangle-Kanten). MeshLambertMaterial nimmt
+    // Szenenlicht an (kein „Papier-Sticker"-Look mehr). Seed-deterministisch
+    // für Multi-User-Sync (Ring 11 V2.1-Stil).
+    spawnIslandAt(x, y, z, height = 6, opts = {}) {
+        if (!this.state.scene) return null;
+        const size = Number.isFinite(opts.size) ? Math.max(6, Math.min(24, opts.size)) : 12;
+        const seedStr = opts.seed != null ? String(opts.seed) : `island-${Date.now()}-${Math.random()}`;
+        const noise = new SimplexNoise(seedStr);
+        const geometry = new THREE.BufferGeometry();
+        const vertices = [];
+        const indices = [];
+        const N = Math.max(8, Math.min(20, Math.round(size)));
+        // Top-Vertices (Index 0..N*N-1) — radiale Noise-Höhe, an der Rim h=0.
+        for (let zi = 0; zi < N; zi++) {
+            for (let xi = 0; xi < N; xi++) {
+                const xp = xi - (N - 1) / 2;
+                const zp = zi - (N - 1) / 2;
+                const distance = Math.sqrt(xp * xp + zp * zp);
+                const maxDist = (N - 1) / 2;
+                let h = 0;
+                if (distance < maxDist * 0.95) {
+                    const factor = 1 - distance / maxDist;
+                    const h1 = noise.noise2D(xi * 0.25, zi * 0.25) * 1.5 * factor;
+                    const h2 = noise.noise2D(xi * 0.6, zi * 0.6) * 0.7 * factor;
+                    h = Math.max(0, h1 + h2 + factor * 0.4);
+                }
+                vertices.push(xp, h, zp);
+            }
+        }
+        // Bottom-Vertices (Index N*N..2*N*N-1) — flache Unterseite, gibt
+        // der Insel sichtbaren Körper. bottomY skaliert mit Wunsch-Höhe.
+        const bottomY = -Math.max(2, height * 0.4);
+        for (let zi = 0; zi < N; zi++) {
+            for (let xi = 0; xi < N; xi++) {
+                const xp = xi - (N - 1) / 2;
+                const zp = zi - (N - 1) / 2;
+                vertices.push(xp, bottomY, zp);
+            }
+        }
+        // Top-Triangles (Winding gegen Uhrzeigersinn → Normal nach oben).
+        for (let zi = 0; zi < N - 1; zi++) {
+            for (let xi = 0; xi < N - 1; xi++) {
+                const a = zi * N + xi;
+                const b = zi * N + (xi + 1);
+                const cc = (zi + 1) * N + xi;
+                const d = (zi + 1) * N + (xi + 1);
+                indices.push(a, b, d, a, d, cc);
+            }
+        }
+        // Bottom-Triangles (umgekehrte Winding → Normal nach unten).
+        const bOff = N * N;
+        for (let zi = 0; zi < N - 1; zi++) {
+            for (let xi = 0; xi < N - 1; xi++) {
+                const a = bOff + zi * N + xi;
+                const b = bOff + zi * N + (xi + 1);
+                const cc = bOff + (zi + 1) * N + xi;
+                const d = bOff + (zi + 1) * N + (xi + 1);
+                indices.push(a, d, b, a, cc, d);
+            }
+        }
+        // Side-Strip um die vier Ränder verbindet Top-Rim mit Bottom-Rim.
+        const addQuad = (t1, t2, b1, b2) => {
+            indices.push(t1, b1, t2, t2, b1, b2);
+        };
+        // North-Rand (zi = 0): top zeigt zur Außenseite (-Z)
+        for (let xi = 0; xi < N - 1; xi++) {
+            addQuad(xi + 1, xi, bOff + xi + 1, bOff + xi);
+        }
+        // South-Rand (zi = N-1): top zeigt zur Außenseite (+Z)
+        for (let xi = 0; xi < N - 1; xi++) {
+            const z = N - 1;
+            addQuad(z * N + xi, z * N + xi + 1, bOff + z * N + xi, bOff + z * N + xi + 1);
+        }
+        // West-Rand (xi = 0): top zeigt nach -X
+        for (let zi = 0; zi < N - 1; zi++) {
+            addQuad(zi * N, (zi + 1) * N, bOff + zi * N, bOff + (zi + 1) * N);
+        }
+        // East-Rand (xi = N-1): top zeigt nach +X
+        for (let zi = 0; zi < N - 1; zi++) {
+            const last = N - 1;
+            addQuad((zi + 1) * N + last, zi * N + last, bOff + (zi + 1) * N + last, bOff + zi * N + last);
+        }
+        geometry.setIndex(indices);
+        geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+        geometry.computeVertexNormals();
+        const material = new THREE.MeshLambertMaterial({ color: 0x6b9e4f, side: THREE.FrontSide });
+        const island = new THREE.Mesh(geometry, material);
+        island.position.set(x, y, z);
+        island.castShadow = true;
+        island.receiveShadow = true;
+        island.userData.sourceOp = "spawn_island";
+        this.state.scene.add(island);
+        if (!Array.isArray(this.state.floatingIslands)) this.state.floatingIslands = [];
+        this.state.floatingIslands.push(island);
+        this._buildIslandCollision(island);
+        return island;
+    }
+
+    // (V7.74) spawnTreeAt wurde entfernt — Bäume sind jetzt Hylomorphismus-
+    // Compounds über die baum_eiche/baum_kiefer-Baupläne. spawn_tree DSL-Op
+    // routet durch spawnArchitecture, derselbe Pfad wie spawn_village +
+    // spawn_temple. Eine Sprache, ein Renderpfad, ein Save, ein Editor.
+
+    // UFOs sind bewusst kollisionsfrei — fliegende Beobachter, kein
+    // Hindernis. Sanfte Sinus-Hover-Animation wird im Frustum-Loop
+    // angewandt (selber Pfad wie initialer spawnIslands-UFO).
+    spawnUfoAt(x, y, z) {
+        if (!this.state.scene) return null;
+        const geo = new THREE.ConeGeometry(1, 2, 8);
+        const mat = new THREE.MeshBasicMaterial({ color: 0xc0e8ff });
+        const ufo = new THREE.Mesh(geo, mat);
+        ufo.position.set(x, y, z);
+        ufo.visible = true;
+        ufo.userData = { baseY: y, speed: 0.5 + Math.random() * 0.5, sourceOp: "spawn_ufo" };
+        this.state.scene.add(ufo);
+        if (!Array.isArray(this.state.ufos)) this.state.ufos = [];
+        this.state.ufos.push(ufo);
+        return ufo;
+    }
+
     // Mesh disposen, Eintrag bleibt als reine Daten erhalten. Fenster für
     // späteren Wieder-Aufbau wenn der Spieler zurückkehrt.
     _cullArchitectureMesh(entry) {
@@ -12596,8 +13302,193 @@ class AnazhRealm {
             `Struktur gebaut: ${type} bei (${entry.position.x.toFixed(1)}, ${entry.position.z.toFixed(1)})${scale !== 1 ? ` ×${scale.toFixed(2)}` : ""}${inRange ? "" : " (cold)"}`,
             "INFO"
         );
-        this._applyCompoundWorldEffects(type);
+        // V7.75 — Welt-Effekte (awe/hope-Boost, Singing-Sinus) sind eine
+        // Antwort der Welt auf SPIELER-GESTE, nicht auf ihre eigene Saat.
+        // Bei populateChunkVegetation (Welt-Affinitäts-Feld) wird `silent`
+        // gesetzt → die Welt erschafft sich selbst still. Awe muss verdient
+        // werden, nicht geschenkt. Proximity-basierte Boosts via
+        // tickPlayerBoosts (Welt-Resonanz) bleiben unverändert — der
+        // Spieler erlebt sie WENN er nah hin geht, nicht beim Welt-Aufbau.
+        if (!opts.silent) {
+            this._applyCompoundWorldEffects(type);
+        }
         return entry;
+    }
+
+    // === Welle 6.G Phase 2 — Welt-Affinitäts-Feld ===
+    //
+    // Vision-Pfeiler §1.3 fraktal: Welt-Verteilung emergiert aus derselben
+    // Sprache wie alles andere — MATERIAL_TAG_KEYS. Kein Biome-Tabelle, kein
+    // hardcoded "Forest/Desert/Volcano". Stattdessen: vier SimplexNoise-
+    // Schichten (lebendig, dichte, glut, magieleitung) bilden ein Welt-Feld,
+    // in dem jede Region ein Tag-Profil hat. Pflanzen + Strukturen spawnen
+    // wahrscheinlicher dort wo ihre Compound-Tags mit dem Welt-Feld resonieren.
+    //
+    // Damit emergiert:
+    //  - lebendig-hoch → Wälder (Bäume mit holz+laub)
+    //  - dichte-hoch → Felsen-Felder (stein_block)
+    //  - magieleitung-hoch → Magie-Zonen (kristall_geode mit quarz)
+    //  - glut-hoch → Vulkan-Anker (glutbrunnen mit glut+stein)
+    //
+    // Seltenheit emergiert automatisch: hochwertige Tag-Kombinationen sind
+    // mathematisch selten in Noise; komplexe Bauplane (viele Tag-Achsen
+    // gleichzeitig) sind multiplikativ noch seltener.
+    //
+    // Bei Welt-Wechsel wird das Feld implizit neu (über state.worldMeta.seed),
+    // weil seed in den Noise-Konstruktor fließt → jede Welt hat ihre eigene
+    // Region-Verteilung. Multi-User-deterministisch: alle Mitspieler mit
+    // gleichem seed sehen identische Regionen.
+    worldFieldAt(x, z) {
+        const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        // Lazy-Init pro Welt — bei Welt-Wechsel automatisch neu, weil seed
+        // anders ist. state.worldField hält den Cache.
+        if (!this.state.worldField || this.state.worldField.seed !== seed) {
+            this.state.worldField = {
+                seed,
+                lebendigNoise: new SimplexNoise(seed + "-veg-lebendig"),
+                dichteNoise: new SimplexNoise(seed + "-veg-dichte"),
+                glutNoise: new SimplexNoise(seed + "-veg-glut"),
+                magieNoise: new SimplexNoise(seed + "-veg-magie"),
+                // Sampling-RNG (deterministisch pro Position) für Spawn-Probe.
+                rngNoise: new SimplexNoise(seed + "-veg-rng"),
+            };
+        }
+        const f = this.state.worldField;
+        // Skala 0.005 entspricht Welle ~200m; Regionen sind groß genug, dass
+        // ein Wald als Wald erkennbar ist. Offsets pro Achse machen sie
+        // unkorreliert (sonst würden lebendig+dichte zusammen schwingen).
+        const s = 0.005;
+        const n01 = (v) => Math.max(0, Math.min(1, (v + 1) / 2));
+        return {
+            lebendig: n01(f.lebendigNoise.noise2D(x * s, z * s)),
+            dichte: n01(f.dichteNoise.noise2D(x * s + 100, z * s - 200)),
+            glut: n01(f.glutNoise.noise2D(x * s + 500, z * s + 700)),
+            magieleitung: n01(f.magieNoise.noise2D(x * s - 333, z * s + 999)),
+        };
+    }
+
+    // Affinity = wie stark resonieren die Compound-Tags eines Bauplans mit
+    // dem Welt-Feld an Position (x, z)? Dot-Product über die 4 Achsen des
+    // Welt-Feldes. Resultat 0..1 (sum / 4 da MAX-aggregierte Tags ebenfalls
+    // 0..1 nach computeCompoundTags + Felder 0..1). Bauplan-Tags > 1 bei
+    // räumlicher Verstärkung würden das überschreiten — wir clampen final.
+    spawnAffinityForBlueprint(name, x, z) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return 0;
+        const world = this.worldFieldAt(x, z);
+        const tags = this.computeCompoundTags(bp);
+        if (!tags) return 0;
+        let score = 0;
+        // Vier Achsen × Tag-Wert. Wenn eine Welt-Achse hoch und der Bauplan
+        // dort Material-Tag-Wert hoch hat → Resonanz.
+        score += world.lebendig * (tags.lebendig || 0);
+        score += world.dichte * (tags.dichte || 0);
+        score += world.glut * (tags.brennbar || 0); // glut → brennbar (Material-Achse)
+        score += world.magieleitung * (tags.magieleitung || 0);
+        return Math.max(0, Math.min(1, score / 4));
+    }
+
+    // Pro Chunk: sample-Raster, beste-Affinität-Bauplan wählen, Bernoulli-
+    // Probe mit chance = base × affinity² → starke Bias zu hochwertigen
+    // Regionen, Floor unterdrückt Mittelmaß. Probe ist deterministisch über
+    // rngNoise → Multi-User-identisch, kein Math.random.
+    //
+    // Idempotenz: Bei doppeltem Aufruf für denselben Chunk würden Bauwerke
+    // doppelt. Wir markieren über state.populatedChunks (Set). Save-Restore
+    // braucht das nicht zu persistieren, weil state.architectures (die echten
+    // Spawns) eh persistiert sind — beim Reload sind sie schon da. Bei einer
+    // NEUEN Welt (kein architectures-Eintrag für den Chunk) wird neu gesät.
+    populateChunkVegetation(cx, cz) {
+        if (!this.state.scene) return 0;
+        if (!this.state.blueprints) return 0;
+        // Idempotenz-Cache: Welt-spezifisch, pro Chunk-Key.
+        if (!this.state.populatedChunks) this.state.populatedChunks = new Set();
+        const chunkKey = `${cx},${cz}`;
+        if (this.state.populatedChunks.has(chunkKey)) return 0;
+        this.state.populatedChunks.add(chunkKey);
+
+        const { WORLD_SIZE, chunkWorldSize } = this._chunkGeometry();
+        const cxWorld = cx * chunkWorldSize - WORLD_SIZE / 2;
+        const czWorld = cz * chunkWorldSize - WORLD_SIZE / 2;
+        // 8×8-Sample-Raster pro Chunk (64 Probepunkte). Bei chunkWorldSize
+        // 37.5m → ~4.7m zwischen Samples. Genug Auflösung für Wald-Dichte.
+        const SAMPLES = 8;
+        const step = chunkWorldSize / SAMPLES;
+
+        // Welt-Höhe für Vegetation: nur 0..30 m über Welt-Boden ist
+        // sinnvoll (unter 0 = unter Wasser, über 30 = zu hoch / steil).
+        const minVegHeight = -2;
+        const maxVegHeight = 30;
+
+        // Noise-Quellen für Höhen-Lookup (gleiche wie in ensureChunkAt).
+        const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        const heightNoise = new SimplexNoise(seed);
+        const caveNoise = new SimplexNoise(seed + "-cave");
+        const volcanoNoise = new SimplexNoise(seed + "-volcano");
+        const steepness = this.state.terrainSteepness;
+        const baseHeight = this.state.terrainBaseHeight;
+
+        // Bauplan-Kandidaten für Welt-Affinitäts-Spawn. Nur Naturraum-Bauwerke
+        // — Dorf/Tempel/Wasserfall bleiben Spieler-Geste. Bäume + Felsen +
+        // Geoden + Glutbrunnen sind Welt-Bürger.
+        const candidates = ["baum_eiche", "baum_kiefer", "stein_block", "kristall_geode", "glutbrunnen"];
+
+        // BASE_RATE × affinity² ist die Spawn-Wahrscheinlichkeit pro Sample.
+        // 0.4 × (0.3)² = 0.036 → ~2.3 Spawns pro Chunk im Mittel; bei
+        // affinity 0.6 → ~9; bei 0.9 → ~21. Natürliche Variation.
+        const BASE_RATE = 0.4;
+        const AFFINITY_FLOOR = 0.18;
+
+        const rng = this.state.worldField && this.state.worldField.rngNoise;
+        let spawned = 0;
+
+        for (let zi = 0; zi < SAMPLES; zi++) {
+            for (let xi = 0; xi < SAMPLES; xi++) {
+                const sampleX = cxWorld + (xi + 0.5) * step;
+                const sampleZ = czWorld + (zi + 0.5) * step;
+                const height = this._terrainHeightAtWorld(
+                    sampleX,
+                    sampleZ,
+                    heightNoise,
+                    steepness,
+                    baseHeight,
+                    caveNoise,
+                    volcanoNoise
+                );
+                if (!Number.isFinite(height)) continue;
+                if (height < minVegHeight || height > maxVegHeight) continue;
+
+                // Beste-Affinität-Bauplan an dieser Position.
+                let bestName = null;
+                let bestAffinity = 0;
+                for (const name of candidates) {
+                    const aff = this.spawnAffinityForBlueprint(name, sampleX, sampleZ);
+                    if (aff > bestAffinity) {
+                        bestAffinity = aff;
+                        bestName = name;
+                    }
+                }
+                if (!bestName || bestAffinity < AFFINITY_FLOOR) continue;
+
+                // Bernoulli-Probe via deterministischer noise2D (Multi-User-safe).
+                const probe = rng ? (rng.noise2D(sampleX * 0.31, sampleZ * 0.31) + 1) / 2 : Math.random();
+                const chance = BASE_RATE * bestAffinity * bestAffinity;
+                if (probe >= chance) continue;
+
+                // Spawn. baseY-Kompensation: spawnArchitecture zieht 0.5 ab
+                // (kalibriert für at_player), wir kompensieren für Terrain.
+                // Zusätzlich: Glutbrunnen+Geoden haben part.y=0 als Bottom,
+                // die Kompensation bringt sie exakt auf den Boden.
+                const seedForSpawn = ((cx * 73856093) ^ (cz * 19349663) ^ (xi * 83492791) ^ (zi * 11)) >>> 0;
+                this.spawnArchitecture(
+                    bestName,
+                    { x: sampleX, y: height + 0.5, z: sampleZ },
+                    { seed: seedForSpawn, silent: true }
+                );
+                spawned++;
+            }
+        }
+        return spawned;
     }
 
     // ### Welle 4 Phase 3 — emergente Welt-Effekte ###
@@ -12966,11 +13857,392 @@ class AnazhRealm {
             }
             slot.appendChild(num);
             slot.appendChild(label);
-            slot.addEventListener("click", () => this.selectHotbarSlot(i));
+            slot.addEventListener("click", () => {
+                // Welle 6.C1: wenn ein Inventar-Bauplan gewählt ist, weist
+                // der Hotbar-Klick ihn diesem Slot zu (Assign-Path). Sonst
+                // wird der Hotbar-Slot wie üblich aktiviert (Bau-Modus an).
+                if (this.state.inventorySelected) {
+                    this.tryAssignFromInventoryToHotbar(i);
+                } else {
+                    this.selectHotbarSlot(i);
+                }
+            });
+            // Welle 6.C1+ Drag&Drop. Gefüllter Hotbar-Slot ist Drag-Source,
+            // jeder Hotbar-Slot ist Drop-Target. Im Drag-Modus wird der
+            // selectHotbarSlot-Pfad nicht ausgelöst (Browser triggert keinen
+            // Click bei Drag-Release).
+            slot.draggable = !!name;
+            slot.addEventListener("dragstart", (ev) => this._onSlotDragStart(ev, "hot", i));
+            slot.addEventListener("dragend", (ev) => this._onSlotDragEnd(ev));
+            slot.addEventListener("dragover", (ev) => this._onSlotDragOver(ev));
+            slot.addEventListener("dragleave", (ev) => this._onSlotDragLeave(ev));
+            slot.addEventListener("drop", (ev) => this._onSlotDrop(ev, "hot", i));
             bar.appendChild(slot);
         }
         this._updateHotbarHighlight();
         this._renderHotbarConfigDOM();
+    }
+
+    // === Welle 6.C1 — Inventar-Overlay Render + UI-Wiring ===
+    //
+    // Tag-Resonanz emergiert aus computeCompoundTags(bp). Pro Slot werden
+    // CSS-Klassen `tag-<axis>` gesetzt, wenn der jeweilige Tag-Wert über
+    // 0.5 (bzw. 0.7 für dichte) liegt. Hover triggert Audio-Ping mit
+    // dominantem Tag. Mehrere Tag-Klassen können stacken (lebendig +
+    // brennbar bei Laub = grün-orange-Schimmer).
+    renderInventoryUI() {
+        if (typeof document === "undefined") return;
+        const grid = document.getElementById("inventory-grid");
+        if (!grid) return;
+        grid.innerHTML = "";
+        const inv = (this.state.player && this.state.player.inventory) || [];
+        const selectedName = this.state.inventorySelected;
+        for (let i = 0; i < inv.length; i++) {
+            const slot = inv[i];
+            const el = document.createElement("button");
+            el.type = "button";
+            el.className = "inventory-slot";
+            el.setAttribute("data-inv-slot", String(i));
+            if (!slot) {
+                el.classList.add("empty");
+                el.setAttribute("aria-label", `Slot ${i + 1} leer`);
+                // Leerer Inventar-Slot: nicht draggable, aber Drop-Target
+                // (anderer Bauplan kann hier abgelegt werden).
+                el.addEventListener("dragover", (ev) => this._onSlotDragOver(ev));
+                el.addEventListener("dragleave", (ev) => this._onSlotDragLeave(ev));
+                el.addEventListener("drop", (ev) => this._onSlotDrop(ev, "inv", i));
+                grid.appendChild(el);
+                continue;
+            }
+            const bp = this.state.blueprints && this.state.blueprints[slot.blueprintName];
+            const label = document.createElement("span");
+            label.className = "slot-label";
+            label.textContent = bp ? bp.label || slot.blueprintName : slot.blueprintName;
+            el.appendChild(label);
+            if (slot.count > 1) {
+                const count = document.createElement("span");
+                count.className = "slot-count";
+                count.textContent = String(slot.count);
+                el.appendChild(count);
+            }
+            // Tag-Magic: dominante Achsen als CSS-Klasse + ARIA-Label.
+            if (bp && typeof this.computeCompoundTags === "function") {
+                const tags = this.computeCompoundTags(bp) || {};
+                const activeTags = [];
+                if ((tags.resoniert || 0) >= 0.5) {
+                    el.classList.add("tag-resoniert");
+                    activeTags.push("resoniert");
+                }
+                if ((tags.brennbar || 0) >= 0.5) {
+                    el.classList.add("tag-brennend");
+                    activeTags.push("brennbar");
+                }
+                if ((tags.magieleitung || 0) >= 0.5) {
+                    el.classList.add("tag-magieleitung");
+                    activeTags.push("magieleitung");
+                }
+                if ((tags.lebendig || 0) >= 0.5) {
+                    el.classList.add("tag-lebendig");
+                    activeTags.push("lebendig");
+                }
+                if ((tags.dichte || 0) >= 0.7) {
+                    el.classList.add("tag-dichte");
+                    activeTags.push("dichte");
+                }
+                el.setAttribute(
+                    "aria-label",
+                    `${label.textContent}${slot.count > 1 ? ` ×${slot.count}` : ""}${activeTags.length ? ` (Tags: ${activeTags.join(", ")})` : ""}`
+                );
+                // Audio-Ping bei Hover wenn signifikante Tag-Resonanz.
+                el.addEventListener("mouseenter", () => {
+                    this.playInventoryHoverPing(tags);
+                });
+            } else {
+                el.setAttribute("aria-label", `${label.textContent}${slot.count > 1 ? ` ×${slot.count}` : ""}`);
+            }
+            if (selectedName && slot.blueprintName === selectedName) {
+                el.classList.add("selected");
+            }
+            el.addEventListener("click", () => this.selectInventorySlot(i));
+            // Drag-Source: gefüllter Inventar-Slot kann gegriffen werden.
+            el.draggable = true;
+            el.addEventListener("dragstart", (ev) => this._onSlotDragStart(ev, "inv", i));
+            el.addEventListener("dragend", (ev) => this._onSlotDragEnd(ev));
+            // Drop-Target: jeder Inventar-Slot (auch leerer) kann Quelle aufnehmen.
+            el.addEventListener("dragover", (ev) => this._onSlotDragOver(ev));
+            el.addEventListener("dragleave", (ev) => this._onSlotDragLeave(ev));
+            el.addEventListener("drop", (ev) => this._onSlotDrop(ev, "inv", i));
+            grid.appendChild(el);
+        }
+        // Selected-Anzeige unten
+        const sel = document.getElementById("inventory-selected");
+        if (sel) {
+            const nameEl = sel.querySelector(".name");
+            if (nameEl) {
+                if (selectedName) {
+                    const bp = this.state.blueprints && this.state.blueprints[selectedName];
+                    nameEl.textContent = bp ? bp.label || selectedName : selectedName;
+                } else {
+                    nameEl.textContent = "—";
+                }
+            }
+        }
+    }
+
+    // Slot-Klick im Inventar: wählt den Bauplan aus. Nächster Hotbar-Slot-
+    // Klick weist ihn dort zu. Doppelklick auf bereits-gewähltem Slot hebt
+    // die Wahl wieder auf.
+    selectInventorySlot(slotIndex) {
+        const inv = (this.state.player && this.state.player.inventory) || [];
+        const slot = inv[slotIndex];
+        if (!slot) return;
+        if (this.state.inventorySelected === slot.blueprintName) {
+            this.state.inventorySelected = null;
+        } else {
+            this.state.inventorySelected = slot.blueprintName;
+        }
+        this.renderInventoryUI();
+    }
+
+    // Wenn ein Inventar-Bauplan ausgewählt ist und der Spieler auf einen
+    // Hotbar-Slot klickt (oder Number-Taste drückt), wird dieser Bauplan
+    // dort abgelegt. Diese Methode ist der Hook in den Hotbar-Click-Pfad.
+    // Aufruf aus _renderHotbarDOM-Click-Listener (separate Wiring).
+    tryAssignFromInventoryToHotbar(hotbarIndex) {
+        if (!this.state.inventorySelected) return false;
+        const idx = Math.max(0, Math.min(8, Number(hotbarIndex) | 0));
+        if (!Array.isArray(this.state.hotbar)) this.state.hotbar = new Array(9).fill(null);
+        this.state.hotbar[idx] = this.state.inventorySelected;
+        this.state.inventorySelected = null;
+        this.renderInventoryUI();
+        if (typeof this._renderHotbarDOM === "function") this._renderHotbarDOM();
+        try {
+            this.saveState();
+        } catch {
+            /* save-Fehler nicht hart blockend */
+        }
+        return true;
+    }
+
+    toggleInventoryOverlay(force) {
+        if (typeof document === "undefined") return;
+        const el = document.getElementById("inventory-overlay");
+        if (!el) return;
+        const open = typeof force === "boolean" ? force : el.hasAttribute("hidden");
+        if (open) {
+            el.removeAttribute("hidden");
+            this.state.inventoryOpen = true;
+            this.renderInventoryUI();
+            // === UX-Konvention wie Minecraft / jedes Survival-Spiel ===
+            // Inventar offen → Pointer-Lock raus, damit der Maus-Cursor
+            // erscheint und Drag&Drop funktioniert. HTML5-Drag&Drop ist
+            // mit Pointer-Lock INKOMPATIBEL: Drag braucht absolute
+            // Maus-Koordinaten, Lock liefert nur relative deltas →
+            // dragstart feuert nicht zuverlässig. Esc-Workaround war
+            // schlechte UX (zwei Tasten für eine Aktion).
+            try {
+                if (document.pointerLockElement) document.exitPointerLock();
+            } catch {
+                /* defensive */
+            }
+            // KEINE keys-Clear — Minecraft-Konvention: WASD bleibt aktiv,
+            // Spieler bewegt sich auch mit offenem Inventar weiter. Nur
+            // die Maus-Look-Steuerung ist über exitPointerLock gesperrt.
+        } else {
+            el.setAttribute("hidden", "");
+            this.state.inventoryOpen = false;
+            this.state.inventorySelected = null;
+            // Bewusst KEIN re-lock — Spieler klickt Canvas um wieder
+            // in Blick-Steuerung zu gehen (Minecraft-Konvention).
+        }
+    }
+
+    inventoryInitDOM() {
+        if (typeof document === "undefined") return;
+        // Tab-Taste toggelt Overlay UNCONDITIONAL — kein Input-Bypass mehr.
+        // Vorher: aus Chat-Input-Focus durfte Tab durchgereicht werden, damit
+        // der Spieler „aus dem Feld tabben" kann. In der Praxis aber:
+        //   - User klickt Chat-Input → Tab wechselt zum nächsten focusable
+        //     Element = erster Hotbar-Slot, sieht aus wie „Tab cycelt durch
+        //     Hotbar". Inventory öffnet nie. Fehlerhaft.
+        //   - Convention für Verlassen eines Feldes ist Esc oder
+        //     Klick-Außen, nicht Tab.
+        // Jetzt: Tab → preventDefault + blur(activeElement) + toggle.
+        // Capture-Phase damit der Listener VOR allem anderen fired.
+        window.addEventListener(
+            "keydown",
+            (event) => {
+                if (event.key !== "Tab") return;
+                event.preventDefault();
+                event.stopPropagation();
+                const active = document.activeElement;
+                if (active && typeof active.blur === "function" && active !== document.body) {
+                    try {
+                        active.blur();
+                    } catch {
+                        /* defensive */
+                    }
+                }
+                this.toggleInventoryOverlay();
+            },
+            true
+        );
+        // Initiales Render (leeres Inventar = leere Slots).
+        this.renderInventoryUI();
+    }
+
+    // === Welle 6.C1+ — Drag&Drop für Inventar ↔ Hotbar ===
+    //
+    // HTML5-Drag&Drop-API. Funktioniert wie Minecraft: gefüllte Slots greifen,
+    // ziehen auf anderen Slot lässt los. Vier Pfade:
+    //   - Inv → Inv: Bauplan-Slots tauschen (rearrange im Inventar)
+    //   - Inv → Hot: Bauplan-Name in Hotbar legen (Inventar bleibt — es ist
+    //     eine Bauplan-Sammlung, keine Verbrauchs-Liste; Hotbar referenziert)
+    //   - Hot → Hot: Hotbar-Slots tauschen
+    //   - Hot → Inv: Hotbar-Slot räumen (Inventar bleibt unverändert)
+    //
+    // state.drag = {kind, index, name} hält die Drag-Quelle. setData/getData
+    // wären für Cross-Window-Drags nötig — wir bleiben in-Window, das spart
+    // JSON-Roundtrip + ist robust gegen leere dataTransfer in manchen Browsern.
+    // Click-State-Workflow (selectInventorySlot → tryAssign) bleibt parallel
+    // als Touch/Keyboard-Fallback.
+    _onSlotDragStart(event, kind, index) {
+        const name =
+            kind === "inv"
+                ? this.state.player.inventory[index] && this.state.player.inventory[index].blueprintName
+                : this.state.hotbar[index];
+        if (!name) {
+            event.preventDefault();
+            return;
+        }
+        this.state.drag = { kind, index, name };
+        // dataTransfer muss gesetzt sein, sonst gilt in Firefox kein drag.
+        // Wir setzen einen harmlosen Marker; der echte Source-State lebt
+        // in state.drag.
+        try {
+            event.dataTransfer.setData("text/plain", name);
+            event.dataTransfer.effectAllowed = "move";
+        } catch {
+            /* defensive */
+        }
+        // Source-Slot visuell markieren.
+        if (event.currentTarget && event.currentTarget.classList) {
+            event.currentTarget.classList.add("dragging");
+        }
+    }
+
+    _onSlotDragOver(event) {
+        // Drop nur erlauben, wenn ein Drag aktiv ist — sonst zurück zur
+        // Browser-Default-Behandlung (selektiert evtl. Text, harmlos).
+        if (!this.state.drag) return;
+        event.preventDefault();
+        try {
+            event.dataTransfer.dropEffect = "move";
+        } catch {
+            /* defensive */
+        }
+        // Target-Slot kurz hervorheben.
+        const el = event.currentTarget;
+        if (el && el.classList) el.classList.add("drop-target");
+    }
+
+    _onSlotDragLeave(event) {
+        const el = event.currentTarget;
+        if (el && el.classList) el.classList.remove("drop-target");
+    }
+
+    _onSlotDrop(event, targetKind, targetIndex) {
+        event.preventDefault();
+        const src = this.state.drag;
+        // state.drag IMMER räumen — egal welcher Pfad genommen wird.
+        // Sonst bliebt eine Drag-Session in state hängen, wenn der User
+        // auf Source-Slot droppt (no-op-Pfad) oder ohne Source droppt.
+        this.state.drag = null;
+        // Visual aufräumen.
+        document.querySelectorAll(".inventory-slot.drop-target, .hotbar-slot.drop-target").forEach((el) => {
+            el.classList.remove("drop-target");
+        });
+        if (!src) return;
+        // Kein-Op wenn Source == Target.
+        if (src.kind === targetKind && src.index === targetIndex) return;
+
+        if (src.kind === "inv" && targetKind === "inv") {
+            // Inventory ↔ Inventory: Slots tauschen (Bauplan-Name + Count).
+            const a = this.state.player.inventory[src.index];
+            const b = this.state.player.inventory[targetIndex];
+            this.state.player.inventory[src.index] = b;
+            this.state.player.inventory[targetIndex] = a;
+        } else if (src.kind === "inv" && targetKind === "hot") {
+            // Inventory → Hotbar: konsequente Slot-Move-Semantik.
+            // Schöpfer-Wunsch V7.77+: „Ziehe ich es aus dem Inventar in
+            // die Hotbar, soll es nichtmehr im Inventar sein, nurnoch in
+            // der Hotbar." → Inv-Slot wird IMMER null beim Move (egal
+            // count). V1-Slot-Konzept: ein Slot trägt einen Bauplan,
+            // Stack-Counts werden beim Drag konsumiert.
+            //   - Hot leer  → Inv-Slot null, Hot = src.name
+            //   - Hot gleicher Name → Inv-Slot null, Hot bleibt
+            //     (Bauplan ist trotzdem aus Inv weg, wie gewünscht)
+            //   - Hot anderer Name → Swap (Inv = {oldHotName, 1}, Hot = src.name)
+            const oldHotName = this.state.hotbar[targetIndex];
+            if (!oldHotName) {
+                this.state.hotbar[targetIndex] = src.name;
+                this.state.player.inventory[src.index] = null;
+            } else if (oldHotName === src.name) {
+                // Hot zeigt schon den Bauplan: Inv-Slot trotzdem leeren
+                // (Move-Semantik konsequent — Source wird konsumiert).
+                this.state.player.inventory[src.index] = null;
+            } else {
+                // Anderer Bauplan im Hot: Swap (Hotbar trägt nur Namen,
+                // also Inv-Slot bekommt {oldHotName, 1}; ggf. überschüssige
+                // Inv-Stack-Counts vom Source werden konsumiert).
+                this.state.player.inventory[src.index] = { blueprintName: oldHotName, count: 1 };
+                this.state.hotbar[targetIndex] = src.name;
+            }
+        } else if (src.kind === "hot" && targetKind === "hot") {
+            // Hotbar ↔ Hotbar: Slots tauschen.
+            const a = this.state.hotbar[src.index];
+            const b = this.state.hotbar[targetIndex];
+            this.state.hotbar[src.index] = b;
+            this.state.hotbar[targetIndex] = a;
+        } else if (src.kind === "hot" && targetKind === "inv") {
+            // Hotbar → Inventory: ECHTES MOVE (Schöpfer-Bug V7.77+:
+            // alte Logik räumte nur Hotbar, Bauplan löste sich auf).
+            // Drei Fälle analog addToInventory:
+            //   - Inv-Slot leer  → Inv bekommt {name, 1}, Hot wird null
+            //   - Inv-Slot gleicher Bauplan → count += 1 (stack), Hot null
+            //   - Inv-Slot anderer Bauplan → no-op (destruktiven Swap
+            //     vermeiden, weil Hotbar nur Namen trägt und der Inv-Count
+            //     beim Tausch verloren ginge).
+            const targetSlot = this.state.player.inventory[targetIndex];
+            if (!targetSlot) {
+                this.state.player.inventory[targetIndex] = { blueprintName: src.name, count: 1 };
+                this.state.hotbar[src.index] = null;
+            } else if (targetSlot.blueprintName === src.name) {
+                targetSlot.count = (targetSlot.count || 1) + 1;
+                this.state.hotbar[src.index] = null;
+            }
+            // else: anderer Bauplan im Ziel → drop schlägt fehl, beide
+            // Slots bleiben unverändert (keine Daten gehen verloren).
+        }
+
+        // state.drag wurde schon oben (vor allen Pfaden) genullt.
+        this.renderInventoryUI();
+        this._renderHotbarDOM();
+        try {
+            this.saveState();
+        } catch {
+            /* save-Fehler nicht hart blockend */
+        }
+    }
+
+    _onSlotDragEnd(event) {
+        this.state.drag = null;
+        // Source-Slot zurücksetzen + alle Drop-Targets aufräumen.
+        if (event && event.currentTarget && event.currentTarget.classList) {
+            event.currentTarget.classList.remove("dragging");
+        }
+        document.querySelectorAll(".dragging").forEach((el) => el.classList.remove("dragging"));
+        document.querySelectorAll(".drop-target").forEach((el) => el.classList.remove("drop-target"));
     }
 
     _updateHotbarHighlight() {
@@ -13783,6 +15055,87 @@ class AnazhRealm {
         this.log(`Kamera-Modus: ${next}`, "INFO");
     }
 
+    // === Welle 6.C2 — Spielmodi (frieden / pfad / schöpfer) ===
+    //
+    // Drei Welt-Beziehungs-Modi (aus wave-6-design §10.1, §10.3):
+    //   frieden  — Welt umarmt: kein HP, kein Tod, keine Stamina-Kosten
+    //   pfad     — Welt verhandelt: HP/Stamina/Tod-Wandlung aktiv
+    //   schöpfer — Welt gehorcht: kein Schaden, voller Zugang
+    //
+    // Persistiert in worldMeta.gameMode (pro-Welt, nicht global) und
+    // gespiegelt nach state.gameMode für schnellen Read in Gate-Pfaden.
+    // setGameMode ist der EINZIGE Mutations-Pfad — er aktualisiert beide
+    // + UI-Latches + Status-Bar + Save.
+    static get GAME_MODES() {
+        return Object.freeze(["frieden", "pfad", "schöpfer"]);
+    }
+
+    setGameMode(mode) {
+        const canonical = AnazhRealm.GAME_MODES.includes(mode) ? mode : "frieden";
+        if (!this.state.worldMeta) this.state.worldMeta = {};
+        this.state.worldMeta.gameMode = canonical;
+        this.state.gameMode = canonical;
+        // Wenn der Wechsel auf frieden/schöpfer fällt während HP=0
+        // (mitten in Phönix-Wandlung), bleibt der Spieler in der Wandlung
+        // — das ist Vision-treu: der Mythos der Phönix-Stunde respektiert
+        // sich auch beim Modus-Wechsel. Phönix endet automatisch nach 5 min.
+        // HP bei frieden→pfad-Wechsel NICHT zurücksetzen: der Spieler
+        // bringt seinen Zustand mit (Vision: Welt-Beziehung ändert sich,
+        // nicht der Spieler).
+        this._renderGameModeUI();
+        try {
+            this.saveState();
+        } catch {
+            // saveState-Fehler nicht hart blockend — Modus lebt in state.
+        }
+        if (typeof this.log === "function") {
+            const labels = { frieden: "Frieden", pfad: "Pfad", schöpfer: "Schöpfer" };
+            this.log(`Welt-Beziehung: ${labels[canonical] || canonical}`, "INFO");
+        }
+        return canonical;
+    }
+
+    // Liefert den aktuellen Modus mit defensiver Migration: alte Saves haben
+    // kein worldMeta.gameMode → frieden als Default. state.gameMode spiegelt
+    // den effektiven Wert; bei Inkonsistenz gewinnt worldMeta (Persistenz-
+    // Quelle).
+    getGameMode() {
+        const stored = this.state.worldMeta && this.state.worldMeta.gameMode;
+        const canonical = AnazhRealm.GAME_MODES.includes(stored) ? stored : "frieden";
+        // state.gameMode-Spiegelung repariert (Cache nach Migration).
+        if (this.state.gameMode !== canonical) this.state.gameMode = canonical;
+        return canonical;
+    }
+
+    // UI-Render-Pfad: aktualisiert Radio + Status-Bar nach Mode-Wechsel.
+    // Idempotent — kann ohne State-Wechsel aufgerufen werden.
+    _renderGameModeUI() {
+        if (typeof document === "undefined") return;
+        const mode = this.getGameMode();
+        // Radio-Buttons in Einstellungen-Drawer
+        const radios = document.querySelectorAll('input[name="game-mode-radio"]');
+        radios.forEach((r) => {
+            r.checked = r.value === mode;
+        });
+        // Status-Bar-Item
+        const statusItem = document.getElementById("status-mode");
+        if (statusItem) {
+            const labels = { frieden: "frieden", pfad: "pfad", schöpfer: "schöpfer" };
+            statusItem.textContent = labels[mode] || mode;
+        }
+    }
+
+    gameModeInitDOM() {
+        if (typeof document === "undefined") return;
+        const radios = document.querySelectorAll('input[name="game-mode-radio"]');
+        radios.forEach((r) => {
+            r.addEventListener("change", () => {
+                if (r.checked) this.setGameMode(r.value);
+            });
+        });
+        this._renderGameModeUI();
+    }
+
     cameraModeInitDOM() {
         const toggle = document.getElementById("camera-mode-toggle");
         if (!toggle) return;
@@ -14403,13 +15756,15 @@ class AnazhRealm {
     }
 
     async init() {
-        this.log("Initialisiere Anazh Realm V7.72... Ewigkeit erwacht!", "INFO");
+        this.log("Initialisiere Anazh Realm V7.77... Ewigkeit erwacht!", "INFO");
         this.themeInitDOM();
         this.grokInitDOM();
         this.symphonyInitDOM();
         this.initStatusPanel();
         this.playerSoulInitDOM();
         this.cameraModeInitDOM();
+        this.gameModeInitDOM();
+        this.inventoryInitDOM();
         // Ring 6.5 — Hotbar im DOM rendern. Wird hier einmal aufgesetzt;
         // setHotbarSlot löst ein Re-Render aus.
         this._renderHotbarDOM();
@@ -14577,6 +15932,16 @@ class AnazhRealm {
             const target = event.target;
             const inInput =
                 target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
+            // Welle 6.C1 Drag-Fix: Inventar offen + Esc → Inventar schließen.
+            // WASD/Space/Hotbar laufen normal durch (Minecraft-Konvention:
+            // Spieler kann sich mit offenem Inventar weiterbewegen, NUR die
+            // Maus-Look-Steuerung ist gesperrt — was über exitPointerLock
+            // beim Inventar-Öffnen automatisch geschieht).
+            if (this.state.inventoryOpen && event.key === "Escape") {
+                this.toggleInventoryOverlay(false);
+                event.preventDefault();
+                return;
+            }
             this.state.keys[event.key.toLowerCase()] = true;
             if (event.key === " " && !inInput) this.handleJump(performance.now() / 1000);
             if (inInput) return;
@@ -14597,7 +15962,13 @@ class AnazhRealm {
         });
         this.log("Tastatureingaben initialisiert: WASD, Space, Shift", "INFO");
 
-        canvas.addEventListener("click", () => canvas.requestPointerLock());
+        canvas.addEventListener("click", () => {
+            // Welle 6.C1 Drag-Fix: Inventar offen → Canvas-Click NICHT
+            // re-locken. Sonst würde ein Klick neben das Overlay den
+            // Pointer-Lock wieder aktivieren und Drag&Drop tot machen.
+            if (this.state.inventoryOpen) return;
+            canvas.requestPointerLock();
+        });
         document.addEventListener("pointerlockchange", () => {
             this.state.isPointerLocked = document.pointerLockElement === canvas;
             this.log(`Pointer-Lock: ${this.state.isPointerLocked ? "Aktiv" : "Inaktiv"}`, "INFO");
@@ -14794,49 +16165,12 @@ class AnazhRealm {
                 });
             }
 
-            // ### Physik für fliegende Inseln ###
-            if (this.state.floatingIslands && this.state.playerMesh) {
-                const playerPos = this.state.playerMesh.position;
-                let addedBodies = 0;
-                this.state.floatingIslands.forEach((island) => {
-                    if (island.userData.needsPhysics && addedBodies < 5) {
-                        const distance = playerPos.distanceTo(island.position);
-                        if (distance < 50) {
-                            const islandSize = island.geometry.parameters?.width || 20;
-                            const islandShape = new Ammo.btBoxShape(
-                                new Ammo.btVector3(islandSize / 2, 5 / 2, islandSize / 2)
-                            );
-                            const transform = new Ammo.btTransform();
-                            transform.setIdentity();
-                            transform.setOrigin(
-                                new Ammo.btVector3(
-                                    island.position.x / this.state.scaleFactor,
-                                    island.position.y / this.state.scaleFactor,
-                                    island.position.z / this.state.scaleFactor
-                                )
-                            );
-                            const motionState = new Ammo.btDefaultMotionState(transform);
-                            const localInertia = new Ammo.btVector3(0, 0, 0);
-                            const rbInfo = new Ammo.btRigidBodyConstructionInfo(
-                                0,
-                                motionState,
-                                islandShape,
-                                localInertia
-                            );
-                            const body = new Ammo.btRigidBody(rbInfo);
-                            this.state.physicsWorld.addRigidBody(body);
-                            island.userData.physicsBody = body;
-                            this.state.rigidBodies.push(island);
-                            island.userData.needsPhysics = false;
-                            addedBodies++;
-                            this.log(
-                                `Physik für Insel: (${island.position.x.toFixed(2)}, ${island.position.y.toFixed(2)}, ${island.position.z.toFixed(2)})`,
-                                "INFO"
-                            );
-                        }
-                    }
-                });
-            }
+            // Welle 6.G Phase 1: der frühere lazy-physics-Pfad für
+            // floatingIslands ist hier gelöscht. Inseln bekommen ihre
+            // btBvhTriangleMeshShape-Kollision jetzt sofort beim Spawn
+            // (siehe `_buildIslandCollision`) statt erst beim ersten
+            // Player-Approach. `island.userData.needsPhysics` wurde nie
+            // gesetzt — der Block war tote Schicht (System-Audit §2).
 
             this.updateWallCollisions();
 

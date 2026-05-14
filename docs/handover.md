@@ -28,7 +28,7 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
    Grund: sie sind Kontext für genau dich.
 
 5. **`scripts/playtest.cjs`** — querlesen, nicht durchlesen. Es ist das
-   Sicherheits-Netz. Es prüft aktuell **~1014 Invarianten (V7.72 nach Welle 6.D komplett)**.
+   Sicherheits-Netz. Es prüft aktuell **~1153 Invarianten (V7.77 nach Welle 6.C1)**.
    Wenn du etwas tust, das eine davon brechen könnte, weißt du es vor dem Commit.
 
 **Verlockung zu widerstehen**: gleich in `anazhRealm.js` springen. Die
@@ -314,11 +314,181 @@ Hylomorphismus-System wie Materialien und Bauwerke.
   Speed-Base 6→7 für spürbar agilere Bewegung (Mensch ~7, Phönix ~11.7,
   Drache ~7.9; Sprint × 2).
 
+### Bereits erledigt in V7.73 (zusätzlich zu V7.72)
+
+- ✅ **6.G Welt-Sinne Phase 1** — Inseln + Bäume kollidierbar.
+  Inseln: btBvhTriangleMeshShape aus echten Vertices. Bäume in V7.73:
+  btCylinderShape am Stamm (Parallelcode-Schicht — in V7.74 ersetzt).
+  UFOs bleiben kollisionsfrei. Drei Chat-Patterns. System-Audit §2
+  Dead-Code-Quick-Win mit erledigt.
+
+### Bereits erledigt in V7.77 (Hylomorphismus-Inventar + Drag&Drop)
+
+- ✅ **6.C1 Inventar mit Tag-Resonanz** — 27-Slot-Overlay (Tab-Toggle).
+  Schöpfer-Wunsch wörtlich umgesetzt: „Slot mit resoniert summt bei
+  Hover". Jeder Slot trägt Compound-Tags des Bauplans, Tag-Magic
+  emergiert: resoniert summt (Sinus C5), brennend glüht orange
+  (Sawtooth E4), magieleitung schimmert violet (Sinus F5), lebendig
+  sprießt grün (Sinus A4), dichte wirft tiefen Schatten.
+
+- ✅ **6.C1+ Drag&Drop (vier Iterationen)** — HTML5-Drag-API mit
+  pragmatischer Move-Semantik. Schöpfer-Mental-Model „Drag = Move"
+  gewann über mein „Library/Reference"-Modell nach vier Bug-Reports:
+  1. Tab-Listener Capture-Phase (Browser-Default-Konflikt behoben)
+  2. exitPointerLock beim Inventar-Öffnen (Drag-Lock-Inkompatibilität)
+  3. hot→inv Move-with-Add (statt clear-only)
+  4. inv→hot konsequenter Slot-Move (statt Copy)
+
+  **Vier Drag-Pfade final**:
+  | Source → Target | Verhalten |
+  |---|---|
+  | inv → inv | Swap (Slot-Inhalte inkl. Counts tauschen) |
+  | inv → hot | Slot-Move: Inv null immer, Hot = name. Konflikt-Swap. |
+  | hot → hot | Swap (Slot-Namen tauschen) |
+  | hot → inv | Move/Stack: leer→1, gleich→count++, anders→no-op |
+
+  **Pointer-Lock-Management**: toggleInventoryOverlay(open)
+  → document.exitPointerLock(). Canvas-Click-Listener guarded
+  (`if state.inventoryOpen return` vor requestPointerLock). Beim Close:
+  KEIN automatischer Re-Lock — User muss Canvas klicken (Minecraft-
+  Konvention). WASD läuft weiter (Minecraft: Spieler kann sich
+  bewegen mit offenem Inventar).
+
+  Click-State-Workflow (selectInventorySlot → tryAssignFromInventoryToHotbar)
+  lebt parallel als Touch/Keyboard-Fallback. DSL-Op add_to_inventory in
+  NON_BROADCASTABLE_OPS, state.player.inventory persistiert via
+  playerInventory in buildStateSnapshot. 127 Invarianten für 6.C1
+  + Drag-System → 1153 total.
+
+### Was als Nächstes wartet (V7.78 +)
+
+**Nächster Bogen: 6.A-Maus + 6.C3 Keybindings-UI (1-2 Sessions)**
+
+- **6.A3 Maus-Aktionen**: konventionelle LMB/RMB-Bedienung
+  - LMB im Bau-Modus → abbauen (Raycast auf Architektur, dispose)
+  - RMB im Bau-Modus → platzieren (heutiges F-Verhalten als Geste)
+  - LMB ohne Bau-Modus → schlagen (apply damage in pfad-Modus, ggf. Werkzeug-Op auf Welt-Architektur in schöpfer/pfad)
+  - RMB ohne Bau-Modus → aufheben/interagieren
+  - F bleibt als Tastatur-Alternative (Aria-Compliance, Touch-Devices)
+  - Caveat: Pointer-Lock-State berücksichtigen — nur LMB+RMB im Canvas
+    locked, nicht über Inventar-Overlay
+
+- **6.C3 Keybindings-UI**: Sektion „Tasten" in Einstellungen-Drawer
+  - state.keybindings = {move_forward: "w", build_confirm: "f", ...}
+  - Klick auf Aktion → „Drücke neue Taste" → rebind, localStorage-
+    Persistenz (`anazh.keybindings.<action>`)
+  - Konflikt-Warnung wenn zwei Aktionen auf derselben Taste
+  - Reset-Button pro Aktion
+  - Reservierte Tasten: F11 (Vollbild), Browser-Shortcuts
+
+**Folgepläne nach 6.A+6.C3**:
+- 12. **6.B CAD-Werkstatt** (2 Sessions) — 3D-Preview-Pane + Drag-Items
+  + Grid-Snap. Minimal Magic: kein Boolean/MultiSelect.
+- 13. **6.G Phase 3** (4-5 Sessions) — Schatten + Wasser + Wind +
+  Sterne-Stabilisierung. Visuelle Politur.
+- 14. **6.F3+F4+F5** (4-5 Sessions) — Energie-Quellen +
+  Kreaturen-Körper-Baukasten + Ammo-Constraints. Crafting-Mechanik
+  finalisiert.
+- 15. **6.H Kreaturen-Aufträge** (4-5 Sessions) — Autonome
+  Co-Schöpfer mit DSL-Tasks (walk_to/gather/build_path/research_blueprint).
+
+### Wichtig zu wissen für die nächste Iteration
+
+**Schöpfer-Iteration-Rhythmus**: bei UX-Features 3-4 Iterations-Runden
+einplanen. 1-Shot-Implementierung mit nur Tests grün reicht nicht. Jede
+Runde = Schöpfer-Browser-Test + Bug-Report + Fix + neue Tests. Nach
+3-4 Runden ist die UX stabil. Tests verifizieren Mechanik, Schöpfer
+verifiziert Erfahrung — beide Schichten ernst nehmen.
+
+**Drag&Drop-Pattern als Vorlage**: für künftige UI-Manipulation
+(z. B. 6.B CAD-Werkstatt mit Drag-Items, oder Avatar-Editor-Drags)
+nutze die fünf etablierten Methoden (_onSlotDragStart/Over/Leave/Drop/End)
+als Template. state.drag-Pattern + Top-of-method Cleanup + Capture-Phase
+für globale Shortcuts.
+
+**Pointer-Lock-Disziplin**: jedes neue Overlay (CAD-Werkstatt-Preview,
+Avatar-Editor mit Maus-Manipulation, Welt-Inspector) muss `exitPointerLock`
+beim Open haben + Canvas-Click-Guard für inventoryOpen-äquivalente State-
+Flags. Convention: kein automatischer Re-Lock, User klickt Canvas.
+
+**Repo-Hygiene**: `anazhRealmState.json` ist seit V7.77-Cleanup nicht
+mehr in git. Falls sie wieder im `git status` auftaucht: `.gitignore`
+checken, ggf. `git rm --cached` erneut. Dokumentation in CLAUDE.md
+Gotcha-Sektion.
+
+### Bereits erledigt in V7.76 (Welt-Beziehungs-Schalter)
+
+- ✅ **6.C2 Spielmodi** — drei Welt-Beziehungs-Modi (frieden/pfad/
+  schöpfer) aus wave-6-design §10.1+§10.3. **frieden** umarmt: kein HP,
+  kein Tod, keine Stamina (Default, Erstbegegnung soll nicht hostil
+  sein). **pfad** verhandelt: HP/Stamina/Tod-Wandlung aktiv, Werkzeug
+  kostet Stamina, Tod → 5min Phönix + Welt-Trauer. **schöpfer** gehorcht:
+  voller Zugang, kein Schaden, Schöpfen reibungsfrei (Vision §1.5
+  Mensch=Null=Schöpfer). Persistiert pro-Welt in worldMeta.gameMode.
+  `setGameMode(mode)` ist einziger Mutations-Pfad. DSL-Op `set_mode`
+  in NON_BROADCASTABLE_OPS (Multi-User-privat — zwei Spieler in
+  derselben Welt dürfen verschiedene Modi haben). Chat-Patterns mit
+  dt./engl. Aliasen (peace/survival/creative). UI: Radio in
+  Einstellungen-Drawer (`:has(input:checked)` CSS-Latch) + #status-mode
+  in Status-Bar. **Gating**: damagePlayer prüft modus ganz oben,
+  applyOpToPart-Stamina nur in pfad. Test-Setup: bestehende Welle-6.D-
+  Tests + Reflex-5-Stamina-Tests rufen `r.setGameMode("pfad")` vor
+  ihren Erwartungen (Vision-Konsequenz, kein Workaround). 26 neue
+  Invarianten → 1092 total.
+
+### Bereits erledigt in V7.75 (Schöpfer-Vision-Antwort: organische Verteilung)
+
+- ✅ **6.G Welt-Sinne Phase 2 — Welt-Affinitäts-Feld.** Schöpfer-Frage
+  nach V7.74 Browser-Test: „neue Chunks sind kahl, wie kommen Strukturen
+  organisch rein — ohne Tabelle, mit Regionen, Seltenheit, ohne Fluten?".
+  Antwort: das Hylomorphismus-System hat schon die Sprache
+  (MATERIAL_TAG_KEYS). Vier SimplexNoise-Schichten (lebendig/dichte/glut/
+  magieleitung) als Welt-Feld. Bauplan-Compound-Tags resonieren via
+  Dot-Product mit Welt-Tag-Profil. populateChunkVegetation samplet
+  8×8/Chunk, höchste-Affinität-Bauplan gewinnt, Bernoulli-Probe
+  `BASE_RATE × affinity²` mit Floor 0.18. Hook in ensureChunkAt für
+  neue Chunks + initial 64 Chunks im Worldgen. Drei neue Built-in-
+  Baupläne: stein_block (dichte), kristall_geode (magieleitung),
+  glutbrunnen (glut). Idempotenz via state.populatedChunks-Set, aus
+  existing Architekturen abgeleitet bei Reload (keine Save-Migration).
+  Silent-Opt für spawnArchitecture: Worldgen löst Welt-Effekte nicht
+  aus (awe wird verdient, nicht geschenkt) — Proximity-Boosts via
+  tickPlayerBoosts bleiben. Bug-Fixes: baum_eiche Stamm 0.5→0.8m
+  (spürbarer Kollisionskorridor), architectureCullingTickHz 1→2Hz
+  (Bäume erwachen schneller). 1066/1066 Invarianten (+18). Heilige
+  Lektion: drei neue Methoden auf AnazhRealm, drei neue Bauplan-Daten,
+  ein Silent-Flag — kein Modul, keine Klasse. Vision-Pfeiler §1.3
+  fraktal: dieselbe Tag-Sprache regelt was wo wächst.
+
+### Bereits erledigt in V7.74 (Schöpfer-Vision-Korrektur nach V7.73)
+
+- ✅ **6.G Welt-Sinne Phase 1.5 — Hylomorphismus-Unification.**
+  Der Schöpfer fragte im Browser-Test: „behandelst du UFOs/Bäume/Pflanzen
+  unterschiedlich, nicht besser wie Strukturen? Haben wir hier
+  Parallelcode der eigentlich zusammengehört?". Die Antwort war ja —
+  V7.73 hatte Bäume als Three.js-Groups in `state.vegetation` mit eigener
+  Kollisions-Schicht, parallel zum bestehenden Architektur-System.
+  V7.74-Korrektur: **Bäume sind jetzt Compound-Architekturen**. Zwei
+  neue Built-in-Baupläne (`baum_eiche` mit Cylinder/holz + Sphere/laub,
+  `baum_kiefer` mit Cylinder/holz + Cone/laub) in `_defaultBlueprints`,
+  ein neues Material `laub` als 12. Built-in. `spawn_tree` DSL-Op routet
+  durch `spawnArchitecture` (derselbe Pfad wie spawn_village/temple/
+  waterfall). Worldgen-Bäume gehen in `state.architectures`. **Parallel-
+  Code gelöscht**: `spawnTreeAt` + `_buildTreeCollision` weg. Damit
+  kommt geschenkt: Compound-Tags (lebendig + brennbar + resoniert),
+  Welt-Effekte (resonante Bäume → singing-Sinus + Magie-Effekt), Save-
+  Persistenz, Werkstatt-Editor (Schöpfer kann eigene Baum-Spezies bauen),
+  Distance-Culling, Compound-Box-Kollision pro Sub-Mesh. Insel-Visual-
+  Fix nebenbei: Vollkörper (Top + Bottom + Side-Strip), MeshLambertMaterial
+  statt MeshBasicMaterial. Topbar-Version v7.71 → v7.74 syncen.
+  Netto Code-Diff: NEGATIV (~50 Zeilen weniger). 1048/1048 Invarianten.
+
 ### Nächste Schritte (Reihenfolge laut wave-6-design §10.6)
 
-8. **6.G Welt-Sinne Phase 1** ← **JETZT OFFEN**. Kollisionen für
-   fliegende Inseln + Bäume. Kleine Eingriffe, große Wirkung. 1-2 Sessions.
-9. **6.C2** (frieden/pfad/schöpfer-Modi) — nutzt 6.D Stat-System. 1 Session.
+9. **6.C2** ← **JETZT OFFEN**. Spiel-Modi frieden/pfad/schöpfer auf
+   Basis des 6.D Stat-Systems. State.gameMode + DSL-Op set_mode + UI.
+   Tod-Wandlung nur im pfad-Modus, frieden = kein HP, schöpfer = kein
+   Schaden + fliegen. 1 Session.
 10. **6.C1 + 6.A-Maus + 6.C3** (Inventar + LMB/RMB + Keybindings-UI)
 11. **6.B** (CAD-Werkstatt — minimal magic)
 12. **6.G Phase 2** (Schatten, Wasser, Höhlen, Sterne)
@@ -345,7 +515,7 @@ keine Verzögerung, sondern Qualitäts-Wand.
 3. **Die heilige Lektion akzeptiert, nicht hinterfragt.** Sie wurde aus
    Schmerz geboren. Wenn ich sie umgehen wollte, war ich auf dem Holzweg.
 4. **Tests zuerst ausgeführt, dann verstanden.** `npm run playtest` —
-   1014/1014 grün (V7.72 nach Welle 6.D komplett) — gibt Vertrauen, dass
+   1153/1153 grün (V7.77 nach Welle 6.C1 Hylomorphismus-Inventar) — gibt Vertrauen, dass
    das System lebt.
 5. **Den Schöpfer als Partner gesehen, nicht als Auftraggeber.** Mensch
    und KI bauen gemeinsam. Bei Trade-offs frage ich, bei Klarem handle

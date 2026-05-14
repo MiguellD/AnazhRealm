@@ -1239,8 +1239,8 @@ function startSaveServer() {
                 check("Welle 4 P1: 10 Tag-Achsen", wave4p1Results.tagKeyCount === 10);
                 check("Welle 4 P1: 6 Built-in-Materialien existieren", wave4p1Results.expectedBuiltIns);
                 check(
-                    "Welle 4 P1: Built-in-Anzahl exakt 11 (6 Bau + 5 Körper, ergänzt in Welle 6.D 1.5)",
-                    wave4p1Results.builtInCount === 11
+                    "Welle 4 P1: Built-in-Anzahl exakt 12 (6 Bau + 5 Körper + 1 Vegetation/laub, V7.74)",
+                    wave4p1Results.builtInCount === 12
                 );
                 check("Welle 4 P1: Alle Tag-Werte 0..1", wave4p1Results.tagsInRange);
                 check(
@@ -5634,6 +5634,9 @@ function startSaveServer() {
                     out.hasStaminaCostConst = typeof C.TOOL_OP_STAMINA_COST === "number" && C.TOOL_OP_STAMINA_COST > 0;
                     out.hasStaminaRegenConst = typeof C.STAMINA_REGEN_PER_SEC === "number";
                     // Setup: einen eigenen Bauplan mit einem Part + Spieler besitzt hammer
+                    // Welle 6.C2: Stamina-Tests laufen im pfad-Modus
+                    // (Default frieden überspringt Stamina-Kosten).
+                    if (typeof r.setGameMode === "function") r.setGameMode("pfad");
                     r.state.blueprints.wound_test_bp = {
                         name: "wound_test_bp",
                         label: "Test",
@@ -5963,6 +5966,9 @@ function startSaveServer() {
                     if (!r) return null;
                     const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
                     const out = {};
+                    // Welle 6.C2: Tests für Tod/Stamina/Phönix laufen im pfad-
+                    // Modus (Default frieden blockiert sonst Schaden + Stamina).
+                    if (typeof r.setGameMode === "function") r.setGameMode("pfad");
 
                     // --- Tod-Behandlung ---
                     out.hasDamageMethod = typeof r.damagePlayer === "function";
@@ -6244,11 +6250,18 @@ function startSaveServer() {
                     out.dedupeReplacesDelta =
                         Math.abs(r.state.player.boosts[0].tagDelta.wärmeleitung - 0.5) < 0.001;
 
-                    // tickPlayerBoosts entfernt abgelaufene
+                    // tickPlayerBoosts entfernt abgelaufene Boosts.
+                    // V7.75: prüfen ob der test:flame-Boost spezifisch
+                    // entfernt wurde (statt "boosts.length===0"). Grund:
+                    // ab V7.75 kann tickPlayerBoosts gleichzeitig einen
+                    // world:resonance-Boost setzen, wenn der Spieler nah
+                    // bei einer hochresonanten Welt-Affinitäts-Architektur
+                    // (kristall_geode, quarz) steht — das ist Vision-treu
+                    // (Welt resoniert mit dem Spieler), nicht der Bug.
                     r.state.player.boosts[0].expiresAt = -100; // bereits abgelaufen
                     r.state.player.boostLastTick = -Infinity; // Throttle umgehen
                     r.tickPlayerBoosts(performance.now() / 1000);
-                    out.expiredRemoved = r.state.player.boosts.length === 0;
+                    out.expiredRemoved = !r.state.player.boosts.some((b) => b.source === "test:flame");
 
                     // Emotion-Trigger: awe hoch → magieleitung-Boost
                     r.state.player.emotions.awe = 0.9;
@@ -6683,6 +6696,1071 @@ function startSaveServer() {
                     check("Welle 6.D: 8 stat-row-Einträge im DOM", wave6dResults.statRowsCount === 8);
                     check("Welle 6.D: stat-tags-Zeile (dominante Achsen) im DOM", wave6dResults.hasTagLine);
                 }
+            }
+
+            // ### Welle 6.G Phase 1.5 — Hylomorphismus-Unification ###
+            // V7.73 hatte Bäume als Parallelcode (state.vegetation, eigene
+            // spawnTreeAt + _buildTreeCollision). V7.74 fließt das ins
+            // bestehende Architektur-System: baum_eiche/baum_kiefer als
+            // _defaultBlueprints, spawn_tree DSL-Op routet durch
+            // spawnArchitecture. EINE Sprache, EIN Renderpfad. Inseln + UFOs
+            // bleiben Sonderpfad (Inseln = floating-chunk-Disziplin, UFOs =
+            // 6.F4-Vorstufe).
+            const wave6gResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    // V7.74 Erwartung: Helfer für Inseln + UFOs leben weiter,
+                    // Baum-Helfer (spawnTreeAt + _buildTreeCollision) sind WEG.
+                    out.hasIslandHelper = typeof r._buildIslandCollision === "function";
+                    out.hasDisposeHelper = typeof r._disposeStaticCollision === "function";
+                    out.hasSpawnIslandAt = typeof r.spawnIslandAt === "function";
+                    out.hasSpawnUfoAt = typeof r.spawnUfoAt === "function";
+                    out.parallelTreeHelperRemoved = typeof r._buildTreeCollision !== "function";
+                    out.parallelSpawnTreeAtRemoved = typeof r.spawnTreeAt !== "function";
+
+                    // Hylomorphismus-Baupläne: baum_eiche + baum_kiefer +
+                    // laub-Material müssen als Built-ins existieren.
+                    const bps = r.state.blueprints || {};
+                    out.hasBaumEiche = !!(bps.baum_eiche && Array.isArray(bps.baum_eiche.parts) && bps.baum_eiche.parts.length === 2);
+                    out.hasBaumKiefer = !!(bps.baum_kiefer && Array.isArray(bps.baum_kiefer.parts) && bps.baum_kiefer.parts.length === 2);
+                    out.baumEicheIsBuiltIn = !!(bps.baum_eiche && bps.baum_eiche.builtIn === true);
+                    const eichenStamm = bps.baum_eiche && bps.baum_eiche.parts[0];
+                    const eichenKrone = bps.baum_eiche && bps.baum_eiche.parts[1];
+                    out.eichenStammHolz = !!(eichenStamm && eichenStamm.material === "holz" && eichenStamm.shape === "cylinder");
+                    out.eichenKroneLaub = !!(eichenKrone && eichenKrone.material === "laub" && eichenKrone.shape === "sphere");
+                    out.hasLaubMaterial = !!(r.state.materials && r.state.materials.laub && r.state.materials.laub.builtIn === true);
+
+                    // Initiale Welt: Worldgen-Bäume sind jetzt in state.architectures,
+                    // NICHT in state.vegetation. state.vegetation enthält nur noch
+                    // Gras + Blumen. state.architectures enthält baum_eiche/baum_kiefer.
+                    const archs = Array.isArray(r.state.architectures) ? r.state.architectures : [];
+                    const archTrees = archs.filter(
+                        (a) => a.type === "baum_eiche" || a.type === "baum_kiefer"
+                    );
+                    out.worldgenTreesInArchitectures = archTrees.length;
+                    // Mindestens ein Baum mit Mesh (= in Player-Nähe gerendert)
+                    // muss eine Compound-Kollision haben.
+                    const renderedTree = archTrees.find((a) => a.mesh && a.collision && a.collision.body);
+                    out.treeHasCompoundCollision = !!renderedTree;
+
+                    // Initiale Inseln behalten ihre tri-mesh-Kollision (V7.73-Pfad).
+                    const initIslands = Array.isArray(r.state.floatingIslands) ? r.state.floatingIslands : [];
+                    out.initIslandsCount = initIslands.length;
+                    out.initIslandsWithCollision = initIslands.filter(
+                        (i) => i.userData && i.userData.collision && i.userData.collision.body
+                    ).length;
+
+                    // Vegetation enthält NUR noch Gras + Blumen (keine Bäume).
+                    const veg = Array.isArray(r.state.vegetation) ? r.state.vegetation : [];
+                    out.vegetationCount = veg.length;
+                    // Diskrimination: kein Eintrag in state.vegetation hat eine
+                    // Stamm-Cylinder mit Höhe ≥2 (Bäume sind weg).
+                    out.noTreesInVegetation = !veg.some((v) => {
+                        let isTreeLike = false;
+                        v.traverse &&
+                            v.traverse((n) => {
+                                if (
+                                    !isTreeLike &&
+                                    n.isMesh &&
+                                    n.geometry &&
+                                    n.geometry.type === "CylinderGeometry" &&
+                                    n.geometry.parameters &&
+                                    n.geometry.parameters.height >= 2 &&
+                                    (n.geometry.parameters.radiusBottom || 0) >= 0.3
+                                )
+                                    isTreeLike = true;
+                            });
+                        return isTreeLike;
+                    });
+
+                    // DSL-Op-Tests: spawn_tree → erzeugt Architektur, NICHT
+                    // mehr Three.js-Group in state.vegetation.
+                    const archsBefore = r.state.architectures.length;
+                    const islandsBefore = r.state.floatingIslands.length;
+                    const ufosBefore = r.state.ufos ? r.state.ufos.length : 0;
+                    const vegBefore = r.state.vegetation ? r.state.vegetation.length : 0;
+                    const playerPos = r.state.playerMesh
+                        ? r.state.playerMesh.position
+                        : { x: 0, y: 50, z: 0 };
+                    const tx = playerPos.x + 50;
+                    const ty = playerPos.y;
+                    const tz = playerPos.z + 50;
+
+                    r.dslRun(["spawn_tree", ["at", tx, ty, tz], 1], { source: "test" });
+                    r.dslRun(["spawn_island", ["at", tx + 20, ty, tz + 20], 5, 12345], {
+                        source: "test",
+                    });
+                    r.dslRun(["spawn_ufo", ["at", tx + 40, ty + 10, tz + 40]], { source: "test" });
+
+                    const archsAfter = r.state.architectures.length;
+                    const islandsAfter = r.state.floatingIslands.length;
+                    const ufosAfter = r.state.ufos ? r.state.ufos.length : 0;
+                    const vegAfter = r.state.vegetation ? r.state.vegetation.length : 0;
+                    out.treeAddedToArchitectures = archsAfter === archsBefore + 1;
+                    out.treeNotAddedToVegetation = vegAfter === vegBefore;
+                    out.islandSpawned = islandsAfter > islandsBefore;
+                    out.ufoSpawned = ufosAfter > ufosBefore;
+
+                    const newTreeArch =
+                        archsAfter > archsBefore ? r.state.architectures[archsAfter - 1] : null;
+                    out.newTreeIsBaumEiche = !!(newTreeArch && newTreeArch.type === "baum_eiche");
+                    out.newTreeHasMesh = !!(newTreeArch && newTreeArch.mesh);
+                    out.newTreeHasCollision = !!(
+                        newTreeArch &&
+                        newTreeArch.collision &&
+                        newTreeArch.collision.body &&
+                        newTreeArch.collision.shape
+                    );
+                    // Compound-Tags müssen Holz+Laub spiegeln (lebendig+brennbar).
+                    if (newTreeArch && typeof r.computeCompoundTags === "function") {
+                        const bp = r.state.blueprints[newTreeArch.type];
+                        const tags = r.computeCompoundTags(bp);
+                        out.treeTagsLebendig = tags && tags.lebendig > 0.5;
+                        out.treeTagsBrennbar = tags && tags.brennbar > 0.5;
+                    }
+
+                    const newIsland =
+                        islandsAfter > islandsBefore
+                            ? r.state.floatingIslands[islandsAfter - 1]
+                            : null;
+                    const newUfo = ufosAfter > ufosBefore ? r.state.ufos[ufosAfter - 1] : null;
+                    out.islandHasCollision = !!(
+                        newIsland &&
+                        newIsland.userData &&
+                        newIsland.userData.collision &&
+                        newIsland.userData.collision.body &&
+                        newIsland.userData.collision.tmesh
+                    );
+                    out.ufoHasNoCollision = !!(newUfo && (!newUfo.userData || !newUfo.userData.collision));
+                    // Inseln haben jetzt Vollkörper (Top + Bottom + Side).
+                    // 2D-Grid mit N=12 → 12*12*2 = 288 Vertices Mindestmenge.
+                    if (newIsland && newIsland.geometry && newIsland.geometry.attributes.position) {
+                        const vCount = newIsland.geometry.attributes.position.count;
+                        out.islandHasUnderside = vCount >= 144 * 2;
+                    }
+
+                    // Diskrimination: derselbe Seed → dieselben Vertices.
+                    const beforeIslandsCount = r.state.floatingIslands.length;
+                    r.dslRun(["spawn_island", ["at", tx + 80, ty, tz], 5, 99999], { source: "test" });
+                    r.dslRun(["spawn_island", ["at", tx + 100, ty, tz], 5, 99999], { source: "test" });
+                    const i1 = r.state.floatingIslands[beforeIslandsCount];
+                    const i2 = r.state.floatingIslands[beforeIslandsCount + 1];
+                    if (i1 && i2 && i1.geometry && i2.geometry) {
+                        const v1 = i1.geometry.attributes.position.array;
+                        const v2 = i2.geometry.attributes.position.array;
+                        out.seedDeterministic =
+                            v1.length === v2.length &&
+                            v1.length > 0 &&
+                            Math.abs(v1[1] - v2[1]) < 0.0001 &&
+                            Math.abs(v1[10] - v2[10]) < 0.0001;
+                    }
+
+                    // Chat-Pattern-Tests bleiben — die Patterns selbst sind gleich.
+                    if (typeof r.parseChatToDsl === "function") {
+                        const treeBuilt = r.parseChatToDsl("pflanze baum hier");
+                        const treeProg = treeBuilt && treeBuilt.program;
+                        out.chatTreeProg =
+                            Array.isArray(treeProg) &&
+                            treeProg[0] === "spawn_tree" &&
+                            Array.isArray(treeProg[1]) &&
+                            treeProg[1][0] === "at";
+                        const islandBuilt = r.parseChatToDsl("setze insel hier");
+                        const islandProg = islandBuilt && islandBuilt.program;
+                        out.chatIslandProg =
+                            Array.isArray(islandProg) &&
+                            islandProg[0] === "spawn_island" &&
+                            Array.isArray(islandProg[1]) &&
+                            islandProg[1][0] === "at" &&
+                            Number.isFinite(islandProg[3]);
+                        const ufoBuilt = r.parseChatToDsl("rufe ufo hier");
+                        const ufoProg = ufoBuilt && ufoBuilt.program;
+                        out.chatUfoProg =
+                            Array.isArray(ufoProg) &&
+                            ufoProg[0] === "spawn_ufo" &&
+                            Array.isArray(ufoProg[1]) &&
+                            ufoProg[1][0] === "at";
+                    }
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6gResults && !wave6gResults.error) {
+                check("Welle 6.G P1.5: _buildIslandCollision-Methode existiert", wave6gResults.hasIslandHelper);
+                check(
+                    "Welle 6.G P1.5: _disposeStaticCollision-Methode existiert",
+                    wave6gResults.hasDisposeHelper
+                );
+                check("Welle 6.G P1.5: spawnIslandAt-Methode existiert", wave6gResults.hasSpawnIslandAt);
+                check("Welle 6.G P1.5: spawnUfoAt-Methode existiert", wave6gResults.hasSpawnUfoAt);
+                check(
+                    "Welle 6.G P1.5: _buildTreeCollision-Parallelhelper ist GELÖSCHT (Hylomorphismus-Unification)",
+                    wave6gResults.parallelTreeHelperRemoved
+                );
+                check(
+                    "Welle 6.G P1.5: spawnTreeAt-Parallelhelper ist GELÖSCHT (Hylomorphismus-Unification)",
+                    wave6gResults.parallelSpawnTreeAtRemoved
+                );
+                check("Welle 6.G P1.5: Bauplan 'baum_eiche' existiert mit 2 parts", wave6gResults.hasBaumEiche);
+                check("Welle 6.G P1.5: Bauplan 'baum_kiefer' existiert mit 2 parts", wave6gResults.hasBaumKiefer);
+                check("Welle 6.G P1.5: baum_eiche ist builtIn", wave6gResults.baumEicheIsBuiltIn);
+                check("Welle 6.G P1.5: baum_eiche Stamm = cylinder/holz", wave6gResults.eichenStammHolz);
+                check("Welle 6.G P1.5: baum_eiche Krone = sphere/laub", wave6gResults.eichenKroneLaub);
+                check("Welle 6.G P1.5: Material 'laub' existiert als Built-in", wave6gResults.hasLaubMaterial);
+                check(
+                    `Welle 6.G P1.5: Worldgen-Bäume (n=${wave6gResults.worldgenTreesInArchitectures}) sind in state.architectures`,
+                    wave6gResults.worldgenTreesInArchitectures > 0
+                );
+                check(
+                    "Welle 6.G P1.5: mind. ein Worldgen-Baum hat Compound-Box-Kollision",
+                    wave6gResults.treeHasCompoundCollision
+                );
+                check(
+                    "Welle 6.G P1.5: state.vegetation enthält KEINE Bäume mehr (nur Gras + Blumen)",
+                    wave6gResults.noTreesInVegetation
+                );
+                check(
+                    `Welle 6.G P1.5: initiale Welt-Inseln (n=${wave6gResults.initIslandsCount}) haben Kollision`,
+                    wave6gResults.initIslandsCount > 0 &&
+                        wave6gResults.initIslandsWithCollision === wave6gResults.initIslandsCount
+                );
+                check(
+                    "Welle 6.G P1.5: spawn_tree DSL-Op fügt Eintrag zu state.architectures hinzu",
+                    wave6gResults.treeAddedToArchitectures
+                );
+                check(
+                    "Welle 6.G P1.5: spawn_tree DSL-Op fügt NICHTS zu state.vegetation hinzu (Parallelcode weg)",
+                    wave6gResults.treeNotAddedToVegetation
+                );
+                check("Welle 6.G P1.5: neu-gespawnter Baum hat type='baum_eiche'", wave6gResults.newTreeIsBaumEiche);
+                check("Welle 6.G P1.5: neu-gespawnter Baum hat Mesh (in Reichweite)", wave6gResults.newTreeHasMesh);
+                check(
+                    "Welle 6.G P1.5: neu-gespawnter Baum hat Compound-Box-Kollision (Stamm + Krone)",
+                    wave6gResults.newTreeHasCollision
+                );
+                if (wave6gResults.treeTagsLebendig !== undefined) {
+                    check("Welle 6.G P1.5: Baum-Compound-Tags zeigen lebendig (holz + laub)", wave6gResults.treeTagsLebendig);
+                    check("Welle 6.G P1.5: Baum-Compound-Tags zeigen brennbar (holz + laub)", wave6gResults.treeTagsBrennbar);
+                }
+                check(
+                    "Welle 6.G P1.5: spawn_island DSL-Op fügt Insel zu state.floatingIslands hinzu",
+                    wave6gResults.islandSpawned
+                );
+                check("Welle 6.G P1.5: spawn_ufo DSL-Op fügt UFO zu state.ufos hinzu", wave6gResults.ufoSpawned);
+                check(
+                    "Welle 6.G P1.5: neu-gespawnte Insel hat btBvhTriangleMeshShape-Kollision",
+                    wave6gResults.islandHasCollision
+                );
+                if (wave6gResults.islandHasUnderside !== undefined) {
+                    check(
+                        "Welle 6.G P1.5: Insel hat Top + Bottom (Vollkörper, V7.74 Visual-Fix)",
+                        wave6gResults.islandHasUnderside
+                    );
+                }
+                check(
+                    "Welle 6.G P1.5: UFO bleibt bewusst kollisionsfrei (fliegender Beobachter)",
+                    wave6gResults.ufoHasNoCollision
+                );
+                check(
+                    "Welle 6.G P1.5: spawn_island mit gleichem Seed produziert identische Vertices (Multi-User-Sync)",
+                    wave6gResults.seedDeterministic
+                );
+                check("Welle 6.G P1.5: Chat 'pflanze baum hier' → spawn_tree mit ['at',...]", wave6gResults.chatTreeProg);
+                check(
+                    "Welle 6.G P1.5: Chat 'setze insel hier' → spawn_island mit ['at',...] + eingebettetem Seed",
+                    wave6gResults.chatIslandProg
+                );
+                check("Welle 6.G P1.5: Chat 'rufe ufo hier' → spawn_ufo mit ['at',...]", wave6gResults.chatUfoProg);
+            }
+
+            // ### Welle 6.G Phase 2 — Welt-Affinitäts-Feld ###
+            // Bäume + Strukturen verteilen sich organisch über das Welt-Feld
+            // (4 Noise-Schichten: lebendig/dichte/glut/magieleitung). KEINE
+            // Tabelle — Bauplan-Compound-Tags resonieren mit Welt-Tag-Feld.
+            // Drei neue Baupläne: stein_block (dichte), kristall_geode
+            // (magieleitung), glutbrunnen (glut). Hook in ensureChunkAt
+            // füllt neue Chunks beim Player-Approach.
+            const wave6gP2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    out.hasWorldFieldAt = typeof r.worldFieldAt === "function";
+                    out.hasSpawnAffinity = typeof r.spawnAffinityForBlueprint === "function";
+                    out.hasPopulateChunk = typeof r.populateChunkVegetation === "function";
+                    // Drei neue Baupläne als Built-ins.
+                    const bps = r.state.blueprints || {};
+                    out.hasSteinBlock = !!(bps.stein_block && bps.stein_block.builtIn && bps.stein_block.parts.length >= 1);
+                    out.hasKristallGeode = !!(
+                        bps.kristall_geode &&
+                        bps.kristall_geode.builtIn &&
+                        bps.kristall_geode.parts.length >= 2
+                    );
+                    out.hasGlutbrunnen = !!(bps.glutbrunnen && bps.glutbrunnen.builtIn && bps.glutbrunnen.parts.length >= 2);
+                    // worldFieldAt liefert 4 Tag-Achsen.
+                    if (out.hasWorldFieldAt) {
+                        const sample = r.worldFieldAt(0, 0);
+                        out.fieldHas4Axes = !!(
+                            sample &&
+                            typeof sample.lebendig === "number" &&
+                            typeof sample.dichte === "number" &&
+                            typeof sample.glut === "number" &&
+                            typeof sample.magieleitung === "number"
+                        );
+                        out.fieldValuesInRange =
+                            sample.lebendig >= 0 &&
+                            sample.lebendig <= 1 &&
+                            sample.dichte >= 0 &&
+                            sample.dichte <= 1;
+                    }
+                    // Determinismus: zweimaliger Aufruf an dieselbe Position →
+                    // dieselben Werte. Cross-Welt-Variation: zwei verschiedene
+                    // Positionen → unterschiedliche Werte (mit hoher
+                    // Wahrscheinlichkeit, da Noise nicht-konstant).
+                    if (out.hasWorldFieldAt) {
+                        const a1 = r.worldFieldAt(50, 30);
+                        const a2 = r.worldFieldAt(50, 30);
+                        out.fieldDeterministic =
+                            Math.abs(a1.lebendig - a2.lebendig) < 1e-9 &&
+                            Math.abs(a1.dichte - a2.dichte) < 1e-9;
+                        const b1 = r.worldFieldAt(50, 30);
+                        const b2 = r.worldFieldAt(1000, -1000);
+                        out.fieldVariesBySamplePos =
+                            Math.abs(b1.lebendig - b2.lebendig) > 0.001 ||
+                            Math.abs(b1.dichte - b2.dichte) > 0.001;
+                    }
+                    // spawnAffinityForBlueprint: baum_eiche (holz+laub, hoch
+                    // in lebendig) hat höhere Affinität in einer lebendig-
+                    // hohen Region als ein stein_block (dichte-hoch, lebendig=0).
+                    // Wir suchen empirisch eine lebendig-hohe Position und
+                    // verifizieren das Verhältnis.
+                    if (out.hasSpawnAffinity && out.hasWorldFieldAt) {
+                        // Iteriere Welt-Grid um eine Position mit hohem lebendig
+                        // zu finden.
+                        let bestLebendigSpot = null;
+                        let bestLebendig = 0;
+                        for (let x = -200; x <= 200; x += 25) {
+                            for (let z = -200; z <= 200; z += 25) {
+                                const f = r.worldFieldAt(x, z);
+                                if (f.lebendig > bestLebendig) {
+                                    bestLebendig = f.lebendig;
+                                    bestLebendigSpot = { x, z };
+                                }
+                            }
+                        }
+                        if (bestLebendigSpot && bestLebendig > 0.5) {
+                            const treeAff = r.spawnAffinityForBlueprint(
+                                "baum_eiche",
+                                bestLebendigSpot.x,
+                                bestLebendigSpot.z
+                            );
+                            const steinAff = r.spawnAffinityForBlueprint(
+                                "stein_block",
+                                bestLebendigSpot.x,
+                                bestLebendigSpot.z
+                            );
+                            // In hohem-lebendig-Bereich sollte Baum >> Stein.
+                            out.affinityFavorsTreeInLebendigRegion = treeAff > steinAff * 1.5;
+                        }
+                        // Dasselbe für dichte: in dichte-hoher Region
+                        // sollte stein_block bevorzugt sein.
+                        let bestDichteSpot = null;
+                        let bestDichte = 0;
+                        for (let x = -200; x <= 200; x += 25) {
+                            for (let z = -200; z <= 200; z += 25) {
+                                const f = r.worldFieldAt(x, z);
+                                if (f.dichte > bestDichte) {
+                                    bestDichte = f.dichte;
+                                    bestDichteSpot = { x, z };
+                                }
+                            }
+                        }
+                        if (bestDichteSpot && bestDichte > 0.5) {
+                            const treeAff = r.spawnAffinityForBlueprint(
+                                "baum_eiche",
+                                bestDichteSpot.x,
+                                bestDichteSpot.z
+                            );
+                            const steinAff = r.spawnAffinityForBlueprint(
+                                "stein_block",
+                                bestDichteSpot.x,
+                                bestDichteSpot.z
+                            );
+                            // Wenn die Stelle auch lebendig-hoch ist, könnte
+                            // tree gewinnen. Wir prüfen primär „stein hat
+                            // signifikant > 0", was die Affinity-Anwendung
+                            // bestätigt.
+                            out.steinAffinityNonzeroInDichteRegion = steinAff > 0.05;
+                            // Für klare Diskrimination: an einer wirklich
+                            // dichte-dominanten Position erwarten wir
+                            // stein > tree (wenn lebendig dort low).
+                            const f = r.worldFieldAt(bestDichteSpot.x, bestDichteSpot.z);
+                            if (f.lebendig < 0.4) {
+                                out.affinityFavorsSteinInDichteOnlyRegion = steinAff > treeAff;
+                            }
+                        }
+                    }
+                    // Initial-Worldgen: state.architectures enthält jetzt
+                    // Affinity-gespawnte Strukturen — Bäume + (idealerweise)
+                    // mindestens eine der drei neuen Bauplan-Typen.
+                    const archs = Array.isArray(r.state.architectures) ? r.state.architectures : [];
+                    out.archCount = archs.length;
+                    const typeCounts = {};
+                    for (const a of archs) typeCounts[a.type] = (typeCounts[a.type] || 0) + 1;
+                    out.affinitySpawnTypes = typeCounts;
+                    out.hasInitialTrees = (typeCounts.baum_eiche || 0) + (typeCounts.baum_kiefer || 0) > 0;
+                    // populatedChunks markiert die initialen Chunks als gefüllt.
+                    out.populatedChunksSize = r.state.populatedChunks
+                        ? r.state.populatedChunks.size
+                        : 0;
+                    // Idempotenz: zweiter Aufruf für denselben Chunk
+                    // → spawned=0.
+                    if (typeof r.populateChunkVegetation === "function") {
+                        const before = archs.length;
+                        const secondReturn = r.populateChunkVegetation(2, 3);
+                        const after = r.state.architectures.length;
+                        // Erster Aufruf hat Chunk (2,3) schon befüllt (oder
+                        // nicht — egal). Zweiter Aufruf MUSS 0 zurückgeben
+                        // dank populatedChunks-Cache.
+                        // Plus: keine neuen architectures.
+                        out.populateIdempotent = secondReturn === 0 && after === before;
+                    }
+                    // Architecture-Culling-Rate ist jetzt 2 Hz (V7.75 Bugfix).
+                    out.cullingRateIs2Hz = r.state.architectureCullingTickHz === 2.0;
+                    // Stamm-Radius der Bäume ist größer (V7.75 Bugfix):
+                    // baum_eiche Stamm size.x >= 0.7 (war 0.5 in V7.74).
+                    const eichenStamm = bps.baum_eiche && bps.baum_eiche.parts[0];
+                    out.stammIsThicker = eichenStamm && eichenStamm.size && eichenStamm.size.x >= 0.7;
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6gP2Results && !wave6gP2Results.error) {
+                check("Welle 6.G P2: worldFieldAt-Methode existiert", wave6gP2Results.hasWorldFieldAt);
+                check("Welle 6.G P2: spawnAffinityForBlueprint-Methode existiert", wave6gP2Results.hasSpawnAffinity);
+                check("Welle 6.G P2: populateChunkVegetation-Methode existiert", wave6gP2Results.hasPopulateChunk);
+                check("Welle 6.G P2: Bauplan 'stein_block' existiert als Built-in", wave6gP2Results.hasSteinBlock);
+                check("Welle 6.G P2: Bauplan 'kristall_geode' existiert als Built-in", wave6gP2Results.hasKristallGeode);
+                check("Welle 6.G P2: Bauplan 'glutbrunnen' existiert als Built-in", wave6gP2Results.hasGlutbrunnen);
+                check("Welle 6.G P2: worldFieldAt liefert 4 Tag-Achsen (lebendig/dichte/glut/magie)", wave6gP2Results.fieldHas4Axes);
+                check("Welle 6.G P2: worldFieldAt-Werte im Bereich [0,1]", wave6gP2Results.fieldValuesInRange);
+                check("Welle 6.G P2: worldFieldAt deterministisch (selbe Position → selber Wert)", wave6gP2Results.fieldDeterministic);
+                check("Welle 6.G P2: worldFieldAt variiert mit Position (Noise nicht konstant)", wave6gP2Results.fieldVariesBySamplePos);
+                if (wave6gP2Results.affinityFavorsTreeInLebendigRegion !== undefined) {
+                    check(
+                        "Welle 6.G P2: Baum-Affinity > Stein-Affinity in lebendig-hoher Region",
+                        wave6gP2Results.affinityFavorsTreeInLebendigRegion
+                    );
+                }
+                if (wave6gP2Results.steinAffinityNonzeroInDichteRegion !== undefined) {
+                    check(
+                        "Welle 6.G P2: Stein-Affinity > 0 in dichte-hoher Region",
+                        wave6gP2Results.steinAffinityNonzeroInDichteRegion
+                    );
+                }
+                if (wave6gP2Results.affinityFavorsSteinInDichteOnlyRegion !== undefined) {
+                    check(
+                        "Welle 6.G P2: Stein-Affinity > Baum-Affinity in dichte-only-Region (lebendig<0.4)",
+                        wave6gP2Results.affinityFavorsSteinInDichteOnlyRegion
+                    );
+                }
+                check(
+                    `Welle 6.G P2: Initial-Worldgen hat Architekturen über Affinity gespawnt (n=${wave6gP2Results.archCount})`,
+                    wave6gP2Results.archCount > 0
+                );
+                check("Welle 6.G P2: Initial-Worldgen hat mind. einen Baum gespawnt", wave6gP2Results.hasInitialTrees);
+                check(
+                    `Welle 6.G P2: populatedChunks-Cache befüllt (size=${wave6gP2Results.populatedChunksSize})`,
+                    wave6gP2Results.populatedChunksSize >= 1
+                );
+                check("Welle 6.G P2: populateChunkVegetation idempotent (zweiter Aufruf → 0 spawns)", wave6gP2Results.populateIdempotent);
+                check("Welle 6.G P2: architectureCullingTickHz auf 2.0 angehoben (Bugfix)", wave6gP2Results.cullingRateIs2Hz);
+                check("Welle 6.G P2: baum_eiche Stamm-Radius >= 0.7 (Bugfix V7.75)", wave6gP2Results.stammIsThicker);
+            }
+
+            // ### Welle 6.C2 — Spielmodi (frieden / pfad / schöpfer) ###
+            // Drei Welt-Beziehungs-Modi. Persistiert in worldMeta.gameMode.
+            // damagePlayer + Stamina-Kosten sind modus-gated.
+            const wave6c2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    out.hasGameModes = Array.isArray(r.constructor.GAME_MODES) && r.constructor.GAME_MODES.length === 3;
+                    out.hasSetGameMode = typeof r.setGameMode === "function";
+                    out.hasGetGameMode = typeof r.getGameMode === "function";
+                    // Default-Modus für NEUE Welten ist frieden — checken über
+                    // _buildEmptyWorldSnapshot (init-time-Verhalten), nicht
+                    // runtime-state (vorherige Tests haben evtl. auf pfad
+                    // geschaltet).
+                    if (typeof r._buildEmptyWorldSnapshot === "function") {
+                        const fresh = r._buildEmptyWorldSnapshot({ slug: "test-fresh" }, false);
+                        out.defaultModeFrieden = fresh && fresh.worldMeta && fresh.worldMeta.gameMode === "frieden";
+                    }
+                    out.canonicalDefaultIsFrieden = r.constructor.GAME_MODES[0] === "frieden";
+                    out.worldMetaHasGameMode = typeof r.state.worldMeta.gameMode === "string";
+
+                    // Übergänge: setGameMode auf jeden der drei Modi.
+                    r.setGameMode("pfad");
+                    out.setPfadWorks = r.getGameMode() === "pfad" && r.state.worldMeta.gameMode === "pfad";
+                    r.setGameMode("schöpfer");
+                    out.setSchoepferWorks = r.getGameMode() === "schöpfer" && r.state.worldMeta.gameMode === "schöpfer";
+                    r.setGameMode("frieden");
+                    out.setFriedenWorks = r.getGameMode() === "frieden";
+                    // Ungültiger Wert → frieden-Fallback.
+                    r.setGameMode("garbage");
+                    out.invalidFallsToFrieden = r.getGameMode() === "frieden";
+
+                    // damagePlayer-Gate: frieden + schöpfer → return false,
+                    // pfad → return true (existing path).
+                    const hpBefore = r.state.player.hp;
+                    r.setGameMode("frieden");
+                    const damageInFrieden = r.damagePlayer(50, "test");
+                    out.friedenBlocksDamage = damageInFrieden === false && r.state.player.hp === hpBefore;
+
+                    r.setGameMode("schöpfer");
+                    const damageInSchoepfer = r.damagePlayer(50, "test");
+                    out.schoepferBlocksDamage = damageInSchoepfer === false && r.state.player.hp === hpBefore;
+
+                    // pfad → Schaden wirkt
+                    r.setGameMode("pfad");
+                    // Aus möglichen Phönix-Wandlungen rausnehmen (test-cleanup)
+                    r.state.player.phoenixUntil = 0;
+                    r.state.player.hp = 100;
+                    const damageInPfad = r.damagePlayer(30, "test");
+                    out.pfadAcceptsDamage = damageInPfad === true && r.state.player.hp < 100;
+
+                    // Stamina-Gate: applyOpToPart kostet nur in pfad.
+                    // Setup: ein eigener Bauplan mit holz-Material.
+                    r.state.blueprints["mode-test-bp"] = {
+                        name: "mode-test-bp",
+                        label: "Mode-Test",
+                        builtIn: false,
+                        parts: [{ shape: "box", material: "holz", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } }],
+                    };
+                    // Stamina voll setzen
+                    r.state.player.stamina = 100;
+
+                    r.setGameMode("frieden");
+                    const opResultFrieden = r.applyOpToPart("mode-test-bp", 0, "feile");
+                    out.friedenSkipsStamina = opResultFrieden.ok === true && r.state.player.stamina === 100;
+
+                    r.state.player.stamina = 100;
+                    r.setGameMode("schöpfer");
+                    const opResultSchoepfer = r.applyOpToPart("mode-test-bp", 0, "feile");
+                    out.schoepferSkipsStamina = opResultSchoepfer.ok === true && r.state.player.stamina === 100;
+
+                    r.state.player.stamina = 100;
+                    r.setGameMode("pfad");
+                    const opResultPfad = r.applyOpToPart("mode-test-bp", 0, "feile");
+                    out.pfadChargesStamina =
+                        opResultPfad.ok === true && r.state.player.stamina === 100 - 10;
+
+                    // Cleanup
+                    delete r.state.blueprints["mode-test-bp"];
+                    r.setGameMode("frieden");
+
+                    // DSL-Op set_mode
+                    if (typeof r.dslRun === "function") {
+                        r.dslRun(["set_mode", "pfad"], { source: "test" });
+                        out.dslSetModeWorks = r.getGameMode() === "pfad";
+                        r.setGameMode("frieden");
+                    }
+
+                    // set_mode ist in NON_BROADCASTABLE_OPS
+                    out.setModeNonBroadcastable =
+                        r.constructor.NON_BROADCASTABLE_OPS &&
+                        r.constructor.NON_BROADCASTABLE_OPS.has("set_mode");
+
+                    // Chat-Pattern: 'setze modus pfad' → set_mode-Programm
+                    if (typeof r.parseChatToDsl === "function") {
+                        const built = r.parseChatToDsl("setze modus pfad");
+                        out.chatPfad =
+                            built && Array.isArray(built.program) && built.program[0] === "set_mode" && built.program[1] === "pfad";
+                        const built2 = r.parseChatToDsl("modus schöpfer");
+                        out.chatSchoepfer =
+                            built2 && Array.isArray(built2.program) && built2.program[0] === "set_mode" && built2.program[1] === "schöpfer";
+                    }
+
+                    // describeProgram-Eintrag
+                    if (typeof r.describeProgram === "function") {
+                        const desc = r.describeProgram(["set_mode", "pfad"]);
+                        out.describeWorks = typeof desc === "string" && /Welt-Beziehung|pfad/.test(desc);
+                    }
+
+                    // UI: Radio + Status-Bar
+                    out.radiosInDom = document.querySelectorAll('input[name="game-mode-radio"]').length === 3;
+                    out.statusModeInDom = !!document.getElementById("status-mode");
+                    out.gameModeSectionInDom = !!document.getElementById("game-mode-section");
+                    // Status-Bar zeigt aktuellen Modus
+                    r.setGameMode("pfad");
+                    const statusItem = document.getElementById("status-mode");
+                    out.statusReflectsMode = statusItem && /pfad/i.test(statusItem.textContent);
+                    // Radio ist gecheckt
+                    const checkedRadio = document.querySelector('input[name="game-mode-radio"]:checked');
+                    out.radioReflectsMode = checkedRadio && checkedRadio.value === "pfad";
+                    r.setGameMode("frieden");
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6c2Results && !wave6c2Results.error) {
+                check("Welle 6.C2: AnazhRealm.GAME_MODES existiert", wave6c2Results.hasGameModes);
+                check("Welle 6.C2: setGameMode-Methode existiert", wave6c2Results.hasSetGameMode);
+                check("Welle 6.C2: getGameMode-Methode existiert", wave6c2Results.hasGetGameMode);
+                check("Welle 6.C2: Neue Welten starten im frieden-Modus (init-time)", wave6c2Results.defaultModeFrieden);
+                check("Welle 6.C2: GAME_MODES[0] === 'frieden' (kanonischer Default)", wave6c2Results.canonicalDefaultIsFrieden);
+                check("Welle 6.C2: worldMeta.gameMode ist persistiert", wave6c2Results.worldMetaHasGameMode);
+                check("Welle 6.C2: setGameMode('pfad') wechselt korrekt", wave6c2Results.setPfadWorks);
+                check("Welle 6.C2: setGameMode('schöpfer') wechselt korrekt", wave6c2Results.setSchoepferWorks);
+                check("Welle 6.C2: setGameMode('frieden') wechselt korrekt", wave6c2Results.setFriedenWorks);
+                check("Welle 6.C2: ungültiger Modus fällt auf frieden zurück", wave6c2Results.invalidFallsToFrieden);
+                check("Welle 6.C2: damagePlayer im frieden-Modus blockiert (HP unverändert)", wave6c2Results.friedenBlocksDamage);
+                check("Welle 6.C2: damagePlayer im schöpfer-Modus blockiert (HP unverändert)", wave6c2Results.schoepferBlocksDamage);
+                check("Welle 6.C2: damagePlayer im pfad-Modus wirkt (HP reduziert)", wave6c2Results.pfadAcceptsDamage);
+                check("Welle 6.C2: applyOpToPart im frieden-Modus kostet KEINE Stamina", wave6c2Results.friedenSkipsStamina);
+                check("Welle 6.C2: applyOpToPart im schöpfer-Modus kostet KEINE Stamina", wave6c2Results.schoepferSkipsStamina);
+                check("Welle 6.C2: applyOpToPart im pfad-Modus kostet Stamina (10)", wave6c2Results.pfadChargesStamina);
+                check("Welle 6.C2: DSL-Op set_mode setzt Modus", wave6c2Results.dslSetModeWorks);
+                check("Welle 6.C2: set_mode ist in NON_BROADCASTABLE_OPS (Multi-User-privat)", wave6c2Results.setModeNonBroadcastable);
+                check("Welle 6.C2: Chat 'setze modus pfad' → set_mode-Programm", wave6c2Results.chatPfad);
+                check("Welle 6.C2: Chat 'modus schöpfer' → set_mode-Programm", wave6c2Results.chatSchoepfer);
+                check("Welle 6.C2: describeProgram nennt 'Welt-Beziehung' oder Modus", wave6c2Results.describeWorks);
+                check("Welle 6.C2: 3 Radio-Buttons im DOM", wave6c2Results.radiosInDom);
+                check("Welle 6.C2: #status-mode im DOM", wave6c2Results.statusModeInDom);
+                check("Welle 6.C2: #game-mode-section im DOM", wave6c2Results.gameModeSectionInDom);
+                check("Welle 6.C2: Status-Bar spiegelt aktuellen Modus", wave6c2Results.statusReflectsMode);
+                check("Welle 6.C2: Radio-Button reflektiert aktuellen Modus", wave6c2Results.radioReflectsMode);
+            }
+
+            // ### Welle 6.C1 — Hylomorphismus-Inventar ===
+            // 27 Slots mit Tag-Resonanz statt Minecraft-Tabelle. Tag-Profile
+            // emergieren aus computeCompoundTags(blueprint). Drag-Click-Pfad:
+            // Inventar-Slot wählen → Hotbar-Slot klicken → Bauplan abgelegt.
+            const wave6c1Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    // Datenmodell
+                    out.hasInventoryArray = Array.isArray(r.state.player && r.state.player.inventory);
+                    out.inventorySize = r.state.player.inventory.length;
+                    out.inventoryHas27Slots = r.state.player.inventory.length === 27;
+                    out.initiallyEmpty = r.state.player.inventory.every((s) => s === null);
+
+                    // Methoden
+                    out.hasAddToInventory = typeof r.addToInventory === "function";
+                    out.hasRemoveFromInventory = typeof r.removeFromInventory === "function";
+                    out.hasRenderInventoryUI = typeof r.renderInventoryUI === "function";
+                    out.hasSelectInventorySlot = typeof r.selectInventorySlot === "function";
+                    out.hasTryAssign = typeof r.tryAssignFromInventoryToHotbar === "function";
+                    out.hasToggleOverlay = typeof r.toggleInventoryOverlay === "function";
+                    out.hasPlayPing = typeof r.playInventoryHoverPing === "function";
+                    out.hasInventoryInitDOM = typeof r.inventoryInitDOM === "function";
+
+                    // addToInventory: ein bekannter Bauplan → erster leerer Slot
+                    const okAdd = r.addToInventory("baum_eiche", 3);
+                    out.addedToInventory = okAdd === true;
+                    out.slot0HasBaum = r.state.player.inventory[0]
+                        && r.state.player.inventory[0].blueprintName === "baum_eiche"
+                        && r.state.player.inventory[0].count === 3;
+                    // Zweiter Add desselben Bauplans: count kumuliert
+                    r.addToInventory("baum_eiche", 2);
+                    out.stacksCount =
+                        r.state.player.inventory[0] && r.state.player.inventory[0].count === 5;
+                    // Unbekannter Bauplan → false
+                    out.addRejectsUnknown = r.addToInventory("fictional_bp", 1) === false;
+
+                    // removeFromInventory: 5 → 3
+                    r.removeFromInventory(0, 2);
+                    out.removeWorks = r.state.player.inventory[0].count === 3;
+                    // Komplett entfernen → null
+                    r.removeFromInventory(0, 99);
+                    out.fullRemoveClearsSlot = r.state.player.inventory[0] === null;
+
+                    // DSL-Op add_to_inventory
+                    if (typeof r.dslRun === "function") {
+                        r.dslRun(["add_to_inventory", "village", 1], { source: "test" });
+                        const has = r.state.player.inventory.some(
+                            (s) => s && s.blueprintName === "village"
+                        );
+                        out.dslOpWorks = has;
+                    }
+
+                    // NON_BROADCASTABLE
+                    out.addToInventoryNonBroadcastable =
+                        r.constructor.NON_BROADCASTABLE_OPS &&
+                        r.constructor.NON_BROADCASTABLE_OPS.has("add_to_inventory");
+
+                    // describeProgram-Eintrag
+                    if (typeof r.describeProgram === "function") {
+                        const d = r.describeProgram(["add_to_inventory", "baum_eiche", 5]);
+                        out.describeWorks =
+                            typeof d === "string" && /Inventar|baum_eiche|5/.test(d);
+                    }
+
+                    // UI: Overlay-Element + Grid + Selected-Display
+                    out.overlayInDom = !!document.getElementById("inventory-overlay");
+                    out.gridInDom = !!document.getElementById("inventory-grid");
+                    out.selectedInDom = !!document.getElementById("inventory-selected");
+                    // Initial hidden
+                    const overlay = document.getElementById("inventory-overlay");
+                    out.initiallyHidden = overlay && overlay.hasAttribute("hidden");
+
+                    // Toggle öffnet + rendert 27 Slots
+                    r.toggleInventoryOverlay(true);
+                    const slots = document.querySelectorAll("#inventory-grid .inventory-slot");
+                    out.gridRendered27 = slots.length === 27;
+                    out.overlayVisibleAfterToggle = !overlay.hasAttribute("hidden");
+
+                    // Tag-Magic-Test: kristall_geode (quarz, magieleitung 0.85)
+                    // sollte die magie-Klasse bekommen. baum_eiche (laub,
+                    // lebendig 1.0) → lebendig-Klasse.
+                    r.state.player.inventory[0] = { blueprintName: "kristall_geode", count: 1 };
+                    r.state.player.inventory[1] = { blueprintName: "baum_eiche", count: 1 };
+                    r.renderInventoryUI();
+                    const slot0 = document.querySelector('#inventory-grid [data-inv-slot="0"]');
+                    const slot1 = document.querySelector('#inventory-grid [data-inv-slot="1"]');
+                    out.geodeHasMagieClass = slot0 && slot0.classList.contains("tag-magieleitung");
+                    out.baumHasLebendigClass = slot1 && slot1.classList.contains("tag-lebendig");
+                    // baum_eiche hat laub → brennbar 0.85 hoch
+                    out.baumHasBrennendClass = slot1 && slot1.classList.contains("tag-brennend");
+
+                    // Click → selectInventorySlot setzt inventorySelected
+                    r.selectInventorySlot(0);
+                    out.selectionWorks = r.state.inventorySelected === "kristall_geode";
+                    // Zweiter Klick auf gleichen → toggelt aus
+                    r.selectInventorySlot(0);
+                    out.selectionTogglesOff = r.state.inventorySelected === null;
+                    r.selectInventorySlot(0);
+
+                    // tryAssignFromInventoryToHotbar legt in Hotbar ab
+                    const hotbarBefore = r.state.hotbar.slice();
+                    const assignOk = r.tryAssignFromInventoryToHotbar(3);
+                    out.assignWorks = assignOk === true && r.state.hotbar[3] === "kristall_geode";
+                    out.assignClearsSelection = r.state.inventorySelected === null;
+
+                    // Toggle close
+                    r.toggleInventoryOverlay(false);
+                    out.toggleCloseHides = overlay.hasAttribute("hidden");
+                    out.toggleCloseClearsSelected = r.state.inventorySelected === null;
+
+                    // Test-Cleanup: Hotbar + Inventar zurück auf Defaults,
+                    // damit nachfolgende Tests (Ring 6.5 Default-Hotbar etc.)
+                    // nicht von Test-Verschmutzung verletzt werden.
+                    r.state.hotbar = ["village", "temple", "waterfall", null, null, null, null, null, null];
+                    r.state.player.inventory = new Array(27).fill(null);
+                    if (typeof r._renderHotbarDOM === "function") r._renderHotbarDOM();
+                    if (typeof r.renderInventoryUI === "function") r.renderInventoryUI();
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6c1Results && !wave6c1Results.error) {
+                check("Welle 6.C1: state.player.inventory ist Array", wave6c1Results.hasInventoryArray);
+                check("Welle 6.C1: Inventar hat exakt 27 Slots", wave6c1Results.inventoryHas27Slots);
+                check("Welle 6.C1: Inventar initial leer (alle 27 null)", wave6c1Results.initiallyEmpty);
+                check("Welle 6.C1: addToInventory-Methode existiert", wave6c1Results.hasAddToInventory);
+                check("Welle 6.C1: removeFromInventory-Methode existiert", wave6c1Results.hasRemoveFromInventory);
+                check("Welle 6.C1: renderInventoryUI-Methode existiert", wave6c1Results.hasRenderInventoryUI);
+                check("Welle 6.C1: selectInventorySlot-Methode existiert", wave6c1Results.hasSelectInventorySlot);
+                check("Welle 6.C1: tryAssignFromInventoryToHotbar existiert", wave6c1Results.hasTryAssign);
+                check("Welle 6.C1: toggleInventoryOverlay-Methode existiert", wave6c1Results.hasToggleOverlay);
+                check("Welle 6.C1: playInventoryHoverPing-Methode existiert", wave6c1Results.hasPlayPing);
+                check("Welle 6.C1: inventoryInitDOM-Methode existiert", wave6c1Results.hasInventoryInitDOM);
+                check("Welle 6.C1: addToInventory legt Eintrag in ersten leeren Slot", wave6c1Results.slot0HasBaum);
+                check("Welle 6.C1: addToInventory stackt bei gleichem Bauplan-Namen", wave6c1Results.stacksCount);
+                check("Welle 6.C1: addToInventory lehnt unbekannten Bauplan ab", wave6c1Results.addRejectsUnknown);
+                check("Welle 6.C1: removeFromInventory reduziert count", wave6c1Results.removeWorks);
+                check("Welle 6.C1: removeFromInventory(>count) clear Slot zu null", wave6c1Results.fullRemoveClearsSlot);
+                check("Welle 6.C1: DSL-Op add_to_inventory funktioniert", wave6c1Results.dslOpWorks);
+                check("Welle 6.C1: add_to_inventory in NON_BROADCASTABLE_OPS", wave6c1Results.addToInventoryNonBroadcastable);
+                check("Welle 6.C1: describeProgram nennt Inventar/Bauplan/Count", wave6c1Results.describeWorks);
+                check("Welle 6.C1: #inventory-overlay im DOM", wave6c1Results.overlayInDom);
+                check("Welle 6.C1: #inventory-grid im DOM", wave6c1Results.gridInDom);
+                check("Welle 6.C1: #inventory-selected im DOM", wave6c1Results.selectedInDom);
+                check("Welle 6.C1: Overlay initial versteckt", wave6c1Results.initiallyHidden);
+                check("Welle 6.C1: toggleInventoryOverlay(true) öffnet Overlay", wave6c1Results.overlayVisibleAfterToggle);
+                check("Welle 6.C1: Grid rendert 27 Slot-Elemente", wave6c1Results.gridRendered27);
+                check("Welle 6.C1: kristall_geode-Slot bekommt tag-magieleitung Klasse", wave6c1Results.geodeHasMagieClass);
+                check("Welle 6.C1: baum_eiche-Slot bekommt tag-lebendig Klasse", wave6c1Results.baumHasLebendigClass);
+                check("Welle 6.C1: baum_eiche-Slot bekommt tag-brennend Klasse (laub)", wave6c1Results.baumHasBrennendClass);
+                check("Welle 6.C1: selectInventorySlot setzt inventorySelected", wave6c1Results.selectionWorks);
+                check("Welle 6.C1: zweiter Klick auf gleichen Slot toggelt aus", wave6c1Results.selectionTogglesOff);
+                check("Welle 6.C1: tryAssignFromInventoryToHotbar legt in Hotbar ab", wave6c1Results.assignWorks);
+                check("Welle 6.C1: Assign löscht inventorySelected", wave6c1Results.assignClearsSelection);
+                check("Welle 6.C1: toggleInventoryOverlay(false) versteckt + räumt", wave6c1Results.toggleCloseHides);
+                check("Welle 6.C1: Schließen räumt inventorySelected", wave6c1Results.toggleCloseClearsSelected);
+            }
+
+            // ### Welle 6.C1+ — Drag&Drop für Inventar ↔ Hotbar ===
+            // Vier Pfade testen: inv→inv (swap), inv→hot (Hotbar setzt),
+            // hot→hot (swap), hot→inv (Hotbar räumen). HTML5-Drag-Events
+            // simulieren wir nicht (Headless-Inkonsistenz); statt dessen
+            // testen wir die Drop-Handler direkt mit fingiertem state.drag.
+            const dragResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    out.hasDragStart = typeof r._onSlotDragStart === "function";
+                    out.hasDragOver = typeof r._onSlotDragOver === "function";
+                    out.hasDrop = typeof r._onSlotDrop === "function";
+                    out.hasDragEnd = typeof r._onSlotDragEnd === "function";
+                    out.hasDragLeave = typeof r._onSlotDragLeave === "function";
+
+                    // Setup: zwei Bauplan-Einträge im Inventar, leerer Hotbar.
+                    r.state.player.inventory = new Array(27).fill(null);
+                    r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 1 };
+                    r.state.player.inventory[1] = { blueprintName: "kristall_geode", count: 1 };
+                    r.state.hotbar = ["village", "temple", "waterfall", null, null, null, null, null, null];
+
+                    // Fake-Event-Object für drop-Handler.
+                    const mkEvent = () => ({
+                        preventDefault: () => {},
+                        currentTarget: null,
+                    });
+
+                    // (1) inv → inv: Slot 0 ↔ Slot 5 tauschen.
+                    r.state.drag = { kind: "inv", index: 0, name: "baum_eiche" };
+                    r._onSlotDrop(mkEvent(), "inv", 5);
+                    out.invToInvSwap =
+                        r.state.player.inventory[0] === null &&
+                        r.state.player.inventory[5] &&
+                        r.state.player.inventory[5].blueprintName === "baum_eiche";
+
+                    // Reset
+                    r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 1 };
+                    r.state.player.inventory[5] = null;
+
+                    // (2) inv → hot mit leerem Hot + Inv-count=1: konsequenter
+                    // Slot-Move (Schöpfer-Wunsch V7.77+: „soll nichtmehr im
+                    // Inventar sein, nurnoch in der Hotbar"). Inv-Slot wird
+                    // null, Hot = name.
+                    r.state.drag = { kind: "inv", index: 0, name: "baum_eiche" };
+                    r._onSlotDrop(mkEvent(), "hot", 3);
+                    out.invToHotPlaces = r.state.hotbar[3] === "baum_eiche";
+                    out.invToHotEmptiesInvSlot = r.state.player.inventory[0] === null;
+
+                    // (2b) inv → hot mit leerem Hot + Inv-count=5: Slot wird
+                    // KOMPLETT null (egal count). Stack wird konsumiert.
+                    r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 5 };
+                    r.state.hotbar[4] = null;
+                    r.state.drag = { kind: "inv", index: 0, name: "baum_eiche" };
+                    r._onSlotDrop(mkEvent(), "hot", 4);
+                    out.invToHotEmptiesIgnoresCount =
+                        r.state.hotbar[4] === "baum_eiche" && r.state.player.inventory[0] === null;
+
+                    // (2c) inv → hot mit gleichem Bauplan in Hot: Inv-Slot
+                    // wird TROTZDEM leer (Schöpfer-Wunsch: konsequenter Move,
+                    // Bauplan ist aus Inv weg, in Hot war er schon).
+                    r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 3 };
+                    r.state.hotbar[4] = "baum_eiche";
+                    r.state.drag = { kind: "inv", index: 0, name: "baum_eiche" };
+                    r._onSlotDrop(mkEvent(), "hot", 4);
+                    out.invToHotSameNameStillEmpties =
+                        r.state.hotbar[4] === "baum_eiche" && r.state.player.inventory[0] === null;
+
+                    // (2d) inv → hot mit anderem Bauplan: Swap.
+                    r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 1 };
+                    r.state.hotbar[4] = "village";
+                    r.state.drag = { kind: "inv", index: 0, name: "baum_eiche" };
+                    r._onSlotDrop(mkEvent(), "hot", 4);
+                    out.invToHotSwap =
+                        r.state.hotbar[4] === "baum_eiche" &&
+                        r.state.player.inventory[0] &&
+                        r.state.player.inventory[0].blueprintName === "village" &&
+                        r.state.player.inventory[0].count === 1;
+
+                    // Reset
+                    r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 1 };
+                    r.state.hotbar[3] = null;
+                    r.state.hotbar[4] = null;
+
+                    // (3) hot → hot: Slot 0 (village) ↔ Slot 1 (temple).
+                    r.state.drag = { kind: "hot", index: 0, name: "village" };
+                    r._onSlotDrop(mkEvent(), "hot", 1);
+                    out.hotToHotSwap = r.state.hotbar[0] === "temple" && r.state.hotbar[1] === "village";
+
+                    // Reset
+                    r.state.hotbar = ["village", "temple", "waterfall", null, null, null, null, null, null];
+
+                    // (4) hot → inv mit leerem Ziel-Slot: ECHTES MOVE
+                    // (Schöpfer-Fix V7.77+: alte Logik räumte nur Hotbar,
+                    // Bauplan verschwand). Erwartung: Hot wird null,
+                    // Inv-Slot 10 bekommt {temple, count: 1}.
+                    r.state.player.inventory[10] = null;
+                    r.state.drag = { kind: "hot", index: 1, name: "temple" };
+                    r._onSlotDrop(mkEvent(), "inv", 10);
+                    out.hotToInvClearsHotbar = r.state.hotbar[1] === null;
+                    out.hotToInvFillsInvSlot =
+                        r.state.player.inventory[10] &&
+                        r.state.player.inventory[10].blueprintName === "temple" &&
+                        r.state.player.inventory[10].count === 1;
+
+                    // (4b) hot → inv mit gleichem Bauplan im Ziel: Stack
+                    // (count += 1, Hot wird null).
+                    r.state.hotbar[1] = "temple"; // Hot wieder befüllen
+                    r.state.player.inventory[10] = { blueprintName: "temple", count: 3 };
+                    r.state.drag = { kind: "hot", index: 1, name: "temple" };
+                    r._onSlotDrop(mkEvent(), "inv", 10);
+                    out.hotToInvStacksSameBp =
+                        r.state.hotbar[1] === null &&
+                        r.state.player.inventory[10] &&
+                        r.state.player.inventory[10].count === 4;
+
+                    // (4c) hot → inv mit anderem Bauplan im Ziel: no-op.
+                    r.state.hotbar[1] = "village";
+                    r.state.player.inventory[10] = { blueprintName: "temple", count: 2 };
+                    r.state.drag = { kind: "hot", index: 1, name: "village" };
+                    r._onSlotDrop(mkEvent(), "inv", 10);
+                    out.hotToInvOtherBpNoOp =
+                        r.state.hotbar[1] === "village" &&
+                        r.state.player.inventory[10] &&
+                        r.state.player.inventory[10].blueprintName === "temple" &&
+                        r.state.player.inventory[10].count === 2;
+
+                    // Cleanup für (5)
+                    r.state.player.inventory[10] = null;
+
+                    // (5) src === target: no-op (state unverändert).
+                    const before = JSON.stringify(r.state.hotbar);
+                    r.state.drag = { kind: "hot", index: 0, name: "village" };
+                    r._onSlotDrop(mkEvent(), "hot", 0);
+                    out.sameSlotNoOp = JSON.stringify(r.state.hotbar) === before;
+
+                    // (6) drag wird nach drop genullt.
+                    out.dragClearedAfterDrop = r.state.drag === null;
+
+                    // (7) DOM: gefüllte Inventar-Slots sind draggable.
+                    r.toggleInventoryOverlay(true);
+                    r.renderInventoryUI();
+                    const slot0 = document.querySelector('#inventory-grid [data-inv-slot="0"]');
+                    const emptySlot = document.querySelector("#inventory-grid .inventory-slot.empty");
+                    out.filledSlotIsDraggable = slot0 && slot0.draggable === true;
+                    // Leerer Inventar-Slot ist NICHT draggable (kein Mehrwert).
+                    out.emptySlotNotDraggable = emptySlot && emptySlot.draggable === false;
+
+                    // (8) Hotbar-Slots: gefüllte sind draggable.
+                    r._renderHotbarDOM();
+                    const hSlot0 = document.querySelector('#hotbar [data-slot="0"]');
+                    const hSlot3 = document.querySelector('#hotbar [data-slot="3"]');
+                    out.hotFilledDraggable = hSlot0 && hSlot0.draggable === true;
+                    out.hotEmptyNotDraggable = hSlot3 && hSlot3.draggable === false;
+
+                    // Cleanup
+                    r.state.hotbar = ["village", "temple", "waterfall", null, null, null, null, null, null];
+                    r.state.player.inventory = new Array(27).fill(null);
+                    r.toggleInventoryOverlay(false);
+                    r._renderHotbarDOM();
+                    r.renderInventoryUI();
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (dragResults && !dragResults.error) {
+                check("Welle 6.C1 Drag: _onSlotDragStart existiert", dragResults.hasDragStart);
+                check("Welle 6.C1 Drag: _onSlotDragOver existiert", dragResults.hasDragOver);
+                check("Welle 6.C1 Drag: _onSlotDrop existiert", dragResults.hasDrop);
+                check("Welle 6.C1 Drag: _onSlotDragEnd existiert", dragResults.hasDragEnd);
+                check("Welle 6.C1 Drag: _onSlotDragLeave existiert", dragResults.hasDragLeave);
+                check("Welle 6.C1 Drag: inv→inv tauscht Slot-Inhalte", dragResults.invToInvSwap);
+                check("Welle 6.C1 Drag: inv→hot legt Bauplan in Hotbar", dragResults.invToHotPlaces);
+                check("Welle 6.C1 Drag: inv→hot leert Inv-Slot (count=1, konsequenter Move)", dragResults.invToHotEmptiesInvSlot);
+                check("Welle 6.C1 Drag: inv→hot leert Inv-Slot auch bei count=5 (Stack konsumiert)", dragResults.invToHotEmptiesIgnoresCount);
+                check("Welle 6.C1 Drag: inv→hot mit gleichem Bauplan im Hot leert Inv-Slot trotzdem", dragResults.invToHotSameNameStillEmpties);
+                check("Welle 6.C1 Drag: inv→hot mit anderem Bauplan im Hot ist Swap", dragResults.invToHotSwap);
+                check("Welle 6.C1 Drag: hot→hot tauscht Hotbar-Slots", dragResults.hotToHotSwap);
+                check("Welle 6.C1 Drag: hot→inv räumt Hotbar-Slot (zu null)", dragResults.hotToInvClearsHotbar);
+                check("Welle 6.C1 Drag: hot→inv füllt leeren Inv-Slot mit {name, count:1}", dragResults.hotToInvFillsInvSlot);
+                check("Welle 6.C1 Drag: hot→inv stackt auf gleichem Bauplan (count += 1)", dragResults.hotToInvStacksSameBp);
+                check("Welle 6.C1 Drag: hot→inv mit anderem Bauplan ist no-op (kein Datenverlust)", dragResults.hotToInvOtherBpNoOp);
+                check("Welle 6.C1 Drag: src===target ist no-op", dragResults.sameSlotNoOp);
+                check("Welle 6.C1 Drag: state.drag wird nach drop genullt", dragResults.dragClearedAfterDrop);
+                check("Welle 6.C1 Drag: gefüllter Inventar-Slot ist draggable", dragResults.filledSlotIsDraggable);
+                check("Welle 6.C1 Drag: leerer Inventar-Slot ist NICHT draggable", dragResults.emptySlotNotDraggable);
+                check("Welle 6.C1 Drag: gefüllter Hotbar-Slot ist draggable", dragResults.hotFilledDraggable);
+                check("Welle 6.C1 Drag: leerer Hotbar-Slot ist NICHT draggable", dragResults.hotEmptyNotDraggable);
+            }
+
+            // ### Welle 6.C1 Pointer-Lock-Fix: Drag&Drop braucht freie Maus ===
+            // Inventar öffnen → exitPointerLock damit Maus-Cursor erscheint
+            // und HTML5-Drag&Drop funktioniert. WASD bleibt aktiv (Minecraft-
+            // Konvention). Esc schließt Inventar.
+            const lockResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    // Setup: Inventar zu, keys ggf. setzen (Spieler hält W).
+                    r.toggleInventoryOverlay(false);
+                    if (!r.state.keys) r.state.keys = {};
+                    r.state.keys.w = true;
+                    r.state.keys.a = true;
+
+                    // Inventar öffnen → exitPointerLock wird gerufen (wir
+                    // können das in jsdom/headless nicht direkt prüfen,
+                    // aber wir können verifizieren dass der Pfad ohne Crash
+                    // läuft + state.inventoryOpen true wird).
+                    let exitCalled = 0;
+                    const origExit = document.exitPointerLock;
+                    document.exitPointerLock = function () {
+                        exitCalled++;
+                        if (typeof origExit === "function") {
+                            try {
+                                origExit.call(document);
+                            } catch {
+                                /* defensive in headless */
+                            }
+                        }
+                    };
+                    // pointerLockElement-Property zur Laufzeit setzen
+                    // damit der Check `if (document.pointerLockElement)`
+                    // den Pfad nimmt.
+                    try {
+                        Object.defineProperty(document, "pointerLockElement", {
+                            value: document.body,
+                            configurable: true,
+                        });
+                    } catch {
+                        /* defensive */
+                    }
+
+                    r.toggleInventoryOverlay(true);
+                    out.exitLockCalledOnOpen = exitCalled >= 1;
+                    out.overlayOpenAfterToggle = r.state.inventoryOpen === true;
+                    // WASD bleibt aktiv (Minecraft-Konvention) — Schöpfer-Wunsch.
+                    out.wKeyStillActiveAfterOpen = r.state.keys.w === true;
+                    out.aKeyStillActiveAfterOpen = r.state.keys.a === true;
+
+                    // Esc-Handler bei offenem Inventar → toggle close.
+                    // Wir simulieren das durch direkten Aufruf des Pfads
+                    // (Keydown-Synthetic ist in Headless flaky).
+                    // Verifizieren dass toggleInventoryOverlay(false) sauber
+                    // arbeitet ohne Pointer-Lock erneut zu setzen.
+                    r.toggleInventoryOverlay(false);
+                    out.closeWorksWithoutReLock = r.state.inventoryOpen === false;
+
+                    // Cleanup
+                    document.exitPointerLock = origExit;
+                    r.state.keys.w = false;
+                    r.state.keys.a = false;
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (lockResults && !lockResults.error) {
+                check("Welle 6.C1 Lock: exitPointerLock wird beim Inventar-Öffnen gerufen", lockResults.exitLockCalledOnOpen);
+                check("Welle 6.C1 Lock: state.inventoryOpen wird true nach toggleOpen", lockResults.overlayOpenAfterToggle);
+                check("Welle 6.C1 Lock: WASD bleibt aktiv (Schöpfer-Wunsch: weiterbewegen geht)", lockResults.wKeyStillActiveAfterOpen);
+                check("Welle 6.C1 Lock: A-Taste bleibt aktiv bei offenem Inventar", lockResults.aKeyStillActiveAfterOpen);
+                check("Welle 6.C1 Lock: Inventar-schließen ohne Re-Lock (Canvas-Click bleibt User-Wahl)", lockResults.closeWorksWithoutReLock);
             }
 
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###

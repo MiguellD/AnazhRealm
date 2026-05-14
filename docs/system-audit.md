@@ -65,11 +65,10 @@ Diese Datei ist eine ehrliche Bestandsaufnahme: alle Funktionen, ihre Verbindung
 ## §2 — Dead-Code Kandidaten
 
 ### Confirmed Dead-Code (sollte gelöscht ODER aktiviert werden)
-- **`spawn_tree`** DSL-Op (Zeile ~913): erhöht `budget.spawnsLeft` Decrement, loggt `spawn_tree_requested`, **macht sonst nichts**. Bäume werden in Wirklichkeit von `spawnIslands`/Terrain-Code platziert, nicht über diese Op.
-- **`spawn_island`** DSL-Op (Zeile ~919): selbes Muster — `_requested`-Event, kein Effekt.
-- **`spawn_ufo`** DSL-Op (Zeile ~924): selbes Muster.
-
-**Empfehlung**: Diese drei Ops entweder **aktivieren** (Bäume/Inseln/UFOs als echte spawnbare Architekturen — passt zu 6.G-Welt-Sinne) oder **löschen** (Vision §1.3 fraktal kommt durch andere Ops). Aktivierung ist die schönere Option, da Bäume sowieso für 6.G2 (Kollision) gebraucht werden.
+- ~~**`spawn_tree`** DSL-Op (Zeile ~913): erhöht `budget.spawnsLeft` Decrement, loggt `spawn_tree_requested`, **macht sonst nichts**.~~ ✅ **Aktiviert V7.73 (Welle 6.G Phase 1)** — echter Spawn-Pfad mit btCylinderShape-Stamm-Kollision (Krone bleibt durchlässig).
+- ~~**`spawn_island`** DSL-Op (Zeile ~919): selbes Muster — `_requested`-Event, kein Effekt.~~ ✅ **Aktiviert V7.73** — radiale Noise-Insel-Geometrie + btBvhTriangleMeshShape-Kollision aus echten Vertices, Seed-Argument für Multi-User-Determinismus.
+- ~~**`spawn_ufo`** DSL-Op (Zeile ~924): selbes Muster.~~ ✅ **Aktiviert V7.73** — Cone-Mesh ohne Body (bewusst: UFOs sind fliegende Beobachter, kein Hindernis).
+- ~~**lazy-physics-Pfad für floatingIslands**~~ ✅ **Gelöscht V7.73** — `tickFrustumCulling` hatte einen Block, der bei Spieler-Approach grobe btBoxShape-Hitboxes baute, gegated auf `island.userData.needsPhysics` — das Flag wurde aber NIE auf true gesetzt. Inseln bekommen ihre Kollision jetzt sofort beim Spawn via `_buildIslandCollision`.
 
 ### Verwaiste State-Variablen
 - **`state.lastServerSaveUpdate`, `state.serverSaveInterval`, `state.isServerSaveInFlight`** (~Zeile 87-89): definiert in constructor, **nie gelesen**. Überreste eines geplanten Auto-Cloud-Save? Save-Server.js schreibt heute synchron on-demand, kein Tick-Loop. **Empfehlung**: löschen ODER aktivieren (Auto-Save alle N Sekunden in save-server — wäre nett).
@@ -336,7 +335,7 @@ Ehrlich vier Adjektive bewerten:
 ## §10 — Konkrete Empfehlungen vor PR-Merge
 
 **Vor dem PR** (1-2 Sessions Quick-Fixes):
-1. `spawn_tree`/`spawn_island`/`spawn_ufo` entweder **aktivieren oder löschen** (Vision-konsistent: aktivieren als Block 6.G1.5 vorgezogen)
+1. ~~`spawn_tree`/`spawn_island`/`spawn_ufo` entweder **aktivieren oder löschen**~~ ✅ **Aktiviert V7.73 als Welle 6.G Phase 1** — beides war die schönere Option (Bäume waren sowieso für 6.G2 Kollision gebraucht). 24 neue Playtest-Invarianten.
 2. Verwaiste `state.lastServerSaveUpdate`-Variablen aufräumen (entweder Auto-Save oder löschen)
 3. ARIA-Live-Region am Welt-Journal + Chat-Output (15-min-Fix, große Wirkung — Pfeiler §1.4)
 

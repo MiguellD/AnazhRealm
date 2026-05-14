@@ -29,7 +29,7 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self';"
         />
-        <title>Anazh Realm v7.71 – Das Ultiversum</title>
+        <title>Anazh Realm v7.77 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
              zusätzliche Datei. img-src 'self' data: in CSP erlaubt data-URI. -->
         <link
@@ -451,6 +451,142 @@
             }
             /* Ring 6.5 — Hotbar. Neun Slots am unteren Bildschirmrand, brass-
            getintet, aktiver Slot mit Violet-Glow markiert. */
+            /* === Welle 6.C1 — Hylomorphismus-Inventar Overlay === */
+            #inventory-overlay {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                z-index: 30;
+                background: var(--parch-bg, rgba(38, 26, 14, 0.95));
+                border: 2px solid var(--brass-2);
+                border-radius: 10px;
+                padding: 18px 22px 14px;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
+                font-family: "Cinzel", Georgia, serif;
+                color: var(--parch-ink);
+                max-width: 90vw;
+            }
+            #inventory-overlay[hidden] {
+                display: none;
+            }
+            #inventory-overlay .inventory-header h2 {
+                margin: 0 0 4px;
+                font-size: 18px;
+                letter-spacing: 0.05em;
+            }
+            #inventory-overlay .inventory-hint {
+                margin: 0 0 12px;
+                font-size: 11px;
+                color: var(--parch-ink-faded);
+                font-family: "IM Fell English", Georgia, serif;
+            }
+            .inventory-grid {
+                display: grid;
+                grid-template-columns: repeat(9, 64px);
+                grid-auto-rows: 56px;
+                gap: 6px;
+            }
+            .inventory-slot {
+                position: relative;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                padding: 4px 2px;
+                background: linear-gradient(180deg, rgba(255, 235, 190, 0.12), rgba(60, 40, 18, 0.3));
+                color: var(--parch-ink-faded);
+                border: 1px solid var(--brass-3);
+                border-radius: 3px;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10px;
+                cursor: pointer;
+                transition:
+                    border-color 200ms ease,
+                    box-shadow 250ms ease,
+                    background 200ms ease;
+            }
+            .inventory-slot.empty {
+                opacity: 0.3;
+                cursor: default;
+            }
+            .inventory-slot .slot-label {
+                font-size: 10px;
+                line-height: 1.1;
+                text-align: center;
+                max-width: 60px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .inventory-slot .slot-count {
+                position: absolute;
+                bottom: 2px;
+                right: 4px;
+                font-size: 10px;
+                color: var(--brass-1);
+                font-weight: 600;
+            }
+            /* Tag-Glow-Klassen: emergieren aus Compound-Tag-Werten.
+               Multiple Tag-Klassen können stacken (Bauplan mit resoniert+magie
+               bekommt beide). filter: drop-shadow ergänzt das border-glow.   */
+            .inventory-slot.tag-resoniert {
+                border-color: rgba(255, 215, 100, 0.7);
+                box-shadow: 0 0 8px rgba(255, 215, 100, 0.35);
+            }
+            .inventory-slot.tag-brennend {
+                border-color: rgba(255, 120, 60, 0.7);
+                box-shadow: 0 0 10px rgba(255, 120, 60, 0.4);
+                background: linear-gradient(180deg, rgba(255, 180, 120, 0.18), rgba(120, 40, 10, 0.35));
+            }
+            .inventory-slot.tag-magieleitung {
+                border-color: rgba(180, 130, 230, 0.75);
+                box-shadow: 0 0 10px rgba(170, 100, 230, 0.4);
+            }
+            .inventory-slot.tag-lebendig {
+                border-color: rgba(120, 200, 110, 0.7);
+                box-shadow: 0 0 6px rgba(120, 200, 110, 0.3);
+            }
+            .inventory-slot.tag-dichte {
+                box-shadow:
+                    0 4px 6px rgba(0, 0, 0, 0.5),
+                    inset 0 0 8px rgba(0, 0, 0, 0.3);
+            }
+            .inventory-slot:hover {
+                border-color: var(--brass-1);
+                background: linear-gradient(180deg, rgba(255, 235, 190, 0.28), rgba(80, 50, 22, 0.5));
+            }
+            .inventory-slot.selected {
+                border-color: var(--violet-1, #a37bd9);
+                box-shadow: 0 0 12px rgba(170, 100, 230, 0.55);
+            }
+            /* Welle 6.C1+ Drag&Drop: Source-Slot blasst aus, Target-Slot leuchtet. */
+            .inventory-slot.dragging,
+            .hotbar-slot.dragging {
+                opacity: 0.35;
+                cursor: grabbing;
+            }
+            .inventory-slot.drop-target,
+            .hotbar-slot.drop-target {
+                border-color: var(--brass-1, #d8b86b);
+                box-shadow:
+                    0 0 14px rgba(216, 184, 107, 0.7),
+                    inset 0 0 8px rgba(216, 184, 107, 0.4);
+                transform: scale(1.04);
+                transition:
+                    border-color 80ms ease,
+                    transform 80ms ease;
+            }
+            .inventory-selected {
+                margin-top: 10px;
+                font-size: 12px;
+                color: var(--parch-ink-faded);
+                font-family: "IM Fell English", Georgia, serif;
+            }
+            .inventory-selected .name {
+                color: var(--brass-1);
+                font-family: "Cinzel", Georgia, serif;
+                font-weight: 600;
+            }
             #hotbar {
                 position: absolute;
                 bottom: 18px;
@@ -1387,6 +1523,29 @@
                 display: grid;
                 grid-template-columns: 1fr 1fr;
                 gap: 5px;
+            }
+            /* Welle 6.C2 — Welt-Beziehungs-Modus-Radios */
+            #game-mode-radios {
+                grid-template-columns: 1fr 1fr 1fr;
+            }
+            .radio-label {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 4px 8px;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 12px;
+                color: var(--parch-ink);
+                cursor: pointer;
+                border: 1px solid var(--brass-2);
+                background: linear-gradient(180deg, rgba(255, 235, 190, 0.25), rgba(180, 140, 80, 0.15));
+            }
+            .radio-label input[type="radio"] {
+                accent-color: var(--violet-1, #6b4a8a);
+            }
+            .radio-label:has(input:checked) {
+                background: linear-gradient(180deg, rgba(212, 163, 255, 0.3), rgba(106, 74, 138, 0.2));
+                border-color: var(--violet-1, #6b4a8a);
             }
             .drawer .actions button {
                 background: linear-gradient(180deg, rgba(255, 235, 190, 0.4), rgba(180, 140, 80, 0.25));
@@ -2398,10 +2557,24 @@
         <div id="dialogue-box" aria-live="polite"></div>
         <div id="build-mode-hud" aria-live="polite" hidden></div>
         <div id="hotbar" role="toolbar" aria-label="Bauplan-Hotbar"></div>
+        <!-- Welle 6.C1 — Hylomorphismus-Inventar (Tab-Toggle). 27 Slots in
+             3×9-Grid. Jeder Slot trägt Tag-Profile bei Hover als Glow + Audio. -->
+        <div id="inventory-overlay" role="dialog" aria-label="Inventar" aria-modal="false" hidden>
+            <div class="inventory-header">
+                <h2>Inventar</h2>
+                <p class="inventory-hint">
+                    Tab schließt · Klick → wählen · Klick auf Hotbar → ablegen · Hover → Tag-Resonanz
+                </p>
+            </div>
+            <div id="inventory-grid" class="inventory-grid"></div>
+            <div id="inventory-selected" class="inventory-selected" aria-live="polite">
+                <span class="label">gewählt:</span> <span class="name">—</span>
+            </div>
+        </div>
         <header id="topbar" class="hud-frame">
             <div class="topbar-inner">
                 <div class="title">
-                    Anazh Realm <span class="version">v7.71</span> <span class="sub">— Das Ultiversum</span>
+                    Anazh Realm <span class="version">v7.77</span> <span class="sub">— Das Ultiversum</span>
                 </div>
                 <nav class="tabs" role="tablist" aria-label="Hauptansichten">
                     <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">
@@ -2449,6 +2622,9 @@
             >
             <span class="status-item"
                 ><span class="label">Seele</span><span class="value" id="status-soul">—</span></span
+            >
+            <span class="status-item"
+                ><span class="label">Modus</span><span class="value" id="status-mode">frieden</span></span
             >
             <span class="status-item"
                 ><span class="label">Bauten</span><span class="value" id="status-architectures">—</span></span
@@ -2600,6 +2776,28 @@
                     <button type="button" data-cmd="Lade Zustand">Laden</button>
                     <button type="button" data-cmd="Lade Datei">Datei…</button>
                     <button type="button" id="action-export-state">Export…</button>
+                </div>
+            </section>
+            <section class="section" id="game-mode-section">
+                <h3>Welt-Beziehung</h3>
+                <p class="drawer-hint">
+                    Drei Beziehungen zur Welt: <strong>frieden</strong> umarmt (kein HP, kein Tod, keine Stamina),
+                    <strong>pfad</strong> verhandelt (HP, Stamina, Tod-Wandlung), <strong>schöpfer</strong> gehorcht
+                    (voller Zugang, kein Schaden). Wechselbar jederzeit.
+                </p>
+                <div class="actions" id="game-mode-radios">
+                    <label class="radio-label">
+                        <input type="radio" name="game-mode-radio" value="frieden" checked />
+                        <span>frieden</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="game-mode-radio" value="pfad" />
+                        <span>pfad</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="game-mode-radio" value="schöpfer" />
+                        <span>schöpfer</span>
+                    </label>
                 </div>
             </section>
             <section class="section">
