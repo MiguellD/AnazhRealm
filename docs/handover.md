@@ -360,28 +360,279 @@ Hylomorphismus-System wie Materialien und Bauwerke.
   playerInventory in buildStateSnapshot. 127 Invarianten für 6.C1
   + Drag-System → 1153 total.
 
-### Was als Nächstes wartet (V7.78 +)
+### V7.83 — Welle 6.H Phase 2C live (14.05.2026): Hylomorphismus-Kreis geschlossen
 
-**Nächster Bogen: 6.A-Maus + 6.C3 Keybindings-UI (1-2 Sessions)**
+**Schöpfer-Vision-Audit hat den letzten Asymmetrie-Punkt erschlagen.**
+V7.82 baute harvest (Welt → Inventar), aber bauen war frei in allen
+Modi. Eine Quelle ohne Senke. Drei Gates existierten bereits modus-
+symmetrisch (damagePlayer, applyOpToPart), nur confirmBuild fehlte.
 
-- **6.A3 Maus-Aktionen**: konventionelle LMB/RMB-Bedienung
-  - LMB im Bau-Modus → abbauen (Raycast auf Architektur, dispose)
-  - RMB im Bau-Modus → platzieren (heutiges F-Verhalten als Geste)
-  - LMB ohne Bau-Modus → schlagen (apply damage in pfad-Modus, ggf. Werkzeug-Op auf Welt-Architektur in schöpfer/pfad)
-  - RMB ohne Bau-Modus → aufheben/interagieren
-  - F bleibt als Tastatur-Alternative (Aria-Compliance, Touch-Devices)
-  - Caveat: Pointer-Lock-State berücksichtigen — nur LMB+RMB im Canvas
-    locked, nicht über Inventar-Overlay
+**Drei neue Spiegel-Funktionen zu harvestArchitecture:**
 
-- **6.C3 Keybindings-UI**: Sektion „Tasten" in Einstellungen-Drawer
-  - state.keybindings = {move_forward: "w", build_confirm: "f", ...}
-  - Klick auf Aktion → „Drücke neue Taste" → rebind, localStorage-
-    Persistenz (`anazh.keybindings.<action>`)
-  - Konflikt-Warnung wenn zwei Aktionen auf derselben Taste
-  - Reset-Button pro Aktion
-  - Reservierte Tasten: F11 (Vollbild), Browser-Shortcuts
+- `computeBuildCost(name)` → Material-Map aus blueprint.parts × Volumen
+  (dieselbe Konstante HARVEST_VOLUME_TO_UNITS=4 wie harvest)
+- `checkBuildCost(name)` → {ok, cost, have, missing} ohne Mutation
+- `tryConsumeBuildCost(name)` → atomar: erst check, dann alle Materialien
+  abziehen (bei Mangel wird NICHTS abgezogen)
+- `_buildMaterialGate(name)` → Modus-Schalter: pfad konsumiert,
+  frieden+schöpfer return {ok:true, free:true}
 
-**Folgepläne nach 6.A+6.C3**:
+**Wertneutralität bewiesen**: Spawn + sofort Harvest derselben Architektur
+liefert genau die ursprüngliche Material-Menge zurück. Eine Konstante
+balanciert beide Richtungen.
+
+**Modus-Symmetrie der drei Gates jetzt vollständig:**
+
+|             | frieden    | pfad         | schöpfer  |
+|-------------|------------|--------------|-----------|
+| damage      | blockiert  | aktiv        | blockiert |
+| applyOpToPart Stamina | kostenlos | 10 | kostenlos |
+| **confirmBuild** | **kostenlos** | **konsumiert** | **kostenlos** |
+
+**Bau-HUD modus-bewusst**: pfad zeigt `5× stein (12)` farbig (grün ok /
+rot fehlt) pro Material, frieden+schöpfer zeigen blaues „frei".
+Modus-Wechsel triggert HUD-Refresh sofort über setGameMode-Hook.
+
+**33/33 Audit-Szenarien grün. 24 permanente Tests. 1385/1385.**
+
+**Was bleibt nach V7.83 in Welle 6.H:**
+
+- **Phase 2B.2 (Kreatur baut für Spieler)** — Geste-Umkehrung zu gather:
+  Spieler sagt „baue dorf hier", Kreatur läuft hin, konsumiert Material
+  AUS dem Spieler-Inventar, ruft confirmBuild-äquivalenten Pfad,
+  spawnt Bauplan, schreibt 'built'-Memory. 1 Session, nutzt existing
+  harvestArchitecture-Pfad rückwärts + tryConsumeBuildCost.
+- **Phase 2D (Kreaturen-Konversationen)** — „Nira, was hast du gesehen?"
+  via LLM-Provider aus pro-Kreatur memory. 2-3 Sessions, braucht LLM-
+  System-Prompt-Erweiterung mit Kreatur-Persona + memory-Auszug.
+
+**Drei größere Bögen jenseits 6.H:**
+
+- **6.B CAD-Werkstatt minimal** — Werkstatt aus dem Bauplan-Editor in
+  räumliche Welt-Klemme (Spieler steht in Werkstatt, sieht Bauplan
+  als Halo, kann mit Werkzeug-Slots agieren). 2-3 Sessions.
+- **Welle 7 Kollektive Welt-Erkenntnis** — Beschreibung in
+  docs/system-audit.md §15: die Welt lernt nicht nur aus dem Spieler-
+  Fitness-Loop, sondern aus dem **Konsens aller Multi-User-Spieler**.
+  Pattern-Memory wird welt-geteilt, Fitness-Werte aggregieren über
+  alle Mitspieler. 4-5 Sessions.
+- **Welle 8 Vergangenheits-Strom** — Welt-Journal-Einträge werden
+  spielbar (Erinnerungs-Klangschicht, sichtbare Spuren großer
+  Ereignisse). Vision §3 noch nicht angefasst. 3-4 Sessions.
+
+### V7.82 — Welle 6.H Phase 2B.5 live (14.05.2026)
+
+**Hylomorphismus-Wurzel-Vereinheitlichung.** Schöpfer-Vision-Audit-
+Frage „warum hat Spieler-LMB ein anderes Verhalten als Kreatur-gather?"
+hat eine Heilige-Lektion-Verletzung aufgedeckt, die drei Versionen
+übersehen wurde. V7.82 baut die EINE Wurzel-Funktion:
+
+**`harvestArchitecture(entry, harvester)`** — die einzige Funktion zum
+Abbauen einer Architektur. Berechnet Material-Map aus `parts × Volumen`
+(`size.x × size.y × size.z × HARVEST_VOLUME_TO_UNITS=4`). Liefert
+`{materials, blueprint, parts}`. Beide Pfade (Spieler-LMB + Kreatur-
+gather) rufen sie auf.
+
+**Material-Inventar-Schicht.** Inventar-Slots sind dual-typed:
+`{kind:'material', material, count}` oder `{kind:'blueprint', name, count}`.
+`addMaterialToInventory(material, count)` stackt bei selber Material-
+Bezeichnung. Material-Slots haben Material-Farbe als Hintergrund-Tint
+und Tag-Klassen aus `material.tags` (statt computeCompoundTags).
+
+**Zwei-Phasen-gather mit carrying.** Kreatur-Ernte landet jetzt in
+`creature.userData.carrying = {materials, blueprint, since}`, NICHT
+direkt im Spieler-Inventar. Bring-Phase: Kreatur läuft zurück zum
+Spieler, bei `CREATURE_HANDOVER_DIST=2.0` Übergabe →
+`addMaterialToInventory` für jedes Material + `delivered`-Memory-
+Eintrag. Visuell: zweites Sprite über der Kreatur in der Farbe des
+dominanten Materials.
+
+**Volumen-Diskrimination:** 2×2×2-Box liefert 8× mehr Material als
+1×1×1. Tempel mit 6 Stein-Pfeilern + Dach + Altar + Spitze → ~60+
+Stein-Einheiten. Mengen emergieren aus existing Geometrie.
+
+**35/35 Audit-Szenarien vor Push. 24 permanente Tests. 3 P2B.1-Tests
+auf carrying-Pfad umgestellt. 1361/1361 grün.**
+
+**Phase 2B-Restbestand jetzt:**
+- **Phase 2B.2 (build)** — Kreatur baut Bauplan für Spieler, verbraucht
+  Material aus Spieler-Inventar. 1 Session.
+- **Phase 2C (Werkstatt-Material)** — Werkstatt-Spawn verbraucht
+  Material aus Inventar. Material-Engpass als Spielmechanik. 1 Session.
+- **Phase 2D (Kreaturen-Konversationen)** — „Nira, was hast du
+  gesehen?" via LLM aus memory. 2-3 Sessions.
+
+### V7.81 — Welle 6.H Phase 2B.1 live (14.05.2026)
+
+**Erste konkrete Co-Schöpfer-Geste (§1.1):** Kreatur tut etwas FÜR den
+Spieler. Spieler sagt „sammle holz" → Kreatur antwortet visuell (cyan
+Aura) + akustisch (G4-Ping) + handelt (geht zur nächsten Architektur
+mit holz, baut sie ab) + erinnert sich (memory `gathered`-Eintrag) +
+Welt-Journal-Eintrag „Eine Kreatur sammelte X für den Schöpfer".
+
+**Neuer Task `gather`** mit `args.material`. `_tickCreatureTaskDirection`
+sucht via `_findNearestArchitectureWithMaterial` (durchsucht
+state.architectures, prüft ob ein Part des Bauplans dieses Material
+trägt), bewegt sich mit CREATURE_GATHER_SPEED=3.0 m/s zum Ziel, bei
+haltDist=1.5m → removeArchitecture (existing 6.A6-Pfad mit Farewell-
+Ping) + addToInventory (existing 6.C1) + memory `gathered`. Wenn
+Material erschöpft → auto-zu-wander mit `no_material`-Erinnerung +
+`reach`-Journal.
+
+**Pro-Kreatur memory[]:** FIFO mit Cap 30, Schema `{type, content, at}`
+analog worldJournal. KEINE Save-Persistenz (Vision §1.1: Beziehung
+gesprochen, nicht gespeichert; gilt auch für Erinnerung).
+
+**Context-dependentes DSL-Arg:** `creature_task(idx, name, paramArg)`
+mappt paramArg semantisch — `gather + string → {material}`,
+`follow_player + number → {distance}`. Helper `_buildCreatureTaskArgs`.
+
+**Chat-Patterns:** `sammle <material>` / `bring <material>` / `hol <m>`
+/ `gather <m>` → nächste Kreatur. `alle sammeln <material>` → alle.
+
+**UI:** Sammeln-Sektion im Kreaturen-Drawer mit Material-Dropdown
+(12 Built-in-Materialien) + 2 Buttons. Status-Bar zeigt jetzt
+„N folgen · M warten · K sammeln". Liste zeigt „sammelt holz".
+
+**Audit-Playthrough:** 45/45 grün VOR Push. 24 permanente Tests
+ergänzt. Phase-1-Test angepasst auf `≥3 Aufträgen` (war `=== 3`).
+**1337/1337 grün.**
+
+**Phase 2B-Plan-Restbestand:**
+- **Phase 2B.2 (build)** — `creature_task gather` als Vorlage: neuer
+  Task `build` mit args.blueprint + args.x/z. Kreatur geht zum Punkt,
+  spawnt Bauplan. 1 Session.
+- **Phase 2B.3 (explore)** — Task `explore` mit args.radius. Kreatur
+  durchwandert einen Bereich, schreibt entdeckte Architekturen ins
+  memory + worldJournal. 1 Session.
+
+### V7.80 — Welle 6.H Phase 2A live (14.05.2026)
+
+**Hylomorphismus durch alles Materielle.** Kreaturen sind jetzt
+Compounds aus `bodyParts × Material` — selbe Sprache wie Spieler-Seele
+(6.D), Architekturen (6.G P1.5), Inventar (6.C1). Vision §1.3 fraktal:
+**eine** Render-Pipeline, **eine** Tag-Pipeline, **eine** Mutations-API.
+
+Drei Built-in-Seelen: `sprite` (octahedron+sphere/quarz, magie-resonant),
+`wesen` (box/stein + sphere+cylinder/holz, dichte+lebendig), `geist`
+(torus/laub + sphere/leder, ätherisch). `_buildCreatureGroup(soulName)`
+ruft `_buildFromBlueprint` — drei Zeilen, keine Parallel-Implementierung.
+
+`computeCreatureCompoundTags(creature)` emergiert aus bodyParts via
+`computeCompoundTags({parts})` — Diskrimination im Test: sprite hat mehr
+magieleitung als wesen, wesen mehr dichte als geist. Charakter folgt
+aus Material × Form, nicht aus Tabelle.
+
+`_pickCreatureName` aus 30-Namen-Pool — Identitäts-Anker für künftige
+Konversationen (Phase 2C).
+
+**Kreaturen-Drawer komplett überarbeitet:**
+- Aufträge-Buttons (folge mir / komm her / warte / erkunde / alle×2)
+  als `data-cmd` — selber Pfad wie Chat (eine Sprache).
+- Form-Dropdown (Zufällig / Sprite / Wesen / Geist) + Spawn-Buttons
+  +1/+5/+10 konsultieren den Dropdown.
+- Liste der Wesen mit Name + Form + Task (folgt/wartet/streift),
+  triggert bei jedem Lifecycle-Event.
+
+**Audit-Playthrough vor Push**: 41/41 Szenarien. **33 permanente
+Playtest-Invarianten** ergänzt. Drei pre-existing Tests mit
+`creature.material.color`-Top-Level-Reads (Phase 3 + UI Run-Button)
+auf traverse umgestellt — Group-aware. `creatures_color`-DSL-Op
+ebenfalls auf traverse umgebaut (Code-Pfad-Defensive-Skip beseitigt).
+
+**1313/1313 grün** (+33).
+
+**Phase 2 Plan (für nächste Bögen):**
+
+- **Phase 2B (gather/build/explore + memory)** — 2-3 Sessions.
+  - `gather(material)`: Kreatur findet Architektur mit Material in
+    Reichweite, bringt es zurück, Inventar-Übergabe an Spieler.
+  - `build(blueprint, x, z)`: Kreatur geht zum Punkt, spawnt Bauplan.
+  - `explore(radius)`: Kreatur erkundet, schreibt Found-Architekturen
+    in ihr `memory`-Array UND ins worldJournal.
+  - `creature.userData.memory[]` als per-Kreatur Erinnerungs-Schicht.
+- **Phase 2C (Konversationen + Pattern-Lernen)** — 2-3 Sessions.
+  - Spieler ruft Kreatur beim Namen: "Nira, was hast du gesehen?".
+  - Kreatur antwortet aus `memory` via LLM-Schicht (existing Ring 7).
+  - Trainings-Pattern-Memory: häufig genutzte neue Chats lernen.
+- **Phase 2D (Custom-Seelen via DSL)** — 1 Session.
+  - `define_creature_soul(name, bodyParts)` DSL-Op (analog
+    `define_soul` für Spieler in 6.D).
+  - Editor im Kreaturen-Drawer wie Spieler-Soul-Editor.
+
+### V7.79 — Welle 6.H Phase 1 live (14.05.2026)
+
+- **6.H Phase 1 Kreaturen-Aufträge** als Co-Schöpfer-Vision §1.1.
+  Drei Tasks (`wander` = Default, heutiges Emotion-Verhalten /
+  `follow_player` = Vektor zum Spieler mit haltDist / `wait` = still).
+  `creature.userData.task = {name, args, since}`. Mutations-Pfad
+  `assignCreatureTask` triggert Aura-Update.
+- **Aura-Sprite** über der Kreatur, additives CanvasTexture mit
+  HSL-Hue je Task (follow=120 grün, wait=40 bernstein, wander=keine).
+  Lifecycle in vier Pfaden (Erzeugung, Position-Update pro Frame,
+  Wechsel, Cleanup bei removeCreature).
+- **DSL-Ops**: `creature_task(idx, name, distance?)`,
+  `creature_task_nearest(name, distance?)`,
+  `creature_task_all(name, distance?)`. Alle drei in
+  `NON_BROADCASTABLE_OPS` (Multi-User-Safety — Phase 2 mit IDs).
+- **Chat-Patterns**: `folge mir` / `komm her` / `warte` / `erkunde` /
+  `alle folgt mir` / `alle warten`.
+- **Keine Save-Persistenz** bewusst — Tasks sind im-Moment-Gesten,
+  Kreaturen sind frische Wesen pro Session, Beziehung wird durch
+  erneute Geste wiederaufgebaut.
+
+**Playthrough vor dem Push**: 43/43 Szenarien grün. **32 permanente
+Playtest-Invarianten** für Phase 1.
+
+**V2-Schließungen nach Schöpfer-Selbstaudit (zweiter Audit-Lauf,
+12 Szenarien)**: 7 Lücken gefunden + alle gefixt:
+- **Audio-Ping bei Task-Wechsel** (Vision §1.2). Frequenzen
+  follow_player=494 Hz / wait=294 Hz / wander=null (Lösen ist still).
+- **Welt-Journal `relationship`-Eintrag** bei jedem echten Wechsel
+  (Vision §1.1). `silent`-Option für Spawn-Defaults damit Init nicht
+  flutet.
+- **Leerschlag-Feedback**: assignTaskToNearest bei null schreibt
+  Chat-Output „Keine Kreatur in der Nähe" + `reach`-Journal-Eintrag.
+- **Texture-Cache** für Aura: `_getCreatureTaskAuraTexture` reusiert
+  eine einzige CanvasTexture statt pro Wechsel neu zu erzeugen.
+- **Status-Bar `#status-tasks`**: zeigt „N folgen · M warten" bzw
+  „—" wenn alle wandern.
+- **describeProgram-Distanz**: distance-Arg erscheint im Text wenn
+  gesetzt.
+
+**+21 permanente Playtest-Invarianten** V2. Gesamt: **1280/1280**.
+
+### V7.78 — Welle 6.A6 + 6.C3 live (14.05.2026)
+
+- **6.A6 Maus-Aktionen** live: LMB abbauen (Architektur am
+  THREE.Raycaster → `removeArchitecture` mit `_cullArchitectureMesh`-
+  Dispose-Pfad / kein Treffer → `modify_terrain` mit -1 m und 1.5 m
+  Radius am Ammo-Raycast-Hit), RMB platzieren (delegiert an
+  `confirmBuild`, selbe Geste wie F). Stamina-Gate analog 6.C2:
+  `MOUSE_ACTION_STAMINA_COST=5` in pfad, kostenlos in
+  frieden+schöpfer. Reichweite emergiert aus Distance-Culling
+  (cold-Strukturen sind nicht trefferbar; raycaster.far = 30 als Cap).
+- **6.C3 Keybindings** live: 6 Aktionen rebindable
+  (`break, place, confirmBuild, inventory, cancelBuild, jump`),
+  Default Minecraft-Konvention (`Mouse0/Mouse2/KeyF/Tab/Escape/Space`).
+  `state.keybindings` + `state.keybindRebind`, Persistenz in
+  `localStorage["anazh.keybindings"]`. Konflikt → **Swap** statt
+  Leerung (jede Aktion bleibt immer gebunden). UI-Sektion in
+  Einstellungen-Drawer mit „Ändern"-Button (pulsiert im Rebind-Modus)
+  und „Standard wiederherstellen"-Reset. Alle vier Eingangs-Listener
+  konsultieren `_actionForBindingCode(event.code)` — keydown
+  (confirmBuild/cancelBuild/jump), Tab-Capture (inventory, gated auf
+  `!keybindRebind`), Canvas mousedown (break/place, Pointer-Lock-
+  Gate). Escape bleibt zusätzlich immer ein Bau-Modus-Verlasser.
+
+**59 neue Invarianten** (18 für 6.A6, 41 für 6.C3) → **1212/1212
+grün**. Browser-Smoke via screenshot.cjs bestätigt Settings-Drawer-
+Sektion rendert mit den Brass-getinteten Rebind-Buttons im painterly
+Stil.
+
+### Was als Nächstes wartet (V7.79 +)
+
+**Folgepläne**:
 - 12. **6.B CAD-Werkstatt** (2 Sessions) — 3D-Preview-Pane + Drag-Items
   + Grid-Snap. Minimal Magic: kein Boolean/MultiSelect.
 - 13. **6.G Phase 3** (4-5 Sessions) — Schatten + Wasser + Wind +

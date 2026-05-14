@@ -508,11 +508,23 @@ function startSaveServer() {
                         learned.program[1] === "blue" &&
                         learned.source === "human";
 
-                    // 8. Phase 5: "Führe Fähigkeit aus" ruft dslRun und mutiert state
+                    // 8. Phase 5: "Führe Fähigkeit aus" ruft dslRun und mutiert state.
+                    // Welle 6.H P2A — Kreatur ist Group; Color lebt auf Sub-Meshes.
                     const someCreature = r.state.creatures[0];
-                    const colorBefore = someCreature ? someCreature.material.color.getHex() : 0;
+                    const readCreatureColor = (c) => {
+                        if (!c) return 0;
+                        if (c.material && c.material.color) return c.material.color.getHex();
+                        let hex = 0;
+                        if (typeof c.traverse === "function") {
+                            c.traverse((n) => {
+                                if (!hex && n.isMesh && n.material && n.material.color) hex = n.material.color.getHex();
+                            });
+                        }
+                        return hex;
+                    };
+                    const colorBefore = readCreatureColor(someCreature);
                     r.processChatCommand("Führe Fähigkeit aus blaukreaturen");
-                    const colorAfter = someCreature ? someCreature.material.color.getHex() : 0;
+                    const colorAfter = readCreatureColor(someCreature);
                     // 0x0000ff = blue
                     out.abilityExecutedMutatesWorld = colorAfter === 0x0000ff && colorBefore !== colorAfter;
 
@@ -4107,8 +4119,7 @@ function startSaveServer() {
                     r.state.p2p.url = "";
                     r.state.p2p.enabled = false;
                     r.p2pLoadPersisted();
-                    out.persistRoundTrip =
-                        r.state.p2p.url === "ws://example.org:9999" && r.state.p2p.enabled === true;
+                    out.persistRoundTrip = r.state.p2p.url === "ws://example.org:9999" && r.state.p2p.enabled === true;
                     // wieder auf Default
                     r.state.p2p.url = "ws://127.0.0.1:4313";
                     r.state.p2p.enabled = false;
@@ -4127,7 +4138,8 @@ function startSaveServer() {
                     out.posUpdatesPeer = peerA && peerA.x === 10 && peerA.y === 5 && peerA.z === 3 && peerA.yaw === 1.5;
 
                     // Mesh wird angelegt (THREE.Group als Avatar)
-                    out.peerMeshSpawned = peerA && peerA.mesh && peerA.mesh.children && peerA.mesh.children.length === 2;
+                    out.peerMeshSpawned =
+                        peerA && peerA.mesh && peerA.mesh.children && peerA.mesh.children.length === 2;
 
                     // peer-leave entfernt peer + mesh aus scene
                     const sceneSizeBefore = r.state.scene.children.length;
@@ -4140,9 +4152,7 @@ function startSaveServer() {
                     out.ownPeerIgnored = !r.state.p2p.peers.has("self-test");
 
                     // Invalid pos (NaN) wird verworfen
-                    r.p2pHandleMessage(
-                        JSON.stringify({ type: "pos", peerId: "peerB", x: NaN, y: 0, z: 0, yaw: 0 })
-                    );
+                    r.p2pHandleMessage(JSON.stringify({ type: "pos", peerId: "peerB", x: NaN, y: 0, z: 0, yaw: 0 }));
                     const peerB = r.state.p2p.peers.get("peerB");
                     out.nanPosNotApplied = peerB && peerB.x === 0;
 
@@ -4223,10 +4233,7 @@ function startSaveServer() {
                 check("Ring 11 V1: NaN-Koordinate in pos wird verworfen", ring11Results.nanPosNotApplied);
                 check("Ring 11 V1: p2pSend ohne offene WS liefert false", ring11Results.sendWithoutWsFalse);
                 check("Ring 11 V1: p2pTick ohne enabled ist no-op (kein Crash)", ring11Results.tickNoOpSafe);
-                check(
-                    "Ring 11 V1: KEIN p2p-/peer_dsl-/remote_run-DSL-Op (Sandbox-Grenze)",
-                    ring11Results.noP2PDslOp
-                );
+                check("Ring 11 V1: KEIN p2p-/peer_dsl-/remote_run-DSL-Op (Sandbox-Grenze)", ring11Results.noP2PDslOp);
                 check("Ring 11 V2.1: CSP enthält allgemeines ws:/wss: (LAN-fähig)", ring11Results.cspHasWebSocket);
                 check("Ring 11 V1: CSP bleibt strict (default-src 'self')", ring11Results.cspKeepsSelf);
                 check("Ring 11 V1: UI-Toggle-Element im DOM", ring11Results.uiToggleExists);
@@ -4303,9 +4310,7 @@ function startSaveServer() {
                     // 7) eingehende dsl mit non-array program wird verworfen
                     let crashed = false;
                     try {
-                        r.p2pHandleMessage(
-                            JSON.stringify({ type: "dsl", peerId: "peerX", program: "not-array" })
-                        );
+                        r.p2pHandleMessage(JSON.stringify({ type: "dsl", peerId: "peerX", program: "not-array" }));
                     } catch (e) {
                         crashed = e.message;
                     }
@@ -4314,14 +4319,10 @@ function startSaveServer() {
                     // 8) Discrimination: zwei minimal verschiedene Programme produzieren
                     // unterschiedliche Welt-Zustände (echtes Sync, keine Stille)
                     r.state.weather = "sunny";
-                    r.p2pHandleMessage(
-                        JSON.stringify({ type: "dsl", peerId: "peerX", program: ["weather", "rainy"] })
-                    );
+                    r.p2pHandleMessage(JSON.stringify({ type: "dsl", peerId: "peerX", program: ["weather", "rainy"] }));
                     const afterRainy = r.state.weather;
                     r.state.weather = "sunny";
-                    r.p2pHandleMessage(
-                        JSON.stringify({ type: "dsl", peerId: "peerX", program: ["weather", "sunny"] })
-                    );
+                    r.p2pHandleMessage(JSON.stringify({ type: "dsl", peerId: "peerX", program: ["weather", "sunny"] }));
                     const afterSunny = r.state.weather;
                     out.discriminationHolds = afterRainy === "rainy" && afterSunny === "sunny";
 
@@ -4358,14 +4359,32 @@ function startSaveServer() {
             } else {
                 check("Ring 11 V2: p2pBroadcastDsl-Methode existiert", ring11V2Results.broadcastMethodExists);
                 check("Ring 11 V2: human-DSL wird gebroadcastet", ring11V2Results.humanBroadcasts);
-                check("Ring 11 V2: remote-DSL wird NICHT re-gebroadcastet (Loop-Schutz)", ring11V2Results.remoteDoesNotEcho);
-                check("Ring 11 V2: LLM-DSL wird NICHT gebroadcastet (nur explizite human-Geste)", ring11V2Results.llmDoesNotBroadcast);
-                check("Ring 11 V2: nicht-verbundener Client broadcastet nicht", ring11V2Results.disconnectedSkipsBroadcast);
-                check("Ring 11 V2: eingehende dsl-Nachricht wird lokal ausgeführt (weather wechselt)", ring11V2Results.remoteDslAppliedLocally);
+                check(
+                    "Ring 11 V2: remote-DSL wird NICHT re-gebroadcastet (Loop-Schutz)",
+                    ring11V2Results.remoteDoesNotEcho
+                );
+                check(
+                    "Ring 11 V2: LLM-DSL wird NICHT gebroadcastet (nur explizite human-Geste)",
+                    ring11V2Results.llmDoesNotBroadcast
+                );
+                check(
+                    "Ring 11 V2: nicht-verbundener Client broadcastet nicht",
+                    ring11V2Results.disconnectedSkipsBroadcast
+                );
+                check(
+                    "Ring 11 V2: eingehende dsl-Nachricht wird lokal ausgeführt (weather wechselt)",
+                    ring11V2Results.remoteDslAppliedLocally
+                );
                 check("Ring 11 V2: dsl mit eigener peerId wird ignoriert", ring11V2Results.ownPeerDslIgnored);
                 check("Ring 11 V2: dsl mit non-array program crasht nicht", ring11V2Results.nonArrayDslNoCrash);
-                check("Ring 11 V2: Diskrimination — zwei verschiedene Programme → zwei verschiedene Welt-Zustände", ring11V2Results.discriminationHolds);
-                check("Ring 11 V2: Remote modify_terrain wächst lokale chunkDeltas (Vision-Punkt)", ring11V2Results.remoteModifyTerrainGrowsDeltas);
+                check(
+                    "Ring 11 V2: Diskrimination — zwei verschiedene Programme → zwei verschiedene Welt-Zustände",
+                    ring11V2Results.discriminationHolds
+                );
+                check(
+                    "Ring 11 V2: Remote modify_terrain wächst lokale chunkDeltas (Vision-Punkt)",
+                    ring11V2Results.remoteModifyTerrainGrowsDeltas
+                );
             }
 
             // ### Ring 11 V2.1 — LAN-Fähigkeit + Sync-Korrektheit ###
@@ -4469,8 +4488,7 @@ function startSaveServer() {
                     const arch1 = r.state.architectures[r.state.architectures.length - 1];
                     r.dslRun(["spawn_village", ["at", 60, 0, 60], 12345], { source: "remote:peerX" });
                     const arch2 = r.state.architectures[r.state.architectures.length - 1];
-                    out.seedDeterminismHolds =
-                        arch1 && arch2 && arch1.seed === arch2.seed && arch1.seed === 12345;
+                    out.seedDeterminismHolds = arch1 && arch2 && arch1.seed === arch2.seed && arch1.seed === 12345;
                     // Cleanup
                     r.state.architectures = r.state.architectures.slice(0, beforeArchCount);
 
@@ -4501,7 +4519,10 @@ function startSaveServer() {
                 check("Ring 11 V2.1: _dslContainsAnyOp findet Op flat", ring11V21Results.containsOpFlat);
                 check("Ring 11 V2.1: _dslContainsAnyOp findet Op verschachtelt", ring11V21Results.containsOpNested);
                 check("Ring 11 V2.1: _dslContainsAnyOp ignoriert nicht-listed Ops", ring11V21Results.containsOpClean);
-                check("Ring 11 V2.1: clean program (weather) wird gebroadcastet", ring11V21Results.cleanProgramBroadcasts);
+                check(
+                    "Ring 11 V2.1: clean program (weather) wird gebroadcastet",
+                    ring11V21Results.cleanProgramBroadcasts
+                );
                 check(
                     "Ring 11 V2.1: player_speed (private) wird NICHT gebroadcastet",
                     ring11V21Results.playerOpDoesNotBroadcast
@@ -4514,14 +4535,8 @@ function startSaveServer() {
                     "Ring 11 V2.1: Chat 'baue dorf hier' embed at(x,y,z)+seed (Multi-Sync-Fix)",
                     ring11V21Results.dorfHasAtNotAtPlayer
                 );
-                check(
-                    "Ring 11 V2.1: Chat 'spawne kreaturen N' embed at-Position",
-                    ring11V21Results.kreatureHasAt
-                );
-                check(
-                    "Ring 11 V2.1: Chat 'baue fraktal X' embed at+rootSeed",
-                    ring11V21Results.fraktalHasSeed
-                );
+                check("Ring 11 V2.1: Chat 'spawne kreaturen N' embed at-Position", ring11V21Results.kreatureHasAt);
+                check("Ring 11 V2.1: Chat 'baue fraktal X' embed at+rootSeed", ring11V21Results.fraktalHasSeed);
                 check(
                     "Ring 11 V2.1: spawn_village(seed) ist deterministisch (gleicher Seed → gleicher Wert)",
                     ring11V21Results.seedDeterminismHolds
@@ -4552,14 +4567,14 @@ function startSaveServer() {
                     out.encodeShape = codeA === "anazh://192.168.1.42:4313/w-1k7p-abc123";
                     const parsedA = r.parseInvitationCode(codeA);
                     out.decodeShape =
-                        parsedA &&
-                        parsedA.url === "ws://192.168.1.42:4313" &&
-                        parsedA.roomId === "w-1k7p-abc123";
+                        parsedA && parsedA.url === "ws://192.168.1.42:4313" && parsedA.roomId === "w-1k7p-abc123";
 
                     // 3. parseInvitationCode toleriert tolerantes Format
                     const parsedTolerant = r.parseInvitationCode("192.168.1.42:4313/myroom123");
                     out.parseTolerant =
-                        parsedTolerant && parsedTolerant.url === "ws://192.168.1.42:4313" && parsedTolerant.roomId === "myroom123";
+                        parsedTolerant &&
+                        parsedTolerant.url === "ws://192.168.1.42:4313" &&
+                        parsedTolerant.roomId === "myroom123";
 
                     // 4. parseInvitationCode lehnt Müll ab
                     out.parseRejectsEmpty = r.parseInvitationCode("") === null;
@@ -4677,19 +4692,40 @@ function startSaveServer() {
                 check("Ring 11.5: state.p2p.pendingWorldSnapshot-Feld existiert", ring115Results.hasPendingFlag);
                 check("Ring 11.5: makeInvitationCode liefert anazh://host:port/roomId", ring115Results.encodeShape);
                 check("Ring 11.5: parseInvitationCode dekodiert URL + roomId", ring115Results.decodeShape);
-                check("Ring 11.5: parseInvitationCode toleriert host:port/room ohne Schema", ring115Results.parseTolerant);
+                check(
+                    "Ring 11.5: parseInvitationCode toleriert host:port/room ohne Schema",
+                    ring115Results.parseTolerant
+                );
                 check("Ring 11.5: parseInvitationCode lehnt leeren Code ab", ring115Results.parseRejectsEmpty);
                 check("Ring 11.5: parseInvitationCode lehnt unsinnigen Code ab", ring115Results.parseRejectsBad);
                 check("Ring 11.5: parseInvitationCode lehnt zu kurze roomId ab", ring115Results.parseRejectsShortRoom);
-                check("Ring 11.5: createNewWorld({role:'host'}) speichert role im worldMeta", ring115Results.hostRoleInSavedMeta);
+                check(
+                    "Ring 11.5: createNewWorld({role:'host'}) speichert role im worldMeta",
+                    ring115Results.hostRoleInSavedMeta
+                );
                 check("Ring 11.5: _importGuestWorld nutzt host-worldId als neue worldId", ring115Results.guestImportOk);
                 check("Ring 11.5: _importGuestWorld setzt worldMeta.role='guest'", ring115Results.guestRoleSet);
                 check("Ring 11.5: _importGuestWorld setzt worldMeta.hostInfo korrekt", ring115Results.guestHostInfoSet);
-                check("Ring 11.5: _importGuestWorld aktiviert P2P-Auto-Connect (localStorage)", ring115Results.p2pEnabledPersisted);
-                check("Ring 11.5: _importGuestWorld speichert host-URL in localStorage", ring115Results.p2pUrlPersisted);
-                check("Ring 11.5: world-snapshot wird ohne pending-Flag verworfen (Sicherheits-Wall)", ring115Results.snapshotRejectedWhenNotPending);
-                check("Ring 11.5: Solo-Spieler antwortet NICHT auf world-request", ring115Results.soloDoesNotAnswerRequest);
-                check("Ring 11.5: Host antwortet auf world-request mit world-snapshot (to=asker)", ring115Results.hostAnswersRequestWithSnapshot);
+                check(
+                    "Ring 11.5: _importGuestWorld aktiviert P2P-Auto-Connect (localStorage)",
+                    ring115Results.p2pEnabledPersisted
+                );
+                check(
+                    "Ring 11.5: _importGuestWorld speichert host-URL in localStorage",
+                    ring115Results.p2pUrlPersisted
+                );
+                check(
+                    "Ring 11.5: world-snapshot wird ohne pending-Flag verworfen (Sicherheits-Wall)",
+                    ring115Results.snapshotRejectedWhenNotPending
+                );
+                check(
+                    "Ring 11.5: Solo-Spieler antwortet NICHT auf world-request",
+                    ring115Results.soloDoesNotAnswerRequest
+                );
+                check(
+                    "Ring 11.5: Host antwortet auf world-request mit world-snapshot (to=asker)",
+                    ring115Results.hostAnswersRequestWithSnapshot
+                );
                 check("Ring 11.5: new-world-dialog im DOM", ring115Results.dialogExists);
                 check("Ring 11.5: Mode-Radios (solo/multi) im DOM", ring115Results.modeRadiosExist);
                 check("Ring 11.5: Role-Radios (host/join) im DOM", ring115Results.roleRadiosExist);
@@ -4814,7 +4850,10 @@ function startSaveServer() {
                         wave6aResults.otherFrictionDefault
                     );
                 }
-                check("Welle 6.A2: isPlayerGrounded hat groundDistance-Konstante (refactored)", wave6aResults.hasGroundDistanceVar);
+                check(
+                    "Welle 6.A2: isPlayerGrounded hat groundDistance-Konstante (refactored)",
+                    wave6aResults.hasGroundDistanceVar
+                );
                 check(
                     "Welle 6.A2: groundDistance ist 0.6 (entspannte Schwelle für Bauwerks-Sub-Boxes)",
                     wave6aResults.groundDistanceIs06
@@ -4882,8 +4921,7 @@ function startSaveServer() {
                         // Setze Spieler knapp über die Top-Fläche
                         r.state.playerMesh.position.set(_savedX + 40, box.max.y + 0.3, _savedZ + 40);
                         r.isPlayerGrounded();
-                        flatBlueprintNotSteep =
-                            r.state.onSteepSlope === false && r.state.groundNormalY > 0.7;
+                        flatBlueprintNotSteep = r.state.onSteepSlope === false && r.state.groundNormalY > 0.7;
                         out.archTopGroundNormalY = r.state.groundNormalY;
                         out.archTopOnSteepSlope = r.state.onSteepSlope;
                     }
@@ -4923,14 +4961,8 @@ function startSaveServer() {
                     "Welle 6.A3: isPlayerGrounded liest get_m_hitNormalWorld (Slope-Tracking aktiv)",
                     wave6a3Results.fnReadsNormal
                 );
-                check(
-                    "Welle 6.A3: isPlayerGrounded setzt onSteepSlope-Flag",
-                    wave6a3Results.fnSetsSteepFlag
-                );
-                check(
-                    "Welle 6.A3: isPlayerGrounded setzt groundNormalY",
-                    wave6a3Results.fnSetsGroundNormal
-                );
+                check("Welle 6.A3: isPlayerGrounded setzt onSteepSlope-Flag", wave6a3Results.fnSetsSteepFlag);
+                check("Welle 6.A3: isPlayerGrounded setzt groundNormalY", wave6a3Results.fnSetsGroundNormal);
                 check(
                     "Welle 6.A3: Negativ-Kontrolle — Himmel hat onSteepSlope=false (nicht geerdet)",
                     wave6a3Results.skyOnSteepSlope === false
@@ -5070,7 +5102,10 @@ function startSaveServer() {
                     "Welle 6.A4: _resolvePhantomTarget nutzt getWorldDirection",
                     wave6a45Results.resolveUsesGetWorldDirection
                 );
-                check("Welle 6.A4: _resolvePhantomTarget nutzt physicsWorld.rayTest", wave6a45Results.resolveUsesRayTest);
+                check(
+                    "Welle 6.A4: _resolvePhantomTarget nutzt physicsWorld.rayTest",
+                    wave6a45Results.resolveUsesRayTest
+                );
                 check(
                     "Welle 6.A5: _resolvePhantomTarget liest hit-Normal für Stabilität",
                     wave6a45Results.resolveReadsNormal
@@ -5080,11 +5115,17 @@ function startSaveServer() {
                     wave6a45Results.resolveStabilityThreshold
                 );
                 check("Welle 6.A4: _resolvePhantomTarget hat Fallback-Pfad", wave6a45Results.resolveHasFallback);
-                check("Welle 6.A5: _applyPhantomTint cached _origColor (kein Drift)", wave6a45Results.tintCachesOrigColor);
+                check(
+                    "Welle 6.A5: _applyPhantomTint cached _origColor (kein Drift)",
+                    wave6a45Results.tintCachesOrigColor
+                );
                 check("Welle 6.A5: Tint hat Grün-Code 0x88ff88 für stabil", wave6a45Results.tintHasGreenStable);
                 check("Welle 6.A5: Tint hat Rot-Code 0xff8888 für instabil", wave6a45Results.tintHasRedUnstable);
                 if (wave6a45Results.phantomExists) {
-                    check("Welle 6.A4: Phantom landet auf Hit-Punkt (nicht alter Y-Fallback)", wave6a45Results.phantomYDownward);
+                    check(
+                        "Welle 6.A4: Phantom landet auf Hit-Punkt (nicht alter Y-Fallback)",
+                        wave6a45Results.phantomYDownward
+                    );
                     check(
                         "Welle 6.A5: Diskrimination — Kamera auf Boden → phantomOnGround=true",
                         wave6a45Results.phantomOnGroundAfterTick === true
@@ -5156,17 +5197,11 @@ function startSaveServer() {
                 check("Welle 6.E1: _describeDslPosition-Helper existiert", wave6e1Results.hasPosHelper);
                 check("Welle 6.E1: _describeDslCondition-Helper existiert", wave6e1Results.hasCondHelper);
                 check("Welle 6.E1: weather-Op wird beschrieben (Wetter + Wert)", wave6e1Results.weatherOk);
-                check(
-                    "Welle 6.E1: spawn_creature-Op nutzt count + emotion + position",
-                    wave6e1Results.creatureOk
-                );
+                check("Welle 6.E1: spawn_creature-Op nutzt count + emotion + position", wave6e1Results.creatureOk);
                 check("Welle 6.E1: chain-Op verbindet Teile mit 'und'", wave6e1Results.chainOk);
                 check("Welle 6.E1: when-Op rendert Condition + Then", wave6e1Results.whenOk);
                 check("Welle 6.E1: unbekannter Op fällt sauber auf Fallback", wave6e1Results.unknownOk);
-                check(
-                    "Welle 6.E1: addNewAbility persistiert description-Feld",
-                    wave6e1Results.persistedOk
-                );
+                check("Welle 6.E1: addNewAbility persistiert description-Feld", wave6e1Results.persistedOk);
                 check(
                     "Welle 6.E1: Lazy-Compute füllt description bei alten Saves (renderAbilitiesList)",
                     wave6e1Results.lazyComputed
@@ -5205,7 +5240,10 @@ function startSaveServer() {
                 check("Welle 6.E2: _introPages-Helper existiert", wave6e2Results.hasPagesHelper);
                 check("Welle 6.E2: #intro-dialog im DOM (init-Aufruf in init()-Sequenz)", wave6e2Results.dialogInDom);
                 check("Welle 6.E2: drei Intro-Seiten", wave6e2Results.pageCount === 3);
-                check("Welle 6.E2: alle Seiten haben Titel + Text", wave6e2Results.pagesHaveTitle && wave6e2Results.pagesHaveBody);
+                check(
+                    "Welle 6.E2: alle Seiten haben Titel + Text",
+                    wave6e2Results.pagesHaveTitle && wave6e2Results.pagesHaveBody
+                );
                 check("Welle 6.E2: Prev-Button vorhanden", wave6e2Results.hasPrevBtn);
                 check("Welle 6.E2: Next-Button vorhanden", wave6e2Results.hasNextBtn);
                 check("Welle 6.E2: Skip-Button vorhanden", wave6e2Results.hasSkipBtn);
@@ -5282,7 +5320,12 @@ function startSaveServer() {
                         label: "Schwach",
                         builtIn: false,
                         parts: [
-                            { shape: "box", position: { x: 0, y: 0, z: 0 }, size: { x: 0.5, y: 0.5, z: 0.5 }, material: "stein" },
+                            {
+                                shape: "box",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 0.5, y: 0.5, z: 0.5 },
+                                material: "stein",
+                            },
                             {
                                 shape: "box",
                                 position: { x: 10, y: 0, z: 0 },
@@ -5300,28 +5343,29 @@ function startSaveServer() {
                     out.weakIsBelowThreshold = weakStrength < 0.7;
 
                     // Journal-Counter vor spawn
-                    const beforeJournal = r.state.worldJournal && r.state.worldJournal.entries
-                        ? r.state.worldJournal.entries.length
-                        : 0;
-                    const beforeSeenKeys = r.state.worldJournal && r.state.worldJournal.seen
-                        ? Object.keys(r.state.worldJournal.seen).filter((k) => k.startsWith("weak_connection:")).length
-                        : 0;
+                    const beforeJournal =
+                        r.state.worldJournal && r.state.worldJournal.entries ? r.state.worldJournal.entries.length : 0;
+                    const beforeSeenKeys =
+                        r.state.worldJournal && r.state.worldJournal.seen
+                            ? Object.keys(r.state.worldJournal.seen).filter((k) => k.startsWith("weak_connection:"))
+                                  .length
+                            : 0;
                     const beforeArchCount = r.state.architectures.length;
                     r.spawnArchitecture(weakName, { x: 250, y: 0, z: 250 }, { seed: 1 });
-                    const afterSeenKeys = r.state.worldJournal && r.state.worldJournal.seen
-                        ? Object.keys(r.state.worldJournal.seen).filter((k) => k.startsWith("weak_connection:")).length
-                        : 0;
-                    const afterJournal = r.state.worldJournal && r.state.worldJournal.entries
-                        ? r.state.worldJournal.entries.length
-                        : 0;
+                    const afterSeenKeys =
+                        r.state.worldJournal && r.state.worldJournal.seen
+                            ? Object.keys(r.state.worldJournal.seen).filter((k) => k.startsWith("weak_connection:"))
+                                  .length
+                            : 0;
+                    const afterJournal =
+                        r.state.worldJournal && r.state.worldJournal.entries ? r.state.worldJournal.entries.length : 0;
                     out.weakJournalIncrement = afterJournal - beforeJournal >= 1;
                     out.weakSeenKeyAdded = afterSeenKeys > beforeSeenKeys;
 
                     // 6.F2 Idempotenz: zweimal spawnen → kein zweiter Eintrag
                     r.spawnArchitecture(weakName, { x: 260, y: 0, z: 260 }, { seed: 2 });
-                    const after2Journal = r.state.worldJournal && r.state.worldJournal.entries
-                        ? r.state.worldJournal.entries.length
-                        : 0;
+                    const after2Journal =
+                        r.state.worldJournal && r.state.worldJournal.entries ? r.state.worldJournal.entries.length : 0;
                     out.weakIsIdempotent = after2Journal === afterJournal;
 
                     // Negativ-Kontrolle: starker Bauplan → KEIN weak_connection-Eintrag
@@ -5331,8 +5375,18 @@ function startSaveServer() {
                         label: "Stark",
                         builtIn: false,
                         parts: [
-                            { shape: "box", position: { x: 0, y: 0, z: 0 }, size: { x: 2, y: 2, z: 2 }, material: "eisen" },
-                            { shape: "box", position: { x: 2.0, y: 0, z: 0 }, size: { x: 2, y: 2, z: 2 }, material: "eisen" },
+                            {
+                                shape: "box",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 2, y: 2, z: 2 },
+                                material: "eisen",
+                            },
+                            {
+                                shape: "box",
+                                position: { x: 2.0, y: 0, z: 0 },
+                                size: { x: 2, y: 2, z: 2 },
+                                material: "eisen",
+                            },
                         ],
                         connections: [{ type: "welding", partA: 0, partB: 1 }],
                     };
@@ -5369,12 +5423,27 @@ function startSaveServer() {
                 check("Welle 6.F1: starke Verbindung (≥1.5) = grün 0x66ff88", wave6fResults.colorStrongIsGreen);
                 check("Welle 6.F1: Bauplan mit Connection erhält THREE.Line im Group", wave6fResults.lineExists);
                 check("Welle 6.F1: Line trägt userData.isConnectionLine-Flag", wave6fResults.lineHasUserDataFlag);
-                check("Welle 6.F2: weakBauplan hat strength < 0.7 (test-setup korrekt)", wave6fResults.weakIsBelowThreshold);
-                check("Welle 6.F2: spawnArchitecture mit schwacher Verbindung schreibt Journal-Eintrag", wave6fResults.weakJournalIncrement);
+                check(
+                    "Welle 6.F2: weakBauplan hat strength < 0.7 (test-setup korrekt)",
+                    wave6fResults.weakIsBelowThreshold
+                );
+                check(
+                    "Welle 6.F2: spawnArchitecture mit schwacher Verbindung schreibt Journal-Eintrag",
+                    wave6fResults.weakJournalIncrement
+                );
                 check("Welle 6.F2: weak_connection:-Schlüssel im worldJournal.seen", wave6fResults.weakSeenKeyAdded);
-                check("Welle 6.F2: Idempotent — zweiter Spawn schreibt KEIN doppeltes Warn", wave6fResults.weakIsIdempotent);
-                check("Welle 6.F2: starker Bauplan hat strength ≥ 0.7 (test-setup korrekt)", wave6fResults.strongIsAboveThreshold);
-                check("Welle 6.F2: Diskrimination — starker Bauplan löst KEINE weak-Warning aus", wave6fResults.strongNoWarning);
+                check(
+                    "Welle 6.F2: Idempotent — zweiter Spawn schreibt KEIN doppeltes Warn",
+                    wave6fResults.weakIsIdempotent
+                );
+                check(
+                    "Welle 6.F2: starker Bauplan hat strength ≥ 0.7 (test-setup korrekt)",
+                    wave6fResults.strongIsAboveThreshold
+                );
+                check(
+                    "Welle 6.F2: Diskrimination — starker Bauplan löst KEINE weak-Warning aus",
+                    wave6fResults.strongNoWarning
+                );
             }
 
             // ### Welle 6.D Etappe 1 — Soul-Tags + STAT_FROM_TAGS + Stat-Berechnung ###
@@ -5434,10 +5503,19 @@ function startSaveServer() {
                     const computed = r.computePlayerStats();
                     out.computedHasTags = computed && typeof computed.tags === "object";
                     out.computedHasStats = computed && typeof computed.stats === "object";
-                    out.computedStatsHasAll = computed && computed.stats &&
-                        ["hpMax", "damage", "speed", "jumpPower", "staminaMax", "precision", "magicResist", "heatResist"].every(
-                            (k) => typeof computed.stats[k] === "number" && Number.isFinite(computed.stats[k])
-                        );
+                    out.computedStatsHasAll =
+                        computed &&
+                        computed.stats &&
+                        [
+                            "hpMax",
+                            "damage",
+                            "speed",
+                            "jumpPower",
+                            "staminaMax",
+                            "precision",
+                            "magicResist",
+                            "heatResist",
+                        ].every((k) => typeof computed.stats[k] === "number" && Number.isFinite(computed.stats[k]));
 
                     // Diskriminations-Test: drei Seelen → drei verschiedene Stat-Profile
                     const savedSoul = r.state.player.soul;
@@ -5472,7 +5550,8 @@ function startSaveServer() {
                     out.stateSpeedMatches = Math.abs(r.state.speed - phoenixStats.speed) < 0.001;
                     out.stateJumpPowerMatches = Math.abs(r.state.jumpPower - phoenixStats.jumpPower) < 0.001;
                     out.stateSprintIsDoubleSpeed = Math.abs(r.state.sprintSpeed - phoenixStats.speed * 2) < 0.001;
-                    out.statePlayerStatsCached = r.state.player.stats && r.state.player.stats.hpMax === phoenixStats.hpMax;
+                    out.statePlayerStatsCached =
+                        r.state.player.stats && r.state.player.stats.hpMax === phoenixStats.hpMax;
                     out.statePlayerHasHpAndStamina =
                         typeof r.state.player.hp === "number" &&
                         typeof r.state.player.hpMax === "number" &&
@@ -5532,7 +5611,11 @@ function startSaveServer() {
 
                     // (2) Chat-Pattern für damage
                     const dmgPattern = r.parseChatToDsl("schade mir 42");
-                    out.damageChatParses = dmgPattern && dmgPattern.program && dmgPattern.program[0] === "damage" && dmgPattern.program[1] === 42;
+                    out.damageChatParses =
+                        dmgPattern &&
+                        dmgPattern.program &&
+                        dmgPattern.program[0] === "damage" &&
+                        dmgPattern.program[1] === 42;
                     const trinkPattern = r.parseChatToDsl("trink trank_lichts");
                     out.trinkChatParses = trinkPattern && trinkPattern.program[0] === "apply_boost";
                     const ruestePattern = r.parseChatToDsl("rüste werkzeug hammer");
@@ -5642,7 +5725,14 @@ function startSaveServer() {
                         label: "Test",
                         builtIn: false,
                         // eisen akzeptiert plastic-Op (hammer-Klasse); stein nur subtractive.
-                        parts: [{ shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } }],
+                        parts: [
+                            {
+                                shape: "box",
+                                material: "eisen",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                            },
+                        ],
                     };
                     if (!r.state.player.tools.includes("hammer")) r.state.player.tools.push("hammer");
                     const staBefore = r.state.player.stamina;
@@ -5668,8 +5758,18 @@ function startSaveServer() {
                         label: "Magie-Trank",
                         builtIn: false,
                         parts: [
-                            { shape: "helix", material: "quarz", position: { x: 0, y: 0, z: 0 }, size: { x: 0.3, y: 0.5, z: 2 } },
-                            { shape: "sphere", material: "glut", position: { x: 0, y: 0.5, z: 0 }, size: { x: 0.2, y: 0.2, z: 0.2 } },
+                            {
+                                shape: "helix",
+                                material: "quarz",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 0.3, y: 0.5, z: 2 },
+                            },
+                            {
+                                shape: "sphere",
+                                material: "glut",
+                                position: { x: 0, y: 0.5, z: 0 },
+                                size: { x: 0.2, y: 0.2, z: 0.2 },
+                            },
                         ],
                     };
                     const markRes = r.setBlueprintAsConsumable("wave6d_potion", 45, "Magie-Trank", 0.2);
@@ -5700,22 +5800,40 @@ function startSaveServer() {
                 // (1) WASD (Original-Mapping: state.right ist geometrisch player-links,
                 // weil forward × up = -X im right-handed Coord-System)
                 check("Reflex 1: WASD-Bewegung — A drückt +state.right (= player-links)", reflexResults.aPressPosRight);
-                check("Reflex 1: WASD-Bewegung — D drückt −state.right (= player-rechts)", reflexResults.dPressNegRight);
+                check(
+                    "Reflex 1: WASD-Bewegung — D drückt −state.right (= player-rechts)",
+                    reflexResults.dPressNegRight
+                );
                 // (2) Chat
-                check("Reflex 2: 'schade mir 42' chat-pattern → DSL ['damage', 42, ...]", reflexResults.damageChatParses);
+                check(
+                    "Reflex 2: 'schade mir 42' chat-pattern → DSL ['damage', 42, ...]",
+                    reflexResults.damageChatParses
+                );
                 check("Reflex 2: 'trink X' chat-pattern → DSL ['apply_boost', ...]", reflexResults.trinkChatParses);
-                check("Reflex 2: 'rüste werkzeug X' chat-pattern → DSL ['equip_tool', ...]", reflexResults.ruesteChatParses);
+                check(
+                    "Reflex 2: 'rüste werkzeug X' chat-pattern → DSL ['equip_tool', ...]",
+                    reflexResults.ruesteChatParses
+                );
                 // (3) Aura: Glow-Sphere + dezenter Sub-Mesh-Tint
                 check("Reflex 3: tickPlayerAura cached _auraBaseColor auf Sub-Mesh", reflexResults.auraBaseColorCached);
                 check("Reflex 3: tickPlayerAura mischt Aura-Farbe in Material", reflexResults.auraTintChangedColor);
                 check("Reflex 3: Alter Boden-Torus-Ring entfernt", reflexResults.boundsRingRemoved);
-                check("Reflex 3 V4: weicher Glow — Sprite mit Radial-Texture existiert", reflexResults.glowSpriteExists);
+                check(
+                    "Reflex 3 V4: weicher Glow — Sprite mit Radial-Texture existiert",
+                    reflexResults.glowSpriteExists
+                );
                 if (reflexResults.glowSpriteExists) {
                     check("Reflex 3 V4: Glow-Sprite ist in der Welt-Szene", reflexResults.glowInScene);
                     check("Reflex 3 V4: Glow ist ein THREE.Sprite (Billboard)", reflexResults.glowIsSprite);
                     check("Reflex 3 V4: Glow-Material ist transparent", reflexResults.glowIsTransparent);
-                    check("Reflex 3 V4: Glow nutzt AdditiveBlending (echter Leucht-Effekt)", reflexResults.glowIsAdditive);
-                    check("Reflex 3 V4: Glow hat Map-Texture (Radial-Gradient für weichen Falloff)", reflexResults.glowHasTexture);
+                    check(
+                        "Reflex 3 V4: Glow nutzt AdditiveBlending (echter Leucht-Effekt)",
+                        reflexResults.glowIsAdditive
+                    );
+                    check(
+                        "Reflex 3 V4: Glow hat Map-Texture (Radial-Gradient für weichen Falloff)",
+                        reflexResults.glowHasTexture
+                    );
                     check("Reflex 3 V4: Glow-Position folgt Spieler (x/z)", reflexResults.glowFollowsPlayer);
                 }
                 // Drache-Orientierung (Schöpfer-Korrektur 13.05.2026): KEIN
@@ -5759,16 +5877,25 @@ function startSaveServer() {
                 check("Reflex 5: applyOpToPart zieht Stamina ab", reflexResults.staminaWasDeducted);
                 check("Reflex 5: applyOpToPart lehnt ab bei stamina<cost", reflexResults.applyOpRejectedNoStamina);
                 // (6) Konsumables-Logik
-                check("Reflex 6: setBlueprintAsConsumable-Methode existiert", reflexResults.hasSetBlueprintAsConsumable);
+                check(
+                    "Reflex 6: setBlueprintAsConsumable-Methode existiert",
+                    reflexResults.hasSetBlueprintAsConsumable
+                );
                 check("Reflex 6: setBlueprintAsConsumable liefert ok", reflexResults.markConsumableOk);
                 check("Reflex 6: Bauplan bekommt role:'consumable'", reflexResults.blueprintGotRoleConsumable);
                 check("Reflex 6: consumableMeta speichert durationSeconds", reflexResults.blueprintHasConsumableMeta);
-                check("Reflex 6: activateConsumable auf Bauplan emergiert Boost aus Compound-Tags", reflexResults.drinkOk && reflexResults.boostExists);
+                check(
+                    "Reflex 6: activateConsumable auf Bauplan emergiert Boost aus Compound-Tags",
+                    reflexResults.drinkOk && reflexResults.boostExists
+                );
                 check(
                     "Reflex 6: Diskrimination — quarz+glut-Bauplan → magieleitung-Boost",
                     reflexResults.boostTagBonusFromCompound
                 );
-                check("Reflex 6: Boost-Dauer aus consumableMeta.durationSeconds", reflexResults.boostUsesBlueprintDuration);
+                check(
+                    "Reflex 6: Boost-Dauer aus consumableMeta.durationSeconds",
+                    reflexResults.boostUsesBlueprintDuration
+                );
             } else if (reflexResults && reflexResults.error) {
                 check("Reflex-Tests Block lief ohne Exception", false, reflexResults.error);
             }
@@ -5811,8 +5938,18 @@ function startSaveServer() {
                         label: "Eisen-Plate",
                         builtIn: false,
                         parts: [
-                            { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
-                            { shape: "box", material: "eisen", position: { x: 0, y: 1, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                            {
+                                shape: "box",
+                                material: "eisen",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                            },
+                            {
+                                shape: "box",
+                                material: "eisen",
+                                position: { x: 0, y: 1, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                            },
                         ],
                     };
                     // Markieren als Rüstung
@@ -5823,7 +5960,8 @@ function startSaveServer() {
                     // Built-in schützen
                     r.state.blueprints.village.builtIn = true;
                     const markBuiltinResult = r.setBlueprintAsArmor("village");
-                    out.markBuiltinRejected = !markBuiltinResult.ok && markBuiltinResult.reason === "cannot_modify_builtin";
+                    out.markBuiltinRejected =
+                        !markBuiltinResult.ok && markBuiltinResult.reason === "cannot_modify_builtin";
 
                     // Equip Rüstung
                     const equipResult = r.equipArmor("test_armor_eisen");
@@ -5840,11 +5978,17 @@ function startSaveServer() {
                         label: "Unmarked",
                         builtIn: false,
                         parts: [
-                            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                            {
+                                shape: "box",
+                                material: "stein",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                            },
                         ],
                     };
                     const equipUnmarkedResult = r.equipArmor("test_plain");
-                    out.unmarkedRejected = !equipUnmarkedResult.ok && equipUnmarkedResult.reason === "not_marked_as_armor";
+                    out.unmarkedRejected =
+                        !equipUnmarkedResult.ok && equipUnmarkedResult.reason === "not_marked_as_armor";
 
                     // Unequip
                     r.equipArmor(null);
@@ -5882,9 +6026,7 @@ function startSaveServer() {
                     // V2: Aura tinted Sub-Meshes; siehe Reflex-Tests Block oben
                     const subMesh = r.state.playerMesh.children[0];
                     out.auraSubMeshTinted =
-                        !!subMesh &&
-                        !!subMesh.userData &&
-                        typeof subMesh.userData._auraBaseColor === "number";
+                        !!subMesh && !!subMesh.userData && typeof subMesh.userData._auraBaseColor === "number";
 
                     // Cleanup
                     r.equipArmor(null);
@@ -5905,10 +6047,7 @@ function startSaveServer() {
                 check("Welle 6.D Etappe 3b: equipTool-Methode existiert", wave6d3bResults.hasEquipTool);
                 check("Welle 6.D Etappe 3b: equipArmor-Methode existiert", wave6d3bResults.hasEquipArmor);
                 check("Welle 6.D Etappe 3b: setBlueprintAsArmor-Methode existiert", wave6d3bResults.hasSetArmor);
-                check(
-                    "Welle 6.D Etappe 3b: state.player.equipped = {tool, armor}",
-                    wave6d3bResults.hasEquippedState
-                );
+                check("Welle 6.D Etappe 3b: state.player.equipped = {tool, armor}", wave6d3bResults.hasEquippedState);
                 check("Welle 6.D Etappe 3b: AURA_TAG_HUE-Map existiert", wave6d3bResults.hasAuraHueMap);
                 check(
                     "Welle 6.D Etappe 3b: AURA_TAG_HUE-Map deckt alle 10 MATERIAL_TAG_KEYS ab",
@@ -5924,8 +6063,14 @@ function startSaveServer() {
                     "Welle 6.D Etappe 3b: Built-in-Bauplan kann nicht als Rüstung markiert werden",
                     wave6d3bResults.markBuiltinRejected
                 );
-                check("Welle 6.D Etappe 3b: equipArmor erfolgreich auf markiertem Bauplan", wave6d3bResults.equipArmorOk);
-                check("Welle 6.D Etappe 3b: state.player.equipped.armor zeigt auf Rüstung", wave6d3bResults.equippedArmorIs);
+                check(
+                    "Welle 6.D Etappe 3b: equipArmor erfolgreich auf markiertem Bauplan",
+                    wave6d3bResults.equipArmorOk
+                );
+                check(
+                    "Welle 6.D Etappe 3b: state.player.equipped.armor zeigt auf Rüstung",
+                    wave6d3bResults.equippedArmorIs
+                );
                 check(
                     "Welle 6.D Etappe 3b: Diskrimination — Eisen-Rüstung erhöht hpMax (dichte + härte hoch)",
                     wave6d3bResults.armorIncreasesHp
@@ -5942,15 +6087,24 @@ function startSaveServer() {
                     "Welle 6.D Etappe 3b: unequip stellt baseline-Stats wieder her",
                     wave6d3bResults.unequippedRestoresStats
                 );
-                check("Welle 6.D Etappe 3b: state.player.equipped.armor == null nach unequip", wave6d3bResults.equippedArmorNull);
+                check(
+                    "Welle 6.D Etappe 3b: state.player.equipped.armor == null nach unequip",
+                    wave6d3bResults.equippedArmorNull
+                );
                 check("Welle 6.D Etappe 3b: DSL-Op unequip(armor) entfernt Rüstung", wave6d3bResults.dslUnequipWorks);
-                check("Welle 6.D Etappe 3b: equipTool akzeptiert Built-in-Werkzeug", wave6d3bResults.equipBuiltinToolOk);
+                check(
+                    "Welle 6.D Etappe 3b: equipTool akzeptiert Built-in-Werkzeug",
+                    wave6d3bResults.equipBuiltinToolOk
+                );
                 check("Welle 6.D Etappe 3b: state.player.equipped.tool ist gesetzt", wave6d3bResults.equippedToolIs);
                 check(
                     "Welle 6.D Etappe 3b: Built-in-Werkzeug ohne sourceBlueprint → kein Stat-Beitrag (ok)",
                     wave6d3bResults.builtinToolNoStatChange
                 );
-                check("Welle 6.D Etappe 3b: buildStateSnapshot persistiert playerEquipped", wave6d3bResults.snapHasEquipped);
+                check(
+                    "Welle 6.D Etappe 3b: buildStateSnapshot persistiert playerEquipped",
+                    wave6d3bResults.snapHasEquipped
+                );
                 check(
                     "Welle 6.D Etappe 3b (V2): Aura tintet Spieler-Sub-Meshes (statt Boden-Ring)",
                     wave6d3bResults.auraSubMeshTinted
@@ -6063,19 +6217,23 @@ function startSaveServer() {
                     out.twoStepAboveMin = twoPrec > 0.4 && twoPrec < 0.9;
 
                     // --- Konsumables ---
-                    out.hasConsumablesContainer =
-                        r.state.consumables && typeof r.state.consumables === "object";
+                    out.hasConsumablesContainer = r.state.consumables && typeof r.state.consumables === "object";
                     out.hasCreateConsumableMethod = typeof r.createOrUpdateConsumable === "function";
                     out.hasActivateMethod = typeof r.activateConsumable === "function";
                     // define_consumable via DSL
                     r.dslRun(
-                        ["define_consumable", "trank_des_lichts", { magieleitung: 0.3, resoniert: 0.2 }, 60, "Trank des Lichts"],
+                        [
+                            "define_consumable",
+                            "trank_des_lichts",
+                            { magieleitung: 0.3, resoniert: 0.2 },
+                            60,
+                            "Trank des Lichts",
+                        ],
                         { source: "test" }
                     );
                     const cn = r.state.consumables.trank_des_lichts;
                     out.consumableDefined = !!cn;
-                    out.consumableTagBonus =
-                        cn && cn.tagBonus && Math.abs(cn.tagBonus.magieleitung - 0.3) < 0.001;
+                    out.consumableTagBonus = cn && cn.tagBonus && Math.abs(cn.tagBonus.magieleitung - 0.3) < 0.001;
                     out.consumableDuration = cn && cn.durationSeconds === 60;
                     out.consumableLabel = cn && cn.label === "Trank des Lichts";
 
@@ -6088,9 +6246,7 @@ function startSaveServer() {
 
                     // Dedupe: zweimal apply_boost verlängert statt zu duplizieren
                     r.dslRun(["apply_boost", "trank_des_lichts"], { source: "test" });
-                    const matching = r.state.player.boosts.filter(
-                        (x) => x.source === "consume:trank_des_lichts"
-                    );
+                    const matching = r.state.player.boosts.filter((x) => x.source === "consume:trank_des_lichts");
                     out.consumableDedupes = matching.length === 1;
 
                     // Unknown name → kein Boost
@@ -6118,7 +6274,10 @@ function startSaveServer() {
             if (wave6d3aResults && !wave6d3aResults.error) {
                 // Tod-Behandlung
                 check("Welle 6.D Etappe 3a: damagePlayer-Methode existiert", wave6d3aResults.hasDamageMethod);
-                check("Welle 6.D Etappe 3a: triggerPhoenixDeath-Methode existiert", wave6d3aResults.hasTriggerPhoenixMethod);
+                check(
+                    "Welle 6.D Etappe 3a: triggerPhoenixDeath-Methode existiert",
+                    wave6d3aResults.hasTriggerPhoenixMethod
+                );
                 check("Welle 6.D Etappe 3a: tickPhoenixDeath-Methode existiert", wave6d3aResults.hasTickPhoenixMethod);
                 check("Welle 6.D Etappe 3a: state.player.phoenixUntil existiert", wave6d3aResults.hasPhoenixState);
                 check(
@@ -6127,7 +6286,10 @@ function startSaveServer() {
                 );
                 check("Welle 6.D Etappe 3a: damagePlayer reduziert HP", wave6d3aResults.hpDropped);
                 check("Welle 6.D Etappe 3a: heatResist dämpft Feuer-Schaden", wave6d3aResults.heatResistReducesDamage);
-                check("Welle 6.D Etappe 3a: HP=0 → Phönix-Wandlung (soul=phoenix)", wave6d3aResults.killTriggersPhoenix);
+                check(
+                    "Welle 6.D Etappe 3a: HP=0 → Phönix-Wandlung (soul=phoenix)",
+                    wave6d3aResults.killTriggersPhoenix
+                );
                 check("Welle 6.D Etappe 3a: phoenixUntil > now nach Tod", wave6d3aResults.phoenixUntilSet);
                 check(
                     "Welle 6.D Etappe 3a: preDeathSoul merkt vorherige Seele",
@@ -6161,30 +6323,42 @@ function startSaveServer() {
                     wave6d3aResults.hybridMatchesDoc,
                     `actual=${(wave6d3aResults.hybridExampleValue || 0).toFixed(3)}`
                 );
-                check("Welle 6.D Etappe 3a: 1 Schritt → reine min (kein Hybrid-Effekt)", wave6d3aResults.oneStepReturnsMin);
                 check(
-                    "Welle 6.D Etappe 3a: leere opChain → Default 0.4",
-                    wave6d3aResults.emptyChainReturnsDefault
+                    "Welle 6.D Etappe 3a: 1 Schritt → reine min (kein Hybrid-Effekt)",
+                    wave6d3aResults.oneStepReturnsMin
                 );
+                check("Welle 6.D Etappe 3a: leere opChain → Default 0.4", wave6d3aResults.emptyChainReturnsDefault);
                 check(
                     "Welle 6.D Etappe 3a: Diskrimination — 2 Stufen liefern Wert zwischen min und max",
                     wave6d3aResults.twoStepAboveMin
                 );
                 // Konsumables
-                check("Welle 6.D Etappe 3a: state.consumables-Container existiert", wave6d3aResults.hasConsumablesContainer);
-                check("Welle 6.D Etappe 3a: createOrUpdateConsumable-Methode existiert", wave6d3aResults.hasCreateConsumableMethod);
+                check(
+                    "Welle 6.D Etappe 3a: state.consumables-Container existiert",
+                    wave6d3aResults.hasConsumablesContainer
+                );
+                check(
+                    "Welle 6.D Etappe 3a: createOrUpdateConsumable-Methode existiert",
+                    wave6d3aResults.hasCreateConsumableMethod
+                );
                 check("Welle 6.D Etappe 3a: activateConsumable-Methode existiert", wave6d3aResults.hasActivateMethod);
-                check("Welle 6.D Etappe 3a: define_consumable DSL-Op legt Konsumabel an", wave6d3aResults.consumableDefined);
+                check(
+                    "Welle 6.D Etappe 3a: define_consumable DSL-Op legt Konsumabel an",
+                    wave6d3aResults.consumableDefined
+                );
                 check("Welle 6.D Etappe 3a: Konsumabel speichert tagBonus", wave6d3aResults.consumableTagBonus);
                 check("Welle 6.D Etappe 3a: Konsumabel speichert durationSeconds", wave6d3aResults.consumableDuration);
                 check("Welle 6.D Etappe 3a: Konsumabel speichert label", wave6d3aResults.consumableLabel);
                 check("Welle 6.D Etappe 3a: apply_boost DSL-Op fügt Boost hinzu", wave6d3aResults.applyBoostAddsBoost);
+                check("Welle 6.D Etappe 3a: aktiver Boost trägt Konsumabel-tagBonus", wave6d3aResults.boostTagBonus);
                 check(
-                    "Welle 6.D Etappe 3a: aktiver Boost trägt Konsumabel-tagBonus",
-                    wave6d3aResults.boostTagBonus
+                    "Welle 6.D Etappe 3a: zweimal apply_boost — Dedupe via consume:<name>",
+                    wave6d3aResults.consumableDedupes
                 );
-                check("Welle 6.D Etappe 3a: zweimal apply_boost — Dedupe via consume:<name>", wave6d3aResults.consumableDedupes);
-                check("Welle 6.D Etappe 3a: unbekannter Konsumabel-Name wird abgelehnt", wave6d3aResults.unknownRejected);
+                check(
+                    "Welle 6.D Etappe 3a: unbekannter Konsumabel-Name wird abgelehnt",
+                    wave6d3aResults.unknownRejected
+                );
                 check(
                     "Welle 6.D Etappe 3a: apply_boost in NON_BROADCASTABLE_OPS (privat)",
                     wave6d3aResults.applyBoostNonBroadcast
@@ -6247,8 +6421,7 @@ function startSaveServer() {
                         label: "Test-Flamme stärker",
                     });
                     out.dedupesBySource = r.state.player.boosts.length === 1;
-                    out.dedupeReplacesDelta =
-                        Math.abs(r.state.player.boosts[0].tagDelta.wärmeleitung - 0.5) < 0.001;
+                    out.dedupeReplacesDelta = Math.abs(r.state.player.boosts[0].tagDelta.wärmeleitung - 0.5) < 0.001;
 
                     // tickPlayerBoosts entfernt abgelaufene Boosts.
                     // V7.75: prüfen ob der test:flame-Boost spezifisch
@@ -6296,10 +6469,30 @@ function startSaveServer() {
                         label: "Resonator",
                         builtIn: false,
                         parts: [
-                            { shape: "helix", material: "quarz", position: { x: 1, y: 0, z: 0 }, size: { x: 0.5, y: 1, z: 3 } },
-                            { shape: "helix", material: "quarz", position: { x: 0, y: 0, z: 1 }, size: { x: 0.5, y: 1, z: 3 } },
-                            { shape: "helix", material: "quarz", position: { x: -1, y: 0, z: 0 }, size: { x: 0.5, y: 1, z: 3 } },
-                            { shape: "helix", material: "quarz", position: { x: 0, y: 0, z: -1 }, size: { x: 0.5, y: 1, z: 3 } },
+                            {
+                                shape: "helix",
+                                material: "quarz",
+                                position: { x: 1, y: 0, z: 0 },
+                                size: { x: 0.5, y: 1, z: 3 },
+                            },
+                            {
+                                shape: "helix",
+                                material: "quarz",
+                                position: { x: 0, y: 0, z: 1 },
+                                size: { x: 0.5, y: 1, z: 3 },
+                            },
+                            {
+                                shape: "helix",
+                                material: "quarz",
+                                position: { x: -1, y: 0, z: 0 },
+                                size: { x: 0.5, y: 1, z: 3 },
+                            },
+                            {
+                                shape: "helix",
+                                material: "quarz",
+                                position: { x: 0, y: 0, z: -1 },
+                                size: { x: 0.5, y: 1, z: 3 },
+                            },
                         ],
                     };
                     r.spawnArchitecture("wave6d2_resonator", { x: 82, y: 0, z: 82 }, { seed: 1 });
@@ -6344,7 +6537,10 @@ function startSaveServer() {
                     "Welle 6.D Etappe 2: BOOST_EMOTION_TAG-Map mit 6 Emotionen",
                     wave6d2Results.hasEmotionMap && wave6d2Results.emotionAxisCount === 6
                 );
-                check("Welle 6.D Etappe 2: BOOST_RESONANCE_DELTA-Konstante existiert", wave6d2Results.hasResonanceConst);
+                check(
+                    "Welle 6.D Etappe 2: BOOST_RESONANCE_DELTA-Konstante existiert",
+                    wave6d2Results.hasResonanceConst
+                );
                 check("Welle 6.D Etappe 2: addPlayerBoost liefert true", wave6d2Results.addReturnsTrue);
                 check("Welle 6.D Etappe 2: boost wird ins Array geschrieben", wave6d2Results.boostsArrayHasOne);
                 check("Welle 6.D Etappe 2: boost trägt tagDelta + Wert", wave6d2Results.boostHasTagDelta);
@@ -6356,11 +6552,26 @@ function startSaveServer() {
                     "Welle 6.D Etappe 2: Diskrimination — wärmeleitung-Boost erhöht heatResist",
                     wave6d2Results.heatResistIncreased
                 );
-                check("Welle 6.D Etappe 2: gleiche source dedupliziert (nur 1 Eintrag)", wave6d2Results.dedupesBySource);
-                check("Welle 6.D Etappe 2: dedupe ersetzt tagDelta des bestehenden Boosts", wave6d2Results.dedupeReplacesDelta);
-                check("Welle 6.D Etappe 2: tickPlayerBoosts entfernt abgelaufene Boosts", wave6d2Results.expiredRemoved);
-                check("Welle 6.D Etappe 2: Emotion-Trigger — awe>0.7 erzeugt magieleitung-Boost", wave6d2Results.emotionAweTriggered);
-                check("Welle 6.D Etappe 2: Emotion-Boost trägt magieleitung-Delta > 0", wave6d2Results.aweBoostHasMagieleitung);
+                check(
+                    "Welle 6.D Etappe 2: gleiche source dedupliziert (nur 1 Eintrag)",
+                    wave6d2Results.dedupesBySource
+                );
+                check(
+                    "Welle 6.D Etappe 2: dedupe ersetzt tagDelta des bestehenden Boosts",
+                    wave6d2Results.dedupeReplacesDelta
+                );
+                check(
+                    "Welle 6.D Etappe 2: tickPlayerBoosts entfernt abgelaufene Boosts",
+                    wave6d2Results.expiredRemoved
+                );
+                check(
+                    "Welle 6.D Etappe 2: Emotion-Trigger — awe>0.7 erzeugt magieleitung-Boost",
+                    wave6d2Results.emotionAweTriggered
+                );
+                check(
+                    "Welle 6.D Etappe 2: Emotion-Boost trägt magieleitung-Delta > 0",
+                    wave6d2Results.aweBoostHasMagieleitung
+                );
                 check(
                     "Welle 6.D Etappe 2: Diskrimination — magieleitung-Boost erhöht magicResist",
                     wave6d2Results.magicResistIncreased
@@ -6370,7 +6581,10 @@ function startSaveServer() {
                     wave6d2Results.resonanceBoostTriggered,
                     `sig.resoniert=${(wave6d2Results.signatureResonierValue || 0).toFixed(2)} thr=${wave6d2Results.signatureThreshold} dist=${(wave6d2Results.distanceToSig || 0).toFixed(2)}`
                 );
-                check("Welle 6.D Etappe 2: Welt-Resonanz-Boost trägt resoniert-Delta > 0", wave6d2Results.resonanceHasResonierDelta);
+                check(
+                    "Welle 6.D Etappe 2: Welt-Resonanz-Boost trägt resoniert-Delta > 0",
+                    wave6d2Results.resonanceHasResonierDelta
+                );
                 check(
                     "Welle 6.D Etappe 2: Negativ-Kontrolle — außerhalb Reichweite KEIN Resonanz-Boost",
                     wave6d2Results.resonanceNotTriggeredFar
@@ -6400,15 +6614,34 @@ function startSaveServer() {
                     // Fallback: prüfen via dslRun
                     const beforeCount = Object.keys(r.state.customSouls || {}).length;
                     const testParts = [
-                        { shape: "box", material: "knochen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.5, y: 1.0, z: 0.4 } },
-                        { shape: "helix", material: "quarz", position: { x: 0, y: 0.6, z: 0 }, size: { x: 0.3, y: 0.6, z: 2 } },
-                        { shape: "sphere", material: "glut", position: { x: 0, y: 0.3, z: 0 }, size: { x: 0.25, y: 0.25, z: 0.25 } },
+                        {
+                            shape: "box",
+                            material: "knochen",
+                            position: { x: 0, y: 0, z: 0 },
+                            size: { x: 0.5, y: 1.0, z: 0.4 },
+                        },
+                        {
+                            shape: "helix",
+                            material: "quarz",
+                            position: { x: 0, y: 0.6, z: 0 },
+                            size: { x: 0.3, y: 0.6, z: 2 },
+                        },
+                        {
+                            shape: "sphere",
+                            material: "glut",
+                            position: { x: 0, y: 0.3, z: 0 },
+                            size: { x: 0.25, y: 0.25, z: 0.25 },
+                        },
                     ];
                     r.dslRun(["define_soul", "kristall_geist", testParts], { source: "test" });
                     const afterCount = Object.keys(r.state.customSouls || {}).length;
                     out.customSoulAdded = afterCount === beforeCount + 1;
                     const created = r.state.customSouls.kristall_geist;
-                    out.customHasBodyParts = !!(created && Array.isArray(created.bodyParts) && created.bodyParts.length === 3);
+                    out.customHasBodyParts = !!(
+                        created &&
+                        Array.isArray(created.bodyParts) &&
+                        created.bodyParts.length === 3
+                    );
                     out.customHasLabel = !!(created && typeof created.label === "string");
 
                     // _getSoulDef findet die Custom-Seele
@@ -6444,7 +6677,8 @@ function startSaveServer() {
                     // UI-Dropdown enthält die neue Seele
                     if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
                     const select = document.getElementById("player-soul-select");
-                    out.dropdownContainsCustom = select && [...select.options].some((o) => o.value === "kristall_geist");
+                    out.dropdownContainsCustom =
+                        select && [...select.options].some((o) => o.value === "kristall_geist");
 
                     // Cap-Test: 16 Custom-Seelen max
                     let overflowResult = "ok";
@@ -6556,9 +6790,7 @@ function startSaveServer() {
                     // applyPlayerSoul auf Custom-Seele rendert tatsächlich ein Mesh
                     r.applyPlayerSoul("test_clone_a");
                     out.customSoulRendered =
-                        !!r.state.playerMesh &&
-                        r.state.playerMesh.children &&
-                        r.state.playerMesh.children.length > 0;
+                        !!r.state.playerMesh && r.state.playerMesh.children && r.state.playerMesh.children.length > 0;
 
                     // Delete: wenn aktive Seele gelöscht → fallback auf "human"
                     const delResult = r.deleteCustomSoul("test_clone_a");
@@ -6579,8 +6811,14 @@ function startSaveServer() {
                 check("Welle 6.D Etappe 1.7: cloneSoulToCustom-Methode existiert", wave6d17Results.hasCloneMethod);
                 check("Welle 6.D Etappe 1.7: deleteCustomSoul-Methode existiert", wave6d17Results.hasDeleteMethod);
                 check("Welle 6.D Etappe 1.7: addPartToCustomSoul-Methode existiert", wave6d17Results.hasAddPartMethod);
-                check("Welle 6.D Etappe 1.7: updatePartInCustomSoul-Methode existiert", wave6d17Results.hasUpdatePartMethod);
-                check("Welle 6.D Etappe 1.7: removePartFromCustomSoul-Methode existiert", wave6d17Results.hasRemovePartMethod);
+                check(
+                    "Welle 6.D Etappe 1.7: updatePartInCustomSoul-Methode existiert",
+                    wave6d17Results.hasUpdatePartMethod
+                );
+                check(
+                    "Welle 6.D Etappe 1.7: removePartFromCustomSoul-Methode existiert",
+                    wave6d17Results.hasRemovePartMethod
+                );
                 check("Welle 6.D Etappe 1.7: #soul-editor im DOM (Spieler-Drawer)", wave6d17Results.editorInDom);
                 check("Welle 6.D Etappe 1.7: Empty-State zeigt Hinweis-Text", wave6d17Results.emptyStateRendered);
                 check("Welle 6.D Etappe 1.7: Klonen/Neu-Action-Buttons vorhanden", wave6d17Results.hasCloneActionBtn);
@@ -6590,53 +6828,111 @@ function startSaveServer() {
                 check("Welle 6.D Etappe 1.7: Editor-Pane mit Parts gerendert", wave6d17Results.editorPaneRendered);
                 check("Welle 6.D Etappe 1.7: 4 Part-Rows im Editor", wave6d17Results.partRowsCount === 4);
                 check("Welle 6.D Etappe 1.7: Shape-Select vorhanden", wave6d17Results.editorHasShapeSelect);
-                check("Welle 6.D Etappe 1.7: addPartToCustomSoul fügt Part hinzu", wave6d17Results.addReturnsOk && wave6d17Results.addedPart);
-                check("Welle 6.D Etappe 1.7: updatePartInCustomSoul wendet Patch an", wave6d17Results.updateReturnsOk && wave6d17Results.updateApplied);
-                check("Welle 6.D Etappe 1.7: removePartFromCustomSoul entfernt Part", wave6d17Results.removeReturnsOk && wave6d17Results.removedPart);
-                check("Welle 6.D Etappe 1.7: Mindestens-1-Schutz — letztes Part kann nicht gelöscht werden", wave6d17Results.lastPartProtected);
-                check("Welle 6.D Etappe 1.7: End-to-End — applyPlayerSoul auf Custom rendert Mesh", wave6d17Results.customSoulRendered);
-                check("Welle 6.D Etappe 1.7: deleteCustomSoul entfernt aus Map", wave6d17Results.deleteReturnsOk && wave6d17Results.deletedFromMap);
-                check("Welle 6.D Etappe 1.7: Löschen der aktiven Seele schaltet zurück auf 'human'", wave6d17Results.fallbackToHuman);
+                check(
+                    "Welle 6.D Etappe 1.7: addPartToCustomSoul fügt Part hinzu",
+                    wave6d17Results.addReturnsOk && wave6d17Results.addedPart
+                );
+                check(
+                    "Welle 6.D Etappe 1.7: updatePartInCustomSoul wendet Patch an",
+                    wave6d17Results.updateReturnsOk && wave6d17Results.updateApplied
+                );
+                check(
+                    "Welle 6.D Etappe 1.7: removePartFromCustomSoul entfernt Part",
+                    wave6d17Results.removeReturnsOk && wave6d17Results.removedPart
+                );
+                check(
+                    "Welle 6.D Etappe 1.7: Mindestens-1-Schutz — letztes Part kann nicht gelöscht werden",
+                    wave6d17Results.lastPartProtected
+                );
+                check(
+                    "Welle 6.D Etappe 1.7: End-to-End — applyPlayerSoul auf Custom rendert Mesh",
+                    wave6d17Results.customSoulRendered
+                );
+                check(
+                    "Welle 6.D Etappe 1.7: deleteCustomSoul entfernt aus Map",
+                    wave6d17Results.deleteReturnsOk && wave6d17Results.deletedFromMap
+                );
+                check(
+                    "Welle 6.D Etappe 1.7: Löschen der aktiven Seele schaltet zurück auf 'human'",
+                    wave6d17Results.fallbackToHuman
+                );
             } else if (wave6d17Results && wave6d17Results.error) {
                 check("Welle 6.D Etappe 1.7: Test-Block lief ohne Exception", false, wave6d17Results.error);
             }
 
             if (wave6d16Results) {
                 check("Welle 6.D Etappe 1.6: _getSoulDef-Helper existiert", wave6d16Results.hasGetSoulDef);
-                check("Welle 6.D Etappe 1.6: createOrUpdateSoulFromDsl-Methode existiert", wave6d16Results.hasCreateMethod);
-                check("Welle 6.D Etappe 1.6: state.customSouls-Container existiert", wave6d16Results.customSoulsContainerExists);
-                check("Welle 6.D Etappe 1.6: define_soul DSL-Op fügt Custom-Seele hinzu", wave6d16Results.customSoulAdded);
-                check("Welle 6.D Etappe 1.6: Custom-Seele hat bodyParts mit 3 Teilen", wave6d16Results.customHasBodyParts);
+                check(
+                    "Welle 6.D Etappe 1.6: createOrUpdateSoulFromDsl-Methode existiert",
+                    wave6d16Results.hasCreateMethod
+                );
+                check(
+                    "Welle 6.D Etappe 1.6: state.customSouls-Container existiert",
+                    wave6d16Results.customSoulsContainerExists
+                );
+                check(
+                    "Welle 6.D Etappe 1.6: define_soul DSL-Op fügt Custom-Seele hinzu",
+                    wave6d16Results.customSoulAdded
+                );
+                check(
+                    "Welle 6.D Etappe 1.6: Custom-Seele hat bodyParts mit 3 Teilen",
+                    wave6d16Results.customHasBodyParts
+                );
                 check("Welle 6.D Etappe 1.6: Custom-Seele bekommt einen label", wave6d16Results.customHasLabel);
-                check("Welle 6.D Etappe 1.6: _getSoulDef findet Custom-Seele neben Built-ins", wave6d16Results.getSoulDefFindsCustom);
-                check("Welle 6.D Etappe 1.6: Built-in-Name geschützt (human nicht überschreibbar)", wave6d16Results.builtinProtected);
-                check("Welle 6.D Etappe 1.6: Compound-Tags der Custom-Seele werden berechnet", wave6d16Results.customTagsExist);
+                check(
+                    "Welle 6.D Etappe 1.6: _getSoulDef findet Custom-Seele neben Built-ins",
+                    wave6d16Results.getSoulDefFindsCustom
+                );
+                check(
+                    "Welle 6.D Etappe 1.6: Built-in-Name geschützt (human nicht überschreibbar)",
+                    wave6d16Results.builtinProtected
+                );
+                check(
+                    "Welle 6.D Etappe 1.6: Compound-Tags der Custom-Seele werden berechnet",
+                    wave6d16Results.customTagsExist
+                );
                 check(
                     "Welle 6.D Etappe 1.6: Vision-Diskrimination — quarz+glut-Seele hat höhere magieleitung als Mensch",
                     wave6d16Results.customMagicHigh
                 );
-                check("Welle 6.D Etappe 1.6: applyPlayerSoul akzeptiert Custom-Namen", wave6d16Results.applyCustomReturnsTrue);
-                check("Welle 6.D Etappe 1.6: state.player.soul ist die Custom-Seele nach apply", wave6d16Results.stateSoulIsCustom);
-                check("Welle 6.D Etappe 1.6: Stats werden für Custom-Seele neu berechnet", wave6d16Results.customStatsComputed);
+                check(
+                    "Welle 6.D Etappe 1.6: applyPlayerSoul akzeptiert Custom-Namen",
+                    wave6d16Results.applyCustomReturnsTrue
+                );
+                check(
+                    "Welle 6.D Etappe 1.6: state.player.soul ist die Custom-Seele nach apply",
+                    wave6d16Results.stateSoulIsCustom
+                );
+                check(
+                    "Welle 6.D Etappe 1.6: Stats werden für Custom-Seele neu berechnet",
+                    wave6d16Results.customStatsComputed
+                );
                 check(
                     "Welle 6.D Etappe 1.6: Custom-Stats unterscheiden sich von Built-in-Stats (Vision-Diskrimination)",
                     wave6d16Results.customStatsDifferFromHuman
                 );
                 check("Welle 6.D Etappe 1.6: UI-Dropdown listet Custom-Seelen", wave6d16Results.dropdownContainsCustom);
                 check("Welle 6.D Etappe 1.6: Cap 16 — überzählige werden abgelehnt", wave6d16Results.capHit);
-                check("Welle 6.D Etappe 1.6: buildStateSnapshot persistiert customSouls", wave6d16Results.snapshotHasCustomSouls);
+                check(
+                    "Welle 6.D Etappe 1.6: buildStateSnapshot persistiert customSouls",
+                    wave6d16Results.snapshotHasCustomSouls
+                );
             }
 
             if (wave6dResults) {
                 check("Welle 6.D: AnazhRealm.STAT_FROM_TAGS-Matrix existiert", wave6dResults.hasStatMatrix);
                 check(
                     "Welle 6.D: STAT_FROM_TAGS hat 8 Stats (hpMax + damage + speed + jumpPower + stamina + precision + 2× Resist)",
-                    wave6dResults.statKeys === "damage,heatResist,hpMax,jumpPower,magicResist,precision,speed,staminaMax"
+                    wave6dResults.statKeys ===
+                        "damage,heatResist,hpMax,jumpPower,magicResist,precision,speed,staminaMax"
                 );
                 check("Welle 6.D: computePlayerStats-Methode existiert", wave6dResults.hasComputeMethod);
                 check("Welle 6.D: recomputePlayerStats-Methode existiert", wave6dResults.hasRecomputeMethod);
                 check("Welle 6.D: renderPlayerStatsUI-Methode existiert", wave6dResults.hasRenderMethod);
-                check("Welle 6.D Etappe 1.5: alle drei Seelen tragen ≥3 bodyParts", wave6dResults.allSoulsHaveBodyParts);
+                check(
+                    "Welle 6.D Etappe 1.5: alle drei Seelen tragen ≥3 bodyParts",
+                    wave6dResults.allSoulsHaveBodyParts
+                );
                 check(
                     "Welle 6.D Etappe 1.5: jedes bodyPart hat shape + material",
                     wave6dResults.bodyPartsHaveShapeMaterial
@@ -6661,13 +6957,31 @@ function startSaveServer() {
                     "Welle 6.D Etappe 1.5: alle Körper-Materialien tragen lebendig > 0.9",
                     wave6dResults.bodyMaterialsAreLebendig
                 );
-                check("Welle 6.D: computePlayerStats liefert {tags, stats}", wave6dResults.computedHasTags && wave6dResults.computedHasStats);
-                check("Welle 6.D: computed.stats hat alle 8 Werte als finite Zahlen", wave6dResults.computedStatsHasAll);
+                check(
+                    "Welle 6.D: computePlayerStats liefert {tags, stats}",
+                    wave6dResults.computedHasTags && wave6dResults.computedHasStats
+                );
+                check(
+                    "Welle 6.D: computed.stats hat alle 8 Werte als finite Zahlen",
+                    wave6dResults.computedStatsHasAll
+                );
                 // Vision-Diskrimination
-                check("Welle 6.D: Diskrimination — Phönix schneller als Drache (low dichte)", wave6dResults.phoenixFasterThanDragon);
-                check("Welle 6.D: Diskrimination — Phönix springt höher als Drache", wave6dResults.phoenixJumpsHigherThanDragon);
-                check("Welle 6.D: Diskrimination — Drache mehr HP als Phönix (tank)", wave6dResults.dragonHasMoreHpThanPhoenix);
-                check("Welle 6.D: Diskrimination — Drache mehr Schaden als Phönix", wave6dResults.dragonHasMoreDamageThanPhoenix);
+                check(
+                    "Welle 6.D: Diskrimination — Phönix schneller als Drache (low dichte)",
+                    wave6dResults.phoenixFasterThanDragon
+                );
+                check(
+                    "Welle 6.D: Diskrimination — Phönix springt höher als Drache",
+                    wave6dResults.phoenixJumpsHigherThanDragon
+                );
+                check(
+                    "Welle 6.D: Diskrimination — Drache mehr HP als Phönix (tank)",
+                    wave6dResults.dragonHasMoreHpThanPhoenix
+                );
+                check(
+                    "Welle 6.D: Diskrimination — Drache mehr Schaden als Phönix",
+                    wave6dResults.dragonHasMoreDamageThanPhoenix
+                );
                 check(
                     "Welle 6.D: Diskrimination — Phönix mehr Magie-Resistenz als Drache (magieleitung hoch)",
                     wave6dResults.phoenixHasMoreMagicResistThanDragon
@@ -6723,22 +7037,40 @@ function startSaveServer() {
                     // Hylomorphismus-Baupläne: baum_eiche + baum_kiefer +
                     // laub-Material müssen als Built-ins existieren.
                     const bps = r.state.blueprints || {};
-                    out.hasBaumEiche = !!(bps.baum_eiche && Array.isArray(bps.baum_eiche.parts) && bps.baum_eiche.parts.length === 2);
-                    out.hasBaumKiefer = !!(bps.baum_kiefer && Array.isArray(bps.baum_kiefer.parts) && bps.baum_kiefer.parts.length === 2);
+                    out.hasBaumEiche = !!(
+                        bps.baum_eiche &&
+                        Array.isArray(bps.baum_eiche.parts) &&
+                        bps.baum_eiche.parts.length === 2
+                    );
+                    out.hasBaumKiefer = !!(
+                        bps.baum_kiefer &&
+                        Array.isArray(bps.baum_kiefer.parts) &&
+                        bps.baum_kiefer.parts.length === 2
+                    );
                     out.baumEicheIsBuiltIn = !!(bps.baum_eiche && bps.baum_eiche.builtIn === true);
                     const eichenStamm = bps.baum_eiche && bps.baum_eiche.parts[0];
                     const eichenKrone = bps.baum_eiche && bps.baum_eiche.parts[1];
-                    out.eichenStammHolz = !!(eichenStamm && eichenStamm.material === "holz" && eichenStamm.shape === "cylinder");
-                    out.eichenKroneLaub = !!(eichenKrone && eichenKrone.material === "laub" && eichenKrone.shape === "sphere");
-                    out.hasLaubMaterial = !!(r.state.materials && r.state.materials.laub && r.state.materials.laub.builtIn === true);
+                    out.eichenStammHolz = !!(
+                        eichenStamm &&
+                        eichenStamm.material === "holz" &&
+                        eichenStamm.shape === "cylinder"
+                    );
+                    out.eichenKroneLaub = !!(
+                        eichenKrone &&
+                        eichenKrone.material === "laub" &&
+                        eichenKrone.shape === "sphere"
+                    );
+                    out.hasLaubMaterial = !!(
+                        r.state.materials &&
+                        r.state.materials.laub &&
+                        r.state.materials.laub.builtIn === true
+                    );
 
                     // Initiale Welt: Worldgen-Bäume sind jetzt in state.architectures,
                     // NICHT in state.vegetation. state.vegetation enthält nur noch
                     // Gras + Blumen. state.architectures enthält baum_eiche/baum_kiefer.
                     const archs = Array.isArray(r.state.architectures) ? r.state.architectures : [];
-                    const archTrees = archs.filter(
-                        (a) => a.type === "baum_eiche" || a.type === "baum_kiefer"
-                    );
+                    const archTrees = archs.filter((a) => a.type === "baum_eiche" || a.type === "baum_kiefer");
                     out.worldgenTreesInArchitectures = archTrees.length;
                     // Mindestens ein Baum mit Mesh (= in Player-Nähe gerendert)
                     // muss eine Compound-Kollision haben.
@@ -6781,9 +7113,7 @@ function startSaveServer() {
                     const islandsBefore = r.state.floatingIslands.length;
                     const ufosBefore = r.state.ufos ? r.state.ufos.length : 0;
                     const vegBefore = r.state.vegetation ? r.state.vegetation.length : 0;
-                    const playerPos = r.state.playerMesh
-                        ? r.state.playerMesh.position
-                        : { x: 0, y: 50, z: 0 };
+                    const playerPos = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 50, z: 0 };
                     const tx = playerPos.x + 50;
                     const ty = playerPos.y;
                     const tz = playerPos.z + 50;
@@ -6803,8 +7133,7 @@ function startSaveServer() {
                     out.islandSpawned = islandsAfter > islandsBefore;
                     out.ufoSpawned = ufosAfter > ufosBefore;
 
-                    const newTreeArch =
-                        archsAfter > archsBefore ? r.state.architectures[archsAfter - 1] : null;
+                    const newTreeArch = archsAfter > archsBefore ? r.state.architectures[archsAfter - 1] : null;
                     out.newTreeIsBaumEiche = !!(newTreeArch && newTreeArch.type === "baum_eiche");
                     out.newTreeHasMesh = !!(newTreeArch && newTreeArch.mesh);
                     out.newTreeHasCollision = !!(
@@ -6821,10 +7150,7 @@ function startSaveServer() {
                         out.treeTagsBrennbar = tags && tags.brennbar > 0.5;
                     }
 
-                    const newIsland =
-                        islandsAfter > islandsBefore
-                            ? r.state.floatingIslands[islandsAfter - 1]
-                            : null;
+                    const newIsland = islandsAfter > islandsBefore ? r.state.floatingIslands[islandsAfter - 1] : null;
                     const newUfo = ufosAfter > ufosBefore ? r.state.ufos[ufosAfter - 1] : null;
                     out.islandHasCollision = !!(
                         newIsland &&
@@ -6889,10 +7215,7 @@ function startSaveServer() {
 
             if (wave6gResults && !wave6gResults.error) {
                 check("Welle 6.G P1.5: _buildIslandCollision-Methode existiert", wave6gResults.hasIslandHelper);
-                check(
-                    "Welle 6.G P1.5: _disposeStaticCollision-Methode existiert",
-                    wave6gResults.hasDisposeHelper
-                );
+                check("Welle 6.G P1.5: _disposeStaticCollision-Methode existiert", wave6gResults.hasDisposeHelper);
                 check("Welle 6.G P1.5: spawnIslandAt-Methode existiert", wave6gResults.hasSpawnIslandAt);
                 check("Welle 6.G P1.5: spawnUfoAt-Methode existiert", wave6gResults.hasSpawnUfoAt);
                 check(
@@ -6941,8 +7264,14 @@ function startSaveServer() {
                     wave6gResults.newTreeHasCollision
                 );
                 if (wave6gResults.treeTagsLebendig !== undefined) {
-                    check("Welle 6.G P1.5: Baum-Compound-Tags zeigen lebendig (holz + laub)", wave6gResults.treeTagsLebendig);
-                    check("Welle 6.G P1.5: Baum-Compound-Tags zeigen brennbar (holz + laub)", wave6gResults.treeTagsBrennbar);
+                    check(
+                        "Welle 6.G P1.5: Baum-Compound-Tags zeigen lebendig (holz + laub)",
+                        wave6gResults.treeTagsLebendig
+                    );
+                    check(
+                        "Welle 6.G P1.5: Baum-Compound-Tags zeigen brennbar (holz + laub)",
+                        wave6gResults.treeTagsBrennbar
+                    );
                 }
                 check(
                     "Welle 6.G P1.5: spawn_island DSL-Op fügt Insel zu state.floatingIslands hinzu",
@@ -6967,7 +7296,10 @@ function startSaveServer() {
                     "Welle 6.G P1.5: spawn_island mit gleichem Seed produziert identische Vertices (Multi-User-Sync)",
                     wave6gResults.seedDeterministic
                 );
-                check("Welle 6.G P1.5: Chat 'pflanze baum hier' → spawn_tree mit ['at',...]", wave6gResults.chatTreeProg);
+                check(
+                    "Welle 6.G P1.5: Chat 'pflanze baum hier' → spawn_tree mit ['at',...]",
+                    wave6gResults.chatTreeProg
+                );
                 check(
                     "Welle 6.G P1.5: Chat 'setze insel hier' → spawn_island mit ['at',...] + eingebettetem Seed",
                     wave6gResults.chatIslandProg
@@ -6992,13 +7324,21 @@ function startSaveServer() {
                     out.hasPopulateChunk = typeof r.populateChunkVegetation === "function";
                     // Drei neue Baupläne als Built-ins.
                     const bps = r.state.blueprints || {};
-                    out.hasSteinBlock = !!(bps.stein_block && bps.stein_block.builtIn && bps.stein_block.parts.length >= 1);
+                    out.hasSteinBlock = !!(
+                        bps.stein_block &&
+                        bps.stein_block.builtIn &&
+                        bps.stein_block.parts.length >= 1
+                    );
                     out.hasKristallGeode = !!(
                         bps.kristall_geode &&
                         bps.kristall_geode.builtIn &&
                         bps.kristall_geode.parts.length >= 2
                     );
-                    out.hasGlutbrunnen = !!(bps.glutbrunnen && bps.glutbrunnen.builtIn && bps.glutbrunnen.parts.length >= 2);
+                    out.hasGlutbrunnen = !!(
+                        bps.glutbrunnen &&
+                        bps.glutbrunnen.builtIn &&
+                        bps.glutbrunnen.parts.length >= 2
+                    );
                     // worldFieldAt liefert 4 Tag-Achsen.
                     if (out.hasWorldFieldAt) {
                         const sample = r.worldFieldAt(0, 0);
@@ -7010,10 +7350,7 @@ function startSaveServer() {
                             typeof sample.magieleitung === "number"
                         );
                         out.fieldValuesInRange =
-                            sample.lebendig >= 0 &&
-                            sample.lebendig <= 1 &&
-                            sample.dichte >= 0 &&
-                            sample.dichte <= 1;
+                            sample.lebendig >= 0 && sample.lebendig <= 1 && sample.dichte >= 0 && sample.dichte <= 1;
                     }
                     // Determinismus: zweimaliger Aufruf an dieselbe Position →
                     // dieselben Werte. Cross-Welt-Variation: zwei verschiedene
@@ -7023,13 +7360,11 @@ function startSaveServer() {
                         const a1 = r.worldFieldAt(50, 30);
                         const a2 = r.worldFieldAt(50, 30);
                         out.fieldDeterministic =
-                            Math.abs(a1.lebendig - a2.lebendig) < 1e-9 &&
-                            Math.abs(a1.dichte - a2.dichte) < 1e-9;
+                            Math.abs(a1.lebendig - a2.lebendig) < 1e-9 && Math.abs(a1.dichte - a2.dichte) < 1e-9;
                         const b1 = r.worldFieldAt(50, 30);
                         const b2 = r.worldFieldAt(1000, -1000);
                         out.fieldVariesBySamplePos =
-                            Math.abs(b1.lebendig - b2.lebendig) > 0.001 ||
-                            Math.abs(b1.dichte - b2.dichte) > 0.001;
+                            Math.abs(b1.lebendig - b2.lebendig) > 0.001 || Math.abs(b1.dichte - b2.dichte) > 0.001;
                     }
                     // spawnAffinityForBlueprint: baum_eiche (holz+laub, hoch
                     // in lebendig) hat höhere Affinität in einer lebendig-
@@ -7112,9 +7447,7 @@ function startSaveServer() {
                     out.affinitySpawnTypes = typeCounts;
                     out.hasInitialTrees = (typeCounts.baum_eiche || 0) + (typeCounts.baum_kiefer || 0) > 0;
                     // populatedChunks markiert die initialen Chunks als gefüllt.
-                    out.populatedChunksSize = r.state.populatedChunks
-                        ? r.state.populatedChunks.size
-                        : 0;
+                    out.populatedChunksSize = r.state.populatedChunks ? r.state.populatedChunks.size : 0;
                     // Idempotenz: zweiter Aufruf für denselben Chunk
                     // → spawned=0.
                     if (typeof r.populateChunkVegetation === "function") {
@@ -7142,12 +7475,24 @@ function startSaveServer() {
                 check("Welle 6.G P2: spawnAffinityForBlueprint-Methode existiert", wave6gP2Results.hasSpawnAffinity);
                 check("Welle 6.G P2: populateChunkVegetation-Methode existiert", wave6gP2Results.hasPopulateChunk);
                 check("Welle 6.G P2: Bauplan 'stein_block' existiert als Built-in", wave6gP2Results.hasSteinBlock);
-                check("Welle 6.G P2: Bauplan 'kristall_geode' existiert als Built-in", wave6gP2Results.hasKristallGeode);
+                check(
+                    "Welle 6.G P2: Bauplan 'kristall_geode' existiert als Built-in",
+                    wave6gP2Results.hasKristallGeode
+                );
                 check("Welle 6.G P2: Bauplan 'glutbrunnen' existiert als Built-in", wave6gP2Results.hasGlutbrunnen);
-                check("Welle 6.G P2: worldFieldAt liefert 4 Tag-Achsen (lebendig/dichte/glut/magie)", wave6gP2Results.fieldHas4Axes);
+                check(
+                    "Welle 6.G P2: worldFieldAt liefert 4 Tag-Achsen (lebendig/dichte/glut/magie)",
+                    wave6gP2Results.fieldHas4Axes
+                );
                 check("Welle 6.G P2: worldFieldAt-Werte im Bereich [0,1]", wave6gP2Results.fieldValuesInRange);
-                check("Welle 6.G P2: worldFieldAt deterministisch (selbe Position → selber Wert)", wave6gP2Results.fieldDeterministic);
-                check("Welle 6.G P2: worldFieldAt variiert mit Position (Noise nicht konstant)", wave6gP2Results.fieldVariesBySamplePos);
+                check(
+                    "Welle 6.G P2: worldFieldAt deterministisch (selbe Position → selber Wert)",
+                    wave6gP2Results.fieldDeterministic
+                );
+                check(
+                    "Welle 6.G P2: worldFieldAt variiert mit Position (Noise nicht konstant)",
+                    wave6gP2Results.fieldVariesBySamplePos
+                );
                 if (wave6gP2Results.affinityFavorsTreeInLebendigRegion !== undefined) {
                     check(
                         "Welle 6.G P2: Baum-Affinity > Stein-Affinity in lebendig-hoher Region",
@@ -7175,8 +7520,14 @@ function startSaveServer() {
                     `Welle 6.G P2: populatedChunks-Cache befüllt (size=${wave6gP2Results.populatedChunksSize})`,
                     wave6gP2Results.populatedChunksSize >= 1
                 );
-                check("Welle 6.G P2: populateChunkVegetation idempotent (zweiter Aufruf → 0 spawns)", wave6gP2Results.populateIdempotent);
-                check("Welle 6.G P2: architectureCullingTickHz auf 2.0 angehoben (Bugfix)", wave6gP2Results.cullingRateIs2Hz);
+                check(
+                    "Welle 6.G P2: populateChunkVegetation idempotent (zweiter Aufruf → 0 spawns)",
+                    wave6gP2Results.populateIdempotent
+                );
+                check(
+                    "Welle 6.G P2: architectureCullingTickHz auf 2.0 angehoben (Bugfix)",
+                    wave6gP2Results.cullingRateIs2Hz
+                );
                 check("Welle 6.G P2: baum_eiche Stamm-Radius >= 0.7 (Bugfix V7.75)", wave6gP2Results.stammIsThicker);
             }
 
@@ -7238,7 +7589,14 @@ function startSaveServer() {
                         name: "mode-test-bp",
                         label: "Mode-Test",
                         builtIn: false,
-                        parts: [{ shape: "box", material: "holz", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } }],
+                        parts: [
+                            {
+                                shape: "box",
+                                material: "holz",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                            },
+                        ],
                     };
                     // Stamina voll setzen
                     r.state.player.stamina = 100;
@@ -7255,8 +7613,7 @@ function startSaveServer() {
                     r.state.player.stamina = 100;
                     r.setGameMode("pfad");
                     const opResultPfad = r.applyOpToPart("mode-test-bp", 0, "feile");
-                    out.pfadChargesStamina =
-                        opResultPfad.ok === true && r.state.player.stamina === 100 - 10;
+                    out.pfadChargesStamina = opResultPfad.ok === true && r.state.player.stamina === 100 - 10;
 
                     // Cleanup
                     delete r.state.blueprints["mode-test-bp"];
@@ -7271,17 +7628,22 @@ function startSaveServer() {
 
                     // set_mode ist in NON_BROADCASTABLE_OPS
                     out.setModeNonBroadcastable =
-                        r.constructor.NON_BROADCASTABLE_OPS &&
-                        r.constructor.NON_BROADCASTABLE_OPS.has("set_mode");
+                        r.constructor.NON_BROADCASTABLE_OPS && r.constructor.NON_BROADCASTABLE_OPS.has("set_mode");
 
                     // Chat-Pattern: 'setze modus pfad' → set_mode-Programm
                     if (typeof r.parseChatToDsl === "function") {
                         const built = r.parseChatToDsl("setze modus pfad");
                         out.chatPfad =
-                            built && Array.isArray(built.program) && built.program[0] === "set_mode" && built.program[1] === "pfad";
+                            built &&
+                            Array.isArray(built.program) &&
+                            built.program[0] === "set_mode" &&
+                            built.program[1] === "pfad";
                         const built2 = r.parseChatToDsl("modus schöpfer");
                         out.chatSchoepfer =
-                            built2 && Array.isArray(built2.program) && built2.program[0] === "set_mode" && built2.program[1] === "schöpfer";
+                            built2 &&
+                            Array.isArray(built2.program) &&
+                            built2.program[0] === "set_mode" &&
+                            built2.program[1] === "schöpfer";
                     }
 
                     // describeProgram-Eintrag
@@ -7311,21 +7673,42 @@ function startSaveServer() {
                 check("Welle 6.C2: AnazhRealm.GAME_MODES existiert", wave6c2Results.hasGameModes);
                 check("Welle 6.C2: setGameMode-Methode existiert", wave6c2Results.hasSetGameMode);
                 check("Welle 6.C2: getGameMode-Methode existiert", wave6c2Results.hasGetGameMode);
-                check("Welle 6.C2: Neue Welten starten im frieden-Modus (init-time)", wave6c2Results.defaultModeFrieden);
-                check("Welle 6.C2: GAME_MODES[0] === 'frieden' (kanonischer Default)", wave6c2Results.canonicalDefaultIsFrieden);
+                check(
+                    "Welle 6.C2: Neue Welten starten im frieden-Modus (init-time)",
+                    wave6c2Results.defaultModeFrieden
+                );
+                check(
+                    "Welle 6.C2: GAME_MODES[0] === 'frieden' (kanonischer Default)",
+                    wave6c2Results.canonicalDefaultIsFrieden
+                );
                 check("Welle 6.C2: worldMeta.gameMode ist persistiert", wave6c2Results.worldMetaHasGameMode);
                 check("Welle 6.C2: setGameMode('pfad') wechselt korrekt", wave6c2Results.setPfadWorks);
                 check("Welle 6.C2: setGameMode('schöpfer') wechselt korrekt", wave6c2Results.setSchoepferWorks);
                 check("Welle 6.C2: setGameMode('frieden') wechselt korrekt", wave6c2Results.setFriedenWorks);
                 check("Welle 6.C2: ungültiger Modus fällt auf frieden zurück", wave6c2Results.invalidFallsToFrieden);
-                check("Welle 6.C2: damagePlayer im frieden-Modus blockiert (HP unverändert)", wave6c2Results.friedenBlocksDamage);
-                check("Welle 6.C2: damagePlayer im schöpfer-Modus blockiert (HP unverändert)", wave6c2Results.schoepferBlocksDamage);
+                check(
+                    "Welle 6.C2: damagePlayer im frieden-Modus blockiert (HP unverändert)",
+                    wave6c2Results.friedenBlocksDamage
+                );
+                check(
+                    "Welle 6.C2: damagePlayer im schöpfer-Modus blockiert (HP unverändert)",
+                    wave6c2Results.schoepferBlocksDamage
+                );
                 check("Welle 6.C2: damagePlayer im pfad-Modus wirkt (HP reduziert)", wave6c2Results.pfadAcceptsDamage);
-                check("Welle 6.C2: applyOpToPart im frieden-Modus kostet KEINE Stamina", wave6c2Results.friedenSkipsStamina);
-                check("Welle 6.C2: applyOpToPart im schöpfer-Modus kostet KEINE Stamina", wave6c2Results.schoepferSkipsStamina);
+                check(
+                    "Welle 6.C2: applyOpToPart im frieden-Modus kostet KEINE Stamina",
+                    wave6c2Results.friedenSkipsStamina
+                );
+                check(
+                    "Welle 6.C2: applyOpToPart im schöpfer-Modus kostet KEINE Stamina",
+                    wave6c2Results.schoepferSkipsStamina
+                );
                 check("Welle 6.C2: applyOpToPart im pfad-Modus kostet Stamina (10)", wave6c2Results.pfadChargesStamina);
                 check("Welle 6.C2: DSL-Op set_mode setzt Modus", wave6c2Results.dslSetModeWorks);
-                check("Welle 6.C2: set_mode ist in NON_BROADCASTABLE_OPS (Multi-User-privat)", wave6c2Results.setModeNonBroadcastable);
+                check(
+                    "Welle 6.C2: set_mode ist in NON_BROADCASTABLE_OPS (Multi-User-privat)",
+                    wave6c2Results.setModeNonBroadcastable
+                );
                 check("Welle 6.C2: Chat 'setze modus pfad' → set_mode-Programm", wave6c2Results.chatPfad);
                 check("Welle 6.C2: Chat 'modus schöpfer' → set_mode-Programm", wave6c2Results.chatSchoepfer);
                 check("Welle 6.C2: describeProgram nennt 'Welt-Beziehung' oder Modus", wave6c2Results.describeWorks);
@@ -7364,13 +7747,13 @@ function startSaveServer() {
                     // addToInventory: ein bekannter Bauplan → erster leerer Slot
                     const okAdd = r.addToInventory("baum_eiche", 3);
                     out.addedToInventory = okAdd === true;
-                    out.slot0HasBaum = r.state.player.inventory[0]
-                        && r.state.player.inventory[0].blueprintName === "baum_eiche"
-                        && r.state.player.inventory[0].count === 3;
+                    out.slot0HasBaum =
+                        r.state.player.inventory[0] &&
+                        r.state.player.inventory[0].blueprintName === "baum_eiche" &&
+                        r.state.player.inventory[0].count === 3;
                     // Zweiter Add desselben Bauplans: count kumuliert
                     r.addToInventory("baum_eiche", 2);
-                    out.stacksCount =
-                        r.state.player.inventory[0] && r.state.player.inventory[0].count === 5;
+                    out.stacksCount = r.state.player.inventory[0] && r.state.player.inventory[0].count === 5;
                     // Unbekannter Bauplan → false
                     out.addRejectsUnknown = r.addToInventory("fictional_bp", 1) === false;
 
@@ -7384,9 +7767,7 @@ function startSaveServer() {
                     // DSL-Op add_to_inventory
                     if (typeof r.dslRun === "function") {
                         r.dslRun(["add_to_inventory", "village", 1], { source: "test" });
-                        const has = r.state.player.inventory.some(
-                            (s) => s && s.blueprintName === "village"
-                        );
+                        const has = r.state.player.inventory.some((s) => s && s.blueprintName === "village");
                         out.dslOpWorks = has;
                     }
 
@@ -7398,8 +7779,7 @@ function startSaveServer() {
                     // describeProgram-Eintrag
                     if (typeof r.describeProgram === "function") {
                         const d = r.describeProgram(["add_to_inventory", "baum_eiche", 5]);
-                        out.describeWorks =
-                            typeof d === "string" && /Inventar|baum_eiche|5/.test(d);
+                        out.describeWorks = typeof d === "string" && /Inventar|baum_eiche|5/.test(d);
                     }
 
                     // UI: Overlay-Element + Grid + Selected-Display
@@ -7476,19 +7856,34 @@ function startSaveServer() {
                 check("Welle 6.C1: addToInventory stackt bei gleichem Bauplan-Namen", wave6c1Results.stacksCount);
                 check("Welle 6.C1: addToInventory lehnt unbekannten Bauplan ab", wave6c1Results.addRejectsUnknown);
                 check("Welle 6.C1: removeFromInventory reduziert count", wave6c1Results.removeWorks);
-                check("Welle 6.C1: removeFromInventory(>count) clear Slot zu null", wave6c1Results.fullRemoveClearsSlot);
+                check(
+                    "Welle 6.C1: removeFromInventory(>count) clear Slot zu null",
+                    wave6c1Results.fullRemoveClearsSlot
+                );
                 check("Welle 6.C1: DSL-Op add_to_inventory funktioniert", wave6c1Results.dslOpWorks);
-                check("Welle 6.C1: add_to_inventory in NON_BROADCASTABLE_OPS", wave6c1Results.addToInventoryNonBroadcastable);
+                check(
+                    "Welle 6.C1: add_to_inventory in NON_BROADCASTABLE_OPS",
+                    wave6c1Results.addToInventoryNonBroadcastable
+                );
                 check("Welle 6.C1: describeProgram nennt Inventar/Bauplan/Count", wave6c1Results.describeWorks);
                 check("Welle 6.C1: #inventory-overlay im DOM", wave6c1Results.overlayInDom);
                 check("Welle 6.C1: #inventory-grid im DOM", wave6c1Results.gridInDom);
                 check("Welle 6.C1: #inventory-selected im DOM", wave6c1Results.selectedInDom);
                 check("Welle 6.C1: Overlay initial versteckt", wave6c1Results.initiallyHidden);
-                check("Welle 6.C1: toggleInventoryOverlay(true) öffnet Overlay", wave6c1Results.overlayVisibleAfterToggle);
+                check(
+                    "Welle 6.C1: toggleInventoryOverlay(true) öffnet Overlay",
+                    wave6c1Results.overlayVisibleAfterToggle
+                );
                 check("Welle 6.C1: Grid rendert 27 Slot-Elemente", wave6c1Results.gridRendered27);
-                check("Welle 6.C1: kristall_geode-Slot bekommt tag-magieleitung Klasse", wave6c1Results.geodeHasMagieClass);
+                check(
+                    "Welle 6.C1: kristall_geode-Slot bekommt tag-magieleitung Klasse",
+                    wave6c1Results.geodeHasMagieClass
+                );
                 check("Welle 6.C1: baum_eiche-Slot bekommt tag-lebendig Klasse", wave6c1Results.baumHasLebendigClass);
-                check("Welle 6.C1: baum_eiche-Slot bekommt tag-brennend Klasse (laub)", wave6c1Results.baumHasBrennendClass);
+                check(
+                    "Welle 6.C1: baum_eiche-Slot bekommt tag-brennend Klasse (laub)",
+                    wave6c1Results.baumHasBrennendClass
+                );
                 check("Welle 6.C1: selectInventorySlot setzt inventorySelected", wave6c1Results.selectionWorks);
                 check("Welle 6.C1: zweiter Klick auf gleichen Slot toggelt aus", wave6c1Results.selectionTogglesOff);
                 check("Welle 6.C1: tryAssignFromInventoryToHotbar legt in Hotbar ab", wave6c1Results.assignWorks);
@@ -7671,15 +8066,33 @@ function startSaveServer() {
                 check("Welle 6.C1 Drag: _onSlotDragLeave existiert", dragResults.hasDragLeave);
                 check("Welle 6.C1 Drag: inv→inv tauscht Slot-Inhalte", dragResults.invToInvSwap);
                 check("Welle 6.C1 Drag: inv→hot legt Bauplan in Hotbar", dragResults.invToHotPlaces);
-                check("Welle 6.C1 Drag: inv→hot leert Inv-Slot (count=1, konsequenter Move)", dragResults.invToHotEmptiesInvSlot);
-                check("Welle 6.C1 Drag: inv→hot leert Inv-Slot auch bei count=5 (Stack konsumiert)", dragResults.invToHotEmptiesIgnoresCount);
-                check("Welle 6.C1 Drag: inv→hot mit gleichem Bauplan im Hot leert Inv-Slot trotzdem", dragResults.invToHotSameNameStillEmpties);
+                check(
+                    "Welle 6.C1 Drag: inv→hot leert Inv-Slot (count=1, konsequenter Move)",
+                    dragResults.invToHotEmptiesInvSlot
+                );
+                check(
+                    "Welle 6.C1 Drag: inv→hot leert Inv-Slot auch bei count=5 (Stack konsumiert)",
+                    dragResults.invToHotEmptiesIgnoresCount
+                );
+                check(
+                    "Welle 6.C1 Drag: inv→hot mit gleichem Bauplan im Hot leert Inv-Slot trotzdem",
+                    dragResults.invToHotSameNameStillEmpties
+                );
                 check("Welle 6.C1 Drag: inv→hot mit anderem Bauplan im Hot ist Swap", dragResults.invToHotSwap);
                 check("Welle 6.C1 Drag: hot→hot tauscht Hotbar-Slots", dragResults.hotToHotSwap);
                 check("Welle 6.C1 Drag: hot→inv räumt Hotbar-Slot (zu null)", dragResults.hotToInvClearsHotbar);
-                check("Welle 6.C1 Drag: hot→inv füllt leeren Inv-Slot mit {name, count:1}", dragResults.hotToInvFillsInvSlot);
-                check("Welle 6.C1 Drag: hot→inv stackt auf gleichem Bauplan (count += 1)", dragResults.hotToInvStacksSameBp);
-                check("Welle 6.C1 Drag: hot→inv mit anderem Bauplan ist no-op (kein Datenverlust)", dragResults.hotToInvOtherBpNoOp);
+                check(
+                    "Welle 6.C1 Drag: hot→inv füllt leeren Inv-Slot mit {name, count:1}",
+                    dragResults.hotToInvFillsInvSlot
+                );
+                check(
+                    "Welle 6.C1 Drag: hot→inv stackt auf gleichem Bauplan (count += 1)",
+                    dragResults.hotToInvStacksSameBp
+                );
+                check(
+                    "Welle 6.C1 Drag: hot→inv mit anderem Bauplan ist no-op (kein Datenverlust)",
+                    dragResults.hotToInvOtherBpNoOp
+                );
                 check("Welle 6.C1 Drag: src===target ist no-op", dragResults.sameSlotNoOp);
                 check("Welle 6.C1 Drag: state.drag wird nach drop genullt", dragResults.dragClearedAfterDrop);
                 check("Welle 6.C1 Drag: gefüllter Inventar-Slot ist draggable", dragResults.filledSlotIsDraggable);
@@ -7756,11 +8169,1751 @@ function startSaveServer() {
                 .catch((e) => ({ error: String(e) }));
 
             if (lockResults && !lockResults.error) {
-                check("Welle 6.C1 Lock: exitPointerLock wird beim Inventar-Öffnen gerufen", lockResults.exitLockCalledOnOpen);
-                check("Welle 6.C1 Lock: state.inventoryOpen wird true nach toggleOpen", lockResults.overlayOpenAfterToggle);
-                check("Welle 6.C1 Lock: WASD bleibt aktiv (Schöpfer-Wunsch: weiterbewegen geht)", lockResults.wKeyStillActiveAfterOpen);
-                check("Welle 6.C1 Lock: A-Taste bleibt aktiv bei offenem Inventar", lockResults.aKeyStillActiveAfterOpen);
-                check("Welle 6.C1 Lock: Inventar-schließen ohne Re-Lock (Canvas-Click bleibt User-Wahl)", lockResults.closeWorksWithoutReLock);
+                check(
+                    "Welle 6.C1 Lock: exitPointerLock wird beim Inventar-Öffnen gerufen",
+                    lockResults.exitLockCalledOnOpen
+                );
+                check(
+                    "Welle 6.C1 Lock: state.inventoryOpen wird true nach toggleOpen",
+                    lockResults.overlayOpenAfterToggle
+                );
+                check(
+                    "Welle 6.C1 Lock: WASD bleibt aktiv (Schöpfer-Wunsch: weiterbewegen geht)",
+                    lockResults.wKeyStillActiveAfterOpen
+                );
+                check(
+                    "Welle 6.C1 Lock: A-Taste bleibt aktiv bei offenem Inventar",
+                    lockResults.aKeyStillActiveAfterOpen
+                );
+                check(
+                    "Welle 6.C1 Lock: Inventar-schließen ohne Re-Lock (Canvas-Click bleibt User-Wahl)",
+                    lockResults.closeWorksWithoutReLock
+                );
+            }
+
+            // ### Welle 6.A6 — Maus-Aktionen (abbauen + platzieren) ###
+            // LMB abbauen / RMB platzieren über konfigurierbares Keybinding.
+            // Architektur-Hit → removeArchitecture; kein Hit → modify_terrain.
+            // Stamina-Gate via getGameMode wie applyOpToPart (6.C2).
+            const wave6a6Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    // Statische Konstante
+                    out.hasStaminaCost = r.constructor.MOUSE_ACTION_STAMINA_COST === 5;
+                    // Methoden-Existenz
+                    out.hasTryMouseBreak = typeof r.tryMouseBreak === "function";
+                    out.hasTryMousePlace = typeof r.tryMousePlace === "function";
+                    out.hasRemoveArchitecture = typeof r.removeArchitecture === "function";
+                    out.hasPickArchitecture = typeof r._pickArchitectureAtCrosshair === "function";
+                    out.hasRaycastWorldHit = typeof r._raycastWorldHit === "function";
+                    out.hasStaminaGate = typeof r._mouseActionStaminaGate === "function";
+                    out.hasConsumeStamina = typeof r._consumeMouseStamina === "function";
+
+                    // Setup: pfad-Modus für Stamina-Tests, frische Stamina.
+                    const oldMode = r.getGameMode();
+                    r.setGameMode("pfad");
+                    r.state.player.stamina = 100;
+                    r.state.player.phoenixUntil = 0;
+
+                    // Stamina-Gate: pfad mit voller Stamina → ok, cost 5
+                    const gateOk = r._mouseActionStaminaGate();
+                    out.pfadGateOk = gateOk.ok === true && gateOk.cost === 5;
+
+                    // Stamina verbrauchen: pfad zieht 5 ab
+                    r._consumeMouseStamina();
+                    out.pfadConsumesFive = r.state.player.stamina === 95;
+
+                    // Stamina unter Kosten → verweigert
+                    r.state.player.stamina = 2;
+                    const gateBlocked = r._mouseActionStaminaGate();
+                    out.pfadGateBlocksLow = gateBlocked.ok === false && gateBlocked.have === 2;
+
+                    // frieden + schöpfer: kein Stamina-Verbrauch
+                    r.setGameMode("frieden");
+                    r.state.player.stamina = 50;
+                    r._consumeMouseStamina();
+                    out.friedenSkipsStamina = r.state.player.stamina === 50;
+
+                    r.setGameMode("schöpfer");
+                    r.state.player.stamina = 50;
+                    r._consumeMouseStamina();
+                    out.schoepferSkipsStamina = r.state.player.stamina === 50;
+
+                    // frieden gate immer ok
+                    r.state.player.stamina = 0;
+                    r.setGameMode("frieden");
+                    out.friedenGateOkAtZero = r._mouseActionStaminaGate().ok === true;
+
+                    // removeArchitecture: synthetisches Setup ohne Mesh/Body
+                    const fakeEntry = { id: 99999, type: "test_arch", position: { x: 0, y: 0, z: 0 }, mesh: null };
+                    r.state.architectures.push(fakeEntry);
+                    const archCountBefore = r.state.architectures.length;
+                    const removed = r.removeArchitecture(fakeEntry);
+                    out.removeArchitectureWorks =
+                        removed === true && r.state.architectures.length === archCountBefore - 1;
+
+                    // removeArchitecture mit nicht-existentem Entry → false
+                    out.removeArchitectureRejectsGhost = r.removeArchitecture({ id: -1, type: "x" }) === false;
+
+                    // tryMousePlace ohne aktiven Bau-Modus → false
+                    r.setGameMode("frieden");
+                    r.state.buildMode.active = false;
+                    out.placeRejectsWithoutBuildMode = r.tryMousePlace() === false;
+
+                    // tryMouseBreak ohne hit & ohne Architektur → false (kein crash)
+                    // (kein physicsWorld in den meisten Tests, also fallback gilt)
+                    const breakResult = r.tryMouseBreak();
+                    out.breakSafeWithoutHit = breakResult === false || breakResult === true;
+
+                    // Cleanup
+                    r.setGameMode(oldMode);
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6a6Results && !wave6a6Results.error) {
+                check("Welle 6.A6: MOUSE_ACTION_STAMINA_COST === 5", wave6a6Results.hasStaminaCost);
+                check("Welle 6.A6: tryMouseBreak existiert", wave6a6Results.hasTryMouseBreak);
+                check("Welle 6.A6: tryMousePlace existiert", wave6a6Results.hasTryMousePlace);
+                check("Welle 6.A6: removeArchitecture existiert", wave6a6Results.hasRemoveArchitecture);
+                check("Welle 6.A6: _pickArchitectureAtCrosshair existiert", wave6a6Results.hasPickArchitecture);
+                check("Welle 6.A6: _raycastWorldHit existiert", wave6a6Results.hasRaycastWorldHit);
+                check("Welle 6.A6: _mouseActionStaminaGate existiert", wave6a6Results.hasStaminaGate);
+                check("Welle 6.A6: _consumeMouseStamina existiert", wave6a6Results.hasConsumeStamina);
+                check("Welle 6.A6: Stamina-Gate im pfad-Modus ok mit cost=5", wave6a6Results.pfadGateOk);
+                check("Welle 6.A6: pfad verbraucht 5 Stamina pro Aktion", wave6a6Results.pfadConsumesFive);
+                check("Welle 6.A6: pfad verweigert bei zu wenig Stamina", wave6a6Results.pfadGateBlocksLow);
+                check("Welle 6.A6: frieden überspringt Stamina-Verbrauch", wave6a6Results.friedenSkipsStamina);
+                check("Welle 6.A6: schöpfer überspringt Stamina-Verbrauch", wave6a6Results.schoepferSkipsStamina);
+                check("Welle 6.A6: frieden-Gate immer ok (auch bei 0 Stamina)", wave6a6Results.friedenGateOkAtZero);
+                check("Welle 6.A6: removeArchitecture entfernt Eintrag", wave6a6Results.removeArchitectureWorks);
+                check(
+                    "Welle 6.A6: removeArchitecture lehnt nicht-existenten Eintrag ab",
+                    wave6a6Results.removeArchitectureRejectsGhost
+                );
+                check(
+                    "Welle 6.A6: tryMousePlace ohne aktiven Bau-Modus → false",
+                    wave6a6Results.placeRejectsWithoutBuildMode
+                );
+                check("Welle 6.A6: tryMouseBreak crasht nicht ohne Hit", wave6a6Results.breakSafeWithoutHit);
+            }
+
+            // ### Welle 6.A6 V2 — Vision §1.2: Resonanz-Abklang beim Abbauen ###
+            // Eine Architektur mit resoniert ≥ resonance_mild verstummt mit
+            // einem Sinus-Ping. Stille Strukturen bleiben stumm — Verstummen
+            // tönt nur wo Klang war.
+            const wave6a6V2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    out.hasFarewellPing = typeof r._playArchitectureFarewellPing === "function";
+                    out.removeIntegratesPing =
+                        typeof r.removeArchitecture === "function" &&
+                        r.removeArchitecture.toString().includes("_playArchitectureFarewellPing");
+                    // Threshold-Konstante existiert
+                    const thr = r.constructor.WORLD_EFFECT_THRESHOLDS;
+                    out.thresholdReadable = thr && typeof thr.resonance_mild === "number" && thr.resonance_mild > 0;
+
+                    // Symphony aktivieren (Headless: autoplay-policy=no-user-gesture-required)
+                    if (typeof r.initSymphony === "function") r.initSymphony();
+                    const ctxOk = r.state.symphony && r.state.symphony.enabled && r.state.symphony.ctx;
+                    out.symphonyReady = !!ctxOk;
+                    if (!ctxOk) return out;
+
+                    // kristall_geode: resoniert ≈ 2.7 (Built-in, Welle 6.G P2)
+                    const geodeTags = r.computeCompoundTags(r.state.blueprints.kristall_geode);
+                    out.geodeIsResonant = (geodeTags.resoniert || 0) >= thr.resonance_mild;
+                    // stein_block: resoniert ≈ 0
+                    const stoneTags = r.computeCompoundTags(r.state.blueprints.stein_block);
+                    out.stoneIsNotResonant = (stoneTags.resoniert || 0) < thr.resonance_mild;
+
+                    // Spy auf createOscillator
+                    const ctx = r.state.symphony.ctx;
+                    const orig = ctx.createOscillator.bind(ctx);
+                    const p = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+
+                    // Test A: Geode-Abbau → mind. 1 Oszillator
+                    const geode = r.spawnArchitecture("kristall_geode", { x: p.x, y: p.y, z: p.z + 6 });
+                    let counterA = 0;
+                    ctx.createOscillator = function () {
+                        counterA++;
+                        return orig();
+                    };
+                    r.removeArchitecture(geode);
+                    out.geodeRemovalRingsOnce = counterA >= 1;
+
+                    // Test B: Stein-Abbau → kein Oszillator (Negativ-Kontrolle)
+                    const stone = r.spawnArchitecture("stein_block", { x: p.x + 4, y: p.y, z: p.z + 4 });
+                    let counterB = 0;
+                    ctx.createOscillator = function () {
+                        counterB++;
+                        return orig();
+                    };
+                    r.removeArchitecture(stone);
+                    out.stoneRemovalIsSilent = counterB === 0;
+
+                    // Test C: Symphony aus → kein Ping selbst bei resonanter Struktur
+                    r.state.symphony.enabled = false;
+                    const geode2 = r.spawnArchitecture("kristall_geode", { x: p.x - 4, y: p.y, z: p.z - 4 });
+                    let counterC = 0;
+                    ctx.createOscillator = function () {
+                        counterC++;
+                        return orig();
+                    };
+                    r.removeArchitecture(geode2);
+                    out.disabledSymphonyStaysSilent = counterC === 0;
+                    r.state.symphony.enabled = true;
+
+                    ctx.createOscillator = orig;
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6a6V2Results && !wave6a6V2Results.error) {
+                check("Welle 6.A6 V2: _playArchitectureFarewellPing existiert", wave6a6V2Results.hasFarewellPing);
+                check(
+                    "Welle 6.A6 V2: removeArchitecture ruft _playArchitectureFarewellPing",
+                    wave6a6V2Results.removeIntegratesPing
+                );
+                check(
+                    "Welle 6.A6 V2: WORLD_EFFECT_THRESHOLDS.resonance_mild lesbar",
+                    wave6a6V2Results.thresholdReadable
+                );
+                check("Welle 6.A6 V2: Symphony initialisierbar im Headless", wave6a6V2Results.symphonyReady);
+                if (wave6a6V2Results.symphonyReady) {
+                    check(
+                        "Welle 6.A6 V2: kristall_geode trägt resoniert ≥ mild-Threshold",
+                        wave6a6V2Results.geodeIsResonant
+                    );
+                    check(
+                        "Welle 6.A6 V2: stein_block trägt resoniert < mild-Threshold (Negativ)",
+                        wave6a6V2Results.stoneIsNotResonant
+                    );
+                    check(
+                        "Welle 6.A6 V2: Geode-Abbau erzeugt mind. einen Oszillator (Vision §1.2)",
+                        wave6a6V2Results.geodeRemovalRingsOnce
+                    );
+                    check(
+                        "Welle 6.A6 V2: Stein-Abbau bleibt stumm (Vision-Disziplin)",
+                        wave6a6V2Results.stoneRemovalIsSilent
+                    );
+                    check(
+                        "Welle 6.A6 V2: deaktivierte Symphony unterdrückt auch resonanten Abbau-Ping",
+                        wave6a6V2Results.disabledSymphonyStaysSilent
+                    );
+                }
+            }
+
+            // ### Welle 6.C3 V2 — HUD spiegelt aktuelle Keybindings ###
+            // _updateBuildModeHud baut den Text aus state.keybindings über
+            // _formatBindingCode. setKeybinding + resetKeybindings triggern
+            // ein HUD-Refresh, sodass der Spieler nie veraltete Beschriftung
+            // sieht.
+            const wave6c3V2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    r.resetKeybindings();
+                    r.setHotbarSlot(0, "village");
+                    r.selectHotbarSlot(0);
+                    const hud = document.getElementById("build-mode-hud");
+                    out.hudVisible = hud && !hud.hidden;
+                    const textDefault = hud ? hud.textContent : "";
+                    out.defaultMentionsConfirmBuild = /F/.test(textDefault);
+                    out.defaultMentionsPlacePretty = /Rechte Maustaste/.test(textDefault);
+                    out.defaultMentionsBreakPretty = /Linke Maustaste/.test(textDefault);
+
+                    // Rebind „place" → KeyB. setKeybinding muss HUD aktualisieren.
+                    r.setKeybinding("place", "KeyB");
+                    const textAfter = hud ? hud.textContent : "";
+                    out.afterRebindContainsB = /\bB\b/.test(textAfter);
+                    out.afterRebindDropsOldLabel = !/Rechte Maustaste/.test(textAfter);
+
+                    // Reset wirkt auch auf HUD.
+                    r.resetKeybindings();
+                    const textReset = hud ? hud.textContent : "";
+                    out.afterResetMentionsRMB = /Rechte Maustaste/.test(textReset);
+
+                    r._clearBuildMode();
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6c3V2Results && !wave6c3V2Results.error) {
+                check("Welle 6.C3 V2: HUD sichtbar im Bau-Modus", wave6c3V2Results.hudVisible);
+                check(
+                    "Welle 6.C3 V2: Default-HUD enthält 'F' (confirmBuild)",
+                    wave6c3V2Results.defaultMentionsConfirmBuild
+                );
+                check(
+                    "Welle 6.C3 V2: Default-HUD enthält 'Rechte Maustaste' (place)",
+                    wave6c3V2Results.defaultMentionsPlacePretty
+                );
+                check(
+                    "Welle 6.C3 V2: Default-HUD enthält 'Linke Maustaste' (break)",
+                    wave6c3V2Results.defaultMentionsBreakPretty
+                );
+                check(
+                    "Welle 6.C3 V2: setKeybinding(place→KeyB) reflektiert sich im HUD-Text",
+                    wave6c3V2Results.afterRebindContainsB
+                );
+                check(
+                    "Welle 6.C3 V2: HUD-Text verliert das alte Label nach Rebind",
+                    wave6c3V2Results.afterRebindDropsOldLabel
+                );
+                check(
+                    "Welle 6.C3 V2: resetKeybindings stellt HUD-Default wieder her",
+                    wave6c3V2Results.afterResetMentionsRMB
+                );
+            }
+
+            // ### Welle 6.C3 — Tastenbelegung (Keybindings) ###
+            // Sechs Aktionen rebindable: break, place, confirmBuild, inventory,
+            // cancelBuild, jump. Default-Map ist Minecraft-Konvention. Konflikt-
+            // Auflösung über Swap. Persistiert in localStorage.
+            const wave6c3Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    // Statische Konstanten
+                    out.hasDefaults =
+                        r.constructor.DEFAULT_KEYBINDINGS &&
+                        typeof r.constructor.DEFAULT_KEYBINDINGS === "object" &&
+                        Object.isFrozen(r.constructor.DEFAULT_KEYBINDINGS);
+                    out.hasActions =
+                        Array.isArray(r.constructor.KEYBINDING_ACTIONS) &&
+                        r.constructor.KEYBINDING_ACTIONS.length === 6;
+                    out.hasLabels = r.constructor.KEYBINDING_LABELS && Object.isFrozen(r.constructor.KEYBINDING_LABELS);
+                    const expectedActions = ["break", "place", "confirmBuild", "inventory", "cancelBuild", "jump"];
+                    out.actionsCorrect = expectedActions.every((a) => r.constructor.KEYBINDING_ACTIONS.includes(a));
+                    // Defaults sind Minecraft-Konvention
+                    out.defaultBreakIsMouse0 = r.constructor.DEFAULT_KEYBINDINGS.break === "Mouse0";
+                    out.defaultPlaceIsMouse2 = r.constructor.DEFAULT_KEYBINDINGS.place === "Mouse2";
+                    out.defaultConfirmBuildIsKeyF = r.constructor.DEFAULT_KEYBINDINGS.confirmBuild === "KeyF";
+                    out.defaultInventoryIsTab = r.constructor.DEFAULT_KEYBINDINGS.inventory === "Tab";
+
+                    // State init
+                    out.hasKeybindingsState = r.state.keybindings && typeof r.state.keybindings === "object";
+                    out.keybindRebindInitNull = r.state.keybindRebind === null;
+
+                    // Methoden-Existenz
+                    out.hasLoad = typeof r._loadKeybindings === "function";
+                    out.hasSave = typeof r._saveKeybindings === "function";
+                    out.hasSet = typeof r.setKeybinding === "function";
+                    out.hasReset = typeof r.resetKeybindings === "function";
+                    out.hasEventToCode = typeof r._eventToBindingCode === "function";
+                    out.hasActionFor = typeof r._actionForBindingCode === "function";
+                    out.hasBeginRebind = typeof r.beginKeybindRebind === "function";
+                    out.hasCancelRebind = typeof r.cancelKeybindRebind === "function";
+                    out.hasInitDOM = typeof r.keybindingsInitDOM === "function";
+                    out.hasRenderUI = typeof r._renderKeybindingsUI === "function";
+                    out.hasFormatCode = typeof r._formatBindingCode === "function";
+
+                    // setKeybinding ändert state
+                    const before = r.state.keybindings.confirmBuild;
+                    const setOk = r.setKeybinding("confirmBuild", "KeyG");
+                    out.setKeybindingWorks = setOk === true && r.state.keybindings.confirmBuild === "KeyG";
+
+                    // setKeybinding-Konflikt = Swap: bind „place" auf das gerade
+                    // gesetzte „KeyG" → confirmBuild bekommt das alte „Mouse2"
+                    // (das war place's Default).
+                    const oldPlace = r.state.keybindings.place;
+                    r.setKeybinding("place", "KeyG");
+                    out.swapHappened =
+                        r.state.keybindings.place === "KeyG" && r.state.keybindings.confirmBuild === oldPlace;
+
+                    // Reset auf Defaults
+                    r.resetKeybindings();
+                    out.resetRestoresDefaults =
+                        r.state.keybindings.break === "Mouse0" &&
+                        r.state.keybindings.place === "Mouse2" &&
+                        r.state.keybindings.confirmBuild === "KeyF" &&
+                        r.state.keybindings.confirmBuild === before; // before war auch der Default
+
+                    // setKeybinding-Validierung: unbekannte Aktion → false
+                    out.setRejectsUnknownAction = r.setKeybinding("ficto", "KeyZ") === false;
+                    out.setRejectsEmptyCode = r.setKeybinding("break", "") === false;
+
+                    // _actionForBindingCode reverse-lookup
+                    out.actionForMouse0 = r._actionForBindingCode("Mouse0") === "break";
+                    out.actionForMouse2 = r._actionForBindingCode("Mouse2") === "place";
+                    out.actionForKeyF = r._actionForBindingCode("KeyF") === "confirmBuild";
+                    out.actionForUnbound = r._actionForBindingCode("KeyZ") === null;
+
+                    // _eventToBindingCode
+                    const mouseEvt = { type: "mousedown", button: 0 };
+                    const mouseEvt2 = { type: "mousedown", button: 2 };
+                    const keyEvt = { type: "keydown", code: "KeyG" };
+                    out.codeForMouseDownLMB = r._eventToBindingCode(mouseEvt) === "Mouse0";
+                    out.codeForMouseDownRMB = r._eventToBindingCode(mouseEvt2) === "Mouse2";
+                    out.codeForKeyDown = r._eventToBindingCode(keyEvt) === "KeyG";
+
+                    // beginKeybindRebind setzt state, cancel räumt auf
+                    r.beginKeybindRebind("break");
+                    out.rebindActive = r.state.keybindRebind && r.state.keybindRebind.action === "break";
+                    r.cancelKeybindRebind();
+                    out.rebindCancelClears = r.state.keybindRebind === null;
+
+                    // _completeKeybindRebind ändert die Bindung
+                    r.beginKeybindRebind("jump");
+                    r._completeKeybindRebind("KeyJ");
+                    out.completeBindsCode = r.state.keybindings.jump === "KeyJ";
+                    // Escape im Rebind-Modus → Abbruch (Binding bleibt)
+                    r.beginKeybindRebind("jump");
+                    r._completeKeybindRebind("Escape");
+                    out.escCancelsRebind = r.state.keybindRebind === null && r.state.keybindings.jump === "KeyJ";
+
+                    // _formatBindingCode pretty-print
+                    out.formatMouse0 = r._formatBindingCode("Mouse0") === "Linke Maustaste";
+                    out.formatMouse2 = r._formatBindingCode("Mouse2") === "Rechte Maustaste";
+                    out.formatSpace = r._formatBindingCode("Space") === "Leertaste";
+                    out.formatKeyF = r._formatBindingCode("KeyF") === "F";
+
+                    // UI: Section + Liste + Reset-Button im DOM
+                    out.sectionInDom = !!document.getElementById("keybindings-section");
+                    out.listInDom = !!document.getElementById("keybindings-list");
+                    out.resetInDom = !!document.getElementById("keybindings-reset");
+                    // 6 keybind-row Zeilen
+                    out.sixRowsRendered = document.querySelectorAll("#keybindings-list .keybind-row").length === 6;
+                    // Pro Aktion ein Rebind-Button mit data-action
+                    out.rebindButtonsPresent = document.querySelectorAll(".keybind-rebind[data-action]").length === 6;
+
+                    // Reset für nachfolgende Tests
+                    r.resetKeybindings();
+                    r.state.keybindRebind = null;
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6c3Results && !wave6c3Results.error) {
+                check("Welle 6.C3: DEFAULT_KEYBINDINGS frozen", wave6c3Results.hasDefaults);
+                check("Welle 6.C3: KEYBINDING_ACTIONS hat 6 Einträge", wave6c3Results.hasActions);
+                check("Welle 6.C3: KEYBINDING_LABELS frozen", wave6c3Results.hasLabels);
+                check(
+                    "Welle 6.C3: Actions vollständig (break/place/confirmBuild/inventory/cancelBuild/jump)",
+                    wave6c3Results.actionsCorrect
+                );
+                check("Welle 6.C3: Default break === Mouse0 (LMB)", wave6c3Results.defaultBreakIsMouse0);
+                check("Welle 6.C3: Default place === Mouse2 (RMB)", wave6c3Results.defaultPlaceIsMouse2);
+                check("Welle 6.C3: Default confirmBuild === KeyF", wave6c3Results.defaultConfirmBuildIsKeyF);
+                check("Welle 6.C3: Default inventory === Tab", wave6c3Results.defaultInventoryIsTab);
+                check("Welle 6.C3: state.keybindings initialisiert", wave6c3Results.hasKeybindingsState);
+                check("Welle 6.C3: state.keybindRebind initial null", wave6c3Results.keybindRebindInitNull);
+                check(
+                    "Welle 6.C3: _loadKeybindings + _saveKeybindings existieren",
+                    wave6c3Results.hasLoad && wave6c3Results.hasSave
+                );
+                check(
+                    "Welle 6.C3: setKeybinding + resetKeybindings existieren",
+                    wave6c3Results.hasSet && wave6c3Results.hasReset
+                );
+                check(
+                    "Welle 6.C3: _eventToBindingCode + _actionForBindingCode existieren",
+                    wave6c3Results.hasEventToCode && wave6c3Results.hasActionFor
+                );
+                check(
+                    "Welle 6.C3: beginKeybindRebind + cancelKeybindRebind existieren",
+                    wave6c3Results.hasBeginRebind && wave6c3Results.hasCancelRebind
+                );
+                check(
+                    "Welle 6.C3: keybindingsInitDOM + _renderKeybindingsUI + _formatBindingCode existieren",
+                    wave6c3Results.hasInitDOM && wave6c3Results.hasRenderUI && wave6c3Results.hasFormatCode
+                );
+                check("Welle 6.C3: setKeybinding ändert state.keybindings", wave6c3Results.setKeybindingWorks);
+                check("Welle 6.C3: Konflikt-Schutz tauscht Bindings (Swap)", wave6c3Results.swapHappened);
+                check("Welle 6.C3: resetKeybindings stellt Defaults wieder her", wave6c3Results.resetRestoresDefaults);
+                check("Welle 6.C3: setKeybinding lehnt unbekannte Aktion ab", wave6c3Results.setRejectsUnknownAction);
+                check("Welle 6.C3: setKeybinding lehnt leeren Code ab", wave6c3Results.setRejectsEmptyCode);
+                check("Welle 6.C3: actionFor Mouse0 → break", wave6c3Results.actionForMouse0);
+                check("Welle 6.C3: actionFor Mouse2 → place", wave6c3Results.actionForMouse2);
+                check("Welle 6.C3: actionFor KeyF → confirmBuild", wave6c3Results.actionForKeyF);
+                check("Welle 6.C3: actionFor ungebundener Code → null", wave6c3Results.actionForUnbound);
+                check("Welle 6.C3: eventToCode MouseEvent LMB → Mouse0", wave6c3Results.codeForMouseDownLMB);
+                check("Welle 6.C3: eventToCode MouseEvent RMB → Mouse2", wave6c3Results.codeForMouseDownRMB);
+                check("Welle 6.C3: eventToCode KeyboardEvent → event.code", wave6c3Results.codeForKeyDown);
+                check("Welle 6.C3: beginKeybindRebind setzt state.keybindRebind", wave6c3Results.rebindActive);
+                check("Welle 6.C3: cancelKeybindRebind räumt auf", wave6c3Results.rebindCancelClears);
+                check("Welle 6.C3: _completeKeybindRebind bindet neuen Code", wave6c3Results.completeBindsCode);
+                check(
+                    "Welle 6.C3: Escape im Rebind-Modus → Abbruch (kein Binding-Wechsel)",
+                    wave6c3Results.escCancelsRebind
+                );
+                check("Welle 6.C3: format Mouse0 → 'Linke Maustaste'", wave6c3Results.formatMouse0);
+                check("Welle 6.C3: format Mouse2 → 'Rechte Maustaste'", wave6c3Results.formatMouse2);
+                check("Welle 6.C3: format Space → 'Leertaste'", wave6c3Results.formatSpace);
+                check("Welle 6.C3: format KeyF → 'F'", wave6c3Results.formatKeyF);
+                check("Welle 6.C3: #keybindings-section im DOM", wave6c3Results.sectionInDom);
+                check("Welle 6.C3: #keybindings-list im DOM", wave6c3Results.listInDom);
+                check("Welle 6.C3: #keybindings-reset im DOM", wave6c3Results.resetInDom);
+                check("Welle 6.C3: 6 keybind-row Zeilen gerendert", wave6c3Results.sixRowsRendered);
+                check("Welle 6.C3: 6 Rebind-Buttons im DOM", wave6c3Results.rebindButtonsPresent);
+            }
+
+            // ### Welle 6.H Phase 1 — Kreaturen-Aufträge (follow_player / wait / wander) ###
+            // Tasks sind Beziehungs-Gesten, keine Identität (Vision §1.1 Co-Schöpfer).
+            // Default-Task „wander" hält das heutige Emotion-Verhalten — Aura ist stumm.
+            // follow_player + wait haben Aura-Sprite (grün/bernstein) als visuelles Feedback.
+            // Multi-User: Tasks in NON_BROADCASTABLE_OPS (Phase 2 mit expliziten IDs).
+            const wave6hResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 3) return null;
+                    const out = {};
+                    // Statische Konstanten
+                    out.hasTasks =
+                        Array.isArray(r.constructor.CREATURE_TASKS) &&
+                        r.constructor.CREATURE_TASKS.length >= 3 &&
+                        r.constructor.CREATURE_TASKS.includes("wander") &&
+                        r.constructor.CREATURE_TASKS.includes("follow_player") &&
+                        r.constructor.CREATURE_TASKS.includes("wait");
+                    out.hasAuraHueMap =
+                        r.constructor.CREATURE_TASK_AURA_HUE &&
+                        r.constructor.CREATURE_TASK_AURA_HUE.follow_player === 120 &&
+                        r.constructor.CREATURE_TASK_AURA_HUE.wait === 40 &&
+                        r.constructor.CREATURE_TASK_AURA_HUE.wander === null;
+                    out.hasFollowDistance =
+                        Number.isFinite(r.constructor.CREATURE_FOLLOW_DISTANCE) &&
+                        r.constructor.CREATURE_FOLLOW_DISTANCE > 0;
+
+                    // Methoden
+                    out.hasAssign = typeof r.assignCreatureTask === "function";
+                    out.hasGet = typeof r._getCreatureTask === "function";
+                    out.hasTick = typeof r._tickCreatureTaskDirection === "function";
+                    out.hasNearestFinder = typeof r.findNearestCreature === "function";
+                    out.hasAssignNearest = typeof r.assignTaskToNearestCreature === "function";
+                    out.hasAssignAll = typeof r.assignTaskToAllCreatures === "function";
+                    out.hasAuraRefresh = typeof r._refreshCreatureTaskAura === "function";
+
+                    // Default-Task für initial-gespawnte Kreaturen ist wander
+                    const c0 = r.state.creatures[0];
+                    out.initialTaskWander = r._getCreatureTask(c0).name === "wander";
+                    out.initialNoAura = !c0.userData.taskAura;
+
+                    // assignCreatureTask wechselt + erzeugt Aura für non-wander
+                    r.assignCreatureTask(c0, "follow_player");
+                    out.assignFollowOk = r._getCreatureTask(c0).name === "follow_player";
+                    out.followCreatesAura = !!c0.userData.taskAura;
+
+                    // Aura-Hue für follow_player ist grünlich (g > r, g > b)
+                    const followColor = c0.userData.taskAura.material.color;
+                    out.followAuraGreenish = followColor.g > followColor.r && followColor.g > followColor.b;
+
+                    r.assignCreatureTask(c0, "wait");
+                    out.waitChangesAuraColor =
+                        c0.userData.taskAura.material.color.r > c0.userData.taskAura.material.color.b;
+
+                    r.assignCreatureTask(c0, "wander");
+                    out.wanderRemovesAura = !c0.userData.taskAura;
+
+                    // Unknown Task wird abgelehnt
+                    out.unknownRejected = r.assignCreatureTask(c0, "fictional") === false;
+
+                    // tickCreatureTaskDirection
+                    const c1 = r.state.creatures[1];
+                    r.assignCreatureTask(c1, "wait");
+                    const waitDir = r._tickCreatureTaskDirection(c1, r._getCreatureTask(c1), "happy");
+                    out.waitGivesZeroDir = waitDir && waitDir.x === 0 && waitDir.z === 0;
+
+                    // follow_player: weit weg → Richtung zum Spieler
+                    const p = r.state.playerMesh.position;
+                    c1.position.set(p.x + 10, p.y, p.z + 10);
+                    r.assignCreatureTask(c1, "follow_player");
+                    const fdir = r._tickCreatureTaskDirection(c1, r._getCreatureTask(c1), "happy");
+                    out.followDirectionToPlayer = fdir.x < 0 && fdir.z < 0 && Math.hypot(fdir.x, fdir.z) > 0;
+
+                    // follow_player: innerhalb haltDist → direction = (0,0,0)
+                    c1.position.set(p.x + 0.3, p.y, p.z + 0.3);
+                    const stopDir = r._tickCreatureTaskDirection(c1, r._getCreatureTask(c1), "happy");
+                    out.followStopsAtHalt = stopDir.x === 0 && stopDir.z === 0;
+
+                    // wander → null (Caller fällt auf Emotion-Logik)
+                    r.assignCreatureTask(c1, "wander");
+                    const wDir = r._tickCreatureTaskDirection(c1, r._getCreatureTask(c1), "happy");
+                    out.wanderReturnsNull = wDir === null;
+
+                    // distance-Arg-Validierung (clamp)
+                    r.assignCreatureTask(c1, "follow_player", { distance: 1.5 });
+                    out.distanceArgKept = r._getCreatureTask(c1).args.distance === 1.5;
+
+                    // findNearestCreature
+                    for (let i = 0; i < r.state.creatures.length; i++) {
+                        r.state.creatures[i].position.set(p.x + 100 + i * 5, p.y, p.z + 100 + i * 5);
+                    }
+                    r.state.creatures[2].position.set(p.x + 2, p.y, p.z + 2);
+                    const nearest = r.findNearestCreature(p);
+                    out.nearestIsCorrect = nearest === r.state.creatures[2];
+
+                    // assignTaskToNearestCreature
+                    r.assignCreatureTask(r.state.creatures[2], "wander");
+                    const target = r.assignTaskToNearestCreature(p, "follow_player");
+                    out.assignNearestWorks =
+                        target === r.state.creatures[2] && r._getCreatureTask(target).name === "follow_player";
+
+                    // assignTaskToAllCreatures
+                    const count = r.assignTaskToAllCreatures("wait");
+                    out.assignAllWorks =
+                        count === r.state.creatures.length &&
+                        r.state.creatures.every((c) => r._getCreatureTask(c).name === "wait");
+                    r.assignTaskToAllCreatures("wander");
+
+                    // DSL-Ops
+                    r.dslRun(["creature_task", 0, "follow_player"], { source: "test" });
+                    out.dslSingleWorks = r._getCreatureTask(r.state.creatures[0]).name === "follow_player";
+                    r.dslRun(["creature_task_all", "wander"], { source: "test" });
+                    out.dslAllWorks = r.state.creatures.every((c) => r._getCreatureTask(c).name === "wander");
+                    r.dslRun(["creature_task", 9999, "follow_player"], { source: "test" });
+                    out.dslOobSafe = true; // wenn wir hier sind, kein crash
+
+                    // NON_BROADCASTABLE_OPS Mitgliedschaft
+                    const nbs = r.constructor.NON_BROADCASTABLE_OPS;
+                    out.nbCreatureTask = nbs.has("creature_task");
+                    out.nbCreatureTaskNearest = nbs.has("creature_task_nearest");
+                    out.nbCreatureTaskAll = nbs.has("creature_task_all");
+
+                    // Chat-Patterns
+                    const folge = r.parseChatToDsl("folge mir");
+                    out.chatFolgeMir =
+                        folge &&
+                        Array.isArray(folge.program) &&
+                        folge.program[0] === "creature_task_nearest" &&
+                        folge.program[1] === "follow_player";
+                    const warte = r.parseChatToDsl("warte");
+                    out.chatWarte =
+                        warte && warte.program[0] === "creature_task_nearest" && warte.program[1] === "wait";
+                    const erkunde = r.parseChatToDsl("erkunde");
+                    out.chatErkunde =
+                        erkunde && erkunde.program[0] === "creature_task_nearest" && erkunde.program[1] === "wander";
+                    const kommHer = r.parseChatToDsl("komm her");
+                    out.chatKommHer =
+                        kommHer &&
+                        kommHer.program[0] === "creature_task_nearest" &&
+                        kommHer.program[1] === "follow_player" &&
+                        kommHer.program[2] === 1.5;
+                    const alle = r.parseChatToDsl("alle folgt mir");
+                    out.chatAlleFolgt =
+                        alle && alle.program[0] === "creature_task_all" && alle.program[1] === "follow_player";
+                    const alleWarten = r.parseChatToDsl("alle warten");
+                    out.chatAlleWarten =
+                        alleWarten && alleWarten.program[0] === "creature_task_all" && alleWarten.program[1] === "wait";
+
+                    // describeProgram-Einträge
+                    const desc1 = r.describeProgram(["creature_task_nearest", "follow_player"]);
+                    out.descNearest = typeof desc1 === "string" && /folge|nächste|Auftrag/i.test(desc1);
+                    const desc2 = r.describeProgram(["creature_task_all", "wait"]);
+                    out.descAll = typeof desc2 === "string" && /alle/i.test(desc2);
+
+                    // removeCreature räumt Aura mit
+                    const cToRemove = r.state.creatures[r.state.creatures.length - 1];
+                    r.assignCreatureTask(cToRemove, "wait");
+                    const auraToCheck = cToRemove.userData.taskAura;
+                    out.preRemoveAuraInScene = r.state.scene.children.includes(auraToCheck);
+                    r.removeCreature(cToRemove);
+                    r.state.creatures.pop(); // sync state mit removeCreature-Pfad
+                    out.postRemoveAuraGone = !r.state.scene.children.includes(auraToCheck);
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6hResults && !wave6hResults.error) {
+                check("Welle 6.H Phase 1: CREATURE_TASKS frozen mit ≥3 Aufträgen", wave6hResults.hasTasks);
+                check(
+                    "Welle 6.H Phase 1: CREATURE_TASK_AURA_HUE map (follow=120/wait=40/wander=null)",
+                    wave6hResults.hasAuraHueMap
+                );
+                check(
+                    "Welle 6.H Phase 1: CREATURE_FOLLOW_DISTANCE definiert + positiv",
+                    wave6hResults.hasFollowDistance
+                );
+                check(
+                    "Welle 6.H Phase 1: alle Methoden existieren (assign/get/tick/nearest/all/auraRefresh)",
+                    wave6hResults.hasAssign &&
+                        wave6hResults.hasGet &&
+                        wave6hResults.hasTick &&
+                        wave6hResults.hasNearestFinder &&
+                        wave6hResults.hasAssignNearest &&
+                        wave6hResults.hasAssignAll &&
+                        wave6hResults.hasAuraRefresh
+                );
+                check(
+                    "Welle 6.H Phase 1: Default-Task initial-gespawnter Kreaturen ist wander",
+                    wave6hResults.initialTaskWander
+                );
+                check("Welle 6.H Phase 1: Default-Task wander hat KEINE Aura", wave6hResults.initialNoAura);
+                check(
+                    "Welle 6.H Phase 1: assignCreatureTask(follow_player) setzt Task + erzeugt Aura",
+                    wave6hResults.assignFollowOk && wave6hResults.followCreatesAura
+                );
+                check("Welle 6.H Phase 1: Aura für follow_player ist grünlich", wave6hResults.followAuraGreenish);
+                check("Welle 6.H Phase 1: Wechsel auf wait ändert Aura-Farbe", wave6hResults.waitChangesAuraColor);
+                check(
+                    "Welle 6.H Phase 1: Rückkehr zu wander entfernt Aura (Lifecycle-Sauberkeit)",
+                    wave6hResults.wanderRemovesAura
+                );
+                check("Welle 6.H Phase 1: assignCreatureTask lehnt unbekannten Task ab", wave6hResults.unknownRejected);
+                check("Welle 6.H Phase 1: wait-Task liefert direction (0,0,0)", wave6hResults.waitGivesZeroDir);
+                check(
+                    "Welle 6.H Phase 1: follow_player-Direction zeigt zum Spieler (weit weg)",
+                    wave6hResults.followDirectionToPlayer
+                );
+                check(
+                    "Welle 6.H Phase 1: follow_player stoppt am haltDist (direction=0)",
+                    wave6hResults.followStopsAtHalt
+                );
+                check(
+                    "Welle 6.H Phase 1: wander-Direction liefert null (Fallback auf Emotion-Logik)",
+                    wave6hResults.wanderReturnsNull
+                );
+                check("Welle 6.H Phase 1: distance-Arg landet in task.args", wave6hResults.distanceArgKept);
+                check("Welle 6.H Phase 1: findNearestCreature wählt die nahste", wave6hResults.nearestIsCorrect);
+                check(
+                    "Welle 6.H Phase 1: assignTaskToNearestCreature wirkt auf nahste",
+                    wave6hResults.assignNearestWorks
+                );
+                check("Welle 6.H Phase 1: assignTaskToAllCreatures wirkt auf alle", wave6hResults.assignAllWorks);
+                check("Welle 6.H Phase 1: DSL creature_task setzt Task", wave6hResults.dslSingleWorks);
+                check("Welle 6.H Phase 1: DSL creature_task_all setzt alle", wave6hResults.dslAllWorks);
+                check("Welle 6.H Phase 1: DSL mit OOB-Index crasht nicht", wave6hResults.dslOobSafe);
+                check(
+                    "Welle 6.H Phase 1: creature_task* in NON_BROADCASTABLE_OPS (Multi-User-Safety)",
+                    wave6hResults.nbCreatureTask &&
+                        wave6hResults.nbCreatureTaskNearest &&
+                        wave6hResults.nbCreatureTaskAll
+                );
+                check(
+                    "Welle 6.H Phase 1: Chat 'folge mir' → creature_task_nearest follow_player",
+                    wave6hResults.chatFolgeMir
+                );
+                check("Welle 6.H Phase 1: Chat 'warte' → creature_task_nearest wait", wave6hResults.chatWarte);
+                check("Welle 6.H Phase 1: Chat 'erkunde' → creature_task_nearest wander", wave6hResults.chatErkunde);
+                check("Welle 6.H Phase 1: Chat 'komm her' → follow_player mit distance=1.5", wave6hResults.chatKommHer);
+                check(
+                    "Welle 6.H Phase 1: Chat 'alle folgt mir' → creature_task_all follow_player",
+                    wave6hResults.chatAlleFolgt
+                );
+                check("Welle 6.H Phase 1: Chat 'alle warten' → creature_task_all wait", wave6hResults.chatAlleWarten);
+                check(
+                    "Welle 6.H Phase 1: describeProgram für nearest enthält 'folge'/'nächste'",
+                    wave6hResults.descNearest
+                );
+                check("Welle 6.H Phase 1: describeProgram für all enthält 'alle'", wave6hResults.descAll);
+                check(
+                    "Welle 6.H Phase 1: removeCreature räumt Aura aus Scene (kein Memory-Leak)",
+                    wave6hResults.preRemoveAuraInScene && wave6hResults.postRemoveAuraGone
+                );
+            }
+
+            // ### Welle 6.H V2 — Vision-/UX-/Performance-Schließungen ###
+            // Nach Schöpfer-Audit: Audio-Antwort bei Task-Wechsel (§1.2),
+            // Journal-Eintrag bei Geste (§1.1), Leerschlag-Feedback (UX),
+            // Status-Bar-Zähler (UX), Texture-Cache (Performance),
+            // describeProgram-Distanz (UX).
+            const wave6hV2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 3) return null;
+                    const out = {};
+
+                    // === Audio-Antwort bei Task-Wechsel (Vision §1.2) ===
+                    out.hasTaskPingMethod = typeof r._playCreatureTaskPing === "function";
+                    out.hasPingFreq =
+                        r.constructor.CREATURE_TASK_PING_FREQ &&
+                        r.constructor.CREATURE_TASK_PING_FREQ.follow_player === 494 &&
+                        r.constructor.CREATURE_TASK_PING_FREQ.wait === 294 &&
+                        r.constructor.CREATURE_TASK_PING_FREQ.wander === null;
+
+                    if (typeof r.initSymphony === "function") r.initSymphony();
+                    const symReady = r.state.symphony && r.state.symphony.enabled && r.state.symphony.ctx;
+                    out.symphonyReady = !!symReady;
+
+                    if (symReady) {
+                        const ctx = r.state.symphony.ctx;
+                        const orig = ctx.createOscillator.bind(ctx);
+                        const c = r.state.creatures[0];
+                        // Wechsel wander → follow_player → Ping
+                        r.assignCreatureTask(c, "wander", {}, { silent: true });
+                        let n = 0;
+                        ctx.createOscillator = function () {
+                            n++;
+                            return orig();
+                        };
+                        r.assignCreatureTask(c, "follow_player");
+                        out.followPings = n >= 1;
+                        n = 0;
+                        r.assignCreatureTask(c, "wait");
+                        out.waitPings = n >= 1;
+                        // Wechsel zu wander → KEIN Ping (Lösen der Bindung ist still)
+                        n = 0;
+                        r.assignCreatureTask(c, "wander");
+                        out.wanderIsSilent = n === 0;
+                        ctx.createOscillator = orig;
+                    }
+
+                    // === Journal-Eintrag bei Beziehungs-Geste (Vision §1.1) ===
+                    out.hasJournalMethod = typeof r._journalCreatureTask === "function";
+                    const c1 = r.state.creatures[1];
+                    r.assignCreatureTask(c1, "wander", {}, { silent: true });
+                    const jBefore = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
+                    r.assignCreatureTask(c1, "follow_player");
+                    const jAfter = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
+                    out.journalGrows = jAfter > jBefore;
+                    // Eintrag trägt type=relationship
+                    const lastEntry =
+                        r.state.worldJournal && r.state.worldJournal.entries[r.state.worldJournal.entries.length - 1];
+                    out.journalTypeIsRelationship = lastEntry && lastEntry.type === "relationship";
+
+                    // === silent-Option unterdrückt Audio + Journal ===
+                    const c2 = r.state.creatures[2];
+                    r.assignCreatureTask(c2, "wander", {}, { silent: true });
+                    const jPre = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
+                    r.assignCreatureTask(c2, "wait", {}, { silent: true });
+                    const jPost = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
+                    out.silentSuppressesJournal = jPost === jPre;
+
+                    // === Leerschlag-Feedback (UX + Vision §1.1) ===
+                    // Alle Kreaturen weit weg, dann Auftrag mit maxDist=60
+                    const pPos = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
+                    for (const c of r.state.creatures) c.position.set(pPos.x + 500, pPos.y, pPos.z + 500);
+                    const chatOutput = document.getElementById("chat-output");
+                    const chatBefore = chatOutput ? chatOutput.children.length : 0;
+                    const journalBefore = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
+                    const result = r.assignTaskToNearestCreature(pPos, "follow_player", {}, 60);
+                    const chatAfter = chatOutput ? chatOutput.children.length : 0;
+                    const journalAfter = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
+                    const lastLine = chatOutput && chatOutput.lastChild ? chatOutput.lastChild.textContent : "";
+                    out.leerschlagReturnsNull = result === null;
+                    out.leerschlagWritesChat = chatAfter > chatBefore && /Keine Kreatur/.test(lastLine);
+                    out.leerschlagWritesJournal = journalAfter > journalBefore;
+                    out.leerschlagJournalTypeReach =
+                        r.state.worldJournal.entries[r.state.worldJournal.entries.length - 1].type === "reach";
+
+                    // === Texture-Cache (Performance) ===
+                    out.hasCacheMethod = typeof r._getCreatureTaskAuraTexture === "function";
+                    const firstTexture = r._getCreatureTaskAuraTexture();
+                    const secondTexture = r._getCreatureTaskAuraTexture();
+                    out.textureCacheReusesInstance = firstTexture === secondTexture;
+                    // 10 Task-Wechsel sollten dieselbe Map nutzen
+                    const c3 = r.state.creatures[0];
+                    c3.position.set(pPos.x + 1, pPos.y, pPos.z + 1); // wieder nah
+                    const uniqueMaps = new Set();
+                    for (let i = 0; i < 10; i++) {
+                        r.assignCreatureTask(c3, "follow_player", {}, { silent: true });
+                        if (c3.userData.taskAura && c3.userData.taskAura.material.map) {
+                            uniqueMaps.add(c3.userData.taskAura.material.map);
+                        }
+                        r.assignCreatureTask(c3, "wander", {}, { silent: true });
+                    }
+                    out.textureSharedAcross10Cycles = uniqueMaps.size === 1;
+
+                    // === Status-Bar Task-Zähler (UX) ===
+                    out.hasRenderTaskStatus = typeof r._renderTaskStatusUI === "function";
+                    out.statusTasksInDom = !!document.getElementById("status-tasks");
+                    r.assignTaskToAllCreatures("wander");
+                    r.assignCreatureTask(r.state.creatures[0], "follow_player", {}, { silent: true });
+                    r.assignCreatureTask(r.state.creatures[1], "follow_player", {}, { silent: true });
+                    r.assignCreatureTask(r.state.creatures[2], "wait", {}, { silent: true });
+                    r._renderTaskStatusUI();
+                    const taskEl = document.getElementById("status-tasks");
+                    const taskText = taskEl ? taskEl.textContent : "";
+                    out.statusShowsCounts = /2 folgen/.test(taskText) && /1 warten/.test(taskText);
+                    // Alle wander → "—"
+                    r.assignTaskToAllCreatures("wander");
+                    r._renderTaskStatusUI();
+                    const taskText2 = taskEl ? taskEl.textContent : "";
+                    out.statusEmptyDash = taskText2 === "—";
+
+                    // === describeProgram zeigt Distanz ===
+                    const descWithDist = r.describeProgram(["creature_task_nearest", "follow_player", 1.5]);
+                    const descWithoutDist = r.describeProgram(["creature_task_nearest", "follow_player"]);
+                    out.descShowsDistance = /1\.5m|Distanz/i.test(descWithDist);
+                    out.descNoDistanceWhenNotGiven = !/1\.5/.test(descWithoutDist);
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6hV2Results && !wave6hV2Results.error) {
+                check("Welle 6.H V2: _playCreatureTaskPing existiert", wave6hV2Results.hasTaskPingMethod);
+                check(
+                    "Welle 6.H V2: CREATURE_TASK_PING_FREQ map (follow=494/wait=294/wander=null)",
+                    wave6hV2Results.hasPingFreq
+                );
+                check("Welle 6.H V2: Symphony initialisierbar im Headless", wave6hV2Results.symphonyReady);
+                if (wave6hV2Results.symphonyReady) {
+                    check(
+                        "Welle 6.H V2: Wechsel zu follow_player erzeugt Audio-Ping (Vision §1.2)",
+                        wave6hV2Results.followPings
+                    );
+                    check("Welle 6.H V2: Wechsel zu wait erzeugt Audio-Ping (Vision §1.2)", wave6hV2Results.waitPings);
+                    check(
+                        "Welle 6.H V2: Wechsel zu wander bleibt STUMM (Disziplin: Lösen tönt nicht)",
+                        wave6hV2Results.wanderIsSilent
+                    );
+                }
+                check("Welle 6.H V2: _journalCreatureTask existiert", wave6hV2Results.hasJournalMethod);
+                check(
+                    "Welle 6.H V2: Task-Wechsel schreibt ins Welt-Journal (Vision §1.1)",
+                    wave6hV2Results.journalGrows
+                );
+                check(
+                    "Welle 6.H V2: Journal-Eintrag trägt type='relationship'",
+                    wave6hV2Results.journalTypeIsRelationship
+                );
+                check(
+                    "Welle 6.H V2: silent-Option unterdrückt Audio + Journal (Spawn-Defaults bleiben still)",
+                    wave6hV2Results.silentSuppressesJournal
+                );
+                check(
+                    "Welle 6.H V2: Leerschlag-Geste schreibt Chat-Output 'Keine Kreatur in der Nähe'",
+                    wave6hV2Results.leerschlagWritesChat
+                );
+                check(
+                    "Welle 6.H V2: Leerschlag-Geste schreibt 'reach'-Journal-Eintrag",
+                    wave6hV2Results.leerschlagWritesJournal && wave6hV2Results.leerschlagJournalTypeReach
+                );
+                check(
+                    "Welle 6.H V2: assignTaskToNearest returnt null bei Leerschlag",
+                    wave6hV2Results.leerschlagReturnsNull
+                );
+                check(
+                    "Welle 6.H V2: _getCreatureTaskAuraTexture existiert + cached",
+                    wave6hV2Results.hasCacheMethod && wave6hV2Results.textureCacheReusesInstance
+                );
+                check(
+                    "Welle 6.H V2: 10 Task-Wechsel teilen sich EINE Textur (kein Memory-Churn)",
+                    wave6hV2Results.textureSharedAcross10Cycles
+                );
+                check("Welle 6.H V2: _renderTaskStatusUI existiert", wave6hV2Results.hasRenderTaskStatus);
+                check("Welle 6.H V2: #status-tasks-Item im DOM", wave6hV2Results.statusTasksInDom);
+                check(
+                    "Welle 6.H V2: Status-Bar zeigt '2 folgen · 1 warten' nach Setup",
+                    wave6hV2Results.statusShowsCounts
+                );
+                check("Welle 6.H V2: Status-Bar zeigt '—' wenn alle wander", wave6hV2Results.statusEmptyDash);
+                check("Welle 6.H V2: describeProgram zeigt Distanz wenn gesetzt", wave6hV2Results.descShowsDistance);
+                check(
+                    "Welle 6.H V2: describeProgram zeigt keine Distanz wenn nicht gesetzt",
+                    wave6hV2Results.descNoDistanceWhenNotGiven
+                );
+            }
+
+            // ### Welle 6.H Phase 2A — Kreaturen als Hylomorphismus-Compounds ###
+            // Kreaturen sind jetzt Multi-Mesh-Groups aus bodyParts × Material —
+            // selbe Sprache wie Spieler-Seele (6.D) + Architektur (6.G P1.5).
+            // Drei Built-in-Seelen sprite/wesen/geist, Tag-Profil emergent.
+            const wave6hP2aResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    const souls = r.constructor.CREATURE_SOULS;
+                    out.soulsFrozen = !!souls && Object.isFrozen(souls);
+                    out.threeSouls =
+                        souls && Object.keys(souls).length === 3 && souls.sprite && souls.wesen && souls.geist;
+                    out.hasSoulNames =
+                        Array.isArray(r.constructor.CREATURE_SOUL_NAMES) &&
+                        r.constructor.CREATURE_SOUL_NAMES.length === 3;
+                    out.hasNamePool =
+                        Array.isArray(r.constructor.CREATURE_NAME_POOL) &&
+                        r.constructor.CREATURE_NAME_POOL.length >= 20;
+                    const spritePart = souls && souls.sprite && souls.sprite.bodyParts[0];
+                    out.bodyPartsHaveSchema =
+                        spritePart && typeof spritePart.shape === "string" && typeof spritePart.material === "string";
+                    out.spriteAuraY = souls && souls.sprite && souls.sprite.auraY === 0.55;
+                    out.wesenAuraY = souls && souls.wesen && souls.wesen.auraY === 0.8;
+                    out.hasBuildCreatureGroup = typeof r._buildCreatureGroup === "function";
+                    out.hasPickSoulName = typeof r._pickCreatureSoulName === "function";
+                    out.hasPickName = typeof r._pickCreatureName === "function";
+                    out.hasComputeTags = typeof r.computeCreatureCompoundTags === "function";
+                    out.hasAuraOffsetY = typeof r._creatureAuraOffsetY === "function";
+                    out.hasCreatureDrawer = typeof r.creatureDrawerInitDOM === "function";
+                    out.hasRenderList = typeof r._renderCreatureListUI === "function";
+                    if (r.state.creatures.length > 0) {
+                        const c0 = r.state.creatures[0];
+                        out.initialIsGroup = c0 && c0.isGroup === true;
+                        out.initialHasSoul =
+                            typeof c0.userData.soul === "string" &&
+                            r.constructor.CREATURE_SOUL_NAMES.includes(c0.userData.soul);
+                        out.initialHasName = typeof c0.userData.name === "string" && c0.userData.name.length > 0;
+                        out.initialHasTask = c0.userData.task && c0.userData.task.name === "wander";
+                        out.initialHasChildren = c0.children && c0.children.length >= 2;
+                    }
+                    r.clearCreatures();
+                    const p = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 5, z: 0 };
+                    const sprite = r.spawnCreatureAt(p.x + 1, p.y, p.z + 1, "happy", "sprite");
+                    const wesen = r.spawnCreatureAt(p.x + 2, p.y, p.z + 2, "happy", "wesen");
+                    const geist = r.spawnCreatureAt(p.x + 3, p.y, p.z + 3, "happy", "geist");
+                    const tagsSprite = r.computeCreatureCompoundTags(sprite);
+                    const tagsWesen = r.computeCreatureCompoundTags(wesen);
+                    const tagsGeist = r.computeCreatureCompoundTags(geist);
+                    out.spriteMoreMagie = (tagsSprite.magieleitung || 0) > (tagsWesen.magieleitung || 0);
+                    out.wesenMoreDichte = (tagsWesen.dichte || 0) > (tagsGeist.dichte || 0);
+                    out.spriteHasResoniert = (tagsSprite.resoniert || 0) > 0;
+                    out.wesenHasLebendig = (tagsWesen.lebendig || 0) > 0;
+                    out.geistHasLebendig = (tagsGeist.lebendig || 0) > 0;
+                    const fb = r.spawnCreatureAt(p.x + 4, p.y, p.z + 4, "happy", "fictional-soul");
+                    out.unknownSoulFallback = !!fb && r.constructor.CREATURE_SOUL_NAMES.includes(fb.userData.soul);
+                    out.spriteAuraOffset = Math.abs(r._creatureAuraOffsetY(sprite) - 0.55) < 0.01;
+                    out.wesenAuraOffset = Math.abs(r._creatureAuraOffsetY(wesen) - 0.8) < 0.01;
+                    out.spawnSpriteWorks = sprite && sprite.userData.soul === "sprite";
+                    out.spawnWesenWorks = wesen && wesen.userData.soul === "wesen";
+                    out.spawnGeistWorks = geist && geist.userData.soul === "geist";
+                    out.hasCreatureDrawerEl = !!document.querySelector('[data-drawer="kreaturen"]');
+                    out.hasTaskActions = !!document.getElementById("creature-task-actions");
+                    const select = document.getElementById("creature-soul-select");
+                    out.hasSoulSelect = !!select && select.options.length === 4;
+                    out.hasCreatureList = !!document.getElementById("creature-list");
+                    out.hasFolgeMir = !!document.querySelector('[data-cmd="folge mir"]');
+                    out.hasKommHer = !!document.querySelector('[data-cmd="komm her"]');
+                    out.hasWarte = !!document.querySelector('[data-cmd="warte"]');
+                    out.hasErkunde = !!document.querySelector('[data-cmd="erkunde"]');
+                    out.hasAlleFolgen = !!document.querySelector('[data-cmd="alle folgt mir"]');
+                    out.hasAlleWarten = !!document.querySelector('[data-cmd="alle warten"]');
+                    out.spawn1Button = !!document.querySelector('[data-creature-spawn="1"]');
+                    out.spawn5Button = !!document.querySelector('[data-creature-spawn="5"]');
+                    r._renderCreatureListUI();
+                    const list = document.getElementById("creature-list");
+                    out.listRendersRows =
+                        list && list.querySelectorAll(".creature-row").length === r.state.creatures.length;
+                    const firstRow = list && list.querySelector(".creature-row");
+                    out.rowHasNameSoulTask =
+                        firstRow &&
+                        firstRow.querySelector(".creature-name") &&
+                        firstRow.querySelector(".creature-soul") &&
+                        firstRow.querySelector(".creature-task");
+                    r.assignCreatureTask(sprite, "follow_player");
+                    const firstRow2 = list && list.querySelector(".creature-row");
+                    const taskCell = firstRow2 && firstRow2.querySelector(".creature-task");
+                    out.taskCellUpdates =
+                        taskCell && (taskCell.textContent === "folgt" || taskCell.classList.contains("follow_player"));
+                    out.preDisposeChildren = sprite.children.length >= 2;
+                    r.removeCreature(sprite);
+                    r.state.creatures = r.state.creatures.filter((c) => c !== sprite);
+                    out.sceneAfterRemove = !r.state.scene.children.includes(sprite);
+                    r.clearCreatures();
+                    r._renderCreatureListUI();
+                    out.emptyListDash = list && list.textContent === "—";
+                    // Cleanup für nachfolgende Tests (Ring 3 V2 peace,
+                    // UI Run-Button): brauchen Kreaturen-Population.
+                    r.spawnCreatures(10);
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6hP2aResults && !wave6hP2aResults.error) {
+                check("Welle 6.H P2A: CREATURE_SOULS frozen", wave6hP2aResults.soulsFrozen);
+                check("Welle 6.H P2A: drei Seelen (sprite/wesen/geist)", wave6hP2aResults.threeSouls);
+                check("Welle 6.H P2A: CREATURE_SOUL_NAMES Array", wave6hP2aResults.hasSoulNames);
+                check("Welle 6.H P2A: CREATURE_NAME_POOL ≥ 20 Namen", wave6hP2aResults.hasNamePool);
+                check("Welle 6.H P2A: bodyParts haben shape+material-Schema", wave6hP2aResults.bodyPartsHaveSchema);
+                check("Welle 6.H P2A: sprite.auraY === 0.55", wave6hP2aResults.spriteAuraY);
+                check("Welle 6.H P2A: wesen.auraY === 0.8", wave6hP2aResults.wesenAuraY);
+                check(
+                    "Welle 6.H P2A: alle Methoden existieren",
+                    wave6hP2aResults.hasBuildCreatureGroup &&
+                        wave6hP2aResults.hasPickSoulName &&
+                        wave6hP2aResults.hasPickName &&
+                        wave6hP2aResults.hasComputeTags &&
+                        wave6hP2aResults.hasAuraOffsetY &&
+                        wave6hP2aResults.hasCreatureDrawer &&
+                        wave6hP2aResults.hasRenderList
+                );
+                check("Welle 6.H P2A: Initial-Kreatur ist THREE.Group", wave6hP2aResults.initialIsGroup);
+                check("Welle 6.H P2A: Initial-Kreatur trägt Soul-Name", wave6hP2aResults.initialHasSoul);
+                check("Welle 6.H P2A: Initial-Kreatur trägt Name aus Pool", wave6hP2aResults.initialHasName);
+                check("Welle 6.H P2A: Initial-Kreatur hat Default-Task wander", wave6hP2aResults.initialHasTask);
+                check("Welle 6.H P2A: Initial-Kreatur-Group hat ≥2 Sub-Meshes", wave6hP2aResults.initialHasChildren);
+                check(
+                    "Welle 6.H P2A: Diskrimination — sprite mehr magieleitung als wesen",
+                    wave6hP2aResults.spriteMoreMagie
+                );
+                check("Welle 6.H P2A: Diskrimination — wesen mehr dichte als geist", wave6hP2aResults.wesenMoreDichte);
+                check("Welle 6.H P2A: sprite-Compound trägt resoniert > 0", wave6hP2aResults.spriteHasResoniert);
+                check("Welle 6.H P2A: wesen-Compound trägt lebendig > 0", wave6hP2aResults.wesenHasLebendig);
+                check("Welle 6.H P2A: geist-Compound trägt lebendig > 0", wave6hP2aResults.geistHasLebendig);
+                check(
+                    "Welle 6.H P2A: Unknown soulName fällt auf bekannte Seele zurück",
+                    wave6hP2aResults.unknownSoulFallback
+                );
+                check("Welle 6.H P2A: _creatureAuraOffsetY(sprite) === 0.55", wave6hP2aResults.spriteAuraOffset);
+                check("Welle 6.H P2A: _creatureAuraOffsetY(wesen) === 0.8", wave6hP2aResults.wesenAuraOffset);
+                check(
+                    "Welle 6.H P2A: spawnCreatureAt(soulName) setzt korrekte Soul",
+                    wave6hP2aResults.spawnSpriteWorks &&
+                        wave6hP2aResults.spawnWesenWorks &&
+                        wave6hP2aResults.spawnGeistWorks
+                );
+                check("Welle 6.H P2A: Kreaturen-Drawer im DOM", wave6hP2aResults.hasCreatureDrawerEl);
+                check("Welle 6.H P2A: Aufträge-Section im DOM", wave6hP2aResults.hasTaskActions);
+                check("Welle 6.H P2A: Form-Dropdown mit 4 Optionen", wave6hP2aResults.hasSoulSelect);
+                check("Welle 6.H P2A: Kreatur-Liste-Container im DOM", wave6hP2aResults.hasCreatureList);
+                check(
+                    "Welle 6.H P2A: alle 6 Aufträge-Buttons als data-cmd",
+                    wave6hP2aResults.hasFolgeMir &&
+                        wave6hP2aResults.hasKommHer &&
+                        wave6hP2aResults.hasWarte &&
+                        wave6hP2aResults.hasErkunde &&
+                        wave6hP2aResults.hasAlleFolgen &&
+                        wave6hP2aResults.hasAlleWarten
+                );
+                check(
+                    "Welle 6.H P2A: Spawn-Buttons +1/+5",
+                    wave6hP2aResults.spawn1Button && wave6hP2aResults.spawn5Button
+                );
+                check("Welle 6.H P2A: Liste rendert eine Zeile pro Kreatur", wave6hP2aResults.listRendersRows);
+                check(
+                    "Welle 6.H P2A: Zeile hat .creature-name + .creature-soul + .creature-task",
+                    wave6hP2aResults.rowHasNameSoulTask
+                );
+                check("Welle 6.H P2A: Task-Wechsel triggert Liste-Refresh", wave6hP2aResults.taskCellUpdates);
+                check("Welle 6.H P2A: removeCreature entfernt Group aus scene", wave6hP2aResults.sceneAfterRemove);
+                check("Welle 6.H P2A: Leere Liste zeigt '—'", wave6hP2aResults.emptyListDash);
+            }
+
+            // ### Welle 6.H Phase 2B.1 — Kreaturen sammeln + erinnern ###
+            // gather-Task mit args.material findet nächste Architektur mit
+            // diesem Material in den Parts, läuft hin, erntet bei haltDist
+            // = 1.5m → entfernt Architektur + addToInventory + memory.
+            const wave6hP2bResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 3) return null;
+                    const out = {};
+                    out.tasksHasGather = r.constructor.CREATURE_TASKS.includes("gather");
+                    out.auraHueGather = r.constructor.CREATURE_TASK_AURA_HUE.gather === 200;
+                    out.pingFreqGather = r.constructor.CREATURE_TASK_PING_FREQ.gather === 392;
+                    out.haltDist = r.constructor.CREATURE_GATHER_HALT_DIST;
+                    out.speed = r.constructor.CREATURE_GATHER_SPEED;
+                    out.memCap = r.constructor.CREATURE_MEMORY_CAP === 30;
+                    out.hasRemember = typeof r._creatureRemember === "function";
+                    out.hasFindArch = typeof r._findNearestArchitectureWithMaterial === "function";
+                    out.hasBuildArgs = typeof r._buildCreatureTaskArgs === "function";
+                    out.hasDescribeArg = typeof r._describeCreatureTaskArg === "function";
+
+                    // Memory + FIFO-Cap
+                    const c0 = r.state.creatures[0];
+                    c0.userData.memory = [];
+                    for (let i = 0; i < 35; i++) r._creatureRemember(c0, "found", { idx: i });
+                    out.memCapEnforced = c0.userData.memory.length === 30;
+                    out.memFifoCorrect =
+                        c0.userData.memory[0].content.idx === 5 && c0.userData.memory[29].content.idx === 34;
+                    out.memHasTimestamp = typeof c0.userData.memory[0].at === "number";
+
+                    // _findNearestArchitectureWithMaterial
+                    const p = r.state.playerMesh.position;
+                    const woodTarget = r._findNearestArchitectureWithMaterial(p, "holz");
+                    out.findsHolz = !!woodTarget;
+                    if (woodTarget) {
+                        out.holzPartConfirmed =
+                            woodTarget.type &&
+                            r.state.blueprints[woodTarget.type] &&
+                            r.state.blueprints[woodTarget.type].parts.some((part) => part && part.material === "holz");
+                    }
+                    out.findsFictionalNull = r._findNearestArchitectureWithMaterial(p, "fictional_xyz") === null;
+
+                    // _buildCreatureTaskArgs context-dependent
+                    out.gatherStringArg = r._buildCreatureTaskArgs("gather", "holz").material === "holz";
+                    out.followNumberArg = r._buildCreatureTaskArgs("follow_player", 1.5).distance === 1.5;
+                    out.waitEmptyArg = Object.keys(r._buildCreatureTaskArgs("wait", "x")).length === 0;
+                    out.gatherWithNumberDrops = !r._buildCreatureTaskArgs("gather", 5).material;
+
+                    // Gather-Direction: läuft zum Ziel
+                    const target = r.spawnArchitecture("baum_eiche", { x: p.x + 10, y: p.y, z: p.z });
+                    c0.position.set(p.x, p.y, p.z);
+                    r.assignCreatureTask(c0, "gather", { material: "holz" }, { silent: true });
+                    const task = r._getCreatureTask(c0);
+                    const dir = r._tickCreatureTaskDirection(c0, task, "happy");
+                    out.gatherDirNonZero = dir && Math.abs(dir.x) + Math.abs(dir.z) > 0;
+                    out.gatherDirTargetsX = dir && dir.x > 0;
+                    out.targetCached = !!task.args._target;
+
+                    // Gather-Ernte bei haltDist — Phase 2B.5: Ernte landet in
+                    // carrying (nicht direkt Inventar; Bring-Phase folgt).
+                    // c0 weit weg vom Spieler positionieren damit nicht sofort
+                    // Übergabe ausgelöst wird.
+                    const tempArch = r.spawnArchitecture("stein_block", { x: p.x + 50, y: p.y, z: p.z + 50 });
+                    c0.position.set(p.x + 50.5, p.y, p.z + 50);
+                    c0.userData.carrying = null;
+                    r.state.player.inventory = new Array(27).fill(null);
+                    r.assignCreatureTask(c0, "gather", { material: "stein" }, { silent: true });
+                    const archCountBefore = r.state.architectures.length;
+                    const t2 = r._getCreatureTask(c0);
+                    r._tickCreatureTaskDirection(c0, t2, "happy");
+                    out.archRemovedOnHarvest = r.state.architectures.length === archCountBefore - 1;
+                    // P2B.5: jetzt landet die Ernte in carrying, das Inventar wird
+                    // erst bei Übergabe gefüllt. carrying-State prüfen.
+                    out.inventoryHasHarvested =
+                        c0.userData.carrying &&
+                        c0.userData.carrying.materials &&
+                        (c0.userData.carrying.materials.stein || 0) > 0;
+                    out.memoryHasGathered =
+                        c0.userData.memory &&
+                        c0.userData.memory.some(
+                            (m) => m.type === "gathered" && m.content && m.content.blueprint === "stein_block"
+                        );
+                    void tempArch;
+
+                    // Unknown Material → wander-Fallback (carrying muss leer sein,
+                    // sonst greift Bring-Phase statt Sucher-Phase).
+                    c0.userData.carrying = null;
+                    if (c0.userData.carryingSprite) {
+                        r.state.scene.remove(c0.userData.carryingSprite);
+                        c0.userData.carryingSprite = null;
+                    }
+                    r.assignCreatureTask(c0, "wander", {}, { silent: true });
+                    r.assignCreatureTask(c0, "gather", { material: "fictional_xyz" }, { silent: true });
+                    const t3 = r._getCreatureTask(c0);
+                    r._tickCreatureTaskDirection(c0, t3, "happy");
+                    const tAfter = r._getCreatureTask(c0);
+                    out.unknownReturnsToWander = tAfter.name === "wander";
+                    out.memoryHasNoMaterial = c0.userData.memory.some(
+                        (m) => m.type === "no_material" && m.content && m.content.material === "fictional_xyz"
+                    );
+
+                    // DSL-Op + Chat
+                    r.assignCreatureTask(r.state.creatures[1], "wander", {}, { silent: true });
+                    r.state.creatures[1].position.set(p.x + 1, p.y, p.z + 1);
+                    r.dslRun(["creature_task", 1, "gather", "holz"], { source: "test" });
+                    const dt = r._getCreatureTask(r.state.creatures[1]);
+                    out.dslGatherWorks = dt && dt.name === "gather" && dt.args.material === "holz";
+
+                    const cases = [
+                        ["sammle holz", "creature_task_nearest", "gather", "holz"],
+                        ["bring quarz", "creature_task_nearest", "gather", "quarz"],
+                        ["alle sammeln eisen", "creature_task_all", "gather", "eisen"],
+                    ];
+                    out.chatPatterns = cases.every(([text, op, tn, mat]) => {
+                        const parsed = r.parseChatToDsl(text);
+                        return (
+                            parsed && parsed.program[0] === op && parsed.program[1] === tn && parsed.program[2] === mat
+                        );
+                    });
+
+                    // NON_BROADCASTABLE_OPS bleibt
+                    const set = r.constructor.NON_BROADCASTABLE_OPS;
+                    out.nonBroadcastable =
+                        set.has("creature_task") && set.has("creature_task_nearest") && set.has("creature_task_all");
+
+                    // Status-Bar
+                    r.assignTaskToAllCreatures("wander", {}, { silent: true });
+                    r.assignCreatureTask(r.state.creatures[0], "gather", { material: "holz" }, { silent: true });
+                    r.assignCreatureTask(r.state.creatures[1], "gather", { material: "holz" }, { silent: true });
+                    r.assignCreatureTask(r.state.creatures[2], "follow_player", {}, { silent: true });
+                    r._renderTaskStatusUI();
+                    const stext = document.getElementById("status-tasks").textContent;
+                    out.statusShowsGather = /2 sammeln/.test(stext);
+                    out.statusShowsFollow = /1 folgen/.test(stext);
+
+                    // describeProgram
+                    const d1 = r.describeProgram(["creature_task_nearest", "gather", "holz"]);
+                    out.descShowsMaterial = /Material/.test(d1) && /holz/.test(d1);
+
+                    // Liste zeigt 'sammelt holz'
+                    r._renderCreatureListUI();
+                    const list = document.getElementById("creature-list");
+                    const firstTask = list && list.querySelector(".creature-row .creature-task");
+                    out.listShowsSammelt = firstTask && /sammelt/.test(firstTask.textContent);
+                    out.listTaskHasGatherClass = firstTask && firstTask.classList.contains("gather");
+
+                    // UI-Sammeln-Sektion
+                    out.hasGatherSelect = !!document.getElementById("creature-gather-select");
+                    out.gatherSelectHasMaterials =
+                        document.querySelectorAll("#creature-gather-select option").length >= 10;
+                    out.hasNearestGatherBtn = !!document.querySelector('[data-creature-gather="nearest"]');
+                    out.hasAllGatherBtn = !!document.querySelector('[data-creature-gather="all"]');
+
+                    // Cleanup für nachfolgende Tests
+                    r.assignTaskToAllCreatures("wander", {}, { silent: true });
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6hP2bResults && !wave6hP2bResults.error) {
+                check("Welle 6.H P2B.1: CREATURE_TASKS enthält 'gather'", wave6hP2bResults.tasksHasGather);
+                check("Welle 6.H P2B.1: AURA_HUE.gather === 200 (cyan)", wave6hP2bResults.auraHueGather);
+                check("Welle 6.H P2B.1: PING_FREQ.gather === 392 (G4)", wave6hP2bResults.pingFreqGather);
+                check(
+                    "Welle 6.H P2B.1: HALT_DIST/SPEED/MEM_CAP=30 als Konstanten",
+                    Number.isFinite(wave6hP2bResults.haltDist) &&
+                        Number.isFinite(wave6hP2bResults.speed) &&
+                        wave6hP2bResults.memCap
+                );
+                check(
+                    "Welle 6.H P2B.1: alle 4 Methoden existieren (_creatureRemember/_findNearestArchitectureWithMaterial/_buildCreatureTaskArgs/_describeCreatureTaskArg)",
+                    wave6hP2bResults.hasRemember &&
+                        wave6hP2bResults.hasFindArch &&
+                        wave6hP2bResults.hasBuildArgs &&
+                        wave6hP2bResults.hasDescribeArg
+                );
+                check(
+                    "Welle 6.H P2B.1: memory[] FIFO-Cap=30 nach 35 Pushes",
+                    wave6hP2bResults.memCapEnforced && wave6hP2bResults.memFifoCorrect
+                );
+                check("Welle 6.H P2B.1: memory-Eintrag hat at-Timestamp", wave6hP2bResults.memHasTimestamp);
+                check(
+                    "Welle 6.H P2B.1: _findNearestArchitectureWithMaterial(holz) findet Baum",
+                    wave6hP2bResults.findsHolz
+                );
+                check(
+                    "Welle 6.H P2B.1: gefundene Architektur trägt material im Part",
+                    wave6hP2bResults.holzPartConfirmed
+                );
+                check("Welle 6.H P2B.1: Unknown Material → null", wave6hP2bResults.findsFictionalNull);
+                check(
+                    "Welle 6.H P2B.1: _buildCreatureTaskArgs context-aware (gather→material, follow→distance, wait→leer, gather+number droppt)",
+                    wave6hP2bResults.gatherStringArg &&
+                        wave6hP2bResults.followNumberArg &&
+                        wave6hP2bResults.waitEmptyArg &&
+                        wave6hP2bResults.gatherWithNumberDrops
+                );
+                check(
+                    "Welle 6.H P2B.1: gather-Tick Direction zeigt zum Ziel",
+                    wave6hP2bResults.gatherDirNonZero && wave6hP2bResults.gatherDirTargetsX
+                );
+                check("Welle 6.H P2B.1: Ziel wird in task.args._target gecached", wave6hP2bResults.targetCached);
+                check(
+                    "Welle 6.H P2B.1: bei haltDist → Architektur entfernt + Inventar gefüllt + memory 'gathered'",
+                    wave6hP2bResults.archRemovedOnHarvest &&
+                        wave6hP2bResults.inventoryHasHarvested &&
+                        wave6hP2bResults.memoryHasGathered
+                );
+                check(
+                    "Welle 6.H P2B.1: gather mit unbekanntem Material → Task fällt auf wander",
+                    wave6hP2bResults.unknownReturnsToWander
+                );
+                check("Welle 6.H P2B.1: 'no_material'-Erinnerung gespeichert", wave6hP2bResults.memoryHasNoMaterial);
+                check(
+                    "Welle 6.H P2B.1: DSL creature_task(idx, gather, material) wirkt",
+                    wave6hP2bResults.dslGatherWorks
+                );
+                check(
+                    "Welle 6.H P2B.1: Chat 'sammle/bring/alle sammeln' Patterns routen korrekt",
+                    wave6hP2bResults.chatPatterns
+                );
+                check(
+                    "Welle 6.H P2B.1: gather-DSL-Ops bleiben in NON_BROADCASTABLE_OPS",
+                    wave6hP2bResults.nonBroadcastable
+                );
+                check(
+                    "Welle 6.H P2B.1: Status-Bar zeigt 'N sammeln' bei gather-Tasks",
+                    wave6hP2bResults.statusShowsGather && wave6hP2bResults.statusShowsFollow
+                );
+                check("Welle 6.H P2B.1: describeProgram zeigt Material", wave6hP2bResults.descShowsMaterial);
+                check(
+                    "Welle 6.H P2B.1: Liste zeigt 'sammelt' + .gather-Class",
+                    wave6hP2bResults.listShowsSammelt && wave6hP2bResults.listTaskHasGatherClass
+                );
+                check(
+                    "Welle 6.H P2B.1: #creature-gather-select im DOM mit ≥10 Optionen",
+                    wave6hP2bResults.hasGatherSelect && wave6hP2bResults.gatherSelectHasMaterials
+                );
+                check(
+                    "Welle 6.H P2B.1: 'Nächste sammelt' + 'Alle sammeln' Buttons im DOM",
+                    wave6hP2bResults.hasNearestGatherBtn && wave6hP2bResults.hasAllGatherBtn
+                );
+            }
+
+            // ### Welle 6.H Phase 2B.5 — harvestArchitecture + Material-Inventar + Bring-Phase ###
+            // EINE Funktion für Spieler-LMB UND Kreatur-gather: Hylomorphismus-
+            // Wurzel. Architekturen lösen sich in Material-Map auf (volumen-
+            // basiert). Inventar dual-typed: {kind:'material'} | {kind:'blueprint'}.
+            // Kreaturen tragen Ernte in carrying, bringen sie zum Spieler.
+            const wave6hP2b5Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 2) return null;
+                    const out = {};
+                    out.hasHarvest = typeof r.harvestArchitecture === "function";
+                    out.hasAddMaterial = typeof r.addMaterialToInventory === "function";
+                    out.hasVolumeConst = r.constructor.HARVEST_VOLUME_TO_UNITS === 4;
+                    out.hasHandoverDist = r.constructor.CREATURE_HANDOVER_DIST === 2.0;
+                    out.hasCarryingVisual = typeof r._refreshCreatureCarryingVisual === "function";
+
+                    const p = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 5, z: 0 };
+
+                    // Material-Map aus parts × Volumen
+                    const stoneBlock = r.spawnArchitecture("stein_block", { x: p.x + 30, y: p.y, z: p.z + 30 });
+                    const h1 = r.harvestArchitecture(stoneBlock, "test");
+                    out.steinBlockHasStein = h1 && h1.materials && h1.materials.stein >= 10;
+                    out.steinHasBlueprintName = h1 && h1.blueprint === "stein_block";
+
+                    const oak = r.spawnArchitecture("baum_eiche", { x: p.x + 35, y: p.y, z: p.z + 30 });
+                    const h2 = r.harvestArchitecture(oak, "test");
+                    out.oakHasHolzAndLaub = h2 && h2.materials && h2.materials.holz > 0 && h2.materials.laub > 0;
+                    out.oakHasNoStein = h2 && (!h2.materials.stein || h2.materials.stein === 0);
+
+                    // Diskrimination: größerer Bauplan = mehr Material
+                    r.state.blueprints._test_small = {
+                        name: "_test_small",
+                        label: "Small",
+                        builtIn: false,
+                        parts: [{ shape: "box", material: "stein", size: { x: 1, y: 1, z: 1 } }],
+                    };
+                    r.state.blueprints._test_big = {
+                        name: "_test_big",
+                        label: "Big",
+                        builtIn: false,
+                        parts: [{ shape: "box", material: "stein", size: { x: 2, y: 2, z: 2 } }],
+                    };
+                    const s = r.spawnArchitecture("_test_small", { x: p.x + 60, y: p.y, z: p.z });
+                    const b = r.spawnArchitecture("_test_big", { x: p.x + 65, y: p.y, z: p.z });
+                    const hs = r.harvestArchitecture(s);
+                    const hb = r.harvestArchitecture(b);
+                    out.volumeDiscrimination = hb.materials.stein > hs.materials.stein;
+                    delete r.state.blueprints._test_small;
+                    delete r.state.blueprints._test_big;
+
+                    // addMaterialToInventory + Schema
+                    r.state.player.inventory = new Array(27).fill(null);
+                    const ok1 = r.addMaterialToInventory("holz", 5);
+                    const ok2 = r.addMaterialToInventory("holz", 3);
+                    const ok3 = r.addMaterialToInventory("stein", 4);
+                    const okBad = r.addMaterialToInventory("fictional_xyz", 1);
+                    out.matAddOk = ok1 && ok2 && ok3;
+                    out.matStacks =
+                        r.state.player.inventory[0] &&
+                        r.state.player.inventory[0].count === 8 &&
+                        r.state.player.inventory[0].kind === "material";
+                    out.matNewSlot = r.state.player.inventory[1] && r.state.player.inventory[1].material === "stein";
+                    out.matRejectsUnknown = okBad === false;
+
+                    // Spieler-LMB nutzt harvestArchitecture (EINE Funktion)
+                    r.state.player.inventory = new Array(27).fill(null);
+                    const target = r.spawnArchitecture("stein_block", { x: p.x, y: p.y, z: p.z + 3 });
+                    void target;
+                    r.state.yaw = 0;
+                    r.state.pitch = -0.1;
+                    if (r.state.camera) {
+                        r.state.camera.lookAt(p.x, p.y, p.z + 3);
+                        r.state.camera.updateMatrixWorld(true);
+                    }
+                    if (typeof r.tickArchitectureCulling === "function") r.tickArchitectureCulling();
+                    const archBeforeLmb = r.state.architectures.length;
+                    r.tryMouseBreak();
+                    out.lmbShrunkArch = r.state.architectures.length < archBeforeLmb;
+                    out.lmbFilledInventory = r.state.player.inventory.some(
+                        (sl) => sl && sl.kind === "material" && sl.material === "stein" && sl.count >= 1
+                    );
+
+                    // Kreatur-gather: zwei-Phasen mit carrying
+                    r.state.player.inventory = new Array(27).fill(null);
+                    r.spawnArchitecture("stein_block", { x: p.x + 30, y: p.y, z: p.z });
+                    const c = r.state.creatures[0];
+                    c.position.set(p.x + 29.5, p.y, p.z);
+                    c.userData.carrying = null;
+                    r.assignCreatureTask(c, "gather", { material: "stein" }, { silent: true });
+                    r._tickCreatureTaskDirection(c, r._getCreatureTask(c), "happy");
+                    out.creatureCarryingSet = !!(c.userData.carrying && c.userData.carrying.materials);
+                    out.inventoryStillEmptyAfterHarvest = r.state.player.inventory.every((sl) => !sl);
+                    out.carryingSpriteCreated = !!c.userData.carryingSprite;
+
+                    // Kreatur zum Spieler bewegen → Übergabe
+                    c.position.set(p.x + 1.5, p.y, p.z);
+                    r._tickCreatureTaskDirection(c, r._getCreatureTask(c), "happy");
+                    out.carryingClearedAfterDelivery = c.userData.carrying === null;
+                    out.playerHasMaterialAfterDelivery = r.state.player.inventory.some(
+                        (sl) => sl && sl.kind === "material" && sl.material === "stein" && sl.count >= 1
+                    );
+                    out.memoryHasDelivered = c.userData.memory && c.userData.memory.some((m) => m.type === "delivered");
+
+                    // Inventar-UI rendert Material-Slot mit Klasse
+                    r.state.player.inventory = new Array(27).fill(null);
+                    r.addMaterialToInventory("holz", 7);
+                    r.renderInventoryUI();
+                    const slot = document.querySelector('[data-inv-slot="0"]');
+                    out.uiHasMaterialClass = slot && slot.classList.contains("material-slot");
+                    const label = slot && slot.querySelector(".slot-label");
+                    out.uiShowsMaterialName = label && /holz/i.test(label.textContent);
+
+                    // Cleanup für nachfolgende Tests
+                    r.spawnCreatures(10);
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6hP2b5Results && !wave6hP2b5Results.error) {
+                check("Welle 6.H P2B.5: harvestArchitecture-Methode existiert", wave6hP2b5Results.hasHarvest);
+                check("Welle 6.H P2B.5: addMaterialToInventory-Methode existiert", wave6hP2b5Results.hasAddMaterial);
+                check("Welle 6.H P2B.5: HARVEST_VOLUME_TO_UNITS===4", wave6hP2b5Results.hasVolumeConst);
+                check("Welle 6.H P2B.5: CREATURE_HANDOVER_DIST===2.0", wave6hP2b5Results.hasHandoverDist);
+                check(
+                    "Welle 6.H P2B.5: _refreshCreatureCarryingVisual-Methode existiert",
+                    wave6hP2b5Results.hasCarryingVisual
+                );
+                check(
+                    "Welle 6.H P2B.5: stein_block-Harvest liefert ≥10 Stein (volumen-basiert)",
+                    wave6hP2b5Results.steinBlockHasStein
+                );
+                check(
+                    "Welle 6.H P2B.5: Rückgabe-Objekt trägt blueprint-Namen",
+                    wave6hP2b5Results.steinHasBlueprintName
+                );
+                check(
+                    "Welle 6.H P2B.5: baum_eiche → holz UND laub (Compound-Diskrimination)",
+                    wave6hP2b5Results.oakHasHolzAndLaub
+                );
+                check(
+                    "Welle 6.H P2B.5: baum_eiche enthält KEIN stein (Negativ-Kontrolle)",
+                    wave6hP2b5Results.oakHasNoStein
+                );
+                check(
+                    "Welle 6.H P2B.5: Diskrimination — 2×2×2-Box liefert mehr als 1×1×1",
+                    wave6hP2b5Results.volumeDiscrimination
+                );
+                check(
+                    "Welle 6.H P2B.5: addMaterialToInventory akzeptiert bekanntes Material",
+                    wave6hP2b5Results.matAddOk
+                );
+                check("Welle 6.H P2B.5: Material-Slots stacken (5+3=8), kind='material'", wave6hP2b5Results.matStacks);
+                check("Welle 6.H P2B.5: Unterschiedliche Materialien in neuen Slots", wave6hP2b5Results.matNewSlot);
+                check("Welle 6.H P2B.5: addMaterialToInventory lehnt Unknown ab", wave6hP2b5Results.matRejectsUnknown);
+                check(
+                    "Welle 6.H P2B.5: Spieler-LMB entfernt Architektur (eine Funktion)",
+                    wave6hP2b5Results.lmbShrunkArch
+                );
+                check(
+                    "Welle 6.H P2B.5: Spieler-LMB füllt Material-Slots (Vision-Inkonsistenz behoben)",
+                    wave6hP2b5Results.lmbFilledInventory
+                );
+                check(
+                    "Welle 6.H P2B.5: Kreatur-Ernte setzt userData.carrying (statt direkt Inventar)",
+                    wave6hP2b5Results.creatureCarryingSet
+                );
+                check(
+                    "Welle 6.H P2B.5: Spieler-Inventar bleibt LEER bis Bring-Phase abgeschlossen",
+                    wave6hP2b5Results.inventoryStillEmptyAfterHarvest
+                );
+                check(
+                    "Welle 6.H P2B.5: Carrying-Sprite wird beim Harvest erzeugt",
+                    wave6hP2b5Results.carryingSpriteCreated
+                );
+                check(
+                    "Welle 6.H P2B.5: Bei <2m zum Spieler: carrying wird geclearet",
+                    wave6hP2b5Results.carryingClearedAfterDelivery
+                );
+                check(
+                    "Welle 6.H P2B.5: Materialien gehen ins Spieler-Inventar bei Übergabe",
+                    wave6hP2b5Results.playerHasMaterialAfterDelivery
+                );
+                check("Welle 6.H P2B.5: 'delivered'-Memory-Eintrag bei Übergabe", wave6hP2b5Results.memoryHasDelivered);
+                check(
+                    "Welle 6.H P2B.5: Material-Slot trägt .material-slot CSS-Klasse",
+                    wave6hP2b5Results.uiHasMaterialClass
+                );
+                check(
+                    "Welle 6.H P2B.5: Material-Slot-Label zeigt Material-Namen",
+                    wave6hP2b5Results.uiShowsMaterialName
+                );
+            }
+
+            // ### Welle 6.H Phase 2C — Material-Konsum beim Bauen (modus-symmetrisch) ###
+            // Vision §1.5 Schöpfer-darf-frei-erschaffen + Modus-Symmetrie zu
+            // damagePlayer/applyOpToPart-Stamina: pfad konsumiert, frieden +
+            // schöpfer kostenlos. computeBuildCost ≡ harvestArchitecture
+            // (Wertneutralität — bauen einer Box kostet das was harvest
+            // zurückliefert).
+            const wave6hP2cResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.playerMesh) return null;
+                    const out = {};
+                    out.hasComputeBuildCost = typeof r.computeBuildCost === "function";
+                    out.hasCheckBuildCost = typeof r.checkBuildCost === "function";
+                    out.hasTryConsumeBuildCost = typeof r.tryConsumeBuildCost === "function";
+                    out.hasBuildMaterialGate = typeof r._buildMaterialGate === "function";
+
+                    // Wertneutralität: build-cost ≡ harvest-return.
+                    const p = r.state.playerMesh.position;
+                    const cost = r.computeBuildCost("stein_block");
+                    const arch = r.spawnArchitecture("stein_block", {
+                        x: p.x + 120,
+                        y: p.y,
+                        z: p.z + 120,
+                    });
+                    const harvest = r.harvestArchitecture(arch, "test");
+                    out.symmetryHarvest = harvest && harvest.materials.stein === cost.stein;
+                    out.steinBlockOnlyStein = Object.keys(cost).length === 1 && cost.stein > 0;
+
+                    // Compound-Diskrimination
+                    const oakCost = r.computeBuildCost("baum_eiche");
+                    out.oakHasHolzAndLaub = oakCost.holz > 0 && oakCost.laub > 0;
+                    out.oakHasNoStein = !oakCost.stein || oakCost.stein === 0;
+
+                    // checkBuildCost ok/missing
+                    const origMode = r.getGameMode();
+                    r.setGameMode("pfad");
+                    r.state.player.inventory = new Array(27).fill(null);
+                    const c1 = r.checkBuildCost("stein_block");
+                    out.checkEmptyInventoryRejected = !c1.ok && c1.missing.stein > 0;
+                    r.addMaterialToInventory("stein", 200);
+                    const c2 = r.checkBuildCost("stein_block");
+                    out.checkSufficientOk = c2.ok && Object.keys(c2.missing).length === 0;
+
+                    // Atomarer Konsum + Atomarität bei Mangel
+                    r.state.player.inventory = new Array(27).fill(null);
+                    r.addMaterialToInventory("stein", 100);
+                    const beforeConsume = r.state.player.inventory[0].count;
+                    const consumed = r.tryConsumeBuildCost("stein_block");
+                    const afterConsume = r.state.player.inventory[0] ? r.state.player.inventory[0].count : 0;
+                    out.consumesExactly = consumed.ok && beforeConsume - afterConsume === consumed.cost.stein;
+
+                    r.state.player.inventory = new Array(27).fill(null);
+                    r.addMaterialToInventory("holz", 100);
+                    const beforeAtomic = r.state.player.inventory[0].count;
+                    const atomicResult = r.tryConsumeBuildCost("baum_eiche");
+                    const afterAtomic = r.state.player.inventory[0].count;
+                    out.atomicAtomicityOnFail = !atomicResult.ok && beforeAtomic === afterAtomic;
+                    out.atomicReportsMissing = atomicResult.missing && atomicResult.missing.laub > 0;
+
+                    // confirmBuild pfad mit Material
+                    r.setGameMode("pfad");
+                    r.state.player.inventory = new Array(27).fill(null);
+                    r.addMaterialToInventory("stein", 200);
+                    r._clearBuildMode && r._clearBuildMode();
+                    r.setHotbarSlot(0, "stein_block");
+                    r.selectHotbarSlot(0);
+                    const archBeforePfad = r.state.architectures.length;
+                    const stoneBeforePfad = r.state.player.inventory[0].count;
+                    const builtPfad = r.confirmBuild();
+                    const stoneAfterPfad = r.state.player.inventory[0] ? r.state.player.inventory[0].count : 0;
+                    out.pfadBuildsWithMaterial = builtPfad === true;
+                    out.pfadConsumesMaterial = stoneBeforePfad > stoneAfterPfad;
+                    out.pfadGrowsWorld = r.state.architectures.length > archBeforePfad;
+
+                    // confirmBuild pfad ohne Material → ablehnung
+                    r.state.player.inventory = new Array(27).fill(null);
+                    r._clearBuildMode && r._clearBuildMode();
+                    r.setHotbarSlot(0, "stein_block");
+                    r.selectHotbarSlot(0);
+                    const archBeforeNoMat = r.state.architectures.length;
+                    const builtNoMat = r.confirmBuild();
+                    out.pfadRejectsWithoutMaterial = builtNoMat === false;
+                    out.pfadNoArchOnReject = r.state.architectures.length === archBeforeNoMat;
+
+                    // confirmBuild schöpfer ohne Material → baut frei
+                    r.setGameMode("schöpfer");
+                    r.state.player.inventory = new Array(27).fill(null);
+                    r._clearBuildMode && r._clearBuildMode();
+                    r.setHotbarSlot(0, "stein_block");
+                    r.selectHotbarSlot(0);
+                    const archBeforeSchoepfer = r.state.architectures.length;
+                    const builtSchoepfer = r.confirmBuild();
+                    out.schoepferBuildsFree = builtSchoepfer === true;
+                    out.schoepferEmptyAfter = r.state.player.inventory.every((s) => !s);
+                    out.schoepferGrows = r.state.architectures.length > archBeforeSchoepfer;
+
+                    // confirmBuild frieden ohne Material → baut frei
+                    r.setGameMode("frieden");
+                    r.state.player.inventory = new Array(27).fill(null);
+                    r._clearBuildMode && r._clearBuildMode();
+                    r.setHotbarSlot(0, "stein_block");
+                    r.selectHotbarSlot(0);
+                    const builtFrieden = r.confirmBuild();
+                    out.friedenBuildsFree = builtFrieden === true;
+                    out.friedenEmptyAfter = r.state.player.inventory.every((s) => !s);
+
+                    // HUD-Reflexion
+                    r.setGameMode("pfad");
+                    r.state.player.inventory = new Array(27).fill(null);
+                    r.addMaterialToInventory("stein", 30);
+                    r._clearBuildMode && r._clearBuildMode();
+                    r.setHotbarSlot(0, "stein_block");
+                    r.selectHotbarSlot(0);
+                    const hud = document.getElementById("build-mode-hud");
+                    const hudHtml = hud && hud.innerHTML;
+                    out.hudShowsCostInPfad = hudHtml && /stein/.test(hudHtml) && /\(30\)/.test(hudHtml);
+
+                    r.setGameMode("schöpfer");
+                    const hudSchoepfer = document.getElementById("build-mode-hud").innerHTML;
+                    out.hudShowsFreiInSchoepfer = /frei/i.test(hudSchoepfer);
+
+                    r.setGameMode("frieden");
+                    const hudFrieden = document.getElementById("build-mode-hud").innerHTML;
+                    out.hudShowsFreiInFrieden = /frei/i.test(hudFrieden);
+
+                    // Cleanup: zurück auf frieden + Hotbar-Defaults für nachfolgende Tests.
+                    // Default-Hotbar (Ring 6.5): [village, temple, waterfall, null×6].
+                    r._clearBuildMode && r._clearBuildMode();
+                    r.setHotbarSlot(0, "village");
+                    r.setHotbarSlot(1, "temple");
+                    r.setHotbarSlot(2, "waterfall");
+                    for (let i = 3; i < 9; i++) r.setHotbarSlot(i, null);
+                    r.setGameMode(origMode || "frieden");
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6hP2cResults && !wave6hP2cResults.error) {
+                check("Welle 6.H P2C: computeBuildCost existiert", wave6hP2cResults.hasComputeBuildCost);
+                check("Welle 6.H P2C: checkBuildCost existiert", wave6hP2cResults.hasCheckBuildCost);
+                check("Welle 6.H P2C: tryConsumeBuildCost existiert", wave6hP2cResults.hasTryConsumeBuildCost);
+                check("Welle 6.H P2C: _buildMaterialGate existiert", wave6hP2cResults.hasBuildMaterialGate);
+                check(
+                    "Welle 6.H P2C: computeBuildCost ≡ harvestArchitecture (Wertneutralität)",
+                    wave6hP2cResults.symmetryHarvest
+                );
+                check("Welle 6.H P2C: stein_block-Kosten enthalten NUR stein", wave6hP2cResults.steinBlockOnlyStein);
+                check("Welle 6.H P2C: baum_eiche-Kosten enthalten holz UND laub", wave6hP2cResults.oakHasHolzAndLaub);
+                check(
+                    "Welle 6.H P2C: baum_eiche-Kosten enthalten KEIN stein (Diskrimination)",
+                    wave6hP2cResults.oakHasNoStein
+                );
+                check(
+                    "Welle 6.H P2C: pfad + leeres Inventar → checkBuildCost.ok=false",
+                    wave6hP2cResults.checkEmptyInventoryRejected
+                );
+                check(
+                    "Welle 6.H P2C: pfad + ausreichend Material → checkBuildCost.ok=true",
+                    wave6hP2cResults.checkSufficientOk
+                );
+                check("Welle 6.H P2C: tryConsumeBuildCost zieht genau die Kosten ab", wave6hP2cResults.consumesExactly);
+                check(
+                    "Welle 6.H P2C: Atomarität — bei Mangel wird NICHTS abgezogen",
+                    wave6hP2cResults.atomicAtomicityOnFail
+                );
+                check("Welle 6.H P2C: missing-Map zeigt fehlendes Sub-Material", wave6hP2cResults.atomicReportsMissing);
+                check(
+                    "Welle 6.H P2C: pfad + Material → confirmBuild liefert true + spawnt",
+                    wave6hP2cResults.pfadBuildsWithMaterial && wave6hP2cResults.pfadGrowsWorld
+                );
+                check(
+                    "Welle 6.H P2C: pfad-Modus konsumiert Material aus Inventar",
+                    wave6hP2cResults.pfadConsumesMaterial
+                );
+                check(
+                    "Welle 6.H P2C: pfad ohne Material → confirmBuild lehnt ab",
+                    wave6hP2cResults.pfadRejectsWithoutMaterial
+                );
+                check(
+                    "Welle 6.H P2C: pfad-Ablehnung → keine Architektur entsteht",
+                    wave6hP2cResults.pfadNoArchOnReject
+                );
+                check(
+                    "Welle 6.H P2C: schöpfer-Modus baut ohne Material (Vision §1.5)",
+                    wave6hP2cResults.schoepferBuildsFree && wave6hP2cResults.schoepferGrows
+                );
+                check(
+                    "Welle 6.H P2C: schöpfer-Modus: Inventar bleibt leer (unbegrenzt)",
+                    wave6hP2cResults.schoepferEmptyAfter
+                );
+                check(
+                    "Welle 6.H P2C: frieden-Modus baut ohne Material (Erstbegegnung umarmt)",
+                    wave6hP2cResults.friedenBuildsFree
+                );
+                check("Welle 6.H P2C: frieden-Modus: Inventar bleibt leer", wave6hP2cResults.friedenEmptyAfter);
+                check(
+                    "Welle 6.H P2C: pfad-HUD zeigt Material-Kosten + verfügbare Menge",
+                    wave6hP2cResults.hudShowsCostInPfad
+                );
+                check("Welle 6.H P2C: schöpfer-HUD zeigt 'frei'", wave6hP2cResults.hudShowsFreiInSchoepfer);
+                check("Welle 6.H P2C: frieden-HUD zeigt 'frei'", wave6hP2cResults.hudShowsFreiInFrieden);
             }
 
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
@@ -8452,10 +10605,33 @@ function startSaveServer() {
                     out.rowHasSourceClass = rows[0] && rows[0].classList.contains("source-human");
 
                     // (c) Run-Button klicken → ability läuft, Welt-Effekt
-                    if (r.state.creatures[0]) r.state.creatures[0].material.color.setHex(0xff0000);
+                    // Welle 6.H P2A — Kreatur ist Group; rote Vor-Color auf
+                    // alle Sub-Meshes setzen, sonst crasht das Test-Setup.
+                    if (r.state.creatures[0]) {
+                        const cR = r.state.creatures[0];
+                        if (cR.material && cR.material.color) cR.material.color.setHex(0xff0000);
+                        else if (typeof cR.traverse === "function") {
+                            cR.traverse((n) => {
+                                if (n.isMesh && n.material && n.material.color) n.material.color.setHex(0xff0000);
+                            });
+                        }
+                    }
                     const runBtn = rows[0] && rows[0].querySelector("[data-run-ability]");
                     if (runBtn) runBtn.click();
-                    const colorAfter = r.state.creatures[0] ? r.state.creatures[0].material.color.getHex() : 0;
+                    // Welle 6.H P2A — Kreatur ist Group; Color über Sub-Meshes lesen.
+                    const cFirst = r.state.creatures[0];
+                    let colorAfter = 0;
+                    if (cFirst) {
+                        if (cFirst.material && cFirst.material.color) {
+                            colorAfter = cFirst.material.color.getHex();
+                        } else if (typeof cFirst.traverse === "function") {
+                            cFirst.traverse((n) => {
+                                if (!colorAfter && n.isMesh && n.material && n.material.color) {
+                                    colorAfter = n.material.color.getHex();
+                                }
+                            });
+                        }
+                    }
                     out.runButtonExecutes = colorAfter === 0x0000ff;
 
                     // (d) Signature-Cache: zweiter updateStatusPanel ohne
