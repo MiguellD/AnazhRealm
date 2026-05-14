@@ -234,7 +234,7 @@ class AnazhRealm {
                     anthropic: { apiKey: "", model: "claude-haiku-4-5" },
                     google: { apiKey: "", model: "gemini-2.5-flash" },
                     openrouter: { apiKey: "", model: "meta-llama/llama-3.3-70b-instruct:free" },
-                    ollama: { apiKey: "", model: "llama3.1", endpoint: "http://localhost:11434", useProxy: false },
+                    ollama: { apiKey: "", model: "llama3.2", endpoint: "http://localhost:11434", useProxy: false },
                 },
                 inFlight: false,
                 lastError: null,
@@ -2683,11 +2683,20 @@ class AnazhRealm {
                 label: "Ollama (lokal oder gehostet)",
                 hint: "Lokal: `ollama serve` auf localhost:11434. Gehostet: eigene URL + optional Bearer-Token (für ollama.com Turbo, Reverse-Proxy mit Auth, Cloud-Hoster).",
                 keyPrefix: "",
+                // V7.97 — Vorschläge (datalist), kein Pflicht-Set. Spieler kann
+                // beliebige Modelle eintragen. Mix aus lokalen Klassikern +
+                // Cloud-Suffix-Beispielen damit beide Welten sichtbar sind.
                 models: [
-                    { id: "llama3.1", label: "Llama 3.1 8B — Standard" },
-                    { id: "llama3.2", label: "Llama 3.2 3B — leicht" },
-                    { id: "qwen2.5", label: "Qwen 2.5 — solide" },
-                    { id: "mistral", label: "Mistral 7B" },
+                    { id: "llama3.2", label: "Llama 3.2 — leicht, lokal" },
+                    { id: "llama3.1", label: "Llama 3.1 8B — solide, lokal" },
+                    { id: "qwen3", label: "Qwen 3 — lokal" },
+                    { id: "qwen2.5", label: "Qwen 2.5 — lokal" },
+                    { id: "gemma2", label: "Gemma 2 — lokal" },
+                    { id: "mistral", label: "Mistral 7B — lokal" },
+                    { id: "phi3", label: "Phi 3 — sehr leicht, lokal" },
+                    { id: "gpt-oss:20b", label: "GPT-OSS 20B — ollama.com Cloud" },
+                    { id: "qwen3.5:cloud", label: "Qwen 3.5 Cloud — ollama.com" },
+                    { id: "kimi-k2.6:cloud", label: "Kimi K2.6 Cloud — ollama.com" },
                 ],
                 requiresKey: false,
                 // V7.95 — Endpoint respektiert volle URL. Wenn der Spieler
@@ -3042,8 +3051,12 @@ class AnazhRealm {
             // V7.96 — useProxy-Flag (Ollama Cloud-Mode): Request wird über
             // localhost:4312/api/proxy/llm geroutet damit der Browser nicht
             // an CORS scheitert. Save-server setzt CORS-Header, leitet weiter.
-            // Funktioniert nur bei `npm run dev` (lokaler save-server).
-            const useProxy = !!(cfg && cfg.useProxy);
+            // V7.97 — Auto-Bypass: bei localhost/127.0.0.1-URLs ist kein
+            // CORS-Problem zu lösen → Proxy macht keinen Sinn und würde am
+            // https-only-Check scheitern. Toggle bleibt für Cloud sinnvoll,
+            // macht aber bei lokal-Setups nichts kaputt.
+            const isLocalUrl = /^https?:\/\/(localhost|127\.0\.0\.1)([:/]|$)/i.test(url);
+            const useProxy = !!(cfg && cfg.useProxy) && !isLocalUrl;
             const fetchUrl = useProxy ? "http://localhost:4312/api/proxy/llm" : url;
             const fetchBody = useProxy ? JSON.stringify({ url, headers, body }) : JSON.stringify(body);
             const fetchHeaders = useProxy ? { "content-type": "application/json" } : headers;
@@ -3054,7 +3067,17 @@ class AnazhRealm {
             });
             if (!res.ok) {
                 const text = await res.text().catch(() => "");
-                llm.lastError = `HTTP ${res.status}: ${text.slice(0, 160)}`;
+                // V7.97 — spezifische 404-Detection für „model not found".
+                // Häufigster Stolperstein bei Ollama: Modell-Name passt nicht
+                // zur lokalen Installation. Klarer Hinweis statt rohem Server-
+                // Output.
+                const isModelMissing = res.status === 404 && /model.*not found|"model"/i.test(text);
+                if (isModelMissing && this.state.llm.provider === "ollama") {
+                    const m = (cfg && cfg.model) || "?";
+                    llm.lastError = `Modell „${m}" nicht gefunden. Prüfe mit \`ollama list\` (lokal) oder im Provider-Dashboard (Cloud) welche Modelle verfügbar sind, und trage den exakten Namen ins Modell-Feld ein.`;
+                } else {
+                    llm.lastError = `HTTP ${res.status}: ${text.slice(0, 160)}`;
+                }
                 return { error: llm.lastError };
             }
             const json = await res.json();
@@ -3515,24 +3538,34 @@ class AnazhRealm {
     }
 
     llmRefreshModelOptions() {
-        const modelSel = document.getElementById("llm-model");
-        if (!modelSel) return;
+        // V7.97 — Modell ist jetzt ein Free-Text-Input mit datalist-Vorschlägen.
+        // Spieler trägt sein Modell selbst ein (egal ob `llama3.2`, `qwen3.5:cloud`,
+        // `meine-fine-tune:v2`); die Vorschläge in der datalist sind Tipp-Hilfen,
+        // kein Pflicht-Set.
+        const modelInput = document.getElementById("llm-model");
+        const dataList = document.getElementById("llm-model-suggestions");
+        if (!modelInput) return;
         const defs = this.llmProviderDefs();
         const def = defs[this.state.llm.provider];
         if (!def) return;
         const cfg = this.state.llm.providerConfig[this.state.llm.provider];
-        modelSel.innerHTML = "";
-        for (const m of def.models) {
-            const opt = document.createElement("option");
-            opt.value = m.id;
-            opt.textContent = m.label;
-            modelSel.appendChild(opt);
+        if (dataList) {
+            dataList.innerHTML = "";
+            for (const m of def.models) {
+                const opt = document.createElement("option");
+                opt.value = m.id;
+                opt.label = m.label;
+                dataList.appendChild(opt);
+            }
         }
-        if (cfg && cfg.model && def.models.some((m) => m.id === cfg.model)) {
-            modelSel.value = cfg.model;
+        // Aktuellen Wert in Input setzen — entweder gespeicherter cfg.model
+        // (auch wenn er nicht in der Vorschlagsliste steht!) oder erstes Vorschlags-
+        // Modell als Default.
+        if (cfg && cfg.model) {
+            modelInput.value = cfg.model;
         } else if (def.models[0]) {
-            modelSel.value = def.models[0].id;
-            cfg.model = def.models[0].id;
+            modelInput.value = def.models[0].id;
+            if (cfg) cfg.model = def.models[0].id;
         }
     }
 
@@ -3567,9 +3600,23 @@ class AnazhRealm {
         const proxyHint = document.getElementById("llm-proxy-hint");
         const proxyCheckbox = document.getElementById("llm-use-proxy");
         const isOllama = this.state.llm.provider === "ollama";
+        // V7.97 — Toggle ist sichtbar bei Ollama, aber wenn die URL lokal
+        // ist (localhost/127.0.0.1), wird das Label angepasst — „nicht nötig
+        // für lokales Setup". Spieler sieht sofort dass Toggle ihn nicht
+        // zwingt, etwas zu tun.
         if (proxyRow) proxyRow.hidden = !isOllama;
         if (proxyHint) proxyHint.hidden = !isOllama;
         if (proxyCheckbox) proxyCheckbox.checked = !!(cfg && cfg.useProxy);
+        if (isOllama && cfg) {
+            const ep = String(cfg.endpoint || "");
+            const isLocal = /(localhost|127\.0\.0\.1)/i.test(ep);
+            const proxyLabel = proxyRow ? proxyRow.querySelector("label span") : null;
+            if (proxyLabel) {
+                proxyLabel.textContent = isLocal
+                    ? "Cloud über save-server-Proxy (für lokales Ollama nicht nötig)"
+                    : "Cloud über save-server-Proxy (löst CORS)";
+            }
+        }
         if (hintEl) hintEl.textContent = def.hint || "";
         this.llmRefreshModelOptions();
         this.llmUpdateStatus();
@@ -3607,9 +3654,12 @@ class AnazhRealm {
             this.llmPersist();
             this.llmRefreshProviderUI();
         });
+        // V7.97 — modelSel ist jetzt ein <input>, change feuert bei
+        // Enter/Blur. Free-Text-Input erlaubt eigene Modell-Namen
+        // (qwen3.5:cloud, gpt-oss, meine-fine-tune:v2, etc.).
         modelSel.addEventListener("change", () => {
             const cfg = this.state.llm.providerConfig[this.state.llm.provider];
-            cfg.model = modelSel.value;
+            cfg.model = String(modelSel.value || "").trim();
             this.llmPersist();
             this.llmUpdateStatus();
         });
@@ -3631,6 +3681,9 @@ class AnazhRealm {
                 cfg.endpoint = endpointInput.value.trim() || "http://localhost:11434";
                 this.llmPersist();
                 this.llmUpdateStatus();
+                // V7.97 — Endpoint-Wechsel triggert Proxy-Label-Refresh
+                // (local vs Cloud-Hinweis aktualisiert sich live).
+                this.llmRefreshProviderUI();
             });
         }
         saveBtn.addEventListener("click", () => {

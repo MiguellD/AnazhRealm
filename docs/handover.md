@@ -360,6 +360,48 @@ Hylomorphismus-System wie Materialien und Bauwerke.
   playerInventory in buildStateSnapshot. 127 Invarianten für 6.C1
   + Drag-System → 1153 total.
 
+### V7.97 — Ollama-UX-Politur durch Schöpfer-Browser-Test (14.05.2026)
+
+**V7.96 brachte den Proxy, V7.97 polierte die UX**:
+
+Schöpfer testete V7.96 mit 4 Screenshots — drei reale Stolpersteine:
+
+**Stolperstein 1 — Toggle aktiv + localhost-URL → 400**:
+- Endpoint default `http://localhost:11434`, User aktiviert Proxy aus
+  Neugier → mein Proxy lehnt http ab („Only https allowed")
+- Fix: `isLocalUrl = /^https?:\/\/(localhost|127\.0\.0\.1)([:/]|$)/i`
+  → bei Match wird `useProxy` intern auf false gesetzt
+- Toggle bleibt aktiv im UI (User-Wahl bewahrt), Bypass passiert
+  transparent. Plus Label kontextuell: „nicht nötig für lokales Setup"
+
+**Stolperstein 2 — Modell-Dropdown veraltet**:
+- User hatte `qwen3.5:cloud`, `gpt-oss`, `kimi-k2.6:cloud` etc.
+- Mein Dropdown nur `llama3.1/3.2/qwen2.5/mistral` → alle 404
+- Fix: `<input type="text" list="llm-model-suggestions">` +
+  `<datalist>` mit aktualisierten 10 Modellen (lokale Klassiker
+  + Cloud-Suffix-Beispiele). Spieler kann beliebige Strings tippen.
+  Default-State auf `llama3.2` (moderner als `llama3.1`).
+
+**Stolperstein 3 — 404 ohne Anleitung**:
+- HTTP 404 mit `{error: "model 'llama3.1' not found"}` kam roh durch
+- Spieler verwirrt: was tun?
+- Fix: `res.status === 404 && /model.*not found|"model"/i.test(text)`
+  → spezifischer Hinweis inkl. Modell-Name + „Prüfe mit `ollama list`"
+
+**6 Tests grün. 1583 → 1589/1589.**
+
+**Lehre 233 zentral**: Toggle sollen niemals den User blockieren —
+entweder Auto-Bypass oder Label-Klärung. Nie einen 400-Fehler an
+den User, wenn das System weiß, dass die Geste in diesem Kontext
+keinen Sinn macht.
+
+**Lehre 234**: Fixe Dropdowns altern, Free-Text lebt. Bei Provider-
+Konfigurationen (Modell-Namen, Endpoints, Custom-URLs) immer
+Free-Text + Vorschläge.
+
+**Lehre 235**: Drei reale Stolpersteine > zehn theoretische Bugs.
+Schöpfer-Browser-Test als Eingangs-Filter, nicht Spekulation.
+
 ### V7.96 — Cloud-LLM-Proxy via save-server (14.05.2026)
 
 **Schöpfer testete V7.95 in GitHack-Setup mit echtem ollama.com-Key**:

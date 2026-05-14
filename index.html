@@ -29,7 +29,7 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self';"
         />
-        <title>Anazh Realm v7.96 – Das Ultiversum</title>
+        <title>Anazh Realm v7.97 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
              zusätzliche Datei. img-src 'self' data: in CSP erlaubt data-URI. -->
         <link
@@ -2834,7 +2834,7 @@
         <header id="topbar" class="hud-frame">
             <div class="topbar-inner">
                 <div class="title">
-                    Anazh Realm <span class="version">v7.96</span> <span class="sub">— Das Ultiversum</span>
+                    Anazh Realm <span class="version">v7.97</span> <span class="sub">— Das Ultiversum</span>
                 </div>
                 <nav class="tabs" role="tablist" aria-label="Hauptansichten">
                     <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">
@@ -3253,11 +3253,27 @@
                     <strong>Groq</strong> (<code>https://api.groq.com/openai/v1/chat/completions</code>),
                     <strong>Together AI</strong>, <strong>Cerebras</strong>, <strong>Gemini</strong>, <strong>OpenRouter</strong>.
                 </div>
+                <!-- V7.97 — Modell als Free-Text-Input mit datalist-Vorschlägen.
+                     Ollama-User haben oft Custom-Modelle (qwen3.5:cloud, gpt-oss,
+                     myllama:7b-quant, etc.) — eine fixe Dropdown-Liste wird nie
+                     komplett sein. Datalist erlaubt Tippen + Vorschläge zugleich. -->
                 <div class="tuning-row">
                     <label for="llm-model"><span>Modell</span></label>
-                    <select id="llm-model">
+                    <input
+                        type="text"
+                        id="llm-model"
+                        list="llm-model-suggestions"
+                        autocomplete="off"
+                        spellcheck="false"
+                        placeholder="z.B. llama3.2, qwen3, gpt-oss:20b"
+                    />
+                    <datalist id="llm-model-suggestions">
                         <!-- gefüllt aus llmProviderDefs()[provider].models -->
-                    </select>
+                    </datalist>
+                </div>
+                <div class="drawer-hint" style="font-size: 11px; opacity: 0.75; margin-top: -6px">
+                    Trag den Modell-Namen ein wie er bei dir verfügbar ist. Lokal: <code>ollama list</code> zeigt deine
+                    Modelle. Cloud-Hoster: prüfe deren Modell-Liste. Vorschläge unten als Tipp-Hilfe.
                 </div>
                 <div class="actions">
                     <button type="button" id="llm-save">Speichern</button>
