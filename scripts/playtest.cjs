@@ -12294,8 +12294,11 @@ function startSaveServer() {
                     out.parserParsesValidJson = ok.say === "Hallo" && Array.isArray(ok.program);
                     const fenced = r.llmParseResponse('```json\n{"say":"hi","program":null}\n```');
                     out.parserStripsFence = fenced.say === "hi" && fenced.program === null;
+                    // V7.98: Parser nutzt Plain-Text-Fallback statt strict-error.
+                    // Lokale Modelle ignorieren oft den JSON-Vertrag — wir nehmen
+                    // ihren Plain-Text als `say` damit der Spieler trotzdem etwas sieht.
                     const broken = r.llmParseResponse("nicht json");
-                    out.parserDetectsError = typeof broken.error === "string";
+                    out.parserDetectsError = broken.say === "nicht json" && broken.fallbackUsed === "plain-text";
 
                     // Disabled-LLM blockt Call ohne Netzwerk-Versuch
                     r.state.llm.enabled = false;
@@ -12353,7 +12356,10 @@ function startSaveServer() {
                 check("Schicht 2: System-Prompt trägt DSL-JSON-Vertrag", llmResults.systemPromptHasJson);
                 check("Schicht 2: Parser akzeptiert gültiges JSON", llmResults.parserParsesValidJson);
                 check("Schicht 2: Parser entfernt Markdown-Fences", llmResults.parserStripsFence);
-                check("Schicht 2: Parser meldet Fehler bei kaputtem Input", llmResults.parserDetectsError);
+                check(
+                    "Schicht 2: Parser nutzt Plain-Text-Fallback bei Nicht-JSON (V7.98 — User sieht Antwort statt Error)",
+                    llmResults.parserDetectsError
+                );
                 check("Schicht 2: Disabled-LLM blockt Call sauber", llmResults.callBlockedWhenDisabled);
                 check(
                     "Schicht 2: CSP erlaubt alle vier Provider-Endpoints",
@@ -12504,17 +12510,19 @@ function startSaveServer() {
                     out.extractsEmpty = ol.extractText(null) === "" && ol.extractText({}) === "";
 
                     // 9. buildBody — Ollama-Native (Basis-URL): hat options.num_predict
+                    // V7.98: 400→800 für Reasoning-Models (think-Block + Antwort)
                     const bodyNative = ol.buildBody("llama3.1", "sys", "user", {
                         endpoint: "http://localhost:11434",
                     });
-                    out.bodyNativeHasOptions = bodyNative.options && bodyNative.options.num_predict === 400;
+                    out.bodyNativeHasOptions = bodyNative.options && bodyNative.options.num_predict === 800;
                     out.bodyNativeNoMaxTokens = bodyNative.max_tokens === undefined;
 
                     // 10. buildBody — OpenAI-kompat (/v1/): hat max_tokens, KEIN options
+                    // V7.98: 400→800
                     const bodyOpenAi = ol.buildBody("gpt-oss", "sys", "user", {
                         endpoint: "https://provider/v1/chat/completions",
                     });
-                    out.bodyOpenAiHasMaxTokens = bodyOpenAi.max_tokens === 400;
+                    out.bodyOpenAiHasMaxTokens = bodyOpenAi.max_tokens === 800;
                     out.bodyOpenAiNoOptions = bodyOpenAi.options === undefined;
 
                     // 11. buildBody — beide haben model + messages + stream:false
@@ -12561,11 +12569,11 @@ function startSaveServer() {
                     v795Results.extractsEmpty
                 );
                 check(
-                    "V7.95 Ollama-Cloud: buildBody Ollama-Native hat options.num_predict (kein max_tokens)",
+                    "V7.95+V7.98 Ollama: buildBody Ollama-Native hat options.num_predict=800 (kein max_tokens)",
                     v795Results.bodyNativeHasOptions && v795Results.bodyNativeNoMaxTokens
                 );
                 check(
-                    "V7.95 Ollama-Cloud: buildBody OpenAI-kompat hat max_tokens (KEIN options-Feld, sonst Reject bei manchen Providern)",
+                    "V7.95+V7.98 Ollama: buildBody OpenAI-kompat hat max_tokens=800 (KEIN options-Feld)",
                     v795Results.bodyOpenAiHasMaxTokens && v795Results.bodyOpenAiNoOptions
                 );
                 check(
@@ -12849,6 +12857,105 @@ function startSaveServer() {
                 );
             } else if (v797ErrorResults && v797ErrorResults.error) {
                 check(`V7.97 Error-Hint: evaluate-Fehler — ${v797ErrorResults.error}`, false);
+            }
+
+            // ### V7.98 — Parser-Robustheit für lokale Reasoning-Models ###
+            //
+            // Schöpfer-Browser-Test V7.97: Ollama lokales qwen3.6 antwortet,
+            // aber Chat zeigt "Leere Antwort". Drei Ursachen:
+            // (1) Reasoning-Models wrappen Output in <think>...</think>;
+            // (2) lokale 7B-Modelle ignorieren oft den JSON-Vertrag;
+            // (3) num_predict=400 reicht nicht für think-Block + Antwort.
+            const v798Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    // 1. <think>-Block wird gestrippt, JSON dahinter wird geparst
+                    const thinkResp = r.llmParseResponse(
+                        '<think>Lass mich überlegen…</think>{"say":"Hallo Welt","program":null}'
+                    );
+                    out.thinkStripped = thinkResp.say === "Hallo Welt" && thinkResp.program === null;
+
+                    // 2. <thinking>-Variante wird auch erkannt
+                    const thinkingResp = r.llmParseResponse(
+                        '<thinking>foo bar</thinking>\n{"say":"Klar"}'
+                    );
+                    out.thinkingStripped = thinkingResp.say === "Klar";
+
+                    // 3. Plain-Text ohne JSON → Plain-Text-Fallback
+                    const plainResp = r.llmParseResponse("Mir geht es gut, danke der Nachfrage.");
+                    out.plainTextFallback =
+                        plainResp.say === "Mir geht es gut, danke der Nachfrage." &&
+                        plainResp.fallbackUsed === "plain-text";
+
+                    // 4. <think>-Block + Plain-Text → think gestrippt, Rest als say
+                    const thinkPlainResp = r.llmParseResponse(
+                        "<think>denke nach</think>Hallo Schöpfer, ich höre dich."
+                    );
+                    out.thinkPlusPlain = /Hallo Schöpfer/.test(thinkPlainResp.say || "");
+
+                    // 5. Striktes JSON ohne fallback (Anthropic/Gemini-Pfad)
+                    const strictResp = r.llmParseResponse('{"say":"Test","program":["weather","sunny"]}');
+                    out.strictJsonStillWorks =
+                        strictResp.say === "Test" &&
+                        Array.isArray(strictResp.program) &&
+                        !strictResp.fallbackUsed;
+
+                    // 6. Markdown-Fence + JSON → fence wird gestripped
+                    const fenceResp = r.llmParseResponse('```json\n{"say":"Fenced"}\n```');
+                    out.fenceStripped = fenceResp.say === "Fenced";
+
+                    // 7. Komplett leerer Input → klarer Error mit raw-Hinweis
+                    const emptyResp = r.llmParseResponse("");
+                    out.emptyHasError = typeof emptyResp.error === "string" && /raw=0/.test(emptyResp.error);
+
+                    // 8. JSON mit leerem say UND text drumherum → Plain-Text-Fallback nimmt drumherum
+                    const emptyJsonResp = r.llmParseResponse('Vorab-Text {"say":""} Nach-Text');
+                    out.emptyJsonFallsBackToText =
+                        emptyJsonResp.say && emptyJsonResp.say.length > 0 &&
+                        emptyJsonResp.fallbackUsed === "json-empty";
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (v798Results && !v798Results.error) {
+                check(
+                    "V7.98 Parser: <think>...</think>-Block wird gestripped, dahinter liegendes JSON sauber geparst",
+                    v798Results.thinkStripped
+                );
+                check(
+                    "V7.98 Parser: <thinking>-Variante wird auch erkannt (case-insensitive)",
+                    v798Results.thinkingStripped
+                );
+                check(
+                    "V7.98 Parser: Plain-Text ohne JSON → Plain-Text-Fallback (User sieht Antwort statt 'Leere Antwort')",
+                    v798Results.plainTextFallback
+                );
+                check(
+                    "V7.98 Parser: <think>-Block + Plain-Text danach → think gestrippt, Rest als say genutzt",
+                    v798Results.thinkPlusPlain
+                );
+                check(
+                    "V7.98 Parser: Striktes JSON ohne think bleibt unverändert (Anthropic/Gemini-Pfad)",
+                    v798Results.strictJsonStillWorks
+                );
+                check(
+                    "V7.98 Parser: Markdown-Fence (```json …```) wird gestripped",
+                    v798Results.fenceStripped
+                );
+                check(
+                    "V7.98 Parser: Leerer Input → klarer Error mit 'raw=0'-Hinweis",
+                    v798Results.emptyHasError
+                );
+                check(
+                    "V7.98 Parser: JSON mit say='' aber Text drumherum → Plain-Text-Fallback (json-empty marker)",
+                    v798Results.emptyJsonFallsBackToText
+                );
+            } else if (v798Results && v798Results.error) {
+                check(`V7.98 Parser: evaluate-Fehler — ${v798Results.error}`, false);
             }
 
             // ### Ring 3 – Player-Emotionen → Welt ###

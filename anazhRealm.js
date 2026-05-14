@@ -2728,6 +2728,10 @@ class AnazhRealm {
                 // wird OMITTED bei OpenAI-kompat-Endpoints (manche Server
                 // lehnen unbekannte Felder ab). Heuristik: wenn endpoint
                 // /v1/chat/completions enthält → OpenAI-kompat → schlanker Body.
+                // V7.98 — Token-Limit von 400 auf 800 erhöht. Reasoning-Models
+                // (qwen3, gpt-oss, deepseek-r1) generieren erst <think>-Block,
+                // dann die Antwort. 400 reicht oft nicht — Antwort wird mitten
+                // im JSON abgeschnitten → Parse-Fehler oder leeres `say`.
                 buildBody: (model, system, userContent, cfg) => {
                     const body = {
                         model,
@@ -2740,9 +2744,9 @@ class AnazhRealm {
                     const ep = (cfg && cfg.endpoint) || "";
                     const isOpenAiCompat = /\/v1\//.test(ep);
                     if (!isOpenAiCompat) {
-                        body.options = { num_predict: 400, temperature: 0.7 };
+                        body.options = { num_predict: 800, temperature: 0.7 };
                     } else {
-                        body.max_tokens = 400;
+                        body.max_tokens = 800;
                         body.temperature = 0.7;
                     }
                     return body;
@@ -3114,28 +3118,59 @@ class AnazhRealm {
     }
 
     llmParseResponse(raw) {
-        // Robust gegen Markdown-Fences und kleine Prä-/Postambeln.
+        // V7.98 — robust gegen drei häufige LLM-Output-Stile:
+        //   1. Reasoning-Models (qwen3, gpt-oss, deepseek-r1) wrappen ihre
+        //      interne Logik in <think>...</think> oder <thinking>...</thinking>.
+        //      Wir strippen das BEVOR wir nach JSON suchen.
+        //   2. Markdown-Code-Fences (```json {...} ```) — extrahieren.
+        //   3. Plain-Text ohne JSON (lokale 7B-Modelle ignorieren oft den
+        //      Vertrag) → Plain-Text-Fallback: nimm den ganzen Text als `say`.
+        //
+        // Diese Schichten machen Ollama-User mit kleinen Modellen happy ohne
+        // dass die strikten JSON-Modelle (Anthropic, Gemini) etwas verlieren.
         if (typeof raw !== "string" || raw.length === 0) {
-            return { error: "Leere Antwort" };
+            return { error: "Leere Antwort vom Modell (raw=0 chars)" };
         }
         let text = raw.trim();
+        // Schritt 1: Reasoning-Tags entfernen
+        text = text.replace(/<think(?:ing)?>[\s\S]*?<\/think(?:ing)?>/gi, "").trim();
+        // Schritt 2: Markdown-Fence rausziehen wenn vorhanden
         const fence = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
         if (fence) text = fence[1].trim();
-        // Falls Modell vorne/hinten Text liefert — schnapp das erste JSON-Object.
+        // Schritt 3: erste {...}-Klammer finden für JSON-Extraktion
         const objMatch = text.match(/\{[\s\S]*\}/);
-        if (objMatch) text = objMatch[0];
-        let obj;
-        try {
-            obj = JSON.parse(text);
-        } catch (err) {
-            return { error: `JSON-Parse: ${err.message}`, raw };
+        if (objMatch) {
+            try {
+                const obj = JSON.parse(objMatch[0]);
+                const say = typeof obj.say === "string" ? obj.say.slice(0, 240) : "";
+                let program = null;
+                if (Array.isArray(obj.program)) program = obj.program;
+                // V7.98 Plain-Text-Fallback: JSON da, aber say leer + kein program
+                // → das Modell hat zwar JSON gemacht, aber inhaltsleer. Nimm
+                // den restlichen Text als say wenn vorhanden.
+                if (!say && !program) {
+                    const before = text.slice(0, objMatch.index || 0).trim();
+                    const after = text.slice((objMatch.index || 0) + objMatch[0].length).trim();
+                    const fallback = (before + " " + after).trim().slice(0, 240);
+                    if (fallback.length > 0) {
+                        return { say: fallback, program: null, raw, fallbackUsed: "json-empty" };
+                    }
+                }
+                return { say, program, raw };
+            } catch {
+                // Fall-through zu Plain-Text-Fallback
+            }
         }
-        const say = typeof obj.say === "string" ? obj.say.slice(0, 240) : "";
-        let program = null;
-        if (Array.isArray(obj.program)) {
-            program = obj.program;
+        // Schritt 4: kein JSON oder JSON-Parse-Fail → ganzen Text als say nehmen
+        // (Heuristik: lokale Modelle die einfach plaudern statt JSON zu liefern)
+        const plainText = text.slice(0, 240);
+        if (plainText.length > 0) {
+            return { say: plainText, program: null, raw, fallbackUsed: "plain-text" };
         }
-        return { say, program, raw };
+        return {
+            error: `Modell antwortete, aber Inhalt war leer nach Parsing (raw='${raw.slice(0, 80)}…')`,
+            raw,
+        };
     }
 
     // Bei Chat-Eingabe, die kein DSL-Treffer ist: LLM rufen, Antwort

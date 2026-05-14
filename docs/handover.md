@@ -360,6 +360,58 @@ Hylomorphismus-System wie Materialien und Bauwerke.
   playerInventory in buildStateSnapshot. 127 Invarianten für 6.C1
   + Drag-System → 1153 total.
 
+### V7.98 — Parser-Robustheit für lokale Reasoning-Models (14.05.2026)
+
+**Schöpfer testete V7.97 mit lokalem Ollama (qwen3.6 via App)**:
+Call kam DURCH (kein CORS, kein 404), aber Chat zeigte konstant
+„(Grok schweigt: Leere Antwort)" und „(KAI schweigt: Leere Antwort)".
+
+**Wurzel**: `llmParseResponse` war zu strikt — verlangte JSON {say, program}.
+
+**Drei Bug-Quellen, ein Fix-Tripel**:
+
+**Bug 1 — Reasoning-Tags**:
+- Moderne Modelle (qwen3, gpt-oss, deepseek-r1) wrappen interne Logik
+  in `<think>...</think>` oder `<thinking>...</thinking>`
+- Mein Parser sah den Block, fand kein JSON darin → Error
+- Fix: `text.replace(/<think(?:ing)?>[\s\S]*?<\/think(?:ing)?>/gi, "")`
+  BEFORE der JSON-Suche
+
+**Bug 2 — Plain-Text-Output**:
+- Lokale 7B-Modelle (qwen3.6, llama3.2, mistral) ignorieren oft den
+  JSON-Vertrag und antworten direkt
+- Mein Parser fand kein {...} → Error
+- Fix: vier-Schicht-Pipeline mit Plain-Text-Fallback
+  (a) `<think>` strippen
+  (b) Markdown-Fence rausziehen
+  (c) JSON-Object versuchen
+  (d) WENN nicht: Plain-Text als `say` (240 Char Cap)
+
+**Bug 3 — Token-Limit zu klein**:
+- num_predict=400 reichte nicht für „denken + antworten"
+- Antwort wurde mitten im Output abgeschnitten
+- Fix: 400 → 800 in beiden buildBody-Pfaden
+
+**Strikte JSON-Modelle (Anthropic, Gemini) verlieren NICHTS** — sie
+liefern saubere JSON, der Parser findet sie sofort, kein Fallback nötig.
+Plain-Text-Pfad greift nur wenn nötig.
+
+**Bessere Diagnostik**:
+- „Leere Antwort" → „Leere Antwort vom Modell (raw=0 chars)"
+- `fallbackUsed: "plain-text"` oder `"json-empty"` markiert was passiert ist
+
+**8 Tests grün. 1589 → 1597/1597.**
+
+**Lehre 236 zentral**: Parser FEHL-TOLERANT bauen wenn das System mit
+verschiedenen LLM-Größen + Stilen leben muss. Pro-Modelle sind brav,
+lokale 7B-Modelle nicht. Plain-Text-Fallback ist Vision-treue Antwort.
+
+**Lehre 237**: Schicht-für-Schicht-Fallback > Monster-Regex. Vier klare
+Schichten mit jeweils einem klaren Job. Debuggable, testbar, erweiterbar.
+
+**Lehre 238**: Token-Limit ist unsichtbare Kostprobe. Reasoning-Models
+brauchen Budget für „denken + antworten". 400 → 800 ist Mittelweg.
+
 ### V7.97 — Ollama-UX-Politur durch Schöpfer-Browser-Test (14.05.2026)
 
 **V7.96 brachte den Proxy, V7.97 polierte die UX**:
