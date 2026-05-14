@@ -12,7 +12,7 @@
 class AnazhRealm {
     constructor() {
         // ### Learnings ### [Stichwortartig optimieren, korrigieren, ergänzen – nie Wissen löschen!]
-        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69, LAN-Fähigkeit + Sync-Korrektheit (Ring 11 V2.1: 0.0.0.0-bind, ws:/wss:-CSP, roomOverride, spawn_*-Embedding, NON_BROADCASTABLE_OPS) in V7.70, Intuitiver Multi-User-Setup (Ring 11.5: Modus-Wahl, Host-Banner mit Einladungs-Code, Auto-Welt-Snapshot beim Join) in V7.71, Welle 6.A — Interaktion-Polish (Wall-Sliding via Player-Friction-0, Erdung-Raycast-Robustheit für Bauwerke) in V7.72, Welle 6.G Phase 1 — Welt-Sinne (fliegende Inseln + Bäume kollidierbar via btBvhTriangleMeshShape/btCylinderShape, drei Dead-Code-DSL-Ops spawn_tree/island/ufo aktiviert, toter needsPhysics-Lazy-Pfad gelöscht) in V7.73, Welle 6.G Phase 1.5 — Hylomorphismus-Unification (Bäume sind jetzt Compound-Architekturen über baum_eiche/baum_kiefer-Baupläne mit Stamm:holz + Krone:laub, eigene spawnTreeAt + _buildTreeCollision gelöscht, Parallelcode → eine Sprache, plus Insel-Visual-Fix mit Underside + Lambert) in V7.74, Welle 6.G Phase 2 — Welt-Affinitäts-Feld (vier SimplexNoise-Schichten lebendig/dichte/glut/magieleitung, Baupläne spawnen wo ihre Compound-Tags resonieren — Wälder/Felsen/Magie-Zonen/Vulkan-Anker emergieren ohne Biome-Tabelle, populateChunkVegetation als Hook in ensureChunkAt + Initial-Worldgen, drei neue Built-in-Baupläne stein_block/kristall_geode/glutbrunnen, Stämme dicker für Spieler-Spürbarkeit, Culling-Tick 1Hz→2Hz, spawn-silent-Opt damit Worldgen die Welt-Effekt-Kaskade nicht überflutet) in V7.75, Welle 6.C2 — Spielmodi (frieden/pfad/schöpfer als Welt-Beziehungs-Schalter, frieden umarmt + pfad verhandelt + schöpfer gehorcht, damagePlayer + applyOpToPart-Stamina modus-gated, set_mode DSL-Op in NON_BROADCASTABLE_OPS, UI-Radio in Einstellungen + Status-Bar #status-mode, worldMeta.gameMode persistiert pro-Welt) in V7.76, Welle 6.C1 — Hylomorphismus-Inventar (27-Slot-Overlay mit Tab-Toggle, Tag-Resonanz emergiert aus Compound-Tags — resoniert summt + brennend glüht + magieleitung schimmert + lebendig sprießt, Audio-Hover-Ping via state.symphony, addToInventory stackt bei gleichem Bauplan-Namen, Inventar-Slot wählen → Hotbar-Slot Klick weist zu, add_to_inventory DSL-Op in NON_BROADCASTABLE_OPS, state.player.inventory[27] persistiert in buildStateSnapshot) in V7.77, Welle 6.A6 + 6.C3 — Maus-Aktionen + Keybindings (LMB abbauen Architektur am Raycast / kein Treffer → modify_terrain-Loch, RMB platzieren = confirmBuild im aktiven Bau-Modus, beide modus-gated mit MOUSE_ACTION_STAMINA_COST=5 in pfad / kostenlos in frieden+schöpfer, DEFAULT_KEYBINDINGS frozen mit 6 Aktionen break/place/confirmBuild/inventory/cancelBuild/jump, Konflikt-Auflösung als Swap statt Leerung, _eventToBindingCode unterstützt KeyboardEvent.code + Mouse0/1/2, Rebind-Capture-Workflow mit Escape-Abbruch, UI-Sektion in Einstellungen-Drawer mit „Ändern"-Button + Standard-Reset, alle 6 Listener konsultieren state.keybindings über _actionForBindingCode, Tab-Listener gated auf !keybindRebind damit Rebind nicht versehentlich Inventar toggelt) in V7.78
+        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69, LAN-Fähigkeit + Sync-Korrektheit (Ring 11 V2.1: 0.0.0.0-bind, ws:/wss:-CSP, roomOverride, spawn_*-Embedding, NON_BROADCASTABLE_OPS) in V7.70, Intuitiver Multi-User-Setup (Ring 11.5: Modus-Wahl, Host-Banner mit Einladungs-Code, Auto-Welt-Snapshot beim Join) in V7.71, Welle 6.A — Interaktion-Polish (Wall-Sliding via Player-Friction-0, Erdung-Raycast-Robustheit für Bauwerke) in V7.72, Welle 6.G Phase 1 — Welt-Sinne (fliegende Inseln + Bäume kollidierbar via btBvhTriangleMeshShape/btCylinderShape, drei Dead-Code-DSL-Ops spawn_tree/island/ufo aktiviert, toter needsPhysics-Lazy-Pfad gelöscht) in V7.73, Welle 6.G Phase 1.5 — Hylomorphismus-Unification (Bäume sind jetzt Compound-Architekturen über baum_eiche/baum_kiefer-Baupläne mit Stamm:holz + Krone:laub, eigene spawnTreeAt + _buildTreeCollision gelöscht, Parallelcode → eine Sprache, plus Insel-Visual-Fix mit Underside + Lambert) in V7.74, Welle 6.G Phase 2 — Welt-Affinitäts-Feld (vier SimplexNoise-Schichten lebendig/dichte/glut/magieleitung, Baupläne spawnen wo ihre Compound-Tags resonieren — Wälder/Felsen/Magie-Zonen/Vulkan-Anker emergieren ohne Biome-Tabelle, populateChunkVegetation als Hook in ensureChunkAt + Initial-Worldgen, drei neue Built-in-Baupläne stein_block/kristall_geode/glutbrunnen, Stämme dicker für Spieler-Spürbarkeit, Culling-Tick 1Hz→2Hz, spawn-silent-Opt damit Worldgen die Welt-Effekt-Kaskade nicht überflutet) in V7.75, Welle 6.C2 — Spielmodi (frieden/pfad/schöpfer als Welt-Beziehungs-Schalter, frieden umarmt + pfad verhandelt + schöpfer gehorcht, damagePlayer + applyOpToPart-Stamina modus-gated, set_mode DSL-Op in NON_BROADCASTABLE_OPS, UI-Radio in Einstellungen + Status-Bar #status-mode, worldMeta.gameMode persistiert pro-Welt) in V7.76, Welle 6.C1 — Hylomorphismus-Inventar (27-Slot-Overlay mit Tab-Toggle, Tag-Resonanz emergiert aus Compound-Tags — resoniert summt + brennend glüht + magieleitung schimmert + lebendig sprießt, Audio-Hover-Ping via state.symphony, addToInventory stackt bei gleichem Bauplan-Namen, Inventar-Slot wählen → Hotbar-Slot Klick weist zu, add_to_inventory DSL-Op in NON_BROADCASTABLE_OPS, state.player.inventory[27] persistiert in buildStateSnapshot) in V7.77, Welle 6.A6 + 6.C3 — Maus-Aktionen + Keybindings (LMB abbauen Architektur am Raycast / kein Treffer → modify_terrain-Loch, RMB platzieren = confirmBuild im aktiven Bau-Modus, beide modus-gated mit MOUSE_ACTION_STAMINA_COST=5 in pfad / kostenlos in frieden+schöpfer, DEFAULT_KEYBINDINGS frozen mit 6 Aktionen break/place/confirmBuild/inventory/cancelBuild/jump, Konflikt-Auflösung als Swap statt Leerung, _eventToBindingCode unterstützt KeyboardEvent.code + Mouse0/1/2, Rebind-Capture-Workflow mit Escape-Abbruch, UI-Sektion in Einstellungen-Drawer mit „Ändern"-Button + Standard-Reset, alle 6 Listener konsultieren state.keybindings über _actionForBindingCode, Tab-Listener gated auf !keybindRebind damit Rebind nicht versehentlich Inventar toggelt, plus Vision-§1.2-Schließung _playArchitectureFarewellPing: abklingender Sinus-Ping beim Abbauen einer resoniert≥resonance_mild-Architektur — selber Audio-Graph wie Spawn-Singing, zeitlich gespiegelt; Stein-Block stumm als Vision-Disziplin, plus HUD dynamisch aus _formatBindingCode statt hartkodierte F/RMB/LMB-Strings, setKeybinding + resetKeybindings triggern automatisch HUD-Refresh) in V7.78
         // - Nexus als Herz der Selbstentwicklung, steuert nun alles über Chat, unzerstörbar und unendlich
         this.state = {
             // ### Kern ###
@@ -13868,6 +13868,12 @@ class AnazhRealm {
         if (!entry) return false;
         const idx = this.state.architectures.indexOf(entry);
         if (idx < 0) return false;
+        // Vision §1.2 — die Welt antwortet sensorisch. Eine resonierende
+        // Struktur (Kristall-Geode, hoch-präzises Werkstück, Singendes
+        // Compound) verstummt beim Abbauen mit einem abklingenden Sinus.
+        // Stumme Strukturen (Roh-Stein, einfache Holz-Hütte) bleiben
+        // still — das Verstummen darf nur dort tönen, wo vorher Klang war.
+        this._playArchitectureFarewellPing(entry);
         this._cullArchitectureMesh(entry);
         this.state.architectures.splice(idx, 1);
         if (typeof this.journalAppend === "function") {
@@ -13878,6 +13884,49 @@ class AnazhRealm {
         }
         if (typeof this.saveState === "function") this.saveState();
         return true;
+    }
+
+    // Vision §1.2-Helfer: kurzer Abklang-Sinus wenn eine resonierende
+    // Architektur abgebaut wird. Frequenz folgt der Tag-Stärke (höher
+    // Resonanz = hellerer Ton). Lebenszeit 0.85 s mit exponentiellem
+    // Decay — analog _applyCompoundWorldEffects "singing"-Schicht, nur
+    // umgekehrt: dort begrüßt der Ton ein neues Werk, hier verabschiedet
+    // er eines. Schwelle `resonance_mild` damit auch leise singende
+    // Strukturen einen Abschied bekommen (nicht erst _strong wie die
+    // Spawn-Singing-Schicht — das wäre Vision-asymmetrisch).
+    _playArchitectureFarewellPing(entry) {
+        if (!entry || !entry.type) return;
+        const sym = this.state.symphony;
+        if (!sym || !sym.enabled || !sym.ctx) return;
+        const bp = this.state.blueprints && this.state.blueprints[entry.type];
+        if (!bp) return;
+        if (typeof this.computeCompoundTags !== "function") return;
+        const tags = this.computeCompoundTags(bp);
+        const resonance = (tags && tags.resoniert) || 0;
+        const thresholds = AnazhRealm.WORLD_EFFECT_THRESHOLDS || {};
+        const minResonance = thresholds.resonance_mild || 0.7;
+        if (resonance < minResonance) return;
+        try {
+            const ctx = sym.ctx;
+            const now = ctx.currentTime;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = "sine";
+            // Frequenz steigt mit Resonanz-Stärke (0.7..3 → 276..516 Hz).
+            const freq = 220 + Math.min(3, resonance) * 80;
+            osc.frequency.setValueAtTime(freq, now);
+            // Abklingender Glissando nach unten — die Struktur „verklingt".
+            osc.frequency.exponentialRampToValueAtTime(Math.max(110, freq * 0.5), now + 0.8);
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.linearRampToValueAtTime(0.08, now + 0.04);
+            gain.gain.exponentialRampToValueAtTime(0.0005, now + 0.8);
+            const dest = sym.masterGain || ctx.destination;
+            osc.connect(gain).connect(dest);
+            osc.start(now);
+            osc.stop(now + 0.85);
+        } catch {
+            /* Audio-Fehler nicht hart — der Abbau soll auch ohne Klang gehen */
+        }
     }
 
     // Pfad analog _resolvePhantomTarget, aber ohne Phantom-Logik. Liefert
@@ -14011,6 +14060,7 @@ class AnazhRealm {
         this.state.keybindings[action] = code;
         this._saveKeybindings();
         if (typeof this._renderKeybindingsUI === "function") this._renderKeybindingsUI();
+        if (typeof this._updateBuildModeHud === "function") this._updateBuildModeHud();
         return true;
     }
 
@@ -14018,6 +14068,7 @@ class AnazhRealm {
         this.state.keybindings = { ...AnazhRealm.DEFAULT_KEYBINDINGS };
         this._saveKeybindings();
         if (typeof this._renderKeybindingsUI === "function") this._renderKeybindingsUI();
+        if (typeof this._updateBuildModeHud === "function") this._updateBuildModeHud();
         return true;
     }
 
@@ -14074,7 +14125,15 @@ class AnazhRealm {
         if (bm.active && bm.blueprintName) {
             const bp = this.state.blueprints[bm.blueprintName];
             const label = bp && bp.label ? bp.label : bm.blueprintName;
-            hud.textContent = `Bau: ${label} — F/RMB bauen, ESC verlassen, 1-9 Slot wählen, LMB abbauen`;
+            // Welle 6.C3 — HUD spiegelt aktuelle Keybindings. Wer „place"
+            // auf KeyB legt, sieht „B bauen" statt „RMB bauen". Fallback
+            // auf DEFAULT_KEYBINDINGS falls state.keybindings noch nicht
+            // initialisiert ist (Test-Edge-Cases).
+            const kb = this.state.keybindings || AnazhRealm.DEFAULT_KEYBINDINGS;
+            const fmt = (code) => this._formatBindingCode(code);
+            hud.textContent =
+                `Bau: ${label} — ${fmt(kb.confirmBuild)}/${fmt(kb.place)} bauen, ` +
+                `${fmt(kb.cancelBuild)} verlassen, 1-9 Slot, ${fmt(kb.break)} abbauen`;
             hud.hidden = false;
         } else {
             hud.hidden = true;

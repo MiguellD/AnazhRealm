@@ -7874,6 +7874,168 @@ function startSaveServer() {
                 check("Welle 6.A6: tryMouseBreak crasht nicht ohne Hit", wave6a6Results.breakSafeWithoutHit);
             }
 
+            // ### Welle 6.A6 V2 — Vision §1.2: Resonanz-Abklang beim Abbauen ###
+            // Eine Architektur mit resoniert ≥ resonance_mild verstummt mit
+            // einem Sinus-Ping. Stille Strukturen bleiben stumm — Verstummen
+            // tönt nur wo Klang war.
+            const wave6a6V2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    out.hasFarewellPing = typeof r._playArchitectureFarewellPing === "function";
+                    out.removeIntegratesPing =
+                        typeof r.removeArchitecture === "function" &&
+                        r.removeArchitecture.toString().includes("_playArchitectureFarewellPing");
+                    // Threshold-Konstante existiert
+                    const thr = r.constructor.WORLD_EFFECT_THRESHOLDS;
+                    out.thresholdReadable = thr && typeof thr.resonance_mild === "number" && thr.resonance_mild > 0;
+
+                    // Symphony aktivieren (Headless: autoplay-policy=no-user-gesture-required)
+                    if (typeof r.initSymphony === "function") r.initSymphony();
+                    const ctxOk = r.state.symphony && r.state.symphony.enabled && r.state.symphony.ctx;
+                    out.symphonyReady = !!ctxOk;
+                    if (!ctxOk) return out;
+
+                    // kristall_geode: resoniert ≈ 2.7 (Built-in, Welle 6.G P2)
+                    const geodeTags = r.computeCompoundTags(r.state.blueprints.kristall_geode);
+                    out.geodeIsResonant = (geodeTags.resoniert || 0) >= thr.resonance_mild;
+                    // stein_block: resoniert ≈ 0
+                    const stoneTags = r.computeCompoundTags(r.state.blueprints.stein_block);
+                    out.stoneIsNotResonant = (stoneTags.resoniert || 0) < thr.resonance_mild;
+
+                    // Spy auf createOscillator
+                    const ctx = r.state.symphony.ctx;
+                    const orig = ctx.createOscillator.bind(ctx);
+                    const p = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+
+                    // Test A: Geode-Abbau → mind. 1 Oszillator
+                    const geode = r.spawnArchitecture("kristall_geode", { x: p.x, y: p.y, z: p.z + 6 });
+                    let counterA = 0;
+                    ctx.createOscillator = function () {
+                        counterA++;
+                        return orig();
+                    };
+                    r.removeArchitecture(geode);
+                    out.geodeRemovalRingsOnce = counterA >= 1;
+
+                    // Test B: Stein-Abbau → kein Oszillator (Negativ-Kontrolle)
+                    const stone = r.spawnArchitecture("stein_block", { x: p.x + 4, y: p.y, z: p.z + 4 });
+                    let counterB = 0;
+                    ctx.createOscillator = function () {
+                        counterB++;
+                        return orig();
+                    };
+                    r.removeArchitecture(stone);
+                    out.stoneRemovalIsSilent = counterB === 0;
+
+                    // Test C: Symphony aus → kein Ping selbst bei resonanter Struktur
+                    r.state.symphony.enabled = false;
+                    const geode2 = r.spawnArchitecture("kristall_geode", { x: p.x - 4, y: p.y, z: p.z - 4 });
+                    let counterC = 0;
+                    ctx.createOscillator = function () {
+                        counterC++;
+                        return orig();
+                    };
+                    r.removeArchitecture(geode2);
+                    out.disabledSymphonyStaysSilent = counterC === 0;
+                    r.state.symphony.enabled = true;
+
+                    ctx.createOscillator = orig;
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6a6V2Results && !wave6a6V2Results.error) {
+                check("Welle 6.A6 V2: _playArchitectureFarewellPing existiert", wave6a6V2Results.hasFarewellPing);
+                check(
+                    "Welle 6.A6 V2: removeArchitecture ruft _playArchitectureFarewellPing",
+                    wave6a6V2Results.removeIntegratesPing
+                );
+                check("Welle 6.A6 V2: WORLD_EFFECT_THRESHOLDS.resonance_mild lesbar", wave6a6V2Results.thresholdReadable);
+                check("Welle 6.A6 V2: Symphony initialisierbar im Headless", wave6a6V2Results.symphonyReady);
+                if (wave6a6V2Results.symphonyReady) {
+                    check("Welle 6.A6 V2: kristall_geode trägt resoniert ≥ mild-Threshold", wave6a6V2Results.geodeIsResonant);
+                    check("Welle 6.A6 V2: stein_block trägt resoniert < mild-Threshold (Negativ)", wave6a6V2Results.stoneIsNotResonant);
+                    check(
+                        "Welle 6.A6 V2: Geode-Abbau erzeugt mind. einen Oszillator (Vision §1.2)",
+                        wave6a6V2Results.geodeRemovalRingsOnce
+                    );
+                    check(
+                        "Welle 6.A6 V2: Stein-Abbau bleibt stumm (Vision-Disziplin)",
+                        wave6a6V2Results.stoneRemovalIsSilent
+                    );
+                    check(
+                        "Welle 6.A6 V2: deaktivierte Symphony unterdrückt auch resonanten Abbau-Ping",
+                        wave6a6V2Results.disabledSymphonyStaysSilent
+                    );
+                }
+            }
+
+            // ### Welle 6.C3 V2 — HUD spiegelt aktuelle Keybindings ###
+            // _updateBuildModeHud baut den Text aus state.keybindings über
+            // _formatBindingCode. setKeybinding + resetKeybindings triggern
+            // ein HUD-Refresh, sodass der Spieler nie veraltete Beschriftung
+            // sieht.
+            const wave6c3V2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    r.resetKeybindings();
+                    r.setHotbarSlot(0, "village");
+                    r.selectHotbarSlot(0);
+                    const hud = document.getElementById("build-mode-hud");
+                    out.hudVisible = hud && !hud.hidden;
+                    const textDefault = hud ? hud.textContent : "";
+                    out.defaultMentionsConfirmBuild = /F/.test(textDefault);
+                    out.defaultMentionsPlacePretty = /Rechte Maustaste/.test(textDefault);
+                    out.defaultMentionsBreakPretty = /Linke Maustaste/.test(textDefault);
+
+                    // Rebind „place" → KeyB. setKeybinding muss HUD aktualisieren.
+                    r.setKeybinding("place", "KeyB");
+                    const textAfter = hud ? hud.textContent : "";
+                    out.afterRebindContainsB = /\bB\b/.test(textAfter);
+                    out.afterRebindDropsOldLabel = !/Rechte Maustaste/.test(textAfter);
+
+                    // Reset wirkt auch auf HUD.
+                    r.resetKeybindings();
+                    const textReset = hud ? hud.textContent : "";
+                    out.afterResetMentionsRMB = /Rechte Maustaste/.test(textReset);
+
+                    r._clearBuildMode();
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6c3V2Results && !wave6c3V2Results.error) {
+                check("Welle 6.C3 V2: HUD sichtbar im Bau-Modus", wave6c3V2Results.hudVisible);
+                check(
+                    "Welle 6.C3 V2: Default-HUD enthält 'F' (confirmBuild)",
+                    wave6c3V2Results.defaultMentionsConfirmBuild
+                );
+                check(
+                    "Welle 6.C3 V2: Default-HUD enthält 'Rechte Maustaste' (place)",
+                    wave6c3V2Results.defaultMentionsPlacePretty
+                );
+                check(
+                    "Welle 6.C3 V2: Default-HUD enthält 'Linke Maustaste' (break)",
+                    wave6c3V2Results.defaultMentionsBreakPretty
+                );
+                check(
+                    "Welle 6.C3 V2: setKeybinding(place→KeyB) reflektiert sich im HUD-Text",
+                    wave6c3V2Results.afterRebindContainsB
+                );
+                check(
+                    "Welle 6.C3 V2: HUD-Text verliert das alte Label nach Rebind",
+                    wave6c3V2Results.afterRebindDropsOldLabel
+                );
+                check(
+                    "Welle 6.C3 V2: resetKeybindings stellt HUD-Default wieder her",
+                    wave6c3V2Results.afterResetMentionsRMB
+                );
+            }
+
             // ### Welle 6.C3 — Tastenbelegung (Keybindings) ###
             // Sechs Aktionen rebindable: break, place, confirmBuild, inventory,
             // cancelBuild, jump. Default-Map ist Minecraft-Konvention. Konflikt-
