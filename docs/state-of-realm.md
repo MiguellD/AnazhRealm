@@ -1,4 +1,8 @@
-# Zustand des Realm — Stand: 14.05.2026 (V7.98, Parser-Robustheit für lokale Reasoning-Models live — Schöpfer-Browser-Test V7.97 zeigte „Leere Antwort" bei lokalem Ollama. Vier-Schicht-Parser: `<think>` strippen, Markdown-Fence, JSON-Object, Plain-Text-Fallback. Token-Limit 400→800. Welle 6.H V2 bleibt 14/14 vollständig.)
+# Zustand des Realm — Stand: 14.05.2026 (V7.98)
+
+**Welle 6.H V2 vollendet (14/14 Sub-Phasen)** — Kreaturen sind jetzt vollwertige Co-Schöpfer-Wesen mit 9 Identitäts-Schichten (Body, Specs, Equipped, Boosts, Tasks, Memory+Persistenz, Konversation via @-Adresse, Proaktivität, Welt-Aktion-Vorschläge mit Sandbox). **LLM-Provider-System maximal robust nach 5-Versionen-Iteration (V7.94-V7.98)** — jedes Ollama-Setup funktioniert: lokal, gehostet, Cloud, Reasoning-Models, lokale 7B-Modelle. CORS-Lösung via save-server-Proxy, Parser mit Plain-Text-Fallback.
+
+Session-Bilanz: V7.78 → V7.98, **175 Commits**, **1597 Playtest-Invarianten grün**, Welle 6.H V2 von 0 auf 14/14, plus die LLM-Robustheit-Welle als wichtige Begleit-Schicht.
 
 Dieses Dokument ist das gemeinsame Gedächtnis für eine künftige Iteration. Es kondensiert (a) die Vision aus den vier Testamenten, (b) den historischen Weg, (c) den aktuellen Code-Stand, (d) den nächsten Plan und (e) die Learnings aus der bisherigen Session.
 

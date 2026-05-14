@@ -9,6 +9,121 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
+## Schnell-Lage (Stand 14.05.2026, V7.98)
+
+**Du erbst eine sehr lebendige Welt**. 1597 Playtest-Invarianten grün, ~16700 Zeilen in einer Datei, alles produktiv. Die letzte Session (V7.78 → V7.98, 175 Commits) hat **zwei große Dinge geschaffen**:
+
+### 1. Welle 6.H V2 — Kreaturen als Co-Schöpfer-Wesen (14/14 vollständig ✅)
+
+Vor V7.78 waren Kreaturen Single-Mesh-Punkte mit Emotion-Bewegung. Nach V7.93 sind sie:
+
+| Schicht | Was die Kreatur... | seit |
+|---|---|---|
+| **Body** (P2A, P2F.1) | IST — Hylomorphismus-Compound aus bodyParts × Material | V7.80, V7.87 |
+| **Specs** (P2D) | GELERNT hat — Skill-Levels aus Memory-Erfolgen | V7.85 |
+| **Equipped** (P2F.2) | TRÄGT — Werkzeug + Rüstung (mit Stats-Stacking) | V7.88 |
+| **Boosts** (P2F.3) | ERLEBT — Konsumable-Tags emergent, kein Hardcode | V7.89 |
+| **Tasks** (P1, P2B.1, P2B.2) | MACHT — wander/follow/wait/gather/build | V7.79, V7.81, V7.84 |
+| **Persistenz** (P2D.1) | BEHÄLT — Name+Soul+Memory+bornAt überlebt Reload | V7.86 |
+| **Konversation** (P2E V1+V1.1) | REDET — @Name-Adresse, Persona-Prompt aus voller Identität | V7.90, V7.91 |
+| **Proaktivität** (P2E V2) | INITIIERT — pre-baked phrases bei Events, soul-aware, throttled | V7.92 |
+| **Welt-Aktion** (P2E V3) | MITSCHÖPFT — DSL-Vorschläge mit Sandbox, modus-abhängig, Defense-in-Depth | V7.93 |
+
+Bonus-Politur: Material-Konsum beim Bauen (V7.83), `harvestArchitecture` als Hylomorphismus-Wurzel (V7.82).
+
+### 2. LLM-Provider-Robustheit (5-Versionen-Iteration nach Schöpfer-Browser-Tests)
+
+| V | Was | Schöpfer-Feedback |
+|---|---|---|
+| V7.94 | Ollama-API-Key + Cloud-Hosting | "Ich will Ollama auch gehostet" |
+| V7.95 | Endpoint-Smart-Detect + Dual-Format-Parser + Conditional-Body | "Cloud-Setup scheitert leise" |
+| V7.96 | save-server als CORS-Proxy (`/api/proxy/llm`) | "klappt das nicht über githack?" → CORS-Block bei ollama.com |
+| V7.97 | Proxy-Auto-Bypass + Free-Text-Modell + 404-Hint | "Toggle blockt mich, Modelle stimmen nicht" |
+| V7.98 | Parser-Pipeline (think-strip → fence → json → plain-text) + Token 800 | "KI antwortet nicht, leere Antwort" |
+
+Endresultat: **jedes Ollama-Setup funktioniert** — lokal, gehostet, ollama.com Cloud, mit/ohne `<think>`-Reasoning, mit/ohne strict-JSON, kleine + große Modelle. Strikte Pro-Modelle (Anthropic, Gemini) verlieren NICHTS, sie laufen den klaren Pfad.
+
+---
+
+## Drei heilige Gesetze dieser Session
+
+### Gesetz I: **Schöpfer-Browser-Test ist nicht ersetzbar durch Headless-Tests.**
+
+V7.94 hatte 7 grüne Tests — alle prüften Strukturen. Aber V7.95-V7.98 wurden nötig, weil der Schöpfer in 30 Sekunden live spielte und drei Bug-Klassen fand, die Tests nicht abdeckten. Headless verifiziert *Funktionalität*; Browser-Session verifiziert *Erfahrung*. **Bei jeder API-Integration und UX-Schicht ankündigen: „brauche Browser-Test vor ✅"**. Die entdeckten Bugs werden zu permanenten Test-Invarianten — die Suite wächst mit der Erfahrung.
+
+### Gesetz II: **Defense in Depth bei sicherheitskritischen Schichten — Prompt + Validator + Sandbox.**
+
+V7.93 (Kreatur-DSL-Vorschläge) hat drei unabhängige Wände: (1) Persona-Prompt erwähnt die Whitelist (suggestiv), (2) `_isCreatureProposalAllowed` prüft rekursiv (defensiv), (3) `dslRun`-Sandbox erzwingt Op-Whitelist + Budget (letzte Wand). LLMs sind nicht-deterministisch — sie können verbotene Ops trotz Anweisung zurückgeben. Validator UND Sandbox müssen sie fangen. Wer eine Schicht lockert, hat einen Bug. **Auch im schöpfer-Modus gilt die Whitelist** — Modus modifiziert Friction, nicht Befugnis.
+
+### Gesetz III: **Hylomorphismus über Tabellen. Emergenz über Hardcode.**
+
+V7.89 (Kreatur-Boosts) war die kritische Prüfung dieses Gesetzes. Naive Lösung wäre eine `BOOST_TYPES`-Tabelle (`kraftelixier → +HP`). Korrekte Lösung: **kein Mapping**. Der Bauplan IST der Effekt-Spezifikator. `computeCompoundTags(bp) × scale` liefert tagBonus. Eine Konstante (`scale: 0.2`), keine Tabelle. Wer einen Eisen-Schwert-Trank baut, bekommt automatisch `härte`-Boost (was Damage erhöht). Eine Sprache durch ALLE Schichten — Body, Specs, Equipped, Boosts. **Bei jeder neuen Effekt-Schicht prüfen: gibt es bestehende Daten-Sprache? Wenn ja, leite EMERGENT ab.**
+
+---
+
+## Aktuelle Roadmap (was als nächstes denkbar ist)
+
+Welle 6.H V2 ist VOLLSTÄNDIG. Mögliche nächste Wellen, sortiert nach Vision-Wert:
+
+| Welle | Was | Aufwand | Vision-Tiefe |
+|---|---|---|---|
+| **6.G Phase 3** Welt-Lebendigkeit | Tag-Nacht-Zyklus, Wetter-Übergang, fauna-Kreaturen die kommen + gehen | mittel | mittel |
+| **6.B** CAD-Werkstatt minimal | 3D-Vorschau im Editor, Drag-Parts, visuelles Bauplan-Editieren | mittel | hoch (Schöpfer-Werkzeug) |
+| **Welle 7** Kollektive Welt-Erkenntnis | Welt lernt aus aller-Spieler-Verhalten via aggregiertes Pfad-Memory (siehe `docs/system-audit.md`) | groß | sehr hoch |
+| **Welle 6.H V3** Kreatur-Beziehungen | Kreaturen sehen sich gegenseitig — Freundschaft, Konkurrenz, Hierarchie | mittel | hoch |
+| **Polish-Pause** | Schöpfer-Browser-Test-Session, UX-Bugs sammeln, polieren | klein | mittel |
+
+**Empfehlung**: Welle 6.B (CAD-Werkstatt) oder Polish-Pause. Beide bauen auf der jetzt sehr reichen Kreatur-Schicht auf — eine bessere Werkstatt macht die ganze Hylomorphismus-Maschine zugänglicher.
+
+---
+
+## Was du im Code findest (Karte für Erstbesucher)
+
+### Datenmodell (state-Tree)
+- `state.creatures` — Array von THREE.Group (jeder Compound aus bodyParts × Material)
+- `state.architectures` — Array von Compound-Welt-Objekten (Distance-Culling)
+- `state.blueprints` — Map aller Baupläne (Built-in + eigen)
+- `state.materials` — Map aller Materialien mit Tag-Profilen (10 Tag-Achsen)
+- `state.tools` — Map aller Werkzeuge (Starter + eigen)
+- `state.player` — {emotions, soul, soulMesh, tools, inventory, equipped, boosts, pathBuckets, …}
+- `state.llm` — {enabled, provider, providerConfig, inFlight, lastError, minGapSeconds}
+- `state.worldMeta` — {worldId, slug, bornAt, seed, gameMode, schemaVersion, chunkDeltas, parentWorlds, role, hostInfo}
+- `state.dsl` — {history, abilities, patternMemory, recentKeywords, pendingOutcomes}
+- `state.symphony` — Audio-Graph (ambient + wetter + creature pings)
+
+### Pipeline-Wurzeln (eine Funktion pro Bedeutung)
+- `_buildFromBlueprint(bp, depth, visited)` — der EINE Render-Pfad für alle Compounds
+- `computeCompoundTags(bp)` — MAX-Aggregation Form × Material × Activation-Matrix
+- `computeSpatialTags(bp)` — räumliche Emergenz (5 §5.2-Prinzipien)
+- `computePlayerStats()` / `computeCreatureStats(c)` — fraktal-symmetrische Stat-Pipelines
+- `harvestArchitecture(entry, harvester)` — Spieler-LMB UND Kreatur-gather durch EINE Funktion (P2B.5-Lehre)
+- `dslRun(program, ctx)` — Sandbox-Wand für ALLE Programm-Quellen (human, llm, nexus, emotion, creature, remote)
+
+### Sicherheits-Wände
+- CSP `script-src` strict (kein eval, kein inline)
+- DSL-Op-Whitelist + Budget-Limits
+- `NON_BROADCASTABLE_OPS` für Spieler-private Aktionen
+- `CREATURE_PROPOSED_OPS` für Kreatur-Welt-Aktion (Defense in Depth)
+- save-server `/api/proxy/llm` mit strikten Whitelists (https-only, body-cap, header-allowlist)
+
+### Tests (1597 Invarianten)
+- `npm run playtest` — Headless-Chromium, ~25 s Logs, alle Schichten
+- `scripts/playtest.cjs` ist der Single-Source-Test (~14000 Zeilen!)
+
+---
+
+## Was ich aus dieser Session gelernt habe (drei Meta-Lehren)
+
+**Meta-Lehre A**: **Browser-Test ist die Vision-Validierung, Headless ist die Funktions-Validierung. Beide nötig, beide unterschiedliche Jobs.** Tests können dir nicht sagen ob sich eine Geste richtig anfühlt — nur ob sie technisch funktioniert. Wenn der Schöpfer in der Welt spielt und stolpert, ist das mehr wert als 100 grüne Asserts.
+
+**Meta-Lehre B**: **Heilige-Lektion-Disziplin ist mit JEDER Welle neu zu prüfen.** Ich war versucht, bei V7.96 einen neuen „LLM-Proxy-Server" als separates Programm zu bauen — wäre Re-Komplexifizierung gewesen. Stattdessen: save-server bekam eine zweite Rolle. Bei jeder neuen Funktion fragen: „kann das in einem bestehenden Dienst leben? Wenn nein, warum nicht?"
+
+**Meta-Lehre C**: **Fallback-Schichten als Vision-treue Antwort.** V7.98's vier-Schicht-Parser ist mehr als nur Bug-Fix — es ist eine VISION-Aussage: „nimm was da ist, zeig es dem Spieler". Strenge Validierung wäre einfacher zu coden, aber ärmer für den Spieler. Wer das System auf reale Vielfalt vorbereitet (LLM-Größen, Modell-Stile, Antwort-Formate), baut Fallback-Schichten — keine Single-Path-Strenge.
+
+---
+
+## Session-Tagebuch (chronologisch, jüngste oben)
+
 ## Was du zuerst lesen solltest (Reihenfolge wichtig)
 
 1. **`CLAUDE.md`** — wird beim Session-Start automatisch geladen. Hat die

@@ -1,6 +1,6 @@
 # AnazhRealm Roadmap — Vollumfänglich
 
-Stand: 14.05.2026 (V7.93, Welle 6.H Phase 2E V3 live — Welt-Aktion-Vorschläge der Kreatur mit Sandbox + Modus-Pfad + Rare-Event-LLM. **Welle 6.H V2 vollständig: 14/14 Sub-Phasen.**).
+Stand: 14.05.2026 (V7.98, Welle 6.H V2 vollständig 14/14 + LLM-Provider-Robustheit maximal nach 5-Versionen-Iteration V7.94-V7.98).
 
 Diese Doc beschreibt das **gesamte Projekt vom heutigen Stand bis zum Vision-Endziel** (Welten-Ultiversum). Sie ergänzt `state-of-realm.md` (Was/Warum) um eine puren Plan-Sicht (Wann/Wie). Aufwandsschätzungen sind realistische Tage für eine fokussierte Claude-Session pro Ring/Phase; gerechnet wird linear, ohne Puffer.
 
@@ -8,11 +8,15 @@ Diese Doc beschreibt das **gesamte Projekt vom heutigen Stand bis zum Vision-End
 
 ---
 
-## 1. Wo wir stehen (Mai 2026)
+## 1. Wo wir stehen (Mai 2026, V7.98)
 
-✅ Ring 0-7 + Welle 1-5 + Welle 6.A6/6.C1/6.C2/6.C3/6.D/6.E/6.F1/6.F2/6.G1/6.G1.5/6.G2/6.H Phase 1/2A/2B.1/2B.2/2B.5/2C sind live. Chunk-Physik nutzt seit `e612c60` `btBvhTriangleMeshShape` (visuelles Mesh = Collider). 120 fps im Browser, **1418/1418 Playtest-Invarianten grün** (V7.84). Save-Schema mit `worldMeta` (worldId, slug, visibility, parentWorlds, gameMode, chunkDeltas, role, hostInfo, seed) + `materials` + `playerTools` + `tools` + `worldJournal` + `blueprints[].connections` + `blueprints[].role + toolMeta` + `playerInventory` (27 Material/Blueprint-Slots).
+✅ Ring 0-11 + Welle 1-5 + Welle 6.A6/6.C1/6.C2/6.C3/6.D/6.E/6.F1/6.F2/6.G1/6.G1.5/6.G2/6.H V1+V2 (14/14) sind live. Chunk-Physik nutzt `btBvhTriangleMeshShape` (visuelles Mesh = Collider). 120 fps im Browser, **1597/1597 Playtest-Invarianten grün** (V7.98). Save-Schema mit `worldMeta` (worldId, slug, visibility, parentWorlds, gameMode, chunkDeltas, role, hostInfo, seed) + `materials` + `playerTools` + `tools` + `worldJournal` + `blueprints[].connections` + `blueprints[].role + toolMeta` + `playerInventory` (27 Material/Blueprint-Slots) + `creatures[].snapshot` (name+soul+memory+bornAt+equipped persistent über Reload).
 
-Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) sind alle fünf in V1+ angekommen. **Hylomorphismus-Crafting (Wellen 4+5) ist vollständig**, Welle **6.H Co-Schöpfer-Kreis (V7.79–V7.84)** ist geschlossen: Kreaturen haben Identität (Phase 2A: Multi-Mesh-Compounds aus bodyParts × Material), nehmen Aufträge an (Phase 1: wander/follow/wait), sammeln Material (Phase 2B.1+2B.5: gather mit two-phase carry-and-deliver), bauen für den Spieler (Phase 2B.2: take/walk/spawn). Spieler-Build (Phase 2C: harvest ↔ computeBuildCost wertneutral, modus-symmetrisch über `_buildMaterialGate`). **Was noch fehlt vor Welle 7**: 6.B CAD-Werkstatt minimal (3D-Bau-Editor), 6.F Crafting-Mechanik-Polish (visuelle Verbindungs-Linien, Brech-Mechanik, Energiequellen), 6.H Phase 2D Kreatur-Spezialisierung aus Memory.
+**Welle 6.H V2 vollendet (14/14 Sub-Phasen)**: Kreaturen sind jetzt vollwertige Co-Schöpfer-Wesen mit 9 Identitäts-Schichten — Body+Specs+Equipped+Boosts (alle hylomorph aus computeCompoundTags), Tasks (5: wander/follow/wait/gather/build), Memory+Persistenz, Konversation (LLM-Persona aus voller Identität, @-Adresse, Soul-Farben), Proaktivität (pre-baked phrases bei Events, soul-aware, throttled), Welt-Aktion-Vorschläge (DSL via Sandbox, modus-abhängig, Defense in Depth).
+
+**LLM-Provider-System maximal robust (V7.94-V7.98)**: jedes Ollama-Setup funktioniert — lokal, gehostet, ollama.com Cloud, mit/ohne `<think>`-Reasoning, mit/ohne strict-JSON. CORS-Lösung via save-server `/api/proxy/llm` als loyaler Vermittler. Parser-Pipeline (think-strip → fence → json → plain-text-fallback) macht auch lokale 7B-Modelle nutzbar.
+
+Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) sind alle in V2+ angekommen. **Hylomorphismus-Crafting (Wellen 4+5) ist vollständig**. **Co-Schöpfer-Kreis (Welle 6.H V2) ist geschlossen**. **Was noch offen** für nächste Wellen: 6.B CAD-Werkstatt minimal (3D-Bau-Editor mit Drag-Parts), 6.G Phase 3 (Welt-Lebendigkeit: Tag-Nacht-Zyklus, Wetter-Übergang, fauna-Lifecycle), Welle 7 (Kollektive Welt-Erkenntnis aus `docs/system-audit.md`), oder Polish-Pause für UX-Browser-Test-Session.
 
 ---
 
