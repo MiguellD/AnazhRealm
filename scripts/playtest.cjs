@@ -12453,6 +12453,129 @@ function startSaveServer() {
                 check(`V7.94 Ollama-Key: evaluate-Fehler — ${ollamaKeyResults.error}`, false);
             }
 
+            // ### V7.95 — Ollama Cloud-Kompatibilität (Endpoint-Detect + Dual-Format-Parse) ###
+            //
+            // Schöpfer-Browser-Test V7.94: Ollama-Cloud-Setup scheiterte still.
+            // Drei Bug-Quellen entdeckt: (1) /api/chat wurde immer angehängt
+            // auch wenn URL schon Pfad hatte; (2) extractText las nur Ollama-
+            // native Format, OpenAI-kompat lieferte null; (3) options.num_predict
+            // ist Ollama-spezifisch, OpenAI lehnt unbekannte Felder ab.
+            const v795Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    const defs = r.llmProviderDefs();
+                    const ol = defs.ollama;
+
+                    // 1. Endpoint smart-detect — Basis-URL ohne Pfad → /api/chat angehängt
+                    out.epAppendsForBase = ol.endpoint("m", "k", { endpoint: "http://localhost:11434" }) ===
+                        "http://localhost:11434/api/chat";
+                    out.epAppendsForCloud = ol.endpoint("m", "k", { endpoint: "https://ollama.com" }) ===
+                        "https://ollama.com/api/chat";
+
+                    // 2. Endpoint smart-detect — URL mit /api/chat → DIREKT verwendet (kein /api/chat/api/chat)
+                    out.epRespectsApiPath = ol.endpoint("m", "k", {
+                        endpoint: "https://ollama.com/api/chat",
+                    }) === "https://ollama.com/api/chat";
+
+                    // 3. Endpoint smart-detect — URL mit /v1/chat/completions → DIREKT (OpenAI-kompat)
+                    out.epRespectsV1Path = ol.endpoint("m", "k", {
+                        endpoint: "https://provider.cloud/v1/chat/completions",
+                    }) === "https://provider.cloud/v1/chat/completions";
+
+                    // 4. Endpoint trim — Trailing-Slash entfernt
+                    out.epTrimsTrailingSlash = ol.endpoint("m", "k", {
+                        endpoint: "https://ollama.com/",
+                    }) === "https://ollama.com/api/chat";
+
+                    // 5. extractText — Ollama-native Format
+                    out.extractsOllamaNative = ol.extractText({ message: { content: "Hallo Welt" } }) === "Hallo Welt";
+
+                    // 6. extractText — OpenAI-kompat Format
+                    out.extractsOpenAi = ol.extractText({
+                        choices: [{ message: { content: "OpenAI-Antwort" } }],
+                    }) === "OpenAI-Antwort";
+
+                    // 7. extractText — Ollama-generate-Pfad (älter)
+                    out.extractsOllamaGenerate = ol.extractText({ response: "Generate-Antwort" }) === "Generate-Antwort";
+
+                    // 8. extractText — leerer/null Input → leerer String
+                    out.extractsEmpty = ol.extractText(null) === "" && ol.extractText({}) === "";
+
+                    // 9. buildBody — Ollama-Native (Basis-URL): hat options.num_predict
+                    const bodyNative = ol.buildBody("llama3.1", "sys", "user", {
+                        endpoint: "http://localhost:11434",
+                    });
+                    out.bodyNativeHasOptions = bodyNative.options && bodyNative.options.num_predict === 400;
+                    out.bodyNativeNoMaxTokens = bodyNative.max_tokens === undefined;
+
+                    // 10. buildBody — OpenAI-kompat (/v1/): hat max_tokens, KEIN options
+                    const bodyOpenAi = ol.buildBody("gpt-oss", "sys", "user", {
+                        endpoint: "https://provider/v1/chat/completions",
+                    });
+                    out.bodyOpenAiHasMaxTokens = bodyOpenAi.max_tokens === 400;
+                    out.bodyOpenAiNoOptions = bodyOpenAi.options === undefined;
+
+                    // 11. buildBody — beide haben model + messages + stream:false
+                    out.bodyHasCommon = bodyNative.model === "llama3.1" &&
+                        Array.isArray(bodyNative.messages) &&
+                        bodyNative.stream === false &&
+                        bodyOpenAi.messages.length === 2;
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (v795Results && !v795Results.error) {
+                check(
+                    "V7.95 Ollama-Cloud: Endpoint hängt /api/chat an wenn Basis-URL ohne Pfad (localhost + ollama.com)",
+                    v795Results.epAppendsForBase && v795Results.epAppendsForCloud
+                );
+                check(
+                    "V7.95 Ollama-Cloud: Endpoint respektiert volle URL mit /api/chat (kein doppeltes /api/chat/api/chat)",
+                    v795Results.epRespectsApiPath
+                );
+                check(
+                    "V7.95 Ollama-Cloud: Endpoint respektiert OpenAI-kompat-URL mit /v1/chat/completions",
+                    v795Results.epRespectsV1Path
+                );
+                check(
+                    "V7.95 Ollama-Cloud: Endpoint trimt trailing-slash sauber",
+                    v795Results.epTrimsTrailingSlash
+                );
+                check(
+                    "V7.95 Ollama-Cloud: extractText liest Ollama-native Format (json.message.content)",
+                    v795Results.extractsOllamaNative
+                );
+                check(
+                    "V7.95 Ollama-Cloud: extractText liest OpenAI-kompat Format (json.choices[0].message.content)",
+                    v795Results.extractsOpenAi
+                );
+                check(
+                    "V7.95 Ollama-Cloud: extractText liest älteres Ollama-generate Format (json.response)",
+                    v795Results.extractsOllamaGenerate
+                );
+                check(
+                    "V7.95 Ollama-Cloud: extractText defensive bei null/leeren Input → '' (kein Crash)",
+                    v795Results.extractsEmpty
+                );
+                check(
+                    "V7.95 Ollama-Cloud: buildBody Ollama-Native hat options.num_predict (kein max_tokens)",
+                    v795Results.bodyNativeHasOptions && v795Results.bodyNativeNoMaxTokens
+                );
+                check(
+                    "V7.95 Ollama-Cloud: buildBody OpenAI-kompat hat max_tokens (KEIN options-Feld, sonst Reject bei manchen Providern)",
+                    v795Results.bodyOpenAiHasMaxTokens && v795Results.bodyOpenAiNoOptions
+                );
+                check(
+                    "V7.95 Ollama-Cloud: buildBody beide Formate haben model + messages + stream:false",
+                    v795Results.bodyHasCommon
+                );
+            } else if (v795Results && v795Results.error) {
+                check(`V7.95 Ollama-Cloud: evaluate-Fehler — ${v795Results.error}`, false);
+            }
+
             // ### Ring 3 – Player-Emotionen → Welt ###
             const ring3Results = await page
                 .evaluate(() => {

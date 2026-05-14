@@ -2690,7 +2690,19 @@ class AnazhRealm {
                     { id: "mistral", label: "Mistral 7B" },
                 ],
                 requiresKey: false,
-                endpoint: (_model, _apiKey, cfg) => `${(cfg && cfg.endpoint) || "http://localhost:11434"}/api/chat`,
+                // V7.95 — Endpoint respektiert volle URL. Wenn der Spieler
+                // eine URL mit /api/ oder /v1/ Pfad einträgt (z.B.
+                // https://ollama.com/api/chat oder https://provider/v1/chat/completions),
+                // wird sie DIREKT verwendet. Sonst wird /api/chat angehängt
+                // (Ollama-Native-Default). So funktionieren beide Welten:
+                // klassisches Ollama + OpenAI-kompatible Cloud-Provider.
+                endpoint: (_model, _apiKey, cfg) => {
+                    const base = ((cfg && cfg.endpoint) || "http://localhost:11434").trim().replace(/\/$/, "");
+                    if (/\/(api|v1)\//.test(base) || /\/(api|v1)\/[^/]+$/.test(base)) {
+                        return base;
+                    }
+                    return `${base}/api/chat`;
+                },
                 // V7.94 — Bearer-Token wird mitgeschickt, falls ein API-Key
                 // gesetzt ist (gehosteter Ollama, ollama.com Turbo, Reverse-
                 // Proxy mit Auth). Lokales `ollama serve` braucht keinen Key
@@ -2702,16 +2714,43 @@ class AnazhRealm {
                     }
                     return headers;
                 },
-                buildBody: (model, system, userContent) => ({
-                    model,
-                    stream: false,
-                    messages: [
-                        { role: "system", content: system },
-                        { role: "user", content: userContent },
-                    ],
-                    options: { num_predict: 400, temperature: 0.7 },
-                }),
-                extractText: (json) => (json && json.message && json.message.content) || "",
+                // V7.95 — Body bleibt OpenAI-kompatibel (model + messages +
+                // stream:false). Ollama-spezifisches `options.num_predict`
+                // wird OMITTED bei OpenAI-kompat-Endpoints (manche Server
+                // lehnen unbekannte Felder ab). Heuristik: wenn endpoint
+                // /v1/chat/completions enthält → OpenAI-kompat → schlanker Body.
+                buildBody: (model, system, userContent, cfg) => {
+                    const body = {
+                        model,
+                        stream: false,
+                        messages: [
+                            { role: "system", content: system },
+                            { role: "user", content: userContent },
+                        ],
+                    };
+                    const ep = (cfg && cfg.endpoint) || "";
+                    const isOpenAiCompat = /\/v1\//.test(ep);
+                    if (!isOpenAiCompat) {
+                        body.options = { num_predict: 400, temperature: 0.7 };
+                    } else {
+                        body.max_tokens = 400;
+                        body.temperature = 0.7;
+                    }
+                    return body;
+                },
+                // V7.95 — extractText versucht zuerst Ollama-native
+                // (json.message.content), dann OpenAI-kompat
+                // (json.choices[0].message.content), dann älterer Ollama-
+                // generate-Pfad (json.response). So funktioniert beides.
+                extractText: (json) => {
+                    if (!json) return "";
+                    if (json.message && typeof json.message.content === "string") return json.message.content;
+                    if (Array.isArray(json.choices) && json.choices[0] && json.choices[0].message) {
+                        return json.choices[0].message.content || "";
+                    }
+                    if (typeof json.response === "string") return json.response;
+                    return "";
+                },
                 buildUserContent,
             },
         };
@@ -2991,7 +3030,9 @@ class AnazhRealm {
             const userContent = def.buildUserContent(system, this.llmBuildContext(), this.llmBuildFewShot(), userText);
             const url = def.endpoint(cfg.model, cfg.apiKey, cfg);
             const headers = def.buildHeaders(cfg.apiKey, cfg);
-            const body = def.buildBody(cfg.model, system, userContent);
+            // V7.95 — cfg als 4. Argument für Provider die OpenAI-kompat-
+            // Detection brauchen (Ollama Cloud). Andere Provider ignorieren es.
+            const body = def.buildBody(cfg.model, system, userContent, cfg);
             const res = await fetch(url, {
                 method: "POST",
                 headers,

@@ -360,6 +360,49 @@ Hylomorphismus-System wie Materialien und Bauwerke.
   playerInventory in buildStateSnapshot. 127 Invarianten für 6.C1
   + Drag-System → 1153 total.
 
+### V7.95 — Ollama-Cloud-Kompatibilität nach Schöpfer-Browser-Test (14.05.2026)
+
+**Schöpfer testete V7.94 mit echtem Cloud-API-Key — drei Bug-Quellen entdeckt**:
+
+**Bug 1 — Endpoint-Doppelpfad**:
+- V7.94: `endpoint(...)` hängte bedingungslos `/api/chat` an
+- Spieler trägt `https://ollama.com/api/chat` ein → wird `…/api/chat/api/chat` (404)
+- V7.95: Smart-Detect via `/\/(api|v1)\//.test(base)` — wenn Pfad da, URL direkt
+- Plus `trim() + replace(/\/$/, "")` gegen Whitespace + trailing-slash
+
+**Bug 2 — extractText nur Ollama-Native**:
+- V7.94: `(json && json.message && json.message.content) || ""`
+- Cloud-Provider mit OpenAI-Kompat liefern `{choices: [{message: {content}}]}`
+- → mein Code gab leeren String zurück, das LLM schien zu schweigen
+- V7.95: dual-format Parser (Ollama-Native + OpenAI-Kompat + Ollama-Generate als Fallbacks)
+
+**Bug 3 — Body-Field-Inkompatibilität**:
+- V7.94: `options: {num_predict: 400, temperature: 0.7}` (Ollama-spezifisch)
+- OpenAI-kompat-Server lehnen unbekannte Top-Level-Felder ab (HTTP 400)
+- V7.95: `buildBody(model, sys, user, cfg)` ist cfg-aware
+  - `/v1/`-Pfad → `max_tokens` + `temperature` (OpenAI-Stil)
+  - sonst → `options.num_predict` + `options.temperature` (Ollama-Native)
+
+**Call-Site-Update**: `def.buildBody(cfg.model, system, userContent, cfg)` —
+alle 4 Provider akzeptieren das 4. Argument silently (Backward-Compat).
+
+**UI-Hint erweitert**:
+- Endpoint-Placeholder zeigt beide Möglichkeiten
+- Zusätzlicher drawer-hint erklärt Auto-Append vs. direkte URL
+
+**11 permanente Tests grün. 1565 → 1576/1576.**
+
+**Lehre 227**: Provider-Name ist KEIN Format-Anker. Format gehört zum
+Endpoint-Pfad. Dual-Format-Provider (Ollama, vLLM, Together) sind häufig.
+
+**Lehre 228 zentral**: Schöpfer-Browser-Test ist nicht ersetzbar. V7.94's
+7 Tests waren grün, aber echte Cloud-Konversation scheiterte. Tests
+prüften Strukturen, nicht End-to-End-Format-Symmetrie zwischen
+Request + Response. **Bei API-Integrationen: Schöpfer-Test VOR ✅-Stempel.**
+
+**Lehre 229**: Conditional Body-Felder > Provider-Splitting. Eine
+Eintrags-Quelle + cfg-aware Builder ist wartungsärmer als doppelte UI.
+
 ### V7.94 — Ollama-API-Key + Cloud-Hosting (14.05.2026)
 
 **Schöpfer-Wunsch**: Ollama auch gehostet, nicht nur localhost.
