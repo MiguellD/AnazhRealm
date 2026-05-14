@@ -360,6 +360,35 @@ Hylomorphismus-System wie Materialien und Bauwerke.
   playerInventory in buildStateSnapshot. 127 Invarianten für 6.C1
   + Drag-System → 1153 total.
 
+### V7.94 — Ollama-API-Key + Cloud-Hosting (14.05.2026)
+
+**Schöpfer-Wunsch**: Ollama auch gehostet, nicht nur localhost.
+
+**Architektur**: minimal-invasive Erweiterung — bestehende API-Verträge
+(requiresKey, endpoint, buildHeaders) bewahrt, nur Header-Builder erweitert.
+
+- `requiresKey: false` BLEIBT (lokal weiterhin ohne Key)
+- `buildHeaders(apiKey)` schickt `Authorization: Bearer <key>` NUR wenn Key gesetzt
+- `endpoint(model, apiKey, cfg)` respektiert `cfg.endpoint` (eigene URL)
+- CSP `connect-src` erhält `https:`-Wildcard für beliebige Cloud-URLs
+- UI Key-Row für ollama sichtbar mit "API-Key (optional)"-Placeholder
+- Provider-Label: "Ollama lokal (offline, kein Key)" → "Ollama (lokal oder gehostet)"
+
+**Setups die jetzt funktionieren**:
+- Lokal: `ollama serve` auf 127.0.0.1:11434 (unverändert, kein Key)
+- ollama.com Turbo: URL + API-Key
+- Eigener Reverse-Proxy mit Bearer-Auth
+- Cloud-Hoster (Modal, Replicate-mit-Ollama-Image, etc.)
+
+**7 Tests grün. 1558 → 1565/1565 invariants.**
+
+**Lehre 225**: bei API-Erweiterungen immer fragen "bricht das den Default-Pfad?".
+Wenn ja: Default unbroken halten, Erweiterung opt-in OBEN drauf.
+
+**Lehre 226**: CSP-Schichten sind unabhängig — connect-src weit +
+script-src strict ergibt akzeptable Sicherheit (ohne XSS-Pfad keine
+Exfiltration möglich).
+
 ### V7.93 — Welle 6.H Phase 2E V3 live (14.05.2026): Welt-Aktion-Vorschläge
 
 **Schöpfer-Wahl getroffen vor dem Bauen** — drei Achsen geklärt:

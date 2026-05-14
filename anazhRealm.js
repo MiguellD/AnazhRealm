@@ -2680,8 +2680,8 @@ class AnazhRealm {
                 buildUserContent,
             },
             ollama: {
-                label: "Ollama lokal (offline, kein Key)",
-                hint: "ollama.com installieren, dann `ollama pull llama3.1` + `ollama serve` in der Konsole.",
+                label: "Ollama (lokal oder gehostet)",
+                hint: "Lokal: `ollama serve` auf localhost:11434. Gehostet: eigene URL + optional Bearer-Token (für ollama.com Turbo, Reverse-Proxy mit Auth, Cloud-Hoster).",
                 keyPrefix: "",
                 models: [
                     { id: "llama3.1", label: "Llama 3.1 8B — Standard" },
@@ -2691,7 +2691,17 @@ class AnazhRealm {
                 ],
                 requiresKey: false,
                 endpoint: (_model, _apiKey, cfg) => `${(cfg && cfg.endpoint) || "http://localhost:11434"}/api/chat`,
-                buildHeaders: () => ({ "content-type": "application/json" }),
+                // V7.94 — Bearer-Token wird mitgeschickt, falls ein API-Key
+                // gesetzt ist (gehosteter Ollama, ollama.com Turbo, Reverse-
+                // Proxy mit Auth). Lokales `ollama serve` braucht keinen Key
+                // → ohne Key keine Authorization-Header (Backward-Compat).
+                buildHeaders: (apiKey) => {
+                    const headers = { "content-type": "application/json" };
+                    if (apiKey && apiKey.length > 0) {
+                        headers["authorization"] = `Bearer ${apiKey}`;
+                    }
+                    return headers;
+                },
                 buildBody: (model, system, userContent) => ({
                     model,
                     stream: false,
@@ -3464,9 +3474,18 @@ class AnazhRealm {
         const cfg = this.state.llm.providerConfig[this.state.llm.provider];
         if (keyInput) {
             keyInput.value = (cfg && cfg.apiKey) || "";
-            keyInput.placeholder = def.keyPrefix ? `${def.keyPrefix}…` : "API-Key";
+            // V7.94 — Ollama-spezifischer Placeholder weil der Key bei
+            // ollama optional ist (nur für gehostete Setups). Andere
+            // Provider zeigen ihren Key-Prefix als Placeholder.
+            if (this.state.llm.provider === "ollama") {
+                keyInput.placeholder = "API-Key (optional, nur für gehostete Setups)";
+            } else {
+                keyInput.placeholder = def.keyPrefix ? `${def.keyPrefix}…` : "API-Key";
+            }
         }
-        if (keyRow) keyRow.hidden = !def.requiresKey;
+        // V7.94 — Key-Feld bei Ollama auch sichtbar (optional). Für die
+        // anderen Provider unverändert: nur sichtbar wenn requiresKey.
+        if (keyRow) keyRow.hidden = !def.requiresKey && this.state.llm.provider !== "ollama";
         if (endpointRow) endpointRow.hidden = this.state.llm.provider !== "ollama";
         if (endpointInput) endpointInput.value = (cfg && cfg.endpoint) || "http://localhost:11434";
         if (hintEl) hintEl.textContent = def.hint || "";

@@ -12361,6 +12361,98 @@ function startSaveServer() {
                 );
             }
 
+            // ### Welle 6.H V7.94 — Ollama-API-Key (gehosteter Setup) ###
+            //
+            // Lokales Ollama braucht keinen Key. Gehostete Setups (ollama.com
+            // Turbo, Reverse-Proxy mit Auth, Cloud-Hoster) kommen mit Bearer-
+            // Token. buildHeaders schickt Authorization-Header NUR wenn Key
+            // gesetzt — Backward-Compat für lokale Spieler.
+            const ollamaKeyResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    const defs = r.llmProviderDefs();
+                    const ol = defs.ollama;
+                    out.providerExists = !!ol;
+                    out.requiresKeyFalse = ol && ol.requiresKey === false; // weiterhin OPTIONAL
+                    out.labelMentionsHosted = ol && /gehostet|Hosted/i.test(ol.label || "");
+                    out.hintMentionsBearer = ol && /Bearer|Token/i.test(ol.hint || "");
+
+                    // buildHeaders ohne Key → kein authorization-Header (lokal)
+                    const headersNoKey = ol.buildHeaders("", { apiKey: "" });
+                    out.noAuthWithoutKey = !headersNoKey.authorization && !headersNoKey.Authorization;
+                    out.contentTypePresent =
+                        headersNoKey["content-type"] === "application/json";
+
+                    // buildHeaders MIT Key → Bearer-Token
+                    const headersWithKey = ol.buildHeaders("sk-test-1234", { apiKey: "sk-test-1234" });
+                    out.bearerWithKey =
+                        headersWithKey.authorization === "Bearer sk-test-1234" ||
+                        headersWithKey.Authorization === "Bearer sk-test-1234";
+
+                    // Endpoint folgt cfg.endpoint (nicht hartkodiert localhost)
+                    const customEp = ol.endpoint("llama3.1", "key", { endpoint: "https://my-ollama.cloud:8443" });
+                    out.endpointRespectsCustom =
+                        customEp === "https://my-ollama.cloud:8443/api/chat";
+
+                    // CSP: connect-src enthält https: Wildcard für Cloud-Endpoints
+                    const meta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+                    const csp = meta ? meta.getAttribute("content") : "";
+                    // Match 'https:' als standalone Wert in connect-src (nicht
+                    // nur die spezifischen 'https://api.X.com'-Einträge).
+                    out.cspHasHttpsWildcard = /connect-src[^;]*\bhttps:\s/.test(csp);
+
+                    // UI: Key-Row ist auch für ollama sichtbar (V7.94)
+                    if (r.state.llm) r.state.llm.provider = "ollama";
+                    if (typeof r.llmRefreshProviderUI === "function") {
+                        r.llmRefreshProviderUI();
+                    }
+                    const keyRow = document.getElementById("llm-key-row");
+                    out.keyRowVisibleForOllama = !!(keyRow && !keyRow.hidden);
+                    const keyInput = document.getElementById("llm-key");
+                    out.placeholderMentionsOptional =
+                        !!(keyInput && /optional|gehostet/i.test(keyInput.placeholder || ""));
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (ollamaKeyResults && !ollamaKeyResults.error) {
+                check(
+                    "V7.94 Ollama-Key: Provider-Label nennt 'gehostet' + Hint nennt Bearer/Token",
+                    ollamaKeyResults.providerExists &&
+                        ollamaKeyResults.labelMentionsHosted &&
+                        ollamaKeyResults.hintMentionsBearer
+                );
+                check(
+                    "V7.94 Ollama-Key: requiresKey bleibt false (lokal weiterhin ohne Key)",
+                    ollamaKeyResults.requiresKeyFalse
+                );
+                check(
+                    "V7.94 Ollama-Key: buildHeaders OHNE Key → kein Authorization (Backward-Compat lokal)",
+                    ollamaKeyResults.noAuthWithoutKey && ollamaKeyResults.contentTypePresent
+                );
+                check(
+                    "V7.94 Ollama-Key: buildHeaders MIT Key → Authorization: Bearer <key>",
+                    ollamaKeyResults.bearerWithKey
+                );
+                check(
+                    "V7.94 Ollama-Key: endpoint respektiert cfg.endpoint (Custom-URL möglich, z.B. https://my-ollama.cloud)",
+                    ollamaKeyResults.endpointRespectsCustom
+                );
+                check(
+                    "V7.94 Ollama-Key: CSP connect-src enthält https: Wildcard (für gehostete Endpoints)",
+                    ollamaKeyResults.cspHasHttpsWildcard
+                );
+                check(
+                    "V7.94 Ollama-Key: UI Key-Row ist für ollama sichtbar (optional, mit Hinweis-Placeholder)",
+                    ollamaKeyResults.keyRowVisibleForOllama && ollamaKeyResults.placeholderMentionsOptional
+                );
+            } else if (ollamaKeyResults && ollamaKeyResults.error) {
+                check(`V7.94 Ollama-Key: evaluate-Fehler — ${ollamaKeyResults.error}`, false);
+            }
+
             // ### Ring 3 – Player-Emotionen → Welt ###
             const ring3Results = await page
                 .evaluate(() => {
