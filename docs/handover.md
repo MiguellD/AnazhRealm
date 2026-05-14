@@ -360,6 +360,60 @@ Hylomorphismus-System wie Materialien und Bauwerke.
   playerInventory in buildStateSnapshot. 127 Invarianten für 6.C1
   + Drag-System → 1153 total.
 
+### V7.80 — Welle 6.H Phase 2A live (14.05.2026)
+
+**Hylomorphismus durch alles Materielle.** Kreaturen sind jetzt
+Compounds aus `bodyParts × Material` — selbe Sprache wie Spieler-Seele
+(6.D), Architekturen (6.G P1.5), Inventar (6.C1). Vision §1.3 fraktal:
+**eine** Render-Pipeline, **eine** Tag-Pipeline, **eine** Mutations-API.
+
+Drei Built-in-Seelen: `sprite` (octahedron+sphere/quarz, magie-resonant),
+`wesen` (box/stein + sphere+cylinder/holz, dichte+lebendig), `geist`
+(torus/laub + sphere/leder, ätherisch). `_buildCreatureGroup(soulName)`
+ruft `_buildFromBlueprint` — drei Zeilen, keine Parallel-Implementierung.
+
+`computeCreatureCompoundTags(creature)` emergiert aus bodyParts via
+`computeCompoundTags({parts})` — Diskrimination im Test: sprite hat mehr
+magieleitung als wesen, wesen mehr dichte als geist. Charakter folgt
+aus Material × Form, nicht aus Tabelle.
+
+`_pickCreatureName` aus 30-Namen-Pool — Identitäts-Anker für künftige
+Konversationen (Phase 2C).
+
+**Kreaturen-Drawer komplett überarbeitet:**
+- Aufträge-Buttons (folge mir / komm her / warte / erkunde / alle×2)
+  als `data-cmd` — selber Pfad wie Chat (eine Sprache).
+- Form-Dropdown (Zufällig / Sprite / Wesen / Geist) + Spawn-Buttons
+  +1/+5/+10 konsultieren den Dropdown.
+- Liste der Wesen mit Name + Form + Task (folgt/wartet/streift),
+  triggert bei jedem Lifecycle-Event.
+
+**Audit-Playthrough vor Push**: 41/41 Szenarien. **33 permanente
+Playtest-Invarianten** ergänzt. Drei pre-existing Tests mit
+`creature.material.color`-Top-Level-Reads (Phase 3 + UI Run-Button)
+auf traverse umgestellt — Group-aware. `creatures_color`-DSL-Op
+ebenfalls auf traverse umgebaut (Code-Pfad-Defensive-Skip beseitigt).
+
+**1313/1313 grün** (+33).
+
+**Phase 2 Plan (für nächste Bögen):**
+
+- **Phase 2B (gather/build/explore + memory)** — 2-3 Sessions.
+  - `gather(material)`: Kreatur findet Architektur mit Material in
+    Reichweite, bringt es zurück, Inventar-Übergabe an Spieler.
+  - `build(blueprint, x, z)`: Kreatur geht zum Punkt, spawnt Bauplan.
+  - `explore(radius)`: Kreatur erkundet, schreibt Found-Architekturen
+    in ihr `memory`-Array UND ins worldJournal.
+  - `creature.userData.memory[]` als per-Kreatur Erinnerungs-Schicht.
+- **Phase 2C (Konversationen + Pattern-Lernen)** — 2-3 Sessions.
+  - Spieler ruft Kreatur beim Namen: "Nira, was hast du gesehen?".
+  - Kreatur antwortet aus `memory` via LLM-Schicht (existing Ring 7).
+  - Trainings-Pattern-Memory: häufig genutzte neue Chats lernen.
+- **Phase 2D (Custom-Seelen via DSL)** — 1 Session.
+  - `define_creature_soul(name, bodyParts)` DSL-Op (analog
+    `define_soul` für Spieler in 6.D).
+  - Editor im Kreaturen-Drawer wie Spieler-Soul-Editor.
+
 ### V7.79 — Welle 6.H Phase 1 live (14.05.2026)
 
 - **6.H Phase 1 Kreaturen-Aufträge** als Co-Schöpfer-Vision §1.1.
