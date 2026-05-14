@@ -28,7 +28,7 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
    Grund: sie sind Kontext für genau dich.
 
 5. **`scripts/playtest.cjs`** — querlesen, nicht durchlesen. Es ist das
-   Sicherheits-Netz. Es prüft aktuell **~1126 Invarianten (V7.77 nach Welle 6.C1)**.
+   Sicherheits-Netz. Es prüft aktuell **~1142 Invarianten (V7.77 nach Welle 6.C1)**.
    Wenn du etwas tust, das eine davon brechen könnte, weißt du es vor dem Commit.
 
 **Verlockung zu widerstehen**: gleich in `anazhRealm.js` springen. Die
@@ -335,7 +335,7 @@ Hylomorphismus-System wie Materialien und Bauwerke.
   gleichem Bauplan-Namen. DSL-Op add_to_inventory in
   NON_BROADCASTABLE_OPS (per-Spieler-privat). state.player.inventory
   persistiert via playerInventory in buildStateSnapshot. 34 neue
-  Invarianten → 1126 total.
+  Invarianten → 1142 total.
 
 ### Bereits erledigt in V7.76 (Welt-Beziehungs-Schalter)
 
@@ -436,7 +436,7 @@ keine Verzögerung, sondern Qualitäts-Wand.
 3. **Die heilige Lektion akzeptiert, nicht hinterfragt.** Sie wurde aus
    Schmerz geboren. Wenn ich sie umgehen wollte, war ich auf dem Holzweg.
 4. **Tests zuerst ausgeführt, dann verstanden.** `npm run playtest` —
-   1126/1126 grün (V7.77 nach Welle 6.C1 Hylomorphismus-Inventar) — gibt Vertrauen, dass
+   1142/1142 grün (V7.77 nach Welle 6.C1 Hylomorphismus-Inventar) — gibt Vertrauen, dass
    das System lebt.
 5. **Den Schöpfer als Partner gesehen, nicht als Auftraggeber.** Mensch
    und KI bauen gemeinsam. Bei Trade-offs frage ich, bei Klarem handle

@@ -13867,6 +13867,16 @@ class AnazhRealm {
                     this.selectHotbarSlot(i);
                 }
             });
+            // Welle 6.C1+ Drag&Drop. Gefüllter Hotbar-Slot ist Drag-Source,
+            // jeder Hotbar-Slot ist Drop-Target. Im Drag-Modus wird der
+            // selectHotbarSlot-Pfad nicht ausgelöst (Browser triggert keinen
+            // Click bei Drag-Release).
+            slot.draggable = !!name;
+            slot.addEventListener("dragstart", (ev) => this._onSlotDragStart(ev, "hot", i));
+            slot.addEventListener("dragend", (ev) => this._onSlotDragEnd(ev));
+            slot.addEventListener("dragover", (ev) => this._onSlotDragOver(ev));
+            slot.addEventListener("dragleave", (ev) => this._onSlotDragLeave(ev));
+            slot.addEventListener("drop", (ev) => this._onSlotDrop(ev, "hot", i));
             bar.appendChild(slot);
         }
         this._updateHotbarHighlight();
@@ -13896,6 +13906,11 @@ class AnazhRealm {
             if (!slot) {
                 el.classList.add("empty");
                 el.setAttribute("aria-label", `Slot ${i + 1} leer`);
+                // Leerer Inventar-Slot: nicht draggable, aber Drop-Target
+                // (anderer Bauplan kann hier abgelegt werden).
+                el.addEventListener("dragover", (ev) => this._onSlotDragOver(ev));
+                el.addEventListener("dragleave", (ev) => this._onSlotDragLeave(ev));
+                el.addEventListener("drop", (ev) => this._onSlotDrop(ev, "inv", i));
                 grid.appendChild(el);
                 continue;
             }
@@ -13949,6 +13964,14 @@ class AnazhRealm {
                 el.classList.add("selected");
             }
             el.addEventListener("click", () => this.selectInventorySlot(i));
+            // Drag-Source: gefüllter Inventar-Slot kann gegriffen werden.
+            el.draggable = true;
+            el.addEventListener("dragstart", (ev) => this._onSlotDragStart(ev, "inv", i));
+            el.addEventListener("dragend", (ev) => this._onSlotDragEnd(ev));
+            // Drop-Target: jeder Inventar-Slot (auch leerer) kann Quelle aufnehmen.
+            el.addEventListener("dragover", (ev) => this._onSlotDragOver(ev));
+            el.addEventListener("dragleave", (ev) => this._onSlotDragLeave(ev));
+            el.addEventListener("drop", (ev) => this._onSlotDrop(ev, "inv", i));
             grid.appendChild(el);
         }
         // Selected-Anzeige unten
@@ -14049,6 +14072,125 @@ class AnazhRealm {
         );
         // Initiales Render (leeres Inventar = leere Slots).
         this.renderInventoryUI();
+    }
+
+    // === Welle 6.C1+ — Drag&Drop für Inventar ↔ Hotbar ===
+    //
+    // HTML5-Drag&Drop-API. Funktioniert wie Minecraft: gefüllte Slots greifen,
+    // ziehen auf anderen Slot lässt los. Vier Pfade:
+    //   - Inv → Inv: Bauplan-Slots tauschen (rearrange im Inventar)
+    //   - Inv → Hot: Bauplan-Name in Hotbar legen (Inventar bleibt — es ist
+    //     eine Bauplan-Sammlung, keine Verbrauchs-Liste; Hotbar referenziert)
+    //   - Hot → Hot: Hotbar-Slots tauschen
+    //   - Hot → Inv: Hotbar-Slot räumen (Inventar bleibt unverändert)
+    //
+    // state.drag = {kind, index, name} hält die Drag-Quelle. setData/getData
+    // wären für Cross-Window-Drags nötig — wir bleiben in-Window, das spart
+    // JSON-Roundtrip + ist robust gegen leere dataTransfer in manchen Browsern.
+    // Click-State-Workflow (selectInventorySlot → tryAssign) bleibt parallel
+    // als Touch/Keyboard-Fallback.
+    _onSlotDragStart(event, kind, index) {
+        const name =
+            kind === "inv"
+                ? this.state.player.inventory[index] && this.state.player.inventory[index].blueprintName
+                : this.state.hotbar[index];
+        if (!name) {
+            event.preventDefault();
+            return;
+        }
+        this.state.drag = { kind, index, name };
+        // dataTransfer muss gesetzt sein, sonst gilt in Firefox kein drag.
+        // Wir setzen einen harmlosen Marker; der echte Source-State lebt
+        // in state.drag.
+        try {
+            event.dataTransfer.setData("text/plain", name);
+            event.dataTransfer.effectAllowed = "move";
+        } catch {
+            /* defensive */
+        }
+        // Source-Slot visuell markieren.
+        if (event.currentTarget && event.currentTarget.classList) {
+            event.currentTarget.classList.add("dragging");
+        }
+    }
+
+    _onSlotDragOver(event) {
+        // Drop nur erlauben, wenn ein Drag aktiv ist — sonst zurück zur
+        // Browser-Default-Behandlung (selektiert evtl. Text, harmlos).
+        if (!this.state.drag) return;
+        event.preventDefault();
+        try {
+            event.dataTransfer.dropEffect = "move";
+        } catch {
+            /* defensive */
+        }
+        // Target-Slot kurz hervorheben.
+        const el = event.currentTarget;
+        if (el && el.classList) el.classList.add("drop-target");
+    }
+
+    _onSlotDragLeave(event) {
+        const el = event.currentTarget;
+        if (el && el.classList) el.classList.remove("drop-target");
+    }
+
+    _onSlotDrop(event, targetKind, targetIndex) {
+        event.preventDefault();
+        const src = this.state.drag;
+        // state.drag IMMER räumen — egal welcher Pfad genommen wird.
+        // Sonst bliebt eine Drag-Session in state hängen, wenn der User
+        // auf Source-Slot droppt (no-op-Pfad) oder ohne Source droppt.
+        this.state.drag = null;
+        // Visual aufräumen.
+        document.querySelectorAll(".inventory-slot.drop-target, .hotbar-slot.drop-target").forEach((el) => {
+            el.classList.remove("drop-target");
+        });
+        if (!src) return;
+        // Kein-Op wenn Source == Target.
+        if (src.kind === targetKind && src.index === targetIndex) return;
+
+        if (src.kind === "inv" && targetKind === "inv") {
+            // Inventory ↔ Inventory: Slots tauschen (Bauplan-Name + Count).
+            const a = this.state.player.inventory[src.index];
+            const b = this.state.player.inventory[targetIndex];
+            this.state.player.inventory[src.index] = b;
+            this.state.player.inventory[targetIndex] = a;
+        } else if (src.kind === "inv" && targetKind === "hot") {
+            // Inventory → Hotbar: Hotbar-Slot bekommt den Bauplan-Namen.
+            // Inventar-Slot bleibt unverändert (Inventar ist Bauplan-
+            // Sammlung, kein verbrauchbarer Stack).
+            this.state.hotbar[targetIndex] = src.name;
+        } else if (src.kind === "hot" && targetKind === "hot") {
+            // Hotbar ↔ Hotbar: Slots tauschen.
+            const a = this.state.hotbar[src.index];
+            const b = this.state.hotbar[targetIndex];
+            this.state.hotbar[src.index] = b;
+            this.state.hotbar[targetIndex] = a;
+        } else if (src.kind === "hot" && targetKind === "inv") {
+            // Hotbar → Inventory: Hotbar-Slot räumen (Inventar unverändert —
+            // der Bauplan war ja schon im Inventar als Eintrag). Effekt:
+            // „Bauplan aus Hotbar entfernen" via Drag aufs Inventar.
+            this.state.hotbar[src.index] = null;
+        }
+
+        // state.drag wurde schon oben (vor allen Pfaden) genullt.
+        this.renderInventoryUI();
+        this._renderHotbarDOM();
+        try {
+            this.saveState();
+        } catch {
+            /* save-Fehler nicht hart blockend */
+        }
+    }
+
+    _onSlotDragEnd(event) {
+        this.state.drag = null;
+        // Source-Slot zurücksetzen + alle Drop-Targets aufräumen.
+        if (event && event.currentTarget && event.currentTarget.classList) {
+            event.currentTarget.classList.remove("dragging");
+        }
+        document.querySelectorAll(".dragging").forEach((el) => el.classList.remove("dragging"));
+        document.querySelectorAll(".drop-target").forEach((el) => el.classList.remove("drop-target"));
     }
 
     _updateHotbarHighlight() {

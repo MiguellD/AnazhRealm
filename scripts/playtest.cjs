@@ -7497,6 +7497,125 @@ function startSaveServer() {
                 check("Welle 6.C1: Schließen räumt inventorySelected", wave6c1Results.toggleCloseClearsSelected);
             }
 
+            // ### Welle 6.C1+ — Drag&Drop für Inventar ↔ Hotbar ===
+            // Vier Pfade testen: inv→inv (swap), inv→hot (Hotbar setzt),
+            // hot→hot (swap), hot→inv (Hotbar räumen). HTML5-Drag-Events
+            // simulieren wir nicht (Headless-Inkonsistenz); statt dessen
+            // testen wir die Drop-Handler direkt mit fingiertem state.drag.
+            const dragResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    out.hasDragStart = typeof r._onSlotDragStart === "function";
+                    out.hasDragOver = typeof r._onSlotDragOver === "function";
+                    out.hasDrop = typeof r._onSlotDrop === "function";
+                    out.hasDragEnd = typeof r._onSlotDragEnd === "function";
+                    out.hasDragLeave = typeof r._onSlotDragLeave === "function";
+
+                    // Setup: zwei Bauplan-Einträge im Inventar, leerer Hotbar.
+                    r.state.player.inventory = new Array(27).fill(null);
+                    r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 1 };
+                    r.state.player.inventory[1] = { blueprintName: "kristall_geode", count: 1 };
+                    r.state.hotbar = ["village", "temple", "waterfall", null, null, null, null, null, null];
+
+                    // Fake-Event-Object für drop-Handler.
+                    const mkEvent = () => ({
+                        preventDefault: () => {},
+                        currentTarget: null,
+                    });
+
+                    // (1) inv → inv: Slot 0 ↔ Slot 5 tauschen.
+                    r.state.drag = { kind: "inv", index: 0, name: "baum_eiche" };
+                    r._onSlotDrop(mkEvent(), "inv", 5);
+                    out.invToInvSwap =
+                        r.state.player.inventory[0] === null &&
+                        r.state.player.inventory[5] &&
+                        r.state.player.inventory[5].blueprintName === "baum_eiche";
+
+                    // Reset
+                    r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 1 };
+                    r.state.player.inventory[5] = null;
+
+                    // (2) inv → hot: Baum auf Hotbar-Slot 3 ablegen.
+                    r.state.drag = { kind: "inv", index: 0, name: "baum_eiche" };
+                    r._onSlotDrop(mkEvent(), "hot", 3);
+                    out.invToHotPlaces = r.state.hotbar[3] === "baum_eiche";
+                    out.invToHotKeepsInventoryEntry =
+                        r.state.player.inventory[0] &&
+                        r.state.player.inventory[0].blueprintName === "baum_eiche";
+
+                    // Reset Hotbar
+                    r.state.hotbar[3] = null;
+
+                    // (3) hot → hot: Slot 0 (village) ↔ Slot 1 (temple).
+                    r.state.drag = { kind: "hot", index: 0, name: "village" };
+                    r._onSlotDrop(mkEvent(), "hot", 1);
+                    out.hotToHotSwap = r.state.hotbar[0] === "temple" && r.state.hotbar[1] === "village";
+
+                    // Reset
+                    r.state.hotbar = ["village", "temple", "waterfall", null, null, null, null, null, null];
+
+                    // (4) hot → inv: Slot 1 (temple) auf Inventar-Slot 10 → räumt Hotbar.
+                    r.state.drag = { kind: "hot", index: 1, name: "temple" };
+                    r._onSlotDrop(mkEvent(), "inv", 10);
+                    out.hotToInvClearsHotbar = r.state.hotbar[1] === null;
+
+                    // (5) src === target: no-op (state unverändert).
+                    const before = JSON.stringify(r.state.hotbar);
+                    r.state.drag = { kind: "hot", index: 0, name: "village" };
+                    r._onSlotDrop(mkEvent(), "hot", 0);
+                    out.sameSlotNoOp = JSON.stringify(r.state.hotbar) === before;
+
+                    // (6) drag wird nach drop genullt.
+                    out.dragClearedAfterDrop = r.state.drag === null;
+
+                    // (7) DOM: gefüllte Inventar-Slots sind draggable.
+                    r.toggleInventoryOverlay(true);
+                    r.renderInventoryUI();
+                    const slot0 = document.querySelector('#inventory-grid [data-inv-slot="0"]');
+                    const emptySlot = document.querySelector("#inventory-grid .inventory-slot.empty");
+                    out.filledSlotIsDraggable = slot0 && slot0.draggable === true;
+                    // Leerer Inventar-Slot ist NICHT draggable (kein Mehrwert).
+                    out.emptySlotNotDraggable = emptySlot && emptySlot.draggable === false;
+
+                    // (8) Hotbar-Slots: gefüllte sind draggable.
+                    r._renderHotbarDOM();
+                    const hSlot0 = document.querySelector('#hotbar [data-slot="0"]');
+                    const hSlot3 = document.querySelector('#hotbar [data-slot="3"]');
+                    out.hotFilledDraggable = hSlot0 && hSlot0.draggable === true;
+                    out.hotEmptyNotDraggable = hSlot3 && hSlot3.draggable === false;
+
+                    // Cleanup
+                    r.state.hotbar = ["village", "temple", "waterfall", null, null, null, null, null, null];
+                    r.state.player.inventory = new Array(27).fill(null);
+                    r.toggleInventoryOverlay(false);
+                    r._renderHotbarDOM();
+                    r.renderInventoryUI();
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (dragResults && !dragResults.error) {
+                check("Welle 6.C1 Drag: _onSlotDragStart existiert", dragResults.hasDragStart);
+                check("Welle 6.C1 Drag: _onSlotDragOver existiert", dragResults.hasDragOver);
+                check("Welle 6.C1 Drag: _onSlotDrop existiert", dragResults.hasDrop);
+                check("Welle 6.C1 Drag: _onSlotDragEnd existiert", dragResults.hasDragEnd);
+                check("Welle 6.C1 Drag: _onSlotDragLeave existiert", dragResults.hasDragLeave);
+                check("Welle 6.C1 Drag: inv→inv tauscht Slot-Inhalte", dragResults.invToInvSwap);
+                check("Welle 6.C1 Drag: inv→hot legt Bauplan in Hotbar", dragResults.invToHotPlaces);
+                check("Welle 6.C1 Drag: inv→hot lässt Inventar-Eintrag stehen", dragResults.invToHotKeepsInventoryEntry);
+                check("Welle 6.C1 Drag: hot→hot tauscht Hotbar-Slots", dragResults.hotToHotSwap);
+                check("Welle 6.C1 Drag: hot→inv räumt Hotbar-Slot (zu null)", dragResults.hotToInvClearsHotbar);
+                check("Welle 6.C1 Drag: src===target ist no-op", dragResults.sameSlotNoOp);
+                check("Welle 6.C1 Drag: state.drag wird nach drop genullt", dragResults.dragClearedAfterDrop);
+                check("Welle 6.C1 Drag: gefüllter Inventar-Slot ist draggable", dragResults.filledSlotIsDraggable);
+                check("Welle 6.C1 Drag: leerer Inventar-Slot ist NICHT draggable", dragResults.emptySlotNotDraggable);
+                check("Welle 6.C1 Drag: gefüllter Hotbar-Slot ist draggable", dragResults.hotFilledDraggable);
+                check("Welle 6.C1 Drag: leerer Hotbar-Slot ist NICHT draggable", dragResults.hotEmptyNotDraggable);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {
