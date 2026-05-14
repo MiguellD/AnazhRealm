@@ -29,7 +29,7 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self';"
         />
-        <title>Anazh Realm v7.90 – Das Ultiversum</title>
+        <title>Anazh Realm v7.91 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
              zusätzliche Datei. img-src 'self' data: in CSP erlaubt data-URI. -->
         <link
@@ -1723,6 +1723,37 @@
                 border-bottom: 1px dotted var(--parch-line, #b09d7c);
                 align-items: center;
             }
+            /* Welle 6.H Phase 2E V1.1 — Soul-spezifische Namensfarben.
+               Sprite (Magie · Quarz) → cyan; Wesen (Solid · Stein+Holz) → erdig brass;
+               Geist (Ätherisch · Laub+Leder) → grünlich. Macht Identität sofort
+               sichtbar — Spieler erkennt am Namen den Charakter-Typ. */
+            .creature-list .creature-name.soul-sprite {
+                color: #88e1e1;
+                text-shadow: 0 0 4px rgba(136, 225, 225, 0.35);
+            }
+            .creature-list .creature-name.soul-wesen {
+                color: #d4a373;
+                text-shadow: 0 0 4px rgba(212, 163, 115, 0.25);
+            }
+            .creature-list .creature-name.soul-geist {
+                color: #9fc89d;
+                text-shadow: 0 0 4px rgba(159, 200, 157, 0.25);
+            }
+            /* Welle 6.H Phase 2E V1.1 — Chat-Antwort einer Kreatur mit
+               Soul-farbigem Namen. Identische Farben wie in der Liste,
+               damit Spieler den selben Anker beim Sprechen + Lesen hat. */
+            .chat-creature-name {
+                font-weight: bold;
+            }
+            .chat-creature-name.soul-sprite {
+                color: #88e1e1;
+            }
+            .chat-creature-name.soul-wesen {
+                color: #d4a373;
+            }
+            .chat-creature-name.soul-geist {
+                color: #9fc89d;
+            }
             .creature-list .creature-name {
                 font-family: "Cinzel", Georgia, serif;
                 color: var(--parch-ink, #2a2018);
@@ -2742,7 +2773,7 @@
         <header id="topbar" class="hud-frame">
             <div class="topbar-inner">
                 <div class="title">
-                    Anazh Realm <span class="version">v7.90</span> <span class="sub">— Das Ultiversum</span>
+                    Anazh Realm <span class="version">v7.91</span> <span class="sub">— Das Ultiversum</span>
                 </div>
                 <nav class="tabs" role="tablist" aria-label="Hauptansichten">
                     <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">
@@ -3196,7 +3227,7 @@
                 </div>
             </div>
             <div id="console-footer">
-                <input type="text" id="chat-input" placeholder="Befehl eingeben (z. B. 'Ändere Wetter zu Regen')" />
+                <input type="text" id="chat-input" placeholder="Befehl oder '@Name was hast du gesehen?' (Kreatur ansprechen)" />
             </div>
         </aside>
         <!-- Versteckter File-Picker für 'Lade Datei'-Chat-Befehl. -->

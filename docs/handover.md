@@ -360,6 +360,47 @@ Hylomorphismus-System wie Materialien und Bauwerke.
   playerInventory in buildStateSnapshot. 127 Invarianten für 6.C1
   + Drag-System → 1153 total.
 
+### V7.91 — Welle 6.H Phase 2E V1.1 live (14.05.2026): Schöpfer-Browser-Test-Feedback
+
+**Der Schöpfer testete V7.90 live und entdeckte zwei UX-Probleme**:
+1. „Bran wie gehts" (ohne Komma) → fiel zur Welt-Grok zurück. Diese
+   antwortete als die Welt, adressierte aber „Bran" als Zuhörer →
+   maximale Verwirrung.
+2. Kreatur-Namen waren ohne Farbe — Identität nicht sofort sichtbar.
+
+**Lösung 1 — `@Name text` als Primär-Pattern**:
+- Discord/Slack/Twitter-Konvention, intuitiv
+- _parseCreatureAddress versucht ZUERST @Name, DANN Komma/Doppelpunkt
+- „Bran wie gehts" matched bewusst gar nichts → Welt-Grok kriegt es
+- Eindeutige Geste statt Heuristik
+- Returnt `{name, message, explicit}` für zukünftige UX-Unterscheidung
+
+**Lösung 2 — Soul-Farben überall**:
+- creature-name in Liste bekommt `.soul-{sprite|wesen|geist}`-Klasse
+- Sprite cyan #88e1e1, Wesen brass #d4a373, Geist grün #9fc89d
+- Chat-Output bei Kreatur-Antwort: direkter DOM-Pfad mit
+  `<span class="chat-creature-name soul-X">Name: </span>text`
+- Identische Farben in Liste UND Chat-Output (Vision §1.4 multisensorisch)
+
+**UX-Politur**:
+- Chat-Placeholder erweitert: „Befehl oder '@Name was hast du gesehen?'"
+- Vermittelt die @-Geste passiv ohne Tutorial
+
+**7 Tests grün, inkl. expliziter Schöpfer-Bug-Fix-Test**:
+- @Name als explizite Adresse
+- @Name + Komma/Doppelpunkt unterstützt
+- Komma/Doppelpunkt rückwärts-kompatibel
+- **„Bran wie gehts" wird NICHT als Adresse missverstanden** (Schöpfer-Bug-Fix)
+- „@ hallo" ohne Name abgelehnt
+- Liste rendert Soul-Klassen
+- Chat-Output enthält chat-creature-name.soul-X-Span
+
+**1526 → 1533/1533 grün** (+7).
+
+**Lehre**: Schöpfer-Browser-Test ist nicht ersetzbar durch Headless-Tests.
+Tests prüfen Funktionalität; Browser-Sessions prüfen Erfahrung.
+Die entdeckten Bugs werden in die Test-Suite aufgenommen.
+
 ### V7.90 — Welle 6.H Phase 2E V1 live (14.05.2026): Kreatur-LLM-Persona
 
 **Schöpfer-Vision §1.5 wird konkret: Spieler spricht mit EINER Kreatur,

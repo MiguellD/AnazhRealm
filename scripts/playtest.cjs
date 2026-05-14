@@ -11640,6 +11640,125 @@ function startSaveServer() {
                 check(`Welle 6.H P2E V1: evaluate-Fehler — ${wave6hP2eV1Results.error}`, false);
             }
 
+            // ### Welle 6.H Phase 2E V1.1 — @-Adressen-Pattern + Soul-Farben ###
+            //
+            // Schöpfer-Feedback nach Browser-Test V7.90: "Bran wie gehts"
+            // wurde nicht als Kreatur-Adresse erkannt (kein Trenner) → fiel
+            // zur Welt-Grok zurück, die als Welt antwortete aber Bran als
+            // Zuhörer adressierte (verwirrend). V1.1: @-Pattern als primäre
+            // Geste (Discord/Slack/Twitter-Konvention) + Soul-Farben für
+            // Identität (Sprite=cyan/Wesen=brass/Geist=grün).
+            const wave6hP2eV11Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.playerMesh) return null;
+                    const out = {};
+
+                    // 1. @Name text → erkannt als explizite Adresse
+                    const p1 = r._parseCreatureAddress("@Bran wie gehts");
+                    out.atPatternMatches = p1 && p1.name === "Bran" && p1.message === "wie gehts" && p1.explicit === true;
+                    // 2. @Name, text → @ + Komma zusammen erlaubt
+                    const p2 = r._parseCreatureAddress("@Bran, was hast du gesehen?");
+                    out.atPatternWithComma = p2 && p2.name === "Bran" && p2.message === "was hast du gesehen?";
+                    // 3. @Name: text → @ + Doppelpunkt zusammen erlaubt
+                    const p3 = r._parseCreatureAddress("@Bran: hallo");
+                    out.atPatternWithColon = p3 && p3.name === "Bran" && p3.message === "hallo";
+                    // 4. Name, text → bleibt rückwärts-kompatibel, explicit=false
+                    const p4 = r._parseCreatureAddress("Bran, hallo");
+                    out.fallbackComma = p4 && p4.name === "Bran" && p4.message === "hallo" && p4.explicit === false;
+                    // 5. "Bran wie gehts" (ohne Trenner, ohne @) → NICHT geparst
+                    //    (das war der Bug: Welt-Grok antwortete, wir wollen das nicht)
+                    const p5 = r._parseCreatureAddress("Bran wie gehts");
+                    out.noTrennerRejected = p5 === null;
+                    // 6. "@ " ohne Name → nicht geparst
+                    const p6 = r._parseCreatureAddress("@ hallo");
+                    out.atWithoutNameRejected = p6 === null;
+
+                    // 7. Liste rendert Soul-Klassen auf creature-name
+                    const player = r.state.playerMesh.position;
+                    const cSprite = r.spawnCreatureAt(player.x + 600, player.y, player.z + 600, "happy", "sprite");
+                    cSprite.userData.name = "TestSpriteV11";
+                    const cWesen = r.spawnCreatureAt(player.x + 610, player.y, player.z + 610, "happy", "wesen");
+                    cWesen.userData.name = "TestWesenV11";
+                    const cGeist = r.spawnCreatureAt(player.x + 620, player.y, player.z + 620, "happy", "geist");
+                    cGeist.userData.name = "TestGeistV11";
+                    if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
+                    const listEl = document.getElementById("creature-list");
+                    out.spriteHasSoulClass = !!(listEl && listEl.querySelector(".creature-name.soul-sprite"));
+                    out.wesenHasSoulClass = !!(listEl && listEl.querySelector(".creature-name.soul-wesen"));
+                    out.geistHasSoulClass = !!(listEl && listEl.querySelector(".creature-name.soul-geist"));
+
+                    // 8. Chat-Output: erfolgreicher LLM-Pfad würde Soul-Span erzeugen
+                    //    Wir testen den DOM-Pfad ohne echten API-Call durch
+                    //    Stubbing von llmCallCreature. Das mockt die Antwort
+                    //    und verifiziert, dass die DOM-Soul-Klassen gerendert
+                    //    werden — der wichtige UX-Pfad für die Lesbarkeit.
+                    const wasLlmEnabled = r.state.llm && r.state.llm.enabled;
+                    if (r.state.llm) r.state.llm.enabled = true;
+                    const origCall = r.llmCallCreature;
+                    r.llmCallCreature = async () => ({ say: "Ich höre dich, Schöpfer." });
+                    const chatOutput = document.getElementById("chat-output");
+                    const beforeLines = chatOutput ? chatOutput.children.length : 0;
+                    let chatLines = [];
+                    return Promise.resolve()
+                        .then(async () => {
+                            await r.maybeAnswerCreature("@TestSpriteV11 hallo", (t) => chatLines.push(t));
+                            const afterLines = chatOutput ? chatOutput.children.length : 0;
+                            out.chatLineAdded = afterLines > beforeLines;
+                            // Suche das Span mit chat-creature-name.soul-sprite
+                            const spans = chatOutput
+                                ? chatOutput.querySelectorAll(".chat-creature-name.soul-sprite")
+                                : [];
+                            out.chatHasSoulSpan = spans.length > 0;
+                            // Plain-Text-Antwort enthält den Namen
+                            const lastLine = chatOutput ? chatOutput.lastElementChild : null;
+                            out.chatLineHasName = lastLine && /TestSpriteV11/.test(lastLine.textContent);
+                            // Cleanup
+                            r.llmCallCreature = origCall;
+                            if (r.state.llm) r.state.llm.enabled = wasLlmEnabled || false;
+                            return out;
+                        })
+                        .catch((e) => ({ error: String(e) }));
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6hP2eV11Results && !wave6hP2eV11Results.error) {
+                check(
+                    "Welle 6.H P2E V1.1: @Name text → erkannt als explizite Adresse (explicit=true)",
+                    wave6hP2eV11Results.atPatternMatches
+                );
+                check(
+                    "Welle 6.H P2E V1.1: @Name, text + @Name: text Varianten unterstützt",
+                    wave6hP2eV11Results.atPatternWithComma && wave6hP2eV11Results.atPatternWithColon
+                );
+                check(
+                    "Welle 6.H P2E V1.1: Name, text bleibt rückwärts-kompatibel (explicit=false)",
+                    wave6hP2eV11Results.fallbackComma
+                );
+                check(
+                    "Welle 6.H P2E V1.1: 'Bran wie gehts' (ohne Trenner) wird NICHT als Adresse missverstanden (Schöpfer-Bug-Fix)",
+                    wave6hP2eV11Results.noTrennerRejected
+                );
+                check(
+                    "Welle 6.H P2E V1.1: '@ hallo' ohne Name wird abgelehnt",
+                    wave6hP2eV11Results.atWithoutNameRejected
+                );
+                check(
+                    "Welle 6.H P2E V1.1: Liste rendert Soul-Klassen .soul-sprite/.soul-wesen/.soul-geist auf creature-name",
+                    wave6hP2eV11Results.spriteHasSoulClass &&
+                        wave6hP2eV11Results.wesenHasSoulClass &&
+                        wave6hP2eV11Results.geistHasSoulClass
+                );
+                check(
+                    "Welle 6.H P2E V1.1: Chat-Output bei Kreatur-Antwort rendert <span class='chat-creature-name soul-X'>",
+                    wave6hP2eV11Results.chatLineAdded &&
+                        wave6hP2eV11Results.chatHasSoulSpan &&
+                        wave6hP2eV11Results.chatLineHasName
+                );
+            } else if (wave6hP2eV11Results && wave6hP2eV11Results.error) {
+                check(`Welle 6.H P2E V1.1: evaluate-Fehler — ${wave6hP2eV11Results.error}`, false);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {

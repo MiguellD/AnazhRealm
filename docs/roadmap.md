@@ -1,6 +1,6 @@
 # AnazhRealm Roadmap — Vollumfänglich
 
-Stand: 14.05.2026 (V7.90, Welle 6.H Phase 2E V1 live — Kreatur-LLM-Persona aus vollem Identitäts-Anker).
+Stand: 14.05.2026 (V7.91, Welle 6.H Phase 2E V1.1 live — Schöpfer-Browser-Test-Feedback: @Name als eindeutige Adresse + Soul-Farben).
 
 Diese Doc beschreibt das **gesamte Projekt vom heutigen Stand bis zum Vision-Endziel** (Welten-Ultiversum). Sie ergänzt `state-of-realm.md` (Was/Warum) um eine puren Plan-Sicht (Wann/Wie). Aufwandsschätzungen sind realistische Tage für eine fokussierte Claude-Session pro Ring/Phase; gerechnet wird linear, ohne Puffer.
 

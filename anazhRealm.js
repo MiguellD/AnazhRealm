@@ -3083,12 +3083,20 @@ class AnazhRealm {
     // Fallback nötig), false wenn der Text nicht zu diesem Pattern passt.
     _parseCreatureAddress(text) {
         if (typeof text !== "string") return null;
-        // Erlaubt: "Nira, hallo", "Nira: was hast du gesehen?". Name ist
-        // Wort-Zeichen + ggf. ß/ä/ö/ü (Kreatur-Namen aus Pool sind ASCII,
-        // aber tolerieren wir Schöpfer-Custom-Namen).
-        const m = text.match(/^([A-Za-zÄÖÜäöüß][A-Za-zÄÖÜäöüß0-9_-]{0,30})[,:]\s*(.+)$/);
-        if (!m) return null;
-        return { name: m[1], message: m[2].trim() };
+        // Welle 6.H Phase 2E V1.1 — `@Name text` ist die eindeutige Geste
+        // (Discord/Slack/Twitter-Konvention). Höchste Priorität, weil ein
+        // `@` am Zeilenanfang KEIN normaler Text ist → keine Mehrdeutigkeit.
+        // Erlaubt optionales Trennzeichen: "@Bran wie gehts" / "@Bran, hallo".
+        let m = text.match(/^@([A-Za-zÄÖÜäöüß][A-Za-zÄÖÜäöüß0-9_-]{0,30})[,:]?\s+(.+)$/);
+        if (m) return { name: m[1], message: m[2].trim(), explicit: true };
+        // Fallback (rückwärts-kompatibel): "Nira, hallo" / "Nira: hallo".
+        // Bewusst KEIN Pattern für "Nira hallo" (ohne Trenner) — sonst würde
+        // jeder Satz, der mit einem Wort beginnt, das ein Kreatur-Name sein
+        // KÖNNTE, als Adresse missverstanden. Spieler-Disziplin verlangt
+        // mindestens ein Trennzeichen oder das @-Präfix.
+        m = text.match(/^([A-Za-zÄÖÜäöüß][A-Za-zÄÖÜäöüß0-9_-]{0,30})[,:]\s*(.+)$/);
+        if (m) return { name: m[1], message: m[2].trim(), explicit: false };
+        return null;
     }
 
     async maybeAnswerCreature(userText, appendChatOutput) {
@@ -3119,7 +3127,24 @@ class AnazhRealm {
         }
         if (reply.say) {
             const sayText = String(reply.say).slice(0, 400);
-            appendChatOutput(`${parsed.name}: ${sayText}`);
+            // Welle 6.H Phase 2E V1.1 — Soul-farbiger Name in der Chat-Antwort.
+            // Direkter DOM-Pfad statt appendChatOutput, damit der Name ein
+            // eigenes <span> mit Soul-Klasse bekommt (cyan/brass/grünlich).
+            // Fallback auf plain-Text wenn DOM nicht verfügbar (Headless).
+            const soulName = (creature.userData && creature.userData.soul) || "wesen";
+            const chatOutput = typeof document !== "undefined" ? document.getElementById("chat-output") : null;
+            if (chatOutput) {
+                const line = document.createElement("div");
+                const nameSpan = document.createElement("span");
+                nameSpan.className = `chat-creature-name soul-${soulName}`;
+                nameSpan.textContent = `${parsed.name}: `;
+                line.appendChild(nameSpan);
+                line.appendChild(document.createTextNode(sayText));
+                chatOutput.appendChild(line);
+                chatOutput.scrollTop = chatOutput.scrollHeight;
+            } else {
+                appendChatOutput(`${parsed.name}: ${sayText}`);
+            }
             // Memory: die Kreatur erinnert sich daran, dass der Schöpfer
             // mit ihr sprach. Vision §1.1 — Geschichte wächst durch Geste.
             if (typeof this._creatureRemember === "function") {
@@ -16676,6 +16701,14 @@ class AnazhRealm {
             }
             const nameEl = document.createElement("span");
             nameEl.className = "creature-name";
+            // Welle 6.H Phase 2E V1.1 — Soul-Klasse für farbige Identität.
+            // Spieler erkennt am Namen sofort den Charakter-Typ (cyan=Sprite-
+            // Magie, brass=Wesen-erdig, grün=Geist-ätherisch). Erweiterbar
+            // für Boost-Tint (Phase 2F.3-Folge) oder Spec-Highlight (P2D-Folge).
+            const _soulForClass = c.userData && c.userData.soul;
+            if (typeof _soulForClass === "string" && _soulForClass.length > 0) {
+                nameEl.classList.add(`soul-${_soulForClass}`);
+            }
             nameEl.textContent = (c.userData && c.userData.name) || "?";
             const soulEl = document.createElement("span");
             soulEl.className = "creature-soul";
