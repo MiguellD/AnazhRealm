@@ -360,6 +360,50 @@ Hylomorphismus-System wie Materialien und Bauwerke.
   playerInventory in buildStateSnapshot. 127 Invarianten für 6.C1
   + Drag-System → 1153 total.
 
+### V7.81 — Welle 6.H Phase 2B.1 live (14.05.2026)
+
+**Erste konkrete Co-Schöpfer-Geste (§1.1):** Kreatur tut etwas FÜR den
+Spieler. Spieler sagt „sammle holz" → Kreatur antwortet visuell (cyan
+Aura) + akustisch (G4-Ping) + handelt (geht zur nächsten Architektur
+mit holz, baut sie ab) + erinnert sich (memory `gathered`-Eintrag) +
+Welt-Journal-Eintrag „Eine Kreatur sammelte X für den Schöpfer".
+
+**Neuer Task `gather`** mit `args.material`. `_tickCreatureTaskDirection`
+sucht via `_findNearestArchitectureWithMaterial` (durchsucht
+state.architectures, prüft ob ein Part des Bauplans dieses Material
+trägt), bewegt sich mit CREATURE_GATHER_SPEED=3.0 m/s zum Ziel, bei
+haltDist=1.5m → removeArchitecture (existing 6.A6-Pfad mit Farewell-
+Ping) + addToInventory (existing 6.C1) + memory `gathered`. Wenn
+Material erschöpft → auto-zu-wander mit `no_material`-Erinnerung +
+`reach`-Journal.
+
+**Pro-Kreatur memory[]:** FIFO mit Cap 30, Schema `{type, content, at}`
+analog worldJournal. KEINE Save-Persistenz (Vision §1.1: Beziehung
+gesprochen, nicht gespeichert; gilt auch für Erinnerung).
+
+**Context-dependentes DSL-Arg:** `creature_task(idx, name, paramArg)`
+mappt paramArg semantisch — `gather + string → {material}`,
+`follow_player + number → {distance}`. Helper `_buildCreatureTaskArgs`.
+
+**Chat-Patterns:** `sammle <material>` / `bring <material>` / `hol <m>`
+/ `gather <m>` → nächste Kreatur. `alle sammeln <material>` → alle.
+
+**UI:** Sammeln-Sektion im Kreaturen-Drawer mit Material-Dropdown
+(12 Built-in-Materialien) + 2 Buttons. Status-Bar zeigt jetzt
+„N folgen · M warten · K sammeln". Liste zeigt „sammelt holz".
+
+**Audit-Playthrough:** 45/45 grün VOR Push. 24 permanente Tests
+ergänzt. Phase-1-Test angepasst auf `≥3 Aufträgen` (war `=== 3`).
+**1337/1337 grün.**
+
+**Phase 2B-Plan-Restbestand:**
+- **Phase 2B.2 (build)** — `creature_task gather` als Vorlage: neuer
+  Task `build` mit args.blueprint + args.x/z. Kreatur geht zum Punkt,
+  spawnt Bauplan. 1 Session.
+- **Phase 2B.3 (explore)** — Task `explore` mit args.radius. Kreatur
+  durchwandert einen Bereich, schreibt entdeckte Architekturen ins
+  memory + worldJournal. 1 Session.
+
 ### V7.80 — Welle 6.H Phase 2A live (14.05.2026)
 
 **Hylomorphismus durch alles Materielle.** Kreaturen sind jetzt
