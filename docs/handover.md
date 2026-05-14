@@ -360,6 +360,30 @@ Hylomorphismus-System wie Materialien und Bauwerke.
   playerInventory in buildStateSnapshot. 127 Invarianten für 6.C1
   + Drag-System → 1153 total.
 
+### V7.79 — Welle 6.H Phase 1 live (14.05.2026)
+
+- **6.H Phase 1 Kreaturen-Aufträge** als Co-Schöpfer-Vision §1.1.
+  Drei Tasks (`wander` = Default, heutiges Emotion-Verhalten /
+  `follow_player` = Vektor zum Spieler mit haltDist / `wait` = still).
+  `creature.userData.task = {name, args, since}`. Mutations-Pfad
+  `assignCreatureTask` triggert Aura-Update.
+- **Aura-Sprite** über der Kreatur, additives CanvasTexture mit
+  HSL-Hue je Task (follow=120 grün, wait=40 bernstein, wander=keine).
+  Lifecycle in vier Pfaden (Erzeugung, Position-Update pro Frame,
+  Wechsel, Cleanup bei removeCreature).
+- **DSL-Ops**: `creature_task(idx, name, distance?)`,
+  `creature_task_nearest(name, distance?)`,
+  `creature_task_all(name, distance?)`. Alle drei in
+  `NON_BROADCASTABLE_OPS` (Multi-User-Safety — Phase 2 mit IDs).
+- **Chat-Patterns**: `folge mir` / `komm her` / `warte` / `erkunde` /
+  `alle folgt mir` / `alle warten`.
+- **Keine Save-Persistenz** bewusst — Tasks sind im-Moment-Gesten,
+  Kreaturen sind frische Wesen pro Session, Beziehung wird durch
+  erneute Geste wiederaufgebaut.
+
+**Playthrough vor dem Push**: 43/43 Szenarien grün. **32 permanente
+Playtest-Invarianten**. Gesamt: 1259/1259.
+
 ### V7.78 — Welle 6.A6 + 6.C3 live (14.05.2026)
 
 - **6.A6 Maus-Aktionen** live: LMB abbauen (Architektur am
