@@ -29,7 +29,7 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self';"
         />
-        <title>Anazh Realm v7.79 – Das Ultiversum</title>
+        <title>Anazh Realm v7.80 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
              zusätzliche Datei. img-src 'self' data: in CSP erlaubt data-URI. -->
         <link
@@ -1702,6 +1702,46 @@
                 0%, 100% { opacity: 1; }
                 50% { opacity: 0.6; }
             }
+            /* Welle 6.H Phase 2A — Kreatur-Liste im Kreaturen-Drawer.
+               Eine Zeile pro Kreatur: Name + Form + aktueller Task. */
+            .creature-list {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                max-height: 260px;
+                overflow-y: auto;
+                font-family: "IM Fell English", Georgia, serif;
+                font-size: 11px;
+                color: var(--parch-ink-soft);
+                padding: 4px 6px;
+            }
+            .creature-list .creature-row {
+                display: grid;
+                grid-template-columns: 1.4fr 1fr 1.1fr;
+                gap: 6px;
+                padding: 3px 4px;
+                border-bottom: 1px dotted var(--parch-line, #b09d7c);
+                align-items: center;
+            }
+            .creature-list .creature-name {
+                font-family: "Cinzel", Georgia, serif;
+                color: var(--parch-ink, #2a2018);
+            }
+            .creature-list .creature-soul {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 10px;
+                color: var(--brass-1, #8a6f3e);
+            }
+            .creature-list .creature-task {
+                font-style: italic;
+                color: var(--parch-ink-soft);
+            }
+            .creature-list .creature-task.follow_player {
+                color: #4faa5c;
+            }
+            .creature-list .creature-task.wait {
+                color: #b48a3c;
+            }
             /* Ring 5: Spieler-Seele. Brass-getintetes <select>, passend zum
            Drawer-Pergament-Look. */
             .drawer .soul-row {
@@ -2620,7 +2660,7 @@
         <header id="topbar" class="hud-frame">
             <div class="topbar-inner">
                 <div class="title">
-                    Anazh Realm <span class="version">v7.79</span> <span class="sub">— Das Ultiversum</span>
+                    Anazh Realm <span class="version">v7.80</span> <span class="sub">— Das Ultiversum</span>
                 </div>
                 <nav class="tabs" role="tablist" aria-label="Hauptansichten">
                     <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">
@@ -2746,14 +2786,52 @@
         <aside class="drawer" data-drawer="kreaturen" aria-label="Kreaturen-Panel" hidden>
             <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
             <h2>Kreaturen</h2>
+            <!-- Welle 6.H Phase 2A — Aufträge als direkte Buttons. data-cmd
+                 routet durch processChatCommand → parseChatToDsl → DSL — selber
+                 Pfad wie wenn der Spieler tippt. So bleibt eine Sprache. -->
+            <section class="section">
+                <h3>Aufträge an Kreaturen</h3>
+                <p class="drawer-hint">
+                    Gesten an die nächste Kreatur in Reichweite. Aura über der Kreatur zeigt aktiven Auftrag.
+                </p>
+                <div class="actions" id="creature-task-actions">
+                    <button type="button" data-cmd="folge mir">Folge mir</button>
+                    <button type="button" data-cmd="komm her">Komm her</button>
+                    <button type="button" data-cmd="warte">Warte</button>
+                    <button type="button" data-cmd="erkunde">Erkunde</button>
+                </div>
+                <div class="actions">
+                    <button type="button" data-cmd="alle folgt mir">Alle folgen</button>
+                    <button type="button" data-cmd="alle warten">Alle warten</button>
+                </div>
+            </section>
             <section class="section">
                 <h3>Spawnen</h3>
+                <div class="soul-row">
+                    <label for="creature-soul-select">Form</label>
+                    <select id="creature-soul-select" aria-label="Kreatur-Seele wählen">
+                        <option value="">Zufällig</option>
+                        <option value="sprite">Sprite (Magie · Quarz)</option>
+                        <option value="wesen">Wesen (Solid · Stein+Holz)</option>
+                        <option value="geist">Geist (Ätherisch · Laub+Leder)</option>
+                    </select>
+                </div>
                 <div class="actions" id="creature-actions">
-                    <button type="button" data-cmd="Spawne Kreaturen 5">+5</button>
-                    <button type="button" data-cmd="Spawne Kreaturen 10">+10</button>
+                    <button type="button" data-creature-spawn="1">+1</button>
+                    <button type="button" data-creature-spawn="5">+5</button>
+                    <button type="button" data-creature-spawn="10">+10</button>
                     <button type="button" data-cmd="Kreaturen aktivieren">Sichtbar</button>
                     <button type="button" data-cmd="Kreaturen deaktivieren">Verbergen</button>
                 </div>
+            </section>
+            <section class="section">
+                <h3>Wesen in der Welt</h3>
+                <p class="drawer-hint">
+                    Identität ist ein Name (Vision §1.1 — Co-Schöpfer-Beziehung). Tag-Profil emergiert aus
+                    Form × Material — eine Sprite ist magie-leitend, ein Wesen dichte/lebendig, ein Geist
+                    ätherisch.
+                </p>
+                <div id="creature-list" class="creature-list" aria-live="polite">—</div>
             </section>
         </aside>
         <aside class="drawer" data-drawer="spieler" aria-label="Spieler-Panel" hidden>

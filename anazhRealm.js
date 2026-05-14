@@ -1,4 +1,4 @@
-/**AnazhRealm V7.79 – Das Ultiversum Vollendet.
+/**AnazhRealm V7.80 – Das Ultiversum Vollendet.
  * Hüpfen: Robust, präzise (Y ~1.5), Coyote-Time 0.3s, Gravitation 1.5G, Reibung 0.5.
  * Kollisionen: Kein Tunneling, steepnessThreshold 3.0, wallThickness 2.0, CCD optimiert.
  * Terrain: Flacher (Höhenunterschiede ±5), KI-gesteuerte Steilheitsanpassung, Chat-Steuerung.
@@ -12,7 +12,7 @@
 class AnazhRealm {
     constructor() {
         // ### Learnings ### [Stichwortartig optimieren, korrigieren, ergänzen – nie Wissen löschen!]
-        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69, LAN-Fähigkeit + Sync-Korrektheit (Ring 11 V2.1: 0.0.0.0-bind, ws:/wss:-CSP, roomOverride, spawn_*-Embedding, NON_BROADCASTABLE_OPS) in V7.70, Intuitiver Multi-User-Setup (Ring 11.5: Modus-Wahl, Host-Banner mit Einladungs-Code, Auto-Welt-Snapshot beim Join) in V7.71, Welle 6.A — Interaktion-Polish (Wall-Sliding via Player-Friction-0, Erdung-Raycast-Robustheit für Bauwerke) in V7.72, Welle 6.G Phase 1 — Welt-Sinne (fliegende Inseln + Bäume kollidierbar via btBvhTriangleMeshShape/btCylinderShape, drei Dead-Code-DSL-Ops spawn_tree/island/ufo aktiviert, toter needsPhysics-Lazy-Pfad gelöscht) in V7.73, Welle 6.G Phase 1.5 — Hylomorphismus-Unification (Bäume sind jetzt Compound-Architekturen über baum_eiche/baum_kiefer-Baupläne mit Stamm:holz + Krone:laub, eigene spawnTreeAt + _buildTreeCollision gelöscht, Parallelcode → eine Sprache, plus Insel-Visual-Fix mit Underside + Lambert) in V7.74, Welle 6.G Phase 2 — Welt-Affinitäts-Feld (vier SimplexNoise-Schichten lebendig/dichte/glut/magieleitung, Baupläne spawnen wo ihre Compound-Tags resonieren — Wälder/Felsen/Magie-Zonen/Vulkan-Anker emergieren ohne Biome-Tabelle, populateChunkVegetation als Hook in ensureChunkAt + Initial-Worldgen, drei neue Built-in-Baupläne stein_block/kristall_geode/glutbrunnen, Stämme dicker für Spieler-Spürbarkeit, Culling-Tick 1Hz→2Hz, spawn-silent-Opt damit Worldgen die Welt-Effekt-Kaskade nicht überflutet) in V7.75, Welle 6.C2 — Spielmodi (frieden/pfad/schöpfer als Welt-Beziehungs-Schalter, frieden umarmt + pfad verhandelt + schöpfer gehorcht, damagePlayer + applyOpToPart-Stamina modus-gated, set_mode DSL-Op in NON_BROADCASTABLE_OPS, UI-Radio in Einstellungen + Status-Bar #status-mode, worldMeta.gameMode persistiert pro-Welt) in V7.76, Welle 6.C1 — Hylomorphismus-Inventar (27-Slot-Overlay mit Tab-Toggle, Tag-Resonanz emergiert aus Compound-Tags — resoniert summt + brennend glüht + magieleitung schimmert + lebendig sprießt, Audio-Hover-Ping via state.symphony, addToInventory stackt bei gleichem Bauplan-Namen, Inventar-Slot wählen → Hotbar-Slot Klick weist zu, add_to_inventory DSL-Op in NON_BROADCASTABLE_OPS, state.player.inventory[27] persistiert in buildStateSnapshot) in V7.77, Welle 6.A6 + 6.C3 — Maus-Aktionen + Keybindings (LMB abbauen Architektur am Raycast / kein Treffer → modify_terrain-Loch, RMB platzieren = confirmBuild im aktiven Bau-Modus, beide modus-gated mit MOUSE_ACTION_STAMINA_COST=5 in pfad / kostenlos in frieden+schöpfer, DEFAULT_KEYBINDINGS frozen mit 6 Aktionen break/place/confirmBuild/inventory/cancelBuild/jump, Konflikt-Auflösung als Swap statt Leerung, _eventToBindingCode unterstützt KeyboardEvent.code + Mouse0/1/2, Rebind-Capture-Workflow mit Escape-Abbruch, UI-Sektion in Einstellungen-Drawer mit „Ändern"-Button + Standard-Reset, alle 6 Listener konsultieren state.keybindings über _actionForBindingCode, Tab-Listener gated auf !keybindRebind damit Rebind nicht versehentlich Inventar toggelt, plus Vision-§1.2-Schließung _playArchitectureFarewellPing: abklingender Sinus-Ping beim Abbauen einer resoniert≥resonance_mild-Architektur — selber Audio-Graph wie Spawn-Singing, zeitlich gespiegelt; Stein-Block stumm als Vision-Disziplin, plus HUD dynamisch aus _formatBindingCode statt hartkodierte F/RMB/LMB-Strings, setKeybinding + resetKeybindings triggern automatisch HUD-Refresh) in V7.78, Welle 6.H Phase 1 — Kreaturen-Aufträge (drei Tasks wander/follow_player/wait als Beziehungs-Gesten zwischen Spieler und Kreatur, creature.userData.task-Datenmodell, assignCreatureTask als einziger Mutations-Pfad mit Aura-Trigger, _tickCreatureTaskDirection-Schicht in updateCreatures-Loop mit null-Fallback auf heutige Emotion-Logik bei wander, additives CanvasTexture-Aura-Sprite über der Kreatur in HSL-Hue je Task — grünlich für follow / bernstein für wait, drei DSL-Ops creature_task/creature_task_nearest/creature_task_all in NON_BROADCASTABLE_OPS, sechs Chat-Patterns folge mir/komm her/warte/erkunde/alle folgt mir/alle warten, Aura-Lifecycle via _refreshCreatureTaskAura mit Disposal in removeCreature, bewusst KEINE Save-Persistenz — Vision §1.1 Co-Schöpfer-Beziehung wird gesprochen nicht gespeichert, plus V2-Schließungen nach Schöpfer-Selbstaudit: _playCreatureTaskPing mit CREATURE_TASK_PING_FREQ je Task — follow_player=494Hz hell, wait=294Hz ruhig, wander=null stumm (Lösen der Bindung darf still sein), _journalCreatureTask schreibt relationship-Eintrag bei echtem Wechsel mit silent-Option für Spawn-Defaults, assignTaskToNearestCreature bei Leerschlag schreibt Chat-Output 'Keine Kreatur in der Nähe' + reach-Journal-Eintrag, _getCreatureTaskAuraTexture cached geteilte CanvasTexture analog 6.D Player-Aura statt pro Wechsel neu zu erzeugen, _renderTaskStatusUI füllt #status-tasks mit 'N folgen · M warten' bzw '—', describeProgram zeigt distance-Arg wenn gesetzt) in V7.79
+        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69, LAN-Fähigkeit + Sync-Korrektheit (Ring 11 V2.1: 0.0.0.0-bind, ws:/wss:-CSP, roomOverride, spawn_*-Embedding, NON_BROADCASTABLE_OPS) in V7.70, Intuitiver Multi-User-Setup (Ring 11.5: Modus-Wahl, Host-Banner mit Einladungs-Code, Auto-Welt-Snapshot beim Join) in V7.71, Welle 6.A — Interaktion-Polish (Wall-Sliding via Player-Friction-0, Erdung-Raycast-Robustheit für Bauwerke) in V7.72, Welle 6.G Phase 1 — Welt-Sinne (fliegende Inseln + Bäume kollidierbar via btBvhTriangleMeshShape/btCylinderShape, drei Dead-Code-DSL-Ops spawn_tree/island/ufo aktiviert, toter needsPhysics-Lazy-Pfad gelöscht) in V7.73, Welle 6.G Phase 1.5 — Hylomorphismus-Unification (Bäume sind jetzt Compound-Architekturen über baum_eiche/baum_kiefer-Baupläne mit Stamm:holz + Krone:laub, eigene spawnTreeAt + _buildTreeCollision gelöscht, Parallelcode → eine Sprache, plus Insel-Visual-Fix mit Underside + Lambert) in V7.74, Welle 6.G Phase 2 — Welt-Affinitäts-Feld (vier SimplexNoise-Schichten lebendig/dichte/glut/magieleitung, Baupläne spawnen wo ihre Compound-Tags resonieren — Wälder/Felsen/Magie-Zonen/Vulkan-Anker emergieren ohne Biome-Tabelle, populateChunkVegetation als Hook in ensureChunkAt + Initial-Worldgen, drei neue Built-in-Baupläne stein_block/kristall_geode/glutbrunnen, Stämme dicker für Spieler-Spürbarkeit, Culling-Tick 1Hz→2Hz, spawn-silent-Opt damit Worldgen die Welt-Effekt-Kaskade nicht überflutet) in V7.75, Welle 6.C2 — Spielmodi (frieden/pfad/schöpfer als Welt-Beziehungs-Schalter, frieden umarmt + pfad verhandelt + schöpfer gehorcht, damagePlayer + applyOpToPart-Stamina modus-gated, set_mode DSL-Op in NON_BROADCASTABLE_OPS, UI-Radio in Einstellungen + Status-Bar #status-mode, worldMeta.gameMode persistiert pro-Welt) in V7.76, Welle 6.C1 — Hylomorphismus-Inventar (27-Slot-Overlay mit Tab-Toggle, Tag-Resonanz emergiert aus Compound-Tags — resoniert summt + brennend glüht + magieleitung schimmert + lebendig sprießt, Audio-Hover-Ping via state.symphony, addToInventory stackt bei gleichem Bauplan-Namen, Inventar-Slot wählen → Hotbar-Slot Klick weist zu, add_to_inventory DSL-Op in NON_BROADCASTABLE_OPS, state.player.inventory[27] persistiert in buildStateSnapshot) in V7.77, Welle 6.A6 + 6.C3 — Maus-Aktionen + Keybindings (LMB abbauen Architektur am Raycast / kein Treffer → modify_terrain-Loch, RMB platzieren = confirmBuild im aktiven Bau-Modus, beide modus-gated mit MOUSE_ACTION_STAMINA_COST=5 in pfad / kostenlos in frieden+schöpfer, DEFAULT_KEYBINDINGS frozen mit 6 Aktionen break/place/confirmBuild/inventory/cancelBuild/jump, Konflikt-Auflösung als Swap statt Leerung, _eventToBindingCode unterstützt KeyboardEvent.code + Mouse0/1/2, Rebind-Capture-Workflow mit Escape-Abbruch, UI-Sektion in Einstellungen-Drawer mit „Ändern"-Button + Standard-Reset, alle 6 Listener konsultieren state.keybindings über _actionForBindingCode, Tab-Listener gated auf !keybindRebind damit Rebind nicht versehentlich Inventar toggelt, plus Vision-§1.2-Schließung _playArchitectureFarewellPing: abklingender Sinus-Ping beim Abbauen einer resoniert≥resonance_mild-Architektur — selber Audio-Graph wie Spawn-Singing, zeitlich gespiegelt; Stein-Block stumm als Vision-Disziplin, plus HUD dynamisch aus _formatBindingCode statt hartkodierte F/RMB/LMB-Strings, setKeybinding + resetKeybindings triggern automatisch HUD-Refresh) in V7.78, Welle 6.H Phase 1 — Kreaturen-Aufträge (drei Tasks wander/follow_player/wait als Beziehungs-Gesten zwischen Spieler und Kreatur, creature.userData.task-Datenmodell, assignCreatureTask als einziger Mutations-Pfad mit Aura-Trigger, _tickCreatureTaskDirection-Schicht in updateCreatures-Loop mit null-Fallback auf heutige Emotion-Logik bei wander, additives CanvasTexture-Aura-Sprite über der Kreatur in HSL-Hue je Task — grünlich für follow / bernstein für wait, drei DSL-Ops creature_task/creature_task_nearest/creature_task_all in NON_BROADCASTABLE_OPS, sechs Chat-Patterns folge mir/komm her/warte/erkunde/alle folgt mir/alle warten, Aura-Lifecycle via _refreshCreatureTaskAura mit Disposal in removeCreature, bewusst KEINE Save-Persistenz — Vision §1.1 Co-Schöpfer-Beziehung wird gesprochen nicht gespeichert, plus V2-Schließungen nach Schöpfer-Selbstaudit: _playCreatureTaskPing mit CREATURE_TASK_PING_FREQ je Task — follow_player=494Hz hell, wait=294Hz ruhig, wander=null stumm (Lösen der Bindung darf still sein), _journalCreatureTask schreibt relationship-Eintrag bei echtem Wechsel mit silent-Option für Spawn-Defaults, assignTaskToNearestCreature bei Leerschlag schreibt Chat-Output 'Keine Kreatur in der Nähe' + reach-Journal-Eintrag, _getCreatureTaskAuraTexture cached geteilte CanvasTexture analog 6.D Player-Aura statt pro Wechsel neu zu erzeugen, _renderTaskStatusUI füllt #status-tasks mit 'N folgen · M warten' bzw '—', describeProgram zeigt distance-Arg wenn gesetzt) in V7.79, Welle 6.H Phase 2A — Kreaturen-Hylomorphismus + Tab-UX (Kreaturen sind jetzt Multi-Mesh-Compounds aus bodyParts × Material — selbe Sprache wie Spieler-Seele 6.D und Architekturen 6.G P1.5; CREATURE_SOULS frozen mit drei Built-in-Identitäten sprite/wesen/geist; applyCreatureSoul-Mutations-Pfad baut Group + tauscht in state.creatures + state.rigidBodies, computeCreatureCompoundTags emergent aus parts via existing computeCompoundTags-Pipeline, Random-Name aus Pool als Identity-Anker, Kreaturen-Drawer UI komplett überarbeitet — Befehl-Buttons folge/komm her/warte/erkunde/alle folgt+warten als data-cmd plus Form-Dropdown vor Spawn-Buttons plus Kreatur-Liste mit Name+Form+Task+Aura-Hint, removeCreature dispoSed nun ganze Group sauber, color-lerp-Pfad in updateCreatures defensive für Groups) in V7.80
         // - Nexus als Herz der Selbstentwicklung, steuert nun alles über Chat, unzerstörbar und unendlich
         this.state = {
             // ### Kern ###
@@ -528,7 +528,7 @@ class AnazhRealm {
     // ### Logging ###
     log(message, level = "INFO") {
         if (level === "DEBUG" && !this.state.debugLogging) return;
-        const logMessage = `[AnazhRealm V7.79] [${level}] ${message}`;
+        const logMessage = `[AnazhRealm V7.80] [${level}] ${message}`;
         this.state.logBuffer.push(logMessage);
         console.log(logMessage);
         if (this.state.logBuffer.length > this.state.maxLogEntries) {
@@ -1591,8 +1591,19 @@ class AnazhRealm {
                 } catch {
                     return;
                 }
+                // Welle 6.H P2A — Kreatur ist Group; tinten via traverse über
+                // alle Sub-Mesh-Materialien. Pre-V7.80-Mesh-Pfad (cr.material)
+                // bleibt als Fallback für Legacy-Test-Setups.
                 for (const cr of this.state.creatures) {
-                    if (cr.material && cr.material.color) cr.material.color.copy(tint);
+                    if (cr.material && cr.material.color) {
+                        cr.material.color.copy(tint);
+                    } else if (typeof cr.traverse === "function") {
+                        cr.traverse((node) => {
+                            if (node.isMesh && node.material && node.material.color) {
+                                node.material.color.copy(tint);
+                            }
+                        });
+                    }
                 }
             },
             creatures_emotion: ([emotion]) => {
@@ -5733,6 +5744,9 @@ class AnazhRealm {
             creature.userData.taskAura = null;
         }
         this.state.scene.remove(creature);
+        // Welle 6.H Phase 2A — Kreatur ist jetzt eine Group; tiefes Disposal
+        // wie bei Soul-Wechsel, sonst leakt jede Sub-Mesh-Geometrie.
+        this._disposeSoulGroup(creature);
         const body = creature.userData?.physicsBody;
         if (body && this.state.physicsWorld) {
             this.state.physicsWorld.removeRigidBody(body);
@@ -5740,6 +5754,7 @@ class AnazhRealm {
         }
         this.state.rigidBodies = this.state.rigidBodies.filter((rb) => rb !== creature);
         if (typeof this._renderTaskStatusUI === "function") this._renderTaskStatusUI();
+        if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
     }
 
     clearCreatures() {
@@ -5749,30 +5764,85 @@ class AnazhRealm {
         this.state.creatureEmotions = [];
     }
 
-    spawnCreatureAt(x, y, z, emotion = "happy") {
-        // Helper für DSL-`spawn_creature` und initiales `spawnCreatures`.
-        // Erstellt ein echtes THREE.Mesh — sonst crasht updateCreatures auf
-        // creature.material.color.lerp().
+    spawnCreatureAt(x, y, z, emotion = "happy", soulName = null) {
+        // Welle 6.H Phase 2A — Kreatur ist jetzt eine Hylomorphismus-Group.
+        // Selber Renderpfad wie Architektur + Spieler-Seele: _buildFromBlueprint
+        // konsumiert bodyParts × Material aus CREATURE_SOULS.
         if (this.state.creatures.length >= this.state.maxCreatures) return null;
-        const geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-        const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.position.set(x, y, z);
-        mesh.visible = true;
-        // Welle 6.H Phase 1 — Default-Task „wander" (heutiges Emotion-Verhalten).
-        // Kreaturen sind frische Wesen pro Session, Tasks sind Gesten, keine
-        // Identität — daher bewusst KEINE Save-Persistenz (Vision §1.1: die
-        // Co-Schöpfer-Beziehung wird gesprochen, nicht gespeichert).
-        mesh.userData = mesh.userData || {};
-        mesh.userData.task = { name: "wander", args: {}, since: performance.now() / 1000 };
-        if (this.state.scene) this.state.scene.add(mesh);
-        this.state.creatures.push(mesh);
+        const chosenSoul = this._pickCreatureSoulName(soulName);
+        const group = this._buildCreatureGroup(chosenSoul);
+        if (!group) return null;
+        group.position.set(x, y, z);
+        group.visible = true;
+        group.userData.kind = "creature";
+        group.userData.soul = chosenSoul;
+        group.userData.name = this._pickCreatureName();
+        group.userData.task = { name: "wander", args: {}, since: performance.now() / 1000 };
+        if (this.state.scene) this.state.scene.add(group);
+        this.state.creatures.push(group);
         this.state.creatureEmotions.push(emotion === "sad" ? "sad" : "happy");
-        // Ring 4: jeder DSL-getriggerte Spawn erzeugt einen Klang-Ping, der
-        // Welt bekommt eine hörbare Spur. Initial-Spawn (über spawnCreatures)
-        // umgeht das absichtlich — sonst hagelt es 10 Pings beim Welt-Bau.
+        if (this.state.physicsWorld) {
+            // Hitbox bleibt bewusst kompakt (0.5×0.5×0.5 wie pre-V7.80) — die
+            // Visual-Höhe variiert je Seele, aber Kollision soll vorhersagbar
+            // sein. Selbe Disziplin wie Spieler-Seele (0.5er Hitbox, Visual 1.7m).
+            const creatureShape = new Ammo.btBoxShape(new Ammo.btVector3(0.25, 0.25, 0.25));
+            this.addRigidBody(group, 0.5, creatureShape);
+        }
+        // Ring 4 — Spawn-Klang. DSL-getriggert pingt, initial-spawn (über
+        // spawnCreatures mit `silent`) bleibt still, sonst hagelt es 10 Pings.
         this.playCreaturePing(emotion === "sad" ? "sad" : "happy");
-        return mesh;
+        return group;
+    }
+
+    _pickCreatureSoulName(requested) {
+        const souls = AnazhRealm.CREATURE_SOUL_NAMES;
+        if (typeof requested === "string" && souls.includes(requested)) return requested;
+        return souls[Math.floor(Math.random() * souls.length)];
+    }
+
+    // Aura-Y-Offset folgt der Soul-Höhe (auraY-Hint pro Seele), damit die
+    // Aura über Sprite und Wesen unterschiedlich hoch schwebt.
+    _creatureAuraOffsetY(creature) {
+        if (!creature || !creature.userData) return 0.9;
+        const soulName = creature.userData.soul;
+        const soul = soulName && AnazhRealm.CREATURE_SOULS[soulName];
+        return soul && Number.isFinite(soul.auraY) ? soul.auraY : 0.9;
+    }
+
+    _pickCreatureName() {
+        const pool = AnazhRealm.CREATURE_NAME_POOL;
+        return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    // Welle 6.H Phase 2A — Builder: Multi-Mesh-Group aus CREATURE_SOULS[name].
+    // Selber Renderpfad wie Architektur (_buildFromBlueprint), damit Material-
+    // Tags + Form-Aktivierung emergent fallen. Soul-unbekannt → Fallback wesen.
+    _buildCreatureGroup(soulName) {
+        if (typeof THREE === "undefined") return null;
+        const soul = AnazhRealm.CREATURE_SOULS[soulName] || AnazhRealm.CREATURE_SOULS.wesen;
+        const group = this._buildFromBlueprint({ name: `creature_${soulName}`, parts: soul.bodyParts });
+        // Opacity-Hinweise aus den bodyParts auf die Materialien übertragen —
+        // _buildFromBlueprint pflegt das normalerweise über das Bauplan-Schema,
+        // aber CreatureSouls dürfen `opacity` direkt am Part tragen.
+        soul.bodyParts.forEach((part, i) => {
+            const child = group.children[i];
+            if (!child || !child.material) return;
+            if (typeof part.opacity === "number" && part.opacity < 1) {
+                child.material.transparent = true;
+                child.material.opacity = part.opacity;
+            }
+        });
+        return group;
+    }
+
+    // Compound-Tags der Kreatur via einheitlicher Pipeline. Vision §1.3 fraktal:
+    // dieselbe MAX-Aggregation wie computeCompoundTags(blueprint) / computeSoulCompoundTags.
+    computeCreatureCompoundTags(creature) {
+        if (!creature) return {};
+        const soulName = creature.userData && creature.userData.soul;
+        const soul = soulName && AnazhRealm.CREATURE_SOULS[soulName];
+        if (!soul) return {};
+        return this.computeCompoundTags({ parts: soul.bodyParts });
     }
 
     // === Welle 6.H Phase 1 — Kreaturen-Aufträge ===
@@ -5853,6 +5923,7 @@ class AnazhRealm {
             this._journalCreatureTask(creature, taskName, prevName);
         }
         if (typeof this._renderTaskStatusUI === "function") this._renderTaskStatusUI();
+        if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
         return true;
     }
 
@@ -6040,7 +6111,8 @@ class AnazhRealm {
         mat.color.setHSL(hue / 360, 0.6, 0.65);
         const sprite = new THREE.Sprite(mat);
         sprite.scale.set(1.4, 1.4, 1);
-        sprite.position.set(creature.position.x, creature.position.y + 0.9, creature.position.z);
+        const auraY = this._creatureAuraOffsetY(creature);
+        sprite.position.set(creature.position.x, creature.position.y + auraY, creature.position.z);
         if (this.state.scene) this.state.scene.add(sprite);
         creature.userData = creature.userData || {};
         creature.userData.taskAura = sprite;
@@ -6069,7 +6141,11 @@ class AnazhRealm {
         el.textContent = parts.length ? parts.join(" · ") : "—";
     }
 
-    spawnCreatures(count = 10) {
+    spawnCreatures(count = 10, soulName = null) {
+        // Welle 6.H Phase 2A — geht jetzt komplett über spawnCreatureAt damit
+        // Spawn-Defaults UND DSL-Spawns denselben Hylomorphismus-Pfad nehmen.
+        // Optional soulName fixiert alle Initial-Spawns auf eine Seele
+        // (für Tests + Multi-Sprite-Welten); sonst Random je Kreatur.
         this.clearCreatures();
         const safeCount = Math.max(0, Math.min(count, this.state.maxCreatures));
         if (safeCount !== count) {
@@ -6077,9 +6153,6 @@ class AnazhRealm {
         }
         const spawnRadius = 50;
         for (let i = 0; i < safeCount; i++) {
-            const creatureGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-            const creatureMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-            const creatureMesh = new THREE.Mesh(creatureGeometry, creatureMaterial);
             const angle = Math.random() * Math.PI * 2;
             const radius = Math.random() * spawnRadius;
             const x = Math.cos(angle) * radius;
@@ -6091,29 +6164,23 @@ class AnazhRealm {
                       Math.min(Math.max(zIndex, 0), 255) * 256 + Math.min(Math.max(xIndex, 0), 255)
                   ]
                 : 0;
-            creatureMesh.position.set(x, terrainHeight + 1.0, z);
-            creatureMesh.visible = true;
-            // Welle 6.H — Default-Task „wander" auch für Initial-Spawns.
-            creatureMesh.userData = creatureMesh.userData || {};
-            creatureMesh.userData.task = { name: "wander", args: {}, since: performance.now() / 1000 };
-            this.state.scene.add(creatureMesh);
-            this.state.creatures.push(creatureMesh);
-            this.state.creatureEmotions.push(
+            const emotion =
                 this.state.weather === "rainy"
                     ? Math.random() < 0.7
                         ? "sad"
                         : "happy"
                     : Math.random() < 0.7
                       ? "happy"
-                      : "sad"
-            );
-
-            if (this.state.physicsWorld) {
-                const creatureShape = new Ammo.btBoxShape(new Ammo.btVector3(0.25, 0.25, 0.25));
-                this.addRigidBody(creatureMesh, 0.5, creatureShape);
-            }
+                      : "sad";
+            // playCreaturePing in spawnCreatureAt mute-temporär, sonst 10 Pings.
+            const symBefore = this.state.symphony && this.state.symphony.enabled;
+            if (this.state.symphony) this.state.symphony.enabled = false;
+            this.spawnCreatureAt(x, terrainHeight + 1.0, z, emotion, soulName);
+            if (this.state.symphony) this.state.symphony.enabled = symBefore;
         }
         this.log(`Kreaturen gespawnt: ${safeCount} Kreaturen`);
+        if (typeof this._renderTaskStatusUI === "function") this._renderTaskStatusUI();
+        if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
     }
 
     updateCreatures(delta) {
@@ -6213,7 +6280,11 @@ class AnazhRealm {
             // Welle 6.H — Task-Aura folgt der Kreatur (Y +0.9 über dem Mesh).
             const aura = creature.userData && creature.userData.taskAura;
             if (aura) {
-                aura.position.set(creature.position.x, creature.position.y + 0.9, creature.position.z);
+                aura.position.set(
+                    creature.position.x,
+                    creature.position.y + this._creatureAuraOffsetY(creature),
+                    creature.position.z
+                );
             }
 
             // Farbe basierend auf Emotion. Defensiv: ein creature ohne material
@@ -14811,6 +14882,79 @@ class AnazhRealm {
         }
     }
 
+    // Welle 6.H Phase 2A — Kreaturen-Drawer-UI. Drei Aufgaben:
+    // 1) Spawn-mit-Form-Wahl (override Chat-Default-Random durch select)
+    // 2) Aufträge-Buttons routen über data-cmd (gemeinsamer Chat-Pfad)
+    // 3) Liste der lebenden Kreaturen mit Name + Form + aktueller Task
+    creatureDrawerInitDOM() {
+        if (typeof document === "undefined") return;
+        const drawer = document.querySelector('[data-drawer="kreaturen"]');
+        if (!drawer) return;
+        // Spawn-Buttons mit data-creature-spawn-Attribut konsultieren den
+        // Form-Dropdown. Bei „" (Zufällig) bleibt spawnCreatures' Default
+        // (random je Kreatur); sonst alle N gespawnten Kreaturen tragen
+        // diese Seele.
+        const select = drawer.querySelector("#creature-soul-select");
+        drawer.querySelectorAll("[data-creature-spawn]").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                const count = Math.max(1, Math.min(50, parseInt(btn.getAttribute("data-creature-spawn"), 10) || 1));
+                const soulName = select ? select.value : "";
+                const chosen = soulName && AnazhRealm.CREATURE_SOUL_NAMES.includes(soulName) ? soulName : null;
+                // Spawn ohne clear (state.creatures bleibt + N neue dazu).
+                for (let i = 0; i < count; i++) {
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 5, z: 0 };
+                    const ang = Math.random() * Math.PI * 2;
+                    const r = 5 + Math.random() * 10;
+                    this.spawnCreatureAt(p.x + Math.cos(ang) * r, p.y + 1, p.z + Math.sin(ang) * r, "happy", chosen);
+                }
+                this._renderCreatureListUI();
+            });
+        });
+        this._renderCreatureListUI();
+    }
+
+    _renderCreatureListUI() {
+        if (typeof document === "undefined") return;
+        const list = document.getElementById("creature-list");
+        if (!list) return;
+        list.innerHTML = "";
+        const creatures = this.state.creatures || [];
+        if (creatures.length === 0) {
+            list.textContent = "—";
+            return;
+        }
+        for (const c of creatures) {
+            const row = document.createElement("div");
+            row.className = "creature-row";
+            const nameEl = document.createElement("span");
+            nameEl.className = "creature-name";
+            nameEl.textContent = (c.userData && c.userData.name) || "?";
+            const soulEl = document.createElement("span");
+            soulEl.className = "creature-soul";
+            const soulName = c.userData && c.userData.soul;
+            const soulLabel =
+                soulName && AnazhRealm.CREATURE_SOULS[soulName] && AnazhRealm.CREATURE_SOULS[soulName].label;
+            soulEl.textContent = soulLabel || "—";
+            const taskEl = document.createElement("span");
+            taskEl.className = "creature-task";
+            const task = this._getCreatureTask(c);
+            const taskName = task ? task.name : "—";
+            taskEl.classList.add(taskName);
+            taskEl.textContent =
+                taskName === "follow_player"
+                    ? "folgt"
+                    : taskName === "wait"
+                      ? "wartet"
+                      : taskName === "wander"
+                        ? "streift"
+                        : "—";
+            row.appendChild(nameEl);
+            row.appendChild(soulEl);
+            row.appendChild(taskEl);
+            list.appendChild(row);
+        }
+    }
+
     inventoryInitDOM() {
         if (typeof document === "undefined") return;
         // Welle 6.C1 — Inventar-Toggle. Default-Bindung ist Tab (Capture-
@@ -16584,7 +16728,7 @@ class AnazhRealm {
     }
 
     async init() {
-        this.log("Initialisiere Anazh Realm V7.79... Ewigkeit erwacht!", "INFO");
+        this.log("Initialisiere Anazh Realm V7.80... Ewigkeit erwacht!", "INFO");
         // Welle 6.C3 — Keybindings VOR allen DOM-Listenern laden. State muss
         // existieren bevor das Settings-Panel rendert (sonst zeigt es leer).
         this.state.keybindings = this._loadKeybindings();
@@ -16598,6 +16742,7 @@ class AnazhRealm {
         this.gameModeInitDOM();
         this.keybindingsInitDOM();
         this.inventoryInitDOM();
+        this.creatureDrawerInitDOM();
         // Ring 6.5 — Hotbar im DOM rendern. Wird hier einmal aufgesetzt;
         // setHotbarSlot löst ein Re-Render aus.
         this._renderHotbarDOM();
@@ -17752,6 +17897,127 @@ AnazhRealm.KEYBINDING_LABELS = Object.freeze({
     cancelBuild: "Bau-Modus verlassen",
     jump: "Springen",
 });
+
+// Welle 6.H Phase 2A — Kreatur-Seelen als Hylomorphismus-Compounds.
+// Selbe Sprache wie playerSoulDefs (6.D) und Architektur-Baupläne (6.G).
+// bodyParts werden über _buildFromBlueprint zu Multi-Mesh-Groups, Tag-Profile
+// emergieren über computeCompoundTags. Drei Built-in-Seelen als Start-
+// Identitäten — Phase 2B kann Custom-Souls via define_creature_soul ergänzen.
+//
+// Materialwahl folgt Vision-Charakter:
+//   sprite  — quarz × octahedron + sphere: magie-leitend, leicht, resonant
+//   wesen   — stein × box + holz × cylinder/sphere: dichte, robust, lebendig
+//   geist   — laub × torus + leder × sphere: lebendig, semi-transparent
+AnazhRealm.CREATURE_SOULS = Object.freeze({
+    sprite: Object.freeze({
+        label: "Sprite",
+        bodyParts: Object.freeze([
+            Object.freeze({
+                shape: "octahedron",
+                material: "quarz",
+                size: { x: 0.22, y: 0.22, z: 0.22 },
+                position: { x: 0, y: 0.05, z: 0 },
+                label: "Kern",
+            }),
+            Object.freeze({
+                shape: "sphere",
+                material: "quarz",
+                size: { x: 0.34, y: 0.34, z: 0.34 },
+                position: { x: 0, y: 0.05, z: 0 },
+                opacity: 0.45,
+                label: "Hülle",
+            }),
+        ]),
+        auraY: 0.55,
+    }),
+    wesen: Object.freeze({
+        label: "Wesen",
+        bodyParts: Object.freeze([
+            Object.freeze({
+                shape: "box",
+                material: "stein",
+                size: { x: 0.38, y: 0.32, z: 0.32 },
+                position: { x: 0, y: 0, z: 0 },
+                label: "Körper",
+            }),
+            Object.freeze({
+                shape: "sphere",
+                material: "holz",
+                size: { x: 0.2, y: 0.2, z: 0.2 },
+                position: { x: 0, y: 0.3, z: 0 },
+                label: "Kopf",
+            }),
+            Object.freeze({
+                shape: "cylinder",
+                material: "holz",
+                size: { x: 0.07, y: 0.28, z: 0.07 },
+                position: { x: 0, y: -0.28, z: 0 },
+                label: "Stamm-Bein",
+            }),
+        ]),
+        auraY: 0.8,
+    }),
+    geist: Object.freeze({
+        label: "Geist",
+        bodyParts: Object.freeze([
+            Object.freeze({
+                shape: "torus",
+                material: "laub",
+                size: { x: 0.3, y: 0.09, z: 0.3 },
+                position: { x: 0, y: 0.1, z: 0 },
+                opacity: 0.55,
+                label: "Ring",
+            }),
+            Object.freeze({
+                shape: "sphere",
+                material: "leder",
+                size: { x: 0.18, y: 0.18, z: 0.18 },
+                position: { x: 0, y: 0, z: 0 },
+                opacity: 0.85,
+                label: "Kern",
+            }),
+        ]),
+        auraY: 0.6,
+    }),
+});
+AnazhRealm.CREATURE_SOUL_NAMES = Object.freeze(Object.keys(AnazhRealm.CREATURE_SOULS));
+
+// Identitäts-Anker: Namen-Pool. Jede Kreatur bekommt beim Spawn einen Namen
+// aus diesem Pool — Vision-Pfeiler §1.1 Co-Schöpfer-Beziehung wird auf
+// Identität gehängt, nicht auf Index. Phase 2B wird Konversationen darauf
+// stützen ("Nina, was hast du gesehen?").
+AnazhRealm.CREATURE_NAME_POOL = Object.freeze([
+    "Nira",
+    "Vex",
+    "Lumin",
+    "Skara",
+    "Thal",
+    "Yune",
+    "Orin",
+    "Kai",
+    "Aro",
+    "Sai",
+    "Mira",
+    "Zen",
+    "Pyx",
+    "Quin",
+    "Rae",
+    "Yto",
+    "Una",
+    "Wel",
+    "Bran",
+    "Cova",
+    "Nox",
+    "Fae",
+    "Glim",
+    "Hira",
+    "Ilen",
+    "Joro",
+    "Lera",
+    "Maev",
+    "Toren",
+    "Tara",
+]);
 
 // Welle 6.D Etappe 3a+ (Schöpfer-Feedback 13.05.2026) — Tod-Wunde-Penalty.
 // Der Spieler trägt nach einem Tod eine graduelle Schwächung: Körper-Tags

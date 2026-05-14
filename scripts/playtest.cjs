@@ -508,11 +508,23 @@ function startSaveServer() {
                         learned.program[1] === "blue" &&
                         learned.source === "human";
 
-                    // 8. Phase 5: "Führe Fähigkeit aus" ruft dslRun und mutiert state
+                    // 8. Phase 5: "Führe Fähigkeit aus" ruft dslRun und mutiert state.
+                    // Welle 6.H P2A — Kreatur ist Group; Color lebt auf Sub-Meshes.
                     const someCreature = r.state.creatures[0];
-                    const colorBefore = someCreature ? someCreature.material.color.getHex() : 0;
+                    const readCreatureColor = (c) => {
+                        if (!c) return 0;
+                        if (c.material && c.material.color) return c.material.color.getHex();
+                        let hex = 0;
+                        if (typeof c.traverse === "function") {
+                            c.traverse((n) => {
+                                if (!hex && n.isMesh && n.material && n.material.color) hex = n.material.color.getHex();
+                            });
+                        }
+                        return hex;
+                    };
+                    const colorBefore = readCreatureColor(someCreature);
                     r.processChatCommand("Führe Fähigkeit aus blaukreaturen");
-                    const colorAfter = someCreature ? someCreature.material.color.getHex() : 0;
+                    const colorAfter = readCreatureColor(someCreature);
                     // 0x0000ff = blue
                     out.abilityExecutedMutatesWorld = colorAfter === 0x0000ff && colorBefore !== colorAfter;
 
@@ -9092,6 +9104,179 @@ function startSaveServer() {
                 );
             }
 
+            // ### Welle 6.H Phase 2A — Kreaturen als Hylomorphismus-Compounds ###
+            // Kreaturen sind jetzt Multi-Mesh-Groups aus bodyParts × Material —
+            // selbe Sprache wie Spieler-Seele (6.D) + Architektur (6.G P1.5).
+            // Drei Built-in-Seelen sprite/wesen/geist, Tag-Profil emergent.
+            const wave6hP2aResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    const souls = r.constructor.CREATURE_SOULS;
+                    out.soulsFrozen = !!souls && Object.isFrozen(souls);
+                    out.threeSouls =
+                        souls && Object.keys(souls).length === 3 && souls.sprite && souls.wesen && souls.geist;
+                    out.hasSoulNames =
+                        Array.isArray(r.constructor.CREATURE_SOUL_NAMES) &&
+                        r.constructor.CREATURE_SOUL_NAMES.length === 3;
+                    out.hasNamePool =
+                        Array.isArray(r.constructor.CREATURE_NAME_POOL) &&
+                        r.constructor.CREATURE_NAME_POOL.length >= 20;
+                    const spritePart = souls && souls.sprite && souls.sprite.bodyParts[0];
+                    out.bodyPartsHaveSchema =
+                        spritePart && typeof spritePart.shape === "string" && typeof spritePart.material === "string";
+                    out.spriteAuraY = souls && souls.sprite && souls.sprite.auraY === 0.55;
+                    out.wesenAuraY = souls && souls.wesen && souls.wesen.auraY === 0.8;
+                    out.hasBuildCreatureGroup = typeof r._buildCreatureGroup === "function";
+                    out.hasPickSoulName = typeof r._pickCreatureSoulName === "function";
+                    out.hasPickName = typeof r._pickCreatureName === "function";
+                    out.hasComputeTags = typeof r.computeCreatureCompoundTags === "function";
+                    out.hasAuraOffsetY = typeof r._creatureAuraOffsetY === "function";
+                    out.hasCreatureDrawer = typeof r.creatureDrawerInitDOM === "function";
+                    out.hasRenderList = typeof r._renderCreatureListUI === "function";
+                    if (r.state.creatures.length > 0) {
+                        const c0 = r.state.creatures[0];
+                        out.initialIsGroup = c0 && c0.isGroup === true;
+                        out.initialHasSoul =
+                            typeof c0.userData.soul === "string" &&
+                            r.constructor.CREATURE_SOUL_NAMES.includes(c0.userData.soul);
+                        out.initialHasName = typeof c0.userData.name === "string" && c0.userData.name.length > 0;
+                        out.initialHasTask = c0.userData.task && c0.userData.task.name === "wander";
+                        out.initialHasChildren = c0.children && c0.children.length >= 2;
+                    }
+                    r.clearCreatures();
+                    const p = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 5, z: 0 };
+                    const sprite = r.spawnCreatureAt(p.x + 1, p.y, p.z + 1, "happy", "sprite");
+                    const wesen = r.spawnCreatureAt(p.x + 2, p.y, p.z + 2, "happy", "wesen");
+                    const geist = r.spawnCreatureAt(p.x + 3, p.y, p.z + 3, "happy", "geist");
+                    const tagsSprite = r.computeCreatureCompoundTags(sprite);
+                    const tagsWesen = r.computeCreatureCompoundTags(wesen);
+                    const tagsGeist = r.computeCreatureCompoundTags(geist);
+                    out.spriteMoreMagie = (tagsSprite.magieleitung || 0) > (tagsWesen.magieleitung || 0);
+                    out.wesenMoreDichte = (tagsWesen.dichte || 0) > (tagsGeist.dichte || 0);
+                    out.spriteHasResoniert = (tagsSprite.resoniert || 0) > 0;
+                    out.wesenHasLebendig = (tagsWesen.lebendig || 0) > 0;
+                    out.geistHasLebendig = (tagsGeist.lebendig || 0) > 0;
+                    const fb = r.spawnCreatureAt(p.x + 4, p.y, p.z + 4, "happy", "fictional-soul");
+                    out.unknownSoulFallback = !!fb && r.constructor.CREATURE_SOUL_NAMES.includes(fb.userData.soul);
+                    out.spriteAuraOffset = Math.abs(r._creatureAuraOffsetY(sprite) - 0.55) < 0.01;
+                    out.wesenAuraOffset = Math.abs(r._creatureAuraOffsetY(wesen) - 0.8) < 0.01;
+                    out.spawnSpriteWorks = sprite && sprite.userData.soul === "sprite";
+                    out.spawnWesenWorks = wesen && wesen.userData.soul === "wesen";
+                    out.spawnGeistWorks = geist && geist.userData.soul === "geist";
+                    out.hasCreatureDrawerEl = !!document.querySelector('[data-drawer="kreaturen"]');
+                    out.hasTaskActions = !!document.getElementById("creature-task-actions");
+                    const select = document.getElementById("creature-soul-select");
+                    out.hasSoulSelect = !!select && select.options.length === 4;
+                    out.hasCreatureList = !!document.getElementById("creature-list");
+                    out.hasFolgeMir = !!document.querySelector('[data-cmd="folge mir"]');
+                    out.hasKommHer = !!document.querySelector('[data-cmd="komm her"]');
+                    out.hasWarte = !!document.querySelector('[data-cmd="warte"]');
+                    out.hasErkunde = !!document.querySelector('[data-cmd="erkunde"]');
+                    out.hasAlleFolgen = !!document.querySelector('[data-cmd="alle folgt mir"]');
+                    out.hasAlleWarten = !!document.querySelector('[data-cmd="alle warten"]');
+                    out.spawn1Button = !!document.querySelector('[data-creature-spawn="1"]');
+                    out.spawn5Button = !!document.querySelector('[data-creature-spawn="5"]');
+                    r._renderCreatureListUI();
+                    const list = document.getElementById("creature-list");
+                    out.listRendersRows =
+                        list && list.querySelectorAll(".creature-row").length === r.state.creatures.length;
+                    const firstRow = list && list.querySelector(".creature-row");
+                    out.rowHasNameSoulTask =
+                        firstRow &&
+                        firstRow.querySelector(".creature-name") &&
+                        firstRow.querySelector(".creature-soul") &&
+                        firstRow.querySelector(".creature-task");
+                    r.assignCreatureTask(sprite, "follow_player");
+                    const firstRow2 = list && list.querySelector(".creature-row");
+                    const taskCell = firstRow2 && firstRow2.querySelector(".creature-task");
+                    out.taskCellUpdates =
+                        taskCell && (taskCell.textContent === "folgt" || taskCell.classList.contains("follow_player"));
+                    out.preDisposeChildren = sprite.children.length >= 2;
+                    r.removeCreature(sprite);
+                    r.state.creatures = r.state.creatures.filter((c) => c !== sprite);
+                    out.sceneAfterRemove = !r.state.scene.children.includes(sprite);
+                    r.clearCreatures();
+                    r._renderCreatureListUI();
+                    out.emptyListDash = list && list.textContent === "—";
+                    // Cleanup für nachfolgende Tests (Ring 3 V2 peace,
+                    // UI Run-Button): brauchen Kreaturen-Population.
+                    r.spawnCreatures(10);
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6hP2aResults && !wave6hP2aResults.error) {
+                check("Welle 6.H P2A: CREATURE_SOULS frozen", wave6hP2aResults.soulsFrozen);
+                check("Welle 6.H P2A: drei Seelen (sprite/wesen/geist)", wave6hP2aResults.threeSouls);
+                check("Welle 6.H P2A: CREATURE_SOUL_NAMES Array", wave6hP2aResults.hasSoulNames);
+                check("Welle 6.H P2A: CREATURE_NAME_POOL ≥ 20 Namen", wave6hP2aResults.hasNamePool);
+                check("Welle 6.H P2A: bodyParts haben shape+material-Schema", wave6hP2aResults.bodyPartsHaveSchema);
+                check("Welle 6.H P2A: sprite.auraY === 0.55", wave6hP2aResults.spriteAuraY);
+                check("Welle 6.H P2A: wesen.auraY === 0.8", wave6hP2aResults.wesenAuraY);
+                check(
+                    "Welle 6.H P2A: alle Methoden existieren",
+                    wave6hP2aResults.hasBuildCreatureGroup &&
+                        wave6hP2aResults.hasPickSoulName &&
+                        wave6hP2aResults.hasPickName &&
+                        wave6hP2aResults.hasComputeTags &&
+                        wave6hP2aResults.hasAuraOffsetY &&
+                        wave6hP2aResults.hasCreatureDrawer &&
+                        wave6hP2aResults.hasRenderList
+                );
+                check("Welle 6.H P2A: Initial-Kreatur ist THREE.Group", wave6hP2aResults.initialIsGroup);
+                check("Welle 6.H P2A: Initial-Kreatur trägt Soul-Name", wave6hP2aResults.initialHasSoul);
+                check("Welle 6.H P2A: Initial-Kreatur trägt Name aus Pool", wave6hP2aResults.initialHasName);
+                check("Welle 6.H P2A: Initial-Kreatur hat Default-Task wander", wave6hP2aResults.initialHasTask);
+                check("Welle 6.H P2A: Initial-Kreatur-Group hat ≥2 Sub-Meshes", wave6hP2aResults.initialHasChildren);
+                check(
+                    "Welle 6.H P2A: Diskrimination — sprite mehr magieleitung als wesen",
+                    wave6hP2aResults.spriteMoreMagie
+                );
+                check("Welle 6.H P2A: Diskrimination — wesen mehr dichte als geist", wave6hP2aResults.wesenMoreDichte);
+                check("Welle 6.H P2A: sprite-Compound trägt resoniert > 0", wave6hP2aResults.spriteHasResoniert);
+                check("Welle 6.H P2A: wesen-Compound trägt lebendig > 0", wave6hP2aResults.wesenHasLebendig);
+                check("Welle 6.H P2A: geist-Compound trägt lebendig > 0", wave6hP2aResults.geistHasLebendig);
+                check(
+                    "Welle 6.H P2A: Unknown soulName fällt auf bekannte Seele zurück",
+                    wave6hP2aResults.unknownSoulFallback
+                );
+                check("Welle 6.H P2A: _creatureAuraOffsetY(sprite) === 0.55", wave6hP2aResults.spriteAuraOffset);
+                check("Welle 6.H P2A: _creatureAuraOffsetY(wesen) === 0.8", wave6hP2aResults.wesenAuraOffset);
+                check(
+                    "Welle 6.H P2A: spawnCreatureAt(soulName) setzt korrekte Soul",
+                    wave6hP2aResults.spawnSpriteWorks &&
+                        wave6hP2aResults.spawnWesenWorks &&
+                        wave6hP2aResults.spawnGeistWorks
+                );
+                check("Welle 6.H P2A: Kreaturen-Drawer im DOM", wave6hP2aResults.hasCreatureDrawerEl);
+                check("Welle 6.H P2A: Aufträge-Section im DOM", wave6hP2aResults.hasTaskActions);
+                check("Welle 6.H P2A: Form-Dropdown mit 4 Optionen", wave6hP2aResults.hasSoulSelect);
+                check("Welle 6.H P2A: Kreatur-Liste-Container im DOM", wave6hP2aResults.hasCreatureList);
+                check(
+                    "Welle 6.H P2A: alle 6 Aufträge-Buttons als data-cmd",
+                    wave6hP2aResults.hasFolgeMir &&
+                        wave6hP2aResults.hasKommHer &&
+                        wave6hP2aResults.hasWarte &&
+                        wave6hP2aResults.hasErkunde &&
+                        wave6hP2aResults.hasAlleFolgen &&
+                        wave6hP2aResults.hasAlleWarten
+                );
+                check(
+                    "Welle 6.H P2A: Spawn-Buttons +1/+5",
+                    wave6hP2aResults.spawn1Button && wave6hP2aResults.spawn5Button
+                );
+                check("Welle 6.H P2A: Liste rendert eine Zeile pro Kreatur", wave6hP2aResults.listRendersRows);
+                check(
+                    "Welle 6.H P2A: Zeile hat .creature-name + .creature-soul + .creature-task",
+                    wave6hP2aResults.rowHasNameSoulTask
+                );
+                check("Welle 6.H P2A: Task-Wechsel triggert Liste-Refresh", wave6hP2aResults.taskCellUpdates);
+                check("Welle 6.H P2A: removeCreature entfernt Group aus scene", wave6hP2aResults.sceneAfterRemove);
+                check("Welle 6.H P2A: Leere Liste zeigt '—'", wave6hP2aResults.emptyListDash);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {
@@ -9781,10 +9966,33 @@ function startSaveServer() {
                     out.rowHasSourceClass = rows[0] && rows[0].classList.contains("source-human");
 
                     // (c) Run-Button klicken → ability läuft, Welt-Effekt
-                    if (r.state.creatures[0]) r.state.creatures[0].material.color.setHex(0xff0000);
+                    // Welle 6.H P2A — Kreatur ist Group; rote Vor-Color auf
+                    // alle Sub-Meshes setzen, sonst crasht das Test-Setup.
+                    if (r.state.creatures[0]) {
+                        const cR = r.state.creatures[0];
+                        if (cR.material && cR.material.color) cR.material.color.setHex(0xff0000);
+                        else if (typeof cR.traverse === "function") {
+                            cR.traverse((n) => {
+                                if (n.isMesh && n.material && n.material.color) n.material.color.setHex(0xff0000);
+                            });
+                        }
+                    }
                     const runBtn = rows[0] && rows[0].querySelector("[data-run-ability]");
                     if (runBtn) runBtn.click();
-                    const colorAfter = r.state.creatures[0] ? r.state.creatures[0].material.color.getHex() : 0;
+                    // Welle 6.H P2A — Kreatur ist Group; Color über Sub-Meshes lesen.
+                    const cFirst = r.state.creatures[0];
+                    let colorAfter = 0;
+                    if (cFirst) {
+                        if (cFirst.material && cFirst.material.color) {
+                            colorAfter = cFirst.material.color.getHex();
+                        } else if (typeof cFirst.traverse === "function") {
+                            cFirst.traverse((n) => {
+                                if (!colorAfter && n.isMesh && n.material && n.material.color) {
+                                    colorAfter = n.material.color.getHex();
+                                }
+                            });
+                        }
+                    }
                     out.runButtonExecutes = colorAfter === 0x0000ff;
 
                     // (d) Signature-Cache: zweiter updateStatusPanel ohne
