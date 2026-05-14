@@ -29,7 +29,7 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self';"
         />
-        <title>Anazh Realm v7.92 – Das Ultiversum</title>
+        <title>Anazh Realm v7.93 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
              zusätzliche Datei. img-src 'self' data: in CSP erlaubt data-URI. -->
         <link
@@ -1754,6 +1754,67 @@
             .chat-creature-name.soul-geist {
                 color: #9fc89d;
             }
+            /* Welle 6.H Phase 2E V3 — Kreatur-Vorschlag-Buttons inline im Chat.
+               Spieler bestätigt/lehnt direkt in der Zeile. Auto-Hinweis-Zeilen
+               sind dezent getintet damit sie sich von Spieler-Befehlen abheben. */
+            .chat-proposal-pending {
+                margin: 4px 0;
+                padding: 3px 6px;
+                background: rgba(176, 106, 217, 0.08);
+                border-left: 2px solid rgba(176, 106, 217, 0.5);
+                font-style: italic;
+            }
+            .chat-proposal-btn {
+                display: inline-block;
+                margin-left: 6px;
+                padding: 2px 10px;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10px;
+                letter-spacing: 0.05em;
+                background: var(--parch-mid, #2c2418);
+                color: var(--parch-ink, #d4c8a8);
+                border: 1px solid var(--brass-mid, #8a6f3c);
+                border-radius: 3px;
+                cursor: pointer;
+                font-style: normal;
+            }
+            .chat-proposal-btn:hover {
+                background: var(--brass-mid, #8a6f3c);
+                color: #1a1408;
+            }
+            .chat-proposal-btn.accept {
+                border-color: rgba(120, 200, 120, 0.7);
+            }
+            .chat-proposal-btn.accept:hover {
+                background: rgba(120, 200, 120, 0.4);
+            }
+            .chat-proposal-btn.reject {
+                border-color: rgba(229, 123, 108, 0.6);
+            }
+            .chat-proposal-btn.reject:hover {
+                background: rgba(229, 123, 108, 0.35);
+            }
+            .chat-proposal-executed,
+            .chat-proposal-failed,
+            .chat-proposal-blocked {
+                margin: 2px 0;
+                padding: 1px 6px;
+                font-style: italic;
+                font-size: 11px;
+                opacity: 0.78;
+            }
+            .chat-proposal-executed {
+                color: #8fc28e;
+            }
+            .chat-proposal-failed,
+            .chat-proposal-blocked {
+                color: #d99a8a;
+            }
+            .chat-proposal-rejected-tag {
+                color: #d99a8a;
+                opacity: 0.75;
+                margin-left: 4px;
+            }
             .creature-list .creature-name {
                 font-family: "Cinzel", Georgia, serif;
                 color: var(--parch-ink, #2a2018);
@@ -2773,7 +2834,7 @@
         <header id="topbar" class="hud-frame">
             <div class="topbar-inner">
                 <div class="title">
-                    Anazh Realm <span class="version">v7.92</span> <span class="sub">— Das Ultiversum</span>
+                    Anazh Realm <span class="version">v7.93</span> <span class="sub">— Das Ultiversum</span>
                 </div>
                 <nav class="tabs" role="tablist" aria-label="Hauptansichten">
                     <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">

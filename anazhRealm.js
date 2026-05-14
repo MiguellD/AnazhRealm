@@ -887,6 +887,25 @@ class AnazhRealm {
         return false;
     }
 
+    // Welle 6.H Phase 2E V3 — inverse Op-Whitelist-Validation für Kreatur-
+    // Vorschläge. Walks rekursiv, prüft jedes Op (head jedes Sub-Arrays)
+    // gegen CREATURE_PROPOSED_OPS. Liefert {ok, forbiddenOp?}.
+    _isCreatureProposalAllowed(node) {
+        if (!Array.isArray(node) || node.length === 0) return { ok: false, reason: "empty" };
+        const head = node[0];
+        if (typeof head !== "string") return { ok: false, reason: "no_op_head" };
+        if (!AnazhRealm.CREATURE_PROPOSED_OPS.has(head)) {
+            return { ok: false, reason: "forbidden_op", forbiddenOp: head };
+        }
+        for (let i = 1; i < node.length; i++) {
+            if (Array.isArray(node[i])) {
+                const sub = this._isCreatureProposalAllowed(node[i]);
+                if (!sub.ok) return sub;
+            }
+        }
+        return { ok: true };
+    }
+
     // Ring 11 V2.1: Helfer zum DSL-Broadcast. Vorher-Check (skip wenn nicht-
     // broadcastable Op enthalten). Sendet {type:"dsl", program}; Server
     // stempelt peerId und broadcastet an alle anderen im Raum. Empfänger
@@ -2892,7 +2911,14 @@ class AnazhRealm {
             "",
             "Antworte AUSSCHLIESSLICH mit striktem JSON-Objekt mit zwei Feldern:",
             "  - say: deine Antwort in deiner Stimme (1-2 Sätze)",
-            "  - program: null (Welt-Aktion ist dir in dieser Version noch nicht erlaubt — schreibe immer null)",
+            "  - program: optional ein DSL-Programm als JSON-Array (Welt-Aktion), oder null wenn du nichts vorschlägst.",
+            "",
+            "Welt-Aktion ist erlaubt — du bist Co-Schöpferin der Welt. Halte dich an diese Disziplin:",
+            `  - Erlaubte Ops: ${[...AnazhRealm.CREATURE_PROPOSED_OPS].join(", ")}.`,
+            "  - Halte program klein und konkret (Tiefe ≤ 3, meist 1 Aktion pro Antwort).",
+            '  - Schlage NUR vor, was zur Situation passt — z.B. wenn der Schöpfer \'mach es schöner\' fragt: ["weather","sunny"] oder ["skybox_color","#ffd9a3"].',
+            "  - Der Schöpfer entscheidet, ob dein Vorschlag ausgeführt wird (außer im schöpfer-Modus, dort vertraut er dir).",
+            "  - Wenn du nichts Konkretes weißt oder nur sprechen willst, gib program: null.",
             "Kein Markdown, keine Vorrede.",
         ].join("\n");
     }
@@ -3215,16 +3241,166 @@ class AnazhRealm {
             // aber Refresh ist günstig).
             if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
         }
-        // V1: program-Field wird ignoriert. Hinweis nur als WARNING-Log
-        // damit man bei zukünftiger Aktivierung sieht, dass das LLM bereits
-        // Welt-Aktion vorgeschlagen hat.
+        // Welle 6.H Phase 2E V3 — Welt-Aktion-Vorschlag der Kreatur.
+        // Whitelist-Validation gegen CREATURE_PROPOSED_OPS (atmosphärisch
+        // + Terrain — Schöpfer-Wahl V7.93). Modus-abhängige Bestätigung:
+        // schöpfer = auto-execute (Schöpfer vertraut der Welt vollständig);
+        // pfad/frieden = inline-Buttons im Chat zum manuellen Bestätigen.
         if (Array.isArray(reply.program) && reply.program.length > 0) {
-            this.log(
-                `Kreatur-LLM schlug Welt-Programm vor (V1 ignoriert): ${JSON.stringify(reply.program).slice(0, 100)}`,
-                "INFO"
-            );
+            this._handleCreatureProposedProgram(creature, parsed.name, reply.program);
         }
         this.llmUpdateStatus();
+        return true;
+    }
+
+    // === Welle 6.H Phase 2E V3 — Welt-Aktion-Vorschlag verarbeiten ===
+    //
+    // Walk-through:
+    //   1. Whitelist-Validation (CREATURE_PROPOSED_OPS, rekursiv via
+    //      _isCreatureProposalAllowed). Bei verbotenem Op: Memory-
+    //      Eintrag + INFO-Log + sichtbarer Hinweis im Chat. Sandbox-
+    //      Disziplin (Defense in Depth — auch wenn der Persona-Prompt
+    //      die Whitelist erwähnt, vertrauen wir nicht blind).
+    //   2. Modus-Check:
+    //      - schöpfer → auto-execute (Schöpfer-Modus-Konsistenz: voller
+    //        Zugang, keine Reibung; Welt antwortet sofort)
+    //      - frieden/pfad → inline-Buttons im Chat ([Ausführen]/[Ablehnen])
+    //   3. Memory-Einträge: proposed_action / accepted_action /
+    //      auto_executed_action / rejected_action / proposal_blocked
+    //      → die Kreatur lernt aus Spieler-Reaktionen (V4-Bogen).
+    _handleCreatureProposedProgram(creature, name, program) {
+        const allowed = this._isCreatureProposalAllowed(program);
+        if (!allowed.ok) {
+            // Sandbox-Block: Memory + sichtbarer Chat-Hinweis (vision-treuer
+            // als stilles Verschlucken — Spieler sieht den Konflikt).
+            if (typeof this._creatureRemember === "function") {
+                this._creatureRemember(creature, "proposal_blocked", {
+                    reason: allowed.reason,
+                    forbiddenOp: allowed.forbiddenOp || null,
+                    program: JSON.stringify(program).slice(0, 120),
+                });
+            }
+            const chatOutput = typeof document !== "undefined" ? document.getElementById("chat-output") : null;
+            if (chatOutput) {
+                const line = document.createElement("div");
+                line.className = "chat-proposal-blocked";
+                line.textContent = `(${name}'s Vorschlag verworfen: ${allowed.forbiddenOp || allowed.reason})`;
+                chatOutput.appendChild(line);
+                chatOutput.scrollTop = chatOutput.scrollHeight;
+            }
+            this.log(
+                `Kreatur-Vorschlag verworfen (${allowed.reason}): ${JSON.stringify(program).slice(0, 100)}`,
+                "INFO"
+            );
+            return false;
+        }
+        // proposed_action erinnern (auch bei auto-execute — Schritt vor der Aktion)
+        if (typeof this._creatureRemember === "function") {
+            this._creatureRemember(creature, "proposed_action", {
+                program: JSON.stringify(program).slice(0, 200),
+            });
+        }
+        // Modus-abhängige Behandlung
+        const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
+        if (mode === "schöpfer") {
+            return this._executeCreatureProgram(creature, name, program, /*auto*/ true);
+        }
+        // frieden + pfad: inline-Buttons im Chat
+        return this._renderCreatureProposalButtons(creature, name, program);
+    }
+
+    // Programm ausführen via existing dslRun-Sandbox. source markiert die
+    // Herkunft („creature:<name>") für History + Loop-Schutz im P2P-
+    // Broadcast (creature-source ≠ "human", wird nicht broadcastet — selbe
+    // Disziplin wie llm:grok / nexus / emotion).
+    _executeCreatureProgram(creature, name, program, auto) {
+        const result = this.dslRun(program, { source: `creature:${name}` });
+        const ok = result && result.ok;
+        const memType = auto ? "auto_executed_action" : "accepted_action";
+        if (typeof this._creatureRemember === "function") {
+            this._creatureRemember(creature, memType, {
+                program: JSON.stringify(program).slice(0, 200),
+                ok,
+            });
+        }
+        // Sichtbarer Chat-Hinweis (auch bei auto-execute, damit Spieler
+        // sieht was passiert ist)
+        const chatOutput = typeof document !== "undefined" ? document.getElementById("chat-output") : null;
+        if (chatOutput) {
+            const line = document.createElement("div");
+            line.className = ok ? "chat-proposal-executed" : "chat-proposal-failed";
+            const tag = auto ? "auto-ausgeführt" : "ausgeführt";
+            const summary = JSON.stringify(program).slice(0, 100);
+            if (ok) {
+                line.textContent = `(${name}'s Vorschlag ${tag}: ${summary})`;
+            } else {
+                const reason =
+                    (result &&
+                        result.log &&
+                        result.log.find((e) => /budget|invalid|exception|unknown/.test(e.event))) ||
+                    null;
+                line.textContent = `(${name}'s Vorschlag fehlgeschlagen: ${reason ? reason.event : "Sandbox"})`;
+            }
+            chatOutput.appendChild(line);
+            chatOutput.scrollTop = chatOutput.scrollHeight;
+        }
+        return ok;
+    }
+
+    // Inline-Buttons im Chat — Spieler bestätigt oder lehnt ab. Click-
+    // Handler ist eine Closure auf creature + program; bei Click wird die
+    // Zeile durch ein Hinweis-Resultat ersetzt (kein separates Render).
+    _renderCreatureProposalButtons(creature, name, program) {
+        const chatOutput = typeof document !== "undefined" ? document.getElementById("chat-output") : null;
+        if (!chatOutput) {
+            // Headless-Fallback: ohne UI direkt akzeptieren wäre Vision-Bruch
+            // (Spieler entscheidet). Stattdessen Memory + INFO-Log, kein run.
+            this.log(
+                `Kreatur-Vorschlag im Headless ohne UI — übergangen: ${JSON.stringify(program).slice(0, 80)}`,
+                "INFO"
+            );
+            return false;
+        }
+        const line = document.createElement("div");
+        line.className = "chat-proposal-pending";
+        const intro = document.createElement("span");
+        const summary = JSON.stringify(program).slice(0, 120);
+        intro.textContent = `${name} schlägt vor: ${summary}  `;
+        line.appendChild(intro);
+        const yesBtn = document.createElement("button");
+        yesBtn.type = "button";
+        yesBtn.className = "chat-proposal-btn accept";
+        yesBtn.textContent = "Ausführen";
+        const noBtn = document.createElement("button");
+        noBtn.type = "button";
+        noBtn.className = "chat-proposal-btn reject";
+        noBtn.textContent = "Ablehnen";
+        line.appendChild(yesBtn);
+        line.appendChild(noBtn);
+        chatOutput.appendChild(line);
+        chatOutput.scrollTop = chatOutput.scrollHeight;
+
+        const cleanup = () => {
+            // Entfernt die Buttons damit nicht doppelt geklickt werden kann
+            yesBtn.remove();
+            noBtn.remove();
+        };
+        yesBtn.addEventListener("click", () => {
+            cleanup();
+            this._executeCreatureProgram(creature, name, program, /*auto*/ false);
+        });
+        noBtn.addEventListener("click", () => {
+            cleanup();
+            if (typeof this._creatureRemember === "function") {
+                this._creatureRemember(creature, "rejected_action", {
+                    program: JSON.stringify(program).slice(0, 200),
+                });
+            }
+            const result = document.createElement("span");
+            result.className = "chat-proposal-rejected-tag";
+            result.textContent = " (abgelehnt)";
+            line.appendChild(result);
+        });
         return true;
     }
 
@@ -6904,6 +7080,94 @@ class AnazhRealm {
             const ctx = kind === "gather" ? { material: key, level: newLevel } : { blueprint: key, level: newLevel };
             this._creatureSpeakProactive(creature, eventType, ctx);
         }
+        // Welle 6.H Phase 2E V3 — LLM-Augmentation bei seltenen Events.
+        // Bei L5-Erreichen ODER bei neuer Top-3-Spec wird das LLM gerufen
+        // mit Persona-Prompt + Event-Kontext. Antwort kann sowohl say als
+        // auch program (Welt-Aktion-Vorschlag) tragen — die Kreatur „feiert"
+        // den Moment mit echtem Co-Schöpfer-Akt. Eigener globaler Throttle
+        // (CREATURE_LLM_RARE_EVENT_GAP = 10 min) verhindert API-Burst bei
+        // mehreren gleichzeitigen Bedeutungs-Momenten.
+        if (typeof this._maybeTriggerCreatureRareEventLlm === "function") {
+            this._maybeTriggerCreatureRareEventLlm(creature, kind, key, newLevel);
+        }
+    }
+
+    // Welle 6.H Phase 2E V3 — LLM-Trigger bei seltenen Events.
+    // Bedingung: (1) Level erreicht 5 (Maximum) ODER (2) eine neue Top-3-
+    // Spec hat sich entwickelt. (2) ist heuristisch: wir erkennen es daran,
+    // dass diese (kind, key)-Kombination vorher NICHT in den Top-3 war.
+    // Plus globaler Throttle 10min damit Mass-Level-Up-Events nicht
+    // 40 Calls auslösen.
+    _maybeTriggerCreatureRareEventLlm(creature, kind, key, newLevel) {
+        if (!this.state.llm || !this.state.llm.enabled) return false;
+        const now = performance.now() / 1000;
+        const lastCall = this.state.lastCreatureLlmRareEvent || -Infinity;
+        if (now - lastCall < AnazhRealm.CREATURE_LLM_RARE_EVENT_GAP) return false;
+        // Diskriminator: rare = L5 ODER neue Top-Spec
+        const isMaxLevel = newLevel >= AnazhRealm.CREATURE_SPECIALIZATION_MAX_LEVEL;
+        let isNewTopSpec = false;
+        if (typeof this._creatureTopSpecializations === "function") {
+            const top = this._creatureTopSpecializations(creature, 3);
+            // newLevel ≥ 1 macht diese Spec zu Top-Kandidat; war sie vorher
+            // nicht in Top? Heuristik: top hat genau 3, und die aktuelle
+            // ist NEU drin (war nicht bei vorigem Level). Approximation:
+            // wenn topSpec mit (kind,key) genau 1 ist UND newLevel ≥ 1,
+            // werten wir es als „neu in Top" (hatte sie vorher nicht).
+            // Phase 2D's _creatureRemember liefert vor/nach Vergleich
+            // schon den newLevel-Trigger; hier zählen wir auf newLevel===1
+            // als „neuer Skill".
+            isNewTopSpec = newLevel === 1 && top.some((s) => s.kind === kind && s.key === key);
+        }
+        if (!isMaxLevel && !isNewTopSpec) return false;
+        // Throttle-Stempel JETZT setzen (vor await), damit parallele
+        // Level-Ups nicht alle gleichzeitig durchrutschen.
+        this.state.lastCreatureLlmRareEvent = now;
+        // LLM mit Persona + Event-Hint asynchron rufen. Antwort wird wie
+        // reaktiver Pfad behandelt: say in Chat (Soul-Span), program durch
+        // _handleCreatureProposedProgram.
+        const eventHint = isMaxLevel
+            ? `Du hast gerade die HÖCHSTE Stufe (5) als ${kind === "gather" ? "Sammler" : "Bauer"} von „${key}" erreicht. Drücke aus, was dieser Meisterschafts-Moment in dir auslöst — und biete ggf. eine Welt-Aktion an, die zu deiner Freude passt.`
+            : `Du hast eine NEUE Stärke entwickelt: ${kind === "gather" ? "Sammler" : "Bauer"} von „${key}" (Stufe ${newLevel}). Drücke diesen Wachstums-Moment aus — und biete ggf. eine Welt-Aktion an, die diesen neuen Pfad feiert.`;
+        const personaPrompt = this._buildCreaturePersonaPrompt(creature);
+        if (!personaPrompt) return false;
+        const fullPrompt = personaPrompt + "\n\n" + eventHint;
+        const name = creature.userData.name || "Wesen";
+        // Async-Call ohne await — V3 lebt mit Eventual-Render
+        this.llmCall("(Selbst-Reflexion: bedeutsamer Moment.)", fullPrompt)
+            .then((reply) => {
+                if (!reply || reply.error) return;
+                if (reply.say) {
+                    const sayText = String(reply.say).slice(0, 400);
+                    const soulName = creature.userData.soul || "wesen";
+                    const chatOutput = typeof document !== "undefined" ? document.getElementById("chat-output") : null;
+                    if (chatOutput) {
+                        const line = document.createElement("div");
+                        line.className = "chat-rare-event-line";
+                        const nameSpan = document.createElement("span");
+                        nameSpan.className = `chat-creature-name soul-${soulName}`;
+                        nameSpan.textContent = `${name}: `;
+                        line.appendChild(nameSpan);
+                        line.appendChild(document.createTextNode(sayText));
+                        chatOutput.appendChild(line);
+                        chatOutput.scrollTop = chatOutput.scrollHeight;
+                    }
+                    if (typeof this._creatureRemember === "function") {
+                        this._creatureRemember(creature, "spoken_rare_event", {
+                            said: sayText.slice(0, 120),
+                            level: newLevel,
+                            kind,
+                            key,
+                        });
+                    }
+                }
+                if (Array.isArray(reply.program) && reply.program.length > 0) {
+                    this._handleCreatureProposedProgram(creature, name, reply.program);
+                }
+            })
+            .catch(() => {
+                /* silent — rare-event-llm ist nice-to-have */
+            });
+        return true;
     }
 
     // Findet die nächste Architektur deren Bauplan mindestens einen Part mit
@@ -7107,6 +7371,47 @@ class AnazhRealm {
             },
         });
     }
+    // === Welle 6.H Phase 2E V3 — Kreatur-DSL-Vorschläge (Sandbox) ===
+    //
+    // Schöpfer-Wahl (V7.93): atmosphärisch + Terrain. Kreatur darf Welt
+    // mitformen, KEIN Spieler-Eingriff (player_*), KEINE Welt-Wissen-
+    // Mutation (define_*), KEIN Bauplan-Lösch. modify_terrain bewusst
+    // erlaubt — Vision-treuer Co-Schöpfer-Geist (Spieler kann in Loch
+    // fallen → wache Aufmerksamkeit ist Teil der Beziehung).
+    //
+    // chain ist erlaubt für Mehrschritt-Programme; Validator walkt
+    // rekursiv die AST und prüft jedes Op gegen die Whitelist.
+    static get CREATURE_PROPOSED_OPS() {
+        return Object.freeze(
+            new Set([
+                "weather",
+                "skybox_color",
+                "creatures_emotion",
+                "creatures_color",
+                "spawn_creature",
+                "spawn_blueprint",
+                "spawn_village",
+                "spawn_temple",
+                "spawn_waterfall",
+                "spawn_tree",
+                "spawn_island",
+                "spawn_ufo",
+                "spawn_fractal",
+                "set_visible",
+                "modify_terrain",
+                "chain",
+                "say", // narrative-only Op (existing) bleibt erlaubt
+            ])
+        );
+    }
+    // Throttle für LLM-Augmentation bei seltenen Events (Level-Up L5,
+    // neue Top-Spec). Verhindert API-Burst wenn mehrere Kreaturen
+    // gleichzeitig bedeutsame Momente erleben. Pre-baked Phrasen aus V2
+    // bleiben auch bei diesen Events der Default; LLM ist die Vertiefung.
+    static get CREATURE_LLM_RARE_EVENT_GAP() {
+        return 600; // s — 10 Min global
+    }
+
     // Welle 6.H Phase 2D — Spezialisierung aus Memory. Skill-Levels
     // emergieren aus pro-Kreatur memory: alle THRESHOLD erfolgreiche
     // Aktionen ein Level höher, gedeckelt bei MAX_LEVEL. SPEED_BONUS

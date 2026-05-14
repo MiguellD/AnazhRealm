@@ -1,6 +1,6 @@
 # AnazhRealm Roadmap — Vollumfänglich
 
-Stand: 14.05.2026 (V7.92, Welle 6.H Phase 2E V2 live — Proaktive Kreatur-Sprache via pre-baked phrase-pool, soul-aware, throttled).
+Stand: 14.05.2026 (V7.93, Welle 6.H Phase 2E V3 live — Welt-Aktion-Vorschläge der Kreatur mit Sandbox + Modus-Pfad + Rare-Event-LLM. **Welle 6.H V2 vollständig: 14/14 Sub-Phasen.**).
 
 Diese Doc beschreibt das **gesamte Projekt vom heutigen Stand bis zum Vision-Endziel** (Welten-Ultiversum). Sie ergänzt `state-of-realm.md` (Was/Warum) um eine puren Plan-Sicht (Wann/Wie). Aufwandsschätzungen sind realistische Tage für eine fokussierte Claude-Session pro Ring/Phase; gerechnet wird linear, ohne Puffer.
 

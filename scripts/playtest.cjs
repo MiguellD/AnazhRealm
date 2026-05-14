@@ -11538,7 +11538,10 @@ function startSaveServer() {
                     out.promptHasWeather = new RegExp(r.state.weather || "sunny").test(prompt);
                     out.promptInstructsJson =
                         /JSON-Objekt/.test(prompt) && /say/.test(prompt) && /program/.test(prompt);
-                    out.promptForbidsProgram = /immer null/.test(prompt) || /noch nicht erlaubt/.test(prompt);
+                    // V3 (V7.93): Prompt erlaubt jetzt program + nennt
+                    // Whitelist (Co-Schöpfer-Geist). V1-Test umgekehrt:
+                    // wir prüfen, dass Whitelist + Anweisung enthalten sind.
+                    out.promptForbidsProgram = /Welt-Aktion ist erlaubt/.test(prompt) && /Erlaubte Ops/.test(prompt);
                     out.promptHasAge = /Sekunden|Minuten|Stunden|Tage/.test(prompt);
 
                     // 5. llmCallCreature ohne LLM-aktiv → error-Object
@@ -11625,7 +11628,7 @@ function startSaveServer() {
                     wave6hP2eV1Results.promptInstructsJson
                 );
                 check(
-                    "Welle 6.H P2E V1: Persona-Prompt verbietet program (V1 reaktiv-only)",
+                    "Welle 6.H P2E V3: Persona-Prompt erlaubt program + nennt CREATURE_PROPOSED_OPS-Whitelist",
                     wave6hP2eV1Results.promptForbidsProgram
                 );
                 check(
@@ -11972,6 +11975,243 @@ function startSaveServer() {
                 );
             } else if (wave6hP2eV2Results && wave6hP2eV2Results.error) {
                 check(`Welle 6.H P2E V2: evaluate-Fehler — ${wave6hP2eV2Results.error}`, false);
+            }
+
+            // ### Welle 6.H Phase 2E V3 — Welt-Aktion-Vorschläge der Kreatur ###
+            //
+            // Schöpfer-Wahl V7.93: atmosphärisch + Terrain (modify_terrain
+            // erlaubt), modus-abhängig (schöpfer auto-execute / pfad+frieden
+            // inline-Buttons), LLM-Augmentation bei seltenen Events (L5,
+            // neue Spec) mit eigenem 10-Min-Throttle. Tests prüfen:
+            // Whitelist-Validation, Modus-Diskrimination, Memory-Einträge,
+            // Sandbox-Defense.
+            const wave6hP2eV3Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.playerMesh) return null;
+                    const out = {};
+                    const Class = r.constructor;
+
+                    // 1. Konstanten + Methoden existieren
+                    out.hasWhitelist = Class.CREATURE_PROPOSED_OPS instanceof Set;
+                    out.whitelistSize = Class.CREATURE_PROPOSED_OPS.size >= 10;
+                    out.weatherAllowed = Class.CREATURE_PROPOSED_OPS.has("weather");
+                    out.modifyTerrainAllowed = Class.CREATURE_PROPOSED_OPS.has("modify_terrain");
+                    out.spawnBlueprintAllowed = Class.CREATURE_PROPOSED_OPS.has("spawn_blueprint");
+                    out.chainAllowed = Class.CREATURE_PROPOSED_OPS.has("chain");
+                    // Forbidden: player_*, define_*, delete_*, set_mode
+                    out.playerSpeedForbidden = !Class.CREATURE_PROPOSED_OPS.has("player_speed");
+                    out.defineBlueprintForbidden = !Class.CREATURE_PROPOSED_OPS.has("define_blueprint");
+                    out.setModeForbidden = !Class.CREATURE_PROPOSED_OPS.has("set_mode");
+                    out.hasValidator = typeof r._isCreatureProposalAllowed === "function";
+                    out.hasHandler = typeof r._handleCreatureProposedProgram === "function";
+                    out.hasExecutor = typeof r._executeCreatureProgram === "function";
+                    out.hasButtonRenderer = typeof r._renderCreatureProposalButtons === "function";
+                    out.hasRareEventTrigger = typeof r._maybeTriggerCreatureRareEventLlm === "function";
+                    out.rareEventGap = Class.CREATURE_LLM_RARE_EVENT_GAP === 600;
+
+                    // 2. Validator: erlaubtes Programm
+                    const okWeather = r._isCreatureProposalAllowed(["weather", "rainy"]);
+                    out.allowsWeather = okWeather.ok === true;
+                    const okChain = r._isCreatureProposalAllowed([
+                        "chain",
+                        ["weather", "sunny"],
+                        ["skybox_color", "#ffd9a3"],
+                    ]);
+                    out.allowsChain = okChain.ok === true;
+                    const okTerrain = r._isCreatureProposalAllowed(["modify_terrain", 0, 0, 5, -1]);
+                    out.allowsTerrain = okTerrain.ok === true;
+
+                    // 3. Validator: verbotene Programme
+                    const noPlayerSpeed = r._isCreatureProposalAllowed(["player_speed", 20]);
+                    out.rejectsPlayerSpeed =
+                        noPlayerSpeed.ok === false && noPlayerSpeed.forbiddenOp === "player_speed";
+                    const noDefine = r._isCreatureProposalAllowed([
+                        "define_blueprint",
+                        "evil",
+                        [{ shape: "box" }],
+                    ]);
+                    out.rejectsDefine =
+                        noDefine.ok === false && noDefine.forbiddenOp === "define_blueprint";
+                    // Verbotene Op TIEF im Chain wird auch erkannt
+                    const nestedBad = r._isCreatureProposalAllowed([
+                        "chain",
+                        ["weather", "sunny"],
+                        ["player_speed", 50], // verboten, tief
+                    ]);
+                    out.rejectsNestedForbidden =
+                        nestedBad.ok === false && nestedBad.forbiddenOp === "player_speed";
+
+                    // 4. Persona-Prompt erlaubt program (V3-Update)
+                    const player = r.state.playerMesh.position;
+                    const c = r.spawnCreatureAt(player.x + 800, player.y, player.z + 800, "happy", "wesen");
+                    c.userData.name = "TestProgramKreatur";
+                    const prompt = r._buildCreaturePersonaPrompt(c);
+                    out.promptMentionsProgram = /Welt-Aktion ist erlaubt/.test(prompt);
+                    out.promptListsOps = /Erlaubte Ops/.test(prompt) && /weather/.test(prompt);
+                    out.promptMentionsModus = /schöpfer-Modus/.test(prompt);
+
+                    // 5. Modus-abhängiger Pfad: schöpfer = auto-execute,
+                    //    pfad = inline-Buttons
+                    const origMode = r.getGameMode();
+                    const chatOutput = document.getElementById("chat-output");
+
+                    // Test schöpfer-Auto: der Wetter ändert sich tatsächlich
+                    r.setGameMode("schöpfer");
+                    const beforeWeather = r.state.weather;
+                    const targetWeather = beforeWeather === "rainy" ? "sunny" : "rainy";
+                    const beforeAuto = chatOutput ? chatOutput.children.length : 0;
+                    r._handleCreatureProposedProgram(c, "TestProgramKreatur", ["weather", targetWeather]);
+                    out.autoExecutedInSchöpfer = r.state.weather === targetWeather;
+                    const afterAuto = chatOutput ? chatOutput.children.length : 0;
+                    out.autoChatLineAdded = afterAuto > beforeAuto;
+                    // Memory-Eintrag: auto_executed_action
+                    const memTypes = (c.userData.memory || []).map((m) => m.type);
+                    out.memoryHasAutoExecuted = memTypes.includes("auto_executed_action");
+
+                    // Test pfad: Buttons werden gerendert (kein automatischer
+                    // Wetter-Wechsel)
+                    r.setGameMode("pfad");
+                    const beforePending = chatOutput
+                        ? chatOutput.querySelectorAll(".chat-proposal-pending").length
+                        : 0;
+                    const targetWeather2 = r.state.weather === "rainy" ? "sunny" : "rainy";
+                    r._handleCreatureProposedProgram(c, "TestProgramKreatur", ["weather", targetWeather2]);
+                    out.pfadDoesNotAutoExecute = r.state.weather !== targetWeather2;
+                    const afterPending = chatOutput
+                        ? chatOutput.querySelectorAll(".chat-proposal-pending").length
+                        : 0;
+                    out.pfadRendersButtons = afterPending > beforePending;
+                    // Memory: proposed_action vorhanden, aber NICHT yet accepted
+                    const memTypes2 = (c.userData.memory || []).map((m) => m.type);
+                    out.memoryHasProposed = memTypes2.includes("proposed_action");
+
+                    // 6. Sandbox-Defense: verbotenes Programm wird auch in
+                    //    schöpfer-Modus blockiert (defense in depth)
+                    r.setGameMode("schöpfer");
+                    const memCountBefore = (c.userData.memory || []).length;
+                    const blockedResult = r._handleCreatureProposedProgram(
+                        c,
+                        "TestProgramKreatur",
+                        ["player_speed", 99]
+                    );
+                    out.forbiddenBlockedEvenInSchöpfer = blockedResult === false;
+                    const memTypes3 = (c.userData.memory || []).map((m) => m.type);
+                    out.memoryHasBlocked = memTypes3.includes("proposal_blocked");
+                    out.memoryGrew = (c.userData.memory || []).length > memCountBefore;
+
+                    r.setGameMode(origMode || "frieden");
+
+                    // 7. Inline-Buttons: Click führt aus. Wir nehmen den LATEST
+                    //    accept-Button (Test 5 hat schon einen dagelassen).
+                    r.setGameMode("pfad");
+                    const c2 = r.spawnCreatureAt(player.x + 810, player.y, player.z + 810, "happy", "sprite");
+                    c2.userData.name = "ClickTestKreatur";
+                    const targetW3 = r.state.weather === "rainy" ? "sunny" : "rainy";
+                    r._renderCreatureProposalButtons(c2, "ClickTestKreatur", ["weather", targetW3]);
+                    const acceptBtns = chatOutput ? chatOutput.querySelectorAll(".chat-proposal-btn.accept") : [];
+                    const acceptBtn = acceptBtns[acceptBtns.length - 1] || null;
+                    out.acceptButtonExists = !!acceptBtn;
+                    if (acceptBtn) {
+                        acceptBtn.click();
+                        out.acceptClickExecutes = r.state.weather === targetW3;
+                        const memTypes4 = (c2.userData.memory || []).map((m) => m.type);
+                        out.memoryHasAccepted = memTypes4.includes("accepted_action");
+                    }
+
+                    // 8. Reject-Button: Memory-Eintrag rejected_action
+                    const c3 = r.spawnCreatureAt(player.x + 820, player.y, player.z + 820, "happy", "geist");
+                    c3.userData.name = "RejectTestKreatur";
+                    r._renderCreatureProposalButtons(c3, "RejectTestKreatur", ["weather", "rainy"]);
+                    const rejectBtns = chatOutput ? chatOutput.querySelectorAll(".chat-proposal-btn.reject") : [];
+                    const rejectBtn = rejectBtns[rejectBtns.length - 1] || null;
+                    out.rejectButtonExists = !!rejectBtn;
+                    if (rejectBtn) {
+                        rejectBtn.click();
+                        const memTypes5 = (c3.userData.memory || []).map((m) => m.type);
+                        out.memoryHasRejected = memTypes5.includes("rejected_action");
+                    }
+
+                    r.setGameMode(origMode || "frieden");
+                    return out;
+                })
+                .catch((e) => ({ error: String(e), stack: e.stack }));
+
+            if (wave6hP2eV3Results && !wave6hP2eV3Results.error) {
+                check(
+                    "Welle 6.H P2E V3: CREATURE_PROPOSED_OPS Set + Validator + Handler + Executor + ButtonRenderer + RareEvent-Trigger existieren",
+                    wave6hP2eV3Results.hasWhitelist &&
+                        wave6hP2eV3Results.whitelistSize &&
+                        wave6hP2eV3Results.hasValidator &&
+                        wave6hP2eV3Results.hasHandler &&
+                        wave6hP2eV3Results.hasExecutor &&
+                        wave6hP2eV3Results.hasButtonRenderer &&
+                        wave6hP2eV3Results.hasRareEventTrigger &&
+                        wave6hP2eV3Results.rareEventGap
+                );
+                check(
+                    "Welle 6.H P2E V3: Whitelist erlaubt atmosphärische + Terrain-Ops (weather, modify_terrain, spawn_blueprint, chain)",
+                    wave6hP2eV3Results.weatherAllowed &&
+                        wave6hP2eV3Results.modifyTerrainAllowed &&
+                        wave6hP2eV3Results.spawnBlueprintAllowed &&
+                        wave6hP2eV3Results.chainAllowed
+                );
+                check(
+                    "Welle 6.H P2E V3: Whitelist verbietet player_speed + define_blueprint + set_mode (Spieler-/Welt-Wissen-Eingriff blockiert)",
+                    wave6hP2eV3Results.playerSpeedForbidden &&
+                        wave6hP2eV3Results.defineBlueprintForbidden &&
+                        wave6hP2eV3Results.setModeForbidden
+                );
+                check(
+                    "Welle 6.H P2E V3: Validator akzeptiert erlaubte Programme (weather, chain, modify_terrain)",
+                    wave6hP2eV3Results.allowsWeather &&
+                        wave6hP2eV3Results.allowsChain &&
+                        wave6hP2eV3Results.allowsTerrain
+                );
+                check(
+                    "Welle 6.H P2E V3: Validator lehnt verbotene Ops ab + nennt forbiddenOp",
+                    wave6hP2eV3Results.rejectsPlayerSpeed && wave6hP2eV3Results.rejectsDefine
+                );
+                check(
+                    "Welle 6.H P2E V3: Validator erkennt verbotene Op TIEF im Chain (Defense-Recursion)",
+                    wave6hP2eV3Results.rejectsNestedForbidden
+                );
+                check(
+                    "Welle 6.H P2E V3: Persona-Prompt erlaubt program + nennt Op-Whitelist + erwähnt schöpfer-Modus",
+                    wave6hP2eV3Results.promptMentionsProgram &&
+                        wave6hP2eV3Results.promptListsOps &&
+                        wave6hP2eV3Results.promptMentionsModus
+                );
+                check(
+                    "Welle 6.H P2E V3: schöpfer-Modus → auto-execute (Wetter ändert sich tatsächlich) + chat-Hinweis-Zeile + Memory auto_executed_action",
+                    wave6hP2eV3Results.autoExecutedInSchöpfer &&
+                        wave6hP2eV3Results.autoChatLineAdded &&
+                        wave6hP2eV3Results.memoryHasAutoExecuted
+                );
+                check(
+                    "Welle 6.H P2E V3: pfad-Modus → KEIN auto-execute, statt Buttons gerendert (.chat-proposal-pending)",
+                    wave6hP2eV3Results.pfadDoesNotAutoExecute &&
+                        wave6hP2eV3Results.pfadRendersButtons &&
+                        wave6hP2eV3Results.memoryHasProposed
+                );
+                check(
+                    "Welle 6.H P2E V3: Defense-in-Depth — verbotenes Programm wird AUCH im schöpfer-Modus blockiert + proposal_blocked-Memory",
+                    wave6hP2eV3Results.forbiddenBlockedEvenInSchöpfer &&
+                        wave6hP2eV3Results.memoryHasBlocked &&
+                        wave6hP2eV3Results.memoryGrew
+                );
+                check(
+                    "Welle 6.H P2E V3: Accept-Button-Click führt Programm aus + accepted_action-Memory",
+                    wave6hP2eV3Results.acceptButtonExists &&
+                        wave6hP2eV3Results.acceptClickExecutes &&
+                        wave6hP2eV3Results.memoryHasAccepted
+                );
+                check(
+                    "Welle 6.H P2E V3: Reject-Button-Click → rejected_action-Memory (Spieler-Wille respektiert)",
+                    wave6hP2eV3Results.rejectButtonExists && wave6hP2eV3Results.memoryHasRejected
+                );
+            } else if (wave6hP2eV3Results && wave6hP2eV3Results.error) {
+                check(`Welle 6.H P2E V3: evaluate-Fehler — ${wave6hP2eV3Results.error}`, false);
             }
 
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###

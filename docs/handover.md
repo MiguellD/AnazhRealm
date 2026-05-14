@@ -360,6 +360,66 @@ Hylomorphismus-System wie Materialien und Bauwerke.
   playerInventory in buildStateSnapshot. 127 Invarianten für 6.C1
   + Drag-System → 1153 total.
 
+### V7.93 — Welle 6.H Phase 2E V3 live (14.05.2026): Welt-Aktion-Vorschläge
+
+**Schöpfer-Wahl getroffen vor dem Bauen** — drei Achsen geklärt:
+1. Whitelist: atmosphärisch + Terrain (modify_terrain ERLAUBT, Vision-Wahl)
+2. LLM-Trigger: reaktiv + seltene Events (Level-Up L5, neue Spec)
+3. Bestätigung: modus-abhängig (schöpfer auto, pfad+frieden Buttons)
+
+**Architektur** (drei Sicherheits-Schichten, „Defense in Depth"):
+1. Persona-Prompt nennt Whitelist + Modus-Hinweis (suggestiv)
+2. `_isCreatureProposalAllowed` rekursive AST-Walk (defensive)
+3. existing `dslRun`-Sandbox mit Op-Whitelist + Budget (letzte Wand)
+
+**6 neue Methoden + 1 Konstanten-Set + 1 Throttle-Konstante**:
+- `CREATURE_PROPOSED_OPS` frozen Set (17 Ops, atmosphärisch + Terrain + chain)
+- `CREATURE_LLM_RARE_EVENT_GAP = 600` (10 Min global)
+- `_isCreatureProposalAllowed(node)` → `{ok, reason, forbiddenOp?}`
+- `_handleCreatureProposedProgram(c, name, program)` → modus-abhängig dispatchen
+- `_executeCreatureProgram(c, name, program, auto)` → dslRun + Memory + Chat
+- `_renderCreatureProposalButtons(c, name, program)` → DOM-Buttons + Click-Handler
+- `_maybeTriggerCreatureRareEventLlm(c, kind, key, level)` → LLM bei L5/neue-Spec
+
+**Persona-Prompt-Update**: V1's „program: immer null" wurde umgekehrt:
+„Welt-Aktion ist erlaubt — du bist Co-Schöpferin. Halte dich an
+diese Disziplin: Erlaubte Ops: ${list}. Halte program klein. Der
+Schöpfer entscheidet (außer im schöpfer-Modus, dort vertraut er dir)."
+
+**Modus-Pfad**:
+- schöpfer → auto-execute mit Chat-Hinweis-Zeile (grün=ok, rot=fail)
+- pfad/frieden → inline-Buttons `[Ausführen][Ablehnen]` mit Click-Handler
+- Whitelist gilt IMMER (auch im schöpfer — Modus modifiziert Friction, nicht Befugnis)
+
+**Memory-Lifecycle**:
+- `proposed_action` (immer, vor Pfad-Wahl)
+- `auto_executed_action` (schöpfer-Pfad nach dslRun)
+- `accepted_action` (pfad+frieden nach Akzept-Click)
+- `rejected_action` (pfad+frieden nach Reject-Click)
+- `proposal_blocked` (bei Whitelist-Verstoß, mit forbiddenOp)
+- `spoken_rare_event` (bei Rare-Event-LLM-Antwort)
+
+**Rare-Event-LLM**:
+- Diskriminator: `level >= MAX_LEVEL=5` ODER `newLevel === 1` (heuristik für „neue Spec")
+- Throttle 10 Min global (verhindert Mass-LU-Burst)
+- Async-Call: `llmCall(eventHint, personaPromptOverride)`
+- Antwort wie reaktiver Pfad: say als Soul-Span, program durch Handler
+
+**Inline-CSS**:
+- `.chat-proposal-pending` (violetter Linker-Border + Tönung)
+- `.chat-proposal-btn.accept/.reject` (grün/rot-Akzent)
+- `.chat-proposal-executed/failed/blocked` (dezent farbig)
+
+**13 Tests grün + 1 V1-Test umgestellt** (V1 verlangte „verbietet program",
+V3 verlangt jetzt „erlaubt program + nennt Whitelist"). 1546 → 1558/1558.
+
+**6.H V2 Status: 14/14 Sub-Phasen erledigt — VOLLSTÄNDIG.**
+
+**Nächste mögliche Wellen**:
+- 6.B CAD-Werkstatt minimal
+- 6.G Phase 3 (Welt-Lebendigkeit-Erweiterungen)
+- Welle 7: Kollektive Welt-Erkenntnis aus `docs/system-audit.md`
+
 ### V7.92 — Welle 6.H Phase 2E V2 live (14.05.2026): Proaktive Kreatur-Sprache
 
 **Vision §1.1 wird konkret**: V7.90+V7.91 waren REAKTIV (Spieler fragt,
