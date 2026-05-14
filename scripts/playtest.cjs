@@ -7556,10 +7556,43 @@ function startSaveServer() {
                     // Reset
                     r.state.hotbar = ["village", "temple", "waterfall", null, null, null, null, null, null];
 
-                    // (4) hot → inv: Slot 1 (temple) auf Inventar-Slot 10 → räumt Hotbar.
+                    // (4) hot → inv mit leerem Ziel-Slot: ECHTES MOVE
+                    // (Schöpfer-Fix V7.77+: alte Logik räumte nur Hotbar,
+                    // Bauplan verschwand). Erwartung: Hot wird null,
+                    // Inv-Slot 10 bekommt {temple, count: 1}.
+                    r.state.player.inventory[10] = null;
                     r.state.drag = { kind: "hot", index: 1, name: "temple" };
                     r._onSlotDrop(mkEvent(), "inv", 10);
                     out.hotToInvClearsHotbar = r.state.hotbar[1] === null;
+                    out.hotToInvFillsInvSlot =
+                        r.state.player.inventory[10] &&
+                        r.state.player.inventory[10].blueprintName === "temple" &&
+                        r.state.player.inventory[10].count === 1;
+
+                    // (4b) hot → inv mit gleichem Bauplan im Ziel: Stack
+                    // (count += 1, Hot wird null).
+                    r.state.hotbar[1] = "temple"; // Hot wieder befüllen
+                    r.state.player.inventory[10] = { blueprintName: "temple", count: 3 };
+                    r.state.drag = { kind: "hot", index: 1, name: "temple" };
+                    r._onSlotDrop(mkEvent(), "inv", 10);
+                    out.hotToInvStacksSameBp =
+                        r.state.hotbar[1] === null &&
+                        r.state.player.inventory[10] &&
+                        r.state.player.inventory[10].count === 4;
+
+                    // (4c) hot → inv mit anderem Bauplan im Ziel: no-op.
+                    r.state.hotbar[1] = "village";
+                    r.state.player.inventory[10] = { blueprintName: "temple", count: 2 };
+                    r.state.drag = { kind: "hot", index: 1, name: "village" };
+                    r._onSlotDrop(mkEvent(), "inv", 10);
+                    out.hotToInvOtherBpNoOp =
+                        r.state.hotbar[1] === "village" &&
+                        r.state.player.inventory[10] &&
+                        r.state.player.inventory[10].blueprintName === "temple" &&
+                        r.state.player.inventory[10].count === 2;
+
+                    // Cleanup für (5)
+                    r.state.player.inventory[10] = null;
 
                     // (5) src === target: no-op (state unverändert).
                     const before = JSON.stringify(r.state.hotbar);
@@ -7608,6 +7641,9 @@ function startSaveServer() {
                 check("Welle 6.C1 Drag: inv→hot lässt Inventar-Eintrag stehen", dragResults.invToHotKeepsInventoryEntry);
                 check("Welle 6.C1 Drag: hot→hot tauscht Hotbar-Slots", dragResults.hotToHotSwap);
                 check("Welle 6.C1 Drag: hot→inv räumt Hotbar-Slot (zu null)", dragResults.hotToInvClearsHotbar);
+                check("Welle 6.C1 Drag: hot→inv füllt leeren Inv-Slot mit {name, count:1}", dragResults.hotToInvFillsInvSlot);
+                check("Welle 6.C1 Drag: hot→inv stackt auf gleichem Bauplan (count += 1)", dragResults.hotToInvStacksSameBp);
+                check("Welle 6.C1 Drag: hot→inv mit anderem Bauplan ist no-op (kein Datenverlust)", dragResults.hotToInvOtherBpNoOp);
                 check("Welle 6.C1 Drag: src===target ist no-op", dragResults.sameSlotNoOp);
                 check("Welle 6.C1 Drag: state.drag wird nach drop genullt", dragResults.dragClearedAfterDrop);
                 check("Welle 6.C1 Drag: gefüllter Inventar-Slot ist draggable", dragResults.filledSlotIsDraggable);

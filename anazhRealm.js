@@ -14184,10 +14184,24 @@ class AnazhRealm {
             this.state.hotbar[src.index] = b;
             this.state.hotbar[targetIndex] = a;
         } else if (src.kind === "hot" && targetKind === "inv") {
-            // Hotbar → Inventory: Hotbar-Slot räumen (Inventar unverändert —
-            // der Bauplan war ja schon im Inventar als Eintrag). Effekt:
-            // „Bauplan aus Hotbar entfernen" via Drag aufs Inventar.
-            this.state.hotbar[src.index] = null;
+            // Hotbar → Inventory: ECHTES MOVE (Schöpfer-Bug V7.77+:
+            // alte Logik räumte nur Hotbar, Bauplan löste sich auf).
+            // Drei Fälle analog addToInventory:
+            //   - Inv-Slot leer  → Inv bekommt {name, 1}, Hot wird null
+            //   - Inv-Slot gleicher Bauplan → count += 1 (stack), Hot null
+            //   - Inv-Slot anderer Bauplan → no-op (destruktiven Swap
+            //     vermeiden, weil Hotbar nur Namen trägt und der Inv-Count
+            //     beim Tausch verloren ginge).
+            const targetSlot = this.state.player.inventory[targetIndex];
+            if (!targetSlot) {
+                this.state.player.inventory[targetIndex] = { blueprintName: src.name, count: 1 };
+                this.state.hotbar[src.index] = null;
+            } else if (targetSlot.blueprintName === src.name) {
+                targetSlot.count = (targetSlot.count || 1) + 1;
+                this.state.hotbar[src.index] = null;
+            }
+            // else: anderer Bauplan im Ziel → drop schlägt fehl, beide
+            // Slots bleiben unverändert (keine Daten gehen verloren).
         }
 
         // state.drag wurde schon oben (vor allen Pfaden) genullt.
