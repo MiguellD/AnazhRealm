@@ -4107,8 +4107,7 @@ function startSaveServer() {
                     r.state.p2p.url = "";
                     r.state.p2p.enabled = false;
                     r.p2pLoadPersisted();
-                    out.persistRoundTrip =
-                        r.state.p2p.url === "ws://example.org:9999" && r.state.p2p.enabled === true;
+                    out.persistRoundTrip = r.state.p2p.url === "ws://example.org:9999" && r.state.p2p.enabled === true;
                     // wieder auf Default
                     r.state.p2p.url = "ws://127.0.0.1:4313";
                     r.state.p2p.enabled = false;
@@ -4127,7 +4126,8 @@ function startSaveServer() {
                     out.posUpdatesPeer = peerA && peerA.x === 10 && peerA.y === 5 && peerA.z === 3 && peerA.yaw === 1.5;
 
                     // Mesh wird angelegt (THREE.Group als Avatar)
-                    out.peerMeshSpawned = peerA && peerA.mesh && peerA.mesh.children && peerA.mesh.children.length === 2;
+                    out.peerMeshSpawned =
+                        peerA && peerA.mesh && peerA.mesh.children && peerA.mesh.children.length === 2;
 
                     // peer-leave entfernt peer + mesh aus scene
                     const sceneSizeBefore = r.state.scene.children.length;
@@ -4140,9 +4140,7 @@ function startSaveServer() {
                     out.ownPeerIgnored = !r.state.p2p.peers.has("self-test");
 
                     // Invalid pos (NaN) wird verworfen
-                    r.p2pHandleMessage(
-                        JSON.stringify({ type: "pos", peerId: "peerB", x: NaN, y: 0, z: 0, yaw: 0 })
-                    );
+                    r.p2pHandleMessage(JSON.stringify({ type: "pos", peerId: "peerB", x: NaN, y: 0, z: 0, yaw: 0 }));
                     const peerB = r.state.p2p.peers.get("peerB");
                     out.nanPosNotApplied = peerB && peerB.x === 0;
 
@@ -4223,10 +4221,7 @@ function startSaveServer() {
                 check("Ring 11 V1: NaN-Koordinate in pos wird verworfen", ring11Results.nanPosNotApplied);
                 check("Ring 11 V1: p2pSend ohne offene WS liefert false", ring11Results.sendWithoutWsFalse);
                 check("Ring 11 V1: p2pTick ohne enabled ist no-op (kein Crash)", ring11Results.tickNoOpSafe);
-                check(
-                    "Ring 11 V1: KEIN p2p-/peer_dsl-/remote_run-DSL-Op (Sandbox-Grenze)",
-                    ring11Results.noP2PDslOp
-                );
+                check("Ring 11 V1: KEIN p2p-/peer_dsl-/remote_run-DSL-Op (Sandbox-Grenze)", ring11Results.noP2PDslOp);
                 check("Ring 11 V2.1: CSP enthält allgemeines ws:/wss: (LAN-fähig)", ring11Results.cspHasWebSocket);
                 check("Ring 11 V1: CSP bleibt strict (default-src 'self')", ring11Results.cspKeepsSelf);
                 check("Ring 11 V1: UI-Toggle-Element im DOM", ring11Results.uiToggleExists);
@@ -4303,9 +4298,7 @@ function startSaveServer() {
                     // 7) eingehende dsl mit non-array program wird verworfen
                     let crashed = false;
                     try {
-                        r.p2pHandleMessage(
-                            JSON.stringify({ type: "dsl", peerId: "peerX", program: "not-array" })
-                        );
+                        r.p2pHandleMessage(JSON.stringify({ type: "dsl", peerId: "peerX", program: "not-array" }));
                     } catch (e) {
                         crashed = e.message;
                     }
@@ -4314,14 +4307,10 @@ function startSaveServer() {
                     // 8) Discrimination: zwei minimal verschiedene Programme produzieren
                     // unterschiedliche Welt-Zustände (echtes Sync, keine Stille)
                     r.state.weather = "sunny";
-                    r.p2pHandleMessage(
-                        JSON.stringify({ type: "dsl", peerId: "peerX", program: ["weather", "rainy"] })
-                    );
+                    r.p2pHandleMessage(JSON.stringify({ type: "dsl", peerId: "peerX", program: ["weather", "rainy"] }));
                     const afterRainy = r.state.weather;
                     r.state.weather = "sunny";
-                    r.p2pHandleMessage(
-                        JSON.stringify({ type: "dsl", peerId: "peerX", program: ["weather", "sunny"] })
-                    );
+                    r.p2pHandleMessage(JSON.stringify({ type: "dsl", peerId: "peerX", program: ["weather", "sunny"] }));
                     const afterSunny = r.state.weather;
                     out.discriminationHolds = afterRainy === "rainy" && afterSunny === "sunny";
 
@@ -4358,14 +4347,32 @@ function startSaveServer() {
             } else {
                 check("Ring 11 V2: p2pBroadcastDsl-Methode existiert", ring11V2Results.broadcastMethodExists);
                 check("Ring 11 V2: human-DSL wird gebroadcastet", ring11V2Results.humanBroadcasts);
-                check("Ring 11 V2: remote-DSL wird NICHT re-gebroadcastet (Loop-Schutz)", ring11V2Results.remoteDoesNotEcho);
-                check("Ring 11 V2: LLM-DSL wird NICHT gebroadcastet (nur explizite human-Geste)", ring11V2Results.llmDoesNotBroadcast);
-                check("Ring 11 V2: nicht-verbundener Client broadcastet nicht", ring11V2Results.disconnectedSkipsBroadcast);
-                check("Ring 11 V2: eingehende dsl-Nachricht wird lokal ausgeführt (weather wechselt)", ring11V2Results.remoteDslAppliedLocally);
+                check(
+                    "Ring 11 V2: remote-DSL wird NICHT re-gebroadcastet (Loop-Schutz)",
+                    ring11V2Results.remoteDoesNotEcho
+                );
+                check(
+                    "Ring 11 V2: LLM-DSL wird NICHT gebroadcastet (nur explizite human-Geste)",
+                    ring11V2Results.llmDoesNotBroadcast
+                );
+                check(
+                    "Ring 11 V2: nicht-verbundener Client broadcastet nicht",
+                    ring11V2Results.disconnectedSkipsBroadcast
+                );
+                check(
+                    "Ring 11 V2: eingehende dsl-Nachricht wird lokal ausgeführt (weather wechselt)",
+                    ring11V2Results.remoteDslAppliedLocally
+                );
                 check("Ring 11 V2: dsl mit eigener peerId wird ignoriert", ring11V2Results.ownPeerDslIgnored);
                 check("Ring 11 V2: dsl mit non-array program crasht nicht", ring11V2Results.nonArrayDslNoCrash);
-                check("Ring 11 V2: Diskrimination — zwei verschiedene Programme → zwei verschiedene Welt-Zustände", ring11V2Results.discriminationHolds);
-                check("Ring 11 V2: Remote modify_terrain wächst lokale chunkDeltas (Vision-Punkt)", ring11V2Results.remoteModifyTerrainGrowsDeltas);
+                check(
+                    "Ring 11 V2: Diskrimination — zwei verschiedene Programme → zwei verschiedene Welt-Zustände",
+                    ring11V2Results.discriminationHolds
+                );
+                check(
+                    "Ring 11 V2: Remote modify_terrain wächst lokale chunkDeltas (Vision-Punkt)",
+                    ring11V2Results.remoteModifyTerrainGrowsDeltas
+                );
             }
 
             // ### Ring 11 V2.1 — LAN-Fähigkeit + Sync-Korrektheit ###
@@ -4469,8 +4476,7 @@ function startSaveServer() {
                     const arch1 = r.state.architectures[r.state.architectures.length - 1];
                     r.dslRun(["spawn_village", ["at", 60, 0, 60], 12345], { source: "remote:peerX" });
                     const arch2 = r.state.architectures[r.state.architectures.length - 1];
-                    out.seedDeterminismHolds =
-                        arch1 && arch2 && arch1.seed === arch2.seed && arch1.seed === 12345;
+                    out.seedDeterminismHolds = arch1 && arch2 && arch1.seed === arch2.seed && arch1.seed === 12345;
                     // Cleanup
                     r.state.architectures = r.state.architectures.slice(0, beforeArchCount);
 
@@ -4501,7 +4507,10 @@ function startSaveServer() {
                 check("Ring 11 V2.1: _dslContainsAnyOp findet Op flat", ring11V21Results.containsOpFlat);
                 check("Ring 11 V2.1: _dslContainsAnyOp findet Op verschachtelt", ring11V21Results.containsOpNested);
                 check("Ring 11 V2.1: _dslContainsAnyOp ignoriert nicht-listed Ops", ring11V21Results.containsOpClean);
-                check("Ring 11 V2.1: clean program (weather) wird gebroadcastet", ring11V21Results.cleanProgramBroadcasts);
+                check(
+                    "Ring 11 V2.1: clean program (weather) wird gebroadcastet",
+                    ring11V21Results.cleanProgramBroadcasts
+                );
                 check(
                     "Ring 11 V2.1: player_speed (private) wird NICHT gebroadcastet",
                     ring11V21Results.playerOpDoesNotBroadcast
@@ -4514,14 +4523,8 @@ function startSaveServer() {
                     "Ring 11 V2.1: Chat 'baue dorf hier' embed at(x,y,z)+seed (Multi-Sync-Fix)",
                     ring11V21Results.dorfHasAtNotAtPlayer
                 );
-                check(
-                    "Ring 11 V2.1: Chat 'spawne kreaturen N' embed at-Position",
-                    ring11V21Results.kreatureHasAt
-                );
-                check(
-                    "Ring 11 V2.1: Chat 'baue fraktal X' embed at+rootSeed",
-                    ring11V21Results.fraktalHasSeed
-                );
+                check("Ring 11 V2.1: Chat 'spawne kreaturen N' embed at-Position", ring11V21Results.kreatureHasAt);
+                check("Ring 11 V2.1: Chat 'baue fraktal X' embed at+rootSeed", ring11V21Results.fraktalHasSeed);
                 check(
                     "Ring 11 V2.1: spawn_village(seed) ist deterministisch (gleicher Seed → gleicher Wert)",
                     ring11V21Results.seedDeterminismHolds
@@ -4552,14 +4555,14 @@ function startSaveServer() {
                     out.encodeShape = codeA === "anazh://192.168.1.42:4313/w-1k7p-abc123";
                     const parsedA = r.parseInvitationCode(codeA);
                     out.decodeShape =
-                        parsedA &&
-                        parsedA.url === "ws://192.168.1.42:4313" &&
-                        parsedA.roomId === "w-1k7p-abc123";
+                        parsedA && parsedA.url === "ws://192.168.1.42:4313" && parsedA.roomId === "w-1k7p-abc123";
 
                     // 3. parseInvitationCode toleriert tolerantes Format
                     const parsedTolerant = r.parseInvitationCode("192.168.1.42:4313/myroom123");
                     out.parseTolerant =
-                        parsedTolerant && parsedTolerant.url === "ws://192.168.1.42:4313" && parsedTolerant.roomId === "myroom123";
+                        parsedTolerant &&
+                        parsedTolerant.url === "ws://192.168.1.42:4313" &&
+                        parsedTolerant.roomId === "myroom123";
 
                     // 4. parseInvitationCode lehnt Müll ab
                     out.parseRejectsEmpty = r.parseInvitationCode("") === null;
@@ -4677,19 +4680,40 @@ function startSaveServer() {
                 check("Ring 11.5: state.p2p.pendingWorldSnapshot-Feld existiert", ring115Results.hasPendingFlag);
                 check("Ring 11.5: makeInvitationCode liefert anazh://host:port/roomId", ring115Results.encodeShape);
                 check("Ring 11.5: parseInvitationCode dekodiert URL + roomId", ring115Results.decodeShape);
-                check("Ring 11.5: parseInvitationCode toleriert host:port/room ohne Schema", ring115Results.parseTolerant);
+                check(
+                    "Ring 11.5: parseInvitationCode toleriert host:port/room ohne Schema",
+                    ring115Results.parseTolerant
+                );
                 check("Ring 11.5: parseInvitationCode lehnt leeren Code ab", ring115Results.parseRejectsEmpty);
                 check("Ring 11.5: parseInvitationCode lehnt unsinnigen Code ab", ring115Results.parseRejectsBad);
                 check("Ring 11.5: parseInvitationCode lehnt zu kurze roomId ab", ring115Results.parseRejectsShortRoom);
-                check("Ring 11.5: createNewWorld({role:'host'}) speichert role im worldMeta", ring115Results.hostRoleInSavedMeta);
+                check(
+                    "Ring 11.5: createNewWorld({role:'host'}) speichert role im worldMeta",
+                    ring115Results.hostRoleInSavedMeta
+                );
                 check("Ring 11.5: _importGuestWorld nutzt host-worldId als neue worldId", ring115Results.guestImportOk);
                 check("Ring 11.5: _importGuestWorld setzt worldMeta.role='guest'", ring115Results.guestRoleSet);
                 check("Ring 11.5: _importGuestWorld setzt worldMeta.hostInfo korrekt", ring115Results.guestHostInfoSet);
-                check("Ring 11.5: _importGuestWorld aktiviert P2P-Auto-Connect (localStorage)", ring115Results.p2pEnabledPersisted);
-                check("Ring 11.5: _importGuestWorld speichert host-URL in localStorage", ring115Results.p2pUrlPersisted);
-                check("Ring 11.5: world-snapshot wird ohne pending-Flag verworfen (Sicherheits-Wall)", ring115Results.snapshotRejectedWhenNotPending);
-                check("Ring 11.5: Solo-Spieler antwortet NICHT auf world-request", ring115Results.soloDoesNotAnswerRequest);
-                check("Ring 11.5: Host antwortet auf world-request mit world-snapshot (to=asker)", ring115Results.hostAnswersRequestWithSnapshot);
+                check(
+                    "Ring 11.5: _importGuestWorld aktiviert P2P-Auto-Connect (localStorage)",
+                    ring115Results.p2pEnabledPersisted
+                );
+                check(
+                    "Ring 11.5: _importGuestWorld speichert host-URL in localStorage",
+                    ring115Results.p2pUrlPersisted
+                );
+                check(
+                    "Ring 11.5: world-snapshot wird ohne pending-Flag verworfen (Sicherheits-Wall)",
+                    ring115Results.snapshotRejectedWhenNotPending
+                );
+                check(
+                    "Ring 11.5: Solo-Spieler antwortet NICHT auf world-request",
+                    ring115Results.soloDoesNotAnswerRequest
+                );
+                check(
+                    "Ring 11.5: Host antwortet auf world-request mit world-snapshot (to=asker)",
+                    ring115Results.hostAnswersRequestWithSnapshot
+                );
                 check("Ring 11.5: new-world-dialog im DOM", ring115Results.dialogExists);
                 check("Ring 11.5: Mode-Radios (solo/multi) im DOM", ring115Results.modeRadiosExist);
                 check("Ring 11.5: Role-Radios (host/join) im DOM", ring115Results.roleRadiosExist);
@@ -4814,7 +4838,10 @@ function startSaveServer() {
                         wave6aResults.otherFrictionDefault
                     );
                 }
-                check("Welle 6.A2: isPlayerGrounded hat groundDistance-Konstante (refactored)", wave6aResults.hasGroundDistanceVar);
+                check(
+                    "Welle 6.A2: isPlayerGrounded hat groundDistance-Konstante (refactored)",
+                    wave6aResults.hasGroundDistanceVar
+                );
                 check(
                     "Welle 6.A2: groundDistance ist 0.6 (entspannte Schwelle für Bauwerks-Sub-Boxes)",
                     wave6aResults.groundDistanceIs06
@@ -4882,8 +4909,7 @@ function startSaveServer() {
                         // Setze Spieler knapp über die Top-Fläche
                         r.state.playerMesh.position.set(_savedX + 40, box.max.y + 0.3, _savedZ + 40);
                         r.isPlayerGrounded();
-                        flatBlueprintNotSteep =
-                            r.state.onSteepSlope === false && r.state.groundNormalY > 0.7;
+                        flatBlueprintNotSteep = r.state.onSteepSlope === false && r.state.groundNormalY > 0.7;
                         out.archTopGroundNormalY = r.state.groundNormalY;
                         out.archTopOnSteepSlope = r.state.onSteepSlope;
                     }
@@ -4923,14 +4949,8 @@ function startSaveServer() {
                     "Welle 6.A3: isPlayerGrounded liest get_m_hitNormalWorld (Slope-Tracking aktiv)",
                     wave6a3Results.fnReadsNormal
                 );
-                check(
-                    "Welle 6.A3: isPlayerGrounded setzt onSteepSlope-Flag",
-                    wave6a3Results.fnSetsSteepFlag
-                );
-                check(
-                    "Welle 6.A3: isPlayerGrounded setzt groundNormalY",
-                    wave6a3Results.fnSetsGroundNormal
-                );
+                check("Welle 6.A3: isPlayerGrounded setzt onSteepSlope-Flag", wave6a3Results.fnSetsSteepFlag);
+                check("Welle 6.A3: isPlayerGrounded setzt groundNormalY", wave6a3Results.fnSetsGroundNormal);
                 check(
                     "Welle 6.A3: Negativ-Kontrolle — Himmel hat onSteepSlope=false (nicht geerdet)",
                     wave6a3Results.skyOnSteepSlope === false
@@ -5070,7 +5090,10 @@ function startSaveServer() {
                     "Welle 6.A4: _resolvePhantomTarget nutzt getWorldDirection",
                     wave6a45Results.resolveUsesGetWorldDirection
                 );
-                check("Welle 6.A4: _resolvePhantomTarget nutzt physicsWorld.rayTest", wave6a45Results.resolveUsesRayTest);
+                check(
+                    "Welle 6.A4: _resolvePhantomTarget nutzt physicsWorld.rayTest",
+                    wave6a45Results.resolveUsesRayTest
+                );
                 check(
                     "Welle 6.A5: _resolvePhantomTarget liest hit-Normal für Stabilität",
                     wave6a45Results.resolveReadsNormal
@@ -5080,11 +5103,17 @@ function startSaveServer() {
                     wave6a45Results.resolveStabilityThreshold
                 );
                 check("Welle 6.A4: _resolvePhantomTarget hat Fallback-Pfad", wave6a45Results.resolveHasFallback);
-                check("Welle 6.A5: _applyPhantomTint cached _origColor (kein Drift)", wave6a45Results.tintCachesOrigColor);
+                check(
+                    "Welle 6.A5: _applyPhantomTint cached _origColor (kein Drift)",
+                    wave6a45Results.tintCachesOrigColor
+                );
                 check("Welle 6.A5: Tint hat Grün-Code 0x88ff88 für stabil", wave6a45Results.tintHasGreenStable);
                 check("Welle 6.A5: Tint hat Rot-Code 0xff8888 für instabil", wave6a45Results.tintHasRedUnstable);
                 if (wave6a45Results.phantomExists) {
-                    check("Welle 6.A4: Phantom landet auf Hit-Punkt (nicht alter Y-Fallback)", wave6a45Results.phantomYDownward);
+                    check(
+                        "Welle 6.A4: Phantom landet auf Hit-Punkt (nicht alter Y-Fallback)",
+                        wave6a45Results.phantomYDownward
+                    );
                     check(
                         "Welle 6.A5: Diskrimination — Kamera auf Boden → phantomOnGround=true",
                         wave6a45Results.phantomOnGroundAfterTick === true
@@ -5156,17 +5185,11 @@ function startSaveServer() {
                 check("Welle 6.E1: _describeDslPosition-Helper existiert", wave6e1Results.hasPosHelper);
                 check("Welle 6.E1: _describeDslCondition-Helper existiert", wave6e1Results.hasCondHelper);
                 check("Welle 6.E1: weather-Op wird beschrieben (Wetter + Wert)", wave6e1Results.weatherOk);
-                check(
-                    "Welle 6.E1: spawn_creature-Op nutzt count + emotion + position",
-                    wave6e1Results.creatureOk
-                );
+                check("Welle 6.E1: spawn_creature-Op nutzt count + emotion + position", wave6e1Results.creatureOk);
                 check("Welle 6.E1: chain-Op verbindet Teile mit 'und'", wave6e1Results.chainOk);
                 check("Welle 6.E1: when-Op rendert Condition + Then", wave6e1Results.whenOk);
                 check("Welle 6.E1: unbekannter Op fällt sauber auf Fallback", wave6e1Results.unknownOk);
-                check(
-                    "Welle 6.E1: addNewAbility persistiert description-Feld",
-                    wave6e1Results.persistedOk
-                );
+                check("Welle 6.E1: addNewAbility persistiert description-Feld", wave6e1Results.persistedOk);
                 check(
                     "Welle 6.E1: Lazy-Compute füllt description bei alten Saves (renderAbilitiesList)",
                     wave6e1Results.lazyComputed
@@ -5205,7 +5228,10 @@ function startSaveServer() {
                 check("Welle 6.E2: _introPages-Helper existiert", wave6e2Results.hasPagesHelper);
                 check("Welle 6.E2: #intro-dialog im DOM (init-Aufruf in init()-Sequenz)", wave6e2Results.dialogInDom);
                 check("Welle 6.E2: drei Intro-Seiten", wave6e2Results.pageCount === 3);
-                check("Welle 6.E2: alle Seiten haben Titel + Text", wave6e2Results.pagesHaveTitle && wave6e2Results.pagesHaveBody);
+                check(
+                    "Welle 6.E2: alle Seiten haben Titel + Text",
+                    wave6e2Results.pagesHaveTitle && wave6e2Results.pagesHaveBody
+                );
                 check("Welle 6.E2: Prev-Button vorhanden", wave6e2Results.hasPrevBtn);
                 check("Welle 6.E2: Next-Button vorhanden", wave6e2Results.hasNextBtn);
                 check("Welle 6.E2: Skip-Button vorhanden", wave6e2Results.hasSkipBtn);
@@ -5282,7 +5308,12 @@ function startSaveServer() {
                         label: "Schwach",
                         builtIn: false,
                         parts: [
-                            { shape: "box", position: { x: 0, y: 0, z: 0 }, size: { x: 0.5, y: 0.5, z: 0.5 }, material: "stein" },
+                            {
+                                shape: "box",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 0.5, y: 0.5, z: 0.5 },
+                                material: "stein",
+                            },
                             {
                                 shape: "box",
                                 position: { x: 10, y: 0, z: 0 },
@@ -5300,28 +5331,29 @@ function startSaveServer() {
                     out.weakIsBelowThreshold = weakStrength < 0.7;
 
                     // Journal-Counter vor spawn
-                    const beforeJournal = r.state.worldJournal && r.state.worldJournal.entries
-                        ? r.state.worldJournal.entries.length
-                        : 0;
-                    const beforeSeenKeys = r.state.worldJournal && r.state.worldJournal.seen
-                        ? Object.keys(r.state.worldJournal.seen).filter((k) => k.startsWith("weak_connection:")).length
-                        : 0;
+                    const beforeJournal =
+                        r.state.worldJournal && r.state.worldJournal.entries ? r.state.worldJournal.entries.length : 0;
+                    const beforeSeenKeys =
+                        r.state.worldJournal && r.state.worldJournal.seen
+                            ? Object.keys(r.state.worldJournal.seen).filter((k) => k.startsWith("weak_connection:"))
+                                  .length
+                            : 0;
                     const beforeArchCount = r.state.architectures.length;
                     r.spawnArchitecture(weakName, { x: 250, y: 0, z: 250 }, { seed: 1 });
-                    const afterSeenKeys = r.state.worldJournal && r.state.worldJournal.seen
-                        ? Object.keys(r.state.worldJournal.seen).filter((k) => k.startsWith("weak_connection:")).length
-                        : 0;
-                    const afterJournal = r.state.worldJournal && r.state.worldJournal.entries
-                        ? r.state.worldJournal.entries.length
-                        : 0;
+                    const afterSeenKeys =
+                        r.state.worldJournal && r.state.worldJournal.seen
+                            ? Object.keys(r.state.worldJournal.seen).filter((k) => k.startsWith("weak_connection:"))
+                                  .length
+                            : 0;
+                    const afterJournal =
+                        r.state.worldJournal && r.state.worldJournal.entries ? r.state.worldJournal.entries.length : 0;
                     out.weakJournalIncrement = afterJournal - beforeJournal >= 1;
                     out.weakSeenKeyAdded = afterSeenKeys > beforeSeenKeys;
 
                     // 6.F2 Idempotenz: zweimal spawnen → kein zweiter Eintrag
                     r.spawnArchitecture(weakName, { x: 260, y: 0, z: 260 }, { seed: 2 });
-                    const after2Journal = r.state.worldJournal && r.state.worldJournal.entries
-                        ? r.state.worldJournal.entries.length
-                        : 0;
+                    const after2Journal =
+                        r.state.worldJournal && r.state.worldJournal.entries ? r.state.worldJournal.entries.length : 0;
                     out.weakIsIdempotent = after2Journal === afterJournal;
 
                     // Negativ-Kontrolle: starker Bauplan → KEIN weak_connection-Eintrag
@@ -5331,8 +5363,18 @@ function startSaveServer() {
                         label: "Stark",
                         builtIn: false,
                         parts: [
-                            { shape: "box", position: { x: 0, y: 0, z: 0 }, size: { x: 2, y: 2, z: 2 }, material: "eisen" },
-                            { shape: "box", position: { x: 2.0, y: 0, z: 0 }, size: { x: 2, y: 2, z: 2 }, material: "eisen" },
+                            {
+                                shape: "box",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 2, y: 2, z: 2 },
+                                material: "eisen",
+                            },
+                            {
+                                shape: "box",
+                                position: { x: 2.0, y: 0, z: 0 },
+                                size: { x: 2, y: 2, z: 2 },
+                                material: "eisen",
+                            },
                         ],
                         connections: [{ type: "welding", partA: 0, partB: 1 }],
                     };
@@ -5369,12 +5411,27 @@ function startSaveServer() {
                 check("Welle 6.F1: starke Verbindung (≥1.5) = grün 0x66ff88", wave6fResults.colorStrongIsGreen);
                 check("Welle 6.F1: Bauplan mit Connection erhält THREE.Line im Group", wave6fResults.lineExists);
                 check("Welle 6.F1: Line trägt userData.isConnectionLine-Flag", wave6fResults.lineHasUserDataFlag);
-                check("Welle 6.F2: weakBauplan hat strength < 0.7 (test-setup korrekt)", wave6fResults.weakIsBelowThreshold);
-                check("Welle 6.F2: spawnArchitecture mit schwacher Verbindung schreibt Journal-Eintrag", wave6fResults.weakJournalIncrement);
+                check(
+                    "Welle 6.F2: weakBauplan hat strength < 0.7 (test-setup korrekt)",
+                    wave6fResults.weakIsBelowThreshold
+                );
+                check(
+                    "Welle 6.F2: spawnArchitecture mit schwacher Verbindung schreibt Journal-Eintrag",
+                    wave6fResults.weakJournalIncrement
+                );
                 check("Welle 6.F2: weak_connection:-Schlüssel im worldJournal.seen", wave6fResults.weakSeenKeyAdded);
-                check("Welle 6.F2: Idempotent — zweiter Spawn schreibt KEIN doppeltes Warn", wave6fResults.weakIsIdempotent);
-                check("Welle 6.F2: starker Bauplan hat strength ≥ 0.7 (test-setup korrekt)", wave6fResults.strongIsAboveThreshold);
-                check("Welle 6.F2: Diskrimination — starker Bauplan löst KEINE weak-Warning aus", wave6fResults.strongNoWarning);
+                check(
+                    "Welle 6.F2: Idempotent — zweiter Spawn schreibt KEIN doppeltes Warn",
+                    wave6fResults.weakIsIdempotent
+                );
+                check(
+                    "Welle 6.F2: starker Bauplan hat strength ≥ 0.7 (test-setup korrekt)",
+                    wave6fResults.strongIsAboveThreshold
+                );
+                check(
+                    "Welle 6.F2: Diskrimination — starker Bauplan löst KEINE weak-Warning aus",
+                    wave6fResults.strongNoWarning
+                );
             }
 
             // ### Welle 6.D Etappe 1 — Soul-Tags + STAT_FROM_TAGS + Stat-Berechnung ###
@@ -5434,10 +5491,19 @@ function startSaveServer() {
                     const computed = r.computePlayerStats();
                     out.computedHasTags = computed && typeof computed.tags === "object";
                     out.computedHasStats = computed && typeof computed.stats === "object";
-                    out.computedStatsHasAll = computed && computed.stats &&
-                        ["hpMax", "damage", "speed", "jumpPower", "staminaMax", "precision", "magicResist", "heatResist"].every(
-                            (k) => typeof computed.stats[k] === "number" && Number.isFinite(computed.stats[k])
-                        );
+                    out.computedStatsHasAll =
+                        computed &&
+                        computed.stats &&
+                        [
+                            "hpMax",
+                            "damage",
+                            "speed",
+                            "jumpPower",
+                            "staminaMax",
+                            "precision",
+                            "magicResist",
+                            "heatResist",
+                        ].every((k) => typeof computed.stats[k] === "number" && Number.isFinite(computed.stats[k]));
 
                     // Diskriminations-Test: drei Seelen → drei verschiedene Stat-Profile
                     const savedSoul = r.state.player.soul;
@@ -5472,7 +5538,8 @@ function startSaveServer() {
                     out.stateSpeedMatches = Math.abs(r.state.speed - phoenixStats.speed) < 0.001;
                     out.stateJumpPowerMatches = Math.abs(r.state.jumpPower - phoenixStats.jumpPower) < 0.001;
                     out.stateSprintIsDoubleSpeed = Math.abs(r.state.sprintSpeed - phoenixStats.speed * 2) < 0.001;
-                    out.statePlayerStatsCached = r.state.player.stats && r.state.player.stats.hpMax === phoenixStats.hpMax;
+                    out.statePlayerStatsCached =
+                        r.state.player.stats && r.state.player.stats.hpMax === phoenixStats.hpMax;
                     out.statePlayerHasHpAndStamina =
                         typeof r.state.player.hp === "number" &&
                         typeof r.state.player.hpMax === "number" &&
@@ -5532,7 +5599,11 @@ function startSaveServer() {
 
                     // (2) Chat-Pattern für damage
                     const dmgPattern = r.parseChatToDsl("schade mir 42");
-                    out.damageChatParses = dmgPattern && dmgPattern.program && dmgPattern.program[0] === "damage" && dmgPattern.program[1] === 42;
+                    out.damageChatParses =
+                        dmgPattern &&
+                        dmgPattern.program &&
+                        dmgPattern.program[0] === "damage" &&
+                        dmgPattern.program[1] === 42;
                     const trinkPattern = r.parseChatToDsl("trink trank_lichts");
                     out.trinkChatParses = trinkPattern && trinkPattern.program[0] === "apply_boost";
                     const ruestePattern = r.parseChatToDsl("rüste werkzeug hammer");
@@ -5642,7 +5713,14 @@ function startSaveServer() {
                         label: "Test",
                         builtIn: false,
                         // eisen akzeptiert plastic-Op (hammer-Klasse); stein nur subtractive.
-                        parts: [{ shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } }],
+                        parts: [
+                            {
+                                shape: "box",
+                                material: "eisen",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                            },
+                        ],
                     };
                     if (!r.state.player.tools.includes("hammer")) r.state.player.tools.push("hammer");
                     const staBefore = r.state.player.stamina;
@@ -5668,8 +5746,18 @@ function startSaveServer() {
                         label: "Magie-Trank",
                         builtIn: false,
                         parts: [
-                            { shape: "helix", material: "quarz", position: { x: 0, y: 0, z: 0 }, size: { x: 0.3, y: 0.5, z: 2 } },
-                            { shape: "sphere", material: "glut", position: { x: 0, y: 0.5, z: 0 }, size: { x: 0.2, y: 0.2, z: 0.2 } },
+                            {
+                                shape: "helix",
+                                material: "quarz",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 0.3, y: 0.5, z: 2 },
+                            },
+                            {
+                                shape: "sphere",
+                                material: "glut",
+                                position: { x: 0, y: 0.5, z: 0 },
+                                size: { x: 0.2, y: 0.2, z: 0.2 },
+                            },
                         ],
                     };
                     const markRes = r.setBlueprintAsConsumable("wave6d_potion", 45, "Magie-Trank", 0.2);
@@ -5700,22 +5788,40 @@ function startSaveServer() {
                 // (1) WASD (Original-Mapping: state.right ist geometrisch player-links,
                 // weil forward × up = -X im right-handed Coord-System)
                 check("Reflex 1: WASD-Bewegung — A drückt +state.right (= player-links)", reflexResults.aPressPosRight);
-                check("Reflex 1: WASD-Bewegung — D drückt −state.right (= player-rechts)", reflexResults.dPressNegRight);
+                check(
+                    "Reflex 1: WASD-Bewegung — D drückt −state.right (= player-rechts)",
+                    reflexResults.dPressNegRight
+                );
                 // (2) Chat
-                check("Reflex 2: 'schade mir 42' chat-pattern → DSL ['damage', 42, ...]", reflexResults.damageChatParses);
+                check(
+                    "Reflex 2: 'schade mir 42' chat-pattern → DSL ['damage', 42, ...]",
+                    reflexResults.damageChatParses
+                );
                 check("Reflex 2: 'trink X' chat-pattern → DSL ['apply_boost', ...]", reflexResults.trinkChatParses);
-                check("Reflex 2: 'rüste werkzeug X' chat-pattern → DSL ['equip_tool', ...]", reflexResults.ruesteChatParses);
+                check(
+                    "Reflex 2: 'rüste werkzeug X' chat-pattern → DSL ['equip_tool', ...]",
+                    reflexResults.ruesteChatParses
+                );
                 // (3) Aura: Glow-Sphere + dezenter Sub-Mesh-Tint
                 check("Reflex 3: tickPlayerAura cached _auraBaseColor auf Sub-Mesh", reflexResults.auraBaseColorCached);
                 check("Reflex 3: tickPlayerAura mischt Aura-Farbe in Material", reflexResults.auraTintChangedColor);
                 check("Reflex 3: Alter Boden-Torus-Ring entfernt", reflexResults.boundsRingRemoved);
-                check("Reflex 3 V4: weicher Glow — Sprite mit Radial-Texture existiert", reflexResults.glowSpriteExists);
+                check(
+                    "Reflex 3 V4: weicher Glow — Sprite mit Radial-Texture existiert",
+                    reflexResults.glowSpriteExists
+                );
                 if (reflexResults.glowSpriteExists) {
                     check("Reflex 3 V4: Glow-Sprite ist in der Welt-Szene", reflexResults.glowInScene);
                     check("Reflex 3 V4: Glow ist ein THREE.Sprite (Billboard)", reflexResults.glowIsSprite);
                     check("Reflex 3 V4: Glow-Material ist transparent", reflexResults.glowIsTransparent);
-                    check("Reflex 3 V4: Glow nutzt AdditiveBlending (echter Leucht-Effekt)", reflexResults.glowIsAdditive);
-                    check("Reflex 3 V4: Glow hat Map-Texture (Radial-Gradient für weichen Falloff)", reflexResults.glowHasTexture);
+                    check(
+                        "Reflex 3 V4: Glow nutzt AdditiveBlending (echter Leucht-Effekt)",
+                        reflexResults.glowIsAdditive
+                    );
+                    check(
+                        "Reflex 3 V4: Glow hat Map-Texture (Radial-Gradient für weichen Falloff)",
+                        reflexResults.glowHasTexture
+                    );
                     check("Reflex 3 V4: Glow-Position folgt Spieler (x/z)", reflexResults.glowFollowsPlayer);
                 }
                 // Drache-Orientierung (Schöpfer-Korrektur 13.05.2026): KEIN
@@ -5759,16 +5865,25 @@ function startSaveServer() {
                 check("Reflex 5: applyOpToPart zieht Stamina ab", reflexResults.staminaWasDeducted);
                 check("Reflex 5: applyOpToPart lehnt ab bei stamina<cost", reflexResults.applyOpRejectedNoStamina);
                 // (6) Konsumables-Logik
-                check("Reflex 6: setBlueprintAsConsumable-Methode existiert", reflexResults.hasSetBlueprintAsConsumable);
+                check(
+                    "Reflex 6: setBlueprintAsConsumable-Methode existiert",
+                    reflexResults.hasSetBlueprintAsConsumable
+                );
                 check("Reflex 6: setBlueprintAsConsumable liefert ok", reflexResults.markConsumableOk);
                 check("Reflex 6: Bauplan bekommt role:'consumable'", reflexResults.blueprintGotRoleConsumable);
                 check("Reflex 6: consumableMeta speichert durationSeconds", reflexResults.blueprintHasConsumableMeta);
-                check("Reflex 6: activateConsumable auf Bauplan emergiert Boost aus Compound-Tags", reflexResults.drinkOk && reflexResults.boostExists);
+                check(
+                    "Reflex 6: activateConsumable auf Bauplan emergiert Boost aus Compound-Tags",
+                    reflexResults.drinkOk && reflexResults.boostExists
+                );
                 check(
                     "Reflex 6: Diskrimination — quarz+glut-Bauplan → magieleitung-Boost",
                     reflexResults.boostTagBonusFromCompound
                 );
-                check("Reflex 6: Boost-Dauer aus consumableMeta.durationSeconds", reflexResults.boostUsesBlueprintDuration);
+                check(
+                    "Reflex 6: Boost-Dauer aus consumableMeta.durationSeconds",
+                    reflexResults.boostUsesBlueprintDuration
+                );
             } else if (reflexResults && reflexResults.error) {
                 check("Reflex-Tests Block lief ohne Exception", false, reflexResults.error);
             }
@@ -5811,8 +5926,18 @@ function startSaveServer() {
                         label: "Eisen-Plate",
                         builtIn: false,
                         parts: [
-                            { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
-                            { shape: "box", material: "eisen", position: { x: 0, y: 1, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                            {
+                                shape: "box",
+                                material: "eisen",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                            },
+                            {
+                                shape: "box",
+                                material: "eisen",
+                                position: { x: 0, y: 1, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                            },
                         ],
                     };
                     // Markieren als Rüstung
@@ -5823,7 +5948,8 @@ function startSaveServer() {
                     // Built-in schützen
                     r.state.blueprints.village.builtIn = true;
                     const markBuiltinResult = r.setBlueprintAsArmor("village");
-                    out.markBuiltinRejected = !markBuiltinResult.ok && markBuiltinResult.reason === "cannot_modify_builtin";
+                    out.markBuiltinRejected =
+                        !markBuiltinResult.ok && markBuiltinResult.reason === "cannot_modify_builtin";
 
                     // Equip Rüstung
                     const equipResult = r.equipArmor("test_armor_eisen");
@@ -5840,11 +5966,17 @@ function startSaveServer() {
                         label: "Unmarked",
                         builtIn: false,
                         parts: [
-                            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                            {
+                                shape: "box",
+                                material: "stein",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                            },
                         ],
                     };
                     const equipUnmarkedResult = r.equipArmor("test_plain");
-                    out.unmarkedRejected = !equipUnmarkedResult.ok && equipUnmarkedResult.reason === "not_marked_as_armor";
+                    out.unmarkedRejected =
+                        !equipUnmarkedResult.ok && equipUnmarkedResult.reason === "not_marked_as_armor";
 
                     // Unequip
                     r.equipArmor(null);
@@ -5882,9 +6014,7 @@ function startSaveServer() {
                     // V2: Aura tinted Sub-Meshes; siehe Reflex-Tests Block oben
                     const subMesh = r.state.playerMesh.children[0];
                     out.auraSubMeshTinted =
-                        !!subMesh &&
-                        !!subMesh.userData &&
-                        typeof subMesh.userData._auraBaseColor === "number";
+                        !!subMesh && !!subMesh.userData && typeof subMesh.userData._auraBaseColor === "number";
 
                     // Cleanup
                     r.equipArmor(null);
@@ -5905,10 +6035,7 @@ function startSaveServer() {
                 check("Welle 6.D Etappe 3b: equipTool-Methode existiert", wave6d3bResults.hasEquipTool);
                 check("Welle 6.D Etappe 3b: equipArmor-Methode existiert", wave6d3bResults.hasEquipArmor);
                 check("Welle 6.D Etappe 3b: setBlueprintAsArmor-Methode existiert", wave6d3bResults.hasSetArmor);
-                check(
-                    "Welle 6.D Etappe 3b: state.player.equipped = {tool, armor}",
-                    wave6d3bResults.hasEquippedState
-                );
+                check("Welle 6.D Etappe 3b: state.player.equipped = {tool, armor}", wave6d3bResults.hasEquippedState);
                 check("Welle 6.D Etappe 3b: AURA_TAG_HUE-Map existiert", wave6d3bResults.hasAuraHueMap);
                 check(
                     "Welle 6.D Etappe 3b: AURA_TAG_HUE-Map deckt alle 10 MATERIAL_TAG_KEYS ab",
@@ -5924,8 +6051,14 @@ function startSaveServer() {
                     "Welle 6.D Etappe 3b: Built-in-Bauplan kann nicht als Rüstung markiert werden",
                     wave6d3bResults.markBuiltinRejected
                 );
-                check("Welle 6.D Etappe 3b: equipArmor erfolgreich auf markiertem Bauplan", wave6d3bResults.equipArmorOk);
-                check("Welle 6.D Etappe 3b: state.player.equipped.armor zeigt auf Rüstung", wave6d3bResults.equippedArmorIs);
+                check(
+                    "Welle 6.D Etappe 3b: equipArmor erfolgreich auf markiertem Bauplan",
+                    wave6d3bResults.equipArmorOk
+                );
+                check(
+                    "Welle 6.D Etappe 3b: state.player.equipped.armor zeigt auf Rüstung",
+                    wave6d3bResults.equippedArmorIs
+                );
                 check(
                     "Welle 6.D Etappe 3b: Diskrimination — Eisen-Rüstung erhöht hpMax (dichte + härte hoch)",
                     wave6d3bResults.armorIncreasesHp
@@ -5942,15 +6075,24 @@ function startSaveServer() {
                     "Welle 6.D Etappe 3b: unequip stellt baseline-Stats wieder her",
                     wave6d3bResults.unequippedRestoresStats
                 );
-                check("Welle 6.D Etappe 3b: state.player.equipped.armor == null nach unequip", wave6d3bResults.equippedArmorNull);
+                check(
+                    "Welle 6.D Etappe 3b: state.player.equipped.armor == null nach unequip",
+                    wave6d3bResults.equippedArmorNull
+                );
                 check("Welle 6.D Etappe 3b: DSL-Op unequip(armor) entfernt Rüstung", wave6d3bResults.dslUnequipWorks);
-                check("Welle 6.D Etappe 3b: equipTool akzeptiert Built-in-Werkzeug", wave6d3bResults.equipBuiltinToolOk);
+                check(
+                    "Welle 6.D Etappe 3b: equipTool akzeptiert Built-in-Werkzeug",
+                    wave6d3bResults.equipBuiltinToolOk
+                );
                 check("Welle 6.D Etappe 3b: state.player.equipped.tool ist gesetzt", wave6d3bResults.equippedToolIs);
                 check(
                     "Welle 6.D Etappe 3b: Built-in-Werkzeug ohne sourceBlueprint → kein Stat-Beitrag (ok)",
                     wave6d3bResults.builtinToolNoStatChange
                 );
-                check("Welle 6.D Etappe 3b: buildStateSnapshot persistiert playerEquipped", wave6d3bResults.snapHasEquipped);
+                check(
+                    "Welle 6.D Etappe 3b: buildStateSnapshot persistiert playerEquipped",
+                    wave6d3bResults.snapHasEquipped
+                );
                 check(
                     "Welle 6.D Etappe 3b (V2): Aura tintet Spieler-Sub-Meshes (statt Boden-Ring)",
                     wave6d3bResults.auraSubMeshTinted
@@ -6063,19 +6205,23 @@ function startSaveServer() {
                     out.twoStepAboveMin = twoPrec > 0.4 && twoPrec < 0.9;
 
                     // --- Konsumables ---
-                    out.hasConsumablesContainer =
-                        r.state.consumables && typeof r.state.consumables === "object";
+                    out.hasConsumablesContainer = r.state.consumables && typeof r.state.consumables === "object";
                     out.hasCreateConsumableMethod = typeof r.createOrUpdateConsumable === "function";
                     out.hasActivateMethod = typeof r.activateConsumable === "function";
                     // define_consumable via DSL
                     r.dslRun(
-                        ["define_consumable", "trank_des_lichts", { magieleitung: 0.3, resoniert: 0.2 }, 60, "Trank des Lichts"],
+                        [
+                            "define_consumable",
+                            "trank_des_lichts",
+                            { magieleitung: 0.3, resoniert: 0.2 },
+                            60,
+                            "Trank des Lichts",
+                        ],
                         { source: "test" }
                     );
                     const cn = r.state.consumables.trank_des_lichts;
                     out.consumableDefined = !!cn;
-                    out.consumableTagBonus =
-                        cn && cn.tagBonus && Math.abs(cn.tagBonus.magieleitung - 0.3) < 0.001;
+                    out.consumableTagBonus = cn && cn.tagBonus && Math.abs(cn.tagBonus.magieleitung - 0.3) < 0.001;
                     out.consumableDuration = cn && cn.durationSeconds === 60;
                     out.consumableLabel = cn && cn.label === "Trank des Lichts";
 
@@ -6088,9 +6234,7 @@ function startSaveServer() {
 
                     // Dedupe: zweimal apply_boost verlängert statt zu duplizieren
                     r.dslRun(["apply_boost", "trank_des_lichts"], { source: "test" });
-                    const matching = r.state.player.boosts.filter(
-                        (x) => x.source === "consume:trank_des_lichts"
-                    );
+                    const matching = r.state.player.boosts.filter((x) => x.source === "consume:trank_des_lichts");
                     out.consumableDedupes = matching.length === 1;
 
                     // Unknown name → kein Boost
@@ -6118,7 +6262,10 @@ function startSaveServer() {
             if (wave6d3aResults && !wave6d3aResults.error) {
                 // Tod-Behandlung
                 check("Welle 6.D Etappe 3a: damagePlayer-Methode existiert", wave6d3aResults.hasDamageMethod);
-                check("Welle 6.D Etappe 3a: triggerPhoenixDeath-Methode existiert", wave6d3aResults.hasTriggerPhoenixMethod);
+                check(
+                    "Welle 6.D Etappe 3a: triggerPhoenixDeath-Methode existiert",
+                    wave6d3aResults.hasTriggerPhoenixMethod
+                );
                 check("Welle 6.D Etappe 3a: tickPhoenixDeath-Methode existiert", wave6d3aResults.hasTickPhoenixMethod);
                 check("Welle 6.D Etappe 3a: state.player.phoenixUntil existiert", wave6d3aResults.hasPhoenixState);
                 check(
@@ -6127,7 +6274,10 @@ function startSaveServer() {
                 );
                 check("Welle 6.D Etappe 3a: damagePlayer reduziert HP", wave6d3aResults.hpDropped);
                 check("Welle 6.D Etappe 3a: heatResist dämpft Feuer-Schaden", wave6d3aResults.heatResistReducesDamage);
-                check("Welle 6.D Etappe 3a: HP=0 → Phönix-Wandlung (soul=phoenix)", wave6d3aResults.killTriggersPhoenix);
+                check(
+                    "Welle 6.D Etappe 3a: HP=0 → Phönix-Wandlung (soul=phoenix)",
+                    wave6d3aResults.killTriggersPhoenix
+                );
                 check("Welle 6.D Etappe 3a: phoenixUntil > now nach Tod", wave6d3aResults.phoenixUntilSet);
                 check(
                     "Welle 6.D Etappe 3a: preDeathSoul merkt vorherige Seele",
@@ -6161,30 +6311,42 @@ function startSaveServer() {
                     wave6d3aResults.hybridMatchesDoc,
                     `actual=${(wave6d3aResults.hybridExampleValue || 0).toFixed(3)}`
                 );
-                check("Welle 6.D Etappe 3a: 1 Schritt → reine min (kein Hybrid-Effekt)", wave6d3aResults.oneStepReturnsMin);
                 check(
-                    "Welle 6.D Etappe 3a: leere opChain → Default 0.4",
-                    wave6d3aResults.emptyChainReturnsDefault
+                    "Welle 6.D Etappe 3a: 1 Schritt → reine min (kein Hybrid-Effekt)",
+                    wave6d3aResults.oneStepReturnsMin
                 );
+                check("Welle 6.D Etappe 3a: leere opChain → Default 0.4", wave6d3aResults.emptyChainReturnsDefault);
                 check(
                     "Welle 6.D Etappe 3a: Diskrimination — 2 Stufen liefern Wert zwischen min und max",
                     wave6d3aResults.twoStepAboveMin
                 );
                 // Konsumables
-                check("Welle 6.D Etappe 3a: state.consumables-Container existiert", wave6d3aResults.hasConsumablesContainer);
-                check("Welle 6.D Etappe 3a: createOrUpdateConsumable-Methode existiert", wave6d3aResults.hasCreateConsumableMethod);
+                check(
+                    "Welle 6.D Etappe 3a: state.consumables-Container existiert",
+                    wave6d3aResults.hasConsumablesContainer
+                );
+                check(
+                    "Welle 6.D Etappe 3a: createOrUpdateConsumable-Methode existiert",
+                    wave6d3aResults.hasCreateConsumableMethod
+                );
                 check("Welle 6.D Etappe 3a: activateConsumable-Methode existiert", wave6d3aResults.hasActivateMethod);
-                check("Welle 6.D Etappe 3a: define_consumable DSL-Op legt Konsumabel an", wave6d3aResults.consumableDefined);
+                check(
+                    "Welle 6.D Etappe 3a: define_consumable DSL-Op legt Konsumabel an",
+                    wave6d3aResults.consumableDefined
+                );
                 check("Welle 6.D Etappe 3a: Konsumabel speichert tagBonus", wave6d3aResults.consumableTagBonus);
                 check("Welle 6.D Etappe 3a: Konsumabel speichert durationSeconds", wave6d3aResults.consumableDuration);
                 check("Welle 6.D Etappe 3a: Konsumabel speichert label", wave6d3aResults.consumableLabel);
                 check("Welle 6.D Etappe 3a: apply_boost DSL-Op fügt Boost hinzu", wave6d3aResults.applyBoostAddsBoost);
+                check("Welle 6.D Etappe 3a: aktiver Boost trägt Konsumabel-tagBonus", wave6d3aResults.boostTagBonus);
                 check(
-                    "Welle 6.D Etappe 3a: aktiver Boost trägt Konsumabel-tagBonus",
-                    wave6d3aResults.boostTagBonus
+                    "Welle 6.D Etappe 3a: zweimal apply_boost — Dedupe via consume:<name>",
+                    wave6d3aResults.consumableDedupes
                 );
-                check("Welle 6.D Etappe 3a: zweimal apply_boost — Dedupe via consume:<name>", wave6d3aResults.consumableDedupes);
-                check("Welle 6.D Etappe 3a: unbekannter Konsumabel-Name wird abgelehnt", wave6d3aResults.unknownRejected);
+                check(
+                    "Welle 6.D Etappe 3a: unbekannter Konsumabel-Name wird abgelehnt",
+                    wave6d3aResults.unknownRejected
+                );
                 check(
                     "Welle 6.D Etappe 3a: apply_boost in NON_BROADCASTABLE_OPS (privat)",
                     wave6d3aResults.applyBoostNonBroadcast
@@ -6247,8 +6409,7 @@ function startSaveServer() {
                         label: "Test-Flamme stärker",
                     });
                     out.dedupesBySource = r.state.player.boosts.length === 1;
-                    out.dedupeReplacesDelta =
-                        Math.abs(r.state.player.boosts[0].tagDelta.wärmeleitung - 0.5) < 0.001;
+                    out.dedupeReplacesDelta = Math.abs(r.state.player.boosts[0].tagDelta.wärmeleitung - 0.5) < 0.001;
 
                     // tickPlayerBoosts entfernt abgelaufene Boosts.
                     // V7.75: prüfen ob der test:flame-Boost spezifisch
@@ -6296,10 +6457,30 @@ function startSaveServer() {
                         label: "Resonator",
                         builtIn: false,
                         parts: [
-                            { shape: "helix", material: "quarz", position: { x: 1, y: 0, z: 0 }, size: { x: 0.5, y: 1, z: 3 } },
-                            { shape: "helix", material: "quarz", position: { x: 0, y: 0, z: 1 }, size: { x: 0.5, y: 1, z: 3 } },
-                            { shape: "helix", material: "quarz", position: { x: -1, y: 0, z: 0 }, size: { x: 0.5, y: 1, z: 3 } },
-                            { shape: "helix", material: "quarz", position: { x: 0, y: 0, z: -1 }, size: { x: 0.5, y: 1, z: 3 } },
+                            {
+                                shape: "helix",
+                                material: "quarz",
+                                position: { x: 1, y: 0, z: 0 },
+                                size: { x: 0.5, y: 1, z: 3 },
+                            },
+                            {
+                                shape: "helix",
+                                material: "quarz",
+                                position: { x: 0, y: 0, z: 1 },
+                                size: { x: 0.5, y: 1, z: 3 },
+                            },
+                            {
+                                shape: "helix",
+                                material: "quarz",
+                                position: { x: -1, y: 0, z: 0 },
+                                size: { x: 0.5, y: 1, z: 3 },
+                            },
+                            {
+                                shape: "helix",
+                                material: "quarz",
+                                position: { x: 0, y: 0, z: -1 },
+                                size: { x: 0.5, y: 1, z: 3 },
+                            },
                         ],
                     };
                     r.spawnArchitecture("wave6d2_resonator", { x: 82, y: 0, z: 82 }, { seed: 1 });
@@ -6344,7 +6525,10 @@ function startSaveServer() {
                     "Welle 6.D Etappe 2: BOOST_EMOTION_TAG-Map mit 6 Emotionen",
                     wave6d2Results.hasEmotionMap && wave6d2Results.emotionAxisCount === 6
                 );
-                check("Welle 6.D Etappe 2: BOOST_RESONANCE_DELTA-Konstante existiert", wave6d2Results.hasResonanceConst);
+                check(
+                    "Welle 6.D Etappe 2: BOOST_RESONANCE_DELTA-Konstante existiert",
+                    wave6d2Results.hasResonanceConst
+                );
                 check("Welle 6.D Etappe 2: addPlayerBoost liefert true", wave6d2Results.addReturnsTrue);
                 check("Welle 6.D Etappe 2: boost wird ins Array geschrieben", wave6d2Results.boostsArrayHasOne);
                 check("Welle 6.D Etappe 2: boost trägt tagDelta + Wert", wave6d2Results.boostHasTagDelta);
@@ -6356,11 +6540,26 @@ function startSaveServer() {
                     "Welle 6.D Etappe 2: Diskrimination — wärmeleitung-Boost erhöht heatResist",
                     wave6d2Results.heatResistIncreased
                 );
-                check("Welle 6.D Etappe 2: gleiche source dedupliziert (nur 1 Eintrag)", wave6d2Results.dedupesBySource);
-                check("Welle 6.D Etappe 2: dedupe ersetzt tagDelta des bestehenden Boosts", wave6d2Results.dedupeReplacesDelta);
-                check("Welle 6.D Etappe 2: tickPlayerBoosts entfernt abgelaufene Boosts", wave6d2Results.expiredRemoved);
-                check("Welle 6.D Etappe 2: Emotion-Trigger — awe>0.7 erzeugt magieleitung-Boost", wave6d2Results.emotionAweTriggered);
-                check("Welle 6.D Etappe 2: Emotion-Boost trägt magieleitung-Delta > 0", wave6d2Results.aweBoostHasMagieleitung);
+                check(
+                    "Welle 6.D Etappe 2: gleiche source dedupliziert (nur 1 Eintrag)",
+                    wave6d2Results.dedupesBySource
+                );
+                check(
+                    "Welle 6.D Etappe 2: dedupe ersetzt tagDelta des bestehenden Boosts",
+                    wave6d2Results.dedupeReplacesDelta
+                );
+                check(
+                    "Welle 6.D Etappe 2: tickPlayerBoosts entfernt abgelaufene Boosts",
+                    wave6d2Results.expiredRemoved
+                );
+                check(
+                    "Welle 6.D Etappe 2: Emotion-Trigger — awe>0.7 erzeugt magieleitung-Boost",
+                    wave6d2Results.emotionAweTriggered
+                );
+                check(
+                    "Welle 6.D Etappe 2: Emotion-Boost trägt magieleitung-Delta > 0",
+                    wave6d2Results.aweBoostHasMagieleitung
+                );
                 check(
                     "Welle 6.D Etappe 2: Diskrimination — magieleitung-Boost erhöht magicResist",
                     wave6d2Results.magicResistIncreased
@@ -6370,7 +6569,10 @@ function startSaveServer() {
                     wave6d2Results.resonanceBoostTriggered,
                     `sig.resoniert=${(wave6d2Results.signatureResonierValue || 0).toFixed(2)} thr=${wave6d2Results.signatureThreshold} dist=${(wave6d2Results.distanceToSig || 0).toFixed(2)}`
                 );
-                check("Welle 6.D Etappe 2: Welt-Resonanz-Boost trägt resoniert-Delta > 0", wave6d2Results.resonanceHasResonierDelta);
+                check(
+                    "Welle 6.D Etappe 2: Welt-Resonanz-Boost trägt resoniert-Delta > 0",
+                    wave6d2Results.resonanceHasResonierDelta
+                );
                 check(
                     "Welle 6.D Etappe 2: Negativ-Kontrolle — außerhalb Reichweite KEIN Resonanz-Boost",
                     wave6d2Results.resonanceNotTriggeredFar
@@ -6400,15 +6602,34 @@ function startSaveServer() {
                     // Fallback: prüfen via dslRun
                     const beforeCount = Object.keys(r.state.customSouls || {}).length;
                     const testParts = [
-                        { shape: "box", material: "knochen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.5, y: 1.0, z: 0.4 } },
-                        { shape: "helix", material: "quarz", position: { x: 0, y: 0.6, z: 0 }, size: { x: 0.3, y: 0.6, z: 2 } },
-                        { shape: "sphere", material: "glut", position: { x: 0, y: 0.3, z: 0 }, size: { x: 0.25, y: 0.25, z: 0.25 } },
+                        {
+                            shape: "box",
+                            material: "knochen",
+                            position: { x: 0, y: 0, z: 0 },
+                            size: { x: 0.5, y: 1.0, z: 0.4 },
+                        },
+                        {
+                            shape: "helix",
+                            material: "quarz",
+                            position: { x: 0, y: 0.6, z: 0 },
+                            size: { x: 0.3, y: 0.6, z: 2 },
+                        },
+                        {
+                            shape: "sphere",
+                            material: "glut",
+                            position: { x: 0, y: 0.3, z: 0 },
+                            size: { x: 0.25, y: 0.25, z: 0.25 },
+                        },
                     ];
                     r.dslRun(["define_soul", "kristall_geist", testParts], { source: "test" });
                     const afterCount = Object.keys(r.state.customSouls || {}).length;
                     out.customSoulAdded = afterCount === beforeCount + 1;
                     const created = r.state.customSouls.kristall_geist;
-                    out.customHasBodyParts = !!(created && Array.isArray(created.bodyParts) && created.bodyParts.length === 3);
+                    out.customHasBodyParts = !!(
+                        created &&
+                        Array.isArray(created.bodyParts) &&
+                        created.bodyParts.length === 3
+                    );
                     out.customHasLabel = !!(created && typeof created.label === "string");
 
                     // _getSoulDef findet die Custom-Seele
@@ -6444,7 +6665,8 @@ function startSaveServer() {
                     // UI-Dropdown enthält die neue Seele
                     if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
                     const select = document.getElementById("player-soul-select");
-                    out.dropdownContainsCustom = select && [...select.options].some((o) => o.value === "kristall_geist");
+                    out.dropdownContainsCustom =
+                        select && [...select.options].some((o) => o.value === "kristall_geist");
 
                     // Cap-Test: 16 Custom-Seelen max
                     let overflowResult = "ok";
@@ -6556,9 +6778,7 @@ function startSaveServer() {
                     // applyPlayerSoul auf Custom-Seele rendert tatsächlich ein Mesh
                     r.applyPlayerSoul("test_clone_a");
                     out.customSoulRendered =
-                        !!r.state.playerMesh &&
-                        r.state.playerMesh.children &&
-                        r.state.playerMesh.children.length > 0;
+                        !!r.state.playerMesh && r.state.playerMesh.children && r.state.playerMesh.children.length > 0;
 
                     // Delete: wenn aktive Seele gelöscht → fallback auf "human"
                     const delResult = r.deleteCustomSoul("test_clone_a");
@@ -6579,8 +6799,14 @@ function startSaveServer() {
                 check("Welle 6.D Etappe 1.7: cloneSoulToCustom-Methode existiert", wave6d17Results.hasCloneMethod);
                 check("Welle 6.D Etappe 1.7: deleteCustomSoul-Methode existiert", wave6d17Results.hasDeleteMethod);
                 check("Welle 6.D Etappe 1.7: addPartToCustomSoul-Methode existiert", wave6d17Results.hasAddPartMethod);
-                check("Welle 6.D Etappe 1.7: updatePartInCustomSoul-Methode existiert", wave6d17Results.hasUpdatePartMethod);
-                check("Welle 6.D Etappe 1.7: removePartFromCustomSoul-Methode existiert", wave6d17Results.hasRemovePartMethod);
+                check(
+                    "Welle 6.D Etappe 1.7: updatePartInCustomSoul-Methode existiert",
+                    wave6d17Results.hasUpdatePartMethod
+                );
+                check(
+                    "Welle 6.D Etappe 1.7: removePartFromCustomSoul-Methode existiert",
+                    wave6d17Results.hasRemovePartMethod
+                );
                 check("Welle 6.D Etappe 1.7: #soul-editor im DOM (Spieler-Drawer)", wave6d17Results.editorInDom);
                 check("Welle 6.D Etappe 1.7: Empty-State zeigt Hinweis-Text", wave6d17Results.emptyStateRendered);
                 check("Welle 6.D Etappe 1.7: Klonen/Neu-Action-Buttons vorhanden", wave6d17Results.hasCloneActionBtn);
@@ -6590,53 +6816,111 @@ function startSaveServer() {
                 check("Welle 6.D Etappe 1.7: Editor-Pane mit Parts gerendert", wave6d17Results.editorPaneRendered);
                 check("Welle 6.D Etappe 1.7: 4 Part-Rows im Editor", wave6d17Results.partRowsCount === 4);
                 check("Welle 6.D Etappe 1.7: Shape-Select vorhanden", wave6d17Results.editorHasShapeSelect);
-                check("Welle 6.D Etappe 1.7: addPartToCustomSoul fügt Part hinzu", wave6d17Results.addReturnsOk && wave6d17Results.addedPart);
-                check("Welle 6.D Etappe 1.7: updatePartInCustomSoul wendet Patch an", wave6d17Results.updateReturnsOk && wave6d17Results.updateApplied);
-                check("Welle 6.D Etappe 1.7: removePartFromCustomSoul entfernt Part", wave6d17Results.removeReturnsOk && wave6d17Results.removedPart);
-                check("Welle 6.D Etappe 1.7: Mindestens-1-Schutz — letztes Part kann nicht gelöscht werden", wave6d17Results.lastPartProtected);
-                check("Welle 6.D Etappe 1.7: End-to-End — applyPlayerSoul auf Custom rendert Mesh", wave6d17Results.customSoulRendered);
-                check("Welle 6.D Etappe 1.7: deleteCustomSoul entfernt aus Map", wave6d17Results.deleteReturnsOk && wave6d17Results.deletedFromMap);
-                check("Welle 6.D Etappe 1.7: Löschen der aktiven Seele schaltet zurück auf 'human'", wave6d17Results.fallbackToHuman);
+                check(
+                    "Welle 6.D Etappe 1.7: addPartToCustomSoul fügt Part hinzu",
+                    wave6d17Results.addReturnsOk && wave6d17Results.addedPart
+                );
+                check(
+                    "Welle 6.D Etappe 1.7: updatePartInCustomSoul wendet Patch an",
+                    wave6d17Results.updateReturnsOk && wave6d17Results.updateApplied
+                );
+                check(
+                    "Welle 6.D Etappe 1.7: removePartFromCustomSoul entfernt Part",
+                    wave6d17Results.removeReturnsOk && wave6d17Results.removedPart
+                );
+                check(
+                    "Welle 6.D Etappe 1.7: Mindestens-1-Schutz — letztes Part kann nicht gelöscht werden",
+                    wave6d17Results.lastPartProtected
+                );
+                check(
+                    "Welle 6.D Etappe 1.7: End-to-End — applyPlayerSoul auf Custom rendert Mesh",
+                    wave6d17Results.customSoulRendered
+                );
+                check(
+                    "Welle 6.D Etappe 1.7: deleteCustomSoul entfernt aus Map",
+                    wave6d17Results.deleteReturnsOk && wave6d17Results.deletedFromMap
+                );
+                check(
+                    "Welle 6.D Etappe 1.7: Löschen der aktiven Seele schaltet zurück auf 'human'",
+                    wave6d17Results.fallbackToHuman
+                );
             } else if (wave6d17Results && wave6d17Results.error) {
                 check("Welle 6.D Etappe 1.7: Test-Block lief ohne Exception", false, wave6d17Results.error);
             }
 
             if (wave6d16Results) {
                 check("Welle 6.D Etappe 1.6: _getSoulDef-Helper existiert", wave6d16Results.hasGetSoulDef);
-                check("Welle 6.D Etappe 1.6: createOrUpdateSoulFromDsl-Methode existiert", wave6d16Results.hasCreateMethod);
-                check("Welle 6.D Etappe 1.6: state.customSouls-Container existiert", wave6d16Results.customSoulsContainerExists);
-                check("Welle 6.D Etappe 1.6: define_soul DSL-Op fügt Custom-Seele hinzu", wave6d16Results.customSoulAdded);
-                check("Welle 6.D Etappe 1.6: Custom-Seele hat bodyParts mit 3 Teilen", wave6d16Results.customHasBodyParts);
+                check(
+                    "Welle 6.D Etappe 1.6: createOrUpdateSoulFromDsl-Methode existiert",
+                    wave6d16Results.hasCreateMethod
+                );
+                check(
+                    "Welle 6.D Etappe 1.6: state.customSouls-Container existiert",
+                    wave6d16Results.customSoulsContainerExists
+                );
+                check(
+                    "Welle 6.D Etappe 1.6: define_soul DSL-Op fügt Custom-Seele hinzu",
+                    wave6d16Results.customSoulAdded
+                );
+                check(
+                    "Welle 6.D Etappe 1.6: Custom-Seele hat bodyParts mit 3 Teilen",
+                    wave6d16Results.customHasBodyParts
+                );
                 check("Welle 6.D Etappe 1.6: Custom-Seele bekommt einen label", wave6d16Results.customHasLabel);
-                check("Welle 6.D Etappe 1.6: _getSoulDef findet Custom-Seele neben Built-ins", wave6d16Results.getSoulDefFindsCustom);
-                check("Welle 6.D Etappe 1.6: Built-in-Name geschützt (human nicht überschreibbar)", wave6d16Results.builtinProtected);
-                check("Welle 6.D Etappe 1.6: Compound-Tags der Custom-Seele werden berechnet", wave6d16Results.customTagsExist);
+                check(
+                    "Welle 6.D Etappe 1.6: _getSoulDef findet Custom-Seele neben Built-ins",
+                    wave6d16Results.getSoulDefFindsCustom
+                );
+                check(
+                    "Welle 6.D Etappe 1.6: Built-in-Name geschützt (human nicht überschreibbar)",
+                    wave6d16Results.builtinProtected
+                );
+                check(
+                    "Welle 6.D Etappe 1.6: Compound-Tags der Custom-Seele werden berechnet",
+                    wave6d16Results.customTagsExist
+                );
                 check(
                     "Welle 6.D Etappe 1.6: Vision-Diskrimination — quarz+glut-Seele hat höhere magieleitung als Mensch",
                     wave6d16Results.customMagicHigh
                 );
-                check("Welle 6.D Etappe 1.6: applyPlayerSoul akzeptiert Custom-Namen", wave6d16Results.applyCustomReturnsTrue);
-                check("Welle 6.D Etappe 1.6: state.player.soul ist die Custom-Seele nach apply", wave6d16Results.stateSoulIsCustom);
-                check("Welle 6.D Etappe 1.6: Stats werden für Custom-Seele neu berechnet", wave6d16Results.customStatsComputed);
+                check(
+                    "Welle 6.D Etappe 1.6: applyPlayerSoul akzeptiert Custom-Namen",
+                    wave6d16Results.applyCustomReturnsTrue
+                );
+                check(
+                    "Welle 6.D Etappe 1.6: state.player.soul ist die Custom-Seele nach apply",
+                    wave6d16Results.stateSoulIsCustom
+                );
+                check(
+                    "Welle 6.D Etappe 1.6: Stats werden für Custom-Seele neu berechnet",
+                    wave6d16Results.customStatsComputed
+                );
                 check(
                     "Welle 6.D Etappe 1.6: Custom-Stats unterscheiden sich von Built-in-Stats (Vision-Diskrimination)",
                     wave6d16Results.customStatsDifferFromHuman
                 );
                 check("Welle 6.D Etappe 1.6: UI-Dropdown listet Custom-Seelen", wave6d16Results.dropdownContainsCustom);
                 check("Welle 6.D Etappe 1.6: Cap 16 — überzählige werden abgelehnt", wave6d16Results.capHit);
-                check("Welle 6.D Etappe 1.6: buildStateSnapshot persistiert customSouls", wave6d16Results.snapshotHasCustomSouls);
+                check(
+                    "Welle 6.D Etappe 1.6: buildStateSnapshot persistiert customSouls",
+                    wave6d16Results.snapshotHasCustomSouls
+                );
             }
 
             if (wave6dResults) {
                 check("Welle 6.D: AnazhRealm.STAT_FROM_TAGS-Matrix existiert", wave6dResults.hasStatMatrix);
                 check(
                     "Welle 6.D: STAT_FROM_TAGS hat 8 Stats (hpMax + damage + speed + jumpPower + stamina + precision + 2× Resist)",
-                    wave6dResults.statKeys === "damage,heatResist,hpMax,jumpPower,magicResist,precision,speed,staminaMax"
+                    wave6dResults.statKeys ===
+                        "damage,heatResist,hpMax,jumpPower,magicResist,precision,speed,staminaMax"
                 );
                 check("Welle 6.D: computePlayerStats-Methode existiert", wave6dResults.hasComputeMethod);
                 check("Welle 6.D: recomputePlayerStats-Methode existiert", wave6dResults.hasRecomputeMethod);
                 check("Welle 6.D: renderPlayerStatsUI-Methode existiert", wave6dResults.hasRenderMethod);
-                check("Welle 6.D Etappe 1.5: alle drei Seelen tragen ≥3 bodyParts", wave6dResults.allSoulsHaveBodyParts);
+                check(
+                    "Welle 6.D Etappe 1.5: alle drei Seelen tragen ≥3 bodyParts",
+                    wave6dResults.allSoulsHaveBodyParts
+                );
                 check(
                     "Welle 6.D Etappe 1.5: jedes bodyPart hat shape + material",
                     wave6dResults.bodyPartsHaveShapeMaterial
@@ -6661,13 +6945,31 @@ function startSaveServer() {
                     "Welle 6.D Etappe 1.5: alle Körper-Materialien tragen lebendig > 0.9",
                     wave6dResults.bodyMaterialsAreLebendig
                 );
-                check("Welle 6.D: computePlayerStats liefert {tags, stats}", wave6dResults.computedHasTags && wave6dResults.computedHasStats);
-                check("Welle 6.D: computed.stats hat alle 8 Werte als finite Zahlen", wave6dResults.computedStatsHasAll);
+                check(
+                    "Welle 6.D: computePlayerStats liefert {tags, stats}",
+                    wave6dResults.computedHasTags && wave6dResults.computedHasStats
+                );
+                check(
+                    "Welle 6.D: computed.stats hat alle 8 Werte als finite Zahlen",
+                    wave6dResults.computedStatsHasAll
+                );
                 // Vision-Diskrimination
-                check("Welle 6.D: Diskrimination — Phönix schneller als Drache (low dichte)", wave6dResults.phoenixFasterThanDragon);
-                check("Welle 6.D: Diskrimination — Phönix springt höher als Drache", wave6dResults.phoenixJumpsHigherThanDragon);
-                check("Welle 6.D: Diskrimination — Drache mehr HP als Phönix (tank)", wave6dResults.dragonHasMoreHpThanPhoenix);
-                check("Welle 6.D: Diskrimination — Drache mehr Schaden als Phönix", wave6dResults.dragonHasMoreDamageThanPhoenix);
+                check(
+                    "Welle 6.D: Diskrimination — Phönix schneller als Drache (low dichte)",
+                    wave6dResults.phoenixFasterThanDragon
+                );
+                check(
+                    "Welle 6.D: Diskrimination — Phönix springt höher als Drache",
+                    wave6dResults.phoenixJumpsHigherThanDragon
+                );
+                check(
+                    "Welle 6.D: Diskrimination — Drache mehr HP als Phönix (tank)",
+                    wave6dResults.dragonHasMoreHpThanPhoenix
+                );
+                check(
+                    "Welle 6.D: Diskrimination — Drache mehr Schaden als Phönix",
+                    wave6dResults.dragonHasMoreDamageThanPhoenix
+                );
                 check(
                     "Welle 6.D: Diskrimination — Phönix mehr Magie-Resistenz als Drache (magieleitung hoch)",
                     wave6dResults.phoenixHasMoreMagicResistThanDragon
@@ -6723,22 +7025,40 @@ function startSaveServer() {
                     // Hylomorphismus-Baupläne: baum_eiche + baum_kiefer +
                     // laub-Material müssen als Built-ins existieren.
                     const bps = r.state.blueprints || {};
-                    out.hasBaumEiche = !!(bps.baum_eiche && Array.isArray(bps.baum_eiche.parts) && bps.baum_eiche.parts.length === 2);
-                    out.hasBaumKiefer = !!(bps.baum_kiefer && Array.isArray(bps.baum_kiefer.parts) && bps.baum_kiefer.parts.length === 2);
+                    out.hasBaumEiche = !!(
+                        bps.baum_eiche &&
+                        Array.isArray(bps.baum_eiche.parts) &&
+                        bps.baum_eiche.parts.length === 2
+                    );
+                    out.hasBaumKiefer = !!(
+                        bps.baum_kiefer &&
+                        Array.isArray(bps.baum_kiefer.parts) &&
+                        bps.baum_kiefer.parts.length === 2
+                    );
                     out.baumEicheIsBuiltIn = !!(bps.baum_eiche && bps.baum_eiche.builtIn === true);
                     const eichenStamm = bps.baum_eiche && bps.baum_eiche.parts[0];
                     const eichenKrone = bps.baum_eiche && bps.baum_eiche.parts[1];
-                    out.eichenStammHolz = !!(eichenStamm && eichenStamm.material === "holz" && eichenStamm.shape === "cylinder");
-                    out.eichenKroneLaub = !!(eichenKrone && eichenKrone.material === "laub" && eichenKrone.shape === "sphere");
-                    out.hasLaubMaterial = !!(r.state.materials && r.state.materials.laub && r.state.materials.laub.builtIn === true);
+                    out.eichenStammHolz = !!(
+                        eichenStamm &&
+                        eichenStamm.material === "holz" &&
+                        eichenStamm.shape === "cylinder"
+                    );
+                    out.eichenKroneLaub = !!(
+                        eichenKrone &&
+                        eichenKrone.material === "laub" &&
+                        eichenKrone.shape === "sphere"
+                    );
+                    out.hasLaubMaterial = !!(
+                        r.state.materials &&
+                        r.state.materials.laub &&
+                        r.state.materials.laub.builtIn === true
+                    );
 
                     // Initiale Welt: Worldgen-Bäume sind jetzt in state.architectures,
                     // NICHT in state.vegetation. state.vegetation enthält nur noch
                     // Gras + Blumen. state.architectures enthält baum_eiche/baum_kiefer.
                     const archs = Array.isArray(r.state.architectures) ? r.state.architectures : [];
-                    const archTrees = archs.filter(
-                        (a) => a.type === "baum_eiche" || a.type === "baum_kiefer"
-                    );
+                    const archTrees = archs.filter((a) => a.type === "baum_eiche" || a.type === "baum_kiefer");
                     out.worldgenTreesInArchitectures = archTrees.length;
                     // Mindestens ein Baum mit Mesh (= in Player-Nähe gerendert)
                     // muss eine Compound-Kollision haben.
@@ -6781,9 +7101,7 @@ function startSaveServer() {
                     const islandsBefore = r.state.floatingIslands.length;
                     const ufosBefore = r.state.ufos ? r.state.ufos.length : 0;
                     const vegBefore = r.state.vegetation ? r.state.vegetation.length : 0;
-                    const playerPos = r.state.playerMesh
-                        ? r.state.playerMesh.position
-                        : { x: 0, y: 50, z: 0 };
+                    const playerPos = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 50, z: 0 };
                     const tx = playerPos.x + 50;
                     const ty = playerPos.y;
                     const tz = playerPos.z + 50;
@@ -6803,8 +7121,7 @@ function startSaveServer() {
                     out.islandSpawned = islandsAfter > islandsBefore;
                     out.ufoSpawned = ufosAfter > ufosBefore;
 
-                    const newTreeArch =
-                        archsAfter > archsBefore ? r.state.architectures[archsAfter - 1] : null;
+                    const newTreeArch = archsAfter > archsBefore ? r.state.architectures[archsAfter - 1] : null;
                     out.newTreeIsBaumEiche = !!(newTreeArch && newTreeArch.type === "baum_eiche");
                     out.newTreeHasMesh = !!(newTreeArch && newTreeArch.mesh);
                     out.newTreeHasCollision = !!(
@@ -6821,10 +7138,7 @@ function startSaveServer() {
                         out.treeTagsBrennbar = tags && tags.brennbar > 0.5;
                     }
 
-                    const newIsland =
-                        islandsAfter > islandsBefore
-                            ? r.state.floatingIslands[islandsAfter - 1]
-                            : null;
+                    const newIsland = islandsAfter > islandsBefore ? r.state.floatingIslands[islandsAfter - 1] : null;
                     const newUfo = ufosAfter > ufosBefore ? r.state.ufos[ufosAfter - 1] : null;
                     out.islandHasCollision = !!(
                         newIsland &&
@@ -6889,10 +7203,7 @@ function startSaveServer() {
 
             if (wave6gResults && !wave6gResults.error) {
                 check("Welle 6.G P1.5: _buildIslandCollision-Methode existiert", wave6gResults.hasIslandHelper);
-                check(
-                    "Welle 6.G P1.5: _disposeStaticCollision-Methode existiert",
-                    wave6gResults.hasDisposeHelper
-                );
+                check("Welle 6.G P1.5: _disposeStaticCollision-Methode existiert", wave6gResults.hasDisposeHelper);
                 check("Welle 6.G P1.5: spawnIslandAt-Methode existiert", wave6gResults.hasSpawnIslandAt);
                 check("Welle 6.G P1.5: spawnUfoAt-Methode existiert", wave6gResults.hasSpawnUfoAt);
                 check(
@@ -6941,8 +7252,14 @@ function startSaveServer() {
                     wave6gResults.newTreeHasCollision
                 );
                 if (wave6gResults.treeTagsLebendig !== undefined) {
-                    check("Welle 6.G P1.5: Baum-Compound-Tags zeigen lebendig (holz + laub)", wave6gResults.treeTagsLebendig);
-                    check("Welle 6.G P1.5: Baum-Compound-Tags zeigen brennbar (holz + laub)", wave6gResults.treeTagsBrennbar);
+                    check(
+                        "Welle 6.G P1.5: Baum-Compound-Tags zeigen lebendig (holz + laub)",
+                        wave6gResults.treeTagsLebendig
+                    );
+                    check(
+                        "Welle 6.G P1.5: Baum-Compound-Tags zeigen brennbar (holz + laub)",
+                        wave6gResults.treeTagsBrennbar
+                    );
                 }
                 check(
                     "Welle 6.G P1.5: spawn_island DSL-Op fügt Insel zu state.floatingIslands hinzu",
@@ -6967,7 +7284,10 @@ function startSaveServer() {
                     "Welle 6.G P1.5: spawn_island mit gleichem Seed produziert identische Vertices (Multi-User-Sync)",
                     wave6gResults.seedDeterministic
                 );
-                check("Welle 6.G P1.5: Chat 'pflanze baum hier' → spawn_tree mit ['at',...]", wave6gResults.chatTreeProg);
+                check(
+                    "Welle 6.G P1.5: Chat 'pflanze baum hier' → spawn_tree mit ['at',...]",
+                    wave6gResults.chatTreeProg
+                );
                 check(
                     "Welle 6.G P1.5: Chat 'setze insel hier' → spawn_island mit ['at',...] + eingebettetem Seed",
                     wave6gResults.chatIslandProg
@@ -6992,13 +7312,21 @@ function startSaveServer() {
                     out.hasPopulateChunk = typeof r.populateChunkVegetation === "function";
                     // Drei neue Baupläne als Built-ins.
                     const bps = r.state.blueprints || {};
-                    out.hasSteinBlock = !!(bps.stein_block && bps.stein_block.builtIn && bps.stein_block.parts.length >= 1);
+                    out.hasSteinBlock = !!(
+                        bps.stein_block &&
+                        bps.stein_block.builtIn &&
+                        bps.stein_block.parts.length >= 1
+                    );
                     out.hasKristallGeode = !!(
                         bps.kristall_geode &&
                         bps.kristall_geode.builtIn &&
                         bps.kristall_geode.parts.length >= 2
                     );
-                    out.hasGlutbrunnen = !!(bps.glutbrunnen && bps.glutbrunnen.builtIn && bps.glutbrunnen.parts.length >= 2);
+                    out.hasGlutbrunnen = !!(
+                        bps.glutbrunnen &&
+                        bps.glutbrunnen.builtIn &&
+                        bps.glutbrunnen.parts.length >= 2
+                    );
                     // worldFieldAt liefert 4 Tag-Achsen.
                     if (out.hasWorldFieldAt) {
                         const sample = r.worldFieldAt(0, 0);
@@ -7010,10 +7338,7 @@ function startSaveServer() {
                             typeof sample.magieleitung === "number"
                         );
                         out.fieldValuesInRange =
-                            sample.lebendig >= 0 &&
-                            sample.lebendig <= 1 &&
-                            sample.dichte >= 0 &&
-                            sample.dichte <= 1;
+                            sample.lebendig >= 0 && sample.lebendig <= 1 && sample.dichte >= 0 && sample.dichte <= 1;
                     }
                     // Determinismus: zweimaliger Aufruf an dieselbe Position →
                     // dieselben Werte. Cross-Welt-Variation: zwei verschiedene
@@ -7023,13 +7348,11 @@ function startSaveServer() {
                         const a1 = r.worldFieldAt(50, 30);
                         const a2 = r.worldFieldAt(50, 30);
                         out.fieldDeterministic =
-                            Math.abs(a1.lebendig - a2.lebendig) < 1e-9 &&
-                            Math.abs(a1.dichte - a2.dichte) < 1e-9;
+                            Math.abs(a1.lebendig - a2.lebendig) < 1e-9 && Math.abs(a1.dichte - a2.dichte) < 1e-9;
                         const b1 = r.worldFieldAt(50, 30);
                         const b2 = r.worldFieldAt(1000, -1000);
                         out.fieldVariesBySamplePos =
-                            Math.abs(b1.lebendig - b2.lebendig) > 0.001 ||
-                            Math.abs(b1.dichte - b2.dichte) > 0.001;
+                            Math.abs(b1.lebendig - b2.lebendig) > 0.001 || Math.abs(b1.dichte - b2.dichte) > 0.001;
                     }
                     // spawnAffinityForBlueprint: baum_eiche (holz+laub, hoch
                     // in lebendig) hat höhere Affinität in einer lebendig-
@@ -7112,9 +7435,7 @@ function startSaveServer() {
                     out.affinitySpawnTypes = typeCounts;
                     out.hasInitialTrees = (typeCounts.baum_eiche || 0) + (typeCounts.baum_kiefer || 0) > 0;
                     // populatedChunks markiert die initialen Chunks als gefüllt.
-                    out.populatedChunksSize = r.state.populatedChunks
-                        ? r.state.populatedChunks.size
-                        : 0;
+                    out.populatedChunksSize = r.state.populatedChunks ? r.state.populatedChunks.size : 0;
                     // Idempotenz: zweiter Aufruf für denselben Chunk
                     // → spawned=0.
                     if (typeof r.populateChunkVegetation === "function") {
@@ -7142,12 +7463,24 @@ function startSaveServer() {
                 check("Welle 6.G P2: spawnAffinityForBlueprint-Methode existiert", wave6gP2Results.hasSpawnAffinity);
                 check("Welle 6.G P2: populateChunkVegetation-Methode existiert", wave6gP2Results.hasPopulateChunk);
                 check("Welle 6.G P2: Bauplan 'stein_block' existiert als Built-in", wave6gP2Results.hasSteinBlock);
-                check("Welle 6.G P2: Bauplan 'kristall_geode' existiert als Built-in", wave6gP2Results.hasKristallGeode);
+                check(
+                    "Welle 6.G P2: Bauplan 'kristall_geode' existiert als Built-in",
+                    wave6gP2Results.hasKristallGeode
+                );
                 check("Welle 6.G P2: Bauplan 'glutbrunnen' existiert als Built-in", wave6gP2Results.hasGlutbrunnen);
-                check("Welle 6.G P2: worldFieldAt liefert 4 Tag-Achsen (lebendig/dichte/glut/magie)", wave6gP2Results.fieldHas4Axes);
+                check(
+                    "Welle 6.G P2: worldFieldAt liefert 4 Tag-Achsen (lebendig/dichte/glut/magie)",
+                    wave6gP2Results.fieldHas4Axes
+                );
                 check("Welle 6.G P2: worldFieldAt-Werte im Bereich [0,1]", wave6gP2Results.fieldValuesInRange);
-                check("Welle 6.G P2: worldFieldAt deterministisch (selbe Position → selber Wert)", wave6gP2Results.fieldDeterministic);
-                check("Welle 6.G P2: worldFieldAt variiert mit Position (Noise nicht konstant)", wave6gP2Results.fieldVariesBySamplePos);
+                check(
+                    "Welle 6.G P2: worldFieldAt deterministisch (selbe Position → selber Wert)",
+                    wave6gP2Results.fieldDeterministic
+                );
+                check(
+                    "Welle 6.G P2: worldFieldAt variiert mit Position (Noise nicht konstant)",
+                    wave6gP2Results.fieldVariesBySamplePos
+                );
                 if (wave6gP2Results.affinityFavorsTreeInLebendigRegion !== undefined) {
                     check(
                         "Welle 6.G P2: Baum-Affinity > Stein-Affinity in lebendig-hoher Region",
@@ -7175,8 +7508,14 @@ function startSaveServer() {
                     `Welle 6.G P2: populatedChunks-Cache befüllt (size=${wave6gP2Results.populatedChunksSize})`,
                     wave6gP2Results.populatedChunksSize >= 1
                 );
-                check("Welle 6.G P2: populateChunkVegetation idempotent (zweiter Aufruf → 0 spawns)", wave6gP2Results.populateIdempotent);
-                check("Welle 6.G P2: architectureCullingTickHz auf 2.0 angehoben (Bugfix)", wave6gP2Results.cullingRateIs2Hz);
+                check(
+                    "Welle 6.G P2: populateChunkVegetation idempotent (zweiter Aufruf → 0 spawns)",
+                    wave6gP2Results.populateIdempotent
+                );
+                check(
+                    "Welle 6.G P2: architectureCullingTickHz auf 2.0 angehoben (Bugfix)",
+                    wave6gP2Results.cullingRateIs2Hz
+                );
                 check("Welle 6.G P2: baum_eiche Stamm-Radius >= 0.7 (Bugfix V7.75)", wave6gP2Results.stammIsThicker);
             }
 
@@ -7238,7 +7577,14 @@ function startSaveServer() {
                         name: "mode-test-bp",
                         label: "Mode-Test",
                         builtIn: false,
-                        parts: [{ shape: "box", material: "holz", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } }],
+                        parts: [
+                            {
+                                shape: "box",
+                                material: "holz",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                            },
+                        ],
                     };
                     // Stamina voll setzen
                     r.state.player.stamina = 100;
@@ -7255,8 +7601,7 @@ function startSaveServer() {
                     r.state.player.stamina = 100;
                     r.setGameMode("pfad");
                     const opResultPfad = r.applyOpToPart("mode-test-bp", 0, "feile");
-                    out.pfadChargesStamina =
-                        opResultPfad.ok === true && r.state.player.stamina === 100 - 10;
+                    out.pfadChargesStamina = opResultPfad.ok === true && r.state.player.stamina === 100 - 10;
 
                     // Cleanup
                     delete r.state.blueprints["mode-test-bp"];
@@ -7271,17 +7616,22 @@ function startSaveServer() {
 
                     // set_mode ist in NON_BROADCASTABLE_OPS
                     out.setModeNonBroadcastable =
-                        r.constructor.NON_BROADCASTABLE_OPS &&
-                        r.constructor.NON_BROADCASTABLE_OPS.has("set_mode");
+                        r.constructor.NON_BROADCASTABLE_OPS && r.constructor.NON_BROADCASTABLE_OPS.has("set_mode");
 
                     // Chat-Pattern: 'setze modus pfad' → set_mode-Programm
                     if (typeof r.parseChatToDsl === "function") {
                         const built = r.parseChatToDsl("setze modus pfad");
                         out.chatPfad =
-                            built && Array.isArray(built.program) && built.program[0] === "set_mode" && built.program[1] === "pfad";
+                            built &&
+                            Array.isArray(built.program) &&
+                            built.program[0] === "set_mode" &&
+                            built.program[1] === "pfad";
                         const built2 = r.parseChatToDsl("modus schöpfer");
                         out.chatSchoepfer =
-                            built2 && Array.isArray(built2.program) && built2.program[0] === "set_mode" && built2.program[1] === "schöpfer";
+                            built2 &&
+                            Array.isArray(built2.program) &&
+                            built2.program[0] === "set_mode" &&
+                            built2.program[1] === "schöpfer";
                     }
 
                     // describeProgram-Eintrag
@@ -7311,21 +7661,42 @@ function startSaveServer() {
                 check("Welle 6.C2: AnazhRealm.GAME_MODES existiert", wave6c2Results.hasGameModes);
                 check("Welle 6.C2: setGameMode-Methode existiert", wave6c2Results.hasSetGameMode);
                 check("Welle 6.C2: getGameMode-Methode existiert", wave6c2Results.hasGetGameMode);
-                check("Welle 6.C2: Neue Welten starten im frieden-Modus (init-time)", wave6c2Results.defaultModeFrieden);
-                check("Welle 6.C2: GAME_MODES[0] === 'frieden' (kanonischer Default)", wave6c2Results.canonicalDefaultIsFrieden);
+                check(
+                    "Welle 6.C2: Neue Welten starten im frieden-Modus (init-time)",
+                    wave6c2Results.defaultModeFrieden
+                );
+                check(
+                    "Welle 6.C2: GAME_MODES[0] === 'frieden' (kanonischer Default)",
+                    wave6c2Results.canonicalDefaultIsFrieden
+                );
                 check("Welle 6.C2: worldMeta.gameMode ist persistiert", wave6c2Results.worldMetaHasGameMode);
                 check("Welle 6.C2: setGameMode('pfad') wechselt korrekt", wave6c2Results.setPfadWorks);
                 check("Welle 6.C2: setGameMode('schöpfer') wechselt korrekt", wave6c2Results.setSchoepferWorks);
                 check("Welle 6.C2: setGameMode('frieden') wechselt korrekt", wave6c2Results.setFriedenWorks);
                 check("Welle 6.C2: ungültiger Modus fällt auf frieden zurück", wave6c2Results.invalidFallsToFrieden);
-                check("Welle 6.C2: damagePlayer im frieden-Modus blockiert (HP unverändert)", wave6c2Results.friedenBlocksDamage);
-                check("Welle 6.C2: damagePlayer im schöpfer-Modus blockiert (HP unverändert)", wave6c2Results.schoepferBlocksDamage);
+                check(
+                    "Welle 6.C2: damagePlayer im frieden-Modus blockiert (HP unverändert)",
+                    wave6c2Results.friedenBlocksDamage
+                );
+                check(
+                    "Welle 6.C2: damagePlayer im schöpfer-Modus blockiert (HP unverändert)",
+                    wave6c2Results.schoepferBlocksDamage
+                );
                 check("Welle 6.C2: damagePlayer im pfad-Modus wirkt (HP reduziert)", wave6c2Results.pfadAcceptsDamage);
-                check("Welle 6.C2: applyOpToPart im frieden-Modus kostet KEINE Stamina", wave6c2Results.friedenSkipsStamina);
-                check("Welle 6.C2: applyOpToPart im schöpfer-Modus kostet KEINE Stamina", wave6c2Results.schoepferSkipsStamina);
+                check(
+                    "Welle 6.C2: applyOpToPart im frieden-Modus kostet KEINE Stamina",
+                    wave6c2Results.friedenSkipsStamina
+                );
+                check(
+                    "Welle 6.C2: applyOpToPart im schöpfer-Modus kostet KEINE Stamina",
+                    wave6c2Results.schoepferSkipsStamina
+                );
                 check("Welle 6.C2: applyOpToPart im pfad-Modus kostet Stamina (10)", wave6c2Results.pfadChargesStamina);
                 check("Welle 6.C2: DSL-Op set_mode setzt Modus", wave6c2Results.dslSetModeWorks);
-                check("Welle 6.C2: set_mode ist in NON_BROADCASTABLE_OPS (Multi-User-privat)", wave6c2Results.setModeNonBroadcastable);
+                check(
+                    "Welle 6.C2: set_mode ist in NON_BROADCASTABLE_OPS (Multi-User-privat)",
+                    wave6c2Results.setModeNonBroadcastable
+                );
                 check("Welle 6.C2: Chat 'setze modus pfad' → set_mode-Programm", wave6c2Results.chatPfad);
                 check("Welle 6.C2: Chat 'modus schöpfer' → set_mode-Programm", wave6c2Results.chatSchoepfer);
                 check("Welle 6.C2: describeProgram nennt 'Welt-Beziehung' oder Modus", wave6c2Results.describeWorks);
@@ -7364,13 +7735,13 @@ function startSaveServer() {
                     // addToInventory: ein bekannter Bauplan → erster leerer Slot
                     const okAdd = r.addToInventory("baum_eiche", 3);
                     out.addedToInventory = okAdd === true;
-                    out.slot0HasBaum = r.state.player.inventory[0]
-                        && r.state.player.inventory[0].blueprintName === "baum_eiche"
-                        && r.state.player.inventory[0].count === 3;
+                    out.slot0HasBaum =
+                        r.state.player.inventory[0] &&
+                        r.state.player.inventory[0].blueprintName === "baum_eiche" &&
+                        r.state.player.inventory[0].count === 3;
                     // Zweiter Add desselben Bauplans: count kumuliert
                     r.addToInventory("baum_eiche", 2);
-                    out.stacksCount =
-                        r.state.player.inventory[0] && r.state.player.inventory[0].count === 5;
+                    out.stacksCount = r.state.player.inventory[0] && r.state.player.inventory[0].count === 5;
                     // Unbekannter Bauplan → false
                     out.addRejectsUnknown = r.addToInventory("fictional_bp", 1) === false;
 
@@ -7384,9 +7755,7 @@ function startSaveServer() {
                     // DSL-Op add_to_inventory
                     if (typeof r.dslRun === "function") {
                         r.dslRun(["add_to_inventory", "village", 1], { source: "test" });
-                        const has = r.state.player.inventory.some(
-                            (s) => s && s.blueprintName === "village"
-                        );
+                        const has = r.state.player.inventory.some((s) => s && s.blueprintName === "village");
                         out.dslOpWorks = has;
                     }
 
@@ -7398,8 +7767,7 @@ function startSaveServer() {
                     // describeProgram-Eintrag
                     if (typeof r.describeProgram === "function") {
                         const d = r.describeProgram(["add_to_inventory", "baum_eiche", 5]);
-                        out.describeWorks =
-                            typeof d === "string" && /Inventar|baum_eiche|5/.test(d);
+                        out.describeWorks = typeof d === "string" && /Inventar|baum_eiche|5/.test(d);
                     }
 
                     // UI: Overlay-Element + Grid + Selected-Display
@@ -7476,19 +7844,34 @@ function startSaveServer() {
                 check("Welle 6.C1: addToInventory stackt bei gleichem Bauplan-Namen", wave6c1Results.stacksCount);
                 check("Welle 6.C1: addToInventory lehnt unbekannten Bauplan ab", wave6c1Results.addRejectsUnknown);
                 check("Welle 6.C1: removeFromInventory reduziert count", wave6c1Results.removeWorks);
-                check("Welle 6.C1: removeFromInventory(>count) clear Slot zu null", wave6c1Results.fullRemoveClearsSlot);
+                check(
+                    "Welle 6.C1: removeFromInventory(>count) clear Slot zu null",
+                    wave6c1Results.fullRemoveClearsSlot
+                );
                 check("Welle 6.C1: DSL-Op add_to_inventory funktioniert", wave6c1Results.dslOpWorks);
-                check("Welle 6.C1: add_to_inventory in NON_BROADCASTABLE_OPS", wave6c1Results.addToInventoryNonBroadcastable);
+                check(
+                    "Welle 6.C1: add_to_inventory in NON_BROADCASTABLE_OPS",
+                    wave6c1Results.addToInventoryNonBroadcastable
+                );
                 check("Welle 6.C1: describeProgram nennt Inventar/Bauplan/Count", wave6c1Results.describeWorks);
                 check("Welle 6.C1: #inventory-overlay im DOM", wave6c1Results.overlayInDom);
                 check("Welle 6.C1: #inventory-grid im DOM", wave6c1Results.gridInDom);
                 check("Welle 6.C1: #inventory-selected im DOM", wave6c1Results.selectedInDom);
                 check("Welle 6.C1: Overlay initial versteckt", wave6c1Results.initiallyHidden);
-                check("Welle 6.C1: toggleInventoryOverlay(true) öffnet Overlay", wave6c1Results.overlayVisibleAfterToggle);
+                check(
+                    "Welle 6.C1: toggleInventoryOverlay(true) öffnet Overlay",
+                    wave6c1Results.overlayVisibleAfterToggle
+                );
                 check("Welle 6.C1: Grid rendert 27 Slot-Elemente", wave6c1Results.gridRendered27);
-                check("Welle 6.C1: kristall_geode-Slot bekommt tag-magieleitung Klasse", wave6c1Results.geodeHasMagieClass);
+                check(
+                    "Welle 6.C1: kristall_geode-Slot bekommt tag-magieleitung Klasse",
+                    wave6c1Results.geodeHasMagieClass
+                );
                 check("Welle 6.C1: baum_eiche-Slot bekommt tag-lebendig Klasse", wave6c1Results.baumHasLebendigClass);
-                check("Welle 6.C1: baum_eiche-Slot bekommt tag-brennend Klasse (laub)", wave6c1Results.baumHasBrennendClass);
+                check(
+                    "Welle 6.C1: baum_eiche-Slot bekommt tag-brennend Klasse (laub)",
+                    wave6c1Results.baumHasBrennendClass
+                );
                 check("Welle 6.C1: selectInventorySlot setzt inventorySelected", wave6c1Results.selectionWorks);
                 check("Welle 6.C1: zweiter Klick auf gleichen Slot toggelt aus", wave6c1Results.selectionTogglesOff);
                 check("Welle 6.C1: tryAssignFromInventoryToHotbar legt in Hotbar ab", wave6c1Results.assignWorks);
@@ -7671,15 +8054,33 @@ function startSaveServer() {
                 check("Welle 6.C1 Drag: _onSlotDragLeave existiert", dragResults.hasDragLeave);
                 check("Welle 6.C1 Drag: inv→inv tauscht Slot-Inhalte", dragResults.invToInvSwap);
                 check("Welle 6.C1 Drag: inv→hot legt Bauplan in Hotbar", dragResults.invToHotPlaces);
-                check("Welle 6.C1 Drag: inv→hot leert Inv-Slot (count=1, konsequenter Move)", dragResults.invToHotEmptiesInvSlot);
-                check("Welle 6.C1 Drag: inv→hot leert Inv-Slot auch bei count=5 (Stack konsumiert)", dragResults.invToHotEmptiesIgnoresCount);
-                check("Welle 6.C1 Drag: inv→hot mit gleichem Bauplan im Hot leert Inv-Slot trotzdem", dragResults.invToHotSameNameStillEmpties);
+                check(
+                    "Welle 6.C1 Drag: inv→hot leert Inv-Slot (count=1, konsequenter Move)",
+                    dragResults.invToHotEmptiesInvSlot
+                );
+                check(
+                    "Welle 6.C1 Drag: inv→hot leert Inv-Slot auch bei count=5 (Stack konsumiert)",
+                    dragResults.invToHotEmptiesIgnoresCount
+                );
+                check(
+                    "Welle 6.C1 Drag: inv→hot mit gleichem Bauplan im Hot leert Inv-Slot trotzdem",
+                    dragResults.invToHotSameNameStillEmpties
+                );
                 check("Welle 6.C1 Drag: inv→hot mit anderem Bauplan im Hot ist Swap", dragResults.invToHotSwap);
                 check("Welle 6.C1 Drag: hot→hot tauscht Hotbar-Slots", dragResults.hotToHotSwap);
                 check("Welle 6.C1 Drag: hot→inv räumt Hotbar-Slot (zu null)", dragResults.hotToInvClearsHotbar);
-                check("Welle 6.C1 Drag: hot→inv füllt leeren Inv-Slot mit {name, count:1}", dragResults.hotToInvFillsInvSlot);
-                check("Welle 6.C1 Drag: hot→inv stackt auf gleichem Bauplan (count += 1)", dragResults.hotToInvStacksSameBp);
-                check("Welle 6.C1 Drag: hot→inv mit anderem Bauplan ist no-op (kein Datenverlust)", dragResults.hotToInvOtherBpNoOp);
+                check(
+                    "Welle 6.C1 Drag: hot→inv füllt leeren Inv-Slot mit {name, count:1}",
+                    dragResults.hotToInvFillsInvSlot
+                );
+                check(
+                    "Welle 6.C1 Drag: hot→inv stackt auf gleichem Bauplan (count += 1)",
+                    dragResults.hotToInvStacksSameBp
+                );
+                check(
+                    "Welle 6.C1 Drag: hot→inv mit anderem Bauplan ist no-op (kein Datenverlust)",
+                    dragResults.hotToInvOtherBpNoOp
+                );
                 check("Welle 6.C1 Drag: src===target ist no-op", dragResults.sameSlotNoOp);
                 check("Welle 6.C1 Drag: state.drag wird nach drop genullt", dragResults.dragClearedAfterDrop);
                 check("Welle 6.C1 Drag: gefüllter Inventar-Slot ist draggable", dragResults.filledSlotIsDraggable);
@@ -7756,11 +8157,26 @@ function startSaveServer() {
                 .catch((e) => ({ error: String(e) }));
 
             if (lockResults && !lockResults.error) {
-                check("Welle 6.C1 Lock: exitPointerLock wird beim Inventar-Öffnen gerufen", lockResults.exitLockCalledOnOpen);
-                check("Welle 6.C1 Lock: state.inventoryOpen wird true nach toggleOpen", lockResults.overlayOpenAfterToggle);
-                check("Welle 6.C1 Lock: WASD bleibt aktiv (Schöpfer-Wunsch: weiterbewegen geht)", lockResults.wKeyStillActiveAfterOpen);
-                check("Welle 6.C1 Lock: A-Taste bleibt aktiv bei offenem Inventar", lockResults.aKeyStillActiveAfterOpen);
-                check("Welle 6.C1 Lock: Inventar-schließen ohne Re-Lock (Canvas-Click bleibt User-Wahl)", lockResults.closeWorksWithoutReLock);
+                check(
+                    "Welle 6.C1 Lock: exitPointerLock wird beim Inventar-Öffnen gerufen",
+                    lockResults.exitLockCalledOnOpen
+                );
+                check(
+                    "Welle 6.C1 Lock: state.inventoryOpen wird true nach toggleOpen",
+                    lockResults.overlayOpenAfterToggle
+                );
+                check(
+                    "Welle 6.C1 Lock: WASD bleibt aktiv (Schöpfer-Wunsch: weiterbewegen geht)",
+                    lockResults.wKeyStillActiveAfterOpen
+                );
+                check(
+                    "Welle 6.C1 Lock: A-Taste bleibt aktiv bei offenem Inventar",
+                    lockResults.aKeyStillActiveAfterOpen
+                );
+                check(
+                    "Welle 6.C1 Lock: Inventar-schließen ohne Re-Lock (Canvas-Click bleibt User-Wahl)",
+                    lockResults.closeWorksWithoutReLock
+                );
             }
 
             // ### Welle 6.A6 — Maus-Aktionen (abbauen + platzieren) ###
@@ -7827,8 +8243,7 @@ function startSaveServer() {
                         removed === true && r.state.architectures.length === archCountBefore - 1;
 
                     // removeArchitecture mit nicht-existentem Entry → false
-                    out.removeArchitectureRejectsGhost =
-                        r.removeArchitecture({ id: -1, type: "x" }) === false;
+                    out.removeArchitectureRejectsGhost = r.removeArchitecture({ id: -1, type: "x" }) === false;
 
                     // tryMousePlace ohne aktiven Bau-Modus → false
                     r.setGameMode("frieden");
@@ -7952,11 +8367,20 @@ function startSaveServer() {
                     "Welle 6.A6 V2: removeArchitecture ruft _playArchitectureFarewellPing",
                     wave6a6V2Results.removeIntegratesPing
                 );
-                check("Welle 6.A6 V2: WORLD_EFFECT_THRESHOLDS.resonance_mild lesbar", wave6a6V2Results.thresholdReadable);
+                check(
+                    "Welle 6.A6 V2: WORLD_EFFECT_THRESHOLDS.resonance_mild lesbar",
+                    wave6a6V2Results.thresholdReadable
+                );
                 check("Welle 6.A6 V2: Symphony initialisierbar im Headless", wave6a6V2Results.symphonyReady);
                 if (wave6a6V2Results.symphonyReady) {
-                    check("Welle 6.A6 V2: kristall_geode trägt resoniert ≥ mild-Threshold", wave6a6V2Results.geodeIsResonant);
-                    check("Welle 6.A6 V2: stein_block trägt resoniert < mild-Threshold (Negativ)", wave6a6V2Results.stoneIsNotResonant);
+                    check(
+                        "Welle 6.A6 V2: kristall_geode trägt resoniert ≥ mild-Threshold",
+                        wave6a6V2Results.geodeIsResonant
+                    );
+                    check(
+                        "Welle 6.A6 V2: stein_block trägt resoniert < mild-Threshold (Negativ)",
+                        wave6a6V2Results.stoneIsNotResonant
+                    );
                     check(
                         "Welle 6.A6 V2: Geode-Abbau erzeugt mind. einen Oszillator (Vision §1.2)",
                         wave6a6V2Results.geodeRemovalRingsOnce
@@ -8063,8 +8487,7 @@ function startSaveServer() {
                     out.defaultInventoryIsTab = r.constructor.DEFAULT_KEYBINDINGS.inventory === "Tab";
 
                     // State init
-                    out.hasKeybindingsState =
-                        r.state.keybindings && typeof r.state.keybindings === "object";
+                    out.hasKeybindingsState = r.state.keybindings && typeof r.state.keybindings === "object";
                     out.keybindRebindInitNull = r.state.keybindRebind === null;
 
                     // Methoden-Existenz
@@ -8091,8 +8514,7 @@ function startSaveServer() {
                     const oldPlace = r.state.keybindings.place;
                     r.setKeybinding("place", "KeyG");
                     out.swapHappened =
-                        r.state.keybindings.place === "KeyG" &&
-                        r.state.keybindings.confirmBuild === oldPlace;
+                        r.state.keybindings.place === "KeyG" && r.state.keybindings.confirmBuild === oldPlace;
 
                     // Reset auf Defaults
                     r.resetKeybindings();
@@ -8122,8 +8544,7 @@ function startSaveServer() {
 
                     // beginKeybindRebind setzt state, cancel räumt auf
                     r.beginKeybindRebind("break");
-                    out.rebindActive =
-                        r.state.keybindRebind && r.state.keybindRebind.action === "break";
+                    out.rebindActive = r.state.keybindRebind && r.state.keybindRebind.action === "break";
                     r.cancelKeybindRebind();
                     out.rebindCancelClears = r.state.keybindRebind === null;
 
@@ -8134,8 +8555,7 @@ function startSaveServer() {
                     // Escape im Rebind-Modus → Abbruch (Binding bleibt)
                     r.beginKeybindRebind("jump");
                     r._completeKeybindRebind("Escape");
-                    out.escCancelsRebind =
-                        r.state.keybindRebind === null && r.state.keybindings.jump === "KeyJ";
+                    out.escCancelsRebind = r.state.keybindRebind === null && r.state.keybindings.jump === "KeyJ";
 
                     // _formatBindingCode pretty-print
                     out.formatMouse0 = r._formatBindingCode("Mouse0") === "Linke Maustaste";
@@ -8148,11 +8568,9 @@ function startSaveServer() {
                     out.listInDom = !!document.getElementById("keybindings-list");
                     out.resetInDom = !!document.getElementById("keybindings-reset");
                     // 6 keybind-row Zeilen
-                    out.sixRowsRendered =
-                        document.querySelectorAll("#keybindings-list .keybind-row").length === 6;
+                    out.sixRowsRendered = document.querySelectorAll("#keybindings-list .keybind-row").length === 6;
                     // Pro Aktion ein Rebind-Button mit data-action
-                    out.rebindButtonsPresent =
-                        document.querySelectorAll(".keybind-rebind[data-action]").length === 6;
+                    out.rebindButtonsPresent = document.querySelectorAll(".keybind-rebind[data-action]").length === 6;
 
                     // Reset für nachfolgende Tests
                     r.resetKeybindings();
@@ -8176,8 +8594,14 @@ function startSaveServer() {
                 check("Welle 6.C3: Default inventory === Tab", wave6c3Results.defaultInventoryIsTab);
                 check("Welle 6.C3: state.keybindings initialisiert", wave6c3Results.hasKeybindingsState);
                 check("Welle 6.C3: state.keybindRebind initial null", wave6c3Results.keybindRebindInitNull);
-                check("Welle 6.C3: _loadKeybindings + _saveKeybindings existieren", wave6c3Results.hasLoad && wave6c3Results.hasSave);
-                check("Welle 6.C3: setKeybinding + resetKeybindings existieren", wave6c3Results.hasSet && wave6c3Results.hasReset);
+                check(
+                    "Welle 6.C3: _loadKeybindings + _saveKeybindings existieren",
+                    wave6c3Results.hasLoad && wave6c3Results.hasSave
+                );
+                check(
+                    "Welle 6.C3: setKeybinding + resetKeybindings existieren",
+                    wave6c3Results.hasSet && wave6c3Results.hasReset
+                );
                 check(
                     "Welle 6.C3: _eventToBindingCode + _actionForBindingCode existieren",
                     wave6c3Results.hasEventToCode && wave6c3Results.hasActionFor
@@ -8218,6 +8642,260 @@ function startSaveServer() {
                 check("Welle 6.C3: #keybindings-reset im DOM", wave6c3Results.resetInDom);
                 check("Welle 6.C3: 6 keybind-row Zeilen gerendert", wave6c3Results.sixRowsRendered);
                 check("Welle 6.C3: 6 Rebind-Buttons im DOM", wave6c3Results.rebindButtonsPresent);
+            }
+
+            // ### Welle 6.H Phase 1 — Kreaturen-Aufträge (follow_player / wait / wander) ###
+            // Tasks sind Beziehungs-Gesten, keine Identität (Vision §1.1 Co-Schöpfer).
+            // Default-Task „wander" hält das heutige Emotion-Verhalten — Aura ist stumm.
+            // follow_player + wait haben Aura-Sprite (grün/bernstein) als visuelles Feedback.
+            // Multi-User: Tasks in NON_BROADCASTABLE_OPS (Phase 2 mit expliziten IDs).
+            const wave6hResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 3) return null;
+                    const out = {};
+                    // Statische Konstanten
+                    out.hasTasks =
+                        Array.isArray(r.constructor.CREATURE_TASKS) &&
+                        r.constructor.CREATURE_TASKS.length === 3 &&
+                        r.constructor.CREATURE_TASKS.includes("wander") &&
+                        r.constructor.CREATURE_TASKS.includes("follow_player") &&
+                        r.constructor.CREATURE_TASKS.includes("wait");
+                    out.hasAuraHueMap =
+                        r.constructor.CREATURE_TASK_AURA_HUE &&
+                        r.constructor.CREATURE_TASK_AURA_HUE.follow_player === 120 &&
+                        r.constructor.CREATURE_TASK_AURA_HUE.wait === 40 &&
+                        r.constructor.CREATURE_TASK_AURA_HUE.wander === null;
+                    out.hasFollowDistance =
+                        Number.isFinite(r.constructor.CREATURE_FOLLOW_DISTANCE) &&
+                        r.constructor.CREATURE_FOLLOW_DISTANCE > 0;
+
+                    // Methoden
+                    out.hasAssign = typeof r.assignCreatureTask === "function";
+                    out.hasGet = typeof r._getCreatureTask === "function";
+                    out.hasTick = typeof r._tickCreatureTaskDirection === "function";
+                    out.hasNearestFinder = typeof r.findNearestCreature === "function";
+                    out.hasAssignNearest = typeof r.assignTaskToNearestCreature === "function";
+                    out.hasAssignAll = typeof r.assignTaskToAllCreatures === "function";
+                    out.hasAuraRefresh = typeof r._refreshCreatureTaskAura === "function";
+
+                    // Default-Task für initial-gespawnte Kreaturen ist wander
+                    const c0 = r.state.creatures[0];
+                    out.initialTaskWander = r._getCreatureTask(c0).name === "wander";
+                    out.initialNoAura = !c0.userData.taskAura;
+
+                    // assignCreatureTask wechselt + erzeugt Aura für non-wander
+                    r.assignCreatureTask(c0, "follow_player");
+                    out.assignFollowOk = r._getCreatureTask(c0).name === "follow_player";
+                    out.followCreatesAura = !!c0.userData.taskAura;
+
+                    // Aura-Hue für follow_player ist grünlich (g > r, g > b)
+                    const followColor = c0.userData.taskAura.material.color;
+                    out.followAuraGreenish = followColor.g > followColor.r && followColor.g > followColor.b;
+
+                    r.assignCreatureTask(c0, "wait");
+                    out.waitChangesAuraColor =
+                        c0.userData.taskAura.material.color.r > c0.userData.taskAura.material.color.b;
+
+                    r.assignCreatureTask(c0, "wander");
+                    out.wanderRemovesAura = !c0.userData.taskAura;
+
+                    // Unknown Task wird abgelehnt
+                    out.unknownRejected = r.assignCreatureTask(c0, "fictional") === false;
+
+                    // tickCreatureTaskDirection
+                    const c1 = r.state.creatures[1];
+                    r.assignCreatureTask(c1, "wait");
+                    const waitDir = r._tickCreatureTaskDirection(c1, r._getCreatureTask(c1), "happy");
+                    out.waitGivesZeroDir = waitDir && waitDir.x === 0 && waitDir.z === 0;
+
+                    // follow_player: weit weg → Richtung zum Spieler
+                    const p = r.state.playerMesh.position;
+                    c1.position.set(p.x + 10, p.y, p.z + 10);
+                    r.assignCreatureTask(c1, "follow_player");
+                    const fdir = r._tickCreatureTaskDirection(c1, r._getCreatureTask(c1), "happy");
+                    out.followDirectionToPlayer = fdir.x < 0 && fdir.z < 0 && Math.hypot(fdir.x, fdir.z) > 0;
+
+                    // follow_player: innerhalb haltDist → direction = (0,0,0)
+                    c1.position.set(p.x + 0.3, p.y, p.z + 0.3);
+                    const stopDir = r._tickCreatureTaskDirection(c1, r._getCreatureTask(c1), "happy");
+                    out.followStopsAtHalt = stopDir.x === 0 && stopDir.z === 0;
+
+                    // wander → null (Caller fällt auf Emotion-Logik)
+                    r.assignCreatureTask(c1, "wander");
+                    const wDir = r._tickCreatureTaskDirection(c1, r._getCreatureTask(c1), "happy");
+                    out.wanderReturnsNull = wDir === null;
+
+                    // distance-Arg-Validierung (clamp)
+                    r.assignCreatureTask(c1, "follow_player", { distance: 1.5 });
+                    out.distanceArgKept = r._getCreatureTask(c1).args.distance === 1.5;
+
+                    // findNearestCreature
+                    for (let i = 0; i < r.state.creatures.length; i++) {
+                        r.state.creatures[i].position.set(p.x + 100 + i * 5, p.y, p.z + 100 + i * 5);
+                    }
+                    r.state.creatures[2].position.set(p.x + 2, p.y, p.z + 2);
+                    const nearest = r.findNearestCreature(p);
+                    out.nearestIsCorrect = nearest === r.state.creatures[2];
+
+                    // assignTaskToNearestCreature
+                    r.assignCreatureTask(r.state.creatures[2], "wander");
+                    const target = r.assignTaskToNearestCreature(p, "follow_player");
+                    out.assignNearestWorks =
+                        target === r.state.creatures[2] && r._getCreatureTask(target).name === "follow_player";
+
+                    // assignTaskToAllCreatures
+                    const count = r.assignTaskToAllCreatures("wait");
+                    out.assignAllWorks =
+                        count === r.state.creatures.length &&
+                        r.state.creatures.every((c) => r._getCreatureTask(c).name === "wait");
+                    r.assignTaskToAllCreatures("wander");
+
+                    // DSL-Ops
+                    r.dslRun(["creature_task", 0, "follow_player"], { source: "test" });
+                    out.dslSingleWorks = r._getCreatureTask(r.state.creatures[0]).name === "follow_player";
+                    r.dslRun(["creature_task_all", "wander"], { source: "test" });
+                    out.dslAllWorks = r.state.creatures.every((c) => r._getCreatureTask(c).name === "wander");
+                    r.dslRun(["creature_task", 9999, "follow_player"], { source: "test" });
+                    out.dslOobSafe = true; // wenn wir hier sind, kein crash
+
+                    // NON_BROADCASTABLE_OPS Mitgliedschaft
+                    const nbs = r.constructor.NON_BROADCASTABLE_OPS;
+                    out.nbCreatureTask = nbs.has("creature_task");
+                    out.nbCreatureTaskNearest = nbs.has("creature_task_nearest");
+                    out.nbCreatureTaskAll = nbs.has("creature_task_all");
+
+                    // Chat-Patterns
+                    const folge = r.parseChatToDsl("folge mir");
+                    out.chatFolgeMir =
+                        folge &&
+                        Array.isArray(folge.program) &&
+                        folge.program[0] === "creature_task_nearest" &&
+                        folge.program[1] === "follow_player";
+                    const warte = r.parseChatToDsl("warte");
+                    out.chatWarte =
+                        warte && warte.program[0] === "creature_task_nearest" && warte.program[1] === "wait";
+                    const erkunde = r.parseChatToDsl("erkunde");
+                    out.chatErkunde =
+                        erkunde && erkunde.program[0] === "creature_task_nearest" && erkunde.program[1] === "wander";
+                    const kommHer = r.parseChatToDsl("komm her");
+                    out.chatKommHer =
+                        kommHer &&
+                        kommHer.program[0] === "creature_task_nearest" &&
+                        kommHer.program[1] === "follow_player" &&
+                        kommHer.program[2] === 1.5;
+                    const alle = r.parseChatToDsl("alle folgt mir");
+                    out.chatAlleFolgt =
+                        alle && alle.program[0] === "creature_task_all" && alle.program[1] === "follow_player";
+                    const alleWarten = r.parseChatToDsl("alle warten");
+                    out.chatAlleWarten =
+                        alleWarten && alleWarten.program[0] === "creature_task_all" && alleWarten.program[1] === "wait";
+
+                    // describeProgram-Einträge
+                    const desc1 = r.describeProgram(["creature_task_nearest", "follow_player"]);
+                    out.descNearest = typeof desc1 === "string" && /folge|nächste|Auftrag/i.test(desc1);
+                    const desc2 = r.describeProgram(["creature_task_all", "wait"]);
+                    out.descAll = typeof desc2 === "string" && /alle/i.test(desc2);
+
+                    // removeCreature räumt Aura mit
+                    const cToRemove = r.state.creatures[r.state.creatures.length - 1];
+                    r.assignCreatureTask(cToRemove, "wait");
+                    const auraToCheck = cToRemove.userData.taskAura;
+                    out.preRemoveAuraInScene = r.state.scene.children.includes(auraToCheck);
+                    r.removeCreature(cToRemove);
+                    r.state.creatures.pop(); // sync state mit removeCreature-Pfad
+                    out.postRemoveAuraGone = !r.state.scene.children.includes(auraToCheck);
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6hResults && !wave6hResults.error) {
+                check("Welle 6.H Phase 1: CREATURE_TASKS frozen mit 3 Aufträgen", wave6hResults.hasTasks);
+                check(
+                    "Welle 6.H Phase 1: CREATURE_TASK_AURA_HUE map (follow=120/wait=40/wander=null)",
+                    wave6hResults.hasAuraHueMap
+                );
+                check(
+                    "Welle 6.H Phase 1: CREATURE_FOLLOW_DISTANCE definiert + positiv",
+                    wave6hResults.hasFollowDistance
+                );
+                check(
+                    "Welle 6.H Phase 1: alle Methoden existieren (assign/get/tick/nearest/all/auraRefresh)",
+                    wave6hResults.hasAssign &&
+                        wave6hResults.hasGet &&
+                        wave6hResults.hasTick &&
+                        wave6hResults.hasNearestFinder &&
+                        wave6hResults.hasAssignNearest &&
+                        wave6hResults.hasAssignAll &&
+                        wave6hResults.hasAuraRefresh
+                );
+                check(
+                    "Welle 6.H Phase 1: Default-Task initial-gespawnter Kreaturen ist wander",
+                    wave6hResults.initialTaskWander
+                );
+                check("Welle 6.H Phase 1: Default-Task wander hat KEINE Aura", wave6hResults.initialNoAura);
+                check(
+                    "Welle 6.H Phase 1: assignCreatureTask(follow_player) setzt Task + erzeugt Aura",
+                    wave6hResults.assignFollowOk && wave6hResults.followCreatesAura
+                );
+                check("Welle 6.H Phase 1: Aura für follow_player ist grünlich", wave6hResults.followAuraGreenish);
+                check("Welle 6.H Phase 1: Wechsel auf wait ändert Aura-Farbe", wave6hResults.waitChangesAuraColor);
+                check(
+                    "Welle 6.H Phase 1: Rückkehr zu wander entfernt Aura (Lifecycle-Sauberkeit)",
+                    wave6hResults.wanderRemovesAura
+                );
+                check("Welle 6.H Phase 1: assignCreatureTask lehnt unbekannten Task ab", wave6hResults.unknownRejected);
+                check("Welle 6.H Phase 1: wait-Task liefert direction (0,0,0)", wave6hResults.waitGivesZeroDir);
+                check(
+                    "Welle 6.H Phase 1: follow_player-Direction zeigt zum Spieler (weit weg)",
+                    wave6hResults.followDirectionToPlayer
+                );
+                check(
+                    "Welle 6.H Phase 1: follow_player stoppt am haltDist (direction=0)",
+                    wave6hResults.followStopsAtHalt
+                );
+                check(
+                    "Welle 6.H Phase 1: wander-Direction liefert null (Fallback auf Emotion-Logik)",
+                    wave6hResults.wanderReturnsNull
+                );
+                check("Welle 6.H Phase 1: distance-Arg landet in task.args", wave6hResults.distanceArgKept);
+                check("Welle 6.H Phase 1: findNearestCreature wählt die nahste", wave6hResults.nearestIsCorrect);
+                check(
+                    "Welle 6.H Phase 1: assignTaskToNearestCreature wirkt auf nahste",
+                    wave6hResults.assignNearestWorks
+                );
+                check("Welle 6.H Phase 1: assignTaskToAllCreatures wirkt auf alle", wave6hResults.assignAllWorks);
+                check("Welle 6.H Phase 1: DSL creature_task setzt Task", wave6hResults.dslSingleWorks);
+                check("Welle 6.H Phase 1: DSL creature_task_all setzt alle", wave6hResults.dslAllWorks);
+                check("Welle 6.H Phase 1: DSL mit OOB-Index crasht nicht", wave6hResults.dslOobSafe);
+                check(
+                    "Welle 6.H Phase 1: creature_task* in NON_BROADCASTABLE_OPS (Multi-User-Safety)",
+                    wave6hResults.nbCreatureTask &&
+                        wave6hResults.nbCreatureTaskNearest &&
+                        wave6hResults.nbCreatureTaskAll
+                );
+                check(
+                    "Welle 6.H Phase 1: Chat 'folge mir' → creature_task_nearest follow_player",
+                    wave6hResults.chatFolgeMir
+                );
+                check("Welle 6.H Phase 1: Chat 'warte' → creature_task_nearest wait", wave6hResults.chatWarte);
+                check("Welle 6.H Phase 1: Chat 'erkunde' → creature_task_nearest wander", wave6hResults.chatErkunde);
+                check("Welle 6.H Phase 1: Chat 'komm her' → follow_player mit distance=1.5", wave6hResults.chatKommHer);
+                check(
+                    "Welle 6.H Phase 1: Chat 'alle folgt mir' → creature_task_all follow_player",
+                    wave6hResults.chatAlleFolgt
+                );
+                check("Welle 6.H Phase 1: Chat 'alle warten' → creature_task_all wait", wave6hResults.chatAlleWarten);
+                check(
+                    "Welle 6.H Phase 1: describeProgram für nearest enthält 'folge'/'nächste'",
+                    wave6hResults.descNearest
+                );
+                check("Welle 6.H Phase 1: describeProgram für all enthält 'alle'", wave6hResults.descAll);
+                check(
+                    "Welle 6.H Phase 1: removeCreature räumt Aura aus Scene (kein Memory-Leak)",
+                    wave6hResults.preRemoveAuraInScene && wave6hResults.postRemoveAuraGone
+                );
             }
 
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
