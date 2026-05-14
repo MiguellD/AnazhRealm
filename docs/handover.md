@@ -360,6 +360,131 @@ Hylomorphismus-System wie Materialien und Bauwerke.
   playerInventory in buildStateSnapshot. 127 Invarianten für 6.C1
   + Drag-System → 1153 total.
 
+### V7.85 — Welle 6.H Phase 2D live (14.05.2026): Beziehung wächst durch Geschichte
+
+**Schöpfer-Wahl in Pfad-Auswahl: 6.H Phase 2D als nächste Welle.**
+V7.84 schloss die Geste-Symmetrie (gather ↔ build), aber memory war
+passiv — kein Wachstums-Mechanismus. Vision §1.1 sagt „die Co-Schöpfer-
+Beziehung wird gesprochen", aber wenn die Beziehung nichts dazulernt,
+ist es bloß Konversation, nicht Bindung.
+
+**Skill-Levels emergieren live aus memory:**
+
+- `_creatureSkillKeyForMemory(type, content)` mappt nur Erfolge
+  (`gathered`+material, `built`+blueprint). Failures (`no_material`,
+  `delivered`, `took_materials`, `no_blueprint`, `no_inventory_for_build`)
+  werden gefiltert — Wachstum kommt aus Erfolg, nicht aus Versuch.
+- `_computeCreatureSpecializations(creature)` iteriert memory (cap 30)
+  und liefert `{gather: {holz: 5, stein: 2}, build: {stein_block: 3}}`.
+  KEIN Cache, KEINE Persistenz — eine Wahrheit, automatisch korrekt
+  bei FIFO-Eviction.
+- `_creatureSpecializationLevel(c, kind, key) = floor(count / 3)`,
+  gedeckelt bei `MAX_LEVEL = 5`. 3 Erfolge = L1, 6 = L2, 15 = L5.
+
+**Speed-Boost** über `_creatureTaskSpeedMultiplier(c, taskName, args)`:
+`1 + level × 0.15`. L5 = +75 % Geschwindigkeit (3.0 → 5.25 m/s).
+Drei Stellen in `_tickCreatureTaskDirection` patchen den Speed:
+gather Bring-Phase, gather Such-Phase, build alle Phasen.
+
+**Level-Up-Hook in `_creatureRemember`** (Pre/Post-Vergleich): Skill-
+Level VOR push merken, push, NEU berechnen. Bei `after > before` →
+`_onCreatureLevelUp(c, kind, key, newLevel)`:
+- **Audio**: Triangle-Oscillator bei 880 Hz (A5, höher als alle Task-
+  Pings — Wachstum ist eigene Klang-Schicht) mit aufwärts-Glissando
+- **Journal**: `growth`-Eintrag „<Name> erreicht Stufe N als Sammler/
+  Bauer von „X""
+- **List-UI-Refresh** damit Pills sofort sichtbar
+
+**UI-Pills in `_renderCreatureListUI`**: Top-2 Spezialisierungen als
+kleine Pills nach soulEl + vor taskEl: `Sammler·material·L3` (cyan)
+oder `Bauer·blueprint·L2` (violett). Klein (9px Cinzel), brass-getintet,
+title-Tooltip „N Erfolge".
+
+**KEINE Persistenz** (Vision §1.1-konsequent): Reload startet jede
+Kreatur wieder bei Level 0. Beziehung muss neu wachsen. Konsequent zu
+memory.
+
+**KEIN DSL-Op** für Specs — sie sind Konsequenz von memory, nicht
+direkt mutables Feld. Spieler kann Skill nicht „setzen", er muss
+durch Aktion entstehen.
+
+**30 permanente Tests grün. 1448/1448 invariants.**
+
+**Was bleibt nach V7.85 in Welle 6.H:**
+
+- **Phase 2E (Kreaturen-Konversationen)** — „Nira, was hast du
+  gesehen?" via LLM-Provider mit pro-Kreatur memory + Specs als
+  System-Prompt-Erweiterung. Specs sind jetzt der Identitäts-Anker:
+  „die Holz-Spezialistin" liest sich anders als „eine generische
+  Kreatur". 2-3 Sessions, braucht LLM-Test-Setup.
+
+**Drei größere Bögen jenseits 6.H:**
+
+- **6.B CAD-Werkstatt minimal** — Spieler-räumlicher Bauplan-Editor.
+  2-3 Sessions.
+- **6.F Crafting-Mechanik** — Energiequellen für Maschinen, Brech-
+  Mechanik hart, Physik-Constraints (Ammo Hinge/Fixed). 4-6 Sessions.
+- **Welle 7 Kollektive Welt-Erkenntnis** — Multi-User-aggregierte
+  Lern-Schicht. 6-8 Sessions, braucht Multi-User-Adoption.
+
+### V7.84 — Welle 6.H Phase 2B.2 live (14.05.2026): Co-Schöpfer-Kreis geschlossen
+
+**Spieler-Vision-Wahl in Pfad-Auswahl: 6.H Phase 2B.2 als nächste Welle.**
+V7.81/V7.82 baute gather (Welt → Spieler-Inventar) als Geste der Welt
+zum Spieler. V7.84 ist die Umkehrung: build (Spieler-Inventar → Welt)
+als Geste des Spielers zur Welt, durch die Kreatur als Vermittler.
+
+**Drei Phasen für `build`-Task** (alle in `_tickCreatureTaskDirection`):
+- **TAKE**: Kreatur läuft mit `CREATURE_BUILD_SPEED=3.0`m/s zum Spieler,
+  bei `CREATURE_HANDOVER_DIST=2.0`m → ruft `_buildMaterialGate(blueprint)`.
+  pfad konsumiert via `tryConsumeBuildCost`; frieden+schöpfer kostenlos.
+  Bei Mangel: Memory + Journal + auto-Fallback auf wander.
+- **WALK**: carrying gesetzt → Kreatur läuft vom Spieler weg bis
+  ≥`CREATURE_BUILD_PLACEMENT_DIST=4.0`m entfernt.
+- **SPAWN**: spawnArchitecture an Kreatur-Position; carrying clearet,
+  'built'-Memory + 'growth'-Journal + auto-wander.
+
+**Datenmodell-Wiederverwendung**: `creature.userData.carrying` ist seit
+P2B.5 dual-typed über `kind: "harvest" | "build"`. Eine Variable, zwei
+Richtungen, Diskrimination im Tick-Branch.
+
+**Modus-Symmetrie der Build-Funktion** (Vision §10.1 erweitert):
+| Modus | Spieler-confirmBuild | Kreatur-build-task |
+|---|---|---|
+| frieden | kostenlos | kostenlos |
+| pfad | konsumiert | konsumiert aus Spieler-Inventar |
+| schöpfer | kostenlos | kostenlos |
+
+**Symbolic cost in carrying** auch in freien Modi: damit Aura + Visual
++ Journal sinnvoll bleiben, schreibt die Take-Phase `computeBuildCost(bp)`
+in `carrying.materials` (mit `free: true`-Flag). Vision §1.4 multisensorisch
+heißt: jeder Modus muss Antwort geben.
+
+**32 permanente Tests grün. 1418/1418 invariants.**
+
+**Was bleibt nach V7.84 in Welle 6.H:**
+
+- **Phase 2D (Kreatur-Spezialisierung aus Memory)** — Vision §1.1
+  Co-Schöpfer-Beziehung wächst durch Geschichte. Jede Kreatur leitet
+  aus ihrem memory-Array Skill-Levels ab (gather:material, build:blueprint).
+  Erfolgreiche Aktionen erhöhen Level alle 3 Wiederholungen, max 5.
+  Speed-Bonus + Level-Up-Audio + UI-Pills in der Liste. **NÄCHSTER SCHRITT**
+  empfohlen vom letzten Agenten — 1 Session.
+- **Phase 2E (Kreaturen-Konversationen)** — „Nira, was hast du gesehen?"
+  via LLM-Provider mit pro-Kreatur memory + Spezialisierungen als
+  System-Prompt-Erweiterung. Braucht Phase 2D als Identitäts-Anker.
+  2-3 Sessions.
+
+**Drei größere Bögen jenseits 6.H:**
+
+- **6.B CAD-Werkstatt minimal** — Spieler-räumlicher Bauplan-Editor.
+  2-3 Sessions.
+- **6.F Crafting-Mechanik** — visuelle Verbindungs-Linien (6.F1 ✅),
+  Brech-Mechanik (6.F2 in Editor ✅, hart 🔴), Energiequellen für
+  Maschinen, Kreaturen-Körper als Baukasten (in 6.H P2A erledigt).
+- **Welle 7 Kollektive Welt-Erkenntnis** — Multi-User-aggregierte
+  Lern-Schicht. 6-8 Sessions, braucht Multi-User-Adoption.
+
 ### V7.83 — Welle 6.H Phase 2C live (14.05.2026): Hylomorphismus-Kreis geschlossen
 
 **Schöpfer-Vision-Audit hat den letzten Asymmetrie-Punkt erschlagen.**

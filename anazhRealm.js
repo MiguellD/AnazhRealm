@@ -5964,13 +5964,165 @@ class AnazhRealm {
     // gesprochen, nicht gespeichert; gilt auch für Erinnerung — sie ist
     // im-Moment-erlebt, nicht im-Save-konserviert). Cap 30 mit FIFO.
     // Eintrags-Schema: `{type, content, at}` analog worldJournal.
+    //
+    // Welle 6.H Phase 2D — der Push triggert Spezialisierungs-Aufstieg:
+    // wenn dieser Eintrag den Skill-Level (gather:material oder build:blueprint)
+    // erhöht, feuert _onCreatureLevelUp mit Audio-Ping + Journal-Eintrag.
+    // Vision §1.1: die Beziehung wächst durch Geschichte, sichtbar gemacht
+    // im Moment des Wachstums.
     _creatureRemember(creature, type, content) {
         if (!creature || !creature.userData) return;
         if (!Array.isArray(creature.userData.memory)) creature.userData.memory = [];
         const mem = creature.userData.memory;
+        // Welle 6.H Phase 2D — Skill-Level VOR dem Push erfassen, damit der
+        // Vergleich nach dem Push erkennt ob ein Aufstieg stattfand.
+        const skillKey = this._creatureSkillKeyForMemory(type, content);
+        const levelBefore = skillKey ? this._creatureSpecializationLevel(creature, skillKey.kind, skillKey.key) : 0;
         mem.push({ type: String(type), content, at: Date.now() });
         const cap = AnazhRealm.CREATURE_MEMORY_CAP;
         while (mem.length > cap) mem.shift();
+        if (skillKey) {
+            const levelAfter = this._creatureSpecializationLevel(creature, skillKey.kind, skillKey.key);
+            if (levelAfter > levelBefore) {
+                this._onCreatureLevelUp(creature, skillKey.kind, skillKey.key, levelAfter);
+            }
+        }
+    }
+
+    // === Welle 6.H Phase 2D — Spezialisierung aus Memory ===
+    //
+    // Vision §1.1: die Co-Schöpfer-Beziehung wächst durch geteilte Geschichte.
+    // Jede Kreatur entwickelt aus ihrem memory-Array Skill-Levels (gather:
+    // material, build:blueprint). Erfolgreiche Aktionen erhöhen Level,
+    // Failures (no_material, no_blueprint, no_inventory_for_build) zählen
+    // NICHT — Wachstum kommt aus Erfolg, nicht aus Versuch.
+    //
+    // Levels emergieren live aus memory-Iteration (keine Persistenz, kein
+    // Cache) — selbe Disziplin wie memory selbst (Vision §1.1: nicht
+    // gespeichert). Beim Reload startet jede Kreatur wieder bei 0 — die
+    // Beziehung muss neu wachsen. Das ist konsequent.
+    //
+    // Speed-Bonus: tick-direction multipliziert mit (1 + level × 0.15).
+    // Level 5 = +75 % Geschwindigkeit. Sichtbar im Spieler-Erleben.
+
+    // Memory-Eintrag → Skill-Key (oder null wenn kein Spezialisierungs-Eintrag).
+    // 'gathered' mit content.material → gather:material; 'built' mit
+    // content.blueprint → build:blueprint. Failures bleiben null.
+    _creatureSkillKeyForMemory(type, content) {
+        if (type === "gathered" && content && typeof content.material === "string" && content.material.length > 0) {
+            return { kind: "gather", key: content.material };
+        }
+        if (type === "built" && content && typeof content.blueprint === "string" && content.blueprint.length > 0) {
+            return { kind: "build", key: content.blueprint };
+        }
+        return null;
+    }
+
+    // Live-Aggregation der Erfolge aus memory. Liefert plain object
+    // {gather: {holz: 5, stein: 2}, build: {stein_block: 7}}. Iteration
+    // ist O(memory.length) = O(30 cap) — günstig genug um pro Tick aufzurufen
+    // ohne Cache (vermeidet Cache-Invalidierung-Bugs).
+    _computeCreatureSpecializations(creature) {
+        const result = { gather: {}, build: {} };
+        if (!creature || !creature.userData || !Array.isArray(creature.userData.memory)) return result;
+        for (const entry of creature.userData.memory) {
+            const skill = this._creatureSkillKeyForMemory(entry.type, entry.content);
+            if (!skill) continue;
+            result[skill.kind][skill.key] = (result[skill.kind][skill.key] || 0) + 1;
+        }
+        return result;
+    }
+
+    // Skill-Level für (kind, key): floor(count / THRESHOLD), gedeckelt bei MAX.
+    // Liefert 0 wenn keine Erfolge. Symmetrisch für gather + build.
+    _creatureSpecializationLevel(creature, kind, key) {
+        if (!creature || typeof kind !== "string" || typeof key !== "string") return 0;
+        const specs = this._computeCreatureSpecializations(creature);
+        const count = (specs[kind] && specs[kind][key]) || 0;
+        const threshold = AnazhRealm.CREATURE_SPECIALIZATION_LEVEL_THRESHOLD;
+        const max = AnazhRealm.CREATURE_SPECIALIZATION_MAX_LEVEL;
+        return Math.min(max, Math.floor(count / threshold));
+    }
+
+    // Top-N Spezialisierungen sortiert nach Level (ties: nach Count). Für UI-
+    // Pills in der Kreatur-Liste. Liefert Array `[{kind, key, level, count}]`,
+    // leeres Array wenn keine Skills mit Level ≥1.
+    _creatureTopSpecializations(creature, n = 2) {
+        const specs = this._computeCreatureSpecializations(creature);
+        const all = [];
+        const threshold = AnazhRealm.CREATURE_SPECIALIZATION_LEVEL_THRESHOLD;
+        const max = AnazhRealm.CREATURE_SPECIALIZATION_MAX_LEVEL;
+        for (const kind of ["gather", "build"]) {
+            for (const [key, count] of Object.entries(specs[kind] || {})) {
+                const level = Math.min(max, Math.floor(count / threshold));
+                if (level >= 1) all.push({ kind, key, level, count });
+            }
+        }
+        all.sort((a, b) => b.level - a.level || b.count - a.count);
+        return all.slice(0, Math.max(0, n));
+    }
+
+    // Speed-Multiplikator für die aktuelle Task. Liefert 1.0 ohne Spezialisierung
+    // (kein Bonus, kein Malus). Wird in _tickCreatureTaskDirection genutzt.
+    _creatureTaskSpeedMultiplier(creature, taskName, args) {
+        if (!creature || !args) return 1;
+        const bonus = AnazhRealm.CREATURE_SPECIALIZATION_SPEED_BONUS_PER_LEVEL;
+        if (taskName === "gather" && typeof args.material === "string") {
+            const lvl = this._creatureSpecializationLevel(creature, "gather", args.material);
+            return 1 + lvl * bonus;
+        }
+        if (taskName === "build" && typeof args.blueprint === "string") {
+            const lvl = this._creatureSpecializationLevel(creature, "build", args.blueprint);
+            return 1 + lvl * bonus;
+        }
+        return 1;
+    }
+
+    // Level-Up-Antwort: Audio-Ping (höher als alle Task-Pings, bedeutet
+    // Wachstum) + Welt-Journal-Eintrag (growth) + List-UI-Refresh + optional
+    // Chat-Hinweis. Vision §1.2 multisensorisch + §1.1 Welt erinnert.
+    _onCreatureLevelUp(creature, kind, key, newLevel) {
+        // Audio
+        const sym = this.state.symphony;
+        if (sym && sym.enabled && sym.ctx) {
+            try {
+                const ctx = sym.ctx;
+                const now = ctx.currentTime;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = "triangle"; // weicher als sine, festlicher
+                const baseFreq = AnazhRealm.CREATURE_SPECIALIZATION_PING_FREQ;
+                osc.frequency.setValueAtTime(baseFreq, now);
+                // Aufwärts-Glissando: Wachstum klingt aufsteigend
+                osc.frequency.linearRampToValueAtTime(baseFreq * 1.5, now + 0.5);
+                gain.gain.setValueAtTime(0.0001, now);
+                gain.gain.linearRampToValueAtTime(0.1, now + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.0005, now + 0.6);
+                const dest = sym.masterGain || ctx.destination;
+                osc.connect(gain).connect(dest);
+                osc.start(now);
+                osc.stop(now + 0.65);
+            } catch {
+                /* Audio darf nie hart blockieren */
+            }
+        }
+        // Journal
+        if (typeof this.journalAppend === "function") {
+            const labels = {
+                gather: `Sammler von „${key}"`,
+                build: `Bauer von „${key}"`,
+            };
+            const role = labels[kind] || `Spezialist von „${key}"`;
+            const name = (creature.userData && creature.userData.name) || "Eine Kreatur";
+            this.journalAppend("growth", `${name} erreicht Stufe ${newLevel} als ${role}.`, {
+                kind,
+                key,
+                level: newLevel,
+                creature: name,
+            });
+        }
+        // List-UI-Refresh damit die neue Pill sofort sichtbar wird.
+        if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
     }
 
     // Findet die nächste Architektur deren Bauplan mindestens einen Part mit
@@ -6072,6 +6224,22 @@ class AnazhRealm {
     }
     static get CREATURE_BUILD_SPEED() {
         return 3.0; // m/s — analog gather (3.0), sichtbar-aktiv aber ohne Hetze
+    }
+    // Welle 6.H Phase 2D — Spezialisierung aus Memory. Skill-Levels
+    // emergieren aus pro-Kreatur memory: alle THRESHOLD erfolgreiche
+    // Aktionen ein Level höher, gedeckelt bei MAX_LEVEL. SPEED_BONUS
+    // moduliert die Tick-Geschwindigkeit (additive Multiplikation).
+    static get CREATURE_SPECIALIZATION_LEVEL_THRESHOLD() {
+        return 3; // Erfolge pro Level — nach 3 Holz-Ernten Level 1, nach 6 Level 2
+    }
+    static get CREATURE_SPECIALIZATION_MAX_LEVEL() {
+        return 5; // Cap — nach 15 Erfolgen ist Level 5 erreicht (Meisterschaft)
+    }
+    static get CREATURE_SPECIALIZATION_SPEED_BONUS_PER_LEVEL() {
+        return 0.15; // L5 = +75 % Geschwindigkeit (3.0 → 5.25 m/s)
+    }
+    static get CREATURE_SPECIALIZATION_PING_FREQ() {
+        return 880; // ~A5, hell-aufschwingend für Wachstum (höher als alle Task-Pings)
     }
 
     _getCreatureTask(creature) {
@@ -6281,7 +6449,9 @@ class AnazhRealm {
                     if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
                     return new THREE.Vector3(0, 0, 0);
                 }
-                const speed = AnazhRealm.CREATURE_GATHER_SPEED;
+                // Welle 6.H Phase 2D — Spezialisierungs-Speed-Bonus für gather.
+                const speed =
+                    AnazhRealm.CREATURE_GATHER_SPEED * this._creatureTaskSpeedMultiplier(creature, "gather", task.args);
                 return new THREE.Vector3((dxp / distp) * speed, 0, (dzp / distp) * speed);
             }
             // ERNTE-PHASE: Ziel suchen, hingehen, harvesten.
@@ -6331,7 +6501,9 @@ class AnazhRealm {
                 if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
                 return new THREE.Vector3(0, 0, 0); // diesen Tick stehen, nächster sucht neues Ziel
             }
-            const speed = AnazhRealm.CREATURE_GATHER_SPEED;
+            // Welle 6.H Phase 2D — Spezialisierungs-Speed-Bonus für gather (Such-Phase).
+            const speed =
+                AnazhRealm.CREATURE_GATHER_SPEED * this._creatureTaskSpeedMultiplier(creature, "gather", task.args);
             const nx = dx / dist;
             const nz = dz / dist;
             return new THREE.Vector3(nx * speed, 0, nz * speed);
@@ -6363,7 +6535,9 @@ class AnazhRealm {
             const carrying = creature.userData && creature.userData.carrying;
             const player = this.state.playerMesh ? this.state.playerMesh.position : null;
             if (!player) return new THREE.Vector3(0, 0, 0);
-            const buildSpeed = AnazhRealm.CREATURE_BUILD_SPEED;
+            // Welle 6.H Phase 2D — Spezialisierungs-Speed-Bonus für build (alle Phasen).
+            const buildSpeed =
+                AnazhRealm.CREATURE_BUILD_SPEED * this._creatureTaskSpeedMultiplier(creature, "build", task.args);
             if (!carrying) {
                 // TAKE-PHASE: zum Spieler laufen, Material entnehmen.
                 const dxp = player.x - creature.position.x;
@@ -15666,6 +15840,25 @@ class AnazhRealm {
             const soulLabel =
                 soulName && AnazhRealm.CREATURE_SOULS[soulName] && AnazhRealm.CREATURE_SOULS[soulName].label;
             soulEl.textContent = soulLabel || "—";
+            // Welle 6.H Phase 2D — Spezialisierungs-Pills (Top-2). Jede Pill
+            // zeigt „Sammler·material·L3" oder „Bauer·blueprint·L2" mit
+            // kind-spezifischer Klasse für visuelle Differenzierung (cyan für
+            // gather, violett für build). Pills werden NACH soulEl + VOR taskEl
+            // in row gehängt — die finale Reihenfolge ist name/soul/specs/task.
+            const specs = this._creatureTopSpecializations(c, 2);
+            let specsWrap = null;
+            if (specs.length > 0) {
+                specsWrap = document.createElement("span");
+                specsWrap.className = "creature-specs";
+                for (const s of specs) {
+                    const pill = document.createElement("span");
+                    pill.className = `creature-spec creature-spec-${s.kind}`;
+                    const role = s.kind === "gather" ? "Sammler" : "Bauer";
+                    pill.textContent = `${role}·${s.key}·L${s.level}`;
+                    pill.title = `${s.count} Erfolge`;
+                    specsWrap.appendChild(pill);
+                }
+            }
             const taskEl = document.createElement("span");
             taskEl.className = "creature-task";
             const task = this._getCreatureTask(c);
@@ -15688,6 +15881,7 @@ class AnazhRealm {
             }
             row.appendChild(nameEl);
             row.appendChild(soulEl);
+            if (specsWrap) row.appendChild(specsWrap);
             row.appendChild(taskEl);
             list.appendChild(row);
         }

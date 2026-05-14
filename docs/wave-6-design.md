@@ -532,6 +532,22 @@ Nachgereicht 13.05.2026 vom Schöpfer. Diese Liste macht die Welt **körperlich 
 
 Hinzugefügt 13.05.2026 vom Schöpfer. **Bevor du dies liest**: Block 6.F4 baut Kreaturen-Körper als Baukasten. Dieser Block (6.H) gibt diesen Körpern **eine eigene Agenda**. Sie wird nach 6.F4 sinnvoll, kann aber auch ohne Multi-Mesh-Bodies funktionieren (Single-Mesh-Kreaturen reichen für V1).
 
+### §12.0 — Implementierungs-Phasen (Stand 14.05.2026, V7.84)
+
+Original-Plan in §12.7 listete vier Sessions; tatsächlich entstanden **sechs Phasen** über sechs Sessions, weil mehrere Wurzel-Erkenntnisse während der Implementierung den Plan vertieft haben:
+
+| Phase | Stand | Zentrale Idee |
+|---|---|---|
+| Phase 1 (V7.79) | ✅ live | Drei Tasks `wander/follow_player/wait` als Beziehungs-Gesten + Aura + Audio + Journal. Kein gather/build noch. |
+| Phase 2A (V7.80) | ✅ live | **Hylomorphismus-Vereinheitlichung** — Kreaturen sind Multi-Mesh-Compounds aus bodyParts × Material wie Spieler+Architektur. Drei Built-in-Souls (sprite/wesen/geist). Nicht im Original-Plan, entstand aus Schöpfer-Frage „Kreaturen brauchen Avatare wie der Spieler". |
+| Phase 2B.1 (V7.81) | ✅ live | gather + memory (Original §12.2-b). |
+| Phase 2B.5 (V7.82) | ✅ live | **Hylomorphismus-Wurzel-Korrektur** — `harvestArchitecture` als EINE Funktion für Spieler-LMB UND Kreatur-gather. Inventar dual-typed (kind=material). Carrying als Bring-Phase-Träger. Nicht im Original-Plan, entstand aus Audit-Frage „warum verhalten sich Spieler und Kreatur unterschiedlich?". |
+| Phase 2C (V7.83) | ✅ live | computeBuildCost als wertneutrale Spiegelung von harvest. Modus-symmetrisch über `_buildMaterialGate`. Drei Gates jetzt konsistent (damage/applyOp/build). |
+| Phase 2B.2 (V7.84) | ✅ live | **Kreatur baut für Spieler** (Original §12.2-d). Geste-Umkehrung zu gather: take→walk→spawn. Carrying dual-typed (kind=harvest|build). Symbolic cost in freien Modi für Visual-Konsistenz. |
+| Phase 2D (V7.85) | ✅ live | **Spezialisierung aus Memory** — Skill-Levels emergieren live aus erfolgreichen Memory-Einträgen (gather:material, build:blueprint). Floor(count/3) gedeckelt bei 5. Speed-Bonus +15 %/Level. Audio (880 Hz triangle aufwärts-Glissando) + Journal („wird Sammler von X") bei Level-Up. UI-Pills (Top-2) in Kreatur-Liste. KEINE Persistenz, KEIN DSL-Op (Vision §1.1 konsequent). 30 Tests, 1448/1448 grün. |
+| Phase 2E (offen) | 🔴 später | **Konversationen** — „Nira, was hast du gesehen?" via LLM-Provider mit pro-Kreatur memory + Specs als System-Prompt-Erweiterung. Specs aus 2D sind Identitäts-Anker: „die Holz-Spezialistin Nira" liest sich anders als „eine generische Kreatur namens Nira". |
+| Phase 3 (offen) | 🔴 später | Ursprüngliche §12.2-Aufträge **build_path** (Straßen) + **research_blueprint** (Rezept-Erfindung). Nicht trivial — research braucht Aktivierungsmatrix-Inverse. |
+
 ### §12.1 — Konzept: Kreaturen als Hilfsgeister
 
 Heute sind Kreaturen Bewegungs-Dekoration — sie wandern, springen, ändern Farbe nach Wetter. Sie tragen keine eigene Absicht.

@@ -10256,6 +10256,313 @@ function startSaveServer() {
                 check(`Welle 6.H P2B.2: evaluate-Fehler — ${wave6hP2b2Results.error}`, false);
             }
 
+            // ### Welle 6.H Phase 2D — Spezialisierung aus Memory ###
+            //
+            // Vision §1.1: Co-Schöpfer-Beziehung wächst durch Geschichte.
+            // Memory-Erfolge (gathered/built) ergeben Skill-Levels (gather:material,
+            // build:blueprint), Speed-Bonus pro Level, Audio + Journal bei Level-Up,
+            // UI-Pills in Kreatur-Liste. KEINE Persistenz (Vision-konsequent).
+            const wave6hP2dResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.playerMesh) return null;
+                    const out = {};
+                    const Class = r.constructor;
+
+                    // 1. Konstanten
+                    out.threshold3 = Class.CREATURE_SPECIALIZATION_LEVEL_THRESHOLD === 3;
+                    out.maxLevel5 = Class.CREATURE_SPECIALIZATION_MAX_LEVEL === 5;
+                    out.speedBonus15 = Class.CREATURE_SPECIALIZATION_SPEED_BONUS_PER_LEVEL === 0.15;
+                    out.pingFreq880 = Class.CREATURE_SPECIALIZATION_PING_FREQ === 880;
+
+                    // 2. Methoden existieren
+                    out.hasComputeSpecs = typeof r._computeCreatureSpecializations === "function";
+                    out.hasLevelMethod = typeof r._creatureSpecializationLevel === "function";
+                    out.hasTopMethod = typeof r._creatureTopSpecializations === "function";
+                    out.hasSpeedMul = typeof r._creatureTaskSpeedMultiplier === "function";
+                    out.hasLevelUp = typeof r._onCreatureLevelUp === "function";
+                    out.hasSkillKey = typeof r._creatureSkillKeyForMemory === "function";
+
+                    // 3. _creatureSkillKeyForMemory mappt korrekt
+                    const sk1 = r._creatureSkillKeyForMemory("gathered", { material: "holz" });
+                    out.skillKeyGather = sk1 && sk1.kind === "gather" && sk1.key === "holz";
+                    const sk2 = r._creatureSkillKeyForMemory("built", { blueprint: "stein_block" });
+                    out.skillKeyBuild = sk2 && sk2.kind === "build" && sk2.key === "stein_block";
+                    const sk3 = r._creatureSkillKeyForMemory("no_material", { material: "holz" });
+                    out.skillKeyFailureNull = sk3 === null;
+                    const sk4 = r._creatureSkillKeyForMemory("delivered", { material: "holz" });
+                    out.skillKeyDeliveredNull = sk4 === null;
+
+                    // 4. Frische Kreatur → leere Specs
+                    const player = r.state.playerMesh.position;
+                    const c = r.spawnCreatureAt(player.x + 80, player.y, player.z + 80, "happy", "wesen");
+                    c.userData.memory = []; // sicherstellen
+                    const s0 = r._computeCreatureSpecializations(c);
+                    out.emptyMemoryEmptySpecs =
+                        s0 && Object.keys(s0.gather).length === 0 && Object.keys(s0.build).length === 0;
+
+                    // 5. _computeCreatureSpecializations zählt korrekt aus memory
+                    c.userData.memory = [
+                        { type: "gathered", content: { material: "holz", blueprint: "baum_eiche" }, at: 1 },
+                        { type: "gathered", content: { material: "holz", blueprint: "baum_eiche" }, at: 2 },
+                        { type: "gathered", content: { material: "stein", blueprint: "stein_block" }, at: 3 },
+                        { type: "built", content: { blueprint: "stein_block" }, at: 4 },
+                        { type: "no_material", content: { material: "holz" }, at: 5 },
+                        { type: "no_blueprint", content: { blueprint: "fictional" }, at: 6 },
+                    ];
+                    const sCounted = r._computeCreatureSpecializations(c);
+                    out.countsHolz = sCounted.gather.holz === 2;
+                    out.countsStein = sCounted.gather.stein === 1;
+                    out.countsBuiltSteinBlock = sCounted.build.stein_block === 1;
+                    out.failuresIgnored = !sCounted.gather.fictional && !sCounted.build.fictional;
+
+                    // 6. _creatureSpecializationLevel
+                    out.level0Empty = r._creatureSpecializationLevel(c, "gather", "lederX") === 0;
+                    out.level0Sub = r._creatureSpecializationLevel(c, "gather", "holz") === 0; // 2 < 3
+
+                    // Push einen dritten gather-holz, sollte L1 erreichen
+                    c.userData.memory.push({ type: "gathered", content: { material: "holz" }, at: 7 });
+                    out.level1At3 = r._creatureSpecializationLevel(c, "gather", "holz") === 1;
+                    // Auf 6 — L2
+                    for (let i = 0; i < 3; i++)
+                        c.userData.memory.push({ type: "gathered", content: { material: "holz" }, at: 8 + i });
+                    out.level2At6 = r._creatureSpecializationLevel(c, "gather", "holz") === 2;
+                    // Auf 100 — gedeckelt bei L5
+                    for (let i = 0; i < 100; i++)
+                        c.userData.memory.push({ type: "gathered", content: { material: "holz" }, at: 100 + i });
+                    out.levelCappedAt5 = r._creatureSpecializationLevel(c, "gather", "holz") === 5;
+
+                    // 7. _creatureTopSpecializations
+                    const c2 = r.spawnCreatureAt(player.x + 90, player.y, player.z + 90, "happy", "wesen");
+                    c2.userData.memory = [
+                        { type: "gathered", content: { material: "holz" }, at: 1 },
+                        { type: "gathered", content: { material: "holz" }, at: 2 },
+                        { type: "gathered", content: { material: "holz" }, at: 3 }, // L1 holz
+                        { type: "built", content: { blueprint: "stein_block" }, at: 4 },
+                        { type: "built", content: { blueprint: "stein_block" }, at: 5 },
+                        { type: "built", content: { blueprint: "stein_block" }, at: 6 },
+                        { type: "built", content: { blueprint: "stein_block" }, at: 7 },
+                        { type: "built", content: { blueprint: "stein_block" }, at: 8 },
+                        { type: "built", content: { blueprint: "stein_block" }, at: 9 }, // L2 stein_block
+                    ];
+                    const top = r._creatureTopSpecializations(c2, 2);
+                    out.topReturnsArray = Array.isArray(top) && top.length === 2;
+                    out.topSortedByLevel = top[0].level >= top[1].level;
+                    out.topHasBuildAtTop = top[0].kind === "build" && top[0].level === 2;
+                    out.topHasGatherSecond = top[1].kind === "gather" && top[1].level === 1;
+                    const topLimit1 = r._creatureTopSpecializations(c2, 1);
+                    out.topLimit1 = topLimit1.length === 1;
+
+                    // Keine Skills → leeres Array
+                    const cFresh = r.spawnCreatureAt(player.x + 95, player.y, player.z + 95, "happy", "wesen");
+                    cFresh.userData.memory = [];
+                    out.topEmpty = r._creatureTopSpecializations(cFresh, 2).length === 0;
+
+                    // 8. Speed-Multiplikator
+                    out.mulL0 = Math.abs(r._creatureTaskSpeedMultiplier(c, "gather", { material: "lederX" }) - 1.0) < 0.001;
+                    // c hat L5 für gather:holz
+                    const mulL5 = r._creatureTaskSpeedMultiplier(c, "gather", { material: "holz" });
+                    out.mulL5 = Math.abs(mulL5 - 1.75) < 0.001;
+                    // build mit L0
+                    out.mulBuildL0 = Math.abs(r._creatureTaskSpeedMultiplier(c, "build", { blueprint: "fictional" }) - 1.0) < 0.001;
+                    // Unbekannter Task → 1
+                    out.mulUnknownTask = r._creatureTaskSpeedMultiplier(c, "wander", {}) === 1;
+                    // Null-Args → 1
+                    out.mulNullArgs = r._creatureTaskSpeedMultiplier(c, "gather", null) === 1;
+
+                    // 9. Level-Up triggert über _creatureRemember
+                    const cFollow = r.spawnCreatureAt(player.x + 100, player.y, player.z + 100, "happy", "wesen");
+                    cFollow.userData.memory = [];
+                    const journalLenBefore = (r.state.worldJournal.entries || []).length;
+                    // 3 gathered → L1, sollte LevelUp triggern
+                    r._creatureRemember(cFollow, "gathered", { material: "quarz" });
+                    r._creatureRemember(cFollow, "gathered", { material: "quarz" });
+                    r._creatureRemember(cFollow, "gathered", { material: "quarz" }); // Level-Up hier
+                    const lvlAfter = r._creatureSpecializationLevel(cFollow, "gather", "quarz");
+                    out.rememberTriggersLevel = lvlAfter === 1;
+                    // Journal sollte einen growth-Eintrag mit "Sammler" / „quarz" / „Stufe 1" haben
+                    const journalAfter = r.state.worldJournal.entries || [];
+                    const hasLvlUpJournal = journalAfter.some(
+                        (e) =>
+                            e.type === "growth" &&
+                            /Sammler/.test(e.text) &&
+                            /quarz/.test(e.text) &&
+                            /Stufe 1/.test(e.text)
+                    );
+                    out.journalHasLvlUp = hasLvlUpJournal;
+                    out.journalGrew = journalAfter.length > journalLenBefore;
+
+                    // 10. Bei Failure-Push KEIN LevelUp
+                    const cFailure = r.spawnCreatureAt(player.x + 110, player.y, player.z + 110, "happy", "wesen");
+                    cFailure.userData.memory = [];
+                    const beforeFailureJournal = (r.state.worldJournal.entries || []).length;
+                    r._creatureRemember(cFailure, "no_material", { material: "holz" });
+                    r._creatureRemember(cFailure, "no_material", { material: "holz" });
+                    r._creatureRemember(cFailure, "no_material", { material: "holz" });
+                    out.failureNoLevel = r._creatureSpecializationLevel(cFailure, "gather", "holz") === 0;
+                    // Journal-Wachstum sollte 0 sein (kein growth-Eintrag durch Failure)
+                    const failureJournalDiff =
+                        (r.state.worldJournal.entries || []).length - beforeFailureJournal;
+                    out.failureJournalUntouched = failureJournalDiff === 0;
+
+                    // 11. UI: .creature-specs span existiert nach Render
+                    if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
+                    const listEl = document.getElementById("creature-list");
+                    const specsSpans = listEl ? listEl.querySelectorAll(".creature-specs") : [];
+                    out.uiSpecsSpansExist = specsSpans.length > 0;
+
+                    // Pills sollten Klassen .creature-spec.creature-spec-gather oder -build haben
+                    const gatherPills = listEl ? listEl.querySelectorAll(".creature-spec.creature-spec-gather") : [];
+                    const buildPills = listEl ? listEl.querySelectorAll(".creature-spec.creature-spec-build") : [];
+                    out.uiHasGatherPills = gatherPills.length > 0;
+                    out.uiHasBuildPills = buildPills.length > 0;
+
+                    // 12. Pills zeigen "Sammler·material·L1" oder „Bauer·blueprint·L2"
+                    const samplePill = gatherPills[0];
+                    out.uiPillTextOk =
+                        samplePill && /Sammler/.test(samplePill.textContent) && /L\d/.test(samplePill.textContent);
+                    const buildPill = buildPills[0];
+                    out.uiBuildPillTextOk =
+                        buildPill && /Bauer/.test(buildPill.textContent) && /L\d/.test(buildPill.textContent);
+
+                    // 13. Fresh creature OHNE specs hat KEINE .creature-specs span in ihrer Row
+                    const cNoSpecsList = r.spawnCreatureAt(player.x + 120, player.y, player.z + 120, "happy", "wesen");
+                    cNoSpecsList.userData.memory = []; // explizit leer
+                    if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
+                    // Wir können nicht direkt die spezifische Row finden, aber wir können prüfen dass die ANZAHL specsSpans = Anzahl Kreaturen mit ≥1 Spec
+                    const allRows = listEl ? listEl.querySelectorAll(".creature-row") : [];
+                    let creaturesWithSpecs = 0;
+                    for (const cc of r.state.creatures) {
+                        if (r._creatureTopSpecializations(cc, 2).length > 0) creaturesWithSpecs++;
+                    }
+                    const allSpecsSpans = listEl ? listEl.querySelectorAll(".creature-specs") : [];
+                    out.uiSpansMatchSpecCount = allSpecsSpans.length === creaturesWithSpecs;
+
+                    // 14. Persistenz NICHT — buildStateSnapshot speichert keine specializations
+                    // (memory ist sowieso nicht persistiert; specs sind live computed daraus)
+                    const snap = r.buildStateSnapshot();
+                    out.snapshotHasNoSpecs = !snap.creatureSpecializations && !snap.specializations;
+
+                    // 15. NICHT in NON_BROADCASTABLE_OPS (es gibt keine specialization-DSL-Op)
+                    out.noSpecDslOp = !Class.NON_BROADCASTABLE_OPS.has("specialization");
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e), stack: e.stack }));
+
+            if (wave6hP2dResults && !wave6hP2dResults.error) {
+                check("Welle 6.H P2D: LEVEL_THRESHOLD === 3", wave6hP2dResults.threshold3);
+                check("Welle 6.H P2D: MAX_LEVEL === 5", wave6hP2dResults.maxLevel5);
+                check("Welle 6.H P2D: SPEED_BONUS_PER_LEVEL === 0.15", wave6hP2dResults.speedBonus15);
+                check("Welle 6.H P2D: PING_FREQ === 880 (A5)", wave6hP2dResults.pingFreq880);
+                check(
+                    "Welle 6.H P2D: alle 6 Methoden existieren (compute/level/top/speedMul/levelUp/skillKey)",
+                    wave6hP2dResults.hasComputeSpecs &&
+                        wave6hP2dResults.hasLevelMethod &&
+                        wave6hP2dResults.hasTopMethod &&
+                        wave6hP2dResults.hasSpeedMul &&
+                        wave6hP2dResults.hasLevelUp &&
+                        wave6hP2dResults.hasSkillKey
+                );
+                check(
+                    "Welle 6.H P2D: skillKeyForMemory mappt gathered → gather:material",
+                    wave6hP2dResults.skillKeyGather
+                );
+                check(
+                    "Welle 6.H P2D: skillKeyForMemory mappt built → build:blueprint",
+                    wave6hP2dResults.skillKeyBuild
+                );
+                check(
+                    "Welle 6.H P2D: skillKeyForMemory failures (no_material, delivered) → null",
+                    wave6hP2dResults.skillKeyFailureNull && wave6hP2dResults.skillKeyDeliveredNull
+                );
+                check(
+                    "Welle 6.H P2D: leere memory → leere specializations",
+                    wave6hP2dResults.emptyMemoryEmptySpecs
+                );
+                check(
+                    "Welle 6.H P2D: computeSpecs zählt gathered nach material (holz=2, stein=1)",
+                    wave6hP2dResults.countsHolz && wave6hP2dResults.countsStein
+                );
+                check(
+                    "Welle 6.H P2D: computeSpecs zählt built nach blueprint",
+                    wave6hP2dResults.countsBuiltSteinBlock
+                );
+                check(
+                    "Welle 6.H P2D: failures (no_material, no_blueprint) zählen NICHT in specs",
+                    wave6hP2dResults.failuresIgnored
+                );
+                check(
+                    "Welle 6.H P2D: Level 0 für leeren Skill + Sub-Threshold (2<3)",
+                    wave6hP2dResults.level0Empty && wave6hP2dResults.level0Sub
+                );
+                check("Welle 6.H P2D: 3 Erfolge → Level 1", wave6hP2dResults.level1At3);
+                check("Welle 6.H P2D: 6 Erfolge → Level 2", wave6hP2dResults.level2At6);
+                check("Welle 6.H P2D: 100 Erfolge → Level 5 (Cap)", wave6hP2dResults.levelCappedAt5);
+                check(
+                    "Welle 6.H P2D: topSpecializations sortiert nach Level + limit",
+                    wave6hP2dResults.topReturnsArray &&
+                        wave6hP2dResults.topSortedByLevel &&
+                        wave6hP2dResults.topHasBuildAtTop &&
+                        wave6hP2dResults.topHasGatherSecond &&
+                        wave6hP2dResults.topLimit1
+                );
+                check(
+                    "Welle 6.H P2D: keine Skills → topSpecializations liefert leeres Array",
+                    wave6hP2dResults.topEmpty
+                );
+                check(
+                    "Welle 6.H P2D: speedMultiplier L0 → 1.0",
+                    wave6hP2dResults.mulL0 && wave6hP2dResults.mulBuildL0
+                );
+                check(
+                    "Welle 6.H P2D: speedMultiplier L5 → 1.75 (1 + 5*0.15)",
+                    wave6hP2dResults.mulL5
+                );
+                check(
+                    "Welle 6.H P2D: speedMultiplier wander/null-args → 1.0",
+                    wave6hP2dResults.mulUnknownTask && wave6hP2dResults.mulNullArgs
+                );
+                check(
+                    "Welle 6.H P2D: 3. erfolgreicher gather → Level-Up im _creatureRemember",
+                    wave6hP2dResults.rememberTriggersLevel
+                );
+                check(
+                    "Welle 6.H P2D: Level-Up schreibt growth-Journal-Eintrag mit Sammler/key/Stufe",
+                    wave6hP2dResults.journalHasLvlUp && wave6hP2dResults.journalGrew
+                );
+                check(
+                    "Welle 6.H P2D: Failure-Memory triggert KEIN Level + KEIN Journal",
+                    wave6hP2dResults.failureNoLevel && wave6hP2dResults.failureJournalUntouched
+                );
+                check(
+                    "Welle 6.H P2D: UI .creature-specs Spans existieren bei Kreaturen mit Specs",
+                    wave6hP2dResults.uiSpecsSpansExist
+                );
+                check(
+                    "Welle 6.H P2D: UI .creature-spec.creature-spec-gather + .creature-spec-build Pills",
+                    wave6hP2dResults.uiHasGatherPills && wave6hP2dResults.uiHasBuildPills
+                );
+                check(
+                    "Welle 6.H P2D: Pills zeigen Sammler/Bauer + Level (L1..L5)",
+                    wave6hP2dResults.uiPillTextOk && wave6hP2dResults.uiBuildPillTextOk
+                );
+                check(
+                    "Welle 6.H P2D: Anzahl .creature-specs Spans = Anzahl Kreaturen mit Specs",
+                    wave6hP2dResults.uiSpansMatchSpecCount
+                );
+                check(
+                    "Welle 6.H P2D: KEINE Persistenz im buildStateSnapshot (Vision §1.1)",
+                    wave6hP2dResults.snapshotHasNoSpecs
+                );
+                check(
+                    "Welle 6.H P2D: KEIN specialization-DSL-Op in NON_BROADCASTABLE_OPS (kein Op nötig)",
+                    wave6hP2dResults.noSpecDslOp
+                );
+            } else if (wave6hP2dResults && wave6hP2dResults.error) {
+                check(`Welle 6.H P2D: evaluate-Fehler — ${wave6hP2dResults.error}`, false);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {
