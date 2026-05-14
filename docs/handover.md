@@ -360,6 +360,66 @@ Hylomorphismus-System wie Materialien und Bauwerke.
   playerInventory in buildStateSnapshot. 127 Invarianten für 6.C1
   + Drag-System → 1153 total.
 
+### V7.83 — Welle 6.H Phase 2C live (14.05.2026): Hylomorphismus-Kreis geschlossen
+
+**Schöpfer-Vision-Audit hat den letzten Asymmetrie-Punkt erschlagen.**
+V7.82 baute harvest (Welt → Inventar), aber bauen war frei in allen
+Modi. Eine Quelle ohne Senke. Drei Gates existierten bereits modus-
+symmetrisch (damagePlayer, applyOpToPart), nur confirmBuild fehlte.
+
+**Drei neue Spiegel-Funktionen zu harvestArchitecture:**
+
+- `computeBuildCost(name)` → Material-Map aus blueprint.parts × Volumen
+  (dieselbe Konstante HARVEST_VOLUME_TO_UNITS=4 wie harvest)
+- `checkBuildCost(name)` → {ok, cost, have, missing} ohne Mutation
+- `tryConsumeBuildCost(name)` → atomar: erst check, dann alle Materialien
+  abziehen (bei Mangel wird NICHTS abgezogen)
+- `_buildMaterialGate(name)` → Modus-Schalter: pfad konsumiert,
+  frieden+schöpfer return {ok:true, free:true}
+
+**Wertneutralität bewiesen**: Spawn + sofort Harvest derselben Architektur
+liefert genau die ursprüngliche Material-Menge zurück. Eine Konstante
+balanciert beide Richtungen.
+
+**Modus-Symmetrie der drei Gates jetzt vollständig:**
+
+|             | frieden    | pfad         | schöpfer  |
+|-------------|------------|--------------|-----------|
+| damage      | blockiert  | aktiv        | blockiert |
+| applyOpToPart Stamina | kostenlos | 10 | kostenlos |
+| **confirmBuild** | **kostenlos** | **konsumiert** | **kostenlos** |
+
+**Bau-HUD modus-bewusst**: pfad zeigt `5× stein (12)` farbig (grün ok /
+rot fehlt) pro Material, frieden+schöpfer zeigen blaues „frei".
+Modus-Wechsel triggert HUD-Refresh sofort über setGameMode-Hook.
+
+**33/33 Audit-Szenarien grün. 24 permanente Tests. 1385/1385.**
+
+**Was bleibt nach V7.83 in Welle 6.H:**
+
+- **Phase 2B.2 (Kreatur baut für Spieler)** — Geste-Umkehrung zu gather:
+  Spieler sagt „baue dorf hier", Kreatur läuft hin, konsumiert Material
+  AUS dem Spieler-Inventar, ruft confirmBuild-äquivalenten Pfad,
+  spawnt Bauplan, schreibt 'built'-Memory. 1 Session, nutzt existing
+  harvestArchitecture-Pfad rückwärts + tryConsumeBuildCost.
+- **Phase 2D (Kreaturen-Konversationen)** — „Nira, was hast du gesehen?"
+  via LLM-Provider aus pro-Kreatur memory. 2-3 Sessions, braucht LLM-
+  System-Prompt-Erweiterung mit Kreatur-Persona + memory-Auszug.
+
+**Drei größere Bögen jenseits 6.H:**
+
+- **6.B CAD-Werkstatt minimal** — Werkstatt aus dem Bauplan-Editor in
+  räumliche Welt-Klemme (Spieler steht in Werkstatt, sieht Bauplan
+  als Halo, kann mit Werkzeug-Slots agieren). 2-3 Sessions.
+- **Welle 7 Kollektive Welt-Erkenntnis** — Beschreibung in
+  docs/system-audit.md §15: die Welt lernt nicht nur aus dem Spieler-
+  Fitness-Loop, sondern aus dem **Konsens aller Multi-User-Spieler**.
+  Pattern-Memory wird welt-geteilt, Fitness-Werte aggregieren über
+  alle Mitspieler. 4-5 Sessions.
+- **Welle 8 Vergangenheits-Strom** — Welt-Journal-Einträge werden
+  spielbar (Erinnerungs-Klangschicht, sichtbare Spuren großer
+  Ereignisse). Vision §3 noch nicht angefasst. 3-4 Sessions.
+
 ### V7.82 — Welle 6.H Phase 2B.5 live (14.05.2026)
 
 **Hylomorphismus-Wurzel-Vereinheitlichung.** Schöpfer-Vision-Audit-
