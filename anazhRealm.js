@@ -4040,6 +4040,27 @@ class AnazhRealm {
                     describe: `alle Kreaturen sammeln „${m[1].toLowerCase()}"`,
                 }),
             },
+            // Welle 6.H Phase 2B.2 — „baue <bauplan>" für build. Geste-Umkehrung
+            // zu sammeln: Spieler ist Material-Quelle, Kreatur erschafft daraus
+            // eine Architektur in der Welt. Modus-symmetrisch: pfad konsumiert
+            // aus Spieler-Inventar (lehnt bei Mangel ab); frieden+schöpfer
+            // bauen kostenlos via _buildMaterialGate.
+            {
+                example: "baue stein_block",
+                re: /^(?:baue|errichte|erschaffe|construct)\s+([a-zäöüß0-9_-]+)$/i,
+                build: (m) => ({
+                    program: ["creature_task_nearest", "build", m[1].toLowerCase()],
+                    describe: `die nächste Kreatur baut „${m[1].toLowerCase()}"`,
+                }),
+            },
+            {
+                example: "alle bauen stein_block",
+                re: /^(?:alle\s+(?:bauen|baut|errichten|erschaffen))\s+([a-zäöüß0-9_-]+)$/i,
+                build: (m) => ({
+                    program: ["creature_task_all", "build", m[1].toLowerCase()],
+                    describe: `alle Kreaturen bauen „${m[1].toLowerCase()}"`,
+                }),
+            },
         ];
         return this._chatDslPatternsCache;
     }
@@ -5913,6 +5934,9 @@ class AnazhRealm {
         if (taskName === "gather" && typeof paramArg === "string" && paramArg.length > 0) {
             return { material: paramArg };
         }
+        if (taskName === "build" && typeof paramArg === "string" && paramArg.length > 0) {
+            return { blueprint: paramArg };
+        }
         if (taskName === "follow_player" && Number.isFinite(paramArg)) {
             return { distance: c(paramArg, 0.5, 20) };
         }
@@ -5920,10 +5944,13 @@ class AnazhRealm {
     }
 
     // describeProgram-Helper für Kreatur-Tasks. Liefert " (Distanz X)" /
-    // " (Material X)" / "" — abhängig von Task + Arg-Typ.
+    // " (Material X)" / " (Bauplan X)" / "" — abhängig von Task + Arg-Typ.
     _describeCreatureTaskArg(taskName, paramArg) {
         if (taskName === "gather" && typeof paramArg === "string" && paramArg.length > 0) {
             return ` (Material „${paramArg}")`;
+        }
+        if (taskName === "build" && typeof paramArg === "string" && paramArg.length > 0) {
+            return ` (Bauplan „${paramArg}")`;
         }
         if (taskName === "follow_player" && Number.isFinite(paramArg)) {
             return ` (Distanz ${paramArg}m)`;
@@ -5992,7 +6019,7 @@ class AnazhRealm {
     // Phase 2 kann explizite Kreatur-IDs broadcasten.
 
     static get CREATURE_TASKS() {
-        return Object.freeze(["wander", "follow_player", "wait", "gather"]);
+        return Object.freeze(["wander", "follow_player", "wait", "gather", "build"]);
     }
     static get CREATURE_TASK_AURA_HUE() {
         return Object.freeze({
@@ -6000,17 +6027,20 @@ class AnazhRealm {
             follow_player: 120, // grünlich, "ich bin dabei"
             wait: 40, // bernsteinfarben, "ich harre"
             gather: 200, // cyan, "ich suche"
+            build: 280, // violett, "ich erschaffe"
         });
     }
     // Vision §1.2 — Audio-Antwort auf Beziehungs-Geste. Frequenz je Task:
     // follow_player hell (Begrüßung), wait tiefer (Ruhe), gather mittig
-    // (aktiv-konzentriert), wander null (Lösen der Bindung darf still sein).
+    // (aktiv-konzentriert), build hoch (aufschwingend wie Schöpfungs-Geste),
+    // wander null (Lösen der Bindung darf still sein).
     static get CREATURE_TASK_PING_FREQ() {
         return Object.freeze({
             wander: null,
             follow_player: 494, // ~B4, helle Antwort
             wait: 294, // ~D4, ruhige Antwort
             gather: 392, // ~G4, neutral-aktive Antwort
+            build: 587, // ~D5, aufschwingende Schöpfungs-Antwort
         });
     }
     // Welle 6.H Phase 2B.1 — gather-spezifische Konstanten.
@@ -6032,6 +6062,16 @@ class AnazhRealm {
     }
     static get CREATURE_FOLLOW_MAX_SPEED() {
         return 4.0; // m/s — schneller als wander damit Folgen sichtbar
+    }
+    // Welle 6.H Phase 2B.2 — build-spezifische Konstanten. Geste-Umkehrung
+    // zu gather: Spieler ist Material-Quelle, Welt ist Bauplan-Senke. Drei
+    // Phasen: take (zum Spieler), build (weg vom Spieler bis Bau-Distanz),
+    // spawn (am Kreatur-Ort).
+    static get CREATURE_BUILD_PLACEMENT_DIST() {
+        return 4.0; // m — wie weit von Spieler entfernt die Kreatur baut
+    }
+    static get CREATURE_BUILD_SPEED() {
+        return 3.0; // m/s — analog gather (3.0), sichtbar-aktiv aber ohne Hetze
     }
 
     _getCreatureTask(creature) {
@@ -6106,6 +6146,8 @@ class AnazhRealm {
             wander: "streift wieder frei",
             follow_player: "schließt sich an",
             wait: "harrt",
+            gather: "sucht Material",
+            build: "wird zur Schöpferin",
         };
         const text = `Eine Kreatur ${labels[taskName] || "ändert ihren Auftrag"}.`;
         this.journalAppend("relationship", text, {
@@ -6294,6 +6336,132 @@ class AnazhRealm {
             const nz = dz / dist;
             return new THREE.Vector3(nx * speed, 0, nz * speed);
         }
+        if (task.name === "build") {
+            // Welle 6.H Phase 2B.2 — Geste-Umkehrung zu gather. Spieler ist
+            // Material-Quelle, Welt ist Bauplan-Senke. Drei Phasen:
+            //   take: laufe zum Spieler, nimm Material aus Inventar (modus-gated
+            //         via _buildMaterialGate — frieden+schöpfer kostenlos);
+            //   walk: laufe von der Übergabe weg bis CREATURE_BUILD_PLACEMENT_DIST;
+            //   spawn: spawne Architektur am Kreatur-Ort + wander-Fallback.
+            //
+            // Ablehnungs-Pfade fallen auf wander zurück mit memory + Journal-
+            // Eintrag (Vision §1.1: die Welt antwortet auch auf falsche Wünsche).
+            const blueprint = task.args && task.args.blueprint;
+            if (typeof blueprint !== "string" || blueprint.length === 0) {
+                this.assignCreatureTask(creature, "wander", {}, { silent: true });
+                return null;
+            }
+            const bp = this.state.blueprints && this.state.blueprints[blueprint];
+            if (!bp) {
+                this._creatureRemember(creature, "no_blueprint", { blueprint });
+                if (typeof this.journalAppend === "function") {
+                    this.journalAppend("reach", `Eine Kreatur kennt den Bauplan „${blueprint}" nicht.`, { blueprint });
+                }
+                this.assignCreatureTask(creature, "wander", {}, { silent: true });
+                return null;
+            }
+            const carrying = creature.userData && creature.userData.carrying;
+            const player = this.state.playerMesh ? this.state.playerMesh.position : null;
+            if (!player) return new THREE.Vector3(0, 0, 0);
+            const buildSpeed = AnazhRealm.CREATURE_BUILD_SPEED;
+            if (!carrying) {
+                // TAKE-PHASE: zum Spieler laufen, Material entnehmen.
+                const dxp = player.x - creature.position.x;
+                const dzp = player.z - creature.position.z;
+                const distp = Math.hypot(dxp, dzp);
+                const handover = AnazhRealm.CREATURE_HANDOVER_DIST || 2.0;
+                if (distp <= handover) {
+                    // Material entnehmen — selber modus-gated Pfad wie Spieler-
+                    // confirmBuild (pfad konsumiert, frieden+schöpfer kostenlos).
+                    const gate = this._buildMaterialGate(blueprint);
+                    if (!gate.ok) {
+                        const missingStr = Object.entries(gate.missing || {})
+                            .map(([m, n]) => `${n}× ${m}`)
+                            .join(", ");
+                        this._creatureRemember(creature, "no_inventory_for_build", {
+                            blueprint,
+                            missing: gate.missing,
+                        });
+                        if (typeof this.journalAppend === "function") {
+                            this.journalAppend(
+                                "reach",
+                                `Der Schöpfer hat kein Material für „${blueprint}" (fehlt: ${missingStr}).`,
+                                { blueprint, missing: gate.missing }
+                            );
+                        }
+                        this.assignCreatureTask(creature, "wander", {}, { silent: true });
+                        return null;
+                    }
+                    // Visual + Journal nutzen die symbolischen Bauplan-Kosten
+                    // (computeBuildCost) — auch in frieden+schöpfer trägt die
+                    // Kreatur sichtbar das Material das die Architektur braucht,
+                    // selbst wenn nichts aus dem Inventar abgezogen wurde.
+                    const symbolicCost = this.computeBuildCost(blueprint);
+                    creature.userData = creature.userData || {};
+                    creature.userData.carrying = {
+                        kind: "build",
+                        materials: symbolicCost,
+                        blueprint,
+                        free: !!gate.free,
+                        since: performance.now() / 1000,
+                    };
+                    if (typeof this._refreshCreatureCarryingVisual === "function") {
+                        this._refreshCreatureCarryingVisual(creature);
+                    }
+                    this._creatureRemember(creature, "took_materials", {
+                        blueprint,
+                        materials: symbolicCost,
+                        free: !!gate.free,
+                    });
+                    if (!gate.free && typeof this.renderInventoryUI === "function") {
+                        this.renderInventoryUI();
+                    }
+                    if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
+                    return new THREE.Vector3(0, 0, 0);
+                }
+                return new THREE.Vector3((dxp / distp) * buildSpeed, 0, (dzp / distp) * buildSpeed);
+            }
+            // WALK-PHASE: von Spieler weg bis Bau-Distanz, dann SPAWN.
+            const dxp2 = creature.position.x - player.x;
+            const dzp2 = creature.position.z - player.z;
+            const distp2 = Math.hypot(dxp2, dzp2);
+            const placement = AnazhRealm.CREATURE_BUILD_PLACEMENT_DIST;
+            if (distp2 < placement) {
+                // Noch zu nah — laufe in der gegenwärtigen Richtung weg
+                // (nimmt Spieler-Bewegung implizit auf, falls Spieler folgt).
+                if (distp2 < 0.001) {
+                    // Spieler steht direkt auf der Kreatur — willkürliche Richtung.
+                    return new THREE.Vector3(buildSpeed, 0, 0);
+                }
+                return new THREE.Vector3((dxp2 / distp2) * buildSpeed, 0, (dzp2 / distp2) * buildSpeed);
+            }
+            // SPAWN-PHASE: am Kreatur-Ort. spawnArchitecture y+0.5-Konvention
+            // (analog confirmBuild, kalibriert auf at_player wo player.y die
+            // Sphäre-Mitte ist). Materialien wurden in TAKE-PHASE konsumiert.
+            const spawnPos = {
+                x: creature.position.x,
+                y: creature.position.y + 0.5,
+                z: creature.position.z,
+            };
+            this.spawnArchitecture(blueprint, spawnPos);
+            this._creatureRemember(creature, "built", {
+                blueprint,
+                materials: carrying.materials,
+                position: spawnPos,
+            });
+            if (typeof this.journalAppend === "function") {
+                this.journalAppend("growth", `Eine Kreatur erschuf „${blueprint}" für den Schöpfer.`, {
+                    blueprint,
+                    materials: carrying.materials,
+                });
+            }
+            creature.userData.carrying = null;
+            if (typeof this._refreshCreatureCarryingVisual === "function") {
+                this._refreshCreatureCarryingVisual(creature);
+            }
+            this.assignCreatureTask(creature, "wander", {}, { silent: true });
+            return new THREE.Vector3(0, 0, 0);
+        }
         return null;
     }
 
@@ -6421,6 +6589,7 @@ class AnazhRealm {
         let follow = 0;
         let wait = 0;
         let gather = 0;
+        let build = 0;
         if (Array.isArray(this.state.creatures)) {
             for (const c of this.state.creatures) {
                 const t = this._getCreatureTask(c);
@@ -6428,12 +6597,14 @@ class AnazhRealm {
                 if (t.name === "follow_player") follow++;
                 else if (t.name === "wait") wait++;
                 else if (t.name === "gather") gather++;
+                else if (t.name === "build") build++;
             }
         }
         const parts = [];
         if (follow > 0) parts.push(`${follow} folgen`);
         if (wait > 0) parts.push(`${wait} warten`);
         if (gather > 0) parts.push(`${gather} sammeln`);
+        if (build > 0) parts.push(`${build} bauen`);
         el.textContent = parts.length ? parts.join(" · ") : "—";
     }
 
@@ -15425,6 +15596,31 @@ class AnazhRealm {
             });
         });
 
+        // Welle 6.H Phase 2B.2 — Bauen-Buttons. Dropdown wird aus aktuellen
+        // Bauplänen befüllt (Built-in + eigene). Selber Routing-Pfad wie Chat.
+        const buildSelect = drawer.querySelector("#creature-build-select");
+        if (buildSelect) {
+            buildSelect.innerHTML = "";
+            const blueprints = this.state.blueprints || {};
+            const names = Object.keys(blueprints).sort();
+            for (const name of names) {
+                const bp = blueprints[name];
+                const opt = document.createElement("option");
+                opt.value = name;
+                opt.textContent = (bp && bp.label) || name;
+                buildSelect.appendChild(opt);
+            }
+        }
+        drawer.querySelectorAll("[data-creature-build]").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                const mode = btn.getAttribute("data-creature-build");
+                const blueprint = buildSelect ? buildSelect.value : "";
+                if (!blueprint) return;
+                const cmd = mode === "all" ? `alle bauen ${blueprint}` : `baue ${blueprint}`;
+                this.processChatCommand(cmd);
+            });
+        });
+
         // Spawn-Buttons mit data-creature-spawn-Attribut konsultieren den
         // Form-Dropdown. Bei „" (Zufällig) bleibt spawnCreatures' Default
         // (random je Kreatur); sonst alle N gespawnten Kreaturen tragen
@@ -15484,6 +15680,9 @@ class AnazhRealm {
             } else if (taskName === "gather") {
                 const mat = task && task.args && task.args.material;
                 taskEl.textContent = mat ? `sammelt ${mat}` : "sammelt";
+            } else if (taskName === "build") {
+                const bp = task && task.args && task.args.blueprint;
+                taskEl.textContent = bp ? `baut ${bp}` : "baut";
             } else {
                 taskEl.textContent = "—";
             }

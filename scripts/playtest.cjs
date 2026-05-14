@@ -9916,6 +9916,346 @@ function startSaveServer() {
                 check("Welle 6.H P2C: frieden-HUD zeigt 'frei'", wave6hP2cResults.hudShowsFreiInFrieden);
             }
 
+            // ### Welle 6.H Phase 2B.2 — Kreatur baut Bauplan für Spieler ###
+            //
+            // Geste-Umkehrung zu gather: Spieler ist Material-Quelle, Kreatur
+            // ist Schöpfungs-Hand. Drei Phasen: take (zum Spieler) → walk
+            // (weg vom Spieler) → spawn (Architektur am Kreatur-Ort). Modus-
+            // symmetrisch über _buildMaterialGate (eine Funktion teilen sich
+            // Spieler-confirmBuild + Kreatur-build-take-Phase).
+            const wave6hP2b2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.playerMesh) return null;
+                    const out = {};
+
+                    // 1. Konstanten
+                    const Tasks = r.constructor.CREATURE_TASKS;
+                    const Hues = r.constructor.CREATURE_TASK_AURA_HUE;
+                    const Freqs = r.constructor.CREATURE_TASK_PING_FREQ;
+                    out.tasksHasBuild = Tasks.includes("build");
+                    out.auraHueBuild = Hues.build === 280;
+                    out.pingFreqBuild = Freqs.build === 587;
+                    out.buildPlacementDist = r.constructor.CREATURE_BUILD_PLACEMENT_DIST === 4.0;
+                    out.buildSpeed = r.constructor.CREATURE_BUILD_SPEED === 3.0;
+
+                    // 2. Args-Mapping
+                    const a1 = r._buildCreatureTaskArgs("build", "stein_block");
+                    out.argsBuildString = a1.blueprint === "stein_block";
+                    const a2 = r._buildCreatureTaskArgs("build", 5);
+                    out.argsBuildNumberDropped = !a2.blueprint;
+                    const a3 = r._buildCreatureTaskArgs("build", "");
+                    out.argsBuildEmptyDropped = !a3.blueprint;
+
+                    // 3. Describe
+                    const desc = r._describeCreatureTaskArg("build", "stein_block");
+                    out.descBuildShowsBlueprint = /Bauplan/.test(desc) && /stein_block/.test(desc);
+
+                    // 4. Tick: kein blueprint → null + falls auf wander
+                    const c0 = r.spawnCreatureAt(r.state.playerMesh.position.x + 50, r.state.playerMesh.position.y, r.state.playerMesh.position.z + 50, "happy", "wesen");
+                    r.assignCreatureTask(c0, "build", {});
+                    const dirEmpty = r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
+                    out.buildEmptyFallsToWander = dirEmpty === null && r._getCreatureTask(c0).name === "wander";
+
+                    // 5. Tick: unknown blueprint → memory + journal + wander
+                    r.assignCreatureTask(c0, "build", { blueprint: "fictional_bp_xyz" });
+                    const dirUnk = r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
+                    out.unknownBpFallsToWander = dirUnk === null && r._getCreatureTask(c0).name === "wander";
+                    const memHasUnk = (c0.userData.memory || []).some((m) => m.type === "no_blueprint");
+                    out.memHasNoBlueprint = memHasUnk;
+
+                    // 6. Take-Phase: Distanz zum Spieler → Vektor zu Spieler hin, Geschwindigkeit BUILD_SPEED
+                    const player = r.state.playerMesh.position;
+                    c0.position.set(player.x + 10, player.y, player.z);
+                    c0.userData.carrying = null;
+                    r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
+                    const dirTake = r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
+                    out.takePhaseTowardsPlayer = dirTake && dirTake.x < 0; // sollte negativ sein (Richtung -x = zum Spieler)
+                    const sp = Math.hypot(dirTake.x, dirTake.z);
+                    out.takePhaseSpeed = Math.abs(sp - r.constructor.CREATURE_BUILD_SPEED) < 0.01;
+
+                    // 7. Take-Phase at handover, pfad ohne Material → ablehnt + memory + wander
+                    const origMode = r.getGameMode();
+                    r.setGameMode("pfad");
+                    r.state.player.inventory = new Array(27).fill(null);
+                    c0.position.set(player.x + 1.0, player.y, player.z); // innerhalb handover (2.0)
+                    c0.userData.carrying = null;
+                    r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
+                    const dirNoMat = r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
+                    out.takeNoMatRejects = dirNoMat === null && r._getCreatureTask(c0).name === "wander";
+                    const memHasNoInv = (c0.userData.memory || []).some((m) => m.type === "no_inventory_for_build");
+                    out.memHasNoInv = memHasNoInv;
+
+                    // 8. Take-Phase at handover, pfad mit Material → carrying gesetzt + Material verbraucht
+                    r.state.player.inventory = new Array(27).fill(null);
+                    r.addMaterialToInventory("stein", 200);
+                    const stoneBefore = r.state.player.inventory[0].count;
+                    c0.position.set(player.x + 1.0, player.y, player.z);
+                    c0.userData.carrying = null;
+                    r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
+                    r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
+                    out.takeSetsCarrying = !!c0.userData.carrying && c0.userData.carrying.kind === "build";
+                    out.takeCarryingHasBp = c0.userData.carrying && c0.userData.carrying.blueprint === "stein_block";
+                    const stoneAfter = r.state.player.inventory[0] ? r.state.player.inventory[0].count : 0;
+                    out.takeConsumesPfad = stoneAfter < stoneBefore;
+                    const memHasTook = (c0.userData.memory || []).some((m) => m.type === "took_materials");
+                    out.memHasTook = memHasTook;
+
+                    // 9. Schöpfer/frieden: carrying wird mit symbolic cost gesetzt, Inventar bleibt leer
+                    r.setGameMode("schöpfer");
+                    r.state.player.inventory = new Array(27).fill(null);
+                    c0.position.set(player.x + 1.0, player.y, player.z);
+                    c0.userData.carrying = null;
+                    r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
+                    r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
+                    out.schoepferCarrying = !!c0.userData.carrying;
+                    out.schoepferCarryingHasMaterials =
+                        c0.userData.carrying &&
+                        c0.userData.carrying.materials &&
+                        c0.userData.carrying.materials.stein > 0;
+                    out.schoepferCarryingFree = c0.userData.carrying && c0.userData.carrying.free === true;
+                    out.schoepferInventoryUntouched = r.state.player.inventory.every((s) => !s);
+
+                    // 10. Walk-Phase: mit carrying, Vektor WEG vom Spieler
+                    r.setGameMode("schöpfer");
+                    c0.position.set(player.x + 2.5, player.y, player.z); // 2.5m, weniger als placement (4.0)
+                    c0.userData.carrying = { kind: "build", materials: { stein: 8 }, blueprint: "stein_block", since: 0 };
+                    r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
+                    const dirWalk = r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
+                    out.walkPhaseAwayFromPlayer = dirWalk && dirWalk.x > 0; // weg vom Spieler = +x
+                    const ws = Math.hypot(dirWalk.x, dirWalk.z);
+                    out.walkPhaseSpeed = Math.abs(ws - r.constructor.CREATURE_BUILD_SPEED) < 0.01;
+
+                    // 11. Spawn-Phase: bei placement_dist → spawnArchitecture + carrying null + memory + wander
+                    c0.position.set(player.x + 5.0, player.y + 1.0, player.z); // > placement (4.0)
+                    c0.userData.carrying = { kind: "build", materials: { stein: 8 }, blueprint: "stein_block", since: 0 };
+                    r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
+                    const archBefore = r.state.architectures.length;
+                    r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
+                    out.spawnPhaseGrowsWorld = r.state.architectures.length > archBefore;
+                    out.spawnPhaseClearsCarrying = c0.userData.carrying === null;
+                    out.spawnPhaseFallsToWander = r._getCreatureTask(c0).name === "wander";
+                    const memHasBuilt = (c0.userData.memory || []).some((m) => m.type === "built");
+                    out.memHasBuilt = memHasBuilt;
+                    const journalHasBuilt = (r.state.worldJournal.entries || []).some(
+                        (e) => e.type === "growth" && /erschuf/.test(e.text)
+                    );
+                    out.journalHasBuilt = journalHasBuilt;
+
+                    // 12. DSL-Op routing
+                    r.dslRun(["creature_task_nearest", "build", "stein_block"], { source: "test" });
+                    // Finde irgendeine Kreatur mit build-Task
+                    const anyBuilding = r.state.creatures.some(
+                        (c) => r._getCreatureTask(c) && r._getCreatureTask(c).name === "build"
+                    );
+                    out.dslNearestSetsBuild = anyBuilding;
+
+                    // 13. NON_BROADCASTABLE_OPS — creature_task* sind schon drin (Phase 1).
+                    // Build wird über dieselben Ops gerufen, also automatisch privat.
+                    out.opsAreNonBroadcast =
+                        r.constructor.NON_BROADCASTABLE_OPS.has("creature_task_nearest") &&
+                        r.constructor.NON_BROADCASTABLE_OPS.has("creature_task_all") &&
+                        r.constructor.NON_BROADCASTABLE_OPS.has("creature_task");
+
+                    // 14. Chat-Patterns
+                    const p1 = r.parseChatToDsl("baue stein_block");
+                    out.chatBauePattern =
+                        p1 &&
+                        Array.isArray(p1.program) &&
+                        p1.program[0] === "creature_task_nearest" &&
+                        p1.program[1] === "build" &&
+                        p1.program[2] === "stein_block";
+                    const p2 = r.parseChatToDsl("alle bauen stein_block");
+                    out.chatAlleBauenPattern =
+                        p2 &&
+                        Array.isArray(p2.program) &&
+                        p2.program[0] === "creature_task_all" &&
+                        p2.program[1] === "build" &&
+                        p2.program[2] === "stein_block";
+
+                    // 15. describeProgram
+                    const desc1 = r.describeProgram(["creature_task_nearest", "build", "stein_block"]);
+                    out.describeProgramShowsBp = /Bauplan/.test(desc1) && /stein_block/.test(desc1);
+
+                    // 16. Status-Bar zeigt 'N bauen'
+                    // Setze mehrere Kreaturen auf build (alle existierenden)
+                    for (const c of r.state.creatures) {
+                        r.assignCreatureTask(c, "build", { blueprint: "stein_block" }, { silent: true });
+                    }
+                    if (typeof r._renderTaskStatusUI === "function") r._renderTaskStatusUI();
+                    const statusEl = document.getElementById("status-tasks");
+                    out.statusShowsBauen = statusEl && /bauen/.test(statusEl.textContent);
+
+                    // 17. Liste zeigt 'baut stein_block' + .build CSS-Class
+                    if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
+                    const listEl = document.getElementById("creature-list");
+                    const buildRow = listEl && listEl.querySelector(".creature-task.build");
+                    out.listHasBuildClass = !!buildRow;
+                    out.listShowsBaut = listEl && /baut stein_block/.test(listEl.textContent);
+
+                    // 18. UI: Dropdown + 2 Buttons im DOM
+                    const buildSelect = document.getElementById("creature-build-select");
+                    out.uiBuildSelectExists = !!buildSelect;
+                    out.uiBuildSelectHasOptions = buildSelect && buildSelect.options.length >= 3;
+                    const buildBtns = document.querySelectorAll("[data-creature-build]");
+                    out.uiBuildButtonsCount = buildBtns.length === 2;
+
+                    // 19. Journal-Label "wird zur Schöpferin" beim build-Wechsel
+                    // (assignCreatureTask hat schon ein Journal geschrieben in #16, prüfen)
+                    const journalHasRel = (r.state.worldJournal.entries || []).some(
+                        (e) => e.type === "relationship" && /Schöpferin/.test(e.text)
+                    );
+                    out.journalHasSchoepferin = journalHasRel;
+
+                    // 20. Symbolic cost: free build hat trotzdem materials map (für Journal/Visual)
+                    r.setGameMode("schöpfer");
+                    r.state.player.inventory = new Array(27).fill(null);
+                    const cFree = r.spawnCreatureAt(player.x + 30, player.y, player.z + 30, "happy", "wesen");
+                    cFree.position.set(player.x + 1.0, player.y, player.z);
+                    cFree.userData.carrying = null;
+                    r.assignCreatureTask(cFree, "build", { blueprint: "baum_eiche" }, { silent: true });
+                    r._tickCreatureTaskDirection(cFree, cFree.userData.task, "happy");
+                    out.symbolicCostHasMultiple =
+                        cFree.userData.carrying &&
+                        Object.keys(cFree.userData.carrying.materials).length >= 2; // baum_eiche = holz + laub
+
+                    // Cleanup für nachfolgende Tests
+                    r.setGameMode(origMode || "frieden");
+                    for (const c of r.state.creatures) {
+                        r.assignCreatureTask(c, "wander", {}, { silent: true });
+                    }
+                    return out;
+                })
+                .catch((e) => ({ error: String(e), stack: e.stack }));
+
+            if (wave6hP2b2Results && !wave6hP2b2Results.error) {
+                check("Welle 6.H P2B.2: CREATURE_TASKS enthält 'build'", wave6hP2b2Results.tasksHasBuild);
+                check("Welle 6.H P2B.2: AURA_HUE.build === 280 (violett)", wave6hP2b2Results.auraHueBuild);
+                check("Welle 6.H P2B.2: PING_FREQ.build === 587 (D5)", wave6hP2b2Results.pingFreqBuild);
+                check(
+                    "Welle 6.H P2B.2: CREATURE_BUILD_PLACEMENT_DIST=4.0 + CREATURE_BUILD_SPEED=3.0",
+                    wave6hP2b2Results.buildPlacementDist && wave6hP2b2Results.buildSpeed
+                );
+                check(
+                    "Welle 6.H P2B.2: _buildCreatureTaskArgs(build, string) → {blueprint}",
+                    wave6hP2b2Results.argsBuildString
+                );
+                check(
+                    "Welle 6.H P2B.2: _buildCreatureTaskArgs(build, number) droppt arg",
+                    wave6hP2b2Results.argsBuildNumberDropped
+                );
+                check(
+                    "Welle 6.H P2B.2: _buildCreatureTaskArgs(build, '') droppt arg",
+                    wave6hP2b2Results.argsBuildEmptyDropped
+                );
+                check(
+                    "Welle 6.H P2B.2: _describeCreatureTaskArg(build, X) zeigt 'Bauplan X'",
+                    wave6hP2b2Results.descBuildShowsBlueprint
+                );
+                check(
+                    "Welle 6.H P2B.2: build ohne blueprint → null + Task fällt auf wander",
+                    wave6hP2b2Results.buildEmptyFallsToWander
+                );
+                check(
+                    "Welle 6.H P2B.2: build mit unbekanntem Bauplan → wander + 'no_blueprint'-Erinnerung",
+                    wave6hP2b2Results.unknownBpFallsToWander && wave6hP2b2Results.memHasNoBlueprint
+                );
+                check(
+                    "Welle 6.H P2B.2: take-Phase weit weg → Vektor zum Spieler hin",
+                    wave6hP2b2Results.takePhaseTowardsPlayer
+                );
+                check(
+                    "Welle 6.H P2B.2: take-Phase Geschwindigkeit = CREATURE_BUILD_SPEED",
+                    wave6hP2b2Results.takePhaseSpeed
+                );
+                check(
+                    "Welle 6.H P2B.2: pfad ohne Material → take lehnt ab + 'no_inventory_for_build'-Memory",
+                    wave6hP2b2Results.takeNoMatRejects && wave6hP2b2Results.memHasNoInv
+                );
+                check(
+                    "Welle 6.H P2B.2: pfad mit Material → carrying.kind='build' + blueprint gesetzt",
+                    wave6hP2b2Results.takeSetsCarrying && wave6hP2b2Results.takeCarryingHasBp
+                );
+                check(
+                    "Welle 6.H P2B.2: pfad: Material wird aus Spieler-Inventar konsumiert",
+                    wave6hP2b2Results.takeConsumesPfad
+                );
+                check(
+                    "Welle 6.H P2B.2: 'took_materials'-Erinnerung gespeichert",
+                    wave6hP2b2Results.memHasTook
+                );
+                check(
+                    "Welle 6.H P2B.2: schöpfer setzt carrying mit symbolic cost (für Visual+Journal)",
+                    wave6hP2b2Results.schoepferCarrying &&
+                        wave6hP2b2Results.schoepferCarryingHasMaterials &&
+                        wave6hP2b2Results.schoepferCarryingFree
+                );
+                check(
+                    "Welle 6.H P2B.2: schöpfer: Inventar bleibt unangetastet (kostenlos)",
+                    wave6hP2b2Results.schoepferInventoryUntouched
+                );
+                check(
+                    "Welle 6.H P2B.2: walk-Phase mit carrying → Vektor WEG vom Spieler bei BUILD_SPEED",
+                    wave6hP2b2Results.walkPhaseAwayFromPlayer && wave6hP2b2Results.walkPhaseSpeed
+                );
+                check(
+                    "Welle 6.H P2B.2: spawn-Phase bei placement_dist → Architektur entsteht",
+                    wave6hP2b2Results.spawnPhaseGrowsWorld
+                );
+                check(
+                    "Welle 6.H P2B.2: spawn-Phase clearet carrying + fällt auf wander zurück",
+                    wave6hP2b2Results.spawnPhaseClearsCarrying && wave6hP2b2Results.spawnPhaseFallsToWander
+                );
+                check(
+                    "Welle 6.H P2B.2: 'built'-Memory + 'growth'-Journal-Eintrag (erschuf ...)",
+                    wave6hP2b2Results.memHasBuilt && wave6hP2b2Results.journalHasBuilt
+                );
+                check(
+                    "Welle 6.H P2B.2: DSL creature_task_nearest('build', bp) wirkt",
+                    wave6hP2b2Results.dslNearestSetsBuild
+                );
+                check(
+                    "Welle 6.H P2B.2: build-Ops bleiben in NON_BROADCASTABLE_OPS (Multi-User-Safety)",
+                    wave6hP2b2Results.opsAreNonBroadcast
+                );
+                check(
+                    "Welle 6.H P2B.2: Chat 'baue X' → creature_task_nearest build X",
+                    wave6hP2b2Results.chatBauePattern
+                );
+                check(
+                    "Welle 6.H P2B.2: Chat 'alle bauen X' → creature_task_all build X",
+                    wave6hP2b2Results.chatAlleBauenPattern
+                );
+                check(
+                    "Welle 6.H P2B.2: describeProgram zeigt 'Bauplan' + name",
+                    wave6hP2b2Results.describeProgramShowsBp
+                );
+                check(
+                    "Welle 6.H P2B.2: Status-Bar zeigt 'N bauen' bei build-Tasks",
+                    wave6hP2b2Results.statusShowsBauen
+                );
+                check(
+                    "Welle 6.H P2B.2: Liste zeigt .build-Class + 'baut <bp>'",
+                    wave6hP2b2Results.listHasBuildClass && wave6hP2b2Results.listShowsBaut
+                );
+                check(
+                    "Welle 6.H P2B.2: UI #creature-build-select Dropdown + ≥3 Optionen + 2 Buttons",
+                    wave6hP2b2Results.uiBuildSelectExists &&
+                        wave6hP2b2Results.uiBuildSelectHasOptions &&
+                        wave6hP2b2Results.uiBuildButtonsCount
+                );
+                check(
+                    "Welle 6.H P2B.2: Journal-Label (wird zur Schoepferin) beim build-Wechsel",
+                    wave6hP2b2Results.journalHasSchoepferin
+                );
+                check(
+                    "Welle 6.H P2B.2: free-build trägt Multi-Material symbolic cost (baum_eiche=holz+laub)",
+                    wave6hP2b2Results.symbolicCostHasMultiple
+                );
+            } else if (wave6hP2b2Results && wave6hP2b2Results.error) {
+                check(`Welle 6.H P2B.2: evaluate-Fehler — ${wave6hP2b2Results.error}`, false);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {
