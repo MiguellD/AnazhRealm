@@ -29,7 +29,7 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self';"
         />
-        <title>Anazh Realm v7.75 – Das Ultiversum</title>
+        <title>Anazh Realm v7.76 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
              zusätzliche Datei. img-src 'self' data: in CSP erlaubt data-URI. -->
         <link
@@ -1388,6 +1388,29 @@
                 grid-template-columns: 1fr 1fr;
                 gap: 5px;
             }
+            /* Welle 6.C2 — Welt-Beziehungs-Modus-Radios */
+            #game-mode-radios {
+                grid-template-columns: 1fr 1fr 1fr;
+            }
+            .radio-label {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 4px 8px;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 12px;
+                color: var(--parch-ink);
+                cursor: pointer;
+                border: 1px solid var(--brass-2);
+                background: linear-gradient(180deg, rgba(255, 235, 190, 0.25), rgba(180, 140, 80, 0.15));
+            }
+            .radio-label input[type="radio"] {
+                accent-color: var(--violet-1, #6b4a8a);
+            }
+            .radio-label:has(input:checked) {
+                background: linear-gradient(180deg, rgba(212, 163, 255, 0.3), rgba(106, 74, 138, 0.2));
+                border-color: var(--violet-1, #6b4a8a);
+            }
             .drawer .actions button {
                 background: linear-gradient(180deg, rgba(255, 235, 190, 0.4), rgba(180, 140, 80, 0.25));
                 color: var(--parch-ink);
@@ -2401,7 +2424,7 @@
         <header id="topbar" class="hud-frame">
             <div class="topbar-inner">
                 <div class="title">
-                    Anazh Realm <span class="version">v7.75</span> <span class="sub">— Das Ultiversum</span>
+                    Anazh Realm <span class="version">v7.76</span> <span class="sub">— Das Ultiversum</span>
                 </div>
                 <nav class="tabs" role="tablist" aria-label="Hauptansichten">
                     <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">
@@ -2449,6 +2472,9 @@
             >
             <span class="status-item"
                 ><span class="label">Seele</span><span class="value" id="status-soul">—</span></span
+            >
+            <span class="status-item"
+                ><span class="label">Modus</span><span class="value" id="status-mode">frieden</span></span
             >
             <span class="status-item"
                 ><span class="label">Bauten</span><span class="value" id="status-architectures">—</span></span
@@ -2600,6 +2626,28 @@
                     <button type="button" data-cmd="Lade Zustand">Laden</button>
                     <button type="button" data-cmd="Lade Datei">Datei…</button>
                     <button type="button" id="action-export-state">Export…</button>
+                </div>
+            </section>
+            <section class="section" id="game-mode-section">
+                <h3>Welt-Beziehung</h3>
+                <p class="drawer-hint">
+                    Drei Beziehungen zur Welt: <strong>frieden</strong> umarmt (kein HP, kein Tod, keine Stamina),
+                    <strong>pfad</strong> verhandelt (HP, Stamina, Tod-Wandlung), <strong>schöpfer</strong> gehorcht
+                    (voller Zugang, kein Schaden). Wechselbar jederzeit.
+                </p>
+                <div class="actions" id="game-mode-radios">
+                    <label class="radio-label">
+                        <input type="radio" name="game-mode-radio" value="frieden" checked />
+                        <span>frieden</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="game-mode-radio" value="pfad" />
+                        <span>pfad</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="game-mode-radio" value="schöpfer" />
+                        <span>schöpfer</span>
+                    </label>
                 </div>
             </section>
             <section class="section">

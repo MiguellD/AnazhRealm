@@ -1,4 +1,4 @@
-/**AnazhRealm V7.75 – Das Ultiversum Vollendet.
+/**AnazhRealm V7.76 – Das Ultiversum Vollendet.
  * Hüpfen: Robust, präzise (Y ~1.5), Coyote-Time 0.3s, Gravitation 1.5G, Reibung 0.5.
  * Kollisionen: Kein Tunneling, steepnessThreshold 3.0, wallThickness 2.0, CCD optimiert.
  * Terrain: Flacher (Höhenunterschiede ±5), KI-gesteuerte Steilheitsanpassung, Chat-Steuerung.
@@ -12,7 +12,7 @@
 class AnazhRealm {
     constructor() {
         // ### Learnings ### [Stichwortartig optimieren, korrigieren, ergänzen – nie Wissen löschen!]
-        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69, LAN-Fähigkeit + Sync-Korrektheit (Ring 11 V2.1: 0.0.0.0-bind, ws:/wss:-CSP, roomOverride, spawn_*-Embedding, NON_BROADCASTABLE_OPS) in V7.70, Intuitiver Multi-User-Setup (Ring 11.5: Modus-Wahl, Host-Banner mit Einladungs-Code, Auto-Welt-Snapshot beim Join) in V7.71, Welle 6.A — Interaktion-Polish (Wall-Sliding via Player-Friction-0, Erdung-Raycast-Robustheit für Bauwerke) in V7.72, Welle 6.G Phase 1 — Welt-Sinne (fliegende Inseln + Bäume kollidierbar via btBvhTriangleMeshShape/btCylinderShape, drei Dead-Code-DSL-Ops spawn_tree/island/ufo aktiviert, toter needsPhysics-Lazy-Pfad gelöscht) in V7.73, Welle 6.G Phase 1.5 — Hylomorphismus-Unification (Bäume sind jetzt Compound-Architekturen über baum_eiche/baum_kiefer-Baupläne mit Stamm:holz + Krone:laub, eigene spawnTreeAt + _buildTreeCollision gelöscht, Parallelcode → eine Sprache, plus Insel-Visual-Fix mit Underside + Lambert) in V7.74, Welle 6.G Phase 2 — Welt-Affinitäts-Feld (vier SimplexNoise-Schichten lebendig/dichte/glut/magieleitung, Baupläne spawnen wo ihre Compound-Tags resonieren — Wälder/Felsen/Magie-Zonen/Vulkan-Anker emergieren ohne Biome-Tabelle, populateChunkVegetation als Hook in ensureChunkAt + Initial-Worldgen, drei neue Built-in-Baupläne stein_block/kristall_geode/glutbrunnen, Stämme dicker für Spieler-Spürbarkeit, Culling-Tick 1Hz→2Hz, spawn-silent-Opt damit Worldgen die Welt-Effekt-Kaskade nicht überflutet) in V7.75
+        // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69, LAN-Fähigkeit + Sync-Korrektheit (Ring 11 V2.1: 0.0.0.0-bind, ws:/wss:-CSP, roomOverride, spawn_*-Embedding, NON_BROADCASTABLE_OPS) in V7.70, Intuitiver Multi-User-Setup (Ring 11.5: Modus-Wahl, Host-Banner mit Einladungs-Code, Auto-Welt-Snapshot beim Join) in V7.71, Welle 6.A — Interaktion-Polish (Wall-Sliding via Player-Friction-0, Erdung-Raycast-Robustheit für Bauwerke) in V7.72, Welle 6.G Phase 1 — Welt-Sinne (fliegende Inseln + Bäume kollidierbar via btBvhTriangleMeshShape/btCylinderShape, drei Dead-Code-DSL-Ops spawn_tree/island/ufo aktiviert, toter needsPhysics-Lazy-Pfad gelöscht) in V7.73, Welle 6.G Phase 1.5 — Hylomorphismus-Unification (Bäume sind jetzt Compound-Architekturen über baum_eiche/baum_kiefer-Baupläne mit Stamm:holz + Krone:laub, eigene spawnTreeAt + _buildTreeCollision gelöscht, Parallelcode → eine Sprache, plus Insel-Visual-Fix mit Underside + Lambert) in V7.74, Welle 6.G Phase 2 — Welt-Affinitäts-Feld (vier SimplexNoise-Schichten lebendig/dichte/glut/magieleitung, Baupläne spawnen wo ihre Compound-Tags resonieren — Wälder/Felsen/Magie-Zonen/Vulkan-Anker emergieren ohne Biome-Tabelle, populateChunkVegetation als Hook in ensureChunkAt + Initial-Worldgen, drei neue Built-in-Baupläne stein_block/kristall_geode/glutbrunnen, Stämme dicker für Spieler-Spürbarkeit, Culling-Tick 1Hz→2Hz, spawn-silent-Opt damit Worldgen die Welt-Effekt-Kaskade nicht überflutet) in V7.75, Welle 6.C2 — Spielmodi (frieden/pfad/schöpfer als Welt-Beziehungs-Schalter, frieden umarmt + pfad verhandelt + schöpfer gehorcht, damagePlayer + applyOpToPart-Stamina modus-gated, set_mode DSL-Op in NON_BROADCASTABLE_OPS, UI-Radio in Einstellungen + Status-Bar #status-mode, worldMeta.gameMode persistiert pro-Welt) in V7.76
         // - Nexus als Herz der Selbstentwicklung, steuert nun alles über Chat, unzerstörbar und unendlich
         this.state = {
             // ### Kern ###
@@ -304,6 +304,18 @@ class AnazhRealm {
                 // null bei solo/host. Wird beim Join-Pfad gefüllt mit
                 // {url, roomId} aus dem Einladungs-Code.
                 hostInfo: null,
+                // Welle 6.C2 — Welt-Beziehungs-Modus. Drei Ausprägungen:
+                //   "frieden" — Welt umarmt: kein HP, kein Tod, keine Stamina-
+                //               Kosten. Default für neue Welten (Erstbegegnung
+                //               soll nicht hostil sein).
+                //   "pfad"    — Welt verhandelt: HP/Stamina/Tod-Wandlung aktiv.
+                //               Werkzeug-Anwendung kostet Stamina. Tod →
+                //               5min Phönix + Welt-Trauer (sorrow+0.3, awe+0.2).
+                //   "schöpfer" — Welt gehorcht: kein Schaden, voller Zugang.
+                //                Mensch=Null=Schöpfer (Vision §1.5).
+                // Persistiert pro Welt (nicht global) — jede Welt darf ihren
+                // eigenen Beziehungs-Schalter haben.
+                gameMode: "frieden",
             },
             // Welle 1 D — Welt-Journal. Geordnete Liste von Erinnerungen
             // (Genesis, erstes Wetter, erste Kreatur, hochfitness Programme,
@@ -507,7 +519,7 @@ class AnazhRealm {
     // ### Logging ###
     log(message, level = "INFO") {
         if (level === "DEBUG" && !this.state.debugLogging) return;
-        const logMessage = `[AnazhRealm V7.75] [${level}] ${message}`;
+        const logMessage = `[AnazhRealm V7.76] [${level}] ${message}`;
         this.state.logBuffer.push(logMessage);
         console.log(logMessage);
         if (this.state.logBuffer.length > this.state.maxLogEntries) {
@@ -829,6 +841,10 @@ class AnazhRealm {
             "equip_tool",
             "equip_armor",
             "unequip",
+            // Welle 6.C2 — Spielmodus ist Welt-Beziehung pro Spieler. Mitspieler
+            // in derselben Welt dürfen verschiedene Modi haben (einer pfad,
+            // einer frieden) — set_mode darf nicht über P2P weiterspringen.
+            "set_mode",
         ]);
     }
 
@@ -1263,6 +1279,15 @@ class AnazhRealm {
                         reason: result.reason,
                     });
                 }
+            },
+            // Welle 6.C2 — Welt-Beziehungs-Modus wechseln. frieden/pfad/
+            // schöpfer aus AnazhRealm.GAME_MODES. Sandbox-validiert (unbekannte
+            // Werte → frieden-Default in setGameMode). In NON_BROADCASTABLE_OPS,
+            // weil Modus pro-Spieler-pro-Welt ist (Multi-User: zwei Spieler in
+            // derselben Welt dürfen verschiedene Beziehungen haben).
+            set_mode: ([mode], ctx) => {
+                const result = this.setGameMode(mode);
+                if (ctx && ctx.log) ctx.log.push({ event: "mode_set", mode: result });
             },
             // Welle 6.D Etappe 3a — Konsumable definieren. Spieler kann ein
             // „Trank-Rezept" anlegen: tagBonus-Map + Dauer in Sekunden.
@@ -3833,6 +3858,29 @@ class AnazhRealm {
                     };
                 },
             },
+            // Welle 6.C2 — Spielmodus wechseln per Chat. Akzeptiert die drei
+            // kanonischen Namen + zwei deutsche Aliase (peace/creative).
+            {
+                example: "setze modus frieden",
+                re: /^(?:setze\s+)?modus\s+(frieden|peace|pfad|survival|schöpfer|schoepfer|creative)$/i,
+                build: (m) => {
+                    const raw = m[1].toLowerCase();
+                    const map = {
+                        frieden: "frieden",
+                        peace: "frieden",
+                        pfad: "pfad",
+                        survival: "pfad",
+                        schöpfer: "schöpfer",
+                        schoepfer: "schöpfer",
+                        creative: "schöpfer",
+                    };
+                    const mode = map[raw] || "frieden";
+                    return {
+                        program: ["set_mode", mode],
+                        describe: `Welt-Beziehung: ${mode}`,
+                    };
+                },
+            },
         ];
         return this._chatDslPatternsCache;
     }
@@ -4819,6 +4867,10 @@ class AnazhRealm {
                 // füllt chunkDeltas defensiv mit `{}` falls fehlend.
                 schemaVersion: "10.5-chunk-delta-v1",
                 chunkDeltas: {},
+                // Welle 6.C2: jede neue Welt startet im frieden-Modus —
+                // Erstbegegnung soll nicht hostil sein. Wer pfad/schöpfer
+                // will, schaltet bewusst über setze modus oder UI.
+                gameMode: "frieden",
             },
             dslAbilities: [],
             dslHistory: [],
@@ -6078,6 +6130,7 @@ class AnazhRealm {
             register_tool: (a) => `registriert „${a[0]}" als Werkzeug`,
             apply_connection: (a) => `verbindet Teile von „${a[0]}" mit „${a[1]}"`,
             apply_op: (a) => `bearbeitet Teil ${a[1]} von „${a[0]}" mit „${a[2]}"`,
+            set_mode: (a) => `wechselt die Welt-Beziehung auf „${a[0]}"`,
             creatures_color: () => `färbt alle Kreaturen`,
             creatures_emotion: (a) => `setzt die Kreaturen-Stimmung auf „${a[0]}"`,
             creatures_speed_mul: (a) => `skaliert die Kreaturen-Geschwindigkeit um ${a[0]}`,
@@ -10363,6 +10416,12 @@ class AnazhRealm {
         if (!this.state.player || typeof amount !== "number" || !Number.isFinite(amount)) return false;
         const value = Math.max(0, Math.min(1000, amount));
         if (value === 0) return false;
+        // Welle 6.C2 — Modus-Gate. Im frieden-Modus existiert HP nicht als
+        // Konsequenz; im schöpfer-Modus gehört die Welt dem Spieler und sie
+        // versehrt ihn nicht. Schaden wird stumm verworfen (kein Log-Spam),
+        // hp + Phönix-Wandlung bleiben unangefasst.
+        const mode = this.getGameMode ? this.getGameMode() : "frieden";
+        if (mode !== "pfad") return false;
         // Wenn aktuell in Phönix-Wandlung: kein doppelter Tod (Spieler ist
         // unverwundbar während der Heilungs-Phase, das ist Teil der Mythos).
         const now = performance.now() / 1000;
@@ -12125,12 +12184,20 @@ class AnazhRealm {
         // oder eine Stamina-stärkere Seele wählen. Damit ist „beliebig stapeln"
         // strukturell ausgeschlossen; Geduld wird zur ECHTEN Kosten, nicht
         // nur zur Reihenfolge.
-        const cost = AnazhRealm.TOOL_OP_STAMINA_COST || 10;
-        const stamina = (this.state.player && this.state.player.stamina) || 0;
-        if (stamina < cost) {
-            return { ok: false, reason: "not_enough_stamina", staminaNeeded: cost, staminaHave: stamina };
+        //
+        // Welle 6.C2 — Modus-Gate. Nur im pfad-Modus verbrauchen Werkzeuge
+        // Stamina. Im frieden-Modus (Erstbegegnung) + schöpfer-Modus (voller
+        // Zugang) ist Schöpfen reibungsfrei — Vision §1.5: Mensch=Null=
+        // Schöpfer darf ohne Geduld-Kosten erschaffen.
+        const mode = this.getGameMode ? this.getGameMode() : "frieden";
+        if (mode === "pfad") {
+            const cost = AnazhRealm.TOOL_OP_STAMINA_COST || 10;
+            const stamina = (this.state.player && this.state.player.stamina) || 0;
+            if (stamina < cost) {
+                return { ok: false, reason: "not_enough_stamina", staminaNeeded: cost, staminaHave: stamina };
+            }
+            this.state.player.stamina = Math.max(0, stamina - cost);
         }
-        this.state.player.stamina = Math.max(0, stamina - cost);
         if (!Array.isArray(part.opChain)) part.opChain = this._defaultPartOpChain();
         part.opChain.push({
             tool: toolName,
@@ -14472,6 +14539,87 @@ class AnazhRealm {
         this.log(`Kamera-Modus: ${next}`, "INFO");
     }
 
+    // === Welle 6.C2 — Spielmodi (frieden / pfad / schöpfer) ===
+    //
+    // Drei Welt-Beziehungs-Modi (aus wave-6-design §10.1, §10.3):
+    //   frieden  — Welt umarmt: kein HP, kein Tod, keine Stamina-Kosten
+    //   pfad     — Welt verhandelt: HP/Stamina/Tod-Wandlung aktiv
+    //   schöpfer — Welt gehorcht: kein Schaden, voller Zugang
+    //
+    // Persistiert in worldMeta.gameMode (pro-Welt, nicht global) und
+    // gespiegelt nach state.gameMode für schnellen Read in Gate-Pfaden.
+    // setGameMode ist der EINZIGE Mutations-Pfad — er aktualisiert beide
+    // + UI-Latches + Status-Bar + Save.
+    static get GAME_MODES() {
+        return Object.freeze(["frieden", "pfad", "schöpfer"]);
+    }
+
+    setGameMode(mode) {
+        const canonical = AnazhRealm.GAME_MODES.includes(mode) ? mode : "frieden";
+        if (!this.state.worldMeta) this.state.worldMeta = {};
+        this.state.worldMeta.gameMode = canonical;
+        this.state.gameMode = canonical;
+        // Wenn der Wechsel auf frieden/schöpfer fällt während HP=0
+        // (mitten in Phönix-Wandlung), bleibt der Spieler in der Wandlung
+        // — das ist Vision-treu: der Mythos der Phönix-Stunde respektiert
+        // sich auch beim Modus-Wechsel. Phönix endet automatisch nach 5 min.
+        // HP bei frieden→pfad-Wechsel NICHT zurücksetzen: der Spieler
+        // bringt seinen Zustand mit (Vision: Welt-Beziehung ändert sich,
+        // nicht der Spieler).
+        this._renderGameModeUI();
+        try {
+            this.saveState();
+        } catch {
+            // saveState-Fehler nicht hart blockend — Modus lebt in state.
+        }
+        if (typeof this.log === "function") {
+            const labels = { frieden: "Frieden", pfad: "Pfad", schöpfer: "Schöpfer" };
+            this.log(`Welt-Beziehung: ${labels[canonical] || canonical}`, "INFO");
+        }
+        return canonical;
+    }
+
+    // Liefert den aktuellen Modus mit defensiver Migration: alte Saves haben
+    // kein worldMeta.gameMode → frieden als Default. state.gameMode spiegelt
+    // den effektiven Wert; bei Inkonsistenz gewinnt worldMeta (Persistenz-
+    // Quelle).
+    getGameMode() {
+        const stored = this.state.worldMeta && this.state.worldMeta.gameMode;
+        const canonical = AnazhRealm.GAME_MODES.includes(stored) ? stored : "frieden";
+        // state.gameMode-Spiegelung repariert (Cache nach Migration).
+        if (this.state.gameMode !== canonical) this.state.gameMode = canonical;
+        return canonical;
+    }
+
+    // UI-Render-Pfad: aktualisiert Radio + Status-Bar nach Mode-Wechsel.
+    // Idempotent — kann ohne State-Wechsel aufgerufen werden.
+    _renderGameModeUI() {
+        if (typeof document === "undefined") return;
+        const mode = this.getGameMode();
+        // Radio-Buttons in Einstellungen-Drawer
+        const radios = document.querySelectorAll('input[name="game-mode-radio"]');
+        radios.forEach((r) => {
+            r.checked = r.value === mode;
+        });
+        // Status-Bar-Item
+        const statusItem = document.getElementById("status-mode");
+        if (statusItem) {
+            const labels = { frieden: "frieden", pfad: "pfad", schöpfer: "schöpfer" };
+            statusItem.textContent = labels[mode] || mode;
+        }
+    }
+
+    gameModeInitDOM() {
+        if (typeof document === "undefined") return;
+        const radios = document.querySelectorAll('input[name="game-mode-radio"]');
+        radios.forEach((r) => {
+            r.addEventListener("change", () => {
+                if (r.checked) this.setGameMode(r.value);
+            });
+        });
+        this._renderGameModeUI();
+    }
+
     cameraModeInitDOM() {
         const toggle = document.getElementById("camera-mode-toggle");
         if (!toggle) return;
@@ -15092,13 +15240,14 @@ class AnazhRealm {
     }
 
     async init() {
-        this.log("Initialisiere Anazh Realm V7.72... Ewigkeit erwacht!", "INFO");
+        this.log("Initialisiere Anazh Realm V7.76... Ewigkeit erwacht!", "INFO");
         this.themeInitDOM();
         this.grokInitDOM();
         this.symphonyInitDOM();
         this.initStatusPanel();
         this.playerSoulInitDOM();
         this.cameraModeInitDOM();
+        this.gameModeInitDOM();
         // Ring 6.5 — Hotbar im DOM rendern. Wird hier einmal aufgesetzt;
         // setHotbarSlot löst ein Re-Render aus.
         this._renderHotbarDOM();

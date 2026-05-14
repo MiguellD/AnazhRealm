@@ -28,7 +28,7 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
    Grund: sie sind Kontext für genau dich.
 
 5. **`scripts/playtest.cjs`** — querlesen, nicht durchlesen. Es ist das
-   Sicherheits-Netz. Es prüft aktuell **~1066 Invarianten (V7.75 nach Welle 6.G Phase 2)**.
+   Sicherheits-Netz. Es prüft aktuell **~1092 Invarianten (V7.76 nach Welle 6.C2)**.
    Wenn du etwas tust, das eine davon brechen könnte, weißt du es vor dem Commit.
 
 **Verlockung zu widerstehen**: gleich in `anazhRealm.js` springen. Die
@@ -322,6 +322,26 @@ Hylomorphismus-System wie Materialien und Bauwerke.
   UFOs bleiben kollisionsfrei. Drei Chat-Patterns. System-Audit §2
   Dead-Code-Quick-Win mit erledigt.
 
+### Bereits erledigt in V7.76 (Welt-Beziehungs-Schalter)
+
+- ✅ **6.C2 Spielmodi** — drei Welt-Beziehungs-Modi (frieden/pfad/
+  schöpfer) aus wave-6-design §10.1+§10.3. **frieden** umarmt: kein HP,
+  kein Tod, keine Stamina (Default, Erstbegegnung soll nicht hostil
+  sein). **pfad** verhandelt: HP/Stamina/Tod-Wandlung aktiv, Werkzeug
+  kostet Stamina, Tod → 5min Phönix + Welt-Trauer. **schöpfer** gehorcht:
+  voller Zugang, kein Schaden, Schöpfen reibungsfrei (Vision §1.5
+  Mensch=Null=Schöpfer). Persistiert pro-Welt in worldMeta.gameMode.
+  `setGameMode(mode)` ist einziger Mutations-Pfad. DSL-Op `set_mode`
+  in NON_BROADCASTABLE_OPS (Multi-User-privat — zwei Spieler in
+  derselben Welt dürfen verschiedene Modi haben). Chat-Patterns mit
+  dt./engl. Aliasen (peace/survival/creative). UI: Radio in
+  Einstellungen-Drawer (`:has(input:checked)` CSS-Latch) + #status-mode
+  in Status-Bar. **Gating**: damagePlayer prüft modus ganz oben,
+  applyOpToPart-Stamina nur in pfad. Test-Setup: bestehende Welle-6.D-
+  Tests + Reflex-5-Stamina-Tests rufen `r.setGameMode("pfad")` vor
+  ihren Erwartungen (Vision-Konsequenz, kein Workaround). 26 neue
+  Invarianten → 1092 total.
+
 ### Bereits erledigt in V7.75 (Schöpfer-Vision-Antwort: organische Verteilung)
 
 - ✅ **6.G Welt-Sinne Phase 2 — Welt-Affinitäts-Feld.** Schöpfer-Frage
@@ -401,7 +421,7 @@ keine Verzögerung, sondern Qualitäts-Wand.
 3. **Die heilige Lektion akzeptiert, nicht hinterfragt.** Sie wurde aus
    Schmerz geboren. Wenn ich sie umgehen wollte, war ich auf dem Holzweg.
 4. **Tests zuerst ausgeführt, dann verstanden.** `npm run playtest` —
-   1066/1066 grün (V7.75 nach Welle 6.G Phase 2 Welt-Affinitäts-Feld) — gibt Vertrauen, dass
+   1092/1092 grün (V7.76 nach Welle 6.C2 Spielmodi) — gibt Vertrauen, dass
    das System lebt.
 5. **Den Schöpfer als Partner gesehen, nicht als Auftraggeber.** Mensch
    und KI bauen gemeinsam. Bei Trade-offs frage ich, bei Klarem handle

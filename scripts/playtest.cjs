@@ -5634,6 +5634,9 @@ function startSaveServer() {
                     out.hasStaminaCostConst = typeof C.TOOL_OP_STAMINA_COST === "number" && C.TOOL_OP_STAMINA_COST > 0;
                     out.hasStaminaRegenConst = typeof C.STAMINA_REGEN_PER_SEC === "number";
                     // Setup: einen eigenen Bauplan mit einem Part + Spieler besitzt hammer
+                    // Welle 6.C2: Stamina-Tests laufen im pfad-Modus
+                    // (Default frieden überspringt Stamina-Kosten).
+                    if (typeof r.setGameMode === "function") r.setGameMode("pfad");
                     r.state.blueprints.wound_test_bp = {
                         name: "wound_test_bp",
                         label: "Test",
@@ -5963,6 +5966,9 @@ function startSaveServer() {
                     if (!r) return null;
                     const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
                     const out = {};
+                    // Welle 6.C2: Tests für Tod/Stamina/Phönix laufen im pfad-
+                    // Modus (Default frieden blockiert sonst Schaden + Stamina).
+                    if (typeof r.setGameMode === "function") r.setGameMode("pfad");
 
                     // --- Tod-Behandlung ---
                     out.hasDamageMethod = typeof r.damagePlayer === "function";
@@ -7172,6 +7178,162 @@ function startSaveServer() {
                 check("Welle 6.G P2: populateChunkVegetation idempotent (zweiter Aufruf → 0 spawns)", wave6gP2Results.populateIdempotent);
                 check("Welle 6.G P2: architectureCullingTickHz auf 2.0 angehoben (Bugfix)", wave6gP2Results.cullingRateIs2Hz);
                 check("Welle 6.G P2: baum_eiche Stamm-Radius >= 0.7 (Bugfix V7.75)", wave6gP2Results.stammIsThicker);
+            }
+
+            // ### Welle 6.C2 — Spielmodi (frieden / pfad / schöpfer) ###
+            // Drei Welt-Beziehungs-Modi. Persistiert in worldMeta.gameMode.
+            // damagePlayer + Stamina-Kosten sind modus-gated.
+            const wave6c2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    out.hasGameModes = Array.isArray(r.constructor.GAME_MODES) && r.constructor.GAME_MODES.length === 3;
+                    out.hasSetGameMode = typeof r.setGameMode === "function";
+                    out.hasGetGameMode = typeof r.getGameMode === "function";
+                    // Default-Modus für NEUE Welten ist frieden — checken über
+                    // _buildEmptyWorldSnapshot (init-time-Verhalten), nicht
+                    // runtime-state (vorherige Tests haben evtl. auf pfad
+                    // geschaltet).
+                    if (typeof r._buildEmptyWorldSnapshot === "function") {
+                        const fresh = r._buildEmptyWorldSnapshot({ slug: "test-fresh" }, false);
+                        out.defaultModeFrieden = fresh && fresh.worldMeta && fresh.worldMeta.gameMode === "frieden";
+                    }
+                    out.canonicalDefaultIsFrieden = r.constructor.GAME_MODES[0] === "frieden";
+                    out.worldMetaHasGameMode = typeof r.state.worldMeta.gameMode === "string";
+
+                    // Übergänge: setGameMode auf jeden der drei Modi.
+                    r.setGameMode("pfad");
+                    out.setPfadWorks = r.getGameMode() === "pfad" && r.state.worldMeta.gameMode === "pfad";
+                    r.setGameMode("schöpfer");
+                    out.setSchoepferWorks = r.getGameMode() === "schöpfer" && r.state.worldMeta.gameMode === "schöpfer";
+                    r.setGameMode("frieden");
+                    out.setFriedenWorks = r.getGameMode() === "frieden";
+                    // Ungültiger Wert → frieden-Fallback.
+                    r.setGameMode("garbage");
+                    out.invalidFallsToFrieden = r.getGameMode() === "frieden";
+
+                    // damagePlayer-Gate: frieden + schöpfer → return false,
+                    // pfad → return true (existing path).
+                    const hpBefore = r.state.player.hp;
+                    r.setGameMode("frieden");
+                    const damageInFrieden = r.damagePlayer(50, "test");
+                    out.friedenBlocksDamage = damageInFrieden === false && r.state.player.hp === hpBefore;
+
+                    r.setGameMode("schöpfer");
+                    const damageInSchoepfer = r.damagePlayer(50, "test");
+                    out.schoepferBlocksDamage = damageInSchoepfer === false && r.state.player.hp === hpBefore;
+
+                    // pfad → Schaden wirkt
+                    r.setGameMode("pfad");
+                    // Aus möglichen Phönix-Wandlungen rausnehmen (test-cleanup)
+                    r.state.player.phoenixUntil = 0;
+                    r.state.player.hp = 100;
+                    const damageInPfad = r.damagePlayer(30, "test");
+                    out.pfadAcceptsDamage = damageInPfad === true && r.state.player.hp < 100;
+
+                    // Stamina-Gate: applyOpToPart kostet nur in pfad.
+                    // Setup: ein eigener Bauplan mit holz-Material.
+                    r.state.blueprints["mode-test-bp"] = {
+                        name: "mode-test-bp",
+                        label: "Mode-Test",
+                        builtIn: false,
+                        parts: [{ shape: "box", material: "holz", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } }],
+                    };
+                    // Stamina voll setzen
+                    r.state.player.stamina = 100;
+
+                    r.setGameMode("frieden");
+                    const opResultFrieden = r.applyOpToPart("mode-test-bp", 0, "feile");
+                    out.friedenSkipsStamina = opResultFrieden.ok === true && r.state.player.stamina === 100;
+
+                    r.state.player.stamina = 100;
+                    r.setGameMode("schöpfer");
+                    const opResultSchoepfer = r.applyOpToPart("mode-test-bp", 0, "feile");
+                    out.schoepferSkipsStamina = opResultSchoepfer.ok === true && r.state.player.stamina === 100;
+
+                    r.state.player.stamina = 100;
+                    r.setGameMode("pfad");
+                    const opResultPfad = r.applyOpToPart("mode-test-bp", 0, "feile");
+                    out.pfadChargesStamina =
+                        opResultPfad.ok === true && r.state.player.stamina === 100 - 10;
+
+                    // Cleanup
+                    delete r.state.blueprints["mode-test-bp"];
+                    r.setGameMode("frieden");
+
+                    // DSL-Op set_mode
+                    if (typeof r.dslRun === "function") {
+                        r.dslRun(["set_mode", "pfad"], { source: "test" });
+                        out.dslSetModeWorks = r.getGameMode() === "pfad";
+                        r.setGameMode("frieden");
+                    }
+
+                    // set_mode ist in NON_BROADCASTABLE_OPS
+                    out.setModeNonBroadcastable =
+                        r.constructor.NON_BROADCASTABLE_OPS &&
+                        r.constructor.NON_BROADCASTABLE_OPS.has("set_mode");
+
+                    // Chat-Pattern: 'setze modus pfad' → set_mode-Programm
+                    if (typeof r.parseChatToDsl === "function") {
+                        const built = r.parseChatToDsl("setze modus pfad");
+                        out.chatPfad =
+                            built && Array.isArray(built.program) && built.program[0] === "set_mode" && built.program[1] === "pfad";
+                        const built2 = r.parseChatToDsl("modus schöpfer");
+                        out.chatSchoepfer =
+                            built2 && Array.isArray(built2.program) && built2.program[0] === "set_mode" && built2.program[1] === "schöpfer";
+                    }
+
+                    // describeProgram-Eintrag
+                    if (typeof r.describeProgram === "function") {
+                        const desc = r.describeProgram(["set_mode", "pfad"]);
+                        out.describeWorks = typeof desc === "string" && /Welt-Beziehung|pfad/.test(desc);
+                    }
+
+                    // UI: Radio + Status-Bar
+                    out.radiosInDom = document.querySelectorAll('input[name="game-mode-radio"]').length === 3;
+                    out.statusModeInDom = !!document.getElementById("status-mode");
+                    out.gameModeSectionInDom = !!document.getElementById("game-mode-section");
+                    // Status-Bar zeigt aktuellen Modus
+                    r.setGameMode("pfad");
+                    const statusItem = document.getElementById("status-mode");
+                    out.statusReflectsMode = statusItem && /pfad/i.test(statusItem.textContent);
+                    // Radio ist gecheckt
+                    const checkedRadio = document.querySelector('input[name="game-mode-radio"]:checked');
+                    out.radioReflectsMode = checkedRadio && checkedRadio.value === "pfad";
+                    r.setGameMode("frieden");
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6c2Results && !wave6c2Results.error) {
+                check("Welle 6.C2: AnazhRealm.GAME_MODES existiert", wave6c2Results.hasGameModes);
+                check("Welle 6.C2: setGameMode-Methode existiert", wave6c2Results.hasSetGameMode);
+                check("Welle 6.C2: getGameMode-Methode existiert", wave6c2Results.hasGetGameMode);
+                check("Welle 6.C2: Neue Welten starten im frieden-Modus (init-time)", wave6c2Results.defaultModeFrieden);
+                check("Welle 6.C2: GAME_MODES[0] === 'frieden' (kanonischer Default)", wave6c2Results.canonicalDefaultIsFrieden);
+                check("Welle 6.C2: worldMeta.gameMode ist persistiert", wave6c2Results.worldMetaHasGameMode);
+                check("Welle 6.C2: setGameMode('pfad') wechselt korrekt", wave6c2Results.setPfadWorks);
+                check("Welle 6.C2: setGameMode('schöpfer') wechselt korrekt", wave6c2Results.setSchoepferWorks);
+                check("Welle 6.C2: setGameMode('frieden') wechselt korrekt", wave6c2Results.setFriedenWorks);
+                check("Welle 6.C2: ungültiger Modus fällt auf frieden zurück", wave6c2Results.invalidFallsToFrieden);
+                check("Welle 6.C2: damagePlayer im frieden-Modus blockiert (HP unverändert)", wave6c2Results.friedenBlocksDamage);
+                check("Welle 6.C2: damagePlayer im schöpfer-Modus blockiert (HP unverändert)", wave6c2Results.schoepferBlocksDamage);
+                check("Welle 6.C2: damagePlayer im pfad-Modus wirkt (HP reduziert)", wave6c2Results.pfadAcceptsDamage);
+                check("Welle 6.C2: applyOpToPart im frieden-Modus kostet KEINE Stamina", wave6c2Results.friedenSkipsStamina);
+                check("Welle 6.C2: applyOpToPart im schöpfer-Modus kostet KEINE Stamina", wave6c2Results.schoepferSkipsStamina);
+                check("Welle 6.C2: applyOpToPart im pfad-Modus kostet Stamina (10)", wave6c2Results.pfadChargesStamina);
+                check("Welle 6.C2: DSL-Op set_mode setzt Modus", wave6c2Results.dslSetModeWorks);
+                check("Welle 6.C2: set_mode ist in NON_BROADCASTABLE_OPS (Multi-User-privat)", wave6c2Results.setModeNonBroadcastable);
+                check("Welle 6.C2: Chat 'setze modus pfad' → set_mode-Programm", wave6c2Results.chatPfad);
+                check("Welle 6.C2: Chat 'modus schöpfer' → set_mode-Programm", wave6c2Results.chatSchoepfer);
+                check("Welle 6.C2: describeProgram nennt 'Welt-Beziehung' oder Modus", wave6c2Results.describeWorks);
+                check("Welle 6.C2: 3 Radio-Buttons im DOM", wave6c2Results.radiosInDom);
+                check("Welle 6.C2: #status-mode im DOM", wave6c2Results.statusModeInDom);
+                check("Welle 6.C2: #game-mode-section im DOM", wave6c2Results.gameModeSectionInDom);
+                check("Welle 6.C2: Status-Bar spiegelt aktuellen Modus", wave6c2Results.statusReflectsMode);
+                check("Welle 6.C2: Radio-Button reflektiert aktuellen Modus", wave6c2Results.radioReflectsMode);
             }
 
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
