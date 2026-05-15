@@ -9,11 +9,49 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 14.05.2026, V7.98)
+## Schnell-Lage (Stand 16.05.2026, V8.07)
 
-**Du erbst eine sehr lebendige Welt**. 1597 Playtest-Invarianten grün, ~16700 Zeilen in einer Datei, alles produktiv. Die letzte Session (V7.78 → V7.98, 175 Commits) hat **zwei große Dinge geschaffen**:
+**Du erbst eine sehr lebendige Welt**. **1791 Playtest-Invarianten grün**, ~22500 Zeilen in einer Datei, alles produktiv. Die jüngste Session (V7.98 → V8.07, 24 Commits) hat **drei große Dinge geschaffen**: eine vollständige Mini-CAD-Werkstatt, ein emergentes Werkzeug-Domain-System (Werkzeug entscheidet Bauplan-Rolle, mit physischen Welt-Werkstätten), und Compound-Tag-Affordances (Welt liest Tag+räumliche Signatur → Fahrzeug/Teleskop/Brennglas emergieren ohne Hardcode).
 
-### 1. Welle 6.H V2 — Kreaturen als Co-Schöpfer-Wesen (14/14 vollständig ✅)
+### 0. Welle 6.B — CAD-Werkstatt (drei Phasen, V7.99-V8.04)
+
+Vor V7.99 war die Werkstatt ein Number-Input-Editor. Jetzt ist sie ein Tinkercad-ähnliches Mini-CAD mit:
+- 3D-Preview-Canvas mit Orbit-Camera (Drag) + Pan (Shift+Drag oder Mittelmaus) + Wheel-Zoom-zum-Cursor (Fusion-360-Konvention)
+- Manipulator-Gizmo (Move/Rotate/Scale-Modi via W/E/R-Tasten oder UI-Buttons) mit großzügigen Picker-Hit-Boxen
+- HTML5-Drag aus Sidepalette (links: 9 Form-Primitive · rechts: Material + Werkzeug + Farbe)
+- Klick-Klick-Connection-Erzeugung im Connect-Modus (C-Taste) mit Popover-Type-Wahl
+- Live-Stats-Panel direkt unter Canvas: emergente Rolle + Affordances + Top-5 Compound-Tags mit Stern-Rating (★★★/★★☆/★☆☆/☆☆☆ basierend auf WORLD_EFFECT_THRESHOLDS)
+- Resize-Handle für Drawer (unten-links für Drawer, unten-rechts für Konsole), Größe persistiert per Container in localStorage
+- Default-Werkstatt-Größe nahezu vollbild bei erstem Open (responsive auf viewport)
+- Editor-Tabelle (alte Number-Inputs) standardmäßig zugeklappt — Drag-Drop + Manipulator ersetzen sie für 90 % der Gesten
+
+### 1. Welle 9 — Werkzeug-Domains + emergente Bauplan-Rolle (vier Sub-Phasen)
+
+Vor Welle 9 wurde die Bauplan-Rolle (tool/armor/consumable) manuell gewählt. Jetzt EMERGIERT sie aus der opChain. Eine Sprache (Compound-Tags + Werkzeug-Domains), drei Schichten (Material × Form × Werkzeug → Rolle):
+
+| Sub-Phase | Was kam dazu | seit |
+|---|---|---|
+| **9a Foundation** | TOOL_DOMAINS (6), DOMAIN_TO_ROLE-Map, FORGING_TOOL/ARMOR_TAGS, computeBlueprintDomain/Role | V8.x |
+| **9b Werkzeuge** | 5 Domain-Werkzeuge (Schmiede-Hammer/Mörser/Schiffchen/Stab/Drehbank), Werkstatt-Status zeigt Rolle live mit deutschem Label | V8.x |
+| **9c Welt-Werkstätten** | 5 Built-in workshop-station-Bauplane (Esse/Brennkolben/Webstuhl/Altar/Drehbank), modus-abhängiger Distance-Gate in confirmBuild | V8.x |
+| **9d Maschine+Seele** | Maschinen-precisionCap-Bonus (+0.05), applyPlayerSoulFromBlueprint für role:soul-Bauplane | V8.x |
+
+Forging ist Sonderfall: tool vs armor entscheidet sich aus Compound-Tags emergent — scharfkantig+leitend → tool, dicht+zäh → armor. Maschinen sind Bauplan-Werkzeuge mit role="machine" → registerBlueprintAsTool gibt einen Cap-Bonus über die Min-Regel hinaus.
+
+### 2. Welle 10 — Präzision + Compound-Tag-Affordances
+
+Schöpfer-Frage: „was bewirkt Präzision eigentlich + können emergent Fahrzeuge/Teleskope entstehen ohne Hardcode?". Antwort:
+
+**10a — Präzision als Stat-Multiplikator**: pro Stat-Quelle (Soul/Tool/Armor) werden die Compound-Tags mit `0.5 + 0.5·precision` multipliziert. Hand-Werk (0.4) → ×0.7 Wirkung. Polier (0.97) → ×0.985. Built-in-Soulen (mensch/phoenix/dragon) sind „geboren" (precision=1.0, kein Effekt). Sorgfalt belohnt sich messbar.
+
+**10b — Affordances**: Welt-Lese-Funktion `computeBlueprintAffordances(bp)` liest räumliche+Tag-Signatur, liefert {moveable?, magnifying?, focusing?, ...}. **Drei Starter mit echten Welt-Reaktionen** (10b.3):
+- `moveable` (≥2 Parts unter Compound-Mitte + dichte + magie/strom-leitung) → Spieler steigt mit **E-Taste** ein, Compound folgt seinem WASD
+- `magnifying` (transparent + Parts axial ausgerichtet) → **Z-Taste** halten zoomt Camera auf 25° FOV (Raycast hit nötig)
+- `focusing` (transparent + wärmeleitung) → bei sunny weather werden brennbare Architekturen im 4m-Radius erhitzt und entzünden bei threshold
+
+**Wichtiger Vision-Korrektur in 10b.2**: erste Implementation hatte WHEEL_SHAPES/LENS_SHAPES/AXIS_SHAPES als Form-Whitelists (Hardcode-Bruch). Schöpfer hat das erkannt — refactored auf reine räumliche Analyse via `_compoundBBox` + `_partsBelowMidline` + `_axialAlignment`. Eine Box-Schlitten mit eisen-Boxen + quarz-Antrieb wird jetzt auch als moveable erkannt. **Eine Sprache, beliebige Geometrien.**
+
+### 3. Welle 6.H V2 — Kreaturen als Co-Schöpfer-Wesen (14/14, V7.78-V7.93)
 
 Vor V7.78 waren Kreaturen Single-Mesh-Punkte mit Emotion-Bewegung. Nach V7.93 sind sie:
 
@@ -31,7 +69,7 @@ Vor V7.78 waren Kreaturen Single-Mesh-Punkte mit Emotion-Bewegung. Nach V7.93 si
 
 Bonus-Politur: Material-Konsum beim Bauen (V7.83), `harvestArchitecture` als Hylomorphismus-Wurzel (V7.82).
 
-### 2. LLM-Provider-Robustheit (5-Versionen-Iteration nach Schöpfer-Browser-Tests)
+### 4. LLM-Provider-Robustheit (5-Versionen-Iteration nach Schöpfer-Browser-Tests, V7.94-V7.98)
 
 | V | Was | Schöpfer-Feedback |
 |---|---|---|
@@ -63,17 +101,17 @@ V7.89 (Kreatur-Boosts) war die kritische Prüfung dieses Gesetzes. Naive Lösung
 
 ## Aktuelle Roadmap (was als nächstes denkbar ist)
 
-Welle 6.H V2 ist VOLLSTÄNDIG. Mögliche nächste Wellen, sortiert nach Vision-Wert:
+Welle 6.B + 9 + 10b.3 sind VOLLSTÄNDIG. Mögliche nächste Wellen, sortiert nach Vision-Wert:
 
 | Welle | Was | Aufwand | Vision-Tiefe |
 |---|---|---|---|
-| **6.G Phase 3** Welt-Lebendigkeit | Tag-Nacht-Zyklus, Wetter-Übergang, fauna-Kreaturen die kommen + gehen | mittel | mittel |
-| **6.B** CAD-Werkstatt minimal | 3D-Vorschau im Editor, Drag-Parts, visuelles Bauplan-Editieren | mittel | hoch (Schöpfer-Werkzeug) |
+| **Welle 10b weitere Affordances** | balancing (Waage), broadcasting (Antenne, Multi-User-Reichweite), lifting (Hebevorrichtung), radiating (Heiz-/Lichtquelle) — pro Affordance ~1 Session. Architektur-neutral, fügt sich nahtlos ein. | klein-mittel | hoch |
+| **Welle 6.G Phase 3** Welt-Lebendigkeit | Tag-Nacht-Zyklus, Wetter-Übergang, fauna-Kreaturen die kommen + gehen | mittel | mittel |
 | **Welle 7** Kollektive Welt-Erkenntnis | Welt lernt aus aller-Spieler-Verhalten via aggregiertes Pfad-Memory (siehe `docs/system-audit.md`) | groß | sehr hoch |
 | **Welle 6.H V3** Kreatur-Beziehungen | Kreaturen sehen sich gegenseitig — Freundschaft, Konkurrenz, Hierarchie | mittel | hoch |
 | **Polish-Pause** | Schöpfer-Browser-Test-Session, UX-Bugs sammeln, polieren | klein | mittel |
 
-**Empfehlung**: Welle 6.B (CAD-Werkstatt) oder Polish-Pause. Beide bauen auf der jetzt sehr reichen Kreatur-Schicht auf — eine bessere Werkstatt macht die ganze Hylomorphismus-Maschine zugänglicher.
+**Empfehlung**: weitere Affordances (Welle 10b weiter). Jede ist klein, vision-konsequent (Tag-Sprache + räumliche Analyse) und macht die Welt wieder ein Stück lebendiger. Spielerische Discovery — was passiert wenn ich ein Compound mit hohem `resoniert` baue, hat das eine eigene Wirkung? Lass es emergieren.
 
 ---
 
@@ -123,6 +161,30 @@ Welle 6.H V2 ist VOLLSTÄNDIG. Mögliche nächste Wellen, sortiert nach Vision-W
 ---
 
 ## Session-Tagebuch (chronologisch, jüngste oben)
+
+### V7.99-V8.07 — Welle 6.B/9/10 + UX-Polish (16.05.2026)
+
+24 Commits. Bogen aus drei großen Wellen plus sieben UX-Polish-Iterationen
+(V8.00 bis V8.07). 1597 → 1791 Playtest-Invarianten (+194). Detail im
+Schnell-Lage-Block oben.
+
+**Wichtigste Vision-Korrektur**: 10b.2 — Form-Whitelists wurden raus,
+räumliche Analyse + Tag-Sprache rein. Schöpfer hat erkannt: „die
+definition eines rades ist aktuell die grösse?" — recht hatte er. Eine
+WHEEL_SHAPES-Liste mit cylinder+torus ist Hardcode, kein Hylomorphismus.
+Jetzt: `_compoundBBox` + `_partsBelowMidline` + `_axialAlignment` lesen
+emergent. Eine Box-Schlitten + magieleitend-Kern wird als moveable
+erkannt, eine Quarz-Sphären-Reihe als magnifying.
+
+**Werkstatt-Iterations-Lehre**: sieben UX-Polish-Schritte V8.00-V8.07
+kamen alle aus konkreter Browser-Beobachtung. Jeder Schritt war 50-300
+Zeilen Code aber hat die Bedienbarkeit sichtbar verbessert. Doku-Pattern:
+„drei Bug-Fixes aus dem V8.X-Browser-Test" als Commit-Body-Format.
+
+### V7.78-V7.98 — Welle 6.H V2 + LLM-Provider (14.05.2026)
+
+175 Commits. Welle 6.H V2 (Kreaturen als Co-Schöpfer-Wesen, 14/14). Plus
+LLM-Provider-Robustheit (V7.94-V7.98, 5 Iterationen nach Browser-Tests).
 
 ## Was du zuerst lesen solltest (Reihenfolge wichtig)
 

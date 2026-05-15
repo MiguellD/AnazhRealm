@@ -349,6 +349,11 @@ class AnazhRealm {
                 // mit Multi-Mesh-Group + sin/cos-Animation. Ammo-Body bleibt
                 // identisch (rein visuell). Default "human".
                 soul: "human",
+                // Welle 10b.3 — Mount-State für moveable-Affordance. null
+                // wenn Spieler nicht aufgesessen, sonst entry.id der
+                // aktuell befahrenen Architektur. Tick zieht die Arch-
+                // Position dem Spieler nach.
+                mountedArch: null,
                 walkPhase: 0,
                 animationLastTick: -Infinity,
                 emotions: { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 },
@@ -496,6 +501,18 @@ class AnazhRealm {
             this.state.player.tools = Object.values(this.state.tools)
                 .filter((t) => t.isStarter)
                 .map((t) => t.name);
+        } else {
+            // Welle 9b — Backfill für bestehende Saves: neue Starter-Werkzeuge
+            // (z. B. die 5 Domain-Werkzeuge die in 9b dazukommen) werden in
+            // bestehende Spieler-Inventare nachgereicht. Saves vor 9b haben
+            // nur die 5 generic-Tools im Array; ohne Backfill wäre Phase 9a
+            // praktisch nicht nutzbar (Spieler kann Domain-Werkzeuge nicht
+            // anwenden, also keine Rolle emergent setzen).
+            for (const t of Object.values(this.state.tools)) {
+                if (t.isStarter && !this.state.player.tools.includes(t.name)) {
+                    this.state.player.tools.push(t.name);
+                }
+            }
         }
         // Ring 6.4 — Built-in-Baupläne als Daten registrieren. Wenn ein
         // Save später User-Baupläne hinzufügt (Editor 6.6), werden sie auf
@@ -5506,15 +5523,42 @@ class AnazhRealm {
         // greifen können.
         this.state.uiActiveDrawer = "welt";
         // Wir loggen Tab-Klicks indirekt via uiActiveDrawer-Update.
+        // Welle 6.B Phase 1: jeder Tab-Klick informiert die Werkstatt, damit
+        // sie den Preview-Renderer aktiviert (wenn Werkstatt offen) oder
+        // pausiert (wenn ein anderer Tab offen ist).
         for (const tab of tabs) {
             tab.addEventListener("click", () => {
                 const name = tab.getAttribute("data-tab");
                 if (name) this.state.uiActiveDrawer = name;
+                if (typeof this._workshopHandleDrawerChange === "function") {
+                    this._workshopHandleDrawerChange(name);
+                }
             });
         }
     }
 
     closeAllDrawers() {
+        // V8.02 Phase 3b — wenn der Spieler gerade im Werkstatt-Connect-Mode
+        // eine Verbindung schmiedet (Source-Part gewählt ODER Popover offen),
+        // soll ESC nur die Connect-Geste abbrechen, nicht den ganzen Drawer
+        // schließen. Cleanest Coupling-Punkt.
+        const ws = this.state.workshop;
+        if (
+            ws &&
+            this.state.uiActiveDrawer === "werkstatt" &&
+            ws.manipulatorMode === "connect" &&
+            (ws.connectFirstPartIdx !== null ||
+                (typeof document !== "undefined" && document.getElementById("workshop-connect-overlay")))
+        ) {
+            ws.connectFirstPartIdx = null;
+            if (typeof this._workshopCloseConnectPopover === "function") {
+                this._workshopCloseConnectPopover();
+            }
+            if (typeof this._workshopSetSelection === "function") {
+                this._workshopSetSelection(null);
+            }
+            return;
+        }
         const tabs = document.querySelectorAll("#topbar .tab");
         for (const tab of tabs) {
             tab.classList.remove("active");
@@ -5524,6 +5568,159 @@ class AnazhRealm {
             drawer.hidden = true;
         }
         this.state.uiActiveDrawer = null;
+        // Welle 6.B Phase 1: Werkstatt-Preview pausieren (Renderer bleibt
+        // alloziert für schnelles Re-Open, aber RAF-Loop stoppt).
+        if (typeof this._workshopHandleDrawerChange === "function") {
+            this._workshopHandleDrawerChange(null);
+        }
+    }
+
+    // V8.00 — Resize-Handles für Konsole + Drawer.
+    // Konsole bekommt einen unten-rechts-Griff (wächst nach rechts+unten),
+    // jeder Drawer einen unten-links-Griff (wächst nach links+unten, weil
+    // Drawer am rechten Bildschirmrand verankert sind).
+    // Größen persistieren in localStorage (Key `anazh.resize.<id>`),
+    // Doppelklick auf Handle resettet auf Default.
+    installResizeHandles() {
+        if (typeof document === "undefined") return;
+        const consoleEl = document.getElementById("console");
+        if (consoleEl) this._installResizeHandle(consoleEl, "br");
+        const drawers = document.querySelectorAll(".drawer[data-drawer]");
+        // V8.01 — Inhalt jedes Drawers in einen .drawer-scroll-Wrapper packen,
+        // BEVOR Handle angehängt wird. Damit scrollt der Inhalt allein und
+        // Background + Border + Handle + h2 bleiben fest am Container.
+        drawers.forEach((d) => {
+            this._wrapDrawerScroll(d);
+            this._installResizeHandle(d, "bl");
+        });
+    }
+
+    // V8.01 — wrappt alle children eines Drawers (außer Header h2, close-button
+    // und Resize-Handle) in einen scrollbaren <div class="drawer-scroll">.
+    // Idempotent: zweiter Aufruf macht nichts.
+    _wrapDrawerScroll(drawer) {
+        if (!drawer) return;
+        if (drawer.querySelector(":scope > .drawer-scroll")) return;
+        const wrapper = document.createElement("div");
+        wrapper.className = "drawer-scroll";
+        // Sammle alle direkten children, die wir in den Wrapper verschieben:
+        // alles außer h2, .drawer-close, .resize-handle (die bleiben am Container).
+        const children = Array.from(drawer.children);
+        const toMove = children.filter((c) => {
+            if (c.tagName === "H2") return false;
+            if (c.classList && c.classList.contains("drawer-close")) return false;
+            if (c.classList && c.classList.contains("resize-handle")) return false;
+            return true;
+        });
+        toMove.forEach((c) => wrapper.appendChild(c));
+        drawer.appendChild(wrapper);
+    }
+
+    _installResizeHandle(container, corner) {
+        if (!container) return;
+        if (container.querySelector(":scope > .resize-handle")) return; // idempotent
+        const handle = document.createElement("div");
+        handle.className = `resize-handle resize-${corner}`;
+        handle.setAttribute("title", "Größe ändern · Doppelklick: Default");
+        handle.setAttribute("aria-label", "Größe ändern");
+        container.appendChild(handle);
+
+        // Container-ID für Persistence (entweder #id oder data-drawer)
+        const cid = container.id || container.getAttribute("data-drawer") || "container";
+        const storageKey = `anazh.resize.${cid}`;
+
+        // Gespeicherte Größe wiederherstellen
+        const restoreSavedSize = () => {
+            const raw = typeof localStorage !== "undefined" ? localStorage.getItem(storageKey) : null;
+            if (!raw) return;
+            try {
+                const saved = JSON.parse(raw);
+                if (saved && typeof saved.width === "number" && saved.width > 0) {
+                    container.style.width = `${saved.width}px`;
+                }
+                if (saved && typeof saved.height === "number" && saved.height > 0) {
+                    container.style.height = `${saved.height}px`;
+                    container.style.maxHeight = "none";
+                    // Konsole hat default `bottom:16px`; mit explizitem height
+                    // muss bottom auf auto damit height wirkt.
+                    if (container.id === "console") {
+                        container.style.bottom = "auto";
+                    }
+                }
+            } catch {
+                /* ignore */
+            }
+        };
+        restoreSavedSize();
+
+        // Drag-State
+        let drag = null;
+        const onDown = (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const rect = container.getBoundingClientRect();
+            drag = {
+                startX: event.clientX,
+                startY: event.clientY,
+                startW: rect.width,
+                startH: rect.height,
+            };
+        };
+        const onMove = (event) => {
+            if (!drag) return;
+            const dx = event.clientX - drag.startX;
+            const dy = event.clientY - drag.startY;
+            let newW;
+            if (corner === "br") {
+                // Wächst nach rechts → +dx
+                newW = drag.startW + dx;
+            } else {
+                // resize-bl: wächst nach links → -dx
+                newW = drag.startW - dx;
+            }
+            const newH = drag.startH + dy;
+            // Clamp: sinnvolle Min + Max (Viewport-Abstand)
+            const clampedW = Math.max(220, Math.min(window.innerWidth - 40, newW));
+            const clampedH = Math.max(180, Math.min(window.innerHeight - 140, newH));
+            container.style.width = `${clampedW}px`;
+            container.style.height = `${clampedH}px`;
+            container.style.maxHeight = "none";
+            if (container.id === "console") {
+                container.style.bottom = "auto";
+            }
+        };
+        const onUp = () => {
+            if (!drag) return;
+            // Persist
+            try {
+                const w = parseInt(container.style.width, 10) || 0;
+                const h = parseInt(container.style.height, 10) || 0;
+                if (typeof localStorage !== "undefined") {
+                    localStorage.setItem(storageKey, JSON.stringify({ width: w, height: h }));
+                }
+            } catch {
+                /* ignore */
+            }
+            drag = null;
+        };
+        handle.addEventListener("mousedown", onDown);
+        window.addEventListener("mousemove", onMove);
+        window.addEventListener("mouseup", onUp);
+
+        // Doppelklick → Reset auf Default (CSS-Werte greifen wieder)
+        handle.addEventListener("dblclick", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            container.style.width = "";
+            container.style.height = "";
+            container.style.maxHeight = "";
+            if (container.id === "console") container.style.bottom = "";
+            try {
+                if (typeof localStorage !== "undefined") localStorage.removeItem(storageKey);
+            } catch {
+                /* ignore */
+            }
+        });
     }
 
     updateStatusPanel(currentTime) {
@@ -13517,6 +13714,9 @@ class AnazhRealm {
         if (!bp) return { ok: false, reason: "blueprint_unknown" };
         if (bp.builtIn) return { ok: false, reason: "cannot_modify_builtin" };
         bp.role = "armor";
+        // Welle 9a — manuellen Override merken damit emergente Berechnung
+        // diesen Bauplan in Ruhe lässt
+        bp.roleManual = true;
         return { ok: true, name };
     }
 
@@ -13603,6 +13803,8 @@ class AnazhRealm {
         const dur = Math.max(0.5, Math.min(600, Number(durationSeconds) || 30));
         const sc = Math.max(0.02, Math.min(1, Number(scale) || 0.2));
         bp.role = "consumable";
+        // Welle 9a — manueller Role-Override (siehe setBlueprintAsArmor)
+        bp.roleManual = true;
         bp.consumableMeta = {
             durationSeconds: dur,
             scale: sc,
@@ -13890,6 +14092,384 @@ class AnazhRealm {
         });
     }
 
+    // ============================================================
+    // ### Welle 10b — Compound-Tag-Affordances ###
+    // Welt-Lese-Funktion: liest die Tag+Form-Signatur eines Bauplans und
+    // liefert Verhaltens-Flags. KEINE Tabelle, KEIN Bauplan-Namen-Lookup —
+    // Compound × räumliche Konfiguration entscheidet was möglich ist.
+    // ============================================================
+
+    // Public: liefert ein {moveable?, magnifying?, focusing?, ...}-Objekt
+    // mit den passenden Flags. Architekturen speichern das beim Spawn als
+    // entry.affordances; Welt-Reaktionen (Bewegung, Zoom, Brennglas-Effekt)
+    // konsultieren das Flag-Profil statt einer hardcoded Bauplan-Liste.
+    computeBlueprintAffordances(bp) {
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return {};
+        const out = {};
+        if (this._isMoveable(bp)) out.moveable = true;
+        if (this._isMagnifying(bp)) out.magnifying = true;
+        if (this._isFocusing(bp)) out.focusing = true;
+        return out;
+    }
+
+    // ----- Räumliche Helper (Form-agnostisch) -----
+
+    // Compound-BBox aus Parts-Positionen. Liefert {min:{x,y,z}, max:{x,y,z}}.
+    // Vision-relevant: alle „unten/oben/Achse"-Fragen werden RELATIV zur
+    // bbox beantwortet, nicht via absolute Y-Werte.
+    _compoundBBox(bp) {
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return null;
+        const min = { x: Infinity, y: Infinity, z: Infinity };
+        const max = { x: -Infinity, y: -Infinity, z: -Infinity };
+        for (const p of bp.parts) {
+            const pos = p.position || { x: 0, y: 0, z: 0 };
+            if (pos.x < min.x) min.x = pos.x;
+            if (pos.y < min.y) min.y = pos.y;
+            if (pos.z < min.z) min.z = pos.z;
+            if (pos.x > max.x) max.x = pos.x;
+            if (pos.y > max.y) max.y = pos.y;
+            if (pos.z > max.z) max.z = pos.z;
+        }
+        return { min, max };
+    }
+
+    // Parts in der unteren Hälfte der Compound-bbox (relativ zur Geometrie
+    // des Bauplans, nicht zur Welt). Vision: „Räder sitzen am Boden des
+    // Compounds" emergiert ohne absolute Y-Schwelle — egal ob das Compound
+    // bei y=0 oder y=10 sitzt.
+    _partsBelowMidline(bp, factor) {
+        const bbox = this._compoundBBox(bp);
+        if (!bbox) return [];
+        const f = typeof factor === "number" ? factor : 0.5;
+        const cutoff = bbox.min.y + (bbox.max.y - bbox.min.y) * f;
+        return bp.parts.filter((p) => {
+            const y = (p.position && p.position.y) || 0;
+            return y <= cutoff;
+        });
+    }
+
+    // Axiale Ausrichtungs-Stärke: wieviel der Parts liegen entlang einer
+    // dominanten Achse? Liefert {axis: "x"|"y"|"z", alignmentRatio: 0..1,
+    // count: N}. Vision: ein Teleskop ist „Compound mit Parts auf einer
+    // Linie" — egal welche Shapes. Die räumliche Konfiguration entscheidet,
+    // nicht die Shape-Liste.
+    _axialAlignment(bp) {
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length < 2) {
+            return { axis: null, alignmentRatio: 0, count: 0 };
+        }
+        const bbox = this._compoundBBox(bp);
+        const span = {
+            x: bbox.max.x - bbox.min.x,
+            y: bbox.max.y - bbox.min.y,
+            z: bbox.max.z - bbox.min.z,
+        };
+        // Dominante Achse = jene mit größter Spannweite
+        let dominantAxis = "x";
+        if (span.y > span.x && span.y > span.z) dominantAxis = "y";
+        else if (span.z > span.x && span.z > span.y) dominantAxis = "z";
+        // Toleranz: Parts gelten als „auf der Achse" wenn ihre Abweichung
+        // von der Mittellinie (in den ANDEREN beiden Achsen) ≤ 25 % der
+        // jeweiligen Spannweite ist (min. 0.2 absolut für sehr kleine
+        // Compounds).
+        const otherAxes = ["x", "y", "z"].filter((a) => a !== dominantAxis);
+        const centers = {};
+        for (const a of otherAxes) centers[a] = (bbox.min[a] + bbox.max[a]) / 2;
+        const tolerances = {};
+        for (const a of otherAxes) tolerances[a] = Math.max(0.2, span[a] * 0.25);
+        let onAxis = 0;
+        for (const p of bp.parts) {
+            const pos = p.position || { x: 0, y: 0, z: 0 };
+            let aligned = true;
+            for (const a of otherAxes) {
+                if (Math.abs(pos[a] - centers[a]) > tolerances[a]) {
+                    aligned = false;
+                    break;
+                }
+            }
+            if (aligned) onAxis++;
+        }
+        return {
+            axis: dominantAxis,
+            alignmentRatio: onAxis / bp.parts.length,
+            count: onAxis,
+        };
+    }
+
+    // ----- Affordance-Tester (Form-agnostisch, Tag-Sprache + räumlich) -----
+
+    // moveable — bewegliches Compound (Fahrzeug-Signatur).
+    // Vision-rein: KEINE Form-Whitelist. Was das Compound bewegt:
+    //   1. Stütz-Konfiguration: ≥2 Parts in unterer bbox-Hälfte (relativ!)
+    //   2. Trägheit: Compound trägt dichte-Tag über Schwelle
+    //   3. Antrieb: magieleitung ODER stromleitung über Schwelle
+    // Ein Schlitten mit dichten Steinen unten + leitfähigem Magie-Kristall
+    // oben rollt genauso wie ein Wagen mit Rad-Cylindern — die räumliche
+    // Geste „Stütze + Antrieb" zählt, nicht der Shape-Name.
+    _isMoveable(bp) {
+        const T = AnazhRealm.AFFORDANCE_THRESHOLDS.moveable;
+        const support = this._partsBelowMidline(bp, T.midlineFactor);
+        if (support.length < T.minSupportParts) return false;
+        const tags = this.computeCompoundTags(bp) || {};
+        if ((tags.dichte || 0) < T.dichteMin) return false;
+        const antrieb = Math.max(tags.magieleitung || 0, tags.stromleitung || 0);
+        return antrieb >= T.antriebTagMin;
+    }
+
+    // magnifying — optisches Compound (Teleskop-Signatur).
+    // Vision-rein: KEINE Form-Whitelist. Was das Compound vergrößert:
+    //   1. transparent-Tag über Schwelle (Licht durchläuft)
+    //   2. Axiale Ausrichtung: ≥60 % der Parts auf einer Achse
+    //   3. Mindestens 2 Parts auf der Achse
+    // Eine Reihe von Quarz-Sphären auf einer Linie wirkt optisch — egal
+    // ob Cone-Cylinder oder Sphere-Sphere-Sphere die Achse bildet.
+    _isMagnifying(bp) {
+        const T = AnazhRealm.AFFORDANCE_THRESHOLDS.magnifying;
+        const tags = this.computeCompoundTags(bp) || {};
+        if ((tags.transparent || 0) < T.transparentMin) return false;
+        const align = this._axialAlignment(bp);
+        return align.alignmentRatio >= T.axialAlignmentMin && align.count >= T.minAxialParts;
+    }
+
+    // focusing — brennfähiges Compound (Brennglas-Signatur).
+    // Reine Tag-Sprache: transparent + wärmeleitung. Form irrelevant —
+    // jede Geometrie die diese Tag-Kombination trägt kann Licht bündeln.
+    _isFocusing(bp) {
+        const T = AnazhRealm.AFFORDANCE_THRESHOLDS.focusing;
+        const tags = this.computeCompoundTags(bp) || {};
+        return (tags.transparent || 0) >= T.transparentMin && (tags.wärmeleitung || 0) >= T.wärmeMin;
+    }
+
+    // ----- Welt-Reaktion: moveable (Spieler steigt ein, Compound folgt) -----
+
+    // Findet die nächste Architektur mit gegebener Affordance im Radius.
+    // Liefert null wenn nichts in Reichweite. Wird für die E-Taste (Mount)
+    // und für andere Spieler-Gesten genutzt.
+    _findNearestAffordanceEntry(affordanceKey, radiusM) {
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!pm) return null;
+        const r2 = radiusM * radiusM;
+        let best = null;
+        let bestD2 = r2;
+        for (const entry of this.state.architectures || []) {
+            if (!entry.affordances || !entry.affordances[affordanceKey]) continue;
+            const dx = entry.position.x - pm.x;
+            const dy = entry.position.y - pm.y;
+            const dz = entry.position.z - pm.z;
+            const d2 = dx * dx + dy * dy + dz * dz;
+            if (d2 <= bestD2) {
+                bestD2 = d2;
+                best = entry;
+            }
+        }
+        return best;
+    }
+
+    // Spieler steigt auf eine moveable-Architektur. Setzt mountedArch + cached
+    // den Mount-Offset (Spieler-Position relativ zur Architektur). Im Game-
+    // Loop (siehe _tickMountedMovement) folgt die Architektur dem Spieler.
+    mountArchitecture(entry) {
+        if (!entry || !entry.affordances || !entry.affordances.moveable) {
+            this.log("Mount: Architektur ist nicht fahrbar", "INFO");
+            return { ok: false, reason: "not_moveable" };
+        }
+        this.state.player.mountedArch = entry.id;
+        // Spieler-Position über die Architektur heben (sodass er „oben drauf"
+        // sitzt). Architektur-Position wird in _tickMountedMovement nachgezogen.
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (pm) {
+            pm.x = entry.position.x;
+            pm.z = entry.position.z;
+            pm.y = entry.position.y + AnazhRealm.MOUNT_FOLLOW_HEIGHT;
+        }
+        this.log(`Eingestiegen in „${entry.type}"`, "INFO");
+        return { ok: true, entry };
+    }
+
+    // Aussteigen: löst die Kopplung. Architektur bleibt an ihrer letzten
+    // Position stehen.
+    dismountArchitecture() {
+        const archId = this.state.player.mountedArch;
+        if (archId === null || archId === undefined) return { ok: false, reason: "not_mounted" };
+        this.state.player.mountedArch = null;
+        this.log(`Ausgestiegen`, "INFO");
+        return { ok: true };
+    }
+
+    // Toggle: wenn nicht-mounted und Mount-Kandidat in Reichweite → mount.
+    // Wenn schon mounted → dismount. Single-Pfad für die E-Taste.
+    toggleMountAtPlayer() {
+        if (this.state.player.mountedArch !== null && this.state.player.mountedArch !== undefined) {
+            return this.dismountArchitecture();
+        }
+        const entry = this._findNearestAffordanceEntry("moveable", AnazhRealm.MOUNT_RANGE_M);
+        if (!entry) {
+            this.log("Mount: kein fahrbares Compound in Reichweite", "INFO");
+            return { ok: false, reason: "none_in_range" };
+        }
+        return this.mountArchitecture(entry);
+    }
+
+    // Pro Frame: wenn mounted, ziehe die Architektur an die Spieler-Position
+    // (mit Höhen-Offset abziehen — Spieler sitzt OBEN). Die Welt-Mesh des
+    // Compounds wird in tickArchitectureCulling automatisch nachgezogen.
+    _tickMountedMovement() {
+        const archId = this.state.player.mountedArch;
+        if (archId === null || archId === undefined) return;
+        const entry = (this.state.architectures || []).find((e) => e.id === archId);
+        if (!entry) {
+            // Architektur ist verschwunden (z. B. abgebaut) → auto-dismount
+            this.state.player.mountedArch = null;
+            return;
+        }
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!pm) return;
+        // Architektur-Position auf Spieler ziehen (minus Höhen-Offset).
+        entry.position.x = pm.x;
+        entry.position.z = pm.z;
+        entry.position.y = pm.y - AnazhRealm.MOUNT_FOLLOW_HEIGHT;
+        // Mesh-Position sofort updaten (sonst lagt das Visual einen Frame).
+        if (entry.mesh) {
+            entry.mesh.position.set(entry.position.x, entry.position.y, entry.position.z);
+        }
+    }
+
+    // ----- Welt-Reaktion: magnifying (Camera-FOV-Zoom) -----
+
+    // Spieler hält Zoom-Geste (z. B. rechtsklick): wenn ein magnifying-
+    // Compound in Blick-Richtung in Reichweite ist, reduziere camera.fov.
+    // setZoomActive(false) stellt den Original-FOV wieder her.
+    setZoomActive(active) {
+        const cam = this.state.camera;
+        if (!cam) return false;
+        if (active) {
+            // Erst prüfen ob es ein magnifying-Target im Blick gibt
+            const hasMag = this._hasMagnifyingInSight();
+            if (!hasMag) return false;
+            if (!this.state._zoomActive) {
+                this.state._normalFov = cam.fov;
+                cam.fov = AnazhRealm.ZOOM_FOV_DEG;
+                cam.updateProjectionMatrix();
+                this.state._zoomActive = true;
+            }
+            return true;
+        }
+        // Zoom aus
+        if (this.state._zoomActive && typeof this.state._normalFov === "number") {
+            cam.fov = this.state._normalFov;
+            cam.updateProjectionMatrix();
+            this.state._zoomActive = false;
+        }
+        return false;
+    }
+
+    // Raycast in Blick-Richtung: trifft der Strahl ein Sub-Mesh einer
+    // magnifying-Architektur in Reichweite?
+    _hasMagnifyingInSight() {
+        const cam = this.state.camera;
+        if (!cam || typeof THREE === "undefined") return false;
+        const meshes = [];
+        for (const entry of this.state.architectures || []) {
+            if (!entry.affordances || !entry.affordances.magnifying) continue;
+            if (!entry.mesh) continue;
+            entry.mesh.traverse((m) => {
+                if (m.isMesh) meshes.push(m);
+            });
+        }
+        if (meshes.length === 0) return false;
+        if (!this._magRaycaster) this._magRaycaster = new THREE.Raycaster();
+        this._magRaycaster.set(cam.position, this._tmpCamDir || new THREE.Vector3(0, 0, -1));
+        if (this._tmpCamDir) cam.getWorldDirection(this._tmpCamDir);
+        else {
+            const dir = new THREE.Vector3();
+            cam.getWorldDirection(dir);
+            this._magRaycaster.set(cam.position, dir);
+        }
+        this._magRaycaster.far = AnazhRealm.MAGNIFYING_RAY_RANGE_M;
+        const hits = this._magRaycaster.intersectObjects(meshes, false);
+        return hits.length > 0;
+    }
+
+    // ----- Welt-Reaktion: focusing (Brennglas im Sonnenschein) -----
+
+    // Pro Frame (throttled in _tickAffordances via dt-Akkumulation): für jede
+    // focusing-Architektur, suche brennbare Architekturen im FOCUSING_HEAT_
+    // RANGE und akkumuliere Wärme. Bei Erreichen der Schwelle ignite —
+    // Architektur wird entfernt + Journal-Eintrag „X entzündet".
+    //
+    // Wirkung nur bei state.weather === "sunny" — das Brennglas braucht
+    // Licht. Vision: die Welt erkennt die Spieler-Geste „Brennglas + Sonne +
+    // Holz" und antwortet emergent.
+    _tickFocusingAffordances(dt) {
+        if (this.state.weather !== "sunny") return;
+        const focusing = (this.state.architectures || []).filter((e) => e.affordances && e.affordances.focusing);
+        if (focusing.length === 0) return;
+        const heatRange2 = AnazhRealm.FOCUSING_HEAT_RANGE_M * AnazhRealm.FOCUSING_HEAT_RANGE_M;
+        const ignite = AnazhRealm.FOCUSING_IGNITE_THRESHOLD;
+        const ratePerSec = AnazhRealm.FOCUSING_HEAT_RATE_PER_SEC;
+        const ignitions = [];
+        for (const target of this.state.architectures || []) {
+            if (target.affordances && target.affordances.focusing) continue; // selbst nicht
+            const targetBp = this.state.blueprints && this.state.blueprints[target.type];
+            if (!targetBp) continue;
+            const tags = this.computeCompoundTags(targetBp) || {};
+            if ((tags.brennbar || 0) < AnazhRealm.BRENNBAR_TAG_MIN) continue;
+            // Mindestens eine focusing-Architektur in Range?
+            let inRange = false;
+            for (const fa of focusing) {
+                const dx = fa.position.x - target.position.x;
+                const dz = fa.position.z - target.position.z;
+                if (dx * dx + dz * dz <= heatRange2) {
+                    inRange = true;
+                    break;
+                }
+            }
+            if (!inRange) continue;
+            target.heatBuildup = (target.heatBuildup || 0) + ratePerSec * dt;
+            if (target.heatBuildup >= ignite) {
+                ignitions.push(target);
+            }
+        }
+        for (const t of ignitions) {
+            this.log(`Sonnen-Brennglas entzündete „${t.type}"`, "INFO");
+            if (this.journalAppend) {
+                this.journalAppend("loss", `Eine Sonne-und-Brennglas-Geste verzehrte „${t.type}".`, {
+                    type: t.type,
+                });
+            }
+            this.removeArchitecture(t);
+        }
+    }
+
+    // Global-Tick für alle Affordances (wird im Game-Loop aufgerufen).
+    // Nimmt dt = Sekunden seit letztem Frame.
+    tickAffordances(dt) {
+        if (!Number.isFinite(dt) || dt <= 0) return;
+        this._tickMountedMovement();
+        this._tickFocusingAffordances(dt);
+    }
+
+    // Welle 9d — Bauplan als Seele anwenden. Wenn der Bauplan role="soul"
+    // trägt, wird seine parts-Liste als bodyParts in state.customSouls
+    // angelegt (mit eindeutigem Namen) und anschließend applyPlayerSoul
+    // gerufen. Damit kann der Spieler einen geschaffenen soul-Bauplan
+    // (z. B. via ritueller-stab + Helix + Quarz) als seinen Avatar tragen.
+    applyPlayerSoulFromBlueprint(blueprintName) {
+        const bp = this.state.blueprints && this.state.blueprints[blueprintName];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.role !== "soul") return { ok: false, reason: "blueprint_not_soul" };
+        if (!Array.isArray(bp.parts) || bp.parts.length === 0) {
+            return { ok: false, reason: "blueprint_empty" };
+        }
+        this.state.customSouls = this.state.customSouls || {};
+        const soulName = `bp_${blueprintName}`;
+        this.state.customSouls[soulName] = {
+            label: bp.label || blueprintName,
+            bodyParts: bp.parts.map((p) => JSON.parse(JSON.stringify(p))),
+        };
+        const ok = this.applyPlayerSoul(soulName);
+        return { ok: !!ok, soulName };
+    }
+
     applyPlayerSoul(name) {
         const defs = this.playerSoulDefs;
         const key = typeof name === "string" ? name.toLowerCase().trim() : "";
@@ -13996,24 +14576,31 @@ class AnazhRealm {
         // dürfen danach drüber/drunter gehen (die wirken als Modifikation).
         // Compound-Tags >1 leben weiter, nur für Stat-Berechnung normalisiert.
         const finalTags = {};
+        // Welle 10a — Präzision moduliert die Stat-Wirkung pro Quelle. Ein
+        // roh gebauter Soul/Tool/Armor ist messbar schwächer als ein polierter.
+        // Built-in-Soulen ohne opChain gelten als "geboren" (precision = 1.0,
+        // kein Effekt). Custom-Soulen aus geschmiedeten Baupläne tragen ihre
+        // Werkzeug-Geschichte mit.
+        const soulPrec = this._compoundAvgPrecisionFromParts(soul && soul.bodyParts);
+        const soulMul = 0.5 + 0.5 * soulPrec;
         for (const key of AnazhRealm.MATERIAL_TAG_KEYS) {
             const raw = Number(compoundTags[key]) || 0;
-            finalTags[key] = Math.max(0, Math.min(1, raw));
+            finalTags[key] = Math.max(0, Math.min(1, raw)) * soulMul;
         }
         // Welle 6.D Etappe 3b — Equipped-Stat-Stacking (wave-6-design §5.3).
-        //   finalTags[t] = soul[t] + armor.compoundTags[t] × armorWeight
-        //                 + tool.compoundTags[t] × toolWeight + boost-Deltas
-        // Werte bewusst NICHT geclamp — STAT_FROM_TAGS-Formeln sind linear,
-        // ein dichter Eisenhelm spürt der Spieler in HP + Schaden, ein leichter
-        // Stab-Werkzeug spürt er in magieleitung. Wer wirklich Caps will, kann
-        // sie in der STAT_FROM_TAGS-Matrix nachschalten.
+        //   finalTags[t] = soul[t] + armor.compoundTags[t] × armorWeight × armorPrec
+        //                 + tool.compoundTags[t] × toolWeight × toolPrec + boost-Deltas
+        // Welle 10a: Präzisions-Multiplier auch hier, pro Quelle.
         const equipped = (this.state.player && this.state.player.equipped) || {};
-        // Werkzeug-Beitrag (nur wenn Bauplan-Tool)
+        // Werkzeug-Beitrag (nur wenn Bauplan-Tool, sourceBlueprint vorhanden)
         if (equipped.tool && this.state.tools && this.state.tools[equipped.tool]) {
             const tool = this.state.tools[equipped.tool];
             if (tool.sourceBlueprint && this.state.blueprints[tool.sourceBlueprint]) {
-                const tags = this.computeCompoundTags(this.state.blueprints[tool.sourceBlueprint]);
-                const w = AnazhRealm.TOOL_STAT_WEIGHT;
+                const bp = this.state.blueprints[tool.sourceBlueprint];
+                const tags = this.computeCompoundTags(bp);
+                const toolPrec = this._compoundAvgPrecisionFromParts(bp.parts);
+                const toolMul = 0.5 + 0.5 * toolPrec;
+                const w = AnazhRealm.TOOL_STAT_WEIGHT * toolMul;
                 for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
                     finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
                 }
@@ -14024,7 +14611,9 @@ class AnazhRealm {
             const bp = this.state.blueprints[equipped.armor];
             if (bp.role === "armor") {
                 const tags = this.computeCompoundTags(bp);
-                const w = AnazhRealm.ARMOR_STAT_WEIGHT;
+                const armorPrec = this._compoundAvgPrecisionFromParts(bp.parts);
+                const armorMul = 0.5 + 0.5 * armorPrec;
+                const w = AnazhRealm.ARMOR_STAT_WEIGHT * armorMul;
                 for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
                     finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
                 }
@@ -14612,6 +15201,153 @@ class AnazhRealm {
             },
         ];
 
+        // ### Welle 9c — Welt-Werkstatt-Architekturen ###
+        // Fünf Welt-Werkstätten, eine pro Nicht-Default-Domain. Sie sind
+        // Bauplane mit role="workshop-station" + workshopDomain=<domain>.
+        // confirmBuild eines domain-Bauplans prüft im pfad-Modus, ob eine
+        // passende Welt-Werkstatt in WORKSHOP_PROXIMITY_M=10m Nähe ist.
+        // Construction-Default-Bauplane (architecture) brauchen keine
+        // Welt-Werkstatt — sie sind die "Open-Air-Welt" selbst.
+        const esseParts = [
+            // Stein-Sockel
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: 0, y: 0.5, z: 0 },
+                size: { x: 2.0, y: 1.0, z: 1.6 },
+            },
+            // Bronze-Schale für die Glut
+            {
+                shape: "sphere",
+                material: "bronze",
+                position: { x: 0, y: 1.3, z: 0 },
+                size: { x: 1.4, y: 0.6, z: 1.2 },
+                opacity: 0.9,
+            },
+            // Glut-Kern, leuchtend
+            {
+                shape: "sphere",
+                material: "glut",
+                position: { x: 0, y: 1.4, z: 0 },
+                size: { x: 0.9, y: 0.5, z: 0.8 },
+                opacity: 0.85,
+            },
+        ];
+        const brennkolbenParts = [
+            // Holz-Untersatz
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: 0, y: 0.3, z: 0 },
+                size: { x: 1.4, y: 0.6, z: 1.4 },
+            },
+            // Quarz-Kolben (durchsichtig)
+            {
+                shape: "sphere",
+                material: "quarz",
+                position: { x: 0, y: 1.2, z: 0 },
+                size: { x: 1.0, y: 1.0, z: 1.0 },
+                opacity: 0.55,
+            },
+            // Steinhals (Trichter)
+            {
+                shape: "cone",
+                material: "stein",
+                position: { x: 0, y: 2.0, z: 0 },
+                size: { x: 0.6, y: 0.8, z: 0.6 },
+            },
+        ];
+        const webstuhlParts = [
+            // Holz-Pfosten links + rechts
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: -1.1, y: 1.2, z: 0 },
+                size: { x: 0.2, y: 2.4, z: 0.2 },
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: 1.1, y: 1.2, z: 0 },
+                size: { x: 0.2, y: 2.4, z: 0.2 },
+            },
+            // Quer-Balken oben + unten (Leder-bespannt, deshalb leder als Material)
+            {
+                shape: "box",
+                material: "leder",
+                position: { x: 0, y: 2.2, z: 0 },
+                size: { x: 2.4, y: 0.18, z: 0.3 },
+            },
+            {
+                shape: "box",
+                material: "leder",
+                position: { x: 0, y: 0.4, z: 0 },
+                size: { x: 2.4, y: 0.18, z: 0.3 },
+            },
+        ];
+        const seelenstein_altarParts = [
+            // Stein-Sockel (rund)
+            {
+                shape: "cylinder",
+                material: "stein",
+                position: { x: 0, y: 0.4, z: 0 },
+                size: { x: 1.6, y: 0.8, z: 1.6 },
+                segments: 8,
+            },
+            // Quarz-Helix als Seelen-Kanal
+            {
+                shape: "helix",
+                material: "quarz",
+                position: { x: 0, y: 1.4, z: 0 },
+                size: { x: 0.5, y: 1.2, z: 4 }, // size.x=Radius, size.y=Höhe, size.z=Windungen
+                opacity: 0.7,
+            },
+            // Knochen-Kranz auf dem Sockel
+            {
+                shape: "torus",
+                material: "knochen",
+                position: { x: 0, y: 0.95, z: 0 },
+                size: { x: 1.2, y: 0.18, z: 1.2 },
+            },
+        ];
+        const drehbankParts = [
+            // Holz-Tisch
+            {
+                shape: "box",
+                material: "holz",
+                position: { x: 0, y: 0.7, z: 0 },
+                size: { x: 2.6, y: 0.2, z: 1.0 },
+            },
+            // Tischbeine (4 Stück)
+            ...[
+                { x: -1.1, z: -0.4 },
+                { x: 1.1, z: -0.4 },
+                { x: -1.1, z: 0.4 },
+                { x: 1.1, z: 0.4 },
+            ].map((p) => ({
+                shape: "cylinder",
+                material: "holz",
+                position: { x: p.x, y: 0.3, z: p.z },
+                size: { x: 0.14, y: 0.6, z: 0.14 },
+            })),
+            // Eisen-Spindel quer auf dem Tisch
+            {
+                shape: "cylinder",
+                material: "eisen",
+                position: { x: 0, y: 0.95, z: 0 },
+                size: { x: 0.16, y: 2.0, z: 0.16 },
+                rotation: { x: 0, y: 0, z: Math.PI / 2 },
+            },
+            // Eisen-Spannfutter (links)
+            {
+                shape: "cylinder",
+                material: "eisen",
+                position: { x: -1.0, y: 0.95, z: 0 },
+                size: { x: 0.3, y: 0.18, z: 0.3 },
+                rotation: { x: 0, y: 0, z: Math.PI / 2 },
+            },
+        ];
+
         return {
             village: { name: "village", label: "Dorf", builtIn: true, parts: villageParts },
             temple: { name: "temple", label: "Tempel", builtIn: true, parts: templeParts },
@@ -14626,6 +15362,52 @@ class AnazhRealm {
                 parts: kristallGeodeParts,
             },
             glutbrunnen: { name: "glutbrunnen", label: "Glutbrunnen", builtIn: true, parts: glutbrunnenParts },
+            // Welle 9c — Welt-Werkstätten
+            esse: {
+                name: "esse",
+                label: "Esse",
+                builtIn: true,
+                role: "workshop-station",
+                roleManual: true,
+                workshopDomain: "forging",
+                parts: esseParts,
+            },
+            brennkolben: {
+                name: "brennkolben",
+                label: "Brennkolben",
+                builtIn: true,
+                role: "workshop-station",
+                roleManual: true,
+                workshopDomain: "alchemy",
+                parts: brennkolbenParts,
+            },
+            webstuhl: {
+                name: "webstuhl",
+                label: "Webstuhl",
+                builtIn: true,
+                role: "workshop-station",
+                roleManual: true,
+                workshopDomain: "textile",
+                parts: webstuhlParts,
+            },
+            seelenstein_altar: {
+                name: "seelenstein_altar",
+                label: "Seelenstein-Altar",
+                builtIn: true,
+                role: "workshop-station",
+                roleManual: true,
+                workshopDomain: "soulwork",
+                parts: seelenstein_altarParts,
+            },
+            drehbank: {
+                name: "drehbank",
+                label: "Drehbank",
+                builtIn: true,
+                role: "workshop-station",
+                roleManual: true,
+                workshopDomain: "mechanism",
+                parts: drehbankParts,
+            },
         };
     }
 
@@ -14804,6 +15586,12 @@ class AnazhRealm {
     // ihrer eigenen Präzision) später in Welle 6 anhängen, ohne die op-
     // Chain-Datenstruktur zu ändern.
     _defaultTools() {
+        // Die ersten 5 Werkzeuge sind GENERIC (domain=null) — Bearbeitungs-
+        // Methoden ohne Werkstatt-Spezialisierung. Sie produzieren Default-
+        // Rolle "architecture" wenn keine domain-spezifischen Werkzeuge in
+        // der opChain stecken. Die 5 Domain-Werkzeuge danach sind Welle 9b:
+        // sie tragen eine domain, die via _refreshBlueprintRoleEmergent die
+        // Bauplan-Rolle bestimmt.
         const list = [
             {
                 name: "hände",
@@ -14811,6 +15599,7 @@ class AnazhRealm {
                 opClass: "subtractive",
                 opName: "hand_knap",
                 precisionCap: 0.4,
+                domain: null,
                 isStarter: true,
                 builtIn: true,
             },
@@ -14820,6 +15609,7 @@ class AnazhRealm {
                 opClass: "subtractive",
                 opName: "hand_knap",
                 precisionCap: 0.5,
+                domain: null,
                 isStarter: true,
                 builtIn: true,
             },
@@ -14829,6 +15619,7 @@ class AnazhRealm {
                 opClass: "plastic",
                 opName: "forge",
                 precisionCap: 0.7,
+                domain: null,
                 isStarter: true,
                 builtIn: true,
             },
@@ -14838,6 +15629,7 @@ class AnazhRealm {
                 opClass: "subtractive",
                 opName: "file",
                 precisionCap: 0.85,
+                domain: null,
                 isStarter: true,
                 builtIn: true,
             },
@@ -14847,6 +15639,64 @@ class AnazhRealm {
                 opClass: "subtractive",
                 opName: "polish",
                 precisionCap: 0.97,
+                domain: null,
+                isStarter: true,
+                builtIn: true,
+            },
+            // ### Welle 9b — Domain-Werkzeuge ###
+            // Eines pro Nicht-Default-Domain. Jedes Werkzeug erbt eine
+            // opClass (Material-Bearbeitung physikalisch) PLUS eine domain
+            // (Werkstatt-Domäne semantisch). Beide sind orthogonal: dieselbe
+            // opClass kann in verschiedenen Domains stecken (additive in
+            // mörser + webstuhl), eine domain kann verschiedene opClasses
+            // tragen (forging mit plastic-Hammer oder phaseChange-Esse).
+            {
+                name: "schmiede-hammer",
+                label: "Schmiede-Hammer",
+                opClass: "plastic",
+                opName: "forge_shape",
+                precisionCap: 0.75,
+                domain: "forging",
+                isStarter: true,
+                builtIn: true,
+            },
+            {
+                name: "mörser",
+                label: "Mörser & Stößel",
+                opClass: "additive",
+                opName: "brew",
+                precisionCap: 0.7,
+                domain: "alchemy",
+                isStarter: true,
+                builtIn: true,
+            },
+            {
+                name: "webstuhl-schiffchen",
+                label: "Webstuhl-Schiffchen",
+                opClass: "additive",
+                opName: "weave",
+                precisionCap: 0.7,
+                domain: "textile",
+                isStarter: true,
+                builtIn: true,
+            },
+            {
+                name: "ritueller-stab",
+                label: "Ritueller Stab",
+                opClass: "phaseChange",
+                opName: "imbue",
+                precisionCap: 0.85,
+                domain: "soulwork",
+                isStarter: true,
+                builtIn: true,
+            },
+            {
+                name: "drehbank-meißel",
+                label: "Drehbank-Meißel",
+                opClass: "subtractive",
+                opName: "turn",
+                precisionCap: 0.9,
+                domain: "mechanism",
                 isStarter: true,
                 builtIn: true,
             },
@@ -14910,6 +15760,25 @@ class AnazhRealm {
         return sum / blueprint.parts.length;
     }
 
+    // Welle 10a — Mittlere Präzision direkt aus einem Parts-Array (analog
+    // _compoundAvgPrecision, aber ohne Bauplan-Wrapper). Wird in
+    // computePlayerStats für Soul-bodyParts genutzt — Soulen sind keine
+    // Bauplane, aber haben dieselbe parts-Struktur.
+    //
+    // Wenn KEIN Part eine opChain hat, gilt das Compound als "geboren"
+    // (precision = 1.0) — Built-in-Soulen wie human/phoenix/dragon und
+    // automatisch importierte Custom-Soulen sind nicht durch Werkzeuge
+    // entstanden. Wer eine eigene Soul via Bauplan-Pfad schmiedet (mit
+    // opChain in den Parts), bekommt eine echte Präzision aus min-Werten.
+    _compoundAvgPrecisionFromParts(parts) {
+        if (!Array.isArray(parts) || parts.length === 0) return 1.0;
+        const anyHasChain = parts.some((p) => p && Array.isArray(p.opChain) && p.opChain.length > 0);
+        if (!anyHasChain) return 1.0;
+        let sum = 0;
+        for (const p of parts) sum += this.computePartPrecision(p);
+        return sum / parts.length;
+    }
+
     // Mutationspfad: Werkzeug auf Part anwenden. Validiert Tool-Besitz +
     // Material × Op-Klassen-Kompatibilität (Konzept §3.2). Operationen
     // werden ANGEHÄNGT, nicht ersetzt — die opChain ist Geschichte, nicht
@@ -14961,6 +15830,10 @@ class AnazhRealm {
             cap: tool.precisionCap,
             at: performance.now() / 1000,
         });
+        // Welle 9a — emergente Bauplan-Rolle aktualisieren. Wenn das Werkzeug
+        // eine Domain trägt (Phase 9b), kann der Bauplan dadurch seine Rolle
+        // wechseln (z. B. construction → forging → tool).
+        this._refreshBlueprintRoleEmergent(blueprintName);
         return { ok: true, precision: this.computePartPrecision(part), staminaRemaining: this.state.player.stamina };
     }
 
@@ -15444,6 +16317,86 @@ class AnazhRealm {
         return min;
     }
 
+    // ============================================================
+    // ### Welle 9a — Werkzeug-Domains + emergente Bauplan-Rolle ###
+    // Schöpfer-Vision: die Rolle eines Bauplans EMERGIERT aus den
+    // verwendeten Werkzeugen. Eine Sprache (Compound-Tags + Werkzeug-
+    // Domains), drei Schichten (Material × Form × Werkzeug → Rolle).
+    // ============================================================
+
+    // Sammelt domain-Häufigkeiten über alle opChain-Einträge aller Parts.
+    // Generische Werkzeuge (domain=null) zählen NICHT mit — sie sind
+    // domain-agnostisch und sollen die Bauplan-Rolle nicht beeinflussen.
+    // Liefert die häufigste Domain (oder null wenn keine domain-tragenden
+    // Ops im Bauplan stecken). Bei Gleichstand entscheidet die Reihenfolge
+    // in TOOL_DOMAINS (deterministisch).
+    computeBlueprintDomain(blueprint) {
+        if (!blueprint || !Array.isArray(blueprint.parts)) return null;
+        const counts = {};
+        for (const part of blueprint.parts) {
+            if (!part || !Array.isArray(part.opChain)) continue;
+            for (const op of part.opChain) {
+                if (!op || typeof op.tool !== "string") continue;
+                const tool = this.state.tools && this.state.tools[op.tool];
+                if (!tool) continue;
+                const dom = tool.domain;
+                if (!dom || typeof dom !== "string") continue;
+                if (!AnazhRealm.TOOL_DOMAINS.includes(dom)) continue;
+                counts[dom] = (counts[dom] || 0) + 1;
+            }
+        }
+        let best = null;
+        let bestCount = 0;
+        for (const dom of AnazhRealm.TOOL_DOMAINS) {
+            const c = counts[dom] || 0;
+            if (c > bestCount) {
+                bestCount = c;
+                best = dom;
+            }
+        }
+        return best;
+    }
+
+    // Forging-Split-Regel: ein Bauplan dessen dominante Domain "forging"
+    // ist wird "tool" wenn seine Compound-Tags die FORGING_TOOL_TAGS-Seite
+    // (härte/magieleitung/stromleitung) stärker tragen, sonst "armor"
+    // (dichte/zähigkeit/wärmeleitung-Seite). Compound-Tags = MAX über
+    // Parts, dieselbe Pipeline wie Welle 4 P2.
+    _computeForgingRole(blueprint) {
+        const tags = this.computeCompoundTags(blueprint) || {};
+        let toolScore = 0;
+        let armorScore = 0;
+        for (const t of AnazhRealm.FORGING_TOOL_TAGS) toolScore += tags[t] || 0;
+        for (const t of AnazhRealm.FORGING_ARMOR_TAGS) armorScore += tags[t] || 0;
+        return toolScore >= armorScore ? "tool" : "armor";
+    }
+
+    // Liefert die emergente Bauplan-Rolle aus der dominanten Werkzeug-
+    // Domain. Default ist "architecture" wenn keine Domain dominiert.
+    // forging-Split wird intern aufgelöst via Compound-Tag-Diskrimination.
+    computeBlueprintRole(blueprint) {
+        const dom = this.computeBlueprintDomain(blueprint);
+        if (!dom) return AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
+        const role = AnazhRealm.DOMAIN_TO_ROLE[dom];
+        if (role === "forging-split") {
+            return this._computeForgingRole(blueprint);
+        }
+        return role || AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
+    }
+
+    // Setzt bp.role emergent ein. Wird aus den Mutations-Methoden gerufen
+    // (addPart, updatePart, removePart, applyOpToPart). Manueller Override
+    // via setBlueprintAsArmor/setBlueprintAsConsumable etc. setzt
+    // bp.roleManual = true und sperrt damit den emergenten Pfad — der
+    // Schöpfer kann eine Rolle erzwingen wenn er das wirklich will.
+    _refreshBlueprintRoleEmergent(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return;
+        if (bp.builtIn) return; // Built-ins haben feste Rollen
+        if (bp.roleManual) return; // manueller Override respektieren
+        bp.role = this.computeBlueprintRole(bp);
+    }
+
     // Setzt Bauplan-Werkzeug-Meta. Nur eigene Baupläne, nur whitelisted
     // opClass, nur sanitized opName. Mutiert in-place, idempotent.
     setBlueprintToolMeta(name, opName, opClass) {
@@ -15458,6 +16411,8 @@ class AnazhRealm {
             return { ok: false, reason: "invalid_op_name" };
         }
         bp.role = "tool";
+        // Welle 9a — manueller Role-Override (siehe setBlueprintAsArmor)
+        bp.roleManual = true;
         bp.toolMeta = { opName: cleanOpName, opClass };
         return { ok: true };
     }
@@ -15473,14 +16428,26 @@ class AnazhRealm {
         const bp = this.state.blueprints[name];
         if (!bp) return { ok: false, reason: "blueprint_unknown" };
         if (bp.builtIn) return { ok: false, reason: "cannot_modify_builtin" };
-        if (bp.role !== "tool" || !bp.toolMeta) {
+        // Welle 9d — Maschinen sind eine Spezialform von Werkzeug. Wer
+        // ein Bauplan-Werkzeug mit role="machine" (statt "tool") registriert,
+        // bekommt den precisionCap-Bonus. toolMeta wird bei beiden Pfaden
+        // gleich benötigt — die Op-Klasse + Op-Name definieren die Anwendung.
+        if ((bp.role !== "tool" && bp.role !== "machine") || !bp.toolMeta) {
             return { ok: false, reason: "not_marked_as_tool" };
         }
         const existing = this.state.tools[name];
         if (existing && existing.builtIn) {
             return { ok: false, reason: "starter_name_protected" };
         }
-        const precisionCap = this.computeBlueprintPrecisionCap(bp);
+        let precisionCap = this.computeBlueprintPrecisionCap(bp);
+        // Welle 9d — Maschinen-Bonus. Wenn der Bauplan emergent oder manuell
+        // als "machine" markiert ist, hebt sich der precisionCap leicht über
+        // die Hand-Min-Regel hinaus. Konzept §4.3: eine schief gebaute Maschine
+        // ist immer noch besser als die Hand mit derselben Min-Präzision.
+        // Bonus wird auf 1.0 gedeckelt (perfekt bleibt theoretisch).
+        if (bp.role === "machine") {
+            precisionCap = Math.min(1.0, precisionCap + AnazhRealm.MACHINE_PRECISION_BONUS);
+        }
         this.state.tools[name] = {
             name,
             label: bp.label || name,
@@ -15490,6 +16457,7 @@ class AnazhRealm {
             isStarter: false,
             builtIn: false,
             sourceBlueprint: name,
+            isMachine: bp.role === "machine",
         };
         if (!Array.isArray(this.state.player.tools)) this.state.player.tools = [];
         if (!this.state.player.tools.includes(name)) this.state.player.tools.push(name);
@@ -15909,6 +16877,15 @@ class AnazhRealm {
             scale,
             mesh: null,
         };
+        // Welle 10b — Affordances werden EINMAL beim Spawn berechnet (nicht
+        // pro Frame). Welt-Reaktionen (Bewegung, Zoom, Brennglas) lesen das
+        // Profil aus entry.affordances. Wenn der Bauplan später editiert
+        // wird, wirkt das auf NEUE Spawns; bestehende Architekturen behalten
+        // ihre Original-Affordances (analog wie precisionCap-Snapshot).
+        const bp = this.state.blueprints && this.state.blueprints[type];
+        if (bp) {
+            entry.affordances = this.computeBlueprintAffordances(bp);
+        }
         this.state.architectures.push(entry);
         // V2: kein Cap mehr — wir bauen den Mesh nur, wenn der Spieler nahe
         // genug ist. Sonst bleibt der Eintrag „cold" (nur Daten) und der
@@ -16416,9 +17393,60 @@ class AnazhRealm {
         return this.tryConsumeBuildCost(blueprintName);
     }
 
+    // ============================================================
+    // ### Welle 9c — Welt-Werkstatt-Gate ###
+    // Prüft im pfad-Modus, ob für einen domain-tragenden Bauplan eine
+    // passende Welt-Werkstatt-Architektur (role="workshop-station" mit
+    // workshopDomain === <Bauplan-Domain>) in WORKSHOP_PROXIMITY_M nähe ist.
+    // In frieden + schöpfer: kein Gate (frieden umarmt, schöpfer gehorcht).
+    // Bauplane ohne Domain (architecture/default) brauchen NIE eine
+    // Welt-Werkstatt — sie sind die Open-Air-Welt selbst.
+    // Workshop-Station-Bauplane (Esse / Brennkolben / etc.) brauchen auch
+    // KEINE Werkstatt zum Bauen — sonst Henne-Ei (man könnte nie die erste
+    // Esse bauen).
+    // ============================================================
+    _workshopStationGate(blueprintName, atPos) {
+        const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
+        if (mode !== "pfad") return { ok: true, free: true };
+        const bp = this.state.blueprints && this.state.blueprints[blueprintName];
+        if (!bp) return { ok: true }; // unbekannter Bauplan — anderer Pfad fängt's
+        // Workshop-Stationen brauchen keinen Werkstatt-Check
+        if (bp.role === "workshop-station") return { ok: true, bootstrap: true };
+        const needed = this.computeBlueprintDomain(bp);
+        if (!needed) return { ok: true }; // generic Bauplan — kein Check
+        // Welt-Werkstatt im Radius suchen
+        const radius = AnazhRealm.WORKSHOP_PROXIMITY_M || 10;
+        const r2 = radius * radius;
+        for (const entry of this.state.architectures || []) {
+            const wbp = this.state.blueprints && this.state.blueprints[entry.type];
+            if (!wbp || wbp.role !== "workshop-station") continue;
+            if (wbp.workshopDomain !== needed) continue;
+            const dx = entry.position.x - atPos.x;
+            const dy = entry.position.y - atPos.y;
+            const dz = entry.position.z - atPos.z;
+            if (dx * dx + dy * dy + dz * dz <= r2) {
+                return { ok: true, found: entry.type, domain: needed };
+            }
+        }
+        return { ok: false, neededDomain: needed };
+    }
+
     confirmBuild() {
         const bm = this.state.buildMode;
         if (!bm.active || !bm.blueprintName || !bm.phantomMesh) return false;
+        const p = bm.phantomMesh.position;
+        const spawnPos = { x: p.x, y: p.y + 0.5, z: p.z };
+        // Welle 9c — Welt-Werkstatt-Gate (modus-abhängig): pfad braucht passende
+        // Werkstatt in der Nähe; frieden + schöpfer überspringen den Check.
+        const stationGate = this._workshopStationGate(bm.blueprintName, spawnPos);
+        if (!stationGate.ok) {
+            const label =
+                (AnazhRealm.TOOL_DOMAIN_LABELS && AnazhRealm.TOOL_DOMAIN_LABELS[stationGate.neededDomain]) ||
+                stationGate.neededDomain;
+            this.log(`Bauen: Du brauchst eine Werkstatt der Domäne „${label}" in der Nähe.`, "INFO");
+            this._renderBuildModeHud && this._renderBuildModeHud();
+            return false;
+        }
         // Material-Gate (modus-abhängig): pfad zieht Materialien ab oder
         // lehnt bei Mangel ab; frieden + schöpfer bauen kostenlos.
         const gate = this._buildMaterialGate(bm.blueprintName);
@@ -16430,8 +17458,6 @@ class AnazhRealm {
             this._renderBuildModeHud && this._renderBuildModeHud();
             return false;
         }
-        const p = bm.phantomMesh.position;
-        const spawnPos = { x: p.x, y: p.y + 0.5, z: p.z };
         this.spawnArchitecture(bm.blueprintName, spawnPos);
         // Inventar-UI + HUD nach Konsum aktualisieren (pfad).
         if (!gate.free) {
@@ -17834,6 +18860,8 @@ class AnazhRealm {
             opChain: this._defaultPartOpChain(),
         };
         bp.parts.push({ ...defaultPart, ...(part || {}) });
+        // Welle 9a — emergente Rolle aktualisieren (außer bei manuellem Override)
+        this._refreshBlueprintRoleEmergent(name);
         return true;
     }
 
@@ -17856,6 +18884,8 @@ class AnazhRealm {
                     partB: c.partB > index ? c.partB - 1 : c.partB,
                 }));
         }
+        // Welle 9a — emergente Rolle aktualisieren
+        this._refreshBlueprintRoleEmergent(name);
         return true;
     }
 
@@ -17883,13 +18913,38 @@ class AnazhRealm {
                 part.color = this.state.materials[patch.material].color;
             }
         }
+        // Welle 9a — emergente Rolle aktualisieren (Shape/Material-Wechsel
+        // kann via Compound-Tags die forging-Split-Entscheidung kippen)
+        this._refreshBlueprintRoleEmergent(name);
         return true;
     }
 
     // Werkstatt-State: welchen Bauplan editieren wir gerade?
+    // Welle 6.B Phase 1: selectedPartIdx (für Selection-Highlight) +
+    // preview (lazy-init, runtime-only, NICHT persistiert).
+    // Welle 6.B Phase 2: manipulatorMode (translate/rotate/scale) + snapEnabled.
+    // Beides Session-State; Defaults translate + snap an.
     _ensureWorkshopState() {
         if (!this.state.workshop) {
             this.state.workshop = { selectedBlueprint: "village" };
+        }
+        if (typeof this.state.workshop.selectedPartIdx === "undefined") {
+            this.state.workshop.selectedPartIdx = null;
+        }
+        if (typeof this.state.workshop.preview === "undefined") {
+            this.state.workshop.preview = null;
+        }
+        // V8.02 Phase 3b — "connect" als 4. Modus für Klick-Klick-
+        // Connection-Erzeugung (zwei Parts klicken → Connection-Type-Popover).
+        const validModes = ["translate", "rotate", "scale", "connect"];
+        if (!validModes.includes(this.state.workshop.manipulatorMode)) {
+            this.state.workshop.manipulatorMode = "translate";
+        }
+        if (!this.state.workshop.connectFirstPartIdx && this.state.workshop.connectFirstPartIdx !== 0) {
+            this.state.workshop.connectFirstPartIdx = null;
+        }
+        if (typeof this.state.workshop.snapEnabled !== "boolean") {
+            this.state.workshop.snapEnabled = true;
         }
         return this.state.workshop;
     }
@@ -17901,7 +18956,19 @@ class AnazhRealm {
             return false;
         }
         ws.selectedBlueprint = name;
+        // Welle 6.B Phase 1 — Selection zurücksetzen beim Bauplan-Wechsel
+        ws.selectedPartIdx = null;
         this._renderWorkshopDOM();
+        // Preview-Mesh neu bauen (falls Preview existiert — defensive für DSL-Pfade
+        // die selectBlueprintForEdit aus Headless aufrufen).
+        if (typeof this._workshopRebuildPreviewMesh === "function") {
+            this._workshopRebuildPreviewMesh();
+        }
+        // Welle 6.B Phase 2 Bug-Fix — Manipulator-UI sync (Read-only-Banner +
+        // Mode-Bar disable) muss bei jedem Bauplan-Wechsel aktualisiert werden.
+        if (typeof this._workshopUpdateManipulatorButtons === "function") {
+            this._workshopUpdateManipulatorButtons();
+        }
         return true;
     }
 
@@ -17942,7 +19009,24 @@ class AnazhRealm {
         header.appendChild(title);
         const status = document.createElement("span");
         status.className = "workshop-status";
-        status.textContent = selected.builtIn ? "Eingebaut — zum Bearbeiten klonen" : `${selected.parts.length} Parts`;
+        if (selected.builtIn) {
+            status.textContent = "Eingebaut — zum Bearbeiten klonen";
+        } else {
+            // Welle 9b — emergente Rolle live anzeigen. Manueller Override
+            // wird mit „(manuell)" markiert, sonst „(aus Werkzeugen)".
+            const role = selected.role || AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
+            const roleLabel = AnazhRealm.BLUEPRINT_ROLE_LABELS[role] || role;
+            const origin = selected.roleManual ? "manuell" : "emergent";
+            // Welle 10b — emergente Affordances (Verhaltens-Flags die aus
+            // Tag+Form-Signatur abgeleitet werden) im Status mit anzeigen.
+            const affordances = this.computeBlueprintAffordances(selected);
+            const affLabels = AnazhRealm.AFFORDANCE_LABELS || {};
+            const affList = Object.keys(affordances)
+                .map((k) => affLabels[k] || k)
+                .join(" · ");
+            const affPart = affList ? ` · ✦ ${affList}` : "";
+            status.textContent = `${selected.parts.length} Parts · Rolle: ${roleLabel} (${origin})${affPart}`;
+        }
         header.appendChild(status);
         editor.appendChild(header);
         // Welle 4 Phase 3 — Werkzeug-Sammlung. Eine Liste der besessenen
@@ -17960,8 +19044,21 @@ class AnazhRealm {
             if (!t) continue;
             const chip = document.createElement("span");
             chip.className = "workshop-tool-chip";
-            chip.textContent = `${t.label} ${t.precisionCap.toFixed(2)}`;
-            chip.title = `${t.opName} (${t.opClass})`;
+            // Welle 9b — Domain-Punkt als visueller Anker. Werkzeuge ohne
+            // Domain (null) bekommen keinen Punkt; Domain-Werkzeuge zeigen
+            // einen farbigen Indikator + Tooltip mit Werkstatt-Domäne.
+            if (t.domain && AnazhRealm.TOOL_DOMAIN_COLORS[t.domain]) {
+                const dot = document.createElement("span");
+                dot.className = "workshop-tool-domain-dot";
+                dot.style.background = AnazhRealm.TOOL_DOMAIN_COLORS[t.domain];
+                dot.title = AnazhRealm.TOOL_DOMAIN_LABELS[t.domain] || t.domain;
+                chip.appendChild(dot);
+            }
+            const labelSpan = document.createElement("span");
+            labelSpan.textContent = `${t.label} ${t.precisionCap.toFixed(2)}`;
+            chip.appendChild(labelSpan);
+            const domainLabel = t.domain ? AnazhRealm.TOOL_DOMAIN_LABELS[t.domain] || t.domain : "generisch";
+            chip.title = `${t.opName} (${t.opClass}) · ${domainLabel}`;
             toolsBox.appendChild(chip);
         }
         editor.appendChild(toolsBox);
@@ -17977,7 +19074,16 @@ class AnazhRealm {
         for (let i = 0; i < selected.parts.length; i++) {
             const part = selected.parts[i];
             const row = document.createElement("div");
-            row.className = "workshop-part-row";
+            const isSelected = ws.selectedPartIdx === i;
+            row.className = "workshop-part-row" + (isSelected ? " selected" : "");
+            row.setAttribute("data-part-idx", String(i));
+            // Welle 6.B Phase 1 — Klick auf Row (außerhalb der Inputs) wechselt
+            // die Part-Selektion. Inputs müssen frei klickbar bleiben für ihre
+            // eigenen Edit-Gesten.
+            row.addEventListener("mousedown", (event) => {
+                if (event.target.closest("input, select, button")) return;
+                this._workshopSetSelection(i);
+            });
             // Shape-Dropdown
             const shapeSelect = document.createElement("select");
             for (const shape of [
@@ -18412,6 +19518,24 @@ class AnazhRealm {
             });
             actions.appendChild(addBtn);
         }
+        // Welle 9d — "Als Seele aktivieren"-Button bei eigenen role:soul-Baupläne.
+        // Synthesisiert eine custom-soul aus den bp.parts und triggert applyPlayerSoul.
+        if (!selected.builtIn && selected.role === "soul") {
+            const soulBtn = document.createElement("button");
+            soulBtn.type = "button";
+            soulBtn.className = "workshop-soul-activate";
+            soulBtn.textContent = "Als Seele tragen";
+            soulBtn.title = "Diesen Bauplan als deine Seele aktivieren — du wirst zur geschaffenen Form";
+            soulBtn.addEventListener("click", () => {
+                const res = this.applyPlayerSoulFromBlueprint(selected.name);
+                if (res.ok) {
+                    this.log(`Seele gewechselt zu „${selected.label || selected.name}".`, "INFO");
+                } else {
+                    this.log(`Seele konnte nicht aktiviert werden (${res.reason || "unknown"})`, "ERROR");
+                }
+            });
+            actions.appendChild(soulBtn);
+        }
         // Klonen
         const cloneBtn = document.createElement("button");
         cloneBtn.type = "button";
@@ -18462,6 +19586,1827 @@ class AnazhRealm {
             this._clearBuildMode();
             if (idx >= 0 && this.state.hotbar[idx] === selected.name) this.selectHotbarSlot(idx);
         }
+        // Welle 6.B Phase 1 — Preview-Mesh synchron halten mit DOM.
+        // Defensive: Methode kann fehlen wenn (sehr selten) Welle 6.B noch
+        // nicht geladen ist.
+        if (typeof this._workshopRebuildPreviewMesh === "function") {
+            this._workshopRebuildPreviewMesh();
+        }
+        // V8.05 — Stats-Panel + Tool-Palette aktualisieren (Tool-Palette
+        // hängt am Spieler-Inventar, das beim DSL-Pfad mutieren kann).
+        if (typeof this._workshopRenderStatsPanel === "function") {
+            this._workshopRenderStatsPanel();
+        }
+        if (typeof this._workshopRenderToolPalette === "function") {
+            this._workshopRenderToolPalette();
+        }
+    }
+
+    // ============================================================
+    // ### Welle 6.B Phase 1 — CAD-Werkstatt 3D-Preview ###
+    // Lazy-init beim Drawer-Open. Eigene THREE.Scene + Camera + Renderer +
+    // RAF-Loop. Rendert state.blueprints[selectedBlueprint] über den
+    // bestehenden _buildFromBlueprint-Pfad (eine Render-Pipeline für alle
+    // Compound-Visuals, Hylomorphismus-Symbiose).
+    // Klick → Raycast → selectedPartIdx → Highlight in Liste + Mesh-Tint.
+    // Phase 2 ergänzt Manipulator-Gizmos für Move/Rotate/Scale.
+    // ============================================================
+
+    // Lazy-init: ruft beim ersten Drawer-Open Renderer + Scene + Camera +
+    // Listener auf. Idempotent — zweiter Aufruf liefert dieselbe Instanz.
+    _workshopEnsurePreview() {
+        if (typeof document === "undefined" || typeof THREE === "undefined") return null;
+        const ws = this._ensureWorkshopState();
+        if (ws.preview) return ws.preview;
+        const canvas = document.getElementById("workshop-preview-canvas");
+        if (!canvas) return null;
+
+        const size = 320;
+        canvas.width = size;
+        canvas.height = size;
+        let renderer;
+        try {
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+        } catch {
+            this.log("Workshop-Preview: WebGL-Renderer fehlgeschlagen — Preview deaktiviert", "ERROR");
+            return null;
+        }
+        renderer.setSize(size, size, false);
+        renderer.setPixelRatio(window.devicePixelRatio || 1);
+        renderer.setClearColor(0x1a140a, 1);
+
+        const scene = new THREE.Scene();
+        const amb = new THREE.AmbientLight(0xffffff, 0.55);
+        scene.add(amb);
+        const key = new THREE.DirectionalLight(0xffe8c2, 0.85);
+        key.position.set(4, 6, 5);
+        scene.add(key);
+        const fill = new THREE.DirectionalLight(0x88aaff, 0.35);
+        fill.position.set(-4, -2, -3);
+        scene.add(fill);
+
+        const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
+
+        const preview = {
+            canvas,
+            renderer,
+            scene,
+            camera,
+            currentMesh: null,
+            partMeshes: new Map(), // sub-Mesh → partIdx
+            origColors: new Map(), // sub-Mesh → original color (uint)
+            orbit: {
+                yaw: 0.6,
+                pitch: 0.32,
+                dist: 6.0,
+                target: new THREE.Vector3(0, 0, 0),
+            },
+            raycaster: new THREE.Raycaster(),
+            drag: null,
+            rafId: null,
+            dirty: true,
+            active: false,
+            listenersInstalled: false,
+            // Welle 6.B Phase 2 — Manipulator-Gizmo. gizmo ist eine THREE.Group
+            // mit drei Sub-Groups (translate/rotate/scale), pro Achse drei
+            // Handle-Meshes. gizmoMeshes ist die Reverse-Map für Raycast-
+            // Identifikation: Mesh → {mode, axis}. dragManipulator hält den
+            // laufenden Drag-State (orthogonal zum orbit-drag).
+            gizmo: null,
+            gizmoMeshes: new Map(),
+            dragManipulator: null,
+            hoveredAxis: null,
+            // V8.01 — ResizeObserver für Canvas. Bei Drawer-Resize ändert sich
+            // die CSS-Größe; internal renderer-Pixel-Dimensionen müssen
+            // mitgezogen werden, sonst wird das Bild stretched/blurry.
+            resizeObserver: null,
+        };
+        ws.preview = preview;
+        this._workshopInstallPreviewListeners();
+        this._workshopBuildGizmo();
+        this._workshopInstallUIListeners();
+        this._workshopInstallCanvasResizeObserver();
+        this._workshopUpdateManipulatorButtons();
+        this._workshopRebuildPreviewMesh();
+        return preview;
+    }
+
+    // Welle 6.B Phase 2 — Button-Click-Handler für Mode-Bar + Keyboard-Listener
+    // für W/E/R/G. Idempotent: zweiter Aufruf macht nichts. Keyboard wird nur
+    // dann gefangen wenn Werkstatt-Drawer offen, pointer NICHT gelockt
+    // (heißt: Spieler ist nicht im aktiven Game-Modus mit WASD-Bewegung), und
+    // kein Input-Feld fokussiert ist.
+    _workshopInstallUIListeners() {
+        if (typeof document === "undefined") return;
+        const ws = this._ensureWorkshopState();
+        if (ws._uiListenersInstalled) return;
+        ws._uiListenersInstalled = true;
+        const modeBar = document.getElementById("workshop-mode-bar");
+        if (modeBar) {
+            modeBar.querySelectorAll("[data-workshop-mode]").forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    const mode = btn.getAttribute("data-workshop-mode");
+                    if (mode) this.setWorkshopManipulatorMode(mode);
+                });
+            });
+        }
+        const snapBtn = document.getElementById("workshop-snap-toggle");
+        if (snapBtn) {
+            snapBtn.addEventListener("click", () => this.toggleWorkshopSnap());
+        }
+        document.addEventListener("keydown", (event) => {
+            // Nur aktiv wenn Werkstatt-Drawer offen
+            if (this.state.uiActiveDrawer !== "werkstatt") return;
+            // Nicht stören wenn Spieler in Pointer-Lock (Game-Movement) ist
+            if (typeof document !== "undefined" && document.pointerLockElement) return;
+            // Nicht stören wenn Input-Feld fokussiert
+            const active = document.activeElement;
+            if (
+                active &&
+                (active.tagName === "INPUT" ||
+                    active.tagName === "TEXTAREA" ||
+                    active.tagName === "SELECT" ||
+                    active.isContentEditable)
+            )
+                return;
+            // Nicht stören während Keybinding-Rebind (6.C3)
+            if (this.state.keybindRebind) return;
+            const key = (event.key || "").toLowerCase();
+            if (key === "w") {
+                this.setWorkshopManipulatorMode("translate");
+                event.preventDefault();
+            } else if (key === "e") {
+                this.setWorkshopManipulatorMode("rotate");
+                event.preventDefault();
+            } else if (key === "r") {
+                this.setWorkshopManipulatorMode("scale");
+                event.preventDefault();
+            } else if (key === "c") {
+                this.setWorkshopManipulatorMode("connect");
+                event.preventDefault();
+            } else if (key === "g") {
+                this.toggleWorkshopSnap();
+                event.preventDefault();
+            }
+        });
+        // V8.02 Phase 3a — Shape-Palette HTML5-Drag-Sources + Canvas-Drop-Target
+        this._workshopInstallShapeDragDrop();
+        // V8.05 — Editor-Toggle + Del-Button-Handler (beide idempotent)
+        this._workshopInstallEditorToggle();
+        this._workshopInstallDeleteButton();
+        // V8.06 — Klonen + Neuer Bauplan direkt in der Mode-Bar
+        this._workshopInstallActionButtons();
+    }
+
+    // V8.01 — ResizeObserver: passt Renderer-Pixel-Dimensionen an die
+    // CSS-Größe des Canvas an. Wird ausgelöst wenn Spieler den Werkstatt-
+    // Drawer per Resize-Handle vergrößert/verkleinert. Camera-Aspect bleibt
+    // 1:1 (aspect-ratio-CSS am Canvas garantiert das).
+    _workshopInstallCanvasResizeObserver() {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview || ws.preview.resizeObserver) return;
+        if (typeof ResizeObserver === "undefined") return;
+        const p = ws.preview;
+        const observer = new ResizeObserver(() => {
+            this._workshopSyncCanvasSize();
+        });
+        observer.observe(p.canvas);
+        // Auch den Drawer beobachten — manchmal feuert canvas-Observer nicht
+        // sofort beim Container-Resize, der Drawer aber schon.
+        const werkstattDrawer = document.querySelector('[data-drawer="werkstatt"]');
+        if (werkstattDrawer) observer.observe(werkstattDrawer);
+        p.resizeObserver = observer;
+        // Initial einmal explizit syncen
+        this._workshopSyncCanvasSize();
+    }
+
+    // Tab-Wechsel-Hook: aktiv wenn Werkstatt-Drawer offen, sonst pausiert.
+    _workshopHandleDrawerChange(activeName) {
+        const ws = this._ensureWorkshopState();
+        if (activeName === "werkstatt") {
+            // V8.06 — Default-Werkstatt-Größe beim ERSTEN Öffnen, wenn keine
+            // localStorage-Größe gespeichert ist. Spieler erwartet einen
+            // großzügigen CAD-Editor, kein 300×400-Briefkasten. Responsive:
+            // begrenzt auf viewport-100, damit kleine Bildschirme nicht überlaufen.
+            this._workshopApplyDefaultSizeOnce();
+            const preview = this._workshopEnsurePreview();
+            if (!preview) return;
+            preview.active = true;
+            preview.dirty = true;
+            this._workshopStartRAF();
+        } else if (ws.preview) {
+            ws.preview.active = false;
+            this._workshopStopRAF();
+        }
+    }
+
+    // V8.06/8.07 — beim ersten Werkstatt-Open eine produktive Default-Größe
+    // setzen wenn der Spieler noch nichts manuell resized hat. Idempotent:
+    // wenn `anazh.workshop.defaultApplied` gesetzt ist, passiert nichts.
+    // V8.07: alte localStorage-Größe (z. B. 300px aus V8.05-Zeit) wird
+    // ÜBERSCHRIEBEN wenn defaultApplied-Flag fehlt — sonst hängt Bestands-User
+    // auf altem Briefkasten-Maß.
+    _workshopApplyDefaultSizeOnce() {
+        if (typeof document === "undefined" || typeof localStorage === "undefined") return;
+        try {
+            const flag = localStorage.getItem("anazh.workshop.defaultApplied");
+            if (flag === "1") return; // nur einmal anwenden
+            const werkstatt = document.querySelector('[data-drawer="werkstatt"]');
+            if (!werkstatt) return;
+            // Default: nahezu vollbild (Schöpfer-Wunsch aus V8.06-Browser-Test)
+            // Begrenzt nur durch viewport — clamp 640..vw-40 (40px Rand).
+            const vw = window.innerWidth || 1400;
+            const vh = window.innerHeight || 900;
+            const w = Math.max(640, vw - 40);
+            const h = Math.max(500, vh - 140);
+            werkstatt.style.width = `${w}px`;
+            werkstatt.style.height = `${h}px`;
+            werkstatt.style.maxHeight = "none";
+            localStorage.setItem("anazh.resize.werkstatt", JSON.stringify({ width: w, height: h }));
+            localStorage.setItem("anazh.workshop.defaultApplied", "1");
+        } catch {
+            /* ignore */
+        }
+    }
+
+    _workshopStartRAF() {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview || ws.preview.rafId !== null) return;
+        // V8.01 — beim Start des RAF defensive Canvas-Sync, falls der Drawer
+        // zwischen Frames per Resize verändert wurde.
+        this._workshopSyncCanvasSize();
+        ws.preview.dirty = true;
+        const tick = () => {
+            const p = ws.preview;
+            if (!p || !p.active) {
+                if (p) p.rafId = null;
+                return;
+            }
+            // Sync canvas-size jeden Frame (günstig: nur diff-Check + setSize
+            // bei realer Änderung). Sorgt dafür, dass Resize-Handle-Drag live
+            // bis ins Pixel-Rendering durchgreift.
+            this._workshopSyncCanvasSize();
+            if (p.dirty || p.drag || p.dragManipulator) {
+                this._workshopRender();
+                p.dirty = false;
+            }
+            p.rafId = requestAnimationFrame(tick);
+        };
+        ws.preview.rafId = requestAnimationFrame(tick);
+    }
+
+    _workshopStopRAF() {
+        const ws = this._ensureWorkshopState();
+        if (ws.preview && ws.preview.rafId !== null) {
+            cancelAnimationFrame(ws.preview.rafId);
+            ws.preview.rafId = null;
+        }
+    }
+
+    // Baut das Mesh aus dem aktiven Bauplan neu, populiert die
+    // partMeshes-Map (sub-Mesh → partIdx) für Raycasting, cached die
+    // ursprüngliche Farbe pro sub-Mesh damit die Selection-Tint reversibel ist.
+    _workshopRebuildPreviewMesh() {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview) return;
+        const p = ws.preview;
+        // Alten Mesh disposen (geometrien + materialien tief)
+        if (p.currentMesh) {
+            p.scene.remove(p.currentMesh);
+            p.currentMesh.traverse((obj) => {
+                if (obj.isMesh) {
+                    if (obj.geometry) obj.geometry.dispose();
+                    if (obj.material) {
+                        if (Array.isArray(obj.material)) obj.material.forEach((m) => m.dispose());
+                        else obj.material.dispose();
+                    }
+                }
+            });
+            p.currentMesh = null;
+        }
+        p.partMeshes.clear();
+        p.origColors.clear();
+
+        const bp = this.state.blueprints[ws.selectedBlueprint];
+        if (!bp || !Array.isArray(bp.parts)) {
+            p.dirty = true;
+            return;
+        }
+        const group = this._buildFromBlueprint(bp);
+        // Top-level-Children korrespondieren 1:1 zu bp.parts (in Reihenfolge).
+        // _buildFromBlueprint fügt pro Part entweder einen Mesh oder eine Sub-Group
+        // (für fraktale blueprint-Refs) hinzu. Wir markieren nur Mesh-Children
+        // für Selection — fraktale Refs sind in Phase 1 als ganze Compound
+        // selektierbar via Sub-Mesh-Hit.
+        let idx = 0;
+        for (const child of group.children) {
+            child.userData.partIdx = idx;
+            if (child.isMesh) {
+                p.partMeshes.set(child, idx);
+                const col = child.material && child.material.color ? child.material.color.getHex() : 0xffffff;
+                p.origColors.set(child, col);
+            } else if (child.children && child.children.length > 0) {
+                // Fraktale Sub-Group: jeder Innen-Mesh-Hit zählt als Hit auf den Part.
+                child.traverse((sub) => {
+                    if (sub.isMesh) {
+                        p.partMeshes.set(sub, idx);
+                        const col = sub.material && sub.material.color ? sub.material.color.getHex() : 0xffffff;
+                        p.origColors.set(sub, col);
+                    }
+                });
+            }
+            idx++;
+        }
+        p.currentMesh = group;
+        p.scene.add(group);
+
+        // Auto-center: Kamera-Target auf Bauplan-Center, Distanz aus Diagonale
+        const bbox = new THREE.Box3().setFromObject(group);
+        if (!bbox.isEmpty()) {
+            bbox.getCenter(p.orbit.target);
+            const size = new THREE.Vector3();
+            bbox.getSize(size);
+            const maxDim = Math.max(size.x, size.y, size.z);
+            if (maxDim > 0) {
+                // Distanz so dass Bauplan komfortabel im Frame steht
+                const targetDist = Math.max(3, maxDim * 2.2);
+                // Nur initial setzen (orbit.dist === 6.0 default); spätere
+                // Spieler-Zooms überschreiben wir nicht.
+                if (!p._distInitialized || Math.abs(p.orbit.dist - 6.0) < 0.001) {
+                    p.orbit.dist = targetDist;
+                    p._distInitialized = true;
+                }
+            }
+        }
+        p.dirty = true;
+    }
+
+    // V8.01 — robuste Canvas-Größen-Synchronisation. Liest die aktuelle
+    // CSS-Pixel-Größe des Canvas und passt renderer + camera an. Wird
+    // sowohl im RAF-Tick als auch vom ResizeObserver gerufen — doppelter
+    // Schutz, weil ResizeObserver in manchen Headless-Browser-Umgebungen
+    // unzuverlässig feuert.
+    _workshopSyncCanvasSize() {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview || !ws.preview.canvas) return;
+        const p = ws.preview;
+        const rect = p.canvas.getBoundingClientRect();
+        const w = Math.max(64, Math.floor(rect.width));
+        const h = Math.max(64, Math.floor(rect.height));
+        if (p.canvas.width !== w || p.canvas.height !== h) {
+            p.renderer.setSize(w, h, false);
+            // Aspect bleibt 1:1 (CSS-aspect-ratio garantiert), aber wenn das
+            // mal nicht so wäre, müsste hier camera.aspect = w/h sein.
+            p.dirty = true;
+        }
+    }
+
+    // Render ein einzelnes Frame: Kamera aus orbit-Werten, Selection-Tint
+    // anwenden, dann renderer.render.
+    _workshopRender() {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview) return;
+        const p = ws.preview;
+        // V8.01 — defensive Sync: prüft ob CSS-Canvas-Größe sich seit dem
+        // letzten Frame geändert hat, passt renderer entsprechend an.
+        this._workshopSyncCanvasSize();
+        // Kamera-Pose berechnen
+        const cosP = Math.cos(p.orbit.pitch);
+        p.camera.position.set(
+            p.orbit.target.x + p.orbit.dist * cosP * Math.cos(p.orbit.yaw),
+            p.orbit.target.y + p.orbit.dist * Math.sin(p.orbit.pitch),
+            p.orbit.target.z + p.orbit.dist * cosP * Math.sin(p.orbit.yaw)
+        );
+        p.camera.lookAt(p.orbit.target);
+        // Selection-Tint: violett-Mischung 50:50 mit Original-Farbe.
+        // Alle anderen Parts zurück auf Original (idempotent).
+        const selIdx = ws.selectedPartIdx;
+        for (const [mesh, idx] of p.partMeshes) {
+            const orig = p.origColors.get(mesh);
+            if (typeof orig !== "number") continue;
+            if (!mesh.material || !mesh.material.color) continue;
+            if (idx === selIdx) {
+                const r1 = (orig >> 16) & 0xff;
+                const g1 = (orig >> 8) & 0xff;
+                const b1 = orig & 0xff;
+                const r2 = 0xb0,
+                    g2 = 0x6a,
+                    b2 = 0xd9;
+                const rB = Math.round(r1 * 0.5 + r2 * 0.5);
+                const gB = Math.round(g1 * 0.5 + g2 * 0.5);
+                const bB = Math.round(b1 * 0.5 + b2 * 0.5);
+                mesh.material.color.setHex((rB << 16) | (gB << 8) | bB);
+            } else {
+                mesh.material.color.setHex(orig);
+            }
+        }
+        // Welle 6.B Phase 2 — Gizmo synchronisieren (Position + Distance-
+        // Scale + Mode-Visibility) VOR dem Render.
+        this._workshopSyncGizmo();
+        p.renderer.render(p.scene, p.camera);
+    }
+
+    // Listener-Installation: Maus-Down/-Move/-Up/-Wheel auf der Preview-Canvas.
+    // Vier Drag-Pfade in Priorität:
+    //   (1) Gizmo-Handle → Manipulator-Drag (pure, kein Orbit)
+    //   (2) Mittelmaus oder Shift+Links → Pan (target verschiebt sich
+    //       parallel zur Camera-Ebene; Standard-CAD-Konvention)
+    //   (3) leerer Links-Klick → Orbit-Drag oder Selection bei kurzem Klick
+    //   (4) Wheel → Zoom-zum-Cursor (Standard-CAD: der Punkt unter der Maus
+    //       bleibt unter der Maus, statt nur am fixen Zentrum zu zoomen).
+    // V8.03 Schöpfer-Browser-Test-Antwort: Wheel hat jetzt stopPropagation
+    // damit nicht der Drawer-Scroll-Wrapper das Event mitfängt; CSS
+    // overscroll-behavior:contain ist die zweite Verteidigungslinie.
+    _workshopInstallPreviewListeners() {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview || ws.preview.listenersInstalled) return;
+        const p = ws.preview;
+        const onDown = (event) => {
+            event.preventDefault();
+            // (1) Gizmo-Hit? Pure Manipulator-Drag, kein Orbit, keine Selection.
+            const gizmoHit = this._workshopRaycastGizmo(event.clientX, event.clientY);
+            if (gizmoHit) {
+                this._workshopBeginManipulation(gizmoHit.mode, gizmoHit.axis, event.clientX, event.clientY);
+                return;
+            }
+            // (2) Pan-Geste: Mittelmaus (button=1) ODER Shift+Links.
+            const isPan = event.button === 1 || (event.button === 0 && event.shiftKey);
+            // (3) Normaler Drag: Orbit / Selection
+            p.drag = {
+                startX: event.clientX,
+                startY: event.clientY,
+                startTime: typeof performance !== "undefined" ? performance.now() : Date.now(),
+                startYaw: p.orbit.yaw,
+                startPitch: p.orbit.pitch,
+                startTarget: p.orbit.target.clone(),
+                moved: false,
+                button: event.button,
+                mode: isPan ? "pan" : "orbit",
+            };
+        };
+        const onMove = (event) => {
+            // (1) Manipulator-Drag aktiv? Dann nur Manipulator anwenden.
+            if (p.dragManipulator) {
+                this._workshopApplyManipulation(event.clientX, event.clientY);
+                return;
+            }
+            // (2) Orbit/Pan-Drag aktiv?
+            if (!p.drag) return;
+            const dx = event.clientX - p.drag.startX;
+            const dy = event.clientY - p.drag.startY;
+            if (!p.drag.moved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
+                p.drag.moved = true;
+            }
+            if (!p.drag.moved) return;
+            if (p.drag.mode === "pan") {
+                // Pan: target verschiebt sich in Camera-Ebene. Camera-Right und
+                // -Up aus der Camera-Matrix lesen; Maus-Delta-Pixel skalieren
+                // mit dist / canvas.height damit Pan-Sensitivität sich an Zoom-
+                // Level anpasst (näher dran → feinere Bewegung).
+                const rect = p.canvas.getBoundingClientRect();
+                const pixelToWorld = p.orbit.dist / Math.max(1, rect.height);
+                const camRight = new THREE.Vector3().setFromMatrixColumn(p.camera.matrix, 0);
+                const camUp = new THREE.Vector3().setFromMatrixColumn(p.camera.matrix, 1);
+                // dx > 0 = Maus nach rechts → target nach links (Welt "folgt" der Maus)
+                p.orbit.target
+                    .copy(p.drag.startTarget)
+                    .addScaledVector(camRight, -dx * pixelToWorld)
+                    .addScaledVector(camUp, dy * pixelToWorld);
+                p.dirty = true;
+            } else if (p.drag.button === 0) {
+                // Orbit (links-Drag): yaw aus horizontaler, pitch aus vertikaler Maus-Bewegung
+                p.orbit.yaw = p.drag.startYaw - dx * 0.01;
+                p.orbit.pitch = Math.max(-1.4, Math.min(1.4, p.drag.startPitch + dy * 0.01));
+                p.dirty = true;
+            }
+        };
+        const onUp = (event) => {
+            if (p.dragManipulator) {
+                this._workshopEndManipulation();
+                return;
+            }
+            if (!p.drag) return;
+            const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+            const wasClick = !p.drag.moved && now - p.drag.startTime < 300;
+            if (wasClick && p.drag.button === 0 && !p.drag.mode.includes("pan")) {
+                this._workshopRaycastSelection(event.clientX, event.clientY);
+            }
+            p.drag = null;
+        };
+        const onWheel = (event) => {
+            event.preventDefault();
+            // V8.03: stopPropagation damit Drawer-Scroll-Wrapper das Wheel
+            // NICHT mitfängt — sonst zoomt nicht der Canvas, sondern der Drawer.
+            event.stopPropagation();
+            const factor = event.deltaY > 0 ? 1.12 : 0.89;
+            const oldDist = p.orbit.dist;
+            const newDist = Math.max(1.5, Math.min(60, oldDist * factor));
+            const actualFactor = newDist / oldDist;
+            // Zoom-zum-Cursor: berechne Welt-Punkt unter dem Cursor (Intersection
+            // mit horizontaler Ebene durch target.y) und verschiebe target
+            // anteilig auf diesen Punkt zu. Wenn der Ray die Ebene nicht trifft
+            // (z. B. Top-Down-Blick), bleibt der einfache dist-Zoom übrig.
+            const worldPoint = this._workshopWorldPointAtCursor(event.clientX, event.clientY);
+            if (worldPoint) {
+                // target wandert anteilig auf worldPoint zu beim Reinzoomen
+                // (actualFactor < 1) bzw. davon weg beim Rauszoomen (>1).
+                const t = 1 - actualFactor;
+                p.orbit.target.addScaledVector(worldPoint.sub(p.orbit.target), t);
+            }
+            p.orbit.dist = newDist;
+            p.dirty = true;
+        };
+        p.canvas.addEventListener("mousedown", onDown);
+        window.addEventListener("mousemove", onMove);
+        window.addEventListener("mouseup", onUp);
+        // capture:true damit der Drawer-Scroll-Container das Wheel NICHT vor
+        // uns sieht (zweite Verteidigung neben overscroll-behavior).
+        p.canvas.addEventListener("wheel", onWheel, { passive: false, capture: true });
+        p.canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+        p.listenersInstalled = true;
+    }
+
+    // Helper: Welt-Punkt unter dem Cursor (horizontale Ebene durch target.y).
+    // Liefert null wenn der Ray die Ebene nicht trifft (z. B. parallele Sicht).
+    _workshopWorldPointAtCursor(clientX, clientY) {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview) return null;
+        const p = ws.preview;
+        const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -p.orbit.target.y);
+        return this._workshopRaycastPlane(clientX, clientY, plane);
+    }
+
+    // Raycast gegen Gizmo-Handles. Liefert {mode, axis} bei Hit, sonst null.
+    // Wird nur ausgewertet wenn Gizmo sichtbar ist (Selection vorhanden + Mode-
+    // Sub-Group aktiv).
+    _workshopRaycastGizmo(clientX, clientY) {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview || !ws.preview.gizmo || !ws.preview.gizmo.visible) return null;
+        const p = ws.preview;
+        const bp = this.state.blueprints[ws.selectedBlueprint];
+        if (!bp || bp.builtIn) return null; // Built-ins haben kein nutzbares Gizmo
+        const rect = p.canvas.getBoundingClientRect();
+        const ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
+        const ndcY = -((clientY - rect.top) / rect.height) * 2 + 1;
+        p.raycaster.setFromCamera({ x: ndcX, y: ndcY }, p.camera);
+        // Nur die Meshes der aktiven Mode-Sub-Group raycasten
+        const mode = ws.manipulatorMode;
+        const candidates = [];
+        for (const [mesh, info] of p.gizmoMeshes) {
+            if (info.mode === mode) candidates.push(mesh);
+        }
+        if (candidates.length === 0) return null;
+        const hits = p.raycaster.intersectObjects(candidates, false);
+        if (hits.length === 0) return null;
+        const info = p.gizmoMeshes.get(hits[0].object);
+        return info ? { mode: info.mode, axis: info.axis } : null;
+    }
+
+    // Raycast: Bildschirm-Koordinaten → NDC → Three.js-Raycaster → erstes
+    // getroffenes Sub-Mesh → partIdx via partMeshes-Map.
+    _workshopRaycastSelection(clientX, clientY) {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview || !ws.preview.currentMesh) return;
+        const p = ws.preview;
+        const rect = p.canvas.getBoundingClientRect();
+        const ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
+        const ndcY = -((clientY - rect.top) / rect.height) * 2 + 1;
+        p.raycaster.setFromCamera({ x: ndcX, y: ndcY }, p.camera);
+        const meshes = Array.from(p.partMeshes.keys());
+        if (meshes.length === 0) return;
+        const hits = p.raycaster.intersectObjects(meshes, false);
+        let hitIdx = null;
+        if (hits.length > 0) {
+            const hitMesh = hits[0].object;
+            const idx = p.partMeshes.get(hitMesh);
+            if (typeof idx === "number") hitIdx = idx;
+        }
+        // V8.02 Phase 3b — Connect-Modus hat Vorrang über Selection-Update.
+        // Klick auf Part im Connect-Modus → zählt als Connect-Schritt (Source
+        // oder Target), nicht als normaler Selection-Wechsel.
+        if (ws.manipulatorMode === "connect") {
+            this._workshopHandleConnectClick(hitIdx);
+            return;
+        }
+        if (hitIdx !== null) {
+            this._workshopSetSelection(hitIdx);
+        } else {
+            this._workshopSetSelection(null);
+        }
+    }
+
+    // Mutations-Pfad: setzt selectedPartIdx + triggert Re-Render des DOM
+    // (Part-Row-Highlight) + Re-Render der Preview (Mesh-Tint).
+    _workshopSetSelection(idx) {
+        const ws = this._ensureWorkshopState();
+        // Validierung: idx muss null oder gültig sein
+        if (idx !== null) {
+            const bp = this.state.blueprints[ws.selectedBlueprint];
+            if (!bp || !Array.isArray(bp.parts) || idx < 0 || idx >= bp.parts.length) {
+                idx = null;
+            }
+        }
+        if (ws.selectedPartIdx === idx) return;
+        ws.selectedPartIdx = idx;
+        if (ws.preview) ws.preview.dirty = true;
+        // DOM neu rendern (für .selected-Klasse auf Part-Row).
+        // ABER: nur wenn DOM existiert — Headless-Pfad könnte _workshopSetSelection
+        // via Test-Code aufrufen.
+        if (typeof document !== "undefined") {
+            const editor = document.getElementById("workshop-editor");
+            if (editor) {
+                // Wir rendern nur die Part-Rows neu, das volle _renderWorkshopDOM
+                // wäre teuer und würde scroll-Position reset. Spar-Refresh:
+                // alle .workshop-part-row durchlaufen, .selected toggeln.
+                const rows = editor.querySelectorAll(".workshop-part-row");
+                rows.forEach((row) => {
+                    const rowIdx = parseInt(row.getAttribute("data-part-idx") || "-1", 10);
+                    row.classList.toggle("selected", rowIdx === idx);
+                });
+            }
+            // V8.05 — Del-Button-Status synchen (UpdateManipulatorButtons macht das)
+            if (typeof this._workshopUpdateManipulatorButtons === "function") {
+                this._workshopUpdateManipulatorButtons();
+            }
+        }
+    }
+
+    // ============================================================
+    // ### Welle 6.B Phase 2 — Manipulator-Gizmo + Drag ###
+    // Drei Modi: translate (Pfeile) · rotate (Ringe) · scale (Würfel).
+    // Klick auf Achse → Drag → Part-Mutation (in Welt-Achsen-Koord).
+    // Grid-Snap (§10.4): translate 0.5, rotate 15°, scale 0.1.
+    // Tasten W/E/R wechseln Modus, G toggelt Snap (Blender-Konvention).
+    // Eigene 1D-Achsen-Projektion via Drag-Plane (eigene Implementation
+    // statt Three.js TransformControls — examples/jsm ist nicht im Bundle).
+    // ============================================================
+
+    // Konstanten für Gizmo-Aufbau. Farben sind kontrastreich gegen den
+    // dunklen Preview-Hintergrund (#1a140a). Achsen-Konvention: X=rot,
+    // Y=grün, Z=blau (Standard 3D-Editor + Three.js AxesHelper).
+    static get WORKSHOP_GIZMO_COLORS() {
+        return Object.freeze({ x: 0xff5566, y: 0x66dd77, z: 0x5599ff, center: 0xffe066 });
+    }
+    static get WORKSHOP_SNAP_TRANSLATE() {
+        return 0.5;
+    }
+    static get WORKSHOP_SNAP_ROTATE() {
+        return Math.PI / 12;
+    } // 15°
+    static get WORKSHOP_SNAP_SCALE() {
+        return 0.1;
+    }
+    static get WORKSHOP_MIN_PART_SIZE() {
+        return 0.05;
+    }
+
+    // Baut die Gizmo-Hierarchie einmalig. Drei Sub-Groups (translate /
+    // rotate / scale), jeweils mit drei Achs-Handles. Die Group selbst
+    // wird in _workshopSyncGizmo positioniert + skaliert + Sub-Group-
+    // Visibility gesetzt.
+    _workshopBuildGizmo() {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview) return;
+        const p = ws.preview;
+        if (p.gizmo) return; // idempotent
+
+        const COLORS = AnazhRealm.WORKSHOP_GIZMO_COLORS;
+        const matFor = (color) =>
+            new THREE.MeshBasicMaterial({
+                color,
+                depthTest: false,
+                depthWrite: false,
+                transparent: true,
+                opacity: 0.95,
+                side: THREE.DoubleSide,
+            });
+
+        const root = new THREE.Group();
+        root.renderOrder = 999;
+        root.visible = false; // versteckt bis Selection da ist
+
+        // Picker-Material: unsichtbar aber für Raycast trefferbar. Klassisches
+        // Three.js TransformControls-Muster — schlanke Visuals + großzügige
+        // Hit-Boxen drumherum, damit Klick auf einen 3-Pixel-Pfeil nicht
+        // nervt. colorWrite:false sorgt dafür, dass die Picker auch bei
+        // depthTest:false nicht zu Farbe oder Depth-Buffer beitragen.
+        const matPicker = () =>
+            new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                visible: false,
+                depthTest: false,
+                depthWrite: false,
+                transparent: true,
+                opacity: 0,
+            });
+
+        // --- Translate-Gizmo: drei Achs-Pfeile mit großzügigen Pickern ---
+        const tGroup = new THREE.Group();
+        tGroup.name = "translate";
+        const buildArrow = (color, axis) => {
+            const grp = new THREE.Group();
+            const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.7, 12), matFor(color));
+            shaft.position.y = 0.45;
+            const tip = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.26, 16), matFor(color));
+            tip.position.y = 0.93;
+            // Picker: viel dicker (radius 0.14), umschließt Schaft + Spitze
+            const picker = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 1.1, 8), matPicker());
+            picker.position.y = 0.55;
+            grp.add(shaft);
+            grp.add(tip);
+            grp.add(picker);
+            // Achsen-Rotation: Cylinder ist default Y-up, also Y-Pfeil OK.
+            if (axis === "x") grp.rotation.z = -Math.PI / 2;
+            else if (axis === "z") grp.rotation.x = Math.PI / 2;
+            const info = { mode: "translate", axis };
+            grp.userData.gizmo = info;
+            shaft.userData.gizmo = info;
+            tip.userData.gizmo = info;
+            picker.userData.gizmo = info;
+            p.gizmoMeshes.set(shaft, info);
+            p.gizmoMeshes.set(tip, info);
+            p.gizmoMeshes.set(picker, info);
+            tGroup.add(grp);
+            return grp;
+        };
+        buildArrow(COLORS.x, "x");
+        buildArrow(COLORS.y, "y");
+        buildArrow(COLORS.z, "z");
+        root.add(tGroup);
+
+        // --- Rotate-Gizmo: drei Torus-Ringe mit großzügigen Pickern ---
+        const rGroup = new THREE.Group();
+        rGroup.name = "rotate";
+        const buildRing = (color, axis) => {
+            const ring = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.03, 8, 48), matFor(color));
+            // Picker: Torus mit deutlich dickerem Tube-Radius (0.09)
+            const picker = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.09, 6, 32), matPicker());
+            if (axis === "x") {
+                ring.rotation.y = Math.PI / 2;
+                picker.rotation.y = Math.PI / 2;
+            } else if (axis === "y") {
+                ring.rotation.x = Math.PI / 2;
+                picker.rotation.x = Math.PI / 2;
+            }
+            // Z: Default-Lage des Torus (in xy-Ebene)
+            const info = { mode: "rotate", axis };
+            ring.userData.gizmo = info;
+            picker.userData.gizmo = info;
+            p.gizmoMeshes.set(ring, info);
+            p.gizmoMeshes.set(picker, info);
+            rGroup.add(ring);
+            rGroup.add(picker);
+        };
+        buildRing(COLORS.x, "x");
+        buildRing(COLORS.y, "y");
+        buildRing(COLORS.z, "z");
+        root.add(rGroup);
+
+        // --- Scale-Gizmo: drei Achs-Würfel + Zentral-Würfel mit Pickern ---
+        const sGroup = new THREE.Group();
+        sGroup.name = "scale";
+        const buildCube = (color, axis) => {
+            const cube = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, 0.15), matFor(color));
+            const picker = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.26, 0.26), matPicker());
+            if (axis === "x") {
+                cube.position.x = 0.7;
+                picker.position.x = 0.7;
+            } else if (axis === "y") {
+                cube.position.y = 0.7;
+                picker.position.y = 0.7;
+            } else if (axis === "z") {
+                cube.position.z = 0.7;
+                picker.position.z = 0.7;
+            }
+            // Schaft als dünner Cylinder vom Center bis zum Würfel (Visual-Anker)
+            const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.7, 8), matFor(color));
+            shaft.position.set(0, 0.35, 0);
+            if (axis === "x") {
+                shaft.rotation.z = -Math.PI / 2;
+                shaft.position.set(0.35, 0, 0);
+            } else if (axis === "z") {
+                shaft.rotation.x = Math.PI / 2;
+                shaft.position.set(0, 0, 0.35);
+            }
+            const info = { mode: "scale", axis };
+            cube.userData.gizmo = info;
+            shaft.userData.gizmo = info;
+            picker.userData.gizmo = info;
+            p.gizmoMeshes.set(cube, info);
+            p.gizmoMeshes.set(shaft, info);
+            p.gizmoMeshes.set(picker, info);
+            sGroup.add(cube);
+            sGroup.add(shaft);
+            sGroup.add(picker);
+        };
+        buildCube(COLORS.x, "x");
+        buildCube(COLORS.y, "y");
+        buildCube(COLORS.z, "z");
+        // Zentral-Würfel = uniform-scale (axis === "uniform")
+        const center = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), matFor(COLORS.center));
+        const centerPicker = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.3), matPicker());
+        const uniformInfo = { mode: "scale", axis: "uniform" };
+        center.userData.gizmo = uniformInfo;
+        centerPicker.userData.gizmo = uniformInfo;
+        p.gizmoMeshes.set(center, uniformInfo);
+        p.gizmoMeshes.set(centerPicker, uniformInfo);
+        sGroup.add(center);
+        sGroup.add(centerPicker);
+        root.add(sGroup);
+
+        p.scene.add(root);
+        p.gizmo = root;
+    }
+
+    // Sync vor jedem Render: Position auf selected part (oder hide wenn keine
+    // Selection), Distance-Scale damit Gizmo konstant ~10% Canvas-Höhe bleibt,
+    // Sub-Group-Sichtbarkeit aus manipulatorMode.
+    _workshopSyncGizmo() {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview || !ws.preview.gizmo) return;
+        const p = ws.preview;
+        const bp = this.state.blueprints[ws.selectedBlueprint];
+        const idx = ws.selectedPartIdx;
+        if (!bp || idx === null || idx < 0 || idx >= bp.parts.length) {
+            p.gizmo.visible = false;
+            return;
+        }
+        // Welle 6.B Phase 2 Bug-Fix — Built-in-Baupläne sind read-only.
+        // Wir VERSTECKEN das Gizmo komplett (statt es zu zeigen aber den Drag
+        // intern abzulehnen): sonst sieht der Spieler das Gizmo, packt es,
+        // nichts greift, Drag fällt auf Orbit durch — unsichtbar verwirrend.
+        // Mit Hide ist die Welt ehrlich: kein sichtbarer Griff = kein Edit.
+        if (bp.builtIn) {
+            p.gizmo.visible = false;
+            return;
+        }
+        const part = bp.parts[idx];
+        if (!part || !part.position) {
+            p.gizmo.visible = false;
+            return;
+        }
+        p.gizmo.visible = true;
+        p.gizmo.position.set(part.position.x || 0, part.position.y || 0, part.position.z || 0);
+        // Distance-Scale: orbit.dist * 0.18 ergibt ~0.18 bei dist 1, ~1.0 bei dist ~5.5
+        const s = Math.max(0.4, p.orbit.dist * 0.18);
+        p.gizmo.scale.setScalar(s);
+        // Sub-Group-Visibility nach Mode
+        const mode = ws.manipulatorMode;
+        for (const child of p.gizmo.children) {
+            child.visible = child.name === mode;
+        }
+    }
+
+    // Drag-Start auf einem Gizmo-Handle. Capture initial Part-State + 3D-
+    // Maus-Position (auf der Drag-Plane). Setzt dragManipulator-State.
+    _workshopBeginManipulation(mode, axis, clientX, clientY) {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview) return;
+        const p = ws.preview;
+        const idx = ws.selectedPartIdx;
+        if (idx === null) return;
+        const bp = this.state.blueprints[ws.selectedBlueprint];
+        if (!bp || bp.builtIn) return; // Built-ins read-only
+        const part = bp.parts[idx];
+        if (!part) return;
+
+        // Snapshot des Part-State vor Drag (für inkrementelle Anwendung)
+        const startPart = {
+            position: { x: part.position.x || 0, y: part.position.y || 0, z: part.position.z || 0 },
+            rotation: {
+                x: (part.rotation && part.rotation.x) || 0,
+                y: (part.rotation && part.rotation.y) || 0,
+                z: (part.rotation && part.rotation.z) || 0,
+            },
+            size: {
+                x: (part.size && part.size.x) || 1,
+                y: (part.size && part.size.y) || 1,
+                z: (part.size && part.size.z) || 1,
+            },
+        };
+
+        // Drag-Plane: für translate + scale ist Pivot = Part-Position, Normale
+        // wird kameranah gewählt (siehe _workshopAxisDragPlaneNormal). Für
+        // rotate ist Pivot = Part-Position, Normale = die rotierte Achse.
+        const pivot = new THREE.Vector3(startPart.position.x, startPart.position.y, startPart.position.z);
+        const axisVec = this._workshopAxisToVec3(axis);
+        let planeNormal;
+        if (mode === "rotate") {
+            planeNormal = axisVec.clone(); // Rotation passiert IN der Ebene senkrecht zur Achse
+        } else {
+            planeNormal = this._workshopAxisDragPlaneNormal(axisVec, p.camera);
+        }
+        const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(planeNormal, pivot);
+
+        const startIntersect = this._workshopRaycastPlane(clientX, clientY, plane);
+        if (!startIntersect) return; // Kamera-Ray parallel zur Ebene — selten
+
+        // Für rotate: Start-Winkel um Pivot
+        let startAngle = 0;
+        if (mode === "rotate") {
+            const v = startIntersect.clone().sub(pivot);
+            // Project on plane perpendicular to axisVec → use two reference axes
+            const refU = this._workshopAxisPerpendicular(axisVec);
+            const refV = axisVec.clone().cross(refU).normalize();
+            startAngle = Math.atan2(v.dot(refV), v.dot(refU));
+        }
+
+        p.dragManipulator = {
+            mode,
+            axis,
+            startPart,
+            pivot,
+            axisVec,
+            plane,
+            startIntersect,
+            startAngle,
+            startClientX: clientX,
+            startClientY: clientY,
+        };
+    }
+
+    // Drag-Frame: berechne Delta entlang Achse + wende auf Part an.
+    // Live-Mesh-Update OHNE Rebuild (Geometrie bleibt, mesh.position/scale
+    // werden direkt gesetzt). Volle Rebuild kommt im End-Pfad.
+    _workshopApplyManipulation(clientX, clientY) {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview || !ws.preview.dragManipulator) return;
+        const p = ws.preview;
+        const m = p.dragManipulator;
+        const bp = this.state.blueprints[ws.selectedBlueprint];
+        if (!bp) return;
+        const part = bp.parts[ws.selectedPartIdx];
+        if (!part) return;
+        const intersect = this._workshopRaycastPlane(clientX, clientY, m.plane);
+        if (!intersect) return;
+
+        if (m.mode === "translate") {
+            const delta = intersect.clone().sub(m.startIntersect);
+            const along = delta.dot(m.axisVec); // signed Welt-Einheiten entlang Achse
+            let newVal = m.startPart.position[m.axis] + along;
+            newVal = this._workshopApplySnap(newVal, "translate");
+            part.position[m.axis] = newVal;
+        } else if (m.mode === "rotate") {
+            const v = intersect.clone().sub(m.pivot);
+            const refU = this._workshopAxisPerpendicular(m.axisVec);
+            const refV = m.axisVec.clone().cross(refU).normalize();
+            const curAngle = Math.atan2(v.dot(refV), v.dot(refU));
+            let delta = curAngle - m.startAngle;
+            // Winkel-Normalisierung (kein 360°-Sprung)
+            while (delta > Math.PI) delta -= 2 * Math.PI;
+            while (delta < -Math.PI) delta += 2 * Math.PI;
+            let newVal = m.startPart.rotation[m.axis] + delta;
+            newVal = this._workshopApplySnap(newVal, "rotate");
+            part.rotation[m.axis] = newVal;
+        } else if (m.mode === "scale") {
+            if (m.axis === "uniform") {
+                // Center-Würfel: Delta entlang der Bildschirm-Y-Achse als
+                // intuitive Scale-Geste (hoch=größer, runter=kleiner).
+                const dy = m.startClientY - clientY;
+                const factor = Math.max(0.05, 1 + dy * 0.01);
+                for (const ax of ["x", "y", "z"]) {
+                    let v = m.startPart.size[ax] * factor;
+                    v = Math.max(AnazhRealm.WORKSHOP_MIN_PART_SIZE, v);
+                    v = this._workshopApplySnap(v, "scale");
+                    part.size[ax] = v;
+                }
+            } else {
+                const delta = intersect.clone().sub(m.startIntersect);
+                const along = delta.dot(m.axisVec);
+                let v = m.startPart.size[m.axis] + along;
+                v = Math.max(AnazhRealm.WORKSHOP_MIN_PART_SIZE, v);
+                v = this._workshopApplySnap(v, "scale");
+                part.size[m.axis] = v;
+            }
+        }
+
+        // Live-Mesh-Update: für translate + rotate genügt mesh.position/rotation
+        // setzen. Für scale müssen wir die Geometrie skalieren (relativ zum
+        // start), weil _makePartGeometry die size in die Geometrie baked.
+        const sub = this._workshopFindMeshForPartIdx(ws.selectedPartIdx);
+        if (sub) {
+            if (part.position) sub.position.set(part.position.x, part.position.y, part.position.z);
+            if (part.rotation) sub.rotation.set(part.rotation.x, part.rotation.y, part.rotation.z);
+            if (m.mode === "scale") {
+                // Approximation: mesh.scale relativ zu Start-Size.
+                const sx = part.size.x / m.startPart.size.x;
+                const sy = part.size.y / m.startPart.size.y;
+                const sz = part.size.z / m.startPart.size.z;
+                sub.scale.set(sx, sy, sz);
+            }
+        }
+        p.dirty = true;
+    }
+
+    // Drag-Ende: voller Rebuild für saubere Geometrie + DOM-Inputs syncen.
+    _workshopEndManipulation() {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview || !ws.preview.dragManipulator) return;
+        ws.preview.dragManipulator = null;
+        // Mesh + Number-Inputs sind möglicherweise out-of-sync (Live-Update war
+        // approximativ). Volle Rebuild + DOM-Render: kostet einmalig, lohnt sich.
+        this._renderWorkshopDOM();
+    }
+
+    // Snap-Helper: rundet Wert auf nächstes Snap-Multiple je Mode.
+    _workshopApplySnap(value, mode) {
+        const ws = this._ensureWorkshopState();
+        if (!ws.snapEnabled) return value;
+        let step;
+        if (mode === "translate") step = AnazhRealm.WORKSHOP_SNAP_TRANSLATE;
+        else if (mode === "rotate") step = AnazhRealm.WORKSHOP_SNAP_ROTATE;
+        else if (mode === "scale") step = AnazhRealm.WORKSHOP_SNAP_SCALE;
+        else return value;
+        return Math.round(value / step) * step;
+    }
+
+    // Helper: Achs-Name → Welt-Vektor
+    _workshopAxisToVec3(axis) {
+        if (axis === "x") return new THREE.Vector3(1, 0, 0);
+        if (axis === "y") return new THREE.Vector3(0, 1, 0);
+        if (axis === "z") return new THREE.Vector3(0, 0, 1);
+        return new THREE.Vector3(1, 0, 0);
+    }
+
+    // Helper: irgendeine Achse senkrecht zur gegebenen (für Rotation-Polar-Koord)
+    _workshopAxisPerpendicular(axisVec) {
+        // Y-Achse als Default-Ref, außer wenn axis ≈ Y → Z nehmen.
+        const ref = Math.abs(axisVec.y) > 0.9 ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(0, 1, 0);
+        return ref
+            .clone()
+            .sub(axisVec.clone().multiplyScalar(ref.dot(axisVec)))
+            .normalize();
+    }
+
+    // Helper: gute Drag-Plane-Normale für eine Welt-Achse. Wir nehmen die
+    // Camera-Forward-Komponente, die senkrecht zur Achse liegt — so steht die
+    // Drag-Ebene am steilsten zur Camera und Maus-Bewegung mapped natürlich.
+    _workshopAxisDragPlaneNormal(axisVec, camera) {
+        const camForward = new THREE.Vector3();
+        camera.getWorldDirection(camForward);
+        // Projektion auf Ebene senkrecht zur Achse
+        const proj = camForward.clone().sub(axisVec.clone().multiplyScalar(camForward.dot(axisVec)));
+        if (proj.lengthSq() < 0.001) {
+            // Camera schaut direkt entlang der Achse — degeneriert. Fallback.
+            return Math.abs(axisVec.y) > 0.9 ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(0, 1, 0);
+        }
+        return proj.normalize();
+    }
+
+    // Helper: Raycast in NDC → Plane-Intersect (3D).
+    _workshopRaycastPlane(clientX, clientY, plane) {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview) return null;
+        const p = ws.preview;
+        const rect = p.canvas.getBoundingClientRect();
+        const ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
+        const ndcY = -((clientY - rect.top) / rect.height) * 2 + 1;
+        p.raycaster.setFromCamera({ x: ndcX, y: ndcY }, p.camera);
+        const target = new THREE.Vector3();
+        const hit = p.raycaster.ray.intersectPlane(plane, target);
+        return hit;
+    }
+
+    // Helper: finde Sub-Mesh für gegebene partIdx (reverse-lookup in partMeshes-Map).
+    _workshopFindMeshForPartIdx(idx) {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview) return null;
+        for (const [mesh, i] of ws.preview.partMeshes) {
+            if (i === idx) return mesh;
+        }
+        return null;
+    }
+
+    // Public: Mode wechseln (translate/rotate/scale/connect).
+    setWorkshopManipulatorMode(mode) {
+        if (!["translate", "rotate", "scale", "connect"].includes(mode)) return false;
+        const ws = this._ensureWorkshopState();
+        if (ws.manipulatorMode === mode) return true;
+        ws.manipulatorMode = mode;
+        // Beim Modus-Wechsel: Connect-Pending-State + Popover schließen.
+        ws.connectFirstPartIdx = null;
+        this._workshopCloseConnectPopover();
+        if (ws.preview) ws.preview.dirty = true;
+        this._workshopUpdateManipulatorButtons();
+        return true;
+    }
+
+    // Public: Snap-Toggle.
+    toggleWorkshopSnap(enabled) {
+        const ws = this._ensureWorkshopState();
+        ws.snapEnabled = typeof enabled === "boolean" ? enabled : !ws.snapEnabled;
+        this._workshopUpdateManipulatorButtons();
+        return ws.snapEnabled;
+    }
+
+    // UI-Sync: Modus-Buttons + Snap-Toggle in der Werkstatt.
+    _workshopUpdateManipulatorButtons() {
+        if (typeof document === "undefined") return;
+        const ws = this._ensureWorkshopState();
+        const modeBar = document.getElementById("workshop-mode-bar");
+        if (modeBar) {
+            const buttons = modeBar.querySelectorAll("[data-workshop-mode]");
+            buttons.forEach((btn) => {
+                const mode = btn.getAttribute("data-workshop-mode");
+                btn.classList.toggle("active", mode === ws.manipulatorMode);
+            });
+        }
+        const snapBtn = document.getElementById("workshop-snap-toggle");
+        if (snapBtn) {
+            snapBtn.classList.toggle("active", ws.snapEnabled);
+            snapBtn.textContent = ws.snapEnabled ? "Snap" : "frei";
+        }
+        // Read-only-Banner: sichtbar bei Built-in-Bauplan, sonst versteckt.
+        // Plus Mode-Bar disable wenn Built-in (visuell + klick-wirkungslos).
+        const banner = document.getElementById("workshop-readonly-banner");
+        const bp = this.state.blueprints[ws.selectedBlueprint];
+        const isBuiltIn = bp && bp.builtIn === true;
+        if (banner) banner.hidden = !isBuiltIn;
+        if (modeBar) {
+            // V8.07 — NUR Mode-Buttons + Snap-Toggle disablen bei built-in.
+            // Klonen + Neu-Buttons bleiben IMMER aktiv (sie sind bauplan-
+            // unabhängig: Klonen erzeugt eine eigene Kopie, Neu legt einen
+            // frischen Bauplan an — beides braucht keinen schreibfähigen
+            // Kontext).
+            const editableBtns = modeBar.querySelectorAll("[data-workshop-mode], #workshop-snap-toggle");
+            editableBtns.forEach((btn) => {
+                btn.disabled = isBuiltIn;
+                btn.style.opacity = isBuiltIn ? "0.45" : "";
+            });
+            // Action-Buttons (Klonen, Neu) immer enabled
+            const actionBtns = modeBar.querySelectorAll(".workshop-action-btn");
+            actionBtns.forEach((btn) => {
+                btn.disabled = false;
+                btn.style.opacity = "";
+            });
+        }
+        // V8.02 Phase 3a — Shape-Palette ebenfalls disable bei Built-in
+        const palette = document.getElementById("workshop-shape-palette");
+        if (palette) {
+            const cards = palette.querySelectorAll(".workshop-shape-card");
+            cards.forEach((card) => {
+                if (isBuiltIn) {
+                    card.setAttribute("draggable", "false");
+                    card.style.opacity = "0.4";
+                    card.style.cursor = "not-allowed";
+                } else {
+                    card.setAttribute("draggable", "true");
+                    card.style.opacity = "";
+                    card.style.cursor = "";
+                }
+            });
+        }
+        // V8.05 — Del-Button: enabled nur wenn ein Part selektiert + bp eigen
+        const delBtn = document.getElementById("workshop-delete-selected-part");
+        if (delBtn) {
+            const hasSel =
+                !isBuiltIn &&
+                ws.selectedPartIdx !== null &&
+                ws.selectedPartIdx !== undefined &&
+                bp &&
+                Array.isArray(bp.parts) &&
+                ws.selectedPartIdx < bp.parts.length;
+            delBtn.disabled = !hasSel;
+        }
+    }
+
+    // V8.05 — Stats-Panel rendert die emergenten Compound-Tags + Rolle
+    // + Affordances direkt unter dem Canvas. Spieler sieht beim Bauen
+    // sofort was räumlich + tag-mäßig passiert.
+    _workshopRenderStatsPanel() {
+        if (typeof document === "undefined") return;
+        const panel = document.getElementById("workshop-stats-panel");
+        if (!panel) return;
+        const ws = this._ensureWorkshopState();
+        const bp = this.state.blueprints[ws.selectedBlueprint];
+        panel.innerHTML = "";
+        if (!bp) return;
+        // Rolle-Chip
+        const role = bp.role || AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
+        const roleLabel = AnazhRealm.BLUEPRINT_ROLE_LABELS[role] || role;
+        const roleRow = document.createElement("div");
+        roleRow.className = "stat-row";
+        const roleLab = document.createElement("span");
+        roleLab.className = "stat-label";
+        roleLab.textContent = "Rolle";
+        roleRow.appendChild(roleLab);
+        const roleChip = document.createElement("span");
+        roleChip.className = "role-chip";
+        roleChip.textContent = roleLabel;
+        roleRow.appendChild(roleChip);
+        // Affordances
+        const aff = this.computeBlueprintAffordances(bp) || {};
+        for (const key of Object.keys(aff)) {
+            const chip = document.createElement("span");
+            chip.className = "affordance-chip";
+            chip.textContent = "✦ " + (AnazhRealm.AFFORDANCE_LABELS[key] || key);
+            roleRow.appendChild(chip);
+        }
+        panel.appendChild(roleRow);
+        // V8.07 — Top-5 Compound-Tags mit STERN-RATING. Schöpfer-Wunsch:
+        // schnelle Erkennung „wie stark ist das?" über visuelle Sterne statt
+        // raw Zahlen. Schwellen aus WORLD_EFFECT_THRESHOLDS (mild/strong/
+        // signature) damit die Sterne mit den existing Welt-Effekt-Gates
+        // konsistent sind.
+        const tags = this.computeCompoundTags(bp) || {};
+        const tagEntries = AnazhRealm.MATERIAL_TAG_KEYS.map((k) => ({ k, v: tags[k] || 0 }))
+            .filter((e) => e.v > 0.1)
+            .sort((a, b) => b.v - a.v)
+            .slice(0, 5);
+        if (tagEntries.length > 0) {
+            const T = AnazhRealm.WORLD_EFFECT_THRESHOLDS || {};
+            const mild = T.resonance_mild || 0.7;
+            const strong = T.resonance_strong || 1.5;
+            const signature = T.resonance_signature || 2.5;
+            const starsFor = (v) => {
+                if (v >= signature) return "★★★";
+                if (v >= strong) return "★★☆";
+                if (v >= mild) return "★☆☆";
+                return "☆☆☆";
+            };
+            const tagRow = document.createElement("div");
+            tagRow.className = "stat-row";
+            const tagLab = document.createElement("span");
+            tagLab.className = "stat-label";
+            tagLab.textContent = "Tags";
+            tagRow.appendChild(tagLab);
+            for (const e of tagEntries) {
+                const chip = document.createElement("span");
+                chip.className = "tag-chip";
+                // Stern-Klassen für Farbgebung pro Level
+                const stars = starsFor(e.v);
+                let levelClass = "lvl-0";
+                if (e.v >= signature) levelClass = "lvl-3";
+                else if (e.v >= strong) levelClass = "lvl-2";
+                else if (e.v >= mild) levelClass = "lvl-1";
+                chip.classList.add(levelClass);
+                const starEl = document.createElement("span");
+                starEl.className = "tag-stars";
+                starEl.textContent = stars;
+                const nameEl = document.createElement("span");
+                nameEl.className = "tag-name";
+                nameEl.textContent = e.k;
+                const valEl = document.createElement("span");
+                valEl.className = "tag-val";
+                valEl.textContent = e.v.toFixed(2);
+                chip.appendChild(starEl);
+                chip.appendChild(nameEl);
+                chip.appendChild(valEl);
+                tagRow.appendChild(chip);
+            }
+            panel.appendChild(tagRow);
+        }
+        // Compound-Präzision (falls Parts opChain haben)
+        const avgPrec = this._compoundAvgPrecision(bp);
+        if (avgPrec > 0) {
+            const precRow = document.createElement("div");
+            precRow.className = "stat-row";
+            const precLab = document.createElement("span");
+            precLab.className = "stat-label";
+            precLab.textContent = "Präzision";
+            precRow.appendChild(precLab);
+            const precChip = document.createElement("span");
+            precChip.className = "tag-chip";
+            precChip.textContent = avgPrec.toFixed(2);
+            precRow.appendChild(precChip);
+            panel.appendChild(precRow);
+        }
+    }
+
+    // V8.05 — Editor-Toggle. Persistent in localStorage (Spieler will
+    // den Editor meist geschlossen halten — die Werkstatt-Hauptarbeit
+    // läuft über Drag-Drop + Manipulator).
+    _workshopInstallEditorToggle() {
+        if (typeof document === "undefined") return;
+        const ws = this._ensureWorkshopState();
+        if (ws._editorToggleInstalled) return;
+        ws._editorToggleInstalled = true;
+        const btn = document.getElementById("workshop-editor-toggle");
+        const editor = document.getElementById("workshop-editor");
+        if (!btn || !editor) return;
+        // Initialer Zustand aus localStorage (Default: zugeklappt)
+        const stored = typeof localStorage !== "undefined" ? localStorage.getItem("anazh.workshop.editorOpen") : null;
+        const open = stored === "1";
+        editor.hidden = !open;
+        btn.setAttribute("aria-expanded", open ? "true" : "false");
+        btn.addEventListener("click", () => {
+            const wasOpen = btn.getAttribute("aria-expanded") === "true";
+            const newOpen = !wasOpen;
+            btn.setAttribute("aria-expanded", newOpen ? "true" : "false");
+            editor.hidden = !newOpen;
+            try {
+                if (typeof localStorage !== "undefined") {
+                    localStorage.setItem("anazh.workshop.editorOpen", newOpen ? "1" : "0");
+                }
+            } catch {
+                /* ignore */
+            }
+        });
+    }
+
+    // V8.06 — Klonen + Neuer Bauplan direkt in der Mode-Bar (statt am
+    // Editor-Ende). Idempotent.
+    _workshopInstallActionButtons() {
+        if (typeof document === "undefined") return;
+        const ws = this._ensureWorkshopState();
+        if (ws._actionBtnsInstalled) return;
+        ws._actionBtnsInstalled = true;
+        const cloneBtn = document.getElementById("workshop-clone-btn");
+        const newBtn = document.getElementById("workshop-new-btn");
+        if (cloneBtn) {
+            cloneBtn.addEventListener("click", () => {
+                const wsLocal = this._ensureWorkshopState();
+                const selected = this.state.blueprints[wsLocal.selectedBlueprint];
+                if (!selected) return;
+                const newName = window.prompt("Name für die Kopie?", `${selected.name}-kopie`);
+                if (!newName) return;
+                if (this.cloneBlueprint(selected.name, newName)) {
+                    this.selectBlueprintForEdit(newName);
+                }
+            });
+        }
+        if (newBtn) {
+            newBtn.addEventListener("click", () => {
+                const name = window.prompt("Name des neuen Bauplans?");
+                if (!name) return;
+                if (this.createBlueprint(name, name)) this.selectBlueprintForEdit(name);
+            });
+        }
+    }
+
+    // V8.05 — Del-Button-Handler. Entfernt den selektierten Part.
+    _workshopInstallDeleteButton() {
+        if (typeof document === "undefined") return;
+        const ws = this._ensureWorkshopState();
+        if (ws._deleteBtnInstalled) return;
+        ws._deleteBtnInstalled = true;
+        const btn = document.getElementById("workshop-delete-selected-part");
+        if (!btn) return;
+        btn.addEventListener("click", () => {
+            const wsLocal = this._ensureWorkshopState();
+            const idx = wsLocal.selectedPartIdx;
+            if (idx === null || idx === undefined) return;
+            const bp = this.state.blueprints[wsLocal.selectedBlueprint];
+            if (!bp || bp.builtIn) return;
+            this.removePartFromBlueprint(bp.name, idx);
+            wsLocal.selectedPartIdx = null;
+            this._renderWorkshopDOM();
+        });
+    }
+
+    // ============================================================
+    // ### Welle 6.B Phase 3a — Shape-Palette HTML5-Drag-Drop ###
+    // Jede Shape-Card im DOM ist draggable. Drag-Source setzt
+    // dataTransfer mit einem eigenen Marker (`application/x-anazh-shape`)
+    // damit kein Konflikt mit dem Inventar-Drag-Pattern (V7.77) entsteht.
+    // Drop-Target ist die Preview-Canvas: bei drop wird die Drop-Position
+    // auf eine Welt-Ebene (y=0) projiziert (oder auf y=0.5 falls Snap),
+    // ein neuer Part am Bauplan angehängt + automatisch selektiert.
+    // ============================================================
+    _workshopInstallShapeDragDrop() {
+        if (typeof document === "undefined") return;
+        const ws = this._ensureWorkshopState();
+        if (ws._shapeDnDInstalled) return;
+        ws._shapeDnDInstalled = true;
+
+        // V8.03 — Material- und Farb-Palette zusätzlich rendern.
+        // V8.05 — Werkzeug-Palette als dritte Sub-Palette (Werkzeug-Drag-Drop
+        // auf Part wendet die Op an wie applyOpToPart).
+        this._workshopRenderMaterialPalette();
+        this._workshopRenderColorPalette();
+        this._workshopRenderToolPalette();
+
+        const shapePalette = document.getElementById("workshop-shape-palette");
+        const matPalette = document.getElementById("workshop-material-palette");
+        const colorPalette = document.getElementById("workshop-color-palette");
+        const toolPalette = document.getElementById("workshop-tool-palette");
+        const canvas = document.getElementById("workshop-preview-canvas");
+        if (!canvas) return;
+
+        // Universal-Drag-Helper: für jeden Card-Container eine Drag-Source
+        // einrichten. Marker via dataTransfer-MIME-Type, data via getAttribute.
+        const installDragSource = (container, cardSelector, dataAttr, marker) => {
+            if (!container) return;
+            const cards = container.querySelectorAll(cardSelector);
+            cards.forEach((card) => {
+                card.addEventListener("dragstart", (event) => {
+                    const data = card.getAttribute(dataAttr);
+                    if (!data) return;
+                    const bp = this.state.blueprints[this._ensureWorkshopState().selectedBlueprint];
+                    if (!bp || bp.builtIn) {
+                        event.preventDefault();
+                        return;
+                    }
+                    event.dataTransfer.setData(marker, data);
+                    event.dataTransfer.effectAllowed = "copy";
+                    card.classList.add("dragging");
+                });
+                card.addEventListener("dragend", () => {
+                    card.classList.remove("dragging");
+                });
+            });
+        };
+        installDragSource(shapePalette, ".workshop-shape-card", "data-shape", "application/x-anazh-shape");
+        installDragSource(matPalette, ".workshop-material-card", "data-material", "application/x-anazh-material");
+        installDragSource(colorPalette, ".workshop-color-swatch", "data-color", "application/x-anazh-color");
+        installDragSource(toolPalette, ".workshop-tool-card", "data-tool", "application/x-anazh-tool");
+
+        // Drop-Target: Canvas. Akzeptiert alle vier Marker.
+        const acceptedMarkers = [
+            "application/x-anazh-shape",
+            "application/x-anazh-material",
+            "application/x-anazh-color",
+            "application/x-anazh-tool",
+        ];
+        canvas.addEventListener("dragover", (event) => {
+            const ourDrag = acceptedMarkers.some((m) => event.dataTransfer.types.includes(m));
+            if (!ourDrag) return;
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "copy";
+            canvas.classList.add("drop-target");
+        });
+        canvas.addEventListener("dragleave", () => {
+            canvas.classList.remove("drop-target");
+        });
+        canvas.addEventListener("drop", (event) => {
+            canvas.classList.remove("drop-target");
+            const shape = event.dataTransfer.getData("application/x-anazh-shape");
+            const material = event.dataTransfer.getData("application/x-anazh-material");
+            const color = event.dataTransfer.getData("application/x-anazh-color");
+            const tool = event.dataTransfer.getData("application/x-anazh-tool");
+            if (!shape && !material && !color && !tool) return;
+            event.preventDefault();
+            if (shape) {
+                this._workshopHandleShapeDrop(shape, event.clientX, event.clientY);
+            } else if (material) {
+                this._workshopHandleMaterialDrop(material, event.clientX, event.clientY);
+            } else if (color) {
+                this._workshopHandleColorDrop(color, event.clientX, event.clientY);
+            } else if (tool) {
+                this._workshopHandleToolDrop(tool, event.clientX, event.clientY);
+            }
+        });
+    }
+
+    // V8.05 — Werkzeug-Palette rendern. Eine Card pro state.tools-Eintrag
+    // den der Spieler besitzt. Drag-Source-Marker = data-tool. Drop auf
+    // einen Part ruft applyOpToPart (selber Pfad wie das alte Editor-
+    // Apply-Dropdown, aber gestern-friendlich aus der Side-Palette).
+    _workshopRenderToolPalette() {
+        if (typeof document === "undefined") return;
+        const palette = document.getElementById("workshop-tool-palette");
+        if (!palette) return;
+        palette.innerHTML = "";
+        const owned = Array.isArray(this.state.player && this.state.player.tools) ? this.state.player.tools : [];
+        const tools = this.state.tools || {};
+        for (const name of owned) {
+            const t = tools[name];
+            if (!t) continue;
+            const card = document.createElement("div");
+            card.className = "workshop-tool-card";
+            card.setAttribute("draggable", "true");
+            card.setAttribute("data-tool", name);
+            const domLabel =
+                t.domain && AnazhRealm.TOOL_DOMAIN_LABELS
+                    ? AnazhRealm.TOOL_DOMAIN_LABELS[t.domain] || t.domain
+                    : "generisch";
+            card.setAttribute(
+                "title",
+                `${t.label || name} · ${t.opName} (${t.opClass}) · ${domLabel} · auf Part ziehen wendet Op an`
+            );
+            // Domain-Dot (V9b-Style)
+            if (t.domain && AnazhRealm.TOOL_DOMAIN_COLORS && AnazhRealm.TOOL_DOMAIN_COLORS[t.domain]) {
+                const dot = document.createElement("span");
+                dot.className = "workshop-tool-domain-dot";
+                dot.style.background = AnazhRealm.TOOL_DOMAIN_COLORS[t.domain];
+                card.appendChild(dot);
+            }
+            const nameEl = document.createElement("span");
+            nameEl.textContent = t.label || name;
+            card.appendChild(nameEl);
+            const precEl = document.createElement("span");
+            precEl.className = "tool-prec";
+            precEl.textContent = (t.precisionCap || 0).toFixed(2);
+            card.appendChild(precEl);
+            palette.appendChild(card);
+        }
+    }
+
+    // V8.05 — Tool-Drop: identifiziert den getroffenen Part via Raycast,
+    // ruft applyOpToPart (gleicher Pfad wie das Editor-Dropdown). Compound-
+    // Tags + Rolle + Affordances werden via _refreshBlueprintRoleEmergent
+    // (Hook in applyOpToPart) automatisch neu berechnet.
+    _workshopHandleToolDrop(toolName, clientX, clientY) {
+        const ws = this._ensureWorkshopState();
+        const bp = this.state.blueprints[ws.selectedBlueprint];
+        if (!bp || bp.builtIn) return;
+        const tool = this.state.tools && this.state.tools[toolName];
+        if (!tool) {
+            this.log(`Workshop-ToolDrop: unbekanntes Werkzeug '${toolName}'`, "INFO");
+            return;
+        }
+        const idx = this._workshopRaycastPartIdxAt(clientX, clientY);
+        if (idx === null) {
+            this.log("Workshop-ToolDrop: kein Part getroffen — drop direkt auf einen Part", "INFO");
+            return;
+        }
+        const result = this.applyOpToPart(bp.name, idx, toolName);
+        if (result && result.ok) {
+            this._renderWorkshopDOM();
+            this._workshopSetSelection(idx);
+            this.log(
+                `Workshop: Werkzeug '${toolName}' auf Part ${idx} angewandt (Präzision ${result.precision.toFixed(2)})`,
+                "INFO"
+            );
+        } else {
+            const reason = (result && result.reason) || "unknown";
+            this.log(`Workshop-ToolDrop: ${reason}`, "INFO");
+        }
+    }
+
+    // V8.03 — Material-Palette aus state.materials rendern. Eine Card pro
+    // Material mit Color-Swatch + Name. Drag-Source-Marker = data-material.
+    _workshopRenderMaterialPalette() {
+        if (typeof document === "undefined") return;
+        const palette = document.getElementById("workshop-material-palette");
+        if (!palette) return;
+        palette.innerHTML = "";
+        const materials = this.state.materials || {};
+        for (const name of Object.keys(materials)) {
+            const mat = materials[name];
+            const card = document.createElement("div");
+            card.className = "workshop-material-card";
+            card.setAttribute("draggable", "true");
+            card.setAttribute("data-material", name);
+            card.setAttribute("title", `${mat.label || name} → auf Part ziehen wechselt Material`);
+            const swatch = document.createElement("span");
+            swatch.className = "mat-swatch";
+            const c = typeof mat.color === "number" ? mat.color : 0x888888;
+            swatch.style.background = `#${c.toString(16).padStart(6, "0")}`;
+            card.appendChild(swatch);
+            const label = document.createElement("span");
+            label.textContent = mat.label || name;
+            card.appendChild(label);
+            palette.appendChild(card);
+        }
+    }
+
+    // V8.03 — Farb-Palette als 12 Quick-Pick-Swatches. Drag-Source-Marker =
+    // data-color (hex-String ohne #).
+    _workshopRenderColorPalette() {
+        if (typeof document === "undefined") return;
+        const palette = document.getElementById("workshop-color-palette");
+        if (!palette) return;
+        palette.innerHTML = "";
+        // 12 Standard-Schöpfer-Farben: Erd-/Steintöne + Akzente
+        const colors = [
+            "#3a2818", // tiefes Erdbraun
+            "#7a5530", // Holzbraun
+            "#b08648", // Bronze
+            "#d4b076", // Sand
+            "#e8d4a8", // Pergament
+            "#8a8a8a", // Stein-Grau
+            "#c0c0c8", // Quarz
+            "#5a8a5e", // Laub
+            "#3a6890", // Wasser
+            "#c44830", // Glut
+            "#e8c850", // Gold
+            "#a878b8", // Magie-Violett
+        ];
+        for (const hex of colors) {
+            const swatch = document.createElement("div");
+            swatch.className = "workshop-color-swatch";
+            swatch.setAttribute("draggable", "true");
+            swatch.setAttribute("data-color", hex.slice(1));
+            swatch.setAttribute("title", `${hex} → auf Part ziehen wechselt Farbe`);
+            swatch.style.background = hex;
+            palette.appendChild(swatch);
+        }
+    }
+
+    // V8.03 — Material-Drop: identifiziert den getroffenen Part via Raycaster
+    // und wechselt sein Material (+ rekonsistente Farbe).
+    _workshopHandleMaterialDrop(material, clientX, clientY) {
+        const ws = this._ensureWorkshopState();
+        const bp = this.state.blueprints[ws.selectedBlueprint];
+        if (!bp || bp.builtIn) return;
+        if (!this.state.materials[material]) {
+            this.log(`Workshop-MaterialDrop: unbekanntes Material '${material}'`, "INFO");
+            return;
+        }
+        const idx = this._workshopRaycastPartIdxAt(clientX, clientY);
+        if (idx === null) {
+            this.log("Workshop-MaterialDrop: kein Part getroffen — drop direkt auf einen Part", "INFO");
+            return;
+        }
+        this.updatePartInBlueprint(bp.name, idx, { material, recolor: true });
+        this._renderWorkshopDOM();
+        this._workshopSetSelection(idx);
+        this.log(`Workshop: Material '${material}' auf Part ${idx} gesetzt`, "INFO");
+    }
+
+    // V8.03 — Color-Drop: wechselt Farbe des getroffenen Parts (Material bleibt).
+    _workshopHandleColorDrop(hexString, clientX, clientY) {
+        const ws = this._ensureWorkshopState();
+        const bp = this.state.blueprints[ws.selectedBlueprint];
+        if (!bp || bp.builtIn) return;
+        const colorNum = parseInt(hexString, 16);
+        if (!Number.isFinite(colorNum)) return;
+        const idx = this._workshopRaycastPartIdxAt(clientX, clientY);
+        if (idx === null) {
+            this.log("Workshop-ColorDrop: kein Part getroffen — drop direkt auf einen Part", "INFO");
+            return;
+        }
+        this.updatePartInBlueprint(bp.name, idx, { color: colorNum });
+        this._renderWorkshopDOM();
+        this._workshopSetSelection(idx);
+        this.log(`Workshop: Farbe #${hexString} auf Part ${idx} gesetzt`, "INFO");
+    }
+
+    // Helper: Welche Part-Idx liegt unter dem Cursor (oder null)?
+    _workshopRaycastPartIdxAt(clientX, clientY) {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview || !ws.preview.currentMesh) return null;
+        const p = ws.preview;
+        const rect = p.canvas.getBoundingClientRect();
+        const ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
+        const ndcY = -((clientY - rect.top) / rect.height) * 2 + 1;
+        p.raycaster.setFromCamera({ x: ndcX, y: ndcY }, p.camera);
+        const meshes = Array.from(p.partMeshes.keys());
+        if (meshes.length === 0) return null;
+        const hits = p.raycaster.intersectObjects(meshes, false);
+        if (hits.length === 0) return null;
+        const idx = p.partMeshes.get(hits[0].object);
+        return typeof idx === "number" ? idx : null;
+    }
+
+    // Drop-Handler: berechnet Welt-Position aus Bildschirm-Koordinaten via
+    // Raycaster gegen eine y=0-Ebene (oder y=0.5 bei snap), fügt einen
+    // neuen Part am Bauplan an + selektiert ihn automatisch.
+    _workshopHandleShapeDrop(shape, clientX, clientY) {
+        const ws = this._ensureWorkshopState();
+        const bp = this.state.blueprints[ws.selectedBlueprint];
+        if (!bp || bp.builtIn) {
+            this.log("Workshop-Drop auf Built-in-Bauplan abgelehnt — bitte erst klonen", "INFO");
+            return;
+        }
+        // Welt-Position aus Drop-Koords: Raycast gegen XZ-Ebene bei y=0.
+        // Wenn die Ebene parallel zur Camera ist (vertikaler Top-Down-Blick),
+        // hat der Ray keinen Schnittpunkt — Fallback ist (0,0,0).
+        let dropPos = { x: 0, y: 0, z: 0 };
+        if (ws.preview) {
+            const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+            const intersect = this._workshopRaycastPlane(clientX, clientY, plane);
+            if (intersect) {
+                dropPos = { x: intersect.x, y: 0.5, z: intersect.z };
+                if (ws.snapEnabled) {
+                    const step = AnazhRealm.WORKSHOP_SNAP_TRANSLATE;
+                    dropPos.x = Math.round(dropPos.x / step) * step;
+                    dropPos.z = Math.round(dropPos.z / step) * step;
+                }
+            }
+        }
+        // Default-Material: erstes existing Material auf bp (für Konsistenz),
+        // fallback "stein".
+        let mat = "stein";
+        if (bp.parts && bp.parts.length > 0 && bp.parts[0].material) {
+            mat = bp.parts[0].material;
+        }
+        const matColor = (this.state.materials[mat] || {}).color || 0x888888;
+        const newPart = {
+            shape,
+            material: mat,
+            color: matColor,
+            position: dropPos,
+            rotation: { x: 0, y: 0, z: 0 },
+            size: { x: 1, y: 1, z: 1 },
+        };
+        this.addPartToBlueprint(bp.name, newPart);
+        // UI refresh + neuen Part auto-selektieren
+        this._renderWorkshopDOM();
+        const newIdx = bp.parts.length - 1;
+        this._workshopSetSelection(newIdx);
+        this.log(
+            `Workshop: ${shape}-Part hinzugefügt bei (${dropPos.x.toFixed(2)}, ${dropPos.y.toFixed(2)}, ${dropPos.z.toFixed(2)})`,
+            "INFO"
+        );
+    }
+
+    // ============================================================
+    // ### Welle 6.B Phase 3b — Klick-Klick-Connection-Erzeugung ###
+    // Im Connect-Modus zählt jeder Klick auf ein Part: erster = Source,
+    // zweiter = Target → öffnet Popover mit 8 Connection-Types. Wahl
+    // schreibt `bp.connections.push({type, partA, partB})`. ESC bricht ab.
+    // ============================================================
+
+    // Behandelt einen Klick im Canvas wenn Modus "connect" ist.
+    // Wird aus _workshopRaycastSelection aufgerufen (Connect-Pfad hat
+    // Vorrang über Selection-Update).
+    _workshopHandleConnectClick(partIdx) {
+        const ws = this._ensureWorkshopState();
+        const bp = this.state.blueprints[ws.selectedBlueprint];
+        if (!bp || bp.builtIn) return;
+        if (partIdx === null || partIdx < 0 || partIdx >= bp.parts.length) {
+            // Klick ins Leere → Connect-Geste zurücksetzen + Popover schließen
+            ws.connectFirstPartIdx = null;
+            this._workshopCloseConnectPopover();
+            this._workshopSetSelection(null);
+            return;
+        }
+        if (ws.connectFirstPartIdx === null) {
+            // Erster Klick: Source merken + visuelles Highlight via Selection
+            ws.connectFirstPartIdx = partIdx;
+            this._workshopSetSelection(partIdx);
+            return;
+        }
+        if (ws.connectFirstPartIdx === partIdx) {
+            // Selber Part nochmal geklickt → Geste zurücksetzen
+            ws.connectFirstPartIdx = null;
+            this._workshopSetSelection(null);
+            return;
+        }
+        // Zweiter Klick auf anderes Part → Type-Popover öffnen
+        this._workshopOpenConnectPopover(ws.connectFirstPartIdx, partIdx);
+    }
+
+    // Öffnet das Connection-Type-Auswahl-Popover über dem Canvas. Klick auf
+    // einen Type schreibt die Connection ins Blueprint + UI-Refresh.
+    _workshopOpenConnectPopover(partA, partB) {
+        if (typeof document === "undefined") return;
+        this._workshopCloseConnectPopover(); // idempotent
+        const ws = this._ensureWorkshopState();
+        const canvas = document.getElementById("workshop-preview-canvas");
+        if (!canvas) return;
+        const wrapper = document.getElementById("workshop-preview-wrapper");
+        if (!wrapper) return;
+        const overlay = document.createElement("div");
+        overlay.id = "workshop-connect-overlay";
+        const title = document.createElement("div");
+        title.className = "conn-title";
+        title.textContent = `Verbindung: Part ${partA} → Part ${partB}`;
+        overlay.appendChild(title);
+        const types = AnazhRealm.CONNECTION_TYPES;
+        for (const typeName of Object.keys(types)) {
+            const def = types[typeName];
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.textContent = `${def.label} — ${def.description}`;
+            btn.title = `Stark in: ${def.strongTags.join(", ")} · Basis ${def.typeStrength}`;
+            btn.addEventListener("click", () => {
+                this._workshopApplyConnection(partA, partB, typeName);
+            });
+            overlay.appendChild(btn);
+        }
+        const cancelBtn = document.createElement("button");
+        cancelBtn.type = "button";
+        cancelBtn.className = "cancel";
+        cancelBtn.textContent = "Abbrechen (ESC)";
+        cancelBtn.addEventListener("click", () => {
+            ws.connectFirstPartIdx = null;
+            this._workshopCloseConnectPopover();
+            this._workshopSetSelection(null);
+        });
+        overlay.appendChild(cancelBtn);
+        // Position: zentriert über dem Canvas
+        wrapper.style.position = "relative";
+        wrapper.appendChild(overlay);
+        // Center berechnen relativ zum Wrapper
+        const cRect = canvas.getBoundingClientRect();
+        const wRect = wrapper.getBoundingClientRect();
+        const top = cRect.top - wRect.top + cRect.height / 2 - overlay.offsetHeight / 2;
+        const left = cRect.left - wRect.left + cRect.width / 2 - overlay.offsetWidth / 2;
+        overlay.style.top = `${Math.max(8, top)}px`;
+        overlay.style.left = `${Math.max(8, left)}px`;
+    }
+
+    _workshopCloseConnectPopover() {
+        if (typeof document === "undefined") return;
+        const overlay = document.getElementById("workshop-connect-overlay");
+        if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    }
+
+    // Schreibt die Connection ins Blueprint + UI-Refresh + Reset.
+    _workshopApplyConnection(partA, partB, typeName) {
+        const ws = this._ensureWorkshopState();
+        const bp = this.state.blueprints[ws.selectedBlueprint];
+        if (!bp || bp.builtIn) return;
+        if (!AnazhRealm.CONNECTION_TYPES[typeName]) return;
+        if (!Array.isArray(bp.connections)) bp.connections = [];
+        // Duplikat-Schutz: dieselbe Connection nicht zweimal hinzufügen.
+        // Reihenfolge ist symmetrisch (A→B ≡ B→A) für diesen Check.
+        const exists = bp.connections.some(
+            (c) =>
+                c.type === typeName &&
+                ((c.partA === partA && c.partB === partB) || (c.partA === partB && c.partB === partA))
+        );
+        if (!exists) {
+            bp.connections.push({ type: typeName, partA, partB });
+            this.log(`Workshop: Verbindung ${typeName} zwischen Part ${partA} und Part ${partB}`, "INFO");
+        }
+        ws.connectFirstPartIdx = null;
+        this._workshopCloseConnectPopover();
+        this._workshopSetSelection(null);
+        this._renderWorkshopDOM();
     }
 
     // Hilfsmethode für UI/Tests: zählt Architekturen in Spieler-Nähe.
@@ -19331,6 +22276,8 @@ class AnazhRealm {
         this._updateBuildModeHud();
         this.initTopbar();
         this.initConsoleDOM();
+        // V8.00 — Resize-Handles für Konsole + alle Drawer (idempotent).
+        this.installResizeHandles();
         // Schicht 2 — LLM-Persistenz aus localStorage holen + UI verkabeln.
         this.llmLoadPersisted();
         this.initLlmUI();
@@ -19530,10 +22477,31 @@ class AnazhRealm {
             } else if (action === "cancelBuild" || event.key === "Escape") {
                 if (this.state.buildMode.active) this._clearBuildMode();
                 this._updateHotbarHighlight();
+            } else if (event.code === "KeyE") {
+                // Welle 10b.3 — E toggelt Mount/Dismount für moveable-
+                // Architekturen. Nur außerhalb des Werkstatt-Drawers (sonst
+                // ist E der Rotate-Modus-Shortcut).
+                if (this.state.uiActiveDrawer !== "werkstatt") {
+                    this.toggleMountAtPlayer();
+                    event.preventDefault();
+                }
+            } else if (event.code === "KeyZ") {
+                // Welle 10b.3 — Z gedrückt halten zoomt durch eine
+                // magnifying-Architektur. Nur wenn die Architektur im Blick
+                // ist. KeyDown ist auto-repeat-tolerant (setZoomActive ist
+                // idempotent — _zoomActive-Flag verhindert doppelte FOV-Sätze).
+                if (this.state.uiActiveDrawer !== "werkstatt") {
+                    this.setZoomActive(true);
+                    event.preventDefault();
+                }
             }
         });
         window.addEventListener("keyup", (event) => {
             this.state.keys[event.key.toLowerCase()] = false;
+            // Welle 10b.3 — Z-Loslassen beendet Zoom.
+            if (event.code === "KeyZ") {
+                this.setZoomActive(false);
+            }
         });
         this.log("Tastatureingaben initialisiert: WASD, Space, Shift", "INFO");
 
@@ -20121,6 +23089,9 @@ class AnazhRealm {
             this.tickBuildMode();
             // Ring 6: Bau-Werke mit Animations-Hook (nur Wasserfälle aktuell).
             this.tickArchitectures(currentTime);
+            // Welle 10b.3 — Affordance-Welt-Reaktionen: mounted-Movement +
+            // focusing-Hitze-Tick. Magnifying läuft asynchron via Tastendruck.
+            this.tickAffordances(delta);
 
             this.pruneDistantChunks(playerPos);
 
@@ -20763,6 +23734,153 @@ AnazhRealm.MATERIAL_OP_COMPATIBILITY = Object.freeze({
     quarz: Object.freeze(["subtractive", "phaseChange"]),
     leder: Object.freeze(["subtractive", "plastic", "additive"]),
 });
+
+// ============================================================
+// Welle 9a — Werkzeug-Domains + emergente Bauplan-Rolle.
+// Schöpfer-Vision (B+C Hybrid): die Rolle eines Bauplans EMERGIERT aus
+// den verwendeten Werkzeugen statt manuell gewählt zu werden — analog
+// wie Compound-Tags aus Material × Form emergieren. Eine Sprache, drei
+// Schichten (Material, Form, Werkzeug).
+//
+// TOOL_DOMAINS sind die sechs Werkstatt-Domänen. Bestehende Built-in-
+// Werkzeuge bleiben generisch (domain=null) — sie passen in jede Domain
+// und beeinflussen die Bauplan-Rolle NICHT. Erst Domain-spezifische
+// Werkzeuge (kommen in Phase 9b) entscheiden eine Rolle.
+// ============================================================
+AnazhRealm.TOOL_DOMAINS = Object.freeze([
+    "construction", // Architekturen, Welt-Bauten
+    "forging", // Werkzeuge + Rüstungen aus Metall/Stein (Tag-split)
+    "alchemy", // Konsumables, Tränke, Tinkturen
+    "textile", // Rüstungen aus Stoff/Leder/Pflanzlich
+    "soulwork", // Seelen-Avatare, rituelle Wesen
+    "mechanism", // Maschinen, komplexe Werkzeug-Bauten
+]);
+
+// Dominante Domain → Bauplan-Rolle. Forging ist ein Sonderfall: die
+// Rolle (tool vs armor) entscheidet sich erst aus den Compound-Tags
+// — eine harte Klinge wird Werkzeug, eine dichte Platte wird Rüstung.
+AnazhRealm.DOMAIN_TO_ROLE = Object.freeze({
+    construction: "architecture",
+    forging: "forging-split", // Sentinel, computeBlueprintRole handled das
+    alchemy: "consumable",
+    textile: "armor",
+    soulwork: "soul",
+    mechanism: "machine",
+});
+
+// Forging-Split: welche Compound-Tags ziehen den Bauplan zur tool-Seite
+// (scharf, leitend, durchdringend) bzw. zur armor-Seite (dicht, zäh,
+// schützend). Hylomorphismus-treu: die Tag-Sprache entscheidet, kein
+// neuer Schalter. Magie-leitung bei tool weil zauberfähige Klingen
+// in der Vision §1.3 öfter Werkzeuge sind (Stäbe, Phylakte).
+AnazhRealm.FORGING_TOOL_TAGS = Object.freeze(["härte", "magieleitung", "stromleitung"]);
+AnazhRealm.FORGING_ARMOR_TAGS = Object.freeze(["dichte", "zähigkeit", "wärmeleitung"]);
+
+// Default-Rolle wenn keine Domain dominiert (alle generic + leere Chain):
+// Bauplan ist eine Welt-Architektur. Erklärt warum die heutigen Built-in-
+// Baupläne (village/temple/etc.) ohne Werkzeug-Anwendung als architecture
+// landen.
+AnazhRealm.DEFAULT_BLUEPRINT_ROLE = "architecture";
+
+// Deutsche Labels für die Welt-Anzeige. Werkstatt-Status zeigt diese
+// statt der englischen Rolle-IDs.
+AnazhRealm.BLUEPRINT_ROLE_LABELS = Object.freeze({
+    architecture: "Bauwerk",
+    tool: "Werkzeug",
+    armor: "Rüstung",
+    consumable: "Konsumable",
+    soul: "Seele",
+    machine: "Maschine",
+});
+
+// Werkzeug-Domain-Labels (deutsch) für UI-Anzeige. null = generic
+// (zeigt keinen Domain-Indikator).
+AnazhRealm.TOOL_DOMAIN_LABELS = Object.freeze({
+    construction: "Konstruktion",
+    forging: "Schmiede",
+    alchemy: "Alchemie",
+    textile: "Weberei",
+    soulwork: "Seelenkunst",
+    mechanism: "Mechanik",
+});
+
+// Domain-Farben für visuelle Wiedererkennung der Werkstatt-Zugehörigkeit.
+AnazhRealm.TOOL_DOMAIN_COLORS = Object.freeze({
+    construction: "#9aaeb8", // Stein-Grau-Blau
+    forging: "#c44830", // Glut-Rot
+    alchemy: "#a878b8", // Magie-Violett
+    textile: "#d4b076", // Sand-Beige
+    soulwork: "#88e1e1", // Geist-Cyan
+    mechanism: "#b08648", // Bronze
+});
+
+// Welle 9c — Welt-Werkstatt-Radius. Spieler muss in dieser Nähe einer
+// Architektur mit passendem workshopDomain stehen (gemessen vom Spawn-
+// Punkt des neuen Bauplans), sonst lehnt confirmBuild im pfad-Modus ab.
+AnazhRealm.WORKSHOP_PROXIMITY_M = 10;
+
+// Welle 9d — Maschinen-Bonus. Ein als Werkzeug registriertes Bauplan
+// mit role="machine" (z. B. eine Drehbank-Kreation des Spielers) bekommt
+// auf seinen precisionCap einen Bonus auf den min-Werte der Parts.
+// Konzept §4.3 sagt: eine Maschine ist präziser als Handarbeit. Bonus
+// wird auf 1.0 gedeckelt (perfekte Präzision bleibt theoretisch).
+AnazhRealm.MACHINE_PRECISION_BONUS = 0.05;
+
+// ============================================================
+// Welle 10b — Compound-Tag-Affordances. Welt liest die Tag+räumliche
+// Konfiguration eines Bauplans und leitet emergent Verhaltens-Flags
+// ab: moveable, magnifying, focusing. KEINE Form-Whitelists, KEINE
+// Tabelle „Bauplan-Name X ist Auto" — eine Welt-Lese-Funktion entscheidet
+// aus Material × räumlicher Verteilung was das Compound IST.
+//
+// Schöpfer-Korrektur (16.05.2026): Form-Whitelists (cylinder/torus als
+// „Räder", cone/cylinder als „Achsen") waren Hardcode-Brüche im Vision-
+// Pfad. Vision-rein: emergent aus Tag-Sprache + räumlicher Topologie.
+//
+// Drei Starter-Affordances:
+//   moveable    — bewegliches Compound: Stütz-Konfiguration (≥2 Parts
+//                 in unterer bbox-Hälfte) + dichte (Trägheit) +
+//                 Antriebs-Tag (magieleitung oder stromleitung)
+//   magnifying  — optisches Compound: transparent ≥ Schwelle + Parts
+//                 entlang einer Achse ausgerichtet (axialer Aufbau)
+//   focusing    — brennfähiges Compound: transparent + wärmeleitung
+//                 (reine Tag-Sprache, keine Form-Erwartung)
+// ============================================================
+AnazhRealm.AFFORDANCE_THRESHOLDS = Object.freeze({
+    moveable: Object.freeze({
+        minSupportParts: 2, // ≥2 Parts in unterer bbox-Hälfte
+        midlineFactor: 0.5, // unten = unter bbox-Mitte (relativ!)
+        dichteMin: 0.3, // Compound muss Trägheit haben
+        antriebTagMin: 0.3, // magieleitung ODER stromleitung
+    }),
+    magnifying: Object.freeze({
+        transparentMin: 0.5, // Compound transparent-Tag
+        axialAlignmentMin: 0.6, // ≥60 % der Parts auf einer Linie
+        minAxialParts: 2, // mind. 2 Parts für eine Achse
+    }),
+    focusing: Object.freeze({
+        transparentMin: 0.5,
+        wärmeMin: 0.3,
+    }),
+});
+
+// Deutsche Affordance-Labels für UI-Anzeige.
+AnazhRealm.AFFORDANCE_LABELS = Object.freeze({
+    moveable: "fahrbar",
+    magnifying: "vergrößernd",
+    focusing: "bündelnd",
+});
+
+// Welt-Reaktion-Konstanten (Welle 10b.3).
+AnazhRealm.MOUNT_RANGE_M = 3; // Spieler muss diese Nähe für E-Mount haben
+AnazhRealm.MOUNT_FOLLOW_HEIGHT = 1.5; // Spieler sitzt oben drauf
+AnazhRealm.MOUNT_SPEED_FACTOR = 0.7; // Compounds fahren etwas langsamer als zu Fuß
+AnazhRealm.ZOOM_FOV_DEG = 25; // Magnifying-Compound zoomt auf 25°
+AnazhRealm.MAGNIFYING_RAY_RANGE_M = 8; // Spieler muss innerhalb dieser Reichweite drauf schauen
+AnazhRealm.FOCUSING_HEAT_RANGE_M = 4; // Brennbare Architekturen in diesem Radius werden erhitzt
+AnazhRealm.FOCUSING_HEAT_RATE_PER_SEC = 0.05; // Erwärmung pro Sekunde bei sunny
+AnazhRealm.FOCUSING_IGNITE_THRESHOLD = 1.0; // Schwelle bei der ignite ausgelöst wird
+AnazhRealm.BRENNBAR_TAG_MIN = 0.5; // Architektur gilt als brennbar ab diesem Tag-Wert
 // Welt-Effekt-Schwellen: zentralisiert, damit Tuning ohne Code-Suche geht.
 // Werte aus Konzept §6.3 (≥0.7 mild, ≥1.5 stark, ≥2.5 signatur).
 AnazhRealm.WORLD_EFFECT_THRESHOLDS = Object.freeze({

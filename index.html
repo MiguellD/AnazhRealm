@@ -1062,7 +1062,7 @@
             #world-guest-banner {
                 margin-top: 0.6em;
                 padding: 0.5em 0.7em;
-                background: rgba(180, 140, 80, 0.10);
+                background: rgba(180, 140, 80, 0.1);
                 border-left: 3px solid var(--brass-1, #8b6a3f);
                 border-radius: 0 3px 3px 0;
                 font-size: 0.9em;
@@ -1286,11 +1286,39 @@
                 right: 12px;
                 width: 300px;
                 max-height: calc(100vh - 140px);
-                overflow-y: auto;
+                /* V8.01 — overflow:hidden am Container, scroll im inneren
+                   .drawer-scroll-Wrapper (via JS bei Init). So bleiben
+                   Background + Border + Resize-Handle + h2 + close-button
+                   FEST am Container, nur die Sections scrollen. */
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
                 font-size: 12px;
                 z-index: 5;
                 border-radius: 12px;
-                box-shadow: var(--shadow-deep);
+                /* V8.00 Bug-Fix — Background direkt am Element (statt via
+                   ::before mit inset:0). Bei overflow-y:auto scrollte das
+                   ::before mit dem Inhalt weg; das Element selbst behält
+                   Background fix beim Scroll (CSS-Standard). Plus Corner-
+                   Dots als zusätzliche background-image-Layer. */
+                background:
+                    radial-gradient(circle 4px at 12px 12px, #1a1410 0 60%, transparent 65%),
+                    radial-gradient(circle 4px at calc(100% - 12px) 12px, #1a1410 0 60%, transparent 65%),
+                    radial-gradient(circle 4px at 12px calc(100% - 12px), #1a1410 0 60%, transparent 65%),
+                    radial-gradient(circle 4px at calc(100% - 12px) calc(100% - 12px), #1a1410 0 60%, transparent 65%),
+                    radial-gradient(ellipse 60% 80% at 30% 20%, rgba(255, 250, 220, 0.6), transparent 70%),
+                    radial-gradient(ellipse 70% 60% at 75% 85%, rgba(140, 90, 30, 0.18), transparent 70%),
+                    linear-gradient(135deg, var(--parch-1) 0%, var(--parch-2) 60%, var(--parch-3) 100%);
+                background-blend-mode: normal, normal, normal, normal, normal, multiply, normal;
+                /* Border-Ringe direkt als inset box-shadow — bleibt fest am
+                   Element, nicht im scroll-flow. */
+                box-shadow:
+                    var(--shadow-deep),
+                    inset 0 0 0 1px rgba(0, 0, 0, 0.55),
+                    inset 0 0 0 5px var(--iron-1),
+                    inset 0 0 0 6px rgba(0, 0, 0, 0.55),
+                    inset 0 0 0 8px var(--brass-3),
+                    inset 0 0 0 9px rgba(0, 0, 0, 0.4);
                 padding: 24px 20px 18px 20px;
                 color: var(--parch-ink);
                 transition:
@@ -1305,39 +1333,69 @@
                 opacity: 0;
                 pointer-events: none;
             }
-            .drawer::before {
-                content: "";
-                position: absolute;
-                inset: 0;
-                background:
-                    radial-gradient(ellipse 60% 80% at 30% 20%, rgba(255, 250, 220, 0.6), transparent 70%),
-                    radial-gradient(ellipse 70% 60% at 75% 85%, rgba(140, 90, 30, 0.18), transparent 70%),
-                    linear-gradient(135deg, var(--parch-1) 0%, var(--parch-2) 60%, var(--parch-3) 100%);
-                background-blend-mode: normal, multiply, normal;
-                border-radius: inherit;
-                z-index: -1;
-            }
-            .drawer::after {
-                content: "";
-                position: absolute;
-                inset: 0;
-                border-radius: inherit;
-                pointer-events: none;
-                box-shadow:
-                    inset 0 0 0 1px rgba(0, 0, 0, 0.55),
-                    inset 0 0 0 5px var(--iron-1),
-                    inset 0 0 0 6px rgba(0, 0, 0, 0.55),
-                    inset 0 0 0 8px var(--brass-3),
-                    inset 0 0 0 9px rgba(0, 0, 0, 0.4);
-                background:
-                    radial-gradient(circle 4px at 12px 12px, #1a1410 0 60%, transparent 65%),
-                    radial-gradient(circle 4px at calc(100% - 12px) 12px, #1a1410 0 60%, transparent 65%),
-                    radial-gradient(circle 4px at 12px calc(100% - 12px), #1a1410 0 60%, transparent 65%),
-                    radial-gradient(circle 4px at calc(100% - 12px) calc(100% - 12px), #1a1410 0 60%, transparent 65%);
-            }
             .drawer > * {
                 position: relative;
                 z-index: 1;
+            }
+            /* V8.01 — h2 + close-button bleiben oben fest (kein flex-shrink),
+               .drawer-scroll nimmt restliche Höhe + scrollt nur Inhalt. */
+            .drawer > h2 {
+                flex-shrink: 0;
+            }
+            .drawer-scroll {
+                flex: 1;
+                overflow-y: auto;
+                min-height: 0;
+                padding-right: 4px;
+                position: relative;
+                z-index: 1;
+                /* V8.03 — verhindert dass Wheel-Events vom Canvas zum Drawer-
+                   Scroll durchsickern. preventDefault im Canvas-Listener ist
+                   die primäre Wand, overscroll-behavior:contain die zweite. */
+                overscroll-behavior: contain;
+            }
+            /* V8.00 — Resize-Handle für Konsole + Drawer.
+               Konsole: unten-rechts (resize-br, nwse-cursor)
+               Drawer: unten-links (resize-bl, nesw-cursor) — wächst nach
+               links + unten, weil Drawer am rechten Bildschirmrand fix. */
+            .resize-handle {
+                position: absolute;
+                width: 18px;
+                height: 18px;
+                z-index: 50;
+                background: linear-gradient(
+                    135deg,
+                    transparent 30%,
+                    rgba(40, 25, 10, 0.55) 30%,
+                    rgba(40, 25, 10, 0.55) 36%,
+                    transparent 36%,
+                    transparent 50%,
+                    var(--brass-2) 50%,
+                    var(--brass-2) 56%,
+                    transparent 56%,
+                    transparent 70%,
+                    var(--brass-2) 70%,
+                    var(--brass-2) 76%,
+                    transparent 76%
+                );
+                opacity: 0.85;
+                transition: opacity 0.15s ease;
+                user-select: none;
+                -webkit-user-select: none;
+            }
+            .resize-handle:hover {
+                opacity: 1;
+            }
+            .resize-handle.resize-br {
+                bottom: 2px;
+                right: 2px;
+                cursor: nwse-resize;
+            }
+            .resize-handle.resize-bl {
+                bottom: 2px;
+                left: 2px;
+                cursor: nesw-resize;
+                transform: scaleX(-1);
             }
             .drawer h2 {
                 font-family: "Cinzel", Georgia, serif;
@@ -1699,8 +1757,13 @@
                 animation: keybind-pulse 0.9s ease-in-out infinite;
             }
             @keyframes keybind-pulse {
-                0%, 100% { opacity: 1; }
-                50% { opacity: 0.6; }
+                0%,
+                100% {
+                    opacity: 1;
+                }
+                50% {
+                    opacity: 0.6;
+                }
             }
             /* Welle 6.H Phase 2A — Kreatur-Liste im Kreaturen-Drawer.
                Eine Zeile pro Kreatur: Name + Form + aktueller Task. */
@@ -2408,6 +2471,20 @@
                 border: 1px solid var(--brass-3);
                 border-radius: 2px;
                 color: var(--parch-ink);
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+            }
+            /* Welle 9b — Werkzeug-Domain-Punkt: kleine farbige Sphäre als
+               visueller Anker für die Werkstatt-Domäne. Nur bei Werkzeugen
+               mit `domain` sichtbar. */
+            .workshop-tool-domain-dot {
+                display: inline-block;
+                width: 7px;
+                height: 7px;
+                border-radius: 50%;
+                border: 1px solid rgba(0, 0, 0, 0.4);
+                flex-shrink: 0;
             }
             .workshop-opchain {
                 grid-column: 1 / -1;
@@ -2580,6 +2657,555 @@
             }
             .workshop-conn-addbtn:hover {
                 background: var(--brass-1);
+            }
+            /* Welle 6.B Phase 1 — CAD-Werkstatt Preview-Canvas */
+            #workshop-preview-wrapper {
+                margin: 4px 0 6px 0;
+                padding: 6px;
+                background: rgba(20, 14, 6, 0.55);
+                border: 1px solid var(--brass-3);
+                border-radius: 3px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 4px;
+            }
+            #workshop-preview-canvas {
+                display: block;
+                width: 100%;
+                aspect-ratio: 1 / 1;
+                background: #1a140a;
+                border: 1px solid var(--parch-edge);
+                border-radius: 2px;
+                cursor: grab;
+                touch-action: none;
+            }
+            #workshop-preview-canvas:active {
+                cursor: grabbing;
+            }
+            .workshop-preview-hint {
+                margin: 0;
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                font-size: 10px;
+                color: var(--parch-ink-faded);
+                text-align: center;
+            }
+            .workshop-preview-selected {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10px;
+                color: var(--violet-1);
+                letter-spacing: 0.5px;
+            }
+            /* Welle 6.B Phase 2 — Manipulator-Modus-Bar (V8.05: über Canvas) */
+            #workshop-mode-bar {
+                display: flex;
+                gap: 4px;
+                margin: 0 0 6px 0;
+                padding: 4px 6px;
+                background: rgba(255, 235, 190, 0.18);
+                border: 1px solid var(--brass-3);
+                border-radius: 3px;
+                flex-wrap: wrap;
+                justify-content: center;
+                align-items: center;
+            }
+            /* V8.05/8.06 — Stats-Panel direkt unter dem Canvas: zeigt emergente
+               Compound-Tags + Affordances + Rolle live. Höherer Kontrast — dunkler
+               Hintergrund + helle Text-Chips damit die Werte auf der hellen
+               Pergament-Drawer-Basis lesbar sind. */
+            #workshop-stats-panel {
+                margin: 4px 0 0 0;
+                padding: 7px 9px;
+                background: rgba(20, 12, 4, 0.65);
+                border: 1px solid var(--brass-3);
+                border-radius: 3px;
+                font-family: "JetBrains Mono", monospace;
+                font-size: 10px;
+                color: var(--parch-bg);
+                line-height: 1.6;
+                min-height: 18px;
+            }
+            #workshop-stats-panel .stat-row {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 5px 10px;
+                align-items: center;
+                margin-bottom: 3px;
+            }
+            #workshop-stats-panel .stat-row:last-child {
+                margin-bottom: 0;
+            }
+            #workshop-stats-panel .stat-label {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9px;
+                letter-spacing: 0.6px;
+                color: var(--brass-1);
+                text-transform: uppercase;
+                margin-right: 4px;
+                font-weight: 600;
+            }
+            #workshop-stats-panel .tag-chip {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                padding: 2px 7px;
+                background: rgba(255, 235, 190, 0.18);
+                border: 1px solid var(--brass-2);
+                border-radius: 2px;
+                font-size: 10px;
+                color: var(--parch-bg);
+                font-weight: 500;
+            }
+            /* V8.07 — Stern-Rating pro Tag-Chip. Schwellen aus WORLD_EFFECT_
+               THRESHOLDS (mild=0.7 / strong=1.5 / signature=2.5). Farbe wächst
+               mit Stärke: lvl-0 grau (matt), lvl-1 brass (mild), lvl-2 gold
+               (stark), lvl-3 violet (Signature). */
+            #workshop-stats-panel .tag-chip .tag-stars {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 11px;
+                color: #6a5a3a;
+                letter-spacing: 1px;
+            }
+            #workshop-stats-panel .tag-chip .tag-name {
+                color: var(--parch-bg);
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10px;
+                letter-spacing: 0.3px;
+            }
+            #workshop-stats-panel .tag-chip .tag-val {
+                font-family: "JetBrains Mono", monospace;
+                color: var(--parch-ink-soft);
+                font-size: 9px;
+                margin-left: 2px;
+            }
+            #workshop-stats-panel .tag-chip.lvl-1 {
+                background: rgba(212, 163, 115, 0.32);
+                border-color: var(--brass-2);
+            }
+            #workshop-stats-panel .tag-chip.lvl-1 .tag-stars {
+                color: #d4a373;
+            }
+            #workshop-stats-panel .tag-chip.lvl-2 {
+                background: linear-gradient(180deg, rgba(232, 200, 80, 0.48), rgba(180, 140, 40, 0.28));
+                border-color: #e8c850;
+            }
+            #workshop-stats-panel .tag-chip.lvl-2 .tag-stars {
+                color: #ffe066;
+                text-shadow: 0 0 4px rgba(255, 224, 102, 0.5);
+            }
+            #workshop-stats-panel .tag-chip.lvl-3 {
+                background: linear-gradient(180deg, rgba(176, 106, 217, 0.6), rgba(120, 60, 180, 0.4));
+                border-color: var(--violet-1);
+            }
+            #workshop-stats-panel .tag-chip.lvl-3 .tag-stars {
+                color: #e9c8ff;
+                text-shadow: 0 0 6px rgba(176, 106, 217, 0.7);
+            }
+            #workshop-stats-panel .tag-chip.lvl-3 .tag-name,
+            #workshop-stats-panel .tag-chip.lvl-3 .tag-val {
+                color: #fff;
+            }
+            #workshop-stats-panel .affordance-chip {
+                padding: 2px 8px;
+                background: linear-gradient(180deg, rgba(176, 106, 217, 0.75), rgba(120, 60, 180, 0.55));
+                border: 1px solid var(--violet-1);
+                border-radius: 2px;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10px;
+                color: #fff;
+                letter-spacing: 0.5px;
+                font-weight: 600;
+                text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+            }
+            #workshop-stats-panel .role-chip {
+                padding: 2px 8px;
+                background: linear-gradient(180deg, rgba(160, 110, 70, 0.85), rgba(110, 70, 35, 0.65));
+                border: 1px solid var(--brass-1);
+                border-radius: 2px;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10px;
+                color: #fff;
+                letter-spacing: 0.5px;
+                font-weight: 600;
+                text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+            }
+            /* V8.05 — Del-Button unter der Form-Palette */
+            .workshop-delete-btn {
+                margin: 6px 0 0 0;
+                padding: 4px 6px;
+                background: linear-gradient(180deg, rgba(196, 72, 48, 0.18), rgba(140, 50, 30, 0.08));
+                border: 1px solid var(--iron-1);
+                border-radius: 3px;
+                color: var(--parch-ink);
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9px;
+                letter-spacing: 0.5px;
+                cursor: pointer;
+                text-align: center;
+                transition: opacity 0.15s ease;
+            }
+            .workshop-delete-btn:hover:not(:disabled) {
+                background: linear-gradient(180deg, rgba(196, 72, 48, 0.34), rgba(140, 50, 30, 0.18));
+                border-color: #c44830;
+            }
+            .workshop-delete-btn:disabled {
+                opacity: 0.35;
+                cursor: not-allowed;
+            }
+            /* V8.05 — Werkzeug-Palette analog Material/Color (gleiche Layout-Sprache) */
+            #workshop-tool-palette {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 3px;
+            }
+            .workshop-tool-card {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                padding: 3px 5px;
+                background: rgba(40, 25, 10, 0.08);
+                border: 1px solid var(--brass-3);
+                border-radius: 3px;
+                cursor: grab;
+                user-select: none;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 8px;
+                color: var(--parch-ink);
+            }
+            .workshop-tool-card:hover {
+                background: rgba(40, 25, 10, 0.22);
+                border-color: var(--brass-1);
+            }
+            .workshop-tool-card:active {
+                cursor: grabbing;
+            }
+            .workshop-tool-card.dragging {
+                opacity: 0.4;
+            }
+            .workshop-tool-card .tool-prec {
+                font-family: "JetBrains Mono", monospace;
+                color: var(--brass-2);
+                margin-left: auto;
+            }
+            /* V8.05 — Editor collapsible */
+            .workshop-editor-toggle {
+                width: 100%;
+                padding: 6px 10px;
+                background: rgba(40, 25, 10, 0.08);
+                border: 1px solid var(--brass-3);
+                border-radius: 3px;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 11px;
+                color: var(--parch-ink);
+                text-align: left;
+                cursor: pointer;
+                letter-spacing: 0.5px;
+                margin: 4px 0;
+            }
+            .workshop-editor-toggle:hover {
+                background: rgba(40, 25, 10, 0.18);
+            }
+            .workshop-editor-toggle .caret {
+                display: inline-block;
+                transition: transform 0.15s ease;
+                margin-right: 6px;
+                color: var(--brass-1);
+            }
+            .workshop-editor-toggle[aria-expanded="true"] .caret {
+                transform: rotate(90deg);
+            }
+            /* V8.06 — höherer Kontrast für Mode-Bar. Mode-Bar sitzt jetzt
+               auf hellem Pergament, also dunkler Hintergrund + dunklerer Text
+               + stärkerer Border. */
+            .workshop-mode-btn,
+            .workshop-snap-btn,
+            .workshop-action-btn {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 11px;
+                font-weight: 600;
+                padding: 5px 12px;
+                background: rgba(40, 25, 10, 0.55);
+                color: var(--parch-bg);
+                border: 1px solid var(--iron-1);
+                border-radius: 3px;
+                cursor: pointer;
+                letter-spacing: 0.5px;
+                text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+            }
+            .workshop-mode-btn:hover,
+            .workshop-snap-btn:hover,
+            .workshop-action-btn:hover {
+                background: rgba(20, 12, 4, 0.72);
+                border-color: var(--brass-1);
+            }
+            .workshop-mode-btn.active {
+                background: linear-gradient(180deg, rgba(120, 60, 180, 0.85), rgba(80, 35, 130, 0.7));
+                border-color: var(--violet-1);
+                color: #fff;
+            }
+            .workshop-snap-btn.active {
+                background: linear-gradient(180deg, rgba(160, 110, 70, 0.85), rgba(110, 70, 35, 0.7));
+                border-color: var(--brass-1);
+                color: #fff;
+            }
+            .workshop-action-btn {
+                background: rgba(40, 25, 10, 0.55);
+            }
+            .workshop-mode-divider {
+                display: inline-block;
+                width: 1px;
+                height: 20px;
+                background: var(--brass-3);
+                margin: 0 4px;
+                vertical-align: middle;
+            }
+            #workshop-readonly-banner {
+                width: 100%;
+                margin: 2px 0 0 0;
+                padding: 4px 8px;
+                background: linear-gradient(180deg, rgba(180, 130, 70, 0.25), rgba(120, 80, 30, 0.18));
+                border: 1px solid var(--brass-3);
+                border-radius: 2px;
+                font-family: "IM Fell English", Georgia, serif;
+                font-size: 11px;
+                font-style: italic;
+                color: var(--parch-ink-faded);
+                text-align: center;
+                box-sizing: border-box;
+            }
+            /* V8.03 — Werkstatt-Layout: Side-Palette + Canvas nebeneinander */
+            #workshop-preview-row {
+                display: flex;
+                flex-direction: row;
+                gap: 8px;
+                align-items: stretch;
+            }
+            #workshop-side-palette {
+                flex: 0 0 88px;
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+                min-width: 0;
+            }
+            /* V8.06 — rechte Spalte 50 % breiter, damit Material/Werkzeug/
+               Farbe-Cards mehr Atem haben. */
+            #workshop-side-palette-right {
+                flex: 0 0 132px;
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+                min-width: 0;
+            }
+            #workshop-side-palette h4,
+            #workshop-side-palette-right h4 {
+                margin: 4px 0 2px 0;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10px;
+                letter-spacing: 0.6px;
+                text-transform: uppercase;
+                color: var(--brass-1);
+                border-bottom: 1px solid var(--parch-edge);
+                padding-bottom: 2px;
+            }
+            #workshop-preview-row #workshop-preview-wrapper {
+                flex: 1;
+                min-width: 0;
+            }
+            /* V8.02 Phase 3a — Shape-Palette mit HTML5-Drag (seitlich, eine Spalte) */
+            #workshop-shape-palette {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 3px;
+            }
+            .workshop-shape-card {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 1px;
+                padding: 3px 2px;
+                background: rgba(40, 25, 10, 0.08);
+                border: 1px solid var(--brass-3);
+                border-radius: 3px;
+                cursor: grab;
+                user-select: none;
+                -webkit-user-select: none;
+                transition:
+                    background 0.15s ease,
+                    border-color 0.15s ease;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 8px;
+                letter-spacing: 0.3px;
+                color: var(--parch-ink);
+                text-align: center;
+            }
+            .workshop-shape-card:hover {
+                background: rgba(40, 25, 10, 0.22);
+                border-color: var(--brass-1);
+            }
+            .workshop-shape-card:active {
+                cursor: grabbing;
+            }
+            .workshop-shape-card.dragging {
+                opacity: 0.4;
+            }
+            .workshop-shape-icon {
+                width: 20px;
+                height: 20px;
+                background: var(--brass-2);
+                pointer-events: none;
+            }
+            /* Mini-ASCII-Icons via clip-path/mask: einfache Silhouetten je Form */
+            .workshop-shape-icon[data-icon="box"] {
+                clip-path: polygon(15% 25%, 50% 5%, 85% 25%, 85% 75%, 50% 95%, 15% 75%);
+            }
+            .workshop-shape-icon[data-icon="sphere"] {
+                border-radius: 50%;
+                clip-path: none;
+                background: radial-gradient(circle at 35% 30%, #f4e4b8 0%, var(--brass-2) 70%);
+            }
+            .workshop-shape-icon[data-icon="cylinder"] {
+                clip-path: polygon(15% 12%, 85% 12%, 85% 88%, 15% 88%);
+                border-radius: 50% / 12%;
+            }
+            .workshop-shape-icon[data-icon="cone"] {
+                clip-path: polygon(50% 5%, 90% 90%, 10% 90%);
+            }
+            .workshop-shape-icon[data-icon="pyramid"] {
+                clip-path: polygon(50% 5%, 95% 70%, 70% 95%, 30% 95%, 5% 70%);
+            }
+            .workshop-shape-icon[data-icon="octahedron"] {
+                clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+            }
+            .workshop-shape-icon[data-icon="plane"] {
+                clip-path: polygon(5% 45%, 95% 45%, 95% 55%, 5% 55%);
+            }
+            .workshop-shape-icon[data-icon="torus"] {
+                border-radius: 50%;
+                background: radial-gradient(
+                    circle at center,
+                    transparent 30%,
+                    var(--brass-2) 32%,
+                    var(--brass-2) 80%,
+                    transparent 82%
+                );
+            }
+            .workshop-shape-icon[data-icon="helix"] {
+                background: repeating-linear-gradient(45deg, var(--brass-2) 0 4px, transparent 4px 8px);
+                clip-path: polygon(35% 0%, 65% 0%, 65% 100%, 35% 100%);
+            }
+            #workshop-preview-canvas.drop-target {
+                box-shadow:
+                    0 0 0 2px var(--violet-1),
+                    0 0 18px 4px rgba(176, 106, 217, 0.45);
+                border-color: var(--violet-1);
+            }
+            /* V8.03 — Material- + Farb-Palette als seitliche Drag-Sources */
+            #workshop-material-palette,
+            #workshop-color-palette {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 3px;
+            }
+            .workshop-material-card,
+            .workshop-color-swatch {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 4px 3px;
+                background: rgba(40, 25, 10, 0.08);
+                border: 1px solid var(--brass-3);
+                border-radius: 3px;
+                cursor: grab;
+                user-select: none;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 8px;
+                letter-spacing: 0.3px;
+                color: var(--parch-ink);
+                text-align: center;
+                min-height: 22px;
+                position: relative;
+                overflow: hidden;
+            }
+            .workshop-material-card:hover,
+            .workshop-color-swatch:hover {
+                border-color: var(--brass-1);
+            }
+            .workshop-material-card:active,
+            .workshop-color-swatch:active {
+                cursor: grabbing;
+            }
+            .workshop-material-card.dragging,
+            .workshop-color-swatch.dragging {
+                opacity: 0.4;
+            }
+            .workshop-material-card .mat-swatch {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                border: 1px solid rgba(0, 0, 0, 0.45);
+                margin-right: 3px;
+                flex-shrink: 0;
+            }
+            .workshop-color-swatch {
+                min-height: 18px;
+                padding: 0;
+                color: transparent;
+            }
+            /* V8.02 Phase 3b — Connect-Modus Visualisierung */
+            .workshop-mode-btn[data-workshop-mode="connect"].active {
+                background: linear-gradient(180deg, rgba(102, 204, 119, 0.5), rgba(70, 160, 90, 0.35));
+                border-color: #4dd07b;
+            }
+            #workshop-connect-overlay {
+                position: absolute;
+                z-index: 60;
+                background: rgba(20, 12, 4, 0.95);
+                border: 1px solid var(--brass-1);
+                border-radius: 4px;
+                padding: 6px;
+                box-shadow: 0 6px 16px rgba(0, 0, 0, 0.55);
+                display: flex;
+                flex-direction: column;
+                gap: 3px;
+                min-width: 180px;
+            }
+            #workshop-connect-overlay .conn-title {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10px;
+                letter-spacing: 0.5px;
+                color: var(--brass-1);
+                padding: 2px 4px;
+                border-bottom: 1px solid var(--brass-3);
+                margin-bottom: 2px;
+            }
+            #workshop-connect-overlay button {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10px;
+                padding: 4px 8px;
+                background: rgba(60, 38, 16, 0.65);
+                color: var(--parch-bg);
+                border: 1px solid var(--brass-3);
+                border-radius: 2px;
+                cursor: pointer;
+                text-align: left;
+            }
+            #workshop-connect-overlay button:hover {
+                background: rgba(176, 106, 217, 0.35);
+                border-color: var(--violet-1);
+            }
+            #workshop-connect-overlay button.cancel {
+                margin-top: 4px;
+                background: transparent;
+                color: var(--parch-ink-faded);
+                border-color: var(--parch-edge);
+                text-align: center;
+                font-style: italic;
+            }
+            .workshop-part-row.selected {
+                background: linear-gradient(180deg, rgba(176, 106, 217, 0.18), rgba(176, 106, 217, 0.08));
+                border-color: var(--violet-1);
+                box-shadow: 0 0 0 1px var(--violet-1) inset;
             }
             .workshop-tool-recursion {
                 margin-top: 10px;
@@ -2986,8 +3612,8 @@
             <section class="section">
                 <h3>Sammeln</h3>
                 <p class="drawer-hint">
-                    Die nächste Kreatur sucht eine Architektur mit dem gewählten Material, bringt sie ins
-                    Inventar und merkt sich was sie fand.
+                    Die nächste Kreatur sucht eine Architektur mit dem gewählten Material, bringt sie ins Inventar und
+                    merkt sich was sie fand.
                 </p>
                 <div class="soul-row">
                     <label for="creature-gather-select">Material</label>
@@ -3019,8 +3645,8 @@
             <section class="section">
                 <h3>Bauen lassen</h3>
                 <p class="drawer-hint">
-                    Die nächste Kreatur kommt zum Schöpfer, nimmt das nötige Material und erschafft daraus
-                    eine Architektur ein paar Schritte entfernt. Spiegel zu „Sammeln".
+                    Die nächste Kreatur kommt zum Schöpfer, nimmt das nötige Material und erschafft daraus eine
+                    Architektur ein paar Schritte entfernt. Spiegel zu „Sammeln".
                 </p>
                 <div class="soul-row">
                     <label for="creature-build-select">Bauplan</label>
@@ -3053,9 +3679,8 @@
             <section class="section">
                 <h3>Wesen in der Welt</h3>
                 <p class="drawer-hint">
-                    Identität ist ein Name (Vision §1.1 — Co-Schöpfer-Beziehung). Tag-Profil emergiert aus
-                    Form × Material — eine Sprite ist magie-leitend, ein Wesen dichte/lebendig, ein Geist
-                    ätherisch.
+                    Identität ist ein Name (Vision §1.1 — Co-Schöpfer-Beziehung). Tag-Profil emergiert aus Form ×
+                    Material — eine Sprite ist magie-leitend, ein Wesen dichte/lebendig, ein Geist ätherisch.
                 </p>
                 <div id="creature-list" class="creature-list" aria-live="polite">—</div>
             </section>
@@ -3065,7 +3690,10 @@
             <h2>Spieler</h2>
             <section class="section">
                 <h3>Seele</h3>
-                <p class="drawer-hint">Form des Spieler-Avatars. Welle 6.D: jede Seele trägt ein Material-Tag-Profil, daraus folgen Stats (Mensch balanced, Phönix schnell/fragil, Drache zäh/langsam).</p>
+                <p class="drawer-hint">
+                    Form des Spieler-Avatars. Welle 6.D: jede Seele trägt ein Material-Tag-Profil, daraus folgen Stats
+                    (Mensch balanced, Phönix schnell/fragil, Drache zäh/langsam).
+                </p>
                 <div class="soul-row">
                     <label for="player-soul-select">Form</label>
                     <select id="player-soul-select" aria-label="Spieler-Seele wählen"></select>
@@ -3077,12 +3705,18 @@
             </section>
             <section class="section">
                 <h3>Eigene Seele formen <span class="section-hint">(Bauplan aus Körper-Teilen)</span></h3>
-                <p class="drawer-hint">Wie Bauwerke + Maschinen: Form × Material × Anordnung → Compound-Tags → Stats. Klone eine Built-in oder erschaffe eine neue Komposition.</p>
+                <p class="drawer-hint">
+                    Wie Bauwerke + Maschinen: Form × Material × Anordnung → Compound-Tags → Stats. Klone eine Built-in
+                    oder erschaffe eine neue Komposition.
+                </p>
                 <div id="soul-editor"></div>
             </section>
             <section class="section">
                 <h3>Ausrüstung <span class="section-hint">(Werkzeug × 0.15 + Rüstung × 0.3)</span></h3>
-                <p class="drawer-hint">Werkzeug + Rüstung tragen ihre Compound-Tags in die Stat-Rechnung. Rüstung wirkt stärker als Werkzeug.</p>
+                <p class="drawer-hint">
+                    Werkzeug + Rüstung tragen ihre Compound-Tags in die Stat-Rechnung. Rüstung wirkt stärker als
+                    Werkzeug.
+                </p>
                 <div id="player-equip"></div>
             </section>
             <section class="section">
@@ -3115,8 +3749,147 @@
                 <div id="workshop-list"></div>
             </section>
             <section class="section">
-                <h3>Editor</h3>
-                <div id="workshop-editor"></div>
+                <h3>3D-Vorschau</h3>
+                <p class="drawer-hint">
+                    Klick: Part · Drag-Achse: bewegen · Drag-leer: orbit · Shift+Drag oder Mittelmaus: pan · Rad: zoom
+                    zum Cursor · W/E/R/C Modus · G snap
+                </p>
+                <div id="workshop-preview-row">
+                    <aside id="workshop-side-palette" aria-label="Form-Palette">
+                        <h4>Formen</h4>
+                        <div id="workshop-shape-palette" role="group" aria-label="Form-Palette">
+                            <div class="workshop-shape-card" draggable="true" data-shape="box" title="Würfel">
+                                <div class="workshop-shape-icon" data-icon="box"></div>
+                                <span>Würfel</span>
+                            </div>
+                            <div class="workshop-shape-card" draggable="true" data-shape="sphere" title="Kugel">
+                                <div class="workshop-shape-icon" data-icon="sphere"></div>
+                                <span>Kugel</span>
+                            </div>
+                            <div class="workshop-shape-card" draggable="true" data-shape="cylinder" title="Zylinder">
+                                <div class="workshop-shape-icon" data-icon="cylinder"></div>
+                                <span>Zylinder</span>
+                            </div>
+                            <div class="workshop-shape-card" draggable="true" data-shape="cone" title="Kegel">
+                                <div class="workshop-shape-icon" data-icon="cone"></div>
+                                <span>Kegel</span>
+                            </div>
+                            <div class="workshop-shape-card" draggable="true" data-shape="pyramid" title="Pyramide">
+                                <div class="workshop-shape-icon" data-icon="pyramid"></div>
+                                <span>Pyramide</span>
+                            </div>
+                            <div class="workshop-shape-card" draggable="true" data-shape="octahedron" title="Oktaeder">
+                                <div class="workshop-shape-icon" data-icon="octahedron"></div>
+                                <span>Oktaeder</span>
+                            </div>
+                            <div class="workshop-shape-card" draggable="true" data-shape="plane" title="Plane">
+                                <div class="workshop-shape-icon" data-icon="plane"></div>
+                                <span>Plane</span>
+                            </div>
+                            <div class="workshop-shape-card" draggable="true" data-shape="torus" title="Torus">
+                                <div class="workshop-shape-icon" data-icon="torus"></div>
+                                <span>Torus</span>
+                            </div>
+                            <div class="workshop-shape-card" draggable="true" data-shape="helix" title="Helix">
+                                <div class="workshop-shape-icon" data-icon="helix"></div>
+                                <span>Helix</span>
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            id="workshop-delete-selected-part"
+                            class="workshop-delete-btn"
+                            title="Selektierten Part entfernen (Entf)"
+                            disabled
+                        >
+                            ✖ Part entfernen
+                        </button>
+                    </aside>
+                    <div id="workshop-preview-wrapper">
+                        <div id="workshop-mode-bar" role="group" aria-label="Manipulator-Modus">
+                            <button
+                                type="button"
+                                class="workshop-mode-btn active"
+                                data-workshop-mode="translate"
+                                title="Verschieben (W)"
+                            >
+                                Move
+                            </button>
+                            <button
+                                type="button"
+                                class="workshop-mode-btn"
+                                data-workshop-mode="rotate"
+                                title="Drehen (E)"
+                            >
+                                Rotate
+                            </button>
+                            <button
+                                type="button"
+                                class="workshop-mode-btn"
+                                data-workshop-mode="scale"
+                                title="Skalieren (R)"
+                            >
+                                Scale
+                            </button>
+                            <button
+                                type="button"
+                                class="workshop-mode-btn"
+                                data-workshop-mode="connect"
+                                title="Verbinden (C)"
+                            >
+                                Connect
+                            </button>
+                            <button
+                                type="button"
+                                id="workshop-snap-toggle"
+                                class="workshop-snap-btn active"
+                                title="Grid-Snap (G)"
+                            >
+                                Snap
+                            </button>
+                            <span class="workshop-mode-divider" aria-hidden="true"></span>
+                            <button
+                                type="button"
+                                id="workshop-clone-btn"
+                                class="workshop-action-btn"
+                                title="Aktuellen Bauplan klonen"
+                            >
+                                Klonen
+                            </button>
+                            <button
+                                type="button"
+                                id="workshop-new-btn"
+                                class="workshop-action-btn"
+                                title="Neuer leerer Bauplan"
+                            >
+                                Neu
+                            </button>
+                        </div>
+                        <canvas id="workshop-preview-canvas"></canvas>
+                        <div id="workshop-readonly-banner" hidden>Eingebaut — zum Bearbeiten klonen</div>
+                        <div id="workshop-stats-panel" aria-live="polite"></div>
+                    </div>
+                    <aside id="workshop-side-palette-right" aria-label="Material-/Werkzeug-/Farb-Palette">
+                        <h4>Materialien</h4>
+                        <div id="workshop-material-palette" role="group" aria-label="Material-Palette"></div>
+                        <h4>Werkzeuge</h4>
+                        <div id="workshop-tool-palette" role="group" aria-label="Werkzeug-Palette"></div>
+                        <h4>Farben</h4>
+                        <div id="workshop-color-palette" role="group" aria-label="Farb-Palette"></div>
+                    </aside>
+                </div>
+            </section>
+            <section class="section" id="workshop-editor-section">
+                <button
+                    type="button"
+                    id="workshop-editor-toggle"
+                    class="workshop-editor-toggle"
+                    aria-expanded="false"
+                    title="Editor-Tabelle ein-/ausklappen"
+                >
+                    <span class="caret">▸</span> Editor (Detail-Werte)
+                </button>
+                <div id="workshop-editor" hidden></div>
             </section>
         </aside>
         <aside class="drawer" data-drawer="einstellungen" aria-label="Einstellungen-Panel" hidden>
@@ -3160,8 +3933,8 @@
             <section class="section" id="creature-speech-section">
                 <h3>Kreaturen-Stimmen</h3>
                 <p class="drawer-hint">
-                    Kreaturen sprechen von selbst bei wichtigen Ereignissen — Level-Up, Trank-Wirkung, fehlendes Material.
-                    Sanft gedrosselt (60s/Wesen, 8s gesamt), damit der Chat ruhig bleibt.
+                    Kreaturen sprechen von selbst bei wichtigen Ereignissen — Level-Up, Trank-Wirkung, fehlendes
+                    Material. Sanft gedrosselt (60s/Wesen, 8s gesamt), damit der Chat ruhig bleibt.
                 </p>
                 <label class="radio-label">
                     <input type="checkbox" id="creature-speech-toggle" checked />
@@ -3174,9 +3947,9 @@
             <section class="section" id="keybindings-section">
                 <h3>Tastenbelegung</h3>
                 <p class="drawer-hint">
-                    Klick „Ändern" und drücke dann die gewünschte Taste oder Maustaste. Esc bricht ab. WASD und 1-9
-                    sind Konvention und bleiben fest. <strong>Abbauen</strong> entfernt Architekturen am Fadenkreuz —
-                    trifft keine, wird ein Loch ins Terrain gegraben.
+                    Klick „Ändern" und drücke dann die gewünschte Taste oder Maustaste. Esc bricht ab. WASD und 1-9 sind
+                    Konvention und bleiben fest. <strong>Abbauen</strong> entfernt Architekturen am Fadenkreuz — trifft
+                    keine, wird ein Loch ins Terrain gegraben.
                 </p>
                 <div id="keybindings-list"></div>
                 <div class="actions">
@@ -3233,8 +4006,10 @@
                 </div>
                 <div class="drawer-hint" style="font-size: 11px; opacity: 0.75; margin-top: -6px">
                     Endpoint kann eine Basis-URL sein (z.B. <code>http://localhost:11434</code> →
-                    <code>/api/chat</code> wird angehängt) oder eine vollständige URL inklusive Pfad
-                    (<code>https://ollama.com/api/chat</code> oder <code>https://provider/v1/chat/completions</code>
+                    <code>/api/chat</code> wird angehängt) oder eine vollständige URL inklusive Pfad (<code
+                        >https://ollama.com/api/chat</code
+                    >
+                    oder <code>https://provider/v1/chat/completions</code>
                     für OpenAI-kompatible Cloud-Hoster).
                 </div>
                 <!-- V7.96 — Proxy-Toggle: Ollama Cloud (ollama.com etc.) sendet KEINE
@@ -3246,12 +4021,18 @@
                         <span>Cloud über save-server-Proxy (löst CORS)</span>
                     </label>
                 </div>
-                <div class="drawer-hint" id="llm-proxy-hint" hidden style="font-size: 11px; opacity: 0.75; margin-top: -6px">
+                <div
+                    class="drawer-hint"
+                    id="llm-proxy-hint"
+                    hidden
+                    style="font-size: 11px; opacity: 0.75; margin-top: -6px"
+                >
                     Aktiviere wenn Cloud-Setup mit CORS-Fehler scheitert (typisch bei
-                    <code>ollama.com</code>). Request läuft über <code>localhost:4312/api/proxy/llm</code> —
-                    braucht laufenden <code>npm run dev</code>. CORS-freundliche Provider die ohne Proxy laufen:
+                    <code>ollama.com</code>). Request läuft über <code>localhost:4312/api/proxy/llm</code> — braucht
+                    laufenden <code>npm run dev</code>. CORS-freundliche Provider die ohne Proxy laufen:
                     <strong>Groq</strong> (<code>https://api.groq.com/openai/v1/chat/completions</code>),
-                    <strong>Together AI</strong>, <strong>Cerebras</strong>, <strong>Gemini</strong>, <strong>OpenRouter</strong>.
+                    <strong>Together AI</strong>, <strong>Cerebras</strong>, <strong>Gemini</strong>,
+                    <strong>OpenRouter</strong>.
                 </div>
                 <!-- V7.97 — Modell als Free-Text-Input mit datalist-Vorschlägen.
                      Ollama-User haben oft Custom-Modelle (qwen3.5:cloud, gpt-oss,
@@ -3289,11 +4070,11 @@
             <section class="settings-section">
                 <h3>Multi-User Sync (Ring 11 V1+V2)</h3>
                 <p class="drawer-hint">
-                    Position + Welt-Aktionen mit anderen Spielern teilen. Braucht den signaling-server
-                    (<code>npm run signaling</code>). Beide Spieler müssen die SELBE Adresse + die SELBE Raum-ID
-                    nutzen. Für ein gemeinsames Welt-Erlebnis: ein Spieler exportiert seine Welt
-                    (Welt-Drawer → „Welt teilen") und der andere importiert sie (Welt-Tor) — dann sind beide
-                    in derselben worldId und sehen identische Strukturen.
+                    Position + Welt-Aktionen mit anderen Spielern teilen. Braucht den signaling-server (<code
+                        >npm run signaling</code
+                    >). Beide Spieler müssen die SELBE Adresse + die SELBE Raum-ID nutzen. Für ein gemeinsames
+                    Welt-Erlebnis: ein Spieler exportiert seine Welt (Welt-Drawer → „Welt teilen") und der andere
+                    importiert sie (Welt-Tor) — dann sind beide in derselben worldId und sehen identische Strukturen.
                 </p>
                 <div class="tuning-row">
                     <label for="p2p-url"><span>Signaling-URL</span></label>
@@ -3342,7 +4123,11 @@
                 </div>
             </div>
             <div id="console-footer">
-                <input type="text" id="chat-input" placeholder="Befehl oder '@Name was hast du gesehen?' (Kreatur ansprechen)" />
+                <input
+                    type="text"
+                    id="chat-input"
+                    placeholder="Befehl oder '@Name was hast du gesehen?' (Kreatur ansprechen)"
+                />
             </div>
         </aside>
         <!-- Versteckter File-Picker für 'Lade Datei'-Chat-Befehl. -->
@@ -3437,9 +4222,7 @@
                3) Joinen: Multi-User, ich gebe Einladungs-Code ein -->
         <dialog id="new-world-dialog">
             <h2>Neue Welt</h2>
-            <p id="new-world-summary" class="drawer-hint">
-                Eine neue Welt erwacht — wähle ihre Beziehungs-Form.
-            </p>
+            <p id="new-world-summary" class="drawer-hint">Eine neue Welt erwacht — wähle ihre Beziehungs-Form.</p>
             <div class="new-world-row">
                 <label for="new-world-slug">Name:</label>
                 <input

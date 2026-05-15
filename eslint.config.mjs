@@ -15,6 +15,8 @@ export default [
                 document: "readonly",
                 performance: "readonly",
                 requestAnimationFrame: "readonly",
+                cancelAnimationFrame: "readonly",
+                ResizeObserver: "readonly",
                 Worker: "readonly",
                 Blob: "readonly",
                 URL: "readonly",

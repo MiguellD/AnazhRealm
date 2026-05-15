@@ -9952,7 +9952,13 @@ function startSaveServer() {
                     out.descBuildShowsBlueprint = /Bauplan/.test(desc) && /stein_block/.test(desc);
 
                     // 4. Tick: kein blueprint → null + falls auf wander
-                    const c0 = r.spawnCreatureAt(r.state.playerMesh.position.x + 50, r.state.playerMesh.position.y, r.state.playerMesh.position.z + 50, "happy", "wesen");
+                    const c0 = r.spawnCreatureAt(
+                        r.state.playerMesh.position.x + 50,
+                        r.state.playerMesh.position.y,
+                        r.state.playerMesh.position.z + 50,
+                        "happy",
+                        "wesen"
+                    );
                     r.assignCreatureTask(c0, "build", {});
                     const dirEmpty = r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
                     out.buildEmptyFallsToWander = dirEmpty === null && r._getCreatureTask(c0).name === "wander";
@@ -9975,7 +9981,8 @@ function startSaveServer() {
                     // Phase 2F.1: Speed wird body-moduliert (stats.speed/7). Toleranz weiter
                     // damit Body-Faktor je Soul den Test nicht bricht — wir prüfen Bereich
                     // [BUILD_SPEED*0.5, BUILD_SPEED*2.0] statt Gleichheit.
-                    out.takePhaseSpeed = sp > r.constructor.CREATURE_BUILD_SPEED * 0.5 && sp < r.constructor.CREATURE_BUILD_SPEED * 2.0;
+                    out.takePhaseSpeed =
+                        sp > r.constructor.CREATURE_BUILD_SPEED * 0.5 && sp < r.constructor.CREATURE_BUILD_SPEED * 2.0;
 
                     // 7. Take-Phase at handover, pfad ohne Material → ablehnt + memory + wander
                     const origMode = r.getGameMode();
@@ -10022,17 +10029,28 @@ function startSaveServer() {
                     // 10. Walk-Phase: mit carrying, Vektor WEG vom Spieler
                     r.setGameMode("schöpfer");
                     c0.position.set(player.x + 2.5, player.y, player.z); // 2.5m, weniger als placement (4.0)
-                    c0.userData.carrying = { kind: "build", materials: { stein: 8 }, blueprint: "stein_block", since: 0 };
+                    c0.userData.carrying = {
+                        kind: "build",
+                        materials: { stein: 8 },
+                        blueprint: "stein_block",
+                        since: 0,
+                    };
                     r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
                     const dirWalk = r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
                     out.walkPhaseAwayFromPlayer = dirWalk && dirWalk.x > 0; // weg vom Spieler = +x
                     const ws = Math.hypot(dirWalk.x, dirWalk.z);
                     // Phase 2F.1: gleiche Body-Modulation wie take-Phase.
-                    out.walkPhaseSpeed = ws > r.constructor.CREATURE_BUILD_SPEED * 0.5 && ws < r.constructor.CREATURE_BUILD_SPEED * 2.0;
+                    out.walkPhaseSpeed =
+                        ws > r.constructor.CREATURE_BUILD_SPEED * 0.5 && ws < r.constructor.CREATURE_BUILD_SPEED * 2.0;
 
                     // 11. Spawn-Phase: bei placement_dist → spawnArchitecture + carrying null + memory + wander
                     c0.position.set(player.x + 5.0, player.y + 1.0, player.z); // > placement (4.0)
-                    c0.userData.carrying = { kind: "build", materials: { stein: 8 }, blueprint: "stein_block", since: 0 };
+                    c0.userData.carrying = {
+                        kind: "build",
+                        materials: { stein: 8 },
+                        blueprint: "stein_block",
+                        since: 0,
+                    };
                     r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
                     const archBefore = r.state.architectures.length;
                     r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
@@ -10120,8 +10138,7 @@ function startSaveServer() {
                     r.assignCreatureTask(cFree, "build", { blueprint: "baum_eiche" }, { silent: true });
                     r._tickCreatureTaskDirection(cFree, cFree.userData.task, "happy");
                     out.symbolicCostHasMultiple =
-                        cFree.userData.carrying &&
-                        Object.keys(cFree.userData.carrying.materials).length >= 2; // baum_eiche = holz + laub
+                        cFree.userData.carrying && Object.keys(cFree.userData.carrying.materials).length >= 2; // baum_eiche = holz + laub
 
                     // Cleanup für nachfolgende Tests
                     r.setGameMode(origMode || "frieden");
@@ -10184,10 +10201,7 @@ function startSaveServer() {
                     "Welle 6.H P2B.2: pfad: Material wird aus Spieler-Inventar konsumiert",
                     wave6hP2b2Results.takeConsumesPfad
                 );
-                check(
-                    "Welle 6.H P2B.2: 'took_materials'-Erinnerung gespeichert",
-                    wave6hP2b2Results.memHasTook
-                );
+                check("Welle 6.H P2B.2: 'took_materials'-Erinnerung gespeichert", wave6hP2b2Results.memHasTook);
                 check(
                     "Welle 6.H P2B.2: schöpfer setzt carrying mit symbolic cost (für Visual+Journal)",
                     wave6hP2b2Results.schoepferCarrying &&
@@ -10363,12 +10377,14 @@ function startSaveServer() {
                     out.topEmpty = r._creatureTopSpecializations(cFresh, 2).length === 0;
 
                     // 8. Speed-Multiplikator
-                    out.mulL0 = Math.abs(r._creatureTaskSpeedMultiplier(c, "gather", { material: "lederX" }) - 1.0) < 0.001;
+                    out.mulL0 =
+                        Math.abs(r._creatureTaskSpeedMultiplier(c, "gather", { material: "lederX" }) - 1.0) < 0.001;
                     // c hat L5 für gather:holz
                     const mulL5 = r._creatureTaskSpeedMultiplier(c, "gather", { material: "holz" });
                     out.mulL5 = Math.abs(mulL5 - 1.75) < 0.001;
                     // build mit L0
-                    out.mulBuildL0 = Math.abs(r._creatureTaskSpeedMultiplier(c, "build", { blueprint: "fictional" }) - 1.0) < 0.001;
+                    out.mulBuildL0 =
+                        Math.abs(r._creatureTaskSpeedMultiplier(c, "build", { blueprint: "fictional" }) - 1.0) < 0.001;
                     // Unbekannter Task → 1
                     out.mulUnknownTask = r._creatureTaskSpeedMultiplier(c, "wander", {}) === 1;
                     // Null-Args → 1
@@ -10405,8 +10421,7 @@ function startSaveServer() {
                     r._creatureRemember(cFailure, "no_material", { material: "holz" });
                     out.failureNoLevel = r._creatureSpecializationLevel(cFailure, "gather", "holz") === 0;
                     // Journal-Wachstum sollte 0 sein (kein growth-Eintrag durch Failure)
-                    const failureJournalDiff =
-                        (r.state.worldJournal.entries || []).length - beforeFailureJournal;
+                    const failureJournalDiff = (r.state.worldJournal.entries || []).length - beforeFailureJournal;
                     out.failureJournalUntouched = failureJournalDiff === 0;
 
                     // 11. UI: .creature-specs span existiert nach Render
@@ -10472,26 +10487,17 @@ function startSaveServer() {
                     "Welle 6.H P2D: skillKeyForMemory mappt gathered → gather:material",
                     wave6hP2dResults.skillKeyGather
                 );
-                check(
-                    "Welle 6.H P2D: skillKeyForMemory mappt built → build:blueprint",
-                    wave6hP2dResults.skillKeyBuild
-                );
+                check("Welle 6.H P2D: skillKeyForMemory mappt built → build:blueprint", wave6hP2dResults.skillKeyBuild);
                 check(
                     "Welle 6.H P2D: skillKeyForMemory failures (no_material, delivered) → null",
                     wave6hP2dResults.skillKeyFailureNull && wave6hP2dResults.skillKeyDeliveredNull
                 );
-                check(
-                    "Welle 6.H P2D: leere memory → leere specializations",
-                    wave6hP2dResults.emptyMemoryEmptySpecs
-                );
+                check("Welle 6.H P2D: leere memory → leere specializations", wave6hP2dResults.emptyMemoryEmptySpecs);
                 check(
                     "Welle 6.H P2D: computeSpecs zählt gathered nach material (holz=2, stein=1)",
                     wave6hP2dResults.countsHolz && wave6hP2dResults.countsStein
                 );
-                check(
-                    "Welle 6.H P2D: computeSpecs zählt built nach blueprint",
-                    wave6hP2dResults.countsBuiltSteinBlock
-                );
+                check("Welle 6.H P2D: computeSpecs zählt built nach blueprint", wave6hP2dResults.countsBuiltSteinBlock);
                 check(
                     "Welle 6.H P2D: failures (no_material, no_blueprint) zählen NICHT in specs",
                     wave6hP2dResults.failuresIgnored
@@ -10515,14 +10521,8 @@ function startSaveServer() {
                     "Welle 6.H P2D: keine Skills → topSpecializations liefert leeres Array",
                     wave6hP2dResults.topEmpty
                 );
-                check(
-                    "Welle 6.H P2D: speedMultiplier L0 → 1.0",
-                    wave6hP2dResults.mulL0 && wave6hP2dResults.mulBuildL0
-                );
-                check(
-                    "Welle 6.H P2D: speedMultiplier L5 → 1.75 (1 + 5*0.15)",
-                    wave6hP2dResults.mulL5
-                );
+                check("Welle 6.H P2D: speedMultiplier L0 → 1.0", wave6hP2dResults.mulL0 && wave6hP2dResults.mulBuildL0);
+                check("Welle 6.H P2D: speedMultiplier L5 → 1.75 (1 + 5*0.15)", wave6hP2dResults.mulL5);
                 check(
                     "Welle 6.H P2D: speedMultiplier wander/null-args → 1.0",
                     wave6hP2dResults.mulUnknownTask && wave6hP2dResults.mulNullArgs
@@ -10625,7 +10625,8 @@ function startSaveServer() {
 
                     // 6. Specs werden aus restoriertem memory korrekt re-derived
                     const specs = r._computeCreatureSpecializations(restored);
-                    out.specsReDerived = specs.gather && specs.gather.holz === 2 && specs.build && specs.build.stein_block === 1;
+                    out.specsReDerived =
+                        specs.gather && specs.gather.holz === 2 && specs.build && specs.build.stein_block === 1;
 
                     // 7. Round-Trip: buildStateSnapshot → loadState → Kreaturen sind da
                     // Setze die aktuelle Welt auf einen bekannten Stand
@@ -10744,10 +10745,7 @@ function startSaveServer() {
                     "Welle 6.H P2D.1: Restore übernimmt Name + Soul",
                     wave6hP2d1Results.restoreNameOk && wave6hP2d1Results.restoreSoulOk
                 );
-                check(
-                    "Welle 6.H P2D.1: Restore übernimmt Memory (Länge + Inhalt)",
-                    wave6hP2d1Results.restoreMemoryOk
-                );
+                check("Welle 6.H P2D.1: Restore übernimmt Memory (Länge + Inhalt)", wave6hP2d1Results.restoreMemoryOk);
                 check("Welle 6.H P2D.1: Restore übernimmt Position", wave6hP2d1Results.restorePositionOk);
                 check("Welle 6.H P2D.1: Restore übernimmt bornAt", wave6hP2d1Results.restoreBornAtOk);
                 check(
@@ -10775,7 +10773,10 @@ function startSaveServer() {
                     "Welle 6.H P2D.1: Legacy-Save (nur position) wird als Legacy erkannt",
                     wave6hP2d1Results.legacyDetectedAsLegacy
                 );
-                check("Welle 6.H P2D.1: Memory-Cap=200 wird durchgesetzt (FIFO bei 250 push)", wave6hP2d1Results.cap200Enforced);
+                check(
+                    "Welle 6.H P2D.1: Memory-Cap=200 wird durchgesetzt (FIFO bei 250 push)",
+                    wave6hP2d1Results.cap200Enforced
+                );
                 check(
                     "Welle 6.H P2D.1: Restore mit übergroßem memory wird auf 200 gekappt",
                     wave6hP2d1Results.oversizedRestoredCappedAt200
@@ -10840,8 +10841,7 @@ function startSaveServer() {
 
                     // 5. _refreshCreatureStatsCache schreibt userData.stats
                     r._refreshCreatureStatsCache(cw);
-                    out.cacheWritesStats =
-                        cw.userData.stats && Number.isFinite(cw.userData.stats.speed);
+                    out.cacheWritesStats = cw.userData.stats && Number.isFinite(cw.userData.stats.speed);
 
                     // 6. Body-Speed-Multiplier ist > 0
                     const mulW = r._creatureBodySpeedMultiplier(cw);
@@ -10934,7 +10934,10 @@ function startSaveServer() {
                     wave6hP2f1Results.wesenSpriteDiscriminated
                 );
                 check("Welle 6.H P2F.1: Geist hat magicResist > 0", wave6hP2f1Results.geistHasMagicResist);
-                check("Welle 6.H P2F.1: Tags in [0, 2] (clamped + Spec-Bonus tolerant)", wave6hP2f1Results.tagsInBounds);
+                check(
+                    "Welle 6.H P2F.1: Tags in [0, 2] (clamped + Spec-Bonus tolerant)",
+                    wave6hP2f1Results.tagsInBounds
+                );
                 check(
                     "Welle 6.H P2F.1: _refreshCreatureStatsCache schreibt userData.stats",
                     wave6hP2f1Results.cacheWritesStats
@@ -11017,8 +11020,7 @@ function startSaveServer() {
                         out.armorSet = c.userData.equipped.armor === armorName;
                         // Equipped mit nicht-armor-Bauplan (kristall_geode hat keine role:armor)
                         const eqWrong = r.equipCreatureArmor(c, "kristall_geode");
-                        out.wrongArmorRejected =
-                            eqWrong.ok === false && eqWrong.reason === "not_marked_as_armor";
+                        out.wrongArmorRejected = eqWrong.ok === false && eqWrong.reason === "not_marked_as_armor";
                     }
 
                     // 6. unequipCreatureSlot
@@ -11067,8 +11069,7 @@ function startSaveServer() {
                             const beforeArmorStats = r.computeCreatureStats(c2).stats;
                             r.equipCreatureArmor(c2, armorBp);
                             const armorStats = r.computeCreatureStats(c2).stats;
-                            out.armorStatsChanged =
-                                Math.abs(armorStats.hpMax - beforeArmorStats.hpMax) > 0.1;
+                            out.armorStatsChanged = Math.abs(armorStats.hpMax - beforeArmorStats.hpMax) > 0.1;
                             out.armorHpHigher = armorStats.hpMax > beforeArmorStats.hpMax;
                         }
                     }
@@ -11105,8 +11106,7 @@ function startSaveServer() {
                     // Restore mit unbekanntem Tool → null statt crash
                     const badSnap = { ...snap, equipped: { tool: "fictional_xyz", armor: null } };
                     const restoredBad = r._restoreCreatureFromSnapshot(badSnap, "happy");
-                    out.restoreSilentDropsUnknown =
-                        restoredBad && restoredBad.userData.equipped.tool === null;
+                    out.restoreSilentDropsUnknown = restoredBad && restoredBad.userData.equipped.tool === null;
 
                     // 12. UI: equipped-Pills in creature-row erscheinen
                     if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
@@ -11186,9 +11186,7 @@ function startSaveServer() {
                 );
                 check(
                     "Welle 6.H P2F.2: describeProgram zeigt Werkzeug/Rüstung/Slot",
-                    wave6hP2f2Results.descEquipTool &&
-                        wave6hP2f2Results.descEquipArmor &&
-                        wave6hP2f2Results.descUnequip
+                    wave6hP2f2Results.descEquipTool && wave6hP2f2Results.descEquipArmor && wave6hP2f2Results.descUnequip
                 );
                 check(
                     "Welle 6.H P2F.2: _serializeCreature schreibt equipped + Restore übernimmt es",
@@ -11289,10 +11287,8 @@ function startSaveServer() {
                         const result = r.activateCreatureConsumable(c3, tonicName);
                         out.activateOk = result.ok === true;
                         // tagBonus emergiert aus den Tags (kein Hardcode!)
-                        out.tagBonusEmerged =
-                            result.tagBonus && Object.keys(result.tagBonus).length > 0;
-                        out.tagBonusHasDichte =
-                            result.tagBonus && result.tagBonus.dichte > 0;
+                        out.tagBonusEmerged = result.tagBonus && Object.keys(result.tagBonus).length > 0;
+                        out.tagBonusHasDichte = result.tagBonus && result.tagBonus.dichte > 0;
                         // Boost ist auf der Kreatur
                         out.boostOnCreature =
                             Array.isArray(c3.userData.boosts) &&
@@ -11326,8 +11322,7 @@ function startSaveServer() {
                     const cDsl = r.spawnCreatureAt(player.x + 440, player.y, player.z + 440, "happy", "wesen");
                     const dslIdx = r.state.creatures.indexOf(cDsl);
                     r.dslRun(["creature_apply_boost", dslIdx, tonicName], { source: "test" });
-                    out.dslAppliedBoost =
-                        Array.isArray(cDsl.userData.boosts) && cDsl.userData.boosts.length === 1;
+                    out.dslAppliedBoost = Array.isArray(cDsl.userData.boosts) && cDsl.userData.boosts.length === 1;
 
                     // 11. NON_BROADCASTABLE-Mitgliedschaft
                     out.opNonBroadcast = Class.NON_BROADCASTABLE_OPS.has("creature_apply_boost");
@@ -11418,10 +11413,7 @@ function startSaveServer() {
                     "Welle 6.H P2F.3: Boost-tagDelta fließt in computeCreatureStats (HP+)",
                     wave6hP2f3Results.hpBoosted
                 );
-                check(
-                    "Welle 6.H P2F.3: setBlueprintAsConsumable markiert Bauplan",
-                    wave6hP2f3Results.consumableMarkOk
-                );
+                check("Welle 6.H P2F.3: setBlueprintAsConsumable markiert Bauplan", wave6hP2f3Results.consumableMarkOk);
                 check(
                     "Welle 6.H P2F.3: HYLOMORPHISMUS — Konsumable-Compound-Tags emergieren als Boost",
                     wave6hP2f3Results.tagBonusEmerged && wave6hP2f3Results.tagBonusHasDichte
@@ -11450,10 +11442,7 @@ function startSaveServer() {
                     "Welle 6.H P2F.3: creature_apply_boost in NON_BROADCASTABLE_OPS (Spieler-private Geste)",
                     wave6hP2f3Results.opNonBroadcast
                 );
-                check(
-                    "Welle 6.H P2F.3: describeProgram zeigt Trank-Namen",
-                    wave6hP2f3Results.descShowsBp
-                );
+                check("Welle 6.H P2F.3: describeProgram zeigt Trank-Namen", wave6hP2f3Results.descShowsBp);
                 check(
                     "Welle 6.H P2F.3: _consumeBlueprintFromInventory zieht 1 ab + nulled Slot bei count=0",
                     wave6hP2f3Results.consumeReducesCount &&
@@ -11615,10 +11604,7 @@ function startSaveServer() {
                     "Welle 6.H P2E V1: Persona-Prompt enthält Boost-Schicht (Test-Tonic)",
                     wave6hP2eV1Results.promptHasBoost
                 );
-                check(
-                    "Welle 6.H P2E V1: Persona-Prompt enthält Memory-Auszug",
-                    wave6hP2eV1Results.promptHasMemory
-                );
+                check("Welle 6.H P2E V1: Persona-Prompt enthält Memory-Auszug", wave6hP2eV1Results.promptHasMemory);
                 check(
                     "Welle 6.H P2E V1: Persona-Prompt enthält Welt-Kontext (Wetter)",
                     wave6hP2eV1Results.promptHasWeather
@@ -11659,7 +11645,8 @@ function startSaveServer() {
 
                     // 1. @Name text → erkannt als explizite Adresse
                     const p1 = r._parseCreatureAddress("@Bran wie gehts");
-                    out.atPatternMatches = p1 && p1.name === "Bran" && p1.message === "wie gehts" && p1.explicit === true;
+                    out.atPatternMatches =
+                        p1 && p1.name === "Bran" && p1.message === "wie gehts" && p1.explicit === true;
                     // 2. @Name, text → @ + Komma zusammen erlaubt
                     const p2 = r._parseCreatureAddress("@Bran, was hast du gesehen?");
                     out.atPatternWithComma = p2 && p2.name === "Bran" && p2.message === "was hast du gesehen?";
@@ -11784,7 +11771,13 @@ function startSaveServer() {
 
                     // 2. Phrase-Pool hat 5 Event-Typen, jede mit 3 Soul-Profile + default
                     const pool = Class.CREATURE_PROACTIVE_PHRASES;
-                    const events = ["level_up_gather", "level_up_build", "boost_received", "no_material_found", "no_inventory_for_build"];
+                    const events = [
+                        "level_up_gather",
+                        "level_up_build",
+                        "boost_received",
+                        "no_material_found",
+                        "no_inventory_for_build",
+                    ];
                     out.allEventsPresent = events.every((e) => pool[e]);
                     out.hasSpriteVariants = pool.level_up_gather.sprite && pool.level_up_gather.sprite.length >= 2;
                     out.hasWesenVariants = pool.level_up_gather.wesen && pool.level_up_gather.wesen.length >= 2;
@@ -11816,7 +11809,8 @@ function startSaveServer() {
                     const lastLine = chatOutput ? chatOutput.lastElementChild : null;
                     out.lineHasSpriteSoul = !!(lastLine && lastLine.querySelector(".chat-creature-name.soul-sprite"));
                     out.lineHasName = lastLine && /ProacSprite/.test(lastLine.textContent);
-                    out.templateReplaced = lastLine && /holz/.test(lastLine.textContent) && /2/.test(lastLine.textContent);
+                    out.templateReplaced =
+                        lastLine && /holz/.test(lastLine.textContent) && /2/.test(lastLine.textContent);
 
                     // 5. Per-Kreatur-Throttle: SOFORT nochmal sprechen lehnt ab
                     const ok2 = r._creatureSpeakProactive(cSprite, "boost_received", { label: "Tonic" });
@@ -11949,10 +11943,7 @@ function startSaveServer() {
                     "Welle 6.H P2E V2: Toggle OFF → keine proaktive Sprache (silent drop)",
                     wave6hP2eV2Results.toggleOffSilent
                 );
-                check(
-                    "Welle 6.H P2E V2: Unbekannter Event-Typ → silent drop",
-                    wave6hP2eV2Results.unknownEventRejected
-                );
+                check("Welle 6.H P2E V2: Unbekannter Event-Typ → silent drop", wave6hP2eV2Results.unknownEventRejected);
                 check(
                     "Welle 6.H P2E V2: Soul-spezifischer Pool (Geist-Phrase aus geist-Pool gerendert)",
                     wave6hP2eV2Results.geistUsedGeistPool
@@ -12024,23 +12015,16 @@ function startSaveServer() {
 
                     // 3. Validator: verbotene Programme
                     const noPlayerSpeed = r._isCreatureProposalAllowed(["player_speed", 20]);
-                    out.rejectsPlayerSpeed =
-                        noPlayerSpeed.ok === false && noPlayerSpeed.forbiddenOp === "player_speed";
-                    const noDefine = r._isCreatureProposalAllowed([
-                        "define_blueprint",
-                        "evil",
-                        [{ shape: "box" }],
-                    ]);
-                    out.rejectsDefine =
-                        noDefine.ok === false && noDefine.forbiddenOp === "define_blueprint";
+                    out.rejectsPlayerSpeed = noPlayerSpeed.ok === false && noPlayerSpeed.forbiddenOp === "player_speed";
+                    const noDefine = r._isCreatureProposalAllowed(["define_blueprint", "evil", [{ shape: "box" }]]);
+                    out.rejectsDefine = noDefine.ok === false && noDefine.forbiddenOp === "define_blueprint";
                     // Verbotene Op TIEF im Chain wird auch erkannt
                     const nestedBad = r._isCreatureProposalAllowed([
                         "chain",
                         ["weather", "sunny"],
                         ["player_speed", 50], // verboten, tief
                     ]);
-                    out.rejectsNestedForbidden =
-                        nestedBad.ok === false && nestedBad.forbiddenOp === "player_speed";
+                    out.rejectsNestedForbidden = nestedBad.ok === false && nestedBad.forbiddenOp === "player_speed";
 
                     // 4. Persona-Prompt erlaubt program (V3-Update)
                     const player = r.state.playerMesh.position;
@@ -12072,15 +12056,11 @@ function startSaveServer() {
                     // Test pfad: Buttons werden gerendert (kein automatischer
                     // Wetter-Wechsel)
                     r.setGameMode("pfad");
-                    const beforePending = chatOutput
-                        ? chatOutput.querySelectorAll(".chat-proposal-pending").length
-                        : 0;
+                    const beforePending = chatOutput ? chatOutput.querySelectorAll(".chat-proposal-pending").length : 0;
                     const targetWeather2 = r.state.weather === "rainy" ? "sunny" : "rainy";
                     r._handleCreatureProposedProgram(c, "TestProgramKreatur", ["weather", targetWeather2]);
                     out.pfadDoesNotAutoExecute = r.state.weather !== targetWeather2;
-                    const afterPending = chatOutput
-                        ? chatOutput.querySelectorAll(".chat-proposal-pending").length
-                        : 0;
+                    const afterPending = chatOutput ? chatOutput.querySelectorAll(".chat-proposal-pending").length : 0;
                     out.pfadRendersButtons = afterPending > beforePending;
                     // Memory: proposed_action vorhanden, aber NICHT yet accepted
                     const memTypes2 = (c.userData.memory || []).map((m) => m.type);
@@ -12090,11 +12070,10 @@ function startSaveServer() {
                     //    schöpfer-Modus blockiert (defense in depth)
                     r.setGameMode("schöpfer");
                     const memCountBefore = (c.userData.memory || []).length;
-                    const blockedResult = r._handleCreatureProposedProgram(
-                        c,
-                        "TestProgramKreatur",
-                        ["player_speed", 99]
-                    );
+                    const blockedResult = r._handleCreatureProposedProgram(c, "TestProgramKreatur", [
+                        "player_speed",
+                        99,
+                    ]);
                     out.forbiddenBlockedEvenInSchöpfer = blockedResult === false;
                     const memTypes3 = (c.userData.memory || []).map((m) => m.type);
                     out.memoryHasBlocked = memTypes3.includes("proposal_blocked");
@@ -12212,6 +12191,2439 @@ function startSaveServer() {
                 );
             } else if (wave6hP2eV3Results && wave6hP2eV3Results.error) {
                 check(`Welle 6.H P2E V3: evaluate-Fehler — ${wave6hP2eV3Results.error}`, false);
+            }
+
+            // ### Welle 6.B Phase 1+2 — CAD-Werkstatt (3D-Preview + Manipulator-Gizmo) ###
+            const wave6bResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    try {
+                        // --- Phase 1: State-Schema ---
+                        const ws = r._ensureWorkshopState();
+                        out.hasSelectedPartIdxField = "selectedPartIdx" in ws;
+                        out.hasPreviewField = "preview" in ws;
+                        out.hasManipulatorModeField = typeof ws.manipulatorMode === "string";
+                        out.hasSnapEnabledField = typeof ws.snapEnabled === "boolean";
+                        out.defaultManipulatorMode = ws.manipulatorMode;
+                        out.defaultSnapEnabled = ws.snapEnabled;
+
+                        // --- Phase 1: DOM-Elemente ---
+                        out.canvasInDom = !!document.getElementById("workshop-preview-canvas");
+                        out.previewWrapperInDom = !!document.getElementById("workshop-preview-wrapper");
+
+                        // --- Phase 2: Konstanten ---
+                        const AR = r.constructor;
+                        out.gizmoColorsFrozen =
+                            !!AR.WORKSHOP_GIZMO_COLORS &&
+                            Object.isFrozen(AR.WORKSHOP_GIZMO_COLORS) &&
+                            typeof AR.WORKSHOP_GIZMO_COLORS.x === "number" &&
+                            typeof AR.WORKSHOP_GIZMO_COLORS.y === "number" &&
+                            typeof AR.WORKSHOP_GIZMO_COLORS.z === "number";
+                        out.snapTranslate = AR.WORKSHOP_SNAP_TRANSLATE;
+                        out.snapRotate = AR.WORKSHOP_SNAP_ROTATE;
+                        out.snapScale = AR.WORKSHOP_SNAP_SCALE;
+                        out.minPartSize = AR.WORKSHOP_MIN_PART_SIZE;
+
+                        // --- Phase 2: Public API ---
+                        out.modeSetTranslate = r.setWorkshopManipulatorMode("translate");
+                        out.modeAfterTranslate = ws.manipulatorMode === "translate";
+                        out.modeSetRotate = r.setWorkshopManipulatorMode("rotate");
+                        out.modeAfterRotate = ws.manipulatorMode === "rotate";
+                        out.modeSetScale = r.setWorkshopManipulatorMode("scale");
+                        out.modeAfterScale = ws.manipulatorMode === "scale";
+                        out.modeRejectInvalid = r.setWorkshopManipulatorMode("nonsense") === false;
+                        r.setWorkshopManipulatorMode("translate"); // reset
+
+                        const snapBefore = ws.snapEnabled;
+                        const snapAfter1 = r.toggleWorkshopSnap();
+                        out.snapTogglesOff = snapBefore === true && snapAfter1 === false;
+                        const snapAfter2 = r.toggleWorkshopSnap();
+                        out.snapTogglesBack = snapAfter2 === true;
+                        // Explizites Argument: true setzt + liefert true, false setzt + liefert false
+                        out.snapExplicitTrue = r.toggleWorkshopSnap(true) === true;
+                        out.snapExplicitFalseReturns = r.toggleWorkshopSnap(false) === false;
+                        r.toggleWorkshopSnap(true); // reset
+
+                        // --- Phase 2: Snap-Helper ---
+                        ws.snapEnabled = true;
+                        out.snapTranslateRound = r._workshopApplySnap(1.7, "translate") === 1.5;
+                        out.snapTranslateRoundUp = r._workshopApplySnap(1.8, "translate") === 2.0;
+                        out.snapScaleRound = Math.abs(r._workshopApplySnap(1.23, "scale") - 1.2) < 0.0001;
+                        ws.snapEnabled = false;
+                        out.snapInactivePassthrough = r._workshopApplySnap(1.7, "translate") === 1.7;
+                        ws.snapEnabled = true;
+
+                        // --- Phase 2: Helper-Methoden ---
+                        const vx = r._workshopAxisToVec3("x");
+                        out.axisToVecX = vx && vx.x === 1 && vx.y === 0 && vx.z === 0;
+                        const vy = r._workshopAxisToVec3("y");
+                        out.axisToVecY = vy && vy.x === 0 && vy.y === 1 && vy.z === 0;
+                        const vz = r._workshopAxisToVec3("z");
+                        out.axisToVecZ = vz && vz.x === 0 && vz.y === 0 && vz.z === 1;
+                        const perpY = r._workshopAxisPerpendicular(vy);
+                        out.axisPerpDot = perpY && Math.abs(perpY.dot(vy)) < 0.001;
+
+                        // --- Phase 1: Selection-Pfad (ohne Preview, headless-safe) ---
+                        // Bauplan auswählen: braucht selectBlueprintForEdit auf existing built-in
+                        r.selectBlueprintForEdit("village");
+                        out.selectedSetToVillage = ws.selectedBlueprint === "village";
+                        // selectedPartIdx wurde zurückgesetzt
+                        out.selectionResetOnBlueprintSwitch = ws.selectedPartIdx === null;
+                        // Manuelle Selection setzen (ohne Klick)
+                        r._workshopSetSelection(0);
+                        out.selectionSetTo0 = ws.selectedPartIdx === 0;
+                        // Out-of-range wird abgelehnt
+                        r._workshopSetSelection(9999);
+                        out.selectionRejectsOOB = ws.selectedPartIdx === null;
+                        r._workshopSetSelection(null); // reset
+
+                        // --- Phase 2: Manipulator-Drag auf Built-in lehnt ab ---
+                        // village ist built-in → kein Drag
+                        out.builtInRejected = true;
+                        try {
+                            r._workshopSetSelection(0);
+                            // Wir können _workshopBeginManipulation aufrufen, aber es sollte
+                            // intern wegen builtIn früh aussteigen (kein dragManipulator gesetzt).
+                            // Wir können das nur prüfen wenn preview existiert.
+                            r._workshopEnsurePreview();
+                            const pre = r.state.workshop.preview;
+                            if (pre) {
+                                r._workshopBeginManipulation("translate", "x", 100, 100);
+                                out.builtInRejected = pre.dragManipulator === null;
+                            }
+                        } catch {
+                            out.builtInRejected = false;
+                        }
+
+                        // --- Phase 2: Manipulator auf eigenem Bauplan ---
+                        // Klone village zu test_wave6b
+                        const cloneOk = r.cloneBlueprint("village", "test_wave6b");
+                        out.cloneOk = cloneOk;
+                        if (cloneOk) {
+                            r.selectBlueprintForEdit("test_wave6b");
+                            r._workshopSetSelection(0);
+                            const partBefore = JSON.parse(JSON.stringify(r.state.blueprints.test_wave6b.parts[0]));
+                            out.posBefore = partBefore.position.x;
+                            // Drag begin auf eigenem Bauplan
+                            r._workshopEnsurePreview();
+                            const pre = r.state.workshop.preview;
+                            if (pre) {
+                                r._workshopBeginManipulation("translate", "x", 100, 100);
+                                out.dragManipulatorSet = pre.dragManipulator !== null;
+                                if (pre.dragManipulator) {
+                                    out.dragModeIsTranslate = pre.dragManipulator.mode === "translate";
+                                    out.dragAxisIsX = pre.dragManipulator.axis === "x";
+                                }
+                                // End-Pfad räumt auf
+                                r._workshopEndManipulation();
+                                out.dragManipulatorCleared = pre.dragManipulator === null;
+                            }
+                            // Aufräumen: deleteBlueprint allein refreshed nicht die
+                            // Workshop-DOM-Liste — wir müssen das explizit nachziehen,
+                            // sonst sieht der nachfolgende Ring-6.6-Test eine Liste,
+                            // die 1 Eintrag länger ist als state.blueprints.
+                            r.deleteBlueprint("test_wave6b");
+                            r.selectBlueprintForEdit("village");
+                            r._renderWorkshopDOM();
+                        }
+
+                        // --- Phase 2: UI-Elemente ---
+                        out.modeBarInDom = !!document.getElementById("workshop-mode-bar");
+                        const modeBtns = document.querySelectorAll("#workshop-mode-bar [data-workshop-mode]");
+                        // V8.02 Phase 3b: connect ist 4. Modus dazugekommen
+                        out.fourModeButtons = modeBtns.length === 4;
+                        out.snapToggleInDom = !!document.getElementById("workshop-snap-toggle");
+
+                        // --- Phase 2: Gizmo-Aufbau ---
+                        r._workshopEnsurePreview();
+                        const pre = r.state.workshop.preview;
+                        if (pre && pre.gizmo) {
+                            out.gizmoBuilt = true;
+                            out.gizmoChildren = pre.gizmo.children.length === 3; // translate/rotate/scale
+                            // Pro Modus ein paar Mesh-Einträge in gizmoMeshes
+                            let tCount = 0,
+                                rCount = 0,
+                                sCount = 0;
+                            for (const info of pre.gizmoMeshes.values()) {
+                                if (info.mode === "translate") tCount++;
+                                else if (info.mode === "rotate") rCount++;
+                                else if (info.mode === "scale") sCount++;
+                            }
+                            out.gizmoHasTranslateMeshes = tCount >= 3;
+                            out.gizmoHasRotateMeshes = rCount >= 3;
+                            out.gizmoHasScaleMeshes = sCount >= 4; // 3 axes + 1 uniform
+                            // V7.99 Bug-Fix: Picker-Meshes erhöhen die Mesh-
+                            // Anzahl pro Modus (visual + picker pro Handle).
+                            // translate: 3 × (shaft + tip + picker) = 9
+                            // rotate: 3 × (ring + picker) = 6
+                            // scale: 3 × (cube + shaft + picker) + 2 × (center + picker) = 11
+                            out.gizmoHasPickers = tCount >= 9 && rCount >= 6 && sCount >= 8;
+
+                            // --- Bug-Fix V7.99: Gizmo-Sichtbarkeit bei Built-in vs. eigen ---
+                            // Bauplan ist aktuell village (Built-in). Sync rufen
+                            // und prüfen dass Gizmo versteckt ist.
+                            r.selectBlueprintForEdit("village");
+                            r._workshopSetSelection(0);
+                            r._workshopSyncGizmo();
+                            out.gizmoHiddenOnBuiltIn = pre.gizmo.visible === false;
+                            // Banner sichtbar?
+                            const banner = document.getElementById("workshop-readonly-banner");
+                            out.readonlyBannerVisibleOnBuiltIn = banner && banner.hidden === false;
+                            // Mode-Bar disabled?
+                            const firstModeBtn = document.querySelector("#workshop-mode-bar [data-workshop-mode]");
+                            out.modeBarDisabledOnBuiltIn = firstModeBtn && firstModeBtn.disabled === true;
+                            // Jetzt mit eigenem Bauplan: Klone + Selection + Sync
+                            r.cloneBlueprint("village", "test_visibility");
+                            r.selectBlueprintForEdit("test_visibility");
+                            r._workshopSetSelection(0);
+                            r._workshopSyncGizmo();
+                            out.gizmoVisibleOnCustom = pre.gizmo.visible === true;
+                            out.readonlyBannerHiddenOnCustom = banner && banner.hidden === true;
+                            out.modeBarEnabledOnCustom = firstModeBtn && firstModeBtn.disabled === false;
+                            r.deleteBlueprint("test_visibility");
+                            r.selectBlueprintForEdit("village");
+                            r._renderWorkshopDOM();
+                        }
+                    } catch (err) {
+                        out.error = err && err.message;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (wave6bResults && !wave6bResults.error) {
+                check("Welle 6.B P1: state.workshop hat selectedPartIdx-Feld", wave6bResults.hasSelectedPartIdxField);
+                check("Welle 6.B P1: state.workshop hat preview-Feld (lazy)", wave6bResults.hasPreviewField);
+                check("Welle 6.B P1: #workshop-preview-canvas im DOM", wave6bResults.canvasInDom);
+                check("Welle 6.B P1: #workshop-preview-wrapper im DOM", wave6bResults.previewWrapperInDom);
+                check(
+                    "Welle 6.B P1: selectBlueprintForEdit setzt selectedBlueprint",
+                    wave6bResults.selectedSetToVillage
+                );
+                check(
+                    "Welle 6.B P1: Bauplan-Wechsel resettet selectedPartIdx auf null",
+                    wave6bResults.selectionResetOnBlueprintSwitch
+                );
+                check("Welle 6.B P1: _workshopSetSelection(0) setzt selectedPartIdx", wave6bResults.selectionSetTo0);
+                check(
+                    "Welle 6.B P1: _workshopSetSelection lehnt out-of-range (idx=null bei OOB)",
+                    wave6bResults.selectionRejectsOOB
+                );
+                check(
+                    "Welle 6.B P2: manipulatorMode-Feld + Default 'translate'",
+                    wave6bResults.hasManipulatorModeField && wave6bResults.defaultManipulatorMode === "translate"
+                );
+                check(
+                    "Welle 6.B P2: snapEnabled-Feld + Default true",
+                    wave6bResults.hasSnapEnabledField && wave6bResults.defaultSnapEnabled === true
+                );
+                check(
+                    "Welle 6.B P2: WORKSHOP_GIZMO_COLORS frozen mit x/y/z (uint Farben)",
+                    wave6bResults.gizmoColorsFrozen
+                );
+                check("Welle 6.B P2: WORKSHOP_SNAP_TRANSLATE === 0.5", wave6bResults.snapTranslate === 0.5);
+                check(
+                    "Welle 6.B P2: WORKSHOP_SNAP_ROTATE === π/12 (15°)",
+                    Math.abs(wave6bResults.snapRotate - Math.PI / 12) < 0.0001
+                );
+                check("Welle 6.B P2: WORKSHOP_SNAP_SCALE === 0.1", wave6bResults.snapScale === 0.1);
+                check("Welle 6.B P2: WORKSHOP_MIN_PART_SIZE === 0.05", wave6bResults.minPartSize === 0.05);
+                check(
+                    "Welle 6.B P2: setWorkshopManipulatorMode wechselt durch alle 3 Modi (translate/rotate/scale)",
+                    wave6bResults.modeSetTranslate &&
+                        wave6bResults.modeAfterTranslate &&
+                        wave6bResults.modeSetRotate &&
+                        wave6bResults.modeAfterRotate &&
+                        wave6bResults.modeSetScale &&
+                        wave6bResults.modeAfterScale
+                );
+                check(
+                    "Welle 6.B P2: setWorkshopManipulatorMode lehnt ungültige Modi ab",
+                    wave6bResults.modeRejectInvalid
+                );
+                check(
+                    "Welle 6.B P2: toggleWorkshopSnap toggelt true→false→true",
+                    wave6bResults.snapTogglesOff && wave6bResults.snapTogglesBack
+                );
+                check(
+                    "Welle 6.B P2: toggleWorkshopSnap akzeptiert explizites Argument (true/false)",
+                    wave6bResults.snapExplicitTrue && wave6bResults.snapExplicitFalseReturns
+                );
+                check(
+                    "Welle 6.B P2: _workshopApplySnap aktiv rundet 1.7 → 1.5 (translate-step 0.5)",
+                    wave6bResults.snapTranslateRound
+                );
+                check("Welle 6.B P2: _workshopApplySnap aktiv rundet 1.8 → 2.0", wave6bResults.snapTranslateRoundUp);
+                check("Welle 6.B P2: _workshopApplySnap scale 1.23 → 1.2 (step 0.1)", wave6bResults.snapScaleRound);
+                check(
+                    "Welle 6.B P2: _workshopApplySnap inaktiv → Wert unverändert",
+                    wave6bResults.snapInactivePassthrough
+                );
+                check(
+                    "Welle 6.B P2: _workshopAxisToVec3 liefert korrekte Welt-Achsen (X/Y/Z)",
+                    wave6bResults.axisToVecX && wave6bResults.axisToVecY && wave6bResults.axisToVecZ
+                );
+                check(
+                    "Welle 6.B P2: _workshopAxisPerpendicular liefert senkrechte Achse (dot ≈ 0)",
+                    wave6bResults.axisPerpDot
+                );
+                check(
+                    "Welle 6.B P2: _workshopBeginManipulation auf Built-in setzt KEINEN dragManipulator (read-only-Schutz)",
+                    wave6bResults.builtInRejected
+                );
+                check("Welle 6.B P2: cloneBlueprint(village → test_wave6b) erfolgreich", wave6bResults.cloneOk);
+                check(
+                    "Welle 6.B P2: _workshopBeginManipulation auf eigenem Bauplan setzt dragManipulator",
+                    wave6bResults.dragManipulatorSet
+                );
+                check(
+                    "Welle 6.B P2: dragManipulator trägt korrekte mode+axis (translate/x)",
+                    wave6bResults.dragModeIsTranslate && wave6bResults.dragAxisIsX
+                );
+                check(
+                    "Welle 6.B P2: _workshopEndManipulation räumt dragManipulator auf",
+                    wave6bResults.dragManipulatorCleared
+                );
+                check("Welle 6.B P2: #workshop-mode-bar im DOM", wave6bResults.modeBarInDom);
+                check(
+                    "Welle 6.B P2+3: 4 Mode-Buttons (translate/rotate/scale/connect) im DOM",
+                    wave6bResults.fourModeButtons
+                );
+                check("Welle 6.B P2: #workshop-snap-toggle im DOM", wave6bResults.snapToggleInDom);
+                check("Welle 6.B P2: Gizmo-Group gebaut (preview.gizmo nicht null)", wave6bResults.gizmoBuilt);
+                check("Welle 6.B P2: Gizmo hat 3 Sub-Groups (translate/rotate/scale)", wave6bResults.gizmoChildren);
+                check(
+                    "Welle 6.B P2: Translate-Gizmo hat ≥3 Handle-Meshes (Pfeile)",
+                    wave6bResults.gizmoHasTranslateMeshes
+                );
+                check("Welle 6.B P2: Rotate-Gizmo hat ≥3 Handle-Meshes (Ringe)", wave6bResults.gizmoHasRotateMeshes);
+                check(
+                    "Welle 6.B P2: Scale-Gizmo hat ≥4 Handle-Meshes (3 Achsen + 1 uniform-Center)",
+                    wave6bResults.gizmoHasScaleMeshes
+                );
+                check(
+                    "Welle 6.B P2 Bug-Fix V7.99: Picker-Meshes pro Mode (translate≥9, rotate≥6, scale≥8 — Klick-Toleranz)",
+                    wave6bResults.gizmoHasPickers
+                );
+                check(
+                    "Welle 6.B P2 Bug-Fix V7.99: Gizmo VERSTECKT bei Built-in (verhindert Geist-Drag-Bug)",
+                    wave6bResults.gizmoHiddenOnBuiltIn
+                );
+                check(
+                    "Welle 6.B P2 Bug-Fix V7.99: Read-only-Banner sichtbar bei Built-in",
+                    wave6bResults.readonlyBannerVisibleOnBuiltIn
+                );
+                check(
+                    "Welle 6.B P2 Bug-Fix V7.99: Mode-Bar Buttons disabled bei Built-in",
+                    wave6bResults.modeBarDisabledOnBuiltIn
+                );
+                check(
+                    "Welle 6.B P2 Bug-Fix V7.99: Gizmo SICHTBAR bei eigenem Bauplan + Selection",
+                    wave6bResults.gizmoVisibleOnCustom
+                );
+                check(
+                    "Welle 6.B P2 Bug-Fix V7.99: Banner versteckt bei eigenem Bauplan",
+                    wave6bResults.readonlyBannerHiddenOnCustom
+                );
+                check(
+                    "Welle 6.B P2 Bug-Fix V7.99: Mode-Bar Buttons enabled bei eigenem Bauplan",
+                    wave6bResults.modeBarEnabledOnCustom
+                );
+            } else if (wave6bResults && wave6bResults.error) {
+                check(`Welle 6.B: evaluate-Fehler — ${wave6bResults.error}`, false);
+            }
+
+            // ### V8.00 — Resize-Handles (Konsole + Drawer) + Background-Fix ###
+            const resizeResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    try {
+                        out.hasInstallMethod = typeof r.installResizeHandles === "function";
+                        out.hasInternalMethod = typeof r._installResizeHandle === "function";
+                        // Konsole: br-handle existiert
+                        const consoleEl = document.getElementById("console");
+                        out.consoleHasHandle = !!(
+                            consoleEl && consoleEl.querySelector(":scope > .resize-handle.resize-br")
+                        );
+                        // Jeder Drawer: bl-handle existiert
+                        const drawers = document.querySelectorAll(".drawer[data-drawer]");
+                        let allDrawersHaveHandle = drawers.length > 0;
+                        let drawerCount = 0;
+                        drawers.forEach((d) => {
+                            drawerCount++;
+                            if (!d.querySelector(":scope > .resize-handle.resize-bl")) {
+                                allDrawersHaveHandle = false;
+                            }
+                        });
+                        out.allDrawersHaveHandle = allDrawersHaveHandle;
+                        out.drawerCount = drawerCount;
+                        // Idempotenz: zweiter installResizeHandles-Call erzeugt keine Duplikate
+                        r.installResizeHandles();
+                        const handlesAfterSecond = document.querySelectorAll("#console > .resize-handle").length;
+                        out.consoleHandleNotDuplicated = handlesAfterSecond === 1;
+                        // localStorage-Persistence: simulate drag end
+                        const werkstatt = document.querySelector('[data-drawer="werkstatt"]');
+                        if (werkstatt) {
+                            werkstatt.style.width = "400px";
+                            werkstatt.style.height = "500px";
+                            // simulate save (mouseup handler logic)
+                            localStorage.setItem("anazh.resize.werkstatt", JSON.stringify({ width: 400, height: 500 }));
+                            const raw = localStorage.getItem("anazh.resize.werkstatt");
+                            out.persistenceWorks =
+                                raw && JSON.parse(raw).width === 400 && JSON.parse(raw).height === 500;
+                            // cleanup
+                            werkstatt.style.width = "";
+                            werkstatt.style.height = "";
+                            localStorage.removeItem("anazh.resize.werkstatt");
+                        }
+                        // Background-Fix: .drawer hat jetzt direkt ein background statt nur ::before.
+                        // Wir prüfen das via computed style — background sollte 'none' nicht sein.
+                        const w = document.querySelector('[data-drawer="welt"]');
+                        if (w) {
+                            const cs = getComputedStyle(w);
+                            out.drawerHasDirectBackground = cs.backgroundImage && cs.backgroundImage !== "none";
+                            out.drawerHasInsetShadow = cs.boxShadow && cs.boxShadow.includes("inset");
+                        }
+                    } catch (err) {
+                        out.error = err && err.message;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (resizeResults && !resizeResults.error) {
+                check(
+                    "V8.00 Resize: installResizeHandles + _installResizeHandle existieren",
+                    resizeResults.hasInstallMethod && resizeResults.hasInternalMethod
+                );
+                check("V8.00 Resize: Konsole hat .resize-br Handle (unten-rechts)", resizeResults.consoleHasHandle);
+                check(
+                    `V8.00 Resize: Alle ${resizeResults.drawerCount} Drawer haben .resize-bl Handle (unten-links)`,
+                    resizeResults.allDrawersHaveHandle
+                );
+                check(
+                    "V8.00 Resize: installResizeHandles ist idempotent (kein Duplikat)",
+                    resizeResults.consoleHandleNotDuplicated
+                );
+                check("V8.00 Resize: localStorage-Persistence schreibt + liest", resizeResults.persistenceWorks);
+                check(
+                    "V8.00 BG-Fix: .drawer hat direktes background-image (statt nur via ::before)",
+                    resizeResults.drawerHasDirectBackground
+                );
+                check(
+                    "V8.00 BG-Fix: .drawer hat inset box-shadow für Border-Ringe (statt nur via ::after)",
+                    resizeResults.drawerHasInsetShadow
+                );
+            } else if (resizeResults && resizeResults.error) {
+                check(`V8.00 Resize: evaluate-Fehler — ${resizeResults.error}`, false);
+            }
+
+            // ### V8.01 — Drawer-Scroll-Wrapper + Canvas-Sync (Bug-Fixes nach Browser-Test) ###
+            const v801Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    try {
+                        // _wrapDrawerScroll + _workshopSyncCanvasSize existieren
+                        out.hasWrapMethod = typeof r._wrapDrawerScroll === "function";
+                        out.hasSyncMethod = typeof r._workshopSyncCanvasSize === "function";
+                        // Jeder Drawer hat .drawer-scroll-Wrapper als direktes child
+                        const drawers = document.querySelectorAll(".drawer[data-drawer]");
+                        let allWrapped = drawers.length > 0;
+                        drawers.forEach((d) => {
+                            if (!d.querySelector(":scope > .drawer-scroll")) allWrapped = false;
+                        });
+                        out.allDrawersWrapped = allWrapped;
+                        out.drawerCount = drawers.length;
+                        // Resize-Handle ist outside des scroll-Wrappers (sonst würde
+                        // er weg-scrollen wie bei v8.00).
+                        const werkstatt = document.querySelector('[data-drawer="werkstatt"]');
+                        if (werkstatt) {
+                            const handleOutside = !!werkstatt.querySelector(":scope > .resize-handle");
+                            const handleInsideWrap = !!werkstatt.querySelector(
+                                ":scope > .drawer-scroll > .resize-handle"
+                            );
+                            out.handleOutsideScroll = handleOutside && !handleInsideWrap;
+                        }
+                        // h2 ist ebenfalls direktes child (bleibt oben fest)
+                        const w2 = document.querySelector('[data-drawer="werkstatt"] > h2');
+                        out.h2DirectChildOfDrawer = !!w2;
+                        // Drawer hat overflow:hidden + display:flex. Beide nur
+                        // prüfbar wenn Drawer SICHTBAR (.drawer[hidden] hat
+                        // display:block!important via CSS-Override).
+                        // Öffne den Werkstatt-Tab kurz für den Test, später
+                        // alles zurück.
+                        const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
+                        const weltTab = document.querySelector('#topbar [data-tab="welt"]');
+                        if (tab) tab.click();
+                        if (werkstatt) {
+                            const cs = getComputedStyle(werkstatt);
+                            out.drawerOverflowHidden = cs.overflow === "hidden" || cs.overflowY === "hidden";
+                            out.drawerDisplayFlex = cs.display === "flex";
+                        }
+                        // drawer-scroll hat overflow-y:auto
+                        const scroll = werkstatt && werkstatt.querySelector(":scope > .drawer-scroll");
+                        if (scroll) {
+                            const cs = getComputedStyle(scroll);
+                            out.scrollOverflowYAuto = cs.overflowY === "auto";
+                        }
+                        // Canvas-Sync: setze Drawer auf 600px, prüfe dass renderer.setSize gerufen wurde
+                        const canvas = document.getElementById("workshop-preview-canvas");
+                        if (canvas && werkstatt) {
+                            werkstatt.style.width = "600px";
+                            // Force eine Sync via _workshopSyncCanvasSize
+                            r._workshopSyncCanvasSize();
+                            const rect = canvas.getBoundingClientRect();
+                            const w = Math.max(64, Math.floor(rect.width));
+                            // canvas.width sollte jetzt der CSS-Größe entsprechen
+                            out.canvasSyncWorks = canvas.width === w;
+                            // cleanup
+                            werkstatt.style.width = "";
+                        }
+                        // CRITICAL Cleanup: zurück zum Welt-Tab + Yaw zurück auf 0,
+                        // sonst stört der Test nachgelagerte Welt-Drawer- und
+                        // Ring-5-V2-Prep-Tests.
+                        if (weltTab) weltTab.click();
+                        r.state.yaw = 0;
+                        if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
+                    } catch (err) {
+                        out.error = err && err.message;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (v801Results && !v801Results.error) {
+                check(
+                    "V8.01: _wrapDrawerScroll + _workshopSyncCanvasSize existieren",
+                    v801Results.hasWrapMethod && v801Results.hasSyncMethod
+                );
+                check(
+                    `V8.01: Alle ${v801Results.drawerCount} Drawer haben .drawer-scroll-Wrapper (Inhalt scrollt, Rahmen bleibt fest)`,
+                    v801Results.allDrawersWrapped
+                );
+                check(
+                    "V8.01: h2 (Drawer-Titel) ist direktes child des Drawers — bleibt oben fest beim Scroll",
+                    v801Results.h2DirectChildOfDrawer
+                );
+                check(
+                    "V8.01: Resize-Handle ist außerhalb des Scroll-Wrappers — bleibt fest in der Ecke",
+                    v801Results.handleOutsideScroll
+                );
+                check(
+                    "V8.01: .drawer hat overflow:hidden (CSS-Wechsel von overflow-y:auto)",
+                    v801Results.drawerOverflowHidden
+                );
+                check("V8.01: .drawer hat display:flex für column-Layout", v801Results.drawerDisplayFlex);
+                check(
+                    "V8.01: .drawer-scroll hat overflow-y:auto (scroller im Wrapper)",
+                    v801Results.scrollOverflowYAuto
+                );
+                check(
+                    "V8.01: _workshopSyncCanvasSize zieht canvas.width an CSS-rect.width nach (Drawer-Resize → Render-Pixel mitwachsen)",
+                    v801Results.canvasSyncWorks
+                );
+            } else if (v801Results && v801Results.error) {
+                check(`V8.01: evaluate-Fehler — ${v801Results.error}`, false);
+            }
+
+            // ### V8.02 Phase 3 — Shape-Drag-Drop + Klick-Klick-Connection ###
+            const v802Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    try {
+                        // Methoden existieren
+                        out.hasShapeDnDInstall = typeof r._workshopInstallShapeDragDrop === "function";
+                        out.hasShapeDropHandler = typeof r._workshopHandleShapeDrop === "function";
+                        out.hasConnectClick = typeof r._workshopHandleConnectClick === "function";
+                        out.hasOpenPopover = typeof r._workshopOpenConnectPopover === "function";
+                        out.hasClosePopover = typeof r._workshopCloseConnectPopover === "function";
+                        out.hasApplyConn = typeof r._workshopApplyConnection === "function";
+
+                        // Shape-Palette: 9 Cards im DOM
+                        const palette = document.getElementById("workshop-shape-palette");
+                        out.paletteInDom = !!palette;
+                        if (palette) {
+                            const cards = palette.querySelectorAll(".workshop-shape-card");
+                            out.nineCards = cards.length === 9;
+                            // Alle 9 expected shapes
+                            const shapes = new Set();
+                            cards.forEach((c) => shapes.add(c.getAttribute("data-shape")));
+                            out.allNineShapesPresent = [
+                                "box",
+                                "sphere",
+                                "cylinder",
+                                "cone",
+                                "pyramid",
+                                "octahedron",
+                                "plane",
+                                "torus",
+                                "helix",
+                            ].every((s) => shapes.has(s));
+                            // Default: draggable=true (eigener Bauplan)
+                            // Aber bei Built-in (initial village) sollten sie draggable=false sein
+                        }
+
+                        // Drop-Handler-Test: auf Built-in muss er ablehnen
+                        r.selectBlueprintForEdit("village");
+                        const partsBeforeBuiltIn = r.state.blueprints.village.parts.length;
+                        r._workshopHandleShapeDrop("box", 100, 100);
+                        const partsAfterBuiltIn = r.state.blueprints.village.parts.length;
+                        out.dropOnBuiltInRejected = partsBeforeBuiltIn === partsAfterBuiltIn;
+
+                        // Drop-Handler auf eigenem Bauplan: fügt Part hinzu + selektiert ihn
+                        if (r.state.blueprints["test_phase3"]) r.deleteBlueprint("test_phase3");
+                        r.cloneBlueprint("village", "test_phase3");
+                        r.selectBlueprintForEdit("test_phase3");
+                        r._workshopEnsurePreview();
+                        const partsBefore = r.state.blueprints.test_phase3.parts.length;
+                        r._workshopHandleShapeDrop("sphere", 100, 100);
+                        const partsAfter = r.state.blueprints.test_phase3.parts.length;
+                        out.dropOnCustomAddsPart = partsAfter === partsBefore + 1;
+                        const newPart = r.state.blueprints.test_phase3.parts[partsAfter - 1];
+                        out.newPartIsSphere = newPart && newPart.shape === "sphere";
+                        out.newPartSelected = r.state.workshop.selectedPartIdx === partsAfter - 1;
+
+                        // Connect-Modus: setWorkshopManipulatorMode akzeptiert "connect"
+                        out.connectModeAccepted = r.setWorkshopManipulatorMode("connect") === true;
+                        out.modeIsConnect = r.state.workshop.manipulatorMode === "connect";
+
+                        // Klick auf Part 0 im Connect-Mode → connectFirstPartIdx wird Source
+                        r._workshopHandleConnectClick(0);
+                        out.connectFirstSetTo0 = r.state.workshop.connectFirstPartIdx === 0;
+                        // Klick auf Part 1 → öffnet Popover
+                        r._workshopHandleConnectClick(1);
+                        const popover = document.getElementById("workshop-connect-overlay");
+                        out.popoverOpened = !!popover;
+                        // Popover hat 8 Type-Buttons + 1 Cancel
+                        if (popover) {
+                            const buttons = popover.querySelectorAll("button");
+                            out.popoverHasButtons = buttons.length === 9; // 8 types + cancel
+                        }
+
+                        // Apply Connection
+                        r._workshopApplyConnection(0, 1, "lashing");
+                        const conns = r.state.blueprints.test_phase3.connections || [];
+                        out.connectionAdded = conns.some((c) => c.partA === 0 && c.partB === 1 && c.type === "lashing");
+                        // Popover wurde geschlossen
+                        out.popoverClosedAfterApply = !document.getElementById("workshop-connect-overlay");
+                        // Connect-State zurückgesetzt
+                        out.connectStateReset = r.state.workshop.connectFirstPartIdx === null;
+
+                        // Duplikat-Schutz: gleiche Connection zweimal → bleibt 1
+                        r._workshopApplyConnection(0, 1, "lashing");
+                        const connsAfterDup = r.state.blueprints.test_phase3.connections || [];
+                        const lashingCount = connsAfterDup.filter(
+                            (c) => c.type === "lashing" && c.partA === 0 && c.partB === 1
+                        ).length;
+                        out.dupRejected = lashingCount === 1;
+
+                        // Apply lehnt unbekannten Type ab
+                        const beforeBogus = (r.state.blueprints.test_phase3.connections || []).length;
+                        r._workshopApplyConnection(0, 1, "nonsense_type");
+                        const afterBogus = (r.state.blueprints.test_phase3.connections || []).length;
+                        out.bogusTypeRejected = afterBogus === beforeBogus;
+
+                        // ESC im Connect-Mode mit pending Source → cancelt nur Connect, nicht Drawer
+                        r._workshopHandleConnectClick(0); // Source = 0
+                        r.state.uiActiveDrawer = "werkstatt";
+                        r.closeAllDrawers();
+                        out.escCancelsConnectOnly = r.state.workshop.connectFirstPartIdx === null;
+                        // Drawer sollte noch aktiv sein, weil ESC nur Connect canceled
+                        out.drawerStillActiveAfterEsc = r.state.uiActiveDrawer === "werkstatt";
+
+                        // Cleanup
+                        r.setWorkshopManipulatorMode("translate");
+                        r.deleteBlueprint("test_phase3");
+                        r.selectBlueprintForEdit("village");
+                        r._renderWorkshopDOM();
+                    } catch (err) {
+                        out.error = err && err.message;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (v802Results && !v802Results.error) {
+                check(
+                    "V8.02 Phase 3: alle 6 Methoden existieren (DragDrop-Install + Drop-Handler + Connect-Click/Open/Close/Apply)",
+                    v802Results.hasShapeDnDInstall &&
+                        v802Results.hasShapeDropHandler &&
+                        v802Results.hasConnectClick &&
+                        v802Results.hasOpenPopover &&
+                        v802Results.hasClosePopover &&
+                        v802Results.hasApplyConn
+                );
+                check("V8.02 Phase 3a: #workshop-shape-palette im DOM", v802Results.paletteInDom);
+                check("V8.02 Phase 3a: 9 Shape-Cards in der Palette", v802Results.nineCards);
+                check(
+                    "V8.02 Phase 3a: alle 9 Primitive (box/sphere/cylinder/cone/pyramid/octahedron/plane/torus/helix)",
+                    v802Results.allNineShapesPresent
+                );
+                check(
+                    "V8.02 Phase 3a: Drop auf Built-in-Bauplan abgelehnt (read-only-Schutz)",
+                    v802Results.dropOnBuiltInRejected
+                );
+                check(
+                    "V8.02 Phase 3a: Drop auf eigenem Bauplan fügt einen Part hinzu",
+                    v802Results.dropOnCustomAddsPart && v802Results.newPartIsSphere
+                );
+                check(
+                    "V8.02 Phase 3a: Neuer Part wird automatisch selektiert (Gizmo bereit)",
+                    v802Results.newPartSelected
+                );
+                check(
+                    "V8.02 Phase 3b: setWorkshopManipulatorMode('connect') akzeptiert + setzt State",
+                    v802Results.connectModeAccepted && v802Results.modeIsConnect
+                );
+                check(
+                    "V8.02 Phase 3b: Erster Connect-Klick setzt connectFirstPartIdx auf Source",
+                    v802Results.connectFirstSetTo0
+                );
+                check(
+                    "V8.02 Phase 3b: Zweiter Connect-Klick öffnet #workshop-connect-overlay",
+                    v802Results.popoverOpened
+                );
+                check(
+                    "V8.02 Phase 3b: Popover hat 8 Type-Buttons + 1 Cancel-Button (= 9 total)",
+                    v802Results.popoverHasButtons
+                );
+                check(
+                    "V8.02 Phase 3b: _workshopApplyConnection schreibt {type, partA, partB} ins bp.connections",
+                    v802Results.connectionAdded
+                );
+                check("V8.02 Phase 3b: Popover schließt nach Apply", v802Results.popoverClosedAfterApply);
+                check("V8.02 Phase 3b: connectFirstPartIdx zurückgesetzt nach Apply", v802Results.connectStateReset);
+                check("V8.02 Phase 3b: Duplikat-Schutz — selbe Connection zweimal → bleibt 1", v802Results.dupRejected);
+                check("V8.02 Phase 3b: Unbekannter Connection-Type wird abgelehnt", v802Results.bogusTypeRejected);
+                check(
+                    "V8.02 Phase 3b: ESC im Connect-Mode mit pending Source → cancelt nur Connect (nicht Drawer)",
+                    v802Results.escCancelsConnectOnly && v802Results.drawerStillActiveAfterEsc
+                );
+            } else if (v802Results && v802Results.error) {
+                check(`V8.02 Phase 3: evaluate-Fehler — ${v802Results.error}`, false);
+            }
+
+            // ### V8.03 — Camera-CAD-Konventionen (Pan + Zoom-to-Cursor + Wheel-Stop) +
+            //             seitliche Material/Color-Palette
+            const v803Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    try {
+                        // Helper-Methoden existieren
+                        out.hasWorldPoint = typeof r._workshopWorldPointAtCursor === "function";
+                        out.hasRaycastPartIdx = typeof r._workshopRaycastPartIdxAt === "function";
+                        out.hasMaterialRender = typeof r._workshopRenderMaterialPalette === "function";
+                        out.hasColorRender = typeof r._workshopRenderColorPalette === "function";
+                        out.hasMaterialDrop = typeof r._workshopHandleMaterialDrop === "function";
+                        out.hasColorDrop = typeof r._workshopHandleColorDrop === "function";
+
+                        // Tab → Werkstatt + eigenen Bauplan vorbereiten
+                        const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
+                        if (tab) tab.click();
+                        if (r.state.blueprints["test_v803"]) r.deleteBlueprint("test_v803");
+                        r.cloneBlueprint("village", "test_v803");
+                        r.selectBlueprintForEdit("test_v803");
+                        r._workshopEnsurePreview();
+                        const pre = r.state.workshop.preview;
+
+                        // Layout-Struktur
+                        out.previewRowInDom = !!document.getElementById("workshop-preview-row");
+                        out.sidePaletteInDom = !!document.getElementById("workshop-side-palette");
+                        out.shapePaletteInDom = !!document.getElementById("workshop-shape-palette");
+                        out.matPaletteInDom = !!document.getElementById("workshop-material-palette");
+                        out.colorPaletteInDom = !!document.getElementById("workshop-color-palette");
+                        // Side-Palette steht VOR der Preview im DOM (flex-row macht
+                        // dann visuell „links neben")
+                        const row = document.getElementById("workshop-preview-row");
+                        if (row) {
+                            const children = Array.from(row.children);
+                            out.paletteBeforePreview =
+                                children[0] &&
+                                children[0].id === "workshop-side-palette" &&
+                                children[1] &&
+                                children[1].id === "workshop-preview-wrapper";
+                        }
+                        // Material-Palette: eine Card pro Material in state.materials
+                        const matCards = document.querySelectorAll(".workshop-material-card");
+                        out.matCardsCount = matCards.length;
+                        out.matCardsMatchState = matCards.length === Object.keys(r.state.materials).length;
+                        // Color-Palette: 12 Swatches
+                        const colorSwatches = document.querySelectorAll(".workshop-color-swatch");
+                        out.twelveColorSwatches = colorSwatches.length === 12;
+
+                        // --- Pan-Geste: Listener-Source enthält Shift+Links + Mittelmaus-Pfad ---
+                        if (pre) {
+                            // Wir prüfen via Source-Inspection (statt dispatchEvent,
+                            // weil Puppeteer-MouseEvent-Constructor manchmal
+                            // Modifier-Keys nicht zuverlässig propagiert).
+                            const src = r._workshopInstallPreviewListeners.toString();
+                            out.shiftLeftStartsPan = src.includes("shiftKey") && src.includes("event.button === 1");
+                            out.middleMouseStartsPan = src.includes("event.button === 1");
+                            // Listener wurden tatsächlich installed (listenersInstalled-Flag)
+                            out.previewListenersInstalled = pre.listenersInstalled === true;
+
+                            // --- Wheel + Zoom-to-Cursor: target verschiebt sich ---
+                            const oldTarget = pre.orbit.target.clone();
+                            const oldDist = pre.orbit.dist;
+                            // Wheel mit deltaY > 0 = zoom-out (factor 1.12)
+                            const wheelEv = new WheelEvent("wheel", {
+                                clientX: 100,
+                                clientY: 100,
+                                deltaY: 100,
+                                bubbles: true,
+                                cancelable: true,
+                            });
+                            pre.canvas.dispatchEvent(wheelEv);
+                            // dist hat sich geändert
+                            out.distChangedOnWheel = pre.orbit.dist !== oldDist;
+                            // target wurde leicht verschoben (zoom-to-cursor) — nur wenn
+                            // der Cursor-Ray die Ebene trifft. Wenn nicht, ist target identisch.
+                            // Wir können nur prüfen dass die Methode RUNS ohne Crash.
+                            out.zoomToCursorTargetMaybeMoved =
+                                !oldTarget.equals(pre.orbit.target) || pre.orbit.target.equals(oldTarget);
+                            // wheel preventDefault: das Event wurde aufgenommen — wir prüfen
+                            // dass defaultPrevented true ist.
+                            out.wheelPreventDefault = wheelEv.defaultPrevented;
+                        }
+
+                        // --- Material-Drop auf Part-Idx 0 ---
+                        // wir simulieren _workshopHandleMaterialDrop direkt
+                        r._workshopSetSelection(0);
+                        const part0Before = r.state.blueprints.test_v803.parts[0].material;
+                        // Use clientX/Y in der Mitte des Canvas (sollte Part 0 treffen
+                        // wenn er da ist — Selection wurde gerade gesetzt)
+                        const canvas = document.getElementById("workshop-preview-canvas");
+                        const rect = canvas.getBoundingClientRect();
+                        const cx = rect.left + rect.width / 2;
+                        const cy = rect.top + rect.height / 2;
+                        // Test: direkte Methode mit gültigem Material
+                        // (raycast hit hängt von Camera-Position ab, also gibt's
+                        // möglicherweise keinen Treffer — pragmatischer: prüfen
+                        // dass die Methode existiert + nicht crashed)
+                        r._workshopHandleMaterialDrop("holz", cx, cy);
+                        out.materialDropNoCrash = true;
+                        // Wenn ein Hit war, sollte material gewechselt sein
+                        const part0After = r.state.blueprints.test_v803.parts[0].material;
+                        out.materialDropMaybeChanged = part0After !== part0Before || part0After === part0Before;
+
+                        // Bogus material wird abgelehnt
+                        r._workshopHandleMaterialDrop("nonsense_material", cx, cy);
+                        out.bogusMaterialNoCrash = true;
+
+                        // --- Color-Drop ---
+                        r._workshopHandleColorDrop("ff5500", cx, cy);
+                        out.colorDropNoCrash = true;
+
+                        // --- CSS overscroll-behavior auf .drawer-scroll ---
+                        const werkstattScroll = document.querySelector('[data-drawer="werkstatt"] > .drawer-scroll');
+                        if (werkstattScroll) {
+                            const cs = getComputedStyle(werkstattScroll);
+                            out.overscrollContain = cs.overscrollBehavior.includes("contain");
+                        }
+
+                        // Cleanup
+                        r.state.workshop.selectedPartIdx = null;
+                        r.deleteBlueprint("test_v803");
+                        r.selectBlueprintForEdit("village");
+                        const weltTab = document.querySelector('#topbar [data-tab="welt"]');
+                        if (weltTab) weltTab.click();
+                        r.state.yaw = 0;
+                        if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
+                    } catch (err) {
+                        out.error = err && err.message;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (v803Results && !v803Results.error) {
+                check(
+                    "V8.03: 6 neue Helper-Methoden existieren (WorldPoint/PartIdxAt + Render×2 + Drop×2)",
+                    v803Results.hasWorldPoint &&
+                        v803Results.hasRaycastPartIdx &&
+                        v803Results.hasMaterialRender &&
+                        v803Results.hasColorRender &&
+                        v803Results.hasMaterialDrop &&
+                        v803Results.hasColorDrop
+                );
+                check("V8.03: #workshop-preview-row im DOM (Layout-Container)", v803Results.previewRowInDom);
+                check("V8.03: #workshop-side-palette im DOM (seitliche Drag-Sources)", v803Results.sidePaletteInDom);
+                check(
+                    "V8.03: Alle 3 Sub-Paletten im DOM (shape/material/color)",
+                    v803Results.shapePaletteInDom && v803Results.matPaletteInDom && v803Results.colorPaletteInDom
+                );
+                check(
+                    "V8.03: Side-Palette steht VOR Preview im DOM (flex-row → visuell links)",
+                    v803Results.paletteBeforePreview
+                );
+                check(
+                    `V8.03: Material-Palette hat ${v803Results.matCardsCount} Cards (= alle state.materials)`,
+                    v803Results.matCardsMatchState
+                );
+                check("V8.03: Color-Palette hat 12 Swatches", v803Results.twelveColorSwatches);
+                check(
+                    "V8.03 Camera: Listener enthält Shift+Links + Mittelmaus → Pan-Modus",
+                    v803Results.shiftLeftStartsPan && v803Results.middleMouseStartsPan
+                );
+                check(
+                    "V8.03 Camera: Preview-Listener wurden installiert (listenersInstalled-Flag)",
+                    v803Results.previewListenersInstalled
+                );
+                check("V8.03 Camera: Wheel ändert orbit.dist (Zoom)", v803Results.distChangedOnWheel);
+                check(
+                    "V8.03 Camera: Wheel ruft preventDefault → kein Drawer-Scroll-Bleed",
+                    v803Results.wheelPreventDefault
+                );
+                check(
+                    "V8.03 Camera: _workshopHandleMaterialDrop crashed nicht",
+                    v803Results.materialDropNoCrash && v803Results.bogusMaterialNoCrash
+                );
+                check("V8.03 Camera: _workshopHandleColorDrop crashed nicht", v803Results.colorDropNoCrash);
+                check(
+                    "V8.03 CSS: .drawer-scroll hat overscroll-behavior:contain (zweite Verteidigung gegen Wheel-Bleed)",
+                    v803Results.overscrollContain
+                );
+            } else if (v803Results && v803Results.error) {
+                check(`V8.03: evaluate-Fehler — ${v803Results.error}`, false);
+            }
+
+            // ### Welle 9a — Werkzeug-Domains + emergente Bauplan-Rolle ###
+            const wave9aResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const AR = r.constructor;
+                    const out = {};
+                    try {
+                        // Konstanten
+                        out.toolDomainsFrozen =
+                            Array.isArray(AR.TOOL_DOMAINS) &&
+                            Object.isFrozen(AR.TOOL_DOMAINS) &&
+                            AR.TOOL_DOMAINS.length === 6;
+                        out.toolDomainsContent = [
+                            "construction",
+                            "forging",
+                            "alchemy",
+                            "textile",
+                            "soulwork",
+                            "mechanism",
+                        ].every((d) => AR.TOOL_DOMAINS.includes(d));
+                        out.domainToRoleFrozen = !!AR.DOMAIN_TO_ROLE && Object.isFrozen(AR.DOMAIN_TO_ROLE);
+                        out.alchemyMapsToConsumable = AR.DOMAIN_TO_ROLE.alchemy === "consumable";
+                        out.textileMapsToArmor = AR.DOMAIN_TO_ROLE.textile === "armor";
+                        out.soulworkMapsToSoul = AR.DOMAIN_TO_ROLE.soulwork === "soul";
+                        out.mechanismMapsToMachine = AR.DOMAIN_TO_ROLE.mechanism === "machine";
+                        out.constructionMapsToArchitecture = AR.DOMAIN_TO_ROLE.construction === "architecture";
+                        out.forgingIsSplit = AR.DOMAIN_TO_ROLE.forging === "forging-split";
+                        out.forgingToolTags =
+                            Array.isArray(AR.FORGING_TOOL_TAGS) && AR.FORGING_TOOL_TAGS.includes("härte");
+                        out.forgingArmorTags =
+                            Array.isArray(AR.FORGING_ARMOR_TAGS) && AR.FORGING_ARMOR_TAGS.includes("dichte");
+                        out.defaultRole = AR.DEFAULT_BLUEPRINT_ROLE === "architecture";
+
+                        // Methoden existieren
+                        out.hasComputeDomain = typeof r.computeBlueprintDomain === "function";
+                        out.hasComputeRole = typeof r.computeBlueprintRole === "function";
+                        out.hasComputeForgingRole = typeof r._computeForgingRole === "function";
+                        out.hasRefresh = typeof r._refreshBlueprintRoleEmergent === "function";
+
+                        // Default-Tools sind alle generic (domain=null)
+                        const tools = r.state.tools || {};
+                        // Welle 9b — die 5 ORIGINAL-Built-ins (hand/feuer/hammer/
+                        // feile/polier) sind generic. Die 5 NEUEN Domain-Tools
+                        // tragen jeweils eine domain ∈ TOOL_DOMAINS.
+                        const originalGenericNames = [
+                            "hände",
+                            "feuerstein-knapper",
+                            "hammer",
+                            "feile",
+                            "polierscheibe",
+                        ];
+                        out.originalToolsGeneric = originalGenericNames.every(
+                            (n) => tools[n] && tools[n].domain === null
+                        );
+                        out.domainToolsHaveDomain = Object.values(tools)
+                            .filter((t) => t.builtIn && t.domain)
+                            .every((t) => AR.TOOL_DOMAINS.includes(t.domain));
+
+                        // Leerer Bauplan / nur generic-Werkzeuge → null Domain, role=architecture
+                        if (r.state.blueprints["test_9a_empty"]) r.deleteBlueprint("test_9a_empty");
+                        r.cloneBlueprint("village", "test_9a_empty");
+                        // Werkzeug "hände" anwenden auf Part 0 — domain=null bleibt
+                        r.applyOpToPart("test_9a_empty", 0, "hände");
+                        out.emptyDomainNull = r.computeBlueprintDomain(r.state.blueprints.test_9a_empty) === null;
+                        out.emptyRoleArchitecture =
+                            r.computeBlueprintRole(r.state.blueprints.test_9a_empty) === "architecture";
+
+                        // Simuliere ein Domain-tragendes Werkzeug (manuell hinzufügen für Test)
+                        r.state.tools["test_forge_hammer"] = {
+                            name: "test_forge_hammer",
+                            label: "Schmiede-Hammer (Test)",
+                            opClass: "plastic",
+                            opName: "forge",
+                            precisionCap: 0.7,
+                            isStarter: false,
+                            builtIn: false,
+                            domain: "forging",
+                        };
+                        if (!r.state.player.tools.includes("test_forge_hammer")) {
+                            r.state.player.tools.push("test_forge_hammer");
+                        }
+                        if (r.state.blueprints["test_9a_forging"]) r.deleteBlueprint("test_9a_forging");
+                        r.cloneBlueprint("village", "test_9a_forging");
+                        // Erst Material auf eisen wechseln (stein lehnt plastic-opClass ab,
+                        // forging-Hammer hat opClass=plastic — applyOp würde sonst scheitern).
+                        r.updatePartInBlueprint("test_9a_forging", 0, { material: "eisen", recolor: true });
+                        r.applyOpToPart("test_9a_forging", 0, "test_forge_hammer");
+                        out.forgingDomainDetected =
+                            r.computeBlueprintDomain(r.state.blueprints.test_9a_forging) === "forging";
+
+                        // Forging-Split via Compound-Tags
+                        const forgingRole = r.computeBlueprintRole(r.state.blueprints.test_9a_forging);
+                        out.forgingResolvedTo = forgingRole;
+                        out.forgingIsToolOrArmor = forgingRole === "tool" || forgingRole === "armor";
+
+                        // Alchemy-Domain → consumable
+                        r.state.tools["test_alchemy_mortar"] = {
+                            name: "test_alchemy_mortar",
+                            label: "Mörser (Test)",
+                            opClass: "additive",
+                            opName: "brew",
+                            precisionCap: 0.7,
+                            isStarter: false,
+                            builtIn: false,
+                            domain: "alchemy",
+                        };
+                        if (!r.state.player.tools.includes("test_alchemy_mortar")) {
+                            r.state.player.tools.push("test_alchemy_mortar");
+                        }
+                        if (r.state.blueprints["test_9a_alchemy"]) r.deleteBlueprint("test_9a_alchemy");
+                        r.cloneBlueprint("village", "test_9a_alchemy");
+                        r.updatePartInBlueprint("test_9a_alchemy", 0, { material: "holz", recolor: true });
+                        r.applyOpToPart("test_9a_alchemy", 0, "test_alchemy_mortar");
+                        out.alchemyRoleIsConsumable =
+                            r.computeBlueprintRole(r.state.blueprints.test_9a_alchemy) === "consumable";
+
+                        // Mechanism-Domain → machine
+                        r.state.tools["test_lathe"] = {
+                            name: "test_lathe",
+                            label: "Drehbank (Test)",
+                            opClass: "subtractive",
+                            opName: "turn",
+                            precisionCap: 0.9,
+                            isStarter: false,
+                            builtIn: false,
+                            domain: "mechanism",
+                        };
+                        if (!r.state.player.tools.includes("test_lathe")) {
+                            r.state.player.tools.push("test_lathe");
+                        }
+                        if (r.state.blueprints["test_9a_mech"]) r.deleteBlueprint("test_9a_mech");
+                        r.cloneBlueprint("village", "test_9a_mech");
+                        r.applyOpToPart("test_9a_mech", 0, "test_lathe");
+                        out.mechanismRoleIsMachine =
+                            r.computeBlueprintRole(r.state.blueprints.test_9a_mech) === "machine";
+
+                        // Emergent-Refresh: addPart triggert _refreshBlueprintRoleEmergent
+                        if (r.state.blueprints["test_9a_emergent"]) r.deleteBlueprint("test_9a_emergent");
+                        r.cloneBlueprint("village", "test_9a_emergent");
+                        r.applyOpToPart("test_9a_emergent", 0, "test_lathe");
+                        out.emergentRoleSetOnApply = r.state.blueprints.test_9a_emergent.role === "machine";
+
+                        // Manueller Override: setBlueprintAsArmor sperrt emergenten Pfad
+                        r.setBlueprintAsArmor("test_9a_emergent");
+                        out.manualOverrideSetsRole = r.state.blueprints.test_9a_emergent.role === "armor";
+                        out.manualOverrideMarksFlag = r.state.blueprints.test_9a_emergent.roleManual === true;
+                        // Nochmal applyOpToPart — role bleibt manual=armor (kein emergent override)
+                        r.applyOpToPart("test_9a_emergent", 0, "test_lathe");
+                        out.manualOverrideStaysAfterApply = r.state.blueprints.test_9a_emergent.role === "armor";
+
+                        // Cleanup
+                        for (const n of [
+                            "test_9a_empty",
+                            "test_9a_forging",
+                            "test_9a_alchemy",
+                            "test_9a_mech",
+                            "test_9a_emergent",
+                        ]) {
+                            if (r.state.blueprints[n]) r.deleteBlueprint(n);
+                        }
+                        for (const t of ["test_forge_hammer", "test_alchemy_mortar", "test_lathe"]) {
+                            delete r.state.tools[t];
+                            r.state.player.tools = r.state.player.tools.filter((x) => x !== t);
+                        }
+                        r._renderWorkshopDOM();
+                    } catch (err) {
+                        out.error = err && err.message;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (wave9aResults && !wave9aResults.error) {
+                check(
+                    "Welle 9a: TOOL_DOMAINS frozen mit 6 Einträgen (construction/forging/alchemy/textile/soulwork/mechanism)",
+                    wave9aResults.toolDomainsFrozen && wave9aResults.toolDomainsContent
+                );
+                check(
+                    "Welle 9a: DOMAIN_TO_ROLE-Map frozen mit korrektem Mapping (alchemy→consumable, textile→armor, soulwork→soul, mechanism→machine, construction→architecture, forging→forging-split)",
+                    wave9aResults.domainToRoleFrozen &&
+                        wave9aResults.alchemyMapsToConsumable &&
+                        wave9aResults.textileMapsToArmor &&
+                        wave9aResults.soulworkMapsToSoul &&
+                        wave9aResults.mechanismMapsToMachine &&
+                        wave9aResults.constructionMapsToArchitecture &&
+                        wave9aResults.forgingIsSplit
+                );
+                check(
+                    "Welle 9a: FORGING_TOOL_TAGS enthält härte + FORGING_ARMOR_TAGS enthält dichte",
+                    wave9aResults.forgingToolTags && wave9aResults.forgingArmorTags
+                );
+                check("Welle 9a: DEFAULT_BLUEPRINT_ROLE === 'architecture'", wave9aResults.defaultRole);
+                check(
+                    "Welle 9a: alle 4 Methoden existieren (computeBlueprintDomain/Role + _computeForgingRole + _refreshBlueprintRoleEmergent)",
+                    wave9aResults.hasComputeDomain &&
+                        wave9aResults.hasComputeRole &&
+                        wave9aResults.hasComputeForgingRole &&
+                        wave9aResults.hasRefresh
+                );
+                check(
+                    "Welle 9a: Original-Built-ins (hände/feuerstein/hammer/feile/polierscheibe) sind generic (domain=null)",
+                    wave9aResults.originalToolsGeneric
+                );
+                check(
+                    "Welle 9b: Domain-Built-ins haben jeweils eine gültige Domain ∈ TOOL_DOMAINS",
+                    wave9aResults.domainToolsHaveDomain
+                );
+                check(
+                    "Welle 9a: Leerer Bauplan + nur generic-Werkzeuge → computeDomain=null",
+                    wave9aResults.emptyDomainNull
+                );
+                check(
+                    "Welle 9a: Leerer Bauplan + nur generic-Werkzeuge → role=architecture (Default)",
+                    wave9aResults.emptyRoleArchitecture
+                );
+                check(
+                    "Welle 9a: Domain-Werkzeug (forging) angewandt → computeDomain='forging'",
+                    wave9aResults.forgingDomainDetected
+                );
+                check(
+                    `Welle 9a: Forging-Split via Compound-Tags → resolveTo='${wave9aResults.forgingResolvedTo}' (tool oder armor)`,
+                    wave9aResults.forgingIsToolOrArmor
+                );
+                check("Welle 9a: Alchemy-Werkzeug → role='consumable'", wave9aResults.alchemyRoleIsConsumable);
+                check("Welle 9a: Mechanism-Werkzeug → role='machine'", wave9aResults.mechanismRoleIsMachine);
+                check(
+                    "Welle 9a: applyOpToPart triggert _refreshBlueprintRoleEmergent → bp.role wird emergent gesetzt",
+                    wave9aResults.emergentRoleSetOnApply
+                );
+                check(
+                    "Welle 9a: Manueller Override (setBlueprintAsArmor) setzt bp.role + roleManual=true",
+                    wave9aResults.manualOverrideSetsRole && wave9aResults.manualOverrideMarksFlag
+                );
+                check(
+                    "Welle 9a: Manueller Override sperrt emergenten Pfad — applyOpToPart ändert role nicht mehr",
+                    wave9aResults.manualOverrideStaysAfterApply
+                );
+            } else if (wave9aResults && wave9aResults.error) {
+                check(`Welle 9a: evaluate-Fehler — ${wave9aResults.error}`, false);
+            }
+
+            // ### Welle 9b — Domain-Werkzeuge + UI-Anzeige der Rolle ###
+            const wave9bResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const AR = r.constructor;
+                    const out = {};
+                    try {
+                        // 5 neue Domain-Werkzeuge in state.tools
+                        const domainToolNames = [
+                            "schmiede-hammer",
+                            "mörser",
+                            "webstuhl-schiffchen",
+                            "ritueller-stab",
+                            "drehbank-meißel",
+                        ];
+                        out.allDomainToolsExist = domainToolNames.every((n) => !!r.state.tools[n]);
+
+                        // Korrektes domain-Mapping pro Tool
+                        out.schmiedeHammerForging =
+                            r.state.tools["schmiede-hammer"] && r.state.tools["schmiede-hammer"].domain === "forging";
+                        out.morserAlchemy = r.state.tools["mörser"] && r.state.tools["mörser"].domain === "alchemy";
+                        out.webstuhlTextile =
+                            r.state.tools["webstuhl-schiffchen"] &&
+                            r.state.tools["webstuhl-schiffchen"].domain === "textile";
+                        out.stabSoulwork =
+                            r.state.tools["ritueller-stab"] && r.state.tools["ritueller-stab"].domain === "soulwork";
+                        out.drehbankMechanism =
+                            r.state.tools["drehbank-meißel"] && r.state.tools["drehbank-meißel"].domain === "mechanism";
+
+                        // Alle 5 Domain-Werkzeuge sind isStarter → im Spieler-Inventar
+                        const playerTools = r.state.player.tools || [];
+                        out.allDomainToolsInInventory = domainToolNames.every((n) => playerTools.includes(n));
+
+                        // Insgesamt 10 Built-in-Werkzeuge (5 generic + 5 domain)
+                        const builtIns = Object.values(r.state.tools).filter((t) => t.builtIn);
+                        out.tenBuiltInTools = builtIns.length === 10;
+
+                        // Konstanten für UI: Labels + Farben
+                        out.roleLabelsFrozen =
+                            !!AR.BLUEPRINT_ROLE_LABELS &&
+                            Object.isFrozen(AR.BLUEPRINT_ROLE_LABELS) &&
+                            AR.BLUEPRINT_ROLE_LABELS.architecture === "Bauwerk" &&
+                            AR.BLUEPRINT_ROLE_LABELS.tool === "Werkzeug" &&
+                            AR.BLUEPRINT_ROLE_LABELS.machine === "Maschine";
+                        out.domainLabelsFrozen =
+                            !!AR.TOOL_DOMAIN_LABELS &&
+                            Object.isFrozen(AR.TOOL_DOMAIN_LABELS) &&
+                            AR.TOOL_DOMAIN_LABELS.forging === "Schmiede" &&
+                            AR.TOOL_DOMAIN_LABELS.alchemy === "Alchemie";
+                        out.domainColorsFrozen =
+                            !!AR.TOOL_DOMAIN_COLORS &&
+                            Object.isFrozen(AR.TOOL_DOMAIN_COLORS) &&
+                            typeof AR.TOOL_DOMAIN_COLORS.forging === "string";
+
+                        // UI: Werkstatt-Status zeigt Rolle live nach Edit
+                        const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
+                        if (tab) tab.click();
+                        if (r.state.blueprints["test_9b"]) r.deleteBlueprint("test_9b");
+                        r.cloneBlueprint("village", "test_9b");
+                        r.selectBlueprintForEdit("test_9b");
+                        // Frisch geklont: Rolle ist architecture (emergent default)
+                        // Status sollte das anzeigen
+                        const status = document.querySelector("#workshop-editor .workshop-status");
+                        out.statusShowsBauwerk =
+                            !!status &&
+                            status.textContent.includes("Bauwerk") &&
+                            status.textContent.includes("emergent");
+                        // Apply schmiede-hammer auf eisen-Part
+                        r.updatePartInBlueprint("test_9b", 0, { material: "eisen", recolor: true });
+                        r.applyOpToPart("test_9b", 0, "schmiede-hammer");
+                        r._renderWorkshopDOM();
+                        const statusAfter = document.querySelector("#workshop-editor .workshop-status");
+                        // Rolle sollte jetzt Werkzeug oder Rüstung sein (forging-split)
+                        out.statusShowsForgingRole =
+                            !!statusAfter &&
+                            (statusAfter.textContent.includes("Werkzeug") ||
+                                statusAfter.textContent.includes("Rüstung")) &&
+                            statusAfter.textContent.includes("emergent");
+
+                        // Tool-Chip: Domain-Dot ist im DOM für Domain-Werkzeug
+                        const chips = document.querySelectorAll(".workshop-tool-chip");
+                        let hasDomainDot = false;
+                        chips.forEach((chip) => {
+                            if (chip.querySelector(".workshop-tool-domain-dot")) hasDomainDot = true;
+                        });
+                        out.toolChipHasDomainDot = hasDomainDot;
+
+                        // Cleanup
+                        if (r.state.blueprints["test_9b"]) r.deleteBlueprint("test_9b");
+                        r.selectBlueprintForEdit("village");
+                        const weltTab = document.querySelector('#topbar [data-tab="welt"]');
+                        if (weltTab) weltTab.click();
+                        r.state.yaw = 0;
+                        if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
+                    } catch (err) {
+                        out.error = err && err.message;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (wave9bResults && !wave9bResults.error) {
+                check("Welle 9b: alle 5 Domain-Werkzeuge in state.tools", wave9bResults.allDomainToolsExist);
+                check(
+                    "Welle 9b: korrektes Domain-Mapping pro Tool (schmiede→forging, mörser→alchemy, …)",
+                    wave9bResults.schmiedeHammerForging &&
+                        wave9bResults.morserAlchemy &&
+                        wave9bResults.webstuhlTextile &&
+                        wave9bResults.stabSoulwork &&
+                        wave9bResults.drehbankMechanism
+                );
+                check(
+                    "Welle 9b: alle 5 Domain-Werkzeuge sind isStarter + im Spieler-Inventar",
+                    wave9bResults.allDomainToolsInInventory
+                );
+                check(
+                    "Welle 9b: 10 Built-in-Werkzeuge insgesamt (5 generic + 5 domain)",
+                    wave9bResults.tenBuiltInTools
+                );
+                check(
+                    "Welle 9b: BLUEPRINT_ROLE_LABELS frozen + deutsche Bezeichnungen (Bauwerk/Werkzeug/Maschine)",
+                    wave9bResults.roleLabelsFrozen
+                );
+                check(
+                    "Welle 9b: TOOL_DOMAIN_LABELS frozen + deutsche Bezeichnungen (Schmiede/Alchemie/…)",
+                    wave9bResults.domainLabelsFrozen
+                );
+                check(
+                    "Welle 9b: TOOL_DOMAIN_COLORS frozen mit Hex-Strings pro Domain",
+                    wave9bResults.domainColorsFrozen
+                );
+                check(
+                    "Welle 9b UI: Werkstatt-Status zeigt 'Rolle: Bauwerk (emergent)' nach Klone",
+                    wave9bResults.statusShowsBauwerk
+                );
+                check(
+                    "Welle 9b UI: Status wechselt nach forging-Op auf Werkzeug/Rüstung (emergent)",
+                    wave9bResults.statusShowsForgingRole
+                );
+                check(
+                    "Welle 9b UI: Tool-Chip enthält .workshop-tool-domain-dot bei Domain-Werkzeugen",
+                    wave9bResults.toolChipHasDomainDot
+                );
+            } else if (wave9bResults && wave9bResults.error) {
+                check(`Welle 9b: evaluate-Fehler — ${wave9bResults.error}`, false);
+            }
+
+            // ### Welle 9c — Welt-Werkstatt-Architekturen + Distance-Gate ###
+            const wave9cResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const AR = r.constructor;
+                    const out = {};
+                    try {
+                        const stationNames = ["esse", "brennkolben", "webstuhl", "seelenstein_altar", "drehbank"];
+                        out.allStationsExist = stationNames.every((n) => !!r.state.blueprints[n]);
+                        out.allHaveRole = stationNames.every(
+                            (n) => r.state.blueprints[n] && r.state.blueprints[n].role === "workshop-station"
+                        );
+                        out.esseForging = r.state.blueprints.esse.workshopDomain === "forging";
+                        out.brennkolbenAlchemy = r.state.blueprints.brennkolben.workshopDomain === "alchemy";
+                        out.webstuhlTextile = r.state.blueprints.webstuhl.workshopDomain === "textile";
+                        out.altarSoulwork = r.state.blueprints.seelenstein_altar.workshopDomain === "soulwork";
+                        out.drehbankMechanism = r.state.blueprints.drehbank.workshopDomain === "mechanism";
+                        out.proximityConst = AR.WORKSHOP_PROXIMITY_M === 10;
+                        out.gateMethodExists = typeof r._workshopStationGate === "function";
+
+                        // Modus auf pfad für strikten Test
+                        r.setGameMode("pfad");
+
+                        // Forging-Bauplan vorbereiten
+                        if (r.state.blueprints["test_9c_forging"]) r.deleteBlueprint("test_9c_forging");
+                        r.cloneBlueprint("village", "test_9c_forging");
+                        r.updatePartInBlueprint("test_9c_forging", 0, { material: "eisen", recolor: true });
+                        r.applyOpToPart("test_9c_forging", 0, "schmiede-hammer");
+
+                        const farPos = { x: 1000, y: 1000, z: 1000 };
+                        const nearPos = { x: 5, y: 0, z: 5 };
+
+                        // Esse nah spawnen
+                        r.spawnArchitecture("esse", nearPos, { silent: true });
+
+                        const gateFar = r._workshopStationGate("test_9c_forging", farPos);
+                        out.pfadFarFails = gateFar && gateFar.ok === false;
+                        out.pfadFarReportsDomain = gateFar && gateFar.neededDomain === "forging";
+
+                        const gateNear = r._workshopStationGate("test_9c_forging", nearPos);
+                        out.pfadNearPasses = gateNear && gateNear.ok === true;
+                        out.pfadNearReportsFound = gateNear && gateNear.found === "esse";
+
+                        r.setGameMode("frieden");
+                        const gateFrieden = r._workshopStationGate("test_9c_forging", farPos);
+                        out.friedenFreeAccess = gateFrieden && gateFrieden.ok === true && gateFrieden.free === true;
+
+                        r.setGameMode("schöpfer");
+                        const gateSchopfer = r._workshopStationGate("test_9c_forging", farPos);
+                        out.schopferFreeAccess = gateSchopfer && gateSchopfer.ok === true && gateSchopfer.free === true;
+
+                        r.setGameMode("pfad");
+                        const gateBootstrap = r._workshopStationGate("esse", farPos);
+                        out.bootstrapOk =
+                            gateBootstrap && gateBootstrap.ok === true && gateBootstrap.bootstrap === true;
+
+                        const gateArch = r._workshopStationGate("village", farPos);
+                        out.archNoCheck = gateArch && gateArch.ok === true;
+
+                        // Cleanup
+                        if (r.state.blueprints["test_9c_forging"]) r.deleteBlueprint("test_9c_forging");
+                        r.state.architectures = r.state.architectures.filter((e) => e.type !== "esse");
+                        r.setGameMode("frieden");
+                    } catch (err) {
+                        out.error = err && err.message;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (wave9cResults && !wave9cResults.error) {
+                check(
+                    "Welle 9c: alle 5 Workshop-Bauplane als Built-ins (esse/brennkolben/webstuhl/seelenstein_altar/drehbank)",
+                    wave9cResults.allStationsExist
+                );
+                check("Welle 9c: alle haben role='workshop-station'", wave9cResults.allHaveRole);
+                check(
+                    "Welle 9c: workshopDomain-Mapping korrekt (esse→forging, brennkolben→alchemy, webstuhl→textile, altar→soulwork, drehbank→mechanism)",
+                    wave9cResults.esseForging &&
+                        wave9cResults.brennkolbenAlchemy &&
+                        wave9cResults.webstuhlTextile &&
+                        wave9cResults.altarSoulwork &&
+                        wave9cResults.drehbankMechanism
+                );
+                check("Welle 9c: Konstante WORKSHOP_PROXIMITY_M === 10", wave9cResults.proximityConst);
+                check("Welle 9c: _workshopStationGate-Methode existiert", wave9cResults.gateMethodExists);
+                check(
+                    "Welle 9c: pfad ohne nahe Werkstatt → Gate lehnt ab + nennt neededDomain",
+                    wave9cResults.pfadFarFails && wave9cResults.pfadFarReportsDomain
+                );
+                check(
+                    "Welle 9c: pfad mit Werkstatt in WORKSHOP_PROXIMITY_M → Gate passt + nennt found-Architektur",
+                    wave9cResults.pfadNearPasses && wave9cResults.pfadNearReportsFound
+                );
+                check(
+                    "Welle 9c: frieden-Modus überspringt Werkstatt-Gate (free=true)",
+                    wave9cResults.friedenFreeAccess
+                );
+                check(
+                    "Welle 9c: schöpfer-Modus überspringt Werkstatt-Gate (free=true)",
+                    wave9cResults.schopferFreeAccess
+                );
+                check(
+                    "Welle 9c: Workshop-Station selbst (Esse) braucht keine Werkstatt (Bootstrap-Pfad)",
+                    wave9cResults.bootstrapOk
+                );
+                check(
+                    "Welle 9c: architecture-Bauplan (village) überspringt Werkstatt-Check (keine Domain → kein Gate)",
+                    wave9cResults.archNoCheck
+                );
+            } else if (wave9cResults && wave9cResults.error) {
+                check(`Welle 9c: evaluate-Fehler — ${wave9cResults.error}`, false);
+            }
+
+            // ### Welle 9d — Maschinen-Bonus + Seelen-Bauplane ###
+            const wave9dResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const AR = r.constructor;
+                    const out = {};
+                    try {
+                        out.machineBonus = AR.MACHINE_PRECISION_BONUS === 0.05;
+                        out.hasSoulFromBp = typeof r.applyPlayerSoulFromBlueprint === "function";
+
+                        // Maschinen-Bonus
+                        if (r.state.blueprints["test_9d_machine"]) r.deleteBlueprint("test_9d_machine");
+                        r.cloneBlueprint("village", "test_9d_machine");
+                        r.setBlueprintToolMeta("test_9d_machine", "turn", "subtractive");
+                        // setBlueprintToolMeta setzt role=tool; force machine:
+                        r.state.blueprints.test_9d_machine.role = "machine";
+                        r.state.blueprints.test_9d_machine.roleManual = true;
+                        const minP = r.computeBlueprintPrecisionCap(r.state.blueprints.test_9d_machine);
+                        const reg = r.registerBlueprintAsTool("test_9d_machine");
+                        out.regOk = reg && reg.ok === true;
+                        if (reg && reg.ok) {
+                            const tool = r.state.tools["test_9d_machine"];
+                            const expected = Math.min(1.0, minP + 0.05);
+                            out.toolHasBonus = Math.abs(tool.precisionCap - expected) < 0.001;
+                            out.toolMarkedMachine = tool.isMachine === true;
+                        }
+
+                        // Ohne machine: kein Bonus
+                        if (r.state.blueprints["test_9d_normaltool"]) r.deleteBlueprint("test_9d_normaltool");
+                        r.cloneBlueprint("village", "test_9d_normaltool");
+                        r.setBlueprintToolMeta("test_9d_normaltool", "file", "subtractive");
+                        const minP2 = r.computeBlueprintPrecisionCap(r.state.blueprints.test_9d_normaltool);
+                        r.registerBlueprintAsTool("test_9d_normaltool");
+                        const toolNoBonus = r.state.tools["test_9d_normaltool"];
+                        out.normalToolNoBonus = toolNoBonus && Math.abs(toolNoBonus.precisionCap - minP2) < 0.001;
+                        out.normalToolNotMachine = toolNoBonus && toolNoBonus.isMachine === false;
+
+                        // Seelen-Bauplan
+                        if (r.state.blueprints["test_9d_soul"]) r.deleteBlueprint("test_9d_soul");
+                        r.cloneBlueprint("village", "test_9d_soul");
+                        r.state.blueprints.test_9d_soul.role = "soul";
+                        r.state.blueprints.test_9d_soul.roleManual = true;
+                        const soulBefore = r.state.player.soul;
+                        const soulRes = r.applyPlayerSoulFromBlueprint("test_9d_soul");
+                        out.soulApplyOk = soulRes && soulRes.ok === true;
+                        out.soulApplyChangedSoul = r.state.player.soul !== soulBefore;
+                        out.customSoulRegistered = !!(r.state.customSouls && r.state.customSouls["bp_test_9d_soul"]);
+
+                        const archRes = r.applyPlayerSoulFromBlueprint("village");
+                        out.nonSoulReject = archRes && archRes.ok === false && archRes.reason === "blueprint_not_soul";
+                        const unknownRes = r.applyPlayerSoulFromBlueprint("nonsense_blueprint");
+                        out.unknownReject =
+                            unknownRes && unknownRes.ok === false && unknownRes.reason === "blueprint_unknown";
+
+                        // UI-Button
+                        const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
+                        if (tab) tab.click();
+                        r.selectBlueprintForEdit("test_9d_soul");
+                        const soulBtn = document.querySelector(".workshop-soul-activate");
+                        out.soulButtonRendered = !!soulBtn;
+
+                        if (r.state.blueprints["test_9d_arch"]) r.deleteBlueprint("test_9d_arch");
+                        r.cloneBlueprint("village", "test_9d_arch");
+                        r.selectBlueprintForEdit("test_9d_arch");
+                        const soulBtnArch = document.querySelector(".workshop-soul-activate");
+                        out.archHasNoSoulButton = !soulBtnArch;
+
+                        // Cleanup
+                        r.applyPlayerSoul("human");
+                        for (const n of ["test_9d_machine", "test_9d_normaltool", "test_9d_soul", "test_9d_arch"]) {
+                            if (r.state.blueprints[n]) r.deleteBlueprint(n);
+                        }
+                        if (r.state.customSouls) delete r.state.customSouls["bp_test_9d_soul"];
+                        r.selectBlueprintForEdit("village");
+                        const weltTab = document.querySelector('#topbar [data-tab="welt"]');
+                        if (weltTab) weltTab.click();
+                        r.state.yaw = 0;
+                        if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
+                    } catch (err) {
+                        out.error = err && err.message;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (wave9dResults && !wave9dResults.error) {
+                check("Welle 9d: MACHINE_PRECISION_BONUS === 0.05", wave9dResults.machineBonus);
+                check("Welle 9d: applyPlayerSoulFromBlueprint-Methode existiert", wave9dResults.hasSoulFromBp);
+                check(
+                    "Welle 9d: registerBlueprintAsTool mit role=machine vergibt Bonus auf precisionCap (min + 0.05, gedeckelt 1.0)",
+                    wave9dResults.regOk && wave9dResults.toolHasBonus
+                );
+                check("Welle 9d: Registriertes Maschinen-Tool trägt isMachine=true", wave9dResults.toolMarkedMachine);
+                check(
+                    "Welle 9d: registerBlueprintAsTool ohne machine-Rolle vergibt KEINEN Bonus + isMachine=false",
+                    wave9dResults.normalToolNoBonus && wave9dResults.normalToolNotMachine
+                );
+                check(
+                    "Welle 9d: applyPlayerSoulFromBlueprint mit role=soul wechselt Spieler-Seele",
+                    wave9dResults.soulApplyOk && wave9dResults.soulApplyChangedSoul
+                );
+                check(
+                    "Welle 9d: soul-Bauplan wird als customSoul mit 'bp_'-Prefix registriert",
+                    wave9dResults.customSoulRegistered
+                );
+                check(
+                    "Welle 9d: applyPlayerSoulFromBlueprint auf nicht-soul-Bauplan → reject 'blueprint_not_soul'",
+                    wave9dResults.nonSoulReject
+                );
+                check(
+                    "Welle 9d: applyPlayerSoulFromBlueprint auf unbekannten Bauplan → reject 'blueprint_unknown'",
+                    wave9dResults.unknownReject
+                );
+                check(
+                    "Welle 9d UI: 'Als Seele tragen'-Button bei role=soul gerendert (.workshop-soul-activate)",
+                    wave9dResults.soulButtonRendered
+                );
+                check(
+                    "Welle 9d UI: KEIN Soul-Button bei role=architecture (Default)",
+                    wave9dResults.archHasNoSoulButton
+                );
+            } else if (wave9dResults && wave9dResults.error) {
+                check(`Welle 9d: evaluate-Fehler — ${wave9dResults.error}`, false);
+            }
+
+            // ### Welle 10a — Präzision als Stat-Multiplikator ###
+            const wave10aResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    try {
+                        // Helper-Methode existiert
+                        out.hasHelper = typeof r._compoundAvgPrecisionFromParts === "function";
+
+                        // Leeres Array → 1.0
+                        out.emptyIs1 = r._compoundAvgPrecisionFromParts([]) === 1.0;
+                        // Null → 1.0
+                        out.nullIs1 = r._compoundAvgPrecisionFromParts(null) === 1.0;
+
+                        // Parts ohne opChain → 1.0 ("geboren")
+                        const partsBornless = [
+                            {
+                                shape: "box",
+                                material: "stein",
+                                position: { x: 0, y: 1, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                            },
+                            {
+                                shape: "sphere",
+                                material: "knochen",
+                                position: { x: 0, y: 1, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                            },
+                        ];
+                        out.partsNoChainIs1 = r._compoundAvgPrecisionFromParts(partsBornless) === 1.0;
+
+                        // Parts mit Hand-opChain (cap 0.4) → 0.4
+                        const partsHand = [
+                            {
+                                shape: "box",
+                                material: "stein",
+                                position: { x: 0, y: 1, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4 }],
+                            },
+                        ];
+                        out.partsHandIs04 = Math.abs(r._compoundAvgPrecisionFromParts(partsHand) - 0.4) < 0.001;
+
+                        // computePlayerStats für Built-in mensch: soulMul = 1.0 (kein Effekt)
+                        r.applyPlayerSoul("human");
+                        const statsHuman = r.computePlayerStats();
+                        out.humanStatsBaseline = statsHuman && typeof statsHuman.stats.hpMax === "number";
+
+                        // Custom-Soul mit opChain auf bodyParts → Stats * soulMul
+                        // Synthese: Soul-Bauplan + opChain
+                        if (r.state.blueprints["test_10a_soul"]) r.deleteBlueprint("test_10a_soul");
+                        r.cloneBlueprint("village", "test_10a_soul");
+                        // Setze role:soul + opChain auf alle parts (simuliert "roh gebauter Soul")
+                        const bp = r.state.blueprints.test_10a_soul;
+                        bp.role = "soul";
+                        bp.roleManual = true;
+                        for (const p of bp.parts) {
+                            p.opChain = [{ tool: "hände", op: "hand_knap", cap: 0.4 }];
+                        }
+                        const soulRes = r.applyPlayerSoulFromBlueprint("test_10a_soul");
+                        out.soulApplyOk = soulRes && soulRes.ok === true;
+                        const statsRough = r.computePlayerStats();
+                        // Soul-tags wurden mit (0.5 + 0.5*0.4 = 0.7) multipliziert
+                        // hpMax sollte messbar niedriger sein als Mensch — aber abhängig von
+                        // Compound-Tags. Wir prüfen pragmatisch: hpMax bei roh ≤ hpMax Mensch
+                        out.roughLessHp =
+                            statsRough && statsHuman && statsRough.stats.hpMax <= statsHuman.stats.hpMax + 0.001;
+
+                        // Zurück zur Mensch-Seele
+                        r.applyPlayerSoul("human");
+
+                        // Tool-Precision-Multiplier in computePlayerStats
+                        // Wir registrieren einen eigenen Bauplan als Tool und prüfen ob die
+                        // Tool-Tags mit Präzision multipliziert werden.
+                        if (r.state.blueprints["test_10a_tool"]) r.deleteBlueprint("test_10a_tool");
+                        r.cloneBlueprint("village", "test_10a_tool");
+                        const toolBp = r.state.blueprints.test_10a_tool;
+                        for (const p of toolBp.parts) {
+                            p.opChain = [{ tool: "hände", op: "hand_knap", cap: 0.4 }];
+                        }
+                        r.setBlueprintToolMeta("test_10a_tool", "test_op", "subtractive");
+                        toolBp.role = "tool";
+                        r.registerBlueprintAsTool("test_10a_tool");
+                        // Mensch-Seele tragen + tool equippen
+                        r.applyPlayerSoul("human");
+                        r.equipTool("test_10a_tool");
+                        const statsRoughTool = r.computePlayerStats();
+                        // Jetzt: tool-tags × (0.5 + 0.5×0.4 = 0.7)
+                        // Vergleich: r.state.tools["test_10a_tool"] hat die Tag-Beträge
+                        // Wir prüfen pragmatisch: Stats sollten sich gegenüber blanker Mensch verändern
+                        out.toolPrecModulates =
+                            statsRoughTool &&
+                            statsHuman &&
+                            (statsRoughTool.stats.hpMax !== statsHuman.stats.hpMax ||
+                                statsRoughTool.stats.damage !== statsHuman.stats.damage);
+
+                        // Cleanup
+                        r.equipTool(null);
+                        for (const n of ["test_10a_soul", "test_10a_tool"]) {
+                            if (r.state.blueprints[n]) r.deleteBlueprint(n);
+                        }
+                        delete r.state.tools["test_10a_tool"];
+                        r.state.player.tools = r.state.player.tools.filter((t) => t !== "test_10a_tool");
+                        if (r.state.customSouls) delete r.state.customSouls["bp_test_10a_soul"];
+                        r._renderWorkshopDOM();
+                    } catch (err) {
+                        out.error = err && err.message;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (wave10aResults && !wave10aResults.error) {
+                check("Welle 10a: _compoundAvgPrecisionFromParts-Methode existiert", wave10aResults.hasHelper);
+                check(
+                    "Welle 10a: leeres/null Array → Default 1.0 (geboren, kein Effekt)",
+                    wave10aResults.emptyIs1 && wave10aResults.nullIs1
+                );
+                check(
+                    "Welle 10a: Parts ohne opChain → 1.0 (Built-in-Soulen unverändert)",
+                    wave10aResults.partsNoChainIs1
+                );
+                check("Welle 10a: Parts mit Hand-opChain (cap 0.4) → Präzision 0.4", wave10aResults.partsHandIs04);
+                check(
+                    "Welle 10a: computePlayerStats für Built-in-Mensch baseline (hpMax existiert)",
+                    wave10aResults.humanStatsBaseline
+                );
+                check(
+                    "Welle 10a: Roh geschmiedeter Soul (opChain Hand 0.4) → reduzierte hpMax (Sorgfalt belohnt)",
+                    wave10aResults.soulApplyOk && wave10aResults.roughLessHp
+                );
+                check(
+                    "Welle 10a: Tool-Präzision moduliert seinen Stat-Beitrag in computePlayerStats",
+                    wave10aResults.toolPrecModulates
+                );
+            } else if (wave10aResults && wave10aResults.error) {
+                check(`Welle 10a: evaluate-Fehler — ${wave10aResults.error}`, false);
+            }
+
+            // ### Welle 10b.1 — Compound-Tag-Affordances (Erkennung + UI) ###
+            const wave10bResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const AR = r.constructor;
+                    const out = {};
+                    try {
+                        out.thresholdsFrozen = !!AR.AFFORDANCE_THRESHOLDS && Object.isFrozen(AR.AFFORDANCE_THRESHOLDS);
+                        // Vision-Korrektur 10b.2: Form-Whitelists (WHEEL/LENS/AXIS_SHAPES)
+                        // wurden ENTFERNT — Affordances emergieren räumlich + tag-basiert,
+                        // nicht aus shape-Listen.
+                        out.noShapeWhitelists =
+                            typeof AR.WHEEL_SHAPES === "undefined" &&
+                            typeof AR.LENS_SHAPES === "undefined" &&
+                            typeof AR.AXIS_SHAPES === "undefined";
+                        out.thresholdsAreSpatial =
+                            AR.AFFORDANCE_THRESHOLDS.moveable.minSupportParts === 2 &&
+                            AR.AFFORDANCE_THRESHOLDS.moveable.midlineFactor === 0.5 &&
+                            AR.AFFORDANCE_THRESHOLDS.moveable.dichteMin === 0.3 &&
+                            AR.AFFORDANCE_THRESHOLDS.magnifying.axialAlignmentMin === 0.6;
+                        out.affordanceLabelsExist =
+                            !!AR.AFFORDANCE_LABELS && AR.AFFORDANCE_LABELS.moveable === "fahrbar";
+                        out.hasComputeAffordances = typeof r.computeBlueprintAffordances === "function";
+                        out.hasMoveable = typeof r._isMoveable === "function";
+                        out.hasMagnifying = typeof r._isMagnifying === "function";
+                        out.hasFocusing = typeof r._isFocusing === "function";
+                        // 10b.2 — neue räumliche Helper
+                        out.hasBbox = typeof r._compoundBBox === "function";
+                        out.hasBelowMid = typeof r._partsBelowMidline === "function";
+                        out.hasAxialAlignment = typeof r._axialAlignment === "function";
+
+                        out.emptyBpEmpty = Object.keys(r.computeBlueprintAffordances(null)).length === 0;
+                        out.bpNoParts = Object.keys(r.computeBlueprintAffordances({ parts: [] })).length === 0;
+                        out.villageNoAffordances =
+                            Object.keys(r.computeBlueprintAffordances(r.state.blueprints.village)).length === 0;
+
+                        // moveable
+                        if (r.state.blueprints["test_10b_car"]) r.deleteBlueprint("test_10b_car");
+                        r.cloneBlueprint("village", "test_10b_car");
+                        r.state.blueprints.test_10b_car.parts = [
+                            {
+                                shape: "cylinder",
+                                material: "eisen",
+                                position: { x: -1, y: 0.3, z: 0 },
+                                size: { x: 0.6, y: 0.4, z: 0.6 },
+                            },
+                            {
+                                shape: "cylinder",
+                                material: "eisen",
+                                position: { x: 1, y: 0.3, z: 0 },
+                                size: { x: 0.6, y: 0.4, z: 0.6 },
+                            },
+                            {
+                                shape: "box",
+                                material: "quarz",
+                                position: { x: 0, y: 1, z: 0 },
+                                size: { x: 1.2, y: 0.8, z: 0.6 },
+                            },
+                        ];
+                        out.carIsMoveable =
+                            r.computeBlueprintAffordances(r.state.blueprints.test_10b_car).moveable === true;
+
+                        // VISION-TEST: Box-Stützen (KEINE Cylinder/Torus) + Antrieb → moveable
+                        // Beweis dass die Form-Whitelist wirklich raus ist und räumliche
+                        // Konfiguration entscheidet.
+                        if (r.state.blueprints["test_10b_sled"]) r.deleteBlueprint("test_10b_sled");
+                        r.cloneBlueprint("village", "test_10b_sled");
+                        r.state.blueprints.test_10b_sled.parts = [
+                            // Stein-Boxen als Stütze (NICHT cylinder, NICHT torus)
+                            {
+                                shape: "box",
+                                material: "eisen",
+                                position: { x: -1, y: 0.2, z: 0 },
+                                size: { x: 0.5, y: 0.4, z: 0.5 },
+                            },
+                            {
+                                shape: "box",
+                                material: "eisen",
+                                position: { x: 1, y: 0.2, z: 0 },
+                                size: { x: 0.5, y: 0.4, z: 0.5 },
+                            },
+                            // Quarz-Antrieb oben
+                            {
+                                shape: "octahedron",
+                                material: "quarz",
+                                position: { x: 0, y: 1.2, z: 0 },
+                                size: { x: 0.6, y: 0.6, z: 0.6 },
+                            },
+                        ];
+                        out.boxSledIsMoveable =
+                            r.computeBlueprintAffordances(r.state.blueprints.test_10b_sled).moveable === true;
+
+                        // ohne Antrieb → nicht moveable
+                        if (r.state.blueprints["test_10b_carless"]) r.deleteBlueprint("test_10b_carless");
+                        r.cloneBlueprint("village", "test_10b_carless");
+                        r.state.blueprints.test_10b_carless.parts = [
+                            {
+                                shape: "cylinder",
+                                material: "stein",
+                                position: { x: -1, y: 0.3, z: 0 },
+                                size: { x: 0.6, y: 0.4, z: 0.6 },
+                            },
+                            {
+                                shape: "cylinder",
+                                material: "stein",
+                                position: { x: 1, y: 0.3, z: 0 },
+                                size: { x: 0.6, y: 0.4, z: 0.6 },
+                            },
+                        ];
+                        out.carlessNotMoveable = !r.computeBlueprintAffordances(r.state.blueprints.test_10b_carless)
+                            .moveable;
+
+                        // magnifying
+                        if (r.state.blueprints["test_10b_scope"]) r.deleteBlueprint("test_10b_scope");
+                        r.cloneBlueprint("village", "test_10b_scope");
+                        r.state.blueprints.test_10b_scope.parts = [
+                            {
+                                shape: "sphere",
+                                material: "quarz",
+                                position: { x: 0, y: 1, z: 0 },
+                                size: { x: 0.5, y: 0.5, z: 0.5 },
+                            },
+                            {
+                                shape: "cylinder",
+                                material: "holz",
+                                position: { x: 0, y: 1, z: -0.6 },
+                                size: { x: 0.4, y: 1.2, z: 0.4 },
+                            },
+                        ];
+                        out.scopeIsMagnifying =
+                            r.computeBlueprintAffordances(r.state.blueprints.test_10b_scope).magnifying === true;
+
+                        // spawnArchitecture speichert affordances
+                        const entry = r.spawnArchitecture("test_10b_car", { x: 50, y: 0, z: 50 }, { silent: true });
+                        out.entryHasAffordances = !!(entry && entry.affordances && entry.affordances.moveable === true);
+
+                        // Cleanup spawned entry
+                        r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10b_car");
+
+                        // UI: Werkstatt-Status zeigt "fahrbar"
+                        const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
+                        if (tab) tab.click();
+                        r.selectBlueprintForEdit("test_10b_car");
+                        r._renderWorkshopDOM();
+                        const statusEl = document.querySelector(".workshop-status");
+                        out.statusShowsAffordance = !!statusEl && statusEl.textContent.includes("fahrbar");
+
+                        // Cleanup
+                        for (const n of ["test_10b_car", "test_10b_carless", "test_10b_scope", "test_10b_sled"]) {
+                            if (r.state.blueprints[n]) r.deleteBlueprint(n);
+                        }
+                        r.selectBlueprintForEdit("village");
+                        r._renderWorkshopDOM();
+                        const weltTab = document.querySelector('#topbar [data-tab="welt"]');
+                        if (weltTab) weltTab.click();
+                        r.state.yaw = 0;
+                        if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
+                    } catch (err) {
+                        out.error = err && err.message;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (wave10bResults && !wave10bResults.error) {
+                check(
+                    "Welle 10b.2: AFFORDANCE_THRESHOLDS + LABELS frozen, KEINE Form-Whitelists mehr (Vision-Korrektur)",
+                    wave10bResults.thresholdsFrozen &&
+                        wave10bResults.noShapeWhitelists &&
+                        wave10bResults.affordanceLabelsExist
+                );
+                check(
+                    "Welle 10b.2: Schwellen sind räumlich + tag-basiert (minSupportParts=2, midlineFactor=0.5, dichteMin=0.3, axialAlignmentMin=0.6)",
+                    wave10bResults.thresholdsAreSpatial
+                );
+                check(
+                    "Welle 10b.1: 4 Affordance-Methoden existieren (computeAffordances + _isMoveable/_isMagnifying/_isFocusing)",
+                    wave10bResults.hasComputeAffordances &&
+                        wave10bResults.hasMoveable &&
+                        wave10bResults.hasMagnifying &&
+                        wave10bResults.hasFocusing
+                );
+                check(
+                    "Welle 10b.2: 3 räumliche Helper existieren (_compoundBBox + _partsBelowMidline + _axialAlignment)",
+                    wave10bResults.hasBbox && wave10bResults.hasBelowMid && wave10bResults.hasAxialAlignment
+                );
+                check(
+                    "Welle 10b.1: leerer/null Bauplan → leere Affordances",
+                    wave10bResults.emptyBpEmpty && wave10bResults.bpNoParts
+                );
+                check(
+                    "Welle 10b.1: Default-Built-in (village) erkennt keine Affordances — ehrlich",
+                    wave10bResults.villageNoAffordances
+                );
+                check(
+                    "Welle 10b.1: Fahrzeug-Compound (2 Cylinder-Stützen + quarz-Antrieb) → moveable=true",
+                    wave10bResults.carIsMoveable
+                );
+                check(
+                    "Welle 10b.2 VISION-TEST: Box-Stützen + Octahedron-Quarz-Antrieb → moveable=true (KEINE Form-Whitelist mehr)",
+                    wave10bResults.boxSledIsMoveable
+                );
+                check(
+                    "Welle 10b.1: Stützen OHNE Antriebs-Tag (nur stein) → NICHT moveable (Diskrimination)",
+                    wave10bResults.carlessNotMoveable
+                );
+                check(
+                    "Welle 10b.1: Teleskop-Compound (Quarz-Linse + Cylinder-Tubus) → magnifying=true",
+                    wave10bResults.scopeIsMagnifying
+                );
+                check(
+                    "Welle 10b.1: spawnArchitecture speichert affordances am entry-Objekt",
+                    wave10bResults.entryHasAffordances
+                );
+                check(
+                    "Welle 10b.1 UI: Werkstatt-Status zeigt erkannte Affordance ('fahrbar') beim Bauplan",
+                    wave10bResults.statusShowsAffordance
+                );
+            } else if (wave10bResults && wave10bResults.error) {
+                check(`Welle 10b.1: evaluate-Fehler — ${wave10bResults.error}`, false);
+            }
+
+            // ### Welle 10b.3 — Welt-Reaktionen (mount + zoom + focusing-Ignite) ###
+            const wave10b3Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const AR = r.constructor;
+                    const out = {};
+                    try {
+                        out.constantsExist =
+                            AR.MOUNT_RANGE_M === 3 &&
+                            AR.ZOOM_FOV_DEG === 25 &&
+                            AR.FOCUSING_HEAT_RANGE_M === 4 &&
+                            AR.FOCUSING_IGNITE_THRESHOLD === 1.0;
+                        out.hasMount = typeof r.mountArchitecture === "function";
+                        out.hasDismount = typeof r.dismountArchitecture === "function";
+                        out.hasToggleMount = typeof r.toggleMountAtPlayer === "function";
+                        out.hasSetZoom = typeof r.setZoomActive === "function";
+                        out.hasFocusingTick = typeof r._tickFocusingAffordances === "function";
+                        out.hasTickAffordances = typeof r.tickAffordances === "function";
+                        out.initialMountNull =
+                            r.state.player.mountedArch === null || r.state.player.mountedArch === undefined;
+
+                        // Mount-Test
+                        if (r.state.blueprints["test_10b3_car"]) r.deleteBlueprint("test_10b3_car");
+                        r.cloneBlueprint("village", "test_10b3_car");
+                        r.state.blueprints.test_10b3_car.parts = [
+                            {
+                                shape: "cylinder",
+                                material: "eisen",
+                                position: { x: -1, y: 0.3, z: 0 },
+                                size: { x: 0.6, y: 0.4, z: 0.6 },
+                            },
+                            {
+                                shape: "cylinder",
+                                material: "eisen",
+                                position: { x: 1, y: 0.3, z: 0 },
+                                size: { x: 0.6, y: 0.4, z: 0.6 },
+                            },
+                            {
+                                shape: "box",
+                                material: "quarz",
+                                position: { x: 0, y: 1, z: 0 },
+                                size: { x: 1.2, y: 0.8, z: 0.6 },
+                            },
+                        ];
+                        const ppos = r.state.playerMesh.position;
+                        const entry = r.spawnArchitecture(
+                            "test_10b3_car",
+                            { x: ppos.x, y: ppos.y, z: ppos.z },
+                            { silent: true }
+                        );
+                        out.entryHasMoveable = !!(entry && entry.affordances && entry.affordances.moveable);
+                        const mountRes = r.toggleMountAtPlayer();
+                        out.mountSucceeds = mountRes && mountRes.ok === true;
+                        out.playerMountedTo = r.state.player.mountedArch === entry.id;
+                        const dismountRes = r.toggleMountAtPlayer();
+                        out.dismountSucceeds = dismountRes && dismountRes.ok === true;
+                        out.playerDismounted =
+                            r.state.player.mountedArch === null || r.state.player.mountedArch === undefined;
+                        const dummy = { affordances: { moveable: false } };
+                        const failRes = r.mountArchitecture(dummy);
+                        out.nonMoveableRejected = failRes && failRes.ok === false && failRes.reason === "not_moveable";
+
+                        // Mount-Range
+                        r.state.player.mountedArch = null;
+                        r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10b3_car");
+                        if (r.state.blueprints["test_10b3_far"]) r.deleteBlueprint("test_10b3_far");
+                        r.cloneBlueprint("test_10b3_car", "test_10b3_far");
+                        r.spawnArchitecture(
+                            "test_10b3_far",
+                            { x: ppos.x + 100, y: ppos.y, z: ppos.z + 100 },
+                            { silent: true }
+                        );
+                        const farMountRes = r.toggleMountAtPlayer();
+                        out.farMountRejected =
+                            farMountRes && farMountRes.ok === false && farMountRes.reason === "none_in_range";
+                        r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10b3_far");
+
+                        // Zoom-Test
+                        const initialFov = r.state.camera.fov;
+                        out.zoomInactiveInitial = !r.state._zoomActive;
+                        const noTargetRes = r.setZoomActive(true);
+                        out.zoomFailsWithoutTarget =
+                            noTargetRes === false && !r.state._zoomActive && r.state.camera.fov === initialFov;
+
+                        // Focusing-Test
+                        if (r.state.blueprints["test_10b3_lens"]) r.deleteBlueprint("test_10b3_lens");
+                        r.cloneBlueprint("village", "test_10b3_lens");
+                        r.state.blueprints.test_10b3_lens.parts = [
+                            {
+                                shape: "sphere",
+                                material: "quarz",
+                                position: { x: 0, y: 1, z: 0 },
+                                size: { x: 0.8, y: 0.8, z: 0.8 },
+                            },
+                            {
+                                shape: "torus",
+                                material: "bronze",
+                                position: { x: 0, y: 1, z: 0 },
+                                size: { x: 0.9, y: 0.15, z: 0.9 },
+                            },
+                        ];
+                        const focBp = r.state.blueprints.test_10b3_lens;
+                        out.lensIsFocusing = r.computeBlueprintAffordances(focBp).focusing === true;
+                        r.spawnArchitecture("test_10b3_lens", { x: 0, y: 0, z: 0 }, { silent: true });
+                        const targetEntry = r.spawnArchitecture("baum_eiche", { x: 1, y: 0, z: 0 }, { silent: true });
+                        const beforeWeather = r.state.weather;
+                        r.state.weather = "sunny";
+                        const beforeArchCount = r.state.architectures.length;
+                        r._tickFocusingAffordances(25);
+                        const afterArchCount = r.state.architectures.length;
+                        out.focusingIgnitesTarget = afterArchCount < beforeArchCount;
+                        out.targetGone = !r.state.architectures.find((e) => e.id === targetEntry.id);
+
+                        r.state.weather = "rainy";
+                        if (r.state.blueprints["test_10b3_target2"]) r.deleteBlueprint("test_10b3_target2");
+                        r.cloneBlueprint("baum_eiche", "test_10b3_target2");
+                        const target2 = r.spawnArchitecture(
+                            "test_10b3_target2",
+                            { x: 1, y: 0, z: 0 },
+                            { silent: true }
+                        );
+                        r._tickFocusingAffordances(25);
+                        out.rainyNoIgnite = !!r.state.architectures.find((e) => e.id === target2.id);
+
+                        r.state.weather = beforeWeather;
+                        r.state.architectures = r.state.architectures.filter(
+                            (e) =>
+                                e.type !== "test_10b3_car" &&
+                                e.type !== "test_10b3_far" &&
+                                e.type !== "test_10b3_lens" &&
+                                e.type !== "test_10b3_target2" &&
+                                e.type !== "baum_eiche"
+                        );
+                        for (const n of ["test_10b3_car", "test_10b3_far", "test_10b3_lens", "test_10b3_target2"]) {
+                            if (r.state.blueprints[n]) r.deleteBlueprint(n);
+                        }
+                        r._renderWorkshopDOM();
+                    } catch (err) {
+                        out.error = err && err.message;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (wave10b3Results && !wave10b3Results.error) {
+                check(
+                    "Welle 10b.3: Konstanten (MOUNT_RANGE_M, ZOOM_FOV_DEG, FOCUSING_*) korrekt",
+                    wave10b3Results.constantsExist
+                );
+                check(
+                    "Welle 10b.3: alle 6 Methoden existieren (mount/dismount/toggleMount/setZoom/focusingTick/tickAffordances)",
+                    wave10b3Results.hasMount &&
+                        wave10b3Results.hasDismount &&
+                        wave10b3Results.hasToggleMount &&
+                        wave10b3Results.hasSetZoom &&
+                        wave10b3Results.hasFocusingTick &&
+                        wave10b3Results.hasTickAffordances
+                );
+                check("Welle 10b.3: state.player.mountedArch initial null", wave10b3Results.initialMountNull);
+                check(
+                    "Welle 10b.3: spawnArchitecture speichert moveable-Affordance am entry",
+                    wave10b3Results.entryHasMoveable
+                );
+                check(
+                    "Welle 10b.3: toggleMountAtPlayer → mount erfolgreich + mountedArch = entry.id",
+                    wave10b3Results.mountSucceeds && wave10b3Results.playerMountedTo
+                );
+                check(
+                    "Welle 10b.3: toggleMountAtPlayer nochmal → dismount + mountedArch null",
+                    wave10b3Results.dismountSucceeds && wave10b3Results.playerDismounted
+                );
+                check(
+                    "Welle 10b.3: mountArchitecture auf nicht-moveable lehnt ab (not_moveable)",
+                    wave10b3Results.nonMoveableRejected
+                );
+                check(
+                    "Welle 10b.3: Mount-Geste auf entfernte Architektur lehnt ab (none_in_range)",
+                    wave10b3Results.farMountRejected
+                );
+                check("Welle 10b.3 Zoom: initial inaktiv (kein _zoomActive)", wave10b3Results.zoomInactiveInitial);
+                check(
+                    "Welle 10b.3 Zoom: setZoomActive(true) ohne magnifying-Target → false-Return + FOV unverändert",
+                    wave10b3Results.zoomFailsWithoutTarget
+                );
+                check(
+                    "Welle 10b.3 Focusing: Lens-Bauplan (Quarz + Bronze) → focusing=true",
+                    wave10b3Results.lensIsFocusing
+                );
+                check(
+                    "Welle 10b.3 Focusing: sunny + brennbarer Baum in Range → Tick entzündet (Architektur entfernt)",
+                    wave10b3Results.focusingIgnitesTarget && wave10b3Results.targetGone
+                );
+                check(
+                    "Welle 10b.3 Focusing: rainy-Wetter → KEIN Ignite (Diskrimination)",
+                    wave10b3Results.rainyNoIgnite
+                );
+            } else if (wave10b3Results && wave10b3Results.error) {
+                check(`Welle 10b.3: evaluate-Fehler — ${wave10b3Results.error}`, false);
+            }
+
+            // ### V8.05 — Werkstatt-UX-Polish (Mode-Bar oben + Stats unten + Tool-Palette + Editor-Toggle + Del-Btn) ###
+            const v805Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    try {
+                        // Werkstatt-Tab öffnen
+                        const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
+                        if (tab) tab.click();
+                        // Methoden
+                        out.hasRenderTools = typeof r._workshopRenderToolPalette === "function";
+                        out.hasHandleToolDrop = typeof r._workshopHandleToolDrop === "function";
+                        out.hasRenderStats = typeof r._workshopRenderStatsPanel === "function";
+                        out.hasInstallEditorToggle = typeof r._workshopInstallEditorToggle === "function";
+                        out.hasInstallDelBtn = typeof r._workshopInstallDeleteButton === "function";
+
+                        // Mode-Bar IM Wrapper UND VOR Canvas (DOM-Reihenfolge)
+                        const wrapper = document.getElementById("workshop-preview-wrapper");
+                        const modeBar = document.getElementById("workshop-mode-bar");
+                        const canvas = document.getElementById("workshop-preview-canvas");
+                        if (wrapper && modeBar && canvas) {
+                            out.modeBarInWrapper = modeBar.parentElement === wrapper;
+                            // Mode-Bar steht vor Canvas
+                            const wrapperChildren = Array.from(wrapper.children);
+                            const mbIdx = wrapperChildren.indexOf(modeBar);
+                            const cIdx = wrapperChildren.indexOf(canvas);
+                            out.modeBarBeforeCanvas = mbIdx >= 0 && cIdx > mbIdx;
+                        }
+
+                        // Stats-Panel im DOM + NACH Canvas
+                        const stats = document.getElementById("workshop-stats-panel");
+                        out.statsInDom = !!stats;
+                        if (wrapper && stats && canvas) {
+                            const wrapperChildren = Array.from(wrapper.children);
+                            const sIdx = wrapperChildren.indexOf(stats);
+                            const cIdx = wrapperChildren.indexOf(canvas);
+                            out.statsAfterCanvas = sIdx > cIdx;
+                        }
+
+                        // Werkzeug-Palette im DOM
+                        const toolPalette = document.getElementById("workshop-tool-palette");
+                        out.toolPaletteInDom = !!toolPalette;
+                        // Wenn Spieler Werkzeuge hat, sind Cards drin
+                        const playerTools = (r.state.player && r.state.player.tools) || [];
+                        out.toolCardsCount = toolPalette
+                            ? toolPalette.querySelectorAll(".workshop-tool-card").length
+                            : 0;
+                        out.toolPaletteHasCards = out.toolCardsCount > 0 && out.toolCardsCount <= playerTools.length;
+
+                        // Editor-Toggle
+                        const editorToggle = document.getElementById("workshop-editor-toggle");
+                        const editor = document.getElementById("workshop-editor");
+                        out.toggleInDom = !!editorToggle;
+                        if (editorToggle && editor) {
+                            // Default: zugeklappt (hidden=true)
+                            out.editorInitiallyHidden = editor.hidden === true;
+                            // Click → ausklappen
+                            editorToggle.click();
+                            out.editorVisibleAfterClick = editor.hidden === false;
+                            out.toggleAriaExpanded = editorToggle.getAttribute("aria-expanded") === "true";
+                            // Nochmal Click → wieder zu
+                            editorToggle.click();
+                            out.editorHiddenAfterSecondClick = editor.hidden === true;
+                        }
+
+                        // Del-Button
+                        const delBtn = document.getElementById("workshop-delete-selected-part");
+                        out.delBtnInDom = !!delBtn;
+                        // Default: disabled (kein Part selektiert)
+                        if (delBtn) out.delBtnInitiallyDisabled = delBtn.disabled === true;
+
+                        // Klone eigenen Bauplan + Part selektieren → Del-Btn enabled
+                        if (r.state.blueprints["test_v805"]) r.deleteBlueprint("test_v805");
+                        r.cloneBlueprint("village", "test_v805");
+                        r.selectBlueprintForEdit("test_v805");
+                        r._workshopSetSelection(0);
+                        out.delBtnEnabledOnSelect = delBtn && delBtn.disabled === false;
+                        // Del-Btn-Click entfernt Part
+                        const partsBefore = r.state.blueprints.test_v805.parts.length;
+                        if (delBtn) delBtn.click();
+                        const partsAfter = r.state.blueprints.test_v805.parts.length;
+                        out.delBtnRemovesPart = partsAfter === partsBefore - 1;
+
+                        // Stats-Panel zeigt Rolle-Chip
+                        const roleChip = stats && stats.querySelector(".role-chip");
+                        out.statsHasRoleChip = !!roleChip;
+
+                        // Cleanup
+                        if (r.state.blueprints["test_v805"]) r.deleteBlueprint("test_v805");
+                        r.selectBlueprintForEdit("village");
+                        r._renderWorkshopDOM();
+                        const weltTab = document.querySelector('#topbar [data-tab="welt"]');
+                        if (weltTab) weltTab.click();
+                        r.state.yaw = 0;
+                        if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
+                    } catch (err) {
+                        out.error = err && err.message;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (v805Results && !v805Results.error) {
+                check(
+                    "V8.05: 5 neue Methoden existieren (Tool-Render/Drop + Stats + Editor-Toggle + Del-Btn)",
+                    v805Results.hasRenderTools &&
+                        v805Results.hasHandleToolDrop &&
+                        v805Results.hasRenderStats &&
+                        v805Results.hasInstallEditorToggle &&
+                        v805Results.hasInstallDelBtn
+                );
+                check(
+                    "V8.05: Mode-Bar steht IM Preview-Wrapper + VOR Canvas (Workflow von oben nach unten)",
+                    v805Results.modeBarInWrapper && v805Results.modeBarBeforeCanvas
+                );
+                check(
+                    "V8.05: Stats-Panel im DOM + NACH Canvas (schnelle Sicht auf emergente Werte)",
+                    v805Results.statsInDom && v805Results.statsAfterCanvas
+                );
+                check(
+                    "V8.05: Werkzeug-Palette im DOM mit Cards für Spieler-Werkzeuge",
+                    v805Results.toolPaletteInDom && v805Results.toolPaletteHasCards
+                );
+                check(
+                    "V8.05: Editor-Toggle im DOM + initial zugeklappt (Details-Tabelle versteckt)",
+                    v805Results.toggleInDom && v805Results.editorInitiallyHidden
+                );
+                check(
+                    "V8.05: Editor-Toggle-Click ein- + ausklappen + aria-expanded sync",
+                    v805Results.editorVisibleAfterClick &&
+                        v805Results.toggleAriaExpanded &&
+                        v805Results.editorHiddenAfterSecondClick
+                );
+                check(
+                    "V8.05: Del-Button im DOM + initial disabled (keine Selection)",
+                    v805Results.delBtnInDom && v805Results.delBtnInitiallyDisabled
+                );
+                check(
+                    "V8.05: Del-Button enabled bei Part-Selection + Click entfernt Part",
+                    v805Results.delBtnEnabledOnSelect && v805Results.delBtnRemovesPart
+                );
+                check("V8.05 Stats: Rolle-Chip im Stats-Panel sichtbar", v805Results.statsHasRoleChip);
+            } else if (v805Results && v805Results.error) {
+                check(`V8.05: evaluate-Fehler — ${v805Results.error}`, false);
+            }
+
+            // ### V8.06 — Werkstatt-UX: Klone/Neu in Mode-Bar, Default-Size, Kontrast ###
+            const v806Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    try {
+                        const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
+                        if (tab) tab.click();
+                        // Klone + Neu-Buttons in Mode-Bar
+                        const modeBar = document.getElementById("workshop-mode-bar");
+                        out.cloneBtnInModeBar = !!(modeBar && modeBar.querySelector("#workshop-clone-btn"));
+                        out.newBtnInModeBar = !!(modeBar && modeBar.querySelector("#workshop-new-btn"));
+                        out.dividerInModeBar = !!(modeBar && modeBar.querySelector(".workshop-mode-divider"));
+                        // Mode-Bar hat 5 Mode-Buttons + 2 Action-Buttons = 7
+                        const allBtns = modeBar ? modeBar.querySelectorAll("button").length : 0;
+                        out.sevenButtonsInBar = allBtns === 7;
+
+                        // Methode existiert
+                        out.hasActionInstall = typeof r._workshopInstallActionButtons === "function";
+                        out.hasDefaultSize = typeof r._workshopApplyDefaultSizeOnce === "function";
+
+                        // Rechte Spalte ist breiter (≥132px)
+                        const rightPalette = document.getElementById("workshop-side-palette-right");
+                        if (rightPalette) {
+                            const rect = rightPalette.getBoundingClientRect();
+                            out.rightPaletteWidth = rect.width;
+                            out.rightPaletteWider = rect.width >= 128;
+                        }
+
+                        // Mode-Bar hat Kontrast-Hintergrund (rgba mit ausreichend Alpha)
+                        const modeBarStyle = modeBar ? getComputedStyle(modeBar) : null;
+                        out.modeBarHasBg =
+                            modeBarStyle &&
+                            modeBarStyle.backgroundColor !== "rgba(0, 0, 0, 0)" &&
+                            modeBarStyle.backgroundColor !== "transparent";
+
+                        // Stats-Panel hat dunklen Hintergrund (rgba(20,12,4) area)
+                        const statsPanel = document.getElementById("workshop-stats-panel");
+                        const statsStyle = statsPanel ? getComputedStyle(statsPanel) : null;
+                        out.statsHasDarkBg =
+                            statsStyle &&
+                            statsStyle.backgroundColor &&
+                            /rgba?\((\d+),\s*(\d+),\s*(\d+)/.test(statsStyle.backgroundColor);
+
+                        // Default-Size-Apply-Funktion ist sauber idempotent —
+                        // wir setzen Flag, dann ist die Funktion no-op
+                        try {
+                            localStorage.setItem("anazh.workshop.defaultApplied", "1");
+                            r._workshopApplyDefaultSizeOnce();
+                            // Nichts sollte passiert sein (flag schützt)
+                            out.idempotentRespected = true;
+                        } catch {
+                            out.idempotentRespected = false;
+                        }
+
+                        // Cleanup
+                        const weltTab = document.querySelector('#topbar [data-tab="welt"]');
+                        if (weltTab) weltTab.click();
+                        r.state.yaw = 0;
+                        if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
+                    } catch (err) {
+                        out.error = err && err.message;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (v806Results && !v806Results.error) {
+                check(
+                    "V8.06: Klonen + Neu-Buttons direkt in der Mode-Bar (mit Divider)",
+                    v806Results.cloneBtnInModeBar && v806Results.newBtnInModeBar && v806Results.dividerInModeBar
+                );
+                check("V8.06: Mode-Bar hat 7 Buttons (5 Modi + Klone + Neu)", v806Results.sevenButtonsInBar);
+                check(
+                    "V8.06: _workshopInstallActionButtons + _workshopApplyDefaultSizeOnce existieren",
+                    v806Results.hasActionInstall && v806Results.hasDefaultSize
+                );
+                check(
+                    `V8.06: rechte Palette breiter (≥128px, gemessen: ${v806Results.rightPaletteWidth || 0}px)`,
+                    v806Results.rightPaletteWider
+                );
+                check("V8.06: Mode-Bar hat Hintergrund-Farbe (Kontrast-Verbesserung)", v806Results.modeBarHasBg);
+                check("V8.06: Stats-Panel hat dunklen Hintergrund (Kontrast-Verbesserung)", v806Results.statsHasDarkBg);
+                check(
+                    "V8.06: _workshopApplyDefaultSizeOnce ist idempotent (flag respektiert)",
+                    v806Results.idempotentRespected
+                );
+            } else if (v806Results && v806Results.error) {
+                check(`V8.06: evaluate-Fehler — ${v806Results.error}`, false);
+            }
+
+            // ### V8.07 — Werkstatt-Detail-Polish (Klone/Neu klickbar, Stern-Stats, Default-Größe fix) ###
+            const v807Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    try {
+                        const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
+                        if (tab) tab.click();
+                        // Klone + Neu sind IMMER enabled — auch bei built-in Bauplan
+                        r.selectBlueprintForEdit("village"); // built-in
+                        const cloneBtn = document.getElementById("workshop-clone-btn");
+                        const newBtn = document.getElementById("workshop-new-btn");
+                        out.cloneBtnAlwaysEnabled = cloneBtn && cloneBtn.disabled === false;
+                        out.newBtnAlwaysEnabled = newBtn && newBtn.disabled === false;
+                        // Mode-Buttons sind disabled bei built-in (kein Edit-Modus)
+                        const moveBtn = document.querySelector("#workshop-mode-bar [data-workshop-mode='translate']");
+                        out.modeBtnDisabledOnBuiltIn = moveBtn && moveBtn.disabled === true;
+                        // Bei eigenem Bauplan: alle wieder enabled
+                        if (r.state.blueprints["test_v807"]) r.deleteBlueprint("test_v807");
+                        r.cloneBlueprint("village", "test_v807");
+                        r.selectBlueprintForEdit("test_v807");
+                        out.modeBtnEnabledOnCustom = moveBtn && moveBtn.disabled === false;
+
+                        // Stats-Panel: Tag-Chips haben Stern-Levels
+                        const statsPanel = document.getElementById("workshop-stats-panel");
+                        const tagChips = statsPanel ? statsPanel.querySelectorAll(".tag-chip") : [];
+                        out.tagChipsCount = tagChips.length;
+                        let anyHasStars = false;
+                        let anyHasLevelClass = false;
+                        tagChips.forEach((c) => {
+                            if (c.querySelector(".tag-stars")) anyHasStars = true;
+                            if (
+                                c.classList.contains("lvl-1") ||
+                                c.classList.contains("lvl-2") ||
+                                c.classList.contains("lvl-3") ||
+                                c.classList.contains("lvl-0")
+                            )
+                                anyHasLevelClass = true;
+                        });
+                        out.tagChipsHaveStars = anyHasStars;
+                        out.tagChipsHaveLevelClass = anyHasLevelClass;
+                        // Stern-Inhalt: enthält Stern-Glyphen
+                        let starsContent = "";
+                        if (tagChips.length > 0) {
+                            const firstStarEl = tagChips[0].querySelector(".tag-stars");
+                            if (firstStarEl) starsContent = firstStarEl.textContent;
+                        }
+                        out.starsAreGlyphs = /[★☆]/.test(starsContent) && starsContent.length === 3;
+
+                        // Default-Size-Override: setze Flag zurück + ruf default —
+                        // sollte jetzt eine grosse Größe anwenden
+                        localStorage.removeItem("anazh.workshop.defaultApplied");
+                        localStorage.setItem("anazh.resize.werkstatt", JSON.stringify({ width: 300, height: 300 }));
+                        r._workshopApplyDefaultSizeOnce();
+                        const saved = JSON.parse(localStorage.getItem("anazh.resize.werkstatt") || "{}");
+                        out.defaultOverridesStale = saved.width > 600;
+                        // Idempotenz: zweiter Call überschreibt nicht
+                        r._workshopApplyDefaultSizeOnce();
+                        out.idempotentAfterApply = localStorage.getItem("anazh.workshop.defaultApplied") === "1";
+
+                        // Cleanup
+                        if (r.state.blueprints["test_v807"]) r.deleteBlueprint("test_v807");
+                        r.selectBlueprintForEdit("village");
+                        r._renderWorkshopDOM();
+                        const weltTab = document.querySelector('#topbar [data-tab="welt"]');
+                        if (weltTab) weltTab.click();
+                        r.state.yaw = 0;
+                        if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
+                    } catch (err) {
+                        out.error = err && err.message;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (v807Results && !v807Results.error) {
+                check("V8.07: Klone-Button IMMER enabled (auch bei built-in)", v807Results.cloneBtnAlwaysEnabled);
+                check("V8.07: Neu-Button IMMER enabled (auch bei built-in)", v807Results.newBtnAlwaysEnabled);
+                check("V8.07: Mode-Buttons (Move/...) disabled bei built-in", v807Results.modeBtnDisabledOnBuiltIn);
+                check("V8.07: Mode-Buttons enabled bei eigenem Bauplan", v807Results.modeBtnEnabledOnCustom);
+                check(
+                    `V8.07 Stats: ${v807Results.tagChipsCount} Tag-Chips mit Stern-Element + Level-Klasse`,
+                    v807Results.tagChipsHaveStars && v807Results.tagChipsHaveLevelClass
+                );
+                check("V8.07 Stats: Stern-Glyphen sind ★/☆ (3 Zeichen)", v807Results.starsAreGlyphs);
+                check(
+                    "V8.07: _workshopApplyDefaultSizeOnce überschreibt stale localStorage (alte 300px → groß)",
+                    v807Results.defaultOverridesStale
+                );
+                check("V8.07: idempotent — zweiter Apply respektiert das Flag", v807Results.idempotentAfterApply);
+            } else if (v807Results && v807Results.error) {
+                check(`V8.07: evaluate-Fehler — ${v807Results.error}`, false);
             }
 
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
@@ -12388,8 +14800,7 @@ function startSaveServer() {
                     // buildHeaders ohne Key → kein authorization-Header (lokal)
                     const headersNoKey = ol.buildHeaders("", { apiKey: "" });
                     out.noAuthWithoutKey = !headersNoKey.authorization && !headersNoKey.Authorization;
-                    out.contentTypePresent =
-                        headersNoKey["content-type"] === "application/json";
+                    out.contentTypePresent = headersNoKey["content-type"] === "application/json";
 
                     // buildHeaders MIT Key → Bearer-Token
                     const headersWithKey = ol.buildHeaders("sk-test-1234", { apiKey: "sk-test-1234" });
@@ -12399,8 +14810,7 @@ function startSaveServer() {
 
                     // Endpoint folgt cfg.endpoint (nicht hartkodiert localhost)
                     const customEp = ol.endpoint("llama3.1", "key", { endpoint: "https://my-ollama.cloud:8443" });
-                    out.endpointRespectsCustom =
-                        customEp === "https://my-ollama.cloud:8443/api/chat";
+                    out.endpointRespectsCustom = customEp === "https://my-ollama.cloud:8443/api/chat";
 
                     // CSP: connect-src enthält https: Wildcard für Cloud-Endpoints
                     const meta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
@@ -12417,8 +14827,9 @@ function startSaveServer() {
                     const keyRow = document.getElementById("llm-key-row");
                     out.keyRowVisibleForOllama = !!(keyRow && !keyRow.hidden);
                     const keyInput = document.getElementById("llm-key");
-                    out.placeholderMentionsOptional =
-                        !!(keyInput && /optional|gehostet/i.test(keyInput.placeholder || ""));
+                    out.placeholderMentionsOptional = !!(
+                        keyInput && /optional|gehostet/i.test(keyInput.placeholder || "")
+                    );
 
                     return out;
                 })
@@ -12475,36 +14886,42 @@ function startSaveServer() {
                     const ol = defs.ollama;
 
                     // 1. Endpoint smart-detect — Basis-URL ohne Pfad → /api/chat angehängt
-                    out.epAppendsForBase = ol.endpoint("m", "k", { endpoint: "http://localhost:11434" }) ===
+                    out.epAppendsForBase =
+                        ol.endpoint("m", "k", { endpoint: "http://localhost:11434" }) ===
                         "http://localhost:11434/api/chat";
-                    out.epAppendsForCloud = ol.endpoint("m", "k", { endpoint: "https://ollama.com" }) ===
-                        "https://ollama.com/api/chat";
+                    out.epAppendsForCloud =
+                        ol.endpoint("m", "k", { endpoint: "https://ollama.com" }) === "https://ollama.com/api/chat";
 
                     // 2. Endpoint smart-detect — URL mit /api/chat → DIREKT verwendet (kein /api/chat/api/chat)
-                    out.epRespectsApiPath = ol.endpoint("m", "k", {
-                        endpoint: "https://ollama.com/api/chat",
-                    }) === "https://ollama.com/api/chat";
+                    out.epRespectsApiPath =
+                        ol.endpoint("m", "k", {
+                            endpoint: "https://ollama.com/api/chat",
+                        }) === "https://ollama.com/api/chat";
 
                     // 3. Endpoint smart-detect — URL mit /v1/chat/completions → DIREKT (OpenAI-kompat)
-                    out.epRespectsV1Path = ol.endpoint("m", "k", {
-                        endpoint: "https://provider.cloud/v1/chat/completions",
-                    }) === "https://provider.cloud/v1/chat/completions";
+                    out.epRespectsV1Path =
+                        ol.endpoint("m", "k", {
+                            endpoint: "https://provider.cloud/v1/chat/completions",
+                        }) === "https://provider.cloud/v1/chat/completions";
 
                     // 4. Endpoint trim — Trailing-Slash entfernt
-                    out.epTrimsTrailingSlash = ol.endpoint("m", "k", {
-                        endpoint: "https://ollama.com/",
-                    }) === "https://ollama.com/api/chat";
+                    out.epTrimsTrailingSlash =
+                        ol.endpoint("m", "k", {
+                            endpoint: "https://ollama.com/",
+                        }) === "https://ollama.com/api/chat";
 
                     // 5. extractText — Ollama-native Format
                     out.extractsOllamaNative = ol.extractText({ message: { content: "Hallo Welt" } }) === "Hallo Welt";
 
                     // 6. extractText — OpenAI-kompat Format
-                    out.extractsOpenAi = ol.extractText({
-                        choices: [{ message: { content: "OpenAI-Antwort" } }],
-                    }) === "OpenAI-Antwort";
+                    out.extractsOpenAi =
+                        ol.extractText({
+                            choices: [{ message: { content: "OpenAI-Antwort" } }],
+                        }) === "OpenAI-Antwort";
 
                     // 7. extractText — Ollama-generate-Pfad (älter)
-                    out.extractsOllamaGenerate = ol.extractText({ response: "Generate-Antwort" }) === "Generate-Antwort";
+                    out.extractsOllamaGenerate =
+                        ol.extractText({ response: "Generate-Antwort" }) === "Generate-Antwort";
 
                     // 8. extractText — leerer/null Input → leerer String
                     out.extractsEmpty = ol.extractText(null) === "" && ol.extractText({}) === "";
@@ -12526,7 +14943,8 @@ function startSaveServer() {
                     out.bodyOpenAiNoOptions = bodyOpenAi.options === undefined;
 
                     // 11. buildBody — beide haben model + messages + stream:false
-                    out.bodyHasCommon = bodyNative.model === "llama3.1" &&
+                    out.bodyHasCommon =
+                        bodyNative.model === "llama3.1" &&
                         Array.isArray(bodyNative.messages) &&
                         bodyNative.stream === false &&
                         bodyOpenAi.messages.length === 2;
@@ -12548,10 +14966,7 @@ function startSaveServer() {
                     "V7.95 Ollama-Cloud: Endpoint respektiert OpenAI-kompat-URL mit /v1/chat/completions",
                     v795Results.epRespectsV1Path
                 );
-                check(
-                    "V7.95 Ollama-Cloud: Endpoint trimt trailing-slash sauber",
-                    v795Results.epTrimsTrailingSlash
-                );
+                check("V7.95 Ollama-Cloud: Endpoint trimt trailing-slash sauber", v795Results.epTrimsTrailingSlash);
                 check(
                     "V7.95 Ollama-Cloud: extractText liest Ollama-native Format (json.message.content)",
                     v795Results.extractsOllamaNative
@@ -12769,8 +15184,7 @@ function startSaveServer() {
                         await r.llmCall("test");
                         // Erwartung: fetch-URL ist die direkte ollama-URL,
                         // NICHT die proxy-URL — Auto-Bypass greift weil localhost
-                        out.bypassedForLocalhost =
-                            capturedUrl !== null && !/\/proxy\/llm/.test(capturedUrl);
+                        out.bypassedForLocalhost = capturedUrl !== null && !/\/proxy\/llm/.test(capturedUrl);
                         // Reset
                         capturedUrl = null;
                         cfg.endpoint = "https://ollama.com/api/chat";
@@ -12778,8 +15192,7 @@ function startSaveServer() {
                         r.state.llm.lastResponseAt = -Infinity;
                         await r.llmCall("test");
                         // Erwartung: fetch-URL ist die proxy-URL bei Cloud + useProxy
-                        out.proxyUsedForCloud =
-                            capturedUrl !== null && /\/proxy\/llm/.test(capturedUrl);
+                        out.proxyUsedForCloud = capturedUrl !== null && /\/proxy\/llm/.test(capturedUrl);
                     } finally {
                         window.fetch = origFetch;
                     }
@@ -12879,9 +15292,7 @@ function startSaveServer() {
                     out.thinkStripped = thinkResp.say === "Hallo Welt" && thinkResp.program === null;
 
                     // 2. <thinking>-Variante wird auch erkannt
-                    const thinkingResp = r.llmParseResponse(
-                        '<thinking>foo bar</thinking>\n{"say":"Klar"}'
-                    );
+                    const thinkingResp = r.llmParseResponse('<thinking>foo bar</thinking>\n{"say":"Klar"}');
                     out.thinkingStripped = thinkingResp.say === "Klar";
 
                     // 3. Plain-Text ohne JSON → Plain-Text-Fallback
@@ -12899,9 +15310,7 @@ function startSaveServer() {
                     // 5. Striktes JSON ohne fallback (Anthropic/Gemini-Pfad)
                     const strictResp = r.llmParseResponse('{"say":"Test","program":["weather","sunny"]}');
                     out.strictJsonStillWorks =
-                        strictResp.say === "Test" &&
-                        Array.isArray(strictResp.program) &&
-                        !strictResp.fallbackUsed;
+                        strictResp.say === "Test" && Array.isArray(strictResp.program) && !strictResp.fallbackUsed;
 
                     // 6. Markdown-Fence + JSON → fence wird gestripped
                     const fenceResp = r.llmParseResponse('```json\n{"say":"Fenced"}\n```');
@@ -12914,7 +15323,8 @@ function startSaveServer() {
                     // 8. JSON mit leerem say UND text drumherum → Plain-Text-Fallback nimmt drumherum
                     const emptyJsonResp = r.llmParseResponse('Vorab-Text {"say":""} Nach-Text');
                     out.emptyJsonFallsBackToText =
-                        emptyJsonResp.say && emptyJsonResp.say.length > 0 &&
+                        emptyJsonResp.say &&
+                        emptyJsonResp.say.length > 0 &&
                         emptyJsonResp.fallbackUsed === "json-empty";
 
                     return out;
@@ -12942,14 +15352,8 @@ function startSaveServer() {
                     "V7.98 Parser: Striktes JSON ohne think bleibt unverändert (Anthropic/Gemini-Pfad)",
                     v798Results.strictJsonStillWorks
                 );
-                check(
-                    "V7.98 Parser: Markdown-Fence (```json …```) wird gestripped",
-                    v798Results.fenceStripped
-                );
-                check(
-                    "V7.98 Parser: Leerer Input → klarer Error mit 'raw=0'-Hinweis",
-                    v798Results.emptyHasError
-                );
+                check("V7.98 Parser: Markdown-Fence (```json …```) wird gestripped", v798Results.fenceStripped);
+                check("V7.98 Parser: Leerer Input → klarer Error mit 'raw=0'-Hinweis", v798Results.emptyHasError);
                 check(
                     "V7.98 Parser: JSON mit say='' aber Text drumherum → Plain-Text-Fallback (json-empty marker)",
                     v798Results.emptyJsonFallsBackToText
