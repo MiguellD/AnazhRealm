@@ -13487,6 +13487,121 @@ function startSaveServer() {
                 check(`Welle 9b: evaluate-Fehler — ${wave9bResults.error}`, false);
             }
 
+            // ### Welle 9c — Welt-Werkstatt-Architekturen + Distance-Gate ###
+            const wave9cResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const AR = r.constructor;
+                    const out = {};
+                    try {
+                        const stationNames = ["esse", "brennkolben", "webstuhl", "seelenstein_altar", "drehbank"];
+                        out.allStationsExist = stationNames.every((n) => !!r.state.blueprints[n]);
+                        out.allHaveRole = stationNames.every(
+                            (n) => r.state.blueprints[n] && r.state.blueprints[n].role === "workshop-station"
+                        );
+                        out.esseForging = r.state.blueprints.esse.workshopDomain === "forging";
+                        out.brennkolbenAlchemy = r.state.blueprints.brennkolben.workshopDomain === "alchemy";
+                        out.webstuhlTextile = r.state.blueprints.webstuhl.workshopDomain === "textile";
+                        out.altarSoulwork = r.state.blueprints.seelenstein_altar.workshopDomain === "soulwork";
+                        out.drehbankMechanism = r.state.blueprints.drehbank.workshopDomain === "mechanism";
+                        out.proximityConst = AR.WORKSHOP_PROXIMITY_M === 10;
+                        out.gateMethodExists = typeof r._workshopStationGate === "function";
+
+                        // Modus auf pfad für strikten Test
+                        r.setGameMode("pfad");
+
+                        // Forging-Bauplan vorbereiten
+                        if (r.state.blueprints["test_9c_forging"]) r.deleteBlueprint("test_9c_forging");
+                        r.cloneBlueprint("village", "test_9c_forging");
+                        r.updatePartInBlueprint("test_9c_forging", 0, { material: "eisen", recolor: true });
+                        r.applyOpToPart("test_9c_forging", 0, "schmiede-hammer");
+
+                        const farPos = { x: 1000, y: 1000, z: 1000 };
+                        const nearPos = { x: 5, y: 0, z: 5 };
+
+                        // Esse nah spawnen
+                        r.spawnArchitecture("esse", nearPos, { silent: true });
+
+                        const gateFar = r._workshopStationGate("test_9c_forging", farPos);
+                        out.pfadFarFails = gateFar && gateFar.ok === false;
+                        out.pfadFarReportsDomain = gateFar && gateFar.neededDomain === "forging";
+
+                        const gateNear = r._workshopStationGate("test_9c_forging", nearPos);
+                        out.pfadNearPasses = gateNear && gateNear.ok === true;
+                        out.pfadNearReportsFound = gateNear && gateNear.found === "esse";
+
+                        r.setGameMode("frieden");
+                        const gateFrieden = r._workshopStationGate("test_9c_forging", farPos);
+                        out.friedenFreeAccess = gateFrieden && gateFrieden.ok === true && gateFrieden.free === true;
+
+                        r.setGameMode("schöpfer");
+                        const gateSchopfer = r._workshopStationGate("test_9c_forging", farPos);
+                        out.schopferFreeAccess = gateSchopfer && gateSchopfer.ok === true && gateSchopfer.free === true;
+
+                        r.setGameMode("pfad");
+                        const gateBootstrap = r._workshopStationGate("esse", farPos);
+                        out.bootstrapOk =
+                            gateBootstrap && gateBootstrap.ok === true && gateBootstrap.bootstrap === true;
+
+                        const gateArch = r._workshopStationGate("village", farPos);
+                        out.archNoCheck = gateArch && gateArch.ok === true;
+
+                        // Cleanup
+                        if (r.state.blueprints["test_9c_forging"]) r.deleteBlueprint("test_9c_forging");
+                        r.state.architectures = r.state.architectures.filter((e) => e.type !== "esse");
+                        r.setGameMode("frieden");
+                    } catch (err) {
+                        out.error = err && err.message;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (wave9cResults && !wave9cResults.error) {
+                check(
+                    "Welle 9c: alle 5 Workshop-Bauplane als Built-ins (esse/brennkolben/webstuhl/seelenstein_altar/drehbank)",
+                    wave9cResults.allStationsExist
+                );
+                check("Welle 9c: alle haben role='workshop-station'", wave9cResults.allHaveRole);
+                check(
+                    "Welle 9c: workshopDomain-Mapping korrekt (esse→forging, brennkolben→alchemy, webstuhl→textile, altar→soulwork, drehbank→mechanism)",
+                    wave9cResults.esseForging &&
+                        wave9cResults.brennkolbenAlchemy &&
+                        wave9cResults.webstuhlTextile &&
+                        wave9cResults.altarSoulwork &&
+                        wave9cResults.drehbankMechanism
+                );
+                check("Welle 9c: Konstante WORKSHOP_PROXIMITY_M === 10", wave9cResults.proximityConst);
+                check("Welle 9c: _workshopStationGate-Methode existiert", wave9cResults.gateMethodExists);
+                check(
+                    "Welle 9c: pfad ohne nahe Werkstatt → Gate lehnt ab + nennt neededDomain",
+                    wave9cResults.pfadFarFails && wave9cResults.pfadFarReportsDomain
+                );
+                check(
+                    "Welle 9c: pfad mit Werkstatt in WORKSHOP_PROXIMITY_M → Gate passt + nennt found-Architektur",
+                    wave9cResults.pfadNearPasses && wave9cResults.pfadNearReportsFound
+                );
+                check(
+                    "Welle 9c: frieden-Modus überspringt Werkstatt-Gate (free=true)",
+                    wave9cResults.friedenFreeAccess
+                );
+                check(
+                    "Welle 9c: schöpfer-Modus überspringt Werkstatt-Gate (free=true)",
+                    wave9cResults.schopferFreeAccess
+                );
+                check(
+                    "Welle 9c: Workshop-Station selbst (Esse) braucht keine Werkstatt (Bootstrap-Pfad)",
+                    wave9cResults.bootstrapOk
+                );
+                check(
+                    "Welle 9c: architecture-Bauplan (village) überspringt Werkstatt-Check (keine Domain → kein Gate)",
+                    wave9cResults.archNoCheck
+                );
+            } else if (wave9cResults && wave9cResults.error) {
+                check(`Welle 9c: evaluate-Fehler — ${wave9cResults.error}`, false);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {

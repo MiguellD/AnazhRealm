@@ -14809,6 +14809,153 @@ class AnazhRealm {
             },
         ];
 
+        // ### Welle 9c — Welt-Werkstatt-Architekturen ###
+        // Fünf Welt-Werkstätten, eine pro Nicht-Default-Domain. Sie sind
+        // Bauplane mit role="workshop-station" + workshopDomain=<domain>.
+        // confirmBuild eines domain-Bauplans prüft im pfad-Modus, ob eine
+        // passende Welt-Werkstatt in WORKSHOP_PROXIMITY_M=10m Nähe ist.
+        // Construction-Default-Bauplane (architecture) brauchen keine
+        // Welt-Werkstatt — sie sind die "Open-Air-Welt" selbst.
+        const esseParts = [
+            // Stein-Sockel
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: 0, y: 0.5, z: 0 },
+                size: { x: 2.0, y: 1.0, z: 1.6 },
+            },
+            // Bronze-Schale für die Glut
+            {
+                shape: "sphere",
+                material: "bronze",
+                position: { x: 0, y: 1.3, z: 0 },
+                size: { x: 1.4, y: 0.6, z: 1.2 },
+                opacity: 0.9,
+            },
+            // Glut-Kern, leuchtend
+            {
+                shape: "sphere",
+                material: "glut",
+                position: { x: 0, y: 1.4, z: 0 },
+                size: { x: 0.9, y: 0.5, z: 0.8 },
+                opacity: 0.85,
+            },
+        ];
+        const brennkolbenParts = [
+            // Holz-Untersatz
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: 0, y: 0.3, z: 0 },
+                size: { x: 1.4, y: 0.6, z: 1.4 },
+            },
+            // Quarz-Kolben (durchsichtig)
+            {
+                shape: "sphere",
+                material: "quarz",
+                position: { x: 0, y: 1.2, z: 0 },
+                size: { x: 1.0, y: 1.0, z: 1.0 },
+                opacity: 0.55,
+            },
+            // Steinhals (Trichter)
+            {
+                shape: "cone",
+                material: "stein",
+                position: { x: 0, y: 2.0, z: 0 },
+                size: { x: 0.6, y: 0.8, z: 0.6 },
+            },
+        ];
+        const webstuhlParts = [
+            // Holz-Pfosten links + rechts
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: -1.1, y: 1.2, z: 0 },
+                size: { x: 0.2, y: 2.4, z: 0.2 },
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: 1.1, y: 1.2, z: 0 },
+                size: { x: 0.2, y: 2.4, z: 0.2 },
+            },
+            // Quer-Balken oben + unten (Leder-bespannt, deshalb leder als Material)
+            {
+                shape: "box",
+                material: "leder",
+                position: { x: 0, y: 2.2, z: 0 },
+                size: { x: 2.4, y: 0.18, z: 0.3 },
+            },
+            {
+                shape: "box",
+                material: "leder",
+                position: { x: 0, y: 0.4, z: 0 },
+                size: { x: 2.4, y: 0.18, z: 0.3 },
+            },
+        ];
+        const seelenstein_altarParts = [
+            // Stein-Sockel (rund)
+            {
+                shape: "cylinder",
+                material: "stein",
+                position: { x: 0, y: 0.4, z: 0 },
+                size: { x: 1.6, y: 0.8, z: 1.6 },
+                segments: 8,
+            },
+            // Quarz-Helix als Seelen-Kanal
+            {
+                shape: "helix",
+                material: "quarz",
+                position: { x: 0, y: 1.4, z: 0 },
+                size: { x: 0.5, y: 1.2, z: 4 }, // size.x=Radius, size.y=Höhe, size.z=Windungen
+                opacity: 0.7,
+            },
+            // Knochen-Kranz auf dem Sockel
+            {
+                shape: "torus",
+                material: "knochen",
+                position: { x: 0, y: 0.95, z: 0 },
+                size: { x: 1.2, y: 0.18, z: 1.2 },
+            },
+        ];
+        const drehbankParts = [
+            // Holz-Tisch
+            {
+                shape: "box",
+                material: "holz",
+                position: { x: 0, y: 0.7, z: 0 },
+                size: { x: 2.6, y: 0.2, z: 1.0 },
+            },
+            // Tischbeine (4 Stück)
+            ...[
+                { x: -1.1, z: -0.4 },
+                { x: 1.1, z: -0.4 },
+                { x: -1.1, z: 0.4 },
+                { x: 1.1, z: 0.4 },
+            ].map((p) => ({
+                shape: "cylinder",
+                material: "holz",
+                position: { x: p.x, y: 0.3, z: p.z },
+                size: { x: 0.14, y: 0.6, z: 0.14 },
+            })),
+            // Eisen-Spindel quer auf dem Tisch
+            {
+                shape: "cylinder",
+                material: "eisen",
+                position: { x: 0, y: 0.95, z: 0 },
+                size: { x: 0.16, y: 2.0, z: 0.16 },
+                rotation: { x: 0, y: 0, z: Math.PI / 2 },
+            },
+            // Eisen-Spannfutter (links)
+            {
+                shape: "cylinder",
+                material: "eisen",
+                position: { x: -1.0, y: 0.95, z: 0 },
+                size: { x: 0.3, y: 0.18, z: 0.3 },
+                rotation: { x: 0, y: 0, z: Math.PI / 2 },
+            },
+        ];
+
         return {
             village: { name: "village", label: "Dorf", builtIn: true, parts: villageParts },
             temple: { name: "temple", label: "Tempel", builtIn: true, parts: templeParts },
@@ -14823,6 +14970,52 @@ class AnazhRealm {
                 parts: kristallGeodeParts,
             },
             glutbrunnen: { name: "glutbrunnen", label: "Glutbrunnen", builtIn: true, parts: glutbrunnenParts },
+            // Welle 9c — Welt-Werkstätten
+            esse: {
+                name: "esse",
+                label: "Esse",
+                builtIn: true,
+                role: "workshop-station",
+                roleManual: true,
+                workshopDomain: "forging",
+                parts: esseParts,
+            },
+            brennkolben: {
+                name: "brennkolben",
+                label: "Brennkolben",
+                builtIn: true,
+                role: "workshop-station",
+                roleManual: true,
+                workshopDomain: "alchemy",
+                parts: brennkolbenParts,
+            },
+            webstuhl: {
+                name: "webstuhl",
+                label: "Webstuhl",
+                builtIn: true,
+                role: "workshop-station",
+                roleManual: true,
+                workshopDomain: "textile",
+                parts: webstuhlParts,
+            },
+            seelenstein_altar: {
+                name: "seelenstein_altar",
+                label: "Seelenstein-Altar",
+                builtIn: true,
+                role: "workshop-station",
+                roleManual: true,
+                workshopDomain: "soulwork",
+                parts: seelenstein_altarParts,
+            },
+            drehbank: {
+                name: "drehbank",
+                label: "Drehbank",
+                builtIn: true,
+                role: "workshop-station",
+                roleManual: true,
+                workshopDomain: "mechanism",
+                parts: drehbankParts,
+            },
         };
     }
 
@@ -16767,9 +16960,60 @@ class AnazhRealm {
         return this.tryConsumeBuildCost(blueprintName);
     }
 
+    // ============================================================
+    // ### Welle 9c — Welt-Werkstatt-Gate ###
+    // Prüft im pfad-Modus, ob für einen domain-tragenden Bauplan eine
+    // passende Welt-Werkstatt-Architektur (role="workshop-station" mit
+    // workshopDomain === <Bauplan-Domain>) in WORKSHOP_PROXIMITY_M nähe ist.
+    // In frieden + schöpfer: kein Gate (frieden umarmt, schöpfer gehorcht).
+    // Bauplane ohne Domain (architecture/default) brauchen NIE eine
+    // Welt-Werkstatt — sie sind die Open-Air-Welt selbst.
+    // Workshop-Station-Bauplane (Esse / Brennkolben / etc.) brauchen auch
+    // KEINE Werkstatt zum Bauen — sonst Henne-Ei (man könnte nie die erste
+    // Esse bauen).
+    // ============================================================
+    _workshopStationGate(blueprintName, atPos) {
+        const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
+        if (mode !== "pfad") return { ok: true, free: true };
+        const bp = this.state.blueprints && this.state.blueprints[blueprintName];
+        if (!bp) return { ok: true }; // unbekannter Bauplan — anderer Pfad fängt's
+        // Workshop-Stationen brauchen keinen Werkstatt-Check
+        if (bp.role === "workshop-station") return { ok: true, bootstrap: true };
+        const needed = this.computeBlueprintDomain(bp);
+        if (!needed) return { ok: true }; // generic Bauplan — kein Check
+        // Welt-Werkstatt im Radius suchen
+        const radius = AnazhRealm.WORKSHOP_PROXIMITY_M || 10;
+        const r2 = radius * radius;
+        for (const entry of this.state.architectures || []) {
+            const wbp = this.state.blueprints && this.state.blueprints[entry.type];
+            if (!wbp || wbp.role !== "workshop-station") continue;
+            if (wbp.workshopDomain !== needed) continue;
+            const dx = entry.position.x - atPos.x;
+            const dy = entry.position.y - atPos.y;
+            const dz = entry.position.z - atPos.z;
+            if (dx * dx + dy * dy + dz * dz <= r2) {
+                return { ok: true, found: entry.type, domain: needed };
+            }
+        }
+        return { ok: false, neededDomain: needed };
+    }
+
     confirmBuild() {
         const bm = this.state.buildMode;
         if (!bm.active || !bm.blueprintName || !bm.phantomMesh) return false;
+        const p = bm.phantomMesh.position;
+        const spawnPos = { x: p.x, y: p.y + 0.5, z: p.z };
+        // Welle 9c — Welt-Werkstatt-Gate (modus-abhängig): pfad braucht passende
+        // Werkstatt in der Nähe; frieden + schöpfer überspringen den Check.
+        const stationGate = this._workshopStationGate(bm.blueprintName, spawnPos);
+        if (!stationGate.ok) {
+            const label =
+                (AnazhRealm.TOOL_DOMAIN_LABELS && AnazhRealm.TOOL_DOMAIN_LABELS[stationGate.neededDomain]) ||
+                stationGate.neededDomain;
+            this.log(`Bauen: Du brauchst eine Werkstatt der Domäne „${label}" in der Nähe.`, "INFO");
+            this._renderBuildModeHud && this._renderBuildModeHud();
+            return false;
+        }
         // Material-Gate (modus-abhängig): pfad zieht Materialien ab oder
         // lehnt bei Mangel ab; frieden + schöpfer bauen kostenlos.
         const gate = this._buildMaterialGate(bm.blueprintName);
@@ -16781,8 +17025,6 @@ class AnazhRealm {
             this._renderBuildModeHud && this._renderBuildModeHud();
             return false;
         }
-        const p = bm.phantomMesh.position;
-        const spawnPos = { x: p.x, y: p.y + 0.5, z: p.z };
         this.spawnArchitecture(bm.blueprintName, spawnPos);
         // Inventar-UI + HUD nach Konsum aktualisieren (pfad).
         if (!gate.free) {
@@ -22745,6 +22987,11 @@ AnazhRealm.TOOL_DOMAIN_COLORS = Object.freeze({
     soulwork: "#88e1e1", // Geist-Cyan
     mechanism: "#b08648", // Bronze
 });
+
+// Welle 9c — Welt-Werkstatt-Radius. Spieler muss in dieser Nähe einer
+// Architektur mit passendem workshopDomain stehen (gemessen vom Spawn-
+// Punkt des neuen Bauplans), sonst lehnt confirmBuild im pfad-Modus ab.
+AnazhRealm.WORKSHOP_PROXIMITY_M = 10;
 // Welt-Effekt-Schwellen: zentralisiert, damit Tuning ohne Code-Suche geht.
 // Werte aus Konzept §6.3 (≥0.7 mild, ≥1.5 stark, ≥2.5 signatur).
 AnazhRealm.WORLD_EFFECT_THRESHOLDS = Object.freeze({
