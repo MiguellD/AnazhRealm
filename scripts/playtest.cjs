@@ -12618,6 +12618,116 @@ function startSaveServer() {
                 check(`V8.00 Resize: evaluate-Fehler — ${resizeResults.error}`, false);
             }
 
+            // ### V8.01 — Drawer-Scroll-Wrapper + Canvas-Sync (Bug-Fixes nach Browser-Test) ###
+            const v801Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    try {
+                        // _wrapDrawerScroll + _workshopSyncCanvasSize existieren
+                        out.hasWrapMethod = typeof r._wrapDrawerScroll === "function";
+                        out.hasSyncMethod = typeof r._workshopSyncCanvasSize === "function";
+                        // Jeder Drawer hat .drawer-scroll-Wrapper als direktes child
+                        const drawers = document.querySelectorAll(".drawer[data-drawer]");
+                        let allWrapped = drawers.length > 0;
+                        drawers.forEach((d) => {
+                            if (!d.querySelector(":scope > .drawer-scroll")) allWrapped = false;
+                        });
+                        out.allDrawersWrapped = allWrapped;
+                        out.drawerCount = drawers.length;
+                        // Resize-Handle ist outside des scroll-Wrappers (sonst würde
+                        // er weg-scrollen wie bei v8.00).
+                        const werkstatt = document.querySelector('[data-drawer="werkstatt"]');
+                        if (werkstatt) {
+                            const handleOutside = !!werkstatt.querySelector(":scope > .resize-handle");
+                            const handleInsideWrap = !!werkstatt.querySelector(
+                                ":scope > .drawer-scroll > .resize-handle"
+                            );
+                            out.handleOutsideScroll = handleOutside && !handleInsideWrap;
+                        }
+                        // h2 ist ebenfalls direktes child (bleibt oben fest)
+                        const w2 = document.querySelector('[data-drawer="werkstatt"] > h2');
+                        out.h2DirectChildOfDrawer = !!w2;
+                        // Drawer hat overflow:hidden + display:flex. Beide nur
+                        // prüfbar wenn Drawer SICHTBAR (.drawer[hidden] hat
+                        // display:block!important via CSS-Override).
+                        // Öffne den Werkstatt-Tab kurz für den Test, später
+                        // alles zurück.
+                        const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
+                        const weltTab = document.querySelector('#topbar [data-tab="welt"]');
+                        if (tab) tab.click();
+                        if (werkstatt) {
+                            const cs = getComputedStyle(werkstatt);
+                            out.drawerOverflowHidden = cs.overflow === "hidden" || cs.overflowY === "hidden";
+                            out.drawerDisplayFlex = cs.display === "flex";
+                        }
+                        // drawer-scroll hat overflow-y:auto
+                        const scroll = werkstatt && werkstatt.querySelector(":scope > .drawer-scroll");
+                        if (scroll) {
+                            const cs = getComputedStyle(scroll);
+                            out.scrollOverflowYAuto = cs.overflowY === "auto";
+                        }
+                        // Canvas-Sync: setze Drawer auf 600px, prüfe dass renderer.setSize gerufen wurde
+                        const canvas = document.getElementById("workshop-preview-canvas");
+                        if (canvas && werkstatt) {
+                            werkstatt.style.width = "600px";
+                            // Force eine Sync via _workshopSyncCanvasSize
+                            r._workshopSyncCanvasSize();
+                            const rect = canvas.getBoundingClientRect();
+                            const w = Math.max(64, Math.floor(rect.width));
+                            // canvas.width sollte jetzt der CSS-Größe entsprechen
+                            out.canvasSyncWorks = canvas.width === w;
+                            // cleanup
+                            werkstatt.style.width = "";
+                        }
+                        // CRITICAL Cleanup: zurück zum Welt-Tab + Yaw zurück auf 0,
+                        // sonst stört der Test nachgelagerte Welt-Drawer- und
+                        // Ring-5-V2-Prep-Tests.
+                        if (weltTab) weltTab.click();
+                        r.state.yaw = 0;
+                        if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
+                    } catch (err) {
+                        out.error = err && err.message;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (v801Results && !v801Results.error) {
+                check(
+                    "V8.01: _wrapDrawerScroll + _workshopSyncCanvasSize existieren",
+                    v801Results.hasWrapMethod && v801Results.hasSyncMethod
+                );
+                check(
+                    `V8.01: Alle ${v801Results.drawerCount} Drawer haben .drawer-scroll-Wrapper (Inhalt scrollt, Rahmen bleibt fest)`,
+                    v801Results.allDrawersWrapped
+                );
+                check(
+                    "V8.01: h2 (Drawer-Titel) ist direktes child des Drawers — bleibt oben fest beim Scroll",
+                    v801Results.h2DirectChildOfDrawer
+                );
+                check(
+                    "V8.01: Resize-Handle ist außerhalb des Scroll-Wrappers — bleibt fest in der Ecke",
+                    v801Results.handleOutsideScroll
+                );
+                check(
+                    "V8.01: .drawer hat overflow:hidden (CSS-Wechsel von overflow-y:auto)",
+                    v801Results.drawerOverflowHidden
+                );
+                check("V8.01: .drawer hat display:flex für column-Layout", v801Results.drawerDisplayFlex);
+                check(
+                    "V8.01: .drawer-scroll hat overflow-y:auto (scroller im Wrapper)",
+                    v801Results.scrollOverflowYAuto
+                );
+                check(
+                    "V8.01: _workshopSyncCanvasSize zieht canvas.width an CSS-rect.width nach (Drawer-Resize → Render-Pixel mitwachsen)",
+                    v801Results.canvasSyncWorks
+                );
+            } else if (v801Results && v801Results.error) {
+                check(`V8.01: evaluate-Fehler — ${v801Results.error}`, false);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {

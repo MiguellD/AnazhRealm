@@ -5548,7 +5548,34 @@ class AnazhRealm {
         const consoleEl = document.getElementById("console");
         if (consoleEl) this._installResizeHandle(consoleEl, "br");
         const drawers = document.querySelectorAll(".drawer[data-drawer]");
-        drawers.forEach((d) => this._installResizeHandle(d, "bl"));
+        // V8.01 — Inhalt jedes Drawers in einen .drawer-scroll-Wrapper packen,
+        // BEVOR Handle angehängt wird. Damit scrollt der Inhalt allein und
+        // Background + Border + Handle + h2 bleiben fest am Container.
+        drawers.forEach((d) => {
+            this._wrapDrawerScroll(d);
+            this._installResizeHandle(d, "bl");
+        });
+    }
+
+    // V8.01 — wrappt alle children eines Drawers (außer Header h2, close-button
+    // und Resize-Handle) in einen scrollbaren <div class="drawer-scroll">.
+    // Idempotent: zweiter Aufruf macht nichts.
+    _wrapDrawerScroll(drawer) {
+        if (!drawer) return;
+        if (drawer.querySelector(":scope > .drawer-scroll")) return;
+        const wrapper = document.createElement("div");
+        wrapper.className = "drawer-scroll";
+        // Sammle alle direkten children, die wir in den Wrapper verschieben:
+        // alles außer h2, .drawer-close, .resize-handle (die bleiben am Container).
+        const children = Array.from(drawer.children);
+        const toMove = children.filter((c) => {
+            if (c.tagName === "H2") return false;
+            if (c.classList && c.classList.contains("drawer-close")) return false;
+            if (c.classList && c.classList.contains("resize-handle")) return false;
+            return true;
+        });
+        toMove.forEach((c) => wrapper.appendChild(c));
+        drawer.appendChild(wrapper);
     }
 
     _installResizeHandle(container, corner) {
@@ -18714,11 +18741,16 @@ class AnazhRealm {
             gizmoMeshes: new Map(),
             dragManipulator: null,
             hoveredAxis: null,
+            // V8.01 — ResizeObserver für Canvas. Bei Drawer-Resize ändert sich
+            // die CSS-Größe; internal renderer-Pixel-Dimensionen müssen
+            // mitgezogen werden, sonst wird das Bild stretched/blurry.
+            resizeObserver: null,
         };
         ws.preview = preview;
         this._workshopInstallPreviewListeners();
         this._workshopBuildGizmo();
         this._workshopInstallUIListeners();
+        this._workshopInstallCanvasResizeObserver();
         this._workshopUpdateManipulatorButtons();
         this._workshopRebuildPreviewMesh();
         return preview;
@@ -18781,6 +18813,28 @@ class AnazhRealm {
         });
     }
 
+    // V8.01 — ResizeObserver: passt Renderer-Pixel-Dimensionen an die
+    // CSS-Größe des Canvas an. Wird ausgelöst wenn Spieler den Werkstatt-
+    // Drawer per Resize-Handle vergrößert/verkleinert. Camera-Aspect bleibt
+    // 1:1 (aspect-ratio-CSS am Canvas garantiert das).
+    _workshopInstallCanvasResizeObserver() {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview || ws.preview.resizeObserver) return;
+        if (typeof ResizeObserver === "undefined") return;
+        const p = ws.preview;
+        const observer = new ResizeObserver(() => {
+            this._workshopSyncCanvasSize();
+        });
+        observer.observe(p.canvas);
+        // Auch den Drawer beobachten — manchmal feuert canvas-Observer nicht
+        // sofort beim Container-Resize, der Drawer aber schon.
+        const werkstattDrawer = document.querySelector('[data-drawer="werkstatt"]');
+        if (werkstattDrawer) observer.observe(werkstattDrawer);
+        p.resizeObserver = observer;
+        // Initial einmal explizit syncen
+        this._workshopSyncCanvasSize();
+    }
+
     // Tab-Wechsel-Hook: aktiv wenn Werkstatt-Drawer offen, sonst pausiert.
     _workshopHandleDrawerChange(activeName) {
         const ws = this._ensureWorkshopState();
@@ -18799,13 +18853,21 @@ class AnazhRealm {
     _workshopStartRAF() {
         const ws = this._ensureWorkshopState();
         if (!ws.preview || ws.preview.rafId !== null) return;
+        // V8.01 — beim Start des RAF defensive Canvas-Sync, falls der Drawer
+        // zwischen Frames per Resize verändert wurde.
+        this._workshopSyncCanvasSize();
+        ws.preview.dirty = true;
         const tick = () => {
             const p = ws.preview;
             if (!p || !p.active) {
                 if (p) p.rafId = null;
                 return;
             }
-            if (p.dirty || p.drag) {
+            // Sync canvas-size jeden Frame (günstig: nur diff-Check + setSize
+            // bei realer Änderung). Sorgt dafür, dass Resize-Handle-Drag live
+            // bis ins Pixel-Rendering durchgreift.
+            this._workshopSyncCanvasSize();
+            if (p.dirty || p.drag || p.dragManipulator) {
                 this._workshopRender();
                 p.dirty = false;
             }
@@ -18900,12 +18962,35 @@ class AnazhRealm {
         p.dirty = true;
     }
 
+    // V8.01 — robuste Canvas-Größen-Synchronisation. Liest die aktuelle
+    // CSS-Pixel-Größe des Canvas und passt renderer + camera an. Wird
+    // sowohl im RAF-Tick als auch vom ResizeObserver gerufen — doppelter
+    // Schutz, weil ResizeObserver in manchen Headless-Browser-Umgebungen
+    // unzuverlässig feuert.
+    _workshopSyncCanvasSize() {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview || !ws.preview.canvas) return;
+        const p = ws.preview;
+        const rect = p.canvas.getBoundingClientRect();
+        const w = Math.max(64, Math.floor(rect.width));
+        const h = Math.max(64, Math.floor(rect.height));
+        if (p.canvas.width !== w || p.canvas.height !== h) {
+            p.renderer.setSize(w, h, false);
+            // Aspect bleibt 1:1 (CSS-aspect-ratio garantiert), aber wenn das
+            // mal nicht so wäre, müsste hier camera.aspect = w/h sein.
+            p.dirty = true;
+        }
+    }
+
     // Render ein einzelnes Frame: Kamera aus orbit-Werten, Selection-Tint
     // anwenden, dann renderer.render.
     _workshopRender() {
         const ws = this._ensureWorkshopState();
         if (!ws.preview) return;
         const p = ws.preview;
+        // V8.01 — defensive Sync: prüft ob CSS-Canvas-Größe sich seit dem
+        // letzten Frame geändert hat, passt renderer entsprechend an.
+        this._workshopSyncCanvasSize();
         // Kamera-Pose berechnen
         const cosP = Math.cos(p.orbit.pitch);
         p.camera.position.set(
