@@ -5594,6 +5594,14 @@ class AnazhRealm {
             d.hidden = d.getAttribute("data-drawer") !== name;
         }
         this.state.uiActiveDrawer = name;
+        // V8.20 Bug-Fix Schöpfer-Test: toggleDrawer ruft nun den Werkstatt-
+        // Lifecycle-Hook (Lazy-Init der 3D-Preview + RAF-Start). Vorher nur
+        // der Tab-Click-Handler tat das — Drawer-Shortcuts (M/K/P/B/I) und
+        // direkte API-Calls landeten ohne Preview-Init, sodass Zentrieren
+        // (Button + H) silent-no-op war (state.workshop.preview === null).
+        if (typeof this._workshopHandleDrawerChange === "function") {
+            this._workshopHandleDrawerChange(name);
+        }
     }
 
     // closeAllDrawers schließt alle (für Help-Klick + ESC).
@@ -20922,7 +20930,12 @@ class AnazhRealm {
     // setzt orbit.target auf BBox-Center + dist auf BBox-Diagonale × 2.2
     // (gleiche Default-Formel wie beim Initial-Render). Shortcut: H.
     resetWorkshopCamera() {
-        const p = this.state.workshopPreview;
+        // V8.20 Bug-Fix Schöpfer-Test: state.workshopPreview existiert NICHT —
+        // korrekter Pfad ist state.workshop.preview. War seit V8.14 falsch,
+        // niemand bemerkt weil die Methode auch silent-no-op-konform war
+        // (early return wenn !p). Schöpfer-Audit V8.19: „Button und Shortcut
+        // greifen nicht" → genau das war's. Jetzt schreibt's auch in den Log.
+        const p = this.state.workshop && this.state.workshop.preview;
         if (!p) return;
         // V8.17 — auch ohne aktives Mesh resettet die Kamera auf neutrale
         // Default-Werte. Vorher: early-return wenn p.currentMesh=null, was

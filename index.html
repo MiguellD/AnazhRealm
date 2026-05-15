@@ -2611,16 +2611,15 @@
             .drawer .hotbar-config-row select:hover {
                 border-color: var(--brass-1);
             }
-            /* Welle 6.X.2 V8.19 — Werkstatt-Drawer: Anker oben-rechts wie
-               andere Drawer (Default-Konvention), Default-Breite füllt
-               den Bereich zwischen Konsole (left ~ 16+420=436) und rechtem
-               Viewport-Rand (right 12). Höhe von topbar bis kurz über HUD.
-               Resize via bottom-left-Handle (Standard-Drawer-Resize-Pfad)
-               → Spieler zieht das untere-linke Eck zum Vergrößern/Verkleinern. */
+            /* Welle 6.X.2 V8.20 — Werkstatt-Drawer in Flucht mit Topbar.
+               Schöpfer-Korrektur: left:12 right:12 (bündig mit Banner oben,
+               12px Air an beiden Seiten — Topbar-Konvention). Volle Breite,
+               Konsole wird darunter überdeckt (Werkstatt z-index 5 > Konsole 4).
+               Höhe wie zuvor: bis kurz über HUD. Resize via bottom-left-Handle. */
             .drawer[data-drawer="werkstatt"] {
-                /* top: 116px, right: 12px aus Default-Drawer beibehalten */
-                width: calc(100vw - 462px);
-                min-width: 460px;
+                left: 12px;
+                right: 12px;
+                width: auto;
                 max-height: calc(100vh - 270px);
             }
             /* Ring 6.6 — Werkstatt-Editor */
