@@ -2611,15 +2611,16 @@
             .drawer .hotbar-config-row select:hover {
                 border-color: var(--brass-1);
             }
-            /* Welle 6.X.2 V8.21 — Werkstatt-Drawer rechts geheftet (right:12),
-               Breite knapp unter Vollformat. Schöpfer-Wunsch: rechte Kante bleibt
-               beim Resize fest (right:12 + width:calc + left:auto), linke
-               Kante wandert beim Ziehen am bottom-left-Handle. ~18px Air zum
-               Topbar-left damit man die Anker-Position rechts spürt. */
+            /* Welle 6.X.2 V8.22 — Werkstatt-Breite exakt Topbar-bündig.
+               Topbar: left:12 right:12 → width = 100vw - 24px. Werkstatt
+               soll dieselbe sichtbare Breite haben, aber rechts geheftet
+               bleiben (right:12 + left:auto + width:fix). Mit width 100vw-24
+               ist linke Kante bei 12px (= Topbar-left). Beim Resize via
+               bottom-left-Handle: rechte Kante bleibt fest, linke wandert. */
             .drawer[data-drawer="werkstatt"] {
                 left: auto;
                 right: 12px;
-                width: calc(100vw - 30px);
+                width: calc(100vw - 24px);
                 max-height: calc(100vh - 270px);
             }
             /* Ring 6.6 — Werkstatt-Editor */
