@@ -13602,6 +13602,132 @@ function startSaveServer() {
                 check(`Welle 9c: evaluate-Fehler — ${wave9cResults.error}`, false);
             }
 
+            // ### Welle 9d — Maschinen-Bonus + Seelen-Bauplane ###
+            const wave9dResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const AR = r.constructor;
+                    const out = {};
+                    try {
+                        out.machineBonus = AR.MACHINE_PRECISION_BONUS === 0.05;
+                        out.hasSoulFromBp = typeof r.applyPlayerSoulFromBlueprint === "function";
+
+                        // Maschinen-Bonus
+                        if (r.state.blueprints["test_9d_machine"]) r.deleteBlueprint("test_9d_machine");
+                        r.cloneBlueprint("village", "test_9d_machine");
+                        r.setBlueprintToolMeta("test_9d_machine", "turn", "subtractive");
+                        // setBlueprintToolMeta setzt role=tool; force machine:
+                        r.state.blueprints.test_9d_machine.role = "machine";
+                        r.state.blueprints.test_9d_machine.roleManual = true;
+                        const minP = r.computeBlueprintPrecisionCap(r.state.blueprints.test_9d_machine);
+                        const reg = r.registerBlueprintAsTool("test_9d_machine");
+                        out.regOk = reg && reg.ok === true;
+                        if (reg && reg.ok) {
+                            const tool = r.state.tools["test_9d_machine"];
+                            const expected = Math.min(1.0, minP + 0.05);
+                            out.toolHasBonus = Math.abs(tool.precisionCap - expected) < 0.001;
+                            out.toolMarkedMachine = tool.isMachine === true;
+                        }
+
+                        // Ohne machine: kein Bonus
+                        if (r.state.blueprints["test_9d_normaltool"]) r.deleteBlueprint("test_9d_normaltool");
+                        r.cloneBlueprint("village", "test_9d_normaltool");
+                        r.setBlueprintToolMeta("test_9d_normaltool", "file", "subtractive");
+                        const minP2 = r.computeBlueprintPrecisionCap(r.state.blueprints.test_9d_normaltool);
+                        r.registerBlueprintAsTool("test_9d_normaltool");
+                        const toolNoBonus = r.state.tools["test_9d_normaltool"];
+                        out.normalToolNoBonus = toolNoBonus && Math.abs(toolNoBonus.precisionCap - minP2) < 0.001;
+                        out.normalToolNotMachine = toolNoBonus && toolNoBonus.isMachine === false;
+
+                        // Seelen-Bauplan
+                        if (r.state.blueprints["test_9d_soul"]) r.deleteBlueprint("test_9d_soul");
+                        r.cloneBlueprint("village", "test_9d_soul");
+                        r.state.blueprints.test_9d_soul.role = "soul";
+                        r.state.blueprints.test_9d_soul.roleManual = true;
+                        const soulBefore = r.state.player.soul;
+                        const soulRes = r.applyPlayerSoulFromBlueprint("test_9d_soul");
+                        out.soulApplyOk = soulRes && soulRes.ok === true;
+                        out.soulApplyChangedSoul = r.state.player.soul !== soulBefore;
+                        out.customSoulRegistered = !!(r.state.customSouls && r.state.customSouls["bp_test_9d_soul"]);
+
+                        const archRes = r.applyPlayerSoulFromBlueprint("village");
+                        out.nonSoulReject = archRes && archRes.ok === false && archRes.reason === "blueprint_not_soul";
+                        const unknownRes = r.applyPlayerSoulFromBlueprint("nonsense_blueprint");
+                        out.unknownReject =
+                            unknownRes && unknownRes.ok === false && unknownRes.reason === "blueprint_unknown";
+
+                        // UI-Button
+                        const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
+                        if (tab) tab.click();
+                        r.selectBlueprintForEdit("test_9d_soul");
+                        const soulBtn = document.querySelector(".workshop-soul-activate");
+                        out.soulButtonRendered = !!soulBtn;
+
+                        if (r.state.blueprints["test_9d_arch"]) r.deleteBlueprint("test_9d_arch");
+                        r.cloneBlueprint("village", "test_9d_arch");
+                        r.selectBlueprintForEdit("test_9d_arch");
+                        const soulBtnArch = document.querySelector(".workshop-soul-activate");
+                        out.archHasNoSoulButton = !soulBtnArch;
+
+                        // Cleanup
+                        r.applyPlayerSoul("human");
+                        for (const n of ["test_9d_machine", "test_9d_normaltool", "test_9d_soul", "test_9d_arch"]) {
+                            if (r.state.blueprints[n]) r.deleteBlueprint(n);
+                        }
+                        if (r.state.customSouls) delete r.state.customSouls["bp_test_9d_soul"];
+                        r.selectBlueprintForEdit("village");
+                        const weltTab = document.querySelector('#topbar [data-tab="welt"]');
+                        if (weltTab) weltTab.click();
+                        r.state.yaw = 0;
+                        if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
+                    } catch (err) {
+                        out.error = err && err.message;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (wave9dResults && !wave9dResults.error) {
+                check("Welle 9d: MACHINE_PRECISION_BONUS === 0.05", wave9dResults.machineBonus);
+                check("Welle 9d: applyPlayerSoulFromBlueprint-Methode existiert", wave9dResults.hasSoulFromBp);
+                check(
+                    "Welle 9d: registerBlueprintAsTool mit role=machine vergibt Bonus auf precisionCap (min + 0.05, gedeckelt 1.0)",
+                    wave9dResults.regOk && wave9dResults.toolHasBonus
+                );
+                check("Welle 9d: Registriertes Maschinen-Tool trägt isMachine=true", wave9dResults.toolMarkedMachine);
+                check(
+                    "Welle 9d: registerBlueprintAsTool ohne machine-Rolle vergibt KEINEN Bonus + isMachine=false",
+                    wave9dResults.normalToolNoBonus && wave9dResults.normalToolNotMachine
+                );
+                check(
+                    "Welle 9d: applyPlayerSoulFromBlueprint mit role=soul wechselt Spieler-Seele",
+                    wave9dResults.soulApplyOk && wave9dResults.soulApplyChangedSoul
+                );
+                check(
+                    "Welle 9d: soul-Bauplan wird als customSoul mit 'bp_'-Prefix registriert",
+                    wave9dResults.customSoulRegistered
+                );
+                check(
+                    "Welle 9d: applyPlayerSoulFromBlueprint auf nicht-soul-Bauplan → reject 'blueprint_not_soul'",
+                    wave9dResults.nonSoulReject
+                );
+                check(
+                    "Welle 9d: applyPlayerSoulFromBlueprint auf unbekannten Bauplan → reject 'blueprint_unknown'",
+                    wave9dResults.unknownReject
+                );
+                check(
+                    "Welle 9d UI: 'Als Seele tragen'-Button bei role=soul gerendert (.workshop-soul-activate)",
+                    wave9dResults.soulButtonRendered
+                );
+                check(
+                    "Welle 9d UI: KEIN Soul-Button bei role=architecture (Default)",
+                    wave9dResults.archHasNoSoulButton
+                );
+            } else if (wave9dResults && wave9dResults.error) {
+                check(`Welle 9d: evaluate-Fehler — ${wave9dResults.error}`, false);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {

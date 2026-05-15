@@ -14087,6 +14087,28 @@ class AnazhRealm {
         });
     }
 
+    // Welle 9d — Bauplan als Seele anwenden. Wenn der Bauplan role="soul"
+    // trägt, wird seine parts-Liste als bodyParts in state.customSouls
+    // angelegt (mit eindeutigem Namen) und anschließend applyPlayerSoul
+    // gerufen. Damit kann der Spieler einen geschaffenen soul-Bauplan
+    // (z. B. via ritueller-stab + Helix + Quarz) als seinen Avatar tragen.
+    applyPlayerSoulFromBlueprint(blueprintName) {
+        const bp = this.state.blueprints && this.state.blueprints[blueprintName];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.role !== "soul") return { ok: false, reason: "blueprint_not_soul" };
+        if (!Array.isArray(bp.parts) || bp.parts.length === 0) {
+            return { ok: false, reason: "blueprint_empty" };
+        }
+        this.state.customSouls = this.state.customSouls || {};
+        const soulName = `bp_${blueprintName}`;
+        this.state.customSouls[soulName] = {
+            label: bp.label || blueprintName,
+            bodyParts: bp.parts.map((p) => JSON.parse(JSON.stringify(p))),
+        };
+        const ok = this.applyPlayerSoul(soulName);
+        return { ok: !!ok, soulName };
+    }
+
     applyPlayerSoul(name) {
         const defs = this.playerSoulDefs;
         const key = typeof name === "string" ? name.toLowerCase().trim() : "";
@@ -16017,14 +16039,26 @@ class AnazhRealm {
         const bp = this.state.blueprints[name];
         if (!bp) return { ok: false, reason: "blueprint_unknown" };
         if (bp.builtIn) return { ok: false, reason: "cannot_modify_builtin" };
-        if (bp.role !== "tool" || !bp.toolMeta) {
+        // Welle 9d — Maschinen sind eine Spezialform von Werkzeug. Wer
+        // ein Bauplan-Werkzeug mit role="machine" (statt "tool") registriert,
+        // bekommt den precisionCap-Bonus. toolMeta wird bei beiden Pfaden
+        // gleich benötigt — die Op-Klasse + Op-Name definieren die Anwendung.
+        if ((bp.role !== "tool" && bp.role !== "machine") || !bp.toolMeta) {
             return { ok: false, reason: "not_marked_as_tool" };
         }
         const existing = this.state.tools[name];
         if (existing && existing.builtIn) {
             return { ok: false, reason: "starter_name_protected" };
         }
-        const precisionCap = this.computeBlueprintPrecisionCap(bp);
+        let precisionCap = this.computeBlueprintPrecisionCap(bp);
+        // Welle 9d — Maschinen-Bonus. Wenn der Bauplan emergent oder manuell
+        // als "machine" markiert ist, hebt sich der precisionCap leicht über
+        // die Hand-Min-Regel hinaus. Konzept §4.3: eine schief gebaute Maschine
+        // ist immer noch besser als die Hand mit derselben Min-Präzision.
+        // Bonus wird auf 1.0 gedeckelt (perfekt bleibt theoretisch).
+        if (bp.role === "machine") {
+            precisionCap = Math.min(1.0, precisionCap + AnazhRealm.MACHINE_PRECISION_BONUS);
+        }
         this.state.tools[name] = {
             name,
             label: bp.label || name,
@@ -16034,6 +16068,7 @@ class AnazhRealm {
             isStarter: false,
             builtIn: false,
             sourceBlueprint: name,
+            isMachine: bp.role === "machine",
         };
         if (!Array.isArray(this.state.player.tools)) this.state.player.tools = [];
         if (!this.state.player.tools.includes(name)) this.state.player.tools.push(name);
@@ -19076,6 +19111,24 @@ class AnazhRealm {
                 this._renderWorkshopDOM();
             });
             actions.appendChild(addBtn);
+        }
+        // Welle 9d — "Als Seele aktivieren"-Button bei eigenen role:soul-Baupläne.
+        // Synthesisiert eine custom-soul aus den bp.parts und triggert applyPlayerSoul.
+        if (!selected.builtIn && selected.role === "soul") {
+            const soulBtn = document.createElement("button");
+            soulBtn.type = "button";
+            soulBtn.className = "workshop-soul-activate";
+            soulBtn.textContent = "Als Seele tragen";
+            soulBtn.title = "Diesen Bauplan als deine Seele aktivieren — du wirst zur geschaffenen Form";
+            soulBtn.addEventListener("click", () => {
+                const res = this.applyPlayerSoulFromBlueprint(selected.name);
+                if (res.ok) {
+                    this.log(`Seele gewechselt zu „${selected.label || selected.name}".`, "INFO");
+                } else {
+                    this.log(`Seele konnte nicht aktiviert werden (${res.reason || "unknown"})`, "ERROR");
+                }
+            });
+            actions.appendChild(soulBtn);
         }
         // Klonen
         const cloneBtn = document.createElement("button");
@@ -22992,6 +23045,13 @@ AnazhRealm.TOOL_DOMAIN_COLORS = Object.freeze({
 // Architektur mit passendem workshopDomain stehen (gemessen vom Spawn-
 // Punkt des neuen Bauplans), sonst lehnt confirmBuild im pfad-Modus ab.
 AnazhRealm.WORKSHOP_PROXIMITY_M = 10;
+
+// Welle 9d — Maschinen-Bonus. Ein als Werkzeug registriertes Bauplan
+// mit role="machine" (z. B. eine Drehbank-Kreation des Spielers) bekommt
+// auf seinen precisionCap einen Bonus auf den min-Werte der Parts.
+// Konzept §4.3 sagt: eine Maschine ist präziser als Handarbeit. Bonus
+// wird auf 1.0 gedeckelt (perfekte Präzision bleibt theoretisch).
+AnazhRealm.MACHINE_PRECISION_BONUS = 0.05;
 // Welt-Effekt-Schwellen: zentralisiert, damit Tuning ohne Code-Suche geht.
 // Werte aus Konzept §6.3 (≥0.7 mild, ≥1.5 stark, ≥2.5 signatur).
 AnazhRealm.WORLD_EFFECT_THRESHOLDS = Object.freeze({
