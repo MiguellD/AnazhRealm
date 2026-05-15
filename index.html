@@ -2739,14 +2739,16 @@
                 gap: 8px;
                 align-items: stretch;
             }
-            #workshop-side-palette {
+            #workshop-side-palette,
+            #workshop-side-palette-right {
                 flex: 0 0 88px;
                 display: flex;
                 flex-direction: column;
                 gap: 6px;
                 min-width: 0;
             }
-            #workshop-side-palette h4 {
+            #workshop-side-palette h4,
+            #workshop-side-palette-right h4 {
                 margin: 4px 0 2px 0;
                 font-family: "Cinzel", Georgia, serif;
                 font-size: 10px;
@@ -3503,7 +3505,7 @@
                     zum Cursor · W/E/R/C Modus · G snap
                 </p>
                 <div id="workshop-preview-row">
-                    <aside id="workshop-side-palette" aria-label="Form-/Material-/Farb-Palette">
+                    <aside id="workshop-side-palette" aria-label="Form-Palette">
                         <h4>Formen</h4>
                         <div id="workshop-shape-palette" role="group" aria-label="Form-Palette">
                             <div class="workshop-shape-card" draggable="true" data-shape="box" title="Würfel">
@@ -3543,10 +3545,6 @@
                                 <span>Helix</span>
                             </div>
                         </div>
-                        <h4>Materialien</h4>
-                        <div id="workshop-material-palette" role="group" aria-label="Material-Palette"></div>
-                        <h4>Farben</h4>
-                        <div id="workshop-color-palette" role="group" aria-label="Farb-Palette"></div>
                     </aside>
                     <div id="workshop-preview-wrapper">
                         <canvas id="workshop-preview-canvas"></canvas>
@@ -3594,6 +3592,12 @@
                             </button>
                         </div>
                     </div>
+                    <aside id="workshop-side-palette-right" aria-label="Material- und Farb-Palette">
+                        <h4>Materialien</h4>
+                        <div id="workshop-material-palette" role="group" aria-label="Material-Palette"></div>
+                        <h4>Farben</h4>
+                        <div id="workshop-color-palette" role="group" aria-label="Farb-Palette"></div>
+                    </aside>
                 </div>
             </section>
             <section class="section">
