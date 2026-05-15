@@ -126,6 +126,17 @@ class AnazhRealm {
             // von _applyDayNightToScene aus Sky-Color + Welt-Affinität.
             hemiLight: null,
             fog: null,
+            // V8.28 6.G4.b — Stern-Feld (THREE.Points) + Welt-Wasser-Plane.
+            // starField folgt der Kamera + dreht sidereal mit timeOfDay.
+            starField: null,
+            waterPlane: null,
+            // V8.28 6.G4.b — Atmosphäre-Slider (Spieler-Präferenz, persistiert).
+            // celLevels: Cel-Shading-Stufen (1=bold, 6≈smooth)
+            // fogDistance: Multiplikator auf Fog-near/far (klein=dichter)
+            atmosphere: {
+                celLevels: 4,
+                fogDistance: 1.0,
+            },
             // Welle 6.G3 (V8.24) — sanfter Wetter-Übergang. null heißt: kein
             // aktiver Übergang. Ein Wechsel zwischen sunny/rainy interpoliert
             // Skybox-Tint + Symphonie-Filter über WEATHER_TRANSITION_DURATION_MS.
@@ -6900,7 +6911,7 @@ class AnazhRealm {
         const fragmentShader = `
         uniform float time;
         uniform vec3 nebulaColor;
-        uniform float starIntensity;
+        uniform float cloudCover;
         varying vec3 vDir;
     float random(vec3 st) {
         return fract(sin(dot(st, vec3(12.9898, 78.233, 45.5432))) * 43758.5453123);
@@ -6932,23 +6943,25 @@ class AnazhRealm {
         float n1 = noise(vDir * 1.0 + time * 0.02);
         float n2 = noise(vDir * 2.0 + time * 0.01);
         float n3 = noise(vDir * 4.0 + time * 0.005);
-        // V8.27 6.G4.a — drei Stern-Schichten mit Hue-Variation. Echte
-        // Sternenfelder sind nicht weiß-monoton — Sterne haben blau-warme
-        // Spektren je nach Typ (heiße O/B-Sterne blau, kühle K/M-Sterne
-        // gelb/rot). Wir mixen warm + cool via Random-Sample pro Stern.
-        float star1 = pow(random(vDir * 80.0), 80.0);        // groß, hell, selten
-        float star2 = pow(random(vDir * 220.0), 150.0) * 0.75; // mittel
-        float star3 = pow(random(vDir * 500.0), 240.0) * 0.45; // klein, dicht, dim
-        // Hue-Sample (offset im Noise-Space damit unkorreliert zur Helligkeit)
-        float hue1 = random(vDir * 80.0 + vec3(17.0, 31.0, 53.0));
-        float hue2 = random(vDir * 220.0 + vec3(41.0, 67.0, 89.0));
-        vec3 warmStar = vec3(1.0, 0.92, 0.75);  // gelblich (K/M-Sterne)
-        vec3 coolStar = vec3(0.75, 0.85, 1.0);  // bläulich (O/B-Sterne)
-        vec3 star1Col = mix(coolStar, warmStar, hue1);
-        vec3 star2Col = mix(coolStar, warmStar, hue2) * 0.92;
-        vec3 starsAccum = star1 * star1Col + star2 * star2Col + star3 * vec3(0.95, 0.97, 1.0);
+        // V8.28 6.G4.b — Sterne sind KEIN Shader-Noise mehr. Prozedurales
+        // Stern-Noise hat keine Pixel-Footprint-Info → flackert bei jeder
+        // Kamera-Rotation (Sub-Pixel-Sample-Aliasing). Echte Sterne sind
+        // jetzt diskrete THREE.Points (siehe _buildStarField) — der
+        // Rasterizer macht echtes Anti-Aliasing, kein Flackern möglich.
+        // Skybox traegt nur noch Nebula-Schimmer + (V8.28 D) Wolken.
         vec3 color = nebulaColor * (0.5 + 0.5 * (n1 + n2 + n3) / 3.0);
-        color += starsAccum * starIntensity;
+        // V8.28 6.G4.b D — Wolken-Schicht. Horizont-nahes Noise, weiss
+        // getintet, langsam ziehend. cloudCover emergiert aus weather
+        // (rainy → dichter). Wolken nur oberhalb des Horizonts (vDir.y > 0).
+        float horizonMask = smoothstep(-0.05, 0.35, vDir.y);
+        float cloudN = noise(vDir * 2.5 + vec3(time * 0.012, 0.0, time * 0.008));
+        float cloudN2 = noise(vDir * 6.0 + vec3(time * 0.02, 0.0, time * 0.014));
+        float clouds = smoothstep(0.55, 0.85, cloudN * 0.65 + cloudN2 * 0.35);
+        clouds *= horizonMask * cloudCover;
+        // Wolken-Farbe folgt der Himmel-Helligkeit (Tag weiss, Nacht dunkelgrau)
+        float skyLum = (nebulaColor.r + nebulaColor.g + nebulaColor.b) / 3.0;
+        vec3 cloudColor = mix(vec3(0.32, 0.34, 0.40), vec3(1.0, 0.98, 0.95), clamp(skyLum * 2.2, 0.0, 1.0));
+        color = mix(color, cloudColor, clouds);
         gl_FragColor = vec4(color, 1.0);
     }
 `;
@@ -6960,10 +6973,9 @@ class AnazhRealm {
             uniforms: {
                 time: { value: 0.0 },
                 nebulaColor: { value: new THREE.Color(0x4b0082) }, // Indigofarben
-                // V8.25 — Sterne-Helligkeit (0..1), via _applyDayNightToScene
-                // gesteuert. Default 0.5 (zwischen Tag und Nacht), beim ersten
-                // tickDayNight wird der korrekte Wert gesetzt.
-                starIntensity: { value: 0.5 },
+                // V8.28 6.G4.b D — Wolken-Deckung (0..1). Aus weather
+                // abgeleitet in _applyDayNightToScene (sunny ~0.25, rainy ~0.85).
+                cloudCover: { value: 0.3 },
             },
             side: THREE.BackSide,
             depthWrite: false,
@@ -6998,6 +7010,121 @@ class AnazhRealm {
                 `Planet ${i} erstellt: Position (${planet.position.x.toFixed(2)}, ${planet.position.y.toFixed(2)}, ${planet.position.z.toFixed(2)})`
             );
         }
+        // V8.28 6.G4.b A — echtes Stern-Feld als THREE.Points
+        this._buildStarField();
+    }
+
+    // V8.28 6.G4.b Phase A — Sterne als diskrete THREE.Points statt
+    // prozedurales Shader-Noise. Wurzel-Fix für das Flacker-Problem:
+    // Shader-Noise hat keine Pixel-Footprint-Info, sampelt bei jeder
+    // Kamera-Rotation andere Sphere-Fragmente → Sub-Pixel-Aliasing →
+    // Sterne blinken. Diskrete Punkte haben echte Sprite-Groesse, der
+    // Rasterizer macht echtes Anti-Aliasing → absolut flackerfrei.
+    //
+    // Eigenschaften (was die Riesen tun — Halo, Outer Wilds, Minecraft):
+    //  - ~2800 Sterne, deterministisch aus worldMeta.seed (Multi-User-safe)
+    //  - per-Stern Groesse (meist klein, wenige gross) + per-Stern Hue
+    //    (blau-weisse O/B-Sterne + gelbliche K/M-Sterne)
+    //  - konstante Pixel-Groesse (sizeAttenuation aus — Sterne sind
+    //    unendlich weit weg, perspektivische Verkleinerung waere falsch)
+    //  - Sidereal-Rotation: das Feld dreht langsam mit timeOfDay um eine
+    //    geneigte Achse (Erd-Achsen-Mimik), Position folgt der Kamera
+    //  - AdditiveBlending → Sterne glimmen, ueberlappen hell
+    _buildStarField() {
+        if (!this.state.scene || typeof THREE === "undefined") return;
+        const STAR_COUNT = 2800;
+        const RADIUS = 480; // knapp innerhalb der Skybox-Sphere (500)
+        // Deterministischer RNG aus dem Welt-Seed — alle Mitspieler sehen
+        // denselben Himmel (Vision: eine Welt, ein Sternbild).
+        const seedStr = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        let seedNum = 0;
+        for (let i = 0; i < seedStr.length; i++) {
+            seedNum = (seedNum * 31 + seedStr.charCodeAt(i)) >>> 0;
+        }
+        const rng = () => {
+            // Mulberry32 — deterministisch, schnell, gute Verteilung
+            seedNum = (seedNum + 0x6d2b79f5) >>> 0;
+            let t = seedNum;
+            t = Math.imul(t ^ (t >>> 15), t | 1);
+            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+        const positions = new Float32Array(STAR_COUNT * 3);
+        const colors = new Float32Array(STAR_COUNT * 3);
+        const sizes = new Float32Array(STAR_COUNT);
+        const warm = new THREE.Color(1.0, 0.92, 0.75); // K/M-Sterne (gelblich)
+        const cool = new THREE.Color(0.78, 0.86, 1.0); // O/B-Sterne (bläulich)
+        const tmpCol = new THREE.Color();
+        for (let i = 0; i < STAR_COUNT; i++) {
+            // Gleichmaessige Verteilung auf der Kugel (kein Pol-Cluster)
+            const u = rng();
+            const v = rng();
+            const theta = 2 * Math.PI * u;
+            const phi = Math.acos(2 * v - 1);
+            positions[i * 3] = RADIUS * Math.sin(phi) * Math.cos(theta);
+            positions[i * 3 + 1] = RADIUS * Math.cos(phi);
+            positions[i * 3 + 2] = RADIUS * Math.sin(phi) * Math.sin(theta);
+            // Hue: mix warm/cool. Helligkeit korreliert leicht mit Groesse.
+            const hue = rng();
+            tmpCol.copy(cool).lerp(warm, hue);
+            // Groesse: pow-Verteilung → die meisten klein, wenige gross
+            const sizeRoll = rng();
+            const size = 1.0 + Math.pow(sizeRoll, 3) * 5.0; // 1..6 px, stark biased klein
+            sizes[i] = size;
+            // Hellere (groessere) Sterne saettigen voller, kleine sind dimmer
+            const bright = 0.55 + Math.pow(sizeRoll, 2) * 0.45;
+            colors[i * 3] = tmpCol.r * bright;
+            colors[i * 3 + 1] = tmpCol.g * bright;
+            colors[i * 3 + 2] = tmpCol.b * bright;
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+        geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+        geo.setAttribute("aSize", new THREE.BufferAttribute(sizes, 1));
+        // Custom Points-Shader: per-Stern Groesse + weicher runder Sprite-
+        // Falloff (sonst sind Points harte Quadrate). uOpacity faded das
+        // ganze Feld mit Tag-Nacht (Tag 0, Nacht 1).
+        const starMat = new THREE.ShaderMaterial({
+            uniforms: {
+                uOpacity: { value: 0.5 },
+                uPixelRatio: { value: typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1 },
+            },
+            vertexShader: `
+                attribute float aSize;
+                varying vec3 vColor;
+                uniform float uPixelRatio;
+                void main() {
+                    vColor = color;
+                    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                    // Konstante Pixel-Groesse (sizeAttenuation aus) — Sterne
+                    // sind unendlich weit, duerfen nicht perspektivisch schrumpfen.
+                    gl_PointSize = aSize * uPixelRatio;
+                    gl_Position = projectionMatrix * mvPosition;
+                }
+            `,
+            fragmentShader: `
+                varying vec3 vColor;
+                uniform float uOpacity;
+                void main() {
+                    // Weicher runder Falloff vom Sprite-Zentrum
+                    float d = length(gl_PointCoord - vec2(0.5));
+                    float alpha = smoothstep(0.5, 0.08, d);
+                    if (alpha <= 0.01) discard;
+                    gl_FragColor = vec4(vColor, alpha * uOpacity);
+                }
+            `,
+            transparent: true,
+            depthWrite: false,
+            depthTest: false,
+            blending: THREE.AdditiveBlending,
+            vertexColors: true,
+        });
+        const starField = new THREE.Points(geo, starMat);
+        starField.frustumCulled = false; // immer rendern (Himmelskoerper)
+        starField.renderOrder = -1; // hinter allem anderen
+        this.state.scene.add(starField);
+        this.state.starField = starField;
+        this.log(`Stern-Feld erstellt — ${STAR_COUNT} diskrete Sterne (V8.28)`);
     }
     // Welle 6.G3 (V8.24) — updateSkyboxWeather ist jetzt ein Schmal-Wrapper
     // auf _applyDayNightToScene. Die Skybox-Farbe ergibt sich aus dem
@@ -22585,18 +22712,23 @@ class AnazhRealm {
             if (u && u.value) {
                 u.value.setRGB(skyR, skyG, skyB);
             }
-            // V8.25 — Sterne nur bei Nacht stärker. starIntensity wandert
-            // umgekehrt zur Sonnenhöhe (sin-Funktion).
-            const starU = this.state.skybox.material.uniforms.starIntensity;
-            if (starU) {
-                const angle = t * Math.PI * 2 - Math.PI / 2;
-                const sunHeight = Math.max(-1, Math.min(1, Math.sin(angle)));
-                // sunHeight = 1 (Mittag) → 0.0 (Sterne unsichtbar)
-                // sunHeight = -1 (Mitternacht) → 1.0 (Sterne voll)
-                // Wetter dämpft Sterne zusätzlich
-                const nightFactor = (1 - sunHeight) * 0.5;
-                starU.value = nightFactor * skyMul;
+            // V8.28 6.G4.b D — Wolken-Deckung aus weather. sunny ~0.22,
+            // rainy ~0.85. Cross-Fade greift natürlich (skyMul ändert sich
+            // weich über requestWeatherTransition).
+            const cloudU = this.state.skybox.material.uniforms.cloudCover;
+            if (cloudU) {
+                cloudU.value = this.state.weather === "rainy" ? 0.85 : 0.22;
             }
+        }
+        // V8.28 6.G4.b A — Stern-Feld-Opacity. starField statt skybox-uniform
+        // (Sterne sind jetzt diskrete Points). Sterne nur bei Nacht sichtbar:
+        // umgekehrt zur Sonnenhöhe, durch Wetter gedämpft.
+        if (this.state.starField && this.state.starField.material) {
+            const sa = t * Math.PI * 2 - Math.PI / 2;
+            const sunHeight = Math.max(-1, Math.min(1, Math.sin(sa)));
+            const nightFactor = (1 - sunHeight) * 0.5; // Mittag 0 → Mitternacht 1
+            const su = this.state.starField.material.uniforms.uOpacity;
+            if (su) su.value = nightFactor * skyMul;
         }
         // Light-Position über Halbkreis (azimut über Tag).
         const dl = this.state.directionalLight;
@@ -22739,14 +22871,18 @@ class AnazhRealm {
         const cycleSeconds = Math.max(60, minutes * 60); // hard-floor 1min
         const advance = delta / cycleSeconds; // wieviel von 0..1 in delta vergeht
         this.state.timeOfDay = (this.state.timeOfDay + advance) % 1;
-        // Throttle: Lights+Skybox-Update alle ~100 ms. Reicht für Auge,
-        // spart Color-Allocs. Tick selbst läuft jeden Frame, aber die
-        // teure Update-Funktion nur 10×/s.
+        // V8.28 6.G4.b — _applyDayNightToScene läuft jetzt JEDEN Frame statt
+        // 10 Hz throttled. Wurzel-Fix für das "Gebäude pulsieren durch den
+        // Tag"-Problem: bei 10 Hz sprang die Beleuchtung in 10 diskreten
+        // Stufen/s → sichtbares Ruckeln der Schatten. Pro Frame wandern die
+        // Schatten seidig. Die Funktion ist billig genug (Color-Lerps +
+        // ein Vector3.copy pro Chunk) — kein Throttle nötig.
+        this._applyDayNightToScene();
+        // Status-Bar-Text bleibt 10 Hz throttled (DOM-textContent ist teurer
+        // als die Scene-Updates, und das Auge braucht keine 60-Hz-Uhr).
         const lastApply = this.state._lastDayNightApply || 0;
         if (currentTime - lastApply >= 0.1) {
-            this._applyDayNightToScene();
             this.state._lastDayNightApply = currentTime;
-            // Status-Bar-Anzeige (24h-Format mit Emoji) ebenfalls 10 Hz
             const r = this._statusRefs;
             if (r && r.time) {
                 r.time.textContent = this._timeOfDayLabel(this.state.timeOfDay);
@@ -25208,6 +25344,24 @@ class AnazhRealm {
             // Z. ~25049), Skybox-Position folgt SYNCHRON.
             if (this.state.camera && this.state.skybox) {
                 this.state.skybox.position.copy(this.state.camera.position);
+            }
+            // V8.28 6.G4.b A — Stern-Feld folgt der Kamera (sonst wandert
+            // der Spieler aus dem Feld heraus) + dreht sidereal mit der
+            // Tageszeit um eine geneigte Achse (Erd-Achsen-Mimik). Die
+            // Rotation gibt den klassischen "Sterne ziehen über den Himmel"-
+            // Effekt — Astronomie statt statischer Tapete.
+            if (this.state.camera && this.state.starField) {
+                this.state.starField.position.copy(this.state.camera.position);
+                const tod = this.state.timeOfDay || 0;
+                this.state.starField.rotation.set(0.4, tod * Math.PI * 2, 0.15);
+            }
+            // V8.28 6.G4.b D — Welt-Wasser folgt der Kamera in xz (eine
+            // grosse Plane, die immer um den Spieler liegt). y bleibt fix
+            // auf waterLevel — das Wasser ist sichtbar nur wo Terrain
+            // darunter liegt (natürliche Senken).
+            if (this.state.camera && this.state.waterPlane) {
+                this.state.waterPlane.position.x = this.state.camera.position.x;
+                this.state.waterPlane.position.z = this.state.camera.position.z;
             }
             this.state.renderer.render(this.state.scene, this.state.camera);
         };

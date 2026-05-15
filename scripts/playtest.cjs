@@ -10930,8 +10930,10 @@ function startSaveServer() {
                     r.worldFieldAt = origWFA;
                     r.state.playerMesh.position.x = 0;
 
-                    // --- Vision 8: starIntensity-Uniform existiert + folgt Tageszeit
-                    const starU = r.state.skybox.material.uniforms.starIntensity;
+                    // --- Vision 8: Stern-Feld (V8.28 THREE.Points) folgt Tageszeit
+                    // Sterne sind jetzt diskrete Points, nicht mehr Skybox-Noise.
+                    const starMat = r.state.starField && r.state.starField.material;
+                    const starU = starMat && starMat.uniforms ? starMat.uniforms.uOpacity : null;
                     out.starIntensityExists = !!starU;
                     if (starU) {
                         r.setTimeOfDay(0.5); // Mittag
@@ -11015,7 +11017,7 @@ function startSaveServer() {
                 check("Welle 6.G3 V2 Vision: chaos=1 verkürzt Wetter-Dauer (<70%)", wave6g3v2Results.chaosSpeedsWeather);
                 check("Welle 6.G3 V2 Vision: lebendig-Region hat höheres FAUNA_TARGET als karge", wave6g3v2Results.liveRegionHasHigherTarget);
                 check("Welle 6.G3 V2 Vision: FAUNA_TARGET-Range plausibel (lebendig ≥10, karg ≤6)", wave6g3v2Results.targetInExpectedRange);
-                check("Welle 6.G3 V2 Vision: starIntensity-Uniform existiert", wave6g3v2Results.starIntensityExists);
+                check("Welle 6.G3 V2 Vision: Stern-Feld-Opacity existiert (V8.28 THREE.Points)", wave6g3v2Results.starIntensityExists);
                 check("Welle 6.G3 V2 Vision: Sterne nachts sichtbar stärker als tags", wave6g3v2Results.starsBrighterAtNight);
                 check("Welle 6.G3 V2 Vision: state.sunMesh ist THREE.Mesh", wave6g3v2Results.sunMeshExists);
                 check("Welle 6.G3 V2 Vision: state.moonMesh ist THREE.Mesh", wave6g3v2Results.moonMeshExists);
@@ -11275,12 +11277,21 @@ function startSaveServer() {
                     }
                     r.setTimeOfDay(0.5);
 
-                    // 6. Skybox-Shader hat Hue-Variation + 3 Stern-Schichten
-                    const fragSrc = r.state.skybox.material.fragmentShader;
-                    out.starHasHueVariation =
-                        /coolStar|warmStar|mix\(coolStar, warmStar/.test(fragSrc);
-                    // 3 Stern-Schichten (star1, star2, star3)
-                    out.threeStarLayers = /star1.*star2.*star3/s.test(fragSrc);
+                    // 6. Stern-Feld (V8.28) hat per-Stern Hue + Größen-Variation.
+                    // Sterne sind jetzt THREE.Points mit color + aSize Attributen.
+                    const sf = r.state.starField;
+                    out.starHasHueVariation = !!(
+                        sf &&
+                        sf.geometry &&
+                        sf.geometry.getAttribute &&
+                        sf.geometry.getAttribute("color")
+                    );
+                    out.threeStarLayers = !!(
+                        sf &&
+                        sf.geometry &&
+                        sf.geometry.getAttribute &&
+                        sf.geometry.getAttribute("aSize")
+                    );
 
                     return out;
                 })
@@ -11299,8 +11310,8 @@ function startSaveServer() {
                 check("V8.27: Terrain-Shader hat lightIntensity-Uniform", v827Results.terrainHasLightIntensityUniform);
                 check("V8.27: Terrain-Shader hat ambientIntensity-Uniform", v827Results.terrainHasAmbientIntensityUniform);
                 check("V8.27: Terrain-lightIntensity folgt Tag-Nacht (Mittag > Nacht)", v827Results.terrainLightFollowsDayCycle);
-                check("V8.27: Skybox-Shader nutzt Hue-Variation (coolStar/warmStar mix)", v827Results.starHasHueVariation);
-                check("V8.27: Drei Stern-Schichten (star1/star2/star3) im Shader", v827Results.threeStarLayers);
+                check("V8.28: Stern-Feld hat per-Stern Hue (color-Attribut)", v827Results.starHasHueVariation);
+                check("V8.28: Stern-Feld hat per-Stern Größen-Variation (aSize-Attribut)", v827Results.threeStarLayers);
             } else {
                 check("V8.27: Tiefe-Welle Tests laufen", false, v827Results ? v827Results.error : "no result");
             }
