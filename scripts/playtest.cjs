@@ -12911,6 +12911,192 @@ function startSaveServer() {
                 check(`V8.02 Phase 3: evaluate-Fehler — ${v802Results.error}`, false);
             }
 
+            // ### V8.03 — Camera-CAD-Konventionen (Pan + Zoom-to-Cursor + Wheel-Stop) +
+            //             seitliche Material/Color-Palette
+            const v803Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    try {
+                        // Helper-Methoden existieren
+                        out.hasWorldPoint = typeof r._workshopWorldPointAtCursor === "function";
+                        out.hasRaycastPartIdx = typeof r._workshopRaycastPartIdxAt === "function";
+                        out.hasMaterialRender = typeof r._workshopRenderMaterialPalette === "function";
+                        out.hasColorRender = typeof r._workshopRenderColorPalette === "function";
+                        out.hasMaterialDrop = typeof r._workshopHandleMaterialDrop === "function";
+                        out.hasColorDrop = typeof r._workshopHandleColorDrop === "function";
+
+                        // Tab → Werkstatt + eigenen Bauplan vorbereiten
+                        const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
+                        if (tab) tab.click();
+                        if (r.state.blueprints["test_v803"]) r.deleteBlueprint("test_v803");
+                        r.cloneBlueprint("village", "test_v803");
+                        r.selectBlueprintForEdit("test_v803");
+                        r._workshopEnsurePreview();
+                        const pre = r.state.workshop.preview;
+
+                        // Layout-Struktur
+                        out.previewRowInDom = !!document.getElementById("workshop-preview-row");
+                        out.sidePaletteInDom = !!document.getElementById("workshop-side-palette");
+                        out.shapePaletteInDom = !!document.getElementById("workshop-shape-palette");
+                        out.matPaletteInDom = !!document.getElementById("workshop-material-palette");
+                        out.colorPaletteInDom = !!document.getElementById("workshop-color-palette");
+                        // Side-Palette steht VOR der Preview im DOM (flex-row macht
+                        // dann visuell „links neben")
+                        const row = document.getElementById("workshop-preview-row");
+                        if (row) {
+                            const children = Array.from(row.children);
+                            out.paletteBeforePreview =
+                                children[0] &&
+                                children[0].id === "workshop-side-palette" &&
+                                children[1] &&
+                                children[1].id === "workshop-preview-wrapper";
+                        }
+                        // Material-Palette: eine Card pro Material in state.materials
+                        const matCards = document.querySelectorAll(".workshop-material-card");
+                        out.matCardsCount = matCards.length;
+                        out.matCardsMatchState = matCards.length === Object.keys(r.state.materials).length;
+                        // Color-Palette: 12 Swatches
+                        const colorSwatches = document.querySelectorAll(".workshop-color-swatch");
+                        out.twelveColorSwatches = colorSwatches.length === 12;
+
+                        // --- Pan-Geste: Listener-Source enthält Shift+Links + Mittelmaus-Pfad ---
+                        if (pre) {
+                            // Wir prüfen via Source-Inspection (statt dispatchEvent,
+                            // weil Puppeteer-MouseEvent-Constructor manchmal
+                            // Modifier-Keys nicht zuverlässig propagiert).
+                            const src = r._workshopInstallPreviewListeners.toString();
+                            out.shiftLeftStartsPan = src.includes("shiftKey") && src.includes("event.button === 1");
+                            out.middleMouseStartsPan = src.includes("event.button === 1");
+                            // Listener wurden tatsächlich installed (listenersInstalled-Flag)
+                            out.previewListenersInstalled = pre.listenersInstalled === true;
+
+                            // --- Wheel + Zoom-to-Cursor: target verschiebt sich ---
+                            const oldTarget = pre.orbit.target.clone();
+                            const oldDist = pre.orbit.dist;
+                            // Wheel mit deltaY > 0 = zoom-out (factor 1.12)
+                            const wheelEv = new WheelEvent("wheel", {
+                                clientX: 100,
+                                clientY: 100,
+                                deltaY: 100,
+                                bubbles: true,
+                                cancelable: true,
+                            });
+                            pre.canvas.dispatchEvent(wheelEv);
+                            // dist hat sich geändert
+                            out.distChangedOnWheel = pre.orbit.dist !== oldDist;
+                            // target wurde leicht verschoben (zoom-to-cursor) — nur wenn
+                            // der Cursor-Ray die Ebene trifft. Wenn nicht, ist target identisch.
+                            // Wir können nur prüfen dass die Methode RUNS ohne Crash.
+                            out.zoomToCursorTargetMaybeMoved =
+                                !oldTarget.equals(pre.orbit.target) || pre.orbit.target.equals(oldTarget);
+                            // wheel preventDefault: das Event wurde aufgenommen — wir prüfen
+                            // dass defaultPrevented true ist.
+                            out.wheelPreventDefault = wheelEv.defaultPrevented;
+                        }
+
+                        // --- Material-Drop auf Part-Idx 0 ---
+                        // wir simulieren _workshopHandleMaterialDrop direkt
+                        r._workshopSetSelection(0);
+                        const part0Before = r.state.blueprints.test_v803.parts[0].material;
+                        // Use clientX/Y in der Mitte des Canvas (sollte Part 0 treffen
+                        // wenn er da ist — Selection wurde gerade gesetzt)
+                        const canvas = document.getElementById("workshop-preview-canvas");
+                        const rect = canvas.getBoundingClientRect();
+                        const cx = rect.left + rect.width / 2;
+                        const cy = rect.top + rect.height / 2;
+                        // Test: direkte Methode mit gültigem Material
+                        // (raycast hit hängt von Camera-Position ab, also gibt's
+                        // möglicherweise keinen Treffer — pragmatischer: prüfen
+                        // dass die Methode existiert + nicht crashed)
+                        r._workshopHandleMaterialDrop("holz", cx, cy);
+                        out.materialDropNoCrash = true;
+                        // Wenn ein Hit war, sollte material gewechselt sein
+                        const part0After = r.state.blueprints.test_v803.parts[0].material;
+                        out.materialDropMaybeChanged = part0After !== part0Before || part0After === part0Before;
+
+                        // Bogus material wird abgelehnt
+                        r._workshopHandleMaterialDrop("nonsense_material", cx, cy);
+                        out.bogusMaterialNoCrash = true;
+
+                        // --- Color-Drop ---
+                        r._workshopHandleColorDrop("ff5500", cx, cy);
+                        out.colorDropNoCrash = true;
+
+                        // --- CSS overscroll-behavior auf .drawer-scroll ---
+                        const werkstattScroll = document.querySelector('[data-drawer="werkstatt"] > .drawer-scroll');
+                        if (werkstattScroll) {
+                            const cs = getComputedStyle(werkstattScroll);
+                            out.overscrollContain = cs.overscrollBehavior.includes("contain");
+                        }
+
+                        // Cleanup
+                        r.state.workshop.selectedPartIdx = null;
+                        r.deleteBlueprint("test_v803");
+                        r.selectBlueprintForEdit("village");
+                        const weltTab = document.querySelector('#topbar [data-tab="welt"]');
+                        if (weltTab) weltTab.click();
+                        r.state.yaw = 0;
+                        if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
+                    } catch (err) {
+                        out.error = err && err.message;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (v803Results && !v803Results.error) {
+                check(
+                    "V8.03: 6 neue Helper-Methoden existieren (WorldPoint/PartIdxAt + Render×2 + Drop×2)",
+                    v803Results.hasWorldPoint &&
+                        v803Results.hasRaycastPartIdx &&
+                        v803Results.hasMaterialRender &&
+                        v803Results.hasColorRender &&
+                        v803Results.hasMaterialDrop &&
+                        v803Results.hasColorDrop
+                );
+                check("V8.03: #workshop-preview-row im DOM (Layout-Container)", v803Results.previewRowInDom);
+                check("V8.03: #workshop-side-palette im DOM (seitliche Drag-Sources)", v803Results.sidePaletteInDom);
+                check(
+                    "V8.03: Alle 3 Sub-Paletten im DOM (shape/material/color)",
+                    v803Results.shapePaletteInDom && v803Results.matPaletteInDom && v803Results.colorPaletteInDom
+                );
+                check(
+                    "V8.03: Side-Palette steht VOR Preview im DOM (flex-row → visuell links)",
+                    v803Results.paletteBeforePreview
+                );
+                check(
+                    `V8.03: Material-Palette hat ${v803Results.matCardsCount} Cards (= alle state.materials)`,
+                    v803Results.matCardsMatchState
+                );
+                check("V8.03: Color-Palette hat 12 Swatches", v803Results.twelveColorSwatches);
+                check(
+                    "V8.03 Camera: Listener enthält Shift+Links + Mittelmaus → Pan-Modus",
+                    v803Results.shiftLeftStartsPan && v803Results.middleMouseStartsPan
+                );
+                check(
+                    "V8.03 Camera: Preview-Listener wurden installiert (listenersInstalled-Flag)",
+                    v803Results.previewListenersInstalled
+                );
+                check("V8.03 Camera: Wheel ändert orbit.dist (Zoom)", v803Results.distChangedOnWheel);
+                check(
+                    "V8.03 Camera: Wheel ruft preventDefault → kein Drawer-Scroll-Bleed",
+                    v803Results.wheelPreventDefault
+                );
+                check(
+                    "V8.03 Camera: _workshopHandleMaterialDrop crashed nicht",
+                    v803Results.materialDropNoCrash && v803Results.bogusMaterialNoCrash
+                );
+                check("V8.03 Camera: _workshopHandleColorDrop crashed nicht", v803Results.colorDropNoCrash);
+                check(
+                    "V8.03 CSS: .drawer-scroll hat overscroll-behavior:contain (zweite Verteidigung gegen Wheel-Bleed)",
+                    v803Results.overscrollContain
+                );
+            } else if (v803Results && v803Results.error) {
+                check(`V8.03: evaluate-Fehler — ${v803Results.error}`, false);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {

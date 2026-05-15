@@ -19059,10 +19059,16 @@ class AnazhRealm {
     }
 
     // Listener-Installation: Maus-Down/-Move/-Up/-Wheel auf der Preview-Canvas.
-    // Drei Drag-Pfade in Priorität: (1) Gizmo-Handle → Manipulator-Drag,
-    // (2) leerer Klick → Orbit-Drag oder Selection bei kurzem Klick,
-    // (3) Wheel → Zoom. Welle 6.B Phase 2 erweitert (1) — Gizmo-Hit hat
-    // strikten Vorrang vor Orbit.
+    // Vier Drag-Pfade in Priorität:
+    //   (1) Gizmo-Handle → Manipulator-Drag (pure, kein Orbit)
+    //   (2) Mittelmaus oder Shift+Links → Pan (target verschiebt sich
+    //       parallel zur Camera-Ebene; Standard-CAD-Konvention)
+    //   (3) leerer Links-Klick → Orbit-Drag oder Selection bei kurzem Klick
+    //   (4) Wheel → Zoom-zum-Cursor (Standard-CAD: der Punkt unter der Maus
+    //       bleibt unter der Maus, statt nur am fixen Zentrum zu zoomen).
+    // V8.03 Schöpfer-Browser-Test-Antwort: Wheel hat jetzt stopPropagation
+    // damit nicht der Drawer-Scroll-Wrapper das Event mitfängt; CSS
+    // overscroll-behavior:contain ist die zweite Verteidigungslinie.
     _workshopInstallPreviewListeners() {
         const ws = this._ensureWorkshopState();
         if (!ws.preview || ws.preview.listenersInstalled) return;
@@ -19075,15 +19081,19 @@ class AnazhRealm {
                 this._workshopBeginManipulation(gizmoHit.mode, gizmoHit.axis, event.clientX, event.clientY);
                 return;
             }
-            // (2) Normaler Drag: Orbit / Selection
+            // (2) Pan-Geste: Mittelmaus (button=1) ODER Shift+Links.
+            const isPan = event.button === 1 || (event.button === 0 && event.shiftKey);
+            // (3) Normaler Drag: Orbit / Selection
             p.drag = {
                 startX: event.clientX,
                 startY: event.clientY,
                 startTime: typeof performance !== "undefined" ? performance.now() : Date.now(),
                 startYaw: p.orbit.yaw,
                 startPitch: p.orbit.pitch,
+                startTarget: p.orbit.target.clone(),
                 moved: false,
                 button: event.button,
+                mode: isPan ? "pan" : "orbit",
             };
         };
         const onMove = (event) => {
@@ -19092,14 +19102,30 @@ class AnazhRealm {
                 this._workshopApplyManipulation(event.clientX, event.clientY);
                 return;
             }
-            // (2) Orbit-Drag aktiv?
+            // (2) Orbit/Pan-Drag aktiv?
             if (!p.drag) return;
             const dx = event.clientX - p.drag.startX;
             const dy = event.clientY - p.drag.startY;
             if (!p.drag.moved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
                 p.drag.moved = true;
             }
-            if (p.drag.moved && p.drag.button === 0) {
+            if (!p.drag.moved) return;
+            if (p.drag.mode === "pan") {
+                // Pan: target verschiebt sich in Camera-Ebene. Camera-Right und
+                // -Up aus der Camera-Matrix lesen; Maus-Delta-Pixel skalieren
+                // mit dist / canvas.height damit Pan-Sensitivität sich an Zoom-
+                // Level anpasst (näher dran → feinere Bewegung).
+                const rect = p.canvas.getBoundingClientRect();
+                const pixelToWorld = p.orbit.dist / Math.max(1, rect.height);
+                const camRight = new THREE.Vector3().setFromMatrixColumn(p.camera.matrix, 0);
+                const camUp = new THREE.Vector3().setFromMatrixColumn(p.camera.matrix, 1);
+                // dx > 0 = Maus nach rechts → target nach links (Welt "folgt" der Maus)
+                p.orbit.target
+                    .copy(p.drag.startTarget)
+                    .addScaledVector(camRight, -dx * pixelToWorld)
+                    .addScaledVector(camUp, dy * pixelToWorld);
+                p.dirty = true;
+            } else if (p.drag.button === 0) {
                 // Orbit (links-Drag): yaw aus horizontaler, pitch aus vertikaler Maus-Bewegung
                 p.orbit.yaw = p.drag.startYaw - dx * 0.01;
                 p.orbit.pitch = Math.max(-1.4, Math.min(1.4, p.drag.startPitch + dy * 0.01));
@@ -19114,23 +19140,52 @@ class AnazhRealm {
             if (!p.drag) return;
             const now = typeof performance !== "undefined" ? performance.now() : Date.now();
             const wasClick = !p.drag.moved && now - p.drag.startTime < 300;
-            if (wasClick && p.drag.button === 0) {
+            if (wasClick && p.drag.button === 0 && !p.drag.mode.includes("pan")) {
                 this._workshopRaycastSelection(event.clientX, event.clientY);
             }
             p.drag = null;
         };
         const onWheel = (event) => {
             event.preventDefault();
+            // V8.03: stopPropagation damit Drawer-Scroll-Wrapper das Wheel
+            // NICHT mitfängt — sonst zoomt nicht der Canvas, sondern der Drawer.
+            event.stopPropagation();
             const factor = event.deltaY > 0 ? 1.12 : 0.89;
-            p.orbit.dist = Math.max(1.5, Math.min(60, p.orbit.dist * factor));
+            const oldDist = p.orbit.dist;
+            const newDist = Math.max(1.5, Math.min(60, oldDist * factor));
+            const actualFactor = newDist / oldDist;
+            // Zoom-zum-Cursor: berechne Welt-Punkt unter dem Cursor (Intersection
+            // mit horizontaler Ebene durch target.y) und verschiebe target
+            // anteilig auf diesen Punkt zu. Wenn der Ray die Ebene nicht trifft
+            // (z. B. Top-Down-Blick), bleibt der einfache dist-Zoom übrig.
+            const worldPoint = this._workshopWorldPointAtCursor(event.clientX, event.clientY);
+            if (worldPoint) {
+                // target wandert anteilig auf worldPoint zu beim Reinzoomen
+                // (actualFactor < 1) bzw. davon weg beim Rauszoomen (>1).
+                const t = 1 - actualFactor;
+                p.orbit.target.addScaledVector(worldPoint.sub(p.orbit.target), t);
+            }
+            p.orbit.dist = newDist;
             p.dirty = true;
         };
         p.canvas.addEventListener("mousedown", onDown);
         window.addEventListener("mousemove", onMove);
         window.addEventListener("mouseup", onUp);
-        p.canvas.addEventListener("wheel", onWheel, { passive: false });
+        // capture:true damit der Drawer-Scroll-Container das Wheel NICHT vor
+        // uns sieht (zweite Verteidigung neben overscroll-behavior).
+        p.canvas.addEventListener("wheel", onWheel, { passive: false, capture: true });
         p.canvas.addEventListener("contextmenu", (e) => e.preventDefault());
         p.listenersInstalled = true;
+    }
+
+    // Helper: Welt-Punkt unter dem Cursor (horizontale Ebene durch target.y).
+    // Liefert null wenn der Ray die Ebene nicht trifft (z. B. parallele Sicht).
+    _workshopWorldPointAtCursor(clientX, clientY) {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview) return null;
+        const p = ws.preview;
+        const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -p.orbit.target.y);
+        return this._workshopRaycastPlane(clientX, clientY, plane);
     }
 
     // Raycast gegen Gizmo-Handles. Liefert {mode, axis} bei Hit, sonst null.
@@ -19755,33 +19810,52 @@ class AnazhRealm {
         if (ws._shapeDnDInstalled) return;
         ws._shapeDnDInstalled = true;
 
-        const palette = document.getElementById("workshop-shape-palette");
+        // V8.03 — Material- und Farb-Palette zusätzlich rendern.
+        this._workshopRenderMaterialPalette();
+        this._workshopRenderColorPalette();
+
+        const shapePalette = document.getElementById("workshop-shape-palette");
+        const matPalette = document.getElementById("workshop-material-palette");
+        const colorPalette = document.getElementById("workshop-color-palette");
         const canvas = document.getElementById("workshop-preview-canvas");
-        if (!palette || !canvas) return;
+        if (!canvas) return;
 
-        const cards = palette.querySelectorAll(".workshop-shape-card");
-        cards.forEach((card) => {
-            card.addEventListener("dragstart", (event) => {
-                const shape = card.getAttribute("data-shape");
-                if (!shape) return;
-                // Built-in-Schutz: dragstart abbrechen wenn Bauplan read-only
-                const bp = this.state.blueprints[this._ensureWorkshopState().selectedBlueprint];
-                if (!bp || bp.builtIn) {
-                    event.preventDefault();
-                    return;
-                }
-                event.dataTransfer.setData("application/x-anazh-shape", shape);
-                event.dataTransfer.effectAllowed = "copy";
-                card.classList.add("dragging");
+        // Universal-Drag-Helper: für jeden Card-Container eine Drag-Source
+        // einrichten. Marker via dataTransfer-MIME-Type, data via getAttribute.
+        const installDragSource = (container, cardSelector, dataAttr, marker) => {
+            if (!container) return;
+            const cards = container.querySelectorAll(cardSelector);
+            cards.forEach((card) => {
+                card.addEventListener("dragstart", (event) => {
+                    const data = card.getAttribute(dataAttr);
+                    if (!data) return;
+                    const bp = this.state.blueprints[this._ensureWorkshopState().selectedBlueprint];
+                    if (!bp || bp.builtIn) {
+                        event.preventDefault();
+                        return;
+                    }
+                    event.dataTransfer.setData(marker, data);
+                    event.dataTransfer.effectAllowed = "copy";
+                    card.classList.add("dragging");
+                });
+                card.addEventListener("dragend", () => {
+                    card.classList.remove("dragging");
+                });
             });
-            card.addEventListener("dragend", () => {
-                card.classList.remove("dragging");
-            });
-        });
+        };
+        installDragSource(shapePalette, ".workshop-shape-card", "data-shape", "application/x-anazh-shape");
+        installDragSource(matPalette, ".workshop-material-card", "data-material", "application/x-anazh-material");
+        installDragSource(colorPalette, ".workshop-color-swatch", "data-color", "application/x-anazh-color");
 
+        // Drop-Target: Canvas. Akzeptiert alle drei Marker.
+        const acceptedMarkers = [
+            "application/x-anazh-shape",
+            "application/x-anazh-material",
+            "application/x-anazh-color",
+        ];
         canvas.addEventListener("dragover", (event) => {
-            // Nur akzeptieren wenn unser Shape-Marker im DataTransfer ist
-            if (!event.dataTransfer.types.includes("application/x-anazh-shape")) return;
+            const ourDrag = acceptedMarkers.some((m) => event.dataTransfer.types.includes(m));
+            if (!ourDrag) return;
             event.preventDefault();
             event.dataTransfer.dropEffect = "copy";
             canvas.classList.add("drop-target");
@@ -19792,10 +19866,134 @@ class AnazhRealm {
         canvas.addEventListener("drop", (event) => {
             canvas.classList.remove("drop-target");
             const shape = event.dataTransfer.getData("application/x-anazh-shape");
-            if (!shape) return;
+            const material = event.dataTransfer.getData("application/x-anazh-material");
+            const color = event.dataTransfer.getData("application/x-anazh-color");
+            if (!shape && !material && !color) return;
             event.preventDefault();
-            this._workshopHandleShapeDrop(shape, event.clientX, event.clientY);
+            if (shape) {
+                this._workshopHandleShapeDrop(shape, event.clientX, event.clientY);
+            } else if (material) {
+                this._workshopHandleMaterialDrop(material, event.clientX, event.clientY);
+            } else if (color) {
+                this._workshopHandleColorDrop(color, event.clientX, event.clientY);
+            }
         });
+    }
+
+    // V8.03 — Material-Palette aus state.materials rendern. Eine Card pro
+    // Material mit Color-Swatch + Name. Drag-Source-Marker = data-material.
+    _workshopRenderMaterialPalette() {
+        if (typeof document === "undefined") return;
+        const palette = document.getElementById("workshop-material-palette");
+        if (!palette) return;
+        palette.innerHTML = "";
+        const materials = this.state.materials || {};
+        for (const name of Object.keys(materials)) {
+            const mat = materials[name];
+            const card = document.createElement("div");
+            card.className = "workshop-material-card";
+            card.setAttribute("draggable", "true");
+            card.setAttribute("data-material", name);
+            card.setAttribute("title", `${mat.label || name} → auf Part ziehen wechselt Material`);
+            const swatch = document.createElement("span");
+            swatch.className = "mat-swatch";
+            const c = typeof mat.color === "number" ? mat.color : 0x888888;
+            swatch.style.background = `#${c.toString(16).padStart(6, "0")}`;
+            card.appendChild(swatch);
+            const label = document.createElement("span");
+            label.textContent = mat.label || name;
+            card.appendChild(label);
+            palette.appendChild(card);
+        }
+    }
+
+    // V8.03 — Farb-Palette als 12 Quick-Pick-Swatches. Drag-Source-Marker =
+    // data-color (hex-String ohne #).
+    _workshopRenderColorPalette() {
+        if (typeof document === "undefined") return;
+        const palette = document.getElementById("workshop-color-palette");
+        if (!palette) return;
+        palette.innerHTML = "";
+        // 12 Standard-Schöpfer-Farben: Erd-/Steintöne + Akzente
+        const colors = [
+            "#3a2818", // tiefes Erdbraun
+            "#7a5530", // Holzbraun
+            "#b08648", // Bronze
+            "#d4b076", // Sand
+            "#e8d4a8", // Pergament
+            "#8a8a8a", // Stein-Grau
+            "#c0c0c8", // Quarz
+            "#5a8a5e", // Laub
+            "#3a6890", // Wasser
+            "#c44830", // Glut
+            "#e8c850", // Gold
+            "#a878b8", // Magie-Violett
+        ];
+        for (const hex of colors) {
+            const swatch = document.createElement("div");
+            swatch.className = "workshop-color-swatch";
+            swatch.setAttribute("draggable", "true");
+            swatch.setAttribute("data-color", hex.slice(1));
+            swatch.setAttribute("title", `${hex} → auf Part ziehen wechselt Farbe`);
+            swatch.style.background = hex;
+            palette.appendChild(swatch);
+        }
+    }
+
+    // V8.03 — Material-Drop: identifiziert den getroffenen Part via Raycaster
+    // und wechselt sein Material (+ rekonsistente Farbe).
+    _workshopHandleMaterialDrop(material, clientX, clientY) {
+        const ws = this._ensureWorkshopState();
+        const bp = this.state.blueprints[ws.selectedBlueprint];
+        if (!bp || bp.builtIn) return;
+        if (!this.state.materials[material]) {
+            this.log(`Workshop-MaterialDrop: unbekanntes Material '${material}'`, "INFO");
+            return;
+        }
+        const idx = this._workshopRaycastPartIdxAt(clientX, clientY);
+        if (idx === null) {
+            this.log("Workshop-MaterialDrop: kein Part getroffen — drop direkt auf einen Part", "INFO");
+            return;
+        }
+        this.updatePartInBlueprint(bp.name, idx, { material, recolor: true });
+        this._renderWorkshopDOM();
+        this._workshopSetSelection(idx);
+        this.log(`Workshop: Material '${material}' auf Part ${idx} gesetzt`, "INFO");
+    }
+
+    // V8.03 — Color-Drop: wechselt Farbe des getroffenen Parts (Material bleibt).
+    _workshopHandleColorDrop(hexString, clientX, clientY) {
+        const ws = this._ensureWorkshopState();
+        const bp = this.state.blueprints[ws.selectedBlueprint];
+        if (!bp || bp.builtIn) return;
+        const colorNum = parseInt(hexString, 16);
+        if (!Number.isFinite(colorNum)) return;
+        const idx = this._workshopRaycastPartIdxAt(clientX, clientY);
+        if (idx === null) {
+            this.log("Workshop-ColorDrop: kein Part getroffen — drop direkt auf einen Part", "INFO");
+            return;
+        }
+        this.updatePartInBlueprint(bp.name, idx, { color: colorNum });
+        this._renderWorkshopDOM();
+        this._workshopSetSelection(idx);
+        this.log(`Workshop: Farbe #${hexString} auf Part ${idx} gesetzt`, "INFO");
+    }
+
+    // Helper: Welche Part-Idx liegt unter dem Cursor (oder null)?
+    _workshopRaycastPartIdxAt(clientX, clientY) {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview || !ws.preview.currentMesh) return null;
+        const p = ws.preview;
+        const rect = p.canvas.getBoundingClientRect();
+        const ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
+        const ndcY = -((clientY - rect.top) / rect.height) * 2 + 1;
+        p.raycaster.setFromCamera({ x: ndcX, y: ndcY }, p.camera);
+        const meshes = Array.from(p.partMeshes.keys());
+        if (meshes.length === 0) return null;
+        const hits = p.raycaster.intersectObjects(meshes, false);
+        if (hits.length === 0) return null;
+        const idx = p.partMeshes.get(hits[0].object);
+        return typeof idx === "number" ? idx : null;
     }
 
     // Drop-Handler: berechnet Welt-Position aus Bildschirm-Koordinaten via

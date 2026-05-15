@@ -1349,6 +1349,10 @@
                 padding-right: 4px;
                 position: relative;
                 z-index: 1;
+                /* V8.03 — verhindert dass Wheel-Events vom Canvas zum Drawer-
+                   Scroll durchsickern. preventDefault im Canvas-Listener ist
+                   die primäre Wand, overscroll-behavior:contain die zweite. */
+                overscroll-behavior: contain;
             }
             /* V8.00 — Resize-Handle für Konsole + Drawer.
                Konsole: unten-rechts (resize-br, nwse-cursor)
@@ -2728,19 +2732,46 @@
                 text-align: center;
                 box-sizing: border-box;
             }
-            /* V8.02 Phase 3a — Shape-Palette mit HTML5-Drag */
+            /* V8.03 — Werkstatt-Layout: Side-Palette + Canvas nebeneinander */
+            #workshop-preview-row {
+                display: flex;
+                flex-direction: row;
+                gap: 8px;
+                align-items: stretch;
+            }
+            #workshop-side-palette {
+                flex: 0 0 88px;
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+                min-width: 0;
+            }
+            #workshop-side-palette h4 {
+                margin: 4px 0 2px 0;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10px;
+                letter-spacing: 0.6px;
+                text-transform: uppercase;
+                color: var(--brass-1);
+                border-bottom: 1px solid var(--parch-edge);
+                padding-bottom: 2px;
+            }
+            #workshop-preview-row #workshop-preview-wrapper {
+                flex: 1;
+                min-width: 0;
+            }
+            /* V8.02 Phase 3a — Shape-Palette mit HTML5-Drag (seitlich, eine Spalte) */
             #workshop-shape-palette {
                 display: grid;
-                grid-template-columns: repeat(3, 1fr);
-                gap: 4px;
-                margin-top: 4px;
+                grid-template-columns: 1fr;
+                gap: 3px;
             }
             .workshop-shape-card {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
-                gap: 2px;
-                padding: 6px 4px;
+                gap: 1px;
+                padding: 3px 2px;
                 background: rgba(40, 25, 10, 0.08);
                 border: 1px solid var(--brass-3);
                 border-radius: 3px;
@@ -2751,8 +2782,8 @@
                     background 0.15s ease,
                     border-color 0.15s ease;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 9px;
-                letter-spacing: 0.4px;
+                font-size: 8px;
+                letter-spacing: 0.3px;
                 color: var(--parch-ink);
                 text-align: center;
             }
@@ -2767,8 +2798,8 @@
                 opacity: 0.4;
             }
             .workshop-shape-icon {
-                width: 22px;
-                height: 22px;
+                width: 20px;
+                height: 20px;
                 background: var(--brass-2);
                 pointer-events: none;
             }
@@ -2816,6 +2847,58 @@
                     0 0 0 2px var(--violet-1),
                     0 0 18px 4px rgba(176, 106, 217, 0.45);
                 border-color: var(--violet-1);
+            }
+            /* V8.03 — Material- + Farb-Palette als seitliche Drag-Sources */
+            #workshop-material-palette,
+            #workshop-color-palette {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 3px;
+            }
+            .workshop-material-card,
+            .workshop-color-swatch {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 4px 3px;
+                background: rgba(40, 25, 10, 0.08);
+                border: 1px solid var(--brass-3);
+                border-radius: 3px;
+                cursor: grab;
+                user-select: none;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 8px;
+                letter-spacing: 0.3px;
+                color: var(--parch-ink);
+                text-align: center;
+                min-height: 22px;
+                position: relative;
+                overflow: hidden;
+            }
+            .workshop-material-card:hover,
+            .workshop-color-swatch:hover {
+                border-color: var(--brass-1);
+            }
+            .workshop-material-card:active,
+            .workshop-color-swatch:active {
+                cursor: grabbing;
+            }
+            .workshop-material-card.dragging,
+            .workshop-color-swatch.dragging {
+                opacity: 0.4;
+            }
+            .workshop-material-card .mat-swatch {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                border: 1px solid rgba(0, 0, 0, 0.45);
+                margin-right: 3px;
+                flex-shrink: 0;
+            }
+            .workshop-color-swatch {
+                min-height: 18px;
+                padding: 0;
+                color: transparent;
             }
             /* V8.02 Phase 3b — Connect-Modus Visualisierung */
             .workshop-mode-btn[data-workshop-mode="connect"].active {
@@ -3415,91 +3498,101 @@
             </section>
             <section class="section">
                 <h3>3D-Vorschau</h3>
-                <div id="workshop-preview-wrapper">
-                    <canvas id="workshop-preview-canvas"></canvas>
-                    <div id="workshop-readonly-banner" hidden>Eingebaut — zum Bearbeiten klonen</div>
-                    <div id="workshop-mode-bar" role="group" aria-label="Manipulator-Modus">
-                        <button
-                            type="button"
-                            class="workshop-mode-btn active"
-                            data-workshop-mode="translate"
-                            title="Verschieben (W)"
-                        >
-                            Move
-                        </button>
-                        <button type="button" class="workshop-mode-btn" data-workshop-mode="rotate" title="Drehen (E)">
-                            Rotate
-                        </button>
-                        <button
-                            type="button"
-                            class="workshop-mode-btn"
-                            data-workshop-mode="scale"
-                            title="Skalieren (R)"
-                        >
-                            Scale
-                        </button>
-                        <button
-                            type="button"
-                            class="workshop-mode-btn"
-                            data-workshop-mode="connect"
-                            title="Verbinden (C)"
-                        >
-                            Connect
-                        </button>
-                        <button
-                            type="button"
-                            id="workshop-snap-toggle"
-                            class="workshop-snap-btn active"
-                            title="Grid-Snap (G)"
-                        >
-                            Snap
-                        </button>
-                    </div>
-                    <p class="workshop-preview-hint">
-                        Klick: Part wählen · Drag-Achse: Part bewegen · Drag leer: rotieren · Rad: zoom · W/E/R/C Modus
-                        · G snap
-                    </p>
-                </div>
-            </section>
-            <section class="section">
-                <h3>Formen ziehen</h3>
-                <p class="drawer-hint">Form ins Canvas ziehen, um sie deinem Bauplan hinzuzufügen.</p>
-                <div id="workshop-shape-palette" role="group" aria-label="Form-Palette">
-                    <div class="workshop-shape-card" draggable="true" data-shape="box" title="Würfel">
-                        <div class="workshop-shape-icon" data-icon="box"></div>
-                        <span>Würfel</span>
-                    </div>
-                    <div class="workshop-shape-card" draggable="true" data-shape="sphere" title="Kugel">
-                        <div class="workshop-shape-icon" data-icon="sphere"></div>
-                        <span>Kugel</span>
-                    </div>
-                    <div class="workshop-shape-card" draggable="true" data-shape="cylinder" title="Zylinder">
-                        <div class="workshop-shape-icon" data-icon="cylinder"></div>
-                        <span>Zylinder</span>
-                    </div>
-                    <div class="workshop-shape-card" draggable="true" data-shape="cone" title="Kegel">
-                        <div class="workshop-shape-icon" data-icon="cone"></div>
-                        <span>Kegel</span>
-                    </div>
-                    <div class="workshop-shape-card" draggable="true" data-shape="pyramid" title="Pyramide">
-                        <div class="workshop-shape-icon" data-icon="pyramid"></div>
-                        <span>Pyramide</span>
-                    </div>
-                    <div class="workshop-shape-card" draggable="true" data-shape="octahedron" title="Oktaeder">
-                        <div class="workshop-shape-icon" data-icon="octahedron"></div>
-                        <span>Oktaeder</span>
-                    </div>
-                    <div class="workshop-shape-card" draggable="true" data-shape="plane" title="Plane">
-                        <div class="workshop-shape-icon" data-icon="plane"></div>
-                        <span>Plane</span>
-                    </div>
-                    <div class="workshop-shape-card" draggable="true" data-shape="torus" title="Torus">
-                        <div class="workshop-shape-icon" data-icon="torus"></div>
-                        <span>Torus</span>
-                    </div>
-                    <div class="workshop-shape-card" draggable="true" data-shape="helix" title="Helix">
-                        <div class="workshop-shape-icon" data-icon="helix"></div>
-                        <span>Helix</span>
+                <p class="drawer-hint">
+                    Klick: Part · Drag-Achse: bewegen · Drag-leer: orbit · Shift+Drag oder Mittelmaus: pan · Rad: zoom
+                    zum Cursor · W/E/R/C Modus · G snap
+                </p>
+                <div id="workshop-preview-row">
+                    <aside id="workshop-side-palette" aria-label="Form-/Material-/Farb-Palette">
+                        <h4>Formen</h4>
+                        <div id="workshop-shape-palette" role="group" aria-label="Form-Palette">
+                            <div class="workshop-shape-card" draggable="true" data-shape="box" title="Würfel">
+                                <div class="workshop-shape-icon" data-icon="box"></div>
+                                <span>Würfel</span>
+                            </div>
+                            <div class="workshop-shape-card" draggable="true" data-shape="sphere" title="Kugel">
+                                <div class="workshop-shape-icon" data-icon="sphere"></div>
+                                <span>Kugel</span>
+                            </div>
+                            <div class="workshop-shape-card" draggable="true" data-shape="cylinder" title="Zylinder">
+                                <div class="workshop-shape-icon" data-icon="cylinder"></div>
+                                <span>Zylinder</span>
+                            </div>
+                            <div class="workshop-shape-card" draggable="true" data-shape="cone" title="Kegel">
+                                <div class="workshop-shape-icon" data-icon="cone"></div>
+                                <span>Kegel</span>
+                            </div>
+                            <div class="workshop-shape-card" draggable="true" data-shape="pyramid" title="Pyramide">
+                                <div class="workshop-shape-icon" data-icon="pyramid"></div>
+                                <span>Pyramide</span>
+                            </div>
+                            <div class="workshop-shape-card" draggable="true" data-shape="octahedron" title="Oktaeder">
+                                <div class="workshop-shape-icon" data-icon="octahedron"></div>
+                                <span>Oktaeder</span>
+                            </div>
+                            <div class="workshop-shape-card" draggable="true" data-shape="plane" title="Plane">
+                                <div class="workshop-shape-icon" data-icon="plane"></div>
+                                <span>Plane</span>
+                            </div>
+                            <div class="workshop-shape-card" draggable="true" data-shape="torus" title="Torus">
+                                <div class="workshop-shape-icon" data-icon="torus"></div>
+                                <span>Torus</span>
+                            </div>
+                            <div class="workshop-shape-card" draggable="true" data-shape="helix" title="Helix">
+                                <div class="workshop-shape-icon" data-icon="helix"></div>
+                                <span>Helix</span>
+                            </div>
+                        </div>
+                        <h4>Materialien</h4>
+                        <div id="workshop-material-palette" role="group" aria-label="Material-Palette"></div>
+                        <h4>Farben</h4>
+                        <div id="workshop-color-palette" role="group" aria-label="Farb-Palette"></div>
+                    </aside>
+                    <div id="workshop-preview-wrapper">
+                        <canvas id="workshop-preview-canvas"></canvas>
+                        <div id="workshop-readonly-banner" hidden>Eingebaut — zum Bearbeiten klonen</div>
+                        <div id="workshop-mode-bar" role="group" aria-label="Manipulator-Modus">
+                            <button
+                                type="button"
+                                class="workshop-mode-btn active"
+                                data-workshop-mode="translate"
+                                title="Verschieben (W)"
+                            >
+                                Move
+                            </button>
+                            <button
+                                type="button"
+                                class="workshop-mode-btn"
+                                data-workshop-mode="rotate"
+                                title="Drehen (E)"
+                            >
+                                Rotate
+                            </button>
+                            <button
+                                type="button"
+                                class="workshop-mode-btn"
+                                data-workshop-mode="scale"
+                                title="Skalieren (R)"
+                            >
+                                Scale
+                            </button>
+                            <button
+                                type="button"
+                                class="workshop-mode-btn"
+                                data-workshop-mode="connect"
+                                title="Verbinden (C)"
+                            >
+                                Connect
+                            </button>
+                            <button
+                                type="button"
+                                id="workshop-snap-toggle"
+                                class="workshop-snap-btn active"
+                                title="Grid-Snap (G)"
+                            >
+                                Snap
+                            </button>
+                        </div>
                     </div>
                 </div>
             </section>
