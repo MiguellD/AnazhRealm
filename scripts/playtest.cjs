@@ -13868,6 +13868,179 @@ function startSaveServer() {
                 check(`Welle 10a: evaluate-Fehler — ${wave10aResults.error}`, false);
             }
 
+            // ### Welle 10b.1 — Compound-Tag-Affordances (Erkennung + UI) ###
+            const wave10bResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const AR = r.constructor;
+                    const out = {};
+                    try {
+                        out.thresholdsFrozen = !!AR.AFFORDANCE_THRESHOLDS && Object.isFrozen(AR.AFFORDANCE_THRESHOLDS);
+                        out.wheelShapesSet =
+                            AR.WHEEL_SHAPES instanceof Set &&
+                            AR.WHEEL_SHAPES.has("cylinder") &&
+                            AR.WHEEL_SHAPES.has("torus");
+                        out.lensShapesSet = AR.LENS_SHAPES instanceof Set && AR.LENS_SHAPES.has("sphere");
+                        out.axisShapesSet = AR.AXIS_SHAPES instanceof Set && AR.AXIS_SHAPES.has("cone");
+                        out.affordanceLabelsExist =
+                            !!AR.AFFORDANCE_LABELS && AR.AFFORDANCE_LABELS.moveable === "fahrbar";
+                        out.hasComputeAffordances = typeof r.computeBlueprintAffordances === "function";
+                        out.hasMoveable = typeof r._isMoveable === "function";
+                        out.hasMagnifying = typeof r._isMagnifying === "function";
+                        out.hasFocusing = typeof r._isFocusing === "function";
+
+                        out.emptyBpEmpty = Object.keys(r.computeBlueprintAffordances(null)).length === 0;
+                        out.bpNoParts = Object.keys(r.computeBlueprintAffordances({ parts: [] })).length === 0;
+                        out.villageNoAffordances =
+                            Object.keys(r.computeBlueprintAffordances(r.state.blueprints.village)).length === 0;
+
+                        // moveable
+                        if (r.state.blueprints["test_10b_car"]) r.deleteBlueprint("test_10b_car");
+                        r.cloneBlueprint("village", "test_10b_car");
+                        r.state.blueprints.test_10b_car.parts = [
+                            {
+                                shape: "cylinder",
+                                material: "eisen",
+                                position: { x: -1, y: 0.3, z: 0 },
+                                size: { x: 0.6, y: 0.4, z: 0.6 },
+                            },
+                            {
+                                shape: "cylinder",
+                                material: "eisen",
+                                position: { x: 1, y: 0.3, z: 0 },
+                                size: { x: 0.6, y: 0.4, z: 0.6 },
+                            },
+                            {
+                                shape: "box",
+                                material: "quarz",
+                                position: { x: 0, y: 1, z: 0 },
+                                size: { x: 1.2, y: 0.8, z: 0.6 },
+                            },
+                        ];
+                        out.carIsMoveable =
+                            r.computeBlueprintAffordances(r.state.blueprints.test_10b_car).moveable === true;
+
+                        // ohne Antrieb → nicht moveable
+                        if (r.state.blueprints["test_10b_carless"]) r.deleteBlueprint("test_10b_carless");
+                        r.cloneBlueprint("village", "test_10b_carless");
+                        r.state.blueprints.test_10b_carless.parts = [
+                            {
+                                shape: "cylinder",
+                                material: "stein",
+                                position: { x: -1, y: 0.3, z: 0 },
+                                size: { x: 0.6, y: 0.4, z: 0.6 },
+                            },
+                            {
+                                shape: "cylinder",
+                                material: "stein",
+                                position: { x: 1, y: 0.3, z: 0 },
+                                size: { x: 0.6, y: 0.4, z: 0.6 },
+                            },
+                        ];
+                        out.carlessNotMoveable = !r.computeBlueprintAffordances(r.state.blueprints.test_10b_carless)
+                            .moveable;
+
+                        // magnifying
+                        if (r.state.blueprints["test_10b_scope"]) r.deleteBlueprint("test_10b_scope");
+                        r.cloneBlueprint("village", "test_10b_scope");
+                        r.state.blueprints.test_10b_scope.parts = [
+                            {
+                                shape: "sphere",
+                                material: "quarz",
+                                position: { x: 0, y: 1, z: 0 },
+                                size: { x: 0.5, y: 0.5, z: 0.5 },
+                            },
+                            {
+                                shape: "cylinder",
+                                material: "holz",
+                                position: { x: 0, y: 1, z: -0.6 },
+                                size: { x: 0.4, y: 1.2, z: 0.4 },
+                            },
+                        ];
+                        out.scopeIsMagnifying =
+                            r.computeBlueprintAffordances(r.state.blueprints.test_10b_scope).magnifying === true;
+
+                        // spawnArchitecture speichert affordances
+                        const entry = r.spawnArchitecture("test_10b_car", { x: 50, y: 0, z: 50 }, { silent: true });
+                        out.entryHasAffordances = !!(entry && entry.affordances && entry.affordances.moveable === true);
+
+                        // Cleanup spawned entry
+                        r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10b_car");
+
+                        // UI: Werkstatt-Status zeigt "fahrbar"
+                        const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
+                        if (tab) tab.click();
+                        r.selectBlueprintForEdit("test_10b_car");
+                        r._renderWorkshopDOM();
+                        const statusEl = document.querySelector(".workshop-status");
+                        out.statusShowsAffordance = !!statusEl && statusEl.textContent.includes("fahrbar");
+
+                        // Cleanup
+                        for (const n of ["test_10b_car", "test_10b_carless", "test_10b_scope"]) {
+                            if (r.state.blueprints[n]) r.deleteBlueprint(n);
+                        }
+                        r.selectBlueprintForEdit("village");
+                        r._renderWorkshopDOM();
+                        const weltTab = document.querySelector('#topbar [data-tab="welt"]');
+                        if (weltTab) weltTab.click();
+                        r.state.yaw = 0;
+                        if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
+                    } catch (err) {
+                        out.error = err && err.message;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (wave10bResults && !wave10bResults.error) {
+                check(
+                    "Welle 10b.1: AFFORDANCE_THRESHOLDS + WHEEL/LENS/AXIS_SHAPES + AFFORDANCE_LABELS frozen",
+                    wave10bResults.thresholdsFrozen &&
+                        wave10bResults.wheelShapesSet &&
+                        wave10bResults.lensShapesSet &&
+                        wave10bResults.axisShapesSet &&
+                        wave10bResults.affordanceLabelsExist
+                );
+                check(
+                    "Welle 10b.1: 4 Methoden existieren (computeAffordances + _isMoveable/_isMagnifying/_isFocusing)",
+                    wave10bResults.hasComputeAffordances &&
+                        wave10bResults.hasMoveable &&
+                        wave10bResults.hasMagnifying &&
+                        wave10bResults.hasFocusing
+                );
+                check(
+                    "Welle 10b.1: leerer/null Bauplan → leere Affordances",
+                    wave10bResults.emptyBpEmpty && wave10bResults.bpNoParts
+                );
+                check(
+                    "Welle 10b.1: Default-Built-in (village) erkennt keine Affordances — ehrlich",
+                    wave10bResults.villageNoAffordances
+                );
+                check(
+                    "Welle 10b.1: Fahrzeug-Compound (2 Räder + quarz-Antrieb) → moveable=true",
+                    wave10bResults.carIsMoveable
+                );
+                check(
+                    "Welle 10b.1: 2 Räder OHNE Antriebs-Tag → NICHT moveable (Diskrimination)",
+                    wave10bResults.carlessNotMoveable
+                );
+                check(
+                    "Welle 10b.1: Teleskop-Compound (Quarz-Linse + Cylinder-Tubus) → magnifying=true",
+                    wave10bResults.scopeIsMagnifying
+                );
+                check(
+                    "Welle 10b.1: spawnArchitecture speichert affordances am entry-Objekt",
+                    wave10bResults.entryHasAffordances
+                );
+                check(
+                    "Welle 10b.1 UI: Werkstatt-Status zeigt erkannte Affordance ('fahrbar') beim Bauplan",
+                    wave10bResults.statusShowsAffordance
+                );
+            } else if (wave10bResults && wave10bResults.error) {
+                check(`Welle 10b.1: evaluate-Fehler — ${wave10bResults.error}`, false);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {

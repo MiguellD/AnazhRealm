@@ -14087,6 +14087,78 @@ class AnazhRealm {
         });
     }
 
+    // ============================================================
+    // ### Welle 10b — Compound-Tag-Affordances ###
+    // Welt-Lese-Funktion: liest die Tag+Form-Signatur eines Bauplans und
+    // liefert Verhaltens-Flags. KEINE Tabelle, KEIN Bauplan-Namen-Lookup —
+    // Compound × räumliche Konfiguration entscheidet was möglich ist.
+    // ============================================================
+
+    // Public: liefert ein {moveable?, magnifying?, focusing?, ...}-Objekt
+    // mit den passenden Flags. Architekturen speichern das beim Spawn als
+    // entry.affordances; Welt-Reaktionen (Bewegung, Zoom, Brennglas-Effekt)
+    // konsultieren das Flag-Profil statt einer hardcoded Bauplan-Liste.
+    computeBlueprintAffordances(bp) {
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return {};
+        const out = {};
+        if (this._isMoveable(bp)) out.moveable = true;
+        if (this._isMagnifying(bp)) out.magnifying = true;
+        if (this._isFocusing(bp)) out.focusing = true;
+        return out;
+    }
+
+    // moveable — Fahrzeug-Signatur. Mindestens 2 Räder (Cylinder/Torus) am
+    // Boden des Compounds (y < wheelMaxY) PLUS Antriebs-Tag (magieleitung
+    // ODER stromleitung) über Schwelle. Vision: das Compound trägt die
+    // Spuren eines Fahrzeugs — Räder unten + leitfähiger Kern.
+    _isMoveable(bp) {
+        const T = AnazhRealm.AFFORDANCE_THRESHOLDS.moveable;
+        let wheelCount = 0;
+        for (const p of bp.parts) {
+            if (!AnazhRealm.WHEEL_SHAPES.has(p.shape)) continue;
+            const y = (p.position && p.position.y) || 0;
+            if (y <= T.wheelMaxY) wheelCount++;
+        }
+        if (wheelCount < T.minWheels) return false;
+        const tags = this.computeCompoundTags(bp) || {};
+        const antrieb = Math.max(tags.magieleitung || 0, tags.stromleitung || 0);
+        return antrieb >= T.antriebTagMin;
+    }
+
+    // magnifying — Teleskop-Signatur. Compound hat transparenten Charakter
+    // (compound-tag transparent ≥ Schwelle) UND mindestens ein Linsen-Part
+    // (Sphere/Cylinder aus transparentem Material) UND mindestens eine
+    // Achsen-Form (Cone oder Cylinder als Tubus).
+    _isMagnifying(bp) {
+        const T = AnazhRealm.AFFORDANCE_THRESHOLDS.magnifying;
+        const tags = this.computeCompoundTags(bp) || {};
+        if ((tags.transparent || 0) < T.transparentMin) return false;
+        // Linsen-Part: transparente Sphere/Cylinder
+        let lenses = 0;
+        let axes = 0;
+        for (const p of bp.parts) {
+            const mat = p.material && this.state.materials && this.state.materials[p.material];
+            const matTrans = mat && mat.tags && mat.tags.transparent;
+            if (AnazhRealm.LENS_SHAPES.has(p.shape) && (matTrans || 0) >= T.lensMaterialTagMin) {
+                lenses++;
+            }
+            if (AnazhRealm.AXIS_SHAPES.has(p.shape)) {
+                axes++;
+            }
+        }
+        return lenses >= 1 && axes >= 1;
+    }
+
+    // focusing — Brennglas-Signatur. Compound hat transparenten Charakter
+    // (Licht durchlässt) PLUS wärmeleitung (Wärme konzentriert sich). Vision:
+    // wer ein transparentes Compound mit wärmeleitendem Material baut, hat
+    // unbewusst die Form eines Brennglases.
+    _isFocusing(bp) {
+        const T = AnazhRealm.AFFORDANCE_THRESHOLDS.focusing;
+        const tags = this.computeCompoundTags(bp) || {};
+        return (tags.transparent || 0) >= T.transparentMin && (tags.wärmeleitung || 0) >= T.wärmeMin;
+    }
+
     // Welle 9d — Bauplan als Seele anwenden. Wenn der Bauplan role="soul"
     // trägt, wird seine parts-Liste als bodyParts in state.customSouls
     // angelegt (mit eindeutigem Namen) und anschließend applyPlayerSoul
@@ -16516,6 +16588,15 @@ class AnazhRealm {
             scale,
             mesh: null,
         };
+        // Welle 10b — Affordances werden EINMAL beim Spawn berechnet (nicht
+        // pro Frame). Welt-Reaktionen (Bewegung, Zoom, Brennglas) lesen das
+        // Profil aus entry.affordances. Wenn der Bauplan später editiert
+        // wird, wirkt das auf NEUE Spawns; bestehende Architekturen behalten
+        // ihre Original-Affordances (analog wie precisionCap-Snapshot).
+        const bp = this.state.blueprints && this.state.blueprints[type];
+        if (bp) {
+            entry.affordances = this.computeBlueprintAffordances(bp);
+        }
         this.state.architectures.push(entry);
         // V2: kein Cap mehr — wir bauen den Mesh nur, wenn der Spieler nahe
         // genug ist. Sonst bleibt der Eintrag „cold" (nur Daten) und der
@@ -18647,7 +18728,15 @@ class AnazhRealm {
             const role = selected.role || AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
             const roleLabel = AnazhRealm.BLUEPRINT_ROLE_LABELS[role] || role;
             const origin = selected.roleManual ? "manuell" : "emergent";
-            status.textContent = `${selected.parts.length} Parts · Rolle: ${roleLabel} (${origin})`;
+            // Welle 10b — emergente Affordances (Verhaltens-Flags die aus
+            // Tag+Form-Signatur abgeleitet werden) im Status mit anzeigen.
+            const affordances = this.computeBlueprintAffordances(selected);
+            const affLabels = AnazhRealm.AFFORDANCE_LABELS || {};
+            const affList = Object.keys(affordances)
+                .map((k) => affLabels[k] || k)
+                .join(" · ");
+            const affPart = affList ? ` · ✦ ${affList}` : "";
+            status.textContent = `${selected.parts.length} Parts · Rolle: ${roleLabel} (${origin})${affPart}`;
         }
         header.appendChild(status);
         editor.appendChild(header);
@@ -23080,6 +23169,56 @@ AnazhRealm.WORKSHOP_PROXIMITY_M = 10;
 // Konzept §4.3 sagt: eine Maschine ist präziser als Handarbeit. Bonus
 // wird auf 1.0 gedeckelt (perfekte Präzision bleibt theoretisch).
 AnazhRealm.MACHINE_PRECISION_BONUS = 0.05;
+
+// ============================================================
+// Welle 10b — Compound-Tag-Affordances. Welt liest die Tag+Form-
+// Signatur eines Bauplans und leitet emergent Verhaltens-Flags ab:
+// moveable, magnifying, focusing. KEINE Tabelle „Bauplan-Name X ist
+// Auto" — eine Welt-Lese-Funktion entscheidet aus Material × Form ×
+// räumlicher Konfiguration was das Compound IST.
+//
+// Drei Starter-Affordances (mehr kommen schrittweise):
+//   moveable    — bewegliches Compound (Fahrzeug): ≥2 Räder unten +
+//                 Antriebs-Tag (magieleitung oder stromleitung)
+//   magnifying  — optisches Compound (Teleskop): transparente Linse(n)
+//                 + axiale Form (Cone/Cylinder als Achse)
+//   focusing    — brennfähiges Compound (Brennglas): transparent +
+//                 wärmeleitung über Schwellen
+// ============================================================
+AnazhRealm.AFFORDANCE_THRESHOLDS = Object.freeze({
+    moveable: Object.freeze({
+        minWheels: 2,
+        wheelMaxY: 0.6, // Räder sitzen am Boden des Compounds
+        antriebTagMin: 0.3, // magieleitung ODER stromleitung dieser Stärke
+    }),
+    magnifying: Object.freeze({
+        transparentMin: 0.5, // Compound braucht klares Material
+        lensMaterialTagMin: 0.5, // mind. eine Linse mit transparent ≥ 0.5
+    }),
+    focusing: Object.freeze({
+        transparentMin: 0.5,
+        wärmeMin: 0.3,
+    }),
+});
+
+// Formen die "Räder" sein können (Fahrzeug-Erkennung). Cylinder + Torus
+// haben axiale Symmetrie + können rollen.
+AnazhRealm.WHEEL_SHAPES = Object.freeze(new Set(["cylinder", "torus"]));
+
+// Formen die "Linsen" sein können (Teleskop-Erkennung). Sphere bündelt
+// Licht symmetrisch, Cylinder als Tubus-Linse möglich.
+AnazhRealm.LENS_SHAPES = Object.freeze(new Set(["sphere", "cylinder"]));
+
+// Formen die "Achse" sein können (Teleskop-Tubus oder ähnliche
+// Ausrichtungs-Strukturen). Cone + Cylinder zeigen eine klare Richtung.
+AnazhRealm.AXIS_SHAPES = Object.freeze(new Set(["cone", "cylinder"]));
+
+// Deutsche Affordance-Labels für UI-Anzeige.
+AnazhRealm.AFFORDANCE_LABELS = Object.freeze({
+    moveable: "fahrbar",
+    magnifying: "vergrößernd",
+    focusing: "bündelnd",
+});
 // Welt-Effekt-Schwellen: zentralisiert, damit Tuning ohne Code-Suche geht.
 // Werte aus Konzept §6.3 (≥0.7 mild, ≥1.5 stark, ≥2.5 signatur).
 AnazhRealm.WORLD_EFFECT_THRESHOLDS = Object.freeze({
