@@ -1862,6 +1862,25 @@ class AnazhRealm {
                 const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : { x: 0, y: 50, z: 0 };
                 return { x: p.x, y: p.y, z: p.z };
             },
+            // Welle 6.X.3 C1 (Audit 17.05.2026) — Spawn-Position vor dem
+            // Spieler statt im Spieler. Vision §11: die Welt-Geste wirkt
+            // selbst-entschieden („ich stelle hier was hin", nicht „ich werde
+            // zum Etwas"). yaw-Vektor × dist (default 5m). Standard-Strukturen
+            // (Dorf/Tempel/Wasserfall) sind ~6-10m groß, deshalb 8m default
+            // wenn von Chat-Pattern ausgelöst — gibt einen kleinen Abstand.
+            at_player_forward: ([dist], ctx) => {
+                const d = c(dist, 1, 50) || 5;
+                const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                const yaw = typeof ctx.state.yaw === "number" ? ctx.state.yaw : 0;
+                // yaw=0 → Blick nach +X. -sin(yaw), 0, -cos(yaw) ist die
+                // Standard-„forward"-Richtung im AnazhRealm-Coord-System
+                // (gleicher Vektor wie der Phantom-Distance-Pfad).
+                return {
+                    x: p.x - Math.sin(yaw) * d,
+                    y: p.y,
+                    z: p.z - Math.cos(yaw) * d,
+                };
+            },
             near_player: ([radius], ctx) => {
                 const r = c(radius, 1, 100);
                 const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : { x: 0, y: 50, z: 0 };
@@ -4556,11 +4575,21 @@ class AnazhRealm {
                 build: (m) => {
                     const map = { dorf: "spawn_village", tempel: "spawn_temple", wasserfall: "spawn_waterfall" };
                     const op = map[m[1].toLowerCase()];
+                    // Welle 6.X.3 C1 (Audit 17.05.2026) — Forward-Offset 8 m
+                    // statt direkter Spieler-Position. Dorf/Tempel/Wasserfall
+                    // sind ~6-10 m groß; ohne Offset stand der Spieler MITTEN
+                    // im Bauwerk. Vision §11: ich stelle hier was hin, ich
+                    // werde nicht zum Etwas. Position+Seed wird auch hier zur
+                    // Build-Zeit explizit eingebettet (Multi-User-Determinismus).
                     const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                    const yaw = typeof this.state.yaw === "number" ? this.state.yaw : 0;
+                    const dist = 8;
+                    const fx = p.x - Math.sin(yaw) * dist;
+                    const fz = p.z - Math.cos(yaw) * dist;
                     const seed = Math.floor(Math.random() * 0xffffffff);
                     return {
-                        program: [op, ["at", p.x, p.y, p.z], seed],
-                        describe: `${m[1]} gebaut`,
+                        program: [op, ["at", fx, p.y, fz], seed],
+                        describe: `${m[1]} vor dir gebaut`,
                     };
                 },
             },
@@ -22711,6 +22740,29 @@ class AnazhRealm {
         this.log("Hauptschleife gestartet – Ultiversum pulsiert!", "INFO");
     }
 
+    // Welle 6.X.3 C3 (Audit 17.05.2026) — Soul-bound Sprung-Steilheits-Check.
+    // Wenn Spieler auf zu steilem Hang steht (state.onSteepSlope), prüft das
+    // System ob der aktuelle Soul-Mesh leicht-genug ist um sich abzudrücken.
+    // Formel `0.7 × lebendig - 0.3 × dichte` aus Audit-Detail (wave-6-design):
+    //   Phönix (lebendig=0.80, dichte=0.46) → 0.42 → kann (Schwelle 0.4)
+    //   Drache (lebendig=0.80, dichte=0.71) → 0.35 → kann nicht
+    //   Mensch (lebendig=0.70, dichte=0.60) → 0.31 → kann nicht
+    // Custom-Souls mit hoher lebendig + niedriger dichte sind Klettermeister.
+    //
+    // **Modus-Override**: schöpfer + frieden überspringen den Check (Vision
+    // §10.1 — Schöpfer kennt keine Friction; Frieden umarmt). Nur pfad-Modus
+    // erlebt die Steilheits-Reibung. Hylomorphismus auf Sprung-Mechanik.
+    _canSoulJumpFromSlope() {
+        if (!this.state.onSteepSlope) return true;
+        const mode = this.getGameMode ? this.getGameMode() : "frieden";
+        if (mode !== "pfad") return true;
+        const tags = (this.state.player && this.state.player.statTags) || {};
+        const lebendig = typeof tags.lebendig === "number" ? tags.lebendig : 0.5;
+        const dichte = typeof tags.dichte === "number" ? tags.dichte : 0.5;
+        const score = 0.7 * lebendig - 0.3 * dichte;
+        return score >= 0.4;
+    }
+
     handleJump(currentTime) {
         // ### Sprunglogik ###
         // Zweck: Abstrahiert Sprungmechanik für bessere Wartbarkeit
@@ -22718,6 +22770,8 @@ class AnazhRealm {
             const isGrounded = this.isPlayerGrounded();
             const withinCoyoteTime = currentTime - this.state.lastGroundedTime <= this.state.coyoteTime;
             if ((isGrounded || withinCoyoteTime) && !this.state.isJumping) {
+                // Welle 6.X.3 C3 — Soul-bound: Drache rutscht, Phönix klettert.
+                if (!this._canSoulJumpFromSlope()) return;
                 // Welle 6.X.1 A1 — Ammo deaktiviert „still stehende" Bodies. Ohne
                 // explizites activate(true) verpufft setLinearVelocity, weil der
                 // Body in der Island schläft. forceActivationState im Bewegungs-
@@ -23025,7 +23079,12 @@ class AnazhRealm {
                 if (this.state.keys[" "] && !this.state.isJumping) {
                     const isGrounded = this.isPlayerGrounded();
                     const withinCoyoteTime = currentTime - this.state.lastGroundedTime <= this.state.coyoteTime;
-                    if (isGrounded || withinCoyoteTime) {
+                    // Welle 6.X.3 C3 — Soul-bound Steilheits-Toleranz prüft
+                    // ob der Soul leicht genug zum Abdrücken am Hang ist.
+                    // Bei false: Sprung-Block wird übersprungen, restlicher
+                    // Update-Loop (Selbstanalyse, Wolken, Lebensdauer …) läuft
+                    // weiter wie gewohnt.
+                    if ((isGrounded || withinCoyoteTime) && this._canSoulJumpFromSlope()) {
                         // Welle 6.X.1 A1 — siehe handleJump: Body wecken vor Velocity.
                         // Im Loop-Jump-Pfad wird nur bei moveDirection.length() > 0
                         // ein forceActivationState aufgerufen — Stand-Sprung würde

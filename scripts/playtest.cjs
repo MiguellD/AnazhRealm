@@ -10219,6 +10219,156 @@ function startSaveServer() {
                 );
             }
 
+            // ### Welle 6.X.3 — Vision-Quick-Wins (Audit 17.05.2026) ###
+            // C1 at_player_forward(dist) DSL-Resolver + Chat „baue X hier"
+            // C3 Soul-bound Sprung-Steilheits-Toleranz
+            const wave6x3Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // --- C1: at_player_forward DSL-Resolver
+                    out.atPlayerForwardExists = !!r.dslPositions.at_player_forward;
+                    if (r.dslPositions.at_player_forward) {
+                        // Spieler bei (10, 50, 20), yaw=0 → forward ist -Z.
+                        // at_player_forward(8) sollte (10, 50, 12) liefern.
+                        r.state.playerMesh.position.set(10, 50, 20);
+                        r.state.yaw = 0;
+                        const ctx = { state: r.state, rng: () => 0.5 };
+                        const pos = r.dslPositions.at_player_forward([8], ctx);
+                        out.atPlayerForwardOffset =
+                            Math.abs(pos.x - 10) < 0.01 &&
+                            Math.abs(pos.y - 50) < 0.01 &&
+                            Math.abs(pos.z - 12) < 0.01;
+                        // Mit yaw=π/2 → forward ist -X. at_player_forward(5) → (5, 50, 20)
+                        r.state.yaw = Math.PI / 2;
+                        const pos2 = r.dslPositions.at_player_forward([5], ctx);
+                        out.atPlayerForwardYawAware =
+                            Math.abs(pos2.x - 5) < 0.01 && Math.abs(pos2.z - 20) < 0.01;
+                        // Reset
+                        r.state.yaw = 0;
+                    }
+
+                    // --- C1: Chat „baue dorf hier" embedded forward-Position
+                    r.state.playerMesh.position.set(0, 50, 0);
+                    r.state.yaw = 0;
+                    const dslOut = r.parseChatToDsl("baue dorf hier");
+                    out.chatBuildDorfParses = !!(dslOut && dslOut.program);
+                    if (dslOut && dslOut.program) {
+                        // Erwartetes Format: ["spawn_village", ["at", x, y, z], seed]
+                        out.chatBuildDorfFormat =
+                            dslOut.program[0] === "spawn_village" &&
+                            Array.isArray(dslOut.program[1]) &&
+                            dslOut.program[1][0] === "at" &&
+                            typeof dslOut.program[2] === "number";
+                        // Position ist NICHT bei (0,0,0) — sondern 8m vor dem
+                        // Spieler. yaw=0 → forward ist -Z, also z ≈ -8.
+                        const z = dslOut.program[1][3];
+                        out.chatBuildDorfForwardOffset = Math.abs(z - -8) < 0.5;
+                    }
+
+                    // --- C3: _canSoulJumpFromSlope existiert
+                    out.canJumpFromSlopeExists = typeof r._canSoulJumpFromSlope === "function";
+
+                    // --- C3: kein Slope → springen erlaubt
+                    r.state.onSteepSlope = false;
+                    out.flatGroundJumpAllowed = r._canSoulJumpFromSlope() === true;
+
+                    // --- C3: Slope + frieden → springen erlaubt (Modus-Override)
+                    r.state.onSteepSlope = true;
+                    r.setGameMode("frieden");
+                    out.peaceModeOverridesSlope = r._canSoulJumpFromSlope() === true;
+
+                    // --- C3: Slope + schöpfer → springen erlaubt
+                    r.setGameMode("schöpfer");
+                    out.creatorModeOverridesSlope = r._canSoulJumpFromSlope() === true;
+
+                    // --- C3: Slope + pfad + Phönix → kann springen (lebendig hoch)
+                    r.setGameMode("pfad");
+                    r.applyPlayerSoul("phoenix");
+                    r.recomputePlayerStats && r.recomputePlayerStats();
+                    out.phoenixCanJumpFromSlope = r._canSoulJumpFromSlope() === true;
+                    out._phoenixTags = r.state.player.statTags
+                        ? `lebendig=${r.state.player.statTags.lebendig?.toFixed(2)} dichte=${r.state.player.statTags.dichte?.toFixed(2)}`
+                        : "no tags";
+
+                    // --- C3: Slope + pfad + Drache → kann NICHT springen (dichte hoch)
+                    r.applyPlayerSoul("dragon");
+                    r.recomputePlayerStats && r.recomputePlayerStats();
+                    out.dragonCannotJumpFromSlope = r._canSoulJumpFromSlope() === false;
+                    out._dragonTags = r.state.player.statTags
+                        ? `lebendig=${r.state.player.statTags.lebendig?.toFixed(2)} dichte=${r.state.player.statTags.dichte?.toFixed(2)}`
+                        : "no tags";
+
+                    // Cleanup
+                    r.applyPlayerSoul("human");
+                    r.recomputePlayerStats && r.recomputePlayerStats();
+                    r.state.onSteepSlope = false;
+                    r.setGameMode("frieden");
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6x3Results && !wave6x3Results.error) {
+                check(
+                    "Welle 6.X.3 C1: at_player_forward DSL-Resolver existiert",
+                    wave6x3Results.atPlayerForwardExists
+                );
+                check(
+                    "Welle 6.X.3 C1: at_player_forward(8) liefert Position 8m vor Spieler (yaw=0)",
+                    wave6x3Results.atPlayerForwardOffset
+                );
+                check(
+                    "Welle 6.X.3 C1: at_player_forward respektiert yaw (π/2 → -X)",
+                    wave6x3Results.atPlayerForwardYawAware
+                );
+                check(
+                    "Welle 6.X.3 C1: Chat 'baue dorf hier' parst zu DSL",
+                    wave6x3Results.chatBuildDorfParses
+                );
+                check(
+                    "Welle 6.X.3 C1: Chat 'baue dorf hier' Format [spawn_village, at, seed]",
+                    wave6x3Results.chatBuildDorfFormat
+                );
+                check(
+                    "Welle 6.X.3 C1: Chat 'baue dorf hier' embedded Forward-Offset (z ≈ -8)",
+                    wave6x3Results.chatBuildDorfForwardOffset
+                );
+                check(
+                    "Welle 6.X.3 C3: _canSoulJumpFromSlope-Methode existiert",
+                    wave6x3Results.canJumpFromSlopeExists
+                );
+                check(
+                    "Welle 6.X.3 C3: kein Slope → Sprung erlaubt",
+                    wave6x3Results.flatGroundJumpAllowed
+                );
+                check(
+                    "Welle 6.X.3 C3: frieden-Modus überschreibt Slope-Block",
+                    wave6x3Results.peaceModeOverridesSlope
+                );
+                check(
+                    "Welle 6.X.3 C3: schöpfer-Modus überschreibt Slope-Block",
+                    wave6x3Results.creatorModeOverridesSlope
+                );
+                check(
+                    "Welle 6.X.3 C3: Phönix darf von Slope springen (lebendig hoch, dichte niedrig)",
+                    wave6x3Results.phoenixCanJumpFromSlope,
+                    wave6x3Results._phoenixTags
+                );
+                check(
+                    "Welle 6.X.3 C3: Drache darf nicht von Slope springen (dichte hoch)",
+                    wave6x3Results.dragonCannotJumpFromSlope,
+                    wave6x3Results._dragonTags
+                );
+            } else {
+                check(
+                    "Welle 6.X.3: Vision-Quick-Win-Tests laufen",
+                    false,
+                    wave6x3Results ? wave6x3Results.error : "no result"
+                );
+            }
+
             // ### Welle 6.H Phase 2B.2 — Kreatur baut Bauplan für Spieler ###
             //
             // Geste-Umkehrung zu gather: Spieler ist Material-Quelle, Kreatur
