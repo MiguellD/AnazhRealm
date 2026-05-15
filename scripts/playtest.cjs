@@ -14091,6 +14091,207 @@ function startSaveServer() {
                 check(`Welle 10b.1: evaluate-Fehler — ${wave10bResults.error}`, false);
             }
 
+            // ### Welle 10b.3 — Welt-Reaktionen (mount + zoom + focusing-Ignite) ###
+            const wave10b3Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const AR = r.constructor;
+                    const out = {};
+                    try {
+                        out.constantsExist =
+                            AR.MOUNT_RANGE_M === 3 &&
+                            AR.ZOOM_FOV_DEG === 25 &&
+                            AR.FOCUSING_HEAT_RANGE_M === 4 &&
+                            AR.FOCUSING_IGNITE_THRESHOLD === 1.0;
+                        out.hasMount = typeof r.mountArchitecture === "function";
+                        out.hasDismount = typeof r.dismountArchitecture === "function";
+                        out.hasToggleMount = typeof r.toggleMountAtPlayer === "function";
+                        out.hasSetZoom = typeof r.setZoomActive === "function";
+                        out.hasFocusingTick = typeof r._tickFocusingAffordances === "function";
+                        out.hasTickAffordances = typeof r.tickAffordances === "function";
+                        out.initialMountNull =
+                            r.state.player.mountedArch === null || r.state.player.mountedArch === undefined;
+
+                        // Mount-Test
+                        if (r.state.blueprints["test_10b3_car"]) r.deleteBlueprint("test_10b3_car");
+                        r.cloneBlueprint("village", "test_10b3_car");
+                        r.state.blueprints.test_10b3_car.parts = [
+                            {
+                                shape: "cylinder",
+                                material: "eisen",
+                                position: { x: -1, y: 0.3, z: 0 },
+                                size: { x: 0.6, y: 0.4, z: 0.6 },
+                            },
+                            {
+                                shape: "cylinder",
+                                material: "eisen",
+                                position: { x: 1, y: 0.3, z: 0 },
+                                size: { x: 0.6, y: 0.4, z: 0.6 },
+                            },
+                            {
+                                shape: "box",
+                                material: "quarz",
+                                position: { x: 0, y: 1, z: 0 },
+                                size: { x: 1.2, y: 0.8, z: 0.6 },
+                            },
+                        ];
+                        const ppos = r.state.playerMesh.position;
+                        const entry = r.spawnArchitecture(
+                            "test_10b3_car",
+                            { x: ppos.x, y: ppos.y, z: ppos.z },
+                            { silent: true }
+                        );
+                        out.entryHasMoveable = !!(entry && entry.affordances && entry.affordances.moveable);
+                        const mountRes = r.toggleMountAtPlayer();
+                        out.mountSucceeds = mountRes && mountRes.ok === true;
+                        out.playerMountedTo = r.state.player.mountedArch === entry.id;
+                        const dismountRes = r.toggleMountAtPlayer();
+                        out.dismountSucceeds = dismountRes && dismountRes.ok === true;
+                        out.playerDismounted =
+                            r.state.player.mountedArch === null || r.state.player.mountedArch === undefined;
+                        const dummy = { affordances: { moveable: false } };
+                        const failRes = r.mountArchitecture(dummy);
+                        out.nonMoveableRejected = failRes && failRes.ok === false && failRes.reason === "not_moveable";
+
+                        // Mount-Range
+                        r.state.player.mountedArch = null;
+                        r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10b3_car");
+                        if (r.state.blueprints["test_10b3_far"]) r.deleteBlueprint("test_10b3_far");
+                        r.cloneBlueprint("test_10b3_car", "test_10b3_far");
+                        r.spawnArchitecture(
+                            "test_10b3_far",
+                            { x: ppos.x + 100, y: ppos.y, z: ppos.z + 100 },
+                            { silent: true }
+                        );
+                        const farMountRes = r.toggleMountAtPlayer();
+                        out.farMountRejected =
+                            farMountRes && farMountRes.ok === false && farMountRes.reason === "none_in_range";
+                        r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10b3_far");
+
+                        // Zoom-Test
+                        const initialFov = r.state.camera.fov;
+                        out.zoomInactiveInitial = !r.state._zoomActive;
+                        const noTargetRes = r.setZoomActive(true);
+                        out.zoomFailsWithoutTarget =
+                            noTargetRes === false && !r.state._zoomActive && r.state.camera.fov === initialFov;
+
+                        // Focusing-Test
+                        if (r.state.blueprints["test_10b3_lens"]) r.deleteBlueprint("test_10b3_lens");
+                        r.cloneBlueprint("village", "test_10b3_lens");
+                        r.state.blueprints.test_10b3_lens.parts = [
+                            {
+                                shape: "sphere",
+                                material: "quarz",
+                                position: { x: 0, y: 1, z: 0 },
+                                size: { x: 0.8, y: 0.8, z: 0.8 },
+                            },
+                            {
+                                shape: "torus",
+                                material: "bronze",
+                                position: { x: 0, y: 1, z: 0 },
+                                size: { x: 0.9, y: 0.15, z: 0.9 },
+                            },
+                        ];
+                        const focBp = r.state.blueprints.test_10b3_lens;
+                        out.lensIsFocusing = r.computeBlueprintAffordances(focBp).focusing === true;
+                        r.spawnArchitecture("test_10b3_lens", { x: 0, y: 0, z: 0 }, { silent: true });
+                        const targetEntry = r.spawnArchitecture("baum_eiche", { x: 1, y: 0, z: 0 }, { silent: true });
+                        const beforeWeather = r.state.weather;
+                        r.state.weather = "sunny";
+                        const beforeArchCount = r.state.architectures.length;
+                        r._tickFocusingAffordances(25);
+                        const afterArchCount = r.state.architectures.length;
+                        out.focusingIgnitesTarget = afterArchCount < beforeArchCount;
+                        out.targetGone = !r.state.architectures.find((e) => e.id === targetEntry.id);
+
+                        r.state.weather = "rainy";
+                        if (r.state.blueprints["test_10b3_target2"]) r.deleteBlueprint("test_10b3_target2");
+                        r.cloneBlueprint("baum_eiche", "test_10b3_target2");
+                        const target2 = r.spawnArchitecture(
+                            "test_10b3_target2",
+                            { x: 1, y: 0, z: 0 },
+                            { silent: true }
+                        );
+                        r._tickFocusingAffordances(25);
+                        out.rainyNoIgnite = !!r.state.architectures.find((e) => e.id === target2.id);
+
+                        r.state.weather = beforeWeather;
+                        r.state.architectures = r.state.architectures.filter(
+                            (e) =>
+                                e.type !== "test_10b3_car" &&
+                                e.type !== "test_10b3_far" &&
+                                e.type !== "test_10b3_lens" &&
+                                e.type !== "test_10b3_target2" &&
+                                e.type !== "baum_eiche"
+                        );
+                        for (const n of ["test_10b3_car", "test_10b3_far", "test_10b3_lens", "test_10b3_target2"]) {
+                            if (r.state.blueprints[n]) r.deleteBlueprint(n);
+                        }
+                        r._renderWorkshopDOM();
+                    } catch (err) {
+                        out.error = err && err.message;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (wave10b3Results && !wave10b3Results.error) {
+                check(
+                    "Welle 10b.3: Konstanten (MOUNT_RANGE_M, ZOOM_FOV_DEG, FOCUSING_*) korrekt",
+                    wave10b3Results.constantsExist
+                );
+                check(
+                    "Welle 10b.3: alle 6 Methoden existieren (mount/dismount/toggleMount/setZoom/focusingTick/tickAffordances)",
+                    wave10b3Results.hasMount &&
+                        wave10b3Results.hasDismount &&
+                        wave10b3Results.hasToggleMount &&
+                        wave10b3Results.hasSetZoom &&
+                        wave10b3Results.hasFocusingTick &&
+                        wave10b3Results.hasTickAffordances
+                );
+                check("Welle 10b.3: state.player.mountedArch initial null", wave10b3Results.initialMountNull);
+                check(
+                    "Welle 10b.3: spawnArchitecture speichert moveable-Affordance am entry",
+                    wave10b3Results.entryHasMoveable
+                );
+                check(
+                    "Welle 10b.3: toggleMountAtPlayer → mount erfolgreich + mountedArch = entry.id",
+                    wave10b3Results.mountSucceeds && wave10b3Results.playerMountedTo
+                );
+                check(
+                    "Welle 10b.3: toggleMountAtPlayer nochmal → dismount + mountedArch null",
+                    wave10b3Results.dismountSucceeds && wave10b3Results.playerDismounted
+                );
+                check(
+                    "Welle 10b.3: mountArchitecture auf nicht-moveable lehnt ab (not_moveable)",
+                    wave10b3Results.nonMoveableRejected
+                );
+                check(
+                    "Welle 10b.3: Mount-Geste auf entfernte Architektur lehnt ab (none_in_range)",
+                    wave10b3Results.farMountRejected
+                );
+                check("Welle 10b.3 Zoom: initial inaktiv (kein _zoomActive)", wave10b3Results.zoomInactiveInitial);
+                check(
+                    "Welle 10b.3 Zoom: setZoomActive(true) ohne magnifying-Target → false-Return + FOV unverändert",
+                    wave10b3Results.zoomFailsWithoutTarget
+                );
+                check(
+                    "Welle 10b.3 Focusing: Lens-Bauplan (Quarz + Bronze) → focusing=true",
+                    wave10b3Results.lensIsFocusing
+                );
+                check(
+                    "Welle 10b.3 Focusing: sunny + brennbarer Baum in Range → Tick entzündet (Architektur entfernt)",
+                    wave10b3Results.focusingIgnitesTarget && wave10b3Results.targetGone
+                );
+                check(
+                    "Welle 10b.3 Focusing: rainy-Wetter → KEIN Ignite (Diskrimination)",
+                    wave10b3Results.rainyNoIgnite
+                );
+            } else if (wave10b3Results && wave10b3Results.error) {
+                check(`Welle 10b.3: evaluate-Fehler — ${wave10b3Results.error}`, false);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {

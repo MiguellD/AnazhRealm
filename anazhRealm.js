@@ -349,6 +349,11 @@ class AnazhRealm {
                 // mit Multi-Mesh-Group + sin/cos-Animation. Ammo-Body bleibt
                 // identisch (rein visuell). Default "human".
                 soul: "human",
+                // Welle 10b.3 — Mount-State für moveable-Affordance. null
+                // wenn Spieler nicht aufgesessen, sonst entry.id der
+                // aktuell befahrenen Architektur. Tick zieht die Arch-
+                // Position dem Spieler nach.
+                mountedArch: null,
                 walkPhase: 0,
                 animationLastTick: -Infinity,
                 emotions: { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 },
@@ -14234,6 +14239,215 @@ class AnazhRealm {
         return (tags.transparent || 0) >= T.transparentMin && (tags.wärmeleitung || 0) >= T.wärmeMin;
     }
 
+    // ----- Welt-Reaktion: moveable (Spieler steigt ein, Compound folgt) -----
+
+    // Findet die nächste Architektur mit gegebener Affordance im Radius.
+    // Liefert null wenn nichts in Reichweite. Wird für die E-Taste (Mount)
+    // und für andere Spieler-Gesten genutzt.
+    _findNearestAffordanceEntry(affordanceKey, radiusM) {
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!pm) return null;
+        const r2 = radiusM * radiusM;
+        let best = null;
+        let bestD2 = r2;
+        for (const entry of this.state.architectures || []) {
+            if (!entry.affordances || !entry.affordances[affordanceKey]) continue;
+            const dx = entry.position.x - pm.x;
+            const dy = entry.position.y - pm.y;
+            const dz = entry.position.z - pm.z;
+            const d2 = dx * dx + dy * dy + dz * dz;
+            if (d2 <= bestD2) {
+                bestD2 = d2;
+                best = entry;
+            }
+        }
+        return best;
+    }
+
+    // Spieler steigt auf eine moveable-Architektur. Setzt mountedArch + cached
+    // den Mount-Offset (Spieler-Position relativ zur Architektur). Im Game-
+    // Loop (siehe _tickMountedMovement) folgt die Architektur dem Spieler.
+    mountArchitecture(entry) {
+        if (!entry || !entry.affordances || !entry.affordances.moveable) {
+            this.log("Mount: Architektur ist nicht fahrbar", "INFO");
+            return { ok: false, reason: "not_moveable" };
+        }
+        this.state.player.mountedArch = entry.id;
+        // Spieler-Position über die Architektur heben (sodass er „oben drauf"
+        // sitzt). Architektur-Position wird in _tickMountedMovement nachgezogen.
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (pm) {
+            pm.x = entry.position.x;
+            pm.z = entry.position.z;
+            pm.y = entry.position.y + AnazhRealm.MOUNT_FOLLOW_HEIGHT;
+        }
+        this.log(`Eingestiegen in „${entry.type}"`, "INFO");
+        return { ok: true, entry };
+    }
+
+    // Aussteigen: löst die Kopplung. Architektur bleibt an ihrer letzten
+    // Position stehen.
+    dismountArchitecture() {
+        const archId = this.state.player.mountedArch;
+        if (archId === null || archId === undefined) return { ok: false, reason: "not_mounted" };
+        this.state.player.mountedArch = null;
+        this.log(`Ausgestiegen`, "INFO");
+        return { ok: true };
+    }
+
+    // Toggle: wenn nicht-mounted und Mount-Kandidat in Reichweite → mount.
+    // Wenn schon mounted → dismount. Single-Pfad für die E-Taste.
+    toggleMountAtPlayer() {
+        if (this.state.player.mountedArch !== null && this.state.player.mountedArch !== undefined) {
+            return this.dismountArchitecture();
+        }
+        const entry = this._findNearestAffordanceEntry("moveable", AnazhRealm.MOUNT_RANGE_M);
+        if (!entry) {
+            this.log("Mount: kein fahrbares Compound in Reichweite", "INFO");
+            return { ok: false, reason: "none_in_range" };
+        }
+        return this.mountArchitecture(entry);
+    }
+
+    // Pro Frame: wenn mounted, ziehe die Architektur an die Spieler-Position
+    // (mit Höhen-Offset abziehen — Spieler sitzt OBEN). Die Welt-Mesh des
+    // Compounds wird in tickArchitectureCulling automatisch nachgezogen.
+    _tickMountedMovement() {
+        const archId = this.state.player.mountedArch;
+        if (archId === null || archId === undefined) return;
+        const entry = (this.state.architectures || []).find((e) => e.id === archId);
+        if (!entry) {
+            // Architektur ist verschwunden (z. B. abgebaut) → auto-dismount
+            this.state.player.mountedArch = null;
+            return;
+        }
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!pm) return;
+        // Architektur-Position auf Spieler ziehen (minus Höhen-Offset).
+        entry.position.x = pm.x;
+        entry.position.z = pm.z;
+        entry.position.y = pm.y - AnazhRealm.MOUNT_FOLLOW_HEIGHT;
+        // Mesh-Position sofort updaten (sonst lagt das Visual einen Frame).
+        if (entry.mesh) {
+            entry.mesh.position.set(entry.position.x, entry.position.y, entry.position.z);
+        }
+    }
+
+    // ----- Welt-Reaktion: magnifying (Camera-FOV-Zoom) -----
+
+    // Spieler hält Zoom-Geste (z. B. rechtsklick): wenn ein magnifying-
+    // Compound in Blick-Richtung in Reichweite ist, reduziere camera.fov.
+    // setZoomActive(false) stellt den Original-FOV wieder her.
+    setZoomActive(active) {
+        const cam = this.state.camera;
+        if (!cam) return false;
+        if (active) {
+            // Erst prüfen ob es ein magnifying-Target im Blick gibt
+            const hasMag = this._hasMagnifyingInSight();
+            if (!hasMag) return false;
+            if (!this.state._zoomActive) {
+                this.state._normalFov = cam.fov;
+                cam.fov = AnazhRealm.ZOOM_FOV_DEG;
+                cam.updateProjectionMatrix();
+                this.state._zoomActive = true;
+            }
+            return true;
+        }
+        // Zoom aus
+        if (this.state._zoomActive && typeof this.state._normalFov === "number") {
+            cam.fov = this.state._normalFov;
+            cam.updateProjectionMatrix();
+            this.state._zoomActive = false;
+        }
+        return false;
+    }
+
+    // Raycast in Blick-Richtung: trifft der Strahl ein Sub-Mesh einer
+    // magnifying-Architektur in Reichweite?
+    _hasMagnifyingInSight() {
+        const cam = this.state.camera;
+        if (!cam || typeof THREE === "undefined") return false;
+        const meshes = [];
+        for (const entry of this.state.architectures || []) {
+            if (!entry.affordances || !entry.affordances.magnifying) continue;
+            if (!entry.mesh) continue;
+            entry.mesh.traverse((m) => {
+                if (m.isMesh) meshes.push(m);
+            });
+        }
+        if (meshes.length === 0) return false;
+        if (!this._magRaycaster) this._magRaycaster = new THREE.Raycaster();
+        this._magRaycaster.set(cam.position, this._tmpCamDir || new THREE.Vector3(0, 0, -1));
+        if (this._tmpCamDir) cam.getWorldDirection(this._tmpCamDir);
+        else {
+            const dir = new THREE.Vector3();
+            cam.getWorldDirection(dir);
+            this._magRaycaster.set(cam.position, dir);
+        }
+        this._magRaycaster.far = AnazhRealm.MAGNIFYING_RAY_RANGE_M;
+        const hits = this._magRaycaster.intersectObjects(meshes, false);
+        return hits.length > 0;
+    }
+
+    // ----- Welt-Reaktion: focusing (Brennglas im Sonnenschein) -----
+
+    // Pro Frame (throttled in _tickAffordances via dt-Akkumulation): für jede
+    // focusing-Architektur, suche brennbare Architekturen im FOCUSING_HEAT_
+    // RANGE und akkumuliere Wärme. Bei Erreichen der Schwelle ignite —
+    // Architektur wird entfernt + Journal-Eintrag „X entzündet".
+    //
+    // Wirkung nur bei state.weather === "sunny" — das Brennglas braucht
+    // Licht. Vision: die Welt erkennt die Spieler-Geste „Brennglas + Sonne +
+    // Holz" und antwortet emergent.
+    _tickFocusingAffordances(dt) {
+        if (this.state.weather !== "sunny") return;
+        const focusing = (this.state.architectures || []).filter((e) => e.affordances && e.affordances.focusing);
+        if (focusing.length === 0) return;
+        const heatRange2 = AnazhRealm.FOCUSING_HEAT_RANGE_M * AnazhRealm.FOCUSING_HEAT_RANGE_M;
+        const ignite = AnazhRealm.FOCUSING_IGNITE_THRESHOLD;
+        const ratePerSec = AnazhRealm.FOCUSING_HEAT_RATE_PER_SEC;
+        const ignitions = [];
+        for (const target of this.state.architectures || []) {
+            if (target.affordances && target.affordances.focusing) continue; // selbst nicht
+            const targetBp = this.state.blueprints && this.state.blueprints[target.type];
+            if (!targetBp) continue;
+            const tags = this.computeCompoundTags(targetBp) || {};
+            if ((tags.brennbar || 0) < AnazhRealm.BRENNBAR_TAG_MIN) continue;
+            // Mindestens eine focusing-Architektur in Range?
+            let inRange = false;
+            for (const fa of focusing) {
+                const dx = fa.position.x - target.position.x;
+                const dz = fa.position.z - target.position.z;
+                if (dx * dx + dz * dz <= heatRange2) {
+                    inRange = true;
+                    break;
+                }
+            }
+            if (!inRange) continue;
+            target.heatBuildup = (target.heatBuildup || 0) + ratePerSec * dt;
+            if (target.heatBuildup >= ignite) {
+                ignitions.push(target);
+            }
+        }
+        for (const t of ignitions) {
+            this.log(`Sonnen-Brennglas entzündete „${t.type}"`, "INFO");
+            if (this.journalAppend) {
+                this.journalAppend("loss", `Eine Sonne-und-Brennglas-Geste verzehrte „${t.type}".`, {
+                    type: t.type,
+                });
+            }
+            this.removeArchitecture(t);
+        }
+    }
+
+    // Global-Tick für alle Affordances (wird im Game-Loop aufgerufen).
+    // Nimmt dt = Sekunden seit letztem Frame.
+    tickAffordances(dt) {
+        if (!Number.isFinite(dt) || dt <= 0) return;
+        this._tickMountedMovement();
+        this._tickFocusingAffordances(dt);
+    }
+
     // Welle 9d — Bauplan als Seele anwenden. Wenn der Bauplan role="soul"
     // trägt, wird seine parts-Liste als bodyParts in state.customSouls
     // angelegt (mit eindeutigem Namen) und anschließend applyPlayerSoul
@@ -21920,10 +22134,31 @@ class AnazhRealm {
             } else if (action === "cancelBuild" || event.key === "Escape") {
                 if (this.state.buildMode.active) this._clearBuildMode();
                 this._updateHotbarHighlight();
+            } else if (event.code === "KeyE") {
+                // Welle 10b.3 — E toggelt Mount/Dismount für moveable-
+                // Architekturen. Nur außerhalb des Werkstatt-Drawers (sonst
+                // ist E der Rotate-Modus-Shortcut).
+                if (this.state.uiActiveDrawer !== "werkstatt") {
+                    this.toggleMountAtPlayer();
+                    event.preventDefault();
+                }
+            } else if (event.code === "KeyZ") {
+                // Welle 10b.3 — Z gedrückt halten zoomt durch eine
+                // magnifying-Architektur. Nur wenn die Architektur im Blick
+                // ist. KeyDown ist auto-repeat-tolerant (setZoomActive ist
+                // idempotent — _zoomActive-Flag verhindert doppelte FOV-Sätze).
+                if (this.state.uiActiveDrawer !== "werkstatt") {
+                    this.setZoomActive(true);
+                    event.preventDefault();
+                }
             }
         });
         window.addEventListener("keyup", (event) => {
             this.state.keys[event.key.toLowerCase()] = false;
+            // Welle 10b.3 — Z-Loslassen beendet Zoom.
+            if (event.code === "KeyZ") {
+                this.setZoomActive(false);
+            }
         });
         this.log("Tastatureingaben initialisiert: WASD, Space, Shift", "INFO");
 
@@ -22511,6 +22746,9 @@ class AnazhRealm {
             this.tickBuildMode();
             // Ring 6: Bau-Werke mit Animations-Hook (nur Wasserfälle aktuell).
             this.tickArchitectures(currentTime);
+            // Welle 10b.3 — Affordance-Welt-Reaktionen: mounted-Movement +
+            // focusing-Hitze-Tick. Magnifying läuft asynchron via Tastendruck.
+            this.tickAffordances(delta);
 
             this.pruneDistantChunks(playerPos);
 
@@ -23289,6 +23527,17 @@ AnazhRealm.AFFORDANCE_LABELS = Object.freeze({
     magnifying: "vergrößernd",
     focusing: "bündelnd",
 });
+
+// Welt-Reaktion-Konstanten (Welle 10b.3).
+AnazhRealm.MOUNT_RANGE_M = 3; // Spieler muss diese Nähe für E-Mount haben
+AnazhRealm.MOUNT_FOLLOW_HEIGHT = 1.5; // Spieler sitzt oben drauf
+AnazhRealm.MOUNT_SPEED_FACTOR = 0.7; // Compounds fahren etwas langsamer als zu Fuß
+AnazhRealm.ZOOM_FOV_DEG = 25; // Magnifying-Compound zoomt auf 25°
+AnazhRealm.MAGNIFYING_RAY_RANGE_M = 8; // Spieler muss innerhalb dieser Reichweite drauf schauen
+AnazhRealm.FOCUSING_HEAT_RANGE_M = 4; // Brennbare Architekturen in diesem Radius werden erhitzt
+AnazhRealm.FOCUSING_HEAT_RATE_PER_SEC = 0.05; // Erwärmung pro Sekunde bei sunny
+AnazhRealm.FOCUSING_IGNITE_THRESHOLD = 1.0; // Schwelle bei der ignite ausgelöst wird
+AnazhRealm.BRENNBAR_TAG_MIN = 0.5; // Architektur gilt als brennbar ab diesem Tag-Wert
 // Welt-Effekt-Schwellen: zentralisiert, damit Tuning ohne Code-Suche geht.
 // Werte aus Konzept §6.3 (≥0.7 mild, ≥1.5 stark, ≥2.5 signatur).
 AnazhRealm.WORLD_EFFECT_THRESHOLDS = Object.freeze({
