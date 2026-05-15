@@ -2240,6 +2240,33 @@
                 font-size: 10.5px;
                 padding: 2px 4px;
             }
+            /* Welle 6.X.4 F1 — Identity-Row (Begleiter-/Spieler-Name). */
+            .drawer .identity-row {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 3px 6px;
+                margin-top: 4px;
+                background: rgba(184, 138, 80, 0.06);
+                border: 1px solid rgba(138, 106, 54, 0.4);
+                border-radius: 3px;
+            }
+            .drawer .identity-row label {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10.5px;
+                color: var(--parch-ink-faded);
+                letter-spacing: 0.04em;
+                min-width: 70px;
+            }
+            .drawer .identity-row input {
+                flex: 1;
+                background: rgba(255, 250, 235, 0.7);
+                color: var(--parch-ink);
+                border: 1px solid var(--brass-2, #b48c50);
+                font-family: "JetBrains Mono", monospace;
+                font-size: 10.5px;
+                padding: 2px 4px;
+            }
             .drawer .equip-mark-header {
                 font-size: 10px;
                 color: var(--parch-ink-faded);
@@ -3986,6 +4013,27 @@
                         <span>Cooldown (s)</span><span class="v" id="tune-cooldown-v">30</span>
                     </label>
                     <input type="range" id="tune-cooldown" min="5" max="120" step="5" value="30" />
+                </div>
+            </section>
+            <!-- Welle 6.X.4 F1 (Audit 17.05.2026) — Personalisierung der
+                 LLM-Konversation. Begleiter bekommt einen Namen (Default
+                 „Grok"), Spieler hat einen Namen (Default „Schöpfer").
+                 Beide werden in System-Prompts eingebettet, damit Grok
+                 dich beim Namen ansprechen kann und eine selbst-gewählte
+                 Identität trägt. Persistenz in localStorage. -->
+            <section class="section" id="identity-section">
+                <h3>Namen (Begleiter + Avatar)</h3>
+                <p class="drawer-hint">
+                    Wie heißt deine Welt-Stimme, wie heißt du? Werden im LLM-System-Prompt referenziert. Default „Grok"
+                    (historisch aus den vier Testamenten) und „Schöpfer" (Vision: Mensch=Null=Schöpfer).
+                </p>
+                <div class="identity-row">
+                    <label for="companion-name-input">Begleiter</label>
+                    <input type="text" id="companion-name-input" maxlength="32" placeholder="Grok" />
+                </div>
+                <div class="identity-row">
+                    <label for="player-name-input">Du</label>
+                    <input type="text" id="player-name-input" maxlength="32" placeholder="Schöpfer" />
                 </div>
             </section>
             <section class="section" id="llm-section">

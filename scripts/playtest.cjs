@@ -4803,6 +4803,8 @@ function startSaveServer() {
                         // Negativ-Kontrolle: 50 m über Tempel-Top — Ray reicht nur
                         // 2.5 m runter, also trifft das Bauwerk nicht.
                         r.state.playerMesh.position.set(archX, topY + 50, archZ);
+                        // Welle 6.X.5 — Cache invalidieren vor frischem Compute.
+                        delete r.state._groundedCachedAt;
                         out.isGroundedHighInSky = r.isPlayerGrounded();
                         // Positiv-Test: Spieler in steigenden Höhen über die
                         // visuelle Top-BBox. Visuelle Box ist nicht 1:1 mit dem
@@ -4817,6 +4819,11 @@ function startSaveServer() {
                         let groundedAtDy = null;
                         for (const dy of [0.1, 0.3, 0.5, 0.7, 1.0, 1.5, 2.0]) {
                             r.state.playerMesh.position.set(archX, topY + dy, archZ);
+                            // Welle 6.X.5 — Cache invalidieren vor jeder
+                            // Position-Probe. In echtem Spiel ändert sich die
+                            // Position nur via Physics-Tick zwischen Frames;
+                            // im Test setzen wir manuell, also Cache resetten.
+                            delete r.state._groundedCachedAt;
                             if (r.isPlayerGrounded()) {
                                 foundGrounded = true;
                                 groundedAtDy = dy;
@@ -10366,6 +10373,126 @@ function startSaveServer() {
                     "Welle 6.X.3: Vision-Quick-Win-Tests laufen",
                     false,
                     wave6x3Results ? wave6x3Results.error : "no result"
+                );
+            }
+
+            // ### Welle 6.X.4 + 6.X.5 — Identity + Performance (Audit 17.05.2026) ###
+            // F1 Begleiter-Name + Avatar-Name (LLM-Persona)
+            // D1 isPlayerGrounded-Cache (2 Frames, ~33 ms)
+            const wave6x45Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // --- F1: state-Felder existieren mit Defaults
+                    out.companionNameDefault = r.state.grok.companionName === "Grok";
+                    out.playerNameDefault = r.state.player.name === "Schöpfer";
+
+                    // --- F1: identityInitDOM-Methode existiert + Inputs im DOM
+                    out.identityInitMethodExists = typeof r.identityInitDOM === "function";
+                    out.companionInputExists = !!document.getElementById("companion-name-input");
+                    out.playerInputExists = !!document.getElementById("player-name-input");
+                    out.identitySectionExists = !!document.getElementById("identity-section");
+
+                    // --- F1: Input-Change setzt state + localStorage
+                    const ci = document.getElementById("companion-name-input");
+                    if (ci) {
+                        ci.value = "Lyra";
+                        ci.dispatchEvent(new Event("input"));
+                        out.companionNameUpdated = r.state.grok.companionName === "Lyra";
+                        out.companionNamePersisted =
+                            typeof localStorage !== "undefined" &&
+                            localStorage.getItem("anazh.companion.name") === "Lyra";
+                        // Reset auf Default
+                        ci.value = "Grok";
+                        ci.dispatchEvent(new Event("input"));
+                    }
+                    const pi = document.getElementById("player-name-input");
+                    if (pi) {
+                        pi.value = "Aelyn";
+                        pi.dispatchEvent(new Event("input"));
+                        out.playerNameUpdated = r.state.player.name === "Aelyn";
+                        out.playerNamePersisted =
+                            typeof localStorage !== "undefined" &&
+                            localStorage.getItem("anazh.player.name") === "Aelyn";
+                        pi.value = "Schöpfer";
+                        pi.dispatchEvent(new Event("input"));
+                    }
+
+                    // --- F1: System-Prompt enthält die zwei Namen
+                    r.state.grok.companionName = "TestCompanion";
+                    r.state.player.name = "TestPlayer";
+                    const prompt = r.llmBuildSystemPrompt();
+                    out.promptContainsCompanionName = /TestCompanion/.test(prompt);
+                    out.promptContainsPlayerName = /TestPlayer/.test(prompt);
+                    // Reset auf Defaults
+                    r.state.grok.companionName = "Grok";
+                    r.state.player.name = "Schöpfer";
+
+                    // --- D1: isPlayerGrounded-Cache
+                    // Source-Check: Cache-Felder + Time-Check existieren
+                    const isgSrc = r.isPlayerGrounded.toString();
+                    out.cacheFieldsInSource =
+                        /_groundedCache/.test(isgSrc) && /_groundedCachedAt/.test(isgSrc);
+                    out.cacheTimeoutInSource = /< 33/.test(isgSrc) || /<= 33/.test(isgSrc);
+
+                    // Funktional: nach einem Aufruf ist _groundedCachedAt gesetzt
+                    delete r.state._groundedCache;
+                    delete r.state._groundedCachedAt;
+                    r.isPlayerGrounded();
+                    out.cacheSetAfterCall = typeof r.state._groundedCachedAt === "number";
+
+                    // Funktional: zweiter Aufruf direkt danach liefert cached
+                    // result (kein Race-Free-Window) — wir prüfen dass der
+                    // Wert nicht NaN ist und stabil bleibt.
+                    const v1 = r.isPlayerGrounded();
+                    const v2 = r.isPlayerGrounded();
+                    out.cacheConsistentBetweenCalls = v1 === v2;
+
+                    // Cache-Override-Test: setze cache manuell, prüfe dass Methode den Wert respektiert
+                    r.state._groundedCache = true;
+                    r.state._groundedCachedAt = performance.now();
+                    out.cachedTrueRespected = r.isPlayerGrounded() === true;
+                    r.state._groundedCache = false;
+                    r.state._groundedCachedAt = performance.now();
+                    out.cachedFalseRespected = r.isPlayerGrounded() === false;
+                    // Cache-Expiry: alter timestamp → fresh compute
+                    r.state._groundedCachedAt = performance.now() - 100; // > 33 ms her
+                    // Wir prüfen NICHT das Ergebnis (das hängt von Physik ab),
+                    // aber dass Cache-Time refreshed wird
+                    const beforeRefresh = r.state._groundedCachedAt;
+                    r.isPlayerGrounded();
+                    out.cacheRefreshedAfterExpiry = r.state._groundedCachedAt > beforeRefresh;
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6x45Results && !wave6x45Results.error) {
+                check("Welle 6.X.4 F1: state.grok.companionName default 'Grok'", wave6x45Results.companionNameDefault);
+                check("Welle 6.X.4 F1: state.player.name default 'Schöpfer'", wave6x45Results.playerNameDefault);
+                check("Welle 6.X.4 F1: identityInitDOM-Methode existiert", wave6x45Results.identityInitMethodExists);
+                check("Welle 6.X.4 F1: #companion-name-input im DOM", wave6x45Results.companionInputExists);
+                check("Welle 6.X.4 F1: #player-name-input im DOM", wave6x45Results.playerInputExists);
+                check("Welle 6.X.4 F1: #identity-section im DOM", wave6x45Results.identitySectionExists);
+                check("Welle 6.X.4 F1: Companion-Input ändert state.grok.companionName", wave6x45Results.companionNameUpdated);
+                check("Welle 6.X.4 F1: Companion-Name persistiert in localStorage", wave6x45Results.companionNamePersisted);
+                check("Welle 6.X.4 F1: Player-Input ändert state.player.name", wave6x45Results.playerNameUpdated);
+                check("Welle 6.X.4 F1: Player-Name persistiert in localStorage", wave6x45Results.playerNamePersisted);
+                check("Welle 6.X.4 F1: System-Prompt enthält Companion-Name", wave6x45Results.promptContainsCompanionName);
+                check("Welle 6.X.4 F1: System-Prompt enthält Player-Name", wave6x45Results.promptContainsPlayerName);
+                check("Welle 6.X.5 D1: Cache-Felder + Time-Check im isPlayerGrounded-Source", wave6x45Results.cacheFieldsInSource);
+                check("Welle 6.X.5 D1: Cache-Timeout 33 ms (≈2 Frames @ 60fps)", wave6x45Results.cacheTimeoutInSource);
+                check("Welle 6.X.5 D1: _groundedCachedAt nach erstem Call gesetzt", wave6x45Results.cacheSetAfterCall);
+                check("Welle 6.X.5 D1: zwei direkte Aufrufe liefern dasselbe", wave6x45Results.cacheConsistentBetweenCalls);
+                check("Welle 6.X.5 D1: gecachtes true wird respektiert", wave6x45Results.cachedTrueRespected);
+                check("Welle 6.X.5 D1: gecachtes false wird respektiert", wave6x45Results.cachedFalseRespected);
+                check("Welle 6.X.5 D1: nach Cache-Expiry wird neu computed (timestamp refresht)", wave6x45Results.cacheRefreshedAfterExpiry);
+            } else {
+                check(
+                    "Welle 6.X.4+5: Identity + Performance-Tests laufen",
+                    false,
+                    wave6x45Results ? wave6x45Results.error : "no result"
                 );
             }
 

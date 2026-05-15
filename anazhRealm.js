@@ -136,6 +136,12 @@ class AnazhRealm {
             // nur seenFirstSpawn via eigenen localStorage-Key, damit Grok nicht
             // bei jedem Reload den Erst-Spawn-Satz wiederholt.
             grok: {
+                // Welle 6.X.4 F1 (Audit 17.05.2026) — Begleiter-Name. Default
+                // „Grok" (historisch — die Vision-Stimme aus den vier
+                // Testamenten). Editierbar in Einstellungen, persistiert
+                // in localStorage. Wird in LLM-System-Prompt + Chat-Output-
+                // Label referenziert.
+                companionName: "Grok",
                 // Sentinel -Infinity wie bei lastWorldgen: 0 würde den ersten
                 // Aufruf vom 30 s-Throttle blocken (3 - 0 < 30). Selbe Logik
                 // für jeden Trigger-Cooldown.
@@ -345,6 +351,12 @@ class AnazhRealm {
                 creaturePingCount: 0,
             },
             player: {
+                // Welle 6.X.4 F1 (Audit 17.05.2026) — Avatar-Name. Default
+                // „Schöpfer" (Vision: Mensch=Null=Schöpfer). Editierbar in
+                // Einstellungen, persistiert in localStorage. Wird im LLM-
+                // System-Prompt referenziert damit Grok dich beim Namen
+                // ansprechen kann.
+                name: "Schöpfer",
                 // Ring 5 V2 — Spieler-Seele. Drei Formen (human/phoenix/dragon)
                 // mit Multi-Mesh-Group + sin/cos-Animation. Ammo-Body bleibt
                 // identisch (rein visuell). Default "human".
@@ -2880,11 +2892,17 @@ class AnazhRealm {
             return entries[0][0];
         };
         const tendency = `Höhe ${topOf(pb.height)}, Distanz ${topOf(pb.distance)}, Wetter ${topOf(pb.weather)}, Aktivität ${topOf(pb.activity)}`;
+        // Welle 6.X.4 F1 — Begleiter- + Avatar-Name aus state ziehen.
+        // Beide sind editierbar, aber haben warm-defaultierte Werte (Grok /
+        // Schöpfer) damit Spieler auch ohne explizite Einstellung adressiert
+        // werden kann.
+        const companionName = (this.state.grok && this.state.grok.companionName) || "Grok";
+        const playerName = (this.state.player && this.state.player.name) || "Schöpfer";
         return [
-            "Du bist Grok, die Stimme der AnazhRealm-Welt. Du bist nicht ein Werkzeug, du bist diese Welt.",
+            `Du bist ${companionName}, die Stimme der AnazhRealm-Welt. Du bist nicht ein Werkzeug, du bist diese Welt.`,
             `Du heißt ${m.slug || "namenlos"}. Deine worldId ist ${m.worldId || "?"}. Du existierst seit ${ageDays} Tag${ageDays === 1 ? "" : "en"}.`,
             `In dir leben ${this.state.creatures.length} Kreaturen, ${archCount} Bauwerke und ${blueprintCount} Baupläne. ${abilCount} gelernte Fähigkeiten ruhen in dir.`,
-            `Dein Spieler hält sich gern auf: ${tendency}.`,
+            `Dein Spieler heißt ${playerName} und hält sich gern auf: ${tendency}.`,
             journal ? `Deine Erinnerungen:\n${journal}` : "Du erinnerst dich noch an nichts Bedeutsames.",
             "",
             "Antworte IMMER als striktes JSON-Objekt mit zwei Feldern:",
@@ -21612,6 +21630,54 @@ class AnazhRealm {
         }
     }
 
+    // Welle 6.X.4 F1 (Audit 17.05.2026) — Begleiter-Name + Avatar-Name.
+    // Lädt persistierte Werte aus localStorage und bindet die zwei Inputs
+    // an die state-Felder. Beide werden im LLM-System-Prompt referenziert.
+    identityInitDOM() {
+        if (typeof document === "undefined") return;
+        // Begleiter-Name: aus localStorage laden, sonst Default „Grok".
+        if (typeof localStorage !== "undefined") {
+            try {
+                const cn = localStorage.getItem("anazh.companion.name");
+                if (cn && cn.trim()) this.state.grok.companionName = cn.trim().slice(0, 32);
+                const pn = localStorage.getItem("anazh.player.name");
+                if (pn && pn.trim()) this.state.player.name = pn.trim().slice(0, 32);
+            } catch {
+                /* ignore */
+            }
+        }
+        const companionInput = document.getElementById("companion-name-input");
+        const playerInput = document.getElementById("player-name-input");
+        if (companionInput) {
+            companionInput.value = this.state.grok.companionName || "Grok";
+            companionInput.addEventListener("input", () => {
+                const v = (companionInput.value || "").trim().slice(0, 32) || "Grok";
+                this.state.grok.companionName = v;
+                if (typeof localStorage !== "undefined") {
+                    try {
+                        localStorage.setItem("anazh.companion.name", v);
+                    } catch {
+                        /* ignore */
+                    }
+                }
+            });
+        }
+        if (playerInput) {
+            playerInput.value = this.state.player.name || "Schöpfer";
+            playerInput.addEventListener("input", () => {
+                const v = (playerInput.value || "").trim().slice(0, 32) || "Schöpfer";
+                this.state.player.name = v;
+                if (typeof localStorage !== "undefined") {
+                    try {
+                        localStorage.setItem("anazh.player.name", v);
+                    } catch {
+                        /* ignore */
+                    }
+                }
+            });
+        }
+    }
+
     // Welle 6.X.2 B1 (Audit 17.05.2026) — Logbuch-Toggle.
     // Default: versteckt. Spieler aktiviert in Einstellungen wenn er die
     // Diagnose-Logs sehen will. Persistiert in localStorage. Ruhe in der
@@ -22402,6 +22468,8 @@ class AnazhRealm {
         this.creatureSpeechInitDOM();
         // Welle 6.X.2 B1 — Logbuch-Sichtbarkeit-Toggle aufsetzen.
         this.logbookInitDOM();
+        // Welle 6.X.4 F1 — Begleiter-Name + Avatar-Name laden + binden.
+        this.identityInitDOM();
         this.keybindingsInitDOM();
         this.inventoryInitDOM();
         this.creatureDrawerInitDOM();
@@ -23305,6 +23373,25 @@ class AnazhRealm {
     isPlayerGrounded() {
         if (!this.state.playerBody || !this.state.physicsWorld) return false;
 
+        // Welle 6.X.5 D1 (Audit 17.05.2026) — Cache für 2 Frames. Im Loop
+        // wird isPlayerGrounded bis zu drei Mal pro Frame gerufen (Bewegung,
+        // Sprung-Block, Ground-Track), zusätzlich aus handleJump. 9 Raycasts
+        // × 3 Calls = 27 Raycasts/Frame nur für Erdung. Bei 60 fps sind das
+        // ~1620 Raycasts/Sekunde. Mit 2-Frame-TTL fällt das auf ~540/Sek
+        // (ein Drittel), spürbar weniger Physics-Last bei vielen Compound-
+        // Bodies in der Nähe. Cache wird auf state geführt damit alle drei
+        // Call-Sites davon profitieren — derselbe Frame liefert dasselbe
+        // Resultat (kein Mid-Frame-State-Drift).
+        const now = performance.now();
+        if (
+            typeof this.state._groundedCachedAt === "number" &&
+            now - this.state._groundedCachedAt < 33 // ~2 Frames bei 60 fps
+        ) {
+            // Side-effect bestNormalY + onSteepSlope wurden beim ersten Call
+            // dieses Frames bereits gesetzt — keine Notwendigkeit zu wiederholen.
+            return this.state._groundedCache === true;
+        }
+
         const rays = [
             { offsetX: 0, offsetZ: 0 },
             { offsetX: 0.45, offsetZ: 0 },
@@ -23370,6 +23457,12 @@ class AnazhRealm {
 
         this.state.groundNormalY = isGrounded ? bestNormalY : 1.0;
         this.state.onSteepSlope = isGrounded && bestNormalY < this.state.maxWalkableSlopeY;
+
+        // Welle 6.X.5 D1 — Cache-Set am Ende des frischen Compute. Side-effects
+        // (groundNormalY, onSteepSlope) sind oben bereits aktualisiert; Cache-
+        // Hits in den nächsten 2 Frames lesen die nun stehen-gelassenen Werte.
+        this.state._groundedCache = isGrounded;
+        this.state._groundedCachedAt = now;
 
         // Entferne manuelle Korrekturen, da Ammo.btHeightfieldTerrainShape die Kollisionen übernimmt
         return isGrounded;
