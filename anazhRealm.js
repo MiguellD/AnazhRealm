@@ -20930,34 +20930,23 @@ class AnazhRealm {
     // setzt orbit.target auf BBox-Center + dist auf BBox-Diagonale × 2.2
     // (gleiche Default-Formel wie beim Initial-Render). Shortcut: H.
     resetWorkshopCamera() {
-        // V8.20 Bug-Fix Schöpfer-Test: state.workshopPreview existiert NICHT —
-        // korrekter Pfad ist state.workshop.preview. War seit V8.14 falsch,
-        // niemand bemerkt weil die Methode auch silent-no-op-konform war
-        // (early return wenn !p). Schöpfer-Audit V8.19: „Button und Shortcut
-        // greifen nicht" → genau das war's. Jetzt schreibt's auch in den Log.
+        // V8.21 Schöpfer-Wunsch: H-Shortcut/Button soll EXAKT dasselbe tun
+        // wie Bauplan-Wechsel — also Mesh frisch bauen + Camera auf den
+        // Bauplan zentrieren. Mesh-Edits bleiben (sind in bp.parts gespeichert),
+        // nur Camera + initial-distance werden frisch.
+        //
+        // Vor V8.21 war's nur Camera-Reset, ohne dist-Reset (dist wird im
+        // Rebuild-Pfad nur initial gesetzt via _distInitialized-Flag). Beim
+        // wiederholten H-Drücken blieb der alte Zoom hängen — Spieler dachte
+        // „greift nicht".
         const p = this.state.workshop && this.state.workshop.preview;
         if (!p) return;
-        // V8.17 — auch ohne aktives Mesh resettet die Kamera auf neutrale
-        // Default-Werte. Vorher: early-return wenn p.currentMesh=null, was
-        // einen kalt geöffneten Drawer ohne Bauplan unfixbar machte.
-        if (p.currentMesh) {
-            const bbox = new THREE.Box3().setFromObject(p.currentMesh);
-            if (!bbox.isEmpty()) {
-                bbox.getCenter(p.orbit.target);
-                const size = new THREE.Vector3();
-                bbox.getSize(size);
-                const maxDim = Math.max(size.x, size.y, size.z);
-                if (maxDim > 0) {
-                    p.orbit.dist = Math.max(3, maxDim * 2.2);
-                }
-            }
-        } else {
-            // Kein Mesh → Default-Origin + Default-Dist.
-            p.orbit.target.set(0, 0, 0);
-            p.orbit.dist = 6;
+        // Reset dist-Flag → Rebuild setzt dist neu auf BBox-passende Distanz.
+        p._distInitialized = false;
+        if (typeof this._workshopRebuildPreviewMesh === "function") {
+            this._workshopRebuildPreviewMesh();
         }
-        // Yaw/Pitch auf neutrale Werkstatt-Sicht zurück. yaw=PI/4 (schräg von
-        // vorn-rechts), pitch leicht oben (0.3 rad ≈ 17°).
+        // Yaw/Pitch zurück auf neutrale Werkstatt-Sicht (PI/4 schräg, 0.3 oben).
         p.orbit.yaw = Math.PI / 4;
         p.orbit.pitch = 0.3;
         p.dirty = true;
