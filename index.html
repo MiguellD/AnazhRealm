@@ -2471,6 +2471,20 @@
                 border: 1px solid var(--brass-3);
                 border-radius: 2px;
                 color: var(--parch-ink);
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+            }
+            /* Welle 9b — Werkzeug-Domain-Punkt: kleine farbige Sphäre als
+               visueller Anker für die Werkstatt-Domäne. Nur bei Werkzeugen
+               mit `domain` sichtbar. */
+            .workshop-tool-domain-dot {
+                display: inline-block;
+                width: 7px;
+                height: 7px;
+                border-radius: 50%;
+                border: 1px solid rgba(0, 0, 0, 0.4);
+                flex-shrink: 0;
             }
             .workshop-opchain {
                 grid-column: 1 / -1;

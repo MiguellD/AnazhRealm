@@ -13139,9 +13139,22 @@ function startSaveServer() {
 
                         // Default-Tools sind alle generic (domain=null)
                         const tools = r.state.tools || {};
-                        out.allBuiltInsGeneric = Object.values(tools)
-                            .filter((t) => t.builtIn)
-                            .every((t) => !t.domain);
+                        // Welle 9b — die 5 ORIGINAL-Built-ins (hand/feuer/hammer/
+                        // feile/polier) sind generic. Die 5 NEUEN Domain-Tools
+                        // tragen jeweils eine domain ∈ TOOL_DOMAINS.
+                        const originalGenericNames = [
+                            "hände",
+                            "feuerstein-knapper",
+                            "hammer",
+                            "feile",
+                            "polierscheibe",
+                        ];
+                        out.originalToolsGeneric = originalGenericNames.every(
+                            (n) => tools[n] && tools[n].domain === null
+                        );
+                        out.domainToolsHaveDomain = Object.values(tools)
+                            .filter((t) => t.builtIn && t.domain)
+                            .every((t) => AR.TOOL_DOMAINS.includes(t.domain));
 
                         // Leerer Bauplan / nur generic-Werkzeuge → null Domain, role=architecture
                         if (r.state.blueprints["test_9a_empty"]) r.deleteBlueprint("test_9a_empty");
@@ -13285,8 +13298,12 @@ function startSaveServer() {
                         wave9aResults.hasRefresh
                 );
                 check(
-                    "Welle 9a: Alle 5 Built-in-Werkzeuge sind generic (domain=null) — beeinflussen Rolle NICHT",
-                    wave9aResults.allBuiltInsGeneric
+                    "Welle 9a: Original-Built-ins (hände/feuerstein/hammer/feile/polierscheibe) sind generic (domain=null)",
+                    wave9aResults.originalToolsGeneric
+                );
+                check(
+                    "Welle 9b: Domain-Built-ins haben jeweils eine gültige Domain ∈ TOOL_DOMAINS",
+                    wave9aResults.domainToolsHaveDomain
                 );
                 check(
                     "Welle 9a: Leerer Bauplan + nur generic-Werkzeuge → computeDomain=null",
@@ -13320,6 +13337,154 @@ function startSaveServer() {
                 );
             } else if (wave9aResults && wave9aResults.error) {
                 check(`Welle 9a: evaluate-Fehler — ${wave9aResults.error}`, false);
+            }
+
+            // ### Welle 9b — Domain-Werkzeuge + UI-Anzeige der Rolle ###
+            const wave9bResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const AR = r.constructor;
+                    const out = {};
+                    try {
+                        // 5 neue Domain-Werkzeuge in state.tools
+                        const domainToolNames = [
+                            "schmiede-hammer",
+                            "mörser",
+                            "webstuhl-schiffchen",
+                            "ritueller-stab",
+                            "drehbank-meißel",
+                        ];
+                        out.allDomainToolsExist = domainToolNames.every((n) => !!r.state.tools[n]);
+
+                        // Korrektes domain-Mapping pro Tool
+                        out.schmiedeHammerForging =
+                            r.state.tools["schmiede-hammer"] && r.state.tools["schmiede-hammer"].domain === "forging";
+                        out.morserAlchemy = r.state.tools["mörser"] && r.state.tools["mörser"].domain === "alchemy";
+                        out.webstuhlTextile =
+                            r.state.tools["webstuhl-schiffchen"] &&
+                            r.state.tools["webstuhl-schiffchen"].domain === "textile";
+                        out.stabSoulwork =
+                            r.state.tools["ritueller-stab"] && r.state.tools["ritueller-stab"].domain === "soulwork";
+                        out.drehbankMechanism =
+                            r.state.tools["drehbank-meißel"] && r.state.tools["drehbank-meißel"].domain === "mechanism";
+
+                        // Alle 5 Domain-Werkzeuge sind isStarter → im Spieler-Inventar
+                        const playerTools = r.state.player.tools || [];
+                        out.allDomainToolsInInventory = domainToolNames.every((n) => playerTools.includes(n));
+
+                        // Insgesamt 10 Built-in-Werkzeuge (5 generic + 5 domain)
+                        const builtIns = Object.values(r.state.tools).filter((t) => t.builtIn);
+                        out.tenBuiltInTools = builtIns.length === 10;
+
+                        // Konstanten für UI: Labels + Farben
+                        out.roleLabelsFrozen =
+                            !!AR.BLUEPRINT_ROLE_LABELS &&
+                            Object.isFrozen(AR.BLUEPRINT_ROLE_LABELS) &&
+                            AR.BLUEPRINT_ROLE_LABELS.architecture === "Bauwerk" &&
+                            AR.BLUEPRINT_ROLE_LABELS.tool === "Werkzeug" &&
+                            AR.BLUEPRINT_ROLE_LABELS.machine === "Maschine";
+                        out.domainLabelsFrozen =
+                            !!AR.TOOL_DOMAIN_LABELS &&
+                            Object.isFrozen(AR.TOOL_DOMAIN_LABELS) &&
+                            AR.TOOL_DOMAIN_LABELS.forging === "Schmiede" &&
+                            AR.TOOL_DOMAIN_LABELS.alchemy === "Alchemie";
+                        out.domainColorsFrozen =
+                            !!AR.TOOL_DOMAIN_COLORS &&
+                            Object.isFrozen(AR.TOOL_DOMAIN_COLORS) &&
+                            typeof AR.TOOL_DOMAIN_COLORS.forging === "string";
+
+                        // UI: Werkstatt-Status zeigt Rolle live nach Edit
+                        const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
+                        if (tab) tab.click();
+                        if (r.state.blueprints["test_9b"]) r.deleteBlueprint("test_9b");
+                        r.cloneBlueprint("village", "test_9b");
+                        r.selectBlueprintForEdit("test_9b");
+                        // Frisch geklont: Rolle ist architecture (emergent default)
+                        // Status sollte das anzeigen
+                        const status = document.querySelector("#workshop-editor .workshop-status");
+                        out.statusShowsBauwerk =
+                            !!status &&
+                            status.textContent.includes("Bauwerk") &&
+                            status.textContent.includes("emergent");
+                        // Apply schmiede-hammer auf eisen-Part
+                        r.updatePartInBlueprint("test_9b", 0, { material: "eisen", recolor: true });
+                        r.applyOpToPart("test_9b", 0, "schmiede-hammer");
+                        r._renderWorkshopDOM();
+                        const statusAfter = document.querySelector("#workshop-editor .workshop-status");
+                        // Rolle sollte jetzt Werkzeug oder Rüstung sein (forging-split)
+                        out.statusShowsForgingRole =
+                            !!statusAfter &&
+                            (statusAfter.textContent.includes("Werkzeug") ||
+                                statusAfter.textContent.includes("Rüstung")) &&
+                            statusAfter.textContent.includes("emergent");
+
+                        // Tool-Chip: Domain-Dot ist im DOM für Domain-Werkzeug
+                        const chips = document.querySelectorAll(".workshop-tool-chip");
+                        let hasDomainDot = false;
+                        chips.forEach((chip) => {
+                            if (chip.querySelector(".workshop-tool-domain-dot")) hasDomainDot = true;
+                        });
+                        out.toolChipHasDomainDot = hasDomainDot;
+
+                        // Cleanup
+                        if (r.state.blueprints["test_9b"]) r.deleteBlueprint("test_9b");
+                        r.selectBlueprintForEdit("village");
+                        const weltTab = document.querySelector('#topbar [data-tab="welt"]');
+                        if (weltTab) weltTab.click();
+                        r.state.yaw = 0;
+                        if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
+                    } catch (err) {
+                        out.error = err && err.message;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (wave9bResults && !wave9bResults.error) {
+                check("Welle 9b: alle 5 Domain-Werkzeuge in state.tools", wave9bResults.allDomainToolsExist);
+                check(
+                    "Welle 9b: korrektes Domain-Mapping pro Tool (schmiede→forging, mörser→alchemy, …)",
+                    wave9bResults.schmiedeHammerForging &&
+                        wave9bResults.morserAlchemy &&
+                        wave9bResults.webstuhlTextile &&
+                        wave9bResults.stabSoulwork &&
+                        wave9bResults.drehbankMechanism
+                );
+                check(
+                    "Welle 9b: alle 5 Domain-Werkzeuge sind isStarter + im Spieler-Inventar",
+                    wave9bResults.allDomainToolsInInventory
+                );
+                check(
+                    "Welle 9b: 10 Built-in-Werkzeuge insgesamt (5 generic + 5 domain)",
+                    wave9bResults.tenBuiltInTools
+                );
+                check(
+                    "Welle 9b: BLUEPRINT_ROLE_LABELS frozen + deutsche Bezeichnungen (Bauwerk/Werkzeug/Maschine)",
+                    wave9bResults.roleLabelsFrozen
+                );
+                check(
+                    "Welle 9b: TOOL_DOMAIN_LABELS frozen + deutsche Bezeichnungen (Schmiede/Alchemie/…)",
+                    wave9bResults.domainLabelsFrozen
+                );
+                check(
+                    "Welle 9b: TOOL_DOMAIN_COLORS frozen mit Hex-Strings pro Domain",
+                    wave9bResults.domainColorsFrozen
+                );
+                check(
+                    "Welle 9b UI: Werkstatt-Status zeigt 'Rolle: Bauwerk (emergent)' nach Klone",
+                    wave9bResults.statusShowsBauwerk
+                );
+                check(
+                    "Welle 9b UI: Status wechselt nach forging-Op auf Werkzeug/Rüstung (emergent)",
+                    wave9bResults.statusShowsForgingRole
+                );
+                check(
+                    "Welle 9b UI: Tool-Chip enthält .workshop-tool-domain-dot bei Domain-Werkzeugen",
+                    wave9bResults.toolChipHasDomainDot
+                );
+            } else if (wave9bResults && wave9bResults.error) {
+                check(`Welle 9b: evaluate-Fehler — ${wave9bResults.error}`, false);
             }
 
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###

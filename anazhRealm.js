@@ -496,6 +496,18 @@ class AnazhRealm {
             this.state.player.tools = Object.values(this.state.tools)
                 .filter((t) => t.isStarter)
                 .map((t) => t.name);
+        } else {
+            // Welle 9b — Backfill für bestehende Saves: neue Starter-Werkzeuge
+            // (z. B. die 5 Domain-Werkzeuge die in 9b dazukommen) werden in
+            // bestehende Spieler-Inventare nachgereicht. Saves vor 9b haben
+            // nur die 5 generic-Tools im Array; ohne Backfill wäre Phase 9a
+            // praktisch nicht nutzbar (Spieler kann Domain-Werkzeuge nicht
+            // anwenden, also keine Rolle emergent setzen).
+            for (const t of Object.values(this.state.tools)) {
+                if (t.isStarter && !this.state.player.tools.includes(t.name)) {
+                    this.state.player.tools.push(t.name);
+                }
+            }
         }
         // Ring 6.4 — Built-in-Baupläne als Daten registrieren. Wenn ein
         // Save später User-Baupläne hinzufügt (Editor 6.6), werden sie auf
@@ -14989,6 +15001,12 @@ class AnazhRealm {
     // ihrer eigenen Präzision) später in Welle 6 anhängen, ohne die op-
     // Chain-Datenstruktur zu ändern.
     _defaultTools() {
+        // Die ersten 5 Werkzeuge sind GENERIC (domain=null) — Bearbeitungs-
+        // Methoden ohne Werkstatt-Spezialisierung. Sie produzieren Default-
+        // Rolle "architecture" wenn keine domain-spezifischen Werkzeuge in
+        // der opChain stecken. Die 5 Domain-Werkzeuge danach sind Welle 9b:
+        // sie tragen eine domain, die via _refreshBlueprintRoleEmergent die
+        // Bauplan-Rolle bestimmt.
         const list = [
             {
                 name: "hände",
@@ -14996,6 +15014,7 @@ class AnazhRealm {
                 opClass: "subtractive",
                 opName: "hand_knap",
                 precisionCap: 0.4,
+                domain: null,
                 isStarter: true,
                 builtIn: true,
             },
@@ -15005,6 +15024,7 @@ class AnazhRealm {
                 opClass: "subtractive",
                 opName: "hand_knap",
                 precisionCap: 0.5,
+                domain: null,
                 isStarter: true,
                 builtIn: true,
             },
@@ -15014,6 +15034,7 @@ class AnazhRealm {
                 opClass: "plastic",
                 opName: "forge",
                 precisionCap: 0.7,
+                domain: null,
                 isStarter: true,
                 builtIn: true,
             },
@@ -15023,6 +15044,7 @@ class AnazhRealm {
                 opClass: "subtractive",
                 opName: "file",
                 precisionCap: 0.85,
+                domain: null,
                 isStarter: true,
                 builtIn: true,
             },
@@ -15032,6 +15054,64 @@ class AnazhRealm {
                 opClass: "subtractive",
                 opName: "polish",
                 precisionCap: 0.97,
+                domain: null,
+                isStarter: true,
+                builtIn: true,
+            },
+            // ### Welle 9b — Domain-Werkzeuge ###
+            // Eines pro Nicht-Default-Domain. Jedes Werkzeug erbt eine
+            // opClass (Material-Bearbeitung physikalisch) PLUS eine domain
+            // (Werkstatt-Domäne semantisch). Beide sind orthogonal: dieselbe
+            // opClass kann in verschiedenen Domains stecken (additive in
+            // mörser + webstuhl), eine domain kann verschiedene opClasses
+            // tragen (forging mit plastic-Hammer oder phaseChange-Esse).
+            {
+                name: "schmiede-hammer",
+                label: "Schmiede-Hammer",
+                opClass: "plastic",
+                opName: "forge_shape",
+                precisionCap: 0.75,
+                domain: "forging",
+                isStarter: true,
+                builtIn: true,
+            },
+            {
+                name: "mörser",
+                label: "Mörser & Stößel",
+                opClass: "additive",
+                opName: "brew",
+                precisionCap: 0.7,
+                domain: "alchemy",
+                isStarter: true,
+                builtIn: true,
+            },
+            {
+                name: "webstuhl-schiffchen",
+                label: "Webstuhl-Schiffchen",
+                opClass: "additive",
+                opName: "weave",
+                precisionCap: 0.7,
+                domain: "textile",
+                isStarter: true,
+                builtIn: true,
+            },
+            {
+                name: "ritueller-stab",
+                label: "Ritueller Stab",
+                opClass: "phaseChange",
+                opName: "imbue",
+                precisionCap: 0.85,
+                domain: "soulwork",
+                isStarter: true,
+                builtIn: true,
+            },
+            {
+                name: "drehbank-meißel",
+                label: "Drehbank-Meißel",
+                opClass: "subtractive",
+                opName: "turn",
+                precisionCap: 0.9,
+                domain: "mechanism",
                 isStarter: true,
                 builtIn: true,
             },
@@ -18254,7 +18334,16 @@ class AnazhRealm {
         header.appendChild(title);
         const status = document.createElement("span");
         status.className = "workshop-status";
-        status.textContent = selected.builtIn ? "Eingebaut — zum Bearbeiten klonen" : `${selected.parts.length} Parts`;
+        if (selected.builtIn) {
+            status.textContent = "Eingebaut — zum Bearbeiten klonen";
+        } else {
+            // Welle 9b — emergente Rolle live anzeigen. Manueller Override
+            // wird mit „(manuell)" markiert, sonst „(aus Werkzeugen)".
+            const role = selected.role || AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
+            const roleLabel = AnazhRealm.BLUEPRINT_ROLE_LABELS[role] || role;
+            const origin = selected.roleManual ? "manuell" : "emergent";
+            status.textContent = `${selected.parts.length} Parts · Rolle: ${roleLabel} (${origin})`;
+        }
         header.appendChild(status);
         editor.appendChild(header);
         // Welle 4 Phase 3 — Werkzeug-Sammlung. Eine Liste der besessenen
@@ -18272,8 +18361,21 @@ class AnazhRealm {
             if (!t) continue;
             const chip = document.createElement("span");
             chip.className = "workshop-tool-chip";
-            chip.textContent = `${t.label} ${t.precisionCap.toFixed(2)}`;
-            chip.title = `${t.opName} (${t.opClass})`;
+            // Welle 9b — Domain-Punkt als visueller Anker. Werkzeuge ohne
+            // Domain (null) bekommen keinen Punkt; Domain-Werkzeuge zeigen
+            // einen farbigen Indikator + Tooltip mit Werkstatt-Domäne.
+            if (t.domain && AnazhRealm.TOOL_DOMAIN_COLORS[t.domain]) {
+                const dot = document.createElement("span");
+                dot.className = "workshop-tool-domain-dot";
+                dot.style.background = AnazhRealm.TOOL_DOMAIN_COLORS[t.domain];
+                dot.title = AnazhRealm.TOOL_DOMAIN_LABELS[t.domain] || t.domain;
+                chip.appendChild(dot);
+            }
+            const labelSpan = document.createElement("span");
+            labelSpan.textContent = `${t.label} ${t.precisionCap.toFixed(2)}`;
+            chip.appendChild(labelSpan);
+            const domainLabel = t.domain ? AnazhRealm.TOOL_DOMAIN_LABELS[t.domain] || t.domain : "generisch";
+            chip.title = `${t.opName} (${t.opClass}) · ${domainLabel}`;
             toolsBox.appendChild(chip);
         }
         editor.appendChild(toolsBox);
@@ -22611,6 +22713,38 @@ AnazhRealm.FORGING_ARMOR_TAGS = Object.freeze(["dichte", "zähigkeit", "wärmele
 // Baupläne (village/temple/etc.) ohne Werkzeug-Anwendung als architecture
 // landen.
 AnazhRealm.DEFAULT_BLUEPRINT_ROLE = "architecture";
+
+// Deutsche Labels für die Welt-Anzeige. Werkstatt-Status zeigt diese
+// statt der englischen Rolle-IDs.
+AnazhRealm.BLUEPRINT_ROLE_LABELS = Object.freeze({
+    architecture: "Bauwerk",
+    tool: "Werkzeug",
+    armor: "Rüstung",
+    consumable: "Konsumable",
+    soul: "Seele",
+    machine: "Maschine",
+});
+
+// Werkzeug-Domain-Labels (deutsch) für UI-Anzeige. null = generic
+// (zeigt keinen Domain-Indikator).
+AnazhRealm.TOOL_DOMAIN_LABELS = Object.freeze({
+    construction: "Konstruktion",
+    forging: "Schmiede",
+    alchemy: "Alchemie",
+    textile: "Weberei",
+    soulwork: "Seelenkunst",
+    mechanism: "Mechanik",
+});
+
+// Domain-Farben für visuelle Wiedererkennung der Werkstatt-Zugehörigkeit.
+AnazhRealm.TOOL_DOMAIN_COLORS = Object.freeze({
+    construction: "#9aaeb8", // Stein-Grau-Blau
+    forging: "#c44830", // Glut-Rot
+    alchemy: "#a878b8", // Magie-Violett
+    textile: "#d4b076", // Sand-Beige
+    soulwork: "#88e1e1", // Geist-Cyan
+    mechanism: "#b08648", // Bronze
+});
 // Welt-Effekt-Schwellen: zentralisiert, damit Tuning ohne Code-Suche geht.
 // Werte aus Konzept §6.3 (≥0.7 mild, ≥1.5 stark, ≥2.5 signatur).
 AnazhRealm.WORLD_EFFECT_THRESHOLDS = Object.freeze({
