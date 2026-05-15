@@ -185,6 +185,19 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 
 Echt gelernt, nicht performt:
 
+### V8.13-V8.19 (17.05.2026) — Sieben Audit-Runden als Rhythmus
+
+**Eine ganze Session-Hälfte besteht aus dem Audit-Rhythmus**: Schöpfer testet im Browser, listet 15-18 Punkte konkret, ich gehe Runde für Runde durch, jede Runde ist ein Commit. Sieben Runden V8.13-V8.19. Was funktioniert hat:
+
+- **Strukturierte Audit-Tabellen**: jeder Punkt bekommt eine Zeile mit „Punkt | Priorität | Plan". Ich gehe in Reihenfolge durch, halte nicht inne für Klärung wenn die Intention klar ist. Bei Unklarheit frage ich gezielt (siehe V8.18 Werkzeug-Tutorial: ich habe zwischen drei UX-Pfaden gewählt + bestätigt).
+- **Tests pro Sub-Punkt**: 5-10 Invarianten pro Audit-Punkt. Schöpfer erkennt dadurch ob ein Fix nur lokal oder strukturell stabil ist. 1791 → 1879 Invarianten in einer Session (+88).
+- **Browser-Cache als Bug-Quelle**: dreimal in dieser Runde hat ein „funktioniert nicht"-Bericht sich nach Hard-Refresh aufgelöst. Defensive Code-Pfade (Fallbacks für undefined-State) sind die Antwort — nicht „User soll Cache leeren".
+- **Schöpfer-Korrekturen über mehrere Runden**: Resize-Handle wechselte br (V8.0)→tr (V8.15)→br (V8.17) durch Iteration. Wer Layout-Entscheidungen trifft, akzeptiert dass die echte Validierung im Spiel passiert, nicht im Code-Review.
+
+**Vision-Lehre**: Audit-Runden sind nicht „Bugfix-Phase nach Feature-Welle". Sie sind ein **gleichberechtigter Rhythmus** — Feature-Welle baut, Audit-Welle integriert. Welle 6.X war ein Feature-Welle (5 Sub-Phasen mit neuen Funktionen); die 7 Audit-Runden V8.13-V8.19 waren das Integrations-Echo. Das Verhältnis ist ungefähr 1:1 (5 Sub-Phasen Bauen ≈ 7 Runden Audit-Antwort).
+
+**Architektur-Lehre**: Defense-in-Depth bei UI-State. `state.player.hp` kann undefined sein vor `recomputePlayerStats`-Lauf — der HUD muss das vertragen. `bp.builtIn` darf keine silent-fail-Werkzeug-Drops produzieren — präzise Fehler-Messages mit Vorwärts-Pfad. Wer einen Bug aus dem Browser-Test bekommt, sucht den **strukturellen Defekt** (was ist die wahre Wurzel?), nicht nur das Symptom.
+
 ### V8.07 + Audit 17.05.2026 — Pause-und-Auditieren als eigenes Werkzeug
 
 **Der Schöpfer hat eine Welle ANGEHALTEN und stattdessen einen 18-Punkte-Audit verlangt** — das war die wichtigste Lehre dieses Tages. Ich war bereit zu 6.G Phase 3 oder Welle 7 zu springen; der Schöpfer hat erkannt, dass eine **strukturierte Audit-Reflexion** vor dem nächsten Bau-Schritt mehr wert ist als der nächste Bau-Schritt selbst. Das ist keine Verzögerung, das ist **Disziplin der Übersicht**.

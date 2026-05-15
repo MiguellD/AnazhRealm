@@ -1,6 +1,6 @@
 # AnazhRealm Roadmap — Vollumfänglich
 
-Stand: 16.05.2026 (V8.07, Welle 6.B CAD-Werkstatt + Welle 9 Werkzeug-Domains + Welle 10 Präzision/Affordances + UX-Polish 8.00-8.07 + Schöpfer-Audit 17.05.2026 mit 18-Punkte-Liste in Roadmap eingearbeitet).
+Stand: 17.05.2026 (V8.19, Welle 6.X komplett + 7 Audit-Runden V8.13-V8.19 mit insgesamt 30+ Browser-Test-Punkten adressiert. 1879/1879 Invarianten grün.)
 
 Diese Doc beschreibt das **gesamte Projekt vom heutigen Stand bis zum Vision-Endziel** (Welten-Ultiversum). Sie ergänzt `state-of-realm.md` (Was/Warum) um eine puren Plan-Sicht (Wann/Wie). Aufwandsschätzungen sind realistische Tage für eine fokussierte Claude-Session pro Ring/Phase; gerechnet wird linear, ohne Puffer.
 

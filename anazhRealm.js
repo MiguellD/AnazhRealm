@@ -19165,6 +19165,15 @@ class AnazhRealm {
         if (typeof this._workshopUpdateManipulatorButtons === "function") {
             this._workshopUpdateManipulatorButtons();
         }
+        // V8.19 Schöpfer-Test: bei Bauplan-Wechsel die CAD-Kamera auf den
+        // neuen Bauplan zentrieren. Vorher behielt die Kamera ihre alte
+        // Orbit-Position (Yaw/Pitch/Dist), sodass beim Zurückwechseln auf
+        // einen vorher gedrehten Bauplan die alte Sicht „klebte". Reset
+        // garantiert: jeder Klick auf ein Listen-Item → frische Top-Down-
+        // schräge Sicht auf den Bauplan-Schwerpunkt.
+        if (typeof this.resetWorkshopCamera === "function") {
+            this.resetWorkshopCamera();
+        }
         return true;
     }
 
@@ -21457,15 +21466,24 @@ class AnazhRealm {
     _workshopHandleToolDrop(toolName, clientX, clientY) {
         const ws = this._ensureWorkshopState();
         const bp = this.state.blueprints[ws.selectedBlueprint];
-        if (!bp || bp.builtIn) return;
+        if (!bp) return;
+        // V8.19 Schöpfer-Bug — Built-in-Bauplan: gib klare Anleitung statt
+        // silent-fail. Spieler musste vorher rätseln warum nichts passiert.
+        if (bp.builtIn) {
+            this.log(
+                `Built-in-Bauplan „${bp.label || bp.name}" — klicke „Klonen" in der Mode-Bar um eine editierbare Kopie zu erstellen.`,
+                "WARNING"
+            );
+            return;
+        }
         const tool = this.state.tools && this.state.tools[toolName];
         if (!tool) {
-            this.log(`Workshop-ToolDrop: unbekanntes Werkzeug '${toolName}'`, "INFO");
+            this.log(`Werkzeug „${toolName}" nicht bekannt`, "ERROR");
             return;
         }
         const idx = this._workshopRaycastPartIdxAt(clientX, clientY);
         if (idx === null) {
-            this.log("Workshop-ToolDrop: kein Part getroffen — drop direkt auf einen Part", "INFO");
+            this.log("Werkzeug auf einen Part im 3D-Mesh ziehen (Treffer-Punkt war daneben).", "INFO");
             return;
         }
         const result = this.applyOpToPart(bp.name, idx, toolName);
@@ -21473,12 +21491,35 @@ class AnazhRealm {
             this._renderWorkshopDOM();
             this._workshopSetSelection(idx);
             this.log(
-                `Workshop: Werkzeug '${toolName}' auf Part ${idx} angewandt (Präzision ${result.precision.toFixed(2)})`,
+                `Werkzeug „${tool.label || toolName}" angewandt auf Part ${idx} (Präzision ${result.precision.toFixed(2)})`,
                 "INFO"
             );
         } else {
+            // V8.19 — bessere Fehlermeldungen pro reason. Schöpfer-Test
+            // zeigte „werkzeuge gehen nicht" → unklar warum. Jetzt sagt
+            // der Log exakt was fehlt.
             const reason = (result && result.reason) || "unknown";
-            this.log(`Workshop-ToolDrop: ${reason}`, "INFO");
+            const part = bp.parts && bp.parts[idx];
+            if (reason === "tool_not_owned") {
+                this.log(
+                    `Werkzeug „${tool.label || toolName}" nicht im Besitz. Erstelle es im Spieler-Drawer (Werkzeug ausrüsten).`,
+                    "WARNING"
+                );
+            } else if (reason === "material_op_incompatible") {
+                const compat = AnazhRealm.MATERIAL_OP_COMPATIBILITY[part?.material];
+                this.log(
+                    `Material „${part?.material}" akzeptiert nicht Op-Klasse „${tool.opClass}". Kompatibel: ${(compat || []).join(", ") || "(keine)"}. ` +
+                        `Stein → subtractive (Feuerstein, Feile), Eisen → alles, Holz → subtractive+additive.`,
+                    "WARNING"
+                );
+            } else if (reason === "insufficient_stamina") {
+                this.log(
+                    "Nicht genug Stamina (10 nötig). Wechsel zu frieden/schöpfer für kostenlose Werkzeug-Anwendung.",
+                    "WARNING"
+                );
+            } else {
+                this.log(`Werkzeug-Anwendung fehlgeschlagen: ${reason}`, "ERROR");
+            }
         }
     }
 
@@ -21513,23 +21554,29 @@ class AnazhRealm {
             card.setAttribute("draggable", "true");
             card.setAttribute("data-material", name);
             card.setAttribute("title", `${mat.label || name} → auf Part ziehen wechselt Material`);
-            const swatch = document.createElement("span");
-            swatch.className = "mat-swatch";
             const c = typeof mat.color === "number" ? mat.color : 0x888888;
-            swatch.style.background = `#${c.toString(16).padStart(6, "0")}`;
-            card.appendChild(swatch);
-            const label = document.createElement("span");
-            label.textContent = mat.label || name;
-            card.appendChild(label);
-            // V8.17 Material-Glyph (nur bei Built-in-Materialien — eigene
-            // Materialien haben keinen Standard-Glyph).
+            const colorHex = `#${c.toString(16).padStart(6, "0")}`;
+            // V8.19 — Glyph in der Material-Farbe VOR dem Label (statt
+            // separater Farb-Kreis + Glyph-rechts). Spieler sieht das
+            // Material-Symbol direkt eingefärbt — kein doppelter Marker mehr.
             if (GLYPHS[name]) {
                 const glyph = document.createElement("span");
                 glyph.className = "mat-glyph";
                 glyph.setAttribute("aria-hidden", "true");
                 glyph.textContent = GLYPHS[name];
+                glyph.style.color = colorHex;
                 card.appendChild(glyph);
+            } else {
+                // Eigene Materialien ohne Glyph → fallback ein gefüllter Kreis
+                // in Material-Farbe, damit kein leerer Slot entsteht.
+                const swatch = document.createElement("span");
+                swatch.className = "mat-swatch";
+                swatch.style.background = colorHex;
+                card.appendChild(swatch);
             }
+            const label = document.createElement("span");
+            label.textContent = mat.label || name;
+            card.appendChild(label);
             palette.appendChild(card);
         }
     }

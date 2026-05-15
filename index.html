@@ -2611,17 +2611,17 @@
             .drawer .hotbar-config-row select:hover {
                 border-color: var(--brass-1);
             }
-            /* Welle 6.X.2 V8.17 — Werkstatt-Drawer voll bemessen.
-               Schöpfer-Wunsch: links bis zur Konsole-Position (~450px),
-               unten bis kurz über die HUD/Hotbar (~150px from bottom).
-               Top wie Default (116px), right wie Default (12px). Vorher
-               max-height 88vh war zu groß — Inhalt ging unter die Hotbar. */
+            /* Welle 6.X.2 V8.19 — Werkstatt-Drawer: Anker oben-rechts wie
+               andere Drawer (Default-Konvention), Default-Breite füllt
+               den Bereich zwischen Konsole (left ~ 16+420=436) und rechtem
+               Viewport-Rand (right 12). Höhe von topbar bis kurz über HUD.
+               Resize via bottom-left-Handle (Standard-Drawer-Resize-Pfad)
+               → Spieler zieht das untere-linke Eck zum Vergrößern/Verkleinern. */
             .drawer[data-drawer="werkstatt"] {
-                left: 450px;
-                right: 12px;
-                width: auto;
-                bottom: 150px;
-                max-height: none;
+                /* top: 116px, right: 12px aus Default-Drawer beibehalten */
+                width: calc(100vw - 462px);
+                min-width: 460px;
+                max-height: calc(100vh - 270px);
             }
             /* Ring 6.6 — Werkstatt-Editor */
             #workshop-list {
@@ -3483,13 +3483,17 @@
             .workshop-color-swatch.dragging {
                 opacity: 0.4;
             }
-            /* V8.17 — Material-Glyph rechts (Konsistenz mit Inventar). */
+            /* V8.19 — Material-Glyph VOR dem Label, in Material-Farbe.
+               Schöpfer-Wunsch: ein Marker pro Material-Card, nicht zwei
+               (vorher Farb-Kreis + Glyph rechts). Glyph trägt die Farbe
+               direkt — visuelle Konsistenz mit Inventar-Slots. */
             .workshop-material-card .mat-glyph {
-                font-size: 13px;
+                font-size: 15px;
                 line-height: 1;
-                color: var(--brass-1, #c69a4a);
-                margin-left: auto;
-                text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
+                min-width: 14px;
+                text-align: center;
+                margin-right: 4px;
+                text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);
             }
             /* V8.17 — Hint-Mini im Side-Palette (kompakt, leitend). */
             .workshop-hint-mini {
@@ -4333,9 +4337,9 @@
                         <div id="workshop-material-palette" role="group" aria-label="Material-Palette"></div>
                         <h4>Werkzeuge</h4>
                         <p class="drawer-hint workshop-hint-mini">
-                            Auf einen Part im 3D ziehen → wendet die Op an. Bearbeitet Material, hebt Präzision,
-                            schärft die Rolle (forging→tool, alchemy→konsumabel). Hand=0.40, Polierscheibe=0.97 —
-                            die schwächste Op deckelt die Compound-Präzision.
+                            Auf einen Part im 3D ziehen → wendet die Op an. Bearbeitet Material, hebt Präzision, schärft
+                            die Rolle (forging→tool, alchemy→konsumabel). Hand=0.40, Polierscheibe=0.97 — die schwächste
+                            Op deckelt die Compound-Präzision.
                         </p>
                         <div id="workshop-tool-palette" role="group" aria-label="Werkzeug-Palette"></div>
                         <h4>Farben</h4>
