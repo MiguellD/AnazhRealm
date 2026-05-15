@@ -13097,6 +13097,231 @@ function startSaveServer() {
                 check(`V8.03: evaluate-Fehler — ${v803Results.error}`, false);
             }
 
+            // ### Welle 9a — Werkzeug-Domains + emergente Bauplan-Rolle ###
+            const wave9aResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const AR = r.constructor;
+                    const out = {};
+                    try {
+                        // Konstanten
+                        out.toolDomainsFrozen =
+                            Array.isArray(AR.TOOL_DOMAINS) &&
+                            Object.isFrozen(AR.TOOL_DOMAINS) &&
+                            AR.TOOL_DOMAINS.length === 6;
+                        out.toolDomainsContent = [
+                            "construction",
+                            "forging",
+                            "alchemy",
+                            "textile",
+                            "soulwork",
+                            "mechanism",
+                        ].every((d) => AR.TOOL_DOMAINS.includes(d));
+                        out.domainToRoleFrozen = !!AR.DOMAIN_TO_ROLE && Object.isFrozen(AR.DOMAIN_TO_ROLE);
+                        out.alchemyMapsToConsumable = AR.DOMAIN_TO_ROLE.alchemy === "consumable";
+                        out.textileMapsToArmor = AR.DOMAIN_TO_ROLE.textile === "armor";
+                        out.soulworkMapsToSoul = AR.DOMAIN_TO_ROLE.soulwork === "soul";
+                        out.mechanismMapsToMachine = AR.DOMAIN_TO_ROLE.mechanism === "machine";
+                        out.constructionMapsToArchitecture = AR.DOMAIN_TO_ROLE.construction === "architecture";
+                        out.forgingIsSplit = AR.DOMAIN_TO_ROLE.forging === "forging-split";
+                        out.forgingToolTags =
+                            Array.isArray(AR.FORGING_TOOL_TAGS) && AR.FORGING_TOOL_TAGS.includes("härte");
+                        out.forgingArmorTags =
+                            Array.isArray(AR.FORGING_ARMOR_TAGS) && AR.FORGING_ARMOR_TAGS.includes("dichte");
+                        out.defaultRole = AR.DEFAULT_BLUEPRINT_ROLE === "architecture";
+
+                        // Methoden existieren
+                        out.hasComputeDomain = typeof r.computeBlueprintDomain === "function";
+                        out.hasComputeRole = typeof r.computeBlueprintRole === "function";
+                        out.hasComputeForgingRole = typeof r._computeForgingRole === "function";
+                        out.hasRefresh = typeof r._refreshBlueprintRoleEmergent === "function";
+
+                        // Default-Tools sind alle generic (domain=null)
+                        const tools = r.state.tools || {};
+                        out.allBuiltInsGeneric = Object.values(tools)
+                            .filter((t) => t.builtIn)
+                            .every((t) => !t.domain);
+
+                        // Leerer Bauplan / nur generic-Werkzeuge → null Domain, role=architecture
+                        if (r.state.blueprints["test_9a_empty"]) r.deleteBlueprint("test_9a_empty");
+                        r.cloneBlueprint("village", "test_9a_empty");
+                        // Werkzeug "hände" anwenden auf Part 0 — domain=null bleibt
+                        r.applyOpToPart("test_9a_empty", 0, "hände");
+                        out.emptyDomainNull = r.computeBlueprintDomain(r.state.blueprints.test_9a_empty) === null;
+                        out.emptyRoleArchitecture =
+                            r.computeBlueprintRole(r.state.blueprints.test_9a_empty) === "architecture";
+
+                        // Simuliere ein Domain-tragendes Werkzeug (manuell hinzufügen für Test)
+                        r.state.tools["test_forge_hammer"] = {
+                            name: "test_forge_hammer",
+                            label: "Schmiede-Hammer (Test)",
+                            opClass: "plastic",
+                            opName: "forge",
+                            precisionCap: 0.7,
+                            isStarter: false,
+                            builtIn: false,
+                            domain: "forging",
+                        };
+                        if (!r.state.player.tools.includes("test_forge_hammer")) {
+                            r.state.player.tools.push("test_forge_hammer");
+                        }
+                        if (r.state.blueprints["test_9a_forging"]) r.deleteBlueprint("test_9a_forging");
+                        r.cloneBlueprint("village", "test_9a_forging");
+                        // Erst Material auf eisen wechseln (stein lehnt plastic-opClass ab,
+                        // forging-Hammer hat opClass=plastic — applyOp würde sonst scheitern).
+                        r.updatePartInBlueprint("test_9a_forging", 0, { material: "eisen", recolor: true });
+                        r.applyOpToPart("test_9a_forging", 0, "test_forge_hammer");
+                        out.forgingDomainDetected =
+                            r.computeBlueprintDomain(r.state.blueprints.test_9a_forging) === "forging";
+
+                        // Forging-Split via Compound-Tags
+                        const forgingRole = r.computeBlueprintRole(r.state.blueprints.test_9a_forging);
+                        out.forgingResolvedTo = forgingRole;
+                        out.forgingIsToolOrArmor = forgingRole === "tool" || forgingRole === "armor";
+
+                        // Alchemy-Domain → consumable
+                        r.state.tools["test_alchemy_mortar"] = {
+                            name: "test_alchemy_mortar",
+                            label: "Mörser (Test)",
+                            opClass: "additive",
+                            opName: "brew",
+                            precisionCap: 0.7,
+                            isStarter: false,
+                            builtIn: false,
+                            domain: "alchemy",
+                        };
+                        if (!r.state.player.tools.includes("test_alchemy_mortar")) {
+                            r.state.player.tools.push("test_alchemy_mortar");
+                        }
+                        if (r.state.blueprints["test_9a_alchemy"]) r.deleteBlueprint("test_9a_alchemy");
+                        r.cloneBlueprint("village", "test_9a_alchemy");
+                        r.updatePartInBlueprint("test_9a_alchemy", 0, { material: "holz", recolor: true });
+                        r.applyOpToPart("test_9a_alchemy", 0, "test_alchemy_mortar");
+                        out.alchemyRoleIsConsumable =
+                            r.computeBlueprintRole(r.state.blueprints.test_9a_alchemy) === "consumable";
+
+                        // Mechanism-Domain → machine
+                        r.state.tools["test_lathe"] = {
+                            name: "test_lathe",
+                            label: "Drehbank (Test)",
+                            opClass: "subtractive",
+                            opName: "turn",
+                            precisionCap: 0.9,
+                            isStarter: false,
+                            builtIn: false,
+                            domain: "mechanism",
+                        };
+                        if (!r.state.player.tools.includes("test_lathe")) {
+                            r.state.player.tools.push("test_lathe");
+                        }
+                        if (r.state.blueprints["test_9a_mech"]) r.deleteBlueprint("test_9a_mech");
+                        r.cloneBlueprint("village", "test_9a_mech");
+                        r.applyOpToPart("test_9a_mech", 0, "test_lathe");
+                        out.mechanismRoleIsMachine =
+                            r.computeBlueprintRole(r.state.blueprints.test_9a_mech) === "machine";
+
+                        // Emergent-Refresh: addPart triggert _refreshBlueprintRoleEmergent
+                        if (r.state.blueprints["test_9a_emergent"]) r.deleteBlueprint("test_9a_emergent");
+                        r.cloneBlueprint("village", "test_9a_emergent");
+                        r.applyOpToPart("test_9a_emergent", 0, "test_lathe");
+                        out.emergentRoleSetOnApply = r.state.blueprints.test_9a_emergent.role === "machine";
+
+                        // Manueller Override: setBlueprintAsArmor sperrt emergenten Pfad
+                        r.setBlueprintAsArmor("test_9a_emergent");
+                        out.manualOverrideSetsRole = r.state.blueprints.test_9a_emergent.role === "armor";
+                        out.manualOverrideMarksFlag = r.state.blueprints.test_9a_emergent.roleManual === true;
+                        // Nochmal applyOpToPart — role bleibt manual=armor (kein emergent override)
+                        r.applyOpToPart("test_9a_emergent", 0, "test_lathe");
+                        out.manualOverrideStaysAfterApply = r.state.blueprints.test_9a_emergent.role === "armor";
+
+                        // Cleanup
+                        for (const n of [
+                            "test_9a_empty",
+                            "test_9a_forging",
+                            "test_9a_alchemy",
+                            "test_9a_mech",
+                            "test_9a_emergent",
+                        ]) {
+                            if (r.state.blueprints[n]) r.deleteBlueprint(n);
+                        }
+                        for (const t of ["test_forge_hammer", "test_alchemy_mortar", "test_lathe"]) {
+                            delete r.state.tools[t];
+                            r.state.player.tools = r.state.player.tools.filter((x) => x !== t);
+                        }
+                        r._renderWorkshopDOM();
+                    } catch (err) {
+                        out.error = err && err.message;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (wave9aResults && !wave9aResults.error) {
+                check(
+                    "Welle 9a: TOOL_DOMAINS frozen mit 6 Einträgen (construction/forging/alchemy/textile/soulwork/mechanism)",
+                    wave9aResults.toolDomainsFrozen && wave9aResults.toolDomainsContent
+                );
+                check(
+                    "Welle 9a: DOMAIN_TO_ROLE-Map frozen mit korrektem Mapping (alchemy→consumable, textile→armor, soulwork→soul, mechanism→machine, construction→architecture, forging→forging-split)",
+                    wave9aResults.domainToRoleFrozen &&
+                        wave9aResults.alchemyMapsToConsumable &&
+                        wave9aResults.textileMapsToArmor &&
+                        wave9aResults.soulworkMapsToSoul &&
+                        wave9aResults.mechanismMapsToMachine &&
+                        wave9aResults.constructionMapsToArchitecture &&
+                        wave9aResults.forgingIsSplit
+                );
+                check(
+                    "Welle 9a: FORGING_TOOL_TAGS enthält härte + FORGING_ARMOR_TAGS enthält dichte",
+                    wave9aResults.forgingToolTags && wave9aResults.forgingArmorTags
+                );
+                check("Welle 9a: DEFAULT_BLUEPRINT_ROLE === 'architecture'", wave9aResults.defaultRole);
+                check(
+                    "Welle 9a: alle 4 Methoden existieren (computeBlueprintDomain/Role + _computeForgingRole + _refreshBlueprintRoleEmergent)",
+                    wave9aResults.hasComputeDomain &&
+                        wave9aResults.hasComputeRole &&
+                        wave9aResults.hasComputeForgingRole &&
+                        wave9aResults.hasRefresh
+                );
+                check(
+                    "Welle 9a: Alle 5 Built-in-Werkzeuge sind generic (domain=null) — beeinflussen Rolle NICHT",
+                    wave9aResults.allBuiltInsGeneric
+                );
+                check(
+                    "Welle 9a: Leerer Bauplan + nur generic-Werkzeuge → computeDomain=null",
+                    wave9aResults.emptyDomainNull
+                );
+                check(
+                    "Welle 9a: Leerer Bauplan + nur generic-Werkzeuge → role=architecture (Default)",
+                    wave9aResults.emptyRoleArchitecture
+                );
+                check(
+                    "Welle 9a: Domain-Werkzeug (forging) angewandt → computeDomain='forging'",
+                    wave9aResults.forgingDomainDetected
+                );
+                check(
+                    `Welle 9a: Forging-Split via Compound-Tags → resolveTo='${wave9aResults.forgingResolvedTo}' (tool oder armor)`,
+                    wave9aResults.forgingIsToolOrArmor
+                );
+                check("Welle 9a: Alchemy-Werkzeug → role='consumable'", wave9aResults.alchemyRoleIsConsumable);
+                check("Welle 9a: Mechanism-Werkzeug → role='machine'", wave9aResults.mechanismRoleIsMachine);
+                check(
+                    "Welle 9a: applyOpToPart triggert _refreshBlueprintRoleEmergent → bp.role wird emergent gesetzt",
+                    wave9aResults.emergentRoleSetOnApply
+                );
+                check(
+                    "Welle 9a: Manueller Override (setBlueprintAsArmor) setzt bp.role + roleManual=true",
+                    wave9aResults.manualOverrideSetsRole && wave9aResults.manualOverrideMarksFlag
+                );
+                check(
+                    "Welle 9a: Manueller Override sperrt emergenten Pfad — applyOpToPart ändert role nicht mehr",
+                    wave9aResults.manualOverrideStaysAfterApply
+                );
+            } else if (wave9aResults && wave9aResults.error) {
+                check(`Welle 9a: evaluate-Fehler — ${wave9aResults.error}`, false);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {

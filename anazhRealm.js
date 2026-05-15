@@ -13697,6 +13697,9 @@ class AnazhRealm {
         if (!bp) return { ok: false, reason: "blueprint_unknown" };
         if (bp.builtIn) return { ok: false, reason: "cannot_modify_builtin" };
         bp.role = "armor";
+        // Welle 9a — manuellen Override merken damit emergente Berechnung
+        // diesen Bauplan in Ruhe lässt
+        bp.roleManual = true;
         return { ok: true, name };
     }
 
@@ -13783,6 +13786,8 @@ class AnazhRealm {
         const dur = Math.max(0.5, Math.min(600, Number(durationSeconds) || 30));
         const sc = Math.max(0.02, Math.min(1, Number(scale) || 0.2));
         bp.role = "consumable";
+        // Welle 9a — manueller Role-Override (siehe setBlueprintAsArmor)
+        bp.roleManual = true;
         bp.consumableMeta = {
             durationSeconds: dur,
             scale: sc,
@@ -15141,6 +15146,10 @@ class AnazhRealm {
             cap: tool.precisionCap,
             at: performance.now() / 1000,
         });
+        // Welle 9a — emergente Bauplan-Rolle aktualisieren. Wenn das Werkzeug
+        // eine Domain trägt (Phase 9b), kann der Bauplan dadurch seine Rolle
+        // wechseln (z. B. construction → forging → tool).
+        this._refreshBlueprintRoleEmergent(blueprintName);
         return { ok: true, precision: this.computePartPrecision(part), staminaRemaining: this.state.player.stamina };
     }
 
@@ -15624,6 +15633,86 @@ class AnazhRealm {
         return min;
     }
 
+    // ============================================================
+    // ### Welle 9a — Werkzeug-Domains + emergente Bauplan-Rolle ###
+    // Schöpfer-Vision: die Rolle eines Bauplans EMERGIERT aus den
+    // verwendeten Werkzeugen. Eine Sprache (Compound-Tags + Werkzeug-
+    // Domains), drei Schichten (Material × Form × Werkzeug → Rolle).
+    // ============================================================
+
+    // Sammelt domain-Häufigkeiten über alle opChain-Einträge aller Parts.
+    // Generische Werkzeuge (domain=null) zählen NICHT mit — sie sind
+    // domain-agnostisch und sollen die Bauplan-Rolle nicht beeinflussen.
+    // Liefert die häufigste Domain (oder null wenn keine domain-tragenden
+    // Ops im Bauplan stecken). Bei Gleichstand entscheidet die Reihenfolge
+    // in TOOL_DOMAINS (deterministisch).
+    computeBlueprintDomain(blueprint) {
+        if (!blueprint || !Array.isArray(blueprint.parts)) return null;
+        const counts = {};
+        for (const part of blueprint.parts) {
+            if (!part || !Array.isArray(part.opChain)) continue;
+            for (const op of part.opChain) {
+                if (!op || typeof op.tool !== "string") continue;
+                const tool = this.state.tools && this.state.tools[op.tool];
+                if (!tool) continue;
+                const dom = tool.domain;
+                if (!dom || typeof dom !== "string") continue;
+                if (!AnazhRealm.TOOL_DOMAINS.includes(dom)) continue;
+                counts[dom] = (counts[dom] || 0) + 1;
+            }
+        }
+        let best = null;
+        let bestCount = 0;
+        for (const dom of AnazhRealm.TOOL_DOMAINS) {
+            const c = counts[dom] || 0;
+            if (c > bestCount) {
+                bestCount = c;
+                best = dom;
+            }
+        }
+        return best;
+    }
+
+    // Forging-Split-Regel: ein Bauplan dessen dominante Domain "forging"
+    // ist wird "tool" wenn seine Compound-Tags die FORGING_TOOL_TAGS-Seite
+    // (härte/magieleitung/stromleitung) stärker tragen, sonst "armor"
+    // (dichte/zähigkeit/wärmeleitung-Seite). Compound-Tags = MAX über
+    // Parts, dieselbe Pipeline wie Welle 4 P2.
+    _computeForgingRole(blueprint) {
+        const tags = this.computeCompoundTags(blueprint) || {};
+        let toolScore = 0;
+        let armorScore = 0;
+        for (const t of AnazhRealm.FORGING_TOOL_TAGS) toolScore += tags[t] || 0;
+        for (const t of AnazhRealm.FORGING_ARMOR_TAGS) armorScore += tags[t] || 0;
+        return toolScore >= armorScore ? "tool" : "armor";
+    }
+
+    // Liefert die emergente Bauplan-Rolle aus der dominanten Werkzeug-
+    // Domain. Default ist "architecture" wenn keine Domain dominiert.
+    // forging-Split wird intern aufgelöst via Compound-Tag-Diskrimination.
+    computeBlueprintRole(blueprint) {
+        const dom = this.computeBlueprintDomain(blueprint);
+        if (!dom) return AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
+        const role = AnazhRealm.DOMAIN_TO_ROLE[dom];
+        if (role === "forging-split") {
+            return this._computeForgingRole(blueprint);
+        }
+        return role || AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
+    }
+
+    // Setzt bp.role emergent ein. Wird aus den Mutations-Methoden gerufen
+    // (addPart, updatePart, removePart, applyOpToPart). Manueller Override
+    // via setBlueprintAsArmor/setBlueprintAsConsumable etc. setzt
+    // bp.roleManual = true und sperrt damit den emergenten Pfad — der
+    // Schöpfer kann eine Rolle erzwingen wenn er das wirklich will.
+    _refreshBlueprintRoleEmergent(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return;
+        if (bp.builtIn) return; // Built-ins haben feste Rollen
+        if (bp.roleManual) return; // manueller Override respektieren
+        bp.role = this.computeBlueprintRole(bp);
+    }
+
     // Setzt Bauplan-Werkzeug-Meta. Nur eigene Baupläne, nur whitelisted
     // opClass, nur sanitized opName. Mutiert in-place, idempotent.
     setBlueprintToolMeta(name, opName, opClass) {
@@ -15638,6 +15727,8 @@ class AnazhRealm {
             return { ok: false, reason: "invalid_op_name" };
         }
         bp.role = "tool";
+        // Welle 9a — manueller Role-Override (siehe setBlueprintAsArmor)
+        bp.roleManual = true;
         bp.toolMeta = { opName: cleanOpName, opClass };
         return { ok: true };
     }
@@ -18014,6 +18105,8 @@ class AnazhRealm {
             opChain: this._defaultPartOpChain(),
         };
         bp.parts.push({ ...defaultPart, ...(part || {}) });
+        // Welle 9a — emergente Rolle aktualisieren (außer bei manuellem Override)
+        this._refreshBlueprintRoleEmergent(name);
         return true;
     }
 
@@ -18036,6 +18129,8 @@ class AnazhRealm {
                     partB: c.partB > index ? c.partB - 1 : c.partB,
                 }));
         }
+        // Welle 9a — emergente Rolle aktualisieren
+        this._refreshBlueprintRoleEmergent(name);
         return true;
     }
 
@@ -18063,6 +18158,9 @@ class AnazhRealm {
                 part.color = this.state.materials[patch.material].color;
             }
         }
+        // Welle 9a — emergente Rolle aktualisieren (Shape/Material-Wechsel
+        // kann via Compound-Tags die forging-Split-Entscheidung kippen)
+        this._refreshBlueprintRoleEmergent(name);
         return true;
     }
 
@@ -22466,6 +22564,53 @@ AnazhRealm.MATERIAL_OP_COMPATIBILITY = Object.freeze({
     quarz: Object.freeze(["subtractive", "phaseChange"]),
     leder: Object.freeze(["subtractive", "plastic", "additive"]),
 });
+
+// ============================================================
+// Welle 9a — Werkzeug-Domains + emergente Bauplan-Rolle.
+// Schöpfer-Vision (B+C Hybrid): die Rolle eines Bauplans EMERGIERT aus
+// den verwendeten Werkzeugen statt manuell gewählt zu werden — analog
+// wie Compound-Tags aus Material × Form emergieren. Eine Sprache, drei
+// Schichten (Material, Form, Werkzeug).
+//
+// TOOL_DOMAINS sind die sechs Werkstatt-Domänen. Bestehende Built-in-
+// Werkzeuge bleiben generisch (domain=null) — sie passen in jede Domain
+// und beeinflussen die Bauplan-Rolle NICHT. Erst Domain-spezifische
+// Werkzeuge (kommen in Phase 9b) entscheiden eine Rolle.
+// ============================================================
+AnazhRealm.TOOL_DOMAINS = Object.freeze([
+    "construction", // Architekturen, Welt-Bauten
+    "forging", // Werkzeuge + Rüstungen aus Metall/Stein (Tag-split)
+    "alchemy", // Konsumables, Tränke, Tinkturen
+    "textile", // Rüstungen aus Stoff/Leder/Pflanzlich
+    "soulwork", // Seelen-Avatare, rituelle Wesen
+    "mechanism", // Maschinen, komplexe Werkzeug-Bauten
+]);
+
+// Dominante Domain → Bauplan-Rolle. Forging ist ein Sonderfall: die
+// Rolle (tool vs armor) entscheidet sich erst aus den Compound-Tags
+// — eine harte Klinge wird Werkzeug, eine dichte Platte wird Rüstung.
+AnazhRealm.DOMAIN_TO_ROLE = Object.freeze({
+    construction: "architecture",
+    forging: "forging-split", // Sentinel, computeBlueprintRole handled das
+    alchemy: "consumable",
+    textile: "armor",
+    soulwork: "soul",
+    mechanism: "machine",
+});
+
+// Forging-Split: welche Compound-Tags ziehen den Bauplan zur tool-Seite
+// (scharf, leitend, durchdringend) bzw. zur armor-Seite (dicht, zäh,
+// schützend). Hylomorphismus-treu: die Tag-Sprache entscheidet, kein
+// neuer Schalter. Magie-leitung bei tool weil zauberfähige Klingen
+// in der Vision §1.3 öfter Werkzeuge sind (Stäbe, Phylakte).
+AnazhRealm.FORGING_TOOL_TAGS = Object.freeze(["härte", "magieleitung", "stromleitung"]);
+AnazhRealm.FORGING_ARMOR_TAGS = Object.freeze(["dichte", "zähigkeit", "wärmeleitung"]);
+
+// Default-Rolle wenn keine Domain dominiert (alle generic + leere Chain):
+// Bauplan ist eine Welt-Architektur. Erklärt warum die heutigen Built-in-
+// Baupläne (village/temple/etc.) ohne Werkzeug-Anwendung als architecture
+// landen.
+AnazhRealm.DEFAULT_BLUEPRINT_ROLE = "architecture";
 // Welt-Effekt-Schwellen: zentralisiert, damit Tuning ohne Code-Suche geht.
 // Werte aus Konzept §6.3 (≥0.7 mild, ≥1.5 stark, ≥2.5 signatur).
 AnazhRealm.WORLD_EFFECT_THRESHOLDS = Object.freeze({
