@@ -2701,68 +2701,85 @@
             #workshop-mode-bar {
                 display: flex;
                 gap: 4px;
-                margin: 0 0 4px 0;
+                margin: 0 0 6px 0;
+                padding: 4px 6px;
+                background: rgba(255, 235, 190, 0.18);
+                border: 1px solid var(--brass-3);
+                border-radius: 3px;
                 flex-wrap: wrap;
                 justify-content: center;
+                align-items: center;
             }
-            /* V8.05 — Stats-Panel direkt unter dem Canvas: zeigt emergente
-               Compound-Tags + Affordances + Rolle live. Spieler sieht beim
-               Bauen sofort was räumlich + tag-mäßig passiert. */
+            /* V8.05/8.06 — Stats-Panel direkt unter dem Canvas: zeigt emergente
+               Compound-Tags + Affordances + Rolle live. Höherer Kontrast — dunkler
+               Hintergrund + helle Text-Chips damit die Werte auf der hellen
+               Pergament-Drawer-Basis lesbar sind. */
             #workshop-stats-panel {
                 margin: 4px 0 0 0;
-                padding: 5px 7px;
-                background: rgba(40, 25, 10, 0.06);
-                border: 1px solid var(--parch-edge);
+                padding: 7px 9px;
+                background: rgba(20, 12, 4, 0.65);
+                border: 1px solid var(--brass-3);
                 border-radius: 3px;
                 font-family: "JetBrains Mono", monospace;
-                font-size: 9px;
-                color: var(--parch-ink-soft);
-                line-height: 1.5;
+                font-size: 10px;
+                color: var(--parch-bg);
+                line-height: 1.6;
                 min-height: 18px;
             }
             #workshop-stats-panel .stat-row {
                 display: flex;
                 flex-wrap: wrap;
-                gap: 4px 8px;
+                gap: 5px 10px;
                 align-items: center;
+                margin-bottom: 3px;
+            }
+            #workshop-stats-panel .stat-row:last-child {
+                margin-bottom: 0;
             }
             #workshop-stats-panel .stat-label {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 8px;
-                letter-spacing: 0.5px;
+                font-size: 9px;
+                letter-spacing: 0.6px;
                 color: var(--brass-1);
                 text-transform: uppercase;
                 margin-right: 4px;
+                font-weight: 600;
             }
             #workshop-stats-panel .tag-chip {
                 display: inline-flex;
                 align-items: center;
                 gap: 2px;
-                padding: 1px 5px;
-                background: rgba(40, 25, 10, 0.12);
-                border: 1px solid var(--brass-3);
+                padding: 2px 7px;
+                background: rgba(255, 235, 190, 0.18);
+                border: 1px solid var(--brass-2);
                 border-radius: 2px;
-                font-size: 9px;
+                font-size: 10px;
+                color: var(--parch-bg);
+                font-weight: 500;
             }
             #workshop-stats-panel .affordance-chip {
-                padding: 1px 6px;
-                background: linear-gradient(180deg, rgba(176, 106, 217, 0.32), rgba(140, 80, 200, 0.16));
+                padding: 2px 8px;
+                background: linear-gradient(180deg, rgba(176, 106, 217, 0.75), rgba(120, 60, 180, 0.55));
                 border: 1px solid var(--violet-1);
                 border-radius: 2px;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 9px;
-                color: var(--parch-bg);
-                letter-spacing: 0.4px;
+                font-size: 10px;
+                color: #fff;
+                letter-spacing: 0.5px;
+                font-weight: 600;
+                text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
             }
             #workshop-stats-panel .role-chip {
-                padding: 1px 6px;
-                background: linear-gradient(180deg, rgba(212, 163, 115, 0.4), rgba(160, 110, 70, 0.18));
+                padding: 2px 8px;
+                background: linear-gradient(180deg, rgba(160, 110, 70, 0.85), rgba(110, 70, 35, 0.65));
                 border: 1px solid var(--brass-1);
                 border-radius: 2px;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 9px;
-                color: var(--parch-bg);
-                letter-spacing: 0.4px;
+                font-size: 10px;
+                color: #fff;
+                letter-spacing: 0.5px;
+                font-weight: 600;
+                text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
             }
             /* V8.05 — Del-Button unter der Form-Palette */
             .workshop-delete-btn {
@@ -2849,32 +2866,50 @@
             .workshop-editor-toggle[aria-expanded="true"] .caret {
                 transform: rotate(90deg);
             }
+            /* V8.06 — höherer Kontrast für Mode-Bar. Mode-Bar sitzt jetzt
+               auf hellem Pergament, also dunkler Hintergrund + dunklerer Text
+               + stärkerer Border. */
             .workshop-mode-btn,
-            .workshop-snap-btn {
+            .workshop-snap-btn,
+            .workshop-action-btn {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 10px;
-                padding: 3px 10px;
-                background: rgba(40, 25, 10, 0.18);
-                color: var(--parch-ink);
-                border: 1px solid var(--brass-3);
+                font-size: 11px;
+                font-weight: 600;
+                padding: 5px 12px;
+                background: rgba(40, 25, 10, 0.55);
+                color: var(--parch-bg);
+                border: 1px solid var(--iron-1);
                 border-radius: 3px;
                 cursor: pointer;
                 letter-spacing: 0.5px;
+                text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
             }
             .workshop-mode-btn:hover,
-            .workshop-snap-btn:hover {
-                background: rgba(40, 25, 10, 0.3);
+            .workshop-snap-btn:hover,
+            .workshop-action-btn:hover {
+                background: rgba(20, 12, 4, 0.72);
                 border-color: var(--brass-1);
             }
             .workshop-mode-btn.active {
-                background: linear-gradient(180deg, rgba(176, 106, 217, 0.5), rgba(120, 60, 180, 0.35));
+                background: linear-gradient(180deg, rgba(120, 60, 180, 0.85), rgba(80, 35, 130, 0.7));
                 border-color: var(--violet-1);
-                color: var(--parch-bg);
+                color: #fff;
             }
             .workshop-snap-btn.active {
-                background: linear-gradient(180deg, rgba(212, 163, 115, 0.5), rgba(160, 110, 70, 0.35));
+                background: linear-gradient(180deg, rgba(160, 110, 70, 0.85), rgba(110, 70, 35, 0.7));
                 border-color: var(--brass-1);
-                color: var(--parch-bg);
+                color: #fff;
+            }
+            .workshop-action-btn {
+                background: rgba(40, 25, 10, 0.55);
+            }
+            .workshop-mode-divider {
+                display: inline-block;
+                width: 1px;
+                height: 20px;
+                background: var(--brass-3);
+                margin: 0 4px;
+                vertical-align: middle;
             }
             #workshop-readonly-banner {
                 width: 100%;
@@ -2897,9 +2932,17 @@
                 gap: 8px;
                 align-items: stretch;
             }
-            #workshop-side-palette,
-            #workshop-side-palette-right {
+            #workshop-side-palette {
                 flex: 0 0 88px;
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+                min-width: 0;
+            }
+            /* V8.06 — rechte Spalte 50 % breiter, damit Material/Werkzeug/
+               Farbe-Cards mehr Atem haben. */
+            #workshop-side-palette-right {
+                flex: 0 0 132px;
                 display: flex;
                 flex-direction: column;
                 gap: 6px;
@@ -3754,6 +3797,23 @@
                                 title="Grid-Snap (G)"
                             >
                                 Snap
+                            </button>
+                            <span class="workshop-mode-divider" aria-hidden="true"></span>
+                            <button
+                                type="button"
+                                id="workshop-clone-btn"
+                                class="workshop-action-btn"
+                                title="Aktuellen Bauplan klonen"
+                            >
+                                Klonen
+                            </button>
+                            <button
+                                type="button"
+                                id="workshop-new-btn"
+                                class="workshop-action-btn"
+                                title="Neuer leerer Bauplan"
+                            >
+                                Neu
                             </button>
                         </div>
                         <canvas id="workshop-preview-canvas"></canvas>

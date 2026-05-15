@@ -19754,6 +19754,8 @@ class AnazhRealm {
         // V8.05 — Editor-Toggle + Del-Button-Handler (beide idempotent)
         this._workshopInstallEditorToggle();
         this._workshopInstallDeleteButton();
+        // V8.06 — Klonen + Neuer Bauplan direkt in der Mode-Bar
+        this._workshopInstallActionButtons();
     }
 
     // V8.01 — ResizeObserver: passt Renderer-Pixel-Dimensionen an die
@@ -19782,6 +19784,11 @@ class AnazhRealm {
     _workshopHandleDrawerChange(activeName) {
         const ws = this._ensureWorkshopState();
         if (activeName === "werkstatt") {
+            // V8.06 — Default-Werkstatt-Größe beim ERSTEN Öffnen, wenn keine
+            // localStorage-Größe gespeichert ist. Spieler erwartet einen
+            // großzügigen CAD-Editor, kein 300×400-Briefkasten. Responsive:
+            // begrenzt auf viewport-100, damit kleine Bildschirme nicht überlaufen.
+            this._workshopApplyDefaultSizeOnce();
             const preview = this._workshopEnsurePreview();
             if (!preview) return;
             preview.active = true;
@@ -19790,6 +19797,32 @@ class AnazhRealm {
         } else if (ws.preview) {
             ws.preview.active = false;
             this._workshopStopRAF();
+        }
+    }
+
+    // V8.06 — beim ersten Werkstatt-Open eine produktive Default-Größe
+    // setzen wenn der Spieler noch nichts manuell resized hat. Idempotent:
+    // wenn `anazh.workshop.defaultApplied` gesetzt ist, passiert nichts.
+    _workshopApplyDefaultSizeOnce() {
+        if (typeof document === "undefined" || typeof localStorage === "undefined") return;
+        try {
+            const flag = localStorage.getItem("anazh.workshop.defaultApplied");
+            const saved = localStorage.getItem("anazh.resize.werkstatt");
+            if (flag === "1" || saved) return; // bereits angewandt oder schon eigene Größe
+            const werkstatt = document.querySelector('[data-drawer="werkstatt"]');
+            if (!werkstatt) return;
+            // Default-Größe: 1100×800, responsive auf viewport
+            const vw = window.innerWidth || 1200;
+            const vh = window.innerHeight || 800;
+            const w = Math.max(640, Math.min(1100, vw - 100));
+            const h = Math.max(500, Math.min(800, vh - 140));
+            werkstatt.style.width = `${w}px`;
+            werkstatt.style.height = `${h}px`;
+            werkstatt.style.maxHeight = "none";
+            localStorage.setItem("anazh.resize.werkstatt", JSON.stringify({ width: w, height: h }));
+            localStorage.setItem("anazh.workshop.defaultApplied", "1");
+        } catch {
+            /* ignore */
         }
     }
 
@@ -20823,6 +20856,36 @@ class AnazhRealm {
                 /* ignore */
             }
         });
+    }
+
+    // V8.06 — Klonen + Neuer Bauplan direkt in der Mode-Bar (statt am
+    // Editor-Ende). Idempotent.
+    _workshopInstallActionButtons() {
+        if (typeof document === "undefined") return;
+        const ws = this._ensureWorkshopState();
+        if (ws._actionBtnsInstalled) return;
+        ws._actionBtnsInstalled = true;
+        const cloneBtn = document.getElementById("workshop-clone-btn");
+        const newBtn = document.getElementById("workshop-new-btn");
+        if (cloneBtn) {
+            cloneBtn.addEventListener("click", () => {
+                const wsLocal = this._ensureWorkshopState();
+                const selected = this.state.blueprints[wsLocal.selectedBlueprint];
+                if (!selected) return;
+                const newName = window.prompt("Name für die Kopie?", `${selected.name}-kopie`);
+                if (!newName) return;
+                if (this.cloneBlueprint(selected.name, newName)) {
+                    this.selectBlueprintForEdit(newName);
+                }
+            });
+        }
+        if (newBtn) {
+            newBtn.addEventListener("click", () => {
+                const name = window.prompt("Name des neuen Bauplans?");
+                if (!name) return;
+                if (this.createBlueprint(name, name)) this.selectBlueprintForEdit(name);
+            });
+        }
     }
 
     // V8.05 — Del-Button-Handler. Entfernt den selektierten Part.

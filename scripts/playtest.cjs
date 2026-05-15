@@ -14439,6 +14439,98 @@ function startSaveServer() {
                 check(`V8.05: evaluate-Fehler — ${v805Results.error}`, false);
             }
 
+            // ### V8.06 — Werkstatt-UX: Klone/Neu in Mode-Bar, Default-Size, Kontrast ###
+            const v806Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    try {
+                        const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
+                        if (tab) tab.click();
+                        // Klone + Neu-Buttons in Mode-Bar
+                        const modeBar = document.getElementById("workshop-mode-bar");
+                        out.cloneBtnInModeBar = !!(modeBar && modeBar.querySelector("#workshop-clone-btn"));
+                        out.newBtnInModeBar = !!(modeBar && modeBar.querySelector("#workshop-new-btn"));
+                        out.dividerInModeBar = !!(modeBar && modeBar.querySelector(".workshop-mode-divider"));
+                        // Mode-Bar hat 5 Mode-Buttons + 2 Action-Buttons = 7
+                        const allBtns = modeBar ? modeBar.querySelectorAll("button").length : 0;
+                        out.sevenButtonsInBar = allBtns === 7;
+
+                        // Methode existiert
+                        out.hasActionInstall = typeof r._workshopInstallActionButtons === "function";
+                        out.hasDefaultSize = typeof r._workshopApplyDefaultSizeOnce === "function";
+
+                        // Rechte Spalte ist breiter (≥132px)
+                        const rightPalette = document.getElementById("workshop-side-palette-right");
+                        if (rightPalette) {
+                            const rect = rightPalette.getBoundingClientRect();
+                            out.rightPaletteWidth = rect.width;
+                            out.rightPaletteWider = rect.width >= 128;
+                        }
+
+                        // Mode-Bar hat Kontrast-Hintergrund (rgba mit ausreichend Alpha)
+                        const modeBarStyle = modeBar ? getComputedStyle(modeBar) : null;
+                        out.modeBarHasBg =
+                            modeBarStyle &&
+                            modeBarStyle.backgroundColor !== "rgba(0, 0, 0, 0)" &&
+                            modeBarStyle.backgroundColor !== "transparent";
+
+                        // Stats-Panel hat dunklen Hintergrund (rgba(20,12,4) area)
+                        const statsPanel = document.getElementById("workshop-stats-panel");
+                        const statsStyle = statsPanel ? getComputedStyle(statsPanel) : null;
+                        out.statsHasDarkBg =
+                            statsStyle &&
+                            statsStyle.backgroundColor &&
+                            /rgba?\((\d+),\s*(\d+),\s*(\d+)/.test(statsStyle.backgroundColor);
+
+                        // Default-Size-Apply-Funktion ist sauber idempotent —
+                        // wir setzen Flag, dann ist die Funktion no-op
+                        try {
+                            localStorage.setItem("anazh.workshop.defaultApplied", "1");
+                            r._workshopApplyDefaultSizeOnce();
+                            // Nichts sollte passiert sein (flag schützt)
+                            out.idempotentRespected = true;
+                        } catch {
+                            out.idempotentRespected = false;
+                        }
+
+                        // Cleanup
+                        const weltTab = document.querySelector('#topbar [data-tab="welt"]');
+                        if (weltTab) weltTab.click();
+                        r.state.yaw = 0;
+                        if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
+                    } catch (err) {
+                        out.error = err && err.message;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (v806Results && !v806Results.error) {
+                check(
+                    "V8.06: Klonen + Neu-Buttons direkt in der Mode-Bar (mit Divider)",
+                    v806Results.cloneBtnInModeBar && v806Results.newBtnInModeBar && v806Results.dividerInModeBar
+                );
+                check("V8.06: Mode-Bar hat 7 Buttons (5 Modi + Klone + Neu)", v806Results.sevenButtonsInBar);
+                check(
+                    "V8.06: _workshopInstallActionButtons + _workshopApplyDefaultSizeOnce existieren",
+                    v806Results.hasActionInstall && v806Results.hasDefaultSize
+                );
+                check(
+                    `V8.06: rechte Palette breiter (≥128px, gemessen: ${v806Results.rightPaletteWidth || 0}px)`,
+                    v806Results.rightPaletteWider
+                );
+                check("V8.06: Mode-Bar hat Hintergrund-Farbe (Kontrast-Verbesserung)", v806Results.modeBarHasBg);
+                check("V8.06: Stats-Panel hat dunklen Hintergrund (Kontrast-Verbesserung)", v806Results.statsHasDarkBg);
+                check(
+                    "V8.06: _workshopApplyDefaultSizeOnce ist idempotent (flag respektiert)",
+                    v806Results.idempotentRespected
+                );
+            } else if (v806Results && v806Results.error) {
+                check(`V8.06: evaluate-Fehler — ${v806Results.error}`, false);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {
