@@ -14,6 +14,15 @@ Führe eine umfassende Prüfung des Projekts durch. Arbeite die folgenden Schrit
 - `node --check save-server.js`
 - Zeilenzählung (`wc -l *.js`) – Wachstum nennenswert seit letztem Audit?
 
+## 2.5 Strict-Audit-Suite (V8.23+)
+Falls noch nicht im pre-push-Workflow:
+- `npm run audit:strict` — vier generische Audit-Schichten:
+  - **CSS-Variable-Audit**: `var(--X)` ohne Fallback muss definiert sein
+  - **Soft-Default-Audit**: Hardcoded „Grok"/„Schöpfer" Limits
+  - **State-Field-Audit**: `this.state.X.Y` reads vs init() + 80+ Lazy-Set-Whitelist
+  - **Public-Method-Smoke-Test**: alle non-`_`-Methods crash-frei ohne Args
+- Erwartung: 0 Failures. Warnings (CSS-Fallback, Arg-Required-Methods) sind akzeptabel.
+
 ## 3. Bekannte Anti-Pattern (Grep-Scans)
 Suche nach Pattern, die schon einmal Bugs verursacht haben:
 

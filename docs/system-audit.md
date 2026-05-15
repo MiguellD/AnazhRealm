@@ -1,6 +1,8 @@
-# AnazhRealm — System-Audit V7.71
+# AnazhRealm — System-Audit V7.71 (Historischer Snapshot)
 
 **Stand**: 13.05.2026, vor PR-Merge des Welten-Ultiversum + Multi-User-Bogens.
+
+> **Hinweis V8.23 (17.05.2026)**: Dieses Audit ist ein **historischer Schnappschuss** vom V7.71-Stand. Seitdem sind 30+ Sub-Wellen + 8 Browser-Test-Audit-Runden durchgelaufen. Die strukturellen Aussagen (Heilige Lektion, Vision-Pfeiler, Robustheits-Bewertung) sind weiter gültig. Methoden-Inventar + Dead-Code-Status sind veraltet — die V8.23-Echtzeit-Sicht steht in `scripts/audit-strict.cjs` (npm run audit:strict, 4 generische Audit-Schichten) + `docs/state-of-realm.md` + `CLAUDE.md`.
 
 Diese Datei ist eine ehrliche Bestandsaufnahme: alle Funktionen, ihre Verbindungen, Dead-Code, Duplikate, K.O.-Bereiche, Robustheits-Schwachstellen, Vision-Alignment, Performance- und Verteilungs-Brainstorm, plus „Was übersehen wir?"-Meta-Perspektive.
 

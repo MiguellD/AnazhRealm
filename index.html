@@ -29,7 +29,7 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self';"
         />
-        <title>Anazh Realm v7.98 – Das Ultiversum</title>
+        <title>Anazh Realm v8.17 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
              zusätzliche Datei. img-src 'self' data: in CSP erlaubt data-URI. -->
         <link
@@ -259,7 +259,11 @@
             #console {
                 position: absolute;
                 top: 116px;
-                bottom: 16px;
+                /* Welle 6.X.2 V8.15 — bottom-Offset von 16 → 150 px damit die
+                   Konsole nicht mit Hotbar (y 18..74) + Stats-HUD (y 88..130)
+                   überlappt. Spieler hatte vorher Chat unter den Hotbar-Slots.
+                   Resize-Handle (jetzt top-right) erlaubt Wachstum nach rechts. */
+                bottom: 150px;
                 left: 16px;
                 width: 420px;
                 display: flex;
@@ -341,11 +345,23 @@
                 flex-direction: column;
                 min-height: 0;
             }
+            /* V8.17 — Chat oben-bündig (nimmt den verfügbaren Platz), Logbuch
+               unten-bündig (nur so viel Höhe wie nötig). Schöpfer-Wunsch:
+               Chat bleibt im Vordergrund, Logbuch lebt am Boden der Konsole. */
             #console-chat-section {
-                flex: 1;
+                flex: 1 1 auto;
+                min-height: 0;
             }
             #console-log-section {
-                flex: 1;
+                flex: 0 0 auto;
+                margin-top: auto;
+            }
+            /* Wenn Logbuch eingeklappt ist (nur Label sichtbar), bleibt es
+               am Boden; wenn ausgeklappt wächst es nach OBEN (max-height-Cap). */
+            #console-log-section #log:not([hidden]) {
+                max-height: 35%;
+                min-height: 60px;
+                overflow-y: auto;
             }
             .console-section-label {
                 font-family: "IM Fell English", Georgia, serif;
@@ -355,6 +371,33 @@
                 text-transform: uppercase;
                 letter-spacing: 0.12em;
                 margin-bottom: 4px;
+            }
+            /* Welle 6.X.2 V8.14 — Logbuch-Inline-Toggle (Click im Konsole-
+               Drawer öffnet/schließt das Logbuch separat vom globalen
+               Einstellungen-Toggle). Beide Toggles synchron via Helper. */
+            button.console-log-toggle {
+                appearance: none;
+                background: transparent;
+                border: none;
+                color: var(--brass-2);
+                cursor: pointer;
+                padding: 0;
+                text-align: left;
+                width: 100%;
+                font-family: inherit;
+                font-style: inherit;
+                font-size: inherit;
+                text-transform: inherit;
+                letter-spacing: inherit;
+            }
+            button.console-log-toggle .caret {
+                display: inline-block;
+                transition: transform 0.2s ease-out;
+                color: var(--brass-1);
+                margin-right: 4px;
+            }
+            button.console-log-toggle[aria-expanded="true"] .caret {
+                transform: rotate(90deg);
             }
             #chat-output {
                 flex: 1;
@@ -510,6 +553,24 @@
                 opacity: 0.3;
                 cursor: default;
             }
+            /* Welle 6.X.4 V8.15 Punkt 17 — Material-Glyph oben im Slot.
+               Fixes Symbol pro Material macht Slot-Art auf einen Blick
+               erkennbar. Bauplan-Slots haben KEINEN Glyph (emergente
+               Compounds tragen kein fixes Symbol). Plus: Material-Slots
+               bekommen einen subtilen doppelten Border-Stil (innen-Inset). */
+            .inventory-slot .slot-glyph {
+                font-size: 18px;
+                line-height: 1;
+                text-align: center;
+                margin-bottom: 2px;
+                color: var(--brass-1);
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+                pointer-events: none;
+            }
+            .inventory-slot.material-slot {
+                border-style: double;
+                border-width: 3px;
+            }
             .inventory-slot .slot-label {
                 font-size: 10px;
                 line-height: 1.1;
@@ -597,9 +658,147 @@
                 padding: 6px;
                 background-color: rgba(20, 12, 4, 0.6);
                 border: 1px solid var(--brass-3);
-                border-radius: 6px;
+                /* V8.17 — Hotbar verschmilzt mit Stats-HUD darüber: keine
+                   abgerundeten Top-Ecken, kein Top-Border. Wenn Stats-HUD
+                   versteckt ist, würde die Hotbar leicht „abgehackt" wirken —
+                   trade-off für die Plattform-Optik. */
+                border-radius: 0 0 6px 6px;
+                border-top: none;
                 z-index: 5;
                 box-shadow: 0 2px 14px rgba(0, 0, 0, 0.5);
+            }
+            /* Welle 6.X.4 B3 (Audit 17.05.2026) — Stats-HUD über der Hotbar.
+               Painterly Pergament + Kupfer. HP/Stamina als zwei SVG-Bars,
+               schmaler als die Hotbar (etwa 80% Breite, zentriert). Hover
+               offenbart slow stats (Damage/Speed/Präzision/etc.). */
+            /* Welle 6.X.4 B3 V8.14 — Stats-HUD-Redesign: antik+modern.
+               Dunkler Eisen-Plattformen-Look mit warm-glühenden Bars +
+               Brass-Endkappen. Symbol-Glyphen statt „HP"/"SP"-Text.
+               Hochkontrastiv: Bar-Glow leuchtet sichtbar gegen dunklen
+               Hintergrund, Text-Schatten für Lesbarkeit auf jeder Welt. */
+            #stats-hud {
+                /* V8.17 — nebeneinander auf Hotbar-Breite, mit Hotbar verschmolzen. */
+                position: absolute;
+                bottom: 86px; /* sitzt direkt auf der Hotbar-Top-Kante (Hotbar bottom 18 + 6 padding + 56 height + 6 padding) */
+                left: 50%;
+                transform: translateX(-50%);
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                justify-content: center;
+                gap: 24px;
+                padding: 8px 14px;
+                width: 636px; /* gleiche Breite wie Hotbar (9*64 + 8*6 + 12 padding) */
+                box-sizing: border-box;
+                background: linear-gradient(
+                    180deg,
+                    rgba(28, 20, 12, 0.88) 0%,
+                    rgba(42, 28, 14, 0.88) 50%,
+                    rgba(20, 14, 8, 0.92) 100%
+                );
+                border: 1px solid var(--brass-2, #8a6322);
+                border-radius: 6px 6px 0 0;
+                border-bottom: none; /* verschmilzt mit Hotbar darunter */
+                z-index: 5;
+                box-shadow:
+                    inset 0 0 0 1px rgba(198, 154, 74, 0.25),
+                    inset 0 1px 0 rgba(255, 220, 150, 0.15),
+                    0 3px 14px rgba(0, 0, 0, 0.6);
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 11px;
+                color: #e9d49e;
+                cursor: help;
+                transition: box-shadow 0.4s ease-out;
+            }
+            #stats-hud .stats-hud-row {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                flex: 1;
+                justify-content: center;
+            }
+            #stats-hud .stats-hud-glyph {
+                font-size: 14px;
+                min-width: 18px;
+                text-align: center;
+                color: #f5e7c4;
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+            }
+            #stats-hud .stats-hud-glyph.glyph-hp {
+                /* Funke / Flamme — Lebenskraft als Wärme. */
+                color: #f5a875;
+                text-shadow:
+                    0 0 6px rgba(245, 168, 117, 0.5),
+                    0 1px 2px rgba(0, 0, 0, 0.7);
+            }
+            #stats-hud .stats-hud-glyph.glyph-stam {
+                /* Spirale / Atem — Ausdauer als Strömung. */
+                color: #e4c87c;
+                text-shadow:
+                    0 0 6px rgba(228, 200, 124, 0.5),
+                    0 1px 2px rgba(0, 0, 0, 0.7);
+            }
+            #stats-hud svg {
+                display: block;
+                filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.7));
+            }
+            #stats-hud .stats-hud-value {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 10px;
+                min-width: 44px;
+                text-align: right;
+                color: #e9d49e;
+                text-shadow: 0 1px 1px rgba(0, 0, 0, 0.7);
+                letter-spacing: 0.04em;
+            }
+            /* HP-niedrig-Indikator: roter Glow um den HUD pulsiert sanft. */
+            #stats-hud.stats-hud-low {
+                animation: stats-hud-pulse 1.6s ease-in-out infinite;
+            }
+            @keyframes stats-hud-pulse {
+                0%,
+                100% {
+                    box-shadow:
+                        inset 0 0 0 1px rgba(198, 154, 74, 0.25),
+                        inset 0 1px 0 rgba(255, 220, 150, 0.15),
+                        0 3px 14px rgba(0, 0, 0, 0.6);
+                }
+                50% {
+                    box-shadow:
+                        inset 0 0 0 1px rgba(220, 60, 40, 0.6),
+                        inset 0 1px 0 rgba(255, 100, 80, 0.3),
+                        0 3px 20px rgba(180, 40, 20, 0.5);
+                }
+            }
+            /* Tooltip mit slow stats — erscheint beim Hover. position:absolute
+               relative zum #stats-hud (das selbst position:absolute ist). */
+            #stats-hud-tooltip {
+                position: absolute;
+                bottom: calc(100% + 6px);
+                left: 50%;
+                transform: translateX(-50%);
+                white-space: nowrap;
+                /* Welle 6.X.4 B3 V8.13 Fix: --parch-paper war undefiniert,
+                   deshalb war der Tooltip-Text unsichtbar. Jetzt expliziter
+                   warmer Cream-Ton + leichter Gold-Schimmer für Kontrast
+                   auf dunklem Hintergrund. */
+                background: rgba(28, 20, 8, 0.95);
+                color: #f5e7c4;
+                border: 1px solid var(--brass-1, #c69a4a);
+                border-radius: 4px;
+                padding: 8px 12px;
+                font-family: "JetBrains Mono", monospace;
+                font-size: 11px;
+                line-height: 1.7;
+                pointer-events: none;
+                opacity: 0;
+                transition: opacity 0.15s ease-out;
+                z-index: 6;
+                box-shadow: 0 2px 14px rgba(0, 0, 0, 0.7);
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+            }
+            #stats-hud:hover #stats-hud-tooltip {
+                opacity: 1;
             }
             .hotbar-slot {
                 width: 64px;
@@ -1396,6 +1595,14 @@
                 left: 2px;
                 cursor: nesw-resize;
                 transform: scaleX(-1);
+            }
+            /* Welle 6.X.2 V8.15 — top-right Resize-Handle für die Konsole.
+               Sitzt am freien Eck (zur Welt hin), nicht am verdeckten unten-
+               rechts wo Hotbar + Stats-HUD im Wege sind. */
+            .resize-handle.resize-tr {
+                top: 2px;
+                right: 2px;
+                cursor: nesw-resize;
             }
             .drawer h2 {
                 font-family: "Cinzel", Georgia, serif;
@@ -2240,6 +2447,62 @@
                 font-size: 10.5px;
                 padding: 2px 4px;
             }
+            /* Welle 6.X.4 D2 — Slider-Row (Master + Pings + Render-Ring). */
+            .drawer .slider-row {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 3px 6px;
+                margin-top: 4px;
+                background: rgba(184, 138, 80, 0.06);
+                border: 1px solid rgba(138, 106, 54, 0.4);
+                border-radius: 3px;
+            }
+            .drawer .slider-row label {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10.5px;
+                color: var(--parch-ink-faded);
+                letter-spacing: 0.04em;
+                min-width: 90px;
+            }
+            .drawer .slider-row input[type="range"] {
+                flex: 1;
+                accent-color: var(--brass-2, #b48c50);
+            }
+            .drawer .slider-row .slider-value {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 10px;
+                color: var(--parch-ink);
+                min-width: 36px;
+                text-align: right;
+            }
+            /* Welle 6.X.4 F1 — Identity-Row (Begleiter-/Spieler-Name). */
+            .drawer .identity-row {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 3px 6px;
+                margin-top: 4px;
+                background: rgba(184, 138, 80, 0.06);
+                border: 1px solid rgba(138, 106, 54, 0.4);
+                border-radius: 3px;
+            }
+            .drawer .identity-row label {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10.5px;
+                color: var(--parch-ink-faded);
+                letter-spacing: 0.04em;
+                min-width: 70px;
+            }
+            .drawer .identity-row input {
+                flex: 1;
+                background: rgba(255, 250, 235, 0.7);
+                color: var(--parch-ink);
+                border: 1px solid var(--brass-2, #b48c50);
+                font-family: "JetBrains Mono", monospace;
+                font-size: 10.5px;
+                padding: 2px 4px;
+            }
             .drawer .equip-mark-header {
                 font-size: 10px;
                 color: var(--parch-ink-faded);
@@ -2347,6 +2610,18 @@
             }
             .drawer .hotbar-config-row select:hover {
                 border-color: var(--brass-1);
+            }
+            /* Welle 6.X.2 V8.22 — Werkstatt-Breite exakt Topbar-bündig.
+               Topbar: left:12 right:12 → width = 100vw - 24px. Werkstatt
+               soll dieselbe sichtbare Breite haben, aber rechts geheftet
+               bleiben (right:12 + left:auto + width:fix). Mit width 100vw-24
+               ist linke Kante bei 12px (= Topbar-left). Beim Resize via
+               bottom-left-Handle: rechte Kante bleibt fest, linke wandert. */
+            .drawer[data-drawer="werkstatt"] {
+                left: auto;
+                right: 12px;
+                width: calc(100vw - 24px);
+                max-height: calc(100vh - 270px);
             }
             /* Ring 6.6 — Werkstatt-Editor */
             #workshop-list {
@@ -2722,7 +2997,7 @@
                 border-radius: 3px;
                 font-family: "JetBrains Mono", monospace;
                 font-size: 10px;
-                color: var(--parch-bg);
+                color: var(--parch-bg, #ece1c5);
                 line-height: 1.6;
                 min-height: 18px;
             }
@@ -2754,7 +3029,7 @@
                 border: 1px solid var(--brass-2);
                 border-radius: 2px;
                 font-size: 10px;
-                color: var(--parch-bg);
+                color: var(--parch-bg, #ece1c5);
                 font-weight: 500;
             }
             /* V8.07 — Stern-Rating pro Tag-Chip. Schwellen aus WORLD_EFFECT_
@@ -2768,7 +3043,7 @@
                 letter-spacing: 1px;
             }
             #workshop-stats-panel .tag-chip .tag-name {
-                color: var(--parch-bg);
+                color: var(--parch-bg, #ece1c5);
                 font-family: "Cinzel", Georgia, serif;
                 font-size: 10px;
                 letter-spacing: 0.3px;
@@ -2829,6 +3104,71 @@
                 letter-spacing: 0.5px;
                 font-weight: 600;
                 text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+            }
+            /* Welle 6.X.4 V8.16 Punkt 18 — emergent vs. manuell. Manuell ist
+               eine bewusste Schöpfer-Geste, emergent ist Welt-Antwort. */
+            #workshop-stats-panel .role-chip.role-emergent {
+                /* Brass-Glow für emergent — die Welt hat geantwortet. */
+                box-shadow: 0 0 6px rgba(198, 154, 74, 0.5);
+            }
+            #workshop-stats-panel .role-chip.role-manual::before {
+                content: "✋ ";
+                opacity: 0.85;
+            }
+            /* V8.17 — Reset-Button neben manuell-gesetzter Rolle. */
+            #workshop-stats-panel .role-reset-btn {
+                margin-left: 4px;
+                padding: 0 6px;
+                background: transparent;
+                border: 1px solid var(--brass-2, #8a6322);
+                border-radius: 2px;
+                color: var(--brass-1, #c69a4a);
+                font-size: 12px;
+                line-height: 1.2;
+                cursor: pointer;
+                transition: background 0.15s ease;
+            }
+            #workshop-stats-panel .role-reset-btn:hover {
+                background: rgba(198, 154, 74, 0.2);
+                color: #fff;
+            }
+            /* Domain-Bars: kleine inline-Bars zeigen Verteilung der Werkzeug-
+               Anwendungen pro Domain. Dominante Domain bekommt Brass-Highlight. */
+            #workshop-stats-panel .workshop-domain-bars {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+                flex: 1;
+            }
+            #workshop-stats-panel .workshop-domain-bar {
+                display: flex;
+                align-items: center;
+                padding: 2px 6px;
+                background: linear-gradient(90deg, rgba(160, 110, 70, 0.3), rgba(160, 110, 70, 0.1));
+                border: 1px solid rgba(184, 138, 80, 0.5);
+                border-radius: 2px;
+                font-family: "JetBrains Mono", monospace;
+                font-size: 9px;
+                color: var(--parch-ink);
+                letter-spacing: 0.05em;
+            }
+            #workshop-stats-panel .workshop-domain-bar.dominant {
+                background: linear-gradient(90deg, rgba(198, 154, 74, 0.7), rgba(198, 154, 74, 0.35));
+                border-color: var(--brass-1, #c69a4a);
+                font-weight: 600;
+                color: #2b1a08;
+            }
+            /* Synergie + Wachstumshinweis — kompakter erklärender Text. */
+            #workshop-stats-panel .workshop-synergy-text,
+            #workshop-stats-panel .workshop-growth-text {
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                font-size: 10px;
+                color: var(--parch-ink-soft);
+                line-height: 1.4;
+            }
+            #workshop-stats-panel .workshop-growth-text.manual-override {
+                color: var(--iron-1, #5b3f10);
             }
             /* V8.05 — Del-Button unter der Form-Palette */
             .workshop-delete-btn {
@@ -2926,7 +3266,7 @@
                 font-weight: 600;
                 padding: 5px 12px;
                 background: rgba(40, 25, 10, 0.55);
-                color: var(--parch-bg);
+                color: var(--parch-bg, #ece1c5);
                 border: 1px solid var(--iron-1);
                 border-radius: 3px;
                 cursor: pointer;
@@ -2981,17 +3321,19 @@
                 gap: 8px;
                 align-items: stretch;
             }
+            /* V8.17 — linke Spalte 30% breiter (88→115px), rechte Spalte
+               50% breiter (132→200px) damit Materialien als 3×4 statt 2×6
+               rendern und Tool-Karten mehr Atem haben. Material-Cards-Grid
+               wechselt automatisch auf 3 Spalten dank flex-wrap im Container. */
             #workshop-side-palette {
-                flex: 0 0 88px;
+                flex: 0 0 115px;
                 display: flex;
                 flex-direction: column;
                 gap: 6px;
                 min-width: 0;
             }
-            /* V8.06 — rechte Spalte 50 % breiter, damit Material/Werkzeug/
-               Farbe-Cards mehr Atem haben. */
             #workshop-side-palette-right {
-                flex: 0 0 132px;
+                flex: 0 0 200px;
                 display: flex;
                 flex-direction: column;
                 gap: 6px;
@@ -3100,11 +3442,13 @@
                     0 0 18px 4px rgba(176, 106, 217, 0.45);
                 border-color: var(--violet-1);
             }
-            /* V8.03 — Material- + Farb-Palette als seitliche Drag-Sources */
+            /* V8.03 — Material- + Farb-Palette als seitliche Drag-Sources.
+               V8.17 — 3 Spalten statt 2 wegen breiterer rechter Side-Palette
+               (Schöpfer-Wunsch Punkt 19). Materialien rendern als 3×4 statt 2×6. */
             #workshop-material-palette,
             #workshop-color-palette {
                 display: grid;
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(3, 1fr);
                 gap: 3px;
             }
             .workshop-material-card,
@@ -3138,6 +3482,26 @@
             .workshop-material-card.dragging,
             .workshop-color-swatch.dragging {
                 opacity: 0.4;
+            }
+            /* V8.19 — Material-Glyph VOR dem Label, in Material-Farbe.
+               Schöpfer-Wunsch: ein Marker pro Material-Card, nicht zwei
+               (vorher Farb-Kreis + Glyph rechts). Glyph trägt die Farbe
+               direkt — visuelle Konsistenz mit Inventar-Slots. */
+            .workshop-material-card .mat-glyph {
+                font-size: 15px;
+                line-height: 1;
+                min-width: 14px;
+                text-align: center;
+                margin-right: 4px;
+                text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);
+            }
+            /* V8.17 — Hint-Mini im Side-Palette (kompakt, leitend). */
+            .workshop-hint-mini {
+                font-size: 9px;
+                line-height: 1.35;
+                margin: 2px 0 4px 0;
+                color: var(--parch-ink-faded);
+                font-style: italic;
             }
             .workshop-material-card .mat-swatch {
                 width: 8px;
@@ -3184,7 +3548,7 @@
                 font-size: 10px;
                 padding: 4px 8px;
                 background: rgba(60, 38, 16, 0.65);
-                color: var(--parch-bg);
+                color: var(--parch-bg, #ece1c5);
                 border: 1px solid var(--brass-3);
                 border-radius: 2px;
                 cursor: pointer;
@@ -3442,6 +3806,99 @@
         <div id="fps"></div>
         <div id="dialogue-box" aria-live="polite"></div>
         <div id="build-mode-hud" aria-live="polite" hidden></div>
+        <!-- Welle 6.X.4 B3 V8.14 — Stats-HUD redesigned. Glyphen statt Text-
+             Labels (Funke=HP, Spirale=Stamina), warme Brass-Endkappen, SVG-
+             Bars mit inner Glow. Antik-modernes Gefühl: Eisen-Plattform mit
+             leuchtenden Werten. Tooltip auf Hover. -->
+        <div id="stats-hud" role="status" aria-label="Lebenskraft + Ausdauer" title="Hover zeigt alle Stats">
+            <div class="stats-hud-row" id="stats-hud-hp-row">
+                <span class="stats-hud-glyph glyph-hp" aria-hidden="true">❖</span>
+                <svg width="170" height="12" viewBox="0 0 170 12" aria-hidden="true">
+                    <defs>
+                        <linearGradient id="hp-gradient" x1="0" x2="0" y1="0" y2="1">
+                            <stop offset="0" stop-color="#ff8a60" />
+                            <stop offset="0.5" stop-color="#e0573a" />
+                            <stop offset="1" stop-color="#8a2b18" />
+                        </linearGradient>
+                        <linearGradient id="hp-glow" x1="0" x2="0" y1="0" y2="1">
+                            <stop offset="0" stop-color="#ffd0a0" stop-opacity="0.4" />
+                            <stop offset="0.5" stop-color="#ff8a60" stop-opacity="0.1" />
+                            <stop offset="1" stop-color="#ff8a60" stop-opacity="0" />
+                        </linearGradient>
+                    </defs>
+                    <rect
+                        x="0"
+                        y="0"
+                        width="170"
+                        height="12"
+                        rx="3"
+                        fill="rgba(15, 8, 4, 0.85)"
+                        stroke="#8a6322"
+                        stroke-width="1"
+                    />
+                    <rect id="stats-hud-hp-fill" x="2" y="2" width="166" height="8" rx="1.5" fill="url(#hp-gradient)" />
+                    <rect
+                        id="stats-hud-hp-glow"
+                        x="2"
+                        y="2"
+                        width="166"
+                        height="4"
+                        rx="1.5"
+                        fill="url(#hp-glow)"
+                        pointer-events="none"
+                    />
+                </svg>
+                <span class="stats-hud-value" id="stats-hud-hp-text">100/100</span>
+            </div>
+            <div class="stats-hud-row" id="stats-hud-stam-row">
+                <span class="stats-hud-glyph glyph-stam" aria-hidden="true">⟁</span>
+                <svg width="170" height="12" viewBox="0 0 170 12" aria-hidden="true">
+                    <defs>
+                        <linearGradient id="stam-gradient" x1="0" x2="0" y1="0" y2="1">
+                            <stop offset="0" stop-color="#f5d488" />
+                            <stop offset="0.5" stop-color="#c4994a" />
+                            <stop offset="1" stop-color="#6a4a1a" />
+                        </linearGradient>
+                        <linearGradient id="stam-glow" x1="0" x2="0" y1="0" y2="1">
+                            <stop offset="0" stop-color="#ffe8b0" stop-opacity="0.4" />
+                            <stop offset="0.5" stop-color="#f5d488" stop-opacity="0.1" />
+                            <stop offset="1" stop-color="#f5d488" stop-opacity="0" />
+                        </linearGradient>
+                    </defs>
+                    <rect
+                        x="0"
+                        y="0"
+                        width="170"
+                        height="12"
+                        rx="3"
+                        fill="rgba(15, 8, 4, 0.85)"
+                        stroke="#8a6322"
+                        stroke-width="1"
+                    />
+                    <rect
+                        id="stats-hud-stam-fill"
+                        x="2"
+                        y="2"
+                        width="166"
+                        height="8"
+                        rx="1.5"
+                        fill="url(#stam-gradient)"
+                    />
+                    <rect
+                        id="stats-hud-stam-glow"
+                        x="2"
+                        y="2"
+                        width="166"
+                        height="4"
+                        rx="1.5"
+                        fill="url(#stam-glow)"
+                        pointer-events="none"
+                    />
+                </svg>
+                <span class="stats-hud-value" id="stats-hud-stam-text">100/100</span>
+            </div>
+            <div id="stats-hud-tooltip" aria-hidden="true">Stats laden …</div>
+        </div>
         <div id="hotbar" role="toolbar" aria-label="Bauplan-Hotbar"></div>
         <!-- Welle 6.C1 — Hylomorphismus-Inventar (Tab-Toggle). 27 Slots in
              3×9-Grid. Jeder Slot trägt Tag-Profile bei Hover als Glow + Audio. -->
@@ -3460,7 +3917,7 @@
         <header id="topbar" class="hud-frame">
             <div class="topbar-inner">
                 <div class="title">
-                    Anazh Realm <span class="version">v7.98</span> <span class="sub">— Das Ultiversum</span>
+                    Anazh Realm <span class="version">v8.17</span> <span class="sub">— Das Ultiversum</span>
                 </div>
                 <nav class="tabs" role="tablist" aria-label="Hauptansichten">
                     <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">
@@ -3572,16 +4029,14 @@
                     <button type="button" data-cmd="Boden deaktivieren">Boden aus</button>
                 </div>
             </section>
-            <section class="section">
-                <h3>Bauwerke</h3>
-                <p class="drawer-hint">Strukturen am Spieler platzieren (Ring 6).</p>
-                <div class="actions" id="architecture-actions">
-                    <button type="button" data-cmd="Baue Dorf hier">Dorf</button>
-                    <button type="button" data-cmd="Baue Tempel hier">Tempel</button>
-                    <button type="button" data-cmd="Baue Wasserfall hier">Wasserfall</button>
-                    <button type="button" data-cmd="Baue Fraktal Tempel">Fraktal</button>
-                </div>
-            </section>
+            <!--
+                Welle 6.X.2 B2 (Audit 17.05.2026): Bauwerke-Quick-Spawn-Sektion
+                entfernt. Hotbar (1-9) + Werkstatt-Editor sind die richtige
+                Schöpfer-Geste. Quick-Buttons hier waren Über-Komfort, der die
+                Vision-Reibung („Werkstatt erst nutzen, dann hotbar belegen,
+                dann bauen") umging und das world-Drawer überfüllte.
+                Spawn ist weiterhin via Chat („Baue Dorf hier") möglich.
+            -->
         </aside>
         <aside class="drawer" data-drawer="kreaturen" aria-label="Kreaturen-Panel" hidden>
             <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
@@ -3847,6 +4302,14 @@
                             >
                                 Snap
                             </button>
+                            <button
+                                type="button"
+                                id="workshop-camera-reset"
+                                class="workshop-action-btn"
+                                title="Kamera auf Bauplan zentrieren (H)"
+                            >
+                                Zentrieren
+                            </button>
                             <span class="workshop-mode-divider" aria-hidden="true"></span>
                             <button
                                 type="button"
@@ -3873,6 +4336,11 @@
                         <h4>Materialien</h4>
                         <div id="workshop-material-palette" role="group" aria-label="Material-Palette"></div>
                         <h4>Werkzeuge</h4>
+                        <p class="drawer-hint workshop-hint-mini">
+                            Auf einen Part im 3D ziehen → wendet die Op an. Bearbeitet Material, hebt Präzision, schärft
+                            die Rolle (forging→tool, alchemy→konsumabel). Hand=0.40, Polierscheibe=0.97 — die schwächste
+                            Op deckelt die Compound-Präzision.
+                        </p>
                         <div id="workshop-tool-palette" role="group" aria-label="Werkzeug-Palette"></div>
                         <h4>Farben</h4>
                         <div id="workshop-color-palette" role="group" aria-label="Farb-Palette"></div>
@@ -3926,6 +4394,21 @@
                     </label>
                 </div>
             </section>
+            <!-- Welle 6.X.2 B1 (Audit 17.05.2026) — Logbuch-Sichtbarkeit.
+                 Power-User-Diagnose-Schicht ist default versteckt, damit die
+                 Konsole ruhig bleibt. Aktiv schalten zeigt das #log-Section
+                 wieder. Persistiert in localStorage. -->
+            <section class="section" id="logbook-section">
+                <h3>Logbuch</h3>
+                <p class="drawer-hint">
+                    Diagnose-Logs sind standardmäßig versteckt, damit der Chat im Vordergrund bleibt. Aktivieren für
+                    Entwickler-Sicht.
+                </p>
+                <label class="radio-label">
+                    <input type="checkbox" id="logbook-toggle" />
+                    <span>Logbuch sichtbar</span>
+                </label>
+            </section>
             <!-- Welle 6.H Phase 2E V2 — proaktive Kreatur-Sprache.
                  Kreaturen melden sich bei Level-Up, Boost-Empfang, Material-
                  Mangel etc. von selbst. Throttle 60s/Kreatur + 8s global.
@@ -3975,13 +4458,67 @@
                     <input type="range" id="tune-cooldown" min="5" max="120" step="5" value="30" />
                 </div>
             </section>
-            <section class="section" id="llm-section">
-                <h3>Grok-Stimme (LLM)</h3>
+            <!-- Welle 6.X.4 D2 (Audit 17.05.2026) — Drei Schieber:
+                 Master-Lautstärke, Kreatur-Pings (separater Volume-Anteil),
+                 Render-Distanz (Chunk-Ring 1..4 = 3×3 bis 9×9 Chunks).
+                 Persistenz in localStorage. Master + Pings wirken live auf
+                 Web-Audio. Render-Distanz greift im nächsten Frame-Tick. -->
+            <section class="section" id="sliders-section">
+                <h3>Lautstärke + Sicht-Weite</h3>
                 <p class="drawer-hint">
-                    Optional: gib Grok eine echte Stimme. Vier Provider — drei haben Gratis-Tiers, Ollama läuft entweder
-                    lokal (kein Key nötig) oder gehostet (eigene URL + optional Bearer-Token, z.B. ollama.com Turbo,
-                    Reverse-Proxy mit Auth). Schlüssel liegen nur im localStorage dieses Browsers. Jeder Vorschlag geht
-                    durch den DSL-Interpreter — die Sandbox hält.
+                    Master-Lautstärke gilt für die ganze Welt-Klangschicht. Kreatur-Pings haben einen eigenen Anteil
+                    (mute mit 0). Render-Ring 1 = 3×3 Chunks, 4 = 9×9 (mehr Welt sichtbar, mehr GPU-Last).
+                </p>
+                <div class="slider-row">
+                    <label for="slider-master">Master</label>
+                    <input type="range" id="slider-master" min="0" max="100" value="100" />
+                    <span class="slider-value" id="slider-master-val">100%</span>
+                </div>
+                <div class="slider-row">
+                    <label for="slider-pings">Kreatur-Pings</label>
+                    <input type="range" id="slider-pings" min="0" max="100" value="100" />
+                    <span class="slider-value" id="slider-pings-val">100%</span>
+                </div>
+                <!-- Welle 6.X.4 D2 V8.15 — eigener Schieber für TTS-Stimme. -->
+                <div class="slider-row">
+                    <label for="slider-voice">Stimme</label>
+                    <input type="range" id="slider-voice" min="0" max="100" value="100" />
+                    <span class="slider-value" id="slider-voice-val">100%</span>
+                </div>
+                <div class="slider-row">
+                    <label for="slider-ring">Sicht-Ring</label>
+                    <input type="range" id="slider-ring" min="1" max="4" value="2" />
+                    <span class="slider-value" id="slider-ring-val">5×5</span>
+                </div>
+            </section>
+            <!-- Welle 6.X.4 F1 (Audit 17.05.2026) — Personalisierung der
+                 LLM-Konversation. Begleiter bekommt einen Namen (Default
+                 „Grok"), Spieler hat einen Namen (Default „Schöpfer").
+                 Beide werden in System-Prompts eingebettet, damit Grok
+                 dich beim Namen ansprechen kann und eine selbst-gewählte
+                 Identität trägt. Persistenz in localStorage. -->
+            <section class="section" id="identity-section">
+                <h3>Namen (Begleiter + Avatar)</h3>
+                <p class="drawer-hint">
+                    Wie heißt deine Welt-Stimme, wie heißt du? Werden im LLM-System-Prompt referenziert. Default „Grok"
+                    (historisch aus den vier Testamenten) und „Schöpfer" (Vision: Mensch=Null=Schöpfer).
+                </p>
+                <div class="identity-row">
+                    <label for="companion-name-input">Begleiter</label>
+                    <input type="text" id="companion-name-input" maxlength="32" placeholder="Grok" />
+                </div>
+                <div class="identity-row">
+                    <label for="player-name-input">Du</label>
+                    <input type="text" id="player-name-input" maxlength="32" placeholder="Schöpfer" />
+                </div>
+            </section>
+            <section class="section" id="llm-section">
+                <h3>Begleiter-Stimme (LLM)</h3>
+                <p class="drawer-hint">
+                    Optional: gib dem Begleiter eine echte Stimme. Vier Provider — drei haben Gratis-Tiers, Ollama läuft
+                    entweder lokal (kein Key nötig) oder gehostet (eigene URL + optional Bearer-Token, z.B. ollama.com
+                    Turbo, Reverse-Proxy mit Auth). Schlüssel liegen nur im localStorage dieses Browsers. Jeder
+                    Vorschlag geht durch den DSL-Interpreter — die Sandbox hält.
                 </p>
                 <div class="tuning-row">
                     <label for="llm-provider"><span>Provider</span></label>
@@ -4117,9 +4654,21 @@
                     <div class="console-section-label">Chat</div>
                     <div id="chat-output"></div>
                 </div>
-                <div id="console-log-section">
-                    <div class="console-section-label">Logbuch</div>
-                    <div id="log"></div>
+                <!-- Welle 6.X.2 V8.14 — Logbuch direkt in der Konsole
+                     ein-/ausklappbar (zusätzlich zum globalen Toggle in
+                     Einstellungen). Click-Label wechselt aria-expanded
+                     und blendet #log ein/aus. Beide Toggles synchron. -->
+                <div id="console-log-section" hidden>
+                    <button
+                        type="button"
+                        id="console-log-toggle"
+                        class="console-section-label console-log-toggle"
+                        aria-expanded="false"
+                        title="Logbuch ein-/ausklappen"
+                    >
+                        <span class="caret" aria-hidden="true">▸</span> Logbuch
+                    </button>
+                    <div id="log" hidden></div>
                 </div>
             </div>
             <div id="console-footer">

@@ -185,6 +185,56 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 
 Echt gelernt, nicht performt:
 
+### V8.23 (17.05.2026) — Bibliothek von Alexandria als Vision-Wort + Test-Infrastruktur
+
+**Das größte Wort der Session** kam vom Schöpfer am Ende: AnazhRealm soll nicht eine Welt sein, sondern ein **Tor zu allen Vibecode-Welten**. Wie OASIS in Ready Player One — der Spieler startet zentral, geht durch Portale in völlig andere Engines (three-fluid-fx, voxelize, image-blaster, etc.), behält Avatar + Inventar + DSL als Lingua franca. Bibliothek von Alexandria der Vibecode-Ära.
+
+Konzept-Doku ist `docs/world-portal.md`. Drei-Schichten-Modell: Kern-Welt (heute) → Welt-Portale (W12) → Vibe-Bibliothek (W13+W14) → Compute-Sharing (W7, umgedeutet). Vision-Wort: „Andere bauen Welten FÜR Spieler. Wir bauen eine Welt, in der Spieler SELBST Welten bauen können — und durch Welten anderer Spieler gehen können."
+
+**Welle 12 wurde umbenannt**: vorher „WebGPU+TSL-Migration" (Performance-Welle, fern), jetzt „Welt-Portal" (Vision-Welle, nahe). WebGPU bleibt optionale Renderpipeline für eine ANDERE Welt-Engine im Sub-Container — kein Migrationspfad für den AnazhRealm-Kern. Die Heilige Lektion bleibt: ein Stamm, viele Ringe, eine Sprache (DSL) als Universal-Bridge zwischen den Welten.
+
+**Plus Test-Infrastruktur als Schutz**: `scripts/audit-strict.cjs` (npm run audit:strict) deckt vier generische Bug-Klassen ab:
+1. CSS-Variable-Audit (var(--X) ohne Fallback muss definiert sein)
+2. Soft-Default-Audit (Hardcoded-Strings über Limit)
+3. State-Field-Audit (this.state.X.Y reads vs init() + 80+ Lazy-Set-Whitelist)
+4. Public-Method-Smoke-Test (alle non-`_`-Methods crash-frei ohne Args)
+
+Hätte alle Bugs der V8.13-V8.22-Audit-Runden vor dem Push gefangen. Läuft in ~25s. Workflow-Empfehlung: `npm run check && npm run playtest && npm run audit:strict` als pre-push-Suite.
+
+**Architektur-Lehre**: **Vision wächst mit der Reise**. Eine Welle die vor 2 Wochen als „WebGPU für Performance" definiert war, ist heute „Welt-Portal für Vision-Skalierung". Wer die Roadmap nicht **versionierbar** hält (Wellen umbenennen darf, neue Wellen zwischenschieben darf), bricht beim ersten Vision-Wachstum. Die Roadmap ist Karte, nicht Vertrag.
+
+**Test-Lehre**: silent-no-ops sind tödlich. Der V8.20-Bug (state.workshopPreview vs state.workshop.preview) war seit V8.14 silent gewesen — niemand bemerkte. Audit-Strict-Suite mit State-Field-Whitelist + Method-Smoke fängt diese Klasse strukturell. Plus jede Methode mit Side-Effect schreibt jetzt einen Log-Eintrag („CAD-Kamera zentriert") damit der Schöpfer-Browser-Test sofort sieht ob ein Pfad erreicht wurde.
+
+### V8.13-V8.19 (17.05.2026) — Sieben Audit-Runden als Rhythmus
+
+**Eine ganze Session-Hälfte besteht aus dem Audit-Rhythmus**: Schöpfer testet im Browser, listet 15-18 Punkte konkret, ich gehe Runde für Runde durch, jede Runde ist ein Commit. Sieben Runden V8.13-V8.19. Was funktioniert hat:
+
+- **Strukturierte Audit-Tabellen**: jeder Punkt bekommt eine Zeile mit „Punkt | Priorität | Plan". Ich gehe in Reihenfolge durch, halte nicht inne für Klärung wenn die Intention klar ist. Bei Unklarheit frage ich gezielt (siehe V8.18 Werkzeug-Tutorial: ich habe zwischen drei UX-Pfaden gewählt + bestätigt).
+- **Tests pro Sub-Punkt**: 5-10 Invarianten pro Audit-Punkt. Schöpfer erkennt dadurch ob ein Fix nur lokal oder strukturell stabil ist. 1791 → 1879 Invarianten in einer Session (+88).
+- **Browser-Cache als Bug-Quelle**: dreimal in dieser Runde hat ein „funktioniert nicht"-Bericht sich nach Hard-Refresh aufgelöst. Defensive Code-Pfade (Fallbacks für undefined-State) sind die Antwort — nicht „User soll Cache leeren".
+- **Schöpfer-Korrekturen über mehrere Runden**: Resize-Handle wechselte br (V8.0)→tr (V8.15)→br (V8.17) durch Iteration. Wer Layout-Entscheidungen trifft, akzeptiert dass die echte Validierung im Spiel passiert, nicht im Code-Review.
+
+**Vision-Lehre**: Audit-Runden sind nicht „Bugfix-Phase nach Feature-Welle". Sie sind ein **gleichberechtigter Rhythmus** — Feature-Welle baut, Audit-Welle integriert. Welle 6.X war ein Feature-Welle (5 Sub-Phasen mit neuen Funktionen); die 7 Audit-Runden V8.13-V8.19 waren das Integrations-Echo. Das Verhältnis ist ungefähr 1:1 (5 Sub-Phasen Bauen ≈ 7 Runden Audit-Antwort).
+
+**Architektur-Lehre**: Defense-in-Depth bei UI-State. `state.player.hp` kann undefined sein vor `recomputePlayerStats`-Lauf — der HUD muss das vertragen. `bp.builtIn` darf keine silent-fail-Werkzeug-Drops produzieren — präzise Fehler-Messages mit Vorwärts-Pfad. Wer einen Bug aus dem Browser-Test bekommt, sucht den **strukturellen Defekt** (was ist die wahre Wurzel?), nicht nur das Symptom.
+
+### V8.07 + Audit 17.05.2026 — Pause-und-Auditieren als eigenes Werkzeug
+
+**Der Schöpfer hat eine Welle ANGEHALTEN und stattdessen einen 18-Punkte-Audit verlangt** — das war die wichtigste Lehre dieses Tages. Ich war bereit zu 6.G Phase 3 oder Welle 7 zu springen; der Schöpfer hat erkannt, dass eine **strukturierte Audit-Reflexion** vor dem nächsten Bau-Schritt mehr wert ist als der nächste Bau-Schritt selbst. Das ist keine Verzögerung, das ist **Disziplin der Übersicht**.
+
+**Audit-Lehren konkret**:
+- **Sub-Agent-Vertrauen ist nicht 1:1**: der Explore-Agent hat zwei wesentliche Code-Stellen verpasst (Player-Aura existiert als `state.playerAuraGlow`, Logbuch ist live im DOM via `flushLog`). Die Disziplin: bei Audit-Ergebnissen IMMER zwei kritische Spot-Checks selbst machen. Sub-Agent ist Beschleuniger, nicht Ersatz für Verständnis.
+- **Wurzel vs. Symptom bei Bugs**: A1 „Jump im Stehen" war NICHT Raycast-Edge-Case (Agent-These), sondern Ammo-Body-Sleeping. Spürbarer Unterschied beim Fix: 2 Zeilen `playerBody.activate(true)` statt 40 Zeilen Raycast-Caching. **Bei jedem Bug: die Wurzel suchen, nicht den ersten plausiblen Erklärungs-Ansatz akzeptieren.**
+- **„Scheint kaputt" vs. wirklich kaputt**: A3 „Rüstung scheint nicht zu funktionieren" — equipArmor + Stat-Stacking funktioniert technisch korrekt. Aber Welle 9a's `_refreshBlueprintRoleEmergent` versteckt die Markier-UI für Baupläne mit emergenter Rolle. Spieler kann nicht markieren → glaubt es ist kaputt. **Sichtbarkeit von Funktion ist Funktion.**
+- **Audit als neuer Roadmap-Schritt**: aus den 18 Punkten emergierte **Welle 6.X (Polish-Sammel)** als bewusste 5-Sub-Phasen-Welle vor dem nächsten Atmosphäre-Block. Plus drei neue Wellen-Stellen: 11 V3 (Soul-Sync), 11 ext. (Substanz-Rolle), 4 V2 (Lofi-Musik). Eine gute Audit-Session bringt mehr Strukturschärfe als drei Feature-Sessions.
+
+**Projekt-Reflexion (7 Inspirations-Projekte): Vision-Alignment-Check**
+- **Wir sind das Werkstatt-Ultiversum**: aus dem Vergleich mit voxelize (Rust authoritative), image-blaster (SaaS Magie), tiny-world-builder (Voxel-Klötzchen) emergiert das Wort. Andere bauen Welten FÜR Spieler — wir bauen eine Welt, in der Spieler SELBST Welten bauen können. Mit lokalen Händen + lokaler KI-Stimme + Peer-Symbiose.
+- **Vision-resonante Übernahmen, keine direkten Forks**: three-fluid-fx als Vendor-Lib für 6.G4 (13 KB, CSP-konform, fluid-Effekte für Emotion + Magie), Erosions-Algorithmen-Inspirationen von THREE.Terrain für 6.G3 (Welt verändert sich eigen-zeitlich), WebGPU+TSL als ferne Welle 12 (line-spider + three-fluid-fx-TSL-Variante).
+- **Lehre**: Inspirations-Projekte sind nicht „was sollen wir kopieren?", sondern „bestätigen sie unseren Weg oder zeigen sie einen anderen?". Bei sechs der sieben: bestätigt + bestärkt unseren Pfad. Bei einem (image-blaster): zeigt einen anderen, vision-fernen Weg. Beide Ergebnisse sind wertvoll.
+
+---
+
 ### V7.99-V8.07 (16.05.2026) — Vision-Korrektur als Lern-Kern
 
 **Eine ganze Session-Welle hängt an einer einzigen Schöpfer-Frage**: „die definition eines rades ist aktuell die grösse?". Diese eine Beobachtung hat Welle 10b komplett refactored — von Form-Whitelist-Hardcode zu räumlicher Analyse + Tag-Sprache. Die Lehre: **wenn ein Detail dich an die Heilige Lektion erinnert, ist sie verletzt.** WHEEL_SHAPES = {cylinder, torus} sah harmlos aus, war aber genau die Tabelle-statt-Sprache, vor der die Lektion warnt. Tagsprache durchziehen ist anstrengender als Form-Listen, aber Vision-treu.

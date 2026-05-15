@@ -146,8 +146,8 @@ function startSaveServer() {
                 `terrainEverGenerated=${finalState.terrainEverGenerated}`
             );
             check(
-                "Mindestens 60 Chunks im groundChunks-Array",
-                finalState.groundChunks >= 60,
+                "Mindestens 25 Chunks im groundChunks-Array (V8.17: dynamisch ring-abhängig)",
+                finalState.groundChunks >= 25,
                 `groundChunks=${finalState.groundChunks}`
             );
             check(
@@ -4803,6 +4803,8 @@ function startSaveServer() {
                         // Negativ-Kontrolle: 50 m über Tempel-Top — Ray reicht nur
                         // 2.5 m runter, also trifft das Bauwerk nicht.
                         r.state.playerMesh.position.set(archX, topY + 50, archZ);
+                        // Welle 6.X.5 — Cache invalidieren vor frischem Compute.
+                        delete r.state._groundedCachedAt;
                         out.isGroundedHighInSky = r.isPlayerGrounded();
                         // Positiv-Test: Spieler in steigenden Höhen über die
                         // visuelle Top-BBox. Visuelle Box ist nicht 1:1 mit dem
@@ -4817,6 +4819,11 @@ function startSaveServer() {
                         let groundedAtDy = null;
                         for (const dy of [0.1, 0.3, 0.5, 0.7, 1.0, 1.5, 2.0]) {
                             r.state.playerMesh.position.set(archX, topY + dy, archZ);
+                            // Welle 6.X.5 — Cache invalidieren vor jeder
+                            // Position-Probe. In echtem Spiel ändert sich die
+                            // Position nur via Physics-Tick zwischen Frames;
+                            // im Test setzen wir manuell, also Cache resetten.
+                            delete r.state._groundedCachedAt;
                             if (r.isPlayerGrounded()) {
                                 foundGrounded = true;
                                 groundedAtDy = dy;
@@ -8486,9 +8493,10 @@ function startSaveServer() {
                         r.constructor.DEFAULT_KEYBINDINGS &&
                         typeof r.constructor.DEFAULT_KEYBINDINGS === "object" &&
                         Object.isFrozen(r.constructor.DEFAULT_KEYBINDINGS);
+                    // V8.17: 12 Aktionen (6 Original + 6 Drawer/Camera-Shortcuts).
                     out.hasActions =
                         Array.isArray(r.constructor.KEYBINDING_ACTIONS) &&
-                        r.constructor.KEYBINDING_ACTIONS.length === 6;
+                        r.constructor.KEYBINDING_ACTIONS.length === 12;
                     out.hasLabels = r.constructor.KEYBINDING_LABELS && Object.isFrozen(r.constructor.KEYBINDING_LABELS);
                     const expectedActions = ["break", "place", "confirmBuild", "inventory", "cancelBuild", "jump"];
                     out.actionsCorrect = expectedActions.every((a) => r.constructor.KEYBINDING_ACTIONS.includes(a));
@@ -8580,9 +8588,9 @@ function startSaveServer() {
                     out.listInDom = !!document.getElementById("keybindings-list");
                     out.resetInDom = !!document.getElementById("keybindings-reset");
                     // 6 keybind-row Zeilen
-                    out.sixRowsRendered = document.querySelectorAll("#keybindings-list .keybind-row").length === 6;
+                    out.sixRowsRendered = document.querySelectorAll("#keybindings-list .keybind-row").length === 12;
                     // Pro Aktion ein Rebind-Button mit data-action
-                    out.rebindButtonsPresent = document.querySelectorAll(".keybind-rebind[data-action]").length === 6;
+                    out.rebindButtonsPresent = document.querySelectorAll(".keybind-rebind[data-action]").length === 12;
 
                     // Reset für nachfolgende Tests
                     r.resetKeybindings();
@@ -8594,7 +8602,7 @@ function startSaveServer() {
 
             if (wave6c3Results && !wave6c3Results.error) {
                 check("Welle 6.C3: DEFAULT_KEYBINDINGS frozen", wave6c3Results.hasDefaults);
-                check("Welle 6.C3: KEYBINDING_ACTIONS hat 6 Einträge", wave6c3Results.hasActions);
+                check("Welle 6.C3/V8.17: KEYBINDING_ACTIONS hat 12 Einträge (6 + 6 Drawer/Camera)", wave6c3Results.hasActions);
                 check("Welle 6.C3: KEYBINDING_LABELS frozen", wave6c3Results.hasLabels);
                 check(
                     "Welle 6.C3: Actions vollständig (break/place/confirmBuild/inventory/cancelBuild/jump)",
@@ -8652,8 +8660,8 @@ function startSaveServer() {
                 check("Welle 6.C3: #keybindings-section im DOM", wave6c3Results.sectionInDom);
                 check("Welle 6.C3: #keybindings-list im DOM", wave6c3Results.listInDom);
                 check("Welle 6.C3: #keybindings-reset im DOM", wave6c3Results.resetInDom);
-                check("Welle 6.C3: 6 keybind-row Zeilen gerendert", wave6c3Results.sixRowsRendered);
-                check("Welle 6.C3: 6 Rebind-Buttons im DOM", wave6c3Results.rebindButtonsPresent);
+                check("Welle 6.C3/V8.17: 12 keybind-row Zeilen gerendert", wave6c3Results.sixRowsRendered);
+                check("Welle 6.C3/V8.17: 12 Rebind-Buttons im DOM", wave6c3Results.rebindButtonsPresent);
             }
 
             // ### Welle 6.H Phase 1 — Kreaturen-Aufträge (follow_player / wait / wander) ###
@@ -9779,6 +9787,11 @@ function startSaveServer() {
                     r._clearBuildMode && r._clearBuildMode();
                     r.setHotbarSlot(0, "stein_block");
                     r.selectHotbarSlot(0);
+                    // Welle 6.X.1 A2 — confirmBuild prüft jetzt phantomOnGround
+                    // im pfad-Modus. Im Headless-Setup läuft tickBuildMode nicht
+                    // (das würde via Raycast die Stabilität setzen). Wir simulieren
+                    // einen stabilen Phantom-Stand für den Material-Konsum-Test.
+                    if (r.state.buildMode) r.state.buildMode.phantomOnGround = true;
                     const archBeforePfad = r.state.architectures.length;
                     const stoneBeforePfad = r.state.player.inventory[0].count;
                     const builtPfad = r.confirmBuild();
@@ -9914,6 +9927,838 @@ function startSaveServer() {
                 );
                 check("Welle 6.H P2C: schöpfer-HUD zeigt 'frei'", wave6hP2cResults.hudShowsFreiInSchoepfer);
                 check("Welle 6.H P2C: frieden-HUD zeigt 'frei'", wave6hP2cResults.hudShowsFreiInFrieden);
+            }
+
+            // ### Welle 6.X.1 Audit-Fixes (17.05.2026) ###
+            // Vier Bug-Quartett-Fixes aus dem Schöpfer-Audit:
+            //   A1 — Ammo-Body activate(true) vor Jump-Velocity (Stand-Sprung)
+            //   A2 — confirmBuild blockt bei instabilem Phantom im pfad-Modus
+            //   A3 — Markier-UI zeigt Baupläne mit emergenter Rolle (filter
+            //        auf !roleManual statt !role), Stat-Panel zeigt Equipped
+            //   A4 — Player-Aura in 1st-Person ausgeblendet (Position bleibt
+            //        getrackt, nur Visibility togglet)
+            const wave6x1Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // --- A1: Code-Strukturtest — activate(true) im handleJump-Pfad
+                    // (Quelltext-Inspektion: das ist die einzige zuverlässige Art
+                    // den Ammo-Sleep-Wakeup zu prüfen ohne echte Physik-Sim).
+                    // Wichtig: nicht den ersten setLinearVelocity-Match nehmen
+                    // (der könnte in einem Kommentar stehen), sondern den ECHTEN
+                    // Method-Call mit `playerBody.setLinearVelocity(`.
+                    const jumpSrc = r.handleJump.toString();
+                    const activatePos = jumpSrc.indexOf(".activate(true)");
+                    const setVelPos = jumpSrc.indexOf("playerBody.setLinearVelocity(");
+                    out.handleJumpActivatesBody =
+                        activatePos > -1 && setVelPos > -1 && activatePos < setVelPos;
+
+                    // --- A2: confirmBuild blockt bei phantomOnGround=false im pfad
+                    r.setGameMode("pfad");
+                    r.state.player.inventory = new Array(27).fill(null);
+                    r.addMaterialToInventory("stein", 200);
+                    r._clearBuildMode && r._clearBuildMode();
+                    r.setHotbarSlot(0, "stein_block");
+                    r.selectHotbarSlot(0);
+                    if (r.state.buildMode) r.state.buildMode.phantomOnGround = false;
+                    const archBeforeBlock = r.state.architectures.length;
+                    const stoneBeforeBlock = r.state.player.inventory[0].count;
+                    const blocked = r.confirmBuild();
+                    const stoneAfterBlock = r.state.player.inventory[0]
+                        ? r.state.player.inventory[0].count
+                        : 0;
+                    out.pfadBlocksUnstable = blocked === false;
+                    out.pfadBlocksNoArch = r.state.architectures.length === archBeforeBlock;
+                    out.pfadBlocksNoMaterialLoss = stoneBeforeBlock === stoneAfterBlock;
+
+                    // schöpfer-Modus: gleiches Setup, instabil → trotzdem baut
+                    r.setGameMode("schöpfer");
+                    if (r.state.buildMode) r.state.buildMode.phantomOnGround = false;
+                    const archBeforeS = r.state.architectures.length;
+                    const builtS = r.confirmBuild();
+                    out.schoepferBypassesUnstable =
+                        builtS === true && r.state.architectures.length > archBeforeS;
+
+                    r._clearBuildMode && r._clearBuildMode();
+                    r.setGameMode("frieden");
+
+                    // --- A3a: Markier-UI nimmt Baupläne mit emergenter Rolle auf
+                    // (filter auf !roleManual statt !role). Wir machen einen
+                    // eigenen Bauplan mit forcierter emergenter Rolle ohne
+                    // roleManual-Flag — vor dem Fix wäre er gefiltert worden.
+                    // createBlueprint returnt true/false, nicht {ok}.
+                    const bpCreated = r.createBlueprint("audit_armor_test", "Audit-Test");
+                    out._a3aCreated = bpCreated === true;
+                    if (bpCreated) {
+                        const bpRef = r.state.blueprints["audit_armor_test"];
+                        bpRef.role = "tool"; // emergent gesetzt, kein Manual
+                        bpRef.roleManual = false;
+                        r.renderPlayerEquipUI && r.renderPlayerEquipUI();
+                        // Alle .equip-mark-label durchsuchen — der Test-Bauplan
+                        // hat "Audit-Test" als Label und muss in mindestens
+                        // einem .equip-mark-label gerendert sein.
+                        const labels = document.querySelectorAll(".equip-mark-label");
+                        out._a3aLabelCount = labels.length;
+                        let found = false;
+                        for (const l of labels) {
+                            if (/audit-test/i.test(l.textContent || "")) {
+                                found = true;
+                                break;
+                            }
+                        }
+                        out.markListShowsEmergentRole = found;
+                        delete r.state.blueprints["audit_armor_test"];
+                        r.renderPlayerEquipUI && r.renderPlayerEquipUI();
+                    } else {
+                        out.markListShowsEmergentRole = false;
+                    }
+
+                    // --- A3b: Stat-Panel zeigt Equipped-Zeile wenn Armor an
+                    const bp2Created = r.createBlueprint("audit_armor_real", "Audit-Helm");
+                    out._a3bCreated = bp2Created === true;
+                    if (bp2Created) {
+                        r.addPartToBlueprint("audit_armor_real", {
+                            shape: "sphere",
+                            material: "stein",
+                            size: { x: 0.5, y: 0.5, z: 0.5 },
+                        });
+                        const armorResult = r.setBlueprintAsArmor("audit_armor_real");
+                        out._a3bMarked = !!(armorResult && armorResult.ok);
+                        const equipResult = r.equipArmor("audit_armor_real");
+                        out._a3bEquipped = !!(equipResult && equipResult.ok);
+                        // Stat-Panel muss tatsächlich rendern — `recomputePlayerStats`
+                        // ist in equipArmor schon drin, aber renderPlayerStatsUI
+                        // muss explizit aufgerufen werden.
+                        r.renderPlayerStatsUI && r.renderPlayerStatsUI();
+                        const container = document.getElementById("player-stats");
+                        out._a3bContainerText = container ? container.textContent.slice(0, 200) : null;
+                        out.statsShowsArmorRow =
+                            !!container && /Rüstung/.test(container.textContent || "");
+                        r.equipArmor(null);
+                        delete r.state.blueprints["audit_armor_real"];
+                        r.renderPlayerStatsUI && r.renderPlayerStatsUI();
+                    } else {
+                        out.statsShowsArmorRow = false;
+                    }
+
+                    // --- A4: 1st-Person → Aura unsichtbar, 3rd-Person → sichtbar
+                    r.setCameraMode("first");
+                    r.tickPlayerAura();
+                    const glow = r.state.playerAuraGlow;
+                    out.auraHiddenInFirst = !!glow && glow.visible === false;
+                    r.setCameraMode("third");
+                    r.tickPlayerAura();
+                    out.auraVisibleInThird = !!glow && glow.visible === true;
+                    // Position bleibt getrackt auch in 1st-Person
+                    r.setCameraMode("first");
+                    r.tickPlayerAura();
+                    const pp = r.state.playerMesh.position;
+                    out.auraPositionStillTracked =
+                        !!glow && Math.abs(glow.position.x - pp.x) < 0.01;
+
+                    // --- Cleanup: Camera-Mode auf Default „first" zurücksetzen
+                    // (Ring 5 V2-Prep prüft Initial-Modus). Hotbar auf Default
+                    // zurücksetzen (Ring 6.5 prüft Default-Hotbar).
+                    r.setCameraMode("first");
+                    try {
+                        localStorage.removeItem("anazhRealmCameraMode");
+                    } catch {
+                        /* ignore */
+                    }
+                    if (r.state.hotbar && r.state.hotbar.length === 9) {
+                        const builtIns = ["village", "temple", "waterfall"];
+                        for (let i = 0; i < 9; i++) {
+                            r.state.hotbar[i] = i < 3 ? builtIns[i] : null;
+                        }
+                    }
+                    r._clearBuildMode && r._clearBuildMode();
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6x1Results && !wave6x1Results.error) {
+                check(
+                    "Welle 6.X.1 A1: handleJump ruft activate(true) vor setLinearVelocity",
+                    wave6x1Results.handleJumpActivatesBody
+                );
+                check(
+                    "Welle 6.X.1 A2: pfad + Phantom-instabil → confirmBuild blockt",
+                    wave6x1Results.pfadBlocksUnstable
+                );
+                check(
+                    "Welle 6.X.1 A2: pfad-Block → keine Architektur entsteht",
+                    wave6x1Results.pfadBlocksNoArch
+                );
+                check(
+                    "Welle 6.X.1 A2: pfad-Block → kein Material-Verlust",
+                    wave6x1Results.pfadBlocksNoMaterialLoss
+                );
+                check(
+                    "Welle 6.X.1 A2: schöpfer-Modus überschreibt Stabilitäts-Gate",
+                    wave6x1Results.schoepferBypassesUnstable
+                );
+                check(
+                    "Welle 6.X.1 A3a: Markier-UI nimmt Baupläne mit emergenter Rolle auf",
+                    wave6x1Results.markListShowsEmergentRole,
+                    `created=${wave6x1Results._a3aCreated}, labelCount=${wave6x1Results._a3aLabelCount}`
+                );
+                check(
+                    "Welle 6.X.1 A3b: Stat-Panel zeigt 'Rüstung'-Zeile wenn equipped",
+                    wave6x1Results.statsShowsArmorRow,
+                    `created=${wave6x1Results._a3bCreated} marked=${wave6x1Results._a3bMarked} equipped=${wave6x1Results._a3bEquipped} text=${(wave6x1Results._a3bContainerText || "").slice(0, 80)}`
+                );
+                check(
+                    "Welle 6.X.1 A4: Player-Aura unsichtbar in 1st-Person",
+                    wave6x1Results.auraHiddenInFirst
+                );
+                check(
+                    "Welle 6.X.1 A4: Player-Aura sichtbar in 3rd-Person",
+                    wave6x1Results.auraVisibleInThird
+                );
+                check(
+                    "Welle 6.X.1 A4: Aura-Position bleibt getrackt auch in 1st-Person",
+                    wave6x1Results.auraPositionStillTracked
+                );
+            } else {
+                check(
+                    "Welle 6.X.1: Audit-Fix-Tests laufen",
+                    false,
+                    wave6x1Results ? wave6x1Results.error : "no result"
+                );
+            }
+
+            // ### Welle 6.X.2 — UI-Politur (Audit 17.05.2026) ###
+            // B1 Logbuch-Toggle (default versteckt)
+            // B2 Welt-Bauwerke-Buttons aus dem world-drawer entfernt
+            // B4 Scrollrad zyklt durch Hotbar-Slots
+            const wave6x2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // B1 — Logbuch-Toggle (V8.14: Section sichtbar, #log toggelt)
+                    out.logbookSectionExists = !!document.getElementById("logbook-section");
+                    out.logbookToggleExists = !!document.getElementById("logbook-toggle");
+                    const consoleLog = document.getElementById("console-log-section");
+                    const logEl = document.getElementById("log");
+                    out.logbookConsoleSectionExists = !!consoleLog;
+                    // V8.14: Section bleibt sichtbar, NUR #log (innen) hidden default
+                    out.logbookHiddenByDefault = !!logEl && logEl.hidden === true;
+                    out.logbookInitDOMExists = typeof r.logbookInitDOM === "function";
+                    out.consoleLogToggleExists = !!document.getElementById("console-log-toggle");
+                    // Toggle aktivieren → #log wird sichtbar (Section bleibt sichtbar)
+                    const toggle = document.getElementById("logbook-toggle");
+                    if (toggle) {
+                        toggle.checked = true;
+                        toggle.dispatchEvent(new Event("change"));
+                        out.logbookVisibleAfterToggle = !!logEl && logEl.hidden === false;
+                        // Cleanup für nachfolgende Tests
+                        toggle.checked = false;
+                        toggle.dispatchEvent(new Event("change"));
+                        out.logbookHiddenAfterUntoggle = !!logEl && logEl.hidden === true;
+                    }
+                    // V8.14: Inline-Console-Toggle togglet selber State
+                    const inlineBtn = document.getElementById("console-log-toggle");
+                    if (inlineBtn && logEl) {
+                        inlineBtn.click();
+                        out.inlineToggleExpands = logEl.hidden === false;
+                        inlineBtn.click();
+                        out.inlineToggleCollapses = logEl.hidden === true;
+                    }
+
+                    // B2 — Welt-Bauwerke-Buttons entfernt
+                    out.architectureActionsRemoved = !document.getElementById("architecture-actions");
+                    // Aber Chat-Pfade existieren weiter (smoke: spawn_village ist noch da)
+                    out.spawnVillageStillCallable = typeof r.dslRun === "function";
+
+                    // B4 — Scrollrad-Hotbar
+                    // Code-Strukturtest: Wheel-Listener im init() (Methode liest
+                    // Wheel-Event auf dem Canvas und ruft selectHotbarSlot).
+                    const initSrc = typeof r.init === "function" ? r.init.toString() : "";
+                    out.wheelListenerInstalled =
+                        /addEventListener\s*\(\s*["']wheel["']/.test(initSrc) &&
+                        /selectHotbarSlot/.test(initSrc);
+
+                    // Logik-Test: simuliere Wheel-Deltas, hotbar-Slot ändert sich
+                    if (r.state.buildMode) r.state.buildMode.slotIndex = 0;
+                    r.selectHotbarSlot(0);
+                    const before = r.state.buildMode.slotIndex;
+                    // Ein Wheel-Delta nach unten → nächster Slot
+                    r.selectHotbarSlot((before + 1) % 9);
+                    out.hotbarCyclesForward = r.state.buildMode.slotIndex === 1;
+                    // Rückwärts (wrap)
+                    r.selectHotbarSlot((1 - 1 + 9) % 9);
+                    out.hotbarCyclesBackward = r.state.buildMode.slotIndex === 0;
+                    r.selectHotbarSlot((0 - 1 + 9) % 9);
+                    out.hotbarWrapsAtZero = r.state.buildMode.slotIndex === 8;
+                    r._clearBuildMode && r._clearBuildMode();
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6x2Results && !wave6x2Results.error) {
+                check("Welle 6.X.2 B1: #logbook-section im DOM", wave6x2Results.logbookSectionExists);
+                check("Welle 6.X.2 B1: #logbook-toggle im DOM", wave6x2Results.logbookToggleExists);
+                check(
+                    "Welle 6.X.2 B1 V8.14: #log default hidden (Section bleibt sichtbar)",
+                    wave6x2Results.logbookHiddenByDefault
+                );
+                check("Welle 6.X.2 B1: logbookInitDOM-Methode existiert", wave6x2Results.logbookInitDOMExists);
+                check(
+                    "Welle 6.X.2 V8.14: #console-log-toggle Inline-Button im DOM",
+                    wave6x2Results.consoleLogToggleExists
+                );
+                check(
+                    "Welle 6.X.2 B1: Toggle aktivieren macht Logbuch sichtbar",
+                    wave6x2Results.logbookVisibleAfterToggle
+                );
+                check(
+                    "Welle 6.X.2 B1: Toggle deaktivieren versteckt Logbuch",
+                    wave6x2Results.logbookHiddenAfterUntoggle
+                );
+                check(
+                    "Welle 6.X.2 V8.14: Inline-Toggle expandiert Logbuch",
+                    wave6x2Results.inlineToggleExpands
+                );
+                check(
+                    "Welle 6.X.2 V8.14: Inline-Toggle collapsed Logbuch",
+                    wave6x2Results.inlineToggleCollapses
+                );
+                check(
+                    "Welle 6.X.2 B2: #architecture-actions aus dem world-drawer entfernt",
+                    wave6x2Results.architectureActionsRemoved
+                );
+                check(
+                    "Welle 6.X.2 B2: dslRun bleibt verfügbar (Chat-Pfad lebt)",
+                    wave6x2Results.spawnVillageStillCallable
+                );
+                check(
+                    "Welle 6.X.2 B4: Wheel-Listener mit selectHotbarSlot installiert",
+                    wave6x2Results.wheelListenerInstalled
+                );
+                check("Welle 6.X.2 B4: Hotbar zykelt vorwärts", wave6x2Results.hotbarCyclesForward);
+                check("Welle 6.X.2 B4: Hotbar zykelt rückwärts", wave6x2Results.hotbarCyclesBackward);
+                check("Welle 6.X.2 B4: Hotbar wrappt bei 0 → 8", wave6x2Results.hotbarWrapsAtZero);
+            } else {
+                check(
+                    "Welle 6.X.2: UI-Politur-Tests laufen",
+                    false,
+                    wave6x2Results ? wave6x2Results.error : "no result"
+                );
+            }
+
+            // ### Welle 6.X.3 — Vision-Quick-Wins (Audit 17.05.2026) ###
+            // C1 at_player_forward(dist) DSL-Resolver + Chat „baue X hier"
+            // C3 Soul-bound Sprung-Steilheits-Toleranz
+            const wave6x3Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // --- C1: at_player_forward DSL-Resolver
+                    out.atPlayerForwardExists = !!r.dslPositions.at_player_forward;
+                    if (r.dslPositions.at_player_forward) {
+                        // Spieler bei (10, 50, 20), yaw=0 → forward ist -Z.
+                        // at_player_forward(8) sollte (10, 50, 12) liefern.
+                        r.state.playerMesh.position.set(10, 50, 20);
+                        r.state.yaw = 0;
+                        const ctx = { state: r.state, rng: () => 0.5 };
+                        const pos = r.dslPositions.at_player_forward([8], ctx);
+                        out.atPlayerForwardOffset =
+                            Math.abs(pos.x - 10) < 0.01 &&
+                            Math.abs(pos.y - 50) < 0.01 &&
+                            Math.abs(pos.z - 12) < 0.01;
+                        // Mit yaw=π/2 → forward ist -X. at_player_forward(5) → (5, 50, 20)
+                        r.state.yaw = Math.PI / 2;
+                        const pos2 = r.dslPositions.at_player_forward([5], ctx);
+                        out.atPlayerForwardYawAware =
+                            Math.abs(pos2.x - 5) < 0.01 && Math.abs(pos2.z - 20) < 0.01;
+                        // Reset
+                        r.state.yaw = 0;
+                    }
+
+                    // --- C1: Chat „baue dorf hier" embedded forward-Position
+                    r.state.playerMesh.position.set(0, 50, 0);
+                    r.state.yaw = 0;
+                    const dslOut = r.parseChatToDsl("baue dorf hier");
+                    out.chatBuildDorfParses = !!(dslOut && dslOut.program);
+                    if (dslOut && dslOut.program) {
+                        // Erwartetes Format: ["spawn_village", ["at", x, y, z], seed]
+                        out.chatBuildDorfFormat =
+                            dslOut.program[0] === "spawn_village" &&
+                            Array.isArray(dslOut.program[1]) &&
+                            dslOut.program[1][0] === "at" &&
+                            typeof dslOut.program[2] === "number";
+                        // Position ist NICHT bei (0,0,0) — sondern 8m vor dem
+                        // Spieler. yaw=0 → forward ist -Z, also z ≈ -8.
+                        const z = dslOut.program[1][3];
+                        out.chatBuildDorfForwardOffset = Math.abs(z - -8) < 0.5;
+                    }
+
+                    // --- C3: _canSoulJumpFromSlope existiert
+                    out.canJumpFromSlopeExists = typeof r._canSoulJumpFromSlope === "function";
+
+                    // --- C3: kein Slope → springen erlaubt
+                    r.state.onSteepSlope = false;
+                    out.flatGroundJumpAllowed = r._canSoulJumpFromSlope() === true;
+
+                    // --- C3: Slope + frieden → springen erlaubt (Modus-Override)
+                    r.state.onSteepSlope = true;
+                    r.setGameMode("frieden");
+                    out.peaceModeOverridesSlope = r._canSoulJumpFromSlope() === true;
+
+                    // --- C3: Slope + schöpfer → springen erlaubt
+                    r.setGameMode("schöpfer");
+                    out.creatorModeOverridesSlope = r._canSoulJumpFromSlope() === true;
+
+                    // --- C3: Slope + pfad + Phönix → kann springen (lebendig hoch)
+                    r.setGameMode("pfad");
+                    r.applyPlayerSoul("phoenix");
+                    r.recomputePlayerStats && r.recomputePlayerStats();
+                    out.phoenixCanJumpFromSlope = r._canSoulJumpFromSlope() === true;
+                    out._phoenixTags = r.state.player.statTags
+                        ? `lebendig=${r.state.player.statTags.lebendig?.toFixed(2)} dichte=${r.state.player.statTags.dichte?.toFixed(2)}`
+                        : "no tags";
+
+                    // --- C3: Slope + pfad + Drache → kann NICHT springen (dichte hoch)
+                    r.applyPlayerSoul("dragon");
+                    r.recomputePlayerStats && r.recomputePlayerStats();
+                    out.dragonCannotJumpFromSlope = r._canSoulJumpFromSlope() === false;
+                    out._dragonTags = r.state.player.statTags
+                        ? `lebendig=${r.state.player.statTags.lebendig?.toFixed(2)} dichte=${r.state.player.statTags.dichte?.toFixed(2)}`
+                        : "no tags";
+
+                    // Cleanup
+                    r.applyPlayerSoul("human");
+                    r.recomputePlayerStats && r.recomputePlayerStats();
+                    r.state.onSteepSlope = false;
+                    r.setGameMode("frieden");
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6x3Results && !wave6x3Results.error) {
+                check(
+                    "Welle 6.X.3 C1: at_player_forward DSL-Resolver existiert",
+                    wave6x3Results.atPlayerForwardExists
+                );
+                check(
+                    "Welle 6.X.3 C1: at_player_forward(8) liefert Position 8m vor Spieler (yaw=0)",
+                    wave6x3Results.atPlayerForwardOffset
+                );
+                check(
+                    "Welle 6.X.3 C1: at_player_forward respektiert yaw (π/2 → -X)",
+                    wave6x3Results.atPlayerForwardYawAware
+                );
+                check(
+                    "Welle 6.X.3 C1: Chat 'baue dorf hier' parst zu DSL",
+                    wave6x3Results.chatBuildDorfParses
+                );
+                check(
+                    "Welle 6.X.3 C1: Chat 'baue dorf hier' Format [spawn_village, at, seed]",
+                    wave6x3Results.chatBuildDorfFormat
+                );
+                check(
+                    "Welle 6.X.3 C1: Chat 'baue dorf hier' embedded Forward-Offset (z ≈ -8)",
+                    wave6x3Results.chatBuildDorfForwardOffset
+                );
+                check(
+                    "Welle 6.X.3 C3: _canSoulJumpFromSlope-Methode existiert",
+                    wave6x3Results.canJumpFromSlopeExists
+                );
+                check(
+                    "Welle 6.X.3 C3: kein Slope → Sprung erlaubt",
+                    wave6x3Results.flatGroundJumpAllowed
+                );
+                check(
+                    "Welle 6.X.3 C3: frieden-Modus überschreibt Slope-Block",
+                    wave6x3Results.peaceModeOverridesSlope
+                );
+                check(
+                    "Welle 6.X.3 C3: schöpfer-Modus überschreibt Slope-Block",
+                    wave6x3Results.creatorModeOverridesSlope
+                );
+                check(
+                    "Welle 6.X.3 C3: Phönix darf von Slope springen (lebendig hoch, dichte niedrig)",
+                    wave6x3Results.phoenixCanJumpFromSlope,
+                    wave6x3Results._phoenixTags
+                );
+                check(
+                    "Welle 6.X.3 C3: Drache darf nicht von Slope springen (dichte hoch)",
+                    wave6x3Results.dragonCannotJumpFromSlope,
+                    wave6x3Results._dragonTags
+                );
+            } else {
+                check(
+                    "Welle 6.X.3: Vision-Quick-Win-Tests laufen",
+                    false,
+                    wave6x3Results ? wave6x3Results.error : "no result"
+                );
+            }
+
+            // ### Welle 6.X.4 + 6.X.5 — Identity + Performance (Audit 17.05.2026) ###
+            // F1 Begleiter-Name + Avatar-Name (LLM-Persona)
+            // D1 isPlayerGrounded-Cache (2 Frames, ~33 ms)
+            const wave6x45Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // --- F1: state-Felder existieren mit Defaults
+                    out.companionNameDefault = r.state.grok.companionName === "Grok";
+                    out.playerNameDefault = r.state.player.name === "Schöpfer";
+
+                    // --- F1: identityInitDOM-Methode existiert + Inputs im DOM
+                    out.identityInitMethodExists = typeof r.identityInitDOM === "function";
+                    out.companionInputExists = !!document.getElementById("companion-name-input");
+                    out.playerInputExists = !!document.getElementById("player-name-input");
+                    out.identitySectionExists = !!document.getElementById("identity-section");
+
+                    // --- F1: Input-Change setzt state + localStorage
+                    const ci = document.getElementById("companion-name-input");
+                    if (ci) {
+                        ci.value = "Lyra";
+                        ci.dispatchEvent(new Event("input"));
+                        out.companionNameUpdated = r.state.grok.companionName === "Lyra";
+                        out.companionNamePersisted =
+                            typeof localStorage !== "undefined" &&
+                            localStorage.getItem("anazh.companion.name") === "Lyra";
+                        // Reset auf Default
+                        ci.value = "Grok";
+                        ci.dispatchEvent(new Event("input"));
+                    }
+                    const pi = document.getElementById("player-name-input");
+                    if (pi) {
+                        pi.value = "Aelyn";
+                        pi.dispatchEvent(new Event("input"));
+                        out.playerNameUpdated = r.state.player.name === "Aelyn";
+                        out.playerNamePersisted =
+                            typeof localStorage !== "undefined" &&
+                            localStorage.getItem("anazh.player.name") === "Aelyn";
+                        pi.value = "Schöpfer";
+                        pi.dispatchEvent(new Event("input"));
+                    }
+
+                    // --- F1: System-Prompt enthält die zwei Namen
+                    r.state.grok.companionName = "TestCompanion";
+                    r.state.player.name = "TestPlayer";
+                    const prompt = r.llmBuildSystemPrompt();
+                    out.promptContainsCompanionName = /TestCompanion/.test(prompt);
+                    out.promptContainsPlayerName = /TestPlayer/.test(prompt);
+                    // Reset auf Defaults
+                    r.state.grok.companionName = "Grok";
+                    r.state.player.name = "Schöpfer";
+
+                    // --- D1: isPlayerGrounded-Cache
+                    // Source-Check: Cache-Felder + Time-Check existieren
+                    const isgSrc = r.isPlayerGrounded.toString();
+                    out.cacheFieldsInSource =
+                        /_groundedCache/.test(isgSrc) && /_groundedCachedAt/.test(isgSrc);
+                    out.cacheTimeoutInSource = /< 33/.test(isgSrc) || /<= 33/.test(isgSrc);
+
+                    // Funktional: nach einem Aufruf ist _groundedCachedAt gesetzt
+                    delete r.state._groundedCache;
+                    delete r.state._groundedCachedAt;
+                    r.isPlayerGrounded();
+                    out.cacheSetAfterCall = typeof r.state._groundedCachedAt === "number";
+
+                    // Funktional: zweiter Aufruf direkt danach liefert cached
+                    // result (kein Race-Free-Window) — wir prüfen dass der
+                    // Wert nicht NaN ist und stabil bleibt.
+                    const v1 = r.isPlayerGrounded();
+                    const v2 = r.isPlayerGrounded();
+                    out.cacheConsistentBetweenCalls = v1 === v2;
+
+                    // Cache-Override-Test: setze cache manuell, prüfe dass Methode den Wert respektiert
+                    r.state._groundedCache = true;
+                    r.state._groundedCachedAt = performance.now();
+                    out.cachedTrueRespected = r.isPlayerGrounded() === true;
+                    r.state._groundedCache = false;
+                    r.state._groundedCachedAt = performance.now();
+                    out.cachedFalseRespected = r.isPlayerGrounded() === false;
+                    // Cache-Expiry: alter timestamp → fresh compute
+                    r.state._groundedCachedAt = performance.now() - 100; // > 33 ms her
+                    // Wir prüfen NICHT das Ergebnis (das hängt von Physik ab),
+                    // aber dass Cache-Time refreshed wird
+                    const beforeRefresh = r.state._groundedCachedAt;
+                    r.isPlayerGrounded();
+                    out.cacheRefreshedAfterExpiry = r.state._groundedCachedAt > beforeRefresh;
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6x45Results && !wave6x45Results.error) {
+                check("Welle 6.X.4 F1: state.grok.companionName default 'Grok'", wave6x45Results.companionNameDefault);
+                check("Welle 6.X.4 F1: state.player.name default 'Schöpfer'", wave6x45Results.playerNameDefault);
+                check("Welle 6.X.4 F1: identityInitDOM-Methode existiert", wave6x45Results.identityInitMethodExists);
+                check("Welle 6.X.4 F1: #companion-name-input im DOM", wave6x45Results.companionInputExists);
+                check("Welle 6.X.4 F1: #player-name-input im DOM", wave6x45Results.playerInputExists);
+                check("Welle 6.X.4 F1: #identity-section im DOM", wave6x45Results.identitySectionExists);
+                check("Welle 6.X.4 F1: Companion-Input ändert state.grok.companionName", wave6x45Results.companionNameUpdated);
+                check("Welle 6.X.4 F1: Companion-Name persistiert in localStorage", wave6x45Results.companionNamePersisted);
+                check("Welle 6.X.4 F1: Player-Input ändert state.player.name", wave6x45Results.playerNameUpdated);
+                check("Welle 6.X.4 F1: Player-Name persistiert in localStorage", wave6x45Results.playerNamePersisted);
+                check("Welle 6.X.4 F1: System-Prompt enthält Companion-Name", wave6x45Results.promptContainsCompanionName);
+                check("Welle 6.X.4 F1: System-Prompt enthält Player-Name", wave6x45Results.promptContainsPlayerName);
+                check("Welle 6.X.5 D1: Cache-Felder + Time-Check im isPlayerGrounded-Source", wave6x45Results.cacheFieldsInSource);
+                check("Welle 6.X.5 D1: Cache-Timeout 33 ms (≈2 Frames @ 60fps)", wave6x45Results.cacheTimeoutInSource);
+                check("Welle 6.X.5 D1: _groundedCachedAt nach erstem Call gesetzt", wave6x45Results.cacheSetAfterCall);
+                check("Welle 6.X.5 D1: zwei direkte Aufrufe liefern dasselbe", wave6x45Results.cacheConsistentBetweenCalls);
+                check("Welle 6.X.5 D1: gecachtes true wird respektiert", wave6x45Results.cachedTrueRespected);
+                check("Welle 6.X.5 D1: gecachtes false wird respektiert", wave6x45Results.cachedFalseRespected);
+                check("Welle 6.X.5 D1: nach Cache-Expiry wird neu computed (timestamp refresht)", wave6x45Results.cacheRefreshedAfterExpiry);
+            } else {
+                check(
+                    "Welle 6.X.4+5: Identity + Performance-Tests laufen",
+                    false,
+                    wave6x45Results ? wave6x45Results.error : "no result"
+                );
+            }
+
+            // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider (Audit 17.05.2026) ###
+            const wave6x4bResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // --- B3: Stats-HUD DOM-Existenz
+                    out.statsHudExists = !!document.getElementById("stats-hud");
+                    out.statsHudHpFillExists = !!document.getElementById("stats-hud-hp-fill");
+                    out.statsHudStamFillExists = !!document.getElementById("stats-hud-stam-fill");
+                    out.statsHudTooltipExists = !!document.getElementById("stats-hud-tooltip");
+                    out.tickStatsHudMethodExists = typeof r.tickStatsHud === "function";
+
+                    // --- B3: tickStatsHud aktualisiert HP-Text + Bar-Width
+                    // V8.13 Fix: HP/Stamina liegen auf state.player.*, nicht state.*
+                    r.state.player.hp = 50;
+                    r.state.player.hpMax = 100;
+                    r.state.player.stamina = 75;
+                    r.state.player.staminaMax = 100;
+                    // Force-Update durch Reset des Throttles
+                    delete r.state._statsHudLastTick;
+                    delete r.state._statsHudTooltipLastTick;
+                    r.tickStatsHud(performance.now() / 1000);
+                    const hpText = document.getElementById("stats-hud-hp-text");
+                    out.hpTextShowsRatio = !!hpText && /50\/100/.test(hpText.textContent);
+                    const stamText = document.getElementById("stats-hud-stam-text");
+                    out.stamTextShowsRatio = !!stamText && /75\/100/.test(stamText.textContent);
+                    const hpFill = document.getElementById("stats-hud-hp-fill");
+                    // V8.14: Bar-Breite ist jetzt 166 (von 158) — 50% → 83px
+                    out.hpFillProportional =
+                        !!hpFill && Math.abs(parseFloat(hpFill.getAttribute("width")) - 83) < 1;
+
+                    // --- B3: Tooltip enthält slow stats nach Hover
+                    r.tickStatsHud(performance.now() / 1000 + 2); // +2s damit Tooltip-Throttle nicht greift
+                    const tooltip = document.getElementById("stats-hud-tooltip");
+                    out.tooltipHasDamage = !!tooltip && /Schaden/.test(tooltip.innerHTML);
+                    out.tooltipHasSpeed = !!tooltip && /Geschwindigk/.test(tooltip.innerHTML);
+                    out.tooltipHasPrecision = !!tooltip && /Präzision/.test(tooltip.innerHTML);
+
+                    // --- D2: state-Felder + UI-Slider existieren
+                    out.masterVolDefault = r.state.symphony.masterVolume === 1.0;
+                    out.pingVolDefault = r.state.symphony.creaturePingVolume === 1.0;
+                    out.ringRadiusDefault = r.state.chunkRingRadius === 2;
+                    out.slidersInitMethodExists = typeof r.slidersInitDOM === "function";
+                    out.slidersSectionExists = !!document.getElementById("sliders-section");
+                    out.masterSliderExists = !!document.getElementById("slider-master");
+                    out.pingsSliderExists = !!document.getElementById("slider-pings");
+                    out.ringSliderExists = !!document.getElementById("slider-ring");
+
+                    // --- D2: Master-Slider ändert state + Persistenz
+                    const ms = document.getElementById("slider-master");
+                    if (ms) {
+                        ms.value = "50";
+                        ms.dispatchEvent(new Event("input"));
+                        out.masterSliderUpdates = Math.abs(r.state.symphony.masterVolume - 0.5) < 0.01;
+                        out.masterSliderPersists =
+                            typeof localStorage !== "undefined" &&
+                            Math.abs(parseFloat(localStorage.getItem("anazh.audio.masterVol")) - 0.5) < 0.01;
+                        // Reset auf default
+                        ms.value = "100";
+                        ms.dispatchEvent(new Event("input"));
+                    }
+
+                    // --- D2: Pings-Slider beeinflusst playCreaturePing-Peak
+                    const ps = document.getElementById("slider-pings");
+                    if (ps) {
+                        ps.value = "0";
+                        ps.dispatchEvent(new Event("input"));
+                        out.pingsSliderUpdates = r.state.symphony.creaturePingVolume === 0;
+                        ps.value = "100";
+                        ps.dispatchEvent(new Event("input"));
+                    }
+
+                    // --- D2: Ring-Slider ändert chunkRingRadius
+                    const rs = document.getElementById("slider-ring");
+                    if (rs) {
+                        rs.value = "3";
+                        rs.dispatchEvent(new Event("input"));
+                        out.ringSliderUpdates = r.state.chunkRingRadius === 3;
+                        const rsv = document.getElementById("slider-ring-val");
+                        out.ringValueDisplaysCorrectly = !!rsv && rsv.textContent === "7×7";
+                        rs.value = "2";
+                        rs.dispatchEvent(new Event("input"));
+                    }
+
+                    // --- D2: playCreaturePing-Source enthält creaturePingVolume
+                    const pcpSrc = r.playCreaturePing.toString();
+                    out.pingsSourceUsesVolume = /creaturePingVolume/.test(pcpSrc);
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            // ### Welle 6.X.4 V8.16 Punkt 18 — Rolle-Synergie + Wachstumskonzept ###
+            const wave6x4cResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // computeBlueprintDomainCounts existiert + liefert sinnvolle Map
+                    out.domainCountsMethodExists = typeof r.computeBlueprintDomainCounts === "function";
+
+                    // Test: Bauplan ohne opChain → leere counts
+                    const tn = "audit_v816_test";
+                    if (r.state.blueprints[tn]) delete r.state.blueprints[tn];
+                    r.createBlueprint(tn, "V816-Test");
+                    r.addPartToBlueprint(tn, {
+                        shape: "sphere",
+                        material: "stein",
+                        size: { x: 0.5, y: 0.5, z: 0.5 },
+                    });
+                    const c0 = r.computeBlueprintDomainCounts(r.state.blueprints[tn]);
+                    out.emptyChainNoDomain = Object.keys(c0).length === 0;
+
+                    // Wende einen Schmiede-Hammer (forging-domain) an → counts.forging = 1
+                    // Hammer (Starter) hat domain:null; nur schmiede-hammer hat
+                    // domain:"forging". Welle 9a-Architektur.
+                    // schmiede-hammer ist nicht Starter — zum Besitz hinzufügen
+                    // (frieden-Modus überspringt Stamina-Cost). Plus: opChain-
+                    // Material-Compat — schmiede-hammer.opClass=plastic ist mit
+                    // stein NICHT kompatibel (MATERIAL_OP_COMPATIBILITY). Eisen
+                    // passt → wir wechseln das Test-Material auf eisen.
+                    r.state.player.tools = Array.isArray(r.state.player.tools)
+                        ? r.state.player.tools
+                        : [];
+                    if (!r.state.player.tools.includes("schmiede-hammer")) {
+                        r.state.player.tools.push("schmiede-hammer");
+                    }
+                    r.state.blueprints[tn].parts[0].material = "eisen";
+                    r.applyOpToPart(tn, 0, "schmiede-hammer");
+                    const c1 = r.computeBlueprintDomainCounts(r.state.blueprints[tn]);
+                    out.afterForgingHasDomain = (c1.forging || 0) === 1;
+
+                    // Cleanup
+                    delete r.state.blueprints[tn];
+
+                    // UI-Rendering: Stats-Panel hat workshop-domain-row +
+                    // workshop-synergy-row + workshop-growth-row Elemente nach
+                    // Render eines eigenen Bauplans.
+                    const tn2 = "audit_v816_render";
+                    r.createBlueprint(tn2, "V816-Render");
+                    r.addPartToBlueprint(tn2, {
+                        shape: "sphere",
+                        material: "eisen", // schmiede-hammer braucht plastic-kompatibles Material
+                        size: { x: 0.5, y: 0.5, z: 0.5 },
+                    });
+                    r.selectBlueprintForEdit && r.selectBlueprintForEdit(tn2);
+                    r._workshopRenderStatsPanel && r._workshopRenderStatsPanel();
+                    const panel = document.getElementById("workshop-stats-panel");
+                    out.synergyRowRendered = !!(panel && panel.querySelector(".workshop-synergy-row"));
+                    out.growthRowRendered = !!(panel && panel.querySelector(".workshop-growth-row"));
+                    // Bei 0 opChain steht „Noch keine Werkzeug-Anwendung" im growth-text
+                    const growthText = panel && panel.querySelector(".workshop-growth-text");
+                    out.growthShowsEmptyHint =
+                        !!growthText && /Noch keine Werkzeug-Anwendung/.test(growthText.textContent);
+                    // Nach Schmiede-Hammer-Anwendung erscheint die Domain-Bar
+                    r.applyOpToPart(tn2, 0, "schmiede-hammer");
+                    r._workshopRenderStatsPanel && r._workshopRenderStatsPanel();
+                    out.domainBarsAppearAfterOp = !!(
+                        panel && panel.querySelector(".workshop-domain-bar.dominant")
+                    );
+
+                    // Cleanup
+                    delete r.state.blueprints[tn2];
+                    r._workshopRenderStatsPanel && r._workshopRenderStatsPanel();
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6x4cResults && !wave6x4cResults.error) {
+                check(
+                    "Welle 6.X.4 V8.16 Punkt 18: computeBlueprintDomainCounts existiert",
+                    wave6x4cResults.domainCountsMethodExists
+                );
+                check(
+                    "Welle 6.X.4 V8.16: Leere opChain → keine Domain-Counts",
+                    wave6x4cResults.emptyChainNoDomain
+                );
+                check(
+                    "Welle 6.X.4 V8.16: Schmiede-Hammer-Anwendung erhöht forging-Count",
+                    wave6x4cResults.afterForgingHasDomain
+                );
+                check(
+                    "Welle 6.X.4 V8.16: Werkstatt-Stats hat .workshop-synergy-row",
+                    wave6x4cResults.synergyRowRendered
+                );
+                check(
+                    "Welle 6.X.4 V8.16: Werkstatt-Stats hat .workshop-growth-row",
+                    wave6x4cResults.growthRowRendered
+                );
+                check(
+                    "Welle 6.X.4 V8.16: Growth-Text bei 0 Ops zeigt Wachstums-Hinweis",
+                    wave6x4cResults.growthShowsEmptyHint
+                );
+                check(
+                    "Welle 6.X.4 V8.16: Domain-Bar.dominant erscheint nach Schmiede-Hammer-Op",
+                    wave6x4cResults.domainBarsAppearAfterOp
+                );
+            } else {
+                check(
+                    "Welle 6.X.4 V8.16: Rolle-Synergie-Tests laufen",
+                    false,
+                    wave6x4cResults ? wave6x4cResults.error : "no result"
+                );
+            }
+
+            if (wave6x4bResults && !wave6x4bResults.error) {
+                check("Welle 6.X.4 B3: #stats-hud im DOM", wave6x4bResults.statsHudExists);
+                check("Welle 6.X.4 B3: #stats-hud-hp-fill SVG-Element existiert", wave6x4bResults.statsHudHpFillExists);
+                check("Welle 6.X.4 B3: #stats-hud-stam-fill SVG-Element existiert", wave6x4bResults.statsHudStamFillExists);
+                check("Welle 6.X.4 B3: #stats-hud-tooltip im DOM", wave6x4bResults.statsHudTooltipExists);
+                check("Welle 6.X.4 B3: tickStatsHud-Methode existiert", wave6x4bResults.tickStatsHudMethodExists);
+                check("Welle 6.X.4 B3: HP-Text zeigt 50/100 nach Setzen", wave6x4bResults.hpTextShowsRatio);
+                check("Welle 6.X.4 B3: Stamina-Text zeigt 75/100 nach Setzen", wave6x4bResults.stamTextShowsRatio);
+                check("Welle 6.X.4 B3: HP-Fill-Width proportional (50% → 83px von 166px)", wave6x4bResults.hpFillProportional);
+                check("Welle 6.X.4 B3: Tooltip enthält Schaden", wave6x4bResults.tooltipHasDamage);
+                check("Welle 6.X.4 B3: Tooltip enthält Geschwindigkeit", wave6x4bResults.tooltipHasSpeed);
+                check("Welle 6.X.4 B3: Tooltip enthält Präzision", wave6x4bResults.tooltipHasPrecision);
+                check("Welle 6.X.4 D2: state.symphony.masterVolume default 1.0", wave6x4bResults.masterVolDefault);
+                check("Welle 6.X.4 D2: state.symphony.creaturePingVolume default 1.0", wave6x4bResults.pingVolDefault);
+                check("Welle 6.X.4 D2: state.chunkRingRadius default 2", wave6x4bResults.ringRadiusDefault);
+                check("Welle 6.X.4 D2: slidersInitDOM-Methode existiert", wave6x4bResults.slidersInitMethodExists);
+                check("Welle 6.X.4 D2: #sliders-section im DOM", wave6x4bResults.slidersSectionExists);
+                check("Welle 6.X.4 D2: #slider-master im DOM", wave6x4bResults.masterSliderExists);
+                check("Welle 6.X.4 D2: #slider-pings im DOM", wave6x4bResults.pingsSliderExists);
+                check("Welle 6.X.4 D2: #slider-ring im DOM", wave6x4bResults.ringSliderExists);
+                check("Welle 6.X.4 D2: Master-Slider ändert state.symphony.masterVolume", wave6x4bResults.masterSliderUpdates);
+                check("Welle 6.X.4 D2: Master-Slider persistiert in localStorage", wave6x4bResults.masterSliderPersists);
+                check("Welle 6.X.4 D2: Pings-Slider ändert state.symphony.creaturePingVolume", wave6x4bResults.pingsSliderUpdates);
+                check("Welle 6.X.4 D2: Ring-Slider ändert state.chunkRingRadius", wave6x4bResults.ringSliderUpdates);
+                check("Welle 6.X.4 D2: Ring-Wert-Display zeigt '7×7' bei value=3", wave6x4bResults.ringValueDisplaysCorrectly);
+                check("Welle 6.X.4 D2: playCreaturePing-Source nutzt creaturePingVolume", wave6x4bResults.pingsSourceUsesVolume);
+            } else {
+                check(
+                    "Welle 6.X.4 B3+D2: Stats-HUD + Slider-Tests laufen",
+                    false,
+                    wave6x4bResults ? wave6x4bResults.error : "no result"
+                );
             }
 
             // ### Welle 6.H Phase 2B.2 — Kreatur baut Bauplan für Spieler ###
@@ -12544,7 +13389,9 @@ function startSaveServer() {
                     try {
                         out.hasInstallMethod = typeof r.installResizeHandles === "function";
                         out.hasInternalMethod = typeof r._installResizeHandle === "function";
-                        // Konsole: br-handle existiert
+                        // Welle 6.X.2 V8.15 — Konsole-Handle ist jetzt
+                        // top-right statt bottom-right (unten verdeckt von
+                        // Hotbar + Stats-HUD).
                         const consoleEl = document.getElementById("console");
                         out.consoleHasHandle = !!(
                             consoleEl && consoleEl.querySelector(":scope > .resize-handle.resize-br")
@@ -12600,7 +13447,7 @@ function startSaveServer() {
                     "V8.00 Resize: installResizeHandles + _installResizeHandle existieren",
                     resizeResults.hasInstallMethod && resizeResults.hasInternalMethod
                 );
-                check("V8.00 Resize: Konsole hat .resize-br Handle (unten-rechts)", resizeResults.consoleHasHandle);
+                check("V8.00/V8.17 Resize: Konsole hat .resize-br Handle (unten-rechts, Schöpfer-Korrektur)", resizeResults.consoleHasHandle);
                 check(
                     `V8.00 Resize: Alle ${resizeResults.drawerCount} Drawer haben .resize-bl Handle (unten-links)`,
                     resizeResults.allDrawersHaveHandle
@@ -14455,7 +15302,8 @@ function startSaveServer() {
                         out.dividerInModeBar = !!(modeBar && modeBar.querySelector(".workshop-mode-divider"));
                         // Mode-Bar hat 5 Mode-Buttons + 2 Action-Buttons = 7
                         const allBtns = modeBar ? modeBar.querySelectorAll("button").length : 0;
-                        out.sevenButtonsInBar = allBtns === 7;
+                        // V8.14: Reset-Button (Zentrieren) hinzugefügt → 8 Buttons.
+                        out.sevenButtonsInBar = allBtns === 8;
 
                         // Methode existiert
                         out.hasActionInstall = typeof r._workshopInstallActionButtons === "function";
@@ -14512,7 +15360,7 @@ function startSaveServer() {
                     "V8.06: Klonen + Neu-Buttons direkt in der Mode-Bar (mit Divider)",
                     v806Results.cloneBtnInModeBar && v806Results.newBtnInModeBar && v806Results.dividerInModeBar
                 );
-                check("V8.06: Mode-Bar hat 7 Buttons (5 Modi + Klone + Neu)", v806Results.sevenButtonsInBar);
+                check("V8.06/V8.14: Mode-Bar hat 8 Buttons (5 Modi + Snap + Klone + Neu + Zentrieren)", v806Results.sevenButtonsInBar);
                 check(
                     "V8.06: _workshopInstallActionButtons + _workshopApplyDefaultSizeOnce existieren",
                     v806Results.hasActionInstall && v806Results.hasDefaultSize

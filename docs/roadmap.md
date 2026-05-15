@@ -1,6 +1,6 @@
 # AnazhRealm Roadmap — Vollumfänglich
 
-Stand: 14.05.2026 (V7.98, Welle 6.H V2 vollständig 14/14 + LLM-Provider-Robustheit maximal nach 5-Versionen-Iteration V7.94-V7.98).
+Stand: 17.05.2026 (V8.23, Welle 6.X komplett + 8 Audit-Runden V8.13-V8.22 mit insgesamt 30+ Browser-Test-Punkten adressiert + V8.23 Test-Infrastruktur (audit-strict.cjs) + Welt-Portal-Konzept-Doku. 1879/1879 Invarianten grün, Audit-Strict 0 Failures.)
 
 Diese Doc beschreibt das **gesamte Projekt vom heutigen Stand bis zum Vision-Endziel** (Welten-Ultiversum). Sie ergänzt `state-of-realm.md` (Was/Warum) um eine puren Plan-Sicht (Wann/Wie). Aufwandsschätzungen sind realistische Tage für eine fokussierte Claude-Session pro Ring/Phase; gerechnet wird linear, ohne Puffer.
 
@@ -8,15 +8,17 @@ Diese Doc beschreibt das **gesamte Projekt vom heutigen Stand bis zum Vision-End
 
 ---
 
-## 1. Wo wir stehen (Mai 2026, V7.98)
+## 1. Wo wir stehen (Mai 2026, V8.07)
 
-✅ Ring 0-11 + Welle 1-5 + Welle 6.A6/6.C1/6.C2/6.C3/6.D/6.E/6.F1/6.F2/6.G1/6.G1.5/6.G2/6.H V1+V2 (14/14) sind live. Chunk-Physik nutzt `btBvhTriangleMeshShape` (visuelles Mesh = Collider). 120 fps im Browser, **1597/1597 Playtest-Invarianten grün** (V7.98). Save-Schema mit `worldMeta` (worldId, slug, visibility, parentWorlds, gameMode, chunkDeltas, role, hostInfo, seed) + `materials` + `playerTools` + `tools` + `worldJournal` + `blueprints[].connections` + `blueprints[].role + toolMeta` + `playerInventory` (27 Material/Blueprint-Slots) + `creatures[].snapshot` (name+soul+memory+bornAt+equipped persistent über Reload).
+✅ Ring 0-11 + Welle 1-5 + Welle 6.A/B/C/D/E/F1+F2/G(1-2)/H V1+V2 + Welle 9 (a-d) + Welle 10 (a + b.1-3) sind live. Chunk-Physik nutzt `btBvhTriangleMeshShape` (visuelles Mesh = Collider). 120 fps im Browser, **1791/1791 Playtest-Invarianten grün** (V8.07).
+
+**Schöpfer-Audit 17.05.2026**: Eine 18-Punkte-Liste hat fünf akute Bugs (A1-A5), drei UI-Wünsche (B1-B4), fünf Vision-Tiefen (C1-C5), zwei Architektur-Fragen (D1-D2), zwei Multi-User-Lücken (E1-E2) und zwei kreative Wünsche (F1-F2) hervorgebracht. Daraus emergierte **Welle 6.X (Polish-Sammel)** als bewusst eingeschobene Welle vor 6.G Phase 3. Plus drei neue Wellen-Stellen: **Welle 11 V3 (Soul-Sync)** für echte Phönix/Drache-Sicht im Multi-User, **Welle 11 ext. (Substanz-Rolle)** für die Hylomorphismus-Diskrimination (eines der größten Vision-Worte: „Universum-Freiheit mit wenigen Stabilisierungs-Mechanismen"), **Ring 4 V2 (Lofi-Musik)** mit emotion-getriebenen Pad-Layern.
 
 **Welle 6.H V2 vollendet (14/14 Sub-Phasen)**: Kreaturen sind jetzt vollwertige Co-Schöpfer-Wesen mit 9 Identitäts-Schichten — Body+Specs+Equipped+Boosts (alle hylomorph aus computeCompoundTags), Tasks (5: wander/follow/wait/gather/build), Memory+Persistenz, Konversation (LLM-Persona aus voller Identität, @-Adresse, Soul-Farben), Proaktivität (pre-baked phrases bei Events, soul-aware, throttled), Welt-Aktion-Vorschläge (DSL via Sandbox, modus-abhängig, Defense in Depth).
 
 **LLM-Provider-System maximal robust (V7.94-V7.98)**: jedes Ollama-Setup funktioniert — lokal, gehostet, ollama.com Cloud, mit/ohne `<think>`-Reasoning, mit/ohne strict-JSON. CORS-Lösung via save-server `/api/proxy/llm` als loyaler Vermittler. Parser-Pipeline (think-strip → fence → json → plain-text-fallback) macht auch lokale 7B-Modelle nutzbar.
 
-Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) sind alle in V2+ angekommen. **Hylomorphismus-Crafting (Wellen 4+5) ist vollständig**. **Co-Schöpfer-Kreis (Welle 6.H V2) ist geschlossen**. **Welle 6.B (CAD-Werkstatt drei Phasen + UX-Polish V8.00-V8.07)**, **Welle 9 (Werkzeug-Domains + Welt-Werkstätten, vier Sub-Phasen)**, **Welle 10 (Präzision-Multiplikator + Compound-Tag-Affordances mit drei Welt-Reaktionen)** alle live (Stand V8.07, 16.05.2026, 1791/1791 Invarianten grün). **Was noch offen**: weitere Affordances (balancing/broadcasting/lifting/radiating als kleine 1-Session-Schritte), 6.G Phase 3 (Welt-Lebendigkeit: Tag-Nacht-Zyklus, Wetter-Übergang, fauna-Lifecycle), Welle 7 (Kollektive Welt-Erkenntnis aus `docs/system-audit.md`).
+Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) sind alle in V2+ angekommen. **Hylomorphismus-Crafting (Wellen 4+5+9+10) ist vollständig vertikal-integriert**. **Co-Schöpfer-Kreis (Welle 6.H V2) ist geschlossen**. **Was jetzt nahe der Oberfläche liegt** (nach Audit): 5 Polish-Sub-Phasen (6.X.1-5), dann Welt-Lebendigkeit (6.G Phase 3), dann Vision-Tiefen (10b ext., Welle 11 ext. Substanz-Rolle, Welle 11 V3 Soul-Sync), dann Skalierung (Welle 7 Kollektive Welt-Erkenntnis).
 
 ---
 
@@ -51,9 +53,21 @@ Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) si
 | W9 | **Werkzeug-Domains + Welt-Werkstätten + emergente Bauplan-Rolle** (B+C Hybrid) | ✅ **9a-d live (V8.07)** — 6 TOOL_DOMAINS, 5 neue Domain-Werkzeuge, 5 Workshop-Station-Bauplane, Maschinen-Bonus, Seelen-Bauplane | – | W4 + W5 |
 | W10 | **Präzision-Multiplikator + Compound-Tag-Affordances** | ✅ **10a + 10b.1-3 live (V8.07)** — Präzision moduliert Stat-Pipe pro Quelle, Affordances als Welt-Schicht (moveable/magnifying/focusing) mit räumlicher Analyse + Tag-Sprache (kein Form-Whitelist). Drei Welt-Reaktionen: E-Mount, Z-Zoom, Sunny-Brennglas-Ignite | – | W9 |
 | W10 ext. | **Weitere Affordances** — balancing/broadcasting/lifting/radiating als kleine Erweiterungen | 🔴 offen, ~1 Session pro Affordance | – | W10 Foundation |
-| W7 | **Kollektive Welt-Erkenntnis (Distributed Compute)** — Skalierungs-Block, vision-treues Modell für Multi-User-Last-Verteilung: Distributed Chunk-Pre-Gen, LLM-Pool über Peers, Shared Compute-Cache, optional Public-Lobby für „join random world" | 🔴 offen — Skizze in `docs/system-audit.md` §7 | 6-8 Sessions | W6 (insb. 6.H Kreaturen-Aufträge) |
+| **W6.X** | **Polish-Sammel (Audit 17.05.2026)** — fünf Sub-Phasen: 6.X.1 Bug-Quartett (A1 Jump-Stand, A2 Ghost-rot-Block, A3 Armor-UI+Markier-Filter, A4 1st-Person-Aura-Hide), 6.X.2 UI-Politur (B1 Logbuch-Toggle, B2 Welt-Bauwerke entfernen, B4 Scrollrad-Hotbar), 6.X.3 Vision-Quick-Wins (C1 Spawn-Offset, C3 Soul-bound-Sprung), 6.X.4 Stats-HUD+Audio-Slider+Begleiter-Name (B3+D2+F1), 6.X.5 Performance-Caching (D1: isPlayerGrounded-Cache) | ✅ **live (V8.08-V8.12, 17.05.2026)** — alle fünf Sub-Phasen in einer Sitzung, +78 Invarianten (1791→1869) | – | – |
+| W6.G3 | **Welt-Lebendigkeit** — Tag-Nacht-Zyklus, sanfte Wetter-Übergänge, Fauna-Lifecycle (Population kommt + geht eigen-zeitlich). Schließt 6.G nach Phase 1+2. Kann C4 (Affinity-Tuning) bei sich aufnehmen. | 🔴 offen | 1-2 Sessions | W6.X |
+| W11 V3 | **Soul-Sync (Multi-User echt körperlich)** — Peer-Avatar wird der echte Soul des Mitspielers (Mensch/Phönix/Drache/Custom), nicht Cone+Sphere. Bauplan-Snapshot via WebSocket bei Soul-Change. **Plus Aura-Sync** (Audit-Reflexion 17.05.2026): Mitspieler sieht meine Aura wenn ich in 3rd-Person sichtbar bin, auch wenn ich selbst in 1st-Person spiele (mein lokaler Hide gilt NUR meine Kamera, andere Renderer bauen die Aura auf die Soul). Low-frequency-Broadcast (alle 1-2 s) der dominanten Tag-Achse + Intensität — kein Frame-Sync nötig, Aura ist langsam-pulsierend. Antwort auf Audit-Punkt #1 (C2). | 🔴 offen | 2-3 Sessions | Ring 11.5 |
+| W11 ext. | **Substanz-Rolle (Hylomorphismus auf Steroiden)** — emergente Rollen aus Substanz: Soul-Marker via bodyParts-räumliche-Symmetrie, Werkzeug/Rüstung via opChain-Domain (schon teilweise da), Nahrung via `nahrhaft`-Tag, Bauwerk als Default. „Eine Sprache, beliebige Identitäten — wenige Stabilisierungs-Mechanismen, unendliche Freiheit." Antwort auf Audit-Punkt #13 (C5), das größte Vision-Wort des Audits. | 🔴 offen | 3-4 Sessions | W6.X + W10 Foundation |
+| W4 V2 | **Lofi-Musik-Schicht** — Pad-Layer (60 BPM, Minor-7th-Akkorde), optional Soft-Kick + Vinyl-Crackle, Emotion-Modulation (hope→Major, sorrow→Tempo-Down). Web-Audio nativ, kein Asset. Antwort auf Audit-Punkt #3 (F2). | 🔴 offen | 1-2 Sessions | Ring 4 V1 |
+| W11 V4 | **Voice-Sync (Begleiter-Stimme im Multi-User)** — nach Soul-Sync (V3): andere Spieler hören deinen Companion-Output. Broadcast: `companion-say { peerId, text, voice }`. Empfänger spielt SpeechSynthesis mit gewählter Voice ab. Vision §1.4 Multisensorik durch alle Peers. Vorbedingung W11 V3. | 🔴 offen (aus Projekt-Reflexion 17.05.2026) | 1 Session | W11 V3 |
+| W7 | **Kollektive Welt-Erkenntnis (Distributed Compute)** — Skalierungs-Block, vision-treues Modell für Multi-User-Last-Verteilung: Distributed Chunk-Pre-Gen, LLM-Pool über Peers, Shared Compute-Cache, optional Public-Lobby für „join random world". Antwort auf Audit-Punkt #8 (E1 ∞ Spieler). | 🔴 offen — Skizze in `docs/system-audit.md` §7 | 6-8 Sessions | W6 (insb. 6.H Kreaturen-Aufträge), W11 V3 für volle Vision |
+| W12 | **Welt-Portal (Bibliothek von Alexandria, V8.23 umbenannt von WebGPU)** — Bauplan-Rolle „portal" + portalMeta (engine + manifest). Sub-Engine-Adapter in iframe/Worker mit Sandbox. DSL als Universal-Bridge zwischen Engines (jede Engine implementiert DSL-Subset). Welt-Manifest-Schema (engine + dsl_subset + signature). PoC mit `three-fluid-fx` (13 KB, klare DSL-Subset, visueller WOW). Detail in `docs/world-portal.md`. | 🔴 offen (aus Vision-Sitzung 17.05.2026: „Bibliothek von Alexandria der Vibecode-Ära") | 6-8 Sessions | W11 ext. + audit:strict |
+| W13 | **Vibe-Pass (Self-Sovereign Identity)** — Crypto-Keypair (ed25519, lokal generiert). Schöpfer signiert eigene Baupläne/Welten. Avatar-Identifier = Public-Key. Kein Coin/NFT-Hype, nur Authentizität. Welt-Memberships als signierte Records. Vorbedingung für Welt-Portale die Authentizität brauchen. | 🔴 offen (aus Vision-Sitzung 17.05.2026) | 5-7 Sessions | W12 |
+| W14 | **Bibliothek (Welt-Registry)** — content-addressed Welt-Index (IPFS-Hash oder simple shared-document). Browse + Suche im Bibliothek-Tab. Klick auf Welt → Portal-Bauplan automatisch ins Inventar. Spieler platziert Portal in Heimat-Welt → kann sie immer wieder besuchen. | 🔴 offen (aus Vision-Sitzung 17.05.2026) | 8-10 Sessions | W13 |
+| W11 V4 (verschoben) | **Voice-Sync (Begleiter-Stimme im Multi-User)** — bleibt offen, niedrige Priorität nach W12-14. | 🔴 offen | 1 Session | W11 V3 |
 
-**Summe verbleibend**: ~12-18 Arbeitstage in fokussierten Sessions. W6 + W9 + W10 sind die Hauptblöcke seit V7.78 — alle live. Was bleibt: Welle 7 (Kollektive Welt-Erkenntnis), 6.G Phase 3 (Welt-Lebendigkeit), weitere Affordances.
+**Summe verbleibend**: ~30-45 Arbeitstage in fokussierten Sessions. **Empfohlene Sequenz nach V8.23 (17.05.2026)**: W6.G3 → W11 V3 → W11 ext. (Substanz-Rolle) → **W12 (Welt-Portal PoC mit three-fluid-fx)** → **W13 (Vibe-Pass)** → **W14 (Bibliothek)** → W7 (Compute-Sharing als verteilter Server-Layer für die Bibliothek). Logik: Polish (✅) → Atmosphäre (Welt lebt eigen) → Multi-User-Tiefe (Peer ist echt) → Hylomorphismus-Vollausbau (Substanz-Rolle) → **Welt-Brücken (12-14, das größte Vision-Wort)** → Skalierung als Compute-Sharing-Layer.
+
+**Hinweis**: WebGPU+TSL ist nicht mehr eine eigene Welle — es ist eine **optionale Renderpipeline für eine andere Welt-Engine** im Welt-Portal-Konzept. Wenn jemand eine WebGPU-Welt veröffentlicht, läuft sie als Sub-Engine im iframe. Kein Pflicht-Migrationspfad für den AnazhRealm-Kern.
 
 ---
 
@@ -491,6 +505,87 @@ Geliefert in einer Session (in Kombination mit Ring 10.5 für die Vorbedingung):
 - Private Welten: Schöpfer generiert Token-Link
 
 **Vorbedingung**: Ring 11 V1 (Position-Sync stabil) + saubere DSL-Sandbox (existiert seit Ring 7).
+
+---
+
+### Welle 6.X: Polish-Sammel (Audit 17.05.2026, ~4-5 Sessions)
+
+**Ziel**: 18 vom Schöpfer kuratierte Bugs/UX/Vision-Punkte in einer fokussierten Welle abarbeiten BEVOR neue Atmosphäre/Mechanik kommt. Logik: ein Spieler der in Reibung steckt, kann die nächsten Vision-Schichten nicht spüren.
+
+**6.X.1 — Bug-Quartett (1 Session)**
+- **A1 Jump-im-Stehen**: `playerBody.activate(true)` vor `setLinearVelocity` in beiden Jump-Pfaden (`handleJump` Zeile 22593 + Loop-Jump Zeile 22895). Ammo-Sleep-State weckt sich sonst nicht.
+- **A2 Ghost-rot-aber-platzierbar**: in `confirmBuild` vor `spawnArchitecture` prüfen `if (getGameMode() === "pfad" && !bm.phantomOnGround) return false;`. Frieden+Schöpfer bleiben durchlässig (Vision §10.1).
+- **A3 Rüstung-Markier-Filter**: `renderPlayerEquipUI` zeigt JETZT alle eigenen Baupläne in Markier-Sektion, außer `bp.roleManual === true` — emergente Welle-9-Rolle blockt nicht mehr explizite Geste. Plus Stat-Panel-Zeilen „Trägt: <armor>" + „Werkzeug: <tool>".
+- **A4 1st-Person-Aura-Hide**: `tickPlayerAura` setzt `glow.visible = state.cameraMode !== "first"`. Mitspieler-Sicht unverändert (P2P sync't keine Aura).
+
+**6.X.2 — UI-Politur (1 Session)**
+- **B1 Logbuch-Toggle**: `#log` und Section-Wrapper bleibt im DOM, aber default `hidden`. Toggle in Einstellungen-Drawer „Logbuch sichtbar". Power-User-Pfad bleibt offen.
+- **B2 Welt-Bauwerke entfernen**: Vier Quick-Spawn-Buttons (Dorf/Tempel/Wasserfall/Fraktal) aus dem world-drawer entfernen. Hotbar+Werkstatt ersetzt sie.
+- **B4 Scrollrad-Hotbar**: `wheel`-Listener auf Canvas, `e.deltaY > 0 ? next : prev` modulo 9. Im Build-Mode deaktiviert (zukünftig: Phantom-Distance-Wheel).
+
+**6.X.3 — Vision-Quick-Wins (1 Session)**
+- **C1 Struktur-Spawn-Offset**: neuer DSL-Resolver `at_player_forward(dist=5)` der `p + yaw-Vektor × dist` liefert. Chat-Patterns „Baue Dorf hier" → `["spawn_village", ["at_player_forward", 8]]` statt `["at_player"]`. Vision §11 — Welt-Geste wirkt selbst-entschieden.
+- **C3 Soul-bound-Sprung**: Jump-Block prüft `if (state.onSteepSlope) return` PLUS soul-abhängige Steilheits-Toleranz: `maxJumpFromSlope = soul.tags.lebendig * 0.7 - dichte * 0.3` o.ä. Phönix klettert wo Drache nicht. Hylomorphismus-Pipeline (Vision §1.3 fraktal).
+
+**6.X.4 — Stats-HUD + Audio-Slider + Begleiter-Name (1-2 Sessions)**
+- **B3 HP/Stamina-Bar**: SVG-Bars über `#hotbar`, painterly-Style (Pergament+Kupfer). Refresh-Loop pro Frame mit `hp/hpMax`. Tooltip auf Hotbar-Items für slow Stats (Damage/Speed/Präzision) — schneller Stat oben, langsamer im Tooltip ("satisfying slow Stats").
+- **D2 Audio-Slider**: drei Slider in Einstellungen (Master / Kreatur-Pings / Chunk-Distance 3..9-Ring).
+- **F1 Begleiter-Name + Avatar-Name**: `state.llm.companionName` (default "Grok") + `state.player.name` (default "Schöpfer"). Beide editierbar im UI, in System-Prompts referenziert. Optional: Voice-Auswahl aus `speechSynthesis.getVoices()`.
+
+**6.X.5 — Performance-Caching (1 Session)**
+- **D1 Raycast-Throttle**: `isPlayerGrounded()` Result cachen für 2 Frames (Variable `_groundedCache` + `_groundedAt`). 540 → 270 Raycasts/Sek. Aura-Update alle 5 Frames (Atem-Animation via performance.now sowieso).
+- Plus Parallel-Code-Audit-Sweep: Suche nach Doppel-Pfaden seit Welle 6.G P1.5 (alle wahrscheinlich sauber, aber Vision-Disziplin).
+
+**Akzeptanz Welle 6.X**: 1791 → ~1840 Playtest-Invarianten. Spieler kann 30 Min spielen ohne Reibung, Welt fühlt sich aufgeräumt + lebendig an.
+
+---
+
+### Welle 11 V3: Soul-Sync (Multi-User echt körperlich, ~2-3 Sessions)
+
+**Ziel**: Mitspieler werden echte Phönixe/Drachen/Custom-Souls, nicht Cone+Sphere.
+
+**Architektur**: bei jedem `applyPlayerSoul`/`applyPlayerSoulFromBlueprint` broadcastet der Spieler einen `soul-snapshot { peerId, soulName?, soulBauplan? }`-Frame. Empfänger ruft `_buildFromBlueprint(bp)` und ersetzt den Cone+Sphere-Group durch das echte Soul-Mesh. Soul-Compound-Tags werden NICHT übertragen (Empfänger berechnet sie eh aus dem Bauplan emergent). Bandbreite: ~2-5 KB einmalig pro Soul-Change.
+
+**Multi-User-Disziplin**: Soul-Sync ist KEIN DSL-Op (würde Loop-Schutz brechen), sondern eigene Message-Type. Welcome-Frame enthält aktive Souls aller Peers. P2P-Welt-Snapshot beim Join (Ring 11.5) erweitert um Soul-Liste.
+
+**Akzeptanz**: zwei Browser-Tabs, ein Spieler wechselt zu Phönix → Mitspieler sieht ihn flatterten statt Kegel. Custom-Soul via define_soul → Mitspieler sieht das Multi-Part-Mesh.
+
+---
+
+### Welle 11 ext.: Substanz-Rolle (Hylomorphismus auf Steroiden, ~3-4 Sessions)
+
+**Ziel** (Audit-Punkt #13 / C5, eines der größten Vision-Worte): Bauplan-Rolle emergiert vollständig aus Substanz, ohne `setBlueprintAs*`-Manualität. „Universum-Freiheit mit wenigen Stabilisierungs-Mechanismen."
+
+**Vier Stabilisatoren** (so wenig wie möglich):
+1. **`bp.bodyParts`-Marker** (Soul): hat eine humanoide/quadruped/winged räumliche Symmetrie + ≥3 Glied-Compounds → Identität = Avatar/Kreatur
+2. **opChain-Domain-Dominanz** (Werkzeug/Rüstung/Trank): bereits in Welle 9a — forging+scharf → tool, forging+dicht → armor, alchemy → consumable
+3. **`compoundTags.nahrhaft`** (Nahrung): neues Tag `nahrhaft = lebendig × verarbeitung_alchemy`. Compounds > 0.5 ohne Domain → Nahrung-Rolle, regeneriert HP/Stamina bei Konsum
+4. **Default → Bauwerk** (alles andere geht als Architektur in die Welt)
+
+**Plus**: Schöpfer-Override via `bp.roleManual = true` bleibt (Welle 9a-Disziplin) — explizite Geste sticht Emergenz.
+
+**Vision-Wort**: „**Substanz-Rolle**" — Identität geht aus der Substanz hervor, nicht aus Etikette. Wie im echten Universum: ein Stein wird Stein, weil er Stein-Material ist, nicht weil jemand ihn als „Stein" markiert hat.
+
+**Akzeptanz**: Schöpfer baut einen Bauplan ohne explizite Rolle → System erkennt korrekt, was er gebaut hat (Schwert / Helm / Trank / Brot / Turm). Markier-UI wird optional — ein „Was wäre wenn"-Button zum überschreiben der emergenten Rolle.
+
+---
+
+### Ring 4 V2: Lofi-Chill-Musik (~1-2 Sessions, Audit-Punkt #3 / F2)
+
+**Ziel**: Welt-Musik atmet langsamer, „minecraft relax", lofi hip hop vibes. Web-Audio nativ, keine Assets.
+
+**Drei neue Schichten** (additive zu V1 ambient + weather + creature):
+- **Chord-Pad**: drei Sinus-Oszillatoren spielen Akkord (Default F#m7 = F# + A + C# + E). LFO 0.05 Hz auf Filter-Cutoff. Akkord-Wechsel alle 8 Takte zufällig aus [F#m, A, C#m, E].
+- **Soft Kick** (optional): Sinus 60 Hz mit kurzem Decay bei Beat 1 von 4 (60 BPM). −18 dB, fast subliminal.
+- **Vinyl-Crackle**: White-Noise + Bandpass 2-4 kHz + sehr leise Gain (−25 dB). Lofi-Charakter.
+
+**Emotion-Modulation**:
+- `hope > 0.6` → Major-Akkord-Pool [F#, A, D, E]
+- `sorrow > 0.6` → 50 BPM statt 60, Filter dunkler
+- `peace > 0.7` → Vinyl-Crackle aus (zu klar), Tempo 45 BPM
+- `chaos > 0.6` → Dissonante Sus2-Akkorde
+
+**Toggle**: separat zu V1 (Spieler darf nur Drone oder Drone+Lofi). Default off.
 
 ---
 

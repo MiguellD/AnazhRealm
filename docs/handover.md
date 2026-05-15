@@ -9,9 +9,18 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 16.05.2026, V8.07)
+## Schnell-Lage (Stand 17.05.2026, V8.23)
 
-**Du erbst eine sehr lebendige Welt**. **1791 Playtest-Invarianten grün**, ~22500 Zeilen in einer Datei, alles produktiv. Die jüngste Session (V7.98 → V8.07, 24 Commits) hat **drei große Dinge geschaffen**: eine vollständige Mini-CAD-Werkstatt, ein emergentes Werkzeug-Domain-System (Werkzeug entscheidet Bauplan-Rolle, mit physischen Welt-Werkstätten), und Compound-Tag-Affordances (Welt liest Tag+räumliche Signatur → Fahrzeug/Teleskop/Brennglas emergieren ohne Hardcode).
+**Du erbst eine sehr lebendige Welt**. **1879 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~25000 Zeilen in einer Datei, alles produktiv. Die letzte Session-Hälfte (V7.98 → V8.23, ~40 Commits über 3 Tage) hat **vier große Dinge geschaffen**:
+
+1. **Welle 6.B/9/10** (V7.99-V8.07): CAD-Werkstatt, Werkzeug-Domain-System, Compound-Tag-Affordances
+2. **Welle 6.X komplett** (V8.08-V8.12): 5 Sub-Phasen Polish (Bug-Quartett, UI-Politur, Vision-Quick-Wins, Stats-HUD+Audio+Begleiter-Name, Performance-Caching)
+3. **8 Audit-Runden** (V8.13-V8.22): 30+ Schöpfer-Browser-Test-Punkte adressiert
+4. **V8.23 Test-Infrastruktur + Welt-Portal-Vision**: `scripts/audit-strict.cjs` (4 generische Audit-Schichten) + `docs/world-portal.md` (Vision-Anker für die Wellen 12-14 — „Bibliothek von Alexandria der Vibecode-Ära")
+
+**Wichtigste Konzept-Verschiebung seit V8.07**: Welle 12 ist nicht mehr „WebGPU+TSL-Migration" sondern **„Welt-Portal"** — AnazhRealm wird Tor zu anderen Vibecode-Welten (three-fluid-fx, voxelize, image-blaster, etc.). Wenn du als nächster Agent in eine Welle 12+ erwachst: lies `docs/world-portal.md` ZUERST.
+
+**Empfohlene Sequenz nach V8.23**: 6.G3 → 11 V3 → 11 ext. (Substanz-Rolle) → 12 (Welt-Portal mit three-fluid-fx PoC) → 13 (Vibe-Pass) → 14 (Bibliothek) → 7 (Compute-Sharing).
 
 ### 0. Welle 6.B — CAD-Werkstatt (drei Phasen, V7.99-V8.04)
 

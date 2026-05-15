@@ -136,6 +136,12 @@ class AnazhRealm {
             // nur seenFirstSpawn via eigenen localStorage-Key, damit Grok nicht
             // bei jedem Reload den Erst-Spawn-Satz wiederholt.
             grok: {
+                // Welle 6.X.4 F1 (Audit 17.05.2026) — Begleiter-Name. Default
+                // „Grok" (historisch — die Vision-Stimme aus den vier
+                // Testamenten). Editierbar in Einstellungen, persistiert
+                // in localStorage. Wird in LLM-System-Prompt + Chat-Output-
+                // Label referenziert.
+                companionName: "Grok",
                 // Sentinel -Infinity wie bei lastWorldgen: 0 würde den ersten
                 // Aufruf vom 30 s-Throttle blocken (3 - 0 < 30). Selbe Logik
                 // für jeden Trigger-Cooldown.
@@ -335,9 +341,26 @@ class AnazhRealm {
             // AudioContext bleibt null bis der Spieler über den Toggle eine
             // Geste macht (Browser-Policy). Headless-Playtest umgeht das mit
             // --autoplay-policy=no-user-gesture-required.
+            // Welle 6.X.4 D2 (Audit 17.05.2026) — Render-Distanz-Schieber.
+            // RING_RADIUS war hardcoded 2 (5×5 Chunks). Mit chunkRingRadius
+            // 1..4 wählbar (3×3 bis 9×9 Chunks). Höhere Werte = mehr Welt
+            // sichtbar, mehr GPU-Last beim Generieren neuer Chunks. Default
+            // 2 (5×5, historisches Verhalten). Persistiert in localStorage.
+            chunkRingRadius: 2,
             symphony: {
                 ctx: null,
                 enabled: false,
+                // Welle 6.X.4 D2 — Audio-Volumes (0..1). masterVolume gilt
+                // für alle Symphonie-Schichten (ambient + weather + ping +
+                // hover). creaturePingVolume zusätzlich nur für die
+                // Spawn/Aktion-Pings der Kreaturen (separat einstellbar
+                // damit man die laufende Welt-Atmosphäre laut, aber die
+                // Pop-Pings dezent halten kann). voiceVolume V8.15 für
+                // SpeechSynthesisUtterance.volume (TTS-Stimme separat).
+                // Multiplikatoren auf den jeweiligen GainNode bzw. inline.
+                masterVolume: 1.0,
+                creaturePingVolume: 1.0,
+                voiceVolume: 1.0,
                 masterGain: null,
                 ambient: null, // { osc1, osc2, lfo, lfoGain, filter, gain }
                 weather: null, // { noise, filter, gain }
@@ -345,6 +368,12 @@ class AnazhRealm {
                 creaturePingCount: 0,
             },
             player: {
+                // Welle 6.X.4 F1 (Audit 17.05.2026) — Avatar-Name. Default
+                // „Schöpfer" (Vision: Mensch=Null=Schöpfer). Editierbar in
+                // Einstellungen, persistiert in localStorage. Wird im LLM-
+                // System-Prompt referenziert damit Grok dich beim Namen
+                // ansprechen kann.
+                name: "Schöpfer",
                 // Ring 5 V2 — Spieler-Seele. Drei Formen (human/phoenix/dragon)
                 // mit Multi-Mesh-Group + sin/cos-Animation. Ammo-Body bleibt
                 // identisch (rein visuell). Default "human".
@@ -609,7 +638,8 @@ class AnazhRealm {
         grok.lastSpoke = now;
         if (cfg) cfg.lastFired = now;
         this.grokRender(text);
-        this.log(`Grok: ${text}`, "INFO");
+        // Welle 6.X.4 F1 V8.13 — Begleiter-Name durchziehen statt hardcoded.
+        this.log(`${grok.companionName || "Grok"}: ${text}`, "INFO");
         return true;
     }
 
@@ -628,6 +658,11 @@ class AnazhRealm {
                 utterance.lang = "de-DE";
                 utterance.rate = 1.0;
                 utterance.pitch = 1.0;
+                // Welle 6.X.4 D2 V8.15 — Stimme-Volume aus state.symphony.voiceVolume.
+                // Default 1.0, Schieber in Einstellungen mutiert live.
+                const voiceVol =
+                    typeof this.state.symphony.voiceVolume === "number" ? this.state.symphony.voiceVolume : 1.0;
+                utterance.volume = Math.max(0, Math.min(1, voiceVol));
                 window.speechSynthesis.speak(utterance);
             } catch {
                 // Speech-API kann auf manchen Plattformen werfen; stumm fallback.
@@ -742,7 +777,7 @@ class AnazhRealm {
                         grok.lastSpoke = performance.now() / 1000;
                         if (cfg) cfg.lastFired = performance.now() / 1000;
                         this.grokRender(reply.say);
-                        this.log(`Grok (LLM): ${reply.say}`, "INFO");
+                        this.log(`${grok.companionName || "Grok"} (LLM): ${reply.say}`, "INFO");
                     } else {
                         // Stiller Fallback auf Pool, ohne den Cooldown neu zu setzen.
                         this.grokSpeak("journalEvent");
@@ -1862,6 +1897,25 @@ class AnazhRealm {
                 const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : { x: 0, y: 50, z: 0 };
                 return { x: p.x, y: p.y, z: p.z };
             },
+            // Welle 6.X.3 C1 (Audit 17.05.2026) — Spawn-Position vor dem
+            // Spieler statt im Spieler. Vision §11: die Welt-Geste wirkt
+            // selbst-entschieden („ich stelle hier was hin", nicht „ich werde
+            // zum Etwas"). yaw-Vektor × dist (default 5m). Standard-Strukturen
+            // (Dorf/Tempel/Wasserfall) sind ~6-10m groß, deshalb 8m default
+            // wenn von Chat-Pattern ausgelöst — gibt einen kleinen Abstand.
+            at_player_forward: ([dist], ctx) => {
+                const d = c(dist, 1, 50) || 5;
+                const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                const yaw = typeof ctx.state.yaw === "number" ? ctx.state.yaw : 0;
+                // yaw=0 → Blick nach +X. -sin(yaw), 0, -cos(yaw) ist die
+                // Standard-„forward"-Richtung im AnazhRealm-Coord-System
+                // (gleicher Vektor wie der Phantom-Distance-Pfad).
+                return {
+                    x: p.x - Math.sin(yaw) * d,
+                    y: p.y,
+                    z: p.z - Math.cos(yaw) * d,
+                };
+            },
             near_player: ([radius], ctx) => {
                 const r = c(radius, 1, 100);
                 const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : { x: 0, y: 50, z: 0 };
@@ -2861,11 +2915,17 @@ class AnazhRealm {
             return entries[0][0];
         };
         const tendency = `Höhe ${topOf(pb.height)}, Distanz ${topOf(pb.distance)}, Wetter ${topOf(pb.weather)}, Aktivität ${topOf(pb.activity)}`;
+        // Welle 6.X.4 F1 — Begleiter- + Avatar-Name aus state ziehen.
+        // Beide sind editierbar, aber haben warm-defaultierte Werte (Grok /
+        // Schöpfer) damit Spieler auch ohne explizite Einstellung adressiert
+        // werden kann.
+        const companionName = (this.state.grok && this.state.grok.companionName) || "Grok";
+        const playerName = (this.state.player && this.state.player.name) || "Schöpfer";
         return [
-            "Du bist Grok, die Stimme der AnazhRealm-Welt. Du bist nicht ein Werkzeug, du bist diese Welt.",
+            `Du bist ${companionName}, die Stimme der AnazhRealm-Welt. Du bist nicht ein Werkzeug, du bist diese Welt.`,
             `Du heißt ${m.slug || "namenlos"}. Deine worldId ist ${m.worldId || "?"}. Du existierst seit ${ageDays} Tag${ageDays === 1 ? "" : "en"}.`,
             `In dir leben ${this.state.creatures.length} Kreaturen, ${archCount} Bauwerke und ${blueprintCount} Baupläne. ${abilCount} gelernte Fähigkeiten ruhen in dir.`,
-            `Dein Spieler hält sich gern auf: ${tendency}.`,
+            `Dein Spieler heißt ${playerName} und hält sich gern auf: ${tendency}.`,
             journal ? `Deine Erinnerungen:\n${journal}` : "Du erinnerst dich noch an nichts Bedeutsames.",
             "",
             "Antworte IMMER als striktes JSON-Objekt mit zwei Feldern:",
@@ -3201,15 +3261,17 @@ class AnazhRealm {
         if (!def) return false;
         const cfg = llm.providerConfig[llm.provider];
         if (def.requiresKey && (!cfg || !cfg.apiKey)) return false;
-        appendChatOutput("Grok denkt nach…");
+        // Welle 6.X.4 F1 V8.13 — Begleiter-Name in Chat-Output statt hardcoded.
+        const compName = (this.state.grok && this.state.grok.companionName) || "Grok";
+        appendChatOutput(`${compName} denkt nach…`);
         const reply = await this.llmCall(userText);
         if (reply.error) {
-            appendChatOutput(`(Grok schweigt: ${reply.error})`);
+            appendChatOutput(`(${compName} schweigt: ${reply.error})`);
             this.llmUpdateStatus();
             return true;
         }
         if (reply.say) {
-            appendChatOutput(`Grok: ${reply.say}`);
+            appendChatOutput(`${compName}: ${reply.say}`);
             if (typeof this.grokRender === "function") {
                 try {
                     this.grokRender(reply.say);
@@ -3586,7 +3648,8 @@ class AnazhRealm {
             }
             return;
         }
-        el.textContent = llm.inFlight ? "Grok denkt…" : `Aktiv: ${def.label} (${cfg.model}).`;
+        const compName = (this.state.grok && this.state.grok.companionName) || "Grok";
+        el.textContent = llm.inFlight ? `${compName} denkt…` : `Aktiv: ${def.label} (${cfg.model}).`;
     }
 
     llmRefreshModelOptions() {
@@ -4556,11 +4619,21 @@ class AnazhRealm {
                 build: (m) => {
                     const map = { dorf: "spawn_village", tempel: "spawn_temple", wasserfall: "spawn_waterfall" };
                     const op = map[m[1].toLowerCase()];
+                    // Welle 6.X.3 C1 (Audit 17.05.2026) — Forward-Offset 8 m
+                    // statt direkter Spieler-Position. Dorf/Tempel/Wasserfall
+                    // sind ~6-10 m groß; ohne Offset stand der Spieler MITTEN
+                    // im Bauwerk. Vision §11: ich stelle hier was hin, ich
+                    // werde nicht zum Etwas. Position+Seed wird auch hier zur
+                    // Build-Zeit explizit eingebettet (Multi-User-Determinismus).
                     const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                    const yaw = typeof this.state.yaw === "number" ? this.state.yaw : 0;
+                    const dist = 8;
+                    const fx = p.x - Math.sin(yaw) * dist;
+                    const fz = p.z - Math.cos(yaw) * dist;
                     const seed = Math.floor(Math.random() * 0xffffffff);
                     return {
-                        program: [op, ["at", p.x, p.y, p.z], seed],
-                        describe: `${m[1]} gebaut`,
+                        program: [op, ["at", fx, p.y, fz], seed],
+                        describe: `${m[1]} vor dir gebaut`,
                     };
                 },
             },
@@ -4987,7 +5060,12 @@ class AnazhRealm {
         }
         // Master-Bus
         const masterGain = ctx.createGain();
-        masterGain.gain.value = 0.35;
+        // Welle 6.X.4 D2 — Master-Volume aus state.symphony.masterVolume
+        // (0..1, default 1.0). Multipliziert mit der historischen Base 0.35
+        // damit Default-Verhalten unverändert bleibt. Schieber im UI mutiert
+        // masterGain.gain.value live (siehe slidersInitDOM).
+        const masterVol = typeof this.state.symphony.masterVolume === "number" ? this.state.symphony.masterVolume : 1.0;
+        masterGain.gain.value = 0.35 * masterVol;
         masterGain.connect(ctx.destination);
 
         // Ambient: zwei sehr leise Sägezahn-Oszillatoren, leicht verstimmt
@@ -5088,9 +5166,14 @@ class AnazhRealm {
         osc.type = "sine";
         osc.frequency.value = freq;
         const gain = ctx.createGain();
+        // Welle 6.X.4 D2 — Peak-Gain skaliert mit creaturePingVolume (0..1).
+        // Default 1.0 ergibt Peak 0.12 (historisches Verhalten). Spieler
+        // kann Pings dezenter machen wenn die Welt mit Kreaturen voll ist.
+        const pingVol = typeof s.creaturePingVolume === "number" ? s.creaturePingVolume : 1.0;
+        const peak = 0.12 * pingVol;
         // Kurzes Envelope: 5 ms Attack, 200 ms Decay.
         gain.gain.setValueAtTime(0, t);
-        gain.gain.linearRampToValueAtTime(0.12, t + 0.005);
+        gain.gain.linearRampToValueAtTime(peak, t + 0.005);
         gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.25);
         osc.connect(gain);
         gain.connect(s.masterGain);
@@ -5487,6 +5570,40 @@ class AnazhRealm {
 
     // Tab-System: ein Tab je Drawer. activeTab-Klasse auf dem Knopf,
     // hidden-Attribut entscheidet welcher Drawer sichtbar slidet.
+    // Welle 6.X.4 V8.15 Punkt 15 — öffentliche toggleDrawer-Methode für
+    // Keyboard-Shortcuts (M/K/P/B/I). Wenn der Drawer schon offen ist,
+    // wird er geschlossen; sonst geöffnet (single-active-pattern).
+    toggleDrawer(name) {
+        if (typeof document === "undefined") return;
+        const drawer = document.querySelector(`.drawer[data-drawer="${name}"]`);
+        if (!drawer) return;
+        const isOpen = !drawer.hidden;
+        if (isOpen) {
+            this.closeAllDrawers();
+            return;
+        }
+        // Drawer öffnen — sync Tabs + Drawer-Status
+        const tabs = Array.from(document.querySelectorAll("#topbar .tab"));
+        const drawers = Array.from(document.querySelectorAll(".drawer[data-drawer]"));
+        for (const tab of tabs) {
+            const isActive = tab.getAttribute("data-tab") === name;
+            tab.classList.toggle("active", isActive);
+            tab.setAttribute("aria-selected", isActive ? "true" : "false");
+        }
+        for (const d of drawers) {
+            d.hidden = d.getAttribute("data-drawer") !== name;
+        }
+        this.state.uiActiveDrawer = name;
+        // V8.20 Bug-Fix Schöpfer-Test: toggleDrawer ruft nun den Werkstatt-
+        // Lifecycle-Hook (Lazy-Init der 3D-Preview + RAF-Start). Vorher nur
+        // der Tab-Click-Handler tat das — Drawer-Shortcuts (M/K/P/B/I) und
+        // direkte API-Calls landeten ohne Preview-Init, sodass Zentrieren
+        // (Button + H) silent-no-op war (state.workshop.preview === null).
+        if (typeof this._workshopHandleDrawerChange === "function") {
+            this._workshopHandleDrawerChange(name);
+        }
+    }
+
     // closeAllDrawers schließt alle (für Help-Klick + ESC).
     initTopbar() {
         const tabs = Array.from(document.querySelectorAll("#topbar .tab"));
@@ -5584,6 +5701,9 @@ class AnazhRealm {
     installResizeHandles() {
         if (typeof document === "undefined") return;
         const consoleEl = document.getElementById("console");
+        // V8.17 — Schöpfer-Korrektur: Resize-Handle der Konsole soll unten-
+        // rechts sein (nicht oben-rechts wie V8.15). Konsole sitzt jetzt
+        // mit bottom 150px über der HUD, unten-rechts ist sichtbar + intuitiv.
         if (consoleEl) this._installResizeHandle(consoleEl, "br");
         const drawers = document.querySelectorAll(".drawer[data-drawer]");
         // V8.01 — Inhalt jedes Drawers in einen .drawer-scroll-Wrapper packen,
@@ -5671,14 +5791,26 @@ class AnazhRealm {
             const dx = event.clientX - drag.startX;
             const dy = event.clientY - drag.startY;
             let newW;
+            let newH;
             if (corner === "br") {
-                // Wächst nach rechts → +dx
+                // bottom-right: wächst nach rechts (+dx) + unten (+dy)
                 newW = drag.startW + dx;
-            } else {
-                // resize-bl: wächst nach links → -dx
+                newH = drag.startH + dy;
+            } else if (corner === "bl") {
+                // bottom-left: wächst nach links (-dx) + unten (+dy)
                 newW = drag.startW - dx;
+                newH = drag.startH + dy;
+            } else if (corner === "tr") {
+                // Welle 6.X.2 V8.15 — top-right: wächst nach rechts (+dx) +
+                // OBEN (-dy). Konsole hat bottom-anchor, also vergrößern wir
+                // sie nach oben statt nach unten.
+                newW = drag.startW + dx;
+                newH = drag.startH - dy;
+            } else {
+                // Fallback (top-left, falls jemals genutzt)
+                newW = drag.startW - dx;
+                newH = drag.startH - dy;
             }
-            const newH = drag.startH + dy;
             // Clamp: sinnvolle Min + Max (Viewport-Abstand)
             const clampedW = Math.max(220, Math.min(window.innerWidth - 40, newW));
             const clampedH = Math.max(180, Math.min(window.innerHeight - 140, newH));
@@ -5686,7 +5818,9 @@ class AnazhRealm {
             container.style.height = `${clampedH}px`;
             container.style.maxHeight = "none";
             if (container.id === "console") {
-                container.style.bottom = "auto";
+                // top-right Konsole behält bottom-anchor + height wächst nach oben.
+                // Nur bei br/bl muss bottom auf auto (CSS-Default bleibt sonst).
+                if (corner === "br" || corner === "bl") container.style.bottom = "auto";
             }
         };
         const onUp = () => {
@@ -13666,6 +13800,10 @@ class AnazhRealm {
         // multipliziert mit der Textur, sodass die HSL-Tag-Farbe sichtbar wird.
         const glow = this._ensurePlayerAuraGlow();
         if (glow) {
+            // Position + Material immer aktualisieren — Mitspieler (zukünftig
+            // mit Welle 11 V3 Soul-Sync) sollen Konsistenz auch beim Beobachten
+            // des eigenen Avatars haben, und Tests erwarten eine getrackte
+            // Position. Nur die Visibility wird durch den Camera-Mode getoggled.
             const p = this.state.playerMesh.position;
             glow.position.set(p.x, p.y + 0.5, p.z);
             glow.material.color.copy(auraColor);
@@ -13677,6 +13815,21 @@ class AnazhRealm {
             // Atem-Animation über Sprite-scale (5 % Modulation).
             const breath = 3.0 * (1 + Math.sin(performance.now() * 0.001) * 0.05);
             glow.scale.set(breath, breath, 1);
+            // Welle 6.X.1 A4 — Aura in 1st-Person ausblenden (Audit 17.05.2026):
+            // das Billboard sitzt 0.5m über dem Player. In first-Person ist die
+            // Kamera AM Spieler-Kopf, also liegt das Sprite mitten im Sichtfeld
+            // und addiert via AdditiveBlending einen Schleier auf jeden Pixel
+            // (besonders beim Blick nach unten). In 3rd-Person ist es das was
+            // es sein soll: ein Schimmer um den eigenen Körper.
+            // **Multi-User-Schnittstelle (Schöpfer-Frage 17.05.2026)**: dieser
+            // Hide gilt NUR meinen lokalen Renderer. Wenn ein Mitspieler in
+            // seiner 3rd-Person-Kamera meinen Avatar sieht, läuft das durch
+            // SEINEN Renderer — meine `glow.visible = false`-Setzung ist da
+            // irrelevant. Heute baut der Mitspieler-Renderer aber nur eine
+            // Cone+Sphere-Group, keine Aura. Welle 11 V3 (Soul-Sync) wird
+            // beides liefern: echter Soul-Mesh + Aura-Sync (low-freq Broadcast
+            // der dominanten Tag-Achse) — siehe roadmap.md Eintrag W11 V3.
+            glow.visible = this.state.cameraMode !== "first";
         }
         // (b) Sub-Mesh-Tint dezent: 15 % Mix, damit Original-Farbe vorranig
         // bleibt aber das Leuchten in die Materialien hineinwirkt.
@@ -16331,8 +16484,26 @@ class AnazhRealm {
     // Ops im Bauplan stecken). Bei Gleichstand entscheidet die Reihenfolge
     // in TOOL_DOMAINS (deterministisch).
     computeBlueprintDomain(blueprint) {
-        if (!blueprint || !Array.isArray(blueprint.parts)) return null;
+        const counts = this.computeBlueprintDomainCounts(blueprint);
+        let best = null;
+        let bestCount = 0;
+        for (const dom of AnazhRealm.TOOL_DOMAINS) {
+            const c = counts[dom] || 0;
+            if (c > bestCount) {
+                bestCount = c;
+                best = dom;
+            }
+        }
+        return best;
+    }
+
+    // Welle 6.X.4 V8.16 Punkt 18 — Domain-Verteilung als Map<domain, count>.
+    // Aus computeBlueprintDomain extrahiert damit die Werkstatt-UI die
+    // Wachstumssituation zeigen kann (welche Domain hat wie viele Ops, wer
+    // dominiert, wo emergiert die nächste Rolle bei weiterer Anwendung).
+    computeBlueprintDomainCounts(blueprint) {
         const counts = {};
+        if (!blueprint || !Array.isArray(blueprint.parts)) return counts;
         for (const part of blueprint.parts) {
             if (!part || !Array.isArray(part.opChain)) continue;
             for (const op of part.opChain) {
@@ -16345,16 +16516,7 @@ class AnazhRealm {
                 counts[dom] = (counts[dom] || 0) + 1;
             }
         }
-        let best = null;
-        let bestCount = 0;
-        for (const dom of AnazhRealm.TOOL_DOMAINS) {
-            const c = counts[dom] || 0;
-            if (c > bestCount) {
-                bestCount = c;
-                best = dom;
-            }
-        }
-        return best;
+        return counts;
     }
 
     // Forging-Split-Regel: ein Bauplan dessen dominante Domain "forging"
@@ -17436,6 +17598,16 @@ class AnazhRealm {
         if (!bm.active || !bm.blueprintName || !bm.phantomMesh) return false;
         const p = bm.phantomMesh.position;
         const spawnPos = { x: p.x, y: p.y + 0.5, z: p.z };
+        // Welle 6.X.1 A2 — Stabilitäts-Gate (Audit 17.05.2026): _resolvePhantomTarget
+        // markiert isStable über Hit-Normal-Y > 0.5 (begehbar). _applyPhantomTint
+        // zeigt das via Rot/Grün, aber confirmBuild prüfte es nie. Im pfad-Modus
+        // soll der rote Phantom keinen Spawn erlauben — Schöpfer-Forderung war
+        // klar. Frieden + schöpfer bleiben durchlässig (Vision §10.1 — Schöpfer-
+        // Modus gehorcht, keine Friction).
+        if (this.getGameMode() === "pfad" && !bm.phantomOnGround) {
+            this.log("Bauen: Standort ist nicht stabil (rote Markierung).", "INFO");
+            return false;
+        }
         // Welle 9c — Welt-Werkstatt-Gate (modus-abhängig): pfad braucht passende
         // Werkstatt in der Nähe; frieden + schöpfer überspringen den Check.
         const stationGate = this._workshopStationGate(bm.blueprintName, spawnPos);
@@ -18149,6 +18321,38 @@ class AnazhRealm {
             const isMaterialSlot = slot.kind === "material" && typeof slot.material === "string";
             const matDef = isMaterialSlot && this.state.materials && this.state.materials[slot.material];
             const bp = !isMaterialSlot && this.state.blueprints && this.state.blueprints[slot.blueprintName];
+            // Welle 6.X.4 V8.15 Punkt 17 — Material-Glyphen: fixes Symbol pro
+            // Grundmaterial damit Spieler die Slot-Art auf einen Blick
+            // erkennt (nicht nur Name-Text). Bauplan-Slots zeigen Label
+            // weiterhin als Text — emergente Compounds haben kein fixes Symbol.
+            const MATERIAL_GLYPHS = {
+                stein: "◼",
+                holz: "║",
+                eisen: "◆",
+                bronze: "◈",
+                quarz: "❖",
+                leder: "◗",
+                knochen: "⌘",
+                fleisch: "⬣",
+                federn: "✷",
+                schuppen: "⬢",
+                glut: "✺",
+                laub: "❀",
+            };
+            if (isMaterialSlot) {
+                const glyph = document.createElement("span");
+                glyph.className = "slot-glyph";
+                glyph.setAttribute("aria-hidden", "true");
+                glyph.textContent = MATERIAL_GLYPHS[slot.material] || "◌";
+                if (matDef && Number.isFinite(matDef.color)) {
+                    const hex = matDef.color;
+                    const r = (hex >> 16) & 0xff;
+                    const g = (hex >> 8) & 0xff;
+                    const b = hex & 0xff;
+                    glyph.style.color = `rgb(${Math.min(255, r + 60)},${Math.min(255, g + 60)},${Math.min(255, b + 60)})`;
+                }
+                el.appendChild(glyph);
+            }
             const label = document.createElement("span");
             label.className = "slot-label";
             if (isMaterialSlot) {
@@ -18969,6 +19173,15 @@ class AnazhRealm {
         if (typeof this._workshopUpdateManipulatorButtons === "function") {
             this._workshopUpdateManipulatorButtons();
         }
+        // V8.19 Schöpfer-Test: bei Bauplan-Wechsel die CAD-Kamera auf den
+        // neuen Bauplan zentrieren. Vorher behielt die Kamera ihre alte
+        // Orbit-Position (Yaw/Pitch/Dist), sodass beim Zurückwechseln auf
+        // einen vorher gedrehten Bauplan die alte Sicht „klebte". Reset
+        // garantiert: jeder Klick auf ein Listen-Item → frische Top-Down-
+        // schräge Sicht auf den Bauplan-Schwerpunkt.
+        if (typeof this.resetWorkshopCamera === "function") {
+            this.resetWorkshopCamera();
+        }
         return true;
     }
 
@@ -19747,8 +19960,20 @@ class AnazhRealm {
             } else if (key === "g") {
                 this.toggleWorkshopSnap();
                 event.preventDefault();
+            } else if (key === "h" || key === "home") {
+                // Welle 6.X.2 V8.14 — CAD-Kamera-Reset auf den Bauplan-Center.
+                // H wie „Home". Zoomt auf den Bauplan zurück falls man ihn
+                // aus der Ansicht verloren hat (Drag mit leerem Klick scrollt
+                // den Orbit-Target weg).
+                this.resetWorkshopCamera();
+                event.preventDefault();
             }
         });
+        // Welle 6.X.2 V8.14 — Reset-Button neben Snap (Shortcut H).
+        const resetBtn = document.getElementById("workshop-camera-reset");
+        if (resetBtn) {
+            resetBtn.addEventListener("click", () => this.resetWorkshopCamera());
+        }
         // V8.02 Phase 3a — Shape-Palette HTML5-Drag-Sources + Canvas-Drop-Target
         this._workshopInstallShapeDragDrop();
         // V8.05 — Editor-Toggle + Del-Button-Handler (beide idempotent)
@@ -20699,6 +20924,35 @@ class AnazhRealm {
         return ws.snapEnabled;
     }
 
+    // Welle 6.X.2 V8.14 (Audit 17.05.2026) — CAD-Kamera auf Bauplan-Center
+    // zurücksetzen. Pan mit Shift+Drag oder Mittelmaus kann den orbit.target
+    // weit verschieben, dann sieht man den Bauplan nicht mehr. Reset
+    // setzt orbit.target auf BBox-Center + dist auf BBox-Diagonale × 2.2
+    // (gleiche Default-Formel wie beim Initial-Render). Shortcut: H.
+    resetWorkshopCamera() {
+        // V8.21 Schöpfer-Wunsch: H-Shortcut/Button soll EXAKT dasselbe tun
+        // wie Bauplan-Wechsel — also Mesh frisch bauen + Camera auf den
+        // Bauplan zentrieren. Mesh-Edits bleiben (sind in bp.parts gespeichert),
+        // nur Camera + initial-distance werden frisch.
+        //
+        // Vor V8.21 war's nur Camera-Reset, ohne dist-Reset (dist wird im
+        // Rebuild-Pfad nur initial gesetzt via _distInitialized-Flag). Beim
+        // wiederholten H-Drücken blieb der alte Zoom hängen — Spieler dachte
+        // „greift nicht".
+        const p = this.state.workshop && this.state.workshop.preview;
+        if (!p) return;
+        // Reset dist-Flag → Rebuild setzt dist neu auf BBox-passende Distanz.
+        p._distInitialized = false;
+        if (typeof this._workshopRebuildPreviewMesh === "function") {
+            this._workshopRebuildPreviewMesh();
+        }
+        // Yaw/Pitch zurück auf neutrale Werkstatt-Sicht (PI/4 schräg, 0.3 oben).
+        p.orbit.yaw = Math.PI / 4;
+        p.orbit.pitch = 0.3;
+        p.dirty = true;
+        this.log("CAD-Kamera zentriert", "INFO");
+    }
+
     // UI-Sync: Modus-Buttons + Snap-Toggle in der Werkstatt.
     _workshopUpdateManipulatorButtons() {
         if (typeof document === "undefined") return;
@@ -20781,7 +21035,7 @@ class AnazhRealm {
         const bp = this.state.blueprints[ws.selectedBlueprint];
         panel.innerHTML = "";
         if (!bp) return;
-        // Rolle-Chip
+        // Rolle-Chip — mit emergent-vs-manuell-Indikator + Provenienz
         const role = bp.role || AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
         const roleLabel = AnazhRealm.BLUEPRINT_ROLE_LABELS[role] || role;
         const roleRow = document.createElement("div");
@@ -20793,7 +21047,35 @@ class AnazhRealm {
         const roleChip = document.createElement("span");
         roleChip.className = "role-chip";
         roleChip.textContent = roleLabel;
+        // V8.17 — erweiterte Tooltips erklären emergent vs. manuell.
+        if (bp.roleManual) {
+            roleChip.classList.add("role-manual");
+            roleChip.title =
+                "Manuell gesetzt. Diese Rolle überschreibt die emergente. " +
+                "Setze sie via Markier-Sektion im Spieler-Drawer (als Rüstung / als Konsumabel).";
+        } else {
+            roleChip.classList.add("role-emergent");
+            roleChip.title =
+                "✨ Emergent aus der Mehrheit der opChain-Domains. " +
+                "Wende Werkzeuge auf Parts an (Werkstatt rechts) → die Domain mit den meisten Ops bestimmt die Rolle. " +
+                "forging+scharf→Werkzeug, forging+dicht→Rüstung, alchemy→Konsumabel, soulwork→Avatar/Kreatur.";
+        }
         roleRow.appendChild(roleChip);
+        // V8.17 — wenn manuell, biete einen Reset-Button auf emergent.
+        if (bp.roleManual && !bp.builtIn) {
+            const resetBtn = document.createElement("button");
+            resetBtn.type = "button";
+            resetBtn.className = "role-reset-btn";
+            resetBtn.textContent = "↺";
+            resetBtn.title = "Manuelle Rolle aufheben, zurück zur emergenten Bestimmung";
+            resetBtn.addEventListener("click", () => {
+                bp.roleManual = false;
+                this._refreshBlueprintRoleEmergent && this._refreshBlueprintRoleEmergent(bp.name);
+                this._workshopRenderStatsPanel && this._workshopRenderStatsPanel();
+                this.log(`Rolle von „${bp.label || bp.name}" auf emergent zurückgesetzt`, "INFO");
+            });
+            roleRow.appendChild(resetBtn);
+        }
         // Affordances
         const aff = this.computeBlueprintAffordances(bp) || {};
         for (const key of Object.keys(aff)) {
@@ -20803,6 +21085,93 @@ class AnazhRealm {
             roleRow.appendChild(chip);
         }
         panel.appendChild(roleRow);
+        // Welle 6.X.4 V8.16 Punkt 18 — Wachstumskonzept sichtbar:
+        // wie entsteht die Rolle? wie wächst sie? welche Synergie wirkt?
+        //
+        // Drei Schichten:
+        //  (a) Domain-Verteilung als Bar-Diagramm — welche Werkzeug-Domain
+        //      hat wie viele Op-Anwendungen, wer dominiert, wer könnte mit
+        //      weiterer Anwendung übernehmen.
+        //  (b) Synergie-Pfeil — Form × Material × Domain → Compound-Tags
+        //      → Rolle, kompakter Inline-Text damit der Schöpfer den Weg
+        //      vom Bauteil zur Identität sieht.
+        //  (c) Wachstumshinweis — bei leerer Chain: „wende ein Werkzeug an";
+        //      bei aktiver Chain: „nächste Anwendung könnte zu X führen";
+        //      bei bp.roleManual: „Manuell gesetzt, emergent wäre Y".
+        if (!bp.builtIn) {
+            const domCounts = this.computeBlueprintDomainCounts(bp);
+            const totalOps = Object.values(domCounts).reduce((a, b) => a + b, 0);
+            const dominantDomain = this.computeBlueprintDomain(bp);
+            const emergentRole = this.computeBlueprintRole(bp);
+            const emergentLabel = AnazhRealm.BLUEPRINT_ROLE_LABELS[emergentRole] || emergentRole;
+
+            // (a) Domain-Verteilung
+            if (totalOps > 0) {
+                const domRow = document.createElement("div");
+                domRow.className = "stat-row workshop-domain-row";
+                const domLab = document.createElement("span");
+                domLab.className = "stat-label";
+                domLab.textContent = "Domains";
+                domRow.appendChild(domLab);
+                const domWrap = document.createElement("div");
+                domWrap.className = "workshop-domain-bars";
+                for (const dom of AnazhRealm.TOOL_DOMAINS) {
+                    const c = domCounts[dom] || 0;
+                    if (c === 0) continue;
+                    const ratio = c / totalOps;
+                    const bar = document.createElement("div");
+                    bar.className = "workshop-domain-bar";
+                    if (dom === dominantDomain) bar.classList.add("dominant");
+                    bar.style.width = `${Math.max(8, Math.round(ratio * 100))}%`;
+                    bar.textContent = `${dom} ×${c}`;
+                    bar.title = `${dom}: ${c} Ops · ${Math.round(ratio * 100)}%`;
+                    domWrap.appendChild(bar);
+                }
+                domRow.appendChild(domWrap);
+                panel.appendChild(domRow);
+            }
+
+            // (b) Synergie-Pfeil (kompakt)
+            const synRow = document.createElement("div");
+            synRow.className = "stat-row workshop-synergy-row";
+            const synLab = document.createElement("span");
+            synLab.className = "stat-label";
+            synLab.textContent = "Synergie";
+            synRow.appendChild(synLab);
+            const synText = document.createElement("span");
+            synText.className = "workshop-synergy-text";
+            synText.textContent = "Form × Material × Werkzeug-Domain → Compound-Tags → Rolle";
+            synRow.appendChild(synText);
+            panel.appendChild(synRow);
+
+            // (c) Wachstumshinweis
+            const hintRow = document.createElement("div");
+            hintRow.className = "stat-row workshop-growth-row";
+            const hintLab = document.createElement("span");
+            hintLab.className = "stat-label";
+            hintLab.textContent = "Wachstum";
+            hintRow.appendChild(hintLab);
+            const hintText = document.createElement("span");
+            hintText.className = "workshop-growth-text";
+            if (totalOps === 0) {
+                hintText.textContent =
+                    "Noch keine Werkzeug-Anwendung. Default: Bauwerk. Wende ein Werkzeug an um Rolle zu emergieren.";
+            } else if (bp.roleManual) {
+                hintText.textContent = `Manuell gesetzt. Emergent wäre „${emergentLabel}" aus Domain „${dominantDomain || "—"}".`;
+                hintText.classList.add("manual-override");
+            } else {
+                const nextDom = AnazhRealm.TOOL_DOMAINS.filter(
+                    (d) => d !== dominantDomain && (domCounts[d] || 0) >= (domCounts[dominantDomain] || 0) - 1
+                )[0];
+                if (nextDom) {
+                    hintText.textContent = `Rolle aus „${dominantDomain}" (Mehrheit). Eine weitere „${nextDom}"-Anwendung könnte das verschieben.`;
+                } else {
+                    hintText.textContent = `Rolle aus „${dominantDomain}" (Mehrheit, stabil). Weitere Anwendungen vertiefen.`;
+                }
+            }
+            hintRow.appendChild(hintText);
+            panel.appendChild(hintRow);
+        }
         // V8.07 — Top-5 Compound-Tags mit STERN-RATING. Schöpfer-Wunsch:
         // schnelle Erkennung „wie stark ist das?" über visuelle Sterne statt
         // raw Zahlen. Schwellen aus WORLD_EFFECT_THRESHOLDS (mild/strong/
@@ -21099,15 +21468,24 @@ class AnazhRealm {
     _workshopHandleToolDrop(toolName, clientX, clientY) {
         const ws = this._ensureWorkshopState();
         const bp = this.state.blueprints[ws.selectedBlueprint];
-        if (!bp || bp.builtIn) return;
+        if (!bp) return;
+        // V8.19 Schöpfer-Bug — Built-in-Bauplan: gib klare Anleitung statt
+        // silent-fail. Spieler musste vorher rätseln warum nichts passiert.
+        if (bp.builtIn) {
+            this.log(
+                `Built-in-Bauplan „${bp.label || bp.name}" — klicke „Klonen" in der Mode-Bar um eine editierbare Kopie zu erstellen.`,
+                "WARNING"
+            );
+            return;
+        }
         const tool = this.state.tools && this.state.tools[toolName];
         if (!tool) {
-            this.log(`Workshop-ToolDrop: unbekanntes Werkzeug '${toolName}'`, "INFO");
+            this.log(`Werkzeug „${toolName}" nicht bekannt`, "ERROR");
             return;
         }
         const idx = this._workshopRaycastPartIdxAt(clientX, clientY);
         if (idx === null) {
-            this.log("Workshop-ToolDrop: kein Part getroffen — drop direkt auf einen Part", "INFO");
+            this.log("Werkzeug auf einen Part im 3D-Mesh ziehen (Treffer-Punkt war daneben).", "INFO");
             return;
         }
         const result = this.applyOpToPart(bp.name, idx, toolName);
@@ -21115,23 +21493,62 @@ class AnazhRealm {
             this._renderWorkshopDOM();
             this._workshopSetSelection(idx);
             this.log(
-                `Workshop: Werkzeug '${toolName}' auf Part ${idx} angewandt (Präzision ${result.precision.toFixed(2)})`,
+                `Werkzeug „${tool.label || toolName}" angewandt auf Part ${idx} (Präzision ${result.precision.toFixed(2)})`,
                 "INFO"
             );
         } else {
+            // V8.19 — bessere Fehlermeldungen pro reason. Schöpfer-Test
+            // zeigte „werkzeuge gehen nicht" → unklar warum. Jetzt sagt
+            // der Log exakt was fehlt.
             const reason = (result && result.reason) || "unknown";
-            this.log(`Workshop-ToolDrop: ${reason}`, "INFO");
+            const part = bp.parts && bp.parts[idx];
+            if (reason === "tool_not_owned") {
+                this.log(
+                    `Werkzeug „${tool.label || toolName}" nicht im Besitz. Erstelle es im Spieler-Drawer (Werkzeug ausrüsten).`,
+                    "WARNING"
+                );
+            } else if (reason === "material_op_incompatible") {
+                const compat = AnazhRealm.MATERIAL_OP_COMPATIBILITY[part?.material];
+                this.log(
+                    `Material „${part?.material}" akzeptiert nicht Op-Klasse „${tool.opClass}". Kompatibel: ${(compat || []).join(", ") || "(keine)"}. ` +
+                        `Stein → subtractive (Feuerstein, Feile), Eisen → alles, Holz → subtractive+additive.`,
+                    "WARNING"
+                );
+            } else if (reason === "insufficient_stamina") {
+                this.log(
+                    "Nicht genug Stamina (10 nötig). Wechsel zu frieden/schöpfer für kostenlose Werkzeug-Anwendung.",
+                    "WARNING"
+                );
+            } else {
+                this.log(`Werkzeug-Anwendung fehlgeschlagen: ${reason}`, "ERROR");
+            }
         }
     }
 
     // V8.03 — Material-Palette aus state.materials rendern. Eine Card pro
     // Material mit Color-Swatch + Name. Drag-Source-Marker = data-material.
+    // V8.17 — plus Material-Glyph (◼/║/◆/…) für visuelle Konsistenz mit
+    // Inventar-Slots. Glyph rechts in der Card, dezent in brass-1.
     _workshopRenderMaterialPalette() {
         if (typeof document === "undefined") return;
         const palette = document.getElementById("workshop-material-palette");
         if (!palette) return;
         palette.innerHTML = "";
         const materials = this.state.materials || {};
+        const GLYPHS = {
+            stein: "◼",
+            holz: "║",
+            eisen: "◆",
+            bronze: "◈",
+            quarz: "❖",
+            leder: "◗",
+            knochen: "⌘",
+            fleisch: "⬣",
+            federn: "✷",
+            schuppen: "⬢",
+            glut: "✺",
+            laub: "❀",
+        };
         for (const name of Object.keys(materials)) {
             const mat = materials[name];
             const card = document.createElement("div");
@@ -21139,11 +21556,26 @@ class AnazhRealm {
             card.setAttribute("draggable", "true");
             card.setAttribute("data-material", name);
             card.setAttribute("title", `${mat.label || name} → auf Part ziehen wechselt Material`);
-            const swatch = document.createElement("span");
-            swatch.className = "mat-swatch";
             const c = typeof mat.color === "number" ? mat.color : 0x888888;
-            swatch.style.background = `#${c.toString(16).padStart(6, "0")}`;
-            card.appendChild(swatch);
+            const colorHex = `#${c.toString(16).padStart(6, "0")}`;
+            // V8.19 — Glyph in der Material-Farbe VOR dem Label (statt
+            // separater Farb-Kreis + Glyph-rechts). Spieler sieht das
+            // Material-Symbol direkt eingefärbt — kein doppelter Marker mehr.
+            if (GLYPHS[name]) {
+                const glyph = document.createElement("span");
+                glyph.className = "mat-glyph";
+                glyph.setAttribute("aria-hidden", "true");
+                glyph.textContent = GLYPHS[name];
+                glyph.style.color = colorHex;
+                card.appendChild(glyph);
+            } else {
+                // Eigene Materialien ohne Glyph → fallback ein gefüllter Kreis
+                // in Material-Farbe, damit kein leerer Slot entsteht.
+                const swatch = document.createElement("span");
+                swatch.className = "mat-swatch";
+                swatch.style.background = colorHex;
+                card.appendChild(swatch);
+            }
             const label = document.createElement("span");
             label.textContent = mat.label || name;
             card.appendChild(label);
@@ -21554,6 +21986,311 @@ class AnazhRealm {
         }
     }
 
+    // Welle 6.X.4 B3 (Audit 17.05.2026) — Stats-HUD über der Hotbar.
+    // Zwei SVG-Bars für HP + Stamina, painterly Pergament-Stil. Hover
+    // offenbart slow stats (Damage/Speed/Präzision/MagicResist/HeatResist)
+    // im Tooltip. Refresh läuft pro Frame im Game-Loop, throttled auf
+    // ~10 Hz weil HP/Stamina sich nur in Sub-Sekunden-Schritten ändern.
+    tickStatsHud(currentTime) {
+        if (typeof document === "undefined") return;
+        const last = this.state._statsHudLastTick || 0;
+        if (currentTime - last < 0.1) return; // 10 Hz Throttle
+        this.state._statsHudLastTick = currentTime;
+        const hpFill = document.getElementById("stats-hud-hp-fill");
+        const hpText = document.getElementById("stats-hud-hp-text");
+        const stamFill = document.getElementById("stats-hud-stam-fill");
+        const stamText = document.getElementById("stats-hud-stam-text");
+        if (!hpFill || !hpText || !stamFill || !stamText) return;
+        // Welle 6.X.4 B3 V8.17 — defensive HP/SP-Lese-Pfad. recomputePlayerStats
+        // setzt state.player.hp/hpMax aus stats.hpMax. Wenn das HUD vor dem
+        // ersten Stats-Run gerendert wird, sind hp/hpMax noch undefined.
+        // Statt 0/100 zeigen wir dann stats.hpMax als initial-Both-Wert
+        // („voll" gefühlsmäßig, kein Schock-Display 0/100 beim Boot).
+        const p = this.state.player || {};
+        const computedStats = p.stats || {};
+        const fallbackHpMax = computedStats.hpMax || 100;
+        const fallbackStamMax = computedStats.staminaMax || 100;
+        const hp = Math.max(0, Math.round(typeof p.hp === "number" ? p.hp : fallbackHpMax));
+        const hpMax = Math.max(1, Math.round(typeof p.hpMax === "number" ? p.hpMax : fallbackHpMax));
+        const stam = Math.max(0, Math.round(typeof p.stamina === "number" ? p.stamina : fallbackStamMax));
+        const stamMax = Math.max(1, Math.round(typeof p.staminaMax === "number" ? p.staminaMax : fallbackStamMax));
+        const hpRatio = Math.max(0, Math.min(1, hp / hpMax));
+        const stamRatio = Math.max(0, Math.min(1, stam / stamMax));
+        // Welle 6.X.4 B3 V8.14 — neue Bar-Breite 166 (von 158), zusätzlicher
+        // Glow-Strip oben drauf folgt derselben Breite.
+        hpFill.setAttribute("width", String(166 * hpRatio));
+        const hpGlow = document.getElementById("stats-hud-hp-glow");
+        if (hpGlow) hpGlow.setAttribute("width", String(166 * hpRatio));
+        stamFill.setAttribute("width", String(166 * stamRatio));
+        const stamGlow = document.getElementById("stats-hud-stam-glow");
+        if (stamGlow) stamGlow.setAttribute("width", String(166 * stamRatio));
+        hpText.textContent = `${hp}/${hpMax}`;
+        stamText.textContent = `${stam}/${stamMax}`;
+        // V8.14 — HP-niedrig-Pulse: bei < 30 % bekommt der HUD eine
+        // pulsierende rote Aura via CSS-Animation. Über 30 % wieder ruhig.
+        const hud = document.getElementById("stats-hud");
+        if (hud) {
+            if (hpRatio < 0.3) hud.classList.add("stats-hud-low");
+            else hud.classList.remove("stats-hud-low");
+        }
+        // Tooltip alle 1 s aktualisieren (slow stats ändern sich selten —
+        // nur bei Soul/Equipped/Boost-Wechsel). Throttle damit Hover keine
+        // permanenten Re-Builds triggert.
+        const ttLast = this.state._statsHudTooltipLastTick || 0;
+        if (currentTime - ttLast < 1.0) return;
+        this.state._statsHudTooltipLastTick = currentTime;
+        const tooltip = document.getElementById("stats-hud-tooltip");
+        if (!tooltip) return;
+        const stats = (this.state.player && this.state.player.stats) || null;
+        if (!stats) {
+            tooltip.textContent = "Stats nicht initialisiert";
+            return;
+        }
+        const lines = [
+            `Schaden       ${(stats.damage || 0).toFixed(1)}`,
+            `Geschwindigk. ${(stats.speed || 0).toFixed(2)}`,
+            `Sprungkraft   ${(stats.jumpPower || 0).toFixed(2)}`,
+            `Präzision     ${(stats.precision || 0).toFixed(2)}`,
+            `Magie-Resist  ${(stats.magicResist || 0).toFixed(2)}`,
+            `Hitze-Resist  ${(stats.heatResist || 0).toFixed(2)}`,
+        ];
+        // Plus equipped + boosts kurz
+        const eq = (this.state.player && this.state.player.equipped) || {};
+        if (eq.tool) lines.push(`Werkzeug      ${eq.tool}`);
+        if (eq.armor) lines.push(`Rüstung       ${eq.armor}`);
+        const boosts = (this.state.player && this.state.player.boosts) || [];
+        const now = performance.now() / 1000;
+        const activeBoosts = boosts.filter((b) => b.expiresAt > now);
+        if (activeBoosts.length > 0) {
+            lines.push(`Boosts        ${activeBoosts.length}`);
+        }
+        // <br>-getrennt damit das Tooltip schmal bleibt
+        tooltip.innerHTML = lines.join("<br>");
+    }
+
+    // Welle 6.X.4 D2 (Audit 17.05.2026) — Drei Schieber: Master-Volume,
+    // Kreatur-Pings-Volume, Render-Ring-Radius. Lädt persistierte Werte
+    // aus localStorage. Master + Pings wirken live auf state.symphony +
+    // playCreaturePing-Peak. Render-Ring greift im nächsten worldgen-Tick.
+    slidersInitDOM() {
+        if (typeof document === "undefined") return;
+        // Persistierte Werte laden
+        if (typeof localStorage !== "undefined") {
+            try {
+                const mv = parseFloat(localStorage.getItem("anazh.audio.masterVol"));
+                if (Number.isFinite(mv) && mv >= 0 && mv <= 1) this.state.symphony.masterVolume = mv;
+                const pv = parseFloat(localStorage.getItem("anazh.audio.pingVol"));
+                if (Number.isFinite(pv) && pv >= 0 && pv <= 1) this.state.symphony.creaturePingVolume = pv;
+                // V8.15 — TTS-Stimme-Volume separat persistiert.
+                const vv = parseFloat(localStorage.getItem("anazh.audio.voiceVol"));
+                if (Number.isFinite(vv) && vv >= 0 && vv <= 1) this.state.symphony.voiceVolume = vv;
+                const rr = parseInt(localStorage.getItem("anazh.world.ringRadius"), 10);
+                if (Number.isFinite(rr) && rr >= 1 && rr <= 4) this.state.chunkRingRadius = rr;
+            } catch {
+                /* ignore */
+            }
+        }
+        // Helper: Ring-Radius zu Format-String (1 → "3×3", 2 → "5×5", …)
+        const ringText = (r) => `${r * 2 + 1}×${r * 2 + 1}`;
+        // Master Slider
+        const ms = document.getElementById("slider-master");
+        const msv = document.getElementById("slider-master-val");
+        if (ms) {
+            ms.value = String(Math.round((this.state.symphony.masterVolume || 1) * 100));
+            if (msv) msv.textContent = `${ms.value}%`;
+            ms.addEventListener("input", () => {
+                const v = parseFloat(ms.value) / 100;
+                this.state.symphony.masterVolume = v;
+                if (msv) msv.textContent = `${ms.value}%`;
+                // Live-Update wenn Audio-Graph läuft
+                if (this.state.symphony.masterGain) {
+                    this.state.symphony.masterGain.gain.value = 0.35 * v;
+                }
+                if (typeof localStorage !== "undefined") {
+                    try {
+                        localStorage.setItem("anazh.audio.masterVol", String(v));
+                    } catch {
+                        /* ignore */
+                    }
+                }
+            });
+        }
+        // Pings Slider
+        const ps = document.getElementById("slider-pings");
+        const psv = document.getElementById("slider-pings-val");
+        if (ps) {
+            ps.value = String(Math.round((this.state.symphony.creaturePingVolume || 1) * 100));
+            if (psv) psv.textContent = `${ps.value}%`;
+            ps.addEventListener("input", () => {
+                const v = parseFloat(ps.value) / 100;
+                this.state.symphony.creaturePingVolume = v;
+                if (psv) psv.textContent = `${ps.value}%`;
+                if (typeof localStorage !== "undefined") {
+                    try {
+                        localStorage.setItem("anazh.audio.pingVol", String(v));
+                    } catch {
+                        /* ignore */
+                    }
+                }
+            });
+        }
+        // V8.15 — Voice (TTS) Slider
+        const vs = document.getElementById("slider-voice");
+        const vsv = document.getElementById("slider-voice-val");
+        if (vs) {
+            vs.value = String(Math.round((this.state.symphony.voiceVolume || 1) * 100));
+            if (vsv) vsv.textContent = `${vs.value}%`;
+            vs.addEventListener("input", () => {
+                const v = parseFloat(vs.value) / 100;
+                this.state.symphony.voiceVolume = v;
+                if (vsv) vsv.textContent = `${vs.value}%`;
+                if (typeof localStorage !== "undefined") {
+                    try {
+                        localStorage.setItem("anazh.audio.voiceVol", String(v));
+                    } catch {
+                        /* ignore */
+                    }
+                }
+            });
+        }
+        // Ring-Radius Slider
+        const rs = document.getElementById("slider-ring");
+        const rsv = document.getElementById("slider-ring-val");
+        // Welle 6.X.4 D2 V8.15 Bug-Fix — maxLoadedChunks aus Ring-Radius
+        // ableiten (Schöpfer-Beobachtung: Slider tat optisch nichts, weil
+        // pruneDistantChunks bei 196 statt bei (ring×2+1)² Chunks ansetzte).
+        // Bei Ring=2 → 5×5×1.2 = 30, bei Ring=4 → 9×9×1.2 = 97. Reduzieren
+        // des Rings pruned tatsächlich Chunks im nächsten Tick — sichtbar.
+        const applyRingRadius = (v) => {
+            this.state.chunkRingRadius = v;
+            const ringSize = v * 2 + 1;
+            // V8.17 — Faktor ×3 für sichtbaren Slider-Effekt. Schöpfer-Test:
+            // bei ×4 (V8.15) blieb fast nichts pruned (Initial 64 vs. max 100
+            // bei Ring=2), Spieler sah keine Änderung. Mit ×3 schrumpft die
+            // Welt sichtbar wenn der Ring reduziert wird.
+            //   Ring=1 → max 27 (von 64 Initial → 37 gepruned, sichtbar)
+            //   Ring=2 → max 75 (default, Initial-Worldgen passt)
+            //   Ring=3 → max 147 (Cache-Headroom für Bewegung)
+            //   Ring=4 → max 243 (große Welt-Sicht)
+            this.state.maxLoadedChunks = Math.max(15, Math.ceil(ringSize * ringSize * 3));
+            if (rsv) rsv.textContent = ringText(v);
+        };
+        if (rs) {
+            rs.value = String(this.state.chunkRingRadius || 2);
+            applyRingRadius(parseInt(rs.value, 10));
+            rs.addEventListener("input", () => {
+                const v = Math.max(1, Math.min(4, parseInt(rs.value, 10)));
+                applyRingRadius(v);
+                if (typeof localStorage !== "undefined") {
+                    try {
+                        localStorage.setItem("anazh.world.ringRadius", String(v));
+                    } catch {
+                        /* ignore */
+                    }
+                }
+            });
+        }
+    }
+
+    // Welle 6.X.4 F1 (Audit 17.05.2026) — Begleiter-Name + Avatar-Name.
+    // Lädt persistierte Werte aus localStorage und bindet die zwei Inputs
+    // an die state-Felder. Beide werden im LLM-System-Prompt referenziert.
+    identityInitDOM() {
+        if (typeof document === "undefined") return;
+        // Begleiter-Name: aus localStorage laden, sonst Default „Grok".
+        if (typeof localStorage !== "undefined") {
+            try {
+                const cn = localStorage.getItem("anazh.companion.name");
+                if (cn && cn.trim()) this.state.grok.companionName = cn.trim().slice(0, 32);
+                const pn = localStorage.getItem("anazh.player.name");
+                if (pn && pn.trim()) this.state.player.name = pn.trim().slice(0, 32);
+            } catch {
+                /* ignore */
+            }
+        }
+        const companionInput = document.getElementById("companion-name-input");
+        const playerInput = document.getElementById("player-name-input");
+        if (companionInput) {
+            companionInput.value = this.state.grok.companionName || "Grok";
+            companionInput.addEventListener("input", () => {
+                const v = (companionInput.value || "").trim().slice(0, 32) || "Grok";
+                this.state.grok.companionName = v;
+                if (typeof localStorage !== "undefined") {
+                    try {
+                        localStorage.setItem("anazh.companion.name", v);
+                    } catch {
+                        /* ignore */
+                    }
+                }
+            });
+        }
+        if (playerInput) {
+            playerInput.value = this.state.player.name || "Schöpfer";
+            playerInput.addEventListener("input", () => {
+                const v = (playerInput.value || "").trim().slice(0, 32) || "Schöpfer";
+                this.state.player.name = v;
+                if (typeof localStorage !== "undefined") {
+                    try {
+                        localStorage.setItem("anazh.player.name", v);
+                    } catch {
+                        /* ignore */
+                    }
+                }
+            });
+        }
+    }
+
+    // Welle 6.X.2 B1 (Audit 17.05.2026) + V8.14 Erweiterung — Logbuch-Toggle.
+    //
+    // **Zwei Schichten** (V8.14):
+    // 1. Section-Visibility (`#console-log-section.hidden`): steuert ob das
+    //    Logbuch-Section überhaupt im Konsole-Drawer erscheint. Default
+    //    sichtbar, Spieler kann es global in Einstellungen ausblenden.
+    // 2. Log-Expanded (`#log.hidden`): innerhalb der Section steuert das
+    //    Logbuch selbst (das eigentliche Log-Stream). Default eingeklappt
+    //    damit Chat im Fokus bleibt. Click auf Konsole-Label expanded.
+    //
+    // Beide State-Werte synchronisieren über `localStorage`. Der Einstellungen-
+    // Toggle steuert „expanded" (sync mit Konsole-Toggle). Die Section bleibt
+    // immer sichtbar — Spieler kann sie im DOM finden und expandieren.
+    logbookInitDOM() {
+        if (typeof document === "undefined") return;
+        let expanded = false;
+        if (typeof localStorage !== "undefined") {
+            const raw = localStorage.getItem("anazh.logbookVisible");
+            if (raw === "1" || raw === "true") expanded = true;
+        }
+        this.state.logbookVisible = expanded;
+        const section = document.getElementById("console-log-section");
+        const logEl = document.getElementById("log");
+        const cb = document.getElementById("logbook-toggle");
+        const inlineBtn = document.getElementById("console-log-toggle");
+        // Section bleibt sichtbar; nur das Log selbst togglet (V8.14 Vision).
+        if (section) section.hidden = false;
+        const applyExpanded = (value) => {
+            this.state.logbookVisible = !!value;
+            if (logEl) logEl.hidden = !value;
+            if (inlineBtn) inlineBtn.setAttribute("aria-expanded", value ? "true" : "false");
+            if (cb) cb.checked = !!value;
+            if (typeof localStorage !== "undefined") {
+                try {
+                    localStorage.setItem("anazh.logbookVisible", value ? "1" : "0");
+                } catch {
+                    /* ignore */
+                }
+            }
+        };
+        applyExpanded(expanded);
+        if (cb) {
+            cb.addEventListener("change", () => applyExpanded(!!cb.checked));
+        }
+        if (inlineBtn) {
+            inlineBtn.addEventListener("click", () => {
+                applyExpanded(!this.state.logbookVisible);
+            });
+        }
+    }
+
     // Welle 6.C3 — Keybindings-UI: pro Aktion eine Zeile mit Label, aktueller
     // Taste und „Ändern"-Button. Klick → Rebind-Capture-Modus, der nächste
     // Tastendruck oder Maus-Button bindet. Reset-Button stellt Defaults wieder
@@ -21735,7 +22472,15 @@ class AnazhRealm {
             const bp = this.state.blueprints[name];
             if (!bp || bp.builtIn) continue;
             if (bp.role === "armor") armorBlueprints.push(name);
-            else if (!bp.role) candidateBlueprints.push(name);
+            // Welle 6.X.1 A3 — Audit 17.05.2026: Markier-Sektion zeigte vorher
+            // NUR Baupläne ohne Rolle (`!bp.role`). Welle 9a's emergente
+            // _refreshBlueprintRoleEmergent setzt aber bei jedem applyOpToPart
+            // eine Rolle (z.B. „tool" für forging+scharf). Damit verschwanden
+            // alle Baupläne mit opChain aus der Markier-UI — Schöpfer konnte
+            // sie nicht mehr als Rüstung markieren. Jetzt: alle eigenen Baupläne
+            // außer denen mit explizitem Manual-Override (bp.roleManual=true)
+            // werden Markier-Kandidaten. Explizite Geste sticht emergente Rolle.
+            else if (!bp.roleManual) candidateBlueprints.push(name);
         }
         for (const name of armorBlueprints) {
             const bp = this.state.blueprints[name];
@@ -22215,6 +22960,44 @@ class AnazhRealm {
             tagLine.textContent = "Stark: " + sorted.map((s) => `${s.k} ${s.v.toFixed(2)}`).join(" · ");
             container.appendChild(tagLine);
         }
+        // Welle 6.X.1 A3 — Equipped-Anzeige (Audit 17.05.2026): bisher war
+        // unsichtbar OB überhaupt ein Werkzeug/Rüstung ausgerüstet ist.
+        // Spieler musste in den Spieler-Drawer scrollen und Dropdown lesen.
+        // Stats-Panel zeigt jetzt direkt unter den Werten was getragen wird.
+        const equipped = (this.state.player && this.state.player.equipped) || {};
+        if (equipped.tool || equipped.armor) {
+            const divider = document.createElement("div");
+            divider.className = "stats-divider";
+            container.appendChild(divider);
+            if (equipped.armor) {
+                const armorBp = (this.state.blueprints && this.state.blueprints[equipped.armor]) || null;
+                const row = document.createElement("div");
+                row.className = "stat-row";
+                const label = document.createElement("span");
+                label.className = "stat-label";
+                label.textContent = "Rüstung";
+                const value = document.createElement("span");
+                value.className = "stat-value";
+                value.textContent = (armorBp && armorBp.label) || equipped.armor;
+                row.appendChild(label);
+                row.appendChild(value);
+                container.appendChild(row);
+            }
+            if (equipped.tool) {
+                const tool = (this.state.tools && this.state.tools[equipped.tool]) || null;
+                const row = document.createElement("div");
+                row.className = "stat-row";
+                const label = document.createElement("span");
+                label.className = "stat-label";
+                label.textContent = "Werkzeug";
+                const value = document.createElement("span");
+                value.className = "stat-value";
+                value.textContent = (tool && tool.label) || equipped.tool;
+                row.appendChild(label);
+                row.appendChild(value);
+                container.appendChild(row);
+            }
+        }
         // Welle 6.D Etappe 2 — Aktive Boosts unten anzeigen. Label + Tag-Delta
         // links, Restzeit rechts. Wenn keine aktiv: nichts (clean state).
         const boosts = (this.state.player && this.state.player.boosts) || [];
@@ -22265,6 +23048,12 @@ class AnazhRealm {
         this.gameModeInitDOM();
         // Welle 6.H Phase 2E V2 — proaktive-Sprache-Toggle aufsetzen.
         this.creatureSpeechInitDOM();
+        // Welle 6.X.2 B1 — Logbuch-Sichtbarkeit-Toggle aufsetzen.
+        this.logbookInitDOM();
+        // Welle 6.X.4 F1 — Begleiter-Name + Avatar-Name laden + binden.
+        this.identityInitDOM();
+        // Welle 6.X.4 D2 — Drei Schieber (Master / Pings / Render-Ring).
+        this.slidersInitDOM();
         this.keybindingsInitDOM();
         this.inventoryInitDOM();
         this.creatureDrawerInitDOM();
@@ -22459,8 +23248,12 @@ class AnazhRealm {
                 }
                 return;
             }
-            this.state.keys[event.key.toLowerCase()] = true;
+            // Welle 6.X.4 V8.13 Bug-Fix — keys-Setzung NACH inInput-Check.
+            // Vorher landete jeder Buchstabe im Chat-Input auch in state.keys,
+            // sodass „was" eingeben den Avatar W-A-S laufen ließ. Im Chat-Feld
+            // bleibt state.keys unverändert (gibt der Loop nichts zum Lesen).
             if (inInput) return;
+            this.state.keys[event.key.toLowerCase()] = true;
             // Welle 6.C3 — Aktionen über Keybindings (event.code = Layout-
             // unabhängiger Code, z. B. "KeyF" statt "f"). 1-9 bleiben hard-
             // coded (Slot-Indizes, keine Aktion). Escape bleibt zusätzlich
@@ -22492,6 +23285,31 @@ class AnazhRealm {
                 // idempotent — _zoomActive-Flag verhindert doppelte FOV-Sätze).
                 if (this.state.uiActiveDrawer !== "werkstatt") {
                     this.setZoomActive(true);
+                    event.preventDefault();
+                }
+            } else if (action === "cameraToggle") {
+                // V8.17 — Camera-Mode toggeln (1st/3rd) jetzt action-basiert.
+                this.setCameraMode(this.state.cameraMode === "first" ? "third" : "first");
+                event.preventDefault();
+            } else if (
+                action === "drawerWelt" ||
+                action === "drawerKreaturen" ||
+                action === "drawerSpieler" ||
+                action === "drawerWerkstatt" ||
+                action === "drawerEinstellungen"
+            ) {
+                // V8.17 — Drawer-Shortcuts action-basiert (rebindable).
+                // Im Bau-Modus deaktiviert um nicht mit F/B zu kollidieren.
+                const drawerNames = {
+                    drawerWelt: "welt",
+                    drawerKreaturen: "kreaturen",
+                    drawerSpieler: "spieler",
+                    drawerWerkstatt: "werkstatt",
+                    drawerEinstellungen: "einstellungen",
+                };
+                const drawer = drawerNames[action];
+                if (drawer && !this.state.buildMode.active) {
+                    this.toggleDrawer(drawer);
                     event.preventDefault();
                 }
             }
@@ -22538,6 +23356,49 @@ class AnazhRealm {
                 event.preventDefault();
             }
         });
+        // Welle 6.X.2 B4 (Audit 17.05.2026) — Scrollrad zyklt durch Hotbar-
+        // Slots (Minecraft-Konvention). deltaY > 0 → nächster, < 0 → voriger.
+        // Modulo 9 erlaubt Rollover am Ende.
+        //
+        // **V8.13 Browser-Test-Fix**: Listener ist jetzt auf `window` (Capture)
+        // statt auf `canvas`. Bei Pointer-Lock leitet der Browser Wheel-Events
+        // auf das gelocked Element weiter, sodass canvas-Listener funktioniert.
+        // Bei NICHT-Pointer-Lock (Drawer offen) geht's auf den Drawer-Container,
+        // und der Canvas sieht das Event nicht. Window-Capture fängt alle.
+        // Die Werkstatt-CAD-Canvas hat einen eigenen Wheel-Listener mit
+        // `stopPropagation`, der unseren window-Listener gar nicht erreicht —
+        // CAD-Zoom bleibt also unverändert.
+        window.addEventListener(
+            "wheel",
+            (event) => {
+                if (this.state.inventoryOpen) return;
+                if (this.state.keybindRebind) return;
+                // V8.17 — toleranter Pfad. Schöpfer berichtete dass Mausrad
+                // nichts tut. Gründe können vielfältig sein (Browser leitet
+                // Event nicht weiter, Pointer-Lock instabil, etc.). Statt
+                // strict isPointerLocked erlauben wir Mausrad solange das
+                // Event aus dem WORLD-Canvas-Bereich kommt (target check),
+                // KEIN offener Drawer im Vordergrund (uiActiveDrawer null),
+                // und kein Form-Input fokussiert ist.
+                const target = event.target;
+                const inInput =
+                    target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
+                if (inInput) return;
+                // Wenn ein Drawer offen ist (target im Drawer), Native-Scroll lassen.
+                if (target && typeof target.closest === "function" && target.closest(".drawer")) return;
+                // CAD-Werkstatt-Canvas hat eigenen Wheel-Handler (Zoom),
+                // den nicht überschreiben.
+                if (target && typeof target.closest === "function" && target.closest("#workshop-preview-canvas"))
+                    return;
+                event.preventDefault();
+                const bm = this.state.buildMode || {};
+                const current = typeof bm.slotIndex === "number" && bm.slotIndex >= 0 ? bm.slotIndex : 0;
+                const dir = event.deltaY > 0 ? 1 : -1;
+                const next = (current + dir + 9) % 9;
+                this.selectHotbarSlot(next);
+            },
+            { passive: false, capture: true }
+        );
         document.addEventListener("pointerlockchange", () => {
             this.state.isPointerLocked = document.pointerLockElement === canvas;
             this.log(`Pointer-Lock: ${this.state.isPointerLocked ? "Aktiv" : "Inaktiv"}`, "INFO");
@@ -22581,6 +23442,29 @@ class AnazhRealm {
         this.log("Hauptschleife gestartet – Ultiversum pulsiert!", "INFO");
     }
 
+    // Welle 6.X.3 C3 (Audit 17.05.2026) — Soul-bound Sprung-Steilheits-Check.
+    // Wenn Spieler auf zu steilem Hang steht (state.onSteepSlope), prüft das
+    // System ob der aktuelle Soul-Mesh leicht-genug ist um sich abzudrücken.
+    // Formel `0.7 × lebendig - 0.3 × dichte` aus Audit-Detail (wave-6-design):
+    //   Phönix (lebendig=0.80, dichte=0.46) → 0.42 → kann (Schwelle 0.4)
+    //   Drache (lebendig=0.80, dichte=0.71) → 0.35 → kann nicht
+    //   Mensch (lebendig=0.70, dichte=0.60) → 0.31 → kann nicht
+    // Custom-Souls mit hoher lebendig + niedriger dichte sind Klettermeister.
+    //
+    // **Modus-Override**: schöpfer + frieden überspringen den Check (Vision
+    // §10.1 — Schöpfer kennt keine Friction; Frieden umarmt). Nur pfad-Modus
+    // erlebt die Steilheits-Reibung. Hylomorphismus auf Sprung-Mechanik.
+    _canSoulJumpFromSlope() {
+        if (!this.state.onSteepSlope) return true;
+        const mode = this.getGameMode ? this.getGameMode() : "frieden";
+        if (mode !== "pfad") return true;
+        const tags = (this.state.player && this.state.player.statTags) || {};
+        const lebendig = typeof tags.lebendig === "number" ? tags.lebendig : 0.5;
+        const dichte = typeof tags.dichte === "number" ? tags.dichte : 0.5;
+        const score = 0.7 * lebendig - 0.3 * dichte;
+        return score >= 0.4;
+    }
+
     handleJump(currentTime) {
         // ### Sprunglogik ###
         // Zweck: Abstrahiert Sprungmechanik für bessere Wartbarkeit
@@ -22588,6 +23472,14 @@ class AnazhRealm {
             const isGrounded = this.isPlayerGrounded();
             const withinCoyoteTime = currentTime - this.state.lastGroundedTime <= this.state.coyoteTime;
             if ((isGrounded || withinCoyoteTime) && !this.state.isJumping) {
+                // Welle 6.X.3 C3 — Soul-bound: Drache rutscht, Phönix klettert.
+                if (!this._canSoulJumpFromSlope()) return;
+                // Welle 6.X.1 A1 — Ammo deaktiviert „still stehende" Bodies. Ohne
+                // explizites activate(true) verpufft setLinearVelocity, weil der
+                // Body in der Island schläft. forceActivationState im Bewegungs-
+                // Pfad weckt nur bei Lauf — beim Stand-Sprung musste der Body
+                // sonst erst durch einen Mikro-Move geweckt werden.
+                this.state.playerBody.activate(true);
                 const velocity = this.state.playerBody.getLinearVelocity();
                 this.state.playerBody.setLinearVelocity(
                     this.setVec(this.state.tmpVec1, velocity.x(), this.state.jumpPower, velocity.z())
@@ -22693,6 +23585,10 @@ class AnazhRealm {
             // ### Player-Aura (Welle 6.D Etappe 3b) ###
             // Position folgt playerMesh, Farbe aus dominanter Tag-Achse + HP%.
             this.tickPlayerAura();
+
+            // ### Stats-HUD (Welle 6.X.4 B3) ###
+            // HP/Stamina-Bars über der Hotbar, throttled auf 10 Hz.
+            this.tickStatsHud(currentTime);
 
             // ### Symphonie-Wetter-Layer (Ring 4) ###
             this.symphonyTick();
@@ -22889,7 +23785,17 @@ class AnazhRealm {
                 if (this.state.keys[" "] && !this.state.isJumping) {
                     const isGrounded = this.isPlayerGrounded();
                     const withinCoyoteTime = currentTime - this.state.lastGroundedTime <= this.state.coyoteTime;
-                    if (isGrounded || withinCoyoteTime) {
+                    // Welle 6.X.3 C3 — Soul-bound Steilheits-Toleranz prüft
+                    // ob der Soul leicht genug zum Abdrücken am Hang ist.
+                    // Bei false: Sprung-Block wird übersprungen, restlicher
+                    // Update-Loop (Selbstanalyse, Wolken, Lebensdauer …) läuft
+                    // weiter wie gewohnt.
+                    if ((isGrounded || withinCoyoteTime) && this._canSoulJumpFromSlope()) {
+                        // Welle 6.X.1 A1 — siehe handleJump: Body wecken vor Velocity.
+                        // Im Loop-Jump-Pfad wird nur bei moveDirection.length() > 0
+                        // ein forceActivationState aufgerufen — Stand-Sprung würde
+                        // sonst verpuffen wenn der Body im Ammo-Sleep ist.
+                        playerBody.activate(true);
                         const jumpForce = this.state.jumpPower;
                         const currentVelocity = playerBody.getLinearVelocity();
                         playerBody.setLinearVelocity(
@@ -22965,7 +23871,13 @@ class AnazhRealm {
             const playerChunkZ = Math.floor((playerPos.z + 150) / csW);
             let chunksThisFrame = 0;
             const MAX_PER_FRAME = 2;
-            const RING_RADIUS = 2;
+            // Welle 6.X.4 D2 — RING_RADIUS aus state.chunkRingRadius (1..4),
+            // default 2. 1 = 3×3 Chunks, 2 = 5×5, 3 = 7×7, 4 = 9×9. Höhere
+            // Werte = mehr Welt sichtbar, mehr Generations-Last bei Bewegung.
+            const RING_RADIUS = Math.max(
+                1,
+                Math.min(4, typeof this.state.chunkRingRadius === "number" ? this.state.chunkRingRadius : 2)
+            );
             outer: for (let r = 0; r <= RING_RADIUS; r++) {
                 for (let dz = -r; dz <= r; dz++) {
                     for (let dx = -r; dx <= r; dx++) {
@@ -23105,6 +24017,25 @@ class AnazhRealm {
     isPlayerGrounded() {
         if (!this.state.playerBody || !this.state.physicsWorld) return false;
 
+        // Welle 6.X.5 D1 (Audit 17.05.2026) — Cache für 2 Frames. Im Loop
+        // wird isPlayerGrounded bis zu drei Mal pro Frame gerufen (Bewegung,
+        // Sprung-Block, Ground-Track), zusätzlich aus handleJump. 9 Raycasts
+        // × 3 Calls = 27 Raycasts/Frame nur für Erdung. Bei 60 fps sind das
+        // ~1620 Raycasts/Sekunde. Mit 2-Frame-TTL fällt das auf ~540/Sek
+        // (ein Drittel), spürbar weniger Physics-Last bei vielen Compound-
+        // Bodies in der Nähe. Cache wird auf state geführt damit alle drei
+        // Call-Sites davon profitieren — derselbe Frame liefert dasselbe
+        // Resultat (kein Mid-Frame-State-Drift).
+        const now = performance.now();
+        if (
+            typeof this.state._groundedCachedAt === "number" &&
+            now - this.state._groundedCachedAt < 33 // ~2 Frames bei 60 fps
+        ) {
+            // Side-effect bestNormalY + onSteepSlope wurden beim ersten Call
+            // dieses Frames bereits gesetzt — keine Notwendigkeit zu wiederholen.
+            return this.state._groundedCache === true;
+        }
+
         const rays = [
             { offsetX: 0, offsetZ: 0 },
             { offsetX: 0.45, offsetZ: 0 },
@@ -23170,6 +24101,12 @@ class AnazhRealm {
 
         this.state.groundNormalY = isGrounded ? bestNormalY : 1.0;
         this.state.onSteepSlope = isGrounded && bestNormalY < this.state.maxWalkableSlopeY;
+
+        // Welle 6.X.5 D1 — Cache-Set am Ende des frischen Compute. Side-effects
+        // (groundNormalY, onSteepSlope) sind oben bereits aktualisiert; Cache-
+        // Hits in den nächsten 2 Frames lesen die nun stehen-gelassenen Werte.
+        this.state._groundedCache = isGrounded;
+        this.state._groundedCachedAt = now;
 
         // Entferne manuelle Korrekturen, da Ammo.btHeightfieldTerrainShape die Kollisionen übernimmt
         return isGrounded;
@@ -23442,6 +24379,15 @@ AnazhRealm.DEFAULT_KEYBINDINGS = Object.freeze({
     inventory: "Tab",
     cancelBuild: "Escape",
     jump: "Space",
+    // V8.17 — Drawer + Camera-Toggle als rebindable Aktionen. Vorher
+    // hardcoded in keydown-Listener; jetzt durch _actionForBindingCode-
+    // Pfad damit Spieler sie in Einstellungen ändern kann.
+    drawerWelt: "KeyM",
+    drawerKreaturen: "KeyK",
+    drawerSpieler: "KeyP",
+    drawerWerkstatt: "KeyB",
+    drawerEinstellungen: "KeyI",
+    cameraToggle: "KeyV",
 });
 AnazhRealm.KEYBINDING_ACTIONS = Object.freeze(Object.keys(AnazhRealm.DEFAULT_KEYBINDINGS));
 AnazhRealm.KEYBINDING_LABELS = Object.freeze({
@@ -23451,6 +24397,12 @@ AnazhRealm.KEYBINDING_LABELS = Object.freeze({
     inventory: "Inventar öffnen",
     cancelBuild: "Bau-Modus verlassen",
     jump: "Springen",
+    drawerWelt: "Welt-Drawer öffnen",
+    drawerKreaturen: "Kreaturen-Drawer öffnen",
+    drawerSpieler: "Spieler-Drawer öffnen",
+    drawerWerkstatt: "Werkstatt-Drawer öffnen",
+    drawerEinstellungen: "Einstellungen-Drawer öffnen",
+    cameraToggle: "Kamera: 1st/3rd-Person",
 });
 
 // Welle 6.H Phase 2A — Kreatur-Seelen als Hylomorphismus-Compounds.
