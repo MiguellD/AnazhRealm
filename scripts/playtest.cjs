@@ -10496,6 +10496,131 @@ function startSaveServer() {
                 );
             }
 
+            // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider (Audit 17.05.2026) ###
+            const wave6x4bResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // --- B3: Stats-HUD DOM-Existenz
+                    out.statsHudExists = !!document.getElementById("stats-hud");
+                    out.statsHudHpFillExists = !!document.getElementById("stats-hud-hp-fill");
+                    out.statsHudStamFillExists = !!document.getElementById("stats-hud-stam-fill");
+                    out.statsHudTooltipExists = !!document.getElementById("stats-hud-tooltip");
+                    out.tickStatsHudMethodExists = typeof r.tickStatsHud === "function";
+
+                    // --- B3: tickStatsHud aktualisiert HP-Text + Bar-Width
+                    r.state.hp = 50;
+                    r.state.hpMax = 100;
+                    r.state.stamina = 75;
+                    r.state.staminaMax = 100;
+                    // Force-Update durch Reset des Throttles
+                    delete r.state._statsHudLastTick;
+                    delete r.state._statsHudTooltipLastTick;
+                    r.tickStatsHud(performance.now() / 1000);
+                    const hpText = document.getElementById("stats-hud-hp-text");
+                    out.hpTextShowsRatio = !!hpText && /50\/100/.test(hpText.textContent);
+                    const stamText = document.getElementById("stats-hud-stam-text");
+                    out.stamTextShowsRatio = !!stamText && /75\/100/.test(stamText.textContent);
+                    const hpFill = document.getElementById("stats-hud-hp-fill");
+                    out.hpFillProportional =
+                        !!hpFill && Math.abs(parseFloat(hpFill.getAttribute("width")) - 79) < 1; // 158 × 0.5 ≈ 79
+
+                    // --- B3: Tooltip enthält slow stats nach Hover
+                    r.tickStatsHud(performance.now() / 1000 + 2); // +2s damit Tooltip-Throttle nicht greift
+                    const tooltip = document.getElementById("stats-hud-tooltip");
+                    out.tooltipHasDamage = !!tooltip && /Schaden/.test(tooltip.innerHTML);
+                    out.tooltipHasSpeed = !!tooltip && /Geschwindigk/.test(tooltip.innerHTML);
+                    out.tooltipHasPrecision = !!tooltip && /Präzision/.test(tooltip.innerHTML);
+
+                    // --- D2: state-Felder + UI-Slider existieren
+                    out.masterVolDefault = r.state.symphony.masterVolume === 1.0;
+                    out.pingVolDefault = r.state.symphony.creaturePingVolume === 1.0;
+                    out.ringRadiusDefault = r.state.chunkRingRadius === 2;
+                    out.slidersInitMethodExists = typeof r.slidersInitDOM === "function";
+                    out.slidersSectionExists = !!document.getElementById("sliders-section");
+                    out.masterSliderExists = !!document.getElementById("slider-master");
+                    out.pingsSliderExists = !!document.getElementById("slider-pings");
+                    out.ringSliderExists = !!document.getElementById("slider-ring");
+
+                    // --- D2: Master-Slider ändert state + Persistenz
+                    const ms = document.getElementById("slider-master");
+                    if (ms) {
+                        ms.value = "50";
+                        ms.dispatchEvent(new Event("input"));
+                        out.masterSliderUpdates = Math.abs(r.state.symphony.masterVolume - 0.5) < 0.01;
+                        out.masterSliderPersists =
+                            typeof localStorage !== "undefined" &&
+                            Math.abs(parseFloat(localStorage.getItem("anazh.audio.masterVol")) - 0.5) < 0.01;
+                        // Reset auf default
+                        ms.value = "100";
+                        ms.dispatchEvent(new Event("input"));
+                    }
+
+                    // --- D2: Pings-Slider beeinflusst playCreaturePing-Peak
+                    const ps = document.getElementById("slider-pings");
+                    if (ps) {
+                        ps.value = "0";
+                        ps.dispatchEvent(new Event("input"));
+                        out.pingsSliderUpdates = r.state.symphony.creaturePingVolume === 0;
+                        ps.value = "100";
+                        ps.dispatchEvent(new Event("input"));
+                    }
+
+                    // --- D2: Ring-Slider ändert chunkRingRadius
+                    const rs = document.getElementById("slider-ring");
+                    if (rs) {
+                        rs.value = "3";
+                        rs.dispatchEvent(new Event("input"));
+                        out.ringSliderUpdates = r.state.chunkRingRadius === 3;
+                        const rsv = document.getElementById("slider-ring-val");
+                        out.ringValueDisplaysCorrectly = !!rsv && rsv.textContent === "7×7";
+                        rs.value = "2";
+                        rs.dispatchEvent(new Event("input"));
+                    }
+
+                    // --- D2: playCreaturePing-Source enthält creaturePingVolume
+                    const pcpSrc = r.playCreaturePing.toString();
+                    out.pingsSourceUsesVolume = /creaturePingVolume/.test(pcpSrc);
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6x4bResults && !wave6x4bResults.error) {
+                check("Welle 6.X.4 B3: #stats-hud im DOM", wave6x4bResults.statsHudExists);
+                check("Welle 6.X.4 B3: #stats-hud-hp-fill SVG-Element existiert", wave6x4bResults.statsHudHpFillExists);
+                check("Welle 6.X.4 B3: #stats-hud-stam-fill SVG-Element existiert", wave6x4bResults.statsHudStamFillExists);
+                check("Welle 6.X.4 B3: #stats-hud-tooltip im DOM", wave6x4bResults.statsHudTooltipExists);
+                check("Welle 6.X.4 B3: tickStatsHud-Methode existiert", wave6x4bResults.tickStatsHudMethodExists);
+                check("Welle 6.X.4 B3: HP-Text zeigt 50/100 nach Setzen", wave6x4bResults.hpTextShowsRatio);
+                check("Welle 6.X.4 B3: Stamina-Text zeigt 75/100 nach Setzen", wave6x4bResults.stamTextShowsRatio);
+                check("Welle 6.X.4 B3: HP-Fill-Width proportional (50% → 79px von 158px)", wave6x4bResults.hpFillProportional);
+                check("Welle 6.X.4 B3: Tooltip enthält Schaden", wave6x4bResults.tooltipHasDamage);
+                check("Welle 6.X.4 B3: Tooltip enthält Geschwindigkeit", wave6x4bResults.tooltipHasSpeed);
+                check("Welle 6.X.4 B3: Tooltip enthält Präzision", wave6x4bResults.tooltipHasPrecision);
+                check("Welle 6.X.4 D2: state.symphony.masterVolume default 1.0", wave6x4bResults.masterVolDefault);
+                check("Welle 6.X.4 D2: state.symphony.creaturePingVolume default 1.0", wave6x4bResults.pingVolDefault);
+                check("Welle 6.X.4 D2: state.chunkRingRadius default 2", wave6x4bResults.ringRadiusDefault);
+                check("Welle 6.X.4 D2: slidersInitDOM-Methode existiert", wave6x4bResults.slidersInitMethodExists);
+                check("Welle 6.X.4 D2: #sliders-section im DOM", wave6x4bResults.slidersSectionExists);
+                check("Welle 6.X.4 D2: #slider-master im DOM", wave6x4bResults.masterSliderExists);
+                check("Welle 6.X.4 D2: #slider-pings im DOM", wave6x4bResults.pingsSliderExists);
+                check("Welle 6.X.4 D2: #slider-ring im DOM", wave6x4bResults.ringSliderExists);
+                check("Welle 6.X.4 D2: Master-Slider ändert state.symphony.masterVolume", wave6x4bResults.masterSliderUpdates);
+                check("Welle 6.X.4 D2: Master-Slider persistiert in localStorage", wave6x4bResults.masterSliderPersists);
+                check("Welle 6.X.4 D2: Pings-Slider ändert state.symphony.creaturePingVolume", wave6x4bResults.pingsSliderUpdates);
+                check("Welle 6.X.4 D2: Ring-Slider ändert state.chunkRingRadius", wave6x4bResults.ringSliderUpdates);
+                check("Welle 6.X.4 D2: Ring-Wert-Display zeigt '7×7' bei value=3", wave6x4bResults.ringValueDisplaysCorrectly);
+                check("Welle 6.X.4 D2: playCreaturePing-Source nutzt creaturePingVolume", wave6x4bResults.pingsSourceUsesVolume);
+            } else {
+                check(
+                    "Welle 6.X.4 B3+D2: Stats-HUD + Slider-Tests laufen",
+                    false,
+                    wave6x4bResults ? wave6x4bResults.error : "no result"
+                );
+            }
+
             // ### Welle 6.H Phase 2B.2 — Kreatur baut Bauplan für Spieler ###
             //
             // Geste-Umkehrung zu gather: Spieler ist Material-Quelle, Kreatur

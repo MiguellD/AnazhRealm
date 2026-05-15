@@ -341,9 +341,24 @@ class AnazhRealm {
             // AudioContext bleibt null bis der Spieler über den Toggle eine
             // Geste macht (Browser-Policy). Headless-Playtest umgeht das mit
             // --autoplay-policy=no-user-gesture-required.
+            // Welle 6.X.4 D2 (Audit 17.05.2026) — Render-Distanz-Schieber.
+            // RING_RADIUS war hardcoded 2 (5×5 Chunks). Mit chunkRingRadius
+            // 1..4 wählbar (3×3 bis 9×9 Chunks). Höhere Werte = mehr Welt
+            // sichtbar, mehr GPU-Last beim Generieren neuer Chunks. Default
+            // 2 (5×5, historisches Verhalten). Persistiert in localStorage.
+            chunkRingRadius: 2,
             symphony: {
                 ctx: null,
                 enabled: false,
+                // Welle 6.X.4 D2 — Audio-Volumes (0..1). masterVolume gilt
+                // für alle Symphonie-Schichten (ambient + weather + ping +
+                // hover). creaturePingVolume zusätzlich nur für die
+                // Spawn/Aktion-Pings der Kreaturen (separat einstellbar
+                // damit man die laufende Welt-Atmosphäre laut, aber die
+                // Pop-Pings dezent halten kann). Multiplikatoren auf den
+                // jeweiligen GainNode bzw. inline-Gain.
+                masterVolume: 1.0,
+                creaturePingVolume: 1.0,
                 masterGain: null,
                 ambient: null, // { osc1, osc2, lfo, lfoGain, filter, gain }
                 weather: null, // { noise, filter, gain }
@@ -5034,7 +5049,12 @@ class AnazhRealm {
         }
         // Master-Bus
         const masterGain = ctx.createGain();
-        masterGain.gain.value = 0.35;
+        // Welle 6.X.4 D2 — Master-Volume aus state.symphony.masterVolume
+        // (0..1, default 1.0). Multipliziert mit der historischen Base 0.35
+        // damit Default-Verhalten unverändert bleibt. Schieber im UI mutiert
+        // masterGain.gain.value live (siehe slidersInitDOM).
+        const masterVol = typeof this.state.symphony.masterVolume === "number" ? this.state.symphony.masterVolume : 1.0;
+        masterGain.gain.value = 0.35 * masterVol;
         masterGain.connect(ctx.destination);
 
         // Ambient: zwei sehr leise Sägezahn-Oszillatoren, leicht verstimmt
@@ -5135,9 +5155,14 @@ class AnazhRealm {
         osc.type = "sine";
         osc.frequency.value = freq;
         const gain = ctx.createGain();
+        // Welle 6.X.4 D2 — Peak-Gain skaliert mit creaturePingVolume (0..1).
+        // Default 1.0 ergibt Peak 0.12 (historisches Verhalten). Spieler
+        // kann Pings dezenter machen wenn die Welt mit Kreaturen voll ist.
+        const pingVol = typeof s.creaturePingVolume === "number" ? s.creaturePingVolume : 1.0;
+        const peak = 0.12 * pingVol;
         // Kurzes Envelope: 5 ms Attack, 200 ms Decay.
         gain.gain.setValueAtTime(0, t);
-        gain.gain.linearRampToValueAtTime(0.12, t + 0.005);
+        gain.gain.linearRampToValueAtTime(peak, t + 0.005);
         gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.25);
         osc.connect(gain);
         gain.connect(s.masterGain);
@@ -21630,6 +21655,150 @@ class AnazhRealm {
         }
     }
 
+    // Welle 6.X.4 B3 (Audit 17.05.2026) — Stats-HUD über der Hotbar.
+    // Zwei SVG-Bars für HP + Stamina, painterly Pergament-Stil. Hover
+    // offenbart slow stats (Damage/Speed/Präzision/MagicResist/HeatResist)
+    // im Tooltip. Refresh läuft pro Frame im Game-Loop, throttled auf
+    // ~10 Hz weil HP/Stamina sich nur in Sub-Sekunden-Schritten ändern.
+    tickStatsHud(currentTime) {
+        if (typeof document === "undefined") return;
+        const last = this.state._statsHudLastTick || 0;
+        if (currentTime - last < 0.1) return; // 10 Hz Throttle
+        this.state._statsHudLastTick = currentTime;
+        const hpFill = document.getElementById("stats-hud-hp-fill");
+        const hpText = document.getElementById("stats-hud-hp-text");
+        const stamFill = document.getElementById("stats-hud-stam-fill");
+        const stamText = document.getElementById("stats-hud-stam-text");
+        if (!hpFill || !hpText || !stamFill || !stamText) return;
+        const hp = Math.max(0, Math.round(this.state.hp || 0));
+        const hpMax = Math.max(1, Math.round(this.state.hpMax || 100));
+        const stam = Math.max(0, Math.round(this.state.stamina || 0));
+        const stamMax = Math.max(1, Math.round(this.state.staminaMax || 100));
+        const hpRatio = Math.max(0, Math.min(1, hp / hpMax));
+        const stamRatio = Math.max(0, Math.min(1, stam / stamMax));
+        hpFill.setAttribute("width", String(158 * hpRatio));
+        stamFill.setAttribute("width", String(158 * stamRatio));
+        hpText.textContent = `${hp}/${hpMax}`;
+        stamText.textContent = `${stam}/${stamMax}`;
+        // Tooltip alle 1 s aktualisieren (slow stats ändern sich selten —
+        // nur bei Soul/Equipped/Boost-Wechsel). Throttle damit Hover keine
+        // permanenten Re-Builds triggert.
+        const ttLast = this.state._statsHudTooltipLastTick || 0;
+        if (currentTime - ttLast < 1.0) return;
+        this.state._statsHudTooltipLastTick = currentTime;
+        const tooltip = document.getElementById("stats-hud-tooltip");
+        if (!tooltip) return;
+        const stats = (this.state.player && this.state.player.stats) || null;
+        if (!stats) {
+            tooltip.textContent = "Stats nicht initialisiert";
+            return;
+        }
+        const lines = [
+            `Schaden       ${(stats.damage || 0).toFixed(1)}`,
+            `Geschwindigk. ${(stats.speed || 0).toFixed(2)}`,
+            `Sprungkraft   ${(stats.jumpPower || 0).toFixed(2)}`,
+            `Präzision     ${(stats.precision || 0).toFixed(2)}`,
+            `Magie-Resist  ${(stats.magicResist || 0).toFixed(2)}`,
+            `Hitze-Resist  ${(stats.heatResist || 0).toFixed(2)}`,
+        ];
+        // Plus equipped + boosts kurz
+        const eq = (this.state.player && this.state.player.equipped) || {};
+        if (eq.tool) lines.push(`Werkzeug      ${eq.tool}`);
+        if (eq.armor) lines.push(`Rüstung       ${eq.armor}`);
+        const boosts = (this.state.player && this.state.player.boosts) || [];
+        const now = performance.now() / 1000;
+        const activeBoosts = boosts.filter((b) => b.expiresAt > now);
+        if (activeBoosts.length > 0) {
+            lines.push(`Boosts        ${activeBoosts.length}`);
+        }
+        // <br>-getrennt damit das Tooltip schmal bleibt
+        tooltip.innerHTML = lines.join("<br>");
+    }
+
+    // Welle 6.X.4 D2 (Audit 17.05.2026) — Drei Schieber: Master-Volume,
+    // Kreatur-Pings-Volume, Render-Ring-Radius. Lädt persistierte Werte
+    // aus localStorage. Master + Pings wirken live auf state.symphony +
+    // playCreaturePing-Peak. Render-Ring greift im nächsten worldgen-Tick.
+    slidersInitDOM() {
+        if (typeof document === "undefined") return;
+        // Persistierte Werte laden
+        if (typeof localStorage !== "undefined") {
+            try {
+                const mv = parseFloat(localStorage.getItem("anazh.audio.masterVol"));
+                if (Number.isFinite(mv) && mv >= 0 && mv <= 1) this.state.symphony.masterVolume = mv;
+                const pv = parseFloat(localStorage.getItem("anazh.audio.pingVol"));
+                if (Number.isFinite(pv) && pv >= 0 && pv <= 1) this.state.symphony.creaturePingVolume = pv;
+                const rr = parseInt(localStorage.getItem("anazh.world.ringRadius"), 10);
+                if (Number.isFinite(rr) && rr >= 1 && rr <= 4) this.state.chunkRingRadius = rr;
+            } catch {
+                /* ignore */
+            }
+        }
+        // Helper: Ring-Radius zu Format-String (1 → "3×3", 2 → "5×5", …)
+        const ringText = (r) => `${r * 2 + 1}×${r * 2 + 1}`;
+        // Master Slider
+        const ms = document.getElementById("slider-master");
+        const msv = document.getElementById("slider-master-val");
+        if (ms) {
+            ms.value = String(Math.round((this.state.symphony.masterVolume || 1) * 100));
+            if (msv) msv.textContent = `${ms.value}%`;
+            ms.addEventListener("input", () => {
+                const v = parseFloat(ms.value) / 100;
+                this.state.symphony.masterVolume = v;
+                if (msv) msv.textContent = `${ms.value}%`;
+                // Live-Update wenn Audio-Graph läuft
+                if (this.state.symphony.masterGain) {
+                    this.state.symphony.masterGain.gain.value = 0.35 * v;
+                }
+                if (typeof localStorage !== "undefined") {
+                    try {
+                        localStorage.setItem("anazh.audio.masterVol", String(v));
+                    } catch {
+                        /* ignore */
+                    }
+                }
+            });
+        }
+        // Pings Slider
+        const ps = document.getElementById("slider-pings");
+        const psv = document.getElementById("slider-pings-val");
+        if (ps) {
+            ps.value = String(Math.round((this.state.symphony.creaturePingVolume || 1) * 100));
+            if (psv) psv.textContent = `${ps.value}%`;
+            ps.addEventListener("input", () => {
+                const v = parseFloat(ps.value) / 100;
+                this.state.symphony.creaturePingVolume = v;
+                if (psv) psv.textContent = `${ps.value}%`;
+                if (typeof localStorage !== "undefined") {
+                    try {
+                        localStorage.setItem("anazh.audio.pingVol", String(v));
+                    } catch {
+                        /* ignore */
+                    }
+                }
+            });
+        }
+        // Ring-Radius Slider
+        const rs = document.getElementById("slider-ring");
+        const rsv = document.getElementById("slider-ring-val");
+        if (rs) {
+            rs.value = String(this.state.chunkRingRadius || 2);
+            if (rsv) rsv.textContent = ringText(parseInt(rs.value, 10));
+            rs.addEventListener("input", () => {
+                const v = Math.max(1, Math.min(4, parseInt(rs.value, 10)));
+                this.state.chunkRingRadius = v;
+                if (rsv) rsv.textContent = ringText(v);
+                if (typeof localStorage !== "undefined") {
+                    try {
+                        localStorage.setItem("anazh.world.ringRadius", String(v));
+                    } catch {
+                        /* ignore */
+                    }
+                }
+            });
+        }
+    }
+
     // Welle 6.X.4 F1 (Audit 17.05.2026) — Begleiter-Name + Avatar-Name.
     // Lädt persistierte Werte aus localStorage und bindet die zwei Inputs
     // an die state-Felder. Beide werden im LLM-System-Prompt referenziert.
@@ -22470,6 +22639,8 @@ class AnazhRealm {
         this.logbookInitDOM();
         // Welle 6.X.4 F1 — Begleiter-Name + Avatar-Name laden + binden.
         this.identityInitDOM();
+        // Welle 6.X.4 D2 — Drei Schieber (Master / Pings / Render-Ring).
+        this.slidersInitDOM();
         this.keybindingsInitDOM();
         this.inventoryInitDOM();
         this.creatureDrawerInitDOM();
@@ -22952,6 +23123,10 @@ class AnazhRealm {
             // Position folgt playerMesh, Farbe aus dominanter Tag-Achse + HP%.
             this.tickPlayerAura();
 
+            // ### Stats-HUD (Welle 6.X.4 B3) ###
+            // HP/Stamina-Bars über der Hotbar, throttled auf 10 Hz.
+            this.tickStatsHud(currentTime);
+
             // ### Symphonie-Wetter-Layer (Ring 4) ###
             this.symphonyTick();
 
@@ -23233,7 +23408,13 @@ class AnazhRealm {
             const playerChunkZ = Math.floor((playerPos.z + 150) / csW);
             let chunksThisFrame = 0;
             const MAX_PER_FRAME = 2;
-            const RING_RADIUS = 2;
+            // Welle 6.X.4 D2 — RING_RADIUS aus state.chunkRingRadius (1..4),
+            // default 2. 1 = 3×3 Chunks, 2 = 5×5, 3 = 7×7, 4 = 9×9. Höhere
+            // Werte = mehr Welt sichtbar, mehr Generations-Last bei Bewegung.
+            const RING_RADIUS = Math.max(
+                1,
+                Math.min(4, typeof this.state.chunkRingRadius === "number" ? this.state.chunkRingRadius : 2)
+            );
             outer: for (let r = 0; r <= RING_RADIUS; r++) {
                 for (let dz = -r; dz <= r; dz++) {
                     for (let dx = -r; dx <= r; dx++) {
