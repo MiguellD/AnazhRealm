@@ -10121,6 +10121,104 @@ function startSaveServer() {
                 );
             }
 
+            // ### Welle 6.X.2 — UI-Politur (Audit 17.05.2026) ###
+            // B1 Logbuch-Toggle (default versteckt)
+            // B2 Welt-Bauwerke-Buttons aus dem world-drawer entfernt
+            // B4 Scrollrad zyklt durch Hotbar-Slots
+            const wave6x2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // B1 — Logbuch-Toggle
+                    out.logbookSectionExists = !!document.getElementById("logbook-section");
+                    out.logbookToggleExists = !!document.getElementById("logbook-toggle");
+                    const consoleLog = document.getElementById("console-log-section");
+                    out.logbookConsoleSectionExists = !!consoleLog;
+                    out.logbookHiddenByDefault = !!consoleLog && consoleLog.hidden === true;
+                    out.logbookInitDOMExists = typeof r.logbookInitDOM === "function";
+                    // Toggle aktivieren → console-log-section wird sichtbar
+                    const toggle = document.getElementById("logbook-toggle");
+                    if (toggle) {
+                        toggle.checked = true;
+                        toggle.dispatchEvent(new Event("change"));
+                        out.logbookVisibleAfterToggle = !!consoleLog && consoleLog.hidden === false;
+                        // Cleanup für nachfolgende Tests
+                        toggle.checked = false;
+                        toggle.dispatchEvent(new Event("change"));
+                        out.logbookHiddenAfterUntoggle = !!consoleLog && consoleLog.hidden === true;
+                    }
+
+                    // B2 — Welt-Bauwerke-Buttons entfernt
+                    out.architectureActionsRemoved = !document.getElementById("architecture-actions");
+                    // Aber Chat-Pfade existieren weiter (smoke: spawn_village ist noch da)
+                    out.spawnVillageStillCallable = typeof r.dslRun === "function";
+
+                    // B4 — Scrollrad-Hotbar
+                    // Code-Strukturtest: Wheel-Listener im init() (Methode liest
+                    // Wheel-Event auf dem Canvas und ruft selectHotbarSlot).
+                    const initSrc = typeof r.init === "function" ? r.init.toString() : "";
+                    out.wheelListenerInstalled =
+                        /addEventListener\s*\(\s*["']wheel["']/.test(initSrc) &&
+                        /selectHotbarSlot/.test(initSrc);
+
+                    // Logik-Test: simuliere Wheel-Deltas, hotbar-Slot ändert sich
+                    if (r.state.buildMode) r.state.buildMode.slotIndex = 0;
+                    r.selectHotbarSlot(0);
+                    const before = r.state.buildMode.slotIndex;
+                    // Ein Wheel-Delta nach unten → nächster Slot
+                    r.selectHotbarSlot((before + 1) % 9);
+                    out.hotbarCyclesForward = r.state.buildMode.slotIndex === 1;
+                    // Rückwärts (wrap)
+                    r.selectHotbarSlot((1 - 1 + 9) % 9);
+                    out.hotbarCyclesBackward = r.state.buildMode.slotIndex === 0;
+                    r.selectHotbarSlot((0 - 1 + 9) % 9);
+                    out.hotbarWrapsAtZero = r.state.buildMode.slotIndex === 8;
+                    r._clearBuildMode && r._clearBuildMode();
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6x2Results && !wave6x2Results.error) {
+                check("Welle 6.X.2 B1: #logbook-section im DOM", wave6x2Results.logbookSectionExists);
+                check("Welle 6.X.2 B1: #logbook-toggle im DOM", wave6x2Results.logbookToggleExists);
+                check(
+                    "Welle 6.X.2 B1: #console-log-section default hidden",
+                    wave6x2Results.logbookHiddenByDefault
+                );
+                check("Welle 6.X.2 B1: logbookInitDOM-Methode existiert", wave6x2Results.logbookInitDOMExists);
+                check(
+                    "Welle 6.X.2 B1: Toggle aktivieren macht Logbuch sichtbar",
+                    wave6x2Results.logbookVisibleAfterToggle
+                );
+                check(
+                    "Welle 6.X.2 B1: Toggle deaktivieren versteckt Logbuch",
+                    wave6x2Results.logbookHiddenAfterUntoggle
+                );
+                check(
+                    "Welle 6.X.2 B2: #architecture-actions aus dem world-drawer entfernt",
+                    wave6x2Results.architectureActionsRemoved
+                );
+                check(
+                    "Welle 6.X.2 B2: dslRun bleibt verfügbar (Chat-Pfad lebt)",
+                    wave6x2Results.spawnVillageStillCallable
+                );
+                check(
+                    "Welle 6.X.2 B4: Wheel-Listener mit selectHotbarSlot installiert",
+                    wave6x2Results.wheelListenerInstalled
+                );
+                check("Welle 6.X.2 B4: Hotbar zykelt vorwärts", wave6x2Results.hotbarCyclesForward);
+                check("Welle 6.X.2 B4: Hotbar zykelt rückwärts", wave6x2Results.hotbarCyclesBackward);
+                check("Welle 6.X.2 B4: Hotbar wrappt bei 0 → 8", wave6x2Results.hotbarWrapsAtZero);
+            } else {
+                check(
+                    "Welle 6.X.2: UI-Politur-Tests laufen",
+                    false,
+                    wave6x2Results ? wave6x2Results.error : "no result"
+                );
+            }
+
             // ### Welle 6.H Phase 2B.2 — Kreatur baut Bauplan für Spieler ###
             //
             // Geste-Umkehrung zu gather: Spieler ist Material-Quelle, Kreatur

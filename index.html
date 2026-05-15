@@ -3572,16 +3572,14 @@
                     <button type="button" data-cmd="Boden deaktivieren">Boden aus</button>
                 </div>
             </section>
-            <section class="section">
-                <h3>Bauwerke</h3>
-                <p class="drawer-hint">Strukturen am Spieler platzieren (Ring 6).</p>
-                <div class="actions" id="architecture-actions">
-                    <button type="button" data-cmd="Baue Dorf hier">Dorf</button>
-                    <button type="button" data-cmd="Baue Tempel hier">Tempel</button>
-                    <button type="button" data-cmd="Baue Wasserfall hier">Wasserfall</button>
-                    <button type="button" data-cmd="Baue Fraktal Tempel">Fraktal</button>
-                </div>
-            </section>
+            <!--
+                Welle 6.X.2 B2 (Audit 17.05.2026): Bauwerke-Quick-Spawn-Sektion
+                entfernt. Hotbar (1-9) + Werkstatt-Editor sind die richtige
+                Schöpfer-Geste. Quick-Buttons hier waren Über-Komfort, der die
+                Vision-Reibung („Werkstatt erst nutzen, dann hotbar belegen,
+                dann bauen") umging und das world-Drawer überfüllte.
+                Spawn ist weiterhin via Chat („Baue Dorf hier") möglich.
+            -->
         </aside>
         <aside class="drawer" data-drawer="kreaturen" aria-label="Kreaturen-Panel" hidden>
             <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
@@ -3926,6 +3924,21 @@
                     </label>
                 </div>
             </section>
+            <!-- Welle 6.X.2 B1 (Audit 17.05.2026) — Logbuch-Sichtbarkeit.
+                 Power-User-Diagnose-Schicht ist default versteckt, damit die
+                 Konsole ruhig bleibt. Aktiv schalten zeigt das #log-Section
+                 wieder. Persistiert in localStorage. -->
+            <section class="section" id="logbook-section">
+                <h3>Logbuch</h3>
+                <p class="drawer-hint">
+                    Diagnose-Logs sind standardmäßig versteckt, damit der Chat im Vordergrund bleibt. Aktivieren für
+                    Entwickler-Sicht.
+                </p>
+                <label class="radio-label">
+                    <input type="checkbox" id="logbook-toggle" />
+                    <span>Logbuch sichtbar</span>
+                </label>
+            </section>
             <!-- Welle 6.H Phase 2E V2 — proaktive Kreatur-Sprache.
                  Kreaturen melden sich bei Level-Up, Boost-Empfang, Material-
                  Mangel etc. von selbst. Throttle 60s/Kreatur + 8s global.
@@ -4117,7 +4130,7 @@
                     <div class="console-section-label">Chat</div>
                     <div id="chat-output"></div>
                 </div>
-                <div id="console-log-section">
+                <div id="console-log-section" hidden>
                     <div class="console-section-label">Logbuch</div>
                     <div id="log"></div>
                 </div>

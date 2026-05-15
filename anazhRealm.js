@@ -13686,9 +13686,15 @@ class AnazhRealm {
             // Kamera AM Spieler-Kopf, also liegt das Sprite mitten im Sichtfeld
             // und addiert via AdditiveBlending einen Schleier auf jeden Pixel
             // (besonders beim Blick nach unten). In 3rd-Person ist es das was
-            // es sein soll: ein Schimmer um den eigenen Körper. Mitspieler
-            // (P2P) sehen die Aura sowieso nicht (kein Soul/Aura-Sync) — kein
-            // Regressions-Risiko, das wird mit Welle 11 V3 sauberer.
+            // es sein soll: ein Schimmer um den eigenen Körper.
+            // **Multi-User-Schnittstelle (Schöpfer-Frage 17.05.2026)**: dieser
+            // Hide gilt NUR meinen lokalen Renderer. Wenn ein Mitspieler in
+            // seiner 3rd-Person-Kamera meinen Avatar sieht, läuft das durch
+            // SEINEN Renderer — meine `glow.visible = false`-Setzung ist da
+            // irrelevant. Heute baut der Mitspieler-Renderer aber nur eine
+            // Cone+Sphere-Group, keine Aura. Welle 11 V3 (Soul-Sync) wird
+            // beides liefern: echter Soul-Mesh + Aura-Sync (low-freq Broadcast
+            // der dominanten Tag-Achse) — siehe roadmap.md Eintrag W11 V3.
             glow.visible = this.state.cameraMode !== "first";
         }
         // (b) Sub-Mesh-Tint dezent: 15 % Mix, damit Original-Farbe vorranig
@@ -21577,6 +21583,37 @@ class AnazhRealm {
         }
     }
 
+    // Welle 6.X.2 B1 (Audit 17.05.2026) — Logbuch-Toggle.
+    // Default: versteckt. Spieler aktiviert in Einstellungen wenn er die
+    // Diagnose-Logs sehen will. Persistiert in localStorage. Ruhe in der
+    // Konsole für die normale Spiel-Erfahrung.
+    logbookInitDOM() {
+        if (typeof document === "undefined") return;
+        let visible = false;
+        if (typeof localStorage !== "undefined") {
+            const raw = localStorage.getItem("anazh.logbookVisible");
+            if (raw === "1" || raw === "true") visible = true;
+        }
+        this.state.logbookVisible = visible;
+        const section = document.getElementById("console-log-section");
+        if (section) section.hidden = !visible;
+        const cb = document.getElementById("logbook-toggle");
+        if (cb) {
+            cb.checked = visible;
+            cb.addEventListener("change", () => {
+                this.state.logbookVisible = !!cb.checked;
+                if (section) section.hidden = !cb.checked;
+                if (typeof localStorage !== "undefined") {
+                    try {
+                        localStorage.setItem("anazh.logbookVisible", cb.checked ? "1" : "0");
+                    } catch {
+                        /* ignore */
+                    }
+                }
+            });
+        }
+    }
+
     // Welle 6.C3 — Keybindings-UI: pro Aktion eine Zeile mit Label, aktueller
     // Taste und „Ändern"-Button. Klick → Rebind-Capture-Modus, der nächste
     // Tastendruck oder Maus-Button bindet. Reset-Button stellt Defaults wieder
@@ -22334,6 +22371,8 @@ class AnazhRealm {
         this.gameModeInitDOM();
         // Welle 6.H Phase 2E V2 — proaktive-Sprache-Toggle aufsetzen.
         this.creatureSpeechInitDOM();
+        // Welle 6.X.2 B1 — Logbuch-Sichtbarkeit-Toggle aufsetzen.
+        this.logbookInitDOM();
         this.keybindingsInitDOM();
         this.inventoryInitDOM();
         this.creatureDrawerInitDOM();
@@ -22607,6 +22646,28 @@ class AnazhRealm {
                 event.preventDefault();
             }
         });
+        // Welle 6.X.2 B4 (Audit 17.05.2026) — Scrollrad zyklt durch Hotbar-
+        // Slots (Minecraft-Konvention). deltaY > 0 → nächster, < 0 → voriger.
+        // Modulo 9 erlaubt Rollover am Ende. Aktiv nur wenn Pointer-Lock an
+        // (Spieler im Spiel) und Inventar nicht offen. Im Bau-Modus bleibt
+        // der Wheel aktiv — Slot-Wechsel im Bau-Modus wechselt das Phantom
+        // (das nutzt selectHotbarSlot, der den Build-Mode übernimmt).
+        canvas.addEventListener(
+            "wheel",
+            (event) => {
+                if (this.state.inventoryOpen) return;
+                if (!this.state.isPointerLocked) return;
+                event.preventDefault();
+                // buildMode.slotIndex trackt den aktiven Slot (auch wenn der
+                // Modus toggled-out ist und nur das Highlight bleibt). Default 0.
+                const bm = this.state.buildMode || {};
+                const current = typeof bm.slotIndex === "number" ? bm.slotIndex : 0;
+                const dir = event.deltaY > 0 ? 1 : -1;
+                const next = (current + dir + 9) % 9;
+                this.selectHotbarSlot(next);
+            },
+            { passive: false }
+        );
         document.addEventListener("pointerlockchange", () => {
             this.state.isPointerLocked = document.pointerLockElement === canvas;
             this.log(`Pointer-Lock: ${this.state.isPointerLocked ? "Aktiv" : "Inaktiv"}`, "INFO");
