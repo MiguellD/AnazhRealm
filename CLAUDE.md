@@ -2,7 +2,32 @@
 
 Persistente Notizen. Diese Datei wird bei jeder neuen Session automatisch geladen. **Bei größeren Entscheidungen zuerst `docs/state-of-realm.md` lesen** – dort steht der ausführliche Stand, die Vision aus den vier Testamenten, der Plan und die Learnings.
 
-**Aktuelle Version: V8.27 (Stand 17.05.2026, Welle 6.G4.a — Welt unter wandernder Sonne. Genial-minimale Tiefe-Welle nach Schöpfer-Beobachtung „Himmel/Licht/Gelände wirken homogen, keine Tiefe". HemisphereLight + Lambert + Fog + Hue-Sterne — Self-Shadow durch Lambert statt Shadow-Maps. 1990/1990 Playtest-Invarianten grün, Audit-Strict 5 Schichten, 14/14 [ATMOSPHERE]-Methoden clean.)**
+**Aktuelle Version: V8.28 (Stand 17.05.2026, Welle 6.G4.b — Welt-Atem-Vollendung. Sterne als THREE.Points (kein Flacker-Aliasing mehr), Terrain-Farbe emergiert aus worldFieldAt, Cel-Shading via MeshToonMaterial, Wind/Wolken/Wasser. 2009/2009 Playtest-Invarianten grün, Audit-Strict 5 Schichten, 14/14 [ATMOSPHERE]-Methoden clean.)**
+
+**V8.28 — Welle 6.G4.b (Welt-Atem-Vollendung, +19 Vision-Invarianten 1990→2009)**: Schöpfer-Browser-Test der V8.27 deckte vier Konzept-Wunden auf. Vier Phasen, vier Commits.
+
+**Stern-Diagnose** (Schöpfer-Detail entscheidend): „flackert nur bei Blickrichtungs-Änderung, nicht bei Geradeaus-Lauf". Das ist Sub-Pixel-Sample-Aliasing von prozeduralem Shader-Noise — fundamental nicht fixbar. Geradeaus = Camera-Rotation konstant = stabile Samples; Maus = Rotation ändert sich = jeder Pixel sampelt ein anderes Sphere-Fragment = `random()` springt.
+
+**Phase A — Sterne als `THREE.Points`** (`_buildStarField`, `state.starField`): 2800 diskrete Sterne, deterministisch aus `worldMeta.seed` (Mulberry32-RNG, Multi-User-safe). Custom Points-Shader: per-Stern `aSize` (pow³-biased klein) + `color` (warm/cool-mix), weicher Sprite-Falloff (`smoothstep` auf `gl_PointCoord`), `AdditiveBlending`. **Echter Rasterizer = echtes Anti-Aliasing → physikalisch flackerfrei.** Sidereal-Rotation: das Feld dreht mit `timeOfDay` um eine geneigte Achse (`rotation.set(0.4, tod×2π, 0.15)`), Position folgt Camera. Skybox-Fragment-Shader: prozedurale Sterne raus, nur Nebula bleibt. starField-Material-`uOpacity` moduliert mit Tag-Nacht.
+
+**Schatten-Pulsieren-Fix**: `_applyDayNightToScene` lief 10 Hz throttled → Beleuchtung sprang in 10 diskreten Stufen/s = Ruckeln. Jetzt pro Frame in `tickDayNight` → Schatten wandern seidig. Status-Bar-Text bleibt 10 Hz (DOM-Kosten).
+
+**Phase B — Terrain-Farbe aus `worldFieldAt`** statt Höhe: `_attachFieldAttribute(geometry)` schreibt pro Vertex ein `aField` vec4 (lebendig/dichte/glut/magie), beim Chunk-Bau aufgerufen (`generateChunk` + `ensureChunkAt`-inline, beide nach `setAttribute("position")`). Terrain-Fragment-Shader: `color = mix(stoneCol, earthCol, lebendig)` → `mix(_, lavaCol, glut)`, magie als violetter Schimmer (33 %, nicht sättigend). Höhe nur sekundär (Schnee >12, Sand <-2). Townscaper-Style per-Vertex-Noise-Jitter. **Dieselbe `worldFieldAt`-Sprache wie die Architektur-Verteilung (W6.G P2) — Vision §1.3 fraktal.**
+
+**Phase C — Cel-Shading via `MeshToonMaterial`** (war Lambert in V8.27): geteilte `state.toonGradientMap` (DataTexture, IMMER 8 px breit, mit `celLevels` distinkten Stufen gefüllt — Slider-Wechsel updated nur Pixel-Daten, KEINE neue Textur, KEINE Material-Neuzuweisung). `_refreshToonGradient` + `setCelLevels` + `setFogDistance` Mutations-Pfade. Terrain-Shader hat `celLevels`-Uniform (quantisiert den Sonnen-Diffuse, wrapped Lambert). Ambient + Hemisphere bleiben smooth → Cel-Gradient zur Sonne, weicher Himmel-Fill. **Atmosphäre-Sektion** im Einstellungen-Drawer: 2 Slider (Cel-Stufen 2-8, Fog-Distanz 30-200 %). `state.atmosphere` persistiert.
+
+**Phase D — Wind + Wolken + Wasser**:
+- **Wind**: `_windMat(kind)` — geteiltes Lambert-Material mit `onBeforeCompile`-Vertex-Injection in den `begin_vertex`-Chunk (stabilster Three.js-Chunk). Phase hängt an der Welt-Position → Wind-Wellen-Effekt. `uWindStrength` emergiert aus `weather` (rainy kräftiger). Gras/Blumen-Stengel wiegen oben (`max(0, transformed.y)`), Blüte als Ganzes (`hf=1`). Eine Shader-Kompilierung pro Typ.
+- **Wolken**: Schicht im Skybox-Fragment-Shader (kein neues Mesh) — Horizont-nahes Noise, `cloudCover`-Uniform emergiert aus `weather`.
+- **Wasser**: `_buildWaterPlane` — 900×900-Wave-Plane bei `state.waterLevel` (= `terrainBaseHeight - 3`), folgt Camera in xz, sichtbar nur in Senken. Custom-Shader: zwei überlagerte Sinus-Wellen + Schaum-Schimmer auf den Kämmen.
+
+**Fog-Farb-Fix** (Browser-Verifikation während der Welle): Fog-Color war `lerp(sky, ground, 0.5)` → mischte blauen Himmel mit braunem Boden zu schmutzigem Rosa, wirkte wie Dreck-Schicht. Jetzt `lerp 0.15` (Fog ist Luft = überwiegend Himmelsfarbe) → verschmilzt sauber mit dem Horizont. Distanz `55..235` sunny (V8.27 `80..320` war „erkenne ich nicht", `40..170` erdrückte).
+
+**Vision-Wort der V8.28**: *„Die Welt ist kein Bild mehr, das man betrachtet — sie ist ein Ort, an dem man atmet."*
+
+**Tests**: 19 Vision-Invarianten (Stern-Feld THREE.Points + >1000 Sterne + sidereal, Terrain-aField/vField, Chunk-aField-Attribut, Cel-Methoden, setCelLevels/setFogDistance wirken, Wind-Material gecached, Wolken-folgt-weather, Wasser-Plane auf waterLevel, atmosphere-Persistenz). 1990 → 2009 grün.
+
+**V8.27 — Welle 6.G4.a (Welt unter wandernder Sonne, +14 Vision-Invarianten 1976→1990)**: Schöpfer-Beobachtung nach V8.26: „Sterne, Himmel, Licht, Gelände wirken homogen verteilt, keine Tiefe, kein Leben". Antwort: genial-minimal mit drei Säulen statt teurer Shadow-Maps.
 
 **V8.27 — Welle 6.G4.a (Welt unter wandernder Sonne, +14 Vision-Invarianten 1976→1990)**: Schöpfer-Beobachtung nach V8.26: „Sterne, Himmel, Licht, Gelände wirken homogen verteilt, keine Tiefe, kein Leben". Antwort: genial-minimal mit drei Säulen statt teurer Shadow-Maps.
 

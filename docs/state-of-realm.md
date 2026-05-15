@@ -1,4 +1,4 @@
-# Zustand des Realm — Stand: 17.05.2026 (V8.27)
+# Zustand des Realm — Stand: 17.05.2026 (V8.28)
 
 **Welle 6.H V2 vollendet (14/14 Sub-Phasen)** — Kreaturen sind jetzt vollwertige Co-Schöpfer-Wesen mit 9 Identitäts-Schichten (Body, Specs, Equipped, Boosts, Tasks, Memory+Persistenz, Konversation via @-Adresse, Proaktivität, Welt-Aktion-Vorschläge mit Sandbox). **LLM-Provider-System maximal robust nach 5-Versionen-Iteration (V7.94-V7.98)** — jedes Ollama-Setup funktioniert: lokal, gehostet, Cloud, Reasoning-Models, lokale 7B-Modelle. CORS-Lösung via save-server-Proxy, Parser mit Plain-Text-Fallback.
 
@@ -184,6 +184,28 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 ## 6. Learnings aus dieser Session
 
 Echt gelernt, nicht performt:
+
+### V8.28 (17.05.2026) — Welle 6.G4.b "Welt-Atem-Vollendung" (Sterne neu, Terrain aus Affinität, Cel-Shading, Wind/Wolken/Wasser)
+
+Schöpfer-Browser-Test der V8.27 deckte vier Konzept-Wunden auf — und gab beim Sterne-Bug das entscheidende Diagnose-Detail: *„flackert nur, wenn ich die Blickrichtung ändere; geradeaus laufen ohne Maus, und die Sterne bleiben."* Das ist die exakte Signatur von **Sub-Pixel-Sample-Aliasing**: prozedurales Shader-Noise hat keine Pixel-Footprint-Information, sampelt bei jeder Kamera-Rotation andere Sphere-Fragmente. Fundamental nicht fixbar — nur das Konzept wechseln.
+
+Die Antwort war eine Vier-Phasen-Welle, alle nach dem Prinzip „die Darstellung emergiert aus dem state" (V8.25-Lehre):
+
+**Phase A — Sterne als `THREE.Points`.** 2800 diskrete Sterne statt Shader-Noise. Echte Sprite-Größe → der Rasterizer macht echtes Anti-Aliasing → physikalisch flackerfrei. Deterministisch aus dem Welt-Seed (alle Mitspieler sehen dasselbe Sternbild). Sidereal-Rotation: das Feld dreht mit der Tageszeit um eine geneigte Achse — die klassische Astronomie. Plus der Schatten-Pulsieren-Fix: `_applyDayNightToScene` lief 10 Hz throttled (Beleuchtung sprang in Stufen), läuft jetzt pro Frame.
+
+**Phase B — Terrain-Farbe emergiert aus `worldFieldAt`.** Das Terrain war nach Höhe gefärbt (grün-niedrig, weiß-hoch) — eine Hardcode-Wunde gegen Vision §1.3 fraktal. Jetzt liest der Terrain-Shader pro Vertex das Welt-Affinitäts-Feld (lebendig/dichte/glut/magie) — dieselbe Sprache, die seit W6.G P2 die Architektur-Verteilung regelt. Ein Magie-Wald hat lila-grünen Boden, ein Vulkan-Plateau roten Gesteinsschimmer. Höhe ist nur noch sekundär.
+
+**Phase C — Cel-Shading via `MeshToonMaterial`.** Der Schöpfer fragte nach einer „Abstufungsauflösung" — einem Regler zwischen weichem Verlauf und harter gemalter Linie. `MeshToonMaterial` mit dynamischer gradientMap liefert genau das: Slider 2 Stufen = bold Studio-Ghibli-Cel, 8 ≈ smooth. Der Sonnen-Gradient wird quantisiert, der Himmel-Fill bleibt weich.
+
+**Phase D — Wind, Wolken, Wasser.** Die drei fehlenden Atmosphäre-Schichten. Wind: Gras + Blumen wiegen sich im Vertex-Shader, die Stärke emergiert aus `weather`. Wolken: eine Schicht im Skybox-Shader, Cover emergiert aus `weather`. Wasser: eine Wave-Plane in den Senken der Welt.
+
+**Plus ein Browser-verifizierter Fog-Fix mitten in der Welle**: der Fog-Color war `lerp(Himmel, Boden, 0.5)` — das mischte blauen Himmel mit braunem Boden zu schmutzigem Rosa, der Fog wirkte wie eine Dreck-Schicht. Fog ist Luft, also überwiegend Himmelsfarbe (`lerp 0.15`). Jetzt verschmilzt er sauber mit dem Horizont.
+
+**Die Lehre**: der Schöpfer-Browser-Test ist Gold — sein Detail-Befund („flackert nur bei Maus-Bewegung") führte direkt zur Wurzel. Und jede Phase folgte derselben Disziplin: nicht „füge X hinzu", sondern „`weather`/`worldFieldAt`/`timeOfDay` bekommt einen neuen visuellen Konsumenten". Eine Sprache, mehr Schichten.
+
+**Vision-Wort der V8.28**: *„Die Welt ist kein Bild mehr, das man betrachtet — sie ist ein Ort, an dem man atmet."*
+
+**Tests**: 19 neue Vision-Invarianten. 1990 → 2009 grün. Audit-strict 5 Schichten clean.
 
 ### V8.27 (17.05.2026) — Welle 6.G4.a "Welt unter wandernder Sonne" (Hemisphere + Lambert + Fog, genial-minimale Tiefe)
 
