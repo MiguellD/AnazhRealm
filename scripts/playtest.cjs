@@ -9599,17 +9599,24 @@ function startSaveServer() {
                     out.matNewSlot = r.state.player.inventory[1] && r.state.player.inventory[1].material === "stein";
                     out.matRejectsUnknown = okBad === false;
 
-                    // Spieler-LMB nutzt harvestArchitecture (EINE Funktion)
+                    // Spieler-LMB nutzt harvestArchitecture (EINE Funktion).
+                    // V8.29 — deterministisch: Kamera EXPLIZIT positionieren
+                    // (nicht auf die Render-Loop-Kamera des letzten Frames
+                    // verlassen, die je nach Spieler-Zustand variiert) +
+                    // Test-Block weit von anderen Architekturen spawnen,
+                    // damit der Raycast garantiert NUR das Target trifft.
                     r.state.player.inventory = new Array(27).fill(null);
-                    const target = r.spawnArchitecture("stein_block", { x: p.x, y: p.y, z: p.z + 3 });
+                    const tcx = p.x + 6;
+                    const tcz = p.z + 6;
+                    const target = r.spawnArchitecture("stein_block", { x: tcx, y: p.y, z: tcz });
                     void target;
-                    r.state.yaw = 0;
-                    r.state.pitch = -0.1;
+                    if (typeof r.tickArchitectureCulling === "function") r.tickArchitectureCulling();
                     if (r.state.camera) {
-                        r.state.camera.lookAt(p.x, p.y, p.z + 3);
+                        // Kamera 6 m vor dem Target, leicht erhöht, schaut drauf.
+                        r.state.camera.position.set(tcx, p.y + 1.5, tcz - 6);
+                        r.state.camera.lookAt(tcx, p.y, tcz);
                         r.state.camera.updateMatrixWorld(true);
                     }
-                    if (typeof r.tickArchitectureCulling === "function") r.tickArchitectureCulling();
                     const archBeforeLmb = r.state.architectures.length;
                     r.tryMouseBreak();
                     out.lmbShrunkArch = r.state.architectures.length < archBeforeLmb;
@@ -11510,9 +11517,10 @@ function startSaveServer() {
                     r.setFogDistance(1.0);
 
                     // --- Phase D: Wind + Wolken + Wasser ---
-                    out.windMatExists = typeof r._windMat === "function";
-                    const wm1 = r._windMat ? r._windMat("grass") : null;
-                    const wm2 = r._windMat ? r._windMat("grass") : null;
+                    // V8.29: Wind lebt jetzt im Instanced-Gras-Material.
+                    out.windMatExists = typeof r._grassInstanceMat === "function";
+                    const wm1 = r._grassInstanceMat ? r._grassInstanceMat() : null;
+                    const wm2 = r._grassInstanceMat ? r._grassInstanceMat() : null;
                     out.windMatCached = !!(wm1 && wm1 === wm2); // geteilt
                     out.windUniformsExist = !!(r.state.windUniforms && r.state.windUniforms.uWindTime);
                     // Skybox-Shader hat cloudCover-Uniform
@@ -11573,8 +11581,8 @@ function startSaveServer() {
                 check("V8.28 C: Terrain-Shader hat celLevels-Uniform", v828Results.terrainHasCelUniform);
                 check("V8.28 C: setCelLevels ändert die Cel-Stufen (2↔6)", v828Results.celSliderWorks);
                 check("V8.28 C: setFogDistance ändert Fog-near (0.5↔2.0)", v828Results.fogSliderWorks);
-                check("V8.28 D: _windMat existiert", v828Results.windMatExists);
-                check("V8.28 D: _windMat ist geteilt/gecached (eine Kompilierung)", v828Results.windMatCached);
+                check("V8.29 D: _grassInstanceMat existiert (Instanced-Gras-Wind)", v828Results.windMatExists);
+                check("V8.29 D: _grassInstanceMat ist geteilt/gecached (eine Kompilierung)", v828Results.windMatCached);
                 check("V8.28 D: state.windUniforms existiert (uWindTime)", v828Results.windUniformsExist);
                 check("V8.28 D: Skybox-Shader hat cloudCover-Uniform", v828Results.skyboxHasClouds);
                 check("V8.28 D: Wolken-Cover folgt weather (rainy > sunny)", v828Results.cloudsFollowWeather);
@@ -11583,6 +11591,113 @@ function startSaveServer() {
                 check("V8.28: state.atmosphere persistiert im Snapshot", v828Results.atmospherePersisted);
             } else {
                 check("V8.28: Welt-Atem-Vollendung Tests laufen", false, v828Results ? v828Results.error : "no result");
+            }
+
+            // ### V8.29 — Die lebendige Welt (Instanced-Gras, Avatar-Hide,
+            // Genesis-Plattform, adaptives Wasser, Cel-Slider-Fix) ###
+            const v829Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // --- Avatar-Hide im 1st-Person ---
+                    out.avatarHideMethods =
+                        typeof r.setCameraMode === "function" && !!r.state.playerMesh;
+                    // Render-Loop setzt player.visible = cameraMode==="third".
+                    // Wir prüfen via Source-Pattern (der Loop läuft async).
+                    {
+                        let found = false;
+                        const proto = Object.getPrototypeOf(r);
+                        for (const name of Object.getOwnPropertyNames(proto)) {
+                            try {
+                                const fn = proto[name];
+                                if (typeof fn !== "function") continue;
+                                if (/player\.visible\s*=\s*this\.state\.cameraMode/.test(fn.toString())) found = true;
+                            } catch {
+                                /* skip */
+                            }
+                        }
+                        out.avatarHideInLoop = found;
+                    }
+
+                    // --- Instanced-Gras ---
+                    out.grassMethodsExist =
+                        typeof r._buildChunkGrass === "function" &&
+                        typeof r._disposeChunkGrass === "function" &&
+                        typeof r._grassInstanceMat === "function";
+                    // Nach dem Worldgen sollten Chunk-Gras-Einträge existieren.
+                    out.chunkGrassMap = !!r.state.chunkGrass && r.state.chunkGrass instanceof Map;
+                    // Mindestens ein Chunk hat ein InstancedMesh (lebendig-Region)
+                    let grassInstances = 0;
+                    if (r.state.chunkGrass) {
+                        for (const v of r.state.chunkGrass.values()) {
+                            if (v && v.isInstancedMesh) grassInstances++;
+                        }
+                    }
+                    out.hasGrassInstances = grassInstances > 0;
+                    // Gras-Material ist InstancedMesh-tauglich + geteilt
+                    out.grassMatShared = r._grassInstanceMat() === r._grassInstanceMat();
+
+                    // --- Genesis-Plattform ---
+                    out.genesisMethodExists = typeof r._ensureGenesisPlatform === "function";
+                    out.startPlattformBlueprint = !!(r.state.blueprints && r.state.blueprints.start_plattform);
+                    // Nach dem ersten Spawn sollte eine start_plattform-Architektur da sein
+                    out.genesisArchExists = !!(
+                        r.state.architectures &&
+                        r.state.architectures.some((a) => a && a.type === "start_plattform")
+                    );
+                    // Idempotenz: zweiter Aufruf erzeugt KEINE zweite Plattform
+                    const before = r.state.architectures.filter((a) => a && a.type === "start_plattform").length;
+                    r._ensureGenesisPlatform();
+                    const after = r.state.architectures.filter((a) => a && a.type === "start_plattform").length;
+                    out.genesisIdempotent = before === after;
+
+                    // --- Adaptives Wasser ---
+                    out.waterAdaptive = typeof r.state.waterLevel === "number" && Number.isFinite(r.state.waterLevel);
+
+                    // --- Cel-gradientMap 32 px ---
+                    out.gradientMap32 = !!(
+                        r.state.toonGradientMap &&
+                        r.state.toonGradientMap.image &&
+                        r.state.toonGradientMap.image.width === 32
+                    );
+                    // celLevels 2 vs 8 → unterschiedliche Gradient-Daten
+                    r.setCelLevels(2);
+                    const g2 = Array.from(r.state.toonGradientMap.image.data.slice(0, 32));
+                    r.setCelLevels(8);
+                    const g8 = Array.from(r.state.toonGradientMap.image.data.slice(0, 32));
+                    out.celGradientChanges = JSON.stringify(g2) !== JSON.stringify(g8);
+                    r.setCelLevels(8);
+
+                    // --- Stern-Mindestgröße (kein Flacker-Aliasing) ---
+                    const sf = r.state.starField;
+                    let minSize = 999;
+                    if (sf && sf.geometry && sf.geometry.getAttribute("aSize")) {
+                        const sizes = sf.geometry.getAttribute("aSize").array;
+                        for (let i = 0; i < sizes.length; i++) if (sizes[i] < minSize) minSize = sizes[i];
+                    }
+                    out.starMinSize3 = minSize >= 3;
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (v829Results && !v829Results.error) {
+                check("V8.29: Avatar wird im 1st-Person ausgeblendet (Render-Loop)", v829Results.avatarHideInLoop);
+                check("V8.29: _buildChunkGrass + _disposeChunkGrass + _grassInstanceMat existieren", v829Results.grassMethodsExist);
+                check("V8.29: state.chunkGrass ist eine Map", v829Results.chunkGrassMap);
+                check("V8.29: mindestens ein Chunk hat ein Gras-InstancedMesh", v829Results.hasGrassInstances);
+                check("V8.29: Gras-Material ist geteilt (ein Draw-Call-Material)", v829Results.grassMatShared);
+                check("V8.29: _ensureGenesisPlatform existiert", v829Results.genesisMethodExists);
+                check("V8.29: start_plattform-Bauplan existiert", v829Results.startPlattformBlueprint);
+                check("V8.29: Genesis-Plattform-Architektur nach Spawn vorhanden", v829Results.genesisArchExists);
+                check("V8.29: _ensureGenesisPlatform ist idempotent (keine Doppel-Plattform)", v829Results.genesisIdempotent);
+                check("V8.29: state.waterLevel ist gesetzt (adaptiv)", v829Results.waterAdaptive);
+                check("V8.29: Cel-gradientMap ist 32 px breit (Smooth-Modus möglich)", v829Results.gradientMap32);
+                check("V8.29: setCelLevels 2↔8 ändert die gradientMap-Daten", v829Results.celGradientChanges);
+                check("V8.29: Sterne haben Mindestgröße ≥3 px (flacker-sicher)", v829Results.starMinSize3);
+            } else {
+                check("V8.29: Die lebendige Welt Tests laufen", false, v829Results ? v829Results.error : "no result");
             }
 
             // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider (Audit 17.05.2026) ###

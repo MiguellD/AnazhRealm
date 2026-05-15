@@ -134,7 +134,7 @@ class AnazhRealm {
             // celLevels: Cel-Shading-Stufen (1=bold, 6≈smooth)
             // fogDistance: Multiplikator auf Fog-near/far (klein=dichter)
             atmosphere: {
-                celLevels: 4,
+                celLevels: 8,
                 fogDistance: 1.0,
             },
             // Welle 6.G3 (V8.24) — sanfter Wetter-Übergang. null heißt: kein
@@ -7069,12 +7069,17 @@ class AnazhRealm {
             // Hue: mix warm/cool. Helligkeit korreliert leicht mit Groesse.
             const hue = rng();
             tmpCol.copy(cool).lerp(warm, hue);
-            // Groesse: pow-Verteilung → die meisten klein, wenige gross
+            // V8.29 — Groesse: Mindestgroesse 3 px. Punkte unter ~3 px sind
+            // zu klein fuer den weichen Falloff → sie flackern bei langsamer
+            // Kamera-Rotation (Sub-Pixel-Sprung an/aus). Kleine Sterne
+            // werden jetzt DIMMER statt KLEINER — die Groesse bleibt
+            // flacker-sicher, die Helligkeit traegt die Variation.
             const sizeRoll = rng();
-            const size = 1.0 + Math.pow(sizeRoll, 3) * 5.0; // 1..6 px, stark biased klein
+            const size = 3.0 + Math.pow(sizeRoll, 2) * 3.5; // 3..6.5 px, AA-sicher
             sizes[i] = size;
-            // Hellere (groessere) Sterne saettigen voller, kleine sind dimmer
-            const bright = 0.55 + Math.pow(sizeRoll, 2) * 0.45;
+            // Helligkeit traegt die Stern-Variation (statt der Groesse):
+            // pow³-biased → die meisten Sterne dim, wenige hell.
+            const bright = 0.32 + Math.pow(sizeRoll, 3) * 0.68;
             colors[i * 3] = tmpCol.r * bright;
             colors[i * 3 + 1] = tmpCol.g * bright;
             colors[i * 3 + 2] = tmpCol.b * bright;
@@ -7141,9 +7146,38 @@ class AnazhRealm {
     _buildWaterPlane() {
         if (!this.state.scene || typeof THREE === "undefined") return;
         if (typeof this.state.waterLevel !== "number") {
-            // Senken-Fueller: knapp unter dem Basis-Niveau. Huegel bleiben
-            // trocken, Schluchten + Mulden sammeln Wasser.
-            this.state.waterLevel = (this.state.terrainBaseHeight || 0) - 3;
+            // V8.29 — Wasser-Niveau ADAPTIV aus dem Terrain. Ein fixes
+            // baseHeight-3 lag oft 90 m unter dem Spieler (Bergwelt), das
+            // Wasser war nie sichtbar. Jetzt: 13×13 Terrain-Höhen über
+            // ±170 m sampeln, sortieren, das ~35-%-Perzentil als Meeres-
+            // spiegel nehmen → die unteren ~35 % der Welt (Senken,
+            // Schluchten, Mulden) füllen sich, Hügel + Berge bleiben
+            // trocken. Sichtbares Wasser ohne die Welt zu fluten.
+            try {
+                const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+                const hN = new SimplexNoise(seed);
+                const cN = new SimplexNoise(seed + "-cave");
+                const vN = new SimplexNoise(seed + "-volcano");
+                const st = this.state.terrainSteepness;
+                const bh = this.state.terrainBaseHeight;
+                const heights = [];
+                for (let i = 0; i < 13; i++) {
+                    for (let j = 0; j < 13; j++) {
+                        const sx = -170 + (340 / 12) * i;
+                        const sz = -170 + (340 / 12) * j;
+                        const h = this._terrainHeightAtWorld(sx, sz, hN, st, bh, cN, vN);
+                        if (Number.isFinite(h)) heights.push(h);
+                    }
+                }
+                if (heights.length > 0) {
+                    heights.sort((a, b) => a - b);
+                    this.state.waterLevel = heights[Math.floor(heights.length * 0.35)];
+                } else {
+                    this.state.waterLevel = (this.state.terrainBaseHeight || 0) - 3;
+                }
+            } catch {
+                this.state.waterLevel = (this.state.terrainBaseHeight || 0) - 3;
+            }
         }
         const geo = new THREE.PlaneGeometry(900, 900, 90, 90);
         geo.rotateX(-Math.PI / 2); // in die xz-Ebene legen, Normal nach oben
@@ -7190,6 +7224,147 @@ class AnazhRealm {
         this.state.scene.add(water);
         this.state.waterPlane = water;
         this.log(`Welt-Wasser erstellt — Niveau y=${this.state.waterLevel.toFixed(1)} (V8.28)`);
+    }
+
+    // V8.29 — Geteiltes Gras-Material für InstancedMesh. Wie machen es die
+    // Genies (Breath of the Wild, No Man's Sky): tausende Halme, EIN Draw-
+    // Call. Der Wind-Vertex-Shader liest die WELT-Position aus der
+    // instanceMatrix (Spalte 3 = Translation) → benachbarte Halme wiegen
+    // phasenversetzt = Wind-Wellen über das ganze Feld. transformed.y ist
+    // die lokale Halm-Höhe (Geometrie auf Wurzel zentriert) → die Wurzel
+    // bleibt fix, die Spitze wiegt.
+    _grassInstanceMat() {
+        if (typeof THREE === "undefined") return null;
+        if (this.state._grassMat) return this.state._grassMat;
+        if (!this.state.windUniforms) {
+            this.state.windUniforms = {
+                uWindTime: { value: 0 },
+                uWindStrength: { value: 0.12 },
+            };
+        }
+        const wu = this.state.windUniforms;
+        const mat = new THREE.MeshLambertMaterial({ color: 0x5fa743, side: THREE.DoubleSide });
+        mat.onBeforeCompile = (shader) => {
+            shader.uniforms.uWindTime = wu.uWindTime;
+            shader.uniforms.uWindStrength = wu.uWindStrength;
+            shader.vertexShader = "uniform float uWindTime;\nuniform float uWindStrength;\n" + shader.vertexShader;
+            shader.vertexShader = shader.vertexShader.replace(
+                "#include <begin_vertex>",
+                `#include <begin_vertex>
+                {
+                    vec3 instPos = vec3(instanceMatrix[3][0], instanceMatrix[3][1], instanceMatrix[3][2]);
+                    float phase = uWindTime * 1.7 + instPos.x * 0.28 + instPos.z * 0.21;
+                    float hf = max(0.0, transformed.y);
+                    transformed.x += sin(phase) * uWindStrength * hf * 1.5;
+                    transformed.z += cos(phase * 0.7) * uWindStrength * hf;
+                }`
+            );
+        };
+        this.state._grassMat = mat;
+        return mat;
+    }
+
+    // V8.29 — Instanced-Gras pro Chunk. Die Genie-Antwort auf „die Welt
+    // wirkt tot": DICHTE. Statt ein paar Einzel-Meshes — ein InstancedMesh
+    // mit bis zu ~2000 Halmen pro Chunk, EIN Draw-Call. Die Dichte EMERGIERT
+    // aus worldFieldAt.lebendig (dieselbe fraktale Sprache wie Terrain-Farbe
+    // + Architektur-Verteilung): lebendig hoch → wogende Wiese, niedrig →
+    // kahler Fels. Keine Biom-Tabelle. Gras lebt am Chunk-Lifecycle
+    // (gebaut in ensureChunkAt, disposed in pruneDistantChunks).
+    _buildChunkGrass(cx, cz) {
+        if (!this.state.scene || typeof THREE === "undefined") return;
+        if (!this.state.chunkGrass) this.state.chunkGrass = new Map();
+        const key = `${cx},${cz}`;
+        if (this.state.chunkGrass.has(key)) return;
+        const { WORLD_SIZE, chunkWorldSize } = this._chunkGeometry();
+        const cxWorld = cx * chunkWorldSize - WORLD_SIZE / 2;
+        const czWorld = cz * chunkWorldSize - WORLD_SIZE / 2;
+        const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        const heightNoise = new SimplexNoise(seed);
+        const caveNoise = new SimplexNoise(seed + "-cave");
+        const volcanoNoise = new SimplexNoise(seed + "-volcano");
+        const steepness = this.state.terrainSteepness;
+        const baseHeight = this.state.terrainBaseHeight;
+        // 16×16 Sample-Raster; pro Sample 0..7 Halme je nach lebendig.
+        const SAMPLES = 16;
+        const step = chunkWorldSize / SAMPLES;
+        // Deterministischer Jitter-RNG (Multi-User-safe via Seed-Hash).
+        let rs = ((cx * 73856093) ^ (cz * 19349663)) >>> 0 || 1;
+        const rnd = () => {
+            rs = (rs + 0x6d2b79f5) >>> 0;
+            let t = rs;
+            t = Math.imul(t ^ (t >>> 15), t | 1);
+            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+        const blades = [];
+        for (let zi = 0; zi < SAMPLES; zi++) {
+            for (let xi = 0; xi < SAMPLES; xi++) {
+                const baseX = cxWorld + (xi + 0.5) * step;
+                const baseZ = czWorld + (zi + 0.5) * step;
+                const field = this.worldFieldAt(baseX, baseZ);
+                const lebendig = field ? field.lebendig : 0;
+                if (lebendig < 0.22) continue; // nur wirklich karger Fels bleibt kahl
+                // Dichte: lebendig × 14 → 0.22 ≈ 3 Halme, 1.0 = 14 Halme.
+                // Linear (nicht quadratisch) damit auch mittel-lebendige
+                // Regionen sichtbar bewachsen sind — die Welt soll grünen.
+                const count = Math.floor(lebendig * 14 + rnd() * 2);
+                for (let k = 0; k < count; k++) {
+                    const gx = baseX + (rnd() - 0.5) * step;
+                    const gz = baseZ + (rnd() - 0.5) * step;
+                    const h = this._terrainHeightAtWorld(
+                        gx,
+                        gz,
+                        heightNoise,
+                        steepness,
+                        baseHeight,
+                        caveNoise,
+                        volcanoNoise
+                    );
+                    if (!Number.isFinite(h) || h < -1 || h > 38) continue;
+                    blades.push({ x: gx, y: h, z: gz, rot: rnd() * Math.PI * 2, scale: 0.7 + rnd() * 0.7 });
+                }
+            }
+        }
+        if (blades.length === 0) {
+            this.state.chunkGrass.set(key, null); // markiert: geprüft, kein Gras
+            return;
+        }
+        // Ein dünner 3-seitiger Kegel als Halm. translate → Origin an die
+        // Wurzel (y 0..0.8), damit der Wind-Shader die Spitze wiegt.
+        const geo = new THREE.ConeGeometry(0.075, 0.85, 3);
+        geo.translate(0, 0.425, 0);
+        const inst = new THREE.InstancedMesh(geo, this._grassInstanceMat(), blades.length);
+        const m = new THREE.Matrix4();
+        const q = new THREE.Quaternion();
+        const pos = new THREE.Vector3();
+        const scl = new THREE.Vector3();
+        const up = new THREE.Vector3(0, 1, 0);
+        for (let i = 0; i < blades.length; i++) {
+            const b = blades[i];
+            pos.set(b.x, b.y, b.z);
+            q.setFromAxisAngle(up, b.rot);
+            scl.set(b.scale, b.scale, b.scale);
+            m.compose(pos, q, scl);
+            inst.setMatrixAt(i, m);
+        }
+        inst.instanceMatrix.needsUpdate = true;
+        inst.castShadow = false;
+        inst.receiveShadow = false;
+        this.state.scene.add(inst);
+        this.state.chunkGrass.set(key, inst);
+    }
+
+    // V8.29 — Gras eines Chunks freigeben (beim Chunk-Prune).
+    _disposeChunkGrass(key) {
+        if (!this.state.chunkGrass) return;
+        const grass = this.state.chunkGrass.get(key);
+        if (grass) {
+            this.state.scene.remove(grass);
+            if (grass.geometry) grass.geometry.dispose();
+            // Material ist geteilt (state._grassMat) — NICHT disposen.
+        }
+        this.state.chunkGrass.delete(key);
     }
     // Welle 6.G3 (V8.24) — updateSkyboxWeather ist jetzt ein Schmal-Wrapper
     // auf _applyDayNightToScene. Die Skybox-Farbe ergibt sich aus dem
@@ -10430,9 +10605,11 @@ class AnazhRealm {
             float ndotl = dot(vNormal, normalize(lightDirection));
             float diffuse = max(ndotl * 0.5 + 0.5, 0.0);
             diffuse = diffuse * diffuse;
-            // V8.28 6.G4.b C — Cel-Shading: diffuse in celLevels Stufen
-            // quantisieren. celLevels hoch ≈ smooth, niedrig = harte Linien.
-            if (celLevels >= 1.5) {
+            // V8.29 — Cel-Shading: diffuse in celLevels Stufen quantisieren.
+            // celLevels >= 7.5 (Slider-Maximum 8) = SMOOTH, kein floor.
+            // 2..7 = harte Cel-Plateaus. So geht der Slider von bold-Cel
+            // bis echt-stufenlos.
+            if (celLevels >= 1.5 && celLevels < 7.5) {
                 diffuse = (floor(diffuse * celLevels) + 0.5) / celLevels;
             }
             vec3 ambient = color * ambientIntensity;
@@ -10453,7 +10630,7 @@ class AnazhRealm {
                 lightIntensity: { value: 1.0 },
                 ambientIntensity: { value: 0.45 },
                 // V8.28 6.G4.b C — Cel-Shading-Stufen (Atmosphäre-Slider).
-                celLevels: { value: (this.state.atmosphere && this.state.atmosphere.celLevels) || 4 },
+                celLevels: { value: (this.state.atmosphere && this.state.atmosphere.celLevels) || 8 },
             },
             side: THREE.DoubleSide,
             depthTest: true,
@@ -10781,71 +10958,11 @@ class AnazhRealm {
                     continue;
                 }
 
-                if (steepness < 1.0 && height > -5 && height < 30 && Math.random() < 0.02) {
-                    // V7.75: Tree-Branch entfernt — Bäume kommen jetzt aus
-                    // populateChunkVegetation (Welt-Affinitäts-Feld). Diese
-                    // Schleife regelt nur noch das DEKORATIVE Vegetation-
-                    // Layer (Gras + Blumen), das nicht in state.architectures
-                    // wandert sondern in state.vegetation bleibt (kosmetisch,
-                    // kein Compound, keine Kollision, hochfrequent).
-                    // Höhen-Range angepasst: Gras < 5m, Blumen >= 5m
-                    // (alte 0..20-Lücke war nur für Bäume).
-                    const vegetationType = height < 5 ? "grass" : "flower";
-                    if (vegetationType === "grass") {
-                        const grassGeometry = new THREE.ConeGeometry(0.2, 1, 4);
-                        // V8.28 6.G4.b D — Wind-Material (geteilt, Vertex-Sway)
-                        const grassMaterial = this._windMat("grass");
-                        const grass = new THREE.Mesh(grassGeometry, grassMaterial);
-                        grass.position.set(xPos, height + 0.5, zPos);
-                        grass.castShadow = true;
-                        grass.receiveShadow = true;
-
-                        try {
-                            grassGeometry.computeBoundingSphere();
-                            grassGeometry.computeBoundingBox();
-                        } catch (e) {
-                            this.log(
-                                `Fehler beim Berechnen der Bounding Sphere/Box für Gras bei (${xPos}, ${zPos}): ${e.message}. Gras wird übersprungen.`,
-                                "ERROR"
-                            );
-                            continue;
-                        }
-
-                        this.state.scene.add(grass);
-                        this.state.vegetation.push(grass);
-                    } else if (vegetationType === "flower") {
-                        const stemGeometry = new THREE.CylinderGeometry(0.1, 0.1, 1, 4);
-                        // V8.28 6.G4.b D — Wind-Materialien (geteilt, Vertex-Sway)
-                        const stemMaterial = this._windMat("stem");
-                        const stem = new THREE.Mesh(stemGeometry, stemMaterial);
-                        const flowerGeometry = new THREE.SphereGeometry(0.3, 8, 8);
-                        const flowerMaterial = this._windMat("flower");
-                        const flower = new THREE.Mesh(flowerGeometry, flowerMaterial);
-                        stem.position.set(xPos, height + 0.5, zPos);
-                        flower.position.set(xPos, height + 1, zPos);
-                        const flowerGroup = new THREE.Group();
-                        flowerGroup.add(stem);
-                        flowerGroup.add(flower);
-                        flowerGroup.castShadow = true;
-                        flowerGroup.receiveShadow = true;
-
-                        try {
-                            stemGeometry.computeBoundingSphere();
-                            stemGeometry.computeBoundingBox();
-                            flowerGeometry.computeBoundingSphere();
-                            flowerGeometry.computeBoundingBox();
-                        } catch (e) {
-                            this.log(
-                                `Fehler beim Berechnen der Bounding Sphere/Box für Blume bei (${xPos}, ${zPos}): ${e.message}. Blume wird übersprungen.`,
-                                "ERROR"
-                            );
-                            continue;
-                        }
-
-                        this.state.scene.add(flowerGroup);
-                        this.state.vegetation.push(flowerGroup);
-                    }
-                }
+                // V8.29 — der alte Einzel-Mesh-Gras/Blumen-Loop ist gelöscht.
+                // Vegetation kommt jetzt aus _buildChunkGrass (Instanced-Gras
+                // pro Chunk, Dichte aus worldFieldAt.lebendig) — dicht statt
+                // spärlich, EIN Draw-Call statt hunderter Meshes, und für
+                // ALLE Chunks (nicht nur den initialen 300×300-Bereich).
 
                 if (steepness > 5.0 && height > 10 && height < 50 && Math.random() < 0.005) {
                     // Reduziere Wahrscheinlichkeit
@@ -10954,11 +11071,69 @@ class AnazhRealm {
 
         this.spawnCreatures();
 
+        // V8.29 — Genesis-Plattform: beim ERSTEN Spawn einer Welt eine
+        // erhöhte Stein-Scheibe am Zentrum, der Spieler startet darauf.
+        // So fällt er nicht blind in ein Tal — er sieht von erhöhter
+        // Warte die Welt. Nur first-spawn (wasFirstSpawn), idempotent.
+        if (wasFirstSpawn) {
+            try {
+                this._ensureGenesisPlatform();
+            } catch (e) {
+                this.log(`Genesis-Plattform fehlgeschlagen: ${e.message}`, "ERROR");
+            }
+        }
+
         // ### Learnings ### [Stichwortartig optimieren, korrigieren und ergänzen aber nie Wissen löschen! Nie Learnings Entfernen!]
 
         // - Weltkoordinaten (x, z) in Noise-Generierung eliminieren Lücken.
         // - Alle Funktionen (Vegetation, Wasserfälle, Inseln) bleiben erhalten.
         // - Seed in SimplexNoise sorgt für konsistente Höhen über Chunks hinweg.
+    }
+
+    // V8.29 — Genesis-Plattform am Welt-Zentrum. Idempotent: spawnt nur
+    // wenn noch keine start_plattform-Architektur existiert (z. B. nach
+    // Reload aus dem Save ist sie schon da). Der Spieler wird oben drauf
+    // gesetzt, damit er beim Welt-Start die Umgebung überblickt statt in
+    // eine Schlucht zu fallen.
+    _ensureGenesisPlatform() {
+        if (!this.state.architectures) return;
+        const exists = this.state.architectures.some((a) => a && a.type === "start_plattform");
+        if (exists) return;
+        // Terrain-Höhe am Zentrum sampeln.
+        const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        const hN = new SimplexNoise(seed);
+        const cN = new SimplexNoise(seed + "-cave");
+        const vN = new SimplexNoise(seed + "-volcano");
+        let h0 = this._terrainHeightAtWorld(
+            0,
+            0,
+            hN,
+            this.state.terrainSteepness,
+            this.state.terrainBaseHeight,
+            cN,
+            vN
+        );
+        if (!Number.isFinite(h0)) h0 = 0;
+        // Plattform 5 m über dem Terrain-Zentrum (genug Überblick, nicht
+        // so hoch dass der Abstieg unangenehm wird).
+        const platCenterY = h0 + 5;
+        // spawnArchitecture zieht intern 0.5 ab (at_player-Kalibrierung).
+        this.spawnArchitecture("start_plattform", { x: 0, y: platCenterY + 0.5, z: 0 }, { silent: true });
+        // Spieler oben auf die Plattform setzen. Plattform-Part-Top liegt
+        // bei platCenterY + 1 (Cylinder y-Center 0.5, Höhe 1). +1.2 Puffer.
+        const spawnY = platCenterY + 2.2;
+        if (this.state.playerMesh) {
+            this.state.playerMesh.position.set(0, spawnY, 0);
+            if (this.state.playerBody) {
+                const t = this.state.tmpTransform;
+                t.setIdentity();
+                t.setOrigin(this.setVec(this.state.tmpVec1, 0, spawnY / this.state.scaleFactor, 0));
+                this.state.playerBody.setWorldTransform(t);
+                this.state.playerBody.setLinearVelocity(this.setVec(this.state.tmpVec2, 0, 0, 0));
+                this.state.playerBody.activate(true);
+            }
+        }
+        this.log(`Genesis-Plattform erstellt bei y=${platCenterY.toFixed(1)}, Spieler auf y=${spawnY.toFixed(1)}`);
     }
     // ### Chunk-Generierung ### V7.66
     generateChunk(chunkX, chunkZ, heightData, width, depth, material) {
@@ -11558,6 +11733,8 @@ class AnazhRealm {
         // state.populatedChunks, daher safe bei doppeltem ensureChunkAt-
         // Aufruf (z. B. nach Chunk-Prune + Re-Ensure).
         this.populateChunkVegetation(newChunkX, newChunkZ);
+        // V8.29 — Instanced-Gras pro Chunk. Idempotent über state.chunkGrass.
+        this._buildChunkGrass(newChunkX, newChunkZ);
 
         this.log(`Chunk hinzugefügt: (${newChunkX}, ${newChunkZ})`);
     }
@@ -11635,7 +11812,7 @@ class AnazhRealm {
             dayLengthMinutes: this.state.dayLengthMinutes || 8,
             // V8.28 6.G4.b — Atmosphäre-Slider (celLevels + fogDistance).
             atmosphere: {
-                celLevels: (this.state.atmosphere && this.state.atmosphere.celLevels) || 4,
+                celLevels: (this.state.atmosphere && this.state.atmosphere.celLevels) || 8,
                 fogDistance: (this.state.atmosphere && this.state.atmosphere.fogDistance) || 1.0,
             },
             // Ring 5: Spieler-Seele (visuelle Form). Beim Load wird sie nach
@@ -12345,6 +12522,12 @@ class AnazhRealm {
             }
             this.state.groundChunks = this.state.groundChunks.filter((c) => c !== chunk);
             this.state.chunkMap.delete(target.key);
+            // V8.29 — Gras des Chunks mit freigeben. _disposeChunkGrass
+            // löscht den chunkGrass-Eintrag, ein Re-Ensure baut das Gras
+            // neu (Gras lebt am Chunk-Mesh-Lifecycle). populatedChunks
+            // bleibt UNANGETASTET — das ist der Architektur-Idempotenz-
+            // Cache, ein Löschen würde Bäume doppelt spawnen.
+            this._disposeChunkGrass(target.key);
         }
         this.log(`Chunk-Cache bereinigt: ${this.state.chunkMap.size} aktive Chunks`, "DEBUG");
     }
@@ -12483,7 +12666,7 @@ class AnazhRealm {
         }
         // V8.28 6.G4.b — Atmosphäre-Slider wiederherstellen (defensive Clamps).
         if (state.atmosphere && typeof state.atmosphere === "object") {
-            if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 4, fogDistance: 1.0 };
+            if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 1.0 };
             const cl = Number(state.atmosphere.celLevels);
             if (Number.isFinite(cl)) this.state.atmosphere.celLevels = Math.max(2, Math.min(8, Math.round(cl)));
             const fd = Number(state.atmosphere.fogDistance);
@@ -15801,6 +15984,26 @@ class AnazhRealm {
                 size: { x: 2.4, y: 2.4, z: 2.4 },
             },
         ];
+        // V8.29 — Genesis-Plattform. Wird beim Erschaffen einer neuen Welt
+        // am Welt-Zentrum gespawnt, der Spieler startet darauf. So fällt er
+        // nicht blind in ein Tal — er sieht von erhöhter Warte die Welt,
+        // bevor er hinabsteigt. Flache breite Stein-Scheibe + ein quarz-
+        // Kern als Wahrzeichen des Anfangs.
+        const startPlattformParts = [
+            {
+                shape: "cylinder",
+                material: "stein",
+                position: { x: 0, y: 0.5, z: 0 },
+                size: { x: 13, y: 1, z: 13 },
+            },
+            {
+                shape: "cylinder",
+                material: "quarz",
+                position: { x: 0, y: 1.15, z: 0 },
+                size: { x: 2.2, y: 0.35, z: 2.2 },
+                opacity: 0.9,
+            },
+        ];
         const kristallGeodeParts = [
             {
                 shape: "sphere",
@@ -16003,6 +16206,12 @@ class AnazhRealm {
             baum_eiche: { name: "baum_eiche", label: "Eiche", builtIn: true, parts: baumEicheParts },
             baum_kiefer: { name: "baum_kiefer", label: "Kiefer", builtIn: true, parts: baumKieferParts },
             stein_block: { name: "stein_block", label: "Felsblock", builtIn: true, parts: steinBlockParts },
+            start_plattform: {
+                name: "start_plattform",
+                label: "Genesis-Plattform",
+                builtIn: true,
+                parts: startPlattformParts,
+            },
             kristall_geode: {
                 name: "kristall_geode",
                 label: "Kristall-Geode",
@@ -17644,20 +17853,21 @@ class AnazhRealm {
         geometry.setAttribute("aField", new THREE.BufferAttribute(field, 4));
     }
 
-    // V8.28 6.G4.b C — Cel-Shading gradientMap für MeshToonMaterial.
-    // Architekturen + Soul + Kreaturen werden als MeshToonMaterial gebaut;
-    // die gradientMap quantisiert das direkte Sonnen-Licht in Stufen.
-    // celLevels niedrig (2) = harte Cel-Linie, hoch (8) ≈ smooth.
+    // V8.29 — Cel-Shading gradientMap für MeshToonMaterial.
+    // Die gradientMap quantisiert das direkte Sonnen-Licht in Stufen.
+    // celLevels 2 = harte Cel-Linie, 8 = ECHT smooth (kein sichtbares Band).
     //
-    // Trick: die Textur ist IMMER 8 px breit, aber mit nur celLevels
-    // distinkten Stufen gefüllt. So bleibt die Textur-Größe konstant —
-    // ein Slider-Wechsel updated nur die Pixel-Daten + needsUpdate, KEINE
-    // neue Textur, KEINE Material-Neuzuweisung über alle Meshes.
+    // V8.28 hatte nur 8 px → selbst bei "Stufe 8" sah man Bänder, es gab
+    // keinen echten Smooth-Modus. Jetzt 32 px: bei celLevels>=8 bekommt
+    // jeder Pixel einen eigenen Wert → 32 Helligkeits-Stufen sehen für
+    // das Auge stufenlos aus. Bei celLevels<8 → genau celLevels Plateaus.
+    // Textur-Größe bleibt konstant 32 px → Slider-Wechsel updated nur die
+    // Pixel-Daten, KEINE neue Textur, KEINE Material-Neuzuweisung.
     _refreshToonGradient() {
         if (typeof THREE === "undefined") return;
-        const levels = (this.state.atmosphere && this.state.atmosphere.celLevels) || 4;
+        const levels = (this.state.atmosphere && this.state.atmosphere.celLevels) || 8;
         const n = Math.max(2, Math.min(8, Math.round(levels)));
-        const W = 8;
+        const W = 32;
         if (!this.state.toonGradientMap) {
             const data = new Uint8Array(W * 4);
             const tex = new THREE.DataTexture(data, W, 1, THREE.RGBAFormat);
@@ -17666,10 +17876,12 @@ class AnazhRealm {
             tex.generateMipmaps = false;
             this.state.toonGradientMap = tex;
         }
+        // celLevels>=8 → 32 distinkte Stufen (smooth). Sonst n Plateaus.
+        const plateaus = n >= 8 ? W : n;
         const data = this.state.toonGradientMap.image.data;
         for (let i = 0; i < W; i++) {
-            const step = Math.min(n - 1, Math.floor((i / W) * n)); // 0..n-1
-            const v = Math.round((step / (n - 1)) * 255);
+            const step = Math.min(plateaus - 1, Math.floor((i / W) * plateaus));
+            const v = Math.round((step / (plateaus - 1)) * 255);
             data[i * 4] = v;
             data[i * 4 + 1] = v;
             data[i * 4 + 2] = v;
@@ -17677,6 +17889,7 @@ class AnazhRealm {
         }
         this.state.toonGradientMap.needsUpdate = true;
         // Terrain-Shader (eigener Custom-Shader) parallel synchronisieren.
+        // celLevels>=8 wird im Shader als "kein floor" interpretiert.
         if (this.state.terrainMaterial && this.state.terrainMaterial.uniforms) {
             const u = this.state.terrainMaterial.uniforms.celLevels;
             if (u) u.value = n;
@@ -17686,58 +17899,12 @@ class AnazhRealm {
     // V8.28 6.G4.b C — Mutations-Pfad für den Cel-Shading-Slider. Setzt
     // state.atmosphere.celLevels, regeneriert die gradientMap, persistiert.
     setCelLevels(levels) {
-        const n = Math.max(2, Math.min(8, Math.round(Number(levels) || 4)));
-        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 4, fogDistance: 1.0 };
+        const n = Math.max(2, Math.min(8, Math.round(Number(levels) || 8)));
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 1.0 };
         this.state.atmosphere.celLevels = n;
         this._refreshToonGradient();
         if (typeof this.saveState === "function") this.saveState();
         return n;
-    }
-
-    // V8.28 6.G4.b D — Wind. Gras + Blumen wiegen sich im Vertex-Shader.
-    // onBeforeCompile injiziert einen Wind-Offset in den begin_vertex-
-    // Shader-Chunk (stabilster Three.js-Chunk) — die volle Lambert-
-    // Beleuchtung bleibt erhalten, nur die Vertices wandern. Die Phase
-    // hängt an der WELT-Position → benachbarte Halme schwingen leicht
-    // versetzt = Wind-Wellen-Effekt. uWindStrength emergiert aus weather
-    // (rainy → kräftiger Wind). Materialien sind geteilt + gecached →
-    // EINE Shader-Kompilierung pro Vegetations-Typ.
-    _windMat(kind) {
-        if (typeof THREE === "undefined") return null;
-        if (!this.state._windMats) this.state._windMats = {};
-        if (this.state._windMats[kind]) return this.state._windMats[kind];
-        if (!this.state.windUniforms) {
-            this.state.windUniforms = {
-                uWindTime: { value: 0 },
-                uWindStrength: { value: 0.12 },
-            };
-        }
-        const wu = this.state.windUniforms;
-        // Natürlichere Farben als das alte Knallgrün/Magenta (Welt soll
-        // bewundert werden, nicht grell sein).
-        const colors = { grass: 0x5a9e3f, stem: 0x4f8e3a, flower: 0xe86ab4 };
-        const mat = new THREE.MeshLambertMaterial({ color: colors[kind] || 0x5a9e3f });
-        // Die Blüte sitzt oben auf dem Stengel → wiegt als Ganzes (hf=1).
-        // Gras + Stengel wiegen nur im oberen Teil (Wurzel bleibt fix).
-        const hfExpr = kind === "flower" ? "1.0" : "max(0.0, transformed.y)";
-        mat.onBeforeCompile = (shader) => {
-            shader.uniforms.uWindTime = wu.uWindTime;
-            shader.uniforms.uWindStrength = wu.uWindStrength;
-            shader.vertexShader = "uniform float uWindTime;\nuniform float uWindStrength;\n" + shader.vertexShader;
-            shader.vertexShader = shader.vertexShader.replace(
-                "#include <begin_vertex>",
-                `#include <begin_vertex>
-                {
-                    vec3 wPos = (modelMatrix * vec4(position, 1.0)).xyz;
-                    float phase = uWindTime * 1.6 + wPos.x * 0.25 + wPos.z * 0.19;
-                    float hf = ${hfExpr};
-                    transformed.x += sin(phase) * uWindStrength * hf;
-                    transformed.z += cos(phase * 0.7) * uWindStrength * hf * 0.7;
-                }`
-            );
-        };
-        this.state._windMats[kind] = mat;
-        return mat;
     }
 
     // V8.28 6.G4.b C — Mutations-Pfad für den Fog-Distanz-Slider.
@@ -17745,7 +17912,7 @@ class AnazhRealm {
     // Fog-near/far. Die echten Werte setzt _applyDayNightToScene.
     setFogDistance(mult) {
         const m = Math.max(0.3, Math.min(2.0, Number(mult) || 1.0));
-        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 4, fogDistance: 1.0 };
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 1.0 };
         this.state.atmosphere.fogDistance = m;
         if (typeof this._applyDayNightToScene === "function") this._applyDayNightToScene();
         if (typeof this.saveState === "function") this.saveState();
@@ -23023,15 +23190,16 @@ class AnazhRealm {
             const fogG = skyG * (1 - gMix) + (hl ? hl.groundColor.g : 0.25) * gMix;
             const fogB = skyB * (1 - gMix) + (hl ? hl.groundColor.b : 0.2) * gMix;
             fog.color.setRGB(fogR, fogG, fogB);
-            // V8.28 6.G4.b C — Fog-Distanz. sunny 55..235, rainy 35..150.
-            // Mittelweg: V8.27 80..320 war "erkenne ich nicht", 40..170 war
-            // erdrückend. Mit der klaren Fog-Farbe (oben) wirkt 55..235
-            // als atmosphärischer Tiefen-Gradient, nicht als Dunst-Wand.
-            // fogDistance-Slider ist Multiplikator (0.3 dicht .. 2.0 weit).
+            // V8.29 — Fog-Distanz spürbar gemacht. sunny 35..150, rainy
+            // 22..95. Bei 235 m far griff der Fog in einer Bergwelt nie
+            // (Berge verdeckten vorher). 150 m ist nah genug, dass der
+            // atmosphärische Gradient klar sichtbar ist — die fernen Berge
+            // verschmelzen mit dem Himmel. Slider geht 30..200 % für weniger
+            // (weiter) bis mehr (dichter) Dunst.
             const rainyMix = this.state.weather === "rainy" ? 1 : 0;
             const fogMult = (this.state.atmosphere && this.state.atmosphere.fogDistance) || 1.0;
-            fog.near = (55 - rainyMix * 20) * fogMult;
-            fog.far = (235 - rainyMix * 85) * fogMult;
+            fog.near = (35 - rainyMix * 13) * fogMult;
+            fog.far = (150 - rainyMix * 55) * fogMult;
         }
         // V8.27 6.G4.a — Terrain-Shader-Uniforms synchronisieren falls vorhanden.
         // Der Custom-Shader hat lightDirection + weatherEffect; wir setzen die
@@ -23685,7 +23853,7 @@ class AnazhRealm {
         const cel = document.getElementById("slider-cel");
         const celVal = document.getElementById("slider-cel-val");
         if (cel) {
-            const c0 = (this.state.atmosphere && this.state.atmosphere.celLevels) || 4;
+            const c0 = (this.state.atmosphere && this.state.atmosphere.celLevels) || 8;
             cel.value = String(c0);
             if (celVal) celVal.textContent = String(c0);
             cel.addEventListener("input", () => {
@@ -25534,6 +25702,11 @@ class AnazhRealm {
                 // Bewegungsrichtung schaut — wichtig für asymmetrische Formen
                 // (Drache hat lange Z-Achse) und Vorbereitung für V2-Glieder.
                 player.rotation.y = this.state.yaw;
+                // V8.29 — Avatar im 1st-Person ausblenden. Die Kamera sitzt
+                // im Kopf des Avatars; ohne Hide schaut der Spieler von innen
+                // durch seinen eigenen (roten) Körper = großes rotes Dreieck
+                // am unteren Bildrand. Im 3rd-Person bleibt er sichtbar.
+                player.visible = this.state.cameraMode === "third";
                 if (this.state.cameraMode === "third") {
                     // Orbit-Kamera hinter + über dem Spieler. Pitch hebt/senkt
                     // die Kamera vertikal; Distance bleibt konstant. Look-At
