@@ -139,6 +139,36 @@ function startSaveServer() {
             r.setWorkshopManipulatorMode("scale");
         });
         await shot("06-scale-mode");
+
+        // Szene 7: Shape-Palette sichtbar im Werkstatt — Phase 3a UI
+        await page.evaluate(() => {
+            const werkstatt = document.querySelector('[data-drawer="werkstatt"]');
+            if (werkstatt) {
+                werkstatt.style.width = "";
+                werkstatt.style.height = "";
+                werkstatt.style.maxHeight = "";
+            }
+            const r = window.anazhRealm;
+            r.setWorkshopManipulatorMode("translate");
+            // Scroll runter zur Shape-Palette
+            const scroll = document.querySelector('[data-drawer="werkstatt"] .drawer-scroll');
+            if (scroll) scroll.scrollTop = 350;
+        });
+        await shot("07-shape-palette");
+
+        // Szene 8: Phase 3b — Connect-Modus mit gerendetem Popover.
+        // Sammelt 2 Part-Klicks → Popover öffnet sich mit Connection-Types.
+        await page.evaluate(() => {
+            const r = window.anazhRealm;
+            r.setWorkshopManipulatorMode("connect");
+            // Klick auf Part 0 + Part 1 simulieren via _workshopHandleConnectClick
+            r._workshopHandleConnectClick(0);
+            r._workshopHandleConnectClick(1);
+            // Scroll zurück nach oben damit Popover sichtbar ist
+            const scroll = document.querySelector('[data-drawer="werkstatt"] .drawer-scroll');
+            if (scroll) scroll.scrollTop = 0;
+        });
+        await shot("08-connect-popover");
     } finally {
         await browser.close();
         server.kill();

@@ -2728,6 +2728,145 @@
                 text-align: center;
                 box-sizing: border-box;
             }
+            /* V8.02 Phase 3a — Shape-Palette mit HTML5-Drag */
+            #workshop-shape-palette {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 4px;
+                margin-top: 4px;
+            }
+            .workshop-shape-card {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 2px;
+                padding: 6px 4px;
+                background: rgba(40, 25, 10, 0.08);
+                border: 1px solid var(--brass-3);
+                border-radius: 3px;
+                cursor: grab;
+                user-select: none;
+                -webkit-user-select: none;
+                transition:
+                    background 0.15s ease,
+                    border-color 0.15s ease;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9px;
+                letter-spacing: 0.4px;
+                color: var(--parch-ink);
+                text-align: center;
+            }
+            .workshop-shape-card:hover {
+                background: rgba(40, 25, 10, 0.22);
+                border-color: var(--brass-1);
+            }
+            .workshop-shape-card:active {
+                cursor: grabbing;
+            }
+            .workshop-shape-card.dragging {
+                opacity: 0.4;
+            }
+            .workshop-shape-icon {
+                width: 22px;
+                height: 22px;
+                background: var(--brass-2);
+                pointer-events: none;
+            }
+            /* Mini-ASCII-Icons via clip-path/mask: einfache Silhouetten je Form */
+            .workshop-shape-icon[data-icon="box"] {
+                clip-path: polygon(15% 25%, 50% 5%, 85% 25%, 85% 75%, 50% 95%, 15% 75%);
+            }
+            .workshop-shape-icon[data-icon="sphere"] {
+                border-radius: 50%;
+                clip-path: none;
+                background: radial-gradient(circle at 35% 30%, #f4e4b8 0%, var(--brass-2) 70%);
+            }
+            .workshop-shape-icon[data-icon="cylinder"] {
+                clip-path: polygon(15% 12%, 85% 12%, 85% 88%, 15% 88%);
+                border-radius: 50% / 12%;
+            }
+            .workshop-shape-icon[data-icon="cone"] {
+                clip-path: polygon(50% 5%, 90% 90%, 10% 90%);
+            }
+            .workshop-shape-icon[data-icon="pyramid"] {
+                clip-path: polygon(50% 5%, 95% 70%, 70% 95%, 30% 95%, 5% 70%);
+            }
+            .workshop-shape-icon[data-icon="octahedron"] {
+                clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+            }
+            .workshop-shape-icon[data-icon="plane"] {
+                clip-path: polygon(5% 45%, 95% 45%, 95% 55%, 5% 55%);
+            }
+            .workshop-shape-icon[data-icon="torus"] {
+                border-radius: 50%;
+                background: radial-gradient(
+                    circle at center,
+                    transparent 30%,
+                    var(--brass-2) 32%,
+                    var(--brass-2) 80%,
+                    transparent 82%
+                );
+            }
+            .workshop-shape-icon[data-icon="helix"] {
+                background: repeating-linear-gradient(45deg, var(--brass-2) 0 4px, transparent 4px 8px);
+                clip-path: polygon(35% 0%, 65% 0%, 65% 100%, 35% 100%);
+            }
+            #workshop-preview-canvas.drop-target {
+                box-shadow:
+                    0 0 0 2px var(--violet-1),
+                    0 0 18px 4px rgba(176, 106, 217, 0.45);
+                border-color: var(--violet-1);
+            }
+            /* V8.02 Phase 3b — Connect-Modus Visualisierung */
+            .workshop-mode-btn[data-workshop-mode="connect"].active {
+                background: linear-gradient(180deg, rgba(102, 204, 119, 0.5), rgba(70, 160, 90, 0.35));
+                border-color: #4dd07b;
+            }
+            #workshop-connect-overlay {
+                position: absolute;
+                z-index: 60;
+                background: rgba(20, 12, 4, 0.95);
+                border: 1px solid var(--brass-1);
+                border-radius: 4px;
+                padding: 6px;
+                box-shadow: 0 6px 16px rgba(0, 0, 0, 0.55);
+                display: flex;
+                flex-direction: column;
+                gap: 3px;
+                min-width: 180px;
+            }
+            #workshop-connect-overlay .conn-title {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10px;
+                letter-spacing: 0.5px;
+                color: var(--brass-1);
+                padding: 2px 4px;
+                border-bottom: 1px solid var(--brass-3);
+                margin-bottom: 2px;
+            }
+            #workshop-connect-overlay button {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10px;
+                padding: 4px 8px;
+                background: rgba(60, 38, 16, 0.65);
+                color: var(--parch-bg);
+                border: 1px solid var(--brass-3);
+                border-radius: 2px;
+                cursor: pointer;
+                text-align: left;
+            }
+            #workshop-connect-overlay button:hover {
+                background: rgba(176, 106, 217, 0.35);
+                border-color: var(--violet-1);
+            }
+            #workshop-connect-overlay button.cancel {
+                margin-top: 4px;
+                background: transparent;
+                color: var(--parch-ink-faded);
+                border-color: var(--parch-edge);
+                text-align: center;
+                font-style: italic;
+            }
             .workshop-part-row.selected {
                 background: linear-gradient(180deg, rgba(176, 106, 217, 0.18), rgba(176, 106, 217, 0.08));
                 border-color: var(--violet-1);
@@ -3301,6 +3440,14 @@
                         </button>
                         <button
                             type="button"
+                            class="workshop-mode-btn"
+                            data-workshop-mode="connect"
+                            title="Verbinden (C)"
+                        >
+                            Connect
+                        </button>
+                        <button
+                            type="button"
                             id="workshop-snap-toggle"
                             class="workshop-snap-btn active"
                             title="Grid-Snap (G)"
@@ -3309,9 +3456,51 @@
                         </button>
                     </div>
                     <p class="workshop-preview-hint">
-                        Klick: Part wählen · Drag-Achse: Part bewegen · Drag leer: rotieren · Rad: zoom · W/E/R Modus ·
-                        G snap
+                        Klick: Part wählen · Drag-Achse: Part bewegen · Drag leer: rotieren · Rad: zoom · W/E/R/C Modus
+                        · G snap
                     </p>
+                </div>
+            </section>
+            <section class="section">
+                <h3>Formen ziehen</h3>
+                <p class="drawer-hint">Form ins Canvas ziehen, um sie deinem Bauplan hinzuzufügen.</p>
+                <div id="workshop-shape-palette" role="group" aria-label="Form-Palette">
+                    <div class="workshop-shape-card" draggable="true" data-shape="box" title="Würfel">
+                        <div class="workshop-shape-icon" data-icon="box"></div>
+                        <span>Würfel</span>
+                    </div>
+                    <div class="workshop-shape-card" draggable="true" data-shape="sphere" title="Kugel">
+                        <div class="workshop-shape-icon" data-icon="sphere"></div>
+                        <span>Kugel</span>
+                    </div>
+                    <div class="workshop-shape-card" draggable="true" data-shape="cylinder" title="Zylinder">
+                        <div class="workshop-shape-icon" data-icon="cylinder"></div>
+                        <span>Zylinder</span>
+                    </div>
+                    <div class="workshop-shape-card" draggable="true" data-shape="cone" title="Kegel">
+                        <div class="workshop-shape-icon" data-icon="cone"></div>
+                        <span>Kegel</span>
+                    </div>
+                    <div class="workshop-shape-card" draggable="true" data-shape="pyramid" title="Pyramide">
+                        <div class="workshop-shape-icon" data-icon="pyramid"></div>
+                        <span>Pyramide</span>
+                    </div>
+                    <div class="workshop-shape-card" draggable="true" data-shape="octahedron" title="Oktaeder">
+                        <div class="workshop-shape-icon" data-icon="octahedron"></div>
+                        <span>Oktaeder</span>
+                    </div>
+                    <div class="workshop-shape-card" draggable="true" data-shape="plane" title="Plane">
+                        <div class="workshop-shape-icon" data-icon="plane"></div>
+                        <span>Plane</span>
+                    </div>
+                    <div class="workshop-shape-card" draggable="true" data-shape="torus" title="Torus">
+                        <div class="workshop-shape-icon" data-icon="torus"></div>
+                        <span>Torus</span>
+                    </div>
+                    <div class="workshop-shape-card" draggable="true" data-shape="helix" title="Helix">
+                        <div class="workshop-shape-icon" data-icon="helix"></div>
+                        <span>Helix</span>
+                    </div>
                 </div>
             </section>
             <section class="section">

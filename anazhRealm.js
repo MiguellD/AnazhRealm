@@ -5521,6 +5521,27 @@ class AnazhRealm {
     }
 
     closeAllDrawers() {
+        // V8.02 Phase 3b — wenn der Spieler gerade im Werkstatt-Connect-Mode
+        // eine Verbindung schmiedet (Source-Part gewählt ODER Popover offen),
+        // soll ESC nur die Connect-Geste abbrechen, nicht den ganzen Drawer
+        // schließen. Cleanest Coupling-Punkt.
+        const ws = this.state.workshop;
+        if (
+            ws &&
+            this.state.uiActiveDrawer === "werkstatt" &&
+            ws.manipulatorMode === "connect" &&
+            (ws.connectFirstPartIdx !== null ||
+                (typeof document !== "undefined" && document.getElementById("workshop-connect-overlay")))
+        ) {
+            ws.connectFirstPartIdx = null;
+            if (typeof this._workshopCloseConnectPopover === "function") {
+                this._workshopCloseConnectPopover();
+            }
+            if (typeof this._workshopSetSelection === "function") {
+                this._workshopSetSelection(null);
+            }
+            return;
+        }
         const tabs = document.querySelectorAll("#topbar .tab");
         for (const tab of tabs) {
             tab.classList.remove("active");
@@ -18060,9 +18081,14 @@ class AnazhRealm {
         if (typeof this.state.workshop.preview === "undefined") {
             this.state.workshop.preview = null;
         }
-        const validModes = ["translate", "rotate", "scale"];
+        // V8.02 Phase 3b — "connect" als 4. Modus für Klick-Klick-
+        // Connection-Erzeugung (zwei Parts klicken → Connection-Type-Popover).
+        const validModes = ["translate", "rotate", "scale", "connect"];
         if (!validModes.includes(this.state.workshop.manipulatorMode)) {
             this.state.workshop.manipulatorMode = "translate";
+        }
+        if (!this.state.workshop.connectFirstPartIdx && this.state.workshop.connectFirstPartIdx !== 0) {
+            this.state.workshop.connectFirstPartIdx = null;
         }
         if (typeof this.state.workshop.snapEnabled !== "boolean") {
             this.state.workshop.snapEnabled = true;
@@ -18806,11 +18832,16 @@ class AnazhRealm {
             } else if (key === "r") {
                 this.setWorkshopManipulatorMode("scale");
                 event.preventDefault();
+            } else if (key === "c") {
+                this.setWorkshopManipulatorMode("connect");
+                event.preventDefault();
             } else if (key === "g") {
                 this.toggleWorkshopSnap();
                 event.preventDefault();
             }
         });
+        // V8.02 Phase 3a — Shape-Palette HTML5-Drag-Sources + Canvas-Drop-Target
+        this._workshopInstallShapeDragDrop();
     }
 
     // V8.01 — ResizeObserver: passt Renderer-Pixel-Dimensionen an die
@@ -19141,16 +19172,24 @@ class AnazhRealm {
         const meshes = Array.from(p.partMeshes.keys());
         if (meshes.length === 0) return;
         const hits = p.raycaster.intersectObjects(meshes, false);
+        let hitIdx = null;
         if (hits.length > 0) {
             const hitMesh = hits[0].object;
             const idx = p.partMeshes.get(hitMesh);
-            if (typeof idx === "number") {
-                this._workshopSetSelection(idx);
-                return;
-            }
+            if (typeof idx === "number") hitIdx = idx;
         }
-        // Kein Hit → Selection lösen
-        this._workshopSetSelection(null);
+        // V8.02 Phase 3b — Connect-Modus hat Vorrang über Selection-Update.
+        // Klick auf Part im Connect-Modus → zählt als Connect-Schritt (Source
+        // oder Target), nicht als normaler Selection-Wechsel.
+        if (ws.manipulatorMode === "connect") {
+            this._workshopHandleConnectClick(hitIdx);
+            return;
+        }
+        if (hitIdx !== null) {
+            this._workshopSetSelection(hitIdx);
+        } else {
+            this._workshopSetSelection(null);
+        }
     }
 
     // Mutations-Pfad: setzt selectedPartIdx + triggert Re-Render des DOM
@@ -19631,12 +19670,15 @@ class AnazhRealm {
         return null;
     }
 
-    // Public: Mode wechseln (translate/rotate/scale).
+    // Public: Mode wechseln (translate/rotate/scale/connect).
     setWorkshopManipulatorMode(mode) {
-        if (!["translate", "rotate", "scale"].includes(mode)) return false;
+        if (!["translate", "rotate", "scale", "connect"].includes(mode)) return false;
         const ws = this._ensureWorkshopState();
         if (ws.manipulatorMode === mode) return true;
         ws.manipulatorMode = mode;
+        // Beim Modus-Wechsel: Connect-Pending-State + Popover schließen.
+        ws.connectFirstPartIdx = null;
+        this._workshopCloseConnectPopover();
         if (ws.preview) ws.preview.dirty = true;
         this._workshopUpdateManipulatorButtons();
         return true;
@@ -19680,6 +19722,249 @@ class AnazhRealm {
                 btn.style.opacity = isBuiltIn ? "0.4" : "";
             });
         }
+        // V8.02 Phase 3a — Shape-Palette ebenfalls disable bei Built-in
+        const palette = document.getElementById("workshop-shape-palette");
+        if (palette) {
+            const cards = palette.querySelectorAll(".workshop-shape-card");
+            cards.forEach((card) => {
+                if (isBuiltIn) {
+                    card.setAttribute("draggable", "false");
+                    card.style.opacity = "0.4";
+                    card.style.cursor = "not-allowed";
+                } else {
+                    card.setAttribute("draggable", "true");
+                    card.style.opacity = "";
+                    card.style.cursor = "";
+                }
+            });
+        }
+    }
+
+    // ============================================================
+    // ### Welle 6.B Phase 3a — Shape-Palette HTML5-Drag-Drop ###
+    // Jede Shape-Card im DOM ist draggable. Drag-Source setzt
+    // dataTransfer mit einem eigenen Marker (`application/x-anazh-shape`)
+    // damit kein Konflikt mit dem Inventar-Drag-Pattern (V7.77) entsteht.
+    // Drop-Target ist die Preview-Canvas: bei drop wird die Drop-Position
+    // auf eine Welt-Ebene (y=0) projiziert (oder auf y=0.5 falls Snap),
+    // ein neuer Part am Bauplan angehängt + automatisch selektiert.
+    // ============================================================
+    _workshopInstallShapeDragDrop() {
+        if (typeof document === "undefined") return;
+        const ws = this._ensureWorkshopState();
+        if (ws._shapeDnDInstalled) return;
+        ws._shapeDnDInstalled = true;
+
+        const palette = document.getElementById("workshop-shape-palette");
+        const canvas = document.getElementById("workshop-preview-canvas");
+        if (!palette || !canvas) return;
+
+        const cards = palette.querySelectorAll(".workshop-shape-card");
+        cards.forEach((card) => {
+            card.addEventListener("dragstart", (event) => {
+                const shape = card.getAttribute("data-shape");
+                if (!shape) return;
+                // Built-in-Schutz: dragstart abbrechen wenn Bauplan read-only
+                const bp = this.state.blueprints[this._ensureWorkshopState().selectedBlueprint];
+                if (!bp || bp.builtIn) {
+                    event.preventDefault();
+                    return;
+                }
+                event.dataTransfer.setData("application/x-anazh-shape", shape);
+                event.dataTransfer.effectAllowed = "copy";
+                card.classList.add("dragging");
+            });
+            card.addEventListener("dragend", () => {
+                card.classList.remove("dragging");
+            });
+        });
+
+        canvas.addEventListener("dragover", (event) => {
+            // Nur akzeptieren wenn unser Shape-Marker im DataTransfer ist
+            if (!event.dataTransfer.types.includes("application/x-anazh-shape")) return;
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "copy";
+            canvas.classList.add("drop-target");
+        });
+        canvas.addEventListener("dragleave", () => {
+            canvas.classList.remove("drop-target");
+        });
+        canvas.addEventListener("drop", (event) => {
+            canvas.classList.remove("drop-target");
+            const shape = event.dataTransfer.getData("application/x-anazh-shape");
+            if (!shape) return;
+            event.preventDefault();
+            this._workshopHandleShapeDrop(shape, event.clientX, event.clientY);
+        });
+    }
+
+    // Drop-Handler: berechnet Welt-Position aus Bildschirm-Koordinaten via
+    // Raycaster gegen eine y=0-Ebene (oder y=0.5 bei snap), fügt einen
+    // neuen Part am Bauplan an + selektiert ihn automatisch.
+    _workshopHandleShapeDrop(shape, clientX, clientY) {
+        const ws = this._ensureWorkshopState();
+        const bp = this.state.blueprints[ws.selectedBlueprint];
+        if (!bp || bp.builtIn) {
+            this.log("Workshop-Drop auf Built-in-Bauplan abgelehnt — bitte erst klonen", "INFO");
+            return;
+        }
+        // Welt-Position aus Drop-Koords: Raycast gegen XZ-Ebene bei y=0.
+        // Wenn die Ebene parallel zur Camera ist (vertikaler Top-Down-Blick),
+        // hat der Ray keinen Schnittpunkt — Fallback ist (0,0,0).
+        let dropPos = { x: 0, y: 0, z: 0 };
+        if (ws.preview) {
+            const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+            const intersect = this._workshopRaycastPlane(clientX, clientY, plane);
+            if (intersect) {
+                dropPos = { x: intersect.x, y: 0.5, z: intersect.z };
+                if (ws.snapEnabled) {
+                    const step = AnazhRealm.WORKSHOP_SNAP_TRANSLATE;
+                    dropPos.x = Math.round(dropPos.x / step) * step;
+                    dropPos.z = Math.round(dropPos.z / step) * step;
+                }
+            }
+        }
+        // Default-Material: erstes existing Material auf bp (für Konsistenz),
+        // fallback "stein".
+        let mat = "stein";
+        if (bp.parts && bp.parts.length > 0 && bp.parts[0].material) {
+            mat = bp.parts[0].material;
+        }
+        const matColor = (this.state.materials[mat] || {}).color || 0x888888;
+        const newPart = {
+            shape,
+            material: mat,
+            color: matColor,
+            position: dropPos,
+            rotation: { x: 0, y: 0, z: 0 },
+            size: { x: 1, y: 1, z: 1 },
+        };
+        this.addPartToBlueprint(bp.name, newPart);
+        // UI refresh + neuen Part auto-selektieren
+        this._renderWorkshopDOM();
+        const newIdx = bp.parts.length - 1;
+        this._workshopSetSelection(newIdx);
+        this.log(
+            `Workshop: ${shape}-Part hinzugefügt bei (${dropPos.x.toFixed(2)}, ${dropPos.y.toFixed(2)}, ${dropPos.z.toFixed(2)})`,
+            "INFO"
+        );
+    }
+
+    // ============================================================
+    // ### Welle 6.B Phase 3b — Klick-Klick-Connection-Erzeugung ###
+    // Im Connect-Modus zählt jeder Klick auf ein Part: erster = Source,
+    // zweiter = Target → öffnet Popover mit 8 Connection-Types. Wahl
+    // schreibt `bp.connections.push({type, partA, partB})`. ESC bricht ab.
+    // ============================================================
+
+    // Behandelt einen Klick im Canvas wenn Modus "connect" ist.
+    // Wird aus _workshopRaycastSelection aufgerufen (Connect-Pfad hat
+    // Vorrang über Selection-Update).
+    _workshopHandleConnectClick(partIdx) {
+        const ws = this._ensureWorkshopState();
+        const bp = this.state.blueprints[ws.selectedBlueprint];
+        if (!bp || bp.builtIn) return;
+        if (partIdx === null || partIdx < 0 || partIdx >= bp.parts.length) {
+            // Klick ins Leere → Connect-Geste zurücksetzen + Popover schließen
+            ws.connectFirstPartIdx = null;
+            this._workshopCloseConnectPopover();
+            this._workshopSetSelection(null);
+            return;
+        }
+        if (ws.connectFirstPartIdx === null) {
+            // Erster Klick: Source merken + visuelles Highlight via Selection
+            ws.connectFirstPartIdx = partIdx;
+            this._workshopSetSelection(partIdx);
+            return;
+        }
+        if (ws.connectFirstPartIdx === partIdx) {
+            // Selber Part nochmal geklickt → Geste zurücksetzen
+            ws.connectFirstPartIdx = null;
+            this._workshopSetSelection(null);
+            return;
+        }
+        // Zweiter Klick auf anderes Part → Type-Popover öffnen
+        this._workshopOpenConnectPopover(ws.connectFirstPartIdx, partIdx);
+    }
+
+    // Öffnet das Connection-Type-Auswahl-Popover über dem Canvas. Klick auf
+    // einen Type schreibt die Connection ins Blueprint + UI-Refresh.
+    _workshopOpenConnectPopover(partA, partB) {
+        if (typeof document === "undefined") return;
+        this._workshopCloseConnectPopover(); // idempotent
+        const ws = this._ensureWorkshopState();
+        const canvas = document.getElementById("workshop-preview-canvas");
+        if (!canvas) return;
+        const wrapper = document.getElementById("workshop-preview-wrapper");
+        if (!wrapper) return;
+        const overlay = document.createElement("div");
+        overlay.id = "workshop-connect-overlay";
+        const title = document.createElement("div");
+        title.className = "conn-title";
+        title.textContent = `Verbindung: Part ${partA} → Part ${partB}`;
+        overlay.appendChild(title);
+        const types = AnazhRealm.CONNECTION_TYPES;
+        for (const typeName of Object.keys(types)) {
+            const def = types[typeName];
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.textContent = `${def.label} — ${def.description}`;
+            btn.title = `Stark in: ${def.strongTags.join(", ")} · Basis ${def.typeStrength}`;
+            btn.addEventListener("click", () => {
+                this._workshopApplyConnection(partA, partB, typeName);
+            });
+            overlay.appendChild(btn);
+        }
+        const cancelBtn = document.createElement("button");
+        cancelBtn.type = "button";
+        cancelBtn.className = "cancel";
+        cancelBtn.textContent = "Abbrechen (ESC)";
+        cancelBtn.addEventListener("click", () => {
+            ws.connectFirstPartIdx = null;
+            this._workshopCloseConnectPopover();
+            this._workshopSetSelection(null);
+        });
+        overlay.appendChild(cancelBtn);
+        // Position: zentriert über dem Canvas
+        wrapper.style.position = "relative";
+        wrapper.appendChild(overlay);
+        // Center berechnen relativ zum Wrapper
+        const cRect = canvas.getBoundingClientRect();
+        const wRect = wrapper.getBoundingClientRect();
+        const top = cRect.top - wRect.top + cRect.height / 2 - overlay.offsetHeight / 2;
+        const left = cRect.left - wRect.left + cRect.width / 2 - overlay.offsetWidth / 2;
+        overlay.style.top = `${Math.max(8, top)}px`;
+        overlay.style.left = `${Math.max(8, left)}px`;
+    }
+
+    _workshopCloseConnectPopover() {
+        if (typeof document === "undefined") return;
+        const overlay = document.getElementById("workshop-connect-overlay");
+        if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    }
+
+    // Schreibt die Connection ins Blueprint + UI-Refresh + Reset.
+    _workshopApplyConnection(partA, partB, typeName) {
+        const ws = this._ensureWorkshopState();
+        const bp = this.state.blueprints[ws.selectedBlueprint];
+        if (!bp || bp.builtIn) return;
+        if (!AnazhRealm.CONNECTION_TYPES[typeName]) return;
+        if (!Array.isArray(bp.connections)) bp.connections = [];
+        // Duplikat-Schutz: dieselbe Connection nicht zweimal hinzufügen.
+        // Reihenfolge ist symmetrisch (A→B ≡ B→A) für diesen Check.
+        const exists = bp.connections.some(
+            (c) =>
+                c.type === typeName &&
+                ((c.partA === partA && c.partB === partB) || (c.partA === partB && c.partB === partA))
+        );
+        if (!exists) {
+            bp.connections.push({ type: typeName, partA, partB });
+            this.log(`Workshop: Verbindung ${typeName} zwischen Part ${partA} und Part ${partB}`, "INFO");
+        }
+        ws.connectFirstPartIdx = null;
+        this._workshopCloseConnectPopover();
+        this._workshopSetSelection(null);
+        this._renderWorkshopDOM();
     }
 
     // Hilfsmethode für UI/Tests: zählt Architekturen in Spieler-Nähe.

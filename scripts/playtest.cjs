@@ -12332,7 +12332,8 @@ function startSaveServer() {
                         // --- Phase 2: UI-Elemente ---
                         out.modeBarInDom = !!document.getElementById("workshop-mode-bar");
                         const modeBtns = document.querySelectorAll("#workshop-mode-bar [data-workshop-mode]");
-                        out.threeModeButtons = modeBtns.length === 3;
+                        // V8.02 Phase 3b: connect ist 4. Modus dazugekommen
+                        out.fourModeButtons = modeBtns.length === 4;
                         out.snapToggleInDom = !!document.getElementById("workshop-snap-toggle");
 
                         // --- Phase 2: Gizmo-Aufbau ---
@@ -12486,7 +12487,10 @@ function startSaveServer() {
                     wave6bResults.dragManipulatorCleared
                 );
                 check("Welle 6.B P2: #workshop-mode-bar im DOM", wave6bResults.modeBarInDom);
-                check("Welle 6.B P2: 3 Mode-Buttons (translate/rotate/scale) im DOM", wave6bResults.threeModeButtons);
+                check(
+                    "Welle 6.B P2+3: 4 Mode-Buttons (translate/rotate/scale/connect) im DOM",
+                    wave6bResults.fourModeButtons
+                );
                 check("Welle 6.B P2: #workshop-snap-toggle im DOM", wave6bResults.snapToggleInDom);
                 check("Welle 6.B P2: Gizmo-Group gebaut (preview.gizmo nicht null)", wave6bResults.gizmoBuilt);
                 check("Welle 6.B P2: Gizmo hat 3 Sub-Groups (translate/rotate/scale)", wave6bResults.gizmoChildren);
@@ -12726,6 +12730,185 @@ function startSaveServer() {
                 );
             } else if (v801Results && v801Results.error) {
                 check(`V8.01: evaluate-Fehler — ${v801Results.error}`, false);
+            }
+
+            // ### V8.02 Phase 3 — Shape-Drag-Drop + Klick-Klick-Connection ###
+            const v802Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    try {
+                        // Methoden existieren
+                        out.hasShapeDnDInstall = typeof r._workshopInstallShapeDragDrop === "function";
+                        out.hasShapeDropHandler = typeof r._workshopHandleShapeDrop === "function";
+                        out.hasConnectClick = typeof r._workshopHandleConnectClick === "function";
+                        out.hasOpenPopover = typeof r._workshopOpenConnectPopover === "function";
+                        out.hasClosePopover = typeof r._workshopCloseConnectPopover === "function";
+                        out.hasApplyConn = typeof r._workshopApplyConnection === "function";
+
+                        // Shape-Palette: 9 Cards im DOM
+                        const palette = document.getElementById("workshop-shape-palette");
+                        out.paletteInDom = !!palette;
+                        if (palette) {
+                            const cards = palette.querySelectorAll(".workshop-shape-card");
+                            out.nineCards = cards.length === 9;
+                            // Alle 9 expected shapes
+                            const shapes = new Set();
+                            cards.forEach((c) => shapes.add(c.getAttribute("data-shape")));
+                            out.allNineShapesPresent = [
+                                "box",
+                                "sphere",
+                                "cylinder",
+                                "cone",
+                                "pyramid",
+                                "octahedron",
+                                "plane",
+                                "torus",
+                                "helix",
+                            ].every((s) => shapes.has(s));
+                            // Default: draggable=true (eigener Bauplan)
+                            // Aber bei Built-in (initial village) sollten sie draggable=false sein
+                        }
+
+                        // Drop-Handler-Test: auf Built-in muss er ablehnen
+                        r.selectBlueprintForEdit("village");
+                        const partsBeforeBuiltIn = r.state.blueprints.village.parts.length;
+                        r._workshopHandleShapeDrop("box", 100, 100);
+                        const partsAfterBuiltIn = r.state.blueprints.village.parts.length;
+                        out.dropOnBuiltInRejected = partsBeforeBuiltIn === partsAfterBuiltIn;
+
+                        // Drop-Handler auf eigenem Bauplan: fügt Part hinzu + selektiert ihn
+                        if (r.state.blueprints["test_phase3"]) r.deleteBlueprint("test_phase3");
+                        r.cloneBlueprint("village", "test_phase3");
+                        r.selectBlueprintForEdit("test_phase3");
+                        r._workshopEnsurePreview();
+                        const partsBefore = r.state.blueprints.test_phase3.parts.length;
+                        r._workshopHandleShapeDrop("sphere", 100, 100);
+                        const partsAfter = r.state.blueprints.test_phase3.parts.length;
+                        out.dropOnCustomAddsPart = partsAfter === partsBefore + 1;
+                        const newPart = r.state.blueprints.test_phase3.parts[partsAfter - 1];
+                        out.newPartIsSphere = newPart && newPart.shape === "sphere";
+                        out.newPartSelected = r.state.workshop.selectedPartIdx === partsAfter - 1;
+
+                        // Connect-Modus: setWorkshopManipulatorMode akzeptiert "connect"
+                        out.connectModeAccepted = r.setWorkshopManipulatorMode("connect") === true;
+                        out.modeIsConnect = r.state.workshop.manipulatorMode === "connect";
+
+                        // Klick auf Part 0 im Connect-Mode → connectFirstPartIdx wird Source
+                        r._workshopHandleConnectClick(0);
+                        out.connectFirstSetTo0 = r.state.workshop.connectFirstPartIdx === 0;
+                        // Klick auf Part 1 → öffnet Popover
+                        r._workshopHandleConnectClick(1);
+                        const popover = document.getElementById("workshop-connect-overlay");
+                        out.popoverOpened = !!popover;
+                        // Popover hat 8 Type-Buttons + 1 Cancel
+                        if (popover) {
+                            const buttons = popover.querySelectorAll("button");
+                            out.popoverHasButtons = buttons.length === 9; // 8 types + cancel
+                        }
+
+                        // Apply Connection
+                        r._workshopApplyConnection(0, 1, "lashing");
+                        const conns = r.state.blueprints.test_phase3.connections || [];
+                        out.connectionAdded = conns.some((c) => c.partA === 0 && c.partB === 1 && c.type === "lashing");
+                        // Popover wurde geschlossen
+                        out.popoverClosedAfterApply = !document.getElementById("workshop-connect-overlay");
+                        // Connect-State zurückgesetzt
+                        out.connectStateReset = r.state.workshop.connectFirstPartIdx === null;
+
+                        // Duplikat-Schutz: gleiche Connection zweimal → bleibt 1
+                        r._workshopApplyConnection(0, 1, "lashing");
+                        const connsAfterDup = r.state.blueprints.test_phase3.connections || [];
+                        const lashingCount = connsAfterDup.filter(
+                            (c) => c.type === "lashing" && c.partA === 0 && c.partB === 1
+                        ).length;
+                        out.dupRejected = lashingCount === 1;
+
+                        // Apply lehnt unbekannten Type ab
+                        const beforeBogus = (r.state.blueprints.test_phase3.connections || []).length;
+                        r._workshopApplyConnection(0, 1, "nonsense_type");
+                        const afterBogus = (r.state.blueprints.test_phase3.connections || []).length;
+                        out.bogusTypeRejected = afterBogus === beforeBogus;
+
+                        // ESC im Connect-Mode mit pending Source → cancelt nur Connect, nicht Drawer
+                        r._workshopHandleConnectClick(0); // Source = 0
+                        r.state.uiActiveDrawer = "werkstatt";
+                        r.closeAllDrawers();
+                        out.escCancelsConnectOnly = r.state.workshop.connectFirstPartIdx === null;
+                        // Drawer sollte noch aktiv sein, weil ESC nur Connect canceled
+                        out.drawerStillActiveAfterEsc = r.state.uiActiveDrawer === "werkstatt";
+
+                        // Cleanup
+                        r.setWorkshopManipulatorMode("translate");
+                        r.deleteBlueprint("test_phase3");
+                        r.selectBlueprintForEdit("village");
+                        r._renderWorkshopDOM();
+                    } catch (err) {
+                        out.error = err && err.message;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (v802Results && !v802Results.error) {
+                check(
+                    "V8.02 Phase 3: alle 6 Methoden existieren (DragDrop-Install + Drop-Handler + Connect-Click/Open/Close/Apply)",
+                    v802Results.hasShapeDnDInstall &&
+                        v802Results.hasShapeDropHandler &&
+                        v802Results.hasConnectClick &&
+                        v802Results.hasOpenPopover &&
+                        v802Results.hasClosePopover &&
+                        v802Results.hasApplyConn
+                );
+                check("V8.02 Phase 3a: #workshop-shape-palette im DOM", v802Results.paletteInDom);
+                check("V8.02 Phase 3a: 9 Shape-Cards in der Palette", v802Results.nineCards);
+                check(
+                    "V8.02 Phase 3a: alle 9 Primitive (box/sphere/cylinder/cone/pyramid/octahedron/plane/torus/helix)",
+                    v802Results.allNineShapesPresent
+                );
+                check(
+                    "V8.02 Phase 3a: Drop auf Built-in-Bauplan abgelehnt (read-only-Schutz)",
+                    v802Results.dropOnBuiltInRejected
+                );
+                check(
+                    "V8.02 Phase 3a: Drop auf eigenem Bauplan fügt einen Part hinzu",
+                    v802Results.dropOnCustomAddsPart && v802Results.newPartIsSphere
+                );
+                check(
+                    "V8.02 Phase 3a: Neuer Part wird automatisch selektiert (Gizmo bereit)",
+                    v802Results.newPartSelected
+                );
+                check(
+                    "V8.02 Phase 3b: setWorkshopManipulatorMode('connect') akzeptiert + setzt State",
+                    v802Results.connectModeAccepted && v802Results.modeIsConnect
+                );
+                check(
+                    "V8.02 Phase 3b: Erster Connect-Klick setzt connectFirstPartIdx auf Source",
+                    v802Results.connectFirstSetTo0
+                );
+                check(
+                    "V8.02 Phase 3b: Zweiter Connect-Klick öffnet #workshop-connect-overlay",
+                    v802Results.popoverOpened
+                );
+                check(
+                    "V8.02 Phase 3b: Popover hat 8 Type-Buttons + 1 Cancel-Button (= 9 total)",
+                    v802Results.popoverHasButtons
+                );
+                check(
+                    "V8.02 Phase 3b: _workshopApplyConnection schreibt {type, partA, partB} ins bp.connections",
+                    v802Results.connectionAdded
+                );
+                check("V8.02 Phase 3b: Popover schließt nach Apply", v802Results.popoverClosedAfterApply);
+                check("V8.02 Phase 3b: connectFirstPartIdx zurückgesetzt nach Apply", v802Results.connectStateReset);
+                check("V8.02 Phase 3b: Duplikat-Schutz — selbe Connection zweimal → bleibt 1", v802Results.dupRejected);
+                check("V8.02 Phase 3b: Unbekannter Connection-Type wird abgelehnt", v802Results.bogusTypeRejected);
+                check(
+                    "V8.02 Phase 3b: ESC im Connect-Mode mit pending Source → cancelt nur Connect (nicht Drawer)",
+                    v802Results.escCancelsConnectOnly && v802Results.drawerStillActiveAfterEsc
+                );
+            } else if (v802Results && v802Results.error) {
+                check(`V8.02 Phase 3: evaluate-Fehler — ${v802Results.error}`, false);
             }
 
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
