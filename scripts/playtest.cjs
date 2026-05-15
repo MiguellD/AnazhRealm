@@ -10137,23 +10137,34 @@ function startSaveServer() {
                     const r = window.anazhRealm;
                     const out = {};
 
-                    // B1 — Logbuch-Toggle
+                    // B1 — Logbuch-Toggle (V8.14: Section sichtbar, #log toggelt)
                     out.logbookSectionExists = !!document.getElementById("logbook-section");
                     out.logbookToggleExists = !!document.getElementById("logbook-toggle");
                     const consoleLog = document.getElementById("console-log-section");
+                    const logEl = document.getElementById("log");
                     out.logbookConsoleSectionExists = !!consoleLog;
-                    out.logbookHiddenByDefault = !!consoleLog && consoleLog.hidden === true;
+                    // V8.14: Section bleibt sichtbar, NUR #log (innen) hidden default
+                    out.logbookHiddenByDefault = !!logEl && logEl.hidden === true;
                     out.logbookInitDOMExists = typeof r.logbookInitDOM === "function";
-                    // Toggle aktivieren → console-log-section wird sichtbar
+                    out.consoleLogToggleExists = !!document.getElementById("console-log-toggle");
+                    // Toggle aktivieren → #log wird sichtbar (Section bleibt sichtbar)
                     const toggle = document.getElementById("logbook-toggle");
                     if (toggle) {
                         toggle.checked = true;
                         toggle.dispatchEvent(new Event("change"));
-                        out.logbookVisibleAfterToggle = !!consoleLog && consoleLog.hidden === false;
+                        out.logbookVisibleAfterToggle = !!logEl && logEl.hidden === false;
                         // Cleanup für nachfolgende Tests
                         toggle.checked = false;
                         toggle.dispatchEvent(new Event("change"));
-                        out.logbookHiddenAfterUntoggle = !!consoleLog && consoleLog.hidden === true;
+                        out.logbookHiddenAfterUntoggle = !!logEl && logEl.hidden === true;
+                    }
+                    // V8.14: Inline-Console-Toggle togglet selber State
+                    const inlineBtn = document.getElementById("console-log-toggle");
+                    if (inlineBtn && logEl) {
+                        inlineBtn.click();
+                        out.inlineToggleExpands = logEl.hidden === false;
+                        inlineBtn.click();
+                        out.inlineToggleCollapses = logEl.hidden === true;
                     }
 
                     // B2 — Welt-Bauwerke-Buttons entfernt
@@ -10191,10 +10202,14 @@ function startSaveServer() {
                 check("Welle 6.X.2 B1: #logbook-section im DOM", wave6x2Results.logbookSectionExists);
                 check("Welle 6.X.2 B1: #logbook-toggle im DOM", wave6x2Results.logbookToggleExists);
                 check(
-                    "Welle 6.X.2 B1: #console-log-section default hidden",
+                    "Welle 6.X.2 B1 V8.14: #log default hidden (Section bleibt sichtbar)",
                     wave6x2Results.logbookHiddenByDefault
                 );
                 check("Welle 6.X.2 B1: logbookInitDOM-Methode existiert", wave6x2Results.logbookInitDOMExists);
+                check(
+                    "Welle 6.X.2 V8.14: #console-log-toggle Inline-Button im DOM",
+                    wave6x2Results.consoleLogToggleExists
+                );
                 check(
                     "Welle 6.X.2 B1: Toggle aktivieren macht Logbuch sichtbar",
                     wave6x2Results.logbookVisibleAfterToggle
@@ -10202,6 +10217,14 @@ function startSaveServer() {
                 check(
                     "Welle 6.X.2 B1: Toggle deaktivieren versteckt Logbuch",
                     wave6x2Results.logbookHiddenAfterUntoggle
+                );
+                check(
+                    "Welle 6.X.2 V8.14: Inline-Toggle expandiert Logbuch",
+                    wave6x2Results.inlineToggleExpands
+                );
+                check(
+                    "Welle 6.X.2 V8.14: Inline-Toggle collapsed Logbuch",
+                    wave6x2Results.inlineToggleCollapses
                 );
                 check(
                     "Welle 6.X.2 B2: #architecture-actions aus dem world-drawer entfernt",
@@ -10524,8 +10547,9 @@ function startSaveServer() {
                     const stamText = document.getElementById("stats-hud-stam-text");
                     out.stamTextShowsRatio = !!stamText && /75\/100/.test(stamText.textContent);
                     const hpFill = document.getElementById("stats-hud-hp-fill");
+                    // V8.14: Bar-Breite ist jetzt 166 (von 158) — 50% → 83px
                     out.hpFillProportional =
-                        !!hpFill && Math.abs(parseFloat(hpFill.getAttribute("width")) - 79) < 1; // 158 × 0.5 ≈ 79
+                        !!hpFill && Math.abs(parseFloat(hpFill.getAttribute("width")) - 83) < 1;
 
                     // --- B3: Tooltip enthält slow stats nach Hover
                     r.tickStatsHud(performance.now() / 1000 + 2); // +2s damit Tooltip-Throttle nicht greift
@@ -10596,7 +10620,7 @@ function startSaveServer() {
                 check("Welle 6.X.4 B3: tickStatsHud-Methode existiert", wave6x4bResults.tickStatsHudMethodExists);
                 check("Welle 6.X.4 B3: HP-Text zeigt 50/100 nach Setzen", wave6x4bResults.hpTextShowsRatio);
                 check("Welle 6.X.4 B3: Stamina-Text zeigt 75/100 nach Setzen", wave6x4bResults.stamTextShowsRatio);
-                check("Welle 6.X.4 B3: HP-Fill-Width proportional (50% → 79px von 158px)", wave6x4bResults.hpFillProportional);
+                check("Welle 6.X.4 B3: HP-Fill-Width proportional (50% → 83px von 166px)", wave6x4bResults.hpFillProportional);
                 check("Welle 6.X.4 B3: Tooltip enthält Schaden", wave6x4bResults.tooltipHasDamage);
                 check("Welle 6.X.4 B3: Tooltip enthält Geschwindigkeit", wave6x4bResults.tooltipHasSpeed);
                 check("Welle 6.X.4 B3: Tooltip enthält Präzision", wave6x4bResults.tooltipHasPrecision);
@@ -15161,7 +15185,8 @@ function startSaveServer() {
                         out.dividerInModeBar = !!(modeBar && modeBar.querySelector(".workshop-mode-divider"));
                         // Mode-Bar hat 5 Mode-Buttons + 2 Action-Buttons = 7
                         const allBtns = modeBar ? modeBar.querySelectorAll("button").length : 0;
-                        out.sevenButtonsInBar = allBtns === 7;
+                        // V8.14: Reset-Button (Zentrieren) hinzugefügt → 8 Buttons.
+                        out.sevenButtonsInBar = allBtns === 8;
 
                         // Methode existiert
                         out.hasActionInstall = typeof r._workshopInstallActionButtons === "function";
@@ -15218,7 +15243,7 @@ function startSaveServer() {
                     "V8.06: Klonen + Neu-Buttons direkt in der Mode-Bar (mit Divider)",
                     v806Results.cloneBtnInModeBar && v806Results.newBtnInModeBar && v806Results.dividerInModeBar
                 );
-                check("V8.06: Mode-Bar hat 7 Buttons (5 Modi + Klone + Neu)", v806Results.sevenButtonsInBar);
+                check("V8.06/V8.14: Mode-Bar hat 8 Buttons (5 Modi + Snap + Klone + Neu + Zentrieren)", v806Results.sevenButtonsInBar);
                 check(
                     "V8.06: _workshopInstallActionButtons + _workshopApplyDefaultSizeOnce existieren",
                     v806Results.hasActionInstall && v806Results.hasDefaultSize

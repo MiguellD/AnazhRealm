@@ -356,6 +356,33 @@
                 letter-spacing: 0.12em;
                 margin-bottom: 4px;
             }
+            /* Welle 6.X.2 V8.14 — Logbuch-Inline-Toggle (Click im Konsole-
+               Drawer öffnet/schließt das Logbuch separat vom globalen
+               Einstellungen-Toggle). Beide Toggles synchron via Helper. */
+            button.console-log-toggle {
+                appearance: none;
+                background: transparent;
+                border: none;
+                color: var(--brass-2);
+                cursor: pointer;
+                padding: 0;
+                text-align: left;
+                width: 100%;
+                font-family: inherit;
+                font-style: inherit;
+                font-size: inherit;
+                text-transform: inherit;
+                letter-spacing: inherit;
+            }
+            button.console-log-toggle .caret {
+                display: inline-block;
+                transition: transform 0.2s ease-out;
+                color: var(--brass-1);
+                margin-right: 4px;
+            }
+            button.console-log-toggle[aria-expanded="true"] .caret {
+                transform: rotate(90deg);
+            }
             #chat-output {
                 flex: 1;
                 min-height: 80px;
@@ -605,6 +632,11 @@
                Painterly Pergament + Kupfer. HP/Stamina als zwei SVG-Bars,
                schmaler als die Hotbar (etwa 80% Breite, zentriert). Hover
                offenbart slow stats (Damage/Speed/Präzision/etc.). */
+            /* Welle 6.X.4 B3 V8.14 — Stats-HUD-Redesign: antik+modern.
+               Dunkler Eisen-Plattformen-Look mit warm-glühenden Bars +
+               Brass-Endkappen. Symbol-Glyphen statt „HP"/"SP"-Text.
+               Hochkontrastiv: Bar-Glow leuchtet sichtbar gegen dunklen
+               Hintergrund, Text-Schatten für Lesbarkeit auf jeder Welt. */
             #stats-hud {
                 position: absolute;
                 bottom: 88px; /* direkt über der 56px-hohen Hotbar + 6px-Padding + 8px-Gap */
@@ -612,36 +644,81 @@
                 transform: translateX(-50%);
                 display: flex;
                 flex-direction: column;
-                gap: 3px;
-                padding: 6px 10px;
-                background: linear-gradient(180deg, rgba(255, 245, 220, 0.85), rgba(220, 195, 150, 0.75));
-                border: 1px solid var(--brass-3);
-                border-radius: 5px;
+                gap: 4px;
+                padding: 8px 14px;
+                background: linear-gradient(
+                    180deg,
+                    rgba(28, 20, 12, 0.88) 0%,
+                    rgba(42, 28, 14, 0.88) 50%,
+                    rgba(20, 14, 8, 0.92) 100%
+                );
+                border: 1px solid var(--brass-2, #8a6322);
+                border-radius: 6px;
                 z-index: 5;
-                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+                box-shadow:
+                    inset 0 0 0 1px rgba(198, 154, 74, 0.25),
+                    inset 0 1px 0 rgba(255, 220, 150, 0.15),
+                    0 3px 14px rgba(0, 0, 0, 0.6);
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 10px;
-                color: var(--parch-ink);
+                font-size: 11px;
+                color: #e9d49e;
                 cursor: help;
+                /* Sanftes Atem-Pulse via subtiler Box-Shadow-Animation, nur bei
+                   niedrigem HP wird das sichtbarer (siehe .stats-hud-low CSS). */
+                transition: box-shadow 0.4s ease-out;
             }
             #stats-hud .stats-hud-row {
                 display: flex;
                 align-items: center;
-                gap: 6px;
+                gap: 8px;
             }
-            #stats-hud .stats-hud-label {
-                min-width: 32px;
-                letter-spacing: 0.05em;
+            #stats-hud .stats-hud-glyph {
+                font-size: 14px;
+                min-width: 18px;
+                text-align: center;
+                color: #f5e7c4;
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+            }
+            #stats-hud .stats-hud-glyph.glyph-hp {
+                /* Funke / Flamme — Lebenskraft als Wärme. */
+                color: #f5a875;
+                text-shadow: 0 0 6px rgba(245, 168, 117, 0.5), 0 1px 2px rgba(0, 0, 0, 0.7);
+            }
+            #stats-hud .stats-hud-glyph.glyph-stam {
+                /* Spirale / Atem — Ausdauer als Strömung. */
+                color: #e4c87c;
+                text-shadow: 0 0 6px rgba(228, 200, 124, 0.5), 0 1px 2px rgba(0, 0, 0, 0.7);
             }
             #stats-hud svg {
                 display: block;
+                filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.7));
             }
             #stats-hud .stats-hud-value {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 9px;
-                min-width: 38px;
+                font-size: 10px;
+                min-width: 44px;
                 text-align: right;
-                color: var(--parch-ink-faded);
+                color: #e9d49e;
+                text-shadow: 0 1px 1px rgba(0, 0, 0, 0.7);
+                letter-spacing: 0.04em;
+            }
+            /* HP-niedrig-Indikator: roter Glow um den HUD pulsiert sanft. */
+            #stats-hud.stats-hud-low {
+                animation: stats-hud-pulse 1.6s ease-in-out infinite;
+            }
+            @keyframes stats-hud-pulse {
+                0%, 100% {
+                    box-shadow:
+                        inset 0 0 0 1px rgba(198, 154, 74, 0.25),
+                        inset 0 1px 0 rgba(255, 220, 150, 0.15),
+                        0 3px 14px rgba(0, 0, 0, 0.6);
+                }
+                50% {
+                    box-shadow:
+                        inset 0 0 0 1px rgba(220, 60, 40, 0.6),
+                        inset 0 1px 0 rgba(255, 100, 80, 0.3),
+                        0 3px 20px rgba(180, 40, 20, 0.5);
+                }
             }
             /* Tooltip mit slow stats — erscheint beim Hover. position:absolute
                relative zum #stats-hud (das selbst position:absolute ist). */
@@ -2476,6 +2553,15 @@
             .drawer .hotbar-config-row select:hover {
                 border-color: var(--brass-1);
             }
+            /* Welle 6.X.2 V8.14 — Werkstatt-Drawer responsive bemessen.
+               Statt fixe 300 px wie andere Drawer: ~80vw max 1100 px,
+               damit Tools-Spalten + 3D-Vorschau + Stats unten alle ohne
+               Scroll sichtbar sind. Höhe deckelt bei 88 vh (leichtes
+               Bottom-Air für die Hotbar). */
+            .drawer[data-drawer="werkstatt"] {
+                width: min(80vw, 1100px);
+                max-height: 88vh;
+            }
             /* Ring 6.6 — Werkstatt-Editor */
             #workshop-list {
                 display: flex;
@@ -3570,38 +3656,56 @@
         <div id="fps"></div>
         <div id="dialogue-box" aria-live="polite"></div>
         <div id="build-mode-hud" aria-live="polite" hidden></div>
-        <!-- Welle 6.X.4 B3 — Stats-HUD über der Hotbar. HP + Stamina als
-             SVG-Bars, satter Painterly-Stil. Tooltip zeigt slow stats. -->
-        <div id="stats-hud" role="status" aria-label="Lebenskraft + Ausdauer">
+        <!-- Welle 6.X.4 B3 V8.14 — Stats-HUD redesigned. Glyphen statt Text-
+             Labels (Funke=HP, Spirale=Stamina), warme Brass-Endkappen, SVG-
+             Bars mit inner Glow. Antik-modernes Gefühl: Eisen-Plattform mit
+             leuchtenden Werten. Tooltip auf Hover. -->
+        <div id="stats-hud" role="status" aria-label="Lebenskraft + Ausdauer" title="Hover zeigt alle Stats">
             <div class="stats-hud-row" id="stats-hud-hp-row">
-                <span class="stats-hud-label">HP</span>
-                <svg width="160" height="10" viewBox="0 0 160 10" aria-hidden="true">
-                    <rect x="0" y="0" width="160" height="10" rx="2"
-                          fill="rgba(40, 24, 12, 0.6)" stroke="rgba(180, 140, 80, 0.7)" stroke-width="1"/>
-                    <rect id="stats-hud-hp-fill" x="1" y="1" width="158" height="8" rx="1"
-                          fill="url(#hp-gradient)"/>
+                <span class="stats-hud-glyph glyph-hp" aria-hidden="true">❖</span>
+                <svg width="170" height="12" viewBox="0 0 170 12" aria-hidden="true">
                     <defs>
                         <linearGradient id="hp-gradient" x1="0" x2="0" y1="0" y2="1">
-                            <stop offset="0" stop-color="#e07050"/>
-                            <stop offset="1" stop-color="#a53b25"/>
+                            <stop offset="0" stop-color="#ff8a60"/>
+                            <stop offset="0.5" stop-color="#e0573a"/>
+                            <stop offset="1" stop-color="#8a2b18"/>
+                        </linearGradient>
+                        <linearGradient id="hp-glow" x1="0" x2="0" y1="0" y2="1">
+                            <stop offset="0" stop-color="#ffd0a0" stop-opacity="0.4"/>
+                            <stop offset="0.5" stop-color="#ff8a60" stop-opacity="0.1"/>
+                            <stop offset="1" stop-color="#ff8a60" stop-opacity="0"/>
                         </linearGradient>
                     </defs>
+                    <rect x="0" y="0" width="170" height="12" rx="3"
+                          fill="rgba(15, 8, 4, 0.85)" stroke="#8a6322" stroke-width="1"/>
+                    <rect id="stats-hud-hp-fill" x="2" y="2" width="166" height="8" rx="1.5"
+                          fill="url(#hp-gradient)"/>
+                    <rect id="stats-hud-hp-glow" x="2" y="2" width="166" height="4" rx="1.5"
+                          fill="url(#hp-glow)" pointer-events="none"/>
                 </svg>
                 <span class="stats-hud-value" id="stats-hud-hp-text">100/100</span>
             </div>
             <div class="stats-hud-row" id="stats-hud-stam-row">
-                <span class="stats-hud-label">SP</span>
-                <svg width="160" height="10" viewBox="0 0 160 10" aria-hidden="true">
-                    <rect x="0" y="0" width="160" height="10" rx="2"
-                          fill="rgba(40, 24, 12, 0.6)" stroke="rgba(180, 140, 80, 0.7)" stroke-width="1"/>
-                    <rect id="stats-hud-stam-fill" x="1" y="1" width="158" height="8" rx="1"
-                          fill="url(#stam-gradient)"/>
+                <span class="stats-hud-glyph glyph-stam" aria-hidden="true">⟁</span>
+                <svg width="170" height="12" viewBox="0 0 170 12" aria-hidden="true">
                     <defs>
                         <linearGradient id="stam-gradient" x1="0" x2="0" y1="0" y2="1">
-                            <stop offset="0" stop-color="#d4b260"/>
-                            <stop offset="1" stop-color="#8a6a36"/>
+                            <stop offset="0" stop-color="#f5d488"/>
+                            <stop offset="0.5" stop-color="#c4994a"/>
+                            <stop offset="1" stop-color="#6a4a1a"/>
+                        </linearGradient>
+                        <linearGradient id="stam-glow" x1="0" x2="0" y1="0" y2="1">
+                            <stop offset="0" stop-color="#ffe8b0" stop-opacity="0.4"/>
+                            <stop offset="0.5" stop-color="#f5d488" stop-opacity="0.1"/>
+                            <stop offset="1" stop-color="#f5d488" stop-opacity="0"/>
                         </linearGradient>
                     </defs>
+                    <rect x="0" y="0" width="170" height="12" rx="3"
+                          fill="rgba(15, 8, 4, 0.85)" stroke="#8a6322" stroke-width="1"/>
+                    <rect id="stats-hud-stam-fill" x="2" y="2" width="166" height="8" rx="1.5"
+                          fill="url(#stam-gradient)"/>
+                    <rect id="stats-hud-stam-glow" x="2" y="2" width="166" height="4" rx="1.5"
+                          fill="url(#stam-glow)" pointer-events="none"/>
                 </svg>
                 <span class="stats-hud-value" id="stats-hud-stam-text">100/100</span>
             </div>
@@ -4010,6 +4114,14 @@
                             >
                                 Snap
                             </button>
+                            <button
+                                type="button"
+                                id="workshop-camera-reset"
+                                class="workshop-action-btn"
+                                title="Kamera auf Bauplan zentrieren (H)"
+                            >
+                                Zentrieren
+                            </button>
                             <span class="workshop-mode-divider" aria-hidden="true"></span>
                             <button
                                 type="button"
@@ -4343,9 +4455,21 @@
                     <div class="console-section-label">Chat</div>
                     <div id="chat-output"></div>
                 </div>
+                <!-- Welle 6.X.2 V8.14 — Logbuch direkt in der Konsole
+                     ein-/ausklappbar (zusätzlich zum globalen Toggle in
+                     Einstellungen). Click-Label wechselt aria-expanded
+                     und blendet #log ein/aus. Beide Toggles synchron. -->
                 <div id="console-log-section" hidden>
-                    <div class="console-section-label">Logbuch</div>
-                    <div id="log"></div>
+                    <button
+                        type="button"
+                        id="console-log-toggle"
+                        class="console-section-label console-log-toggle"
+                        aria-expanded="false"
+                        title="Logbuch ein-/ausklappen"
+                    >
+                        <span class="caret" aria-hidden="true">▸</span> Logbuch
+                    </button>
+                    <div id="log" hidden></div>
                 </div>
             </div>
             <div id="console-footer">

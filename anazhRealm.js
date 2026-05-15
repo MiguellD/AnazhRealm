@@ -19852,8 +19852,20 @@ class AnazhRealm {
             } else if (key === "g") {
                 this.toggleWorkshopSnap();
                 event.preventDefault();
+            } else if (key === "h" || key === "home") {
+                // Welle 6.X.2 V8.14 — CAD-Kamera-Reset auf den Bauplan-Center.
+                // H wie „Home". Zoomt auf den Bauplan zurück falls man ihn
+                // aus der Ansicht verloren hat (Drag mit leerem Klick scrollt
+                // den Orbit-Target weg).
+                this.resetWorkshopCamera();
+                event.preventDefault();
             }
         });
+        // Welle 6.X.2 V8.14 — Reset-Button neben Snap (Shortcut H).
+        const resetBtn = document.getElementById("workshop-camera-reset");
+        if (resetBtn) {
+            resetBtn.addEventListener("click", () => this.resetWorkshopCamera());
+        }
         // V8.02 Phase 3a — Shape-Palette HTML5-Drag-Sources + Canvas-Drop-Target
         this._workshopInstallShapeDragDrop();
         // V8.05 — Editor-Toggle + Del-Button-Handler (beide idempotent)
@@ -20804,6 +20816,30 @@ class AnazhRealm {
         return ws.snapEnabled;
     }
 
+    // Welle 6.X.2 V8.14 (Audit 17.05.2026) — CAD-Kamera auf Bauplan-Center
+    // zurücksetzen. Pan mit Shift+Drag oder Mittelmaus kann den orbit.target
+    // weit verschieben, dann sieht man den Bauplan nicht mehr. Reset
+    // setzt orbit.target auf BBox-Center + dist auf BBox-Diagonale × 2.2
+    // (gleiche Default-Formel wie beim Initial-Render). Shortcut: H.
+    resetWorkshopCamera() {
+        const p = this.state.workshopPreview;
+        if (!p || !p.currentMesh) return;
+        const bbox = new THREE.Box3().setFromObject(p.currentMesh);
+        if (bbox.isEmpty()) return;
+        bbox.getCenter(p.orbit.target);
+        const size = new THREE.Vector3();
+        bbox.getSize(size);
+        const maxDim = Math.max(size.x, size.y, size.z);
+        if (maxDim > 0) {
+            p.orbit.dist = Math.max(3, maxDim * 2.2);
+        }
+        // Yaw/Pitch auf neutrale Werkstatt-Sicht zurück. yaw=PI/4 (schräg von
+        // vorn-rechts), pitch leicht oben (0.3 rad ≈ 17°).
+        p.orbit.yaw = Math.PI / 4;
+        p.orbit.pitch = 0.3;
+        p.dirty = true;
+    }
+
     // UI-Sync: Modus-Buttons + Snap-Toggle in der Werkstatt.
     _workshopUpdateManipulatorButtons() {
         if (typeof document === "undefined") return;
@@ -21684,10 +21720,23 @@ class AnazhRealm {
         const stamMax = Math.max(1, Math.round(p.staminaMax || 100));
         const hpRatio = Math.max(0, Math.min(1, hp / hpMax));
         const stamRatio = Math.max(0, Math.min(1, stam / stamMax));
-        hpFill.setAttribute("width", String(158 * hpRatio));
-        stamFill.setAttribute("width", String(158 * stamRatio));
+        // Welle 6.X.4 B3 V8.14 — neue Bar-Breite 166 (von 158), zusätzlicher
+        // Glow-Strip oben drauf folgt derselben Breite.
+        hpFill.setAttribute("width", String(166 * hpRatio));
+        const hpGlow = document.getElementById("stats-hud-hp-glow");
+        if (hpGlow) hpGlow.setAttribute("width", String(166 * hpRatio));
+        stamFill.setAttribute("width", String(166 * stamRatio));
+        const stamGlow = document.getElementById("stats-hud-stam-glow");
+        if (stamGlow) stamGlow.setAttribute("width", String(166 * stamRatio));
         hpText.textContent = `${hp}/${hpMax}`;
         stamText.textContent = `${stam}/${stamMax}`;
+        // V8.14 — HP-niedrig-Pulse: bei < 30 % bekommt der HUD eine
+        // pulsierende rote Aura via CSS-Animation. Über 30 % wieder ruhig.
+        const hud = document.getElementById("stats-hud");
+        if (hud) {
+            if (hpRatio < 0.3) hud.classList.add("stats-hud-low");
+            else hud.classList.remove("stats-hud-low");
+        }
         // Tooltip alle 1 s aktualisieren (slow stats ändern sich selten —
         // nur bei Soul/Equipped/Boost-Wechsel). Throttle damit Hover keine
         // permanenten Re-Builds triggert.
@@ -21855,33 +21904,53 @@ class AnazhRealm {
         }
     }
 
-    // Welle 6.X.2 B1 (Audit 17.05.2026) — Logbuch-Toggle.
-    // Default: versteckt. Spieler aktiviert in Einstellungen wenn er die
-    // Diagnose-Logs sehen will. Persistiert in localStorage. Ruhe in der
-    // Konsole für die normale Spiel-Erfahrung.
+    // Welle 6.X.2 B1 (Audit 17.05.2026) + V8.14 Erweiterung — Logbuch-Toggle.
+    //
+    // **Zwei Schichten** (V8.14):
+    // 1. Section-Visibility (`#console-log-section.hidden`): steuert ob das
+    //    Logbuch-Section überhaupt im Konsole-Drawer erscheint. Default
+    //    sichtbar, Spieler kann es global in Einstellungen ausblenden.
+    // 2. Log-Expanded (`#log.hidden`): innerhalb der Section steuert das
+    //    Logbuch selbst (das eigentliche Log-Stream). Default eingeklappt
+    //    damit Chat im Fokus bleibt. Click auf Konsole-Label expanded.
+    //
+    // Beide State-Werte synchronisieren über `localStorage`. Der Einstellungen-
+    // Toggle steuert „expanded" (sync mit Konsole-Toggle). Die Section bleibt
+    // immer sichtbar — Spieler kann sie im DOM finden und expandieren.
     logbookInitDOM() {
         if (typeof document === "undefined") return;
-        let visible = false;
+        let expanded = false;
         if (typeof localStorage !== "undefined") {
             const raw = localStorage.getItem("anazh.logbookVisible");
-            if (raw === "1" || raw === "true") visible = true;
+            if (raw === "1" || raw === "true") expanded = true;
         }
-        this.state.logbookVisible = visible;
+        this.state.logbookVisible = expanded;
         const section = document.getElementById("console-log-section");
-        if (section) section.hidden = !visible;
+        const logEl = document.getElementById("log");
         const cb = document.getElementById("logbook-toggle");
-        if (cb) {
-            cb.checked = visible;
-            cb.addEventListener("change", () => {
-                this.state.logbookVisible = !!cb.checked;
-                if (section) section.hidden = !cb.checked;
-                if (typeof localStorage !== "undefined") {
-                    try {
-                        localStorage.setItem("anazh.logbookVisible", cb.checked ? "1" : "0");
-                    } catch {
-                        /* ignore */
-                    }
+        const inlineBtn = document.getElementById("console-log-toggle");
+        // Section bleibt sichtbar; nur das Log selbst togglet (V8.14 Vision).
+        if (section) section.hidden = false;
+        const applyExpanded = (value) => {
+            this.state.logbookVisible = !!value;
+            if (logEl) logEl.hidden = !value;
+            if (inlineBtn) inlineBtn.setAttribute("aria-expanded", value ? "true" : "false");
+            if (cb) cb.checked = !!value;
+            if (typeof localStorage !== "undefined") {
+                try {
+                    localStorage.setItem("anazh.logbookVisible", value ? "1" : "0");
+                } catch {
+                    /* ignore */
                 }
+            }
+        };
+        applyExpanded(expanded);
+        if (cb) {
+            cb.addEventListener("change", () => applyExpanded(!!cb.checked));
+        }
+        if (inlineBtn) {
+            inlineBtn.addEventListener("click", () => {
+                applyExpanded(!this.state.logbookVisible);
             });
         }
     }
