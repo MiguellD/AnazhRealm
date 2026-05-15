@@ -2,7 +2,19 @@
 
 Persistente Notizen. Diese Datei wird bei jeder neuen Session automatisch geladen. **Bei größeren Entscheidungen zuerst `docs/state-of-realm.md` lesen** – dort steht der ausführliche Stand, die Vision aus den vier Testamenten, der Plan und die Learnings.
 
-**Aktuelle Version: V8.30 (Stand 17.05.2026, Welle 6.G4.d — Schnittstellen-Politur. Sterne testen gegen Tiefenpuffer (verschwinden hinter Bergen), Avatar im 1st-Person sichtbar (nur Kopf versteckt), Wasser mit diagonalen Multi-Wellen + Sonnen-Glitzern statt Schachbrett, Wasser-Physik (Auftrieb + Schwimm-Bremse + Unterwasser-Tint). 2029/2029 Playtest-Invarianten grün, Audit-Strict 5 Schichten, 14/14 [ATMOSPHERE]-Methoden clean.)**
+**Aktuelle Version: V8.31 (Stand 17.05.2026, Welle 6.G4.d² — Fog an die Custom-Shader. Schöpfer-Befund: „Fog-Slider ändert die Gras-Farbe statt Nebel zu zeigen". Wurzel: Custom-`ShaderMaterial` erben THREE.Fog NICHT — nur das Gras (Lambert) verblasste, das Terrain blieb scharf. Fix: Fog-Uniforms + fog-mix in Terrain- + Wasser-Shader. Plus Wasser-Wellen heterogener (Domain-Warp + 6 Oktaven). 2035/2035 Playtest-Invarianten grün, Audit-Strict 5 Schichten, 14/14 [ATMOSPHERE]-Methoden clean.)**
+
+**V8.31 — Welle 6.G4.d² (Fog-Schnittstelle + heterogeneres Wasser, +6 Vision-Invarianten 2029→2035)**: Schöpfer-Browser-Test der V8.30 — Begeisterung („wow stark, props champ") + ein präziser Bug-Befund: *„Fog-Distanz scheint kein Nebel aufzutauchen, sondern die Farbe der Gräser zu ändern — das scheint noch falsch."*
+
+**Wurzel** (wieder die Schnittstellen-Frage): Three.js' `THREE.Fog` wirkt NUR auf eingebaute Materialien (Lambert/Toon/Standard). Custom-`ShaderMaterial` erben es NICHT — sie brauchen Fog-Uniforms + fog-mix von Hand. Das Gras ist `MeshLambertMaterial` → es verblasste im Fog. Das Terrain (Custom-Shader) + Wasser (Custom-Shader) ignorierten den Fog komplett. Ergebnis: der Fog-Slider verfärbte scheinbar „nur das Gras", weil das Gras das einzige große Fog-reagierende Element war. **Fix**: `fogColor`/`fogNear`/`fogFar`-Uniforms + `varying vFogDepth` (View-Space-Tiefe) + `mix(color, fogColor, smoothstep(fogNear, fogFar, vFogDepth))` in Terrain- UND Wasser-Fragment-Shader. `_applyDayNightToScene` reicht `state.fog`-Werte an alle drei Schicht-Typen durch. Jetzt trägt das Terrain den Dunst — der Fog wird zur echten atmosphärischen Schicht.
+
+**Plus Wasser heterogener** (Schöpfer: „Wellen besser, noch etwas homogen, nicht so wild"): `waveHeight(xz)`-Funktion mit **Domain-Warping** (die Sample-Position wird durch eine grobe niederfrequente Welle verzerrt, bevor die Hauptwellen greifen → die Periodizität bricht) + **6 Oktaven** statt 4. Die Wellen wirken wild statt gleichmäßig.
+
+**Vision-Lehre der V8.31**: *„Three.js' eingebaute Features (Fog, Licht) enden an der Custom-Shader-Grenze. Ein ShaderMaterial ist eine Insel — jede Schnittstelle muss als Uniform hinübergetragen werden."*
+
+**Offene 6.G4-Polish-Punkte** (in roadmap.md vermerkt): Tauchen (mit Slide/Sneak-Geste, Minecraft-Stil), Schwimm-Animation (Avatar wirkt statisch gegen das bewegte Wasser), Wasser evtl. noch heterogener (Gerstner-Verschiebung).
+
+**Tests**: 6 neue Vision-Invarianten (Terrain-Fog-Uniforms, Terrain-fog-mix, Wasser-Fog, Wasser-Domain-Warp, Fog-Slider-erreicht-Terrain). 2029 → 2035 grün.
 
 **V8.30 — Welle 6.G4.d (Schnittstellen-Politur, +7 Vision-Invarianten 2022→2029)**: Schöpfer-Browser-Test der V8.29 — Begeisterung („wow, großer Schritt") + vier Wunden, und die Kern-Frage „hast du die Schnittstellen beachtet, synergetisch erweitert?". Ehrliche Antwort: Gras + Plattform ja, drei Schichten waren oberflächlich verkabelt:
 

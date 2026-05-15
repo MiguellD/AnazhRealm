@@ -11780,6 +11780,67 @@ function startSaveServer() {
                 check("V8.30: Schnittstellen-Politur Tests laufen", false, v830Results ? v830Results.error : "no result");
             }
 
+            // ### V8.31 — Fog an die Custom-Shader + heterogenere Wasser-Wellen ###
+            const v831Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // Terrain-Custom-Shader hat jetzt Fog-Uniforms + fog-mix.
+                    if (r.state.terrainMaterial) {
+                        const tm = r.state.terrainMaterial;
+                        out.terrainFogUniforms = !!(
+                            tm.uniforms &&
+                            tm.uniforms.fogColor &&
+                            tm.uniforms.fogNear &&
+                            tm.uniforms.fogFar
+                        );
+                        out.terrainFogInShader =
+                            /vFogDepth/.test(tm.vertexShader || "") &&
+                            /smoothstep\(fogNear, fogFar/.test(tm.fragmentShader || "");
+                    }
+                    // Wasser-Custom-Shader hat Fog + Domain-Warp.
+                    if (r.state.waterPlane && r.state.waterPlane.material) {
+                        const wm = r.state.waterPlane.material;
+                        out.waterFogUniforms = !!(wm.uniforms && wm.uniforms.fogColor && wm.uniforms.fogNear);
+                        out.waterDomainWarp =
+                            /waveHeight/.test(wm.vertexShader || "") &&
+                            /warp/.test(wm.vertexShader || "");
+                        out.waterFogInShader = /smoothstep\(fogNear, fogFar/.test(wm.fragmentShader || "");
+                    }
+                    // Fog-Slider propagiert in die Custom-Shader-Uniforms.
+                    r.setFogDistance(0.4);
+                    r._applyDayNightToScene();
+                    const tnNear =
+                        r.state.terrainMaterial &&
+                        r.state.terrainMaterial.uniforms.fogFar
+                            ? r.state.terrainMaterial.uniforms.fogFar.value
+                            : -1;
+                    r.setFogDistance(1.8);
+                    r._applyDayNightToScene();
+                    const tnFar =
+                        r.state.terrainMaterial &&
+                        r.state.terrainMaterial.uniforms.fogFar
+                            ? r.state.terrainMaterial.uniforms.fogFar.value
+                            : -1;
+                    out.fogSliderReachesTerrain = tnFar > tnNear;
+                    r.setFogDistance(1.0);
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (v831Results && !v831Results.error) {
+                check("V8.31: Terrain-Shader hat Fog-Uniforms (fogColor/Near/Far)", v831Results.terrainFogUniforms);
+                check("V8.31: Terrain-Shader hat vFogDepth + fog-mix", v831Results.terrainFogInShader);
+                check("V8.31: Wasser-Shader hat Fog-Uniforms", v831Results.waterFogUniforms);
+                check("V8.31: Wasser-Shader hat fog-mix", v831Results.waterFogInShader);
+                check("V8.31: Wasser-Wellen nutzen Domain-Warp (heterogener)", v831Results.waterDomainWarp);
+                check("V8.31: Fog-Slider erreicht den Terrain-Shader (kein Gras-only-Effekt mehr)", v831Results.fogSliderReachesTerrain);
+            } else {
+                check("V8.31: Fog-Custom-Shader Tests laufen", false, v831Results ? v831Results.error : "no result");
+            }
+
             // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider (Audit 17.05.2026) ###
             const wave6x4bResults = await page
                 .evaluate(() => {

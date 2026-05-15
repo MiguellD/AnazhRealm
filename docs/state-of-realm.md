@@ -1,4 +1,4 @@
-# Zustand des Realm — Stand: 17.05.2026 (V8.30)
+# Zustand des Realm — Stand: 17.05.2026 (V8.31)
 
 **Welle 6.H V2 vollendet (14/14 Sub-Phasen)** — Kreaturen sind jetzt vollwertige Co-Schöpfer-Wesen mit 9 Identitäts-Schichten (Body, Specs, Equipped, Boosts, Tasks, Memory+Persistenz, Konversation via @-Adresse, Proaktivität, Welt-Aktion-Vorschläge mit Sandbox). **LLM-Provider-System maximal robust nach 5-Versionen-Iteration (V7.94-V7.98)** — jedes Ollama-Setup funktioniert: lokal, gehostet, Cloud, Reasoning-Models, lokale 7B-Modelle. CORS-Lösung via save-server-Proxy, Parser mit Plain-Text-Fallback.
 
@@ -184,6 +184,24 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 ## 6. Learnings aus dieser Session
 
 Echt gelernt, nicht performt:
+
+### V8.31 (17.05.2026) — Welle 6.G4.d² "Fog an die Custom-Shader" (+ heterogeneres Wasser)
+
+Der Schöpfer-Browser-Test der V8.30 war begeistert — *„wow stark, props champ"* — und brachte einen präzisen Bug-Befund: *„Fog-Distanz scheint kein Nebel aufzutauchen, sondern die Farbe der Gräser zu ändern — das scheint noch falsch."*
+
+Er hatte recht, und es war — schon wieder — die Schnittstellen-Frage. `THREE.Fog` ist eine Three.js-Funktion, die nur in die *eingebauten* Materialien (Lambert, Toon, Standard) eincompiliert wird. Ein Custom-`ShaderMaterial` erbt sie nicht. Das Gras ist `MeshLambertMaterial` — es verblasste im Fog. Aber das Terrain und das Wasser sind Custom-Shader — sie ignorierten den Fog komplett. Das Ergebnis: wenn der Fog-Slider bewegt wurde, verblasste nur das Gras (das einzige große Fog-reagierende Element), während das Terrain knackscharf blieb. Es *wirkte* wie eine Gras-Verfärbung.
+
+Der Fix schließt die Fog-Schnittstelle an die Custom-Shader an: `fogColor`/`fogNear`/`fogFar`-Uniforms, ein `varying vFogDepth` (die View-Space-Tiefe), und am Ende des Fragment-Shaders `mix(color, fogColor, smoothstep(fogNear, fogFar, vFogDepth))`. `_applyDayNightToScene` reicht die `state.fog`-Werte an Terrain und Wasser durch. Jetzt verblasst die ganze Welt gleichmäßig im Dunst — der Fog ist eine echte atmosphärische Schicht.
+
+Plus, weil der Schöpfer das Wasser noch *„etwas homogen, nicht so wild"* fand: die Wellen bekommen Domain-Warping (die Sample-Position wird durch eine grobe Welle verzerrt, bevor die Hauptwellen greifen — das bricht die Periodizität) und sechs Oktaven statt vier.
+
+**Die Lehre, dreimal in Folge bestätigt** (Sterne-Overlay V8.30, Wasser-ohne-Physik V8.30, Fog-nur-auf-Gras V8.31): Three.js' eingebaute Features enden an der Custom-Shader-Grenze. Ein `ShaderMaterial` ist eine Insel — Fog, Licht, Schatten muss jede einzeln als Uniform hinübergetragen werden. Eine neue visuelle Schicht ist erst fertig, wenn alle Schnittstellen verkabelt sind.
+
+**Offene 6.G4-Polish-Punkte**: Tauchen (mit Slide/Sneak-Geste), Schwimm-Animation, Wasser evtl. noch heterogener — in `roadmap.md` vermerkt.
+
+**Vision-Wort der V8.31**: *„Ein ShaderMaterial ist eine Insel — jede Schnittstelle muss als Uniform hinübergetragen werden."*
+
+**Tests**: 6 neue Vision-Invarianten. 2029 → 2035 grün.
 
 ### V8.30 (17.05.2026) — Welle 6.G4.d "Schnittstellen-Politur" (Sterne-Tiefe, Avatar-Korrektur, Wasser-Wellen, Wasser-Physik)
 

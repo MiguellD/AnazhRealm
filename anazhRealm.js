@@ -7197,48 +7197,58 @@ class AnazhRealm {
                 // V8.29.1 — Sonnen-Richtung für echtes Glitzern.
                 uSunDir: { value: new THREE.Vector3(1, 1, 1).normalize() },
                 uLight: { value: 1.0 },
+                // V8.31 — Fog (Custom-Shader erbt THREE.Fog nicht).
+                fogColor: { value: new THREE.Color(0x88a0c8) },
+                fogNear: { value: 35 },
+                fogFar: { value: 150 },
             },
-            // V8.29.1 — Wellen DIAGONAL + multi-frequenz statt achsen-paralleler
-            // sin(x)+cos(z). Letzteres ergab ein Schachbrett-Gitter. Vier
-            // Wellen in schrägen Richtungen mit verschiedenen Frequenzen
-            // (Gerstner-Lehre: BotW, Sea of Thieves) brechen das Muster.
-            // Plus echte Wellen-NORMALE (analytisch aus den Ableitungen)
-            // für Sonnen-Glitzern statt der flachen Tief/Flach-Färbung.
+            // V8.31 — Wellen HETEROGENER. Sechs Oktaven statt vier + Domain-
+            // Warping (die Sample-Position wird durch eine grobe Welle
+            // verzerrt, bevor die Hauptwellen greifen) → die Periodizität
+            // bricht, das Wasser wirkt wild statt gleichmäßig. Echte
+            // Wellen-Normale aus den Ableitungen, Blinn-Phong-Sonnen-Glitzern.
             vertexShader: `
                 uniform float uTime;
                 varying float vWave;
                 varying vec3 vNormal;
                 varying vec3 vWorldPos;
+                varying float vFogDepth;
                 // Eine Welle: Richtung (dx,dz), Frequenz f, Amplitude a, Speed s.
                 float wave(vec2 xz, vec2 dir, float f, float a, float s) {
                     return a * sin(dot(xz, dir) * f + uTime * s);
                 }
+                // Gesamthöhe an einer Position — sechs Oktaven, davor ein
+                // Domain-Warp, der die Wiederholung sichtbar aufbricht.
+                float waveHeight(vec2 xz) {
+                    vec2 warp = vec2(
+                        sin(xz.x * 0.022 + uTime * 0.25) * 7.0,
+                        cos(xz.y * 0.019 - uTime * 0.21) * 7.0
+                    );
+                    vec2 w = xz + warp;
+                    return
+                        wave(w, vec2(0.86, 0.51), 0.10, 0.40, 0.85) +
+                        wave(w, vec2(-0.42, 0.91), 0.075, 0.30, 0.65) +
+                        wave(w, vec2(0.62, -0.78), 0.19, 0.18, 1.2) +
+                        wave(w, vec2(-0.95, -0.30), 0.29, 0.12, 1.55) +
+                        wave(w, vec2(0.30, 0.95), 0.46, 0.07, 2.05) +
+                        wave(w, vec2(0.73, -0.69), 0.71, 0.045, 2.7);
+                }
                 void main() {
                     vec3 p = position;
                     vec2 xz = p.xz;
-                    float w =
-                        wave(xz, vec2(0.86, 0.51), 0.13, 0.34, 0.9) +
-                        wave(xz, vec2(-0.42, 0.91), 0.085, 0.27, 0.7) +
-                        wave(xz, vec2(0.62, -0.78), 0.21, 0.15, 1.25) +
-                        wave(xz, vec2(-0.95, -0.30), 0.31, 0.09, 1.6);
+                    float w = waveHeight(xz);
                     p.y += w;
                     vWave = w;
-                    // Normale analytisch: Steigung in x und z numerisch.
-                    float e = 1.5;
-                    float wx =
-                        wave(xz + vec2(e, 0.0), vec2(0.86, 0.51), 0.13, 0.34, 0.9) +
-                        wave(xz + vec2(e, 0.0), vec2(-0.42, 0.91), 0.085, 0.27, 0.7) +
-                        wave(xz + vec2(e, 0.0), vec2(0.62, -0.78), 0.21, 0.15, 1.25) +
-                        wave(xz + vec2(e, 0.0), vec2(-0.95, -0.30), 0.31, 0.09, 1.6);
-                    float wz =
-                        wave(xz + vec2(0.0, e), vec2(0.86, 0.51), 0.13, 0.34, 0.9) +
-                        wave(xz + vec2(0.0, e), vec2(-0.42, 0.91), 0.085, 0.27, 0.7) +
-                        wave(xz + vec2(0.0, e), vec2(0.62, -0.78), 0.21, 0.15, 1.25) +
-                        wave(xz + vec2(0.0, e), vec2(-0.95, -0.30), 0.31, 0.09, 1.6);
+                    // Normale analytisch aus den Ableitungen.
+                    float e = 1.4;
+                    float wx = waveHeight(xz + vec2(e, 0.0));
+                    float wz = waveHeight(xz + vec2(0.0, e));
                     vNormal = normalize(vec3(-(wx - w) / e, 1.0, -(wz - w) / e));
                     vec4 wp = modelMatrix * vec4(p, 1.0);
                     vWorldPos = wp.xyz;
-                    gl_Position = projectionMatrix * viewMatrix * wp;
+                    vec4 mv = viewMatrix * wp;
+                    vFogDepth = -mv.z;
+                    gl_Position = projectionMatrix * mv;
                 }
             `,
             fragmentShader: `
@@ -7246,9 +7256,13 @@ class AnazhRealm {
                 uniform vec3 uShallow;
                 uniform vec3 uSunDir;
                 uniform float uLight;
+                uniform vec3 fogColor;
+                uniform float fogNear;
+                uniform float fogFar;
                 varying float vWave;
                 varying vec3 vNormal;
                 varying vec3 vWorldPos;
+                varying float vFogDepth;
                 void main() {
                     vec3 n = normalize(vNormal);
                     // Grundfarbe: tief/flach nach Wellenhöhe, weich gemischt.
@@ -7263,6 +7277,10 @@ class AnazhRealm {
                     // Diffuse Wellen-Modellierung — Flanken zur Sonne heller.
                     float diff = max(dot(n, normalize(uSunDir)), 0.0);
                     col *= 0.7 + 0.3 * diff;
+                    // V8.31 — Fog: das Wasser verschmilzt in der Distanz mit
+                    // dem Dunst, wie Terrain + Gras.
+                    float fogF = smoothstep(fogNear, fogFar, vFogDepth);
+                    col = mix(col, fogColor, fogF);
                     gl_FragColor = vec4(col, 0.82);
                 }
             `,
@@ -10588,12 +10606,16 @@ class AnazhRealm {
         varying float vHeight;
         varying vec3 vNormal;
         varying vec4 vField;
+        varying float vFogDepth;
         void main() {
             vUv = uv;
             vHeight = position.y;
             vNormal = normalize(normalMatrix * normal);
             vField = aField;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+            // V8.31 — Fog-Tiefe (View-Space-Distanz) für das Fragment.
+            vFogDepth = -mvPosition.z;
+            gl_Position = projectionMatrix * mvPosition;
         }
     `;
         const fragmentShader = `
@@ -10602,6 +10624,7 @@ class AnazhRealm {
         varying float vHeight;
         varying vec3 vNormal;
         varying vec4 vField;
+        varying float vFogDepth;
         uniform vec3 lightDirection;
         uniform float weatherEffect;
         // V8.27 6.G4.a — Tag-Nacht synchronisiert. lightIntensity moduliert
@@ -10611,6 +10634,14 @@ class AnazhRealm {
         uniform float ambientIntensity;
         // V8.28 6.G4.b C — Cel-Shading-Stufen (2 = bold, 8 ≈ smooth).
         uniform float celLevels;
+        // V8.31 — Fog. Custom-ShaderMaterials erben THREE.Fog NICHT
+        // automatisch (nur eingebaute Lambert/Toon/Standard). Ohne diese
+        // Uniforms blieb das Terrain knackscharf, während das Gras
+        // (Lambert) verblasste → der Fog-Slider "verfärbte" scheinbar nur
+        // das Gras. Jetzt trägt auch das Terrain den Dunst.
+        uniform vec3 fogColor;
+        uniform float fogNear;
+        uniform float fogFar;
         float random(vec2 st) {
             return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
         }
@@ -10668,6 +10699,9 @@ class AnazhRealm {
             vec3 ambient = color * ambientIntensity;
             vec3 diffuseColor = color * diffuse * lightIntensity;
             vec3 finalColor = ambient + diffuseColor;
+            // V8.31 — Fog: in der Distanz mit der Fog-Farbe verschmelzen.
+            float fogF = smoothstep(fogNear, fogFar, vFogDepth);
+            finalColor = mix(finalColor, fogColor, fogF);
             gl_FragColor = vec4(finalColor, 1.0);
         }
     `;
@@ -10684,6 +10718,10 @@ class AnazhRealm {
                 ambientIntensity: { value: 0.45 },
                 // V8.28 6.G4.b C — Cel-Shading-Stufen (Atmosphäre-Slider).
                 celLevels: { value: (this.state.atmosphere && this.state.atmosphere.celLevels) || 8 },
+                // V8.31 — Fog. Aus state.fog in _applyDayNightToScene gesetzt.
+                fogColor: { value: new THREE.Color(0x88a0c8) },
+                fogNear: { value: 35 },
+                fogFar: { value: 150 },
             },
             side: THREE.DoubleSide,
             depthTest: true,
@@ -23279,20 +23317,26 @@ class AnazhRealm {
             const lightDir = this.state.directionalLight.position.clone().normalize();
             for (const chunk of this.state.groundChunks) {
                 if (chunk.material && chunk.material.uniforms) {
-                    if (chunk.material.uniforms.lightDirection) {
-                        chunk.material.uniforms.lightDirection.value.copy(lightDir);
-                    }
-                    if (chunk.material.uniforms.lightIntensity) {
-                        chunk.material.uniforms.lightIntensity.value = dl.intensity;
-                    }
-                    if (chunk.material.uniforms.ambientIntensity) {
-                        chunk.material.uniforms.ambientIntensity.value = al ? al.intensity : 0.45;
+                    const cu = chunk.material.uniforms;
+                    if (cu.lightDirection) cu.lightDirection.value.copy(lightDir);
+                    if (cu.lightIntensity) cu.lightIntensity.value = dl.intensity;
+                    if (cu.ambientIntensity) cu.ambientIntensity.value = al ? al.intensity : 0.45;
+                    // V8.31 — Fog an den Terrain-Custom-Shader anschließen.
+                    // Ohne das blieb das Terrain knackscharf, während nur
+                    // das Gras (Lambert) verblasste → der Fog-Slider wirkte
+                    // wie eine Gras-Verfärbung. Jetzt trägt das Terrain den
+                    // Dunst — der Fog wird zur echten atmosphärischen Schicht.
+                    if (fog) {
+                        if (cu.fogColor) cu.fogColor.value.copy(fog.color);
+                        if (cu.fogNear) cu.fogNear.value = fog.near;
+                        if (cu.fogFar) cu.fogFar.value = fog.far;
                     }
                 }
             }
         }
         // V8.29.1 — Welt-Wasser mit der Sonne synchronisieren: Sonnen-
         // Richtung für das Glitzern + Licht-Intensität für Tag-Nacht-Tint.
+        // V8.31 — plus Fog-Uniforms (Custom-Shader erbt THREE.Fog nicht).
         if (this.state.waterPlane && this.state.waterPlane.material && this.state.directionalLight) {
             const wu = this.state.waterPlane.material.uniforms;
             if (wu && wu.uSunDir) {
@@ -23300,6 +23344,11 @@ class AnazhRealm {
             }
             if (wu && wu.uLight) {
                 wu.uLight.value = Math.max(0.22, dl.intensity);
+            }
+            if (wu && fog) {
+                if (wu.fogColor) wu.fogColor.value.copy(fog.color);
+                if (wu.fogNear) wu.fogNear.value = fog.near;
+                if (wu.fogFar) wu.fogFar.value = fog.far;
             }
         }
     }
