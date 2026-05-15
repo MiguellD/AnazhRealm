@@ -3115,6 +3115,23 @@
                 content: "✋ ";
                 opacity: 0.85;
             }
+            /* V8.17 — Reset-Button neben manuell-gesetzter Rolle. */
+            #workshop-stats-panel .role-reset-btn {
+                margin-left: 4px;
+                padding: 0 6px;
+                background: transparent;
+                border: 1px solid var(--brass-2, #8a6322);
+                border-radius: 2px;
+                color: var(--brass-1, #c69a4a);
+                font-size: 12px;
+                line-height: 1.2;
+                cursor: pointer;
+                transition: background 0.15s ease;
+            }
+            #workshop-stats-panel .role-reset-btn:hover {
+                background: rgba(198, 154, 74, 0.2);
+                color: #fff;
+            }
             /* Domain-Bars: kleine inline-Bars zeigen Verteilung der Werkzeug-
                Anwendungen pro Domain. Dominante Domain bekommt Brass-Highlight. */
             #workshop-stats-panel .workshop-domain-bars {
@@ -3465,6 +3482,22 @@
             .workshop-material-card.dragging,
             .workshop-color-swatch.dragging {
                 opacity: 0.4;
+            }
+            /* V8.17 — Material-Glyph rechts (Konsistenz mit Inventar). */
+            .workshop-material-card .mat-glyph {
+                font-size: 13px;
+                line-height: 1;
+                color: var(--brass-1, #c69a4a);
+                margin-left: auto;
+                text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
+            }
+            /* V8.17 — Hint-Mini im Side-Palette (kompakt, leitend). */
+            .workshop-hint-mini {
+                font-size: 9px;
+                line-height: 1.35;
+                margin: 2px 0 4px 0;
+                color: var(--parch-ink-faded);
+                font-style: italic;
             }
             .workshop-material-card .mat-swatch {
                 width: 8px;
@@ -4299,6 +4332,11 @@
                         <h4>Materialien</h4>
                         <div id="workshop-material-palette" role="group" aria-label="Material-Palette"></div>
                         <h4>Werkzeuge</h4>
+                        <p class="drawer-hint workshop-hint-mini">
+                            Auf einen Part im 3D ziehen → wendet die Op an. Bearbeitet Material, hebt Präzision,
+                            schärft die Rolle (forging→tool, alchemy→konsumabel). Hand=0.40, Polierscheibe=0.97 —
+                            die schwächste Op deckelt die Compound-Präzision.
+                        </p>
                         <div id="workshop-tool-palette" role="group" aria-label="Werkzeug-Palette"></div>
                         <h4>Farben</h4>
                         <div id="workshop-color-palette" role="group" aria-label="Farb-Palette"></div>

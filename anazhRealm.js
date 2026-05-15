@@ -21036,14 +21036,35 @@ class AnazhRealm {
         const roleChip = document.createElement("span");
         roleChip.className = "role-chip";
         roleChip.textContent = roleLabel;
+        // V8.17 — erweiterte Tooltips erklären emergent vs. manuell.
         if (bp.roleManual) {
             roleChip.classList.add("role-manual");
-            roleChip.title = "Manuell gesetzt — überschreibt emergente Rolle";
+            roleChip.title =
+                "Manuell gesetzt. Diese Rolle überschreibt die emergente. " +
+                "Setze sie via Markier-Sektion im Spieler-Drawer (als Rüstung / als Konsumabel).";
         } else {
             roleChip.classList.add("role-emergent");
-            roleChip.title = "Emergent aus opChain-Domain-Mehrheit";
+            roleChip.title =
+                "✨ Emergent aus der Mehrheit der opChain-Domains. " +
+                "Wende Werkzeuge auf Parts an (Werkstatt rechts) → die Domain mit den meisten Ops bestimmt die Rolle. " +
+                "forging+scharf→Werkzeug, forging+dicht→Rüstung, alchemy→Konsumabel, soulwork→Avatar/Kreatur.";
         }
         roleRow.appendChild(roleChip);
+        // V8.17 — wenn manuell, biete einen Reset-Button auf emergent.
+        if (bp.roleManual && !bp.builtIn) {
+            const resetBtn = document.createElement("button");
+            resetBtn.type = "button";
+            resetBtn.className = "role-reset-btn";
+            resetBtn.textContent = "↺";
+            resetBtn.title = "Manuelle Rolle aufheben, zurück zur emergenten Bestimmung";
+            resetBtn.addEventListener("click", () => {
+                bp.roleManual = false;
+                this._refreshBlueprintRoleEmergent && this._refreshBlueprintRoleEmergent(bp.name);
+                this._workshopRenderStatsPanel && this._workshopRenderStatsPanel();
+                this.log(`Rolle von „${bp.label || bp.name}" auf emergent zurückgesetzt`, "INFO");
+            });
+            roleRow.appendChild(resetBtn);
+        }
         // Affordances
         const aff = this.computeBlueprintAffordances(bp) || {};
         for (const key of Object.keys(aff)) {
@@ -21463,12 +21484,28 @@ class AnazhRealm {
 
     // V8.03 — Material-Palette aus state.materials rendern. Eine Card pro
     // Material mit Color-Swatch + Name. Drag-Source-Marker = data-material.
+    // V8.17 — plus Material-Glyph (◼/║/◆/…) für visuelle Konsistenz mit
+    // Inventar-Slots. Glyph rechts in der Card, dezent in brass-1.
     _workshopRenderMaterialPalette() {
         if (typeof document === "undefined") return;
         const palette = document.getElementById("workshop-material-palette");
         if (!palette) return;
         palette.innerHTML = "";
         const materials = this.state.materials || {};
+        const GLYPHS = {
+            stein: "◼",
+            holz: "║",
+            eisen: "◆",
+            bronze: "◈",
+            quarz: "❖",
+            leder: "◗",
+            knochen: "⌘",
+            fleisch: "⬣",
+            federn: "✷",
+            schuppen: "⬢",
+            glut: "✺",
+            laub: "❀",
+        };
         for (const name of Object.keys(materials)) {
             const mat = materials[name];
             const card = document.createElement("div");
@@ -21484,6 +21521,15 @@ class AnazhRealm {
             const label = document.createElement("span");
             label.textContent = mat.label || name;
             card.appendChild(label);
+            // V8.17 Material-Glyph (nur bei Built-in-Materialien — eigene
+            // Materialien haben keinen Standard-Glyph).
+            if (GLYPHS[name]) {
+                const glyph = document.createElement("span");
+                glyph.className = "mat-glyph";
+                glyph.setAttribute("aria-hidden", "true");
+                glyph.textContent = GLYPHS[name];
+                card.appendChild(glyph);
+            }
             palette.appendChild(card);
         }
     }
