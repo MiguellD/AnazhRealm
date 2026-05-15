@@ -2,7 +2,29 @@
 
 Persistente Notizen. Diese Datei wird bei jeder neuen Session automatisch geladen. **Bei größeren Entscheidungen zuerst `docs/state-of-realm.md` lesen** – dort steht der ausführliche Stand, die Vision aus den vier Testamenten, der Plan und die Learnings.
 
-**Aktuelle Version: V8.28 (Stand 17.05.2026, Welle 6.G4.b — Welt-Atem-Vollendung. Sterne als THREE.Points (kein Flacker-Aliasing mehr), Terrain-Farbe emergiert aus worldFieldAt, Cel-Shading via MeshToonMaterial, Wind/Wolken/Wasser. 2009/2009 Playtest-Invarianten grün, Audit-Strict 5 Schichten, 14/14 [ATMOSPHERE]-Methoden clean.)**
+**Aktuelle Version: V8.29 (Stand 17.05.2026, Welle 6.G4.c — Die lebendige Welt. Instanced-Gras pro Chunk (Dichte aus worldFieldAt), Avatar im 1st-Person versteckt, Cel-Slider mit echtem Smooth-Modus (32px gradientMap), adaptives Wasser, Genesis-Plattform. 2022/2022 Playtest-Invarianten grün, Audit-Strict 5 Schichten, 14/14 [ATMOSPHERE]-Methoden clean.)**
+
+**V8.29 — Welle 6.G4.c (Die lebendige Welt, +13 Vision-Invarianten 2009→2022)**: Schöpfer-Browser-Test der V8.28 deckte sieben Wunden auf.
+
+1. **Sterne-Flackern bei langsamer Maus** (Schöpfer-Detail: nur bei Maus-Bewegung, nicht bei Geradeaus-Lauf): Punkte unter ~3 px sind zu klein für den weichen Falloff — Sub-Pixel-Sprung an/aus. `_buildStarField` jetzt Mindestgröße 3 px, kleine Sterne werden DIMMER statt KLEINER (`bright = 0.32 + pow³ × 0.68`).
+
+2. **Rotes Dreieck** = der Spieler-Avatar (`_buildHumanGroup`, rotes `MeshBasicMaterial`), im 1st-Person nicht versteckt — die Kamera sitzt im Avatar-Kopf, man schaut von innen durch den Körper. Fix im Render-Loop: `player.visible = this.state.cameraMode === "third"`.
+
+3. **Cel-Slider tat nichts**: gradientMap war nur 8 px → selbst „Stufe 8" zeigte Bänder, kein echter Smooth-Modus. Jetzt **32 px**: `celLevels >= 8` füllt 32 distinkte Stufen (für das Auge stufenlos), `< 8` füllt N Plateaus. Terrain-Shader `celLevels >= 7.5` → kein `floor` (smooth). Default `celLevels: 8` (smooth) — Cel ist eine Option, nicht der Default.
+
+4. **Fog unsichtbar**: far 235 m griff in einer Bergwelt nie (Berge verdeckten). Jetzt `35..150` sunny, `22..95` rainy — spürbar bei 100 %.
+
+5. **Keine Wiesen/Gräser** — die Genie-Antwort: **Instanced-Gras**. `_buildChunkGrass(cx, cz)` baut pro Chunk ein `THREE.InstancedMesh` mit bis ~2000 Halmen — EIN Draw-Call (wie Breath of the Wild / No Man's Sky). Dichte EMERGIERT aus `worldFieldAt.lebendig` (`lebendig × 14` Halme/Sample, Schwelle 0.22) — dieselbe fraktale Sprache wie Terrain-Farbe + Architektur-Verteilung. Wind über `_grassInstanceMat` (onBeforeCompile, Welt-Position aus `instanceMatrix[3]`). Gras lebt am Chunk-Lifecycle: `_buildChunkGrass` in `ensureChunkAt`, `_disposeChunkGrass` in `pruneDistantChunks`, idempotent über `state.chunkGrass`-Map. **Der alte spärliche Einzel-Mesh-Gras/Blumen-Loop ist gelöscht** (war nur im initialen 300×300-Bereich, `Math.random() < 0.02`), ebenso `_windMat` (jetzt im Gras-Material).
+
+6. **Kein Wasser**: `waterLevel` war fix `baseHeight-3` (90 m unter dem Spieler in einer Bergwelt). Jetzt adaptiv: 13×13 Terrain-Höhen über ±170 m sampeln, sortieren, **~35-%-Perzentil** als Meeresspiegel → die unteren ~35 % (Senken, Schluchten) füllen sich, Berge bleiben trocken.
+
+7. **Genesis-Plattform** (Schöpfer-Vorschlag): neuer Built-in-Bauplan `start_plattform` (flache Stein-Scheibe + quarz-Kern), beim ERSTEN Welt-Spawn am Zentrum gespawnt (`_ensureGenesisPlatform`, idempotent über `architectures`-Check). Der Spieler startet erhöht darauf statt blind in ein Tal zu fallen — bessere UX + Screenshot-Verifikation.
+
+**Vision-Wort der V8.29**: *„Eine Welt, die ein Tor zu anderen Welten sein soll, muss zuerst selbst atmen — und grünen."*
+
+**Tests**: 13 neue Vision-Invarianten (Avatar-Hide im Loop, _buildChunkGrass/_disposeChunkGrass, chunkGrass-Map, Gras-InstancedMesh, Genesis-Plattform + Idempotenz, adaptives waterLevel, gradientMap 32px, setCelLevels 2↔8 ändert Gradient, Stern-Mindestgröße ≥3). 2009 → 2022 grün. Der P2B.5-LMB-Test wurde deterministisch gemacht (explizite Kamera-Position statt Render-Loop-Abhängigkeit).
+
+**V8.28 — Welle 6.G4.b (Welt-Atem-Vollendung, +19 Vision-Invarianten 1990→2009)**: Schöpfer-Browser-Test der V8.27 deckte vier Konzept-Wunden auf. Vier Phasen, vier Commits.
 
 **V8.28 — Welle 6.G4.b (Welt-Atem-Vollendung, +19 Vision-Invarianten 1990→2009)**: Schöpfer-Browser-Test der V8.27 deckte vier Konzept-Wunden auf. Vier Phasen, vier Commits.
 

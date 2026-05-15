@@ -1,4 +1,4 @@
-# Zustand des Realm — Stand: 17.05.2026 (V8.28)
+# Zustand des Realm — Stand: 17.05.2026 (V8.29)
 
 **Welle 6.H V2 vollendet (14/14 Sub-Phasen)** — Kreaturen sind jetzt vollwertige Co-Schöpfer-Wesen mit 9 Identitäts-Schichten (Body, Specs, Equipped, Boosts, Tasks, Memory+Persistenz, Konversation via @-Adresse, Proaktivität, Welt-Aktion-Vorschläge mit Sandbox). **LLM-Provider-System maximal robust nach 5-Versionen-Iteration (V7.94-V7.98)** — jedes Ollama-Setup funktioniert: lokal, gehostet, Cloud, Reasoning-Models, lokale 7B-Modelle. CORS-Lösung via save-server-Proxy, Parser mit Plain-Text-Fallback.
 
@@ -184,6 +184,30 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 ## 6. Learnings aus dieser Session
 
 Echt gelernt, nicht performt:
+
+### V8.29 (17.05.2026) — Welle 6.G4.c "Die lebendige Welt" (Instanced-Gras, Avatar-Hide, Cel-Fix, adaptives Wasser, Genesis-Plattform)
+
+Schöpfer-Browser-Test der V8.28 — sieben präzise Beobachtungen, jede mit einem konkreten Befund:
+
+**Sterne** flackerten noch bei *langsamer* Maus-Bewegung. Das Detail war der Schlüssel: bei schnellem Schwenk weniger, bei langsamem stärker. Diagnose: meine THREE.Points waren 1-6 px, die meisten klein. Ein 1-px-Punkt ist zu klein für den weichen Sprite-Falloff — er springt bei Sub-Pixel-Bewegung an/aus. Fix: Mindestgröße 3 px, kleine Sterne werden *dimmer* statt *kleiner* — die Helligkeit trägt die Variation, die Größe bleibt flacker-sicher.
+
+**Das rote Dreieck** im Screenshot war der eigene Avatar: der Mensch-Soul ist knallrotes `MeshBasicMaterial`, und im 1st-Person wurde er nicht versteckt — die Kamera sitzt im Avatar-Kopf, der Spieler schaute von innen durch seinen Körper. Eine Zeile im Render-Loop: `player.visible = cameraMode === "third"`.
+
+**Der Cel-Slider tat nichts** — meine gradientMap war nur 8 px breit, es gab keinen echten Smooth-Modus. Jetzt 32 px: bei „Stufe 8" bekommt jeder Pixel einen eigenen Wert (stufenlos für das Auge), bei 2-7 echte Cel-Plateaus. Default ist 8 (smooth) — Cel-Shading ist eine Option für die, die es wollen, nicht der erzwungene Look.
+
+**Der Fog** war unsichtbar — far=235 m, aber in einer Bergwelt verdecken die Berge die Sicht längst vorher. Auf 35..150 m gezogen, jetzt spürbar.
+
+**Keine Wiesen, alles kahl** — das war die Vision-Frage: *„wie machen das die Genies?"*. Die Antwort ist nicht komplexeres Terrain, es ist **Dichte durch Instancing**. `_buildChunkGrass` baut pro Chunk ein `THREE.InstancedMesh` mit bis zu ~2000 Halmen — EIN Draw-Call, so wie Breath of the Wild und No Man's Sky. Die Dichte EMERGIERT aus `worldFieldAt.lebendig` — dieselbe fraktale Sprache, die schon Terrain-Farbe und Architektur-Verteilung regelt. Kein Biom-System, ein neuer Konsument des Felds. Der alte spärliche Einzel-Mesh-Gras-Loop (nur im Initialbereich, 2 % der Vertices) ist gelöscht.
+
+**Kein Wasser** — `waterLevel` war fix auf `baseHeight-3`, in einer Bergwelt 90 m unter dem Spieler. Jetzt adaptiv: beim Worldgen 169 Terrain-Höhen sampeln, das ~35-%-Perzentil als Meeresspiegel — Senken und Schluchten füllen sich, Berge bleiben trocken.
+
+**Die Genesis-Plattform** war ein Schöpfer-Vorschlag: beim ersten Betreten einer Welt auf einer erhöhten Plattform starten, statt blind in ein Tal zu fallen. Ein neuer Built-in-Bauplan, am Welt-Zentrum gespawnt — bessere erste Sicht auf die Welt, und es half der Screenshot-Verifikation.
+
+**Die Lehre**: der Schöpfer-Browser-Test bleibt das Gold. Sieben Beobachtungen, sieben Wurzeln — und jede Lösung folgte derselben Disziplin: die Darstellung emergiert aus dem state (`worldFieldAt`, `cameraMode`, `weather`). Eine Sprache, mehr Schichten.
+
+**Vision-Wort der V8.29**: *„Eine Welt, die ein Tor zu anderen Welten sein soll, muss zuerst selbst atmen — und grünen."*
+
+**Tests**: 13 neue Vision-Invarianten. 2009 → 2022 grün. Audit-strict 5 Schichten clean.
 
 ### V8.28 (17.05.2026) — Welle 6.G4.b "Welt-Atem-Vollendung" (Sterne neu, Terrain aus Affinität, Cel-Shading, Wind/Wolken/Wasser)
 
