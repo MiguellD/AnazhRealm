@@ -29,7 +29,7 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self';"
         />
-        <title>Anazh Realm v8.17 – Das Ultiversum</title>
+        <title>Anazh Realm v8.24 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
              zusätzliche Datei. img-src 'self' data: in CSP erlaubt data-URI. -->
         <link
@@ -3917,7 +3917,7 @@
         <header id="topbar" class="hud-frame">
             <div class="topbar-inner">
                 <div class="title">
-                    Anazh Realm <span class="version">v8.17</span> <span class="sub">— Das Ultiversum</span>
+                    Anazh Realm <span class="version">v8.24</span> <span class="sub">— Das Ultiversum</span>
                 </div>
                 <nav class="tabs" role="tablist" aria-label="Hauptansichten">
                     <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">
@@ -3971,6 +3971,9 @@
             >
             <span class="status-item"
                 ><span class="label">Modus</span><span class="value" id="status-mode">frieden</span></span
+            >
+            <span class="status-item"
+                ><span class="label">Zeit</span><span class="value" id="status-time">—</span></span
             >
             <span class="status-item"
                 ><span class="label">Bauten</span><span class="value" id="status-architectures">—</span></span
@@ -4489,6 +4492,28 @@
                     <label for="slider-ring">Sicht-Ring</label>
                     <input type="range" id="slider-ring" min="1" max="4" value="2" />
                     <span class="slider-value" id="slider-ring-val">5×5</span>
+                </div>
+            </section>
+            <!-- Welle 6.G3 (V8.24) — Tag-Nacht-Zyklus-Slider.
+                 Default 8 Min für sichtbare Iteration im Sitz. Slider 1-60 Min.
+                 Aktuelle Tageszeit + Slider beide hier sichtbar damit der
+                 Schöpfer den Zyklus live ändern + spüren kann. -->
+            <section class="section" id="day-night-section">
+                <h3>Tag-Nacht-Zyklus</h3>
+                <p class="drawer-hint">
+                    Wie schnell atmet die Welt? Ein voller Zyklus von Mitternacht über Mittag zurück. 8 Min Default
+                    (schnell-spürbar), 60 Min für ein realistisches Welt-Gefühl. Die Tageszeit wird in der Status-Bar
+                    angezeigt.
+                </p>
+                <div class="slider-row">
+                    <label for="slider-daylength">Tag-Länge</label>
+                    <input type="range" id="slider-daylength" min="1" max="60" value="8" />
+                    <span class="slider-value" id="slider-daylength-val">8 Min</span>
+                </div>
+                <div class="slider-row">
+                    <label for="slider-timeofday">Tageszeit</label>
+                    <input type="range" id="slider-timeofday" min="0" max="1000" value="500" />
+                    <span class="slider-value" id="slider-timeofday-val">12:00</span>
                 </div>
             </section>
             <!-- Welle 6.X.4 F1 (Audit 17.05.2026) — Personalisierung der

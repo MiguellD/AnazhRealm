@@ -185,6 +185,25 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 
 Echt gelernt, nicht performt:
 
+### V8.24 (17.05.2026) — Welle 6.G3 Welt-Lebendigkeit (Tag-Nacht + Wetter-Cross-Fade + Fauna-Lifecycle)
+
+**Welle 6.G3 in einer Sitzung**, drei Schichten emergent + vision-treu:
+
+- **a) Tag-Nacht-Zyklus**: `state.timeOfDay 0..1` als Welt-Atem-Foundation. 7 frozen `DAY_NIGHT_STOPS` als Stützpunkte (Mitternacht → Sonnenaufgang → Mittag → Sonnenuntergang → Dämmerung), `_interpolateDayNight(t)` lineare Lerp zwischen Stops. DirectionalLight wandert über Halbkreis (azimut über Tag, Höhe über sin-Kurve), AmbientLight-Intensity moduliert (0.18 bei Nacht, 0.6 bei Mittag — sonst wäre Mitternacht schwarz-tot). Skybox-Tint × Wetter-Multiplier — eine Quelle der Wahrheit, `updateSkyboxWeather()` ist jetzt nur ein Wrapper auf `_applyDayNightToScene()`. Status-Bar `#status-time` mit Emoji 🌌🌅☀️🌇 + 24h-Format. Slider 1-60 min in Einstellungen, Default 8 min (Schöpfer-Wahl: schnell-spürbar, mehrere Zyklen in 30 min Spiel). DSL-Op `set_time_of_day` in NON_BROADCASTABLE_OPS (jeder Mitspieler eigene Tageszeit — vision §10.1 persönliche Welt-Beziehung).
+
+- **b) Sanfte Wetter-Übergänge**: `WEATHER_TINTS` frozen mit `skyMul`/`lightMul`. `requestWeatherTransition(target, durationMs?, fromWeather?)` startet 45 s Cross-Fade. **Architektur-Lehre der Welle**: `state.weather` wird SOFORT auf das Ziel gesetzt (logische Schicht — `weather_is rainy` reagiert sofort, DSL-Conditions bleiben kompatibel), die Transition ist eine REIN VISUELLE Schicht. Ein Test-Failure (`DSL-Effekt: weather wirkt auf state`) hat mich gezwungen, die zwei Schichten zu trennen — Logik vs. Visual. Vision-treu: wenn der Spieler „weather rainy" sagt, MEINT er dass es jetzt regnen wird; die Welt ist bereits im Wandel. Das Visual läuft 45 s, aber semantisch ist es da.
+
+- **c) Fauna-Lifecycle mit Trauer**: Schöpfer-Wahl V1 mit echtem Sterben. TARGET=8/MAX=20-Population, 10 s-Tick, Geburts-Cooldown 25 s + Death-Cooldown 35 s (Welt soll nicht massensterben). `_pickFaunaSoulAtPlayer` wählt Soul via Welt-Affinitäts-Feld (Welle 6.G P2) — sprite in magie-Region, wesen in lebendig/dichte, geist als Fallback. Tod: ältesten Kreatur via `_findOldestCreature` (kleinster `bornAt`), sorrow +0.2 geclamped + loss-Journal mit ageSec + 1.2 s Lebewohl-Sinus-Ping (soul-abhängige Frequenz: sprite C5/523Hz, geist G4/392Hz, wesen A3/220Hz — Klang folgt Substanz, Vision §1.3 fraktal). Geburt: silent-Spawn 12-25 m vom Spieler + growth-Journal. **Memory der toten Kreatur wird bewusst NICHT ins Welt-Journal kopiert** — Vision §1.1: die Beziehung lebt nur, solange die Kreatur lebt; nach Tod erinnern sich nur Mensch und Welt-Journal.
+
+**Drei kleine Bug-Fixes nebenbei**:
+1. `state.weather` instant + Transition visuell — eine Pattern-Lehre für jeden state-mit-visualer-Transition.
+2. `setDayLength(0)` mit `|| DEFAULT` fiel auf 8 statt zu clampen — `Number.isFinite` check statt truthy-fallback.
+3. `requestWeatherTransition` braucht optionalen `fromWeather`-Arg, weil der `weather`-DSL-Op den state bereits VOR dem Aufruf setzt — sonst wäre `from === to` immer.
+
+**Lehre — Pattern für Welt-lebt-Schichten**: jede neue Atmosphäre-Schicht (Tag-Nacht / Wetter / Fauna) hat denselben Pattern: (1) Konstanten als Class-Getter, (2) Tick-Methode mit Throttle, (3) DSL-Op falls Mensch eingreifen darf (mit NON_BROADCASTABLE-Check für Spieler-private Aktionen), (4) Status-Bar-Ref + UI-Slider, (5) Persistenz in buildStateSnapshot, (6) Tests in playtest.cjs. **Sechs Pflicht-Punkte**, dann ist die Welle vollständig. 59 neue Invarianten in einer Sitzung — Pattern macht die Welle wiederholbar.
+
+**Performance-Note**: drei neue Ticks im Game-Loop (tickDayNight, tickWeatherTransition, tickFaunaLifecycle). Throttling sorgt für günstige Kosten: tickDayNight feuert jeden Frame für smooth Position-Advance, aber `_applyDayNightToScene` (mit Color-Allocs) nur alle 100 ms. tickWeatherTransition ist no-op solange `state.weatherTransition === null`. tickFaunaLifecycle hat 10 s-Interval-Gate. Insgesamt vernachlässigbare Last.
+
 ### V8.23 (17.05.2026) — Bibliothek von Alexandria als Vision-Wort + Test-Infrastruktur
 
 **Das größte Wort der Session** kam vom Schöpfer am Ende: AnazhRealm soll nicht eine Welt sein, sondern ein **Tor zu allen Vibecode-Welten**. Wie OASIS in Ready Player One — der Spieler startet zentral, geht durch Portale in völlig andere Engines (three-fluid-fx, voxelize, image-blaster, etc.), behält Avatar + Inventar + DSL als Lingua franca. Bibliothek von Alexandria der Vibecode-Ära.

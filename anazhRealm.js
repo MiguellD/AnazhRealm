@@ -107,6 +107,25 @@ class AnazhRealm {
             terrainBaseHeight: 0.0,
             weather: "sunny",
             weatherEffectTime: 0,
+            // Welle 6.G3 (V8.24) — Tag-Nacht-Zyklus. timeOfDay 0..1 mit
+            // 0=Mitternacht, 0.25=Sonnenaufgang, 0.5=Mittag, 0.75=Sonnenuntergang.
+            // dayLengthMinutes ist die Echt-Zeit für einen kompletten Zyklus.
+            // Default 8 Min (schnell-spürbar), Slider 1-60 Min in den
+            // Einstellungen. Beide Felder persistiert. Lights+Skybox werden
+            // pro Frame aus timeOfDay abgeleitet — eine Quelle der Wahrheit.
+            timeOfDay: 0.5,
+            dayLengthMinutes: 8,
+            _lastDayNightTick: -Infinity, // Sentinel, erste Iteration setzt initialen Stand
+            directionalLight: null, // Reference, in initThreeJS gesetzt
+            ambientLight: null,
+            // Welle 6.G3 (V8.24) — sanfter Wetter-Übergang. null heißt: kein
+            // aktiver Übergang. Ein Wechsel zwischen sunny/rainy interpoliert
+            // Skybox-Tint + Symphonie-Filter über WEATHER_TRANSITION_DURATION_MS.
+            weatherTransition: null,
+            // Welle 6.G3 (V8.24) — Fauna-Lifecycle. Bei Unterpopulation
+            // (< TARGET) gebären sich Kreaturen langsam, bei Überpopulation
+            // (> MAX) verabschieden sich die ältesten mit Trauer-Effekt.
+            faunaLifecycle: { lastTick: 0, lastBirthAt: 0, lastDeathAt: 0 },
             noiseCache: new Map(),
             nexusLayers: new Map(),
             nexusCodeForge: {},
@@ -926,6 +945,10 @@ class AnazhRealm {
             // Welle 6.H Phase 2F.3 — Konsumable-Übergabe an Kreatur ist
             // Spieler-private Geste (er „gibt" der Kreatur den Trank).
             "creature_apply_boost",
+            // Welle 6.G3.a — Tageszeit ist per-Spieler-Beziehung zur Welt
+            // (jeder Mitspieler darf seine eigene Tageszeit/Phase haben,
+            // gleiche Disziplin wie set_mode). Tag-Nacht-Tick läuft lokal.
+            "set_time_of_day",
         ]);
     }
 
@@ -1064,11 +1087,31 @@ class AnazhRealm {
         this._dslEffectsCache = {
             weather: ([name]) => {
                 if (name === "sunny" || name === "rainy") {
+                    // Welle 6.G3.b — state.weather wird SOFORT gesetzt
+                    // (logisch das Ziel-Wetter, weather_is-Condition + DSL-
+                    // Sequenzen reagieren sofort darauf). Die Transition ist
+                    // eine REIN VISUELLE Schicht — Skybox+Symphonie cross-
+                    // faden über 45 s zum neuen Zielwetter. So bleibt die
+                    // Logik instant, das Auge sieht den weichen Übergang.
+                    const oldWeather = this.state.weather;
                     this.state.weather = name;
                     this.state.weatherEffectTime = 0;
-                    this.updateSkyboxWeather();
+                    if (oldWeather !== name) {
+                        // Nur einen Cross-Fade starten wenn es wirklich
+                        // einen Wechsel gibt.
+                        this.requestWeatherTransition(name, undefined, oldWeather);
+                    }
+                    // updateSkyboxWeather wird nicht mehr direkt gerufen —
+                    // _applyDayNightToScene übernimmt das pro Frame.
                     this.updateCreatureEmotions();
                 }
+            },
+            // Welle 6.G3.a — set_time_of_day(t) als DSL-Op. t ∈ 0..1, 0=
+            // Mitternacht, 0.5=Mittag. NON_BROADCASTABLE — jeder Mitspieler
+            // darf seine eigene Tageszeit haben (vision §10.1 frieden/pfad/
+            // schöpfer: persönliche Welt-Beziehung).
+            set_time_of_day: ([t]) => {
+                this.setTimeOfDay(Number(t));
             },
             gravity: ([value]) => {
                 const v = c(value, -30, 0);
@@ -5403,6 +5446,8 @@ class AnazhRealm {
             creatures: document.getElementById("status-creatures"),
             soul: document.getElementById("status-soul"),
             architectures: document.getElementById("status-architectures"),
+            // Welle 6.G3 — Status-Bar zeigt die aktuelle Tageszeit
+            time: document.getElementById("status-time"),
             emotions: emotionRefs,
             abilities: document.getElementById("status-abilities"),
             abilitiesSignature: "",
@@ -5877,6 +5922,13 @@ class AnazhRealm {
         if (r.architectures) {
             const counts = this.countArchitecturesNearPlayer(60);
             r.architectures.textContent = `${counts.near} nah / ${counts.total}`;
+        }
+        // Welle 6.G3 — Tageszeit-Anzeige (zusätzlich zum 10-Hz-Refresh in
+        // tickDayNight; diese Schleife läuft 0.4 s und ist Backup für die
+        // Fälle wo tickDayNight pausiert ist).
+        if (r.time) {
+            const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
+            r.time.textContent = this._timeOfDayLabel(t);
         }
         const e = this.state.player.emotions;
         for (const axis of Object.keys(r.emotions)) {
@@ -6874,13 +6926,17 @@ class AnazhRealm {
             );
         }
     }
+    // Welle 6.G3 (V8.24) — updateSkyboxWeather ist jetzt ein Schmal-Wrapper
+    // auf _applyDayNightToScene. Die Skybox-Farbe ergibt sich aus dem
+    // kombinierten Tag-Nacht-Tint × Wetter-Tint (multiplikative Verkettung).
+    // Hard-Switches gibt es nicht mehr — alle Wetterwechsel laufen durch
+    // requestWeatherTransition (sanfter Cross-Fade) oder direkten state-
+    // Schreib (legacy + initial Load); _applyDayNightToScene berechnet
+    // pro Frame den finalen Skybox-Tint aus state.timeOfDay + state.weather.
     updateSkyboxWeather() {
-        if (this.state.weather === "rainy") {
-            this.state.skybox.material.uniforms.nebulaColor.value.set(0x2f2f2f); // Dunkler für Regen
-        } else {
-            this.state.skybox.material.uniforms.nebulaColor.value.set(0x4b0082); // Indigofarben für Sonne
+        if (typeof this._applyDayNightToScene === "function") {
+            this._applyDayNightToScene();
         }
-        this.log(`Skybox-Wetter aktualisiert: ${this.state.weather}`);
     }
 
     // ### Kreaturen ### V7.42
@@ -7746,6 +7802,76 @@ class AnazhRealm {
     // „die nahste Kreatur folge mir" beim Empfänger eine andere Kreatur
     // (oder denselben Mitspieler) referenzieren würde — falsche Semantik.
     // Phase 2 kann explizite Kreatur-IDs broadcasten.
+
+    // ### Welle 6.G3 (V8.24) — Welt-Lebendigkeit ###
+    // Tag-Nacht-Stops als Tag-Phase → {skyColor, lightColor, intensity}-Tripel.
+    // tickDayNight interpoliert zwischen diesen Stops, je nach timeOfDay 0..1.
+    // 0=Mitternacht (kalt-magisch), 0.25=Sonnenaufgang (warm-rosé),
+    // 0.5=Mittag (klar-hell), 0.75=Sonnenuntergang (gold-violett).
+    // Skybox-Tint wird mit dem Wetter-Tint kombiniert (sunny vs. rainy).
+    static get DAY_NIGHT_STOPS() {
+        return Object.freeze([
+            // t=0 Mitternacht
+            Object.freeze({ t: 0.0, sky: 0x161830, light: 0x6a7aa8, intensity: 0.28 }),
+            // t=0.2 frühe Dämmerung
+            Object.freeze({ t: 0.2, sky: 0x4a3a5c, light: 0xd29bbf, intensity: 0.55 }),
+            // t=0.3 Sonnenaufgang (warm-rosé)
+            Object.freeze({ t: 0.3, sky: 0xc66c4d, light: 0xffd0a8, intensity: 0.85 }),
+            // t=0.5 Mittag (klar)
+            Object.freeze({ t: 0.5, sky: 0x4b75c2, light: 0xffffff, intensity: 1.0 }),
+            // t=0.7 Sonnenuntergang (gold-violett)
+            Object.freeze({ t: 0.7, sky: 0xc04a7a, light: 0xffba88, intensity: 0.8 }),
+            // t=0.8 Dämmerung (kalt-violett)
+            Object.freeze({ t: 0.8, sky: 0x3a2c54, light: 0x9090d0, intensity: 0.5 }),
+            // t=1.0 → wraps zu 0.0 (Mitternacht)
+            Object.freeze({ t: 1.0, sky: 0x161830, light: 0x6a7aa8, intensity: 0.28 }),
+        ]);
+    }
+    // Welle 6.G3 — Wetter-Tint, zusammen mit Tag-Nacht-Tint kombiniert
+    // (Multiply-Blend). Sunny lässt den Tagestint durch, rainy dämpft ihn.
+    static get WEATHER_TINTS() {
+        return Object.freeze({
+            sunny: Object.freeze({ skyMul: 1.0, lightMul: 1.0 }),
+            rainy: Object.freeze({ skyMul: 0.55, lightMul: 0.7 }),
+        });
+    }
+    static get WEATHER_TRANSITION_DURATION_MS() {
+        return 45000; // 45 s — sanft, nicht zu lang
+    }
+    static get DAY_LENGTH_MIN_MINUTES() {
+        return 1; // Slider-Minimum
+    }
+    static get DAY_LENGTH_MAX_MINUTES() {
+        return 60; // Slider-Maximum
+    }
+    static get DAY_LENGTH_DEFAULT_MINUTES() {
+        return 8; // Schöpfer-Wahl: schnell-spürbar
+    }
+    // Welle 6.G3 — Fauna-Lifecycle-Parameter. TARGET ist die untere Schwelle
+    // für Geburten (Welt atmet zurück zur Ziel-Population), MAX die obere
+    // Schwelle für Tod (Überpopulation wird sanft abgebaut). DAY_LENGTH-
+    // unabhängig: alle 10s ein Check.
+    static get FAUNA_TICK_INTERVAL_MS() {
+        return 10000; // 10 s — fauna lebt langsam
+    }
+    static get FAUNA_TARGET_POPULATION() {
+        return 8; // wenn weniger → langsame Geburten
+    }
+    static get FAUNA_MAX_POPULATION() {
+        return 20; // wenn mehr → langsame Todesfälle
+    }
+    static get FAUNA_BIRTH_PROBABILITY() {
+        return 0.18; // pro 10s-Check (~1.08/min Max-Rate)
+    }
+    static get FAUNA_DEATH_PROBABILITY() {
+        return 0.12; // pro 10s-Check
+    }
+    static get FAUNA_BIRTH_COOLDOWN_MS() {
+        return 25000; // mind. 25 s zwischen Geburten
+    }
+    static get FAUNA_DEATH_COOLDOWN_MS() {
+        return 35000; // mind. 35 s zwischen Toden — Welt soll nicht massensterben
+    }
 
     static get CREATURE_TASKS() {
         return Object.freeze(["wander", "follow_player", "wait", "gather", "build"]);
@@ -11177,6 +11303,12 @@ class AnazhRealm {
             // bleiben absichtlich draußen — sie sind reine Laufzeit-Drosselung,
             // ein Reload soll wieder triggerfähig sein.
             playerEmotions: { ...this.state.player.emotions },
+            // Welle 6.G3 — Tag-Nacht-Zustand persistieren. timeOfDay läuft
+            // weiter wo er aufgehört hat, dayLengthMinutes ist Spieler-Wahl.
+            // weatherTransition NICHT persistiert (Runtime-Artefakt, ein
+            // Reload soll mit stabilem Wetter starten).
+            timeOfDay: typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5,
+            dayLengthMinutes: this.state.dayLengthMinutes || 8,
             // Ring 5: Spieler-Seele (visuelle Form). Beim Load wird sie nach
             // dem playerMesh-Bau angewandt — kein Body-Recreate.
             playerSoul: this.state.player.soul || "human",
@@ -12006,6 +12138,23 @@ class AnazhRealm {
                 this.playerSoulDefs[state.playerSoul] ||
                 (this.state.customSouls && this.state.customSouls[state.playerSoul]);
             if (known) this.applyPlayerSoul(state.playerSoul);
+        }
+        // Welle 6.G3 — Tag-Nacht-Zustand wiederherstellen. Defensive:
+        // timeOfDay muss 0..1 sein, dayLengthMinutes muss in [min, max]-
+        // Range liegen. Bei ungültigen Werten: Defaults (0.5 / 8 min).
+        if (typeof state.timeOfDay === "number" && state.timeOfDay >= 0 && state.timeOfDay <= 1) {
+            this.state.timeOfDay = state.timeOfDay;
+        }
+        if (typeof state.dayLengthMinutes === "number") {
+            const min = this.constructor.DAY_LENGTH_MIN_MINUTES;
+            const max = this.constructor.DAY_LENGTH_MAX_MINUTES;
+            if (state.dayLengthMinutes >= min && state.dayLengthMinutes <= max) {
+                this.state.dayLengthMinutes = state.dayLengthMinutes;
+            }
+        }
+        // Lights+Skybox sofort neu aus restauriertem timeOfDay setzen
+        if (typeof this._applyDayNightToScene === "function") {
+            this._applyDayNightToScene();
         }
         // Welle 6.D Etappe 3a — Konsumables aus Save rekonstruieren (defensiv
         // über createOrUpdateConsumable, das die tagBonus + duration prüft).
@@ -22068,6 +22217,426 @@ class AnazhRealm {
         tooltip.innerHTML = lines.join("<br>");
     }
 
+    // ##############################################################
+    // ### Welle 6.G3 (V8.24) — Welt-Lebendigkeit
+    // ##############################################################
+    // Drei Schichten in einer Welle:
+    //   a) Tag-Nacht-Zyklus — state.timeOfDay läuft 0..1, Lights+Skybox folgen
+    //   b) Sanfte Wetter-Übergänge — Skybox + Symphonie cross-faden 45 s
+    //   c) Fauna-Lifecycle — Geburten bei < TARGET, Tod bei > MAX mit Trauer
+
+    // ### 6.G3.a — Tag-Nacht-Zyklus ###
+
+    // Lineare Interpolation zwischen DAY_NIGHT_STOPS. Sortiert nach `.t`,
+    // findet das Stop-Paar das `t` umschließt, lerpt Sky-Color, Light-Color,
+    // Intensity. Output ist ein {sky, light, intensity}-Objekt mit
+    // THREE.Color-Instanzen.
+    _interpolateDayNight(t) {
+        const stops = this.constructor.DAY_NIGHT_STOPS;
+        const tWrap = ((t % 1) + 1) % 1; // 0..1 sicher
+        let i = 0;
+        for (let k = 0; k < stops.length - 1; k++) {
+            if (tWrap >= stops[k].t && tWrap <= stops[k + 1].t) {
+                i = k;
+                break;
+            }
+        }
+        const a = stops[i];
+        const b = stops[i + 1];
+        const span = b.t - a.t;
+        const local = span > 0 ? (tWrap - a.t) / span : 0;
+        const skyA = new THREE.Color(a.sky);
+        const skyB = new THREE.Color(b.sky);
+        const lightA = new THREE.Color(a.light);
+        const lightB = new THREE.Color(b.light);
+        return {
+            sky: skyA.lerp(skyB, local),
+            light: lightA.lerp(lightB, local),
+            intensity: a.intensity + (b.intensity - a.intensity) * local,
+        };
+    }
+
+    // Wendet timeOfDay+Wetter-Tint auf Lights + Skybox an. Eine Quelle der
+    // Wahrheit: nichts setzt diese Werte direkt, alles geht hier durch.
+    // updateSkyboxWeather() ist nur ein Schmal-Wrapper der hier rein-ruft.
+    _applyDayNightToScene() {
+        if (!this.state.directionalLight) return; // Pre-init safe
+        const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
+        const stop = this._interpolateDayNight(t);
+        // Welle 6.G3 — Wetter-Tint multipliziert auf den Tagestint.
+        // sunny → 1.0, rainy → 0.55 für sky / 0.7 für light. Während eines
+        // Wetter-Übergangs (weatherTransition aktiv) wird zwischen den Mul-
+        // Werten gelerpt.
+        const wt = this.state.weatherTransition;
+        const tints = this.constructor.WEATHER_TINTS;
+        let skyMul, lightMul;
+        if (wt && wt.from && wt.to) {
+            const fromT = tints[wt.from] || tints.sunny;
+            const toT = tints[wt.to] || tints.sunny;
+            const p = Math.max(0, Math.min(1, wt.progress || 0));
+            skyMul = fromT.skyMul + (toT.skyMul - fromT.skyMul) * p;
+            lightMul = fromT.lightMul + (toT.lightMul - fromT.lightMul) * p;
+        } else {
+            const currentTint = tints[this.state.weather] || tints.sunny;
+            skyMul = currentTint.skyMul;
+            lightMul = currentTint.lightMul;
+        }
+        // Skybox-Tint setzen (Uniform `nebulaColor`). Skybox-Tint ×
+        // Sky-Multiplier = endgültige Farbe. THREE.Color hat keinen *=,
+        // also direkte Komponenten-Mul.
+        const sky = stop.sky;
+        const skyR = sky.r * skyMul;
+        const skyG = sky.g * skyMul;
+        const skyB = sky.b * skyMul;
+        if (this.state.skybox && this.state.skybox.material && this.state.skybox.material.uniforms) {
+            const u = this.state.skybox.material.uniforms.nebulaColor;
+            if (u && u.value) {
+                u.value.setRGB(skyR, skyG, skyB);
+            }
+        }
+        // Light-Position über Halbkreis (azimut über Tag). Höhe folgt
+        // sin(2π·t - π/2): bei t=0 unter dem Horizont (y=-1), bei t=0.5
+        // im Zenit (y=1). x rotiert linear über den Tag. Welt-Skala: Welt-
+        // Größe ist ~300, also Licht aus 200 m Entfernung.
+        const dl = this.state.directionalLight;
+        const angle = t * Math.PI * 2 - Math.PI / 2; // -π/2 → +3π/2
+        const lightDist = 200;
+        dl.position.set(
+            Math.cos(angle) * lightDist,
+            Math.sin(angle) * lightDist,
+            Math.sin(angle * 0.5) * lightDist * 0.4 // leichte Schwingung in z
+        );
+        // Light-Color * lightMul
+        const li = stop.light;
+        dl.color.setRGB(li.r * lightMul, li.g * lightMul, li.b * lightMul);
+        // Light-Intensity wird durch Wetter zusätzlich gedrosselt.
+        dl.intensity = stop.intensity * lightMul;
+        // Ambient-Light bleibt fast konstant, leicht moduliert für Nacht-
+        // Tiefe (sonst wirkt Mitternacht schwarz-tot).
+        const al = this.state.ambientLight;
+        if (al) {
+            // Mitternacht ambient 0.18, Mittag 0.6. Linear über sin-Höhe.
+            const sunHeight = Math.max(0, Math.sin(angle));
+            al.intensity = 0.18 + 0.42 * sunHeight;
+        }
+    }
+
+    // Treibt timeOfDay vorwärts basierend auf realer Echtzeit + dayLength.
+    // currentTime ist die performance.now()/1000-Sekunden-Variante des
+    // Game-Loops. Delta wird aus _lastDayNightTick errechnet, sicher gegen
+    // Sprünge (Tab-Wechsel etc.) durch Math.min(delta, 1.0).
+    tickDayNight(currentTime) {
+        const last = this.state._lastDayNightTick;
+        if (!Number.isFinite(last)) {
+            this.state._lastDayNightTick = currentTime;
+            this._applyDayNightToScene();
+            return;
+        }
+        const delta = Math.min(1.0, currentTime - last); // Sekunden, gegen Tab-Sleeps
+        this.state._lastDayNightTick = currentTime;
+        const minutes = this.state.dayLengthMinutes || this.constructor.DAY_LENGTH_DEFAULT_MINUTES;
+        const cycleSeconds = Math.max(60, minutes * 60); // hard-floor 1min
+        const advance = delta / cycleSeconds; // wieviel von 0..1 in delta vergeht
+        this.state.timeOfDay = (this.state.timeOfDay + advance) % 1;
+        // Throttle: Lights+Skybox-Update alle ~100 ms. Reicht für Auge,
+        // spart Color-Allocs. Tick selbst läuft jeden Frame, aber die
+        // teure Update-Funktion nur 10×/s.
+        const lastApply = this.state._lastDayNightApply || 0;
+        if (currentTime - lastApply >= 0.1) {
+            this._applyDayNightToScene();
+            this.state._lastDayNightApply = currentTime;
+            // Status-Bar-Anzeige (24h-Format mit Emoji) ebenfalls 10 Hz
+            const r = this._statusRefs;
+            if (r && r.time) {
+                r.time.textContent = this._timeOfDayLabel(this.state.timeOfDay);
+            }
+        }
+    }
+
+    // Liefert eine kurze, lesbare Tageszeit-Beschreibung. z. B. "🌅 06:24".
+    // Vier Symbole für vier Phasen: 🌌 Nacht / 🌅 Morgen / ☀️ Tag / 🌇 Abend.
+    _timeOfDayLabel(t) {
+        const tWrap = ((t % 1) + 1) % 1;
+        const hours = tWrap * 24;
+        const h = Math.floor(hours);
+        const m = Math.floor((hours - h) * 60);
+        const hStr = h.toString().padStart(2, "0");
+        const mStr = m.toString().padStart(2, "0");
+        let emoji = "☀️";
+        if (tWrap < 0.22 || tWrap >= 0.85)
+            emoji = "🌌"; // Nacht
+        else if (tWrap < 0.35)
+            emoji = "🌅"; // Morgen
+        else if (tWrap < 0.65)
+            emoji = "☀️"; // Tag
+        else emoji = "🌇"; // Abend
+        return `${emoji} ${hStr}:${mStr}`;
+    }
+
+    // Setzt die Tag-Länge (in Minuten). Persistiert in worldMeta + localStorage.
+    setDayLength(minutes) {
+        const min = this.constructor.DAY_LENGTH_MIN_MINUTES;
+        const max = this.constructor.DAY_LENGTH_MAX_MINUTES;
+        const num = Number(minutes);
+        const safeMinutes = Number.isFinite(num) ? num : this.constructor.DAY_LENGTH_DEFAULT_MINUTES;
+        const v = Math.max(min, Math.min(max, safeMinutes));
+        this.state.dayLengthMinutes = v;
+        try {
+            if (typeof localStorage !== "undefined") localStorage.setItem("anazh.dayLengthMinutes", String(v));
+        } catch (e) {
+            void e;
+        }
+    }
+
+    // Setzt timeOfDay direkt (z. B. via DSL-Op set_time_of_day(0.5) für Mittag).
+    setTimeOfDay(t) {
+        const v = Math.max(0, Math.min(1, Number(t)));
+        if (!Number.isFinite(v)) return false;
+        this.state.timeOfDay = v;
+        this._applyDayNightToScene();
+        const r = this._statusRefs;
+        if (r && r.time) r.time.textContent = this._timeOfDayLabel(v);
+        return true;
+    }
+
+    // ### 6.G3.b — Sanfte Wetter-Übergänge ###
+
+    // Startet einen Cross-Fade. target = Ziel-Wetter, fromWeather =
+    // explizit übergebener vorheriger Zustand (sonst state.weather, das aber
+    // schon auf target gesetzt sein kann, wenn der DSL-Op uns vor dem
+    // Wechsel ruft). duration default WEATHER_TRANSITION_DURATION_MS (45 s).
+    // Bei laufendem Übergang wird from auf Vorgänger-from gefriert, target neu
+    // gesetzt. state.weather selbst wird NICHT modifiziert (das ist Job
+    // des Callers — Transition ist reine Visual-Schicht).
+    requestWeatherTransition(target, durationMs, fromWeather) {
+        if (target !== "sunny" && target !== "rainy") return false;
+        const dur = Math.max(100, Number(durationMs) || this.constructor.WEATHER_TRANSITION_DURATION_MS);
+        const wt = this.state.weatherTransition;
+        let from = typeof fromWeather === "string" ? fromWeather : this.state.weather;
+        if (wt && wt.from && wt.to && wt.to !== target) {
+            // Mitten im Übergang — behalte Vorgänger-from, aber neues to.
+            from = wt.from;
+        } else if (wt && wt.to === target) {
+            // Schon auf demselben Ziel — no-op (idempotent).
+            return true;
+        }
+        if (from === target) {
+            // Schon dort, kein Übergang nötig.
+            this.state.weatherTransition = null;
+            return true;
+        }
+        this.state.weatherTransition = {
+            from,
+            to: target,
+            progress: 0,
+            duration: dur,
+            startedAt: typeof performance !== "undefined" ? performance.now() : Date.now(),
+        };
+        return true;
+    }
+
+    // Pro-Frame-Tick: schreitet weatherTransition.progress voran. Bei
+    // progress >= 1 wird der Übergang abgeschlossen, state.weather auf to
+    // gesetzt, transition genullt. Während des Übergangs wirken Skybox-Mul
+    // (via _applyDayNightToScene) UND Symphonie-Gain (linear gerampt).
+    tickWeatherTransition(_currentTime) {
+        const wt = this.state.weatherTransition;
+        if (!wt) return;
+        const nowMs = typeof performance !== "undefined" ? performance.now() : Date.now();
+        const elapsed = nowMs - wt.startedAt;
+        wt.progress = Math.min(1, elapsed / wt.duration);
+        if (wt.progress >= 1) {
+            // Übergang fertig — Transition lösen. state.weather ist schon
+            // beim DSL-Op-Aufruf auf das Ziel gesetzt worden (instant-Logik).
+            // _applyDayNightToScene wird im nächsten DayNight-Tick die finale
+            // Skybox-Tönung setzen (kein wt mehr → currentTint direkt).
+            this.state.weatherTransition = null;
+            return;
+        }
+        // Symphonie-Gain während des Übergangs sanft rampen. weather-Layer
+        // hat eigenes ramping in symphonyTick — wir setzen hier nur das
+        // gerampte Ziel-Volume statt sofortig.
+        if (this.state.symphony && this.state.symphony.enabled && this.state.symphony.weather) {
+            const w = this.state.symphony.weather;
+            const targetGain = wt.to === "rainy" ? 0.045 : 0;
+            const currentGain = wt.from === "rainy" ? 0.045 : 0;
+            const interp = currentGain + (targetGain - currentGain) * wt.progress;
+            if (w.gain && w.gain.gain) {
+                try {
+                    w.gain.gain.setTargetAtTime(interp, this.state.symphony.ctx.currentTime, 0.2);
+                } catch (e) {
+                    void e;
+                }
+            }
+        }
+    }
+
+    // ### 6.G3.c — Fauna-Lifecycle ###
+
+    // Wählt eine Soul für eine neue Kreatur basierend auf Welt-Affinität.
+    // Welt-Field bei Spieler-Position bestimmt dominante Achse, daraus
+    // wird die passende Soul abgeleitet (lebendig → wesen, magie → sprite,
+    // dichte → geist). Fallback: Zufalls-Soul aus dem Pool.
+    _pickFaunaSoulAtPlayer() {
+        const pm = this.state.playerMesh;
+        if (!pm || typeof this.worldFieldAt !== "function") return this._pickCreatureSoulName();
+        const field = this.worldFieldAt(pm.position.x, pm.position.z);
+        if (!field) return this._pickCreatureSoulName();
+        // Höchste Achse wählen
+        let topKey = "lebendig";
+        let topVal = -Infinity;
+        for (const k of Object.keys(field)) {
+            if (field[k] > topVal) {
+                topVal = field[k];
+                topKey = k;
+            }
+        }
+        // Achse → Soul-Mapping (vision-konsistent zu CREATURE_SOULS)
+        if (topKey === "magieleitung") return "sprite";
+        if (topKey === "dichte") return "wesen";
+        if (topKey === "lebendig") return "wesen";
+        if (topKey === "glut") return "sprite";
+        return this._pickCreatureSoulName();
+    }
+
+    // Findet die älteste Kreatur (kleinster bornAt). Für Tod-Wahl bei
+    // Überpopulation — wer am längsten da ist, geht zuerst. Defensiv gegen
+    // Kreaturen ohne bornAt (z.B. aus Legacy-Save).
+    _findOldestCreature() {
+        if (!this.state.creatures || this.state.creatures.length === 0) return null;
+        let oldest = null;
+        let oldestBorn = Infinity;
+        for (const c of this.state.creatures) {
+            const b = (c && c.userData && c.userData.bornAt) || 0;
+            if (b < oldestBorn) {
+                oldestBorn = b;
+                oldest = c;
+            }
+        }
+        return oldest;
+    }
+
+    // Tod einer Kreatur durch Lifecycle. Vision §10 — Trauer im Welt-Atem:
+    // sorrow += 0.2 (geclamped), journal-loss-Eintrag, kurzer Aura-Pulse,
+    // dann normale removeCreature-Pipeline. Memory bleibt bewusst nicht
+    // erhalten (Vision §1.1 — die Beziehung lebt nur, solange die Kreatur
+    // lebt; nach Tod erinnern sich nur Mensch und Welt-Journal).
+    _creatureNaturalDeath(creature) {
+        if (!creature) return false;
+        const name = (creature.userData && creature.userData.name) || "(unbenannt)";
+        const soul = (creature.userData && creature.userData.soul) || "wesen";
+        const bornAt = (creature.userData && creature.userData.bornAt) || 0;
+        const ageSec = bornAt > 0 ? (Date.now() - bornAt) / 1000 : null;
+        // Sorrow-Effekt (clamped)
+        if (this.state.player && this.state.player.emotions) {
+            const e = this.state.player.emotions;
+            e.sorrow = Math.max(0, Math.min(1, (e.sorrow || 0) + 0.2));
+        }
+        // Journal-Eintrag
+        if (typeof this.journalAppend === "function") {
+            this.journalAppend("loss", `${name} kehrt zur Erde zurück.`, {
+                creature: name,
+                soul,
+                ageSec,
+                cause: "fauna_lifecycle",
+            });
+        }
+        // Lebewohl-Aura: kurzer Sinus-Ping in Symphony, falls aktiv.
+        // Frequenz hängt von Soul ab (sprite hell, geist mittel, wesen tief).
+        if (this.state.symphony && this.state.symphony.enabled && this.state.symphony.ctx) {
+            try {
+                const ctx = this.state.symphony.ctx;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                const freq = soul === "sprite" ? 523 : soul === "geist" ? 392 : 220;
+                osc.type = "sine";
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(freq * 0.5, ctx.currentTime + 1.2);
+                gain.gain.setValueAtTime(0.0, ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.2);
+                osc.connect(gain);
+                gain.connect(this.state.symphony.masterGain || ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 1.3);
+            } catch (e) {
+                void e;
+            }
+        }
+        // removeCreature läuft den Standard-Cleanup (Scene-remove, Body-dispose,
+        // Aura-dispose, state.creatures-splice). Memory wird mit der Kreatur
+        // verworfen — bewusst nicht ins Journal kopiert (Vision §1.1 lebende
+        // Beziehung).
+        if (typeof this.removeCreature === "function") {
+            this.removeCreature(creature);
+        }
+        this.state.faunaLifecycle.lastDeathAt = Date.now();
+        return true;
+    }
+
+    // Geburt einer Kreatur. Soul-Wahl via Welt-Affinität. Spawn-Position
+    // in moderater Distanz zum Spieler (nicht direkt unter den Füßen, aber
+    // sichtbar). Stille Spawn (kein Symphony-Spawn-Ping — Geburt ist sanft,
+    // nicht laut).
+    _creatureNaturalBirth() {
+        if (typeof this.spawnCreatureAt !== "function") return false;
+        const pm = this.state.playerMesh;
+        if (!pm) return false;
+        const soul = this._pickFaunaSoulAtPlayer();
+        // Position 12-25 m vom Spieler entfernt, zufällige Richtung
+        const angle = Math.random() * Math.PI * 2;
+        const distance = 12 + Math.random() * 13;
+        const x = pm.position.x + Math.cos(angle) * distance;
+        const z = pm.position.z + Math.sin(angle) * distance;
+        const y = pm.position.y + 2; // leicht über Spieler-Höhe (fällt aufs Terrain)
+        // Spawn (silent damit kein Ping-Schwall)
+        const prevSymphony = this.state.symphony && this.state.symphony.enabled;
+        if (prevSymphony) this.state.symphony.enabled = false;
+        const c = this.spawnCreatureAt(x, y, z, "happy", soul);
+        if (prevSymphony) this.state.symphony.enabled = true;
+        if (!c) return false;
+        // Journal-Eintrag — Geburt ist Welt-Atem, leise Notiz
+        if (typeof this.journalAppend === "function") {
+            const name = (c.userData && c.userData.name) || "(Wesen)";
+            this.journalAppend("growth", `${name} (${soul}) tritt in die Welt ein.`, {
+                creature: name,
+                soul,
+                cause: "fauna_lifecycle",
+            });
+        }
+        this.state.faunaLifecycle.lastBirthAt = Date.now();
+        return true;
+    }
+
+    // Tick — läuft alle FAUNA_TICK_INTERVAL_MS. Prüft Population:
+    // < TARGET → mit p=BIRTH probabilistisch Geburt (Cooldown beachten)
+    // > MAX → mit p=DEATH probabilistisch Tod (Cooldown beachten)
+    tickFaunaLifecycle(currentTime) {
+        const ms = currentTime * 1000;
+        const last = this.state.faunaLifecycle.lastTick || 0;
+        const interval = this.constructor.FAUNA_TICK_INTERVAL_MS;
+        if (ms - last < interval) return;
+        this.state.faunaLifecycle.lastTick = ms;
+        const count = (this.state.creatures && this.state.creatures.length) || 0;
+        const target = this.constructor.FAUNA_TARGET_POPULATION;
+        const max = this.constructor.FAUNA_MAX_POPULATION;
+        const birthCd = this.constructor.FAUNA_BIRTH_COOLDOWN_MS;
+        const deathCd = this.constructor.FAUNA_DEATH_COOLDOWN_MS;
+        const now = Date.now();
+        if (count < target) {
+            const sinceBirth = now - (this.state.faunaLifecycle.lastBirthAt || 0);
+            if (sinceBirth >= birthCd && Math.random() < this.constructor.FAUNA_BIRTH_PROBABILITY) {
+                this._creatureNaturalBirth();
+            }
+        } else if (count > max) {
+            const sinceDeath = now - (this.state.faunaLifecycle.lastDeathAt || 0);
+            if (sinceDeath >= deathCd && Math.random() < this.constructor.FAUNA_DEATH_PROBABILITY) {
+                const oldest = this._findOldestCreature();
+                if (oldest) this._creatureNaturalDeath(oldest);
+            }
+        }
+    }
+
     // Welle 6.X.4 D2 (Audit 17.05.2026) — Drei Schieber: Master-Volume,
     // Kreatur-Pings-Volume, Render-Ring-Radius. Lädt persistierte Werte
     // aus localStorage. Master + Pings wirken live auf state.symphony +
@@ -22188,6 +22757,49 @@ class AnazhRealm {
                         /* ignore */
                     }
                 }
+            });
+        }
+
+        // Welle 6.G3 (V8.24) — Tag-Nacht-Slider + Tageszeit-Slider.
+        // Tag-Länge: 1-60 Min. Tageszeit: 0-1000 (skaliert auf 0..1, drei
+        // Nachkomma-Stellen-Präzision damit Drag smooth fühlt).
+        const dl = document.getElementById("slider-daylength");
+        const dlVal = document.getElementById("slider-daylength-val");
+        if (dl) {
+            // Persistierte Tag-Länge aus localStorage einlesen (Init).
+            try {
+                if (typeof localStorage !== "undefined") {
+                    const stored = localStorage.getItem("anazh.dayLengthMinutes");
+                    if (stored) {
+                        const v = Math.max(
+                            this.constructor.DAY_LENGTH_MIN_MINUTES,
+                            Math.min(this.constructor.DAY_LENGTH_MAX_MINUTES, parseInt(stored, 10) || 8)
+                        );
+                        this.state.dayLengthMinutes = v;
+                    }
+                }
+            } catch (e) {
+                void e;
+            }
+            dl.value = String(this.state.dayLengthMinutes || 8);
+            if (dlVal) dlVal.textContent = `${dl.value} Min`;
+            dl.addEventListener("input", () => {
+                const v = parseInt(dl.value, 10);
+                this.setDayLength(v);
+                if (dlVal) dlVal.textContent = `${v} Min`;
+            });
+        }
+
+        const tod = document.getElementById("slider-timeofday");
+        const todVal = document.getElementById("slider-timeofday-val");
+        if (tod) {
+            const t0 = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
+            tod.value = String(Math.round(t0 * 1000));
+            if (todVal) todVal.textContent = this._timeOfDayLabel(t0).replace(/^[^\s]+\s/, "");
+            tod.addEventListener("input", () => {
+                const v = parseInt(tod.value, 10) / 1000;
+                this.setTimeOfDay(v);
+                if (todVal) todVal.textContent = this._timeOfDayLabel(v).replace(/^[^\s]+\s/, "");
             });
         }
     }
@@ -23164,7 +23776,16 @@ class AnazhRealm {
         directionalLight.shadow.camera.top = 300;
         directionalLight.shadow.camera.bottom = -300;
         scene.add(directionalLight);
+        // Welle 6.G3 — Refs cachen für tickDayNight. Eine Quelle der Wahrheit
+        // (Lights+Skybox werden aus state.timeOfDay abgeleitet pro Frame).
+        this.state.ambientLight = ambientLight;
+        this.state.directionalLight = directionalLight;
         this.log("Beleuchtung hinzugefügt: Ambient (0.6), Directional (1.0) mit Schatten", "INFO");
+        // Welle 6.G3 — initialer Lichtstand aus timeOfDay (Default 0.5 = Mittag).
+        // Pro-Frame-Tick übernimmt danach.
+        if (typeof this._applyDayNightToScene === "function") {
+            this._applyDayNightToScene();
+        }
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         this.state.camera = camera;
@@ -23589,6 +24210,20 @@ class AnazhRealm {
             // ### Stats-HUD (Welle 6.X.4 B3) ###
             // HP/Stamina-Bars über der Hotbar, throttled auf 10 Hz.
             this.tickStatsHud(currentTime);
+
+            // ### Tag-Nacht-Zyklus (Welle 6.G3.a) ###
+            // timeOfDay läuft, Lights+Skybox folgen. _applyDayNightToScene
+            // throttled auf 10 Hz, Tick selbst feuert jeden Frame für
+            // smooth Position-Advance.
+            this.tickDayNight(currentTime);
+
+            // ### Wetter-Übergang (Welle 6.G3.b) ###
+            // Cross-Fade über 45 s. No-op wenn kein Übergang aktiv.
+            this.tickWeatherTransition(currentTime);
+
+            // ### Fauna-Lifecycle (Welle 6.G3.c) ###
+            // Alle 10 s: Geburt bei < TARGET, Tod bei > MAX mit Trauer.
+            this.tickFaunaLifecycle(currentTime);
 
             // ### Symphonie-Wetter-Layer (Ring 4) ###
             this.symphonyTick();

@@ -10520,6 +10520,264 @@ function startSaveServer() {
                 );
             }
 
+            // ### Welle 6.G3 — Welt-Lebendigkeit (V8.24, 17.05.2026) ###
+            // Drei Schichten: (a) Tag-Nacht-Zyklus, (b) sanfter Wetter-Übergang,
+            // (c) Fauna-Lifecycle mit Geburt + Tod. Testet Konstanten,
+            // Methoden, Persistenz, DSL-Op, UI-DOM.
+            const wave6g3Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    const AnazhRealm = window.AnazhRealm || r.constructor;
+
+                    // --- a) Tag-Nacht-Zyklus
+                    out.timeOfDayField = typeof r.state.timeOfDay === "number" && r.state.timeOfDay >= 0 && r.state.timeOfDay <= 1;
+                    out.dayLengthDefault = r.state.dayLengthMinutes === 8;
+                    out.dayLengthConstantsExist =
+                        AnazhRealm.DAY_LENGTH_MIN_MINUTES === 1 &&
+                        AnazhRealm.DAY_LENGTH_MAX_MINUTES === 60 &&
+                        AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES === 8;
+                    out.dayNightStopsExists = Array.isArray(AnazhRealm.DAY_NIGHT_STOPS);
+                    out.dayNightStopsSorted =
+                        AnazhRealm.DAY_NIGHT_STOPS &&
+                        AnazhRealm.DAY_NIGHT_STOPS.length === 7 &&
+                        AnazhRealm.DAY_NIGHT_STOPS[0].t === 0 &&
+                        AnazhRealm.DAY_NIGHT_STOPS[AnazhRealm.DAY_NIGHT_STOPS.length - 1].t === 1;
+                    out.lightsReferenced =
+                        r.state.directionalLight !== null && r.state.ambientLight !== null;
+                    out.interpolateMethod = typeof r._interpolateDayNight === "function";
+                    out.applyMethod = typeof r._applyDayNightToScene === "function";
+                    out.tickMethod = typeof r.tickDayNight === "function";
+                    out.timeOfDayLabelMethod = typeof r._timeOfDayLabel === "function";
+                    out.setTimeOfDayMethod = typeof r.setTimeOfDay === "function";
+                    out.setDayLengthMethod = typeof r.setDayLength === "function";
+
+                    // _interpolateDayNight Mid-Test: t=0.5 sollte Mittag (klar)
+                    const midDay = r._interpolateDayNight(0.5);
+                    out.interpolateMiddayClear = midDay && midDay.intensity >= 0.95;
+                    const midNight = r._interpolateDayNight(0);
+                    out.interpolateMidnightDim = midNight && midNight.intensity < 0.35;
+                    out.interpolateWrap = r._interpolateDayNight(1.5).intensity === r._interpolateDayNight(0.5).intensity;
+
+                    // setTimeOfDay setzt korrekt
+                    r.setTimeOfDay(0.25);
+                    out.setTimeOfDayWorks = Math.abs(r.state.timeOfDay - 0.25) < 0.001;
+                    // Sonnenaufgang Label
+                    out.timeLabel0_25HasEmoji = r._timeOfDayLabel(0.25).includes(":");
+                    out.timeLabel0_25Hours = r._timeOfDayLabel(0.25).includes("06:");
+
+                    // tickDayNight schreitet voran
+                    r.setTimeOfDay(0.4);
+                    const beforeT = r.state.timeOfDay;
+                    r.state._lastDayNightTick = 0;
+                    r.tickDayNight(0.5); // 0.5 s delta, dayLength=8min=480s → +0.001
+                    out.tickAdvances = r.state.timeOfDay > beforeT;
+                    // setDayLength clamped
+                    r.setDayLength(5);
+                    out.setDayLength5 = r.state.dayLengthMinutes === 5;
+                    r.setDayLength(999); // > max 60
+                    out.setDayLengthClampedMax = r.state.dayLengthMinutes === 60;
+                    r.setDayLength(0); // < min 1
+                    out.setDayLengthClampedMin = r.state.dayLengthMinutes === 1;
+                    r.setDayLength(8); // zurück
+
+                    // DSL-Op set_time_of_day
+                    r.dslRun(["set_time_of_day", 0.7]);
+                    out.dslSetTimeOfDay = Math.abs(r.state.timeOfDay - 0.7) < 0.001;
+                    // NON_BROADCASTABLE
+                    out.setTimeOfDayInBlacklist = AnazhRealm.NON_BROADCASTABLE_OPS.has("set_time_of_day");
+
+                    // Status-Bar + Slider im DOM
+                    out.statusTimeInDom = !!document.getElementById("status-time");
+                    out.dayLengthSliderInDom = !!document.getElementById("slider-daylength");
+                    out.timeOfDaySliderInDom = !!document.getElementById("slider-timeofday");
+                    out.dayNightSectionInDom = !!document.getElementById("day-night-section");
+
+                    // _applyDayNightToScene setzt DirectionalLight-Position
+                    r.setTimeOfDay(0.5); // Mittag
+                    const noonY = r.state.directionalLight.position.y;
+                    r.setTimeOfDay(0); // Mitternacht
+                    const midnightY = r.state.directionalLight.position.y;
+                    out.lightPosFollowsTimeOfDay = noonY > 0 && midnightY < noonY;
+
+                    // --- b) Sanfte Wetter-Übergänge
+                    out.weatherTransitionDuration =
+                        AnazhRealm.WEATHER_TRANSITION_DURATION_MS === 45000;
+                    out.requestWeatherTransitionMethod = typeof r.requestWeatherTransition === "function";
+                    out.tickWeatherTransitionMethod = typeof r.tickWeatherTransition === "function";
+                    out.weatherTintsExists = !!AnazhRealm.WEATHER_TINTS;
+                    out.weatherTintsSunnyRainy =
+                        AnazhRealm.WEATHER_TINTS.sunny &&
+                        AnazhRealm.WEATHER_TINTS.rainy &&
+                        AnazhRealm.WEATHER_TINTS.sunny.skyMul === 1.0 &&
+                        AnazhRealm.WEATHER_TINTS.rainy.skyMul < 1.0;
+
+                    // Setze sunny als Ausgangspunkt
+                    r.state.weather = "sunny";
+                    r.state.weatherTransition = null;
+                    // weather-DSL-Op startet Transition + setzt state.weather sofort
+                    r.dslRun(["weather", "rainy"]);
+                    out.weatherStateImmediate = r.state.weather === "rainy";
+                    out.weatherTransitionStarted = !!r.state.weatherTransition;
+                    out.weatherTransitionFromSunny =
+                        r.state.weatherTransition && r.state.weatherTransition.from === "sunny";
+                    out.weatherTransitionToRainy =
+                        r.state.weatherTransition && r.state.weatherTransition.to === "rainy";
+                    // requestWeatherTransition(rainy) wenn schon rainy → no-op (gleiches to)
+                    const okSameTarget = r.requestWeatherTransition("rainy");
+                    out.transitionSameTargetNoop = okSameTarget === true;
+                    // Invalides Target
+                    out.transitionInvalidRejected = r.requestWeatherTransition("hagel") === false;
+                    // tickWeatherTransition setzt progress voran
+                    r.state.weatherTransition.startedAt = performance.now() - 100; // 100 ms
+                    r.tickWeatherTransition(0);
+                    out.transitionProgressAdvanced = r.state.weatherTransition && r.state.weatherTransition.progress > 0;
+                    // Bei progress=1 → transition geclearet
+                    if (r.state.weatherTransition) {
+                        r.state.weatherTransition.startedAt = performance.now() - 60000; // 60s = > 45s duration
+                    }
+                    r.tickWeatherTransition(0);
+                    out.transitionClearedOnComplete = r.state.weatherTransition === null;
+
+                    // --- c) Fauna-Lifecycle
+                    out.faunaTargetPop = AnazhRealm.FAUNA_TARGET_POPULATION === 8;
+                    out.faunaMaxPop = AnazhRealm.FAUNA_MAX_POPULATION === 20;
+                    out.faunaTickInterval = AnazhRealm.FAUNA_TICK_INTERVAL_MS === 10000;
+                    out.faunaBirthCdExists = AnazhRealm.FAUNA_BIRTH_COOLDOWN_MS > 0;
+                    out.faunaDeathCdExists = AnazhRealm.FAUNA_DEATH_COOLDOWN_MS > 0;
+                    out.findOldestMethod = typeof r._findOldestCreature === "function";
+                    out.naturalBirthMethod = typeof r._creatureNaturalBirth === "function";
+                    out.naturalDeathMethod = typeof r._creatureNaturalDeath === "function";
+                    out.pickFaunaSoulMethod = typeof r._pickFaunaSoulAtPlayer === "function";
+                    out.faunaLifecycleField = r.state.faunaLifecycle && typeof r.state.faunaLifecycle.lastTick === "number";
+
+                    // _findOldestCreature liefert die älteste (kleinster bornAt)
+                    if (r.state.creatures.length >= 2) {
+                        const c0 = r.state.creatures[0];
+                        const c1 = r.state.creatures[1];
+                        if (!c0.userData) c0.userData = {};
+                        if (!c1.userData) c1.userData = {};
+                        c0.userData.bornAt = Date.now() - 5000;
+                        c1.userData.bornAt = Date.now() - 10000;
+                        const oldest = r._findOldestCreature();
+                        out.oldestIsOlder = oldest === c1;
+                    } else {
+                        out.oldestIsOlder = true; // skip wenn keine Kreaturen
+                    }
+
+                    // _pickFaunaSoulAtPlayer liefert valide Soul
+                    const soul = r._pickFaunaSoulAtPlayer();
+                    out.faunaSoulValid =
+                        soul === "sprite" || soul === "wesen" || soul === "geist";
+
+                    // _creatureNaturalDeath effektiviert (sorrow +0.2, journal-loss, removeCreature)
+                    if (r.state.creatures.length > 0) {
+                        const beforeCount = r.state.creatures.length;
+                        const beforeSorrow = (r.state.player.emotions && r.state.player.emotions.sorrow) || 0;
+                        const beforeJournalLoss = (r.state.worldJournal.entries || []).filter((e) => e.type === "loss").length;
+                        r._creatureNaturalDeath(r.state.creatures[0]);
+                        out.deathReducesCount = r.state.creatures.length === beforeCount - 1;
+                        out.deathIncreasesSorrow =
+                            (r.state.player.emotions && r.state.player.emotions.sorrow) > beforeSorrow;
+                        const afterJournalLoss = (r.state.worldJournal.entries || []).filter((e) => e.type === "loss").length;
+                        out.deathAddsLossJournal = afterJournalLoss > beforeJournalLoss;
+                    } else {
+                        out.deathReducesCount = true;
+                        out.deathIncreasesSorrow = true;
+                        out.deathAddsLossJournal = true;
+                    }
+
+                    // _creatureNaturalBirth fügt Kreatur hinzu + Journal
+                    const beforeBirthCount = r.state.creatures.length;
+                    const beforeBirthGrowth = (r.state.worldJournal.entries || []).filter((e) => e.type === "growth").length;
+                    r._creatureNaturalBirth();
+                    out.birthIncreasesCount = r.state.creatures.length === beforeBirthCount + 1;
+                    const afterBirthGrowth = (r.state.worldJournal.entries || []).filter((e) => e.type === "growth").length;
+                    out.birthAddsGrowthJournal = afterBirthGrowth > beforeBirthGrowth;
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (wave6g3Results && !wave6g3Results.error) {
+                // --- a) Tag-Nacht
+                check("Welle 6.G3.a: state.timeOfDay existiert + ist [0,1]", wave6g3Results.timeOfDayField);
+                check("Welle 6.G3.a: dayLengthMinutes Default 8", wave6g3Results.dayLengthDefault);
+                check("Welle 6.G3.a: Tag-Längen-Konstanten (1/60/8) korrekt", wave6g3Results.dayLengthConstantsExist);
+                check("Welle 6.G3.a: DAY_NIGHT_STOPS frozen Array", wave6g3Results.dayNightStopsExists);
+                check("Welle 6.G3.a: 7 Stops, sortiert von t=0 bis t=1", wave6g3Results.dayNightStopsSorted);
+                check("Welle 6.G3.a: directionalLight + ambientLight Referenzen gesetzt", wave6g3Results.lightsReferenced);
+                check("Welle 6.G3.a: _interpolateDayNight-Methode existiert", wave6g3Results.interpolateMethod);
+                check("Welle 6.G3.a: _applyDayNightToScene-Methode existiert", wave6g3Results.applyMethod);
+                check("Welle 6.G3.a: tickDayNight-Methode existiert", wave6g3Results.tickMethod);
+                check("Welle 6.G3.a: _timeOfDayLabel-Methode existiert", wave6g3Results.timeOfDayLabelMethod);
+                check("Welle 6.G3.a: setTimeOfDay-Methode existiert", wave6g3Results.setTimeOfDayMethod);
+                check("Welle 6.G3.a: setDayLength-Methode existiert", wave6g3Results.setDayLengthMethod);
+                check("Welle 6.G3.a: Mittag (0.5) hat hohe Intensity (>0.95)", wave6g3Results.interpolateMiddayClear);
+                check("Welle 6.G3.a: Mitternacht (0) hat niedrige Intensity (<0.35)", wave6g3Results.interpolateMidnightDim);
+                check("Welle 6.G3.a: _interpolateDayNight wrapt korrekt (1.5 ≡ 0.5)", wave6g3Results.interpolateWrap);
+                check("Welle 6.G3.a: setTimeOfDay(0.25) setzt state korrekt", wave6g3Results.setTimeOfDayWorks);
+                check("Welle 6.G3.a: _timeOfDayLabel hat Doppelpunkt-Format", wave6g3Results.timeLabel0_25HasEmoji);
+                check("Welle 6.G3.a: _timeOfDayLabel(0.25) zeigt 06:00", wave6g3Results.timeLabel0_25Hours);
+                check("Welle 6.G3.a: tickDayNight schreitet timeOfDay voran", wave6g3Results.tickAdvances);
+                check("Welle 6.G3.a: setDayLength(5) wirkt", wave6g3Results.setDayLength5);
+                check("Welle 6.G3.a: setDayLength clamped >60 auf 60", wave6g3Results.setDayLengthClampedMax);
+                check("Welle 6.G3.a: setDayLength clamped <1 auf 1", wave6g3Results.setDayLengthClampedMin);
+                check("Welle 6.G3.a: DSL-Op set_time_of_day wirkt", wave6g3Results.dslSetTimeOfDay);
+                check("Welle 6.G3.a: set_time_of_day in NON_BROADCASTABLE_OPS", wave6g3Results.setTimeOfDayInBlacklist);
+                check("Welle 6.G3.a: #status-time im DOM", wave6g3Results.statusTimeInDom);
+                check("Welle 6.G3.a: #slider-daylength im DOM", wave6g3Results.dayLengthSliderInDom);
+                check("Welle 6.G3.a: #slider-timeofday im DOM", wave6g3Results.timeOfDaySliderInDom);
+                check("Welle 6.G3.a: #day-night-section im DOM", wave6g3Results.dayNightSectionInDom);
+                check(
+                    "Welle 6.G3.a: DirectionalLight.position.y folgt timeOfDay (Mittag oben, Mitternacht unten)",
+                    wave6g3Results.lightPosFollowsTimeOfDay
+                );
+
+                // --- b) Wetter-Übergang
+                check("Welle 6.G3.b: WEATHER_TRANSITION_DURATION_MS === 45000", wave6g3Results.weatherTransitionDuration);
+                check("Welle 6.G3.b: requestWeatherTransition-Methode existiert", wave6g3Results.requestWeatherTransitionMethod);
+                check("Welle 6.G3.b: tickWeatherTransition-Methode existiert", wave6g3Results.tickWeatherTransitionMethod);
+                check("Welle 6.G3.b: WEATHER_TINTS frozen mit sunny/rainy", wave6g3Results.weatherTintsExists);
+                check(
+                    "Welle 6.G3.b: WEATHER_TINTS — sunny skyMul 1.0, rainy < 1.0 (dämpft Sky)",
+                    wave6g3Results.weatherTintsSunnyRainy
+                );
+                check("Welle 6.G3.b: weather-DSL-Op setzt state.weather SOFORT (Backward-Compat)", wave6g3Results.weatherStateImmediate);
+                check("Welle 6.G3.b: weather-Wechsel startet weatherTransition", wave6g3Results.weatherTransitionStarted);
+                check("Welle 6.G3.b: weatherTransition.from = vorheriges Wetter (sunny)", wave6g3Results.weatherTransitionFromSunny);
+                check("Welle 6.G3.b: weatherTransition.to = Ziel (rainy)", wave6g3Results.weatherTransitionToRainy);
+                check("Welle 6.G3.b: requestWeatherTransition mit selbem Ziel ist idempotent (true ohne neu zu starten)", wave6g3Results.transitionSameTargetNoop);
+                check("Welle 6.G3.b: requestWeatherTransition lehnt ungültiges Wetter ab", wave6g3Results.transitionInvalidRejected);
+                check("Welle 6.G3.b: tickWeatherTransition schreitet progress voran", wave6g3Results.transitionProgressAdvanced);
+                check("Welle 6.G3.b: tickWeatherTransition löscht Transition bei progress=1", wave6g3Results.transitionClearedOnComplete);
+
+                // --- c) Fauna-Lifecycle
+                check("Welle 6.G3.c: FAUNA_TARGET_POPULATION === 8", wave6g3Results.faunaTargetPop);
+                check("Welle 6.G3.c: FAUNA_MAX_POPULATION === 20", wave6g3Results.faunaMaxPop);
+                check("Welle 6.G3.c: FAUNA_TICK_INTERVAL_MS === 10000", wave6g3Results.faunaTickInterval);
+                check("Welle 6.G3.c: FAUNA_BIRTH_COOLDOWN_MS > 0", wave6g3Results.faunaBirthCdExists);
+                check("Welle 6.G3.c: FAUNA_DEATH_COOLDOWN_MS > 0", wave6g3Results.faunaDeathCdExists);
+                check("Welle 6.G3.c: _findOldestCreature-Methode existiert", wave6g3Results.findOldestMethod);
+                check("Welle 6.G3.c: _creatureNaturalBirth-Methode existiert", wave6g3Results.naturalBirthMethod);
+                check("Welle 6.G3.c: _creatureNaturalDeath-Methode existiert", wave6g3Results.naturalDeathMethod);
+                check("Welle 6.G3.c: _pickFaunaSoulAtPlayer-Methode existiert", wave6g3Results.pickFaunaSoulMethod);
+                check("Welle 6.G3.c: state.faunaLifecycle initialisiert", wave6g3Results.faunaLifecycleField);
+                check("Welle 6.G3.c: _findOldestCreature wählt kleinste bornAt", wave6g3Results.oldestIsOlder);
+                check("Welle 6.G3.c: _pickFaunaSoulAtPlayer liefert valide Soul (sprite/wesen/geist)", wave6g3Results.faunaSoulValid);
+                check("Welle 6.G3.c: _creatureNaturalDeath reduziert Kreaturen-Anzahl", wave6g3Results.deathReducesCount);
+                check("Welle 6.G3.c: _creatureNaturalDeath erhöht player.emotions.sorrow", wave6g3Results.deathIncreasesSorrow);
+                check("Welle 6.G3.c: _creatureNaturalDeath schreibt loss-Journal", wave6g3Results.deathAddsLossJournal);
+                check("Welle 6.G3.c: _creatureNaturalBirth fügt Kreatur hinzu", wave6g3Results.birthIncreasesCount);
+                check("Welle 6.G3.c: _creatureNaturalBirth schreibt growth-Journal", wave6g3Results.birthAddsGrowthJournal);
+            } else {
+                check(
+                    "Welle 6.G3: alle Tests laufen",
+                    false,
+                    wave6g3Results ? wave6g3Results.error : "no result"
+                );
+            }
+
             // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider (Audit 17.05.2026) ###
             const wave6x4bResults = await page
                 .evaluate(() => {
