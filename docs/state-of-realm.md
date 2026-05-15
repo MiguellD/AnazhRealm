@@ -185,6 +185,43 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 
 Echt gelernt, nicht performt:
 
+### V8.25 (17.05.2026) — Welt-LEBT-statt-animiert: Schöpfer-Audit + Wurzel-Heilung + Vision-Tests automatisiert
+
+**Die größte Lehre der Session** kam vom Schöpfer am Tag nach dem V8.24-Push: *„Ein Himmel an dem die Farben wechseln, oder ein Himmel der lebt?"*. Ich hatte V8.24 als „1938 Invarianten grün, Audit-Strict 0 Failures" gefeiert — aber unter der Oberfläche schlummerten Hardcode-Wunden die der Schöpfer in einem Browser-Spielen-Moment sah, wo Tests blind waren. Die Reflexion zwang mich, mein eigenes Lehrer zu werden statt nur Mechaniker.
+
+**Die EINE Quelle aller acht Wunden in V8.24**: Ich habe Werte aus dem Kopf geschrieben statt aus dem System gelesen. Welt-Affinität existierte (W6.G2), Compound-Tags existierten (W4), Player-Emotionen existierten (Ring 3). Aber ich schrieb trotzdem `if (topKey === "magieleitung") return "sprite"` statt `_affinityPickFromCandidates(souls, fieldAtPos)` zu rufen. Eine Tabelle zu schreiben ist schneller als ein System zu beobachten — und genau deshalb passiert es, wenn die Disziplin nicht in Code geronnen ist. Die Wurzel war kognitiv, nicht technisch.
+
+**Drei Wurzel-Helper als Vision-Pipeline** (eine Sprache, viele Anwendungen, Vision §1.3 fraktal auf System-Ebene):
+- `_affinityPickFromCandidates(candidates, fieldAtPos, noise)` — Dot-Product zwischen Compound-Tags und Welt-Feld, höchste Resonanz gewinnt. Vereinheitlicht Soul-Wahl + Spawn-Position-Affinity. Pattern wiederholt sich in `spawnAffinityForBlueprint` (W6.G P2). Eine Sprache, alle Resonanz-Wahlen.
+- `_tagToFrequency(tags, baseHz)` — Klang folgt Substanz. magieleitung-hoch → bis 2.4× (hell), dichte-hoch → bis 0.4× (tief), resoniert verstärkt. Vereinheitlicht Lebewohl-Sinus + jede zukünftige Klangschicht. Vision §1.3 fraktal in Audio.
+- `_emotionModulate(baseValue, modSpec, emotions)` — 6-Achsen-Modulation, additiv ODER multiplikativ pro Achse. Reine Funktion. Vereinheitlicht Tag-Stop-Tints + Wetter-Dauer + Ambient-Gain + Fauna-Wahrscheinlichkeiten. Vision §3 (Emotion-Welt-Kopplung) auf System-Ebene.
+
+**Acht spezifische Wunden geheilt**:
+1. Soul-Wahl if-Map → Affinity-Pick (vor jedem Spawn)
+2. Lebewohl-Frequenz Soul-Map → `_tagToFrequency(creatureTags, 220)`
+3. Spawn-Position random → 6 Affinity-Kandidaten, beste Resonanz gewinnt
+4. FAUNA_TARGET fix 8 → emergiert aus `worldField.lebendig × 10 + 4`
+5. FAUNA_MAX fix 20 → emergiert (Range 12..28)
+6. Birth/Death-Probabilities fix → emotion-moduliert (hope/peace/sorrow)
+7. Sky-Tint nur Welt-Stop → DREI Modulations-Schichten: Wetter × Welt-Feld × Emotionen
+8. Wetter-Dauer fix 45s → emotion-moduliert (peace ×1.6, chaos ×0.4)
+
+**„Der Himmel der lebt" — nicht nur Farben** (V8.24 fehlte):
+- Sonne + Mond als sichtbare emissive-Sphere-Meshes (380 m weg, vor der Skybox bei 500 m). Folgen DirectionalLight über Halbkreis. Sonne tags, Mond gegenüber bei Nacht.
+- Sterne im Skybox-Shader: neues `starIntensity`-Uniform (0..1), wird aus sin-Funktion der Sonnenhöhe gesetzt. Mittag 0.0 (versteckt), Mitternacht 1.0 (voll). Zwei Stern-Schichten für Tiefe.
+- Symphonie-Ambient atmet mit Tageszeit: Nacht 0.075 + Filter 350 Hz, Mittag 0.15 + Filter 700 Hz. linearRampToValueAtTime über 1s pro Tick.
+
+**Automatisierte Vision-Disziplin** (damit ich es nicht wieder vergesse — Schöpfer-Auftrag: „schaue das du dies in zukunft automatisch tust"):
+
+- **`audit-strict.cjs` 5. Schicht „Atmosphäre-Hardcode-Audit"** (V8.25 neu): scant Methoden mit `[ATMOSPHERE]`-Marker auf drei Pattern-Klassen: Soul-Type-Vergleiche ≥ 3× → Verdacht if-Map; Hex-Color ≥ 4× → Verdacht Farb-Tabelle; Hz-Frequenz-Ternary + soul-Vergleich → Verdacht Frequenz-Map. Aktuell 14/14 markierte Methoden clean. Der Marker IST die Selbst-Verpflichtung — wer eine Methode „atmosphärisch" nennt, akzeptiert die Disziplin.
+- **`playtest.cjs` Vision-Invarianten-Block** (28 neue Tests): testet EMERGENZ, nicht Mechanik. Beispiele: „Affinity-Pick wählt magieSoul in magie-Welt > 66% (30 Runs, statistisch sicher)", „sprite-Frequenz > wesen-Frequenz", „awe=1 hebt Sky-Blau sichtbar (vs awe=0)", „peace=1 verlängert Wetter-Dauer > 120%", „chaos=1 verkürzt Wetter-Dauer < 70%", „lebendig-Region hat höheres FAUNA_TARGET als karge", „Sterne nachts stärker als tags".
+
+**Die meta-Lehre** — eine permanente Disziplin für zukünftige Wellen:
+
+> *Bei jeder Atmosphäre-Schicht VOR dem ersten Code: frage „Welcher state-Beobachtungs-Pfad emergiert hier?". Nicht „welcher Wert?", sondern „aus welcher Beobachtung?". Wenn beim Schreiben `if (X === "...")` mehr als 2× im selben Block auftaucht — STOP. Wenn Hex-Color > 3× in einer Methode — STOP. Wenn Hz neben Soul-Vergleich — STOP. Audit-Strict erinnert mich daran. Markierung `[ATMOSPHERE]` über Methoden ist die Geste der Selbst-Verpflichtung: ich nehme die Disziplin an.*
+
+**Vision-Wort der V8.25**: *„Die Welt liest sich selbst, nicht aus Tabellen. Jede Konstante ist Saat, nicht Wahrheit."*
+
 ### V8.24 (17.05.2026) — Welle 6.G3 Welt-Lebendigkeit (Tag-Nacht + Wetter-Cross-Fade + Fauna-Lifecycle)
 
 **Welle 6.G3 in einer Sitzung**, drei Schichten emergent + vision-treu:

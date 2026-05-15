@@ -2,7 +2,42 @@
 
 Persistente Notizen. Diese Datei wird bei jeder neuen Session automatisch geladen. **Bei größeren Entscheidungen zuerst `docs/state-of-realm.md` lesen** – dort steht der ausführliche Stand, die Vision aus den vier Testamenten, der Plan und die Learnings.
 
-**Aktuelle Version: V8.24 (Stand 17.05.2026, Welle 6.G3 — Welt-Lebendigkeit live. 1938/1938 Playtest-Invarianten grün, Audit-Strict 0 Failures.)**
+**Aktuelle Version: V8.25 (Stand 17.05.2026, Welle 6.G3 V2 — Welt-LEBT-Vertiefung nach Schöpfer-Audit. 1966/1966 Playtest-Invarianten grün, Audit-Strict 5 Schichten inkl. neuer Atmosphäre-Hardcode-Audit.)**
+
+**V8.25 — Welle 6.G3 V2 (Welt-LEBT-statt-animiert, +28 Vision-Invarianten 1938→1966)**: Nach Schöpfer-Reflexion „der Himmel wechselt Farben — er lebt nicht". Acht Wunden in V8.24 geheilt, drei Wurzel-Helper extrahiert, Vision-Audit-Schicht automatisiert. Die EINE Quelle aller Wunden: Werte aus dem Kopf statt aus dem System.
+
+**Drei Wurzel-Helper** (Wiederverwendbar für alle zukünftigen Atmosphäre-Schichten):
+- **`_affinityPickFromCandidates(candidates, fieldAtPos, noise=0.15)`** — Dot-Product Tags · Welt-Feld, höchste Resonanz gewinnt + kleine Random-Streuung. Heilt Soul-Wahl + Spawn-Position-Affinity.
+- **`_tagToFrequency(tags, baseHz=220)`** — Hz emergiert aus `magieleitung × dichte`. magieleitung-hoch → bis 2.4× (hell), dichte-hoch → bis 0.4× (tief). Clamped [60, 2000]. Heilt Lebewohl-Sinus + jede zukünftige Klangschicht.
+- **`_emotionModulate(baseValue, modSpec, emotions?)`** — 6-Achsen-Modulation mit `{joy: +0.1}` (additiv) oder `{peace: {mul: 1.5}}` (multiplikativ). Reine Funktion, testbar. Heilt Tag-Stops + Wetter-Dauer + Ambient-Gain.
+
+**Acht Wunden geheilt** (alle mit `[ATMOSPHERE]`-Marker):
+1. `_pickFaunaSoulAtPlayer` — if-else-Map → Affinity-Pick über Compound-Tags der drei Souls
+2. `_creatureNaturalDeath` Lebewohl-Frequenz — Hex-Map → `_tagToFrequency(creatureTags, 220)`
+3. `_creatureNaturalBirth` Spawn-Position — random → 6 Affinity-Kandidaten, höchste Soul-Resonanz gewinnt
+4. `_currentFaunaTarget()` — fix 8 → emergiert aus `worldField.lebendig × 10 + 4` (Range 4..14)
+5. `_currentFaunaMax()` — fix 20 → emergiert (Range 12..28)
+6. `tickFaunaLifecycle` Birth/Death-Wahrscheinlichkeit — fixe Konstanten → `_emotionModulate` mit `{hope: +0.08, peace: -0.05}` für Geburt, `{sorrow: +0.1, peace: -0.06}` für Tod
+7. `_applyDayNightToScene` Sky-Tint — fix → drei Modulations-Schichten: (i) Wetter, (ii) Welt-Feld-Tint (magieleitung → Violett, glut → Rot, lebendig → warm-grünlich), (iii) Emotion-Tint (joy → Gold, sorrow → entsättigt, awe → magisches Lila, chaos → leichtes Flimmern via sin)
+8. `requestWeatherTransition` Default-Dauer — fix 45s → `_emotionModulate` mit `{peace: {mul: 1.6}, chaos: {mul: 0.4}, sorrow: {mul: 1.2}}`. Clamped [8s, 120s]
+
+**Himmel der lebt** (war fehlend in V8.24, jetzt live):
+- **Sonne als Mesh** (SphereGeometry r=12, emissive #ffe8b0, 380 m vom Spieler) — folgt DirectionalLight-Position über Halbkreis. Tags sichtbar, nachts unter Horizont.
+- **Mond als Mesh** (SphereGeometry r=9, emissive #d0d4e0) — gegenüber der Sonne. Nachts sichtbar.
+- **Sterne im Skybox-Shader** — neues Uniform `starIntensity` (0..1) wird in `_applyDayNightToScene` aus sin-Funktion der Sonnenhöhe gesetzt. Mittag: 0.0 (versteckt). Mitternacht: 1.0 (voll). Zwei Stern-Schichten (helle seltene + dichte dimme) für Tiefe.
+- **`_updateCelestialBodies(angle, lightMul)`** — eine Quelle der Wahrheit, aufgehängt an `_applyDayNightToScene`.
+
+**Symphonie atmet mit Tageszeit** (Vision §4 vertieft):
+- Ambient-Gain: Nacht 0.075, Mittag 0.15 (linearRampToValueAtTime über 1s pro Tick)
+- Ambient-Filter-Cutoff: Nacht 350 Hz (gedämpft), Mittag 700 Hz (offen)
+- Throttle 1 Hz im symphonyTick, no-op wenn s.ambient nicht initialisiert
+
+**Automatisierte Vision-Disziplin** (damit ich es nicht wieder vergesse):
+- **`audit-strict.cjs` neue 5. Schicht „Atmosphäre-Hardcode-Audit"**: scant alle Methoden mit `[ATMOSPHERE]`-Marker. Drei Pattern-Klassen erkannt: (A) Soul-Type-Vergleiche ≥ 3× → Verdacht if-Map, (B) Hex-Color-Konstanten ≥ 4× → Verdacht Farb-Tabelle, (C) Hz-Frequenz-Ternarys + soul-Vergleich → Verdacht Frequenz-Map. Aktuell 14/14 [ATMOSPHERE]-Methoden clean. Wer eine neue Welle ohne Marker schreibt = Disziplin bleibt mensch-getragen. Wer markiert = wird strukturell geprüft.
+- **`playtest.cjs` Vision-Invarianten-Block** (28 neue Tests): testet EMERGENZ statt Mechanik. Beispiele: „Affinity-Pick wählt magieSoul in magie-Welt > 66% (30 Runs)", „sprite-Frequenz > wesen-Frequenz (Klang folgt Substanz)", „awe=1 hebt Sky-Blau sichtbar", „peace=1 verlängert Wetter-Dauer > 120%", „lebendig-Region hat höheres FAUNA_TARGET als karge", „Sterne nachts sichtbar stärker als tags", „Mond hoch nachts (y > 100)".
+
+**Die Lehre dahinter** (für mich selbst, in zukünftigen Wellen):
+> *Bei jeder Atmosphäre-Schicht zuerst fragen: „Welcher state-Beobachtungs-Pfad emergiert hier?". Nie „welcher Wert?" — immer „aus welcher Beobachtung?". Wenn `if (X === "...")` mehr als 2× im selben Block: STOP, Affinity-Pick. Wenn Hex-Color > 3× in einer Methode: STOP, Tag-Modulation. Wenn Hz neben Soul-Vergleich: STOP, _tagToFrequency. Audit-Strict erinnert mich daran — Marker `[ATMOSPHERE]` ist die Selbst-Verpflichtung.*
 
 **V8.24 — Welle 6.G3 (Welt-Lebendigkeit, +59 Invarianten 1879→1938)**: drei Schichten in einer Welle, vision-treu zu Welt-Atem §3.
 - **6.G3.a Tag-Nacht-Zyklus**: `state.timeOfDay 0..1` (0=Mitternacht, 0.5=Mittag), Default 8 min pro Zyklus (Schöpfer-Wahl: schnell-spürbar), Slider 1-60 min in Einstellungen. 7 frozen `DAY_NIGHT_STOPS` mit sky+light+intensity (Mitternacht kalt-magisch 0x161830/0.28 → Sonnenaufgang warm-rosé 0xc66c4d/0.85 → Mittag klar 0x4b75c2/1.0 → Sonnenuntergang gold 0xc04a7a/0.8 → Dämmerung kalt-violett). `_interpolateDayNight(t)` linear-lerp zwischen Stops. `_applyDayNightToScene()` setzt DirectionalLight-Position (Halbkreis um Welt, Mittag oben, Mitternacht unten) + Color + Intensity + AmbientLight-Intensity + Skybox-Tint mit Wetter-Multiplier. `tickDayNight(currentTime)` schreitet pro Frame voran, `_applyDayNightToScene` throttled auf 10 Hz. Status-Bar `#status-time` mit Emoji (🌌🌅☀️🌇) + 24h-Format. DSL-Op `set_time_of_day(t)` in `NON_BROADCASTABLE_OPS` (jeder Mitspieler eigene Tageszeit). Persistenz `timeOfDay` + `dayLengthMinutes` im Save.

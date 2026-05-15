@@ -10778,6 +10778,252 @@ function startSaveServer() {
                 );
             }
 
+            // ### Welle 6.G3 V2 — Vision-Invarianten (V8.25, 17.05.2026) ###
+            // Prüft EMERGENZ statt Mechanik: wirkt Welt-Affinität wirklich auf
+            // Soul-Wahl? Folgen Frequenzen den Tags? Modulieren Emotionen den
+            // Tint? Ist Wetter-Dauer emotion-abhängig? Vision §1.3 fraktal:
+            // alles emergiert aus dem System, nicht aus Tabellen.
+            const wave6g3v2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    const AnazhRealm = window.AnazhRealm || r.constructor;
+
+                    // --- Wurzel-Helper existieren
+                    out.affinityPickHelper = typeof r._affinityPickFromCandidates === "function";
+                    out.tagFrequencyHelper = typeof r._tagToFrequency === "function";
+                    out.emotionModulateHelper = typeof r._emotionModulate === "function";
+                    out.creatureSoulTagsHelper = typeof r._creatureSoulTags === "function";
+                    out.faunaTargetHelper = typeof r._currentFaunaTarget === "function";
+
+                    // --- Vision 1: Affinity-Pick wählt höhere Resonanz
+                    // Test-Kandidaten mit klaren Tag-Profilen
+                    const candidates = [
+                        { name: "lebendigSoul", tags: { lebendig: 1.0, dichte: 0, glut: 0, magieleitung: 0 } },
+                        { name: "magieSoul", tags: { lebendig: 0, dichte: 0, glut: 0, magieleitung: 1.0 } },
+                        { name: "dichteSoul", tags: { lebendig: 0, dichte: 1.0, glut: 0, magieleitung: 0 } },
+                    ];
+                    // Welt-Feld mit dominanter Magie-Achse
+                    const fieldMagie = { lebendig: 0.1, dichte: 0.1, glut: 0.1, magieleitung: 0.9 };
+                    // 10× Durchläufe sammeln — Statistik gegen das Noise
+                    let magieWins = 0;
+                    for (let i = 0; i < 30; i++) {
+                        const pickResult = r._affinityPickFromCandidates(candidates, fieldMagie, 0.05);
+                        if (pickResult.pick && pickResult.pick.name === "magieSoul") magieWins++;
+                    }
+                    out.affinityPicksMagieInMagieField = magieWins > 20; // > 66% (statistisch sicher)
+
+                    // Diskrimination: in einer dichte-Welt wird dichteSoul bevorzugt
+                    const fieldDichte = { lebendig: 0.1, dichte: 0.9, glut: 0.1, magieleitung: 0.1 };
+                    let dichteWins = 0;
+                    for (let i = 0; i < 30; i++) {
+                        const pickResult = r._affinityPickFromCandidates(candidates, fieldDichte, 0.05);
+                        if (pickResult.pick && pickResult.pick.name === "dichteSoul") dichteWins++;
+                    }
+                    out.affinityPicksDichteInDichteField = dichteWins > 20;
+
+                    // --- Vision 2: _tagToFrequency korreliert mit magieleitung
+                    const f1 = r._tagToFrequency({ magieleitung: 0.9, dichte: 0.1 }, 220);
+                    const f2 = r._tagToFrequency({ magieleitung: 0.1, dichte: 0.9 }, 220);
+                    out.tagFreqHighMagieIsHigher = f1 > f2;
+                    // Soul-spezifische Frequenzen (sprite > wesen)
+                    const spriteTags = r._creatureSoulTags("sprite");
+                    const wesenTags = r._creatureSoulTags("wesen");
+                    const spriteFreq = r._tagToFrequency(spriteTags, 220);
+                    const wesenFreq = r._tagToFrequency(wesenTags, 220);
+                    out.spriteFreqHigherThanWesen = spriteFreq > wesenFreq;
+                    out.bothFrequenciesInRange = spriteFreq >= 60 && spriteFreq <= 2000 && wesenFreq >= 60 && wesenFreq <= 2000;
+
+                    // --- Vision 3: _emotionModulate moduliert mit Emotion-Achsen
+                    const noEmo = { joy: 0, sorrow: 0 };
+                    const happyEmo = { joy: 1, sorrow: 0 };
+                    const baseMod = r._emotionModulate(10, { joy: 5 }, noEmo);
+                    const happyMod = r._emotionModulate(10, { joy: 5 }, happyEmo);
+                    out.emotionModulateAdditiveWorks = Math.abs(happyMod - 15) < 0.001 && Math.abs(baseMod - 10) < 0.001;
+                    // Mul-Spec
+                    const peaceMod = r._emotionModulate(100, { peace: { mul: 1.5 } }, { peace: 1 });
+                    out.emotionModulateMulWorks = Math.abs(peaceMod - 150) < 0.001;
+
+                    // --- Vision 4: Sky-Tint moduliert mit awe
+                    // Setze awe=0, lese sky-Color; setze awe=1, vergleiche.
+                    r.setTimeOfDay(0.5); // Mittag
+                    r.state.player.emotions.awe = 0;
+                    r.state.player.emotions.joy = 0;
+                    r.state.player.emotions.sorrow = 0;
+                    r.state.weather = "sunny";
+                    r.state.weatherTransition = null;
+                    r._applyDayNightToScene();
+                    const skyU = r.state.skybox.material.uniforms.nebulaColor;
+                    const skyAtAweZero = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
+                    r.state.player.emotions.awe = 1.0;
+                    r._applyDayNightToScene();
+                    const skyAtAweHigh = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
+                    // Bei awe=1 sollte b (Blau-Anteil) sichtbar höher sein
+                    out.aweRaisesBlue = skyAtAweHigh.b > skyAtAweZero.b + 0.02;
+                    // r-Anteil auch (Lila = Rot + Blau)
+                    out.aweRaisesRedToo = skyAtAweHigh.r > skyAtAweZero.r + 0.01;
+
+                    // --- Vision 5: sorrow entsättigt Sky-Tint
+                    r.state.player.emotions.awe = 0;
+                    r.state.player.emotions.sorrow = 0;
+                    r._applyDayNightToScene();
+                    const skyAtSorrowZero = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
+                    r.state.player.emotions.sorrow = 1.0;
+                    r._applyDayNightToScene();
+                    const skyAtSorrowHigh = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
+                    // Sättigung = max(rgb) - min(rgb)
+                    const satZero = Math.max(skyAtSorrowZero.r, skyAtSorrowZero.g, skyAtSorrowZero.b) -
+                        Math.min(skyAtSorrowZero.r, skyAtSorrowZero.g, skyAtSorrowZero.b);
+                    const satHigh = Math.max(skyAtSorrowHigh.r, skyAtSorrowHigh.g, skyAtSorrowHigh.b) -
+                        Math.min(skyAtSorrowHigh.r, skyAtSorrowHigh.g, skyAtSorrowHigh.b);
+                    out.sorrowReducesSaturation = satHigh < satZero;
+                    // Reset
+                    r.state.player.emotions.sorrow = 0;
+                    r._applyDayNightToScene();
+
+                    // --- Vision 6: Wetter-Dauer skaliert mit Emotion
+                    // peace=1 → Dauer > Default. chaos=1 → Dauer < Default.
+                    r.state.player.emotions.peace = 0;
+                    r.state.player.emotions.chaos = 0;
+                    r.state.weather = "sunny";
+                    r.state.weatherTransition = null;
+                    r.requestWeatherTransition("rainy"); // Default-Dauer (sollte ~45000)
+                    const defaultDur = r.state.weatherTransition && r.state.weatherTransition.duration;
+                    r.state.weatherTransition = null;
+                    r.state.weather = "sunny";
+                    r.state.player.emotions.peace = 1.0;
+                    r.requestWeatherTransition("rainy");
+                    const peaceDur = r.state.weatherTransition && r.state.weatherTransition.duration;
+                    r.state.weatherTransition = null;
+                    r.state.weather = "sunny";
+                    r.state.player.emotions.peace = 0;
+                    r.state.player.emotions.chaos = 1.0;
+                    r.requestWeatherTransition("rainy");
+                    const chaosDur = r.state.weatherTransition && r.state.weatherTransition.duration;
+                    r.state.weatherTransition = null;
+                    r.state.weather = "sunny";
+                    r.state.player.emotions.chaos = 0;
+                    out.peaceSlowsWeather = peaceDur > defaultDur * 1.2;
+                    out.chaosSpeedsWeather = chaosDur < defaultDur * 0.7;
+
+                    // --- Vision 7: FAUNA_TARGET skaliert mit lebendig
+                    // Simuliere zwei Positionen mit verschiedenem lebendig
+                    const origWFA = r.worldFieldAt;
+                    r.worldFieldAt = function (x, z) {
+                        if (x < 0) return { lebendig: 0.95, dichte: 0.1, glut: 0.1, magieleitung: 0.1 };
+                        return { lebendig: 0.1, dichte: 0.95, glut: 0.1, magieleitung: 0.1 };
+                    };
+                    r.state.playerMesh.position.x = -100;
+                    const targetLiv = r._currentFaunaTarget();
+                    r.state.playerMesh.position.x = 100;
+                    const targetKarg = r._currentFaunaTarget();
+                    out.liveRegionHasHigherTarget = targetLiv > targetKarg;
+                    out.targetInExpectedRange = targetLiv >= 10 && targetKarg <= 6;
+                    r.worldFieldAt = origWFA;
+                    r.state.playerMesh.position.x = 0;
+
+                    // --- Vision 8: starIntensity-Uniform existiert + folgt Tageszeit
+                    const starU = r.state.skybox.material.uniforms.starIntensity;
+                    out.starIntensityExists = !!starU;
+                    if (starU) {
+                        r.setTimeOfDay(0.5); // Mittag
+                        r._applyDayNightToScene();
+                        const starsMittag = starU.value;
+                        r.setTimeOfDay(0); // Mitternacht
+                        r._applyDayNightToScene();
+                        const starsNacht = starU.value;
+                        out.starsBrighterAtNight = starsNacht > starsMittag + 0.2;
+                    }
+
+                    // --- Vision 9: Sonne + Mond Meshes existieren + folgen Tageszeit
+                    out.sunMeshExists = !!r.state.sunMesh && r.state.sunMesh.type === "Mesh";
+                    out.moonMeshExists = !!r.state.moonMesh && r.state.moonMesh.type === "Mesh";
+                    if (r.state.sunMesh && r.state.moonMesh) {
+                        r.setTimeOfDay(0.5); // Mittag
+                        r._applyDayNightToScene();
+                        const sunYNoon = r.state.sunMesh.position.y;
+                        const moonYNoon = r.state.moonMesh.position.y;
+                        r.setTimeOfDay(0); // Mitternacht
+                        r._applyDayNightToScene();
+                        const sunYMidnight = r.state.sunMesh.position.y;
+                        const moonYMidnight = r.state.moonMesh.position.y;
+                        // Mittag: Sonne oben, Mond unten. Mitternacht: umgekehrt.
+                        out.sunHighAtNoon = sunYNoon > 100;
+                        out.moonLowAtNoon = moonYNoon < -100;
+                        out.sunLowAtMidnight = sunYMidnight < -100;
+                        out.moonHighAtMidnight = moonYMidnight > 100;
+                    }
+                    r.setTimeOfDay(0.5); // Reset
+
+                    // --- Vision 10: Sky-Tint moduliert mit Welt-Feld (magie-Region)
+                    // Mock worldFieldAt für hohe magieleitung
+                    r.worldFieldAt = function () {
+                        return { lebendig: 0.1, dichte: 0.1, glut: 0.1, magieleitung: 0.9 };
+                    };
+                    r.state.player.emotions.awe = 0;
+                    r._applyDayNightToScene();
+                    const skyMagieField = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
+                    r.worldFieldAt = function () {
+                        return { lebendig: 0.1, dichte: 0.9, glut: 0.1, magieleitung: 0.1 };
+                    };
+                    r._applyDayNightToScene();
+                    const skyDichteField = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
+                    // Magie-Region sollte mehr Blau haben als dichte-Region
+                    out.magieFieldRaisesBlue = skyMagieField.b > skyDichteField.b + 0.02;
+                    // Reset
+                    r.worldFieldAt = origWFA;
+                    r._applyDayNightToScene();
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (wave6g3v2Results && !wave6g3v2Results.error) {
+                check("Welle 6.G3 V2: _affinityPickFromCandidates existiert", wave6g3v2Results.affinityPickHelper);
+                check("Welle 6.G3 V2: _tagToFrequency existiert", wave6g3v2Results.tagFrequencyHelper);
+                check("Welle 6.G3 V2: _emotionModulate existiert", wave6g3v2Results.emotionModulateHelper);
+                check("Welle 6.G3 V2: _creatureSoulTags existiert", wave6g3v2Results.creatureSoulTagsHelper);
+                check("Welle 6.G3 V2: _currentFaunaTarget existiert", wave6g3v2Results.faunaTargetHelper);
+                check(
+                    "Welle 6.G3 V2 Vision: Affinity-Pick wählt magieSoul in magie-Welt (>66%, 30 Runs)",
+                    wave6g3v2Results.affinityPicksMagieInMagieField
+                );
+                check(
+                    "Welle 6.G3 V2 Vision: Affinity-Pick wählt dichteSoul in dichte-Welt (>66%, 30 Runs)",
+                    wave6g3v2Results.affinityPicksDichteInDichteField
+                );
+                check(
+                    "Welle 6.G3 V2 Vision: _tagToFrequency mit hoher magieleitung > niedriger magieleitung",
+                    wave6g3v2Results.tagFreqHighMagieIsHigher
+                );
+                check("Welle 6.G3 V2 Vision: sprite-Frequenz > wesen-Frequenz (Klang folgt Substanz)", wave6g3v2Results.spriteFreqHigherThanWesen);
+                check("Welle 6.G3 V2 Vision: beide Frequenzen im Range [60, 2000] Hz", wave6g3v2Results.bothFrequenciesInRange);
+                check("Welle 6.G3 V2 Vision: _emotionModulate additiv (joy=1 → +5 auf base 10 = 15)", wave6g3v2Results.emotionModulateAdditiveWorks);
+                check("Welle 6.G3 V2 Vision: _emotionModulate multiplikativ (peace=1 + mul:1.5 → ×1.5)", wave6g3v2Results.emotionModulateMulWorks);
+                check("Welle 6.G3 V2 Vision: awe=1 hebt Sky-Blau-Anteil sichtbar", wave6g3v2Results.aweRaisesBlue);
+                check("Welle 6.G3 V2 Vision: awe=1 hebt Sky-Rot-Anteil (Magie = Lila)", wave6g3v2Results.aweRaisesRedToo);
+                check("Welle 6.G3 V2 Vision: sorrow=1 reduziert Sky-Sättigung", wave6g3v2Results.sorrowReducesSaturation);
+                check("Welle 6.G3 V2 Vision: peace=1 verlängert Wetter-Dauer (>120%)", wave6g3v2Results.peaceSlowsWeather);
+                check("Welle 6.G3 V2 Vision: chaos=1 verkürzt Wetter-Dauer (<70%)", wave6g3v2Results.chaosSpeedsWeather);
+                check("Welle 6.G3 V2 Vision: lebendig-Region hat höheres FAUNA_TARGET als karge", wave6g3v2Results.liveRegionHasHigherTarget);
+                check("Welle 6.G3 V2 Vision: FAUNA_TARGET-Range plausibel (lebendig ≥10, karg ≤6)", wave6g3v2Results.targetInExpectedRange);
+                check("Welle 6.G3 V2 Vision: starIntensity-Uniform existiert", wave6g3v2Results.starIntensityExists);
+                check("Welle 6.G3 V2 Vision: Sterne nachts sichtbar stärker als tags", wave6g3v2Results.starsBrighterAtNight);
+                check("Welle 6.G3 V2 Vision: state.sunMesh ist THREE.Mesh", wave6g3v2Results.sunMeshExists);
+                check("Welle 6.G3 V2 Vision: state.moonMesh ist THREE.Mesh", wave6g3v2Results.moonMeshExists);
+                check("Welle 6.G3 V2 Vision: Sonne hoch am Mittag (y > 100)", wave6g3v2Results.sunHighAtNoon);
+                check("Welle 6.G3 V2 Vision: Mond niedrig am Mittag (y < -100)", wave6g3v2Results.moonLowAtNoon);
+                check("Welle 6.G3 V2 Vision: Sonne niedrig nachts (y < -100)", wave6g3v2Results.sunLowAtMidnight);
+                check("Welle 6.G3 V2 Vision: Mond hoch nachts (y > 100)", wave6g3v2Results.moonHighAtMidnight);
+                check("Welle 6.G3 V2 Vision: magie-Welt-Region hebt Sky-Blau (vs dichte-Region)", wave6g3v2Results.magieFieldRaisesBlue);
+            } else {
+                check(
+                    "Welle 6.G3 V2: Vision-Tests laufen",
+                    false,
+                    wave6g3v2Results ? wave6g3v2Results.error : "no result"
+                );
+            }
+
             // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider (Audit 17.05.2026) ###
             const wave6x4bResults = await page
                 .evaluate(() => {

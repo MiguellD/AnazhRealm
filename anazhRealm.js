@@ -118,6 +118,10 @@ class AnazhRealm {
             _lastDayNightTick: -Infinity, // Sentinel, erste Iteration setzt initialen Stand
             directionalLight: null, // Reference, in initThreeJS gesetzt
             ambientLight: null,
+            // Welle 6.G3 V2 (V8.25) — Himmelskörper als sichtbare Meshes.
+            // Position folgt _applyDayNightToScene/_updateCelestialBodies.
+            sunMesh: null,
+            moonMesh: null,
             // Welle 6.G3 (V8.24) — sanfter Wetter-Übergang. null heißt: kein
             // aktiver Übergang. Ein Wechsel zwischen sunny/rainy interpoliert
             // Skybox-Tint + Symphonie-Filter über WEATHER_TRANSITION_DURATION_MS.
@@ -5335,18 +5339,55 @@ class AnazhRealm {
         osc.stop(t + 0.2);
     }
 
+    // [ATMOSPHERE] Symphonie-Tick. V8.25-Erweiterung: ambient-Gain atmet
+    // mit der Tageszeit — bei Nacht tiefer + ruhiger (×0.5), bei Mittag
+    // hell + voll (×1.0), Übergänge sanft. Vision §4: Welt-Klang folgt
+    // Welt-Atem. Filter-Cutoff moduliert mit (Nacht = dunkler, Mittag = klarer).
     symphonyTick() {
         const s = this.state.symphony;
         if (!s.enabled || !s.ctx) return;
-        if (s.lastWeather === this.state.weather) return;
-        // Sanftes Cross-Fade des Wetter-Layers: 1.5 s Rampe auf Ziel.
-        const target = this.state.weather === "rainy" ? 0.18 : 0.0;
-        const now = s.ctx.currentTime;
-        s.weather.gain.gain.cancelScheduledValues(now);
-        s.weather.gain.gain.setValueAtTime(s.weather.gain.gain.value, now);
-        s.weather.gain.gain.linearRampToValueAtTime(target, now + 1.5);
-        s.lastWeather = this.state.weather;
-        this.log(`Symphonie: wetter-Layer → ${target.toFixed(2)} (${this.state.weather})`, "DEBUG");
+        // (1) Wetter-Cross-Fade (wie V8.24)
+        if (s.lastWeather !== this.state.weather) {
+            const target = this.state.weather === "rainy" ? 0.18 : 0.0;
+            const now = s.ctx.currentTime;
+            s.weather.gain.gain.cancelScheduledValues(now);
+            s.weather.gain.gain.setValueAtTime(s.weather.gain.gain.value, now);
+            s.weather.gain.gain.linearRampToValueAtTime(target, now + 1.5);
+            s.lastWeather = this.state.weather;
+            this.log(`Symphonie: wetter-Layer → ${target.toFixed(2)} (${this.state.weather})`, "DEBUG");
+        }
+        // (2) V8.25 — Tag-Nacht-Modulation des Ambient. Throttle auf 1 Hz.
+        const ctx = s.ctx;
+        const lastAtmTick = s._lastDayNightAtmTick || 0;
+        const nowMs = ctx.currentTime * 1000;
+        if (nowMs - lastAtmTick < 1000) return;
+        s._lastDayNightAtmTick = nowMs;
+        if (!s.ambient || !s.ambient.ambientGain) return;
+        const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
+        const angle = t * Math.PI * 2 - Math.PI / 2;
+        const sunHeight = Math.max(0, Math.sin(angle)); // 0=Nacht, 1=Mittag
+        // Gain: Nacht 0.075 (halb so laut), Mittag 0.15 (Original)
+        const targetGain = 0.075 + 0.075 * sunHeight;
+        const nowCtx = ctx.currentTime;
+        const ag = s.ambient.ambientGain;
+        try {
+            ag.gain.cancelScheduledValues(nowCtx);
+            ag.gain.setValueAtTime(ag.gain.value, nowCtx);
+            ag.gain.linearRampToValueAtTime(targetGain, nowCtx + 1.0);
+        } catch (e) {
+            void e;
+        }
+        // Filter-Cutoff: Nacht 350 Hz (gedämpft), Mittag 700 Hz (offen)
+        if (s.ambient.filter && s.ambient.filter.frequency) {
+            const targetCutoff = 350 + 350 * sunHeight;
+            try {
+                s.ambient.filter.frequency.cancelScheduledValues(nowCtx);
+                s.ambient.filter.frequency.setValueAtTime(s.ambient.filter.frequency.value, nowCtx);
+                s.ambient.filter.frequency.linearRampToValueAtTime(targetCutoff, nowCtx + 1.0);
+            } catch (e) {
+                void e;
+            }
+        }
     }
 
     // ### Status-Panel (UI V1) ###
@@ -6845,9 +6886,12 @@ class AnazhRealm {
             gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }
     `;
+        // Welle 6.G3 V2 (V8.25) — starIntensity-Uniform damit Sterne nur bei
+        // Nacht stark sind. Steuerung über _applyDayNightToScene.
         const fragmentShader = `
         uniform float time;
         uniform vec3 nebulaColor;
+        uniform float starIntensity;
         varying vec3 vWorldPosition;
     float random(vec3 st) {
         return fract(sin(dot(st, vec3(12.9898, 78.233, 45.5432))) * 43758.5453123);
@@ -6877,9 +6921,13 @@ class AnazhRealm {
         float n1 = noise(pos * 1.0 + time * 0.1);
         float n2 = noise(pos * 2.0 + time * 0.05);
         float n3 = noise(pos * 4.0 + time * 0.025);
-        float starField = pow(random(pos * 100.0), 100.0); // Sterne
+        // V8.25 — Sterne moduliert mit starIntensity (0=Tag versteckt, 1=Nacht voll).
+        // Zwei Stern-Schichten für Tiefe.
+        float starField = pow(random(pos * 100.0), 100.0); // helle, seltene Sterne
+        float starField2 = pow(random(pos * 300.0), 200.0) * 0.6; // dimmer, dichter
+        float stars = (starField + starField2) * starIntensity;
         vec3 color = nebulaColor * (0.5 + 0.5 * (n1 + n2 + n3) / 3.0);
-        color += vec3(starField); // Helle Sterne hinzufügen
+        color += vec3(stars);
         gl_FragColor = vec4(color, 1.0);
     }
 `;
@@ -6891,6 +6939,10 @@ class AnazhRealm {
             uniforms: {
                 time: { value: 0.0 },
                 nebulaColor: { value: new THREE.Color(0x4b0082) }, // Indigofarben
+                // V8.25 — Sterne-Helligkeit (0..1), via _applyDayNightToScene
+                // gesteuert. Default 0.5 (zwischen Tag und Nacht), beim ersten
+                // tickDayNight wird der korrekte Wert gesetzt.
+                starIntensity: { value: 0.5 },
             },
             side: THREE.BackSide,
             depthWrite: false,
@@ -22218,6 +22270,100 @@ class AnazhRealm {
     }
 
     // ##############################################################
+    // ### Welle 6.G3 V2 (V8.25) — Atmosphäre-Wurzel-Helper (Vision-Heilung)
+    // ##############################################################
+    // V8.24 hatte Hardcode-Wunden: if-Maps für Soul-Wahl, Hz-Konstanten für
+    // Frequenzen, fixe Wetter-Dauer. Diese drei Wurzel-Helper sind die
+    // Vision-Pipeline (Vision §1.3 fraktal): jede Atmosphäre-Schicht emergiert
+    // aus dem System, nicht aus Tabellen.
+    //
+    // ATMOSPHERE — Methoden mit diesem Marker werden vom audit-strict
+    // "Atmosphäre-Hardcode-Audit" geprüft (Pattern-Match gegen if-Type-Maps
+    // und Magic-Number-Frequenzen). Whitelist nur über expliziten Marker.
+
+    // [ATMOSPHERE] Affinity-Pick — gegeben Kandidaten mit Compound-Tags und
+    // ein Welt-Feld an Position (x, z), wähle den Kandidaten dessen Tags am
+    // stärksten mit dem Welt-Feld resonieren. Dot-Product Tags · Field nach
+    // 4 Achsen (lebendig/dichte/glut/magieleitung). Optional ein noise-Anteil
+    // für sanfte Variabilität — sonst wäre immer dieselbe Soul in derselben
+    // Region. Liefert {pick, scoreMap} damit Tests Diskrimination prüfen können.
+    _affinityPickFromCandidates(candidates, fieldAtPos, noise = 0.15) {
+        if (!Array.isArray(candidates) || candidates.length === 0) {
+            return { pick: null, scoreMap: {} };
+        }
+        if (!fieldAtPos || typeof fieldAtPos !== "object") {
+            // Ohne Welt-Feld kein Affinity-Pick → erster Kandidat
+            return { pick: candidates[0], scoreMap: {} };
+        }
+        const axes = ["lebendig", "dichte", "glut", "magieleitung"];
+        let bestPick = null;
+        let bestScore = -Infinity;
+        const scoreMap = {};
+        for (const cand of candidates) {
+            const tags = cand.tags || {};
+            let score = 0;
+            for (const ax of axes) {
+                const fieldVal = fieldAtPos[ax] || 0;
+                const tagVal = tags[ax] || 0;
+                score += fieldVal * tagVal;
+            }
+            // Noise: kleine Random-Komponente damit nicht jeder Spawn identisch ist
+            score += (Math.random() - 0.5) * noise;
+            scoreMap[cand.name || cand.id || "(unnamed)"] = score;
+            if (score > bestScore) {
+                bestScore = score;
+                bestPick = cand;
+            }
+        }
+        return { pick: bestPick, scoreMap };
+    }
+
+    // [ATMOSPHERE] Tag-Frequency-Mapping — Klang folgt Substanz, Vision §1.3.
+    // Magieleitung leitet ins Hochtonale (Sterne klingen hoch), Dichte ins
+    // Tieftonale (Erde klingt tief). Resoniert verstärkt den Hauptton.
+    // Liefert Hz im sinnvollen Sinus-Bereich. Saat-Baseline ist baseHz; die
+    // Modulation darf um Faktor 0.3..2.5 variieren.
+    _tagToFrequency(tags, baseHz = 220) {
+        if (!tags || typeof tags !== "object") return baseHz;
+        const magie = Math.max(0, Math.min(1, tags.magieleitung || 0));
+        const dichte = Math.max(0, Math.min(1, tags.dichte || 0));
+        const resoniert = Math.max(0, Math.min(1, tags.resoniert || 0));
+        // Octave-Schritt nach oben mit magieleitung (×1 bis ×2.4)
+        // Octave-Schritt nach unten mit dichte (×0.4 bis ×1)
+        // Resoniert hellt etwas auf (+5..15 %)
+        const upMul = 1 + magie * 1.4;
+        const downMul = 1 - dichte * 0.6;
+        const resoMul = 1 + resoniert * 0.15;
+        const hz = baseHz * upMul * downMul * resoMul;
+        return Math.max(60, Math.min(2000, hz));
+    }
+
+    // [ATMOSPHERE] Emotion-Modulator — gegeben ein Basis-Wert und eine
+    // Modulations-Spec ({ joy: +0.1, sorrow: -0.2, awe: ×1.5, ... }), wende
+    // die sechs Emotions-Achsen an. Spec-Einträge mit Prefix '×' (oder Object
+    // mit `mul`) multiplizieren, mit '+' (oder `add`) addieren. Default ist
+    // additiv. Liefert den modulierten Wert. Reine Funktion (kein side-effect),
+    // testbar.
+    _emotionModulate(baseValue, modSpec, emotions) {
+        if (typeof baseValue !== "number" || !Number.isFinite(baseValue)) return baseValue;
+        const e = emotions || (this.state.player && this.state.player.emotions) || {};
+        const axes = ["joy", "awe", "sorrow", "hope", "peace", "chaos"];
+        let result = baseValue;
+        for (const ax of axes) {
+            if (!modSpec || modSpec[ax] === undefined || modSpec[ax] === null) continue;
+            const eVal = Math.max(0, Math.min(1, e[ax] || 0));
+            const m = modSpec[ax];
+            if (typeof m === "number") {
+                result += m * eVal; // Additiv-Default
+            } else if (m && typeof m === "object") {
+                if (typeof m.mul === "number") result *= 1 + (m.mul - 1) * eVal;
+                if (typeof m.add === "number") result += m.add * eVal;
+            }
+        }
+        return result;
+    }
+
+    // ##############################################################
     // ### Welle 6.G3 (V8.24) — Welt-Lebendigkeit
     // ##############################################################
     // Drei Schichten in einer Welle:
@@ -22256,17 +22402,23 @@ class AnazhRealm {
         };
     }
 
-    // Wendet timeOfDay+Wetter-Tint auf Lights + Skybox an. Eine Quelle der
-    // Wahrheit: nichts setzt diese Werte direkt, alles geht hier durch.
-    // updateSkyboxWeather() ist nur ein Schmal-Wrapper der hier rein-ruft.
+    // [ATMOSPHERE] Wendet timeOfDay + Wetter + Welt-Feld + Emotionen auf
+    // Lights + Skybox an. V8.25-Heilung: drei Modulations-Schichten über
+    // den Basis-Stops, alle vision-treu emergent:
+    //   1) Wetter-Multiplier (sunny vs rainy), wie V8.24 — gut so
+    //   2) Welt-Feld-Tint (Welt-Affinität am Spieler) — NEU. magieleitung-
+    //      Region zieht ins Violett, glut-Region ins Rote, lebendig-Region
+    //      ins warme Gelb-Grün. Eine Welt mit Region-Charakter strahlt das
+    //      auch im Himmel ab.
+    //   3) Emotion-Tint (Player-Emotionen) — NEU. joy → gold, sorrow →
+    //      entsättigt + grau, awe → magisches Lila, chaos → leichtes Flimmern.
+    // Die Skybox lebt nicht nur durch die Tageszeit, sondern durch alles
+    // was den Spieler und die Welt definiert.
     _applyDayNightToScene() {
         if (!this.state.directionalLight) return; // Pre-init safe
         const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
         const stop = this._interpolateDayNight(t);
-        // Welle 6.G3 — Wetter-Tint multipliziert auf den Tagestint.
-        // sunny → 1.0, rainy → 0.55 für sky / 0.7 für light. Während eines
-        // Wetter-Übergangs (weatherTransition aktiv) wird zwischen den Mul-
-        // Werten gelerpt.
+        // Schicht 1 — Wetter-Tint
         const wt = this.state.weatherTransition;
         const tints = this.constructor.WEATHER_TINTS;
         let skyMul, lightMul;
@@ -22281,43 +22433,154 @@ class AnazhRealm {
             skyMul = currentTint.skyMul;
             lightMul = currentTint.lightMul;
         }
-        // Skybox-Tint setzen (Uniform `nebulaColor`). Skybox-Tint ×
-        // Sky-Multiplier = endgültige Farbe. THREE.Color hat keinen *=,
-        // also direkte Komponenten-Mul.
-        const sky = stop.sky;
-        const skyR = sky.r * skyMul;
-        const skyG = sky.g * skyMul;
-        const skyB = sky.b * skyMul;
+        // Stop-Sky als THREE.Color, davon eine clone-Kopie zum Modulieren
+        const skyColor = stop.sky.clone();
+        const lightColor = stop.light.clone();
+        let lightIntensity = stop.intensity * lightMul;
+        // Schicht 2 — Welt-Feld-Tint (Welt-Affinität am Spieler)
+        const pm = this.state.playerMesh;
+        if (pm && typeof this.worldFieldAt === "function") {
+            const field = this.worldFieldAt(pm.position.x, pm.position.z);
+            if (field) {
+                const mag = Math.max(0, Math.min(1, field.magieleitung || 0));
+                const glut = Math.max(0, Math.min(1, field.glut || 0));
+                const lebendig = Math.max(0, Math.min(1, field.lebendig || 0));
+                // magieleitung-Region: Sky leicht ins Violett verschieben
+                if (mag > 0.5) {
+                    const m = (mag - 0.5) * 0.3; // 0..0.15
+                    skyColor.r = Math.min(1, skyColor.r + m * 0.6);
+                    skyColor.b = Math.min(1, skyColor.b + m * 1.0);
+                    lightColor.b = Math.min(1, lightColor.b + m * 0.4);
+                }
+                // glut-Region: ins Rot-Orange
+                if (glut > 0.5) {
+                    const g = (glut - 0.5) * 0.4; // 0..0.2
+                    skyColor.r = Math.min(1, skyColor.r + g);
+                    skyColor.g = Math.max(0, skyColor.g - g * 0.3);
+                    lightColor.r = Math.min(1, lightColor.r + g * 0.6);
+                }
+                // lebendig-Region: warm-grünlich
+                if (lebendig > 0.5) {
+                    const l = (lebendig - 0.5) * 0.25; // 0..0.125
+                    skyColor.g = Math.min(1, skyColor.g + l);
+                    skyColor.r = Math.min(1, skyColor.r + l * 0.3);
+                }
+            }
+        }
+        // Schicht 3 — Emotion-Tint
+        const emotions = (this.state.player && this.state.player.emotions) || {};
+        const joy = Math.max(0, Math.min(1, emotions.joy || 0));
+        const sorrow = Math.max(0, Math.min(1, emotions.sorrow || 0));
+        const awe = Math.max(0, Math.min(1, emotions.awe || 0));
+        const chaos = Math.max(0, Math.min(1, emotions.chaos || 0));
+        // joy → gold (warm)
+        if (joy > 0.2) {
+            const j = (joy - 0.2) * 0.25; // 0..0.2
+            skyColor.r = Math.min(1, skyColor.r + j);
+            skyColor.g = Math.min(1, skyColor.g + j * 0.7);
+            lightColor.r = Math.min(1, lightColor.r + j * 0.5);
+            lightIntensity *= 1 + (joy - 0.2) * 0.15;
+        }
+        // sorrow → entsättigt + dämpft
+        if (sorrow > 0.2) {
+            const s = (sorrow - 0.2) * 0.5; // 0..0.4
+            const greyR = (skyColor.r + skyColor.g + skyColor.b) / 3;
+            skyColor.r = skyColor.r * (1 - s) + greyR * s;
+            skyColor.g = skyColor.g * (1 - s) + greyR * s;
+            skyColor.b = skyColor.b * (1 - s) + greyR * s;
+            lightIntensity *= 1 - (sorrow - 0.2) * 0.2;
+        }
+        // awe → magisches Lila im Sky + Light
+        if (awe > 0.2) {
+            const a = (awe - 0.2) * 0.35; // 0..0.28
+            skyColor.b = Math.min(1, skyColor.b + a);
+            skyColor.r = Math.min(1, skyColor.r + a * 0.6);
+            lightColor.b = Math.min(1, lightColor.b + a * 0.5);
+        }
+        // chaos → leichtes Flimmern (sin über performance.now)
+        if (chaos > 0.3) {
+            const c = (chaos - 0.3) * 0.15; // 0..0.105
+            const flutter = Math.sin(performance.now() / 180) * c;
+            skyColor.r = Math.max(0, Math.min(1, skyColor.r + flutter));
+            skyColor.g = Math.max(0, Math.min(1, skyColor.g - flutter * 0.7));
+        }
+        // Schicht 1 final anwenden — skyMul auf den modulierten Sky-Color
+        const skyR = skyColor.r * skyMul;
+        const skyG = skyColor.g * skyMul;
+        const skyB = skyColor.b * skyMul;
         if (this.state.skybox && this.state.skybox.material && this.state.skybox.material.uniforms) {
             const u = this.state.skybox.material.uniforms.nebulaColor;
             if (u && u.value) {
                 u.value.setRGB(skyR, skyG, skyB);
             }
+            // V8.25 — Sterne nur bei Nacht stärker. starIntensity wandert
+            // umgekehrt zur Sonnenhöhe (sin-Funktion).
+            const starU = this.state.skybox.material.uniforms.starIntensity;
+            if (starU) {
+                const angle = t * Math.PI * 2 - Math.PI / 2;
+                const sunHeight = Math.max(-1, Math.min(1, Math.sin(angle)));
+                // sunHeight = 1 (Mittag) → 0.0 (Sterne unsichtbar)
+                // sunHeight = -1 (Mitternacht) → 1.0 (Sterne voll)
+                // Wetter dämpft Sterne zusätzlich
+                const nightFactor = (1 - sunHeight) * 0.5;
+                starU.value = nightFactor * skyMul;
+            }
         }
-        // Light-Position über Halbkreis (azimut über Tag). Höhe folgt
-        // sin(2π·t - π/2): bei t=0 unter dem Horizont (y=-1), bei t=0.5
-        // im Zenit (y=1). x rotiert linear über den Tag. Welt-Skala: Welt-
-        // Größe ist ~300, also Licht aus 200 m Entfernung.
+        // Light-Position über Halbkreis (azimut über Tag).
         const dl = this.state.directionalLight;
-        const angle = t * Math.PI * 2 - Math.PI / 2; // -π/2 → +3π/2
+        const angle = t * Math.PI * 2 - Math.PI / 2;
         const lightDist = 200;
         dl.position.set(
             Math.cos(angle) * lightDist,
             Math.sin(angle) * lightDist,
-            Math.sin(angle * 0.5) * lightDist * 0.4 // leichte Schwingung in z
+            Math.sin(angle * 0.5) * lightDist * 0.4
         );
-        // Light-Color * lightMul
-        const li = stop.light;
-        dl.color.setRGB(li.r * lightMul, li.g * lightMul, li.b * lightMul);
-        // Light-Intensity wird durch Wetter zusätzlich gedrosselt.
-        dl.intensity = stop.intensity * lightMul;
-        // Ambient-Light bleibt fast konstant, leicht moduliert für Nacht-
-        // Tiefe (sonst wirkt Mitternacht schwarz-tot).
+        dl.color.setRGB(lightColor.r * lightMul, lightColor.g * lightMul, lightColor.b * lightMul);
+        dl.intensity = lightIntensity;
+        // Ambient: Mitternacht 0.18, Mittag 0.6 + leichte Modulation durch
+        // joy/awe (positive Emotion erhöht ambient leicht — Welt wirkt heller)
         const al = this.state.ambientLight;
         if (al) {
-            // Mitternacht ambient 0.18, Mittag 0.6. Linear über sin-Höhe.
             const sunHeight = Math.max(0, Math.sin(angle));
-            al.intensity = 0.18 + 0.42 * sunHeight;
+            const baseAmb = 0.18 + 0.42 * sunHeight;
+            al.intensity = this._emotionModulate(baseAmb, { joy: 0.08, awe: 0.05, sorrow: -0.04 });
+        }
+        // V8.25 — Sonne + Mond Position aktualisieren (falls Meshes existieren)
+        this._updateCelestialBodies(angle, lightMul);
+    }
+
+    // [ATMOSPHERE] Sonne + Mond als sichtbare Meshes — visualer Anker des
+    // Tag-Nacht-Zyklus. Aufgehängt an _applyDayNightToScene, damit eine
+    // Quelle der Wahrheit. Sonne ist 380 m weg (vor der Skybox bei 500 m),
+    // sichtbar wenn ihre Höhe ≥ 0; Mond auf der gegenüberliegenden Seite,
+    // sichtbar wenn ihre Höhe ≥ 0. Beide haben emissive-Material das durch
+    // unsere Render-Pipeline auch ohne MeshLambert leuchtet.
+    _updateCelestialBodies(angle, lightMul) {
+        const sunDist = 380;
+        const sun = this.state.sunMesh;
+        const moon = this.state.moonMesh;
+        if (sun) {
+            const sx = Math.cos(angle) * sunDist;
+            const sy = Math.sin(angle) * sunDist;
+            const sz = Math.sin(angle * 0.5) * sunDist * 0.4;
+            sun.position.set(sx, sy, sz);
+            sun.visible = sy > -10; // unter Horizont ausblenden
+            // Sonne dimmt mit Wetter (rainy = trüber Schein)
+            if (sun.material && sun.material.color) {
+                const baseR = 1.0,
+                    baseG = 0.92,
+                    baseB = 0.7;
+                sun.material.color.setRGB(baseR * lightMul, baseG * lightMul, baseB * lightMul);
+            }
+        }
+        if (moon) {
+            // Mond gegenüber der Sonne
+            const moonAngle = angle + Math.PI;
+            const mx = Math.cos(moonAngle) * sunDist;
+            const my = Math.sin(moonAngle) * sunDist;
+            const mz = Math.sin(moonAngle * 0.5) * sunDist * 0.4;
+            moon.position.set(mx, my, mz);
+            moon.visible = my > -10;
         }
     }
 
@@ -22401,16 +22664,26 @@ class AnazhRealm {
 
     // ### 6.G3.b — Sanfte Wetter-Übergänge ###
 
-    // Startet einen Cross-Fade. target = Ziel-Wetter, fromWeather =
-    // explizit übergebener vorheriger Zustand (sonst state.weather, das aber
-    // schon auf target gesetzt sein kann, wenn der DSL-Op uns vor dem
-    // Wechsel ruft). duration default WEATHER_TRANSITION_DURATION_MS (45 s).
-    // Bei laufendem Übergang wird from auf Vorgänger-from gefriert, target neu
-    // gesetzt. state.weather selbst wird NICHT modifiziert (das ist Job
-    // des Callers — Transition ist reine Visual-Schicht).
+    // [ATMOSPHERE] Startet einen Cross-Fade. V8.25-Heilung: Default-Dauer
+    // emergiert aus Player-Emotionen via _emotionModulate — eine ruhige Welt
+    // (peace hoch) zieht Wolken langsamer (×1.6), eine chaotische (chaos hoch)
+    // blitzt schneller (×0.4). Explizit übergebene Dauer überschreibt das.
+    // Vision §3: Wetter atmet mit dem Spieler.
     requestWeatherTransition(target, durationMs, fromWeather) {
         if (target !== "sunny" && target !== "rainy") return false;
-        const dur = Math.max(100, Number(durationMs) || this.constructor.WEATHER_TRANSITION_DURATION_MS);
+        let dur;
+        if (typeof durationMs === "number" && Number.isFinite(durationMs)) {
+            dur = Math.max(100, durationMs);
+        } else {
+            // Default mit Emotion-Modulation
+            const baseDur = this.constructor.WEATHER_TRANSITION_DURATION_MS; // 45000
+            const modulated = this._emotionModulate(baseDur, {
+                peace: { mul: 1.6 }, // peace=1 → ×1.6 (72s)
+                chaos: { mul: 0.4 }, // chaos=1 → ×0.4 (18s)
+                sorrow: { mul: 1.2 }, // sorrow zieht Wolken langsam-melancholisch
+            });
+            dur = Math.max(8000, Math.min(120000, modulated));
+        }
         const wt = this.state.weatherTransition;
         let from = typeof fromWeather === "string" ? fromWeather : this.state.weather;
         if (wt && wt.from && wt.to && wt.to !== target) {
@@ -22473,30 +22746,41 @@ class AnazhRealm {
 
     // ### 6.G3.c — Fauna-Lifecycle ###
 
-    // Wählt eine Soul für eine neue Kreatur basierend auf Welt-Affinität.
-    // Welt-Field bei Spieler-Position bestimmt dominante Achse, daraus
-    // wird die passende Soul abgeleitet (lebendig → wesen, magie → sprite,
-    // dichte → geist). Fallback: Zufalls-Soul aus dem Pool.
-    _pickFaunaSoulAtPlayer() {
+    // [ATMOSPHERE] Compound-Tags einer Soul (ohne Kreatur-Instanz zu brauchen).
+    // Wrapper um computeCompoundTags({parts: soul.bodyParts}) — wird in
+    // _pickFaunaSoulAtPlayer für Affinity-Vergleich vor dem Spawn gebraucht.
+    _creatureSoulTags(soulName) {
+        const soul = AnazhRealm.CREATURE_SOULS && AnazhRealm.CREATURE_SOULS[soulName];
+        if (!soul || !soul.bodyParts) return {};
+        return this.computeCompoundTags({ parts: soul.bodyParts });
+    }
+
+    // [ATMOSPHERE] Wählt eine Soul für eine neue Kreatur — Vision-treu via
+    // Affinity-Pick statt if-Else-Map (V8.24-Wunde geheilt). Für jede Soul
+    // wird Compound-Tags × Welt-Feld-Dot-Product berechnet, höchste Resonanz
+    // gewinnt. Vision §1.3 fraktal: dieselbe Logik wie spawnAffinityForBlueprint.
+    // Bei mehreren Aufrufen in derselben Region streut die Wahl leicht
+    // (noise 0.15), damit nicht jeder Spawn identisch ist.
+    // Optionales x, z überschreibt die Spieler-Position (für Spawn-Position-
+    // Affinity nutzen).
+    _pickFaunaSoulAtPlayer(x, z) {
         const pm = this.state.playerMesh;
-        if (!pm || typeof this.worldFieldAt !== "function") return this._pickCreatureSoulName();
-        const field = this.worldFieldAt(pm.position.x, pm.position.z);
-        if (!field) return this._pickCreatureSoulName();
-        // Höchste Achse wählen
-        let topKey = "lebendig";
-        let topVal = -Infinity;
-        for (const k of Object.keys(field)) {
-            if (field[k] > topVal) {
-                topVal = field[k];
-                topKey = k;
-            }
+        if ((!pm && (x === undefined || z === undefined)) || typeof this.worldFieldAt !== "function") {
+            return this._pickCreatureSoulName();
         }
-        // Achse → Soul-Mapping (vision-konsistent zu CREATURE_SOULS)
-        if (topKey === "magieleitung") return "sprite";
-        if (topKey === "dichte") return "wesen";
-        if (topKey === "lebendig") return "wesen";
-        if (topKey === "glut") return "sprite";
-        return this._pickCreatureSoulName();
+        const px = x !== undefined ? x : pm.position.x;
+        const pz = z !== undefined ? z : pm.position.z;
+        const field = this.worldFieldAt(px, pz);
+        if (!field) return this._pickCreatureSoulName();
+        // Kandidaten: alle Built-in-Souls mit ihren Compound-Tags
+        const souls = AnazhRealm.CREATURE_SOULS;
+        if (!souls) return this._pickCreatureSoulName();
+        const candidates = Object.keys(souls).map((name) => ({
+            name,
+            tags: this._creatureSoulTags(name),
+        }));
+        const { pick } = this._affinityPickFromCandidates(candidates, field);
+        return (pick && pick.name) || this._pickCreatureSoulName();
     }
 
     // Findet die älteste Kreatur (kleinster bornAt). Für Tod-Wahl bei
@@ -22516,17 +22800,21 @@ class AnazhRealm {
         return oldest;
     }
 
-    // Tod einer Kreatur durch Lifecycle. Vision §10 — Trauer im Welt-Atem:
-    // sorrow += 0.2 (geclamped), journal-loss-Eintrag, kurzer Aura-Pulse,
-    // dann normale removeCreature-Pipeline. Memory bleibt bewusst nicht
-    // erhalten (Vision §1.1 — die Beziehung lebt nur, solange die Kreatur
-    // lebt; nach Tod erinnern sich nur Mensch und Welt-Journal).
+    // [ATMOSPHERE] Tod einer Kreatur durch Lifecycle. Vision §10 — Trauer
+    // im Welt-Atem: sorrow += 0.2 (geclamped), journal-loss-Eintrag, kurzer
+    // Aura-Pulse, dann normale removeCreature-Pipeline. Memory bleibt bewusst
+    // nicht erhalten (Vision §1.1 — die Beziehung lebt nur, solange die
+    // Kreatur lebt; nach Tod erinnern sich nur Mensch und Welt-Journal).
+    // V8.25-Heilung: Lebewohl-Frequenz emergiert aus _tagToFrequency(soul-Tags)
+    // statt aus Soul→Hz-Map. Klang folgt Substanz, Vision §1.3 fraktal.
     _creatureNaturalDeath(creature) {
         if (!creature) return false;
         const name = (creature.userData && creature.userData.name) || "(unbenannt)";
         const soul = (creature.userData && creature.userData.soul) || "wesen";
         const bornAt = (creature.userData && creature.userData.bornAt) || 0;
         const ageSec = bornAt > 0 ? (Date.now() - bornAt) / 1000 : null;
+        // Tags BEVOR removeCreature läuft (danach ist die Kreatur weg)
+        const tags = this.computeCreatureCompoundTags(creature);
         // Sorrow-Effekt (clamped)
         if (this.state.player && this.state.player.emotions) {
             const e = this.state.player.emotions;
@@ -22541,14 +22829,16 @@ class AnazhRealm {
                 cause: "fauna_lifecycle",
             });
         }
-        // Lebewohl-Aura: kurzer Sinus-Ping in Symphony, falls aktiv.
-        // Frequenz hängt von Soul ab (sprite hell, geist mittel, wesen tief).
+        // Lebewohl-Sinus: Frequenz emergiert aus Compound-Tags. Vision §1.3
+        // fraktal — Klang folgt Substanz. sprite (magieleitung hoch) klingt
+        // hell, wesen (dichte hoch) klingt tief, geist (zwischen) klingt mittel.
+        // Basis 220 Hz (A3), _tagToFrequency moduliert auf 0.4..2.4× = 88..528 Hz.
         if (this.state.symphony && this.state.symphony.enabled && this.state.symphony.ctx) {
             try {
                 const ctx = this.state.symphony.ctx;
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
-                const freq = soul === "sprite" ? 523 : soul === "geist" ? 392 : 220;
+                const freq = this._tagToFrequency(tags, 220);
                 osc.type = "sine";
                 osc.frequency.setValueAtTime(freq, ctx.currentTime);
                 osc.frequency.exponentialRampToValueAtTime(freq * 0.5, ctx.currentTime + 1.2);
@@ -22574,33 +22864,54 @@ class AnazhRealm {
         return true;
     }
 
-    // Geburt einer Kreatur. Soul-Wahl via Welt-Affinität. Spawn-Position
-    // in moderater Distanz zum Spieler (nicht direkt unter den Füßen, aber
-    // sichtbar). Stille Spawn (kein Symphony-Spawn-Ping — Geburt ist sanft,
-    // nicht laut).
+    // [ATMOSPHERE] Geburt einer Kreatur. V8.25-Heilung: Spawn-Position
+    // emergiert aus Welt-Affinität, nicht random. Wir samplen 6 Kandidaten-
+    // Positionen 12-25 m vom Spieler, wählen für jede die affinity-beste
+    // Soul, und nehmen den Kandidat mit höchstem Total-Affinity-Score —
+    // dort gehört die Kreatur hin. Vision §1.3: Welt sucht ihr eigenes
+    // Wesen, der Spieler ist Beobachter, kein Zentrum. Stille Spawn (kein
+    // Symphony-Ping — Geburt ist sanft, nicht laut).
     _creatureNaturalBirth() {
         if (typeof this.spawnCreatureAt !== "function") return false;
         const pm = this.state.playerMesh;
         if (!pm) return false;
-        const soul = this._pickFaunaSoulAtPlayer();
-        // Position 12-25 m vom Spieler entfernt, zufällige Richtung
-        const angle = Math.random() * Math.PI * 2;
-        const distance = 12 + Math.random() * 13;
-        const x = pm.position.x + Math.cos(angle) * distance;
-        const z = pm.position.z + Math.sin(angle) * distance;
-        const y = pm.position.y + 2; // leicht über Spieler-Höhe (fällt aufs Terrain)
+        // 6 Kandidaten-Positionen + jeweilige Affinity-beste-Soul
+        const candidates = [];
+        for (let i = 0; i < 6; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const distance = 12 + Math.random() * 13;
+            const cx = pm.position.x + Math.cos(angle) * distance;
+            const cz = pm.position.z + Math.sin(angle) * distance;
+            const field = typeof this.worldFieldAt === "function" ? this.worldFieldAt(cx, cz) : null;
+            const soul = this._pickFaunaSoulAtPlayer(cx, cz);
+            // Resonanz-Score: Soul-Tags · Field, total
+            let score = 0;
+            if (field && soul) {
+                const tags = this._creatureSoulTags(soul);
+                for (const ax of ["lebendig", "dichte", "glut", "magieleitung"]) {
+                    score += (field[ax] || 0) * (tags[ax] || 0);
+                }
+            }
+            candidates.push({ x: cx, z: cz, soul, score });
+        }
+        // Welt entscheidet: höchster Resonanz-Score gewinnt (+ kleine random
+        // Streuung damit keine zwei Geburten in derselben Region identisch sind)
+        candidates.sort((a, b) => b.score + Math.random() * 0.1 - (a.score + Math.random() * 0.1));
+        const best = candidates[0];
+        const y = pm.position.y + 2;
         // Spawn (silent damit kein Ping-Schwall)
         const prevSymphony = this.state.symphony && this.state.symphony.enabled;
         if (prevSymphony) this.state.symphony.enabled = false;
-        const c = this.spawnCreatureAt(x, y, z, "happy", soul);
+        const c = this.spawnCreatureAt(best.x, y, best.z, "happy", best.soul);
         if (prevSymphony) this.state.symphony.enabled = true;
         if (!c) return false;
-        // Journal-Eintrag — Geburt ist Welt-Atem, leise Notiz
+        // Journal-Eintrag — Geburt ist Welt-Atem, leise Notiz mit Affinität
         if (typeof this.journalAppend === "function") {
             const name = (c.userData && c.userData.name) || "(Wesen)";
-            this.journalAppend("growth", `${name} (${soul}) tritt in die Welt ein.`, {
+            this.journalAppend("growth", `${name} (${best.soul}) tritt in die Welt ein.`, {
                 creature: name,
-                soul,
+                soul: best.soul,
+                affinityScore: best.score.toFixed(3),
                 cause: "fauna_lifecycle",
             });
         }
@@ -22608,9 +22919,39 @@ class AnazhRealm {
         return true;
     }
 
-    // Tick — läuft alle FAUNA_TICK_INTERVAL_MS. Prüft Population:
-    // < TARGET → mit p=BIRTH probabilistisch Geburt (Cooldown beachten)
-    // > MAX → mit p=DEATH probabilistisch Tod (Cooldown beachten)
+    // [ATMOSPHERE] Fauna-Ziel-Population emergiert aus Welt-Lebendigkeit.
+    // V8.25-Heilung: TARGET war konstant 8, jetzt skaliert mit
+    // worldFieldAt(player).lebendig: ein üppiger Wald trägt 12-14 Kreaturen,
+    // eine karge Felsen-Region nur 3-4. Vision §1.3: die Welt entscheidet
+    // wie viel Leben sie tragen will.
+    _currentFaunaTarget() {
+        const baseTarget = this.constructor.FAUNA_TARGET_POPULATION; // 8
+        const pm = this.state.playerMesh;
+        if (!pm || typeof this.worldFieldAt !== "function") return baseTarget;
+        const f = this.worldFieldAt(pm.position.x, pm.position.z);
+        if (!f) return baseTarget;
+        // lebendig 0..1 mappt auf 4..14 (baseTarget±50%)
+        const lebendig = Math.max(0, Math.min(1, f.lebendig || 0));
+        return Math.round(4 + lebendig * 10);
+    }
+
+    // [ATMOSPHERE] Fauna-Max-Population — symmetrisches Pattern zu Target.
+    // Bei sehr lebendiger Region erlauben wir mehr Kreaturen (cap höher).
+    _currentFaunaMax() {
+        const baseMax = this.constructor.FAUNA_MAX_POPULATION; // 20
+        const pm = this.state.playerMesh;
+        if (!pm || typeof this.worldFieldAt !== "function") return baseMax;
+        const f = this.worldFieldAt(pm.position.x, pm.position.z);
+        if (!f) return baseMax;
+        const lebendig = Math.max(0, Math.min(1, f.lebendig || 0));
+        return Math.round(12 + lebendig * 16); // 12..28
+    }
+
+    // [ATMOSPHERE] Tick — läuft alle FAUNA_TICK_INTERVAL_MS. V8.25-Heilung:
+    // Target + Max emergieren aus Welt-Lebendigkeit (_currentFaunaTarget /
+    // _currentFaunaMax). Plus Birth/Death-Probability moduliert mit Player-
+    // Emotionen — sorrow erhöht Tod, peace verlangsamt, hope beschleunigt
+    // Geburten. Vision §3: Welt atmet mit dem Spieler.
     tickFaunaLifecycle(currentTime) {
         const ms = currentTime * 1000;
         const last = this.state.faunaLifecycle.lastTick || 0;
@@ -22618,19 +22959,25 @@ class AnazhRealm {
         if (ms - last < interval) return;
         this.state.faunaLifecycle.lastTick = ms;
         const count = (this.state.creatures && this.state.creatures.length) || 0;
-        const target = this.constructor.FAUNA_TARGET_POPULATION;
-        const max = this.constructor.FAUNA_MAX_POPULATION;
+        const target = this._currentFaunaTarget();
+        const max = this._currentFaunaMax();
         const birthCd = this.constructor.FAUNA_BIRTH_COOLDOWN_MS;
         const deathCd = this.constructor.FAUNA_DEATH_COOLDOWN_MS;
         const now = Date.now();
         if (count < target) {
             const sinceBirth = now - (this.state.faunaLifecycle.lastBirthAt || 0);
-            if (sinceBirth >= birthCd && Math.random() < this.constructor.FAUNA_BIRTH_PROBABILITY) {
+            // Emotion-Modulation: hope beschleunigt Geburt, peace verlangsamt
+            const baseBirth = this.constructor.FAUNA_BIRTH_PROBABILITY;
+            const birthP = this._emotionModulate(baseBirth, { hope: 0.08, peace: -0.05 });
+            if (sinceBirth >= birthCd && Math.random() < Math.max(0.02, Math.min(0.5, birthP))) {
                 this._creatureNaturalBirth();
             }
         } else if (count > max) {
             const sinceDeath = now - (this.state.faunaLifecycle.lastDeathAt || 0);
-            if (sinceDeath >= deathCd && Math.random() < this.constructor.FAUNA_DEATH_PROBABILITY) {
+            // sorrow erhöht Tod, peace dämpft
+            const baseDeath = this.constructor.FAUNA_DEATH_PROBABILITY;
+            const deathP = this._emotionModulate(baseDeath, { sorrow: 0.1, peace: -0.06 });
+            if (sinceDeath >= deathCd && Math.random() < Math.max(0.02, Math.min(0.5, deathP))) {
                 const oldest = this._findOldestCreature();
                 if (oldest) this._creatureNaturalDeath(oldest);
             }
@@ -23761,6 +24108,35 @@ class AnazhRealm {
 
         this.createGalaxySkybox();
         this.log("Galaxy-Skybox erstellt", "INFO");
+
+        // Welle 6.G3 V2 (V8.25) — Sonne + Mond als sichtbare Himmelskörper.
+        // Beide sind emissive-Sphere-Meshes, Position folgt DirectionalLight
+        // via _updateCelestialBodies(angle). Sonne tagsüber sichtbar, Mond
+        // nachts (gegenüberliegende Hemisphäre). Vision: ein Himmel der lebt,
+        // nicht eine Farb-Animation. Größe 12 m (gut sichtbar aus 380 m Distanz).
+        const sunGeo = new THREE.SphereGeometry(12, 16, 16);
+        const sunMat = new THREE.MeshBasicMaterial({
+            color: 0xffe8b0,
+            fog: false,
+            transparent: true,
+            opacity: 0.95,
+        });
+        const sunMesh = new THREE.Mesh(sunGeo, sunMat);
+        sunMesh.frustumCulled = false; // immer rendern (Himmelskörper)
+        scene.add(sunMesh);
+        this.state.sunMesh = sunMesh;
+        const moonGeo = new THREE.SphereGeometry(9, 16, 16);
+        const moonMat = new THREE.MeshBasicMaterial({
+            color: 0xd0d4e0,
+            fog: false,
+            transparent: true,
+            opacity: 0.9,
+        });
+        const moonMesh = new THREE.Mesh(moonGeo, moonMat);
+        moonMesh.frustumCulled = false;
+        scene.add(moonMesh);
+        this.state.moonMesh = moonMesh;
+        this.log("Himmelskörper hinzugefügt (Sonne + Mond)", "INFO");
 
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
         scene.add(ambientLight);
