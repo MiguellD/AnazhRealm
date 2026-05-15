@@ -14215,24 +14215,31 @@ class AnazhRealm {
         // dürfen danach drüber/drunter gehen (die wirken als Modifikation).
         // Compound-Tags >1 leben weiter, nur für Stat-Berechnung normalisiert.
         const finalTags = {};
+        // Welle 10a — Präzision moduliert die Stat-Wirkung pro Quelle. Ein
+        // roh gebauter Soul/Tool/Armor ist messbar schwächer als ein polierter.
+        // Built-in-Soulen ohne opChain gelten als "geboren" (precision = 1.0,
+        // kein Effekt). Custom-Soulen aus geschmiedeten Baupläne tragen ihre
+        // Werkzeug-Geschichte mit.
+        const soulPrec = this._compoundAvgPrecisionFromParts(soul && soul.bodyParts);
+        const soulMul = 0.5 + 0.5 * soulPrec;
         for (const key of AnazhRealm.MATERIAL_TAG_KEYS) {
             const raw = Number(compoundTags[key]) || 0;
-            finalTags[key] = Math.max(0, Math.min(1, raw));
+            finalTags[key] = Math.max(0, Math.min(1, raw)) * soulMul;
         }
         // Welle 6.D Etappe 3b — Equipped-Stat-Stacking (wave-6-design §5.3).
-        //   finalTags[t] = soul[t] + armor.compoundTags[t] × armorWeight
-        //                 + tool.compoundTags[t] × toolWeight + boost-Deltas
-        // Werte bewusst NICHT geclamp — STAT_FROM_TAGS-Formeln sind linear,
-        // ein dichter Eisenhelm spürt der Spieler in HP + Schaden, ein leichter
-        // Stab-Werkzeug spürt er in magieleitung. Wer wirklich Caps will, kann
-        // sie in der STAT_FROM_TAGS-Matrix nachschalten.
+        //   finalTags[t] = soul[t] + armor.compoundTags[t] × armorWeight × armorPrec
+        //                 + tool.compoundTags[t] × toolWeight × toolPrec + boost-Deltas
+        // Welle 10a: Präzisions-Multiplier auch hier, pro Quelle.
         const equipped = (this.state.player && this.state.player.equipped) || {};
-        // Werkzeug-Beitrag (nur wenn Bauplan-Tool)
+        // Werkzeug-Beitrag (nur wenn Bauplan-Tool, sourceBlueprint vorhanden)
         if (equipped.tool && this.state.tools && this.state.tools[equipped.tool]) {
             const tool = this.state.tools[equipped.tool];
             if (tool.sourceBlueprint && this.state.blueprints[tool.sourceBlueprint]) {
-                const tags = this.computeCompoundTags(this.state.blueprints[tool.sourceBlueprint]);
-                const w = AnazhRealm.TOOL_STAT_WEIGHT;
+                const bp = this.state.blueprints[tool.sourceBlueprint];
+                const tags = this.computeCompoundTags(bp);
+                const toolPrec = this._compoundAvgPrecisionFromParts(bp.parts);
+                const toolMul = 0.5 + 0.5 * toolPrec;
+                const w = AnazhRealm.TOOL_STAT_WEIGHT * toolMul;
                 for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
                     finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
                 }
@@ -14243,7 +14250,9 @@ class AnazhRealm {
             const bp = this.state.blueprints[equipped.armor];
             if (bp.role === "armor") {
                 const tags = this.computeCompoundTags(bp);
-                const w = AnazhRealm.ARMOR_STAT_WEIGHT;
+                const armorPrec = this._compoundAvgPrecisionFromParts(bp.parts);
+                const armorMul = 0.5 + 0.5 * armorPrec;
+                const w = AnazhRealm.ARMOR_STAT_WEIGHT * armorMul;
                 for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
                     finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
                 }
@@ -15388,6 +15397,25 @@ class AnazhRealm {
         let sum = 0;
         for (const p of blueprint.parts) sum += this.computePartPrecision(p);
         return sum / blueprint.parts.length;
+    }
+
+    // Welle 10a — Mittlere Präzision direkt aus einem Parts-Array (analog
+    // _compoundAvgPrecision, aber ohne Bauplan-Wrapper). Wird in
+    // computePlayerStats für Soul-bodyParts genutzt — Soulen sind keine
+    // Bauplane, aber haben dieselbe parts-Struktur.
+    //
+    // Wenn KEIN Part eine opChain hat, gilt das Compound als "geboren"
+    // (precision = 1.0) — Built-in-Soulen wie human/phoenix/dragon und
+    // automatisch importierte Custom-Soulen sind nicht durch Werkzeuge
+    // entstanden. Wer eine eigene Soul via Bauplan-Pfad schmiedet (mit
+    // opChain in den Parts), bekommt eine echte Präzision aus min-Werten.
+    _compoundAvgPrecisionFromParts(parts) {
+        if (!Array.isArray(parts) || parts.length === 0) return 1.0;
+        const anyHasChain = parts.some((p) => p && Array.isArray(p.opChain) && p.opChain.length > 0);
+        if (!anyHasChain) return 1.0;
+        let sum = 0;
+        for (const p of parts) sum += this.computePartPrecision(p);
+        return sum / parts.length;
     }
 
     // Mutationspfad: Werkzeug auf Part anwenden. Validiert Tool-Besitz +
