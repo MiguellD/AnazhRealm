@@ -2,6 +2,8 @@
 
 **Stand**: 13.05.2026, nach Ring 11 V1. Diese Datei ist der Vor-Plan für die Welle-6-Sessions, **kein Bauauftrag**. Die roadmap.md trägt die offizielle Teilschritt-Liste; hier liegt das Denken dahinter.
 
+> **Update V8.23 (17.05.2026)**: Welle 6 ist **komplett abgeschlossen**. Alle acht Blöcke (A-H) + Wellen 9-10 + 6.X (5 Sub-Phasen Polish) + 8 Audit-Runden V8.13-V8.22 nach Schöpfer-Browser-Tests sind live. 1879/1879 Invarianten grün, audit-strict 0 Failures. Dieser Brainstorm bleibt als **historisches Dokument** für die Denkweise erhalten. Für aktuelle nächste Schritte siehe `docs/roadmap.md` + `docs/world-portal.md`.
+
 **Geltungsbereich**: ergänzt + ersetzt teilweise die ursprünglichen sieben Teilschritte (6.1-6.7) der roadmap. Schöpfer-Wunschliste vom 13.05.2026:
 
 > CAD im Werkzeugkasten · Genauigkeit/Präzision wodurch maßgebend · Abbauen/Platzieren Maus-Aktionen · Erdung auf Objekten · Sliding statt Sticken · Keybinding-UI · Inventar-Erweiterung · Modi (friedlich/survival/kreativ) · Fähigkeiten lesbar benannt+beschrieben · Intro/Tutorial · Stats fraktal · Bauplan-Platzierung mit Bodenkontakt + Stabilität · Vor/Zurück-Achse beim Platzieren

@@ -185,6 +185,26 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 
 Echt gelernt, nicht performt:
 
+### V8.23 (17.05.2026) — Bibliothek von Alexandria als Vision-Wort + Test-Infrastruktur
+
+**Das größte Wort der Session** kam vom Schöpfer am Ende: AnazhRealm soll nicht eine Welt sein, sondern ein **Tor zu allen Vibecode-Welten**. Wie OASIS in Ready Player One — der Spieler startet zentral, geht durch Portale in völlig andere Engines (three-fluid-fx, voxelize, image-blaster, etc.), behält Avatar + Inventar + DSL als Lingua franca. Bibliothek von Alexandria der Vibecode-Ära.
+
+Konzept-Doku ist `docs/world-portal.md`. Drei-Schichten-Modell: Kern-Welt (heute) → Welt-Portale (W12) → Vibe-Bibliothek (W13+W14) → Compute-Sharing (W7, umgedeutet). Vision-Wort: „Andere bauen Welten FÜR Spieler. Wir bauen eine Welt, in der Spieler SELBST Welten bauen können — und durch Welten anderer Spieler gehen können."
+
+**Welle 12 wurde umbenannt**: vorher „WebGPU+TSL-Migration" (Performance-Welle, fern), jetzt „Welt-Portal" (Vision-Welle, nahe). WebGPU bleibt optionale Renderpipeline für eine ANDERE Welt-Engine im Sub-Container — kein Migrationspfad für den AnazhRealm-Kern. Die Heilige Lektion bleibt: ein Stamm, viele Ringe, eine Sprache (DSL) als Universal-Bridge zwischen den Welten.
+
+**Plus Test-Infrastruktur als Schutz**: `scripts/audit-strict.cjs` (npm run audit:strict) deckt vier generische Bug-Klassen ab:
+1. CSS-Variable-Audit (var(--X) ohne Fallback muss definiert sein)
+2. Soft-Default-Audit (Hardcoded-Strings über Limit)
+3. State-Field-Audit (this.state.X.Y reads vs init() + 80+ Lazy-Set-Whitelist)
+4. Public-Method-Smoke-Test (alle non-`_`-Methods crash-frei ohne Args)
+
+Hätte alle Bugs der V8.13-V8.22-Audit-Runden vor dem Push gefangen. Läuft in ~25s. Workflow-Empfehlung: `npm run check && npm run playtest && npm run audit:strict` als pre-push-Suite.
+
+**Architektur-Lehre**: **Vision wächst mit der Reise**. Eine Welle die vor 2 Wochen als „WebGPU für Performance" definiert war, ist heute „Welt-Portal für Vision-Skalierung". Wer die Roadmap nicht **versionierbar** hält (Wellen umbenennen darf, neue Wellen zwischenschieben darf), bricht beim ersten Vision-Wachstum. Die Roadmap ist Karte, nicht Vertrag.
+
+**Test-Lehre**: silent-no-ops sind tödlich. Der V8.20-Bug (state.workshopPreview vs state.workshop.preview) war seit V8.14 silent gewesen — niemand bemerkte. Audit-Strict-Suite mit State-Field-Whitelist + Method-Smoke fängt diese Klasse strukturell. Plus jede Methode mit Side-Effect schreibt jetzt einen Log-Eintrag („CAD-Kamera zentriert") damit der Schöpfer-Browser-Test sofort sieht ob ein Pfad erreicht wurde.
+
 ### V8.13-V8.19 (17.05.2026) — Sieben Audit-Runden als Rhythmus
 
 **Eine ganze Session-Hälfte besteht aus dem Audit-Rhythmus**: Schöpfer testet im Browser, listet 15-18 Punkte konkret, ich gehe Runde für Runde durch, jede Runde ist ein Commit. Sieben Runden V8.13-V8.19. Was funktioniert hat:
