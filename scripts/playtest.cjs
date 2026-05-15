@@ -14292,6 +14292,153 @@ function startSaveServer() {
                 check(`Welle 10b.3: evaluate-Fehler — ${wave10b3Results.error}`, false);
             }
 
+            // ### V8.05 — Werkstatt-UX-Polish (Mode-Bar oben + Stats unten + Tool-Palette + Editor-Toggle + Del-Btn) ###
+            const v805Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    try {
+                        // Werkstatt-Tab öffnen
+                        const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
+                        if (tab) tab.click();
+                        // Methoden
+                        out.hasRenderTools = typeof r._workshopRenderToolPalette === "function";
+                        out.hasHandleToolDrop = typeof r._workshopHandleToolDrop === "function";
+                        out.hasRenderStats = typeof r._workshopRenderStatsPanel === "function";
+                        out.hasInstallEditorToggle = typeof r._workshopInstallEditorToggle === "function";
+                        out.hasInstallDelBtn = typeof r._workshopInstallDeleteButton === "function";
+
+                        // Mode-Bar IM Wrapper UND VOR Canvas (DOM-Reihenfolge)
+                        const wrapper = document.getElementById("workshop-preview-wrapper");
+                        const modeBar = document.getElementById("workshop-mode-bar");
+                        const canvas = document.getElementById("workshop-preview-canvas");
+                        if (wrapper && modeBar && canvas) {
+                            out.modeBarInWrapper = modeBar.parentElement === wrapper;
+                            // Mode-Bar steht vor Canvas
+                            const wrapperChildren = Array.from(wrapper.children);
+                            const mbIdx = wrapperChildren.indexOf(modeBar);
+                            const cIdx = wrapperChildren.indexOf(canvas);
+                            out.modeBarBeforeCanvas = mbIdx >= 0 && cIdx > mbIdx;
+                        }
+
+                        // Stats-Panel im DOM + NACH Canvas
+                        const stats = document.getElementById("workshop-stats-panel");
+                        out.statsInDom = !!stats;
+                        if (wrapper && stats && canvas) {
+                            const wrapperChildren = Array.from(wrapper.children);
+                            const sIdx = wrapperChildren.indexOf(stats);
+                            const cIdx = wrapperChildren.indexOf(canvas);
+                            out.statsAfterCanvas = sIdx > cIdx;
+                        }
+
+                        // Werkzeug-Palette im DOM
+                        const toolPalette = document.getElementById("workshop-tool-palette");
+                        out.toolPaletteInDom = !!toolPalette;
+                        // Wenn Spieler Werkzeuge hat, sind Cards drin
+                        const playerTools = (r.state.player && r.state.player.tools) || [];
+                        out.toolCardsCount = toolPalette
+                            ? toolPalette.querySelectorAll(".workshop-tool-card").length
+                            : 0;
+                        out.toolPaletteHasCards = out.toolCardsCount > 0 && out.toolCardsCount <= playerTools.length;
+
+                        // Editor-Toggle
+                        const editorToggle = document.getElementById("workshop-editor-toggle");
+                        const editor = document.getElementById("workshop-editor");
+                        out.toggleInDom = !!editorToggle;
+                        if (editorToggle && editor) {
+                            // Default: zugeklappt (hidden=true)
+                            out.editorInitiallyHidden = editor.hidden === true;
+                            // Click → ausklappen
+                            editorToggle.click();
+                            out.editorVisibleAfterClick = editor.hidden === false;
+                            out.toggleAriaExpanded = editorToggle.getAttribute("aria-expanded") === "true";
+                            // Nochmal Click → wieder zu
+                            editorToggle.click();
+                            out.editorHiddenAfterSecondClick = editor.hidden === true;
+                        }
+
+                        // Del-Button
+                        const delBtn = document.getElementById("workshop-delete-selected-part");
+                        out.delBtnInDom = !!delBtn;
+                        // Default: disabled (kein Part selektiert)
+                        if (delBtn) out.delBtnInitiallyDisabled = delBtn.disabled === true;
+
+                        // Klone eigenen Bauplan + Part selektieren → Del-Btn enabled
+                        if (r.state.blueprints["test_v805"]) r.deleteBlueprint("test_v805");
+                        r.cloneBlueprint("village", "test_v805");
+                        r.selectBlueprintForEdit("test_v805");
+                        r._workshopSetSelection(0);
+                        out.delBtnEnabledOnSelect = delBtn && delBtn.disabled === false;
+                        // Del-Btn-Click entfernt Part
+                        const partsBefore = r.state.blueprints.test_v805.parts.length;
+                        if (delBtn) delBtn.click();
+                        const partsAfter = r.state.blueprints.test_v805.parts.length;
+                        out.delBtnRemovesPart = partsAfter === partsBefore - 1;
+
+                        // Stats-Panel zeigt Rolle-Chip
+                        const roleChip = stats && stats.querySelector(".role-chip");
+                        out.statsHasRoleChip = !!roleChip;
+
+                        // Cleanup
+                        if (r.state.blueprints["test_v805"]) r.deleteBlueprint("test_v805");
+                        r.selectBlueprintForEdit("village");
+                        r._renderWorkshopDOM();
+                        const weltTab = document.querySelector('#topbar [data-tab="welt"]');
+                        if (weltTab) weltTab.click();
+                        r.state.yaw = 0;
+                        if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
+                    } catch (err) {
+                        out.error = err && err.message;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (v805Results && !v805Results.error) {
+                check(
+                    "V8.05: 5 neue Methoden existieren (Tool-Render/Drop + Stats + Editor-Toggle + Del-Btn)",
+                    v805Results.hasRenderTools &&
+                        v805Results.hasHandleToolDrop &&
+                        v805Results.hasRenderStats &&
+                        v805Results.hasInstallEditorToggle &&
+                        v805Results.hasInstallDelBtn
+                );
+                check(
+                    "V8.05: Mode-Bar steht IM Preview-Wrapper + VOR Canvas (Workflow von oben nach unten)",
+                    v805Results.modeBarInWrapper && v805Results.modeBarBeforeCanvas
+                );
+                check(
+                    "V8.05: Stats-Panel im DOM + NACH Canvas (schnelle Sicht auf emergente Werte)",
+                    v805Results.statsInDom && v805Results.statsAfterCanvas
+                );
+                check(
+                    "V8.05: Werkzeug-Palette im DOM mit Cards für Spieler-Werkzeuge",
+                    v805Results.toolPaletteInDom && v805Results.toolPaletteHasCards
+                );
+                check(
+                    "V8.05: Editor-Toggle im DOM + initial zugeklappt (Details-Tabelle versteckt)",
+                    v805Results.toggleInDom && v805Results.editorInitiallyHidden
+                );
+                check(
+                    "V8.05: Editor-Toggle-Click ein- + ausklappen + aria-expanded sync",
+                    v805Results.editorVisibleAfterClick &&
+                        v805Results.toggleAriaExpanded &&
+                        v805Results.editorHiddenAfterSecondClick
+                );
+                check(
+                    "V8.05: Del-Button im DOM + initial disabled (keine Selection)",
+                    v805Results.delBtnInDom && v805Results.delBtnInitiallyDisabled
+                );
+                check(
+                    "V8.05: Del-Button enabled bei Part-Selection + Click entfernt Part",
+                    v805Results.delBtnEnabledOnSelect && v805Results.delBtnRemovesPart
+                );
+                check("V8.05 Stats: Rolle-Chip im Stats-Panel sichtbar", v805Results.statsHasRoleChip);
+            } else if (v805Results && v805Results.error) {
+                check(`V8.05: evaluate-Fehler — ${v805Results.error}`, false);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {

@@ -19592,6 +19592,14 @@ class AnazhRealm {
         if (typeof this._workshopRebuildPreviewMesh === "function") {
             this._workshopRebuildPreviewMesh();
         }
+        // V8.05 — Stats-Panel + Tool-Palette aktualisieren (Tool-Palette
+        // hängt am Spieler-Inventar, das beim DSL-Pfad mutieren kann).
+        if (typeof this._workshopRenderStatsPanel === "function") {
+            this._workshopRenderStatsPanel();
+        }
+        if (typeof this._workshopRenderToolPalette === "function") {
+            this._workshopRenderToolPalette();
+        }
     }
 
     // ============================================================
@@ -19743,6 +19751,9 @@ class AnazhRealm {
         });
         // V8.02 Phase 3a — Shape-Palette HTML5-Drag-Sources + Canvas-Drop-Target
         this._workshopInstallShapeDragDrop();
+        // V8.05 — Editor-Toggle + Del-Button-Handler (beide idempotent)
+        this._workshopInstallEditorToggle();
+        this._workshopInstallDeleteButton();
     }
 
     // V8.01 — ResizeObserver: passt Renderer-Pixel-Dimensionen an die
@@ -20176,6 +20187,10 @@ class AnazhRealm {
                     const rowIdx = parseInt(row.getAttribute("data-part-idx") || "-1", 10);
                     row.classList.toggle("selected", rowIdx === idx);
                 });
+            }
+            // V8.05 — Del-Button-Status synchen (UpdateManipulatorButtons macht das)
+            if (typeof this._workshopUpdateManipulatorButtons === "function") {
+                this._workshopUpdateManipulatorButtons();
             }
         }
     }
@@ -20694,6 +20709,140 @@ class AnazhRealm {
                 }
             });
         }
+        // V8.05 — Del-Button: enabled nur wenn ein Part selektiert + bp eigen
+        const delBtn = document.getElementById("workshop-delete-selected-part");
+        if (delBtn) {
+            const hasSel =
+                !isBuiltIn &&
+                ws.selectedPartIdx !== null &&
+                ws.selectedPartIdx !== undefined &&
+                bp &&
+                Array.isArray(bp.parts) &&
+                ws.selectedPartIdx < bp.parts.length;
+            delBtn.disabled = !hasSel;
+        }
+    }
+
+    // V8.05 — Stats-Panel rendert die emergenten Compound-Tags + Rolle
+    // + Affordances direkt unter dem Canvas. Spieler sieht beim Bauen
+    // sofort was räumlich + tag-mäßig passiert.
+    _workshopRenderStatsPanel() {
+        if (typeof document === "undefined") return;
+        const panel = document.getElementById("workshop-stats-panel");
+        if (!panel) return;
+        const ws = this._ensureWorkshopState();
+        const bp = this.state.blueprints[ws.selectedBlueprint];
+        panel.innerHTML = "";
+        if (!bp) return;
+        // Rolle-Chip
+        const role = bp.role || AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
+        const roleLabel = AnazhRealm.BLUEPRINT_ROLE_LABELS[role] || role;
+        const roleRow = document.createElement("div");
+        roleRow.className = "stat-row";
+        const roleLab = document.createElement("span");
+        roleLab.className = "stat-label";
+        roleLab.textContent = "Rolle";
+        roleRow.appendChild(roleLab);
+        const roleChip = document.createElement("span");
+        roleChip.className = "role-chip";
+        roleChip.textContent = roleLabel;
+        roleRow.appendChild(roleChip);
+        // Affordances
+        const aff = this.computeBlueprintAffordances(bp) || {};
+        for (const key of Object.keys(aff)) {
+            const chip = document.createElement("span");
+            chip.className = "affordance-chip";
+            chip.textContent = "✦ " + (AnazhRealm.AFFORDANCE_LABELS[key] || key);
+            roleRow.appendChild(chip);
+        }
+        panel.appendChild(roleRow);
+        // Top-5 Compound-Tags (nur die mit Wert > 0.1)
+        const tags = this.computeCompoundTags(bp) || {};
+        const tagEntries = AnazhRealm.MATERIAL_TAG_KEYS.map((k) => ({ k, v: tags[k] || 0 }))
+            .filter((e) => e.v > 0.1)
+            .sort((a, b) => b.v - a.v)
+            .slice(0, 5);
+        if (tagEntries.length > 0) {
+            const tagRow = document.createElement("div");
+            tagRow.className = "stat-row";
+            const tagLab = document.createElement("span");
+            tagLab.className = "stat-label";
+            tagLab.textContent = "Tags";
+            tagRow.appendChild(tagLab);
+            for (const e of tagEntries) {
+                const chip = document.createElement("span");
+                chip.className = "tag-chip";
+                chip.textContent = `${e.k} ${e.v.toFixed(2)}`;
+                tagRow.appendChild(chip);
+            }
+            panel.appendChild(tagRow);
+        }
+        // Compound-Präzision (falls Parts opChain haben)
+        const avgPrec = this._compoundAvgPrecision(bp);
+        if (avgPrec > 0) {
+            const precRow = document.createElement("div");
+            precRow.className = "stat-row";
+            const precLab = document.createElement("span");
+            precLab.className = "stat-label";
+            precLab.textContent = "Präzision";
+            precRow.appendChild(precLab);
+            const precChip = document.createElement("span");
+            precChip.className = "tag-chip";
+            precChip.textContent = avgPrec.toFixed(2);
+            precRow.appendChild(precChip);
+            panel.appendChild(precRow);
+        }
+    }
+
+    // V8.05 — Editor-Toggle. Persistent in localStorage (Spieler will
+    // den Editor meist geschlossen halten — die Werkstatt-Hauptarbeit
+    // läuft über Drag-Drop + Manipulator).
+    _workshopInstallEditorToggle() {
+        if (typeof document === "undefined") return;
+        const ws = this._ensureWorkshopState();
+        if (ws._editorToggleInstalled) return;
+        ws._editorToggleInstalled = true;
+        const btn = document.getElementById("workshop-editor-toggle");
+        const editor = document.getElementById("workshop-editor");
+        if (!btn || !editor) return;
+        // Initialer Zustand aus localStorage (Default: zugeklappt)
+        const stored = typeof localStorage !== "undefined" ? localStorage.getItem("anazh.workshop.editorOpen") : null;
+        const open = stored === "1";
+        editor.hidden = !open;
+        btn.setAttribute("aria-expanded", open ? "true" : "false");
+        btn.addEventListener("click", () => {
+            const wasOpen = btn.getAttribute("aria-expanded") === "true";
+            const newOpen = !wasOpen;
+            btn.setAttribute("aria-expanded", newOpen ? "true" : "false");
+            editor.hidden = !newOpen;
+            try {
+                if (typeof localStorage !== "undefined") {
+                    localStorage.setItem("anazh.workshop.editorOpen", newOpen ? "1" : "0");
+                }
+            } catch {
+                /* ignore */
+            }
+        });
+    }
+
+    // V8.05 — Del-Button-Handler. Entfernt den selektierten Part.
+    _workshopInstallDeleteButton() {
+        if (typeof document === "undefined") return;
+        const ws = this._ensureWorkshopState();
+        if (ws._deleteBtnInstalled) return;
+        ws._deleteBtnInstalled = true;
+        const btn = document.getElementById("workshop-delete-selected-part");
+        if (!btn) return;
+        btn.addEventListener("click", () => {
+            const wsLocal = this._ensureWorkshopState();
+            const idx = wsLocal.selectedPartIdx;
+            if (idx === null || idx === undefined) return;
+            const bp = this.state.blueprints[wsLocal.selectedBlueprint];
+            if (!bp || bp.builtIn) return;
+            this.removePartFromBlueprint(bp.name, idx);
+            wsLocal.selectedPartIdx = null;
+            this._renderWorkshopDOM();
+        });
     }
 
     // ============================================================
@@ -20712,12 +20861,16 @@ class AnazhRealm {
         ws._shapeDnDInstalled = true;
 
         // V8.03 — Material- und Farb-Palette zusätzlich rendern.
+        // V8.05 — Werkzeug-Palette als dritte Sub-Palette (Werkzeug-Drag-Drop
+        // auf Part wendet die Op an wie applyOpToPart).
         this._workshopRenderMaterialPalette();
         this._workshopRenderColorPalette();
+        this._workshopRenderToolPalette();
 
         const shapePalette = document.getElementById("workshop-shape-palette");
         const matPalette = document.getElementById("workshop-material-palette");
         const colorPalette = document.getElementById("workshop-color-palette");
+        const toolPalette = document.getElementById("workshop-tool-palette");
         const canvas = document.getElementById("workshop-preview-canvas");
         if (!canvas) return;
 
@@ -20747,12 +20900,14 @@ class AnazhRealm {
         installDragSource(shapePalette, ".workshop-shape-card", "data-shape", "application/x-anazh-shape");
         installDragSource(matPalette, ".workshop-material-card", "data-material", "application/x-anazh-material");
         installDragSource(colorPalette, ".workshop-color-swatch", "data-color", "application/x-anazh-color");
+        installDragSource(toolPalette, ".workshop-tool-card", "data-tool", "application/x-anazh-tool");
 
-        // Drop-Target: Canvas. Akzeptiert alle drei Marker.
+        // Drop-Target: Canvas. Akzeptiert alle vier Marker.
         const acceptedMarkers = [
             "application/x-anazh-shape",
             "application/x-anazh-material",
             "application/x-anazh-color",
+            "application/x-anazh-tool",
         ];
         canvas.addEventListener("dragover", (event) => {
             const ourDrag = acceptedMarkers.some((m) => event.dataTransfer.types.includes(m));
@@ -20769,7 +20924,8 @@ class AnazhRealm {
             const shape = event.dataTransfer.getData("application/x-anazh-shape");
             const material = event.dataTransfer.getData("application/x-anazh-material");
             const color = event.dataTransfer.getData("application/x-anazh-color");
-            if (!shape && !material && !color) return;
+            const tool = event.dataTransfer.getData("application/x-anazh-tool");
+            if (!shape && !material && !color && !tool) return;
             event.preventDefault();
             if (shape) {
                 this._workshopHandleShapeDrop(shape, event.clientX, event.clientY);
@@ -20777,8 +20933,86 @@ class AnazhRealm {
                 this._workshopHandleMaterialDrop(material, event.clientX, event.clientY);
             } else if (color) {
                 this._workshopHandleColorDrop(color, event.clientX, event.clientY);
+            } else if (tool) {
+                this._workshopHandleToolDrop(tool, event.clientX, event.clientY);
             }
         });
+    }
+
+    // V8.05 — Werkzeug-Palette rendern. Eine Card pro state.tools-Eintrag
+    // den der Spieler besitzt. Drag-Source-Marker = data-tool. Drop auf
+    // einen Part ruft applyOpToPart (selber Pfad wie das alte Editor-
+    // Apply-Dropdown, aber gestern-friendlich aus der Side-Palette).
+    _workshopRenderToolPalette() {
+        if (typeof document === "undefined") return;
+        const palette = document.getElementById("workshop-tool-palette");
+        if (!palette) return;
+        palette.innerHTML = "";
+        const owned = Array.isArray(this.state.player && this.state.player.tools) ? this.state.player.tools : [];
+        const tools = this.state.tools || {};
+        for (const name of owned) {
+            const t = tools[name];
+            if (!t) continue;
+            const card = document.createElement("div");
+            card.className = "workshop-tool-card";
+            card.setAttribute("draggable", "true");
+            card.setAttribute("data-tool", name);
+            const domLabel =
+                t.domain && AnazhRealm.TOOL_DOMAIN_LABELS
+                    ? AnazhRealm.TOOL_DOMAIN_LABELS[t.domain] || t.domain
+                    : "generisch";
+            card.setAttribute(
+                "title",
+                `${t.label || name} · ${t.opName} (${t.opClass}) · ${domLabel} · auf Part ziehen wendet Op an`
+            );
+            // Domain-Dot (V9b-Style)
+            if (t.domain && AnazhRealm.TOOL_DOMAIN_COLORS && AnazhRealm.TOOL_DOMAIN_COLORS[t.domain]) {
+                const dot = document.createElement("span");
+                dot.className = "workshop-tool-domain-dot";
+                dot.style.background = AnazhRealm.TOOL_DOMAIN_COLORS[t.domain];
+                card.appendChild(dot);
+            }
+            const nameEl = document.createElement("span");
+            nameEl.textContent = t.label || name;
+            card.appendChild(nameEl);
+            const precEl = document.createElement("span");
+            precEl.className = "tool-prec";
+            precEl.textContent = (t.precisionCap || 0).toFixed(2);
+            card.appendChild(precEl);
+            palette.appendChild(card);
+        }
+    }
+
+    // V8.05 — Tool-Drop: identifiziert den getroffenen Part via Raycast,
+    // ruft applyOpToPart (gleicher Pfad wie das Editor-Dropdown). Compound-
+    // Tags + Rolle + Affordances werden via _refreshBlueprintRoleEmergent
+    // (Hook in applyOpToPart) automatisch neu berechnet.
+    _workshopHandleToolDrop(toolName, clientX, clientY) {
+        const ws = this._ensureWorkshopState();
+        const bp = this.state.blueprints[ws.selectedBlueprint];
+        if (!bp || bp.builtIn) return;
+        const tool = this.state.tools && this.state.tools[toolName];
+        if (!tool) {
+            this.log(`Workshop-ToolDrop: unbekanntes Werkzeug '${toolName}'`, "INFO");
+            return;
+        }
+        const idx = this._workshopRaycastPartIdxAt(clientX, clientY);
+        if (idx === null) {
+            this.log("Workshop-ToolDrop: kein Part getroffen — drop direkt auf einen Part", "INFO");
+            return;
+        }
+        const result = this.applyOpToPart(bp.name, idx, toolName);
+        if (result && result.ok) {
+            this._renderWorkshopDOM();
+            this._workshopSetSelection(idx);
+            this.log(
+                `Workshop: Werkzeug '${toolName}' auf Part ${idx} angewandt (Präzision ${result.precision.toFixed(2)})`,
+                "INFO"
+            );
+        } else {
+            const reason = (result && result.reason) || "unknown";
+            this.log(`Workshop-ToolDrop: ${reason}`, "INFO");
+        }
     }
 
     // V8.03 — Material-Palette aus state.materials rendern. Eine Card pro

@@ -2697,13 +2697,157 @@
                 color: var(--violet-1);
                 letter-spacing: 0.5px;
             }
-            /* Welle 6.B Phase 2 — Manipulator-Modus-Bar */
+            /* Welle 6.B Phase 2 — Manipulator-Modus-Bar (V8.05: über Canvas) */
             #workshop-mode-bar {
                 display: flex;
                 gap: 4px;
-                margin: 4px 0 2px 0;
+                margin: 0 0 4px 0;
                 flex-wrap: wrap;
                 justify-content: center;
+            }
+            /* V8.05 — Stats-Panel direkt unter dem Canvas: zeigt emergente
+               Compound-Tags + Affordances + Rolle live. Spieler sieht beim
+               Bauen sofort was räumlich + tag-mäßig passiert. */
+            #workshop-stats-panel {
+                margin: 4px 0 0 0;
+                padding: 5px 7px;
+                background: rgba(40, 25, 10, 0.06);
+                border: 1px solid var(--parch-edge);
+                border-radius: 3px;
+                font-family: "JetBrains Mono", monospace;
+                font-size: 9px;
+                color: var(--parch-ink-soft);
+                line-height: 1.5;
+                min-height: 18px;
+            }
+            #workshop-stats-panel .stat-row {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 4px 8px;
+                align-items: center;
+            }
+            #workshop-stats-panel .stat-label {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 8px;
+                letter-spacing: 0.5px;
+                color: var(--brass-1);
+                text-transform: uppercase;
+                margin-right: 4px;
+            }
+            #workshop-stats-panel .tag-chip {
+                display: inline-flex;
+                align-items: center;
+                gap: 2px;
+                padding: 1px 5px;
+                background: rgba(40, 25, 10, 0.12);
+                border: 1px solid var(--brass-3);
+                border-radius: 2px;
+                font-size: 9px;
+            }
+            #workshop-stats-panel .affordance-chip {
+                padding: 1px 6px;
+                background: linear-gradient(180deg, rgba(176, 106, 217, 0.32), rgba(140, 80, 200, 0.16));
+                border: 1px solid var(--violet-1);
+                border-radius: 2px;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9px;
+                color: var(--parch-bg);
+                letter-spacing: 0.4px;
+            }
+            #workshop-stats-panel .role-chip {
+                padding: 1px 6px;
+                background: linear-gradient(180deg, rgba(212, 163, 115, 0.4), rgba(160, 110, 70, 0.18));
+                border: 1px solid var(--brass-1);
+                border-radius: 2px;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9px;
+                color: var(--parch-bg);
+                letter-spacing: 0.4px;
+            }
+            /* V8.05 — Del-Button unter der Form-Palette */
+            .workshop-delete-btn {
+                margin: 6px 0 0 0;
+                padding: 4px 6px;
+                background: linear-gradient(180deg, rgba(196, 72, 48, 0.18), rgba(140, 50, 30, 0.08));
+                border: 1px solid var(--iron-1);
+                border-radius: 3px;
+                color: var(--parch-ink);
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9px;
+                letter-spacing: 0.5px;
+                cursor: pointer;
+                text-align: center;
+                transition: opacity 0.15s ease;
+            }
+            .workshop-delete-btn:hover:not(:disabled) {
+                background: linear-gradient(180deg, rgba(196, 72, 48, 0.34), rgba(140, 50, 30, 0.18));
+                border-color: #c44830;
+            }
+            .workshop-delete-btn:disabled {
+                opacity: 0.35;
+                cursor: not-allowed;
+            }
+            /* V8.05 — Werkzeug-Palette analog Material/Color (gleiche Layout-Sprache) */
+            #workshop-tool-palette {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 3px;
+            }
+            .workshop-tool-card {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                padding: 3px 5px;
+                background: rgba(40, 25, 10, 0.08);
+                border: 1px solid var(--brass-3);
+                border-radius: 3px;
+                cursor: grab;
+                user-select: none;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 8px;
+                color: var(--parch-ink);
+            }
+            .workshop-tool-card:hover {
+                background: rgba(40, 25, 10, 0.22);
+                border-color: var(--brass-1);
+            }
+            .workshop-tool-card:active {
+                cursor: grabbing;
+            }
+            .workshop-tool-card.dragging {
+                opacity: 0.4;
+            }
+            .workshop-tool-card .tool-prec {
+                font-family: "JetBrains Mono", monospace;
+                color: var(--brass-2);
+                margin-left: auto;
+            }
+            /* V8.05 — Editor collapsible */
+            .workshop-editor-toggle {
+                width: 100%;
+                padding: 6px 10px;
+                background: rgba(40, 25, 10, 0.08);
+                border: 1px solid var(--brass-3);
+                border-radius: 3px;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 11px;
+                color: var(--parch-ink);
+                text-align: left;
+                cursor: pointer;
+                letter-spacing: 0.5px;
+                margin: 4px 0;
+            }
+            .workshop-editor-toggle:hover {
+                background: rgba(40, 25, 10, 0.18);
+            }
+            .workshop-editor-toggle .caret {
+                display: inline-block;
+                transition: transform 0.15s ease;
+                margin-right: 6px;
+                color: var(--brass-1);
+            }
+            .workshop-editor-toggle[aria-expanded="true"] .caret {
+                transform: rotate(90deg);
             }
             .workshop-mode-btn,
             .workshop-snap-btn {
@@ -3559,10 +3703,17 @@
                                 <span>Helix</span>
                             </div>
                         </div>
+                        <button
+                            type="button"
+                            id="workshop-delete-selected-part"
+                            class="workshop-delete-btn"
+                            title="Selektierten Part entfernen (Entf)"
+                            disabled
+                        >
+                            ✖ Part entfernen
+                        </button>
                     </aside>
                     <div id="workshop-preview-wrapper">
-                        <canvas id="workshop-preview-canvas"></canvas>
-                        <div id="workshop-readonly-banner" hidden>Eingebaut — zum Bearbeiten klonen</div>
                         <div id="workshop-mode-bar" role="group" aria-label="Manipulator-Modus">
                             <button
                                 type="button"
@@ -3605,18 +3756,31 @@
                                 Snap
                             </button>
                         </div>
+                        <canvas id="workshop-preview-canvas"></canvas>
+                        <div id="workshop-readonly-banner" hidden>Eingebaut — zum Bearbeiten klonen</div>
+                        <div id="workshop-stats-panel" aria-live="polite"></div>
                     </div>
-                    <aside id="workshop-side-palette-right" aria-label="Material- und Farb-Palette">
+                    <aside id="workshop-side-palette-right" aria-label="Material-/Werkzeug-/Farb-Palette">
                         <h4>Materialien</h4>
                         <div id="workshop-material-palette" role="group" aria-label="Material-Palette"></div>
+                        <h4>Werkzeuge</h4>
+                        <div id="workshop-tool-palette" role="group" aria-label="Werkzeug-Palette"></div>
                         <h4>Farben</h4>
                         <div id="workshop-color-palette" role="group" aria-label="Farb-Palette"></div>
                     </aside>
                 </div>
             </section>
-            <section class="section">
-                <h3>Editor</h3>
-                <div id="workshop-editor"></div>
+            <section class="section" id="workshop-editor-section">
+                <button
+                    type="button"
+                    id="workshop-editor-toggle"
+                    class="workshop-editor-toggle"
+                    aria-expanded="false"
+                    title="Editor-Tabelle ein-/ausklappen"
+                >
+                    <span class="caret">▸</span> Editor (Detail-Werte)
+                </button>
+                <div id="workshop-editor" hidden></div>
             </section>
         </aside>
         <aside class="drawer" data-drawer="einstellungen" aria-label="Einstellungen-Panel" hidden>
