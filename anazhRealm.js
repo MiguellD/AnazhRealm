@@ -636,7 +636,8 @@ class AnazhRealm {
         grok.lastSpoke = now;
         if (cfg) cfg.lastFired = now;
         this.grokRender(text);
-        this.log(`Grok: ${text}`, "INFO");
+        // Welle 6.X.4 F1 V8.13 — Begleiter-Name durchziehen statt hardcoded.
+        this.log(`${grok.companionName || "Grok"}: ${text}`, "INFO");
         return true;
     }
 
@@ -769,7 +770,7 @@ class AnazhRealm {
                         grok.lastSpoke = performance.now() / 1000;
                         if (cfg) cfg.lastFired = performance.now() / 1000;
                         this.grokRender(reply.say);
-                        this.log(`Grok (LLM): ${reply.say}`, "INFO");
+                        this.log(`${grok.companionName || "Grok"} (LLM): ${reply.say}`, "INFO");
                     } else {
                         // Stiller Fallback auf Pool, ohne den Cooldown neu zu setzen.
                         this.grokSpeak("journalEvent");
@@ -3253,15 +3254,17 @@ class AnazhRealm {
         if (!def) return false;
         const cfg = llm.providerConfig[llm.provider];
         if (def.requiresKey && (!cfg || !cfg.apiKey)) return false;
-        appendChatOutput("Grok denkt nach…");
+        // Welle 6.X.4 F1 V8.13 — Begleiter-Name in Chat-Output statt hardcoded.
+        const compName = (this.state.grok && this.state.grok.companionName) || "Grok";
+        appendChatOutput(`${compName} denkt nach…`);
         const reply = await this.llmCall(userText);
         if (reply.error) {
-            appendChatOutput(`(Grok schweigt: ${reply.error})`);
+            appendChatOutput(`(${compName} schweigt: ${reply.error})`);
             this.llmUpdateStatus();
             return true;
         }
         if (reply.say) {
-            appendChatOutput(`Grok: ${reply.say}`);
+            appendChatOutput(`${compName}: ${reply.say}`);
             if (typeof this.grokRender === "function") {
                 try {
                     this.grokRender(reply.say);
@@ -3638,7 +3641,8 @@ class AnazhRealm {
             }
             return;
         }
-        el.textContent = llm.inFlight ? "Grok denkt…" : `Aktiv: ${def.label} (${cfg.model}).`;
+        const compName = (this.state.grok && this.state.grok.companionName) || "Grok";
+        el.textContent = llm.inFlight ? `${compName} denkt…` : `Aktiv: ${def.label} (${cfg.model}).`;
     }
 
     llmRefreshModelOptions() {
@@ -21670,10 +21674,14 @@ class AnazhRealm {
         const stamFill = document.getElementById("stats-hud-stam-fill");
         const stamText = document.getElementById("stats-hud-stam-text");
         if (!hpFill || !hpText || !stamFill || !stamText) return;
-        const hp = Math.max(0, Math.round(this.state.hp || 0));
-        const hpMax = Math.max(1, Math.round(this.state.hpMax || 100));
-        const stam = Math.max(0, Math.round(this.state.stamina || 0));
-        const stamMax = Math.max(1, Math.round(this.state.staminaMax || 100));
+        // Welle 6.X.4 B3 Browser-Fix V8.13: HP/Stamina liegen auf state.player.*,
+        // NICHT auf state.* (mein V8.12 las falsche Felder, deshalb zeigte das
+        // HUD immer 100/100 während der Spieler-Drawer 134/140 zeigte).
+        const p = this.state.player || {};
+        const hp = Math.max(0, Math.round(p.hp || 0));
+        const hpMax = Math.max(1, Math.round(p.hpMax || 100));
+        const stam = Math.max(0, Math.round(p.stamina || 0));
+        const stamMax = Math.max(1, Math.round(p.staminaMax || 100));
         const hpRatio = Math.max(0, Math.min(1, hp / hpMax));
         const stamRatio = Math.max(0, Math.min(1, stam / stamMax));
         hpFill.setAttribute("width", String(158 * hpRatio));
@@ -22835,8 +22843,12 @@ class AnazhRealm {
                 }
                 return;
             }
-            this.state.keys[event.key.toLowerCase()] = true;
+            // Welle 6.X.4 V8.13 Bug-Fix — keys-Setzung NACH inInput-Check.
+            // Vorher landete jeder Buchstabe im Chat-Input auch in state.keys,
+            // sodass „was" eingeben den Avatar W-A-S laufen ließ. Im Chat-Feld
+            // bleibt state.keys unverändert (gibt der Loop nichts zum Lesen).
             if (inInput) return;
+            this.state.keys[event.key.toLowerCase()] = true;
             // Welle 6.C3 — Aktionen über Keybindings (event.code = Layout-
             // unabhängiger Code, z. B. "KeyF" statt "f"). 1-9 bleiben hard-
             // coded (Slot-Indizes, keine Aktion). Escape bleibt zusätzlich
@@ -22916,14 +22928,22 @@ class AnazhRealm {
         });
         // Welle 6.X.2 B4 (Audit 17.05.2026) — Scrollrad zyklt durch Hotbar-
         // Slots (Minecraft-Konvention). deltaY > 0 → nächster, < 0 → voriger.
-        // Modulo 9 erlaubt Rollover am Ende. Aktiv nur wenn Pointer-Lock an
-        // (Spieler im Spiel) und Inventar nicht offen. Im Bau-Modus bleibt
-        // der Wheel aktiv — Slot-Wechsel im Bau-Modus wechselt das Phantom
-        // (das nutzt selectHotbarSlot, der den Build-Mode übernimmt).
-        canvas.addEventListener(
+        // Modulo 9 erlaubt Rollover am Ende.
+        //
+        // **V8.13 Browser-Test-Fix**: Listener ist jetzt auf `window` (Capture)
+        // statt auf `canvas`. Bei Pointer-Lock leitet der Browser Wheel-Events
+        // auf das gelocked Element weiter, sodass canvas-Listener funktioniert.
+        // Bei NICHT-Pointer-Lock (Drawer offen) geht's auf den Drawer-Container,
+        // und der Canvas sieht das Event nicht. Window-Capture fängt alle.
+        // Die Werkstatt-CAD-Canvas hat einen eigenen Wheel-Listener mit
+        // `stopPropagation`, der unseren window-Listener gar nicht erreicht —
+        // CAD-Zoom bleibt also unverändert.
+        window.addEventListener(
             "wheel",
             (event) => {
                 if (this.state.inventoryOpen) return;
+                // Aktiv nur wenn Spieler IM Spiel ist (Pointer-Lock) — sonst
+                // würde Drawer-Scroll plötzlich die Hotbar zykeln.
                 if (!this.state.isPointerLocked) return;
                 event.preventDefault();
                 // buildMode.slotIndex trackt den aktiven Slot (auch wenn der
@@ -22934,7 +22954,7 @@ class AnazhRealm {
                 const next = (current + dir + 9) % 9;
                 this.selectHotbarSlot(next);
             },
-            { passive: false }
+            { passive: false, capture: true }
         );
         document.addEventListener("pointerlockchange", () => {
             this.state.isPointerLocked = document.pointerLockElement === canvas;

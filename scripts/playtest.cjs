@@ -10510,10 +10510,11 @@ function startSaveServer() {
                     out.tickStatsHudMethodExists = typeof r.tickStatsHud === "function";
 
                     // --- B3: tickStatsHud aktualisiert HP-Text + Bar-Width
-                    r.state.hp = 50;
-                    r.state.hpMax = 100;
-                    r.state.stamina = 75;
-                    r.state.staminaMax = 100;
+                    // V8.13 Fix: HP/Stamina liegen auf state.player.*, nicht state.*
+                    r.state.player.hp = 50;
+                    r.state.player.hpMax = 100;
+                    r.state.player.stamina = 75;
+                    r.state.player.staminaMax = 100;
                     // Force-Update durch Reset des Throttles
                     delete r.state._statsHudLastTick;
                     delete r.state._statsHudTooltipLastTick;
