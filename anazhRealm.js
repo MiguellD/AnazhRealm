@@ -10288,14 +10288,18 @@ class AnazhRealm {
         }
 
         // ### Shader-Material ###
+        // V8.28 6.G4.b B — Terrain-Shader liest Welt-Affinität pro Vertex.
         const vertexShader = `
+        attribute vec4 aField;
         varying vec2 vUv;
         varying float vHeight;
         varying vec3 vNormal;
+        varying vec4 vField;
         void main() {
             vUv = uv;
             vHeight = position.y;
             vNormal = normalize(normalMatrix * normal);
+            vField = aField;
             gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }
     `;
@@ -10304,6 +10308,7 @@ class AnazhRealm {
         varying vec2 vUv;
         varying float vHeight;
         varying vec3 vNormal;
+        varying vec4 vField;
         uniform vec3 lightDirection;
         uniform float weatherEffect;
         // V8.27 6.G4.a — Tag-Nacht synchronisiert. lightIntensity moduliert
@@ -10311,6 +10316,8 @@ class AnazhRealm {
         // den Grund-Schein (Mittag = 0.6, Mitternacht = 0.18).
         uniform float lightIntensity;
         uniform float ambientIntensity;
+        // V8.28 6.G4.b C — Cel-Shading-Stufen (2 = bold, 8 ≈ smooth).
+        uniform float celLevels;
         float random(vec2 st) {
             return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
         }
@@ -10325,44 +10332,44 @@ class AnazhRealm {
             return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
         }
         void main() {
-            vec3 grassColor = vec3(0.1, 0.6, 0.1);
-            vec3 sandColor = vec3(0.9, 0.8, 0.5);
-            vec3 rockColor = vec3(0.4, 0.4, 0.4);
-            vec3 dirtColor = vec3(0.4, 0.2, 0.1);
-            vec3 snowColor = vec3(0.9, 0.9, 1.0);
-            vec3 waterColor = vec3(0.1, 0.3, 0.6);
-            vec3 caveColor = vec3(0.2, 0.2, 0.2);
-            vec3 lavaColor = vec3(1.0, 0.5, 0.0);
+            // V8.28 6.G4.b B — die Grundfarbe EMERGIERT aus der Welt-
+            // Affinität, NICHT aus der Höhe. Dieselbe worldFieldAt-Sprache
+            // wie die Architektur-Verteilung (Vision §1.3 fraktal). Höhe
+            // wird sekundär (Schnee oben, Sand/Geröll in tiefen Senken).
+            float lebendig = vField.x;
+            float dichte   = vField.y;
+            float glut     = vField.z;
+            float magie    = vField.w;
+            vec3 stoneCol = vec3(0.42, 0.44, 0.49); // dichte → grau-bläulich
+            vec3 earthCol = vec3(0.27, 0.49, 0.19); // lebendig → satt-grün-erdig
+            vec3 lavaCol  = vec3(0.46, 0.20, 0.11); // glut → rot-braun vulkanisch
+            // Stein ist die Saat; lebendig blendet Erdgrün ein, glut Vulkan.
+            vec3 color = stoneCol;
+            color = mix(color, earthCol, smoothstep(0.25, 0.85, lebendig));
+            color = mix(color, lavaCol, smoothstep(0.38, 0.92, glut));
+            // magie ist ein SCHIMMER über allem (nicht sättigend) — das
+            // normal-Magische hebt sich aus dem Normalen, ersetzt es nicht.
+            vec3 violet = vec3(0.55, 0.36, 0.86);
+            color = mix(color, violet, smoothstep(0.55, 1.0, magie) * 0.33);
+            // Höhe sekundär: Schnee auf Gipfeln, helle Senken-Ablagerung.
             float height = vHeight;
-            vec3 color;
-            if (height < -20.0) {
-                color = caveColor;
-            } else if (height < -10.0) {
-                color = waterColor;
-            } else if (height < -5.0) {
-                color = mix(waterColor, grassColor, (height + 10.0) / 5.0);
-            } else if (height < 0.0) {
-                color = mix(grassColor, dirtColor, (height + 5.0) / 5.0);
-            } else if (height < 10.0) {
-                color = mix(dirtColor, sandColor, height / 10.0);
-            } else if (height < 30.0) {
-                color = mix(sandColor, rockColor, (height - 10.0) / 20.0);
-            } else if (height < 80.0) {
-                color = mix(rockColor, snowColor, (height - 30.0) / 50.0);
-            } else {
-                color = mix(snowColor, lavaColor, (height - 80.0) / 20.0);
-            }
-            float n1 = noise(vUv * 2.0);
-            float n2 = noise(vUv * 5.0);
-            float n3 = noise(vUv * 10.0);
-            color += vec3(n1 * 0.05 + n2 * 0.03 + n3 * 0.02);
+            color = mix(color, vec3(0.92, 0.93, 1.0), smoothstep(12.0, 42.0, height));
+            color = mix(color, vec3(0.78, 0.72, 0.52), smoothstep(-2.0, -14.0, height));
+            // Townscaper-Style: leichter per-Vertex-Noise-Jitter für Detail.
+            float n1 = noise(vUv * 3.0);
+            float n2 = noise(vUv * 9.0);
+            color += vec3((n1 - 0.5) * 0.07 + (n2 - 0.5) * 0.035);
             color = mix(color, color * 0.7, weatherEffect);
             // V8.27 6.G4.a — Diffuse + Ambient mit Tag-Nacht-Intensities.
-            // Wrapped Lambert (smoothstep auf negativen Anteil) für sanfteren
-            // Schatten-Übergang — vermeidet harten Cut bei Normal · Light < 0.
+            // Wrapped Lambert (half-Lambert) für sanfteren Schatten-Übergang.
             float ndotl = dot(vNormal, normalize(lightDirection));
-            float diffuse = max(ndotl * 0.5 + 0.5, 0.0); // half-Lambert/wrap
-            diffuse = diffuse * diffuse; // Squaring schärft das Mittel-Tone
+            float diffuse = max(ndotl * 0.5 + 0.5, 0.0);
+            diffuse = diffuse * diffuse;
+            // V8.28 6.G4.b C — Cel-Shading: diffuse in celLevels Stufen
+            // quantisieren. celLevels hoch ≈ smooth, niedrig = harte Linien.
+            if (celLevels >= 1.5) {
+                diffuse = (floor(diffuse * celLevels) + 0.5) / celLevels;
+            }
             vec3 ambient = color * ambientIntensity;
             vec3 diffuseColor = color * diffuse * lightIntensity;
             vec3 finalColor = ambient + diffuseColor;
@@ -10380,6 +10387,8 @@ class AnazhRealm {
                 // werden in _applyDayNightToScene live überschrieben.
                 lightIntensity: { value: 1.0 },
                 ambientIntensity: { value: 0.45 },
+                // V8.28 6.G4.b C — Cel-Shading-Stufen (Atmosphäre-Slider).
+                celLevels: { value: (this.state.atmosphere && this.state.atmosphere.celLevels) || 4 },
             },
             side: THREE.DoubleSide,
             depthTest: true,
@@ -10941,6 +10950,8 @@ class AnazhRealm {
         geometry.setIndex(indices);
         geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
         geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+        // V8.28 6.G4.b B — Welt-Affinität pro Vertex (Terrain-Shader-Farbe)
+        this._attachFieldAttribute(geometry);
         geometry.computeVertexNormals();
 
         const positions = geometry.attributes.position.array;
@@ -11386,6 +11397,8 @@ class AnazhRealm {
         geometry.setIndex(indices);
         geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
         geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+        // V8.28 6.G4.b B — Welt-Affinität pro Vertex (Terrain-Shader-Farbe)
+        this._attachFieldAttribute(geometry);
         geometry.computeVertexNormals();
         geometry.computeBoundingSphere();
 
@@ -11555,6 +11568,11 @@ class AnazhRealm {
             // Reload soll mit stabilem Wetter starten).
             timeOfDay: typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5,
             dayLengthMinutes: this.state.dayLengthMinutes || 8,
+            // V8.28 6.G4.b — Atmosphäre-Slider (celLevels + fogDistance).
+            atmosphere: {
+                celLevels: (this.state.atmosphere && this.state.atmosphere.celLevels) || 4,
+                fogDistance: (this.state.atmosphere && this.state.atmosphere.fogDistance) || 1.0,
+            },
             // Ring 5: Spieler-Seele (visuelle Form). Beim Load wird sie nach
             // dem playerMesh-Bau angewandt — kein Body-Recreate.
             playerSoul: this.state.player.soul || "human",
@@ -12397,6 +12415,14 @@ class AnazhRealm {
             if (state.dayLengthMinutes >= min && state.dayLengthMinutes <= max) {
                 this.state.dayLengthMinutes = state.dayLengthMinutes;
             }
+        }
+        // V8.28 6.G4.b — Atmosphäre-Slider wiederherstellen (defensive Clamps).
+        if (state.atmosphere && typeof state.atmosphere === "object") {
+            if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 4, fogDistance: 1.0 };
+            const cl = Number(state.atmosphere.celLevels);
+            if (Number.isFinite(cl)) this.state.atmosphere.celLevels = Math.max(2, Math.min(8, Math.round(cl)));
+            const fd = Number(state.atmosphere.fogDistance);
+            if (Number.isFinite(fd)) this.state.atmosphere.fogDistance = Math.max(0.3, Math.min(2.0, fd));
         }
         // Lights+Skybox sofort neu aus restauriertem timeOfDay setzen
         if (typeof this._applyDayNightToScene === "function") {
@@ -15445,12 +15471,16 @@ class AnazhRealm {
                 matOpts.transparent = true;
                 matOpts.opacity = part.opacity;
             }
-            // V8.27 6.G4.a — MeshLambertMaterial statt Basic. Reagiert auf
-            // DirectionalLight + AmbientLight + HemisphereLight. Self-Shadow
-            // entsteht automatisch (Wand die von der Sonne wegzeigt = dunkel).
-            // Vision-Wirkung: jede Architektur, jeder Spieler-Soul, jede
-            // Kreatur atmet jetzt mit der Tag-Nacht-Schicht.
-            const mat = new THREE.MeshLambertMaterial(matOpts);
+            // V8.28 6.G4.b C — MeshToonMaterial statt Lambert (V8.27 war
+            // Lambert). Reagiert auf dieselben Lichter (Directional +
+            // Ambient + Hemisphere), aber die gradientMap quantisiert das
+            // Sonnen-Licht in Cel-Stufen — Studio-Ghibli-Look. Slider-
+            // steuerbar: 2 Stufen = harte Cel-Linie, 8 ≈ smooth. Ambient +
+            // Hemisphere bleiben smooth → Cel-Gradient zur Sonne, weicher
+            // Himmel-Fill. gradientMap ist geteilt (state.toonGradientMap).
+            if (!this.state.toonGradientMap) this._refreshToonGradient();
+            matOpts.gradientMap = this.state.toonGradientMap;
+            const mat = new THREE.MeshToonMaterial(matOpts);
             materials.push(mat);
             const mesh = new THREE.Mesh(geom, mat);
             const pos = part.position || { x: 0, y: 0, z: 0 };
@@ -17525,6 +17555,90 @@ class AnazhRealm {
             glut: n01(f.glutNoise.noise2D(x * s + 500, z * s + 700)),
             magieleitung: n01(f.magieNoise.noise2D(x * s - 333, z * s + 999)),
         };
+    }
+
+    // V8.28 6.G4.b B — Welt-Affinität pro Terrain-Vertex als vec4-Attribut.
+    // Der Terrain-Shader liest worldFieldAt (lebendig/dichte/glut/magie) und
+    // leitet daraus die Grundfarbe ab — dieselbe Sprache wie die Architektur-
+    // Verteilung (W6.G P2). Vision §1.3 fraktal: ein Feld, das WAS-wo-wächst
+    // UND WIE-der-Boden-aussieht regelt. Wird beim Chunk-Bau aufgerufen, NACH
+    // setAttribute("position"). Vertices liegen in Welt-Koords (Chunks haben
+    // mesh.position = 0,0,0), also kann worldFieldAt direkt position lesen.
+    _attachFieldAttribute(geometry) {
+        const pos = geometry && geometry.getAttribute ? geometry.getAttribute("position") : null;
+        if (!pos) return;
+        const count = pos.count;
+        const field = new Float32Array(count * 4);
+        for (let i = 0; i < count; i++) {
+            const f = this.worldFieldAt(pos.getX(i), pos.getZ(i));
+            field[i * 4] = f.lebendig;
+            field[i * 4 + 1] = f.dichte;
+            field[i * 4 + 2] = f.glut;
+            field[i * 4 + 3] = f.magieleitung;
+        }
+        geometry.setAttribute("aField", new THREE.BufferAttribute(field, 4));
+    }
+
+    // V8.28 6.G4.b C — Cel-Shading gradientMap für MeshToonMaterial.
+    // Architekturen + Soul + Kreaturen werden als MeshToonMaterial gebaut;
+    // die gradientMap quantisiert das direkte Sonnen-Licht in Stufen.
+    // celLevels niedrig (2) = harte Cel-Linie, hoch (8) ≈ smooth.
+    //
+    // Trick: die Textur ist IMMER 8 px breit, aber mit nur celLevels
+    // distinkten Stufen gefüllt. So bleibt die Textur-Größe konstant —
+    // ein Slider-Wechsel updated nur die Pixel-Daten + needsUpdate, KEINE
+    // neue Textur, KEINE Material-Neuzuweisung über alle Meshes.
+    _refreshToonGradient() {
+        if (typeof THREE === "undefined") return;
+        const levels = (this.state.atmosphere && this.state.atmosphere.celLevels) || 4;
+        const n = Math.max(2, Math.min(8, Math.round(levels)));
+        const W = 8;
+        if (!this.state.toonGradientMap) {
+            const data = new Uint8Array(W * 4);
+            const tex = new THREE.DataTexture(data, W, 1, THREE.RGBAFormat);
+            tex.minFilter = THREE.NearestFilter;
+            tex.magFilter = THREE.NearestFilter;
+            tex.generateMipmaps = false;
+            this.state.toonGradientMap = tex;
+        }
+        const data = this.state.toonGradientMap.image.data;
+        for (let i = 0; i < W; i++) {
+            const step = Math.min(n - 1, Math.floor((i / W) * n)); // 0..n-1
+            const v = Math.round((step / (n - 1)) * 255);
+            data[i * 4] = v;
+            data[i * 4 + 1] = v;
+            data[i * 4 + 2] = v;
+            data[i * 4 + 3] = 255;
+        }
+        this.state.toonGradientMap.needsUpdate = true;
+        // Terrain-Shader (eigener Custom-Shader) parallel synchronisieren.
+        if (this.state.terrainMaterial && this.state.terrainMaterial.uniforms) {
+            const u = this.state.terrainMaterial.uniforms.celLevels;
+            if (u) u.value = n;
+        }
+    }
+
+    // V8.28 6.G4.b C — Mutations-Pfad für den Cel-Shading-Slider. Setzt
+    // state.atmosphere.celLevels, regeneriert die gradientMap, persistiert.
+    setCelLevels(levels) {
+        const n = Math.max(2, Math.min(8, Math.round(Number(levels) || 4)));
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 4, fogDistance: 1.0 };
+        this.state.atmosphere.celLevels = n;
+        this._refreshToonGradient();
+        if (typeof this.saveState === "function") this.saveState();
+        return n;
+    }
+
+    // V8.28 6.G4.b C — Mutations-Pfad für den Fog-Distanz-Slider.
+    // fogDistance ist ein Multiplikator (0.3 dicht .. 2.0 weit) auf
+    // Fog-near/far. Die echten Werte setzt _applyDayNightToScene.
+    setFogDistance(mult) {
+        const m = Math.max(0.3, Math.min(2.0, Number(mult) || 1.0));
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 4, fogDistance: 1.0 };
+        this.state.atmosphere.fogDistance = m;
+        if (typeof this._applyDayNightToScene === "function") this._applyDayNightToScene();
+        if (typeof this.saveState === "function") this.saveState();
+        return m;
     }
 
     // Affinity = wie stark resonieren die Compound-Tags eines Bauplans mit
@@ -22793,10 +22907,13 @@ class AnazhRealm {
             const fogG = (skyG + (hl ? hl.groundColor.g : 0.25)) / 2;
             const fogB = (skyB + (hl ? hl.groundColor.b : 0.2)) / 2;
             fog.color.setRGB(fogR, fogG, fogB);
-            // Fog-Distanz: rainy macht enger (60..220), sunny weiter (80..320)
+            // V8.28 6.G4.b C — Fog deutlich näher (war 80..320, kaum
+            // erkennbar). sunny 40..170, rainy 25..105. fogDistance-Slider
+            // ist ein Multiplikator (0.3 dicht .. 2.0 weit).
             const rainyMix = this.state.weather === "rainy" ? 1 : 0;
-            fog.near = 80 - rainyMix * 20;
-            fog.far = 320 - rainyMix * 100;
+            const fogMult = (this.state.atmosphere && this.state.atmosphere.fogDistance) || 1.0;
+            fog.near = (40 - rainyMix * 15) * fogMult;
+            fog.far = (170 - rainyMix * 65) * fogMult;
         }
         // V8.27 6.G4.a — Terrain-Shader-Uniforms synchronisieren falls vorhanden.
         // Der Custom-Shader hat lightDirection + weatherEffect; wir setzen die
@@ -23443,6 +23560,31 @@ class AnazhRealm {
                 const v = parseInt(tod.value, 10) / 1000;
                 this.setTimeOfDay(v);
                 if (todVal) todVal.textContent = this._timeOfDayLabel(v).replace(/^[^\s]+\s/, "");
+            });
+        }
+
+        // V8.28 6.G4.b C — Atmosphäre-Slider: Cel-Stufen + Fog-Distanz.
+        const cel = document.getElementById("slider-cel");
+        const celVal = document.getElementById("slider-cel-val");
+        if (cel) {
+            const c0 = (this.state.atmosphere && this.state.atmosphere.celLevels) || 4;
+            cel.value = String(c0);
+            if (celVal) celVal.textContent = String(c0);
+            cel.addEventListener("input", () => {
+                const v = this.setCelLevels(parseInt(cel.value, 10));
+                if (celVal) celVal.textContent = String(v);
+            });
+        }
+        const fogS = document.getElementById("slider-fog");
+        const fogVal = document.getElementById("slider-fog-val");
+        if (fogS) {
+            const f0 = (this.state.atmosphere && this.state.atmosphere.fogDistance) || 1.0;
+            fogS.value = String(Math.round(f0 * 100));
+            if (fogVal) fogVal.textContent = `${Math.round(f0 * 100)} %`;
+            fogS.addEventListener("input", () => {
+                const pct = parseInt(fogS.value, 10);
+                this.setFogDistance(pct / 100);
+                if (fogVal) fogVal.textContent = `${pct} %`;
             });
         }
     }

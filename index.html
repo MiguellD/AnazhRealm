@@ -4516,6 +4516,28 @@
                     <span class="slider-value" id="slider-timeofday-val">12:00</span>
                 </div>
             </section>
+            <!-- V8.28 6.G4.b — Atmosphäre-Regler. Cel-Shading-Stufen: wie
+                 die Schatten auf Strukturen abgestuft werden (2 = harte
+                 Cel-Linien wie Studio-Ghibli, 8 ≈ weicher Verlauf). Fog-
+                 Distanz: wie nah der atmosphärische Dunst beginnt. -->
+            <section class="section" id="atmosphere-section">
+                <h3>Atmosphäre</h3>
+                <p class="drawer-hint">
+                    Cel-Stufen formen die Licht-Abstufung auf Strukturen — wenig Stufen geben harte gemalte Linien
+                    (Studio-Ghibli-Look), viele einen weichen Verlauf. Fog-Distanz regelt, wie nah der Welt-Dunst
+                    beginnt.
+                </p>
+                <div class="slider-row">
+                    <label for="slider-cel">Cel-Stufen</label>
+                    <input type="range" id="slider-cel" min="2" max="8" value="4" />
+                    <span class="slider-value" id="slider-cel-val">4</span>
+                </div>
+                <div class="slider-row">
+                    <label for="slider-fog">Fog-Distanz</label>
+                    <input type="range" id="slider-fog" min="30" max="200" value="100" />
+                    <span class="slider-value" id="slider-fog-val">100 %</span>
+                </div>
+            </section>
             <!-- Welle 6.X.4 F1 (Audit 17.05.2026) — Personalisierung der
                  LLM-Konversation. Begleiter bekommt einen Namen (Default
                  „Grok"), Spieler hat einen Namen (Default „Schöpfer").

@@ -11239,21 +11239,23 @@ function startSaveServer() {
                     r._applyDayNightToScene();
 
                     // 4. Architektur-Material ist Lambert (nach V8.27 Build-Pipeline)
-                    // Erstelle eine Test-Architektur und prüfe Material-Typ
-                    let hasLambertMaterial = false;
+                    // V8.28 — Architektur-Material ist jetzt MeshToonMaterial
+                    // (Cel-Shading). Reagiert auf Licht wie Lambert, aber
+                    // quantisiert das Sonnen-Diffuse über die gradientMap.
+                    let hasToonMaterial = false;
                     if (typeof r.spawnArchitecture === "function" && r.state.blueprints && r.state.blueprints.stein_block) {
                         const arch = r.spawnArchitecture("stein_block", { x: 0, y: 10, z: 0 }, { silent: true });
                         if (arch && arch.mesh) {
                             arch.mesh.traverse((node) => {
-                                if (node.isMesh && node.material && node.material.isMeshLambertMaterial) {
-                                    hasLambertMaterial = true;
+                                if (node.isMesh && node.material && node.material.isMeshToonMaterial) {
+                                    hasToonMaterial = true;
                                 }
                             });
                             // Cleanup
                             if (typeof r.removeArchitecture === "function") r.removeArchitecture(arch);
                         }
                     }
-                    out.architectureUsesLambert = hasLambertMaterial;
+                    out.architectureUsesLambert = hasToonMaterial;
 
                     // 5. Terrain-Shader hat lightIntensity + ambientIntensity-Uniforms
                     if (r.state.groundChunks && r.state.groundChunks.length > 0) {
@@ -11306,7 +11308,7 @@ function startSaveServer() {
                 check("V8.27: HemisphereLight.intensity folgt Sonnenhöhe", v827Results.hemiIntensityFollowsDayCycle);
                 check("V8.27: HemisphereLight.groundColor.g hoch in lebendig-Region", v827Results.groundColorFollowsLebendig);
                 check("V8.27: HemisphereLight.groundColor.r hoch in glut-Region", v827Results.groundColorFollowsGlut);
-                check("V8.27: Architektur-Material ist MeshLambertMaterial (statt Basic)", v827Results.architectureUsesLambert);
+                check("V8.28: Architektur-Material ist MeshToonMaterial (Cel-Shading)", v827Results.architectureUsesLambert);
                 check("V8.27: Terrain-Shader hat lightIntensity-Uniform", v827Results.terrainHasLightIntensityUniform);
                 check("V8.27: Terrain-Shader hat ambientIntensity-Uniform", v827Results.terrainHasAmbientIntensityUniform);
                 check("V8.27: Terrain-lightIntensity folgt Tag-Nacht (Mittag > Nacht)", v827Results.terrainLightFollowsDayCycle);
