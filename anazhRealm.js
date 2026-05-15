@@ -14107,52 +14107,127 @@ class AnazhRealm {
         return out;
     }
 
-    // moveable — Fahrzeug-Signatur. Mindestens 2 Räder (Cylinder/Torus) am
-    // Boden des Compounds (y < wheelMaxY) PLUS Antriebs-Tag (magieleitung
-    // ODER stromleitung) über Schwelle. Vision: das Compound trägt die
-    // Spuren eines Fahrzeugs — Räder unten + leitfähiger Kern.
+    // ----- Räumliche Helper (Form-agnostisch) -----
+
+    // Compound-BBox aus Parts-Positionen. Liefert {min:{x,y,z}, max:{x,y,z}}.
+    // Vision-relevant: alle „unten/oben/Achse"-Fragen werden RELATIV zur
+    // bbox beantwortet, nicht via absolute Y-Werte.
+    _compoundBBox(bp) {
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return null;
+        const min = { x: Infinity, y: Infinity, z: Infinity };
+        const max = { x: -Infinity, y: -Infinity, z: -Infinity };
+        for (const p of bp.parts) {
+            const pos = p.position || { x: 0, y: 0, z: 0 };
+            if (pos.x < min.x) min.x = pos.x;
+            if (pos.y < min.y) min.y = pos.y;
+            if (pos.z < min.z) min.z = pos.z;
+            if (pos.x > max.x) max.x = pos.x;
+            if (pos.y > max.y) max.y = pos.y;
+            if (pos.z > max.z) max.z = pos.z;
+        }
+        return { min, max };
+    }
+
+    // Parts in der unteren Hälfte der Compound-bbox (relativ zur Geometrie
+    // des Bauplans, nicht zur Welt). Vision: „Räder sitzen am Boden des
+    // Compounds" emergiert ohne absolute Y-Schwelle — egal ob das Compound
+    // bei y=0 oder y=10 sitzt.
+    _partsBelowMidline(bp, factor) {
+        const bbox = this._compoundBBox(bp);
+        if (!bbox) return [];
+        const f = typeof factor === "number" ? factor : 0.5;
+        const cutoff = bbox.min.y + (bbox.max.y - bbox.min.y) * f;
+        return bp.parts.filter((p) => {
+            const y = (p.position && p.position.y) || 0;
+            return y <= cutoff;
+        });
+    }
+
+    // Axiale Ausrichtungs-Stärke: wieviel der Parts liegen entlang einer
+    // dominanten Achse? Liefert {axis: "x"|"y"|"z", alignmentRatio: 0..1,
+    // count: N}. Vision: ein Teleskop ist „Compound mit Parts auf einer
+    // Linie" — egal welche Shapes. Die räumliche Konfiguration entscheidet,
+    // nicht die Shape-Liste.
+    _axialAlignment(bp) {
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length < 2) {
+            return { axis: null, alignmentRatio: 0, count: 0 };
+        }
+        const bbox = this._compoundBBox(bp);
+        const span = {
+            x: bbox.max.x - bbox.min.x,
+            y: bbox.max.y - bbox.min.y,
+            z: bbox.max.z - bbox.min.z,
+        };
+        // Dominante Achse = jene mit größter Spannweite
+        let dominantAxis = "x";
+        if (span.y > span.x && span.y > span.z) dominantAxis = "y";
+        else if (span.z > span.x && span.z > span.y) dominantAxis = "z";
+        // Toleranz: Parts gelten als „auf der Achse" wenn ihre Abweichung
+        // von der Mittellinie (in den ANDEREN beiden Achsen) ≤ 25 % der
+        // jeweiligen Spannweite ist (min. 0.2 absolut für sehr kleine
+        // Compounds).
+        const otherAxes = ["x", "y", "z"].filter((a) => a !== dominantAxis);
+        const centers = {};
+        for (const a of otherAxes) centers[a] = (bbox.min[a] + bbox.max[a]) / 2;
+        const tolerances = {};
+        for (const a of otherAxes) tolerances[a] = Math.max(0.2, span[a] * 0.25);
+        let onAxis = 0;
+        for (const p of bp.parts) {
+            const pos = p.position || { x: 0, y: 0, z: 0 };
+            let aligned = true;
+            for (const a of otherAxes) {
+                if (Math.abs(pos[a] - centers[a]) > tolerances[a]) {
+                    aligned = false;
+                    break;
+                }
+            }
+            if (aligned) onAxis++;
+        }
+        return {
+            axis: dominantAxis,
+            alignmentRatio: onAxis / bp.parts.length,
+            count: onAxis,
+        };
+    }
+
+    // ----- Affordance-Tester (Form-agnostisch, Tag-Sprache + räumlich) -----
+
+    // moveable — bewegliches Compound (Fahrzeug-Signatur).
+    // Vision-rein: KEINE Form-Whitelist. Was das Compound bewegt:
+    //   1. Stütz-Konfiguration: ≥2 Parts in unterer bbox-Hälfte (relativ!)
+    //   2. Trägheit: Compound trägt dichte-Tag über Schwelle
+    //   3. Antrieb: magieleitung ODER stromleitung über Schwelle
+    // Ein Schlitten mit dichten Steinen unten + leitfähigem Magie-Kristall
+    // oben rollt genauso wie ein Wagen mit Rad-Cylindern — die räumliche
+    // Geste „Stütze + Antrieb" zählt, nicht der Shape-Name.
     _isMoveable(bp) {
         const T = AnazhRealm.AFFORDANCE_THRESHOLDS.moveable;
-        let wheelCount = 0;
-        for (const p of bp.parts) {
-            if (!AnazhRealm.WHEEL_SHAPES.has(p.shape)) continue;
-            const y = (p.position && p.position.y) || 0;
-            if (y <= T.wheelMaxY) wheelCount++;
-        }
-        if (wheelCount < T.minWheels) return false;
+        const support = this._partsBelowMidline(bp, T.midlineFactor);
+        if (support.length < T.minSupportParts) return false;
         const tags = this.computeCompoundTags(bp) || {};
+        if ((tags.dichte || 0) < T.dichteMin) return false;
         const antrieb = Math.max(tags.magieleitung || 0, tags.stromleitung || 0);
         return antrieb >= T.antriebTagMin;
     }
 
-    // magnifying — Teleskop-Signatur. Compound hat transparenten Charakter
-    // (compound-tag transparent ≥ Schwelle) UND mindestens ein Linsen-Part
-    // (Sphere/Cylinder aus transparentem Material) UND mindestens eine
-    // Achsen-Form (Cone oder Cylinder als Tubus).
+    // magnifying — optisches Compound (Teleskop-Signatur).
+    // Vision-rein: KEINE Form-Whitelist. Was das Compound vergrößert:
+    //   1. transparent-Tag über Schwelle (Licht durchläuft)
+    //   2. Axiale Ausrichtung: ≥60 % der Parts auf einer Achse
+    //   3. Mindestens 2 Parts auf der Achse
+    // Eine Reihe von Quarz-Sphären auf einer Linie wirkt optisch — egal
+    // ob Cone-Cylinder oder Sphere-Sphere-Sphere die Achse bildet.
     _isMagnifying(bp) {
         const T = AnazhRealm.AFFORDANCE_THRESHOLDS.magnifying;
         const tags = this.computeCompoundTags(bp) || {};
         if ((tags.transparent || 0) < T.transparentMin) return false;
-        // Linsen-Part: transparente Sphere/Cylinder
-        let lenses = 0;
-        let axes = 0;
-        for (const p of bp.parts) {
-            const mat = p.material && this.state.materials && this.state.materials[p.material];
-            const matTrans = mat && mat.tags && mat.tags.transparent;
-            if (AnazhRealm.LENS_SHAPES.has(p.shape) && (matTrans || 0) >= T.lensMaterialTagMin) {
-                lenses++;
-            }
-            if (AnazhRealm.AXIS_SHAPES.has(p.shape)) {
-                axes++;
-            }
-        }
-        return lenses >= 1 && axes >= 1;
+        const align = this._axialAlignment(bp);
+        return align.alignmentRatio >= T.axialAlignmentMin && align.count >= T.minAxialParts;
     }
 
-    // focusing — Brennglas-Signatur. Compound hat transparenten Charakter
-    // (Licht durchlässt) PLUS wärmeleitung (Wärme konzentriert sich). Vision:
-    // wer ein transparentes Compound mit wärmeleitendem Material baut, hat
-    // unbewusst die Form eines Brennglases.
+    // focusing — brennfähiges Compound (Brennglas-Signatur).
+    // Reine Tag-Sprache: transparent + wärmeleitung. Form irrelevant —
+    // jede Geometrie die diese Tag-Kombination trägt kann Licht bündeln.
     _isFocusing(bp) {
         const T = AnazhRealm.AFFORDANCE_THRESHOLDS.focusing;
         const tags = this.computeCompoundTags(bp) || {};
@@ -23171,47 +23246,42 @@ AnazhRealm.WORKSHOP_PROXIMITY_M = 10;
 AnazhRealm.MACHINE_PRECISION_BONUS = 0.05;
 
 // ============================================================
-// Welle 10b — Compound-Tag-Affordances. Welt liest die Tag+Form-
-// Signatur eines Bauplans und leitet emergent Verhaltens-Flags ab:
-// moveable, magnifying, focusing. KEINE Tabelle „Bauplan-Name X ist
-// Auto" — eine Welt-Lese-Funktion entscheidet aus Material × Form ×
-// räumlicher Konfiguration was das Compound IST.
+// Welle 10b — Compound-Tag-Affordances. Welt liest die Tag+räumliche
+// Konfiguration eines Bauplans und leitet emergent Verhaltens-Flags
+// ab: moveable, magnifying, focusing. KEINE Form-Whitelists, KEINE
+// Tabelle „Bauplan-Name X ist Auto" — eine Welt-Lese-Funktion entscheidet
+// aus Material × räumlicher Verteilung was das Compound IST.
 //
-// Drei Starter-Affordances (mehr kommen schrittweise):
-//   moveable    — bewegliches Compound (Fahrzeug): ≥2 Räder unten +
+// Schöpfer-Korrektur (16.05.2026): Form-Whitelists (cylinder/torus als
+// „Räder", cone/cylinder als „Achsen") waren Hardcode-Brüche im Vision-
+// Pfad. Vision-rein: emergent aus Tag-Sprache + räumlicher Topologie.
+//
+// Drei Starter-Affordances:
+//   moveable    — bewegliches Compound: Stütz-Konfiguration (≥2 Parts
+//                 in unterer bbox-Hälfte) + dichte (Trägheit) +
 //                 Antriebs-Tag (magieleitung oder stromleitung)
-//   magnifying  — optisches Compound (Teleskop): transparente Linse(n)
-//                 + axiale Form (Cone/Cylinder als Achse)
-//   focusing    — brennfähiges Compound (Brennglas): transparent +
-//                 wärmeleitung über Schwellen
+//   magnifying  — optisches Compound: transparent ≥ Schwelle + Parts
+//                 entlang einer Achse ausgerichtet (axialer Aufbau)
+//   focusing    — brennfähiges Compound: transparent + wärmeleitung
+//                 (reine Tag-Sprache, keine Form-Erwartung)
 // ============================================================
 AnazhRealm.AFFORDANCE_THRESHOLDS = Object.freeze({
     moveable: Object.freeze({
-        minWheels: 2,
-        wheelMaxY: 0.6, // Räder sitzen am Boden des Compounds
-        antriebTagMin: 0.3, // magieleitung ODER stromleitung dieser Stärke
+        minSupportParts: 2, // ≥2 Parts in unterer bbox-Hälfte
+        midlineFactor: 0.5, // unten = unter bbox-Mitte (relativ!)
+        dichteMin: 0.3, // Compound muss Trägheit haben
+        antriebTagMin: 0.3, // magieleitung ODER stromleitung
     }),
     magnifying: Object.freeze({
-        transparentMin: 0.5, // Compound braucht klares Material
-        lensMaterialTagMin: 0.5, // mind. eine Linse mit transparent ≥ 0.5
+        transparentMin: 0.5, // Compound transparent-Tag
+        axialAlignmentMin: 0.6, // ≥60 % der Parts auf einer Linie
+        minAxialParts: 2, // mind. 2 Parts für eine Achse
     }),
     focusing: Object.freeze({
         transparentMin: 0.5,
         wärmeMin: 0.3,
     }),
 });
-
-// Formen die "Räder" sein können (Fahrzeug-Erkennung). Cylinder + Torus
-// haben axiale Symmetrie + können rollen.
-AnazhRealm.WHEEL_SHAPES = Object.freeze(new Set(["cylinder", "torus"]));
-
-// Formen die "Linsen" sein können (Teleskop-Erkennung). Sphere bündelt
-// Licht symmetrisch, Cylinder als Tubus-Linse möglich.
-AnazhRealm.LENS_SHAPES = Object.freeze(new Set(["sphere", "cylinder"]));
-
-// Formen die "Achse" sein können (Teleskop-Tubus oder ähnliche
-// Ausrichtungs-Strukturen). Cone + Cylinder zeigen eine klare Richtung.
-AnazhRealm.AXIS_SHAPES = Object.freeze(new Set(["cone", "cylinder"]));
 
 // Deutsche Affordance-Labels für UI-Anzeige.
 AnazhRealm.AFFORDANCE_LABELS = Object.freeze({

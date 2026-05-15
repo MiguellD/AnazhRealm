@@ -13877,18 +13877,28 @@ function startSaveServer() {
                     const out = {};
                     try {
                         out.thresholdsFrozen = !!AR.AFFORDANCE_THRESHOLDS && Object.isFrozen(AR.AFFORDANCE_THRESHOLDS);
-                        out.wheelShapesSet =
-                            AR.WHEEL_SHAPES instanceof Set &&
-                            AR.WHEEL_SHAPES.has("cylinder") &&
-                            AR.WHEEL_SHAPES.has("torus");
-                        out.lensShapesSet = AR.LENS_SHAPES instanceof Set && AR.LENS_SHAPES.has("sphere");
-                        out.axisShapesSet = AR.AXIS_SHAPES instanceof Set && AR.AXIS_SHAPES.has("cone");
+                        // Vision-Korrektur 10b.2: Form-Whitelists (WHEEL/LENS/AXIS_SHAPES)
+                        // wurden ENTFERNT — Affordances emergieren räumlich + tag-basiert,
+                        // nicht aus shape-Listen.
+                        out.noShapeWhitelists =
+                            typeof AR.WHEEL_SHAPES === "undefined" &&
+                            typeof AR.LENS_SHAPES === "undefined" &&
+                            typeof AR.AXIS_SHAPES === "undefined";
+                        out.thresholdsAreSpatial =
+                            AR.AFFORDANCE_THRESHOLDS.moveable.minSupportParts === 2 &&
+                            AR.AFFORDANCE_THRESHOLDS.moveable.midlineFactor === 0.5 &&
+                            AR.AFFORDANCE_THRESHOLDS.moveable.dichteMin === 0.3 &&
+                            AR.AFFORDANCE_THRESHOLDS.magnifying.axialAlignmentMin === 0.6;
                         out.affordanceLabelsExist =
                             !!AR.AFFORDANCE_LABELS && AR.AFFORDANCE_LABELS.moveable === "fahrbar";
                         out.hasComputeAffordances = typeof r.computeBlueprintAffordances === "function";
                         out.hasMoveable = typeof r._isMoveable === "function";
                         out.hasMagnifying = typeof r._isMagnifying === "function";
                         out.hasFocusing = typeof r._isFocusing === "function";
+                        // 10b.2 — neue räumliche Helper
+                        out.hasBbox = typeof r._compoundBBox === "function";
+                        out.hasBelowMid = typeof r._partsBelowMidline === "function";
+                        out.hasAxialAlignment = typeof r._axialAlignment === "function";
 
                         out.emptyBpEmpty = Object.keys(r.computeBlueprintAffordances(null)).length === 0;
                         out.bpNoParts = Object.keys(r.computeBlueprintAffordances({ parts: [] })).length === 0;
@@ -13920,6 +13930,36 @@ function startSaveServer() {
                         ];
                         out.carIsMoveable =
                             r.computeBlueprintAffordances(r.state.blueprints.test_10b_car).moveable === true;
+
+                        // VISION-TEST: Box-Stützen (KEINE Cylinder/Torus) + Antrieb → moveable
+                        // Beweis dass die Form-Whitelist wirklich raus ist und räumliche
+                        // Konfiguration entscheidet.
+                        if (r.state.blueprints["test_10b_sled"]) r.deleteBlueprint("test_10b_sled");
+                        r.cloneBlueprint("village", "test_10b_sled");
+                        r.state.blueprints.test_10b_sled.parts = [
+                            // Stein-Boxen als Stütze (NICHT cylinder, NICHT torus)
+                            {
+                                shape: "box",
+                                material: "eisen",
+                                position: { x: -1, y: 0.2, z: 0 },
+                                size: { x: 0.5, y: 0.4, z: 0.5 },
+                            },
+                            {
+                                shape: "box",
+                                material: "eisen",
+                                position: { x: 1, y: 0.2, z: 0 },
+                                size: { x: 0.5, y: 0.4, z: 0.5 },
+                            },
+                            // Quarz-Antrieb oben
+                            {
+                                shape: "octahedron",
+                                material: "quarz",
+                                position: { x: 0, y: 1.2, z: 0 },
+                                size: { x: 0.6, y: 0.6, z: 0.6 },
+                            },
+                        ];
+                        out.boxSledIsMoveable =
+                            r.computeBlueprintAffordances(r.state.blueprints.test_10b_sled).moveable === true;
 
                         // ohne Antrieb → nicht moveable
                         if (r.state.blueprints["test_10b_carless"]) r.deleteBlueprint("test_10b_carless");
@@ -13977,7 +14017,7 @@ function startSaveServer() {
                         out.statusShowsAffordance = !!statusEl && statusEl.textContent.includes("fahrbar");
 
                         // Cleanup
-                        for (const n of ["test_10b_car", "test_10b_carless", "test_10b_scope"]) {
+                        for (const n of ["test_10b_car", "test_10b_carless", "test_10b_scope", "test_10b_sled"]) {
                             if (r.state.blueprints[n]) r.deleteBlueprint(n);
                         }
                         r.selectBlueprintForEdit("village");
@@ -13995,19 +14035,25 @@ function startSaveServer() {
 
             if (wave10bResults && !wave10bResults.error) {
                 check(
-                    "Welle 10b.1: AFFORDANCE_THRESHOLDS + WHEEL/LENS/AXIS_SHAPES + AFFORDANCE_LABELS frozen",
+                    "Welle 10b.2: AFFORDANCE_THRESHOLDS + LABELS frozen, KEINE Form-Whitelists mehr (Vision-Korrektur)",
                     wave10bResults.thresholdsFrozen &&
-                        wave10bResults.wheelShapesSet &&
-                        wave10bResults.lensShapesSet &&
-                        wave10bResults.axisShapesSet &&
+                        wave10bResults.noShapeWhitelists &&
                         wave10bResults.affordanceLabelsExist
                 );
                 check(
-                    "Welle 10b.1: 4 Methoden existieren (computeAffordances + _isMoveable/_isMagnifying/_isFocusing)",
+                    "Welle 10b.2: Schwellen sind räumlich + tag-basiert (minSupportParts=2, midlineFactor=0.5, dichteMin=0.3, axialAlignmentMin=0.6)",
+                    wave10bResults.thresholdsAreSpatial
+                );
+                check(
+                    "Welle 10b.1: 4 Affordance-Methoden existieren (computeAffordances + _isMoveable/_isMagnifying/_isFocusing)",
                     wave10bResults.hasComputeAffordances &&
                         wave10bResults.hasMoveable &&
                         wave10bResults.hasMagnifying &&
                         wave10bResults.hasFocusing
+                );
+                check(
+                    "Welle 10b.2: 3 räumliche Helper existieren (_compoundBBox + _partsBelowMidline + _axialAlignment)",
+                    wave10bResults.hasBbox && wave10bResults.hasBelowMid && wave10bResults.hasAxialAlignment
                 );
                 check(
                     "Welle 10b.1: leerer/null Bauplan → leere Affordances",
@@ -14018,11 +14064,15 @@ function startSaveServer() {
                     wave10bResults.villageNoAffordances
                 );
                 check(
-                    "Welle 10b.1: Fahrzeug-Compound (2 Räder + quarz-Antrieb) → moveable=true",
+                    "Welle 10b.1: Fahrzeug-Compound (2 Cylinder-Stützen + quarz-Antrieb) → moveable=true",
                     wave10bResults.carIsMoveable
                 );
                 check(
-                    "Welle 10b.1: 2 Räder OHNE Antriebs-Tag → NICHT moveable (Diskrimination)",
+                    "Welle 10b.2 VISION-TEST: Box-Stützen + Octahedron-Quarz-Antrieb → moveable=true (KEINE Form-Whitelist mehr)",
+                    wave10bResults.boxSledIsMoveable
+                );
+                check(
+                    "Welle 10b.1: Stützen OHNE Antriebs-Tag (nur stein) → NICHT moveable (Diskrimination)",
                     wave10bResults.carlessNotMoveable
                 );
                 check(
