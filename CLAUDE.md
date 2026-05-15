@@ -2,7 +2,17 @@
 
 Persistente Notizen. Diese Datei wird bei jeder neuen Session automatisch geladen. **Bei größeren Entscheidungen zuerst `docs/state-of-realm.md` lesen** – dort steht der ausführliche Stand, die Vision aus den vier Testamenten, der Plan und die Learnings.
 
-**Aktuelle Version: V7.98 (Stand 14.05.2026, Parser-Robustheit für lokale Reasoning-Models — Schöpfer-Browser-Test V7.97: Ollama-Call kommt durch, aber Chat zeigt „Leere Antwort". Drei Bug-Quellen: (1) **`<think>...</think>`-Reasoning-Tags** von qwen3/gpt-oss/deepseek werden jetzt gestrippt vor JSON-Suche; (2) **Plain-Text-Fallback** wenn lokale 7B-Modelle den JSON-Vertrag ignorieren — der raw-Text wird als `say` verwendet, Spieler sieht die Antwort statt „Leere Antwort"; (3) **Token-Limit 400→800** weil Reasoning-Models sonst mitten im Output abgeschnitten werden. Strikte JSON-Modelle (Anthropic, Gemini) verlieren nichts — der Fallback greift nur wenn nötig. Welle 6.H V2 bleibt 14/14)**
+**Aktuelle Version: V8.07 (Stand 16.05.2026, Welle 6.B CAD-Werkstatt + Welle 9 Werkzeug-Domains + Welle 10 Präzision/Affordances + UX-Polish 8.00-8.07. 1791/1791 Playtest-Invarianten grün.)**
+
+**Session-Bogen 14-16.05.2026** (V7.98 → V8.07, 24 Commits): aus einer kosmetischen CAD-Werkstatt wurde ein vollständiges Hylomorphismus-Werkzeug. Drei große Wellen + sieben UX-Iterationen.
+
+- **Welle 6.B** (drei Phasen): Mini-CAD-Werkstatt mit 3D-Preview, Klick-Selektion, voller Tinkercad-Manipulator (Move/Rotate/Scale/Connect/Snap), HTML5-Drag aus Sidepalette (Formen + Materialien + Farben + Werkzeuge), Klick-Klick-Connection-Erzeugung. Resize-Handles für Konsole+Drawer, Background-Scroll-Fix, Canvas-Auto-Resize. CAD-Camera-Konventionen (Pan via Shift+Drag/Mittelmaus, Wheel zoomt zum Cursor).
+- **Welle 9** (vier Sub-Phasen): Werkzeug-Domains + emergente Bauplan-Rolle. 6 Domains (construction/forging/alchemy/textile/soulwork/mechanism), 5 neue Built-in-Werkzeuge (Schmiede-Hammer/Mörser/Webstuhl-Schiffchen/Stab/Drehbank-Meißel), 5 Built-in-Welt-Werkstätten (Esse/Brennkolben/Webstuhl/Seelenstein-Altar/Drehbank), modus-abhängiger Werkstatt-Distance-Gate, Maschinen-precisionCap-Bonus, Seelen-Bauplane via applyPlayerSoulFromBlueprint.
+- **Welle 10** (zwei Sub-Wellen): (a) Präzision als Stat-Multiplikator pro Quelle (Soul/Tool/Armor) — Sorgfalt belohnt sich messbar. (b) Compound-Tag-Affordances — Welt liest räumliche + Tag-Signatur, leitet emergent Verhaltens-Flags ab. Drei Starter (moveable/magnifying/focusing) mit echten Welt-Reaktionen: Spieler reitet ein Compound via E-Taste, Z-Taste zoomt durch transparente Linsen, focusing-Compounds entzünden brennbare Architekturen bei sunny weather.
+
+**Vision-Lehren aus dem Bogen**: (1) Form-Whitelists sind Hardcode-Brüche — Welle 10b.2 hat die WHEEL_SHAPES/LENS_SHAPES/AXIS_SHAPES-Sets durch räumliche Analyse (`_compoundBBox`, `_partsBelowMidline`, `_axialAlignment`) ersetzt. Vision-rein: Tag-Sprache + räumliche Konfiguration entscheiden. (2) Affordances als neue Welt-Schicht — jede neue Verhaltens-Klasse ist eine `_is*`-Methode plus eine Welt-Reaktion, kein Architektur-Eingriff. (3) Schöpfer-Browser-Tests sind das Gold der UX-Iteration: jeder der sieben V8.x-Polish-Schritte kam aus konkreter Live-Beobachtung.
+
+**V7.98 Vorher-Stand** (15.05.2026, V7.94-V7.98 LLM-Provider-Iteration): Parser-Robustheit für lokale Reasoning-Models. `<think>...</think>`-Tags strippen, Plain-Text-Fallback bei JSON-Verweigerung, Token-Limit 400→800. Welle 6.H V2 (Kreaturen-Konversation) bleibt 14/14 grün.
 
 ## Projektüberblick
 
