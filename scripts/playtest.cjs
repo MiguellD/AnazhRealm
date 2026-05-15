@@ -11601,10 +11601,10 @@ function startSaveServer() {
                     const out = {};
 
                     // --- Avatar-Hide im 1st-Person ---
-                    out.avatarHideMethods =
-                        typeof r.setCameraMode === "function" && !!r.state.playerMesh;
-                    // Render-Loop setzt player.visible = cameraMode==="third".
-                    // Wir prüfen via Source-Pattern (der Loop läuft async).
+                    out.avatarHideMethods = typeof r.setCameraMode === "function" && !!r.state.playerMesh;
+                    // V8.29.1 — Render-Loop hält player.visible=true,
+                    // versteckt nur den KOPF im 1st-Person (headPart.visible
+                    // = cameraMode==="third"). Via Source-Pattern geprüft.
                     {
                         let found = false;
                         const proto = Object.getPrototypeOf(r);
@@ -11612,7 +11612,7 @@ function startSaveServer() {
                             try {
                                 const fn = proto[name];
                                 if (typeof fn !== "function") continue;
-                                if (/player\.visible\s*=\s*this\.state\.cameraMode/.test(fn.toString())) found = true;
+                                if (/headPart\.visible\s*=\s*this\.state\.cameraMode/.test(fn.toString())) found = true;
                             } catch {
                                 /* skip */
                             }
@@ -11643,8 +11643,7 @@ function startSaveServer() {
                     out.startPlattformBlueprint = !!(r.state.blueprints && r.state.blueprints.start_plattform);
                     // Nach dem ersten Spawn sollte eine start_plattform-Architektur da sein
                     out.genesisArchExists = !!(
-                        r.state.architectures &&
-                        r.state.architectures.some((a) => a && a.type === "start_plattform")
+                        r.state.architectures && r.state.architectures.some((a) => a && a.type === "start_plattform")
                     );
                     // Idempotenz: zweiter Aufruf erzeugt KEINE zweite Plattform
                     const before = r.state.architectures.filter((a) => a && a.type === "start_plattform").length;
@@ -11683,21 +11682,102 @@ function startSaveServer() {
                 .catch((err) => ({ error: err && err.message }));
 
             if (v829Results && !v829Results.error) {
-                check("V8.29: Avatar wird im 1st-Person ausgeblendet (Render-Loop)", v829Results.avatarHideInLoop);
-                check("V8.29: _buildChunkGrass + _disposeChunkGrass + _grassInstanceMat existieren", v829Results.grassMethodsExist);
+                check(
+                    "V8.29.1: nur der Kopf wird im 1st-Person versteckt (Avatar bleibt sichtbar)",
+                    v829Results.avatarHideInLoop
+                );
+                check(
+                    "V8.29: _buildChunkGrass + _disposeChunkGrass + _grassInstanceMat existieren",
+                    v829Results.grassMethodsExist
+                );
                 check("V8.29: state.chunkGrass ist eine Map", v829Results.chunkGrassMap);
                 check("V8.29: mindestens ein Chunk hat ein Gras-InstancedMesh", v829Results.hasGrassInstances);
                 check("V8.29: Gras-Material ist geteilt (ein Draw-Call-Material)", v829Results.grassMatShared);
                 check("V8.29: _ensureGenesisPlatform existiert", v829Results.genesisMethodExists);
                 check("V8.29: start_plattform-Bauplan existiert", v829Results.startPlattformBlueprint);
                 check("V8.29: Genesis-Plattform-Architektur nach Spawn vorhanden", v829Results.genesisArchExists);
-                check("V8.29: _ensureGenesisPlatform ist idempotent (keine Doppel-Plattform)", v829Results.genesisIdempotent);
+                check(
+                    "V8.29: _ensureGenesisPlatform ist idempotent (keine Doppel-Plattform)",
+                    v829Results.genesisIdempotent
+                );
                 check("V8.29: state.waterLevel ist gesetzt (adaptiv)", v829Results.waterAdaptive);
                 check("V8.29: Cel-gradientMap ist 32 px breit (Smooth-Modus möglich)", v829Results.gradientMap32);
                 check("V8.29: setCelLevels 2↔8 ändert die gradientMap-Daten", v829Results.celGradientChanges);
                 check("V8.29: Sterne haben Mindestgröße ≥3 px (flacker-sicher)", v829Results.starMinSize3);
             } else {
                 check("V8.29: Die lebendige Welt Tests laufen", false, v829Results ? v829Results.error : "no result");
+            }
+
+            // ### V8.30 — Schnittstellen-Politur (Sterne-Tiefe, Avatar,
+            // Wasser-Wellen, Wasser-Physik) ###
+            const v830Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // Sterne testen gegen den Tiefenpuffer (kein Overlay mehr)
+                    out.starsDepthTest = !!(
+                        r.state.starField &&
+                        r.state.starField.material &&
+                        r.state.starField.material.depthTest === true
+                    );
+
+                    // Wasser-Shader: diagonale Wellen (wave-Funktion mit
+                    // Richtungs-Vektoren) + Sonnen-Glitzern (Spekular).
+                    let waterDiagonal = false;
+                    let waterSpecular = false;
+                    if (r.state.waterPlane && r.state.waterPlane.material) {
+                        const vs = r.state.waterPlane.material.vertexShader || "";
+                        const fs = r.state.waterPlane.material.fragmentShader || "";
+                        waterDiagonal = /float wave\(/.test(vs) && /dot\(xz, dir\)/.test(vs);
+                        waterSpecular = /spec/.test(fs) && /uSunDir/.test(fs);
+                    }
+                    out.waterDiagonalWaves = waterDiagonal;
+                    out.waterSunGlitter = waterSpecular;
+                    // Wasser-Shader hat uSunDir-Uniform (Tag-Nacht-Sync)
+                    out.waterHasSunUniform = !!(
+                        r.state.waterPlane &&
+                        r.state.waterPlane.material &&
+                        r.state.waterPlane.material.uniforms &&
+                        r.state.waterPlane.material.uniforms.uSunDir
+                    );
+
+                    // Wasser-Physik: state.playerUnderwater existiert als Flag
+                    out.underwaterFlagExists = typeof r.state.playerUnderwater === "boolean";
+                    // Render-Loop hat Auftriebs- + Speed-Logik (Source-Pattern)
+                    {
+                        let buoy = false;
+                        let speedCut = false;
+                        const proto = Object.getPrototypeOf(r);
+                        for (const name of Object.getOwnPropertyNames(proto)) {
+                            try {
+                                const fn = proto[name];
+                                if (typeof fn !== "function") continue;
+                                const src = fn.toString();
+                                if (/playerUnderwater\s*=\s*submerged/.test(src)) buoy = true;
+                                if (/playerUnderwater\)\s*currentSpeed\s*\*=/.test(src)) speedCut = true;
+                            } catch {
+                                /* skip */
+                            }
+                        }
+                        out.waterBuoyancy = buoy;
+                        out.waterSpeedCut = speedCut;
+                    }
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (v830Results && !v830Results.error) {
+                check("V8.30: Sterne testen gegen Tiefenpuffer (kein Overlay)", v830Results.starsDepthTest);
+                check("V8.30: Wasser-Shader hat diagonale Multi-Wellen (kein Schachbrett)", v830Results.waterDiagonalWaves);
+                check("V8.30: Wasser-Shader hat Sonnen-Glitzern (Spekular)", v830Results.waterSunGlitter);
+                check("V8.30: Wasser-Shader hat uSunDir-Uniform (Tag-Nacht-Sync)", v830Results.waterHasSunUniform);
+                check("V8.30: state.playerUnderwater-Flag existiert", v830Results.underwaterFlagExists);
+                check("V8.30: Render-Loop hat Wasser-Auftrieb", v830Results.waterBuoyancy);
+                check("V8.30: Bewegung wird unter Wasser gebremst", v830Results.waterSpeedCut);
+            } else {
+                check("V8.30: Schnittstellen-Politur Tests laufen", false, v830Results ? v830Results.error : "no result");
             }
 
             // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider (Audit 17.05.2026) ###
@@ -18279,7 +18359,12 @@ function startSaveServer() {
                     // Cleanup: starte vom Default aus.
                     r.applyPlayerSoul("human");
                     out.defaultIsHuman = r.state.player.soul === "human";
-                    out.defaultColorRed = currentMaterial() && currentMaterial().color.getHex() === 0xff0000;
+                    // V8.29.1 — Mensch-Avatar ist jetzt MeshToonMaterial mit
+                    // gedämpftem Rot (0xc0392b) statt grelles MeshBasic 0xff0000.
+                    out.defaultColorRed =
+                        currentMaterial() &&
+                        currentMaterial().color.getHex() === 0xc0392b &&
+                        currentMaterial().isMeshToonMaterial === true;
                     // V2: statt Geometrie-Typ prüfen wir die Group-Struktur
                     // (Mensch hat torso/head/2 Arme/2 Beine = 6 Parts).
                     const humanParts = currentParts();
@@ -18449,7 +18534,10 @@ function startSaveServer() {
                     `count=${ring5Results.dropdownOptionCount} values=${ring5Results.dropdownOptionValues}`
                 );
                 check("Ring 5: Default-Seele ist 'human'", ring5Results.defaultIsHuman);
-                check("Ring 5: Default-Material-Farbe ist rot (0xff0000)", ring5Results.defaultColorRed);
+                check(
+                    "Ring 5: Mensch-Avatar ist MeshToonMaterial, gedämpftes Rot (V8.29.1)",
+                    ring5Results.defaultColorRed
+                );
                 check("Ring 5 V2: Mensch-Group hat torso/head/2 Arme/2 Beine", ring5Results.humanHasAllParts);
                 check("Ring 5: applyPlayerSoul('phoenix') liefert true", ring5Results.applyReturnsTrue);
                 check("Ring 5: Phönix setzt state.player.soul = 'phoenix'", ring5Results.phoenixSoulSet);

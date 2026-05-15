@@ -130,6 +130,9 @@ class AnazhRealm {
             // starField folgt der Kamera + dreht sidereal mit timeOfDay.
             starField: null,
             waterPlane: null,
+            // V8.29.1 — true wenn der Spieler unter waterLevel ist. Treibt
+            // Auftrieb (Physik-Loop), langsamere Bewegung + Unterwasser-Tint.
+            playerUnderwater: false,
             // V8.28 6.G4.b — Atmosphäre-Slider (Spieler-Präferenz, persistiert).
             // celLevels: Cel-Shading-Stufen (1=bold, 6≈smooth)
             // fogDistance: Multiplikator auf Fog-near/far (klein=dichter)
@@ -7122,13 +7125,18 @@ class AnazhRealm {
             `,
             transparent: true,
             depthWrite: false,
-            depthTest: false,
+            // V8.29.1 — depthTest TRUE: die Sterne testen gegen den Tiefen-
+            // puffer. Terrain + Berge + Strukturen (opak, schreiben Tiefe)
+            // verdecken die Sterne dahinter sauber — vorher (depthTest false)
+            // lagen sie als Overlay über der ganzen Welt. Die Skybox schreibt
+            // keine Tiefe (depthWrite false) → im freien Himmel besteht der
+            // Test, die Sterne bleiben dort sichtbar.
+            depthTest: true,
             blending: THREE.AdditiveBlending,
             vertexColors: true,
         });
         const starField = new THREE.Points(geo, starMat);
         starField.frustumCulled = false; // immer rendern (Himmelskoerper)
-        starField.renderOrder = -1; // hinter allem anderen
         this.state.scene.add(starField);
         this.state.starField = starField;
         this.log(`Stern-Feld erstellt — ${STAR_COUNT} diskrete Sterne (V8.28)`);
@@ -7186,31 +7194,76 @@ class AnazhRealm {
                 uTime: { value: 0 },
                 uDeep: { value: new THREE.Color(0x16364f) },
                 uShallow: { value: new THREE.Color(0x3f88a8) },
+                // V8.29.1 — Sonnen-Richtung für echtes Glitzern.
+                uSunDir: { value: new THREE.Vector3(1, 1, 1).normalize() },
+                uLight: { value: 1.0 },
             },
+            // V8.29.1 — Wellen DIAGONAL + multi-frequenz statt achsen-paralleler
+            // sin(x)+cos(z). Letzteres ergab ein Schachbrett-Gitter. Vier
+            // Wellen in schrägen Richtungen mit verschiedenen Frequenzen
+            // (Gerstner-Lehre: BotW, Sea of Thieves) brechen das Muster.
+            // Plus echte Wellen-NORMALE (analytisch aus den Ableitungen)
+            // für Sonnen-Glitzern statt der flachen Tief/Flach-Färbung.
             vertexShader: `
                 uniform float uTime;
                 varying float vWave;
+                varying vec3 vNormal;
+                varying vec3 vWorldPos;
+                // Eine Welle: Richtung (dx,dz), Frequenz f, Amplitude a, Speed s.
+                float wave(vec2 xz, vec2 dir, float f, float a, float s) {
+                    return a * sin(dot(xz, dir) * f + uTime * s);
+                }
                 void main() {
                     vec3 p = position;
-                    float w = sin(p.x * 0.12 + uTime * 0.9) * 0.35
-                            + cos(p.z * 0.15 + uTime * 0.7) * 0.26
-                            + sin((p.x + p.z) * 0.07 + uTime * 1.3) * 0.16;
+                    vec2 xz = p.xz;
+                    float w =
+                        wave(xz, vec2(0.86, 0.51), 0.13, 0.34, 0.9) +
+                        wave(xz, vec2(-0.42, 0.91), 0.085, 0.27, 0.7) +
+                        wave(xz, vec2(0.62, -0.78), 0.21, 0.15, 1.25) +
+                        wave(xz, vec2(-0.95, -0.30), 0.31, 0.09, 1.6);
                     p.y += w;
                     vWave = w;
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+                    // Normale analytisch: Steigung in x und z numerisch.
+                    float e = 1.5;
+                    float wx =
+                        wave(xz + vec2(e, 0.0), vec2(0.86, 0.51), 0.13, 0.34, 0.9) +
+                        wave(xz + vec2(e, 0.0), vec2(-0.42, 0.91), 0.085, 0.27, 0.7) +
+                        wave(xz + vec2(e, 0.0), vec2(0.62, -0.78), 0.21, 0.15, 1.25) +
+                        wave(xz + vec2(e, 0.0), vec2(-0.95, -0.30), 0.31, 0.09, 1.6);
+                    float wz =
+                        wave(xz + vec2(0.0, e), vec2(0.86, 0.51), 0.13, 0.34, 0.9) +
+                        wave(xz + vec2(0.0, e), vec2(-0.42, 0.91), 0.085, 0.27, 0.7) +
+                        wave(xz + vec2(0.0, e), vec2(0.62, -0.78), 0.21, 0.15, 1.25) +
+                        wave(xz + vec2(0.0, e), vec2(-0.95, -0.30), 0.31, 0.09, 1.6);
+                    vNormal = normalize(vec3(-(wx - w) / e, 1.0, -(wz - w) / e));
+                    vec4 wp = modelMatrix * vec4(p, 1.0);
+                    vWorldPos = wp.xyz;
+                    gl_Position = projectionMatrix * viewMatrix * wp;
                 }
             `,
             fragmentShader: `
                 uniform vec3 uDeep;
                 uniform vec3 uShallow;
+                uniform vec3 uSunDir;
+                uniform float uLight;
                 varying float vWave;
+                varying vec3 vNormal;
+                varying vec3 vWorldPos;
                 void main() {
-                    // Wellenkaemme heller (flach), Taeler tiefer (dunkel)
-                    float t = clamp(vWave * 0.7 + 0.5, 0.0, 1.0);
-                    vec3 col = mix(uDeep, uShallow, t);
-                    // Schaum-Schimmer auf den hoechsten Kaemmen
-                    col += vec3(0.25) * smoothstep(0.55, 0.78, vWave);
-                    gl_FragColor = vec4(col, 0.78);
+                    vec3 n = normalize(vNormal);
+                    // Grundfarbe: tief/flach nach Wellenhöhe, weich gemischt.
+                    float t = clamp(vWave * 0.5 + 0.5, 0.0, 1.0);
+                    vec3 col = mix(uDeep, uShallow, t) * uLight;
+                    // Echtes Sonnen-Glitzern: Spekular-Highlight auf den
+                    // Wellen-Flanken, die zur Sonne zeigen (Blinn-Phong).
+                    vec3 viewDir = normalize(cameraPosition - vWorldPos);
+                    vec3 halfV = normalize(normalize(uSunDir) + viewDir);
+                    float spec = pow(max(dot(n, halfV), 0.0), 60.0);
+                    col += vec3(1.0, 0.97, 0.85) * spec * 0.9 * uLight;
+                    // Diffuse Wellen-Modellierung — Flanken zur Sonne heller.
+                    float diff = max(dot(n, normalize(uSunDir)), 0.0);
+                    col *= 0.7 + 0.3 * diff;
+                    gl_FragColor = vec4(col, 0.82);
                 }
             `,
             transparent: true,
@@ -14719,7 +14772,16 @@ class AnazhRealm {
 
     _buildHumanGroup() {
         const group = new THREE.Group();
-        const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        // V8.29.1 — MeshToonMaterial statt knallrotes MeshBasic. Reagiert
+        // auf Tag-Nacht-Licht wie der Rest der Welt (V8.28-Konsistenz),
+        // gedämpftes Rot statt grelles 0xff0000. gradientMap geteilt.
+        if (!this.state.toonGradientMap && typeof this._refreshToonGradient === "function") {
+            this._refreshToonGradient();
+        }
+        const material = new THREE.MeshToonMaterial({
+            color: 0xc0392b,
+            gradientMap: this.state.toonGradientMap || null,
+        });
         const torso = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.7, 0.3), material);
         torso.position.y = 0.45;
         torso.castShadow = true;
@@ -23200,6 +23262,15 @@ class AnazhRealm {
             const fogMult = (this.state.atmosphere && this.state.atmosphere.fogDistance) || 1.0;
             fog.near = (35 - rainyMix * 13) * fogMult;
             fog.far = (150 - rainyMix * 55) * fogMult;
+            // V8.29.1 — Unterwasser-Tint. Ist der Spieler unter waterLevel,
+            // wird der Fog blau-dicht: die Welt sieht durch Wasser gefiltert
+            // aus (kein neues Mesh — die bestehende Fog-Schnittstelle trägt
+            // den Effekt). Distanz auf ~5..32 m → echte Trübung.
+            if (this.state.playerUnderwater) {
+                fog.color.setRGB(0.06, 0.19, 0.32);
+                fog.near = 4;
+                fog.far = 34;
+            }
         }
         // V8.27 6.G4.a — Terrain-Shader-Uniforms synchronisieren falls vorhanden.
         // Der Custom-Shader hat lightDirection + weatherEffect; wir setzen die
@@ -23218,6 +23289,17 @@ class AnazhRealm {
                         chunk.material.uniforms.ambientIntensity.value = al ? al.intensity : 0.45;
                     }
                 }
+            }
+        }
+        // V8.29.1 — Welt-Wasser mit der Sonne synchronisieren: Sonnen-
+        // Richtung für das Glitzern + Licht-Intensität für Tag-Nacht-Tint.
+        if (this.state.waterPlane && this.state.waterPlane.material && this.state.directionalLight) {
+            const wu = this.state.waterPlane.material.uniforms;
+            if (wu && wu.uSunDir) {
+                wu.uSunDir.value.copy(this.state.directionalLight.position).normalize();
+            }
+            if (wu && wu.uLight) {
+                wu.uLight.value = Math.max(0.22, dl.intensity);
             }
         }
     }
@@ -25423,6 +25505,31 @@ class AnazhRealm {
                             body.setLinearVelocity(this.setVec(this.state.tmpVec1, velocity.x(), -25, velocity.z()));
                         }
 
+                        // V8.29.1 — Wasser-Physik. Ist der Spieler unter dem
+                        // Wasser-Niveau, wirkt Auftrieb: die Fall-Geschwindig-
+                        // keit wird stark gedämpft, ein sanfter Aufwärts-Drift
+                        // hebt ihn — er schwimmt, statt auf den Grund zu sinken.
+                        // state.playerUnderwater treibt den Bewegungs-Speed
+                        // (langsamer) + den Unterwasser-Tint.
+                        if (mesh === this.state.playerMesh && typeof this.state.waterLevel === "number") {
+                            const submerged = scaledY < this.state.waterLevel;
+                            this.state.playerUnderwater = submerged;
+                            if (submerged) {
+                                const vy = velocity.y();
+                                // Tiefer = mehr Auftrieb (bis +2.5 m/s Drift).
+                                const depth = Math.min(8, this.state.waterLevel - scaledY);
+                                const buoyantVy = Math.max(-2.5, vy * 0.45) + depth * 0.18;
+                                body.setLinearVelocity(
+                                    this.setVec(
+                                        this.state.tmpVec1,
+                                        velocity.x() * 0.7,
+                                        Math.min(2.5, buoyantVy),
+                                        velocity.z() * 0.7
+                                    )
+                                );
+                            }
+                        }
+
                         // Kill-Plane näher an den Welt-Boden gerückt: vorher
                         // erst nach 1000 m freiem Fall — der Spieler war
                         // gefühlt "verloren". 30 m unter dem tiefsten Welt-
@@ -25493,7 +25600,10 @@ class AnazhRealm {
             const player = this.state.playerMesh;
             const camera = this.state.camera;
             const playerBody = this.state.playerBody;
-            const currentSpeed = this.state.keys["shift"] ? this.state.sprintSpeed : this.state.speed;
+            let currentSpeed = this.state.keys["shift"] ? this.state.sprintSpeed : this.state.speed;
+            // V8.29.1 — Wasser bremst. Unter Wasser bewegt sich der Spieler
+            // auf 55 % Geschwindigkeit — er schwimmt, watet nicht durch.
+            if (this.state.playerUnderwater) currentSpeed *= 0.55;
 
             this.state.forward.set(Math.sin(this.state.yaw), 0, Math.cos(this.state.yaw));
             this.state.right.set(Math.cos(this.state.yaw), 0, -Math.sin(this.state.yaw));
@@ -25702,11 +25812,17 @@ class AnazhRealm {
                 // Bewegungsrichtung schaut — wichtig für asymmetrische Formen
                 // (Drache hat lange Z-Achse) und Vorbereitung für V2-Glieder.
                 player.rotation.y = this.state.yaw;
-                // V8.29 — Avatar im 1st-Person ausblenden. Die Kamera sitzt
-                // im Kopf des Avatars; ohne Hide schaut der Spieler von innen
-                // durch seinen eigenen (roten) Körper = großes rotes Dreieck
-                // am unteren Bildrand. Im 3rd-Person bleibt er sichtbar.
-                player.visible = this.state.cameraMode === "third";
+                // V8.29.1 — Avatar im 1st-Person SICHTBAR (Schöpfer-Korrektur:
+                // den eigenen Körper zu sehen ist normal — Minecraft etc.
+                // tun das auch). Nur der KOPF wird im 1st-Person versteckt:
+                // die Kamera SITZT im Kopf, kein Spiel zeigt den eigenen
+                // Kopf von innen. Torso/Arme/Beine bleiben sichtbar beim
+                // Runterschauen. Im 3rd-Person ist alles sichtbar.
+                player.visible = true;
+                {
+                    const headPart = player.userData && player.userData.parts && player.userData.parts.head;
+                    if (headPart) headPart.visible = this.state.cameraMode === "third";
+                }
                 if (this.state.cameraMode === "third") {
                     // Orbit-Kamera hinter + über dem Spieler. Pitch hebt/senkt
                     // die Kamera vertikal; Distance bleibt konstant. Look-At

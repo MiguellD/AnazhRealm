@@ -2,7 +2,23 @@
 
 Persistente Notizen. Diese Datei wird bei jeder neuen Session automatisch geladen. **Bei größeren Entscheidungen zuerst `docs/state-of-realm.md` lesen** – dort steht der ausführliche Stand, die Vision aus den vier Testamenten, der Plan und die Learnings.
 
-**Aktuelle Version: V8.29 (Stand 17.05.2026, Welle 6.G4.c — Die lebendige Welt. Instanced-Gras pro Chunk (Dichte aus worldFieldAt), Avatar im 1st-Person versteckt, Cel-Slider mit echtem Smooth-Modus (32px gradientMap), adaptives Wasser, Genesis-Plattform. 2022/2022 Playtest-Invarianten grün, Audit-Strict 5 Schichten, 14/14 [ATMOSPHERE]-Methoden clean.)**
+**Aktuelle Version: V8.30 (Stand 17.05.2026, Welle 6.G4.d — Schnittstellen-Politur. Sterne testen gegen Tiefenpuffer (verschwinden hinter Bergen), Avatar im 1st-Person sichtbar (nur Kopf versteckt), Wasser mit diagonalen Multi-Wellen + Sonnen-Glitzern statt Schachbrett, Wasser-Physik (Auftrieb + Schwimm-Bremse + Unterwasser-Tint). 2029/2029 Playtest-Invarianten grün, Audit-Strict 5 Schichten, 14/14 [ATMOSPHERE]-Methoden clean.)**
+
+**V8.30 — Welle 6.G4.d (Schnittstellen-Politur, +7 Vision-Invarianten 2022→2029)**: Schöpfer-Browser-Test der V8.29 — Begeisterung („wow, großer Schritt") + vier Wunden, und die Kern-Frage „hast du die Schnittstellen beachtet, synergetisch erweitert?". Ehrliche Antwort: Gras + Plattform ja, drei Schichten waren oberflächlich verkabelt:
+
+1. **Sterne als Overlay** — `depthTest: false` ignorierte den Tiefenpuffer, die Sterne lagen über der ganzen Welt. Fix: `depthTest: true` — Terrain + Berge (opak, schreiben Tiefe) verdecken die Sterne dahinter. Die Skybox schreibt keine Tiefe → im freien Himmel bleiben sie sichtbar.
+
+2. **Avatar im 1st-Person komplett versteckt** — falsche Annahme. Jedes 1st-Person-Spiel zeigt den eigenen Körper (Minecraft). Fix: `player.visible = true`, nur der KOPF wird im 1st-Person versteckt (`player.userData.parts.head` — die Kamera SITZT im Kopf). Plus: Mensch-Avatar von knallrotem `MeshBasicMaterial` auf `MeshToonMaterial` (gedämpftes Rot 0xc0392b, reagiert auf Licht — V8.28-Konsistenz).
+
+3. **Schachbrettmuster überm Wasser** — `sin(x) + cos(z)` sind achsen-parallele Wellen → ein Gitter. Fix (Gerstner-Lehre, BotW/Sea of Thieves): `wave(xz, dir, freq, amp, speed)` mit vier Wellen in SCHRÄGEN Richtungen + verschiedenen Frequenzen. Plus echte Wellen-Normale (analytisch aus den Ableitungen) → Blinn-Phong-Sonnen-Glitzern statt der flachen Tief/Flach-Färbung. `uSunDir` + `uLight` aus `_applyDayNightToScene` synchronisiert.
+
+4. **Keine Wasser-Physik** — der Spieler lief auf dem Grund. Fix: `state.playerUnderwater`-Flag (true unter `waterLevel`). Im Physik-Loop wirkt Auftrieb (Fall gedämpft × 0.45, Drift +depth×0.18, Cap +2.5 m/s). Bewegung × 0.55 unter Wasser. Unterwasser-Tint über die Fog-Schnittstelle (blau-dicht, near 4 / far 34).
+
+**Vision-Lehre der V8.30**: *„Eine neue Schicht ist erst fertig, wenn sie an die bestehenden Schnittstellen angeschlossen ist — Tiefenpuffer, Physik, Tag-Nacht. Visual ohne Verkabelung ist eine Attrappe."*
+
+**Tests**: 7 neue Vision-Invarianten (Sterne-depthTest, Wasser-Diagonal-Wellen, Wasser-Sonnen-Glitzern, uSunDir-Sync, playerUnderwater-Flag, Auftrieb, Schwimm-Bremse). 2022 → 2029 grün.
+
+**V8.29 — Welle 6.G4.c (Die lebendige Welt, +13 Vision-Invarianten 2009→2022)**: Schöpfer-Browser-Test der V8.28 deckte sieben Wunden auf.
 
 **V8.29 — Welle 6.G4.c (Die lebendige Welt, +13 Vision-Invarianten 2009→2022)**: Schöpfer-Browser-Test der V8.28 deckte sieben Wunden auf.
 

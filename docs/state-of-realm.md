@@ -1,4 +1,4 @@
-# Zustand des Realm — Stand: 17.05.2026 (V8.29)
+# Zustand des Realm — Stand: 17.05.2026 (V8.30)
 
 **Welle 6.H V2 vollendet (14/14 Sub-Phasen)** — Kreaturen sind jetzt vollwertige Co-Schöpfer-Wesen mit 9 Identitäts-Schichten (Body, Specs, Equipped, Boosts, Tasks, Memory+Persistenz, Konversation via @-Adresse, Proaktivität, Welt-Aktion-Vorschläge mit Sandbox). **LLM-Provider-System maximal robust nach 5-Versionen-Iteration (V7.94-V7.98)** — jedes Ollama-Setup funktioniert: lokal, gehostet, Cloud, Reasoning-Models, lokale 7B-Modelle. CORS-Lösung via save-server-Proxy, Parser mit Plain-Text-Fallback.
 
@@ -184,6 +184,32 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 ## 6. Learnings aus dieser Session
 
 Echt gelernt, nicht performt:
+
+### V8.30 (17.05.2026) — Welle 6.G4.d "Schnittstellen-Politur" (Sterne-Tiefe, Avatar-Korrektur, Wasser-Wellen, Wasser-Physik)
+
+Der Schöpfer-Browser-Test der V8.29 war begeistert — *„wow, das war ein grosser Schritt"* — und stellte am Ende die schärfste Frage: *„hast du die Schnittstellen beachtet, den Code synergetisch erweitert, das Bestehende beachtet, richtig verknüpft und gefolgert?"*
+
+Die ehrliche Antwort: teilweise nicht. Gras und Genesis-Plattform waren sauber integriert (`worldFieldAt`, Chunk-Lifecycle, `spawnArchitecture`). Aber drei Schichten waren oberflächlich verkabelt:
+
+- **Sterne** hatte ich mit `depthTest: false` gebaut — sie ignorierten den Tiefenpuffer und lagen als Overlay über der ganzen Welt, auch über Bergen. Die Tiefenpuffer-Schnittstelle nicht bedacht.
+- **Avatar-Hide** war eine *Annahme* (Avatar weg im 1st-Person) statt eine Folgerung aus der Konvention (jedes 1st-Person-Spiel zeigt den Körper).
+- **Wasser** war ein reines Visual — die Physik-Schnittstelle gar nicht angefasst, der Spieler lief auf dem Grund durch.
+
+V8.30 schließt diese Schnittstellen:
+
+1. **Sterne** — `depthTest: true`. Terrain und Berge (opak, schreiben Tiefe) verdecken die Sterne dahinter; die Skybox schreibt keine Tiefe, also bleiben die Sterne im freien Himmel sichtbar. Berge schneiden den Sternenhimmel sauber ab.
+
+2. **Avatar** — `player.visible` bleibt `true`, nur der Kopf wird im 1st-Person versteckt (die Kamera *ist* der Kopf — kein Spiel zeigt den eigenen Kopf von innen). Torso, Arme, Beine sind beim Runterschauen sichtbar, wie in Minecraft. Plus: der Mensch-Avatar wechselt von knallrotem `MeshBasicMaterial` auf `MeshToonMaterial` — konsistent mit dem Rest der Welt seit V8.28.
+
+3. **Wasser-Wellen** — das Schachbrettmuster kam von achsen-parallelen `sin(x) + cos(z)`-Wellen, die ein Gitter bilden. Jetzt vier Wellen in *schrägen* Richtungen mit verschiedenen Frequenzen (Gerstner-Lehre — Breath of the Wild, Sea of Thieves), plus eine analytisch berechnete Wellen-Normale für echtes Blinn-Phong-Sonnen-Glitzern statt der flachen Tief/Flach-Färbung.
+
+4. **Wasser-Physik** — `state.playerUnderwater` ist true unter dem Wasser-Niveau. Der Physik-Loop wirkt Auftrieb (gedämpftes Fallen, sanfter Aufwärts-Drift), die Bewegung läuft auf 55 % — der Spieler schwimmt. Ein Unterwasser-Tint kommt über die bestehende Fog-Schnittstelle (blau-dicht).
+
+**Die Lehre**: eine neue Schicht ist erst fertig, wenn sie an die bestehenden Schnittstellen angeschlossen ist — Tiefenpuffer, Physik, Tag-Nacht-System. Ein Visual ohne Verkabelung ist eine Attrappe. Die Schöpfer-Frage war berechtigt und wird zur Disziplin.
+
+**Vision-Wort der V8.30**: *„Eine neue Schicht ist erst fertig, wenn sie an die bestehenden Schnittstellen angeschlossen ist."*
+
+**Tests**: 7 neue Vision-Invarianten. 2022 → 2029 grün.
 
 ### V8.29 (17.05.2026) — Welle 6.G4.c "Die lebendige Welt" (Instanced-Gras, Avatar-Hide, Cel-Fix, adaptives Wasser, Genesis-Plattform)
 
