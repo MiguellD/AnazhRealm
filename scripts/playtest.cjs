@@ -10612,6 +10612,120 @@ function startSaveServer() {
                 })
                 .catch((e) => ({ error: String(e) }));
 
+            // ### Welle 6.X.4 V8.16 Punkt 18 — Rolle-Synergie + Wachstumskonzept ###
+            const wave6x4cResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // computeBlueprintDomainCounts existiert + liefert sinnvolle Map
+                    out.domainCountsMethodExists = typeof r.computeBlueprintDomainCounts === "function";
+
+                    // Test: Bauplan ohne opChain → leere counts
+                    const tn = "audit_v816_test";
+                    if (r.state.blueprints[tn]) delete r.state.blueprints[tn];
+                    r.createBlueprint(tn, "V816-Test");
+                    r.addPartToBlueprint(tn, {
+                        shape: "sphere",
+                        material: "stein",
+                        size: { x: 0.5, y: 0.5, z: 0.5 },
+                    });
+                    const c0 = r.computeBlueprintDomainCounts(r.state.blueprints[tn]);
+                    out.emptyChainNoDomain = Object.keys(c0).length === 0;
+
+                    // Wende einen Schmiede-Hammer (forging-domain) an → counts.forging = 1
+                    // Hammer (Starter) hat domain:null; nur schmiede-hammer hat
+                    // domain:"forging". Welle 9a-Architektur.
+                    // schmiede-hammer ist nicht Starter — zum Besitz hinzufügen
+                    // (frieden-Modus überspringt Stamina-Cost). Plus: opChain-
+                    // Material-Compat — schmiede-hammer.opClass=plastic ist mit
+                    // stein NICHT kompatibel (MATERIAL_OP_COMPATIBILITY). Eisen
+                    // passt → wir wechseln das Test-Material auf eisen.
+                    r.state.player.tools = Array.isArray(r.state.player.tools)
+                        ? r.state.player.tools
+                        : [];
+                    if (!r.state.player.tools.includes("schmiede-hammer")) {
+                        r.state.player.tools.push("schmiede-hammer");
+                    }
+                    r.state.blueprints[tn].parts[0].material = "eisen";
+                    r.applyOpToPart(tn, 0, "schmiede-hammer");
+                    const c1 = r.computeBlueprintDomainCounts(r.state.blueprints[tn]);
+                    out.afterForgingHasDomain = (c1.forging || 0) === 1;
+
+                    // Cleanup
+                    delete r.state.blueprints[tn];
+
+                    // UI-Rendering: Stats-Panel hat workshop-domain-row +
+                    // workshop-synergy-row + workshop-growth-row Elemente nach
+                    // Render eines eigenen Bauplans.
+                    const tn2 = "audit_v816_render";
+                    r.createBlueprint(tn2, "V816-Render");
+                    r.addPartToBlueprint(tn2, {
+                        shape: "sphere",
+                        material: "eisen", // schmiede-hammer braucht plastic-kompatibles Material
+                        size: { x: 0.5, y: 0.5, z: 0.5 },
+                    });
+                    r.selectBlueprintForEdit && r.selectBlueprintForEdit(tn2);
+                    r._workshopRenderStatsPanel && r._workshopRenderStatsPanel();
+                    const panel = document.getElementById("workshop-stats-panel");
+                    out.synergyRowRendered = !!(panel && panel.querySelector(".workshop-synergy-row"));
+                    out.growthRowRendered = !!(panel && panel.querySelector(".workshop-growth-row"));
+                    // Bei 0 opChain steht „Noch keine Werkzeug-Anwendung" im growth-text
+                    const growthText = panel && panel.querySelector(".workshop-growth-text");
+                    out.growthShowsEmptyHint =
+                        !!growthText && /Noch keine Werkzeug-Anwendung/.test(growthText.textContent);
+                    // Nach Schmiede-Hammer-Anwendung erscheint die Domain-Bar
+                    r.applyOpToPart(tn2, 0, "schmiede-hammer");
+                    r._workshopRenderStatsPanel && r._workshopRenderStatsPanel();
+                    out.domainBarsAppearAfterOp = !!(
+                        panel && panel.querySelector(".workshop-domain-bar.dominant")
+                    );
+
+                    // Cleanup
+                    delete r.state.blueprints[tn2];
+                    r._workshopRenderStatsPanel && r._workshopRenderStatsPanel();
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6x4cResults && !wave6x4cResults.error) {
+                check(
+                    "Welle 6.X.4 V8.16 Punkt 18: computeBlueprintDomainCounts existiert",
+                    wave6x4cResults.domainCountsMethodExists
+                );
+                check(
+                    "Welle 6.X.4 V8.16: Leere opChain → keine Domain-Counts",
+                    wave6x4cResults.emptyChainNoDomain
+                );
+                check(
+                    "Welle 6.X.4 V8.16: Schmiede-Hammer-Anwendung erhöht forging-Count",
+                    wave6x4cResults.afterForgingHasDomain
+                );
+                check(
+                    "Welle 6.X.4 V8.16: Werkstatt-Stats hat .workshop-synergy-row",
+                    wave6x4cResults.synergyRowRendered
+                );
+                check(
+                    "Welle 6.X.4 V8.16: Werkstatt-Stats hat .workshop-growth-row",
+                    wave6x4cResults.growthRowRendered
+                );
+                check(
+                    "Welle 6.X.4 V8.16: Growth-Text bei 0 Ops zeigt Wachstums-Hinweis",
+                    wave6x4cResults.growthShowsEmptyHint
+                );
+                check(
+                    "Welle 6.X.4 V8.16: Domain-Bar.dominant erscheint nach Schmiede-Hammer-Op",
+                    wave6x4cResults.domainBarsAppearAfterOp
+                );
+            } else {
+                check(
+                    "Welle 6.X.4 V8.16: Rolle-Synergie-Tests laufen",
+                    false,
+                    wave6x4cResults ? wave6x4cResults.error : "no result"
+                );
+            }
+
             if (wave6x4bResults && !wave6x4bResults.error) {
                 check("Welle 6.X.4 B3: #stats-hud im DOM", wave6x4bResults.statsHudExists);
                 check("Welle 6.X.4 B3: #stats-hud-hp-fill SVG-Element existiert", wave6x4bResults.statsHudHpFillExists);

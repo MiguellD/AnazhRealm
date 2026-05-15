@@ -16476,8 +16476,26 @@ class AnazhRealm {
     // Ops im Bauplan stecken). Bei Gleichstand entscheidet die Reihenfolge
     // in TOOL_DOMAINS (deterministisch).
     computeBlueprintDomain(blueprint) {
-        if (!blueprint || !Array.isArray(blueprint.parts)) return null;
+        const counts = this.computeBlueprintDomainCounts(blueprint);
+        let best = null;
+        let bestCount = 0;
+        for (const dom of AnazhRealm.TOOL_DOMAINS) {
+            const c = counts[dom] || 0;
+            if (c > bestCount) {
+                bestCount = c;
+                best = dom;
+            }
+        }
+        return best;
+    }
+
+    // Welle 6.X.4 V8.16 Punkt 18 — Domain-Verteilung als Map<domain, count>.
+    // Aus computeBlueprintDomain extrahiert damit die Werkstatt-UI die
+    // Wachstumssituation zeigen kann (welche Domain hat wie viele Ops, wer
+    // dominiert, wo emergiert die nächste Rolle bei weiterer Anwendung).
+    computeBlueprintDomainCounts(blueprint) {
         const counts = {};
+        if (!blueprint || !Array.isArray(blueprint.parts)) return counts;
         for (const part of blueprint.parts) {
             if (!part || !Array.isArray(part.opChain)) continue;
             for (const op of part.opChain) {
@@ -16490,16 +16508,7 @@ class AnazhRealm {
                 counts[dom] = (counts[dom] || 0) + 1;
             }
         }
-        let best = null;
-        let bestCount = 0;
-        for (const dom of AnazhRealm.TOOL_DOMAINS) {
-            const c = counts[dom] || 0;
-            if (c > bestCount) {
-                bestCount = c;
-                best = dom;
-            }
-        }
-        return best;
+        return counts;
     }
 
     // Forging-Split-Regel: ein Bauplan dessen dominante Domain "forging"
@@ -21004,7 +21013,7 @@ class AnazhRealm {
         const bp = this.state.blueprints[ws.selectedBlueprint];
         panel.innerHTML = "";
         if (!bp) return;
-        // Rolle-Chip
+        // Rolle-Chip — mit emergent-vs-manuell-Indikator + Provenienz
         const role = bp.role || AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
         const roleLabel = AnazhRealm.BLUEPRINT_ROLE_LABELS[role] || role;
         const roleRow = document.createElement("div");
@@ -21016,6 +21025,13 @@ class AnazhRealm {
         const roleChip = document.createElement("span");
         roleChip.className = "role-chip";
         roleChip.textContent = roleLabel;
+        if (bp.roleManual) {
+            roleChip.classList.add("role-manual");
+            roleChip.title = "Manuell gesetzt — überschreibt emergente Rolle";
+        } else {
+            roleChip.classList.add("role-emergent");
+            roleChip.title = "Emergent aus opChain-Domain-Mehrheit";
+        }
         roleRow.appendChild(roleChip);
         // Affordances
         const aff = this.computeBlueprintAffordances(bp) || {};
@@ -21026,6 +21042,93 @@ class AnazhRealm {
             roleRow.appendChild(chip);
         }
         panel.appendChild(roleRow);
+        // Welle 6.X.4 V8.16 Punkt 18 — Wachstumskonzept sichtbar:
+        // wie entsteht die Rolle? wie wächst sie? welche Synergie wirkt?
+        //
+        // Drei Schichten:
+        //  (a) Domain-Verteilung als Bar-Diagramm — welche Werkzeug-Domain
+        //      hat wie viele Op-Anwendungen, wer dominiert, wer könnte mit
+        //      weiterer Anwendung übernehmen.
+        //  (b) Synergie-Pfeil — Form × Material × Domain → Compound-Tags
+        //      → Rolle, kompakter Inline-Text damit der Schöpfer den Weg
+        //      vom Bauteil zur Identität sieht.
+        //  (c) Wachstumshinweis — bei leerer Chain: „wende ein Werkzeug an";
+        //      bei aktiver Chain: „nächste Anwendung könnte zu X führen";
+        //      bei bp.roleManual: „Manuell gesetzt, emergent wäre Y".
+        if (!bp.builtIn) {
+            const domCounts = this.computeBlueprintDomainCounts(bp);
+            const totalOps = Object.values(domCounts).reduce((a, b) => a + b, 0);
+            const dominantDomain = this.computeBlueprintDomain(bp);
+            const emergentRole = this.computeBlueprintRole(bp);
+            const emergentLabel = AnazhRealm.BLUEPRINT_ROLE_LABELS[emergentRole] || emergentRole;
+
+            // (a) Domain-Verteilung
+            if (totalOps > 0) {
+                const domRow = document.createElement("div");
+                domRow.className = "stat-row workshop-domain-row";
+                const domLab = document.createElement("span");
+                domLab.className = "stat-label";
+                domLab.textContent = "Domains";
+                domRow.appendChild(domLab);
+                const domWrap = document.createElement("div");
+                domWrap.className = "workshop-domain-bars";
+                for (const dom of AnazhRealm.TOOL_DOMAINS) {
+                    const c = domCounts[dom] || 0;
+                    if (c === 0) continue;
+                    const ratio = c / totalOps;
+                    const bar = document.createElement("div");
+                    bar.className = "workshop-domain-bar";
+                    if (dom === dominantDomain) bar.classList.add("dominant");
+                    bar.style.width = `${Math.max(8, Math.round(ratio * 100))}%`;
+                    bar.textContent = `${dom} ×${c}`;
+                    bar.title = `${dom}: ${c} Ops · ${Math.round(ratio * 100)}%`;
+                    domWrap.appendChild(bar);
+                }
+                domRow.appendChild(domWrap);
+                panel.appendChild(domRow);
+            }
+
+            // (b) Synergie-Pfeil (kompakt)
+            const synRow = document.createElement("div");
+            synRow.className = "stat-row workshop-synergy-row";
+            const synLab = document.createElement("span");
+            synLab.className = "stat-label";
+            synLab.textContent = "Synergie";
+            synRow.appendChild(synLab);
+            const synText = document.createElement("span");
+            synText.className = "workshop-synergy-text";
+            synText.textContent = "Form × Material × Werkzeug-Domain → Compound-Tags → Rolle";
+            synRow.appendChild(synText);
+            panel.appendChild(synRow);
+
+            // (c) Wachstumshinweis
+            const hintRow = document.createElement("div");
+            hintRow.className = "stat-row workshop-growth-row";
+            const hintLab = document.createElement("span");
+            hintLab.className = "stat-label";
+            hintLab.textContent = "Wachstum";
+            hintRow.appendChild(hintLab);
+            const hintText = document.createElement("span");
+            hintText.className = "workshop-growth-text";
+            if (totalOps === 0) {
+                hintText.textContent =
+                    "Noch keine Werkzeug-Anwendung. Default: Bauwerk. Wende ein Werkzeug an um Rolle zu emergieren.";
+            } else if (bp.roleManual) {
+                hintText.textContent = `Manuell gesetzt. Emergent wäre „${emergentLabel}" aus Domain „${dominantDomain || "—"}".`;
+                hintText.classList.add("manual-override");
+            } else {
+                const nextDom = AnazhRealm.TOOL_DOMAINS.filter(
+                    (d) => d !== dominantDomain && (domCounts[d] || 0) >= (domCounts[dominantDomain] || 0) - 1
+                )[0];
+                if (nextDom) {
+                    hintText.textContent = `Rolle aus „${dominantDomain}" (Mehrheit). Eine weitere „${nextDom}"-Anwendung könnte das verschieben.`;
+                } else {
+                    hintText.textContent = `Rolle aus „${dominantDomain}" (Mehrheit, stabil). Weitere Anwendungen vertiefen.`;
+                }
+            }
+            hintRow.appendChild(hintText);
+            panel.appendChild(hintRow);
+        }
         // V8.07 — Top-5 Compound-Tags mit STERN-RATING. Schöpfer-Wunsch:
         // schnelle Erkennung „wie stark ist das?" über visuelle Sterne statt
         // raw Zahlen. Schwellen aus WORLD_EFFECT_THRESHOLDS (mild/strong/
