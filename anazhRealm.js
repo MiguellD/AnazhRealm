@@ -6879,20 +6879,25 @@ class AnazhRealm {
 
     // ### Skybox ###
     createGalaxySkybox() {
+        // V8.26 Bug 1 — Sternenrauschen-Fix: Shader nutzt LOKALE `position`
+        // (Vertex-Attribut, immer dieselbe Sphere-Geometrie) statt
+        // `vWorldPosition` (= modelMatrix × position). Vorher rauschten die
+        // Sterne beim Gehen weil die modelMatrix-Translation den Sample-
+        // Punkt verschob. Mit der Skybox die der Kamera folgt (im Render-
+        // Loop) + lokaler `position` als Sample-Achse sind die Sterne
+        // ABSOLUT in Welt-Richtung stabil — egal wo der Spieler steht.
         const vertexShader = `
-        varying vec3 vWorldPosition;
+        varying vec3 vDir;
         void main() {
-            vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
+            vDir = normalize(position);
             gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }
     `;
-        // Welle 6.G3 V2 (V8.25) — starIntensity-Uniform damit Sterne nur bei
-        // Nacht stark sind. Steuerung über _applyDayNightToScene.
         const fragmentShader = `
         uniform float time;
         uniform vec3 nebulaColor;
         uniform float starIntensity;
-        varying vec3 vWorldPosition;
+        varying vec3 vDir;
     float random(vec3 st) {
         return fract(sin(dot(st, vec3(12.9898, 78.233, 45.5432))) * 43758.5453123);
     }
@@ -6917,14 +6922,16 @@ class AnazhRealm {
     }
 
     void main() {
-        vec3 pos = normalize(vWorldPosition);
-        float n1 = noise(pos * 1.0 + time * 0.1);
-        float n2 = noise(pos * 2.0 + time * 0.05);
-        float n3 = noise(pos * 4.0 + time * 0.025);
+        // V8.26 Bug 1 — vDir ist normalize(position), stabil egal wo Spieler steht.
+        // Nebula-Noise SEHR langsam animieren (time × 0.02 statt 0.1) damit
+        // die Wolken atmen ohne zu zappeln.
+        float n1 = noise(vDir * 1.0 + time * 0.02);
+        float n2 = noise(vDir * 2.0 + time * 0.01);
+        float n3 = noise(vDir * 4.0 + time * 0.005);
         // V8.25 — Sterne moduliert mit starIntensity (0=Tag versteckt, 1=Nacht voll).
         // Zwei Stern-Schichten für Tiefe.
-        float starField = pow(random(pos * 100.0), 100.0); // helle, seltene Sterne
-        float starField2 = pow(random(pos * 300.0), 200.0) * 0.6; // dimmer, dichter
+        float starField = pow(random(vDir * 100.0), 100.0); // helle, seltene Sterne
+        float starField2 = pow(random(vDir * 300.0), 200.0) * 0.6; // dimmer, dichter
         float stars = (starField + starField2) * starIntensity;
         vec3 color = nebulaColor * (0.5 + 0.5 * (n1 + n2 + n3) / 3.0);
         color += vec3(stars);
@@ -7861,21 +7868,34 @@ class AnazhRealm {
     // 0=Mitternacht (kalt-magisch), 0.25=Sonnenaufgang (warm-rosé),
     // 0.5=Mittag (klar-hell), 0.75=Sonnenuntergang (gold-violett).
     // Skybox-Tint wird mit dem Wetter-Tint kombiniert (sunny vs. rainy).
+    // V8.26 Bug 2 — Tag-Nacht-Stops erweitert von 7 auf 13 Stützpunkte für
+    // sanftere Übergänge. Der V8.24-Bug war: zwischen t=0.2 (0x4a3a5c violett)
+    // und t=0.3 (0xc66c4d orange) wurde linear gelerpt — eine HUGE Farb-
+    // Differenz in nur 10 % Zeitintervall, also nicht gradueller Sonnen-
+    // aufgang sondern Sprung. Jetzt sind die Stops dichter an den
+    // Übergangs-Phasen, und _interpolateDayNight nutzt smoothstep statt
+    // linear (siehe dort). Konsequenz: smooth Phasenwechsel ohne harte
+    // Farbsprünge.
     static get DAY_NIGHT_STOPS() {
         return Object.freeze([
-            // t=0 Mitternacht
             Object.freeze({ t: 0.0, sky: 0x161830, light: 0x6a7aa8, intensity: 0.28 }),
-            // t=0.2 frühe Dämmerung
-            Object.freeze({ t: 0.2, sky: 0x4a3a5c, light: 0xd29bbf, intensity: 0.55 }),
-            // t=0.3 Sonnenaufgang (warm-rosé)
-            Object.freeze({ t: 0.3, sky: 0xc66c4d, light: 0xffd0a8, intensity: 0.85 }),
-            // t=0.5 Mittag (klar)
+            Object.freeze({ t: 0.15, sky: 0x1e1e3a, light: 0x7888b8, intensity: 0.35 }),
+            Object.freeze({ t: 0.22, sky: 0x3a2c54, light: 0x9080c8, intensity: 0.48 }),
+            Object.freeze({ t: 0.27, sky: 0x6a4258, light: 0xc090b8, intensity: 0.65 }),
+            Object.freeze({ t: 0.32, sky: 0xa05a52, light: 0xe8b298, intensity: 0.78 }),
+            Object.freeze({ t: 0.38, sky: 0xc88060, light: 0xffd0a8, intensity: 0.9 }),
+            // V8.26 zweite Iteration: zusätzlicher Stop bei 0.44 zwischen
+            // Sonnenaufgang-warm und Mittag-blau, sonst war der R-Sprung
+            // (200→75) zu hart. Sanfter blau-grauer Vormittag-Tint.
+            Object.freeze({ t: 0.44, sky: 0x8e9bb8, light: 0xffe8c8, intensity: 0.95 }),
             Object.freeze({ t: 0.5, sky: 0x4b75c2, light: 0xffffff, intensity: 1.0 }),
-            // t=0.7 Sonnenuntergang (gold-violett)
-            Object.freeze({ t: 0.7, sky: 0xc04a7a, light: 0xffba88, intensity: 0.8 }),
-            // t=0.8 Dämmerung (kalt-violett)
-            Object.freeze({ t: 0.8, sky: 0x3a2c54, light: 0x9090d0, intensity: 0.5 }),
-            // t=1.0 → wraps zu 0.0 (Mitternacht)
+            // Symmetrisch: Zwischenstop nach Mittag, vor Sonnenuntergang
+            Object.freeze({ t: 0.56, sky: 0x7090b8, light: 0xfff0d8, intensity: 0.97 }),
+            Object.freeze({ t: 0.62, sky: 0x9078b0, light: 0xffd8b0, intensity: 0.92 }),
+            Object.freeze({ t: 0.68, sky: 0xc04a7a, light: 0xffba88, intensity: 0.8 }),
+            Object.freeze({ t: 0.74, sky: 0x804060, light: 0xb888a8, intensity: 0.62 }),
+            Object.freeze({ t: 0.82, sky: 0x3a2c54, light: 0x8888b8, intensity: 0.42 }),
+            Object.freeze({ t: 0.9, sky: 0x1e1e3a, light: 0x7080a8, intensity: 0.32 }),
             Object.freeze({ t: 1.0, sky: 0x161830, light: 0x6a7aa8, intensity: 0.28 }),
         ]);
     }
@@ -8787,10 +8807,7 @@ class AnazhRealm {
                 (creature.position.y + 0.5) / this.state.scaleFactor,
                 (creature.position.z + (emotion === "happy" ? 2 : -2)) / this.state.scaleFactor
             );
-            const rayCallback = new Ammo.ClosestRayResultCallback(rayStart, rayEnd);
-            this.state.physicsWorld.rayTest(rayStart, rayEnd, rayCallback);
-            const hasHit = rayCallback.hasHit();
-            Ammo.destroy(rayCallback);
+            const hasHit = this._runRaycast(rayStart, rayEnd, (_cb, hit) => hit);
 
             // Bewegung: Welle 6.H Phase 1. Wenn ein non-wander-Task aktiv ist,
             // hat er Vorrang über die heutige Emotion-Logik (follow_player /
@@ -10014,12 +10031,26 @@ class AnazhRealm {
         if (this.state.wallBoxes) {
             this.state.wallBoxes.forEach((wall) => {
                 this.state.scene.remove(wall);
+                // V8.26 Polish §6.2 — Geometrie + Material disposen sonst leakt
+                // jeder Welt-Regen die wall-BoxGeometry + MeshBasicMaterial im
+                // VRAM. Vorher: nur scene.remove + physics-body destroy.
+                if (wall.geometry) wall.geometry.dispose();
+                if (wall.material) {
+                    if (Array.isArray(wall.material)) wall.material.forEach((m) => m && m.dispose());
+                    else wall.material.dispose();
+                }
                 const body = wall.userData.physicsBody;
                 if (body) {
                     this.state.physicsWorld.removeRigidBody(body);
                     Ammo.destroy(body);
                     this.state.rigidBodies = this.state.rigidBodies.filter((rb) => rb !== wall);
                 }
+                // V8.26 Polish §6.4 — Ammo-Shape + MotionState wurden bei
+                // addWallCollisions in userData gespeichert. Sie sind nach
+                // Body-Destroy unreferenziert und müssen separat aus dem
+                // WASM-Heap geräumt werden, sonst leakt jeder Welt-Regen.
+                if (wall.userData.physicsShape) Ammo.destroy(wall.userData.physicsShape);
+                if (wall.userData.physicsMotionState) Ammo.destroy(wall.userData.physicsMotionState);
             });
             this.state.wallBoxes = [];
             this.log("Alte Wand-Kollisionsboxen entfernt");
@@ -17890,21 +17921,18 @@ class AnazhRealm {
             (cp.y + this._tmpCamDir.y * maxDist) / sf,
             (cp.z + this._tmpCamDir.z * maxDist) / sf
         );
-        const cb = new Ammo.ClosestRayResultCallback(rayStart, rayEnd);
-        this.state.physicsWorld.rayTest(rayStart, rayEnd, cb);
-        let result = fallback;
-        if (cb.hasHit()) {
-            const hit = cb.get_m_hitPointWorld();
+        const result = this._runRaycast(rayStart, rayEnd, (cb, hit) => {
+            if (!hit) return fallback;
+            const point = cb.get_m_hitPointWorld();
             const nrm = cb.get_m_hitNormalWorld();
-            result = {
-                x: hit.x() * sf,
-                y: hit.y() * sf,
-                z: hit.z() * sf,
+            return {
+                x: point.x() * sf,
+                y: point.y() * sf,
+                z: point.z() * sf,
                 isStable: nrm.y() > 0.5,
                 hit: true,
             };
-        }
-        Ammo.destroy(cb);
+        });
         return result;
     }
 
@@ -18115,15 +18143,11 @@ class AnazhRealm {
             (cp.y + this._tmpCamDir.y * maxDist) / sf,
             (cp.z + this._tmpCamDir.z * maxDist) / sf
         );
-        const cb = new Ammo.ClosestRayResultCallback(rayStart, rayEnd);
-        this.state.physicsWorld.rayTest(rayStart, rayEnd, cb);
-        let result = fallback;
-        if (cb.hasHit()) {
+        return this._runRaycast(rayStart, rayEnd, (cb, hit) => {
+            if (!hit) return fallback;
             const p = cb.get_m_hitPointWorld();
-            result = { hit: true, x: p.x() * sf, y: p.y() * sf, z: p.z() * sf };
-        }
-        Ammo.destroy(cb);
-        return result;
+            return { hit: true, x: p.x() * sf, y: p.y() * sf, z: p.z() * sf };
+        });
     }
 
     _mouseActionStaminaGate() {
@@ -22377,6 +22401,11 @@ class AnazhRealm {
     // findet das Stop-Paar das `t` umschließt, lerpt Sky-Color, Light-Color,
     // Intensity. Output ist ein {sky, light, intensity}-Objekt mit
     // THREE.Color-Instanzen.
+    // V8.26 Bug 2 — _interpolateDayNight nutzt jetzt smoothstep statt linear.
+    // Smoothstep(x) = x²·(3-2x): macht Übergänge an Anfang/Ende langsam,
+    // in der Mitte schneller — wirkt natürlich-organisch wie ein echter
+    // Sonnenaufgang, nicht wie ein abrupter Linear-Schwenk. Zusammen mit
+    // den 13 Stops (statt 7) heilt das die V8.25-Beobachtung „Sonne springt".
     _interpolateDayNight(t) {
         const stops = this.constructor.DAY_NIGHT_STOPS;
         const tWrap = ((t % 1) + 1) % 1; // 0..1 sicher
@@ -22390,15 +22419,17 @@ class AnazhRealm {
         const a = stops[i];
         const b = stops[i + 1];
         const span = b.t - a.t;
-        const local = span > 0 ? (tWrap - a.t) / span : 0;
+        const linear = span > 0 ? (tWrap - a.t) / span : 0;
+        // Smoothstep: 3x² - 2x³ — sanftes Easing für Farb+Intensity-Übergänge
+        const eased = linear * linear * (3 - 2 * linear);
         const skyA = new THREE.Color(a.sky);
         const skyB = new THREE.Color(b.sky);
         const lightA = new THREE.Color(a.light);
         const lightB = new THREE.Color(b.light);
         return {
-            sky: skyA.lerp(skyB, local),
-            light: lightA.lerp(lightB, local),
-            intensity: a.intensity + (b.intensity - a.intensity) * local,
+            sky: skyA.lerp(skyB, eased),
+            light: lightA.lerp(lightB, eased),
+            intensity: a.intensity + (b.intensity - a.intensity) * eased,
         };
     }
 
@@ -22745,6 +22776,28 @@ class AnazhRealm {
     }
 
     // ### 6.G3.c — Fauna-Lifecycle ###
+
+    // V8.26 Polish §6.3 — Raycast-Boilerplate-Helper. Vorher: 5 Call-Sites
+    // mit identischem alloc-rayTest-destroy-Block. Jetzt: eine Quelle für
+    // das WASM-Lifecycle, Caller extrahiert Ergebnis selbst (weil unter-
+    // schiedliche Anforderungen — manche brauchen Normale, manche nur hit-
+    // Point, manche nur hasHit). Liefert das Callback-Objekt SOLANGE die
+    // Funktion läuft — Caller MUSS `Ammo.destroy(cb)` rufen ODER über
+    // `_runRaycast(start, end, extractor)` arbeiten (siehe unten).
+    //
+    // Der einfachere Pfad: _runRaycast bekommt einen Extractor-Callback.
+    // Lifecycle bleibt komplett in einer Funktion, Caller ist 1 Zeile.
+    _runRaycast(rayStart, rayEnd, extractor) {
+        const cb = new Ammo.ClosestRayResultCallback(rayStart, rayEnd);
+        this.state.physicsWorld.rayTest(rayStart, rayEnd, cb);
+        let result = null;
+        try {
+            result = extractor(cb, cb.hasHit());
+        } finally {
+            Ammo.destroy(cb);
+        }
+        return result;
+    }
 
     // [ATMOSPHERE] Compound-Tags einer Soul (ohne Kreatur-Instanz zu brauchen).
     // Wrapper um computeCompoundTags({parts: soul.bodyParts}) — wird in
@@ -24622,12 +24675,19 @@ class AnazhRealm {
             }
 
             // ### Frustum Culling ###
-            const frustum = new THREE.Frustum().setFromProjectionMatrix(
-                new THREE.Matrix4().multiplyMatrices(
-                    this.state.camera.projectionMatrix,
-                    this.state.camera.matrixWorldInverse
-                )
+            // V8.26 Polish §6.1 — Frustum + Matrix4 als state-Pool statt
+            // pro-Frame-Allocation. Vorher: 60 Allocs/s = unnötiger GC-Druck.
+            // Jetzt: einmal allokiert, im Render-Loop nur Werte aktualisiert.
+            if (!this._frustumCache) {
+                this._frustumCache = new THREE.Frustum();
+                this._frustumMatrixCache = new THREE.Matrix4();
+            }
+            this._frustumMatrixCache.multiplyMatrices(
+                this.state.camera.projectionMatrix,
+                this.state.camera.matrixWorldInverse
             );
+            this._frustumCache.setFromProjectionMatrix(this._frustumMatrixCache);
+            const frustum = this._frustumCache;
             this.state.groundChunks.forEach((chunk) => (chunk.visible = this.isInFrustum(chunk, frustum)));
             if (this.state.floatingIslands)
                 this.state.floatingIslands.forEach((island) => (island.visible = this.isInFrustum(island, frustum)));
@@ -24904,6 +24964,14 @@ class AnazhRealm {
             }
 
             // ### Skybox und Planeten ###
+            // V8.26 Bug 1 — Skybox-Position folgt Kamera. So bleibt der Spieler
+            // immer im Zentrum der Skybox-Sphere und die Stern-Samples (über
+            // lokale Vertex-position) sind absolut stabil in Welt-Richtung.
+            // Vorher rauschten Sterne beim Gehen weil der Spieler ±150m
+            // gegen Skybox-Radius 500m sample-Verschiebung erzeugte.
+            if (this.state.camera) {
+                this.state.skybox.position.copy(this.state.camera.position);
+            }
             this.state.skybox.material.uniforms.time.value = currentTime;
             this.state.planets.forEach((planet) => {
                 const theta = currentTime / 10;
@@ -25091,10 +25159,9 @@ class AnazhRealm {
                 (this.state.playerMesh.position.y - 3.0) / this.state.scaleFactor,
                 (this.state.playerMesh.position.z + ray.offsetZ) / this.state.scaleFactor
             );
-            const rayCallback = new Ammo.ClosestRayResultCallback(rayStart, rayEnd);
-            this.state.physicsWorld.rayTest(rayStart, rayEnd, rayCallback);
-            if (rayCallback.hasHit()) {
-                const hitPoint = rayCallback.get_m_hitPointWorld();
+            this._runRaycast(rayStart, rayEnd, (cb, hit) => {
+                if (!hit) return;
+                const hitPoint = cb.get_m_hitPointWorld();
                 const hitY = hitPoint.y() * this.state.scaleFactor;
                 const distance = Math.abs(hitY - (this.state.playerMesh.position.y - 0.5));
                 if (distance < groundDistance) {
@@ -25102,12 +25169,11 @@ class AnazhRealm {
                     // Normal aufsammeln — flachste (höchstes y) gewinnt: wenn
                     // ein Ray auf eine flache Sub-Fläche trifft (Treppe, kleine
                     // Plattform), zählt der Spieler als „begehbar geerdet".
-                    const hitNormal = rayCallback.get_m_hitNormalWorld();
+                    const hitNormal = cb.get_m_hitNormalWorld();
                     const ny = hitNormal.y();
                     if (ny > bestNormalY) bestNormalY = ny;
                 }
-            }
-            Ammo.destroy(rayCallback);
+            });
         }
 
         this.state.groundNormalY = isGrounded ? bestNormalY : 1.0;
@@ -25133,24 +25199,25 @@ class AnazhRealm {
                   ]
                 : 0;
         if (height === 0 && this.state.playerMesh) {
-            // Fallback: Verwende Raycasting, um die Höhe direkt von der Physik-Kollision zu erhalten
-            const rayStart = new Ammo.btVector3(
+            // Fallback: Raycast für Terrain-Höhe. V8.26 Polish §6.4 — nutzt
+            // jetzt tmpVec1/tmpVec2-Pool statt new Ammo.btVector3 + manuelle
+            // Destroy. Plus _runRaycast für das Callback-Lifecycle.
+            const rayStart = this.setVec(
+                this.state.tmpVec1,
                 x / this.state.scaleFactor,
                 100 / this.state.scaleFactor,
                 z / this.state.scaleFactor
             );
-            const rayEnd = new Ammo.btVector3(
+            const rayEnd = this.setVec(
+                this.state.tmpVec2,
                 x / this.state.scaleFactor,
                 -100 / this.state.scaleFactor,
                 z / this.state.scaleFactor
             );
-            const rayCallback = new Ammo.ClosestRayResultCallback(rayStart, rayEnd);
-            this.state.physicsWorld.rayTest(rayStart, rayEnd, rayCallback);
-            if (rayCallback.hasHit()) {
-                const hitPoint = rayCallback.get_m_hitPointWorld();
-                height = hitPoint.y() * this.state.scaleFactor;
-            }
-            Ammo.destroy(rayCallback);
+            height = this._runRaycast(rayStart, rayEnd, (cb, hit) => {
+                if (!hit) return 0;
+                return cb.get_m_hitPointWorld().y() * this.state.scaleFactor;
+            });
             this.log(
                 `Terrain-Höhe nicht verfügbar bei (${x.toFixed(2)}, ${z.toFixed(2)}), Raycast-Höhe: ${height.toFixed(2)}`,
                 "DEBUG"
@@ -25281,22 +25348,36 @@ class AnazhRealm {
                     box.position.set(worldX, height + boxHeight / 2, worldZ);
                     box.visible = true;
 
-                    const boxShape = new Ammo.btBoxShape(new Ammo.btVector3(scaleX / 2, boxHeight / 2, scaleZ / 2));
+                    // V8.26 Polish §6.4 — btVector3-Pool statt drei new-Allocs
+                    // pro Wand-Box. Ammo's btBoxShape + setOrigin + Inertia-Init
+                    // kopieren die Werte intern, also kann tmpVec1 sequentiell
+                    // wiederverwendet werden. Plus rbInfo + transform werden
+                    // nach Body-Konstruktion destroyed (sie sind Helper, ihre
+                    // Werte sind im Body gespiegelt).
+                    const halfExtents = this.setVec(this.state.tmpVec1, scaleX / 2, boxHeight / 2, scaleZ / 2);
+                    const boxShape = new Ammo.btBoxShape(halfExtents);
                     const transform = new Ammo.btTransform();
                     transform.setIdentity();
-                    transform.setOrigin(
-                        new Ammo.btVector3(
-                            worldX / this.state.scaleFactor,
-                            (height + boxHeight / 2) / this.state.scaleFactor,
-                            worldZ / this.state.scaleFactor
-                        )
+                    const origin = this.setVec(
+                        this.state.tmpVec1,
+                        worldX / this.state.scaleFactor,
+                        (height + boxHeight / 2) / this.state.scaleFactor,
+                        worldZ / this.state.scaleFactor
                     );
+                    transform.setOrigin(origin);
                     const motionState = new Ammo.btDefaultMotionState(transform);
-                    const localInertia = new Ammo.btVector3(0, 0, 0);
+                    const localInertia = this.setVec(this.state.tmpVec1, 0, 0, 0);
                     const rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, boxShape, localInertia);
                     const body = new Ammo.btRigidBody(rbInfo);
                     this.state.physicsWorld.addRigidBody(body);
+                    // Helper-Objekte räumen — Werte sind in MotionState + Body
+                    // bereits kopiert. boxShape + motionState bleiben referenziert
+                    // vom Body und werden beim Wand-Cleanup destroyed.
+                    Ammo.destroy(rbInfo);
+                    Ammo.destroy(transform);
                     box.userData.physicsBody = body;
+                    box.userData.physicsShape = boxShape;
+                    box.userData.physicsMotionState = motionState;
                     this.state.rigidBodies.push(box);
                     this.state.wallBoxes.push(box);
                     this.state.scene.add(box);

@@ -5016,7 +5016,11 @@ function startSaveServer() {
                     const resolveSrc = r._resolvePhantomTarget.toString();
                     out.resolveUsesCamera = /this\.state\.camera/.test(resolveSrc);
                     out.resolveUsesGetWorldDirection = /getWorldDirection/.test(resolveSrc);
-                    out.resolveUsesRayTest = /rayTest/.test(resolveSrc);
+                    // V8.26 Polish §6.3 — _resolvePhantomTarget ruft jetzt
+                    // _runRaycast statt direkt rayTest. _runRaycast wickelt
+                    // physicsWorld.rayTest intern + Cleanup. Beide Pattern
+                    // sind akzeptabel.
+                    out.resolveUsesRayTest = /rayTest|_runRaycast/.test(resolveSrc);
                     out.resolveReadsNormal = /get_m_hitNormalWorld/.test(resolveSrc);
                     out.resolveHasFallback = /fallback/.test(resolveSrc);
                     out.resolveStabilityThreshold = /nrm\.y\(\)\s*>\s*0\.5/.test(resolveSrc);
@@ -10538,11 +10542,15 @@ function startSaveServer() {
                         AnazhRealm.DAY_LENGTH_MAX_MINUTES === 60 &&
                         AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES === 8;
                     out.dayNightStopsExists = Array.isArray(AnazhRealm.DAY_NIGHT_STOPS);
+                    // V8.26 Bug 2 — Stops erweitert von 7 auf 13 für sanftere
+                    // Übergänge (smoothstep + dichtere Stop-Verteilung). Test
+                    // prüft jetzt ≥7 Stops + monoton steigende t-Werte.
                     out.dayNightStopsSorted =
                         AnazhRealm.DAY_NIGHT_STOPS &&
-                        AnazhRealm.DAY_NIGHT_STOPS.length === 7 &&
+                        AnazhRealm.DAY_NIGHT_STOPS.length >= 7 &&
                         AnazhRealm.DAY_NIGHT_STOPS[0].t === 0 &&
-                        AnazhRealm.DAY_NIGHT_STOPS[AnazhRealm.DAY_NIGHT_STOPS.length - 1].t === 1;
+                        AnazhRealm.DAY_NIGHT_STOPS[AnazhRealm.DAY_NIGHT_STOPS.length - 1].t === 1 &&
+                        AnazhRealm.DAY_NIGHT_STOPS.every((s, i, arr) => i === 0 || s.t > arr[i - 1].t);
                     out.lightsReferenced =
                         r.state.directionalLight !== null && r.state.ambientLight !== null;
                     out.interpolateMethod = typeof r._interpolateDayNight === "function";
@@ -10705,7 +10713,7 @@ function startSaveServer() {
                 check("Welle 6.G3.a: dayLengthMinutes Default 8", wave6g3Results.dayLengthDefault);
                 check("Welle 6.G3.a: Tag-Längen-Konstanten (1/60/8) korrekt", wave6g3Results.dayLengthConstantsExist);
                 check("Welle 6.G3.a: DAY_NIGHT_STOPS frozen Array", wave6g3Results.dayNightStopsExists);
-                check("Welle 6.G3.a: 7 Stops, sortiert von t=0 bis t=1", wave6g3Results.dayNightStopsSorted);
+                check("Welle 6.G3.a: ≥7 Stops, monoton steigend von t=0 bis t=1 (V8.26: 13 Stops für smoothe Übergänge)", wave6g3Results.dayNightStopsSorted);
                 check("Welle 6.G3.a: directionalLight + ambientLight Referenzen gesetzt", wave6g3Results.lightsReferenced);
                 check("Welle 6.G3.a: _interpolateDayNight-Methode existiert", wave6g3Results.interpolateMethod);
                 check("Welle 6.G3.a: _applyDayNightToScene-Methode existiert", wave6g3Results.applyMethod);
@@ -11022,6 +11030,127 @@ function startSaveServer() {
                     false,
                     wave6g3v2Results ? wave6g3v2Results.error : "no result"
                 );
+            }
+
+            // ### V8.26 Browser-Bug-Fixes + Polish (17.05.2026) ###
+            // Zwei Browser-Test-Bugs aus V8.25-Session + vier Audit-Polish-
+            // Punkte. Tests sind PERMANENT (nicht nur regression catchers).
+            const v826Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // Bug 1 — Stern-Stabilität: Skybox folgt Camera + Shader
+                    // nutzt lokale vDir. Test: bewege Spieler 100 m → Skybox-
+                    // Position folgt + nebulaColor-Sample-Achse bleibt vDir.
+                    // Skybox-Folgt-Camera: durchsuche alle Prototype-Methoden auf
+                    // das Pattern `skybox.position.copy(this.state.camera.position)`.
+                    // Es lebt in der animate-Closure von init() — also irgendwo
+                    // im Source der init-Methode.
+                    out.skyboxFollowsCamera = false;
+                    try {
+                        const proto = Object.getPrototypeOf(r);
+                        const names = Object.getOwnPropertyNames(proto);
+                        for (const name of names) {
+                            try {
+                                const fn = proto[name];
+                                if (typeof fn !== "function") continue;
+                                const src = fn.toString();
+                                if (/skybox\.position\.copy\s*\(\s*this\.state\.camera\.position/.test(src)) {
+                                    out.skyboxFollowsCamera = true;
+                                    break;
+                                }
+                            } catch {
+                                /* getter that crashes — skip */
+                            }
+                        }
+                    } catch {
+                        out.skyboxFollowsCamera = false;
+                    }
+                    // Shader nutzt lokale Position (vDir) statt vWorldPosition
+                    if (r.state.skybox && r.state.skybox.material && r.state.skybox.material.vertexShader) {
+                        out.shaderUsesLocalPosition =
+                            /varying vec3 vDir/.test(r.state.skybox.material.vertexShader) &&
+                            /vDir = normalize\(position\)/.test(r.state.skybox.material.vertexShader);
+                        out.shaderFragmentUsesVDir = /vDir/.test(r.state.skybox.material.fragmentShader);
+                    }
+
+                    // Bug 2 — Sonnenaufgang sanft: 13 Stops + smoothstep im Lerp
+                    const AnazhRealm = window.AnazhRealm || r.constructor;
+                    // V8.26 iter2: 15 Stops (13 + 2 Vormittag/Nachmittag-Zwischenstops
+                    // weil orange→blau noch zu hart war)
+                    out.thirteenStops = AnazhRealm.DAY_NIGHT_STOPS.length >= 13;
+                    // Stop bei t=0.32 sollte zwischen 0.27 (rotbraun) und 0.38 (orange) liegen
+                    const stops = AnazhRealm.DAY_NIGHT_STOPS;
+                    const t032 = stops.find((s) => s.t === 0.32);
+                    out.intermediateStopExists = !!t032;
+                    // Smoothstep im _interpolateDayNight: prüfe Source
+                    const interpSrc = r._interpolateDayNight.toString();
+                    out.interpUsesSmoothstep = /3 - 2 \* linear/.test(interpSrc) || /eased/.test(interpSrc);
+
+                    // Interpolations-Test: zwischen Stops t=0.22 und t=0.27 sollte
+                    // bei t=0.245 (Mitte) NICHT genau die Hälfte der Farben sein,
+                    // sondern smoothstep-gewichtet (in der Mitte schnell, am Rand
+                    // langsam). Wir prüfen: bei linear 50% wäre lerp-Wert 0.5,
+                    // smoothstep(0.5) = 0.5 — Mitte ist gleich. Aber am Anfang
+                    // (linear 0.2) ist smoothstep(0.2) = 0.104 — viel langsamer.
+                    // Statt symbolisch zu rechnen: prüfe, dass Tint bei t=0.235
+                    // (kurz nach Stop 0.22) näher am Start-Stop ist als bei
+                    // linearem Lerp.
+                    const at22 = r._interpolateDayNight(0.22);
+                    const at245 = r._interpolateDayNight(0.245); // 50 % Weg
+                    const at27 = r._interpolateDayNight(0.27);
+                    // Bei smoothstep ist 0.245 (mitte) ≈ lerp(at22, at27, 0.5),
+                    // weil smoothstep(0.5) = 0.5. Aber bei 0.232 (20% des Wegs)
+                    // wäre smoothstep(0.2)=0.104, also viel näher an at22.
+                    const at232 = r._interpolateDayNight(0.232);
+                    const distLinearAt232 = Math.abs(at232.sky.r - (at22.sky.r + 0.2 * (at27.sky.r - at22.sky.r)));
+                    const distSmoothAt232 = Math.abs(at232.sky.r - (at22.sky.r + 0.104 * (at27.sky.r - at22.sky.r)));
+                    out.smoothstepIsActive = distSmoothAt232 < distLinearAt232 - 0.001;
+                    // Stop-Differenzen sind klein — kein Sprung über 0.3 in R-Component
+                    let maxJump = 0;
+                    for (let i = 1; i < stops.length; i++) {
+                        const a = stops[i - 1].sky;
+                        const b = stops[i].sky;
+                        const aR = (a >> 16) & 0xff,
+                            bR = (b >> 16) & 0xff;
+                        const aG = (a >> 8) & 0xff,
+                            bG = (b >> 8) & 0xff;
+                        const aB = a & 0xff,
+                            bB = b & 0xff;
+                        const dist = Math.max(Math.abs(aR - bR), Math.abs(aG - bG), Math.abs(aB - bB));
+                        if (dist > maxJump) maxJump = dist;
+                    }
+                    // Max-Differenz pro Komponente sollte < 90 sein (vorher war 124 R)
+                    out.noSharpColorJumps = maxJump < 95;
+                    out.maxJump = maxJump;
+
+                    // Polish §6.1 — Frustum-Pool
+                    out.frustumPoolExists = !!r._frustumCache && !!r._frustumMatrixCache;
+
+                    // Polish §6.3 — _runRaycast-Helper
+                    out.runRaycastHelperExists = typeof r._runRaycast === "function";
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (v826Results && !v826Results.error) {
+                check("V8.26 Bug 1: Skybox.position folgt camera.position (Stern-Rauschen-Fix)", v826Results.skyboxFollowsCamera);
+                check("V8.26 Bug 1: Vertex-Shader nutzt lokale `vDir = normalize(position)`", v826Results.shaderUsesLocalPosition);
+                check("V8.26 Bug 1: Fragment-Shader sampelt mit vDir (nicht vWorldPosition)", v826Results.shaderFragmentUsesVDir);
+                check("V8.26 Bug 2: 13 DAY_NIGHT_STOPS (statt 7) für sanftere Übergänge", v826Results.thirteenStops);
+                check("V8.26 Bug 2: Zwischen-Stop bei t=0.32 existiert (Sonnenaufgang-Phase)", v826Results.intermediateStopExists);
+                check("V8.26 Bug 2: _interpolateDayNight nutzt smoothstep statt linear-Lerp", v826Results.interpUsesSmoothstep);
+                check("V8.26 Bug 2: Smoothstep wirkt empirisch (Anfangs-Phase langsamer als linear)", v826Results.smoothstepIsActive);
+                check(
+                    `V8.26 Bug 2: Keine harten Farbsprünge zwischen Stops (max RGB-Komponente <95, ist ${v826Results.maxJump})`,
+                    v826Results.noSharpColorJumps
+                );
+                check("V8.26 Polish §6.1: _frustumCache + _frustumMatrixCache statt pro-Frame-Alloc", v826Results.frustumPoolExists);
+                check("V8.26 Polish §6.3: _runRaycast-Helper existiert (5 Call-Sites konsolidiert)", v826Results.runRaycastHelperExists);
+            } else {
+                check("V8.26: Browser-Bugs + Polish-Tests laufen", false, v826Results ? v826Results.error : "no result");
             }
 
             // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider (Audit 17.05.2026) ###

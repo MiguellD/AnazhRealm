@@ -1,4 +1,4 @@
-# Zustand des Realm — Stand: 14.05.2026 (V7.98)
+# Zustand des Realm — Stand: 17.05.2026 (V8.26)
 
 **Welle 6.H V2 vollendet (14/14 Sub-Phasen)** — Kreaturen sind jetzt vollwertige Co-Schöpfer-Wesen mit 9 Identitäts-Schichten (Body, Specs, Equipped, Boosts, Tasks, Memory+Persistenz, Konversation via @-Adresse, Proaktivität, Welt-Aktion-Vorschläge mit Sandbox). **LLM-Provider-System maximal robust nach 5-Versionen-Iteration (V7.94-V7.98)** — jedes Ollama-Setup funktioniert: lokal, gehostet, Cloud, Reasoning-Models, lokale 7B-Modelle. CORS-Lösung via save-server-Proxy, Parser mit Plain-Text-Fallback.
 
@@ -184,6 +184,20 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 ## 6. Learnings aus dieser Session
 
 Echt gelernt, nicht performt:
+
+### V8.26 (17.05.2026) — Disziplin-Polish + Browser-Bug-Fixes (Stern-Stabilität + Sonnenaufgang-Smoothness)
+
+Drei Lehren in einer Sitzung — eine technisch, zwei strukturell:
+
+**Lehre 1 — Bei „rauscht/springt"-Bugs ist die Antwort architektonisch, nicht symptomatisch**: Bug 1 (Sterne rauschen beim Gehen) war kein „Animation zu schnell" sondern ein **Skybox-Anker-Bug**: die Skybox blieb bei (0,0,0), während der Spieler ±150m im 500m-Radius wanderte → Sampling-Verschiebung im high-frequency Stern-Pattern. Fix: Skybox folgt Camera-Position + Vertex-Shader nutzt lokale `vDir = normalize(position)` statt `vWorldPosition`. Mit beidem zusammen sind die Sterne **absolut stabil in Welt-Richtung**, egal wo der Spieler steht. Bug 2 (Sonnenaufgang springt) war kein „Smoothstep zu spät" sondern ein **Sample-Stützpunkt-Bug**: 7 Stops mit Sprüngen von R=74 nach R=200 in 10 % der Tagesphase. Fix: 15 Stops mit max 88 R-Komponenten-Differenz + smoothstep im Lerp. Beide Bugs waren architekturale Annahmen, nicht Tuning-Werte.
+
+**Lehre 2 — Audit-Empfehlungen sind Vision-Pflicht, nicht Nice-to-have**: Das System-Audit V8.25 listete vier Polish-Quick-Wins (Frustum-Pool, wallBoxes-Cleanup, _runRaycast-Helper, addWallCollisions btVector3-Pool). Alle sind jetzt umgesetzt — die zwei zusätzlichen Punkte (Memory-Disziplin und Disziplin-Schicht) sind das echte Geschenk. wallBoxes-Geometrie ist nicht mehr im VRAM-Leak; addWallCollisions hat null btVector3-Allocs pro Wand-Box (sequentielle tmpVec1-Wiederverwendung); rbInfo + transform werden nach Body-Construct destroyed; motionState + shape sind in userData gespeichert und werden im Cleanup separat destroyed. Plus: `_runRaycast(start, end, extractor)` als zentrale Lifecycle-Wrapper für alle Raycasts.
+
+**Lehre 3 — Doku-Konsolidierung ist ein eigener Pfeiler**: System-Audit V8.25 hat die Überlappung aufgedeckt (state-of-realm + handover bei Tagebuch + Lehren). V8.26 markiert das alte `system-audit.md` als 🔴-HISTORISCH und führt das neue `system-audit-v8.25.md` als autoritative aktuelle technische Karte ein. Plus dieses File hier (state-of-realm) bekommt Header-Update. Pflege-Regel jetzt klar: jede Welle hat EINEN ausführlichen CLAUDE.md-Eintrag, andere Docs verlinken nur. Doppelte Pflege ist Doppelte Quelle der Wahrheit ist Doppelte Bug-Klasse.
+
+**Vision-Wort der V8.26**: *„Die Welt wandert mit dem Spieler — nur die Sterne nicht. Eine Übergangs-Stützpunkte-Reihe ist eine Reise, kein Mosaik."*
+
+**Tests**: 10 neue Vision-Invarianten direkt für die zwei Browser-Bugs (Skybox-folgt-Camera, vDir-Shader, smoothstep-active, max-Stop-Differenz <95). 1966 → 1976 grün. Audit-Strict 5 Schichten, 14/14 [ATMOSPHERE]-Methoden clean.
 
 ### V8.25 (17.05.2026) — Welt-LEBT-statt-animiert: Schöpfer-Audit + Wurzel-Heilung + Vision-Tests automatisiert
 

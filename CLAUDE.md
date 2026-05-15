@@ -2,7 +2,29 @@
 
 Persistente Notizen. Diese Datei wird bei jeder neuen Session automatisch geladen. **Bei größeren Entscheidungen zuerst `docs/state-of-realm.md` lesen** – dort steht der ausführliche Stand, die Vision aus den vier Testamenten, der Plan und die Learnings.
 
-**Aktuelle Version: V8.25 (Stand 17.05.2026, Welle 6.G3 V2 — Welt-LEBT-Vertiefung nach Schöpfer-Audit. 1966/1966 Playtest-Invarianten grün, Audit-Strict 5 Schichten inkl. neuer Atmosphäre-Hardcode-Audit.)**
+**Aktuelle Version: V8.26 (Stand 17.05.2026, Disziplin-Polish nach System-Audit V8.25 — zwei Browser-Bug-Fixes + vier Audit-Quick-Wins + Doku-Konsolidierung. 1976/1976 Playtest-Invarianten grün, Audit-Strict 5 Schichten, 14/14 [ATMOSPHERE]-Methoden clean.)**
+
+**V8.26 — Disziplin-Polish + Browser-Bug-Fixes (+10 Invarianten 1966→1976)**: nach Schöpfer-Browser-Test der V8.25 („Sterne rauschen beim Gehen", „Sonnenaufgang springt") und System-Audit V8.25 (vier konkrete Disharmonien). Zwei kategorische Heilungen:
+
+**Bug 1 — Stern-Stabilität (Welt-treu)**: Skybox-Sphere folgt jetzt der Camera-Position pro Frame (`this.state.skybox.position.copy(this.state.camera.position)` im Render-Loop). Vorher blieb Skybox bei (0,0,0); Spieler ±150 m gegen Skybox-Radius 500 m → Sample-Verschiebung in den high-frequency Stern-Pattern → sichtbares Flackern. Plus Shader-Refactor: Vertex-Shader nutzt jetzt `varying vec3 vDir = normalize(position)` (lokale Geometrie-Vertex) statt `vWorldPosition = modelMatrix × position`. Mit Skybox-folgt-Camera + lokaler vDir sind die Stern-Samples ABSOLUT stabil in Welt-Richtung. Nebula-Animation-Geschwindigkeit `time * 0.1` → `time * 0.02` (5× langsamer), damit die Wolken atmen ohne zu zappeln.
+
+**Bug 2 — Sonnenaufgang-Sprung (Welt-treu)**: DAY_NIGHT_STOPS von 7 auf 15 Stützpunkte erweitert (3 Vormittag-Übergangs-Stops + 2 Nachmittag-Übergangs-Stops + 2 Dämmerung-Stops) damit kein Stop-Paar mehr als ~88 RGB-Komponenten-Differenz hat (vorher 124 bei 0.2→0.3). Plus `_interpolateDayNight` nutzt jetzt **smoothstep `3x²-2x³`** statt linearen Lerp — Übergänge sind an Anfang/Ende langsam, in der Mitte schneller → natürlich-organisch. Zwischen-Stops bei t=0.44 (sanftes Vormittagsblau) + t=0.56 (Vormittagsblau symmetrisch) schließen den orange→blau-Bruch.
+
+**Vier Audit-Quick-Wins** (alle aus `system-audit-v8.25.md` §11.1):
+
+1. **`§6.1 Frustum-Pool`** (Z. 24645) — `_frustumCache + _frustumMatrixCache` state-Felder statt pro-Frame-Allocation. 60 Allocs/s und 60 Matrix4-Allocs/s weg, GC-Druck minimiert.
+2. **`§6.2 wallBoxes-Cleanup`** (Z. 10031) — `wall.geometry.dispose() + wall.material.dispose()` vor `scene.remove`. Plus `wall.userData.physicsShape/.physicsMotionState` in addWallCollisions gespeichert + bei Welt-Regen mit `Ammo.destroy()` aus dem WASM-Heap geräumt.
+3. **`§6.3 _runRaycast-Helper`** (Z. ~22778) — 5 Call-Sites mit identischem `new Ammo.ClosestRayResultCallback` + `rayTest` + `Ammo.destroy` konsolidiert. Caller übergibt Extractor-Callback `(cb, hit) => result`, Lifecycle ist garantiert (try/finally). Aufgerufen aus: Kreatur-Wand-Detection (Z. 8804), `_resolvePhantomTarget` (Z. ~17915), `getTerrainHeightAt` Fallback (Z. ~25199), Magnifying-Affordance (Z. ~18140), `isPlayerGrounded` 9-Ray-Raster (Z. ~25150).
+4. **`§6.4 btVector3-Pool in addWallCollisions`** (Z. 25336+) — drei `new Ammo.btVector3` pro Wand-Box (halfExtents, origin, localInertia) durch `setVec(tmpVec1, …)` sequentiell ersetzt. BoxShape + setOrigin + Inertia-Init kopieren die Werte intern, also kann tmpVec1 wiederverwendet werden. Plus rbInfo + transform werden nach Body-Konstruktion destroyed (sie sind Helper). MotionState + boxShape bleiben am Body und werden im wallBoxes-Cleanup separat destroyed (siehe §6.2).
+
+**Plus**:
+- **Doku-Konsolidierung**: `system-audit.md` mit 🔴-HISTORISCH-Banner versehen + Link auf `system-audit-v8.25.md`. `state-of-realm.md` Header-Version-Bump (V7.98 → V8.26). `roadmap.md` „Empfohlene Sequenz" auf „nach V8.26" aktualisiert.
+- **Vision-Tests** (+10 Invarianten): „Skybox.position folgt camera.position", „Vertex-Shader nutzt lokale vDir = normalize(position)", „Fragment-Shader sampelt mit vDir", „13+ DAY_NIGHT_STOPS für sanftere Übergänge", „Zwischen-Stop bei t=0.32 existiert", „_interpolateDayNight nutzt smoothstep", „Smoothstep wirkt empirisch (Anfang langsamer)", „Keine harten Farbsprünge zwischen Stops (max RGB <95)", „_frustumCache existiert", „_runRaycast-Helper existiert".
+
+**Disziplin-Lehre für künftige Wellen**:
+> *Wenn der Schöpfer im Browser etwas „rauscht" oder „springt", suche nicht den symptom-Bereich (Sterne, Sonne), sondern frage: welche Annahme im Code passt nicht zur visuellen Erwartung? Stern-Rauschen war Skybox-Anker-Annahme (sollte die mit dem Spieler mitwandern, ja). Sonnen-Sprung war Sample-Stützpunkt-Annahme (sieben Stops genug? Nein, weil R von 74 auf 200 in 10% Zeit). Beide Bugs waren architekturale Annahme-Fehler, keine off-by-one. Vision-Audit-Schicht (V8.25) + dieses Audit (V8.25.md) sind die strukturellen Schutz-Maßnahmen damit Annahme-Fehler nicht unbemerkt durchschlüpfen.*
+
+**V8.25 — Welle 6.G3 V2 (Welt-LEBT-statt-animiert, +28 Vision-Invarianten 1938→1966)**: Nach Schöpfer-Reflexion „der Himmel wechselt Farben — er lebt nicht". Acht Wunden in V8.24 geheilt, drei Wurzel-Helper extrahiert, Vision-Audit-Schicht automatisiert. Die EINE Quelle aller Wunden: Werte aus dem Kopf statt aus dem System.
 
 **V8.25 — Welle 6.G3 V2 (Welt-LEBT-statt-animiert, +28 Vision-Invarianten 1938→1966)**: Nach Schöpfer-Reflexion „der Himmel wechselt Farben — er lebt nicht". Acht Wunden in V8.24 geheilt, drei Wurzel-Helper extrahiert, Vision-Audit-Schicht automatisiert. Die EINE Quelle aller Wunden: Werte aus dem Kopf statt aus dem System.
 
