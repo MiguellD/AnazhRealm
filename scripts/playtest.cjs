@@ -9779,6 +9779,11 @@ function startSaveServer() {
                     r._clearBuildMode && r._clearBuildMode();
                     r.setHotbarSlot(0, "stein_block");
                     r.selectHotbarSlot(0);
+                    // Welle 6.X.1 A2 — confirmBuild prüft jetzt phantomOnGround
+                    // im pfad-Modus. Im Headless-Setup läuft tickBuildMode nicht
+                    // (das würde via Raycast die Stabilität setzen). Wir simulieren
+                    // einen stabilen Phantom-Stand für den Material-Konsum-Test.
+                    if (r.state.buildMode) r.state.buildMode.phantomOnGround = true;
                     const archBeforePfad = r.state.architectures.length;
                     const stoneBeforePfad = r.state.player.inventory[0].count;
                     const builtPfad = r.confirmBuild();
@@ -9914,6 +9919,206 @@ function startSaveServer() {
                 );
                 check("Welle 6.H P2C: schöpfer-HUD zeigt 'frei'", wave6hP2cResults.hudShowsFreiInSchoepfer);
                 check("Welle 6.H P2C: frieden-HUD zeigt 'frei'", wave6hP2cResults.hudShowsFreiInFrieden);
+            }
+
+            // ### Welle 6.X.1 Audit-Fixes (17.05.2026) ###
+            // Vier Bug-Quartett-Fixes aus dem Schöpfer-Audit:
+            //   A1 — Ammo-Body activate(true) vor Jump-Velocity (Stand-Sprung)
+            //   A2 — confirmBuild blockt bei instabilem Phantom im pfad-Modus
+            //   A3 — Markier-UI zeigt Baupläne mit emergenter Rolle (filter
+            //        auf !roleManual statt !role), Stat-Panel zeigt Equipped
+            //   A4 — Player-Aura in 1st-Person ausgeblendet (Position bleibt
+            //        getrackt, nur Visibility togglet)
+            const wave6x1Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // --- A1: Code-Strukturtest — activate(true) im handleJump-Pfad
+                    // (Quelltext-Inspektion: das ist die einzige zuverlässige Art
+                    // den Ammo-Sleep-Wakeup zu prüfen ohne echte Physik-Sim).
+                    // Wichtig: nicht den ersten setLinearVelocity-Match nehmen
+                    // (der könnte in einem Kommentar stehen), sondern den ECHTEN
+                    // Method-Call mit `playerBody.setLinearVelocity(`.
+                    const jumpSrc = r.handleJump.toString();
+                    const activatePos = jumpSrc.indexOf(".activate(true)");
+                    const setVelPos = jumpSrc.indexOf("playerBody.setLinearVelocity(");
+                    out.handleJumpActivatesBody =
+                        activatePos > -1 && setVelPos > -1 && activatePos < setVelPos;
+
+                    // --- A2: confirmBuild blockt bei phantomOnGround=false im pfad
+                    r.setGameMode("pfad");
+                    r.state.player.inventory = new Array(27).fill(null);
+                    r.addMaterialToInventory("stein", 200);
+                    r._clearBuildMode && r._clearBuildMode();
+                    r.setHotbarSlot(0, "stein_block");
+                    r.selectHotbarSlot(0);
+                    if (r.state.buildMode) r.state.buildMode.phantomOnGround = false;
+                    const archBeforeBlock = r.state.architectures.length;
+                    const stoneBeforeBlock = r.state.player.inventory[0].count;
+                    const blocked = r.confirmBuild();
+                    const stoneAfterBlock = r.state.player.inventory[0]
+                        ? r.state.player.inventory[0].count
+                        : 0;
+                    out.pfadBlocksUnstable = blocked === false;
+                    out.pfadBlocksNoArch = r.state.architectures.length === archBeforeBlock;
+                    out.pfadBlocksNoMaterialLoss = stoneBeforeBlock === stoneAfterBlock;
+
+                    // schöpfer-Modus: gleiches Setup, instabil → trotzdem baut
+                    r.setGameMode("schöpfer");
+                    if (r.state.buildMode) r.state.buildMode.phantomOnGround = false;
+                    const archBeforeS = r.state.architectures.length;
+                    const builtS = r.confirmBuild();
+                    out.schoepferBypassesUnstable =
+                        builtS === true && r.state.architectures.length > archBeforeS;
+
+                    r._clearBuildMode && r._clearBuildMode();
+                    r.setGameMode("frieden");
+
+                    // --- A3a: Markier-UI nimmt Baupläne mit emergenter Rolle auf
+                    // (filter auf !roleManual statt !role). Wir machen einen
+                    // eigenen Bauplan mit forcierter emergenter Rolle ohne
+                    // roleManual-Flag — vor dem Fix wäre er gefiltert worden.
+                    // createBlueprint returnt true/false, nicht {ok}.
+                    const bpCreated = r.createBlueprint("audit_armor_test", "Audit-Test");
+                    out._a3aCreated = bpCreated === true;
+                    if (bpCreated) {
+                        const bpRef = r.state.blueprints["audit_armor_test"];
+                        bpRef.role = "tool"; // emergent gesetzt, kein Manual
+                        bpRef.roleManual = false;
+                        r.renderPlayerEquipUI && r.renderPlayerEquipUI();
+                        // Alle .equip-mark-label durchsuchen — der Test-Bauplan
+                        // hat "Audit-Test" als Label und muss in mindestens
+                        // einem .equip-mark-label gerendert sein.
+                        const labels = document.querySelectorAll(".equip-mark-label");
+                        out._a3aLabelCount = labels.length;
+                        let found = false;
+                        for (const l of labels) {
+                            if (/audit-test/i.test(l.textContent || "")) {
+                                found = true;
+                                break;
+                            }
+                        }
+                        out.markListShowsEmergentRole = found;
+                        delete r.state.blueprints["audit_armor_test"];
+                        r.renderPlayerEquipUI && r.renderPlayerEquipUI();
+                    } else {
+                        out.markListShowsEmergentRole = false;
+                    }
+
+                    // --- A3b: Stat-Panel zeigt Equipped-Zeile wenn Armor an
+                    const bp2Created = r.createBlueprint("audit_armor_real", "Audit-Helm");
+                    out._a3bCreated = bp2Created === true;
+                    if (bp2Created) {
+                        r.addPartToBlueprint("audit_armor_real", {
+                            shape: "sphere",
+                            material: "stein",
+                            size: { x: 0.5, y: 0.5, z: 0.5 },
+                        });
+                        const armorResult = r.setBlueprintAsArmor("audit_armor_real");
+                        out._a3bMarked = !!(armorResult && armorResult.ok);
+                        const equipResult = r.equipArmor("audit_armor_real");
+                        out._a3bEquipped = !!(equipResult && equipResult.ok);
+                        // Stat-Panel muss tatsächlich rendern — `recomputePlayerStats`
+                        // ist in equipArmor schon drin, aber renderPlayerStatsUI
+                        // muss explizit aufgerufen werden.
+                        r.renderPlayerStatsUI && r.renderPlayerStatsUI();
+                        const container = document.getElementById("player-stats");
+                        out._a3bContainerText = container ? container.textContent.slice(0, 200) : null;
+                        out.statsShowsArmorRow =
+                            !!container && /Rüstung/.test(container.textContent || "");
+                        r.equipArmor(null);
+                        delete r.state.blueprints["audit_armor_real"];
+                        r.renderPlayerStatsUI && r.renderPlayerStatsUI();
+                    } else {
+                        out.statsShowsArmorRow = false;
+                    }
+
+                    // --- A4: 1st-Person → Aura unsichtbar, 3rd-Person → sichtbar
+                    r.setCameraMode("first");
+                    r.tickPlayerAura();
+                    const glow = r.state.playerAuraGlow;
+                    out.auraHiddenInFirst = !!glow && glow.visible === false;
+                    r.setCameraMode("third");
+                    r.tickPlayerAura();
+                    out.auraVisibleInThird = !!glow && glow.visible === true;
+                    // Position bleibt getrackt auch in 1st-Person
+                    r.setCameraMode("first");
+                    r.tickPlayerAura();
+                    const pp = r.state.playerMesh.position;
+                    out.auraPositionStillTracked =
+                        !!glow && Math.abs(glow.position.x - pp.x) < 0.01;
+
+                    // --- Cleanup: Camera-Mode auf Default „first" zurücksetzen
+                    // (Ring 5 V2-Prep prüft Initial-Modus). Hotbar auf Default
+                    // zurücksetzen (Ring 6.5 prüft Default-Hotbar).
+                    r.setCameraMode("first");
+                    try {
+                        localStorage.removeItem("anazhRealmCameraMode");
+                    } catch {
+                        /* ignore */
+                    }
+                    if (r.state.hotbar && r.state.hotbar.length === 9) {
+                        const builtIns = ["village", "temple", "waterfall"];
+                        for (let i = 0; i < 9; i++) {
+                            r.state.hotbar[i] = i < 3 ? builtIns[i] : null;
+                        }
+                    }
+                    r._clearBuildMode && r._clearBuildMode();
+
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6x1Results && !wave6x1Results.error) {
+                check(
+                    "Welle 6.X.1 A1: handleJump ruft activate(true) vor setLinearVelocity",
+                    wave6x1Results.handleJumpActivatesBody
+                );
+                check(
+                    "Welle 6.X.1 A2: pfad + Phantom-instabil → confirmBuild blockt",
+                    wave6x1Results.pfadBlocksUnstable
+                );
+                check(
+                    "Welle 6.X.1 A2: pfad-Block → keine Architektur entsteht",
+                    wave6x1Results.pfadBlocksNoArch
+                );
+                check(
+                    "Welle 6.X.1 A2: pfad-Block → kein Material-Verlust",
+                    wave6x1Results.pfadBlocksNoMaterialLoss
+                );
+                check(
+                    "Welle 6.X.1 A2: schöpfer-Modus überschreibt Stabilitäts-Gate",
+                    wave6x1Results.schoepferBypassesUnstable
+                );
+                check(
+                    "Welle 6.X.1 A3a: Markier-UI nimmt Baupläne mit emergenter Rolle auf",
+                    wave6x1Results.markListShowsEmergentRole,
+                    `created=${wave6x1Results._a3aCreated}, labelCount=${wave6x1Results._a3aLabelCount}`
+                );
+                check(
+                    "Welle 6.X.1 A3b: Stat-Panel zeigt 'Rüstung'-Zeile wenn equipped",
+                    wave6x1Results.statsShowsArmorRow,
+                    `created=${wave6x1Results._a3bCreated} marked=${wave6x1Results._a3bMarked} equipped=${wave6x1Results._a3bEquipped} text=${(wave6x1Results._a3bContainerText || "").slice(0, 80)}`
+                );
+                check(
+                    "Welle 6.X.1 A4: Player-Aura unsichtbar in 1st-Person",
+                    wave6x1Results.auraHiddenInFirst
+                );
+                check(
+                    "Welle 6.X.1 A4: Player-Aura sichtbar in 3rd-Person",
+                    wave6x1Results.auraVisibleInThird
+                );
+                check(
+                    "Welle 6.X.1 A4: Aura-Position bleibt getrackt auch in 1st-Person",
+                    wave6x1Results.auraPositionStillTracked
+                );
+            } else {
+                check(
+                    "Welle 6.X.1: Audit-Fix-Tests laufen",
+                    false,
+                    wave6x1Results ? wave6x1Results.error : "no result"
+                );
             }
 
             // ### Welle 6.H Phase 2B.2 — Kreatur baut Bauplan für Spieler ###

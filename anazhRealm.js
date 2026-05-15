@@ -13666,6 +13666,10 @@ class AnazhRealm {
         // multipliziert mit der Textur, sodass die HSL-Tag-Farbe sichtbar wird.
         const glow = this._ensurePlayerAuraGlow();
         if (glow) {
+            // Position + Material immer aktualisieren — Mitspieler (zukünftig
+            // mit Welle 11 V3 Soul-Sync) sollen Konsistenz auch beim Beobachten
+            // des eigenen Avatars haben, und Tests erwarten eine getrackte
+            // Position. Nur die Visibility wird durch den Camera-Mode getoggled.
             const p = this.state.playerMesh.position;
             glow.position.set(p.x, p.y + 0.5, p.z);
             glow.material.color.copy(auraColor);
@@ -13677,6 +13681,15 @@ class AnazhRealm {
             // Atem-Animation über Sprite-scale (5 % Modulation).
             const breath = 3.0 * (1 + Math.sin(performance.now() * 0.001) * 0.05);
             glow.scale.set(breath, breath, 1);
+            // Welle 6.X.1 A4 — Aura in 1st-Person ausblenden (Audit 17.05.2026):
+            // das Billboard sitzt 0.5m über dem Player. In first-Person ist die
+            // Kamera AM Spieler-Kopf, also liegt das Sprite mitten im Sichtfeld
+            // und addiert via AdditiveBlending einen Schleier auf jeden Pixel
+            // (besonders beim Blick nach unten). In 3rd-Person ist es das was
+            // es sein soll: ein Schimmer um den eigenen Körper. Mitspieler
+            // (P2P) sehen die Aura sowieso nicht (kein Soul/Aura-Sync) — kein
+            // Regressions-Risiko, das wird mit Welle 11 V3 sauberer.
+            glow.visible = this.state.cameraMode !== "first";
         }
         // (b) Sub-Mesh-Tint dezent: 15 % Mix, damit Original-Farbe vorranig
         // bleibt aber das Leuchten in die Materialien hineinwirkt.
@@ -17436,6 +17449,16 @@ class AnazhRealm {
         if (!bm.active || !bm.blueprintName || !bm.phantomMesh) return false;
         const p = bm.phantomMesh.position;
         const spawnPos = { x: p.x, y: p.y + 0.5, z: p.z };
+        // Welle 6.X.1 A2 — Stabilitäts-Gate (Audit 17.05.2026): _resolvePhantomTarget
+        // markiert isStable über Hit-Normal-Y > 0.5 (begehbar). _applyPhantomTint
+        // zeigt das via Rot/Grün, aber confirmBuild prüfte es nie. Im pfad-Modus
+        // soll der rote Phantom keinen Spawn erlauben — Schöpfer-Forderung war
+        // klar. Frieden + schöpfer bleiben durchlässig (Vision §10.1 — Schöpfer-
+        // Modus gehorcht, keine Friction).
+        if (this.getGameMode() === "pfad" && !bm.phantomOnGround) {
+            this.log("Bauen: Standort ist nicht stabil (rote Markierung).", "INFO");
+            return false;
+        }
         // Welle 9c — Welt-Werkstatt-Gate (modus-abhängig): pfad braucht passende
         // Werkstatt in der Nähe; frieden + schöpfer überspringen den Check.
         const stationGate = this._workshopStationGate(bm.blueprintName, spawnPos);
@@ -21735,7 +21758,15 @@ class AnazhRealm {
             const bp = this.state.blueprints[name];
             if (!bp || bp.builtIn) continue;
             if (bp.role === "armor") armorBlueprints.push(name);
-            else if (!bp.role) candidateBlueprints.push(name);
+            // Welle 6.X.1 A3 — Audit 17.05.2026: Markier-Sektion zeigte vorher
+            // NUR Baupläne ohne Rolle (`!bp.role`). Welle 9a's emergente
+            // _refreshBlueprintRoleEmergent setzt aber bei jedem applyOpToPart
+            // eine Rolle (z.B. „tool" für forging+scharf). Damit verschwanden
+            // alle Baupläne mit opChain aus der Markier-UI — Schöpfer konnte
+            // sie nicht mehr als Rüstung markieren. Jetzt: alle eigenen Baupläne
+            // außer denen mit explizitem Manual-Override (bp.roleManual=true)
+            // werden Markier-Kandidaten. Explizite Geste sticht emergente Rolle.
+            else if (!bp.roleManual) candidateBlueprints.push(name);
         }
         for (const name of armorBlueprints) {
             const bp = this.state.blueprints[name];
@@ -22215,6 +22246,44 @@ class AnazhRealm {
             tagLine.textContent = "Stark: " + sorted.map((s) => `${s.k} ${s.v.toFixed(2)}`).join(" · ");
             container.appendChild(tagLine);
         }
+        // Welle 6.X.1 A3 — Equipped-Anzeige (Audit 17.05.2026): bisher war
+        // unsichtbar OB überhaupt ein Werkzeug/Rüstung ausgerüstet ist.
+        // Spieler musste in den Spieler-Drawer scrollen und Dropdown lesen.
+        // Stats-Panel zeigt jetzt direkt unter den Werten was getragen wird.
+        const equipped = (this.state.player && this.state.player.equipped) || {};
+        if (equipped.tool || equipped.armor) {
+            const divider = document.createElement("div");
+            divider.className = "stats-divider";
+            container.appendChild(divider);
+            if (equipped.armor) {
+                const armorBp = (this.state.blueprints && this.state.blueprints[equipped.armor]) || null;
+                const row = document.createElement("div");
+                row.className = "stat-row";
+                const label = document.createElement("span");
+                label.className = "stat-label";
+                label.textContent = "Rüstung";
+                const value = document.createElement("span");
+                value.className = "stat-value";
+                value.textContent = (armorBp && armorBp.label) || equipped.armor;
+                row.appendChild(label);
+                row.appendChild(value);
+                container.appendChild(row);
+            }
+            if (equipped.tool) {
+                const tool = (this.state.tools && this.state.tools[equipped.tool]) || null;
+                const row = document.createElement("div");
+                row.className = "stat-row";
+                const label = document.createElement("span");
+                label.className = "stat-label";
+                label.textContent = "Werkzeug";
+                const value = document.createElement("span");
+                value.className = "stat-value";
+                value.textContent = (tool && tool.label) || equipped.tool;
+                row.appendChild(label);
+                row.appendChild(value);
+                container.appendChild(row);
+            }
+        }
         // Welle 6.D Etappe 2 — Aktive Boosts unten anzeigen. Label + Tag-Delta
         // links, Restzeit rechts. Wenn keine aktiv: nichts (clean state).
         const boosts = (this.state.player && this.state.player.boosts) || [];
@@ -22588,6 +22657,12 @@ class AnazhRealm {
             const isGrounded = this.isPlayerGrounded();
             const withinCoyoteTime = currentTime - this.state.lastGroundedTime <= this.state.coyoteTime;
             if ((isGrounded || withinCoyoteTime) && !this.state.isJumping) {
+                // Welle 6.X.1 A1 — Ammo deaktiviert „still stehende" Bodies. Ohne
+                // explizites activate(true) verpufft setLinearVelocity, weil der
+                // Body in der Island schläft. forceActivationState im Bewegungs-
+                // Pfad weckt nur bei Lauf — beim Stand-Sprung musste der Body
+                // sonst erst durch einen Mikro-Move geweckt werden.
+                this.state.playerBody.activate(true);
                 const velocity = this.state.playerBody.getLinearVelocity();
                 this.state.playerBody.setLinearVelocity(
                     this.setVec(this.state.tmpVec1, velocity.x(), this.state.jumpPower, velocity.z())
@@ -22890,6 +22965,11 @@ class AnazhRealm {
                     const isGrounded = this.isPlayerGrounded();
                     const withinCoyoteTime = currentTime - this.state.lastGroundedTime <= this.state.coyoteTime;
                     if (isGrounded || withinCoyoteTime) {
+                        // Welle 6.X.1 A1 — siehe handleJump: Body wecken vor Velocity.
+                        // Im Loop-Jump-Pfad wird nur bei moveDirection.length() > 0
+                        // ein forceActivationState aufgerufen — Stand-Sprung würde
+                        // sonst verpuffen wenn der Body im Ammo-Sleep ist.
+                        playerBody.activate(true);
                         const jumpForce = this.state.jumpPower;
                         const currentVelocity = playerBody.getLinearVelocity();
                         playerBody.setLinearVelocity(

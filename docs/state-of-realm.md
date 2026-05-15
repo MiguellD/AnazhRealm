@@ -185,6 +185,23 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 
 Echt gelernt, nicht performt:
 
+### V8.07 + Audit 17.05.2026 — Pause-und-Auditieren als eigenes Werkzeug
+
+**Der Schöpfer hat eine Welle ANGEHALTEN und stattdessen einen 18-Punkte-Audit verlangt** — das war die wichtigste Lehre dieses Tages. Ich war bereit zu 6.G Phase 3 oder Welle 7 zu springen; der Schöpfer hat erkannt, dass eine **strukturierte Audit-Reflexion** vor dem nächsten Bau-Schritt mehr wert ist als der nächste Bau-Schritt selbst. Das ist keine Verzögerung, das ist **Disziplin der Übersicht**.
+
+**Audit-Lehren konkret**:
+- **Sub-Agent-Vertrauen ist nicht 1:1**: der Explore-Agent hat zwei wesentliche Code-Stellen verpasst (Player-Aura existiert als `state.playerAuraGlow`, Logbuch ist live im DOM via `flushLog`). Die Disziplin: bei Audit-Ergebnissen IMMER zwei kritische Spot-Checks selbst machen. Sub-Agent ist Beschleuniger, nicht Ersatz für Verständnis.
+- **Wurzel vs. Symptom bei Bugs**: A1 „Jump im Stehen" war NICHT Raycast-Edge-Case (Agent-These), sondern Ammo-Body-Sleeping. Spürbarer Unterschied beim Fix: 2 Zeilen `playerBody.activate(true)` statt 40 Zeilen Raycast-Caching. **Bei jedem Bug: die Wurzel suchen, nicht den ersten plausiblen Erklärungs-Ansatz akzeptieren.**
+- **„Scheint kaputt" vs. wirklich kaputt**: A3 „Rüstung scheint nicht zu funktionieren" — equipArmor + Stat-Stacking funktioniert technisch korrekt. Aber Welle 9a's `_refreshBlueprintRoleEmergent` versteckt die Markier-UI für Baupläne mit emergenter Rolle. Spieler kann nicht markieren → glaubt es ist kaputt. **Sichtbarkeit von Funktion ist Funktion.**
+- **Audit als neuer Roadmap-Schritt**: aus den 18 Punkten emergierte **Welle 6.X (Polish-Sammel)** als bewusste 5-Sub-Phasen-Welle vor dem nächsten Atmosphäre-Block. Plus drei neue Wellen-Stellen: 11 V3 (Soul-Sync), 11 ext. (Substanz-Rolle), 4 V2 (Lofi-Musik). Eine gute Audit-Session bringt mehr Strukturschärfe als drei Feature-Sessions.
+
+**Projekt-Reflexion (7 Inspirations-Projekte): Vision-Alignment-Check**
+- **Wir sind das Werkstatt-Ultiversum**: aus dem Vergleich mit voxelize (Rust authoritative), image-blaster (SaaS Magie), tiny-world-builder (Voxel-Klötzchen) emergiert das Wort. Andere bauen Welten FÜR Spieler — wir bauen eine Welt, in der Spieler SELBST Welten bauen können. Mit lokalen Händen + lokaler KI-Stimme + Peer-Symbiose.
+- **Vision-resonante Übernahmen, keine direkten Forks**: three-fluid-fx als Vendor-Lib für 6.G4 (13 KB, CSP-konform, fluid-Effekte für Emotion + Magie), Erosions-Algorithmen-Inspirationen von THREE.Terrain für 6.G3 (Welt verändert sich eigen-zeitlich), WebGPU+TSL als ferne Welle 12 (line-spider + three-fluid-fx-TSL-Variante).
+- **Lehre**: Inspirations-Projekte sind nicht „was sollen wir kopieren?", sondern „bestätigen sie unseren Weg oder zeigen sie einen anderen?". Bei sechs der sieben: bestätigt + bestärkt unseren Pfad. Bei einem (image-blaster): zeigt einen anderen, vision-fernen Weg. Beide Ergebnisse sind wertvoll.
+
+---
+
 ### V7.99-V8.07 (16.05.2026) — Vision-Korrektur als Lern-Kern
 
 **Eine ganze Session-Welle hängt an einer einzigen Schöpfer-Frage**: „die definition eines rades ist aktuell die grösse?". Diese eine Beobachtung hat Welle 10b komplett refactored — von Form-Whitelist-Hardcode zu räumlicher Analyse + Tag-Sprache. Die Lehre: **wenn ein Detail dich an die Heilige Lektion erinnert, ist sie verletzt.** WHEEL_SHAPES = {cylinder, torus} sah harmlos aus, war aber genau die Tabelle-statt-Sprache, vor der die Lektion warnt. Tagsprache durchziehen ist anstrengender als Form-Listen, aber Vision-treu.

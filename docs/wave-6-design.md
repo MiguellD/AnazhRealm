@@ -524,6 +524,40 @@ Nachgereicht 13.05.2026 vom Schöpfer. Diese Liste macht die Welt **körperlich 
 
 **Vision-Anbindung**: Wasser ist im Hylomorphismus-System genau wie Stein und Eisen — ein Material mit Tag-Profil, das in Compounds (Brunnen, Aquädukte, Flüsse) verwendbar ist.
 
+### 6.G3 — Welt-Lebendigkeit (Schöpfer-Audit 17.05.2026 + Projekt-Reflexion, ~1-2 Sessions)
+
+**Heute**: Welt ist statisch — Architekturen verharren, Wetter wechselt instant, kein Tag/Nacht, keine Fauna die kommt/geht.
+
+**Drei Schichten**:
+
+**a) Tag-Nacht-Zyklus**: `state.timeOfDay = 0..1` (0=Mitternacht, 0.5=Mittag). DirectionalLight-Position wandert über Halbkreis, Skybox-Tint cross-fadet (warm-tag → kalt-nacht → magisch-dämmerung). Default: realistischer 24min Game-Tag oder konfigurierbar. Vision §3 ist Welt-Atem.
+
+**b) Sanfte Wetter-Übergänge**: `setWeather` wird zu `requestWeatherTransition`. Über 30-60 s cross-faden Skybox-Color, Particle-Density (Regen-Rate steigt), Symphony-Wetter-Filter-Gain. Heute springt es; vision-natürlicher wäre „Wolken ziehen auf, Regen beginnt sanft".
+
+**c) Fauna-Lifecycle**: Kreaturen-Population atmet eigen-zeitlich. Bei `state.creatures.length < TARGET_POPULATION` (z.B. 8) spawnen neue Kreaturen mit niedriger Wahrscheinlichkeit pro Minute. Bei Überpopulation (>20) sterben einzelne (mit Trauer-Effekt: `journalAppend("loss", "Eine Kreatur kehrt zur Erde zurück")`). Soul-Wahl via Welt-Affinitäts-Feld (`spawnAffinityForBlueprint` für Creature-Souls).
+
+**Inspirations-Quelle (Projekt-Reflexion 17.05.2026)**: **THREE.Terrain** zeigt Erosion-Algorithmen (Brownian + Worley). Erweiterung wäre **Erosions-Tick**: modify_terrain bei seltenen Events („Wasser höhlt aus", „Wind glättet Berg"). Welt verändert sich auch ohne Spieler — Vision-Pfeiler §11 vertieft.
+
+**Aufwand**: 1-2 Sessions ohne Erosion, 3 mit Erosion-Schicht.
+
+### 6.G4 — Shader-Erweiterungen (Schöpfer-Vision + Projekt-Reflexion, ~2-3 Sessions)
+
+**Heute**: Terrain ist `MeshBasicMaterial` (kein Licht-Effekt), Architekturen ähnlich. Keine Post-Processing-Schicht.
+
+**Drei Vision-Schichten**:
+
+**a) Licht-empfindliche Materialien**: Wechsel `MeshBasicMaterial` → `MeshLambertMaterial` für Architekturen + Heightfield. Mit Tag-Nacht-Zyklus aus 6.G3 entsteht damit „Mondschein über Tempel" / „Morgenrot auf Wald".
+
+**b) Glüh-Effekt für hochpräzise Compounds**: bestehender Welt-Effekt-Pfad (`_applyCompoundWorldEffects`) bekommt visuellen Verstärker. Wenn `tags.resoniert ≥ resonance_strong AND avgPrec ≥ precision_high`, bekommt das Mesh `EmissiveMap` oder `Bloom` per Postprocess. Vision §4 — Präzision sichtbar.
+
+**c) Fluid-Effekte über `three-fluid-fx`** (Projekt-Reflexion 17.05.2026, ~13 KB Vendor-Lib): 2D-GPGPU-Fluid-Solver als Post-Processing-Schicht. Drei vision-relevante Effekte:
+- **Emotion-Fluid**: chaos-Achse erzeugt Turbulenz, peace glättet. Vision §3 direkt visualisiert.
+- **Magie-Aura-Wellen**: über `tags.magieleitung ≥ T.magic_strong`-Compounds entstehen schimmernde UV-Verzerrungs-Felder
+- **Hitze-Distortion**: über `tags.glut`-Architekturen (Glutbrunnen) Wackeln in der Sicht
+- Vendor-Footprint: ein Peer-Dep (`three`), 13 KB gzipped, CSP-konform (kein eval)
+
+**Reihenfolge**: 6.G4 nach 6.G3 (Tag-Nacht macht Licht-Effekt erst sinnvoll). 6.G4-c könnte in eigene Sub-Welle „6.G4.fluid".
+
 ---
 
 
