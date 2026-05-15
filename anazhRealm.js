@@ -19800,22 +19800,25 @@ class AnazhRealm {
         }
     }
 
-    // V8.06 — beim ersten Werkstatt-Open eine produktive Default-Größe
+    // V8.06/8.07 — beim ersten Werkstatt-Open eine produktive Default-Größe
     // setzen wenn der Spieler noch nichts manuell resized hat. Idempotent:
     // wenn `anazh.workshop.defaultApplied` gesetzt ist, passiert nichts.
+    // V8.07: alte localStorage-Größe (z. B. 300px aus V8.05-Zeit) wird
+    // ÜBERSCHRIEBEN wenn defaultApplied-Flag fehlt — sonst hängt Bestands-User
+    // auf altem Briefkasten-Maß.
     _workshopApplyDefaultSizeOnce() {
         if (typeof document === "undefined" || typeof localStorage === "undefined") return;
         try {
             const flag = localStorage.getItem("anazh.workshop.defaultApplied");
-            const saved = localStorage.getItem("anazh.resize.werkstatt");
-            if (flag === "1" || saved) return; // bereits angewandt oder schon eigene Größe
+            if (flag === "1") return; // nur einmal anwenden
             const werkstatt = document.querySelector('[data-drawer="werkstatt"]');
             if (!werkstatt) return;
-            // Default-Größe: 1100×800, responsive auf viewport
-            const vw = window.innerWidth || 1200;
-            const vh = window.innerHeight || 800;
-            const w = Math.max(640, Math.min(1100, vw - 100));
-            const h = Math.max(500, Math.min(800, vh - 140));
+            // Default: nahezu vollbild (Schöpfer-Wunsch aus V8.06-Browser-Test)
+            // Begrenzt nur durch viewport — clamp 640..vw-40 (40px Rand).
+            const vw = window.innerWidth || 1400;
+            const vh = window.innerHeight || 900;
+            const w = Math.max(640, vw - 40);
+            const h = Math.max(500, vh - 140);
             werkstatt.style.width = `${w}px`;
             werkstatt.style.height = `${h}px`;
             werkstatt.style.maxHeight = "none";
@@ -20720,10 +20723,21 @@ class AnazhRealm {
         const isBuiltIn = bp && bp.builtIn === true;
         if (banner) banner.hidden = !isBuiltIn;
         if (modeBar) {
-            const allBtns = modeBar.querySelectorAll("button");
-            allBtns.forEach((btn) => {
+            // V8.07 — NUR Mode-Buttons + Snap-Toggle disablen bei built-in.
+            // Klonen + Neu-Buttons bleiben IMMER aktiv (sie sind bauplan-
+            // unabhängig: Klonen erzeugt eine eigene Kopie, Neu legt einen
+            // frischen Bauplan an — beides braucht keinen schreibfähigen
+            // Kontext).
+            const editableBtns = modeBar.querySelectorAll("[data-workshop-mode], #workshop-snap-toggle");
+            editableBtns.forEach((btn) => {
                 btn.disabled = isBuiltIn;
-                btn.style.opacity = isBuiltIn ? "0.4" : "";
+                btn.style.opacity = isBuiltIn ? "0.45" : "";
+            });
+            // Action-Buttons (Klonen, Neu) immer enabled
+            const actionBtns = modeBar.querySelectorAll(".workshop-action-btn");
+            actionBtns.forEach((btn) => {
+                btn.disabled = false;
+                btn.style.opacity = "";
             });
         }
         // V8.02 Phase 3a — Shape-Palette ebenfalls disable bei Built-in
@@ -20789,13 +20803,27 @@ class AnazhRealm {
             roleRow.appendChild(chip);
         }
         panel.appendChild(roleRow);
-        // Top-5 Compound-Tags (nur die mit Wert > 0.1)
+        // V8.07 — Top-5 Compound-Tags mit STERN-RATING. Schöpfer-Wunsch:
+        // schnelle Erkennung „wie stark ist das?" über visuelle Sterne statt
+        // raw Zahlen. Schwellen aus WORLD_EFFECT_THRESHOLDS (mild/strong/
+        // signature) damit die Sterne mit den existing Welt-Effekt-Gates
+        // konsistent sind.
         const tags = this.computeCompoundTags(bp) || {};
         const tagEntries = AnazhRealm.MATERIAL_TAG_KEYS.map((k) => ({ k, v: tags[k] || 0 }))
             .filter((e) => e.v > 0.1)
             .sort((a, b) => b.v - a.v)
             .slice(0, 5);
         if (tagEntries.length > 0) {
+            const T = AnazhRealm.WORLD_EFFECT_THRESHOLDS || {};
+            const mild = T.resonance_mild || 0.7;
+            const strong = T.resonance_strong || 1.5;
+            const signature = T.resonance_signature || 2.5;
+            const starsFor = (v) => {
+                if (v >= signature) return "★★★";
+                if (v >= strong) return "★★☆";
+                if (v >= mild) return "★☆☆";
+                return "☆☆☆";
+            };
             const tagRow = document.createElement("div");
             tagRow.className = "stat-row";
             const tagLab = document.createElement("span");
@@ -20805,7 +20833,25 @@ class AnazhRealm {
             for (const e of tagEntries) {
                 const chip = document.createElement("span");
                 chip.className = "tag-chip";
-                chip.textContent = `${e.k} ${e.v.toFixed(2)}`;
+                // Stern-Klassen für Farbgebung pro Level
+                const stars = starsFor(e.v);
+                let levelClass = "lvl-0";
+                if (e.v >= signature) levelClass = "lvl-3";
+                else if (e.v >= strong) levelClass = "lvl-2";
+                else if (e.v >= mild) levelClass = "lvl-1";
+                chip.classList.add(levelClass);
+                const starEl = document.createElement("span");
+                starEl.className = "tag-stars";
+                starEl.textContent = stars;
+                const nameEl = document.createElement("span");
+                nameEl.className = "tag-name";
+                nameEl.textContent = e.k;
+                const valEl = document.createElement("span");
+                valEl.className = "tag-val";
+                valEl.textContent = e.v.toFixed(2);
+                chip.appendChild(starEl);
+                chip.appendChild(nameEl);
+                chip.appendChild(valEl);
                 tagRow.appendChild(chip);
             }
             panel.appendChild(tagRow);

@@ -14531,6 +14531,101 @@ function startSaveServer() {
                 check(`V8.06: evaluate-Fehler — ${v806Results.error}`, false);
             }
 
+            // ### V8.07 — Werkstatt-Detail-Polish (Klone/Neu klickbar, Stern-Stats, Default-Größe fix) ###
+            const v807Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    try {
+                        const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
+                        if (tab) tab.click();
+                        // Klone + Neu sind IMMER enabled — auch bei built-in Bauplan
+                        r.selectBlueprintForEdit("village"); // built-in
+                        const cloneBtn = document.getElementById("workshop-clone-btn");
+                        const newBtn = document.getElementById("workshop-new-btn");
+                        out.cloneBtnAlwaysEnabled = cloneBtn && cloneBtn.disabled === false;
+                        out.newBtnAlwaysEnabled = newBtn && newBtn.disabled === false;
+                        // Mode-Buttons sind disabled bei built-in (kein Edit-Modus)
+                        const moveBtn = document.querySelector("#workshop-mode-bar [data-workshop-mode='translate']");
+                        out.modeBtnDisabledOnBuiltIn = moveBtn && moveBtn.disabled === true;
+                        // Bei eigenem Bauplan: alle wieder enabled
+                        if (r.state.blueprints["test_v807"]) r.deleteBlueprint("test_v807");
+                        r.cloneBlueprint("village", "test_v807");
+                        r.selectBlueprintForEdit("test_v807");
+                        out.modeBtnEnabledOnCustom = moveBtn && moveBtn.disabled === false;
+
+                        // Stats-Panel: Tag-Chips haben Stern-Levels
+                        const statsPanel = document.getElementById("workshop-stats-panel");
+                        const tagChips = statsPanel ? statsPanel.querySelectorAll(".tag-chip") : [];
+                        out.tagChipsCount = tagChips.length;
+                        let anyHasStars = false;
+                        let anyHasLevelClass = false;
+                        tagChips.forEach((c) => {
+                            if (c.querySelector(".tag-stars")) anyHasStars = true;
+                            if (
+                                c.classList.contains("lvl-1") ||
+                                c.classList.contains("lvl-2") ||
+                                c.classList.contains("lvl-3") ||
+                                c.classList.contains("lvl-0")
+                            )
+                                anyHasLevelClass = true;
+                        });
+                        out.tagChipsHaveStars = anyHasStars;
+                        out.tagChipsHaveLevelClass = anyHasLevelClass;
+                        // Stern-Inhalt: enthält Stern-Glyphen
+                        let starsContent = "";
+                        if (tagChips.length > 0) {
+                            const firstStarEl = tagChips[0].querySelector(".tag-stars");
+                            if (firstStarEl) starsContent = firstStarEl.textContent;
+                        }
+                        out.starsAreGlyphs = /[★☆]/.test(starsContent) && starsContent.length === 3;
+
+                        // Default-Size-Override: setze Flag zurück + ruf default —
+                        // sollte jetzt eine grosse Größe anwenden
+                        localStorage.removeItem("anazh.workshop.defaultApplied");
+                        localStorage.setItem("anazh.resize.werkstatt", JSON.stringify({ width: 300, height: 300 }));
+                        r._workshopApplyDefaultSizeOnce();
+                        const saved = JSON.parse(localStorage.getItem("anazh.resize.werkstatt") || "{}");
+                        out.defaultOverridesStale = saved.width > 600;
+                        // Idempotenz: zweiter Call überschreibt nicht
+                        r._workshopApplyDefaultSizeOnce();
+                        out.idempotentAfterApply = localStorage.getItem("anazh.workshop.defaultApplied") === "1";
+
+                        // Cleanup
+                        if (r.state.blueprints["test_v807"]) r.deleteBlueprint("test_v807");
+                        r.selectBlueprintForEdit("village");
+                        r._renderWorkshopDOM();
+                        const weltTab = document.querySelector('#topbar [data-tab="welt"]');
+                        if (weltTab) weltTab.click();
+                        r.state.yaw = 0;
+                        if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
+                    } catch (err) {
+                        out.error = err && err.message;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (v807Results && !v807Results.error) {
+                check("V8.07: Klone-Button IMMER enabled (auch bei built-in)", v807Results.cloneBtnAlwaysEnabled);
+                check("V8.07: Neu-Button IMMER enabled (auch bei built-in)", v807Results.newBtnAlwaysEnabled);
+                check("V8.07: Mode-Buttons (Move/...) disabled bei built-in", v807Results.modeBtnDisabledOnBuiltIn);
+                check("V8.07: Mode-Buttons enabled bei eigenem Bauplan", v807Results.modeBtnEnabledOnCustom);
+                check(
+                    `V8.07 Stats: ${v807Results.tagChipsCount} Tag-Chips mit Stern-Element + Level-Klasse`,
+                    v807Results.tagChipsHaveStars && v807Results.tagChipsHaveLevelClass
+                );
+                check("V8.07 Stats: Stern-Glyphen sind ★/☆ (3 Zeichen)", v807Results.starsAreGlyphs);
+                check(
+                    "V8.07: _workshopApplyDefaultSizeOnce überschreibt stale localStorage (alte 300px → groß)",
+                    v807Results.defaultOverridesStale
+                );
+                check("V8.07: idempotent — zweiter Apply respektiert das Flag", v807Results.idempotentAfterApply);
+            } else if (v807Results && v807Results.error) {
+                check(`V8.07: evaluate-Fehler — ${v807Results.error}`, false);
+            }
+
             // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
             const llmResults = await page
                 .evaluate(() => {
