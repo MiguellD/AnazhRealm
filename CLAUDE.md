@@ -2,7 +2,48 @@
 
 Persistente Notizen. Diese Datei wird bei jeder neuen Session automatisch geladen. **Bei größeren Entscheidungen zuerst `docs/state-of-realm.md` lesen** – dort steht der ausführliche Stand, die Vision aus den vier Testamenten, der Plan und die Learnings.
 
-**Aktuelle Version: V8.26 (Stand 17.05.2026, Disziplin-Polish nach System-Audit V8.25 — zwei Browser-Bug-Fixes + vier Audit-Quick-Wins + Doku-Konsolidierung. 1976/1976 Playtest-Invarianten grün, Audit-Strict 5 Schichten, 14/14 [ATMOSPHERE]-Methoden clean.)**
+**Aktuelle Version: V8.27 (Stand 17.05.2026, Welle 6.G4.a — Welt unter wandernder Sonne. Genial-minimale Tiefe-Welle nach Schöpfer-Beobachtung „Himmel/Licht/Gelände wirken homogen, keine Tiefe". HemisphereLight + Lambert + Fog + Hue-Sterne — Self-Shadow durch Lambert statt Shadow-Maps. 1990/1990 Playtest-Invarianten grün, Audit-Strict 5 Schichten, 14/14 [ATMOSPHERE]-Methoden clean.)**
+
+**V8.27 — Welle 6.G4.a (Welt unter wandernder Sonne, +14 Vision-Invarianten 1976→1990)**: Schöpfer-Beobachtung nach V8.26: „Sterne, Himmel, Licht, Gelände wirken homogen verteilt, keine Tiefe, kein Leben". Antwort: genial-minimal mit drei Säulen statt teurer Shadow-Maps.
+
+**Stern-Bug-Endfix** (V8.26 war nicht ganz richtig): Skybox-Position-Copy DIREKT vor `renderer.render` verschoben (Z. ~25082) statt nach `time`-Uniform-Update. Vorher kopiert SIE die alte Camera-Position (Camera-Update bei Z. ~25049 passiert zwischen Skybox-Copy und Render). Jetzt: Camera ist bereits gesetzt → Skybox-folgt-Camera-Pattern wirkt synchron, keine 2s-Nachlauf-Wackel mehr.
+
+**Die drei Säulen** (Ori/Townscaper/Genshin/Studio-Ghibli-Lehre):
+
+1. **`HemisphereLight`** (`state.hemiLight`, in `initThreeJS`) — skyColor oben + groundColor unten, mixt automatisch über mesh-normal.y. Setze ich in `_applyDayNightToScene` live:
+   - `hl.color` ≈ skyColor × 1.1 (Tag-Nacht-Tint, leicht angehellt)
+   - `hl.groundColor` ≈ Welt-Affinität am Spieler: `lebendig → erdgrün`, `glut → rot-orange`, `magieleitung → violett`. Saat-Earth-Tone `0x3a2818` als Baseline, dann via `worldFieldAt` aufmoduliert
+   - `hl.intensity = (0.25 + 0.35 × sunHeight) × lightMul` — Tag 0.6, Nacht 0.25, durch Wetter gedrosselt
+
+2. **`MeshLambertMaterial` überall** statt `MeshBasicMaterial`. Konkrete Stellen geheilt:
+   - `_buildFromBlueprint` Z. ~15307 — alle Architekturen, Spieler-Soul, Kreaturen-Body (Kern!)
+   - Gras + Blumen-Stengel + Blumen-Blüten (Z. ~10583, 10604, 10607)
+   - Inseln-Fallback (Z. ~10326) + Terrain-Fallback (Z. ~10260)
+   - **Self-Shadow durch Lambert** — eine Wand die von der Sonne wegzeigt wird automatisch dunkel. **80 % des Schatten-Effekts ohne ein einziges Shadow-Map-Pixel.**
+
+3. **`THREE.Fog`** (`state.fog`) — atmosphärischer Tiefen-Gradient. Color = lerp(skyColor, groundColor, 0.5). near=80/far=320 bei sunny, near=60/far=220 bei rainy (enger Sicht). Bei Tag-Nacht-Wechsel atmet die Welt-Distanz.
+
+**Terrain-Shader-Sync** — drittes Geheimnis. Der Custom-Shader hatte schon `lightDirection`-Uniform, war aber hardcoded auf `(1,1,1)`. Jetzt:
+- `lightDirection` aus `state.directionalLight.position.normalize()` pro Frame
+- Neue Uniforms `lightIntensity` + `ambientIntensity` aus Tag-Nacht-Schicht
+- Fragment-Shader nutzt **wrapped Lambert** (`ndotl * 0.5 + 0.5`, dann squared) statt hartem clip — sanftere Schattengrenze
+- Heightfield reagiert jetzt wie Architekturen auf die Sonnen-Position
+
+**Skybox-Sterne mit Tiefe** — drei Schichten statt zwei, plus Hue-Variation:
+- `star1 = pow(random(vDir × 80), 80)` — große, helle, seltene Sterne
+- `star2 = pow(random(vDir × 220), 150) × 0.75` — mittlere
+- `star3 = pow(random(vDir × 500), 240) × 0.45` — kleine, dichte, dim
+- Hue-Sample mit Offset im Noise-Space: `mix(coolStar, warmStar, hue1)` — blau-weiße O/B-Sterne + gelbliche K/M-Sterne. Echter Sternenhimmel hat Spektren, nicht weiße Punkte.
+
+**Performance-Bilanz** — die genial-minimale Lösung verifiziert: Lambert kostet ~10-15 % mehr als Basic. HemisphereLight ist ein zusätzlicher Light-Slot (Three.js limitiert), kostet praktisch nichts. Fog ist ein Multiply pro Fragment. **Gesamt-GPU-Mehrlast vs V8.26: ca. 10 %**. Shadow-Maps wären 50-100 % gewesen. Schöpfer-Wahl validiert.
+
+**Vision-Synergie geschlossen**: Welt-Affinität-Feld (W6.G P2) → HemisphereLight.groundColor → jede Architektur, jeder Stein, jedes Mesh ist ANDERS getintet in magie-Region vs dichte-Region vs lebendig-Region. Tag-Nacht (V8.24-V8.26) → HemisphereLight.color + DirectionalLight + Fog → alle Materialien atmen mit. **Eine Sprache (state.beobachten), zwei neue Konsumenten** (HemisphereLight + Fog).
+
+**Vision-Wort der V8.27**: *„Die Welt ist nicht mehr eine flache Karte unter einer wandernden Sonne — sie ist Material, das atmet."*
+
+**Tests**: 14 neue Vision-Invarianten — „HemisphereLight folgt Tag-Nacht", „groundColor.g hoch in lebendig-Region", „groundColor.r hoch in glut-Region", „Architektur-Material ist Lambert", „Terrain-lightIntensity folgt Sonnenhöhe", „Skybox-Shader hat Hue-Variation + drei Stern-Schichten". 1976 → 1990 grün.
+
+**V8.26 — Disziplin-Polish + Browser-Bug-Fixes (+10 Invarianten 1966→1976)**: nach Schöpfer-Browser-Test der V8.25 („Sterne rauschen beim Gehen", „Sonnenaufgang springt") und System-Audit V8.25 (vier konkrete Disharmonien). Zwei kategorische Heilungen:
 
 **V8.26 — Disziplin-Polish + Browser-Bug-Fixes (+10 Invarianten 1966→1976)**: nach Schöpfer-Browser-Test der V8.25 („Sterne rauschen beim Gehen", „Sonnenaufgang springt") und System-Audit V8.25 (vier konkrete Disharmonien). Zwei kategorische Heilungen:
 

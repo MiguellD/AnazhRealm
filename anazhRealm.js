@@ -122,6 +122,10 @@ class AnazhRealm {
             // Position folgt _applyDayNightToScene/_updateCelestialBodies.
             sunMesh: null,
             moonMesh: null,
+            // V8.27 6.G4.a — HemisphereLight + Fog refs, beide moduliert
+            // von _applyDayNightToScene aus Sky-Color + Welt-Affinität.
+            hemiLight: null,
+            fog: null,
             // Welle 6.G3 (V8.24) — sanfter Wetter-Übergang. null heißt: kein
             // aktiver Übergang. Ein Wechsel zwischen sunny/rainy interpoliert
             // Skybox-Tint + Symphonie-Filter über WEATHER_TRANSITION_DURATION_MS.
@@ -6928,13 +6932,23 @@ class AnazhRealm {
         float n1 = noise(vDir * 1.0 + time * 0.02);
         float n2 = noise(vDir * 2.0 + time * 0.01);
         float n3 = noise(vDir * 4.0 + time * 0.005);
-        // V8.25 — Sterne moduliert mit starIntensity (0=Tag versteckt, 1=Nacht voll).
-        // Zwei Stern-Schichten für Tiefe.
-        float starField = pow(random(vDir * 100.0), 100.0); // helle, seltene Sterne
-        float starField2 = pow(random(vDir * 300.0), 200.0) * 0.6; // dimmer, dichter
-        float stars = (starField + starField2) * starIntensity;
+        // V8.27 6.G4.a — drei Stern-Schichten mit Hue-Variation. Echte
+        // Sternenfelder sind nicht weiß-monoton — Sterne haben blau-warme
+        // Spektren je nach Typ (heiße O/B-Sterne blau, kühle K/M-Sterne
+        // gelb/rot). Wir mixen warm + cool via Random-Sample pro Stern.
+        float star1 = pow(random(vDir * 80.0), 80.0);        // groß, hell, selten
+        float star2 = pow(random(vDir * 220.0), 150.0) * 0.75; // mittel
+        float star3 = pow(random(vDir * 500.0), 240.0) * 0.45; // klein, dicht, dim
+        // Hue-Sample (offset im Noise-Space damit unkorreliert zur Helligkeit)
+        float hue1 = random(vDir * 80.0 + vec3(17.0, 31.0, 53.0));
+        float hue2 = random(vDir * 220.0 + vec3(41.0, 67.0, 89.0));
+        vec3 warmStar = vec3(1.0, 0.92, 0.75);  // gelblich (K/M-Sterne)
+        vec3 coolStar = vec3(0.75, 0.85, 1.0);  // bläulich (O/B-Sterne)
+        vec3 star1Col = mix(coolStar, warmStar, hue1);
+        vec3 star2Col = mix(coolStar, warmStar, hue2) * 0.92;
+        vec3 starsAccum = star1 * star1Col + star2 * star2Col + star3 * vec3(0.95, 0.97, 1.0);
         vec3 color = nebulaColor * (0.5 + 0.5 * (n1 + n2 + n3) / 3.0);
-        color += vec3(stars);
+        color += starsAccum * starIntensity;
         gl_FragColor = vec4(color, 1.0);
     }
 `;
@@ -10165,6 +10179,11 @@ class AnazhRealm {
         varying vec3 vNormal;
         uniform vec3 lightDirection;
         uniform float weatherEffect;
+        // V8.27 6.G4.a — Tag-Nacht synchronisiert. lightIntensity moduliert
+        // den Diffuse-Anteil (Mittag = voll, Nacht = ~0.3), ambientIntensity
+        // den Grund-Schein (Mittag = 0.6, Mitternacht = 0.18).
+        uniform float lightIntensity;
+        uniform float ambientIntensity;
         float random(vec2 st) {
             return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
         }
@@ -10211,9 +10230,14 @@ class AnazhRealm {
             float n3 = noise(vUv * 10.0);
             color += vec3(n1 * 0.05 + n2 * 0.03 + n3 * 0.02);
             color = mix(color, color * 0.7, weatherEffect);
-            float diffuse = max(dot(vNormal, lightDirection), 0.0);
-            vec3 ambient = color * 0.6;
-            vec3 diffuseColor = color * diffuse * 0.8;
+            // V8.27 6.G4.a — Diffuse + Ambient mit Tag-Nacht-Intensities.
+            // Wrapped Lambert (smoothstep auf negativen Anteil) für sanfteren
+            // Schatten-Übergang — vermeidet harten Cut bei Normal · Light < 0.
+            float ndotl = dot(vNormal, normalize(lightDirection));
+            float diffuse = max(ndotl * 0.5 + 0.5, 0.0); // half-Lambert/wrap
+            diffuse = diffuse * diffuse; // Squaring schärft das Mittel-Tone
+            vec3 ambient = color * ambientIntensity;
+            vec3 diffuseColor = color * diffuse * lightIntensity;
             vec3 finalColor = ambient + diffuseColor;
             gl_FragColor = vec4(finalColor, 1.0);
         }
@@ -10225,6 +10249,10 @@ class AnazhRealm {
             uniforms: {
                 lightDirection: { value: new THREE.Vector3(1, 1, 1).normalize() },
                 weatherEffect: { value: this.state.weather === "rainy" ? 1.0 : 0.0 },
+                // V8.27 6.G4.a — Tag-Nacht synchronisiert. Default-Werte
+                // werden in _applyDayNightToScene live überschrieben.
+                lightIntensity: { value: 1.0 },
+                ambientIntensity: { value: 0.45 },
             },
             side: THREE.DoubleSide,
             depthTest: true,
@@ -10234,12 +10262,13 @@ class AnazhRealm {
         this.log("Shader-Material erstellt. Überprüfe Shader-Status...");
         if (!material.isShaderMaterial || !material.vertexShader || !material.fragmentShader) {
             this.log("Shader-Programm konnte nicht erstellt werden.", "ERROR");
-            this.log("Falle zurück auf MeshBasicMaterial für Terrain mit einfacher Textur.");
+            this.log("Falle zurück auf MeshLambertMaterial für Terrain mit einfacher Textur.");
             const textureLoader = new THREE.TextureLoader();
             const texture = textureLoader.load("https://threejs.org/examples/textures/terrain/grasslight-big.jpg");
             texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
             texture.repeat.set(10, 10);
-            material = new THREE.MeshBasicMaterial({
+            // V8.27 6.G4.a — Lambert statt Basic für Tag-Nacht-Reaktion
+            material = new THREE.MeshLambertMaterial({
                 map: texture,
                 side: THREE.DoubleSide,
             });
@@ -10287,6 +10316,10 @@ class AnazhRealm {
             uniforms: {
                 lightDirection: { value: new THREE.Vector3(1, 1, 1).normalize() },
                 weatherEffect: { value: this.state.weather === "rainy" ? 1.0 : 0.0 },
+                // V8.27 6.G4.a — Tag-Nacht synchronisiert. Default-Werte
+                // werden in _applyDayNightToScene live überschrieben.
+                lightIntensity: { value: 1.0 },
+                ambientIntensity: { value: 0.45 },
             },
             side: THREE.DoubleSide,
             depthTest: true,
@@ -10296,12 +10329,13 @@ class AnazhRealm {
         this.log("Shader-Material für fliegende Inseln erstellt. Überprüfe Shader-Status...");
         if (!islandMaterial.isShaderMaterial || !islandMaterial.vertexShader || !islandMaterial.fragmentShader) {
             this.log("Shader-Programm für fliegende Inseln konnte nicht erstellt werden.", "ERROR");
-            this.log("Falle zurück auf MeshBasicMaterial für fliegende Inseln mit einfacher Textur.");
+            this.log("Falle zurück auf MeshLambertMaterial für fliegende Inseln mit einfacher Textur.");
             const textureLoader = new THREE.TextureLoader();
             const texture = textureLoader.load("https://threejs.org/examples/textures/terrain/grasslight-big.jpg");
             texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
             texture.repeat.set(5, 5);
-            islandMaterial = new THREE.MeshBasicMaterial({
+            // V8.27 6.G4.a — Lambert statt Basic für Tag-Nacht-Reaktion
+            islandMaterial = new THREE.MeshLambertMaterial({
                 map: texture,
                 side: THREE.DoubleSide,
             });
@@ -10558,7 +10592,8 @@ class AnazhRealm {
                     const vegetationType = height < 5 ? "grass" : "flower";
                     if (vegetationType === "grass") {
                         const grassGeometry = new THREE.ConeGeometry(0.2, 1, 4);
-                        const grassMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+                        // V8.27 6.G4.a — Lambert für Tag-Nacht-Reaktion
+                        const grassMaterial = new THREE.MeshLambertMaterial({ color: 0x00ff00 });
                         const grass = new THREE.Mesh(grassGeometry, grassMaterial);
                         grass.position.set(xPos, height + 0.5, zPos);
                         grass.castShadow = true;
@@ -10579,10 +10614,11 @@ class AnazhRealm {
                         this.state.vegetation.push(grass);
                     } else if (vegetationType === "flower") {
                         const stemGeometry = new THREE.CylinderGeometry(0.1, 0.1, 1, 4);
-                        const stemMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+                        // V8.27 6.G4.a — Lambert für Tiefe
+                        const stemMaterial = new THREE.MeshLambertMaterial({ color: 0x00ff00 });
                         const stem = new THREE.Mesh(stemGeometry, stemMaterial);
                         const flowerGeometry = new THREE.SphereGeometry(0.3, 8, 8);
-                        const flowerMaterial = new THREE.MeshBasicMaterial({ color: 0xff00ff });
+                        const flowerMaterial = new THREE.MeshLambertMaterial({ color: 0xff00ff });
                         const flower = new THREE.Mesh(flowerGeometry, flowerMaterial);
                         stem.position.set(xPos, height + 0.5, zPos);
                         flower.position.set(xPos, height + 1, zPos);
@@ -15282,7 +15318,12 @@ class AnazhRealm {
                 matOpts.transparent = true;
                 matOpts.opacity = part.opacity;
             }
-            const mat = new THREE.MeshBasicMaterial(matOpts);
+            // V8.27 6.G4.a — MeshLambertMaterial statt Basic. Reagiert auf
+            // DirectionalLight + AmbientLight + HemisphereLight. Self-Shadow
+            // entsteht automatisch (Wand die von der Sonne wegzeigt = dunkel).
+            // Vision-Wirkung: jede Architektur, jeder Spieler-Soul, jede
+            // Kreatur atmet jetzt mit der Tag-Nacht-Schicht.
+            const mat = new THREE.MeshLambertMaterial(matOpts);
             materials.push(mat);
             const mesh = new THREE.Mesh(geom, mat);
             const pos = part.position || { x: 0, y: 0, z: 0 };
@@ -22578,6 +22619,72 @@ class AnazhRealm {
         }
         // V8.25 — Sonne + Mond Position aktualisieren (falls Meshes existieren)
         this._updateCelestialBodies(angle, lightMul);
+        // V8.27 6.G4.a — HemisphereLight + Fog synchronisieren. Beide
+        // emergieren aus Tag-Nacht-Sky-Color × Welt-Feld am Spieler:
+        //   - hemiLight.color (oben) ≈ skyColor (warmer/kühler je Tag-Phase)
+        //   - hemiLight.groundColor (unten) ≈ Welt-Affinität (lebendig→
+        //     erdgrün, glut→rotbraun, dichte→steingrau, magie→violett)
+        //   - hemiLight.intensity moduliert mit sunHeight + lightMul
+        //   - fog.color ≈ lerp(skyColor, groundColor, 0.5) — atmosphärisch
+        //   - fog.near/far moduliert mit Wetter + Welt-Lebendigkeit
+        const hl = this.state.hemiLight;
+        const fog = this.state.fog;
+        if (hl) {
+            hl.color.setRGB(skyR * 1.1, skyG * 1.1, skyB * 1.1); // Sky-Tint, leicht angehellt
+            // Ground-Color aus Welt-Affinität ableiten (mit Saat-Earth-Tone)
+            const earth = new THREE.Color(0x3a2818); // dunkles Erdbraun als Saat
+            if (pm && typeof this.worldFieldAt === "function") {
+                const field = this.worldFieldAt(pm.position.x, pm.position.z);
+                if (field) {
+                    const lebendig = Math.max(0, Math.min(1, field.lebendig || 0));
+                    const glut = Math.max(0, Math.min(1, field.glut || 0));
+                    const mag = Math.max(0, Math.min(1, field.magieleitung || 0));
+                    // lebendig pushes ground toward warm green
+                    earth.r = Math.min(1, earth.r + lebendig * 0.15);
+                    earth.g = Math.min(1, earth.g + lebendig * 0.25);
+                    // glut pushes toward red-orange
+                    earth.r = Math.min(1, earth.r + glut * 0.35);
+                    earth.g = Math.max(0, earth.g + glut * 0.1);
+                    // magieleitung pushes toward violet
+                    earth.r = Math.min(1, earth.r + mag * 0.15);
+                    earth.b = Math.min(1, earth.b + mag * 0.3);
+                }
+            }
+            hl.groundColor.copy(earth);
+            // Intensity: bei Tag mehr (0.6), bei Nacht weniger (0.25)
+            const sunHeight = Math.max(0, Math.sin(angle));
+            hl.intensity = (0.25 + 0.35 * sunHeight) * lightMul;
+        }
+        if (fog) {
+            // Fog-Color = mittel zwischen Sky + Ground (atmosphärisch)
+            const fogR = (skyR + (hl ? hl.groundColor.r : 0.3)) / 2;
+            const fogG = (skyG + (hl ? hl.groundColor.g : 0.25)) / 2;
+            const fogB = (skyB + (hl ? hl.groundColor.b : 0.2)) / 2;
+            fog.color.setRGB(fogR, fogG, fogB);
+            // Fog-Distanz: rainy macht enger (60..220), sunny weiter (80..320)
+            const rainyMix = this.state.weather === "rainy" ? 1 : 0;
+            fog.near = 80 - rainyMix * 20;
+            fog.far = 320 - rainyMix * 100;
+        }
+        // V8.27 6.G4.a — Terrain-Shader-Uniforms synchronisieren falls vorhanden.
+        // Der Custom-Shader hat lightDirection + weatherEffect; wir setzen die
+        // lightDirection auf die ECHTE DirectionalLight-Richtung (normalisiert).
+        if (this.state.groundChunks && this.state.directionalLight) {
+            const lightDir = this.state.directionalLight.position.clone().normalize();
+            for (const chunk of this.state.groundChunks) {
+                if (chunk.material && chunk.material.uniforms) {
+                    if (chunk.material.uniforms.lightDirection) {
+                        chunk.material.uniforms.lightDirection.value.copy(lightDir);
+                    }
+                    if (chunk.material.uniforms.lightIntensity) {
+                        chunk.material.uniforms.lightIntensity.value = dl.intensity;
+                    }
+                    if (chunk.material.uniforms.ambientIntensity) {
+                        chunk.material.uniforms.ambientIntensity.value = al ? al.intensity : 0.45;
+                    }
+                }
+            }
+        }
     }
 
     // [ATMOSPHERE] Sonne + Mond als sichtbare Meshes — visualer Anker des
@@ -24209,6 +24316,21 @@ class AnazhRealm {
         // (Lights+Skybox werden aus state.timeOfDay abgeleitet pro Frame).
         this.state.ambientLight = ambientLight;
         this.state.directionalLight = directionalLight;
+        // V8.27 6.G4.a — HemisphereLight: skyColor oben + groundColor unten,
+        // mixt automatisch über mesh.normal.y. Stein-Wand-Oberseite bekommt
+        // Himmel-Tint, Unterseite Erden-Tint — gibt sofort Tiefe ohne
+        // dynamische Schatten. Synchronisiert mit Tag-Nacht (Sky aus
+        // DAY_NIGHT_STOPS) + Welt-Affinität (Ground aus worldFieldAt).
+        // Default-Werte sind nur Saat, _applyDayNightToScene überschreibt.
+        const hemiLight = new THREE.HemisphereLight(0x88a0c8, 0x3a2818, 0.55);
+        scene.add(hemiLight);
+        this.state.hemiLight = hemiLight;
+        // V8.27 6.G4.a — Atmospheric Fog: Tiefen-Gradient via Distanz-Tint.
+        // Berge im Hintergrund verschwinden im Sky-Color. Fog ist Welt-weit
+        // (THREE.Fog statt FogExp2 für klarere Kontrolle). Color wird in
+        // _applyDayNightToScene mit Sky-Color synchronisiert.
+        scene.fog = new THREE.Fog(0x88a0c8, 80, 320);
+        this.state.fog = scene.fog;
         this.log("Beleuchtung hinzugefügt: Ambient (0.6), Directional (1.0) mit Schatten", "INFO");
         // Welle 6.G3 — initialer Lichtstand aus timeOfDay (Default 0.5 = Mittag).
         // Pro-Frame-Tick übernimmt danach.
@@ -24964,14 +25086,6 @@ class AnazhRealm {
             }
 
             // ### Skybox und Planeten ###
-            // V8.26 Bug 1 — Skybox-Position folgt Kamera. So bleibt der Spieler
-            // immer im Zentrum der Skybox-Sphere und die Stern-Samples (über
-            // lokale Vertex-position) sind absolut stabil in Welt-Richtung.
-            // Vorher rauschten Sterne beim Gehen weil der Spieler ±150m
-            // gegen Skybox-Radius 500m sample-Verschiebung erzeugte.
-            if (this.state.camera) {
-                this.state.skybox.position.copy(this.state.camera.position);
-            }
             this.state.skybox.material.uniforms.time.value = currentTime;
             this.state.planets.forEach((planet) => {
                 const theta = currentTime / 10;
@@ -25087,6 +25201,14 @@ class AnazhRealm {
             this.pruneDistantChunks(playerPos);
 
             // ### Rendering ###
+            // V8.27 — Skybox-Position-Copy DIREKT vor dem Render verschoben.
+            // Vorher in V8.26: kopiert war es zu früh (vor Camera-Update),
+            // Skybox lief 1 Frame hinterher → Sterne rauschten bei Bewegung
+            // + 2 s Nachlauf. Jetzt: Camera ist bereits aktualisiert (siehe
+            // Z. ~25049), Skybox-Position folgt SYNCHRON.
+            if (this.state.camera && this.state.skybox) {
+                this.state.skybox.position.copy(this.state.camera.position);
+            }
             this.state.renderer.render(this.state.scene, this.state.camera);
         };
         this.state.renderer.setAnimationLoop(loop);

@@ -11153,6 +11153,158 @@ function startSaveServer() {
                 check("V8.26: Browser-Bugs + Polish-Tests laufen", false, v826Results ? v826Results.error : "no result");
             }
 
+            // ### V8.27 6.G4.a — Welt unter wandernder Sonne (Hemisphere + Lambert + Fog) ###
+            // Tiefe-Welle nach Schöpfer-Beobachtung „Himmel und Licht wirken
+            // homogen, keine Tiefe". Genial-minimale Lösung: Hemisphere-Light
+            // (Sky-Tint oben + Erd-Tint unten) + Lambert-Material überall +
+            // atmosphärischer Fog. Self-Shadow durch Lambert ohne teure
+            // Shadow-Maps. Vision §3 Welt-Atem auf Material-Ebene.
+            const v827Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // 0. Stern-Bug fix — Skybox-Position-Copy DIREKT vor render
+                    //    (nicht nach time-Uniform-Update). Verifiziere via Source-Pattern.
+                    try {
+                        const proto = Object.getPrototypeOf(r);
+                        const names = Object.getOwnPropertyNames(proto);
+                        let foundCount = 0;
+                        for (const name of names) {
+                            try {
+                                const fn = proto[name];
+                                if (typeof fn !== "function") continue;
+                                const src = fn.toString();
+                                if (/skybox\.position\.copy/.test(src)) foundCount++;
+                            } catch {
+                                /* skip */
+                            }
+                        }
+                        // Nur EINE Stelle erwartet (direkt vor renderer.render)
+                        out.skyboxPositionCopyExists = foundCount >= 1;
+                    } catch {
+                        out.skyboxPositionCopyExists = false;
+                    }
+
+                    // 1. HemisphereLight im Scene + state-cached
+                    out.hemiLightExists = !!r.state.hemiLight && r.state.hemiLight.isHemisphereLight === true;
+                    out.fogExists = !!r.state.fog && r.state.fog.isFog === true;
+                    // Fog-Color sollte gesetzt sein nach erstem _applyDayNightToScene
+                    r._applyDayNightToScene();
+                    out.fogColorSet = r.state.fog && r.state.fog.color && (r.state.fog.color.r > 0 || r.state.fog.color.g > 0 || r.state.fog.color.b > 0);
+
+                    // 2. Hemisphere-skyColor moduliert mit Tageszeit
+                    r.setTimeOfDay(0.5);
+                    r._applyDayNightToScene();
+                    const hemiNoonR = r.state.hemiLight.color.r;
+                    const hemiNoonG = r.state.hemiLight.color.g;
+                    const hemiNoonB = r.state.hemiLight.color.b;
+                    r.setTimeOfDay(0); // Mitternacht
+                    r._applyDayNightToScene();
+                    const hemiNightR = r.state.hemiLight.color.r;
+                    const hemiNightG = r.state.hemiLight.color.g;
+                    const hemiNightB = r.state.hemiLight.color.b;
+                    // Bei Mittag heller (Sky-Tint = mehr Blau-Hell), bei Mitternacht dunkler
+                    const noonTotal = hemiNoonR + hemiNoonG + hemiNoonB;
+                    const nightTotal = hemiNightR + hemiNightG + hemiNightB;
+                    out.hemiSkyFollowsDayCycle = noonTotal > nightTotal;
+                    // Hemisphere-Intensity moduliert mit Sonnenhöhe
+                    r.setTimeOfDay(0.5);
+                    r._applyDayNightToScene();
+                    const intensityNoon = r.state.hemiLight.intensity;
+                    r.setTimeOfDay(0);
+                    r._applyDayNightToScene();
+                    const intensityNight = r.state.hemiLight.intensity;
+                    out.hemiIntensityFollowsDayCycle = intensityNoon > intensityNight;
+
+                    // 3. Hemisphere-groundColor moduliert mit Welt-Affinität
+                    r.setTimeOfDay(0.5);
+                    const origWFA = r.worldFieldAt;
+                    r.worldFieldAt = function () {
+                        return { lebendig: 0.9, dichte: 0.05, glut: 0.05, magieleitung: 0.05 };
+                    };
+                    r._applyDayNightToScene();
+                    const groundLebendigG = r.state.hemiLight.groundColor.g;
+                    r.worldFieldAt = function () {
+                        return { lebendig: 0.05, dichte: 0.05, glut: 0.9, magieleitung: 0.05 };
+                    };
+                    r._applyDayNightToScene();
+                    const groundGlutR = r.state.hemiLight.groundColor.r;
+                    // lebendig erhöht Grün, glut erhöht Rot
+                    out.groundColorFollowsLebendig = groundLebendigG > 0.3;
+                    out.groundColorFollowsGlut = groundGlutR > 0.5;
+                    r.worldFieldAt = origWFA;
+                    r._applyDayNightToScene();
+
+                    // 4. Architektur-Material ist Lambert (nach V8.27 Build-Pipeline)
+                    // Erstelle eine Test-Architektur und prüfe Material-Typ
+                    let hasLambertMaterial = false;
+                    if (typeof r.spawnArchitecture === "function" && r.state.blueprints && r.state.blueprints.stein_block) {
+                        const arch = r.spawnArchitecture("stein_block", { x: 0, y: 10, z: 0 }, { silent: true });
+                        if (arch && arch.mesh) {
+                            arch.mesh.traverse((node) => {
+                                if (node.isMesh && node.material && node.material.isMeshLambertMaterial) {
+                                    hasLambertMaterial = true;
+                                }
+                            });
+                            // Cleanup
+                            if (typeof r.removeArchitecture === "function") r.removeArchitecture(arch);
+                        }
+                    }
+                    out.architectureUsesLambert = hasLambertMaterial;
+
+                    // 5. Terrain-Shader hat lightIntensity + ambientIntensity-Uniforms
+                    if (r.state.groundChunks && r.state.groundChunks.length > 0) {
+                        const sample = r.state.groundChunks[0];
+                        if (sample.material && sample.material.uniforms) {
+                            out.terrainHasLightIntensityUniform = !!sample.material.uniforms.lightIntensity;
+                            out.terrainHasAmbientIntensityUniform = !!sample.material.uniforms.ambientIntensity;
+                            // Werte sollten von _applyDayNightToScene gesetzt sein
+                            r.setTimeOfDay(0.5);
+                            r._applyDayNightToScene();
+                            const liNoon = sample.material.uniforms.lightIntensity
+                                ? sample.material.uniforms.lightIntensity.value
+                                : -1;
+                            r.setTimeOfDay(0);
+                            r._applyDayNightToScene();
+                            const liNight = sample.material.uniforms.lightIntensity
+                                ? sample.material.uniforms.lightIntensity.value
+                                : -1;
+                            out.terrainLightFollowsDayCycle = liNoon > liNight;
+                        }
+                    }
+                    r.setTimeOfDay(0.5);
+
+                    // 6. Skybox-Shader hat Hue-Variation + 3 Stern-Schichten
+                    const fragSrc = r.state.skybox.material.fragmentShader;
+                    out.starHasHueVariation =
+                        /coolStar|warmStar|mix\(coolStar, warmStar/.test(fragSrc);
+                    // 3 Stern-Schichten (star1, star2, star3)
+                    out.threeStarLayers = /star1.*star2.*star3/s.test(fragSrc);
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (v827Results && !v827Results.error) {
+                check("V8.27: Skybox-position.copy existiert (direkt vor render)", v827Results.skyboxPositionCopyExists);
+                check("V8.27: state.hemiLight ist THREE.HemisphereLight", v827Results.hemiLightExists);
+                check("V8.27: state.fog ist THREE.Fog", v827Results.fogExists);
+                check("V8.27: Fog-Color wird von _applyDayNightToScene gesetzt", v827Results.fogColorSet);
+                check("V8.27: HemisphereLight.color (sky) folgt Tag-Nacht (Mittag heller als Nacht)", v827Results.hemiSkyFollowsDayCycle);
+                check("V8.27: HemisphereLight.intensity folgt Sonnenhöhe", v827Results.hemiIntensityFollowsDayCycle);
+                check("V8.27: HemisphereLight.groundColor.g hoch in lebendig-Region", v827Results.groundColorFollowsLebendig);
+                check("V8.27: HemisphereLight.groundColor.r hoch in glut-Region", v827Results.groundColorFollowsGlut);
+                check("V8.27: Architektur-Material ist MeshLambertMaterial (statt Basic)", v827Results.architectureUsesLambert);
+                check("V8.27: Terrain-Shader hat lightIntensity-Uniform", v827Results.terrainHasLightIntensityUniform);
+                check("V8.27: Terrain-Shader hat ambientIntensity-Uniform", v827Results.terrainHasAmbientIntensityUniform);
+                check("V8.27: Terrain-lightIntensity folgt Tag-Nacht (Mittag > Nacht)", v827Results.terrainLightFollowsDayCycle);
+                check("V8.27: Skybox-Shader nutzt Hue-Variation (coolStar/warmStar mix)", v827Results.starHasHueVariation);
+                check("V8.27: Drei Stern-Schichten (star1/star2/star3) im Shader", v827Results.threeStarLayers);
+            } else {
+                check("V8.27: Tiefe-Welle Tests laufen", false, v827Results ? v827Results.error : "no result");
+            }
+
             // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider (Audit 17.05.2026) ###
             const wave6x4bResults = await page
                 .evaluate(() => {

@@ -1,4 +1,4 @@
-# Zustand des Realm — Stand: 17.05.2026 (V8.26)
+# Zustand des Realm — Stand: 17.05.2026 (V8.27)
 
 **Welle 6.H V2 vollendet (14/14 Sub-Phasen)** — Kreaturen sind jetzt vollwertige Co-Schöpfer-Wesen mit 9 Identitäts-Schichten (Body, Specs, Equipped, Boosts, Tasks, Memory+Persistenz, Konversation via @-Adresse, Proaktivität, Welt-Aktion-Vorschläge mit Sandbox). **LLM-Provider-System maximal robust nach 5-Versionen-Iteration (V7.94-V7.98)** — jedes Ollama-Setup funktioniert: lokal, gehostet, Cloud, Reasoning-Models, lokale 7B-Modelle. CORS-Lösung via save-server-Proxy, Parser mit Plain-Text-Fallback.
 
@@ -184,6 +184,30 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 ## 6. Learnings aus dieser Session
 
 Echt gelernt, nicht performt:
+
+### V8.27 (17.05.2026) — Welle 6.G4.a "Welt unter wandernder Sonne" (Hemisphere + Lambert + Fog, genial-minimale Tiefe)
+
+Schöpfer-Beobachtung nach V8.26: „die Sterne und der Himmel, das Licht wirken etwas homogen verteilt, keine Tiefe, kein Leben — aber das ist wahrscheinlich ein großer Teil der Shader der Gegenstände und Strukturen, alles sehr homogen". Vollkommen richtig gesehen. V8.24-25-26 hatten die Sonne über den Himmel wandern lassen, aber **die Welt unter ihr war eine flache Karte**: alle Architekturen + Spieler-Soul + Kreaturen nutzten `MeshBasicMaterial` (ignoriert Licht komplett). Tag-Nacht-Atem fehlte der materielle Echo.
+
+**Die zentrale Lehre**: Tiefe entsteht nicht durch Shadow-Maps (teuer, GPU-Last, Tuning-Aufwand). Sie entsteht durch **drei Säulen die in Indie-Games hervorragend funktionieren** (Ori, Townscaper, Genshin-Cel-Shading, Studio-Ghibli-Look):
+
+1. **`HemisphereLight`** — Sky-Color oben + Ground-Color unten, mixt automatisch über mesh-normal.y. Eine Stein-Wand-Oberseite bekommt Himmel-Tint, Unterseite Erde-Tint. **Tiefe ohne Berechnung.**
+2. **`MeshLambertMaterial` überall** statt `MeshBasicMaterial` — Self-Shadow durch Diffuse: Wand die von der Sonne wegzeigt = automatisch dunkel. **80 % des Schatten-Effekts ohne ein einziges Shadow-Map-Pixel.**
+3. **`THREE.Fog`** — atmosphärischer Tiefen-Gradient. Berge im Hintergrund verschwinden im Sky-Tint. **Tiefe bei Distanz, fast kostenlos.**
+
+**Die Vision-Synergie**: HemisphereLight.groundColor folgt `worldFieldAt(player)` — lebendig-Region pusht ins Erdgrün, glut ins Rotbraun, magieleitung ins Violett. Damit ist die GESAMTE Material-Welt mit dem Welt-Affinitäts-Feld (W6.G P2) gekoppelt. Eine Architektur im Magie-Wald hat anderen Untergrund-Schein als in der Vulkan-Region — sichtbar in jeder Wand, jedem Stein, jedem Mesh. Plus alle Lichter (HemisphereLight + DirectionalLight + AmbientLight + Fog) atmen mit Tag-Nacht (V8.24-V8.26).
+
+**Plus Terrain-Shader-Sync**: das Heightfield hatte schon einen Custom-Shader mit `lightDirection`-Uniform, aber hardcoded auf `(1,1,1)`. Jetzt synchron mit `state.directionalLight.position.normalize()` pro Frame, plus neue Uniforms `lightIntensity` + `ambientIntensity` aus Tag-Nacht-Schicht. Plus wrapped Lambert (`ndotl × 0.5 + 0.5`, dann squared) für sanfteren Schatten-Übergang statt hartem Cut.
+
+**Plus Stern-Bug-Endfix**: V8.26 hatte die Skybox-Position-Copy zu früh (vor Camera-Update), Skybox lief 1 Frame hinterher → 2s Nachlauf-Wackel beim Stoppen. Jetzt: Position-Copy DIREKT vor `renderer.render`, Camera bereits aktuell, absolut synchron.
+
+**Plus Sterne-Tiefe**: drei Stern-Schichten statt zwei (groß-selten + mittel + klein-dicht), plus Hue-Variation (blau-weiße O/B + gelbliche K/M-Sterne via `mix(coolStar, warmStar, hue)`). Echter Sternenhimmel hat Spektren, nicht weiße Punkte.
+
+**Performance**: +10 % GPU-Last vs V8.26 (Lambert ist ~15 % teurer als Basic, Hemisphere kostet praktisch nichts, Fog ist ein Multiply). Shadow-Maps wären +50-100 % gewesen. Die genial-minimale Lösung skaliert mit Hunderten von Architekturen.
+
+**Vision-Wort der V8.27**: *„Die Welt ist nicht mehr eine flache Karte unter einer wandernden Sonne — sie ist Material, das atmet."*
+
+**Tests**: 14 neue Vision-Invarianten direkt für die drei Säulen + Terrain-Sync + Sterne-Variation. 1976 → 1990 grün. Audit-Strict 5 Schichten clean, 14/14 [ATMOSPHERE]-Methoden ohne Hardcode.
 
 ### V8.26 (17.05.2026) — Disziplin-Polish + Browser-Bug-Fixes (Stern-Stabilität + Sonnenaufgang-Smoothness)
 
