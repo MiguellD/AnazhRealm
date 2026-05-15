@@ -7012,6 +7012,8 @@ class AnazhRealm {
         }
         // V8.28 6.G4.b A — echtes Stern-Feld als THREE.Points
         this._buildStarField();
+        // V8.28 6.G4.b D — Welt-Wasser (Wave-Plane in Senken)
+        this._buildWaterPlane();
     }
 
     // V8.28 6.G4.b Phase A — Sterne als diskrete THREE.Points statt
@@ -7125,6 +7127,69 @@ class AnazhRealm {
         this.state.scene.add(starField);
         this.state.starField = starField;
         this.log(`Stern-Feld erstellt — ${STAR_COUNT} diskrete Sterne (V8.28)`);
+    }
+
+    // V8.28 6.G4.b D — Welt-Wasser. Eine grosse Wave-Plane bei waterLevel,
+    // folgt der Kamera in xz (Render-Loop). Sichtbar nur, wo das Terrain
+    // darunter liegt — also in natuerlichen Senken + Schluchten (canyon-
+    // Modifier). Kein Eingriff in den Terrain-Generator: die Welt-Identitaet
+    // bleibt, das Wasser fuellt nur, was eh schon tief ist.
+    //
+    // Vertex-Shader macht zwei ueberlagerte Sinus-Wellen → fliessende
+    // Oberflaeche. Fragment mischt tief/flach nach Wellenhoehe + leichter
+    // Schaum-Schimmer auf den Wellenkaemmen.
+    _buildWaterPlane() {
+        if (!this.state.scene || typeof THREE === "undefined") return;
+        if (typeof this.state.waterLevel !== "number") {
+            // Senken-Fueller: knapp unter dem Basis-Niveau. Huegel bleiben
+            // trocken, Schluchten + Mulden sammeln Wasser.
+            this.state.waterLevel = (this.state.terrainBaseHeight || 0) - 3;
+        }
+        const geo = new THREE.PlaneGeometry(900, 900, 90, 90);
+        geo.rotateX(-Math.PI / 2); // in die xz-Ebene legen, Normal nach oben
+        const mat = new THREE.ShaderMaterial({
+            uniforms: {
+                uTime: { value: 0 },
+                uDeep: { value: new THREE.Color(0x16364f) },
+                uShallow: { value: new THREE.Color(0x3f88a8) },
+            },
+            vertexShader: `
+                uniform float uTime;
+                varying float vWave;
+                void main() {
+                    vec3 p = position;
+                    float w = sin(p.x * 0.12 + uTime * 0.9) * 0.35
+                            + cos(p.z * 0.15 + uTime * 0.7) * 0.26
+                            + sin((p.x + p.z) * 0.07 + uTime * 1.3) * 0.16;
+                    p.y += w;
+                    vWave = w;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 uDeep;
+                uniform vec3 uShallow;
+                varying float vWave;
+                void main() {
+                    // Wellenkaemme heller (flach), Taeler tiefer (dunkel)
+                    float t = clamp(vWave * 0.7 + 0.5, 0.0, 1.0);
+                    vec3 col = mix(uDeep, uShallow, t);
+                    // Schaum-Schimmer auf den hoechsten Kaemmen
+                    col += vec3(0.25) * smoothstep(0.55, 0.78, vWave);
+                    gl_FragColor = vec4(col, 0.78);
+                }
+            `,
+            transparent: true,
+            depthWrite: false,
+            side: THREE.DoubleSide,
+        });
+        const water = new THREE.Mesh(geo, mat);
+        water.position.y = this.state.waterLevel;
+        water.frustumCulled = false; // folgt der Kamera, immer relevant
+        water.renderOrder = 1; // nach opaken Objekten (transparent)
+        this.state.scene.add(water);
+        this.state.waterPlane = water;
+        this.log(`Welt-Wasser erstellt — Niveau y=${this.state.waterLevel.toFixed(1)} (V8.28)`);
     }
     // Welle 6.G3 (V8.24) — updateSkyboxWeather ist jetzt ein Schmal-Wrapper
     // auf _applyDayNightToScene. Die Skybox-Farbe ergibt sich aus dem
@@ -10728,8 +10793,8 @@ class AnazhRealm {
                     const vegetationType = height < 5 ? "grass" : "flower";
                     if (vegetationType === "grass") {
                         const grassGeometry = new THREE.ConeGeometry(0.2, 1, 4);
-                        // V8.27 6.G4.a — Lambert für Tag-Nacht-Reaktion
-                        const grassMaterial = new THREE.MeshLambertMaterial({ color: 0x00ff00 });
+                        // V8.28 6.G4.b D — Wind-Material (geteilt, Vertex-Sway)
+                        const grassMaterial = this._windMat("grass");
                         const grass = new THREE.Mesh(grassGeometry, grassMaterial);
                         grass.position.set(xPos, height + 0.5, zPos);
                         grass.castShadow = true;
@@ -10750,11 +10815,11 @@ class AnazhRealm {
                         this.state.vegetation.push(grass);
                     } else if (vegetationType === "flower") {
                         const stemGeometry = new THREE.CylinderGeometry(0.1, 0.1, 1, 4);
-                        // V8.27 6.G4.a — Lambert für Tiefe
-                        const stemMaterial = new THREE.MeshLambertMaterial({ color: 0x00ff00 });
+                        // V8.28 6.G4.b D — Wind-Materialien (geteilt, Vertex-Sway)
+                        const stemMaterial = this._windMat("stem");
                         const stem = new THREE.Mesh(stemGeometry, stemMaterial);
                         const flowerGeometry = new THREE.SphereGeometry(0.3, 8, 8);
-                        const flowerMaterial = new THREE.MeshLambertMaterial({ color: 0xff00ff });
+                        const flowerMaterial = this._windMat("flower");
                         const flower = new THREE.Mesh(flowerGeometry, flowerMaterial);
                         stem.position.set(xPos, height + 0.5, zPos);
                         flower.position.set(xPos, height + 1, zPos);
@@ -17629,6 +17694,52 @@ class AnazhRealm {
         return n;
     }
 
+    // V8.28 6.G4.b D — Wind. Gras + Blumen wiegen sich im Vertex-Shader.
+    // onBeforeCompile injiziert einen Wind-Offset in den begin_vertex-
+    // Shader-Chunk (stabilster Three.js-Chunk) — die volle Lambert-
+    // Beleuchtung bleibt erhalten, nur die Vertices wandern. Die Phase
+    // hängt an der WELT-Position → benachbarte Halme schwingen leicht
+    // versetzt = Wind-Wellen-Effekt. uWindStrength emergiert aus weather
+    // (rainy → kräftiger Wind). Materialien sind geteilt + gecached →
+    // EINE Shader-Kompilierung pro Vegetations-Typ.
+    _windMat(kind) {
+        if (typeof THREE === "undefined") return null;
+        if (!this.state._windMats) this.state._windMats = {};
+        if (this.state._windMats[kind]) return this.state._windMats[kind];
+        if (!this.state.windUniforms) {
+            this.state.windUniforms = {
+                uWindTime: { value: 0 },
+                uWindStrength: { value: 0.12 },
+            };
+        }
+        const wu = this.state.windUniforms;
+        // Natürlichere Farben als das alte Knallgrün/Magenta (Welt soll
+        // bewundert werden, nicht grell sein).
+        const colors = { grass: 0x5a9e3f, stem: 0x4f8e3a, flower: 0xe86ab4 };
+        const mat = new THREE.MeshLambertMaterial({ color: colors[kind] || 0x5a9e3f });
+        // Die Blüte sitzt oben auf dem Stengel → wiegt als Ganzes (hf=1).
+        // Gras + Stengel wiegen nur im oberen Teil (Wurzel bleibt fix).
+        const hfExpr = kind === "flower" ? "1.0" : "max(0.0, transformed.y)";
+        mat.onBeforeCompile = (shader) => {
+            shader.uniforms.uWindTime = wu.uWindTime;
+            shader.uniforms.uWindStrength = wu.uWindStrength;
+            shader.vertexShader = "uniform float uWindTime;\nuniform float uWindStrength;\n" + shader.vertexShader;
+            shader.vertexShader = shader.vertexShader.replace(
+                "#include <begin_vertex>",
+                `#include <begin_vertex>
+                {
+                    vec3 wPos = (modelMatrix * vec4(position, 1.0)).xyz;
+                    float phase = uWindTime * 1.6 + wPos.x * 0.25 + wPos.z * 0.19;
+                    float hf = ${hfExpr};
+                    transformed.x += sin(phase) * uWindStrength * hf;
+                    transformed.z += cos(phase * 0.7) * uWindStrength * hf * 0.7;
+                }`
+            );
+        };
+        this.state._windMats[kind] = mat;
+        return mat;
+    }
+
     // V8.28 6.G4.b C — Mutations-Pfad für den Fog-Distanz-Slider.
     // fogDistance ist ein Multiplikator (0.3 dicht .. 2.0 weit) auf
     // Fog-near/far. Die echten Werte setzt _applyDayNightToScene.
@@ -22902,18 +23013,25 @@ class AnazhRealm {
             hl.intensity = (0.25 + 0.35 * sunHeight) * lightMul;
         }
         if (fog) {
-            // Fog-Color = mittel zwischen Sky + Ground (atmosphärisch)
-            const fogR = (skyR + (hl ? hl.groundColor.r : 0.3)) / 2;
-            const fogG = (skyG + (hl ? hl.groundColor.g : 0.25)) / 2;
-            const fogB = (skyB + (hl ? hl.groundColor.b : 0.2)) / 2;
+            // V8.28 6.G4.b — Fog ist LUFT, also überwiegend Himmelsfarbe
+            // (nur 15 % Boden-Tint). lerp 0.5 mischte blauen Himmel mit
+            // braunem Boden zu schmutzigem Rosa — der Fog wirkte wie eine
+            // Dreck-Schicht statt wie atmosphärischer Dunst. Mit 0.15
+            // verschmilzt der Fog sauber mit dem Himmel am Horizont.
+            const gMix = 0.15;
+            const fogR = skyR * (1 - gMix) + (hl ? hl.groundColor.r : 0.3) * gMix;
+            const fogG = skyG * (1 - gMix) + (hl ? hl.groundColor.g : 0.25) * gMix;
+            const fogB = skyB * (1 - gMix) + (hl ? hl.groundColor.b : 0.2) * gMix;
             fog.color.setRGB(fogR, fogG, fogB);
-            // V8.28 6.G4.b C — Fog deutlich näher (war 80..320, kaum
-            // erkennbar). sunny 40..170, rainy 25..105. fogDistance-Slider
-            // ist ein Multiplikator (0.3 dicht .. 2.0 weit).
+            // V8.28 6.G4.b C — Fog-Distanz. sunny 55..235, rainy 35..150.
+            // Mittelweg: V8.27 80..320 war "erkenne ich nicht", 40..170 war
+            // erdrückend. Mit der klaren Fog-Farbe (oben) wirkt 55..235
+            // als atmosphärischer Tiefen-Gradient, nicht als Dunst-Wand.
+            // fogDistance-Slider ist Multiplikator (0.3 dicht .. 2.0 weit).
             const rainyMix = this.state.weather === "rainy" ? 1 : 0;
             const fogMult = (this.state.atmosphere && this.state.atmosphere.fogDistance) || 1.0;
-            fog.near = (40 - rainyMix * 15) * fogMult;
-            fog.far = (170 - rainyMix * 65) * fogMult;
+            fog.near = (55 - rainyMix * 20) * fogMult;
+            fog.far = (235 - rainyMix * 85) * fogMult;
         }
         // V8.27 6.G4.a — Terrain-Shader-Uniforms synchronisieren falls vorhanden.
         // Der Custom-Shader hat lightDirection + weatherEffect; wir setzen die
@@ -25504,6 +25622,15 @@ class AnazhRealm {
             if (this.state.camera && this.state.waterPlane) {
                 this.state.waterPlane.position.x = this.state.camera.position.x;
                 this.state.waterPlane.position.z = this.state.camera.position.z;
+                if (this.state.waterPlane.material && this.state.waterPlane.material.uniforms) {
+                    this.state.waterPlane.material.uniforms.uTime.value = currentTime;
+                }
+            }
+            // V8.28 6.G4.b D — Wind. uWindTime läuft kontinuierlich,
+            // uWindStrength emergiert aus weather (rainy = kräftiger).
+            if (this.state.windUniforms) {
+                this.state.windUniforms.uWindTime.value = currentTime;
+                this.state.windUniforms.uWindStrength.value = this.state.weather === "rainy" ? 0.26 : 0.12;
             }
             this.state.renderer.render(this.state.scene, this.state.camera);
         };

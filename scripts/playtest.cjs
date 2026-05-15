@@ -8606,7 +8606,10 @@ function startSaveServer() {
 
             if (wave6c3Results && !wave6c3Results.error) {
                 check("Welle 6.C3: DEFAULT_KEYBINDINGS frozen", wave6c3Results.hasDefaults);
-                check("Welle 6.C3/V8.17: KEYBINDING_ACTIONS hat 12 Einträge (6 + 6 Drawer/Camera)", wave6c3Results.hasActions);
+                check(
+                    "Welle 6.C3/V8.17: KEYBINDING_ACTIONS hat 12 Einträge (6 + 6 Drawer/Camera)",
+                    wave6c3Results.hasActions
+                );
                 check("Welle 6.C3: KEYBINDING_LABELS frozen", wave6c3Results.hasLabels);
                 check(
                     "Welle 6.C3: Actions vollständig (break/place/confirmBuild/inventory/cancelBuild/jump)",
@@ -9955,8 +9958,7 @@ function startSaveServer() {
                     const jumpSrc = r.handleJump.toString();
                     const activatePos = jumpSrc.indexOf(".activate(true)");
                     const setVelPos = jumpSrc.indexOf("playerBody.setLinearVelocity(");
-                    out.handleJumpActivatesBody =
-                        activatePos > -1 && setVelPos > -1 && activatePos < setVelPos;
+                    out.handleJumpActivatesBody = activatePos > -1 && setVelPos > -1 && activatePos < setVelPos;
 
                     // --- A2: confirmBuild blockt bei phantomOnGround=false im pfad
                     r.setGameMode("pfad");
@@ -9969,9 +9971,7 @@ function startSaveServer() {
                     const archBeforeBlock = r.state.architectures.length;
                     const stoneBeforeBlock = r.state.player.inventory[0].count;
                     const blocked = r.confirmBuild();
-                    const stoneAfterBlock = r.state.player.inventory[0]
-                        ? r.state.player.inventory[0].count
-                        : 0;
+                    const stoneAfterBlock = r.state.player.inventory[0] ? r.state.player.inventory[0].count : 0;
                     out.pfadBlocksUnstable = blocked === false;
                     out.pfadBlocksNoArch = r.state.architectures.length === archBeforeBlock;
                     out.pfadBlocksNoMaterialLoss = stoneBeforeBlock === stoneAfterBlock;
@@ -9981,8 +9981,7 @@ function startSaveServer() {
                     if (r.state.buildMode) r.state.buildMode.phantomOnGround = false;
                     const archBeforeS = r.state.architectures.length;
                     const builtS = r.confirmBuild();
-                    out.schoepferBypassesUnstable =
-                        builtS === true && r.state.architectures.length > archBeforeS;
+                    out.schoepferBypassesUnstable = builtS === true && r.state.architectures.length > archBeforeS;
 
                     r._clearBuildMode && r._clearBuildMode();
                     r.setGameMode("frieden");
@@ -10037,8 +10036,7 @@ function startSaveServer() {
                         r.renderPlayerStatsUI && r.renderPlayerStatsUI();
                         const container = document.getElementById("player-stats");
                         out._a3bContainerText = container ? container.textContent.slice(0, 200) : null;
-                        out.statsShowsArmorRow =
-                            !!container && /Rüstung/.test(container.textContent || "");
+                        out.statsShowsArmorRow = !!container && /Rüstung/.test(container.textContent || "");
                         r.equipArmor(null);
                         delete r.state.blueprints["audit_armor_real"];
                         r.renderPlayerStatsUI && r.renderPlayerStatsUI();
@@ -10058,8 +10056,7 @@ function startSaveServer() {
                     r.setCameraMode("first");
                     r.tickPlayerAura();
                     const pp = r.state.playerMesh.position;
-                    out.auraPositionStillTracked =
-                        !!glow && Math.abs(glow.position.x - pp.x) < 0.01;
+                    out.auraPositionStillTracked = !!glow && Math.abs(glow.position.x - pp.x) < 0.01;
 
                     // --- Cleanup: Camera-Mode auf Default „first" zurücksetzen
                     // (Ring 5 V2-Prep prüft Initial-Modus). Hotbar auf Default
@@ -10091,14 +10088,8 @@ function startSaveServer() {
                     "Welle 6.X.1 A2: pfad + Phantom-instabil → confirmBuild blockt",
                     wave6x1Results.pfadBlocksUnstable
                 );
-                check(
-                    "Welle 6.X.1 A2: pfad-Block → keine Architektur entsteht",
-                    wave6x1Results.pfadBlocksNoArch
-                );
-                check(
-                    "Welle 6.X.1 A2: pfad-Block → kein Material-Verlust",
-                    wave6x1Results.pfadBlocksNoMaterialLoss
-                );
+                check("Welle 6.X.1 A2: pfad-Block → keine Architektur entsteht", wave6x1Results.pfadBlocksNoArch);
+                check("Welle 6.X.1 A2: pfad-Block → kein Material-Verlust", wave6x1Results.pfadBlocksNoMaterialLoss);
                 check(
                     "Welle 6.X.1 A2: schöpfer-Modus überschreibt Stabilitäts-Gate",
                     wave6x1Results.schoepferBypassesUnstable
@@ -10113,14 +10104,8 @@ function startSaveServer() {
                     wave6x1Results.statsShowsArmorRow,
                     `created=${wave6x1Results._a3bCreated} marked=${wave6x1Results._a3bMarked} equipped=${wave6x1Results._a3bEquipped} text=${(wave6x1Results._a3bContainerText || "").slice(0, 80)}`
                 );
-                check(
-                    "Welle 6.X.1 A4: Player-Aura unsichtbar in 1st-Person",
-                    wave6x1Results.auraHiddenInFirst
-                );
-                check(
-                    "Welle 6.X.1 A4: Player-Aura sichtbar in 3rd-Person",
-                    wave6x1Results.auraVisibleInThird
-                );
+                check("Welle 6.X.1 A4: Player-Aura unsichtbar in 1st-Person", wave6x1Results.auraHiddenInFirst);
+                check("Welle 6.X.1 A4: Player-Aura sichtbar in 3rd-Person", wave6x1Results.auraVisibleInThird);
                 check(
                     "Welle 6.X.1 A4: Aura-Position bleibt getrackt auch in 1st-Person",
                     wave6x1Results.auraPositionStillTracked
@@ -10182,8 +10167,7 @@ function startSaveServer() {
                     // Wheel-Event auf dem Canvas und ruft selectHotbarSlot).
                     const initSrc = typeof r.init === "function" ? r.init.toString() : "";
                     out.wheelListenerInstalled =
-                        /addEventListener\s*\(\s*["']wheel["']/.test(initSrc) &&
-                        /selectHotbarSlot/.test(initSrc);
+                        /addEventListener\s*\(\s*["']wheel["']/.test(initSrc) && /selectHotbarSlot/.test(initSrc);
 
                     // Logik-Test: simuliere Wheel-Deltas, hotbar-Slot ändert sich
                     if (r.state.buildMode) r.state.buildMode.slotIndex = 0;
@@ -10223,14 +10207,8 @@ function startSaveServer() {
                     "Welle 6.X.2 B1: Toggle deaktivieren versteckt Logbuch",
                     wave6x2Results.logbookHiddenAfterUntoggle
                 );
-                check(
-                    "Welle 6.X.2 V8.14: Inline-Toggle expandiert Logbuch",
-                    wave6x2Results.inlineToggleExpands
-                );
-                check(
-                    "Welle 6.X.2 V8.14: Inline-Toggle collapsed Logbuch",
-                    wave6x2Results.inlineToggleCollapses
-                );
+                check("Welle 6.X.2 V8.14: Inline-Toggle expandiert Logbuch", wave6x2Results.inlineToggleExpands);
+                check("Welle 6.X.2 V8.14: Inline-Toggle collapsed Logbuch", wave6x2Results.inlineToggleCollapses);
                 check(
                     "Welle 6.X.2 B2: #architecture-actions aus dem world-drawer entfernt",
                     wave6x2Results.architectureActionsRemoved
@@ -10272,14 +10250,11 @@ function startSaveServer() {
                         const ctx = { state: r.state, rng: () => 0.5 };
                         const pos = r.dslPositions.at_player_forward([8], ctx);
                         out.atPlayerForwardOffset =
-                            Math.abs(pos.x - 10) < 0.01 &&
-                            Math.abs(pos.y - 50) < 0.01 &&
-                            Math.abs(pos.z - 12) < 0.01;
+                            Math.abs(pos.x - 10) < 0.01 && Math.abs(pos.y - 50) < 0.01 && Math.abs(pos.z - 12) < 0.01;
                         // Mit yaw=π/2 → forward ist -X. at_player_forward(5) → (5, 50, 20)
                         r.state.yaw = Math.PI / 2;
                         const pos2 = r.dslPositions.at_player_forward([5], ctx);
-                        out.atPlayerForwardYawAware =
-                            Math.abs(pos2.x - 5) < 0.01 && Math.abs(pos2.z - 20) < 0.01;
+                        out.atPlayerForwardYawAware = Math.abs(pos2.x - 5) < 0.01 && Math.abs(pos2.z - 20) < 0.01;
                         // Reset
                         r.state.yaw = 0;
                     }
@@ -10346,10 +10321,7 @@ function startSaveServer() {
                 .catch((e) => ({ error: String(e) }));
 
             if (wave6x3Results && !wave6x3Results.error) {
-                check(
-                    "Welle 6.X.3 C1: at_player_forward DSL-Resolver existiert",
-                    wave6x3Results.atPlayerForwardExists
-                );
+                check("Welle 6.X.3 C1: at_player_forward DSL-Resolver existiert", wave6x3Results.atPlayerForwardExists);
                 check(
                     "Welle 6.X.3 C1: at_player_forward(8) liefert Position 8m vor Spieler (yaw=0)",
                     wave6x3Results.atPlayerForwardOffset
@@ -10358,10 +10330,7 @@ function startSaveServer() {
                     "Welle 6.X.3 C1: at_player_forward respektiert yaw (π/2 → -X)",
                     wave6x3Results.atPlayerForwardYawAware
                 );
-                check(
-                    "Welle 6.X.3 C1: Chat 'baue dorf hier' parst zu DSL",
-                    wave6x3Results.chatBuildDorfParses
-                );
+                check("Welle 6.X.3 C1: Chat 'baue dorf hier' parst zu DSL", wave6x3Results.chatBuildDorfParses);
                 check(
                     "Welle 6.X.3 C1: Chat 'baue dorf hier' Format [spawn_village, at, seed]",
                     wave6x3Results.chatBuildDorfFormat
@@ -10370,18 +10339,9 @@ function startSaveServer() {
                     "Welle 6.X.3 C1: Chat 'baue dorf hier' embedded Forward-Offset (z ≈ -8)",
                     wave6x3Results.chatBuildDorfForwardOffset
                 );
-                check(
-                    "Welle 6.X.3 C3: _canSoulJumpFromSlope-Methode existiert",
-                    wave6x3Results.canJumpFromSlopeExists
-                );
-                check(
-                    "Welle 6.X.3 C3: kein Slope → Sprung erlaubt",
-                    wave6x3Results.flatGroundJumpAllowed
-                );
-                check(
-                    "Welle 6.X.3 C3: frieden-Modus überschreibt Slope-Block",
-                    wave6x3Results.peaceModeOverridesSlope
-                );
+                check("Welle 6.X.3 C3: _canSoulJumpFromSlope-Methode existiert", wave6x3Results.canJumpFromSlopeExists);
+                check("Welle 6.X.3 C3: kein Slope → Sprung erlaubt", wave6x3Results.flatGroundJumpAllowed);
+                check("Welle 6.X.3 C3: frieden-Modus überschreibt Slope-Block", wave6x3Results.peaceModeOverridesSlope);
                 check(
                     "Welle 6.X.3 C3: schöpfer-Modus überschreibt Slope-Block",
                     wave6x3Results.creatorModeOverridesSlope
@@ -10460,8 +10420,7 @@ function startSaveServer() {
                     // --- D1: isPlayerGrounded-Cache
                     // Source-Check: Cache-Felder + Time-Check existieren
                     const isgSrc = r.isPlayerGrounded.toString();
-                    out.cacheFieldsInSource =
-                        /_groundedCache/.test(isgSrc) && /_groundedCachedAt/.test(isgSrc);
+                    out.cacheFieldsInSource = /_groundedCache/.test(isgSrc) && /_groundedCachedAt/.test(isgSrc);
                     out.cacheTimeoutInSource = /< 33/.test(isgSrc) || /<= 33/.test(isgSrc);
 
                     // Funktional: nach einem Aufruf ist _groundedCachedAt gesetzt
@@ -10503,19 +10462,37 @@ function startSaveServer() {
                 check("Welle 6.X.4 F1: #companion-name-input im DOM", wave6x45Results.companionInputExists);
                 check("Welle 6.X.4 F1: #player-name-input im DOM", wave6x45Results.playerInputExists);
                 check("Welle 6.X.4 F1: #identity-section im DOM", wave6x45Results.identitySectionExists);
-                check("Welle 6.X.4 F1: Companion-Input ändert state.grok.companionName", wave6x45Results.companionNameUpdated);
-                check("Welle 6.X.4 F1: Companion-Name persistiert in localStorage", wave6x45Results.companionNamePersisted);
+                check(
+                    "Welle 6.X.4 F1: Companion-Input ändert state.grok.companionName",
+                    wave6x45Results.companionNameUpdated
+                );
+                check(
+                    "Welle 6.X.4 F1: Companion-Name persistiert in localStorage",
+                    wave6x45Results.companionNamePersisted
+                );
                 check("Welle 6.X.4 F1: Player-Input ändert state.player.name", wave6x45Results.playerNameUpdated);
                 check("Welle 6.X.4 F1: Player-Name persistiert in localStorage", wave6x45Results.playerNamePersisted);
-                check("Welle 6.X.4 F1: System-Prompt enthält Companion-Name", wave6x45Results.promptContainsCompanionName);
+                check(
+                    "Welle 6.X.4 F1: System-Prompt enthält Companion-Name",
+                    wave6x45Results.promptContainsCompanionName
+                );
                 check("Welle 6.X.4 F1: System-Prompt enthält Player-Name", wave6x45Results.promptContainsPlayerName);
-                check("Welle 6.X.5 D1: Cache-Felder + Time-Check im isPlayerGrounded-Source", wave6x45Results.cacheFieldsInSource);
+                check(
+                    "Welle 6.X.5 D1: Cache-Felder + Time-Check im isPlayerGrounded-Source",
+                    wave6x45Results.cacheFieldsInSource
+                );
                 check("Welle 6.X.5 D1: Cache-Timeout 33 ms (≈2 Frames @ 60fps)", wave6x45Results.cacheTimeoutInSource);
                 check("Welle 6.X.5 D1: _groundedCachedAt nach erstem Call gesetzt", wave6x45Results.cacheSetAfterCall);
-                check("Welle 6.X.5 D1: zwei direkte Aufrufe liefern dasselbe", wave6x45Results.cacheConsistentBetweenCalls);
+                check(
+                    "Welle 6.X.5 D1: zwei direkte Aufrufe liefern dasselbe",
+                    wave6x45Results.cacheConsistentBetweenCalls
+                );
                 check("Welle 6.X.5 D1: gecachtes true wird respektiert", wave6x45Results.cachedTrueRespected);
                 check("Welle 6.X.5 D1: gecachtes false wird respektiert", wave6x45Results.cachedFalseRespected);
-                check("Welle 6.X.5 D1: nach Cache-Expiry wird neu computed (timestamp refresht)", wave6x45Results.cacheRefreshedAfterExpiry);
+                check(
+                    "Welle 6.X.5 D1: nach Cache-Expiry wird neu computed (timestamp refresht)",
+                    wave6x45Results.cacheRefreshedAfterExpiry
+                );
             } else {
                 check(
                     "Welle 6.X.4+5: Identity + Performance-Tests laufen",
@@ -10535,7 +10512,8 @@ function startSaveServer() {
                     const AnazhRealm = window.AnazhRealm || r.constructor;
 
                     // --- a) Tag-Nacht-Zyklus
-                    out.timeOfDayField = typeof r.state.timeOfDay === "number" && r.state.timeOfDay >= 0 && r.state.timeOfDay <= 1;
+                    out.timeOfDayField =
+                        typeof r.state.timeOfDay === "number" && r.state.timeOfDay >= 0 && r.state.timeOfDay <= 1;
                     out.dayLengthDefault = r.state.dayLengthMinutes === 8;
                     out.dayLengthConstantsExist =
                         AnazhRealm.DAY_LENGTH_MIN_MINUTES === 1 &&
@@ -10551,8 +10529,7 @@ function startSaveServer() {
                         AnazhRealm.DAY_NIGHT_STOPS[0].t === 0 &&
                         AnazhRealm.DAY_NIGHT_STOPS[AnazhRealm.DAY_NIGHT_STOPS.length - 1].t === 1 &&
                         AnazhRealm.DAY_NIGHT_STOPS.every((s, i, arr) => i === 0 || s.t > arr[i - 1].t);
-                    out.lightsReferenced =
-                        r.state.directionalLight !== null && r.state.ambientLight !== null;
+                    out.lightsReferenced = r.state.directionalLight !== null && r.state.ambientLight !== null;
                     out.interpolateMethod = typeof r._interpolateDayNight === "function";
                     out.applyMethod = typeof r._applyDayNightToScene === "function";
                     out.tickMethod = typeof r.tickDayNight === "function";
@@ -10565,7 +10542,8 @@ function startSaveServer() {
                     out.interpolateMiddayClear = midDay && midDay.intensity >= 0.95;
                     const midNight = r._interpolateDayNight(0);
                     out.interpolateMidnightDim = midNight && midNight.intensity < 0.35;
-                    out.interpolateWrap = r._interpolateDayNight(1.5).intensity === r._interpolateDayNight(0.5).intensity;
+                    out.interpolateWrap =
+                        r._interpolateDayNight(1.5).intensity === r._interpolateDayNight(0.5).intensity;
 
                     // setTimeOfDay setzt korrekt
                     r.setTimeOfDay(0.25);
@@ -10609,8 +10587,7 @@ function startSaveServer() {
                     out.lightPosFollowsTimeOfDay = noonY > 0 && midnightY < noonY;
 
                     // --- b) Sanfte Wetter-Übergänge
-                    out.weatherTransitionDuration =
-                        AnazhRealm.WEATHER_TRANSITION_DURATION_MS === 45000;
+                    out.weatherTransitionDuration = AnazhRealm.WEATHER_TRANSITION_DURATION_MS === 45000;
                     out.requestWeatherTransitionMethod = typeof r.requestWeatherTransition === "function";
                     out.tickWeatherTransitionMethod = typeof r.tickWeatherTransition === "function";
                     out.weatherTintsExists = !!AnazhRealm.WEATHER_TINTS;
@@ -10639,7 +10616,8 @@ function startSaveServer() {
                     // tickWeatherTransition setzt progress voran
                     r.state.weatherTransition.startedAt = performance.now() - 100; // 100 ms
                     r.tickWeatherTransition(0);
-                    out.transitionProgressAdvanced = r.state.weatherTransition && r.state.weatherTransition.progress > 0;
+                    out.transitionProgressAdvanced =
+                        r.state.weatherTransition && r.state.weatherTransition.progress > 0;
                     // Bei progress=1 → transition geclearet
                     if (r.state.weatherTransition) {
                         r.state.weatherTransition.startedAt = performance.now() - 60000; // 60s = > 45s duration
@@ -10657,7 +10635,8 @@ function startSaveServer() {
                     out.naturalBirthMethod = typeof r._creatureNaturalBirth === "function";
                     out.naturalDeathMethod = typeof r._creatureNaturalDeath === "function";
                     out.pickFaunaSoulMethod = typeof r._pickFaunaSoulAtPlayer === "function";
-                    out.faunaLifecycleField = r.state.faunaLifecycle && typeof r.state.faunaLifecycle.lastTick === "number";
+                    out.faunaLifecycleField =
+                        r.state.faunaLifecycle && typeof r.state.faunaLifecycle.lastTick === "number";
 
                     // _findOldestCreature liefert die älteste (kleinster bornAt)
                     if (r.state.creatures.length >= 2) {
@@ -10675,19 +10654,22 @@ function startSaveServer() {
 
                     // _pickFaunaSoulAtPlayer liefert valide Soul
                     const soul = r._pickFaunaSoulAtPlayer();
-                    out.faunaSoulValid =
-                        soul === "sprite" || soul === "wesen" || soul === "geist";
+                    out.faunaSoulValid = soul === "sprite" || soul === "wesen" || soul === "geist";
 
                     // _creatureNaturalDeath effektiviert (sorrow +0.2, journal-loss, removeCreature)
                     if (r.state.creatures.length > 0) {
                         const beforeCount = r.state.creatures.length;
                         const beforeSorrow = (r.state.player.emotions && r.state.player.emotions.sorrow) || 0;
-                        const beforeJournalLoss = (r.state.worldJournal.entries || []).filter((e) => e.type === "loss").length;
+                        const beforeJournalLoss = (r.state.worldJournal.entries || []).filter(
+                            (e) => e.type === "loss"
+                        ).length;
                         r._creatureNaturalDeath(r.state.creatures[0]);
                         out.deathReducesCount = r.state.creatures.length === beforeCount - 1;
                         out.deathIncreasesSorrow =
                             (r.state.player.emotions && r.state.player.emotions.sorrow) > beforeSorrow;
-                        const afterJournalLoss = (r.state.worldJournal.entries || []).filter((e) => e.type === "loss").length;
+                        const afterJournalLoss = (r.state.worldJournal.entries || []).filter(
+                            (e) => e.type === "loss"
+                        ).length;
                         out.deathAddsLossJournal = afterJournalLoss > beforeJournalLoss;
                     } else {
                         out.deathReducesCount = true;
@@ -10697,10 +10679,14 @@ function startSaveServer() {
 
                     // _creatureNaturalBirth fügt Kreatur hinzu + Journal
                     const beforeBirthCount = r.state.creatures.length;
-                    const beforeBirthGrowth = (r.state.worldJournal.entries || []).filter((e) => e.type === "growth").length;
+                    const beforeBirthGrowth = (r.state.worldJournal.entries || []).filter(
+                        (e) => e.type === "growth"
+                    ).length;
                     r._creatureNaturalBirth();
                     out.birthIncreasesCount = r.state.creatures.length === beforeBirthCount + 1;
-                    const afterBirthGrowth = (r.state.worldJournal.entries || []).filter((e) => e.type === "growth").length;
+                    const afterBirthGrowth = (r.state.worldJournal.entries || []).filter(
+                        (e) => e.type === "growth"
+                    ).length;
                     out.birthAddsGrowthJournal = afterBirthGrowth > beforeBirthGrowth;
 
                     return out;
@@ -10713,8 +10699,14 @@ function startSaveServer() {
                 check("Welle 6.G3.a: dayLengthMinutes Default 8", wave6g3Results.dayLengthDefault);
                 check("Welle 6.G3.a: Tag-Längen-Konstanten (1/60/8) korrekt", wave6g3Results.dayLengthConstantsExist);
                 check("Welle 6.G3.a: DAY_NIGHT_STOPS frozen Array", wave6g3Results.dayNightStopsExists);
-                check("Welle 6.G3.a: ≥7 Stops, monoton steigend von t=0 bis t=1 (V8.26: 13 Stops für smoothe Übergänge)", wave6g3Results.dayNightStopsSorted);
-                check("Welle 6.G3.a: directionalLight + ambientLight Referenzen gesetzt", wave6g3Results.lightsReferenced);
+                check(
+                    "Welle 6.G3.a: ≥7 Stops, monoton steigend von t=0 bis t=1 (V8.26: 13 Stops für smoothe Übergänge)",
+                    wave6g3Results.dayNightStopsSorted
+                );
+                check(
+                    "Welle 6.G3.a: directionalLight + ambientLight Referenzen gesetzt",
+                    wave6g3Results.lightsReferenced
+                );
                 check("Welle 6.G3.a: _interpolateDayNight-Methode existiert", wave6g3Results.interpolateMethod);
                 check("Welle 6.G3.a: _applyDayNightToScene-Methode existiert", wave6g3Results.applyMethod);
                 check("Welle 6.G3.a: tickDayNight-Methode existiert", wave6g3Results.tickMethod);
@@ -10722,7 +10714,10 @@ function startSaveServer() {
                 check("Welle 6.G3.a: setTimeOfDay-Methode existiert", wave6g3Results.setTimeOfDayMethod);
                 check("Welle 6.G3.a: setDayLength-Methode existiert", wave6g3Results.setDayLengthMethod);
                 check("Welle 6.G3.a: Mittag (0.5) hat hohe Intensity (>0.95)", wave6g3Results.interpolateMiddayClear);
-                check("Welle 6.G3.a: Mitternacht (0) hat niedrige Intensity (<0.35)", wave6g3Results.interpolateMidnightDim);
+                check(
+                    "Welle 6.G3.a: Mitternacht (0) hat niedrige Intensity (<0.35)",
+                    wave6g3Results.interpolateMidnightDim
+                );
                 check("Welle 6.G3.a: _interpolateDayNight wrapt korrekt (1.5 ≡ 0.5)", wave6g3Results.interpolateWrap);
                 check("Welle 6.G3.a: setTimeOfDay(0.25) setzt state korrekt", wave6g3Results.setTimeOfDayWorks);
                 check("Welle 6.G3.a: _timeOfDayLabel hat Doppelpunkt-Format", wave6g3Results.timeLabel0_25HasEmoji);
@@ -10743,22 +10738,52 @@ function startSaveServer() {
                 );
 
                 // --- b) Wetter-Übergang
-                check("Welle 6.G3.b: WEATHER_TRANSITION_DURATION_MS === 45000", wave6g3Results.weatherTransitionDuration);
-                check("Welle 6.G3.b: requestWeatherTransition-Methode existiert", wave6g3Results.requestWeatherTransitionMethod);
-                check("Welle 6.G3.b: tickWeatherTransition-Methode existiert", wave6g3Results.tickWeatherTransitionMethod);
+                check(
+                    "Welle 6.G3.b: WEATHER_TRANSITION_DURATION_MS === 45000",
+                    wave6g3Results.weatherTransitionDuration
+                );
+                check(
+                    "Welle 6.G3.b: requestWeatherTransition-Methode existiert",
+                    wave6g3Results.requestWeatherTransitionMethod
+                );
+                check(
+                    "Welle 6.G3.b: tickWeatherTransition-Methode existiert",
+                    wave6g3Results.tickWeatherTransitionMethod
+                );
                 check("Welle 6.G3.b: WEATHER_TINTS frozen mit sunny/rainy", wave6g3Results.weatherTintsExists);
                 check(
                     "Welle 6.G3.b: WEATHER_TINTS — sunny skyMul 1.0, rainy < 1.0 (dämpft Sky)",
                     wave6g3Results.weatherTintsSunnyRainy
                 );
-                check("Welle 6.G3.b: weather-DSL-Op setzt state.weather SOFORT (Backward-Compat)", wave6g3Results.weatherStateImmediate);
-                check("Welle 6.G3.b: weather-Wechsel startet weatherTransition", wave6g3Results.weatherTransitionStarted);
-                check("Welle 6.G3.b: weatherTransition.from = vorheriges Wetter (sunny)", wave6g3Results.weatherTransitionFromSunny);
+                check(
+                    "Welle 6.G3.b: weather-DSL-Op setzt state.weather SOFORT (Backward-Compat)",
+                    wave6g3Results.weatherStateImmediate
+                );
+                check(
+                    "Welle 6.G3.b: weather-Wechsel startet weatherTransition",
+                    wave6g3Results.weatherTransitionStarted
+                );
+                check(
+                    "Welle 6.G3.b: weatherTransition.from = vorheriges Wetter (sunny)",
+                    wave6g3Results.weatherTransitionFromSunny
+                );
                 check("Welle 6.G3.b: weatherTransition.to = Ziel (rainy)", wave6g3Results.weatherTransitionToRainy);
-                check("Welle 6.G3.b: requestWeatherTransition mit selbem Ziel ist idempotent (true ohne neu zu starten)", wave6g3Results.transitionSameTargetNoop);
-                check("Welle 6.G3.b: requestWeatherTransition lehnt ungültiges Wetter ab", wave6g3Results.transitionInvalidRejected);
-                check("Welle 6.G3.b: tickWeatherTransition schreitet progress voran", wave6g3Results.transitionProgressAdvanced);
-                check("Welle 6.G3.b: tickWeatherTransition löscht Transition bei progress=1", wave6g3Results.transitionClearedOnComplete);
+                check(
+                    "Welle 6.G3.b: requestWeatherTransition mit selbem Ziel ist idempotent (true ohne neu zu starten)",
+                    wave6g3Results.transitionSameTargetNoop
+                );
+                check(
+                    "Welle 6.G3.b: requestWeatherTransition lehnt ungültiges Wetter ab",
+                    wave6g3Results.transitionInvalidRejected
+                );
+                check(
+                    "Welle 6.G3.b: tickWeatherTransition schreitet progress voran",
+                    wave6g3Results.transitionProgressAdvanced
+                );
+                check(
+                    "Welle 6.G3.b: tickWeatherTransition löscht Transition bei progress=1",
+                    wave6g3Results.transitionClearedOnComplete
+                );
 
                 // --- c) Fauna-Lifecycle
                 check("Welle 6.G3.c: FAUNA_TARGET_POPULATION === 8", wave6g3Results.faunaTargetPop);
@@ -10772,18 +10797,26 @@ function startSaveServer() {
                 check("Welle 6.G3.c: _pickFaunaSoulAtPlayer-Methode existiert", wave6g3Results.pickFaunaSoulMethod);
                 check("Welle 6.G3.c: state.faunaLifecycle initialisiert", wave6g3Results.faunaLifecycleField);
                 check("Welle 6.G3.c: _findOldestCreature wählt kleinste bornAt", wave6g3Results.oldestIsOlder);
-                check("Welle 6.G3.c: _pickFaunaSoulAtPlayer liefert valide Soul (sprite/wesen/geist)", wave6g3Results.faunaSoulValid);
-                check("Welle 6.G3.c: _creatureNaturalDeath reduziert Kreaturen-Anzahl", wave6g3Results.deathReducesCount);
-                check("Welle 6.G3.c: _creatureNaturalDeath erhöht player.emotions.sorrow", wave6g3Results.deathIncreasesSorrow);
+                check(
+                    "Welle 6.G3.c: _pickFaunaSoulAtPlayer liefert valide Soul (sprite/wesen/geist)",
+                    wave6g3Results.faunaSoulValid
+                );
+                check(
+                    "Welle 6.G3.c: _creatureNaturalDeath reduziert Kreaturen-Anzahl",
+                    wave6g3Results.deathReducesCount
+                );
+                check(
+                    "Welle 6.G3.c: _creatureNaturalDeath erhöht player.emotions.sorrow",
+                    wave6g3Results.deathIncreasesSorrow
+                );
                 check("Welle 6.G3.c: _creatureNaturalDeath schreibt loss-Journal", wave6g3Results.deathAddsLossJournal);
                 check("Welle 6.G3.c: _creatureNaturalBirth fügt Kreatur hinzu", wave6g3Results.birthIncreasesCount);
-                check("Welle 6.G3.c: _creatureNaturalBirth schreibt growth-Journal", wave6g3Results.birthAddsGrowthJournal);
-            } else {
                 check(
-                    "Welle 6.G3: alle Tests laufen",
-                    false,
-                    wave6g3Results ? wave6g3Results.error : "no result"
+                    "Welle 6.G3.c: _creatureNaturalBirth schreibt growth-Journal",
+                    wave6g3Results.birthAddsGrowthJournal
                 );
+            } else {
+                check("Welle 6.G3: alle Tests laufen", false, wave6g3Results ? wave6g3Results.error : "no result");
             }
 
             // ### Welle 6.G3 V2 — Vision-Invarianten (V8.25, 17.05.2026) ###
@@ -10840,14 +10873,16 @@ function startSaveServer() {
                     const spriteFreq = r._tagToFrequency(spriteTags, 220);
                     const wesenFreq = r._tagToFrequency(wesenTags, 220);
                     out.spriteFreqHigherThanWesen = spriteFreq > wesenFreq;
-                    out.bothFrequenciesInRange = spriteFreq >= 60 && spriteFreq <= 2000 && wesenFreq >= 60 && wesenFreq <= 2000;
+                    out.bothFrequenciesInRange =
+                        spriteFreq >= 60 && spriteFreq <= 2000 && wesenFreq >= 60 && wesenFreq <= 2000;
 
                     // --- Vision 3: _emotionModulate moduliert mit Emotion-Achsen
                     const noEmo = { joy: 0, sorrow: 0 };
                     const happyEmo = { joy: 1, sorrow: 0 };
                     const baseMod = r._emotionModulate(10, { joy: 5 }, noEmo);
                     const happyMod = r._emotionModulate(10, { joy: 5 }, happyEmo);
-                    out.emotionModulateAdditiveWorks = Math.abs(happyMod - 15) < 0.001 && Math.abs(baseMod - 10) < 0.001;
+                    out.emotionModulateAdditiveWorks =
+                        Math.abs(happyMod - 15) < 0.001 && Math.abs(baseMod - 10) < 0.001;
                     // Mul-Spec
                     const peaceMod = r._emotionModulate(100, { peace: { mul: 1.5 } }, { peace: 1 });
                     out.emotionModulateMulWorks = Math.abs(peaceMod - 150) < 0.001;
@@ -10880,9 +10915,11 @@ function startSaveServer() {
                     r._applyDayNightToScene();
                     const skyAtSorrowHigh = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
                     // Sättigung = max(rgb) - min(rgb)
-                    const satZero = Math.max(skyAtSorrowZero.r, skyAtSorrowZero.g, skyAtSorrowZero.b) -
+                    const satZero =
+                        Math.max(skyAtSorrowZero.r, skyAtSorrowZero.g, skyAtSorrowZero.b) -
                         Math.min(skyAtSorrowZero.r, skyAtSorrowZero.g, skyAtSorrowZero.b);
-                    const satHigh = Math.max(skyAtSorrowHigh.r, skyAtSorrowHigh.g, skyAtSorrowHigh.b) -
+                    const satHigh =
+                        Math.max(skyAtSorrowHigh.r, skyAtSorrowHigh.g, skyAtSorrowHigh.b) -
                         Math.min(skyAtSorrowHigh.r, skyAtSorrowHigh.g, skyAtSorrowHigh.b);
                     out.sorrowReducesSaturation = satHigh < satZero;
                     // Reset
@@ -11006,26 +11043,65 @@ function startSaveServer() {
                     "Welle 6.G3 V2 Vision: _tagToFrequency mit hoher magieleitung > niedriger magieleitung",
                     wave6g3v2Results.tagFreqHighMagieIsHigher
                 );
-                check("Welle 6.G3 V2 Vision: sprite-Frequenz > wesen-Frequenz (Klang folgt Substanz)", wave6g3v2Results.spriteFreqHigherThanWesen);
-                check("Welle 6.G3 V2 Vision: beide Frequenzen im Range [60, 2000] Hz", wave6g3v2Results.bothFrequenciesInRange);
-                check("Welle 6.G3 V2 Vision: _emotionModulate additiv (joy=1 → +5 auf base 10 = 15)", wave6g3v2Results.emotionModulateAdditiveWorks);
-                check("Welle 6.G3 V2 Vision: _emotionModulate multiplikativ (peace=1 + mul:1.5 → ×1.5)", wave6g3v2Results.emotionModulateMulWorks);
+                check(
+                    "Welle 6.G3 V2 Vision: sprite-Frequenz > wesen-Frequenz (Klang folgt Substanz)",
+                    wave6g3v2Results.spriteFreqHigherThanWesen
+                );
+                check(
+                    "Welle 6.G3 V2 Vision: beide Frequenzen im Range [60, 2000] Hz",
+                    wave6g3v2Results.bothFrequenciesInRange
+                );
+                check(
+                    "Welle 6.G3 V2 Vision: _emotionModulate additiv (joy=1 → +5 auf base 10 = 15)",
+                    wave6g3v2Results.emotionModulateAdditiveWorks
+                );
+                check(
+                    "Welle 6.G3 V2 Vision: _emotionModulate multiplikativ (peace=1 + mul:1.5 → ×1.5)",
+                    wave6g3v2Results.emotionModulateMulWorks
+                );
                 check("Welle 6.G3 V2 Vision: awe=1 hebt Sky-Blau-Anteil sichtbar", wave6g3v2Results.aweRaisesBlue);
-                check("Welle 6.G3 V2 Vision: awe=1 hebt Sky-Rot-Anteil (Magie = Lila)", wave6g3v2Results.aweRaisesRedToo);
-                check("Welle 6.G3 V2 Vision: sorrow=1 reduziert Sky-Sättigung", wave6g3v2Results.sorrowReducesSaturation);
-                check("Welle 6.G3 V2 Vision: peace=1 verlängert Wetter-Dauer (>120%)", wave6g3v2Results.peaceSlowsWeather);
-                check("Welle 6.G3 V2 Vision: chaos=1 verkürzt Wetter-Dauer (<70%)", wave6g3v2Results.chaosSpeedsWeather);
-                check("Welle 6.G3 V2 Vision: lebendig-Region hat höheres FAUNA_TARGET als karge", wave6g3v2Results.liveRegionHasHigherTarget);
-                check("Welle 6.G3 V2 Vision: FAUNA_TARGET-Range plausibel (lebendig ≥10, karg ≤6)", wave6g3v2Results.targetInExpectedRange);
-                check("Welle 6.G3 V2 Vision: Stern-Feld-Opacity existiert (V8.28 THREE.Points)", wave6g3v2Results.starIntensityExists);
-                check("Welle 6.G3 V2 Vision: Sterne nachts sichtbar stärker als tags", wave6g3v2Results.starsBrighterAtNight);
+                check(
+                    "Welle 6.G3 V2 Vision: awe=1 hebt Sky-Rot-Anteil (Magie = Lila)",
+                    wave6g3v2Results.aweRaisesRedToo
+                );
+                check(
+                    "Welle 6.G3 V2 Vision: sorrow=1 reduziert Sky-Sättigung",
+                    wave6g3v2Results.sorrowReducesSaturation
+                );
+                check(
+                    "Welle 6.G3 V2 Vision: peace=1 verlängert Wetter-Dauer (>120%)",
+                    wave6g3v2Results.peaceSlowsWeather
+                );
+                check(
+                    "Welle 6.G3 V2 Vision: chaos=1 verkürzt Wetter-Dauer (<70%)",
+                    wave6g3v2Results.chaosSpeedsWeather
+                );
+                check(
+                    "Welle 6.G3 V2 Vision: lebendig-Region hat höheres FAUNA_TARGET als karge",
+                    wave6g3v2Results.liveRegionHasHigherTarget
+                );
+                check(
+                    "Welle 6.G3 V2 Vision: FAUNA_TARGET-Range plausibel (lebendig ≥10, karg ≤6)",
+                    wave6g3v2Results.targetInExpectedRange
+                );
+                check(
+                    "Welle 6.G3 V2 Vision: Stern-Feld-Opacity existiert (V8.28 THREE.Points)",
+                    wave6g3v2Results.starIntensityExists
+                );
+                check(
+                    "Welle 6.G3 V2 Vision: Sterne nachts sichtbar stärker als tags",
+                    wave6g3v2Results.starsBrighterAtNight
+                );
                 check("Welle 6.G3 V2 Vision: state.sunMesh ist THREE.Mesh", wave6g3v2Results.sunMeshExists);
                 check("Welle 6.G3 V2 Vision: state.moonMesh ist THREE.Mesh", wave6g3v2Results.moonMeshExists);
                 check("Welle 6.G3 V2 Vision: Sonne hoch am Mittag (y > 100)", wave6g3v2Results.sunHighAtNoon);
                 check("Welle 6.G3 V2 Vision: Mond niedrig am Mittag (y < -100)", wave6g3v2Results.moonLowAtNoon);
                 check("Welle 6.G3 V2 Vision: Sonne niedrig nachts (y < -100)", wave6g3v2Results.sunLowAtMidnight);
                 check("Welle 6.G3 V2 Vision: Mond hoch nachts (y > 100)", wave6g3v2Results.moonHighAtMidnight);
-                check("Welle 6.G3 V2 Vision: magie-Welt-Region hebt Sky-Blau (vs dichte-Region)", wave6g3v2Results.magieFieldRaisesBlue);
+                check(
+                    "Welle 6.G3 V2 Vision: magie-Welt-Region hebt Sky-Blau (vs dichte-Region)",
+                    wave6g3v2Results.magieFieldRaisesBlue
+                );
             } else {
                 check(
                     "Welle 6.G3 V2: Vision-Tests laufen",
@@ -11138,21 +11214,49 @@ function startSaveServer() {
                 .catch((err) => ({ error: err && err.message }));
 
             if (v826Results && !v826Results.error) {
-                check("V8.26 Bug 1: Skybox.position folgt camera.position (Stern-Rauschen-Fix)", v826Results.skyboxFollowsCamera);
-                check("V8.26 Bug 1: Vertex-Shader nutzt lokale `vDir = normalize(position)`", v826Results.shaderUsesLocalPosition);
-                check("V8.26 Bug 1: Fragment-Shader sampelt mit vDir (nicht vWorldPosition)", v826Results.shaderFragmentUsesVDir);
+                check(
+                    "V8.26 Bug 1: Skybox.position folgt camera.position (Stern-Rauschen-Fix)",
+                    v826Results.skyboxFollowsCamera
+                );
+                check(
+                    "V8.26 Bug 1: Vertex-Shader nutzt lokale `vDir = normalize(position)`",
+                    v826Results.shaderUsesLocalPosition
+                );
+                check(
+                    "V8.26 Bug 1: Fragment-Shader sampelt mit vDir (nicht vWorldPosition)",
+                    v826Results.shaderFragmentUsesVDir
+                );
                 check("V8.26 Bug 2: 13 DAY_NIGHT_STOPS (statt 7) für sanftere Übergänge", v826Results.thirteenStops);
-                check("V8.26 Bug 2: Zwischen-Stop bei t=0.32 existiert (Sonnenaufgang-Phase)", v826Results.intermediateStopExists);
-                check("V8.26 Bug 2: _interpolateDayNight nutzt smoothstep statt linear-Lerp", v826Results.interpUsesSmoothstep);
-                check("V8.26 Bug 2: Smoothstep wirkt empirisch (Anfangs-Phase langsamer als linear)", v826Results.smoothstepIsActive);
+                check(
+                    "V8.26 Bug 2: Zwischen-Stop bei t=0.32 existiert (Sonnenaufgang-Phase)",
+                    v826Results.intermediateStopExists
+                );
+                check(
+                    "V8.26 Bug 2: _interpolateDayNight nutzt smoothstep statt linear-Lerp",
+                    v826Results.interpUsesSmoothstep
+                );
+                check(
+                    "V8.26 Bug 2: Smoothstep wirkt empirisch (Anfangs-Phase langsamer als linear)",
+                    v826Results.smoothstepIsActive
+                );
                 check(
                     `V8.26 Bug 2: Keine harten Farbsprünge zwischen Stops (max RGB-Komponente <95, ist ${v826Results.maxJump})`,
                     v826Results.noSharpColorJumps
                 );
-                check("V8.26 Polish §6.1: _frustumCache + _frustumMatrixCache statt pro-Frame-Alloc", v826Results.frustumPoolExists);
-                check("V8.26 Polish §6.3: _runRaycast-Helper existiert (5 Call-Sites konsolidiert)", v826Results.runRaycastHelperExists);
+                check(
+                    "V8.26 Polish §6.1: _frustumCache + _frustumMatrixCache statt pro-Frame-Alloc",
+                    v826Results.frustumPoolExists
+                );
+                check(
+                    "V8.26 Polish §6.3: _runRaycast-Helper existiert (5 Call-Sites konsolidiert)",
+                    v826Results.runRaycastHelperExists
+                );
             } else {
-                check("V8.26: Browser-Bugs + Polish-Tests laufen", false, v826Results ? v826Results.error : "no result");
+                check(
+                    "V8.26: Browser-Bugs + Polish-Tests laufen",
+                    false,
+                    v826Results ? v826Results.error : "no result"
+                );
             }
 
             // ### V8.27 6.G4.a — Welt unter wandernder Sonne (Hemisphere + Lambert + Fog) ###
@@ -11193,7 +11297,10 @@ function startSaveServer() {
                     out.fogExists = !!r.state.fog && r.state.fog.isFog === true;
                     // Fog-Color sollte gesetzt sein nach erstem _applyDayNightToScene
                     r._applyDayNightToScene();
-                    out.fogColorSet = r.state.fog && r.state.fog.color && (r.state.fog.color.r > 0 || r.state.fog.color.g > 0 || r.state.fog.color.b > 0);
+                    out.fogColorSet =
+                        r.state.fog &&
+                        r.state.fog.color &&
+                        (r.state.fog.color.r > 0 || r.state.fog.color.g > 0 || r.state.fog.color.b > 0);
 
                     // 2. Hemisphere-skyColor moduliert mit Tageszeit
                     r.setTimeOfDay(0.5);
@@ -11243,7 +11350,11 @@ function startSaveServer() {
                     // (Cel-Shading). Reagiert auf Licht wie Lambert, aber
                     // quantisiert das Sonnen-Diffuse über die gradientMap.
                     let hasToonMaterial = false;
-                    if (typeof r.spawnArchitecture === "function" && r.state.blueprints && r.state.blueprints.stein_block) {
+                    if (
+                        typeof r.spawnArchitecture === "function" &&
+                        r.state.blueprints &&
+                        r.state.blueprints.stein_block
+                    ) {
                         const arch = r.spawnArchitecture("stein_block", { x: 0, y: 10, z: 0 }, { silent: true });
                         if (arch && arch.mesh) {
                             arch.mesh.traverse((node) => {
@@ -11300,22 +11411,178 @@ function startSaveServer() {
                 .catch((err) => ({ error: err && err.message }));
 
             if (v827Results && !v827Results.error) {
-                check("V8.27: Skybox-position.copy existiert (direkt vor render)", v827Results.skyboxPositionCopyExists);
+                check(
+                    "V8.27: Skybox-position.copy existiert (direkt vor render)",
+                    v827Results.skyboxPositionCopyExists
+                );
                 check("V8.27: state.hemiLight ist THREE.HemisphereLight", v827Results.hemiLightExists);
                 check("V8.27: state.fog ist THREE.Fog", v827Results.fogExists);
                 check("V8.27: Fog-Color wird von _applyDayNightToScene gesetzt", v827Results.fogColorSet);
-                check("V8.27: HemisphereLight.color (sky) folgt Tag-Nacht (Mittag heller als Nacht)", v827Results.hemiSkyFollowsDayCycle);
+                check(
+                    "V8.27: HemisphereLight.color (sky) folgt Tag-Nacht (Mittag heller als Nacht)",
+                    v827Results.hemiSkyFollowsDayCycle
+                );
                 check("V8.27: HemisphereLight.intensity folgt Sonnenhöhe", v827Results.hemiIntensityFollowsDayCycle);
-                check("V8.27: HemisphereLight.groundColor.g hoch in lebendig-Region", v827Results.groundColorFollowsLebendig);
+                check(
+                    "V8.27: HemisphereLight.groundColor.g hoch in lebendig-Region",
+                    v827Results.groundColorFollowsLebendig
+                );
                 check("V8.27: HemisphereLight.groundColor.r hoch in glut-Region", v827Results.groundColorFollowsGlut);
-                check("V8.28: Architektur-Material ist MeshToonMaterial (Cel-Shading)", v827Results.architectureUsesLambert);
+                check(
+                    "V8.28: Architektur-Material ist MeshToonMaterial (Cel-Shading)",
+                    v827Results.architectureUsesLambert
+                );
                 check("V8.27: Terrain-Shader hat lightIntensity-Uniform", v827Results.terrainHasLightIntensityUniform);
-                check("V8.27: Terrain-Shader hat ambientIntensity-Uniform", v827Results.terrainHasAmbientIntensityUniform);
-                check("V8.27: Terrain-lightIntensity folgt Tag-Nacht (Mittag > Nacht)", v827Results.terrainLightFollowsDayCycle);
+                check(
+                    "V8.27: Terrain-Shader hat ambientIntensity-Uniform",
+                    v827Results.terrainHasAmbientIntensityUniform
+                );
+                check(
+                    "V8.27: Terrain-lightIntensity folgt Tag-Nacht (Mittag > Nacht)",
+                    v827Results.terrainLightFollowsDayCycle
+                );
                 check("V8.28: Stern-Feld hat per-Stern Hue (color-Attribut)", v827Results.starHasHueVariation);
                 check("V8.28: Stern-Feld hat per-Stern Größen-Variation (aSize-Attribut)", v827Results.threeStarLayers);
             } else {
                 check("V8.27: Tiefe-Welle Tests laufen", false, v827Results ? v827Results.error : "no result");
+            }
+
+            // ### V8.28 6.G4.b — Welt-Atem-Vollendung (Sterne/Terrain/Cel/Wind/Wolken/Wasser) ###
+            // Schöpfer-Beobachtung: Sterne flackern bei Kamera-Rotation,
+            // Terrain nur nach Höhe gefärbt, kein Wind/Wolken/Wasser.
+            const v828Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // --- Phase A: Stern-Feld ---
+                    const sf = r.state.starField;
+                    out.starFieldIsPoints = !!(sf && sf.type === "Points");
+                    out.starCount =
+                        sf && sf.geometry && sf.geometry.getAttribute("position")
+                            ? sf.geometry.getAttribute("position").count
+                            : 0;
+                    out.starFieldHasMany = out.starCount > 1000;
+                    // Sidereal-Rotation: rotation ändert sich mit timeOfDay
+                    out.starFieldRotates = !!(sf && sf.rotation);
+
+                    // --- Phase B: Terrain-Affinität ---
+                    out.attachFieldExists = typeof r._attachFieldAttribute === "function";
+                    // terrainMaterial-Shader liest aField
+                    const tm = r.state.terrainMaterial;
+                    out.terrainShaderHasField = !!(
+                        tm &&
+                        tm.vertexShader &&
+                        /aField/.test(tm.vertexShader) &&
+                        tm.fragmentShader &&
+                        /vField/.test(tm.fragmentShader)
+                    );
+                    // Chunk-Geometrie trägt aField-Attribut
+                    let chunkHasField = false;
+                    if (r.state.groundChunks && r.state.groundChunks.length > 0) {
+                        const g = r.state.groundChunks[0].geometry;
+                        chunkHasField = !!(g && g.getAttribute && g.getAttribute("aField"));
+                    }
+                    out.chunkHasFieldAttribute = chunkHasField;
+
+                    // --- Phase C: Cel-Shading + Fog ---
+                    out.celMethodsExist =
+                        typeof r._refreshToonGradient === "function" &&
+                        typeof r.setCelLevels === "function" &&
+                        typeof r.setFogDistance === "function";
+                    out.toonGradientExists = !!r.state.toonGradientMap;
+                    out.terrainHasCelUniform = !!(tm && tm.uniforms && tm.uniforms.celLevels);
+                    // setCelLevels ändert celLevels in state + terrainMaterial
+                    r.setCelLevels(2);
+                    const cel2 = tm && tm.uniforms && tm.uniforms.celLevels ? tm.uniforms.celLevels.value : -1;
+                    r.setCelLevels(6);
+                    const cel6 = tm && tm.uniforms && tm.uniforms.celLevels ? tm.uniforms.celLevels.value : -1;
+                    out.celSliderWorks = cel2 === 2 && cel6 === 6;
+                    r.setCelLevels(4);
+                    // setFogDistance ändert fog.near/far
+                    r.setFogDistance(0.5);
+                    r._applyDayNightToScene();
+                    const fogNear05 = r.state.fog ? r.state.fog.near : -1;
+                    r.setFogDistance(2.0);
+                    r._applyDayNightToScene();
+                    const fogNear20 = r.state.fog ? r.state.fog.near : -1;
+                    out.fogSliderWorks = fogNear20 > fogNear05;
+                    r.setFogDistance(1.0);
+
+                    // --- Phase D: Wind + Wolken + Wasser ---
+                    out.windMatExists = typeof r._windMat === "function";
+                    const wm1 = r._windMat ? r._windMat("grass") : null;
+                    const wm2 = r._windMat ? r._windMat("grass") : null;
+                    out.windMatCached = !!(wm1 && wm1 === wm2); // geteilt
+                    out.windUniformsExist = !!(r.state.windUniforms && r.state.windUniforms.uWindTime);
+                    // Skybox-Shader hat cloudCover-Uniform
+                    out.skyboxHasClouds = !!(
+                        r.state.skybox &&
+                        r.state.skybox.material &&
+                        r.state.skybox.material.uniforms &&
+                        r.state.skybox.material.uniforms.cloudCover
+                    );
+                    // Wolken-Cover folgt weather
+                    r.state.weather = "rainy";
+                    r._applyDayNightToScene();
+                    const cloudRainy = r.state.skybox.material.uniforms.cloudCover.value;
+                    r.state.weather = "sunny";
+                    r._applyDayNightToScene();
+                    const cloudSunny = r.state.skybox.material.uniforms.cloudCover.value;
+                    out.cloudsFollowWeather = cloudRainy > cloudSunny;
+                    // Welt-Wasser
+                    out.waterPlaneExists = !!(r.state.waterPlane && r.state.waterPlane.type === "Mesh");
+                    out.waterAtLevel = !!(
+                        r.state.waterPlane &&
+                        typeof r.state.waterLevel === "number" &&
+                        Math.abs(r.state.waterPlane.position.y - r.state.waterLevel) < 0.01
+                    );
+
+                    // --- Atmosphäre-Persistenz ---
+                    r.setCelLevels(7);
+                    r.setFogDistance(1.5);
+                    const snap = r.buildStateSnapshot();
+                    out.atmospherePersisted = !!(
+                        snap &&
+                        snap.atmosphere &&
+                        snap.atmosphere.celLevels === 7 &&
+                        Math.abs(snap.atmosphere.fogDistance - 1.5) < 0.01
+                    );
+                    r.setCelLevels(4);
+                    r.setFogDistance(1.0);
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (v828Results && !v828Results.error) {
+                check("V8.28 A: state.starField ist THREE.Points", v828Results.starFieldIsPoints);
+                check("V8.28 A: Stern-Feld hat >1000 diskrete Sterne", v828Results.starFieldHasMany);
+                check("V8.28 A: Stern-Feld hat Rotation (sidereal)", v828Results.starFieldRotates);
+                check("V8.28 B: _attachFieldAttribute existiert", v828Results.attachFieldExists);
+                check(
+                    "V8.28 B: Terrain-Shader liest aField/vField (Welt-Affinität)",
+                    v828Results.terrainShaderHasField
+                );
+                check("V8.28 B: Chunk-Geometrie trägt aField-Attribut", v828Results.chunkHasFieldAttribute);
+                check(
+                    "V8.28 C: _refreshToonGradient + setCelLevels + setFogDistance existieren",
+                    v828Results.celMethodsExist
+                );
+                check("V8.28 C: state.toonGradientMap existiert (Cel-gradientMap)", v828Results.toonGradientExists);
+                check("V8.28 C: Terrain-Shader hat celLevels-Uniform", v828Results.terrainHasCelUniform);
+                check("V8.28 C: setCelLevels ändert die Cel-Stufen (2↔6)", v828Results.celSliderWorks);
+                check("V8.28 C: setFogDistance ändert Fog-near (0.5↔2.0)", v828Results.fogSliderWorks);
+                check("V8.28 D: _windMat existiert", v828Results.windMatExists);
+                check("V8.28 D: _windMat ist geteilt/gecached (eine Kompilierung)", v828Results.windMatCached);
+                check("V8.28 D: state.windUniforms existiert (uWindTime)", v828Results.windUniformsExist);
+                check("V8.28 D: Skybox-Shader hat cloudCover-Uniform", v828Results.skyboxHasClouds);
+                check("V8.28 D: Wolken-Cover folgt weather (rainy > sunny)", v828Results.cloudsFollowWeather);
+                check("V8.28 D: state.waterPlane existiert (THREE.Mesh)", v828Results.waterPlaneExists);
+                check("V8.28 D: Wasser-Plane liegt auf waterLevel", v828Results.waterAtLevel);
+                check("V8.28: state.atmosphere persistiert im Snapshot", v828Results.atmospherePersisted);
+            } else {
+                check("V8.28: Welt-Atem-Vollendung Tests laufen", false, v828Results ? v828Results.error : "no result");
             }
 
             // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider (Audit 17.05.2026) ###
@@ -11347,8 +11614,7 @@ function startSaveServer() {
                     out.stamTextShowsRatio = !!stamText && /75\/100/.test(stamText.textContent);
                     const hpFill = document.getElementById("stats-hud-hp-fill");
                     // V8.14: Bar-Breite ist jetzt 166 (von 158) — 50% → 83px
-                    out.hpFillProportional =
-                        !!hpFill && Math.abs(parseFloat(hpFill.getAttribute("width")) - 83) < 1;
+                    out.hpFillProportional = !!hpFill && Math.abs(parseFloat(hpFill.getAttribute("width")) - 83) < 1;
 
                     // --- B3: Tooltip enthält slow stats nach Hover
                     r.tickStatsHud(performance.now() / 1000 + 2); // +2s damit Tooltip-Throttle nicht greift
@@ -11440,9 +11706,7 @@ function startSaveServer() {
                     // Material-Compat — schmiede-hammer.opClass=plastic ist mit
                     // stein NICHT kompatibel (MATERIAL_OP_COMPATIBILITY). Eisen
                     // passt → wir wechseln das Test-Material auf eisen.
-                    r.state.player.tools = Array.isArray(r.state.player.tools)
-                        ? r.state.player.tools
-                        : [];
+                    r.state.player.tools = Array.isArray(r.state.player.tools) ? r.state.player.tools : [];
                     if (!r.state.player.tools.includes("schmiede-hammer")) {
                         r.state.player.tools.push("schmiede-hammer");
                     }
@@ -11476,9 +11740,7 @@ function startSaveServer() {
                     // Nach Schmiede-Hammer-Anwendung erscheint die Domain-Bar
                     r.applyOpToPart(tn2, 0, "schmiede-hammer");
                     r._workshopRenderStatsPanel && r._workshopRenderStatsPanel();
-                    out.domainBarsAppearAfterOp = !!(
-                        panel && panel.querySelector(".workshop-domain-bar.dominant")
-                    );
+                    out.domainBarsAppearAfterOp = !!(panel && panel.querySelector(".workshop-domain-bar.dominant"));
 
                     // Cleanup
                     delete r.state.blueprints[tn2];
@@ -11493,10 +11755,7 @@ function startSaveServer() {
                     "Welle 6.X.4 V8.16 Punkt 18: computeBlueprintDomainCounts existiert",
                     wave6x4cResults.domainCountsMethodExists
                 );
-                check(
-                    "Welle 6.X.4 V8.16: Leere opChain → keine Domain-Counts",
-                    wave6x4cResults.emptyChainNoDomain
-                );
+                check("Welle 6.X.4 V8.16: Leere opChain → keine Domain-Counts", wave6x4cResults.emptyChainNoDomain);
                 check(
                     "Welle 6.X.4 V8.16: Schmiede-Hammer-Anwendung erhöht forging-Count",
                     wave6x4cResults.afterForgingHasDomain
@@ -11505,10 +11764,7 @@ function startSaveServer() {
                     "Welle 6.X.4 V8.16: Werkstatt-Stats hat .workshop-synergy-row",
                     wave6x4cResults.synergyRowRendered
                 );
-                check(
-                    "Welle 6.X.4 V8.16: Werkstatt-Stats hat .workshop-growth-row",
-                    wave6x4cResults.growthRowRendered
-                );
+                check("Welle 6.X.4 V8.16: Werkstatt-Stats hat .workshop-growth-row", wave6x4cResults.growthRowRendered);
                 check(
                     "Welle 6.X.4 V8.16: Growth-Text bei 0 Ops zeigt Wachstums-Hinweis",
                     wave6x4cResults.growthShowsEmptyHint
@@ -11528,12 +11784,18 @@ function startSaveServer() {
             if (wave6x4bResults && !wave6x4bResults.error) {
                 check("Welle 6.X.4 B3: #stats-hud im DOM", wave6x4bResults.statsHudExists);
                 check("Welle 6.X.4 B3: #stats-hud-hp-fill SVG-Element existiert", wave6x4bResults.statsHudHpFillExists);
-                check("Welle 6.X.4 B3: #stats-hud-stam-fill SVG-Element existiert", wave6x4bResults.statsHudStamFillExists);
+                check(
+                    "Welle 6.X.4 B3: #stats-hud-stam-fill SVG-Element existiert",
+                    wave6x4bResults.statsHudStamFillExists
+                );
                 check("Welle 6.X.4 B3: #stats-hud-tooltip im DOM", wave6x4bResults.statsHudTooltipExists);
                 check("Welle 6.X.4 B3: tickStatsHud-Methode existiert", wave6x4bResults.tickStatsHudMethodExists);
                 check("Welle 6.X.4 B3: HP-Text zeigt 50/100 nach Setzen", wave6x4bResults.hpTextShowsRatio);
                 check("Welle 6.X.4 B3: Stamina-Text zeigt 75/100 nach Setzen", wave6x4bResults.stamTextShowsRatio);
-                check("Welle 6.X.4 B3: HP-Fill-Width proportional (50% → 83px von 166px)", wave6x4bResults.hpFillProportional);
+                check(
+                    "Welle 6.X.4 B3: HP-Fill-Width proportional (50% → 83px von 166px)",
+                    wave6x4bResults.hpFillProportional
+                );
                 check("Welle 6.X.4 B3: Tooltip enthält Schaden", wave6x4bResults.tooltipHasDamage);
                 check("Welle 6.X.4 B3: Tooltip enthält Geschwindigkeit", wave6x4bResults.tooltipHasSpeed);
                 check("Welle 6.X.4 B3: Tooltip enthält Präzision", wave6x4bResults.tooltipHasPrecision);
@@ -11545,12 +11807,27 @@ function startSaveServer() {
                 check("Welle 6.X.4 D2: #slider-master im DOM", wave6x4bResults.masterSliderExists);
                 check("Welle 6.X.4 D2: #slider-pings im DOM", wave6x4bResults.pingsSliderExists);
                 check("Welle 6.X.4 D2: #slider-ring im DOM", wave6x4bResults.ringSliderExists);
-                check("Welle 6.X.4 D2: Master-Slider ändert state.symphony.masterVolume", wave6x4bResults.masterSliderUpdates);
-                check("Welle 6.X.4 D2: Master-Slider persistiert in localStorage", wave6x4bResults.masterSliderPersists);
-                check("Welle 6.X.4 D2: Pings-Slider ändert state.symphony.creaturePingVolume", wave6x4bResults.pingsSliderUpdates);
+                check(
+                    "Welle 6.X.4 D2: Master-Slider ändert state.symphony.masterVolume",
+                    wave6x4bResults.masterSliderUpdates
+                );
+                check(
+                    "Welle 6.X.4 D2: Master-Slider persistiert in localStorage",
+                    wave6x4bResults.masterSliderPersists
+                );
+                check(
+                    "Welle 6.X.4 D2: Pings-Slider ändert state.symphony.creaturePingVolume",
+                    wave6x4bResults.pingsSliderUpdates
+                );
                 check("Welle 6.X.4 D2: Ring-Slider ändert state.chunkRingRadius", wave6x4bResults.ringSliderUpdates);
-                check("Welle 6.X.4 D2: Ring-Wert-Display zeigt '7×7' bei value=3", wave6x4bResults.ringValueDisplaysCorrectly);
-                check("Welle 6.X.4 D2: playCreaturePing-Source nutzt creaturePingVolume", wave6x4bResults.pingsSourceUsesVolume);
+                check(
+                    "Welle 6.X.4 D2: Ring-Wert-Display zeigt '7×7' bei value=3",
+                    wave6x4bResults.ringValueDisplaysCorrectly
+                );
+                check(
+                    "Welle 6.X.4 D2: playCreaturePing-Source nutzt creaturePingVolume",
+                    wave6x4bResults.pingsSourceUsesVolume
+                );
             } else {
                 check(
                     "Welle 6.X.4 B3+D2: Stats-HUD + Slider-Tests laufen",
@@ -14245,7 +14522,10 @@ function startSaveServer() {
                     "V8.00 Resize: installResizeHandles + _installResizeHandle existieren",
                     resizeResults.hasInstallMethod && resizeResults.hasInternalMethod
                 );
-                check("V8.00/V8.17 Resize: Konsole hat .resize-br Handle (unten-rechts, Schöpfer-Korrektur)", resizeResults.consoleHasHandle);
+                check(
+                    "V8.00/V8.17 Resize: Konsole hat .resize-br Handle (unten-rechts, Schöpfer-Korrektur)",
+                    resizeResults.consoleHasHandle
+                );
                 check(
                     `V8.00 Resize: Alle ${resizeResults.drawerCount} Drawer haben .resize-bl Handle (unten-links)`,
                     resizeResults.allDrawersHaveHandle
@@ -16158,7 +16438,10 @@ function startSaveServer() {
                     "V8.06: Klonen + Neu-Buttons direkt in der Mode-Bar (mit Divider)",
                     v806Results.cloneBtnInModeBar && v806Results.newBtnInModeBar && v806Results.dividerInModeBar
                 );
-                check("V8.06/V8.14: Mode-Bar hat 8 Buttons (5 Modi + Snap + Klone + Neu + Zentrieren)", v806Results.sevenButtonsInBar);
+                check(
+                    "V8.06/V8.14: Mode-Bar hat 8 Buttons (5 Modi + Snap + Klone + Neu + Zentrieren)",
+                    v806Results.sevenButtonsInBar
+                );
                 check(
                     "V8.06: _workshopInstallActionButtons + _workshopApplyDefaultSizeOnce existieren",
                     v806Results.hasActionInstall && v806Results.hasDefaultSize
