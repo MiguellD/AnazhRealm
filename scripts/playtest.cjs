@@ -13274,10 +13274,12 @@ function startSaveServer() {
                     try {
                         out.hasInstallMethod = typeof r.installResizeHandles === "function";
                         out.hasInternalMethod = typeof r._installResizeHandle === "function";
-                        // Konsole: br-handle existiert
+                        // Welle 6.X.2 V8.15 — Konsole-Handle ist jetzt
+                        // top-right statt bottom-right (unten verdeckt von
+                        // Hotbar + Stats-HUD).
                         const consoleEl = document.getElementById("console");
                         out.consoleHasHandle = !!(
-                            consoleEl && consoleEl.querySelector(":scope > .resize-handle.resize-br")
+                            consoleEl && consoleEl.querySelector(":scope > .resize-handle.resize-tr")
                         );
                         // Jeder Drawer: bl-handle existiert
                         const drawers = document.querySelectorAll(".drawer[data-drawer]");
@@ -13330,7 +13332,7 @@ function startSaveServer() {
                     "V8.00 Resize: installResizeHandles + _installResizeHandle existieren",
                     resizeResults.hasInstallMethod && resizeResults.hasInternalMethod
                 );
-                check("V8.00 Resize: Konsole hat .resize-br Handle (unten-rechts)", resizeResults.consoleHasHandle);
+                check("V8.00/V8.15 Resize: Konsole hat .resize-tr Handle (oben-rechts, V8.15)", resizeResults.consoleHasHandle);
                 check(
                     `V8.00 Resize: Alle ${resizeResults.drawerCount} Drawer haben .resize-bl Handle (unten-links)`,
                     resizeResults.allDrawersHaveHandle

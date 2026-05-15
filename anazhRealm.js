@@ -355,10 +355,12 @@ class AnazhRealm {
                 // hover). creaturePingVolume zusätzlich nur für die
                 // Spawn/Aktion-Pings der Kreaturen (separat einstellbar
                 // damit man die laufende Welt-Atmosphäre laut, aber die
-                // Pop-Pings dezent halten kann). Multiplikatoren auf den
-                // jeweiligen GainNode bzw. inline-Gain.
+                // Pop-Pings dezent halten kann). voiceVolume V8.15 für
+                // SpeechSynthesisUtterance.volume (TTS-Stimme separat).
+                // Multiplikatoren auf den jeweiligen GainNode bzw. inline.
                 masterVolume: 1.0,
                 creaturePingVolume: 1.0,
+                voiceVolume: 1.0,
                 masterGain: null,
                 ambient: null, // { osc1, osc2, lfo, lfoGain, filter, gain }
                 weather: null, // { noise, filter, gain }
@@ -656,6 +658,11 @@ class AnazhRealm {
                 utterance.lang = "de-DE";
                 utterance.rate = 1.0;
                 utterance.pitch = 1.0;
+                // Welle 6.X.4 D2 V8.15 — Stimme-Volume aus state.symphony.voiceVolume.
+                // Default 1.0, Schieber in Einstellungen mutiert live.
+                const voiceVol =
+                    typeof this.state.symphony.voiceVolume === "number" ? this.state.symphony.voiceVolume : 1.0;
+                utterance.volume = Math.max(0, Math.min(1, voiceVol));
                 window.speechSynthesis.speak(utterance);
             } catch {
                 // Speech-API kann auf manchen Plattformen werfen; stumm fallback.
@@ -5563,6 +5570,32 @@ class AnazhRealm {
 
     // Tab-System: ein Tab je Drawer. activeTab-Klasse auf dem Knopf,
     // hidden-Attribut entscheidet welcher Drawer sichtbar slidet.
+    // Welle 6.X.4 V8.15 Punkt 15 — öffentliche toggleDrawer-Methode für
+    // Keyboard-Shortcuts (M/K/P/B/I). Wenn der Drawer schon offen ist,
+    // wird er geschlossen; sonst geöffnet (single-active-pattern).
+    toggleDrawer(name) {
+        if (typeof document === "undefined") return;
+        const drawer = document.querySelector(`.drawer[data-drawer="${name}"]`);
+        if (!drawer) return;
+        const isOpen = !drawer.hidden;
+        if (isOpen) {
+            this.closeAllDrawers();
+            return;
+        }
+        // Drawer öffnen — sync Tabs + Drawer-Status
+        const tabs = Array.from(document.querySelectorAll("#topbar .tab"));
+        const drawers = Array.from(document.querySelectorAll(".drawer[data-drawer]"));
+        for (const tab of tabs) {
+            const isActive = tab.getAttribute("data-tab") === name;
+            tab.classList.toggle("active", isActive);
+            tab.setAttribute("aria-selected", isActive ? "true" : "false");
+        }
+        for (const d of drawers) {
+            d.hidden = d.getAttribute("data-drawer") !== name;
+        }
+        this.state.uiActiveDrawer = name;
+    }
+
     // closeAllDrawers schließt alle (für Help-Klick + ESC).
     initTopbar() {
         const tabs = Array.from(document.querySelectorAll("#topbar .tab"));
@@ -5660,7 +5693,10 @@ class AnazhRealm {
     installResizeHandles() {
         if (typeof document === "undefined") return;
         const consoleEl = document.getElementById("console");
-        if (consoleEl) this._installResizeHandle(consoleEl, "br");
+        // Welle 6.X.2 V8.15 — Konsole-Resize jetzt top-right statt bottom-right.
+        // Konsole sitzt links-unten; unten-rechts ist verdeckt von Hotbar +
+        // Stats-HUD, oben-rechts zeigt zur freien Welt-Sicht.
+        if (consoleEl) this._installResizeHandle(consoleEl, "tr");
         const drawers = document.querySelectorAll(".drawer[data-drawer]");
         // V8.01 — Inhalt jedes Drawers in einen .drawer-scroll-Wrapper packen,
         // BEVOR Handle angehängt wird. Damit scrollt der Inhalt allein und
@@ -5747,14 +5783,26 @@ class AnazhRealm {
             const dx = event.clientX - drag.startX;
             const dy = event.clientY - drag.startY;
             let newW;
+            let newH;
             if (corner === "br") {
-                // Wächst nach rechts → +dx
+                // bottom-right: wächst nach rechts (+dx) + unten (+dy)
                 newW = drag.startW + dx;
-            } else {
-                // resize-bl: wächst nach links → -dx
+                newH = drag.startH + dy;
+            } else if (corner === "bl") {
+                // bottom-left: wächst nach links (-dx) + unten (+dy)
                 newW = drag.startW - dx;
+                newH = drag.startH + dy;
+            } else if (corner === "tr") {
+                // Welle 6.X.2 V8.15 — top-right: wächst nach rechts (+dx) +
+                // OBEN (-dy). Konsole hat bottom-anchor, also vergrößern wir
+                // sie nach oben statt nach unten.
+                newW = drag.startW + dx;
+                newH = drag.startH - dy;
+            } else {
+                // Fallback (top-left, falls jemals genutzt)
+                newW = drag.startW - dx;
+                newH = drag.startH - dy;
             }
-            const newH = drag.startH + dy;
             // Clamp: sinnvolle Min + Max (Viewport-Abstand)
             const clampedW = Math.max(220, Math.min(window.innerWidth - 40, newW));
             const clampedH = Math.max(180, Math.min(window.innerHeight - 140, newH));
@@ -5762,7 +5810,9 @@ class AnazhRealm {
             container.style.height = `${clampedH}px`;
             container.style.maxHeight = "none";
             if (container.id === "console") {
-                container.style.bottom = "auto";
+                // top-right Konsole behält bottom-anchor + height wächst nach oben.
+                // Nur bei br/bl muss bottom auf auto (CSS-Default bleibt sonst).
+                if (corner === "br" || corner === "bl") container.style.bottom = "auto";
             }
         };
         const onUp = () => {
@@ -18254,6 +18304,38 @@ class AnazhRealm {
             const isMaterialSlot = slot.kind === "material" && typeof slot.material === "string";
             const matDef = isMaterialSlot && this.state.materials && this.state.materials[slot.material];
             const bp = !isMaterialSlot && this.state.blueprints && this.state.blueprints[slot.blueprintName];
+            // Welle 6.X.4 V8.15 Punkt 17 — Material-Glyphen: fixes Symbol pro
+            // Grundmaterial damit Spieler die Slot-Art auf einen Blick
+            // erkennt (nicht nur Name-Text). Bauplan-Slots zeigen Label
+            // weiterhin als Text — emergente Compounds haben kein fixes Symbol.
+            const MATERIAL_GLYPHS = {
+                stein: "◼",
+                holz: "║",
+                eisen: "◆",
+                bronze: "◈",
+                quarz: "❖",
+                leder: "◗",
+                knochen: "⌘",
+                fleisch: "⬣",
+                federn: "✷",
+                schuppen: "⬢",
+                glut: "✺",
+                laub: "❀",
+            };
+            if (isMaterialSlot) {
+                const glyph = document.createElement("span");
+                glyph.className = "slot-glyph";
+                glyph.setAttribute("aria-hidden", "true");
+                glyph.textContent = MATERIAL_GLYPHS[slot.material] || "◌";
+                if (matDef && Number.isFinite(matDef.color)) {
+                    const hex = matDef.color;
+                    const r = (hex >> 16) & 0xff;
+                    const g = (hex >> 8) & 0xff;
+                    const b = hex & 0xff;
+                    glyph.style.color = `rgb(${Math.min(255, r + 60)},${Math.min(255, g + 60)},${Math.min(255, b + 60)})`;
+                }
+                el.appendChild(glyph);
+            }
             const label = document.createElement("span");
             label.className = "slot-label";
             if (isMaterialSlot) {
@@ -21785,6 +21867,9 @@ class AnazhRealm {
                 if (Number.isFinite(mv) && mv >= 0 && mv <= 1) this.state.symphony.masterVolume = mv;
                 const pv = parseFloat(localStorage.getItem("anazh.audio.pingVol"));
                 if (Number.isFinite(pv) && pv >= 0 && pv <= 1) this.state.symphony.creaturePingVolume = pv;
+                // V8.15 — TTS-Stimme-Volume separat persistiert.
+                const vv = parseFloat(localStorage.getItem("anazh.audio.voiceVol"));
+                if (Number.isFinite(vv) && vv >= 0 && vv <= 1) this.state.symphony.voiceVolume = vv;
                 const rr = parseInt(localStorage.getItem("anazh.world.ringRadius"), 10);
                 if (Number.isFinite(rr) && rr >= 1 && rr <= 4) this.state.chunkRingRadius = rr;
             } catch {
@@ -21835,16 +21920,51 @@ class AnazhRealm {
                 }
             });
         }
+        // V8.15 — Voice (TTS) Slider
+        const vs = document.getElementById("slider-voice");
+        const vsv = document.getElementById("slider-voice-val");
+        if (vs) {
+            vs.value = String(Math.round((this.state.symphony.voiceVolume || 1) * 100));
+            if (vsv) vsv.textContent = `${vs.value}%`;
+            vs.addEventListener("input", () => {
+                const v = parseFloat(vs.value) / 100;
+                this.state.symphony.voiceVolume = v;
+                if (vsv) vsv.textContent = `${vs.value}%`;
+                if (typeof localStorage !== "undefined") {
+                    try {
+                        localStorage.setItem("anazh.audio.voiceVol", String(v));
+                    } catch {
+                        /* ignore */
+                    }
+                }
+            });
+        }
         // Ring-Radius Slider
         const rs = document.getElementById("slider-ring");
         const rsv = document.getElementById("slider-ring-val");
+        // Welle 6.X.4 D2 V8.15 Bug-Fix — maxLoadedChunks aus Ring-Radius
+        // ableiten (Schöpfer-Beobachtung: Slider tat optisch nichts, weil
+        // pruneDistantChunks bei 196 statt bei (ring×2+1)² Chunks ansetzte).
+        // Bei Ring=2 → 5×5×1.2 = 30, bei Ring=4 → 9×9×1.2 = 97. Reduzieren
+        // des Rings pruned tatsächlich Chunks im nächsten Tick — sichtbar.
+        const applyRingRadius = (v) => {
+            this.state.chunkRingRadius = v;
+            const ringSize = v * 2 + 1;
+            // V8.15 Bug-Fix: Faktor ×4 statt ×1.2. Cache-Headroom für
+            // walken-und-zurück-Bewegung (Chunks bleiben geladen statt
+            // sofort gepruned). Ring=1 → 36 max, Ring=2 → 100, Ring=3 → 196,
+            // Ring=4 → 324. Spieler sieht Veränderung beim Reduzieren des
+            // Rings noch immer (neue Chunks werden im kleinen Ring nicht
+            // mehr generiert), aber bestehende bleiben sichtbar.
+            this.state.maxLoadedChunks = Math.max(60, Math.ceil(ringSize * ringSize * 4));
+            if (rsv) rsv.textContent = ringText(v);
+        };
         if (rs) {
             rs.value = String(this.state.chunkRingRadius || 2);
-            if (rsv) rsv.textContent = ringText(parseInt(rs.value, 10));
+            applyRingRadius(parseInt(rs.value, 10));
             rs.addEventListener("input", () => {
                 const v = Math.max(1, Math.min(4, parseInt(rs.value, 10)));
-                this.state.chunkRingRadius = v;
-                if (rsv) rsv.textContent = ringText(v);
+                applyRingRadius(v);
                 if (typeof localStorage !== "undefined") {
                     try {
                         localStorage.setItem("anazh.world.ringRadius", String(v));
@@ -22949,6 +23069,35 @@ class AnazhRealm {
                 // idempotent — _zoomActive-Flag verhindert doppelte FOV-Sätze).
                 if (this.state.uiActiveDrawer !== "werkstatt") {
                     this.setZoomActive(true);
+                    event.preventDefault();
+                }
+            } else if (event.code === "KeyV") {
+                // Welle 6.X.4 V8.15 Punkt 15 — Camera-Mode toggeln (1st/3rd).
+                // V wie „View". 3rd-Person zeigt Avatar von hinten, 1st-Person
+                // ist Standard.
+                this.setCameraMode(this.state.cameraMode === "first" ? "third" : "first");
+                event.preventDefault();
+            } else if (
+                event.code === "KeyP" || // Spieler-Drawer
+                event.code === "KeyK" || // Kreaturen-Drawer
+                event.code === "KeyB" || // Werkstatt (Build)
+                event.code === "KeyI" || // Einstellungen
+                event.code === "KeyM" // Welt (Map)
+            ) {
+                // Welle 6.X.4 V8.15 Punkt 15 — Drawer-Shortcuts.
+                // M = Welt (Map), K = Kreaturen, P = Spieler, B = Werkstatt
+                // (Build), I = Einstellungen. Toggelt offen/zu. Aktiviert
+                // nicht im Bau-Modus (sonst kollidiert F/B mit Bau-Aktionen).
+                const drawerMap = {
+                    KeyM: "welt",
+                    KeyK: "kreaturen",
+                    KeyP: "spieler",
+                    KeyB: "werkstatt",
+                    KeyI: "einstellungen",
+                };
+                const drawer = drawerMap[event.code];
+                if (drawer && !this.state.buildMode.active) {
+                    this.toggleDrawer ? this.toggleDrawer(drawer) : this._toggleDrawerByName(drawer);
                     event.preventDefault();
                 }
             }
