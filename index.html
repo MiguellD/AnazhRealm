@@ -29,7 +29,7 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self';"
         />
-        <title>Anazh Realm v8.12 – Das Ultiversum</title>
+        <title>Anazh Realm v8.17 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
              zusätzliche Datei. img-src 'self' data: in CSP erlaubt data-URI. -->
         <link
@@ -345,11 +345,23 @@
                 flex-direction: column;
                 min-height: 0;
             }
+            /* V8.17 — Chat oben-bündig (nimmt den verfügbaren Platz), Logbuch
+               unten-bündig (nur so viel Höhe wie nötig). Schöpfer-Wunsch:
+               Chat bleibt im Vordergrund, Logbuch lebt am Boden der Konsole. */
             #console-chat-section {
-                flex: 1;
+                flex: 1 1 auto;
+                min-height: 0;
             }
             #console-log-section {
-                flex: 1;
+                flex: 0 0 auto;
+                margin-top: auto;
+            }
+            /* Wenn Logbuch eingeklappt ist (nur Label sichtbar), bleibt es
+               am Boden; wenn ausgeklappt wächst es nach OBEN (max-height-Cap). */
+            #console-log-section #log:not([hidden]) {
+                max-height: 35%;
+                min-height: 60px;
+                overflow-y: auto;
             }
             .console-section-label {
                 font-family: "IM Fell English", Georgia, serif;
@@ -646,7 +658,12 @@
                 padding: 6px;
                 background-color: rgba(20, 12, 4, 0.6);
                 border: 1px solid var(--brass-3);
-                border-radius: 6px;
+                /* V8.17 — Hotbar verschmilzt mit Stats-HUD darüber: keine
+                   abgerundeten Top-Ecken, kein Top-Border. Wenn Stats-HUD
+                   versteckt ist, würde die Hotbar leicht „abgehackt" wirken —
+                   trade-off für die Plattform-Optik. */
+                border-radius: 0 0 6px 6px;
+                border-top: none;
                 z-index: 5;
                 box-shadow: 0 2px 14px rgba(0, 0, 0, 0.5);
             }
@@ -660,14 +677,19 @@
                Hochkontrastiv: Bar-Glow leuchtet sichtbar gegen dunklen
                Hintergrund, Text-Schatten für Lesbarkeit auf jeder Welt. */
             #stats-hud {
+                /* V8.17 — nebeneinander auf Hotbar-Breite, mit Hotbar verschmolzen. */
                 position: absolute;
-                bottom: 88px; /* direkt über der 56px-hohen Hotbar + 6px-Padding + 8px-Gap */
+                bottom: 86px; /* sitzt direkt auf der Hotbar-Top-Kante (Hotbar bottom 18 + 6 padding + 56 height + 6 padding) */
                 left: 50%;
                 transform: translateX(-50%);
                 display: flex;
-                flex-direction: column;
-                gap: 4px;
+                flex-direction: row;
+                align-items: center;
+                justify-content: center;
+                gap: 24px;
                 padding: 8px 14px;
+                width: 636px; /* gleiche Breite wie Hotbar (9*64 + 8*6 + 12 padding) */
+                box-sizing: border-box;
                 background: linear-gradient(
                     180deg,
                     rgba(28, 20, 12, 0.88) 0%,
@@ -675,7 +697,8 @@
                     rgba(20, 14, 8, 0.92) 100%
                 );
                 border: 1px solid var(--brass-2, #8a6322);
-                border-radius: 6px;
+                border-radius: 6px 6px 0 0;
+                border-bottom: none; /* verschmilzt mit Hotbar darunter */
                 z-index: 5;
                 box-shadow:
                     inset 0 0 0 1px rgba(198, 154, 74, 0.25),
@@ -685,14 +708,14 @@
                 font-size: 11px;
                 color: #e9d49e;
                 cursor: help;
-                /* Sanftes Atem-Pulse via subtiler Box-Shadow-Animation, nur bei
-                   niedrigem HP wird das sichtbarer (siehe .stats-hud-low CSS). */
                 transition: box-shadow 0.4s ease-out;
             }
             #stats-hud .stats-hud-row {
                 display: flex;
                 align-items: center;
                 gap: 8px;
+                flex: 1;
+                justify-content: center;
             }
             #stats-hud .stats-hud-glyph {
                 font-size: 14px;
@@ -704,12 +727,16 @@
             #stats-hud .stats-hud-glyph.glyph-hp {
                 /* Funke / Flamme — Lebenskraft als Wärme. */
                 color: #f5a875;
-                text-shadow: 0 0 6px rgba(245, 168, 117, 0.5), 0 1px 2px rgba(0, 0, 0, 0.7);
+                text-shadow:
+                    0 0 6px rgba(245, 168, 117, 0.5),
+                    0 1px 2px rgba(0, 0, 0, 0.7);
             }
             #stats-hud .stats-hud-glyph.glyph-stam {
                 /* Spirale / Atem — Ausdauer als Strömung. */
                 color: #e4c87c;
-                text-shadow: 0 0 6px rgba(228, 200, 124, 0.5), 0 1px 2px rgba(0, 0, 0, 0.7);
+                text-shadow:
+                    0 0 6px rgba(228, 200, 124, 0.5),
+                    0 1px 2px rgba(0, 0, 0, 0.7);
             }
             #stats-hud svg {
                 display: block;
@@ -729,7 +756,8 @@
                 animation: stats-hud-pulse 1.6s ease-in-out infinite;
             }
             @keyframes stats-hud-pulse {
-                0%, 100% {
+                0%,
+                100% {
                     box-shadow:
                         inset 0 0 0 1px rgba(198, 154, 74, 0.25),
                         inset 0 1px 0 rgba(255, 220, 150, 0.15),
@@ -2583,14 +2611,17 @@
             .drawer .hotbar-config-row select:hover {
                 border-color: var(--brass-1);
             }
-            /* Welle 6.X.2 V8.14 — Werkstatt-Drawer responsive bemessen.
-               Statt fixe 300 px wie andere Drawer: ~80vw max 1100 px,
-               damit Tools-Spalten + 3D-Vorschau + Stats unten alle ohne
-               Scroll sichtbar sind. Höhe deckelt bei 88 vh (leichtes
-               Bottom-Air für die Hotbar). */
+            /* Welle 6.X.2 V8.17 — Werkstatt-Drawer voll bemessen.
+               Schöpfer-Wunsch: links bis zur Konsole-Position (~450px),
+               unten bis kurz über die HUD/Hotbar (~150px from bottom).
+               Top wie Default (116px), right wie Default (12px). Vorher
+               max-height 88vh war zu groß — Inhalt ging unter die Hotbar. */
             .drawer[data-drawer="werkstatt"] {
-                width: min(80vw, 1100px);
-                max-height: 88vh;
+                left: 450px;
+                right: 12px;
+                width: auto;
+                bottom: 150px;
+                max-height: none;
             }
             /* Ring 6.6 — Werkstatt-Editor */
             #workshop-list {
@@ -3273,17 +3304,19 @@
                 gap: 8px;
                 align-items: stretch;
             }
+            /* V8.17 — linke Spalte 30% breiter (88→115px), rechte Spalte
+               50% breiter (132→200px) damit Materialien als 3×4 statt 2×6
+               rendern und Tool-Karten mehr Atem haben. Material-Cards-Grid
+               wechselt automatisch auf 3 Spalten dank flex-wrap im Container. */
             #workshop-side-palette {
-                flex: 0 0 88px;
+                flex: 0 0 115px;
                 display: flex;
                 flex-direction: column;
                 gap: 6px;
                 min-width: 0;
             }
-            /* V8.06 — rechte Spalte 50 % breiter, damit Material/Werkzeug/
-               Farbe-Cards mehr Atem haben. */
             #workshop-side-palette-right {
-                flex: 0 0 132px;
+                flex: 0 0 200px;
                 display: flex;
                 flex-direction: column;
                 gap: 6px;
@@ -3392,11 +3425,13 @@
                     0 0 18px 4px rgba(176, 106, 217, 0.45);
                 border-color: var(--violet-1);
             }
-            /* V8.03 — Material- + Farb-Palette als seitliche Drag-Sources */
+            /* V8.03 — Material- + Farb-Palette als seitliche Drag-Sources.
+               V8.17 — 3 Spalten statt 2 wegen breiterer rechter Side-Palette
+               (Schöpfer-Wunsch Punkt 19). Materialien rendern als 3×4 statt 2×6. */
             #workshop-material-palette,
             #workshop-color-palette {
                 display: grid;
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(3, 1fr);
                 gap: 3px;
             }
             .workshop-material-card,
@@ -3744,22 +3779,37 @@
                 <svg width="170" height="12" viewBox="0 0 170 12" aria-hidden="true">
                     <defs>
                         <linearGradient id="hp-gradient" x1="0" x2="0" y1="0" y2="1">
-                            <stop offset="0" stop-color="#ff8a60"/>
-                            <stop offset="0.5" stop-color="#e0573a"/>
-                            <stop offset="1" stop-color="#8a2b18"/>
+                            <stop offset="0" stop-color="#ff8a60" />
+                            <stop offset="0.5" stop-color="#e0573a" />
+                            <stop offset="1" stop-color="#8a2b18" />
                         </linearGradient>
                         <linearGradient id="hp-glow" x1="0" x2="0" y1="0" y2="1">
-                            <stop offset="0" stop-color="#ffd0a0" stop-opacity="0.4"/>
-                            <stop offset="0.5" stop-color="#ff8a60" stop-opacity="0.1"/>
-                            <stop offset="1" stop-color="#ff8a60" stop-opacity="0"/>
+                            <stop offset="0" stop-color="#ffd0a0" stop-opacity="0.4" />
+                            <stop offset="0.5" stop-color="#ff8a60" stop-opacity="0.1" />
+                            <stop offset="1" stop-color="#ff8a60" stop-opacity="0" />
                         </linearGradient>
                     </defs>
-                    <rect x="0" y="0" width="170" height="12" rx="3"
-                          fill="rgba(15, 8, 4, 0.85)" stroke="#8a6322" stroke-width="1"/>
-                    <rect id="stats-hud-hp-fill" x="2" y="2" width="166" height="8" rx="1.5"
-                          fill="url(#hp-gradient)"/>
-                    <rect id="stats-hud-hp-glow" x="2" y="2" width="166" height="4" rx="1.5"
-                          fill="url(#hp-glow)" pointer-events="none"/>
+                    <rect
+                        x="0"
+                        y="0"
+                        width="170"
+                        height="12"
+                        rx="3"
+                        fill="rgba(15, 8, 4, 0.85)"
+                        stroke="#8a6322"
+                        stroke-width="1"
+                    />
+                    <rect id="stats-hud-hp-fill" x="2" y="2" width="166" height="8" rx="1.5" fill="url(#hp-gradient)" />
+                    <rect
+                        id="stats-hud-hp-glow"
+                        x="2"
+                        y="2"
+                        width="166"
+                        height="4"
+                        rx="1.5"
+                        fill="url(#hp-glow)"
+                        pointer-events="none"
+                    />
                 </svg>
                 <span class="stats-hud-value" id="stats-hud-hp-text">100/100</span>
             </div>
@@ -3768,22 +3818,45 @@
                 <svg width="170" height="12" viewBox="0 0 170 12" aria-hidden="true">
                     <defs>
                         <linearGradient id="stam-gradient" x1="0" x2="0" y1="0" y2="1">
-                            <stop offset="0" stop-color="#f5d488"/>
-                            <stop offset="0.5" stop-color="#c4994a"/>
-                            <stop offset="1" stop-color="#6a4a1a"/>
+                            <stop offset="0" stop-color="#f5d488" />
+                            <stop offset="0.5" stop-color="#c4994a" />
+                            <stop offset="1" stop-color="#6a4a1a" />
                         </linearGradient>
                         <linearGradient id="stam-glow" x1="0" x2="0" y1="0" y2="1">
-                            <stop offset="0" stop-color="#ffe8b0" stop-opacity="0.4"/>
-                            <stop offset="0.5" stop-color="#f5d488" stop-opacity="0.1"/>
-                            <stop offset="1" stop-color="#f5d488" stop-opacity="0"/>
+                            <stop offset="0" stop-color="#ffe8b0" stop-opacity="0.4" />
+                            <stop offset="0.5" stop-color="#f5d488" stop-opacity="0.1" />
+                            <stop offset="1" stop-color="#f5d488" stop-opacity="0" />
                         </linearGradient>
                     </defs>
-                    <rect x="0" y="0" width="170" height="12" rx="3"
-                          fill="rgba(15, 8, 4, 0.85)" stroke="#8a6322" stroke-width="1"/>
-                    <rect id="stats-hud-stam-fill" x="2" y="2" width="166" height="8" rx="1.5"
-                          fill="url(#stam-gradient)"/>
-                    <rect id="stats-hud-stam-glow" x="2" y="2" width="166" height="4" rx="1.5"
-                          fill="url(#stam-glow)" pointer-events="none"/>
+                    <rect
+                        x="0"
+                        y="0"
+                        width="170"
+                        height="12"
+                        rx="3"
+                        fill="rgba(15, 8, 4, 0.85)"
+                        stroke="#8a6322"
+                        stroke-width="1"
+                    />
+                    <rect
+                        id="stats-hud-stam-fill"
+                        x="2"
+                        y="2"
+                        width="166"
+                        height="8"
+                        rx="1.5"
+                        fill="url(#stam-gradient)"
+                    />
+                    <rect
+                        id="stats-hud-stam-glow"
+                        x="2"
+                        y="2"
+                        width="166"
+                        height="4"
+                        rx="1.5"
+                        fill="url(#stam-glow)"
+                        pointer-events="none"
+                    />
                 </svg>
                 <span class="stats-hud-value" id="stats-hud-stam-text">100/100</span>
             </div>
@@ -3807,7 +3880,7 @@
         <header id="topbar" class="hud-frame">
             <div class="topbar-inner">
                 <div class="title">
-                    Anazh Realm <span class="version">v8.12</span> <span class="sub">— Das Ultiversum</span>
+                    Anazh Realm <span class="version">v8.17</span> <span class="sub">— Das Ultiversum</span>
                 </div>
                 <nav class="tabs" role="tablist" aria-label="Hauptansichten">
                     <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">
@@ -4398,12 +4471,12 @@
                 </div>
             </section>
             <section class="section" id="llm-section">
-                <h3>Grok-Stimme (LLM)</h3>
+                <h3>Begleiter-Stimme (LLM)</h3>
                 <p class="drawer-hint">
-                    Optional: gib Grok eine echte Stimme. Vier Provider — drei haben Gratis-Tiers, Ollama läuft entweder
-                    lokal (kein Key nötig) oder gehostet (eigene URL + optional Bearer-Token, z.B. ollama.com Turbo,
-                    Reverse-Proxy mit Auth). Schlüssel liegen nur im localStorage dieses Browsers. Jeder Vorschlag geht
-                    durch den DSL-Interpreter — die Sandbox hält.
+                    Optional: gib dem Begleiter eine echte Stimme. Vier Provider — drei haben Gratis-Tiers, Ollama läuft
+                    entweder lokal (kein Key nötig) oder gehostet (eigene URL + optional Bearer-Token, z.B. ollama.com
+                    Turbo, Reverse-Proxy mit Auth). Schlüssel liegen nur im localStorage dieses Browsers. Jeder
+                    Vorschlag geht durch den DSL-Interpreter — die Sandbox hält.
                 </p>
                 <div class="tuning-row">
                     <label for="llm-provider"><span>Provider</span></label>

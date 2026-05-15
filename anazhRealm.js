@@ -5693,10 +5693,10 @@ class AnazhRealm {
     installResizeHandles() {
         if (typeof document === "undefined") return;
         const consoleEl = document.getElementById("console");
-        // Welle 6.X.2 V8.15 — Konsole-Resize jetzt top-right statt bottom-right.
-        // Konsole sitzt links-unten; unten-rechts ist verdeckt von Hotbar +
-        // Stats-HUD, oben-rechts zeigt zur freien Welt-Sicht.
-        if (consoleEl) this._installResizeHandle(consoleEl, "tr");
+        // V8.17 — Schöpfer-Korrektur: Resize-Handle der Konsole soll unten-
+        // rechts sein (nicht oben-rechts wie V8.15). Konsole sitzt jetzt
+        // mit bottom 150px über der HUD, unten-rechts ist sichtbar + intuitiv.
+        if (consoleEl) this._installResizeHandle(consoleEl, "br");
         const drawers = document.querySelectorAll(".drawer[data-drawer]");
         // V8.01 — Inhalt jedes Drawers in einen .drawer-scroll-Wrapper packen,
         // BEVOR Handle angehängt wird. Damit scrollt der Inhalt allein und
@@ -20914,21 +20914,32 @@ class AnazhRealm {
     // (gleiche Default-Formel wie beim Initial-Render). Shortcut: H.
     resetWorkshopCamera() {
         const p = this.state.workshopPreview;
-        if (!p || !p.currentMesh) return;
-        const bbox = new THREE.Box3().setFromObject(p.currentMesh);
-        if (bbox.isEmpty()) return;
-        bbox.getCenter(p.orbit.target);
-        const size = new THREE.Vector3();
-        bbox.getSize(size);
-        const maxDim = Math.max(size.x, size.y, size.z);
-        if (maxDim > 0) {
-            p.orbit.dist = Math.max(3, maxDim * 2.2);
+        if (!p) return;
+        // V8.17 — auch ohne aktives Mesh resettet die Kamera auf neutrale
+        // Default-Werte. Vorher: early-return wenn p.currentMesh=null, was
+        // einen kalt geöffneten Drawer ohne Bauplan unfixbar machte.
+        if (p.currentMesh) {
+            const bbox = new THREE.Box3().setFromObject(p.currentMesh);
+            if (!bbox.isEmpty()) {
+                bbox.getCenter(p.orbit.target);
+                const size = new THREE.Vector3();
+                bbox.getSize(size);
+                const maxDim = Math.max(size.x, size.y, size.z);
+                if (maxDim > 0) {
+                    p.orbit.dist = Math.max(3, maxDim * 2.2);
+                }
+            }
+        } else {
+            // Kein Mesh → Default-Origin + Default-Dist.
+            p.orbit.target.set(0, 0, 0);
+            p.orbit.dist = 6;
         }
         // Yaw/Pitch auf neutrale Werkstatt-Sicht zurück. yaw=PI/4 (schräg von
         // vorn-rechts), pitch leicht oben (0.3 rad ≈ 17°).
         p.orbit.yaw = Math.PI / 4;
         p.orbit.pitch = 0.3;
         p.dirty = true;
+        this.log("CAD-Kamera zentriert", "INFO");
     }
 
     // UI-Sync: Modus-Buttons + Snap-Toggle in der Werkstatt.
@@ -21895,14 +21906,19 @@ class AnazhRealm {
         const stamFill = document.getElementById("stats-hud-stam-fill");
         const stamText = document.getElementById("stats-hud-stam-text");
         if (!hpFill || !hpText || !stamFill || !stamText) return;
-        // Welle 6.X.4 B3 Browser-Fix V8.13: HP/Stamina liegen auf state.player.*,
-        // NICHT auf state.* (mein V8.12 las falsche Felder, deshalb zeigte das
-        // HUD immer 100/100 während der Spieler-Drawer 134/140 zeigte).
+        // Welle 6.X.4 B3 V8.17 — defensive HP/SP-Lese-Pfad. recomputePlayerStats
+        // setzt state.player.hp/hpMax aus stats.hpMax. Wenn das HUD vor dem
+        // ersten Stats-Run gerendert wird, sind hp/hpMax noch undefined.
+        // Statt 0/100 zeigen wir dann stats.hpMax als initial-Both-Wert
+        // („voll" gefühlsmäßig, kein Schock-Display 0/100 beim Boot).
         const p = this.state.player || {};
-        const hp = Math.max(0, Math.round(p.hp || 0));
-        const hpMax = Math.max(1, Math.round(p.hpMax || 100));
-        const stam = Math.max(0, Math.round(p.stamina || 0));
-        const stamMax = Math.max(1, Math.round(p.staminaMax || 100));
+        const computedStats = p.stats || {};
+        const fallbackHpMax = computedStats.hpMax || 100;
+        const fallbackStamMax = computedStats.staminaMax || 100;
+        const hp = Math.max(0, Math.round(typeof p.hp === "number" ? p.hp : fallbackHpMax));
+        const hpMax = Math.max(1, Math.round(typeof p.hpMax === "number" ? p.hpMax : fallbackHpMax));
+        const stam = Math.max(0, Math.round(typeof p.stamina === "number" ? p.stamina : fallbackStamMax));
+        const stamMax = Math.max(1, Math.round(typeof p.staminaMax === "number" ? p.staminaMax : fallbackStamMax));
         const hpRatio = Math.max(0, Math.min(1, hp / hpMax));
         const stamRatio = Math.max(0, Math.min(1, stam / stamMax));
         // Welle 6.X.4 B3 V8.14 — neue Bar-Breite 166 (von 158), zusätzlicher
@@ -22053,13 +22069,15 @@ class AnazhRealm {
         const applyRingRadius = (v) => {
             this.state.chunkRingRadius = v;
             const ringSize = v * 2 + 1;
-            // V8.15 Bug-Fix: Faktor ×4 statt ×1.2. Cache-Headroom für
-            // walken-und-zurück-Bewegung (Chunks bleiben geladen statt
-            // sofort gepruned). Ring=1 → 36 max, Ring=2 → 100, Ring=3 → 196,
-            // Ring=4 → 324. Spieler sieht Veränderung beim Reduzieren des
-            // Rings noch immer (neue Chunks werden im kleinen Ring nicht
-            // mehr generiert), aber bestehende bleiben sichtbar.
-            this.state.maxLoadedChunks = Math.max(60, Math.ceil(ringSize * ringSize * 4));
+            // V8.17 — Faktor ×3 für sichtbaren Slider-Effekt. Schöpfer-Test:
+            // bei ×4 (V8.15) blieb fast nichts pruned (Initial 64 vs. max 100
+            // bei Ring=2), Spieler sah keine Änderung. Mit ×3 schrumpft die
+            // Welt sichtbar wenn der Ring reduziert wird.
+            //   Ring=1 → max 27 (von 64 Initial → 37 gepruned, sichtbar)
+            //   Ring=2 → max 75 (default, Initial-Worldgen passt)
+            //   Ring=3 → max 147 (Cache-Headroom für Bewegung)
+            //   Ring=4 → max 243 (große Welt-Sicht)
+            this.state.maxLoadedChunks = Math.max(15, Math.ceil(ringSize * ringSize * 3));
             if (rsv) rsv.textContent = ringText(v);
         };
         if (rs) {
@@ -23174,33 +23192,29 @@ class AnazhRealm {
                     this.setZoomActive(true);
                     event.preventDefault();
                 }
-            } else if (event.code === "KeyV") {
-                // Welle 6.X.4 V8.15 Punkt 15 — Camera-Mode toggeln (1st/3rd).
-                // V wie „View". 3rd-Person zeigt Avatar von hinten, 1st-Person
-                // ist Standard.
+            } else if (action === "cameraToggle") {
+                // V8.17 — Camera-Mode toggeln (1st/3rd) jetzt action-basiert.
                 this.setCameraMode(this.state.cameraMode === "first" ? "third" : "first");
                 event.preventDefault();
             } else if (
-                event.code === "KeyP" || // Spieler-Drawer
-                event.code === "KeyK" || // Kreaturen-Drawer
-                event.code === "KeyB" || // Werkstatt (Build)
-                event.code === "KeyI" || // Einstellungen
-                event.code === "KeyM" // Welt (Map)
+                action === "drawerWelt" ||
+                action === "drawerKreaturen" ||
+                action === "drawerSpieler" ||
+                action === "drawerWerkstatt" ||
+                action === "drawerEinstellungen"
             ) {
-                // Welle 6.X.4 V8.15 Punkt 15 — Drawer-Shortcuts.
-                // M = Welt (Map), K = Kreaturen, P = Spieler, B = Werkstatt
-                // (Build), I = Einstellungen. Toggelt offen/zu. Aktiviert
-                // nicht im Bau-Modus (sonst kollidiert F/B mit Bau-Aktionen).
-                const drawerMap = {
-                    KeyM: "welt",
-                    KeyK: "kreaturen",
-                    KeyP: "spieler",
-                    KeyB: "werkstatt",
-                    KeyI: "einstellungen",
+                // V8.17 — Drawer-Shortcuts action-basiert (rebindable).
+                // Im Bau-Modus deaktiviert um nicht mit F/B zu kollidieren.
+                const drawerNames = {
+                    drawerWelt: "welt",
+                    drawerKreaturen: "kreaturen",
+                    drawerSpieler: "spieler",
+                    drawerWerkstatt: "werkstatt",
+                    drawerEinstellungen: "einstellungen",
                 };
-                const drawer = drawerMap[event.code];
+                const drawer = drawerNames[action];
                 if (drawer && !this.state.buildMode.active) {
-                    this.toggleDrawer ? this.toggleDrawer(drawer) : this._toggleDrawerByName(drawer);
+                    this.toggleDrawer(drawer);
                     event.preventDefault();
                 }
             }
@@ -23263,14 +23277,27 @@ class AnazhRealm {
             "wheel",
             (event) => {
                 if (this.state.inventoryOpen) return;
-                // Aktiv nur wenn Spieler IM Spiel ist (Pointer-Lock) — sonst
-                // würde Drawer-Scroll plötzlich die Hotbar zykeln.
-                if (!this.state.isPointerLocked) return;
+                if (this.state.keybindRebind) return;
+                // V8.17 — toleranter Pfad. Schöpfer berichtete dass Mausrad
+                // nichts tut. Gründe können vielfältig sein (Browser leitet
+                // Event nicht weiter, Pointer-Lock instabil, etc.). Statt
+                // strict isPointerLocked erlauben wir Mausrad solange das
+                // Event aus dem WORLD-Canvas-Bereich kommt (target check),
+                // KEIN offener Drawer im Vordergrund (uiActiveDrawer null),
+                // und kein Form-Input fokussiert ist.
+                const target = event.target;
+                const inInput =
+                    target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
+                if (inInput) return;
+                // Wenn ein Drawer offen ist (target im Drawer), Native-Scroll lassen.
+                if (target && typeof target.closest === "function" && target.closest(".drawer")) return;
+                // CAD-Werkstatt-Canvas hat eigenen Wheel-Handler (Zoom),
+                // den nicht überschreiben.
+                if (target && typeof target.closest === "function" && target.closest("#workshop-preview-canvas"))
+                    return;
                 event.preventDefault();
-                // buildMode.slotIndex trackt den aktiven Slot (auch wenn der
-                // Modus toggled-out ist und nur das Highlight bleibt). Default 0.
                 const bm = this.state.buildMode || {};
-                const current = typeof bm.slotIndex === "number" ? bm.slotIndex : 0;
+                const current = typeof bm.slotIndex === "number" && bm.slotIndex >= 0 ? bm.slotIndex : 0;
                 const dir = event.deltaY > 0 ? 1 : -1;
                 const next = (current + dir + 9) % 9;
                 this.selectHotbarSlot(next);
@@ -24257,6 +24284,15 @@ AnazhRealm.DEFAULT_KEYBINDINGS = Object.freeze({
     inventory: "Tab",
     cancelBuild: "Escape",
     jump: "Space",
+    // V8.17 — Drawer + Camera-Toggle als rebindable Aktionen. Vorher
+    // hardcoded in keydown-Listener; jetzt durch _actionForBindingCode-
+    // Pfad damit Spieler sie in Einstellungen ändern kann.
+    drawerWelt: "KeyM",
+    drawerKreaturen: "KeyK",
+    drawerSpieler: "KeyP",
+    drawerWerkstatt: "KeyB",
+    drawerEinstellungen: "KeyI",
+    cameraToggle: "KeyV",
 });
 AnazhRealm.KEYBINDING_ACTIONS = Object.freeze(Object.keys(AnazhRealm.DEFAULT_KEYBINDINGS));
 AnazhRealm.KEYBINDING_LABELS = Object.freeze({
@@ -24266,6 +24302,12 @@ AnazhRealm.KEYBINDING_LABELS = Object.freeze({
     inventory: "Inventar öffnen",
     cancelBuild: "Bau-Modus verlassen",
     jump: "Springen",
+    drawerWelt: "Welt-Drawer öffnen",
+    drawerKreaturen: "Kreaturen-Drawer öffnen",
+    drawerSpieler: "Spieler-Drawer öffnen",
+    drawerWerkstatt: "Werkstatt-Drawer öffnen",
+    drawerEinstellungen: "Einstellungen-Drawer öffnen",
+    cameraToggle: "Kamera: 1st/3rd-Person",
 });
 
 // Welle 6.H Phase 2A — Kreatur-Seelen als Hylomorphismus-Compounds.

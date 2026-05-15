@@ -146,8 +146,8 @@ function startSaveServer() {
                 `terrainEverGenerated=${finalState.terrainEverGenerated}`
             );
             check(
-                "Mindestens 60 Chunks im groundChunks-Array",
-                finalState.groundChunks >= 60,
+                "Mindestens 25 Chunks im groundChunks-Array (V8.17: dynamisch ring-abhängig)",
+                finalState.groundChunks >= 25,
                 `groundChunks=${finalState.groundChunks}`
             );
             check(
@@ -8493,9 +8493,10 @@ function startSaveServer() {
                         r.constructor.DEFAULT_KEYBINDINGS &&
                         typeof r.constructor.DEFAULT_KEYBINDINGS === "object" &&
                         Object.isFrozen(r.constructor.DEFAULT_KEYBINDINGS);
+                    // V8.17: 12 Aktionen (6 Original + 6 Drawer/Camera-Shortcuts).
                     out.hasActions =
                         Array.isArray(r.constructor.KEYBINDING_ACTIONS) &&
-                        r.constructor.KEYBINDING_ACTIONS.length === 6;
+                        r.constructor.KEYBINDING_ACTIONS.length === 12;
                     out.hasLabels = r.constructor.KEYBINDING_LABELS && Object.isFrozen(r.constructor.KEYBINDING_LABELS);
                     const expectedActions = ["break", "place", "confirmBuild", "inventory", "cancelBuild", "jump"];
                     out.actionsCorrect = expectedActions.every((a) => r.constructor.KEYBINDING_ACTIONS.includes(a));
@@ -8587,9 +8588,9 @@ function startSaveServer() {
                     out.listInDom = !!document.getElementById("keybindings-list");
                     out.resetInDom = !!document.getElementById("keybindings-reset");
                     // 6 keybind-row Zeilen
-                    out.sixRowsRendered = document.querySelectorAll("#keybindings-list .keybind-row").length === 6;
+                    out.sixRowsRendered = document.querySelectorAll("#keybindings-list .keybind-row").length === 12;
                     // Pro Aktion ein Rebind-Button mit data-action
-                    out.rebindButtonsPresent = document.querySelectorAll(".keybind-rebind[data-action]").length === 6;
+                    out.rebindButtonsPresent = document.querySelectorAll(".keybind-rebind[data-action]").length === 12;
 
                     // Reset für nachfolgende Tests
                     r.resetKeybindings();
@@ -8601,7 +8602,7 @@ function startSaveServer() {
 
             if (wave6c3Results && !wave6c3Results.error) {
                 check("Welle 6.C3: DEFAULT_KEYBINDINGS frozen", wave6c3Results.hasDefaults);
-                check("Welle 6.C3: KEYBINDING_ACTIONS hat 6 Einträge", wave6c3Results.hasActions);
+                check("Welle 6.C3/V8.17: KEYBINDING_ACTIONS hat 12 Einträge (6 + 6 Drawer/Camera)", wave6c3Results.hasActions);
                 check("Welle 6.C3: KEYBINDING_LABELS frozen", wave6c3Results.hasLabels);
                 check(
                     "Welle 6.C3: Actions vollständig (break/place/confirmBuild/inventory/cancelBuild/jump)",
@@ -8659,8 +8660,8 @@ function startSaveServer() {
                 check("Welle 6.C3: #keybindings-section im DOM", wave6c3Results.sectionInDom);
                 check("Welle 6.C3: #keybindings-list im DOM", wave6c3Results.listInDom);
                 check("Welle 6.C3: #keybindings-reset im DOM", wave6c3Results.resetInDom);
-                check("Welle 6.C3: 6 keybind-row Zeilen gerendert", wave6c3Results.sixRowsRendered);
-                check("Welle 6.C3: 6 Rebind-Buttons im DOM", wave6c3Results.rebindButtonsPresent);
+                check("Welle 6.C3/V8.17: 12 keybind-row Zeilen gerendert", wave6c3Results.sixRowsRendered);
+                check("Welle 6.C3/V8.17: 12 Rebind-Buttons im DOM", wave6c3Results.rebindButtonsPresent);
             }
 
             // ### Welle 6.H Phase 1 — Kreaturen-Aufträge (follow_player / wait / wander) ###
@@ -13393,7 +13394,7 @@ function startSaveServer() {
                         // Hotbar + Stats-HUD).
                         const consoleEl = document.getElementById("console");
                         out.consoleHasHandle = !!(
-                            consoleEl && consoleEl.querySelector(":scope > .resize-handle.resize-tr")
+                            consoleEl && consoleEl.querySelector(":scope > .resize-handle.resize-br")
                         );
                         // Jeder Drawer: bl-handle existiert
                         const drawers = document.querySelectorAll(".drawer[data-drawer]");
@@ -13446,7 +13447,7 @@ function startSaveServer() {
                     "V8.00 Resize: installResizeHandles + _installResizeHandle existieren",
                     resizeResults.hasInstallMethod && resizeResults.hasInternalMethod
                 );
-                check("V8.00/V8.15 Resize: Konsole hat .resize-tr Handle (oben-rechts, V8.15)", resizeResults.consoleHasHandle);
+                check("V8.00/V8.17 Resize: Konsole hat .resize-br Handle (unten-rechts, Schöpfer-Korrektur)", resizeResults.consoleHasHandle);
                 check(
                     `V8.00 Resize: Alle ${resizeResults.drawerCount} Drawer haben .resize-bl Handle (unten-links)`,
                     resizeResults.allDrawersHaveHandle
