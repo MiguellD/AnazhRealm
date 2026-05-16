@@ -16343,20 +16343,48 @@ class AnazhRealm {
             if (!a || !b) continue;
             const pa = a.position || { x: 0, y: 0, z: 0 };
             const pb = b.position || { x: 0, y: 0, z: 0 };
+            const strength = this.computeConnectionStrength(c, blueprint);
+            const color = this._connectionColor(strength);
+            // V8.38 — Verbindungen sichtbar machen (Schöpfer-Browser-Test:
+            // „bei zwei berührenden Würfeln erkenne ich die Verbindung nicht,
+            // sie liegt innerhalb der Geometrie"). Wurzel: die Linie verläuft
+            // zwischen zwei Part-Zentren — bei überlappenden Parts steckt sie
+            // komplett im Mesh. Fix: depthTest:false + hoher renderOrder →
+            // Linie + Marker zeichnen IMMER über den Parts. Der Mittelpunkt-
+            // Marker ist der unmissverständliche „hier ist eine Verbindung"-
+            // Punkt, auch wenn die Parts einander ganz überlappen.
             const geom = new THREE.BufferGeometry();
             geom.setAttribute(
                 "position",
                 new THREE.Float32BufferAttribute([pa.x || 0, pa.y || 0, pa.z || 0, pb.x || 0, pb.y || 0, pb.z || 0], 3)
             );
-            const strength = this.computeConnectionStrength(c, blueprint);
-            const color = this._connectionColor(strength);
-            // Opacity 0.75 lässt die Linie sichtbar ohne dass sie den Bauplan dominiert.
-            const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.75 });
+            const mat = new THREE.LineBasicMaterial({
+                color,
+                transparent: true,
+                opacity: 0.9,
+                depthTest: false,
+            });
             const line = new THREE.Line(geom, mat);
+            line.renderOrder = 999;
             line.userData.isConnectionLine = true;
             line.userData.connectionStrength = strength;
             line.userData.connectionType = c.type;
             group.add(line);
+            // Mittelpunkt-Marker — ein kleiner Oktaeder in der Lastfarbe.
+            const marker = new THREE.Mesh(
+                new THREE.OctahedronGeometry(0.28, 0),
+                new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.92, depthTest: false })
+            );
+            marker.position.set(
+                ((pa.x || 0) + (pb.x || 0)) / 2,
+                ((pa.y || 0) + (pb.y || 0)) / 2,
+                ((pa.z || 0) + (pb.z || 0)) / 2
+            );
+            marker.renderOrder = 1000;
+            marker.userData.isConnectionLine = true;
+            marker.userData.connectionStrength = strength;
+            marker.userData.connectionType = c.type;
+            group.add(marker);
         }
     }
 
@@ -18883,6 +18911,24 @@ class AnazhRealm {
         return { ok: Object.keys(missing).length === 0, cost, have, missing };
     }
 
+    // V8.38 — Tooltip-Text für Bauplan-Slots in Inventar/Hotbar (Schöpfer-
+    // Browser-Test: „beim Hovern über den Bauplan wäre die Material-Info
+    // interessant — dann sehe ich direkt ob ich's im Inventar hab").
+    // Nutzt checkBuildCost: pro Material need + have + ✓/✗.
+    _blueprintCostTooltip(blueprintName) {
+        const bp = this.state.blueprints && this.state.blueprints[blueprintName];
+        const label = (bp && (bp.label || bp.name)) || blueprintName;
+        const check = this.checkBuildCost(blueprintName);
+        const mats = Object.keys(check.cost);
+        if (mats.length === 0) return `${label} — Bau-Kosten: keine`;
+        const parts = mats.map((m) => {
+            const need = check.cost[m];
+            const have = check.have[m] || 0;
+            return `${need}× ${m}: hast ${have} ${have >= need ? "✓" : "✗"}`;
+        });
+        return `${label} — Bau-Kosten: ${parts.join(" · ")}`;
+    }
+
     // Atomar konsumieren: erst prüfen, dann ALLE Materialien abziehen. Wenn
     // einer fehlt, wird gar nichts abgezogen (keine halben Kosten). Slots
     // werden in Reihenfolge geleert, leere Slots werden auf null gesetzt
@@ -19610,6 +19656,8 @@ class AnazhRealm {
                 const bp = this.state.blueprints[name];
                 label.textContent = bp.label || name;
                 slot.classList.add("filled");
+                // V8.38 — Material-Bedarf als Hover-Tooltip.
+                slot.title = this._blueprintCostTooltip(name);
             } else {
                 label.textContent = "—";
             }
@@ -19784,6 +19832,9 @@ class AnazhRealm {
             } else {
                 el.setAttribute("aria-label", `${label.textContent}${slot.count > 1 ? ` ×${slot.count}` : ""}`);
             }
+            // V8.38 — Bauplan-Slot: Material-Bedarf als Hover-Tooltip, damit
+            // der Schöpfer direkt sieht, ob er die Materialien im Inventar hat.
+            if (bp) el.title = this._blueprintCostTooltip(slot.blueprintName);
             if (selectedName && slot.blueprintName === selectedName) {
                 el.classList.add("selected");
             }
@@ -20831,6 +20882,15 @@ class AnazhRealm {
         connTitle.className = "workshop-tags-title";
         connTitle.textContent = "Verbindungen";
         connectionsSection.appendChild(connTitle);
+        // V8.38 — erklärt, was eine Verbindung TUT (Schöpfer-Frage: „verstehe
+        // noch nicht ganz wie die beeinflussen").
+        const connHint = document.createElement("div");
+        connHint.className = "workshop-tags-empty";
+        connHint.textContent =
+            "Eine Verbindung trägt eine Last (0–3 ★) aus Verbindungstyp × Material-Stärke × " +
+            "Kontaktfläche. Schwach (rot, <0.7) = Sollbruchstelle. Im 3D-Preview markiert ein " +
+            "farbiger Punkt jede Verbindung.";
+        connectionsSection.appendChild(connHint);
         const connections = Array.isArray(selected.connections) ? selected.connections : [];
         if (connections.length === 0) {
             const empty = document.createElement("div");
@@ -21474,7 +21534,9 @@ class AnazhRealm {
         if (p.currentMesh) {
             p.scene.remove(p.currentMesh);
             p.currentMesh.traverse((obj) => {
-                if (obj.isMesh) {
+                // V8.38 — auch isLine disposen (Verbindungs-Linien), sonst
+                // leaken ihre Geometrie + Material bei jedem Bauplan-Edit.
+                if (obj.isMesh || obj.isLine) {
                     if (obj.geometry) obj.geometry.dispose();
                     if (obj.material) {
                         if (Array.isArray(obj.material)) obj.material.forEach((m) => m.dispose());
@@ -21500,6 +21562,11 @@ class AnazhRealm {
         // selektierbar via Sub-Mesh-Hit.
         let idx = 0;
         for (const child of group.children) {
+            // V8.38 — Verbindungs-Linien/-Marker sind keine Parts: überspringen,
+            // damit ein Marker nicht als Part in partMeshes landet (sonst wäre
+            // er selektierbar + würde getintet). Sie liegen am Ende der
+            // children-Liste — continue ohne idx++ hält die Part-Indizes 1:1.
+            if (child.userData && child.userData.isConnectionLine) continue;
             child.userData.partIdx = idx;
             if (child.isMesh) {
                 p.partMeshes.set(child, idx);
@@ -21555,8 +21622,13 @@ class AnazhRealm {
         const h = Math.max(64, Math.floor(rect.height));
         if (p.canvas.width !== w || p.canvas.height !== h) {
             p.renderer.setSize(w, h, false);
-            // Aspect bleibt 1:1 (CSS-aspect-ratio garantiert), aber wenn das
-            // mal nicht so wäre, müsste hier camera.aspect = w/h sein.
+            // V8.38 — der Preview-Canvas ist nicht mehr 1:1 (CSS aspect-ratio
+            // 5/3, damit das Stats-Panel ohne Scrollen sichtbar bleibt) → die
+            // Kamera muss das Seitenverhältnis übernehmen, sonst staucht das Bild.
+            if (p.camera) {
+                p.camera.aspect = w / h;
+                p.camera.updateProjectionMatrix();
+            }
             p.dirty = true;
         }
     }

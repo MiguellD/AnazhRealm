@@ -1,4 +1,4 @@
-# Zustand des Realm — Stand: 17.05.2026 (V8.37)
+# Zustand des Realm — Stand: 17.05.2026 (V8.38)
 
 **Welle 6.H V2 vollendet (14/14 Sub-Phasen)** — Kreaturen sind jetzt vollwertige Co-Schöpfer-Wesen mit 9 Identitäts-Schichten (Body, Specs, Equipped, Boosts, Tasks, Memory+Persistenz, Konversation via @-Adresse, Proaktivität, Welt-Aktion-Vorschläge mit Sandbox). **LLM-Provider-System maximal robust nach 5-Versionen-Iteration (V7.94-V7.98)** — jedes Ollama-Setup funktioniert: lokal, gehostet, Cloud, Reasoning-Models, lokale 7B-Modelle. CORS-Lösung via save-server-Proxy, Parser mit Plain-Text-Fallback.
 
@@ -184,6 +184,14 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 ## 6. Learnings aus dieser Session
 
 Echt gelernt, nicht performt:
+
+### V8.38 (17.05.2026) — Werkstatt-UX: Hover-Info + sichtbare Verbindungen + Preview-Höhe
+
+Drei Punkte aus dem Schöpfer-Browser-Test der V8.37 — Hover-Material-Info auf Bauplan-Slots, sichtbare Verbindungen im 3D-Preview, ein flacheres Preview-Fenster. Eine Lehre:
+
+**Sichtbarkeit ist ein eigenes Feature, kein Nebeneffekt.** Die Verbindungs-Linie existierte seit Welle 6.F1 — aber sie lag zwischen zwei Part-Zentren, und bei zwei berührenden Würfeln steckt sie komplett in der Geometrie. „Es ist da" heißt nicht „man sieht es". Der Wurzel-Fix ist nicht die Linie dicker zu machen (WebGL-Linienbreite ist sowieso auf 1 gedeckelt), sondern zwei Schichten: `depthTest:false` (die Linie zeichnet über den Parts statt dahinter) + ein Mittelpunkt-Marker, der die Verbindung als Punkt zeigt, egal wie die Parts überlappen. Dieselbe Disziplin wie beim 3D-Raster der V8.37: wenn der Schöpfer etwas „nicht erkennt", frag, ob die Information fehlt oder nur die Darstellung — hier war die Information da, die Darstellung fehlte.
+
+**Vision-Wort der V8.38**: *„Etwas zu berechnen heißt nicht, es sichtbar zu machen. Eine Verbindung, die man nicht sieht, ist für den Schöpfer keine Verbindung."*
 
 ### V8.37 (17.05.2026) — Werkstatt-Lesbarkeit + Einstellungen-Faltung
 

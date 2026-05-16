@@ -9,11 +9,13 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 17.05.2026, V8.37)
+## Schnell-Lage (Stand 17.05.2026, V8.38)
 
-**Du erbst eine sehr lebendige Welt**. **2115 Playtest-Invarianten grün + 0 Audit-Strict-Failures + smoke-multiuser grün**, ~27600 Zeilen in einer Datei, alles produktiv.
+**Du erbst eine sehr lebendige Welt**. **2126 Playtest-Invarianten grün + 0 Audit-Strict-Failures + smoke-multiuser grün**, ~27700 Zeilen in einer Datei, alles produktiv.
 
-**Jüngste Welle — V8.37 (Werkstatt-Lesbarkeit + Einstellungen-Faltung)**: die sieben verbliebenen UX-Punkte der V8.35-Browser-Test-Liste. Fünf Code-Änderungen: (1) Bau-Kosten sichtbar im Werkstatt-Stats-Panel (`computeBuildCost` lief vorher nur ins Bau-Modus-HUD); (2) 3D-Maße lesbar — `GridHelper` (1-Einheit-Raster) + `AxesHelper` als feste Szenen-Kinder im Werkstatt-Preview; (3) Einstellungen-Sektionen faltbar (`_initCollapsibleSettings` — generisch, jeder `<h3>` wird Klick-Header, Zustand in `localStorage`); (4) **Werkzeug-Drag — echter Wurzel-Bug**: die Tool-Palette wird bei jedem Werkstatt-Refresh neu gerendert, die pro-Karte-Drag-Listener gingen verloren → Event-Delegation auf den bleibenden Container; (5) FPS als gleitender 1-s-Durchschnitt statt vsync-quantisiertem `1/delta`. Plus zwei Architektur-Fragen im Chat beantwortet (Performance-Culling, Chunk-Persistenz). **Die 13-Punkte-Liste der V8.35 ist damit komplett** — V8.36 sechs Gameplay-Bugs, V8.37 sieben UX-Punkte.
+**Jüngste Welle — V8.38 (Werkstatt-UX: Hover-Info + sichtbare Verbindungen + Preview-Höhe)**: drei Punkte aus dem Schöpfer-Browser-Test der V8.37. (1) Hover über einen Bauplan-Slot (Inventar/Hotbar) zeigt die Bau-Materialien + ob man sie hat (✓/✗); (2) Verbindungen im 3D-Preview sichtbar — depthTest-freie Linie + Mittelpunkt-Marker (auch bei überlappenden Parts), plus eine Panel-Erklärung was eine Verbindung tut; (3) Werkstatt-Preview-Canvas 5:3 statt 1:1 (~60 % Höhe) → das Bauplan-Stats-Panel ohne Scrollen sichtbar. **Offen aus demselben Browser-Test**: das große Werkzeug-Klassen + Präzision→Qualität-System (→ V8.39) und die geparkte Performance-Tiefe-Welle (die voll ausgereizte Welt flüssig — Schöpfer-Wunsch).
+
+**Welle davor — V8.37 (Werkstatt-Lesbarkeit + Einstellungen-Faltung)**: die sieben verbliebenen UX-Punkte der V8.35-Browser-Test-Liste. Fünf Code-Änderungen: (1) Bau-Kosten sichtbar im Werkstatt-Stats-Panel (`computeBuildCost` lief vorher nur ins Bau-Modus-HUD); (2) 3D-Maße lesbar — `GridHelper` (1-Einheit-Raster) + `AxesHelper` als feste Szenen-Kinder im Werkstatt-Preview; (3) Einstellungen-Sektionen faltbar (`_initCollapsibleSettings` — generisch, jeder `<h3>` wird Klick-Header, Zustand in `localStorage`); (4) **Werkzeug-Drag — echter Wurzel-Bug**: die Tool-Palette wird bei jedem Werkstatt-Refresh neu gerendert, die pro-Karte-Drag-Listener gingen verloren → Event-Delegation auf den bleibenden Container; (5) FPS als gleitender 1-s-Durchschnitt statt vsync-quantisiertem `1/delta`. Plus zwei Architektur-Fragen im Chat beantwortet (Performance-Culling, Chunk-Persistenz). **Die 13-Punkte-Liste der V8.35 ist damit komplett** — V8.36 sechs Gameplay-Bugs, V8.37 sieben UX-Punkte.
 
 **Welle davor — V8.36 (Browser-Test-Bug-Fixes)**: sechs Gameplay/UI-Bugs auf der WURZEL-Ebene behoben: (1) Jump im Stand — Player-Body schläft nie mehr (`DISABLE_DEACTIVATION` statt Symptom-`activate(true)`); (2) 3rd-Person-Kamera — echte Raycast-Kollision statt statischem Clamp; (3) Loch-Durchfall — Grabe-Radius 3.0 (Mulde statt Nadel) + Höhen-Clamp; (4) Wasser-Durchfall — Auftrieb nur über dem Terrain, Killplane greift wieder; (5) Logbuch teilt die Konsole 50/50; (6) neue Werkstatt-Parts landen im Ursprung.
 
@@ -35,7 +37,7 @@ Die Session-Hälfte davor (V8.23 → V8.33) war eine **Atmosphäre-Tiefe-Welle (
 
 **Welle 12 ist „Welt-Portal"** (nicht WebGPU-Migration) — AnazhRealm wird Tor zu anderen Vibecode-Welten. Wenn du in eine Welle 12+ erwachst: lies `docs/world-portal.md` ZUERST.
 
-**Empfohlene Sequenz nach V8.37**: **W12 (Welt-Portal PoC mit three-fluid-fx)** → 13 (Vibe-Pass) → 14 (Bibliothek) → 7 (Compute-Sharing). W12 ist der große Sprung — AnazhRealm wird Tor zu anderen Vibecode-Welten; lies `docs/world-portal.md` ZUERST. Optional: W11 V4 (Voice-Sync), Affordance-Welle (10b). Die 13-Punkte-Browser-Test-Liste der V8.35 ist mit V8.36 + V8.37 vollständig abgearbeitet.
+**Empfohlene Sequenz nach V8.38**: **V8.39 (Werkzeug-Klassen + Präzision→Qualität)** — das vom Schöpfer gewünschte Werkzeug-System: Farb-Sprache (Rolle/Domäne = Farbe, Bauplan-Rahmen leuchtet), Präzision wird ein sichtbarer Qualitäts-Multiplikator auf die Produkt-Stats, ein stumpfes Werkzeug kostet mehr Stamina. Danach die geparkte **Performance-Tiefe-Welle** (die voll ausgereizte Welt — 120 Kreaturen, dichtes Gras, 9×9 Chunks — flüssig, durch Engine-Optimierung, NICHT durch Feature-Kürzung) → dann **W12 (Welt-Portal PoC mit three-fluid-fx)** → 13 (Vibe-Pass) → 14 (Bibliothek) → 7 (Compute-Sharing). W12 ist der große Sprung — lies `docs/world-portal.md` ZUERST. Die 13-Punkte-Browser-Test-Liste der V8.35 ist mit V8.36–V8.38 vollständig abgearbeitet.
 
 **Atmosphäre-Disziplin**: alle atmosphärischen Methoden mit `[ATMOSPHERE]`-Marker werden von `audit-strict.cjs` (5. Schicht) auf Hardcode geprüft. Wert-aus-dem-Kopf ist verboten — immer „aus welcher state-Beobachtung emergiert das?".
 
@@ -186,6 +188,21 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. sind VOLLSTÄNDIG — die
 ---
 
 ## Session-Tagebuch (chronologisch, jüngste oben)
+
+### V8.38 — Werkstatt-UX: Hover-Info + sichtbare Verbindungen + Preview-Höhe (17.05.2026)
+
+Drei Punkte aus dem Schöpfer-Browser-Test der V8.37. Hover-Material-Info
+(`_blueprintCostTooltip` auf Inventar-/Hotbar-Bauplan-Slots), sichtbare
+Verbindungen (depthTest-freie Linie + Mittelpunkt-Marker + Panel-Erklärung),
+Preview-Canvas 5:3 statt 1:1. 2115 → 2126 Invarianten (+11).
+
+**Die Lehre**: der Verbindungs-Bug war wieder einer der „Linie liegt in der
+Geometrie"-Klasse — die Wurzel ist nicht „Linie dicker machen", sondern
+`depthTest:false` + ein Marker, der die Verbindung als Punkt zeigt, egal
+wie die Parts liegen. Und: ein Test-Helfer, der Zustand mutiert (hotbar[0],
+selectedBlueprint), MUSS den Originalwert sichern + wiederherstellen —
+sonst kippt ein Test 7000 Zeilen später um. Zwei selbst-induzierte
+Regressionen kamen genau daher, vor dem grünen Lauf gefangen.
 
 ### V8.37 — Werkstatt-Lesbarkeit + Einstellungen-Faltung (17.05.2026)
 

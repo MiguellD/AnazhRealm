@@ -5310,17 +5310,22 @@ function startSaveServer() {
                     };
                     // Build und auf THREE.Line prüfen
                     const built = r._buildFromBlueprint(r.state.blueprints[testName]);
-                    let lineCount = 0;
+                    // V8.38 — eine Verbindung erzeugt jetzt eine Linie UND
+                    // einen Mittelpunkt-Marker (beide isConnectionLine), damit
+                    // die Verbindung auch bei überlappenden Parts sichtbar ist.
+                    let connLineCount = 0;
+                    let connMarkerCount = 0;
                     let lineColor = null;
                     built.traverse((node) => {
                         if (node.userData && node.userData.isConnectionLine) {
-                            lineCount++;
+                            if (node.isLine) connLineCount++;
+                            if (node.isMesh) connMarkerCount++;
                             if (node.material && node.material.color) lineColor = node.material.color.getHex();
                         }
                     });
-                    out.lineCount = lineCount;
-                    out.lineExists = lineCount === 1;
-                    out.lineHasUserDataFlag = lineCount === 1;
+                    out.lineCount = connLineCount;
+                    out.lineExists = connLineCount === 1 && connMarkerCount === 1;
+                    out.lineHasUserDataFlag = connLineCount === 1;
                     out.lineColor = lineColor;
 
                     // 6.F2 Brech-Warning: extrem schwache Verbindung → Journal-Eintrag
@@ -12479,6 +12484,112 @@ function startSaveServer() {
                 check("V8.37: abnormaler Delta (Tab-Pause) verwirft das FPS-Fenster", v837Results.fpsResetsOnStall);
             } else {
                 check("V8.37: Werkstatt-Lesbarkeit Tests laufen", false, v837Results ? v837Results.error : "no result");
+            }
+
+            // ### V8.38 — Werkstatt-UX: Hover-Kosten + sichtbare Verbindungen + Preview-Höhe ###
+            const v838Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // C — Hover-Material-Info auf Bauplan-Slots.
+                    {
+                        if (r.state.blueprints["_t838c"]) delete r.state.blueprints["_t838c"];
+                        r.createBlueprint("_t838c", "T838C");
+                        r.state.blueprints["_t838c"].parts = [
+                            {
+                                shape: "box",
+                                material: "stein",
+                                position: { x: 0, y: 0, z: 0 },
+                                rotation: { x: 0, y: 0, z: 0 },
+                                size: { x: 2, y: 2, z: 2 },
+                                color: 0x888888,
+                            },
+                        ];
+                        out.costTooltipMethod = typeof r._blueprintCostTooltip === "function";
+                        const tip = r._blueprintCostTooltip("_t838c");
+                        out.costTooltipText =
+                            /Bau-Kosten/.test(tip) && /stein/.test(tip) && /hast/.test(tip);
+                        const origHotbar0 = r.state.hotbar[0];
+                        r.state.hotbar[0] = "_t838c";
+                        r._renderHotbarDOM();
+                        const hslot = document.querySelector('#hotbar .hotbar-slot[data-slot="0"]');
+                        out.hotbarSlotTitle = !!hslot && /Bau-Kosten/.test(hslot.title || "");
+                        r.state.hotbar[0] = origHotbar0;
+                        r._renderHotbarDOM();
+                        const origInv0 = r.state.player.inventory[0];
+                        r.state.player.inventory[0] = { kind: "blueprint", blueprintName: "_t838c", count: 1 };
+                        r.renderInventoryUI();
+                        const islot = document.querySelector('#inventory-grid .inventory-slot[data-inv-slot="0"]');
+                        out.invSlotTitle = !!islot && /Bau-Kosten/.test(islot.title || "");
+                        r.state.player.inventory[0] = origInv0;
+                        r.renderInventoryUI();
+                        delete r.state.blueprints["_t838c"];
+                    }
+
+                    // D — Verbindungen im 3D-Preview sichtbar.
+                    {
+                        const origSel = r.state.workshop && r.state.workshop.selectedBlueprint;
+                        if (r.state.blueprints["_t838d"]) delete r.state.blueprints["_t838d"];
+                        r.createBlueprint("_t838d", "T838D");
+                        const bp = r.state.blueprints["_t838d"];
+                        bp.parts = [
+                            { shape: "box", material: "stein", position: { x: -1, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, color: 0x888888 },
+                            { shape: "box", material: "stein", position: { x: 1, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, color: 0x888888 },
+                        ];
+                        r.addConnectionToBlueprint("_t838d", { type: "masonry", partA: 0, partB: 1 });
+                        const group = r._buildFromBlueprint(bp);
+                        const conn = group.children.filter((c) => c.userData && c.userData.isConnectionLine);
+                        out.connHasLine = conn.some((c) => c.isLine);
+                        out.connHasMarker = conn.some((c) => c.isMesh);
+                        out.connDepthTestOff =
+                            conn.length > 0 && conn.every((c) => c.material && c.material.depthTest === false);
+                        // _workshopRebuildPreviewMesh zählt Verbindungen NICHT als Part.
+                        if (typeof r.selectBlueprintForEdit === "function") r.selectBlueprintForEdit("_t838d");
+                        r._workshopEnsurePreview();
+                        r._workshopRebuildPreviewMesh();
+                        const pre = r.state.workshop && r.state.workshop.preview;
+                        out.connNotCountedAsPart = !!pre && pre.partMeshes.size === 2;
+                        r._renderWorkshopDOM();
+                        const connSection = document.querySelector(".workshop-connections");
+                        out.connHintShown =
+                            !!connSection && /Sollbruchstelle/.test(connSection.textContent || "");
+                        delete r.state.blueprints["_t838d"];
+                        // Auswahl wiederherstellen — kein hängender Verweis auf
+                        // den gelöschten Test-Bauplan für nachfolgende Tests.
+                        if (origSel && r.state.blueprints[origSel] && typeof r.selectBlueprintForEdit === "function") {
+                            r.selectBlueprintForEdit(origSel);
+                        }
+                    }
+
+                    // F — 3D-Preview-Höhe.
+                    {
+                        out.previewAspect = [...document.querySelectorAll("style")].some((s) =>
+                            /#workshop-preview-canvas[^}]*aspect-ratio:\s*5\s*\/\s*3/.test(s.textContent)
+                        );
+                        out.cameraAspectSync = /camera\.aspect = w \/ h/.test(
+                            r._workshopSyncCanvasSize.toString()
+                        );
+                    }
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (v838Results && !v838Results.error) {
+                check("V8.38: _blueprintCostTooltip-Methode existiert", v838Results.costTooltipMethod);
+                check("V8.38: Kosten-Tooltip nennt Bau-Kosten + Material + 'hast'", v838Results.costTooltipText);
+                check("V8.38: gefüllter Hotbar-Slot trägt den Kosten-Tooltip", v838Results.hotbarSlotTitle);
+                check("V8.38: Bauplan-Inventar-Slot trägt den Kosten-Tooltip", v838Results.invSlotTitle);
+                check("V8.38: Verbindung rendert eine Linie im 3D-Preview", v838Results.connHasLine);
+                check("V8.38: Verbindung rendert einen Mittelpunkt-Marker", v838Results.connHasMarker);
+                check("V8.38: Verbindungs-Linie + Marker sind depthTest-frei (immer sichtbar)", v838Results.connDepthTestOff);
+                check("V8.38: Verbindungen werden NICHT als Part gezählt (partMeshes korrekt)", v838Results.connNotCountedAsPart);
+                check("V8.38: Werkstatt-Panel erklärt, was eine Verbindung tut", v838Results.connHintShown);
+                check("V8.38: Preview-Canvas hat aspect-ratio 5/3 (Stats-Panel ohne Scrollen)", v838Results.previewAspect);
+                check("V8.38: Canvas-Sync setzt camera.aspect (kein gestauchtes Bild)", v838Results.cameraAspectSync);
+            } else {
+                check("V8.38: Werkstatt-UX Tests laufen", false, v838Results ? v838Results.error : "no result");
             }
 
             // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider (Audit 17.05.2026) ###
