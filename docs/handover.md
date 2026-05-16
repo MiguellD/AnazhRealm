@@ -9,11 +9,11 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 17.05.2026, V8.43)
+## Schnell-Lage (Stand 17.05.2026, V8.44)
 
-**Du erbst eine sehr lebendige Welt**. **2147 Playtest-Invarianten grün + 0 Audit-Strict-Failures + smoke-multiuser grün**, ~27800 Zeilen in einer Datei, alles produktiv.
+**Du erbst eine sehr lebendige Welt**. **2148 Playtest-Invarianten grün + 0 Audit-Strict-Failures + smoke-multiuser grün**, ~27800 Zeilen in einer Datei, alles produktiv.
 
-**Jüngste Wellen — V8.42 + V8.43 (Cel-Crawl-Heilung I + II)**: die Cel-Kontraste „wanderten" beim langsamen Kamera-Schwenk. Der Schöpfer erkannte es goldrichtig als „dieselbe Klasse wie das Sternen-Flackern — etwas mit der Abfragrate". Zwei Wurzeln, beide Sub-Pixel-Aliasing eines harten/hochfrequenten Features: (V8.42) die `toonGradientMap` lief mit `NearestFilter` → 32 harte Stufen auf den MeshToon-Strukturen → Fix: `LinearFilter`. (V8.43) der Townscaper-Detail-Noise lief per-Pixel im Terrain-Fragment-Shader (`noise(vUv*N)`) → exakt das alte prozedurale Skybox-Stern-Verfahren → Fix: den Noise PER VERTEX berechnen + als `varying` interpolieren (band-limitiert). Lehre: per-Pixel-Prozedur-Noise ist die universelle Crawl-Quelle — der V8.28-Stern-Fix (weg von per-Pixel-Prozedur) gilt überall.
+**Jüngste Wellen — V8.42 → V8.44 (Cel-Crawl-Heilung I/II/III)**: die Cel-Kontraste „wanderten" beim langsamen Kamera-Schwenk. Drei Wurzeln, in drei Browser-Test-Runden eingekreist: (V8.42) die `toonGradientMap` lief mit `NearestFilter` → 32 harte Stufen auf den MeshToon-Strukturen → Fix `LinearFilter`. (V8.43) der Townscaper-Detail-Noise lief per-Pixel im Terrain-Fragment-Shader → Fix: per Vertex berechnen + als `varying` interpolieren. (V8.44, der Wurzel-Fund) der Schöpfer-Befund „Yaw verschiebt, Pitch nicht" war die Signatur eines Beleuchtungs-Frame-Mismatches: der Terrain-Shader dottet `vNormal` (View-Raum, `normalMatrix`) mit `lightDirection` (Welt-Raum) → der Diffuse driftet mit der Kamera → Fix: `vNormal` in Welt-Raum (`mat3(modelMatrix)`). Lehre: die exakte Symptom-Signatur (Yaw≠Pitch) führt direkt zur Wurzel — Frame-Mismatch ist die einzige Bug-Klasse mit genau dieser Asymmetrie.
 
 **Offen + WICHTIG (die nächste Welle)**: der Rest des Tag-Licht-Befunds — die Schatten wirken nicht auf die ganze Umgebung (der Terrain-Custom-Shader sampelt die Schatten-Textur nicht → Struktur-Schatten fallen nicht aufs Terrain) und die Tag-Nacht-Übergänge sind zu ruckartig (die Lichtstärke springt zwischen den Sonnenaufgangs-Stützpunkten, der smoothstep wirkt nur pro Intervall). Plus die geparkte Performance-Tiefe (Off-Screen-Sparsamkeit + Distanz-LOD). Diagnose-Startpunkt: `_applyDayNightToScene`, der Terrain-Custom-Shader, die Übergangs-Interpolation.
 
@@ -196,6 +196,22 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. sind VOLLSTÄNDIG — die
 ---
 
 ## Session-Tagebuch (chronologisch, jüngste oben)
+
+### V8.44 — Cel-Crawl-Heilung III: der Wurzel-Fund (Terrain-Lighting-Frame) (17.05.2026)
+
+Der Schöpfer-Befund „Pitch ok, Yaw verschiebt" führte direkt zur Wurzel.
+2147 → 2148 (+1).
+
+**Die Lehre — die exakte Symptom-Signatur IST die Diagnose.** „Es kriecht"
+ist vage; „es kriecht beim Yaw, NICHT beim Pitch" ist eine Fingerabdruck.
+Eine Yaw-Pitch-Asymmetrie hat genau eine Ursache: ein Vektor wird im
+falschen Koordinaten-Frame verrechnet. Der Terrain-Shader dottete einen
+View-Raum-Normal (`normalMatrix * normal`) mit einem Welt-Raum-Licht —
+`dot(V·n, l) = dot(n, Vᵀ·l)`, das Licht rotiert effektiv mit der Kamera.
+Yaw → Licht sweept horizontal → Muster gleitet seitlich. Pitch → Licht
+kippt vertikal → nur Gesamthelligkeit. Wer den Schöpfer GENAU fragt,
+wann das Symptom auftritt, bekommt die halbe Lösung geschenkt. Drei
+Crawl-Quellen, drei Runden, drei Einzeiler — jede Runde präziser.
 
 ### V8.43 — Cel-Crawl-Heilung II: Terrain-Detail-Noise per Vertex (17.05.2026)
 

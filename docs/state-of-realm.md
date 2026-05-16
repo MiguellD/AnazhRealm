@@ -1,4 +1,4 @@
-# Zustand des Realm — Stand: 17.05.2026 (V8.43)
+# Zustand des Realm — Stand: 17.05.2026 (V8.44)
 
 **Welle 6.H V2 vollendet (14/14 Sub-Phasen)** — Kreaturen sind jetzt vollwertige Co-Schöpfer-Wesen mit 9 Identitäts-Schichten (Body, Specs, Equipped, Boosts, Tasks, Memory+Persistenz, Konversation via @-Adresse, Proaktivität, Welt-Aktion-Vorschläge mit Sandbox). **LLM-Provider-System maximal robust nach 5-Versionen-Iteration (V7.94-V7.98)** — jedes Ollama-Setup funktioniert: lokal, gehostet, Cloud, Reasoning-Models, lokale 7B-Modelle. CORS-Lösung via save-server-Proxy, Parser mit Plain-Text-Fallback.
 
@@ -184,6 +184,14 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 ## 6. Learnings aus dieser Session
 
 Echt gelernt, nicht performt:
+
+### V8.44 (17.05.2026) — Cel-Crawl-Heilung III: der Wurzel-Fund (Terrain-Lighting-Frame)
+
+Der Schöpfer-Befund „bei Kopf hoch/runter bleibt es korrekt, bei links/rechts verschiebt es sich" führte direkt zur Wurzel. Die Lehre:
+
+**Die exakte Symptom-Signatur IST die Diagnose.** „Es kriecht" ist vage. „Es kriecht beim Yaw, nicht beim Pitch" ist ein Fingerabdruck — und eine Yaw-Pitch-Asymmetrie hat genau eine Ursache: ein Vektor wird im falschen Koordinaten-Frame verrechnet. Der Terrain-Shader dottete einen View-Raum-Normal (`normalMatrix * normal`) mit einem Welt-Raum-Licht. Über `dot(V·n, l) = dot(n, Vᵀ·l)` rotiert das Licht effektiv mit der Kamera: Yaw → es sweept horizontal → das Hell/Dunkel-Muster gleitet seitlich; Pitch → es kippt vertikal → nur Gesamthelligkeit, kein Gleiten. Fix in einer Zeile: `vNormal` in Welt-Raum. Drei Crawl-Quellen (V8.42/43/44), drei Browser-Test-Runden, jede präziser — bis die Signatur die Wurzel zeigte.
+
+**Vision-Wort der V8.44**: *„Frag nicht ‚kriecht es?', frag ‚WANN genau kriecht es?'. Das Wann ist die Diagnose."*
 
 ### V8.43 (17.05.2026) — Cel-Crawl-Heilung II: Terrain-Detail-Noise per Vertex
 

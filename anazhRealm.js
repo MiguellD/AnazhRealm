@@ -10928,7 +10928,12 @@ class AnazhRealm {
         }
         void main() {
             vHeight = position.y;
-            vNormal = normalize(normalMatrix * normal);
+            // V8.44 — vNormal in WELT-Raum (mat3(modelMatrix)). Der Diffuse
+            // dottet vNormal mit der world-space lightDirection; mit einem
+            // View-Raum-Normal (normalMatrix) driftete das Ergebnis mit der
+            // Kamera — beim Yaw glitt das Hell/Dunkel-Muster horizontal übers
+            // Terrain. Welt-Normal + Welt-Licht = kamera-unabhängig, korrekt.
+            vNormal = normalize(mat3(modelMatrix) * normal);
             vField = aField;
             // Townscaper-Detail-Jitter — zwei Noise-Oktaven, hier per Vertex.
             float n1 = noise(uv * 3.0);
