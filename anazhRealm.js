@@ -84,7 +84,8 @@ class AnazhRealm {
             groundNormalY: 1.0,
             onSteepSlope: false,
             frameCount: 0,
-            lastFpsUpdate: 0,
+            _fpsFrames: 0,
+            _fpsElapsed: 0,
             fps: 0,
             forward: new THREE.Vector3(),
             right: new THREE.Vector3(),
@@ -6921,19 +6922,31 @@ class AnazhRealm {
         return ordered.map((e) => `- [${e.type}] ${e.text}`).join("\n");
     }
 
+    // V8.37 — FPS als gleitender 1-Sekunden-Durchschnitt (Schöpfer-Browser-
+    // Test: „FPS-Anzeige steht immer auf ~60/120"). Wurzel: das alte
+    // Math.round(1/delta) misst EINEN Frame — und requestAnimationFrame ist
+    // vsync-gekoppelt, ein Einzel-Frame dauert exakt 1/Refreshrate. Die Zahl
+    // KANN damit nur 120/60/40/30… annehmen, nie etwas dazwischen, und
+    // flackert pro Frame. Der Durchschnitt über ein 1-s-Fenster liefert eine
+    // echte, ruhige Zahl (z.B. 58, wenn ein paar Frames fallen). Der alte
+    // Pro-Frame-DEBUG-Log ist mit raus (60-120 Einträge/s = Konsolen-Flut).
     updateFps(delta) {
-        const fps = Math.round(1 / delta);
-        this.state.fps = fps;
-        const fpsDiv = document.getElementById("fps");
-        if (fpsDiv) {
-            fpsDiv.innerText = `FPS: ${fps}`; // Korrekte String-Interpolation
-            this.log(`FPS-Div aktualisiert: FPS: ${fps}`, "DEBUG");
-        } else {
-            this.log("FPS-Div nicht gefunden – DOM-Element 'fps' fehlt", "ERROR");
+        if (!(delta > 0) || delta > 0.5) {
+            // Erster Frame / Tab war inaktiv → Fenster verwerfen, sauber neu.
+            this.state._fpsFrames = 0;
+            this.state._fpsElapsed = 0;
+            return;
         }
-        if (performance.now() / 1000 - this.state.lastFpsUpdate >= 1.0) {
+        this.state._fpsFrames += 1;
+        this.state._fpsElapsed += delta;
+        if (this.state._fpsElapsed >= 1.0) {
+            const fps = Math.round(this.state._fpsFrames / this.state._fpsElapsed);
+            this.state.fps = fps;
+            this.state._fpsFrames = 0;
+            this.state._fpsElapsed = 0;
+            const fpsDiv = typeof document !== "undefined" ? document.getElementById("fps") : null;
+            if (fpsDiv) fpsDiv.innerText = `FPS: ${fps}`;
             this.log(`FPS: ${fps}`, "INFO");
-            this.state.lastFpsUpdate = performance.now() / 1000;
         }
     }
 
@@ -21202,6 +21215,22 @@ class AnazhRealm {
         fill.position.set(-4, -2, -3);
         scene.add(fill);
 
+        // V8.37 — 3D-Maße lesbar im Werkstatt-Preview (Schöpfer-Browser-Test:
+        // „3D-Dimensionen nicht ablesbar"). Ein perspektivisches Bild ohne
+        // Referenz lässt keine Größe erkennen. Ein 1-Einheit-Raster auf der
+        // Ursprungs-Ebene + ein Achsenkreuz geben CAD-Maß-Orientierung
+        // (Tinkercad/Blender-Konvention). Feste Szenen-Kinder —
+        // _workshopRebuildPreviewMesh disposed nur currentMesh, nicht diese.
+        // raycast = no-op: die Helfer dürfen Part-Auswahl + Gizmo NIE stören.
+        const grid = new THREE.GridHelper(12, 12, 0x7a5a34, 0x3a2e1c);
+        grid.material.opacity = 0.55;
+        grid.material.transparent = true;
+        grid.raycast = () => {};
+        scene.add(grid);
+        const axes = new THREE.AxesHelper(2.5);
+        axes.raycast = () => {};
+        scene.add(axes);
+
         const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
 
         const preview = {
@@ -21209,6 +21238,8 @@ class AnazhRealm {
             renderer,
             scene,
             camera,
+            gridHelper: grid,
+            axesHelper: axes,
             currentMesh: null,
             partMeshes: new Map(), // sub-Mesh → partIdx
             origColors: new Map(), // sub-Mesh → original color (uint)
@@ -22431,6 +22462,28 @@ class AnazhRealm {
             roleRow.appendChild(chip);
         }
         panel.appendChild(roleRow);
+        // V8.37 — Bau-Kosten sichtbar im Werkstatt-Panel (Schöpfer-Browser-
+        // Test: „Bau-Material nicht sichtbar"). computeBuildCost ist die EINE
+        // Quelle — dieselbe Volumen-Formel wie harvestArchitecture. Im
+        // pfad-Modus echte Kosten; frieden/schöpfer bauen frei, die Anzeige
+        // bleibt aber informativ (sie zeigt, was die Substanz wiegt). Gilt
+        // für alle Baupläne (auch built-in) — die Kosten sind intrinsisch.
+        const buildCost = this.computeBuildCost(bp.name);
+        const costMats = Object.keys(buildCost);
+        if (costMats.length > 0) {
+            const costRow = document.createElement("div");
+            costRow.className = "stat-row";
+            const costLab = document.createElement("span");
+            costLab.className = "stat-label";
+            costLab.textContent = "Bau-Kosten";
+            costRow.appendChild(costLab);
+            const costText = document.createElement("span");
+            costText.className = "workshop-cost-text";
+            costText.textContent = costMats.map((m) => `${buildCost[m]}× ${m}`).join(" · ");
+            costText.title = "Materialien, die der Bau verbraucht (im pfad-Modus; frieden/schöpfer bauen frei).";
+            costRow.appendChild(costText);
+            panel.appendChild(costRow);
+        }
         // Welle 6.X.4 V8.16 Punkt 18 — Wachstumskonzept sichtbar:
         // wie entsteht die Rolle? wie wächst sie? welche Synergie wirkt?
         //
@@ -22705,27 +22758,34 @@ class AnazhRealm {
         const canvas = document.getElementById("workshop-preview-canvas");
         if (!canvas) return;
 
-        // Universal-Drag-Helper: für jeden Card-Container eine Drag-Source
-        // einrichten. Marker via dataTransfer-MIME-Type, data via getAttribute.
+        // Universal-Drag-Helper: pro Card-Container EINE Drag-Source via
+        // Event-Delegation. Marker via dataTransfer-MIME-Type, data via
+        // getAttribute. V8.37 — Wurzel-Fix (Schöpfer-Browser-Test: „Werkzeuge
+        // lassen sich nicht ziehen wie Farben/Materialien"): die Werkzeug-
+        // Palette wird bei JEDEM Werkstatt-Refresh neu gerendert (die Tool-
+        // Liste hängt am Spieler-Inventar), die alten Pro-Karte-Listener
+        // gingen dabei verloren. Shape/Material/Farbe werden nur EINMAL
+        // gerendert — darum funktionierten die. Ein Listener auf dem
+        // bleibenden Container überlebt jedes Neu-Rendern (Event-Delegation).
         const installDragSource = (container, cardSelector, dataAttr, marker) => {
             if (!container) return;
-            const cards = container.querySelectorAll(cardSelector);
-            cards.forEach((card) => {
-                card.addEventListener("dragstart", (event) => {
-                    const data = card.getAttribute(dataAttr);
-                    if (!data) return;
-                    const bp = this.state.blueprints[this._ensureWorkshopState().selectedBlueprint];
-                    if (!bp || bp.builtIn) {
-                        event.preventDefault();
-                        return;
-                    }
-                    event.dataTransfer.setData(marker, data);
-                    event.dataTransfer.effectAllowed = "copy";
-                    card.classList.add("dragging");
-                });
-                card.addEventListener("dragend", () => {
-                    card.classList.remove("dragging");
-                });
+            container.addEventListener("dragstart", (event) => {
+                const card = event.target && event.target.closest ? event.target.closest(cardSelector) : null;
+                if (!card) return;
+                const data = card.getAttribute(dataAttr);
+                if (!data) return;
+                const bp = this.state.blueprints[this._ensureWorkshopState().selectedBlueprint];
+                if (!bp || bp.builtIn) {
+                    event.preventDefault();
+                    return;
+                }
+                event.dataTransfer.setData(marker, data);
+                event.dataTransfer.effectAllowed = "copy";
+                card.classList.add("dragging");
+            });
+            container.addEventListener("dragend", (event) => {
+                const card = event.target && event.target.closest ? event.target.closest(cardSelector) : null;
+                if (card) card.classList.remove("dragging");
             });
         };
         installDragSource(shapePalette, ".workshop-shape-card", "data-shape", "application/x-anazh-shape");
@@ -22796,11 +22856,14 @@ class AnazhRealm {
                 "title",
                 `${t.label || name} · ${t.opName} (${t.opClass}) · ${domLabel} · auf Part ziehen wendet Op an`
             );
-            // Domain-Dot (V9b-Style)
+            // Domain-Dot (V9b-Style). V8.37 — eigener Tooltip (Schöpfer-
+            // Browser-Test fragte „was sind die farbigen Punkte?"): der Punkt
+            // markiert die Werkzeug-Domäne, gleiche Farbe = gleiche Domäne.
             if (t.domain && AnazhRealm.TOOL_DOMAIN_COLORS && AnazhRealm.TOOL_DOMAIN_COLORS[t.domain]) {
                 const dot = document.createElement("span");
                 dot.className = "workshop-tool-domain-dot";
                 dot.style.background = AnazhRealm.TOOL_DOMAIN_COLORS[t.domain];
+                dot.title = `Domäne: ${domLabel} — Werkzeuge derselben Domäne teilen die Punkt-Farbe.`;
                 card.appendChild(dot);
             }
             const nameEl = document.createElement("span");
@@ -23327,6 +23390,54 @@ class AnazhRealm {
                 this.log(cb.checked ? "Kreaturen-Stimmen aktiv" : "Kreaturen-Stimmen ruhen", "INFO");
             });
         }
+    }
+
+    // V8.37 — Einstellungen-Sektionen faltbar (Schöpfer-Browser-Test:
+    // „Einstellungen-Untermenüs sollten faltbar sein"). Zwölf Sektionen
+    // sind viel Scroll. Statt zwölf HTML-Umbauten ein generischer Pfad:
+    // jede <section> im Einstellungen-Drawer bekommt ihren <h3> als
+    // Klick-Header, ein Klick toggelt die .collapsed-Klasse — eine CSS-
+    // Regel blendet dann alles außer dem Header aus. Der Falt-Zustand
+    // wird in einem localStorage-Schlüssel als Map gemerkt (die Wahl
+    // überlebt den Reload). Default: alle offen (kein Verhaltens-Sprung),
+    // der Schöpfer faltet selbst, was er nicht braucht. Idempotent: ein
+    // schon verdrahteter Header (.collapsible-header) wird übersprungen.
+    _initCollapsibleSettings() {
+        if (typeof document === "undefined") return;
+        const drawer = document.querySelector('.drawer[data-drawer="einstellungen"]');
+        if (!drawer) return;
+        let stored = {};
+        try {
+            stored = JSON.parse(localStorage.getItem("anazh.settings.collapsed") || "{}") || {};
+        } catch {
+            stored = {};
+        }
+        const sections = drawer.querySelectorAll("section.section, section.settings-section");
+        sections.forEach((sec, i) => {
+            const header = sec.querySelector("h3");
+            if (!header || header.classList.contains("collapsible-header")) return;
+            const key = sec.id || `settings-sec-${i}`;
+            header.classList.add("collapsible-header");
+            header.setAttribute("role", "button");
+            header.setAttribute("tabindex", "0");
+            if (stored[key]) sec.classList.add("collapsed");
+            const toggle = () => {
+                sec.classList.toggle("collapsed");
+                stored[key] = sec.classList.contains("collapsed");
+                try {
+                    localStorage.setItem("anazh.settings.collapsed", JSON.stringify(stored));
+                } catch {
+                    /* quota / private mode → silent */
+                }
+            };
+            header.addEventListener("click", toggle);
+            header.addEventListener("keydown", (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    toggle();
+                }
+            });
+        });
     }
 
     // Welle 6.X.4 B3 (Audit 17.05.2026) — Stats-HUD über der Hotbar.
@@ -25323,6 +25434,8 @@ class AnazhRealm {
         this.gameModeInitDOM();
         // Welle 6.H Phase 2E V2 — proaktive-Sprache-Toggle aufsetzen.
         this.creatureSpeechInitDOM();
+        // V8.37 — Einstellungen-Sektionen faltbar machen.
+        this._initCollapsibleSettings();
         // Welle 6.X.2 B1 — Logbuch-Sichtbarkeit-Toggle aufsetzen.
         this.logbookInitDOM();
         // Welle 6.X.4 F1 — Begleiter-Name + Avatar-Name laden + binden.

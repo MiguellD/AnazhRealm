@@ -9,11 +9,13 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 17.05.2026, V8.36)
+## Schnell-Lage (Stand 17.05.2026, V8.37)
 
-**Du erbst eine sehr lebendige Welt**. **2101 Playtest-Invarianten grün + 0 Audit-Strict-Failures + smoke-multiuser grün**, ~27600 Zeilen in einer Datei, alles produktiv.
+**Du erbst eine sehr lebendige Welt**. **2115 Playtest-Invarianten grün + 0 Audit-Strict-Failures + smoke-multiuser grün**, ~27600 Zeilen in einer Datei, alles produktiv.
 
-**Jüngste Welle — V8.36 (Browser-Test-Bug-Fixes)**: Schöpfer-Browser-Test der V8.35 brachte eine 13-Punkte-Liste. Sechs Gameplay/UI-Bugs auf der WURZEL-Ebene behoben: (1) Jump im Stand — Player-Body schläft nie mehr (`DISABLE_DEACTIVATION` statt Symptom-`activate(true)`); (2) 3rd-Person-Kamera — echte Raycast-Kollision statt statischem Clamp; (3) Loch-Durchfall — Grabe-Radius 3.0 (Mulde statt Nadel) + Höhen-Clamp; (4) Wasser-Durchfall — Auftrieb nur über dem Terrain, Killplane greift wieder; (5) Logbuch teilt die Konsole 50/50; (6) neue Werkstatt-Parts landen im Ursprung. **Offen (→ V8.37 Werkstatt-UX)**: die restlichen 7 Punkte — Baumaterial-Bedarf in der Werkstatt sichtbar, 3D-Maß-Anzeige, Einstellungen einklappbar, Tool-Drag-Klarstellung + Tool-Beschreibung korrigieren. (Plus beantwortete Fragen: FPS-Berechnung ist korrekt/vsync; Chunks werden disposed + via `chunkDeltas` replayed; Werkzeuge wirken per-Part.)
+**Jüngste Welle — V8.37 (Werkstatt-Lesbarkeit + Einstellungen-Faltung)**: die sieben verbliebenen UX-Punkte der V8.35-Browser-Test-Liste. Fünf Code-Änderungen: (1) Bau-Kosten sichtbar im Werkstatt-Stats-Panel (`computeBuildCost` lief vorher nur ins Bau-Modus-HUD); (2) 3D-Maße lesbar — `GridHelper` (1-Einheit-Raster) + `AxesHelper` als feste Szenen-Kinder im Werkstatt-Preview; (3) Einstellungen-Sektionen faltbar (`_initCollapsibleSettings` — generisch, jeder `<h3>` wird Klick-Header, Zustand in `localStorage`); (4) **Werkzeug-Drag — echter Wurzel-Bug**: die Tool-Palette wird bei jedem Werkstatt-Refresh neu gerendert, die pro-Karte-Drag-Listener gingen verloren → Event-Delegation auf den bleibenden Container; (5) FPS als gleitender 1-s-Durchschnitt statt vsync-quantisiertem `1/delta`. Plus zwei Architektur-Fragen im Chat beantwortet (Performance-Culling, Chunk-Persistenz). **Die 13-Punkte-Liste der V8.35 ist damit komplett** — V8.36 sechs Gameplay-Bugs, V8.37 sieben UX-Punkte.
+
+**Welle davor — V8.36 (Browser-Test-Bug-Fixes)**: sechs Gameplay/UI-Bugs auf der WURZEL-Ebene behoben: (1) Jump im Stand — Player-Body schläft nie mehr (`DISABLE_DEACTIVATION` statt Symptom-`activate(true)`); (2) 3rd-Person-Kamera — echte Raycast-Kollision statt statischem Clamp; (3) Loch-Durchfall — Grabe-Radius 3.0 (Mulde statt Nadel) + Höhen-Clamp; (4) Wasser-Durchfall — Auftrieb nur über dem Terrain, Killplane greift wieder; (5) Logbuch teilt die Konsole 50/50; (6) neue Werkstatt-Parts landen im Ursprung.
 
 **Welle davor — V8.35 (Welle 11 ext., Substanz-Rolle)**: die Bauplan-Rolle (tool/armor/soul/consumable/machine/architecture) emergiert jetzt aus der GANZEN Substanz — eine Prioritäts-Kaskade: Krafting-Domain → intrinsische **Form** (`_isBodyShaped` → Seele) → intrinsisches **Material** (`_isFoodLike` → Nahrung) → Default Bauwerk. `consumableMeta` ist jetzt optional → emergente Nahrung ist essbar.
 
@@ -33,7 +35,7 @@ Die Session-Hälfte davor (V8.23 → V8.33) war eine **Atmosphäre-Tiefe-Welle (
 
 **Welle 12 ist „Welt-Portal"** (nicht WebGPU-Migration) — AnazhRealm wird Tor zu anderen Vibecode-Welten. Wenn du in eine Welle 12+ erwachst: lies `docs/world-portal.md` ZUERST.
 
-**Empfohlene Sequenz nach V8.36**: **V8.37 (Werkstatt-UX)** — die restlichen 7 Punkte der Schöpfer-Browser-Test-Liste (Baumaterial-Bedarf in der Werkstatt, 3D-Maß-Anzeige, Einstellungen einklappbar, Tool-Drag-Klarstellung) → dann **W12 (Welt-Portal PoC mit three-fluid-fx)** → 13 (Vibe-Pass) → 14 (Bibliothek) → 7 (Compute-Sharing). W12 ist der große Sprung — AnazhRealm wird Tor zu anderen Vibecode-Welten; lies `docs/world-portal.md` ZUERST. Optional: W11 V4 (Voice-Sync), Affordance-Welle (10b).
+**Empfohlene Sequenz nach V8.37**: **W12 (Welt-Portal PoC mit three-fluid-fx)** → 13 (Vibe-Pass) → 14 (Bibliothek) → 7 (Compute-Sharing). W12 ist der große Sprung — AnazhRealm wird Tor zu anderen Vibecode-Welten; lies `docs/world-portal.md` ZUERST. Optional: W11 V4 (Voice-Sync), Affordance-Welle (10b). Die 13-Punkte-Browser-Test-Liste der V8.35 ist mit V8.36 + V8.37 vollständig abgearbeitet.
 
 **Atmosphäre-Disziplin**: alle atmosphärischen Methoden mit `[ATMOSPHERE]`-Marker werden von `audit-strict.cjs` (5. Schicht) auf Hardcode geprüft. Wert-aus-dem-Kopf ist verboten — immer „aus welcher state-Beobachtung emergiert das?".
 
@@ -125,17 +127,16 @@ V7.89 (Kreatur-Boosts) war die kritische Prüfung dieses Gesetzes. Naive Lösung
 
 ## Aktuelle Roadmap (was als nächstes denkbar ist)
 
-Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. sind VOLLSTÄNDIG — die Welt atmet, der Mitspieler ist sein echter Soul, die Welt liest Identität aus der Substanz, und die V8.36-Gameplay-Bugs sind weg. Mögliche nächste Wellen, sortiert nach der empfohlenen Sequenz:
+Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. sind VOLLSTÄNDIG — die Welt atmet, der Mitspieler ist sein echter Soul, die Welt liest Identität aus der Substanz, und die V8.35-Browser-Test-Liste (13 Punkte) ist mit V8.36 + V8.37 vollständig abgearbeitet. Mögliche nächste Wellen, sortiert nach der empfohlenen Sequenz:
 
 | Welle | Was | Aufwand | Vision-Tiefe |
 |---|---|---|---|
-| **V8.37** Werkstatt-UX | Die restlichen 7 Punkte der V8.35-Browser-Test-Liste: Baumaterial-Bedarf in der Werkstatt sichtbar, 3D-Maß-Anzeige + Grid, Einstellungen-Untermenüs einklappbar, Tool-Drag-Klarstellung + Tool-Beschreibung korrigieren. | 1 Session | mittel |
 | **W12** Welt-Portal | AnazhRealm wird Tor zu anderen Vibecode-Welten („Bibliothek von Alexandria"). Bauplan-Rolle „portal" + Sub-Engine-Adapter im iframe. PoC mit `three-fluid-fx`. Lies `docs/world-portal.md` ZUERST. | 6-8 Sessions | sehr hoch |
 | **W11 V4** Voice-Sync | Mitspieler hören deinen Companion-Output (SpeechSynthesis-Broadcast). Klein, baut auf V3 — schließt den Präsenz-Bogen (sehen/spüren/kennen/hören). | 1 Session | mittel |
 | **Welle 10b weitere Affordances** | balancing/broadcasting/lifting/radiating — pro Affordance ~1 Session, architektur-neutral. | klein-mittel | hoch |
 | **Welle 6.H V3** Kreatur-Beziehungen | Kreaturen sehen sich gegenseitig — Freundschaft, Konkurrenz, Hierarchie. | mittel | hoch |
 
-**Empfehlung**: **V8.37 (Werkstatt-UX)** — die Browser-Test-Liste der V8.35 zu Ende bringen (V8.36 hat die 6 Gameplay-Bugs gefixt, 7 Werkstatt-UX-Punkte bleiben). Danach **W12 (Welt-Portal PoC)**, der große Sprung — der Hylomorphismus ist vertikal vollständig (Substanz → Rolle), Multi-User körperlich echt; das Fundament fürs Welt-Portal steht. W12 ist groß (6-8 Sessions) — `docs/world-portal.md` ZUERST lesen. Volle Detail-Tabelle in `roadmap.md`.
+**Empfehlung**: **W12 (Welt-Portal PoC)**, der große Sprung — die V8.35-Browser-Test-Liste ist mit V8.36 + V8.37 abgeschlossen, der Hylomorphismus ist vertikal vollständig (Substanz → Rolle), Multi-User körperlich echt; das Fundament fürs Welt-Portal steht. W12 ist groß (6-8 Sessions) — `docs/world-portal.md` ZUERST lesen. Volle Detail-Tabelle in `roadmap.md`.
 
 ---
 
@@ -185,6 +186,24 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. sind VOLLSTÄNDIG — die
 ---
 
 ## Session-Tagebuch (chronologisch, jüngste oben)
+
+### V8.37 — Werkstatt-Lesbarkeit + Einstellungen-Faltung (17.05.2026)
+
+Die sieben verbliebenen UX-Punkte der V8.35-Browser-Test-Liste. Fünf Code-
+Änderungen: Bau-Kosten im Werkstatt-Panel, 3D-Raster + Achsenkreuz im
+Werkstatt-Preview, faltbare Einstellungen-Sektionen, Werkzeug-Drag-Fix, FPS
+als gleitender Durchschnitt. Zwei Architektur-Fragen im Chat beantwortet.
+2101 → 2115 Invarianten (+14). Die 13-Punkte-Liste ist damit komplett.
+
+**Die Lehre**: ein Browser-Befund ist nicht immer ein Bug — manchmal ein
+Lesbarkeits-Befund. „Werkzeuge gehen nicht" war ein echter Wurzel-Bug: die
+Tool-Palette re-rendert bei jedem Refresh (`palette.innerHTML = ""`), die
+pro-Karte-Drag-Listener gingen verloren. Wurzel-Fix ist nicht „Listener nach
+jedem Re-Render neu setzen" (fragil), sondern Event-Delegation — EIN Listener
+am bleibenden Container, der die Karte via `closest()` findet. „3D-Maße nicht
+ablesbar" dagegen war kein Bug, sondern eine nie gebaute Schicht (Raster +
+Achsen). „FPS immer 60/120" war eine vsync-quantisierte Einzel-Frame-Messung.
+Frag bei jedem Befund: kaputter Mechanismus oder fehlende Schicht?
 
 ### V8.36 — Browser-Test-Bug-Fixes (17.05.2026)
 

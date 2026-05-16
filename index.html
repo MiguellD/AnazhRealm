@@ -29,7 +29,7 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self';"
         />
-        <title>Anazh Realm v8.36 – Das Ultiversum</title>
+        <title>Anazh Realm v8.37 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
              zusätzliche Datei. img-src 'self' data: in CSP erlaubt data-URI. -->
         <link
@@ -1716,6 +1716,32 @@
                 border-bottom: 1px solid var(--parch-edge);
                 padding-bottom: 4px;
             }
+            /* V8.37 — faltbare Einstellungen-Sektionen. Der <h3> wird zum
+               Klick-Header; .collapsed blendet alles außer dem Header aus. */
+            .drawer h3.collapsible-header {
+                cursor: pointer;
+                user-select: none;
+                position: relative;
+                padding-right: 18px;
+            }
+            .drawer h3.collapsible-header:hover {
+                color: var(--brass-1, #d4a373);
+            }
+            .drawer h3.collapsible-header::after {
+                content: "▾";
+                position: absolute;
+                right: 2px;
+                top: 0;
+                font-size: 9px;
+                opacity: 0.65;
+                transition: transform 0.15s ease;
+            }
+            .drawer .collapsed > h3.collapsible-header::after {
+                transform: rotate(-90deg);
+            }
+            .drawer .collapsed > :not(h3) {
+                display: none;
+            }
             .drawer .row {
                 display: flex;
                 justify-content: space-between;
@@ -3177,6 +3203,13 @@
             #workshop-stats-panel .workshop-growth-text.manual-override {
                 color: var(--iron-1, #5b3f10);
             }
+            /* V8.37 — Bau-Kosten als Daten-Readout (monospace, brass). */
+            #workshop-stats-panel .workshop-cost-text {
+                font-family: "JetBrains Mono", "Courier New", monospace;
+                font-size: 10px;
+                color: var(--brass-1, #d4a373);
+                line-height: 1.4;
+            }
             /* V8.05 — Del-Button unter der Form-Palette */
             .workshop-delete-btn {
                 margin: 6px 0 0 0;
@@ -3924,7 +3957,7 @@
         <header id="topbar" class="hud-frame">
             <div class="topbar-inner">
                 <div class="title">
-                    Anazh Realm <span class="version">v8.36</span> <span class="sub">— Das Ultiversum</span>
+                    Anazh Realm <span class="version">v8.37</span> <span class="sub">— Das Ultiversum</span>
                 </div>
                 <nav class="tabs" role="tablist" aria-label="Hauptansichten">
                     <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">

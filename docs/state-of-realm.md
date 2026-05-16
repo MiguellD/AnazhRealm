@@ -1,4 +1,4 @@
-# Zustand des Realm — Stand: 17.05.2026 (V8.36)
+# Zustand des Realm — Stand: 17.05.2026 (V8.37)
 
 **Welle 6.H V2 vollendet (14/14 Sub-Phasen)** — Kreaturen sind jetzt vollwertige Co-Schöpfer-Wesen mit 9 Identitäts-Schichten (Body, Specs, Equipped, Boosts, Tasks, Memory+Persistenz, Konversation via @-Adresse, Proaktivität, Welt-Aktion-Vorschläge mit Sandbox). **LLM-Provider-System maximal robust nach 5-Versionen-Iteration (V7.94-V7.98)** — jedes Ollama-Setup funktioniert: lokal, gehostet, Cloud, Reasoning-Models, lokale 7B-Modelle. CORS-Lösung via save-server-Proxy, Parser mit Plain-Text-Fallback.
 
@@ -184,6 +184,16 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 ## 6. Learnings aus dieser Session
 
 Echt gelernt, nicht performt:
+
+### V8.37 (17.05.2026) — Werkstatt-Lesbarkeit + Einstellungen-Faltung
+
+Die sieben verbliebenen UX-Punkte der V8.35-Browser-Test-Liste — fünf Code-Änderungen, zwei Architektur-Antworten. Damit ist die 13-Punkte-Liste komplett (V8.36 sechs Gameplay-Bugs, V8.37 sieben UX-Punkte). Zwei Lehren:
+
+1. **Ein Browser-Befund ist nicht immer ein Bug — manchmal eine fehlende Schicht.** „3D-Maße nicht ablesbar" war kein gebrochener Mechanismus, sondern eine nie gebaute Referenz-Schicht: dem Werkstatt-Preview fehlte schlicht ein Raster + Achsenkreuz (CAD-Konvention — Tinkercad/Blender haben sie). „Werkzeuge gehen nicht" dagegen war ein echter Wurzel-Bug. Die Disziplin: bei jedem Befund fragen — kaputter Mechanismus, oder fehlende Schicht? Die Heilung ist je nach Antwort eine andere (Mechanismus reparieren vs. Schicht bauen).
+
+2. **Re-gerenderte DOM-Knoten verlieren ihre Listener — Event-Delegation ist die Wurzel-Antwort.** Der Werkzeug-Drag-Bug: `installDragSource` hängte einen `dragstart`-Listener an jede Karte; die Werkzeug-Palette wird aber bei jedem Werkstatt-Refresh neu gerendert (`palette.innerHTML = ""` + neue Karten), die Listener waren weg. Shape/Material/Farbe-Paletten werden nur einmal gerendert — die hatten den Bug nie. Der Wurzel-Fix ist nicht „Listener nach jedem Re-Render neu setzen" (fragil, leicht zu vergessen), sondern Event-Delegation: EIN Listener am bleibenden Container, der die gezogene Karte via `closest()` findet. Ein Pattern, das jedes künftige Re-Rendern überlebt.
+
+**Vision-Wort der V8.37**: *„Frag bei jedem Befund: ist das Symptom ein gebrochener Mechanismus oder eine nie gebaute Schicht? Die Wurzel-Heilung ist je nach Antwort eine andere — aber sie ist immer eine Schicht, die überlebt."*
 
 ### V8.36 (17.05.2026) — Browser-Test-Bug-Fixes (Wurzel statt Symptom)
 

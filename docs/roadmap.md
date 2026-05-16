@@ -1,6 +1,6 @@
 # AnazhRealm Roadmap — Vollumfänglich
 
-Stand: 17.05.2026 (V8.36, Welle 6.G4 + Ring 11 V3 + Welle 11 ext. KOMPLETT + V8.36 Browser-Test-Bug-Fixes — Atmosphäre-Tiefe + Soul-Sync + Substanz-Rolle, plus sechs Wurzel-Fixes aus dem Schöpfer-Browser-Test (Jump, Kamera, Loch-/Wasser-Durchfall, Logbuch, Parts). 2101/2101 Invarianten grün, smoke-multiuser grün, Audit-Strict 0 Failures. Nächste empfohlene Welle: V8.37 Werkstatt-UX, dann W12 Welt-Portal.)
+Stand: 17.05.2026 (V8.37, Welle 6.G4 + Ring 11 V3 + Welle 11 ext. KOMPLETT + V8.35-Browser-Test-Liste (13 Punkte) vollständig abgearbeitet — V8.36 sechs Gameplay-Wurzel-Fixes (Jump, Kamera, Loch-/Wasser-Durchfall, Logbuch, Parts), V8.37 sieben Werkstatt-UX-Punkte (Bau-Kosten sichtbar, 3D-Raster + Achsen, Einstellungen faltbar, Werkzeug-Drag-Fix via Event-Delegation, FPS-Durchschnitt). 2115/2115 Invarianten grün, smoke-multiuser grün, Audit-Strict 0 Failures. Nächste empfohlene Welle: W12 Welt-Portal.)
 
 Diese Doc beschreibt das **gesamte Projekt vom heutigen Stand bis zum Vision-Endziel** (Welten-Ultiversum). Sie ergänzt `state-of-realm.md` (Was/Warum) um eine puren Plan-Sicht (Wann/Wie). Aufwandsschätzungen sind realistische Tage für eine fokussierte Claude-Session pro Ring/Phase; gerechnet wird linear, ohne Puffer.
 

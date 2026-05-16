@@ -12363,6 +12363,124 @@ function startSaveServer() {
                 check("V8.36: Browser-Test-Bug-Fix Tests laufen", false, v836Results ? v836Results.error : "no result");
             }
 
+            // ### V8.37 — Werkstatt-Lesbarkeit + Einstellungen-Faltung ###
+            const v837Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // A — Bau-Kosten sichtbar im Werkstatt-Stats-Panel.
+                    {
+                        if (r.state.blueprints["_t837a"]) delete r.state.blueprints["_t837a"];
+                        r.createBlueprint("_t837a", "T837A");
+                        r.state.blueprints["_t837a"].parts = [
+                            {
+                                shape: "box",
+                                material: "stein",
+                                position: { x: 0, y: 0, z: 0 },
+                                rotation: { x: 0, y: 0, z: 0 },
+                                size: { x: 2, y: 2, z: 2 },
+                                color: 0x888888,
+                            },
+                        ];
+                        if (typeof r.selectBlueprintForEdit === "function") r.selectBlueprintForEdit("_t837a");
+                        r._workshopRenderStatsPanel();
+                        const panel = document.getElementById("workshop-stats-panel");
+                        const txt = panel ? panel.textContent : "";
+                        const cost = r.computeBuildCost("_t837a");
+                        out.costPanelShown = /Bau-Kosten/.test(txt);
+                        out.costPanelValue = (cost.stein || 0) > 0 && txt.includes(`${cost.stein}× stein`);
+                        delete r.state.blueprints["_t837a"];
+                    }
+
+                    // B — 3D-Raster + Achsenkreuz im Werkstatt-Preview.
+                    {
+                        r._workshopEnsurePreview();
+                        const pre = r.state.workshop && r.state.workshop.preview;
+                        out.gridInScene =
+                            !!pre && !!pre.gridHelper && pre.scene.children.includes(pre.gridHelper);
+                        out.axesInScene =
+                            !!pre && !!pre.axesHelper && pre.scene.children.includes(pre.axesHelper);
+                        // raycast der Helfer ist als eigene no-op-Property
+                        // überschrieben → Part-Auswahl + Gizmo bleiben ungestört.
+                        out.helperRaycastNoop =
+                            !!pre &&
+                            Object.prototype.hasOwnProperty.call(pre.gridHelper, "raycast") &&
+                            Object.prototype.hasOwnProperty.call(pre.axesHelper, "raycast");
+                    }
+
+                    // C — Einstellungen-Sektionen faltbar.
+                    {
+                        r._initCollapsibleSettings(); // idempotent
+                        const drawer = document.querySelector('.drawer[data-drawer="einstellungen"]');
+                        const headers = drawer ? drawer.querySelectorAll("h3.collapsible-header") : [];
+                        out.collapsibleHeaders = headers.length >= 12;
+                        if (headers.length > 0) {
+                            const sec = headers[0].closest("section");
+                            const before = sec.classList.contains("collapsed");
+                            headers[0].click();
+                            const after = sec.classList.contains("collapsed");
+                            out.collapseToggles = before !== after;
+                            headers[0].click(); // Ausgangszustand wiederherstellen
+                        } else {
+                            out.collapseToggles = false;
+                        }
+                    }
+
+                    // D — Werkzeug-Drag überlebt Palette-Neu-Rendern (Delegation).
+                    {
+                        const src = r._workshopInstallShapeDragDrop.toString();
+                        // Delegation: EIN Listener am bleibenden Container, NICHT
+                        // pro Karte (Karten verschwinden beim Re-Render).
+                        out.dragDelegated =
+                            /container\.addEventListener\("dragstart"/.test(src) && !/cards\.forEach/.test(src);
+                        out.dragSetData = /\.dataTransfer\.setData/.test(src);
+                        // Re-Render der Tool-Palette: frische Karten bleiben draggable.
+                        r._workshopRenderToolPalette();
+                        const palette = document.getElementById("workshop-tool-palette");
+                        const card = palette ? palette.querySelector(".workshop-tool-card") : null;
+                        out.toolCardDraggable = !!card && card.getAttribute("draggable") === "true";
+                        // Domänen-Farbpunkt bekommt einen erklärenden Tooltip.
+                        out.dotHasTitle = /dot\.title\s*=/.test(r._workshopRenderToolPalette.toString());
+                    }
+
+                    // E — FPS als gleitender 1-s-Durchschnitt (nicht 1/delta).
+                    {
+                        r.state._fpsFrames = 0;
+                        r.state._fpsElapsed = 0;
+                        r.state.fps = 0;
+                        for (let i = 0; i < 90; i++) r.updateFps(1 / 60);
+                        out.fpsRollingAvg = r.state.fps === 60;
+                        out.fpsNotSingleFrame = !/Math\.round\(1 \/ delta\)/.test(r.updateFps.toString());
+                        r.state._fpsFrames = 5;
+                        r.state._fpsElapsed = 0.3;
+                        r.updateFps(2.0); // abnormaler Delta → Fenster verwerfen
+                        out.fpsResetsOnStall = r.state._fpsFrames === 0 && r.state._fpsElapsed === 0;
+                    }
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (v837Results && !v837Results.error) {
+                check("V8.37: Bau-Kosten-Sektion im Werkstatt-Panel sichtbar", v837Results.costPanelShown);
+                check("V8.37: Bau-Kosten zeigt den computeBuildCost-Wert pro Material", v837Results.costPanelValue);
+                check("V8.37: Werkstatt-Preview hat ein Maß-Raster (GridHelper)", v837Results.gridInScene);
+                check("V8.37: Werkstatt-Preview hat ein Achsenkreuz (AxesHelper)", v837Results.axesInScene);
+                check("V8.37: Raster + Achsen sind raycast-stumm (stören Part-Auswahl nicht)", v837Results.helperRaycastNoop);
+                check("V8.37: Einstellungen-Sektionen haben faltbare Header (≥12)", v837Results.collapsibleHeaders);
+                check("V8.37: Klick auf einen Sektion-Header faltet/entfaltet", v837Results.collapseToggles);
+                check("V8.37: Werkzeug-Drag läuft über Container-Delegation", v837Results.dragDelegated);
+                check("V8.37: Werkzeug-Drag überträgt weiterhin Daten (setData)", v837Results.dragSetData);
+                check("V8.37: neu-gerenderte Werkzeug-Karte bleibt draggable", v837Results.toolCardDraggable);
+                check("V8.37: Domänen-Farbpunkt trägt einen erklärenden Tooltip", v837Results.dotHasTitle);
+                check("V8.37: FPS ist ein gleitender Durchschnitt (90 Frames @60 → fps=60)", v837Results.fpsRollingAvg);
+                check("V8.37: FPS-Rechnung nutzt nicht mehr Einzel-Frame 1/delta", v837Results.fpsNotSingleFrame);
+                check("V8.37: abnormaler Delta (Tab-Pause) verwirft das FPS-Fenster", v837Results.fpsResetsOnStall);
+            } else {
+                check("V8.37: Werkstatt-Lesbarkeit Tests laufen", false, v837Results ? v837Results.error : "no result");
+            }
+
             // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider (Audit 17.05.2026) ###
             const wave6x4bResults = await page
                 .evaluate(() => {
