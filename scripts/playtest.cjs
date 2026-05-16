@@ -379,12 +379,18 @@ function startSaveServer() {
                 );
             }
 
-            // Zwei Loop-Iterationen warten, damit der Nexus-Loop die Test-Evolution
-            // aus der Queue zieht und in dsl.history einträgt.
-            await new Promise((r) => setTimeout(r, 500));
+            // V8.50 — den Game-Loop deterministisch synchron treiben statt auf
+            // rAF zu warten. Headless-Chromium drosselt requestAnimationFrame
+            // auf ~1 Hz → ein 500-ms-Fenster enthielt oft 0 Loop-Ticks → der
+            // Nexus zog die Test-Evolution nicht aus der Queue → flaky CI.
+            // _gameLoopTick ist die Loop-Funktion selbst (5× = bis zu 5
+            // Queue-Einträge verarbeitet).
             const phase2Results = await page
                 .evaluate(() => {
                     const r = window.anazhRealm;
+                    if (typeof r._gameLoopTick === "function") {
+                        for (let k = 0; k < 5; k++) r._gameLoopTick(performance.now());
+                    }
                     return {
                         historyLen: r.state.dsl.history.length,
                         queueLen: r.state.nexusEvolutionQueue.length,
@@ -19880,14 +19886,15 @@ function startSaveServer() {
                 })
                 .catch((err) => ({ error: err && err.message }));
 
-            // Loop mehrere Ticks laufen lassen, damit player.rotation.y
-            // aktualisiert wird. Headless-rAF tickt etwas träger als im
-            // sichtbaren Browser, deshalb großzügig 300 ms.
-            await new Promise((r) => setTimeout(r, 300));
+            // V8.50 — Loop synchron treiben statt auf rAF zu warten. Headless-
+            // Chromium drosselt requestAnimationFrame auf ~1 Hz → ein 300-ms-
+            // Fenster enthielt oft 0 Loop-Ticks → player.rotation.y blieb
+            // stale → flaky CI. _gameLoopTick treibt genau einen Frame.
             const cameraEffect = await page
                 .evaluate(() => {
                     const r = window.anazhRealm;
                     if (!r || !r.state.camera || !r.state.playerMesh) return null;
+                    if (typeof r._gameLoopTick === "function") r._gameLoopTick(performance.now());
                     return {
                         playerYaw: r.state.yaw,
                         playerRotationY: r.state.playerMesh.rotation.y,
@@ -19908,29 +19915,24 @@ function startSaveServer() {
             // page.evaluate yields nicht an rAF im Headless — also außen
             // warten zwischen "Pitch setzen" und "cam.y lesen", wie's auch
             // beim Rotation-Test funktioniert.
+            // V8.50 — Pitch setzen + Loop SYNCHRON treiben + cam-Offset lesen,
+            // alles in EINEM evaluate. Vorher: setzen, 500 ms auf rAF warten,
+            // in zweitem evaluate lesen — im Headless (rAF ~1 Hz) landete
+            // vereinzelt 0 Ticks im Fenster → stale cam-y → flaky CI.
             const setPitchAndRead = async (pitch) => {
-                await page.evaluate((p) => {
+                return await page.evaluate((p) => {
                     const r = window.anazhRealm;
                     r.setCameraMode("third");
                     r.state.yaw = 0;
                     r.state.pitch = p;
-                    // Player-Velocity nullen, damit cam-Position nicht zwischen
-                    // den beiden Frames durch Spieler-Bewegung schwankt
-                    // (z. B. wenn ein voriger Test ihm Velocity gegeben hat).
+                    // Player-Velocity nullen, damit cam-Position nicht durch
+                    // Spieler-Bewegung schwankt.
                     if (r.state.playerBody && r.state.tmpVec2) {
                         r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec2, 0, 0, 0));
                     }
-                }, pitch);
-                // 500 ms statt 350 ms — der dichte Test-Cluster davor (Welle 6.A4+A5
-                // spawnt Architekturen + teleportiert Spieler+Kamera) kann den
-                // Loop-Tick verzögern; 350 ms war Headless-zu-knapp, vereinzelt
-                // landete der clamp (cam-y = player-0.2) in der Antwort. 500 ms
-                // gibt mehrere Frames Puffer zum Stabilisieren.
-                await new Promise((r) => setTimeout(r, 500));
-                return await page.evaluate(() => {
-                    const r = window.anazhRealm;
+                    if (typeof r._gameLoopTick === "function") r._gameLoopTick(performance.now());
                     return r.state.camera.position.y - r.state.playerMesh.position.y;
-                });
+                }, pitch);
             };
             const upDelta = await setPitchAndRead(Math.PI / 6);
             const clampedDelta = await setPitchAndRead(Math.PI / 2 - 0.1);

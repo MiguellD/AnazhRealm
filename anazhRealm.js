@@ -26965,6 +26965,13 @@ class AnazhRealm {
             }
             this.state.renderer.render(this.state.scene, this.state.camera);
         };
+        // V8.50 — die Loop-Funktion exponieren, damit Tests (playtest.cjs)
+        // einen Frame SYNCHRON treiben können statt auf das im Headless auf
+        // ~1 Hz gedrosselte requestAnimationFrame zu warten (das war die
+        // Wurzel der zwei timing-flaky CI-Tests). Ändert das Laufzeit-
+        // Verhalten NICHT — der Loop läuft weiterhin über setAnimationLoop;
+        // dies ist nur eine zusätzliche, frei aufrufbare Referenz.
+        this._gameLoopTick = loop;
         this.state.renderer.setAnimationLoop(loop);
     }
 
