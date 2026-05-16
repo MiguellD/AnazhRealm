@@ -11775,7 +11775,11 @@ class AnazhRealm {
                 const falloff = t * t * (3 - 2 * t);
                 const delta = dh * falloff;
                 const idx = z * VTX + x;
-                heightData[idx] += delta;
+                // V8.36 — Höhe clampen. Ungeklemmt trieb wiederholtes Graben
+                // am selben Punkt die Höhe unbegrenzt nach unten → entartetes
+                // Mesh + Durchfall. [-100, 100] = derselbe Band wie der
+                // Welt-Vertex-Clamp.
+                heightData[idx] = Math.max(-100, Math.min(100, heightData[idx] + delta));
                 arr[idx * 3 + 1] = heightData[idx];
                 touched++;
             }
@@ -19304,7 +19308,11 @@ class AnazhRealm {
         const target = this._raycastWorldHit(30);
         if (!target.hit) return false;
         this._consumeMouseStamina();
-        const r = 1.5;
+        // V8.36 — Radius 3.0 statt 1.5: bei 1.5 ≈ vertexStep (1.17) traf ein
+        // Grabe-Op faktisch nur EINEN Vertex → mit jedem Klick eine spitzere
+        // Nadel statt einer Mulde, bis man durch die Welt fiel. 3.0 spannt
+        // mehrere Vertices → eine glatte, begehbare Mulde.
+        const r = 3.0;
         const dh = -1.0;
         if (typeof this.dslRun === "function") {
             this.dslRun(["modify_terrain", target.x, target.z, r, dh], { source: "human" });
@@ -22751,7 +22759,7 @@ class AnazhRealm {
             if (!shape && !material && !color && !tool) return;
             event.preventDefault();
             if (shape) {
-                this._workshopHandleShapeDrop(shape, event.clientX, event.clientY);
+                this._workshopHandleShapeDrop(shape);
             } else if (material) {
                 this._workshopHandleMaterialDrop(material, event.clientX, event.clientY);
             } else if (color) {
@@ -23020,29 +23028,19 @@ class AnazhRealm {
     // Drop-Handler: berechnet Welt-Position aus Bildschirm-Koordinaten via
     // Raycaster gegen eine y=0-Ebene (oder y=0.5 bei snap), fügt einen
     // neuen Part am Bauplan an + selektiert ihn automatisch.
-    _workshopHandleShapeDrop(shape, clientX, clientY) {
+    _workshopHandleShapeDrop(shape) {
         const ws = this._ensureWorkshopState();
         const bp = this.state.blueprints[ws.selectedBlueprint];
         if (!bp || bp.builtIn) {
             this.log("Workshop-Drop auf Built-in-Bauplan abgelehnt — bitte erst klonen", "INFO");
             return;
         }
-        // Welt-Position aus Drop-Koords: Raycast gegen XZ-Ebene bei y=0.
-        // Wenn die Ebene parallel zur Camera ist (vertikaler Top-Down-Blick),
-        // hat der Ray keinen Schnittpunkt — Fallback ist (0,0,0).
-        let dropPos = { x: 0, y: 0, z: 0 };
-        if (ws.preview) {
-            const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-            const intersect = this._workshopRaycastPlane(clientX, clientY, plane);
-            if (intersect) {
-                dropPos = { x: intersect.x, y: 0.5, z: intersect.z };
-                if (ws.snapEnabled) {
-                    const step = AnazhRealm.WORKSHOP_SNAP_TRANSLATE;
-                    dropPos.x = Math.round(dropPos.x / step) * step;
-                    dropPos.z = Math.round(dropPos.z / step) * step;
-                }
-            }
-        }
+        // V8.36 — neue Parts landen IMMER im Ursprung (0,0,0). Vorher wurde
+        // die Drop-Bildschirm-Koordinate auf die y=0-Ebene geraycastet — bei
+        // schrägem Kamera-Winkel landete das Part „irgendwo im Raum",
+        // unvorhersehbar. Vom Ursprung aus verschiebt der Schöpfer es
+        // kontrolliert mit dem Move-Manipulator.
+        const dropPos = { x: 0, y: 0, z: 0 };
         // Default-Material: erstes existing Material auf bp (für Konsistenz),
         // fallback "stein".
         let mat = "stein";
@@ -25541,6 +25539,12 @@ class AnazhRealm {
                 // jeden Frame explizit nullt (siehe Spielerbewegung im Game-Loop),
                 // statt sich auf Reibung zu verlassen.
                 this.state.playerBody.setFriction(0);
+                // V8.36 — Player-Body schläft NIE. Ammo deaktiviert still-
+                // stehende Bodies (ISLAND_SLEEPING); ein schlafender Body nahm
+                // Eingaben (Stand-Sprung!) nicht zuverlässig an, auch mit
+                // activate(true). DISABLE_DEACTIVATION (4) hält ihn dauerhaft
+                // wach — der Spieler reagiert immer sofort, ob er geht oder steht.
+                this.state.playerBody.forceActivationState(4);
             }
             this.log("Physik-Körper für Spieler hinzugefügt", "INFO");
             this.state.selfAwareness.components.push("playerBody");
@@ -26053,20 +26057,31 @@ class AnazhRealm {
                             // Augen sitzen auf Kamera-Höhe (scaledY + 1.6).
                             this.state.playerEyesUnderwater = scaledY + 1.6 < this.state.waterLevel;
                             if (submerged) {
-                                // V8.33 — Tauchen + Auftauchen. Shift drückt
-                                // aktiv nach unten (Minecraft-Konvention:
-                                // Shift = abtauchen im Wasser), Space hebt
-                                // nach oben; ohne Eingabe wirkt der natürliche
-                                // Auftrieb. Logik in _swimVerticalVelocity.
-                                const swimVy = this._swimVerticalVelocity(
-                                    velocity.y(),
-                                    this.state.waterLevel - scaledY,
-                                    !!this.state.keys["shift"],
-                                    !!this.state.keys[" "]
+                                // V8.36 — Auftrieb wirkt NUR über dem Terrain.
+                                // Fällt der Spieler durch die Welt (weit unter
+                                // die Terrain-Oberfläche), fing ihn der Auftrieb
+                                // sonst ab — er „schwamm" unter dem Boden statt
+                                // von der Killplane resettet zu werden. Wasser
+                                // sitzt immer auf festem Grund; ist man weit
+                                // darunter, trägt nichts → die Killplane greift.
+                                const wTerrainY = this.getTerrainHeightAt(
+                                    pos.x() * this.state.scaleFactor,
+                                    pos.z() * this.state.scaleFactor
                                 );
-                                body.setLinearVelocity(
-                                    this.setVec(this.state.tmpVec1, velocity.x() * 0.7, swimVy, velocity.z() * 0.7)
-                                );
+                                if (scaledY >= wTerrainY - 22) {
+                                    // V8.33 — Tauchen + Auftauchen. Shift taucht
+                                    // ab (Minecraft-Konvention), Space hebt; ohne
+                                    // Eingabe wirkt der natürliche Auftrieb.
+                                    const swimVy = this._swimVerticalVelocity(
+                                        velocity.y(),
+                                        this.state.waterLevel - scaledY,
+                                        !!this.state.keys["shift"],
+                                        !!this.state.keys[" "]
+                                    );
+                                    body.setLinearVelocity(
+                                        this.setVec(this.state.tmpVec1, velocity.x() * 0.7, swimVy, velocity.z() * 0.7)
+                                    );
+                                }
                             }
                         }
 
@@ -26180,7 +26195,11 @@ class AnazhRealm {
                             this.state.moveDirection.z * currentSpeed * slopePenalty
                         )
                     );
-                    playerBody.forceActivationState(1);
+                    // V8.36 — kein forceActivationState mehr nötig: der
+                    // Player-Body trägt seit der Erschaffung DISABLE_DEACTIVATION
+                    // (schläft nie). Ein forceActivationState(1) HIER würde ihn
+                    // auf ACTIVE_TAG zurückstufen → der Stand-Sleep-Bug käme
+                    // zurück, sobald man stehen bleibt.
                 } else if (!this.state.onSteepSlope) {
                     // Auf flachem Boden: ohne Eingabe vx + vz auf 0 zwingen
                     // (Standard-Stopp-Verhalten). Auf steilem Hang lassen wir
@@ -26379,21 +26398,42 @@ class AnazhRealm {
                     const dist = this.state.cameraThirdDistance;
                     const height = this.state.cameraThirdHeight;
                     const cosPitch = Math.cos(this.state.pitch);
+                    const camX = player.position.x - Math.sin(this.state.yaw) * dist * cosPitch;
+                    const camZ = player.position.z - Math.cos(this.state.yaw) * dist * cosPitch;
                     let camY = player.position.y + height - Math.sin(this.state.pitch) * dist;
-                    // Boden-Clamp: Kamera darf nicht unter Spieler-Füße. Ohne
-                    // diesen Schutz fährt sie bei steilem Hoch-Schauen durchs
-                    // Terrain und der Spieler sieht das Innere der Welt.
-                    // Player-Box ist 1×1×1, Center auf player.y, Füße bei
-                    // player.y − 0.5; etwas Puffer drüber (0.3) hält die
-                    // Kamera sicher über jeder normalen Heightfield-Spitze.
+                    // Boden-Clamp: Kamera nicht unter die Spieler-Füße.
                     const minCamY = player.position.y - 0.2;
                     if (camY < minCamY) camY = minCamY;
-                    camera.position.set(
-                        player.position.x - Math.sin(this.state.yaw) * dist * cosPitch,
-                        camY,
-                        player.position.z - Math.cos(this.state.yaw) * dist * cosPitch
-                    );
-                    camera.lookAt(player.position.x, player.position.y + 1.0, player.position.z);
+                    // V8.36 — echte Kamera-Kollision. Der statische minCamY-Clamp
+                    // kannte das Terrain an der KAMERA-Position nicht — in einem
+                    // Loch (oder hinter einer Wand) tauchte die Kamera durch das
+                    // Terrain. Jetzt: Raycast vom Blickziel (Spieler-Brust) zur
+                    // Wunsch-Position; trifft er Terrain/Struktur, wird die Kamera
+                    // an den Treffer herangezogen (15 % Puffer davor). Eine Lösung
+                    // für Loch UND Wand UND Bauwerk — kein Sonderfall pro Geometrie.
+                    const tx = player.position.x;
+                    const ty = player.position.y + 1.0;
+                    const tz = player.position.z;
+                    let finalX = camX;
+                    let finalY = camY;
+                    let finalZ = camZ;
+                    if (this.state.physicsWorld && typeof Ammo !== "undefined") {
+                        const sf = this.state.scaleFactor || 1;
+                        const rs = this.setVec(this.state.tmpVec1, tx / sf, ty / sf, tz / sf);
+                        const re = this.setVec(this.state.tmpVec2, camX / sf, camY / sf, camZ / sf);
+                        const hp = this._runRaycast(rs, re, (cb, hit) => {
+                            if (!hit) return null;
+                            const p = cb.get_m_hitPointWorld();
+                            return { x: p.x() * sf, y: p.y() * sf, z: p.z() * sf };
+                        });
+                        if (hp) {
+                            finalX = tx + (hp.x - tx) * 0.85;
+                            finalY = ty + (hp.y - ty) * 0.85;
+                            finalZ = tz + (hp.z - tz) * 0.85;
+                        }
+                    }
+                    camera.position.set(finalX, finalY, finalZ);
+                    camera.lookAt(tx, ty, tz);
                 } else {
                     camera.position.set(player.position.x, player.position.y + 1.6, player.position.z);
                     camera.lookAt(

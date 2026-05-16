@@ -29,7 +29,7 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self';"
         />
-        <title>Anazh Realm v8.35 – Das Ultiversum</title>
+        <title>Anazh Realm v8.36 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
              zusätzliche Datei. img-src 'self' data: in CSP erlaubt data-URI. -->
         <link
@@ -349,17 +349,24 @@
                unten-bündig (nur so viel Höhe wie nötig). Schöpfer-Wunsch:
                Chat bleibt im Vordergrund, Logbuch lebt am Boden der Konsole. */
             #console-chat-section {
-                flex: 1 1 auto;
+                flex: 1 1 0;
                 min-height: 0;
             }
+            /* V8.36 — eingeklappt: nur das Label, am Boden der Konsole.
+               Ausgeklappt (#log sichtbar): flex:1 1 0 wie der Chat → beide
+               teilen die Konsole 50/50, das Logbuch verdeckt den Chat
+               nicht mehr (Schöpfer-Browser-Test V8.35). */
             #console-log-section {
                 flex: 0 0 auto;
                 margin-top: auto;
+                min-height: 0;
             }
-            /* Wenn Logbuch eingeklappt ist (nur Label sichtbar), bleibt es
-               am Boden; wenn ausgeklappt wächst es nach OBEN (max-height-Cap). */
+            #console-log-section:has(#log:not([hidden])) {
+                flex: 1 1 0;
+                margin-top: 0;
+            }
             #console-log-section #log:not([hidden]) {
-                max-height: 35%;
+                flex: 1 1 0;
                 min-height: 60px;
                 overflow-y: auto;
             }
@@ -3917,7 +3924,7 @@
         <header id="topbar" class="hud-frame">
             <div class="topbar-inner">
                 <div class="title">
-                    Anazh Realm <span class="version">v8.35</span> <span class="sub">— Das Ultiversum</span>
+                    Anazh Realm <span class="version">v8.36</span> <span class="sub">— Das Ultiversum</span>
                 </div>
                 <nav class="tabs" role="tablist" aria-label="Hauptansichten">
                     <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">

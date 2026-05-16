@@ -1,4 +1,4 @@
-# Zustand des Realm — Stand: 17.05.2026 (V8.35)
+# Zustand des Realm — Stand: 17.05.2026 (V8.36)
 
 **Welle 6.H V2 vollendet (14/14 Sub-Phasen)** — Kreaturen sind jetzt vollwertige Co-Schöpfer-Wesen mit 9 Identitäts-Schichten (Body, Specs, Equipped, Boosts, Tasks, Memory+Persistenz, Konversation via @-Adresse, Proaktivität, Welt-Aktion-Vorschläge mit Sandbox). **LLM-Provider-System maximal robust nach 5-Versionen-Iteration (V7.94-V7.98)** — jedes Ollama-Setup funktioniert: lokal, gehostet, Cloud, Reasoning-Models, lokale 7B-Modelle. CORS-Lösung via save-server-Proxy, Parser mit Plain-Text-Fallback.
 
@@ -184,6 +184,19 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 ## 6. Learnings aus dieser Session
 
 Echt gelernt, nicht performt:
+
+### V8.36 (17.05.2026) — Browser-Test-Bug-Fixes (Wurzel statt Symptom)
+
+Der Schöpfer-Browser-Test der V8.35 brachte eine 13-Punkte-Liste. Sechs Gameplay/UI-Bugs in einer Welle behoben — jeder auf der Wurzel-Ebene. Drei Lehren:
+
+1. **Der erste Verdacht ist oft falsch — verifiziere, bevor du baust.** Der Jump-im-Stand-Bug schien ein `scaleFactor`-Mismatch zwischen den zwei Jump-Pfaden zu sein (`handleJump` nutzt `jumpPower` roh, der Loop-Block `jumpPower / scaleFactor`). Plausibel — aber `scaleFactor === 1`, also rechnen beide identisch. Die echte Wurzel: der Ammo-Body schläft im Stillstand ein. Hätte ich auf der `scaleFactor`-Vermutung „gefixt", wäre der Bug geblieben. „Trust but verify" gilt auch für die eigene Diagnose.
+
+2. **Symptom-Pflaster brechen wieder; Wurzel-Heilungen schließen die Klasse.** Die V8.08 hatte den Stand-Sprung mit `activate(true)` im Jump-Pfad „gefixt" — ein Pflaster, das ein schlafendes Body im Moment des Sprungs weckt. Es regredierte. V8.36 heilt die Wurzel: der Player-Body bekommt `DISABLE_DEACTIVATION` — er schläft NIE. Das behebt nicht nur Jump, sondern jede künftige „Body schläft, Eingabe verpufft"-Situation. Ein Wurzel-Fix ist breiter als der gemeldete Bug.
+
+3. **Eine Lösung pro Bug-Klasse, nicht pro Symptom.** Die 3rd-Person-Kamera „sah durch den Boden in einem Loch". Der Symptom-Fix wäre ein tieferer Loch-Spezial-Clamp. Der Wurzel-Fix ist eine echte Kamera-Kollision (Raycast vom Spieler zur Kamera) — die löst Loch UND Wand UND Bauwerk in einem, ohne Sonderfall pro Geometrie. Genau wie die Affordance-Helfer (Welle 10b): räumliche Analyse statt Whitelist.
+
+**Vision-Wort der V8.36**: *„Ein Browser-Befund nennt das Symptom. Die Meisterschaft ist, die Wurzel zu finden — und der erste Verdacht ist oft nicht die Wurzel."*
+
 
 ### V8.35 (17.05.2026) — Welle 11 ext. "Substanz-Rolle" (Rolle emergiert aus Form + Material)
 

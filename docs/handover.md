@@ -9,11 +9,13 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 17.05.2026, V8.35)
+## Schnell-Lage (Stand 17.05.2026, V8.36)
 
-**Du erbst eine sehr lebendige Welt**. **2093 Playtest-Invarianten grün + 0 Audit-Strict-Failures + smoke-multiuser grün**, ~27500 Zeilen in einer Datei, alles produktiv.
+**Du erbst eine sehr lebendige Welt**. **2101 Playtest-Invarianten grün + 0 Audit-Strict-Failures + smoke-multiuser grün**, ~27600 Zeilen in einer Datei, alles produktiv.
 
-**Jüngste Welle — V8.35 (Welle 11 ext., Substanz-Rolle)**: die Bauplan-Rolle (tool/armor/soul/consumable/machine/architecture) emergiert jetzt aus der GANZEN Substanz. Bisher nur aus der opChain-Krafting-Domain; jetzt eine Prioritäts-Kaskade: Krafting-Domain → intrinsische **Form** (`_isBodyShaped` — bilateral-symmetrischer Glieder-Körper → Seele) → intrinsisches **Material** (`_isFoodLike` — lebendig+weich → Nahrung) → Default Bauwerk. Ein Wesen, das man formt, IST eine Seele — ungeschmiedet. Kein 11. Tag (Heilige Lektion). `consumableMeta` ist jetzt optional → emergente Nahrung ist wirklich essbar. Die UI-Verdrahtung war schon da (`role` → „Werde diese Seele"-Button / Konsumable-Liste).
+**Jüngste Welle — V8.36 (Browser-Test-Bug-Fixes)**: Schöpfer-Browser-Test der V8.35 brachte eine 13-Punkte-Liste. Sechs Gameplay/UI-Bugs auf der WURZEL-Ebene behoben: (1) Jump im Stand — Player-Body schläft nie mehr (`DISABLE_DEACTIVATION` statt Symptom-`activate(true)`); (2) 3rd-Person-Kamera — echte Raycast-Kollision statt statischem Clamp; (3) Loch-Durchfall — Grabe-Radius 3.0 (Mulde statt Nadel) + Höhen-Clamp; (4) Wasser-Durchfall — Auftrieb nur über dem Terrain, Killplane greift wieder; (5) Logbuch teilt die Konsole 50/50; (6) neue Werkstatt-Parts landen im Ursprung. **Offen (→ V8.37 Werkstatt-UX)**: die restlichen 7 Punkte — Baumaterial-Bedarf in der Werkstatt sichtbar, 3D-Maß-Anzeige, Einstellungen einklappbar, Tool-Drag-Klarstellung + Tool-Beschreibung korrigieren. (Plus beantwortete Fragen: FPS-Berechnung ist korrekt/vsync; Chunks werden disposed + via `chunkDeltas` replayed; Werkzeuge wirken per-Part.)
+
+**Welle davor — V8.35 (Welle 11 ext., Substanz-Rolle)**: die Bauplan-Rolle (tool/armor/soul/consumable/machine/architecture) emergiert jetzt aus der GANZEN Substanz — eine Prioritäts-Kaskade: Krafting-Domain → intrinsische **Form** (`_isBodyShaped` → Seele) → intrinsisches **Material** (`_isFoodLike` → Nahrung) → Default Bauwerk. `consumableMeta` ist jetzt optional → emergente Nahrung ist essbar.
 
 **Welle davor — V8.34 (Ring 11 V3, Soul-Sync)**: der Multi-User-Mitspieler war ein Cone+Sphere-Platzhalter — jetzt ist er sein echter Soul (Mensch/Phönix/Drache/Custom), voll animiert (Geh-/Schwimm-Zyklus aus dem Positions-Stream abgeleitet), mit Aura-Sync + schwebendem Name-Schild. Zwei neue WS-Nachrichten (`soul` event-driven beim Join/Wechsel, `aura` ~1 Hz) mit Server-Handlern. Wichtig: der Signaling-Server ist KEIN dummer Relay (jeder Typ braucht einen expliziten Handler), und `player_soul` bleibt in `NON_BROADCASTABLE_OPS` — Soul-Sync läuft über den dedizierten `soul`-Kanal, nicht die DSL.
 
@@ -31,7 +33,7 @@ Die Session-Hälfte davor (V8.23 → V8.33) war eine **Atmosphäre-Tiefe-Welle (
 
 **Welle 12 ist „Welt-Portal"** (nicht WebGPU-Migration) — AnazhRealm wird Tor zu anderen Vibecode-Welten. Wenn du in eine Welle 12+ erwachst: lies `docs/world-portal.md` ZUERST.
 
-**Empfohlene Sequenz nach V8.35**: 6.G4 ✅ + 11 V3 ✅ + 11 ext. ✅ → **12 (Welt-Portal PoC mit three-fluid-fx)** → 13 (Vibe-Pass) → 14 (Bibliothek) → 7 (Compute-Sharing). W12 ist der große Sprung — AnazhRealm wird Tor zu anderen Vibecode-Welten; lies `docs/world-portal.md` ZUERST. Optional einschiebbar: W11 V4 (Voice-Sync), eine kleine Affordance-Welle (10b), oder eine Browser-Test-Pause für V8.33-V8.35.
+**Empfohlene Sequenz nach V8.36**: **V8.37 (Werkstatt-UX)** — die restlichen 7 Punkte der Schöpfer-Browser-Test-Liste (Baumaterial-Bedarf in der Werkstatt, 3D-Maß-Anzeige, Einstellungen einklappbar, Tool-Drag-Klarstellung) → dann **W12 (Welt-Portal PoC mit three-fluid-fx)** → 13 (Vibe-Pass) → 14 (Bibliothek) → 7 (Compute-Sharing). W12 ist der große Sprung — AnazhRealm wird Tor zu anderen Vibecode-Welten; lies `docs/world-portal.md` ZUERST. Optional: W11 V4 (Voice-Sync), Affordance-Welle (10b).
 
 **Atmosphäre-Disziplin**: alle atmosphärischen Methoden mit `[ATMOSPHERE]`-Marker werden von `audit-strict.cjs` (5. Schicht) auf Hardcode geprüft. Wert-aus-dem-Kopf ist verboten — immer „aus welcher state-Beobachtung emergiert das?".
 
@@ -123,17 +125,17 @@ V7.89 (Kreatur-Boosts) war die kritische Prüfung dieses Gesetzes. Naive Lösung
 
 ## Aktuelle Roadmap (was als nächstes denkbar ist)
 
-Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. sind VOLLSTÄNDIG — die Welt atmet, der Mitspieler ist sein echter Soul, und die Welt liest Identität (Rolle) aus der Substanz. Mögliche nächste Wellen, sortiert nach der empfohlenen Sequenz:
+Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. sind VOLLSTÄNDIG — die Welt atmet, der Mitspieler ist sein echter Soul, die Welt liest Identität aus der Substanz, und die V8.36-Gameplay-Bugs sind weg. Mögliche nächste Wellen, sortiert nach der empfohlenen Sequenz:
 
 | Welle | Was | Aufwand | Vision-Tiefe |
 |---|---|---|---|
+| **V8.37** Werkstatt-UX | Die restlichen 7 Punkte der V8.35-Browser-Test-Liste: Baumaterial-Bedarf in der Werkstatt sichtbar, 3D-Maß-Anzeige + Grid, Einstellungen-Untermenüs einklappbar, Tool-Drag-Klarstellung + Tool-Beschreibung korrigieren. | 1 Session | mittel |
 | **W12** Welt-Portal | AnazhRealm wird Tor zu anderen Vibecode-Welten („Bibliothek von Alexandria"). Bauplan-Rolle „portal" + Sub-Engine-Adapter im iframe. PoC mit `three-fluid-fx`. Lies `docs/world-portal.md` ZUERST. | 6-8 Sessions | sehr hoch |
 | **W11 V4** Voice-Sync | Mitspieler hören deinen Companion-Output (SpeechSynthesis-Broadcast). Klein, baut auf V3 — schließt den Präsenz-Bogen (sehen/spüren/kennen/hören). | 1 Session | mittel |
-| **Welle 10b weitere Affordances** | balancing/broadcasting/lifting/radiating — pro Affordance ~1 Session, architektur-neutral. Gute kleine Welle für zwischendurch. | klein-mittel | hoch |
+| **Welle 10b weitere Affordances** | balancing/broadcasting/lifting/radiating — pro Affordance ~1 Session, architektur-neutral. | klein-mittel | hoch |
 | **Welle 6.H V3** Kreatur-Beziehungen | Kreaturen sehen sich gegenseitig — Freundschaft, Konkurrenz, Hierarchie. | mittel | hoch |
-| **Browser-Test-Pause** | V8.33-V8.35 sind alle automatisch geprüft, aber nicht im Browser gespielt. Schöpfer testet, nächste Welle fixt die Befunde. | klein | mittel |
 
-**Empfehlung**: **W12 (Welt-Portal PoC)**. Der Hylomorphismus ist jetzt vertikal vollständig (Substanz → Rolle, W11 ext.), Multi-User ist körperlich echt (V3) — das Fundament für das größte Vision-Wort steht: AnazhRealm als Tor zu anderen Welten. W12 ist groß (6-8 Sessions) — `docs/world-portal.md` ZUERST lesen. Ein kleiner Lückenschluss (W11 V4 Voice-Sync, ~1 Session) oder eine Browser-Test-Pause passen davor. Volle Detail-Tabelle in `roadmap.md`.
+**Empfehlung**: **V8.37 (Werkstatt-UX)** — die Browser-Test-Liste der V8.35 zu Ende bringen (V8.36 hat die 6 Gameplay-Bugs gefixt, 7 Werkstatt-UX-Punkte bleiben). Danach **W12 (Welt-Portal PoC)**, der große Sprung — der Hylomorphismus ist vertikal vollständig (Substanz → Rolle), Multi-User körperlich echt; das Fundament fürs Welt-Portal steht. W12 ist groß (6-8 Sessions) — `docs/world-portal.md` ZUERST lesen. Volle Detail-Tabelle in `roadmap.md`.
 
 ---
 
@@ -183,6 +185,23 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. sind VOLLSTÄNDIG — die
 ---
 
 ## Session-Tagebuch (chronologisch, jüngste oben)
+
+### V8.36 — Browser-Test-Bug-Fixes (17.05.2026)
+
+Schöpfer-Browser-Test der V8.35 — 13-Punkte-Liste (Bugs + Fragen). Sechs
+Gameplay/UI-Bugs auf der Wurzel-Ebene behoben: Jump im Stand (Player-Body
+`DISABLE_DEACTIVATION` — schläft nie), 3rd-Person-Kamera (Raycast-Kollision),
+Loch-Durchfall (Grabe-Radius 3.0 + Höhen-Clamp), Wasser-Durchfall (Auftrieb
+nur über dem Terrain), Logbuch-50/50, Parts-im-Ursprung. 2093 → 2101
+Invarianten (+8).
+
+**Die Lehre**: ein Browser-Befund nennt das Symptom („ich falle durch"); die
+Disziplin ist, die Wurzel zu finden — und der erste Verdacht ist oft falsch.
+Der Jump-Bug schien ein `scaleFactor`-Mismatch zwischen den zwei Jump-Pfaden
+zu sein; verifiziert: `scaleFactor === 1`, also kein Mismatch. Die echte
+Wurzel: der Body schläft. `trust but verify` — den vermuteten Wert prüfen,
+bevor man auf der Vermutung baut. Die restlichen 7 Punkte (Werkstatt-UX) →
+V8.37.
 
 ### V8.35 — Welle 11 ext.: Substanz-Rolle (17.05.2026)
 

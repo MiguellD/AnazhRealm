@@ -12280,6 +12280,89 @@ function startSaveServer() {
                 check("V8.35: Substanz-Rolle Tests laufen", false, v835Results ? v835Results.error : "no result");
             }
 
+            // ### V8.36 — Browser-Test-Bug-Fixes (Wurzel-Fixes) ###
+            const v836Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    const proto = Object.getPrototypeOf(r);
+                    const allSrc = [];
+                    for (const name of Object.getOwnPropertyNames(proto)) {
+                        try {
+                            const fn = proto[name];
+                            if (typeof fn === "function") allSrc.push({ name, src: fn.toString() });
+                        } catch {
+                            /* skip */
+                        }
+                    }
+                    const anySrc = (re) => allSrc.some((m) => re.test(m.src));
+                    const srcOf = (name) => {
+                        const m = allSrc.find((x) => x.name === name);
+                        return m ? m.src : "";
+                    };
+
+                    // 1. Jump — Player-Body schläft nie (DISABLE_DEACTIVATION=4);
+                    //    der forceActivationState(1) im Geh-Block ist entfernt.
+                    out.jumpNeverSleeps = anySrc(/\.forceActivationState\(4\)/);
+                    out.jumpNoActivate1 = !anySrc(/\.forceActivationState\(1\)/);
+
+                    // 2. 3rd-Person-Kamera — Kollisions-Raycast im Render-Loop.
+                    {
+                        const src = srcOf("startEternalLoop");
+                        out.cameraRaycast = /cameraMode === "third"/.test(src) && /get_m_hitPointWorld/.test(src);
+                    }
+
+                    // 3. Loch-Durchfall — Grabe-Radius 3.0 + Höhen-Clamp.
+                    out.digRadius3 = /const r = 3\.0;/.test(srcOf("tryMouseBreak"));
+                    out.digHeightClamp = /Math\.max\(-100, Math\.min\(100,/.test(srcOf("_applyModifyOpToChunk"));
+
+                    // 4. Wasser-Durchfall — Auftrieb-Gate über getTerrainHeightAt.
+                    {
+                        const src = srcOf("startEternalLoop");
+                        out.waterGate = /getTerrainHeightAt/.test(src) && /wTerrainY - 22/.test(src);
+                    }
+
+                    // 5. Logbuch — CSS-Regel teilt die Konsole 50/50.
+                    out.logCssRule = [...document.querySelectorAll("style")].some((s) =>
+                        s.textContent.includes("console-log-section:has")
+                    );
+
+                    // 6. Neue Werkstatt-Parts landen im Ursprung (0,0,0).
+                    {
+                        if (r.state.blueprints["_t836"]) delete r.state.blueprints["_t836"];
+                        r.createBlueprint("_t836", "T836");
+                        if (typeof r.selectBlueprintForEdit === "function") r.selectBlueprintForEdit("_t836");
+                        const before = (r.state.blueprints["_t836"].parts || []).length;
+                        r._workshopHandleShapeDrop("box");
+                        const parts = r.state.blueprints["_t836"].parts || [];
+                        const np = parts[parts.length - 1];
+                        out.partAtOrigin =
+                            parts.length === before + 1 &&
+                            !!np &&
+                            !!np.position &&
+                            np.position.x === 0 &&
+                            np.position.y === 0 &&
+                            np.position.z === 0;
+                        delete r.state.blueprints["_t836"];
+                    }
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (v836Results && !v836Results.error) {
+                check("V8.36: Player-Body schläft nie (DISABLE_DEACTIVATION)", v836Results.jumpNeverSleeps);
+                check("V8.36: forceActivationState(1)-Call im Geh-Block entfernt (kein Sleep-Downgrade)", v836Results.jumpNoActivate1);
+                check("V8.36: 3rd-Person-Kamera macht Kollisions-Raycast", v836Results.cameraRaycast);
+                check("V8.36: Grabe-Radius auf 3.0 (Mulde statt Nadel)", v836Results.digRadius3);
+                check("V8.36: modify_terrain clampt die Höhe [-100,100] (kein Durchfall)", v836Results.digHeightClamp);
+                check("V8.36: Auftrieb-Gate via getTerrainHeightAt (Killplane greift wieder)", v836Results.waterGate);
+                check("V8.36: Logbuch-CSS teilt die Konsole 50/50 (verdeckt den Chat nicht)", v836Results.logCssRule);
+                check("V8.36: neue Werkstatt-Parts landen im Ursprung (0,0,0)", v836Results.partAtOrigin);
+            } else {
+                check("V8.36: Browser-Test-Bug-Fix Tests laufen", false, v836Results ? v836Results.error : "no result");
+            }
+
             // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider (Audit 17.05.2026) ###
             const wave6x4bResults = await page
                 .evaluate(() => {
