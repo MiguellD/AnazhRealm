@@ -23,6 +23,8 @@
 //   Server → Client   { "type": "peer-leave", "peerId": "..." }
 //   Server → Client   { "type": "pos", "peerId": "...", "x":.., "y":.., "z":.., "yaw":.. }
 //   Server → Client   { "type": "dsl", "peerId": "...", "program": [...] }
+//   Server → Client   { "type": "soul", "peerId": "...", "soulName": "...", "bodyParts": [...], "name": "..." }
+//   Server → Client   { "type": "aura", "peerId": "...", "hue": .., "intensity": .. }
 //   Server → Client   { "type": "world-request", "peerId": "..." }   (forwarded)
 //   Server → Client   { "type": "world-snapshot", "peerId": "...", "state": {...} }
 //
@@ -187,6 +189,28 @@ function handleClientMessage(ws, raw) {
         if (!Array.isArray(msg.program)) return;
         if (msg.program.length === 0 || msg.program.length > 256) return;
         broadcastToRoom(ws.anazh.room, { type: "dsl", peerId: ws.anazh.peerId, program: msg.program }, ws);
+        return;
+    }
+    if (msg.type === "soul") {
+        // Ring 11 V3: Soul-Sync — der Peer teilt seine Seele (Name + ggf.
+        // bodyParts für Custom-Seelen) + Avatar-Namen. Selten gesendet
+        // (Join + Soul-Wechsel). Server stempelt die authoritative peerId.
+        const soulName = typeof msg.soulName === "string" ? msg.soulName.slice(0, 64) : "";
+        if (!soulName) return;
+        const out = { type: "soul", peerId: ws.anazh.peerId, soulName };
+        if (Array.isArray(msg.bodyParts) && msg.bodyParts.length <= 64) {
+            out.bodyParts = msg.bodyParts;
+        }
+        if (typeof msg.name === "string") out.name = msg.name.slice(0, 48);
+        broadcastToRoom(ws.anazh.room, out, ws);
+        return;
+    }
+    if (msg.type === "aura") {
+        // Ring 11 V3: Aura-Sync — dominante Tag-Hue + Intensität, ~1 Hz.
+        const hue = Number(msg.hue);
+        const intensity = Number(msg.intensity);
+        if (![hue, intensity].every(Number.isFinite)) return;
+        broadcastToRoom(ws.anazh.room, { type: "aura", peerId: ws.anazh.peerId, hue, intensity }, ws);
         return;
     }
     if (msg.type === "world-request" || msg.type === "world-snapshot") {

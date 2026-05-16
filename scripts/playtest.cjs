@@ -294,11 +294,14 @@ function startSaveServer() {
                     // sicherer als die direction-API, die immer den Map-Mittel-
                     // punkt nimmt. Wir bauen ein 3×3-Außen-Cluster east-süd
                     // sowie eine Diagonale, um auch Eck-Nähte zu testen.
-                    r.ensureChunkAt(8, 7);
-                    r.ensureChunkAt(9, 7);
-                    r.ensureChunkAt(8, 8);
-                    r.ensureChunkAt(-1, -1);
-                    r.ensureChunkAt(-1, 0);
+                    // V8.40 — der Default-Sicht-Ring ist jetzt 4 (9×9); die
+                    // alten Nah-Koordinaten lägen im geladenen Ring. Bewusst
+                    // weit weg, damit es echte Neu-Chunks sind.
+                    r.ensureChunkAt(20, 20);
+                    r.ensureChunkAt(21, 20);
+                    r.ensureChunkAt(20, 21);
+                    r.ensureChunkAt(-15, -15);
+                    r.ensureChunkAt(-15, -14);
                     const after = r.state.chunkMap.size;
                     const newKeys = [...r.state.chunkMap.keys()].filter((k) => !beforeKeys.has(k));
                     let allHeightsFinite = true;
@@ -5310,17 +5313,22 @@ function startSaveServer() {
                     };
                     // Build und auf THREE.Line prüfen
                     const built = r._buildFromBlueprint(r.state.blueprints[testName]);
-                    let lineCount = 0;
+                    // V8.38 — eine Verbindung erzeugt jetzt eine Linie UND
+                    // einen Mittelpunkt-Marker (beide isConnectionLine), damit
+                    // die Verbindung auch bei überlappenden Parts sichtbar ist.
+                    let connLineCount = 0;
+                    let connMarkerCount = 0;
                     let lineColor = null;
                     built.traverse((node) => {
                         if (node.userData && node.userData.isConnectionLine) {
-                            lineCount++;
+                            if (node.isLine) connLineCount++;
+                            if (node.isMesh) connMarkerCount++;
                             if (node.material && node.material.color) lineColor = node.material.color.getHex();
                         }
                     });
-                    out.lineCount = lineCount;
-                    out.lineExists = lineCount === 1;
-                    out.lineHasUserDataFlag = lineCount === 1;
+                    out.lineCount = connLineCount;
+                    out.lineExists = connLineCount === 1 && connMarkerCount === 1;
+                    out.lineHasUserDataFlag = connLineCount === 1;
                     out.lineColor = lineColor;
 
                     // 6.F2 Brech-Warning: extrem schwache Verbindung → Journal-Eintrag
@@ -7624,7 +7632,10 @@ function startSaveServer() {
                     r.state.player.stamina = 100;
                     r.setGameMode("pfad");
                     const opResultPfad = r.applyOpToPart("mode-test-bp", 0, "feile");
-                    out.pfadChargesStamina = opResultPfad.ok === true && r.state.player.stamina === 100 - 10;
+                    // V8.39 — die Kosten skalieren mit dem Werkzeug-cap (nicht
+                    // mehr fix 10); dieser Test prüft das Modus-GATE (pfad
+                    // konsumiert), die genaue Skalierung prüft der V8.39-Block.
+                    out.pfadChargesStamina = opResultPfad.ok === true && r.state.player.stamina < 100;
 
                     // Cleanup
                     delete r.state.blueprints["mode-test-bp"];
@@ -7714,7 +7725,7 @@ function startSaveServer() {
                     "Welle 6.C2: applyOpToPart im schöpfer-Modus kostet KEINE Stamina",
                     wave6c2Results.schoepferSkipsStamina
                 );
-                check("Welle 6.C2: applyOpToPart im pfad-Modus kostet Stamina (10)", wave6c2Results.pfadChargesStamina);
+                check("Welle 6.C2: applyOpToPart im pfad-Modus kostet Stamina (Modus-Gate)", wave6c2Results.pfadChargesStamina);
                 check("Welle 6.C2: DSL-Op set_mode setzt Modus", wave6c2Results.dslSetModeWorks);
                 check(
                     "Welle 6.C2: set_mode ist in NON_BROADCASTABLE_OPS (Multi-User-privat)",
@@ -11729,7 +11740,7 @@ function startSaveServer() {
                     if (r.state.waterPlane && r.state.waterPlane.material) {
                         const vs = r.state.waterPlane.material.vertexShader || "";
                         const fs = r.state.waterPlane.material.fragmentShader || "";
-                        waterDiagonal = /float wave\(/.test(vs) && /dot\(xz, dir\)/.test(vs);
+                        waterDiagonal = /gerstnerWave\(/.test(vs) && /dot\(xz/.test(vs);
                         waterSpecular = /spec/.test(fs) && /uSunDir/.test(fs);
                     }
                     out.waterDiagonalWaves = waterDiagonal;
@@ -11804,7 +11815,7 @@ function startSaveServer() {
                         const wm = r.state.waterPlane.material;
                         out.waterFogUniforms = !!(wm.uniforms && wm.uniforms.fogColor && wm.uniforms.fogNear);
                         out.waterDomainWarp =
-                            /waveHeight/.test(wm.vertexShader || "") &&
+                            /waveDisplace/.test(wm.vertexShader || "") &&
                             /warp/.test(wm.vertexShader || "");
                         out.waterFogInShader = /smoothstep\(fogNear, fogFar/.test(wm.fragmentShader || "");
                     }
@@ -11901,6 +11912,954 @@ function startSaveServer() {
                 check("V8.32: Wasser-Politur Tests laufen", false, v832Results ? v832Results.error : "no result");
             }
 
+            // ### V8.33 — Welle 6.G4.e: Tauchen + Schwimm-Animation + Gerstner ###
+            const v833Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // --- Tauchen: _swimVerticalVelocity (reine Funktion) ---
+                    out.swimFnExists = typeof r._swimVerticalVelocity === "function";
+                    if (out.swimFnExists) {
+                        const dive = r._swimVerticalVelocity(0, 4, true, false);
+                        const rise = r._swimVerticalVelocity(0, 4, false, true);
+                        const neutral = r._swimVerticalVelocity(0, 4, false, false);
+                        out.diveSinks = dive < 0;
+                        out.riseLifts = rise > 0;
+                        out.neutralFloats = neutral > 0 && neutral <= 2.5;
+                        out.diveBelowNeutral = dive < neutral;
+                        out.riseAboveNeutral = rise > neutral;
+                        out.surfaceNoDrift = Math.abs(r._swimVerticalVelocity(0, 0, false, false)) < 0.01;
+                    }
+                    // Physik-Loop nutzt _swimVerticalVelocity mit Shift/Space,
+                    // Shift ist unter Wasser KEIN Sprint mehr (Source-Pattern).
+                    {
+                        let usesFn = false;
+                        let shiftNotSprint = false;
+                        const proto = Object.getPrototypeOf(r);
+                        for (const name of Object.getOwnPropertyNames(proto)) {
+                            try {
+                                const fn = proto[name];
+                                if (typeof fn !== "function") continue;
+                                const src = fn.toString();
+                                if (
+                                    /_swimVerticalVelocity\(/.test(src) &&
+                                    /keys\["shift"\]/.test(src) &&
+                                    /keys\[" "\]/.test(src)
+                                )
+                                    usesFn = true;
+                                if (/keys\["shift"\]\s*&&\s*!this\.state\.playerUnderwater/.test(src))
+                                    shiftNotSprint = true;
+                            } catch {
+                                /* skip */
+                            }
+                        }
+                        out.physicsUsesSwimFn = usesFn;
+                        out.shiftNotSprintUnderwater = shiftNotSprint;
+                    }
+
+                    // --- Schwimm-Animation (isoliert, soul-unabhängig) ---
+                    {
+                        const src = r.animatePlayerSoul.toString();
+                        out.animPassesUnderwater =
+                            /playerUnderwater/.test(src) && /def\.animate\([^)]*underwater\)/.test(src);
+                    }
+                    {
+                        const gh = r._buildHumanGroup();
+                        out.humanYXZ = gh.rotation.order === "YXZ";
+                        r._animateHuman(gh, 1.0, 0, false, true);
+                        out.humanSwimLean = Math.abs(gh.rotation.x) > 0.05;
+                        r._animateHuman(gh, 1.0, 0, false, false);
+                        out.humanSwimReset = Math.abs(gh.rotation.x) < 0.001;
+                        r._disposeSoulGroup(gh);
+
+                        const gp = r._buildPhoenixGroup();
+                        r._animatePhoenix(gp, 1.0, 0, true, true);
+                        out.phoenixSwimLean = Math.abs(gp.rotation.x) > 0.05;
+                        r._disposeSoulGroup(gp);
+
+                        const gd = r._buildDragonGroup();
+                        r._animateDragon(gd, 1.0, 0, true, true);
+                        out.dragonSwimLean = Math.abs(gd.rotation.x) > 0.05;
+                        r._disposeSoulGroup(gd);
+                    }
+
+                    // --- Gerstner-Wellen im Wasser-Shader ---
+                    if (r.state.waterPlane && r.state.waterPlane.material) {
+                        const vs = r.state.waterPlane.material.vertexShader || "";
+                        out.gerstnerFn = /vec3 gerstnerWave\(/.test(vs);
+                        out.waveDisplaceVec3 = /vec3 waveDisplace\(/.test(vs);
+                        out.gerstnerHorizontal = /q \* a \* d\.x/.test(vs);
+                        out.gerstnerCrossNormal = /cross\(/.test(vs);
+                        out.gerstnerKeepsWarp = /warp/.test(vs);
+                    }
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (v833Results && !v833Results.error) {
+                check("V8.33: _swimVerticalVelocity existiert (reine Funktion)", v833Results.swimFnExists);
+                check("V8.33: Tauchen — Shift erzeugt Sink-Geschwindigkeit", v833Results.diveSinks);
+                check("V8.33: Auftauchen — Space erzeugt Aufwärts-Geschwindigkeit", v833Results.riseLifts);
+                check("V8.33: Neutral — natürlicher Auftrieb treibt zur Oberfläche", v833Results.neutralFloats);
+                check("V8.33: Tauchen sinkt unter den Neutral-Auftrieb (Diskrimination)", v833Results.diveBelowNeutral);
+                check("V8.33: Auftauchen hebt über den Neutral-Auftrieb (Diskrimination)", v833Results.riseAboveNeutral);
+                check("V8.33: An der Oberfläche kein Auftriebs-Drift (depth 0)", v833Results.surfaceNoDrift);
+                check("V8.33: Physik-Loop nutzt _swimVerticalVelocity mit Shift/Space", v833Results.physicsUsesSwimFn);
+                check("V8.33: Shift ist unter Wasser Tauchen, nicht Sprint", v833Results.shiftNotSprintUnderwater);
+                check("V8.33: animatePlayerSoul reicht den underwater-Flag durch", v833Results.animPassesUnderwater);
+                check("V8.33: Soul-Group nutzt YXZ-Rotation (lokaler Vorwärts-Lehnen)", v833Results.humanYXZ);
+                check("V8.33: Mensch neigt sich unter Wasser (Schwimm-Pose)", v833Results.humanSwimLean);
+                check("V8.33: Schwimm-Pose wird an Land zurückgesetzt (rotation.x=0)", v833Results.humanSwimReset);
+                check("V8.33: Phönix neigt sich unter Wasser (Schwimm-Pose)", v833Results.phoenixSwimLean);
+                check("V8.33: Drache neigt sich unter Wasser (Schwimm-Pose)", v833Results.dragonSwimLean);
+                check("V8.33: Wasser-Shader hat gerstnerWave-Funktion (vec3)", v833Results.gerstnerFn);
+                check("V8.33: Wasser-Shader hat waveDisplace (vec3-Verschiebung)", v833Results.waveDisplaceVec3);
+                check("V8.33: Gerstner-Wellen verschieben horizontal (spitze Kämme)", v833Results.gerstnerHorizontal);
+                check("V8.33: Wasser-Normale aus Kreuzprodukt der Tangenten", v833Results.gerstnerCrossNormal);
+                check("V8.33: Gerstner-Wellen behalten den Domain-Warp (V8.31-Erbe)", v833Results.gerstnerKeepsWarp);
+            } else {
+                check("V8.33: Wasser-Vollendung Tests laufen", false, v833Results ? v833Results.error : "no result");
+            }
+
+            // ### V8.34 — Ring 11 V3: Soul-Sync (Peer-Avatar = echte Seele) ###
+            const v834Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    const p2p = r.state.p2p;
+                    p2p.peerId = "self-v834";
+                    p2p.enabled = false;
+
+                    out.methodsExist =
+                        typeof r._p2pBuildPlaceholderMesh === "function" &&
+                        typeof r._p2pApplyPeerSoul === "function" &&
+                        typeof r._p2pBuildNameLabel === "function" &&
+                        typeof r._p2pUpdatePeer === "function" &&
+                        typeof r._p2pEnsurePeerAura === "function" &&
+                        typeof r._p2pBroadcastSoul === "function" &&
+                        typeof r._p2pBroadcastAura === "function";
+
+                    // Frischer Peer → Cone+Sphere-Platzhalter, V3-Felder vorhanden.
+                    r.p2pHandleMessage(JSON.stringify({ type: "peer-join", peerId: "pv1" }));
+                    const pv1 = p2p.peers.get("pv1");
+                    out.placeholderKind = !!pv1 && pv1.meshKind === "placeholder";
+                    out.placeholderMesh = !!(pv1 && pv1.mesh && pv1.mesh.children && pv1.mesh.children.length === 2);
+                    out.entryHasV3Fields =
+                        !!pv1 && "soulName" in pv1 && "auraHue" in pv1 && "walkPhase" in pv1 && "nameLabel" in pv1;
+
+                    // soul-Nachricht (Built-in Phönix) → echte Seele + Name-Schild.
+                    r.p2pHandleMessage(
+                        JSON.stringify({ type: "soul", peerId: "pv1", soulName: "phoenix", name: "Aria" })
+                    );
+                    const pv1b = p2p.peers.get("pv1");
+                    out.builtinSoulName = !!pv1b && pv1b.soulName === "phoenix";
+                    out.builtinMeshKind = !!pv1b && pv1b.meshKind === "soul";
+                    out.builtinHasParts = !!(
+                        pv1b &&
+                        pv1b.mesh &&
+                        pv1b.mesh.userData &&
+                        pv1b.mesh.userData.parts &&
+                        pv1b.mesh.userData.parts.leftWing
+                    );
+                    out.nameLabelCreated = !!(pv1b && pv1b.avatarName === "Aria" && pv1b.nameLabel);
+
+                    // Soul-Wechsel phoenix → dragon → Mesh wird neu gebaut.
+                    r.p2pHandleMessage(JSON.stringify({ type: "soul", peerId: "pv1", soulName: "dragon" }));
+                    const pv1c = p2p.peers.get("pv1");
+                    out.soulChangeRebuilt =
+                        !!pv1c &&
+                        pv1c.soulName === "dragon" &&
+                        pv1c.mesh.userData.parts &&
+                        !!pv1c.mesh.userData.parts.tailJoint;
+
+                    // soul-Nachricht (Custom-Seele via bodyParts).
+                    r.p2pHandleMessage(
+                        JSON.stringify({
+                            type: "soul",
+                            peerId: "pv2",
+                            soulName: "custom-test-soul",
+                            bodyParts: [{ shape: "box", material: "stein", size: { x: 1, y: 1, z: 1 } }],
+                        })
+                    );
+                    const pv2 = p2p.peers.get("pv2");
+                    out.customMeshKind = !!pv2 && pv2.meshKind === "soul-custom";
+                    out.customMeshBuilt = !!(pv2 && pv2.mesh && pv2.mesh.children && pv2.mesh.children.length >= 1);
+
+                    // aura-Nachricht.
+                    r.p2pHandleMessage(JSON.stringify({ type: "aura", peerId: "pv1", hue: 270, intensity: 0.8 }));
+                    const pv1d = p2p.peers.get("pv1");
+                    out.auraReceived =
+                        !!pv1d && pv1d.auraHue === 270 && Math.abs((pv1d.auraIntensity || 0) - 0.8) < 0.001;
+
+                    // _p2pUpdatePeer erzeugt den Aura-Sprite + animiert.
+                    r._p2pUpdatePeer(pv1d, 1.0, 0.016);
+                    out.auraSpriteCreated = !!pv1d.auraGlow;
+
+                    // _p2pBroadcastSoul-Payload (p2pSend gemockt).
+                    p2p.enabled = true;
+                    let captured = null;
+                    const origSend = r.p2pSend;
+                    r.p2pSend = (obj) => {
+                        captured = obj;
+                        return true;
+                    };
+                    r._p2pBroadcastSoul();
+                    r.p2pSend = origSend;
+                    p2p.enabled = false;
+                    out.broadcastSoulPayload =
+                        !!captured &&
+                        captured.type === "soul" &&
+                        captured.soulName === r.state.player.soul &&
+                        typeof captured.name === "string";
+
+                    // tickPlayerAura cached die Aura-Werte für den Sync.
+                    r.tickPlayerAura();
+                    out.auraOutCached =
+                        typeof r.state.player._auraHueOut === "number" &&
+                        typeof r.state.player._auraIntensityOut === "number";
+
+                    // player_soul bleibt NON_BROADCASTABLE — Soul-Sync läuft über
+                    // den dedizierten `soul`-Kanal, NICHT über die DSL.
+                    out.playerSoulStillLocal = r.constructor.NON_BROADCASTABLE_OPS.has("player_soul");
+
+                    // _p2pRemovePeer räumt Peer + Mesh + Aura + Name-Schild.
+                    r._p2pRemovePeer("pv1");
+                    r._p2pRemovePeer("pv2");
+                    out.peersRemoved = !p2p.peers.has("pv1") && !p2p.peers.has("pv2");
+
+                    p2p.enabled = false;
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (v834Results && !v834Results.error) {
+                check("V8.34: Soul-Sync-Methoden existieren (7)", v834Results.methodsExist);
+                check("V8.34: frischer Peer ist Cone+Sphere-Platzhalter", v834Results.placeholderKind);
+                check("V8.34: Platzhalter-Mesh hat 2 Teile (Kegel+Kugel)", v834Results.placeholderMesh);
+                check("V8.34: Peer-Entry trägt die V3-Felder", v834Results.entryHasV3Fields);
+                check("V8.34: soul-Nachricht setzt soulName (Built-in)", v834Results.builtinSoulName);
+                check("V8.34: Built-in-Seele → meshKind 'soul'", v834Results.builtinMeshKind);
+                check("V8.34: Peer-Phönix hat animierbare Parts (Flügel)", v834Results.builtinHasParts);
+                check("V8.34: Name-Schild wird aus dem Avatar-Namen erzeugt", v834Results.nameLabelCreated);
+                check("V8.34: Soul-Wechsel baut den Peer-Avatar neu (→ Drache)", v834Results.soulChangeRebuilt);
+                check("V8.34: Custom-Seele → meshKind 'soul-custom'", v834Results.customMeshKind);
+                check("V8.34: Custom-Seele wird aus bodyParts gebaut", v834Results.customMeshBuilt);
+                check("V8.34: aura-Nachricht setzt Hue + Intensität", v834Results.auraReceived);
+                check("V8.34: _p2pUpdatePeer erzeugt den Peer-Aura-Sprite", v834Results.auraSpriteCreated);
+                check(
+                    "V8.34: _p2pBroadcastSoul sendet {type:soul, soulName, name}",
+                    v834Results.broadcastSoulPayload
+                );
+                check("V8.34: tickPlayerAura cached Hue+Intensität für den Sync", v834Results.auraOutCached);
+                check("V8.34: player_soul bleibt NON_BROADCASTABLE (Soul-Sync ≠ DSL)", v834Results.playerSoulStillLocal);
+                check("V8.34: _p2pRemovePeer entfernt Peer + Avatar + Aura + Schild", v834Results.peersRemoved);
+            } else {
+                check("V8.34: Soul-Sync Tests laufen", false, v834Results ? v834Results.error : "no result");
+            }
+
+            // ### V8.35 — Welle 11 ext.: Substanz-Rolle (Rolle aus der Substanz) ###
+            const v835Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    const part = (mat, x, y, z) => ({
+                        shape: "box",
+                        material: mat,
+                        size: { x: 1, y: 1, z: 1 },
+                        position: { x, y, z },
+                    });
+
+                    out.methodsExist =
+                        typeof r._compoundSymmetry === "function" &&
+                        typeof r._isBodyShaped === "function" &&
+                        typeof r._isFoodLike === "function";
+
+                    // --- Körper-Form → Seele: Torso+Kopf auf der Achse,
+                    //     Glieder als Spiegel-Paar ---
+                    // Wesen: Torso+Kopf auf der Achse (vertikal gestreckt),
+                    // Arme als Off-Achsen-Spiegel-Paar.
+                    const bodyBp = {
+                        name: "_t835_body",
+                        parts: [part("fleisch", 0, 1, 0), part("knochen", 0, 3, 0), part("fleisch", -1, 2, 0), part("fleisch", 1, 2, 0)],
+                    };
+                    out.bodyIsShaped = r._isBodyShaped(bodyBp) === true;
+                    out.bodyRoleSoul = r.computeBlueprintRole(bodyBp) === "soul";
+
+                    // --- Turm: 3 Boxen gestapelt auf der Achse — symmetrisch,
+                    //     aber KEINE Glieder → kein Körper ---
+                    const towerBp = {
+                        name: "_t835_tower",
+                        parts: [part("stein", 0, 0, 0), part("stein", 0, 1, 0), part("stein", 0, 2, 0)],
+                    };
+                    out.towerNotBody = r._isBodyShaped(towerBp) === false;
+                    out.towerRoleArchitecture = r.computeBlueprintRole(towerBp) === "architecture";
+
+                    // --- Asymmetrisch: kein Spiegel → kein Körper ---
+                    const asymBp = {
+                        name: "_t835_asym",
+                        parts: [part("stein", 0, 0, 0), part("stein", 2, 1, 0), part("stein", 5, 2, 1)],
+                    };
+                    out.asymNotBody = r._isBodyShaped(asymBp) === false;
+
+                    // --- lebendig+weich → Nahrung ---
+                    const foodBp = { name: "_t835_food", parts: [{ shape: "sphere", material: "fleisch", size: { x: 1, y: 1, z: 1 }, position: { x: 0, y: 0, z: 0 } }] };
+                    out.foodIsFoodLike = r._isFoodLike(foodBp) === true;
+                    out.foodRoleConsumable = r.computeBlueprintRole(foodBp) === "consumable";
+
+                    const stoneBp = { name: "_t835_stone", parts: [part("stein", 0, 0, 0)] };
+                    out.stoneNotFood = r._isFoodLike(stoneBp) === false;
+                    out.stoneRoleArchitecture = r.computeBlueprintRole(stoneBp) === "architecture";
+
+                    // --- Priorität: ein Körper aus lebendigem Material ist eine
+                    //     SEELE (Körper-Form schlägt Nahrung) ---
+                    out.priorityBodyBeatsFood = r.computeBlueprintRole(bodyBp) === "soul";
+
+                    // --- _refreshBlueprintRoleEmergent: registrierter Körper-
+                    //     Bauplan emergiert OHNE Werkzeug-Op als "soul" ---
+                    r.state.blueprints["_t835_body_reg"] = {
+                        name: "_t835_body_reg",
+                        label: "Test-Körper",
+                        builtIn: false,
+                        parts: JSON.parse(JSON.stringify(bodyBp.parts)),
+                    };
+                    r._refreshBlueprintRoleEmergent("_t835_body_reg");
+                    out.refreshEmergesSoul = r.state.blueprints["_t835_body_reg"].role === "soul";
+
+                    // registrierte Nahrung emergiert als "consumable"
+                    r.state.blueprints["_t835_food_reg"] = {
+                        name: "_t835_food_reg",
+                        label: "Test-Frucht",
+                        builtIn: false,
+                        parts: JSON.parse(JSON.stringify(foodBp.parts)),
+                    };
+                    r._refreshBlueprintRoleEmergent("_t835_food_reg");
+                    out.refreshEmergesFood = r.state.blueprints["_t835_food_reg"].role === "consumable";
+
+                    // --- Manueller Override schlägt die Emergenz weiterhin ---
+                    r.state.blueprints["_t835_manual"] = {
+                        name: "_t835_manual",
+                        label: "Test-Manuell",
+                        builtIn: false,
+                        roleManual: true,
+                        role: "architecture",
+                        parts: JSON.parse(JSON.stringify(bodyBp.parts)),
+                    };
+                    r._refreshBlueprintRoleEmergent("_t835_manual");
+                    out.roleManualStillWins = r.state.blueprints["_t835_manual"].role === "architecture";
+
+                    // --- activateConsumable funktioniert OHNE consumableMeta
+                    //     (emergente Nahrung ist essbar) ---
+                    r.state.blueprints["_t835_food_reg"].role = "consumable";
+                    const before = (r.state.player.boosts || []).length;
+                    const eatRes = r.activateConsumable("_t835_food_reg");
+                    out.metaLessConsumableWorks =
+                        !!(eatRes && eatRes.ok) && (r.state.player.boosts || []).length > before;
+
+                    // Aufräumen
+                    if (r.state.player.boosts) {
+                        r.state.player.boosts = r.state.player.boosts.filter(
+                            (b) => b.source !== "consume:_t835_food_reg"
+                        );
+                        if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
+                    }
+                    delete r.state.blueprints["_t835_body_reg"];
+                    delete r.state.blueprints["_t835_food_reg"];
+                    delete r.state.blueprints["_t835_manual"];
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (v835Results && !v835Results.error) {
+                check("V8.35: Substanz-Helfer existieren (_compoundSymmetry/_isBodyShaped/_isFoodLike)", v835Results.methodsExist);
+                check("V8.35: bilateral-symmetrisches Glieder-Compound ist body-shaped", v835Results.bodyIsShaped);
+                check("V8.35: Körper-Form emergiert als Rolle 'soul'", v835Results.bodyRoleSoul);
+                check("V8.35: gestapelter Turm (symmetrisch, keine Glieder) ist KEIN Körper", v835Results.towerNotBody);
+                check("V8.35: Turm emergiert als 'architecture' (Default)", v835Results.towerRoleArchitecture);
+                check("V8.35: asymmetrisches Compound ist KEIN Körper", v835Results.asymNotBody);
+                check("V8.35: lebendig+weiche Substanz ist food-like", v835Results.foodIsFoodLike);
+                check("V8.35: lebendige Substanz emergiert als Rolle 'consumable'", v835Results.foodRoleConsumable);
+                check("V8.35: Stein-Substanz ist KEINE Nahrung", v835Results.stoneNotFood);
+                check("V8.35: Stein-Block emergiert als 'architecture'", v835Results.stoneRoleArchitecture);
+                check("V8.35: Priorität — Körper aus lebendigem Material ist Seele, nicht Nahrung", v835Results.priorityBodyBeatsFood);
+                check("V8.35: _refreshBlueprintRoleEmergent — Körper-Bauplan → 'soul' (ohne Op)", v835Results.refreshEmergesSoul);
+                check("V8.35: _refreshBlueprintRoleEmergent — Nahrungs-Bauplan → 'consumable' (ohne Op)", v835Results.refreshEmergesFood);
+                check("V8.35: manueller Rollen-Override schlägt die Emergenz weiterhin", v835Results.roleManualStillWins);
+                check("V8.35: activateConsumable funktioniert ohne consumableMeta (emergente Nahrung essbar)", v835Results.metaLessConsumableWorks);
+            } else {
+                check("V8.35: Substanz-Rolle Tests laufen", false, v835Results ? v835Results.error : "no result");
+            }
+
+            // ### V8.36 — Browser-Test-Bug-Fixes (Wurzel-Fixes) ###
+            const v836Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    const proto = Object.getPrototypeOf(r);
+                    const allSrc = [];
+                    for (const name of Object.getOwnPropertyNames(proto)) {
+                        try {
+                            const fn = proto[name];
+                            if (typeof fn === "function") allSrc.push({ name, src: fn.toString() });
+                        } catch {
+                            /* skip */
+                        }
+                    }
+                    const anySrc = (re) => allSrc.some((m) => re.test(m.src));
+                    const srcOf = (name) => {
+                        const m = allSrc.find((x) => x.name === name);
+                        return m ? m.src : "";
+                    };
+
+                    // 1. Jump — Player-Body schläft nie (DISABLE_DEACTIVATION=4);
+                    //    der forceActivationState(1) im Geh-Block ist entfernt.
+                    out.jumpNeverSleeps = anySrc(/\.forceActivationState\(4\)/);
+                    out.jumpNoActivate1 = !anySrc(/\.forceActivationState\(1\)/);
+
+                    // 2. 3rd-Person-Kamera — Kollisions-Raycast im Render-Loop.
+                    {
+                        const src = srcOf("startEternalLoop");
+                        out.cameraRaycast = /cameraMode === "third"/.test(src) && /get_m_hitPointWorld/.test(src);
+                    }
+
+                    // 3. Loch-Durchfall — Grabe-Radius 3.0 + Höhen-Clamp.
+                    out.digRadius3 = /const r = 3\.0;/.test(srcOf("tryMouseBreak"));
+                    out.digHeightClamp = /Math\.max\(-100, Math\.min\(100,/.test(srcOf("_applyModifyOpToChunk"));
+
+                    // 4. Wasser-Durchfall — Auftrieb-Gate über getTerrainHeightAt.
+                    {
+                        const src = srcOf("startEternalLoop");
+                        out.waterGate = /getTerrainHeightAt/.test(src) && /wTerrainY - 22/.test(src);
+                    }
+
+                    // 5. Logbuch — CSS-Regel teilt die Konsole 50/50.
+                    out.logCssRule = [...document.querySelectorAll("style")].some((s) =>
+                        s.textContent.includes("console-log-section:has")
+                    );
+
+                    // 6. Neue Werkstatt-Parts landen im Ursprung (0,0,0).
+                    {
+                        if (r.state.blueprints["_t836"]) delete r.state.blueprints["_t836"];
+                        r.createBlueprint("_t836", "T836");
+                        if (typeof r.selectBlueprintForEdit === "function") r.selectBlueprintForEdit("_t836");
+                        const before = (r.state.blueprints["_t836"].parts || []).length;
+                        r._workshopHandleShapeDrop("box");
+                        const parts = r.state.blueprints["_t836"].parts || [];
+                        const np = parts[parts.length - 1];
+                        out.partAtOrigin =
+                            parts.length === before + 1 &&
+                            !!np &&
+                            !!np.position &&
+                            np.position.x === 0 &&
+                            np.position.y === 0 &&
+                            np.position.z === 0;
+                        delete r.state.blueprints["_t836"];
+                    }
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (v836Results && !v836Results.error) {
+                check("V8.36: Player-Body schläft nie (DISABLE_DEACTIVATION)", v836Results.jumpNeverSleeps);
+                check("V8.36: forceActivationState(1)-Call im Geh-Block entfernt (kein Sleep-Downgrade)", v836Results.jumpNoActivate1);
+                check("V8.36: 3rd-Person-Kamera macht Kollisions-Raycast", v836Results.cameraRaycast);
+                check("V8.36: Grabe-Radius auf 3.0 (Mulde statt Nadel)", v836Results.digRadius3);
+                check("V8.36: modify_terrain clampt die Höhe [-100,100] (kein Durchfall)", v836Results.digHeightClamp);
+                check("V8.36: Auftrieb-Gate via getTerrainHeightAt (Killplane greift wieder)", v836Results.waterGate);
+                check("V8.36: Logbuch-CSS teilt die Konsole 50/50 (verdeckt den Chat nicht)", v836Results.logCssRule);
+                check("V8.36: neue Werkstatt-Parts landen im Ursprung (0,0,0)", v836Results.partAtOrigin);
+            } else {
+                check("V8.36: Browser-Test-Bug-Fix Tests laufen", false, v836Results ? v836Results.error : "no result");
+            }
+
+            // ### V8.37 — Werkstatt-Lesbarkeit + Einstellungen-Faltung ###
+            const v837Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // A — Bau-Kosten sichtbar im Werkstatt-Stats-Panel.
+                    {
+                        if (r.state.blueprints["_t837a"]) delete r.state.blueprints["_t837a"];
+                        r.createBlueprint("_t837a", "T837A");
+                        r.state.blueprints["_t837a"].parts = [
+                            {
+                                shape: "box",
+                                material: "stein",
+                                position: { x: 0, y: 0, z: 0 },
+                                rotation: { x: 0, y: 0, z: 0 },
+                                size: { x: 2, y: 2, z: 2 },
+                                color: 0x888888,
+                            },
+                        ];
+                        if (typeof r.selectBlueprintForEdit === "function") r.selectBlueprintForEdit("_t837a");
+                        r._workshopRenderStatsPanel();
+                        const panel = document.getElementById("workshop-stats-panel");
+                        const txt = panel ? panel.textContent : "";
+                        const cost = r.computeBuildCost("_t837a");
+                        out.costPanelShown = /Bau-Kosten/.test(txt);
+                        out.costPanelValue = (cost.stein || 0) > 0 && txt.includes(`${cost.stein}× stein`);
+                        delete r.state.blueprints["_t837a"];
+                    }
+
+                    // B — 3D-Raster + Achsenkreuz im Werkstatt-Preview.
+                    {
+                        r._workshopEnsurePreview();
+                        const pre = r.state.workshop && r.state.workshop.preview;
+                        out.gridInScene =
+                            !!pre && !!pre.gridHelper && pre.scene.children.includes(pre.gridHelper);
+                        out.axesInScene =
+                            !!pre && !!pre.axesHelper && pre.scene.children.includes(pre.axesHelper);
+                        // raycast der Helfer ist als eigene no-op-Property
+                        // überschrieben → Part-Auswahl + Gizmo bleiben ungestört.
+                        out.helperRaycastNoop =
+                            !!pre &&
+                            Object.prototype.hasOwnProperty.call(pre.gridHelper, "raycast") &&
+                            Object.prototype.hasOwnProperty.call(pre.axesHelper, "raycast");
+                    }
+
+                    // C — Einstellungen-Sektionen faltbar.
+                    {
+                        r._initCollapsibleSettings(); // idempotent
+                        const drawer = document.querySelector('.drawer[data-drawer="einstellungen"]');
+                        const headers = drawer ? drawer.querySelectorAll("h3.collapsible-header") : [];
+                        out.collapsibleHeaders = headers.length >= 12;
+                        if (headers.length > 0) {
+                            const sec = headers[0].closest("section");
+                            const before = sec.classList.contains("collapsed");
+                            headers[0].click();
+                            const after = sec.classList.contains("collapsed");
+                            out.collapseToggles = before !== after;
+                            headers[0].click(); // Ausgangszustand wiederherstellen
+                        } else {
+                            out.collapseToggles = false;
+                        }
+                    }
+
+                    // D — Werkzeug-Drag überlebt Palette-Neu-Rendern (Delegation).
+                    {
+                        const src = r._workshopInstallShapeDragDrop.toString();
+                        // Delegation: EIN Listener am bleibenden Container, NICHT
+                        // pro Karte (Karten verschwinden beim Re-Render).
+                        out.dragDelegated =
+                            /container\.addEventListener\("dragstart"/.test(src) && !/cards\.forEach/.test(src);
+                        out.dragSetData = /\.dataTransfer\.setData/.test(src);
+                        // Re-Render der Tool-Palette: frische Karten bleiben draggable.
+                        r._workshopRenderToolPalette();
+                        const palette = document.getElementById("workshop-tool-palette");
+                        const card = palette ? palette.querySelector(".workshop-tool-card") : null;
+                        out.toolCardDraggable = !!card && card.getAttribute("draggable") === "true";
+                        // Domänen-Farbpunkt bekommt einen erklärenden Tooltip.
+                        out.dotHasTitle = /dot\.title\s*=/.test(r._workshopRenderToolPalette.toString());
+                    }
+
+                    // E — FPS als gleitender 1-s-Durchschnitt (nicht 1/delta).
+                    {
+                        r.state._fpsFrames = 0;
+                        r.state._fpsElapsed = 0;
+                        r.state.fps = 0;
+                        for (let i = 0; i < 90; i++) r.updateFps(1 / 60);
+                        out.fpsRollingAvg = r.state.fps === 60;
+                        out.fpsNotSingleFrame = !/Math\.round\(1 \/ delta\)/.test(r.updateFps.toString());
+                        r.state._fpsFrames = 5;
+                        r.state._fpsElapsed = 0.3;
+                        r.updateFps(2.0); // abnormaler Delta → Fenster verwerfen
+                        out.fpsResetsOnStall = r.state._fpsFrames === 0 && r.state._fpsElapsed === 0;
+                    }
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (v837Results && !v837Results.error) {
+                check("V8.37: Bau-Kosten-Sektion im Werkstatt-Panel sichtbar", v837Results.costPanelShown);
+                check("V8.37: Bau-Kosten zeigt den computeBuildCost-Wert pro Material", v837Results.costPanelValue);
+                check("V8.37: Werkstatt-Preview hat ein Maß-Raster (GridHelper)", v837Results.gridInScene);
+                check("V8.37: Werkstatt-Preview hat ein Achsenkreuz (AxesHelper)", v837Results.axesInScene);
+                check("V8.37: Raster + Achsen sind raycast-stumm (stören Part-Auswahl nicht)", v837Results.helperRaycastNoop);
+                check("V8.37: Einstellungen-Sektionen haben faltbare Header (≥12)", v837Results.collapsibleHeaders);
+                check("V8.37: Klick auf einen Sektion-Header faltet/entfaltet", v837Results.collapseToggles);
+                check("V8.37: Werkzeug-Drag läuft über Container-Delegation", v837Results.dragDelegated);
+                check("V8.37: Werkzeug-Drag überträgt weiterhin Daten (setData)", v837Results.dragSetData);
+                check("V8.37: neu-gerenderte Werkzeug-Karte bleibt draggable", v837Results.toolCardDraggable);
+                check("V8.37: Domänen-Farbpunkt trägt einen erklärenden Tooltip", v837Results.dotHasTitle);
+                check("V8.37: FPS ist ein gleitender Durchschnitt (90 Frames @60 → fps=60)", v837Results.fpsRollingAvg);
+                check("V8.37: FPS-Rechnung nutzt nicht mehr Einzel-Frame 1/delta", v837Results.fpsNotSingleFrame);
+                check("V8.37: abnormaler Delta (Tab-Pause) verwirft das FPS-Fenster", v837Results.fpsResetsOnStall);
+            } else {
+                check("V8.37: Werkstatt-Lesbarkeit Tests laufen", false, v837Results ? v837Results.error : "no result");
+            }
+
+            // ### V8.38 — Werkstatt-UX: Hover-Kosten + sichtbare Verbindungen + Preview-Höhe ###
+            const v838Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // C — Hover-Material-Info auf Bauplan-Slots.
+                    {
+                        if (r.state.blueprints["_t838c"]) delete r.state.blueprints["_t838c"];
+                        r.createBlueprint("_t838c", "T838C");
+                        r.state.blueprints["_t838c"].parts = [
+                            {
+                                shape: "box",
+                                material: "stein",
+                                position: { x: 0, y: 0, z: 0 },
+                                rotation: { x: 0, y: 0, z: 0 },
+                                size: { x: 2, y: 2, z: 2 },
+                                color: 0x888888,
+                            },
+                        ];
+                        out.costTooltipMethod = typeof r._blueprintCostTooltip === "function";
+                        const tip = r._blueprintCostTooltip("_t838c");
+                        out.costTooltipText =
+                            /Bau-Kosten/.test(tip) && /stein/.test(tip) && /hast/.test(tip);
+                        const origHotbar0 = r.state.hotbar[0];
+                        r.state.hotbar[0] = "_t838c";
+                        r._renderHotbarDOM();
+                        const hslot = document.querySelector('#hotbar .hotbar-slot[data-slot="0"]');
+                        out.hotbarSlotTitle = !!hslot && /Bau-Kosten/.test(hslot.title || "");
+                        r.state.hotbar[0] = origHotbar0;
+                        r._renderHotbarDOM();
+                        const origInv0 = r.state.player.inventory[0];
+                        r.state.player.inventory[0] = { kind: "blueprint", blueprintName: "_t838c", count: 1 };
+                        r.renderInventoryUI();
+                        const islot = document.querySelector('#inventory-grid .inventory-slot[data-inv-slot="0"]');
+                        out.invSlotTitle = !!islot && /Bau-Kosten/.test(islot.title || "");
+                        r.state.player.inventory[0] = origInv0;
+                        r.renderInventoryUI();
+                        delete r.state.blueprints["_t838c"];
+                    }
+
+                    // D — Verbindungen im 3D-Preview sichtbar.
+                    {
+                        const origSel = r.state.workshop && r.state.workshop.selectedBlueprint;
+                        if (r.state.blueprints["_t838d"]) delete r.state.blueprints["_t838d"];
+                        r.createBlueprint("_t838d", "T838D");
+                        const bp = r.state.blueprints["_t838d"];
+                        bp.parts = [
+                            { shape: "box", material: "stein", position: { x: -1, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, color: 0x888888 },
+                            { shape: "box", material: "stein", position: { x: 1, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, color: 0x888888 },
+                        ];
+                        r.addConnectionToBlueprint("_t838d", { type: "masonry", partA: 0, partB: 1 });
+                        const group = r._buildFromBlueprint(bp);
+                        const conn = group.children.filter((c) => c.userData && c.userData.isConnectionLine);
+                        out.connHasLine = conn.some((c) => c.isLine);
+                        out.connHasMarker = conn.some((c) => c.isMesh);
+                        out.connDepthTestOff =
+                            conn.length > 0 && conn.every((c) => c.material && c.material.depthTest === false);
+                        // _workshopRebuildPreviewMesh zählt Verbindungen NICHT als Part.
+                        if (typeof r.selectBlueprintForEdit === "function") r.selectBlueprintForEdit("_t838d");
+                        r._workshopEnsurePreview();
+                        r._workshopRebuildPreviewMesh();
+                        const pre = r.state.workshop && r.state.workshop.preview;
+                        out.connNotCountedAsPart = !!pre && pre.partMeshes.size === 2;
+                        r._renderWorkshopDOM();
+                        const connSection = document.querySelector(".workshop-connections");
+                        out.connHintShown =
+                            !!connSection && /Sollbruchstelle/.test(connSection.textContent || "");
+                        delete r.state.blueprints["_t838d"];
+                        // Auswahl wiederherstellen — kein hängender Verweis auf
+                        // den gelöschten Test-Bauplan für nachfolgende Tests.
+                        if (origSel && r.state.blueprints[origSel] && typeof r.selectBlueprintForEdit === "function") {
+                            r.selectBlueprintForEdit(origSel);
+                        }
+                    }
+
+                    // F — 3D-Preview-Höhe.
+                    {
+                        out.previewAspect = [...document.querySelectorAll("style")].some((s) =>
+                            /#workshop-preview-canvas[^}]*aspect-ratio:\s*5\s*\/\s*3/.test(s.textContent)
+                        );
+                        out.cameraAspectSync = /camera\.aspect = w \/ h/.test(
+                            r._workshopSyncCanvasSize.toString()
+                        );
+                    }
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (v838Results && !v838Results.error) {
+                check("V8.38: _blueprintCostTooltip-Methode existiert", v838Results.costTooltipMethod);
+                check("V8.38: Kosten-Tooltip nennt Bau-Kosten + Material + 'hast'", v838Results.costTooltipText);
+                check("V8.38: gefüllter Hotbar-Slot trägt den Kosten-Tooltip", v838Results.hotbarSlotTitle);
+                check("V8.38: Bauplan-Inventar-Slot trägt den Kosten-Tooltip", v838Results.invSlotTitle);
+                check("V8.38: Verbindung rendert eine Linie im 3D-Preview", v838Results.connHasLine);
+                check("V8.38: Verbindung rendert einen Mittelpunkt-Marker", v838Results.connHasMarker);
+                check("V8.38: Verbindungs-Linie + Marker sind depthTest-frei (immer sichtbar)", v838Results.connDepthTestOff);
+                check("V8.38: Verbindungen werden NICHT als Part gezählt (partMeshes korrekt)", v838Results.connNotCountedAsPart);
+                check("V8.38: Werkstatt-Panel erklärt, was eine Verbindung tut", v838Results.connHintShown);
+                check("V8.38: Preview-Canvas hat aspect-ratio 5/3 (Stats-Panel ohne Scrollen)", v838Results.previewAspect);
+                check("V8.38: Canvas-Sync setzt camera.aspect (kein gestauchtes Bild)", v838Results.cameraAspectSync);
+            } else {
+                check("V8.38: Werkstatt-UX Tests laufen", false, v838Results ? v838Results.error : "no result");
+            }
+
+            // ### V8.39 — Werkzeug-Klassen + Präzision→Qualität ###
+            const v839Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // Farb-Sprache: Rollen-Farben-Konstante.
+                    const rc = r.constructor && r.constructor.BLUEPRINT_ROLE_COLORS;
+                    out.roleColorsExist =
+                        !!rc &&
+                        typeof rc.armor === "string" &&
+                        typeof rc.tool === "string" &&
+                        typeof rc.soul === "string" &&
+                        typeof rc.architecture === "string";
+
+                    // computeBlueprintQuality.
+                    out.qualityMethod = typeof r.computeBlueprintQuality === "function";
+                    out.qualityUnworked =
+                        r.computeBlueprintQuality({
+                            parts: [{ shape: "box", material: "stein", size: { x: 1, y: 1, z: 1 } }],
+                        }) === 1.0;
+                    const qWorked = r.computeBlueprintQuality({
+                        parts: [
+                            {
+                                shape: "box",
+                                material: "stein",
+                                size: { x: 1, y: 1, z: 1 },
+                                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+                            },
+                        ],
+                    });
+                    out.qualityWorked = qWorked > 0.3 && qWorked < 0.6;
+
+                    // Aufwand: Stamina skaliert mit Werkzeug-cap (pfad-Modus).
+                    {
+                        const prevMode = typeof r.getGameMode === "function" ? r.getGameMode() : "frieden";
+                        r.setGameMode("pfad");
+                        if (r.state.blueprints["_t839s"]) delete r.state.blueprints["_t839s"];
+                        r.createBlueprint("_t839s", "T839S");
+                        r.state.blueprints["_t839s"].parts = [
+                            {
+                                shape: "box",
+                                material: "eisen",
+                                position: { x: 0, y: 0, z: 0 },
+                                rotation: { x: 0, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                                color: 0x888888,
+                                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+                            },
+                        ];
+                        r.state.player.stamina = 500;
+                        const b1 = r.state.player.stamina;
+                        const res1 = r.applyOpToPart("_t839s", 0, "hände");
+                        const costLow = b1 - r.state.player.stamina;
+                        const b2 = r.state.player.stamina;
+                        const res2 = r.applyOpToPart("_t839s", 0, "polierscheibe");
+                        const costHigh = b2 - r.state.player.stamina;
+                        out.staminaScales =
+                            !!res1.ok && !!res2.ok && costLow > costHigh && costLow >= 9 && costHigh <= 7;
+                        r.setGameMode(prevMode);
+                        delete r.state.blueprints["_t839s"];
+                    }
+
+                    // Qualität skaliert Creature-Stats + Konsumable (Source-Check).
+                    out.creatureStatsQuality = /computeBlueprintQuality/.test(
+                        r.computeCreatureStats.toString()
+                    );
+                    out.consumableQuality = /computeBlueprintQuality/.test(r.activateConsumable.toString());
+
+                    // Farb-Sprache im DOM: Rollen-Chip-Glow + Bauplan-Zeilen-Glow + Qualität-Zeile.
+                    {
+                        const origSel = r.state.workshop && r.state.workshop.selectedBlueprint;
+                        if (r.state.blueprints["_t839c"]) delete r.state.blueprints["_t839c"];
+                        r.createBlueprint("_t839c", "T839C");
+                        r.state.blueprints["_t839c"].parts = [
+                            {
+                                shape: "box",
+                                material: "stein",
+                                position: { x: 0, y: 0, z: 0 },
+                                rotation: { x: 0, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                                color: 0x888888,
+                                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+                            },
+                        ];
+                        if (typeof r.selectBlueprintForEdit === "function") r.selectBlueprintForEdit("_t839c");
+                        r._workshopRenderStatsPanel();
+                        const panel = document.getElementById("workshop-stats-panel");
+                        const chip = panel ? panel.querySelector(".role-chip") : null;
+                        out.roleChipGlow = !!chip && !!chip.style.boxShadow && chip.style.boxShadow.length > 0;
+                        out.qualityRow = !!panel && /Qualität/.test(panel.textContent || "");
+                        r._renderWorkshopDOM();
+                        const lrow = document.querySelector("#workshop-list .workshop-list-row");
+                        out.listRowGlow = !!lrow && !!lrow.style.borderLeft && lrow.style.borderLeft.length > 0;
+                        delete r.state.blueprints["_t839c"];
+                        if (origSel && r.state.blueprints[origSel] && typeof r.selectBlueprintForEdit === "function") {
+                            r.selectBlueprintForEdit(origSel);
+                        }
+                    }
+
+                    // Equip-Hinweis im Spieler-Drawer.
+                    r.renderPlayerEquipUI();
+                    const eq = document.getElementById("player-equip");
+                    out.equipHint = !!eq && /Rüstung anziehen/.test(eq.textContent || "");
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (v839Results && !v839Results.error) {
+                check("V8.39: BLUEPRINT_ROLE_COLORS-Konstante mit allen Rollen", v839Results.roleColorsExist);
+                check("V8.39: computeBlueprintQuality-Methode existiert", v839Results.qualityMethod);
+                check("V8.39: unbearbeiteter Bauplan hat Qualität 1.0 (geboren)", v839Results.qualityUnworked);
+                check("V8.39: bearbeiteter Bauplan trägt seine Werkzeug-Präzision als Qualität", v839Results.qualityWorked);
+                check("V8.39: Werkzeug-Op-Stamina skaliert mit cap (stumpf teurer als fein)", v839Results.staminaScales);
+                check("V8.39: computeCreatureStats skaliert Equip mit Qualität", v839Results.creatureStatsQuality);
+                check("V8.39: activateConsumable skaliert Trank-Stärke mit Qualität", v839Results.consumableQuality);
+                check("V8.39: Rollen-Chip leuchtet in der Rollen-Farbe", v839Results.roleChipGlow);
+                check("V8.39: Werkstatt-Stats-Panel zeigt eine Qualität-Zeile", v839Results.qualityRow);
+                check("V8.39: Bauplan-Liste-Zeile leuchtet in der Rollen-Farbe", v839Results.listRowGlow);
+                check("V8.39: Spieler-Drawer zeigt den Rüstung-Equip-Hinweis", v839Results.equipHint);
+            } else {
+                check("V8.39: Werkzeug-Klassen Tests laufen", false, v839Results ? v839Results.error : "no result");
+            }
+
+            // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
+            const v840Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    const ring = document.getElementById("slider-ring");
+                    out.ringSliderRange = !!ring && ring.max === "8" && ring.value === "4";
+                    const cel = document.getElementById("slider-cel");
+                    // V8.41 — Cel-Regler auf 2–8 zurückgenommen (Reserve verworfen).
+                    out.celSliderRange = !!cel && cel.max === "8" && cel.value === "8";
+
+                    // Cel-Stufen 2–8: 8 = smooth, höhere Werte clampen auf 8.
+                    const origCel = r.state.atmosphere ? r.state.atmosphere.celLevels : 8;
+                    out.celClampsAt8 = r.setCelLevels(8) === 8 && r.setCelLevels(20) === 8;
+                    out.celSmoothThreshold = /n >= 8 \? W/.test(r._refreshToonGradient.toString());
+                    // V8.42 — Gradient-Textur mit LinearFilter (crawl-frei).
+                    out.celGradientLinear =
+                        !!r.state.toonGradientMap &&
+                        r.state.toonGradientMap.magFilter === (window.THREE && window.THREE.LinearFilter);
+                    // V8.43 — Terrain-Detail-Noise per Vertex statt per Pixel.
+                    out.terrainJitterPerVertex =
+                        !!r.state.terrainMaterial &&
+                        /vJitter/.test(r.state.terrainMaterial.vertexShader || "") &&
+                        /noise\(uv/.test(r.state.terrainMaterial.vertexShader || "") &&
+                        !/noise\(vUv/.test(r.state.terrainMaterial.fragmentShader || "");
+                    // V8.44 — Terrain-vNormal in Welt-Raum (kamera-unabhängiger
+                    // Diffuse): mat3(modelMatrix), nicht normalMatrix.
+                    out.terrainNormalWorldSpace =
+                        !!r.state.terrainMaterial &&
+                        /mat3\(modelMatrix\) \* normal/.test(r.state.terrainMaterial.vertexShader || "") &&
+                        !/normalMatrix \* normal/.test(r.state.terrainMaterial.vertexShader || "");
+                    // V8.45 — Terrain-Fog = radiale Distanz (dreh-invariant),
+                    // nicht View-Space-Z. Regex prüft die echte Zuweisung
+                    // (nicht den erklärenden Kommentar-Text).
+                    out.terrainFogRadial =
+                        !!r.state.terrainMaterial &&
+                        /vFogDepth = length\(mvPosition/.test(r.state.terrainMaterial.vertexShader || "") &&
+                        !/vFogDepth = -mvPosition\.z/.test(r.state.terrainMaterial.vertexShader || "");
+                    r.setCelLevels(origCel);
+
+                    // Fog: Effekt-Bereich verdreifacht (0.9 .. 9.0, Default 3.0).
+                    const origFog = r.state.atmosphere ? r.state.atmosphere.fogDistance : 3.0;
+                    out.fogTripleRange =
+                        r.setFogDistance(9.0) === 9.0 &&
+                        r.setFogDistance(0.5) === 0.9 &&
+                        r.setFogDistance(3.0) === 3.0;
+                    out.fogDefault3 = r.setFogDistance() === 3.0;
+                    r.setFogDistance(origFog);
+                    out.fogHandlerTriples = /\(pct \/ 100\) \* 3/.test(r.slidersInitDOM.toString());
+
+                    // V8.41 — Cache-Buster auf der anazhRealm.js-Einbindung.
+                    const appScript = [...document.querySelectorAll("script")].find((s) =>
+                        (s.getAttribute("src") || "").includes("anazhRealm.js")
+                    );
+                    out.cacheBust =
+                        !!appScript && /anazhRealm\.js\?v=/.test(appScript.getAttribute("src") || "");
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (v840Results && !v840Results.error) {
+                check("V8.40: Sicht-Ring-Regler 1–8, Default 4 (9×9)", v840Results.ringSliderRange);
+                check("V8.41: Cel-Stufen-Regler 2–8, Default 8 (Reserve verworfen)", v840Results.celSliderRange);
+                check("V8.41: Cel-Stufen clampt über 8 auf 8", v840Results.celClampsAt8);
+                check("V8.40: Cel ab 8 bleibt smooth (32-Stufen-Gradient)", v840Results.celSmoothThreshold);
+                check("V8.42: Cel-Gradient nutzt LinearFilter (crawl-frei)", v840Results.celGradientLinear);
+                check(
+                    "V8.43: Terrain-Detail-Noise per Vertex berechnet (crawl-frei)",
+                    v840Results.terrainJitterPerVertex
+                );
+                check(
+                    "V8.44: Terrain-vNormal in Welt-Raum (Diffuse kamera-unabhängig)",
+                    v840Results.terrainNormalWorldSpace
+                );
+                check(
+                    "V8.45: Terrain-Fog = radiale Distanz (dreh-invariant)",
+                    v840Results.terrainFogRadial
+                );
+                check("V8.40: Fog-Effekt-Bereich verdreifacht (0.9 .. 9.0)", v840Results.fogTripleRange);
+                check("V8.40: Fog-Default ist 3.0 (= heutiger 300%-Effekt)", v840Results.fogDefault3);
+                check("V8.40: Fog-Regler-Eingabe wird verdreifacht (pct/100 × 3)", v840Results.fogHandlerTriples);
+                check("V8.41: anazhRealm.js mit Cache-Buster ?v= eingebunden", v840Results.cacheBust);
+            } else {
+                check("V8.40: Regler-Tests laufen", false, v840Results ? v840Results.error : "no result");
+            }
+
+            // ### V8.46 — Sanfte Wetter-Übergänge ###
+            const v846Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    out.helperExists = typeof r._weatherBlendedValue === "function";
+                    const origWeather = r.state.weather;
+                    const origTrans = r.state.weatherTransition;
+                    // Ohne Transition: sunny → sunnyVal, rainy → rainyVal.
+                    r.state.weatherTransition = null;
+                    r.state.weather = "sunny";
+                    out.blendSunny = r._weatherBlendedValue(0, 1) === 0;
+                    r.state.weather = "rainy";
+                    out.blendRainy = r._weatherBlendedValue(0, 1) === 1;
+                    // Mitten in der Transition: progress 0.5 → halber Weg.
+                    r.state.weatherTransition = { from: "sunny", to: "rainy", progress: 0.5 };
+                    out.blendMid = Math.abs(r._weatherBlendedValue(0, 1) - 0.5) < 0.001;
+                    r.state.weatherTransition = origTrans;
+                    r.state.weather = origWeather;
+                    // weatherEffect + cloudCover faden jetzt über den Helper.
+                    const src = r._applyDayNightToScene.toString();
+                    out.weatherEffectFades = /cu\.weatherEffect.*_weatherBlendedValue/.test(src);
+                    out.cloudFades = /cloudU\.value = this\._weatherBlendedValue/.test(src);
+                    // V8.47 — Shadow-Bias gegen Shadow-Acne auf flachen Flächen.
+                    const sh = r.state.directionalLight && r.state.directionalLight.shadow;
+                    out.shadowAntiAcne =
+                        !!sh && sh.normalBias > 0 && sh.bias < 0 && sh.mapSize.width >= 2048;
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (v846Results && !v846Results.error) {
+                check("V8.46: _weatherBlendedValue-Helper existiert", v846Results.helperExists);
+                check("V8.46: Helper ohne Transition liefert Wetter-Wert (sunny)", v846Results.blendSunny);
+                check("V8.46: Helper ohne Transition liefert Wetter-Wert (rainy)", v846Results.blendRainy);
+                check("V8.46: Helper cross-fadet in der Transition (progress 0.5 → halb)", v846Results.blendMid);
+                check("V8.46: weatherEffect cross-fadet über den Helper", v846Results.weatherEffectFades);
+                check("V8.46: cloudCover cross-fadet über den Helper", v846Results.cloudFades);
+                check(
+                    "V8.47: Shadow-Bias gesetzt (gegen Acne-Linien auf flachen Flächen)",
+                    v846Results.shadowAntiAcne
+                );
+            } else {
+                check(
+                    "V8.46: Wetter-Übergangs-Tests laufen",
+                    false,
+                    v846Results ? v846Results.error : "no result"
+                );
+            }
+
             // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider (Audit 17.05.2026) ###
             const wave6x4bResults = await page
                 .evaluate(() => {
@@ -11942,7 +12901,7 @@ function startSaveServer() {
                     // --- D2: state-Felder + UI-Slider existieren
                     out.masterVolDefault = r.state.symphony.masterVolume === 1.0;
                     out.pingVolDefault = r.state.symphony.creaturePingVolume === 1.0;
-                    out.ringRadiusDefault = r.state.chunkRingRadius === 2;
+                    out.ringRadiusDefault = r.state.chunkRingRadius === 4;
                     out.slidersInitMethodExists = typeof r.slidersInitDOM === "function";
                     out.slidersSectionExists = !!document.getElementById("sliders-section");
                     out.masterSliderExists = !!document.getElementById("slider-master");
@@ -12117,7 +13076,7 @@ function startSaveServer() {
                 check("Welle 6.X.4 B3: Tooltip enthält Präzision", wave6x4bResults.tooltipHasPrecision);
                 check("Welle 6.X.4 D2: state.symphony.masterVolume default 1.0", wave6x4bResults.masterVolDefault);
                 check("Welle 6.X.4 D2: state.symphony.creaturePingVolume default 1.0", wave6x4bResults.pingVolDefault);
-                check("Welle 6.X.4 D2: state.chunkRingRadius default 2", wave6x4bResults.ringRadiusDefault);
+                check("Welle 6.X.4 D2: state.chunkRingRadius default 4 (V8.40: 9×9)", wave6x4bResults.ringRadiusDefault);
                 check("Welle 6.X.4 D2: slidersInitDOM-Methode existiert", wave6x4bResults.slidersInitMethodExists);
                 check("Welle 6.X.4 D2: #sliders-section im DOM", wave6x4bResults.slidersSectionExists);
                 check("Welle 6.X.4 D2: #slider-master im DOM", wave6x4bResults.masterSliderExists);

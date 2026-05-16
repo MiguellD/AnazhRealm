@@ -84,7 +84,8 @@ class AnazhRealm {
             groundNormalY: 1.0,
             onSteepSlope: false,
             frameCount: 0,
-            lastFpsUpdate: 0,
+            _fpsFrames: 0,
+            _fpsElapsed: 0,
             fps: 0,
             forward: new THREE.Vector3(),
             right: new THREE.Vector3(),
@@ -143,7 +144,7 @@ class AnazhRealm {
             // fogDistance: Multiplikator auf Fog-near/far (klein=dichter)
             atmosphere: {
                 celLevels: 8,
-                fogDistance: 1.0,
+                fogDistance: 3.0,
             },
             // Welle 6.G3 (V8.24) — sanfter Wetter-Übergang. null heißt: kein
             // aktiver Übergang. Ein Wechsel zwischen sunny/rainy interpoliert
@@ -392,7 +393,7 @@ class AnazhRealm {
             // 1..4 wählbar (3×3 bis 9×9 Chunks). Höhere Werte = mehr Welt
             // sichtbar, mehr GPU-Last beim Generieren neuer Chunks. Default
             // 2 (5×5, historisches Verhalten). Persistiert in localStorage.
-            chunkRingRadius: 2,
+            chunkRingRadius: 4,
             symphony: {
                 ctx: null,
                 enabled: false,
@@ -4263,11 +4264,15 @@ class AnazhRealm {
             if (p2p.role === "host" && typeof this.updateWorldInfo === "function") {
                 this.updateWorldInfo();
             }
+            // Ring 11 V3 — den bereits anwesenden Peers meine Seele zeigen.
+            this._p2pBroadcastSoul();
             return;
         }
         if (msg.type === "peer-join") {
             if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
                 this._p2pEnsurePeerEntry(msg.peerId);
+                // Ring 11 V3 — dem Neuankömmling meine Seele zeigen.
+                this._p2pBroadcastSoul();
             }
             return;
         }
@@ -4284,6 +4289,12 @@ class AnazhRealm {
             const z = Number(msg.z);
             const yaw = Number(msg.yaw);
             if (![x, y, z, yaw].every(Number.isFinite)) return;
+            // Ring 11 V3 — Bewegungs-Erkennung für die Peer-Animation: ein
+            // spürbarer Positions-Sprung markiert "in Bewegung" für 0.25 s
+            // (_p2pUpdatePeer leitet daraus den Geh-/Schwimm-Zyklus ab).
+            if (Math.hypot(x - entry.x, z - entry.z) > 0.015) {
+                entry.lastMovedAt = performance.now() / 1000;
+            }
             entry.x = x;
             entry.y = y;
             entry.z = z;
@@ -4305,6 +4316,42 @@ class AnazhRealm {
             } catch (err) {
                 this.log(`P2P-DSL Ausführungsfehler von ${pid}: ${err.message}`, "WARN");
             }
+            return;
+        }
+        if (msg.type === "soul") {
+            // Ring 11 V3 — Soul-Sync. Der Peer teilt seine Seele; wir bauen
+            // seinen Avatar daraus (Built-in via def.build, Custom via
+            // _buildFromBlueprint). KEIN DSL-Pfad — die Seele eines Peers ist
+            // eine Darstellungs-Tatsache, keine Welt-Mutation.
+            const pid = msg.peerId;
+            if (typeof pid !== "string" || pid === p2p.peerId) return;
+            const entry = this._p2pEnsurePeerEntry(pid);
+            const soulName = typeof msg.soulName === "string" ? msg.soulName : "";
+            if (!soulName) return;
+            const changed = entry.soulName !== soulName;
+            entry.soulName = soulName;
+            entry.bodyParts = Array.isArray(msg.bodyParts) ? msg.bodyParts : null;
+            if (typeof msg.name === "string" && msg.name.trim()) {
+                const nm = msg.name.trim().slice(0, 48);
+                if (entry.avatarName !== nm) {
+                    entry.avatarName = nm;
+                    this._p2pRefreshPeerNameLabel(entry);
+                }
+            }
+            if (changed) this._p2pApplyPeerSoul(entry);
+            entry.lastSeen = performance.now() / 1000;
+            return;
+        }
+        if (msg.type === "aura") {
+            // Ring 11 V3 — Aura-Sync. Dominante Tag-Hue + Intensität (~1 Hz).
+            const pid = msg.peerId;
+            if (typeof pid !== "string" || pid === p2p.peerId) return;
+            const entry = this._p2pEnsurePeerEntry(pid);
+            const hue = Number(msg.hue);
+            const intensity = Number(msg.intensity);
+            if (Number.isFinite(hue)) entry.auraHue = hue;
+            if (Number.isFinite(intensity)) entry.auraIntensity = intensity;
+            entry.lastSeen = performance.now() / 1000;
             return;
         }
         if (msg.type === "world-request") {
@@ -4379,28 +4426,212 @@ class AnazhRealm {
             z: 0,
             yaw: 0,
             mesh: null,
+            // Ring 11 V3 — Soul-Sync. meshKind unterscheidet den Cone+Sphere-
+            // Platzhalter ("placeholder") vom echten Seelen-Mesh ("soul" für
+            // Built-ins, "soul-custom" für bodyParts-Seelen). soulName/bodyParts
+            // kommen mit der `soul`-Nachricht, avatarName trägt das Name-Schild.
+            meshKind: "placeholder",
+            soulName: null,
+            bodyParts: null,
+            avatarName: null,
+            walkPhase: 0,
+            lastMovedAt: 0,
+            auraHue: null,
+            auraIntensity: 0,
+            auraGlow: null,
+            nameLabel: null,
             lastSeen: performance.now() / 1000,
         };
         p2p.peers.set(peerId, entry);
-        if (this.state.scene && typeof THREE !== "undefined") {
-            // Einfacher Markierungs-Mesh: Kegel + Kugel. Farbe deterministisch
-            // aus peerId-Hash, damit derselbe Peer immer dieselbe Farbe hat —
-            // erleichtert Erkennung im Multi-Peer-Fall.
-            let hash = 0;
-            for (let i = 0; i < peerId.length; i++) hash = (hash * 31 + peerId.charCodeAt(i)) >>> 0;
-            const hue = (hash % 360) / 360;
-            const color = new THREE.Color().setHSL(hue, 0.7, 0.55);
-            const group = new THREE.Group();
-            const body = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.4, 8), new THREE.MeshBasicMaterial({ color }));
-            body.position.y = 0.7;
-            const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 8), new THREE.MeshBasicMaterial({ color }));
-            head.position.y = 1.55;
-            group.add(body);
-            group.add(head);
-            this.state.scene.add(group);
-            entry.mesh = group;
-        }
+        entry.mesh = this._p2pBuildPlaceholderMesh(peerId);
+        if (entry.mesh && this.state.scene) this.state.scene.add(entry.mesh);
         return entry;
+    }
+
+    // Ring 11 V3 — Platzhalter-Avatar (Kegel + Kugel), solange die Seele des
+    // Peers noch nicht bekannt ist. Farbe deterministisch aus dem peerId-Hash.
+    _p2pBuildPlaceholderMesh(peerId) {
+        if (typeof THREE === "undefined") return null;
+        let hash = 0;
+        for (let i = 0; i < peerId.length; i++) hash = (hash * 31 + peerId.charCodeAt(i)) >>> 0;
+        const color = new THREE.Color().setHSL((hash % 360) / 360, 0.7, 0.55);
+        const group = new THREE.Group();
+        const body = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.4, 8), new THREE.MeshBasicMaterial({ color }));
+        body.position.y = 0.7;
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 8), new THREE.MeshBasicMaterial({ color }));
+        head.position.y = 1.55;
+        group.add(body, head);
+        return group;
+    }
+
+    // Ring 11 V3 — den Platzhalter durch die echte Seele des Peers ersetzen.
+    // Built-in-Seelen (Mensch/Phönix/Drache) via def.build() — sie tragen
+    // userData.parts und sind damit voll animierbar (Geh-/Schwimm-Zyklus).
+    // Custom-Seelen via _buildFromBlueprint aus den mitgesendeten bodyParts.
+    _p2pApplyPeerSoul(entry) {
+        if (!this.state.scene || typeof THREE === "undefined") return;
+        const def = entry.soulName && this.playerSoulDefs[entry.soulName];
+        let group = null;
+        let kind = "placeholder";
+        if (def && typeof def.build === "function") {
+            group = def.build();
+            kind = "soul";
+        } else if (Array.isArray(entry.bodyParts) && entry.bodyParts.length > 0) {
+            group = this._buildFromBlueprint({ name: `peer:${entry.peerId}`, parts: entry.bodyParts });
+            kind = "soul-custom";
+        }
+        if (!group) return; // unbekannte Seele ohne bodyParts → Platzhalter bleibt
+        if (entry.mesh) {
+            this.state.scene.remove(entry.mesh);
+            this._p2pDisposeMesh(entry.mesh);
+        }
+        this.state.scene.add(group);
+        entry.mesh = group;
+        entry.meshKind = kind;
+    }
+
+    _p2pDisposeMesh(obj) {
+        if (!obj || typeof obj.traverse !== "function") return;
+        obj.traverse((node) => {
+            if (node.geometry && node.geometry.dispose) node.geometry.dispose();
+            if (node.material && node.material.dispose) node.material.dispose();
+        });
+    }
+
+    // Ring 11 V3 — Aura-Sprite eines Peers. Teilt die gecachte Gradient-
+    // Textur mit dem Spieler-Aura-Sprite. Anders als der lokale Aura-Sprite
+    // ist die Peer-Aura IMMER sichtbar — der 1st-Person-Hide gilt nur die
+    // eigene Kamera, ein Mitspieler sieht meine Aura immer.
+    _p2pEnsurePeerAura(entry) {
+        if (entry.auraGlow) return entry.auraGlow;
+        if (typeof THREE === "undefined" || !this.state.scene) return null;
+        const mat = new THREE.SpriteMaterial({
+            map: this._buildAuraGradientTexture(),
+            color: 0xffffff,
+            blending: THREE.AdditiveBlending,
+            transparent: true,
+            opacity: 0.6,
+            depthWrite: false,
+        });
+        const sprite = new THREE.Sprite(mat);
+        sprite.scale.set(3.0, 3.0, 1);
+        this.state.scene.add(sprite);
+        entry.auraGlow = sprite;
+        return sprite;
+    }
+
+    // Ring 11 V3 — Name-Schild über dem Peer. Eine CanvasTexture mit dem
+    // Avatar-Namen; depthTest aus, damit der Name immer lesbar bleibt.
+    _p2pBuildNameLabel(name) {
+        if (typeof document === "undefined" || typeof THREE === "undefined") return null;
+        const canvas = document.createElement("canvas");
+        canvas.width = 256;
+        canvas.height = 64;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return null;
+        ctx.fillStyle = "rgba(18,16,26,0.74)";
+        ctx.fillRect(6, 14, 244, 36);
+        ctx.font = "bold 30px Cinzel, Georgia, serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "#f0e6d2";
+        ctx.fillText(String(name).slice(0, 24), 128, 33);
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.needsUpdate = true;
+        const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, depthTest: false });
+        const sprite = new THREE.Sprite(mat);
+        sprite.scale.set(2.6, 0.65, 1);
+        sprite.renderOrder = 5;
+        return sprite;
+    }
+
+    // Name-Schild neu bauen, wenn der Avatar-Name eines Peers ankommt/wechselt.
+    _p2pRefreshPeerNameLabel(entry) {
+        if (entry.nameLabel) {
+            if (this.state.scene) this.state.scene.remove(entry.nameLabel);
+            if (entry.nameLabel.material) {
+                if (entry.nameLabel.material.map) entry.nameLabel.material.map.dispose();
+                entry.nameLabel.material.dispose();
+            }
+            entry.nameLabel = null;
+        }
+        if (!entry.avatarName) return;
+        const label = this._p2pBuildNameLabel(entry.avatarName);
+        if (label && this.state.scene) {
+            this.state.scene.add(label);
+            entry.nameLabel = label;
+        }
+    }
+
+    // Ring 11 V3 — pro-Frame-Update eines Peers: Position, Animation (aus dem
+    // Positions-Stream abgeleitet), Aura, Name-Schild.
+    _p2pUpdatePeer(entry, t, dt) {
+        const mesh = entry.mesh;
+        if (!mesh) return;
+        const nowSec = (typeof performance !== "undefined" ? performance.now() : t * 1000) / 1000;
+        const isMoving = nowSec - (entry.lastMovedAt || 0) < 0.25;
+        const underwater = typeof this.state.waterLevel === "number" && entry.y < this.state.waterLevel;
+        // Der Cone+Sphere-Platzhalter sitzt mit -1-Offset; das Seelen-Mesh am
+        // playerMesh-Origin (entry.y direkt — wie der lokale Soul-Group).
+        const yOff = entry.meshKind === "placeholder" ? -1 : 0;
+        let posY = entry.y + yOff;
+        if (entry.meshKind === "soul-custom") {
+            // Custom-Seelen kriegen kein def.animate — ein sanftes Idle-Wippen.
+            posY += Math.sin(t * 1.8) * 0.04;
+        }
+        mesh.position.set(entry.x, posY, entry.z);
+        mesh.rotation.y = entry.yaw;
+        // Built-in-Seelen voll animieren (Geh-/Schwimm-Zyklus), abgeleitet aus
+        // dem Positions-Stream — keine Extra-Bandbreite.
+        if (entry.meshKind === "soul") {
+            const def = this.playerSoulDefs[entry.soulName];
+            if (def && typeof def.animate === "function" && mesh.userData && mesh.userData.parts) {
+                if (underwater) entry.walkPhase += dt * (isMoving ? 5.0 : 2.3);
+                else if (isMoving) entry.walkPhase += dt * (entry.soulName === "dragon" ? 4.5 : 5.5);
+                def.animate(mesh, t, entry.walkPhase, isMoving, underwater);
+            }
+        }
+        // Aura — immer sichtbar (Peer-Aura ignoriert den lokalen Kamera-Hide).
+        if (entry.auraHue !== null) {
+            const glow = this._p2pEnsurePeerAura(entry);
+            if (glow) {
+                glow.position.set(entry.x, entry.y + 0.5, entry.z);
+                glow.material.color.setHSL((((entry.auraHue % 360) + 360) % 360) / 360, 0.78, 0.5);
+                const intensity = Math.max(0, Math.min(1, entry.auraIntensity || 0));
+                glow.material.opacity = 0.4 + 0.5 * intensity;
+                const breath = 3.0 * (1 + Math.sin(t) * 0.05);
+                glow.scale.set(breath, breath, 1);
+            }
+        }
+        // Name-Schild folgt über dem Kopf.
+        if (entry.nameLabel) {
+            entry.nameLabel.position.set(entry.x, entry.y + 2.3, entry.z);
+        }
+    }
+
+    // Ring 11 V3 — die eigene Seele an alle Mitspieler senden (Join + Wechsel).
+    // Built-in-Seelen brauchen nur den Namen; Custom-Seelen tragen ihre
+    // bodyParts mit, weil der Empfänger den Bauplan nicht hat.
+    _p2pBroadcastSoul() {
+        if (!this.state.p2p || !this.state.p2p.enabled) return;
+        const soulName = (this.state.player && this.state.player.soul) || "human";
+        const msg = { type: "soul", soulName };
+        const custom = this.state.customSouls && this.state.customSouls[soulName];
+        if (custom && Array.isArray(custom.bodyParts)) msg.bodyParts = custom.bodyParts;
+        const avatarName = this.state.player && this.state.player.name;
+        if (typeof avatarName === "string" && avatarName.trim()) msg.name = avatarName.trim().slice(0, 48);
+        this.p2pSend(msg);
+    }
+
+    // Ring 11 V3 — die eigene Aura (dominante Tag-Hue + Intensität) senden.
+    // Niedrigfrequent (~1 Hz, p2pTick) — die Aura pulsiert langsam, kein
+    // Frame-Sync nötig. Werte stammen aus tickPlayerAura.
+    _p2pBroadcastAura() {
+        if (!this.state.p2p || !this.state.p2p.enabled || !this.state.player) return;
+        const hue = this.state.player._auraHueOut;
+        const intensity = this.state.player._auraIntensityOut;
+        if (typeof hue !== "number" || typeof intensity !== "number") return;
+        this.p2pSend({ type: "aura", hue, intensity });
     }
 
     _p2pRemovePeer(peerId) {
@@ -4408,11 +4639,21 @@ class AnazhRealm {
         const entry = p2p.peers.get(peerId);
         if (!entry) return;
         if (entry.mesh) {
-            this.state.scene.remove(entry.mesh);
-            entry.mesh.traverse((obj) => {
-                if (obj.geometry && obj.geometry.dispose) obj.geometry.dispose();
-                if (obj.material && obj.material.dispose) obj.material.dispose();
-            });
+            if (this.state.scene) this.state.scene.remove(entry.mesh);
+            this._p2pDisposeMesh(entry.mesh);
+        }
+        if (entry.auraGlow) {
+            if (this.state.scene) this.state.scene.remove(entry.auraGlow);
+            // Material disposen — aber NICHT die geteilte Gradient-Textur.
+            if (entry.auraGlow.material) entry.auraGlow.material.dispose();
+        }
+        if (entry.nameLabel) {
+            if (this.state.scene) this.state.scene.remove(entry.nameLabel);
+            if (entry.nameLabel.material) {
+                // Name-Schild hat eine EIGENE CanvasTexture — die mit disposen.
+                if (entry.nameLabel.material.map) entry.nameLabel.material.map.dispose();
+                entry.nameLabel.material.dispose();
+            }
         }
         p2p.peers.delete(peerId);
     }
@@ -4440,15 +4681,21 @@ class AnazhRealm {
                 yaw: this.state.yaw || 0,
             });
         }
-        // Peer-Meshes ans aktuelle Position-State angleichen + idle-purge
-        // (kein update >10 s → entfernen, vermutlich verbindungslos).
+        // Ring 11 V3 — Aura-Sync, ~1 Hz (die Aura pulsiert langsam, kein
+        // Frame-Sync nötig).
+        if (currentTimeMs - (p2p._lastAuraBroadcast || 0) > 1000) {
+            p2p._lastAuraBroadcast = currentTimeMs;
+            this._p2pBroadcastAura();
+        }
+        // Peer-Avatare nachziehen: Position, Animation, Aura, Name-Schild +
+        // idle-purge (kein update >10 s → entfernen, vermutlich verbindungslos).
         const nowSec = currentTimeMs / 1000;
+        const t = nowSec;
+        const dt = p2p._lastTickMs ? Math.max(0, Math.min(0.1, (currentTimeMs - p2p._lastTickMs) / 1000)) : 0;
+        p2p._lastTickMs = currentTimeMs;
         const stale = [];
         for (const [pid, entry] of p2p.peers) {
-            if (entry.mesh) {
-                entry.mesh.position.set(entry.x, entry.y - 1, entry.z);
-                entry.mesh.rotation.y = entry.yaw;
-            }
+            this._p2pUpdatePeer(entry, t, dt);
             if (nowSec - entry.lastSeen > 10) stale.push(pid);
         }
         for (const pid of stale) this._p2pRemovePeer(pid);
@@ -6675,19 +6922,31 @@ class AnazhRealm {
         return ordered.map((e) => `- [${e.type}] ${e.text}`).join("\n");
     }
 
+    // V8.37 — FPS als gleitender 1-Sekunden-Durchschnitt (Schöpfer-Browser-
+    // Test: „FPS-Anzeige steht immer auf ~60/120"). Wurzel: das alte
+    // Math.round(1/delta) misst EINEN Frame — und requestAnimationFrame ist
+    // vsync-gekoppelt, ein Einzel-Frame dauert exakt 1/Refreshrate. Die Zahl
+    // KANN damit nur 120/60/40/30… annehmen, nie etwas dazwischen, und
+    // flackert pro Frame. Der Durchschnitt über ein 1-s-Fenster liefert eine
+    // echte, ruhige Zahl (z.B. 58, wenn ein paar Frames fallen). Der alte
+    // Pro-Frame-DEBUG-Log ist mit raus (60-120 Einträge/s = Konsolen-Flut).
     updateFps(delta) {
-        const fps = Math.round(1 / delta);
-        this.state.fps = fps;
-        const fpsDiv = document.getElementById("fps");
-        if (fpsDiv) {
-            fpsDiv.innerText = `FPS: ${fps}`; // Korrekte String-Interpolation
-            this.log(`FPS-Div aktualisiert: FPS: ${fps}`, "DEBUG");
-        } else {
-            this.log("FPS-Div nicht gefunden – DOM-Element 'fps' fehlt", "ERROR");
+        if (!(delta > 0) || delta > 0.5) {
+            // Erster Frame / Tab war inaktiv → Fenster verwerfen, sauber neu.
+            this.state._fpsFrames = 0;
+            this.state._fpsElapsed = 0;
+            return;
         }
-        if (performance.now() / 1000 - this.state.lastFpsUpdate >= 1.0) {
+        this.state._fpsFrames += 1;
+        this.state._fpsElapsed += delta;
+        if (this.state._fpsElapsed >= 1.0) {
+            const fps = Math.round(this.state._fpsFrames / this.state._fpsElapsed);
+            this.state.fps = fps;
+            this.state._fpsFrames = 0;
+            this.state._fpsElapsed = 0;
+            const fpsDiv = typeof document !== "undefined" ? document.getElementById("fps") : null;
+            if (fpsDiv) fpsDiv.innerText = `FPS: ${fps}`;
             this.log(`FPS: ${fps}`, "INFO");
-            this.state.lastFpsUpdate = performance.now() / 1000;
         }
     }
 
@@ -7207,52 +7466,69 @@ class AnazhRealm {
                 fogNear: { value: 35 },
                 fogFar: { value: 150 },
             },
-            // V8.31 — Wellen HETEROGENER. Sechs Oktaven statt vier + Domain-
-            // Warping (die Sample-Position wird durch eine grobe Welle
-            // verzerrt, bevor die Hauptwellen greifen) → die Periodizität
-            // bricht, das Wasser wirkt wild statt gleichmäßig. Echte
-            // Wellen-Normale aus den Ableitungen, Blinn-Phong-Sonnen-Glitzern.
+            // V8.33 6.G4.e — Gerstner-Wellen. Statt reiner Höhen-Sinusse
+            // verschieben Gerstner-Wellen die Vertices AUCH horizontal: sie
+            // wandern zu den Kämmen hin → spitze Kämme, breite Täler statt
+            // gleichmäßiger Hügel (der echte Ozean-Look). Sechs Gerstner-
+            // Oktaven, davor der Domain-Warp aus V8.31, der die Periodizität
+            // aufbricht. Normale aus dem Kreuzprodukt der verschobenen
+            // Nachbar-Tangenten (Höhen-Differenzieren reicht bei horizontaler
+            // Verschiebung nicht mehr). Blinn-Phong-Sonnen-Glitzern bleibt.
             vertexShader: `
                 uniform float uTime;
                 varying float vWave;
                 varying vec3 vNormal;
                 varying vec3 vWorldPos;
                 varying float vFogDepth;
-                // Eine Welle: Richtung (dx,dz), Frequenz f, Amplitude a, Speed s.
-                float wave(vec2 xz, vec2 dir, float f, float a, float s) {
-                    return a * sin(dot(xz, dir) * f + uTime * s);
+                // Eine Gerstner-Welle: dir = Richtung, f = Frequenz,
+                // a = Amplitude, s = Geschwindigkeit, q = Steilheit. Liefert
+                // die 3D-Verschiebung — horizontale Stauchung (q*a*d * cos)
+                // plus vertikale Höhe (a * sin).
+                vec3 gerstnerWave(vec2 xz, vec2 dir, float f, float a, float s, float q) {
+                    vec2 d = normalize(dir);
+                    float phase = dot(xz, d) * f + uTime * s;
+                    return vec3(q * a * d.x * cos(phase), a * sin(phase), q * a * d.y * cos(phase));
                 }
-                // Gesamthöhe an einer Position — sechs Oktaven, davor ein
-                // Domain-Warp, der die Wiederholung sichtbar aufbricht.
-                float waveHeight(vec2 xz) {
+                // Gesamt-Verschiebung an einer Position — sechs Gerstner-
+                // Oktaven, davor ein Domain-Warp (V8.31), der die Wieder-
+                // holung sichtbar aufbricht. Steilheit q steigt zu den
+                // kurzen Wellen hin (spitze Schaumkämme); die Summe der
+                // q*f*a bleibt klein → keine sich überschlagenden Wellen.
+                vec3 waveDisplace(vec2 xz) {
                     vec2 warp = vec2(
                         sin(xz.x * 0.022 + uTime * 0.25) * 7.0,
                         cos(xz.y * 0.019 - uTime * 0.21) * 7.0
                     );
                     vec2 w = xz + warp;
-                    return
-                        wave(w, vec2(0.86, 0.51), 0.10, 0.40, 0.85) +
-                        wave(w, vec2(-0.42, 0.91), 0.075, 0.30, 0.65) +
-                        wave(w, vec2(0.62, -0.78), 0.19, 0.18, 1.2) +
-                        wave(w, vec2(-0.95, -0.30), 0.29, 0.12, 1.55) +
-                        wave(w, vec2(0.30, 0.95), 0.46, 0.07, 2.05) +
-                        wave(w, vec2(0.73, -0.69), 0.71, 0.045, 2.7);
+                    vec3 d = vec3(0.0);
+                    d += gerstnerWave(w, vec2(0.86, 0.51), 0.10, 0.40, 0.85, 0.90);
+                    d += gerstnerWave(w, vec2(-0.42, 0.91), 0.075, 0.30, 0.65, 0.85);
+                    d += gerstnerWave(w, vec2(0.62, -0.78), 0.19, 0.18, 1.2, 0.95);
+                    d += gerstnerWave(w, vec2(-0.95, -0.30), 0.29, 0.12, 1.55, 1.10);
+                    d += gerstnerWave(w, vec2(0.30, 0.95), 0.46, 0.07, 2.05, 1.30);
+                    d += gerstnerWave(w, vec2(0.73, -0.69), 0.71, 0.045, 2.7, 1.40);
+                    return d;
                 }
                 void main() {
                     vec3 p = position;
                     vec2 xz = p.xz;
-                    float w = waveHeight(xz);
-                    p.y += w;
-                    vWave = w;
-                    // Normale analytisch aus den Ableitungen.
+                    vec3 disp = waveDisplace(xz);
+                    vec3 pd = p + disp;
+                    vWave = disp.y;
+                    // Normale aus den verschobenen Nachbar-Punkten: zwei
+                    // Tangenten, Kreuzprodukt. Gerstner verschiebt horizontal,
+                    // also reicht reines Höhen-Differenzieren nicht.
                     float e = 1.4;
-                    float wx = waveHeight(xz + vec2(e, 0.0));
-                    float wz = waveHeight(xz + vec2(0.0, e));
-                    vNormal = normalize(vec3(-(wx - w) / e, 1.0, -(wz - w) / e));
-                    vec4 wp = modelMatrix * vec4(p, 1.0);
+                    vec3 px = vec3(p.x + e, p.y, p.z) + waveDisplace(vec2(p.x + e, p.z));
+                    vec3 pz = vec3(p.x, p.y, p.z + e) + waveDisplace(vec2(p.x, p.z + e));
+                    vec3 nrm = normalize(cross(pz - pd, px - pd));
+                    if (nrm.y < 0.0) nrm = -nrm;
+                    vNormal = nrm;
+                    vec4 wp = modelMatrix * vec4(pd, 1.0);
                     vWorldPos = wp.xyz;
                     vec4 mv = viewMatrix * wp;
-                    vFogDepth = -mv.z;
+                    // V8.45 — radiale Distanz (dreh-invariant), wie Terrain.
+                    vFogDepth = length(mv.xyz);
                     gl_Position = projectionMatrix * mv;
                 }
             `,
@@ -7795,14 +8071,20 @@ class AnazhRealm {
         if (!creature) return { ok: false, reason: "no_creature" };
         const bp = this.state.blueprints && this.state.blueprints[blueprintName];
         if (!bp) return { ok: false, reason: "blueprint_unknown" };
-        if (bp.role !== "consumable" || !bp.consumableMeta) {
+        if (bp.role !== "consumable") {
             return { ok: false, reason: "not_marked_as_consumable" };
         }
+        // Welle 11 ext. — consumableMeta optional (siehe activateConsumable):
+        // emergente Nahrung ist auch für Kreaturen verfütterbar.
+        const meta = bp.consumableMeta || {};
         const tags = this.computeCompoundTags(bp);
-        const scale = bp.consumableMeta.scale || 0.2;
+        const scale = meta.scale || 0.2;
+        // V8.39 — Qualität skaliert die Trank-Stärke (selber Pfad wie
+        // activateConsumable).
+        const qMul = 0.5 + 0.5 * this.computeBlueprintQuality(bp);
         const tagBonus = {};
         for (const tag of Object.keys(tags)) {
-            const v = tags[tag] * scale;
+            const v = tags[tag] * scale * qMul;
             if (Math.abs(v) > 0.001) tagBonus[tag] = Math.max(-1, Math.min(1, v));
         }
         if (Object.keys(tagBonus).length === 0) {
@@ -7811,8 +8093,8 @@ class AnazhRealm {
         const ok = this.applyCreatureBoost(creature, {
             source: `consume:${blueprintName}`,
             tagDelta: tagBonus,
-            durationSeconds: bp.consumableMeta.durationSeconds || 30,
-            label: bp.consumableMeta.label || bp.label || blueprintName,
+            durationSeconds: meta.durationSeconds || 30,
+            label: meta.label || bp.label || blueprintName,
         });
         return ok ? { ok: true, tagBonus } : { ok: false, reason: "boost_apply_failed" };
     }
@@ -7915,8 +8197,11 @@ class AnazhRealm {
         if (equipped.tool && this.state.tools && this.state.tools[equipped.tool]) {
             const tool = this.state.tools[equipped.tool];
             if (tool.sourceBlueprint && this.state.blueprints[tool.sourceBlueprint]) {
-                const tags = this.computeCompoundTags(this.state.blueprints[tool.sourceBlueprint]) || {};
-                const w = AnazhRealm.TOOL_STAT_WEIGHT;
+                const toolBp = this.state.blueprints[tool.sourceBlueprint];
+                const tags = this.computeCompoundTags(toolBp) || {};
+                // V8.39 — Qualität skaliert das Stat-Gewicht (selber Pfad wie
+                // computePlayerStats): ein grob gebautes Werkzeug wirkt halb.
+                const w = AnazhRealm.TOOL_STAT_WEIGHT * (0.5 + 0.5 * this.computeBlueprintQuality(toolBp));
                 for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
                     finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
                 }
@@ -7927,7 +8212,9 @@ class AnazhRealm {
             const bp = this.state.blueprints[equipped.armor];
             if (bp.role === "armor") {
                 const tags = this.computeCompoundTags(bp) || {};
-                const w = AnazhRealm.ARMOR_STAT_WEIGHT;
+                // V8.39 — Qualität skaliert das Stat-Gewicht (selber Pfad wie
+                // computePlayerStats): eine grob gebaute Rüstung wirkt halb.
+                const w = AnazhRealm.ARMOR_STAT_WEIGHT * (0.5 + 0.5 * this.computeBlueprintQuality(bp));
                 for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
                     finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
                 }
@@ -10616,29 +10903,62 @@ class AnazhRealm {
         // V8.28 6.G4.b B — Terrain-Shader liest Welt-Affinität pro Vertex.
         const vertexShader = `
         attribute vec4 aField;
-        varying vec2 vUv;
         varying float vHeight;
         varying vec3 vNormal;
         varying vec4 vField;
         varying float vFogDepth;
+        // V8.43 — der Detail-Noise wird PER VERTEX berechnet und als varying
+        // interpoliert. Vorher lief noise() im Fragment-Shader (per-Pixel) →
+        // bei Kamera-Drehung kroch das hochfrequente Muster per Sub-Pixel-
+        // Aliasing übers Terrain (dieselbe Klasse wie die alten prozeduralen
+        // Skybox-Sterne, bevor sie echte Geometrie wurden). Per-Vertex +
+        // Interpolation = band-limitiert, stabil unter Kamera-Bewegung.
+        varying float vJitter;
+        float random(vec2 st) {
+            return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
+        }
+        float noise(vec2 st) {
+            vec2 i = floor(st);
+            vec2 f = fract(st);
+            float a = random(i);
+            float b = random(i + vec2(1.0, 0.0));
+            float c = random(i + vec2(0.0, 1.0));
+            float d = random(i + vec2(1.0, 1.0));
+            vec2 u = f * f * (3.0 - 2.0 * f);
+            return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+        }
         void main() {
-            vUv = uv;
             vHeight = position.y;
-            vNormal = normalize(normalMatrix * normal);
+            // V8.44 — vNormal in WELT-Raum (mat3(modelMatrix)). Der Diffuse
+            // dottet vNormal mit der world-space lightDirection; mit einem
+            // View-Raum-Normal (normalMatrix) driftete das Ergebnis mit der
+            // Kamera — beim Yaw glitt das Hell/Dunkel-Muster horizontal übers
+            // Terrain. Welt-Normal + Welt-Licht = kamera-unabhängig, korrekt.
+            vNormal = normalize(mat3(modelMatrix) * normal);
             vField = aField;
+            // Townscaper-Detail-Jitter — zwei Noise-Oktaven, hier per Vertex.
+            float n1 = noise(uv * 3.0);
+            float n2 = noise(uv * 9.0);
+            vJitter = (n1 - 0.5) * 0.07 + (n2 - 0.5) * 0.035;
             vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-            // V8.31 — Fog-Tiefe (View-Space-Distanz) für das Fragment.
-            vFogDepth = -mvPosition.z;
+            // V8.45 — Fog-Tiefe = RADIALE Distanz zur Kamera (length), nicht
+            // View-Space-Z (-mvPosition.z). View-Z hängt von der Blick-
+            // RICHTUNG ab: beim reinen Drehen änderte sich die Fog-Menge auf
+            // einem festen Terrain-Punkt → der Dunst „atmete" beim langsamen
+            // Kamera-Schwenk (das letzte kamera-abhängige Glied im Terrain-
+            // Shader nach dem V8.44-Lighting-Frame-Fix). Radiale Distanz ist
+            // dreh-invariant → das Terrain ist jetzt voll kamera-unabhängig.
+            vFogDepth = length(mvPosition.xyz);
             gl_Position = projectionMatrix * mvPosition;
         }
     `;
         const fragmentShader = `
         precision mediump float;
-        varying vec2 vUv;
         varying float vHeight;
         varying vec3 vNormal;
         varying vec4 vField;
         varying float vFogDepth;
+        varying float vJitter;
         uniform vec3 lightDirection;
         uniform float weatherEffect;
         // V8.27 6.G4.a — Tag-Nacht synchronisiert. lightIntensity moduliert
@@ -10656,19 +10976,6 @@ class AnazhRealm {
         uniform vec3 fogColor;
         uniform float fogNear;
         uniform float fogFar;
-        float random(vec2 st) {
-            return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
-        }
-        float noise(vec2 st) {
-            vec2 i = floor(st);
-            vec2 f = fract(st);
-            float a = random(i);
-            float b = random(i + vec2(1.0, 0.0));
-            float c = random(i + vec2(0.0, 1.0));
-            float d = random(i + vec2(1.0, 1.0));
-            vec2 u = f * f * (3.0 - 2.0 * f);
-            return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
-        }
         void main() {
             // V8.28 6.G4.b B — die Grundfarbe EMERGIERT aus der Welt-
             // Affinität, NICHT aus der Höhe. Dieselbe worldFieldAt-Sprache
@@ -10693,10 +11000,10 @@ class AnazhRealm {
             float height = vHeight;
             color = mix(color, vec3(0.92, 0.93, 1.0), smoothstep(12.0, 42.0, height));
             color = mix(color, vec3(0.78, 0.72, 0.52), smoothstep(-2.0, -14.0, height));
-            // Townscaper-Style: leichter per-Vertex-Noise-Jitter für Detail.
-            float n1 = noise(vUv * 3.0);
-            float n2 = noise(vUv * 9.0);
-            color += vec3((n1 - 0.5) * 0.07 + (n2 - 0.5) * 0.035);
+            // V8.43 — Townscaper-Detail-Jitter, jetzt per Vertex berechnet
+            // und interpoliert (crawl-frei — siehe Vertex-Shader). Vorher
+            // lief noise() hier per-Pixel und kroch bei Kamera-Drehung.
+            color += vec3(vJitter);
             color = mix(color, color * 0.7, weatherEffect);
             // V8.27 6.G4.a — Diffuse + Ambient mit Tag-Nacht-Intensities.
             // Wrapped Lambert (half-Lambert) für sanfteren Schatten-Übergang.
@@ -11510,7 +11817,11 @@ class AnazhRealm {
                 const falloff = t * t * (3 - 2 * t);
                 const delta = dh * falloff;
                 const idx = z * VTX + x;
-                heightData[idx] += delta;
+                // V8.36 — Höhe clampen. Ungeklemmt trieb wiederholtes Graben
+                // am selben Punkt die Höhe unbegrenzt nach unten → entartetes
+                // Mesh + Durchfall. [-100, 100] = derselbe Band wie der
+                // Welt-Vertex-Clamp.
+                heightData[idx] = Math.max(-100, Math.min(100, heightData[idx] + delta));
                 arr[idx * 3 + 1] = heightData[idx];
                 touched++;
             }
@@ -11918,7 +12229,7 @@ class AnazhRealm {
             // V8.28 6.G4.b — Atmosphäre-Slider (celLevels + fogDistance).
             atmosphere: {
                 celLevels: (this.state.atmosphere && this.state.atmosphere.celLevels) || 8,
-                fogDistance: (this.state.atmosphere && this.state.atmosphere.fogDistance) || 1.0,
+                fogDistance: (this.state.atmosphere && this.state.atmosphere.fogDistance) || 3.0,
             },
             // Ring 5: Spieler-Seele (visuelle Form). Beim Load wird sie nach
             // dem playerMesh-Bau angewandt — kein Body-Recreate.
@@ -12771,11 +13082,11 @@ class AnazhRealm {
         }
         // V8.28 6.G4.b — Atmosphäre-Slider wiederherstellen (defensive Clamps).
         if (state.atmosphere && typeof state.atmosphere === "object") {
-            if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 1.0 };
+            if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0 };
             const cl = Number(state.atmosphere.celLevels);
             if (Number.isFinite(cl)) this.state.atmosphere.celLevels = Math.max(2, Math.min(8, Math.round(cl)));
             const fd = Number(state.atmosphere.fogDistance);
-            if (Number.isFinite(fd)) this.state.atmosphere.fogDistance = Math.max(0.3, Math.min(3.0, fd));
+            if (Number.isFinite(fd)) this.state.atmosphere.fogDistance = Math.max(0.9, Math.min(9.0, fd));
         }
         // Lights+Skybox sofort neu aus restauriertem timeOfDay setzen
         if (typeof this._applyDayNightToScene === "function") {
@@ -14087,7 +14398,7 @@ class AnazhRealm {
                 label: "Mensch",
                 color: 0xff0000,
                 build: () => this._buildHumanGroup(),
-                animate: (g, t, ph, mv) => this._animateHuman(g, t, ph, mv),
+                animate: (g, t, ph, mv, uw) => this._animateHuman(g, t, ph, mv, uw),
                 bodyParts: [
                     { shape: "box", material: "fleisch", size: { x: 0.6, y: 1.0, z: 0.4 }, label: "Torso" },
                     { shape: "sphere", material: "knochen", size: { x: 0.3, y: 0.3, z: 0.3 }, label: "Kopf" },
@@ -14099,7 +14410,7 @@ class AnazhRealm {
                 label: "Phönix",
                 color: 0xff7a1a,
                 build: () => this._buildPhoenixGroup(),
-                animate: (g, t, ph, mv) => this._animatePhoenix(g, t, ph, mv),
+                animate: (g, t, ph, mv, uw) => this._animatePhoenix(g, t, ph, mv, uw),
                 bodyParts: [
                     { shape: "box", material: "federn", size: { x: 0.4, y: 0.55, z: 0.35 }, label: "Körper" },
                     { shape: "plane", material: "federn", size: { x: 1.2, y: 0.6, z: 0.05 }, label: "Flügel" },
@@ -14111,7 +14422,7 @@ class AnazhRealm {
                 label: "Drache",
                 color: 0x2d6e3b,
                 build: () => this._buildDragonGroup(),
-                animate: (g, t, ph, mv) => this._animateDragon(g, t, ph, mv),
+                animate: (g, t, ph, mv, uw) => this._animateDragon(g, t, ph, mv, uw),
                 bodyParts: [
                     { shape: "box", material: "schuppen", size: { x: 1.2, y: 0.7, z: 0.5 }, label: "Körper" },
                     { shape: "sphere", material: "schuppen", size: { x: 0.45, y: 0.4, z: 0.4 }, label: "Kopf" },
@@ -14567,6 +14878,12 @@ class AnazhRealm {
         const auraSat = 0.85 * hpRatio;
         const auraLit = 0.5;
         const auraColor = new THREE.Color().setHSL(hue / 360, auraSat, auraLit);
+        // Ring 11 V3 — dominante Hue + Intensität cachen, damit p2pTick sie im
+        // Aura-Sync an die Mitspieler senden kann (~1 Hz). intensity ist
+        // hpRatio × Tag-Stärke — 0..1, der Empfänger rendert daraus die Opacity.
+        const auraStrength = Math.min(1, bestVal / 1.5);
+        this.state.player._auraHueOut = hue;
+        this.state.player._auraIntensityOut = hpRatio * auraStrength;
         // (a) Glow-Sprite (V4): weicher Schimmer um den Avatar.
         // Sprite ist Billboard (folgt Kamera automatisch). Radius wirkt
         // physisch über `scale`; die radial-Gradient-Texture sorgt für den
@@ -14581,10 +14898,9 @@ class AnazhRealm {
             const p = this.state.playerMesh.position;
             glow.position.set(p.x, p.y + 0.5, p.z);
             glow.material.color.copy(auraColor);
-            // Sprite-Master-Opacity skaliert mit HP × dominanter Tag-Intensität.
-            // Cap bei 1.0 (Texture-Alpha selbst läuft auf max 0.55 in der Mitte,
-            // Rand 0 — das ist der weiche Verlauf).
-            const auraStrength = Math.min(1, bestVal / 1.5);
+            // Sprite-Master-Opacity skaliert mit HP × dominanter Tag-Intensität
+            // (auraStrength oben berechnet). Cap bei 1.0 (Texture-Alpha selbst
+            // läuft auf max 0.55 in der Mitte, Rand 0 — der weiche Verlauf).
             glow.material.opacity = 0.55 + 0.45 * hpRatio * auraStrength;
             // Atem-Animation über Sprite-scale (5 % Modulation).
             const breath = 3.0 * (1 + Math.sin(performance.now() * 0.001) * 0.05);
@@ -14751,12 +15067,19 @@ class AnazhRealm {
         // weil Compound-Tags bis 3 reichen können, Boost-Deltas sollen 0..0.5
         // bleiben damit der Effekt spürbar aber nicht dominant ist.
         const bp = this.state.blueprints && this.state.blueprints[name];
-        if (bp && bp.role === "consumable" && bp.consumableMeta) {
+        if (bp && bp.role === "consumable") {
+            // Welle 11 ext. — consumableMeta ist optional: eine emergente
+            // Nahrung (lebendig+weich) oder ein alchemy-Domain-Bauplan trägt
+            // keine Meta, ist aber dennoch essbar — Defaults greifen.
+            const meta = bp.consumableMeta || {};
             const tags = this.computeCompoundTags(bp);
-            const scale = bp.consumableMeta.scale || 0.2;
+            const scale = meta.scale || 0.2;
+            // V8.39 — Qualität skaliert die Trank-Stärke: ein grob gebrautes
+            // Konsumable wirkt halb, ein fein gefertigtes voll.
+            const qMul = 0.5 + 0.5 * this.computeBlueprintQuality(bp);
             const tagBonus = {};
             for (const tag of Object.keys(tags)) {
-                const v = tags[tag] * scale;
+                const v = tags[tag] * scale * qMul;
                 if (Math.abs(v) > 0.001) tagBonus[tag] = Math.max(-1, Math.min(1, v));
             }
             if (Object.keys(tagBonus).length === 0) {
@@ -14765,8 +15088,8 @@ class AnazhRealm {
             const ok = this.addPlayerBoost({
                 source: `consume:${name}`,
                 tagDelta: tagBonus,
-                durationSeconds: bp.consumableMeta.durationSeconds || 30,
-                label: bp.consumableMeta.label || bp.label || name,
+                durationSeconds: meta.durationSeconds || 30,
+                label: meta.label || bp.label || name,
             });
             return { ok };
         }
@@ -14824,6 +15147,9 @@ class AnazhRealm {
 
     _buildHumanGroup() {
         const group = new THREE.Group();
+        // V8.33 — YXZ-Rotation: rotation.y (Yaw) ist außen, rotation.x wirkt
+        // im gedrehten Frame = lokaler Vorwärts-Lehnen für die Schwimm-Pose.
+        group.rotation.order = "YXZ";
         // V8.29.1 — MeshToonMaterial statt knallrotes MeshBasic. Reagiert
         // auf Tag-Nacht-Licht wie der Rest der Welt (V8.28-Konsistenz),
         // gedämpftes Rot statt grelles 0xff0000. gradientMap geteilt.
@@ -14853,8 +15179,29 @@ class AnazhRealm {
         return group;
     }
 
-    _animateHuman(group, t, walkPhase, isMoving) {
+    _animateHuman(group, t, walkPhase, isMoving, underwater) {
         const p = group.userData.parts;
+        if (underwater) {
+            // V8.33 — Schwimm-Pose: der Körper neigt sich vorwärts ins
+            // Wasser, die Arme ziehen wechselnde Kraul-Züge in weitem Bogen,
+            // die Beine flattern. Der Avatar wirkt nicht mehr statisch gegen
+            // das bewegte Wasser.
+            group.rotation.x = isMoving ? 0.6 : 0.28;
+            const armAmp = isMoving ? 1.5 : 0.7;
+            p.leftArm.rotation.x = Math.sin(walkPhase) * armAmp - 0.35;
+            p.rightArm.rotation.x = Math.sin(walkPhase + Math.PI) * armAmp - 0.35;
+            p.leftArm.rotation.z = 0.4;
+            p.rightArm.rotation.z = -0.4;
+            const kickAmp = isMoving ? 0.4 : 0.18;
+            p.leftLeg.rotation.x = Math.sin(walkPhase * 1.8) * kickAmp;
+            p.rightLeg.rotation.x = Math.sin(walkPhase * 1.8 + Math.PI) * kickAmp;
+            p.torso.position.y = 0.45 + Math.sin(t * 2.2) * 0.05;
+            return;
+        }
+        // An Land: Lehnen + Arm-Splay zurücksetzen (Schwimm-Pose räumen).
+        group.rotation.x = 0;
+        p.leftArm.rotation.z = 0;
+        p.rightArm.rotation.z = 0;
         if (isMoving) {
             // Schritt-Zyklus: Beine ±0.5 rad gegenphasig, Arme ±0.3 entgegen
             const swing = Math.sin(walkPhase) * 0.5;
@@ -14876,6 +15223,8 @@ class AnazhRealm {
 
     _buildPhoenixGroup() {
         const group = new THREE.Group();
+        // V8.33 — YXZ-Rotation für den lokalen Schwimm-Lehnen (rotation.x).
+        group.rotation.order = "YXZ";
         const material = new THREE.MeshBasicMaterial({ color: 0xff7a1a });
         // Körper: Oktaeder im Brust-Bereich
         const body = new THREE.Mesh(new THREE.OctahedronGeometry(0.45, 0), material);
@@ -14913,8 +15262,22 @@ class AnazhRealm {
         return group;
     }
 
-    _animatePhoenix(group, t, walkPhase, isMoving) {
+    _animatePhoenix(group, t, walkPhase, isMoving, underwater) {
         const p = group.userData.parts;
+        if (underwater) {
+            // V8.33 — Schwimm-Pose: die Flügel werden zu Flossen, ein
+            // langsamer breiter Paddel-Schlag treibt den Phönix wie einen
+            // tauchenden Vogel (Pinguin/Kormoran). Körper geneigt + Wippen.
+            group.rotation.x = isMoving ? 0.5 : 0.22;
+            const paddle = Math.sin(walkPhase) * (isMoving ? 1.0 : 0.5);
+            p.leftWing.rotation.z = -0.3 - paddle;
+            p.rightWing.rotation.z = 0.3 + paddle;
+            p.body.position.y = 0.5 + Math.sin(t * 2.0) * 0.05;
+            p.head.position.y = 0.95 + Math.sin(t * 2.0) * 0.04;
+            p.tail.rotation.z = Math.sin(t * 1.5) * 0.12;
+            return;
+        }
+        group.rotation.x = 0;
         // Flügel flattern immer (Phönix ist ein Flugwesen). In Bewegung
         // schneller, im Idle gemächlich.
         const flapSpeed = isMoving ? 14 : 7;
@@ -14933,6 +15296,8 @@ class AnazhRealm {
 
     _buildDragonGroup() {
         const group = new THREE.Group();
+        // V8.33 — YXZ-Rotation für den lokalen Schwimm-Lehnen (rotation.x).
+        group.rotation.order = "YXZ";
         const material = new THREE.MeshBasicMaterial({ color: 0x2d6e3b });
         // Welle 6.D Etappe 3b — Drache-Orientierung bleibt mit Kopf in +Z
         // (Forward). Der Schöpfer hatte zwischenzeitlich „W/S vertauscht"
@@ -14988,8 +15353,28 @@ class AnazhRealm {
         return group;
     }
 
-    _animateDragon(group, t, walkPhase, isMoving) {
+    _animateDragon(group, t, walkPhase, isMoving, underwater) {
         const p = group.userData.parts;
+        if (underwater) {
+            // V8.33 — Schwimm-Pose: der Drache gleitet wie eine Seeschlange,
+            // der Schweif wellt kräftig als Antrieb, die Beine paddeln knapp,
+            // der Körper neigt sich ins Wasser.
+            group.rotation.x = isMoving ? 0.4 : 0.16;
+            const paddle = Math.sin(walkPhase) * (isMoving ? 0.45 : 0.2);
+            p.flLeg.rotation.x = paddle;
+            p.brLeg.rotation.x = paddle;
+            p.frLeg.rotation.x = -paddle;
+            p.blLeg.rotation.x = -paddle;
+            p.body.position.y = 0.4 + Math.sin(t * 1.9) * 0.05;
+            // Schweif wellt kräftiger — Antrieb statt Zier.
+            const tailAmp = isMoving ? 0.5 : 0.32;
+            p.tailJoint.rotation.y = Math.sin(t * 3.0) * tailAmp;
+            p.tailJoint2.rotation.y = Math.sin(t * 3.0 - 0.7) * (tailAmp + 0.12);
+            p.tailJoint3.rotation.y = Math.sin(t * 3.0 - 1.4) * (tailAmp + 0.24);
+            p.head.position.y = 0.5 + Math.sin(t * 1.7) * 0.03;
+            return;
+        }
+        group.rotation.x = 0;
         if (isMoving) {
             // Trab: Diagonale Bein-Paare (FL+BR vs FR+BL) gegenphasig
             const swing = Math.sin(walkPhase) * 0.45;
@@ -15173,6 +15558,80 @@ class AnazhRealm {
         const T = AnazhRealm.AFFORDANCE_THRESHOLDS.focusing;
         const tags = this.computeCompoundTags(bp) || {};
         return (tags.transparent || 0) >= T.transparentMin && (tags.wärmeleitung || 0) >= T.wärmeMin;
+    }
+
+    // ----- Welle 11 ext. — intrinsische Substanz-Signale für die Rolle -----
+
+    // Bilaterale Symmetrie eines Compounds. Liefert {ratio, limbPairs}:
+    // ratio = Anteil Parts mit Spiegel-Partner (auf der Mittelachse zählt
+    // ein Part als sein eigener Spiegel), limbPairs = Anzahl echter
+    // Off-Achsen-Spiegel-Paare (= Glieder). Ein Wesen hat hohe ratio UND
+    // Glieder; ein Turm hat ratio 1.0 aber 0 limbPairs (alles auf der Achse).
+    _compoundSymmetry(bp) {
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length < 2) return { ratio: 0, limbPairs: 0 };
+        const bbox = this._compoundBBox(bp);
+        const T = AnazhRealm.SUBSTANCE_ROLE_THRESHOLDS.body;
+        const centerX = (bbox.min.x + bbox.max.x) / 2;
+        const spanX = bbox.max.x - bbox.min.x;
+        const spanY = bbox.max.y - bbox.min.y;
+        const spanZ = bbox.max.z - bbox.min.z;
+        const tol = Math.max(0.25, Math.max(spanX, spanY, spanZ) * T.mirrorTol);
+        const offAxisCut = Math.max(0.2, spanX * T.offAxisMin);
+        const parts = bp.parts;
+        const usedAsPartner = new Set();
+        let matched = 0;
+        let limbPairs = 0;
+        for (let i = 0; i < parts.length; i++) {
+            const p = parts[i].position || { x: 0, y: 0, z: 0 };
+            const offAxis = Math.abs(p.x - centerX) > offAxisCut;
+            const mx = 2 * centerX - p.x; // gespiegelte x-Position
+            let found = false;
+            for (let j = 0; j < parts.length; j++) {
+                if (j === i) continue;
+                const q = parts[j].position || { x: 0, y: 0, z: 0 };
+                if (Math.abs(q.x - mx) <= tol && Math.abs(q.y - p.y) <= tol && Math.abs(q.z - p.z) <= tol) {
+                    found = true;
+                    if (offAxis && i < j && !usedAsPartner.has(j)) {
+                        limbPairs++;
+                        usedAsPartner.add(j);
+                    }
+                    break;
+                }
+            }
+            // Ein Part auf der Mittelachse ist sein eigener Spiegel.
+            if (!found && !offAxis) found = true;
+            if (found) matched++;
+        }
+        return { ratio: matched / parts.length, limbPairs };
+    }
+
+    // body — Seelen-Signatur: ein Wesen-Körper ist bilateral symmetrisch
+    // (Glieder in Spiegel-Paaren) + mehrteilig. Räumliche Konfiguration
+    // entscheidet, keine Form-Whitelist — ein Compound aus Box+Sphere+zwei
+    // gespiegelten Cylindern IST ein Körper, egal welche Shapes.
+    _isBodyShaped(bp) {
+        if (!bp || !Array.isArray(bp.parts)) return false;
+        const T = AnazhRealm.SUBSTANCE_ROLE_THRESHOLDS.body;
+        if (bp.parts.length < T.minParts) return false;
+        // Vertikalität: ein Körper "steht" — die Y-Ausdehnung ist ein
+        // spürbarer Anteil der horizontalen. Ein flaches, breit gestreutes
+        // Dorf fällt hier raus, obwohl es bilateral symmetrisch ist.
+        const bbox = this._compoundBBox(bp);
+        const spanY = bbox.max.y - bbox.min.y;
+        const horiz = Math.max(bbox.max.x - bbox.min.x, bbox.max.z - bbox.min.z);
+        if (spanY < horiz * T.verticalMin) return false;
+        const sym = this._compoundSymmetry(bp);
+        return sym.ratio >= T.symmetryMin && sym.limbPairs >= T.minLimbPairs;
+    }
+
+    // food — Nahrungs-Signatur: lebendig + weich. Reine Tag-Sprache aus den
+    // bestehenden 10 Tags (kein 11. Tag — Heilige Lektion). Ein Fleisch- oder
+    // Frucht-Compound ist essbar, ein Holz- oder Stein-Compound nicht.
+    _isFoodLike(bp) {
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return false;
+        const T = AnazhRealm.SUBSTANCE_ROLE_THRESHOLDS.food;
+        const tags = this.computeCompoundTags(bp) || {};
+        return (tags.lebendig || 0) >= T.lebendigMin && (tags.härte || 0) <= T.härteMax;
     }
 
     // ----- Welt-Reaktion: moveable (Spieler steigt ein, Compound folgt) -----
@@ -15459,6 +15918,12 @@ class AnazhRealm {
             newGroup.rotation.copy(old.rotation);
             newGroup.scale.copy(old.scale);
             newGroup.visible = old.visible;
+            // V8.33 — `Euler.copy` überträgt auch die `order`. Eine Custom-
+            // Seele (über `_buildFromBlueprint`) hat das Default-XYZ; ohne
+            // dieses Reset würde ein Custom→Built-in-Wechsel das YXZ der
+            // Built-in-Gruppe überschreiben und die Schwimm-Pose seitlich
+            // statt vorwärts kippen lassen. Die Spieler-Gruppe ist IMMER YXZ.
+            newGroup.rotation.order = "YXZ";
             // Physics-Body-Referenz mitnehmen (Sync-Loop liest
             // mesh.userData.physicsBody) und Eintrag in state.rigidBodies
             // mitswappen — sonst überschreibt der Sync-Loop die Position
@@ -15489,6 +15954,9 @@ class AnazhRealm {
         // und Resistenzen. DSL-Tuning via player_speed/player_jump_power
         // überschreibt danach frei, bleibt aber bis zum nächsten Soul-Wechsel.
         this.recomputePlayerStats();
+        // Ring 11 V3 — Soul-Sync: Mitspieler über den Seelen-Wechsel
+        // informieren, damit ihr Renderer den neuen Avatar baut.
+        if (this.state.p2p && this.state.p2p.enabled) this._p2pBroadcastSoul();
         return true;
     }
 
@@ -15626,16 +16094,23 @@ class AnazhRealm {
             const speed = Math.hypot(v.x(), v.z());
             isMoving = speed > 0.4;
         }
+        // V8.33 — unter Wasser schwimmt der Avatar statt zu laufen.
+        const underwater = !!this.state.playerUnderwater;
         // Walk-Phase nur in Bewegung akkumulieren (keine Glieder-Sprünge
         // beim Stop). Frame-Delta aus animationLastTick.
         const last = p.animationLastTick;
         const dt = last > -Infinity ? Math.max(0, currentTime - last) : 0;
         p.animationLastTick = currentTime;
-        if (isMoving) {
+        if (underwater) {
+            // V8.33 — Schwimm-Takt. Die Phase läuft auch im Stillstand weiter
+            // (Wasser-Treten strokt sanft), in Bewegung schneller — so springt
+            // der Zug-Rhythmus nicht beim Start/Stopp.
+            p.walkPhase += dt * (isMoving ? 5.0 : 2.3);
+        } else if (isMoving) {
             const stepHz = this.state.player.soul === "dragon" ? 4.5 : 5.5;
             p.walkPhase += dt * stepHz;
         }
-        def.animate(mesh, currentTime, p.walkPhase, isMoving);
+        def.animate(mesh, currentTime, p.walkPhase, isMoving, underwater);
     }
 
     // ### Ring 6 – architectureTemplates V1 ###
@@ -15900,20 +16375,48 @@ class AnazhRealm {
             if (!a || !b) continue;
             const pa = a.position || { x: 0, y: 0, z: 0 };
             const pb = b.position || { x: 0, y: 0, z: 0 };
+            const strength = this.computeConnectionStrength(c, blueprint);
+            const color = this._connectionColor(strength);
+            // V8.38 — Verbindungen sichtbar machen (Schöpfer-Browser-Test:
+            // „bei zwei berührenden Würfeln erkenne ich die Verbindung nicht,
+            // sie liegt innerhalb der Geometrie"). Wurzel: die Linie verläuft
+            // zwischen zwei Part-Zentren — bei überlappenden Parts steckt sie
+            // komplett im Mesh. Fix: depthTest:false + hoher renderOrder →
+            // Linie + Marker zeichnen IMMER über den Parts. Der Mittelpunkt-
+            // Marker ist der unmissverständliche „hier ist eine Verbindung"-
+            // Punkt, auch wenn die Parts einander ganz überlappen.
             const geom = new THREE.BufferGeometry();
             geom.setAttribute(
                 "position",
                 new THREE.Float32BufferAttribute([pa.x || 0, pa.y || 0, pa.z || 0, pb.x || 0, pb.y || 0, pb.z || 0], 3)
             );
-            const strength = this.computeConnectionStrength(c, blueprint);
-            const color = this._connectionColor(strength);
-            // Opacity 0.75 lässt die Linie sichtbar ohne dass sie den Bauplan dominiert.
-            const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.75 });
+            const mat = new THREE.LineBasicMaterial({
+                color,
+                transparent: true,
+                opacity: 0.9,
+                depthTest: false,
+            });
             const line = new THREE.Line(geom, mat);
+            line.renderOrder = 999;
             line.userData.isConnectionLine = true;
             line.userData.connectionStrength = strength;
             line.userData.connectionType = c.type;
             group.add(line);
+            // Mittelpunkt-Marker — ein kleiner Oktaeder in der Lastfarbe.
+            const marker = new THREE.Mesh(
+                new THREE.OctahedronGeometry(0.28, 0),
+                new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.92, depthTest: false })
+            );
+            marker.position.set(
+                ((pa.x || 0) + (pb.x || 0)) / 2,
+                ((pa.y || 0) + (pb.y || 0)) / 2,
+                ((pa.z || 0) + (pb.z || 0)) / 2
+            );
+            marker.renderOrder = 1000;
+            marker.userData.isConnectionLine = true;
+            marker.userData.connectionStrength = strength;
+            marker.userData.connectionType = c.type;
+            group.add(marker);
         }
     }
 
@@ -16750,6 +17253,17 @@ class AnazhRealm {
         return sum / parts.length;
     }
 
+    // V8.39 — Bauplan-Qualität: ein Name für das Konzept „wie gut ist das
+    // gemacht?". Es IST die mittlere Part-Präzision (_compoundAvgPrecision-
+    // FromParts) — ein unbearbeiteter Bauplan gilt als „geboren" (1.0), ein
+    // bearbeiteter trägt seine min-Werte. Die Qualität skaliert die Wirkung
+    // des Produkts: Rüstungs-Stat-Gewicht + Trank-Stärke gehen mit
+    // (0.5 + 0.5·Qualität) — ein grobes Produkt wirkt halb, ein feines voll.
+    computeBlueprintQuality(blueprint) {
+        if (!blueprint || !Array.isArray(blueprint.parts)) return 1.0;
+        return this._compoundAvgPrecisionFromParts(blueprint.parts);
+    }
+
     // Mutationspfad: Werkzeug auf Part anwenden. Validiert Tool-Besitz +
     // Material × Op-Klassen-Kompatibilität (Konzept §3.2). Operationen
     // werden ANGEHÄNGT, nicht ersetzt — die opChain ist Geschichte, nicht
@@ -16787,7 +17301,12 @@ class AnazhRealm {
         // Schöpfer darf ohne Geduld-Kosten erschaffen.
         const mode = this.getGameMode ? this.getGameMode() : "frieden";
         if (mode === "pfad") {
-            const cost = AnazhRealm.TOOL_OP_STAMINA_COST || 10;
+            // V8.39 — Aufwand skaliert mit der Werkzeug-Präzision: ein stumpfes
+            // Werkzeug (niedriger cap) kostet mehr Kraft, ein feines weniger.
+            // cap 0.4 → ×1.1 (~11), cap 0.97 → ×0.53 (~5). Besseres Werkzeug
+            // = effizienter. Floor 2, damit eine Op nie gratis wird.
+            const baseCost = AnazhRealm.TOOL_OP_STAMINA_COST || 10;
+            const cost = Math.max(2, Math.round(baseCost * (1.5 - (tool.precisionCap || 0.5))));
             const stamina = (this.state.player && this.state.player.stamina) || 0;
             if (stamina < cost) {
                 return { ok: false, reason: "not_enough_stamina", staminaNeeded: cost, staminaHave: stamina };
@@ -17351,17 +17870,28 @@ class AnazhRealm {
         return toolScore >= armorScore ? "tool" : "armor";
     }
 
-    // Liefert die emergente Bauplan-Rolle aus der dominanten Werkzeug-
-    // Domain. Default ist "architecture" wenn keine Domain dominiert.
-    // forging-Split wird intern aufgelöst via Compound-Tag-Diskrimination.
+    // Welle 11 ext. — Substanz-Rolle. Die Rolle emergiert aus der GANZEN
+    // Substanz, in dieser Priorität:
+    //   1. Krafting-GESCHICHTE — die dominante opChain-Werkzeug-Domain
+    //      (forging→tool/armor, alchemy→consumable, soulwork→soul, …). Die
+    //      bewusste Werkzeug-Wahl ist ein Intent und hat Vorrang.
+    //   2. intrinsische FORM — bilateral-symmetrischer Glieder-Körper →
+    //      "soul". Greift wenn keine Krafting-Domain spricht: eine geformte
+    //      Gestalt IST ein Wesen, auch ungeschmiedet.
+    //   3. intrinsisches MATERIAL — lebendig+weiche Substanz → "consumable"
+    //      (Nahrung).
+    //   4. Default — "architecture" (Bauwerk).
+    // forging-Split wird via Compound-Tag-Diskrimination aufgelöst.
     computeBlueprintRole(blueprint) {
         const dom = this.computeBlueprintDomain(blueprint);
-        if (!dom) return AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
-        const role = AnazhRealm.DOMAIN_TO_ROLE[dom];
-        if (role === "forging-split") {
-            return this._computeForgingRole(blueprint);
+        if (dom) {
+            const role = AnazhRealm.DOMAIN_TO_ROLE[dom];
+            if (role === "forging-split") return this._computeForgingRole(blueprint);
+            if (role) return role;
         }
-        return role || AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
+        if (this._isBodyShaped(blueprint)) return "soul";
+        if (this._isFoodLike(blueprint)) return "consumable";
+        return AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
     }
 
     // Setzt bp.role emergent ein. Wird aus den Mutations-Methoden gerufen
@@ -17980,13 +18510,22 @@ class AnazhRealm {
     _refreshToonGradient() {
         if (typeof THREE === "undefined") return;
         const levels = (this.state.atmosphere && this.state.atmosphere.celLevels) || 8;
+        // V8.41 — Regler-Bereich 2–8 (8 = smooth/32 Stufen, 2..7 harte
+        // Plateaus). Das V8.40-Reserve-Band 9–16 war eine Fehleinschätzung:
+        // eine tote Regler-Hälfte ist schlechtere UX (Schöpfer-Browser-Test).
         const n = Math.max(2, Math.min(8, Math.round(levels)));
         const W = 32;
         if (!this.state.toonGradientMap) {
             const data = new Uint8Array(W * 4);
             const tex = new THREE.DataTexture(data, W, 1, THREE.RGBAFormat);
-            tex.minFilter = THREE.NearestFilter;
-            tex.magFilter = THREE.NearestFilter;
+            // V8.42 — LinearFilter statt NearestFilter: die GPU interpoliert
+            // den Gradient → echt stufenlos. NearestFilter gab 32 HARTE
+            // Stufen, deren Kanten beim Kamera-Schwenk über die Strukturen
+            // krochen (Sub-Pixel-Aliasing — dieselbe Klasse wie das alte
+            // Sternen-Flackern). Anti-Aliasing an der Wurzel, kein neues
+            // System: die Textur-Interpolation IST der Anti-Aliaser.
+            tex.minFilter = THREE.LinearFilter;
+            tex.magFilter = THREE.LinearFilter;
             tex.generateMipmaps = false;
             this.state.toonGradientMap = tex;
         }
@@ -18013,8 +18552,9 @@ class AnazhRealm {
     // V8.28 6.G4.b C — Mutations-Pfad für den Cel-Shading-Slider. Setzt
     // state.atmosphere.celLevels, regeneriert die gradientMap, persistiert.
     setCelLevels(levels) {
+        // V8.41 — Regler-Bereich 2–8 (8 = smooth). V8.40-Reserve 9–16 verworfen.
         const n = Math.max(2, Math.min(8, Math.round(Number(levels) || 8)));
-        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 1.0 };
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0 };
         this.state.atmosphere.celLevels = n;
         this._refreshToonGradient();
         if (typeof this.saveState === "function") this.saveState();
@@ -18025,8 +18565,10 @@ class AnazhRealm {
     // fogDistance ist ein Multiplikator (0.3 dicht .. 2.0 weit) auf
     // Fog-near/far. Die echten Werte setzt _applyDayNightToScene.
     setFogDistance(mult) {
-        const m = Math.max(0.3, Math.min(3.0, Number(mult) || 1.0));
-        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 1.0 };
+        // V8.40 — Effekt-Bereich verdreifacht: Label „100%" = mult 3.0 (=
+        // heutiger 300%-Fog, neuer Default), Label „300%" = mult 9.0.
+        const m = Math.max(0.9, Math.min(9.0, Number(mult) || 3.0));
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0 };
         this.state.atmosphere.fogDistance = m;
         if (typeof this._applyDayNightToScene === "function") this._applyDayNightToScene();
         if (typeof this.saveState === "function") this.saveState();
@@ -18427,6 +18969,24 @@ class AnazhRealm {
             if (has < need) missing[mat] = need - has;
         }
         return { ok: Object.keys(missing).length === 0, cost, have, missing };
+    }
+
+    // V8.38 — Tooltip-Text für Bauplan-Slots in Inventar/Hotbar (Schöpfer-
+    // Browser-Test: „beim Hovern über den Bauplan wäre die Material-Info
+    // interessant — dann sehe ich direkt ob ich's im Inventar hab").
+    // Nutzt checkBuildCost: pro Material need + have + ✓/✗.
+    _blueprintCostTooltip(blueprintName) {
+        const bp = this.state.blueprints && this.state.blueprints[blueprintName];
+        const label = (bp && (bp.label || bp.name)) || blueprintName;
+        const check = this.checkBuildCost(blueprintName);
+        const mats = Object.keys(check.cost);
+        if (mats.length === 0) return `${label} — Bau-Kosten: keine`;
+        const parts = mats.map((m) => {
+            const need = check.cost[m];
+            const have = check.have[m] || 0;
+            return `${need}× ${m}: hast ${have} ${have >= need ? "✓" : "✗"}`;
+        });
+        return `${label} — Bau-Kosten: ${parts.join(" · ")}`;
     }
 
     // Atomar konsumieren: erst prüfen, dann ALLE Materialien abziehen. Wenn
@@ -18867,7 +19427,11 @@ class AnazhRealm {
         const target = this._raycastWorldHit(30);
         if (!target.hit) return false;
         this._consumeMouseStamina();
-        const r = 1.5;
+        // V8.36 — Radius 3.0 statt 1.5: bei 1.5 ≈ vertexStep (1.17) traf ein
+        // Grabe-Op faktisch nur EINEN Vertex → mit jedem Klick eine spitzere
+        // Nadel statt einer Mulde, bis man durch die Welt fiel. 3.0 spannt
+        // mehrere Vertices → eine glatte, begehbare Mulde.
+        const r = 3.0;
         const dh = -1.0;
         if (typeof this.dslRun === "function") {
             this.dslRun(["modify_terrain", target.x, target.z, r, dh], { source: "human" });
@@ -18948,7 +19512,7 @@ class AnazhRealm {
         // erst ESC oder Slot-Wechsel verlässt den Modus.
         const bpName = this.state.buildMode.blueprintName;
         const bp = bpName && this.state.blueprints && this.state.blueprints[bpName];
-        if (bp && bp.role === "consumable" && bp.consumableMeta) {
+        if (bp && bp.role === "consumable") {
             const hit = this._pickCreatureAtCrosshair();
             if (!hit || !hit.creature) {
                 this.log(`Übergabe: keine Kreatur am Fadenkreuz.`, "INFO");
@@ -19152,6 +19716,8 @@ class AnazhRealm {
                 const bp = this.state.blueprints[name];
                 label.textContent = bp.label || name;
                 slot.classList.add("filled");
+                // V8.38 — Material-Bedarf als Hover-Tooltip.
+                slot.title = this._blueprintCostTooltip(name);
             } else {
                 label.textContent = "—";
             }
@@ -19326,6 +19892,9 @@ class AnazhRealm {
             } else {
                 el.setAttribute("aria-label", `${label.textContent}${slot.count > 1 ? ` ×${slot.count}` : ""}`);
             }
+            // V8.38 — Bauplan-Slot: Material-Bedarf als Hover-Tooltip, damit
+            // der Schöpfer direkt sieht, ob er die Materialien im Inventar hat.
+            if (bp) el.title = this._blueprintCostTooltip(slot.blueprintName);
             if (selectedName && slot.blueprintName === selectedName) {
                 el.classList.add("selected");
             }
@@ -20098,6 +20667,13 @@ class AnazhRealm {
             const row = document.createElement("div");
             row.className = "workshop-list-row" + (name === ws.selectedBlueprint ? " selected" : "");
             row.setAttribute("data-blueprint", name);
+            // V8.39 — Farb-Sprache: die Bauplan-Zeile leuchtet links in der
+            // Rollen-Farbe → ein Blick sagt, was jeder Bauplan IST.
+            {
+                const rRole = bp.role || AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
+                const rColor = (AnazhRealm.BLUEPRINT_ROLE_COLORS || {})[rRole];
+                if (rColor) row.style.borderLeft = `3px solid ${rColor}`;
+            }
             const nameSpan = document.createElement("span");
             nameSpan.className = "name";
             nameSpan.textContent = bp.label || name;
@@ -20373,6 +20949,15 @@ class AnazhRealm {
         connTitle.className = "workshop-tags-title";
         connTitle.textContent = "Verbindungen";
         connectionsSection.appendChild(connTitle);
+        // V8.38 — erklärt, was eine Verbindung TUT (Schöpfer-Frage: „verstehe
+        // noch nicht ganz wie die beeinflussen").
+        const connHint = document.createElement("div");
+        connHint.className = "workshop-tags-empty";
+        connHint.textContent =
+            "Eine Verbindung trägt eine Last (0–3 ★) aus Verbindungstyp × Material-Stärke × " +
+            "Kontaktfläche. Schwach (rot, <0.7) = Sollbruchstelle. Im 3D-Preview markiert ein " +
+            "farbiger Punkt jede Verbindung.";
+        connectionsSection.appendChild(connHint);
         const connections = Array.isArray(selected.connections) ? selected.connections : [];
         if (connections.length === 0) {
             const empty = document.createElement("div");
@@ -20757,6 +21342,22 @@ class AnazhRealm {
         fill.position.set(-4, -2, -3);
         scene.add(fill);
 
+        // V8.37 — 3D-Maße lesbar im Werkstatt-Preview (Schöpfer-Browser-Test:
+        // „3D-Dimensionen nicht ablesbar"). Ein perspektivisches Bild ohne
+        // Referenz lässt keine Größe erkennen. Ein 1-Einheit-Raster auf der
+        // Ursprungs-Ebene + ein Achsenkreuz geben CAD-Maß-Orientierung
+        // (Tinkercad/Blender-Konvention). Feste Szenen-Kinder —
+        // _workshopRebuildPreviewMesh disposed nur currentMesh, nicht diese.
+        // raycast = no-op: die Helfer dürfen Part-Auswahl + Gizmo NIE stören.
+        const grid = new THREE.GridHelper(12, 12, 0x7a5a34, 0x3a2e1c);
+        grid.material.opacity = 0.55;
+        grid.material.transparent = true;
+        grid.raycast = () => {};
+        scene.add(grid);
+        const axes = new THREE.AxesHelper(2.5);
+        axes.raycast = () => {};
+        scene.add(axes);
+
         const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
 
         const preview = {
@@ -20764,6 +21365,8 @@ class AnazhRealm {
             renderer,
             scene,
             camera,
+            gridHelper: grid,
+            axesHelper: axes,
             currentMesh: null,
             partMeshes: new Map(), // sub-Mesh → partIdx
             origColors: new Map(), // sub-Mesh → original color (uint)
@@ -20998,7 +21601,9 @@ class AnazhRealm {
         if (p.currentMesh) {
             p.scene.remove(p.currentMesh);
             p.currentMesh.traverse((obj) => {
-                if (obj.isMesh) {
+                // V8.38 — auch isLine disposen (Verbindungs-Linien), sonst
+                // leaken ihre Geometrie + Material bei jedem Bauplan-Edit.
+                if (obj.isMesh || obj.isLine) {
                     if (obj.geometry) obj.geometry.dispose();
                     if (obj.material) {
                         if (Array.isArray(obj.material)) obj.material.forEach((m) => m.dispose());
@@ -21024,6 +21629,11 @@ class AnazhRealm {
         // selektierbar via Sub-Mesh-Hit.
         let idx = 0;
         for (const child of group.children) {
+            // V8.38 — Verbindungs-Linien/-Marker sind keine Parts: überspringen,
+            // damit ein Marker nicht als Part in partMeshes landet (sonst wäre
+            // er selektierbar + würde getintet). Sie liegen am Ende der
+            // children-Liste — continue ohne idx++ hält die Part-Indizes 1:1.
+            if (child.userData && child.userData.isConnectionLine) continue;
             child.userData.partIdx = idx;
             if (child.isMesh) {
                 p.partMeshes.set(child, idx);
@@ -21079,8 +21689,13 @@ class AnazhRealm {
         const h = Math.max(64, Math.floor(rect.height));
         if (p.canvas.width !== w || p.canvas.height !== h) {
             p.renderer.setSize(w, h, false);
-            // Aspect bleibt 1:1 (CSS-aspect-ratio garantiert), aber wenn das
-            // mal nicht so wäre, müsste hier camera.aspect = w/h sein.
+            // V8.38 — der Preview-Canvas ist nicht mehr 1:1 (CSS aspect-ratio
+            // 5/3, damit das Stats-Panel ohne Scrollen sichtbar bleibt) → die
+            // Kamera muss das Seitenverhältnis übernehmen, sonst staucht das Bild.
+            if (p.camera) {
+                p.camera.aspect = w / h;
+                p.camera.updateProjectionMatrix();
+            }
             p.dirty = true;
         }
     }
@@ -21946,6 +22561,15 @@ class AnazhRealm {
         const roleChip = document.createElement("span");
         roleChip.className = "role-chip";
         roleChip.textContent = roleLabel;
+        // V8.39 — Farb-Sprache: der Rollen-Chip leuchtet in der Rollen-Farbe.
+        // Ein Blick sagt, was der Bauplan IST.
+        {
+            const roleColor = (AnazhRealm.BLUEPRINT_ROLE_COLORS || {})[role];
+            if (roleColor) {
+                roleChip.style.borderColor = roleColor;
+                roleChip.style.boxShadow = `0 0 6px ${roleColor}`;
+            }
+        }
         // V8.17 — erweiterte Tooltips erklären emergent vs. manuell.
         if (bp.roleManual) {
             roleChip.classList.add("role-manual");
@@ -21955,9 +22579,11 @@ class AnazhRealm {
         } else {
             roleChip.classList.add("role-emergent");
             roleChip.title =
-                "✨ Emergent aus der Mehrheit der opChain-Domains. " +
-                "Wende Werkzeuge auf Parts an (Werkstatt rechts) → die Domain mit den meisten Ops bestimmt die Rolle. " +
-                "forging+scharf→Werkzeug, forging+dicht→Rüstung, alchemy→Konsumabel, soulwork→Avatar/Kreatur.";
+                "✨ Emergent aus der ganzen Substanz. " +
+                "1) Form: ein bilateral-symmetrisches Glieder-Compound → Seele. " +
+                "2) Krafting: die opChain-Domain mit den meisten Ops → forging+scharf→Werkzeug, " +
+                "forging+dicht→Rüstung, alchemy→Konsumabel, soulwork→Seele. " +
+                "3) Material: lebendig+weiche Substanz → Nahrung. Sonst: Bauwerk.";
         }
         roleRow.appendChild(roleChip);
         // V8.17 — wenn manuell, biete einen Reset-Button auf emergent.
@@ -21984,6 +22610,28 @@ class AnazhRealm {
             roleRow.appendChild(chip);
         }
         panel.appendChild(roleRow);
+        // V8.37 — Bau-Kosten sichtbar im Werkstatt-Panel (Schöpfer-Browser-
+        // Test: „Bau-Material nicht sichtbar"). computeBuildCost ist die EINE
+        // Quelle — dieselbe Volumen-Formel wie harvestArchitecture. Im
+        // pfad-Modus echte Kosten; frieden/schöpfer bauen frei, die Anzeige
+        // bleibt aber informativ (sie zeigt, was die Substanz wiegt). Gilt
+        // für alle Baupläne (auch built-in) — die Kosten sind intrinsisch.
+        const buildCost = this.computeBuildCost(bp.name);
+        const costMats = Object.keys(buildCost);
+        if (costMats.length > 0) {
+            const costRow = document.createElement("div");
+            costRow.className = "stat-row";
+            const costLab = document.createElement("span");
+            costLab.className = "stat-label";
+            costLab.textContent = "Bau-Kosten";
+            costRow.appendChild(costLab);
+            const costText = document.createElement("span");
+            costText.className = "workshop-cost-text";
+            costText.textContent = costMats.map((m) => `${buildCost[m]}× ${m}`).join(" · ");
+            costText.title = "Materialien, die der Bau verbraucht (im pfad-Modus; frieden/schöpfer bauen frei).";
+            costRow.appendChild(costText);
+            panel.appendChild(costRow);
+        }
         // Welle 6.X.4 V8.16 Punkt 18 — Wachstumskonzept sichtbar:
         // wie entsteht die Rolle? wie wächst sie? welche Synergie wirkt?
         //
@@ -22039,7 +22687,7 @@ class AnazhRealm {
             synRow.appendChild(synLab);
             const synText = document.createElement("span");
             synText.className = "workshop-synergy-text";
-            synText.textContent = "Form × Material × Werkzeug-Domain → Compound-Tags → Rolle";
+            synText.textContent = "Körper-Symmetrie · Werkzeug-Domain · lebendige Substanz → Rolle";
             synRow.appendChild(synText);
             panel.appendChild(synRow);
 
@@ -22053,8 +22701,15 @@ class AnazhRealm {
             const hintText = document.createElement("span");
             hintText.className = "workshop-growth-text";
             if (totalOps === 0) {
-                hintText.textContent =
-                    "Noch keine Werkzeug-Anwendung. Default: Bauwerk. Wende ein Werkzeug an um Rolle zu emergieren.";
+                // Welle 11 ext. — ohne Werkzeug-Ops kann die Rolle dennoch
+                // aus der intrinsischen Substanz emergieren (Körper-Form →
+                // Seele, lebendig+weich → Nahrung).
+                if (emergentRole !== AnazhRealm.DEFAULT_BLUEPRINT_ROLE) {
+                    hintText.textContent = `Noch keine Werkzeug-Anwendung — die Rolle „${emergentLabel}" emergiert direkt aus der Substanz (Form/Material).`;
+                } else {
+                    hintText.textContent =
+                        "Noch keine Werkzeug-Anwendung. Default: Bauwerk. Wende ein Werkzeug an, forme einen symmetrischen Körper, oder nutze lebendige Substanz — die Rolle emergiert.";
+                }
             } else if (bp.roleManual) {
                 hintText.textContent = `Manuell gesetzt. Emergent wäre „${emergentLabel}" aus Domain „${dominantDomain || "—"}".`;
                 hintText.classList.add("manual-override");
@@ -22131,11 +22786,18 @@ class AnazhRealm {
             precRow.className = "stat-row";
             const precLab = document.createElement("span");
             precLab.className = "stat-label";
-            precLab.textContent = "Präzision";
+            // V8.39 — „Präzision" → „Qualität": dieselbe Zahl, aber der Name
+            // sagt, was sie BEDEUTET — sie skaliert die Produkt-Wirkung.
+            precLab.textContent = "Qualität";
             precRow.appendChild(precLab);
             const precChip = document.createElement("span");
             precChip.className = "tag-chip";
-            precChip.textContent = avgPrec.toFixed(2);
+            const q5 = Math.max(0, Math.min(5, Math.round(avgPrec * 5)));
+            precChip.textContent = `${"★".repeat(q5)}${"☆".repeat(5 - q5)} ${avgPrec.toFixed(2)}`;
+            precChip.title =
+                "Qualität = mittlere Part-Präzision. Sie skaliert die Wirkung des Produkts: " +
+                "Rüstung/Trank wirken mit (0.5 + 0.5·Qualität) — grob ≈ halb, fein ≈ voll. " +
+                "Feineres Werkzeug → höhere Qualität.";
             precRow.appendChild(precChip);
             panel.appendChild(precRow);
         }
@@ -22251,27 +22913,34 @@ class AnazhRealm {
         const canvas = document.getElementById("workshop-preview-canvas");
         if (!canvas) return;
 
-        // Universal-Drag-Helper: für jeden Card-Container eine Drag-Source
-        // einrichten. Marker via dataTransfer-MIME-Type, data via getAttribute.
+        // Universal-Drag-Helper: pro Card-Container EINE Drag-Source via
+        // Event-Delegation. Marker via dataTransfer-MIME-Type, data via
+        // getAttribute. V8.37 — Wurzel-Fix (Schöpfer-Browser-Test: „Werkzeuge
+        // lassen sich nicht ziehen wie Farben/Materialien"): die Werkzeug-
+        // Palette wird bei JEDEM Werkstatt-Refresh neu gerendert (die Tool-
+        // Liste hängt am Spieler-Inventar), die alten Pro-Karte-Listener
+        // gingen dabei verloren. Shape/Material/Farbe werden nur EINMAL
+        // gerendert — darum funktionierten die. Ein Listener auf dem
+        // bleibenden Container überlebt jedes Neu-Rendern (Event-Delegation).
         const installDragSource = (container, cardSelector, dataAttr, marker) => {
             if (!container) return;
-            const cards = container.querySelectorAll(cardSelector);
-            cards.forEach((card) => {
-                card.addEventListener("dragstart", (event) => {
-                    const data = card.getAttribute(dataAttr);
-                    if (!data) return;
-                    const bp = this.state.blueprints[this._ensureWorkshopState().selectedBlueprint];
-                    if (!bp || bp.builtIn) {
-                        event.preventDefault();
-                        return;
-                    }
-                    event.dataTransfer.setData(marker, data);
-                    event.dataTransfer.effectAllowed = "copy";
-                    card.classList.add("dragging");
-                });
-                card.addEventListener("dragend", () => {
-                    card.classList.remove("dragging");
-                });
+            container.addEventListener("dragstart", (event) => {
+                const card = event.target && event.target.closest ? event.target.closest(cardSelector) : null;
+                if (!card) return;
+                const data = card.getAttribute(dataAttr);
+                if (!data) return;
+                const bp = this.state.blueprints[this._ensureWorkshopState().selectedBlueprint];
+                if (!bp || bp.builtIn) {
+                    event.preventDefault();
+                    return;
+                }
+                event.dataTransfer.setData(marker, data);
+                event.dataTransfer.effectAllowed = "copy";
+                card.classList.add("dragging");
+            });
+            container.addEventListener("dragend", (event) => {
+                const card = event.target && event.target.closest ? event.target.closest(cardSelector) : null;
+                if (card) card.classList.remove("dragging");
             });
         };
         installDragSource(shapePalette, ".workshop-shape-card", "data-shape", "application/x-anazh-shape");
@@ -22305,7 +22974,7 @@ class AnazhRealm {
             if (!shape && !material && !color && !tool) return;
             event.preventDefault();
             if (shape) {
-                this._workshopHandleShapeDrop(shape, event.clientX, event.clientY);
+                this._workshopHandleShapeDrop(shape);
             } else if (material) {
                 this._workshopHandleMaterialDrop(material, event.clientX, event.clientY);
             } else if (color) {
@@ -22342,11 +23011,14 @@ class AnazhRealm {
                 "title",
                 `${t.label || name} · ${t.opName} (${t.opClass}) · ${domLabel} · auf Part ziehen wendet Op an`
             );
-            // Domain-Dot (V9b-Style)
+            // Domain-Dot (V9b-Style). V8.37 — eigener Tooltip (Schöpfer-
+            // Browser-Test fragte „was sind die farbigen Punkte?"): der Punkt
+            // markiert die Werkzeug-Domäne, gleiche Farbe = gleiche Domäne.
             if (t.domain && AnazhRealm.TOOL_DOMAIN_COLORS && AnazhRealm.TOOL_DOMAIN_COLORS[t.domain]) {
                 const dot = document.createElement("span");
                 dot.className = "workshop-tool-domain-dot";
                 dot.style.background = AnazhRealm.TOOL_DOMAIN_COLORS[t.domain];
+                dot.title = `Domäne: ${domLabel} — Werkzeuge derselben Domäne teilen die Punkt-Farbe.`;
                 card.appendChild(dot);
             }
             const nameEl = document.createElement("span");
@@ -22574,29 +23246,19 @@ class AnazhRealm {
     // Drop-Handler: berechnet Welt-Position aus Bildschirm-Koordinaten via
     // Raycaster gegen eine y=0-Ebene (oder y=0.5 bei snap), fügt einen
     // neuen Part am Bauplan an + selektiert ihn automatisch.
-    _workshopHandleShapeDrop(shape, clientX, clientY) {
+    _workshopHandleShapeDrop(shape) {
         const ws = this._ensureWorkshopState();
         const bp = this.state.blueprints[ws.selectedBlueprint];
         if (!bp || bp.builtIn) {
             this.log("Workshop-Drop auf Built-in-Bauplan abgelehnt — bitte erst klonen", "INFO");
             return;
         }
-        // Welt-Position aus Drop-Koords: Raycast gegen XZ-Ebene bei y=0.
-        // Wenn die Ebene parallel zur Camera ist (vertikaler Top-Down-Blick),
-        // hat der Ray keinen Schnittpunkt — Fallback ist (0,0,0).
-        let dropPos = { x: 0, y: 0, z: 0 };
-        if (ws.preview) {
-            const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-            const intersect = this._workshopRaycastPlane(clientX, clientY, plane);
-            if (intersect) {
-                dropPos = { x: intersect.x, y: 0.5, z: intersect.z };
-                if (ws.snapEnabled) {
-                    const step = AnazhRealm.WORKSHOP_SNAP_TRANSLATE;
-                    dropPos.x = Math.round(dropPos.x / step) * step;
-                    dropPos.z = Math.round(dropPos.z / step) * step;
-                }
-            }
-        }
+        // V8.36 — neue Parts landen IMMER im Ursprung (0,0,0). Vorher wurde
+        // die Drop-Bildschirm-Koordinate auf die y=0-Ebene geraycastet — bei
+        // schrägem Kamera-Winkel landete das Part „irgendwo im Raum",
+        // unvorhersehbar. Vom Ursprung aus verschiebt der Schöpfer es
+        // kontrolliert mit dem Move-Manipulator.
+        const dropPos = { x: 0, y: 0, z: 0 };
         // Default-Material: erstes existing Material auf bp (für Konsistenz),
         // fallback "stein".
         let mat = "stein";
@@ -22883,6 +23545,54 @@ class AnazhRealm {
                 this.log(cb.checked ? "Kreaturen-Stimmen aktiv" : "Kreaturen-Stimmen ruhen", "INFO");
             });
         }
+    }
+
+    // V8.37 — Einstellungen-Sektionen faltbar (Schöpfer-Browser-Test:
+    // „Einstellungen-Untermenüs sollten faltbar sein"). Zwölf Sektionen
+    // sind viel Scroll. Statt zwölf HTML-Umbauten ein generischer Pfad:
+    // jede <section> im Einstellungen-Drawer bekommt ihren <h3> als
+    // Klick-Header, ein Klick toggelt die .collapsed-Klasse — eine CSS-
+    // Regel blendet dann alles außer dem Header aus. Der Falt-Zustand
+    // wird in einem localStorage-Schlüssel als Map gemerkt (die Wahl
+    // überlebt den Reload). Default: alle offen (kein Verhaltens-Sprung),
+    // der Schöpfer faltet selbst, was er nicht braucht. Idempotent: ein
+    // schon verdrahteter Header (.collapsible-header) wird übersprungen.
+    _initCollapsibleSettings() {
+        if (typeof document === "undefined") return;
+        const drawer = document.querySelector('.drawer[data-drawer="einstellungen"]');
+        if (!drawer) return;
+        let stored = {};
+        try {
+            stored = JSON.parse(localStorage.getItem("anazh.settings.collapsed") || "{}") || {};
+        } catch {
+            stored = {};
+        }
+        const sections = drawer.querySelectorAll("section.section, section.settings-section");
+        sections.forEach((sec, i) => {
+            const header = sec.querySelector("h3");
+            if (!header || header.classList.contains("collapsible-header")) return;
+            const key = sec.id || `settings-sec-${i}`;
+            header.classList.add("collapsible-header");
+            header.setAttribute("role", "button");
+            header.setAttribute("tabindex", "0");
+            if (stored[key]) sec.classList.add("collapsed");
+            const toggle = () => {
+                sec.classList.toggle("collapsed");
+                stored[key] = sec.classList.contains("collapsed");
+                try {
+                    localStorage.setItem("anazh.settings.collapsed", JSON.stringify(stored));
+                } catch {
+                    /* quota / private mode → silent */
+                }
+            };
+            header.addEventListener("click", toggle);
+            header.addEventListener("keydown", (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    toggle();
+                }
+            });
+        });
     }
 
     // Welle 6.X.4 B3 (Audit 17.05.2026) — Stats-HUD über der Hotbar.
@@ -23219,11 +23929,12 @@ class AnazhRealm {
                 u.value.setRGB(skyR, skyG, skyB);
             }
             // V8.28 6.G4.b D — Wolken-Deckung aus weather. sunny ~0.22,
-            // rainy ~0.85. Cross-Fade greift natürlich (skyMul ändert sich
-            // weich über requestWeatherTransition).
+            // rainy ~0.85. V8.46 — über die Wetter-Transition cross-gefadet
+            // (vorher flippte cloudCover sofort → harter Wetter-Sprung,
+            // während Licht/Skybox sanft faden).
             const cloudU = this.state.skybox.material.uniforms.cloudCover;
             if (cloudU) {
-                cloudU.value = this.state.weather === "rainy" ? 0.85 : 0.22;
+                cloudU.value = this._weatherBlendedValue(0.22, 0.85);
             }
         }
         // V8.28 6.G4.b A — Stern-Feld-Opacity. starField statt skybox-uniform
@@ -23311,7 +24022,7 @@ class AnazhRealm {
             // verschmelzen mit dem Himmel. Slider geht 30..200 % für weniger
             // (weiter) bis mehr (dichter) Dunst.
             const rainyMix = this.state.weather === "rainy" ? 1 : 0;
-            const fogMult = (this.state.atmosphere && this.state.atmosphere.fogDistance) || 1.0;
+            const fogMult = (this.state.atmosphere && this.state.atmosphere.fogDistance) || 3.0;
             fog.near = (35 - rainyMix * 13) * fogMult;
             fog.far = (150 - rainyMix * 55) * fogMult;
             // V8.32 — Unterwasser-Tint NUR beim echten Tauchen (Augen unter
@@ -23338,6 +24049,11 @@ class AnazhRealm {
                     if (cu.lightDirection) cu.lightDirection.value.copy(lightDir);
                     if (cu.lightIntensity) cu.lightIntensity.value = dl.intensity;
                     if (cu.ambientIntensity) cu.ambientIntensity.value = al ? al.intensity : 0.45;
+                    // V8.46 — weatherEffect (Terrain-Verdunklung bei Regen)
+                    // pro Frame + über die Transition cross-faden. Vorher nur
+                    // beim Chunk-Bau gesetzt → es flippte hart, und alte Chunks
+                    // behielten ihren Stand (Patchwork). Jetzt sanft + einheitlich.
+                    if (cu.weatherEffect) cu.weatherEffect.value = this._weatherBlendedValue(0.0, 1.0);
                     // V8.31 — Fog an den Terrain-Custom-Shader anschließen.
                     // Ohne das blieb das Terrain knackscharf, während nur
                     // das Gras (Lambert) verblasste → der Fog-Slider wirkte
@@ -23488,6 +24204,21 @@ class AnazhRealm {
     }
 
     // ### 6.G3.b — Sanfte Wetter-Übergänge ###
+
+    // V8.46 — ein per-Wetter-Skalar, über die laufende 45s-Transition
+    // cross-gefadet. Ohne dies flippten weatherEffect (Terrain-Verdunklung)
+    // und cloudCover SOFORT mit state.weather, während Licht/Skybox sanft
+    // faden → der Wetter-Wechsel sprang hart. Eine Quelle für alle
+    // wetter-abhängigen Skalare.
+    _weatherBlendedValue(sunnyVal, rainyVal) {
+        const valFor = (w) => (w === "rainy" ? rainyVal : sunnyVal);
+        const wt = this.state.weatherTransition;
+        if (wt && wt.from && wt.to) {
+            const p = Math.max(0, Math.min(1, wt.progress || 0));
+            return valFor(wt.from) + (valFor(wt.to) - valFor(wt.from)) * p;
+        }
+        return valFor(this.state.weather);
+    }
 
     // [ATMOSPHERE] Startet einen Cross-Fade. V8.25-Heilung: Default-Dauer
     // emergiert aus Player-Emotionen via _emotionModulate — eine ruhige Welt
@@ -23848,7 +24579,7 @@ class AnazhRealm {
                 const vv = parseFloat(localStorage.getItem("anazh.audio.voiceVol"));
                 if (Number.isFinite(vv) && vv >= 0 && vv <= 1) this.state.symphony.voiceVolume = vv;
                 const rr = parseInt(localStorage.getItem("anazh.world.ringRadius"), 10);
-                if (Number.isFinite(rr) && rr >= 1 && rr <= 4) this.state.chunkRingRadius = rr;
+                if (Number.isFinite(rr) && rr >= 1 && rr <= 8) this.state.chunkRingRadius = rr;
             } catch {
                 /* ignore */
             }
@@ -23939,10 +24670,11 @@ class AnazhRealm {
             if (rsv) rsv.textContent = ringText(v);
         };
         if (rs) {
-            rs.value = String(this.state.chunkRingRadius || 2);
+            rs.value = String(this.state.chunkRingRadius || 4);
             applyRingRadius(parseInt(rs.value, 10));
             rs.addEventListener("input", () => {
-                const v = Math.max(1, Math.min(4, parseInt(rs.value, 10)));
+                // V8.40 — Regler-Bereich 1–8 (3×3 … 17×17), Default 4 (9×9).
+                const v = Math.max(1, Math.min(8, parseInt(rs.value, 10)));
                 applyRingRadius(v);
                 if (typeof localStorage !== "undefined") {
                     try {
@@ -24012,12 +24744,15 @@ class AnazhRealm {
         const fogS = document.getElementById("slider-fog");
         const fogVal = document.getElementById("slider-fog-val");
         if (fogS) {
-            const f0 = (this.state.atmosphere && this.state.atmosphere.fogDistance) || 1.0;
-            fogS.value = String(Math.round(f0 * 100));
-            if (fogVal) fogVal.textContent = `${Math.round(f0 * 100)} %`;
+            // V8.40 — Label = fogDistance / 3 × 100 (mult 3.0 → „100%"),
+            // Regler-Eingabe → setFogDistance(pct / 100 × 3).
+            const f0 = (this.state.atmosphere && this.state.atmosphere.fogDistance) || 3.0;
+            const fogPct = Math.round((f0 / 3) * 100);
+            fogS.value = String(fogPct);
+            if (fogVal) fogVal.textContent = `${fogPct} %`;
             fogS.addEventListener("input", () => {
                 const pct = parseInt(fogS.value, 10);
-                this.setFogDistance(pct / 100);
+                this.setFogDistance((pct / 100) * 3);
                 if (fogVal) fogVal.textContent = `${pct} %`;
             });
         }
@@ -24251,6 +24986,14 @@ class AnazhRealm {
         const container = document.getElementById("player-equip");
         if (!container) return;
         container.innerHTML = "";
+        // V8.39 — Equip-Hinweis (Schöpfer-Browser-Test „Rüstung anziehen?"):
+        // Rüstung ist 2-stufig — eigenen Bauplan unten als „Rüstung" markieren,
+        // dann oben im Dropdown wählen.
+        const equipHint = document.createElement("div");
+        equipHint.className = "drawer-hint";
+        equipHint.textContent =
+            "Rüstung anziehen: einen eigenen Bauplan unten als Rüstung markieren — dann oben im Dropdown wählen.";
+        container.appendChild(equipHint);
         const equipped = (this.state.player && this.state.player.equipped) || { tool: null, armor: null };
         // Werkzeug-Slot
         const toolRow = document.createElement("div");
@@ -24879,6 +25622,8 @@ class AnazhRealm {
         this.gameModeInitDOM();
         // Welle 6.H Phase 2E V2 — proaktive-Sprache-Toggle aufsetzen.
         this.creatureSpeechInitDOM();
+        // V8.37 — Einstellungen-Sektionen faltbar machen.
+        this._initCollapsibleSettings();
         // Welle 6.X.2 B1 — Logbuch-Sichtbarkeit-Toggle aufsetzen.
         this.logbookInitDOM();
         // Welle 6.X.4 F1 — Begleiter-Name + Avatar-Name laden + binden.
@@ -25015,14 +25760,24 @@ class AnazhRealm {
         const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
         directionalLight.position.set(1, 1, 1);
         directionalLight.castShadow = true;
-        directionalLight.shadow.mapSize.width = 1024;
-        directionalLight.shadow.mapSize.height = 1024;
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
         directionalLight.shadow.camera.near = 0.5;
         directionalLight.shadow.camera.far = 500;
         directionalLight.shadow.camera.left = -300;
         directionalLight.shadow.camera.right = 300;
         directionalLight.shadow.camera.top = 300;
         directionalLight.shadow.camera.bottom = -300;
+        // V8.47 — Shadow-Bias gegen Shadow-Acne. Ohne Bias schattet die
+        // grobe Shadow-Map (600 Welt-Einheiten / 2048 Texel ≈ 0.3 Einh./
+        // Texel) flache, zur Sonne zeigende Flächen SELBST → diagonale
+        // Streifen-Linien, am sichtbarsten auf horizontalen Bauwerks-Dächern
+        // (gewölbte Flächen verbergen es). normalBias verschiebt den Shadow-
+        // Sample entlang der Flächen-Normale — der wirksame Acne-Killer auf
+        // flachen Flächen; bias ist der kleine zusätzliche Tiefen-Nudge. Die
+        // mapSize 1024→2048 halbiert zugleich die Texel-Größe (schärfer).
+        directionalLight.shadow.bias = -0.0005;
+        directionalLight.shadow.normalBias = 1.0;
         scene.add(directionalLight);
         // Welle 6.G3 — Refs cachen für tickDayNight. Eine Quelle der Wahrheit
         // (Lights+Skybox werden aus state.timeOfDay abgeleitet pro Frame).
@@ -25095,6 +25850,12 @@ class AnazhRealm {
                 // jeden Frame explizit nullt (siehe Spielerbewegung im Game-Loop),
                 // statt sich auf Reibung zu verlassen.
                 this.state.playerBody.setFriction(0);
+                // V8.36 — Player-Body schläft NIE. Ammo deaktiviert still-
+                // stehende Bodies (ISLAND_SLEEPING); ein schlafender Body nahm
+                // Eingaben (Stand-Sprung!) nicht zuverlässig an, auch mit
+                // activate(true). DISABLE_DEACTIVATION (4) hält ihn dauerhaft
+                // wach — der Spieler reagiert immer sofort, ob er geht oder steht.
+                this.state.playerBody.forceActivationState(4);
             }
             this.log("Physik-Körper für Spieler hinzugefügt", "INFO");
             this.state.selfAwareness.components.push("playerBody");
@@ -25381,6 +26142,27 @@ class AnazhRealm {
         }
     }
 
+    // V8.33 6.G4.e — vertikale Schwimm-Geschwindigkeit unter Wasser. Eine
+    // reine Funktion (damit testbar, analog _emotionModulate / _tagToFrequency):
+    // Shift taucht aktiv ab, Space hebt nach oben, ohne Eingabe wirkt der
+    // natürliche Auftrieb — der Spieler treibt sanft zur Oberfläche zurück
+    // (V8.30-Verhalten bewahrt). currentVy = aktuelle vy (m/s), depth = Tiefe
+    // unter dem Wasser-Niveau (m), dive/rise = Tasten-Flags. Liefert die Ziel-vy.
+    _swimVerticalVelocity(currentVy, depth, dive, rise) {
+        const d = Math.max(0, Math.min(8, depth));
+        if (dive) {
+            // Abtauchen: Ziel-Sinkgeschwindigkeit -3.2 m/s, lerp-geglättet —
+            // überwindet den Auftrieb, der Spieler sinkt kontrolliert.
+            return currentVy + (-3.2 - currentVy) * 0.25;
+        }
+        if (rise) {
+            // Auftauchen: aktiv nach oben schwimmen, Ziel +3.2 m/s.
+            return currentVy + (3.2 - currentVy) * 0.25;
+        }
+        // Neutral: Auftrieb — tiefer = stärkerer Aufwärts-Drift, gedeckelt.
+        return Math.min(2.5, Math.max(-2.5, currentVy * 0.45) + d * 0.18);
+    }
+
     startEternalLoop() {
         // ### Spiel-Loop V7.66 ###
         // Learnings:
@@ -25586,18 +26368,31 @@ class AnazhRealm {
                             // Augen sitzen auf Kamera-Höhe (scaledY + 1.6).
                             this.state.playerEyesUnderwater = scaledY + 1.6 < this.state.waterLevel;
                             if (submerged) {
-                                const vy = velocity.y();
-                                // Tiefer = mehr Auftrieb (bis +2.5 m/s Drift).
-                                const depth = Math.min(8, this.state.waterLevel - scaledY);
-                                const buoyantVy = Math.max(-2.5, vy * 0.45) + depth * 0.18;
-                                body.setLinearVelocity(
-                                    this.setVec(
-                                        this.state.tmpVec1,
-                                        velocity.x() * 0.7,
-                                        Math.min(2.5, buoyantVy),
-                                        velocity.z() * 0.7
-                                    )
+                                // V8.36 — Auftrieb wirkt NUR über dem Terrain.
+                                // Fällt der Spieler durch die Welt (weit unter
+                                // die Terrain-Oberfläche), fing ihn der Auftrieb
+                                // sonst ab — er „schwamm" unter dem Boden statt
+                                // von der Killplane resettet zu werden. Wasser
+                                // sitzt immer auf festem Grund; ist man weit
+                                // darunter, trägt nichts → die Killplane greift.
+                                const wTerrainY = this.getTerrainHeightAt(
+                                    pos.x() * this.state.scaleFactor,
+                                    pos.z() * this.state.scaleFactor
                                 );
+                                if (scaledY >= wTerrainY - 22) {
+                                    // V8.33 — Tauchen + Auftauchen. Shift taucht
+                                    // ab (Minecraft-Konvention), Space hebt; ohne
+                                    // Eingabe wirkt der natürliche Auftrieb.
+                                    const swimVy = this._swimVerticalVelocity(
+                                        velocity.y(),
+                                        this.state.waterLevel - scaledY,
+                                        !!this.state.keys["shift"],
+                                        !!this.state.keys[" "]
+                                    );
+                                    body.setLinearVelocity(
+                                        this.setVec(this.state.tmpVec1, velocity.x() * 0.7, swimVy, velocity.z() * 0.7)
+                                    );
+                                }
                             }
                         }
 
@@ -25671,7 +26466,10 @@ class AnazhRealm {
             const player = this.state.playerMesh;
             const camera = this.state.camera;
             const playerBody = this.state.playerBody;
-            let currentSpeed = this.state.keys["shift"] ? this.state.sprintSpeed : this.state.speed;
+            // V8.33 — Unter Wasser ist Shift die Tauch-Geste (nach unten),
+            // nicht Sprint. An Land bleibt Shift der Sprint-Modifikator.
+            let currentSpeed =
+                this.state.keys["shift"] && !this.state.playerUnderwater ? this.state.sprintSpeed : this.state.speed;
             // V8.29.1 — Wasser bremst. Unter Wasser bewegt sich der Spieler
             // auf 55 % Geschwindigkeit — er schwimmt, watet nicht durch.
             if (this.state.playerUnderwater) currentSpeed *= 0.55;
@@ -25708,7 +26506,11 @@ class AnazhRealm {
                             this.state.moveDirection.z * currentSpeed * slopePenalty
                         )
                     );
-                    playerBody.forceActivationState(1);
+                    // V8.36 — kein forceActivationState mehr nötig: der
+                    // Player-Body trägt seit der Erschaffung DISABLE_DEACTIVATION
+                    // (schläft nie). Ein forceActivationState(1) HIER würde ihn
+                    // auf ACTIVE_TAG zurückstufen → der Stand-Sleep-Bug käme
+                    // zurück, sobald man stehen bleibt.
                 } else if (!this.state.onSteepSlope) {
                     // Auf flachem Boden: ohne Eingabe vx + vz auf 0 zwingen
                     // (Standard-Stopp-Verhalten). Auf steilem Hang lassen wir
@@ -25814,7 +26616,7 @@ class AnazhRealm {
             // Werte = mehr Welt sichtbar, mehr Generations-Last bei Bewegung.
             const RING_RADIUS = Math.max(
                 1,
-                Math.min(4, typeof this.state.chunkRingRadius === "number" ? this.state.chunkRingRadius : 2)
+                Math.min(8, typeof this.state.chunkRingRadius === "number" ? this.state.chunkRingRadius : 4)
             );
             outer: for (let r = 0; r <= RING_RADIUS; r++) {
                 for (let dz = -r; dz <= r; dz++) {
@@ -25907,21 +26709,42 @@ class AnazhRealm {
                     const dist = this.state.cameraThirdDistance;
                     const height = this.state.cameraThirdHeight;
                     const cosPitch = Math.cos(this.state.pitch);
+                    const camX = player.position.x - Math.sin(this.state.yaw) * dist * cosPitch;
+                    const camZ = player.position.z - Math.cos(this.state.yaw) * dist * cosPitch;
                     let camY = player.position.y + height - Math.sin(this.state.pitch) * dist;
-                    // Boden-Clamp: Kamera darf nicht unter Spieler-Füße. Ohne
-                    // diesen Schutz fährt sie bei steilem Hoch-Schauen durchs
-                    // Terrain und der Spieler sieht das Innere der Welt.
-                    // Player-Box ist 1×1×1, Center auf player.y, Füße bei
-                    // player.y − 0.5; etwas Puffer drüber (0.3) hält die
-                    // Kamera sicher über jeder normalen Heightfield-Spitze.
+                    // Boden-Clamp: Kamera nicht unter die Spieler-Füße.
                     const minCamY = player.position.y - 0.2;
                     if (camY < minCamY) camY = minCamY;
-                    camera.position.set(
-                        player.position.x - Math.sin(this.state.yaw) * dist * cosPitch,
-                        camY,
-                        player.position.z - Math.cos(this.state.yaw) * dist * cosPitch
-                    );
-                    camera.lookAt(player.position.x, player.position.y + 1.0, player.position.z);
+                    // V8.36 — echte Kamera-Kollision. Der statische minCamY-Clamp
+                    // kannte das Terrain an der KAMERA-Position nicht — in einem
+                    // Loch (oder hinter einer Wand) tauchte die Kamera durch das
+                    // Terrain. Jetzt: Raycast vom Blickziel (Spieler-Brust) zur
+                    // Wunsch-Position; trifft er Terrain/Struktur, wird die Kamera
+                    // an den Treffer herangezogen (15 % Puffer davor). Eine Lösung
+                    // für Loch UND Wand UND Bauwerk — kein Sonderfall pro Geometrie.
+                    const tx = player.position.x;
+                    const ty = player.position.y + 1.0;
+                    const tz = player.position.z;
+                    let finalX = camX;
+                    let finalY = camY;
+                    let finalZ = camZ;
+                    if (this.state.physicsWorld && typeof Ammo !== "undefined") {
+                        const sf = this.state.scaleFactor || 1;
+                        const rs = this.setVec(this.state.tmpVec1, tx / sf, ty / sf, tz / sf);
+                        const re = this.setVec(this.state.tmpVec2, camX / sf, camY / sf, camZ / sf);
+                        const hp = this._runRaycast(rs, re, (cb, hit) => {
+                            if (!hit) return null;
+                            const p = cb.get_m_hitPointWorld();
+                            return { x: p.x() * sf, y: p.y() * sf, z: p.z() * sf };
+                        });
+                        if (hp) {
+                            finalX = tx + (hp.x - tx) * 0.85;
+                            finalY = ty + (hp.y - ty) * 0.85;
+                            finalZ = tz + (hp.z - tz) * 0.85;
+                        }
+                    }
+                    camera.position.set(finalX, finalY, finalZ);
+                    camera.lookAt(tx, ty, tz);
                 } else {
                     camera.position.set(player.position.x, player.position.y + 1.6, player.position.z);
                     camera.lookAt(
@@ -26742,6 +27565,20 @@ AnazhRealm.BLUEPRINT_ROLE_LABELS = Object.freeze({
     machine: "Maschine",
 });
 
+// V8.39 — Farb-Sprache: jede Rolle eine feste Farbe. Rollen-Chip +
+// Bauplan-Zeile in der Werkstatt-Liste leuchten darin → ein Blick sagt,
+// was ein Ding IST. Bauwerk = Stein-Erdgrau, Werkzeug = Schmiede-Rot,
+// Rüstung = Stahl-Blau, Konsumable = Alchemie-Violett, Seele = Seelen-
+// Cyan, Maschine = Bronze. Sechs klar unterscheidbare Töne.
+AnazhRealm.BLUEPRINT_ROLE_COLORS = Object.freeze({
+    architecture: "#9a9088",
+    tool: "#c44830",
+    armor: "#7d96b8",
+    consumable: "#a878b8",
+    soul: "#88e1e1",
+    machine: "#b08648",
+});
+
 // Werkzeug-Domain-Labels (deutsch) für UI-Anzeige. null = generic
 // (zeigt keinen Domain-Indikator).
 AnazhRealm.TOOL_DOMAIN_LABELS = Object.freeze({
@@ -26810,6 +27647,26 @@ AnazhRealm.AFFORDANCE_THRESHOLDS = Object.freeze({
     focusing: Object.freeze({
         transparentMin: 0.5,
         wärmeMin: 0.3,
+    }),
+});
+
+// Welle 11 ext. — Substanz-Rolle. Schwellen für die intrinsischen Rollen-
+// Signale: body (Seele aus Körper-Symmetrie) + food (Nahrung aus lebendig+
+// weich). Bewusst KEIN 11. Material-Tag (Heilige Lektion — die 10 Tags
+// bleiben die eine Sprache); Nahrung emergiert aus den bestehenden Tags.
+AnazhRealm.SUBSTANCE_ROLE_THRESHOLDS = Object.freeze({
+    body: Object.freeze({
+        minParts: 3, // ein Körper hat mehrere Teile
+        symmetryMin: 0.78, // Anteil Parts mit Spiegel-Partner (bilateral)
+        minLimbPairs: 1, // ≥1 echtes Off-Achsen-Spiegel-Paar (Glieder)
+        offAxisMin: 0.18, // |x − Zentrum| / spanX ab dem ein Part "Glied" ist
+        mirrorTol: 0.35, // Spiegel-Such-Toleranz, relativ zur Compound-Größe
+        verticalMin: 0.45, // Y-Spanne ≥ 45 % der horizontalen — ein Körper
+        // "steht"; ein flaches Dorf (Hütten in der xz-Ebene) fällt raus.
+    }),
+    food: Object.freeze({
+        lebendigMin: 0.6, // klar lebendig (Fleisch, Laub, Frucht)
+        härteMax: 0.5, // weich genug zum Essen
     }),
 });
 

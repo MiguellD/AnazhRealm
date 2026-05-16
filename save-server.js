@@ -176,7 +176,11 @@ function handleLlmProxy(req, res) {
 }
 
 function sendStaticFile(req, res) {
-    const reqPath = req.url === "/" ? "/index.html" : req.url;
+    // V8.41 — Query-String abschneiden (Cache-Buster anazhRealm.js?v=8.41).
+    // Ein Webserver bedient statische Dateien anhand des Pfads; die Query
+    // ist nur Cache-Schlüssel für Browser/CDN. Ohne dies 404 auf ?v=.
+    const urlPath = (req.url || "/").split("?")[0];
+    const reqPath = urlPath === "/" ? "/index.html" : urlPath;
     const safePath = path.normalize(reqPath).replace(/^(\.\.[/\\])+/, "");
     const filePath = path.join(PROJECT_ROOT, safePath);
 

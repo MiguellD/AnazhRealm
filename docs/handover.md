@@ -9,9 +9,37 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 17.05.2026, V8.32)
+## Schnell-Lage (Stand 17.05.2026, V8.47)
 
-**Du erbst eine sehr lebendige Welt**. **2041 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~25700 Zeilen in einer Datei, alles produktiv. Die jüngste Session-Hälfte (V8.23 → V8.32) war eine **Atmosphäre-Tiefe-Welle (6.G4)** in sechs Schritten, jeder aus einem Schöpfer-Browser-Test:
+**Du erbst eine sehr lebendige Welt**. **2156 Playtest-Invarianten grün + 0 Audit-Strict-Failures + smoke-multiuser grün**, ~27800 Zeilen in einer Datei, alles produktiv.
+
+**Jüngste Welle — V8.47 (Shadow-Acne-Heilung)**: Schöpfer-Befund „unnatürliche Schattenlinien nur auf komplett horizontalen flachen Flächen" (Bauwerks-Dächer). Diese Präzision war die Diagnose — Cel-Banding erscheint auf GEWÖLBTEN Flächen, nicht auf flachen; der Schöpfer sah das Gegenteil → Shadow-Map-Acne. Die `DirectionalLight` hatte keinen Shadow-Bias → flache, zur Sonne zeigende Flächen schatten sich selbst in Streifen. Fix: `shadow.normalBias = 1.0` + `shadow.bias = -0.0005` + mapSize 1024→2048.
+
+**Welle davor — V8.46 (Sanfte Wetter-Übergänge)**: `_weatherBlendedValue` cross-fadet `weatherEffect` + `cloudCover` über die 45s-Transition (vorher flippten sie sofort → harter Wetter-Sprung).
+
+**Offen — die nächste Welle**: (1) Schatten aufs Terrain — der Terrain-Custom-Shader sampelt die Schatten-Textur nicht, also fallen Struktur-Schatten nicht aufs Terrain (das Terrain hat keine empfangenen Schatten). (2) die geparkte Performance-Tiefe (Off-Screen-Sparsamkeit + Distanz-LOD). PR **#17** offen (V8.24–V8.47 hängen dran). Zwei Playtest-Tests sind timing-flaky (Nexus-history, Kamera-Pitch) — gelegentliches CI-Rot, kein echter Defekt; deterministisch-Machen ist eine offene Aufräum-Aufgabe.
+
+**Jüngste Wellen — V8.42 → V8.45 (Cel-Crawl-Heilung I–IV)**: die Cel-Kontraste „wanderten" beim langsamen Kamera-Schwenk. Vier Wurzeln, in vier Browser-Test-Runden eingekreist: (V8.42) `toonGradientMap` lief mit `NearestFilter` → 32 harte Stufen → Fix `LinearFilter`. (V8.43) der Detail-Noise lief per-Pixel im Terrain-Fragment-Shader → Fix: per Vertex + `varying`. (V8.44) der Schöpfer-Befund „Yaw verschiebt, Pitch nicht" = Beleuchtungs-Frame-Mismatch: der Terrain-Shader dottete `vNormal` (View-Raum) mit `lightDirection` (Welt-Raum) → Fix: `vNormal` in Welt-Raum (`mat3(modelMatrix)`). (V8.45) letztes kamera-abhängiges Glied: der Fog nutzte View-Space-Z → Fix: radiale Distanz (`length(mvPosition.xyz)`). Das Terrain ist jetzt voll kamera-unabhängig.
+
+**Offen — die nächste Welle (Schöpfer-Befund V8.45-Browser-Test)**: (1) Tag-Nacht- + Wetter-Übergänge glätten — der Wetter-Wechsel springt hart (blendet nicht ineinander), bei Regen wirken die Schatten zu extrem („auf 0"). Vermutung: `weatherEffect`/`lightMul` flippen sofort mit `state.weather` statt mit der 45 s-Transition zu cross-faden. (2) Schatten der Strukturen wirken anders als die Umgebung (das Terrain-Custom-Shader vs. MeshToon — zwei Cel-Systeme; bei niedriger Cel-Stufe ein „Wellenmuster" auf gewölbten Bauten). (3) die geparkte Performance-Tiefe.
+
+**Offen + WICHTIG (die nächste Welle)**: der Rest des Tag-Licht-Befunds — die Schatten wirken nicht auf die ganze Umgebung (der Terrain-Custom-Shader sampelt die Schatten-Textur nicht → Struktur-Schatten fallen nicht aufs Terrain) und die Tag-Nacht-Übergänge sind zu ruckartig (die Lichtstärke springt zwischen den Sonnenaufgangs-Stützpunkten, der smoothstep wirkt nur pro Intervall). Plus die geparkte Performance-Tiefe (Off-Screen-Sparsamkeit + Distanz-LOD). Diagnose-Startpunkt: `_applyDayNightToScene`, der Terrain-Custom-Shader, die Übergangs-Interpolation.
+
+**Wellen davor**: V8.41 (Cache-Buster `anazhRealm.js?v=` + save-server strippt Query — der „Ring-Regler schiebt, Zahl bleibt"-Befund war stale Cache, kein Code-Bug; Cel-Regler von 2–16 zurück auf 2–8). V8.40 (Sicht-Ring-Regler 1–8 Default 9×9, Fog-Effekt verdreifacht). PR **#17** offen (V8.24–V8.42; V8.43 hängt dran).
+
+**Welle davor — V8.39 (Werkzeug-Klassen + Präzision→Qualität)**: das vom Schöpfer gewünschte Werkzeug-System — Farb-Sprache (`BLUEPRINT_ROLE_COLORS`, Rollen-Chip + Bauplan-Zeile leuchten), `computeBlueprintQuality` skaliert die Produkt-Wirkung (`computeCreatureStats` + Konsumables × 0.5+0.5·Qualität), Werkzeug-Op-Stamina skaliert mit dem cap.
+
+**Welle davor — V8.38 (Werkstatt-UX: Hover-Info + sichtbare Verbindungen + Preview-Höhe)**: drei Punkte aus dem Schöpfer-Browser-Test der V8.37. (1) Hover über einen Bauplan-Slot (Inventar/Hotbar) zeigt die Bau-Materialien + ob man sie hat (✓/✗); (2) Verbindungen im 3D-Preview sichtbar — depthTest-freie Linie + Mittelpunkt-Marker (auch bei überlappenden Parts); (3) Werkstatt-Preview-Canvas 5:3 statt 1:1 (~60 % Höhe) → Stats-Panel ohne Scrollen sichtbar.
+
+**Welle davor — V8.37 (Werkstatt-Lesbarkeit + Einstellungen-Faltung)**: die sieben verbliebenen UX-Punkte der V8.35-Browser-Test-Liste. Fünf Code-Änderungen: (1) Bau-Kosten sichtbar im Werkstatt-Stats-Panel (`computeBuildCost` lief vorher nur ins Bau-Modus-HUD); (2) 3D-Maße lesbar — `GridHelper` (1-Einheit-Raster) + `AxesHelper` als feste Szenen-Kinder im Werkstatt-Preview; (3) Einstellungen-Sektionen faltbar (`_initCollapsibleSettings` — generisch, jeder `<h3>` wird Klick-Header, Zustand in `localStorage`); (4) **Werkzeug-Drag — echter Wurzel-Bug**: die Tool-Palette wird bei jedem Werkstatt-Refresh neu gerendert, die pro-Karte-Drag-Listener gingen verloren → Event-Delegation auf den bleibenden Container; (5) FPS als gleitender 1-s-Durchschnitt statt vsync-quantisiertem `1/delta`. Plus zwei Architektur-Fragen im Chat beantwortet (Performance-Culling, Chunk-Persistenz). **Die 13-Punkte-Liste der V8.35 ist damit komplett** — V8.36 sechs Gameplay-Bugs, V8.37 sieben UX-Punkte.
+
+**Welle davor — V8.36 (Browser-Test-Bug-Fixes)**: sechs Gameplay/UI-Bugs auf der WURZEL-Ebene behoben: (1) Jump im Stand — Player-Body schläft nie mehr (`DISABLE_DEACTIVATION` statt Symptom-`activate(true)`); (2) 3rd-Person-Kamera — echte Raycast-Kollision statt statischem Clamp; (3) Loch-Durchfall — Grabe-Radius 3.0 (Mulde statt Nadel) + Höhen-Clamp; (4) Wasser-Durchfall — Auftrieb nur über dem Terrain, Killplane greift wieder; (5) Logbuch teilt die Konsole 50/50; (6) neue Werkstatt-Parts landen im Ursprung.
+
+**Welle davor — V8.35 (Welle 11 ext., Substanz-Rolle)**: die Bauplan-Rolle (tool/armor/soul/consumable/machine/architecture) emergiert jetzt aus der GANZEN Substanz — eine Prioritäts-Kaskade: Krafting-Domain → intrinsische **Form** (`_isBodyShaped` → Seele) → intrinsisches **Material** (`_isFoodLike` → Nahrung) → Default Bauwerk. `consumableMeta` ist jetzt optional → emergente Nahrung ist essbar.
+
+**Welle davor — V8.34 (Ring 11 V3, Soul-Sync)**: der Multi-User-Mitspieler war ein Cone+Sphere-Platzhalter — jetzt ist er sein echter Soul (Mensch/Phönix/Drache/Custom), voll animiert (Geh-/Schwimm-Zyklus aus dem Positions-Stream abgeleitet), mit Aura-Sync + schwebendem Name-Schild. Zwei neue WS-Nachrichten (`soul` event-driven beim Join/Wechsel, `aura` ~1 Hz) mit Server-Handlern. Wichtig: der Signaling-Server ist KEIN dummer Relay (jeder Typ braucht einen expliziten Handler), und `player_soul` bleibt in `NON_BROADCASTABLE_OPS` — Soul-Sync läuft über den dedizierten `soul`-Kanal, nicht die DSL.
+
+Die Session-Hälfte davor (V8.23 → V8.33) war eine **Atmosphäre-Tiefe-Welle (6.G4)** in sieben Schritten, jeder aus einem Schöpfer-Browser-Test:
 
 1. **V8.24-V8.26**: Welt-Lebendigkeit (Tag-Nacht, Wetter-Übergänge, Fauna-Trauer) + Welt-LEBT-Heilung (drei Wurzel-Helper, acht Hardcode-Wunden) + Disziplin-Polish (Stern-Stabilität, Sonnenaufgang-Smoothness, vier Audit-Quick-Wins)
 2. **V8.27 (6.G4.a)**: Welt unter wandernder Sonne — HemisphereLight + MeshLambert + Fog (Self-Shadow ohne Shadow-Maps)
@@ -19,12 +47,13 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 4. **V8.29 (6.G4.c)**: Die lebendige Welt — Instanced-Gras pro Chunk (Dichte aus `worldFieldAt.lebendig`), adaptives Wasser, Genesis-Plattform
 5. **V8.30-V8.31 (6.G4.d)**: Schnittstellen-Politur — Sterne-Tiefenpuffer, Avatar-Korrektur, Wasser-Wellen+Physik, Fog an die Custom-Shader
 6. **V8.32 (6.G4.d³)**: Wasser-Politur — Tauch-Tint nur bei Augen-unter-Wasser (`playerEyesUnderwater` getrennt von `playerUnderwater`), Wasser-Fresnel (am Horizont opak → keine Sterne durch), Fog-Slider bis 300 %
+7. **V8.33 (6.G4.e)**: Wasser-Vollendung — Tauchen+Auftauchen (Shift/Space, kontextuell — keine neue Keybinding-Taste), Schwimm-Animation (alle drei Seelen neigen sich + stroken/paddeln/wellen), Gerstner-Wellen (horizontale Stauchung → spitze Kämme). Die drei offenen 6.G4-Polish-Punkte geschlossen — **6.G4 ist komplett**.
 
-**Die wiederkehrende Lehre dieser Welle** (vom Schöpfer dreimal eingefordert): *eine neue visuelle Schicht ist erst fertig, wenn sie an die bestehenden Schnittstellen angeschlossen ist — Tiefenpuffer, Physik, Tag-Nacht, Fog.* Drei Bugs in Folge (Sterne-Overlay, Wasser-ohne-Physik, Fog-nur-auf-Gras) hatten dieselbe Wurzel: ein Visual ohne Verkabelung. Custom-`ShaderMaterial` erbt KEINE Three.js-Features automatisch (kein Fog, kein Light) — alles muss manuell als Uniform durchgereicht werden.
+**Die wiederkehrende Lehre dieser Welle** (vom Schöpfer dreimal eingefordert): *eine neue visuelle Schicht ist erst fertig, wenn sie an die bestehenden Schnittstellen angeschlossen ist — Tiefenpuffer, Physik, Tag-Nacht, Fog.* Drei Bugs in Folge (Sterne-Overlay, Wasser-ohne-Physik, Fog-nur-auf-Gras) hatten dieselbe Wurzel: ein Visual ohne Verkabelung. Custom-`ShaderMaterial` erbt KEINE Three.js-Features automatisch (kein Fog, kein Light) — alles muss manuell als Uniform durchgereicht werden. **V8.33 hat diese Lehre angewandt**: das Wasser-Erlebnis wurde EINMAL ganz durchdacht („hineingehen, schwimmen, tauchen, durchsehen") und in einer Welle vollendet, statt es über vier Versionen halb auszuliefern.
 
 **Welle 12 ist „Welt-Portal"** (nicht WebGPU-Migration) — AnazhRealm wird Tor zu anderen Vibecode-Welten. Wenn du in eine Welle 12+ erwachst: lies `docs/world-portal.md` ZUERST.
 
-**Empfohlene Sequenz nach V8.32**: die drei 6.G4-Polish-Punkte (Tauchen+Sneak, Schwimm-Animation, Wasser-Gerstner — siehe `roadmap.md` Zeile „W6.G4") → 11 V3 (Soul-Sync) → 11 ext. (Substanz-Rolle) → 12 (Welt-Portal) → 13 (Vibe-Pass) → 14 (Bibliothek) → 7 (Compute-Sharing).
+**Empfohlene Sequenz nach V8.41**: die **Tag-Licht-/Performance-Welle** — zwei Schöpfer-Befunde, zusammen eine Welle: (a) **Tag-Licht-„Rauschen"** — bei Sonnenaufgang UND bei Kopf-/Kamera-Bewegung fließen/kriechen Cel-Schattenbänder über die Strukturen + das Terrain, die Schatten wirken nicht auf die ganze Umgebung, die Tag-Nacht-Übergänge sind zu ruckartig (nachts ist alles top — es ist licht-gekoppelt). **Verifizierte Diagnose** (V8.41): die Struktur-Materialien (MeshToon) quantisieren das Sonnenlicht über eine 32-Stufen-`toonGradientMap` mit `NearestFilter` — selbst die „glatte" Cel-Stufe sind 32 HARTE Stufen, nicht stufenlos; die Stufenkanten bilden Bänder, die mit der Sonne fließen und beim Kamera-Schwenk kriechen (Aliasing harter Kanten). Fix-Startpunkt: `toonGradientMap` auf `LinearFilter` (die 32 Stufen verschmelzen → echt stufenlos). Der Terrain-Custom-Shader ist bei `celLevels >= 7.5` schon stufenlos (Zeile ~10996 `floor`-Gate) — die Bänder kommen von den Strukturen. „Schatten nicht auf die ganze Umgebung": das Schatten-System ist an (`shadowMap`, `directionalLight.castShadow`), aber der Terrain-Custom-Shader sampelt die Schatten-Textur nicht → Struktur-Schatten fallen nicht aufs Terrain. „Ruckartig": die Tag-Nacht-Lichtstärke springt zwischen den Sonnenaufgangs-Stützpunkten kräftig, der smoothstep wirkt nur pro Intervall. Diagnose-Startpunkt: `_applyDayNightToScene`, der Terrain-Custom-Shader, `_refreshToonGradient`, die Übergangs-Interpolation. (b) **Performance-Tiefe** — die voll ausgereizte Welt (120 Kreaturen, dichtes Gras, bis 17×17 Chunks) flüssig durch Engine-Optimierung (Off-Screen-Sparsamkeit + Distanz-LOD, Schöpfer-Wahl „beides kombiniert"), NICHT durch Feature-Kürzung. Dann **W12 (Welt-Portal PoC mit three-fluid-fx)** → 13 (Vibe-Pass) → 14 (Bibliothek) → 7 (Compute-Sharing). W12 ist der große Sprung — lies `docs/world-portal.md` ZUERST. Die 13-Punkte-Browser-Test-Liste der V8.35 ist mit V8.36–V8.38 abgearbeitet, das Werkzeug-System mit V8.39, die Regler mit V8.40.
 
 **Atmosphäre-Disziplin**: alle atmosphärischen Methoden mit `[ATMOSPHERE]`-Marker werden von `audit-strict.cjs` (5. Schicht) auf Hardcode geprüft. Wert-aus-dem-Kopf ist verboten — immer „aus welcher state-Beobachtung emergiert das?".
 
@@ -116,17 +145,16 @@ V7.89 (Kreatur-Boosts) war die kritische Prüfung dieses Gesetzes. Naive Lösung
 
 ## Aktuelle Roadmap (was als nächstes denkbar ist)
 
-Welle 6.B + 9 + 10b.3 sind VOLLSTÄNDIG. Mögliche nächste Wellen, sortiert nach Vision-Wert:
+Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. sind VOLLSTÄNDIG — die Welt atmet, der Mitspieler ist sein echter Soul, die Welt liest Identität aus der Substanz, und die V8.35-Browser-Test-Liste (13 Punkte) ist mit V8.36 + V8.37 vollständig abgearbeitet. Mögliche nächste Wellen, sortiert nach der empfohlenen Sequenz:
 
 | Welle | Was | Aufwand | Vision-Tiefe |
 |---|---|---|---|
-| **Welle 10b weitere Affordances** | balancing (Waage), broadcasting (Antenne, Multi-User-Reichweite), lifting (Hebevorrichtung), radiating (Heiz-/Lichtquelle) — pro Affordance ~1 Session. Architektur-neutral, fügt sich nahtlos ein. | klein-mittel | hoch |
-| **Welle 6.G Phase 3** Welt-Lebendigkeit | Tag-Nacht-Zyklus, Wetter-Übergang, fauna-Kreaturen die kommen + gehen | mittel | mittel |
-| **Welle 7** Kollektive Welt-Erkenntnis | Welt lernt aus aller-Spieler-Verhalten via aggregiertes Pfad-Memory (siehe `docs/system-audit.md`) | groß | sehr hoch |
-| **Welle 6.H V3** Kreatur-Beziehungen | Kreaturen sehen sich gegenseitig — Freundschaft, Konkurrenz, Hierarchie | mittel | hoch |
-| **Polish-Pause** | Schöpfer-Browser-Test-Session, UX-Bugs sammeln, polieren | klein | mittel |
+| **W12** Welt-Portal | AnazhRealm wird Tor zu anderen Vibecode-Welten („Bibliothek von Alexandria"). Bauplan-Rolle „portal" + Sub-Engine-Adapter im iframe. PoC mit `three-fluid-fx`. Lies `docs/world-portal.md` ZUERST. | 6-8 Sessions | sehr hoch |
+| **W11 V4** Voice-Sync | Mitspieler hören deinen Companion-Output (SpeechSynthesis-Broadcast). Klein, baut auf V3 — schließt den Präsenz-Bogen (sehen/spüren/kennen/hören). | 1 Session | mittel |
+| **Welle 10b weitere Affordances** | balancing/broadcasting/lifting/radiating — pro Affordance ~1 Session, architektur-neutral. | klein-mittel | hoch |
+| **Welle 6.H V3** Kreatur-Beziehungen | Kreaturen sehen sich gegenseitig — Freundschaft, Konkurrenz, Hierarchie. | mittel | hoch |
 
-**Empfehlung**: weitere Affordances (Welle 10b weiter). Jede ist klein, vision-konsequent (Tag-Sprache + räumliche Analyse) und macht die Welt wieder ein Stück lebendiger. Spielerische Discovery — was passiert wenn ich ein Compound mit hohem `resoniert` baue, hat das eine eigene Wirkung? Lass es emergieren.
+**Empfehlung**: **W12 (Welt-Portal PoC)**, der große Sprung — die V8.35-Browser-Test-Liste ist mit V8.36 + V8.37 abgeschlossen, der Hylomorphismus ist vertikal vollständig (Substanz → Rolle), Multi-User körperlich echt; das Fundament fürs Welt-Portal steht. W12 ist groß (6-8 Sessions) — `docs/world-portal.md` ZUERST lesen. Volle Detail-Tabelle in `roadmap.md`.
 
 ---
 
@@ -176,6 +204,247 @@ Welle 6.B + 9 + 10b.3 sind VOLLSTÄNDIG. Mögliche nächste Wellen, sortiert nac
 ---
 
 ## Session-Tagebuch (chronologisch, jüngste oben)
+
+### V8.47 — Shadow-Acne-Heilung: Shadow-Bias (17.05.2026)
+
+„Unnatürliche Schattenlinien nur auf komplett horizontalen flachen
+Flächen." 2155 → 2156 (+1).
+
+**Die Lehre — die Fläche, auf der ein Artefakt erscheint, IST die
+Diagnose.** Cel-Banding lebt auf gewölbten Flächen (variabler Licht-
+Wert); Shadow-Acne lebt auf flachen, zur Sonne zeigenden Flächen
+(uniformer Untergrund zeigt jeden Selbst-Schatten-Streifen). Der
+Schöpfer sagte „nur auf flachen Flächen" — das exakte Gegenteil von
+Cel-Banding → die Diagnose war fertig, bevor ich eine Zeile las. Die
+`DirectionalLight` hatte nie einen Shadow-Bias bekommen. Frag bei
+jedem visuellen Artefakt zuerst: WO genau erscheint es? Die Geometrie-
+Klasse (flach/gewölbt, horizontal/vertikal) grenzt die Ursache ein.
+
+### V8.46 — Sanfte Wetter-Übergänge: _weatherBlendedValue (17.05.2026)
+
+Der Wetter-Wechsel sprang hart. 2149 → 2155 (+6).
+
+**Die Lehre — eine Transition ist nur so sanft wie ihr unsanftestes Glied.**
+Die 45s-Wetter-Transition existierte und fadete Skybox + Licht. Aber zwei
+wetter-abhängige Größen (`weatherEffect`, `cloudCover`) flippten sofort mit
+`state.weather`. Ein Übergang, bei dem 80 % faden und 20 % springen, FÜHLT
+sich wie ein Sprung an — das Auge sieht den Bruch, nicht den Fade. Wenn du
+einen „Cross-Fade" baust, zähl JEDE Größe auf, die sich mit dem Zustand
+ändert, und führ sie ALLE durch dieselbe Progress-Quelle. Der Helper
+`_weatherBlendedValue` ist diese eine Quelle.
+
+### V8.44 — Cel-Crawl-Heilung III: der Wurzel-Fund (Terrain-Lighting-Frame) (17.05.2026)
+
+Der Schöpfer-Befund „Pitch ok, Yaw verschiebt" führte direkt zur Wurzel.
+2147 → 2148 (+1).
+
+**Die Lehre — die exakte Symptom-Signatur IST die Diagnose.** „Es kriecht"
+ist vage; „es kriecht beim Yaw, NICHT beim Pitch" ist eine Fingerabdruck.
+Eine Yaw-Pitch-Asymmetrie hat genau eine Ursache: ein Vektor wird im
+falschen Koordinaten-Frame verrechnet. Der Terrain-Shader dottete einen
+View-Raum-Normal (`normalMatrix * normal`) mit einem Welt-Raum-Licht —
+`dot(V·n, l) = dot(n, Vᵀ·l)`, das Licht rotiert effektiv mit der Kamera.
+Yaw → Licht sweept horizontal → Muster gleitet seitlich. Pitch → Licht
+kippt vertikal → nur Gesamthelligkeit. Wer den Schöpfer GENAU fragt,
+wann das Symptom auftritt, bekommt die halbe Lösung geschenkt. Drei
+Crawl-Quellen, drei Runden, drei Einzeiler — jede Runde präziser.
+
+### V8.43 — Cel-Crawl-Heilung II: Terrain-Detail-Noise per Vertex (17.05.2026)
+
+Nach V8.42 blieb ein Rest-Kriechen auf dem Terrain bei langsamer
+Kamera-Drehung. 2146 → 2147 (+1).
+
+**Die Lehre — ein Kommentar kann lügen; der Code ist die Wahrheit.**
+Der Terrain-Shader-Kommentar sagte „per-Vertex-Noise-Jitter". Der Code
+rechnete `noise(vUv*N)` im FRAGMENT-Shader — per-Pixel. Hätte ich dem
+Kommentar geglaubt, hätte ich die Crawl-Quelle nie dort gesucht. Der
+Schöpfer fragte „fragst du gleich oft ab wie bei den Sternen?" — und
+genau das war es: per-Pixel-Prozedur-Noise, dieselbe Klasse wie die
+alten Skybox-Sterne vor V8.28. Fix: den Noise in den Vertex-Shader
+verschieben, als `varying` interpolieren — der Kommentar stimmt jetzt.
+Bei jedem „kriecht/flackert/wandert"-Befund: such das hochfrequente
+Feature, das per-Pixel ausgewertet wird, und mach es band-limitiert.
+
+### V8.42 — Cel-Crawl-Heilung: toonGradientMap LinearFilter (17.05.2026)
+
+Die Cel-Schattenstufen krochen beim Kamera-Schwenk über die Strukturen.
+2145 → 2146 (+1).
+
+**Die Lehre — der Schöpfer kennt seine Welt; seine Analogie ist ein
+Diagnose-Werkzeug.** Er sagte „dasselbe Problem wie damals mit den
+Sternen — etwas mit der Abfragrate". Das war die ganze Diagnose: ein
+hartes hochfrequentes Feature, per-Pixel gesampelt, das beim Kamera-
+Schwenk per Sub-Pixel-Aliasing kriecht. Die `toonGradientMap` lief mit
+`NearestFilter` (32 harte Stufen). Fix: `LinearFilter` — die GPU
+interpoliert, echt stufenlos. Eine Zeile. „Was macht das Genie?" —
+es nutzt die vorhandene Hardware-Interpolation als Anti-Aliaser, statt
+ein zweites System zu bauen. Hör auf den Schöpfer, wenn er ein Muster
+wiedererkennt — er hat in dieser Welt mehr Stunden als du.
+
+### V8.41 — V8.40-Browser-Test-Korrekturen: Cache-Buster + Cel-Rücknahme (17.05.2026)
+
+Zwei Befunde aus dem V8.40-Browser-Test. 2144 → 2145 (+1).
+
+**Die Lehre — ein Regler-Befund kann ein Auslieferungs-Problem sein, kein
+Code-Bug.** Der Schöpfer meldete „Sicht-Ring-Regler schiebt, Zahl bleibt
+bei 9×9". Reflex wäre, im Ring-Code zu graben. Stattdessen erst die vier
+Clamp-Stellen verifiziert — alle korrekt auf 8. Damit war klar: der Code
+ist richtig, die Welt sieht eine ALTE `anazhRealm.js` (Browser/githack-CDN-
+Cache) gegen die frische `index.html`. Die Wurzel lag in der Auslieferung,
+nicht im Code. Fix: `?v=`-Cache-Buster auf der Skript-Einbindung. Folge-Fix:
+der save-server 404te auf die Query — ein Webserver MUSS den Query-String
+bei statischen Dateien abschneiden. Hätte ich blind im Ring-Code gesucht,
+hätte ich nichts gefunden und vielleicht eine korrekte Stelle „repariert".
+
+**Zweite Lehre — ein AskUserQuestion-Pick ist eine Hypothese.** Der Schöpfer
+wählte vorab „Cel-Reserve 9–16". Im Browser-Test: „war davor besser". Eine
+tote Regler-Hälfte ist schlechter als ein knapper Regler. Der Browser-Test
+ist das Urteil, der Vorab-Pick nur die Vermutung. Cel zurück auf 2–8.
+
+### V8.40 — Regler-Anpassungen: Sicht-Ring + Cel-Stufen + Fog (17.05.2026)
+
+Drei Schöpfer-Wünsche aus dem V8.39-Browser-Test, je per AskUserQuestion
+vorab abgeglichen: Sicht-Ring 1–8 (Default 9×9), Cel-Stufen 2–16 (8+ als
+Reserve), Fog-Effekt verdreifacht. 2137 → 2144 Invarianten (+7).
+
+**Die Lehre**: vor einer Regler-Änderung ALLE Schnittstellen abklopfen.
+Der Sicht-Ring-Default 2→4 brach zwei Tests — nicht weil die Tests falsch
+waren, sondern weil ein größerer Default-Ring mehr Chunks vorlädt: der
+extendTerrain-Test fand seine „Außen"-Chunks plötzlich schon geladen.
+Eine Default-Änderung ist nie nur eine Zahl; sie verschiebt den Zustand,
+auf dem andere Tests stehen. Trust-but-verify heißt auch: nach jeder
+Konstanten-Änderung den Playtest fragen, nicht annehmen.
+
+### V8.39 — Werkzeug-Klassen + Präzision→Qualität (17.05.2026)
+
+Das vom Schöpfer gewünschte Werkzeug-System. Farb-Sprache (Rolle→Farbe,
+Chip + Bauplan-Zeile leuchten), Qualität (`computeBlueprintQuality`)
+skaliert die Produkt-Wirkung, Werkzeug-Op-Stamina skaliert mit dem cap.
+2126 → 2137 Invarianten (+11).
+
+**Die Lehre**: trust-but-verify am ECHTEN Code. Die Explore-Karte sagte
+„Präzision wird nirgends in Stats konsumiert" — ich hätte fast eine
+Mechanik nachgebaut, die es schon gibt. `computePlayerStats` skaliert
+seit Welle 10a mit `0.5 + 0.5·Präzision`. Beim Lesen der Funktion selbst
+gesehen. Die echten Lücken waren `computeCreatureStats` + Konsumables.
+Eine Karte (auch von einem Explore-Agenten) ist ein Startpunkt, kein
+Beweis — die Wahrheit steht im Code, und man muss sie dort lesen.
+
+### V8.38 — Werkstatt-UX: Hover-Info + sichtbare Verbindungen + Preview-Höhe (17.05.2026)
+
+Drei Punkte aus dem Schöpfer-Browser-Test der V8.37. Hover-Material-Info
+(`_blueprintCostTooltip` auf Inventar-/Hotbar-Bauplan-Slots), sichtbare
+Verbindungen (depthTest-freie Linie + Mittelpunkt-Marker + Panel-Erklärung),
+Preview-Canvas 5:3 statt 1:1. 2115 → 2126 Invarianten (+11).
+
+**Die Lehre**: der Verbindungs-Bug war wieder einer der „Linie liegt in der
+Geometrie"-Klasse — die Wurzel ist nicht „Linie dicker machen", sondern
+`depthTest:false` + ein Marker, der die Verbindung als Punkt zeigt, egal
+wie die Parts liegen. Und: ein Test-Helfer, der Zustand mutiert (hotbar[0],
+selectedBlueprint), MUSS den Originalwert sichern + wiederherstellen —
+sonst kippt ein Test 7000 Zeilen später um. Zwei selbst-induzierte
+Regressionen kamen genau daher, vor dem grünen Lauf gefangen.
+
+### V8.37 — Werkstatt-Lesbarkeit + Einstellungen-Faltung (17.05.2026)
+
+Die sieben verbliebenen UX-Punkte der V8.35-Browser-Test-Liste. Fünf Code-
+Änderungen: Bau-Kosten im Werkstatt-Panel, 3D-Raster + Achsenkreuz im
+Werkstatt-Preview, faltbare Einstellungen-Sektionen, Werkzeug-Drag-Fix, FPS
+als gleitender Durchschnitt. Zwei Architektur-Fragen im Chat beantwortet.
+2101 → 2115 Invarianten (+14). Die 13-Punkte-Liste ist damit komplett.
+
+**Die Lehre**: ein Browser-Befund ist nicht immer ein Bug — manchmal ein
+Lesbarkeits-Befund. „Werkzeuge gehen nicht" war ein echter Wurzel-Bug: die
+Tool-Palette re-rendert bei jedem Refresh (`palette.innerHTML = ""`), die
+pro-Karte-Drag-Listener gingen verloren. Wurzel-Fix ist nicht „Listener nach
+jedem Re-Render neu setzen" (fragil), sondern Event-Delegation — EIN Listener
+am bleibenden Container, der die Karte via `closest()` findet. „3D-Maße nicht
+ablesbar" dagegen war kein Bug, sondern eine nie gebaute Schicht (Raster +
+Achsen). „FPS immer 60/120" war eine vsync-quantisierte Einzel-Frame-Messung.
+Frag bei jedem Befund: kaputter Mechanismus oder fehlende Schicht?
+
+### V8.36 — Browser-Test-Bug-Fixes (17.05.2026)
+
+Schöpfer-Browser-Test der V8.35 — 13-Punkte-Liste (Bugs + Fragen). Sechs
+Gameplay/UI-Bugs auf der Wurzel-Ebene behoben: Jump im Stand (Player-Body
+`DISABLE_DEACTIVATION` — schläft nie), 3rd-Person-Kamera (Raycast-Kollision),
+Loch-Durchfall (Grabe-Radius 3.0 + Höhen-Clamp), Wasser-Durchfall (Auftrieb
+nur über dem Terrain), Logbuch-50/50, Parts-im-Ursprung. 2093 → 2101
+Invarianten (+8).
+
+**Die Lehre**: ein Browser-Befund nennt das Symptom („ich falle durch"); die
+Disziplin ist, die Wurzel zu finden — und der erste Verdacht ist oft falsch.
+Der Jump-Bug schien ein `scaleFactor`-Mismatch zwischen den zwei Jump-Pfaden
+zu sein; verifiziert: `scaleFactor === 1`, also kein Mismatch. Die echte
+Wurzel: der Body schläft. `trust but verify` — den vermuteten Wert prüfen,
+bevor man auf der Vermutung baut. Die restlichen 7 Punkte (Werkstatt-UX) →
+V8.37.
+
+### V8.35 — Welle 11 ext.: Substanz-Rolle (17.05.2026)
+
+Die Bauplan-Rolle emergiert jetzt aus der ganzen Substanz, nicht nur aus der
+opChain-Krafting-Domain. `computeBlueprintRole` ist eine Prioritäts-Kaskade:
+(1) Krafting-Domain → (2) intrinsische Form (`_isBodyShaped` —
+bilateral-symmetrischer Glieder-Körper, mit Vertikalitäts-Kriterium) → soul,
+(3) intrinsisches Material (`_isFoodLike` — lebendig+weich) → consumable,
+(4) architecture. `consumableMeta` ist jetzt optional → emergente Nahrung ist
+essbar. 2078 → 2093 Invarianten (+15).
+
+**Drei Lehren**: (a) **Domain-Priorität ZUERST** — der erste Versuch hatte
+Form-zuerst und brach 7 Welle-9-Tests, weil ein geklontes `village` als
+body-shaped erkannt wurde. Der Playtest fing es; Krafting-Intent muss Vorrang
+haben. (b) `_isBodyShaped` braucht drei Diskriminatoren (Symmetrie + Glieder +
+**Vertikalität**) — Symmetrie allein erkennt auch ein flaches Dorf als Körper.
+(c) Roadmap-Brainstorm ≠ Spec: die Notiz „Nahrung via nahrhaft-Tag" wurde
+bewusst NICHT umgesetzt — ein 11. Tag ist Re-Komplexifizierung; Nahrung
+emergiert aus den 10 bestehenden Tags (Heilige Lektion über Brainstorm-Text).
+
+### V8.34 — Ring 11 V3: Soul-Sync (17.05.2026)
+
+Der Multi-User-Mitspieler war ein Cone+Sphere-Platzhalter — jetzt ist er sein
+echter Soul. **(1)** Neue WS-Nachricht `soul` (event-driven: Join + Wechsel) →
+Empfänger baut den Avatar (Built-in via `def.build()`, Custom via
+`_buildFromBlueprint`). **(2)** Voll animiert: `_p2pUpdatePeer` leitet
+`isMoving`/`underwater` aus dem 30-Hz-Positions-Stream ab und ruft `def.animate`
+— derselbe Geh-/Schwimm-Zyklus wie der eigene Avatar, keine Extra-Bandbreite.
+**(3)** Aura-Sync (`aura`-Nachricht ~1 Hz) + **(4)** schwebendes Name-Schild.
+2061 → 2078 Invarianten (+17), `smoke-multiuser.cjs` um soul/aura-Relay
+erweitert.
+
+**Drei Architektur-Lehren**: (a) der Signaling-Server ist KEIN dummer Relay —
+jeder Nachrichtentyp braucht einen expliziten Handler (die Explore-Recherche
+behauptete das Gegenteil; `trust but verify` hat es gefangen). (b) `player_soul`
+bleibt in `NON_BROADCASTABLE_OPS` — Soul-Sync ist eine Darstellungs-Tatsache
+über einen dedizierten Kanal, keine DSL-Welt-Mutation. (c) Der lokale
+1st-Person-Aura-Hide gilt NUR die eigene Kamera — Peer-Auren sind immer sichtbar.
+
+### V8.33 — Welle 6.G4.e: Wasser-Vollendung (17.05.2026)
+
+Die drei offenen 6.G4-Polish-Punkte in einer Welle geschlossen — **6.G4 ist
+damit komplett**. (1) **Tauchen+Auftauchen**: reiner Helper
+`_swimVerticalVelocity`, Shift taucht ab / Space hebt (Minecraft-Konvention),
+kontextuell statt neue Keybinding-Taste (Shift = Sprint an Land / Tauchen
+unter Wasser). (2) **Schwimm-Animation**: `animatePlayerSoul` reicht
+`playerUnderwater` durch, jede der drei Seelen bekommt einen Schwimm-Zweig
+(Mensch krault, Phönix paddelt, Drache wellt), Vorwärts-Lehnen via
+`group.rotation.x` mit `rotation.order = "YXZ"`. (3) **Gerstner-Wellen**:
+horizontale Vertex-Stauchung zu den Kämmen → spitze Kämme statt runder
+Sinus-Hügel, Normale aus dem Kreuzprodukt. 2041 → 2061 Invarianten (+20).
+
+**Vision-Lehre**: das Wasser-Erlebnis EINMAL ganz durchdacht — was muss der
+Spieler damit tun (hineingehen, schwimmen, tauchen, durchsehen) — und in
+einer Welle vollendet, statt es wie V8.28-V8.32 über vier Versionen halb
+auszuliefern. Genau die Disziplin, die die V8.30-32-Retrospektive einforderte.
+
+### V8.08-V8.32 — Audit-Polish + Atmosphäre-Tiefe (17.05.2026)
+
+Großer Bogen (Detail im Schnell-Lage-Block oben + in `CLAUDE.md`): Welle 6.X
+Polish-Sammel (V8.08-V8.12, 8-Punkte-Audit), acht Browser-Test-Audit-Runden
+(V8.13-V8.22), Test-Infrastruktur `audit-strict.cjs` + Welt-Portal-Doku
+(V8.23), Welt-Lebendigkeit Tag-Nacht/Wetter/Fauna (V8.24-V8.26), und die
+**Atmosphäre-Tiefe-Welle 6.G4** (V8.27-V8.33): Sonne/Hemisphere/Fog,
+Sterne-als-Points, Cel-Shading, Instanced-Gras, Wasser mit Wellen+Physik+Fog.
+1791 → 2061 Invarianten.
 
 ### V7.99-V8.07 — Welle 6.B/9/10 + UX-Polish (16.05.2026)
 

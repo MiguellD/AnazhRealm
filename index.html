@@ -29,7 +29,7 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self';"
         />
-        <title>Anazh Realm v8.32 – Das Ultiversum</title>
+        <title>Anazh Realm v8.47 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
              zusätzliche Datei. img-src 'self' data: in CSP erlaubt data-URI. -->
         <link
@@ -349,17 +349,24 @@
                unten-bündig (nur so viel Höhe wie nötig). Schöpfer-Wunsch:
                Chat bleibt im Vordergrund, Logbuch lebt am Boden der Konsole. */
             #console-chat-section {
-                flex: 1 1 auto;
+                flex: 1 1 0;
                 min-height: 0;
             }
+            /* V8.36 — eingeklappt: nur das Label, am Boden der Konsole.
+               Ausgeklappt (#log sichtbar): flex:1 1 0 wie der Chat → beide
+               teilen die Konsole 50/50, das Logbuch verdeckt den Chat
+               nicht mehr (Schöpfer-Browser-Test V8.35). */
             #console-log-section {
                 flex: 0 0 auto;
                 margin-top: auto;
+                min-height: 0;
             }
-            /* Wenn Logbuch eingeklappt ist (nur Label sichtbar), bleibt es
-               am Boden; wenn ausgeklappt wächst es nach OBEN (max-height-Cap). */
+            #console-log-section:has(#log:not([hidden])) {
+                flex: 1 1 0;
+                margin-top: 0;
+            }
             #console-log-section #log:not([hidden]) {
-                max-height: 35%;
+                flex: 1 1 0;
                 min-height: 60px;
                 overflow-y: auto;
             }
@@ -1709,6 +1716,32 @@
                 border-bottom: 1px solid var(--parch-edge);
                 padding-bottom: 4px;
             }
+            /* V8.37 — faltbare Einstellungen-Sektionen. Der <h3> wird zum
+               Klick-Header; .collapsed blendet alles außer dem Header aus. */
+            .drawer h3.collapsible-header {
+                cursor: pointer;
+                user-select: none;
+                position: relative;
+                padding-right: 18px;
+            }
+            .drawer h3.collapsible-header:hover {
+                color: var(--brass-1, #d4a373);
+            }
+            .drawer h3.collapsible-header::after {
+                content: "▾";
+                position: absolute;
+                right: 2px;
+                top: 0;
+                font-size: 9px;
+                opacity: 0.65;
+                transition: transform 0.15s ease;
+            }
+            .drawer .collapsed > h3.collapsible-header::after {
+                transform: rotate(-90deg);
+            }
+            .drawer .collapsed > :not(h3) {
+                display: none;
+            }
             .drawer .row {
                 display: flex;
                 justify-content: space-between;
@@ -2948,7 +2981,9 @@
             #workshop-preview-canvas {
                 display: block;
                 width: 100%;
-                aspect-ratio: 1 / 1;
+                /* V8.38 — 5:3 statt 1:1 → der Viewer ist ~60% so hoch wie breit,
+                   das Bauplan-Stats-Panel rutscht ohne Scrollen ins Bild. */
+                aspect-ratio: 5 / 3;
                 background: #1a140a;
                 border: 1px solid var(--parch-edge);
                 border-radius: 2px;
@@ -3169,6 +3204,13 @@
             }
             #workshop-stats-panel .workshop-growth-text.manual-override {
                 color: var(--iron-1, #5b3f10);
+            }
+            /* V8.37 — Bau-Kosten als Daten-Readout (monospace, brass). */
+            #workshop-stats-panel .workshop-cost-text {
+                font-family: "JetBrains Mono", "Courier New", monospace;
+                font-size: 10px;
+                color: var(--brass-1, #d4a373);
+                line-height: 1.4;
             }
             /* V8.05 — Del-Button unter der Form-Palette */
             .workshop-delete-btn {
@@ -3917,7 +3959,7 @@
         <header id="topbar" class="hud-frame">
             <div class="topbar-inner">
                 <div class="title">
-                    Anazh Realm <span class="version">v8.32</span> <span class="sub">— Das Ultiversum</span>
+                    Anazh Realm <span class="version">v8.47</span> <span class="sub">— Das Ultiversum</span>
                 </div>
                 <nav class="tabs" role="tablist" aria-label="Hauptansichten">
                     <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">
@@ -4490,7 +4532,7 @@
                 </div>
                 <div class="slider-row">
                     <label for="slider-ring">Sicht-Ring</label>
-                    <input type="range" id="slider-ring" min="1" max="4" value="2" />
+                    <input type="range" id="slider-ring" min="1" max="8" value="4" />
                     <span class="slider-value" id="slider-ring-val">5×5</span>
                 </div>
             </section>
@@ -4879,7 +4921,10 @@
         <script src="vendor/simplex-noise.js"></script>
         <!-- Phase 6: kein Inline-Bootstrap mehr — direkte Skript-Einbindung, defer
          garantiert die Reihenfolge nach den Vendor-Libs und das Warten auf
-         DOMContentLoaded ohne Inline-Listener. -->
-        <script src="anazhRealm.js" defer></script>
+         DOMContentLoaded ohne Inline-Listener.
+         V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
+         (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
+         frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
+        <script src="anazhRealm.js?v=8.47" defer></script>
     </body>
 </html>

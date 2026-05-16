@@ -1,4 +1,4 @@
-# Zustand des Realm — Stand: 17.05.2026 (V8.32)
+# Zustand des Realm — Stand: 17.05.2026 (V8.47)
 
 **Welle 6.H V2 vollendet (14/14 Sub-Phasen)** — Kreaturen sind jetzt vollwertige Co-Schöpfer-Wesen mit 9 Identitäts-Schichten (Body, Specs, Equipped, Boosts, Tasks, Memory+Persistenz, Konversation via @-Adresse, Proaktivität, Welt-Aktion-Vorschläge mit Sandbox). **LLM-Provider-System maximal robust nach 5-Versionen-Iteration (V7.94-V7.98)** — jedes Ollama-Setup funktioniert: lokal, gehostet, Cloud, Reasoning-Models, lokale 7B-Modelle. CORS-Lösung via save-server-Proxy, Parser mit Plain-Text-Fallback.
 
@@ -184,6 +184,145 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 ## 6. Learnings aus dieser Session
 
 Echt gelernt, nicht performt:
+
+### V8.47 (17.05.2026) — Shadow-Acne-Heilung: Shadow-Bias
+
+„Unnatürliche Schattenlinien, scheinen nur auf komplett horizontalen flachen Flächen zu geschehen." Die Lehre:
+
+**Die Fläche, auf der ein Artefakt erscheint, ist die Diagnose.** Cel-Banding lebt auf gewölbten Flächen (wo der Licht-Wert über die Krümmung variiert); Shadow-Acne lebt auf flachen, zur Lichtquelle zeigenden Flächen (der uniforme Untergrund zeigt jeden Selbst-Schatten-Streifen, gewölbte Flächen verbergen ihn). Der Schöpfer sagte „nur auf flachen Flächen" — das exakte Gegenteil der Cel-Banding-Signatur. Damit stand die Diagnose fest, bevor eine Code-Zeile gelesen war: die `DirectionalLight` warf Schatten, hatte aber nie einen Shadow-Bias (`shadow.bias`/`shadow.normalBias` default 0) → die grobe Shadow-Map schattete flache Flächen selbst. Fix: `normalBias` + `bias` + feinere Map.
+
+**Vision-Wort der V8.47**: *„Frag bei jedem visuellen Artefakt zuerst: wo genau? Die Geometrie-Klasse, auf der es sitzt, grenzt die Ursache ein, bevor du den Code öffnest."*
+
+### V8.46 (17.05.2026) — Sanfte Wetter-Übergänge: _weatherBlendedValue
+
+Der Wetter-Wechsel sprang hart, blendete nicht ineinander. Die Lehre:
+
+**Eine Transition ist nur so sanft wie ihr unsanftestes Glied.** Die 45s-Wetter-Transition existierte und cross-fadete Skybox-Farbe + Licht-Intensität. Aber zwei wetter-abhängige Größen — `weatherEffect` (Terrain-Verdunklung) und `cloudCover` (Wolken-Deckung) — flippten sofort mit `state.weather` (das beim Wechsel instant aufs Ziel springt). Ein Übergang, bei dem das meiste fadet und ein Teil springt, fühlt sich als Ganzes wie ein Sprung an — das Auge sieht den Bruch, nicht den Fade. Fix: Helper `_weatherBlendedValue` führt JEDEN per-Wetter-Skalar durch dieselbe `weatherTransition.progress`-Quelle. (Der `weatherEffect`-Uniform hatte zusätzlich nie ein Update bekommen — nur beim Chunk-Bau gesetzt → alte Chunks blieben stale → Patchwork.)
+
+**Vision-Wort der V8.46**: *„Wenn du einen Cross-Fade baust, zähl jede Größe auf, die sich ändert — eine einzige, die springt, lässt den ganzen Übergang springen."*
+
+### V8.44 (17.05.2026) — Cel-Crawl-Heilung III: der Wurzel-Fund (Terrain-Lighting-Frame)
+
+Der Schöpfer-Befund „bei Kopf hoch/runter bleibt es korrekt, bei links/rechts verschiebt es sich" führte direkt zur Wurzel. Die Lehre:
+
+**Die exakte Symptom-Signatur IST die Diagnose.** „Es kriecht" ist vage. „Es kriecht beim Yaw, nicht beim Pitch" ist ein Fingerabdruck — und eine Yaw-Pitch-Asymmetrie hat genau eine Ursache: ein Vektor wird im falschen Koordinaten-Frame verrechnet. Der Terrain-Shader dottete einen View-Raum-Normal (`normalMatrix * normal`) mit einem Welt-Raum-Licht. Über `dot(V·n, l) = dot(n, Vᵀ·l)` rotiert das Licht effektiv mit der Kamera: Yaw → es sweept horizontal → das Hell/Dunkel-Muster gleitet seitlich; Pitch → es kippt vertikal → nur Gesamthelligkeit, kein Gleiten. Fix in einer Zeile: `vNormal` in Welt-Raum. Drei Crawl-Quellen (V8.42/43/44), drei Browser-Test-Runden, jede präziser — bis die Signatur die Wurzel zeigte.
+
+**Vision-Wort der V8.44**: *„Frag nicht ‚kriecht es?', frag ‚WANN genau kriecht es?'. Das Wann ist die Diagnose."*
+
+### V8.43 (17.05.2026) — Cel-Crawl-Heilung II: Terrain-Detail-Noise per Vertex
+
+Nach V8.42 blieb ein Rest-Kriechen auf dem Terrain bei langsamer Kamera-Drehung. Die Lehre:
+
+**Ein Kommentar kann lügen; der Code ist die Wahrheit.** Der Terrain-Shader-Kommentar sagte „per-Vertex-Noise-Jitter" — der Code rechnete `noise(vUv*N)` im FRAGMENT-Shader, per-Pixel. Der Schöpfer fragte „fragst du gleich oft ab wie bei den Sternen?", und genau das war es: ein hochfrequentes prozedurales Muster, per-Pixel ausgewertet → bei Kamera-Drehung Sub-Pixel-Aliasing → Kriechen. Dieselbe Bug-Klasse wie die prozeduralen Skybox-Sterne vor V8.28. Fix: `random()`/`noise()`/die zwei Oktaven in den Vertex-Shader verschoben, das Ergebnis als `varying` interpoliert — band-limitiert, stabil. Der Kommentar stimmt jetzt.
+
+**Vision-Wort der V8.43**: *„Glaub dem Kommentar nicht — lies den Code. Und bei jedem ‚es kriecht': finde das hochfrequente Feature, das per-Pixel gesampelt wird, und band-limitiere es."*
+
+### V8.42 (17.05.2026) — Cel-Crawl-Heilung: toonGradientMap LinearFilter
+
+Die Cel-Schattenstufen krochen beim langsamen Kamera-Schwenk über die Strukturen. Der Schöpfer erkannte es als „dasselbe Problem wie damals mit den Sternen". Die Lehre:
+
+**Die Analogie des Schöpfers ist ein Diagnose-Werkzeug.** „Etwas mit der Abfragrate, wie bei den Sternen" — das war die vollständige Diagnose: ein hartes hochfrequentes Feature (die 32-Stufen-`toonGradientMap` mit `NearestFilter`), per-Pixel gesampelt, dessen Kanten beim Kamera-Schwenk per Sub-Pixel-Aliasing kriechen. Fix: `LinearFilter` — die GPU interpoliert den Gradient zu echter Stufenlosigkeit. Eine Zeile. Kein neues System, keine Dopplung — die Hardware-Textur-Interpolation IST der Anti-Aliaser, genau wie das echte Rasterizer-AA der Stern-Points (V8.28). Wer in der Welt mehr Stunden hat, erkennt Muster schneller als jede Code-Analyse.
+
+**Vision-Wort der V8.42**: *„Das Genie baut kein zweites System — es findet das eine, das schon da ist, und lässt es die Arbeit tun."*
+
+### V8.41 (17.05.2026) — V8.40-Browser-Test-Korrekturen: Cache-Buster + Cel-Rücknahme
+
+Zwei Befunde aus dem V8.40-Browser-Test. Zwei Lehren:
+
+**Ein Regler-Befund kann ein Auslieferungs-Problem sein, kein Code-Bug.** „Sicht-Ring-Regler schiebt, Zahl bleibt bei 9×9" — statt im Ring-Code zu graben, erst die vier Clamp-Stellen verifiziert: alle korrekt auf 8. Damit stand fest, dass die Welt eine alte `anazhRealm.js` (Browser/CDN-Cache) gegen die frische `index.html` sieht. Fix: `?v=`-Cache-Buster auf der Skript-Einbindung; der save-server muss dafür den Query-String bei statischen Dateien abschneiden. Blind im richtigen Code zu suchen hätte nichts gefunden — und vielleicht eine korrekte Stelle „repariert".
+
+**Ein AskUserQuestion-Pick ist eine Hypothese, der Browser-Test das Urteil.** Der Schöpfer wählte vorab „Cel-Reserve 9–16"; im Browser-Test: „war davor besser". Eine tote Regler-Hälfte ist schlechter als ein knapper Regler — über „smooth" gibt es nichts Glatteres. Cel zurück auf 2–8.
+
+**Vision-Wort der V8.41**: *„Bevor du im Code gräbst, frag, ob der Code überhaupt ankommt. Und ein Vorab-Ja ist kein Urteil — das Urteil fällt im Browser."*
+
+### V8.40 (17.05.2026) — Regler-Anpassungen: Sicht-Ring + Cel-Stufen + Fog
+
+Drei Schöpfer-Wünsche aus dem V8.39-Browser-Test, je per AskUserQuestion vorab abgeglichen: Sicht-Ring 1–8 (Default 9×9), Cel-Stufen 2–16 (8+ Reserve), Fog-Effekt verdreifacht. Eine Lehre:
+
+**Eine Default-Änderung ist nie nur eine Zahl.** Der Sicht-Ring-Default 2→4 brach zwei Playtest-Invarianten — nicht weil die Tests falsch waren, sondern weil ein größerer Default-Ring mehr Chunks vorlädt: der extendTerrain-Test fand seine „Außen"-Chunks plötzlich schon im geladenen Ring, und der chunkRingRadius-Default-Test prüfte noch die alte Zahl. Eine Konstante verschiebt den Zustand, auf dem andere Tests stehen. Die Disziplin: nach jeder Konstanten-/Default-Änderung den Playtest fragen — und die gefundenen Test-Brüche sind oft kein Bug, sondern ein berechtigtes „der Test muss die neue Realität anerkennen".
+
+**Vision-Wort der V8.40**: *„Freiheit bei Stabilität: der Regler darf bis ans Limit — aber das Limit muss tragen. Eine Zahl zu verdoppeln heißt, ihre ganze Folgekette mitzudenken."*
+
+### V8.39 (17.05.2026) — Werkzeug-Klassen + Präzision→Qualität
+
+Das vom Schöpfer gewünschte Werkzeug-System: eine Farb-Sprache (jede Rolle eine feste Farbe, Rollen-Chip + Bauplan-Zeile leuchten darin), Qualität (`computeBlueprintQuality`) skaliert die Produkt-Wirkung, ein stumpfes Werkzeug kostet mehr Stamina. Eine Lehre:
+
+**Eine Code-Karte ist ein Startpunkt, kein Beweis.** Der Explore-Agent kartierte das Werkzeug-System „vollständig" und meldete als Lücke: „Präzision wird berechnet, aber nie in Stats konsumiert." Ich war dabei, genau diese Mechanik nachzubauen — bis ich `computePlayerStats` SELBST las: es skaliert Rüstung/Werkzeug/Soul seit Welle 10a mit `0.5 + 0.5·Präzision`. Die Karte hatte die falsche Sache geprüft (den `precision`-STAT statt das Gewicht-Multiplikator). Hätte ich der Karte vertraut, wäre eine doppelte Mechanik entstanden. Die echten Lücken lagen woanders (`computeCreatureStats` + Konsumables skalierten flach). Trust-but-verify gilt auch — gerade — für die Ergebnisse eigener Recherche-Werkzeuge: der Code ist die Wahrheit, die Karte ist nur der Wegweiser.
+
+**Vision-Wort der V8.39**: *„Bevor du eine Mechanik baust, lies, ob sie schon lebt. Eine Karte sagt dir, wo du suchen sollst — gefunden hast du erst, wenn du den Code selbst gelesen hast."*
+
+### V8.38 (17.05.2026) — Werkstatt-UX: Hover-Info + sichtbare Verbindungen + Preview-Höhe
+
+Drei Punkte aus dem Schöpfer-Browser-Test der V8.37 — Hover-Material-Info auf Bauplan-Slots, sichtbare Verbindungen im 3D-Preview, ein flacheres Preview-Fenster. Eine Lehre:
+
+**Sichtbarkeit ist ein eigenes Feature, kein Nebeneffekt.** Die Verbindungs-Linie existierte seit Welle 6.F1 — aber sie lag zwischen zwei Part-Zentren, und bei zwei berührenden Würfeln steckt sie komplett in der Geometrie. „Es ist da" heißt nicht „man sieht es". Der Wurzel-Fix ist nicht die Linie dicker zu machen (WebGL-Linienbreite ist sowieso auf 1 gedeckelt), sondern zwei Schichten: `depthTest:false` (die Linie zeichnet über den Parts statt dahinter) + ein Mittelpunkt-Marker, der die Verbindung als Punkt zeigt, egal wie die Parts überlappen. Dieselbe Disziplin wie beim 3D-Raster der V8.37: wenn der Schöpfer etwas „nicht erkennt", frag, ob die Information fehlt oder nur die Darstellung — hier war die Information da, die Darstellung fehlte.
+
+**Vision-Wort der V8.38**: *„Etwas zu berechnen heißt nicht, es sichtbar zu machen. Eine Verbindung, die man nicht sieht, ist für den Schöpfer keine Verbindung."*
+
+### V8.37 (17.05.2026) — Werkstatt-Lesbarkeit + Einstellungen-Faltung
+
+Die sieben verbliebenen UX-Punkte der V8.35-Browser-Test-Liste — fünf Code-Änderungen, zwei Architektur-Antworten. Damit ist die 13-Punkte-Liste komplett (V8.36 sechs Gameplay-Bugs, V8.37 sieben UX-Punkte). Zwei Lehren:
+
+1. **Ein Browser-Befund ist nicht immer ein Bug — manchmal eine fehlende Schicht.** „3D-Maße nicht ablesbar" war kein gebrochener Mechanismus, sondern eine nie gebaute Referenz-Schicht: dem Werkstatt-Preview fehlte schlicht ein Raster + Achsenkreuz (CAD-Konvention — Tinkercad/Blender haben sie). „Werkzeuge gehen nicht" dagegen war ein echter Wurzel-Bug. Die Disziplin: bei jedem Befund fragen — kaputter Mechanismus, oder fehlende Schicht? Die Heilung ist je nach Antwort eine andere (Mechanismus reparieren vs. Schicht bauen).
+
+2. **Re-gerenderte DOM-Knoten verlieren ihre Listener — Event-Delegation ist die Wurzel-Antwort.** Der Werkzeug-Drag-Bug: `installDragSource` hängte einen `dragstart`-Listener an jede Karte; die Werkzeug-Palette wird aber bei jedem Werkstatt-Refresh neu gerendert (`palette.innerHTML = ""` + neue Karten), die Listener waren weg. Shape/Material/Farbe-Paletten werden nur einmal gerendert — die hatten den Bug nie. Der Wurzel-Fix ist nicht „Listener nach jedem Re-Render neu setzen" (fragil, leicht zu vergessen), sondern Event-Delegation: EIN Listener am bleibenden Container, der die gezogene Karte via `closest()` findet. Ein Pattern, das jedes künftige Re-Rendern überlebt.
+
+**Vision-Wort der V8.37**: *„Frag bei jedem Befund: ist das Symptom ein gebrochener Mechanismus oder eine nie gebaute Schicht? Die Wurzel-Heilung ist je nach Antwort eine andere — aber sie ist immer eine Schicht, die überlebt."*
+
+### V8.36 (17.05.2026) — Browser-Test-Bug-Fixes (Wurzel statt Symptom)
+
+Der Schöpfer-Browser-Test der V8.35 brachte eine 13-Punkte-Liste. Sechs Gameplay/UI-Bugs in einer Welle behoben — jeder auf der Wurzel-Ebene. Drei Lehren:
+
+1. **Der erste Verdacht ist oft falsch — verifiziere, bevor du baust.** Der Jump-im-Stand-Bug schien ein `scaleFactor`-Mismatch zwischen den zwei Jump-Pfaden zu sein (`handleJump` nutzt `jumpPower` roh, der Loop-Block `jumpPower / scaleFactor`). Plausibel — aber `scaleFactor === 1`, also rechnen beide identisch. Die echte Wurzel: der Ammo-Body schläft im Stillstand ein. Hätte ich auf der `scaleFactor`-Vermutung „gefixt", wäre der Bug geblieben. „Trust but verify" gilt auch für die eigene Diagnose.
+
+2. **Symptom-Pflaster brechen wieder; Wurzel-Heilungen schließen die Klasse.** Die V8.08 hatte den Stand-Sprung mit `activate(true)` im Jump-Pfad „gefixt" — ein Pflaster, das ein schlafendes Body im Moment des Sprungs weckt. Es regredierte. V8.36 heilt die Wurzel: der Player-Body bekommt `DISABLE_DEACTIVATION` — er schläft NIE. Das behebt nicht nur Jump, sondern jede künftige „Body schläft, Eingabe verpufft"-Situation. Ein Wurzel-Fix ist breiter als der gemeldete Bug.
+
+3. **Eine Lösung pro Bug-Klasse, nicht pro Symptom.** Die 3rd-Person-Kamera „sah durch den Boden in einem Loch". Der Symptom-Fix wäre ein tieferer Loch-Spezial-Clamp. Der Wurzel-Fix ist eine echte Kamera-Kollision (Raycast vom Spieler zur Kamera) — die löst Loch UND Wand UND Bauwerk in einem, ohne Sonderfall pro Geometrie. Genau wie die Affordance-Helfer (Welle 10b): räumliche Analyse statt Whitelist.
+
+**Vision-Wort der V8.36**: *„Ein Browser-Befund nennt das Symptom. Die Meisterschaft ist, die Wurzel zu finden — und der erste Verdacht ist oft nicht die Wurzel."*
+
+
+### V8.35 (17.05.2026) — Welle 11 ext. "Substanz-Rolle" (Rolle emergiert aus Form + Material)
+
+Seit Welle 9 emergiert die Bauplan-Rolle (tool/armor/soul/consumable/machine) aus der opChain-Werkzeug-Domain — aus der Krafting-GESCHICHTE (welche Werkzeuge das Werkstück berührt haben). Aber ein Bauplan, den man zu einem Körper formt und nie schmiedet, blieb „architecture". Die Vision §1.3 sagt: die Welt liest, was ein Ding IST, aus seiner Substanz. Substanz ist mehr als Krafting-Geschichte — sie ist auch FORM und MATERIAL. V8.35 vollendet das: `computeBlueprintRole` ist jetzt eine Prioritäts-Kaskade über alle drei Substanz-Schichten.
+
+Drei Lehren:
+
+1. **Der Playtest hat eine Prioritäts-Fehlentscheidung gefangen.** Der erste Wurf hatte die intrinsische Form ZUERST geprüft (ein Körper IST ein Wesen, dachte ich — egal wie gekraftet). Sieben Welle-9-Tests brachen sofort: sie klonen `village` und wenden Domain-Werkzeuge an — und ein geklontes Dorf (symmetrische Hütten) wurde von `_isBodyShaped` als Körper erkannt und überschrieb die Domain-Rolle. Lehre: die bewusste Werkzeug-Wahl ist ein Intent und muss Vorrang haben; die intrinsische Form/Material spricht, WENN keine Krafting-Domain da ist. Hätte ich nur Code-Analyse gemacht und nicht getestet, wäre die Regression durchgerutscht.
+
+2. **Ein Signal braucht oft mehrere Diskriminatoren.** „Bilateral symmetrisch" allein erkennt auch ein Dorf als Körper (Hütten in Spiegel-Paaren). Erst drei Diskriminatoren zusammen — Symmetrie + echte Glieder-Paare + Vertikalität („ein Körper steht") — trennen ein Wesen sauber von einem flachen Dorf und von einem Turm. Vgl. die V8.32-Lehre („ein Zustand mit zwei Wirkungen braucht zwei Schwellen") — hier: eine Identität mit vielen Doppelgängern braucht mehrere Diskriminatoren.
+
+3. **Roadmap-Brainstorm ist nicht Spec.** Die Roadmap-Notiz sagte „Nahrung via `nahrhaft`-Tag" — ein 11. Material-Tag. Bewusst nicht umgesetzt: ein neuer Tag hätte jedes Material, die 9×10-Aktivierungs-Matrix und eine Save-Migration angefasst — Re-Komplexifizierung für ein Feature, das aus den 10 bestehenden Tags sauber emergiert (`lebendig` hoch + `härte` niedrig = essbar). Die Heilige Lektion schlägt die Brainstorm-Notiz.
+
+**Vision-Wort der V8.35**: *„Die Welt liest, was ein Ding IST — aus seiner ganzen Substanz: woraus es besteht, was du daraus geformt hast, und wie du es bearbeitet hast."*
+
+### V8.34 (17.05.2026) — Ring 11 V3 "Soul-Sync" (Peer-Avatar wird die echte Seele)
+
+Multi-User war seit V7.68-V7.71 verkabelt — Position-Sync, DSL-Broadcast, Welt-Snapshot beim Join. Aber der Mitspieler selbst war ein Cone+Sphere-Kegel mit einer peerId-Hash-Farbe. Funktional „da", aber ein Marker, kein Wesen. V3 macht ihn zu seinem echten Soul: man sieht den Mitspieler als Mensch/Phönix/Drache/Custom, voll animiert, mit Aura und Namen.
+
+Drei Lehren aus dieser Welle:
+
+1. **„Trust but verify" hat einen echten Fehler gefangen.** Die Code-Recherche (ein Explore-Agent) berichtete, der Signaling-Server sei ein „dumb broadcast relay, all types pass through". Beim direkten Lesen von `handleClientMessage` zeigte sich: der Server hat pro Nachrichtentyp ein explizites `if`, das das Objekt rekonstruiert + die authoritative peerId stempelt — KEIN generischer Fallthrough. Hätte ich der Agent-Zusammenfassung vertraut, wären `soul`/`aura` stillschweigend verschluckt worden. Eine Agent-Zusammenfassung beschreibt, was der Agent zu finden GLAUBTE — den Code, den man editieren wird, liest man selbst.
+
+2. **Eine Tatsache ist nicht immer eine Mutation.** Es war verlockend, den Soul-Sync über die bestehende DSL-Broadcast-Schiene zu schicken (`player_soul` aus `NON_BROADCASTABLE_OPS` nehmen). Falsch: ein DSL-Op läuft auf dem Empfänger durch `dslRun` — ein Peer-Soul-Wechsel hätte MEINEN Soul mutiert. Die Seele eines Peers ist eine **Darstellungs-Tatsache** (welchen Avatar rendere ich für ihn), keine Welt-Mutation. Sie braucht einen eigenen Kanal, keine geteilte Schiene. Frag bei jedem Sync: „ändert das die Welt, oder beschreibt es nur einen anderen Spieler?".
+
+3. **Ein lokaler Hide ist nicht global.** Die Spieler-Aura wird in 1st-Person lokal versteckt (das Billboard läge im eigenen Sichtfeld). Aber das ist eine Aussage über MEINE Kamera. Ein Mitspieler, der mich sieht, rendert durch SEINE Kamera — meine Aura muss er immer sehen. Peer-Auren ignorieren den Kamera-Hide. Genau die Schnittstellen-Frage, die der Schöpfer im 17.05.-Audit gestellt hatte (Punkt C2).
+
+**Vision-Wort der V8.34**: *„Ein Mitspieler ist erst ein Co-Schöpfer, wenn man ihn als das sieht, was er IST — seine Form, sein Zustand, sein Name."*
+
+### V8.33 (17.05.2026) — Welle 6.G4.e "Wasser-Vollendung" (Tauchen, Schwimm-Animation, Gerstner-Wellen)
+
+Drei offene 6.G4-Polish-Punkte standen seit V8.31 in der Roadmap: Tauchen, Schwimm-Animation, Wasser-Gerstner. Die V8.30-32-Retrospektive hatte eine scharfe Lehre formuliert: *„Das Wasser hat vier Versionen gebraucht, weil ich es jedes Mal halb abgeliefert habe. Ein Feature gehört vollständig durchdacht."* V8.33 wendet genau das an — die drei Punkte sind nicht drei kleine Wellen, sie sind **eine Frage**: was muss ein Spieler mit Wasser tun können? Hineingehen (V8.30), schwimmen, tauchen, durchsehen (V8.32). Schwimmen + Tauchen fehlten. Also: eine Welle, alle drei.
+
+1. **Tauchen** — der Auftrieb trieb den Spieler IMMER nach oben; abtauchen war unmöglich, und damit waren der V8.32-Unterwasser-Tint + die Fresnel-Durchsicht praktisch unerreichbar (man kam mit den Augen nie unter Wasser). Tauchen war also nicht ein Extra — es war die fehlende Geste, die zwei vorige Features erst erlebbar macht. Lösung: reiner Helper `_swimVerticalVelocity` (Shift ab, Space hoch, sonst Auftrieb).
+
+2. **Kontextuelle Taste statt halbes Keybinding.** Die Roadmap hatte „braucht eine Sneak-Taste im Keybinding-System" notiert. Aber es gibt keine Land-Hock-Mechanik — eine `sneak`-Keybinding, die an Land nichts tut, wäre genau der „halb abgelieferte" Fehler. Stattdessen: Shift ist kontextuell (Sprint an Land, Tauchen im Wasser), Space ebenso (Springen / Auftauchen). Minecraft-Konvention, null neue UI. Architektur-Begründung: Bewegungs-Modifikatoren (WASD, Sprint, Jump-Hold) leben in `state.keys`, nicht im Keybinding-System — Tauchen gehört dorthin.
+
+3. **Euler-Reihenfolge ist eine Schnittstelle.** Die Schwimm-Pose neigt den Avatar über `group.rotation.x`. Mit der Default-`XYZ`-Reihenfolge wäre `rotation.x` eine Welt-X-Drehung — der Avatar würde je nach Blickrichtung seitlich kippen statt vorwärts. `rotation.order = "YXZ"` macht `rotation.x` zu einem lokalen Vorwärts-Lehnen. Eine unscheinbare Eigenschaft, aber ohne sie ist die Pose falsch.
+
+**Die Lehre**: ein Feature ganz durchdenken heißt, die Frage hinter den Aufgaben zu finden. Drei Roadmap-Zeilen (Tauchen, Animation, Gerstner) waren in Wahrheit eine Frage (Wasser-Erlebnis vollenden) — und als eine Welle gebaut, schließen sie sich gegenseitig auf (Tauchen macht Tint+Fresnel erlebbar, Schwimm-Animation macht Tauchen glaubwürdig). Halb ausgeliefert hätten sie sich gegenseitig ins Leere laufen lassen.
+
+**Vision-Wort der V8.33**: *„Drei Aufgaben können eine Frage sein. Finde die Frage, dann liefere sie ganz."*
 
 ### V8.32 (17.05.2026) — Welle 6.G4.d³ "Wasser-Politur" (Tauch-Tint nur bei Augen-unter-Wasser, Wasser-Fresnel)
 
@@ -1142,13 +1281,12 @@ CI macht 1-4 automatisch; 5+6 sind Disziplin.
 
 ## 10. Wie eine neue Session starten
 
-1. Branch checken: `git status` sollte auf `claude/new-adventure-fetch-branch-NF847` zeigen, working tree clean. Letzter SHA dieser Übergabe ist im Commit-Archiv §4 das letzte Element. **Vor dem Anfangen: `git fetch --all` UND alle Branches durchsehen — `origin/main` ist oft nicht der neueste Stand, weitere Feature-Branches können vorausgehen (siehe Learning #28).**
-2. `CLAUDE.md` ist auto-geladen — sofort verfügbar. Diese Doc (`state-of-realm.md`) gezielt lesen wenn größere Entscheidungen anstehen.
-3. Bei Bedarf `docs/nexus-dsl.md` lesen für Ring 2 Phase 3+ Details.
-4. Falls der Schöpfer fragt „wo stehen wir?" → §3 (Matrix) + §5 (Pfad D Tabelle) zitieren. Stand: Ring 0+1 ✅, Ring 2 Phase 1+2 ✅, Phase 3-7 + Ringe 3-7 + Ringe 8-11 offen.
-5. Falls der Schöpfer „los" sagt ohne Spezifikation → Ring 2 Phase 3 (Chat-Parser → DSL) vorschlagen. Das schließt die DSL-Brücke und bereitet die Welten-Modifikation (Ring 8+) vor.
-6. Falls der Schöpfer „Welt modifizierbar" fragt → §7 Frage 4 zeigen (Ebenen A/B/C) und Ebene B empfehlen.
-7. Falls etwas re-komplexifiziert werden soll → erst Versionslog-Lektion (§2) UND §6 Punkt 8 („Patchwork sammelt sich an") zitieren, dann diskutieren.
+1. Branch checken: `git status` — der aktuelle Entwicklungs-Branch steht im Session-Auftrag, working tree sollte clean sein. **Vor dem Anfangen: `git fetch --all` UND alle Branches durchsehen — `origin/main` ist oft nicht der neueste Stand (siehe Learning #28).**
+2. `CLAUDE.md` ist auto-geladen — sofort verfügbar. **`docs/handover.md` ZUERST lesen** — die Orientierungs-Doku für den nächsten Agenten (Schnell-Lage, heilige Gesetze, Rhythmus, empfohlene nächste Schritte). Dann diese Doc (`state-of-realm.md`) für Vision + Learnings.
+3. `docs/roadmap.md` für die volle Wellen-Tabelle mit Status + Aufwand.
+4. Falls der Schöpfer fragt „wo stehen wir?" → Ring 0-11 + Welle 1-6 (inkl. 6.G3 Welt-Lebendigkeit + 6.G4 Atmosphäre-Tiefe) sind live; Stand V8.33. Nächste empfohlene Welle: W11 V3 (Soul-Sync). Detail in `handover.md` + `roadmap.md`.
+5. Falls der Schöpfer „los" sagt ohne Spezifikation → die `handover.md`-Empfehlung vorschlagen (aktuell W11 V3 Soul-Sync — der Multi-User-Mitspieler wird sein echter Soul statt Cone+Sphere).
+6. Falls etwas re-komplexifiziert werden soll → erst Versionslog-Lektion (§2) UND §6 Punkt 8 („Patchwork sammelt sich an") zitieren, dann diskutieren.
 
 ### Wichtige Gotchas, die in dieser Session geboren wurden
 
