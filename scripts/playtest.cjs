@@ -11180,29 +11180,33 @@ function startSaveServer() {
                     const stops = AnazhRealm.DAY_NIGHT_STOPS;
                     const t032 = stops.find((s) => s.t === 0.32);
                     out.intermediateStopExists = !!t032;
-                    // Smoothstep im _interpolateDayNight: prüfe Source
+                    // V8.48 — _interpolateDayNight nutzt jetzt Catmull-Rom
+                    // (global C1-stetig) statt per-Intervall-smoothstep.
                     const interpSrc = r._interpolateDayNight.toString();
-                    out.interpUsesSmoothstep = /3 - 2 \* linear/.test(interpSrc) || /eased/.test(interpSrc);
+                    out.interpUsesCatmull = /_catmullDayNight/.test(interpSrc);
 
-                    // Interpolations-Test: zwischen Stops t=0.22 und t=0.27 sollte
-                    // bei t=0.245 (Mitte) NICHT genau die Hälfte der Farben sein,
-                    // sondern smoothstep-gewichtet (in der Mitte schnell, am Rand
-                    // langsam). Wir prüfen: bei linear 50% wäre lerp-Wert 0.5,
-                    // smoothstep(0.5) = 0.5 — Mitte ist gleich. Aber am Anfang
-                    // (linear 0.2) ist smoothstep(0.2) = 0.104 — viel langsamer.
-                    // Statt symbolisch zu rechnen: prüfe, dass Tint bei t=0.235
-                    // (kurz nach Stop 0.22) näher am Start-Stop ist als bei
-                    // linearem Lerp.
-                    const at22 = r._interpolateDayNight(0.22);
-                    const at245 = r._interpolateDayNight(0.245); // 50 % Weg
-                    const at27 = r._interpolateDayNight(0.27);
-                    // Bei smoothstep ist 0.245 (mitte) ≈ lerp(at22, at27, 0.5),
-                    // weil smoothstep(0.5) = 0.5. Aber bei 0.232 (20% des Wegs)
-                    // wäre smoothstep(0.2)=0.104, also viel näher an at22.
-                    const at232 = r._interpolateDayNight(0.232);
-                    const distLinearAt232 = Math.abs(at232.sky.r - (at22.sky.r + 0.2 * (at27.sky.r - at22.sky.r)));
-                    const distSmoothAt232 = Math.abs(at232.sky.r - (at22.sky.r + 0.104 * (at27.sky.r - at22.sky.r)));
-                    out.smoothstepIsActive = distSmoothAt232 < distLinearAt232 - 0.001;
+                    // V8.48 — kein Pulsen mehr. Die alte per-Intervall-
+                    // smoothstep hatte Geschwindigkeit 0 an JEDEM Stop
+                    // (slow→fast→slow → „ruckartig"). Catmull-Rom: die
+                    // Steigung an einem Stop folgt der Nachbar-Differenz.
+                    // An t=0.32 STEIGT die Intensität (0.65→0.78→0.9), die
+                    // Steigung dort muss klar positiv sein (smoothstep: ≈0).
+                    const dtN = 0.003;
+                    const slopeAtStop =
+                        (r._interpolateDayNight(0.32 + dtN).intensity -
+                            r._interpolateDayNight(0.32 - dtN).intensity) /
+                        (2 * dtN);
+                    out.dayNightNoPulse = slopeAtStop > 0.3;
+                    // C1-Stetigkeit: Steigung kurz VOR und kurz NACH dem Stop
+                    // sind nahezu gleich (kein Knick, glatte Geschwindigkeit).
+                    const slopeBefore =
+                        (r._interpolateDayNight(0.32).intensity - r._interpolateDayNight(0.32 - dtN).intensity) / dtN;
+                    const slopeAfter =
+                        (r._interpolateDayNight(0.32 + dtN).intensity - r._interpolateDayNight(0.32).intensity) / dtN;
+                    out.dayNightC1 = Math.abs(slopeBefore - slopeAfter) < 0.6;
+                    // Stops werden weiterhin EXAKT reproduziert (Hermite trifft
+                    // p1 bei u=0): t=0.5 (Mittag) muss intensity 1.0 liefern.
+                    out.dayNightStopExact = Math.abs(r._interpolateDayNight(0.5).intensity - 1.0) < 0.001;
                     // Stop-Differenzen sind klein — kein Sprung über 0.3 in R-Component
                     let maxJump = 0;
                     for (let i = 1; i < stops.length; i++) {
@@ -11250,12 +11254,20 @@ function startSaveServer() {
                     v826Results.intermediateStopExists
                 );
                 check(
-                    "V8.26 Bug 2: _interpolateDayNight nutzt smoothstep statt linear-Lerp",
-                    v826Results.interpUsesSmoothstep
+                    "V8.48: _interpolateDayNight nutzt Catmull-Rom (_catmullDayNight) statt smoothstep",
+                    v826Results.interpUsesCatmull
                 );
                 check(
-                    "V8.26 Bug 2: Smoothstep wirkt empirisch (Anfangs-Phase langsamer als linear)",
-                    v826Results.smoothstepIsActive
+                    "V8.48: Tag-Nacht pulst nicht mehr (Steigung an Stop t=0.32 klar positiv)",
+                    v826Results.dayNightNoPulse
+                );
+                check(
+                    "V8.48: Tag-Nacht-Kurve ist C1-stetig (Steigung vor ≈ nach Stop, kein Knick)",
+                    v826Results.dayNightC1
+                );
+                check(
+                    "V8.48: Catmull-Rom reproduziert Stop-Werte exakt (Mittag t=0.5 → intensity 1.0)",
+                    v826Results.dayNightStopExact
                 );
                 check(
                     `V8.26 Bug 2: Keine harten Farbsprünge zwischen Stops (max RGB-Komponente <95, ist ${v826Results.maxJump})`,
@@ -12858,6 +12870,84 @@ function startSaveServer() {
                     false,
                     v846Results ? v846Results.error : "no result"
                 );
+            }
+
+            // ### V8.48 — Terrain-Schatten + Tag-Nacht-Glättung ###
+            const v848Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    const tm = r.state.terrainMaterial;
+                    out.terrainIsShader = !!tm && tm.type === "ShaderMaterial";
+                    if (out.terrainIsShader) {
+                        out.vertexHasShadowChunks =
+                            /shadowmap_pars_vertex/.test(tm.vertexShader) &&
+                            /shadowmap_vertex/.test(tm.vertexShader);
+                        out.fragmentHasShadowChunks =
+                            /shadowmap_pars_fragment/.test(tm.fragmentShader) &&
+                            /getShadow\(/.test(tm.fragmentShader) &&
+                            /vDirectionalShadowCoord/.test(tm.fragmentShader);
+                        out.fragmentHighp = /precision highp float/.test(tm.fragmentShader);
+                        out.terrainLightsTrue = tm.lights === true;
+                        out.terrainHasShadowUniform = !!tm.uniforms && !!tm.uniforms.directionalShadowMap;
+                    }
+                    // Shadow-Frustum folgt dem Spieler: Light-Target = Spieler-xz.
+                    out.targetInScene =
+                        !!r.state.directionalLight &&
+                        !!r.state.directionalLight.target &&
+                        r.state.directionalLight.target.parent === r.state.scene;
+                    const pm = r.state.playerMesh;
+                    if (pm) {
+                        const ox = pm.position.x;
+                        const oz = pm.position.z;
+                        pm.position.x = 123.5;
+                        pm.position.z = -77.25;
+                        r._applyDayNightToScene();
+                        const tgt = r.state.directionalLight.target.position;
+                        out.shadowFollowsPlayer =
+                            Math.abs(tgt.x - 123.5) < 0.01 && Math.abs(tgt.z - -77.25) < 0.01;
+                        pm.position.x = ox;
+                        pm.position.z = oz;
+                        r._applyDayNightToScene();
+                    }
+                    // _applyDayNightToScene leitet die Terrain-lightDirection aus
+                    // der reinen Sonnen-Richtung sunDir ab (nicht position.normalize()).
+                    const adnSrc = r._applyDayNightToScene.toString();
+                    out.usesSunDir = /const lightDir = sunDir/.test(adnSrc);
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (v848Results && !v848Results.error) {
+                check("V8.48: Terrain nutzt ShaderMaterial (kein Lambert-Fallback)", v848Results.terrainIsShader);
+                check("V8.48: Terrain-Vertex-Shader hat Shadow-Chunks", v848Results.vertexHasShadowChunks);
+                check(
+                    "V8.48: Terrain-Fragment-Shader sampelt die Shadow-Map (getShadow)",
+                    v848Results.fragmentHasShadowChunks
+                );
+                check(
+                    "V8.48: Terrain-Fragment-Shader nutzt highp (Shadow-Koord-Präzision)",
+                    v848Results.fragmentHighp
+                );
+                check(
+                    "V8.48: Terrain-Material hat lights:true (Renderer befüllt Shadow-Uniforms)",
+                    v848Results.terrainLightsTrue
+                );
+                check(
+                    "V8.48: Terrain-Uniforms enthalten directionalShadowMap-Slot",
+                    v848Results.terrainHasShadowUniform
+                );
+                check("V8.48: Light-Target im Szenengraph", v848Results.targetInScene);
+                check(
+                    "V8.48: Shadow-Frustum folgt dem Spieler (Target = Spieler-xz)",
+                    v848Results.shadowFollowsPlayer
+                );
+                check(
+                    "V8.48: Terrain-lightDirection aus reiner Sonnen-Richtung (sunDir)",
+                    v848Results.usesSunDir
+                );
+            } else {
+                check("V8.48: Terrain-Schatten-Tests laufen", false, v848Results ? v848Results.error : "no result");
             }
 
             // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider (Audit 17.05.2026) ###
