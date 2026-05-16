@@ -15125,12 +15125,12 @@ class AnazhRealm {
         return { ok: true, name };
     }
 
-    // W12 Phase 1 — Bauplan als Welt-Portal markieren. Analog zu
-    // setBlueprintAsArmor/setBlueprintAsConsumable: ein eigener Bauplan
-    // bekommt role:"portal" + portalMeta. Beim Betreten (E-Taste, Commit 3)
-    // lädt die in portalMeta.world genannte Skelett-Welt im sandboxed
-    // iframe. Portal ist eine REIN MANUELLE Rolle — computeBlueprintRole
-    // leitet sie nie emergent ab (ein Tor ist eine bewusste Schöpfer-Geste).
+    // W12 Phase 1 — Bauplan als Welt-Portal markieren. Die Tor-NATUR
+    // emergiert aus der Substanz (magie-leitender Ring, siehe
+    // _isPortalShaped) — diese Methode bindet das ZIEL (portalMeta.world,
+    // das nicht emergieren kann) und erzwingt zugleich die Rolle, analog
+    // setBlueprintAsConsumable/-Armor (roleManual = true). Beim Betreten
+    // (E-Taste, Commit 3) lädt die genannte Welt im sandboxed iframe.
     setBlueprintAsPortal(name, portalMeta) {
         const bp = this.state.blueprints && this.state.blueprints[name];
         if (!bp) return { ok: false, reason: "blueprint_unknown" };
@@ -15735,6 +15735,27 @@ class AnazhRealm {
         const T = AnazhRealm.SUBSTANCE_ROLE_THRESHOLDS.food;
         const tags = this.computeCompoundTags(bp) || {};
         return (tags.lebendig || 0) >= T.lebendigMin && (tags.härte || 0) <= T.härteMax;
+    }
+
+    // portal — Tor-Signatur (W12). Ein Tor rahmt einen begehbaren
+    // Durchgang UND leitet Magie. Zwei emergente Signale:
+    //   1. FORM: das Compound trägt einen Torus, groß genug zum
+    //      Durchschreiten. Der Torus ist unter den neun Primitiven die
+    //      Ring-Form — das einzige mit einer Öffnung; kein Proxy-Whitelist,
+    //      sondern die definierende Geometrie eines Rahmens.
+    //   2. MATERIAL: hohe magieleitung aus computeCompoundTags. Die
+    //      Aktivierungsmatrix gibt dem Torus magieleitung 3 — ein
+    //      Quarz-Ring erreicht damit hohe Werte, ein Stein-/Eisen-Ring
+    //      nicht. So WIRD ein Magie-Ring ein Tor; ein schlichter Ring
+    //      bleibt Bauwerk. Das Ziel (wohin das Tor führt) emergiert NICHT
+    //      — es ist autorierte portalMeta (setBlueprintAsPortal).
+    _isPortalShaped(bp) {
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return false;
+        const T = AnazhRealm.SUBSTANCE_ROLE_THRESHOLDS.portal;
+        const hasRing = bp.parts.some((p) => p.shape === "torus" && ((p.size && p.size.x) || 1) >= T.minRingSize);
+        if (!hasRing) return false;
+        const tags = this.computeCompoundTags(bp) || {};
+        return (tags.magieleitung || 0) >= T.magieleitungMin;
     }
 
     // ----- Welt-Reaktion: moveable (Spieler steigt ein, Compound folgt) -----
@@ -17005,9 +17026,10 @@ class AnazhRealm {
                 workshopDomain: "mechanism",
                 parts: drehbankParts,
             },
-            // W12 Phase 1 — Welt-Portal. Rolle "portal" (rein manuell —
-            // computeBlueprintRole leitet sie nie emergent ab). portalMeta
-            // nennt die Skelett-Welt; das Betreten kommt in Commit 3.
+            // W12 Phase 1 — Welt-Portal. Rolle "portal" — emergiert aus
+            // einem magie-leitenden Ring (siehe _isPortalShaped); hier als
+            // Built-in deklariert. portalMeta nennt das Ziel (Skelett-Welt);
+            // das Betreten kommt in Commit 3.
             welt_portal: {
                 name: "welt_portal",
                 label: "Welt-Portal",
@@ -18013,10 +18035,16 @@ class AnazhRealm {
     //   2. intrinsische FORM — bilateral-symmetrischer Glieder-Körper →
     //      "soul". Greift wenn keine Krafting-Domain spricht: eine geformte
     //      Gestalt IST ein Wesen, auch ungeschmiedet.
-    //   3. intrinsisches MATERIAL — lebendig+weiche Substanz → "consumable"
+    //   3. FORM + MATERIAL — ein magie-leitender Ring → "portal" (W12).
+    //      Die Aktivierungsmatrix gibt dem Torus magieleitung 3; ein
+    //      Quarz-Ring wird so zum Tor, ein schlichter Stein-Ring bleibt
+    //      Bauwerk. Siehe _isPortalShaped.
+    //   4. intrinsisches MATERIAL — lebendig+weiche Substanz → "consumable"
     //      (Nahrung).
-    //   4. Default — "architecture" (Bauwerk).
-    // forging-Split wird via Compound-Tag-Diskrimination aufgelöst.
+    //   5. Default — "architecture" (Bauwerk).
+    // forging-Split wird via Compound-Tag-Diskrimination aufgelöst. Das
+    // ZIEL eines Portals (portalMeta.world) emergiert NICHT — es ist
+    // autoriert (setBlueprintAsPortal), wie toolMeta/consumableMeta.
     computeBlueprintRole(blueprint) {
         const dom = this.computeBlueprintDomain(blueprint);
         if (dom) {
@@ -18025,6 +18053,7 @@ class AnazhRealm {
             if (role) return role;
         }
         if (this._isBodyShaped(blueprint)) return "soul";
+        if (this._isPortalShaped(blueprint)) return "portal";
         if (this._isFoodLike(blueprint)) return "consumable";
         return AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
     }
@@ -27897,6 +27926,14 @@ AnazhRealm.SUBSTANCE_ROLE_THRESHOLDS = Object.freeze({
     food: Object.freeze({
         lebendigMin: 0.6, // klar lebendig (Fleisch, Laub, Frucht)
         härteMax: 0.5, // weich genug zum Essen
+    }),
+    // W12 — Tor-Signatur. minRingSize: ein Torus muss begehbar groß sein
+    // (ein Deko-Ring ist kein Tor). magieleitungMin: ein Tor leitet Magie
+    // — ein Stein-/Eisen-Ring (magieleitung 0) bleibt darunter, ein
+    // Quarz-Ring darüber.
+    portal: Object.freeze({
+        minRingSize: 2.0,
+        magieleitungMin: 1.3,
     }),
 });
 

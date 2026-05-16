@@ -12807,10 +12807,27 @@ function startSaveServer() {
                     out.sanitizeValid =
                         sanValid.world === "worlds/skeleton/index.html" && sanValid.label === "Test-Welt";
 
-                    // Regression: computeBlueprintRole leitet NIE "portal" ab — Portal
-                    // ist rein manuell. Selbst ein portal-förmiger Bauplan (Torus-Ring
-                    // + Quarz-Scheibe) bekommt keine portal-Rolle.
-                    const portalShaped = {
+                    // W12-Korrektur — die Portal-NATUR emergiert aus der Substanz:
+                    // ein magie-leitender Ring wird zum Tor (das Ziel bleibt autoriert).
+                    out.portalShapedMethod = typeof r._isPortalShaped === "function";
+
+                    // Magie-Ring (Quarz-Torus, begehbar groß) → Portal.
+                    const magicRing = {
+                        parts: [
+                            {
+                                shape: "torus",
+                                material: "quarz",
+                                size: { x: 3.4, y: 3.4, z: 3.4 },
+                                position: { x: 0, y: 0, z: 0 },
+                            },
+                        ],
+                    };
+                    out.magicRingIsPortalShaped = r._isPortalShaped(magicRing) === true;
+                    out.magicRingRolePortal = r.computeBlueprintRole(magicRing) === "portal";
+
+                    // Stein-Ring (kein Magie-Material) → KEIN Portal. Die
+                    // "aus-Magie"-Diskrimination: ein schlichter Ring bleibt Bauwerk.
+                    const stoneRing = {
                         parts: [
                             {
                                 shape: "torus",
@@ -12818,15 +12835,46 @@ function startSaveServer() {
                                 size: { x: 3.4, y: 3.4, z: 3.4 },
                                 position: { x: 0, y: 0, z: 0 },
                             },
+                        ],
+                    };
+                    out.stoneRingNotPortal =
+                        r._isPortalShaped(stoneRing) === false && r.computeBlueprintRole(stoneRing) !== "portal";
+
+                    // Winziger Deko-Torus aus Quarz → KEIN Portal (nicht begehbar groß).
+                    const tinyRing = {
+                        parts: [
                             {
-                                shape: "cylinder",
+                                shape: "torus",
                                 material: "quarz",
-                                size: { x: 2.6, y: 0.16, z: 2.6 },
+                                size: { x: 0.8, y: 0.8, z: 0.8 },
                                 position: { x: 0, y: 0, z: 0 },
                             },
                         ],
                     };
-                    out.computeNeverPortal = r.computeBlueprintRole(portalShaped) !== "portal";
+                    out.tinyRingNotPortal = r._isPortalShaped(tinyRing) === false;
+
+                    // kristall_geode (magisch, aber massiv, kein Ring) → KEIN Portal.
+                    const geode = r.state.blueprints && r.state.blueprints.kristall_geode;
+                    out.geodeNotPortal = !!geode && r._isPortalShaped(geode) === false;
+
+                    // Built-in welt_portal erfüllt selbst die emergente Regel.
+                    out.builtinSatisfiesRule = !!wp && r._isPortalShaped(wp) === true;
+
+                    // Emergenter Pfad: ein eigener Bauplan mit Magie-Ring wird via
+                    // _refreshBlueprintRoleEmergent zum Portal — OHNE setBlueprintAsPortal.
+                    if (r.state.blueprints["_w12e"]) delete r.state.blueprints["_w12e"];
+                    r.createBlueprint("_w12e", "W12E");
+                    r.state.blueprints["_w12e"].parts = [
+                        {
+                            shape: "torus",
+                            material: "quarz",
+                            size: { x: 3.4, y: 3.4, z: 3.4 },
+                            position: { x: 0, y: 0, z: 0 },
+                        },
+                    ];
+                    r._refreshBlueprintRoleEmergent("_w12e");
+                    out.emergentRefreshPortal = r.state.blueprints["_w12e"].role === "portal";
+                    delete r.state.blueprints["_w12e"];
 
                     delete r.state.blueprints["_w12p"];
                     return out;
@@ -12852,9 +12900,25 @@ function startSaveServer() {
                 check("W12 P1: _sanitizePortalMeta verwirft fremdes Origin", w12c1Results.sanitizeForeign);
                 check("W12 P1: _sanitizePortalMeta verwirft Pfad-Traversal", w12c1Results.sanitizeTraversal);
                 check("W12 P1: _sanitizePortalMeta behält gültigen worlds/-Pfad", w12c1Results.sanitizeValid);
+                check("W12 P1: _isPortalShaped-Methode existiert", w12c1Results.portalShapedMethod);
+                check("W12 P1: Magie-Ring (Quarz-Torus) ist _isPortalShaped", w12c1Results.magicRingIsPortalShaped);
                 check(
-                    "W12 P1: computeBlueprintRole leitet nie 'portal' ab (Regression)",
-                    w12c1Results.computeNeverPortal
+                    "W12 P1: Magie-Ring emergiert als Rolle 'portal' (computeBlueprintRole)",
+                    w12c1Results.magicRingRolePortal
+                );
+                check(
+                    "W12 P1: Stein-Ring ohne Magie wird NICHT Portal (aus-Magie-Diskrimination)",
+                    w12c1Results.stoneRingNotPortal
+                );
+                check("W12 P1: winziger Deko-Torus wird NICHT Portal (Begehbarkeit)", w12c1Results.tinyRingNotPortal);
+                check(
+                    "W12 P1: kristall_geode (magisch, massiv) wird NICHT Portal (kein Ring)",
+                    w12c1Results.geodeNotPortal
+                );
+                check("W12 P1: Built-in welt_portal erfüllt _isPortalShaped selbst", w12c1Results.builtinSatisfiesRule);
+                check(
+                    "W12 P1: Magie-Ring emergiert via _refreshBlueprintRoleEmergent zu 'portal'",
+                    w12c1Results.emergentRefreshPortal
                 );
             } else {
                 check(
