@@ -9,9 +9,9 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 17.05.2026, V8.32)
+## Schnell-Lage (Stand 17.05.2026, V8.33)
 
-**Du erbst eine sehr lebendige Welt**. **2041 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~25700 Zeilen in einer Datei, alles produktiv. Die jüngste Session-Hälfte (V8.23 → V8.32) war eine **Atmosphäre-Tiefe-Welle (6.G4)** in sechs Schritten, jeder aus einem Schöpfer-Browser-Test:
+**Du erbst eine sehr lebendige Welt**. **2061 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~26900 Zeilen in einer Datei, alles produktiv. Die jüngste Session-Hälfte (V8.23 → V8.33) war eine **Atmosphäre-Tiefe-Welle (6.G4)** in sieben Schritten, jeder aus einem Schöpfer-Browser-Test:
 
 1. **V8.24-V8.26**: Welt-Lebendigkeit (Tag-Nacht, Wetter-Übergänge, Fauna-Trauer) + Welt-LEBT-Heilung (drei Wurzel-Helper, acht Hardcode-Wunden) + Disziplin-Polish (Stern-Stabilität, Sonnenaufgang-Smoothness, vier Audit-Quick-Wins)
 2. **V8.27 (6.G4.a)**: Welt unter wandernder Sonne — HemisphereLight + MeshLambert + Fog (Self-Shadow ohne Shadow-Maps)
@@ -19,12 +19,13 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 4. **V8.29 (6.G4.c)**: Die lebendige Welt — Instanced-Gras pro Chunk (Dichte aus `worldFieldAt.lebendig`), adaptives Wasser, Genesis-Plattform
 5. **V8.30-V8.31 (6.G4.d)**: Schnittstellen-Politur — Sterne-Tiefenpuffer, Avatar-Korrektur, Wasser-Wellen+Physik, Fog an die Custom-Shader
 6. **V8.32 (6.G4.d³)**: Wasser-Politur — Tauch-Tint nur bei Augen-unter-Wasser (`playerEyesUnderwater` getrennt von `playerUnderwater`), Wasser-Fresnel (am Horizont opak → keine Sterne durch), Fog-Slider bis 300 %
+7. **V8.33 (6.G4.e)**: Wasser-Vollendung — Tauchen+Auftauchen (Shift/Space, kontextuell — keine neue Keybinding-Taste), Schwimm-Animation (alle drei Seelen neigen sich + stroken/paddeln/wellen), Gerstner-Wellen (horizontale Stauchung → spitze Kämme). Die drei offenen 6.G4-Polish-Punkte geschlossen — **6.G4 ist komplett**.
 
-**Die wiederkehrende Lehre dieser Welle** (vom Schöpfer dreimal eingefordert): *eine neue visuelle Schicht ist erst fertig, wenn sie an die bestehenden Schnittstellen angeschlossen ist — Tiefenpuffer, Physik, Tag-Nacht, Fog.* Drei Bugs in Folge (Sterne-Overlay, Wasser-ohne-Physik, Fog-nur-auf-Gras) hatten dieselbe Wurzel: ein Visual ohne Verkabelung. Custom-`ShaderMaterial` erbt KEINE Three.js-Features automatisch (kein Fog, kein Light) — alles muss manuell als Uniform durchgereicht werden.
+**Die wiederkehrende Lehre dieser Welle** (vom Schöpfer dreimal eingefordert): *eine neue visuelle Schicht ist erst fertig, wenn sie an die bestehenden Schnittstellen angeschlossen ist — Tiefenpuffer, Physik, Tag-Nacht, Fog.* Drei Bugs in Folge (Sterne-Overlay, Wasser-ohne-Physik, Fog-nur-auf-Gras) hatten dieselbe Wurzel: ein Visual ohne Verkabelung. Custom-`ShaderMaterial` erbt KEINE Three.js-Features automatisch (kein Fog, kein Light) — alles muss manuell als Uniform durchgereicht werden. **V8.33 hat diese Lehre angewandt**: das Wasser-Erlebnis wurde EINMAL ganz durchdacht („hineingehen, schwimmen, tauchen, durchsehen") und in einer Welle vollendet, statt es über vier Versionen halb auszuliefern.
 
 **Welle 12 ist „Welt-Portal"** (nicht WebGPU-Migration) — AnazhRealm wird Tor zu anderen Vibecode-Welten. Wenn du in eine Welle 12+ erwachst: lies `docs/world-portal.md` ZUERST.
 
-**Empfohlene Sequenz nach V8.32**: die drei 6.G4-Polish-Punkte (Tauchen+Sneak, Schwimm-Animation, Wasser-Gerstner — siehe `roadmap.md` Zeile „W6.G4") → 11 V3 (Soul-Sync) → 11 ext. (Substanz-Rolle) → 12 (Welt-Portal) → 13 (Vibe-Pass) → 14 (Bibliothek) → 7 (Compute-Sharing).
+**Empfohlene Sequenz nach V8.33**: 6.G4 ist komplett → 11 V3 (Soul-Sync) → 11 ext. (Substanz-Rolle) → 12 (Welt-Portal PoC mit three-fluid-fx) → 13 (Vibe-Pass) → 14 (Bibliothek) → 7 (Compute-Sharing).
 
 **Atmosphäre-Disziplin**: alle atmosphärischen Methoden mit `[ATMOSPHERE]`-Marker werden von `audit-strict.cjs` (5. Schicht) auf Hardcode geprüft. Wert-aus-dem-Kopf ist verboten — immer „aus welcher state-Beobachtung emergiert das?".
 
@@ -116,17 +117,17 @@ V7.89 (Kreatur-Boosts) war die kritische Prüfung dieses Gesetzes. Naive Lösung
 
 ## Aktuelle Roadmap (was als nächstes denkbar ist)
 
-Welle 6.B + 9 + 10b.3 sind VOLLSTÄNDIG. Mögliche nächste Wellen, sortiert nach Vision-Wert:
+Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 sind VOLLSTÄNDIG — die Welt atmet (Tag-Nacht, Wetter, Fauna, Atmosphäre-Tiefe, Wasser mit Tauchen/Schwimmen/Gerstner). Mögliche nächste Wellen, sortiert nach der empfohlenen Sequenz:
 
 | Welle | Was | Aufwand | Vision-Tiefe |
 |---|---|---|---|
-| **Welle 10b weitere Affordances** | balancing (Waage), broadcasting (Antenne, Multi-User-Reichweite), lifting (Hebevorrichtung), radiating (Heiz-/Lichtquelle) — pro Affordance ~1 Session. Architektur-neutral, fügt sich nahtlos ein. | klein-mittel | hoch |
-| **Welle 6.G Phase 3** Welt-Lebendigkeit | Tag-Nacht-Zyklus, Wetter-Übergang, fauna-Kreaturen die kommen + gehen | mittel | mittel |
-| **Welle 7** Kollektive Welt-Erkenntnis | Welt lernt aus aller-Spieler-Verhalten via aggregiertes Pfad-Memory (siehe `docs/system-audit.md`) | groß | sehr hoch |
-| **Welle 6.H V3** Kreatur-Beziehungen | Kreaturen sehen sich gegenseitig — Freundschaft, Konkurrenz, Hierarchie | mittel | hoch |
-| **Polish-Pause** | Schöpfer-Browser-Test-Session, UX-Bugs sammeln, polieren | klein | mittel |
+| **W11 V3** Soul-Sync | Peer-Avatar im Multi-User wird der echte Soul (Mensch/Phönix/Drache) statt Cone+Sphere; plus Aura-Sync. | 2-3 Sessions | hoch |
+| **W11 ext.** Substanz-Rolle | emergente Rollen aus Substanz (Soul/Werkzeug/Rüstung/Nahrung) — „eine Sprache, beliebige Identitäten". Das größte Vision-Wort des 17.05.-Audits. | 3-4 Sessions | sehr hoch |
+| **W12** Welt-Portal | AnazhRealm wird Tor zu anderen Vibecode-Welten. PoC mit `three-fluid-fx`. Lies `docs/world-portal.md` ZUERST. | 6-8 Sessions | sehr hoch |
+| **Welle 10b weitere Affordances** | balancing/broadcasting/lifting/radiating — pro Affordance ~1 Session, architektur-neutral. Gute kleine Welle für zwischendurch. | klein-mittel | hoch |
+| **Welle 6.H V3** Kreatur-Beziehungen | Kreaturen sehen sich gegenseitig — Freundschaft, Konkurrenz, Hierarchie. | mittel | hoch |
 
-**Empfehlung**: weitere Affordances (Welle 10b weiter). Jede ist klein, vision-konsequent (Tag-Sprache + räumliche Analyse) und macht die Welt wieder ein Stück lebendiger. Spielerische Discovery — was passiert wenn ich ein Compound mit hohem `resoniert` baue, hat das eine eigene Wirkung? Lass es emergieren.
+**Empfehlung**: **W11 V3 (Soul-Sync)**. Multi-User ist verkabelt (Position + DSL-Sync), aber der Mitspieler ist ein Cone+Sphere — er sollte sein echter Soul sein. Danach die Substanz-Rolle (W11 ext.), dann der Welt-Portal-Bogen (12-14). Eine kleine Affordance-Welle (10b) passt jederzeit als Pause dazwischen. Volle Detail-Tabelle in `roadmap.md`.
 
 ---
 
@@ -176,6 +177,34 @@ Welle 6.B + 9 + 10b.3 sind VOLLSTÄNDIG. Mögliche nächste Wellen, sortiert nac
 ---
 
 ## Session-Tagebuch (chronologisch, jüngste oben)
+
+### V8.33 — Welle 6.G4.e: Wasser-Vollendung (17.05.2026)
+
+Die drei offenen 6.G4-Polish-Punkte in einer Welle geschlossen — **6.G4 ist
+damit komplett**. (1) **Tauchen+Auftauchen**: reiner Helper
+`_swimVerticalVelocity`, Shift taucht ab / Space hebt (Minecraft-Konvention),
+kontextuell statt neue Keybinding-Taste (Shift = Sprint an Land / Tauchen
+unter Wasser). (2) **Schwimm-Animation**: `animatePlayerSoul` reicht
+`playerUnderwater` durch, jede der drei Seelen bekommt einen Schwimm-Zweig
+(Mensch krault, Phönix paddelt, Drache wellt), Vorwärts-Lehnen via
+`group.rotation.x` mit `rotation.order = "YXZ"`. (3) **Gerstner-Wellen**:
+horizontale Vertex-Stauchung zu den Kämmen → spitze Kämme statt runder
+Sinus-Hügel, Normale aus dem Kreuzprodukt. 2041 → 2061 Invarianten (+20).
+
+**Vision-Lehre**: das Wasser-Erlebnis EINMAL ganz durchdacht — was muss der
+Spieler damit tun (hineingehen, schwimmen, tauchen, durchsehen) — und in
+einer Welle vollendet, statt es wie V8.28-V8.32 über vier Versionen halb
+auszuliefern. Genau die Disziplin, die die V8.30-32-Retrospektive einforderte.
+
+### V8.08-V8.32 — Audit-Polish + Atmosphäre-Tiefe (17.05.2026)
+
+Großer Bogen (Detail im Schnell-Lage-Block oben + in `CLAUDE.md`): Welle 6.X
+Polish-Sammel (V8.08-V8.12, 8-Punkte-Audit), acht Browser-Test-Audit-Runden
+(V8.13-V8.22), Test-Infrastruktur `audit-strict.cjs` + Welt-Portal-Doku
+(V8.23), Welt-Lebendigkeit Tag-Nacht/Wetter/Fauna (V8.24-V8.26), und die
+**Atmosphäre-Tiefe-Welle 6.G4** (V8.27-V8.33): Sonne/Hemisphere/Fog,
+Sterne-als-Points, Cel-Shading, Instanced-Gras, Wasser mit Wellen+Physik+Fog.
+1791 → 2061 Invarianten.
 
 ### V7.99-V8.07 — Welle 6.B/9/10 + UX-Polish (16.05.2026)
 

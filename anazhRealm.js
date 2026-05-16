@@ -7207,49 +7207,65 @@ class AnazhRealm {
                 fogNear: { value: 35 },
                 fogFar: { value: 150 },
             },
-            // V8.31 — Wellen HETEROGENER. Sechs Oktaven statt vier + Domain-
-            // Warping (die Sample-Position wird durch eine grobe Welle
-            // verzerrt, bevor die Hauptwellen greifen) → die Periodizität
-            // bricht, das Wasser wirkt wild statt gleichmäßig. Echte
-            // Wellen-Normale aus den Ableitungen, Blinn-Phong-Sonnen-Glitzern.
+            // V8.33 6.G4.e — Gerstner-Wellen. Statt reiner Höhen-Sinusse
+            // verschieben Gerstner-Wellen die Vertices AUCH horizontal: sie
+            // wandern zu den Kämmen hin → spitze Kämme, breite Täler statt
+            // gleichmäßiger Hügel (der echte Ozean-Look). Sechs Gerstner-
+            // Oktaven, davor der Domain-Warp aus V8.31, der die Periodizität
+            // aufbricht. Normale aus dem Kreuzprodukt der verschobenen
+            // Nachbar-Tangenten (Höhen-Differenzieren reicht bei horizontaler
+            // Verschiebung nicht mehr). Blinn-Phong-Sonnen-Glitzern bleibt.
             vertexShader: `
                 uniform float uTime;
                 varying float vWave;
                 varying vec3 vNormal;
                 varying vec3 vWorldPos;
                 varying float vFogDepth;
-                // Eine Welle: Richtung (dx,dz), Frequenz f, Amplitude a, Speed s.
-                float wave(vec2 xz, vec2 dir, float f, float a, float s) {
-                    return a * sin(dot(xz, dir) * f + uTime * s);
+                // Eine Gerstner-Welle: dir = Richtung, f = Frequenz,
+                // a = Amplitude, s = Geschwindigkeit, q = Steilheit. Liefert
+                // die 3D-Verschiebung — horizontale Stauchung (q*a*d * cos)
+                // plus vertikale Höhe (a * sin).
+                vec3 gerstnerWave(vec2 xz, vec2 dir, float f, float a, float s, float q) {
+                    vec2 d = normalize(dir);
+                    float phase = dot(xz, d) * f + uTime * s;
+                    return vec3(q * a * d.x * cos(phase), a * sin(phase), q * a * d.y * cos(phase));
                 }
-                // Gesamthöhe an einer Position — sechs Oktaven, davor ein
-                // Domain-Warp, der die Wiederholung sichtbar aufbricht.
-                float waveHeight(vec2 xz) {
+                // Gesamt-Verschiebung an einer Position — sechs Gerstner-
+                // Oktaven, davor ein Domain-Warp (V8.31), der die Wieder-
+                // holung sichtbar aufbricht. Steilheit q steigt zu den
+                // kurzen Wellen hin (spitze Schaumkämme); die Summe der
+                // q*f*a bleibt klein → keine sich überschlagenden Wellen.
+                vec3 waveDisplace(vec2 xz) {
                     vec2 warp = vec2(
                         sin(xz.x * 0.022 + uTime * 0.25) * 7.0,
                         cos(xz.y * 0.019 - uTime * 0.21) * 7.0
                     );
                     vec2 w = xz + warp;
-                    return
-                        wave(w, vec2(0.86, 0.51), 0.10, 0.40, 0.85) +
-                        wave(w, vec2(-0.42, 0.91), 0.075, 0.30, 0.65) +
-                        wave(w, vec2(0.62, -0.78), 0.19, 0.18, 1.2) +
-                        wave(w, vec2(-0.95, -0.30), 0.29, 0.12, 1.55) +
-                        wave(w, vec2(0.30, 0.95), 0.46, 0.07, 2.05) +
-                        wave(w, vec2(0.73, -0.69), 0.71, 0.045, 2.7);
+                    vec3 d = vec3(0.0);
+                    d += gerstnerWave(w, vec2(0.86, 0.51), 0.10, 0.40, 0.85, 0.90);
+                    d += gerstnerWave(w, vec2(-0.42, 0.91), 0.075, 0.30, 0.65, 0.85);
+                    d += gerstnerWave(w, vec2(0.62, -0.78), 0.19, 0.18, 1.2, 0.95);
+                    d += gerstnerWave(w, vec2(-0.95, -0.30), 0.29, 0.12, 1.55, 1.10);
+                    d += gerstnerWave(w, vec2(0.30, 0.95), 0.46, 0.07, 2.05, 1.30);
+                    d += gerstnerWave(w, vec2(0.73, -0.69), 0.71, 0.045, 2.7, 1.40);
+                    return d;
                 }
                 void main() {
                     vec3 p = position;
                     vec2 xz = p.xz;
-                    float w = waveHeight(xz);
-                    p.y += w;
-                    vWave = w;
-                    // Normale analytisch aus den Ableitungen.
+                    vec3 disp = waveDisplace(xz);
+                    vec3 pd = p + disp;
+                    vWave = disp.y;
+                    // Normale aus den verschobenen Nachbar-Punkten: zwei
+                    // Tangenten, Kreuzprodukt. Gerstner verschiebt horizontal,
+                    // also reicht reines Höhen-Differenzieren nicht.
                     float e = 1.4;
-                    float wx = waveHeight(xz + vec2(e, 0.0));
-                    float wz = waveHeight(xz + vec2(0.0, e));
-                    vNormal = normalize(vec3(-(wx - w) / e, 1.0, -(wz - w) / e));
-                    vec4 wp = modelMatrix * vec4(p, 1.0);
+                    vec3 px = vec3(p.x + e, p.y, p.z) + waveDisplace(vec2(p.x + e, p.z));
+                    vec3 pz = vec3(p.x, p.y, p.z + e) + waveDisplace(vec2(p.x, p.z + e));
+                    vec3 nrm = normalize(cross(pz - pd, px - pd));
+                    if (nrm.y < 0.0) nrm = -nrm;
+                    vNormal = nrm;
+                    vec4 wp = modelMatrix * vec4(pd, 1.0);
                     vWorldPos = wp.xyz;
                     vec4 mv = viewMatrix * wp;
                     vFogDepth = -mv.z;
@@ -14087,7 +14103,7 @@ class AnazhRealm {
                 label: "Mensch",
                 color: 0xff0000,
                 build: () => this._buildHumanGroup(),
-                animate: (g, t, ph, mv) => this._animateHuman(g, t, ph, mv),
+                animate: (g, t, ph, mv, uw) => this._animateHuman(g, t, ph, mv, uw),
                 bodyParts: [
                     { shape: "box", material: "fleisch", size: { x: 0.6, y: 1.0, z: 0.4 }, label: "Torso" },
                     { shape: "sphere", material: "knochen", size: { x: 0.3, y: 0.3, z: 0.3 }, label: "Kopf" },
@@ -14099,7 +14115,7 @@ class AnazhRealm {
                 label: "Phönix",
                 color: 0xff7a1a,
                 build: () => this._buildPhoenixGroup(),
-                animate: (g, t, ph, mv) => this._animatePhoenix(g, t, ph, mv),
+                animate: (g, t, ph, mv, uw) => this._animatePhoenix(g, t, ph, mv, uw),
                 bodyParts: [
                     { shape: "box", material: "federn", size: { x: 0.4, y: 0.55, z: 0.35 }, label: "Körper" },
                     { shape: "plane", material: "federn", size: { x: 1.2, y: 0.6, z: 0.05 }, label: "Flügel" },
@@ -14111,7 +14127,7 @@ class AnazhRealm {
                 label: "Drache",
                 color: 0x2d6e3b,
                 build: () => this._buildDragonGroup(),
-                animate: (g, t, ph, mv) => this._animateDragon(g, t, ph, mv),
+                animate: (g, t, ph, mv, uw) => this._animateDragon(g, t, ph, mv, uw),
                 bodyParts: [
                     { shape: "box", material: "schuppen", size: { x: 1.2, y: 0.7, z: 0.5 }, label: "Körper" },
                     { shape: "sphere", material: "schuppen", size: { x: 0.45, y: 0.4, z: 0.4 }, label: "Kopf" },
@@ -14824,6 +14840,9 @@ class AnazhRealm {
 
     _buildHumanGroup() {
         const group = new THREE.Group();
+        // V8.33 — YXZ-Rotation: rotation.y (Yaw) ist außen, rotation.x wirkt
+        // im gedrehten Frame = lokaler Vorwärts-Lehnen für die Schwimm-Pose.
+        group.rotation.order = "YXZ";
         // V8.29.1 — MeshToonMaterial statt knallrotes MeshBasic. Reagiert
         // auf Tag-Nacht-Licht wie der Rest der Welt (V8.28-Konsistenz),
         // gedämpftes Rot statt grelles 0xff0000. gradientMap geteilt.
@@ -14853,8 +14872,29 @@ class AnazhRealm {
         return group;
     }
 
-    _animateHuman(group, t, walkPhase, isMoving) {
+    _animateHuman(group, t, walkPhase, isMoving, underwater) {
         const p = group.userData.parts;
+        if (underwater) {
+            // V8.33 — Schwimm-Pose: der Körper neigt sich vorwärts ins
+            // Wasser, die Arme ziehen wechselnde Kraul-Züge in weitem Bogen,
+            // die Beine flattern. Der Avatar wirkt nicht mehr statisch gegen
+            // das bewegte Wasser.
+            group.rotation.x = isMoving ? 0.6 : 0.28;
+            const armAmp = isMoving ? 1.5 : 0.7;
+            p.leftArm.rotation.x = Math.sin(walkPhase) * armAmp - 0.35;
+            p.rightArm.rotation.x = Math.sin(walkPhase + Math.PI) * armAmp - 0.35;
+            p.leftArm.rotation.z = 0.4;
+            p.rightArm.rotation.z = -0.4;
+            const kickAmp = isMoving ? 0.4 : 0.18;
+            p.leftLeg.rotation.x = Math.sin(walkPhase * 1.8) * kickAmp;
+            p.rightLeg.rotation.x = Math.sin(walkPhase * 1.8 + Math.PI) * kickAmp;
+            p.torso.position.y = 0.45 + Math.sin(t * 2.2) * 0.05;
+            return;
+        }
+        // An Land: Lehnen + Arm-Splay zurücksetzen (Schwimm-Pose räumen).
+        group.rotation.x = 0;
+        p.leftArm.rotation.z = 0;
+        p.rightArm.rotation.z = 0;
         if (isMoving) {
             // Schritt-Zyklus: Beine ±0.5 rad gegenphasig, Arme ±0.3 entgegen
             const swing = Math.sin(walkPhase) * 0.5;
@@ -14876,6 +14916,8 @@ class AnazhRealm {
 
     _buildPhoenixGroup() {
         const group = new THREE.Group();
+        // V8.33 — YXZ-Rotation für den lokalen Schwimm-Lehnen (rotation.x).
+        group.rotation.order = "YXZ";
         const material = new THREE.MeshBasicMaterial({ color: 0xff7a1a });
         // Körper: Oktaeder im Brust-Bereich
         const body = new THREE.Mesh(new THREE.OctahedronGeometry(0.45, 0), material);
@@ -14913,8 +14955,22 @@ class AnazhRealm {
         return group;
     }
 
-    _animatePhoenix(group, t, walkPhase, isMoving) {
+    _animatePhoenix(group, t, walkPhase, isMoving, underwater) {
         const p = group.userData.parts;
+        if (underwater) {
+            // V8.33 — Schwimm-Pose: die Flügel werden zu Flossen, ein
+            // langsamer breiter Paddel-Schlag treibt den Phönix wie einen
+            // tauchenden Vogel (Pinguin/Kormoran). Körper geneigt + Wippen.
+            group.rotation.x = isMoving ? 0.5 : 0.22;
+            const paddle = Math.sin(walkPhase) * (isMoving ? 1.0 : 0.5);
+            p.leftWing.rotation.z = -0.3 - paddle;
+            p.rightWing.rotation.z = 0.3 + paddle;
+            p.body.position.y = 0.5 + Math.sin(t * 2.0) * 0.05;
+            p.head.position.y = 0.95 + Math.sin(t * 2.0) * 0.04;
+            p.tail.rotation.z = Math.sin(t * 1.5) * 0.12;
+            return;
+        }
+        group.rotation.x = 0;
         // Flügel flattern immer (Phönix ist ein Flugwesen). In Bewegung
         // schneller, im Idle gemächlich.
         const flapSpeed = isMoving ? 14 : 7;
@@ -14933,6 +14989,8 @@ class AnazhRealm {
 
     _buildDragonGroup() {
         const group = new THREE.Group();
+        // V8.33 — YXZ-Rotation für den lokalen Schwimm-Lehnen (rotation.x).
+        group.rotation.order = "YXZ";
         const material = new THREE.MeshBasicMaterial({ color: 0x2d6e3b });
         // Welle 6.D Etappe 3b — Drache-Orientierung bleibt mit Kopf in +Z
         // (Forward). Der Schöpfer hatte zwischenzeitlich „W/S vertauscht"
@@ -14988,8 +15046,28 @@ class AnazhRealm {
         return group;
     }
 
-    _animateDragon(group, t, walkPhase, isMoving) {
+    _animateDragon(group, t, walkPhase, isMoving, underwater) {
         const p = group.userData.parts;
+        if (underwater) {
+            // V8.33 — Schwimm-Pose: der Drache gleitet wie eine Seeschlange,
+            // der Schweif wellt kräftig als Antrieb, die Beine paddeln knapp,
+            // der Körper neigt sich ins Wasser.
+            group.rotation.x = isMoving ? 0.4 : 0.16;
+            const paddle = Math.sin(walkPhase) * (isMoving ? 0.45 : 0.2);
+            p.flLeg.rotation.x = paddle;
+            p.brLeg.rotation.x = paddle;
+            p.frLeg.rotation.x = -paddle;
+            p.blLeg.rotation.x = -paddle;
+            p.body.position.y = 0.4 + Math.sin(t * 1.9) * 0.05;
+            // Schweif wellt kräftiger — Antrieb statt Zier.
+            const tailAmp = isMoving ? 0.5 : 0.32;
+            p.tailJoint.rotation.y = Math.sin(t * 3.0) * tailAmp;
+            p.tailJoint2.rotation.y = Math.sin(t * 3.0 - 0.7) * (tailAmp + 0.12);
+            p.tailJoint3.rotation.y = Math.sin(t * 3.0 - 1.4) * (tailAmp + 0.24);
+            p.head.position.y = 0.5 + Math.sin(t * 1.7) * 0.03;
+            return;
+        }
+        group.rotation.x = 0;
         if (isMoving) {
             // Trab: Diagonale Bein-Paare (FL+BR vs FR+BL) gegenphasig
             const swing = Math.sin(walkPhase) * 0.45;
@@ -15459,6 +15537,12 @@ class AnazhRealm {
             newGroup.rotation.copy(old.rotation);
             newGroup.scale.copy(old.scale);
             newGroup.visible = old.visible;
+            // V8.33 — `Euler.copy` überträgt auch die `order`. Eine Custom-
+            // Seele (über `_buildFromBlueprint`) hat das Default-XYZ; ohne
+            // dieses Reset würde ein Custom→Built-in-Wechsel das YXZ der
+            // Built-in-Gruppe überschreiben und die Schwimm-Pose seitlich
+            // statt vorwärts kippen lassen. Die Spieler-Gruppe ist IMMER YXZ.
+            newGroup.rotation.order = "YXZ";
             // Physics-Body-Referenz mitnehmen (Sync-Loop liest
             // mesh.userData.physicsBody) und Eintrag in state.rigidBodies
             // mitswappen — sonst überschreibt der Sync-Loop die Position
@@ -15626,16 +15710,23 @@ class AnazhRealm {
             const speed = Math.hypot(v.x(), v.z());
             isMoving = speed > 0.4;
         }
+        // V8.33 — unter Wasser schwimmt der Avatar statt zu laufen.
+        const underwater = !!this.state.playerUnderwater;
         // Walk-Phase nur in Bewegung akkumulieren (keine Glieder-Sprünge
         // beim Stop). Frame-Delta aus animationLastTick.
         const last = p.animationLastTick;
         const dt = last > -Infinity ? Math.max(0, currentTime - last) : 0;
         p.animationLastTick = currentTime;
-        if (isMoving) {
+        if (underwater) {
+            // V8.33 — Schwimm-Takt. Die Phase läuft auch im Stillstand weiter
+            // (Wasser-Treten strokt sanft), in Bewegung schneller — so springt
+            // der Zug-Rhythmus nicht beim Start/Stopp.
+            p.walkPhase += dt * (isMoving ? 5.0 : 2.3);
+        } else if (isMoving) {
             const stepHz = this.state.player.soul === "dragon" ? 4.5 : 5.5;
             p.walkPhase += dt * stepHz;
         }
-        def.animate(mesh, currentTime, p.walkPhase, isMoving);
+        def.animate(mesh, currentTime, p.walkPhase, isMoving, underwater);
     }
 
     // ### Ring 6 – architectureTemplates V1 ###
@@ -25381,6 +25472,27 @@ class AnazhRealm {
         }
     }
 
+    // V8.33 6.G4.e — vertikale Schwimm-Geschwindigkeit unter Wasser. Eine
+    // reine Funktion (damit testbar, analog _emotionModulate / _tagToFrequency):
+    // Shift taucht aktiv ab, Space hebt nach oben, ohne Eingabe wirkt der
+    // natürliche Auftrieb — der Spieler treibt sanft zur Oberfläche zurück
+    // (V8.30-Verhalten bewahrt). currentVy = aktuelle vy (m/s), depth = Tiefe
+    // unter dem Wasser-Niveau (m), dive/rise = Tasten-Flags. Liefert die Ziel-vy.
+    _swimVerticalVelocity(currentVy, depth, dive, rise) {
+        const d = Math.max(0, Math.min(8, depth));
+        if (dive) {
+            // Abtauchen: Ziel-Sinkgeschwindigkeit -3.2 m/s, lerp-geglättet —
+            // überwindet den Auftrieb, der Spieler sinkt kontrolliert.
+            return currentVy + (-3.2 - currentVy) * 0.25;
+        }
+        if (rise) {
+            // Auftauchen: aktiv nach oben schwimmen, Ziel +3.2 m/s.
+            return currentVy + (3.2 - currentVy) * 0.25;
+        }
+        // Neutral: Auftrieb — tiefer = stärkerer Aufwärts-Drift, gedeckelt.
+        return Math.min(2.5, Math.max(-2.5, currentVy * 0.45) + d * 0.18);
+    }
+
     startEternalLoop() {
         // ### Spiel-Loop V7.66 ###
         // Learnings:
@@ -25586,17 +25698,19 @@ class AnazhRealm {
                             // Augen sitzen auf Kamera-Höhe (scaledY + 1.6).
                             this.state.playerEyesUnderwater = scaledY + 1.6 < this.state.waterLevel;
                             if (submerged) {
-                                const vy = velocity.y();
-                                // Tiefer = mehr Auftrieb (bis +2.5 m/s Drift).
-                                const depth = Math.min(8, this.state.waterLevel - scaledY);
-                                const buoyantVy = Math.max(-2.5, vy * 0.45) + depth * 0.18;
+                                // V8.33 — Tauchen + Auftauchen. Shift drückt
+                                // aktiv nach unten (Minecraft-Konvention:
+                                // Shift = abtauchen im Wasser), Space hebt
+                                // nach oben; ohne Eingabe wirkt der natürliche
+                                // Auftrieb. Logik in _swimVerticalVelocity.
+                                const swimVy = this._swimVerticalVelocity(
+                                    velocity.y(),
+                                    this.state.waterLevel - scaledY,
+                                    !!this.state.keys["shift"],
+                                    !!this.state.keys[" "]
+                                );
                                 body.setLinearVelocity(
-                                    this.setVec(
-                                        this.state.tmpVec1,
-                                        velocity.x() * 0.7,
-                                        Math.min(2.5, buoyantVy),
-                                        velocity.z() * 0.7
-                                    )
+                                    this.setVec(this.state.tmpVec1, velocity.x() * 0.7, swimVy, velocity.z() * 0.7)
                                 );
                             }
                         }
@@ -25671,7 +25785,10 @@ class AnazhRealm {
             const player = this.state.playerMesh;
             const camera = this.state.camera;
             const playerBody = this.state.playerBody;
-            let currentSpeed = this.state.keys["shift"] ? this.state.sprintSpeed : this.state.speed;
+            // V8.33 — Unter Wasser ist Shift die Tauch-Geste (nach unten),
+            // nicht Sprint. An Land bleibt Shift der Sprint-Modifikator.
+            let currentSpeed =
+                this.state.keys["shift"] && !this.state.playerUnderwater ? this.state.sprintSpeed : this.state.speed;
             // V8.29.1 — Wasser bremst. Unter Wasser bewegt sich der Spieler
             // auf 55 % Geschwindigkeit — er schwimmt, watet nicht durch.
             if (this.state.playerUnderwater) currentSpeed *= 0.55;

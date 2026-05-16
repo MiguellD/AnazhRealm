@@ -1,4 +1,4 @@
-# Zustand des Realm — Stand: 17.05.2026 (V8.32)
+# Zustand des Realm — Stand: 17.05.2026 (V8.33)
 
 **Welle 6.H V2 vollendet (14/14 Sub-Phasen)** — Kreaturen sind jetzt vollwertige Co-Schöpfer-Wesen mit 9 Identitäts-Schichten (Body, Specs, Equipped, Boosts, Tasks, Memory+Persistenz, Konversation via @-Adresse, Proaktivität, Welt-Aktion-Vorschläge mit Sandbox). **LLM-Provider-System maximal robust nach 5-Versionen-Iteration (V7.94-V7.98)** — jedes Ollama-Setup funktioniert: lokal, gehostet, Cloud, Reasoning-Models, lokale 7B-Modelle. CORS-Lösung via save-server-Proxy, Parser mit Plain-Text-Fallback.
 
@@ -184,6 +184,20 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 ## 6. Learnings aus dieser Session
 
 Echt gelernt, nicht performt:
+
+### V8.33 (17.05.2026) — Welle 6.G4.e "Wasser-Vollendung" (Tauchen, Schwimm-Animation, Gerstner-Wellen)
+
+Drei offene 6.G4-Polish-Punkte standen seit V8.31 in der Roadmap: Tauchen, Schwimm-Animation, Wasser-Gerstner. Die V8.30-32-Retrospektive hatte eine scharfe Lehre formuliert: *„Das Wasser hat vier Versionen gebraucht, weil ich es jedes Mal halb abgeliefert habe. Ein Feature gehört vollständig durchdacht."* V8.33 wendet genau das an — die drei Punkte sind nicht drei kleine Wellen, sie sind **eine Frage**: was muss ein Spieler mit Wasser tun können? Hineingehen (V8.30), schwimmen, tauchen, durchsehen (V8.32). Schwimmen + Tauchen fehlten. Also: eine Welle, alle drei.
+
+1. **Tauchen** — der Auftrieb trieb den Spieler IMMER nach oben; abtauchen war unmöglich, und damit waren der V8.32-Unterwasser-Tint + die Fresnel-Durchsicht praktisch unerreichbar (man kam mit den Augen nie unter Wasser). Tauchen war also nicht ein Extra — es war die fehlende Geste, die zwei vorige Features erst erlebbar macht. Lösung: reiner Helper `_swimVerticalVelocity` (Shift ab, Space hoch, sonst Auftrieb).
+
+2. **Kontextuelle Taste statt halbes Keybinding.** Die Roadmap hatte „braucht eine Sneak-Taste im Keybinding-System" notiert. Aber es gibt keine Land-Hock-Mechanik — eine `sneak`-Keybinding, die an Land nichts tut, wäre genau der „halb abgelieferte" Fehler. Stattdessen: Shift ist kontextuell (Sprint an Land, Tauchen im Wasser), Space ebenso (Springen / Auftauchen). Minecraft-Konvention, null neue UI. Architektur-Begründung: Bewegungs-Modifikatoren (WASD, Sprint, Jump-Hold) leben in `state.keys`, nicht im Keybinding-System — Tauchen gehört dorthin.
+
+3. **Euler-Reihenfolge ist eine Schnittstelle.** Die Schwimm-Pose neigt den Avatar über `group.rotation.x`. Mit der Default-`XYZ`-Reihenfolge wäre `rotation.x` eine Welt-X-Drehung — der Avatar würde je nach Blickrichtung seitlich kippen statt vorwärts. `rotation.order = "YXZ"` macht `rotation.x` zu einem lokalen Vorwärts-Lehnen. Eine unscheinbare Eigenschaft, aber ohne sie ist die Pose falsch.
+
+**Die Lehre**: ein Feature ganz durchdenken heißt, die Frage hinter den Aufgaben zu finden. Drei Roadmap-Zeilen (Tauchen, Animation, Gerstner) waren in Wahrheit eine Frage (Wasser-Erlebnis vollenden) — und als eine Welle gebaut, schließen sie sich gegenseitig auf (Tauchen macht Tint+Fresnel erlebbar, Schwimm-Animation macht Tauchen glaubwürdig). Halb ausgeliefert hätten sie sich gegenseitig ins Leere laufen lassen.
+
+**Vision-Wort der V8.33**: *„Drei Aufgaben können eine Frage sein. Finde die Frage, dann liefere sie ganz."*
 
 ### V8.32 (17.05.2026) — Welle 6.G4.d³ "Wasser-Politur" (Tauch-Tint nur bei Augen-unter-Wasser, Wasser-Fresnel)
 

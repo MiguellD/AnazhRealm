@@ -11729,7 +11729,7 @@ function startSaveServer() {
                     if (r.state.waterPlane && r.state.waterPlane.material) {
                         const vs = r.state.waterPlane.material.vertexShader || "";
                         const fs = r.state.waterPlane.material.fragmentShader || "";
-                        waterDiagonal = /float wave\(/.test(vs) && /dot\(xz, dir\)/.test(vs);
+                        waterDiagonal = /gerstnerWave\(/.test(vs) && /dot\(xz/.test(vs);
                         waterSpecular = /spec/.test(fs) && /uSunDir/.test(fs);
                     }
                     out.waterDiagonalWaves = waterDiagonal;
@@ -11804,7 +11804,7 @@ function startSaveServer() {
                         const wm = r.state.waterPlane.material;
                         out.waterFogUniforms = !!(wm.uniforms && wm.uniforms.fogColor && wm.uniforms.fogNear);
                         out.waterDomainWarp =
-                            /waveHeight/.test(wm.vertexShader || "") &&
+                            /waveDisplace/.test(wm.vertexShader || "") &&
                             /warp/.test(wm.vertexShader || "");
                         out.waterFogInShader = /smoothstep\(fogNear, fogFar/.test(wm.fragmentShader || "");
                     }
@@ -11899,6 +11899,117 @@ function startSaveServer() {
                 check("V8.32: setFogDistance akzeptiert 3.0", v832Results.fogDistanceTo3);
             } else {
                 check("V8.32: Wasser-Politur Tests laufen", false, v832Results ? v832Results.error : "no result");
+            }
+
+            // ### V8.33 — Welle 6.G4.e: Tauchen + Schwimm-Animation + Gerstner ###
+            const v833Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // --- Tauchen: _swimVerticalVelocity (reine Funktion) ---
+                    out.swimFnExists = typeof r._swimVerticalVelocity === "function";
+                    if (out.swimFnExists) {
+                        const dive = r._swimVerticalVelocity(0, 4, true, false);
+                        const rise = r._swimVerticalVelocity(0, 4, false, true);
+                        const neutral = r._swimVerticalVelocity(0, 4, false, false);
+                        out.diveSinks = dive < 0;
+                        out.riseLifts = rise > 0;
+                        out.neutralFloats = neutral > 0 && neutral <= 2.5;
+                        out.diveBelowNeutral = dive < neutral;
+                        out.riseAboveNeutral = rise > neutral;
+                        out.surfaceNoDrift = Math.abs(r._swimVerticalVelocity(0, 0, false, false)) < 0.01;
+                    }
+                    // Physik-Loop nutzt _swimVerticalVelocity mit Shift/Space,
+                    // Shift ist unter Wasser KEIN Sprint mehr (Source-Pattern).
+                    {
+                        let usesFn = false;
+                        let shiftNotSprint = false;
+                        const proto = Object.getPrototypeOf(r);
+                        for (const name of Object.getOwnPropertyNames(proto)) {
+                            try {
+                                const fn = proto[name];
+                                if (typeof fn !== "function") continue;
+                                const src = fn.toString();
+                                if (
+                                    /_swimVerticalVelocity\(/.test(src) &&
+                                    /keys\["shift"\]/.test(src) &&
+                                    /keys\[" "\]/.test(src)
+                                )
+                                    usesFn = true;
+                                if (/keys\["shift"\]\s*&&\s*!this\.state\.playerUnderwater/.test(src))
+                                    shiftNotSprint = true;
+                            } catch {
+                                /* skip */
+                            }
+                        }
+                        out.physicsUsesSwimFn = usesFn;
+                        out.shiftNotSprintUnderwater = shiftNotSprint;
+                    }
+
+                    // --- Schwimm-Animation (isoliert, soul-unabhängig) ---
+                    {
+                        const src = r.animatePlayerSoul.toString();
+                        out.animPassesUnderwater =
+                            /playerUnderwater/.test(src) && /def\.animate\([^)]*underwater\)/.test(src);
+                    }
+                    {
+                        const gh = r._buildHumanGroup();
+                        out.humanYXZ = gh.rotation.order === "YXZ";
+                        r._animateHuman(gh, 1.0, 0, false, true);
+                        out.humanSwimLean = Math.abs(gh.rotation.x) > 0.05;
+                        r._animateHuman(gh, 1.0, 0, false, false);
+                        out.humanSwimReset = Math.abs(gh.rotation.x) < 0.001;
+                        r._disposeSoulGroup(gh);
+
+                        const gp = r._buildPhoenixGroup();
+                        r._animatePhoenix(gp, 1.0, 0, true, true);
+                        out.phoenixSwimLean = Math.abs(gp.rotation.x) > 0.05;
+                        r._disposeSoulGroup(gp);
+
+                        const gd = r._buildDragonGroup();
+                        r._animateDragon(gd, 1.0, 0, true, true);
+                        out.dragonSwimLean = Math.abs(gd.rotation.x) > 0.05;
+                        r._disposeSoulGroup(gd);
+                    }
+
+                    // --- Gerstner-Wellen im Wasser-Shader ---
+                    if (r.state.waterPlane && r.state.waterPlane.material) {
+                        const vs = r.state.waterPlane.material.vertexShader || "";
+                        out.gerstnerFn = /vec3 gerstnerWave\(/.test(vs);
+                        out.waveDisplaceVec3 = /vec3 waveDisplace\(/.test(vs);
+                        out.gerstnerHorizontal = /q \* a \* d\.x/.test(vs);
+                        out.gerstnerCrossNormal = /cross\(/.test(vs);
+                        out.gerstnerKeepsWarp = /warp/.test(vs);
+                    }
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (v833Results && !v833Results.error) {
+                check("V8.33: _swimVerticalVelocity existiert (reine Funktion)", v833Results.swimFnExists);
+                check("V8.33: Tauchen — Shift erzeugt Sink-Geschwindigkeit", v833Results.diveSinks);
+                check("V8.33: Auftauchen — Space erzeugt Aufwärts-Geschwindigkeit", v833Results.riseLifts);
+                check("V8.33: Neutral — natürlicher Auftrieb treibt zur Oberfläche", v833Results.neutralFloats);
+                check("V8.33: Tauchen sinkt unter den Neutral-Auftrieb (Diskrimination)", v833Results.diveBelowNeutral);
+                check("V8.33: Auftauchen hebt über den Neutral-Auftrieb (Diskrimination)", v833Results.riseAboveNeutral);
+                check("V8.33: An der Oberfläche kein Auftriebs-Drift (depth 0)", v833Results.surfaceNoDrift);
+                check("V8.33: Physik-Loop nutzt _swimVerticalVelocity mit Shift/Space", v833Results.physicsUsesSwimFn);
+                check("V8.33: Shift ist unter Wasser Tauchen, nicht Sprint", v833Results.shiftNotSprintUnderwater);
+                check("V8.33: animatePlayerSoul reicht den underwater-Flag durch", v833Results.animPassesUnderwater);
+                check("V8.33: Soul-Group nutzt YXZ-Rotation (lokaler Vorwärts-Lehnen)", v833Results.humanYXZ);
+                check("V8.33: Mensch neigt sich unter Wasser (Schwimm-Pose)", v833Results.humanSwimLean);
+                check("V8.33: Schwimm-Pose wird an Land zurückgesetzt (rotation.x=0)", v833Results.humanSwimReset);
+                check("V8.33: Phönix neigt sich unter Wasser (Schwimm-Pose)", v833Results.phoenixSwimLean);
+                check("V8.33: Drache neigt sich unter Wasser (Schwimm-Pose)", v833Results.dragonSwimLean);
+                check("V8.33: Wasser-Shader hat gerstnerWave-Funktion (vec3)", v833Results.gerstnerFn);
+                check("V8.33: Wasser-Shader hat waveDisplace (vec3-Verschiebung)", v833Results.waveDisplaceVec3);
+                check("V8.33: Gerstner-Wellen verschieben horizontal (spitze Kämme)", v833Results.gerstnerHorizontal);
+                check("V8.33: Wasser-Normale aus Kreuzprodukt der Tangenten", v833Results.gerstnerCrossNormal);
+                check("V8.33: Gerstner-Wellen behalten den Domain-Warp (V8.31-Erbe)", v833Results.gerstnerKeepsWarp);
+            } else {
+                check("V8.33: Wasser-Vollendung Tests laufen", false, v833Results ? v833Results.error : "no result");
             }
 
             // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider (Audit 17.05.2026) ###
