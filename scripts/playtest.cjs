@@ -13244,6 +13244,126 @@ function startSaveServer() {
                 check("W12 P2 C1: Strom-Welt Tests laufen", false, w12p2Results ? w12p2Results.error : "no result");
             }
 
+            // ### W12 Phase 2 Commit 2 — DSL-Brücke (das Protokoll) ###
+            const w12bridgeResults = await page
+                .evaluate(async () => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // _sanitizePortalMeta säubert das dsl-Manifest.
+                    const sanA = r._sanitizePortalMeta({
+                        world: "worlds/fluid/index.html",
+                        dsl: ["weather", "BAD OP", 7, "set_turbulence"],
+                    });
+                    out.sanitizeDsl =
+                        Array.isArray(sanA.dsl) &&
+                        sanA.dsl.length === 2 &&
+                        sanA.dsl.includes("weather") &&
+                        sanA.dsl.includes("set_turbulence");
+                    out.sanitizeNoDsl = r._sanitizePortalMeta({ world: "worlds/skeleton/index.html" }).dsl === null;
+
+                    // Built-in-Manifeste.
+                    const ws = r.state.blueprints.welt_strom;
+                    const wp = r.state.blueprints.welt_portal;
+                    out.stromManifest =
+                        !!ws.portalMeta.dsl &&
+                        ws.portalMeta.dsl.includes("weather") &&
+                        ws.portalMeta.dsl.includes("sturm") &&
+                        ws.portalMeta.dsl.includes("set_turbulence");
+                    out.skeletonManifest = !!wp.portalMeta.dsl && wp.portalMeta.dsl.includes("skybox_color");
+
+                    // _portalProgramOps — chain ist Rahmen, kein Wort.
+                    out.opsSingle = JSON.stringify(r._portalProgramOps(["weather", "rainy"])) === '["weather"]';
+                    out.opsChain =
+                        JSON.stringify(r._portalProgramOps(["chain", ["weather", "sunny"], ["sturm"]])) ===
+                        '["weather","sturm"]';
+
+                    // enterPortal(welt_strom) → Overlay trägt das Manifest + body.in-portal.
+                    const pm = r.state.playerMesh.position;
+                    r.spawnArchitecture("welt_strom", { x: pm.x, y: pm.y, z: pm.z });
+                    const entry = (r.state.architectures || []).find((e) => e.type === "welt_strom");
+                    r.enterPortal(entry);
+                    out.overlayCarriesManifest =
+                        !!r._portalOverlay &&
+                        Array.isArray(r._portalOverlay.dsl) &&
+                        r._portalOverlay.dsl.includes("sturm");
+                    out.bodyInPortal = document.body.classList.contains("in-portal");
+
+                    // _portalParseWorldCommand — welt-eigene Wörter.
+                    const wc = r._portalParseWorldCommand("set_turbulence 0.8");
+                    out.parseWorldWord = Array.isArray(wc) && wc[0] === "set_turbulence" && wc[1] === 0.8;
+                    out.parseWorldRejects = r._portalParseWorldCommand("flieg hoch") === null;
+
+                    // _portalRouteDsl — Subset-Op weitergereicht, unbekanntes verworfen.
+                    const rt1 = r._portalRouteDsl(["weather", "rainy"], "Wetter", null);
+                    out.routeForward = rt1.forwarded === true && rt1.reason === "sent";
+                    const rt2 = r._portalRouteDsl(["spawn_creature", 3], "x", null);
+                    out.routeUnknown = rt2.forwarded === false && rt2.reason === "unknown_op";
+                    // Stufe 0 — ausgestellte Welt (kein Manifest).
+                    r._portalOverlay.dsl = null;
+                    const rt3 = r._portalRouteDsl(["weather", "rainy"], "x", null);
+                    out.routeExhibited = rt3.forwarded === false && rt3.reason === "exhibited";
+
+                    // Intercept: Chat-DSL im Portal läuft NICHT auf der Heimat-Welt.
+                    r._portalOverlay.dsl = ["weather"];
+                    r.state.weather = "sunny";
+                    r.processChatCommand("setze wetter rainy");
+                    out.homeWeatherUntouched = r.state.weather === "sunny";
+
+                    r.exitPortal();
+                    out.bodyClassCleared = !document.body.classList.contains("in-portal");
+                    if (entry) r.removeArchitecture(entry);
+
+                    // Sub-Welt-Adapter werden ausgeliefert.
+                    try {
+                        const fxBody = await (await fetch("worlds/fluid/fluid.js")).text();
+                        out.fluidAdapter =
+                            /function applyDsl/.test(fxBody) &&
+                            /"dsl"/.test(fxBody) &&
+                            /function setEnergy/.test(fxBody);
+                        const skBody = await (await fetch("worlds/skeleton/skeleton.js")).text();
+                        out.skeletonAdapter = /function applyDsl/.test(skBody) && /"dsl"/.test(skBody);
+                    } catch (e) {
+                        out.fluidAdapter = false;
+                        out.skeletonAdapter = false;
+                    }
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w12bridgeResults && !w12bridgeResults.error) {
+                check("W12 P2 C2: _sanitizePortalMeta säubert das dsl-Manifest", w12bridgeResults.sanitizeDsl);
+                check("W12 P2 C2: _sanitizePortalMeta — kein dsl → null (Stufe 0)", w12bridgeResults.sanitizeNoDsl);
+                check("W12 P2 C2: welt_strom trägt ein DSL-Manifest", w12bridgeResults.stromManifest);
+                check("W12 P2 C2: welt_portal (Skelett) trägt ein DSL-Manifest", w12bridgeResults.skeletonManifest);
+                check("W12 P2 C2: _portalProgramOps liest ein einzelnes Op", w12bridgeResults.opsSingle);
+                check("W12 P2 C2: _portalProgramOps liest eine chain (ohne 'chain')", w12bridgeResults.opsChain);
+                check("W12 P2 C2: das Portal-Overlay trägt das Manifest", w12bridgeResults.overlayCarriesManifest);
+                check("W12 P2 C2: body.in-portal hebt die Konsole im Portal", w12bridgeResults.bodyInPortal);
+                check("W12 P2 C2: _portalParseWorldCommand parst welt-eigene Wörter", w12bridgeResults.parseWorldWord);
+                check(
+                    "W12 P2 C2: _portalParseWorldCommand verwirft Nicht-Manifest-Wörter",
+                    w12bridgeResults.parseWorldRejects
+                );
+                check("W12 P2 C2: _portalRouteDsl reicht ein Subset-Op weiter", w12bridgeResults.routeForward);
+                check("W12 P2 C2: _portalRouteDsl verwirft ein unbekanntes Op", w12bridgeResults.routeUnknown);
+                check("W12 P2 C2: _portalRouteDsl — Stufe 0 (ausgestellt, stumm)", w12bridgeResults.routeExhibited);
+                check(
+                    "W12 P2 C2: Chat-DSL im Portal läuft NICHT auf der Heimat-Welt",
+                    w12bridgeResults.homeWeatherUntouched
+                );
+                check("W12 P2 C2: exitPortal räumt body.in-portal", w12bridgeResults.bodyClassCleared);
+                check("W12 P2 C2: Fluid-Welt-Adapter (applyDsl + dsl-Handler)", w12bridgeResults.fluidAdapter);
+                check("W12 P2 C2: Skelett-Welt-Adapter (applyDsl + dsl-Handler)", w12bridgeResults.skeletonAdapter);
+            } else {
+                check(
+                    "W12 P2 C2: DSL-Brücke Tests laufen",
+                    false,
+                    w12bridgeResults ? w12bridgeResults.error : "no result"
+                );
+            }
+
             // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
             const v840Results = await page
                 .evaluate(() => {

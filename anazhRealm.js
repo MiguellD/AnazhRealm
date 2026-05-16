@@ -10379,6 +10379,21 @@ class AnazhRealm {
         // läuft er durch denselben Interpreter wie der Nexus — Budgets, Outcome,
         // Persistenz inklusive. Legacy-Pfad bleibt als Fallback für Befehle,
         // die noch kein DSL-Äquivalent haben (System-IO, Toggles, Phase-5-Themen).
+        // W12 Phase 2 — im Portal: ein Chat-Befehl wandert in die Sub-Welt
+        // statt auf der eingefrorenen Heimat-Welt zu laufen. Der Welt-
+        // Manifest entscheidet — _portalRouteDsl trägt die Drei-Stufen-Logik.
+        if (this._portalOverlay) {
+            const inWorld = this.parseChatToDsl(command);
+            const program = inWorld ? inWorld.program : this._portalParseWorldCommand(command);
+            if (program) {
+                this._portalRouteDsl(program, inWorld ? inWorld.describe : command, appendChatOutput);
+            } else {
+                appendChatOutput(`(Im Portal — „${command}" ist kein DSL-Befehl für diese Welt.)`);
+            }
+            chatInput.value = "";
+            return;
+        }
+
         const parsed = this.parseChatToDsl(command);
         if (parsed) {
             const result = this.dslRun(parsed.program, { source: "human" });
@@ -15156,7 +15171,16 @@ class AnazhRealm {
             typeof src.label === "string" && src.label.trim()
                 ? src.label.trim().slice(0, 60)
                 : String(fallbackLabel || "Portal").slice(0, 60);
-        return { world, label };
+        // W12 Phase 2 — der Manifest: welche DSL-Wörter die Welt versteht.
+        // Eine externe Übersetzungs-Schicht (von der Bibliothek autoriert,
+        // nicht von der Welt). Nur op-förmige Strings, gedeckelt. Fehlt es →
+        // Stufe 0: die Welt ist ausgestellt, stumm gegenüber der DSL.
+        let dsl = null;
+        if (Array.isArray(src.dsl)) {
+            const ops = src.dsl.filter((op) => typeof op === "string" && /^[a-z_]{1,40}$/.test(op));
+            if (ops.length) dsl = ops.slice(0, 64);
+        }
+        return { world, label, dsl };
     }
 
     // W12 Phase 1 — Portal-Overlay: ein Vollbild-iframe, das die Sub-Welt
@@ -15182,7 +15206,11 @@ class AnazhRealm {
         iframe.setAttribute("sandbox", "allow-scripts allow-same-origin");
         const hint = document.createElement("div");
         hint.className = "portal-hint";
-        hint.textContent = "Esc — zurück zur Heimat-Welt";
+        // Stufe-bewusster Hinweis: spricht die Welt die DSL (hat sie einen
+        // Manifest), kann der Spieler per Konsole Befehle hineinreichen.
+        hint.textContent = meta.dsl
+            ? "Esc — Heimkehr · Konsole — Befehle an diese Welt"
+            : "Esc — zurück zur Heimat-Welt";
         overlay.appendChild(iframe);
         overlay.appendChild(hint);
         // Eltern-Seite des Handshakes: auf {type:"ready"} der Sub-Welt lauschen.
@@ -15196,8 +15224,17 @@ class AnazhRealm {
         };
         window.addEventListener("message", onMessage);
         iframe.addEventListener("load", () => this._portalSendEnter());
-        this._portalOverlay = { overlayEl: overlay, iframe, onMessage, world: meta.world };
+        this._portalOverlay = {
+            overlayEl: overlay,
+            iframe,
+            onMessage,
+            world: meta.world,
+            label: meta.label,
+            dsl: meta.dsl,
+        };
         document.body.appendChild(overlay);
+        // Die Konsole übers Overlay heben — DSL-Eingabe im Portal möglich.
+        document.body.classList.add("in-portal");
         iframe.src = meta.world;
         return this._portalOverlay;
     }
@@ -15220,6 +15257,9 @@ class AnazhRealm {
         if (po.onMessage) window.removeEventListener("message", po.onMessage);
         if (po.overlayEl && po.overlayEl.parentNode) {
             po.overlayEl.parentNode.removeChild(po.overlayEl);
+        }
+        if (typeof document !== "undefined" && document.body) {
+            document.body.classList.remove("in-portal");
         }
         this._portalOverlay = null;
     }
@@ -15258,6 +15298,78 @@ class AnazhRealm {
         this.state.keys = {};
         this.log("Portal verlassen — zurück in der Heimat-Welt", "INFO");
         return { ok: true };
+    }
+
+    // W12 Phase 2 — die DSL-Brücke. Im Portal wandert ein Chat-DSL-Programm
+    // in die Sub-Welt statt auf der eingefrorenen Heimat-Welt zu laufen.
+    // Der Welt-Manifest (portalMeta.dsl) ist das Wörterbuch — Drei-Stufen-
+    // Klarheit: kein Manifest → ausgestellt/stumm; Op nicht im Subset → die
+    // Welt kennt das Wort nicht; Op im Subset → an den Welt-Adapter gereicht.
+    _portalRouteDsl(program, describe, append) {
+        const po = this._portalOverlay;
+        const say = typeof append === "function" ? append : (m) => this.log(m, "INFO");
+        if (!po) return { forwarded: false, reason: "not_in_portal" };
+        const label = po.label || "diese Welt";
+        if (!Array.isArray(po.dsl) || !po.dsl.length) {
+            say(`„${label}" ist ausgestellt — sie versteht die DSL noch nicht.`);
+            return { forwarded: false, reason: "exhibited" };
+        }
+        const ops = this._portalProgramOps(program);
+        const unknown = ops.find((op) => !po.dsl.includes(op));
+        if (!ops.length || unknown) {
+            say(`„${label}" versteht „${unknown || "diesen Befehl"}" nicht.`);
+            return { forwarded: false, reason: "unknown_op", op: unknown || null };
+        }
+        if (!this._portalForwardDsl(program)) {
+            say(`„${label}" konnte den Befehl nicht empfangen.`);
+            return { forwarded: false, reason: "no_frame" };
+        }
+        say(`→ ${describe || "an die Welt gesendet"}`);
+        return { forwarded: true, reason: "sent" };
+    }
+
+    // Alle wirksamen Op-Namen eines DSL-Programms einsammeln; chain ist ein
+    // struktureller Rahmen, nicht selbst ein Wort.
+    _portalProgramOps(program) {
+        const ops = [];
+        const walk = (node) => {
+            if (!Array.isArray(node) || typeof node[0] !== "string") return;
+            if (node[0] === "chain") {
+                for (let i = 1; i < node.length; i++) walk(node[i]);
+            } else {
+                ops.push(node[0]);
+            }
+        };
+        walk(program);
+        return ops;
+    }
+
+    // Ein DSL-Programm per postMessage an die Sub-Welt reichen (same-origin).
+    _portalForwardDsl(program) {
+        const po = this._portalOverlay;
+        if (!po || !po.iframe || !po.iframe.contentWindow) return false;
+        po.iframe.contentWindow.postMessage({ type: "dsl", program }, window.location.origin);
+        return true;
+    }
+
+    // W12 Phase 2 — im Portal ein welt-eigenes Wort parsen: ist das erste
+    // Token ein vom Manifest deklariertes Op, das der DSL-Kern nicht kennt,
+    // wird der Rest als Argumente genommen (Zahl als Zahl, sonst String). So
+    // erreicht der Spieler welt-eigene Wörter (sturm, set_turbulence …) — die
+    // DSL wächst am Rand, der Kern bleibt schlank.
+    _portalParseWorldCommand(command) {
+        const po = this._portalOverlay;
+        if (!po || !Array.isArray(po.dsl)) return null;
+        const tokens = String(command || "")
+            .trim()
+            .split(/\s+/);
+        const op = (tokens[0] || "").toLowerCase();
+        if (!op || !po.dsl.includes(op)) return null;
+        const args = tokens.slice(1).map((t) => {
+            const n = Number(t);
+            return t !== "" && Number.isFinite(n) ? n : t;
+        });
+        return [op, ...args];
     }
 
     // W12 Phase 1 — E-Tasten-Pfad: ist ein Portal in Reichweite, betritt es.
@@ -17192,19 +17304,32 @@ class AnazhRealm {
                 builtIn: true,
                 role: "portal",
                 roleManual: true,
-                portalMeta: { world: AnazhRealm.PORTAL_SKELETON_WORLD, label: "Skelett-Welt" },
+                // dsl: der Manifest — die Skelett-Welt versteht ein Wort
+                // (skybox_color tönt die Leere). Beweist mit der Strom-Welt:
+                // eine Brücke, zwei Welten, zwei Vokabulare.
+                portalMeta: {
+                    world: AnazhRealm.PORTAL_SKELETON_WORLD,
+                    label: "Skelett-Welt",
+                    dsl: ["skybox_color"],
+                },
                 parts: weltPortalParts,
             },
             // W12 Phase 2 — Strom-Welt-Portal. Führt in die erste lebendige
             // Sub-Welt: three-fluid-fx (fremde Engine) auf modernem Three.js,
             // gebündelt in worlds/fluid/. Eine Welt bringt ihre Engine mit.
+            // dsl: der Manifest — Kern-Ops (weather/skybox_color) + welt-eigene
+            // Wörter (sturm/ruhe/set_turbulence). Die DSL wächst am Rand.
             welt_strom: {
                 name: "welt_strom",
                 label: "Strom-Welt",
                 builtIn: true,
                 role: "portal",
                 roleManual: true,
-                portalMeta: { world: "worlds/fluid/index.html", label: "Strom-Welt" },
+                portalMeta: {
+                    world: "worlds/fluid/index.html",
+                    label: "Strom-Welt",
+                    dsl: ["weather", "skybox_color", "sturm", "ruhe", "set_turbulence"],
+                },
                 parts: weltStromParts,
             },
         };

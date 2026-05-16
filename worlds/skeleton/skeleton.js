@@ -6,6 +6,22 @@
     const nameEl = document.getElementById("avatar-name");
     const statusEl = document.getElementById("portal-status");
 
+    // W12 Phase 2 — die DSL-Brücke. Die Skelett-Welt versteht ein einziges
+    // Wort: skybox_color tönt die Leere. Beweis: dieselbe Brücke trägt die
+    // Strom-Welt UND dieses Gerüst — das Protokoll ist generisch, der
+    // Adapter pro Welt eigen.
+    function applyDsl(program) {
+        if (!Array.isArray(program) || typeof program[0] !== "string") return;
+        if (program[0] === "chain") {
+            for (let i = 1; i < program.length; i++) applyDsl(program[i]);
+            return;
+        }
+        if (program[0] === "skybox_color") {
+            const m = /^#?([0-9a-fA-F]{6})$/.exec(String(program[1] == null ? "" : program[1]).trim());
+            if (m) document.body.style.background = "#" + m[1];
+        }
+    }
+
     // Nur Nachrichten vom Eltern-Fenster (der Heimat-Welt) annehmen.
     window.addEventListener("message", (event) => {
         if (event.source !== window.parent) return;
@@ -16,6 +32,8 @@
             const name = typeof avatar.name === "string" && avatar.name ? avatar.name : "Reisender";
             if (nameEl) nameEl.textContent = name;
             if (statusEl) statusEl.textContent = "verbunden";
+        } else if (msg.type === "dsl") {
+            applyDsl(msg.program);
         }
     });
 

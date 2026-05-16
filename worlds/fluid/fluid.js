@@ -42,7 +42,8 @@ try {
     fluid.enableDye = true;
     attachPointerSplats(renderer.domElement, fluid, { coloredStrokes: true });
 
-    // Fullscreen-Anzeige des Farb-Stroms (dyeTexture, RGB-Tinte).
+    // Fullscreen-Anzeige des Farb-Stroms (dyeTexture, RGB-Tinte) über einem
+    // Backdrop, den der DSL-Op skybox_color tönen kann.
     display = new FullscreenPass(
         new THREE.ShaderMaterial({
             vertexShader: FULLSCREEN_VERTEX,
@@ -50,13 +51,17 @@ try {
                 "precision highp float;",
                 "varying vec2 vUv;",
                 "uniform sampler2D tFluid;",
+                "uniform vec3 uBackdrop;",
                 "void main() {",
                 "  vec3 ink = texture2D(tFluid, vUv).rgb;",
                 "  float glow = clamp(length(ink), 0.0, 1.5);",
-                "  gl_FragColor = vec4(ink + ink * glow * 0.5, 1.0);",
+                "  gl_FragColor = vec4(uBackdrop + ink + ink * glow * 0.5, 1.0);",
                 "}",
             ].join("\n"),
-            uniforms: { tFluid: { value: null } },
+            uniforms: {
+                tFluid: { value: null },
+                uBackdrop: { value: new THREE.Color(0.02, 0.024, 0.045) },
+            },
         })
     );
 } catch (err) {
@@ -91,7 +96,53 @@ function frame(now) {
 }
 if (renderer && fluid && display) requestAnimationFrame(frame);
 
-// --- postMessage-Handshake mit der Heimat-Welt (Naht für die DSL-Brücke) ---
+// --- W12 Phase 2 — DSL-Brücke: die Heimat-Welt reicht Befehle herein. ---
+// three-fluid-fx kennt AnazhRealm nicht; die Übersetzung von DSL-Wörtern in
+// Fluid-Parameter ist Bibliotheks-Code (der Adapter), nicht Engine-Code.
+function setEnergy(e) {
+    if (!fluid) return;
+    const v = Math.max(0, Math.min(1, e));
+    fluid.curlStrength = 0.3 + v * 3.4;
+    fluid.splatForce = 3 + v * 11;
+    fluid.densityDissipation = 0.99 - v * 0.04;
+}
+
+function applyBackdrop(arg) {
+    if (!display) return;
+    const m = /^#?([0-9a-fA-F]{6})$/.exec(String(arg == null ? "" : arg).trim());
+    if (!m) return;
+    const n = parseInt(m[1], 16);
+    display.material.uniforms.uBackdrop.value.setRGB(
+        (((n >> 16) & 255) / 255) * 0.5,
+        (((n >> 8) & 255) / 255) * 0.5,
+        ((n & 255) / 255) * 0.5
+    );
+}
+
+// Kern-Ops (weather, skybox_color) + welt-eigene Wörter (sturm, ruhe,
+// set_turbulence) — das per-Welt-Vokabular, das der Manifest deklariert.
+function applyDsl(program) {
+    if (!Array.isArray(program) || typeof program[0] !== "string") return;
+    const op = program[0];
+    if (op === "chain") {
+        for (let i = 1; i < program.length; i++) applyDsl(program[i]);
+        return;
+    }
+    if (op === "skybox_color") {
+        applyBackdrop(program[1]);
+    } else if (op === "weather") {
+        setEnergy(String(program[1]) === "rainy" ? 0.16 : 0.62);
+    } else if (op === "sturm") {
+        setEnergy(1);
+    } else if (op === "ruhe") {
+        setEnergy(0.05);
+    } else if (op === "set_turbulence") {
+        const t = Number(program[1]);
+        if (Number.isFinite(t)) setEnergy(t);
+    }
+}
+
+// --- postMessage-Handshake mit der Heimat-Welt ---
 window.addEventListener("message", (event) => {
     if (event.source !== window.parent) return;
     const msg = event.data;
@@ -101,6 +152,9 @@ window.addEventListener("message", (event) => {
         const name = typeof avatar.name === "string" && avatar.name ? avatar.name : "Reisender";
         const el = document.getElementById("avatar-name");
         if (el) el.textContent = name;
+    } else if (msg.type === "dsl") {
+        // Die Heimat-Welt hat ein DSL-Programm hereingereicht.
+        applyDsl(msg.program);
     }
 });
 

@@ -3886,6 +3886,11 @@
                 font: 13px/1.4 "JetBrains Mono", monospace;
                 pointer-events: none;
             }
+            /* W12 Phase 2 — im Portal hebt sich die Konsole über das Overlay,
+               damit der Spieler DSL-Befehle an die Sub-Welt schicken kann. */
+            body.in-portal #console {
+                z-index: 9001;
+            }
         </style>
     </head>
     <body data-theme="tag">
