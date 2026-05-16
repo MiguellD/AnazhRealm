@@ -13022,8 +13022,11 @@ function startSaveServer() {
                     const r = window.anazhRealm;
                     const out = {};
 
-                    // Portal-Affordance: welt_portal trägt isPortal, ein Dorf nicht.
-                    out.affPortal = r.computeBlueprintAffordances(r.state.blueprints.welt_portal).isPortal === true;
+                    // Portal-Affordance: welt_portal trägt AUSSCHLIESSLICH isPortal
+                    // (kein moveable/magnifying/focusing — ein Tor ist kein Fahrzeug).
+                    const wpAff = r.computeBlueprintAffordances(r.state.blueprints.welt_portal);
+                    out.affPortal = wpAff.isPortal === true;
+                    out.affPortalExclusive = !wpAff.moveable && !wpAff.magnifying && !wpAff.focusing;
                     out.affNonPortal = !r.computeBlueprintAffordances(r.state.blueprints.village).isPortal;
 
                     out.methods =
@@ -13106,6 +13109,10 @@ function startSaveServer() {
 
             if (w12c3Results && !w12c3Results.error) {
                 check("W12 P1 C3: welt_portal trägt die isPortal-Affordance", w12c3Results.affPortal);
+                check(
+                    "W12 P1 C3: ein Portal ist kein Fahrzeug/keine Linse (nur isPortal)",
+                    w12c3Results.affPortalExclusive
+                );
                 check("W12 P1 C3: ein Dorf trägt KEINE isPortal-Affordance", w12c3Results.affNonPortal);
                 check("W12 P1 C3: enterPortal/exitPortal/_tick/_tryEnter existieren", w12c3Results.methods);
                 check("W12 P1 C3: gespawntes Portal trägt affordances.isPortal", w12c3Results.spawnedHasAffordance);

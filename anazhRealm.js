@@ -15658,14 +15658,17 @@ class AnazhRealm {
     // konsultieren das Flag-Profil statt einer hardcoded Bauplan-Liste.
     computeBlueprintAffordances(bp) {
         if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return {};
+        // W12 — ein Portal IST ein Tor: seine einzige Affordance ist
+        // "betreten" (isPortal). Es ist kein Fahrzeug und keine Linse — die
+        // Rolle "portal" schließt die räumlichen Affordances aus. (Sonst
+        // erfüllt der welt_portal-Ring, dessen deckungsgleiche Parts +
+        // Quarz-Membran zufällig _isMoveable treffen, beim E-Druck den
+        // Mount-Pfad und klebt am Spieler — Schöpfer-Browser-Test V8.51.)
+        if (bp.role === "portal") return { isPortal: true };
         const out = {};
         if (this._isMoveable(bp)) out.moveable = true;
         if (this._isMagnifying(bp)) out.magnifying = true;
         if (this._isFocusing(bp)) out.focusing = true;
-        // W12 — Portal-Affordance folgt direkt aus der Rolle (die selbst
-        // emergent ist, siehe _isPortalShaped). _findNearestAffordanceEntry
-        // + die E-Taste lesen entry.affordances.isPortal.
-        if (bp.role === "portal") out.isPortal = true;
         return out;
     }
 
