@@ -18497,8 +18497,14 @@ class AnazhRealm {
         if (!this.state.toonGradientMap) {
             const data = new Uint8Array(W * 4);
             const tex = new THREE.DataTexture(data, W, 1, THREE.RGBAFormat);
-            tex.minFilter = THREE.NearestFilter;
-            tex.magFilter = THREE.NearestFilter;
+            // V8.42 — LinearFilter statt NearestFilter: die GPU interpoliert
+            // den Gradient → echt stufenlos. NearestFilter gab 32 HARTE
+            // Stufen, deren Kanten beim Kamera-Schwenk über die Strukturen
+            // krochen (Sub-Pixel-Aliasing — dieselbe Klasse wie das alte
+            // Sternen-Flackern). Anti-Aliasing an der Wurzel, kein neues
+            // System: die Textur-Interpolation IST der Anti-Aliaser.
+            tex.minFilter = THREE.LinearFilter;
+            tex.magFilter = THREE.LinearFilter;
             tex.generateMipmaps = false;
             this.state.toonGradientMap = tex;
         }

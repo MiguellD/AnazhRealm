@@ -9,15 +9,15 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 17.05.2026, V8.41)
+## Schnell-Lage (Stand 17.05.2026, V8.42)
 
-**Du erbst eine sehr lebendige Welt**. **2145 Playtest-Invarianten grün + 0 Audit-Strict-Failures + smoke-multiuser grün**, ~27800 Zeilen in einer Datei, alles produktiv.
+**Du erbst eine sehr lebendige Welt**. **2146 Playtest-Invarianten grün + 0 Audit-Strict-Failures + smoke-multiuser grün**, ~27800 Zeilen in einer Datei, alles produktiv.
 
-**Jüngste Welle — V8.41 (V8.40-Browser-Test-Korrekturen)**: zwei Befunde. (1) Der Befund „Sicht-Ring-Regler schiebt, Zahl bleibt bei 9×9" war KEIN Code-Bug (alle vier Ring-Clamps verifiziert auf 8) — sondern stale Cache: frische index.html gegen alte anazhRealm.js. Fix: Cache-Buster `anazhRealm.js?v=8.41` + `save-server.js` strippt jetzt Query-Strings beim Datei-Servieren. (2) Die V8.40-Cel-Erweiterung 2–16 (9–16 „Reserve") wurde auf 2–8 zurückgenommen — der Browser-Test fand die tote Regler-Hälfte schlechter; über „smooth" gibt es nichts Glatteres. Sicht-Ring 1–8 + Fog-Verdreifachung aus V8.40 bleiben.
+**Jüngste Welle — V8.42 (Cel-Crawl-Heilung)**: die Cel-Schattenstufen „wanderten" beim langsamen Kopf-Bewegen über die Strukturen. Der Schöpfer erkannte es goldrichtig als „dieselbe Klasse wie das Sternen-Flackern". Wurzel: die geteilte `toonGradientMap` lief mit `NearestFilter` → 32 HARTE Stufen, deren Kanten per Sub-Pixel-Aliasing krochen. Fix in EINER Zeile (`_refreshToonGradient`): `LinearFilter` — die GPU interpoliert den Gradient → echt stufenlos, Anti-Aliasing an der Wurzel.
 
-**Offen + WICHTIG (die nächste Welle)**: der Tag-Licht-Befund — bei Sonnenaufgang UND bei Kopf-Bewegung fließen Cel-Schattenbänder über die Strukturen/das Terrain („Rauschen"), die Schatten wirken nicht auf die ganze Umgebung, die Tag-Nacht-Übergänge sind zu ruckartig (nachts top — es ist licht-gekoppelt). Die Diagnose liegt vor — siehe „Empfohlene Sequenz". Plus die geparkte Performance-Tiefe.
+**Offen + WICHTIG (die nächste Welle)**: der Rest des Tag-Licht-Befunds — die Schatten wirken nicht auf die ganze Umgebung (der Terrain-Custom-Shader sampelt die Schatten-Textur nicht → Struktur-Schatten fallen nicht aufs Terrain) und die Tag-Nacht-Übergänge sind zu ruckartig (die Lichtstärke springt zwischen den Sonnenaufgangs-Stützpunkten, der smoothstep wirkt nur pro Intervall). Plus die geparkte Performance-Tiefe (Off-Screen-Sparsamkeit + Distanz-LOD). Diagnose-Startpunkt: `_applyDayNightToScene`, der Terrain-Custom-Shader, die Übergangs-Interpolation.
 
-**Welle davor — V8.40 (Regler-Anpassungen)**: Sicht-Ring-Regler 1–8 (Default 9×9), Fog-Effekt verdreifacht (Label „100%" = mult 3.0). Die V8.40-Cel-Erweiterung wurde von V8.41 korrigiert.
+**Wellen davor**: V8.41 (Cache-Buster `anazhRealm.js?v=` + save-server strippt Query — der „Ring-Regler schiebt, Zahl bleibt"-Befund war stale Cache, kein Code-Bug; Cel-Regler von 2–16 zurück auf 2–8). V8.40 (Sicht-Ring-Regler 1–8 Default 9×9, Fog-Effekt verdreifacht).
 
 **Welle davor — V8.39 (Werkzeug-Klassen + Präzision→Qualität)**: das vom Schöpfer gewünschte Werkzeug-System — Farb-Sprache (`BLUEPRINT_ROLE_COLORS`, Rollen-Chip + Bauplan-Zeile leuchten), `computeBlueprintQuality` skaliert die Produkt-Wirkung (`computeCreatureStats` + Konsumables × 0.5+0.5·Qualität), Werkzeug-Op-Stamina skaliert mit dem cap.
 
@@ -196,6 +196,22 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. sind VOLLSTÄNDIG — die
 ---
 
 ## Session-Tagebuch (chronologisch, jüngste oben)
+
+### V8.42 — Cel-Crawl-Heilung: toonGradientMap LinearFilter (17.05.2026)
+
+Die Cel-Schattenstufen krochen beim Kamera-Schwenk über die Strukturen.
+2145 → 2146 (+1).
+
+**Die Lehre — der Schöpfer kennt seine Welt; seine Analogie ist ein
+Diagnose-Werkzeug.** Er sagte „dasselbe Problem wie damals mit den
+Sternen — etwas mit der Abfragrate". Das war die ganze Diagnose: ein
+hartes hochfrequentes Feature, per-Pixel gesampelt, das beim Kamera-
+Schwenk per Sub-Pixel-Aliasing kriecht. Die `toonGradientMap` lief mit
+`NearestFilter` (32 harte Stufen). Fix: `LinearFilter` — die GPU
+interpoliert, echt stufenlos. Eine Zeile. „Was macht das Genie?" —
+es nutzt die vorhandene Hardware-Interpolation als Anti-Aliaser, statt
+ein zweites System zu bauen. Hör auf den Schöpfer, wenn er ein Muster
+wiedererkennt — er hat in dieser Welt mehr Stunden als du.
 
 ### V8.41 — V8.40-Browser-Test-Korrekturen: Cache-Buster + Cel-Rücknahme (17.05.2026)
 

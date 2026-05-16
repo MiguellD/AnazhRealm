@@ -1,4 +1,4 @@
-# Zustand des Realm — Stand: 17.05.2026 (V8.41)
+# Zustand des Realm — Stand: 17.05.2026 (V8.42)
 
 **Welle 6.H V2 vollendet (14/14 Sub-Phasen)** — Kreaturen sind jetzt vollwertige Co-Schöpfer-Wesen mit 9 Identitäts-Schichten (Body, Specs, Equipped, Boosts, Tasks, Memory+Persistenz, Konversation via @-Adresse, Proaktivität, Welt-Aktion-Vorschläge mit Sandbox). **LLM-Provider-System maximal robust nach 5-Versionen-Iteration (V7.94-V7.98)** — jedes Ollama-Setup funktioniert: lokal, gehostet, Cloud, Reasoning-Models, lokale 7B-Modelle. CORS-Lösung via save-server-Proxy, Parser mit Plain-Text-Fallback.
 
@@ -184,6 +184,14 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 ## 6. Learnings aus dieser Session
 
 Echt gelernt, nicht performt:
+
+### V8.42 (17.05.2026) — Cel-Crawl-Heilung: toonGradientMap LinearFilter
+
+Die Cel-Schattenstufen krochen beim langsamen Kamera-Schwenk über die Strukturen. Der Schöpfer erkannte es als „dasselbe Problem wie damals mit den Sternen". Die Lehre:
+
+**Die Analogie des Schöpfers ist ein Diagnose-Werkzeug.** „Etwas mit der Abfragrate, wie bei den Sternen" — das war die vollständige Diagnose: ein hartes hochfrequentes Feature (die 32-Stufen-`toonGradientMap` mit `NearestFilter`), per-Pixel gesampelt, dessen Kanten beim Kamera-Schwenk per Sub-Pixel-Aliasing kriechen. Fix: `LinearFilter` — die GPU interpoliert den Gradient zu echter Stufenlosigkeit. Eine Zeile. Kein neues System, keine Dopplung — die Hardware-Textur-Interpolation IST der Anti-Aliaser, genau wie das echte Rasterizer-AA der Stern-Points (V8.28). Wer in der Welt mehr Stunden hat, erkennt Muster schneller als jede Code-Analyse.
+
+**Vision-Wort der V8.42**: *„Das Genie baut kein zweites System — es findet das eine, das schon da ist, und lässt es die Arbeit tun."*
 
 ### V8.41 (17.05.2026) — V8.40-Browser-Test-Korrekturen: Cache-Buster + Cel-Rücknahme
 

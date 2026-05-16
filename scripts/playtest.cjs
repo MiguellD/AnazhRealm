@@ -12738,6 +12738,10 @@ function startSaveServer() {
                     const origCel = r.state.atmosphere ? r.state.atmosphere.celLevels : 8;
                     out.celClampsAt8 = r.setCelLevels(8) === 8 && r.setCelLevels(20) === 8;
                     out.celSmoothThreshold = /n >= 8 \? W/.test(r._refreshToonGradient.toString());
+                    // V8.42 — Gradient-Textur mit LinearFilter (crawl-frei).
+                    out.celGradientLinear =
+                        !!r.state.toonGradientMap &&
+                        r.state.toonGradientMap.magFilter === (window.THREE && window.THREE.LinearFilter);
                     r.setCelLevels(origCel);
 
                     // Fog: Effekt-Bereich verdreifacht (0.9 .. 9.0, Default 3.0).
@@ -12766,6 +12770,7 @@ function startSaveServer() {
                 check("V8.41: Cel-Stufen-Regler 2–8, Default 8 (Reserve verworfen)", v840Results.celSliderRange);
                 check("V8.41: Cel-Stufen clampt über 8 auf 8", v840Results.celClampsAt8);
                 check("V8.40: Cel ab 8 bleibt smooth (32-Stufen-Gradient)", v840Results.celSmoothThreshold);
+                check("V8.42: Cel-Gradient nutzt LinearFilter (crawl-frei)", v840Results.celGradientLinear);
                 check("V8.40: Fog-Effekt-Bereich verdreifacht (0.9 .. 9.0)", v840Results.fogTripleRange);
                 check("V8.40: Fog-Default ist 3.0 (= heutiger 300%-Effekt)", v840Results.fogDefault3);
                 check("V8.40: Fog-Regler-Eingabe wird verdreifacht (pct/100 × 3)", v840Results.fogHandlerTriples);
