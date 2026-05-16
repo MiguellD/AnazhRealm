@@ -1,4 +1,4 @@
-# Zustand des Realm — Stand: 17.05.2026 (V8.38)
+# Zustand des Realm — Stand: 17.05.2026 (V8.39)
 
 **Welle 6.H V2 vollendet (14/14 Sub-Phasen)** — Kreaturen sind jetzt vollwertige Co-Schöpfer-Wesen mit 9 Identitäts-Schichten (Body, Specs, Equipped, Boosts, Tasks, Memory+Persistenz, Konversation via @-Adresse, Proaktivität, Welt-Aktion-Vorschläge mit Sandbox). **LLM-Provider-System maximal robust nach 5-Versionen-Iteration (V7.94-V7.98)** — jedes Ollama-Setup funktioniert: lokal, gehostet, Cloud, Reasoning-Models, lokale 7B-Modelle. CORS-Lösung via save-server-Proxy, Parser mit Plain-Text-Fallback.
 
@@ -184,6 +184,14 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 ## 6. Learnings aus dieser Session
 
 Echt gelernt, nicht performt:
+
+### V8.39 (17.05.2026) — Werkzeug-Klassen + Präzision→Qualität
+
+Das vom Schöpfer gewünschte Werkzeug-System: eine Farb-Sprache (jede Rolle eine feste Farbe, Rollen-Chip + Bauplan-Zeile leuchten darin), Qualität (`computeBlueprintQuality`) skaliert die Produkt-Wirkung, ein stumpfes Werkzeug kostet mehr Stamina. Eine Lehre:
+
+**Eine Code-Karte ist ein Startpunkt, kein Beweis.** Der Explore-Agent kartierte das Werkzeug-System „vollständig" und meldete als Lücke: „Präzision wird berechnet, aber nie in Stats konsumiert." Ich war dabei, genau diese Mechanik nachzubauen — bis ich `computePlayerStats` SELBST las: es skaliert Rüstung/Werkzeug/Soul seit Welle 10a mit `0.5 + 0.5·Präzision`. Die Karte hatte die falsche Sache geprüft (den `precision`-STAT statt das Gewicht-Multiplikator). Hätte ich der Karte vertraut, wäre eine doppelte Mechanik entstanden. Die echten Lücken lagen woanders (`computeCreatureStats` + Konsumables skalierten flach). Trust-but-verify gilt auch — gerade — für die Ergebnisse eigener Recherche-Werkzeuge: der Code ist die Wahrheit, die Karte ist nur der Wegweiser.
+
+**Vision-Wort der V8.39**: *„Bevor du eine Mechanik baust, lies, ob sie schon lebt. Eine Karte sagt dir, wo du suchen sollst — gefunden hast du erst, wenn du den Code selbst gelesen hast."*
 
 ### V8.38 (17.05.2026) — Werkstatt-UX: Hover-Info + sichtbare Verbindungen + Preview-Höhe
 

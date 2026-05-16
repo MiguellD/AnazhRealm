@@ -7629,7 +7629,10 @@ function startSaveServer() {
                     r.state.player.stamina = 100;
                     r.setGameMode("pfad");
                     const opResultPfad = r.applyOpToPart("mode-test-bp", 0, "feile");
-                    out.pfadChargesStamina = opResultPfad.ok === true && r.state.player.stamina === 100 - 10;
+                    // V8.39 — die Kosten skalieren mit dem Werkzeug-cap (nicht
+                    // mehr fix 10); dieser Test prüft das Modus-GATE (pfad
+                    // konsumiert), die genaue Skalierung prüft der V8.39-Block.
+                    out.pfadChargesStamina = opResultPfad.ok === true && r.state.player.stamina < 100;
 
                     // Cleanup
                     delete r.state.blueprints["mode-test-bp"];
@@ -7719,7 +7722,7 @@ function startSaveServer() {
                     "Welle 6.C2: applyOpToPart im schöpfer-Modus kostet KEINE Stamina",
                     wave6c2Results.schoepferSkipsStamina
                 );
-                check("Welle 6.C2: applyOpToPart im pfad-Modus kostet Stamina (10)", wave6c2Results.pfadChargesStamina);
+                check("Welle 6.C2: applyOpToPart im pfad-Modus kostet Stamina (Modus-Gate)", wave6c2Results.pfadChargesStamina);
                 check("Welle 6.C2: DSL-Op set_mode setzt Modus", wave6c2Results.dslSetModeWorks);
                 check(
                     "Welle 6.C2: set_mode ist in NON_BROADCASTABLE_OPS (Multi-User-privat)",
@@ -12590,6 +12593,131 @@ function startSaveServer() {
                 check("V8.38: Canvas-Sync setzt camera.aspect (kein gestauchtes Bild)", v838Results.cameraAspectSync);
             } else {
                 check("V8.38: Werkstatt-UX Tests laufen", false, v838Results ? v838Results.error : "no result");
+            }
+
+            // ### V8.39 — Werkzeug-Klassen + Präzision→Qualität ###
+            const v839Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // Farb-Sprache: Rollen-Farben-Konstante.
+                    const rc = r.constructor && r.constructor.BLUEPRINT_ROLE_COLORS;
+                    out.roleColorsExist =
+                        !!rc &&
+                        typeof rc.armor === "string" &&
+                        typeof rc.tool === "string" &&
+                        typeof rc.soul === "string" &&
+                        typeof rc.architecture === "string";
+
+                    // computeBlueprintQuality.
+                    out.qualityMethod = typeof r.computeBlueprintQuality === "function";
+                    out.qualityUnworked =
+                        r.computeBlueprintQuality({
+                            parts: [{ shape: "box", material: "stein", size: { x: 1, y: 1, z: 1 } }],
+                        }) === 1.0;
+                    const qWorked = r.computeBlueprintQuality({
+                        parts: [
+                            {
+                                shape: "box",
+                                material: "stein",
+                                size: { x: 1, y: 1, z: 1 },
+                                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+                            },
+                        ],
+                    });
+                    out.qualityWorked = qWorked > 0.3 && qWorked < 0.6;
+
+                    // Aufwand: Stamina skaliert mit Werkzeug-cap (pfad-Modus).
+                    {
+                        const prevMode = typeof r.getGameMode === "function" ? r.getGameMode() : "frieden";
+                        r.setGameMode("pfad");
+                        if (r.state.blueprints["_t839s"]) delete r.state.blueprints["_t839s"];
+                        r.createBlueprint("_t839s", "T839S");
+                        r.state.blueprints["_t839s"].parts = [
+                            {
+                                shape: "box",
+                                material: "eisen",
+                                position: { x: 0, y: 0, z: 0 },
+                                rotation: { x: 0, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                                color: 0x888888,
+                                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+                            },
+                        ];
+                        r.state.player.stamina = 500;
+                        const b1 = r.state.player.stamina;
+                        const res1 = r.applyOpToPart("_t839s", 0, "hände");
+                        const costLow = b1 - r.state.player.stamina;
+                        const b2 = r.state.player.stamina;
+                        const res2 = r.applyOpToPart("_t839s", 0, "polierscheibe");
+                        const costHigh = b2 - r.state.player.stamina;
+                        out.staminaScales =
+                            !!res1.ok && !!res2.ok && costLow > costHigh && costLow >= 9 && costHigh <= 7;
+                        r.setGameMode(prevMode);
+                        delete r.state.blueprints["_t839s"];
+                    }
+
+                    // Qualität skaliert Creature-Stats + Konsumable (Source-Check).
+                    out.creatureStatsQuality = /computeBlueprintQuality/.test(
+                        r.computeCreatureStats.toString()
+                    );
+                    out.consumableQuality = /computeBlueprintQuality/.test(r.activateConsumable.toString());
+
+                    // Farb-Sprache im DOM: Rollen-Chip-Glow + Bauplan-Zeilen-Glow + Qualität-Zeile.
+                    {
+                        const origSel = r.state.workshop && r.state.workshop.selectedBlueprint;
+                        if (r.state.blueprints["_t839c"]) delete r.state.blueprints["_t839c"];
+                        r.createBlueprint("_t839c", "T839C");
+                        r.state.blueprints["_t839c"].parts = [
+                            {
+                                shape: "box",
+                                material: "stein",
+                                position: { x: 0, y: 0, z: 0 },
+                                rotation: { x: 0, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                                color: 0x888888,
+                                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+                            },
+                        ];
+                        if (typeof r.selectBlueprintForEdit === "function") r.selectBlueprintForEdit("_t839c");
+                        r._workshopRenderStatsPanel();
+                        const panel = document.getElementById("workshop-stats-panel");
+                        const chip = panel ? panel.querySelector(".role-chip") : null;
+                        out.roleChipGlow = !!chip && !!chip.style.boxShadow && chip.style.boxShadow.length > 0;
+                        out.qualityRow = !!panel && /Qualität/.test(panel.textContent || "");
+                        r._renderWorkshopDOM();
+                        const lrow = document.querySelector("#workshop-list .workshop-list-row");
+                        out.listRowGlow = !!lrow && !!lrow.style.borderLeft && lrow.style.borderLeft.length > 0;
+                        delete r.state.blueprints["_t839c"];
+                        if (origSel && r.state.blueprints[origSel] && typeof r.selectBlueprintForEdit === "function") {
+                            r.selectBlueprintForEdit(origSel);
+                        }
+                    }
+
+                    // Equip-Hinweis im Spieler-Drawer.
+                    r.renderPlayerEquipUI();
+                    const eq = document.getElementById("player-equip");
+                    out.equipHint = !!eq && /Rüstung anziehen/.test(eq.textContent || "");
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (v839Results && !v839Results.error) {
+                check("V8.39: BLUEPRINT_ROLE_COLORS-Konstante mit allen Rollen", v839Results.roleColorsExist);
+                check("V8.39: computeBlueprintQuality-Methode existiert", v839Results.qualityMethod);
+                check("V8.39: unbearbeiteter Bauplan hat Qualität 1.0 (geboren)", v839Results.qualityUnworked);
+                check("V8.39: bearbeiteter Bauplan trägt seine Werkzeug-Präzision als Qualität", v839Results.qualityWorked);
+                check("V8.39: Werkzeug-Op-Stamina skaliert mit cap (stumpf teurer als fein)", v839Results.staminaScales);
+                check("V8.39: computeCreatureStats skaliert Equip mit Qualität", v839Results.creatureStatsQuality);
+                check("V8.39: activateConsumable skaliert Trank-Stärke mit Qualität", v839Results.consumableQuality);
+                check("V8.39: Rollen-Chip leuchtet in der Rollen-Farbe", v839Results.roleChipGlow);
+                check("V8.39: Werkstatt-Stats-Panel zeigt eine Qualität-Zeile", v839Results.qualityRow);
+                check("V8.39: Bauplan-Liste-Zeile leuchtet in der Rollen-Farbe", v839Results.listRowGlow);
+                check("V8.39: Spieler-Drawer zeigt den Rüstung-Equip-Hinweis", v839Results.equipHint);
+            } else {
+                check("V8.39: Werkzeug-Klassen Tests laufen", false, v839Results ? v839Results.error : "no result");
             }
 
             // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider (Audit 17.05.2026) ###

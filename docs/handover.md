@@ -9,11 +9,13 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 17.05.2026, V8.38)
+## Schnell-Lage (Stand 17.05.2026, V8.39)
 
-**Du erbst eine sehr lebendige Welt**. **2126 Playtest-Invarianten grün + 0 Audit-Strict-Failures + smoke-multiuser grün**, ~27700 Zeilen in einer Datei, alles produktiv.
+**Du erbst eine sehr lebendige Welt**. **2137 Playtest-Invarianten grün + 0 Audit-Strict-Failures + smoke-multiuser grün**, ~27800 Zeilen in einer Datei, alles produktiv.
 
-**Jüngste Welle — V8.38 (Werkstatt-UX: Hover-Info + sichtbare Verbindungen + Preview-Höhe)**: drei Punkte aus dem Schöpfer-Browser-Test der V8.37. (1) Hover über einen Bauplan-Slot (Inventar/Hotbar) zeigt die Bau-Materialien + ob man sie hat (✓/✗); (2) Verbindungen im 3D-Preview sichtbar — depthTest-freie Linie + Mittelpunkt-Marker (auch bei überlappenden Parts), plus eine Panel-Erklärung was eine Verbindung tut; (3) Werkstatt-Preview-Canvas 5:3 statt 1:1 (~60 % Höhe) → das Bauplan-Stats-Panel ohne Scrollen sichtbar. **Offen aus demselben Browser-Test**: das große Werkzeug-Klassen + Präzision→Qualität-System (→ V8.39) und die geparkte Performance-Tiefe-Welle (die voll ausgereizte Welt flüssig — Schöpfer-Wunsch).
+**Jüngste Welle — V8.39 (Werkzeug-Klassen + Präzision→Qualität)**: das vom Schöpfer gewünschte Werkzeug-System. (1) Farb-Sprache — jede Rolle eine feste Farbe (`BLUEPRINT_ROLE_COLORS`), Rollen-Chip + Werkstatt-Bauplan-Zeile leuchten darin; (2) `computeBlueprintQuality` (= mittlere Part-Präzision) skaliert die Produkt-Wirkung — `computeCreatureStats` + Konsumables ziehen jetzt × (0.5+0.5·Qualität), die alte „Präzision"-Zeile heißt jetzt „Qualität" mit Stern-Rating; (3) die Werkzeug-Op-Stamina skaliert mit dem cap (stumpf teurer als fein) — die min-Regel bleibt unantastbar. Verifikations-Lehre: die Explore-Karte sagte „Präzision nicht in Stats konsumiert" — falsch, `computePlayerStats` tat es schon (Welle 10a); trust-but-verify am Code hat es gefangen. **Offen (geparkt)**: die Performance-Tiefe-Welle (die voll ausgereizte Welt flüssig — Schöpfer-Wunsch aus dem V8.37-Test).
+
+**Welle davor — V8.38 (Werkstatt-UX: Hover-Info + sichtbare Verbindungen + Preview-Höhe)**: drei Punkte aus dem Schöpfer-Browser-Test der V8.37. (1) Hover über einen Bauplan-Slot (Inventar/Hotbar) zeigt die Bau-Materialien + ob man sie hat (✓/✗); (2) Verbindungen im 3D-Preview sichtbar — depthTest-freie Linie + Mittelpunkt-Marker (auch bei überlappenden Parts); (3) Werkstatt-Preview-Canvas 5:3 statt 1:1 (~60 % Höhe) → Stats-Panel ohne Scrollen sichtbar.
 
 **Welle davor — V8.37 (Werkstatt-Lesbarkeit + Einstellungen-Faltung)**: die sieben verbliebenen UX-Punkte der V8.35-Browser-Test-Liste. Fünf Code-Änderungen: (1) Bau-Kosten sichtbar im Werkstatt-Stats-Panel (`computeBuildCost` lief vorher nur ins Bau-Modus-HUD); (2) 3D-Maße lesbar — `GridHelper` (1-Einheit-Raster) + `AxesHelper` als feste Szenen-Kinder im Werkstatt-Preview; (3) Einstellungen-Sektionen faltbar (`_initCollapsibleSettings` — generisch, jeder `<h3>` wird Klick-Header, Zustand in `localStorage`); (4) **Werkzeug-Drag — echter Wurzel-Bug**: die Tool-Palette wird bei jedem Werkstatt-Refresh neu gerendert, die pro-Karte-Drag-Listener gingen verloren → Event-Delegation auf den bleibenden Container; (5) FPS als gleitender 1-s-Durchschnitt statt vsync-quantisiertem `1/delta`. Plus zwei Architektur-Fragen im Chat beantwortet (Performance-Culling, Chunk-Persistenz). **Die 13-Punkte-Liste der V8.35 ist damit komplett** — V8.36 sechs Gameplay-Bugs, V8.37 sieben UX-Punkte.
 
@@ -37,7 +39,7 @@ Die Session-Hälfte davor (V8.23 → V8.33) war eine **Atmosphäre-Tiefe-Welle (
 
 **Welle 12 ist „Welt-Portal"** (nicht WebGPU-Migration) — AnazhRealm wird Tor zu anderen Vibecode-Welten. Wenn du in eine Welle 12+ erwachst: lies `docs/world-portal.md` ZUERST.
 
-**Empfohlene Sequenz nach V8.38**: **V8.39 (Werkzeug-Klassen + Präzision→Qualität)** — das vom Schöpfer gewünschte Werkzeug-System: Farb-Sprache (Rolle/Domäne = Farbe, Bauplan-Rahmen leuchtet), Präzision wird ein sichtbarer Qualitäts-Multiplikator auf die Produkt-Stats, ein stumpfes Werkzeug kostet mehr Stamina. Danach die geparkte **Performance-Tiefe-Welle** (die voll ausgereizte Welt — 120 Kreaturen, dichtes Gras, 9×9 Chunks — flüssig, durch Engine-Optimierung, NICHT durch Feature-Kürzung) → dann **W12 (Welt-Portal PoC mit three-fluid-fx)** → 13 (Vibe-Pass) → 14 (Bibliothek) → 7 (Compute-Sharing). W12 ist der große Sprung — lies `docs/world-portal.md` ZUERST. Die 13-Punkte-Browser-Test-Liste der V8.35 ist mit V8.36–V8.38 vollständig abgearbeitet.
+**Empfohlene Sequenz nach V8.39**: die geparkte **Performance-Tiefe-Welle** (die voll ausgereizte Welt — 120 Kreaturen, dichtes Gras, 9×9 Chunks — flüssig, durch Engine-Optimierung, NICHT durch Feature-Kürzung; der Schöpfer-Wunsch aus dem V8.37-Browser-Test). Dann **W12 (Welt-Portal PoC mit three-fluid-fx)** → 13 (Vibe-Pass) → 14 (Bibliothek) → 7 (Compute-Sharing). W12 ist der große Sprung — AnazhRealm wird Tor zu anderen Vibecode-Welten; lies `docs/world-portal.md` ZUERST. Die 13-Punkte-Browser-Test-Liste der V8.35 ist mit V8.36–V8.38 vollständig abgearbeitet, das Werkzeug-System mit V8.39.
 
 **Atmosphäre-Disziplin**: alle atmosphärischen Methoden mit `[ATMOSPHERE]`-Marker werden von `audit-strict.cjs` (5. Schicht) auf Hardcode geprüft. Wert-aus-dem-Kopf ist verboten — immer „aus welcher state-Beobachtung emergiert das?".
 
@@ -188,6 +190,21 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. sind VOLLSTÄNDIG — die
 ---
 
 ## Session-Tagebuch (chronologisch, jüngste oben)
+
+### V8.39 — Werkzeug-Klassen + Präzision→Qualität (17.05.2026)
+
+Das vom Schöpfer gewünschte Werkzeug-System. Farb-Sprache (Rolle→Farbe,
+Chip + Bauplan-Zeile leuchten), Qualität (`computeBlueprintQuality`)
+skaliert die Produkt-Wirkung, Werkzeug-Op-Stamina skaliert mit dem cap.
+2126 → 2137 Invarianten (+11).
+
+**Die Lehre**: trust-but-verify am ECHTEN Code. Die Explore-Karte sagte
+„Präzision wird nirgends in Stats konsumiert" — ich hätte fast eine
+Mechanik nachgebaut, die es schon gibt. `computePlayerStats` skaliert
+seit Welle 10a mit `0.5 + 0.5·Präzision`. Beim Lesen der Funktion selbst
+gesehen. Die echten Lücken waren `computeCreatureStats` + Konsumables.
+Eine Karte (auch von einem Explore-Agenten) ist ein Startpunkt, kein
+Beweis — die Wahrheit steht im Code, und man muss sie dort lesen.
 
 ### V8.38 — Werkstatt-UX: Hover-Info + sichtbare Verbindungen + Preview-Höhe (17.05.2026)
 

@@ -8078,9 +8078,12 @@ class AnazhRealm {
         const meta = bp.consumableMeta || {};
         const tags = this.computeCompoundTags(bp);
         const scale = meta.scale || 0.2;
+        // V8.39 — Qualität skaliert die Trank-Stärke (selber Pfad wie
+        // activateConsumable).
+        const qMul = 0.5 + 0.5 * this.computeBlueprintQuality(bp);
         const tagBonus = {};
         for (const tag of Object.keys(tags)) {
-            const v = tags[tag] * scale;
+            const v = tags[tag] * scale * qMul;
             if (Math.abs(v) > 0.001) tagBonus[tag] = Math.max(-1, Math.min(1, v));
         }
         if (Object.keys(tagBonus).length === 0) {
@@ -8193,8 +8196,11 @@ class AnazhRealm {
         if (equipped.tool && this.state.tools && this.state.tools[equipped.tool]) {
             const tool = this.state.tools[equipped.tool];
             if (tool.sourceBlueprint && this.state.blueprints[tool.sourceBlueprint]) {
-                const tags = this.computeCompoundTags(this.state.blueprints[tool.sourceBlueprint]) || {};
-                const w = AnazhRealm.TOOL_STAT_WEIGHT;
+                const toolBp = this.state.blueprints[tool.sourceBlueprint];
+                const tags = this.computeCompoundTags(toolBp) || {};
+                // V8.39 — Qualität skaliert das Stat-Gewicht (selber Pfad wie
+                // computePlayerStats): ein grob gebautes Werkzeug wirkt halb.
+                const w = AnazhRealm.TOOL_STAT_WEIGHT * (0.5 + 0.5 * this.computeBlueprintQuality(toolBp));
                 for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
                     finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
                 }
@@ -8205,7 +8211,9 @@ class AnazhRealm {
             const bp = this.state.blueprints[equipped.armor];
             if (bp.role === "armor") {
                 const tags = this.computeCompoundTags(bp) || {};
-                const w = AnazhRealm.ARMOR_STAT_WEIGHT;
+                // V8.39 — Qualität skaliert das Stat-Gewicht (selber Pfad wie
+                // computePlayerStats): eine grob gebaute Rüstung wirkt halb.
+                const w = AnazhRealm.ARMOR_STAT_WEIGHT * (0.5 + 0.5 * this.computeBlueprintQuality(bp));
                 for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
                     finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
                 }
@@ -15045,9 +15053,12 @@ class AnazhRealm {
             const meta = bp.consumableMeta || {};
             const tags = this.computeCompoundTags(bp);
             const scale = meta.scale || 0.2;
+            // V8.39 — Qualität skaliert die Trank-Stärke: ein grob gebrautes
+            // Konsumable wirkt halb, ein fein gefertigtes voll.
+            const qMul = 0.5 + 0.5 * this.computeBlueprintQuality(bp);
             const tagBonus = {};
             for (const tag of Object.keys(tags)) {
-                const v = tags[tag] * scale;
+                const v = tags[tag] * scale * qMul;
                 if (Math.abs(v) > 0.001) tagBonus[tag] = Math.max(-1, Math.min(1, v));
             }
             if (Object.keys(tagBonus).length === 0) {
@@ -17221,6 +17232,17 @@ class AnazhRealm {
         return sum / parts.length;
     }
 
+    // V8.39 — Bauplan-Qualität: ein Name für das Konzept „wie gut ist das
+    // gemacht?". Es IST die mittlere Part-Präzision (_compoundAvgPrecision-
+    // FromParts) — ein unbearbeiteter Bauplan gilt als „geboren" (1.0), ein
+    // bearbeiteter trägt seine min-Werte. Die Qualität skaliert die Wirkung
+    // des Produkts: Rüstungs-Stat-Gewicht + Trank-Stärke gehen mit
+    // (0.5 + 0.5·Qualität) — ein grobes Produkt wirkt halb, ein feines voll.
+    computeBlueprintQuality(blueprint) {
+        if (!blueprint || !Array.isArray(blueprint.parts)) return 1.0;
+        return this._compoundAvgPrecisionFromParts(blueprint.parts);
+    }
+
     // Mutationspfad: Werkzeug auf Part anwenden. Validiert Tool-Besitz +
     // Material × Op-Klassen-Kompatibilität (Konzept §3.2). Operationen
     // werden ANGEHÄNGT, nicht ersetzt — die opChain ist Geschichte, nicht
@@ -17258,7 +17280,12 @@ class AnazhRealm {
         // Schöpfer darf ohne Geduld-Kosten erschaffen.
         const mode = this.getGameMode ? this.getGameMode() : "frieden";
         if (mode === "pfad") {
-            const cost = AnazhRealm.TOOL_OP_STAMINA_COST || 10;
+            // V8.39 — Aufwand skaliert mit der Werkzeug-Präzision: ein stumpfes
+            // Werkzeug (niedriger cap) kostet mehr Kraft, ein feines weniger.
+            // cap 0.4 → ×1.1 (~11), cap 0.97 → ×0.53 (~5). Besseres Werkzeug
+            // = effizienter. Floor 2, damit eine Op nie gratis wird.
+            const baseCost = AnazhRealm.TOOL_OP_STAMINA_COST || 10;
+            const cost = Math.max(2, Math.round(baseCost * (1.5 - (tool.precisionCap || 0.5))));
             const stamina = (this.state.player && this.state.player.stamina) || 0;
             if (stamina < cost) {
                 return { ok: false, reason: "not_enough_stamina", staminaNeeded: cost, staminaHave: stamina };
@@ -20607,6 +20634,13 @@ class AnazhRealm {
             const row = document.createElement("div");
             row.className = "workshop-list-row" + (name === ws.selectedBlueprint ? " selected" : "");
             row.setAttribute("data-blueprint", name);
+            // V8.39 — Farb-Sprache: die Bauplan-Zeile leuchtet links in der
+            // Rollen-Farbe → ein Blick sagt, was jeder Bauplan IST.
+            {
+                const rRole = bp.role || AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
+                const rColor = (AnazhRealm.BLUEPRINT_ROLE_COLORS || {})[rRole];
+                if (rColor) row.style.borderLeft = `3px solid ${rColor}`;
+            }
             const nameSpan = document.createElement("span");
             nameSpan.className = "name";
             nameSpan.textContent = bp.label || name;
@@ -22494,6 +22528,15 @@ class AnazhRealm {
         const roleChip = document.createElement("span");
         roleChip.className = "role-chip";
         roleChip.textContent = roleLabel;
+        // V8.39 — Farb-Sprache: der Rollen-Chip leuchtet in der Rollen-Farbe.
+        // Ein Blick sagt, was der Bauplan IST.
+        {
+            const roleColor = (AnazhRealm.BLUEPRINT_ROLE_COLORS || {})[role];
+            if (roleColor) {
+                roleChip.style.borderColor = roleColor;
+                roleChip.style.boxShadow = `0 0 6px ${roleColor}`;
+            }
+        }
         // V8.17 — erweiterte Tooltips erklären emergent vs. manuell.
         if (bp.roleManual) {
             roleChip.classList.add("role-manual");
@@ -22710,11 +22753,18 @@ class AnazhRealm {
             precRow.className = "stat-row";
             const precLab = document.createElement("span");
             precLab.className = "stat-label";
-            precLab.textContent = "Präzision";
+            // V8.39 — „Präzision" → „Qualität": dieselbe Zahl, aber der Name
+            // sagt, was sie BEDEUTET — sie skaliert die Produkt-Wirkung.
+            precLab.textContent = "Qualität";
             precRow.appendChild(precLab);
             const precChip = document.createElement("span");
             precChip.className = "tag-chip";
-            precChip.textContent = avgPrec.toFixed(2);
+            const q5 = Math.max(0, Math.min(5, Math.round(avgPrec * 5)));
+            precChip.textContent = `${"★".repeat(q5)}${"☆".repeat(5 - q5)} ${avgPrec.toFixed(2)}`;
+            precChip.title =
+                "Qualität = mittlere Part-Präzision. Sie skaliert die Wirkung des Produkts: " +
+                "Rüstung/Trank wirken mit (0.5 + 0.5·Qualität) — grob ≈ halb, fein ≈ voll. " +
+                "Feineres Werkzeug → höhere Qualität.";
             precRow.appendChild(precChip);
             panel.appendChild(precRow);
         }
@@ -24878,6 +24928,14 @@ class AnazhRealm {
         const container = document.getElementById("player-equip");
         if (!container) return;
         container.innerHTML = "";
+        // V8.39 — Equip-Hinweis (Schöpfer-Browser-Test „Rüstung anziehen?"):
+        // Rüstung ist 2-stufig — eigenen Bauplan unten als „Rüstung" markieren,
+        // dann oben im Dropdown wählen.
+        const equipHint = document.createElement("div");
+        equipHint.className = "drawer-hint";
+        equipHint.textContent =
+            "Rüstung anziehen: einen eigenen Bauplan unten als Rüstung markieren — dann oben im Dropdown wählen.";
+        container.appendChild(equipHint);
         const equipped = (this.state.player && this.state.player.equipped) || { tool: null, armor: null };
         // Werkzeug-Slot
         const toolRow = document.createElement("div");
@@ -27437,6 +27495,20 @@ AnazhRealm.BLUEPRINT_ROLE_LABELS = Object.freeze({
     consumable: "Konsumable",
     soul: "Seele",
     machine: "Maschine",
+});
+
+// V8.39 — Farb-Sprache: jede Rolle eine feste Farbe. Rollen-Chip +
+// Bauplan-Zeile in der Werkstatt-Liste leuchten darin → ein Blick sagt,
+// was ein Ding IST. Bauwerk = Stein-Erdgrau, Werkzeug = Schmiede-Rot,
+// Rüstung = Stahl-Blau, Konsumable = Alchemie-Violett, Seele = Seelen-
+// Cyan, Maschine = Bronze. Sechs klar unterscheidbare Töne.
+AnazhRealm.BLUEPRINT_ROLE_COLORS = Object.freeze({
+    architecture: "#9a9088",
+    tool: "#c44830",
+    armor: "#7d96b8",
+    consumable: "#a878b8",
+    soul: "#88e1e1",
+    machine: "#b08648",
 });
 
 // Werkzeug-Domain-Labels (deutsch) für UI-Anzeige. null = generic
