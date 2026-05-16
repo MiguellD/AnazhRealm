@@ -12742,6 +12742,12 @@ function startSaveServer() {
                     out.celGradientLinear =
                         !!r.state.toonGradientMap &&
                         r.state.toonGradientMap.magFilter === (window.THREE && window.THREE.LinearFilter);
+                    // V8.43 — Terrain-Detail-Noise per Vertex statt per Pixel.
+                    out.terrainJitterPerVertex =
+                        !!r.state.terrainMaterial &&
+                        /vJitter/.test(r.state.terrainMaterial.vertexShader || "") &&
+                        /noise\(uv/.test(r.state.terrainMaterial.vertexShader || "") &&
+                        !/noise\(vUv/.test(r.state.terrainMaterial.fragmentShader || "");
                     r.setCelLevels(origCel);
 
                     // Fog: Effekt-Bereich verdreifacht (0.9 .. 9.0, Default 3.0).
@@ -12771,6 +12777,10 @@ function startSaveServer() {
                 check("V8.41: Cel-Stufen clampt über 8 auf 8", v840Results.celClampsAt8);
                 check("V8.40: Cel ab 8 bleibt smooth (32-Stufen-Gradient)", v840Results.celSmoothThreshold);
                 check("V8.42: Cel-Gradient nutzt LinearFilter (crawl-frei)", v840Results.celGradientLinear);
+                check(
+                    "V8.43: Terrain-Detail-Noise per Vertex berechnet (crawl-frei)",
+                    v840Results.terrainJitterPerVertex
+                );
                 check("V8.40: Fog-Effekt-Bereich verdreifacht (0.9 .. 9.0)", v840Results.fogTripleRange);
                 check("V8.40: Fog-Default ist 3.0 (= heutiger 300%-Effekt)", v840Results.fogDefault3);
                 check("V8.40: Fog-Regler-Eingabe wird verdreifacht (pct/100 × 3)", v840Results.fogHandlerTriples);

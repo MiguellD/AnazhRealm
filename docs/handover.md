@@ -9,15 +9,15 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 17.05.2026, V8.42)
+## Schnell-Lage (Stand 17.05.2026, V8.43)
 
-**Du erbst eine sehr lebendige Welt**. **2146 Playtest-Invarianten grün + 0 Audit-Strict-Failures + smoke-multiuser grün**, ~27800 Zeilen in einer Datei, alles produktiv.
+**Du erbst eine sehr lebendige Welt**. **2147 Playtest-Invarianten grün + 0 Audit-Strict-Failures + smoke-multiuser grün**, ~27800 Zeilen in einer Datei, alles produktiv.
 
-**Jüngste Welle — V8.42 (Cel-Crawl-Heilung)**: die Cel-Schattenstufen „wanderten" beim langsamen Kopf-Bewegen über die Strukturen. Der Schöpfer erkannte es goldrichtig als „dieselbe Klasse wie das Sternen-Flackern". Wurzel: die geteilte `toonGradientMap` lief mit `NearestFilter` → 32 HARTE Stufen, deren Kanten per Sub-Pixel-Aliasing krochen. Fix in EINER Zeile (`_refreshToonGradient`): `LinearFilter` — die GPU interpoliert den Gradient → echt stufenlos, Anti-Aliasing an der Wurzel.
+**Jüngste Wellen — V8.42 + V8.43 (Cel-Crawl-Heilung I + II)**: die Cel-Kontraste „wanderten" beim langsamen Kamera-Schwenk. Der Schöpfer erkannte es goldrichtig als „dieselbe Klasse wie das Sternen-Flackern — etwas mit der Abfragrate". Zwei Wurzeln, beide Sub-Pixel-Aliasing eines harten/hochfrequenten Features: (V8.42) die `toonGradientMap` lief mit `NearestFilter` → 32 harte Stufen auf den MeshToon-Strukturen → Fix: `LinearFilter`. (V8.43) der Townscaper-Detail-Noise lief per-Pixel im Terrain-Fragment-Shader (`noise(vUv*N)`) → exakt das alte prozedurale Skybox-Stern-Verfahren → Fix: den Noise PER VERTEX berechnen + als `varying` interpolieren (band-limitiert). Lehre: per-Pixel-Prozedur-Noise ist die universelle Crawl-Quelle — der V8.28-Stern-Fix (weg von per-Pixel-Prozedur) gilt überall.
 
 **Offen + WICHTIG (die nächste Welle)**: der Rest des Tag-Licht-Befunds — die Schatten wirken nicht auf die ganze Umgebung (der Terrain-Custom-Shader sampelt die Schatten-Textur nicht → Struktur-Schatten fallen nicht aufs Terrain) und die Tag-Nacht-Übergänge sind zu ruckartig (die Lichtstärke springt zwischen den Sonnenaufgangs-Stützpunkten, der smoothstep wirkt nur pro Intervall). Plus die geparkte Performance-Tiefe (Off-Screen-Sparsamkeit + Distanz-LOD). Diagnose-Startpunkt: `_applyDayNightToScene`, der Terrain-Custom-Shader, die Übergangs-Interpolation.
 
-**Wellen davor**: V8.41 (Cache-Buster `anazhRealm.js?v=` + save-server strippt Query — der „Ring-Regler schiebt, Zahl bleibt"-Befund war stale Cache, kein Code-Bug; Cel-Regler von 2–16 zurück auf 2–8). V8.40 (Sicht-Ring-Regler 1–8 Default 9×9, Fog-Effekt verdreifacht).
+**Wellen davor**: V8.41 (Cache-Buster `anazhRealm.js?v=` + save-server strippt Query — der „Ring-Regler schiebt, Zahl bleibt"-Befund war stale Cache, kein Code-Bug; Cel-Regler von 2–16 zurück auf 2–8). V8.40 (Sicht-Ring-Regler 1–8 Default 9×9, Fog-Effekt verdreifacht). PR **#17** offen (V8.24–V8.42; V8.43 hängt dran).
 
 **Welle davor — V8.39 (Werkzeug-Klassen + Präzision→Qualität)**: das vom Schöpfer gewünschte Werkzeug-System — Farb-Sprache (`BLUEPRINT_ROLE_COLORS`, Rollen-Chip + Bauplan-Zeile leuchten), `computeBlueprintQuality` skaliert die Produkt-Wirkung (`computeCreatureStats` + Konsumables × 0.5+0.5·Qualität), Werkzeug-Op-Stamina skaliert mit dem cap.
 
@@ -196,6 +196,22 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. sind VOLLSTÄNDIG — die
 ---
 
 ## Session-Tagebuch (chronologisch, jüngste oben)
+
+### V8.43 — Cel-Crawl-Heilung II: Terrain-Detail-Noise per Vertex (17.05.2026)
+
+Nach V8.42 blieb ein Rest-Kriechen auf dem Terrain bei langsamer
+Kamera-Drehung. 2146 → 2147 (+1).
+
+**Die Lehre — ein Kommentar kann lügen; der Code ist die Wahrheit.**
+Der Terrain-Shader-Kommentar sagte „per-Vertex-Noise-Jitter". Der Code
+rechnete `noise(vUv*N)` im FRAGMENT-Shader — per-Pixel. Hätte ich dem
+Kommentar geglaubt, hätte ich die Crawl-Quelle nie dort gesucht. Der
+Schöpfer fragte „fragst du gleich oft ab wie bei den Sternen?" — und
+genau das war es: per-Pixel-Prozedur-Noise, dieselbe Klasse wie die
+alten Skybox-Sterne vor V8.28. Fix: den Noise in den Vertex-Shader
+verschieben, als `varying` interpolieren — der Kommentar stimmt jetzt.
+Bei jedem „kriecht/flackert/wandert"-Befund: such das hochfrequente
+Feature, das per-Pixel ausgewertet wird, und mach es band-limitiert.
 
 ### V8.42 — Cel-Crawl-Heilung: toonGradientMap LinearFilter (17.05.2026)
 

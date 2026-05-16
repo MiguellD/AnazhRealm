@@ -10902,16 +10902,38 @@ class AnazhRealm {
         // V8.28 6.G4.b B — Terrain-Shader liest Welt-Affinität pro Vertex.
         const vertexShader = `
         attribute vec4 aField;
-        varying vec2 vUv;
         varying float vHeight;
         varying vec3 vNormal;
         varying vec4 vField;
         varying float vFogDepth;
+        // V8.43 — der Detail-Noise wird PER VERTEX berechnet und als varying
+        // interpoliert. Vorher lief noise() im Fragment-Shader (per-Pixel) →
+        // bei Kamera-Drehung kroch das hochfrequente Muster per Sub-Pixel-
+        // Aliasing übers Terrain (dieselbe Klasse wie die alten prozeduralen
+        // Skybox-Sterne, bevor sie echte Geometrie wurden). Per-Vertex +
+        // Interpolation = band-limitiert, stabil unter Kamera-Bewegung.
+        varying float vJitter;
+        float random(vec2 st) {
+            return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
+        }
+        float noise(vec2 st) {
+            vec2 i = floor(st);
+            vec2 f = fract(st);
+            float a = random(i);
+            float b = random(i + vec2(1.0, 0.0));
+            float c = random(i + vec2(0.0, 1.0));
+            float d = random(i + vec2(1.0, 1.0));
+            vec2 u = f * f * (3.0 - 2.0 * f);
+            return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+        }
         void main() {
-            vUv = uv;
             vHeight = position.y;
             vNormal = normalize(normalMatrix * normal);
             vField = aField;
+            // Townscaper-Detail-Jitter — zwei Noise-Oktaven, hier per Vertex.
+            float n1 = noise(uv * 3.0);
+            float n2 = noise(uv * 9.0);
+            vJitter = (n1 - 0.5) * 0.07 + (n2 - 0.5) * 0.035;
             vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
             // V8.31 — Fog-Tiefe (View-Space-Distanz) für das Fragment.
             vFogDepth = -mvPosition.z;
@@ -10920,11 +10942,11 @@ class AnazhRealm {
     `;
         const fragmentShader = `
         precision mediump float;
-        varying vec2 vUv;
         varying float vHeight;
         varying vec3 vNormal;
         varying vec4 vField;
         varying float vFogDepth;
+        varying float vJitter;
         uniform vec3 lightDirection;
         uniform float weatherEffect;
         // V8.27 6.G4.a — Tag-Nacht synchronisiert. lightIntensity moduliert
@@ -10942,19 +10964,6 @@ class AnazhRealm {
         uniform vec3 fogColor;
         uniform float fogNear;
         uniform float fogFar;
-        float random(vec2 st) {
-            return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
-        }
-        float noise(vec2 st) {
-            vec2 i = floor(st);
-            vec2 f = fract(st);
-            float a = random(i);
-            float b = random(i + vec2(1.0, 0.0));
-            float c = random(i + vec2(0.0, 1.0));
-            float d = random(i + vec2(1.0, 1.0));
-            vec2 u = f * f * (3.0 - 2.0 * f);
-            return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
-        }
         void main() {
             // V8.28 6.G4.b B — die Grundfarbe EMERGIERT aus der Welt-
             // Affinität, NICHT aus der Höhe. Dieselbe worldFieldAt-Sprache
@@ -10979,10 +10988,10 @@ class AnazhRealm {
             float height = vHeight;
             color = mix(color, vec3(0.92, 0.93, 1.0), smoothstep(12.0, 42.0, height));
             color = mix(color, vec3(0.78, 0.72, 0.52), smoothstep(-2.0, -14.0, height));
-            // Townscaper-Style: leichter per-Vertex-Noise-Jitter für Detail.
-            float n1 = noise(vUv * 3.0);
-            float n2 = noise(vUv * 9.0);
-            color += vec3((n1 - 0.5) * 0.07 + (n2 - 0.5) * 0.035);
+            // V8.43 — Townscaper-Detail-Jitter, jetzt per Vertex berechnet
+            // und interpoliert (crawl-frei — siehe Vertex-Shader). Vorher
+            // lief noise() hier per-Pixel und kroch bei Kamera-Drehung.
+            color += vec3(vJitter);
             color = mix(color, color * 0.7, weatherEffect);
             // V8.27 6.G4.a — Diffuse + Ambient mit Tag-Nacht-Intensities.
             // Wrapped Lambert (half-Lambert) für sanfteren Schatten-Übergang.

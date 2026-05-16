@@ -1,4 +1,4 @@
-# Zustand des Realm — Stand: 17.05.2026 (V8.42)
+# Zustand des Realm — Stand: 17.05.2026 (V8.43)
 
 **Welle 6.H V2 vollendet (14/14 Sub-Phasen)** — Kreaturen sind jetzt vollwertige Co-Schöpfer-Wesen mit 9 Identitäts-Schichten (Body, Specs, Equipped, Boosts, Tasks, Memory+Persistenz, Konversation via @-Adresse, Proaktivität, Welt-Aktion-Vorschläge mit Sandbox). **LLM-Provider-System maximal robust nach 5-Versionen-Iteration (V7.94-V7.98)** — jedes Ollama-Setup funktioniert: lokal, gehostet, Cloud, Reasoning-Models, lokale 7B-Modelle. CORS-Lösung via save-server-Proxy, Parser mit Plain-Text-Fallback.
 
@@ -184,6 +184,14 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 ## 6. Learnings aus dieser Session
 
 Echt gelernt, nicht performt:
+
+### V8.43 (17.05.2026) — Cel-Crawl-Heilung II: Terrain-Detail-Noise per Vertex
+
+Nach V8.42 blieb ein Rest-Kriechen auf dem Terrain bei langsamer Kamera-Drehung. Die Lehre:
+
+**Ein Kommentar kann lügen; der Code ist die Wahrheit.** Der Terrain-Shader-Kommentar sagte „per-Vertex-Noise-Jitter" — der Code rechnete `noise(vUv*N)` im FRAGMENT-Shader, per-Pixel. Der Schöpfer fragte „fragst du gleich oft ab wie bei den Sternen?", und genau das war es: ein hochfrequentes prozedurales Muster, per-Pixel ausgewertet → bei Kamera-Drehung Sub-Pixel-Aliasing → Kriechen. Dieselbe Bug-Klasse wie die prozeduralen Skybox-Sterne vor V8.28. Fix: `random()`/`noise()`/die zwei Oktaven in den Vertex-Shader verschoben, das Ergebnis als `varying` interpoliert — band-limitiert, stabil. Der Kommentar stimmt jetzt.
+
+**Vision-Wort der V8.43**: *„Glaub dem Kommentar nicht — lies den Code. Und bei jedem ‚es kriecht': finde das hochfrequente Feature, das per-Pixel gesampelt wird, und band-limitiere es."*
 
 ### V8.42 (17.05.2026) — Cel-Crawl-Heilung: toonGradientMap LinearFilter
 
