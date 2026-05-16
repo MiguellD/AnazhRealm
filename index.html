@@ -27,7 +27,7 @@
     -->
         <meta
             http-equiv="Content-Security-Policy"
-            content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self';"
+            content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self';"
         />
         <title>Anazh Realm v8.50 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
@@ -3840,6 +3840,32 @@
             }
             #help-overlay .close:hover {
                 color: #fbe9b8;
+            }
+            /* W12 Phase 1 — Portal-Overlay: Vollbild-iframe der betretenen
+               Sub-Welt. Liegt über der ganzen Heimat-Welt-Oberfläche. */
+            #portal-overlay {
+                position: fixed;
+                inset: 0;
+                z-index: 9000;
+                background: #05060a;
+            }
+            #portal-overlay .portal-frame {
+                width: 100%;
+                height: 100%;
+                border: 0;
+                display: block;
+            }
+            #portal-overlay .portal-hint {
+                position: absolute;
+                left: 50%;
+                bottom: 16px;
+                transform: translateX(-50%);
+                padding: 5px 14px;
+                border-radius: 6px;
+                background: rgba(5, 6, 10, 0.72);
+                color: #9fb0c8;
+                font: 13px/1.4 "JetBrains Mono", monospace;
+                pointer-events: none;
             }
         </style>
     </head>

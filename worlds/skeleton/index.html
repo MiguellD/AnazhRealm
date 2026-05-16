@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="de">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <!-- W12 Phase 1 — Die Skelett-Welt ist ein eigenes Document mit
+             eigener, strikter CSP. Skript nur aus skeleton.js (kein inline),
+             keine fremden Origins. Spätere Fremd-Welten (W14) bringen ihre
+             eigene CSP mit — die Isolation trägt die iframe-Sandbox. -->
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'self'; object-src 'none';"
+        />
+        <title>Skelett-Welt — AnazhRealm-Portal</title>
+        <style>
+            html,
+            body {
+                margin: 0;
+                height: 100%;
+                background: radial-gradient(ellipse at center, #141a2e 0%, #05060a 78%);
+                color: #cdd8ee;
+                font-family: "Courier New", monospace;
+                overflow: hidden;
+            }
+            #void {
+                position: fixed;
+                inset: 0;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                gap: 0.55em;
+                padding: 1.5em;
+                box-sizing: border-box;
+            }
+            #glyph {
+                width: 116px;
+                height: 116px;
+                border-radius: 50%;
+                border: 2px solid #43c98a;
+                box-shadow:
+                    0 0 42px #43c98a88,
+                    inset 0 0 30px #43c98a55;
+                animation: portal-pulse 3.4s ease-in-out infinite;
+            }
+            @keyframes portal-pulse {
+                0%,
+                100% {
+                    transform: scale(1);
+                    opacity: 0.68;
+                }
+                50% {
+                    transform: scale(1.08);
+                    opacity: 1;
+                }
+            }
+            h1 {
+                margin: 0.5em 0 0;
+                font-size: 1.5rem;
+                font-weight: 400;
+                letter-spacing: 0.32em;
+                color: #e6ecf8;
+            }
+            .sub {
+                font-size: 0.85rem;
+                opacity: 0.72;
+                max-width: 32em;
+            }
+            #avatar-name {
+                color: #43c98a;
+            }
+            .hint {
+                margin-top: 1.5em;
+                font-size: 0.75rem;
+                opacity: 0.5;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="void">
+            <div id="glyph"></div>
+            <h1>SKELETT-WELT</h1>
+            <div class="sub">
+                Reisender: <span id="avatar-name">…</span> ·
+                <span id="portal-status">wartet auf Heimat-Welt</span>
+            </div>
+            <div class="sub" style="opacity: 0.55">
+                Ein leeres Tor-Gerüst. Hier lädt W12 Phase 2 eine echte Sub-Engine; die
+                DSL-Brücke dockt am postMessage-Handshake an.
+            </div>
+            <div class="hint">Esc — zurück zur Heimat-Welt</div>
+        </div>
+        <script src="skeleton.js?v=1"></script>
+    </body>
+</html>

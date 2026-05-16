@@ -12928,6 +12928,94 @@ function startSaveServer() {
                 );
             }
 
+            // ### W12 Phase 1 Commit 2 — Skelett-Welt + iframe-Overlay + CSP ###
+            const w12c2Results = await page
+                .evaluate(async () => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // CSP: frame-src 'self' (nur same-origin iframes erlaubt).
+                    const cspMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+                    const csp = cspMeta ? cspMeta.getAttribute("content") || "" : "";
+                    out.cspFrameSrc = /frame-src\s+'self'/.test(csp);
+
+                    // Skelett-Welt-Seite + Skript werden ausgeliefert.
+                    try {
+                        const htmlRes = await fetch("worlds/skeleton/index.html");
+                        const htmlBody = htmlRes.ok ? await htmlRes.text() : "";
+                        out.skeletonHtmlServed =
+                            htmlRes.ok &&
+                            /SKELETT-WELT/.test(htmlBody) &&
+                            /id="avatar-name"/.test(htmlBody) &&
+                            /skeleton\.js/.test(htmlBody);
+                        const jsRes = await fetch("worlds/skeleton/skeleton.js");
+                        const jsBody = jsRes.ok ? await jsRes.text() : "";
+                        out.skeletonJsServed =
+                            jsRes.ok &&
+                            /addEventListener\("message"/.test(jsBody) &&
+                            /"ready"/.test(jsBody) &&
+                            /"enter"/.test(jsBody);
+                    } catch (e) {
+                        out.skeletonHtmlServed = false;
+                        out.skeletonJsServed = false;
+                    }
+
+                    // Overlay-Methoden.
+                    out.buildMethod = typeof r._buildPortalOverlay === "function";
+                    out.disposeMethod = typeof r._disposePortalOverlay === "function";
+                    out.sendEnterMethod = typeof r._portalSendEnter === "function";
+
+                    // _buildPortalOverlay erzeugt das Overlay + sandboxed iframe.
+                    r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "Test" });
+                    const overlay = document.getElementById("portal-overlay");
+                    const iframe = overlay ? overlay.querySelector("iframe.portal-frame") : null;
+                    out.overlayBuilt = !!overlay && !!iframe;
+                    out.iframeSandboxed = !!iframe && (iframe.getAttribute("sandbox") || "").includes("allow-scripts");
+                    out.iframeSrcSkeleton = !!iframe && iframe.src.includes("worlds/skeleton/index.html");
+                    out.overlayRefSet = !!r._portalOverlay;
+
+                    // _disposePortalOverlay räumt Overlay + Ref.
+                    r._disposePortalOverlay();
+                    out.overlayDisposed = !document.getElementById("portal-overlay") && !r._portalOverlay;
+
+                    // Defense-in-Depth: ein fremdes Origin im world-Feld wird auch im
+                    // Overlay-Builder gesäubert (kein evil.example im iframe-src).
+                    r._buildPortalOverlay({ world: "https://evil.example/pwn" });
+                    const evilFrame = document.querySelector("#portal-overlay iframe.portal-frame");
+                    out.overlaySanitizesForeign =
+                        !!evilFrame &&
+                        !evilFrame.src.includes("evil.example") &&
+                        evilFrame.src.includes("worlds/skeleton");
+                    r._disposePortalOverlay();
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w12c2Results && !w12c2Results.error) {
+                check("W12 P1 C2: CSP enthält frame-src 'self'", w12c2Results.cspFrameSrc);
+                check("W12 P1 C2: Skelett-Welt-Seite wird ausgeliefert", w12c2Results.skeletonHtmlServed);
+                check("W12 P1 C2: skeleton.js mit Handshake wird ausgeliefert", w12c2Results.skeletonJsServed);
+                check("W12 P1 C2: _buildPortalOverlay-Methode existiert", w12c2Results.buildMethod);
+                check("W12 P1 C2: _disposePortalOverlay-Methode existiert", w12c2Results.disposeMethod);
+                check("W12 P1 C2: _portalSendEnter-Methode existiert", w12c2Results.sendEnterMethod);
+                check("W12 P1 C2: _buildPortalOverlay erzeugt Overlay + iframe", w12c2Results.overlayBuilt);
+                check("W12 P1 C2: iframe ist sandboxed (allow-scripts)", w12c2Results.iframeSandboxed);
+                check("W12 P1 C2: iframe-src zeigt auf die Skelett-Welt", w12c2Results.iframeSrcSkeleton);
+                check("W12 P1 C2: _portalOverlay-Ref nach Build gesetzt", w12c2Results.overlayRefSet);
+                check("W12 P1 C2: _disposePortalOverlay räumt Overlay + Ref", w12c2Results.overlayDisposed);
+                check(
+                    "W12 P1 C2: Overlay-Builder säubert fremdes Origin (Defense-in-Depth)",
+                    w12c2Results.overlaySanitizesForeign
+                );
+            } else {
+                check(
+                    "W12 P1 C2: Skelett-Welt Commit 2 Tests laufen",
+                    false,
+                    w12c2Results ? w12c2Results.error : "no result"
+                );
+            }
+
             // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
             const v840Results = await page
                 .evaluate(() => {

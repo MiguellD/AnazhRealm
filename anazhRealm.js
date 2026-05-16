@@ -15159,6 +15159,68 @@ class AnazhRealm {
         return { world, label };
     }
 
+    // W12 Phase 1 — Portal-Overlay: ein Vollbild-iframe, das die Sub-Welt
+    // (portalMeta.world) sandboxed lädt. Eltern-Seite des postMessage-
+    // Handshakes: beim iframe-load (und beim {type:"ready"} der Sub-Welt)
+    // einen Avatar-Schnappschuss senden. Refs liegen auf this._portalOverlay,
+    // damit _disposePortalOverlay sie tief räumen kann. Wird in Commit 3 von
+    // enterPortal/exitPortal verkabelt.
+    _buildPortalOverlay(portalMeta) {
+        if (this._portalOverlay) this._disposePortalOverlay();
+        if (typeof document === "undefined") return null;
+        // Defense-in-Depth: das world-Ziel wird hier nochmals gesäubert —
+        // selbst ein manipuliertes portalMeta kann kein fremdes Origin laden.
+        const meta = this._sanitizePortalMeta(portalMeta, "Portal-Welt");
+        const overlay = document.createElement("div");
+        overlay.id = "portal-overlay";
+        const iframe = document.createElement("iframe");
+        iframe.className = "portal-frame";
+        iframe.title = meta.label || "Portal-Welt";
+        // Sandbox: Skripte + eigenes (same-origin) Document genügt für die
+        // Skelett-Welt. Eine echte Fremd-Engine (W14) bekäme allow-scripts
+        // allein → null-origin, kein Zugriff auf unsere localStorage/Cookies.
+        iframe.setAttribute("sandbox", "allow-scripts allow-same-origin");
+        const hint = document.createElement("div");
+        hint.className = "portal-hint";
+        hint.textContent = "Esc — zurück zur Heimat-Welt";
+        overlay.appendChild(iframe);
+        overlay.appendChild(hint);
+        // Eltern-Seite des Handshakes: auf {type:"ready"} der Sub-Welt lauschen.
+        const onMessage = (event) => {
+            if (!this._portalOverlay || event.source !== iframe.contentWindow) return;
+            const msg = event.data;
+            if (msg && typeof msg === "object" && msg.type === "ready") this._portalSendEnter();
+        };
+        window.addEventListener("message", onMessage);
+        iframe.addEventListener("load", () => this._portalSendEnter());
+        this._portalOverlay = { overlayEl: overlay, iframe, onMessage, world: meta.world };
+        document.body.appendChild(overlay);
+        iframe.src = meta.world;
+        return this._portalOverlay;
+    }
+
+    // Sendet den Avatar-Schnappschuss an die Sub-Welt. Same-origin → das
+    // Ziel-Origin ist bekannt (window.location.origin), kein "*" nötig.
+    _portalSendEnter() {
+        const po = this._portalOverlay;
+        if (!po || !po.iframe || !po.iframe.contentWindow) return;
+        const player = this.state.player || {};
+        const avatar = { name: (player.name && String(player.name)) || "Schöpfer" };
+        po.iframe.contentWindow.postMessage({ type: "enter", avatar }, window.location.origin);
+    }
+
+    // Räumt das Portal-Overlay: Message-Listener ab, Overlay-DOM raus,
+    // Ref auf null. Idempotent.
+    _disposePortalOverlay() {
+        const po = this._portalOverlay;
+        if (!po) return;
+        if (po.onMessage) window.removeEventListener("message", po.onMessage);
+        if (po.overlayEl && po.overlayEl.parentNode) {
+            po.overlayEl.parentNode.removeChild(po.overlayEl);
+        }
+        this._portalOverlay = null;
+    }
+
     // Eine Konsumable aktivieren — addet einen Boost via Etappe-2-System.
     // Source ist `consume:<name>`, sodass Dedupe greift (zwei Doppelklicks
     // verlängern statt zu duplizieren). Zwei Pfade: zuerst Bauplan-mit-role-
