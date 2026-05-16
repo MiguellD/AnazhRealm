@@ -9534,6 +9534,15 @@ class AnazhRealm {
     updateCreatures(delta) {
         this.state.creatureAnimationTime += delta;
         const workerData = [];
+        // V8.49 — Scratch-Vektoren EINMAL angelegt + pro Kreatur pro Frame
+        // wiederverwendet, statt mehrere THREE.Vector3 je Kreatur zu allokieren
+        // (bei 120 Kreaturen waren das ~400 Allokationen/Frame → GC-Ruckeln).
+        const scratchDir = this._creatureScratchDir || (this._creatureScratchDir = new THREE.Vector3());
+        const scratchA = this._creatureScratchA || (this._creatureScratchA = new THREE.Vector3());
+        const scratchB = this._creatureScratchB || (this._creatureScratchB = new THREE.Vector3());
+        const playerPos = this.state.playerMesh.position;
+        // V8.49 — Distanz-LOD: jenseits 70 m kein Hindernis-Raycast (² gespart).
+        const OBSTACLE_RAYCAST_MAX_DIST_SQ = 70 * 70;
         for (let i = 0; i < this.state.creatures.length; i++) {
             const creature = this.state.creatures[i];
             const emotion = this.state.creatureEmotions[i];
@@ -9547,20 +9556,29 @@ class AnazhRealm {
             // Physik bleibt immer aktiv, nur Rendering wird optimiert
             creature.visible = inFrustum; // Sichtbarkeit basierend auf Frustum
 
-            // Raycast für Hindernis-Erkennung
-            const rayStart = this.setVec(
-                this.state.tmpVec1,
-                creature.position.x / this.state.scaleFactor,
-                (creature.position.y + 0.5) / this.state.scaleFactor,
-                creature.position.z / this.state.scaleFactor
-            );
-            const rayEnd = this.setVec(
-                this.state.tmpVec2,
-                (creature.position.x + (emotion === "happy" ? 2 : -2)) / this.state.scaleFactor,
-                (creature.position.y + 0.5) / this.state.scaleFactor,
-                (creature.position.z + (emotion === "happy" ? 2 : -2)) / this.state.scaleFactor
-            );
-            const hasHit = this._runRaycast(rayStart, rayEnd, (_cb, hit) => hit);
+            // V8.49 — Hindernis-Raycast nur für sichtbare, nahe Kreaturen.
+            // Off-Screen-Sparsamkeit + Distanz-LOD: die Hindernis-Vermeidung
+            // ist eine rein visuelle Verfeinerung — eine Kreatur außerhalb des
+            // Sichtfelds oder >70 m entfernt braucht keinen Physik-Raycast pro
+            // Frame (das waren bei 120 Kreaturen 120 Raycasts/Frame). Die
+            // Bewegung selbst bleibt für ALLE Kreaturen aktiv — nur die
+            // Hindernis-Erkennung wird gespart, wo sie niemand sieht.
+            let hasHit = false;
+            if (inFrustum && creature.position.distanceToSquared(playerPos) < OBSTACLE_RAYCAST_MAX_DIST_SQ) {
+                const rayStart = this.setVec(
+                    this.state.tmpVec1,
+                    creature.position.x / this.state.scaleFactor,
+                    (creature.position.y + 0.5) / this.state.scaleFactor,
+                    creature.position.z / this.state.scaleFactor
+                );
+                const rayEnd = this.setVec(
+                    this.state.tmpVec2,
+                    (creature.position.x + (emotion === "happy" ? 2 : -2)) / this.state.scaleFactor,
+                    (creature.position.y + 0.5) / this.state.scaleFactor,
+                    (creature.position.z + (emotion === "happy" ? 2 : -2)) / this.state.scaleFactor
+                );
+                hasHit = this._runRaycast(rayStart, rayEnd, (_cb, hit) => hit);
+            }
 
             // Bewegung: Welle 6.H Phase 1. Wenn ein non-wander-Task aktiv ist,
             // hat er Vorrang über die heutige Emotion-Logik (follow_player /
@@ -9569,35 +9587,39 @@ class AnazhRealm {
             const task = this._getCreatureTask(creature);
             let direction = this._tickCreatureTaskDirection(creature, task, emotion);
             if (direction === null) {
-                direction = new THREE.Vector3();
+                direction = scratchDir.set(0, 0, 0);
                 if (emotion === "happy") {
-                    const toPlayer = new THREE.Vector3().subVectors(this.state.playerMesh.position, creature.position);
+                    const toPlayer = scratchA.subVectors(playerPos, creature.position);
                     toPlayer.y = 0;
                     if (toPlayer.length() > 2) {
-                        direction = toPlayer.normalize().multiplyScalar(speed);
+                        direction.copy(toPlayer.normalize().multiplyScalar(speed));
                     }
-                    for (let j = 0; j < this.state.creatures.length; j++) {
-                        if (i !== j && this.state.creatureEmotions[j] === "happy") {
+                    // V8.49 — Schwarm-Kohäsion: nur für sichtbare Kreaturen
+                    // (off-screen ist Flocking unsichtbar), distanceToSquared
+                    // statt distanceTo (kein sqrt), und nach 6 Nachbarn
+                    // abbrechen. Das war eine O(N²)-Schleife über ALLE
+                    // Kreaturen — bei 120 sind das 14400 Distanz-Tests/Frame.
+                    // Das Verhalten bleibt: 6 nahe Nachbarn reichen für
+                    // Flocking genauso wie 119.
+                    if (inFrustum) {
+                        let neighbors = 0;
+                        for (let j = 0; j < this.state.creatures.length && neighbors < 6; j++) {
+                            if (i === j || this.state.creatureEmotions[j] !== "happy") continue;
                             const otherCreature = this.state.creatures[j];
-                            const dist = creature.position.distanceTo(otherCreature.position);
-                            if (dist > 1 && dist < 5) {
-                                const toOther = new THREE.Vector3().subVectors(
-                                    otherCreature.position,
-                                    creature.position
-                                );
+                            const dsq = creature.position.distanceToSquared(otherCreature.position);
+                            if (dsq > 1 && dsq < 25) {
+                                const toOther = scratchB.subVectors(otherCreature.position, creature.position);
                                 toOther.y = 0;
                                 direction.add(toOther.normalize().multiplyScalar(0.5));
+                                neighbors++;
                             }
                         }
                     }
                 } else {
-                    const fromPlayer = new THREE.Vector3().subVectors(
-                        creature.position,
-                        this.state.playerMesh.position
-                    );
+                    const fromPlayer = scratchA.subVectors(creature.position, playerPos);
                     fromPlayer.y = 0;
                     if (fromPlayer.length() < 10) {
-                        direction = fromPlayer.normalize().multiplyScalar(speed);
+                        direction.copy(fromPlayer.normalize().multiplyScalar(speed));
                     } else {
                         direction.set((Math.random() - 0.5) * speed, 0, (Math.random() - 0.5) * speed);
                     }
@@ -10902,6 +10924,11 @@ class AnazhRealm {
         // ### Shader-Material ###
         // V8.28 6.G4.b B — Terrain-Shader liest Welt-Affinität pro Vertex.
         const vertexShader = `
+        // V8.48 — Drei.js-Shadow-Chunks: shadowmap_pars_vertex deklariert
+        // directionalShadowMatrix + vDirectionalShadowCoord, common liefert
+        // inverseTransformDirection (von shadowmap_vertex gebraucht).
+        #include <common>
+        #include <shadowmap_pars_vertex>
         attribute vec4 aField;
         varying float vHeight;
         varying vec3 vNormal;
@@ -10950,10 +10977,28 @@ class AnazhRealm {
             // dreh-invariant → das Terrain ist jetzt voll kamera-unabhängig.
             vFogDepth = length(mvPosition.xyz);
             gl_Position = projectionMatrix * mvPosition;
+            // V8.48 — Schatten empfangen: Shadow-Map-Koordinaten berechnen,
+            // damit der Terrain-Custom-Shader dieselbe DirectionalLight-
+            // Shadow-Map sampelt wie die MeshToon-Strukturen. Der Chunk
+            // shadowmap_vertex braucht transformedNormal + worldPosition.
+            vec3 objectNormal = vec3(normal);
+            vec3 transformedNormal = normalMatrix * objectNormal;
+            vec3 transformed = vec3(position);
+            vec4 worldPosition = modelMatrix * vec4(transformed, 1.0);
+            #include <shadowmap_vertex>
         }
     `;
         const fragmentShader = `
-        precision mediump float;
+        // V8.48 — highp (statt mediump): die Shadow-Map-Koordinate
+        // vDirectionalShadowCoord braucht volle Präzision, sonst flackert
+        // die Tiefen-Vergleichs-Kante. Die Strukturen (MeshToon) rechnen
+        // ebenfalls highp — gleiche Präzision = konsistenter Schatten.
+        precision highp float;
+        // V8.48 — packing liefert unpackRGBAToDepth (von getShadow gebraucht),
+        // shadowmap_pars_fragment deklariert directionalShadowMap + getShadow.
+        #include <common>
+        #include <packing>
+        #include <shadowmap_pars_fragment>
         varying float vHeight;
         varying vec3 vNormal;
         varying vec4 vField;
@@ -11017,8 +11062,19 @@ class AnazhRealm {
             if (celLevels >= 1.5 && celLevels < 7.5) {
                 diffuse = (floor(diffuse * celLevels) + 0.5) / celLevels;
             }
+            // V8.48 — Schatten der Strukturen aufs Terrain. getShadow sampelt
+            // dieselbe DirectionalLight-Shadow-Map wie die MeshToon-Struk-
+            // turen (gleiche PCFSoft-Filterung + Bias → konsistenter Look).
+            // Der Schatten dämpft NUR den Diffuse-Anteil; das Ambient bleibt,
+            // ein Schatten ist nie ganz schwarz. Nach der Cel-Quantisierung
+            // als sanfter Multiplikator — wie der Schatten bei MeshToon.
+            float shadowFactor = 1.0;
+            #if defined(USE_SHADOWMAP) && NUM_DIR_LIGHT_SHADOWS > 0
+                DirectionalLightShadow dls = directionalLightShadows[0];
+                shadowFactor = getShadow(directionalShadowMap[0], dls.shadowMapSize, dls.shadowBias, dls.shadowRadius, vDirectionalShadowCoord[0]);
+            #endif
             vec3 ambient = color * ambientIntensity;
-            vec3 diffuseColor = color * diffuse * lightIntensity;
+            vec3 diffuseColor = color * diffuse * lightIntensity * shadowFactor;
             vec3 finalColor = ambient + diffuseColor;
             // V8.31 — Fog: in der Distanz mit der Fog-Farbe verschmelzen.
             float fogF = smoothstep(fogNear, fogFar, vFogDepth);
@@ -11027,23 +11083,37 @@ class AnazhRealm {
         }
     `;
 
+        // V8.48 — Terrain-Uniforms: die eigenen Uniforms mit THREE.UniformsLib.lights
+        // gemergt. Ein ShaderMaterial mit `lights: true` empfängt die Shadow-
+        // Uniforms (directionalShadowMap/-Matrix/-Shadows) nur, wenn deren
+        // Slots in material.uniforms vorhanden sind — der Renderer befüllt sie
+        // dann pro Frame. UniformsUtils.merge klont, also liefert die Factory
+        // bei jedem Aufruf eine frische Instanz (Terrain + Inseln teilen den
+        // Shader, brauchen aber je eigene Uniform-Objekte).
+        const buildTerrainUniforms = () =>
+            THREE.UniformsUtils.merge([
+                THREE.UniformsLib.lights,
+                {
+                    lightDirection: { value: new THREE.Vector3(1, 1, 1).normalize() },
+                    weatherEffect: { value: this.state.weather === "rainy" ? 1.0 : 0.0 },
+                    // V8.27 6.G4.a — Tag-Nacht synchronisiert. Default-Werte
+                    // werden in _applyDayNightToScene live überschrieben.
+                    lightIntensity: { value: 1.0 },
+                    ambientIntensity: { value: 0.45 },
+                    // V8.28 6.G4.b C — Cel-Shading-Stufen (Atmosphäre-Slider).
+                    celLevels: { value: (this.state.atmosphere && this.state.atmosphere.celLevels) || 8 },
+                    // V8.31 — Fog. Aus state.fog in _applyDayNightToScene gesetzt.
+                    fogColor: { value: new THREE.Color(0x88a0c8) },
+                    fogNear: { value: 35 },
+                    fogFar: { value: 150 },
+                },
+            ]);
         let material = new THREE.ShaderMaterial({
             vertexShader,
             fragmentShader,
-            uniforms: {
-                lightDirection: { value: new THREE.Vector3(1, 1, 1).normalize() },
-                weatherEffect: { value: this.state.weather === "rainy" ? 1.0 : 0.0 },
-                // V8.27 6.G4.a — Tag-Nacht synchronisiert. Default-Werte
-                // werden in _applyDayNightToScene live überschrieben.
-                lightIntensity: { value: 1.0 },
-                ambientIntensity: { value: 0.45 },
-                // V8.28 6.G4.b C — Cel-Shading-Stufen (Atmosphäre-Slider).
-                celLevels: { value: (this.state.atmosphere && this.state.atmosphere.celLevels) || 8 },
-                // V8.31 — Fog. Aus state.fog in _applyDayNightToScene gesetzt.
-                fogColor: { value: new THREE.Color(0x88a0c8) },
-                fogNear: { value: 35 },
-                fogFar: { value: 150 },
-            },
+            uniforms: buildTerrainUniforms(),
+            // V8.48 — lights: true → der Renderer befüllt die Shadow-Uniforms.
+            lights: true,
             side: THREE.DoubleSide,
             depthTest: true,
             depthWrite: true,
@@ -11100,17 +11170,16 @@ class AnazhRealm {
         this.state.floatingIslands = [];
         this.state.ufos = [];
         const numIslands = 3; // Reduziere Anzahl für bessere Performance
+        // V8.48 — Inseln teilen den Terrain-Shader, brauchen also dieselbe
+        // lights/Shadow-Verkabelung (sonst sampelt der geteilte Fragment-
+        // Shader eine ungebundene Shadow-Textur). Volle Uniform-Liste über
+        // dieselbe Factory — das gibt den Inseln zugleich korrektes Cel +
+        // Fog statt der bisherigen ungesetzten Default-0-Uniforms.
         let islandMaterial = new THREE.ShaderMaterial({
             vertexShader,
             fragmentShader,
-            uniforms: {
-                lightDirection: { value: new THREE.Vector3(1, 1, 1).normalize() },
-                weatherEffect: { value: this.state.weather === "rainy" ? 1.0 : 0.0 },
-                // V8.27 6.G4.a — Tag-Nacht synchronisiert. Default-Werte
-                // werden in _applyDayNightToScene live überschrieben.
-                lightIntensity: { value: 1.0 },
-                ambientIntensity: { value: 0.45 },
-            },
+            uniforms: buildTerrainUniforms(),
+            lights: true,
             side: THREE.DoubleSide,
             depthTest: true,
             depthWrite: true,
@@ -23781,40 +23850,85 @@ class AnazhRealm {
 
     // ### 6.G3.a — Tag-Nacht-Zyklus ###
 
-    // Lineare Interpolation zwischen DAY_NIGHT_STOPS. Sortiert nach `.t`,
-    // findet das Stop-Paar das `t` umschließt, lerpt Sky-Color, Light-Color,
-    // Intensity. Output ist ein {sky, light, intensity}-Objekt mit
-    // THREE.Color-Instanzen.
-    // V8.26 Bug 2 — _interpolateDayNight nutzt jetzt smoothstep statt linear.
-    // Smoothstep(x) = x²·(3-2x): macht Übergänge an Anfang/Ende langsam,
-    // in der Mitte schneller — wirkt natürlich-organisch wie ein echter
-    // Sonnenaufgang, nicht wie ein abrupter Linear-Schwenk. Zusammen mit
-    // den 13 Stops (statt 7) heilt das die V8.25-Beobachtung „Sonne springt".
+    // V8.48 — ein-Segment Catmull-Rom-Hermite. Liefert den interpolierten
+    // Skalar zwischen v1 (bei u=0) und v2 (bei u=1). Die Tangenten m1/m2
+    // sind die nicht-uniformen Catmull-Rom-Tangenten aus den Nachbarn
+    // p0/p3 — daher ist die Gesamtkurve über alle Stops hinweg C1-stetig.
+    _catmullDayNight(v0, v1, v2, v3, t0, t1, t2, t3, u) {
+        const h = t2 - t1;
+        const m1 = t2 - t0 !== 0 ? (v2 - v0) / (t2 - t0) : 0;
+        const m2 = t3 - t1 !== 0 ? (v3 - v1) / (t3 - t1) : 0;
+        const u2 = u * u;
+        const u3 = u2 * u;
+        const h00 = 2 * u3 - 3 * u2 + 1;
+        const h10 = u3 - 2 * u2 + u;
+        const h01 = -2 * u3 + 3 * u2;
+        const h11 = u3 - u2;
+        return h00 * v1 + h10 * h * m1 + h01 * v2 + h11 * h * m2;
+    }
+
+    // Interpoliert zwischen DAY_NIGHT_STOPS, je nach timeOfDay 0..1.
+    // Output ist ein {sky, light, intensity}-Objekt mit THREE.Color-Instanzen.
+    // V8.48 — Catmull-Rom statt per-Intervall-smoothstep. Das smoothstep
+    // (V8.26) machte JEDEN Übergang an seinen Enden langsam und in der Mitte
+    // schnell → die Lichtstärke „pulste" an jedem Stützpunkt (Geschwindigkeit
+    // 0 → Spitze → 0, alle ~34 s bei 8-min-Tag) — das war das vom Schöpfer
+    // gemeldete „ruckartige". Catmull-Rom-Tangenten sind über die GANZE
+    // periodische Kurve C1-stetig: die Geschwindigkeit variiert glatt, kein
+    // Pulsen, keine Knicke. Die Werte AN den Stops bleiben exakt (Hermite
+    // reproduziert p1 bei u=0, p2 bei u=1) — die getunten Stop-Farben
+    // (Mittag-Klar, Sonnenaufgang-Rosé …) sind unangetastet.
     _interpolateDayNight(t) {
         const stops = this.constructor.DAY_NIGHT_STOPS;
+        const n = stops.length; // 15, mit stops[0] ≡ stops[n-1] (periodisch)
+        const uniq = n - 1; // 14 eindeutige Knoten
         const tWrap = ((t % 1) + 1) % 1; // 0..1 sicher
         let i = 0;
-        for (let k = 0; k < stops.length - 1; k++) {
+        for (let k = 0; k < n - 1; k++) {
             if (tWrap >= stops[k].t && tWrap <= stops[k + 1].t) {
                 i = k;
                 break;
             }
         }
-        const a = stops[i];
-        const b = stops[i + 1];
-        const span = b.t - a.t;
-        const linear = span > 0 ? (tWrap - a.t) / span : 0;
-        // Smoothstep: 3x² - 2x³ — sanftes Easing für Farb+Intensity-Übergänge
-        const eased = linear * linear * (3 - 2 * linear);
-        const skyA = new THREE.Color(a.sky);
-        const skyB = new THREE.Color(b.sky);
-        const lightA = new THREE.Color(a.light);
-        const lightB = new THREE.Color(b.light);
-        return {
-            sky: skyA.lerp(skyB, eased),
-            light: lightA.lerp(lightB, eased),
-            intensity: a.intensity + (b.intensity - a.intensity) * eased,
-        };
+        const p1 = stops[i];
+        const p2 = stops[i + 1];
+        // p0/p3 sind die periodischen Nachbarn; der Index-Wrap überspringt
+        // das Duplikat (stops[0] ≡ stops[n-1]).
+        const p0 = stops[(i - 1 + uniq) % uniq];
+        const p3 = stops[(i + 2) % uniq];
+        let t0 = p0.t;
+        const t1 = p1.t;
+        const t2 = p2.t;
+        let t3 = p3.t;
+        // periodisch korrigieren, damit t0 < t1 < t2 < t3 monoton ist
+        if (t0 > t1) t0 -= 1.0;
+        if (t3 < t2) t3 += 1.0;
+        const span = t2 - t1;
+        const u = span > 0 ? (tWrap - t1) / span : 0;
+        const c0 = new THREE.Color(p0.sky);
+        const c1 = new THREE.Color(p1.sky);
+        const c2 = new THREE.Color(p2.sky);
+        const c3 = new THREE.Color(p3.sky);
+        const l0 = new THREE.Color(p0.light);
+        const l1 = new THREE.Color(p1.light);
+        const l2 = new THREE.Color(p2.light);
+        const l3 = new THREE.Color(p3.light);
+        const clamp01 = (x) => Math.max(0, Math.min(1, x));
+        const sky = new THREE.Color(
+            clamp01(this._catmullDayNight(c0.r, c1.r, c2.r, c3.r, t0, t1, t2, t3, u)),
+            clamp01(this._catmullDayNight(c0.g, c1.g, c2.g, c3.g, t0, t1, t2, t3, u)),
+            clamp01(this._catmullDayNight(c0.b, c1.b, c2.b, c3.b, t0, t1, t2, t3, u))
+        );
+        const light = new THREE.Color(
+            clamp01(this._catmullDayNight(l0.r, l1.r, l2.r, l3.r, t0, t1, t2, t3, u)),
+            clamp01(this._catmullDayNight(l0.g, l1.g, l2.g, l3.g, t0, t1, t2, t3, u)),
+            clamp01(this._catmullDayNight(l0.b, l1.b, l2.b, l3.b, t0, t1, t2, t3, u))
+        );
+        const intensity = Math.max(
+            0,
+            this._catmullDayNight(p0.intensity, p1.intensity, p2.intensity, p3.intensity, t0, t1, t2, t3, u)
+        );
+        return { sky, light, intensity };
     }
 
     // [ATMOSPHERE] Wendet timeOfDay + Wetter + Welt-Feld + Emotionen auf
@@ -23951,11 +24065,24 @@ class AnazhRealm {
         const dl = this.state.directionalLight;
         const angle = t * Math.PI * 2 - Math.PI / 2;
         const lightDist = 200;
-        dl.position.set(
-            Math.cos(angle) * lightDist,
-            Math.sin(angle) * lightDist,
-            Math.sin(angle * 0.5) * lightDist * 0.4
-        );
+        // V8.48 — reine Sonnen-RICHTUNG (Einheitsvektor Oberfläche→Sonne),
+        // getrennt von der Licht-POSITION. Vorher waren beide dasselbe
+        // (position.normalize() = Richtung). Jetzt folgt die Position dem
+        // Spieler, damit das Shadow-Frustum um ihn liegt — die Richtung
+        // für Beleuchtung + Shader-Uniforms bleibt das reine sunDir.
+        const sunDirX = Math.cos(angle);
+        const sunDirY = Math.sin(angle);
+        const sunDirZ = Math.sin(angle * 0.5) * 0.4;
+        const sunLen = Math.hypot(sunDirX, sunDirY, sunDirZ) || 1;
+        const sunDir = new THREE.Vector3(sunDirX / sunLen, sunDirY / sunLen, sunDirZ / sunLen);
+        const focusX = pm ? pm.position.x : 0;
+        const focusZ = pm ? pm.position.z : 0;
+        dl.position.set(focusX + sunDir.x * lightDist, sunDir.y * lightDist, focusZ + sunDir.z * lightDist);
+        if (dl.target) {
+            // Schatten-Frustum zentriert auf den Spieler (y=0 als Boden-Saat).
+            dl.target.position.set(focusX, 0, focusZ);
+            dl.target.updateMatrixWorld();
+        }
         dl.color.setRGB(lightColor.r * lightMul, lightColor.g * lightMul, lightColor.b * lightMul);
         dl.intensity = lightIntensity;
         // Ambient: Mitternacht 0.18, Mittag 0.6 + leichte Modulation durch
@@ -24042,7 +24169,10 @@ class AnazhRealm {
         // Der Custom-Shader hat lightDirection + weatherEffect; wir setzen die
         // lightDirection auf die ECHTE DirectionalLight-Richtung (normalisiert).
         if (this.state.groundChunks && this.state.directionalLight) {
-            const lightDir = this.state.directionalLight.position.clone().normalize();
+            // V8.48 — die reine Sonnen-Richtung (sunDir), NICHT mehr
+            // position.normalize(): die Licht-Position folgt seit V8.48 dem
+            // Spieler, ihre Normalisierung wäre keine Richtung mehr.
+            const lightDir = sunDir;
             for (const chunk of this.state.groundChunks) {
                 if (chunk.material && chunk.material.uniforms) {
                     const cu = chunk.material.uniforms;
@@ -24073,7 +24203,9 @@ class AnazhRealm {
         if (this.state.waterPlane && this.state.waterPlane.material && this.state.directionalLight) {
             const wu = this.state.waterPlane.material.uniforms;
             if (wu && wu.uSunDir) {
-                wu.uSunDir.value.copy(this.state.directionalLight.position).normalize();
+                // V8.48 — reine Sonnen-Richtung (Licht-Position folgt seit
+                // V8.48 dem Spieler, ihre Normalisierung wäre keine Richtung).
+                wu.uSunDir.value.copy(sunDir);
             }
             if (wu && wu.uLight) {
                 wu.uLight.value = Math.max(0.22, dl.intensity);
@@ -25778,7 +25910,23 @@ class AnazhRealm {
         // mapSize 1024→2048 halbiert zugleich die Texel-Größe (schärfer).
         directionalLight.shadow.bias = -0.0005;
         directionalLight.shadow.normalBias = 1.0;
+        // V8.48 — KRITISCH: nach dem Setzen der Shadow-Camera-Bounds MUSS
+        // updateProjectionMatrix() laufen. Die OrthographicCamera berechnet
+        // ihre projectionMatrix nur im Konstruktor (für die ±5-Defaults) und
+        // bei explizitem Aufruf. Ohne diesen Aufruf blieb die projectionMatrix
+        // degeneriert → light.shadow.matrix war degeneriert → JEDER Fragment
+        // sampelte die Shadow-Map an einem einzigen Punkt → es fiel NIE ein
+        // korrekter Schatten (weder auf Strukturen noch aufs Terrain). Der
+        // V8.47-Shadow-Bias konnte gegen ein degeneriertes Frustum nichts
+        // ausrichten — das war die wahre Wurzel der „Schatten-Linien".
+        directionalLight.shadow.camera.updateProjectionMatrix();
         scene.add(directionalLight);
+        // V8.48 — das Light-Target in den Szenengraph hängen, damit sein
+        // matrixWorld pro Frame aktualisiert wird. _applyDayNightToScene
+        // setzt es auf die Spieler-Position → das 600×600-Shadow-Frustum
+        // folgt dem Spieler, statt fix um den Ursprung zu liegen (sonst
+        // empfingen nur Strukturen nahe (0,0) Schatten aufs Terrain).
+        scene.add(directionalLight.target);
         // Welle 6.G3 — Refs cachen für tickDayNight. Eine Quelle der Wahrheit
         // (Lights+Skybox werden aus state.timeOfDay abgeleitet pro Frame).
         this.state.ambientLight = ambientLight;
@@ -26817,6 +26965,13 @@ class AnazhRealm {
             }
             this.state.renderer.render(this.state.scene, this.state.camera);
         };
+        // V8.50 — die Loop-Funktion exponieren, damit Tests (playtest.cjs)
+        // einen Frame SYNCHRON treiben können statt auf das im Headless auf
+        // ~1 Hz gedrosselte requestAnimationFrame zu warten (das war die
+        // Wurzel der zwei timing-flaky CI-Tests). Ändert das Laufzeit-
+        // Verhalten NICHT — der Loop läuft weiterhin über setAnimationLoop;
+        // dies ist nur eine zusätzliche, frei aufrufbare Referenz.
+        this._gameLoopTick = loop;
         this.state.renderer.setAnimationLoop(loop);
     }
 

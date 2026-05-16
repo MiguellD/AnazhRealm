@@ -46,8 +46,7 @@ Pre-Push-Empfehlung: `npm run check && npm run playtest && npm run audit:strict`
 | `docs/nexus-dsl.md` | DSL-Design |
 | `docs/crafting-konzept.md` | Hylomorphismus-Konzept |
 | `docs/aktivierungsmatrix.md` | Form × Tag Aktivierungs-Matrix v2 |
-| `docs/wave-6-design.md` | Welle 6 Crafting-Polish (komplett seit V8.23) |
-| `docs/system-audit.md` | System-Audit (historischer V7.71-Snapshot) |
+| `docs/archiv/` | Abgeschlossene Dokumente — fertige Designs + Audit-Snapshots (`wave-6-design.md`, `system-audit*.md`) |
 | `CLAUDE.md` | Projektgedächtnis — kompakter Top-Stand, wird bei Session-Start geladen |
 
 ## Heilige Lektion

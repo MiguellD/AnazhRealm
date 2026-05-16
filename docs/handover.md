@@ -17,7 +17,7 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 **Welle davor — V8.46 (Sanfte Wetter-Übergänge)**: `_weatherBlendedValue` cross-fadet `weatherEffect` + `cloudCover` über die 45s-Transition (vorher flippten sie sofort → harter Wetter-Sprung).
 
-**Offen — die nächste Welle**: (1) Schatten aufs Terrain — der Terrain-Custom-Shader sampelt die Schatten-Textur nicht, also fallen Struktur-Schatten nicht aufs Terrain (das Terrain hat keine empfangenen Schatten). (2) die geparkte Performance-Tiefe (Off-Screen-Sparsamkeit + Distanz-LOD). PR **#17** offen (V8.24–V8.47 hängen dran). Zwei Playtest-Tests sind timing-flaky (Nexus-history, Kamera-Pitch) — gelegentliches CI-Rot, kein echter Defekt; deterministisch-Machen ist eine offene Aufräum-Aufgabe.
+**Offen — die nächste Welle**: (1) Schatten aufs Terrain — der Terrain-Custom-Shader sampelt die Schatten-Textur nicht, also fallen Struktur-Schatten nicht aufs Terrain (das Terrain hat keine empfangenen Schatten). (2) die geparkte Performance-Tiefe (Off-Screen-Sparsamkeit + Distanz-LOD). PR **#17** offen (V8.24–V8.47 hängen dran). Die ehemals timing-flaky Playtest-Tests (Nexus-history, Kamera-Rotation/-Pitch) sind seit V8.50 deterministisch — sie treiben den Game-Loop synchron über `_gameLoopTick` statt auf das im Headless gedrosselte rAF zu warten.
 
 **Jüngste Wellen — V8.42 → V8.45 (Cel-Crawl-Heilung I–IV)**: die Cel-Kontraste „wanderten" beim langsamen Kamera-Schwenk. Vier Wurzeln, in vier Browser-Test-Runden eingekreist: (V8.42) `toonGradientMap` lief mit `NearestFilter` → 32 harte Stufen → Fix `LinearFilter`. (V8.43) der Detail-Noise lief per-Pixel im Terrain-Fragment-Shader → Fix: per Vertex + `varying`. (V8.44) der Schöpfer-Befund „Yaw verschiebt, Pitch nicht" = Beleuchtungs-Frame-Mismatch: der Terrain-Shader dottete `vNormal` (View-Raum) mit `lightDirection` (Welt-Raum) → Fix: `vNormal` in Welt-Raum (`mat3(modelMatrix)`). (V8.45) letztes kamera-abhängiges Glied: der Fog nutzte View-Space-Z → Fix: radiale Distanz (`length(mvPosition.xyz)`). Das Terrain ist jetzt voll kamera-unabhängig.
 
@@ -721,7 +721,7 @@ pro Chunk-Delta, Multi-User Position-Sync, DSL-AST-Broadcast, intuitiver
 Multi-User-Setup mit Einladungs-Code.
 
 **Welle 6 ist tief eingeschossen (V7.72).** Plan + entschiedene Reihenfolge
-in `docs/wave-6-design.md` §10.6 + `docs/roadmap.md`. **Der Vision-Pfeiler
+in `docs/archiv/wave-6-design.md` §10.6 + `docs/roadmap.md`. **Der Vision-Pfeiler
 6.D Stat-System ist komplett live** — Spieler ist Compound im selben
 Hylomorphismus-System wie Materialien und Bauwerke.
 
@@ -1110,7 +1110,7 @@ V3 verlangt jetzt „erlaubt program + nennt Whitelist"). 1546 → 1558/1558.
 **Nächste mögliche Wellen**:
 - 6.B CAD-Werkstatt minimal
 - 6.G Phase 3 (Welt-Lebendigkeit-Erweiterungen)
-- Welle 7: Kollektive Welt-Erkenntnis aus `docs/system-audit.md`
+- Welle 7: Kollektive Welt-Erkenntnis aus `docs/archiv/system-audit.md`
 
 ### V7.92 — Welle 6.H Phase 2E V2 live (14.05.2026): Proaktive Kreatur-Sprache
 
@@ -1628,7 +1628,7 @@ Modus-Wechsel triggert HUD-Refresh sofort über setGameMode-Hook.
   räumliche Welt-Klemme (Spieler steht in Werkstatt, sieht Bauplan
   als Halo, kann mit Werkzeug-Slots agieren). 2-3 Sessions.
 - **Welle 7 Kollektive Welt-Erkenntnis** — Beschreibung in
-  docs/system-audit.md §15: die Welt lernt nicht nur aus dem Spieler-
+  docs/archiv/system-audit.md §15: die Welt lernt nicht nur aus dem Spieler-
   Fitness-Loop, sondern aus dem **Konsens aller Multi-User-Spieler**.
   Pattern-Memory wird welt-geteilt, Fitness-Werte aggregieren über
   alle Mitspieler. 4-5 Sessions.
