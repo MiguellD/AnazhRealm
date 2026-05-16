@@ -107,6 +107,52 @@ class AnazhRealm {
             terrainBaseHeight: 0.0,
             weather: "sunny",
             weatherEffectTime: 0,
+            // Welle 6.G3 (V8.24) — Tag-Nacht-Zyklus. timeOfDay 0..1 mit
+            // 0=Mitternacht, 0.25=Sonnenaufgang, 0.5=Mittag, 0.75=Sonnenuntergang.
+            // dayLengthMinutes ist die Echt-Zeit für einen kompletten Zyklus.
+            // Default 8 Min (schnell-spürbar), Slider 1-60 Min in den
+            // Einstellungen. Beide Felder persistiert. Lights+Skybox werden
+            // pro Frame aus timeOfDay abgeleitet — eine Quelle der Wahrheit.
+            timeOfDay: 0.5,
+            dayLengthMinutes: 8,
+            _lastDayNightTick: -Infinity, // Sentinel, erste Iteration setzt initialen Stand
+            directionalLight: null, // Reference, in initThreeJS gesetzt
+            ambientLight: null,
+            // Welle 6.G3 V2 (V8.25) — Himmelskörper als sichtbare Meshes.
+            // Position folgt _applyDayNightToScene/_updateCelestialBodies.
+            sunMesh: null,
+            moonMesh: null,
+            // V8.27 6.G4.a — HemisphereLight + Fog refs, beide moduliert
+            // von _applyDayNightToScene aus Sky-Color + Welt-Affinität.
+            hemiLight: null,
+            fog: null,
+            // V8.28 6.G4.b — Stern-Feld (THREE.Points) + Welt-Wasser-Plane.
+            // starField folgt der Kamera + dreht sidereal mit timeOfDay.
+            starField: null,
+            waterPlane: null,
+            // V8.29.1 — true wenn der Spieler unter waterLevel ist. Treibt
+            // Auftrieb (Physik-Loop), langsamere Bewegung + Unterwasser-Tint.
+            playerUnderwater: false,
+            // V8.32 — true wenn die AUGEN unter Wasser sind (echtes Tauchen).
+            // Treibt den blauen Unterwasser-Tint — getrennt von
+            // playerUnderwater (Körper im Wasser), damit der Tint nicht
+            // schon beim Waten/Schwimmen erscheint.
+            playerEyesUnderwater: false,
+            // V8.28 6.G4.b — Atmosphäre-Slider (Spieler-Präferenz, persistiert).
+            // celLevels: Cel-Shading-Stufen (1=bold, 6≈smooth)
+            // fogDistance: Multiplikator auf Fog-near/far (klein=dichter)
+            atmosphere: {
+                celLevels: 8,
+                fogDistance: 1.0,
+            },
+            // Welle 6.G3 (V8.24) — sanfter Wetter-Übergang. null heißt: kein
+            // aktiver Übergang. Ein Wechsel zwischen sunny/rainy interpoliert
+            // Skybox-Tint + Symphonie-Filter über WEATHER_TRANSITION_DURATION_MS.
+            weatherTransition: null,
+            // Welle 6.G3 (V8.24) — Fauna-Lifecycle. Bei Unterpopulation
+            // (< TARGET) gebären sich Kreaturen langsam, bei Überpopulation
+            // (> MAX) verabschieden sich die ältesten mit Trauer-Effekt.
+            faunaLifecycle: { lastTick: 0, lastBirthAt: 0, lastDeathAt: 0 },
             noiseCache: new Map(),
             nexusLayers: new Map(),
             nexusCodeForge: {},
@@ -926,6 +972,10 @@ class AnazhRealm {
             // Welle 6.H Phase 2F.3 — Konsumable-Übergabe an Kreatur ist
             // Spieler-private Geste (er „gibt" der Kreatur den Trank).
             "creature_apply_boost",
+            // Welle 6.G3.a — Tageszeit ist per-Spieler-Beziehung zur Welt
+            // (jeder Mitspieler darf seine eigene Tageszeit/Phase haben,
+            // gleiche Disziplin wie set_mode). Tag-Nacht-Tick läuft lokal.
+            "set_time_of_day",
         ]);
     }
 
@@ -1064,11 +1114,31 @@ class AnazhRealm {
         this._dslEffectsCache = {
             weather: ([name]) => {
                 if (name === "sunny" || name === "rainy") {
+                    // Welle 6.G3.b — state.weather wird SOFORT gesetzt
+                    // (logisch das Ziel-Wetter, weather_is-Condition + DSL-
+                    // Sequenzen reagieren sofort darauf). Die Transition ist
+                    // eine REIN VISUELLE Schicht — Skybox+Symphonie cross-
+                    // faden über 45 s zum neuen Zielwetter. So bleibt die
+                    // Logik instant, das Auge sieht den weichen Übergang.
+                    const oldWeather = this.state.weather;
                     this.state.weather = name;
                     this.state.weatherEffectTime = 0;
-                    this.updateSkyboxWeather();
+                    if (oldWeather !== name) {
+                        // Nur einen Cross-Fade starten wenn es wirklich
+                        // einen Wechsel gibt.
+                        this.requestWeatherTransition(name, undefined, oldWeather);
+                    }
+                    // updateSkyboxWeather wird nicht mehr direkt gerufen —
+                    // _applyDayNightToScene übernimmt das pro Frame.
                     this.updateCreatureEmotions();
                 }
+            },
+            // Welle 6.G3.a — set_time_of_day(t) als DSL-Op. t ∈ 0..1, 0=
+            // Mitternacht, 0.5=Mittag. NON_BROADCASTABLE — jeder Mitspieler
+            // darf seine eigene Tageszeit haben (vision §10.1 frieden/pfad/
+            // schöpfer: persönliche Welt-Beziehung).
+            set_time_of_day: ([t]) => {
+                this.setTimeOfDay(Number(t));
             },
             gravity: ([value]) => {
                 const v = c(value, -30, 0);
@@ -5292,18 +5362,55 @@ class AnazhRealm {
         osc.stop(t + 0.2);
     }
 
+    // [ATMOSPHERE] Symphonie-Tick. V8.25-Erweiterung: ambient-Gain atmet
+    // mit der Tageszeit — bei Nacht tiefer + ruhiger (×0.5), bei Mittag
+    // hell + voll (×1.0), Übergänge sanft. Vision §4: Welt-Klang folgt
+    // Welt-Atem. Filter-Cutoff moduliert mit (Nacht = dunkler, Mittag = klarer).
     symphonyTick() {
         const s = this.state.symphony;
         if (!s.enabled || !s.ctx) return;
-        if (s.lastWeather === this.state.weather) return;
-        // Sanftes Cross-Fade des Wetter-Layers: 1.5 s Rampe auf Ziel.
-        const target = this.state.weather === "rainy" ? 0.18 : 0.0;
-        const now = s.ctx.currentTime;
-        s.weather.gain.gain.cancelScheduledValues(now);
-        s.weather.gain.gain.setValueAtTime(s.weather.gain.gain.value, now);
-        s.weather.gain.gain.linearRampToValueAtTime(target, now + 1.5);
-        s.lastWeather = this.state.weather;
-        this.log(`Symphonie: wetter-Layer → ${target.toFixed(2)} (${this.state.weather})`, "DEBUG");
+        // (1) Wetter-Cross-Fade (wie V8.24)
+        if (s.lastWeather !== this.state.weather) {
+            const target = this.state.weather === "rainy" ? 0.18 : 0.0;
+            const now = s.ctx.currentTime;
+            s.weather.gain.gain.cancelScheduledValues(now);
+            s.weather.gain.gain.setValueAtTime(s.weather.gain.gain.value, now);
+            s.weather.gain.gain.linearRampToValueAtTime(target, now + 1.5);
+            s.lastWeather = this.state.weather;
+            this.log(`Symphonie: wetter-Layer → ${target.toFixed(2)} (${this.state.weather})`, "DEBUG");
+        }
+        // (2) V8.25 — Tag-Nacht-Modulation des Ambient. Throttle auf 1 Hz.
+        const ctx = s.ctx;
+        const lastAtmTick = s._lastDayNightAtmTick || 0;
+        const nowMs = ctx.currentTime * 1000;
+        if (nowMs - lastAtmTick < 1000) return;
+        s._lastDayNightAtmTick = nowMs;
+        if (!s.ambient || !s.ambient.ambientGain) return;
+        const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
+        const angle = t * Math.PI * 2 - Math.PI / 2;
+        const sunHeight = Math.max(0, Math.sin(angle)); // 0=Nacht, 1=Mittag
+        // Gain: Nacht 0.075 (halb so laut), Mittag 0.15 (Original)
+        const targetGain = 0.075 + 0.075 * sunHeight;
+        const nowCtx = ctx.currentTime;
+        const ag = s.ambient.ambientGain;
+        try {
+            ag.gain.cancelScheduledValues(nowCtx);
+            ag.gain.setValueAtTime(ag.gain.value, nowCtx);
+            ag.gain.linearRampToValueAtTime(targetGain, nowCtx + 1.0);
+        } catch (e) {
+            void e;
+        }
+        // Filter-Cutoff: Nacht 350 Hz (gedämpft), Mittag 700 Hz (offen)
+        if (s.ambient.filter && s.ambient.filter.frequency) {
+            const targetCutoff = 350 + 350 * sunHeight;
+            try {
+                s.ambient.filter.frequency.cancelScheduledValues(nowCtx);
+                s.ambient.filter.frequency.setValueAtTime(s.ambient.filter.frequency.value, nowCtx);
+                s.ambient.filter.frequency.linearRampToValueAtTime(targetCutoff, nowCtx + 1.0);
+            } catch (e) {
+                void e;
+            }
+        }
     }
 
     // ### Status-Panel (UI V1) ###
@@ -5403,6 +5510,8 @@ class AnazhRealm {
             creatures: document.getElementById("status-creatures"),
             soul: document.getElementById("status-soul"),
             architectures: document.getElementById("status-architectures"),
+            // Welle 6.G3 — Status-Bar zeigt die aktuelle Tageszeit
+            time: document.getElementById("status-time"),
             emotions: emotionRefs,
             abilities: document.getElementById("status-abilities"),
             abilitiesSignature: "",
@@ -5877,6 +5986,13 @@ class AnazhRealm {
         if (r.architectures) {
             const counts = this.countArchitecturesNearPlayer(60);
             r.architectures.textContent = `${counts.near} nah / ${counts.total}`;
+        }
+        // Welle 6.G3 — Tageszeit-Anzeige (zusätzlich zum 10-Hz-Refresh in
+        // tickDayNight; diese Schleife läuft 0.4 s und ist Backup für die
+        // Fälle wo tickDayNight pausiert ist).
+        if (r.time) {
+            const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
+            r.time.textContent = this._timeOfDayLabel(t);
         }
         const e = this.state.player.emotions;
         for (const axis of Object.keys(r.emotions)) {
@@ -6786,17 +6902,25 @@ class AnazhRealm {
 
     // ### Skybox ###
     createGalaxySkybox() {
+        // V8.26 Bug 1 — Sternenrauschen-Fix: Shader nutzt LOKALE `position`
+        // (Vertex-Attribut, immer dieselbe Sphere-Geometrie) statt
+        // `vWorldPosition` (= modelMatrix × position). Vorher rauschten die
+        // Sterne beim Gehen weil die modelMatrix-Translation den Sample-
+        // Punkt verschob. Mit der Skybox die der Kamera folgt (im Render-
+        // Loop) + lokaler `position` als Sample-Achse sind die Sterne
+        // ABSOLUT in Welt-Richtung stabil — egal wo der Spieler steht.
         const vertexShader = `
-        varying vec3 vWorldPosition;
+        varying vec3 vDir;
         void main() {
-            vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
+            vDir = normalize(position);
             gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }
     `;
         const fragmentShader = `
         uniform float time;
         uniform vec3 nebulaColor;
-        varying vec3 vWorldPosition;
+        uniform float cloudCover;
+        varying vec3 vDir;
     float random(vec3 st) {
         return fract(sin(dot(st, vec3(12.9898, 78.233, 45.5432))) * 43758.5453123);
     }
@@ -6821,13 +6945,31 @@ class AnazhRealm {
     }
 
     void main() {
-        vec3 pos = normalize(vWorldPosition);
-        float n1 = noise(pos * 1.0 + time * 0.1);
-        float n2 = noise(pos * 2.0 + time * 0.05);
-        float n3 = noise(pos * 4.0 + time * 0.025);
-        float starField = pow(random(pos * 100.0), 100.0); // Sterne
+        // V8.26 Bug 1 — vDir ist normalize(position), stabil egal wo Spieler steht.
+        // Nebula-Noise SEHR langsam animieren (time × 0.02 statt 0.1) damit
+        // die Wolken atmen ohne zu zappeln.
+        float n1 = noise(vDir * 1.0 + time * 0.02);
+        float n2 = noise(vDir * 2.0 + time * 0.01);
+        float n3 = noise(vDir * 4.0 + time * 0.005);
+        // V8.28 6.G4.b — Sterne sind KEIN Shader-Noise mehr. Prozedurales
+        // Stern-Noise hat keine Pixel-Footprint-Info → flackert bei jeder
+        // Kamera-Rotation (Sub-Pixel-Sample-Aliasing). Echte Sterne sind
+        // jetzt diskrete THREE.Points (siehe _buildStarField) — der
+        // Rasterizer macht echtes Anti-Aliasing, kein Flackern möglich.
+        // Skybox traegt nur noch Nebula-Schimmer + (V8.28 D) Wolken.
         vec3 color = nebulaColor * (0.5 + 0.5 * (n1 + n2 + n3) / 3.0);
-        color += vec3(starField); // Helle Sterne hinzufügen
+        // V8.28 6.G4.b D — Wolken-Schicht. Horizont-nahes Noise, weiss
+        // getintet, langsam ziehend. cloudCover emergiert aus weather
+        // (rainy → dichter). Wolken nur oberhalb des Horizonts (vDir.y > 0).
+        float horizonMask = smoothstep(-0.05, 0.35, vDir.y);
+        float cloudN = noise(vDir * 2.5 + vec3(time * 0.012, 0.0, time * 0.008));
+        float cloudN2 = noise(vDir * 6.0 + vec3(time * 0.02, 0.0, time * 0.014));
+        float clouds = smoothstep(0.55, 0.85, cloudN * 0.65 + cloudN2 * 0.35);
+        clouds *= horizonMask * cloudCover;
+        // Wolken-Farbe folgt der Himmel-Helligkeit (Tag weiss, Nacht dunkelgrau)
+        float skyLum = (nebulaColor.r + nebulaColor.g + nebulaColor.b) / 3.0;
+        vec3 cloudColor = mix(vec3(0.32, 0.34, 0.40), vec3(1.0, 0.98, 0.95), clamp(skyLum * 2.2, 0.0, 1.0));
+        color = mix(color, cloudColor, clouds);
         gl_FragColor = vec4(color, 1.0);
     }
 `;
@@ -6839,6 +6981,9 @@ class AnazhRealm {
             uniforms: {
                 time: { value: 0.0 },
                 nebulaColor: { value: new THREE.Color(0x4b0082) }, // Indigofarben
+                // V8.28 6.G4.b D — Wolken-Deckung (0..1). Aus weather
+                // abgeleitet in _applyDayNightToScene (sunny ~0.25, rainy ~0.85).
+                cloudCover: { value: 0.3 },
             },
             side: THREE.BackSide,
             depthWrite: false,
@@ -6873,14 +7018,450 @@ class AnazhRealm {
                 `Planet ${i} erstellt: Position (${planet.position.x.toFixed(2)}, ${planet.position.y.toFixed(2)}, ${planet.position.z.toFixed(2)})`
             );
         }
+        // V8.28 6.G4.b A — echtes Stern-Feld als THREE.Points
+        this._buildStarField();
+        // V8.28 6.G4.b D — Welt-Wasser (Wave-Plane in Senken)
+        this._buildWaterPlane();
     }
-    updateSkyboxWeather() {
-        if (this.state.weather === "rainy") {
-            this.state.skybox.material.uniforms.nebulaColor.value.set(0x2f2f2f); // Dunkler für Regen
-        } else {
-            this.state.skybox.material.uniforms.nebulaColor.value.set(0x4b0082); // Indigofarben für Sonne
+
+    // V8.28 6.G4.b Phase A — Sterne als diskrete THREE.Points statt
+    // prozedurales Shader-Noise. Wurzel-Fix für das Flacker-Problem:
+    // Shader-Noise hat keine Pixel-Footprint-Info, sampelt bei jeder
+    // Kamera-Rotation andere Sphere-Fragmente → Sub-Pixel-Aliasing →
+    // Sterne blinken. Diskrete Punkte haben echte Sprite-Groesse, der
+    // Rasterizer macht echtes Anti-Aliasing → absolut flackerfrei.
+    //
+    // Eigenschaften (was die Riesen tun — Halo, Outer Wilds, Minecraft):
+    //  - ~2800 Sterne, deterministisch aus worldMeta.seed (Multi-User-safe)
+    //  - per-Stern Groesse (meist klein, wenige gross) + per-Stern Hue
+    //    (blau-weisse O/B-Sterne + gelbliche K/M-Sterne)
+    //  - konstante Pixel-Groesse (sizeAttenuation aus — Sterne sind
+    //    unendlich weit weg, perspektivische Verkleinerung waere falsch)
+    //  - Sidereal-Rotation: das Feld dreht langsam mit timeOfDay um eine
+    //    geneigte Achse (Erd-Achsen-Mimik), Position folgt der Kamera
+    //  - AdditiveBlending → Sterne glimmen, ueberlappen hell
+    _buildStarField() {
+        if (!this.state.scene || typeof THREE === "undefined") return;
+        const STAR_COUNT = 2800;
+        const RADIUS = 480; // knapp innerhalb der Skybox-Sphere (500)
+        // Deterministischer RNG aus dem Welt-Seed — alle Mitspieler sehen
+        // denselben Himmel (Vision: eine Welt, ein Sternbild).
+        const seedStr = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        let seedNum = 0;
+        for (let i = 0; i < seedStr.length; i++) {
+            seedNum = (seedNum * 31 + seedStr.charCodeAt(i)) >>> 0;
         }
-        this.log(`Skybox-Wetter aktualisiert: ${this.state.weather}`);
+        const rng = () => {
+            // Mulberry32 — deterministisch, schnell, gute Verteilung
+            seedNum = (seedNum + 0x6d2b79f5) >>> 0;
+            let t = seedNum;
+            t = Math.imul(t ^ (t >>> 15), t | 1);
+            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+        const positions = new Float32Array(STAR_COUNT * 3);
+        const colors = new Float32Array(STAR_COUNT * 3);
+        const sizes = new Float32Array(STAR_COUNT);
+        const warm = new THREE.Color(1.0, 0.92, 0.75); // K/M-Sterne (gelblich)
+        const cool = new THREE.Color(0.78, 0.86, 1.0); // O/B-Sterne (bläulich)
+        const tmpCol = new THREE.Color();
+        for (let i = 0; i < STAR_COUNT; i++) {
+            // Gleichmaessige Verteilung auf der Kugel (kein Pol-Cluster)
+            const u = rng();
+            const v = rng();
+            const theta = 2 * Math.PI * u;
+            const phi = Math.acos(2 * v - 1);
+            positions[i * 3] = RADIUS * Math.sin(phi) * Math.cos(theta);
+            positions[i * 3 + 1] = RADIUS * Math.cos(phi);
+            positions[i * 3 + 2] = RADIUS * Math.sin(phi) * Math.sin(theta);
+            // Hue: mix warm/cool. Helligkeit korreliert leicht mit Groesse.
+            const hue = rng();
+            tmpCol.copy(cool).lerp(warm, hue);
+            // V8.29 — Groesse: Mindestgroesse 3 px. Punkte unter ~3 px sind
+            // zu klein fuer den weichen Falloff → sie flackern bei langsamer
+            // Kamera-Rotation (Sub-Pixel-Sprung an/aus). Kleine Sterne
+            // werden jetzt DIMMER statt KLEINER — die Groesse bleibt
+            // flacker-sicher, die Helligkeit traegt die Variation.
+            const sizeRoll = rng();
+            const size = 3.0 + Math.pow(sizeRoll, 2) * 3.5; // 3..6.5 px, AA-sicher
+            sizes[i] = size;
+            // Helligkeit traegt die Stern-Variation (statt der Groesse):
+            // pow³-biased → die meisten Sterne dim, wenige hell.
+            const bright = 0.32 + Math.pow(sizeRoll, 3) * 0.68;
+            colors[i * 3] = tmpCol.r * bright;
+            colors[i * 3 + 1] = tmpCol.g * bright;
+            colors[i * 3 + 2] = tmpCol.b * bright;
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+        geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+        geo.setAttribute("aSize", new THREE.BufferAttribute(sizes, 1));
+        // Custom Points-Shader: per-Stern Groesse + weicher runder Sprite-
+        // Falloff (sonst sind Points harte Quadrate). uOpacity faded das
+        // ganze Feld mit Tag-Nacht (Tag 0, Nacht 1).
+        const starMat = new THREE.ShaderMaterial({
+            uniforms: {
+                uOpacity: { value: 0.5 },
+                uPixelRatio: { value: typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1 },
+            },
+            vertexShader: `
+                attribute float aSize;
+                varying vec3 vColor;
+                uniform float uPixelRatio;
+                void main() {
+                    vColor = color;
+                    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                    // Konstante Pixel-Groesse (sizeAttenuation aus) — Sterne
+                    // sind unendlich weit, duerfen nicht perspektivisch schrumpfen.
+                    gl_PointSize = aSize * uPixelRatio;
+                    gl_Position = projectionMatrix * mvPosition;
+                }
+            `,
+            fragmentShader: `
+                varying vec3 vColor;
+                uniform float uOpacity;
+                void main() {
+                    // Weicher runder Falloff vom Sprite-Zentrum
+                    float d = length(gl_PointCoord - vec2(0.5));
+                    float alpha = smoothstep(0.5, 0.08, d);
+                    if (alpha <= 0.01) discard;
+                    gl_FragColor = vec4(vColor, alpha * uOpacity);
+                }
+            `,
+            transparent: true,
+            depthWrite: false,
+            // V8.29.1 — depthTest TRUE: die Sterne testen gegen den Tiefen-
+            // puffer. Terrain + Berge + Strukturen (opak, schreiben Tiefe)
+            // verdecken die Sterne dahinter sauber — vorher (depthTest false)
+            // lagen sie als Overlay über der ganzen Welt. Die Skybox schreibt
+            // keine Tiefe (depthWrite false) → im freien Himmel besteht der
+            // Test, die Sterne bleiben dort sichtbar.
+            depthTest: true,
+            blending: THREE.AdditiveBlending,
+            vertexColors: true,
+        });
+        const starField = new THREE.Points(geo, starMat);
+        starField.frustumCulled = false; // immer rendern (Himmelskoerper)
+        this.state.scene.add(starField);
+        this.state.starField = starField;
+        this.log(`Stern-Feld erstellt — ${STAR_COUNT} diskrete Sterne (V8.28)`);
+    }
+
+    // V8.28 6.G4.b D — Welt-Wasser. Eine grosse Wave-Plane bei waterLevel,
+    // folgt der Kamera in xz (Render-Loop). Sichtbar nur, wo das Terrain
+    // darunter liegt — also in natuerlichen Senken + Schluchten (canyon-
+    // Modifier). Kein Eingriff in den Terrain-Generator: die Welt-Identitaet
+    // bleibt, das Wasser fuellt nur, was eh schon tief ist.
+    //
+    // Vertex-Shader macht zwei ueberlagerte Sinus-Wellen → fliessende
+    // Oberflaeche. Fragment mischt tief/flach nach Wellenhoehe + leichter
+    // Schaum-Schimmer auf den Wellenkaemmen.
+    _buildWaterPlane() {
+        if (!this.state.scene || typeof THREE === "undefined") return;
+        if (typeof this.state.waterLevel !== "number") {
+            // V8.29 — Wasser-Niveau ADAPTIV aus dem Terrain. Ein fixes
+            // baseHeight-3 lag oft 90 m unter dem Spieler (Bergwelt), das
+            // Wasser war nie sichtbar. Jetzt: 13×13 Terrain-Höhen über
+            // ±170 m sampeln, sortieren, das ~35-%-Perzentil als Meeres-
+            // spiegel nehmen → die unteren ~35 % der Welt (Senken,
+            // Schluchten, Mulden) füllen sich, Hügel + Berge bleiben
+            // trocken. Sichtbares Wasser ohne die Welt zu fluten.
+            try {
+                const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+                const hN = new SimplexNoise(seed);
+                const cN = new SimplexNoise(seed + "-cave");
+                const vN = new SimplexNoise(seed + "-volcano");
+                const st = this.state.terrainSteepness;
+                const bh = this.state.terrainBaseHeight;
+                const heights = [];
+                for (let i = 0; i < 13; i++) {
+                    for (let j = 0; j < 13; j++) {
+                        const sx = -170 + (340 / 12) * i;
+                        const sz = -170 + (340 / 12) * j;
+                        const h = this._terrainHeightAtWorld(sx, sz, hN, st, bh, cN, vN);
+                        if (Number.isFinite(h)) heights.push(h);
+                    }
+                }
+                if (heights.length > 0) {
+                    heights.sort((a, b) => a - b);
+                    this.state.waterLevel = heights[Math.floor(heights.length * 0.35)];
+                } else {
+                    this.state.waterLevel = (this.state.terrainBaseHeight || 0) - 3;
+                }
+            } catch {
+                this.state.waterLevel = (this.state.terrainBaseHeight || 0) - 3;
+            }
+        }
+        const geo = new THREE.PlaneGeometry(900, 900, 90, 90);
+        geo.rotateX(-Math.PI / 2); // in die xz-Ebene legen, Normal nach oben
+        const mat = new THREE.ShaderMaterial({
+            uniforms: {
+                uTime: { value: 0 },
+                uDeep: { value: new THREE.Color(0x16364f) },
+                uShallow: { value: new THREE.Color(0x3f88a8) },
+                // V8.29.1 — Sonnen-Richtung für echtes Glitzern.
+                uSunDir: { value: new THREE.Vector3(1, 1, 1).normalize() },
+                uLight: { value: 1.0 },
+                // V8.31 — Fog (Custom-Shader erbt THREE.Fog nicht).
+                fogColor: { value: new THREE.Color(0x88a0c8) },
+                fogNear: { value: 35 },
+                fogFar: { value: 150 },
+            },
+            // V8.31 — Wellen HETEROGENER. Sechs Oktaven statt vier + Domain-
+            // Warping (die Sample-Position wird durch eine grobe Welle
+            // verzerrt, bevor die Hauptwellen greifen) → die Periodizität
+            // bricht, das Wasser wirkt wild statt gleichmäßig. Echte
+            // Wellen-Normale aus den Ableitungen, Blinn-Phong-Sonnen-Glitzern.
+            vertexShader: `
+                uniform float uTime;
+                varying float vWave;
+                varying vec3 vNormal;
+                varying vec3 vWorldPos;
+                varying float vFogDepth;
+                // Eine Welle: Richtung (dx,dz), Frequenz f, Amplitude a, Speed s.
+                float wave(vec2 xz, vec2 dir, float f, float a, float s) {
+                    return a * sin(dot(xz, dir) * f + uTime * s);
+                }
+                // Gesamthöhe an einer Position — sechs Oktaven, davor ein
+                // Domain-Warp, der die Wiederholung sichtbar aufbricht.
+                float waveHeight(vec2 xz) {
+                    vec2 warp = vec2(
+                        sin(xz.x * 0.022 + uTime * 0.25) * 7.0,
+                        cos(xz.y * 0.019 - uTime * 0.21) * 7.0
+                    );
+                    vec2 w = xz + warp;
+                    return
+                        wave(w, vec2(0.86, 0.51), 0.10, 0.40, 0.85) +
+                        wave(w, vec2(-0.42, 0.91), 0.075, 0.30, 0.65) +
+                        wave(w, vec2(0.62, -0.78), 0.19, 0.18, 1.2) +
+                        wave(w, vec2(-0.95, -0.30), 0.29, 0.12, 1.55) +
+                        wave(w, vec2(0.30, 0.95), 0.46, 0.07, 2.05) +
+                        wave(w, vec2(0.73, -0.69), 0.71, 0.045, 2.7);
+                }
+                void main() {
+                    vec3 p = position;
+                    vec2 xz = p.xz;
+                    float w = waveHeight(xz);
+                    p.y += w;
+                    vWave = w;
+                    // Normale analytisch aus den Ableitungen.
+                    float e = 1.4;
+                    float wx = waveHeight(xz + vec2(e, 0.0));
+                    float wz = waveHeight(xz + vec2(0.0, e));
+                    vNormal = normalize(vec3(-(wx - w) / e, 1.0, -(wz - w) / e));
+                    vec4 wp = modelMatrix * vec4(p, 1.0);
+                    vWorldPos = wp.xyz;
+                    vec4 mv = viewMatrix * wp;
+                    vFogDepth = -mv.z;
+                    gl_Position = projectionMatrix * mv;
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 uDeep;
+                uniform vec3 uShallow;
+                uniform vec3 uSunDir;
+                uniform float uLight;
+                uniform vec3 fogColor;
+                uniform float fogNear;
+                uniform float fogFar;
+                varying float vWave;
+                varying vec3 vNormal;
+                varying vec3 vWorldPos;
+                varying float vFogDepth;
+                void main() {
+                    vec3 n = normalize(vNormal);
+                    // Grundfarbe: tief/flach nach Wellenhöhe, weich gemischt.
+                    float t = clamp(vWave * 0.5 + 0.5, 0.0, 1.0);
+                    vec3 col = mix(uDeep, uShallow, t) * uLight;
+                    // Echtes Sonnen-Glitzern: Spekular-Highlight auf den
+                    // Wellen-Flanken, die zur Sonne zeigen (Blinn-Phong).
+                    vec3 viewDir = normalize(cameraPosition - vWorldPos);
+                    vec3 halfV = normalize(normalize(uSunDir) + viewDir);
+                    float spec = pow(max(dot(n, halfV), 0.0), 60.0);
+                    col += vec3(1.0, 0.97, 0.85) * spec * 0.9 * uLight;
+                    // Diffuse Wellen-Modellierung — Flanken zur Sonne heller.
+                    float diff = max(dot(n, normalize(uSunDir)), 0.0);
+                    col *= 0.7 + 0.3 * diff;
+                    // V8.31 — Fog: das Wasser verschmilzt in der Distanz mit
+                    // dem Dunst, wie Terrain + Gras.
+                    float fogF = smoothstep(fogNear, fogFar, vFogDepth);
+                    col = mix(col, fogColor, fogF);
+                    // V8.32 — Fresnel-Opazität. Echtes Wasser ist bei flachem
+                    // Blickwinkel (Horizont, viewDir fast parallel zur
+                    // Oberfläche) nahezu spiegelnd-opak und bei steilem Blick
+                    // (von oben) transparent. Das löst das "Sterne scheinen
+                    // durchs Wasser"-Problem: am Horizont, wo man die Sterne
+                    // durchscheinen sah, wird das Wasser fast undurchsichtig.
+                    // Von oben bleibt es klar, der Grund scheint durch.
+                    float fres = pow(1.0 - max(dot(viewDir, n), 0.0), 3.0);
+                    float alpha = mix(0.74, 0.99, fres);
+                    gl_FragColor = vec4(col, alpha);
+                }
+            `,
+            transparent: true,
+            depthWrite: false,
+            side: THREE.DoubleSide,
+        });
+        const water = new THREE.Mesh(geo, mat);
+        water.position.y = this.state.waterLevel;
+        water.frustumCulled = false; // folgt der Kamera, immer relevant
+        water.renderOrder = 1; // nach opaken Objekten (transparent)
+        this.state.scene.add(water);
+        this.state.waterPlane = water;
+        this.log(`Welt-Wasser erstellt — Niveau y=${this.state.waterLevel.toFixed(1)} (V8.28)`);
+    }
+
+    // V8.29 — Geteiltes Gras-Material für InstancedMesh. Wie machen es die
+    // Genies (Breath of the Wild, No Man's Sky): tausende Halme, EIN Draw-
+    // Call. Der Wind-Vertex-Shader liest die WELT-Position aus der
+    // instanceMatrix (Spalte 3 = Translation) → benachbarte Halme wiegen
+    // phasenversetzt = Wind-Wellen über das ganze Feld. transformed.y ist
+    // die lokale Halm-Höhe (Geometrie auf Wurzel zentriert) → die Wurzel
+    // bleibt fix, die Spitze wiegt.
+    _grassInstanceMat() {
+        if (typeof THREE === "undefined") return null;
+        if (this.state._grassMat) return this.state._grassMat;
+        if (!this.state.windUniforms) {
+            this.state.windUniforms = {
+                uWindTime: { value: 0 },
+                uWindStrength: { value: 0.12 },
+            };
+        }
+        const wu = this.state.windUniforms;
+        const mat = new THREE.MeshLambertMaterial({ color: 0x5fa743, side: THREE.DoubleSide });
+        mat.onBeforeCompile = (shader) => {
+            shader.uniforms.uWindTime = wu.uWindTime;
+            shader.uniforms.uWindStrength = wu.uWindStrength;
+            shader.vertexShader = "uniform float uWindTime;\nuniform float uWindStrength;\n" + shader.vertexShader;
+            shader.vertexShader = shader.vertexShader.replace(
+                "#include <begin_vertex>",
+                `#include <begin_vertex>
+                {
+                    vec3 instPos = vec3(instanceMatrix[3][0], instanceMatrix[3][1], instanceMatrix[3][2]);
+                    float phase = uWindTime * 1.7 + instPos.x * 0.28 + instPos.z * 0.21;
+                    float hf = max(0.0, transformed.y);
+                    transformed.x += sin(phase) * uWindStrength * hf * 1.5;
+                    transformed.z += cos(phase * 0.7) * uWindStrength * hf;
+                }`
+            );
+        };
+        this.state._grassMat = mat;
+        return mat;
+    }
+
+    // V8.29 — Instanced-Gras pro Chunk. Die Genie-Antwort auf „die Welt
+    // wirkt tot": DICHTE. Statt ein paar Einzel-Meshes — ein InstancedMesh
+    // mit bis zu ~2000 Halmen pro Chunk, EIN Draw-Call. Die Dichte EMERGIERT
+    // aus worldFieldAt.lebendig (dieselbe fraktale Sprache wie Terrain-Farbe
+    // + Architektur-Verteilung): lebendig hoch → wogende Wiese, niedrig →
+    // kahler Fels. Keine Biom-Tabelle. Gras lebt am Chunk-Lifecycle
+    // (gebaut in ensureChunkAt, disposed in pruneDistantChunks).
+    _buildChunkGrass(cx, cz) {
+        if (!this.state.scene || typeof THREE === "undefined") return;
+        if (!this.state.chunkGrass) this.state.chunkGrass = new Map();
+        const key = `${cx},${cz}`;
+        if (this.state.chunkGrass.has(key)) return;
+        const { WORLD_SIZE, chunkWorldSize } = this._chunkGeometry();
+        const cxWorld = cx * chunkWorldSize - WORLD_SIZE / 2;
+        const czWorld = cz * chunkWorldSize - WORLD_SIZE / 2;
+        const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        const heightNoise = new SimplexNoise(seed);
+        const caveNoise = new SimplexNoise(seed + "-cave");
+        const volcanoNoise = new SimplexNoise(seed + "-volcano");
+        const steepness = this.state.terrainSteepness;
+        const baseHeight = this.state.terrainBaseHeight;
+        // 16×16 Sample-Raster; pro Sample 0..7 Halme je nach lebendig.
+        const SAMPLES = 16;
+        const step = chunkWorldSize / SAMPLES;
+        // Deterministischer Jitter-RNG (Multi-User-safe via Seed-Hash).
+        let rs = ((cx * 73856093) ^ (cz * 19349663)) >>> 0 || 1;
+        const rnd = () => {
+            rs = (rs + 0x6d2b79f5) >>> 0;
+            let t = rs;
+            t = Math.imul(t ^ (t >>> 15), t | 1);
+            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+        const blades = [];
+        for (let zi = 0; zi < SAMPLES; zi++) {
+            for (let xi = 0; xi < SAMPLES; xi++) {
+                const baseX = cxWorld + (xi + 0.5) * step;
+                const baseZ = czWorld + (zi + 0.5) * step;
+                const field = this.worldFieldAt(baseX, baseZ);
+                const lebendig = field ? field.lebendig : 0;
+                if (lebendig < 0.22) continue; // nur wirklich karger Fels bleibt kahl
+                // Dichte: lebendig × 14 → 0.22 ≈ 3 Halme, 1.0 = 14 Halme.
+                // Linear (nicht quadratisch) damit auch mittel-lebendige
+                // Regionen sichtbar bewachsen sind — die Welt soll grünen.
+                const count = Math.floor(lebendig * 14 + rnd() * 2);
+                for (let k = 0; k < count; k++) {
+                    const gx = baseX + (rnd() - 0.5) * step;
+                    const gz = baseZ + (rnd() - 0.5) * step;
+                    const h = this._terrainHeightAtWorld(
+                        gx,
+                        gz,
+                        heightNoise,
+                        steepness,
+                        baseHeight,
+                        caveNoise,
+                        volcanoNoise
+                    );
+                    if (!Number.isFinite(h) || h < -1 || h > 38) continue;
+                    blades.push({ x: gx, y: h, z: gz, rot: rnd() * Math.PI * 2, scale: 0.7 + rnd() * 0.7 });
+                }
+            }
+        }
+        if (blades.length === 0) {
+            this.state.chunkGrass.set(key, null); // markiert: geprüft, kein Gras
+            return;
+        }
+        // Ein dünner 3-seitiger Kegel als Halm. translate → Origin an die
+        // Wurzel (y 0..0.8), damit der Wind-Shader die Spitze wiegt.
+        const geo = new THREE.ConeGeometry(0.075, 0.85, 3);
+        geo.translate(0, 0.425, 0);
+        const inst = new THREE.InstancedMesh(geo, this._grassInstanceMat(), blades.length);
+        const m = new THREE.Matrix4();
+        const q = new THREE.Quaternion();
+        const pos = new THREE.Vector3();
+        const scl = new THREE.Vector3();
+        const up = new THREE.Vector3(0, 1, 0);
+        for (let i = 0; i < blades.length; i++) {
+            const b = blades[i];
+            pos.set(b.x, b.y, b.z);
+            q.setFromAxisAngle(up, b.rot);
+            scl.set(b.scale, b.scale, b.scale);
+            m.compose(pos, q, scl);
+            inst.setMatrixAt(i, m);
+        }
+        inst.instanceMatrix.needsUpdate = true;
+        inst.castShadow = false;
+        inst.receiveShadow = false;
+        this.state.scene.add(inst);
+        this.state.chunkGrass.set(key, inst);
+    }
+
+    // V8.29 — Gras eines Chunks freigeben (beim Chunk-Prune).
+    _disposeChunkGrass(key) {
+        if (!this.state.chunkGrass) return;
+        const grass = this.state.chunkGrass.get(key);
+        if (grass) {
+            this.state.scene.remove(grass);
+            if (grass.geometry) grass.geometry.dispose();
+            // Material ist geteilt (state._grassMat) — NICHT disposen.
+        }
+        this.state.chunkGrass.delete(key);
+    }
+    // Welle 6.G3 (V8.24) — updateSkyboxWeather ist jetzt ein Schmal-Wrapper
+    // auf _applyDayNightToScene. Die Skybox-Farbe ergibt sich aus dem
+    // kombinierten Tag-Nacht-Tint × Wetter-Tint (multiplikative Verkettung).
+    // Hard-Switches gibt es nicht mehr — alle Wetterwechsel laufen durch
+    // requestWeatherTransition (sanfter Cross-Fade) oder direkten state-
+    // Schreib (legacy + initial Load); _applyDayNightToScene berechnet
+    // pro Frame den finalen Skybox-Tint aus state.timeOfDay + state.weather.
+    updateSkyboxWeather() {
+        if (typeof this._applyDayNightToScene === "function") {
+            this._applyDayNightToScene();
+        }
     }
 
     // ### Kreaturen ### V7.42
@@ -7747,6 +8328,89 @@ class AnazhRealm {
     // (oder denselben Mitspieler) referenzieren würde — falsche Semantik.
     // Phase 2 kann explizite Kreatur-IDs broadcasten.
 
+    // ### Welle 6.G3 (V8.24) — Welt-Lebendigkeit ###
+    // Tag-Nacht-Stops als Tag-Phase → {skyColor, lightColor, intensity}-Tripel.
+    // tickDayNight interpoliert zwischen diesen Stops, je nach timeOfDay 0..1.
+    // 0=Mitternacht (kalt-magisch), 0.25=Sonnenaufgang (warm-rosé),
+    // 0.5=Mittag (klar-hell), 0.75=Sonnenuntergang (gold-violett).
+    // Skybox-Tint wird mit dem Wetter-Tint kombiniert (sunny vs. rainy).
+    // V8.26 Bug 2 — Tag-Nacht-Stops erweitert von 7 auf 13 Stützpunkte für
+    // sanftere Übergänge. Der V8.24-Bug war: zwischen t=0.2 (0x4a3a5c violett)
+    // und t=0.3 (0xc66c4d orange) wurde linear gelerpt — eine HUGE Farb-
+    // Differenz in nur 10 % Zeitintervall, also nicht gradueller Sonnen-
+    // aufgang sondern Sprung. Jetzt sind die Stops dichter an den
+    // Übergangs-Phasen, und _interpolateDayNight nutzt smoothstep statt
+    // linear (siehe dort). Konsequenz: smooth Phasenwechsel ohne harte
+    // Farbsprünge.
+    static get DAY_NIGHT_STOPS() {
+        return Object.freeze([
+            Object.freeze({ t: 0.0, sky: 0x161830, light: 0x6a7aa8, intensity: 0.28 }),
+            Object.freeze({ t: 0.15, sky: 0x1e1e3a, light: 0x7888b8, intensity: 0.35 }),
+            Object.freeze({ t: 0.22, sky: 0x3a2c54, light: 0x9080c8, intensity: 0.48 }),
+            Object.freeze({ t: 0.27, sky: 0x6a4258, light: 0xc090b8, intensity: 0.65 }),
+            Object.freeze({ t: 0.32, sky: 0xa05a52, light: 0xe8b298, intensity: 0.78 }),
+            Object.freeze({ t: 0.38, sky: 0xc88060, light: 0xffd0a8, intensity: 0.9 }),
+            // V8.26 zweite Iteration: zusätzlicher Stop bei 0.44 zwischen
+            // Sonnenaufgang-warm und Mittag-blau, sonst war der R-Sprung
+            // (200→75) zu hart. Sanfter blau-grauer Vormittag-Tint.
+            Object.freeze({ t: 0.44, sky: 0x8e9bb8, light: 0xffe8c8, intensity: 0.95 }),
+            Object.freeze({ t: 0.5, sky: 0x4b75c2, light: 0xffffff, intensity: 1.0 }),
+            // Symmetrisch: Zwischenstop nach Mittag, vor Sonnenuntergang
+            Object.freeze({ t: 0.56, sky: 0x7090b8, light: 0xfff0d8, intensity: 0.97 }),
+            Object.freeze({ t: 0.62, sky: 0x9078b0, light: 0xffd8b0, intensity: 0.92 }),
+            Object.freeze({ t: 0.68, sky: 0xc04a7a, light: 0xffba88, intensity: 0.8 }),
+            Object.freeze({ t: 0.74, sky: 0x804060, light: 0xb888a8, intensity: 0.62 }),
+            Object.freeze({ t: 0.82, sky: 0x3a2c54, light: 0x8888b8, intensity: 0.42 }),
+            Object.freeze({ t: 0.9, sky: 0x1e1e3a, light: 0x7080a8, intensity: 0.32 }),
+            Object.freeze({ t: 1.0, sky: 0x161830, light: 0x6a7aa8, intensity: 0.28 }),
+        ]);
+    }
+    // Welle 6.G3 — Wetter-Tint, zusammen mit Tag-Nacht-Tint kombiniert
+    // (Multiply-Blend). Sunny lässt den Tagestint durch, rainy dämpft ihn.
+    static get WEATHER_TINTS() {
+        return Object.freeze({
+            sunny: Object.freeze({ skyMul: 1.0, lightMul: 1.0 }),
+            rainy: Object.freeze({ skyMul: 0.55, lightMul: 0.7 }),
+        });
+    }
+    static get WEATHER_TRANSITION_DURATION_MS() {
+        return 45000; // 45 s — sanft, nicht zu lang
+    }
+    static get DAY_LENGTH_MIN_MINUTES() {
+        return 1; // Slider-Minimum
+    }
+    static get DAY_LENGTH_MAX_MINUTES() {
+        return 60; // Slider-Maximum
+    }
+    static get DAY_LENGTH_DEFAULT_MINUTES() {
+        return 8; // Schöpfer-Wahl: schnell-spürbar
+    }
+    // Welle 6.G3 — Fauna-Lifecycle-Parameter. TARGET ist die untere Schwelle
+    // für Geburten (Welt atmet zurück zur Ziel-Population), MAX die obere
+    // Schwelle für Tod (Überpopulation wird sanft abgebaut). DAY_LENGTH-
+    // unabhängig: alle 10s ein Check.
+    static get FAUNA_TICK_INTERVAL_MS() {
+        return 10000; // 10 s — fauna lebt langsam
+    }
+    static get FAUNA_TARGET_POPULATION() {
+        return 8; // wenn weniger → langsame Geburten
+    }
+    static get FAUNA_MAX_POPULATION() {
+        return 20; // wenn mehr → langsame Todesfälle
+    }
+    static get FAUNA_BIRTH_PROBABILITY() {
+        return 0.18; // pro 10s-Check (~1.08/min Max-Rate)
+    }
+    static get FAUNA_DEATH_PROBABILITY() {
+        return 0.12; // pro 10s-Check
+    }
+    static get FAUNA_BIRTH_COOLDOWN_MS() {
+        return 25000; // mind. 25 s zwischen Geburten
+    }
+    static get FAUNA_DEATH_COOLDOWN_MS() {
+        return 35000; // mind. 35 s zwischen Toden — Welt soll nicht massensterben
+    }
+
     static get CREATURE_TASKS() {
         return Object.freeze(["wander", "follow_player", "wait", "gather", "build"]);
     }
@@ -8609,10 +9273,7 @@ class AnazhRealm {
                 (creature.position.y + 0.5) / this.state.scaleFactor,
                 (creature.position.z + (emotion === "happy" ? 2 : -2)) / this.state.scaleFactor
             );
-            const rayCallback = new Ammo.ClosestRayResultCallback(rayStart, rayEnd);
-            this.state.physicsWorld.rayTest(rayStart, rayEnd, rayCallback);
-            const hasHit = rayCallback.hasHit();
-            Ammo.destroy(rayCallback);
+            const hasHit = this._runRaycast(rayStart, rayEnd, (_cb, hit) => hit);
 
             // Bewegung: Welle 6.H Phase 1. Wenn ein non-wander-Task aktiv ist,
             // hat er Vorrang über die heutige Emotion-Logik (follow_player /
@@ -9836,12 +10497,26 @@ class AnazhRealm {
         if (this.state.wallBoxes) {
             this.state.wallBoxes.forEach((wall) => {
                 this.state.scene.remove(wall);
+                // V8.26 Polish §6.2 — Geometrie + Material disposen sonst leakt
+                // jeder Welt-Regen die wall-BoxGeometry + MeshBasicMaterial im
+                // VRAM. Vorher: nur scene.remove + physics-body destroy.
+                if (wall.geometry) wall.geometry.dispose();
+                if (wall.material) {
+                    if (Array.isArray(wall.material)) wall.material.forEach((m) => m && m.dispose());
+                    else wall.material.dispose();
+                }
                 const body = wall.userData.physicsBody;
                 if (body) {
                     this.state.physicsWorld.removeRigidBody(body);
                     Ammo.destroy(body);
                     this.state.rigidBodies = this.state.rigidBodies.filter((rb) => rb !== wall);
                 }
+                // V8.26 Polish §6.4 — Ammo-Shape + MotionState wurden bei
+                // addWallCollisions in userData gespeichert. Sie sind nach
+                // Body-Destroy unreferenziert und müssen separat aus dem
+                // WASM-Heap geräumt werden, sonst leakt jeder Welt-Regen.
+                if (wall.userData.physicsShape) Ammo.destroy(wall.userData.physicsShape);
+                if (wall.userData.physicsMotionState) Ammo.destroy(wall.userData.physicsMotionState);
             });
             this.state.wallBoxes = [];
             this.log("Alte Wand-Kollisionsboxen entfernt");
@@ -9938,15 +10613,23 @@ class AnazhRealm {
         }
 
         // ### Shader-Material ###
+        // V8.28 6.G4.b B — Terrain-Shader liest Welt-Affinität pro Vertex.
         const vertexShader = `
+        attribute vec4 aField;
         varying vec2 vUv;
         varying float vHeight;
         varying vec3 vNormal;
+        varying vec4 vField;
+        varying float vFogDepth;
         void main() {
             vUv = uv;
             vHeight = position.y;
             vNormal = normalize(normalMatrix * normal);
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            vField = aField;
+            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+            // V8.31 — Fog-Tiefe (View-Space-Distanz) für das Fragment.
+            vFogDepth = -mvPosition.z;
+            gl_Position = projectionMatrix * mvPosition;
         }
     `;
         const fragmentShader = `
@@ -9954,8 +10637,25 @@ class AnazhRealm {
         varying vec2 vUv;
         varying float vHeight;
         varying vec3 vNormal;
+        varying vec4 vField;
+        varying float vFogDepth;
         uniform vec3 lightDirection;
         uniform float weatherEffect;
+        // V8.27 6.G4.a — Tag-Nacht synchronisiert. lightIntensity moduliert
+        // den Diffuse-Anteil (Mittag = voll, Nacht = ~0.3), ambientIntensity
+        // den Grund-Schein (Mittag = 0.6, Mitternacht = 0.18).
+        uniform float lightIntensity;
+        uniform float ambientIntensity;
+        // V8.28 6.G4.b C — Cel-Shading-Stufen (2 = bold, 8 ≈ smooth).
+        uniform float celLevels;
+        // V8.31 — Fog. Custom-ShaderMaterials erben THREE.Fog NICHT
+        // automatisch (nur eingebaute Lambert/Toon/Standard). Ohne diese
+        // Uniforms blieb das Terrain knackscharf, während das Gras
+        // (Lambert) verblasste → der Fog-Slider "verfärbte" scheinbar nur
+        // das Gras. Jetzt trägt auch das Terrain den Dunst.
+        uniform vec3 fogColor;
+        uniform float fogNear;
+        uniform float fogFar;
         float random(vec2 st) {
             return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
         }
@@ -9970,42 +10670,52 @@ class AnazhRealm {
             return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
         }
         void main() {
-            vec3 grassColor = vec3(0.1, 0.6, 0.1);
-            vec3 sandColor = vec3(0.9, 0.8, 0.5);
-            vec3 rockColor = vec3(0.4, 0.4, 0.4);
-            vec3 dirtColor = vec3(0.4, 0.2, 0.1);
-            vec3 snowColor = vec3(0.9, 0.9, 1.0);
-            vec3 waterColor = vec3(0.1, 0.3, 0.6);
-            vec3 caveColor = vec3(0.2, 0.2, 0.2);
-            vec3 lavaColor = vec3(1.0, 0.5, 0.0);
+            // V8.28 6.G4.b B — die Grundfarbe EMERGIERT aus der Welt-
+            // Affinität, NICHT aus der Höhe. Dieselbe worldFieldAt-Sprache
+            // wie die Architektur-Verteilung (Vision §1.3 fraktal). Höhe
+            // wird sekundär (Schnee oben, Sand/Geröll in tiefen Senken).
+            float lebendig = vField.x;
+            float dichte   = vField.y;
+            float glut     = vField.z;
+            float magie    = vField.w;
+            vec3 stoneCol = vec3(0.42, 0.44, 0.49); // dichte → grau-bläulich
+            vec3 earthCol = vec3(0.27, 0.49, 0.19); // lebendig → satt-grün-erdig
+            vec3 lavaCol  = vec3(0.46, 0.20, 0.11); // glut → rot-braun vulkanisch
+            // Stein ist die Saat; lebendig blendet Erdgrün ein, glut Vulkan.
+            vec3 color = stoneCol;
+            color = mix(color, earthCol, smoothstep(0.25, 0.85, lebendig));
+            color = mix(color, lavaCol, smoothstep(0.38, 0.92, glut));
+            // magie ist ein SCHIMMER über allem (nicht sättigend) — das
+            // normal-Magische hebt sich aus dem Normalen, ersetzt es nicht.
+            vec3 violet = vec3(0.55, 0.36, 0.86);
+            color = mix(color, violet, smoothstep(0.55, 1.0, magie) * 0.33);
+            // Höhe sekundär: Schnee auf Gipfeln, helle Senken-Ablagerung.
             float height = vHeight;
-            vec3 color;
-            if (height < -20.0) {
-                color = caveColor;
-            } else if (height < -10.0) {
-                color = waterColor;
-            } else if (height < -5.0) {
-                color = mix(waterColor, grassColor, (height + 10.0) / 5.0);
-            } else if (height < 0.0) {
-                color = mix(grassColor, dirtColor, (height + 5.0) / 5.0);
-            } else if (height < 10.0) {
-                color = mix(dirtColor, sandColor, height / 10.0);
-            } else if (height < 30.0) {
-                color = mix(sandColor, rockColor, (height - 10.0) / 20.0);
-            } else if (height < 80.0) {
-                color = mix(rockColor, snowColor, (height - 30.0) / 50.0);
-            } else {
-                color = mix(snowColor, lavaColor, (height - 80.0) / 20.0);
-            }
-            float n1 = noise(vUv * 2.0);
-            float n2 = noise(vUv * 5.0);
-            float n3 = noise(vUv * 10.0);
-            color += vec3(n1 * 0.05 + n2 * 0.03 + n3 * 0.02);
+            color = mix(color, vec3(0.92, 0.93, 1.0), smoothstep(12.0, 42.0, height));
+            color = mix(color, vec3(0.78, 0.72, 0.52), smoothstep(-2.0, -14.0, height));
+            // Townscaper-Style: leichter per-Vertex-Noise-Jitter für Detail.
+            float n1 = noise(vUv * 3.0);
+            float n2 = noise(vUv * 9.0);
+            color += vec3((n1 - 0.5) * 0.07 + (n2 - 0.5) * 0.035);
             color = mix(color, color * 0.7, weatherEffect);
-            float diffuse = max(dot(vNormal, lightDirection), 0.0);
-            vec3 ambient = color * 0.6;
-            vec3 diffuseColor = color * diffuse * 0.8;
+            // V8.27 6.G4.a — Diffuse + Ambient mit Tag-Nacht-Intensities.
+            // Wrapped Lambert (half-Lambert) für sanfteren Schatten-Übergang.
+            float ndotl = dot(vNormal, normalize(lightDirection));
+            float diffuse = max(ndotl * 0.5 + 0.5, 0.0);
+            diffuse = diffuse * diffuse;
+            // V8.29 — Cel-Shading: diffuse in celLevels Stufen quantisieren.
+            // celLevels >= 7.5 (Slider-Maximum 8) = SMOOTH, kein floor.
+            // 2..7 = harte Cel-Plateaus. So geht der Slider von bold-Cel
+            // bis echt-stufenlos.
+            if (celLevels >= 1.5 && celLevels < 7.5) {
+                diffuse = (floor(diffuse * celLevels) + 0.5) / celLevels;
+            }
+            vec3 ambient = color * ambientIntensity;
+            vec3 diffuseColor = color * diffuse * lightIntensity;
             vec3 finalColor = ambient + diffuseColor;
+            // V8.31 — Fog: in der Distanz mit der Fog-Farbe verschmelzen.
+            float fogF = smoothstep(fogNear, fogFar, vFogDepth);
+            finalColor = mix(finalColor, fogColor, fogF);
             gl_FragColor = vec4(finalColor, 1.0);
         }
     `;
@@ -10016,6 +10726,16 @@ class AnazhRealm {
             uniforms: {
                 lightDirection: { value: new THREE.Vector3(1, 1, 1).normalize() },
                 weatherEffect: { value: this.state.weather === "rainy" ? 1.0 : 0.0 },
+                // V8.27 6.G4.a — Tag-Nacht synchronisiert. Default-Werte
+                // werden in _applyDayNightToScene live überschrieben.
+                lightIntensity: { value: 1.0 },
+                ambientIntensity: { value: 0.45 },
+                // V8.28 6.G4.b C — Cel-Shading-Stufen (Atmosphäre-Slider).
+                celLevels: { value: (this.state.atmosphere && this.state.atmosphere.celLevels) || 8 },
+                // V8.31 — Fog. Aus state.fog in _applyDayNightToScene gesetzt.
+                fogColor: { value: new THREE.Color(0x88a0c8) },
+                fogNear: { value: 35 },
+                fogFar: { value: 150 },
             },
             side: THREE.DoubleSide,
             depthTest: true,
@@ -10025,12 +10745,13 @@ class AnazhRealm {
         this.log("Shader-Material erstellt. Überprüfe Shader-Status...");
         if (!material.isShaderMaterial || !material.vertexShader || !material.fragmentShader) {
             this.log("Shader-Programm konnte nicht erstellt werden.", "ERROR");
-            this.log("Falle zurück auf MeshBasicMaterial für Terrain mit einfacher Textur.");
+            this.log("Falle zurück auf MeshLambertMaterial für Terrain mit einfacher Textur.");
             const textureLoader = new THREE.TextureLoader();
             const texture = textureLoader.load("https://threejs.org/examples/textures/terrain/grasslight-big.jpg");
             texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
             texture.repeat.set(10, 10);
-            material = new THREE.MeshBasicMaterial({
+            // V8.27 6.G4.a — Lambert statt Basic für Tag-Nacht-Reaktion
+            material = new THREE.MeshLambertMaterial({
                 map: texture,
                 side: THREE.DoubleSide,
             });
@@ -10078,6 +10799,10 @@ class AnazhRealm {
             uniforms: {
                 lightDirection: { value: new THREE.Vector3(1, 1, 1).normalize() },
                 weatherEffect: { value: this.state.weather === "rainy" ? 1.0 : 0.0 },
+                // V8.27 6.G4.a — Tag-Nacht synchronisiert. Default-Werte
+                // werden in _applyDayNightToScene live überschrieben.
+                lightIntensity: { value: 1.0 },
+                ambientIntensity: { value: 0.45 },
             },
             side: THREE.DoubleSide,
             depthTest: true,
@@ -10087,12 +10812,13 @@ class AnazhRealm {
         this.log("Shader-Material für fliegende Inseln erstellt. Überprüfe Shader-Status...");
         if (!islandMaterial.isShaderMaterial || !islandMaterial.vertexShader || !islandMaterial.fragmentShader) {
             this.log("Shader-Programm für fliegende Inseln konnte nicht erstellt werden.", "ERROR");
-            this.log("Falle zurück auf MeshBasicMaterial für fliegende Inseln mit einfacher Textur.");
+            this.log("Falle zurück auf MeshLambertMaterial für fliegende Inseln mit einfacher Textur.");
             const textureLoader = new THREE.TextureLoader();
             const texture = textureLoader.load("https://threejs.org/examples/textures/terrain/grasslight-big.jpg");
             texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
             texture.repeat.set(5, 5);
-            islandMaterial = new THREE.MeshBasicMaterial({
+            // V8.27 6.G4.a — Lambert statt Basic für Tag-Nacht-Reaktion
+            islandMaterial = new THREE.MeshLambertMaterial({
                 map: texture,
                 side: THREE.DoubleSide,
             });
@@ -10337,69 +11063,11 @@ class AnazhRealm {
                     continue;
                 }
 
-                if (steepness < 1.0 && height > -5 && height < 30 && Math.random() < 0.02) {
-                    // V7.75: Tree-Branch entfernt — Bäume kommen jetzt aus
-                    // populateChunkVegetation (Welt-Affinitäts-Feld). Diese
-                    // Schleife regelt nur noch das DEKORATIVE Vegetation-
-                    // Layer (Gras + Blumen), das nicht in state.architectures
-                    // wandert sondern in state.vegetation bleibt (kosmetisch,
-                    // kein Compound, keine Kollision, hochfrequent).
-                    // Höhen-Range angepasst: Gras < 5m, Blumen >= 5m
-                    // (alte 0..20-Lücke war nur für Bäume).
-                    const vegetationType = height < 5 ? "grass" : "flower";
-                    if (vegetationType === "grass") {
-                        const grassGeometry = new THREE.ConeGeometry(0.2, 1, 4);
-                        const grassMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-                        const grass = new THREE.Mesh(grassGeometry, grassMaterial);
-                        grass.position.set(xPos, height + 0.5, zPos);
-                        grass.castShadow = true;
-                        grass.receiveShadow = true;
-
-                        try {
-                            grassGeometry.computeBoundingSphere();
-                            grassGeometry.computeBoundingBox();
-                        } catch (e) {
-                            this.log(
-                                `Fehler beim Berechnen der Bounding Sphere/Box für Gras bei (${xPos}, ${zPos}): ${e.message}. Gras wird übersprungen.`,
-                                "ERROR"
-                            );
-                            continue;
-                        }
-
-                        this.state.scene.add(grass);
-                        this.state.vegetation.push(grass);
-                    } else if (vegetationType === "flower") {
-                        const stemGeometry = new THREE.CylinderGeometry(0.1, 0.1, 1, 4);
-                        const stemMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-                        const stem = new THREE.Mesh(stemGeometry, stemMaterial);
-                        const flowerGeometry = new THREE.SphereGeometry(0.3, 8, 8);
-                        const flowerMaterial = new THREE.MeshBasicMaterial({ color: 0xff00ff });
-                        const flower = new THREE.Mesh(flowerGeometry, flowerMaterial);
-                        stem.position.set(xPos, height + 0.5, zPos);
-                        flower.position.set(xPos, height + 1, zPos);
-                        const flowerGroup = new THREE.Group();
-                        flowerGroup.add(stem);
-                        flowerGroup.add(flower);
-                        flowerGroup.castShadow = true;
-                        flowerGroup.receiveShadow = true;
-
-                        try {
-                            stemGeometry.computeBoundingSphere();
-                            stemGeometry.computeBoundingBox();
-                            flowerGeometry.computeBoundingSphere();
-                            flowerGeometry.computeBoundingBox();
-                        } catch (e) {
-                            this.log(
-                                `Fehler beim Berechnen der Bounding Sphere/Box für Blume bei (${xPos}, ${zPos}): ${e.message}. Blume wird übersprungen.`,
-                                "ERROR"
-                            );
-                            continue;
-                        }
-
-                        this.state.scene.add(flowerGroup);
-                        this.state.vegetation.push(flowerGroup);
-                    }
-                }
+                // V8.29 — der alte Einzel-Mesh-Gras/Blumen-Loop ist gelöscht.
+                // Vegetation kommt jetzt aus _buildChunkGrass (Instanced-Gras
+                // pro Chunk, Dichte aus worldFieldAt.lebendig) — dicht statt
+                // spärlich, EIN Draw-Call statt hunderter Meshes, und für
+                // ALLE Chunks (nicht nur den initialen 300×300-Bereich).
 
                 if (steepness > 5.0 && height > 10 && height < 50 && Math.random() < 0.005) {
                     // Reduziere Wahrscheinlichkeit
@@ -10508,11 +11176,69 @@ class AnazhRealm {
 
         this.spawnCreatures();
 
+        // V8.29 — Genesis-Plattform: beim ERSTEN Spawn einer Welt eine
+        // erhöhte Stein-Scheibe am Zentrum, der Spieler startet darauf.
+        // So fällt er nicht blind in ein Tal — er sieht von erhöhter
+        // Warte die Welt. Nur first-spawn (wasFirstSpawn), idempotent.
+        if (wasFirstSpawn) {
+            try {
+                this._ensureGenesisPlatform();
+            } catch (e) {
+                this.log(`Genesis-Plattform fehlgeschlagen: ${e.message}`, "ERROR");
+            }
+        }
+
         // ### Learnings ### [Stichwortartig optimieren, korrigieren und ergänzen aber nie Wissen löschen! Nie Learnings Entfernen!]
 
         // - Weltkoordinaten (x, z) in Noise-Generierung eliminieren Lücken.
         // - Alle Funktionen (Vegetation, Wasserfälle, Inseln) bleiben erhalten.
         // - Seed in SimplexNoise sorgt für konsistente Höhen über Chunks hinweg.
+    }
+
+    // V8.29 — Genesis-Plattform am Welt-Zentrum. Idempotent: spawnt nur
+    // wenn noch keine start_plattform-Architektur existiert (z. B. nach
+    // Reload aus dem Save ist sie schon da). Der Spieler wird oben drauf
+    // gesetzt, damit er beim Welt-Start die Umgebung überblickt statt in
+    // eine Schlucht zu fallen.
+    _ensureGenesisPlatform() {
+        if (!this.state.architectures) return;
+        const exists = this.state.architectures.some((a) => a && a.type === "start_plattform");
+        if (exists) return;
+        // Terrain-Höhe am Zentrum sampeln.
+        const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        const hN = new SimplexNoise(seed);
+        const cN = new SimplexNoise(seed + "-cave");
+        const vN = new SimplexNoise(seed + "-volcano");
+        let h0 = this._terrainHeightAtWorld(
+            0,
+            0,
+            hN,
+            this.state.terrainSteepness,
+            this.state.terrainBaseHeight,
+            cN,
+            vN
+        );
+        if (!Number.isFinite(h0)) h0 = 0;
+        // Plattform 5 m über dem Terrain-Zentrum (genug Überblick, nicht
+        // so hoch dass der Abstieg unangenehm wird).
+        const platCenterY = h0 + 5;
+        // spawnArchitecture zieht intern 0.5 ab (at_player-Kalibrierung).
+        this.spawnArchitecture("start_plattform", { x: 0, y: platCenterY + 0.5, z: 0 }, { silent: true });
+        // Spieler oben auf die Plattform setzen. Plattform-Part-Top liegt
+        // bei platCenterY + 1 (Cylinder y-Center 0.5, Höhe 1). +1.2 Puffer.
+        const spawnY = platCenterY + 2.2;
+        if (this.state.playerMesh) {
+            this.state.playerMesh.position.set(0, spawnY, 0);
+            if (this.state.playerBody) {
+                const t = this.state.tmpTransform;
+                t.setIdentity();
+                t.setOrigin(this.setVec(this.state.tmpVec1, 0, spawnY / this.state.scaleFactor, 0));
+                this.state.playerBody.setWorldTransform(t);
+                this.state.playerBody.setLinearVelocity(this.setVec(this.state.tmpVec2, 0, 0, 0));
+                this.state.playerBody.activate(true);
+            }
+        }
+        this.log(`Genesis-Plattform erstellt bei y=${platCenterY.toFixed(1)}, Spieler auf y=${spawnY.toFixed(1)}`);
     }
     // ### Chunk-Generierung ### V7.66
     generateChunk(chunkX, chunkZ, heightData, width, depth, material) {
@@ -10569,6 +11295,8 @@ class AnazhRealm {
         geometry.setIndex(indices);
         geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
         geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+        // V8.28 6.G4.b B — Welt-Affinität pro Vertex (Terrain-Shader-Farbe)
+        this._attachFieldAttribute(geometry);
         geometry.computeVertexNormals();
 
         const positions = geometry.attributes.position.array;
@@ -11014,6 +11742,8 @@ class AnazhRealm {
         geometry.setIndex(indices);
         geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
         geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+        // V8.28 6.G4.b B — Welt-Affinität pro Vertex (Terrain-Shader-Farbe)
+        this._attachFieldAttribute(geometry);
         geometry.computeVertexNormals();
         geometry.computeBoundingSphere();
 
@@ -11108,6 +11838,8 @@ class AnazhRealm {
         // state.populatedChunks, daher safe bei doppeltem ensureChunkAt-
         // Aufruf (z. B. nach Chunk-Prune + Re-Ensure).
         this.populateChunkVegetation(newChunkX, newChunkZ);
+        // V8.29 — Instanced-Gras pro Chunk. Idempotent über state.chunkGrass.
+        this._buildChunkGrass(newChunkX, newChunkZ);
 
         this.log(`Chunk hinzugefügt: (${newChunkX}, ${newChunkZ})`);
     }
@@ -11177,6 +11909,17 @@ class AnazhRealm {
             // bleiben absichtlich draußen — sie sind reine Laufzeit-Drosselung,
             // ein Reload soll wieder triggerfähig sein.
             playerEmotions: { ...this.state.player.emotions },
+            // Welle 6.G3 — Tag-Nacht-Zustand persistieren. timeOfDay läuft
+            // weiter wo er aufgehört hat, dayLengthMinutes ist Spieler-Wahl.
+            // weatherTransition NICHT persistiert (Runtime-Artefakt, ein
+            // Reload soll mit stabilem Wetter starten).
+            timeOfDay: typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5,
+            dayLengthMinutes: this.state.dayLengthMinutes || 8,
+            // V8.28 6.G4.b — Atmosphäre-Slider (celLevels + fogDistance).
+            atmosphere: {
+                celLevels: (this.state.atmosphere && this.state.atmosphere.celLevels) || 8,
+                fogDistance: (this.state.atmosphere && this.state.atmosphere.fogDistance) || 1.0,
+            },
             // Ring 5: Spieler-Seele (visuelle Form). Beim Load wird sie nach
             // dem playerMesh-Bau angewandt — kein Body-Recreate.
             playerSoul: this.state.player.soul || "human",
@@ -11884,6 +12627,12 @@ class AnazhRealm {
             }
             this.state.groundChunks = this.state.groundChunks.filter((c) => c !== chunk);
             this.state.chunkMap.delete(target.key);
+            // V8.29 — Gras des Chunks mit freigeben. _disposeChunkGrass
+            // löscht den chunkGrass-Eintrag, ein Re-Ensure baut das Gras
+            // neu (Gras lebt am Chunk-Mesh-Lifecycle). populatedChunks
+            // bleibt UNANGETASTET — das ist der Architektur-Idempotenz-
+            // Cache, ein Löschen würde Bäume doppelt spawnen.
+            this._disposeChunkGrass(target.key);
         }
         this.log(`Chunk-Cache bereinigt: ${this.state.chunkMap.size} aktive Chunks`, "DEBUG");
     }
@@ -12006,6 +12755,31 @@ class AnazhRealm {
                 this.playerSoulDefs[state.playerSoul] ||
                 (this.state.customSouls && this.state.customSouls[state.playerSoul]);
             if (known) this.applyPlayerSoul(state.playerSoul);
+        }
+        // Welle 6.G3 — Tag-Nacht-Zustand wiederherstellen. Defensive:
+        // timeOfDay muss 0..1 sein, dayLengthMinutes muss in [min, max]-
+        // Range liegen. Bei ungültigen Werten: Defaults (0.5 / 8 min).
+        if (typeof state.timeOfDay === "number" && state.timeOfDay >= 0 && state.timeOfDay <= 1) {
+            this.state.timeOfDay = state.timeOfDay;
+        }
+        if (typeof state.dayLengthMinutes === "number") {
+            const min = this.constructor.DAY_LENGTH_MIN_MINUTES;
+            const max = this.constructor.DAY_LENGTH_MAX_MINUTES;
+            if (state.dayLengthMinutes >= min && state.dayLengthMinutes <= max) {
+                this.state.dayLengthMinutes = state.dayLengthMinutes;
+            }
+        }
+        // V8.28 6.G4.b — Atmosphäre-Slider wiederherstellen (defensive Clamps).
+        if (state.atmosphere && typeof state.atmosphere === "object") {
+            if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 1.0 };
+            const cl = Number(state.atmosphere.celLevels);
+            if (Number.isFinite(cl)) this.state.atmosphere.celLevels = Math.max(2, Math.min(8, Math.round(cl)));
+            const fd = Number(state.atmosphere.fogDistance);
+            if (Number.isFinite(fd)) this.state.atmosphere.fogDistance = Math.max(0.3, Math.min(3.0, fd));
+        }
+        // Lights+Skybox sofort neu aus restauriertem timeOfDay setzen
+        if (typeof this._applyDayNightToScene === "function") {
+            this._applyDayNightToScene();
         }
         // Welle 6.D Etappe 3a — Konsumables aus Save rekonstruieren (defensiv
         // über createOrUpdateConsumable, das die tagBonus + duration prüft).
@@ -14050,7 +14824,16 @@ class AnazhRealm {
 
     _buildHumanGroup() {
         const group = new THREE.Group();
-        const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        // V8.29.1 — MeshToonMaterial statt knallrotes MeshBasic. Reagiert
+        // auf Tag-Nacht-Licht wie der Rest der Welt (V8.28-Konsistenz),
+        // gedämpftes Rot statt grelles 0xff0000. gradientMap geteilt.
+        if (!this.state.toonGradientMap && typeof this._refreshToonGradient === "function") {
+            this._refreshToonGradient();
+        }
+        const material = new THREE.MeshToonMaterial({
+            color: 0xc0392b,
+            gradientMap: this.state.toonGradientMap || null,
+        });
         const torso = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.7, 0.3), material);
         torso.position.y = 0.45;
         torso.castShadow = true;
@@ -15050,7 +15833,16 @@ class AnazhRealm {
                 matOpts.transparent = true;
                 matOpts.opacity = part.opacity;
             }
-            const mat = new THREE.MeshBasicMaterial(matOpts);
+            // V8.28 6.G4.b C — MeshToonMaterial statt Lambert (V8.27 war
+            // Lambert). Reagiert auf dieselben Lichter (Directional +
+            // Ambient + Hemisphere), aber die gradientMap quantisiert das
+            // Sonnen-Licht in Cel-Stufen — Studio-Ghibli-Look. Slider-
+            // steuerbar: 2 Stufen = harte Cel-Linie, 8 ≈ smooth. Ambient +
+            // Hemisphere bleiben smooth → Cel-Gradient zur Sonne, weicher
+            // Himmel-Fill. gradientMap ist geteilt (state.toonGradientMap).
+            if (!this.state.toonGradientMap) this._refreshToonGradient();
+            matOpts.gradientMap = this.state.toonGradientMap;
+            const mat = new THREE.MeshToonMaterial(matOpts);
             materials.push(mat);
             const mesh = new THREE.Mesh(geom, mat);
             const pos = part.position || { x: 0, y: 0, z: 0 };
@@ -15306,6 +16098,26 @@ class AnazhRealm {
                 size: { x: 2.4, y: 2.4, z: 2.4 },
             },
         ];
+        // V8.29 — Genesis-Plattform. Wird beim Erschaffen einer neuen Welt
+        // am Welt-Zentrum gespawnt, der Spieler startet darauf. So fällt er
+        // nicht blind in ein Tal — er sieht von erhöhter Warte die Welt,
+        // bevor er hinabsteigt. Flache breite Stein-Scheibe + ein quarz-
+        // Kern als Wahrzeichen des Anfangs.
+        const startPlattformParts = [
+            {
+                shape: "cylinder",
+                material: "stein",
+                position: { x: 0, y: 0.5, z: 0 },
+                size: { x: 13, y: 1, z: 13 },
+            },
+            {
+                shape: "cylinder",
+                material: "quarz",
+                position: { x: 0, y: 1.15, z: 0 },
+                size: { x: 2.2, y: 0.35, z: 2.2 },
+                opacity: 0.9,
+            },
+        ];
         const kristallGeodeParts = [
             {
                 shape: "sphere",
@@ -15508,6 +16320,12 @@ class AnazhRealm {
             baum_eiche: { name: "baum_eiche", label: "Eiche", builtIn: true, parts: baumEicheParts },
             baum_kiefer: { name: "baum_kiefer", label: "Kiefer", builtIn: true, parts: baumKieferParts },
             stein_block: { name: "stein_block", label: "Felsblock", builtIn: true, parts: steinBlockParts },
+            start_plattform: {
+                name: "start_plattform",
+                label: "Genesis-Plattform",
+                builtIn: true,
+                parts: startPlattformParts,
+            },
             kristall_geode: {
                 name: "kristall_geode",
                 label: "Kristall-Geode",
@@ -17127,6 +17945,94 @@ class AnazhRealm {
         };
     }
 
+    // V8.28 6.G4.b B — Welt-Affinität pro Terrain-Vertex als vec4-Attribut.
+    // Der Terrain-Shader liest worldFieldAt (lebendig/dichte/glut/magie) und
+    // leitet daraus die Grundfarbe ab — dieselbe Sprache wie die Architektur-
+    // Verteilung (W6.G P2). Vision §1.3 fraktal: ein Feld, das WAS-wo-wächst
+    // UND WIE-der-Boden-aussieht regelt. Wird beim Chunk-Bau aufgerufen, NACH
+    // setAttribute("position"). Vertices liegen in Welt-Koords (Chunks haben
+    // mesh.position = 0,0,0), also kann worldFieldAt direkt position lesen.
+    _attachFieldAttribute(geometry) {
+        const pos = geometry && geometry.getAttribute ? geometry.getAttribute("position") : null;
+        if (!pos) return;
+        const count = pos.count;
+        const field = new Float32Array(count * 4);
+        for (let i = 0; i < count; i++) {
+            const f = this.worldFieldAt(pos.getX(i), pos.getZ(i));
+            field[i * 4] = f.lebendig;
+            field[i * 4 + 1] = f.dichte;
+            field[i * 4 + 2] = f.glut;
+            field[i * 4 + 3] = f.magieleitung;
+        }
+        geometry.setAttribute("aField", new THREE.BufferAttribute(field, 4));
+    }
+
+    // V8.29 — Cel-Shading gradientMap für MeshToonMaterial.
+    // Die gradientMap quantisiert das direkte Sonnen-Licht in Stufen.
+    // celLevels 2 = harte Cel-Linie, 8 = ECHT smooth (kein sichtbares Band).
+    //
+    // V8.28 hatte nur 8 px → selbst bei "Stufe 8" sah man Bänder, es gab
+    // keinen echten Smooth-Modus. Jetzt 32 px: bei celLevels>=8 bekommt
+    // jeder Pixel einen eigenen Wert → 32 Helligkeits-Stufen sehen für
+    // das Auge stufenlos aus. Bei celLevels<8 → genau celLevels Plateaus.
+    // Textur-Größe bleibt konstant 32 px → Slider-Wechsel updated nur die
+    // Pixel-Daten, KEINE neue Textur, KEINE Material-Neuzuweisung.
+    _refreshToonGradient() {
+        if (typeof THREE === "undefined") return;
+        const levels = (this.state.atmosphere && this.state.atmosphere.celLevels) || 8;
+        const n = Math.max(2, Math.min(8, Math.round(levels)));
+        const W = 32;
+        if (!this.state.toonGradientMap) {
+            const data = new Uint8Array(W * 4);
+            const tex = new THREE.DataTexture(data, W, 1, THREE.RGBAFormat);
+            tex.minFilter = THREE.NearestFilter;
+            tex.magFilter = THREE.NearestFilter;
+            tex.generateMipmaps = false;
+            this.state.toonGradientMap = tex;
+        }
+        // celLevels>=8 → 32 distinkte Stufen (smooth). Sonst n Plateaus.
+        const plateaus = n >= 8 ? W : n;
+        const data = this.state.toonGradientMap.image.data;
+        for (let i = 0; i < W; i++) {
+            const step = Math.min(plateaus - 1, Math.floor((i / W) * plateaus));
+            const v = Math.round((step / (plateaus - 1)) * 255);
+            data[i * 4] = v;
+            data[i * 4 + 1] = v;
+            data[i * 4 + 2] = v;
+            data[i * 4 + 3] = 255;
+        }
+        this.state.toonGradientMap.needsUpdate = true;
+        // Terrain-Shader (eigener Custom-Shader) parallel synchronisieren.
+        // celLevels>=8 wird im Shader als "kein floor" interpretiert.
+        if (this.state.terrainMaterial && this.state.terrainMaterial.uniforms) {
+            const u = this.state.terrainMaterial.uniforms.celLevels;
+            if (u) u.value = n;
+        }
+    }
+
+    // V8.28 6.G4.b C — Mutations-Pfad für den Cel-Shading-Slider. Setzt
+    // state.atmosphere.celLevels, regeneriert die gradientMap, persistiert.
+    setCelLevels(levels) {
+        const n = Math.max(2, Math.min(8, Math.round(Number(levels) || 8)));
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 1.0 };
+        this.state.atmosphere.celLevels = n;
+        this._refreshToonGradient();
+        if (typeof this.saveState === "function") this.saveState();
+        return n;
+    }
+
+    // V8.28 6.G4.b C — Mutations-Pfad für den Fog-Distanz-Slider.
+    // fogDistance ist ein Multiplikator (0.3 dicht .. 2.0 weit) auf
+    // Fog-near/far. Die echten Werte setzt _applyDayNightToScene.
+    setFogDistance(mult) {
+        const m = Math.max(0.3, Math.min(3.0, Number(mult) || 1.0));
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 1.0 };
+        this.state.atmosphere.fogDistance = m;
+        if (typeof this._applyDayNightToScene === "function") this._applyDayNightToScene();
+        if (typeof this.saveState === "function") this.saveState();
+        return m;
+    }
+
     // Affinity = wie stark resonieren die Compound-Tags eines Bauplans mit
     // dem Welt-Feld an Position (x, z)? Dot-Product über die 4 Achsen des
     // Welt-Feldes. Resultat 0..1 (sum / 4 da MAX-aggregierte Tags ebenfalls
@@ -17689,21 +18595,18 @@ class AnazhRealm {
             (cp.y + this._tmpCamDir.y * maxDist) / sf,
             (cp.z + this._tmpCamDir.z * maxDist) / sf
         );
-        const cb = new Ammo.ClosestRayResultCallback(rayStart, rayEnd);
-        this.state.physicsWorld.rayTest(rayStart, rayEnd, cb);
-        let result = fallback;
-        if (cb.hasHit()) {
-            const hit = cb.get_m_hitPointWorld();
+        const result = this._runRaycast(rayStart, rayEnd, (cb, hit) => {
+            if (!hit) return fallback;
+            const point = cb.get_m_hitPointWorld();
             const nrm = cb.get_m_hitNormalWorld();
-            result = {
-                x: hit.x() * sf,
-                y: hit.y() * sf,
-                z: hit.z() * sf,
+            return {
+                x: point.x() * sf,
+                y: point.y() * sf,
+                z: point.z() * sf,
                 isStable: nrm.y() > 0.5,
                 hit: true,
             };
-        }
-        Ammo.destroy(cb);
+        });
         return result;
     }
 
@@ -17914,15 +18817,11 @@ class AnazhRealm {
             (cp.y + this._tmpCamDir.y * maxDist) / sf,
             (cp.z + this._tmpCamDir.z * maxDist) / sf
         );
-        const cb = new Ammo.ClosestRayResultCallback(rayStart, rayEnd);
-        this.state.physicsWorld.rayTest(rayStart, rayEnd, cb);
-        let result = fallback;
-        if (cb.hasHit()) {
+        return this._runRaycast(rayStart, rayEnd, (cb, hit) => {
+            if (!hit) return fallback;
             const p = cb.get_m_hitPointWorld();
-            result = { hit: true, x: p.x() * sf, y: p.y() * sf, z: p.z() * sf };
-        }
-        Ammo.destroy(cb);
-        return result;
+            return { hit: true, x: p.x() * sf, y: p.y() * sf, z: p.z() * sf };
+        });
     }
 
     _mouseActionStaminaGate() {
@@ -22068,6 +22967,870 @@ class AnazhRealm {
         tooltip.innerHTML = lines.join("<br>");
     }
 
+    // ##############################################################
+    // ### Welle 6.G3 V2 (V8.25) — Atmosphäre-Wurzel-Helper (Vision-Heilung)
+    // ##############################################################
+    // V8.24 hatte Hardcode-Wunden: if-Maps für Soul-Wahl, Hz-Konstanten für
+    // Frequenzen, fixe Wetter-Dauer. Diese drei Wurzel-Helper sind die
+    // Vision-Pipeline (Vision §1.3 fraktal): jede Atmosphäre-Schicht emergiert
+    // aus dem System, nicht aus Tabellen.
+    //
+    // ATMOSPHERE — Methoden mit diesem Marker werden vom audit-strict
+    // "Atmosphäre-Hardcode-Audit" geprüft (Pattern-Match gegen if-Type-Maps
+    // und Magic-Number-Frequenzen). Whitelist nur über expliziten Marker.
+
+    // [ATMOSPHERE] Affinity-Pick — gegeben Kandidaten mit Compound-Tags und
+    // ein Welt-Feld an Position (x, z), wähle den Kandidaten dessen Tags am
+    // stärksten mit dem Welt-Feld resonieren. Dot-Product Tags · Field nach
+    // 4 Achsen (lebendig/dichte/glut/magieleitung). Optional ein noise-Anteil
+    // für sanfte Variabilität — sonst wäre immer dieselbe Soul in derselben
+    // Region. Liefert {pick, scoreMap} damit Tests Diskrimination prüfen können.
+    _affinityPickFromCandidates(candidates, fieldAtPos, noise = 0.15) {
+        if (!Array.isArray(candidates) || candidates.length === 0) {
+            return { pick: null, scoreMap: {} };
+        }
+        if (!fieldAtPos || typeof fieldAtPos !== "object") {
+            // Ohne Welt-Feld kein Affinity-Pick → erster Kandidat
+            return { pick: candidates[0], scoreMap: {} };
+        }
+        const axes = ["lebendig", "dichte", "glut", "magieleitung"];
+        let bestPick = null;
+        let bestScore = -Infinity;
+        const scoreMap = {};
+        for (const cand of candidates) {
+            const tags = cand.tags || {};
+            let score = 0;
+            for (const ax of axes) {
+                const fieldVal = fieldAtPos[ax] || 0;
+                const tagVal = tags[ax] || 0;
+                score += fieldVal * tagVal;
+            }
+            // Noise: kleine Random-Komponente damit nicht jeder Spawn identisch ist
+            score += (Math.random() - 0.5) * noise;
+            scoreMap[cand.name || cand.id || "(unnamed)"] = score;
+            if (score > bestScore) {
+                bestScore = score;
+                bestPick = cand;
+            }
+        }
+        return { pick: bestPick, scoreMap };
+    }
+
+    // [ATMOSPHERE] Tag-Frequency-Mapping — Klang folgt Substanz, Vision §1.3.
+    // Magieleitung leitet ins Hochtonale (Sterne klingen hoch), Dichte ins
+    // Tieftonale (Erde klingt tief). Resoniert verstärkt den Hauptton.
+    // Liefert Hz im sinnvollen Sinus-Bereich. Saat-Baseline ist baseHz; die
+    // Modulation darf um Faktor 0.3..2.5 variieren.
+    _tagToFrequency(tags, baseHz = 220) {
+        if (!tags || typeof tags !== "object") return baseHz;
+        const magie = Math.max(0, Math.min(1, tags.magieleitung || 0));
+        const dichte = Math.max(0, Math.min(1, tags.dichte || 0));
+        const resoniert = Math.max(0, Math.min(1, tags.resoniert || 0));
+        // Octave-Schritt nach oben mit magieleitung (×1 bis ×2.4)
+        // Octave-Schritt nach unten mit dichte (×0.4 bis ×1)
+        // Resoniert hellt etwas auf (+5..15 %)
+        const upMul = 1 + magie * 1.4;
+        const downMul = 1 - dichte * 0.6;
+        const resoMul = 1 + resoniert * 0.15;
+        const hz = baseHz * upMul * downMul * resoMul;
+        return Math.max(60, Math.min(2000, hz));
+    }
+
+    // [ATMOSPHERE] Emotion-Modulator — gegeben ein Basis-Wert und eine
+    // Modulations-Spec ({ joy: +0.1, sorrow: -0.2, awe: ×1.5, ... }), wende
+    // die sechs Emotions-Achsen an. Spec-Einträge mit Prefix '×' (oder Object
+    // mit `mul`) multiplizieren, mit '+' (oder `add`) addieren. Default ist
+    // additiv. Liefert den modulierten Wert. Reine Funktion (kein side-effect),
+    // testbar.
+    _emotionModulate(baseValue, modSpec, emotions) {
+        if (typeof baseValue !== "number" || !Number.isFinite(baseValue)) return baseValue;
+        const e = emotions || (this.state.player && this.state.player.emotions) || {};
+        const axes = ["joy", "awe", "sorrow", "hope", "peace", "chaos"];
+        let result = baseValue;
+        for (const ax of axes) {
+            if (!modSpec || modSpec[ax] === undefined || modSpec[ax] === null) continue;
+            const eVal = Math.max(0, Math.min(1, e[ax] || 0));
+            const m = modSpec[ax];
+            if (typeof m === "number") {
+                result += m * eVal; // Additiv-Default
+            } else if (m && typeof m === "object") {
+                if (typeof m.mul === "number") result *= 1 + (m.mul - 1) * eVal;
+                if (typeof m.add === "number") result += m.add * eVal;
+            }
+        }
+        return result;
+    }
+
+    // ##############################################################
+    // ### Welle 6.G3 (V8.24) — Welt-Lebendigkeit
+    // ##############################################################
+    // Drei Schichten in einer Welle:
+    //   a) Tag-Nacht-Zyklus — state.timeOfDay läuft 0..1, Lights+Skybox folgen
+    //   b) Sanfte Wetter-Übergänge — Skybox + Symphonie cross-faden 45 s
+    //   c) Fauna-Lifecycle — Geburten bei < TARGET, Tod bei > MAX mit Trauer
+
+    // ### 6.G3.a — Tag-Nacht-Zyklus ###
+
+    // Lineare Interpolation zwischen DAY_NIGHT_STOPS. Sortiert nach `.t`,
+    // findet das Stop-Paar das `t` umschließt, lerpt Sky-Color, Light-Color,
+    // Intensity. Output ist ein {sky, light, intensity}-Objekt mit
+    // THREE.Color-Instanzen.
+    // V8.26 Bug 2 — _interpolateDayNight nutzt jetzt smoothstep statt linear.
+    // Smoothstep(x) = x²·(3-2x): macht Übergänge an Anfang/Ende langsam,
+    // in der Mitte schneller — wirkt natürlich-organisch wie ein echter
+    // Sonnenaufgang, nicht wie ein abrupter Linear-Schwenk. Zusammen mit
+    // den 13 Stops (statt 7) heilt das die V8.25-Beobachtung „Sonne springt".
+    _interpolateDayNight(t) {
+        const stops = this.constructor.DAY_NIGHT_STOPS;
+        const tWrap = ((t % 1) + 1) % 1; // 0..1 sicher
+        let i = 0;
+        for (let k = 0; k < stops.length - 1; k++) {
+            if (tWrap >= stops[k].t && tWrap <= stops[k + 1].t) {
+                i = k;
+                break;
+            }
+        }
+        const a = stops[i];
+        const b = stops[i + 1];
+        const span = b.t - a.t;
+        const linear = span > 0 ? (tWrap - a.t) / span : 0;
+        // Smoothstep: 3x² - 2x³ — sanftes Easing für Farb+Intensity-Übergänge
+        const eased = linear * linear * (3 - 2 * linear);
+        const skyA = new THREE.Color(a.sky);
+        const skyB = new THREE.Color(b.sky);
+        const lightA = new THREE.Color(a.light);
+        const lightB = new THREE.Color(b.light);
+        return {
+            sky: skyA.lerp(skyB, eased),
+            light: lightA.lerp(lightB, eased),
+            intensity: a.intensity + (b.intensity - a.intensity) * eased,
+        };
+    }
+
+    // [ATMOSPHERE] Wendet timeOfDay + Wetter + Welt-Feld + Emotionen auf
+    // Lights + Skybox an. V8.25-Heilung: drei Modulations-Schichten über
+    // den Basis-Stops, alle vision-treu emergent:
+    //   1) Wetter-Multiplier (sunny vs rainy), wie V8.24 — gut so
+    //   2) Welt-Feld-Tint (Welt-Affinität am Spieler) — NEU. magieleitung-
+    //      Region zieht ins Violett, glut-Region ins Rote, lebendig-Region
+    //      ins warme Gelb-Grün. Eine Welt mit Region-Charakter strahlt das
+    //      auch im Himmel ab.
+    //   3) Emotion-Tint (Player-Emotionen) — NEU. joy → gold, sorrow →
+    //      entsättigt + grau, awe → magisches Lila, chaos → leichtes Flimmern.
+    // Die Skybox lebt nicht nur durch die Tageszeit, sondern durch alles
+    // was den Spieler und die Welt definiert.
+    _applyDayNightToScene() {
+        if (!this.state.directionalLight) return; // Pre-init safe
+        const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
+        const stop = this._interpolateDayNight(t);
+        // Schicht 1 — Wetter-Tint
+        const wt = this.state.weatherTransition;
+        const tints = this.constructor.WEATHER_TINTS;
+        let skyMul, lightMul;
+        if (wt && wt.from && wt.to) {
+            const fromT = tints[wt.from] || tints.sunny;
+            const toT = tints[wt.to] || tints.sunny;
+            const p = Math.max(0, Math.min(1, wt.progress || 0));
+            skyMul = fromT.skyMul + (toT.skyMul - fromT.skyMul) * p;
+            lightMul = fromT.lightMul + (toT.lightMul - fromT.lightMul) * p;
+        } else {
+            const currentTint = tints[this.state.weather] || tints.sunny;
+            skyMul = currentTint.skyMul;
+            lightMul = currentTint.lightMul;
+        }
+        // Stop-Sky als THREE.Color, davon eine clone-Kopie zum Modulieren
+        const skyColor = stop.sky.clone();
+        const lightColor = stop.light.clone();
+        let lightIntensity = stop.intensity * lightMul;
+        // Schicht 2 — Welt-Feld-Tint (Welt-Affinität am Spieler)
+        const pm = this.state.playerMesh;
+        if (pm && typeof this.worldFieldAt === "function") {
+            const field = this.worldFieldAt(pm.position.x, pm.position.z);
+            if (field) {
+                const mag = Math.max(0, Math.min(1, field.magieleitung || 0));
+                const glut = Math.max(0, Math.min(1, field.glut || 0));
+                const lebendig = Math.max(0, Math.min(1, field.lebendig || 0));
+                // magieleitung-Region: Sky leicht ins Violett verschieben
+                if (mag > 0.5) {
+                    const m = (mag - 0.5) * 0.3; // 0..0.15
+                    skyColor.r = Math.min(1, skyColor.r + m * 0.6);
+                    skyColor.b = Math.min(1, skyColor.b + m * 1.0);
+                    lightColor.b = Math.min(1, lightColor.b + m * 0.4);
+                }
+                // glut-Region: ins Rot-Orange
+                if (glut > 0.5) {
+                    const g = (glut - 0.5) * 0.4; // 0..0.2
+                    skyColor.r = Math.min(1, skyColor.r + g);
+                    skyColor.g = Math.max(0, skyColor.g - g * 0.3);
+                    lightColor.r = Math.min(1, lightColor.r + g * 0.6);
+                }
+                // lebendig-Region: warm-grünlich
+                if (lebendig > 0.5) {
+                    const l = (lebendig - 0.5) * 0.25; // 0..0.125
+                    skyColor.g = Math.min(1, skyColor.g + l);
+                    skyColor.r = Math.min(1, skyColor.r + l * 0.3);
+                }
+            }
+        }
+        // Schicht 3 — Emotion-Tint
+        const emotions = (this.state.player && this.state.player.emotions) || {};
+        const joy = Math.max(0, Math.min(1, emotions.joy || 0));
+        const sorrow = Math.max(0, Math.min(1, emotions.sorrow || 0));
+        const awe = Math.max(0, Math.min(1, emotions.awe || 0));
+        const chaos = Math.max(0, Math.min(1, emotions.chaos || 0));
+        // joy → gold (warm)
+        if (joy > 0.2) {
+            const j = (joy - 0.2) * 0.25; // 0..0.2
+            skyColor.r = Math.min(1, skyColor.r + j);
+            skyColor.g = Math.min(1, skyColor.g + j * 0.7);
+            lightColor.r = Math.min(1, lightColor.r + j * 0.5);
+            lightIntensity *= 1 + (joy - 0.2) * 0.15;
+        }
+        // sorrow → entsättigt + dämpft
+        if (sorrow > 0.2) {
+            const s = (sorrow - 0.2) * 0.5; // 0..0.4
+            const greyR = (skyColor.r + skyColor.g + skyColor.b) / 3;
+            skyColor.r = skyColor.r * (1 - s) + greyR * s;
+            skyColor.g = skyColor.g * (1 - s) + greyR * s;
+            skyColor.b = skyColor.b * (1 - s) + greyR * s;
+            lightIntensity *= 1 - (sorrow - 0.2) * 0.2;
+        }
+        // awe → magisches Lila im Sky + Light
+        if (awe > 0.2) {
+            const a = (awe - 0.2) * 0.35; // 0..0.28
+            skyColor.b = Math.min(1, skyColor.b + a);
+            skyColor.r = Math.min(1, skyColor.r + a * 0.6);
+            lightColor.b = Math.min(1, lightColor.b + a * 0.5);
+        }
+        // chaos → leichtes Flimmern (sin über performance.now)
+        if (chaos > 0.3) {
+            const c = (chaos - 0.3) * 0.15; // 0..0.105
+            const flutter = Math.sin(performance.now() / 180) * c;
+            skyColor.r = Math.max(0, Math.min(1, skyColor.r + flutter));
+            skyColor.g = Math.max(0, Math.min(1, skyColor.g - flutter * 0.7));
+        }
+        // Schicht 1 final anwenden — skyMul auf den modulierten Sky-Color
+        const skyR = skyColor.r * skyMul;
+        const skyG = skyColor.g * skyMul;
+        const skyB = skyColor.b * skyMul;
+        if (this.state.skybox && this.state.skybox.material && this.state.skybox.material.uniforms) {
+            const u = this.state.skybox.material.uniforms.nebulaColor;
+            if (u && u.value) {
+                u.value.setRGB(skyR, skyG, skyB);
+            }
+            // V8.28 6.G4.b D — Wolken-Deckung aus weather. sunny ~0.22,
+            // rainy ~0.85. Cross-Fade greift natürlich (skyMul ändert sich
+            // weich über requestWeatherTransition).
+            const cloudU = this.state.skybox.material.uniforms.cloudCover;
+            if (cloudU) {
+                cloudU.value = this.state.weather === "rainy" ? 0.85 : 0.22;
+            }
+        }
+        // V8.28 6.G4.b A — Stern-Feld-Opacity. starField statt skybox-uniform
+        // (Sterne sind jetzt diskrete Points). Sterne nur bei Nacht sichtbar:
+        // umgekehrt zur Sonnenhöhe, durch Wetter gedämpft.
+        if (this.state.starField && this.state.starField.material) {
+            const sa = t * Math.PI * 2 - Math.PI / 2;
+            const sunHeight = Math.max(-1, Math.min(1, Math.sin(sa)));
+            const nightFactor = (1 - sunHeight) * 0.5; // Mittag 0 → Mitternacht 1
+            const su = this.state.starField.material.uniforms.uOpacity;
+            if (su) su.value = nightFactor * skyMul;
+        }
+        // Light-Position über Halbkreis (azimut über Tag).
+        const dl = this.state.directionalLight;
+        const angle = t * Math.PI * 2 - Math.PI / 2;
+        const lightDist = 200;
+        dl.position.set(
+            Math.cos(angle) * lightDist,
+            Math.sin(angle) * lightDist,
+            Math.sin(angle * 0.5) * lightDist * 0.4
+        );
+        dl.color.setRGB(lightColor.r * lightMul, lightColor.g * lightMul, lightColor.b * lightMul);
+        dl.intensity = lightIntensity;
+        // Ambient: Mitternacht 0.18, Mittag 0.6 + leichte Modulation durch
+        // joy/awe (positive Emotion erhöht ambient leicht — Welt wirkt heller)
+        const al = this.state.ambientLight;
+        if (al) {
+            const sunHeight = Math.max(0, Math.sin(angle));
+            const baseAmb = 0.18 + 0.42 * sunHeight;
+            al.intensity = this._emotionModulate(baseAmb, { joy: 0.08, awe: 0.05, sorrow: -0.04 });
+        }
+        // V8.25 — Sonne + Mond Position aktualisieren (falls Meshes existieren)
+        this._updateCelestialBodies(angle, lightMul);
+        // V8.27 6.G4.a — HemisphereLight + Fog synchronisieren. Beide
+        // emergieren aus Tag-Nacht-Sky-Color × Welt-Feld am Spieler:
+        //   - hemiLight.color (oben) ≈ skyColor (warmer/kühler je Tag-Phase)
+        //   - hemiLight.groundColor (unten) ≈ Welt-Affinität (lebendig→
+        //     erdgrün, glut→rotbraun, dichte→steingrau, magie→violett)
+        //   - hemiLight.intensity moduliert mit sunHeight + lightMul
+        //   - fog.color ≈ lerp(skyColor, groundColor, 0.5) — atmosphärisch
+        //   - fog.near/far moduliert mit Wetter + Welt-Lebendigkeit
+        const hl = this.state.hemiLight;
+        const fog = this.state.fog;
+        if (hl) {
+            hl.color.setRGB(skyR * 1.1, skyG * 1.1, skyB * 1.1); // Sky-Tint, leicht angehellt
+            // Ground-Color aus Welt-Affinität ableiten (mit Saat-Earth-Tone)
+            const earth = new THREE.Color(0x3a2818); // dunkles Erdbraun als Saat
+            if (pm && typeof this.worldFieldAt === "function") {
+                const field = this.worldFieldAt(pm.position.x, pm.position.z);
+                if (field) {
+                    const lebendig = Math.max(0, Math.min(1, field.lebendig || 0));
+                    const glut = Math.max(0, Math.min(1, field.glut || 0));
+                    const mag = Math.max(0, Math.min(1, field.magieleitung || 0));
+                    // lebendig pushes ground toward warm green
+                    earth.r = Math.min(1, earth.r + lebendig * 0.15);
+                    earth.g = Math.min(1, earth.g + lebendig * 0.25);
+                    // glut pushes toward red-orange
+                    earth.r = Math.min(1, earth.r + glut * 0.35);
+                    earth.g = Math.max(0, earth.g + glut * 0.1);
+                    // magieleitung pushes toward violet
+                    earth.r = Math.min(1, earth.r + mag * 0.15);
+                    earth.b = Math.min(1, earth.b + mag * 0.3);
+                }
+            }
+            hl.groundColor.copy(earth);
+            // Intensity: bei Tag mehr (0.6), bei Nacht weniger (0.25)
+            const sunHeight = Math.max(0, Math.sin(angle));
+            hl.intensity = (0.25 + 0.35 * sunHeight) * lightMul;
+        }
+        if (fog) {
+            // V8.28 6.G4.b — Fog ist LUFT, also überwiegend Himmelsfarbe
+            // (nur 15 % Boden-Tint). lerp 0.5 mischte blauen Himmel mit
+            // braunem Boden zu schmutzigem Rosa — der Fog wirkte wie eine
+            // Dreck-Schicht statt wie atmosphärischer Dunst. Mit 0.15
+            // verschmilzt der Fog sauber mit dem Himmel am Horizont.
+            const gMix = 0.15;
+            const fogR = skyR * (1 - gMix) + (hl ? hl.groundColor.r : 0.3) * gMix;
+            const fogG = skyG * (1 - gMix) + (hl ? hl.groundColor.g : 0.25) * gMix;
+            const fogB = skyB * (1 - gMix) + (hl ? hl.groundColor.b : 0.2) * gMix;
+            fog.color.setRGB(fogR, fogG, fogB);
+            // V8.29 — Fog-Distanz spürbar gemacht. sunny 35..150, rainy
+            // 22..95. Bei 235 m far griff der Fog in einer Bergwelt nie
+            // (Berge verdeckten vorher). 150 m ist nah genug, dass der
+            // atmosphärische Gradient klar sichtbar ist — die fernen Berge
+            // verschmelzen mit dem Himmel. Slider geht 30..200 % für weniger
+            // (weiter) bis mehr (dichter) Dunst.
+            const rainyMix = this.state.weather === "rainy" ? 1 : 0;
+            const fogMult = (this.state.atmosphere && this.state.atmosphere.fogDistance) || 1.0;
+            fog.near = (35 - rainyMix * 13) * fogMult;
+            fog.far = (150 - rainyMix * 55) * fogMult;
+            // V8.32 — Unterwasser-Tint NUR beim echten Tauchen (Augen unter
+            // Wasser), nicht schon beim Waten/Schwimmen. Vorher triggerte er
+            // bei playerUnderwater (Körper-Mitte im Wasser) → der blaue Fog
+            // sprang an, sobald das Wasser halbe Körperhöhe erreichte. Jetzt:
+            // playerEyesUnderwater. Der dichte 4..34-Fog ignoriert bewusst
+            // den fogDistance-Slider — Tauch-Trübung ist fest, nicht die
+            // Land-Sicht-Einstellung (Schöpfer-Wunsch V8.32).
+            if (this.state.playerEyesUnderwater) {
+                fog.color.setRGB(0.06, 0.19, 0.32);
+                fog.near = 4;
+                fog.far = 34;
+            }
+        }
+        // V8.27 6.G4.a — Terrain-Shader-Uniforms synchronisieren falls vorhanden.
+        // Der Custom-Shader hat lightDirection + weatherEffect; wir setzen die
+        // lightDirection auf die ECHTE DirectionalLight-Richtung (normalisiert).
+        if (this.state.groundChunks && this.state.directionalLight) {
+            const lightDir = this.state.directionalLight.position.clone().normalize();
+            for (const chunk of this.state.groundChunks) {
+                if (chunk.material && chunk.material.uniforms) {
+                    const cu = chunk.material.uniforms;
+                    if (cu.lightDirection) cu.lightDirection.value.copy(lightDir);
+                    if (cu.lightIntensity) cu.lightIntensity.value = dl.intensity;
+                    if (cu.ambientIntensity) cu.ambientIntensity.value = al ? al.intensity : 0.45;
+                    // V8.31 — Fog an den Terrain-Custom-Shader anschließen.
+                    // Ohne das blieb das Terrain knackscharf, während nur
+                    // das Gras (Lambert) verblasste → der Fog-Slider wirkte
+                    // wie eine Gras-Verfärbung. Jetzt trägt das Terrain den
+                    // Dunst — der Fog wird zur echten atmosphärischen Schicht.
+                    if (fog) {
+                        if (cu.fogColor) cu.fogColor.value.copy(fog.color);
+                        if (cu.fogNear) cu.fogNear.value = fog.near;
+                        if (cu.fogFar) cu.fogFar.value = fog.far;
+                    }
+                }
+            }
+        }
+        // V8.29.1 — Welt-Wasser mit der Sonne synchronisieren: Sonnen-
+        // Richtung für das Glitzern + Licht-Intensität für Tag-Nacht-Tint.
+        // V8.31 — plus Fog-Uniforms (Custom-Shader erbt THREE.Fog nicht).
+        if (this.state.waterPlane && this.state.waterPlane.material && this.state.directionalLight) {
+            const wu = this.state.waterPlane.material.uniforms;
+            if (wu && wu.uSunDir) {
+                wu.uSunDir.value.copy(this.state.directionalLight.position).normalize();
+            }
+            if (wu && wu.uLight) {
+                wu.uLight.value = Math.max(0.22, dl.intensity);
+            }
+            if (wu && fog) {
+                if (wu.fogColor) wu.fogColor.value.copy(fog.color);
+                if (wu.fogNear) wu.fogNear.value = fog.near;
+                if (wu.fogFar) wu.fogFar.value = fog.far;
+            }
+        }
+    }
+
+    // [ATMOSPHERE] Sonne + Mond als sichtbare Meshes — visualer Anker des
+    // Tag-Nacht-Zyklus. Aufgehängt an _applyDayNightToScene, damit eine
+    // Quelle der Wahrheit. Sonne ist 380 m weg (vor der Skybox bei 500 m),
+    // sichtbar wenn ihre Höhe ≥ 0; Mond auf der gegenüberliegenden Seite,
+    // sichtbar wenn ihre Höhe ≥ 0. Beide haben emissive-Material das durch
+    // unsere Render-Pipeline auch ohne MeshLambert leuchtet.
+    _updateCelestialBodies(angle, lightMul) {
+        const sunDist = 380;
+        const sun = this.state.sunMesh;
+        const moon = this.state.moonMesh;
+        if (sun) {
+            const sx = Math.cos(angle) * sunDist;
+            const sy = Math.sin(angle) * sunDist;
+            const sz = Math.sin(angle * 0.5) * sunDist * 0.4;
+            sun.position.set(sx, sy, sz);
+            sun.visible = sy > -10; // unter Horizont ausblenden
+            // Sonne dimmt mit Wetter (rainy = trüber Schein)
+            if (sun.material && sun.material.color) {
+                const baseR = 1.0,
+                    baseG = 0.92,
+                    baseB = 0.7;
+                sun.material.color.setRGB(baseR * lightMul, baseG * lightMul, baseB * lightMul);
+            }
+        }
+        if (moon) {
+            // Mond gegenüber der Sonne
+            const moonAngle = angle + Math.PI;
+            const mx = Math.cos(moonAngle) * sunDist;
+            const my = Math.sin(moonAngle) * sunDist;
+            const mz = Math.sin(moonAngle * 0.5) * sunDist * 0.4;
+            moon.position.set(mx, my, mz);
+            moon.visible = my > -10;
+        }
+    }
+
+    // Treibt timeOfDay vorwärts basierend auf realer Echtzeit + dayLength.
+    // currentTime ist die performance.now()/1000-Sekunden-Variante des
+    // Game-Loops. Delta wird aus _lastDayNightTick errechnet, sicher gegen
+    // Sprünge (Tab-Wechsel etc.) durch Math.min(delta, 1.0).
+    tickDayNight(currentTime) {
+        const last = this.state._lastDayNightTick;
+        if (!Number.isFinite(last)) {
+            this.state._lastDayNightTick = currentTime;
+            this._applyDayNightToScene();
+            return;
+        }
+        const delta = Math.min(1.0, currentTime - last); // Sekunden, gegen Tab-Sleeps
+        this.state._lastDayNightTick = currentTime;
+        const minutes = this.state.dayLengthMinutes || this.constructor.DAY_LENGTH_DEFAULT_MINUTES;
+        const cycleSeconds = Math.max(60, minutes * 60); // hard-floor 1min
+        const advance = delta / cycleSeconds; // wieviel von 0..1 in delta vergeht
+        this.state.timeOfDay = (this.state.timeOfDay + advance) % 1;
+        // V8.28 6.G4.b — _applyDayNightToScene läuft jetzt JEDEN Frame statt
+        // 10 Hz throttled. Wurzel-Fix für das "Gebäude pulsieren durch den
+        // Tag"-Problem: bei 10 Hz sprang die Beleuchtung in 10 diskreten
+        // Stufen/s → sichtbares Ruckeln der Schatten. Pro Frame wandern die
+        // Schatten seidig. Die Funktion ist billig genug (Color-Lerps +
+        // ein Vector3.copy pro Chunk) — kein Throttle nötig.
+        this._applyDayNightToScene();
+        // Status-Bar-Text bleibt 10 Hz throttled (DOM-textContent ist teurer
+        // als die Scene-Updates, und das Auge braucht keine 60-Hz-Uhr).
+        const lastApply = this.state._lastDayNightApply || 0;
+        if (currentTime - lastApply >= 0.1) {
+            this.state._lastDayNightApply = currentTime;
+            const r = this._statusRefs;
+            if (r && r.time) {
+                r.time.textContent = this._timeOfDayLabel(this.state.timeOfDay);
+            }
+        }
+    }
+
+    // Liefert eine kurze, lesbare Tageszeit-Beschreibung. z. B. "🌅 06:24".
+    // Vier Symbole für vier Phasen: 🌌 Nacht / 🌅 Morgen / ☀️ Tag / 🌇 Abend.
+    _timeOfDayLabel(t) {
+        const tWrap = ((t % 1) + 1) % 1;
+        const hours = tWrap * 24;
+        const h = Math.floor(hours);
+        const m = Math.floor((hours - h) * 60);
+        const hStr = h.toString().padStart(2, "0");
+        const mStr = m.toString().padStart(2, "0");
+        let emoji = "☀️";
+        if (tWrap < 0.22 || tWrap >= 0.85)
+            emoji = "🌌"; // Nacht
+        else if (tWrap < 0.35)
+            emoji = "🌅"; // Morgen
+        else if (tWrap < 0.65)
+            emoji = "☀️"; // Tag
+        else emoji = "🌇"; // Abend
+        return `${emoji} ${hStr}:${mStr}`;
+    }
+
+    // Setzt die Tag-Länge (in Minuten). Persistiert in worldMeta + localStorage.
+    setDayLength(minutes) {
+        const min = this.constructor.DAY_LENGTH_MIN_MINUTES;
+        const max = this.constructor.DAY_LENGTH_MAX_MINUTES;
+        const num = Number(minutes);
+        const safeMinutes = Number.isFinite(num) ? num : this.constructor.DAY_LENGTH_DEFAULT_MINUTES;
+        const v = Math.max(min, Math.min(max, safeMinutes));
+        this.state.dayLengthMinutes = v;
+        try {
+            if (typeof localStorage !== "undefined") localStorage.setItem("anazh.dayLengthMinutes", String(v));
+        } catch (e) {
+            void e;
+        }
+    }
+
+    // Setzt timeOfDay direkt (z. B. via DSL-Op set_time_of_day(0.5) für Mittag).
+    setTimeOfDay(t) {
+        const v = Math.max(0, Math.min(1, Number(t)));
+        if (!Number.isFinite(v)) return false;
+        this.state.timeOfDay = v;
+        this._applyDayNightToScene();
+        const r = this._statusRefs;
+        if (r && r.time) r.time.textContent = this._timeOfDayLabel(v);
+        return true;
+    }
+
+    // ### 6.G3.b — Sanfte Wetter-Übergänge ###
+
+    // [ATMOSPHERE] Startet einen Cross-Fade. V8.25-Heilung: Default-Dauer
+    // emergiert aus Player-Emotionen via _emotionModulate — eine ruhige Welt
+    // (peace hoch) zieht Wolken langsamer (×1.6), eine chaotische (chaos hoch)
+    // blitzt schneller (×0.4). Explizit übergebene Dauer überschreibt das.
+    // Vision §3: Wetter atmet mit dem Spieler.
+    requestWeatherTransition(target, durationMs, fromWeather) {
+        if (target !== "sunny" && target !== "rainy") return false;
+        let dur;
+        if (typeof durationMs === "number" && Number.isFinite(durationMs)) {
+            dur = Math.max(100, durationMs);
+        } else {
+            // Default mit Emotion-Modulation
+            const baseDur = this.constructor.WEATHER_TRANSITION_DURATION_MS; // 45000
+            const modulated = this._emotionModulate(baseDur, {
+                peace: { mul: 1.6 }, // peace=1 → ×1.6 (72s)
+                chaos: { mul: 0.4 }, // chaos=1 → ×0.4 (18s)
+                sorrow: { mul: 1.2 }, // sorrow zieht Wolken langsam-melancholisch
+            });
+            dur = Math.max(8000, Math.min(120000, modulated));
+        }
+        const wt = this.state.weatherTransition;
+        let from = typeof fromWeather === "string" ? fromWeather : this.state.weather;
+        if (wt && wt.from && wt.to && wt.to !== target) {
+            // Mitten im Übergang — behalte Vorgänger-from, aber neues to.
+            from = wt.from;
+        } else if (wt && wt.to === target) {
+            // Schon auf demselben Ziel — no-op (idempotent).
+            return true;
+        }
+        if (from === target) {
+            // Schon dort, kein Übergang nötig.
+            this.state.weatherTransition = null;
+            return true;
+        }
+        this.state.weatherTransition = {
+            from,
+            to: target,
+            progress: 0,
+            duration: dur,
+            startedAt: typeof performance !== "undefined" ? performance.now() : Date.now(),
+        };
+        return true;
+    }
+
+    // Pro-Frame-Tick: schreitet weatherTransition.progress voran. Bei
+    // progress >= 1 wird der Übergang abgeschlossen, state.weather auf to
+    // gesetzt, transition genullt. Während des Übergangs wirken Skybox-Mul
+    // (via _applyDayNightToScene) UND Symphonie-Gain (linear gerampt).
+    tickWeatherTransition(_currentTime) {
+        const wt = this.state.weatherTransition;
+        if (!wt) return;
+        const nowMs = typeof performance !== "undefined" ? performance.now() : Date.now();
+        const elapsed = nowMs - wt.startedAt;
+        wt.progress = Math.min(1, elapsed / wt.duration);
+        if (wt.progress >= 1) {
+            // Übergang fertig — Transition lösen. state.weather ist schon
+            // beim DSL-Op-Aufruf auf das Ziel gesetzt worden (instant-Logik).
+            // _applyDayNightToScene wird im nächsten DayNight-Tick die finale
+            // Skybox-Tönung setzen (kein wt mehr → currentTint direkt).
+            this.state.weatherTransition = null;
+            return;
+        }
+        // Symphonie-Gain während des Übergangs sanft rampen. weather-Layer
+        // hat eigenes ramping in symphonyTick — wir setzen hier nur das
+        // gerampte Ziel-Volume statt sofortig.
+        if (this.state.symphony && this.state.symphony.enabled && this.state.symphony.weather) {
+            const w = this.state.symphony.weather;
+            const targetGain = wt.to === "rainy" ? 0.045 : 0;
+            const currentGain = wt.from === "rainy" ? 0.045 : 0;
+            const interp = currentGain + (targetGain - currentGain) * wt.progress;
+            if (w.gain && w.gain.gain) {
+                try {
+                    w.gain.gain.setTargetAtTime(interp, this.state.symphony.ctx.currentTime, 0.2);
+                } catch (e) {
+                    void e;
+                }
+            }
+        }
+    }
+
+    // ### 6.G3.c — Fauna-Lifecycle ###
+
+    // V8.26 Polish §6.3 — Raycast-Boilerplate-Helper. Vorher: 5 Call-Sites
+    // mit identischem alloc-rayTest-destroy-Block. Jetzt: eine Quelle für
+    // das WASM-Lifecycle, Caller extrahiert Ergebnis selbst (weil unter-
+    // schiedliche Anforderungen — manche brauchen Normale, manche nur hit-
+    // Point, manche nur hasHit). Liefert das Callback-Objekt SOLANGE die
+    // Funktion läuft — Caller MUSS `Ammo.destroy(cb)` rufen ODER über
+    // `_runRaycast(start, end, extractor)` arbeiten (siehe unten).
+    //
+    // Der einfachere Pfad: _runRaycast bekommt einen Extractor-Callback.
+    // Lifecycle bleibt komplett in einer Funktion, Caller ist 1 Zeile.
+    _runRaycast(rayStart, rayEnd, extractor) {
+        const cb = new Ammo.ClosestRayResultCallback(rayStart, rayEnd);
+        this.state.physicsWorld.rayTest(rayStart, rayEnd, cb);
+        let result = null;
+        try {
+            result = extractor(cb, cb.hasHit());
+        } finally {
+            Ammo.destroy(cb);
+        }
+        return result;
+    }
+
+    // [ATMOSPHERE] Compound-Tags einer Soul (ohne Kreatur-Instanz zu brauchen).
+    // Wrapper um computeCompoundTags({parts: soul.bodyParts}) — wird in
+    // _pickFaunaSoulAtPlayer für Affinity-Vergleich vor dem Spawn gebraucht.
+    _creatureSoulTags(soulName) {
+        const soul = AnazhRealm.CREATURE_SOULS && AnazhRealm.CREATURE_SOULS[soulName];
+        if (!soul || !soul.bodyParts) return {};
+        return this.computeCompoundTags({ parts: soul.bodyParts });
+    }
+
+    // [ATMOSPHERE] Wählt eine Soul für eine neue Kreatur — Vision-treu via
+    // Affinity-Pick statt if-Else-Map (V8.24-Wunde geheilt). Für jede Soul
+    // wird Compound-Tags × Welt-Feld-Dot-Product berechnet, höchste Resonanz
+    // gewinnt. Vision §1.3 fraktal: dieselbe Logik wie spawnAffinityForBlueprint.
+    // Bei mehreren Aufrufen in derselben Region streut die Wahl leicht
+    // (noise 0.15), damit nicht jeder Spawn identisch ist.
+    // Optionales x, z überschreibt die Spieler-Position (für Spawn-Position-
+    // Affinity nutzen).
+    _pickFaunaSoulAtPlayer(x, z) {
+        const pm = this.state.playerMesh;
+        if ((!pm && (x === undefined || z === undefined)) || typeof this.worldFieldAt !== "function") {
+            return this._pickCreatureSoulName();
+        }
+        const px = x !== undefined ? x : pm.position.x;
+        const pz = z !== undefined ? z : pm.position.z;
+        const field = this.worldFieldAt(px, pz);
+        if (!field) return this._pickCreatureSoulName();
+        // Kandidaten: alle Built-in-Souls mit ihren Compound-Tags
+        const souls = AnazhRealm.CREATURE_SOULS;
+        if (!souls) return this._pickCreatureSoulName();
+        const candidates = Object.keys(souls).map((name) => ({
+            name,
+            tags: this._creatureSoulTags(name),
+        }));
+        const { pick } = this._affinityPickFromCandidates(candidates, field);
+        return (pick && pick.name) || this._pickCreatureSoulName();
+    }
+
+    // Findet die älteste Kreatur (kleinster bornAt). Für Tod-Wahl bei
+    // Überpopulation — wer am längsten da ist, geht zuerst. Defensiv gegen
+    // Kreaturen ohne bornAt (z.B. aus Legacy-Save).
+    _findOldestCreature() {
+        if (!this.state.creatures || this.state.creatures.length === 0) return null;
+        let oldest = null;
+        let oldestBorn = Infinity;
+        for (const c of this.state.creatures) {
+            const b = (c && c.userData && c.userData.bornAt) || 0;
+            if (b < oldestBorn) {
+                oldestBorn = b;
+                oldest = c;
+            }
+        }
+        return oldest;
+    }
+
+    // [ATMOSPHERE] Tod einer Kreatur durch Lifecycle. Vision §10 — Trauer
+    // im Welt-Atem: sorrow += 0.2 (geclamped), journal-loss-Eintrag, kurzer
+    // Aura-Pulse, dann normale removeCreature-Pipeline. Memory bleibt bewusst
+    // nicht erhalten (Vision §1.1 — die Beziehung lebt nur, solange die
+    // Kreatur lebt; nach Tod erinnern sich nur Mensch und Welt-Journal).
+    // V8.25-Heilung: Lebewohl-Frequenz emergiert aus _tagToFrequency(soul-Tags)
+    // statt aus Soul→Hz-Map. Klang folgt Substanz, Vision §1.3 fraktal.
+    _creatureNaturalDeath(creature) {
+        if (!creature) return false;
+        const name = (creature.userData && creature.userData.name) || "(unbenannt)";
+        const soul = (creature.userData && creature.userData.soul) || "wesen";
+        const bornAt = (creature.userData && creature.userData.bornAt) || 0;
+        const ageSec = bornAt > 0 ? (Date.now() - bornAt) / 1000 : null;
+        // Tags BEVOR removeCreature läuft (danach ist die Kreatur weg)
+        const tags = this.computeCreatureCompoundTags(creature);
+        // Sorrow-Effekt (clamped)
+        if (this.state.player && this.state.player.emotions) {
+            const e = this.state.player.emotions;
+            e.sorrow = Math.max(0, Math.min(1, (e.sorrow || 0) + 0.2));
+        }
+        // Journal-Eintrag
+        if (typeof this.journalAppend === "function") {
+            this.journalAppend("loss", `${name} kehrt zur Erde zurück.`, {
+                creature: name,
+                soul,
+                ageSec,
+                cause: "fauna_lifecycle",
+            });
+        }
+        // Lebewohl-Sinus: Frequenz emergiert aus Compound-Tags. Vision §1.3
+        // fraktal — Klang folgt Substanz. sprite (magieleitung hoch) klingt
+        // hell, wesen (dichte hoch) klingt tief, geist (zwischen) klingt mittel.
+        // Basis 220 Hz (A3), _tagToFrequency moduliert auf 0.4..2.4× = 88..528 Hz.
+        if (this.state.symphony && this.state.symphony.enabled && this.state.symphony.ctx) {
+            try {
+                const ctx = this.state.symphony.ctx;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                const freq = this._tagToFrequency(tags, 220);
+                osc.type = "sine";
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(freq * 0.5, ctx.currentTime + 1.2);
+                gain.gain.setValueAtTime(0.0, ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.2);
+                osc.connect(gain);
+                gain.connect(this.state.symphony.masterGain || ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 1.3);
+            } catch (e) {
+                void e;
+            }
+        }
+        // removeCreature läuft den Standard-Cleanup (Scene-remove, Body-dispose,
+        // Aura-dispose, state.creatures-splice). Memory wird mit der Kreatur
+        // verworfen — bewusst nicht ins Journal kopiert (Vision §1.1 lebende
+        // Beziehung).
+        if (typeof this.removeCreature === "function") {
+            this.removeCreature(creature);
+        }
+        this.state.faunaLifecycle.lastDeathAt = Date.now();
+        return true;
+    }
+
+    // [ATMOSPHERE] Geburt einer Kreatur. V8.25-Heilung: Spawn-Position
+    // emergiert aus Welt-Affinität, nicht random. Wir samplen 6 Kandidaten-
+    // Positionen 12-25 m vom Spieler, wählen für jede die affinity-beste
+    // Soul, und nehmen den Kandidat mit höchstem Total-Affinity-Score —
+    // dort gehört die Kreatur hin. Vision §1.3: Welt sucht ihr eigenes
+    // Wesen, der Spieler ist Beobachter, kein Zentrum. Stille Spawn (kein
+    // Symphony-Ping — Geburt ist sanft, nicht laut).
+    _creatureNaturalBirth() {
+        if (typeof this.spawnCreatureAt !== "function") return false;
+        const pm = this.state.playerMesh;
+        if (!pm) return false;
+        // 6 Kandidaten-Positionen + jeweilige Affinity-beste-Soul
+        const candidates = [];
+        for (let i = 0; i < 6; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const distance = 12 + Math.random() * 13;
+            const cx = pm.position.x + Math.cos(angle) * distance;
+            const cz = pm.position.z + Math.sin(angle) * distance;
+            const field = typeof this.worldFieldAt === "function" ? this.worldFieldAt(cx, cz) : null;
+            const soul = this._pickFaunaSoulAtPlayer(cx, cz);
+            // Resonanz-Score: Soul-Tags · Field, total
+            let score = 0;
+            if (field && soul) {
+                const tags = this._creatureSoulTags(soul);
+                for (const ax of ["lebendig", "dichte", "glut", "magieleitung"]) {
+                    score += (field[ax] || 0) * (tags[ax] || 0);
+                }
+            }
+            candidates.push({ x: cx, z: cz, soul, score });
+        }
+        // Welt entscheidet: höchster Resonanz-Score gewinnt (+ kleine random
+        // Streuung damit keine zwei Geburten in derselben Region identisch sind)
+        candidates.sort((a, b) => b.score + Math.random() * 0.1 - (a.score + Math.random() * 0.1));
+        const best = candidates[0];
+        const y = pm.position.y + 2;
+        // Spawn (silent damit kein Ping-Schwall)
+        const prevSymphony = this.state.symphony && this.state.symphony.enabled;
+        if (prevSymphony) this.state.symphony.enabled = false;
+        const c = this.spawnCreatureAt(best.x, y, best.z, "happy", best.soul);
+        if (prevSymphony) this.state.symphony.enabled = true;
+        if (!c) return false;
+        // Journal-Eintrag — Geburt ist Welt-Atem, leise Notiz mit Affinität
+        if (typeof this.journalAppend === "function") {
+            const name = (c.userData && c.userData.name) || "(Wesen)";
+            this.journalAppend("growth", `${name} (${best.soul}) tritt in die Welt ein.`, {
+                creature: name,
+                soul: best.soul,
+                affinityScore: best.score.toFixed(3),
+                cause: "fauna_lifecycle",
+            });
+        }
+        this.state.faunaLifecycle.lastBirthAt = Date.now();
+        return true;
+    }
+
+    // [ATMOSPHERE] Fauna-Ziel-Population emergiert aus Welt-Lebendigkeit.
+    // V8.25-Heilung: TARGET war konstant 8, jetzt skaliert mit
+    // worldFieldAt(player).lebendig: ein üppiger Wald trägt 12-14 Kreaturen,
+    // eine karge Felsen-Region nur 3-4. Vision §1.3: die Welt entscheidet
+    // wie viel Leben sie tragen will.
+    _currentFaunaTarget() {
+        const baseTarget = this.constructor.FAUNA_TARGET_POPULATION; // 8
+        const pm = this.state.playerMesh;
+        if (!pm || typeof this.worldFieldAt !== "function") return baseTarget;
+        const f = this.worldFieldAt(pm.position.x, pm.position.z);
+        if (!f) return baseTarget;
+        // lebendig 0..1 mappt auf 4..14 (baseTarget±50%)
+        const lebendig = Math.max(0, Math.min(1, f.lebendig || 0));
+        return Math.round(4 + lebendig * 10);
+    }
+
+    // [ATMOSPHERE] Fauna-Max-Population — symmetrisches Pattern zu Target.
+    // Bei sehr lebendiger Region erlauben wir mehr Kreaturen (cap höher).
+    _currentFaunaMax() {
+        const baseMax = this.constructor.FAUNA_MAX_POPULATION; // 20
+        const pm = this.state.playerMesh;
+        if (!pm || typeof this.worldFieldAt !== "function") return baseMax;
+        const f = this.worldFieldAt(pm.position.x, pm.position.z);
+        if (!f) return baseMax;
+        const lebendig = Math.max(0, Math.min(1, f.lebendig || 0));
+        return Math.round(12 + lebendig * 16); // 12..28
+    }
+
+    // [ATMOSPHERE] Tick — läuft alle FAUNA_TICK_INTERVAL_MS. V8.25-Heilung:
+    // Target + Max emergieren aus Welt-Lebendigkeit (_currentFaunaTarget /
+    // _currentFaunaMax). Plus Birth/Death-Probability moduliert mit Player-
+    // Emotionen — sorrow erhöht Tod, peace verlangsamt, hope beschleunigt
+    // Geburten. Vision §3: Welt atmet mit dem Spieler.
+    tickFaunaLifecycle(currentTime) {
+        const ms = currentTime * 1000;
+        const last = this.state.faunaLifecycle.lastTick || 0;
+        const interval = this.constructor.FAUNA_TICK_INTERVAL_MS;
+        if (ms - last < interval) return;
+        this.state.faunaLifecycle.lastTick = ms;
+        const count = (this.state.creatures && this.state.creatures.length) || 0;
+        const target = this._currentFaunaTarget();
+        const max = this._currentFaunaMax();
+        const birthCd = this.constructor.FAUNA_BIRTH_COOLDOWN_MS;
+        const deathCd = this.constructor.FAUNA_DEATH_COOLDOWN_MS;
+        const now = Date.now();
+        if (count < target) {
+            const sinceBirth = now - (this.state.faunaLifecycle.lastBirthAt || 0);
+            // Emotion-Modulation: hope beschleunigt Geburt, peace verlangsamt
+            const baseBirth = this.constructor.FAUNA_BIRTH_PROBABILITY;
+            const birthP = this._emotionModulate(baseBirth, { hope: 0.08, peace: -0.05 });
+            if (sinceBirth >= birthCd && Math.random() < Math.max(0.02, Math.min(0.5, birthP))) {
+                this._creatureNaturalBirth();
+            }
+        } else if (count > max) {
+            const sinceDeath = now - (this.state.faunaLifecycle.lastDeathAt || 0);
+            // sorrow erhöht Tod, peace dämpft
+            const baseDeath = this.constructor.FAUNA_DEATH_PROBABILITY;
+            const deathP = this._emotionModulate(baseDeath, { sorrow: 0.1, peace: -0.06 });
+            if (sinceDeath >= deathCd && Math.random() < Math.max(0.02, Math.min(0.5, deathP))) {
+                const oldest = this._findOldestCreature();
+                if (oldest) this._creatureNaturalDeath(oldest);
+            }
+        }
+    }
+
     // Welle 6.X.4 D2 (Audit 17.05.2026) — Drei Schieber: Master-Volume,
     // Kreatur-Pings-Volume, Render-Ring-Radius. Lädt persistierte Werte
     // aus localStorage. Master + Pings wirken live auf state.symphony +
@@ -22188,6 +23951,74 @@ class AnazhRealm {
                         /* ignore */
                     }
                 }
+            });
+        }
+
+        // Welle 6.G3 (V8.24) — Tag-Nacht-Slider + Tageszeit-Slider.
+        // Tag-Länge: 1-60 Min. Tageszeit: 0-1000 (skaliert auf 0..1, drei
+        // Nachkomma-Stellen-Präzision damit Drag smooth fühlt).
+        const dl = document.getElementById("slider-daylength");
+        const dlVal = document.getElementById("slider-daylength-val");
+        if (dl) {
+            // Persistierte Tag-Länge aus localStorage einlesen (Init).
+            try {
+                if (typeof localStorage !== "undefined") {
+                    const stored = localStorage.getItem("anazh.dayLengthMinutes");
+                    if (stored) {
+                        const v = Math.max(
+                            this.constructor.DAY_LENGTH_MIN_MINUTES,
+                            Math.min(this.constructor.DAY_LENGTH_MAX_MINUTES, parseInt(stored, 10) || 8)
+                        );
+                        this.state.dayLengthMinutes = v;
+                    }
+                }
+            } catch (e) {
+                void e;
+            }
+            dl.value = String(this.state.dayLengthMinutes || 8);
+            if (dlVal) dlVal.textContent = `${dl.value} Min`;
+            dl.addEventListener("input", () => {
+                const v = parseInt(dl.value, 10);
+                this.setDayLength(v);
+                if (dlVal) dlVal.textContent = `${v} Min`;
+            });
+        }
+
+        const tod = document.getElementById("slider-timeofday");
+        const todVal = document.getElementById("slider-timeofday-val");
+        if (tod) {
+            const t0 = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
+            tod.value = String(Math.round(t0 * 1000));
+            if (todVal) todVal.textContent = this._timeOfDayLabel(t0).replace(/^[^\s]+\s/, "");
+            tod.addEventListener("input", () => {
+                const v = parseInt(tod.value, 10) / 1000;
+                this.setTimeOfDay(v);
+                if (todVal) todVal.textContent = this._timeOfDayLabel(v).replace(/^[^\s]+\s/, "");
+            });
+        }
+
+        // V8.28 6.G4.b C — Atmosphäre-Slider: Cel-Stufen + Fog-Distanz.
+        const cel = document.getElementById("slider-cel");
+        const celVal = document.getElementById("slider-cel-val");
+        if (cel) {
+            const c0 = (this.state.atmosphere && this.state.atmosphere.celLevels) || 8;
+            cel.value = String(c0);
+            if (celVal) celVal.textContent = String(c0);
+            cel.addEventListener("input", () => {
+                const v = this.setCelLevels(parseInt(cel.value, 10));
+                if (celVal) celVal.textContent = String(v);
+            });
+        }
+        const fogS = document.getElementById("slider-fog");
+        const fogVal = document.getElementById("slider-fog-val");
+        if (fogS) {
+            const f0 = (this.state.atmosphere && this.state.atmosphere.fogDistance) || 1.0;
+            fogS.value = String(Math.round(f0 * 100));
+            if (fogVal) fogVal.textContent = `${Math.round(f0 * 100)} %`;
+            fogS.addEventListener("input", () => {
+                const pct = parseInt(fogS.value, 10);
+                this.setFogDistance(pct / 100);
+                if (fogVal) fogVal.textContent = `${pct} %`;
             });
         }
     }
@@ -23150,6 +24981,35 @@ class AnazhRealm {
         this.createGalaxySkybox();
         this.log("Galaxy-Skybox erstellt", "INFO");
 
+        // Welle 6.G3 V2 (V8.25) — Sonne + Mond als sichtbare Himmelskörper.
+        // Beide sind emissive-Sphere-Meshes, Position folgt DirectionalLight
+        // via _updateCelestialBodies(angle). Sonne tagsüber sichtbar, Mond
+        // nachts (gegenüberliegende Hemisphäre). Vision: ein Himmel der lebt,
+        // nicht eine Farb-Animation. Größe 12 m (gut sichtbar aus 380 m Distanz).
+        const sunGeo = new THREE.SphereGeometry(12, 16, 16);
+        const sunMat = new THREE.MeshBasicMaterial({
+            color: 0xffe8b0,
+            fog: false,
+            transparent: true,
+            opacity: 0.95,
+        });
+        const sunMesh = new THREE.Mesh(sunGeo, sunMat);
+        sunMesh.frustumCulled = false; // immer rendern (Himmelskörper)
+        scene.add(sunMesh);
+        this.state.sunMesh = sunMesh;
+        const moonGeo = new THREE.SphereGeometry(9, 16, 16);
+        const moonMat = new THREE.MeshBasicMaterial({
+            color: 0xd0d4e0,
+            fog: false,
+            transparent: true,
+            opacity: 0.9,
+        });
+        const moonMesh = new THREE.Mesh(moonGeo, moonMat);
+        moonMesh.frustumCulled = false;
+        scene.add(moonMesh);
+        this.state.moonMesh = moonMesh;
+        this.log("Himmelskörper hinzugefügt (Sonne + Mond)", "INFO");
+
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
         scene.add(ambientLight);
         const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
@@ -23164,7 +25024,31 @@ class AnazhRealm {
         directionalLight.shadow.camera.top = 300;
         directionalLight.shadow.camera.bottom = -300;
         scene.add(directionalLight);
+        // Welle 6.G3 — Refs cachen für tickDayNight. Eine Quelle der Wahrheit
+        // (Lights+Skybox werden aus state.timeOfDay abgeleitet pro Frame).
+        this.state.ambientLight = ambientLight;
+        this.state.directionalLight = directionalLight;
+        // V8.27 6.G4.a — HemisphereLight: skyColor oben + groundColor unten,
+        // mixt automatisch über mesh.normal.y. Stein-Wand-Oberseite bekommt
+        // Himmel-Tint, Unterseite Erden-Tint — gibt sofort Tiefe ohne
+        // dynamische Schatten. Synchronisiert mit Tag-Nacht (Sky aus
+        // DAY_NIGHT_STOPS) + Welt-Affinität (Ground aus worldFieldAt).
+        // Default-Werte sind nur Saat, _applyDayNightToScene überschreibt.
+        const hemiLight = new THREE.HemisphereLight(0x88a0c8, 0x3a2818, 0.55);
+        scene.add(hemiLight);
+        this.state.hemiLight = hemiLight;
+        // V8.27 6.G4.a — Atmospheric Fog: Tiefen-Gradient via Distanz-Tint.
+        // Berge im Hintergrund verschwinden im Sky-Color. Fog ist Welt-weit
+        // (THREE.Fog statt FogExp2 für klarere Kontrolle). Color wird in
+        // _applyDayNightToScene mit Sky-Color synchronisiert.
+        scene.fog = new THREE.Fog(0x88a0c8, 80, 320);
+        this.state.fog = scene.fog;
         this.log("Beleuchtung hinzugefügt: Ambient (0.6), Directional (1.0) mit Schatten", "INFO");
+        // Welle 6.G3 — initialer Lichtstand aus timeOfDay (Default 0.5 = Mittag).
+        // Pro-Frame-Tick übernimmt danach.
+        if (typeof this._applyDayNightToScene === "function") {
+            this._applyDayNightToScene();
+        }
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         this.state.camera = camera;
@@ -23590,6 +25474,20 @@ class AnazhRealm {
             // HP/Stamina-Bars über der Hotbar, throttled auf 10 Hz.
             this.tickStatsHud(currentTime);
 
+            // ### Tag-Nacht-Zyklus (Welle 6.G3.a) ###
+            // timeOfDay läuft, Lights+Skybox folgen. _applyDayNightToScene
+            // throttled auf 10 Hz, Tick selbst feuert jeden Frame für
+            // smooth Position-Advance.
+            this.tickDayNight(currentTime);
+
+            // ### Wetter-Übergang (Welle 6.G3.b) ###
+            // Cross-Fade über 45 s. No-op wenn kein Übergang aktiv.
+            this.tickWeatherTransition(currentTime);
+
+            // ### Fauna-Lifecycle (Welle 6.G3.c) ###
+            // Alle 10 s: Geburt bei < TARGET, Tod bei > MAX mit Trauer.
+            this.tickFaunaLifecycle(currentTime);
+
             // ### Symphonie-Wetter-Layer (Ring 4) ###
             this.symphonyTick();
 
@@ -23611,12 +25509,19 @@ class AnazhRealm {
             }
 
             // ### Frustum Culling ###
-            const frustum = new THREE.Frustum().setFromProjectionMatrix(
-                new THREE.Matrix4().multiplyMatrices(
-                    this.state.camera.projectionMatrix,
-                    this.state.camera.matrixWorldInverse
-                )
+            // V8.26 Polish §6.1 — Frustum + Matrix4 als state-Pool statt
+            // pro-Frame-Allocation. Vorher: 60 Allocs/s = unnötiger GC-Druck.
+            // Jetzt: einmal allokiert, im Render-Loop nur Werte aktualisiert.
+            if (!this._frustumCache) {
+                this._frustumCache = new THREE.Frustum();
+                this._frustumMatrixCache = new THREE.Matrix4();
+            }
+            this._frustumMatrixCache.multiplyMatrices(
+                this.state.camera.projectionMatrix,
+                this.state.camera.matrixWorldInverse
             );
+            this._frustumCache.setFromProjectionMatrix(this._frustumMatrixCache);
+            const frustum = this._frustumCache;
             this.state.groundChunks.forEach((chunk) => (chunk.visible = this.isInFrustum(chunk, frustum)));
             if (this.state.floatingIslands)
                 this.state.floatingIslands.forEach((island) => (island.visible = this.isInFrustum(island, frustum)));
@@ -23664,6 +25569,36 @@ class AnazhRealm {
                         // bleibt unter Cell-Breite × 60 fps.
                         if (mesh === this.state.playerMesh && velocity.y() < -25) {
                             body.setLinearVelocity(this.setVec(this.state.tmpVec1, velocity.x(), -25, velocity.z()));
+                        }
+
+                        // V8.29.1 — Wasser-Physik. Ist der Spieler unter dem
+                        // Wasser-Niveau, wirkt Auftrieb: die Fall-Geschwindig-
+                        // keit wird stark gedämpft, ein sanfter Aufwärts-Drift
+                        // hebt ihn — er schwimmt, statt auf den Grund zu sinken.
+                        // V8.32 — zwei getrennte Flags: playerUnderwater
+                        // (Körper-Mitte im Wasser → Auftrieb + Bremse) und
+                        // playerEyesUnderwater (Augen/Kamera unter Wasser →
+                        // blauer Tint). Sonst sprang der Tint schon beim
+                        // Waten/Schwimmen an, obwohl der Kopf über Wasser war.
+                        if (mesh === this.state.playerMesh && typeof this.state.waterLevel === "number") {
+                            const submerged = scaledY < this.state.waterLevel;
+                            this.state.playerUnderwater = submerged;
+                            // Augen sitzen auf Kamera-Höhe (scaledY + 1.6).
+                            this.state.playerEyesUnderwater = scaledY + 1.6 < this.state.waterLevel;
+                            if (submerged) {
+                                const vy = velocity.y();
+                                // Tiefer = mehr Auftrieb (bis +2.5 m/s Drift).
+                                const depth = Math.min(8, this.state.waterLevel - scaledY);
+                                const buoyantVy = Math.max(-2.5, vy * 0.45) + depth * 0.18;
+                                body.setLinearVelocity(
+                                    this.setVec(
+                                        this.state.tmpVec1,
+                                        velocity.x() * 0.7,
+                                        Math.min(2.5, buoyantVy),
+                                        velocity.z() * 0.7
+                                    )
+                                );
+                            }
                         }
 
                         // Kill-Plane näher an den Welt-Boden gerückt: vorher
@@ -23736,7 +25671,10 @@ class AnazhRealm {
             const player = this.state.playerMesh;
             const camera = this.state.camera;
             const playerBody = this.state.playerBody;
-            const currentSpeed = this.state.keys["shift"] ? this.state.sprintSpeed : this.state.speed;
+            let currentSpeed = this.state.keys["shift"] ? this.state.sprintSpeed : this.state.speed;
+            // V8.29.1 — Wasser bremst. Unter Wasser bewegt sich der Spieler
+            // auf 55 % Geschwindigkeit — er schwimmt, watet nicht durch.
+            if (this.state.playerUnderwater) currentSpeed *= 0.55;
 
             this.state.forward.set(Math.sin(this.state.yaw), 0, Math.cos(this.state.yaw));
             this.state.right.set(Math.cos(this.state.yaw), 0, -Math.sin(this.state.yaw));
@@ -23945,6 +25883,17 @@ class AnazhRealm {
                 // Bewegungsrichtung schaut — wichtig für asymmetrische Formen
                 // (Drache hat lange Z-Achse) und Vorbereitung für V2-Glieder.
                 player.rotation.y = this.state.yaw;
+                // V8.29.1 — Avatar im 1st-Person SICHTBAR (Schöpfer-Korrektur:
+                // den eigenen Körper zu sehen ist normal — Minecraft etc.
+                // tun das auch). Nur der KOPF wird im 1st-Person versteckt:
+                // die Kamera SITZT im Kopf, kein Spiel zeigt den eigenen
+                // Kopf von innen. Torso/Arme/Beine bleiben sichtbar beim
+                // Runterschauen. Im 3rd-Person ist alles sichtbar.
+                player.visible = true;
+                {
+                    const headPart = player.userData && player.userData.parts && player.userData.parts.head;
+                    if (headPart) headPart.visible = this.state.cameraMode === "third";
+                }
                 if (this.state.cameraMode === "third") {
                     // Orbit-Kamera hinter + über dem Spieler. Pitch hebt/senkt
                     // die Kamera vertikal; Distance bleibt konstant. Look-At
@@ -24008,6 +25957,41 @@ class AnazhRealm {
             this.pruneDistantChunks(playerPos);
 
             // ### Rendering ###
+            // V8.27 — Skybox-Position-Copy DIREKT vor dem Render verschoben.
+            // Vorher in V8.26: kopiert war es zu früh (vor Camera-Update),
+            // Skybox lief 1 Frame hinterher → Sterne rauschten bei Bewegung
+            // + 2 s Nachlauf. Jetzt: Camera ist bereits aktualisiert (siehe
+            // Z. ~25049), Skybox-Position folgt SYNCHRON.
+            if (this.state.camera && this.state.skybox) {
+                this.state.skybox.position.copy(this.state.camera.position);
+            }
+            // V8.28 6.G4.b A — Stern-Feld folgt der Kamera (sonst wandert
+            // der Spieler aus dem Feld heraus) + dreht sidereal mit der
+            // Tageszeit um eine geneigte Achse (Erd-Achsen-Mimik). Die
+            // Rotation gibt den klassischen "Sterne ziehen über den Himmel"-
+            // Effekt — Astronomie statt statischer Tapete.
+            if (this.state.camera && this.state.starField) {
+                this.state.starField.position.copy(this.state.camera.position);
+                const tod = this.state.timeOfDay || 0;
+                this.state.starField.rotation.set(0.4, tod * Math.PI * 2, 0.15);
+            }
+            // V8.28 6.G4.b D — Welt-Wasser folgt der Kamera in xz (eine
+            // grosse Plane, die immer um den Spieler liegt). y bleibt fix
+            // auf waterLevel — das Wasser ist sichtbar nur wo Terrain
+            // darunter liegt (natürliche Senken).
+            if (this.state.camera && this.state.waterPlane) {
+                this.state.waterPlane.position.x = this.state.camera.position.x;
+                this.state.waterPlane.position.z = this.state.camera.position.z;
+                if (this.state.waterPlane.material && this.state.waterPlane.material.uniforms) {
+                    this.state.waterPlane.material.uniforms.uTime.value = currentTime;
+                }
+            }
+            // V8.28 6.G4.b D — Wind. uWindTime läuft kontinuierlich,
+            // uWindStrength emergiert aus weather (rainy = kräftiger).
+            if (this.state.windUniforms) {
+                this.state.windUniforms.uWindTime.value = currentTime;
+                this.state.windUniforms.uWindStrength.value = this.state.weather === "rainy" ? 0.26 : 0.12;
+            }
             this.state.renderer.render(this.state.scene, this.state.camera);
         };
         this.state.renderer.setAnimationLoop(loop);
@@ -24080,10 +26064,9 @@ class AnazhRealm {
                 (this.state.playerMesh.position.y - 3.0) / this.state.scaleFactor,
                 (this.state.playerMesh.position.z + ray.offsetZ) / this.state.scaleFactor
             );
-            const rayCallback = new Ammo.ClosestRayResultCallback(rayStart, rayEnd);
-            this.state.physicsWorld.rayTest(rayStart, rayEnd, rayCallback);
-            if (rayCallback.hasHit()) {
-                const hitPoint = rayCallback.get_m_hitPointWorld();
+            this._runRaycast(rayStart, rayEnd, (cb, hit) => {
+                if (!hit) return;
+                const hitPoint = cb.get_m_hitPointWorld();
                 const hitY = hitPoint.y() * this.state.scaleFactor;
                 const distance = Math.abs(hitY - (this.state.playerMesh.position.y - 0.5));
                 if (distance < groundDistance) {
@@ -24091,12 +26074,11 @@ class AnazhRealm {
                     // Normal aufsammeln — flachste (höchstes y) gewinnt: wenn
                     // ein Ray auf eine flache Sub-Fläche trifft (Treppe, kleine
                     // Plattform), zählt der Spieler als „begehbar geerdet".
-                    const hitNormal = rayCallback.get_m_hitNormalWorld();
+                    const hitNormal = cb.get_m_hitNormalWorld();
                     const ny = hitNormal.y();
                     if (ny > bestNormalY) bestNormalY = ny;
                 }
-            }
-            Ammo.destroy(rayCallback);
+            });
         }
 
         this.state.groundNormalY = isGrounded ? bestNormalY : 1.0;
@@ -24122,24 +26104,25 @@ class AnazhRealm {
                   ]
                 : 0;
         if (height === 0 && this.state.playerMesh) {
-            // Fallback: Verwende Raycasting, um die Höhe direkt von der Physik-Kollision zu erhalten
-            const rayStart = new Ammo.btVector3(
+            // Fallback: Raycast für Terrain-Höhe. V8.26 Polish §6.4 — nutzt
+            // jetzt tmpVec1/tmpVec2-Pool statt new Ammo.btVector3 + manuelle
+            // Destroy. Plus _runRaycast für das Callback-Lifecycle.
+            const rayStart = this.setVec(
+                this.state.tmpVec1,
                 x / this.state.scaleFactor,
                 100 / this.state.scaleFactor,
                 z / this.state.scaleFactor
             );
-            const rayEnd = new Ammo.btVector3(
+            const rayEnd = this.setVec(
+                this.state.tmpVec2,
                 x / this.state.scaleFactor,
                 -100 / this.state.scaleFactor,
                 z / this.state.scaleFactor
             );
-            const rayCallback = new Ammo.ClosestRayResultCallback(rayStart, rayEnd);
-            this.state.physicsWorld.rayTest(rayStart, rayEnd, rayCallback);
-            if (rayCallback.hasHit()) {
-                const hitPoint = rayCallback.get_m_hitPointWorld();
-                height = hitPoint.y() * this.state.scaleFactor;
-            }
-            Ammo.destroy(rayCallback);
+            height = this._runRaycast(rayStart, rayEnd, (cb, hit) => {
+                if (!hit) return 0;
+                return cb.get_m_hitPointWorld().y() * this.state.scaleFactor;
+            });
             this.log(
                 `Terrain-Höhe nicht verfügbar bei (${x.toFixed(2)}, ${z.toFixed(2)}), Raycast-Höhe: ${height.toFixed(2)}`,
                 "DEBUG"
@@ -24270,22 +26253,36 @@ class AnazhRealm {
                     box.position.set(worldX, height + boxHeight / 2, worldZ);
                     box.visible = true;
 
-                    const boxShape = new Ammo.btBoxShape(new Ammo.btVector3(scaleX / 2, boxHeight / 2, scaleZ / 2));
+                    // V8.26 Polish §6.4 — btVector3-Pool statt drei new-Allocs
+                    // pro Wand-Box. Ammo's btBoxShape + setOrigin + Inertia-Init
+                    // kopieren die Werte intern, also kann tmpVec1 sequentiell
+                    // wiederverwendet werden. Plus rbInfo + transform werden
+                    // nach Body-Konstruktion destroyed (sie sind Helper, ihre
+                    // Werte sind im Body gespiegelt).
+                    const halfExtents = this.setVec(this.state.tmpVec1, scaleX / 2, boxHeight / 2, scaleZ / 2);
+                    const boxShape = new Ammo.btBoxShape(halfExtents);
                     const transform = new Ammo.btTransform();
                     transform.setIdentity();
-                    transform.setOrigin(
-                        new Ammo.btVector3(
-                            worldX / this.state.scaleFactor,
-                            (height + boxHeight / 2) / this.state.scaleFactor,
-                            worldZ / this.state.scaleFactor
-                        )
+                    const origin = this.setVec(
+                        this.state.tmpVec1,
+                        worldX / this.state.scaleFactor,
+                        (height + boxHeight / 2) / this.state.scaleFactor,
+                        worldZ / this.state.scaleFactor
                     );
+                    transform.setOrigin(origin);
                     const motionState = new Ammo.btDefaultMotionState(transform);
-                    const localInertia = new Ammo.btVector3(0, 0, 0);
+                    const localInertia = this.setVec(this.state.tmpVec1, 0, 0, 0);
                     const rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, boxShape, localInertia);
                     const body = new Ammo.btRigidBody(rbInfo);
                     this.state.physicsWorld.addRigidBody(body);
+                    // Helper-Objekte räumen — Werte sind in MotionState + Body
+                    // bereits kopiert. boxShape + motionState bleiben referenziert
+                    // vom Body und werden beim Wand-Cleanup destroyed.
+                    Ammo.destroy(rbInfo);
+                    Ammo.destroy(transform);
                     box.userData.physicsBody = body;
+                    box.userData.physicsShape = boxShape;
+                    box.userData.physicsMotionState = motionState;
                     this.state.rigidBodies.push(box);
                     this.state.wallBoxes.push(box);
                     this.state.scene.add(box);

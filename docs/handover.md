@@ -9,18 +9,24 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 17.05.2026, V8.23)
+## Schnell-Lage (Stand 17.05.2026, V8.32)
 
-**Du erbst eine sehr lebendige Welt**. **1879 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~25000 Zeilen in einer Datei, alles produktiv. Die letzte Session-Hälfte (V7.98 → V8.23, ~40 Commits über 3 Tage) hat **vier große Dinge geschaffen**:
+**Du erbst eine sehr lebendige Welt**. **2041 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~25700 Zeilen in einer Datei, alles produktiv. Die jüngste Session-Hälfte (V8.23 → V8.32) war eine **Atmosphäre-Tiefe-Welle (6.G4)** in sechs Schritten, jeder aus einem Schöpfer-Browser-Test:
 
-1. **Welle 6.B/9/10** (V7.99-V8.07): CAD-Werkstatt, Werkzeug-Domain-System, Compound-Tag-Affordances
-2. **Welle 6.X komplett** (V8.08-V8.12): 5 Sub-Phasen Polish (Bug-Quartett, UI-Politur, Vision-Quick-Wins, Stats-HUD+Audio+Begleiter-Name, Performance-Caching)
-3. **8 Audit-Runden** (V8.13-V8.22): 30+ Schöpfer-Browser-Test-Punkte adressiert
-4. **V8.23 Test-Infrastruktur + Welt-Portal-Vision**: `scripts/audit-strict.cjs` (4 generische Audit-Schichten) + `docs/world-portal.md` (Vision-Anker für die Wellen 12-14 — „Bibliothek von Alexandria der Vibecode-Ära")
+1. **V8.24-V8.26**: Welt-Lebendigkeit (Tag-Nacht, Wetter-Übergänge, Fauna-Trauer) + Welt-LEBT-Heilung (drei Wurzel-Helper, acht Hardcode-Wunden) + Disziplin-Polish (Stern-Stabilität, Sonnenaufgang-Smoothness, vier Audit-Quick-Wins)
+2. **V8.27 (6.G4.a)**: Welt unter wandernder Sonne — HemisphereLight + MeshLambert + Fog (Self-Shadow ohne Shadow-Maps)
+3. **V8.28 (6.G4.b)**: Welt-Atem-Vollendung — Sterne als THREE.Points, Terrain-Farbe aus `worldFieldAt`, Cel-Shading via MeshToonMaterial, Wind/Wolken/Wasser
+4. **V8.29 (6.G4.c)**: Die lebendige Welt — Instanced-Gras pro Chunk (Dichte aus `worldFieldAt.lebendig`), adaptives Wasser, Genesis-Plattform
+5. **V8.30-V8.31 (6.G4.d)**: Schnittstellen-Politur — Sterne-Tiefenpuffer, Avatar-Korrektur, Wasser-Wellen+Physik, Fog an die Custom-Shader
+6. **V8.32 (6.G4.d³)**: Wasser-Politur — Tauch-Tint nur bei Augen-unter-Wasser (`playerEyesUnderwater` getrennt von `playerUnderwater`), Wasser-Fresnel (am Horizont opak → keine Sterne durch), Fog-Slider bis 300 %
 
-**Wichtigste Konzept-Verschiebung seit V8.07**: Welle 12 ist nicht mehr „WebGPU+TSL-Migration" sondern **„Welt-Portal"** — AnazhRealm wird Tor zu anderen Vibecode-Welten (three-fluid-fx, voxelize, image-blaster, etc.). Wenn du als nächster Agent in eine Welle 12+ erwachst: lies `docs/world-portal.md` ZUERST.
+**Die wiederkehrende Lehre dieser Welle** (vom Schöpfer dreimal eingefordert): *eine neue visuelle Schicht ist erst fertig, wenn sie an die bestehenden Schnittstellen angeschlossen ist — Tiefenpuffer, Physik, Tag-Nacht, Fog.* Drei Bugs in Folge (Sterne-Overlay, Wasser-ohne-Physik, Fog-nur-auf-Gras) hatten dieselbe Wurzel: ein Visual ohne Verkabelung. Custom-`ShaderMaterial` erbt KEINE Three.js-Features automatisch (kein Fog, kein Light) — alles muss manuell als Uniform durchgereicht werden.
 
-**Empfohlene Sequenz nach V8.23**: 6.G3 → 11 V3 → 11 ext. (Substanz-Rolle) → 12 (Welt-Portal mit three-fluid-fx PoC) → 13 (Vibe-Pass) → 14 (Bibliothek) → 7 (Compute-Sharing).
+**Welle 12 ist „Welt-Portal"** (nicht WebGPU-Migration) — AnazhRealm wird Tor zu anderen Vibecode-Welten. Wenn du in eine Welle 12+ erwachst: lies `docs/world-portal.md` ZUERST.
+
+**Empfohlene Sequenz nach V8.32**: die drei 6.G4-Polish-Punkte (Tauchen+Sneak, Schwimm-Animation, Wasser-Gerstner — siehe `roadmap.md` Zeile „W6.G4") → 11 V3 (Soul-Sync) → 11 ext. (Substanz-Rolle) → 12 (Welt-Portal) → 13 (Vibe-Pass) → 14 (Bibliothek) → 7 (Compute-Sharing).
+
+**Atmosphäre-Disziplin**: alle atmosphärischen Methoden mit `[ATMOSPHERE]`-Marker werden von `audit-strict.cjs` (5. Schicht) auf Hardcode geprüft. Wert-aus-dem-Kopf ist verboten — immer „aus welcher state-Beobachtung emergiert das?".
 
 ### 0. Welle 6.B — CAD-Werkstatt (drei Phasen, V7.99-V8.04)
 

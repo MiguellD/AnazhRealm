@@ -604,12 +604,126 @@ async function auditStateAndMethods() {
 }
 
 // ============================================================
+// 5. Atmosphäre-Hardcode-Audit (V8.25)
+// ============================================================
+// Heilt eine V8.24-Lehre: Atmosphäre-Schichten (Tag-Nacht, Wetter, Fauna,
+// Klang) sind durchsetzt von Hardcode-Wunden wenn der Schreiber Werte aus
+// dem Kopf nimmt statt aus state.beobachten. Dieser Audit pattern-matcht
+// gegen drei Hardcode-Klassen INNERHALB einer Methode die mit `[ATMOSPHERE]`-
+// Marker versehen ist. Andere Methoden bleiben unberührt — die Markierung
+// ist die Vertrauens-Wand: wer eine Methode atmosphärisch nennt, akzeptiert
+// die Disziplin.
+//
+// Hardcode-Klassen:
+//   A) Soul-Type-Map: mehrere `if (x === "soul-name")` oder ternary mit
+//      mehr als 2 Soul/Type-Strings in einer Methode → if-Map. Vision-treu
+//      wäre Affinity-Pick.
+//   B) Hex-Color-Arrays: mehr als 3 wörtliche `0xXXXXXX` in einer Methode →
+//      hardcoded Farb-Tabelle. Vision-treu wäre Modulation aus Tags/Welt.
+//      (Class-Konstanten sind ausgenommen — die sind Saat.)
+//   C) Magic-Number-Frequencies: ternary mit Hz-Zahlen (60..2000) → wahr-
+//      scheinlich Frequenz-Map. Vision-treu wäre _tagToFrequency.
+function auditAtmosphereHardcode() {
+    console.log("\n=== Atmosphäre-Hardcode-Audit ===");
+    const src = fs.readFileSync(SOURCE_JS, "utf8");
+    // Methode-Block extrahieren: von `[ATMOSPHERE]`-Kommentar bis zur
+    // nächsten Methode (Zeile beginnt mit 4-Space + identifier(args).
+    const lines = src.split("\n");
+    const atmosphereMethods = [];
+    for (let i = 0; i < lines.length; i++) {
+        if (!/\[ATMOSPHERE\]/.test(lines[i])) continue;
+        // Suche die Methode darunter (überspringe Comment-Lines)
+        let j = i + 1;
+        while (j < lines.length && /^\s*\/\//.test(lines[j])) j++;
+        // j sollte jetzt auf der Methoden-Signatur sein
+        const sigMatch = /^\s{4}([\w_]+)\s*\(/.exec(lines[j] || "");
+        if (!sigMatch) continue;
+        const methodName = sigMatch[1];
+        // Methode endet beim nächsten gleich-eingerückten `}`
+        let k = j + 1;
+        let depth = 0;
+        while (k < lines.length) {
+            const line = lines[k];
+            for (const ch of line) {
+                if (ch === "{") depth++;
+                else if (ch === "}") depth--;
+            }
+            if (depth < 0) break;
+            k++;
+        }
+        const body = lines.slice(j, k + 1).join("\n");
+        atmosphereMethods.push({ name: methodName, body, startLine: j + 1 });
+    }
+    if (atmosphereMethods.length === 0) {
+        warn("ATMOSPHERE", "Keine `[ATMOSPHERE]`-Marker gefunden", "Marker fehlen oder Audit-Regex passt nicht");
+        return;
+    }
+    let cleanCount = 0;
+    let warnCount = 0;
+    for (const m of atmosphereMethods) {
+        const { name, body } = m;
+        // A) Soul-Type-Maps: zähle `=== "..."`-Vergleiche mit "soul", "sprite",
+        //    "wesen", "geist", "human", "phoenix", "dragon" als Vergleichs-Wert
+        const soulCompares = body.match(
+            /=== ?["'](sprite|wesen|geist|human|phoenix|dragon|sunny|rainy)["']/g
+        );
+        if (soulCompares && soulCompares.length >= 3) {
+            warn(
+                "ATMOSPHERE",
+                `${name}: ${soulCompares.length} Soul/Type-Vergleiche — verdacht auf if-Map`,
+                "nutze _affinityPickFromCandidates oder Tag-basiertes Routing"
+            );
+            warnCount++;
+            continue;
+        }
+        // B) Hex-Color-Arrays in Methode (Class-Konstanten haben eigene
+        //    `static get`-Blöcke, sind nicht hier)
+        const hexColors = body.match(/0x[0-9a-fA-F]{6}/g);
+        if (hexColors && hexColors.length >= 4) {
+            warn(
+                "ATMOSPHERE",
+                `${name}: ${hexColors.length} Hex-Farben in einer Methode — verdacht auf Farb-Tabelle`,
+                "vermeide hardcoded Color-Map, moduliere aus Tags/Welt-Feld"
+            );
+            warnCount++;
+            continue;
+        }
+        // C) Hz-Frequenz-ternary (60..2000 Hz)
+        const ternaryFreq =
+            body.match(/[?:]\s*\d{2,4}(?:\.\d+)?\s*:/g) ||
+            body.match(/\d{2,4}\s*:\s*\d{2,4}\s*:\s*\d{2,4}/g);
+        if (ternaryFreq && ternaryFreq.length >= 2) {
+            // Tiefere Prüfung: liegen die Zahlen im Hz-Range UND in derselben
+            // Zeile wie "freq" oder "Hz"?
+            const freqCtx = /freq\s*=\s*[\w.[\]'"]*\s*===?\s*["']/.test(body);
+            if (freqCtx) {
+                warn(
+                    "ATMOSPHERE",
+                    `${name}: Frequenz-Map aus Soul-Vergleichen erkannt`,
+                    "nutze _tagToFrequency(tags, baseHz) — Klang folgt Substanz"
+                );
+                warnCount++;
+                continue;
+            }
+        }
+        cleanCount++;
+    }
+    if (warnCount === 0) {
+        pass(
+            "ATMOSPHERE",
+            `${cleanCount}/${atmosphereMethods.length} [ATMOSPHERE]-Methoden frei von Hardcode-Mustern`
+        );
+    }
+}
+
+// ============================================================
 // Main
 // ============================================================
 (async () => {
     console.log("AnazhRealm Strict-Audit-Suite\n");
     auditCssVariables();
     auditSoftDefaults();
+    auditAtmosphereHardcode();
     await auditStateAndMethods();
 
     console.log("\n=== Zusammenfassung ===");

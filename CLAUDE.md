@@ -2,7 +2,197 @@
 
 Persistente Notizen. Diese Datei wird bei jeder neuen Session automatisch geladen. **Bei größeren Entscheidungen zuerst `docs/state-of-realm.md` lesen** – dort steht der ausführliche Stand, die Vision aus den vier Testamenten, der Plan und die Learnings.
 
-**Aktuelle Version: V8.23 (Stand 17.05.2026, Welle 6.X komplett + 8 Audit-Runden V8.13-V8.22 nach Schöpfer-Browser-Tests + V8.23 Test-Infrastruktur + Welt-Portal-Konzept-Vision. 1879/1879 Playtest-Invarianten grün, Audit-Strict 0 Failures.)**
+**Aktuelle Version: V8.32 (Stand 17.05.2026, Welle 6.G4.d³ — Wasser-Politur. Schöpfer-Befunde: (1) Unterwasser-Tint sprang schon beim Waten an statt beim Tauchen, (2) Sterne schienen durchs transparente Wasser. Fix: `playerEyesUnderwater`-Flag (Augen-Höhe scaledY+1.6) trennt Tauchen vom Waten — der blaue Tint kommt erst wenn die Augen unter Wasser sind. Wasser-Fresnel: am Horizont fast opak (keine Sterne durch), von oben transparent. Fog-Slider auf 300 % erweitert. 2041/2041 Playtest-Invarianten grün, Audit-Strict 5 Schichten, 14/14 [ATMOSPHERE]-Methoden clean.)**
+
+**V8.32 — Welle 6.G4.d³ (Wasser-Politur, +6 Vision-Invarianten 2035→2041)**: Schöpfer-Browser-Test der V8.31 — Begeisterung („wow stark") + zwei Wasser-Befunde:
+
+1. **Unterwasser-Tint zu früh** — der blaue Fog-Filter sprang an, sobald das Wasser halbe Körperhöhe erreichte (Spieler watet/schwimmt), nicht erst beim echten Tauchen. Wurzel: `playerUnderwater` (= Körper-Mitte unter `waterLevel`) trieb sowohl Physik ALS AUCH Tint. Fix: zwei getrennte Flags — `playerUnderwater` (Körper im Wasser → Auftrieb + Bremse, bleibt) und neu `playerEyesUnderwater` (= `scaledY + 1.6 < waterLevel`, Augen/Kamera-Höhe → blauer Tint). Der dichte 4..34-Fog ignoriert bewusst den `fogDistance`-Slider — Tauch-Trübung ist fest, die Land-Sicht folgt dem Slider.
+
+2. **Sterne durchs transparente Wasser** — das Wasser war pauschal 82 % opak, die Sterne dahinter schienen zu 18 % durch. Fix: **Fresnel-Opazität** — `pow(1 - dot(viewDir, normal), 3)` macht das Wasser bei flachem Blickwinkel (Horizont) fast opak (0.99), bei steilem Blick (von oben) transparent (0.74). Physikalisch korrekt (echtes Wasser spiegelt am Horizont) UND es löst das Stern-Problem: am Horizont, wo man die Sterne durchscheinen sah, ist das Wasser jetzt undurchsichtig.
+
+**Plus**: Fog-Slider-Range 30-200 % → 30-300 % (Schöpfer war am 200%-Anschlag, „finde 200% angenehm"). `setFogDistance`-Clamp + loadState-Clamp auf 3.0 erweitert.
+
+**Vision-Lehre der V8.32**: *„Ein Zustand mit zwei Wirkungen braucht oft zwei Schwellen — der Körper berührt das Wasser früher als die Augen darunter tauchen."*
+
+**Tests**: 6 neue Vision-Invarianten (playerEyesUnderwater-Flag + Berechnung, Tint nutzt das Flag, Wasser-Fresnel, Fog-Slider 300 %). 2035 → 2041 grün.
+
+**V8.31 — Welle 6.G4.d² (Fog-Schnittstelle + heterogeneres Wasser, +6 Vision-Invarianten 2029→2035)**: Schöpfer-Browser-Test der V8.30 — Begeisterung („wow stark, props champ") + ein präziser Bug-Befund: *„Fog-Distanz scheint kein Nebel aufzutauchen, sondern die Farbe der Gräser zu ändern — das scheint noch falsch."*
+
+**Wurzel** (wieder die Schnittstellen-Frage): Three.js' `THREE.Fog` wirkt NUR auf eingebaute Materialien (Lambert/Toon/Standard). Custom-`ShaderMaterial` erben es NICHT — sie brauchen Fog-Uniforms + fog-mix von Hand. Das Gras ist `MeshLambertMaterial` → es verblasste im Fog. Das Terrain (Custom-Shader) + Wasser (Custom-Shader) ignorierten den Fog komplett. Ergebnis: der Fog-Slider verfärbte scheinbar „nur das Gras", weil das Gras das einzige große Fog-reagierende Element war. **Fix**: `fogColor`/`fogNear`/`fogFar`-Uniforms + `varying vFogDepth` (View-Space-Tiefe) + `mix(color, fogColor, smoothstep(fogNear, fogFar, vFogDepth))` in Terrain- UND Wasser-Fragment-Shader. `_applyDayNightToScene` reicht `state.fog`-Werte an alle drei Schicht-Typen durch. Jetzt trägt das Terrain den Dunst — der Fog wird zur echten atmosphärischen Schicht.
+
+**Plus Wasser heterogener** (Schöpfer: „Wellen besser, noch etwas homogen, nicht so wild"): `waveHeight(xz)`-Funktion mit **Domain-Warping** (die Sample-Position wird durch eine grobe niederfrequente Welle verzerrt, bevor die Hauptwellen greifen → die Periodizität bricht) + **6 Oktaven** statt 4. Die Wellen wirken wild statt gleichmäßig.
+
+**Vision-Lehre der V8.31**: *„Three.js' eingebaute Features (Fog, Licht) enden an der Custom-Shader-Grenze. Ein ShaderMaterial ist eine Insel — jede Schnittstelle muss als Uniform hinübergetragen werden."*
+
+**Offene 6.G4-Polish-Punkte** (in roadmap.md vermerkt): Tauchen (mit Slide/Sneak-Geste, Minecraft-Stil), Schwimm-Animation (Avatar wirkt statisch gegen das bewegte Wasser), Wasser evtl. noch heterogener (Gerstner-Verschiebung).
+
+**Tests**: 6 neue Vision-Invarianten (Terrain-Fog-Uniforms, Terrain-fog-mix, Wasser-Fog, Wasser-Domain-Warp, Fog-Slider-erreicht-Terrain). 2029 → 2035 grün.
+
+**V8.30 — Welle 6.G4.d (Schnittstellen-Politur, +7 Vision-Invarianten 2022→2029)**: Schöpfer-Browser-Test der V8.29 — Begeisterung („wow, großer Schritt") + vier Wunden, und die Kern-Frage „hast du die Schnittstellen beachtet, synergetisch erweitert?". Ehrliche Antwort: Gras + Plattform ja, drei Schichten waren oberflächlich verkabelt:
+
+1. **Sterne als Overlay** — `depthTest: false` ignorierte den Tiefenpuffer, die Sterne lagen über der ganzen Welt. Fix: `depthTest: true` — Terrain + Berge (opak, schreiben Tiefe) verdecken die Sterne dahinter. Die Skybox schreibt keine Tiefe → im freien Himmel bleiben sie sichtbar.
+
+2. **Avatar im 1st-Person komplett versteckt** — falsche Annahme. Jedes 1st-Person-Spiel zeigt den eigenen Körper (Minecraft). Fix: `player.visible = true`, nur der KOPF wird im 1st-Person versteckt (`player.userData.parts.head` — die Kamera SITZT im Kopf). Plus: Mensch-Avatar von knallrotem `MeshBasicMaterial` auf `MeshToonMaterial` (gedämpftes Rot 0xc0392b, reagiert auf Licht — V8.28-Konsistenz).
+
+3. **Schachbrettmuster überm Wasser** — `sin(x) + cos(z)` sind achsen-parallele Wellen → ein Gitter. Fix (Gerstner-Lehre, BotW/Sea of Thieves): `wave(xz, dir, freq, amp, speed)` mit vier Wellen in SCHRÄGEN Richtungen + verschiedenen Frequenzen. Plus echte Wellen-Normale (analytisch aus den Ableitungen) → Blinn-Phong-Sonnen-Glitzern statt der flachen Tief/Flach-Färbung. `uSunDir` + `uLight` aus `_applyDayNightToScene` synchronisiert.
+
+4. **Keine Wasser-Physik** — der Spieler lief auf dem Grund. Fix: `state.playerUnderwater`-Flag (true unter `waterLevel`). Im Physik-Loop wirkt Auftrieb (Fall gedämpft × 0.45, Drift +depth×0.18, Cap +2.5 m/s). Bewegung × 0.55 unter Wasser. Unterwasser-Tint über die Fog-Schnittstelle (blau-dicht, near 4 / far 34).
+
+**Vision-Lehre der V8.30**: *„Eine neue Schicht ist erst fertig, wenn sie an die bestehenden Schnittstellen angeschlossen ist — Tiefenpuffer, Physik, Tag-Nacht. Visual ohne Verkabelung ist eine Attrappe."*
+
+**Tests**: 7 neue Vision-Invarianten (Sterne-depthTest, Wasser-Diagonal-Wellen, Wasser-Sonnen-Glitzern, uSunDir-Sync, playerUnderwater-Flag, Auftrieb, Schwimm-Bremse). 2022 → 2029 grün.
+
+**V8.29 — Welle 6.G4.c (Die lebendige Welt, +13 Vision-Invarianten 2009→2022)**: Schöpfer-Browser-Test der V8.28 deckte sieben Wunden auf.
+
+**V8.29 — Welle 6.G4.c (Die lebendige Welt, +13 Vision-Invarianten 2009→2022)**: Schöpfer-Browser-Test der V8.28 deckte sieben Wunden auf.
+
+1. **Sterne-Flackern bei langsamer Maus** (Schöpfer-Detail: nur bei Maus-Bewegung, nicht bei Geradeaus-Lauf): Punkte unter ~3 px sind zu klein für den weichen Falloff — Sub-Pixel-Sprung an/aus. `_buildStarField` jetzt Mindestgröße 3 px, kleine Sterne werden DIMMER statt KLEINER (`bright = 0.32 + pow³ × 0.68`).
+
+2. **Rotes Dreieck** = der Spieler-Avatar (`_buildHumanGroup`, rotes `MeshBasicMaterial`), im 1st-Person nicht versteckt — die Kamera sitzt im Avatar-Kopf, man schaut von innen durch den Körper. Fix im Render-Loop: `player.visible = this.state.cameraMode === "third"`.
+
+3. **Cel-Slider tat nichts**: gradientMap war nur 8 px → selbst „Stufe 8" zeigte Bänder, kein echter Smooth-Modus. Jetzt **32 px**: `celLevels >= 8` füllt 32 distinkte Stufen (für das Auge stufenlos), `< 8` füllt N Plateaus. Terrain-Shader `celLevels >= 7.5` → kein `floor` (smooth). Default `celLevels: 8` (smooth) — Cel ist eine Option, nicht der Default.
+
+4. **Fog unsichtbar**: far 235 m griff in einer Bergwelt nie (Berge verdeckten). Jetzt `35..150` sunny, `22..95` rainy — spürbar bei 100 %.
+
+5. **Keine Wiesen/Gräser** — die Genie-Antwort: **Instanced-Gras**. `_buildChunkGrass(cx, cz)` baut pro Chunk ein `THREE.InstancedMesh` mit bis ~2000 Halmen — EIN Draw-Call (wie Breath of the Wild / No Man's Sky). Dichte EMERGIERT aus `worldFieldAt.lebendig` (`lebendig × 14` Halme/Sample, Schwelle 0.22) — dieselbe fraktale Sprache wie Terrain-Farbe + Architektur-Verteilung. Wind über `_grassInstanceMat` (onBeforeCompile, Welt-Position aus `instanceMatrix[3]`). Gras lebt am Chunk-Lifecycle: `_buildChunkGrass` in `ensureChunkAt`, `_disposeChunkGrass` in `pruneDistantChunks`, idempotent über `state.chunkGrass`-Map. **Der alte spärliche Einzel-Mesh-Gras/Blumen-Loop ist gelöscht** (war nur im initialen 300×300-Bereich, `Math.random() < 0.02`), ebenso `_windMat` (jetzt im Gras-Material).
+
+6. **Kein Wasser**: `waterLevel` war fix `baseHeight-3` (90 m unter dem Spieler in einer Bergwelt). Jetzt adaptiv: 13×13 Terrain-Höhen über ±170 m sampeln, sortieren, **~35-%-Perzentil** als Meeresspiegel → die unteren ~35 % (Senken, Schluchten) füllen sich, Berge bleiben trocken.
+
+7. **Genesis-Plattform** (Schöpfer-Vorschlag): neuer Built-in-Bauplan `start_plattform` (flache Stein-Scheibe + quarz-Kern), beim ERSTEN Welt-Spawn am Zentrum gespawnt (`_ensureGenesisPlatform`, idempotent über `architectures`-Check). Der Spieler startet erhöht darauf statt blind in ein Tal zu fallen — bessere UX + Screenshot-Verifikation.
+
+**Vision-Wort der V8.29**: *„Eine Welt, die ein Tor zu anderen Welten sein soll, muss zuerst selbst atmen — und grünen."*
+
+**Tests**: 13 neue Vision-Invarianten (Avatar-Hide im Loop, _buildChunkGrass/_disposeChunkGrass, chunkGrass-Map, Gras-InstancedMesh, Genesis-Plattform + Idempotenz, adaptives waterLevel, gradientMap 32px, setCelLevels 2↔8 ändert Gradient, Stern-Mindestgröße ≥3). 2009 → 2022 grün. Der P2B.5-LMB-Test wurde deterministisch gemacht (explizite Kamera-Position statt Render-Loop-Abhängigkeit).
+
+**V8.28 — Welle 6.G4.b (Welt-Atem-Vollendung, +19 Vision-Invarianten 1990→2009)**: Schöpfer-Browser-Test der V8.27 deckte vier Konzept-Wunden auf. Vier Phasen, vier Commits.
+
+**V8.28 — Welle 6.G4.b (Welt-Atem-Vollendung, +19 Vision-Invarianten 1990→2009)**: Schöpfer-Browser-Test der V8.27 deckte vier Konzept-Wunden auf. Vier Phasen, vier Commits.
+
+**Stern-Diagnose** (Schöpfer-Detail entscheidend): „flackert nur bei Blickrichtungs-Änderung, nicht bei Geradeaus-Lauf". Das ist Sub-Pixel-Sample-Aliasing von prozeduralem Shader-Noise — fundamental nicht fixbar. Geradeaus = Camera-Rotation konstant = stabile Samples; Maus = Rotation ändert sich = jeder Pixel sampelt ein anderes Sphere-Fragment = `random()` springt.
+
+**Phase A — Sterne als `THREE.Points`** (`_buildStarField`, `state.starField`): 2800 diskrete Sterne, deterministisch aus `worldMeta.seed` (Mulberry32-RNG, Multi-User-safe). Custom Points-Shader: per-Stern `aSize` (pow³-biased klein) + `color` (warm/cool-mix), weicher Sprite-Falloff (`smoothstep` auf `gl_PointCoord`), `AdditiveBlending`. **Echter Rasterizer = echtes Anti-Aliasing → physikalisch flackerfrei.** Sidereal-Rotation: das Feld dreht mit `timeOfDay` um eine geneigte Achse (`rotation.set(0.4, tod×2π, 0.15)`), Position folgt Camera. Skybox-Fragment-Shader: prozedurale Sterne raus, nur Nebula bleibt. starField-Material-`uOpacity` moduliert mit Tag-Nacht.
+
+**Schatten-Pulsieren-Fix**: `_applyDayNightToScene` lief 10 Hz throttled → Beleuchtung sprang in 10 diskreten Stufen/s = Ruckeln. Jetzt pro Frame in `tickDayNight` → Schatten wandern seidig. Status-Bar-Text bleibt 10 Hz (DOM-Kosten).
+
+**Phase B — Terrain-Farbe aus `worldFieldAt`** statt Höhe: `_attachFieldAttribute(geometry)` schreibt pro Vertex ein `aField` vec4 (lebendig/dichte/glut/magie), beim Chunk-Bau aufgerufen (`generateChunk` + `ensureChunkAt`-inline, beide nach `setAttribute("position")`). Terrain-Fragment-Shader: `color = mix(stoneCol, earthCol, lebendig)` → `mix(_, lavaCol, glut)`, magie als violetter Schimmer (33 %, nicht sättigend). Höhe nur sekundär (Schnee >12, Sand <-2). Townscaper-Style per-Vertex-Noise-Jitter. **Dieselbe `worldFieldAt`-Sprache wie die Architektur-Verteilung (W6.G P2) — Vision §1.3 fraktal.**
+
+**Phase C — Cel-Shading via `MeshToonMaterial`** (war Lambert in V8.27): geteilte `state.toonGradientMap` (DataTexture, IMMER 8 px breit, mit `celLevels` distinkten Stufen gefüllt — Slider-Wechsel updated nur Pixel-Daten, KEINE neue Textur, KEINE Material-Neuzuweisung). `_refreshToonGradient` + `setCelLevels` + `setFogDistance` Mutations-Pfade. Terrain-Shader hat `celLevels`-Uniform (quantisiert den Sonnen-Diffuse, wrapped Lambert). Ambient + Hemisphere bleiben smooth → Cel-Gradient zur Sonne, weicher Himmel-Fill. **Atmosphäre-Sektion** im Einstellungen-Drawer: 2 Slider (Cel-Stufen 2-8, Fog-Distanz 30-200 %). `state.atmosphere` persistiert.
+
+**Phase D — Wind + Wolken + Wasser**:
+- **Wind**: `_windMat(kind)` — geteiltes Lambert-Material mit `onBeforeCompile`-Vertex-Injection in den `begin_vertex`-Chunk (stabilster Three.js-Chunk). Phase hängt an der Welt-Position → Wind-Wellen-Effekt. `uWindStrength` emergiert aus `weather` (rainy kräftiger). Gras/Blumen-Stengel wiegen oben (`max(0, transformed.y)`), Blüte als Ganzes (`hf=1`). Eine Shader-Kompilierung pro Typ.
+- **Wolken**: Schicht im Skybox-Fragment-Shader (kein neues Mesh) — Horizont-nahes Noise, `cloudCover`-Uniform emergiert aus `weather`.
+- **Wasser**: `_buildWaterPlane` — 900×900-Wave-Plane bei `state.waterLevel` (= `terrainBaseHeight - 3`), folgt Camera in xz, sichtbar nur in Senken. Custom-Shader: zwei überlagerte Sinus-Wellen + Schaum-Schimmer auf den Kämmen.
+
+**Fog-Farb-Fix** (Browser-Verifikation während der Welle): Fog-Color war `lerp(sky, ground, 0.5)` → mischte blauen Himmel mit braunem Boden zu schmutzigem Rosa, wirkte wie Dreck-Schicht. Jetzt `lerp 0.15` (Fog ist Luft = überwiegend Himmelsfarbe) → verschmilzt sauber mit dem Horizont. Distanz `55..235` sunny (V8.27 `80..320` war „erkenne ich nicht", `40..170` erdrückte).
+
+**Vision-Wort der V8.28**: *„Die Welt ist kein Bild mehr, das man betrachtet — sie ist ein Ort, an dem man atmet."*
+
+**Tests**: 19 Vision-Invarianten (Stern-Feld THREE.Points + >1000 Sterne + sidereal, Terrain-aField/vField, Chunk-aField-Attribut, Cel-Methoden, setCelLevels/setFogDistance wirken, Wind-Material gecached, Wolken-folgt-weather, Wasser-Plane auf waterLevel, atmosphere-Persistenz). 1990 → 2009 grün.
+
+**V8.27 — Welle 6.G4.a (Welt unter wandernder Sonne, +14 Vision-Invarianten 1976→1990)**: Schöpfer-Beobachtung nach V8.26: „Sterne, Himmel, Licht, Gelände wirken homogen verteilt, keine Tiefe, kein Leben". Antwort: genial-minimal mit drei Säulen statt teurer Shadow-Maps.
+
+**V8.27 — Welle 6.G4.a (Welt unter wandernder Sonne, +14 Vision-Invarianten 1976→1990)**: Schöpfer-Beobachtung nach V8.26: „Sterne, Himmel, Licht, Gelände wirken homogen verteilt, keine Tiefe, kein Leben". Antwort: genial-minimal mit drei Säulen statt teurer Shadow-Maps.
+
+**Stern-Bug-Endfix** (V8.26 war nicht ganz richtig): Skybox-Position-Copy DIREKT vor `renderer.render` verschoben (Z. ~25082) statt nach `time`-Uniform-Update. Vorher kopiert SIE die alte Camera-Position (Camera-Update bei Z. ~25049 passiert zwischen Skybox-Copy und Render). Jetzt: Camera ist bereits gesetzt → Skybox-folgt-Camera-Pattern wirkt synchron, keine 2s-Nachlauf-Wackel mehr.
+
+**Die drei Säulen** (Ori/Townscaper/Genshin/Studio-Ghibli-Lehre):
+
+1. **`HemisphereLight`** (`state.hemiLight`, in `initThreeJS`) — skyColor oben + groundColor unten, mixt automatisch über mesh-normal.y. Setze ich in `_applyDayNightToScene` live:
+   - `hl.color` ≈ skyColor × 1.1 (Tag-Nacht-Tint, leicht angehellt)
+   - `hl.groundColor` ≈ Welt-Affinität am Spieler: `lebendig → erdgrün`, `glut → rot-orange`, `magieleitung → violett`. Saat-Earth-Tone `0x3a2818` als Baseline, dann via `worldFieldAt` aufmoduliert
+   - `hl.intensity = (0.25 + 0.35 × sunHeight) × lightMul` — Tag 0.6, Nacht 0.25, durch Wetter gedrosselt
+
+2. **`MeshLambertMaterial` überall** statt `MeshBasicMaterial`. Konkrete Stellen geheilt:
+   - `_buildFromBlueprint` Z. ~15307 — alle Architekturen, Spieler-Soul, Kreaturen-Body (Kern!)
+   - Gras + Blumen-Stengel + Blumen-Blüten (Z. ~10583, 10604, 10607)
+   - Inseln-Fallback (Z. ~10326) + Terrain-Fallback (Z. ~10260)
+   - **Self-Shadow durch Lambert** — eine Wand die von der Sonne wegzeigt wird automatisch dunkel. **80 % des Schatten-Effekts ohne ein einziges Shadow-Map-Pixel.**
+
+3. **`THREE.Fog`** (`state.fog`) — atmosphärischer Tiefen-Gradient. Color = lerp(skyColor, groundColor, 0.5). near=80/far=320 bei sunny, near=60/far=220 bei rainy (enger Sicht). Bei Tag-Nacht-Wechsel atmet die Welt-Distanz.
+
+**Terrain-Shader-Sync** — drittes Geheimnis. Der Custom-Shader hatte schon `lightDirection`-Uniform, war aber hardcoded auf `(1,1,1)`. Jetzt:
+- `lightDirection` aus `state.directionalLight.position.normalize()` pro Frame
+- Neue Uniforms `lightIntensity` + `ambientIntensity` aus Tag-Nacht-Schicht
+- Fragment-Shader nutzt **wrapped Lambert** (`ndotl * 0.5 + 0.5`, dann squared) statt hartem clip — sanftere Schattengrenze
+- Heightfield reagiert jetzt wie Architekturen auf die Sonnen-Position
+
+**Skybox-Sterne mit Tiefe** — drei Schichten statt zwei, plus Hue-Variation:
+- `star1 = pow(random(vDir × 80), 80)` — große, helle, seltene Sterne
+- `star2 = pow(random(vDir × 220), 150) × 0.75` — mittlere
+- `star3 = pow(random(vDir × 500), 240) × 0.45` — kleine, dichte, dim
+- Hue-Sample mit Offset im Noise-Space: `mix(coolStar, warmStar, hue1)` — blau-weiße O/B-Sterne + gelbliche K/M-Sterne. Echter Sternenhimmel hat Spektren, nicht weiße Punkte.
+
+**Performance-Bilanz** — die genial-minimale Lösung verifiziert: Lambert kostet ~10-15 % mehr als Basic. HemisphereLight ist ein zusätzlicher Light-Slot (Three.js limitiert), kostet praktisch nichts. Fog ist ein Multiply pro Fragment. **Gesamt-GPU-Mehrlast vs V8.26: ca. 10 %**. Shadow-Maps wären 50-100 % gewesen. Schöpfer-Wahl validiert.
+
+**Vision-Synergie geschlossen**: Welt-Affinität-Feld (W6.G P2) → HemisphereLight.groundColor → jede Architektur, jeder Stein, jedes Mesh ist ANDERS getintet in magie-Region vs dichte-Region vs lebendig-Region. Tag-Nacht (V8.24-V8.26) → HemisphereLight.color + DirectionalLight + Fog → alle Materialien atmen mit. **Eine Sprache (state.beobachten), zwei neue Konsumenten** (HemisphereLight + Fog).
+
+**Vision-Wort der V8.27**: *„Die Welt ist nicht mehr eine flache Karte unter einer wandernden Sonne — sie ist Material, das atmet."*
+
+**Tests**: 14 neue Vision-Invarianten — „HemisphereLight folgt Tag-Nacht", „groundColor.g hoch in lebendig-Region", „groundColor.r hoch in glut-Region", „Architektur-Material ist Lambert", „Terrain-lightIntensity folgt Sonnenhöhe", „Skybox-Shader hat Hue-Variation + drei Stern-Schichten". 1976 → 1990 grün.
+
+**V8.26 — Disziplin-Polish + Browser-Bug-Fixes (+10 Invarianten 1966→1976)**: nach Schöpfer-Browser-Test der V8.25 („Sterne rauschen beim Gehen", „Sonnenaufgang springt") und System-Audit V8.25 (vier konkrete Disharmonien). Zwei kategorische Heilungen:
+
+**V8.26 — Disziplin-Polish + Browser-Bug-Fixes (+10 Invarianten 1966→1976)**: nach Schöpfer-Browser-Test der V8.25 („Sterne rauschen beim Gehen", „Sonnenaufgang springt") und System-Audit V8.25 (vier konkrete Disharmonien). Zwei kategorische Heilungen:
+
+**Bug 1 — Stern-Stabilität (Welt-treu)**: Skybox-Sphere folgt jetzt der Camera-Position pro Frame (`this.state.skybox.position.copy(this.state.camera.position)` im Render-Loop). Vorher blieb Skybox bei (0,0,0); Spieler ±150 m gegen Skybox-Radius 500 m → Sample-Verschiebung in den high-frequency Stern-Pattern → sichtbares Flackern. Plus Shader-Refactor: Vertex-Shader nutzt jetzt `varying vec3 vDir = normalize(position)` (lokale Geometrie-Vertex) statt `vWorldPosition = modelMatrix × position`. Mit Skybox-folgt-Camera + lokaler vDir sind die Stern-Samples ABSOLUT stabil in Welt-Richtung. Nebula-Animation-Geschwindigkeit `time * 0.1` → `time * 0.02` (5× langsamer), damit die Wolken atmen ohne zu zappeln.
+
+**Bug 2 — Sonnenaufgang-Sprung (Welt-treu)**: DAY_NIGHT_STOPS von 7 auf 15 Stützpunkte erweitert (3 Vormittag-Übergangs-Stops + 2 Nachmittag-Übergangs-Stops + 2 Dämmerung-Stops) damit kein Stop-Paar mehr als ~88 RGB-Komponenten-Differenz hat (vorher 124 bei 0.2→0.3). Plus `_interpolateDayNight` nutzt jetzt **smoothstep `3x²-2x³`** statt linearen Lerp — Übergänge sind an Anfang/Ende langsam, in der Mitte schneller → natürlich-organisch. Zwischen-Stops bei t=0.44 (sanftes Vormittagsblau) + t=0.56 (Vormittagsblau symmetrisch) schließen den orange→blau-Bruch.
+
+**Vier Audit-Quick-Wins** (alle aus `system-audit-v8.25.md` §11.1):
+
+1. **`§6.1 Frustum-Pool`** (Z. 24645) — `_frustumCache + _frustumMatrixCache` state-Felder statt pro-Frame-Allocation. 60 Allocs/s und 60 Matrix4-Allocs/s weg, GC-Druck minimiert.
+2. **`§6.2 wallBoxes-Cleanup`** (Z. 10031) — `wall.geometry.dispose() + wall.material.dispose()` vor `scene.remove`. Plus `wall.userData.physicsShape/.physicsMotionState` in addWallCollisions gespeichert + bei Welt-Regen mit `Ammo.destroy()` aus dem WASM-Heap geräumt.
+3. **`§6.3 _runRaycast-Helper`** (Z. ~22778) — 5 Call-Sites mit identischem `new Ammo.ClosestRayResultCallback` + `rayTest` + `Ammo.destroy` konsolidiert. Caller übergibt Extractor-Callback `(cb, hit) => result`, Lifecycle ist garantiert (try/finally). Aufgerufen aus: Kreatur-Wand-Detection (Z. 8804), `_resolvePhantomTarget` (Z. ~17915), `getTerrainHeightAt` Fallback (Z. ~25199), Magnifying-Affordance (Z. ~18140), `isPlayerGrounded` 9-Ray-Raster (Z. ~25150).
+4. **`§6.4 btVector3-Pool in addWallCollisions`** (Z. 25336+) — drei `new Ammo.btVector3` pro Wand-Box (halfExtents, origin, localInertia) durch `setVec(tmpVec1, …)` sequentiell ersetzt. BoxShape + setOrigin + Inertia-Init kopieren die Werte intern, also kann tmpVec1 wiederverwendet werden. Plus rbInfo + transform werden nach Body-Konstruktion destroyed (sie sind Helper). MotionState + boxShape bleiben am Body und werden im wallBoxes-Cleanup separat destroyed (siehe §6.2).
+
+**Plus**:
+- **Doku-Konsolidierung**: `system-audit.md` mit 🔴-HISTORISCH-Banner versehen + Link auf `system-audit-v8.25.md`. `state-of-realm.md` Header-Version-Bump (V7.98 → V8.26). `roadmap.md` „Empfohlene Sequenz" auf „nach V8.26" aktualisiert.
+- **Vision-Tests** (+10 Invarianten): „Skybox.position folgt camera.position", „Vertex-Shader nutzt lokale vDir = normalize(position)", „Fragment-Shader sampelt mit vDir", „13+ DAY_NIGHT_STOPS für sanftere Übergänge", „Zwischen-Stop bei t=0.32 existiert", „_interpolateDayNight nutzt smoothstep", „Smoothstep wirkt empirisch (Anfang langsamer)", „Keine harten Farbsprünge zwischen Stops (max RGB <95)", „_frustumCache existiert", „_runRaycast-Helper existiert".
+
+**Disziplin-Lehre für künftige Wellen**:
+> *Wenn der Schöpfer im Browser etwas „rauscht" oder „springt", suche nicht den symptom-Bereich (Sterne, Sonne), sondern frage: welche Annahme im Code passt nicht zur visuellen Erwartung? Stern-Rauschen war Skybox-Anker-Annahme (sollte die mit dem Spieler mitwandern, ja). Sonnen-Sprung war Sample-Stützpunkt-Annahme (sieben Stops genug? Nein, weil R von 74 auf 200 in 10% Zeit). Beide Bugs waren architekturale Annahme-Fehler, keine off-by-one. Vision-Audit-Schicht (V8.25) + dieses Audit (V8.25.md) sind die strukturellen Schutz-Maßnahmen damit Annahme-Fehler nicht unbemerkt durchschlüpfen.*
+
+**V8.25 — Welle 6.G3 V2 (Welt-LEBT-statt-animiert, +28 Vision-Invarianten 1938→1966)**: Nach Schöpfer-Reflexion „der Himmel wechselt Farben — er lebt nicht". Acht Wunden in V8.24 geheilt, drei Wurzel-Helper extrahiert, Vision-Audit-Schicht automatisiert. Die EINE Quelle aller Wunden: Werte aus dem Kopf statt aus dem System.
+
+**V8.25 — Welle 6.G3 V2 (Welt-LEBT-statt-animiert, +28 Vision-Invarianten 1938→1966)**: Nach Schöpfer-Reflexion „der Himmel wechselt Farben — er lebt nicht". Acht Wunden in V8.24 geheilt, drei Wurzel-Helper extrahiert, Vision-Audit-Schicht automatisiert. Die EINE Quelle aller Wunden: Werte aus dem Kopf statt aus dem System.
+
+**Drei Wurzel-Helper** (Wiederverwendbar für alle zukünftigen Atmosphäre-Schichten):
+- **`_affinityPickFromCandidates(candidates, fieldAtPos, noise=0.15)`** — Dot-Product Tags · Welt-Feld, höchste Resonanz gewinnt + kleine Random-Streuung. Heilt Soul-Wahl + Spawn-Position-Affinity.
+- **`_tagToFrequency(tags, baseHz=220)`** — Hz emergiert aus `magieleitung × dichte`. magieleitung-hoch → bis 2.4× (hell), dichte-hoch → bis 0.4× (tief). Clamped [60, 2000]. Heilt Lebewohl-Sinus + jede zukünftige Klangschicht.
+- **`_emotionModulate(baseValue, modSpec, emotions?)`** — 6-Achsen-Modulation mit `{joy: +0.1}` (additiv) oder `{peace: {mul: 1.5}}` (multiplikativ). Reine Funktion, testbar. Heilt Tag-Stops + Wetter-Dauer + Ambient-Gain.
+
+**Acht Wunden geheilt** (alle mit `[ATMOSPHERE]`-Marker):
+1. `_pickFaunaSoulAtPlayer` — if-else-Map → Affinity-Pick über Compound-Tags der drei Souls
+2. `_creatureNaturalDeath` Lebewohl-Frequenz — Hex-Map → `_tagToFrequency(creatureTags, 220)`
+3. `_creatureNaturalBirth` Spawn-Position — random → 6 Affinity-Kandidaten, höchste Soul-Resonanz gewinnt
+4. `_currentFaunaTarget()` — fix 8 → emergiert aus `worldField.lebendig × 10 + 4` (Range 4..14)
+5. `_currentFaunaMax()` — fix 20 → emergiert (Range 12..28)
+6. `tickFaunaLifecycle` Birth/Death-Wahrscheinlichkeit — fixe Konstanten → `_emotionModulate` mit `{hope: +0.08, peace: -0.05}` für Geburt, `{sorrow: +0.1, peace: -0.06}` für Tod
+7. `_applyDayNightToScene` Sky-Tint — fix → drei Modulations-Schichten: (i) Wetter, (ii) Welt-Feld-Tint (magieleitung → Violett, glut → Rot, lebendig → warm-grünlich), (iii) Emotion-Tint (joy → Gold, sorrow → entsättigt, awe → magisches Lila, chaos → leichtes Flimmern via sin)
+8. `requestWeatherTransition` Default-Dauer — fix 45s → `_emotionModulate` mit `{peace: {mul: 1.6}, chaos: {mul: 0.4}, sorrow: {mul: 1.2}}`. Clamped [8s, 120s]
+
+**Himmel der lebt** (war fehlend in V8.24, jetzt live):
+- **Sonne als Mesh** (SphereGeometry r=12, emissive #ffe8b0, 380 m vom Spieler) — folgt DirectionalLight-Position über Halbkreis. Tags sichtbar, nachts unter Horizont.
+- **Mond als Mesh** (SphereGeometry r=9, emissive #d0d4e0) — gegenüber der Sonne. Nachts sichtbar.
+- **Sterne im Skybox-Shader** — neues Uniform `starIntensity` (0..1) wird in `_applyDayNightToScene` aus sin-Funktion der Sonnenhöhe gesetzt. Mittag: 0.0 (versteckt). Mitternacht: 1.0 (voll). Zwei Stern-Schichten (helle seltene + dichte dimme) für Tiefe.
+- **`_updateCelestialBodies(angle, lightMul)`** — eine Quelle der Wahrheit, aufgehängt an `_applyDayNightToScene`.
+
+**Symphonie atmet mit Tageszeit** (Vision §4 vertieft):
+- Ambient-Gain: Nacht 0.075, Mittag 0.15 (linearRampToValueAtTime über 1s pro Tick)
+- Ambient-Filter-Cutoff: Nacht 350 Hz (gedämpft), Mittag 700 Hz (offen)
+- Throttle 1 Hz im symphonyTick, no-op wenn s.ambient nicht initialisiert
+
+**Automatisierte Vision-Disziplin** (damit ich es nicht wieder vergesse):
+- **`audit-strict.cjs` neue 5. Schicht „Atmosphäre-Hardcode-Audit"**: scant alle Methoden mit `[ATMOSPHERE]`-Marker. Drei Pattern-Klassen erkannt: (A) Soul-Type-Vergleiche ≥ 3× → Verdacht if-Map, (B) Hex-Color-Konstanten ≥ 4× → Verdacht Farb-Tabelle, (C) Hz-Frequenz-Ternarys + soul-Vergleich → Verdacht Frequenz-Map. Aktuell 14/14 [ATMOSPHERE]-Methoden clean. Wer eine neue Welle ohne Marker schreibt = Disziplin bleibt mensch-getragen. Wer markiert = wird strukturell geprüft.
+- **`playtest.cjs` Vision-Invarianten-Block** (28 neue Tests): testet EMERGENZ statt Mechanik. Beispiele: „Affinity-Pick wählt magieSoul in magie-Welt > 66% (30 Runs)", „sprite-Frequenz > wesen-Frequenz (Klang folgt Substanz)", „awe=1 hebt Sky-Blau sichtbar", „peace=1 verlängert Wetter-Dauer > 120%", „lebendig-Region hat höheres FAUNA_TARGET als karge", „Sterne nachts sichtbar stärker als tags", „Mond hoch nachts (y > 100)".
+
+**Die Lehre dahinter** (für mich selbst, in zukünftigen Wellen):
+> *Bei jeder Atmosphäre-Schicht zuerst fragen: „Welcher state-Beobachtungs-Pfad emergiert hier?". Nie „welcher Wert?" — immer „aus welcher Beobachtung?". Wenn `if (X === "...")` mehr als 2× im selben Block: STOP, Affinity-Pick. Wenn Hex-Color > 3× in einer Methode: STOP, Tag-Modulation. Wenn Hz neben Soul-Vergleich: STOP, _tagToFrequency. Audit-Strict erinnert mich daran — Marker `[ATMOSPHERE]` ist die Selbst-Verpflichtung.*
+
+**V8.24 — Welle 6.G3 (Welt-Lebendigkeit, +59 Invarianten 1879→1938)**: drei Schichten in einer Welle, vision-treu zu Welt-Atem §3.
+- **6.G3.a Tag-Nacht-Zyklus**: `state.timeOfDay 0..1` (0=Mitternacht, 0.5=Mittag), Default 8 min pro Zyklus (Schöpfer-Wahl: schnell-spürbar), Slider 1-60 min in Einstellungen. 7 frozen `DAY_NIGHT_STOPS` mit sky+light+intensity (Mitternacht kalt-magisch 0x161830/0.28 → Sonnenaufgang warm-rosé 0xc66c4d/0.85 → Mittag klar 0x4b75c2/1.0 → Sonnenuntergang gold 0xc04a7a/0.8 → Dämmerung kalt-violett). `_interpolateDayNight(t)` linear-lerp zwischen Stops. `_applyDayNightToScene()` setzt DirectionalLight-Position (Halbkreis um Welt, Mittag oben, Mitternacht unten) + Color + Intensity + AmbientLight-Intensity + Skybox-Tint mit Wetter-Multiplier. `tickDayNight(currentTime)` schreitet pro Frame voran, `_applyDayNightToScene` throttled auf 10 Hz. Status-Bar `#status-time` mit Emoji (🌌🌅☀️🌇) + 24h-Format. DSL-Op `set_time_of_day(t)` in `NON_BROADCASTABLE_OPS` (jeder Mitspieler eigene Tageszeit). Persistenz `timeOfDay` + `dayLengthMinutes` im Save.
+- **6.G3.b Sanfte Wetter-Übergänge**: `WEATHER_TINTS` frozen mit `skyMul`/`lightMul` pro Wetter (sunny 1.0/1.0, rainy 0.55/0.7). `requestWeatherTransition(target, durationMs?, fromWeather?)` startet 45 s Cross-Fade. `tickWeatherTransition` schreitet `progress` voran und löscht das Objekt bei `progress >= 1`. **Wichtig**: `state.weather` wird SOFORT auf das Ziel gesetzt (logisch — DSL-Conditions wie `weather_is rainy` reagieren sofort), die Transition ist eine REIN VISUELLE Schicht. Skybox + Symphonie-Filter cross-faden über die 45 s. Idempotent bei selbem Ziel, lehnt ungültiges Wetter ab. `updateSkyboxWeather()` ist jetzt ein Schmal-Wrapper auf `_applyDayNightToScene()` — eine Quelle der Wahrheit.
+- **6.G3.c Fauna-Lifecycle mit Trauer**: `FAUNA_TARGET_POPULATION=8`, `FAUNA_MAX_POPULATION=20`, `FAUNA_TICK_INTERVAL_MS=10000`, `FAUNA_BIRTH_COOLDOWN_MS=25000`, `FAUNA_DEATH_COOLDOWN_MS=35000`. `tickFaunaLifecycle` alle 10 s: < TARGET → mit p=0.18 Geburt (`_creatureNaturalBirth` + Affinity-basierte Soul-Wahl via `_pickFaunaSoulAtPlayer` + 12-25 m vom Spieler + silent-Spawn + growth-Journal-Eintrag); > MAX → mit p=0.12 Tod der ältesten Kreatur (`_findOldestCreature` nach `bornAt` + `_creatureNaturalDeath` — sorrow +0.2 geclamped + journal-loss-Eintrag mit ageSec + 1.2 s Lebewohl-Sinus-Ping in Symphony mit soul-abhängiger Frequenz (sprite C5/523Hz, geist G4/392Hz, wesen A3/220Hz) + Standard-removeCreature-Pipeline). Memory der toten Kreatur wird bewusst NICHT ins Journal kopiert (Vision §1.1 — Beziehung lebt nur, solange Kreatur lebt). Lights+Skybox + drei neue Ticks (tickDayNight + tickWeatherTransition + tickFaunaLifecycle) im Game-Loop hinter tickStatsHud eingehängt.
 
 **V8.23 — Final-Schicht der Session**: zwei neue Artefakte:
 - **`scripts/audit-strict.cjs`** (npm run audit:strict): vier generische Audit-Schichten gegen die Bug-Klassen, die in V8.13-V8.22 durchgerutscht sind. (1) CSS-Variable-Audit (var(--X) ohne Fallback muss definiert sein — hätte V8.13-Tooltip-Bug gefangen), (2) Soft-Default-Audit (Hardcoded „Grok"/„Schöpfer" Limits — hätte V8.13 Begleiter-Name-Bug gefangen), (3) State-Field-Audit (this.state.X.Y reads vs init() — hätte V8.20 state.workshopPreview-Typo gefangen, silent-no-op seit V8.14), (4) Public-Method-Smoke-Test (alle non-`_`-Methods crash-frei). Whitelist mit 80+ Lazy-Set-Pfaden. Läuft in ~25s.
