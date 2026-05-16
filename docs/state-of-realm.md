@@ -1,4 +1,4 @@
-# Zustand des Realm — Stand: 17.05.2026 (V8.39)
+# Zustand des Realm — Stand: 17.05.2026 (V8.40)
 
 **Welle 6.H V2 vollendet (14/14 Sub-Phasen)** — Kreaturen sind jetzt vollwertige Co-Schöpfer-Wesen mit 9 Identitäts-Schichten (Body, Specs, Equipped, Boosts, Tasks, Memory+Persistenz, Konversation via @-Adresse, Proaktivität, Welt-Aktion-Vorschläge mit Sandbox). **LLM-Provider-System maximal robust nach 5-Versionen-Iteration (V7.94-V7.98)** — jedes Ollama-Setup funktioniert: lokal, gehostet, Cloud, Reasoning-Models, lokale 7B-Modelle. CORS-Lösung via save-server-Proxy, Parser mit Plain-Text-Fallback.
 
@@ -184,6 +184,14 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 ## 6. Learnings aus dieser Session
 
 Echt gelernt, nicht performt:
+
+### V8.40 (17.05.2026) — Regler-Anpassungen: Sicht-Ring + Cel-Stufen + Fog
+
+Drei Schöpfer-Wünsche aus dem V8.39-Browser-Test, je per AskUserQuestion vorab abgeglichen: Sicht-Ring 1–8 (Default 9×9), Cel-Stufen 2–16 (8+ Reserve), Fog-Effekt verdreifacht. Eine Lehre:
+
+**Eine Default-Änderung ist nie nur eine Zahl.** Der Sicht-Ring-Default 2→4 brach zwei Playtest-Invarianten — nicht weil die Tests falsch waren, sondern weil ein größerer Default-Ring mehr Chunks vorlädt: der extendTerrain-Test fand seine „Außen"-Chunks plötzlich schon im geladenen Ring, und der chunkRingRadius-Default-Test prüfte noch die alte Zahl. Eine Konstante verschiebt den Zustand, auf dem andere Tests stehen. Die Disziplin: nach jeder Konstanten-/Default-Änderung den Playtest fragen — und die gefundenen Test-Brüche sind oft kein Bug, sondern ein berechtigtes „der Test muss die neue Realität anerkennen".
+
+**Vision-Wort der V8.40**: *„Freiheit bei Stabilität: der Regler darf bis ans Limit — aber das Limit muss tragen. Eine Zahl zu verdoppeln heißt, ihre ganze Folgekette mitzudenken."*
 
 ### V8.39 (17.05.2026) — Werkzeug-Klassen + Präzision→Qualität
 

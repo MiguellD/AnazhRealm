@@ -9,11 +9,13 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 17.05.2026, V8.39)
+## Schnell-Lage (Stand 17.05.2026, V8.40)
 
-**Du erbst eine sehr lebendige Welt**. **2137 Playtest-Invarianten grün + 0 Audit-Strict-Failures + smoke-multiuser grün**, ~27800 Zeilen in einer Datei, alles produktiv.
+**Du erbst eine sehr lebendige Welt**. **2144 Playtest-Invarianten grün + 0 Audit-Strict-Failures + smoke-multiuser grün**, ~27800 Zeilen in einer Datei, alles produktiv.
 
-**Jüngste Welle — V8.39 (Werkzeug-Klassen + Präzision→Qualität)**: das vom Schöpfer gewünschte Werkzeug-System. (1) Farb-Sprache — jede Rolle eine feste Farbe (`BLUEPRINT_ROLE_COLORS`), Rollen-Chip + Werkstatt-Bauplan-Zeile leuchten darin; (2) `computeBlueprintQuality` (= mittlere Part-Präzision) skaliert die Produkt-Wirkung — `computeCreatureStats` + Konsumables ziehen jetzt × (0.5+0.5·Qualität), die alte „Präzision"-Zeile heißt jetzt „Qualität" mit Stern-Rating; (3) die Werkzeug-Op-Stamina skaliert mit dem cap (stumpf teurer als fein) — die min-Regel bleibt unantastbar. Verifikations-Lehre: die Explore-Karte sagte „Präzision nicht in Stats konsumiert" — falsch, `computePlayerStats` tat es schon (Welle 10a); trust-but-verify am Code hat es gefangen. **Offen (geparkt)**: die Performance-Tiefe-Welle (die voll ausgereizte Welt flüssig — Schöpfer-Wunsch aus dem V8.37-Test).
+**Jüngste Welle — V8.40 (Regler-Anpassungen)**: drei Schöpfer-Wünsche aus dem V8.39-Browser-Test, je per AskUserQuestion abgeglichen. (1) Sicht-Ring-Regler 1–8 (3×3…17×17), Default 4 (9×9); (2) Cel-Stufen-Regler 2–16, Default 8 (8–16 alle smooth = Reserve, Schöpfer-Wahl); (3) Fog-Effekt verdreifacht — Label „100%" = `fogDistance`-Mult 3.0 (= heutiger 300%-Fog, neuer Default), Regler bis „300%" = mult 9.0. **Offen + WICHTIG**: der Schöpfer-Befund aus dem V8.40-Browser-Test — bei Sonnenaufgang fließt ein „Rauschen"/Cel-Bänder über die Strukturen, Schatten wirken nicht auf die ganze Umgebung, Tag-Nacht-Übergänge zu ruckartig. Plus die geparkte Performance-Tiefe-Welle. Beides ist die nächste Welle.
+
+**Welle davor — V8.39 (Werkzeug-Klassen + Präzision→Qualität)**: das vom Schöpfer gewünschte Werkzeug-System — Farb-Sprache (`BLUEPRINT_ROLE_COLORS`, Rollen-Chip + Bauplan-Zeile leuchten), `computeBlueprintQuality` skaliert die Produkt-Wirkung (`computeCreatureStats` + Konsumables × 0.5+0.5·Qualität), Werkzeug-Op-Stamina skaliert mit dem cap.
 
 **Welle davor — V8.38 (Werkstatt-UX: Hover-Info + sichtbare Verbindungen + Preview-Höhe)**: drei Punkte aus dem Schöpfer-Browser-Test der V8.37. (1) Hover über einen Bauplan-Slot (Inventar/Hotbar) zeigt die Bau-Materialien + ob man sie hat (✓/✗); (2) Verbindungen im 3D-Preview sichtbar — depthTest-freie Linie + Mittelpunkt-Marker (auch bei überlappenden Parts); (3) Werkstatt-Preview-Canvas 5:3 statt 1:1 (~60 % Höhe) → Stats-Panel ohne Scrollen sichtbar.
 
@@ -39,7 +41,7 @@ Die Session-Hälfte davor (V8.23 → V8.33) war eine **Atmosphäre-Tiefe-Welle (
 
 **Welle 12 ist „Welt-Portal"** (nicht WebGPU-Migration) — AnazhRealm wird Tor zu anderen Vibecode-Welten. Wenn du in eine Welle 12+ erwachst: lies `docs/world-portal.md` ZUERST.
 
-**Empfohlene Sequenz nach V8.39**: **V8.40 (Regler-Anpassungen)** — drei Schöpfer-Wünsche aus dem V8.39-Browser-Test: (1) **Sicht-Ring** — 9×9 als Default + Regler-Bereich verdoppeln (heute 1–4 = 3×3…9×9 → neu 1–8, Default-Wert 4); (2) **Cel-Stufen** — 8 bleibt Default, Regler-Bereich verdoppeln (heute 2–8 → neu 2–16; `_refreshToonGradient`-Clamp + Terrain-Shader-`celLevels` mitziehen); (3) **Fog** — der heutige 300%-Effekt (`fogDistance`-Mult 3.0) wird der neue Default und trägt das Label „100%"; der Regler reicht weiter bis Label „300%" (= 3× das neue 100% = `fogDistance` 9.0 = 9× heute), der Fog-Effekt-Bereich verdreifacht sich also (`setFogDistance`-Clamp + `loadState`-Clamp + Slider-Label-Mapping anpassen). Danach die geparkte **Performance-Tiefe-Welle** (die voll ausgereizte Welt — 120 Kreaturen, dichtes Gras, 9×9 Chunks — flüssig, durch Engine-Optimierung, NICHT durch Feature-Kürzung; Schöpfer-Wunsch aus dem V8.37-Browser-Test). Dann **W12 (Welt-Portal PoC mit three-fluid-fx)** → 13 (Vibe-Pass) → 14 (Bibliothek) → 7 (Compute-Sharing). W12 ist der große Sprung — AnazhRealm wird Tor zu anderen Vibecode-Welten; lies `docs/world-portal.md` ZUERST. Die 13-Punkte-Browser-Test-Liste der V8.35 ist mit V8.36–V8.38 vollständig abgearbeitet, das Werkzeug-System mit V8.39.
+**Empfohlene Sequenz nach V8.40**: die **Tag-Licht-/Performance-Welle** — zwei Schöpfer-Befunde aus dem V8.40-Browser-Test, zusammen eine Welle: (a) **Tag-Licht-„Rauschen"** — bei Sonnenaufgang fließen Cel-Schattenbänder über die Strukturen, die Schatten wirken nicht auf die ganze Umgebung, die Tag-Nacht-Übergänge sind zu ruckartig (nachts ist alles top — es ist licht-gekoppelt). Diagnose-Startpunkt: `_applyDayNightToScene`, der Terrain-Custom-Shader (cel-Quantisierung), das Cel-Banding auf Strukturen, die Übergangs-Interpolation. (b) **Performance-Tiefe** — die voll ausgereizte Welt (120 Kreaturen, dichtes Gras, bis 17×17 Chunks) flüssig durch Engine-Optimierung (Off-Screen-Sparsamkeit + Distanz-LOD, Schöpfer-Wahl „beides kombiniert"), NICHT durch Feature-Kürzung. Dann **W12 (Welt-Portal PoC mit three-fluid-fx)** → 13 (Vibe-Pass) → 14 (Bibliothek) → 7 (Compute-Sharing). W12 ist der große Sprung — lies `docs/world-portal.md` ZUERST. Die 13-Punkte-Browser-Test-Liste der V8.35 ist mit V8.36–V8.38 abgearbeitet, das Werkzeug-System mit V8.39, die Regler mit V8.40.
 
 **Atmosphäre-Disziplin**: alle atmosphärischen Methoden mit `[ATMOSPHERE]`-Marker werden von `audit-strict.cjs` (5. Schicht) auf Hardcode geprüft. Wert-aus-dem-Kopf ist verboten — immer „aus welcher state-Beobachtung emergiert das?".
 
@@ -190,6 +192,20 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. sind VOLLSTÄNDIG — die
 ---
 
 ## Session-Tagebuch (chronologisch, jüngste oben)
+
+### V8.40 — Regler-Anpassungen: Sicht-Ring + Cel-Stufen + Fog (17.05.2026)
+
+Drei Schöpfer-Wünsche aus dem V8.39-Browser-Test, je per AskUserQuestion
+vorab abgeglichen: Sicht-Ring 1–8 (Default 9×9), Cel-Stufen 2–16 (8+ als
+Reserve), Fog-Effekt verdreifacht. 2137 → 2144 Invarianten (+7).
+
+**Die Lehre**: vor einer Regler-Änderung ALLE Schnittstellen abklopfen.
+Der Sicht-Ring-Default 2→4 brach zwei Tests — nicht weil die Tests falsch
+waren, sondern weil ein größerer Default-Ring mehr Chunks vorlädt: der
+extendTerrain-Test fand seine „Außen"-Chunks plötzlich schon geladen.
+Eine Default-Änderung ist nie nur eine Zahl; sie verschiebt den Zustand,
+auf dem andere Tests stehen. Trust-but-verify heißt auch: nach jeder
+Konstanten-Änderung den Playtest fragen, nicht annehmen.
 
 ### V8.39 — Werkzeug-Klassen + Präzision→Qualität (17.05.2026)
 

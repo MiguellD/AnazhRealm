@@ -294,11 +294,14 @@ function startSaveServer() {
                     // sicherer als die direction-API, die immer den Map-Mittel-
                     // punkt nimmt. Wir bauen ein 3×3-Außen-Cluster east-süd
                     // sowie eine Diagonale, um auch Eck-Nähte zu testen.
-                    r.ensureChunkAt(8, 7);
-                    r.ensureChunkAt(9, 7);
-                    r.ensureChunkAt(8, 8);
-                    r.ensureChunkAt(-1, -1);
-                    r.ensureChunkAt(-1, 0);
+                    // V8.40 — der Default-Sicht-Ring ist jetzt 4 (9×9); die
+                    // alten Nah-Koordinaten lägen im geladenen Ring. Bewusst
+                    // weit weg, damit es echte Neu-Chunks sind.
+                    r.ensureChunkAt(20, 20);
+                    r.ensureChunkAt(21, 20);
+                    r.ensureChunkAt(20, 21);
+                    r.ensureChunkAt(-15, -15);
+                    r.ensureChunkAt(-15, -14);
                     const after = r.state.chunkMap.size;
                     const newKeys = [...r.state.chunkMap.keys()].filter((k) => !beforeKeys.has(k));
                     let allHeightsFinite = true;
@@ -12720,6 +12723,48 @@ function startSaveServer() {
                 check("V8.39: Werkzeug-Klassen Tests laufen", false, v839Results ? v839Results.error : "no result");
             }
 
+            // ### V8.40 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
+            const v840Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    const ring = document.getElementById("slider-ring");
+                    out.ringSliderRange = !!ring && ring.max === "8" && ring.value === "4";
+                    const cel = document.getElementById("slider-cel");
+                    out.celSliderRange = !!cel && cel.max === "16" && cel.value === "8";
+
+                    // Cel-Stufen: Regler-Bereich bis 16, 8+ bleibt smooth (Reserve).
+                    const origCel = r.state.atmosphere ? r.state.atmosphere.celLevels : 8;
+                    out.celAcceptsHigh = r.setCelLevels(16) === 16 && r.setCelLevels(20) === 16;
+                    out.celSmoothThreshold = /n >= 8 \? W/.test(r._refreshToonGradient.toString());
+                    r.setCelLevels(origCel);
+
+                    // Fog: Effekt-Bereich verdreifacht (0.9 .. 9.0, Default 3.0).
+                    const origFog = r.state.atmosphere ? r.state.atmosphere.fogDistance : 3.0;
+                    out.fogTripleRange =
+                        r.setFogDistance(9.0) === 9.0 &&
+                        r.setFogDistance(0.5) === 0.9 &&
+                        r.setFogDistance(3.0) === 3.0;
+                    out.fogDefault3 = r.setFogDistance() === 3.0;
+                    r.setFogDistance(origFog);
+                    out.fogHandlerTriples = /\(pct \/ 100\) \* 3/.test(r.slidersInitDOM.toString());
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (v840Results && !v840Results.error) {
+                check("V8.40: Sicht-Ring-Regler 1–8, Default 4 (9×9)", v840Results.ringSliderRange);
+                check("V8.40: Cel-Stufen-Regler 2–16, Default 8", v840Results.celSliderRange);
+                check("V8.40: Cel-Stufen akzeptiert bis 16 (clamp am neuen Max)", v840Results.celAcceptsHigh);
+                check("V8.40: Cel ab 8 bleibt smooth (Reserve-Schwelle unverändert)", v840Results.celSmoothThreshold);
+                check("V8.40: Fog-Effekt-Bereich verdreifacht (0.9 .. 9.0)", v840Results.fogTripleRange);
+                check("V8.40: Fog-Default ist 3.0 (= heutiger 300%-Effekt)", v840Results.fogDefault3);
+                check("V8.40: Fog-Regler-Eingabe wird verdreifacht (pct/100 × 3)", v840Results.fogHandlerTriples);
+            } else {
+                check("V8.40: Regler-Tests laufen", false, v840Results ? v840Results.error : "no result");
+            }
+
             // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider (Audit 17.05.2026) ###
             const wave6x4bResults = await page
                 .evaluate(() => {
@@ -12761,7 +12806,7 @@ function startSaveServer() {
                     // --- D2: state-Felder + UI-Slider existieren
                     out.masterVolDefault = r.state.symphony.masterVolume === 1.0;
                     out.pingVolDefault = r.state.symphony.creaturePingVolume === 1.0;
-                    out.ringRadiusDefault = r.state.chunkRingRadius === 2;
+                    out.ringRadiusDefault = r.state.chunkRingRadius === 4;
                     out.slidersInitMethodExists = typeof r.slidersInitDOM === "function";
                     out.slidersSectionExists = !!document.getElementById("sliders-section");
                     out.masterSliderExists = !!document.getElementById("slider-master");
@@ -12936,7 +12981,7 @@ function startSaveServer() {
                 check("Welle 6.X.4 B3: Tooltip enthält Präzision", wave6x4bResults.tooltipHasPrecision);
                 check("Welle 6.X.4 D2: state.symphony.masterVolume default 1.0", wave6x4bResults.masterVolDefault);
                 check("Welle 6.X.4 D2: state.symphony.creaturePingVolume default 1.0", wave6x4bResults.pingVolDefault);
-                check("Welle 6.X.4 D2: state.chunkRingRadius default 2", wave6x4bResults.ringRadiusDefault);
+                check("Welle 6.X.4 D2: state.chunkRingRadius default 4 (V8.40: 9×9)", wave6x4bResults.ringRadiusDefault);
                 check("Welle 6.X.4 D2: slidersInitDOM-Methode existiert", wave6x4bResults.slidersInitMethodExists);
                 check("Welle 6.X.4 D2: #sliders-section im DOM", wave6x4bResults.slidersSectionExists);
                 check("Welle 6.X.4 D2: #slider-master im DOM", wave6x4bResults.masterSliderExists);

@@ -144,7 +144,7 @@ class AnazhRealm {
             // fogDistance: Multiplikator auf Fog-near/far (klein=dichter)
             atmosphere: {
                 celLevels: 8,
-                fogDistance: 1.0,
+                fogDistance: 3.0,
             },
             // Welle 6.G3 (V8.24) — sanfter Wetter-Übergang. null heißt: kein
             // aktiver Übergang. Ein Wechsel zwischen sunny/rainy interpoliert
@@ -393,7 +393,7 @@ class AnazhRealm {
             // 1..4 wählbar (3×3 bis 9×9 Chunks). Höhere Werte = mehr Welt
             // sichtbar, mehr GPU-Last beim Generieren neuer Chunks. Default
             // 2 (5×5, historisches Verhalten). Persistiert in localStorage.
-            chunkRingRadius: 2,
+            chunkRingRadius: 4,
             symphony: {
                 ctx: null,
                 enabled: false,
@@ -12208,7 +12208,7 @@ class AnazhRealm {
             // V8.28 6.G4.b — Atmosphäre-Slider (celLevels + fogDistance).
             atmosphere: {
                 celLevels: (this.state.atmosphere && this.state.atmosphere.celLevels) || 8,
-                fogDistance: (this.state.atmosphere && this.state.atmosphere.fogDistance) || 1.0,
+                fogDistance: (this.state.atmosphere && this.state.atmosphere.fogDistance) || 3.0,
             },
             // Ring 5: Spieler-Seele (visuelle Form). Beim Load wird sie nach
             // dem playerMesh-Bau angewandt — kein Body-Recreate.
@@ -13061,11 +13061,11 @@ class AnazhRealm {
         }
         // V8.28 6.G4.b — Atmosphäre-Slider wiederherstellen (defensive Clamps).
         if (state.atmosphere && typeof state.atmosphere === "object") {
-            if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 1.0 };
+            if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0 };
             const cl = Number(state.atmosphere.celLevels);
-            if (Number.isFinite(cl)) this.state.atmosphere.celLevels = Math.max(2, Math.min(8, Math.round(cl)));
+            if (Number.isFinite(cl)) this.state.atmosphere.celLevels = Math.max(2, Math.min(16, Math.round(cl)));
             const fd = Number(state.atmosphere.fogDistance);
-            if (Number.isFinite(fd)) this.state.atmosphere.fogDistance = Math.max(0.3, Math.min(3.0, fd));
+            if (Number.isFinite(fd)) this.state.atmosphere.fogDistance = Math.max(0.9, Math.min(9.0, fd));
         }
         // Lights+Skybox sofort neu aus restauriertem timeOfDay setzen
         if (typeof this._applyDayNightToScene === "function") {
@@ -18489,7 +18489,9 @@ class AnazhRealm {
     _refreshToonGradient() {
         if (typeof THREE === "undefined") return;
         const levels = (this.state.atmosphere && this.state.atmosphere.celLevels) || 8;
-        const n = Math.max(2, Math.min(8, Math.round(levels)));
+        // V8.40 — Regler-Bereich 2–16. n >= 8 bleibt der Smooth-Schwellwert
+        // (8–16 alle 32-stufig glatt = „Reserve nach oben", 8 wie heute).
+        const n = Math.max(2, Math.min(16, Math.round(levels)));
         const W = 32;
         if (!this.state.toonGradientMap) {
             const data = new Uint8Array(W * 4);
@@ -18522,8 +18524,9 @@ class AnazhRealm {
     // V8.28 6.G4.b C — Mutations-Pfad für den Cel-Shading-Slider. Setzt
     // state.atmosphere.celLevels, regeneriert die gradientMap, persistiert.
     setCelLevels(levels) {
-        const n = Math.max(2, Math.min(8, Math.round(Number(levels) || 8)));
-        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 1.0 };
+        // V8.40 — Regler-Bereich 2–16 (8+ alle smooth, „Reserve").
+        const n = Math.max(2, Math.min(16, Math.round(Number(levels) || 8)));
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0 };
         this.state.atmosphere.celLevels = n;
         this._refreshToonGradient();
         if (typeof this.saveState === "function") this.saveState();
@@ -18534,8 +18537,10 @@ class AnazhRealm {
     // fogDistance ist ein Multiplikator (0.3 dicht .. 2.0 weit) auf
     // Fog-near/far. Die echten Werte setzt _applyDayNightToScene.
     setFogDistance(mult) {
-        const m = Math.max(0.3, Math.min(3.0, Number(mult) || 1.0));
-        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 1.0 };
+        // V8.40 — Effekt-Bereich verdreifacht: Label „100%" = mult 3.0 (=
+        // heutiger 300%-Fog, neuer Default), Label „300%" = mult 9.0.
+        const m = Math.max(0.9, Math.min(9.0, Number(mult) || 3.0));
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0 };
         this.state.atmosphere.fogDistance = m;
         if (typeof this._applyDayNightToScene === "function") this._applyDayNightToScene();
         if (typeof this.saveState === "function") this.saveState();
@@ -23988,7 +23993,7 @@ class AnazhRealm {
             // verschmelzen mit dem Himmel. Slider geht 30..200 % für weniger
             // (weiter) bis mehr (dichter) Dunst.
             const rainyMix = this.state.weather === "rainy" ? 1 : 0;
-            const fogMult = (this.state.atmosphere && this.state.atmosphere.fogDistance) || 1.0;
+            const fogMult = (this.state.atmosphere && this.state.atmosphere.fogDistance) || 3.0;
             fog.near = (35 - rainyMix * 13) * fogMult;
             fog.far = (150 - rainyMix * 55) * fogMult;
             // V8.32 — Unterwasser-Tint NUR beim echten Tauchen (Augen unter
@@ -24525,7 +24530,7 @@ class AnazhRealm {
                 const vv = parseFloat(localStorage.getItem("anazh.audio.voiceVol"));
                 if (Number.isFinite(vv) && vv >= 0 && vv <= 1) this.state.symphony.voiceVolume = vv;
                 const rr = parseInt(localStorage.getItem("anazh.world.ringRadius"), 10);
-                if (Number.isFinite(rr) && rr >= 1 && rr <= 4) this.state.chunkRingRadius = rr;
+                if (Number.isFinite(rr) && rr >= 1 && rr <= 8) this.state.chunkRingRadius = rr;
             } catch {
                 /* ignore */
             }
@@ -24616,10 +24621,11 @@ class AnazhRealm {
             if (rsv) rsv.textContent = ringText(v);
         };
         if (rs) {
-            rs.value = String(this.state.chunkRingRadius || 2);
+            rs.value = String(this.state.chunkRingRadius || 4);
             applyRingRadius(parseInt(rs.value, 10));
             rs.addEventListener("input", () => {
-                const v = Math.max(1, Math.min(4, parseInt(rs.value, 10)));
+                // V8.40 — Regler-Bereich 1–8 (3×3 … 17×17), Default 4 (9×9).
+                const v = Math.max(1, Math.min(8, parseInt(rs.value, 10)));
                 applyRingRadius(v);
                 if (typeof localStorage !== "undefined") {
                     try {
@@ -24689,12 +24695,15 @@ class AnazhRealm {
         const fogS = document.getElementById("slider-fog");
         const fogVal = document.getElementById("slider-fog-val");
         if (fogS) {
-            const f0 = (this.state.atmosphere && this.state.atmosphere.fogDistance) || 1.0;
-            fogS.value = String(Math.round(f0 * 100));
-            if (fogVal) fogVal.textContent = `${Math.round(f0 * 100)} %`;
+            // V8.40 — Label = fogDistance / 3 × 100 (mult 3.0 → „100%"),
+            // Regler-Eingabe → setFogDistance(pct / 100 × 3).
+            const f0 = (this.state.atmosphere && this.state.atmosphere.fogDistance) || 3.0;
+            const fogPct = Math.round((f0 / 3) * 100);
+            fogS.value = String(fogPct);
+            if (fogVal) fogVal.textContent = `${fogPct} %`;
             fogS.addEventListener("input", () => {
                 const pct = parseInt(fogS.value, 10);
-                this.setFogDistance(pct / 100);
+                this.setFogDistance((pct / 100) * 3);
                 if (fogVal) fogVal.textContent = `${pct} %`;
             });
         }
@@ -26548,7 +26557,7 @@ class AnazhRealm {
             // Werte = mehr Welt sichtbar, mehr Generations-Last bei Bewegung.
             const RING_RADIUS = Math.max(
                 1,
-                Math.min(4, typeof this.state.chunkRingRadius === "number" ? this.state.chunkRingRadius : 2)
+                Math.min(8, typeof this.state.chunkRingRadius === "number" ? this.state.chunkRingRadius : 4)
             );
             outer: for (let r = 0; r <= RING_RADIUS; r++) {
                 for (let dz = -r; dz <= r; dz++) {
