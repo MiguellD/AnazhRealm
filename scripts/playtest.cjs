@@ -13148,6 +13148,102 @@ function startSaveServer() {
                 );
             }
 
+            // ### W12 Phase 2 Commit 1 — Strom-Welt (three-fluid-fx) ###
+            const w12p2Results = await page
+                .evaluate(async () => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // Fluid-Welt-Seite + Skript + vendored Engine werden ausgeliefert.
+                    try {
+                        const htmlRes = await fetch("worlds/fluid/index.html");
+                        const htmlBody = htmlRes.ok ? await htmlRes.text() : "";
+                        out.fluidHtmlServed =
+                            htmlRes.ok &&
+                            /Strom-Welt/.test(htmlBody) &&
+                            /id="avatar-name"/.test(htmlBody) &&
+                            /type="module"/.test(htmlBody) &&
+                            /fluid\.js/.test(htmlBody);
+                        const jsRes = await fetch("worlds/fluid/fluid.js");
+                        const jsBody = jsRes.ok ? await jsRes.text() : "";
+                        out.fluidJsServed =
+                            jsRes.ok &&
+                            /FluidSimulation/.test(jsBody) &&
+                            /"ready"/.test(jsBody) &&
+                            /"enter"/.test(jsBody) &&
+                            /"exit"/.test(jsBody) &&
+                            jsBody.includes("./lib/");
+                        const coreRes = await fetch("worlds/fluid/lib/three.core.min.js");
+                        const modRes = await fetch("worlds/fluid/lib/three.module.min.js");
+                        const fxRes = await fetch("worlds/fluid/lib/three-fluid-fx.es.js");
+                        out.engineVendored = coreRes.ok && modRes.ok && fxRes.ok;
+                        const fxBody = fxRes.ok ? await fxRes.text() : "";
+                        // three-fluid-fx ist gepatcht: kein bare "three"-Import mehr.
+                        out.fxPatched =
+                            fxBody.includes('from "./three.module.min.js"') && !fxBody.includes('from "three"');
+                    } catch (e) {
+                        out.fluidHtmlServed = false;
+                        out.fluidJsServed = false;
+                        out.engineVendored = false;
+                        out.fxPatched = false;
+                    }
+
+                    // Built-in welt_strom-Portal.
+                    const ws = r.state.blueprints && r.state.blueprints.welt_strom;
+                    out.stromExists = !!ws && ws.builtIn === true;
+                    out.stromIsPortal = !!ws && ws.role === "portal" && ws.roleManual === true;
+                    out.stromMeta = !!ws && !!ws.portalMeta && ws.portalMeta.world === "worlds/fluid/index.html";
+
+                    // welt_strom trägt exklusiv die isPortal-Affordance + ist _isPortalShaped.
+                    const wsAff = r.computeBlueprintAffordances(ws);
+                    out.stromAffordance =
+                        wsAff.isPortal === true && !wsAff.moveable && !wsAff.magnifying && !wsAff.focusing;
+                    out.stromPortalShaped = r._isPortalShaped(ws) === true;
+
+                    // _sanitizePortalMeta akzeptiert den Fluid-Welt-Pfad.
+                    out.sanitizeFluidWorld =
+                        r._sanitizePortalMeta({ world: "worlds/fluid/index.html" }, "fb").world ===
+                        "worlds/fluid/index.html";
+
+                    // enterPortal(welt_strom) → Overlay-iframe zeigt auf die Fluid-Welt.
+                    const pm = r.state.playerMesh.position;
+                    r.spawnArchitecture("welt_strom", { x: pm.x, y: pm.y, z: pm.z });
+                    const stromEntry = (r.state.architectures || []).find((e) => e.type === "welt_strom");
+                    const enterRes = stromEntry ? r.enterPortal(stromEntry) : { ok: false };
+                    const frame = document.querySelector("#portal-overlay iframe.portal-frame");
+                    out.enterFluidWorld = !!enterRes.ok && !!frame && frame.src.includes("worlds/fluid/index.html");
+                    r.exitPortal();
+                    if (stromEntry) r.removeArchitecture(stromEntry);
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w12p2Results && !w12p2Results.error) {
+                check("W12 P2 C1: Fluid-Welt-Seite wird ausgeliefert", w12p2Results.fluidHtmlServed);
+                check(
+                    "W12 P2 C1: fluid.js (FluidSimulation + Handshake) wird ausgeliefert",
+                    w12p2Results.fluidJsServed
+                );
+                check("W12 P2 C1: Engine vendored (three.core/module + three-fluid-fx)", w12p2Results.engineVendored);
+                check("W12 P2 C1: three-fluid-fx three-Import auf lib gepatcht", w12p2Results.fxPatched);
+                check("W12 P2 C1: Built-in welt_strom-Portal existiert", w12p2Results.stromExists);
+                check("W12 P2 C1: welt_strom hat role:'portal'", w12p2Results.stromIsPortal);
+                check("W12 P2 C1: welt_strom portalMeta zeigt auf die Fluid-Welt", w12p2Results.stromMeta);
+                check("W12 P2 C1: welt_strom trägt exklusiv die isPortal-Affordance", w12p2Results.stromAffordance);
+                check(
+                    "W12 P2 C1: welt_strom ist _isPortalShaped (Quarz-Ring emergiert)",
+                    w12p2Results.stromPortalShaped
+                );
+                check("W12 P2 C1: _sanitizePortalMeta akzeptiert den Fluid-Welt-Pfad", w12p2Results.sanitizeFluidWorld);
+                check(
+                    "W12 P2 C1: enterPortal(welt_strom) lädt die Fluid-Welt ins iframe",
+                    w12p2Results.enterFluidWorld
+                );
+            } else {
+                check("W12 P2 C1: Strom-Welt Tests laufen", false, w12p2Results ? w12p2Results.error : "no result");
+            }
+
             // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
             const v840Results = await page
                 .evaluate(() => {

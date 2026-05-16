@@ -17097,6 +17097,25 @@ class AnazhRealm {
             },
         ];
 
+        // W12 Phase 2 — Strom-Welt-Portal: ein Quarz-Ring (Crystalline Tor,
+        // sichtbar abgesetzt vom Stein-Ring des welt_portal). Führt in die
+        // three-fluid-fx-Sub-Welt (worlds/fluid/).
+        const weltStromParts = [
+            {
+                shape: "torus",
+                material: "quarz",
+                position: { x: 0, y: 2.2, z: 0 },
+                size: { x: 3.4, y: 3.4, z: 3.4 },
+            },
+            {
+                shape: "cylinder",
+                material: "quarz",
+                position: { x: 0, y: 2.2, z: 0 },
+                size: { x: 2.6, y: 0.16, z: 2.6 },
+                rotation: { x: Math.PI / 2, y: 0, z: 0 },
+            },
+        ];
+
         return {
             village: { name: "village", label: "Dorf", builtIn: true, parts: villageParts },
             temple: { name: "temple", label: "Tempel", builtIn: true, parts: templeParts },
@@ -17175,6 +17194,18 @@ class AnazhRealm {
                 roleManual: true,
                 portalMeta: { world: AnazhRealm.PORTAL_SKELETON_WORLD, label: "Skelett-Welt" },
                 parts: weltPortalParts,
+            },
+            // W12 Phase 2 — Strom-Welt-Portal. Führt in die erste lebendige
+            // Sub-Welt: three-fluid-fx (fremde Engine) auf modernem Three.js,
+            // gebündelt in worlds/fluid/. Eine Welt bringt ihre Engine mit.
+            welt_strom: {
+                name: "welt_strom",
+                label: "Strom-Welt",
+                builtIn: true,
+                role: "portal",
+                roleManual: true,
+                portalMeta: { world: "worlds/fluid/index.html", label: "Strom-Welt" },
+                parts: weltStromParts,
             },
         };
     }

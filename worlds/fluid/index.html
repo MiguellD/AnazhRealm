@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="de">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <!-- W12 Phase 2 — die Strom-Welt ist ein eigenes Document mit eigener,
+             strikter CSP. Skript nur same-origin (fluid.js + lib/), keine
+             fremden Origins. Die iframe-Sandbox trägt die Isolation. -->
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'self'; object-src 'none';"
+        />
+        <title>Strom-Welt — AnazhRealm-Portal</title>
+        <style>
+            html,
+            body {
+                margin: 0;
+                height: 100%;
+                background: #05060a;
+                overflow: hidden;
+                font-family: "Courier New", monospace;
+            }
+            canvas {
+                display: block;
+            }
+            #hud {
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: 16px;
+                text-align: center;
+                font-size: 13px;
+                line-height: 1.7;
+                color: #9fb0c8;
+                text-shadow: 0 0 8px #000;
+                pointer-events: none;
+            }
+            #hud b {
+                color: #43c98a;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="hud">
+            <div id="hud-line">Strom-Welt — bewege die Maus, der Farb-Strom folgt dir.</div>
+            <div>Reisender: <b id="avatar-name">…</b> · Esc — zurück zur Heimat-Welt</div>
+        </div>
+        <script type="module" src="fluid.js?v=1"></script>
+    </body>
+</html>
