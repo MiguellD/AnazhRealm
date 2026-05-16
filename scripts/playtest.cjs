@@ -12810,6 +12810,48 @@ function startSaveServer() {
                 check("V8.40: Regler-Tests laufen", false, v840Results ? v840Results.error : "no result");
             }
 
+            // ### V8.46 — Sanfte Wetter-Übergänge ###
+            const v846Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    out.helperExists = typeof r._weatherBlendedValue === "function";
+                    const origWeather = r.state.weather;
+                    const origTrans = r.state.weatherTransition;
+                    // Ohne Transition: sunny → sunnyVal, rainy → rainyVal.
+                    r.state.weatherTransition = null;
+                    r.state.weather = "sunny";
+                    out.blendSunny = r._weatherBlendedValue(0, 1) === 0;
+                    r.state.weather = "rainy";
+                    out.blendRainy = r._weatherBlendedValue(0, 1) === 1;
+                    // Mitten in der Transition: progress 0.5 → halber Weg.
+                    r.state.weatherTransition = { from: "sunny", to: "rainy", progress: 0.5 };
+                    out.blendMid = Math.abs(r._weatherBlendedValue(0, 1) - 0.5) < 0.001;
+                    r.state.weatherTransition = origTrans;
+                    r.state.weather = origWeather;
+                    // weatherEffect + cloudCover faden jetzt über den Helper.
+                    const src = r._applyDayNightToScene.toString();
+                    out.weatherEffectFades = /cu\.weatherEffect.*_weatherBlendedValue/.test(src);
+                    out.cloudFades = /cloudU\.value = this\._weatherBlendedValue/.test(src);
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (v846Results && !v846Results.error) {
+                check("V8.46: _weatherBlendedValue-Helper existiert", v846Results.helperExists);
+                check("V8.46: Helper ohne Transition liefert Wetter-Wert (sunny)", v846Results.blendSunny);
+                check("V8.46: Helper ohne Transition liefert Wetter-Wert (rainy)", v846Results.blendRainy);
+                check("V8.46: Helper cross-fadet in der Transition (progress 0.5 → halb)", v846Results.blendMid);
+                check("V8.46: weatherEffect cross-fadet über den Helper", v846Results.weatherEffectFades);
+                check("V8.46: cloudCover cross-fadet über den Helper", v846Results.cloudFades);
+            } else {
+                check(
+                    "V8.46: Wetter-Übergangs-Tests laufen",
+                    false,
+                    v846Results ? v846Results.error : "no result"
+                );
+            }
+
             // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider (Audit 17.05.2026) ###
             const wave6x4bResults = await page
                 .evaluate(() => {

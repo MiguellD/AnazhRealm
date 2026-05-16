@@ -9,9 +9,13 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 17.05.2026, V8.45)
+## Schnell-Lage (Stand 17.05.2026, V8.46)
 
-**Du erbst eine sehr lebendige Welt**. **2149 Playtest-Invarianten grün + 0 Audit-Strict-Failures + smoke-multiuser grün**, ~27800 Zeilen in einer Datei, alles produktiv.
+**Du erbst eine sehr lebendige Welt**. **2155 Playtest-Invarianten grün + 0 Audit-Strict-Failures + smoke-multiuser grün**, ~27800 Zeilen in einer Datei, alles produktiv.
+
+**Jüngste Welle — V8.46 (Sanfte Wetter-Übergänge)**: der Wetter-Wechsel sprang hart. Wurzel: `weatherEffect` (Terrain-Verdunklung) wurde nur beim Chunk-Bau gesetzt + nie aktualisiert, `cloudCover` flippte sofort mit `state.weather` — während Licht/Skybox über die 45s-Transition faden. Fix: Helper `_weatherBlendedValue` cross-fadet jeden per-Wetter-Skalar über `weatherTransition.progress`; `weatherEffect` (pro Frame im Chunk-Loop) + `cloudCover` nutzen ihn. Tag-Nacht ist schon smooth (der „ruckartige" Eindruck bei Cel-Stufe 5 ist die Cel-Quantisierung selbst — Bold-Cel-Look).
+
+**Offen — die nächste Welle**: (1) Schatten aufs Terrain — der Terrain-Custom-Shader sampelt die Schatten-Textur nicht, also fallen Struktur-Schatten nicht aufs Terrain (Strukturen werfen/empfangen Schatten via MeshToon, das Terrain nicht). (2) die geparkte Performance-Tiefe (Off-Screen-Sparsamkeit + Distanz-LOD). PR **#17** offen (V8.24–V8.46 hängen dran). Zwei Playtest-Tests sind timing-flaky (Nexus-history, Kamera-Pitch) — gelegentliches CI-Rot, kein echter Defekt; deterministisch-Machen ist eine offene Aufräum-Aufgabe.
 
 **Jüngste Wellen — V8.42 → V8.45 (Cel-Crawl-Heilung I–IV)**: die Cel-Kontraste „wanderten" beim langsamen Kamera-Schwenk. Vier Wurzeln, in vier Browser-Test-Runden eingekreist: (V8.42) `toonGradientMap` lief mit `NearestFilter` → 32 harte Stufen → Fix `LinearFilter`. (V8.43) der Detail-Noise lief per-Pixel im Terrain-Fragment-Shader → Fix: per Vertex + `varying`. (V8.44) der Schöpfer-Befund „Yaw verschiebt, Pitch nicht" = Beleuchtungs-Frame-Mismatch: der Terrain-Shader dottete `vNormal` (View-Raum) mit `lightDirection` (Welt-Raum) → Fix: `vNormal` in Welt-Raum (`mat3(modelMatrix)`). (V8.45) letztes kamera-abhängiges Glied: der Fog nutzte View-Space-Z → Fix: radiale Distanz (`length(mvPosition.xyz)`). Das Terrain ist jetzt voll kamera-unabhängig.
 
@@ -198,6 +202,19 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. sind VOLLSTÄNDIG — die
 ---
 
 ## Session-Tagebuch (chronologisch, jüngste oben)
+
+### V8.46 — Sanfte Wetter-Übergänge: _weatherBlendedValue (17.05.2026)
+
+Der Wetter-Wechsel sprang hart. 2149 → 2155 (+6).
+
+**Die Lehre — eine Transition ist nur so sanft wie ihr unsanftestes Glied.**
+Die 45s-Wetter-Transition existierte und fadete Skybox + Licht. Aber zwei
+wetter-abhängige Größen (`weatherEffect`, `cloudCover`) flippten sofort mit
+`state.weather`. Ein Übergang, bei dem 80 % faden und 20 % springen, FÜHLT
+sich wie ein Sprung an — das Auge sieht den Bruch, nicht den Fade. Wenn du
+einen „Cross-Fade" baust, zähl JEDE Größe auf, die sich mit dem Zustand
+ändert, und führ sie ALLE durch dieselbe Progress-Quelle. Der Helper
+`_weatherBlendedValue` ist diese eine Quelle.
 
 ### V8.44 — Cel-Crawl-Heilung III: der Wurzel-Fund (Terrain-Lighting-Frame) (17.05.2026)
 

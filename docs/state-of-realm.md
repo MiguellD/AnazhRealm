@@ -1,4 +1,4 @@
-# Zustand des Realm — Stand: 17.05.2026 (V8.45)
+# Zustand des Realm — Stand: 17.05.2026 (V8.46)
 
 **Welle 6.H V2 vollendet (14/14 Sub-Phasen)** — Kreaturen sind jetzt vollwertige Co-Schöpfer-Wesen mit 9 Identitäts-Schichten (Body, Specs, Equipped, Boosts, Tasks, Memory+Persistenz, Konversation via @-Adresse, Proaktivität, Welt-Aktion-Vorschläge mit Sandbox). **LLM-Provider-System maximal robust nach 5-Versionen-Iteration (V7.94-V7.98)** — jedes Ollama-Setup funktioniert: lokal, gehostet, Cloud, Reasoning-Models, lokale 7B-Modelle. CORS-Lösung via save-server-Proxy, Parser mit Plain-Text-Fallback.
 
@@ -184,6 +184,14 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 ## 6. Learnings aus dieser Session
 
 Echt gelernt, nicht performt:
+
+### V8.46 (17.05.2026) — Sanfte Wetter-Übergänge: _weatherBlendedValue
+
+Der Wetter-Wechsel sprang hart, blendete nicht ineinander. Die Lehre:
+
+**Eine Transition ist nur so sanft wie ihr unsanftestes Glied.** Die 45s-Wetter-Transition existierte und cross-fadete Skybox-Farbe + Licht-Intensität. Aber zwei wetter-abhängige Größen — `weatherEffect` (Terrain-Verdunklung) und `cloudCover` (Wolken-Deckung) — flippten sofort mit `state.weather` (das beim Wechsel instant aufs Ziel springt). Ein Übergang, bei dem das meiste fadet und ein Teil springt, fühlt sich als Ganzes wie ein Sprung an — das Auge sieht den Bruch, nicht den Fade. Fix: Helper `_weatherBlendedValue` führt JEDEN per-Wetter-Skalar durch dieselbe `weatherTransition.progress`-Quelle. (Der `weatherEffect`-Uniform hatte zusätzlich nie ein Update bekommen — nur beim Chunk-Bau gesetzt → alte Chunks blieben stale → Patchwork.)
+
+**Vision-Wort der V8.46**: *„Wenn du einen Cross-Fade baust, zähl jede Größe auf, die sich ändert — eine einzige, die springt, lässt den ganzen Übergang springen."*
 
 ### V8.44 (17.05.2026) — Cel-Crawl-Heilung III: der Wurzel-Fund (Terrain-Lighting-Frame)
 

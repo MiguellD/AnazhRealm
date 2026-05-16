@@ -23929,11 +23929,12 @@ class AnazhRealm {
                 u.value.setRGB(skyR, skyG, skyB);
             }
             // V8.28 6.G4.b D — Wolken-Deckung aus weather. sunny ~0.22,
-            // rainy ~0.85. Cross-Fade greift natürlich (skyMul ändert sich
-            // weich über requestWeatherTransition).
+            // rainy ~0.85. V8.46 — über die Wetter-Transition cross-gefadet
+            // (vorher flippte cloudCover sofort → harter Wetter-Sprung,
+            // während Licht/Skybox sanft faden).
             const cloudU = this.state.skybox.material.uniforms.cloudCover;
             if (cloudU) {
-                cloudU.value = this.state.weather === "rainy" ? 0.85 : 0.22;
+                cloudU.value = this._weatherBlendedValue(0.22, 0.85);
             }
         }
         // V8.28 6.G4.b A — Stern-Feld-Opacity. starField statt skybox-uniform
@@ -24048,6 +24049,11 @@ class AnazhRealm {
                     if (cu.lightDirection) cu.lightDirection.value.copy(lightDir);
                     if (cu.lightIntensity) cu.lightIntensity.value = dl.intensity;
                     if (cu.ambientIntensity) cu.ambientIntensity.value = al ? al.intensity : 0.45;
+                    // V8.46 — weatherEffect (Terrain-Verdunklung bei Regen)
+                    // pro Frame + über die Transition cross-faden. Vorher nur
+                    // beim Chunk-Bau gesetzt → es flippte hart, und alte Chunks
+                    // behielten ihren Stand (Patchwork). Jetzt sanft + einheitlich.
+                    if (cu.weatherEffect) cu.weatherEffect.value = this._weatherBlendedValue(0.0, 1.0);
                     // V8.31 — Fog an den Terrain-Custom-Shader anschließen.
                     // Ohne das blieb das Terrain knackscharf, während nur
                     // das Gras (Lambert) verblasste → der Fog-Slider wirkte
@@ -24198,6 +24204,21 @@ class AnazhRealm {
     }
 
     // ### 6.G3.b — Sanfte Wetter-Übergänge ###
+
+    // V8.46 — ein per-Wetter-Skalar, über die laufende 45s-Transition
+    // cross-gefadet. Ohne dies flippten weatherEffect (Terrain-Verdunklung)
+    // und cloudCover SOFORT mit state.weather, während Licht/Skybox sanft
+    // faden → der Wetter-Wechsel sprang hart. Eine Quelle für alle
+    // wetter-abhängigen Skalare.
+    _weatherBlendedValue(sunnyVal, rainyVal) {
+        const valFor = (w) => (w === "rainy" ? rainyVal : sunnyVal);
+        const wt = this.state.weatherTransition;
+        if (wt && wt.from && wt.to) {
+            const p = Math.max(0, Math.min(1, wt.progress || 0));
+            return valFor(wt.from) + (valFor(wt.to) - valFor(wt.from)) * p;
+        }
+        return valFor(this.state.weather);
+    }
 
     // [ATMOSPHERE] Startet einen Cross-Fade. V8.25-Heilung: Default-Dauer
     // emergiert aus Player-Emotionen via _emotionModulate — eine ruhige Welt
