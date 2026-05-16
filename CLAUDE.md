@@ -755,6 +755,7 @@ Die Reihenfolge der Einträge unten ist chronologisch belassen (Ring/Welle-Entst
 - Pull Requests nur auf expliziten Wunsch des Users.
 - **Vision treu bleiben**: jeder Vorschlag sollte die Heilige Lektion respektieren (keine Re-Komplexifizierung). Bei Zweifel: `docs/state-of-realm.md` §2 nachlesen.
 - **Test-First-Mentalität**: nach jeder substanziellen Änderung Playtest-Gate, nicht nur Code-Analyse. Drei Selbst-induzierte Regressionen in dieser Session entstanden durch zu späte Browser-Tests.
+- **Doku-Disziplin — eine Quelle der Wahrheit**: pro Welle EIN ausführlicher Versions-Eintrag, und der lebt oben in dieser `CLAUDE.md` (auto-geladen = kanonische Versions-Historie). `state-of-realm.md` (Tiefe) und `handover.md` (Erstorientierung) verweisen darauf, statt jede Welle neu zu erzählen — doppelte Pflege ist doppelte Drift. Fertige Designs + Audit-Snapshots wandern nach `docs/archiv/` (nicht löschen — verschieben).
 
 ## Doc-Map
 
@@ -767,8 +768,8 @@ Die Reihenfolge der Einträge unten ist chronologisch belassen (Ring/Welle-Entst
 | `vendor/README.md` | Vendor-Libs Versionen + Update-Befehl |
 | `docs/crafting-konzept.md` | **Hylomorphismus-Konzept** — Bausteine, Operationen, Compounds, räumliche Prinzipien (Welle 4-6 Vorlage) |
 | `docs/aktivierungsmatrix.md` | Form-Tag-Aktivierungs-Matrix v2 (9 × 10), Quellcode für `AnazhRealm.FORM_TAG_ACTIVATION` |
-| `docs/wave-6-design.md` | **Welle-6-Brainstorm** — acht Blöcke (A Interaktion, B CAD, C Inventar+Modi, D Stats fraktal, E Lesbarkeit, F Crafting-Mechanik, G Welt-Sinne, H Kreaturen-Aufträge). Stat-System als Hylomorphismus-Erweiterung auf den Spieler. Schöpfer-Entscheidungen in §10. |
-| `docs/system-audit.md` | **System-Audit V7.71** — Methoden-Inventar nach Domäne, Dead-Code, Duplikate, K.O.-Bereiche, Robustheits-Beurteilung, Vision-Alignment-Check (78% live), Performance-Brainstorm, „Kollektive Welt-Erkenntnis"-Konzept für Welle 7, 15 übersehene Perspektiven. Pflichtlektüre vor großen Eingriffen. |
+| `docs/world-portal.md` | **W12-Vision-Anker** — AnazhRealm als Tor zu anderen Vibecode-Welten („Bibliothek von Alexandria"). Vor einer Welle 12+ ZUERST lesen. |
+| `docs/archiv/` | **Abgeschlossene Dokumente** — fertige Designs (`wave-6-design.md`) + Audit-Snapshots (`system-audit.md` V7.71, `system-audit-v8.25.md`). Reine Referenz, nicht mehr gepflegt. Ein frisches Audit erzeugt `/audit`. |
 | `scripts/playtest.cjs` | Headless-Playtest mit **1153+ Invarianten** als CI-Gate (Stand V7.77 nach Welle 6.C1 Hylomorphismus-Inventar; aktueller Zähler in der Playtest-Konsole am Ende eines Laufs) |
 | `scripts/smoke-multiuser.cjs` | End-to-End-Test für Ring 11 V1: spawnt signaling-server, öffnet zwei WS-Clients, prüft welcome/peer-join/pos/peer-leave-Flow (`npm run smoke:multiuser`) |
 | `signaling-server.js` | Ring 11 V1 WebSocket-Broker (RFC-6455 von Hand, zero deps), `npm run signaling` startet auf Port 4313 |

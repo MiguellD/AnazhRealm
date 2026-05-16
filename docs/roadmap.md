@@ -60,7 +60,7 @@ Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) si
 | W11 ext. | **Substanz-Rolle (Hylomorphismus auf Steroiden)** — emergente Rollen aus der ganzen Substanz: Soul aus Körper-Symmetrie, Werkzeug/Rüstung/Maschine/Konsumable aus der opChain-Domain, Nahrung aus lebendig+weicher Substanz, Bauwerk als Default. „Eine Sprache, beliebige Identitäten." | ✅ **live (V8.35)** — `computeBlueprintRole` ist eine Prioritäts-Kaskade: (1) opChain-Krafting-Domain, (2) intrinsische Form (`_isBodyShaped`: bilateral-symmetrischer Glieder-Körper + Vertikalitäts-Kriterium → soul), (3) intrinsisches Material (`_isFoodLike`: lebendig ≥ 0.6 + härte ≤ 0.5 → consumable), (4) architecture. Neue form-agnostische Helfer `_compoundSymmetry`/`_isBodyShaped`/`_isFoodLike` im `_isMoveable`-Stil. KEIN 11. Tag (Heilige Lektion — Nahrung emergiert aus den 10 bestehenden Tags). `consumableMeta` jetzt optional → emergente Nahrung ist essbar. Domain-Priorität zuerst (sonst hijackt jede symmetrische Form die Domain-Rolle — im Playtest gefangen). +15 Invarianten 2078→2093. | – | W6.X + W10 Foundation |
 | W4 V2 | **Lofi-Musik-Schicht** — Pad-Layer (60 BPM, Minor-7th-Akkorde), optional Soft-Kick + Vinyl-Crackle, Emotion-Modulation (hope→Major, sorrow→Tempo-Down). Web-Audio nativ, kein Asset. Antwort auf Audit-Punkt #3 (F2). | 🔴 offen | 1-2 Sessions | Ring 4 V1 |
 | W11 V4 | **Voice-Sync (Begleiter-Stimme im Multi-User)** — nach Soul-Sync (V3): andere Spieler hören deinen Companion-Output. Broadcast: `companion-say { peerId, text, voice }`. Empfänger spielt SpeechSynthesis mit gewählter Voice ab. Vision §1.4 Multisensorik durch alle Peers. Vorbedingung W11 V3. | 🔴 offen (aus Projekt-Reflexion 17.05.2026) | 1 Session | W11 V3 |
-| W7 | **Kollektive Welt-Erkenntnis (Distributed Compute)** — Skalierungs-Block, vision-treues Modell für Multi-User-Last-Verteilung: Distributed Chunk-Pre-Gen, LLM-Pool über Peers, Shared Compute-Cache, optional Public-Lobby für „join random world". Antwort auf Audit-Punkt #8 (E1 ∞ Spieler). | 🔴 offen — Skizze in `docs/system-audit.md` §7 | 6-8 Sessions | W6 (insb. 6.H Kreaturen-Aufträge), W11 V3 für volle Vision |
+| W7 | **Kollektive Welt-Erkenntnis (Distributed Compute)** — Skalierungs-Block, vision-treues Modell für Multi-User-Last-Verteilung: Distributed Chunk-Pre-Gen, LLM-Pool über Peers, Shared Compute-Cache, optional Public-Lobby für „join random world". Antwort auf Audit-Punkt #8 (E1 ∞ Spieler). | 🔴 offen — Skizze in `docs/archiv/system-audit.md` §7 | 6-8 Sessions | W6 (insb. 6.H Kreaturen-Aufträge), W11 V3 für volle Vision |
 | W12 | **Welt-Portal (Bibliothek von Alexandria, V8.23 umbenannt von WebGPU)** — Bauplan-Rolle „portal" + portalMeta (engine + manifest). Sub-Engine-Adapter in iframe/Worker mit Sandbox. DSL als Universal-Bridge zwischen Engines (jede Engine implementiert DSL-Subset). Welt-Manifest-Schema (engine + dsl_subset + signature). PoC mit `three-fluid-fx` (13 KB, klare DSL-Subset, visueller WOW). Detail in `docs/world-portal.md`. | 🔴 offen (aus Vision-Sitzung 17.05.2026: „Bibliothek von Alexandria der Vibecode-Ära") | 6-8 Sessions | W11 ext. + audit:strict |
 | W13 | **Vibe-Pass (Self-Sovereign Identity)** — Crypto-Keypair (ed25519, lokal generiert). Schöpfer signiert eigene Baupläne/Welten. Avatar-Identifier = Public-Key. Kein Coin/NFT-Hype, nur Authentizität. Welt-Memberships als signierte Records. Vorbedingung für Welt-Portale die Authentizität brauchen. | 🔴 offen (aus Vision-Sitzung 17.05.2026) | 5-7 Sessions | W12 |
 | W14 | **Bibliothek (Welt-Registry)** — content-addressed Welt-Index (IPFS-Hash oder simple shared-document). Browse + Suche im Bibliothek-Tab. Klick auf Welt → Portal-Bauplan automatisch ins Inventar. Spieler platziert Portal in Heimat-Welt → kann sie immer wieder besuchen. | 🔴 offen (aus Vision-Sitzung 17.05.2026) | 8-10 Sessions | W13 |
@@ -239,7 +239,7 @@ Plus: inline-styles aus `index.html` entfernt (`#fps`, `#state-file-input`), Inl
 
 **Gesamt-Schätzung**: ~18-22 Sessions, verteilt auf 3-4 Monate Echtzeit, in sechs Blöcken **6.A bis 6.F** organisiert.
 
-**Detaillierte Design-Notizen + Brainstorm** in [`docs/wave-6-design.md`](./wave-6-design.md). Roadmap-Eintrag hier ist die Milestone-Übersicht; die Begründungs- und Konzept-Tiefe lebt im Design-Doc.
+**Detaillierte Design-Notizen + Brainstorm** in [`docs/archiv/wave-6-design.md`](./archiv/wave-6-design.md). Roadmap-Eintrag hier ist die Milestone-Übersicht; die Begründungs- und Konzept-Tiefe lebt im Design-Doc.
 
 #### Sechs Blöcke
 
@@ -256,7 +256,7 @@ Plus: inline-styles aus `index.html` entfernt (`#fps`, `#state-file-input`), Inl
 
 **Vision-Hebel der Welle**: Block 6.D macht den Spieler zum **Compound im selben Hylomorphismus-System** wie Materialien und Bauwerke. `STAT_FROM_TAGS`-Matrix analog `FORM_TAG_ACTIVATION`. Wenn das Stat-System ohne Bezug zu `MATERIAL_TAG_KEYS` funktioniert, wurde die Vision verfehlt — explizite Warnung im Design-Doc §9.
 
-**Beschlossene Reihenfolge** (Schöpfer hat 13.05.2026 freie Hand gegeben, Entscheidungen in `docs/wave-6-design.md` §10.6):
+**Beschlossene Reihenfolge** (Schöpfer hat 13.05.2026 freie Hand gegeben, Entscheidungen in `docs/archiv/wave-6-design.md` §10.6):
 1. 6.A1+A2 (Sliding + Erdung) ✅ V7.72
 2. 6.A3 (Slope-Anti-Klebe, ad-hoc) ✅ V7.72
 3. 6.A4+A5 (Raycast-Place + Stabilitäts-Visual) ✅ V7.72
@@ -302,7 +302,7 @@ Plus: inline-styles aus `index.html` entfernt (`#fps`, `#state-file-input`), Inl
 
 #### Alt-Plan-Archiv
 
-Der ursprüngliche Welle-6-Plan (sieben Teilschritte 6.1-6.7) ist vollständig in den Block **6.F** überführt. Details siehe `docs/wave-6-design.md` §7. 6.6 (Rüstung) wird Teil von 6.D (Stats), 6.7 (Min-Regel) wird Teil von 6.D §5.5.
+Der ursprüngliche Welle-6-Plan (sieben Teilschritte 6.1-6.7) ist vollständig in den Block **6.F** überführt. Details siehe `docs/archiv/wave-6-design.md` §7. 6.6 (Rüstung) wird Teil von 6.D (Stats), 6.7 (Min-Regel) wird Teil von 6.D §5.5.
 
 ---
 
