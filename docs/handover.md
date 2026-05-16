@@ -154,7 +154,7 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. sind VOLLSTÄNDIG — die
 | **Welle 10b weitere Affordances** | balancing/broadcasting/lifting/radiating — pro Affordance ~1 Session, architektur-neutral. | klein-mittel | hoch |
 | **Welle 6.H V3** Kreatur-Beziehungen | Kreaturen sehen sich gegenseitig — Freundschaft, Konkurrenz, Hierarchie. | mittel | hoch |
 
-**Empfehlung**: **W12 (Welt-Portal PoC)**, der große Sprung — die V8.35-Browser-Test-Liste ist mit V8.36 + V8.37 abgeschlossen, der Hylomorphismus ist vertikal vollständig (Substanz → Rolle), Multi-User körperlich echt; das Fundament fürs Welt-Portal steht. W12 ist groß (6-8 Sessions) — `docs/world-portal.md` ZUERST lesen. Volle Detail-Tabelle in `roadmap.md`.
+**Empfehlung**: **W12 Phase 2** — W12 Phase 1 (Welt-Portal-Skelett) ist live (V8.51, Schöpfer-Browser-Test bestätigt): die emergente Rolle „portal" (ein magie-leitender Ring), die Skelett-Welt im sandboxed iframe, Betreten/Pause/Rückkehr stehen. Phase 2 bringt eine echte Sub-Engine + die DSL-Brücke am bestehenden postMessage-Handshake (`{enter}`/`{ready}`/`{exit}`). `docs/world-portal.md` + den V8.51-Eintrag in `CLAUDE.md` ZUERST lesen. Volle Detail-Tabelle in `roadmap.md`.
 
 ---
 
