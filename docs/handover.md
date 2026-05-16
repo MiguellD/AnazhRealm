@@ -9,11 +9,13 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 17.05.2026, V8.44)
+## Schnell-Lage (Stand 17.05.2026, V8.45)
 
-**Du erbst eine sehr lebendige Welt**. **2148 Playtest-Invarianten grün + 0 Audit-Strict-Failures + smoke-multiuser grün**, ~27800 Zeilen in einer Datei, alles produktiv.
+**Du erbst eine sehr lebendige Welt**. **2149 Playtest-Invarianten grün + 0 Audit-Strict-Failures + smoke-multiuser grün**, ~27800 Zeilen in einer Datei, alles produktiv.
 
-**Jüngste Wellen — V8.42 → V8.44 (Cel-Crawl-Heilung I/II/III)**: die Cel-Kontraste „wanderten" beim langsamen Kamera-Schwenk. Drei Wurzeln, in drei Browser-Test-Runden eingekreist: (V8.42) die `toonGradientMap` lief mit `NearestFilter` → 32 harte Stufen auf den MeshToon-Strukturen → Fix `LinearFilter`. (V8.43) der Townscaper-Detail-Noise lief per-Pixel im Terrain-Fragment-Shader → Fix: per Vertex berechnen + als `varying` interpolieren. (V8.44, der Wurzel-Fund) der Schöpfer-Befund „Yaw verschiebt, Pitch nicht" war die Signatur eines Beleuchtungs-Frame-Mismatches: der Terrain-Shader dottet `vNormal` (View-Raum, `normalMatrix`) mit `lightDirection` (Welt-Raum) → der Diffuse driftet mit der Kamera → Fix: `vNormal` in Welt-Raum (`mat3(modelMatrix)`). Lehre: die exakte Symptom-Signatur (Yaw≠Pitch) führt direkt zur Wurzel — Frame-Mismatch ist die einzige Bug-Klasse mit genau dieser Asymmetrie.
+**Jüngste Wellen — V8.42 → V8.45 (Cel-Crawl-Heilung I–IV)**: die Cel-Kontraste „wanderten" beim langsamen Kamera-Schwenk. Vier Wurzeln, in vier Browser-Test-Runden eingekreist: (V8.42) `toonGradientMap` lief mit `NearestFilter` → 32 harte Stufen → Fix `LinearFilter`. (V8.43) der Detail-Noise lief per-Pixel im Terrain-Fragment-Shader → Fix: per Vertex + `varying`. (V8.44) der Schöpfer-Befund „Yaw verschiebt, Pitch nicht" = Beleuchtungs-Frame-Mismatch: der Terrain-Shader dottete `vNormal` (View-Raum) mit `lightDirection` (Welt-Raum) → Fix: `vNormal` in Welt-Raum (`mat3(modelMatrix)`). (V8.45) letztes kamera-abhängiges Glied: der Fog nutzte View-Space-Z → Fix: radiale Distanz (`length(mvPosition.xyz)`). Das Terrain ist jetzt voll kamera-unabhängig.
+
+**Offen — die nächste Welle (Schöpfer-Befund V8.45-Browser-Test)**: (1) Tag-Nacht- + Wetter-Übergänge glätten — der Wetter-Wechsel springt hart (blendet nicht ineinander), bei Regen wirken die Schatten zu extrem („auf 0"). Vermutung: `weatherEffect`/`lightMul` flippen sofort mit `state.weather` statt mit der 45 s-Transition zu cross-faden. (2) Schatten der Strukturen wirken anders als die Umgebung (das Terrain-Custom-Shader vs. MeshToon — zwei Cel-Systeme; bei niedriger Cel-Stufe ein „Wellenmuster" auf gewölbten Bauten). (3) die geparkte Performance-Tiefe.
 
 **Offen + WICHTIG (die nächste Welle)**: der Rest des Tag-Licht-Befunds — die Schatten wirken nicht auf die ganze Umgebung (der Terrain-Custom-Shader sampelt die Schatten-Textur nicht → Struktur-Schatten fallen nicht aufs Terrain) und die Tag-Nacht-Übergänge sind zu ruckartig (die Lichtstärke springt zwischen den Sonnenaufgangs-Stützpunkten, der smoothstep wirkt nur pro Intervall). Plus die geparkte Performance-Tiefe (Off-Screen-Sparsamkeit + Distanz-LOD). Diagnose-Startpunkt: `_applyDayNightToScene`, der Terrain-Custom-Shader, die Übergangs-Interpolation.
 

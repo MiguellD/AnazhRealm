@@ -7527,7 +7527,8 @@ class AnazhRealm {
                     vec4 wp = modelMatrix * vec4(pd, 1.0);
                     vWorldPos = wp.xyz;
                     vec4 mv = viewMatrix * wp;
-                    vFogDepth = -mv.z;
+                    // V8.45 — radiale Distanz (dreh-invariant), wie Terrain.
+                    vFogDepth = length(mv.xyz);
                     gl_Position = projectionMatrix * mv;
                 }
             `,
@@ -10940,8 +10941,14 @@ class AnazhRealm {
             float n2 = noise(uv * 9.0);
             vJitter = (n1 - 0.5) * 0.07 + (n2 - 0.5) * 0.035;
             vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-            // V8.31 — Fog-Tiefe (View-Space-Distanz) für das Fragment.
-            vFogDepth = -mvPosition.z;
+            // V8.45 — Fog-Tiefe = RADIALE Distanz zur Kamera (length), nicht
+            // View-Space-Z (-mvPosition.z). View-Z hängt von der Blick-
+            // RICHTUNG ab: beim reinen Drehen änderte sich die Fog-Menge auf
+            // einem festen Terrain-Punkt → der Dunst „atmete" beim langsamen
+            // Kamera-Schwenk (das letzte kamera-abhängige Glied im Terrain-
+            // Shader nach dem V8.44-Lighting-Frame-Fix). Radiale Distanz ist
+            // dreh-invariant → das Terrain ist jetzt voll kamera-unabhängig.
+            vFogDepth = length(mvPosition.xyz);
             gl_Position = projectionMatrix * mvPosition;
         }
     `;

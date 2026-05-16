@@ -12754,6 +12754,13 @@ function startSaveServer() {
                         !!r.state.terrainMaterial &&
                         /mat3\(modelMatrix\) \* normal/.test(r.state.terrainMaterial.vertexShader || "") &&
                         !/normalMatrix \* normal/.test(r.state.terrainMaterial.vertexShader || "");
+                    // V8.45 — Terrain-Fog = radiale Distanz (dreh-invariant),
+                    // nicht View-Space-Z. Regex prüft die echte Zuweisung
+                    // (nicht den erklärenden Kommentar-Text).
+                    out.terrainFogRadial =
+                        !!r.state.terrainMaterial &&
+                        /vFogDepth = length\(mvPosition/.test(r.state.terrainMaterial.vertexShader || "") &&
+                        !/vFogDepth = -mvPosition\.z/.test(r.state.terrainMaterial.vertexShader || "");
                     r.setCelLevels(origCel);
 
                     // Fog: Effekt-Bereich verdreifacht (0.9 .. 9.0, Default 3.0).
@@ -12790,6 +12797,10 @@ function startSaveServer() {
                 check(
                     "V8.44: Terrain-vNormal in Welt-Raum (Diffuse kamera-unabhängig)",
                     v840Results.terrainNormalWorldSpace
+                );
+                check(
+                    "V8.45: Terrain-Fog = radiale Distanz (dreh-invariant)",
+                    v840Results.terrainFogRadial
                 );
                 check("V8.40: Fog-Effekt-Bereich verdreifacht (0.9 .. 9.0)", v840Results.fogTripleRange);
                 check("V8.40: Fog-Default ist 3.0 (= heutiger 300%-Effekt)", v840Results.fogDefault3);
