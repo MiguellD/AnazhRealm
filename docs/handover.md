@@ -9,11 +9,15 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 17.05.2026, V8.40)
+## Schnell-Lage (Stand 17.05.2026, V8.41)
 
-**Du erbst eine sehr lebendige Welt**. **2144 Playtest-Invarianten grün + 0 Audit-Strict-Failures + smoke-multiuser grün**, ~27800 Zeilen in einer Datei, alles produktiv.
+**Du erbst eine sehr lebendige Welt**. **2145 Playtest-Invarianten grün + 0 Audit-Strict-Failures + smoke-multiuser grün**, ~27800 Zeilen in einer Datei, alles produktiv.
 
-**Jüngste Welle — V8.40 (Regler-Anpassungen)**: drei Schöpfer-Wünsche aus dem V8.39-Browser-Test, je per AskUserQuestion abgeglichen. (1) Sicht-Ring-Regler 1–8 (3×3…17×17), Default 4 (9×9); (2) Cel-Stufen-Regler 2–16, Default 8 (8–16 alle smooth = Reserve, Schöpfer-Wahl); (3) Fog-Effekt verdreifacht — Label „100%" = `fogDistance`-Mult 3.0 (= heutiger 300%-Fog, neuer Default), Regler bis „300%" = mult 9.0. **Offen + WICHTIG**: der Schöpfer-Befund aus dem V8.40-Browser-Test — bei Sonnenaufgang fließt ein „Rauschen"/Cel-Bänder über die Strukturen, Schatten wirken nicht auf die ganze Umgebung, Tag-Nacht-Übergänge zu ruckartig. Plus die geparkte Performance-Tiefe-Welle. Beides ist die nächste Welle.
+**Jüngste Welle — V8.41 (V8.40-Browser-Test-Korrekturen)**: zwei Befunde. (1) Der Befund „Sicht-Ring-Regler schiebt, Zahl bleibt bei 9×9" war KEIN Code-Bug (alle vier Ring-Clamps verifiziert auf 8) — sondern stale Cache: frische index.html gegen alte anazhRealm.js. Fix: Cache-Buster `anazhRealm.js?v=8.41` + `save-server.js` strippt jetzt Query-Strings beim Datei-Servieren. (2) Die V8.40-Cel-Erweiterung 2–16 (9–16 „Reserve") wurde auf 2–8 zurückgenommen — der Browser-Test fand die tote Regler-Hälfte schlechter; über „smooth" gibt es nichts Glatteres. Sicht-Ring 1–8 + Fog-Verdreifachung aus V8.40 bleiben.
+
+**Offen + WICHTIG (die nächste Welle)**: der Tag-Licht-Befund — bei Sonnenaufgang UND bei Kopf-Bewegung fließen Cel-Schattenbänder über die Strukturen/das Terrain („Rauschen"), die Schatten wirken nicht auf die ganze Umgebung, die Tag-Nacht-Übergänge sind zu ruckartig (nachts top — es ist licht-gekoppelt). Die Diagnose liegt vor — siehe „Empfohlene Sequenz". Plus die geparkte Performance-Tiefe.
+
+**Welle davor — V8.40 (Regler-Anpassungen)**: Sicht-Ring-Regler 1–8 (Default 9×9), Fog-Effekt verdreifacht (Label „100%" = mult 3.0). Die V8.40-Cel-Erweiterung wurde von V8.41 korrigiert.
 
 **Welle davor — V8.39 (Werkzeug-Klassen + Präzision→Qualität)**: das vom Schöpfer gewünschte Werkzeug-System — Farb-Sprache (`BLUEPRINT_ROLE_COLORS`, Rollen-Chip + Bauplan-Zeile leuchten), `computeBlueprintQuality` skaliert die Produkt-Wirkung (`computeCreatureStats` + Konsumables × 0.5+0.5·Qualität), Werkzeug-Op-Stamina skaliert mit dem cap.
 
@@ -41,7 +45,7 @@ Die Session-Hälfte davor (V8.23 → V8.33) war eine **Atmosphäre-Tiefe-Welle (
 
 **Welle 12 ist „Welt-Portal"** (nicht WebGPU-Migration) — AnazhRealm wird Tor zu anderen Vibecode-Welten. Wenn du in eine Welle 12+ erwachst: lies `docs/world-portal.md` ZUERST.
 
-**Empfohlene Sequenz nach V8.40**: die **Tag-Licht-/Performance-Welle** — zwei Schöpfer-Befunde aus dem V8.40-Browser-Test, zusammen eine Welle: (a) **Tag-Licht-„Rauschen"** — bei Sonnenaufgang fließen Cel-Schattenbänder über die Strukturen, die Schatten wirken nicht auf die ganze Umgebung, die Tag-Nacht-Übergänge sind zu ruckartig (nachts ist alles top — es ist licht-gekoppelt). Diagnose-Startpunkt: `_applyDayNightToScene`, der Terrain-Custom-Shader (cel-Quantisierung), das Cel-Banding auf Strukturen, die Übergangs-Interpolation. (b) **Performance-Tiefe** — die voll ausgereizte Welt (120 Kreaturen, dichtes Gras, bis 17×17 Chunks) flüssig durch Engine-Optimierung (Off-Screen-Sparsamkeit + Distanz-LOD, Schöpfer-Wahl „beides kombiniert"), NICHT durch Feature-Kürzung. Dann **W12 (Welt-Portal PoC mit three-fluid-fx)** → 13 (Vibe-Pass) → 14 (Bibliothek) → 7 (Compute-Sharing). W12 ist der große Sprung — lies `docs/world-portal.md` ZUERST. Die 13-Punkte-Browser-Test-Liste der V8.35 ist mit V8.36–V8.38 abgearbeitet, das Werkzeug-System mit V8.39, die Regler mit V8.40.
+**Empfohlene Sequenz nach V8.41**: die **Tag-Licht-/Performance-Welle** — zwei Schöpfer-Befunde, zusammen eine Welle: (a) **Tag-Licht-„Rauschen"** — bei Sonnenaufgang UND bei Kopf-/Kamera-Bewegung fließen/kriechen Cel-Schattenbänder über die Strukturen + das Terrain, die Schatten wirken nicht auf die ganze Umgebung, die Tag-Nacht-Übergänge sind zu ruckartig (nachts ist alles top — es ist licht-gekoppelt). **Verifizierte Diagnose** (V8.41): die Struktur-Materialien (MeshToon) quantisieren das Sonnenlicht über eine 32-Stufen-`toonGradientMap` mit `NearestFilter` — selbst die „glatte" Cel-Stufe sind 32 HARTE Stufen, nicht stufenlos; die Stufenkanten bilden Bänder, die mit der Sonne fließen und beim Kamera-Schwenk kriechen (Aliasing harter Kanten). Fix-Startpunkt: `toonGradientMap` auf `LinearFilter` (die 32 Stufen verschmelzen → echt stufenlos). Der Terrain-Custom-Shader ist bei `celLevels >= 7.5` schon stufenlos (Zeile ~10996 `floor`-Gate) — die Bänder kommen von den Strukturen. „Schatten nicht auf die ganze Umgebung": das Schatten-System ist an (`shadowMap`, `directionalLight.castShadow`), aber der Terrain-Custom-Shader sampelt die Schatten-Textur nicht → Struktur-Schatten fallen nicht aufs Terrain. „Ruckartig": die Tag-Nacht-Lichtstärke springt zwischen den Sonnenaufgangs-Stützpunkten kräftig, der smoothstep wirkt nur pro Intervall. Diagnose-Startpunkt: `_applyDayNightToScene`, der Terrain-Custom-Shader, `_refreshToonGradient`, die Übergangs-Interpolation. (b) **Performance-Tiefe** — die voll ausgereizte Welt (120 Kreaturen, dichtes Gras, bis 17×17 Chunks) flüssig durch Engine-Optimierung (Off-Screen-Sparsamkeit + Distanz-LOD, Schöpfer-Wahl „beides kombiniert"), NICHT durch Feature-Kürzung. Dann **W12 (Welt-Portal PoC mit three-fluid-fx)** → 13 (Vibe-Pass) → 14 (Bibliothek) → 7 (Compute-Sharing). W12 ist der große Sprung — lies `docs/world-portal.md` ZUERST. Die 13-Punkte-Browser-Test-Liste der V8.35 ist mit V8.36–V8.38 abgearbeitet, das Werkzeug-System mit V8.39, die Regler mit V8.40.
 
 **Atmosphäre-Disziplin**: alle atmosphärischen Methoden mit `[ATMOSPHERE]`-Marker werden von `audit-strict.cjs` (5. Schicht) auf Hardcode geprüft. Wert-aus-dem-Kopf ist verboten — immer „aus welcher state-Beobachtung emergiert das?".
 
@@ -192,6 +196,26 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. sind VOLLSTÄNDIG — die
 ---
 
 ## Session-Tagebuch (chronologisch, jüngste oben)
+
+### V8.41 — V8.40-Browser-Test-Korrekturen: Cache-Buster + Cel-Rücknahme (17.05.2026)
+
+Zwei Befunde aus dem V8.40-Browser-Test. 2144 → 2145 (+1).
+
+**Die Lehre — ein Regler-Befund kann ein Auslieferungs-Problem sein, kein
+Code-Bug.** Der Schöpfer meldete „Sicht-Ring-Regler schiebt, Zahl bleibt
+bei 9×9". Reflex wäre, im Ring-Code zu graben. Stattdessen erst die vier
+Clamp-Stellen verifiziert — alle korrekt auf 8. Damit war klar: der Code
+ist richtig, die Welt sieht eine ALTE `anazhRealm.js` (Browser/githack-CDN-
+Cache) gegen die frische `index.html`. Die Wurzel lag in der Auslieferung,
+nicht im Code. Fix: `?v=`-Cache-Buster auf der Skript-Einbindung. Folge-Fix:
+der save-server 404te auf die Query — ein Webserver MUSS den Query-String
+bei statischen Dateien abschneiden. Hätte ich blind im Ring-Code gesucht,
+hätte ich nichts gefunden und vielleicht eine korrekte Stelle „repariert".
+
+**Zweite Lehre — ein AskUserQuestion-Pick ist eine Hypothese.** Der Schöpfer
+wählte vorab „Cel-Reserve 9–16". Im Browser-Test: „war davor besser". Eine
+tote Regler-Hälfte ist schlechter als ein knapper Regler. Der Browser-Test
+ist das Urteil, der Vorab-Pick nur die Vermutung. Cel zurück auf 2–8.
 
 ### V8.40 — Regler-Anpassungen: Sicht-Ring + Cel-Stufen + Fog (17.05.2026)
 

@@ -1,6 +1,6 @@
 # AnazhRealm Roadmap — Vollumfänglich
 
-Stand: 17.05.2026 (V8.40, Welle 6.G4 + Ring 11 V3 + Welle 11 ext. KOMPLETT + V8.35-Browser-Test-Liste abgearbeitet + V8.39 Werkzeug-System + V8.40 Regler-Anpassungen (Sicht-Ring 1–8 Default 9×9, Cel-Stufen 2–16, Fog-Effekt verdreifacht). 2144/2144 Invarianten grün, smoke-multiuser grün, Audit-Strict 0 Failures. Nächste empfohlene Welle: Tag-Licht-„Rauschen"-Heilung + Performance-Tiefe (zwei Schöpfer-Befunde aus dem V8.40-Browser-Test), dann W12 Welt-Portal.)
+Stand: 17.05.2026 (V8.41, Welle 6.G4 + Ring 11 V3 + Welle 11 ext. KOMPLETT + V8.35-Browser-Test-Liste abgearbeitet + V8.39 Werkzeug-System + V8.40 Regler-Anpassungen (Sicht-Ring 1–8 Default 9×9, Fog-Effekt verdreifacht) + V8.41 Browser-Test-Korrekturen (Cache-Buster, Cel zurück auf 2–8). 2145/2145 Invarianten grün, smoke-multiuser grün, Audit-Strict 0 Failures. Nächste empfohlene Welle: Tag-Licht-„Rauschen"-Heilung + Performance-Tiefe (Diagnose verifiziert — MeshToon-Gradient NearestFilter, Terrain ohne Schatten-Sampling, ruckartige Übergänge), dann W12 Welt-Portal.)
 
 Diese Doc beschreibt das **gesamte Projekt vom heutigen Stand bis zum Vision-Endziel** (Welten-Ultiversum). Sie ergänzt `state-of-realm.md` (Was/Warum) um eine puren Plan-Sicht (Wann/Wie). Aufwandsschätzungen sind realistische Tage für eine fokussierte Claude-Session pro Ring/Phase; gerechnet wird linear, ohne Puffer.
 

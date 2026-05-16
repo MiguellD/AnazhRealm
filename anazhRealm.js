@@ -13063,7 +13063,7 @@ class AnazhRealm {
         if (state.atmosphere && typeof state.atmosphere === "object") {
             if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0 };
             const cl = Number(state.atmosphere.celLevels);
-            if (Number.isFinite(cl)) this.state.atmosphere.celLevels = Math.max(2, Math.min(16, Math.round(cl)));
+            if (Number.isFinite(cl)) this.state.atmosphere.celLevels = Math.max(2, Math.min(8, Math.round(cl)));
             const fd = Number(state.atmosphere.fogDistance);
             if (Number.isFinite(fd)) this.state.atmosphere.fogDistance = Math.max(0.9, Math.min(9.0, fd));
         }
@@ -18489,9 +18489,10 @@ class AnazhRealm {
     _refreshToonGradient() {
         if (typeof THREE === "undefined") return;
         const levels = (this.state.atmosphere && this.state.atmosphere.celLevels) || 8;
-        // V8.40 — Regler-Bereich 2–16. n >= 8 bleibt der Smooth-Schwellwert
-        // (8–16 alle 32-stufig glatt = „Reserve nach oben", 8 wie heute).
-        const n = Math.max(2, Math.min(16, Math.round(levels)));
+        // V8.41 — Regler-Bereich 2–8 (8 = smooth/32 Stufen, 2..7 harte
+        // Plateaus). Das V8.40-Reserve-Band 9–16 war eine Fehleinschätzung:
+        // eine tote Regler-Hälfte ist schlechtere UX (Schöpfer-Browser-Test).
+        const n = Math.max(2, Math.min(8, Math.round(levels)));
         const W = 32;
         if (!this.state.toonGradientMap) {
             const data = new Uint8Array(W * 4);
@@ -18524,8 +18525,8 @@ class AnazhRealm {
     // V8.28 6.G4.b C — Mutations-Pfad für den Cel-Shading-Slider. Setzt
     // state.atmosphere.celLevels, regeneriert die gradientMap, persistiert.
     setCelLevels(levels) {
-        // V8.40 — Regler-Bereich 2–16 (8+ alle smooth, „Reserve").
-        const n = Math.max(2, Math.min(16, Math.round(Number(levels) || 8)));
+        // V8.41 — Regler-Bereich 2–8 (8 = smooth). V8.40-Reserve 9–16 verworfen.
+        const n = Math.max(2, Math.min(8, Math.round(Number(levels) || 8)));
         if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0 };
         this.state.atmosphere.celLevels = n;
         this._refreshToonGradient();

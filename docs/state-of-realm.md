@@ -1,4 +1,4 @@
-# Zustand des Realm — Stand: 17.05.2026 (V8.40)
+# Zustand des Realm — Stand: 17.05.2026 (V8.41)
 
 **Welle 6.H V2 vollendet (14/14 Sub-Phasen)** — Kreaturen sind jetzt vollwertige Co-Schöpfer-Wesen mit 9 Identitäts-Schichten (Body, Specs, Equipped, Boosts, Tasks, Memory+Persistenz, Konversation via @-Adresse, Proaktivität, Welt-Aktion-Vorschläge mit Sandbox). **LLM-Provider-System maximal robust nach 5-Versionen-Iteration (V7.94-V7.98)** — jedes Ollama-Setup funktioniert: lokal, gehostet, Cloud, Reasoning-Models, lokale 7B-Modelle. CORS-Lösung via save-server-Proxy, Parser mit Plain-Text-Fallback.
 
@@ -184,6 +184,16 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 ## 6. Learnings aus dieser Session
 
 Echt gelernt, nicht performt:
+
+### V8.41 (17.05.2026) — V8.40-Browser-Test-Korrekturen: Cache-Buster + Cel-Rücknahme
+
+Zwei Befunde aus dem V8.40-Browser-Test. Zwei Lehren:
+
+**Ein Regler-Befund kann ein Auslieferungs-Problem sein, kein Code-Bug.** „Sicht-Ring-Regler schiebt, Zahl bleibt bei 9×9" — statt im Ring-Code zu graben, erst die vier Clamp-Stellen verifiziert: alle korrekt auf 8. Damit stand fest, dass die Welt eine alte `anazhRealm.js` (Browser/CDN-Cache) gegen die frische `index.html` sieht. Fix: `?v=`-Cache-Buster auf der Skript-Einbindung; der save-server muss dafür den Query-String bei statischen Dateien abschneiden. Blind im richtigen Code zu suchen hätte nichts gefunden — und vielleicht eine korrekte Stelle „repariert".
+
+**Ein AskUserQuestion-Pick ist eine Hypothese, der Browser-Test das Urteil.** Der Schöpfer wählte vorab „Cel-Reserve 9–16"; im Browser-Test: „war davor besser". Eine tote Regler-Hälfte ist schlechter als ein knapper Regler — über „smooth" gibt es nichts Glatteres. Cel zurück auf 2–8.
+
+**Vision-Wort der V8.41**: *„Bevor du im Code gräbst, frag, ob der Code überhaupt ankommt. Und ein Vorab-Ja ist kein Urteil — das Urteil fällt im Browser."*
 
 ### V8.40 (17.05.2026) — Regler-Anpassungen: Sicht-Ring + Cel-Stufen + Fog
 
