@@ -9,11 +9,13 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 17.05.2026, V8.34)
+## Schnell-Lage (Stand 17.05.2026, V8.35)
 
-**Du erbst eine sehr lebendige Welt**. **2078 Playtest-Invarianten grün + 0 Audit-Strict-Failures + smoke-multiuser grün**, ~27300 Zeilen in einer Datei, alles produktiv.
+**Du erbst eine sehr lebendige Welt**. **2093 Playtest-Invarianten grün + 0 Audit-Strict-Failures + smoke-multiuser grün**, ~27500 Zeilen in einer Datei, alles produktiv.
 
-**Jüngste Welle — V8.34 (Ring 11 V3, Soul-Sync)**: der Multi-User-Mitspieler war ein Cone+Sphere-Platzhalter — jetzt ist er sein echter Soul (Mensch/Phönix/Drache/Custom), voll animiert (Geh-/Schwimm-Zyklus aus dem Positions-Stream abgeleitet), mit Aura-Sync + schwebendem Name-Schild. Zwei neue WS-Nachrichten (`soul` event-driven beim Join/Wechsel, `aura` ~1 Hz) mit Server-Handlern. Wichtig: der Signaling-Server ist KEIN dummer Relay (jeder Typ braucht einen expliziten Handler), und `player_soul` bleibt in `NON_BROADCASTABLE_OPS` — Soul-Sync läuft über den dedizierten `soul`-Kanal, nicht die DSL.
+**Jüngste Welle — V8.35 (Welle 11 ext., Substanz-Rolle)**: die Bauplan-Rolle (tool/armor/soul/consumable/machine/architecture) emergiert jetzt aus der GANZEN Substanz. Bisher nur aus der opChain-Krafting-Domain; jetzt eine Prioritäts-Kaskade: Krafting-Domain → intrinsische **Form** (`_isBodyShaped` — bilateral-symmetrischer Glieder-Körper → Seele) → intrinsisches **Material** (`_isFoodLike` — lebendig+weich → Nahrung) → Default Bauwerk. Ein Wesen, das man formt, IST eine Seele — ungeschmiedet. Kein 11. Tag (Heilige Lektion). `consumableMeta` ist jetzt optional → emergente Nahrung ist wirklich essbar. Die UI-Verdrahtung war schon da (`role` → „Werde diese Seele"-Button / Konsumable-Liste).
+
+**Welle davor — V8.34 (Ring 11 V3, Soul-Sync)**: der Multi-User-Mitspieler war ein Cone+Sphere-Platzhalter — jetzt ist er sein echter Soul (Mensch/Phönix/Drache/Custom), voll animiert (Geh-/Schwimm-Zyklus aus dem Positions-Stream abgeleitet), mit Aura-Sync + schwebendem Name-Schild. Zwei neue WS-Nachrichten (`soul` event-driven beim Join/Wechsel, `aura` ~1 Hz) mit Server-Handlern. Wichtig: der Signaling-Server ist KEIN dummer Relay (jeder Typ braucht einen expliziten Handler), und `player_soul` bleibt in `NON_BROADCASTABLE_OPS` — Soul-Sync läuft über den dedizierten `soul`-Kanal, nicht die DSL.
 
 Die Session-Hälfte davor (V8.23 → V8.33) war eine **Atmosphäre-Tiefe-Welle (6.G4)** in sieben Schritten, jeder aus einem Schöpfer-Browser-Test:
 
@@ -29,7 +31,7 @@ Die Session-Hälfte davor (V8.23 → V8.33) war eine **Atmosphäre-Tiefe-Welle (
 
 **Welle 12 ist „Welt-Portal"** (nicht WebGPU-Migration) — AnazhRealm wird Tor zu anderen Vibecode-Welten. Wenn du in eine Welle 12+ erwachst: lies `docs/world-portal.md` ZUERST.
 
-**Empfohlene Sequenz nach V8.34**: 6.G4 ✅ + 11 V3 ✅ → **11 ext. (Substanz-Rolle)** → 12 (Welt-Portal PoC mit three-fluid-fx) → 13 (Vibe-Pass) → 14 (Bibliothek) → 7 (Compute-Sharing). Optional: W11 V4 (Voice-Sync — andere hören deinen Companion) baut natürlich auf V3 auf, ist aber niedrige Priorität.
+**Empfohlene Sequenz nach V8.35**: 6.G4 ✅ + 11 V3 ✅ + 11 ext. ✅ → **12 (Welt-Portal PoC mit three-fluid-fx)** → 13 (Vibe-Pass) → 14 (Bibliothek) → 7 (Compute-Sharing). W12 ist der große Sprung — AnazhRealm wird Tor zu anderen Vibecode-Welten; lies `docs/world-portal.md` ZUERST. Optional einschiebbar: W11 V4 (Voice-Sync), eine kleine Affordance-Welle (10b), oder eine Browser-Test-Pause für V8.33-V8.35.
 
 **Atmosphäre-Disziplin**: alle atmosphärischen Methoden mit `[ATMOSPHERE]`-Marker werden von `audit-strict.cjs` (5. Schicht) auf Hardcode geprüft. Wert-aus-dem-Kopf ist verboten — immer „aus welcher state-Beobachtung emergiert das?".
 
@@ -121,17 +123,17 @@ V7.89 (Kreatur-Boosts) war die kritische Prüfung dieses Gesetzes. Naive Lösung
 
 ## Aktuelle Roadmap (was als nächstes denkbar ist)
 
-Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 sind VOLLSTÄNDIG — die Welt atmet (Tag-Nacht, Wetter, Fauna, Atmosphäre-Tiefe, Wasser mit Tauchen/Schwimmen/Gerstner) und der Multi-User-Mitspieler ist sein echter Soul. Mögliche nächste Wellen, sortiert nach der empfohlenen Sequenz:
+Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. sind VOLLSTÄNDIG — die Welt atmet, der Mitspieler ist sein echter Soul, und die Welt liest Identität (Rolle) aus der Substanz. Mögliche nächste Wellen, sortiert nach der empfohlenen Sequenz:
 
 | Welle | Was | Aufwand | Vision-Tiefe |
 |---|---|---|---|
-| **W11 ext.** Substanz-Rolle | emergente Rollen aus Substanz (Soul/Werkzeug/Rüstung/Nahrung) — „eine Sprache, beliebige Identitäten". Das größte Vision-Wort des 17.05.-Audits. | 3-4 Sessions | sehr hoch |
-| **W12** Welt-Portal | AnazhRealm wird Tor zu anderen Vibecode-Welten. PoC mit `three-fluid-fx`. Lies `docs/world-portal.md` ZUERST. | 6-8 Sessions | sehr hoch |
+| **W12** Welt-Portal | AnazhRealm wird Tor zu anderen Vibecode-Welten („Bibliothek von Alexandria"). Bauplan-Rolle „portal" + Sub-Engine-Adapter im iframe. PoC mit `three-fluid-fx`. Lies `docs/world-portal.md` ZUERST. | 6-8 Sessions | sehr hoch |
+| **W11 V4** Voice-Sync | Mitspieler hören deinen Companion-Output (SpeechSynthesis-Broadcast). Klein, baut auf V3 — schließt den Präsenz-Bogen (sehen/spüren/kennen/hören). | 1 Session | mittel |
 | **Welle 10b weitere Affordances** | balancing/broadcasting/lifting/radiating — pro Affordance ~1 Session, architektur-neutral. Gute kleine Welle für zwischendurch. | klein-mittel | hoch |
-| **W11 V4** Voice-Sync | Mitspieler hören deinen Companion-Output (SpeechSynthesis-Broadcast). Baut auf V3. | 1 Session | mittel |
 | **Welle 6.H V3** Kreatur-Beziehungen | Kreaturen sehen sich gegenseitig — Freundschaft, Konkurrenz, Hierarchie. | mittel | hoch |
+| **Browser-Test-Pause** | V8.33-V8.35 sind alle automatisch geprüft, aber nicht im Browser gespielt. Schöpfer testet, nächste Welle fixt die Befunde. | klein | mittel |
 
-**Empfehlung**: **W11 ext. (Substanz-Rolle)**. Multi-User ist jetzt körperlich echt (V3). Der nächste große Vision-Hebel: emergente Rollen aus Substanz — eine Seele entsteht aus bodyParts-Symmetrie, ein Werkzeug aus opChain-Domain, Nahrung aus dem `nahrhaft`-Tag. Danach der Welt-Portal-Bogen (12-14, das größte Vision-Wort). Eine kleine Affordance-Welle (10b) oder W11 V4 (Voice-Sync) passen jederzeit als Pause dazwischen. Volle Detail-Tabelle in `roadmap.md`.
+**Empfehlung**: **W12 (Welt-Portal PoC)**. Der Hylomorphismus ist jetzt vertikal vollständig (Substanz → Rolle, W11 ext.), Multi-User ist körperlich echt (V3) — das Fundament für das größte Vision-Wort steht: AnazhRealm als Tor zu anderen Welten. W12 ist groß (6-8 Sessions) — `docs/world-portal.md` ZUERST lesen. Ein kleiner Lückenschluss (W11 V4 Voice-Sync, ~1 Session) oder eine Browser-Test-Pause passen davor. Volle Detail-Tabelle in `roadmap.md`.
 
 ---
 
@@ -181,6 +183,25 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 sind VOLLSTÄNDIG — die Welt atme
 ---
 
 ## Session-Tagebuch (chronologisch, jüngste oben)
+
+### V8.35 — Welle 11 ext.: Substanz-Rolle (17.05.2026)
+
+Die Bauplan-Rolle emergiert jetzt aus der ganzen Substanz, nicht nur aus der
+opChain-Krafting-Domain. `computeBlueprintRole` ist eine Prioritäts-Kaskade:
+(1) Krafting-Domain → (2) intrinsische Form (`_isBodyShaped` —
+bilateral-symmetrischer Glieder-Körper, mit Vertikalitäts-Kriterium) → soul,
+(3) intrinsisches Material (`_isFoodLike` — lebendig+weich) → consumable,
+(4) architecture. `consumableMeta` ist jetzt optional → emergente Nahrung ist
+essbar. 2078 → 2093 Invarianten (+15).
+
+**Drei Lehren**: (a) **Domain-Priorität ZUERST** — der erste Versuch hatte
+Form-zuerst und brach 7 Welle-9-Tests, weil ein geklontes `village` als
+body-shaped erkannt wurde. Der Playtest fing es; Krafting-Intent muss Vorrang
+haben. (b) `_isBodyShaped` braucht drei Diskriminatoren (Symmetrie + Glieder +
+**Vertikalität**) — Symmetrie allein erkennt auch ein flaches Dorf als Körper.
+(c) Roadmap-Brainstorm ≠ Spec: die Notiz „Nahrung via nahrhaft-Tag" wurde
+bewusst NICHT umgesetzt — ein 11. Tag ist Re-Komplexifizierung; Nahrung
+emergiert aus den 10 bestehenden Tags (Heilige Lektion über Brainstorm-Text).
 
 ### V8.34 — Ring 11 V3: Soul-Sync (17.05.2026)
 

@@ -1,4 +1,4 @@
-# Zustand des Realm — Stand: 17.05.2026 (V8.34)
+# Zustand des Realm — Stand: 17.05.2026 (V8.35)
 
 **Welle 6.H V2 vollendet (14/14 Sub-Phasen)** — Kreaturen sind jetzt vollwertige Co-Schöpfer-Wesen mit 9 Identitäts-Schichten (Body, Specs, Equipped, Boosts, Tasks, Memory+Persistenz, Konversation via @-Adresse, Proaktivität, Welt-Aktion-Vorschläge mit Sandbox). **LLM-Provider-System maximal robust nach 5-Versionen-Iteration (V7.94-V7.98)** — jedes Ollama-Setup funktioniert: lokal, gehostet, Cloud, Reasoning-Models, lokale 7B-Modelle. CORS-Lösung via save-server-Proxy, Parser mit Plain-Text-Fallback.
 
@@ -184,6 +184,20 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 ## 6. Learnings aus dieser Session
 
 Echt gelernt, nicht performt:
+
+### V8.35 (17.05.2026) — Welle 11 ext. "Substanz-Rolle" (Rolle emergiert aus Form + Material)
+
+Seit Welle 9 emergiert die Bauplan-Rolle (tool/armor/soul/consumable/machine) aus der opChain-Werkzeug-Domain — aus der Krafting-GESCHICHTE (welche Werkzeuge das Werkstück berührt haben). Aber ein Bauplan, den man zu einem Körper formt und nie schmiedet, blieb „architecture". Die Vision §1.3 sagt: die Welt liest, was ein Ding IST, aus seiner Substanz. Substanz ist mehr als Krafting-Geschichte — sie ist auch FORM und MATERIAL. V8.35 vollendet das: `computeBlueprintRole` ist jetzt eine Prioritäts-Kaskade über alle drei Substanz-Schichten.
+
+Drei Lehren:
+
+1. **Der Playtest hat eine Prioritäts-Fehlentscheidung gefangen.** Der erste Wurf hatte die intrinsische Form ZUERST geprüft (ein Körper IST ein Wesen, dachte ich — egal wie gekraftet). Sieben Welle-9-Tests brachen sofort: sie klonen `village` und wenden Domain-Werkzeuge an — und ein geklontes Dorf (symmetrische Hütten) wurde von `_isBodyShaped` als Körper erkannt und überschrieb die Domain-Rolle. Lehre: die bewusste Werkzeug-Wahl ist ein Intent und muss Vorrang haben; die intrinsische Form/Material spricht, WENN keine Krafting-Domain da ist. Hätte ich nur Code-Analyse gemacht und nicht getestet, wäre die Regression durchgerutscht.
+
+2. **Ein Signal braucht oft mehrere Diskriminatoren.** „Bilateral symmetrisch" allein erkennt auch ein Dorf als Körper (Hütten in Spiegel-Paaren). Erst drei Diskriminatoren zusammen — Symmetrie + echte Glieder-Paare + Vertikalität („ein Körper steht") — trennen ein Wesen sauber von einem flachen Dorf und von einem Turm. Vgl. die V8.32-Lehre („ein Zustand mit zwei Wirkungen braucht zwei Schwellen") — hier: eine Identität mit vielen Doppelgängern braucht mehrere Diskriminatoren.
+
+3. **Roadmap-Brainstorm ist nicht Spec.** Die Roadmap-Notiz sagte „Nahrung via `nahrhaft`-Tag" — ein 11. Material-Tag. Bewusst nicht umgesetzt: ein neuer Tag hätte jedes Material, die 9×10-Aktivierungs-Matrix und eine Save-Migration angefasst — Re-Komplexifizierung für ein Feature, das aus den 10 bestehenden Tags sauber emergiert (`lebendig` hoch + `härte` niedrig = essbar). Die Heilige Lektion schlägt die Brainstorm-Notiz.
+
+**Vision-Wort der V8.35**: *„Die Welt liest, was ein Ding IST — aus seiner ganzen Substanz: woraus es besteht, was du daraus geformt hast, und wie du es bearbeitet hast."*
 
 ### V8.34 (17.05.2026) — Ring 11 V3 "Soul-Sync" (Peer-Avatar wird die echte Seele)
 

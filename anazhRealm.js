@@ -8057,11 +8057,14 @@ class AnazhRealm {
         if (!creature) return { ok: false, reason: "no_creature" };
         const bp = this.state.blueprints && this.state.blueprints[blueprintName];
         if (!bp) return { ok: false, reason: "blueprint_unknown" };
-        if (bp.role !== "consumable" || !bp.consumableMeta) {
+        if (bp.role !== "consumable") {
             return { ok: false, reason: "not_marked_as_consumable" };
         }
+        // Welle 11 ext. — consumableMeta optional (siehe activateConsumable):
+        // emergente Nahrung ist auch für Kreaturen verfütterbar.
+        const meta = bp.consumableMeta || {};
         const tags = this.computeCompoundTags(bp);
-        const scale = bp.consumableMeta.scale || 0.2;
+        const scale = meta.scale || 0.2;
         const tagBonus = {};
         for (const tag of Object.keys(tags)) {
             const v = tags[tag] * scale;
@@ -8073,8 +8076,8 @@ class AnazhRealm {
         const ok = this.applyCreatureBoost(creature, {
             source: `consume:${blueprintName}`,
             tagDelta: tagBonus,
-            durationSeconds: bp.consumableMeta.durationSeconds || 30,
-            label: bp.consumableMeta.label || bp.label || blueprintName,
+            durationSeconds: meta.durationSeconds || 30,
+            label: meta.label || bp.label || blueprintName,
         });
         return ok ? { ok: true, tagBonus } : { ok: false, reason: "boost_apply_failed" };
     }
@@ -15018,9 +15021,13 @@ class AnazhRealm {
         // weil Compound-Tags bis 3 reichen können, Boost-Deltas sollen 0..0.5
         // bleiben damit der Effekt spürbar aber nicht dominant ist.
         const bp = this.state.blueprints && this.state.blueprints[name];
-        if (bp && bp.role === "consumable" && bp.consumableMeta) {
+        if (bp && bp.role === "consumable") {
+            // Welle 11 ext. — consumableMeta ist optional: eine emergente
+            // Nahrung (lebendig+weich) oder ein alchemy-Domain-Bauplan trägt
+            // keine Meta, ist aber dennoch essbar — Defaults greifen.
+            const meta = bp.consumableMeta || {};
             const tags = this.computeCompoundTags(bp);
-            const scale = bp.consumableMeta.scale || 0.2;
+            const scale = meta.scale || 0.2;
             const tagBonus = {};
             for (const tag of Object.keys(tags)) {
                 const v = tags[tag] * scale;
@@ -15032,8 +15039,8 @@ class AnazhRealm {
             const ok = this.addPlayerBoost({
                 source: `consume:${name}`,
                 tagDelta: tagBonus,
-                durationSeconds: bp.consumableMeta.durationSeconds || 30,
-                label: bp.consumableMeta.label || bp.label || name,
+                durationSeconds: meta.durationSeconds || 30,
+                label: meta.label || bp.label || name,
             });
             return { ok };
         }
@@ -15502,6 +15509,80 @@ class AnazhRealm {
         const T = AnazhRealm.AFFORDANCE_THRESHOLDS.focusing;
         const tags = this.computeCompoundTags(bp) || {};
         return (tags.transparent || 0) >= T.transparentMin && (tags.wärmeleitung || 0) >= T.wärmeMin;
+    }
+
+    // ----- Welle 11 ext. — intrinsische Substanz-Signale für die Rolle -----
+
+    // Bilaterale Symmetrie eines Compounds. Liefert {ratio, limbPairs}:
+    // ratio = Anteil Parts mit Spiegel-Partner (auf der Mittelachse zählt
+    // ein Part als sein eigener Spiegel), limbPairs = Anzahl echter
+    // Off-Achsen-Spiegel-Paare (= Glieder). Ein Wesen hat hohe ratio UND
+    // Glieder; ein Turm hat ratio 1.0 aber 0 limbPairs (alles auf der Achse).
+    _compoundSymmetry(bp) {
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length < 2) return { ratio: 0, limbPairs: 0 };
+        const bbox = this._compoundBBox(bp);
+        const T = AnazhRealm.SUBSTANCE_ROLE_THRESHOLDS.body;
+        const centerX = (bbox.min.x + bbox.max.x) / 2;
+        const spanX = bbox.max.x - bbox.min.x;
+        const spanY = bbox.max.y - bbox.min.y;
+        const spanZ = bbox.max.z - bbox.min.z;
+        const tol = Math.max(0.25, Math.max(spanX, spanY, spanZ) * T.mirrorTol);
+        const offAxisCut = Math.max(0.2, spanX * T.offAxisMin);
+        const parts = bp.parts;
+        const usedAsPartner = new Set();
+        let matched = 0;
+        let limbPairs = 0;
+        for (let i = 0; i < parts.length; i++) {
+            const p = parts[i].position || { x: 0, y: 0, z: 0 };
+            const offAxis = Math.abs(p.x - centerX) > offAxisCut;
+            const mx = 2 * centerX - p.x; // gespiegelte x-Position
+            let found = false;
+            for (let j = 0; j < parts.length; j++) {
+                if (j === i) continue;
+                const q = parts[j].position || { x: 0, y: 0, z: 0 };
+                if (Math.abs(q.x - mx) <= tol && Math.abs(q.y - p.y) <= tol && Math.abs(q.z - p.z) <= tol) {
+                    found = true;
+                    if (offAxis && i < j && !usedAsPartner.has(j)) {
+                        limbPairs++;
+                        usedAsPartner.add(j);
+                    }
+                    break;
+                }
+            }
+            // Ein Part auf der Mittelachse ist sein eigener Spiegel.
+            if (!found && !offAxis) found = true;
+            if (found) matched++;
+        }
+        return { ratio: matched / parts.length, limbPairs };
+    }
+
+    // body — Seelen-Signatur: ein Wesen-Körper ist bilateral symmetrisch
+    // (Glieder in Spiegel-Paaren) + mehrteilig. Räumliche Konfiguration
+    // entscheidet, keine Form-Whitelist — ein Compound aus Box+Sphere+zwei
+    // gespiegelten Cylindern IST ein Körper, egal welche Shapes.
+    _isBodyShaped(bp) {
+        if (!bp || !Array.isArray(bp.parts)) return false;
+        const T = AnazhRealm.SUBSTANCE_ROLE_THRESHOLDS.body;
+        if (bp.parts.length < T.minParts) return false;
+        // Vertikalität: ein Körper "steht" — die Y-Ausdehnung ist ein
+        // spürbarer Anteil der horizontalen. Ein flaches, breit gestreutes
+        // Dorf fällt hier raus, obwohl es bilateral symmetrisch ist.
+        const bbox = this._compoundBBox(bp);
+        const spanY = bbox.max.y - bbox.min.y;
+        const horiz = Math.max(bbox.max.x - bbox.min.x, bbox.max.z - bbox.min.z);
+        if (spanY < horiz * T.verticalMin) return false;
+        const sym = this._compoundSymmetry(bp);
+        return sym.ratio >= T.symmetryMin && sym.limbPairs >= T.minLimbPairs;
+    }
+
+    // food — Nahrungs-Signatur: lebendig + weich. Reine Tag-Sprache aus den
+    // bestehenden 10 Tags (kein 11. Tag — Heilige Lektion). Ein Fleisch- oder
+    // Frucht-Compound ist essbar, ein Holz- oder Stein-Compound nicht.
+    _isFoodLike(bp) {
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return false;
+        const T = AnazhRealm.SUBSTANCE_ROLE_THRESHOLDS.food;
+        const tags = this.computeCompoundTags(bp) || {};
+        return (tags.lebendig || 0) >= T.lebendigMin && (tags.härte || 0) <= T.härteMax;
     }
 
     // ----- Welt-Reaktion: moveable (Spieler steigt ein, Compound folgt) -----
@@ -17696,17 +17777,28 @@ class AnazhRealm {
         return toolScore >= armorScore ? "tool" : "armor";
     }
 
-    // Liefert die emergente Bauplan-Rolle aus der dominanten Werkzeug-
-    // Domain. Default ist "architecture" wenn keine Domain dominiert.
-    // forging-Split wird intern aufgelöst via Compound-Tag-Diskrimination.
+    // Welle 11 ext. — Substanz-Rolle. Die Rolle emergiert aus der GANZEN
+    // Substanz, in dieser Priorität:
+    //   1. Krafting-GESCHICHTE — die dominante opChain-Werkzeug-Domain
+    //      (forging→tool/armor, alchemy→consumable, soulwork→soul, …). Die
+    //      bewusste Werkzeug-Wahl ist ein Intent und hat Vorrang.
+    //   2. intrinsische FORM — bilateral-symmetrischer Glieder-Körper →
+    //      "soul". Greift wenn keine Krafting-Domain spricht: eine geformte
+    //      Gestalt IST ein Wesen, auch ungeschmiedet.
+    //   3. intrinsisches MATERIAL — lebendig+weiche Substanz → "consumable"
+    //      (Nahrung).
+    //   4. Default — "architecture" (Bauwerk).
+    // forging-Split wird via Compound-Tag-Diskrimination aufgelöst.
     computeBlueprintRole(blueprint) {
         const dom = this.computeBlueprintDomain(blueprint);
-        if (!dom) return AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
-        const role = AnazhRealm.DOMAIN_TO_ROLE[dom];
-        if (role === "forging-split") {
-            return this._computeForgingRole(blueprint);
+        if (dom) {
+            const role = AnazhRealm.DOMAIN_TO_ROLE[dom];
+            if (role === "forging-split") return this._computeForgingRole(blueprint);
+            if (role) return role;
         }
-        return role || AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
+        if (this._isBodyShaped(blueprint)) return "soul";
+        if (this._isFoodLike(blueprint)) return "consumable";
+        return AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
     }
 
     // Setzt bp.role emergent ein. Wird aus den Mutations-Methoden gerufen
@@ -19293,7 +19385,7 @@ class AnazhRealm {
         // erst ESC oder Slot-Wechsel verlässt den Modus.
         const bpName = this.state.buildMode.blueprintName;
         const bp = bpName && this.state.blueprints && this.state.blueprints[bpName];
-        if (bp && bp.role === "consumable" && bp.consumableMeta) {
+        if (bp && bp.role === "consumable") {
             const hit = this._pickCreatureAtCrosshair();
             if (!hit || !hit.creature) {
                 this.log(`Übergabe: keine Kreatur am Fadenkreuz.`, "INFO");
@@ -22300,9 +22392,11 @@ class AnazhRealm {
         } else {
             roleChip.classList.add("role-emergent");
             roleChip.title =
-                "✨ Emergent aus der Mehrheit der opChain-Domains. " +
-                "Wende Werkzeuge auf Parts an (Werkstatt rechts) → die Domain mit den meisten Ops bestimmt die Rolle. " +
-                "forging+scharf→Werkzeug, forging+dicht→Rüstung, alchemy→Konsumabel, soulwork→Avatar/Kreatur.";
+                "✨ Emergent aus der ganzen Substanz. " +
+                "1) Form: ein bilateral-symmetrisches Glieder-Compound → Seele. " +
+                "2) Krafting: die opChain-Domain mit den meisten Ops → forging+scharf→Werkzeug, " +
+                "forging+dicht→Rüstung, alchemy→Konsumabel, soulwork→Seele. " +
+                "3) Material: lebendig+weiche Substanz → Nahrung. Sonst: Bauwerk.";
         }
         roleRow.appendChild(roleChip);
         // V8.17 — wenn manuell, biete einen Reset-Button auf emergent.
@@ -22384,7 +22478,7 @@ class AnazhRealm {
             synRow.appendChild(synLab);
             const synText = document.createElement("span");
             synText.className = "workshop-synergy-text";
-            synText.textContent = "Form × Material × Werkzeug-Domain → Compound-Tags → Rolle";
+            synText.textContent = "Körper-Symmetrie · Werkzeug-Domain · lebendige Substanz → Rolle";
             synRow.appendChild(synText);
             panel.appendChild(synRow);
 
@@ -22398,8 +22492,15 @@ class AnazhRealm {
             const hintText = document.createElement("span");
             hintText.className = "workshop-growth-text";
             if (totalOps === 0) {
-                hintText.textContent =
-                    "Noch keine Werkzeug-Anwendung. Default: Bauwerk. Wende ein Werkzeug an um Rolle zu emergieren.";
+                // Welle 11 ext. — ohne Werkzeug-Ops kann die Rolle dennoch
+                // aus der intrinsischen Substanz emergieren (Körper-Form →
+                // Seele, lebendig+weich → Nahrung).
+                if (emergentRole !== AnazhRealm.DEFAULT_BLUEPRINT_ROLE) {
+                    hintText.textContent = `Noch keine Werkzeug-Anwendung — die Rolle „${emergentLabel}" emergiert direkt aus der Substanz (Form/Material).`;
+                } else {
+                    hintText.textContent =
+                        "Noch keine Werkzeug-Anwendung. Default: Bauwerk. Wende ein Werkzeug an, forme einen symmetrischen Körper, oder nutze lebendige Substanz — die Rolle emergiert.";
+                }
             } else if (bp.roleManual) {
                 hintText.textContent = `Manuell gesetzt. Emergent wäre „${emergentLabel}" aus Domain „${dominantDomain || "—"}".`;
                 hintText.classList.add("manual-override");
@@ -27181,6 +27282,26 @@ AnazhRealm.AFFORDANCE_THRESHOLDS = Object.freeze({
     focusing: Object.freeze({
         transparentMin: 0.5,
         wärmeMin: 0.3,
+    }),
+});
+
+// Welle 11 ext. — Substanz-Rolle. Schwellen für die intrinsischen Rollen-
+// Signale: body (Seele aus Körper-Symmetrie) + food (Nahrung aus lebendig+
+// weich). Bewusst KEIN 11. Material-Tag (Heilige Lektion — die 10 Tags
+// bleiben die eine Sprache); Nahrung emergiert aus den bestehenden Tags.
+AnazhRealm.SUBSTANCE_ROLE_THRESHOLDS = Object.freeze({
+    body: Object.freeze({
+        minParts: 3, // ein Körper hat mehrere Teile
+        symmetryMin: 0.78, // Anteil Parts mit Spiegel-Partner (bilateral)
+        minLimbPairs: 1, // ≥1 echtes Off-Achsen-Spiegel-Paar (Glieder)
+        offAxisMin: 0.18, // |x − Zentrum| / spanX ab dem ein Part "Glied" ist
+        mirrorTol: 0.35, // Spiegel-Such-Toleranz, relativ zur Compound-Größe
+        verticalMin: 0.45, // Y-Spanne ≥ 45 % der horizontalen — ein Körper
+        // "steht"; ein flaches Dorf (Hütten in der xz-Ebene) fällt raus.
+    }),
+    food: Object.freeze({
+        lebendigMin: 0.6, // klar lebendig (Fleisch, Laub, Frucht)
+        härteMax: 0.5, // weich genug zum Essen
     }),
 });
 

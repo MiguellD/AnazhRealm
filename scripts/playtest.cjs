@@ -12148,6 +12148,138 @@ function startSaveServer() {
                 check("V8.34: Soul-Sync Tests laufen", false, v834Results ? v834Results.error : "no result");
             }
 
+            // ### V8.35 — Welle 11 ext.: Substanz-Rolle (Rolle aus der Substanz) ###
+            const v835Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    const part = (mat, x, y, z) => ({
+                        shape: "box",
+                        material: mat,
+                        size: { x: 1, y: 1, z: 1 },
+                        position: { x, y, z },
+                    });
+
+                    out.methodsExist =
+                        typeof r._compoundSymmetry === "function" &&
+                        typeof r._isBodyShaped === "function" &&
+                        typeof r._isFoodLike === "function";
+
+                    // --- Körper-Form → Seele: Torso+Kopf auf der Achse,
+                    //     Glieder als Spiegel-Paar ---
+                    // Wesen: Torso+Kopf auf der Achse (vertikal gestreckt),
+                    // Arme als Off-Achsen-Spiegel-Paar.
+                    const bodyBp = {
+                        name: "_t835_body",
+                        parts: [part("fleisch", 0, 1, 0), part("knochen", 0, 3, 0), part("fleisch", -1, 2, 0), part("fleisch", 1, 2, 0)],
+                    };
+                    out.bodyIsShaped = r._isBodyShaped(bodyBp) === true;
+                    out.bodyRoleSoul = r.computeBlueprintRole(bodyBp) === "soul";
+
+                    // --- Turm: 3 Boxen gestapelt auf der Achse — symmetrisch,
+                    //     aber KEINE Glieder → kein Körper ---
+                    const towerBp = {
+                        name: "_t835_tower",
+                        parts: [part("stein", 0, 0, 0), part("stein", 0, 1, 0), part("stein", 0, 2, 0)],
+                    };
+                    out.towerNotBody = r._isBodyShaped(towerBp) === false;
+                    out.towerRoleArchitecture = r.computeBlueprintRole(towerBp) === "architecture";
+
+                    // --- Asymmetrisch: kein Spiegel → kein Körper ---
+                    const asymBp = {
+                        name: "_t835_asym",
+                        parts: [part("stein", 0, 0, 0), part("stein", 2, 1, 0), part("stein", 5, 2, 1)],
+                    };
+                    out.asymNotBody = r._isBodyShaped(asymBp) === false;
+
+                    // --- lebendig+weich → Nahrung ---
+                    const foodBp = { name: "_t835_food", parts: [{ shape: "sphere", material: "fleisch", size: { x: 1, y: 1, z: 1 }, position: { x: 0, y: 0, z: 0 } }] };
+                    out.foodIsFoodLike = r._isFoodLike(foodBp) === true;
+                    out.foodRoleConsumable = r.computeBlueprintRole(foodBp) === "consumable";
+
+                    const stoneBp = { name: "_t835_stone", parts: [part("stein", 0, 0, 0)] };
+                    out.stoneNotFood = r._isFoodLike(stoneBp) === false;
+                    out.stoneRoleArchitecture = r.computeBlueprintRole(stoneBp) === "architecture";
+
+                    // --- Priorität: ein Körper aus lebendigem Material ist eine
+                    //     SEELE (Körper-Form schlägt Nahrung) ---
+                    out.priorityBodyBeatsFood = r.computeBlueprintRole(bodyBp) === "soul";
+
+                    // --- _refreshBlueprintRoleEmergent: registrierter Körper-
+                    //     Bauplan emergiert OHNE Werkzeug-Op als "soul" ---
+                    r.state.blueprints["_t835_body_reg"] = {
+                        name: "_t835_body_reg",
+                        label: "Test-Körper",
+                        builtIn: false,
+                        parts: JSON.parse(JSON.stringify(bodyBp.parts)),
+                    };
+                    r._refreshBlueprintRoleEmergent("_t835_body_reg");
+                    out.refreshEmergesSoul = r.state.blueprints["_t835_body_reg"].role === "soul";
+
+                    // registrierte Nahrung emergiert als "consumable"
+                    r.state.blueprints["_t835_food_reg"] = {
+                        name: "_t835_food_reg",
+                        label: "Test-Frucht",
+                        builtIn: false,
+                        parts: JSON.parse(JSON.stringify(foodBp.parts)),
+                    };
+                    r._refreshBlueprintRoleEmergent("_t835_food_reg");
+                    out.refreshEmergesFood = r.state.blueprints["_t835_food_reg"].role === "consumable";
+
+                    // --- Manueller Override schlägt die Emergenz weiterhin ---
+                    r.state.blueprints["_t835_manual"] = {
+                        name: "_t835_manual",
+                        label: "Test-Manuell",
+                        builtIn: false,
+                        roleManual: true,
+                        role: "architecture",
+                        parts: JSON.parse(JSON.stringify(bodyBp.parts)),
+                    };
+                    r._refreshBlueprintRoleEmergent("_t835_manual");
+                    out.roleManualStillWins = r.state.blueprints["_t835_manual"].role === "architecture";
+
+                    // --- activateConsumable funktioniert OHNE consumableMeta
+                    //     (emergente Nahrung ist essbar) ---
+                    r.state.blueprints["_t835_food_reg"].role = "consumable";
+                    const before = (r.state.player.boosts || []).length;
+                    const eatRes = r.activateConsumable("_t835_food_reg");
+                    out.metaLessConsumableWorks =
+                        !!(eatRes && eatRes.ok) && (r.state.player.boosts || []).length > before;
+
+                    // Aufräumen
+                    if (r.state.player.boosts) {
+                        r.state.player.boosts = r.state.player.boosts.filter(
+                            (b) => b.source !== "consume:_t835_food_reg"
+                        );
+                        if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
+                    }
+                    delete r.state.blueprints["_t835_body_reg"];
+                    delete r.state.blueprints["_t835_food_reg"];
+                    delete r.state.blueprints["_t835_manual"];
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (v835Results && !v835Results.error) {
+                check("V8.35: Substanz-Helfer existieren (_compoundSymmetry/_isBodyShaped/_isFoodLike)", v835Results.methodsExist);
+                check("V8.35: bilateral-symmetrisches Glieder-Compound ist body-shaped", v835Results.bodyIsShaped);
+                check("V8.35: Körper-Form emergiert als Rolle 'soul'", v835Results.bodyRoleSoul);
+                check("V8.35: gestapelter Turm (symmetrisch, keine Glieder) ist KEIN Körper", v835Results.towerNotBody);
+                check("V8.35: Turm emergiert als 'architecture' (Default)", v835Results.towerRoleArchitecture);
+                check("V8.35: asymmetrisches Compound ist KEIN Körper", v835Results.asymNotBody);
+                check("V8.35: lebendig+weiche Substanz ist food-like", v835Results.foodIsFoodLike);
+                check("V8.35: lebendige Substanz emergiert als Rolle 'consumable'", v835Results.foodRoleConsumable);
+                check("V8.35: Stein-Substanz ist KEINE Nahrung", v835Results.stoneNotFood);
+                check("V8.35: Stein-Block emergiert als 'architecture'", v835Results.stoneRoleArchitecture);
+                check("V8.35: Priorität — Körper aus lebendigem Material ist Seele, nicht Nahrung", v835Results.priorityBodyBeatsFood);
+                check("V8.35: _refreshBlueprintRoleEmergent — Körper-Bauplan → 'soul' (ohne Op)", v835Results.refreshEmergesSoul);
+                check("V8.35: _refreshBlueprintRoleEmergent — Nahrungs-Bauplan → 'consumable' (ohne Op)", v835Results.refreshEmergesFood);
+                check("V8.35: manueller Rollen-Override schlägt die Emergenz weiterhin", v835Results.roleManualStillWins);
+                check("V8.35: activateConsumable funktioniert ohne consumableMeta (emergente Nahrung essbar)", v835Results.metaLessConsumableWorks);
+            } else {
+                check("V8.35: Substanz-Rolle Tests laufen", false, v835Results ? v835Results.error : "no result");
+            }
+
             // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider (Audit 17.05.2026) ###
             const wave6x4bResults = await page
                 .evaluate(() => {
