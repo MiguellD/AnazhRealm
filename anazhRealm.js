@@ -4263,11 +4263,15 @@ class AnazhRealm {
             if (p2p.role === "host" && typeof this.updateWorldInfo === "function") {
                 this.updateWorldInfo();
             }
+            // Ring 11 V3 — den bereits anwesenden Peers meine Seele zeigen.
+            this._p2pBroadcastSoul();
             return;
         }
         if (msg.type === "peer-join") {
             if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
                 this._p2pEnsurePeerEntry(msg.peerId);
+                // Ring 11 V3 — dem Neuankömmling meine Seele zeigen.
+                this._p2pBroadcastSoul();
             }
             return;
         }
@@ -4284,6 +4288,12 @@ class AnazhRealm {
             const z = Number(msg.z);
             const yaw = Number(msg.yaw);
             if (![x, y, z, yaw].every(Number.isFinite)) return;
+            // Ring 11 V3 — Bewegungs-Erkennung für die Peer-Animation: ein
+            // spürbarer Positions-Sprung markiert "in Bewegung" für 0.25 s
+            // (_p2pUpdatePeer leitet daraus den Geh-/Schwimm-Zyklus ab).
+            if (Math.hypot(x - entry.x, z - entry.z) > 0.015) {
+                entry.lastMovedAt = performance.now() / 1000;
+            }
             entry.x = x;
             entry.y = y;
             entry.z = z;
@@ -4305,6 +4315,42 @@ class AnazhRealm {
             } catch (err) {
                 this.log(`P2P-DSL Ausführungsfehler von ${pid}: ${err.message}`, "WARN");
             }
+            return;
+        }
+        if (msg.type === "soul") {
+            // Ring 11 V3 — Soul-Sync. Der Peer teilt seine Seele; wir bauen
+            // seinen Avatar daraus (Built-in via def.build, Custom via
+            // _buildFromBlueprint). KEIN DSL-Pfad — die Seele eines Peers ist
+            // eine Darstellungs-Tatsache, keine Welt-Mutation.
+            const pid = msg.peerId;
+            if (typeof pid !== "string" || pid === p2p.peerId) return;
+            const entry = this._p2pEnsurePeerEntry(pid);
+            const soulName = typeof msg.soulName === "string" ? msg.soulName : "";
+            if (!soulName) return;
+            const changed = entry.soulName !== soulName;
+            entry.soulName = soulName;
+            entry.bodyParts = Array.isArray(msg.bodyParts) ? msg.bodyParts : null;
+            if (typeof msg.name === "string" && msg.name.trim()) {
+                const nm = msg.name.trim().slice(0, 48);
+                if (entry.avatarName !== nm) {
+                    entry.avatarName = nm;
+                    this._p2pRefreshPeerNameLabel(entry);
+                }
+            }
+            if (changed) this._p2pApplyPeerSoul(entry);
+            entry.lastSeen = performance.now() / 1000;
+            return;
+        }
+        if (msg.type === "aura") {
+            // Ring 11 V3 — Aura-Sync. Dominante Tag-Hue + Intensität (~1 Hz).
+            const pid = msg.peerId;
+            if (typeof pid !== "string" || pid === p2p.peerId) return;
+            const entry = this._p2pEnsurePeerEntry(pid);
+            const hue = Number(msg.hue);
+            const intensity = Number(msg.intensity);
+            if (Number.isFinite(hue)) entry.auraHue = hue;
+            if (Number.isFinite(intensity)) entry.auraIntensity = intensity;
+            entry.lastSeen = performance.now() / 1000;
             return;
         }
         if (msg.type === "world-request") {
@@ -4379,28 +4425,212 @@ class AnazhRealm {
             z: 0,
             yaw: 0,
             mesh: null,
+            // Ring 11 V3 — Soul-Sync. meshKind unterscheidet den Cone+Sphere-
+            // Platzhalter ("placeholder") vom echten Seelen-Mesh ("soul" für
+            // Built-ins, "soul-custom" für bodyParts-Seelen). soulName/bodyParts
+            // kommen mit der `soul`-Nachricht, avatarName trägt das Name-Schild.
+            meshKind: "placeholder",
+            soulName: null,
+            bodyParts: null,
+            avatarName: null,
+            walkPhase: 0,
+            lastMovedAt: 0,
+            auraHue: null,
+            auraIntensity: 0,
+            auraGlow: null,
+            nameLabel: null,
             lastSeen: performance.now() / 1000,
         };
         p2p.peers.set(peerId, entry);
-        if (this.state.scene && typeof THREE !== "undefined") {
-            // Einfacher Markierungs-Mesh: Kegel + Kugel. Farbe deterministisch
-            // aus peerId-Hash, damit derselbe Peer immer dieselbe Farbe hat —
-            // erleichtert Erkennung im Multi-Peer-Fall.
-            let hash = 0;
-            for (let i = 0; i < peerId.length; i++) hash = (hash * 31 + peerId.charCodeAt(i)) >>> 0;
-            const hue = (hash % 360) / 360;
-            const color = new THREE.Color().setHSL(hue, 0.7, 0.55);
-            const group = new THREE.Group();
-            const body = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.4, 8), new THREE.MeshBasicMaterial({ color }));
-            body.position.y = 0.7;
-            const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 8), new THREE.MeshBasicMaterial({ color }));
-            head.position.y = 1.55;
-            group.add(body);
-            group.add(head);
-            this.state.scene.add(group);
-            entry.mesh = group;
-        }
+        entry.mesh = this._p2pBuildPlaceholderMesh(peerId);
+        if (entry.mesh && this.state.scene) this.state.scene.add(entry.mesh);
         return entry;
+    }
+
+    // Ring 11 V3 — Platzhalter-Avatar (Kegel + Kugel), solange die Seele des
+    // Peers noch nicht bekannt ist. Farbe deterministisch aus dem peerId-Hash.
+    _p2pBuildPlaceholderMesh(peerId) {
+        if (typeof THREE === "undefined") return null;
+        let hash = 0;
+        for (let i = 0; i < peerId.length; i++) hash = (hash * 31 + peerId.charCodeAt(i)) >>> 0;
+        const color = new THREE.Color().setHSL((hash % 360) / 360, 0.7, 0.55);
+        const group = new THREE.Group();
+        const body = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.4, 8), new THREE.MeshBasicMaterial({ color }));
+        body.position.y = 0.7;
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 8), new THREE.MeshBasicMaterial({ color }));
+        head.position.y = 1.55;
+        group.add(body, head);
+        return group;
+    }
+
+    // Ring 11 V3 — den Platzhalter durch die echte Seele des Peers ersetzen.
+    // Built-in-Seelen (Mensch/Phönix/Drache) via def.build() — sie tragen
+    // userData.parts und sind damit voll animierbar (Geh-/Schwimm-Zyklus).
+    // Custom-Seelen via _buildFromBlueprint aus den mitgesendeten bodyParts.
+    _p2pApplyPeerSoul(entry) {
+        if (!this.state.scene || typeof THREE === "undefined") return;
+        const def = entry.soulName && this.playerSoulDefs[entry.soulName];
+        let group = null;
+        let kind = "placeholder";
+        if (def && typeof def.build === "function") {
+            group = def.build();
+            kind = "soul";
+        } else if (Array.isArray(entry.bodyParts) && entry.bodyParts.length > 0) {
+            group = this._buildFromBlueprint({ name: `peer:${entry.peerId}`, parts: entry.bodyParts });
+            kind = "soul-custom";
+        }
+        if (!group) return; // unbekannte Seele ohne bodyParts → Platzhalter bleibt
+        if (entry.mesh) {
+            this.state.scene.remove(entry.mesh);
+            this._p2pDisposeMesh(entry.mesh);
+        }
+        this.state.scene.add(group);
+        entry.mesh = group;
+        entry.meshKind = kind;
+    }
+
+    _p2pDisposeMesh(obj) {
+        if (!obj || typeof obj.traverse !== "function") return;
+        obj.traverse((node) => {
+            if (node.geometry && node.geometry.dispose) node.geometry.dispose();
+            if (node.material && node.material.dispose) node.material.dispose();
+        });
+    }
+
+    // Ring 11 V3 — Aura-Sprite eines Peers. Teilt die gecachte Gradient-
+    // Textur mit dem Spieler-Aura-Sprite. Anders als der lokale Aura-Sprite
+    // ist die Peer-Aura IMMER sichtbar — der 1st-Person-Hide gilt nur die
+    // eigene Kamera, ein Mitspieler sieht meine Aura immer.
+    _p2pEnsurePeerAura(entry) {
+        if (entry.auraGlow) return entry.auraGlow;
+        if (typeof THREE === "undefined" || !this.state.scene) return null;
+        const mat = new THREE.SpriteMaterial({
+            map: this._buildAuraGradientTexture(),
+            color: 0xffffff,
+            blending: THREE.AdditiveBlending,
+            transparent: true,
+            opacity: 0.6,
+            depthWrite: false,
+        });
+        const sprite = new THREE.Sprite(mat);
+        sprite.scale.set(3.0, 3.0, 1);
+        this.state.scene.add(sprite);
+        entry.auraGlow = sprite;
+        return sprite;
+    }
+
+    // Ring 11 V3 — Name-Schild über dem Peer. Eine CanvasTexture mit dem
+    // Avatar-Namen; depthTest aus, damit der Name immer lesbar bleibt.
+    _p2pBuildNameLabel(name) {
+        if (typeof document === "undefined" || typeof THREE === "undefined") return null;
+        const canvas = document.createElement("canvas");
+        canvas.width = 256;
+        canvas.height = 64;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return null;
+        ctx.fillStyle = "rgba(18,16,26,0.74)";
+        ctx.fillRect(6, 14, 244, 36);
+        ctx.font = "bold 30px Cinzel, Georgia, serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "#f0e6d2";
+        ctx.fillText(String(name).slice(0, 24), 128, 33);
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.needsUpdate = true;
+        const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, depthTest: false });
+        const sprite = new THREE.Sprite(mat);
+        sprite.scale.set(2.6, 0.65, 1);
+        sprite.renderOrder = 5;
+        return sprite;
+    }
+
+    // Name-Schild neu bauen, wenn der Avatar-Name eines Peers ankommt/wechselt.
+    _p2pRefreshPeerNameLabel(entry) {
+        if (entry.nameLabel) {
+            if (this.state.scene) this.state.scene.remove(entry.nameLabel);
+            if (entry.nameLabel.material) {
+                if (entry.nameLabel.material.map) entry.nameLabel.material.map.dispose();
+                entry.nameLabel.material.dispose();
+            }
+            entry.nameLabel = null;
+        }
+        if (!entry.avatarName) return;
+        const label = this._p2pBuildNameLabel(entry.avatarName);
+        if (label && this.state.scene) {
+            this.state.scene.add(label);
+            entry.nameLabel = label;
+        }
+    }
+
+    // Ring 11 V3 — pro-Frame-Update eines Peers: Position, Animation (aus dem
+    // Positions-Stream abgeleitet), Aura, Name-Schild.
+    _p2pUpdatePeer(entry, t, dt) {
+        const mesh = entry.mesh;
+        if (!mesh) return;
+        const nowSec = (typeof performance !== "undefined" ? performance.now() : t * 1000) / 1000;
+        const isMoving = nowSec - (entry.lastMovedAt || 0) < 0.25;
+        const underwater = typeof this.state.waterLevel === "number" && entry.y < this.state.waterLevel;
+        // Der Cone+Sphere-Platzhalter sitzt mit -1-Offset; das Seelen-Mesh am
+        // playerMesh-Origin (entry.y direkt — wie der lokale Soul-Group).
+        const yOff = entry.meshKind === "placeholder" ? -1 : 0;
+        let posY = entry.y + yOff;
+        if (entry.meshKind === "soul-custom") {
+            // Custom-Seelen kriegen kein def.animate — ein sanftes Idle-Wippen.
+            posY += Math.sin(t * 1.8) * 0.04;
+        }
+        mesh.position.set(entry.x, posY, entry.z);
+        mesh.rotation.y = entry.yaw;
+        // Built-in-Seelen voll animieren (Geh-/Schwimm-Zyklus), abgeleitet aus
+        // dem Positions-Stream — keine Extra-Bandbreite.
+        if (entry.meshKind === "soul") {
+            const def = this.playerSoulDefs[entry.soulName];
+            if (def && typeof def.animate === "function" && mesh.userData && mesh.userData.parts) {
+                if (underwater) entry.walkPhase += dt * (isMoving ? 5.0 : 2.3);
+                else if (isMoving) entry.walkPhase += dt * (entry.soulName === "dragon" ? 4.5 : 5.5);
+                def.animate(mesh, t, entry.walkPhase, isMoving, underwater);
+            }
+        }
+        // Aura — immer sichtbar (Peer-Aura ignoriert den lokalen Kamera-Hide).
+        if (entry.auraHue !== null) {
+            const glow = this._p2pEnsurePeerAura(entry);
+            if (glow) {
+                glow.position.set(entry.x, entry.y + 0.5, entry.z);
+                glow.material.color.setHSL((((entry.auraHue % 360) + 360) % 360) / 360, 0.78, 0.5);
+                const intensity = Math.max(0, Math.min(1, entry.auraIntensity || 0));
+                glow.material.opacity = 0.4 + 0.5 * intensity;
+                const breath = 3.0 * (1 + Math.sin(t) * 0.05);
+                glow.scale.set(breath, breath, 1);
+            }
+        }
+        // Name-Schild folgt über dem Kopf.
+        if (entry.nameLabel) {
+            entry.nameLabel.position.set(entry.x, entry.y + 2.3, entry.z);
+        }
+    }
+
+    // Ring 11 V3 — die eigene Seele an alle Mitspieler senden (Join + Wechsel).
+    // Built-in-Seelen brauchen nur den Namen; Custom-Seelen tragen ihre
+    // bodyParts mit, weil der Empfänger den Bauplan nicht hat.
+    _p2pBroadcastSoul() {
+        if (!this.state.p2p || !this.state.p2p.enabled) return;
+        const soulName = (this.state.player && this.state.player.soul) || "human";
+        const msg = { type: "soul", soulName };
+        const custom = this.state.customSouls && this.state.customSouls[soulName];
+        if (custom && Array.isArray(custom.bodyParts)) msg.bodyParts = custom.bodyParts;
+        const avatarName = this.state.player && this.state.player.name;
+        if (typeof avatarName === "string" && avatarName.trim()) msg.name = avatarName.trim().slice(0, 48);
+        this.p2pSend(msg);
+    }
+
+    // Ring 11 V3 — die eigene Aura (dominante Tag-Hue + Intensität) senden.
+    // Niedrigfrequent (~1 Hz, p2pTick) — die Aura pulsiert langsam, kein
+    // Frame-Sync nötig. Werte stammen aus tickPlayerAura.
+    _p2pBroadcastAura() {
+        if (!this.state.p2p || !this.state.p2p.enabled || !this.state.player) return;
+        const hue = this.state.player._auraHueOut;
+        const intensity = this.state.player._auraIntensityOut;
+        if (typeof hue !== "number" || typeof intensity !== "number") return;
+        this.p2pSend({ type: "aura", hue, intensity });
     }
 
     _p2pRemovePeer(peerId) {
@@ -4408,11 +4638,21 @@ class AnazhRealm {
         const entry = p2p.peers.get(peerId);
         if (!entry) return;
         if (entry.mesh) {
-            this.state.scene.remove(entry.mesh);
-            entry.mesh.traverse((obj) => {
-                if (obj.geometry && obj.geometry.dispose) obj.geometry.dispose();
-                if (obj.material && obj.material.dispose) obj.material.dispose();
-            });
+            if (this.state.scene) this.state.scene.remove(entry.mesh);
+            this._p2pDisposeMesh(entry.mesh);
+        }
+        if (entry.auraGlow) {
+            if (this.state.scene) this.state.scene.remove(entry.auraGlow);
+            // Material disposen — aber NICHT die geteilte Gradient-Textur.
+            if (entry.auraGlow.material) entry.auraGlow.material.dispose();
+        }
+        if (entry.nameLabel) {
+            if (this.state.scene) this.state.scene.remove(entry.nameLabel);
+            if (entry.nameLabel.material) {
+                // Name-Schild hat eine EIGENE CanvasTexture — die mit disposen.
+                if (entry.nameLabel.material.map) entry.nameLabel.material.map.dispose();
+                entry.nameLabel.material.dispose();
+            }
         }
         p2p.peers.delete(peerId);
     }
@@ -4440,15 +4680,21 @@ class AnazhRealm {
                 yaw: this.state.yaw || 0,
             });
         }
-        // Peer-Meshes ans aktuelle Position-State angleichen + idle-purge
-        // (kein update >10 s → entfernen, vermutlich verbindungslos).
+        // Ring 11 V3 — Aura-Sync, ~1 Hz (die Aura pulsiert langsam, kein
+        // Frame-Sync nötig).
+        if (currentTimeMs - (p2p._lastAuraBroadcast || 0) > 1000) {
+            p2p._lastAuraBroadcast = currentTimeMs;
+            this._p2pBroadcastAura();
+        }
+        // Peer-Avatare nachziehen: Position, Animation, Aura, Name-Schild +
+        // idle-purge (kein update >10 s → entfernen, vermutlich verbindungslos).
         const nowSec = currentTimeMs / 1000;
+        const t = nowSec;
+        const dt = p2p._lastTickMs ? Math.max(0, Math.min(0.1, (currentTimeMs - p2p._lastTickMs) / 1000)) : 0;
+        p2p._lastTickMs = currentTimeMs;
         const stale = [];
         for (const [pid, entry] of p2p.peers) {
-            if (entry.mesh) {
-                entry.mesh.position.set(entry.x, entry.y - 1, entry.z);
-                entry.mesh.rotation.y = entry.yaw;
-            }
+            this._p2pUpdatePeer(entry, t, dt);
             if (nowSec - entry.lastSeen > 10) stale.push(pid);
         }
         for (const pid of stale) this._p2pRemovePeer(pid);
@@ -14583,6 +14829,12 @@ class AnazhRealm {
         const auraSat = 0.85 * hpRatio;
         const auraLit = 0.5;
         const auraColor = new THREE.Color().setHSL(hue / 360, auraSat, auraLit);
+        // Ring 11 V3 — dominante Hue + Intensität cachen, damit p2pTick sie im
+        // Aura-Sync an die Mitspieler senden kann (~1 Hz). intensity ist
+        // hpRatio × Tag-Stärke — 0..1, der Empfänger rendert daraus die Opacity.
+        const auraStrength = Math.min(1, bestVal / 1.5);
+        this.state.player._auraHueOut = hue;
+        this.state.player._auraIntensityOut = hpRatio * auraStrength;
         // (a) Glow-Sprite (V4): weicher Schimmer um den Avatar.
         // Sprite ist Billboard (folgt Kamera automatisch). Radius wirkt
         // physisch über `scale`; die radial-Gradient-Texture sorgt für den
@@ -14597,10 +14849,9 @@ class AnazhRealm {
             const p = this.state.playerMesh.position;
             glow.position.set(p.x, p.y + 0.5, p.z);
             glow.material.color.copy(auraColor);
-            // Sprite-Master-Opacity skaliert mit HP × dominanter Tag-Intensität.
-            // Cap bei 1.0 (Texture-Alpha selbst läuft auf max 0.55 in der Mitte,
-            // Rand 0 — das ist der weiche Verlauf).
-            const auraStrength = Math.min(1, bestVal / 1.5);
+            // Sprite-Master-Opacity skaliert mit HP × dominanter Tag-Intensität
+            // (auraStrength oben berechnet). Cap bei 1.0 (Texture-Alpha selbst
+            // läuft auf max 0.55 in der Mitte, Rand 0 — der weiche Verlauf).
             glow.material.opacity = 0.55 + 0.45 * hpRatio * auraStrength;
             // Atem-Animation über Sprite-scale (5 % Modulation).
             const breath = 3.0 * (1 + Math.sin(performance.now() * 0.001) * 0.05);
@@ -15573,6 +15824,9 @@ class AnazhRealm {
         // und Resistenzen. DSL-Tuning via player_speed/player_jump_power
         // überschreibt danach frei, bleibt aber bis zum nächsten Soul-Wechsel.
         this.recomputePlayerStats();
+        // Ring 11 V3 — Soul-Sync: Mitspieler über den Seelen-Wechsel
+        // informieren, damit ihr Renderer den neuen Avatar baut.
+        if (this.state.p2p && this.state.p2p.enabled) this._p2pBroadcastSoul();
         return true;
     }
 

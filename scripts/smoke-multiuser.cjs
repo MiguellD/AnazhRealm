@@ -53,6 +53,16 @@ async function run() {
     wsA.send(JSON.stringify({ type: "dsl", program: new Array(300).fill("over_cap") }));
     await sleep(150);
 
+    // Ring 11 V3: Soul-Sync. A teilt seine Seele + Aura → B bekommt beides
+    // mit dem peerId-Stempel des Servers.
+    wsA.send(JSON.stringify({ type: "soul", soulName: "phoenix", name: "Aria", bodyParts: [{ shape: "box" }] }));
+    wsA.send(JSON.stringify({ type: "aura", hue: 270, intensity: 0.8 }));
+    await sleep(150);
+    // Defensive: soul ohne soulName + aura mit NaN-hue werden verworfen.
+    wsA.send(JSON.stringify({ type: "soul" }));
+    wsA.send(JSON.stringify({ type: "aura", hue: "x", intensity: 0.5 }));
+    await sleep(150);
+
     // Ring 11.5: world-request (broadcast) + world-snapshot (targeted).
     // B sendet world-request → A bekommt es → A antwortet mit world-snapshot
     // to=peerB. Server forwarded zielgerichtet — andere Peers (hier nur A
@@ -106,6 +116,18 @@ async function run() {
         (e) => e.type === "welcome" && Array.isArray(e.lanAddresses)
     );
 
+    // Ring 11 V3 Assertions
+    const bGotSoulFromA = events.b.some(
+        (e) => e.type === "soul" && e.peerId === "peerA" && e.soulName === "phoenix" && e.name === "Aria"
+    );
+    const bGotAuraFromA = events.b.some(
+        (e) => e.type === "aura" && e.peerId === "peerA" && e.hue === 270 && e.intensity === 0.8
+    );
+    const aNotEchoedOwnSoul = !events.a.some((e) => e.type === "soul");
+    // Genau die EINE gute soul-/aura-Nachricht (kaputte wurden verworfen).
+    const bRejectedBadSoul = events.b.filter((e) => e.type === "soul").length === 1;
+    const bRejectedBadAura = events.b.filter((e) => e.type === "aura").length === 1;
+
     console.log("\n=== Verdict ===");
     console.log("V1 A welcome:", aSawWelcome);
     console.log("V1 A sees B-join:", aSawBjoin);
@@ -120,6 +142,10 @@ async function run() {
     console.log("V2.2 A bekommt eigenen world-request NICHT zurück:", aNotEchoedOwnRequest);
     console.log("V2.2 B bekommt world-snapshot targeted:", bGotWorldSnapshot);
     console.log("V2.2 A bekommt eigenen world-snapshot NICHT zurück:", aNotEchoedOwnSnapshot);
+    console.log("V3 B bekommt A's soul (phoenix/Aria) mit peerId-Stempel:", bGotSoulFromA);
+    console.log("V3 B bekommt A's aura (hue/intensity) mit peerId-Stempel:", bGotAuraFromA);
+    console.log("V3 A bekommt eigene soul NICHT zurück:", aNotEchoedOwnSoul);
+    console.log("V3 Server verwirft soul ohne soulName / aura mit NaN:", bRejectedBadSoul && bRejectedBadAura);
 
     // B disconnects
     wsB.close();
@@ -144,7 +170,12 @@ async function run() {
         aGotWorldRequest &&
         aNotEchoedOwnRequest &&
         !!bGotWorldSnapshot &&
-        aNotEchoedOwnSnapshot;
+        aNotEchoedOwnSnapshot &&
+        bGotSoulFromA &&
+        bGotAuraFromA &&
+        aNotEchoedOwnSoul &&
+        bRejectedBadSoul &&
+        bRejectedBadAura;
     server.kill();
     process.exit(allOk ? 0 : 1);
 }

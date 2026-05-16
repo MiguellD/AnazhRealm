@@ -1,4 +1,4 @@
-# Zustand des Realm — Stand: 17.05.2026 (V8.33)
+# Zustand des Realm — Stand: 17.05.2026 (V8.34)
 
 **Welle 6.H V2 vollendet (14/14 Sub-Phasen)** — Kreaturen sind jetzt vollwertige Co-Schöpfer-Wesen mit 9 Identitäts-Schichten (Body, Specs, Equipped, Boosts, Tasks, Memory+Persistenz, Konversation via @-Adresse, Proaktivität, Welt-Aktion-Vorschläge mit Sandbox). **LLM-Provider-System maximal robust nach 5-Versionen-Iteration (V7.94-V7.98)** — jedes Ollama-Setup funktioniert: lokal, gehostet, Cloud, Reasoning-Models, lokale 7B-Modelle. CORS-Lösung via save-server-Proxy, Parser mit Plain-Text-Fallback.
 
@@ -184,6 +184,20 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 ## 6. Learnings aus dieser Session
 
 Echt gelernt, nicht performt:
+
+### V8.34 (17.05.2026) — Ring 11 V3 "Soul-Sync" (Peer-Avatar wird die echte Seele)
+
+Multi-User war seit V7.68-V7.71 verkabelt — Position-Sync, DSL-Broadcast, Welt-Snapshot beim Join. Aber der Mitspieler selbst war ein Cone+Sphere-Kegel mit einer peerId-Hash-Farbe. Funktional „da", aber ein Marker, kein Wesen. V3 macht ihn zu seinem echten Soul: man sieht den Mitspieler als Mensch/Phönix/Drache/Custom, voll animiert, mit Aura und Namen.
+
+Drei Lehren aus dieser Welle:
+
+1. **„Trust but verify" hat einen echten Fehler gefangen.** Die Code-Recherche (ein Explore-Agent) berichtete, der Signaling-Server sei ein „dumb broadcast relay, all types pass through". Beim direkten Lesen von `handleClientMessage` zeigte sich: der Server hat pro Nachrichtentyp ein explizites `if`, das das Objekt rekonstruiert + die authoritative peerId stempelt — KEIN generischer Fallthrough. Hätte ich der Agent-Zusammenfassung vertraut, wären `soul`/`aura` stillschweigend verschluckt worden. Eine Agent-Zusammenfassung beschreibt, was der Agent zu finden GLAUBTE — den Code, den man editieren wird, liest man selbst.
+
+2. **Eine Tatsache ist nicht immer eine Mutation.** Es war verlockend, den Soul-Sync über die bestehende DSL-Broadcast-Schiene zu schicken (`player_soul` aus `NON_BROADCASTABLE_OPS` nehmen). Falsch: ein DSL-Op läuft auf dem Empfänger durch `dslRun` — ein Peer-Soul-Wechsel hätte MEINEN Soul mutiert. Die Seele eines Peers ist eine **Darstellungs-Tatsache** (welchen Avatar rendere ich für ihn), keine Welt-Mutation. Sie braucht einen eigenen Kanal, keine geteilte Schiene. Frag bei jedem Sync: „ändert das die Welt, oder beschreibt es nur einen anderen Spieler?".
+
+3. **Ein lokaler Hide ist nicht global.** Die Spieler-Aura wird in 1st-Person lokal versteckt (das Billboard läge im eigenen Sichtfeld). Aber das ist eine Aussage über MEINE Kamera. Ein Mitspieler, der mich sieht, rendert durch SEINE Kamera — meine Aura muss er immer sehen. Peer-Auren ignorieren den Kamera-Hide. Genau die Schnittstellen-Frage, die der Schöpfer im 17.05.-Audit gestellt hatte (Punkt C2).
+
+**Vision-Wort der V8.34**: *„Ein Mitspieler ist erst ein Co-Schöpfer, wenn man ihn als das sieht, was er IST — seine Form, sein Zustand, sein Name."*
 
 ### V8.33 (17.05.2026) — Welle 6.G4.e "Wasser-Vollendung" (Tauchen, Schwimm-Animation, Gerstner-Wellen)
 

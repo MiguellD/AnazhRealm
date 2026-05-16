@@ -9,9 +9,13 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 17.05.2026, V8.33)
+## Schnell-Lage (Stand 17.05.2026, V8.34)
 
-**Du erbst eine sehr lebendige Welt**. **2061 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~26900 Zeilen in einer Datei, alles produktiv. Die jüngste Session-Hälfte (V8.23 → V8.33) war eine **Atmosphäre-Tiefe-Welle (6.G4)** in sieben Schritten, jeder aus einem Schöpfer-Browser-Test:
+**Du erbst eine sehr lebendige Welt**. **2078 Playtest-Invarianten grün + 0 Audit-Strict-Failures + smoke-multiuser grün**, ~27300 Zeilen in einer Datei, alles produktiv.
+
+**Jüngste Welle — V8.34 (Ring 11 V3, Soul-Sync)**: der Multi-User-Mitspieler war ein Cone+Sphere-Platzhalter — jetzt ist er sein echter Soul (Mensch/Phönix/Drache/Custom), voll animiert (Geh-/Schwimm-Zyklus aus dem Positions-Stream abgeleitet), mit Aura-Sync + schwebendem Name-Schild. Zwei neue WS-Nachrichten (`soul` event-driven beim Join/Wechsel, `aura` ~1 Hz) mit Server-Handlern. Wichtig: der Signaling-Server ist KEIN dummer Relay (jeder Typ braucht einen expliziten Handler), und `player_soul` bleibt in `NON_BROADCASTABLE_OPS` — Soul-Sync läuft über den dedizierten `soul`-Kanal, nicht die DSL.
+
+Die Session-Hälfte davor (V8.23 → V8.33) war eine **Atmosphäre-Tiefe-Welle (6.G4)** in sieben Schritten, jeder aus einem Schöpfer-Browser-Test:
 
 1. **V8.24-V8.26**: Welt-Lebendigkeit (Tag-Nacht, Wetter-Übergänge, Fauna-Trauer) + Welt-LEBT-Heilung (drei Wurzel-Helper, acht Hardcode-Wunden) + Disziplin-Polish (Stern-Stabilität, Sonnenaufgang-Smoothness, vier Audit-Quick-Wins)
 2. **V8.27 (6.G4.a)**: Welt unter wandernder Sonne — HemisphereLight + MeshLambert + Fog (Self-Shadow ohne Shadow-Maps)
@@ -25,7 +29,7 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 **Welle 12 ist „Welt-Portal"** (nicht WebGPU-Migration) — AnazhRealm wird Tor zu anderen Vibecode-Welten. Wenn du in eine Welle 12+ erwachst: lies `docs/world-portal.md` ZUERST.
 
-**Empfohlene Sequenz nach V8.33**: 6.G4 ist komplett → 11 V3 (Soul-Sync) → 11 ext. (Substanz-Rolle) → 12 (Welt-Portal PoC mit three-fluid-fx) → 13 (Vibe-Pass) → 14 (Bibliothek) → 7 (Compute-Sharing).
+**Empfohlene Sequenz nach V8.34**: 6.G4 ✅ + 11 V3 ✅ → **11 ext. (Substanz-Rolle)** → 12 (Welt-Portal PoC mit three-fluid-fx) → 13 (Vibe-Pass) → 14 (Bibliothek) → 7 (Compute-Sharing). Optional: W11 V4 (Voice-Sync — andere hören deinen Companion) baut natürlich auf V3 auf, ist aber niedrige Priorität.
 
 **Atmosphäre-Disziplin**: alle atmosphärischen Methoden mit `[ATMOSPHERE]`-Marker werden von `audit-strict.cjs` (5. Schicht) auf Hardcode geprüft. Wert-aus-dem-Kopf ist verboten — immer „aus welcher state-Beobachtung emergiert das?".
 
@@ -117,17 +121,17 @@ V7.89 (Kreatur-Boosts) war die kritische Prüfung dieses Gesetzes. Naive Lösung
 
 ## Aktuelle Roadmap (was als nächstes denkbar ist)
 
-Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 sind VOLLSTÄNDIG — die Welt atmet (Tag-Nacht, Wetter, Fauna, Atmosphäre-Tiefe, Wasser mit Tauchen/Schwimmen/Gerstner). Mögliche nächste Wellen, sortiert nach der empfohlenen Sequenz:
+Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 sind VOLLSTÄNDIG — die Welt atmet (Tag-Nacht, Wetter, Fauna, Atmosphäre-Tiefe, Wasser mit Tauchen/Schwimmen/Gerstner) und der Multi-User-Mitspieler ist sein echter Soul. Mögliche nächste Wellen, sortiert nach der empfohlenen Sequenz:
 
 | Welle | Was | Aufwand | Vision-Tiefe |
 |---|---|---|---|
-| **W11 V3** Soul-Sync | Peer-Avatar im Multi-User wird der echte Soul (Mensch/Phönix/Drache) statt Cone+Sphere; plus Aura-Sync. | 2-3 Sessions | hoch |
 | **W11 ext.** Substanz-Rolle | emergente Rollen aus Substanz (Soul/Werkzeug/Rüstung/Nahrung) — „eine Sprache, beliebige Identitäten". Das größte Vision-Wort des 17.05.-Audits. | 3-4 Sessions | sehr hoch |
 | **W12** Welt-Portal | AnazhRealm wird Tor zu anderen Vibecode-Welten. PoC mit `three-fluid-fx`. Lies `docs/world-portal.md` ZUERST. | 6-8 Sessions | sehr hoch |
 | **Welle 10b weitere Affordances** | balancing/broadcasting/lifting/radiating — pro Affordance ~1 Session, architektur-neutral. Gute kleine Welle für zwischendurch. | klein-mittel | hoch |
+| **W11 V4** Voice-Sync | Mitspieler hören deinen Companion-Output (SpeechSynthesis-Broadcast). Baut auf V3. | 1 Session | mittel |
 | **Welle 6.H V3** Kreatur-Beziehungen | Kreaturen sehen sich gegenseitig — Freundschaft, Konkurrenz, Hierarchie. | mittel | hoch |
 
-**Empfehlung**: **W11 V3 (Soul-Sync)**. Multi-User ist verkabelt (Position + DSL-Sync), aber der Mitspieler ist ein Cone+Sphere — er sollte sein echter Soul sein. Danach die Substanz-Rolle (W11 ext.), dann der Welt-Portal-Bogen (12-14). Eine kleine Affordance-Welle (10b) passt jederzeit als Pause dazwischen. Volle Detail-Tabelle in `roadmap.md`.
+**Empfehlung**: **W11 ext. (Substanz-Rolle)**. Multi-User ist jetzt körperlich echt (V3). Der nächste große Vision-Hebel: emergente Rollen aus Substanz — eine Seele entsteht aus bodyParts-Symmetrie, ein Werkzeug aus opChain-Domain, Nahrung aus dem `nahrhaft`-Tag. Danach der Welt-Portal-Bogen (12-14, das größte Vision-Wort). Eine kleine Affordance-Welle (10b) oder W11 V4 (Voice-Sync) passen jederzeit als Pause dazwischen. Volle Detail-Tabelle in `roadmap.md`.
 
 ---
 
@@ -177,6 +181,25 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 sind VOLLSTÄNDIG — die Welt atmet (Tag-N
 ---
 
 ## Session-Tagebuch (chronologisch, jüngste oben)
+
+### V8.34 — Ring 11 V3: Soul-Sync (17.05.2026)
+
+Der Multi-User-Mitspieler war ein Cone+Sphere-Platzhalter — jetzt ist er sein
+echter Soul. **(1)** Neue WS-Nachricht `soul` (event-driven: Join + Wechsel) →
+Empfänger baut den Avatar (Built-in via `def.build()`, Custom via
+`_buildFromBlueprint`). **(2)** Voll animiert: `_p2pUpdatePeer` leitet
+`isMoving`/`underwater` aus dem 30-Hz-Positions-Stream ab und ruft `def.animate`
+— derselbe Geh-/Schwimm-Zyklus wie der eigene Avatar, keine Extra-Bandbreite.
+**(3)** Aura-Sync (`aura`-Nachricht ~1 Hz) + **(4)** schwebendes Name-Schild.
+2061 → 2078 Invarianten (+17), `smoke-multiuser.cjs` um soul/aura-Relay
+erweitert.
+
+**Drei Architektur-Lehren**: (a) der Signaling-Server ist KEIN dummer Relay —
+jeder Nachrichtentyp braucht einen expliziten Handler (die Explore-Recherche
+behauptete das Gegenteil; `trust but verify` hat es gefangen). (b) `player_soul`
+bleibt in `NON_BROADCASTABLE_OPS` — Soul-Sync ist eine Darstellungs-Tatsache
+über einen dedizierten Kanal, keine DSL-Welt-Mutation. (c) Der lokale
+1st-Person-Aura-Hide gilt NUR die eigene Kamera — Peer-Auren sind immer sichtbar.
 
 ### V8.33 — Welle 6.G4.e: Wasser-Vollendung (17.05.2026)
 

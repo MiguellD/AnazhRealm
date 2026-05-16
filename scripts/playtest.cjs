@@ -12012,6 +12012,142 @@ function startSaveServer() {
                 check("V8.33: Wasser-Vollendung Tests laufen", false, v833Results ? v833Results.error : "no result");
             }
 
+            // ### V8.34 — Ring 11 V3: Soul-Sync (Peer-Avatar = echte Seele) ###
+            const v834Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    const p2p = r.state.p2p;
+                    p2p.peerId = "self-v834";
+                    p2p.enabled = false;
+
+                    out.methodsExist =
+                        typeof r._p2pBuildPlaceholderMesh === "function" &&
+                        typeof r._p2pApplyPeerSoul === "function" &&
+                        typeof r._p2pBuildNameLabel === "function" &&
+                        typeof r._p2pUpdatePeer === "function" &&
+                        typeof r._p2pEnsurePeerAura === "function" &&
+                        typeof r._p2pBroadcastSoul === "function" &&
+                        typeof r._p2pBroadcastAura === "function";
+
+                    // Frischer Peer → Cone+Sphere-Platzhalter, V3-Felder vorhanden.
+                    r.p2pHandleMessage(JSON.stringify({ type: "peer-join", peerId: "pv1" }));
+                    const pv1 = p2p.peers.get("pv1");
+                    out.placeholderKind = !!pv1 && pv1.meshKind === "placeholder";
+                    out.placeholderMesh = !!(pv1 && pv1.mesh && pv1.mesh.children && pv1.mesh.children.length === 2);
+                    out.entryHasV3Fields =
+                        !!pv1 && "soulName" in pv1 && "auraHue" in pv1 && "walkPhase" in pv1 && "nameLabel" in pv1;
+
+                    // soul-Nachricht (Built-in Phönix) → echte Seele + Name-Schild.
+                    r.p2pHandleMessage(
+                        JSON.stringify({ type: "soul", peerId: "pv1", soulName: "phoenix", name: "Aria" })
+                    );
+                    const pv1b = p2p.peers.get("pv1");
+                    out.builtinSoulName = !!pv1b && pv1b.soulName === "phoenix";
+                    out.builtinMeshKind = !!pv1b && pv1b.meshKind === "soul";
+                    out.builtinHasParts = !!(
+                        pv1b &&
+                        pv1b.mesh &&
+                        pv1b.mesh.userData &&
+                        pv1b.mesh.userData.parts &&
+                        pv1b.mesh.userData.parts.leftWing
+                    );
+                    out.nameLabelCreated = !!(pv1b && pv1b.avatarName === "Aria" && pv1b.nameLabel);
+
+                    // Soul-Wechsel phoenix → dragon → Mesh wird neu gebaut.
+                    r.p2pHandleMessage(JSON.stringify({ type: "soul", peerId: "pv1", soulName: "dragon" }));
+                    const pv1c = p2p.peers.get("pv1");
+                    out.soulChangeRebuilt =
+                        !!pv1c &&
+                        pv1c.soulName === "dragon" &&
+                        pv1c.mesh.userData.parts &&
+                        !!pv1c.mesh.userData.parts.tailJoint;
+
+                    // soul-Nachricht (Custom-Seele via bodyParts).
+                    r.p2pHandleMessage(
+                        JSON.stringify({
+                            type: "soul",
+                            peerId: "pv2",
+                            soulName: "custom-test-soul",
+                            bodyParts: [{ shape: "box", material: "stein", size: { x: 1, y: 1, z: 1 } }],
+                        })
+                    );
+                    const pv2 = p2p.peers.get("pv2");
+                    out.customMeshKind = !!pv2 && pv2.meshKind === "soul-custom";
+                    out.customMeshBuilt = !!(pv2 && pv2.mesh && pv2.mesh.children && pv2.mesh.children.length >= 1);
+
+                    // aura-Nachricht.
+                    r.p2pHandleMessage(JSON.stringify({ type: "aura", peerId: "pv1", hue: 270, intensity: 0.8 }));
+                    const pv1d = p2p.peers.get("pv1");
+                    out.auraReceived =
+                        !!pv1d && pv1d.auraHue === 270 && Math.abs((pv1d.auraIntensity || 0) - 0.8) < 0.001;
+
+                    // _p2pUpdatePeer erzeugt den Aura-Sprite + animiert.
+                    r._p2pUpdatePeer(pv1d, 1.0, 0.016);
+                    out.auraSpriteCreated = !!pv1d.auraGlow;
+
+                    // _p2pBroadcastSoul-Payload (p2pSend gemockt).
+                    p2p.enabled = true;
+                    let captured = null;
+                    const origSend = r.p2pSend;
+                    r.p2pSend = (obj) => {
+                        captured = obj;
+                        return true;
+                    };
+                    r._p2pBroadcastSoul();
+                    r.p2pSend = origSend;
+                    p2p.enabled = false;
+                    out.broadcastSoulPayload =
+                        !!captured &&
+                        captured.type === "soul" &&
+                        captured.soulName === r.state.player.soul &&
+                        typeof captured.name === "string";
+
+                    // tickPlayerAura cached die Aura-Werte für den Sync.
+                    r.tickPlayerAura();
+                    out.auraOutCached =
+                        typeof r.state.player._auraHueOut === "number" &&
+                        typeof r.state.player._auraIntensityOut === "number";
+
+                    // player_soul bleibt NON_BROADCASTABLE — Soul-Sync läuft über
+                    // den dedizierten `soul`-Kanal, NICHT über die DSL.
+                    out.playerSoulStillLocal = r.constructor.NON_BROADCASTABLE_OPS.has("player_soul");
+
+                    // _p2pRemovePeer räumt Peer + Mesh + Aura + Name-Schild.
+                    r._p2pRemovePeer("pv1");
+                    r._p2pRemovePeer("pv2");
+                    out.peersRemoved = !p2p.peers.has("pv1") && !p2p.peers.has("pv2");
+
+                    p2p.enabled = false;
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (v834Results && !v834Results.error) {
+                check("V8.34: Soul-Sync-Methoden existieren (7)", v834Results.methodsExist);
+                check("V8.34: frischer Peer ist Cone+Sphere-Platzhalter", v834Results.placeholderKind);
+                check("V8.34: Platzhalter-Mesh hat 2 Teile (Kegel+Kugel)", v834Results.placeholderMesh);
+                check("V8.34: Peer-Entry trägt die V3-Felder", v834Results.entryHasV3Fields);
+                check("V8.34: soul-Nachricht setzt soulName (Built-in)", v834Results.builtinSoulName);
+                check("V8.34: Built-in-Seele → meshKind 'soul'", v834Results.builtinMeshKind);
+                check("V8.34: Peer-Phönix hat animierbare Parts (Flügel)", v834Results.builtinHasParts);
+                check("V8.34: Name-Schild wird aus dem Avatar-Namen erzeugt", v834Results.nameLabelCreated);
+                check("V8.34: Soul-Wechsel baut den Peer-Avatar neu (→ Drache)", v834Results.soulChangeRebuilt);
+                check("V8.34: Custom-Seele → meshKind 'soul-custom'", v834Results.customMeshKind);
+                check("V8.34: Custom-Seele wird aus bodyParts gebaut", v834Results.customMeshBuilt);
+                check("V8.34: aura-Nachricht setzt Hue + Intensität", v834Results.auraReceived);
+                check("V8.34: _p2pUpdatePeer erzeugt den Peer-Aura-Sprite", v834Results.auraSpriteCreated);
+                check(
+                    "V8.34: _p2pBroadcastSoul sendet {type:soul, soulName, name}",
+                    v834Results.broadcastSoulPayload
+                );
+                check("V8.34: tickPlayerAura cached Hue+Intensität für den Sync", v834Results.auraOutCached);
+                check("V8.34: player_soul bleibt NON_BROADCASTABLE (Soul-Sync ≠ DSL)", v834Results.playerSoulStillLocal);
+                check("V8.34: _p2pRemovePeer entfernt Peer + Avatar + Aura + Schild", v834Results.peersRemoved);
+            } else {
+                check("V8.34: Soul-Sync Tests laufen", false, v834Results ? v834Results.error : "no result");
+            }
+
             // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider (Audit 17.05.2026) ###
             const wave6x4bResults = await page
                 .evaluate(() => {
