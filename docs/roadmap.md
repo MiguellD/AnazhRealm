@@ -1,6 +1,6 @@
 # AnazhRealm Roadmap — Vollumfänglich
 
-Stand: 17.05.2026 (V8.23, Welle 6.X komplett + 8 Audit-Runden V8.13-V8.22 mit insgesamt 30+ Browser-Test-Punkten adressiert + V8.23 Test-Infrastruktur (audit-strict.cjs) + Welt-Portal-Konzept-Doku. 1879/1879 Invarianten grün, Audit-Strict 0 Failures.)
+Stand: 17.05.2026 (V8.33, Welle 6.G4 KOMPLETT — Atmosphäre-Tiefe inkl. Wasser-Vollendung (Tauchen, Schwimm-Animation, Gerstner-Wellen). 2061/2061 Invarianten grün, Audit-Strict 0 Failures. Nächste empfohlene Welle: W11 V3 Soul-Sync.)
 
 Diese Doc beschreibt das **gesamte Projekt vom heutigen Stand bis zum Vision-Endziel** (Welten-Ultiversum). Sie ergänzt `state-of-realm.md` (Was/Warum) um eine puren Plan-Sicht (Wann/Wie). Aufwandsschätzungen sind realistische Tage für eine fokussierte Claude-Session pro Ring/Phase; gerechnet wird linear, ohne Puffer.
 

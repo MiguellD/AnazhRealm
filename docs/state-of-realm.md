@@ -1156,13 +1156,12 @@ CI macht 1-4 automatisch; 5+6 sind Disziplin.
 
 ## 10. Wie eine neue Session starten
 
-1. Branch checken: `git status` sollte auf `claude/new-adventure-fetch-branch-NF847` zeigen, working tree clean. Letzter SHA dieser Übergabe ist im Commit-Archiv §4 das letzte Element. **Vor dem Anfangen: `git fetch --all` UND alle Branches durchsehen — `origin/main` ist oft nicht der neueste Stand, weitere Feature-Branches können vorausgehen (siehe Learning #28).**
-2. `CLAUDE.md` ist auto-geladen — sofort verfügbar. Diese Doc (`state-of-realm.md`) gezielt lesen wenn größere Entscheidungen anstehen.
-3. Bei Bedarf `docs/nexus-dsl.md` lesen für Ring 2 Phase 3+ Details.
-4. Falls der Schöpfer fragt „wo stehen wir?" → §3 (Matrix) + §5 (Pfad D Tabelle) zitieren. Stand: Ring 0+1 ✅, Ring 2 Phase 1+2 ✅, Phase 3-7 + Ringe 3-7 + Ringe 8-11 offen.
-5. Falls der Schöpfer „los" sagt ohne Spezifikation → Ring 2 Phase 3 (Chat-Parser → DSL) vorschlagen. Das schließt die DSL-Brücke und bereitet die Welten-Modifikation (Ring 8+) vor.
-6. Falls der Schöpfer „Welt modifizierbar" fragt → §7 Frage 4 zeigen (Ebenen A/B/C) und Ebene B empfehlen.
-7. Falls etwas re-komplexifiziert werden soll → erst Versionslog-Lektion (§2) UND §6 Punkt 8 („Patchwork sammelt sich an") zitieren, dann diskutieren.
+1. Branch checken: `git status` — der aktuelle Entwicklungs-Branch steht im Session-Auftrag, working tree sollte clean sein. **Vor dem Anfangen: `git fetch --all` UND alle Branches durchsehen — `origin/main` ist oft nicht der neueste Stand (siehe Learning #28).**
+2. `CLAUDE.md` ist auto-geladen — sofort verfügbar. **`docs/handover.md` ZUERST lesen** — die Orientierungs-Doku für den nächsten Agenten (Schnell-Lage, heilige Gesetze, Rhythmus, empfohlene nächste Schritte). Dann diese Doc (`state-of-realm.md`) für Vision + Learnings.
+3. `docs/roadmap.md` für die volle Wellen-Tabelle mit Status + Aufwand.
+4. Falls der Schöpfer fragt „wo stehen wir?" → Ring 0-11 + Welle 1-6 (inkl. 6.G3 Welt-Lebendigkeit + 6.G4 Atmosphäre-Tiefe) sind live; Stand V8.33. Nächste empfohlene Welle: W11 V3 (Soul-Sync). Detail in `handover.md` + `roadmap.md`.
+5. Falls der Schöpfer „los" sagt ohne Spezifikation → die `handover.md`-Empfehlung vorschlagen (aktuell W11 V3 Soul-Sync — der Multi-User-Mitspieler wird sein echter Soul statt Cone+Sphere).
+6. Falls etwas re-komplexifiziert werden soll → erst Versionslog-Lektion (§2) UND §6 Punkt 8 („Patchwork sammelt sich an") zitieren, dann diskutieren.
 
 ### Wichtige Gotchas, die in dieser Session geboren wurden
 
