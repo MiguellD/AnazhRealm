@@ -1,4 +1,4 @@
-# Zustand des Realm — Stand: 17.05.2026 (V8.31)
+# Zustand des Realm — Stand: 17.05.2026 (V8.32)
 
 **Welle 6.H V2 vollendet (14/14 Sub-Phasen)** — Kreaturen sind jetzt vollwertige Co-Schöpfer-Wesen mit 9 Identitäts-Schichten (Body, Specs, Equipped, Boosts, Tasks, Memory+Persistenz, Konversation via @-Adresse, Proaktivität, Welt-Aktion-Vorschläge mit Sandbox). **LLM-Provider-System maximal robust nach 5-Versionen-Iteration (V7.94-V7.98)** — jedes Ollama-Setup funktioniert: lokal, gehostet, Cloud, Reasoning-Models, lokale 7B-Modelle. CORS-Lösung via save-server-Proxy, Parser mit Plain-Text-Fallback.
 
@@ -184,6 +184,22 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 ## 6. Learnings aus dieser Session
 
 Echt gelernt, nicht performt:
+
+### V8.32 (17.05.2026) — Welle 6.G4.d³ "Wasser-Politur" (Tauch-Tint nur bei Augen-unter-Wasser, Wasser-Fresnel)
+
+Der Schöpfer-Browser-Test der V8.31 war begeistert — und brachte zwei präzise Wasser-Befunde:
+
+**Der Unterwasser-Tint sprang zu früh.** Sobald das Wasser halbe Körperhöhe erreichte (der Spieler watet oder schwimmt), wurde die Welt blau gefiltert — *„als ob ich schon tauche, dabei schwimmen wir noch"*. Die Wurzel: ein einziges Flag, `playerUnderwater`, trieb zwei verschiedene Dinge — die Physik (Auftrieb, Bremse) *und* den blauen Tint. Aber die beiden brauchen verschiedene Schwellen: der Körper berührt das Wasser, lange bevor die Augen darunter tauchen. Jetzt zwei Flags: `playerUnderwater` (Körper-Mitte unter `waterLevel` → Auftrieb) und `playerEyesUnderwater` (`scaledY + 1.6 < waterLevel`, also Kamera-/Augen-Höhe → blauer Tint). Der Tint kommt erst beim echten Untertauchen.
+
+**Sterne schienen durchs transparente Wasser.** Das Wasser war pauschal 82 % deckend, die Sterne dahinter schimmerten zu 18 % durch. Die nachhaltige Lösung ist **Fresnel**: echtes Wasser ist bei flachem Blickwinkel (zum Horizont) fast spiegelnd-opak und nur bei steilem Blick (von oben) transparent. `pow(1 - dot(viewDir, normal), 3)` steuert die Opazität von 0.74 (von oben, der Grund scheint durch) bis 0.99 (am Horizont, fast undurchsichtig). Das ist physikalisch korrekt — und genau am Horizont, wo man die Sterne durchscheinen sah, ist das Wasser jetzt deckend.
+
+Plus: der Fog-Slider wurde von 200 % auf 300 % Maximum erweitert — der Schöpfer war am Anschlag (*„finde 200 % angenehm"*) und wünschte mehr Spielraum.
+
+**Die Lehre**: ein Zustand mit zwei Wirkungen braucht oft zwei Schwellen. „Der Spieler ist im Wasser" ist nicht ein Ereignis, sondern zwei — Körper-berührt-Wasser und Augen-tauchen-unter. Wer beide an dasselbe Flag hängt, bekommt das eine zu früh oder das andere zu spät.
+
+**Vision-Wort der V8.32**: *„Ein Zustand mit zwei Wirkungen braucht oft zwei Schwellen."*
+
+**Tests**: 6 neue Vision-Invarianten. 2035 → 2041 grün.
 
 ### V8.31 (17.05.2026) — Welle 6.G4.d² "Fog an die Custom-Shader" (+ heterogeneres Wasser)
 

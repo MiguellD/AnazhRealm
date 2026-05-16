@@ -133,6 +133,11 @@ class AnazhRealm {
             // V8.29.1 — true wenn der Spieler unter waterLevel ist. Treibt
             // Auftrieb (Physik-Loop), langsamere Bewegung + Unterwasser-Tint.
             playerUnderwater: false,
+            // V8.32 — true wenn die AUGEN unter Wasser sind (echtes Tauchen).
+            // Treibt den blauen Unterwasser-Tint — getrennt von
+            // playerUnderwater (Körper im Wasser), damit der Tint nicht
+            // schon beim Waten/Schwimmen erscheint.
+            playerEyesUnderwater: false,
             // V8.28 6.G4.b — Atmosphäre-Slider (Spieler-Präferenz, persistiert).
             // celLevels: Cel-Shading-Stufen (1=bold, 6≈smooth)
             // fogDistance: Multiplikator auf Fog-near/far (klein=dichter)
@@ -7281,7 +7286,16 @@ class AnazhRealm {
                     // dem Dunst, wie Terrain + Gras.
                     float fogF = smoothstep(fogNear, fogFar, vFogDepth);
                     col = mix(col, fogColor, fogF);
-                    gl_FragColor = vec4(col, 0.82);
+                    // V8.32 — Fresnel-Opazität. Echtes Wasser ist bei flachem
+                    // Blickwinkel (Horizont, viewDir fast parallel zur
+                    // Oberfläche) nahezu spiegelnd-opak und bei steilem Blick
+                    // (von oben) transparent. Das löst das "Sterne scheinen
+                    // durchs Wasser"-Problem: am Horizont, wo man die Sterne
+                    // durchscheinen sah, wird das Wasser fast undurchsichtig.
+                    // Von oben bleibt es klar, der Grund scheint durch.
+                    float fres = pow(1.0 - max(dot(viewDir, n), 0.0), 3.0);
+                    float alpha = mix(0.74, 0.99, fres);
+                    gl_FragColor = vec4(col, alpha);
                 }
             `,
             transparent: true,
@@ -12761,7 +12775,7 @@ class AnazhRealm {
             const cl = Number(state.atmosphere.celLevels);
             if (Number.isFinite(cl)) this.state.atmosphere.celLevels = Math.max(2, Math.min(8, Math.round(cl)));
             const fd = Number(state.atmosphere.fogDistance);
-            if (Number.isFinite(fd)) this.state.atmosphere.fogDistance = Math.max(0.3, Math.min(2.0, fd));
+            if (Number.isFinite(fd)) this.state.atmosphere.fogDistance = Math.max(0.3, Math.min(3.0, fd));
         }
         // Lights+Skybox sofort neu aus restauriertem timeOfDay setzen
         if (typeof this._applyDayNightToScene === "function") {
@@ -18011,7 +18025,7 @@ class AnazhRealm {
     // fogDistance ist ein Multiplikator (0.3 dicht .. 2.0 weit) auf
     // Fog-near/far. Die echten Werte setzt _applyDayNightToScene.
     setFogDistance(mult) {
-        const m = Math.max(0.3, Math.min(2.0, Number(mult) || 1.0));
+        const m = Math.max(0.3, Math.min(3.0, Number(mult) || 1.0));
         if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 1.0 };
         this.state.atmosphere.fogDistance = m;
         if (typeof this._applyDayNightToScene === "function") this._applyDayNightToScene();
@@ -23300,11 +23314,14 @@ class AnazhRealm {
             const fogMult = (this.state.atmosphere && this.state.atmosphere.fogDistance) || 1.0;
             fog.near = (35 - rainyMix * 13) * fogMult;
             fog.far = (150 - rainyMix * 55) * fogMult;
-            // V8.29.1 — Unterwasser-Tint. Ist der Spieler unter waterLevel,
-            // wird der Fog blau-dicht: die Welt sieht durch Wasser gefiltert
-            // aus (kein neues Mesh — die bestehende Fog-Schnittstelle trägt
-            // den Effekt). Distanz auf ~5..32 m → echte Trübung.
-            if (this.state.playerUnderwater) {
+            // V8.32 — Unterwasser-Tint NUR beim echten Tauchen (Augen unter
+            // Wasser), nicht schon beim Waten/Schwimmen. Vorher triggerte er
+            // bei playerUnderwater (Körper-Mitte im Wasser) → der blaue Fog
+            // sprang an, sobald das Wasser halbe Körperhöhe erreichte. Jetzt:
+            // playerEyesUnderwater. Der dichte 4..34-Fog ignoriert bewusst
+            // den fogDistance-Slider — Tauch-Trübung ist fest, nicht die
+            // Land-Sicht-Einstellung (Schöpfer-Wunsch V8.32).
+            if (this.state.playerEyesUnderwater) {
                 fog.color.setRGB(0.06, 0.19, 0.32);
                 fog.near = 4;
                 fog.far = 34;
@@ -25558,11 +25575,16 @@ class AnazhRealm {
                         // Wasser-Niveau, wirkt Auftrieb: die Fall-Geschwindig-
                         // keit wird stark gedämpft, ein sanfter Aufwärts-Drift
                         // hebt ihn — er schwimmt, statt auf den Grund zu sinken.
-                        // state.playerUnderwater treibt den Bewegungs-Speed
-                        // (langsamer) + den Unterwasser-Tint.
+                        // V8.32 — zwei getrennte Flags: playerUnderwater
+                        // (Körper-Mitte im Wasser → Auftrieb + Bremse) und
+                        // playerEyesUnderwater (Augen/Kamera unter Wasser →
+                        // blauer Tint). Sonst sprang der Tint schon beim
+                        // Waten/Schwimmen an, obwohl der Kopf über Wasser war.
                         if (mesh === this.state.playerMesh && typeof this.state.waterLevel === "number") {
                             const submerged = scaledY < this.state.waterLevel;
                             this.state.playerUnderwater = submerged;
+                            // Augen sitzen auf Kamera-Höhe (scaledY + 1.6).
+                            this.state.playerEyesUnderwater = scaledY + 1.6 < this.state.waterLevel;
                             if (submerged) {
                                 const vy = velocity.y();
                                 // Tiefer = mehr Auftrieb (bis +2.5 m/s Drift).

@@ -2,7 +2,19 @@
 
 Persistente Notizen. Diese Datei wird bei jeder neuen Session automatisch geladen. **Bei größeren Entscheidungen zuerst `docs/state-of-realm.md` lesen** – dort steht der ausführliche Stand, die Vision aus den vier Testamenten, der Plan und die Learnings.
 
-**Aktuelle Version: V8.31 (Stand 17.05.2026, Welle 6.G4.d² — Fog an die Custom-Shader. Schöpfer-Befund: „Fog-Slider ändert die Gras-Farbe statt Nebel zu zeigen". Wurzel: Custom-`ShaderMaterial` erben THREE.Fog NICHT — nur das Gras (Lambert) verblasste, das Terrain blieb scharf. Fix: Fog-Uniforms + fog-mix in Terrain- + Wasser-Shader. Plus Wasser-Wellen heterogener (Domain-Warp + 6 Oktaven). 2035/2035 Playtest-Invarianten grün, Audit-Strict 5 Schichten, 14/14 [ATMOSPHERE]-Methoden clean.)**
+**Aktuelle Version: V8.32 (Stand 17.05.2026, Welle 6.G4.d³ — Wasser-Politur. Schöpfer-Befunde: (1) Unterwasser-Tint sprang schon beim Waten an statt beim Tauchen, (2) Sterne schienen durchs transparente Wasser. Fix: `playerEyesUnderwater`-Flag (Augen-Höhe scaledY+1.6) trennt Tauchen vom Waten — der blaue Tint kommt erst wenn die Augen unter Wasser sind. Wasser-Fresnel: am Horizont fast opak (keine Sterne durch), von oben transparent. Fog-Slider auf 300 % erweitert. 2041/2041 Playtest-Invarianten grün, Audit-Strict 5 Schichten, 14/14 [ATMOSPHERE]-Methoden clean.)**
+
+**V8.32 — Welle 6.G4.d³ (Wasser-Politur, +6 Vision-Invarianten 2035→2041)**: Schöpfer-Browser-Test der V8.31 — Begeisterung („wow stark") + zwei Wasser-Befunde:
+
+1. **Unterwasser-Tint zu früh** — der blaue Fog-Filter sprang an, sobald das Wasser halbe Körperhöhe erreichte (Spieler watet/schwimmt), nicht erst beim echten Tauchen. Wurzel: `playerUnderwater` (= Körper-Mitte unter `waterLevel`) trieb sowohl Physik ALS AUCH Tint. Fix: zwei getrennte Flags — `playerUnderwater` (Körper im Wasser → Auftrieb + Bremse, bleibt) und neu `playerEyesUnderwater` (= `scaledY + 1.6 < waterLevel`, Augen/Kamera-Höhe → blauer Tint). Der dichte 4..34-Fog ignoriert bewusst den `fogDistance`-Slider — Tauch-Trübung ist fest, die Land-Sicht folgt dem Slider.
+
+2. **Sterne durchs transparente Wasser** — das Wasser war pauschal 82 % opak, die Sterne dahinter schienen zu 18 % durch. Fix: **Fresnel-Opazität** — `pow(1 - dot(viewDir, normal), 3)` macht das Wasser bei flachem Blickwinkel (Horizont) fast opak (0.99), bei steilem Blick (von oben) transparent (0.74). Physikalisch korrekt (echtes Wasser spiegelt am Horizont) UND es löst das Stern-Problem: am Horizont, wo man die Sterne durchscheinen sah, ist das Wasser jetzt undurchsichtig.
+
+**Plus**: Fog-Slider-Range 30-200 % → 30-300 % (Schöpfer war am 200%-Anschlag, „finde 200% angenehm"). `setFogDistance`-Clamp + loadState-Clamp auf 3.0 erweitert.
+
+**Vision-Lehre der V8.32**: *„Ein Zustand mit zwei Wirkungen braucht oft zwei Schwellen — der Körper berührt das Wasser früher als die Augen darunter tauchen."*
+
+**Tests**: 6 neue Vision-Invarianten (playerEyesUnderwater-Flag + Berechnung, Tint nutzt das Flag, Wasser-Fresnel, Fog-Slider 300 %). 2035 → 2041 grün.
 
 **V8.31 — Welle 6.G4.d² (Fog-Schnittstelle + heterogeneres Wasser, +6 Vision-Invarianten 2029→2035)**: Schöpfer-Browser-Test der V8.30 — Begeisterung („wow stark, props champ") + ein präziser Bug-Befund: *„Fog-Distanz scheint kein Nebel aufzutauchen, sondern die Farbe der Gräser zu ändern — das scheint noch falsch."*
 

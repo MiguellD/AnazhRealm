@@ -11841,6 +11841,66 @@ function startSaveServer() {
                 check("V8.31: Fog-Custom-Shader Tests laufen", false, v831Results ? v831Results.error : "no result");
             }
 
+            // ### V8.32 — Tauch-Tint nur bei Augen-unter-Wasser + Wasser-Fresnel ###
+            const v832Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // Getrennte Flags: playerUnderwater (Körper) vs.
+                    // playerEyesUnderwater (Augen/Tauchen).
+                    out.eyesFlagExists = typeof r.state.playerEyesUnderwater === "boolean";
+                    // Physik-Loop berechnet playerEyesUnderwater aus scaledY+1.6.
+                    {
+                        let found = false;
+                        const proto = Object.getPrototypeOf(r);
+                        for (const name of Object.getOwnPropertyNames(proto)) {
+                            try {
+                                const fn = proto[name];
+                                if (typeof fn !== "function") continue;
+                                if (/playerEyesUnderwater\s*=\s*scaledY \+ 1\.6/.test(fn.toString())) found = true;
+                            } catch {
+                                /* skip */
+                            }
+                        }
+                        out.eyesFlagComputed = found;
+                    }
+                    // Der Unterwasser-Tint nutzt playerEyesUnderwater, NICHT
+                    // mehr playerUnderwater (Source-Pattern in _applyDayNightToScene).
+                    {
+                        const src = r._applyDayNightToScene.toString();
+                        out.tintUsesEyesFlag = /playerEyesUnderwater/.test(src) && /fog\.near = 4/.test(src);
+                    }
+
+                    // Wasser-Shader hat Fresnel-Opazität.
+                    if (r.state.waterPlane && r.state.waterPlane.material) {
+                        const fs = r.state.waterPlane.material.fragmentShader || "";
+                        out.waterFresnel = /fres/.test(fs) && /pow\(1\.0 - max\(dot\(viewDir, n\)/.test(fs);
+                    }
+
+                    // Fog-Slider erlaubt bis 300 %.
+                    const fs = document.getElementById("slider-fog");
+                    out.fogSliderTo300 = !!(fs && parseInt(fs.max, 10) === 300);
+                    // setFogDistance akzeptiert 3.0.
+                    r.setFogDistance(3.0);
+                    out.fogDistanceTo3 = Math.abs(r.state.atmosphere.fogDistance - 3.0) < 0.01;
+                    r.setFogDistance(1.0);
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (v832Results && !v832Results.error) {
+                check("V8.32: state.playerEyesUnderwater-Flag existiert", v832Results.eyesFlagExists);
+                check("V8.32: playerEyesUnderwater wird aus scaledY+1.6 berechnet (Augen-Höhe)", v832Results.eyesFlagComputed);
+                check("V8.32: Unterwasser-Tint nutzt playerEyesUnderwater (nicht beim Waten)", v832Results.tintUsesEyesFlag);
+                check("V8.32: Wasser-Shader hat Fresnel-Opazität (Sterne nicht durchs Wasser)", v832Results.waterFresnel);
+                check("V8.32: Fog-Slider geht bis 300 %", v832Results.fogSliderTo300);
+                check("V8.32: setFogDistance akzeptiert 3.0", v832Results.fogDistanceTo3);
+            } else {
+                check("V8.32: Wasser-Politur Tests laufen", false, v832Results ? v832Results.error : "no result");
+            }
+
             // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider (Audit 17.05.2026) ###
             const wave6x4bResults = await page
                 .evaluate(() => {
