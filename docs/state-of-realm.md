@@ -1,4 +1,4 @@
-# Zustand des Realm — Stand: 17.05.2026 (V8.46)
+# Zustand des Realm — Stand: 17.05.2026 (V8.47)
 
 **Welle 6.H V2 vollendet (14/14 Sub-Phasen)** — Kreaturen sind jetzt vollwertige Co-Schöpfer-Wesen mit 9 Identitäts-Schichten (Body, Specs, Equipped, Boosts, Tasks, Memory+Persistenz, Konversation via @-Adresse, Proaktivität, Welt-Aktion-Vorschläge mit Sandbox). **LLM-Provider-System maximal robust nach 5-Versionen-Iteration (V7.94-V7.98)** — jedes Ollama-Setup funktioniert: lokal, gehostet, Cloud, Reasoning-Models, lokale 7B-Modelle. CORS-Lösung via save-server-Proxy, Parser mit Plain-Text-Fallback.
 
@@ -184,6 +184,14 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 ## 6. Learnings aus dieser Session
 
 Echt gelernt, nicht performt:
+
+### V8.47 (17.05.2026) — Shadow-Acne-Heilung: Shadow-Bias
+
+„Unnatürliche Schattenlinien, scheinen nur auf komplett horizontalen flachen Flächen zu geschehen." Die Lehre:
+
+**Die Fläche, auf der ein Artefakt erscheint, ist die Diagnose.** Cel-Banding lebt auf gewölbten Flächen (wo der Licht-Wert über die Krümmung variiert); Shadow-Acne lebt auf flachen, zur Lichtquelle zeigenden Flächen (der uniforme Untergrund zeigt jeden Selbst-Schatten-Streifen, gewölbte Flächen verbergen ihn). Der Schöpfer sagte „nur auf flachen Flächen" — das exakte Gegenteil der Cel-Banding-Signatur. Damit stand die Diagnose fest, bevor eine Code-Zeile gelesen war: die `DirectionalLight` warf Schatten, hatte aber nie einen Shadow-Bias (`shadow.bias`/`shadow.normalBias` default 0) → die grobe Shadow-Map schattete flache Flächen selbst. Fix: `normalBias` + `bias` + feinere Map.
+
+**Vision-Wort der V8.47**: *„Frag bei jedem visuellen Artefakt zuerst: wo genau? Die Geometrie-Klasse, auf der es sitzt, grenzt die Ursache ein, bevor du den Code öffnest."*
 
 ### V8.46 (17.05.2026) — Sanfte Wetter-Übergänge: _weatherBlendedValue
 

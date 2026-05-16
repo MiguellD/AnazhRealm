@@ -12833,6 +12833,10 @@ function startSaveServer() {
                     const src = r._applyDayNightToScene.toString();
                     out.weatherEffectFades = /cu\.weatherEffect.*_weatherBlendedValue/.test(src);
                     out.cloudFades = /cloudU\.value = this\._weatherBlendedValue/.test(src);
+                    // V8.47 — Shadow-Bias gegen Shadow-Acne auf flachen Flächen.
+                    const sh = r.state.directionalLight && r.state.directionalLight.shadow;
+                    out.shadowAntiAcne =
+                        !!sh && sh.normalBias > 0 && sh.bias < 0 && sh.mapSize.width >= 2048;
                     return out;
                 })
                 .catch((err) => ({ error: err && err.message }));
@@ -12844,6 +12848,10 @@ function startSaveServer() {
                 check("V8.46: Helper cross-fadet in der Transition (progress 0.5 → halb)", v846Results.blendMid);
                 check("V8.46: weatherEffect cross-fadet über den Helper", v846Results.weatherEffectFades);
                 check("V8.46: cloudCover cross-fadet über den Helper", v846Results.cloudFades);
+                check(
+                    "V8.47: Shadow-Bias gesetzt (gegen Acne-Linien auf flachen Flächen)",
+                    v846Results.shadowAntiAcne
+                );
             } else {
                 check(
                     "V8.46: Wetter-Übergangs-Tests laufen",

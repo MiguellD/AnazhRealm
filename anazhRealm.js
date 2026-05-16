@@ -25760,14 +25760,24 @@ class AnazhRealm {
         const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
         directionalLight.position.set(1, 1, 1);
         directionalLight.castShadow = true;
-        directionalLight.shadow.mapSize.width = 1024;
-        directionalLight.shadow.mapSize.height = 1024;
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
         directionalLight.shadow.camera.near = 0.5;
         directionalLight.shadow.camera.far = 500;
         directionalLight.shadow.camera.left = -300;
         directionalLight.shadow.camera.right = 300;
         directionalLight.shadow.camera.top = 300;
         directionalLight.shadow.camera.bottom = -300;
+        // V8.47 — Shadow-Bias gegen Shadow-Acne. Ohne Bias schattet die
+        // grobe Shadow-Map (600 Welt-Einheiten / 2048 Texel ≈ 0.3 Einh./
+        // Texel) flache, zur Sonne zeigende Flächen SELBST → diagonale
+        // Streifen-Linien, am sichtbarsten auf horizontalen Bauwerks-Dächern
+        // (gewölbte Flächen verbergen es). normalBias verschiebt den Shadow-
+        // Sample entlang der Flächen-Normale — der wirksame Acne-Killer auf
+        // flachen Flächen; bias ist der kleine zusätzliche Tiefen-Nudge. Die
+        // mapSize 1024→2048 halbiert zugleich die Texel-Größe (schärfer).
+        directionalLight.shadow.bias = -0.0005;
+        directionalLight.shadow.normalBias = 1.0;
         scene.add(directionalLight);
         // Welle 6.G3 — Refs cachen für tickDayNight. Eine Quelle der Wahrheit
         // (Lights+Skybox werden aus state.timeOfDay abgeleitet pro Frame).

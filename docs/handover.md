@@ -9,13 +9,15 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 17.05.2026, V8.46)
+## Schnell-Lage (Stand 17.05.2026, V8.47)
 
-**Du erbst eine sehr lebendige Welt**. **2155 Playtest-Invarianten grün + 0 Audit-Strict-Failures + smoke-multiuser grün**, ~27800 Zeilen in einer Datei, alles produktiv.
+**Du erbst eine sehr lebendige Welt**. **2156 Playtest-Invarianten grün + 0 Audit-Strict-Failures + smoke-multiuser grün**, ~27800 Zeilen in einer Datei, alles produktiv.
 
-**Jüngste Welle — V8.46 (Sanfte Wetter-Übergänge)**: der Wetter-Wechsel sprang hart. Wurzel: `weatherEffect` (Terrain-Verdunklung) wurde nur beim Chunk-Bau gesetzt + nie aktualisiert, `cloudCover` flippte sofort mit `state.weather` — während Licht/Skybox über die 45s-Transition faden. Fix: Helper `_weatherBlendedValue` cross-fadet jeden per-Wetter-Skalar über `weatherTransition.progress`; `weatherEffect` (pro Frame im Chunk-Loop) + `cloudCover` nutzen ihn. Tag-Nacht ist schon smooth (der „ruckartige" Eindruck bei Cel-Stufe 5 ist die Cel-Quantisierung selbst — Bold-Cel-Look).
+**Jüngste Welle — V8.47 (Shadow-Acne-Heilung)**: Schöpfer-Befund „unnatürliche Schattenlinien nur auf komplett horizontalen flachen Flächen" (Bauwerks-Dächer). Diese Präzision war die Diagnose — Cel-Banding erscheint auf GEWÖLBTEN Flächen, nicht auf flachen; der Schöpfer sah das Gegenteil → Shadow-Map-Acne. Die `DirectionalLight` hatte keinen Shadow-Bias → flache, zur Sonne zeigende Flächen schatten sich selbst in Streifen. Fix: `shadow.normalBias = 1.0` + `shadow.bias = -0.0005` + mapSize 1024→2048.
 
-**Offen — die nächste Welle**: (1) Schatten aufs Terrain — der Terrain-Custom-Shader sampelt die Schatten-Textur nicht, also fallen Struktur-Schatten nicht aufs Terrain (Strukturen werfen/empfangen Schatten via MeshToon, das Terrain nicht). (2) die geparkte Performance-Tiefe (Off-Screen-Sparsamkeit + Distanz-LOD). PR **#17** offen (V8.24–V8.46 hängen dran). Zwei Playtest-Tests sind timing-flaky (Nexus-history, Kamera-Pitch) — gelegentliches CI-Rot, kein echter Defekt; deterministisch-Machen ist eine offene Aufräum-Aufgabe.
+**Welle davor — V8.46 (Sanfte Wetter-Übergänge)**: `_weatherBlendedValue` cross-fadet `weatherEffect` + `cloudCover` über die 45s-Transition (vorher flippten sie sofort → harter Wetter-Sprung).
+
+**Offen — die nächste Welle**: (1) Schatten aufs Terrain — der Terrain-Custom-Shader sampelt die Schatten-Textur nicht, also fallen Struktur-Schatten nicht aufs Terrain (das Terrain hat keine empfangenen Schatten). (2) die geparkte Performance-Tiefe (Off-Screen-Sparsamkeit + Distanz-LOD). PR **#17** offen (V8.24–V8.47 hängen dran). Zwei Playtest-Tests sind timing-flaky (Nexus-history, Kamera-Pitch) — gelegentliches CI-Rot, kein echter Defekt; deterministisch-Machen ist eine offene Aufräum-Aufgabe.
 
 **Jüngste Wellen — V8.42 → V8.45 (Cel-Crawl-Heilung I–IV)**: die Cel-Kontraste „wanderten" beim langsamen Kamera-Schwenk. Vier Wurzeln, in vier Browser-Test-Runden eingekreist: (V8.42) `toonGradientMap` lief mit `NearestFilter` → 32 harte Stufen → Fix `LinearFilter`. (V8.43) der Detail-Noise lief per-Pixel im Terrain-Fragment-Shader → Fix: per Vertex + `varying`. (V8.44) der Schöpfer-Befund „Yaw verschiebt, Pitch nicht" = Beleuchtungs-Frame-Mismatch: der Terrain-Shader dottete `vNormal` (View-Raum) mit `lightDirection` (Welt-Raum) → Fix: `vNormal` in Welt-Raum (`mat3(modelMatrix)`). (V8.45) letztes kamera-abhängiges Glied: der Fog nutzte View-Space-Z → Fix: radiale Distanz (`length(mvPosition.xyz)`). Das Terrain ist jetzt voll kamera-unabhängig.
 
@@ -202,6 +204,21 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. sind VOLLSTÄNDIG — die
 ---
 
 ## Session-Tagebuch (chronologisch, jüngste oben)
+
+### V8.47 — Shadow-Acne-Heilung: Shadow-Bias (17.05.2026)
+
+„Unnatürliche Schattenlinien nur auf komplett horizontalen flachen
+Flächen." 2155 → 2156 (+1).
+
+**Die Lehre — die Fläche, auf der ein Artefakt erscheint, IST die
+Diagnose.** Cel-Banding lebt auf gewölbten Flächen (variabler Licht-
+Wert); Shadow-Acne lebt auf flachen, zur Sonne zeigenden Flächen
+(uniformer Untergrund zeigt jeden Selbst-Schatten-Streifen). Der
+Schöpfer sagte „nur auf flachen Flächen" — das exakte Gegenteil von
+Cel-Banding → die Diagnose war fertig, bevor ich eine Zeile las. Die
+`DirectionalLight` hatte nie einen Shadow-Bias bekommen. Frag bei
+jedem visuellen Artefakt zuerst: WO genau erscheint es? Die Geometrie-
+Klasse (flach/gewölbt, horizontal/vertikal) grenzt die Ursache ein.
 
 ### V8.46 — Sanfte Wetter-Übergänge: _weatherBlendedValue (17.05.2026)
 
