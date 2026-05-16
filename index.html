@@ -29,7 +29,7 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self';"
         />
-        <title>Anazh Realm v8.50 – Das Ultiversum</title>
+        <title>Anazh Realm v8.51 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
              zusätzliche Datei. img-src 'self' data: in CSP erlaubt data-URI. -->
         <link
@@ -497,6 +497,25 @@
                 box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
             }
             #build-mode-hud[hidden] {
+                display: none;
+            }
+            /* W12 — Portal-Prompt: "E — Portal betreten", wenn ein Tor in
+               Reichweite ist. Tor-grüner Akzent, mittig über der Hotbar. */
+            #portal-prompt {
+                position: fixed;
+                left: 50%;
+                bottom: 120px;
+                transform: translateX(-50%);
+                z-index: 60;
+                padding: 6px 16px;
+                border-radius: 6px;
+                background: rgba(8, 14, 11, 0.82);
+                border: 1px solid #43c98a;
+                color: #9ff0c8;
+                font: 14px/1.4 "JetBrains Mono", monospace;
+                pointer-events: none;
+            }
+            #portal-prompt[hidden] {
                 display: none;
             }
             /* Ring 6.5 — Hotbar. Neun Slots am unteren Bildschirmrand, brass-
@@ -3874,6 +3893,7 @@
         <div id="fps"></div>
         <div id="dialogue-box" aria-live="polite"></div>
         <div id="build-mode-hud" aria-live="polite" hidden></div>
+        <div id="portal-prompt" aria-live="polite" hidden></div>
         <!-- Welle 6.X.4 B3 V8.14 — Stats-HUD redesigned. Glyphen statt Text-
              Labels (Funke=HP, Spirale=Stamina), warme Brass-Endkappen, SVG-
              Bars mit inner Glow. Antik-modernes Gefühl: Eisen-Plattform mit
@@ -3985,7 +4005,7 @@
         <header id="topbar" class="hud-frame">
             <div class="topbar-inner">
                 <div class="title">
-                    Anazh Realm <span class="version">v8.50</span> <span class="sub">— Das Ultiversum</span>
+                    Anazh Realm <span class="version">v8.51</span> <span class="sub">— Das Ultiversum</span>
                 </div>
                 <nav class="tabs" role="tablist" aria-label="Hauptansichten">
                     <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">
@@ -4951,6 +4971,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=8.50" defer></script>
+        <script src="anazhRealm.js?v=8.51" defer></script>
     </body>
 </html>

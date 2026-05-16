@@ -15189,7 +15189,10 @@ class AnazhRealm {
         const onMessage = (event) => {
             if (!this._portalOverlay || event.source !== iframe.contentWindow) return;
             const msg = event.data;
-            if (msg && typeof msg === "object" && msg.type === "ready") this._portalSendEnter();
+            if (!msg || typeof msg !== "object") return;
+            if (msg.type === "ready") this._portalSendEnter();
+            // Die Sub-Welt meldet Esc (Fokus liegt im iframe) → Heimkehr.
+            else if (msg.type === "exit") this.exitPortal();
         };
         window.addEventListener("message", onMessage);
         iframe.addEventListener("load", () => this._portalSendEnter());
@@ -15219,6 +15222,70 @@ class AnazhRealm {
             po.overlayEl.parentNode.removeChild(po.overlayEl);
         }
         this._portalOverlay = null;
+    }
+
+    // W12 Phase 1 — ein Portal betreten. Der Game-Loop sieht _portalOverlay
+    // und friert die Heimat-Welt ein (Early-Return); der Pointer-Lock wird
+    // gelöst, das iframe-Overlay gebaut. Das Ziel kommt aus dem Bauplan-
+    // portalMeta — fehlt es (etwa bei einem emergenten Magie-Ring), greift
+    // im Overlay-Builder die Skelett-Welt als Default.
+    enterPortal(entry) {
+        if (this._portalOverlay) return { ok: false, reason: "already_in_portal" };
+        if (!entry || !entry.affordances || !entry.affordances.isPortal) {
+            return { ok: false, reason: "not_a_portal" };
+        }
+        const bp = this.state.blueprints && this.state.blueprints[entry.type];
+        const portalMeta = bp && bp.portalMeta ? bp.portalMeta : null;
+        if (typeof document !== "undefined" && document.exitPointerLock) {
+            try {
+                document.exitPointerLock();
+            } catch {
+                /* Pointer-Lock war nicht aktiv — egal */
+            }
+        }
+        this._buildPortalOverlay(portalMeta);
+        this.log(`Portal betreten: „${(portalMeta && portalMeta.label) || entry.type}"`, "INFO");
+        return { ok: true };
+    }
+
+    // W12 Phase 1 — ein Portal verlassen. Räumt das Overlay; der Game-Loop
+    // sieht _portalOverlay = null und nimmt die Heimat-Welt wieder auf.
+    exitPortal() {
+        if (!this._portalOverlay) return { ok: false, reason: "not_in_portal" };
+        this._disposePortalOverlay();
+        // Tasten-Zustand verwerfen: ein keyup kann im iframe gelandet sein,
+        // sonst liefe der Avatar nach der Heimkehr von selbst weiter.
+        this.state.keys = {};
+        this.log("Portal verlassen — zurück in der Heimat-Welt", "INFO");
+        return { ok: true };
+    }
+
+    // W12 Phase 1 — E-Tasten-Pfad: ist ein Portal in Reichweite, betritt es.
+    // Liefert true wenn betreten — die E-Taste fällt dann nicht auf Mount.
+    _tryEnterPortalAtPlayer() {
+        if (this._portalOverlay) return false;
+        const entry = this._findNearestAffordanceEntry("isPortal", AnazhRealm.PORTAL_REACH_M);
+        if (!entry) return false;
+        const res = this.enterPortal(entry);
+        return !!(res && res.ok);
+    }
+
+    // W12 Phase 1 — pro Frame (via tickAffordances): zeigt den Prompt
+    // „E — Portal betreten", wenn ein Portal in Reichweite ist. Läuft nur
+    // in der Heimat-Welt — im Portal selbst ist der Loop eingefroren.
+    _tickPortalAffordance() {
+        if (typeof document === "undefined") return;
+        const prompt = document.getElementById("portal-prompt");
+        if (!prompt) return;
+        const entry = this._findNearestAffordanceEntry("isPortal", AnazhRealm.PORTAL_REACH_M);
+        if (entry) {
+            const bp = this.state.blueprints && this.state.blueprints[entry.type];
+            const label = (bp && bp.portalMeta && bp.portalMeta.label) || entry.type;
+            prompt.textContent = `E — Portal betreten: ${label}`;
+            prompt.hidden = false;
+        } else if (!prompt.hidden) {
+            prompt.hidden = true;
+        }
     }
 
     // Eine Konsumable aktivieren — addet einen Boost via Etappe-2-System.
@@ -15595,6 +15662,10 @@ class AnazhRealm {
         if (this._isMoveable(bp)) out.moveable = true;
         if (this._isMagnifying(bp)) out.magnifying = true;
         if (this._isFocusing(bp)) out.focusing = true;
+        // W12 — Portal-Affordance folgt direkt aus der Rolle (die selbst
+        // emergent ist, siehe _isPortalShaped). _findNearestAffordanceEntry
+        // + die E-Taste lesen entry.affordances.isPortal.
+        if (bp.role === "portal") out.isPortal = true;
         return out;
     }
 
@@ -16027,6 +16098,7 @@ class AnazhRealm {
         if (!Number.isFinite(dt) || dt <= 0) return;
         this._tickMountedMovement();
         this._tickFocusingAffordances(dt);
+        this._tickPortalAffordance();
     }
 
     // Welle 9d — Bauplan als Seele anwenden. Wenn der Bauplan role="soul"
@@ -26170,6 +26242,17 @@ class AnazhRealm {
         this.generateNewWorld();
 
         window.addEventListener("keydown", (event) => {
+            // W12 — ist ein Portal offen, ist die Heimat-Welt eingefroren:
+            // nur Esc verlässt das Portal, alle anderen Tasten sind gesperrt
+            // (kein WASD in der pausierten Welt). Bei Fokus im iframe meldet
+            // die Sub-Welt das Esc selbst (skeleton.js → {type:"exit"}).
+            if (this._portalOverlay) {
+                if (event.key === "Escape") {
+                    this.exitPortal();
+                    event.preventDefault();
+                }
+                return;
+            }
             // Wenn der Fokus in einem Eingabe-Feld liegt (Chat), keine
             // Spiel-Aktionen aus den Tasten lösen — sonst tippt der User
             // "1" und es geht in den Bau-Modus statt in den Chat.
@@ -26223,9 +26306,10 @@ class AnazhRealm {
             } else if (event.code === "KeyE") {
                 // Welle 10b.3 — E toggelt Mount/Dismount für moveable-
                 // Architekturen. Nur außerhalb des Werkstatt-Drawers (sonst
-                // ist E der Rotate-Modus-Shortcut).
+                // ist E der Rotate-Modus-Shortcut). W12 — ein Portal in
+                // Reichweite schlägt das Reiten: erst _tryEnterPortalAtPlayer.
                 if (this.state.uiActiveDrawer !== "werkstatt") {
-                    this.toggleMountAtPlayer();
+                    if (!this._tryEnterPortalAtPlayer()) this.toggleMountAtPlayer();
                     event.preventDefault();
                 }
             } else if (event.code === "KeyZ") {
@@ -26479,6 +26563,11 @@ class AnazhRealm {
             const delta = Math.max(0.001, (time - lastTime) / 1000);
             lastTime = time;
             const currentTime = time / 1000;
+
+            // W12 — ist ein Portal offen, friert die Heimat-Welt ein: der
+            // Loop kehrt VOR Physik/Ticks/Render um. lastTime wurde gerade
+            // gesetzt und bleibt frisch → kein Delta-Sprung beim Verlassen.
+            if (this._portalOverlay) return;
 
             // ### FPS aktualisieren ###
             this.updateFps(delta);
@@ -28009,6 +28098,9 @@ AnazhRealm.AFFORDANCE_LABELS = Object.freeze({
 // Welt-Reaktion-Konstanten (Welle 10b.3).
 AnazhRealm.MOUNT_RANGE_M = 3; // Spieler muss diese Nähe für E-Mount haben
 AnazhRealm.MOUNT_FOLLOW_HEIGHT = 1.5; // Spieler sitzt oben drauf
+// W12 — E-Reichweite, um ein Portal zu betreten. Etwas großzügiger als
+// MOUNT_RANGE_M: ein Tor-Ring ist groß, der Spieler steht davor.
+AnazhRealm.PORTAL_REACH_M = 4.5;
 AnazhRealm.MOUNT_SPEED_FACTOR = 0.7; // Compounds fahren etwas langsamer als zu Fuß
 AnazhRealm.ZOOM_FOV_DEG = 25; // Magnifying-Compound zoomt auf 25°
 AnazhRealm.MAGNIFYING_RAY_RANGE_M = 8; // Spieler muss innerhalb dieser Reichweite drauf schauen

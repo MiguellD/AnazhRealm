@@ -13016,6 +13016,131 @@ function startSaveServer() {
                 );
             }
 
+            // ### W12 Phase 1 Commit 3 — Betreten / Pause / Rückkehr ###
+            const w12c3Results = await page
+                .evaluate(async () => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // Portal-Affordance: welt_portal trägt isPortal, ein Dorf nicht.
+                    out.affPortal = r.computeBlueprintAffordances(r.state.blueprints.welt_portal).isPortal === true;
+                    out.affNonPortal = !r.computeBlueprintAffordances(r.state.blueprints.village).isPortal;
+
+                    out.methods =
+                        typeof r.enterPortal === "function" &&
+                        typeof r.exitPortal === "function" &&
+                        typeof r._tickPortalAffordance === "function" &&
+                        typeof r._tryEnterPortalAtPlayer === "function";
+
+                    // spawnArchitecture eines Portals → Entry trägt affordances.isPortal.
+                    const pm = r.state.playerMesh.position;
+                    r.spawnArchitecture("welt_portal", { x: pm.x, y: pm.y, z: pm.z });
+                    const portalEntry = (r.state.architectures || []).find((e) => e.type === "welt_portal");
+                    out.spawnedHasAffordance =
+                        !!portalEntry && !!portalEntry.affordances && portalEntry.affordances.isPortal === true;
+
+                    // enterPortal baut das Overlay.
+                    const enterRes = portalEntry ? r.enterPortal(portalEntry) : { ok: false };
+                    out.enterBuildsOverlay =
+                        !!enterRes.ok && !!document.getElementById("portal-overlay") && !!r._portalOverlay;
+                    // Doppel-Eintritt wird abgelehnt.
+                    const doubleRes = r.enterPortal(portalEntry);
+                    out.rejectsDoubleEnter = !doubleRes.ok && doubleRes.reason === "already_in_portal";
+
+                    // Loop friert die Heimat-Welt ein, solange das Portal offen ist.
+                    const framesBefore = r.state._fpsFrames;
+                    r._gameLoopTick(performance.now());
+                    const framesInPortal = r.state._fpsFrames;
+                    out.loopFreezesInPortal = framesInPortal === framesBefore;
+
+                    // exitPortal räumt Overlay + Tasten-Zustand.
+                    r.state.keys.w = true;
+                    const exitRes = r.exitPortal();
+                    out.exitDisposesOverlay =
+                        !!exitRes.ok && !document.getElementById("portal-overlay") && !r._portalOverlay;
+                    out.exitClearsKeys = !r.state.keys.w;
+
+                    // Loop nimmt die Heimat-Welt nach dem Verlassen wieder auf.
+                    r._gameLoopTick(performance.now());
+                    out.loopResumesAfterPortal = r.state._fpsFrames !== framesInPortal;
+
+                    // exitPortal ohne offenes Portal + enterPortal auf Nicht-Portal.
+                    const exitAgain = r.exitPortal();
+                    out.rejectsExitWhenIdle = !exitAgain.ok && exitAgain.reason === "not_in_portal";
+                    const badEnter = r.enterPortal({ type: "village", affordances: {} });
+                    out.rejectsNonPortal = !badEnter.ok && badEnter.reason === "not_a_portal";
+
+                    // Loop-Guard ist verdrahtet.
+                    out.loopGuard = /_portalOverlay/.test(r.startEternalLoop.toString());
+
+                    // _tickPortalAffordance zeigt den Prompt, wenn ein Portal nah ist.
+                    r._tickPortalAffordance();
+                    const promptEl = document.getElementById("portal-prompt");
+                    out.promptShownNearPortal =
+                        !!promptEl && !promptEl.hidden && /Portal betreten/.test(promptEl.textContent || "");
+
+                    // _tryEnterPortalAtPlayer betritt das nahe Portal.
+                    out.tryEnterWorks = r._tryEnterPortalAtPlayer() === true && !!r._portalOverlay;
+                    r.exitPortal();
+
+                    // Portal entfernen → Prompt verschwindet, _tryEnter scheitert.
+                    if (portalEntry) r.removeArchitecture(portalEntry);
+                    r._tickPortalAffordance();
+                    out.promptHiddenWhenNone = !!promptEl && promptEl.hidden === true;
+                    out.tryEnterFailsWhenNone = r._tryEnterPortalAtPlayer() === false;
+
+                    // skeleton.js meldet Esc als {type:"exit"} an die Heimat-Welt.
+                    try {
+                        const jsRes = await fetch("worlds/skeleton/skeleton.js");
+                        const jsBody = jsRes.ok ? await jsRes.text() : "";
+                        out.skeletonForwardsEsc = /Escape/.test(jsBody) && /"exit"/.test(jsBody);
+                    } catch (e) {
+                        out.skeletonForwardsEsc = false;
+                    }
+                    // _buildPortalOverlay behandelt die exit-Nachricht der Sub-Welt.
+                    out.overlayHandlesExit = /"exit"/.test(r._buildPortalOverlay.toString());
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w12c3Results && !w12c3Results.error) {
+                check("W12 P1 C3: welt_portal trägt die isPortal-Affordance", w12c3Results.affPortal);
+                check("W12 P1 C3: ein Dorf trägt KEINE isPortal-Affordance", w12c3Results.affNonPortal);
+                check("W12 P1 C3: enterPortal/exitPortal/_tick/_tryEnter existieren", w12c3Results.methods);
+                check("W12 P1 C3: gespawntes Portal trägt affordances.isPortal", w12c3Results.spawnedHasAffordance);
+                check("W12 P1 C3: enterPortal baut das iframe-Overlay", w12c3Results.enterBuildsOverlay);
+                check("W12 P1 C3: enterPortal lehnt Doppel-Eintritt ab", w12c3Results.rejectsDoubleEnter);
+                check("W12 P1 C3: Loop friert die Heimat-Welt ein (Portal offen)", w12c3Results.loopFreezesInPortal);
+                check("W12 P1 C3: exitPortal räumt Overlay + Ref", w12c3Results.exitDisposesOverlay);
+                check("W12 P1 C3: exitPortal verwirft stale Tasten-Zustände", w12c3Results.exitClearsKeys);
+                check(
+                    "W12 P1 C3: Loop nimmt die Heimat-Welt nach dem Verlassen wieder auf",
+                    w12c3Results.loopResumesAfterPortal
+                );
+                check("W12 P1 C3: exitPortal ohne offenes Portal wird abgelehnt", w12c3Results.rejectsExitWhenIdle);
+                check("W12 P1 C3: enterPortal lehnt eine Nicht-Portal-Architektur ab", w12c3Results.rejectsNonPortal);
+                check("W12 P1 C3: Game-Loop hat den Portal-Guard verdrahtet", w12c3Results.loopGuard);
+                check(
+                    "W12 P1 C3: _tickPortalAffordance zeigt den Prompt am Portal",
+                    w12c3Results.promptShownNearPortal
+                );
+                check("W12 P1 C3: _tryEnterPortalAtPlayer betritt ein nahes Portal", w12c3Results.tryEnterWorks);
+                check("W12 P1 C3: Prompt verschwindet ohne Portal in Reichweite", w12c3Results.promptHiddenWhenNone);
+                check("W12 P1 C3: _tryEnterPortalAtPlayer scheitert ohne Portal", w12c3Results.tryEnterFailsWhenNone);
+                check(
+                    "W12 P1 C3: skeleton.js meldet Esc als exit an die Heimat-Welt",
+                    w12c3Results.skeletonForwardsEsc
+                );
+                check("W12 P1 C3: _buildPortalOverlay behandelt die exit-Nachricht", w12c3Results.overlayHandlesExit);
+            } else {
+                check(
+                    "W12 P1 C3: Betreten/Pause/Rückkehr Tests laufen",
+                    false,
+                    w12c3Results ? w12c3Results.error : "no result"
+                );
+            }
+
             // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
             const v840Results = await page
                 .evaluate(() => {
