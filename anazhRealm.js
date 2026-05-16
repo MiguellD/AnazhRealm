@@ -15125,6 +15125,40 @@ class AnazhRealm {
         return { ok: true, name };
     }
 
+    // W12 Phase 1 — Bauplan als Welt-Portal markieren. Analog zu
+    // setBlueprintAsArmor/setBlueprintAsConsumable: ein eigener Bauplan
+    // bekommt role:"portal" + portalMeta. Beim Betreten (E-Taste, Commit 3)
+    // lädt die in portalMeta.world genannte Skelett-Welt im sandboxed
+    // iframe. Portal ist eine REIN MANUELLE Rolle — computeBlueprintRole
+    // leitet sie nie emergent ab (ein Tor ist eine bewusste Schöpfer-Geste).
+    setBlueprintAsPortal(name, portalMeta) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.builtIn) return { ok: false, reason: "cannot_modify_builtin" };
+        bp.role = "portal";
+        // manuellen Override merken (siehe setBlueprintAsArmor)
+        bp.roleManual = true;
+        bp.portalMeta = this._sanitizePortalMeta(portalMeta, bp.label || name);
+        return { ok: true, name };
+    }
+
+    // Säubert portalMeta. world muss ein same-origin relativer worlds/-Pfad
+    // sein — kein "://", kein "..", kein führender Slash. Damit kann ein
+    // Bauplan kein fremdes Origin ins iframe ziehen (die CSP bleibt
+    // frame-src 'self'). Ungültiges world fällt auf die Skelett-Welt zurück.
+    _sanitizePortalMeta(portalMeta, fallbackLabel) {
+        const src = portalMeta && typeof portalMeta === "object" ? portalMeta : {};
+        let world = String(src.world || "").trim();
+        if (!/^worlds\/[\w./-]+$/.test(world) || world.includes("..")) {
+            world = AnazhRealm.PORTAL_SKELETON_WORLD;
+        }
+        const label =
+            typeof src.label === "string" && src.label.trim()
+                ? src.label.trim().slice(0, 60)
+                : String(fallbackLabel || "Portal").slice(0, 60);
+        return { world, label };
+    }
+
     // Eine Konsumable aktivieren — addet einen Boost via Etappe-2-System.
     // Source ist `consume:<name>`, sodass Dedupe greift (zwei Doppelklicks
     // verlängern statt zu duplizieren). Zwei Pfade: zuerst Bauplan-mit-role-
@@ -16885,6 +16919,26 @@ class AnazhRealm {
             },
         ];
 
+        // W12 Phase 1 — Welt-Portal: ein Tor zu anderen Welten. Stein-Ring
+        // (Torus, vertikal stehend wie ein Türrahmen) mit einer schimmernden
+        // Quarz-Membran im Innern. Quarz ist transparent + magieleitend → die
+        // Membran wirkt durchscheinend-arkan.
+        const weltPortalParts = [
+            {
+                shape: "torus",
+                material: "stein",
+                position: { x: 0, y: 2.2, z: 0 },
+                size: { x: 3.4, y: 3.4, z: 3.4 },
+            },
+            {
+                shape: "cylinder",
+                material: "quarz",
+                position: { x: 0, y: 2.2, z: 0 },
+                size: { x: 2.6, y: 0.16, z: 2.6 },
+                rotation: { x: Math.PI / 2, y: 0, z: 0 },
+            },
+        ];
+
         return {
             village: { name: "village", label: "Dorf", builtIn: true, parts: villageParts },
             temple: { name: "temple", label: "Tempel", builtIn: true, parts: templeParts },
@@ -16950,6 +17004,18 @@ class AnazhRealm {
                 roleManual: true,
                 workshopDomain: "mechanism",
                 parts: drehbankParts,
+            },
+            // W12 Phase 1 — Welt-Portal. Rolle "portal" (rein manuell —
+            // computeBlueprintRole leitet sie nie emergent ab). portalMeta
+            // nennt die Skelett-Welt; das Betreten kommt in Commit 3.
+            welt_portal: {
+                name: "welt_portal",
+                label: "Welt-Portal",
+                builtIn: true,
+                role: "portal",
+                roleManual: true,
+                portalMeta: { world: AnazhRealm.PORTAL_SKELETON_WORLD, label: "Skelett-Welt" },
+                parts: weltPortalParts,
             },
         };
     }
@@ -27709,6 +27775,12 @@ AnazhRealm.FORGING_ARMOR_TAGS = Object.freeze(["dichte", "zähigkeit", "wärmele
 // landen.
 AnazhRealm.DEFAULT_BLUEPRINT_ROLE = "architecture";
 
+// W12 Phase 1 — Welt-Portal. Die same-origin Skelett-Welt-Seite, die ein
+// Portal im sandboxed iframe lädt (Datei in Commit 2 angelegt).
+// portalMeta.world zeigt hierauf; _sanitizePortalMeta erlaubt nur
+// worlds/-Pfade — kein fremdes Origin, die CSP bleibt frame-src 'self'.
+AnazhRealm.PORTAL_SKELETON_WORLD = "worlds/skeleton/index.html";
+
 // Deutsche Labels für die Welt-Anzeige. Werkstatt-Status zeigt diese
 // statt der englischen Rolle-IDs.
 AnazhRealm.BLUEPRINT_ROLE_LABELS = Object.freeze({
@@ -27718,13 +27790,15 @@ AnazhRealm.BLUEPRINT_ROLE_LABELS = Object.freeze({
     consumable: "Konsumable",
     soul: "Seele",
     machine: "Maschine",
+    portal: "Portal",
 });
 
 // V8.39 — Farb-Sprache: jede Rolle eine feste Farbe. Rollen-Chip +
 // Bauplan-Zeile in der Werkstatt-Liste leuchten darin → ein Blick sagt,
 // was ein Ding IST. Bauwerk = Stein-Erdgrau, Werkzeug = Schmiede-Rot,
 // Rüstung = Stahl-Blau, Konsumable = Alchemie-Violett, Seele = Seelen-
-// Cyan, Maschine = Bronze. Sechs klar unterscheidbare Töne.
+// Cyan, Maschine = Bronze, Portal = Tor-Grün (W12). Sieben klar
+// unterscheidbare Töne.
 AnazhRealm.BLUEPRINT_ROLE_COLORS = Object.freeze({
     architecture: "#9a9088",
     tool: "#c44830",
@@ -27732,6 +27806,7 @@ AnazhRealm.BLUEPRINT_ROLE_COLORS = Object.freeze({
     consumable: "#a878b8",
     soul: "#88e1e1",
     machine: "#b08648",
+    portal: "#43c98a",
 });
 
 // Werkzeug-Domain-Labels (deutsch) für UI-Anzeige. null = generic

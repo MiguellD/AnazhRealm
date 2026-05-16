@@ -12741,6 +12741,129 @@ function startSaveServer() {
                 check("V8.39: Werkzeug-Klassen Tests laufen", false, v839Results ? v839Results.error : "no result");
             }
 
+            // ### W12 Phase 1 Commit 1 — Welt-Portal: Rolle + Built-in welt_portal ###
+            const w12c1Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    const C = r.constructor;
+
+                    // Rolle "portal" in Label- + Farb-Konstanten.
+                    out.roleLabel = !!C && !!C.BLUEPRINT_ROLE_LABELS && C.BLUEPRINT_ROLE_LABELS.portal === "Portal";
+                    out.roleColor =
+                        !!C && !!C.BLUEPRINT_ROLE_COLORS && typeof C.BLUEPRINT_ROLE_COLORS.portal === "string";
+
+                    // PORTAL_SKELETON_WORLD-Konstante zeigt auf einen worlds/-Pfad.
+                    out.skeletonConst =
+                        typeof C.PORTAL_SKELETON_WORLD === "string" && /^worlds\//.test(C.PORTAL_SKELETON_WORLD);
+
+                    // Built-in welt_portal-Bauplan.
+                    const wp = r.state.blueprints && r.state.blueprints.welt_portal;
+                    out.builtinExists = !!wp && wp.builtIn === true;
+                    out.builtinRole = !!wp && wp.role === "portal" && wp.roleManual === true;
+                    out.builtinMeta =
+                        !!wp &&
+                        !!wp.portalMeta &&
+                        typeof wp.portalMeta.world === "string" &&
+                        typeof wp.portalMeta.label === "string";
+                    out.builtinHasParts = !!wp && Array.isArray(wp.parts) && wp.parts.length >= 2;
+
+                    // setBlueprintAsPortal — Marker-Methode.
+                    out.markMethod = typeof r.setBlueprintAsPortal === "function";
+                    if (r.state.blueprints["_w12p"]) delete r.state.blueprints["_w12p"];
+                    r.createBlueprint("_w12p", "W12P");
+                    const markRes = r.setBlueprintAsPortal("_w12p");
+                    const marked = r.state.blueprints["_w12p"];
+                    out.markOk =
+                        !!markRes &&
+                        markRes.ok === true &&
+                        !!marked &&
+                        marked.role === "portal" &&
+                        marked.roleManual === true &&
+                        !!marked.portalMeta &&
+                        typeof marked.portalMeta.world === "string";
+
+                    // Manueller Override bleibt nach _refreshBlueprintRoleEmergent.
+                    r._refreshBlueprintRoleEmergent("_w12p");
+                    out.manualSticks = r.state.blueprints["_w12p"].role === "portal";
+
+                    // Built-in-Schutz + Unknown-Reject.
+                    const builtinRej = r.setBlueprintAsPortal("village");
+                    out.rejectBuiltin =
+                        !!builtinRej && builtinRej.ok === false && builtinRej.reason === "cannot_modify_builtin";
+                    const unknownRej = r.setBlueprintAsPortal("_does_not_exist_xyz");
+                    out.rejectUnknown =
+                        !!unknownRej && unknownRej.ok === false && unknownRej.reason === "blueprint_unknown";
+
+                    // _sanitizePortalMeta — fremdes Origin + Pfad-Traversal werden verworfen.
+                    const sanForeign = r._sanitizePortalMeta({ world: "https://evil.example/x" }, "fb");
+                    out.sanitizeForeign = sanForeign.world === C.PORTAL_SKELETON_WORLD;
+                    const sanTraversal = r._sanitizePortalMeta({ world: "worlds/../secret" }, "fb");
+                    out.sanitizeTraversal = sanTraversal.world === C.PORTAL_SKELETON_WORLD;
+                    const sanValid = r._sanitizePortalMeta(
+                        { world: "worlds/skeleton/index.html", label: "Test-Welt" },
+                        "fb"
+                    );
+                    out.sanitizeValid =
+                        sanValid.world === "worlds/skeleton/index.html" && sanValid.label === "Test-Welt";
+
+                    // Regression: computeBlueprintRole leitet NIE "portal" ab — Portal
+                    // ist rein manuell. Selbst ein portal-förmiger Bauplan (Torus-Ring
+                    // + Quarz-Scheibe) bekommt keine portal-Rolle.
+                    const portalShaped = {
+                        parts: [
+                            {
+                                shape: "torus",
+                                material: "stein",
+                                size: { x: 3.4, y: 3.4, z: 3.4 },
+                                position: { x: 0, y: 0, z: 0 },
+                            },
+                            {
+                                shape: "cylinder",
+                                material: "quarz",
+                                size: { x: 2.6, y: 0.16, z: 2.6 },
+                                position: { x: 0, y: 0, z: 0 },
+                            },
+                        ],
+                    };
+                    out.computeNeverPortal = r.computeBlueprintRole(portalShaped) !== "portal";
+
+                    delete r.state.blueprints["_w12p"];
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w12c1Results && !w12c1Results.error) {
+                check("W12 P1: Rolle 'portal' in BLUEPRINT_ROLE_LABELS", w12c1Results.roleLabel);
+                check("W12 P1: Rolle 'portal' in BLUEPRINT_ROLE_COLORS", w12c1Results.roleColor);
+                check("W12 P1: PORTAL_SKELETON_WORLD zeigt auf worlds/-Pfad", w12c1Results.skeletonConst);
+                check("W12 P1: Built-in welt_portal-Bauplan existiert", w12c1Results.builtinExists);
+                check("W12 P1: welt_portal hat role:'portal' + roleManual", w12c1Results.builtinRole);
+                check("W12 P1: welt_portal trägt portalMeta (world + label)", w12c1Results.builtinMeta);
+                check("W12 P1: welt_portal hat min. 2 Parts (Ring + Membran)", w12c1Results.builtinHasParts);
+                check("W12 P1: setBlueprintAsPortal-Methode existiert", w12c1Results.markMethod);
+                check("W12 P1: setBlueprintAsPortal markiert eigenen Bauplan", w12c1Results.markOk);
+                check(
+                    "W12 P1: manuelle Portal-Rolle überlebt _refreshBlueprintRoleEmergent",
+                    w12c1Results.manualSticks
+                );
+                check("W12 P1: setBlueprintAsPortal lehnt Built-in ab", w12c1Results.rejectBuiltin);
+                check("W12 P1: setBlueprintAsPortal lehnt unbekannten Bauplan ab", w12c1Results.rejectUnknown);
+                check("W12 P1: _sanitizePortalMeta verwirft fremdes Origin", w12c1Results.sanitizeForeign);
+                check("W12 P1: _sanitizePortalMeta verwirft Pfad-Traversal", w12c1Results.sanitizeTraversal);
+                check("W12 P1: _sanitizePortalMeta behält gültigen worlds/-Pfad", w12c1Results.sanitizeValid);
+                check(
+                    "W12 P1: computeBlueprintRole leitet nie 'portal' ab (Regression)",
+                    w12c1Results.computeNeverPortal
+                );
+            } else {
+                check(
+                    "W12 P1: Welt-Portal Commit 1 Tests laufen",
+                    false,
+                    w12c1Results ? w12c1Results.error : "no result"
+                );
+            }
+
             // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
             const v840Results = await page
                 .evaluate(() => {
