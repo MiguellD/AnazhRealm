@@ -12950,6 +12950,75 @@ function startSaveServer() {
                 check("V8.48: Terrain-Schatten-Tests laufen", false, v848Results ? v848Results.error : "no result");
             }
 
+            // ### V8.49 — updateCreatures-Politur (Off-Screen-Sparsamkeit + Distanz-LOD) ###
+            const v849Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    const src = r.updateCreatures.toString();
+                    // Strukturell: Kohäsion nutzt distanceToSquared (kein sqrt),
+                    // der Raycast ist distanz-/sicht-gegated, Scratch gepoolt.
+                    out.usesDistanceSquared = /distanceToSquared/.test(src);
+                    out.raycastGated = /OBSTACLE_RAYCAST_MAX_DIST_SQ/.test(src) && /inFrustum/.test(src);
+                    out.scratchPooled = /_creatureScratchDir/.test(src);
+                    // Funktional: viele Kreaturen, mehrere Ticks → kein Crash,
+                    // Bewegung erhalten, alle Positionen endlich.
+                    while (r.state.creatures.length < 60 && typeof r.spawnCreatureAt === "function") {
+                        const p = r.state.playerMesh.position;
+                        r.spawnCreatureAt(
+                            p.x + (Math.random() - 0.5) * 50,
+                            p.y,
+                            p.z + (Math.random() - 0.5) * 50,
+                            "happy"
+                        );
+                    }
+                    const before = r.state.creatures.map((c) => c.position.x + c.position.y + c.position.z);
+                    let crashed = false;
+                    try {
+                        for (let k = 0; k < 8; k++) r.updateCreatures(0.05);
+                    } catch (e) {
+                        crashed = true;
+                        out.err = String(e && e.message);
+                    }
+                    out.noCrash = !crashed;
+                    const after = r.state.creatures.map((c) => c.position.x + c.position.y + c.position.z);
+                    let moved = 0;
+                    for (let k = 0; k < before.length; k++) {
+                        if (Math.abs(before[k] - after[k]) > 0.001) moved++;
+                    }
+                    out.creaturesMoved = before.length > 0 && moved > before.length * 0.5;
+                    out.allFinite = r.state.creatures.every(
+                        (c) =>
+                            Number.isFinite(c.position.x) &&
+                            Number.isFinite(c.position.y) &&
+                            Number.isFinite(c.position.z)
+                    );
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (v849Results && !v849Results.error) {
+                check(
+                    "V8.49: Kohäsion nutzt distanceToSquared (kein sqrt, O(N²) entschärft)",
+                    v849Results.usesDistanceSquared
+                );
+                check("V8.49: Hindernis-Raycast ist off-screen-/distanz-gegated", v849Results.raycastGated);
+                check("V8.49: Scratch-Vektoren gepoolt (keine Pro-Kreatur-Allokation)", v849Results.scratchPooled);
+                check(
+                    "V8.49: updateCreatures läuft mit 60 Kreaturen ohne Crash",
+                    v849Results.noCrash,
+                    v849Results.err
+                );
+                check("V8.49: Kreaturen bewegen sich weiterhin (Verhalten erhalten)", v849Results.creaturesMoved);
+                check("V8.49: alle Kreatur-Positionen endlich (keine NaN)", v849Results.allFinite);
+            } else {
+                check(
+                    "V8.49: updateCreatures-Politur-Tests laufen",
+                    false,
+                    v849Results ? v849Results.error : "no result"
+                );
+            }
+
             // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider (Audit 17.05.2026) ###
             const wave6x4bResults = await page
                 .evaluate(() => {

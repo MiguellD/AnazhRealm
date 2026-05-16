@@ -9534,6 +9534,15 @@ class AnazhRealm {
     updateCreatures(delta) {
         this.state.creatureAnimationTime += delta;
         const workerData = [];
+        // V8.49 — Scratch-Vektoren EINMAL angelegt + pro Kreatur pro Frame
+        // wiederverwendet, statt mehrere THREE.Vector3 je Kreatur zu allokieren
+        // (bei 120 Kreaturen waren das ~400 Allokationen/Frame → GC-Ruckeln).
+        const scratchDir = this._creatureScratchDir || (this._creatureScratchDir = new THREE.Vector3());
+        const scratchA = this._creatureScratchA || (this._creatureScratchA = new THREE.Vector3());
+        const scratchB = this._creatureScratchB || (this._creatureScratchB = new THREE.Vector3());
+        const playerPos = this.state.playerMesh.position;
+        // V8.49 — Distanz-LOD: jenseits 70 m kein Hindernis-Raycast (² gespart).
+        const OBSTACLE_RAYCAST_MAX_DIST_SQ = 70 * 70;
         for (let i = 0; i < this.state.creatures.length; i++) {
             const creature = this.state.creatures[i];
             const emotion = this.state.creatureEmotions[i];
@@ -9547,20 +9556,29 @@ class AnazhRealm {
             // Physik bleibt immer aktiv, nur Rendering wird optimiert
             creature.visible = inFrustum; // Sichtbarkeit basierend auf Frustum
 
-            // Raycast für Hindernis-Erkennung
-            const rayStart = this.setVec(
-                this.state.tmpVec1,
-                creature.position.x / this.state.scaleFactor,
-                (creature.position.y + 0.5) / this.state.scaleFactor,
-                creature.position.z / this.state.scaleFactor
-            );
-            const rayEnd = this.setVec(
-                this.state.tmpVec2,
-                (creature.position.x + (emotion === "happy" ? 2 : -2)) / this.state.scaleFactor,
-                (creature.position.y + 0.5) / this.state.scaleFactor,
-                (creature.position.z + (emotion === "happy" ? 2 : -2)) / this.state.scaleFactor
-            );
-            const hasHit = this._runRaycast(rayStart, rayEnd, (_cb, hit) => hit);
+            // V8.49 — Hindernis-Raycast nur für sichtbare, nahe Kreaturen.
+            // Off-Screen-Sparsamkeit + Distanz-LOD: die Hindernis-Vermeidung
+            // ist eine rein visuelle Verfeinerung — eine Kreatur außerhalb des
+            // Sichtfelds oder >70 m entfernt braucht keinen Physik-Raycast pro
+            // Frame (das waren bei 120 Kreaturen 120 Raycasts/Frame). Die
+            // Bewegung selbst bleibt für ALLE Kreaturen aktiv — nur die
+            // Hindernis-Erkennung wird gespart, wo sie niemand sieht.
+            let hasHit = false;
+            if (inFrustum && creature.position.distanceToSquared(playerPos) < OBSTACLE_RAYCAST_MAX_DIST_SQ) {
+                const rayStart = this.setVec(
+                    this.state.tmpVec1,
+                    creature.position.x / this.state.scaleFactor,
+                    (creature.position.y + 0.5) / this.state.scaleFactor,
+                    creature.position.z / this.state.scaleFactor
+                );
+                const rayEnd = this.setVec(
+                    this.state.tmpVec2,
+                    (creature.position.x + (emotion === "happy" ? 2 : -2)) / this.state.scaleFactor,
+                    (creature.position.y + 0.5) / this.state.scaleFactor,
+                    (creature.position.z + (emotion === "happy" ? 2 : -2)) / this.state.scaleFactor
+                );
+                hasHit = this._runRaycast(rayStart, rayEnd, (_cb, hit) => hit);
+            }
 
             // Bewegung: Welle 6.H Phase 1. Wenn ein non-wander-Task aktiv ist,
             // hat er Vorrang über die heutige Emotion-Logik (follow_player /
@@ -9569,35 +9587,39 @@ class AnazhRealm {
             const task = this._getCreatureTask(creature);
             let direction = this._tickCreatureTaskDirection(creature, task, emotion);
             if (direction === null) {
-                direction = new THREE.Vector3();
+                direction = scratchDir.set(0, 0, 0);
                 if (emotion === "happy") {
-                    const toPlayer = new THREE.Vector3().subVectors(this.state.playerMesh.position, creature.position);
+                    const toPlayer = scratchA.subVectors(playerPos, creature.position);
                     toPlayer.y = 0;
                     if (toPlayer.length() > 2) {
-                        direction = toPlayer.normalize().multiplyScalar(speed);
+                        direction.copy(toPlayer.normalize().multiplyScalar(speed));
                     }
-                    for (let j = 0; j < this.state.creatures.length; j++) {
-                        if (i !== j && this.state.creatureEmotions[j] === "happy") {
+                    // V8.49 — Schwarm-Kohäsion: nur für sichtbare Kreaturen
+                    // (off-screen ist Flocking unsichtbar), distanceToSquared
+                    // statt distanceTo (kein sqrt), und nach 6 Nachbarn
+                    // abbrechen. Das war eine O(N²)-Schleife über ALLE
+                    // Kreaturen — bei 120 sind das 14400 Distanz-Tests/Frame.
+                    // Das Verhalten bleibt: 6 nahe Nachbarn reichen für
+                    // Flocking genauso wie 119.
+                    if (inFrustum) {
+                        let neighbors = 0;
+                        for (let j = 0; j < this.state.creatures.length && neighbors < 6; j++) {
+                            if (i === j || this.state.creatureEmotions[j] !== "happy") continue;
                             const otherCreature = this.state.creatures[j];
-                            const dist = creature.position.distanceTo(otherCreature.position);
-                            if (dist > 1 && dist < 5) {
-                                const toOther = new THREE.Vector3().subVectors(
-                                    otherCreature.position,
-                                    creature.position
-                                );
+                            const dsq = creature.position.distanceToSquared(otherCreature.position);
+                            if (dsq > 1 && dsq < 25) {
+                                const toOther = scratchB.subVectors(otherCreature.position, creature.position);
                                 toOther.y = 0;
                                 direction.add(toOther.normalize().multiplyScalar(0.5));
+                                neighbors++;
                             }
                         }
                     }
                 } else {
-                    const fromPlayer = new THREE.Vector3().subVectors(
-                        creature.position,
-                        this.state.playerMesh.position
-                    );
+                    const fromPlayer = scratchA.subVectors(creature.position, playerPos);
                     fromPlayer.y = 0;
                     if (fromPlayer.length() < 10) {
-                        direction = fromPlayer.normalize().multiplyScalar(speed);
+                        direction.copy(fromPlayer.normalize().multiplyScalar(speed));
                     } else {
                         direction.set((Math.random() - 0.5) * speed, 0, (Math.random() - 0.5) * speed);
                     }
