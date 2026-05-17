@@ -169,6 +169,43 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
         );
         check("Mesh trägt Traffic in beide Richtungen", true);
 
+        // Multi-User-Bau-Sync — A baut eine Struktur, B sieht sie; A baut sie
+        // ab, B's Kopie verschwindet. Beweis über das echte Mesh.
+        const archId = await pageA.evaluate(() => {
+            const r = window.anazhRealm;
+            r.setGameMode && r.setGameMode("schöpfer"); // Bau-Gates frei
+            r.state.buildMode = {
+                active: true,
+                blueprintName: "stein_block",
+                phantomMesh: { position: { x: 44, y: 6, z: -44 } },
+                phantomOnGround: true,
+            };
+            r.confirmBuild();
+            const arches = r.state.architectures;
+            return arches.length ? arches[arches.length - 1].id : null;
+        });
+        check("A: Struktur gebaut + geteilte archId vergeben", typeof archId === "string", String(archId));
+        await waitFor(
+            pageB,
+            (id) => window.anazhRealm.state.architectures.some((a) => a && a.id === id),
+            8000,
+            "B sieht A's gebaute Struktur über das Mesh",
+            archId
+        );
+        check("Bau platzieren synchronisiert peer-to-peer", true);
+        // A baut die Struktur ab → B's Kopie muss verschwinden.
+        await pageA.evaluate((id) => {
+            window.anazhRealm.dslRun(["remove_architecture", id], { source: "human" });
+        }, archId);
+        await waitFor(
+            pageB,
+            (id) => !window.anazhRealm.state.architectures.some((a) => a && a.id === id),
+            8000,
+            "B's Kopie der Struktur verschwindet nach A's Abbau",
+            archId
+        );
+        check("Bau abbauen synchronisiert peer-to-peer", true);
+
         // W7 Phase 2 — Welt-Snapshot über das Mesh. A wird Host, B Guest;
         // B holt A's Welt in Stücken über den DataChannel (kein WS-Relay).
         const worldIdA = await pageA.evaluate(() => {

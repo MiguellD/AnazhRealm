@@ -1402,7 +1402,7 @@ class AnazhRealm {
             // Bauplan-Namen (built-in oder eigen): `["spawn_blueprint",
             // "mein-tempelplatz", ["at_player"]]`. Wird vom Hotbar (6.5)
             // und Werkstatt (6.6) als universeller Pfad benutzt.
-            spawn_blueprint: ([name, positionNode, seed], ctx) => {
+            spawn_blueprint: ([name, positionNode, seed, archId], ctx) => {
                 if (typeof name !== "string") {
                     ctx.log.push({ event: "invalid_blueprint_name", name });
                     return;
@@ -1412,6 +1412,15 @@ class AnazhRealm {
                     ctx.log.push({ event: "unknown_blueprint", name });
                     return;
                 }
+                // Multi-User-Bau-Sync: ein optionales archId macht den Spawn
+                // peer-übergreifend identifizierbar (für remove_architecture).
+                // Idempotent — eine doppelt zugestellte Nachricht spawnt nicht
+                // ein zweites Mal.
+                const sharedId = typeof archId === "string" && archId ? archId : null;
+                if (sharedId && this.state.architectures.some((a) => a && a.id === sharedId)) {
+                    ctx.log.push({ event: "spawn_blueprint_duplicate", name, id: sharedId });
+                    return;
+                }
                 const pos = this.dslEvalPos(positionNode, ctx);
                 if (ctx.budget.spawnsLeft <= 0) {
                     ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
@@ -1419,8 +1428,28 @@ class AnazhRealm {
                 }
                 ctx.budget.spawnsLeft--;
                 const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
-                const entry = this.spawnArchitecture(name, pos, { seed: s });
+                const opts = { seed: s };
+                if (sharedId) opts.id = sharedId;
+                const entry = this.spawnArchitecture(name, pos, opts);
                 ctx.log.push({ event: "spawned_blueprint", name, id: entry ? entry.id : null, pos, seed: s });
+            },
+            // Multi-User-Bau-Sync — eine Architektur mit geteilter id entfernen.
+            // Der Sender hat sie lokal schon abgebaut (harvestArchitecture); die
+            // Mitspieler holen die Entfernung über diesen Op nach. Nur string-
+            // ids (spieler-gebaut) — eine numerische Worldgen-id würde nichts
+            // treffen (jeder Peer zählt anders) und nie fälschlich löschen.
+            remove_architecture: ([archId], ctx) => {
+                if (typeof archId !== "string" || !archId) {
+                    ctx.log.push({ event: "remove_architecture_invalid_id" });
+                    return;
+                }
+                const arch = (this.state.architectures || []).find((a) => a && a.id === archId);
+                if (!arch) {
+                    ctx.log.push({ event: "remove_architecture_not_found", id: archId });
+                    return;
+                }
+                this.removeArchitecture(arch);
+                ctx.log.push({ event: "removed_architecture", id: archId });
             },
             // Welle 2 B — Schöpfer-Werkzeuge. Der LLM (oder Chat-Befehl) kann
             // eigene Baupläne und Fähigkeiten erschaffen, nicht nur bestehende
@@ -4474,6 +4503,13 @@ class AnazhRealm {
 
     _p2pChunkXferId() {
         return "x-" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+    }
+
+    // Multi-User-Bau-Sync — eine geteilte Architektur-Identität. String (statt
+    // der numerischen Worldgen-id), damit zwei Peers dieselbe spieler-gebaute
+    // Struktur eindeutig meinen können (Spawn + Abbau-Sync).
+    _newArchId() {
+        return "a-" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
     }
 
     // W7 Phase 2 — den Resync vom Host anfordern: ein Guest holt die Welt
@@ -10721,6 +10757,7 @@ class AnazhRealm {
             spawn_temple: (a) => `errichtet einen Tempel ${pos(a[0])}`,
             spawn_waterfall: (a) => `formt einen Wasserfall ${pos(a[0])}`,
             spawn_blueprint: (a) => `baut „${a[0]}" ${pos(a[1])}`,
+            remove_architecture: () => `baut ein Bauwerk ab`,
             spawn_fractal: (a) => `lässt „${a[1]}" fraktal in Tiefe ${a[2]} wachsen ${pos(a[0])}`,
             define_blueprint: (a) => `legt einen neuen Bauplan „${a[0]}" an`,
             define_material: (a) => `definiert ein neues Material „${a[0]}"`,
@@ -12943,6 +12980,12 @@ class AnazhRealm {
             // Mesh wird beim Laden aus dem Seed rekonstruiert (kein Mesh-
             // Snapshot). V2 inkludiert scale für fraktale Sub-Strukturen.
             architectures: (this.state.architectures || []).map((a) => ({
+                // Multi-User-Bau-Sync: eine string-id ist eine GETEILTE
+                // Architektur-Identität (spieler-gebaut + broadcastet). Sie
+                // muss den Save + den W7-P2-Snapshot-Transfer überleben,
+                // sonst divergieren die ids zweier Peers und der Abbau-Sync
+                // bricht. Numerische ids (Worldgen) sind lokal — auch ok.
+                id: a.id,
                 type: a.type,
                 position: { x: a.position.x, y: a.position.y, z: a.position.z },
                 seed: a.seed,
@@ -14649,7 +14692,7 @@ class AnazhRealm {
             this.state.architectures = [];
             for (const a of state.architectures) {
                 if (!a || typeof a.type !== "string" || !a.position) continue;
-                this.spawnArchitecture(a.type, a.position, { seed: a.seed, scale: a.scale });
+                this.spawnArchitecture(a.type, a.position, { seed: a.seed, scale: a.scale, id: a.id });
             }
             this.log(`Architekturen geladen: ${state.architectures.length}`);
         }
@@ -20752,7 +20795,7 @@ class AnazhRealm {
         const seed = Number.isFinite(opts.seed) ? opts.seed : Math.floor(Math.random() * 0xffffffff);
         const scale = Number.isFinite(opts.scale) && opts.scale > 0 ? opts.scale : 1;
         const entry = {
-            id: this.state.architectureNextId++,
+            id: typeof opts.id === "string" && opts.id ? opts.id : this.state.architectureNextId++,
             type,
             position: { x: position.x || 0, y: position.y || 0, z: position.z || 0 },
             seed,
@@ -21468,7 +21511,23 @@ class AnazhRealm {
             this._renderBuildModeHud && this._renderBuildModeHud();
             return false;
         }
-        this.spawnArchitecture(bm.blueprintName, spawnPos);
+        // Multi-User-Bau-Sync — eine geteilte string-id, damit das Bauwerk
+        // peer-übergreifend identifizierbar ist (Abbau-Sync). Lokal gespawnt
+        // wie bisher; der Broadcast lässt es auf den Welten der Mitspieler
+        // erscheinen. Ein eigener (nicht-built-in) Bauplan reist als
+        // define_blueprint mit — der Empfänger kennt ihn sonst nicht.
+        const archId = this._newArchId();
+        this.spawnArchitecture(bm.blueprintName, spawnPos, { id: archId });
+        if (this.state.p2p && this.state.p2p.enabled && typeof this.p2pBroadcastDsl === "function") {
+            const posNode = ["at", spawnPos.x, spawnPos.y, spawnPos.z];
+            const spawnOp = ["spawn_blueprint", bm.blueprintName, posNode, 0, archId];
+            const ownBp = this.state.blueprints[bm.blueprintName];
+            const prog =
+                ownBp && !ownBp.builtIn && Array.isArray(ownBp.parts)
+                    ? ["chain", ["define_blueprint", bm.blueprintName, ownBp.parts], spawnOp]
+                    : spawnOp;
+            this.p2pBroadcastDsl(prog);
+        }
         // Inventar-UI + HUD nach Konsum aktualisieren (pfad).
         if (!gate.free) {
             this.renderInventoryUI && this.renderInventoryUI();
@@ -21781,6 +21840,9 @@ class AnazhRealm {
         const pick = this._pickArchitectureAtCrosshair();
         if (pick && pick.entry) {
             this._consumeMouseStamina();
+            // Multi-User-Bau-Sync: die id VOR dem Abbau merken (harvest
+            // entfernt den Eintrag) — Mitspieler holen die Entfernung nach.
+            const archId = pick.entry.id;
             // Welle 6.H P2B.5 — harvestArchitecture statt nur removeArchitecture.
             // Die Materialien des Bauplans fließen ins Spieler-Inventar. Eine
             // Sprache für Spieler-LMB + Kreatur-gather: beide ernten gleich.
@@ -21793,6 +21855,17 @@ class AnazhRealm {
                     }
                 }
                 this.log(`Abgebaut: ${harvest.blueprint} → ${parts.join(", ") || "(kein Material)"}`, "INFO");
+            }
+            // Multi-User-Bau-Sync — Mitspieler entfernen ihre Kopie. Nur
+            // geteilte string-ids (spieler-gebaut); eine numerische Worldgen-
+            // id bleibt lokal (träfe bei einem Peer nichts oder das Falsche).
+            if (
+                typeof archId === "string" &&
+                this.state.p2p &&
+                this.state.p2p.enabled &&
+                typeof this.p2pBroadcastDsl === "function"
+            ) {
+                this.p2pBroadcastDsl(["remove_architecture", archId]);
             }
             return true;
         }

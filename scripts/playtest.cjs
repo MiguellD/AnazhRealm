@@ -4651,6 +4651,143 @@ function startSaveServer() {
                 check("W7 P2: Resync-Knopf im DOM", w7p2Results.resyncButtonExists);
             }
 
+            // ### Multi-User-Bau-Sync — Strukturen synchron platzieren + abbauen ###
+            // confirmBuild + tryMouseBreak broadcasten jetzt; eine geteilte
+            // string-archId macht eine spieler-gebaute Struktur peer-über-
+            // greifend identifizierbar. Tests: opts.id-Pfad, spawn_blueprint
+            // mit archId + Idempotenz, remove_architecture, confirmBuild-
+            // Broadcast (built-in direkt, eigener Bauplan als chain), Persistenz.
+            const buildSyncResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    const origBuildMode = r.state.buildMode;
+
+                    out.newArchIdUnique =
+                        typeof r._newArchId === "function" &&
+                        typeof r._newArchId() === "string" &&
+                        r._newArchId() !== r._newArchId();
+
+                    // spawnArchitecture mit opts.id → string-id; ohne → numerisch.
+                    const eShared = r.spawnArchitecture("stein_block", { x: 12, y: 4, z: 12 }, { id: "a-unit-1" });
+                    out.spawnAcceptsStringId = !!eShared && eShared.id === "a-unit-1";
+                    const eLocal = r.spawnArchitecture("stein_block", { x: 14, y: 4, z: 14 }, {});
+                    out.spawnDefaultNumericId = !!eLocal && typeof eLocal.id === "number";
+
+                    // spawn_blueprint-Op mit archId.
+                    r.dslRun(["spawn_blueprint", "stein_block", ["at", 20, 4, 20], 0, "a-unit-2"], { source: "test" });
+                    out.spawnBlueprintArchId = r.state.architectures.some((a) => a && a.id === "a-unit-2");
+                    // Idempotenz: zweiter Lauf mit derselben id → kein zweiter Spawn.
+                    const before = r.state.architectures.filter((a) => a && a.id === "a-unit-2").length;
+                    r.dslRun(["spawn_blueprint", "stein_block", ["at", 21, 4, 21], 0, "a-unit-2"], { source: "test" });
+                    const after = r.state.architectures.filter((a) => a && a.id === "a-unit-2").length;
+                    out.spawnBlueprintIdempotent = before === 1 && after === 1;
+
+                    // remove_architecture entfernt per string-id.
+                    r.dslRun(["remove_architecture", "a-unit-2"], { source: "test" });
+                    out.removeArchitectureWorks = !r.state.architectures.some((a) => a && a.id === "a-unit-2");
+                    // Unbekannte / nicht-string id → kein Crash, keine Entfernung.
+                    const cnt = r.state.architectures.length;
+                    r.dslRun(["remove_architecture", "a-does-not-exist"], { source: "test" });
+                    r.dslRun(["remove_architecture", 12345], { source: "test" });
+                    out.removeArchitectureSafe = r.state.architectures.length === cnt;
+
+                    // describeProgram kennt remove_architecture.
+                    out.describeRemove =
+                        typeof r.describeProgram === "function" &&
+                        /ab/i.test(r.describeProgram(["remove_architecture", "a-x"]) || "");
+
+                    // spawn_blueprint + remove_architecture MÜSSEN broadcasten
+                    // (nicht in NON_BROADCASTABLE_OPS).
+                    const nb = window.AnazhRealm ? window.AnazhRealm.NON_BROADCASTABLE_OPS : r.constructor.NON_BROADCASTABLE_OPS;
+                    out.opsAreBroadcastable = !nb.has("spawn_blueprint") && !nb.has("remove_architecture");
+
+                    // confirmBuild broadcastet spawn_blueprint mit string-archId.
+                    const sent = [];
+                    const origBroadcast = r.p2pBroadcastDsl;
+                    r.p2pBroadcastDsl = (prog) => sent.push(prog);
+                    r.state.p2p.enabled = true;
+                    r.setGameMode && r.setGameMode("schöpfer"); // Gates frei
+                    r.state.buildMode = {
+                        active: true,
+                        blueprintName: "stein_block",
+                        phantomMesh: { position: { x: 30, y: 4, z: 30 } },
+                        phantomOnGround: true,
+                    };
+                    const builtOk = r.confirmBuild();
+                    const builtInProg = sent[sent.length - 1];
+                    out.confirmBuildBroadcasts =
+                        builtOk === true &&
+                        Array.isArray(builtInProg) &&
+                        builtInProg[0] === "spawn_blueprint" &&
+                        builtInProg[1] === "stein_block" &&
+                        typeof builtInProg[4] === "string" &&
+                        builtInProg[4].length > 2;
+                    // Die lokal gebaute Struktur trägt dieselbe string-id.
+                    out.confirmBuildLocalSharedId = r.state.architectures.some(
+                        (a) => a && a.id === builtInProg[4]
+                    );
+
+                    // Eigener (nicht-built-in) Bauplan → chain(define_blueprint, spawn).
+                    const cloneName = "bausync_custom";
+                    const cloned = r.cloneBlueprint && r.cloneBlueprint("stein_block", cloneName);
+                    let chainOk = false;
+                    if (cloned && r.state.blueprints[cloneName] && !r.state.blueprints[cloneName].builtIn) {
+                        r.state.buildMode = {
+                            active: true,
+                            blueprintName: cloneName,
+                            phantomMesh: { position: { x: 33, y: 4, z: 33 } },
+                            phantomOnGround: true,
+                        };
+                        r.confirmBuild();
+                        const customProg = sent[sent.length - 1];
+                        chainOk =
+                            Array.isArray(customProg) &&
+                            customProg[0] === "chain" &&
+                            customProg[1][0] === "define_blueprint" &&
+                            customProg[2][0] === "spawn_blueprint";
+                    }
+                    out.confirmBuildCustomChains = chainOk;
+
+                    r.p2pBroadcastDsl = origBroadcast;
+                    r.state.p2p.enabled = false;
+                    // buildMode-Original wiederherstellen (Tests danach lesen
+                    // sein phantomOnGround-Feld); aktiv aus.
+                    r.state.buildMode = origBuildMode;
+                    r.state.buildMode.active = false;
+
+                    // Persistenz: buildStateSnapshot trägt die arch-id.
+                    const snap = r.buildStateSnapshot();
+                    out.snapshotKeepsArchId =
+                        Array.isArray(snap.architectures) &&
+                        snap.architectures.some((a) => a && a.id === "a-unit-1");
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!buildSyncResults || buildSyncResults.error) {
+                check(
+                    "Multi-User-Bau-Sync: Snapshot erreichbar",
+                    false,
+                    (buildSyncResults && buildSyncResults.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Bau-Sync: _newArchId liefert eindeutige string-ids", buildSyncResults.newArchIdUnique);
+                check("Bau-Sync: spawnArchitecture nimmt eine geteilte string-id", buildSyncResults.spawnAcceptsStringId);
+                check("Bau-Sync: spawnArchitecture ohne id bleibt numerisch (Worldgen)", buildSyncResults.spawnDefaultNumericId);
+                check("Bau-Sync: spawn_blueprint spawnt unter der archId", buildSyncResults.spawnBlueprintArchId);
+                check("Bau-Sync: spawn_blueprint ist idempotent (kein Doppel-Spawn)", buildSyncResults.spawnBlueprintIdempotent);
+                check("Bau-Sync: remove_architecture entfernt per string-id", buildSyncResults.removeArchitectureWorks);
+                check("Bau-Sync: remove_architecture ist defensiv (unbekannt/nicht-string)", buildSyncResults.removeArchitectureSafe);
+                check("Bau-Sync: describeProgram kennt remove_architecture", buildSyncResults.describeRemove);
+                check("Bau-Sync: spawn_blueprint + remove_architecture broadcasten", buildSyncResults.opsAreBroadcastable);
+                check("Bau-Sync: confirmBuild broadcastet spawn_blueprint mit archId", buildSyncResults.confirmBuildBroadcasts);
+                check("Bau-Sync: die lokal gebaute Struktur trägt die geteilte id", buildSyncResults.confirmBuildLocalSharedId);
+                check("Bau-Sync: eigener Bauplan reist als chain(define_blueprint, spawn)", buildSyncResults.confirmBuildCustomChains);
+                check("Bau-Sync: buildStateSnapshot persistiert die arch-id", buildSyncResults.snapshotKeepsArchId);
+            }
+
             // ### Ring 11 V2 — DSL-AST-Broadcast (Welt-Sync) ###
             // Sandbox-Pfad: human-dslRun broadcastet via p2pSend wenn enabled+
             // connected; remote-dslRun (source="remote:*") läuft durch dslRun
