@@ -13545,6 +13545,12 @@ class AnazhRealm {
                             label: bp.portalMeta.label,
                             dsl: Array.isArray(bp.portalMeta.dsl) ? bp.portalMeta.dsl.slice() : null,
                         };
+                        // KI-Übersetzer Phase 2 — die translatedWorldId muss
+                        // mitreisen, sonst verlöre ein geholtes Übersetzer-
+                        // Portal beim Reload sein Szenen-Ziel (V8.59-Lehre).
+                        if (bp.portalMeta.translatedWorldId) {
+                            out.portalMeta.translatedWorldId = bp.portalMeta.translatedWorldId;
+                        }
                     }
                     // W13 Phase 2 — die Bauplan-Signatur reist mit dem Bauplan
                     // (Save, Welt-Tor-Export, Recipe-Import, Fusion). Echtheit
@@ -14276,6 +14282,12 @@ class AnazhRealm {
             out.translated = true;
             out.translatedAt = typeof m.translatedAt === "number" ? m.translatedAt : Date.now();
         }
+        // KI-Übersetzer Phase 2 — eine aufgebaute Welt trägt ihre deklarative
+        // Szene; sie läuft beim Laden erneut durch _sanitizeWorldScene (die
+        // Wand gilt auch für den localStorage-Rundlauf).
+        if (m.scene && typeof m.scene === "object") {
+            out.scene = this._sanitizeWorldScene(m.scene);
+        }
         return out;
     }
 
@@ -14459,6 +14471,169 @@ class AnazhRealm {
             world: clean.id,
         });
         return { ok: true, id: clean.id, label: clean.label };
+    }
+
+    // ### KI-Übersetzer Phase 2 — die Welt bekommt einen Körper ###
+    // Phase 1 übersetzte eine fremde Welt in ein Manifest (Identität +
+    // Vokabular). Phase 2 öffnet das Tor: die übersetzte Welt wird
+    // betretbar. Statt LLM-generierten Adapter-Code auszuführen (die
+    // gefährliche Hälfte), übersetzt der LLM die Welt in eine deklarative
+    // SZENE — wieder DATEN, kein Code. Der generische, hand-geschriebene
+    // Renderer in worlds/translated/ baut JEDE solche Szene auf. Eine Welt,
+    // ausgedrückt in einer Sprache, die AnazhRealm selbst rendert: die
+    // Bibliothek von Alexandria, die nicht brennt — kein fremdes Repo,
+    // keine fremde Engine, die rotten kann; nur eine Szene + unser Renderer,
+    // beide dauerhaft. Die Sicherheit: NIE läuft LLM-Code, nur eine
+    // gedeckelte deklarative Szene wird gerendert.
+
+    // Säubert eine LLM-erzeugte Szene auf eine sichere, IMMER renderbare
+    // Form: jede Farbe ein striktes #rrggbb, jede Zahl geclampt, jede Liste
+    // gedeckelt, jede Aufzählung gegen eine Whitelist. Liefert IMMER eine
+    // gültige Szene (fehlende Felder → Default) — so bricht selbst ein
+    // karger LLM-Output keine Welt. Das ist die Sicherheits-Wand der
+    // Phase 2: der LLM kann per Konstruktion nur eine harmlose Szene liefern.
+    _sanitizeWorldScene(raw) {
+        const src = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+        const hex = (v, fallback) => {
+            const m = /^#?([0-9a-fA-F]{6})$/.exec(String(v == null ? "" : v).trim());
+            return m ? "#" + m[1].toLowerCase() : fallback;
+        };
+        const num = (v, lo, hi, fb) => {
+            const n = Number(v);
+            return Number.isFinite(n) ? Math.max(lo, Math.min(hi, n)) : fb;
+        };
+        const SHAPES = ["box", "sphere", "cone", "cylinder", "torus", "octahedron"];
+        const GROUND = ["flat", "hills", "water", "void"];
+        const AMBIENT = ["none", "snow", "embers", "motes", "rain"];
+        const sky = src.sky && typeof src.sky === "object" ? src.sky : {};
+        const ground = src.ground && typeof src.ground === "object" ? src.ground : {};
+        const light = src.light && typeof src.light === "object" ? src.light : {};
+        const ambient = src.ambient && typeof src.ambient === "object" ? src.ambient : {};
+        const objects = [];
+        if (Array.isArray(src.objects)) {
+            for (const o of src.objects) {
+                if (!o || typeof o !== "object") continue;
+                objects.push({
+                    shape: SHAPES.includes(o.shape) ? o.shape : "box",
+                    color: hex(o.color, "#8a6a3a"),
+                    count: Math.round(num(o.count, 1, 140, 12)),
+                    area: num(o.area, 3, 130, 40),
+                    size: num(o.size, 0.2, 14, 2),
+                    height: num(o.height, -25, 45, 0),
+                    spin: o.spin === true,
+                    float: o.float === true,
+                });
+                if (objects.length >= 14) break;
+            }
+        }
+        const dslEffects = {};
+        if (src.dslEffects && typeof src.dslEffects === "object") {
+            let n = 0;
+            for (const op of Object.keys(src.dslEffects)) {
+                if (!/^[a-z_]{1,40}$/.test(op)) continue;
+                const e = src.dslEffects[op];
+                if (!e || typeof e !== "object") continue;
+                const eff = {
+                    fogShift: num(e.fogShift, -1, 1, 0),
+                    lightShift: num(e.lightShift, -1, 1, 0),
+                    burst: Math.round(num(e.burst, 0, 50, 0)),
+                };
+                const skyHex = hex(e.sky, null);
+                if (skyHex) eff.sky = skyHex;
+                dslEffects[op] = eff;
+                if (++n >= 32) break;
+            }
+        }
+        return {
+            sky: { top: hex(sky.top, "#2a3a6a"), bottom: hex(sky.bottom, "#c8b88a") },
+            fog: hex(src.fog, "#9aa6c0"),
+            ground: {
+                color: hex(ground.color, "#3a6a3a"),
+                style: GROUND.includes(ground.style) ? ground.style : "flat",
+            },
+            light: { color: hex(light.color, "#ffe9c8"), intensity: num(light.intensity, 0, 2, 1) },
+            objects,
+            ambient: {
+                kind: AMBIENT.includes(ambient.kind) ? ambient.kind : "motes",
+                color: hex(ambient.color, "#ffffff"),
+            },
+            dslEffects,
+        };
+    }
+
+    // Der System-Prompt des Szenen-Übersetzers — er weist das LLM an, eine
+    // Welt in eine deklarative Szene zu übersetzen (Daten, kein Code).
+    _buildSceneTranslatorPrompt() {
+        return [
+            "Du baust für AnazhRealm die SZENE einer fremden Welt — eine deklarative",
+            "Beschreibung, die der generische 3D-Renderer der Bibliothek aufbaut. Das",
+            "Manifest (Identität + Vokabular) steht schon; jetzt gib der Welt einen Körper.",
+            "",
+            "Antworte mit GENAU EINEM JSON-Objekt — kein weiterer Text, keine Erklärung:",
+            "{",
+            '  "sky":    { "top": "#rrggbb", "bottom": "#rrggbb" },',
+            '  "fog":    "#rrggbb",',
+            '  "ground": { "color": "#rrggbb", "style": "flat" | "hills" | "water" | "void" },',
+            '  "light":  { "color": "#rrggbb", "intensity": 0.0-2.0 },',
+            '  "objects": [',
+            '    { "shape": "box"|"sphere"|"cone"|"cylinder"|"torus"|"octahedron",',
+            '      "color": "#rrggbb", "count": 1-140, "area": 3-130, "size": 0.2-14,',
+            '      "height": -25..45, "spin": true|false, "float": true|false }',
+            "  ],",
+            '  "ambient": { "kind": "none"|"snow"|"embers"|"motes"|"rain", "color": "#rrggbb" },',
+            '  "dslEffects": { "<wort>": { "sky": "#rrggbb", "fogShift": -1..1, "lightShift": -1..1, "burst": 0-50 } }',
+            "}",
+            "",
+            "Waehle Farben + Formen, die die beschriebene Welt einfangen — eine Lava-Welt",
+            "glueht rot, eine Eis-Welt schimmert blau-weiss, ein Wald ist gruen + dicht.",
+            "objects sind verstreute Form-Gruppen (count Stueck, im Radius area um die",
+            "Mitte). dslEffects gibt jedem Wort aus dem Vokabular eine sichtbare Wirkung",
+            "(sky faerbt den Himmel, fogShift verdichtet/lichtet den Nebel, lightShift",
+            "hellt auf/ab, burst wirft Partikel aus). Alle Farben strikt #rrggbb.",
+        ].join("\n");
+    }
+
+    // KI-Übersetzer Phase 2 — eine übersetzte Welt in eine deklarative Szene
+    // übersetzen. Ruft das LLM über llmCall (derselbe Transport), liest die
+    // Szene per _parseManifestResponse, säubert sie per _sanitizeWorldScene.
+    async translateWorldScene(world) {
+        const w = world && typeof world === "object" ? world : {};
+        const desc = [
+            `Welt: ${w.label || w.id || "unbenannt"}`,
+            w.desc ? `Beschreibung: ${w.desc}` : "",
+            Array.isArray(w.dsl) && w.dsl.length ? `Vokabular: ${w.dsl.join(", ")}` : "",
+        ]
+            .filter(Boolean)
+            .join("\n");
+        if (desc.length < 6) return { ok: false, reason: "world_too_thin" };
+        const parsed = await this.llmCall(desc, this._buildSceneTranslatorPrompt());
+        if (parsed && parsed.error && !parsed.raw) return { ok: false, reason: parsed.error };
+        const obj = this._parseManifestResponse((parsed && parsed.raw) || "");
+        if (!obj) return { ok: false, reason: "no_scene_in_response" };
+        return { ok: true, scene: this._sanitizeWorldScene(obj) };
+    }
+
+    // KI-Übersetzer Phase 2 — einer übersetzten Welt einen Körper geben:
+    // die Szene generieren, an die customWorlds-Welt heften und sie
+    // betretbar machen (world → der generische Renderer, reachable:true).
+    // Das ist der Moment, in dem das Tor sich wirklich öffnet.
+    async buildTranslatedWorld(worldId) {
+        const key = String(worldId || "")
+            .trim()
+            .toLowerCase();
+        const w = this.state.customWorlds && this.state.customWorlds[key];
+        if (!w) return { ok: false, reason: "world_unknown" };
+        if (!w.translated) return { ok: false, reason: "not_translated" };
+        const res = await this.translateWorldScene(w);
+        if (!res.ok) return res;
+        w.scene = res.scene;
+        w.world = AnazhRealm.PORTAL_TRANSLATED_WORLD;
+        w.reachable = true;
+        this._saveCustomWorlds();
+        this.journalAppend("growth", `Der KI-Übersetzer gab „${w.label}" einen Körper — die Welt ist nun betretbar.`, {
+            world: w.id,
+        });
+        return { ok: true, id: w.id, label: w.label };
     }
 
     // ### Welle 3 F — Welt-Tor ###
@@ -17212,11 +17387,17 @@ class AnazhRealm {
             entry = this._libraryWorlds().find((w) => w.label.toLowerCase() === key);
         }
         if (!entry) return { ok: false, reason: "world_unknown" };
-        return this.setBlueprintAsPortal(blueprintName, {
+        const meta = {
             world: entry.world,
             label: entry.label,
             dsl: entry.dsl.slice(),
-        });
+        };
+        // KI-Übersetzer Phase 2 — eine aufgebaute übersetzte Welt teilt sich
+        // den generischen Renderer worlds/translated/; die translatedWorldId
+        // sagt ihm beim enter-Handshake, welche Szene er aufbauen soll.
+        const custom = this.state.customWorlds && this.state.customWorlds[entry.id];
+        if (custom && custom.translated) meta.translatedWorldId = entry.id;
+        return this.setBlueprintAsPortal(blueprintName, meta);
     }
 
     // ===== W14 Phase 1 — Bibliothek =====
@@ -17357,25 +17538,39 @@ class AnazhRealm {
             card.appendChild(dslWrap);
 
             const worldId = w.id;
+            // KI-Übersetzer Phase 2 — drei Zustände einer Bibliothek-Karte:
+            // eine übersetzte Welt OHNE Szene braucht „Welt aufbauen"; mit
+            // Szene ist sie betretbar (+ „neu aufbauen"); eine empfangene
+            // Welt ohne erreichbare Dateien bleibt browsbar, nicht betretbar.
+            const needsScene = isTranslated && !w.scene;
+            const isTranslatedWithScene = isTranslated && !!w.scene;
             const unreachable = isImported && w.reachable === false;
-            const getBtn = document.createElement("button");
-            getBtn.type = "button";
-            getBtn.className = "library-get";
-            getBtn.textContent = "Portal holen";
             const status = document.createElement("span");
             status.className = "library-status";
-            if (unreachable) {
-                // Browsbar, aber nicht betretbar — ehrlich markiert statt
-                // totem Portal. Eine KI-übersetzte Welt wartet noch auf das
-                // Vendoren ihrer Engine (KI-Übersetzer Phase 2/3); eine
-                // empfangene Welt brachte nur ihr Manifest mit.
+            if (needsScene) {
+                const buildBtn = document.createElement("button");
+                buildBtn.type = "button";
+                buildBtn.className = "library-get library-build";
+                buildBtn.textContent = "Welt aufbauen";
+                buildBtn.title =
+                    "Die KI gibt dieser übersetzten Welt eine deklarative Szene — danach führt ihr Portal hindurch.";
+                buildBtn.addEventListener("click", () => this._runWorldBuild(worldId, buildBtn, status));
+                card.appendChild(buildBtn);
+            } else if (unreachable) {
+                const getBtn = document.createElement("button");
+                getBtn.type = "button";
+                getBtn.className = "library-get";
+                getBtn.textContent = "Portal holen";
                 getBtn.disabled = true;
-                getBtn.title = isTranslated
-                    ? "Übersetzt — die Engine-Dateien werden in einer späteren Phase vendort."
-                    : "Die Welt-Dateien sind nicht verfügbar — nur das Manifest kam an.";
-                status.textContent = isTranslated ? "Engine folgt (Phase 2)" : "Welt-Dateien nicht verfügbar";
+                getBtn.title = "Die Welt-Dateien sind nicht verfügbar — nur das Manifest kam an.";
+                status.textContent = "Welt-Dateien nicht verfügbar";
                 status.className = "library-status library-unreachable";
+                card.appendChild(getBtn);
             } else {
+                const getBtn = document.createElement("button");
+                getBtn.type = "button";
+                getBtn.className = "library-get";
+                getBtn.textContent = "Portal holen";
                 getBtn.addEventListener("click", () => {
                     const res = this.obtainPortalForWorld(worldId);
                     if (res.ok) {
@@ -17386,8 +17581,19 @@ class AnazhRealm {
                         this.log(`obtainPortalForWorld: ${res.reason}`, "ERROR");
                     }
                 });
+                card.appendChild(getBtn);
+                // Eine aufgebaute übersetzte Welt darf neu aufgebaut werden —
+                // eine frische Szene zur selben Identität.
+                if (isTranslatedWithScene) {
+                    const rebuildBtn = document.createElement("button");
+                    rebuildBtn.type = "button";
+                    rebuildBtn.className = "library-sig-btn library-rebuild";
+                    rebuildBtn.textContent = "neu aufbauen";
+                    rebuildBtn.title = "Die KI baut eine neue Szene für diese Welt.";
+                    rebuildBtn.addEventListener("click", () => this._runWorldBuild(worldId, rebuildBtn, status));
+                    card.appendChild(rebuildBtn);
+                }
             }
-            card.appendChild(getBtn);
             card.appendChild(status);
 
             // W14 Phase 2/3 — Signatur-Zeile. Built-in-Welten signiert der
@@ -17559,6 +17765,10 @@ class AnazhRealm {
                 "Die KI lieferte kein verwertbares Manifest. Versuch es nochmal oder beschreibe die Welt klarer.",
             id_is_builtin: "Die KI wählte eine schon vergebene Welt-id — versuch es nochmal.",
             invalid_manifest: "Das übersetzte Manifest war unbrauchbar — versuch es nochmal.",
+            no_scene_in_response: "Die KI lieferte keine verwertbare Szene. Versuch es nochmal.",
+            world_too_thin: "Diese Welt hat zu wenig Substanz — übersetze sie zuerst ausführlicher.",
+            not_translated: "Nur KI-übersetzte Welten lassen sich aufbauen.",
+            world_unknown: "Diese Welt ist nicht in der Bibliothek.",
         };
         return map[reason] || `Übersetzung fehlgeschlagen: ${reason}`;
     }
@@ -17698,6 +17908,33 @@ class AnazhRealm {
         review.appendChild(actions);
     }
 
+    // KI-Übersetzer Phase 2 — den Welt-Aufbau auslösen (Knopf-Handler der
+    // Bibliothek-Karte). Generiert die deklarative Szene und macht die Welt
+    // betretbar; danach rendert renderLibraryUI die Karte neu.
+    async _runWorldBuild(worldId, btn, statusEl) {
+        if (btn) btn.disabled = true;
+        if (statusEl) {
+            statusEl.textContent = "Die KI baut die Welt …";
+            statusEl.className = "library-status";
+        }
+        let res;
+        try {
+            res = await this.buildTranslatedWorld(worldId);
+        } catch (e) {
+            res = { ok: false, reason: (e && e.message) || "Fehler" };
+        }
+        if (res && res.ok) {
+            this.log(`KI-Übersetzer: „${res.label}" hat einen Körper — die Welt ist betretbar.`, "INFO");
+            this.renderLibraryUI();
+        } else {
+            if (btn) btn.disabled = false;
+            if (statusEl) {
+                statusEl.textContent = this._translatorReasonText(res ? res.reason : "Fehler");
+                statusEl.className = "library-status library-unreachable";
+            }
+        }
+    }
+
     // W12 — ein DSL-Manifest säubern: nur op-förmige Strings (klein +
     // Unterstrich, ≤40 Zeichen), gedeckelt auf 64. Genutzt fürs portalMeta-
     // Manifest (Phase 2, Stufe „übersetzt") UND fürs native ready-Manifest
@@ -17730,7 +17967,14 @@ class AnazhRealm {
         // Welt kann ihr Manifest im ready-Handshake auch SELBST melden
         // (Stufe „nativ", _portalReceiveManifest) — dann gewinnt das.
         const dsl = this._sanitizeDslSubset(src.dsl);
-        return { world, label, dsl };
+        const meta = { world, label, dsl };
+        // KI-Übersetzer Phase 2 — eine übersetzte Welt teilt sich den
+        // generischen Renderer worlds/translated/; translatedWorldId sagt
+        // ihm beim enter-Handshake, welche Szene er aufbauen soll.
+        if (typeof src.translatedWorldId === "string" && /^[a-z0-9_-]{1,40}$/.test(src.translatedWorldId)) {
+            meta.translatedWorldId = src.translatedWorldId;
+        }
+        return meta;
     }
 
     // W12 Phase 1 — Portal-Overlay: ein Vollbild-iframe, das die Sub-Welt
@@ -17797,6 +18041,9 @@ class AnazhRealm {
             world: meta.world,
             label: meta.label,
             dsl: meta.dsl,
+            // KI-Übersetzer Phase 2 — gesetzt für eine übersetzte Welt: sagt
+            // _portalSendEnter, welche deklarative Szene es mitschicken muss.
+            translatedWorldId: meta.translatedWorldId || null,
             // W12 Phase 3 — Drei-Stufen-Klarheit: kein Manifest → ausgestellt;
             // portalMeta-Manifest → übersetzt; meldet die Welt ihr eigenes
             // (ready-Handshake) → nativ. _portalReceiveManifest hebt auf nativ.
@@ -17819,7 +18066,11 @@ class AnazhRealm {
     _portalShowSignature(worldPath) {
         const po = this._portalOverlay;
         if (!po || !po.sigEl) return;
-        const reg = this._libraryWorlds().find((w) => w.world === worldPath);
+        // KI-Übersetzer Phase 2 — übersetzte Welten teilen sich den world-Pfad
+        // (worlds/translated/); die translatedWorldId löst die richtige auf.
+        const reg = po.translatedWorldId
+            ? this._worldEntry(po.translatedWorldId)
+            : this._libraryWorlds().find((w) => w.world === worldPath);
         if (!reg) return;
         this.verifyWorldSignature(reg.id).then((st) => {
             // Hat der Spieler das Portal vorher verlassen, ist po veraltet.
@@ -17905,10 +18156,16 @@ class AnazhRealm {
     _portalSendEnter() {
         const po = this._portalOverlay;
         if (!po || !po.iframe || !po.iframe.contentWindow) return;
-        po.iframe.contentWindow.postMessage(
-            { type: "enter", avatar: this._portalEnterPayload() },
-            window.location.origin
-        );
+        const msg = { type: "enter", avatar: this._portalEnterPayload() };
+        // KI-Übersetzer Phase 2 — eine übersetzte Welt trägt ihre deklarative
+        // Szene mit (sie liegt sanitiert in customWorlds); der generische
+        // Renderer in worlds/translated/ baut sie auf. Die Szene ist DATEN —
+        // sie wird gerendert, nie ausgeführt (W13-V2-Disziplin).
+        if (po.translatedWorldId) {
+            const w = this.state.customWorlds && this.state.customWorlds[po.translatedWorldId];
+            if (w && w.scene) msg.scene = w.scene;
+        }
+        po.iframe.contentWindow.postMessage(msg, window.location.origin);
     }
 
     // Räumt das Portal-Overlay: Message-Listener ab, Overlay-DOM raus,
@@ -31104,6 +31361,10 @@ AnazhRealm.DEFAULT_BLUEPRINT_ROLE = "architecture";
 // portalMeta.world zeigt hierauf; _sanitizePortalMeta erlaubt nur
 // worlds/-Pfade — kein fremdes Origin, die CSP bleibt frame-src 'self'.
 AnazhRealm.PORTAL_SKELETON_WORLD = "worlds/skeleton/index.html";
+// KI-Übersetzer Phase 2 — der generische Renderer, der eine deklarative
+// Szene aufbaut. Jede aufgebaute übersetzte Welt zeigt hierauf; ihre
+// individuelle Szene reist im enter-Handshake (po.translatedWorldId).
+AnazhRealm.PORTAL_TRANSLATED_WORLD = "worlds/translated/index.html";
 
 // W12 Phase 2 — die Welt-Registry: die EINE Quelle, welche Sub-Welten es
 // gibt, je mit Pfad + DSL-Manifest (welche Wörter die Welt versteht) +

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="de">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <!-- KI-Übersetzer Phase 2 — der generische Translated-World-Renderer.
+             Eigenes Document, eigene strikte CSP. Skript nur same-origin
+             (translated.js + lib/), keine fremden Origins. Hier läuft NIE
+             LLM-Code — nur eine deklarative SZENE (Daten), die durch den
+             enter-Handshake kommt, wird aufgebaut. Die iframe-Sandbox der
+             Heimat-Welt trägt die Isolation. -->
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'self'; object-src 'none';"
+        />
+        <title>Übersetzte Welt — AnazhRealm-Portal</title>
+        <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404;
+             img-src 'self' data: in der CSP erlaubt die data-URI. -->
+        <link
+            rel="icon"
+            type="image/png"
+            href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+        />
+        <style>
+            html,
+            body {
+                margin: 0;
+                height: 100%;
+                background: #0c1018;
+                overflow: hidden;
+                font-family: "Courier New", monospace;
+            }
+            canvas {
+                display: block;
+            }
+            #hud {
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: 16px;
+                text-align: center;
+                font-size: 13px;
+                line-height: 1.7;
+                color: #b8c4d8;
+                text-shadow: 0 0 8px #000;
+                pointer-events: none;
+            }
+            #hud b {
+                color: #6b8fd8;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="hud">
+            <div id="hud-line">Übersetzte Welt — eine deklarative Szene, von AnazhRealm gerendert.</div>
+            <div>Reisender: <b id="avatar-name">…</b> · Esc — zurück zur Heimat-Welt</div>
+        </div>
+        <!-- Klassisches Global-Skript: erst Three.js (r130), dann der
+             generische Renderer. -->
+        <script src="lib/three.min.js"></script>
+        <script src="translated.js?v=1"></script>
+    </body>
+</html>
