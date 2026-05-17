@@ -14383,6 +14383,124 @@ function startSaveServer() {
                 check("W14 P1: Bibliothek-Tests laufen", false, w14Results ? w14Results.error : "no result");
             }
 
+            // ### W14 Phase 2 Teil A — Welt-Manifest-Signatur ###
+            const w14p2Results = await page
+                .evaluate(async () => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    const REG = r.constructor.WORLD_REGISTRY;
+                    out.methods =
+                        typeof r._canonicalManifest === "function" &&
+                        typeof r.signWorld === "function" &&
+                        typeof r.verifyWorldSignature === "function" &&
+                        typeof r._loadSignedWorlds === "function" &&
+                        typeof r._portalShowSignature === "function";
+                    // _canonicalManifest deterministisch + ignoriert world/desc.
+                    const c1 = r._canonicalManifest(REG.fluid);
+                    const c2 = r._canonicalManifest({
+                        id: "fluid",
+                        label: "Strom-Welt",
+                        dsl: REG.fluid.dsl,
+                        world: "anderer/pfad",
+                        desc: "andere beschreibung",
+                    });
+                    out.canonDeterministic = c1 === c2 && c1.length > 0;
+                    out.canonIgnoresPath = !c1.includes("worlds/");
+                    // Vorzustand säubern.
+                    delete r.state.signedWorlds.fluid;
+                    delete r.state.signedWorlds.terrain;
+                    // Unsigniert → "unsigned".
+                    out.unsignedState = (await r.verifyWorldSignature("fluid")) === "unsigned";
+                    // signWorld signiert + persistiert.
+                    const signRes = await r.signWorld("fluid");
+                    out.signOk = signRes.ok === true && /^[0-9a-f]{64}$/i.test(signRes.authorPubKey || "");
+                    out.signStored =
+                        !!r.state.signedWorlds.fluid && /^[0-9a-f]+$/i.test(r.state.signedWorlds.fluid.signature || "");
+                    out.signValid = (await r.verifyWorldSignature("fluid")) === "valid";
+                    // signWorld verwirft eine unbekannte Welt.
+                    out.signUnknownRejected = (await r.signWorld("nirgendwo")).ok === false;
+                    // localStorage-Persistenz: _loadSignedWorlds liest die Signatur zurück.
+                    const reloaded = r._loadSignedWorlds();
+                    out.persistRoundtrip =
+                        !!reloaded.fluid && reloaded.fluid.signature === r.state.signedWorlds.fluid.signature;
+                    // "modified" — der Manifest-Hash passt nicht mehr.
+                    const realHash = r.state.signedWorlds.fluid.signedHash;
+                    r.state.signedWorlds.fluid.signedHash = "deadbeef";
+                    out.modifiedState = (await r.verifyWorldSignature("fluid")) === "modified";
+                    r.state.signedWorlds.fluid.signedHash = realHash;
+                    // "forged" — die Signatur passt nicht zum Autor.
+                    const realSig = r.state.signedWorlds.fluid.signature;
+                    r.state.signedWorlds.fluid.signature = (realSig[0] === "a" ? "b" : "a") + realSig.slice(1);
+                    out.forgedState = (await r.verifyWorldSignature("fluid")) === "forged";
+                    r.state.signedWorlds.fluid.signature = realSig;
+                    // Cross-Autor: ein mit FREMDEM Schlüssel signiertes Manifest verifiziert.
+                    const foreign = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
+                    const foreignJwk = await crypto.subtle.exportKey("jwk", foreign.privateKey);
+                    const foreignPubHex = r._vibeBytesToHex(r._vibeB64uToBytes(foreignJwk.x));
+                    const canonTerrain = r._canonicalManifest(REG.terrain);
+                    const foreignSig = r._vibeBytesToHex(
+                        new Uint8Array(
+                            await crypto.subtle.sign(
+                                { name: "Ed25519" },
+                                foreign.privateKey,
+                                new TextEncoder().encode(canonTerrain)
+                            )
+                        )
+                    );
+                    r.state.signedWorlds.terrain = {
+                        authorPubKey: foreignPubHex,
+                        signature: foreignSig,
+                        signedHash: r._fastHash(canonTerrain),
+                        signedAt: Date.now(),
+                    };
+                    out.crossAuthorValid = (await r.verifyWorldSignature("terrain")) === "valid";
+                    // _loadSignedWorlds defensiv gegen korruptes localStorage.
+                    const savedRaw = localStorage.getItem("anazh.signedWorlds");
+                    localStorage.setItem("anazh.signedWorlds", "{kaputt");
+                    out.loadDefensive = JSON.stringify(r._loadSignedWorlds()) === "{}";
+                    if (savedRaw !== null) localStorage.setItem("anazh.signedWorlds", savedRaw);
+                    // UI: Bibliothek-Karte trägt eine Signatur-Zeile + einen Knopf.
+                    r.renderLibraryUI();
+                    out.uiSigRow = !!document.querySelector("#library-list .library-sig-row");
+                    out.uiSigBtn = !!document.querySelector("#library-list .library-sig-btn");
+                    // Portal-Overlay: das Betreten einer signierten Welt zeigt
+                    // „signiert von <Autor>".
+                    r._buildPortalOverlay({ world: REG.fluid.world, label: "Strom-Welt", dsl: REG.fluid.dsl });
+                    out.overlayHasSigEl = !!(r._portalOverlay && r._portalOverlay.sigEl);
+                    out.overlaySigInDom = !!document.querySelector("#portal-overlay .portal-sig");
+                    await new Promise((res) => setTimeout(res, 180));
+                    const sigEl = r._portalOverlay && r._portalOverlay.sigEl;
+                    out.overlayShowsSigned = !!sigEl && sigEl.hidden === false && /signiert von/.test(sigEl.textContent);
+                    r._disposePortalOverlay();
+                    // Aufräumen.
+                    delete r.state.signedWorlds.fluid;
+                    delete r.state.signedWorlds.terrain;
+                    r._saveSignedWorlds();
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w14p2Results && !w14p2Results.error) {
+                check("W14 P2: _canonicalManifest/signWorld/verifyWorldSignature/_loadSignedWorlds/_portalShowSignature existieren", w14p2Results.methods);
+                check("W14 P2: _canonicalManifest ist deterministisch", w14p2Results.canonDeterministic);
+                check("W14 P2: _canonicalManifest ignoriert world-Pfad + desc (signiert die Substanz)", w14p2Results.canonIgnoresPath);
+                check("W14 P2: unsignierte Welt → Status 'unsigned'", w14p2Results.unsignedState);
+                check("W14 P2: signWorld signiert eine registrierte Welt", w14p2Results.signOk);
+                check("W14 P2: Signatur in state.signedWorlds gespeichert", w14p2Results.signStored);
+                check("W14 P2: signierte Welt → Status 'valid'", w14p2Results.signValid);
+                check("W14 P2: signWorld verwirft eine unbekannte Welt", w14p2Results.signUnknownRejected);
+                check("W14 P2: Signatur überlebt den localStorage-Rundlauf (_loadSignedWorlds)", w14p2Results.persistRoundtrip);
+                check("W14 P2: geändertes Manifest → Status 'modified'", w14p2Results.modifiedState);
+                check("W14 P2: gefälschte Signatur → Status 'forged'", w14p2Results.forgedState);
+                check("W14 P2: fremd-signiertes Manifest verifiziert (Cross-Autor)", w14p2Results.crossAuthorValid);
+                check("W14 P2: _loadSignedWorlds ist defensiv gegen korruptes localStorage", w14p2Results.loadDefensive);
+                check("W14 P2: Bibliothek-Karte trägt eine Signatur-Zeile + Knopf", w14p2Results.uiSigRow && w14p2Results.uiSigBtn);
+                check("W14 P2: Portal-Overlay legt eine .portal-sig-Zeile an", w14p2Results.overlayHasSigEl && w14p2Results.overlaySigInDom);
+                check("W14 P2: Betreten einer signierten Welt zeigt 'signiert von <Autor>'", w14p2Results.overlayShowsSigned);
+            } else {
+                check("W14 P2: Manifest-Signatur-Tests laufen", false, w14p2Results ? w14p2Results.error : "no result");
+            }
+
             // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
             const v840Results = await page
                 .evaluate(() => {

@@ -396,6 +396,12 @@ class AnazhRealm {
                 privateKey: null,
                 _privateKeyJwk: null,
             },
+            // W14 Phase 2 — signierte Welt-Manifeste. Welcher WORLD_REGISTRY-
+            // Eintrag mit welchem Vibe-Pass versiegelt wurde. Spieler-global
+            // (wie der Vibe-Pass selbst), NIE im Welt-Save; persistiert im
+            // localStorage-Schlüssel "anazh.signedWorlds". _loadSignedWorlds()
+            // füllt es beim Init.
+            signedWorlds: {},
             // Ring 3 — Player-Emotionen. Sechs Achsen, jeweils 0..1.
             // Chat-Inputs füllen sie regelbasiert; im Game-Loop verflüchtigen
             // sie sich langsam; Schwellen-Trigger feuern DSL-Programme, sodass
@@ -13006,6 +13012,109 @@ class AnazhRealm {
         return ok ? "valid" : "forged";
     }
 
+    // ### W14 Phase 2 — Welt-Manifest-Signatur ###
+    // Spiegelt die W13-P2-Bauplan-Signatur: eine Welt wird mit dem Vibe-Pass
+    // versiegelt, jeder kann prüfen „signiert von <Autor>". Self-Sovereign —
+    // der Spieler signiert mit SEINEM Schlüssel (kein Projekt-Schlüssel, keine
+    // zentrale Autorität, world-portal.md §4). Die Signatur ist spieler-global
+    // (state.signedWorlds + localStorage "anazh.signedWorlds"), wie der
+    // Vibe-Pass selbst — die statischen worlds/<id>/manifest.json bleiben
+    // unberührt (der Browser kann sie nicht schreiben).
+
+    // Der signierbare Kern eines Welt-Manifests: Identität + Name + DSL-
+    // Vokabular, deterministisch serialisiert (analog _canonicalBlueprint).
+    // world (der Pfad) + desc (Browse-Text) gehören NICHT zur Substanz.
+    _canonicalManifest(m) {
+        if (!m || typeof m !== "object") return "";
+        const dsl = (Array.isArray(m.dsl) ? m.dsl : []).map((d) => String(d));
+        return JSON.stringify({ v: 1, id: String(m.id || ""), label: String(m.label || ""), dsl });
+    }
+
+    // Lädt die signierten Welten aus dem GLOBALEN localStorage-Schlüssel.
+    // Defensiv: jeder Eintrag muss strukturell plausibel sein (Hex-Form),
+    // sonst wird er verworfen — die echte Verifikation macht verifyWorldSignature.
+    _loadSignedWorlds() {
+        const out = {};
+        try {
+            const raw = typeof localStorage !== "undefined" ? localStorage.getItem("anazh.signedWorlds") : null;
+            if (!raw) return out;
+            const parsed = JSON.parse(raw);
+            if (!parsed || typeof parsed !== "object") return out;
+            for (const id of Object.keys(parsed)) {
+                const e = parsed[id];
+                if (
+                    e &&
+                    typeof e.signature === "string" &&
+                    /^[0-9a-f]{2,256}$/i.test(e.signature) &&
+                    typeof e.authorPubKey === "string" &&
+                    /^[0-9a-f]{64}$/i.test(e.authorPubKey)
+                ) {
+                    out[id] = {
+                        authorPubKey: e.authorPubKey,
+                        signature: e.signature,
+                        signedHash: typeof e.signedHash === "string" ? e.signedHash : "",
+                        signedAt: typeof e.signedAt === "number" ? e.signedAt : 0,
+                    };
+                }
+            }
+        } catch {
+            /* korrupter Eintrag → leere Map, kein Wurf */
+        }
+        return out;
+    }
+
+    _saveSignedWorlds() {
+        try {
+            if (typeof localStorage !== "undefined") {
+                localStorage.setItem("anazh.signedWorlds", JSON.stringify(this.state.signedWorlds || {}));
+            }
+        } catch (e) {
+            this.log(`signedWorlds-Speichern fehlgeschlagen: ${e && e.message}`, "WARN");
+        }
+    }
+
+    // Versiegelt eine registrierte Welt mit dem Vibe-Pass. Async (ed25519).
+    async signWorld(worldId) {
+        const key = String(worldId || "")
+            .trim()
+            .toLowerCase();
+        const entry = AnazhRealm.WORLD_REGISTRY[key];
+        if (!entry) return { ok: false, reason: "world_unknown" };
+        const vp = this.state.vibePass;
+        if (!vp || !vp.ready) return { ok: false, reason: "no_vibepass" };
+        const canonical = this._canonicalManifest(entry);
+        const sig = await this._vibeSign(canonical);
+        if (!sig) return { ok: false, reason: "sign_failed" };
+        if (!this.state.signedWorlds) this.state.signedWorlds = {};
+        this.state.signedWorlds[key] = {
+            authorPubKey: vp.publicKeyHex,
+            signature: sig,
+            signedHash: this._fastHash(canonical),
+            signedAt: Date.now(),
+        };
+        this._saveSignedWorlds();
+        this.journalAppend("ritual", `Ich veröffentlichte die ${entry.label} mit meinem Vibe-Pass.`, {
+            world: key,
+        });
+        return { ok: true, authorPubKey: vp.publicKeyHex };
+    }
+
+    // Prüft den Signatur-Status einer Welt — vier Stufen, exakt wie
+    // verifyBlueprintSignature: unsigned / valid / modified / forged.
+    // Async (ed25519-Verifikation). Defensiv: kein Wurf bei Müll-Eingabe.
+    async verifyWorldSignature(worldId) {
+        const key = String(worldId || "")
+            .trim()
+            .toLowerCase();
+        const entry = AnazhRealm.WORLD_REGISTRY[key];
+        const sig = this.state.signedWorlds && this.state.signedWorlds[key];
+        if (!entry || !sig || !sig.signature || !sig.authorPubKey) return "unsigned";
+        const canonical = this._canonicalManifest(entry);
+        if (sig.signedHash && this._fastHash(canonical) !== sig.signedHash) return "modified";
+        const ok = await this._vibeVerify(canonical, sig.signature, sig.authorPubKey);
+        return ok ? "valid" : "forged";
+    }
+
     // ### Welle 3 F — Welt-Tor ###
     // Welt-Info im Welt-Drawer: die Welt wird sichtbar als Welt, mit
     // Identität, Alter, Erinnerungen. Export = bestehender Save-Snapshot
@@ -15888,6 +15997,64 @@ class AnazhRealm {
             card.appendChild(getBtn);
             card.appendChild(status);
 
+            // W14 Phase 2 — Signatur-Zeile: der Spieler versiegelt die Welt
+            // mit seinem Vibe-Pass. Vier Status-Stufen, exakt wie die W13-P2-
+            // Bauplan-Signatur. refreshSig prüft async + aktualisiert nur die
+            // zwei Knoten — so bleibt die „Portal holen"-Statuszeile erhalten.
+            const sigRow = document.createElement("div");
+            sigRow.className = "library-sig-row";
+            const sigStatus = document.createElement("span");
+            sigStatus.className = "library-sig-status";
+            sigStatus.textContent = "prüfe …";
+            const sigBtn = document.createElement("button");
+            sigBtn.type = "button";
+            sigBtn.className = "library-sig-btn";
+            sigBtn.textContent = "Signieren";
+            sigBtn.disabled = true;
+            const worldId = w.id;
+            const refreshSig = () => {
+                const vpReady = !!(this.state.vibePass && this.state.vibePass.ready);
+                this.verifyWorldSignature(worldId).then((st) => {
+                    const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
+                    const sig = this.state.signedWorlds && this.state.signedWorlds[worldId];
+                    if (st === "valid") {
+                        const who =
+                            sig && sig.authorPubKey === myKey
+                                ? "dein Vibe-Pass"
+                                : this._vibeFingerprint(sig && sig.authorPubKey);
+                        sigStatus.textContent = `✓ signiert · ${who}`;
+                        sigStatus.className = "library-sig-status sig-valid";
+                        if (sig) sigStatus.title = "ed25519:" + sig.authorPubKey;
+                        sigBtn.textContent = "Neu signieren";
+                    } else if (st === "modified") {
+                        sigStatus.textContent = "geändert — neu signieren";
+                        sigStatus.className = "library-sig-status sig-modified";
+                        sigBtn.textContent = "Neu signieren";
+                    } else if (st === "forged") {
+                        sigStatus.textContent = "⚠ Signatur ungültig";
+                        sigStatus.className = "library-sig-status sig-forged";
+                        sigBtn.textContent = "Neu signieren";
+                    } else {
+                        sigStatus.textContent = "nicht signiert";
+                        sigStatus.className = "library-sig-status sig-unsigned";
+                        sigBtn.textContent = "Signieren";
+                    }
+                    sigBtn.disabled = !vpReady;
+                    if (!vpReady) sigBtn.title = "Vibe-Pass nicht bereit — siehe Spieler-Drawer.";
+                });
+            };
+            sigBtn.addEventListener("click", async () => {
+                sigBtn.disabled = true;
+                const res = await this.signWorld(worldId);
+                if (res.ok) this.log(`Bibliothek: ${w.label} mit dem Vibe-Pass signiert.`, "INFO");
+                else this.log(`signWorld: ${res.reason}`, "ERROR");
+                refreshSig();
+            });
+            sigRow.appendChild(sigStatus);
+            sigRow.appendChild(sigBtn);
+            card.appendChild(sigRow);
+            refreshSig();
+
             list.appendChild(card);
         }
     }
@@ -15964,6 +16131,12 @@ class AnazhRealm {
             : "Esc — zurück zur Heimat-Welt";
         overlay.appendChild(iframe);
         overlay.appendChild(hint);
+        // W14 Phase 2 — „signiert von <Autor>"-Zeile. Verborgen, bis
+        // _portalShowSignature eine Welt-Signatur findet.
+        const sigEl = document.createElement("div");
+        sigEl.className = "portal-sig";
+        sigEl.hidden = true;
+        overlay.appendChild(sigEl);
         // Eltern-Seite des Handshakes: auf {type:"ready"} der Sub-Welt lauschen.
         const onMessage = (event) => {
             if (!this._portalOverlay || event.source !== iframe.contentWindow) return;
@@ -15988,6 +16161,7 @@ class AnazhRealm {
             iframe,
             onMessage,
             hintEl: hint,
+            sigEl,
             world: meta.world,
             label: meta.label,
             dsl: meta.dsl,
@@ -15997,10 +16171,41 @@ class AnazhRealm {
             manifestStage: meta.dsl ? "übersetzt" : "ausgestellt",
         };
         document.body.appendChild(overlay);
+        // W14 Phase 2 — ist die Ziel-Welt mit einem Vibe-Pass versiegelt,
+        // zeigt das Overlay „signiert von <Autor>". Heimat-seitige Signatur
+        // (state.signedWorlds) — kein Warten auf den ready-Handshake nötig.
+        this._portalShowSignature(meta.world);
         // Die Konsole übers Overlay heben — DSL-Eingabe im Portal möglich.
         document.body.classList.add("in-portal");
         iframe.src = meta.world;
         return this._portalOverlay;
+    }
+
+    // W14 Phase 2 — die Signatur-Zeile im Portal-Overlay füllen. Resolved die
+    // Welt-id aus dem Pfad, verifiziert die heimat-seitige Welt-Signatur und
+    // zeigt „✓ signiert von <Autor>" — oder bleibt verborgen (unsigniert).
+    _portalShowSignature(worldPath) {
+        const po = this._portalOverlay;
+        if (!po || !po.sigEl) return;
+        const reg = Object.values(AnazhRealm.WORLD_REGISTRY).find((w) => w.world === worldPath);
+        if (!reg) return;
+        this.verifyWorldSignature(reg.id).then((st) => {
+            // Hat der Spieler das Portal vorher verlassen, ist po veraltet.
+            if (this._portalOverlay !== po || !po.sigEl) return;
+            const sig = this.state.signedWorlds && this.state.signedWorlds[reg.id];
+            if (st === "valid" && sig) {
+                const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
+                const who = sig.authorPubKey === myKey ? "dir" : this._vibeFingerprint(sig.authorPubKey);
+                po.sigEl.textContent = `✓ signiert von ${who}`;
+                po.sigEl.className = "portal-sig sig-valid";
+                po.sigEl.hidden = false;
+            } else if (st === "modified" || st === "forged") {
+                po.sigEl.textContent = "⚠ Signatur dieser Welt ungültig";
+                po.sigEl.className = "portal-sig sig-bad";
+                po.sigEl.hidden = false;
+            }
+            // unsigned → die Zeile bleibt verborgen.
+        });
     }
 
     // Sendet den Avatar-Schnappschuss an die Sub-Welt. Same-origin → das
@@ -27093,6 +27298,8 @@ class AnazhRealm {
         // existieren bevor das Settings-Panel rendert (sonst zeigt es leer).
         this.state.keybindings = this._loadKeybindings();
         this.state.keybindRebind = null;
+        // W14 Phase 2 — signierte Welt-Manifeste aus dem globalen localStorage.
+        this.state.signedWorlds = this._loadSignedWorlds();
         this.themeInitDOM();
         this.grokInitDOM();
         this.symphonyInitDOM();

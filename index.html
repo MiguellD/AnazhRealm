@@ -29,7 +29,7 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self';"
         />
-        <title>Anazh Realm v8.59 – Das Ultiversum</title>
+        <title>Anazh Realm v8.60 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
              zusätzliche Datei. img-src 'self' data: in CSP erlaubt data-URI. -->
         <link
@@ -2328,6 +2328,48 @@
                 color: #2c8a5e;
                 margin-left: 8px;
             }
+            /* W14 Phase 2 — Welt-Signatur-Zeile auf der Bibliothek-Karte.
+               Spiegelt den Stil der W13-P2-Werkstatt-Signatur-Zeile. */
+            .library-sig-row {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                margin-top: 5px;
+                padding-top: 5px;
+                border-top: 1px dotted rgba(138, 106, 54, 0.3);
+            }
+            .library-sig-status {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 9px;
+                flex: 1;
+            }
+            .library-sig-status.sig-valid {
+                color: #3f8a4f;
+            }
+            .library-sig-status.sig-modified {
+                color: #b07a1f;
+            }
+            .library-sig-status.sig-forged {
+                color: #a04040;
+            }
+            .library-sig-status.sig-unsigned {
+                color: var(--parch-ink-faded, #7b5a2e);
+                opacity: 0.75;
+            }
+            .library-sig-btn {
+                background: linear-gradient(180deg, rgba(255, 235, 190, 0.55), rgba(180, 140, 80, 0.35));
+                color: var(--parch-ink, #2b1a08);
+                border: 1px solid var(--brass-2, #8a6322);
+                padding: 2px 9px;
+                font-size: 9.5px;
+                cursor: pointer;
+                border-radius: 2px;
+                font-family: "Cinzel", Georgia, serif;
+            }
+            .library-sig-btn:disabled {
+                opacity: 0.5;
+                cursor: default;
+            }
             /* Ring 5: Spieler-Seele. Brass-getintetes <select>, passend zum
            Drawer-Pergament-Look. */
             .drawer .soul-row {
@@ -4058,6 +4100,24 @@
                 font: 13px/1.4 "JetBrains Mono", monospace;
                 pointer-events: none;
             }
+            /* W14 Phase 2 — „signiert von <Autor>"-Zeile im Portal-Overlay. */
+            #portal-overlay .portal-sig {
+                position: absolute;
+                left: 50%;
+                top: 16px;
+                transform: translateX(-50%);
+                padding: 4px 14px;
+                border-radius: 6px;
+                background: rgba(5, 6, 10, 0.78);
+                font: 12px/1.4 "JetBrains Mono", monospace;
+                pointer-events: none;
+            }
+            #portal-overlay .portal-sig.sig-valid {
+                color: #5fc97f;
+            }
+            #portal-overlay .portal-sig.sig-bad {
+                color: #d97a6a;
+            }
             /* W12 Phase 2 — im Portal hebt sich die Konsole über das Overlay,
                damit der Spieler DSL-Befehle an die Sub-Welt schicken kann. */
             body.in-portal #console {
@@ -4182,7 +4242,7 @@
         <header id="topbar" class="hud-frame">
             <div class="topbar-inner">
                 <div class="title">
-                    Anazh Realm <span class="version">v8.59</span> <span class="sub">— Das Ultiversum</span>
+                    Anazh Realm <span class="version">v8.60</span> <span class="sub">— Das Ultiversum</span>
                 </div>
                 <nav class="tabs" role="tablist" aria-label="Hauptansichten">
                     <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">
@@ -5178,6 +5238,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=8.59" defer></script>
+        <script src="anazhRealm.js?v=8.60" defer></script>
     </body>
 </html>
