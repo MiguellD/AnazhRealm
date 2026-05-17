@@ -1,6 +1,6 @@
 # AnazhRealm Roadmap — Vollumfänglich
 
-Stand: 17.05.2026 (V8.56, W13 Vibe-Pass KOMPLETT (Phase 1+2+3) — souveräne Avatar-Identität. Phase 1 (V8.54): ein ed25519-Schlüsselpaar, lokal erzeugt (WebCrypto nativ), privat in `localStorage["anazh.vibePass"]`, nie im Welt-Save. Phase 2 (V8.55): Bauplan-Signaturen — `signBlueprint`/`verifyBlueprintSignature` signieren die SUBSTANZ (Rolle + Parts + Verbindungen, nicht den Namen), vier Status-Stufen, Werkstatt-Anzeige, Signatur reist durch Save/Welt-Tor/Fusion. Phase 3 (V8.56): Vibe-Pass-Identität im Multi-User — ein neuer WS-Typ `vibe` trägt vibePassId + einen Beweis (Signatur über die eigene peerId); der Mitspieler ist beweisbar sein Schlüssel, das Name-Schild zeigt „✓ <Fingerprint>". Davor: V8.51-V8.53 W12 Welt-Portal komplett. 2377/2377 Invarianten grün, Audit-Strict 0 Failures. Nächste empfohlene Welle: W14 (Bibliothek — Welt-Registry + Portal-Manifest-Signatur).)
+Stand: 17.05.2026 (V8.57, W13 Vibe-Pass KOMPLETT (Phase 1+2+3) — souveräne Avatar-Identität. Phase 1 (V8.54): ein ed25519-Schlüsselpaar, lokal erzeugt (WebCrypto nativ), privat in `localStorage["anazh.vibePass"]`, nie im Welt-Save. Phase 2 (V8.55): Bauplan-Signaturen — `signBlueprint`/`verifyBlueprintSignature` signieren die SUBSTANZ (Rolle + Parts + Verbindungen, nicht den Namen), vier Status-Stufen, Werkstatt-Anzeige, Signatur reist durch Save/Welt-Tor/Fusion. Phase 3 (V8.56): Vibe-Pass-Identität im Multi-User — ein neuer WS-Typ `vibe` trägt vibePassId + einen Beweis (Signatur über die eigene peerId); der Mitspieler ist beweisbar sein Schlüssel, das Name-Schild zeigt „✓ <Fingerprint>". Davor: V8.51-V8.53 W12 Welt-Portal komplett. 2377/2377 Invarianten grün, Audit-Strict 0 Failures. Nächste empfohlene Welle: W14 (Bibliothek — Welt-Registry + Portal-Manifest-Signatur). V8.57 heilte einen flaky CI-Playtest (3rd-Person-Kamera-Pitch) an der Wurzel — Detail in `CLAUDE.md`.)
 
 Diese Doc beschreibt das **gesamte Projekt vom heutigen Stand bis zum Vision-Endziel** (Welten-Ultiversum). Sie ergänzt `state-of-realm.md` (Was/Warum) um eine puren Plan-Sicht (Wann/Wie). Aufwandsschätzungen sind realistische Tage für eine fokussierte Claude-Session pro Ring/Phase; gerechnet wird linear, ohne Puffer.
 
@@ -8,7 +8,7 @@ Diese Doc beschreibt das **gesamte Projekt vom heutigen Stand bis zum Vision-End
 
 ---
 
-## 1. Wo wir stehen (Mai 2026, V8.56)
+## 1. Wo wir stehen (Mai 2026, V8.57)
 
 ✅ **Ring 0-11.5 + Welle 1-12 + W13 sind live.** Der Kern atmet (Hylomorphismus-Crafting, Tag-Nacht, lebendige Welt), der Multi-User ist tief (der Mitspieler ist sein echter Soul), das Welt-Portal trägt fremde Engines (W12), und der Avatar ist eine souveräne ed25519-Identität (W13). Chunk-Physik nutzt `btBvhTriangleMeshShape` (visuelles Mesh = Collider). 120 fps im Browser, **2377/2377 Playtest-Invarianten grün**, Audit-Strict 0 Failures.
 
@@ -711,7 +711,7 @@ Themen, die kein eigener Ring sind, sondern durch alle Ringe ziehen.
 
 ### 5.1 Test-Coverage (CI-Gate)
 
-- Stand V8.56: **2377 Invarianten** in `scripts/playtest.cjs` (Headless-Chromium, ~25 s Log-Sammlung) + `audit:strict.cjs` (5 generische Audit-Schichten) + `smoke-multiuser.cjs`
+- Stand V8.57: **2377 Invarianten** in `scripts/playtest.cjs` (Headless-Chromium, ~25 s Log-Sammlung) + `audit:strict.cjs` (5 generische Audit-Schichten) + `smoke-multiuser.cjs`
 - Pro Welle +6-35 neue Invarianten (Effekt sichtbar, kein Crash, Save-Schema OK, Emergenz statt Mechanik)
 - Disziplin: nach jeder substanziellen Änderung das Playtest-Gate, nicht nur Code-Analyse
 
@@ -726,7 +726,7 @@ Themen, die kein eigener Ring sind, sondern durch alle Ringe ziehen.
 
 ### 5.3 CSP & Security
 
-- Stand V8.56: CSP **strict** seit Ring 2 Phase 6 — `script-src` ohne `eval`/`inline`, nur dokumentierte Vendor-Konzessionen (`wasm-unsafe-eval` für Ammo, `unsafe-inline` style für Three.js, `worker-src blob:`). CI-Gate erzwingt „kein dynamisches Auswerten im eigenen Bundle".
+- Stand V8.57: CSP **strict** seit Ring 2 Phase 6 — `script-src` ohne `eval`/`inline`, nur dokumentierte Vendor-Konzessionen (`wasm-unsafe-eval` für Ammo, `unsafe-inline` style für Three.js, `worker-src blob:`). CI-Gate erzwingt „kein dynamisches Auswerten im eigenen Bundle".
 - Multi-User: eingehende DSL läuft durch dieselbe `dslRun`-Sandbox wie eigene Programme (Op-Whitelist + Budget-Limits). `NON_BROADCASTABLE_OPS` schützt Spieler-private Ops, `CREATURE_PROPOSED_OPS` die Kreatur-Welt-Aktion.
 - W13 Vibe-Pass: WebCrypto-Ed25519 nativ (keine CSP-Lockerung), privater Schlüssel global in `localStorage`, NIE im teilbaren Welt-Save.
 

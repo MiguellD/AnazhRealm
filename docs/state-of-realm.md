@@ -1,4 +1,4 @@
-# Zustand des Realm — Stand: 17.05.2026 (V8.56)
+# Zustand des Realm — Stand: 17.05.2026 (V8.57)
 
 **W13 Vibe-Pass KOMPLETT (V8.54-V8.56)** — der Avatar ist eine souveräne Identität. **Phase 3 (V8.56)** trägt sie in den Multi-User: ein neuer WS-Nachrichtentyp `vibe` (`{vibePassId, proof}`) — `proof` signiert die eigene peerId, der Empfänger verifiziert gegen die server-gestempelte peerId; die Bindung macht den Beweis fälschungssicher. Ein Mitspieler ist damit nicht mehr nur eine fälschbare peerId + ein gewählter Name, sondern beweisbar sein Vibe-Pass — das Name-Schild zeigt „✓ <Fingerprint>". **Phase 2 (V8.55)**: Bauplan-Signaturen — `signBlueprint`/`verifyBlueprintSignature` signieren die SUBSTANZ eines Bauplans (Rolle + Parts + Verbindungen, nicht den Namen), vier Status-Stufen, Werkstatt-Anzeige. **Phase 1 (V8.54)**: der Vibe-Pass — ein ed25519-Schlüsselpaar, lokal erzeugt (WebCrypto nativ, kein Vendoring), privat in `localStorage["anazh.vibePass"]`, nie im Welt-Save. Vollständige Wellen-Einträge in `CLAUDE.md` V8.54-V8.56. **Davor — W12 Phase 3 (V8.53)**: die Portal-Brücke wurde beidseitig. **Teil A**: eine Sub-Welt meldet Welt-Ereignisse (`{type:"event"}`) zurück ins Heimat-Journal (Typ `portal`) — geloggt, NIE ausgeführt; die Asymmetrie zur DSL-Hin-Richtung IST die Sicherheits-Wand. **Teil B**: jede Welt bringt ihr eigenes `manifest.json` mit und meldet ihr DSL-Vokabular im `ready`-Handshake — die Drei-Stufen-Klarheit (ausgestellt/übersetzt/nativ) wird real, „nativ" gewinnt. **Davor — W12 Phase 1+2 (V8.51+V8.52)**: das Welt-Portal wurde real — zwei fremde Engines (die Strom-Welt `three-fluid-fx`, die Terrain-Welt `three.terrain.js`) docken über ein generisches DSL-Protokoll an, eine Brücke trägt alle Welten, die `WORLD_REGISTRY` + `aimBlueprintAtWorld` machen das Portal-Zielen spieler-erreichbar. Vollständiger Wellen-Eintrag in `CLAUDE.md` V8.53; Vision in `docs/world-portal.md`. **Davor — Welle 6.H V2 (14/14 Sub-Phasen)**: Kreaturen sind vollwertige Co-Schöpfer-Wesen mit 9 Identitäts-Schichten (Body, Specs, Equipped, Boosts, Tasks, Memory+Persistenz, Konversation via @-Adresse, Proaktivität, Welt-Aktion-Vorschläge mit Sandbox). 2377 Playtest-Invarianten grün.
 
@@ -167,7 +167,7 @@ Aggregat: **61 Commits** in dieser Konversations-Serie (von `5df65e3` zu HEAD, ~
 
 Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen sieben Wachstumsringe ein, jeder einzeln durch das CI-Gate gesichert, keiner re-komplexifiziert.**
 
-> **Stand V8.56**: die sieben Wachstumsringe der Ur-Tabelle unten sind **alle erledigt** — ebenso die darauf folgenden Wellen 1-13 (Welten-Ultiversum, Hylomorphismus-Crafting, Co-Schöpfer-Kreis, Welt-Portal, Vibe-Pass). Der Stamm hat gehalten: eine Datei, ~28000 Zeilen, keine Re-Komplexifizierung. Die aktuelle Front ist **W14 (Bibliothek)** — der vollständige, lebende Plan steht in `docs/roadmap.md` (§2 Übersicht, §3 Welle-14-Detail mit Drei-Phasen-Plan + Schnittstellen). Die Tabelle unten bleibt als historischer Ur-Plan stehen.
+> **Stand V8.57**: die sieben Wachstumsringe der Ur-Tabelle unten sind **alle erledigt** — ebenso die darauf folgenden Wellen 1-13 (Welten-Ultiversum, Hylomorphismus-Crafting, Co-Schöpfer-Kreis, Welt-Portal, Vibe-Pass). Der Stamm hat gehalten: eine Datei, ~28000 Zeilen, keine Re-Komplexifizierung. Die aktuelle Front ist **W14 (Bibliothek)** — der vollständige, lebende Plan steht in `docs/roadmap.md` (§2 Übersicht, §3 Welle-14-Detail mit Drei-Phasen-Plan + Schnittstellen). Die Tabelle unten bleibt als historischer Ur-Plan stehen.
 
 | Ring | Pfeiler | Was konkret | Aufwand | Vorbedingung |
 |---|---|---|---|---|
@@ -190,6 +190,14 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 ## 6. Learnings aus dieser Session
 
 Echt gelernt, nicht performt:
+
+### V8.57 (17.05.2026) — Flaky-Test-Heilung II: den richtigen Mess-Punkt treffen
+
+Ein CI-Playtest flakte — derselbe Commit rot im einen Lauf, grün im anderen. Die Lehre baut auf V8.50:
+
+**Ein Test ist erst deterministisch, wenn ALLE seine Eingaben es sind.** V8.50 heilte das Timing (der Loop wird synchron über `_gameLoopTick` getrieben statt auf das im Headless gedrosselte rAF zu warten). Aber der 3rd-Person-Kamera-Pitch-Test las `camera.position.y` — und dieser Wert läuft durch die V8.36-Kamera-Kollision, deren Raycast von der nicht-deterministischen Spieler-Umgebung abhängt. Timing-deterministisch, aber nicht umgebungs-deterministisch — eine halbe Heilung, und sie hielt nur, bis die andere Hälfte zuschlug. Fix: der Spielcode spiegelt die pitch-gesteuerte Wunsch-Höhe (`state._cameraDesiredY`, vor der Kollision); der Test liest die — die Schicht, die er MEINT, nicht das durch drei Schichten (Pitch-Formel → Boden-Clamp → Kollisions-Raycast) gelaufene Endergebnis. Die saubere Lösung war nicht, den Test gegen die Umgebung abzuschirmen, sondern den Mess-Punkt an die richtige Stelle zu legen.
+
+**Vision-Wort der V8.57**: *„Derselbe Commit rot und grün ist der Fingerabdruck eines flaky Tests — und flaky heißt fast immer: du misst eine Schicht zu spät."*
 
 ### V8.54-V8.56 (17.05.2026) — W13 Vibe-Pass: souveräne Avatar-Identität in drei Phasen
 
