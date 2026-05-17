@@ -335,6 +335,16 @@ class AnazhRealm {
                 rtcPeers: new Map(),
                 iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
                 meshActive: false,
+                // W7 Phase 2 — Welt-Snapshot über das Mesh. worldXfers puffert
+                // eingehende Snapshot-Stücke (xferId → {from, total, parts,
+                // received}); pendingPullFrom merkt, von welchem Peer wir
+                // gerade einen Pull erwarten (nur dessen Stücke werden
+                // angenommen). _testNoReload unterdrückt den Reload nach dem
+                // Resync im Playtest.
+                worldXfers: new Map(),
+                pendingPullFrom: null,
+                _lastXferProgress: null,
+                _testNoReload: false,
             },
             // Welt-Identität (Ring 8+, siehe docs/state-of-realm.md §11). Felder
             // werden jetzt schon gesetzt, damit das Save-Schema zukunftsfest
@@ -4278,6 +4288,10 @@ class AnazhRealm {
         // ohne zugehörigen Peer-Mesh-Eintrag).
         for (const pid of Array.from(p2p.rtcPeers.keys())) this._p2pCloseRtcPeer(pid);
         p2p.meshActive = false;
+        // W7 Phase 2 — laufende Welt-Transfers verwerfen.
+        p2p.worldXfers.clear();
+        p2p.pendingPullFrom = null;
+        p2p._lastXferProgress = null;
     }
 
     // W7 Phase 1: roher WS-Versand. Trägt das Signaling (join, rtc-offer/
@@ -4425,10 +4439,152 @@ class AnazhRealm {
             return;
         }
         if (!msg || typeof msg !== "object") return;
+        // W7 Phase 2 — Welt-Transfer läuft kanal-exklusiv (kann nicht über
+        // den WS injiziert werden, weil hier behandelt statt re-dispatcht).
+        if (msg.type === "world-pull") {
+            this._p2pHandleWorldPull(peerId);
+            return;
+        }
+        if (msg.type === "world-chunk") {
+            this._p2pHandleWorldChunk(peerId, msg);
+            return;
+        }
         const ALLOWED = ["pos", "dsl", "soul", "aura", "vibe"];
         if (!ALLOWED.includes(msg.type)) return;
         msg.peerId = peerId;
         this.p2pHandleMessage(JSON.stringify(msg));
+    }
+
+    // W7 Phase 2 — eine Nachricht an den Kanal genau eines Peers senden.
+    _p2pSendChannelTo(peerId, obj) {
+        const rtc = this.state.p2p.rtcPeers.get(peerId);
+        if (!rtc || !rtc.open || !rtc.channel) return false;
+        try {
+            rtc.channel.send(JSON.stringify(obj));
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    _p2pChunkXferId() {
+        return "x-" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+    }
+
+    // W7 Phase 2 — den Resync vom Host anfordern: ein Guest holt die Welt
+    // des Hosts frisch über das Mesh. Nur sinnvoll, wenn das Mesh steht und
+    // ein host-Peer verbunden ist.
+    _p2pRequestWorldResync() {
+        const p2p = this.state.p2p;
+        if (!this._p2pMeshReady()) return { ok: false, reason: "no_mesh" };
+        let hostPeerId = null;
+        for (const [pid, entry] of p2p.peers) {
+            if (entry.worldRole === "host") {
+                hostPeerId = pid;
+                break;
+            }
+        }
+        if (!hostPeerId) return { ok: false, reason: "no_host" };
+        const rtc = p2p.rtcPeers.get(hostPeerId);
+        if (!rtc || !rtc.open) return { ok: false, reason: "no_channel" };
+        p2p.pendingWorldSnapshot = true;
+        p2p.pendingPullFrom = hostPeerId;
+        const sent = this._p2pSendChannelTo(hostPeerId, { type: "world-pull" });
+        if (!sent) {
+            p2p.pendingWorldSnapshot = false;
+            p2p.pendingPullFrom = null;
+            return { ok: false, reason: "send_failed" };
+        }
+        this.log(`Welt-Resync vom Host ${hostPeerId.slice(0, 12)}… angefordert`, "INFO");
+        this.p2pUpdateStatus();
+        return { ok: true, hostPeerId };
+    }
+
+    // W7 Phase 2 — auf einen world-pull antworten: den eigenen Snapshot in
+    // P2P_WORLD_CHUNK_SIZE-Stücke zerlegen und über den DataChannel senden.
+    // Backpressure über channel.bufferedAmount fängt grosse Welten ab.
+    async _p2pHandleWorldPull(peerId) {
+        const rtc = this.state.p2p.rtcPeers.get(peerId);
+        if (!rtc || !rtc.open || !rtc.channel) return;
+        // Nur eine echte (geteilte) Welt herausgeben.
+        const role = this.state.p2p.role;
+        if (role !== "host" && role !== "guest") return;
+        let snap;
+        try {
+            snap = JSON.stringify(this.buildStateSnapshot());
+        } catch (err) {
+            this.log(`Welt-Snapshot für Resync konnte nicht gebaut werden: ${err.message}`, "WARN");
+            return;
+        }
+        const size = AnazhRealm.P2P_WORLD_CHUNK_SIZE;
+        const total = Math.max(1, Math.ceil(snap.length / size));
+        const xferId = this._p2pChunkXferId();
+        for (let seq = 0; seq < total; seq++) {
+            // Backpressure: warten, bis der Sende-Puffer abgeflossen ist.
+            let guard = 0;
+            while (rtc.channel.bufferedAmount > 262144 && guard++ < 600) {
+                await new Promise((r) => setTimeout(r, 16));
+            }
+            if (rtc.channel.readyState !== "open") return;
+            try {
+                rtc.channel.send(
+                    JSON.stringify({
+                        type: "world-chunk",
+                        xferId,
+                        seq,
+                        total,
+                        data: snap.slice(seq * size, (seq + 1) * size),
+                    })
+                );
+            } catch (err) {
+                this.log(`Welt-Transfer abgebrochen: ${err.message}`, "WARN");
+                return;
+            }
+        }
+        this.log(`Welt in ${total} Stücken über das Mesh an ${peerId.slice(0, 12)}… gesendet`, "INFO");
+    }
+
+    // W7 Phase 2 — ein Snapshot-Stück empfangen + zusammensetzen. Nur Stücke
+    // vom Peer, von dem wir aktiv gepullt haben, werden angenommen.
+    _p2pHandleWorldChunk(peerId, msg) {
+        const p2p = this.state.p2p;
+        if (!p2p.pendingWorldSnapshot || peerId !== p2p.pendingPullFrom) return;
+        const xferId = msg.xferId;
+        const seq = msg.seq;
+        const total = msg.total;
+        if (typeof xferId !== "string" || !Number.isInteger(seq) || !Number.isInteger(total)) return;
+        if (total < 1 || total > 8192 || seq < 0 || seq >= total) return;
+        if (typeof msg.data !== "string") return;
+        let xfer = p2p.worldXfers.get(xferId);
+        if (!xfer) {
+            xfer = { from: peerId, total, parts: new Array(total).fill(null), received: 0 };
+            p2p.worldXfers.set(xferId, xfer);
+        }
+        if (xfer.total !== total || xfer.from !== peerId) return;
+        if (xfer.parts[seq] !== null) return; // Duplikat
+        xfer.parts[seq] = msg.data;
+        xfer.received++;
+        p2p._lastXferProgress = { xferId, received: xfer.received, total };
+        this.p2pUpdateStatus();
+        if (xfer.received < total) return;
+        // Komplett — zusammensetzen + übernehmen.
+        p2p.worldXfers.delete(xferId);
+        p2p.pendingPullFrom = null;
+        const joined = xfer.parts.join("");
+        p2p._lastReceivedSnapshotLen = joined.length;
+        let parsed;
+        try {
+            parsed = JSON.parse(joined);
+        } catch (err) {
+            this.log(`Welt-Transfer korrupt (${joined.length} Zeichen): ${err.message}`, "ERROR");
+            p2p.pendingWorldSnapshot = false;
+            p2p._lastXferProgress = null;
+            this.p2pUpdateStatus();
+            return;
+        }
+        this.log(`Welt-Transfer komplett (${total} Stücke) — übernehme`, "INFO");
+        p2p._lastXferProgress = null;
+        this._p2pApplyWorldSnapshot(peerId, parsed, { reload: true });
     }
 
     // W7 Phase 1: gepufferte ICE-Kandidaten anwenden, sobald die
@@ -4572,6 +4728,8 @@ class AnazhRealm {
                     this._p2pRefreshPeerNameLabel(entry);
                 }
             }
+            // W7 Phase 2 — Welt-Rolle des Peers merken (Resync-Ziel-Findung).
+            if (typeof msg.worldRole === "string") entry.worldRole = msg.worldRole;
             if (changed) this._p2pApplyPeerSoul(entry);
             entry.lastSeen = performance.now() / 1000;
             return;
@@ -4694,36 +4852,45 @@ class AnazhRealm {
             const senderId = msg.peerId;
             if (typeof senderId !== "string" || senderId === p2p.peerId) return;
             if (!msg.state || typeof msg.state !== "object") return;
-            // Snapshot übernehmen: setze worldMeta.role = "guest", merke
-            // host-Info, dann loadState. Reload danach via UI-Pfad.
-            try {
-                // worldMeta.role wird durch loadState überschrieben — wir
-                // müssen es NACHHER auf guest setzen + persistieren.
-                this.loadState(msg.state);
-                if (this.state.worldMeta) {
-                    this.state.worldMeta.role = "guest";
-                    this.state.worldMeta.hostInfo = {
-                        url: p2p.url,
-                        roomId: p2p.room,
-                        peerId: senderId,
-                    };
-                }
-                p2p.role = "guest";
-                p2p.pendingWorldSnapshot = false;
-                // Save sofort schreiben, damit Reload die guest-Welt findet
-                try {
-                    this.saveState();
-                } catch (err) {
-                    this.log(`Save nach Welt-Snapshot fehlgeschlagen: ${err.message}`, "WARN");
-                }
-                this.log(`Welt-Snapshot empfangen + geladen, jetzt Guest in ${p2p.room.slice(0, 8)}…`, "INFO");
-                // UI-Banner ggf. updaten
-                this.p2pUpdateStatus();
-                this.updateWorldInfo();
-            } catch (err) {
-                this.log(`Welt-Snapshot konnte nicht geladen werden: ${err.message}`, "ERROR");
-                p2p.pendingWorldSnapshot = false;
+            this._p2pApplyWorldSnapshot(senderId, msg.state);
+        }
+    }
+
+    // Ring 11.5 / W7 Phase 2 — einen empfangenen Welt-Snapshot übernehmen:
+    // loadState, worldMeta.role = "guest" + hostInfo, saveState. Geteilt vom
+    // WS-`world-snapshot`-Pfad (Ring 11.5, reload=false — der UI-Join-Pfad
+    // reloadet selbst) und vom Mesh-Resync (W7 P2, reload=true — der Spieler
+    // hat bewusst „Welt neu holen" gewählt, ein Reload baut sauber neu auf).
+    _p2pApplyWorldSnapshot(senderId, state, { reload = false } = {}) {
+        const p2p = this.state.p2p;
+        try {
+            this.loadState(state);
+            if (this.state.worldMeta) {
+                this.state.worldMeta.role = "guest";
+                this.state.worldMeta.hostInfo = {
+                    url: p2p.url,
+                    roomId: p2p.room,
+                    peerId: senderId,
+                };
             }
+            p2p.role = "guest";
+            p2p.pendingWorldSnapshot = false;
+            try {
+                this.saveState();
+            } catch (err) {
+                this.log(`Save nach Welt-Snapshot fehlgeschlagen: ${err.message}`, "WARN");
+            }
+            this.log(`Welt-Snapshot empfangen + geladen, jetzt Guest in ${(p2p.room || "").slice(0, 8)}…`, "INFO");
+            this.p2pUpdateStatus();
+            this.updateWorldInfo();
+            if (reload && !p2p._testNoReload && typeof window !== "undefined" && window.location) {
+                window.location.reload();
+            }
+            return { ok: true };
+        } catch (err) {
+            this.log(`Welt-Snapshot konnte nicht geladen werden: ${err.message}`, "ERROR");
+            p2p.pendingWorldSnapshot = false;
+            return { ok: false, reason: err.message };
         }
     }
 
@@ -4758,6 +4925,9 @@ class AnazhRealm {
             // gegen diesen Schlüssel verifiziert — Identität, nicht Behauptung.
             vibePassId: null,
             vibeVerified: false,
+            // W7 Phase 2 — Welt-Rolle des Peers (host/guest/solo), kommt mit
+            // der `soul`-Nachricht. Der Resync-Pfad pullt vom host-Peer.
+            worldRole: null,
             lastSeen: performance.now() / 1000,
         };
         p2p.peers.set(peerId, entry);
@@ -4957,6 +5127,9 @@ class AnazhRealm {
         if (custom && Array.isArray(custom.bodyParts)) msg.bodyParts = custom.bodyParts;
         const avatarName = this.state.player && this.state.player.name;
         if (typeof avatarName === "string" && avatarName.trim()) msg.name = avatarName.trim().slice(0, 48);
+        // W7 Phase 2 — die Welt-Rolle mitteilen, damit ein Guest weiss,
+        // welcher verbundene Peer der Host ist (Ziel des Welt-Resync).
+        msg.worldRole = (this.state.worldMeta && this.state.worldMeta.role) || "solo";
         this.p2pSend(msg);
     }
 
@@ -5118,6 +5291,24 @@ class AnazhRealm {
             this.p2pPersist();
             this.p2pUpdateStatus();
         });
+        // W7 Phase 2 — Resync-Knopf: ein Guest holt die Welt des Hosts frisch
+        // über das Mesh (heilt eine ggf. divergierte Welt).
+        const resyncBtn = document.getElementById("p2p-resync");
+        if (resyncBtn) {
+            resyncBtn.addEventListener("click", () => {
+                const res = this._p2pRequestWorldResync();
+                if (!res.ok) {
+                    const reason =
+                        {
+                            no_mesh: "Mesh steht noch nicht.",
+                            no_host: "Kein Host im Raum gefunden.",
+                            no_channel: "Kein offener Kanal zum Host.",
+                            send_failed: "Anfrage konnte nicht gesendet werden.",
+                        }[res.reason] || res.reason;
+                    if (statusEl) statusEl.textContent = `Resync nicht möglich: ${reason}`;
+                }
+            });
+        }
     }
 
     p2pUpdateStatus() {
@@ -5130,6 +5321,10 @@ class AnazhRealm {
                 statusEl.textContent = `Fehler: ${p.lastError}`;
             } else if (!p.connected) {
                 statusEl.textContent = "Verbinde…";
+            } else if (p._lastXferProgress) {
+                // W7 Phase 2 — ein Welt-Transfer läuft.
+                const x = p._lastXferProgress;
+                statusEl.textContent = `Welt-Transfer: ${x.received}/${x.total} Stücke …`;
             } else {
                 const room = p.room ? `${p.room.slice(0, 8)}…` : "—";
                 const peerCount = p.peers.size;
@@ -5138,6 +5333,14 @@ class AnazhRealm {
                 const transport = peerCount > 0 ? (p.meshActive ? " · Mesh p2p" : " · Server-Relay") : "";
                 statusEl.textContent = `Verbunden (Raum ${room}, ${peerCount} Mitspieler${transport}).`;
             }
+        }
+        // W7 Phase 2 — Resync-Knopf: nur für einen Guest mit stehendem Mesh
+        // sichtbar (er holt die Welt des Hosts frisch).
+        const resyncBtn = document.getElementById("p2p-resync");
+        if (resyncBtn) {
+            const p = this.state.p2p;
+            const show = p.enabled && p.connected && p.meshActive && p.role === "guest";
+            resyncBtn.hidden = !show;
         }
         // Ring 11.5: Banner mit Connection-Stand aktualisieren (Host:
         // peerCount, Guest: connected-Indikator).
@@ -29528,6 +29731,13 @@ AnazhRealm.STAMINA_REGEN_PER_SEC = 5;
 // niedriger als TOOL_OP weil Bauen/Abbauen häufiger und niederschwelliger
 // als Polier-Schritte sind. Modus-Gate (frieden+schöpfer: 0, pfad: 5).
 AnazhRealm.MOUSE_ACTION_STAMINA_COST = 5;
+
+// W7 Phase 2 — Welt-Snapshot über das Mesh. Ein Joiner/Guest holt die
+// Welt des Hosts in Stücken über den RTCDataChannel statt in einem WS-
+// Frame (das hatte ein 1-MiB-Limit + war ein Host-Bottleneck). 16 KiB pro
+// Stück ist die interop-sichere DataChannel-Nachrichtengröße; Backpressure
+// über channel.bufferedAmount fängt grosse Welten ab.
+AnazhRealm.P2P_WORLD_CHUNK_SIZE = 16384;
 
 // Welle 6.C3 — Keybindings. Default-Map (Aktion → Code). KeyboardEvent.code
 // für Tasten (Layout-unabhängig, z. B. "KeyF" statt "f"), "Mouse0"/"Mouse1"/

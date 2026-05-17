@@ -4451,6 +4451,186 @@ function startSaveServer() {
                 check("W7 P1: UI-Status zeigt 'Server-Relay' bei Fallback", w7Results.uiShowsRelay);
             }
 
+            // ### W7 Phase 2 — Welt-Snapshot über das Mesh ###
+            // Ein Guest holt die Welt des Hosts in P2P_WORLD_CHUNK_SIZE-Stücken
+            // über den RTCDataChannel. Tests prüfen: Chunk-Reassembly, die
+            // Annahme-Wand (nur Stücke vom gepullten Peer + nur bei pending),
+            // worldRole im soul-Kanal, _p2pApplyWorldSnapshot extrahiert,
+            // Resync-Fehlerpfade. Der echte Transfer läuft in smoke-webrtc.cjs.
+            const w7p2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    const p2p = r.state.p2p;
+
+                    out.w7p2StateFields =
+                        p2p.worldXfers instanceof Map &&
+                        p2p.pendingPullFrom === null &&
+                        Number.isInteger(r.constructor.P2P_WORLD_CHUNK_SIZE) &&
+                        r.constructor.P2P_WORLD_CHUNK_SIZE > 0;
+                    out.w7p2MethodsPresent =
+                        typeof r._p2pApplyWorldSnapshot === "function" &&
+                        typeof r._p2pSendChannelTo === "function" &&
+                        typeof r._p2pChunkXferId === "function" &&
+                        typeof r._p2pRequestWorldResync === "function" &&
+                        typeof r._p2pHandleWorldPull === "function" &&
+                        typeof r._p2pHandleWorldChunk === "function";
+
+                    // _p2pChunkXferId: nicht-leer + zwei Aufrufe verschieden.
+                    const x1 = r._p2pChunkXferId();
+                    const x2 = r._p2pChunkXferId();
+                    out.xferIdShape = typeof x1 === "string" && x1.length > 4 && x1 !== x2;
+
+                    // soul-Broadcast trägt worldRole.
+                    const sent = [];
+                    const origSend = r.p2pSend;
+                    r.p2pSend = (o) => {
+                        sent.push(o);
+                        return true;
+                    };
+                    p2p.enabled = true;
+                    r.state.worldMeta.role = "host";
+                    r._p2pBroadcastSoul();
+                    out.soulCarriesWorldRole = sent.some((m) => m.type === "soul" && m.worldRole === "host");
+                    r.p2pSend = origSend;
+
+                    // soul-Empfang speichert worldRole am Peer-Eintrag.
+                    p2p.peerId = "self-test";
+                    for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+                    r.p2pHandleMessage(
+                        JSON.stringify({ type: "soul", peerId: "hostPeer", soulName: "human", worldRole: "host" })
+                    );
+                    const hp = p2p.peers.get("hostPeer");
+                    out.soulStoresWorldRole = !!hp && hp.worldRole === "host";
+
+                    // Chunk-Reassembly: ein Test-Snapshot in 3 Stücke geteilt,
+                    // über _p2pHandleWorldChunk gefüttert → auf Vollständigkeit
+                    // zusammengesetzt + _p2pApplyWorldSnapshot aufgerufen.
+                    const testSnap = JSON.stringify({ hello: "w7p2", n: 42, arr: [1, 2, 3, 4, 5] });
+                    const a = testSnap.slice(0, 10);
+                    const b = testSnap.slice(10, 22);
+                    const c = testSnap.slice(22);
+                    let applied = null;
+                    const origApply = r._p2pApplyWorldSnapshot;
+                    r._p2pApplyWorldSnapshot = (senderId, state) => {
+                        applied = { senderId, state };
+                        return { ok: true };
+                    };
+                    p2p.pendingWorldSnapshot = true;
+                    p2p.pendingPullFrom = "hostPeer";
+                    p2p.worldXfers.clear();
+                    const xid = "x-test-1";
+                    r._p2pHandleWorldChunk("hostPeer", { type: "world-chunk", xferId: xid, seq: 0, total: 3, data: a });
+                    out.chunkIncompleteAfterOne = p2p.worldXfers.has(xid) && applied === null;
+                    r._p2pHandleWorldChunk("hostPeer", { type: "world-chunk", xferId: xid, seq: 2, total: 3, data: c });
+                    // Duplikat von seq 0 — wird ignoriert, kein Doppel-Zählen.
+                    r._p2pHandleWorldChunk("hostPeer", { type: "world-chunk", xferId: xid, seq: 0, total: 3, data: a });
+                    out.chunkDuplicateIgnored = p2p.worldXfers.get(xid).received === 2;
+                    r._p2pHandleWorldChunk("hostPeer", { type: "world-chunk", xferId: xid, seq: 1, total: 3, data: b });
+                    out.chunkReassemblyApplies =
+                        applied !== null &&
+                        applied.senderId === "hostPeer" &&
+                        applied.state &&
+                        applied.state.hello === "w7p2" &&
+                        applied.state.n === 42;
+                    out.chunkXferClearedOnComplete = !p2p.worldXfers.has(xid);
+                    out.lastSnapshotLenTracked = p2p._lastReceivedSnapshotLen === testSnap.length;
+
+                    // Annahme-Wand: ein Chunk von einem FREMDEN Peer (nicht
+                    // pendingPullFrom) wird verworfen.
+                    p2p.pendingWorldSnapshot = true;
+                    p2p.pendingPullFrom = "hostPeer";
+                    p2p.worldXfers.clear();
+                    r._p2pHandleWorldChunk("evilPeer", {
+                        type: "world-chunk",
+                        xferId: "x-evil",
+                        seq: 0,
+                        total: 1,
+                        data: "{}",
+                    });
+                    out.chunkRejectsWrongPeer = !p2p.worldXfers.has("x-evil");
+
+                    // Annahme-Wand: ein Chunk ohne pendingWorldSnapshot wird
+                    // verworfen.
+                    p2p.pendingWorldSnapshot = false;
+                    p2p.worldXfers.clear();
+                    r._p2pHandleWorldChunk("hostPeer", {
+                        type: "world-chunk",
+                        xferId: "x-nopend",
+                        seq: 0,
+                        total: 1,
+                        data: "{}",
+                    });
+                    out.chunkRejectsWhenNotPending = !p2p.worldXfers.has("x-nopend");
+                    r._p2pApplyWorldSnapshot = origApply;
+
+                    // Resync-Fehlerpfade: kein Mesh → no_mesh.
+                    for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+                    p2p.rtcPeers.clear();
+                    const noMesh = r._p2pRequestWorldResync();
+                    out.resyncNoMesh = noMesh.ok === false && noMesh.reason === "no_mesh";
+
+                    // Mesh steht, aber kein host-Peer → no_host.
+                    r._p2pEnsurePeerEntry("plainPeer");
+                    p2p.rtcPeers.set("plainPeer", { pc: null, open: true, channel: {}, pendingIce: [] });
+                    const noHost = r._p2pRequestWorldResync();
+                    out.resyncNoHost = noHost.ok === false && noHost.reason === "no_host";
+
+                    // _p2pApplyWorldSnapshot extrahiert: setzt role guest
+                    // (loadState gestubbt, damit kein echter Welt-Umbau läuft).
+                    const origLoad = r.loadState;
+                    r.loadState = () => {};
+                    p2p.role = "host";
+                    p2p._testNoReload = true;
+                    const applyRes = r._p2pApplyWorldSnapshot("hostX", { worldMeta: {} }, { reload: false });
+                    out.applyExtractedWorks = applyRes.ok === true && p2p.role === "guest";
+                    r.loadState = origLoad;
+
+                    // UI: der Resync-Knopf existiert im DOM.
+                    out.resyncButtonExists = !!document.getElementById("p2p-resync");
+
+                    // Cleanup
+                    for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+                    p2p.rtcPeers.clear();
+                    p2p.worldXfers.clear();
+                    p2p.pendingWorldSnapshot = false;
+                    p2p.pendingPullFrom = null;
+                    p2p._lastXferProgress = null;
+                    p2p.enabled = false;
+                    p2p.connected = false;
+                    p2p.role = "solo";
+                    p2p._testNoReload = false;
+                    r.state.worldMeta.role = "solo";
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!w7p2Results || w7p2Results.error) {
+                check(
+                    "W7 Phase 2: Snapshot erreichbar",
+                    false,
+                    (w7p2Results && w7p2Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("W7 P2: state.p2p trägt worldXfers/pendingPullFrom + P2P_WORLD_CHUNK_SIZE", w7p2Results.w7p2StateFields);
+                check("W7 P2: alle Welt-Transfer-Methoden auf der Klasse", w7p2Results.w7p2MethodsPresent);
+                check("W7 P2: _p2pChunkXferId liefert eindeutige IDs", w7p2Results.xferIdShape);
+                check("W7 P2: soul-Broadcast trägt worldRole", w7p2Results.soulCarriesWorldRole);
+                check("W7 P2: soul-Empfang speichert worldRole am Peer", w7p2Results.soulStoresWorldRole);
+                check("W7 P2: ein Stück allein lässt den Transfer unvollständig", w7p2Results.chunkIncompleteAfterOne);
+                check("W7 P2: ein doppeltes Stück wird nicht doppelt gezählt", w7p2Results.chunkDuplicateIgnored);
+                check("W7 P2: vollständige Stücke werden zusammengesetzt + angewendet", w7p2Results.chunkReassemblyApplies);
+                check("W7 P2: der Transfer-Puffer wird nach Abschluss geräumt", w7p2Results.chunkXferClearedOnComplete);
+                check("W7 P2: die empfangene Snapshot-Länge wird festgehalten", w7p2Results.lastSnapshotLenTracked);
+                check("W7 P2: ein Stück vom falschen Peer wird verworfen", w7p2Results.chunkRejectsWrongPeer);
+                check("W7 P2: ein Stück ohne laufenden Pull wird verworfen", w7p2Results.chunkRejectsWhenNotPending);
+                check("W7 P2: Resync ohne Mesh → no_mesh", w7p2Results.resyncNoMesh);
+                check("W7 P2: Resync ohne host-Peer → no_host", w7p2Results.resyncNoHost);
+                check("W7 P2: _p2pApplyWorldSnapshot setzt die Guest-Rolle", w7p2Results.applyExtractedWorks);
+                check("W7 P2: Resync-Knopf im DOM", w7p2Results.resyncButtonExists);
+            }
+
             // ### Ring 11 V2 — DSL-AST-Broadcast (Welt-Sync) ###
             // Sandbox-Pfad: human-dslRun broadcastet via p2pSend wenn enabled+
             // connected; remote-dslRun (source="remote:*") läuft durch dslRun

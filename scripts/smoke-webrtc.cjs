@@ -168,6 +168,43 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
             MARK_X2
         );
         check("Mesh trägt Traffic in beide Richtungen", true);
+
+        // W7 Phase 2 — Welt-Snapshot über das Mesh. A wird Host, B Guest;
+        // B holt A's Welt in Stücken über den DataChannel (kein WS-Relay).
+        const worldIdA = await pageA.evaluate(() => {
+            const r = window.anazhRealm;
+            r.state.p2p.role = "host";
+            r.state.worldMeta.role = "host";
+            r._p2pBroadcastSoul(); // worldRole=host an B verteilen
+            return r.state.worldMeta.worldId;
+        });
+        await pageB.evaluate(() => {
+            const r = window.anazhRealm;
+            r.state.p2p.role = "guest";
+            r.state.worldMeta.role = "guest";
+            r.state.p2p._testNoReload = true; // im Test nicht neu laden
+        });
+        // B muss A's Welt-Rolle (host) über den soul-Kanal erfahren.
+        await waitFor(
+            pageB,
+            () => Array.from(window.anazhRealm.state.p2p.peers.values()).some((p) => p.worldRole === "host"),
+            8000,
+            "B kennt A als Host"
+        );
+        // B fordert den Welt-Resync an.
+        const resync = await pageB.evaluate(() => window.anazhRealm._p2pRequestWorldResync());
+        check("B: Welt-Resync angefordert", resync && resync.ok === true, JSON.stringify(resync));
+        // B übernimmt A's Welt → B's worldId wird zu A's worldId.
+        await waitFor(
+            pageB,
+            (wid) => window.anazhRealm.state.worldMeta.worldId === wid,
+            15000,
+            "B übernimmt A's Welt über den chunked Mesh-Transfer",
+            worldIdA
+        );
+        check("B übernahm A's Welt-Snapshot peer-to-peer (chunked)", true);
+        const snapLenB = await pageB.evaluate(() => window.anazhRealm.state.p2p._lastReceivedSnapshotLen);
+        check("B reassemblierte den vollständigen Snapshot", typeof snapLenB === "number" && snapLenB > 100, `len=${snapLenB}`);
     } catch (err) {
         check(`Test-Ablauf ohne Fehler`, false, err.message);
     } finally {

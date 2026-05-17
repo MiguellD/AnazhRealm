@@ -55,7 +55,15 @@ async function run() {
 
     // Ring 11 V3: Soul-Sync. A teilt seine Seele + Aura → B bekommt beides
     // mit dem peerId-Stempel des Servers.
-    wsA.send(JSON.stringify({ type: "soul", soulName: "phoenix", name: "Aria", bodyParts: [{ shape: "box" }] }));
+    wsA.send(
+        JSON.stringify({
+            type: "soul",
+            soulName: "phoenix",
+            name: "Aria",
+            bodyParts: [{ shape: "box" }],
+            worldRole: "host",
+        })
+    );
     wsA.send(JSON.stringify({ type: "aura", hue: 270, intensity: 0.8 }));
     await sleep(150);
     // Defensive: soul ohne soulName + aura mit NaN-hue werden verworfen.
@@ -146,7 +154,12 @@ async function run() {
 
     // Ring 11 V3 Assertions
     const bGotSoulFromA = events.b.some(
-        (e) => e.type === "soul" && e.peerId === "peerA" && e.soulName === "phoenix" && e.name === "Aria"
+        (e) =>
+            e.type === "soul" &&
+            e.peerId === "peerA" &&
+            e.soulName === "phoenix" &&
+            e.name === "Aria" &&
+            e.worldRole === "host"
     );
     const bGotAuraFromA = events.b.some(
         (e) => e.type === "aura" && e.peerId === "peerA" && e.hue === 270 && e.intensity === 0.8
