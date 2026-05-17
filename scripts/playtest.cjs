@@ -13613,6 +13613,51 @@ function startSaveServer() {
                 );
             }
 
+            // ### W12 Phase 2 — Markier-Sektion: Portal-Knopf erreichbar + umwidmbar ###
+            const w12markResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    r.state.blueprints.test_mark_ring = {
+                        name: "test_mark_ring",
+                        label: "TestMarkRing",
+                        builtIn: false,
+                        parts: [],
+                    };
+                    r.renderPlayerEquipUI();
+                    const rowsBefore = document.querySelectorAll(".equip-mark-row").length;
+                    out.markRowRendered = rowsBefore > 0 && !!document.querySelector(".equip-portal-select");
+                    // markieren → roleManual gesetzt
+                    r.aimBlueprintAtWorld("test_mark_ring", "fluid");
+                    r.renderPlayerEquipUI();
+                    const rowsAfter = document.querySelectorAll(".equip-mark-row").length;
+                    // Trap-Fix: ein markierter Bauplan bleibt re-markierbar in der Sektion.
+                    out.markPersistsAfterRole = rowsAfter === rowsBefore;
+                    // Die Reihe nennt die aktuelle Rolle.
+                    out.rowShowsRole = Array.from(document.querySelectorAll(".equip-mark-label")).some(
+                        (el) => /TestMarkRing/.test(el.textContent) && /portal/i.test(el.textContent)
+                    );
+                    delete r.state.blueprints.test_mark_ring;
+                    r.renderPlayerEquipUI();
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w12markResults && !w12markResults.error) {
+                check("W12 P2: Markier-Reihe + Portal-Auswahl gerendert", w12markResults.markRowRendered);
+                check(
+                    "W12 P2: markierter Bauplan bleibt umwidmbar (kein Sackgassen-Zustand)",
+                    w12markResults.markPersistsAfterRole
+                );
+                check("W12 P2: Markier-Reihe nennt die aktuelle Rolle", w12markResults.rowShowsRole);
+            } else {
+                check(
+                    "W12 P2: Markier-Sektion Tests laufen",
+                    false,
+                    w12markResults ? w12markResults.error : "no result"
+                );
+            }
+
             // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
             const v840Results = await page
                 .evaluate(() => {

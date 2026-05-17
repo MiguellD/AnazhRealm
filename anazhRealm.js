@@ -25671,15 +25671,13 @@ class AnazhRealm {
             const bp = this.state.blueprints[name];
             if (!bp || bp.builtIn) continue;
             if (bp.role === "armor") armorBlueprints.push(name);
-            // Welle 6.X.1 A3 — Audit 17.05.2026: Markier-Sektion zeigte vorher
-            // NUR Baupläne ohne Rolle (`!bp.role`). Welle 9a's emergente
-            // _refreshBlueprintRoleEmergent setzt aber bei jedem applyOpToPart
-            // eine Rolle (z.B. „tool" für forging+scharf). Damit verschwanden
-            // alle Baupläne mit opChain aus der Markier-UI — Schöpfer konnte
-            // sie nicht mehr als Rüstung markieren. Jetzt: alle eigenen Baupläne
-            // außer denen mit explizitem Manual-Override (bp.roleManual=true)
-            // werden Markier-Kandidaten. Explizite Geste sticht emergente Rolle.
-            else if (!bp.roleManual) candidateBlueprints.push(name);
+            // W12 Phase 2 — JEDER eigene Nicht-Rüstung-Bauplan ist Markier-
+            // Kandidat, auch ein bereits markierter (roleManual). Sonst
+            // verschwindet ein Bauplan nach dem Markieren aus der Sektion und
+            // die Wahl wird zur Sackgasse — ein versehentlich als Konsumabel
+            // markiertes Portal ließ sich nicht mehr umwidmen. Die Reihe zeigt
+            // die aktuelle Rolle; ein erneuter Klick widmet um.
+            else candidateBlueprints.push(name);
         }
         for (const name of armorBlueprints) {
             const bp = this.state.blueprints[name];
@@ -25698,9 +25696,9 @@ class AnazhRealm {
         });
         armorRow.appendChild(armorSel);
         container.appendChild(armorRow);
-        // Markier-Sektion: eigene Baupläne ohne Rolle bekommen zwei Buttons:
-        // „Als Rüstung" und „Als Konsumabel". So entscheidet der Schöpfer
-        // pro Bauplan, ob er physisch (Rüstung) oder verzehrbar (Trank) ist.
+        // Markier-Sektion: jeder eigene Bauplan bekommt Rüstung-/Konsumabel-/
+        // Portal-Optionen. So entscheidet der Schöpfer pro Bauplan, was es IST
+        // — und kann eine Wahl jederzeit umwidmen (die Reihe nennt die Rolle).
         if (candidateBlueprints.length > 0) {
             const markHeader = document.createElement("div");
             markHeader.className = "equip-mark-header";
@@ -25712,7 +25710,10 @@ class AnazhRealm {
                 row.className = "equip-mark-row";
                 const label = document.createElement("span");
                 label.className = "equip-mark-label";
-                label.textContent = bp.label || name;
+                // aktuelle Rolle anzeigen — der Schöpfer sieht, was der Bauplan
+                // gerade IST, und kann ihn gezielt umwidmen.
+                const roleLabel = bp.role ? AnazhRealm.BLUEPRINT_ROLE_LABELS[bp.role] || bp.role : "";
+                label.textContent = (bp.label || name) + (roleLabel ? ` — ${roleLabel}` : "");
                 row.appendChild(label);
                 const armorBtn = document.createElement("button");
                 armorBtn.type = "button";
