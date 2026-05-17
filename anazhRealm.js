@@ -28075,6 +28075,13 @@ class AnazhRealm {
                     // Boden-Clamp: Kamera nicht unter die Spieler-Füße.
                     const minCamY = player.position.y - 0.2;
                     if (camY < minCamY) camY = minCamY;
+                    // V8.57 — die pitch-gesteuerte Wunsch-Höhe der Kamera (nach
+                    // Boden-Clamp, VOR der Kamera-Kollision unten) als State
+                    // spiegeln. Der Playtest prüft die Pitch-Inversion daran
+                    // deterministisch: die Kollisions-Raycast unten hängt von der
+                    // nicht-deterministischen Umgebung des Spielers ab und gehört
+                    // nicht in den reinen Pitch-Test.
+                    this.state._cameraDesiredY = camY;
                     // V8.36 — echte Kamera-Kollision. Der statische minCamY-Clamp
                     // kannte das Terrain an der KAMERA-Position nicht — in einem
                     // Loch (oder hinter einer Wand) tauchte die Kamera durch das

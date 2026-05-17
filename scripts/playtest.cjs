@@ -21438,27 +21438,33 @@ function startSaveServer() {
             // Pitch-Inversion + Boden-Clamp im 3rd-Modus prüfen: Maus hoch
             // (pitch positiv) muss Kamera SENKEN, nicht heben. Bei extremem
             // Pitch darf die Kamera nicht unter den Boden tauchen.
-            // Drei Pitch-Werte sequentiell prüfen. setTimeout innerhalb
-            // page.evaluate yields nicht an rAF im Headless — also außen
-            // warten zwischen "Pitch setzen" und "cam.y lesen", wie's auch
-            // beim Rotation-Test funktioniert.
-            // V8.50 — Pitch setzen + Loop SYNCHRON treiben + cam-Offset lesen,
-            // alles in EINEM evaluate. Vorher: setzen, 500 ms auf rAF warten,
-            // in zweitem evaluate lesen — im Headless (rAF ~1 Hz) landete
-            // vereinzelt 0 Ticks im Fenster → stale cam-y → flaky CI.
+            //
+            // V8.50 — Pitch setzen + Loop SYNCHRON treiben (statt auf das im
+            // Headless ~1 Hz gedrosselte rAF zu warten).
+            //
+            // V8.57 — Wurzel-Heilung des flaky CI-Falls. Gelesen wird jetzt
+            // `_cameraDesiredY` (die pitch-gesteuerte Wunsch-Höhe), NICHT
+            // `camera.position.y`. Grund: die V8.36-Kamera-Kollision zieht die
+            // Kamera per Raycast ein, sobald Terrain/Struktur/Kreatur hinter
+            // dem Spieler steht — und wo der Spieler nach 20 s autonomem Lauf
+            // landet, ist nicht-deterministisch. Die hohe "Maus runter"-Kamera
+            // wurde so vereinzelt unter die Schwelle gezogen → CI-Flake.
+            // `_cameraDesiredY` ist die reine Pitch-Mathematik (inkl.
+            // Boden-Clamp), umgebungs-unabhängig — genau das, was dieser Test
+            // prüfen will. Die Kamera-Kollision ist ein eigenes Feature.
             const setPitchAndRead = async (pitch) => {
                 return await page.evaluate((p) => {
                     const r = window.anazhRealm;
                     r.setCameraMode("third");
                     r.state.yaw = 0;
                     r.state.pitch = p;
-                    // Player-Velocity nullen, damit cam-Position nicht durch
-                    // Spieler-Bewegung schwankt.
+                    // Player-Velocity nullen, damit der Spieler während der
+                    // drei Messungen nicht driftet.
                     if (r.state.playerBody && r.state.tmpVec2) {
                         r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec2, 0, 0, 0));
                     }
                     if (typeof r._gameLoopTick === "function") r._gameLoopTick(performance.now());
-                    return r.state.camera.position.y - r.state.playerMesh.position.y;
+                    return r.state._cameraDesiredY - r.state.playerMesh.position.y;
                 }, pitch);
             };
             const upDelta = await setPitchAndRead(Math.PI / 6);

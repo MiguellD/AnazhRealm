@@ -9,11 +9,13 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 17.05.2026, V8.56)
+## Schnell-Lage (Stand 17.05.2026, V8.57)
 
 **Du erbst eine sehr lebendige Welt**. **2377 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~28000 Zeilen in einer Datei, alles produktiv.
 
-**Jüngste Welle — V8.56 (W13 Phase 3: Vibe-Pass-Identität im Multi-User)**: P1 gab dem Avatar einen Schlüssel, P2 ließ ihn seine Werke signieren — P3 trägt die Identität in die geteilte Welt. Ein Mitspieler ist nicht mehr nur eine fälschbare `peerId` + ein gewählter Name, sondern sein Vibe-Pass — **beweisbar**. Ein neuer WS-Nachrichtentyp `vibe` (`{vibePassId, proof}`); `proof` signiert die EIGENE peerId, der Empfänger verifiziert gegen die server-gestempelte peerId — ein geklauter Beweis nützt nichts (er gilt einer fremden peerId). Das Name-Schild eines verifizierten Mitspielers wächst um „✓ <Fingerprint>". Damit ist **W13 (Vibe-Pass) mit Phase 1+2+3 vollständig**. Ein Commit, playtest-grün. **Lies `CLAUDE.md` V8.56 ZUERST.**
+**Jüngster Fix — V8.57 (Flaky-Test-Heilung)**: ein flaky CI-`playtest` an der Wurzel geheilt. Der Check „Ring 5 V2-Prep: Maus runter hebt Kamera (3rd)" las `camera.position.y` — den Wert NACH der V8.36-Kamera-Kollision, deren Raycast die Kamera umgebungs-abhängig einzieht (wo der Spieler nach 20 s steht, ist nicht-deterministisch → CI-Flake). Fix: der Spielcode spiegelt die pitch-gesteuerte Wunsch-Höhe als `state._cameraDesiredY` (vor der Kollision); der Test liest sie → reine, umgebungs-unabhängige Pitch-Mathematik. Detail: `CLAUDE.md` V8.57.
+
+**Welle davor — V8.56 (W13 Phase 3: Vibe-Pass-Identität im Multi-User)**: P1 gab dem Avatar einen Schlüssel, P2 ließ ihn seine Werke signieren — P3 trägt die Identität in die geteilte Welt. Ein Mitspieler ist nicht mehr nur eine fälschbare `peerId` + ein gewählter Name, sondern sein Vibe-Pass — **beweisbar**. Ein neuer WS-Nachrichtentyp `vibe` (`{vibePassId, proof}`); `proof` signiert die EIGENE peerId, der Empfänger verifiziert gegen die server-gestempelte peerId — ein geklauter Beweis nützt nichts (er gilt einer fremden peerId). Das Name-Schild eines verifizierten Mitspielers wächst um „✓ <Fingerprint>". Damit ist **W13 (Vibe-Pass) mit Phase 1+2+3 vollständig**. Ein Commit, playtest-grün. **Lies `CLAUDE.md` V8.56 ZUERST.**
 
 **Welle davor — V8.55 (W13 Phase 2: Bauplan-Signaturen)**: ein eigener Bauplan trägt eine ed25519-Signatur. Signiert wird die SUBSTANZ (`_canonicalBlueprint`: Rolle + Parts + Verbindungen), nicht der Name — so überlebt die Signatur Recipe-Import + Fusion. `verifyBlueprintSignature` → vier Stufen (unsigned/valid/modified/forged), bei jedem Werkstatt-Render frisch geprüft (kein Mutations-Hook).
 
