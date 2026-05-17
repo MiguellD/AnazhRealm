@@ -53,7 +53,7 @@ Konsequenz für jede künftige Iteration: **niemals re-komplexifizieren ohne Not
 
 | Pfeiler / Modul (Testament) | Status | Detail |
 |---|---|---|
-| ✅ Stabiles Fundament | erreicht | 34 Commits, CI-Gate mit 36 Invarianten, Chunk-Welt mit BVH-Triangle-Mesh-Physik (visual = collision) |
+| ✅ Stabiles Fundament | erreicht | CI-Gate mit 2377 Playtest-Invarianten + Audit-Strict, Chunk-Welt mit BVH-Triangle-Mesh-Physik (visual = collision), 120 fps |
 | ✅ Rendering (Three.js, Skybox, Planeten) | vorhanden | `vendor/three.min.js` r134 |
 | ✅ Physik (Ammo.js WASM) | vorhanden | gepoolte `tmpVec1/2`, 0 Hot-Path-Allocs |
 | ✅ Bewegung, Sprung, Egoperspektive | vorhanden | WASD + Sprint + Pointer-Lock |
@@ -61,11 +61,11 @@ Konsequenz für jede künftige Iteration: **niemals re-komplexifizieren ohne Not
 | ✅ Persistenz (localStorage + JSON + Upload/Download) | vorhanden | 3 Pfade getestet |
 | ✅ Save/Load über CDN-Link | vorhanden | „Lade Datei" Chat-Befehl |
 | ✅ Frustum-Culling korrekt | vorhanden | boundingSphere-basiert |
-| 🟡 Kreaturen + Emotionen | rudimentär | `happy/sad` Binär, beeinflusst Sprung |
-| 🟡 KI lernt mit TF.js | rudimentär | trainiert auf Spieler-Bewegung, beeinflusst aber nichts |
-| 🟡 Wetter (sunny/rainy) | rudimentär | wechselt alle 30 s, beeinflusst Skybox + Kreatur-Emotion |
-| 🟡 Nexus-Evolution | rudimentär | 3 hartcodierte Effekte (gravityShift, creatureDance, terrainFlatten), zufällig gewählt |
-| 🟡 Chat-Steuerung | 13/25 migriert | 13 welt-betreffende Befehle laufen jetzt durch die DSL (`parseChatToDsl`), restliche 12 sind bewusst legacy (System-IO + Self-Heal); `füge code` + `entwickle fähigkeit` komplett gelöscht (Phase 5) |
+| ✅ Kreaturen als Co-Schöpfer-Wesen | vollwertig — Welle 6.H V2 (14/14) | Soul (Mensch/Phönix/Drache/Custom) + Stats + Specs + Equipped + Boosts (alle hylomorph), 5 Tasks, Memory + Persistenz, LLM-Persona, proaktive Sprache |
+| ✅ Welt lernt aus Spieler (Ring 7) | live — IQ-Schicht statt brain.js | TF.js entfernt (war toter Code); Pfad-Buckets + Multi-Dim-Fitness + Pattern-Memory + vier wählbare LLM-Provider als Grok-Stimme |
+| ✅ Wetter + Tag-Nacht + Atmosphäre | vollwertig — Welle 6.G3/G4 | Tag-Nacht-Zyklus, 45 s-Wetter-Cross-Fade, Fauna-Lifecycle, Sonne/Sterne/Cel-Shading/Wasser — emotion- + welt-feld-moduliert |
+| ✅ Nexus-Komposition (DSL) | live — Fitness-V2 | `dslCompose` mit Roulette-Wheel-Selektion + Mutation über `state.dsl.history` — der Nexus lernt aus eigenen Outcomes |
+| ✅ Chat-Steuerung über DSL | live | welt-betreffende Befehle laufen durch `parseChatToDsl`, System-IO bleibt bewusst legacy; `füge code` + `entwickle fähigkeit` gelöscht (CSP-strict) |
 | ✅ **Grok hat Stimme** (`dialogue-box`, narrative Reflexion) | V1 live — 5 Trigger (firstSpawn, idle, jumpBurst, rainLong, nexus), Text + optional Speech. `dreamWithPlayer`, `interpretEmotionalSpeech` weiterhin offen für spätere Ringe. |
 | ✅ **DSL Interpreter + Generator + Abilities + CSP + Selektion** (Ring 2 vollständig) | live — 41 Ops, Budget-Limits, Scheduler, autonome Nexus-Komposition mit V1-Fitness, **Chat→DSL für 13 Welt-Befehle**, **Abilities als reine DSL-Programme**, **Save persistiert DSL-Abilities**, **kein `new Function`/`eval` im eigenen Bundle (CI-Gate hart)**, **CSP-Header strict mit dokumentierten Vendor-Konzessionen**, **Fitness-V2 Roulette-Wheel + Mutation (`dslSelectByFitness` + `dslMutate`) — der Nexus lernt aus eigenen Outcomes**. |
 | ✅ **Welten-Ultiversum vollständig** (Ringe 8 / 8.1 / 8.2 / 9 / 10 / 10.1) | **vollständig live — Mai 2026**. `worldMeta` mit `worldId`, `slug`, `creator`, `visibility`, `parentWorlds`, `seed`, `bornAt`, `fusionStrategy`, `schemaVersion` (`8.0-multiworld-v1` für Standard, `9.0-tor-v1` für importierte, `10.0-fusion-v1` für fusionierte Welten). Drei localStorage-Keys spannen das System. **Methoden**: `createNewWorld`, `switchToWorld`, `deleteWorld`, `importWorldBeside`, `fuseWorlds(idA, idB, strategy)`, `importRecipesFromWorld(srcId)`. **Welt-Tor (Ring 9)**: Drei-Wahl-Dialog (Ersetzen / Daneben legen / Fusionieren-mit-aktueller). **Fusion (Ring 10)**: drei Strategien — `sequence` (History konkateniert, Emotionen aus A), `random-mix` (50:50 interleaved, Mittel), `tag-merge` (Math.max Vereinigung). Inventar-Union mit `-fusion`-Suffix bei Kollision. Cascade-Rewire: `sourceBlueprint` + `refName` folgen Bauplan-Umbenennungen (Reflexions-Bugfix). Stammbaum-Sektion mit klickbaren Eltern-Welt-Links. **Recipe-Pick (Ring 10.1)**: `importRecipesFromWorld` kopiert Baupläne + Materialien + Werkzeuge aus Quell-Welt in aktive OHNE Fusion. Aktive Welt-Identität bleibt unangetastet, Konflikt-Suffix `-import`, gleiche Cascade-Rewire-Garantie. UI: „Rezepte holen"-Button pro Welt-Picker-Reihe. **Ring 11 (Multi-User P2P-Sync) bleibt offen** — das letzte Vision-Kapitel. |
@@ -78,13 +78,17 @@ Konsequenz für jede künftige Iteration: **niemals re-komplexifizieren ohne Not
 | ✅ **Welle 6.B — Mini-CAD-Werkstatt** (V8.07) | **drei Phasen + sieben UX-Iterationen live** — Tinkercad-ähnlicher Werkstatt-Editor mit 3D-Preview-Canvas + Orbit/Pan/Zoom-zum-Cursor + voller Manipulator-Gizmo (Move/Rotate/Scale via W/E/R, Connect via C, Snap via G). HTML5-Drag-Sources: Formen links, Materialien+Werkzeuge+Farben rechts. Klick-Klick-Connection-Erzeugung im Connect-Modus. Stats-Panel unter Canvas zeigt emergente Rolle + Affordances + Top-5 Tags mit Stern-Rating. Editor-Tabelle (alte Number-Inputs) standardmäßig zugeklappt. Default-Werkstatt-Größe nahezu vollbild. |
 | ✅ **Welle 9 — Werkzeug-Domains + emergente Bauplan-Rolle** (V8.07) | **vier Sub-Phasen live** — 6 TOOL_DOMAINS (construction/forging/alchemy/textile/soulwork/mechanism) + DOMAIN_TO_ROLE-Map. Bauplan-Rolle EMERGIERT aus opChain (häufigste Domain entscheidet). Forging-Split via Compound-Tags (scharfkantig→tool, dicht→armor). 5 neue Built-in-Domain-Werkzeuge. 5 neue Built-in-Welt-Werkstatt-Architekturen (Esse/Brennkolben/Webstuhl/Altar/Drehbank). confirmBuild Distance-Gate modus-abhängig. Maschinen-precisionCap-Bonus (+0.05). applyPlayerSoulFromBlueprint für role:soul-Bauplane. |
 | ✅ **Welle 10 — Präzision + Compound-Tag-Affordances** (V8.07) | **10a + 10b.1-3 live** — (a) Präzision multipliziert pro Stat-Quelle (Soul/Tool/Armor) die Compound-Tag-Wirkung mit `0.5 + 0.5·precision`. Built-in-Soulen sind „geboren" mit precision=1.0 (Backward-Compat). (b) Affordances als neue Welt-Schicht: `computeBlueprintAffordances(bp)` liest räumliche+Tag-Signatur, liefert Verhaltens-Flags. Drei Starter: **moveable** (Stütze+Antrieb→E-Taste mounted Spieler), **magnifying** (transparent+axial→Z-Taste zoomt FOV), **focusing** (transparent+wärmeleitung→sunny entzündet brennbare Nähe). Vision-rein: KEINE Form-Whitelists, drei räumliche Helfer (_compoundBBox/_partsBelowMidline/_axialAlignment) sind die Welt-Lese-Funktion. |
+| ✅ **Welle 11 ext. — Substanz-Rolle** (V8.35) | live — `computeBlueprintRole` ist eine Prioritäts-Kaskade (Krafting-Domain → Form `_isBodyShaped` → Material `_isFoodLike` → Bauwerk). Identität emergiert aus der ganzen Substanz, nicht aus Etiketten. |
+| ✅ **Welle 12 — Welt-Portal** (V8.51-V8.53) | live — Bauplan-Rolle „portal", sandboxed iframe, zwei fremde Engines (three-fluid-fx / three.terrain.js), generische DSL-Brücke, beidseitiger Kanal, native Manifest-Stufe. Detail: `world-portal.md`. |
+| ✅ **Welle 13 — Vibe-Pass** (V8.54-V8.56) | live — ed25519-Schlüsselpaar (WebCrypto nativ), Bauplan-Signaturen über die Substanz, peerId-gebundene Multi-User-Identität. Self-Sovereign, kein Coin. |
+| 🔴 **Welle 14 — Bibliothek** | offen, nächste Welle — Welt-Registry zum Browsen fremder Welten + signierte Portal-Manifeste. Detail: `roadmap.md` §3. |
 | 🔴 `evolveCommunity` (Kreatur-Kulturen) | fehlt |
 | ✅ **Welt lernt aus Spieler** (Ring 7 Schicht 1+2) | live — brain.js bewusst NICHT eingebunden (Re-Komplexifizierungs-Risiko, siehe Learning #59). Stattdessen zwei dünne Schichten auf der DSL: Schicht 1 = Pfad-Buckets + Multi-Dim-Fitness + Pattern-Memory + History 500. Schicht 2 = **vier wählbare LLM-Provider** als echte Grok-Stimme: Anthropic Claude (kostet), Google Gemini (gratis-Tier), OpenRouter (Llama/Mistral mit `:free`-Suffix), Ollama lokal (offline, kein Key). Keys per-Provider im `localStorage`, JSON-Output `{say, program}` läuft strikt durch `dslRun` (Sandbox). TF.js raus, CSP-`'unsafe-eval'` aufgelöst. |
 | 🔴 VR (`vrMenu.js`, `startVR`) | nicht aktiviert |
-| 🔴 Multi-World / Server-Sync (`openInfiniteGate`, `mirrorMultiverse`) | nicht vorhanden |
+| ✅ Multi-Welt + Multi-User-Sync (Ringe 8-11.5) | live — mehrere worldIds parallel, Welt-Tor, Fusion, WebSocket-Position-Sync + DSL-Broadcast + Soul-Sync |
 | 🔴 IndexedDB-Persistenz (statt localStorage) | nicht implementiert |
 
-**Faustschätzung**: das Fundament + die fünf Vision-Pfeiler (Symbiose / Emotion / Multisensorik / Stimme / Identität) stehen alle mit V1 oder höher. Was fehlt: Welt-Ultiversum (Ringe 8-11), Crafting/Materie, Kreatur-Kulturen. Schätzwert: **~65 % der Vision** umgesetzt; der schwerste Block (Sprache + Sicherheit + Sinne + Lernfähigkeit) ist durch.
+**Faustschätzung**: das Fundament + alle fünf Vision-Pfeiler stehen mit V2+. Welt-Ultiversum (Ringe 8-11.5), Hylomorphismus-Crafting, Co-Schöpfer-Kreis, Welt-Portal (W12) und souveräne Identität (W13) sind durch. Schätzwert: **~88 % der Vision** umgesetzt; was bleibt, ist die Bibliothek (W14, fremde Welten browsen) und die Skalierung (W7, Compute-Sharing).
 
 ---
 
@@ -163,6 +167,8 @@ Aggregat: **61 Commits** in dieser Konversations-Serie (von `5df65e3` zu HEAD, ~
 
 Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen sieben Wachstumsringe ein, jeder einzeln durch das CI-Gate gesichert, keiner re-komplexifiziert.**
 
+> **Stand V8.56**: die sieben Wachstumsringe der Ur-Tabelle unten sind **alle erledigt** — ebenso die darauf folgenden Wellen 1-13 (Welten-Ultiversum, Hylomorphismus-Crafting, Co-Schöpfer-Kreis, Welt-Portal, Vibe-Pass). Der Stamm hat gehalten: eine Datei, ~28000 Zeilen, keine Re-Komplexifizierung. Die aktuelle Front ist **W14 (Bibliothek)** — der vollständige, lebende Plan steht in `docs/roadmap.md` (§2 Übersicht, §3 Welle-14-Detail mit Drei-Phasen-Plan + Schnittstellen). Die Tabelle unten bleibt als historischer Ur-Plan stehen.
+
 | Ring | Pfeiler | Was konkret | Aufwand | Vorbedingung |
 |---|---|---|---|---|
 | **1** | **Grok-Stimme** ✅ V1 | `#dialogue-box` + `#grok-voice-toggle` in `index.html`. `state.grok` mit Pool, Throttle (30 s global), Per-Trigger-Cooldowns. `grokSpeak(key)`, `grokRender(text)`, `grokTick(currentTime)`, `grokMarkFirstSpawn()`. 5 Trigger live: firstSpawn (1×, via localStorage gemerkt), idle>45s, jumpBurst (≥4 Sprünge/8s), rainLong>60s, nexus-Evolution. SpeechSynthesis nur wenn User-Toggle aktiv und Browser unterstützt. | erledigt | – |
@@ -184,6 +190,42 @@ Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen s
 ## 6. Learnings aus dieser Session
 
 Echt gelernt, nicht performt:
+
+### V8.54-V8.56 (17.05.2026) — W13 Vibe-Pass: souveräne Avatar-Identität in drei Phasen
+
+W13 gab dem Avatar einen Schlüssel (P1), ließ ihn seine Werke signieren (P2) und trug die Identität in die geteilte Welt (P3). Drei Lehren:
+
+**Vor dem ersten Code die teure Annahme prüfen.** Die Sorge war „ed25519 braucht eine Vendor-Lib" — eine 20-Sekunden-Probe im echten Playtest-Browser zeigte, dass WebCrypto (`crypto.subtle`) Ed25519 nativ trägt. Eine Probe sparte eine ganze Vendor-Schicht und eine CSP-Lockerung. Wer eine Welle mit einer ungeprüften Kostenannahme beginnt, baut womöglich ein Fundament, das es gar nicht braucht.
+
+**Signiere die Substanz, nicht das Etikett.** Eine Bauplan-Signatur deckt `_canonicalBlueprint` (Rolle + Parts + Verbindungen, deterministisch gerundet) — bewusst NICHT den Namen. So überlebt sie Recipe-Import und Fusion (die taufen Namen um) und bricht nur bei echter Veränderung. Verifikation läuft als Anzeige bei jedem Render, nicht als Hook an den ~zehn Editier-Methoden — Nicht-Kopplung kann keine Mutation verpassen, auch keine künftig hinzugefügte.
+
+**Identität beweist man, man behauptet sie nicht.** Im Multi-User broadcastet ein Peer nicht nur seinen Schlüssel — er signiert seine server-gestempelte peerId. Ein geklauter Beweis gilt einer fremden peerId und scheitert. Die Sicherheit sitzt im Protokoll, nicht in einer vertrauenswürdigen Instanz; der signaling-server prüft nichts. Und: der `vibe`-Kanal mirrort Zeile für Zeile den bestehenden `soul`-Kanal — wer ein erprobtes Muster kopiert statt neu erfindet, erbt seine Korrektheit.
+
+**Vision-Wort der V8.56**: *„Eine Phase einer großen Welle baut die Primitive, nicht das Haus — P1 du HAST einen Schlüssel, P2 du SIGNIERST deine Werke, P3 in der Welt BIST du dein Schlüssel. Jede Phase baute nur auf die vorige, keine erfand das Fundament neu."*
+
+### V8.51-V8.53 (17.05.2026) — W12 Welt-Portal: das Tor zu fremden Welten in drei Phasen
+
+W12 baute das Skelett (P1: ein Tor, das eine Sub-Welt im sandboxed iframe lädt), machte es real (P2: zwei fremde Engines, eine generische DSL-Brücke) und schloss den Kreis (P3: Rückkanal + native Manifest-Stufe). Drei Lehren:
+
+**Eine Rolle hat oft zwei Schichten — Natur und autorierte Meta.** Der erste Wurf machte „portal" zu einer rein manuellen Rolle. Der Schöpfer fing es im Review: „müsste das Portal nicht aus der Matrix evolvieren, sowas wie aus Magie?" Goldrichtig. Ein Portal hat eine Natur („ist ein Tor" — emergiert aus Ring-Form + Magieleitung) und ein Ziel („führt nach Welt X" — autoriert). Beim ersten Wurf nicht vermischen.
+
+**„Scheint hardcoded" hat drei Wurzeln.** Ein fehlendes System, ein fehlender PFAD zu einem vorhandenen System (`setBlueprintAsPortal` existierte, war aber unerreichbar — keine UI, kein DSL-Op), oder eine Magie-Zahl statt einer logischen Auswertung (die Tor-Größe war eine Konstante, wurde `_avatarPassageSize`). Bei jedem „wirkt hardcoded"-Befund alle drei prüfen.
+
+**Ein Kanal hat zwei Richtungen, und sie dürfen nicht symmetrisch sein.** Heimat→Sub trägt Befehle (werden ausgeführt), Sub→Heimat trägt Ereignisse (werden geloggt, nie ausgeführt). Die Asymmetrie ist kein Mangel — sie IST die Sicherheits-Wand: was hereinkommt, läuft nie als Code.
+
+**Vision-Wort der V8.53**: *„Ein Protokoll trägt unendlich viele Welten, wenn der Kern unberührt bleibt — eine neue Welt ist ein Manifest plus ein Adapter, null Kern-Änderung."*
+
+### V8.48-V8.50 (17.05.2026) — Terrain-Schatten, Performance-Tiefe, Flaky-Heilung
+
+Drei kleinere Wellen zwischen den großen Bögen. Die Lehren:
+
+**Headless prüft Funktion, der Browser prüft Erfahrung.** Der Terrain-Schatten-Shader (V8.48) war nachweislich korrekt verdrahtet, aber im Headless-SwiftShader nicht sichtbar prüfbar — erst der Schöpfer-Browser-Test bestätigte, dass die Schatten fallen. Manche Wahrheiten zeigt nur der echte Browser.
+
+**Optimiere die Verschwendung, nicht die Funktion.** `updateCreatures` (V8.49) wurde 2,4× schneller, ohne dass eine Kreatur sich anders bewegt — Scratch-Vektoren gepoolt, Hindernis-Raycasts off-screen-gegated, O(N²)-Flocking nach 6 Nachbarn abgebrochen. Keine Tiefe entfernt, nur Verschwendung dort, wo sie niemand sieht.
+
+**Ein Test, der auf den rAF-Loop wartet, ist im Headless prinzipiell flaky.** Headless-Chromium drosselt `requestAnimationFrame` auf ~1 Hz — ein 300-ms-Wartefenster enthielt oft 0 Loop-Ticks. Die Lösung (V8.50) war nicht „länger warten", sondern den Loop synchron zu treiben (`_gameLoopTick`).
+
+**Vision-Wort der V8.50**: *„Wenn ein Test wackelt, behebe nicht das Timing — entferne die Abhängigkeit vom Timing."*
 
 ### V8.47 (17.05.2026) — Shadow-Acne-Heilung: Shadow-Bias
 

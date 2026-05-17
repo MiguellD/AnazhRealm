@@ -184,7 +184,7 @@ Avatar = Self-Sovereign Identity. Nicht Crypto-Wallet im Spekulations-Sinn, sond
 >
 > **Phase 3 (V8.56) — Vibe-Pass-Identität im Multi-User.** Ein neuer WebSocket-Nachrichtentyp `vibe` (`{vibePassId, proof}`) trägt die Identität: `proof` ist eine Signatur über die EIGENE peerId des Senders, der Empfänger verifiziert sie gegen die server-gestempelte peerId — die Bindung macht den Beweis fälschungssicher (ein geklauter Beweis gilt einer fremden peerId). Der Mitspieler ist damit nicht mehr nur eine fälschbare peerId + ein gewählter Name, sondern beweisbar sein Vibe-Pass; das Name-Schild zeigt bei verifizierter Identität „✓ <Fingerprint>". `vibe` läuft NICHT über die DSL, der signaling-server relayt es als dummer (nichts verifizierender) Vermittler.
 >
-> **Offen — W14**: das Portal-Manifest bekommt das `authorPubKey`/`signature`-Feld (§3.3) — eine veröffentlichte Welt signiert ihr eigenes `manifest.json`, `_vibeVerify` (steht aus W13) prüft es. Das gehört zur Welt-Registry (W14), weil erst dort fremde, anderswo veröffentlichte Welten andocken. Der vollständige Wellen-Eintrag steht in `CLAUDE.md` V8.56.
+> **Offen — W14**: das Portal-Manifest bekommt das `authorPubKey`/`signature`-Feld (§3.3) — eine veröffentlichte Welt signiert ihr eigenes `manifest.json`, `_vibeVerify` (aus W13, steht) prüft es. Das gehört zur Welt-Registry (W14, Phase 2), weil erst dort fremde, anderswo veröffentlichte Welten andocken. Plus **W13 V2** (§4-Punkt „Avatar-Anpassungen" — der Pass trägt Custom-Seele + Materialien + Werkzeuge in andere Welten). Der vollständige Wellen-Eintrag steht in `CLAUDE.md` V8.56, der konkrete Drei-Phasen-Plan für W14 (mit Schnittstellen) in `docs/roadmap.md` §3 (Welle 14).
 
 ---
 
@@ -203,19 +203,19 @@ Das ist die **Energy-Verschiebung nach Nutzen** die du beschrieben hast. Wer ein
 
 ## 6. Roadmap-Sequenz
 
-Aktuelle Polish-Phase (V8.x) abschließen, dann:
+Stand V8.56 — die Sequenz bis zur Bibliothek:
 
-| Welle | Inhalt | Aufwand |
+| Welle | Inhalt | Status |
 |---|---|---|
-| **6.G3** | Welt-Lebendigkeit (Tag-Nacht, Wetter-Übergänge, Fauna-Lifecycle) | 1-2 Sessions |
-| **11 V3** | Soul-Sync Multi-User (echter Phönix/Drache + Aura-Sync) | 2-3 Sessions |
-| **11 ext.** | Substanz-Rolle (Identität emergiert aus Substanz) | 3-4 Sessions |
-| **12** | **Welt-Portal** (Bauplan-Rolle "portal" + Sub-Engine-Adapter + DSL-Subset-Schema) | 6-8 Sessions |
-| **13** | **Vibe-Pass** (Crypto-Keypair + Bauplan-Signaturen + Avatar-Identity) | 5-7 Sessions |
-| **14** | **Bibliothek** (Welt-Registry + Browse-UI + Auto-Portal-Bauplan-Erstellung) | 8-10 Sessions |
-| **7** | **Compute-Sharing** (WebRTC-Mesh als Server-Layer für Welt-Portale) | 6-8 Sessions |
+| **6.G3 / 6.G4** | Welt-Lebendigkeit + Atmosphäre-Tiefe (Tag-Nacht, Wetter, Fauna, Sonne, Wasser) | ✅ live (V8.24-V8.33) |
+| **11 V3** | Soul-Sync Multi-User (echter Phönix/Drache + Aura-Sync) | ✅ live (V8.34) |
+| **11 ext.** | Substanz-Rolle (Identität emergiert aus Substanz) | ✅ live (V8.35) |
+| **12** | **Welt-Portal** (Rolle „portal" + Sub-Engine-Adapter + DSL-Brücke) | ✅ live (V8.51-V8.53) |
+| **13** | **Vibe-Pass** (ed25519-Keypair + Bauplan-Signaturen + Avatar-Identity) | ✅ live (V8.54-V8.56) |
+| **14** | **Bibliothek** (Welt-Registry + Browse-UI + Auto-Portal-Bauplan) | 🔴 **nächste Welle** — Drei-Phasen-Plan in `roadmap.md` §3 |
+| **7** | **Compute-Sharing** (WebRTC-Mesh als Server-Layer für Welt-Portale) | 🔴 offen — Skalierung |
 
-Welle 12 ist das **Proof of Concept**. Welle 13 + 14 + 7 sind die **Skalierung zur Bibliothek**.
+Welle 12 war das **Proof of Concept** (bewiesen). Welle 13 ✅ + 14 + 7 sind die **Skalierung zur Bibliothek**.
 
 ---
 
