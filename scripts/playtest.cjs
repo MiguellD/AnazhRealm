@@ -13898,6 +13898,113 @@ function startSaveServer() {
                 check("W12 P3b: manifest.json-/Adapter-Quell-Check läuft", false, err && err.message);
             }
 
+            // ### W13 Phase 1 — Vibe-Pass: die souveräne Avatar-Identität ###
+            const w13p1Results = await page
+                .evaluate(async () => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    // Methoden-Existenz.
+                    out.methods =
+                        typeof r._ensureVibePass === "function" &&
+                        typeof r._vibeSign === "function" &&
+                        typeof r._vibeVerify === "function" &&
+                        typeof r.vibePassId === "function";
+                    // Identität ist nach init bereit.
+                    const vp = r.state.vibePass;
+                    out.ready = !!vp && vp.ready === true;
+                    // vibePassId — kanonisches ed25519:<64hex>-Format.
+                    const id = r.vibePassId();
+                    out.idFormat = typeof id === "string" && /^ed25519:[0-9a-f]{64}$/.test(id);
+                    // localStorage trägt den privaten Schlüssel als JWK.
+                    let stored = null;
+                    try {
+                        stored = JSON.parse(localStorage.getItem("anazh.vibePass"));
+                    } catch {
+                        stored = null;
+                    }
+                    out.persisted =
+                        !!stored &&
+                        stored.schemaVersion === "vibepass-1" &&
+                        !!stored.privateKeyJwk &&
+                        stored.privateKeyJwk.kty === "OKP" &&
+                        stored.privateKeyJwk.crv === "Ed25519" &&
+                        typeof stored.privateKeyJwk.d === "string" &&
+                        typeof stored.privateKeyJwk.x === "string";
+                    // Erneutes _ensureVibePass lädt denselben Schlüssel (kein Neu-Erzeugen).
+                    const idBefore = r.vibePassId();
+                    await r._ensureVibePass();
+                    out.idStable = r.vibePassId() === idBefore;
+                    // Fingerprint — Kurzform aus den ersten 16 Hex-Zeichen.
+                    out.fingerprint =
+                        typeof vp.fingerprint === "string" && vp.fingerprint.replace(/ /g, "").length === 16;
+                    // Signieren liefert eine 64-Byte-Signatur (128 Hex).
+                    const sig = await r._vibeSign("anazh-vibe-pass-test");
+                    out.signHex = typeof sig === "string" && /^[0-9a-f]{128}$/.test(sig);
+                    // Verifizieren: gültige Signatur → true.
+                    out.verifyValid = (await r._vibeVerify("anazh-vibe-pass-test", sig, vp.publicKeyHex)) === true;
+                    // Manipulierte Nachricht → false.
+                    out.verifyTampered =
+                        (await r._vibeVerify("anazh-vibe-pass-TAMPERED", sig, vp.publicKeyHex)) === false;
+                    // Falscher öffentlicher Schlüssel → false.
+                    out.verifyWrongKey =
+                        (await r._vibeVerify("anazh-vibe-pass-test", sig, "0".repeat(64))) === false;
+                    // Defensiv: Müll-Eingabe wirft nicht, liefert false.
+                    out.verifyDefensive =
+                        (await r._vibeVerify("x", null, null)) === false &&
+                        (await r._vibeVerify("x", "zzz", "kurz")) === false;
+                    // Genesis-Erinnerung im Journal (Typ "ritual").
+                    const entries = (r.state.worldJournal && r.state.worldJournal.entries) || [];
+                    out.journalGenesis = entries.some(
+                        (e) => e && e.type === "ritual" && /Vibe-Pass/.test(e.text || "")
+                    );
+                    // Sicherheit: der private Schlüssel darf NIE im Welt-Save landen.
+                    const snapJson = JSON.stringify(r.buildStateSnapshot());
+                    out.snapshotClean =
+                        snapJson.indexOf(vp._privateKeyJwk.d) === -1 && snapJson.indexOf('"vibePass"') === -1;
+                    // Export → Import-Rundlauf bewahrt die Identität.
+                    const exported = r.exportVibePass();
+                    out.exportShape =
+                        !!exported && exported.schemaVersion === "vibepass-1" && !!exported.privateKeyJwk;
+                    const imp = await r.importVibePass(exported, { skipConfirm: true });
+                    out.importRoundTrip = !!imp && imp.ok === true && r.vibePassId() === idBefore;
+                    const impBad = await r.importVibePass({ nonsense: true }, { skipConfirm: true });
+                    out.importRejectsGarbage = !!impBad && impBad.ok === false;
+                    // UI.
+                    out.uiSection = !!document.getElementById("vibe-pass-section");
+                    const body = document.getElementById("vibe-pass-body");
+                    out.uiBody = !!body && body.textContent.indexOf(vp.fingerprint) !== -1;
+                    out.uiButtons =
+                        !!document.getElementById("vibe-pass-export") &&
+                        !!document.getElementById("vibe-pass-import") &&
+                        !!document.getElementById("vibe-pass-file-input");
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w13p1Results && !w13p1Results.error) {
+                check("W13 P1: _ensureVibePass/_vibeSign/_vibeVerify/vibePassId existieren", w13p1Results.methods);
+                check("W13 P1: Vibe-Pass ist nach init bereit", w13p1Results.ready);
+                check("W13 P1: vibePassId liefert ed25519:<64hex>", w13p1Results.idFormat);
+                check("W13 P1: privater Schlüssel als JWK in localStorage persistiert", w13p1Results.persisted);
+                check("W13 P1: erneutes _ensureVibePass lädt denselben Schlüssel", w13p1Results.idStable);
+                check("W13 P1: Fingerprint = 16 Hex-Zeichen in Vierergruppen", w13p1Results.fingerprint);
+                check("W13 P1: _vibeSign liefert eine 64-Byte-Signatur (128 Hex)", w13p1Results.signHex);
+                check("W13 P1: _vibeVerify akzeptiert eine gültige Signatur", w13p1Results.verifyValid);
+                check("W13 P1: _vibeVerify weist eine manipulierte Nachricht ab", w13p1Results.verifyTampered);
+                check("W13 P1: _vibeVerify weist einen falschen Schlüssel ab", w13p1Results.verifyWrongKey);
+                check("W13 P1: _vibeVerify ist defensiv gegen Müll-Eingabe", w13p1Results.verifyDefensive);
+                check("W13 P1: Genesis-Erinnerung (ritual) im Journal", w13p1Results.journalGenesis);
+                check("W13 P1: privater Schlüssel leckt NICHT in den Welt-Save", w13p1Results.snapshotClean);
+                check("W13 P1: exportVibePass liefert ein gültiges Sicherungs-Objekt", w13p1Results.exportShape);
+                check("W13 P1: Export→Import-Rundlauf bewahrt die Identität", w13p1Results.importRoundTrip);
+                check("W13 P1: importVibePass weist ungültige Daten ab", w13p1Results.importRejectsGarbage);
+                check("W13 P1: Vibe-Pass-Sektion im DOM", w13p1Results.uiSection);
+                check("W13 P1: Vibe-Pass-Body zeigt den Fingerprint", w13p1Results.uiBody);
+                check("W13 P1: Sichern/Wiederherstellen-Knöpfe + File-Input im DOM", w13p1Results.uiButtons);
+            } else {
+                check("W13 P1: Vibe-Pass-Tests laufen", false, w13p1Results ? w13p1Results.error : "no result");
+            }
+
             // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
             const v840Results = await page
                 .evaluate(() => {

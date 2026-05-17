@@ -32,6 +32,9 @@ export default [
                 crypto: "readonly",
                 WebSocket: "readonly",
                 navigator: "readonly",
+                atob: "readonly",
+                btoa: "readonly",
+                TextEncoder: "readonly",
                 // CDN-Libs
                 THREE: "readonly",
                 Ammo: "readonly",

@@ -380,6 +380,22 @@ class AnazhRealm {
                 entryCap: 200,
                 seen: {},
             },
+            // W13 Phase 1 — Vibe-Pass: die souveräne Avatar-Identität. Ein
+            // ed25519-Schlüsselpaar, lokal erzeugt, spieler-eigen und welt-
+            // unabhängig. Der private Schlüssel lebt im GLOBALEN localStorage-
+            // Schlüssel "anazh.vibePass" — NIE im Welt-Save (sonst leckte die
+            // Identität in geteilte Welt-Dateien). Dieses Feld ist reiner
+            // Laufzeit-Spiegel; _ensureVibePass() füllt es beim Erwachen.
+            vibePass: {
+                ready: false,
+                createdAt: null,
+                publicKeyHex: null,
+                fingerprint: null,
+                freshlyCreated: false,
+                publicKey: null,
+                privateKey: null,
+                _privateKeyJwk: null,
+            },
             // Ring 3 — Player-Emotionen. Sechs Achsen, jeweils 0..1.
             // Chat-Inputs füllen sie regelbasiert; im Game-Loop verflüchtigen
             // sie sich langsam; Schwellen-Trigger feuern DSL-Programme, sodass
@@ -12466,6 +12482,337 @@ class AnazhRealm {
         document.body.appendChild(a);
         a.click();
         a.remove();
+    }
+
+    // ### W13 Phase 1 — Vibe-Pass: die souveräne Avatar-Identität ###
+    // Ein ed25519-Schlüsselpaar, lokal beim ersten Erwachen erzeugt. Der
+    // öffentliche Schlüssel IST der Avatar — unverfälschbar. Der private
+    // Schlüssel signiert, was der Schöpfer baut; andere können prüfen, dass
+    // ein Werk wirklich von ihm stammt. Kein Coin, keine Kette — nur Echtheit.
+    // Phase 1 legt das Fundament (Schlüssel + Sign/Verify-Primitive + Sicht +
+    // Sicherung); Phase 2 signiert Baupläne, Phase 3 prüft überall.
+    //
+    // crypto.subtle (WebCrypto) trägt Ed25519 nativ — kein Vendoring, keine
+    // CSP-Lockerung. Verfügbar nur im Secure Context (https / localhost); die
+    // Methoden degradieren anmutig, wenn er fehlt.
+
+    _vibeBytesToHex(bytes) {
+        let s = "";
+        for (let i = 0; i < bytes.length; i++) s += bytes[i].toString(16).padStart(2, "0");
+        return s;
+    }
+
+    _vibeHexToBytes(hex) {
+        const clean = String(hex).replace(/[^0-9a-fA-F]/g, "");
+        const out = new Uint8Array(clean.length >> 1);
+        for (let i = 0; i < out.length; i++) out[i] = parseInt(clean.slice(i * 2, i * 2 + 2), 16);
+        return out;
+    }
+
+    _vibeB64uToBytes(b64u) {
+        let s = String(b64u).replace(/-/g, "+").replace(/_/g, "/");
+        while (s.length % 4) s += "=";
+        const bin = atob(s);
+        const out = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+        return out;
+    }
+
+    _vibeBytesToB64u(bytes) {
+        let bin = "";
+        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+        return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    }
+
+    // Die sichtbare Kurzform des Schlüssels — die ersten 16 Hex-Zeichen in
+    // Vierergruppen. Genug zum Wiedererkennen, kurz genug fürs Drawer.
+    _vibeFingerprint(pubHex) {
+        if (typeof pubHex !== "string" || pubHex.length < 16) return "—";
+        return pubHex
+            .slice(0, 16)
+            .replace(/(.{4})/g, "$1 ")
+            .trim();
+    }
+
+    // Der kanonische Identifier — dasselbe Format wie das Welt-Portal-Manifest
+    // (docs/world-portal.md §3.3: "authorPubKey": "ed25519:...").
+    vibePassId() {
+        const vp = this.state.vibePass;
+        return vp && vp.ready && vp.publicKeyHex ? "ed25519:" + vp.publicKeyHex : null;
+    }
+
+    // Übernimmt ein privates JWK in den Laufzeit-State: importiert beide
+    // CryptoKeys, leitet öffentlichen Hex-Schlüssel + Fingerprint ab. Die
+    // await-Importe laufen VOR jeder vp.*-Zuweisung — schlägt ein Import fehl,
+    // bleibt der bisherige State unberührt.
+    async _adoptVibePassJwk(privateKeyJwk, createdAt, fresh) {
+        const privateKey = await crypto.subtle.importKey("jwk", privateKeyJwk, { name: "Ed25519" }, true, ["sign"]);
+        const publicKey = await crypto.subtle.importKey(
+            "jwk",
+            { kty: "OKP", crv: "Ed25519", x: privateKeyJwk.x },
+            { name: "Ed25519" },
+            true,
+            ["verify"]
+        );
+        const vp = this.state.vibePass;
+        vp.privateKey = privateKey;
+        vp.publicKey = publicKey;
+        vp.publicKeyHex = this._vibeBytesToHex(this._vibeB64uToBytes(privateKeyJwk.x));
+        vp.fingerprint = this._vibeFingerprint(vp.publicKeyHex);
+        vp.createdAt = createdAt || Date.now();
+        vp.freshlyCreated = !!fresh;
+        vp._privateKeyJwk = privateKeyJwk;
+        vp.ready = true;
+    }
+
+    // Baut das Sicherungs-Objekt — auch der Inhalt der localStorage-Persistenz.
+    _vibePassExportObject() {
+        const vp = this.state.vibePass;
+        if (!vp || !vp.ready || !vp._privateKeyJwk) return null;
+        return {
+            schemaVersion: "vibepass-1",
+            createdAt: vp.createdAt || Date.now(),
+            publicKeyHex: vp.publicKeyHex,
+            privateKeyJwk: vp._privateKeyJwk,
+        };
+    }
+
+    _persistVibePass() {
+        const obj = this._vibePassExportObject();
+        if (!obj || typeof localStorage === "undefined") return;
+        try {
+            localStorage.setItem("anazh.vibePass", JSON.stringify(obj));
+        } catch (e) {
+            this.log(`Vibe-Pass speichern fehlgeschlagen: ${e && e.message}`, "ERROR");
+        }
+    }
+
+    // Lädt den Vibe-Pass aus dem globalen localStorage oder erzeugt beim
+    // allerersten Erwachen ein frisches Schlüsselpaar. Wirft nie — fehlt der
+    // Secure Context, ruht die Identität (ready bleibt false).
+    async _ensureVibePass() {
+        const vp = this.state.vibePass;
+        if (!vp) return;
+        if (typeof crypto === "undefined" || !crypto.subtle) {
+            this.log("Vibe-Pass ruht — kein Secure Context (crypto.subtle fehlt).", "WARN");
+            this._renderVibePassUI();
+            return;
+        }
+        let stored = null;
+        try {
+            const raw = typeof localStorage !== "undefined" ? localStorage.getItem("anazh.vibePass") : null;
+            if (raw) stored = JSON.parse(raw);
+        } catch {
+            stored = null;
+        }
+        try {
+            const jwk = stored && stored.privateKeyJwk;
+            if (jwk && jwk.kty === "OKP" && jwk.crv === "Ed25519" && typeof jwk.d === "string") {
+                await this._adoptVibePassJwk(jwk, stored.createdAt, false);
+            } else {
+                const pair = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
+                const freshJwk = await crypto.subtle.exportKey("jwk", pair.privateKey);
+                await this._adoptVibePassJwk(freshJwk, Date.now(), true);
+                this._persistVibePass();
+                this.log(`Vibe-Pass erzeugt: ${this.vibePassId()}`, "INFO");
+                this.journalAppendOnce(
+                    "vibepass:genesis",
+                    "ritual",
+                    `Der Avatar empfing seinen Vibe-Pass — eine souveräne Identität, ` +
+                        `ein Schlüssel, der nur ihm gehört (${vp.fingerprint}).`,
+                    { fingerprint: vp.fingerprint }
+                );
+            }
+        } catch (e) {
+            this.log(`Vibe-Pass-Initialisierung fehlgeschlagen: ${e && e.message}`, "ERROR");
+        }
+        this._renderVibePassUI();
+    }
+
+    // Signiert einen Text mit dem privaten Schlüssel → Signatur als Hex.
+    // Phase 2 (Bauplan-Signaturen) baut hierauf. Liefert null, wenn der
+    // Vibe-Pass nicht bereit ist.
+    async _vibeSign(message) {
+        const vp = this.state.vibePass;
+        if (!vp || !vp.ready || !vp.privateKey || typeof crypto === "undefined" || !crypto.subtle) {
+            return null;
+        }
+        try {
+            const data = new TextEncoder().encode(String(message));
+            const sig = await crypto.subtle.sign({ name: "Ed25519" }, vp.privateKey, data);
+            return this._vibeBytesToHex(new Uint8Array(sig));
+        } catch (e) {
+            this.log(`Vibe-Pass-Signatur fehlgeschlagen: ${e && e.message}`, "ERROR");
+            return null;
+        }
+    }
+
+    // Prüft eine Signatur gegen einen ÖFFENTLICHEN Schlüssel (Hex). Verifiziert
+    // damit jedes Autors Werk, nicht nur das eigene — Phase 3 baut hierauf.
+    // Defensiv: ungültige Eingabe → false, nie ein Wurf.
+    async _vibeVerify(message, signatureHex, publicKeyHex) {
+        if (typeof crypto === "undefined" || !crypto.subtle) return false;
+        if (typeof signatureHex !== "string" || typeof publicKeyHex !== "string") return false;
+        if (!/^[0-9a-f]+$/i.test(signatureHex) || !/^[0-9a-f]{64}$/i.test(publicKeyHex)) return false;
+        try {
+            const publicKey = await crypto.subtle.importKey(
+                "jwk",
+                {
+                    kty: "OKP",
+                    crv: "Ed25519",
+                    x: this._vibeBytesToB64u(this._vibeHexToBytes(publicKeyHex)),
+                },
+                { name: "Ed25519" },
+                true,
+                ["verify"]
+            );
+            const data = new TextEncoder().encode(String(message));
+            return await crypto.subtle.verify({ name: "Ed25519" }, publicKey, this._vibeHexToBytes(signatureHex), data);
+        } catch {
+            return false;
+        }
+    }
+
+    // Sichert den Vibe-Pass als Datei — die einzige Versicherung gegen den
+    // Verlust der Identität (localStorage kann gelöscht werden). Liefert das
+    // Sicherungs-Objekt auch zurück (für Tests + Diagnose).
+    exportVibePass() {
+        const obj = this._vibePassExportObject();
+        if (!obj) {
+            this.log("Vibe-Pass noch nicht bereit — kein Export.", "WARN");
+            return null;
+        }
+        const tag = (this.state.vibePass.publicKeyHex || "pass").slice(0, 12);
+        this.triggerStateDownload(obj, `anazh-vibe-pass-${tag}.json`);
+        this.journalAppend("ritual", "Ich sicherte meinen Vibe-Pass — den Schlüssel meiner Identität.");
+        return obj;
+    }
+
+    // Stellt einen gesicherten Vibe-Pass wieder her. Ersetzt die aktuelle
+    // Identität — daher die Rückfrage (außer der Aufrufer setzt skipConfirm,
+    // wie der Playtest; folgt dem {reload:false}-Muster der Welt-Methoden).
+    async importVibePass(parsed, opts) {
+        opts = opts || {};
+        if (!parsed || typeof parsed !== "object") {
+            return { ok: false, reason: "invalid" };
+        }
+        const jwk = parsed.privateKeyJwk;
+        if (
+            !jwk ||
+            typeof jwk !== "object" ||
+            jwk.kty !== "OKP" ||
+            jwk.crv !== "Ed25519" ||
+            typeof jwk.d !== "string" ||
+            typeof jwk.x !== "string"
+        ) {
+            this.log("Vibe-Pass-Import: kein gültiger ed25519-Schlüssel.", "ERROR");
+            return { ok: false, reason: "invalid_key" };
+        }
+        if (typeof crypto === "undefined" || !crypto.subtle) {
+            return { ok: false, reason: "no_crypto" };
+        }
+        if (!opts.skipConfirm && typeof window !== "undefined" && typeof window.confirm === "function") {
+            const accepted = window.confirm(
+                "Vibe-Pass wiederherstellen? Deine aktuelle Identität wird ersetzt — " +
+                    "sichere sie zuerst, falls du sie behalten willst."
+            );
+            if (!accepted) return { ok: false, reason: "cancelled" };
+        }
+        try {
+            await this._adoptVibePassJwk(jwk, parsed.createdAt, false);
+            this._persistVibePass();
+            this.journalAppend(
+                "ritual",
+                `Ein Vibe-Pass wurde wiederhergestellt — meine Identität ist nun ${this.state.vibePass.fingerprint}.`
+            );
+            this._renderVibePassUI();
+            this.log(`Vibe-Pass wiederhergestellt: ${this.vibePassId()}`, "INFO");
+            return { ok: true, id: this.vibePassId() };
+        } catch (e) {
+            this.log(`Vibe-Pass-Import fehlgeschlagen: ${e && e.message}`, "ERROR");
+            return { ok: false, reason: "import_failed" };
+        }
+    }
+
+    _handleVibePassFile(file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            let parsed = null;
+            try {
+                parsed = JSON.parse(reader.result);
+            } catch (e) {
+                this.log(`Vibe-Pass-Import fehlgeschlagen (${file.name}): ${e && e.message}`, "ERROR");
+                return;
+            }
+            this.importVibePass(parsed);
+        };
+        reader.onerror = () => this.log(`FileReader-Fehler bei ${file.name}`, "ERROR");
+        reader.readAsText(file);
+    }
+
+    vibePassInitDOM() {
+        if (typeof document === "undefined") return;
+        const exportBtn = document.getElementById("vibe-pass-export");
+        if (exportBtn && exportBtn.dataset.vibeWired !== "1") {
+            exportBtn.dataset.vibeWired = "1";
+            exportBtn.addEventListener("click", () => this.exportVibePass());
+        }
+        const importBtn = document.getElementById("vibe-pass-import");
+        if (importBtn && importBtn.dataset.vibeWired !== "1") {
+            importBtn.dataset.vibeWired = "1";
+            importBtn.addEventListener("click", () => {
+                const input = document.getElementById("vibe-pass-file-input");
+                if (input) {
+                    input.value = "";
+                    input.click();
+                }
+            });
+        }
+        const fileInput = document.getElementById("vibe-pass-file-input");
+        if (fileInput && fileInput.dataset.vibeWired !== "1") {
+            fileInput.dataset.vibeWired = "1";
+            fileInput.addEventListener("change", (e) => {
+                const f = e.target && e.target.files && e.target.files[0];
+                if (f) this._handleVibePassFile(f);
+            });
+        }
+        this._renderVibePassUI();
+    }
+
+    _renderVibePassUI() {
+        if (typeof document === "undefined") return;
+        const body = document.getElementById("vibe-pass-body");
+        if (!body) return;
+        body.innerHTML = "";
+        const vp = this.state.vibePass;
+        if (!vp || !vp.ready) {
+            const wait = document.createElement("div");
+            wait.className = "drawer-hint";
+            wait.textContent =
+                typeof crypto !== "undefined" && crypto.subtle
+                    ? "Der Vibe-Pass wird erzeugt …"
+                    : "Vibe-Pass ruht — öffne die Welt über https oder localhost.";
+            body.appendChild(wait);
+            return;
+        }
+        const fp = document.createElement("div");
+        fp.className = "vibe-pass-fingerprint";
+        fp.textContent = vp.fingerprint;
+        fp.title = "ed25519:" + vp.publicKeyHex;
+        body.appendChild(fp);
+
+        const idEl = document.createElement("div");
+        idEl.className = "vibe-pass-id";
+        idEl.textContent = "ed25519:" + vp.publicKeyHex;
+        body.appendChild(idEl);
+
+        if (vp.createdAt) {
+            const born = document.createElement("div");
+            born.className = "vibe-pass-born";
+            born.textContent = "Erweckt am " + new Date(vp.createdAt).toLocaleDateString();
+            body.appendChild(born);
+        }
     }
 
     // ### Welle 3 F — Welt-Tor ###
@@ -26352,6 +26699,9 @@ class AnazhRealm {
         this.logbookInitDOM();
         // Welle 6.X.4 F1 — Begleiter-Name + Avatar-Name laden + binden.
         this.identityInitDOM();
+        // W13 Phase 1 — Vibe-Pass-Sektion verkabeln (Render folgt mit
+        // _ensureVibePass nach ensureWorldMeta).
+        this.vibePassInitDOM();
         // Welle 6.X.4 D2 — Drei Schieber (Master / Pings / Render-Ring).
         this.slidersInitDOM();
         this.keybindingsInitDOM();
@@ -26381,6 +26731,11 @@ class AnazhRealm {
         // Single-Welt-Save, falls vorhanden.
         this._preloadActiveWorldMeta();
         this.ensureWorldMeta();
+        // W13 Phase 1 — Vibe-Pass laden oder beim ersten Erwachen erzeugen.
+        // Nach ensureWorldMeta, damit die Genesis-Erinnerung ins Welt-Journal
+        // fließen kann. Die Identität ist welt-unabhängig, aber die Geburt
+        // wird in der dann aktiven Welt erinnert.
+        await this._ensureVibePass();
         // Welle 6.E2 — Intro-Overlay beim ersten Welt-Start. Liest seen.intro
         // aus dem soeben hydrierten worldJournal + localStorage `anazh.ui.skipIntro`.
         this.initIntroDialog();
