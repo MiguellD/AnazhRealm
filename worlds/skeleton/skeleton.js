@@ -34,6 +34,68 @@
         }
     }
 
+    // W14 Phase 2 / W13 V2 — der Vibe-Pass trägt das Schaffen des Reisenden
+    // in diese fremde Welt: seine Seele, seine Materialien, seine Werkzeuge.
+    // Die Skelett-Welt begrüßt ihn mit dem, was er geschaffen hat. Alles als
+    // TEXT (textContent) — der Payload wird ANGEZEIGT, nie ausgeführt;
+    // Material-Farben werden auf ein striktes #rrggbb-Hex gesäubert.
+    function byId(id) {
+        return document.getElementById(id);
+    }
+    function hexFromColor(n) {
+        return "#" + ((Number(n) || 0) & 0xffffff).toString(16).padStart(6, "0");
+    }
+    function renderBrought(avatar) {
+        const vibeLine = byId("vibe-line");
+        if (vibeLine && typeof avatar.fingerprint === "string" && avatar.fingerprint) {
+            vibeLine.textContent = "Vibe-Pass · " + avatar.fingerprint;
+            vibeLine.hidden = false;
+        }
+        const brought = byId("brought");
+        if (!brought) return;
+        let any = false;
+        const soulEl = byId("brought-soul");
+        if (soulEl && avatar.soul && typeof avatar.soul === "object") {
+            soulEl.textContent = "Du trägst die Seele ";
+            const b = document.createElement("b");
+            b.textContent = String(avatar.soul.label || avatar.soul.name || "—");
+            soulEl.appendChild(b);
+            any = true;
+        }
+        const mats = Array.isArray(avatar.materials) ? avatar.materials : [];
+        const tools = Array.isArray(avatar.tools) ? avatar.tools : [];
+        const matWrap = byId("brought-mats");
+        if (matWrap) {
+            matWrap.textContent = "";
+            for (const m of mats.slice(0, 16)) {
+                const chip = document.createElement("span");
+                chip.className = "brought-chip";
+                chip.textContent = String((m && m.name) || "?");
+                chip.style.borderColor = hexFromColor(m && m.color);
+                matWrap.appendChild(chip);
+                any = true;
+            }
+        }
+        const toolWrap = byId("brought-tools");
+        if (toolWrap) {
+            toolWrap.textContent = "";
+            for (const t of tools.slice(0, 16)) {
+                const chip = document.createElement("span");
+                chip.className = "brought-chip";
+                chip.textContent = "⚒ " + String((t && (t.label || t.name)) || "?");
+                toolWrap.appendChild(chip);
+                any = true;
+            }
+        }
+        // Den Tor-Ring mit einer mitgebrachten Material-Farbe tönen — die
+        // fremde Welt nimmt eine Farbe des Schaffens an.
+        if (mats.length) {
+            const glyph = byId("glyph");
+            if (glyph) glyph.style.borderColor = hexFromColor(mats[0] && mats[0].color);
+        }
+        brought.hidden = !any;
+    }
+
     // Nur Nachrichten vom Eltern-Fenster (der Heimat-Welt) annehmen.
     window.addEventListener("message", (event) => {
         if (event.source !== window.parent) return;
@@ -44,6 +106,7 @@
             const name = typeof avatar.name === "string" && avatar.name ? avatar.name : "Reisender";
             if (nameEl) nameEl.textContent = name;
             if (statusEl) statusEl.textContent = "verbunden";
+            renderBrought(avatar);
         } else if (msg.type === "dsl") {
             applyDsl(msg.program);
         }

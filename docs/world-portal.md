@@ -65,6 +65,8 @@ Beim Betreten (`E-Taste auf Portal`):
 
 ### Schicht 3 — Vibe-Bibliothek (Welle 14)
 
+> **Phase 1 live (V8.58)**: der „Bibliothek"-Tab + die Aktion „Portal holen" stehen — die `WORLD_REGISTRY` ist browsbar, ein Klick legt einen auf die Welt gerichteten Portal-Bauplan ins Inventar. Phase 2 (signierte Manifeste) + Phase 3 (fremde Welten empfangen) folgen — Detail in `roadmap.md` §3.
+
 Eine Welt-Registry — wie ein App-Store für Welten, aber dezentral:
 
 - Welten sind **content-addressed** (IPFS-Hash oder ähnlich)
@@ -184,7 +186,7 @@ Avatar = Self-Sovereign Identity. Nicht Crypto-Wallet im Spekulations-Sinn, sond
 >
 > **Phase 3 (V8.56) — Vibe-Pass-Identität im Multi-User.** Ein neuer WebSocket-Nachrichtentyp `vibe` (`{vibePassId, proof}`) trägt die Identität: `proof` ist eine Signatur über die EIGENE peerId des Senders, der Empfänger verifiziert sie gegen die server-gestempelte peerId — die Bindung macht den Beweis fälschungssicher (ein geklauter Beweis gilt einer fremden peerId). Der Mitspieler ist damit nicht mehr nur eine fälschbare peerId + ein gewählter Name, sondern beweisbar sein Vibe-Pass; das Name-Schild zeigt bei verifizierter Identität „✓ <Fingerprint>". `vibe` läuft NICHT über die DSL, der signaling-server relayt es als dummer (nichts verifizierender) Vermittler.
 >
-> **Offen — W14**: das Portal-Manifest bekommt das `authorPubKey`/`signature`-Feld (§3.3) — eine veröffentlichte Welt signiert ihr eigenes `manifest.json`, `_vibeVerify` (aus W13, steht) prüft es. Das gehört zur Welt-Registry (W14, Phase 2), weil erst dort fremde, anderswo veröffentlichte Welten andocken. Plus **W13 V2** (§4-Punkt „Avatar-Anpassungen" — der Pass trägt Custom-Seele + Materialien + Werkzeuge in andere Welten). Der vollständige Wellen-Eintrag steht in `CLAUDE.md` V8.56, der konkrete Drei-Phasen-Plan für W14 (mit Schnittstellen) in `docs/roadmap.md` §3 (Welle 14).
+> **Umsetzung (V8.60, W14 Phase 2)**: das Welt-Manifest wird signiert. `signWorld`/`verifyWorldSignature` versiegeln eine Welt mit dem Vibe-Pass (vier Status-Stufen, exakt wie die W13-P2-Bauplan-Signatur); das Portal-Overlay zeigt beim Betreten „signiert von &lt;Autor&gt;". **Self-Sovereign**: der Spieler signiert mit SEINEM Schlüssel — kein Projekt-Schlüssel, keine zentrale Autorität (§4). Abweichung von §3.3: die Signatur ist (Phase 2) spieler-global heimat-seitig (`state.signedWorlds` + localStorage), NICHT in der statischen `manifest.json` — der Browser kann keine Repo-Dateien schreiben; die manifest-getragene Signatur (fremde Welten tragen die Signatur ihres Autors) ist Phase 3. **W13 V2 ist mit erledigt**: `_portalEnterPayload` trägt das Schaffen des Spielers (aktive Seele, eigene Materialien + Werkzeuge) durch ein Portal in die fremde Sub-Welt. **W14 Phase 3 (V8.61)** vollendet es: `exportWorldManifest` gibt eine signierte Welt als §3.3-Manifest-Datei aus (jetzt MIT `authorPubKey`/`signature` — die manifest-getragene Signatur, der §3.3-literale Pfad), `importWorldManifest` empfängt ein fremdes Manifest → `state.customWorlds`, die Bibliothek wird ein wachsender Index, „signiert von <Autor>" wird zwischen Spielern real. **Damit ist W14 (Bibliothek) mit Phase 1+2+3 komplett.** Eine empfangene Welt ohne erreichbare Dateien ist browsbar, aber nicht betretbar — der KI-Übersetzer (Welt-Dateien vendorn, §3.3-Horizont) bleibt der bewusste letzte Schritt. Vollständige Einträge in `CLAUDE.md` V8.60/V8.61.
 
 ---
 
@@ -203,7 +205,7 @@ Das ist die **Energy-Verschiebung nach Nutzen** die du beschrieben hast. Wer ein
 
 ## 6. Roadmap-Sequenz
 
-Stand V8.56 — die Sequenz bis zur Bibliothek:
+Stand V8.58 — die Sequenz bis zur Bibliothek:
 
 | Welle | Inhalt | Status |
 |---|---|---|
@@ -212,7 +214,7 @@ Stand V8.56 — die Sequenz bis zur Bibliothek:
 | **11 ext.** | Substanz-Rolle (Identität emergiert aus Substanz) | ✅ live (V8.35) |
 | **12** | **Welt-Portal** (Rolle „portal" + Sub-Engine-Adapter + DSL-Brücke) | ✅ live (V8.51-V8.53) |
 | **13** | **Vibe-Pass** (ed25519-Keypair + Bauplan-Signaturen + Avatar-Identity) | ✅ live (V8.54-V8.56) |
-| **14** | **Bibliothek** (Welt-Registry + Browse-UI + Auto-Portal-Bauplan) | 🔴 **nächste Welle** — Drei-Phasen-Plan in `roadmap.md` §3 |
+| **14** | **Bibliothek** (Welt-Registry + Browse-UI + Auto-Portal-Bauplan) | ✅ **komplett (V8.58/V8.60/V8.61)** — browsbarer „Bibliothek"-Tab + „Portal holen" (P1), signierte Welt-Manifeste + „signiert von <Autor>" + W13 V2 (P2), fremde Welt-Manifeste exportieren/importieren — die Bibliothek wird ein wachsender Index (P3). KI-Übersetzer als Horizont. |
 | **7** | **Compute-Sharing** (WebRTC-Mesh als Server-Layer für Welt-Portale) | 🔴 offen — Skalierung |
 
 Welle 12 war das **Proof of Concept** (bewiesen). Welle 13 ✅ + 14 + 7 sind die **Skalierung zur Bibliothek**.

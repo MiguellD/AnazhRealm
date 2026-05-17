@@ -2,7 +2,7 @@
 
 Ein als Co-Creation-Werk Mensch+KI entworfenes 3D-Browser-Sandbox-Ultiversum. Eine Datei, ein Stamm, viele Ringe.
 
-**Stand**: V8.57 (17.05.2026) — W13 Vibe-Pass komplett (Phase 1+2+3). Der Avatar ist eine souveräne ed25519-Identität: er hält einen Schlüssel, signiert seine Werke (Bauplan-Signaturen über die Substanz), und im Multi-User trägt jeder Mitspieler seine beweisbare Identität — ein peerId-gebundener Beweis, ein verifiziertes Name-Schild. Davor W12 Welt-Portal (Phase 1+2+3 komplett). V8.57 heilte einen flaky CI-Playtest (3rd-Person-Kamera-Pitch) an der Wurzel.
+**Stand**: V8.61 (17.05.2026) — **W14 (Bibliothek) komplett**: die Welt-Registry ist browsbar (P1), signierbar mit dem Vibe-Pass (P2 — „signiert von <Autor>", plus W13 V2: das Schaffen reist durchs Portal mit) und empfangend (P3 — fremde Welt-Manifeste exportieren/importieren, die Bibliothek wird ein wachsender Index). Die Bibliothek von Alexandria der Vibecode-Ära steht; der KI-Übersetzer bleibt der Horizont. Ein achter Topbar-Tab „Bibliothek" macht die Welt-Registry browsbar — pro Welt eine Karte mit Label, Beschreibung, DSL-Vokabular und Stufen-Marke; ein Klick „Portal holen" legt einen auf die Welt gerichteten Tor-Bauplan ins Inventar. Davor W13 Vibe-Pass komplett (souveräne ed25519-Identität: Schlüssel, signierte Werke, peerId-gebundene Multi-User-Identität) und W12 Welt-Portal (Phase 1+2+3 komplett).
 
 ## Was es ist
 

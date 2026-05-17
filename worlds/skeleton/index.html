@@ -75,6 +75,41 @@
                 font-size: 0.75rem;
                 opacity: 0.5;
             }
+            /* W14 Phase 2 / W13 V2 — das Schaffen, das der Vibe-Pass mitträgt. */
+            #vibe-line {
+                font-size: 0.72rem;
+                opacity: 0.6;
+                letter-spacing: 0.08em;
+            }
+            #brought {
+                margin-top: 0.8em;
+                max-width: 30em;
+                border-top: 1px solid #43c98a44;
+                padding-top: 0.7em;
+            }
+            .brought-soul {
+                font-size: 0.82rem;
+                color: #cdd8ee;
+                margin-bottom: 0.4em;
+            }
+            .brought-soul b {
+                color: #43c98a;
+            }
+            .brought-chips {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 4px;
+                justify-content: center;
+                margin-top: 4px;
+            }
+            .brought-chip {
+                font-size: 0.66rem;
+                padding: 1px 7px;
+                border-radius: 8px;
+                background: #1a2238;
+                border: 1px solid #43c98a55;
+                color: #cdd8ee;
+            }
         </style>
     </head>
     <body>
@@ -85,12 +120,14 @@
                 Reisender: <span id="avatar-name">…</span> ·
                 <span id="portal-status">wartet auf Heimat-Welt</span>
             </div>
-            <div class="sub" style="opacity: 0.55">
-                Ein leeres Tor-Gerüst. Hier lädt W12 Phase 2 eine echte Sub-Engine; die
-                DSL-Brücke dockt am postMessage-Handshake an.
+            <div class="sub" id="vibe-line" hidden></div>
+            <div id="brought" hidden>
+                <div class="brought-soul" id="brought-soul"></div>
+                <div class="brought-chips" id="brought-mats"></div>
+                <div class="brought-chips" id="brought-tools"></div>
             </div>
             <div class="hint">Esc — zurück zur Heimat-Welt</div>
         </div>
-        <script src="skeleton.js?v=2"></script>
+        <script src="skeleton.js?v=3"></script>
     </body>
 </html>

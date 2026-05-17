@@ -29,7 +29,7 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self';"
         />
-        <title>Anazh Realm v8.57 – Das Ultiversum</title>
+        <title>Anazh Realm v8.61 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
              zusätzliche Datei. img-src 'self' data: in CSP erlaubt data-URI. -->
         <link
@@ -2239,6 +2239,156 @@
                 color: #e08adc;
                 white-space: nowrap;
             }
+            /* W14 Phase 1 — Bibliothek: browsbare Welt-Registry. Pro Welt
+               eine Karte (Label + Beschreibung + DSL-Vokabular + Stufen-Marke
+               + „Portal holen"). Stil mirror't die Drawer-Pergament-Sprache. */
+            .library-list {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                padding: 4px 2px;
+            }
+            .library-card {
+                border: 1px solid var(--brass-2, #8a6322);
+                border-radius: 3px;
+                padding: 7px 9px;
+                background: linear-gradient(180deg, rgba(255, 240, 205, 0.32), rgba(180, 140, 80, 0.1));
+            }
+            .library-card-head {
+                display: flex;
+                align-items: baseline;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+            .library-card-name {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 13px;
+                font-weight: bold;
+                color: var(--parch-ink, #2b1a08);
+            }
+            .library-stage {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 9px;
+                letter-spacing: 0.04em;
+                padding: 1px 6px;
+                border-radius: 8px;
+                background: rgba(67, 201, 138, 0.18);
+                color: #2c8a5e;
+                border: 1px solid rgba(67, 201, 138, 0.5);
+            }
+            .library-stage.stage-ausgestellt {
+                background: rgba(154, 144, 136, 0.18);
+                color: var(--parch-ink-faded, #7b5a2e);
+                border-color: rgba(154, 144, 136, 0.5);
+            }
+            .library-desc {
+                font-family: "IM Fell English", Georgia, serif;
+                font-size: 11px;
+                font-style: italic;
+                color: var(--parch-ink-soft, #5a3f1d);
+                margin: 4px 0 5px;
+            }
+            .library-dsl {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 3px;
+                margin-bottom: 6px;
+            }
+            .library-dsl-word {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 9px;
+                padding: 1px 5px;
+                border-radius: 2px;
+                background: rgba(138, 106, 54, 0.16);
+                color: var(--parch-ink-soft, #5a3f1d);
+            }
+            .library-dsl-empty {
+                font-family: "IM Fell English", Georgia, serif;
+                font-size: 10px;
+                font-style: italic;
+                color: var(--parch-ink-faded, #7b5a2e);
+            }
+            .library-get {
+                background: linear-gradient(180deg, rgba(255, 235, 190, 0.55), rgba(180, 140, 80, 0.35));
+                color: var(--parch-ink, #2b1a08);
+                border: 1px solid var(--brass-2, #8a6322);
+                padding: 3px 12px;
+                font-size: 10.5px;
+                cursor: pointer;
+                border-radius: 2px;
+                font-family: "Cinzel", Georgia, serif;
+            }
+            .library-get:hover {
+                background: linear-gradient(180deg, rgba(255, 245, 210, 0.7), rgba(200, 160, 100, 0.45));
+            }
+            .library-status {
+                font-family: "IM Fell English", Georgia, serif;
+                font-size: 10px;
+                font-style: italic;
+                color: #2c8a5e;
+                margin-left: 8px;
+            }
+            /* W14 Phase 2 — Welt-Signatur-Zeile auf der Bibliothek-Karte.
+               Spiegelt den Stil der W13-P2-Werkstatt-Signatur-Zeile. */
+            .library-sig-row {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                margin-top: 5px;
+                padding-top: 5px;
+                border-top: 1px dotted rgba(138, 106, 54, 0.3);
+            }
+            .library-sig-status {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 9px;
+                flex: 1;
+            }
+            .library-sig-status.sig-valid {
+                color: #3f8a4f;
+            }
+            .library-sig-status.sig-modified {
+                color: #b07a1f;
+            }
+            .library-sig-status.sig-forged {
+                color: #a04040;
+            }
+            .library-sig-status.sig-unsigned {
+                color: var(--parch-ink-faded, #7b5a2e);
+                opacity: 0.75;
+            }
+            .library-sig-btn {
+                background: linear-gradient(180deg, rgba(255, 235, 190, 0.55), rgba(180, 140, 80, 0.35));
+                color: var(--parch-ink, #2b1a08);
+                border: 1px solid var(--brass-2, #8a6322);
+                padding: 2px 9px;
+                font-size: 9.5px;
+                cursor: pointer;
+                border-radius: 2px;
+                font-family: "Cinzel", Georgia, serif;
+            }
+            .library-sig-btn:disabled {
+                opacity: 0.5;
+                cursor: default;
+            }
+            /* W14 Phase 3 — eine empfangene (importierte) Welt-Karte. */
+            .library-card-imported {
+                border-left: 3px solid #6a8fc8;
+            }
+            .library-imported-mark {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 9px;
+                letter-spacing: 0.04em;
+                padding: 1px 6px;
+                border-radius: 8px;
+                background: rgba(106, 143, 200, 0.2);
+                color: #4a6a9a;
+                border: 1px solid rgba(106, 143, 200, 0.5);
+            }
+            .library-status.library-unreachable {
+                color: var(--parch-ink-faded, #7b5a2e);
+                font-style: italic;
+                opacity: 0.85;
+            }
             /* Ring 5: Spieler-Seele. Brass-getintetes <select>, passend zum
            Drawer-Pergament-Look. */
             .drawer .soul-row {
@@ -3969,6 +4119,24 @@
                 font: 13px/1.4 "JetBrains Mono", monospace;
                 pointer-events: none;
             }
+            /* W14 Phase 2 — „signiert von <Autor>"-Zeile im Portal-Overlay. */
+            #portal-overlay .portal-sig {
+                position: absolute;
+                left: 50%;
+                top: 16px;
+                transform: translateX(-50%);
+                padding: 4px 14px;
+                border-radius: 6px;
+                background: rgba(5, 6, 10, 0.78);
+                font: 12px/1.4 "JetBrains Mono", monospace;
+                pointer-events: none;
+            }
+            #portal-overlay .portal-sig.sig-valid {
+                color: #5fc97f;
+            }
+            #portal-overlay .portal-sig.sig-bad {
+                color: #d97a6a;
+            }
             /* W12 Phase 2 — im Portal hebt sich die Konsole über das Overlay,
                damit der Spieler DSL-Befehle an die Sub-Welt schicken kann. */
             body.in-portal #console {
@@ -4093,7 +4261,7 @@
         <header id="topbar" class="hud-frame">
             <div class="topbar-inner">
                 <div class="title">
-                    Anazh Realm <span class="version">v8.56</span> <span class="sub">— Das Ultiversum</span>
+                    Anazh Realm <span class="version">v8.61</span> <span class="sub">— Das Ultiversum</span>
                 </div>
                 <nav class="tabs" role="tablist" aria-label="Hauptansichten">
                     <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">
@@ -4103,6 +4271,7 @@
                     <button class="tab" type="button" data-tab="spieler" role="tab">Spieler</button>
                     <button class="tab" type="button" data-tab="faehigkeiten" role="tab">Fähigkeiten</button>
                     <button class="tab" type="button" data-tab="werkstatt" role="tab">Werkstatt</button>
+                    <button class="tab" type="button" data-tab="bibliothek" role="tab">Bibliothek</button>
                     <button class="tab" type="button" data-tab="einstellungen" role="tab">Einstellungen</button>
                     <button class="tab" type="button" data-tab="hilfe" role="tab">Hilfe</button>
                 </nav>
@@ -4550,6 +4719,29 @@
                     <span class="caret">▸</span> Editor (Detail-Werte)
                 </button>
                 <div id="workshop-editor" hidden></div>
+            </section>
+        </aside>
+        <!-- W14 Phase 1 — Bibliothek: die WORLD_REGISTRY browsbar. Pro Welt
+             eine Karte; „Portal holen" legt einen Tor-Bauplan ins Inventar.
+             #library-list wird von renderLibraryUI() gefüllt. -->
+        <aside class="drawer" data-drawer="bibliothek" aria-label="Bibliothek-Panel" hidden>
+            <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
+            <h2>Bibliothek</h2>
+            <section class="section">
+                <h3>Welten <span class="section-hint">(durch ein Tor erreichbar)</span></h3>
+                <p class="drawer-hint">
+                    Andere Welten, betretbar durch ein Portal. „Portal holen" legt einen Tor-Bauplan in dein
+                    Inventar — platziere ihn über die Hotbar in deiner Welt und geh per E-Taste hindurch.
+                    „Teilen…" exportiert das signierte Manifest einer Welt; „Welt empfangen…" liest ein
+                    fremdes Manifest ein — so wächst die Bibliothek (W14 Phase 3).
+                </p>
+                <!-- W14 Phase 3 — fremde Welt-Manifeste empfangen. Versteckter
+                     Datei-Picker, vom „Welt empfangen"-Knopf ausgelöst. -->
+                <div class="actions">
+                    <button type="button" id="library-import">Welt empfangen…</button>
+                </div>
+                <input type="file" id="library-import-input" accept="application/json,.json" hidden />
+                <div id="library-list" class="library-list" aria-live="polite">—</div>
             </section>
         </aside>
         <aside class="drawer" data-drawer="einstellungen" aria-label="Einstellungen-Panel" hidden>
@@ -5073,6 +5265,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=8.57" defer></script>
+        <script src="anazhRealm.js?v=8.61" defer></script>
     </body>
 </html>

@@ -14268,6 +14268,511 @@ function startSaveServer() {
                 check("W13 P3: signaling-server-Quell-Check läuft", false, err && err.message);
             }
 
+            // ### W14 Phase 1 — Bibliothek: browsbare Welt-Registry ###
+            const w14Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    const REG = r.constructor.WORLD_REGISTRY;
+                    out.methods =
+                        typeof r.renderLibraryUI === "function" &&
+                        typeof r.obtainPortalForWorld === "function" &&
+                        typeof r.libraryInitDOM === "function";
+                    // Jeder Registry-Eintrag trägt jetzt eine Beschreibung (W14).
+                    out.registryHasDesc = Object.values(REG).every(
+                        (w) => typeof w.desc === "string" && w.desc.length > 0
+                    );
+                    // Tab + Drawer im DOM.
+                    out.tabInDom = !!document.querySelector('#topbar .tab[data-tab="bibliothek"]');
+                    out.drawerInDom = !!document.querySelector('.drawer[data-drawer="bibliothek"]');
+                    // renderLibraryUI baut eine Karte pro Registry-Welt.
+                    r.renderLibraryUI();
+                    const cards = document.querySelectorAll("#library-list .library-card");
+                    out.cardPerWorld = cards.length === Object.keys(REG).length;
+                    // Eine Karte zeigt Label + DSL-Wörter + Stufen-Marke.
+                    const fluidCard = Array.from(cards).find((c) => /Strom-Welt/.test(c.textContent));
+                    out.cardShowsDsl =
+                        !!fluidCard && /sturm/.test(fluidCard.textContent) && /übersetzt/.test(fluidCard.textContent);
+                    // obtainPortalForWorld: klont welt_portal, richtet, legt ins Inventar.
+                    const res1 = r.obtainPortalForWorld("fluid");
+                    out.obtainOk = res1.ok === true && res1.blueprint === "portal_fluid";
+                    const bp = r.state.blueprints.portal_fluid;
+                    out.bpIsPortal = !!bp && bp.role === "portal" && bp.builtIn !== true;
+                    out.bpAimedAtFluid = !!bp && !!bp.portalMeta && bp.portalMeta.world === REG.fluid.world;
+                    // Der geholte Bauplan ist betretbar (Affordance isPortal).
+                    out.bpEnterable = !!bp && r.computeBlueprintAffordances(bp).isPortal === true;
+                    // Im Inventar gelandet.
+                    const slot1 = r.state.player.inventory.find((s) => s && s.blueprintName === "portal_fluid");
+                    out.inInventory = !!slot1 && slot1.count >= 1;
+                    // Zweites Holen stackt — kein zweiter Bauplan.
+                    const bpCountBefore = Object.keys(r.state.blueprints).length;
+                    const res2 = r.obtainPortalForWorld("fluid");
+                    const bpCountAfter = Object.keys(r.state.blueprints).length;
+                    const slot2 = r.state.player.inventory.find((s) => s && s.blueprintName === "portal_fluid");
+                    out.secondStacks =
+                        res2.ok === true && !!slot2 && slot2.count >= 2 && bpCountAfter === bpCountBefore;
+                    // Unbekannte Welt → abgelehnt.
+                    out.unknownRejected = r.obtainPortalForWorld("nirgendwo").ok === false;
+                    // V8.59 — portalMeta + role:portal überleben den Save.
+                    // buildStateSnapshot muss sie schreiben, loadState sie
+                    // wiederherstellen — sonst verlöre ein geholtes Portal beim
+                    // Reload seine Ausrichtung (und träfe wieder _isMoveable).
+                    const snap = r.buildStateSnapshot();
+                    const snapBp = (snap.blueprints || []).find((b) => b && b.name === "portal_fluid");
+                    out.snapPersistsPortal =
+                        !!snapBp &&
+                        snapBp.role === "portal" &&
+                        !!snapBp.portalMeta &&
+                        snapBp.portalMeta.world === REG.fluid.world;
+                    // Read-Seite: den Snapshot-Eintrag durch loadState zurückspielen.
+                    delete r.state.blueprints.portal_fluid;
+                    r.loadState({ blueprints: snapBp ? [snapBp] : [] });
+                    const reBp = r.state.blueprints.portal_fluid;
+                    out.loadRestoresPortal =
+                        !!reBp &&
+                        reBp.role === "portal" &&
+                        !!reBp.portalMeta &&
+                        reBp.portalMeta.world === REG.fluid.world;
+                    out.loadKeepsEnterable = !!reBp && r.computeBlueprintAffordances(reBp).isPortal === true;
+                    // obtainPortalForWorld richtet bei jedem Aufruf neu aus —
+                    // heilt ein Portal, dem (etwa aus einem alten Save) die
+                    // Ausrichtung fehlt.
+                    if (reBp) {
+                        delete reBp.portalMeta;
+                        reBp.role = "architecture";
+                    }
+                    r.obtainPortalForWorld("fluid");
+                    const healedBp = r.state.blueprints.portal_fluid;
+                    out.reaimHeals =
+                        !!healedBp &&
+                        healedBp.role === "portal" &&
+                        !!healedBp.portalMeta &&
+                        healedBp.portalMeta.world === REG.fluid.world;
+                    // Aufräumen, damit spätere Blöcke einen sauberen Stand sehen.
+                    delete r.state.blueprints.portal_fluid;
+                    for (let i = 0; i < r.state.player.inventory.length; i++) {
+                        const s = r.state.player.inventory[i];
+                        if (s && s.blueprintName === "portal_fluid") r.state.player.inventory[i] = null;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w14Results && !w14Results.error) {
+                check("W14 P1: renderLibraryUI/obtainPortalForWorld/libraryInitDOM existieren", w14Results.methods);
+                check("W14 P1: jeder WORLD_REGISTRY-Eintrag trägt eine Beschreibung", w14Results.registryHasDesc);
+                check("W14 P1: Bibliothek-Tab im Topbar", w14Results.tabInDom);
+                check("W14 P1: Bibliothek-Drawer im DOM", w14Results.drawerInDom);
+                check("W14 P1: renderLibraryUI baut eine Karte pro Welt", w14Results.cardPerWorld);
+                check("W14 P1: Karte zeigt Label + DSL-Vokabular + Stufen-Marke", w14Results.cardShowsDsl);
+                check("W14 P1: obtainPortalForWorld liefert ok + portal_fluid", w14Results.obtainOk);
+                check("W14 P1: der geholte Bauplan trägt role:portal + ist eigen (nicht built-in)", w14Results.bpIsPortal);
+                check("W14 P1: der geholte Bauplan ist auf die Strom-Welt gerichtet", w14Results.bpAimedAtFluid);
+                check("W14 P1: der geholte Portal-Bauplan ist betretbar (Affordance isPortal)", w14Results.bpEnterable);
+                check("W14 P1: das Portal liegt im Inventar", w14Results.inInventory);
+                check("W14 P1: zweites Holen stackt im Inventar (kein zweiter Bauplan)", w14Results.secondStacks);
+                check("W14 P1: obtainPortalForWorld verwirft eine unbekannte Welt", w14Results.unknownRejected);
+                check("W14 P1: buildStateSnapshot persistiert role:portal + portalMeta", w14Results.snapPersistsPortal);
+                check("W14 P1: loadState stellt role:portal + portalMeta wieder her", w14Results.loadRestoresPortal);
+                check("W14 P1: der wiederhergestellte Portal-Bauplan bleibt betretbar", w14Results.loadKeepsEnterable);
+                check(
+                    "W14 P1: obtainPortalForWorld richtet neu aus + heilt verlorenes portalMeta",
+                    w14Results.reaimHeals
+                );
+            } else {
+                check("W14 P1: Bibliothek-Tests laufen", false, w14Results ? w14Results.error : "no result");
+            }
+
+            // ### W14 Phase 2 Teil A — Welt-Manifest-Signatur ###
+            const w14p2Results = await page
+                .evaluate(async () => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    const REG = r.constructor.WORLD_REGISTRY;
+                    out.methods =
+                        typeof r._canonicalManifest === "function" &&
+                        typeof r.signWorld === "function" &&
+                        typeof r.verifyWorldSignature === "function" &&
+                        typeof r._loadSignedWorlds === "function" &&
+                        typeof r._portalShowSignature === "function";
+                    // _canonicalManifest deterministisch + ignoriert world/desc.
+                    const c1 = r._canonicalManifest(REG.fluid);
+                    const c2 = r._canonicalManifest({
+                        id: "fluid",
+                        label: "Strom-Welt",
+                        dsl: REG.fluid.dsl,
+                        world: "anderer/pfad",
+                        desc: "andere beschreibung",
+                    });
+                    out.canonDeterministic = c1 === c2 && c1.length > 0;
+                    out.canonIgnoresPath = !c1.includes("worlds/");
+                    // Vorzustand säubern.
+                    delete r.state.signedWorlds.fluid;
+                    delete r.state.signedWorlds.terrain;
+                    // Unsigniert → "unsigned".
+                    out.unsignedState = (await r.verifyWorldSignature("fluid")) === "unsigned";
+                    // signWorld signiert + persistiert.
+                    const signRes = await r.signWorld("fluid");
+                    out.signOk = signRes.ok === true && /^[0-9a-f]{64}$/i.test(signRes.authorPubKey || "");
+                    out.signStored =
+                        !!r.state.signedWorlds.fluid && /^[0-9a-f]+$/i.test(r.state.signedWorlds.fluid.signature || "");
+                    out.signValid = (await r.verifyWorldSignature("fluid")) === "valid";
+                    // signWorld verwirft eine unbekannte Welt.
+                    out.signUnknownRejected = (await r.signWorld("nirgendwo")).ok === false;
+                    // localStorage-Persistenz: _loadSignedWorlds liest die Signatur zurück.
+                    const reloaded = r._loadSignedWorlds();
+                    out.persistRoundtrip =
+                        !!reloaded.fluid && reloaded.fluid.signature === r.state.signedWorlds.fluid.signature;
+                    // "modified" — der Manifest-Hash passt nicht mehr.
+                    const realHash = r.state.signedWorlds.fluid.signedHash;
+                    r.state.signedWorlds.fluid.signedHash = "deadbeef";
+                    out.modifiedState = (await r.verifyWorldSignature("fluid")) === "modified";
+                    r.state.signedWorlds.fluid.signedHash = realHash;
+                    // "forged" — die Signatur passt nicht zum Autor.
+                    const realSig = r.state.signedWorlds.fluid.signature;
+                    r.state.signedWorlds.fluid.signature = (realSig[0] === "a" ? "b" : "a") + realSig.slice(1);
+                    out.forgedState = (await r.verifyWorldSignature("fluid")) === "forged";
+                    r.state.signedWorlds.fluid.signature = realSig;
+                    // Cross-Autor: ein mit FREMDEM Schlüssel signiertes Manifest verifiziert.
+                    const foreign = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
+                    const foreignJwk = await crypto.subtle.exportKey("jwk", foreign.privateKey);
+                    const foreignPubHex = r._vibeBytesToHex(r._vibeB64uToBytes(foreignJwk.x));
+                    const canonTerrain = r._canonicalManifest(REG.terrain);
+                    const foreignSig = r._vibeBytesToHex(
+                        new Uint8Array(
+                            await crypto.subtle.sign(
+                                { name: "Ed25519" },
+                                foreign.privateKey,
+                                new TextEncoder().encode(canonTerrain)
+                            )
+                        )
+                    );
+                    r.state.signedWorlds.terrain = {
+                        authorPubKey: foreignPubHex,
+                        signature: foreignSig,
+                        signedHash: r._fastHash(canonTerrain),
+                        signedAt: Date.now(),
+                    };
+                    out.crossAuthorValid = (await r.verifyWorldSignature("terrain")) === "valid";
+                    // _loadSignedWorlds defensiv gegen korruptes localStorage.
+                    const savedRaw = localStorage.getItem("anazh.signedWorlds");
+                    localStorage.setItem("anazh.signedWorlds", "{kaputt");
+                    out.loadDefensive = JSON.stringify(r._loadSignedWorlds()) === "{}";
+                    if (savedRaw !== null) localStorage.setItem("anazh.signedWorlds", savedRaw);
+                    // UI: Bibliothek-Karte trägt eine Signatur-Zeile + einen Knopf.
+                    r.renderLibraryUI();
+                    out.uiSigRow = !!document.querySelector("#library-list .library-sig-row");
+                    out.uiSigBtn = !!document.querySelector("#library-list .library-sig-btn");
+                    // Portal-Overlay: das Betreten einer signierten Welt zeigt
+                    // „signiert von <Autor>".
+                    r._buildPortalOverlay({ world: REG.fluid.world, label: "Strom-Welt", dsl: REG.fluid.dsl });
+                    out.overlayHasSigEl = !!(r._portalOverlay && r._portalOverlay.sigEl);
+                    out.overlaySigInDom = !!document.querySelector("#portal-overlay .portal-sig");
+                    await new Promise((res) => setTimeout(res, 180));
+                    const sigEl = r._portalOverlay && r._portalOverlay.sigEl;
+                    out.overlayShowsSigned = !!sigEl && sigEl.hidden === false && /signiert von/.test(sigEl.textContent);
+                    r._disposePortalOverlay();
+                    // Aufräumen.
+                    delete r.state.signedWorlds.fluid;
+                    delete r.state.signedWorlds.terrain;
+                    r._saveSignedWorlds();
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w14p2Results && !w14p2Results.error) {
+                check("W14 P2: _canonicalManifest/signWorld/verifyWorldSignature/_loadSignedWorlds/_portalShowSignature existieren", w14p2Results.methods);
+                check("W14 P2: _canonicalManifest ist deterministisch", w14p2Results.canonDeterministic);
+                check("W14 P2: _canonicalManifest ignoriert world-Pfad + desc (signiert die Substanz)", w14p2Results.canonIgnoresPath);
+                check("W14 P2: unsignierte Welt → Status 'unsigned'", w14p2Results.unsignedState);
+                check("W14 P2: signWorld signiert eine registrierte Welt", w14p2Results.signOk);
+                check("W14 P2: Signatur in state.signedWorlds gespeichert", w14p2Results.signStored);
+                check("W14 P2: signierte Welt → Status 'valid'", w14p2Results.signValid);
+                check("W14 P2: signWorld verwirft eine unbekannte Welt", w14p2Results.signUnknownRejected);
+                check("W14 P2: Signatur überlebt den localStorage-Rundlauf (_loadSignedWorlds)", w14p2Results.persistRoundtrip);
+                check("W14 P2: geändertes Manifest → Status 'modified'", w14p2Results.modifiedState);
+                check("W14 P2: gefälschte Signatur → Status 'forged'", w14p2Results.forgedState);
+                check("W14 P2: fremd-signiertes Manifest verifiziert (Cross-Autor)", w14p2Results.crossAuthorValid);
+                check("W14 P2: _loadSignedWorlds ist defensiv gegen korruptes localStorage", w14p2Results.loadDefensive);
+                check("W14 P2: Bibliothek-Karte trägt eine Signatur-Zeile + Knopf", w14p2Results.uiSigRow && w14p2Results.uiSigBtn);
+                check("W14 P2: Portal-Overlay legt eine .portal-sig-Zeile an", w14p2Results.overlayHasSigEl && w14p2Results.overlaySigInDom);
+                check("W14 P2: Betreten einer signierten Welt zeigt 'signiert von <Autor>'", w14p2Results.overlayShowsSigned);
+            } else {
+                check("W14 P2: Manifest-Signatur-Tests laufen", false, w14p2Results ? w14p2Results.error : "no result");
+            }
+
+            // ### W14 Phase 2 Teil B — W13 V2: das Schaffen reist mit ###
+            const w13v2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    out.payloadMethods =
+                        typeof r._portalEnterPayload === "function" && typeof r._portalSendEnter === "function";
+                    const baseP = r._portalEnterPayload();
+                    out.payloadName = typeof baseP.name === "string" && baseP.name.length > 0;
+                    out.payloadVibeId =
+                        typeof baseP.vibePassId === "string" && /^ed25519:[0-9a-f]{64}$/i.test(baseP.vibePassId);
+                    out.payloadFingerprint = typeof baseP.fingerprint === "string" && baseP.fingerprint.length > 0;
+                    out.payloadSoul =
+                        !!baseP.soul && typeof baseP.soul.name === "string" && typeof baseP.soul.label === "string";
+                    // Eigene Materialien/Werkzeuge reisen mit — Built-ins NICHT.
+                    // Plus: der 16er-Deckel hält den postMessage-Payload klein.
+                    for (let i = 0; i < 20; i++) {
+                        r.state.materials["_w14m" + i] = {
+                            builtIn: false,
+                            color: 0x44cc88,
+                            label: "M" + i,
+                            tags: {},
+                        };
+                    }
+                    r.state.tools._w14tool = {
+                        builtIn: false,
+                        label: "Testfeile",
+                        opName: "test_op",
+                        opClass: "subtractive",
+                    };
+                    const ownP = r._portalEnterPayload();
+                    out.payloadOwnMaterials =
+                        ownP.materials.some((m) => m.name === "_w14m0") &&
+                        !ownP.materials.some((m) => m.name === "stein");
+                    out.payloadMaterialCap = ownP.materials.length <= 16;
+                    out.payloadOwnTools =
+                        ownP.tools.some((t) => t.name === "_w14tool") &&
+                        !ownP.tools.some((t) => t.name === "hammer");
+                    for (let i = 0; i < 20; i++) delete r.state.materials["_w14m" + i];
+                    delete r.state.tools._w14tool;
+                    out.sendUsesPayload = /_portalEnterPayload/.test(r._portalSendEnter.toString());
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w13v2Results && !w13v2Results.error) {
+                check("W13 V2: _portalEnterPayload + _portalSendEnter existieren", w13v2Results.payloadMethods);
+                check("W13 V2: der enter-Payload trägt den Avatar-Namen", w13v2Results.payloadName);
+                check("W13 V2: der enter-Payload trägt die vibePassId (ed25519)", w13v2Results.payloadVibeId);
+                check("W13 V2: der enter-Payload trägt den Vibe-Pass-Fingerprint", w13v2Results.payloadFingerprint);
+                check("W13 V2: der enter-Payload trägt die aktive Seele (name + label)", w13v2Results.payloadSoul);
+                check("W13 V2: nur EIGENE Materialien reisen mit (Built-ins bleiben)", w13v2Results.payloadOwnMaterials);
+                check("W13 V2: die Materialien-Liste ist auf 16 gedeckelt", w13v2Results.payloadMaterialCap);
+                check("W13 V2: nur EIGENE Werkzeuge reisen mit (Built-ins bleiben)", w13v2Results.payloadOwnTools);
+                check("W13 V2: _portalSendEnter sendet den _portalEnterPayload", w13v2Results.sendUsesPayload);
+            } else {
+                check("W13 V2: enter-Payload-Tests laufen", false, w13v2Results ? w13v2Results.error : "no result");
+            }
+            // W13 V2 — die Sub-Welten empfangen + zeigen das Schaffen (Quell-Check).
+            try {
+                const skJs = fs.readFileSync(path.join(__dirname, "..", "worlds", "skeleton", "skeleton.js"), "utf8");
+                check(
+                    "W13 V2: skeleton.js hat renderBrought + liest soul/materials/tools",
+                    /function renderBrought/.test(skJs) &&
+                        /avatar\.soul/.test(skJs) &&
+                        /avatar\.materials/.test(skJs) &&
+                        /avatar\.tools/.test(skJs)
+                );
+                check(
+                    "W13 V2: skeleton.js rendert den Payload als Text + säubert Material-Farben",
+                    /textContent/.test(skJs) && /0xffffff/.test(skJs) && !/innerHTML/.test(skJs)
+                );
+                const skHtml = fs.readFileSync(
+                    path.join(__dirname, "..", "worlds", "skeleton", "index.html"),
+                    "utf8"
+                );
+                check(
+                    "W13 V2: skeleton/index.html trägt das Mitgebracht-Panel",
+                    /id="brought"/.test(skHtml) && /brought-mats/.test(skHtml) && /brought-tools/.test(skHtml)
+                );
+                const flJs = fs.readFileSync(path.join(__dirname, "..", "worlds", "fluid", "fluid.js"), "utf8");
+                const teJs = fs.readFileSync(path.join(__dirname, "..", "worlds", "terrain", "terrain.js"), "utf8");
+                check(
+                    "W13 V2: fluid + terrain zeigen den Vibe-Pass-Fingerprint des Reisenden",
+                    /avatar\.fingerprint/.test(flJs) && /avatar\.fingerprint/.test(teJs)
+                );
+            } catch (err) {
+                check("W13 V2: Sub-Welt-Quell-Checks laufen", false, err && err.message);
+            }
+
+            // ### W14 Phase 3 — fremde Welten empfangen ###
+            const w14p3Results = await page
+                .evaluate(async () => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    const REG = r.constructor.WORLD_REGISTRY;
+                    out.methods =
+                        typeof r._worldEntry === "function" &&
+                        typeof r._libraryWorlds === "function" &&
+                        typeof r._loadCustomWorlds === "function" &&
+                        typeof r._sanitizeImportedManifest === "function" &&
+                        typeof r.exportWorldManifest === "function" &&
+                        typeof r.importWorldManifest === "function";
+                    // Vorzustand säubern.
+                    r.state.customWorlds = {};
+                    r.state.signedWorlds = r.state.signedWorlds || {};
+                    delete r.state.signedWorlds.fluid;
+                    // _worldEntry: Built-in auflösbar.
+                    out.worldEntryBuiltin = r._worldEntry("fluid") === REG.fluid;
+                    // _sanitizeImportedManifest: Built-in-id + Müll-id abgelehnt.
+                    out.sanitizeRejectsBuiltin =
+                        r._sanitizeImportedManifest({
+                            id: "fluid",
+                            label: "X",
+                            world: "worlds/skeleton/index.html",
+                            dsl: [],
+                        }) === null;
+                    out.sanitizeRejectsBadId =
+                        r._sanitizeImportedManifest({ id: "BÖSE id!", label: "X", world: "worlds/skeleton/index.html" }) ===
+                        null;
+                    // exportWorldManifest: unsigniert → not_signed.
+                    out.exportUnsignedRejected = r.exportWorldManifest("fluid").reason === "not_signed";
+                    // fluid signieren, dann exportieren.
+                    await r.signWorld("fluid");
+                    const exp = r.exportWorldManifest("fluid");
+                    out.exportOk =
+                        exp.ok === true &&
+                        !!exp.manifest &&
+                        exp.manifest.id === "fluid" &&
+                        exp.manifest.schemaVersion === "1.0" &&
+                        /^[0-9a-f]{64}$/i.test(exp.manifest.authorPubKey || "");
+                    // importWorldManifest: Built-in-id-Kollision + Müll.
+                    const clash = await r.importWorldManifest({
+                        schemaVersion: "1.0",
+                        id: "terrain",
+                        label: "X",
+                        world: "worlds/skeleton/index.html",
+                        dsl: [],
+                    });
+                    out.importBuiltinRejected = clash.ok === false && clash.reason === "id_is_builtin";
+                    const garbage = await r.importWorldManifest({ nonsense: true });
+                    out.importGarbageRejected = garbage.ok === false;
+                    // Cross-Autor: ein fremd-signiertes Manifest (neue id, erreichbarer Pfad).
+                    const foreign = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
+                    const foreignJwk = await crypto.subtle.exportKey("jwk", foreign.privateKey);
+                    const foreignPubHex = r._vibeBytesToHex(r._vibeB64uToBytes(foreignJwk.x));
+                    const fm = {
+                        schemaVersion: "1.0",
+                        id: "void-zwei",
+                        label: "Void Zwei",
+                        desc: "Eine fremde Leere.",
+                        world: "worlds/skeleton/index.html",
+                        dsl: ["skybox_color"],
+                    };
+                    const fmCanon = r._canonicalManifest(fm);
+                    const sign = async (canon) =>
+                        r._vibeBytesToHex(
+                            new Uint8Array(
+                                await crypto.subtle.sign(
+                                    { name: "Ed25519" },
+                                    foreign.privateKey,
+                                    new TextEncoder().encode(canon)
+                                )
+                            )
+                        );
+                    const fmSig = await sign(fmCanon);
+                    const importValid = await r.importWorldManifest(
+                        Object.assign({}, fm, {
+                            authorPubKey: foreignPubHex,
+                            signature: fmSig,
+                            signedHash: r._fastHash(fmCanon),
+                        })
+                    );
+                    out.importCrossAuthorValid =
+                        importValid.ok === true &&
+                        importValid.signatureStatus === "valid" &&
+                        importValid.reachable === true;
+                    out.customWorldStored = !!(r.state.customWorlds && r.state.customWorlds["void-zwei"]);
+                    out.verifyCustomValid = (await r.verifyWorldSignature("void-zwei")) === "valid";
+                    out.worldEntryCustom = !!r._worldEntry("void-zwei");
+                    out.libraryWorldsMerged =
+                        r._libraryWorlds().some((w) => w.id === "void-zwei") &&
+                        r._libraryWorlds().length > Object.keys(REG).length;
+                    // Gefälschte Signatur → forged.
+                    const fmFalsch = Object.assign({}, fm, { id: "void-falsch" });
+                    const importForged = await r.importWorldManifest(
+                        Object.assign({}, fmFalsch, {
+                            authorPubKey: foreignPubHex,
+                            signature: (fmSig[0] === "a" ? "b" : "a") + fmSig.slice(1),
+                            signedHash: r._fastHash(r._canonicalManifest(fmFalsch)),
+                        })
+                    );
+                    out.importForged = importForged.ok === true && importForged.signatureStatus === "forged";
+                    // Unerreichbare Welt: die fetch-Probe schlägt fehl.
+                    const importUnreach = await r.importWorldManifest({
+                        schemaVersion: "1.0",
+                        id: "void-fern",
+                        label: "Ferne Welt",
+                        world: "worlds/erfundene-welt/index.html",
+                        dsl: [],
+                    });
+                    out.importUnreachable = importUnreach.ok === true && importUnreach.reachable === false;
+                    // obtainPortalForWorld: erreichbare custom-Welt ok, unerreichbare abgelehnt.
+                    out.obtainCustomReachable = r.obtainPortalForWorld("void-zwei").ok === true;
+                    const obUn = r.obtainPortalForWorld("void-fern");
+                    out.obtainCustomUnreachable = obUn.ok === false && obUn.reason === "world_unreachable";
+                    // V8.61-Härtung — _runRaycast verzweigt defensiv bei
+                    // null-physicsWorld (sonst flakte ein rayTest-on-null im
+                    // rAF-Loop während eines Welt-Regens).
+                    const savedPW = r.state.physicsWorld;
+                    r.state.physicsWorld = null;
+                    try {
+                        out.raycastNullSafe = r._runRaycast(null, null, (_cb, hit) => hit) === false;
+                    } catch (e) {
+                        out.raycastNullSafe = false;
+                    }
+                    r.state.physicsWorld = savedPW;
+                    // localStorage-Rundlauf.
+                    const reloaded = r._loadCustomWorlds();
+                    out.customWorldsRoundtrip =
+                        !!reloaded["void-zwei"] &&
+                        reloaded["void-zwei"].signature === r.state.customWorlds["void-zwei"].signature;
+                    // UI: renderLibraryUI rendert eine importierte Karte + Import-Knopf im DOM.
+                    r.renderLibraryUI();
+                    out.uiImportedCard =
+                        !!document.querySelector("#library-list .library-card-imported") &&
+                        !!document.querySelector("#library-list .library-imported-mark");
+                    out.uiImportButton =
+                        !!document.getElementById("library-import") &&
+                        !!document.getElementById("library-import-input");
+                    // Aufräumen.
+                    r.state.customWorlds = {};
+                    r._saveCustomWorlds();
+                    delete r.state.signedWorlds.fluid;
+                    r._saveSignedWorlds();
+                    delete r.state.blueprints["portal_void-zwei"];
+                    for (let i = 0; i < r.state.player.inventory.length; i++) {
+                        const s = r.state.player.inventory[i];
+                        if (s && typeof s.blueprintName === "string" && s.blueprintName.indexOf("portal_void") === 0) {
+                            r.state.player.inventory[i] = null;
+                        }
+                    }
+                    r.renderLibraryUI();
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w14p3Results && !w14p3Results.error) {
+                check("W14 P3: _worldEntry/_libraryWorlds/_loadCustomWorlds/_sanitizeImportedManifest/export+importWorldManifest existieren", w14p3Results.methods);
+                check("W14 P3: _worldEntry löst eine Built-in-Welt auf", w14p3Results.worldEntryBuiltin);
+                check("W14 P3: _sanitizeImportedManifest lehnt eine Built-in-id ab (kein Override)", w14p3Results.sanitizeRejectsBuiltin);
+                check("W14 P3: _sanitizeImportedManifest lehnt eine ungültige id ab", w14p3Results.sanitizeRejectsBadId);
+                check("W14 P3: exportWorldManifest verlangt eine signierte Welt", w14p3Results.exportUnsignedRejected);
+                check("W14 P3: exportWorldManifest liefert das signierte §3.3-Manifest", w14p3Results.exportOk);
+                check("W14 P3: importWorldManifest verwirft eine Built-in-id-Kollision", w14p3Results.importBuiltinRejected);
+                check("W14 P3: importWorldManifest verwirft ein Müll-Manifest", w14p3Results.importGarbageRejected);
+                check("W14 P3: ein fremd-signiertes Manifest importiert + verifiziert (Cross-Autor)", w14p3Results.importCrossAuthorValid);
+                check("W14 P3: die importierte Welt landet in state.customWorlds", w14p3Results.customWorldStored);
+                check("W14 P3: verifyWorldSignature liest die manifest-getragene Signatur (valid)", w14p3Results.verifyCustomValid);
+                check("W14 P3: _worldEntry + _libraryWorlds umfassen die importierte Welt", w14p3Results.worldEntryCustom && w14p3Results.libraryWorldsMerged);
+                check("W14 P3: ein manipuliertes Manifest → Signatur 'forged'", w14p3Results.importForged);
+                check("W14 P3: eine Welt ohne erreichbare Dateien wird reachable:false markiert", w14p3Results.importUnreachable);
+                check("W14 P3: obtainPortalForWorld holt eine erreichbare importierte Welt", w14p3Results.obtainCustomReachable);
+                check("W14 P3: obtainPortalForWorld verweigert eine unerreichbare Welt (kein totes Portal)", w14p3Results.obtainCustomUnreachable);
+                check("W14 P3: importierte Welten überleben den localStorage-Rundlauf", w14p3Results.customWorldsRoundtrip);
+                check("W14 P3: Bibliothek rendert eine 'empfangen'-Karte für die importierte Welt", w14p3Results.uiImportedCard);
+                check("W14 P3: 'Welt empfangen'-Knopf + Datei-Picker im DOM", w14p3Results.uiImportButton);
+                check("W14 P3: _runRaycast ist defensiv gegen ein null-physicsWorld (kein rayTest-Crash)", w14p3Results.raycastNullSafe);
+            } else {
+                check("W14 P3: Welt-Import-Tests laufen", false, w14p3Results ? w14p3Results.error : "no result");
+            }
+
             // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
             const v840Results = await page
                 .evaluate(() => {
@@ -20621,7 +21126,8 @@ function startSaveServer() {
                     // Tab-System
                     const tabs = document.querySelectorAll("#topbar .tab");
                     out.tabCount = tabs.length;
-                    out.allTabsPresent = tabs.length === 7;
+                    // W14 — der Bibliothek-Tab ist der 8.
+                    out.allTabsPresent = tabs.length === 8;
                     const weltTab = document.querySelector('#topbar .tab[data-tab="welt"]');
                     out.weltTabActive = weltTab && weltTab.classList.contains("active");
                     const weltDrawer = document.querySelector('.drawer[data-drawer="welt"]');
