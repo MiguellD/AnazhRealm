@@ -1,0 +1,6 @@
+{
+    "schemaVersion": "1.0",
+    "id": "terrain",
+    "label": "Terrain-Welt",
+    "dsl": ["skybox_color", "gebirge", "ebene", "neu"]
+}

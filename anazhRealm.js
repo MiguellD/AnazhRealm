@@ -15201,6 +15201,17 @@ class AnazhRealm {
         });
     }
 
+    // W12 — ein DSL-Manifest säubern: nur op-förmige Strings (klein +
+    // Unterstrich, ≤40 Zeichen), gedeckelt auf 64. Genutzt fürs portalMeta-
+    // Manifest (Phase 2, Stufe „übersetzt") UND fürs native ready-Manifest
+    // (Phase 3, Stufe „nativ"). Liefert null, wenn nichts Gültiges übrig
+    // bleibt — eine Sub-Welt kann so kein garbage-Op deklarieren.
+    _sanitizeDslSubset(arr) {
+        if (!Array.isArray(arr)) return null;
+        const ops = arr.filter((op) => typeof op === "string" && /^[a-z_]{1,40}$/.test(op));
+        return ops.length ? ops.slice(0, 64) : null;
+    }
+
     // Säubert portalMeta. world muss ein same-origin relativer worlds/-Pfad
     // sein — kein "://", kein "..", kein führender Slash. Damit kann ein
     // Bauplan kein fremdes Origin ins iframe ziehen (die CSP bleibt
@@ -15216,14 +15227,12 @@ class AnazhRealm {
                 ? src.label.trim().slice(0, 60)
                 : String(fallbackLabel || "Portal").slice(0, 60);
         // W12 Phase 2 — der Manifest: welche DSL-Wörter die Welt versteht.
-        // Eine externe Übersetzungs-Schicht (von der Bibliothek autoriert,
-        // nicht von der Welt). Nur op-förmige Strings, gedeckelt. Fehlt es →
-        // Stufe 0: die Welt ist ausgestellt, stumm gegenüber der DSL.
-        let dsl = null;
-        if (Array.isArray(src.dsl)) {
-            const ops = src.dsl.filter((op) => typeof op === "string" && /^[a-z_]{1,40}$/.test(op));
-            if (ops.length) dsl = ops.slice(0, 64);
-        }
+        // Eine externe Übersetzungs-Schicht (von Registry/Bauplan autoriert,
+        // nicht von der Welt selbst — Stufe „übersetzt"). Fehlt es → Stufe
+        // „ausgestellt": die Welt ist stumm gegenüber der DSL. Phase 3: die
+        // Welt kann ihr Manifest im ready-Handshake auch SELBST melden
+        // (Stufe „nativ", _portalReceiveManifest) — dann gewinnt das.
+        const dsl = this._sanitizeDslSubset(src.dsl);
         return { world, label, dsl };
     }
 
@@ -15262,9 +15271,17 @@ class AnazhRealm {
             if (!this._portalOverlay || event.source !== iframe.contentWindow) return;
             const msg = event.data;
             if (!msg || typeof msg !== "object") return;
-            if (msg.type === "ready") this._portalSendEnter();
+            if (msg.type === "ready") {
+                // W12 Phase 3 — meldet die Welt ihr eigenes Manifest mit,
+                // übernimmt die Heimat es (Stufe „nativ").
+                this._portalReceiveManifest(msg);
+                this._portalSendEnter();
+            }
             // Die Sub-Welt meldet Esc (Fokus liegt im iframe) → Heimkehr.
             else if (msg.type === "exit") this.exitPortal();
+            // W12 Phase 3 — die Sub-Welt spricht zurück: ein Welt-Ereignis
+            // wandert ins Heimat-Journal (geloggt, nie ausgeführt).
+            else if (msg.type === "event") this._portalReceiveEvent(msg);
         };
         window.addEventListener("message", onMessage);
         iframe.addEventListener("load", () => this._portalSendEnter());
@@ -15272,9 +15289,14 @@ class AnazhRealm {
             overlayEl: overlay,
             iframe,
             onMessage,
+            hintEl: hint,
             world: meta.world,
             label: meta.label,
             dsl: meta.dsl,
+            // W12 Phase 3 — Drei-Stufen-Klarheit: kein Manifest → ausgestellt;
+            // portalMeta-Manifest → übersetzt; meldet die Welt ihr eigenes
+            // (ready-Handshake) → nativ. _portalReceiveManifest hebt auf nativ.
+            manifestStage: meta.dsl ? "übersetzt" : "ausgestellt",
         };
         document.body.appendChild(overlay);
         // Die Konsole übers Overlay heben — DSL-Eingabe im Portal möglich.
@@ -15328,7 +15350,18 @@ class AnazhRealm {
             }
         }
         this._buildPortalOverlay(portalMeta);
-        this.log(`Portal betreten: „${(portalMeta && portalMeta.label) || entry.type}"`, "INFO");
+        const worldLabel = (portalMeta && portalMeta.label) || entry.type;
+        this.log(`Portal betreten: „${worldLabel}"`, "INFO");
+        // W12 Phase 3 — die erste Reise durch ein bestimmtes Tor ist eine
+        // Erinnerung wert. journalAppendOnce (Schlüssel = Welt-Pfad): das
+        // wiederholte Betreten desselben Tors flutet das Journal nicht. Die
+        // Welt-Ereignisse drinnen kommen über _portalReceiveEvent.
+        const worldKey = (portalMeta && portalMeta.world) || AnazhRealm.PORTAL_SKELETON_WORLD;
+        this.journalAppendOnce(
+            `portalVisit:${worldKey}`,
+            "portal",
+            `Du tratst zum ersten Mal durch das Tor „${worldLabel}".`
+        );
         return { ok: true };
     }
 
@@ -15341,6 +15374,10 @@ class AnazhRealm {
         // sonst liefe der Avatar nach der Heimkehr von selbst weiter.
         this.state.keys = {};
         this.log("Portal verlassen — zurück in der Heimat-Welt", "INFO");
+        // W12 Phase 3 — die Heimkehr ist der Speicher-Punkt: die im Portal
+        // gesammelten Erinnerungen (Erst-Besuch + Welt-Ereignisse) werden
+        // mit dem regulären State-Snapshot dauerhaft.
+        this.saveState();
         return { ok: true };
     }
 
@@ -15414,6 +15451,46 @@ class AnazhRealm {
             return t !== "" && Number.isFinite(n) ? n : t;
         });
         return [op, ...args];
+    }
+
+    // W12 Phase 3 — der Rückkanal. Die Sub-Welt meldet ein Welt-Ereignis
+    // (ein Sturm zog auf, ein Gebirge erhob sich); die Heimat schreibt es
+    // als Erinnerung ins Welt-Journal. Ein Ereignis wird GELOGGT, NIE
+    // ausgeführt — die Asymmetrie IST die Sicherheits-Wand: Heimat→Sub
+    // trägt DSL (wird in der Sub-Welt ausgeführt), Sub→Heimat trägt nur
+    // Ereignis-Text (wird erinnert). Selbst eine böswillige Sub-Welt kann
+    // so nur gedeckelten Text ins Journal legen — kein Code, keine Mutation
+    // des Heimat-States. Der Text wird auf 160 Zeichen gekappt, damit eine
+    // fremde Welt keine Journal-Zeile sprengt.
+    _portalReceiveEvent(msg) {
+        if (!this._portalOverlay) return false;
+        const text = String((msg && msg.text) || "").trim();
+        if (!text) return false;
+        const po = this._portalOverlay;
+        this.journalAppend("portal", text.slice(0, 160), { world: po.label || po.world || "Portal-Welt" });
+        return true;
+    }
+
+    // W12 Phase 3 — die native Manifest-Stufe. Meldet eine Sub-Welt im
+    // ready-Handshake ihr eigenes DSL-Manifest (dsl + label), übernimmt die
+    // Heimat es: die Welt beschreibt sich SELBST (Stufe „nativ") — höher als
+    // das portalMeta-Manifest (Stufe „übersetzt", von Registry/Bauplan
+    // gesetzt). Das angekündigte dsl läuft durch denselben Sanitizer wie
+    // jedes Manifest — eine Sub-Welt kann kein garbage-Op einschmuggeln.
+    _portalReceiveManifest(msg) {
+        const po = this._portalOverlay;
+        if (!po || !msg) return false;
+        const dsl = this._sanitizeDslSubset(msg.dsl);
+        if (!dsl) return false;
+        po.dsl = dsl;
+        po.manifestStage = "nativ";
+        if (typeof msg.label === "string" && msg.label.trim()) {
+            po.label = msg.label.trim().slice(0, 60);
+        }
+        if (po.hintEl) {
+            po.hintEl.textContent = "Esc — Heimkehr · Konsole — Befehle an diese Welt";
+        }
+        return true;
     }
 
     // W12 Phase 1 — E-Tasten-Pfad: ist ein Portal in Reichweite, betritt es.

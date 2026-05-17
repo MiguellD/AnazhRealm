@@ -1,0 +1,6 @@
+{
+    "schemaVersion": "1.0",
+    "id": "skeleton",
+    "label": "Skelett-Welt",
+    "dsl": ["skybox_color"]
+}

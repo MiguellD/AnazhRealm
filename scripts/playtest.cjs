@@ -13658,6 +13658,246 @@ function startSaveServer() {
                 );
             }
 
+            // ### W12 Phase 3 — Teil A: Ereignisse zurück (Sub-Welt → Journal) ###
+            const w12p3aResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    const journal = () => r.state.worldJournal.entries;
+                    const lastEntry = () => journal()[journal().length - 1];
+                    out.methodExists = typeof r._portalReceiveEvent === "function";
+                    // Stub-Overlay: _portalReceiveEvent braucht nur _portalOverlay-Truthiness.
+                    r._portalOverlay = { label: "Test-Welt", world: "worlds/skeleton/index.html", dsl: null };
+                    const ok = r._portalReceiveEvent({ type: "event", text: "Ein Sturm zog auf." });
+                    const ev = lastEntry();
+                    out.eventJournaled = ok === true && !!ev && ev.text === "Ein Sturm zog auf.";
+                    out.eventTypeIsPortal = !!ev && ev.type === "portal";
+                    out.eventCtxWorld = !!ev && !!ev.ctx && ev.ctx.world === "Test-Welt";
+                    // Leeres/garbage Ereignis wird verworfen — der letzte Eintrag bleibt.
+                    const guard = lastEntry();
+                    r._portalReceiveEvent({ type: "event", text: "   " });
+                    r._portalReceiveEvent({ type: "event" });
+                    out.garbageIgnored = lastEntry() === guard;
+                    // Text wird auf 160 gedeckelt — eine fremde Welt sprengt keine Zeile.
+                    r._portalReceiveEvent({ type: "event", text: "x".repeat(400) });
+                    out.textCapped = lastEntry().text.length <= 160;
+                    // SICHERHEIT: ein Ereignis mit program-Feld führt NICHTS aus.
+                    const weatherBefore = r.state.weather;
+                    r._portalReceiveEvent({ type: "event", text: "harmlos", program: ["weather", "rainy"] });
+                    out.eventNeverExecutes = r.state.weather === weatherBefore && lastEntry().text === "harmlos";
+                    // Außerhalb eines Portals ist _portalReceiveEvent ein No-op.
+                    r._portalOverlay = null;
+                    out.noopOutsidePortal = r._portalReceiveEvent({ type: "event", text: "z" }) === false;
+                    // Der onMessage-Dispatch leitet {type:"event"} an _portalReceiveEvent.
+                    r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "Dispatch-Welt", dsl: null });
+                    const po = r._portalOverlay;
+                    po.onMessage({
+                        source: po.iframe.contentWindow,
+                        data: { type: "event", text: "Dispatch-Probe." },
+                    });
+                    out.onMessageDispatches = lastEntry().text === "Dispatch-Probe.";
+                    r._disposePortalOverlay();
+                    // enterPortal schreibt den Erst-Besuch (journalAppendOnce).
+                    // Der seen-Schlüssel wird vorab geleert — ein früherer
+                    // Portal-Test könnte die Skelett-Welt schon betreten haben.
+                    r.state.blueprints.test_p3_ring = {
+                        name: "test_p3_ring",
+                        label: "Test-P3-Ring",
+                        builtIn: false,
+                        parts: [],
+                        portalMeta: { world: "worlds/skeleton/index.html", label: "P3-Tor", dsl: null },
+                    };
+                    const visitKey = "portalVisit:worlds/skeleton/index.html";
+                    if (r.state.worldJournal.seen) delete r.state.worldJournal.seen[visitKey];
+                    r.enterPortal({ type: "test_p3_ring", affordances: { isPortal: true } });
+                    const visit = lastEntry();
+                    out.entryJournaled = !!visit && visit.type === "portal" && /P3-Tor/.test(visit.text);
+                    r.exitPortal();
+                    // Zweites Betreten flutet das Journal NICHT (journalAppendOnce).
+                    const reGuard = lastEntry();
+                    r.enterPortal({ type: "test_p3_ring", affordances: { isPortal: true } });
+                    out.entryOncePerWorld = lastEntry() === reGuard;
+                    r.exitPortal();
+                    if (r.state.worldJournal.seen) delete r.state.worldJournal.seen[visitKey];
+                    delete r.state.blueprints.test_p3_ring;
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w12p3aResults && !w12p3aResults.error) {
+                check("W12 P3a: _portalReceiveEvent existiert", w12p3aResults.methodExists);
+                check("W12 P3a: Welt-Ereignis wird ins Journal geschrieben", w12p3aResults.eventJournaled);
+                check("W12 P3a: Journal-Eintrag trägt den Typ 'portal'", w12p3aResults.eventTypeIsPortal);
+                check("W12 P3a: Eintrag merkt sich die Welt (ctx.world)", w12p3aResults.eventCtxWorld);
+                check("W12 P3a: leeres/garbage Ereignis wird verworfen", w12p3aResults.garbageIgnored);
+                check("W12 P3a: Ereignis-Text wird auf 160 Zeichen gedeckelt", w12p3aResults.textCapped);
+                check("W12 P3a: SICHERHEIT — ein Ereignis führt NIE DSL aus", w12p3aResults.eventNeverExecutes);
+                check("W12 P3a: außerhalb eines Portals ist es ein No-op", w12p3aResults.noopOutsidePortal);
+                check("W12 P3a: onMessage-Dispatch leitet {type:event} weiter", w12p3aResults.onMessageDispatches);
+                check("W12 P3a: enterPortal schreibt den Erst-Besuch ins Journal", w12p3aResults.entryJournaled);
+                check("W12 P3a: wiederholtes Betreten flutet das Journal nicht", w12p3aResults.entryOncePerWorld);
+            } else {
+                check("W12 P3a: Teil-A-Tests laufen", false, w12p3aResults ? w12p3aResults.error : "no result");
+            }
+
+            // W12 P3a — die drei Welt-Adapter melden Ereignisse zurück (Quell-Check).
+            try {
+                for (const [w, file] of [
+                    ["Skelett", "skeleton/skeleton.js"],
+                    ["Strom", "fluid/fluid.js"],
+                    ["Terrain", "terrain/terrain.js"],
+                ]) {
+                    const src = fs.readFileSync(path.join(__dirname, "..", "worlds", file), "utf8");
+                    check(
+                        `W12 P3a: ${w}-Welt-Adapter meldet Ereignisse zurück`,
+                        /function sendEvent/.test(src) && /type:\s*"event"/.test(src) && /sendEvent\("/.test(src)
+                    );
+                }
+            } catch (err) {
+                check("W12 P3a: Welt-Adapter-Quell-Check läuft", false, err && err.message);
+            }
+
+            // ### W12 Phase 3 — Teil B: die native Manifest-Stufe ###
+            const w12p3bResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    // _sanitizeDslSubset — der gemeinsame Manifest-Sanitizer.
+                    out.sanitizeExists = typeof r._sanitizeDslSubset === "function";
+                    out.sanitizeFilters =
+                        JSON.stringify(r._sanitizeDslSubset(["ok_op", "Bad Op", 5, "auch_gut", null])) ===
+                        JSON.stringify(["ok_op", "auch_gut"]);
+                    out.sanitizeNullOnEmpty =
+                        r._sanitizeDslSubset([]) === null && r._sanitizeDslSubset("nope") === null;
+                    out.sanitizeCaps = r._sanitizeDslSubset(new Array(80).fill("op")).length === 64;
+                    // _portalReceiveManifest — die Welt beschreibt sich selbst.
+                    out.receiveExists = typeof r._portalReceiveManifest === "function";
+                    r._portalOverlay = {
+                        label: "Alt-Label",
+                        world: "worlds/fluid/index.html",
+                        dsl: ["skybox_color"],
+                        manifestStage: "übersetzt",
+                        hintEl: null,
+                    };
+                    const ok = r._portalReceiveManifest({
+                        type: "ready",
+                        dsl: ["skybox_color", "flut"],
+                        label: "Strom-Welt",
+                    });
+                    out.nativeOverrides =
+                        ok === true &&
+                        r._portalOverlay.dsl.includes("flut") &&
+                        r._portalOverlay.manifestStage === "nativ";
+                    out.nativeLabel = r._portalOverlay.label === "Strom-Welt";
+                    // Angekündigtes dsl wird gesäubert — kein garbage-Op.
+                    r._portalOverlay.dsl = null;
+                    r._portalReceiveManifest({ dsl: ["gut_op", "BÖSE OP", 42] });
+                    out.nativeSanitized = JSON.stringify(r._portalOverlay.dsl) === JSON.stringify(["gut_op"]);
+                    // Kein dsl → false, das vorhandene Manifest bleibt (Fallback).
+                    r._portalOverlay.dsl = ["original"];
+                    r._portalOverlay.manifestStage = "übersetzt";
+                    out.noDslKeepsFallback =
+                        r._portalReceiveManifest({ type: "ready" }) === false &&
+                        r._portalOverlay.dsl[0] === "original" &&
+                        r._portalOverlay.manifestStage === "übersetzt";
+                    r._portalOverlay = null;
+                    // _buildPortalOverlay setzt die Drei-Stufen-Marke + hintEl.
+                    r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "T", dsl: ["skybox_color"] });
+                    out.stageUebersetzt =
+                        r._portalOverlay.manifestStage === "übersetzt" && !!r._portalOverlay.hintEl;
+                    r._disposePortalOverlay();
+                    r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "T", dsl: null });
+                    out.stageAusgestellt = r._portalOverlay.manifestStage === "ausgestellt";
+                    r._disposePortalOverlay();
+                    // Der ready-Handler wendet das native Manifest an.
+                    r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "T", dsl: null });
+                    const po = r._portalOverlay;
+                    po.onMessage({
+                        source: po.iframe.contentWindow,
+                        data: { type: "ready", dsl: ["skybox_color", "selbst_op"], label: "Selbst-Welt" },
+                    });
+                    out.readyAppliesManifest =
+                        !!po.dsl &&
+                        po.dsl.includes("selbst_op") &&
+                        po.manifestStage === "nativ" &&
+                        po.label === "Selbst-Welt";
+                    r._disposePortalOverlay();
+                    // Das Registry-Literal kennt „flut" NICHT — der Beweis,
+                    // dass die native Stufe mehr trägt als die übersetzte.
+                    out.registryLacksFlut = !r.constructor.WORLD_REGISTRY.fluid.dsl.includes("flut");
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w12p3bResults && !w12p3bResults.error) {
+                check("W12 P3b: _sanitizeDslSubset existiert", w12p3bResults.sanitizeExists);
+                check("W12 P3b: Sanitizer filtert Nicht-Ops raus", w12p3bResults.sanitizeFilters);
+                check("W12 P3b: Sanitizer liefert null bei leer/Nicht-Array", w12p3bResults.sanitizeNullOnEmpty);
+                check("W12 P3b: Sanitizer deckelt auf 64 Ops", w12p3bResults.sanitizeCaps);
+                check("W12 P3b: _portalReceiveManifest existiert", w12p3bResults.receiveExists);
+                check(
+                    "W12 P3b: natives Manifest überschreibt po.dsl + setzt Stufe 'nativ'",
+                    w12p3bResults.nativeOverrides
+                );
+                check("W12 P3b: natives Manifest übernimmt das Welt-Label", w12p3bResults.nativeLabel);
+                check("W12 P3b: angekündigtes dsl wird gesäubert (kein garbage-Op)", w12p3bResults.nativeSanitized);
+                check("W12 P3b: ready ohne dsl → Fallback aufs portalMeta-Manifest", w12p3bResults.noDslKeepsFallback);
+                check(
+                    "W12 P3b: _buildPortalOverlay markiert Stufe 'übersetzt' + hintEl",
+                    w12p3bResults.stageUebersetzt
+                );
+                check(
+                    "W12 P3b: ohne Manifest markiert _buildPortalOverlay Stufe 'ausgestellt'",
+                    w12p3bResults.stageAusgestellt
+                );
+                check("W12 P3b: der ready-Handler wendet das native Manifest an", w12p3bResults.readyAppliesManifest);
+                check("W12 P3b: das Registry-Literal kennt 'flut' nicht", w12p3bResults.registryLacksFlut);
+            } else {
+                check("W12 P3b: Teil-B-Tests laufen", false, w12p3bResults ? w12p3bResults.error : "no result");
+            }
+
+            // W12 P3b — die manifest.json-Dateien + die Adapter-Verdrahtung (Quell-Check).
+            try {
+                let fluidManifestHasFlut = false;
+                for (const [w, id, file] of [
+                    ["Skelett", "skeleton", "skeleton/manifest.json"],
+                    ["Strom", "fluid", "fluid/manifest.json"],
+                    ["Terrain", "terrain", "terrain/manifest.json"],
+                ]) {
+                    const m = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "worlds", file), "utf8"));
+                    check(
+                        `W12 P3b: ${w}-Welt hat ein valides manifest.json`,
+                        m &&
+                            m.schemaVersion === "1.0" &&
+                            m.id === id &&
+                            typeof m.label === "string" &&
+                            Array.isArray(m.dsl) &&
+                            m.dsl.length > 0 &&
+                            m.dsl.every((op) => typeof op === "string")
+                    );
+                    if (id === "fluid") fluidManifestHasFlut = m.dsl.includes("flut");
+                }
+                check(
+                    "W12 P3b: das fluid-Manifest deklariert 'flut' (jenseits des Registry-Literals)",
+                    fluidManifestHasFlut
+                );
+                for (const [w, file] of [
+                    ["Skelett", "skeleton/skeleton.js"],
+                    ["Strom", "fluid/fluid.js"],
+                    ["Terrain", "terrain/terrain.js"],
+                ]) {
+                    const src = fs.readFileSync(path.join(__dirname, "..", "worlds", file), "utf8");
+                    check(
+                        `W12 P3b: ${w}-Welt-Adapter lädt manifest.json + meldet es im ready`,
+                        /fetch\(\s*["']\.\/manifest\.json["']\s*\)/.test(src) && /announceReady/.test(src)
+                    );
+                }
+                const fluidSrc = fs.readFileSync(path.join(__dirname, "..", "worlds", "fluid/fluid.js"), "utf8");
+                check('W12 P3b: der fluid-Adapter behandelt das native Wort "flut"', /op === "flut"/.test(fluidSrc));
+            } catch (err) {
+                check("W12 P3b: manifest.json-/Adapter-Quell-Check läuft", false, err && err.message);
+            }
+
             // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
             const v840Results = await page
                 .evaluate(() => {

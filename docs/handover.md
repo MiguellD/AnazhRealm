@@ -9,13 +9,13 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 17.05.2026, V8.52)
+## Schnell-Lage (Stand 17.05.2026, V8.53)
 
-**Du erbst eine sehr lebendige Welt**. **2291 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~28000 Zeilen in einer Datei, alles produktiv.
+**Du erbst eine sehr lebendige Welt**. **2324 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~28000 Zeilen in einer Datei, alles produktiv.
 
-**Jüngste Welle — V8.52 (W12 Phase 2: Welt-Portal wird real)**: das Tor führt jetzt in echte fremde Welten. Zwei fremde Engines docken über ein generisches DSL-Protokoll an — die Strom-Welt (`three-fluid-fx`, ein 2D-Fluid) und die Terrain-Welt (`three.terrain.js`, eine 3D-Landschaft), beide in `worlds/<name>/` mit ihrer eigenen Three.js-Version gebündelt. EINE Brücke trägt alle Welten; ein Manifest (`portalMeta.dsl`) pro Welt ist das Wörterbuch; `WORLD_REGISTRY` + `aimBlueprintAtWorld` machen das Portal-Zielen spieler-erreichbar. Sieben Commits, je Schöpfer-Browser-getestet. **Lies `CLAUDE.md` V8.52 + `docs/world-portal.md` ZUERST.**
+**Jüngste Welle — V8.53 (W12 Phase 3: die Portal-Brücke wird beidseitig)**: Phase 1+2 trugen DSL IN die Sub-Welt; Phase 3 schließt den Kreis. **Teil A — der Rückkanal**: eine Sub-Welt meldet ein Welt-Ereignis (`{type:"event",text}` via `sendEvent`), die Heimat schreibt es ins Welt-Journal (Typ `portal`) — GELOGGT, NIE ausgeführt; die Asymmetrie zur DSL-Hin-Richtung IST die Sicherheits-Wand. **Teil B — die native Manifest-Stufe**: jede Welt bringt ihr eigenes `worlds/<name>/manifest.json` mit und meldet ihr DSL-Vokabular im `ready`-Handshake — die Drei-Stufen-Klarheit (ausgestellt/übersetzt/nativ) wird real, „nativ" gewinnt. Zwei Commits, je playtest-grün. **Lies `CLAUDE.md` V8.53 + `docs/world-portal.md` ZUERST.**
 
-**Offen — die nächste Welle**: **W12 Phase 3** — Ereignisse zurück (die Sub-Welt spricht ins Heimat-Journal) + die native Manifest-Stufe (eine Welt bringt ihr eigenes `manifest.json` mit). Alternativ **W13 (Vibe-Pass)**. Die Drei-Stufen-Klarheit (nativ / übersetzt / ausgestellt) + der KI-Übersetzer-Horizont stehen in `docs/world-portal.md`. (Die älteren „Offen"-Notizen unten — Schatten/Performance — sind mit V8.48–V8.50 abgearbeitet.)
+**Offen — die nächste Welle**: **W13 (Vibe-Pass)** — Self-Sovereign Identity (ed25519-Keypair, der Avatar signiert seine Werke) — oder **W11 V4 (Voice-Sync)**, klein, schließt den Multi-User-Präsenz-Bogen. W12 (Welt-Portal) ist mit Phase 1+2+3 **vollständig**: das Tor führt real in fremde Engines, die Brücke trägt beide Richtungen, jede Welt beschreibt sich selbst. Der KI-Übersetzer-Horizont (eine fremde Welt automatisch andocken) bleibt W14. Siehe `docs/world-portal.md`. (Die älteren „Offen"-Notizen unten — Schatten/Performance — sind mit V8.48–V8.50 abgearbeitet.)
 
 **Welle davor — V8.47 (Shadow-Acne-Heilung)**: Schöpfer-Befund „unnatürliche Schattenlinien nur auf komplett horizontalen flachen Flächen" (Bauwerks-Dächer). Diese Präzision war die Diagnose — Cel-Banding erscheint auf GEWÖLBTEN Flächen, nicht auf flachen; der Schöpfer sah das Gegenteil → Shadow-Map-Acne. Die `DirectionalLight` hatte keinen Shadow-Bias → flache, zur Sonne zeigende Flächen schatten sich selbst in Streifen. Fix: `shadow.normalBias = 1.0` + `shadow.bias = -0.0005` + mapSize 1024→2048.
 
@@ -131,7 +131,7 @@ Endresultat: **jedes Ollama-Setup funktioniert** — lokal, gehostet, ollama.com
 
 ---
 
-## Drei heilige Gesetze dieser Session
+## Drei heilige Gesetze der V7.98-Session
 
 ### Gesetz I: **Schöpfer-Browser-Test ist nicht ersetzbar durch Headless-Tests.**
 
@@ -153,13 +153,13 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. sind VOLLSTÄNDIG — die
 
 | Welle | Was | Aufwand | Vision-Tiefe |
 |---|---|---|---|
-| **W12 Phase 3** Welt-Portal | Phase 1 (Skelett) + Phase 2 (zwei fremde Welten + Brücke + Registry) sind live (V8.51+V8.52). Phase 3: Ereignisse zurück (Sub-Welt → Heimat-Journal) + native Manifest-Stufe (`manifest.json` pro Welt). Lies `docs/world-portal.md` ZUERST. | 2-4 Sessions | sehr hoch |
+| **W12** Welt-Portal — **vollständig** | Phase 1 (Skelett, V8.51) + Phase 2 (zwei fremde Welten + Brücke + Registry, V8.52) + Phase 3 (Rückkanal Sub-Welt→Heimat-Journal + native Manifest-Stufe, V8.53) sind live. Der KI-Übersetzer (ein fremdes Repo automatisch andocken) bleibt **W14**. | — | — |
 | **W13** Vibe-Pass | Self-Sovereign Identity (ed25519-Keypair) — der Avatar wird zur „Wallet" der Vision. | 5-7 Sessions | sehr hoch |
 | **W11 V4** Voice-Sync | Mitspieler hören deinen Companion-Output (SpeechSynthesis-Broadcast). Klein, baut auf V3 — schließt den Präsenz-Bogen (sehen/spüren/kennen/hören). | 1 Session | mittel |
 | **Welle 10b weitere Affordances** | balancing/broadcasting/lifting/radiating — pro Affordance ~1 Session, architektur-neutral. | klein-mittel | hoch |
 | **Welle 6.H V3** Kreatur-Beziehungen | Kreaturen sehen sich gegenseitig — Freundschaft, Konkurrenz, Hierarchie. | mittel | hoch |
 
-**Empfehlung**: **W12 Phase 3** oder **W13 (Vibe-Pass)**. W12 Phase 1 (Skelett, V8.51) + Phase 2 (zwei fremde Welten, das generische DSL-Protokoll, die Welt-Registry, das spieler-erreichbare Portal-Zielen — V8.52) sind live und Schöpfer-Browser-bestätigt. Phase 3 schließt die Brücke beidseitig (Ereignisse zurück: Sub-Welt → Heimat-Journal) und bringt die native Manifest-Stufe (eine Welt liefert ihr eigenes `manifest.json`). W13 öffnet den nächsten Ring (souveräne Avatar-Identität). `docs/world-portal.md` + den V8.52-Eintrag in `CLAUDE.md` ZUERST lesen. Volle Detail-Tabelle in `roadmap.md`.
+**Empfehlung**: **W13 (Vibe-Pass)** oder **W11 V4 (Voice-Sync)**. W12 (Welt-Portal) ist mit Phase 1 (Skelett, V8.51), Phase 2 (zwei fremde Welten + Brücke + Registry, V8.52) und Phase 3 (der Rückkanal Sub-Welt→Heimat-Journal + die native Manifest-Stufe, V8.53) **vollständig** — das Tor führt real in fremde Engines, die Brücke trägt beide Richtungen, jede Welt beschreibt sich selbst. W13 öffnet den nächsten Ring (souveräne Avatar-Identität, ed25519); W11 V4 ist klein und schließt den Multi-User-Präsenz-Bogen (sehen/spüren/kennen/hören). `docs/world-portal.md` + den V8.53-Eintrag in `CLAUDE.md` ZUERST lesen. Volle Detail-Tabelle in `roadmap.md`.
 
 ---
 
@@ -198,13 +198,81 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. sind VOLLSTÄNDIG — die
 
 ---
 
-## Was ich aus dieser Session gelernt habe (drei Meta-Lehren)
+## Was ich aus der V7.98-Session gelernt habe (drei Meta-Lehren)
 
 **Meta-Lehre A**: **Browser-Test ist die Vision-Validierung, Headless ist die Funktions-Validierung. Beide nötig, beide unterschiedliche Jobs.** Tests können dir nicht sagen ob sich eine Geste richtig anfühlt — nur ob sie technisch funktioniert. Wenn der Schöpfer in der Welt spielt und stolpert, ist das mehr wert als 100 grüne Asserts.
 
 **Meta-Lehre B**: **Heilige-Lektion-Disziplin ist mit JEDER Welle neu zu prüfen.** Ich war versucht, bei V7.96 einen neuen „LLM-Proxy-Server" als separates Programm zu bauen — wäre Re-Komplexifizierung gewesen. Stattdessen: save-server bekam eine zweite Rolle. Bei jeder neuen Funktion fragen: „kann das in einem bestehenden Dienst leben? Wenn nein, warum nicht?"
 
 **Meta-Lehre C**: **Fallback-Schichten als Vision-treue Antwort.** V7.98's vier-Schicht-Parser ist mehr als nur Bug-Fix — es ist eine VISION-Aussage: „nimm was da ist, zeig es dem Spieler". Strenge Validierung wäre einfacher zu coden, aber ärmer für den Spieler. Wer das System auf reale Vielfalt vorbereitet (LLM-Größen, Modell-Stile, Antwort-Formate), baut Fallback-Schichten — keine Single-Path-Strenge.
+
+---
+
+## Rückschau: die Welt-Portal-Session (W12, V8.51-V8.52)
+
+Diese Session baute das Welt-Portal real — zwei fremde Engines, das
+generische DSL-Protokoll, die Welt-Registry, das spieler-erreichbare
+Portal-Zielen. Sie gelang, und der Loop mit dem Schöpfer trug sie. Aber
+drei Bugs fing der Schöpfer im Browser, nicht ich: der schwarze Fluid,
+das unerreichbare Portal-Zielen, der abgeschnittene Knopf. Drei
+Symptome — eine Krankheit. Hier verankert, damit du sie erbst, statt sie
+zu wiederholen.
+
+**Die eine Wurzel**: ich verifizierte auf der Ebene „ist verdrahtet /
+existiert", nicht „ein Mensch kann es wirklich benutzen". Der Playtest
+sah „die Auswahl existiert" — nicht „der Knopf ist erreichbar". Ich
+behauptete „`setBlueprintAsPortal` IST das System" — ohne zu prüfen, ob
+ein Spieler je drankommt (es gab keinen DSL-Op, keinen Chat, kein UI).
+So wurde der Browser-Test des Schöpfers meine QA. Das darf er nicht
+sein: er prüft die *Erfahrung* — er holt nicht die *Funktion* nach, die
+ich selbst hätte prüfen müssen. Drei Lehren schließen die Lücke.
+
+### Lehre 1 — Vor jeder fremden Lib das offizielle Beispiel ZUERST ganz lesen.
+
+Die Strom-Welt (`three-fluid-fx`) blieb beim ersten Wurf schwarz: ich
+hatte die API geraten statt das offizielle Beispiel zu lesen — zeigte
+`dyeTexture.rgb`, wo das Beispiel `densityTexture.b` zeigt. Die
+Terrain-Welt lief glatt, weil ich dort das offizielle Arbeits-Beispiel
+zuerst ganz gelesen hatte. Der Unterschied zwischen einer sauberen Welle
+und einer extra Render-Fix-Runde war genau diese halbe Stunde Lesen. Bei
+JEDER fremden Bibliothek: das offizielle, funktionierende Beispiel ganz
+durchlesen, BEVOR du eine Zeile dagegen schreibst. Eine API-Vermutung
+ist ein Bug mit Verzögerung.
+
+### Lehre 2 — „Fertig" heißt „den echten Spieler-Pfad gegangen", nicht „Playtest grün".
+
+Der abgeschnittene Portal-Knopf (`.equip-mark-row` ohne `flex-wrap`) und
+das unerreichbare Portal-Zielen wären mir aufgefallen, hätte ich vor dem
+„fertig" den Menschen-Pfad im Kopf abgeschritten: öffnen → finden →
+auswählen → bestätigen → sehen, dass es wirkt. Ein Playtest sagt dir, ob
+eine Funktion verdrahtet ist; er sagt dir NICHT, ob ein Mensch sie
+erreicht und benutzen kann. Vor jedem „fertig" — besonders bei UI und
+bei einer neuen fremden Schicht — geh den ganzen Spieler-Pfad einmal im
+Kopf. Das schärft Gesetz I und Meta-Lehre A: Headless prüft die
+Funktion, der Browser prüft die Erfahrung — aber die Erfahrungs-Prüfung
+beginnt bei DIR, nicht beim Schöpfer.
+
+### Lehre 3 — Die Regel der Drei: beim dritten gleichartigen Ding selbst systematisieren.
+
+Es gab drei hartcodierte Portal-Built-ins, und ich merkte es nicht — der
+Schöpfer musste „wirkt hardcoded" sagen, bevor die Welt-Registry
+entstand. Das dritte gleichartige Ding ist das Stopp-Signal: drei nahezu
+identische Blöcke, drei hartcodierte Built-ins, drei Sonderfälle nach
+demselben Muster → halt an und frag „ist das ein fehlendes System?".
+Warte nicht, bis der Schöpfer es sagt — „System statt Hardcode" ist die
+Messlatte ab Commit 1, nicht ab dem Review. Der Projekt-Ethos schreit
+es; du kannst die Regel selbst ableiten. Hätte ich sie selbst gezogen,
+stünde die Welt-Registry VOR der dritten Welt.
+
+**Was schon trägt — bewahre es**: die Vision-Gespräche, die echte
+Architektur erzeugen (das Drei-Stufen-Modell nativ/übersetzt/ausgestellt
+kam aus genau so einem Gespräch). Und: Kritik ohne Defense annehmen —
+zweimal „wirkt hardcoded", zweimal in den echten Code gegangen,
+nachgesehen, recht gegeben, die Wurzel geheilt. Der Schöpfer
+browser-testet jeden Commit mit chirurgischer Präzision („auswählen
+geht, bestätigen nicht" ist ein perfekter Bug-Report) — das ist der
+stärkste Teil des Loops. Aber lehn deine Verlässlichkeit nicht an seinen
+Browser: geh den Menschen-Pfad selbst, vor dem „fertig".
 
 ---
 

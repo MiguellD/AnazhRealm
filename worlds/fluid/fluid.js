@@ -147,6 +147,14 @@ function setEnergy(e) {
     energy = Math.max(0, Math.min(1, e));
 }
 
+// W12 Phase 3 — der Rückkanal: ein Welt-Ereignis an die Heimat-Welt melden.
+// Die Heimat schreibt es als Erinnerung ins Journal (sie führt es nicht aus).
+function sendEvent(text) {
+    if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: "event", text: String(text) }, "*");
+    }
+}
+
 function applyBackdrop(arg) {
     if (!display) return;
     const m = /^#?([0-9a-fA-F]{6})$/.exec(String(arg == null ? "" : arg).trim());
@@ -171,21 +179,33 @@ function applyDsl(program) {
     }
     if (op === "skybox_color") {
         applyBackdrop(program[1]);
+        sendEvent("Der Hintergrund der Strom-Welt nahm einen neuen Ton an.");
     } else if (op === "weather") {
         const rainy = String(program[1]) === "rainy";
         setEnergy(rainy ? 0.16 : 0.66);
         burst(rainy ? 8 : 18, rainy ? 0.5 : 1.3);
+        sendEvent(rainy ? "Über der Strom-Welt zog Regen auf." : "Die Strom-Welt klarte auf.");
     } else if (op === "sturm") {
         setEnergy(1);
         burst(44, 2.6);
+        sendEvent("Ein Sturm fuhr durch die Strom-Welt.");
     } else if (op === "ruhe") {
         setEnergy(0.05);
+        sendEvent("Die Strömung der Strom-Welt kam zur Ruhe.");
     } else if (op === "set_turbulence") {
         const t = Number(program[1]);
         if (Number.isFinite(t)) {
             setEnergy(t);
             burst(10 + Math.round(t * 34), 0.6 + t * 2.2);
+            sendEvent("Die Turbulenz der Strom-Welt wurde neu gestimmt.");
         }
+    } else if (op === "flut") {
+        // W12 Phase 3 — ein welt-eigenes Wort, das NUR im manifest.json der
+        // Strom-Welt steht, nicht im Registry-Literal. Der Beweis der nativen
+        // Stufe: die Heimat lernt „flut" von der Welt selbst.
+        setEnergy(0.92);
+        burst(60, 3.2);
+        sendEvent("Eine Flut brach über die Strom-Welt herein.");
     }
 }
 
@@ -212,7 +232,20 @@ window.addEventListener("keydown", (event) => {
     }
 });
 
-// Der Heimat-Welt melden: die Strom-Welt lebt und lauscht.
-if (window.parent && window.parent !== window) {
-    window.parent.postMessage({ type: "ready", world: "fluid" }, "*");
+// W12 Phase 3 — die native Manifest-Stufe: die Strom-Welt liest ihr eigenes
+// manifest.json und meldet dsl + label im ready-Handshake. Die Heimat lernt
+// das Vokabular (inkl. „flut", das NICHT im Registry-Literal steht) von der
+// Welt selbst. Fetch-Fehler → ready ohne dsl, die Heimat fällt zurück.
+function announceReady(extra) {
+    if (window.parent && window.parent !== window) {
+        window.parent.postMessage(Object.assign({ type: "ready", world: "fluid" }, extra || {}), "*");
+    }
 }
+fetch("./manifest.json")
+    .then((res) => (res.ok ? res.json() : null))
+    .then((m) => {
+        const dsl = m && Array.isArray(m.dsl) ? m.dsl : null;
+        const label = m && typeof m.label === "string" ? m.label : null;
+        announceReady(dsl ? { dsl, label } : {});
+    })
+    .catch(() => announceReady({}));
