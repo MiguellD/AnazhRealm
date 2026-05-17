@@ -16041,10 +16041,44 @@ class AnazhRealm {
     //      nicht. So WIRD ein Magie-Ring ein Tor; ein schlichter Ring
     //      bleibt Bauwerk. Das Ziel (wohin das Tor führt) emergiert NICHT
     //      — es ist autorierte portalMeta (setBlueprintAsPortal).
+    // Wie groß muss ein Ring sein, damit der Reisende ihn durchschreiten
+    // kann? Die Schwelle EMERGIERT aus der Ausdehnung des aktuellen Avatars
+    // (Soul-bodyParts) — ein Drache braucht ein größeres Tor als ein
+    // Mensch. Ersetzt die feste minRingSize-Zahl: „begehbar" wird logisch
+    // am Körper gemessen, nicht an einer Konstante.
+    _avatarPassageSize() {
+        const soulName = (this.state.player && this.state.player.soul) || "human";
+        let parts = null;
+        const def = this.playerSoulDefs && this.playerSoulDefs[soulName];
+        if (def && Array.isArray(def.bodyParts)) parts = def.bodyParts;
+        if (!parts) {
+            const custom = this.state.customSouls && this.state.customSouls[soulName];
+            if (custom && Array.isArray(custom.bodyParts)) parts = custom.bodyParts;
+        }
+        if (!parts || !parts.length) return 1.7; // Fallback — Menschen-Höhe
+        const lo = { x: Infinity, y: Infinity, z: Infinity };
+        const hi = { x: -Infinity, y: -Infinity, z: -Infinity };
+        for (const p of parts) {
+            const pos = p.position || { x: 0, y: 0, z: 0 };
+            const sz = p.size || { x: 1, y: 1, z: 1 };
+            for (const ax of ["x", "y", "z"]) {
+                const c = pos[ax] || 0;
+                const h = (sz[ax] || 1) / 2;
+                if (c - h < lo[ax]) lo[ax] = c - h;
+                if (c + h > hi[ax]) hi[ax] = c + h;
+            }
+        }
+        const span = Math.max(hi.x - lo.x, hi.y - lo.y, hi.z - lo.z);
+        return Number.isFinite(span) && span > 0.5 ? span : 1.7;
+    }
+
     _isPortalShaped(bp) {
         if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return false;
         const T = AnazhRealm.SUBSTANCE_ROLE_THRESHOLDS.portal;
-        const hasRing = bp.parts.some((p) => p.shape === "torus" && ((p.size && p.size.x) || 1) >= T.minRingSize);
+        // begehbar = der Ring ist groß genug, dass der Reisende hindurchpasst
+        // — die Schwelle emergiert aus der Avatar-Größe, keine feste Zahl.
+        const minRing = this._avatarPassageSize();
+        const hasRing = bp.parts.some((p) => p.shape === "torus" && ((p.size && p.size.x) || 1) >= minRing);
         if (!hasRing) return false;
         const tags = this.computeCompoundTags(bp) || {};
         return (tags.magieleitung || 0) >= T.magieleitungMin;
@@ -28356,12 +28390,12 @@ AnazhRealm.SUBSTANCE_ROLE_THRESHOLDS = Object.freeze({
         lebendigMin: 0.6, // klar lebendig (Fleisch, Laub, Frucht)
         härteMax: 0.5, // weich genug zum Essen
     }),
-    // W12 — Tor-Signatur. minRingSize: ein Torus muss begehbar groß sein
-    // (ein Deko-Ring ist kein Tor). magieleitungMin: ein Tor leitet Magie
-    // — ein Stein-/Eisen-Ring (magieleitung 0) bleibt darunter, ein
-    // Quarz-Ring darüber.
+    // W12 — Tor-Signatur. Die begehbare Größe ist KEINE feste Zahl mehr —
+    // _avatarPassageSize misst sie an der Ausdehnung des Reisenden (ein
+    // Drache-Tor ist größer als ein Menschen-Tor). magieleitungMin: ein Tor
+    // leitet Magie — ein Stein-/Eisen-Ring (magieleitung 0) bleibt darunter,
+    // ein Quarz-Ring darüber.
     portal: Object.freeze({
-        minRingSize: 2.0,
         magieleitungMin: 1.3,
     }),
 });

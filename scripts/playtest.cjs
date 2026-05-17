@@ -13559,6 +13559,60 @@ function startSaveServer() {
                 );
             }
 
+            // ### W12 Phase 2 — Portal-Größe emergiert aus der Avatar-Größe ###
+            const w12portalSizeResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    out.passageExists = typeof r._avatarPassageSize === "function";
+                    const passage = r._avatarPassageSize();
+                    out.passageSane = typeof passage === "number" && passage > 0.5 && passage < 30;
+                    const torusBp = (sizeX, material) => ({
+                        name: "t_test",
+                        parts: [
+                            {
+                                shape: "torus",
+                                material: material,
+                                size: { x: sizeX, y: 1, z: 1 },
+                                position: { x: 0, y: 0, z: 0 },
+                            },
+                        ],
+                    });
+                    // Ein magieleitender Torus deutlich größer als der Reisende → Tor-Form.
+                    out.bigIsPortalShaped = r._isPortalShaped(torusBp(passage * 2.5, "quarz")) === true;
+                    // Derselbe Ring deutlich kleiner als der Reisende → kein Tor.
+                    out.smallNotPortalShaped = r._isPortalShaped(torusBp(passage * 0.3, "quarz")) === false;
+                    // Magieleitung bleibt nötig: ein großer Eisen-Ring ist kein Tor.
+                    out.ironStillNotPortal = r._isPortalShaped(torusBp(passage * 2.5, "eisen")) === false;
+                    // Built-in-Portale bleiben Tore (Ring 3.4/3.6 > Avatar).
+                    out.builtinsStayPortal =
+                        r._isPortalShaped(r.state.blueprints.welt_strom) === true &&
+                        r._isPortalShaped(r.state.blueprints.welt_terrain) === true;
+                    // minRingSize ist als feste Zahl entfernt.
+                    out.noFixedThreshold = r.constructor.SUBSTANCE_ROLE_THRESHOLDS.portal.minRingSize === undefined;
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w12portalSizeResults && !w12portalSizeResults.error) {
+                check("W12 P2: _avatarPassageSize existiert", w12portalSizeResults.passageExists);
+                check("W12 P2: Avatar-Durchgangsgröße ist plausibel", w12portalSizeResults.passageSane);
+                check("W12 P2: großer Magie-Ring ist Tor-förmig", w12portalSizeResults.bigIsPortalShaped);
+                check("W12 P2: zu kleiner Ring (< Avatar) ist kein Tor", w12portalSizeResults.smallNotPortalShaped);
+                check(
+                    "W12 P2: großer Eisen-Ring bleibt kein Tor (Magie nötig)",
+                    w12portalSizeResults.ironStillNotPortal
+                );
+                check("W12 P2: Built-in-Portale bleiben Tor-förmig", w12portalSizeResults.builtinsStayPortal);
+                check("W12 P2: feste minRingSize-Zahl ist entfernt", w12portalSizeResults.noFixedThreshold);
+            } else {
+                check(
+                    "W12 P2: Portal-Größe Tests laufen",
+                    false,
+                    w12portalSizeResults ? w12portalSizeResults.error : "no result"
+                );
+            }
+
             // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
             const v840Results = await page
                 .evaluate(() => {
