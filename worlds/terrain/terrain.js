@@ -207,7 +207,19 @@
         }
     });
 
-    if (window.parent && window.parent !== window) {
-        window.parent.postMessage({ type: "ready", world: "terrain" }, "*");
+    // W12 Phase 3 — die native Manifest-Stufe: die Terrain-Welt liest ihr
+    // eigenes manifest.json und meldet dsl + label im ready-Handshake.
+    function announceReady(extra) {
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage(Object.assign({ type: "ready", world: "terrain" }, extra || {}), "*");
+        }
     }
+    fetch("./manifest.json")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((m) => {
+            const dsl = m && Array.isArray(m.dsl) ? m.dsl : null;
+            const label = m && typeof m.label === "string" ? m.label : null;
+            announceReady(dsl ? { dsl, label } : {});
+        })
+        .catch(() => announceReady({}));
 })();

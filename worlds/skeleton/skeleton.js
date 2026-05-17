@@ -58,8 +58,22 @@
         }
     });
 
-    // Der Heimat-Welt melden: die Skelett-Welt lebt und lauscht.
-    if (window.parent && window.parent !== window) {
-        window.parent.postMessage({ type: "ready", world: "skeleton" }, "*");
+    // W12 Phase 3 — die native Manifest-Stufe: die Welt liest ihr eigenes
+    // manifest.json und meldet ihr DSL-Vokabular + Label im ready-Handshake.
+    // Die Heimat lernt die Welt-Sprache so von der WELT selbst (Stufe
+    // „nativ"). Schlägt der Fetch fehl, meldet die Welt ready ohne dsl — die
+    // Heimat fällt aufs portalMeta-Manifest zurück.
+    function announceReady(extra) {
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage(Object.assign({ type: "ready", world: "skeleton" }, extra || {}), "*");
+        }
     }
+    fetch("./manifest.json")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((m) => {
+            const dsl = m && Array.isArray(m.dsl) ? m.dsl : null;
+            const label = m && typeof m.label === "string" ? m.label : null;
+            announceReady(dsl ? { dsl, label } : {});
+        })
+        .catch(() => announceReady({}));
 })();

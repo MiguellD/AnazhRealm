@@ -199,6 +199,13 @@ function applyDsl(program) {
             burst(10 + Math.round(t * 34), 0.6 + t * 2.2);
             sendEvent("Die Turbulenz der Strom-Welt wurde neu gestimmt.");
         }
+    } else if (op === "flut") {
+        // W12 Phase 3 — ein welt-eigenes Wort, das NUR im manifest.json der
+        // Strom-Welt steht, nicht im Registry-Literal. Der Beweis der nativen
+        // Stufe: die Heimat lernt „flut" von der Welt selbst.
+        setEnergy(0.92);
+        burst(60, 3.2);
+        sendEvent("Eine Flut brach über die Strom-Welt herein.");
     }
 }
 
@@ -225,7 +232,20 @@ window.addEventListener("keydown", (event) => {
     }
 });
 
-// Der Heimat-Welt melden: die Strom-Welt lebt und lauscht.
-if (window.parent && window.parent !== window) {
-    window.parent.postMessage({ type: "ready", world: "fluid" }, "*");
+// W12 Phase 3 — die native Manifest-Stufe: die Strom-Welt liest ihr eigenes
+// manifest.json und meldet dsl + label im ready-Handshake. Die Heimat lernt
+// das Vokabular (inkl. „flut", das NICHT im Registry-Literal steht) von der
+// Welt selbst. Fetch-Fehler → ready ohne dsl, die Heimat fällt zurück.
+function announceReady(extra) {
+    if (window.parent && window.parent !== window) {
+        window.parent.postMessage(Object.assign({ type: "ready", world: "fluid" }, extra || {}), "*");
+    }
 }
+fetch("./manifest.json")
+    .then((res) => (res.ok ? res.json() : null))
+    .then((m) => {
+        const dsl = m && Array.isArray(m.dsl) ? m.dsl : null;
+        const label = m && typeof m.label === "string" ? m.label : null;
+        announceReady(dsl ? { dsl, label } : {});
+    })
+    .catch(() => announceReady({}));

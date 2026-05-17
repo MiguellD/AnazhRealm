@@ -1,0 +1,6 @@
+{
+    "schemaVersion": "1.0",
+    "id": "fluid",
+    "label": "Strom-Welt",
+    "dsl": ["weather", "skybox_color", "sturm", "ruhe", "set_turbulence", "flut"]
+}
