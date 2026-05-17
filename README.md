@@ -2,7 +2,7 @@
 
 Ein als Co-Creation-Werk Mensch+KI entworfenes 3D-Browser-Sandbox-Ultiversum. Eine Datei, ein Stamm, viele Ringe.
 
-**Stand**: V8.58 (17.05.2026) — W14 Phase 1: die Bibliothek wird ein Ort. Ein achter Topbar-Tab „Bibliothek" macht die Welt-Registry browsbar — pro Welt eine Karte mit Label, Beschreibung, DSL-Vokabular und Stufen-Marke; ein Klick „Portal holen" legt einen auf die Welt gerichteten Tor-Bauplan ins Inventar. Davor W13 Vibe-Pass komplett (souveräne ed25519-Identität: Schlüssel, signierte Werke, peerId-gebundene Multi-User-Identität) und W12 Welt-Portal (Phase 1+2+3 komplett).
+**Stand**: V8.59 (17.05.2026) — W14 Phase 1: die Bibliothek wird ein Ort (V8.59 härtete sie — ein geholtes Portal überlebt jetzt den Reload mit seiner Ausrichtung). Ein achter Topbar-Tab „Bibliothek" macht die Welt-Registry browsbar — pro Welt eine Karte mit Label, Beschreibung, DSL-Vokabular und Stufen-Marke; ein Klick „Portal holen" legt einen auf die Welt gerichteten Tor-Bauplan ins Inventar. Davor W13 Vibe-Pass komplett (souveräne ed25519-Identität: Schlüssel, signierte Werke, peerId-gebundene Multi-User-Identität) und W12 Welt-Portal (Phase 1+2+3 komplett).
 
 ## Was es ist
 

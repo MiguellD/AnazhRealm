@@ -9,11 +9,13 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 17.05.2026, V8.58)
+## Schnell-Lage (Stand 17.05.2026, V8.59)
 
-**Du erbst eine sehr lebendige Welt**. **2390 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~28000 Zeilen in einer Datei, alles produktiv.
+**Du erbst eine sehr lebendige Welt**. **2394 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~28000 Zeilen in einer Datei, alles produktiv.
 
-**Jüngste Welle — V8.58 (W14 Phase 1: Bibliothek)**: die `WORLD_REGISTRY` wird ein spieler-erreichbarer Ort. Ein achter Topbar-Tab „Bibliothek" listet die registrierten Sub-Welten als browsbare Karten (Label, Beschreibung, DSL-Vokabular, Stufen-Marke); „Portal holen" klont den portal-förmigen Magie-Ring `welt_portal` zu einem eigenen, auf die Welt gerichteten Bauplan und legt ihn ins Inventar. Kein neuer Stamm — W14 verbindet bestehende Schnittstellen (`WORLD_REGISTRY`, `aimBlueprintAtWorld`, `cloneBlueprint`, `addToInventory`). +13 Invarianten 2377→2390, Bibliothek-Drawer browser-verifiziert. **Lies `CLAUDE.md` V8.58 ZUERST.**
+**Jüngste Welle — V8.59 (W14 Phase 1 Härtung)**: ein Selbst-Audit der V8.58 fand eine nicht zu Ende gedachte Folge — `buildStateSnapshot`/`loadState` persistierten `portalMeta` + `role:"portal"` nicht (nur `role:"tool"`), ein über die Bibliothek geholtes Portal verlor beim Reload seine Ausrichtung und der `welt_portal`-Klon traf wieder den V8.51-`_isMoveable`-Bug. Fix: ein Portal-Zweig in beiden Save-Pfaden (parallel zum `tool`-Zweig, `portalMeta` beim Laden durch `_sanitizePortalMeta`); `obtainPortalForWorld` richtet bei jedem Aufruf neu aus (heilt Altsaves). +4 Invarianten 2390→2394. **Lies `CLAUDE.md` V8.59 + V8.58 ZUERST.**
+
+**Davor — V8.58 (W14 Phase 1: Bibliothek)**: die `WORLD_REGISTRY` wird ein spieler-erreichbarer Ort. Ein achter Topbar-Tab „Bibliothek" listet die registrierten Sub-Welten als browsbare Karten (Label, Beschreibung, DSL-Vokabular, Stufen-Marke); „Portal holen" klont den portal-förmigen Magie-Ring `welt_portal` zu einem eigenen, auf die Welt gerichteten Bauplan und legt ihn ins Inventar. Kein neuer Stamm — W14 verbindet bestehende Schnittstellen (`WORLD_REGISTRY`, `aimBlueprintAtWorld`, `cloneBlueprint`, `addToInventory`). +13 Invarianten 2377→2390, Bibliothek-Drawer browser-verifiziert. **Lies `CLAUDE.md` V8.58 ZUERST.**
 
 **Welle davor — V8.57 (Flaky-Test-Heilung)**: ein flaky CI-`playtest` an der Wurzel geheilt. Der Check „Ring 5 V2-Prep: Maus runter hebt Kamera (3rd)" las `camera.position.y` — den Wert NACH der V8.36-Kamera-Kollision, deren Raycast die Kamera umgebungs-abhängig einzieht (wo der Spieler nach 20 s steht, ist nicht-deterministisch → CI-Flake). Fix: der Spielcode spiegelt die pitch-gesteuerte Wunsch-Höhe als `state._cameraDesiredY` (vor der Kollision); der Test liest sie → reine, umgebungs-unabhängige Pitch-Mathematik. Detail: `CLAUDE.md` V8.57.
 
