@@ -176,6 +176,8 @@ Avatar = Self-Sovereign Identity. Nicht Crypto-Wallet im Spekulations-Sinn, sond
 - Welt-Memberships (du warst auf dieser Welt aktiv)
 - Avatar-Anpassungen (deine Custom-Seele, deine Materialien, deine Werkzeuge)
 
+> **Umsetzungsstand (V8.54, W13 Phase 1)** — die **Schlüssel-Grundlage ist live**. `_ensureVibePass` erzeugt beim ersten Erwachen ein ed25519-Schlüsselpaar (WebCrypto nativ über `crypto.subtle` — kein Vendoring, keine CSP-Lockerung; im Playtest-Chrome 148 vorab geprüft) und persistiert es als privates JWK im GLOBALEN localStorage-Schlüssel `anazh.vibePass` — spieler-eigen, welt-unabhängig, NIE im Welt-Save (sonst leckte die Identität in geteilte Welt-Dateien). Der öffentliche Schlüssel ist der Avatar-Identifier (`vibePassId()` → `ed25519:<64hex>`, dasselbe Format wie `authorPubKey` in §3.3). Zwei Primitive stehen: `_vibeSign(text)` und `_vibeVerify(text, sigHex, pubHex)` (letzteres prüft jedes Autors Werk, nicht nur das eigene). Eine Sektion im Spieler-Drawer zeigt Fingerprint + Identifier und bietet Export/Import — die Identität ist sicherbar. **Offen**: Phase 2 — der Schöpfer signiert seine Baupläne (ein Bauplan trägt `signature` + `authorPubKey`); Phase 3 — die Prüfung der Signaturen in Multi-User, Welt-Tor und Portal-Manifest (das ergänzt die in §3.3 genannten `authorPubKey`/`signature`-Felder). Der vollständige Wellen-Eintrag steht in `CLAUDE.md` V8.54.
+
 ---
 
 ## 5. Compute-Sharing (Welle 7, jetzt erweitert)

@@ -2,7 +2,7 @@
 
 Ein als Co-Creation-Werk Mensch+KI entworfenes 3D-Browser-Sandbox-Ultiversum. Eine Datei, ein Stamm, viele Ringe.
 
-**Stand**: V8.53 (17.05.2026) — W12 Welt-Portal mit Phase 1+2+3 komplett: das Tor führt real in fremde Engines, die Brücke trägt beide Richtungen (Sub-Welt → Heimat-Journal), jede Welt beschreibt sich selbst via `manifest.json`.
+**Stand**: V8.54 (17.05.2026) — W13 Phase 1: der Vibe-Pass. Der Avatar bekommt eine souveräne Identität — ein ed25519-Schlüsselpaar, lokal erzeugt (WebCrypto nativ), der öffentliche Schlüssel IST der Avatar. Davor W12 Welt-Portal (Phase 1+2+3 komplett: das Tor führt real in fremde Engines).
 
 ## Was es ist
 

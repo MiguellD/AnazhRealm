@@ -9,13 +9,15 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 17.05.2026, V8.53)
+## Schnell-Lage (Stand 17.05.2026, V8.54)
 
-**Du erbst eine sehr lebendige Welt**. **2324 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~28000 Zeilen in einer Datei, alles produktiv.
+**Du erbst eine sehr lebendige Welt**. **2343 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~28000 Zeilen in einer Datei, alles produktiv.
 
-**Jüngste Welle — V8.53 (W12 Phase 3: die Portal-Brücke wird beidseitig)**: Phase 1+2 trugen DSL IN die Sub-Welt; Phase 3 schließt den Kreis. **Teil A — der Rückkanal**: eine Sub-Welt meldet ein Welt-Ereignis (`{type:"event",text}` via `sendEvent`), die Heimat schreibt es ins Welt-Journal (Typ `portal`) — GELOGGT, NIE ausgeführt; die Asymmetrie zur DSL-Hin-Richtung IST die Sicherheits-Wand. **Teil B — die native Manifest-Stufe**: jede Welt bringt ihr eigenes `worlds/<name>/manifest.json` mit und meldet ihr DSL-Vokabular im `ready`-Handshake — die Drei-Stufen-Klarheit (ausgestellt/übersetzt/nativ) wird real, „nativ" gewinnt. Zwei Commits, je playtest-grün. **Lies `CLAUDE.md` V8.53 + `docs/world-portal.md` ZUERST.**
+**Jüngste Welle — V8.54 (W13 Phase 1: der Vibe-Pass)**: W13 macht den Avatar zur **Self-Sovereign Identity** — `docs/world-portal.md` §4. Phase 1 ist die **Schlüssel-Grundlage**: ein ed25519-Schlüsselpaar, lokal beim ersten Erwachen erzeugt, der öffentliche Schlüssel IST der Avatar. WebCrypto trägt Ed25519 nativ (vorab im Playtest-Chrome 148 geprüft) — **kein Vendoring, keine CSP-Lockerung**. Der private Schlüssel lebt GLOBAL in `localStorage["anazh.vibePass"]`, NIE im Welt-Save — das ist die Sicherheits-Wand (eine Welt-Datei wird geteilt). Zwei Primitive `_vibeSign`/`_vibeVerify` (Phase 2/3 bauen darauf), eine sichtbare + sicherbare Identität im Spieler-Drawer (Fingerprint, Export/Import), ein Genesis-Eintrag im Journal. Ein Commit, playtest-grün. **Lies `CLAUDE.md` V8.54 + `docs/world-portal.md` §4 ZUERST.**
 
-**Offen — die nächste Welle**: **W13 (Vibe-Pass)** — Self-Sovereign Identity (ed25519-Keypair, der Avatar signiert seine Werke) — oder **W11 V4 (Voice-Sync)**, klein, schließt den Multi-User-Präsenz-Bogen. W12 (Welt-Portal) ist mit Phase 1+2+3 **vollständig**: das Tor führt real in fremde Engines, die Brücke trägt beide Richtungen, jede Welt beschreibt sich selbst. Der KI-Übersetzer-Horizont (eine fremde Welt automatisch andocken) bleibt W14. Siehe `docs/world-portal.md`. (Die älteren „Offen"-Notizen unten — Schatten/Performance — sind mit V8.48–V8.50 abgearbeitet.)
+**Welle davor — V8.53 (W12 Phase 3: die Portal-Brücke wird beidseitig)**: Phase 1+2 trugen DSL IN die Sub-Welt; Phase 3 schloss den Kreis. **Teil A — der Rückkanal**: eine Sub-Welt meldet ein Welt-Ereignis (`{type:"event",text}` via `sendEvent`), die Heimat schreibt es ins Welt-Journal (Typ `portal`) — GELOGGT, NIE ausgeführt; die Asymmetrie zur DSL-Hin-Richtung IST die Sicherheits-Wand. **Teil B — die native Manifest-Stufe**: jede Welt bringt ihr eigenes `worlds/<name>/manifest.json` mit. W12 (Welt-Portal) ist mit Phase 1+2+3 **vollständig**.
+
+**Offen — die nächste Welle**: **W13 Phase 2** — der Schöpfer signiert seine Werke: ein Bauplan trägt eine Signatur + `authorPubKey`, die Werkstatt zeigt signiert/unsigniert. `_vibeSign`/`_vibeVerify` stehen schon — Phase 2 ist die Anwendung der Primitive. Danach Phase 3 (Prüfung der Signaturen in Multi-User / Welt-Tor / Portal-Manifest — letzteres ergänzt das `authorPubKey`/`signature`-Feld des `world-portal.md`-§3.3-Manifests). Alternativ einschiebbar: W11 V4 (Voice-Sync, ~1 Session). Siehe `docs/world-portal.md` §4. (Die älteren „Offen"-Notizen unten — Schatten/Performance — sind mit V8.48–V8.50 abgearbeitet.)
 
 **Welle davor — V8.47 (Shadow-Acne-Heilung)**: Schöpfer-Befund „unnatürliche Schattenlinien nur auf komplett horizontalen flachen Flächen" (Bauwerks-Dächer). Diese Präzision war die Diagnose — Cel-Banding erscheint auf GEWÖLBTEN Flächen, nicht auf flachen; der Schöpfer sah das Gegenteil → Shadow-Map-Acne. Die `DirectionalLight` hatte keinen Shadow-Bias → flache, zur Sonne zeigende Flächen schatten sich selbst in Streifen. Fix: `shadow.normalBias = 1.0` + `shadow.bias = -0.0005` + mapSize 1024→2048.
 
@@ -154,12 +156,12 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. sind VOLLSTÄNDIG — die
 | Welle | Was | Aufwand | Vision-Tiefe |
 |---|---|---|---|
 | **W12** Welt-Portal — **vollständig** | Phase 1 (Skelett, V8.51) + Phase 2 (zwei fremde Welten + Brücke + Registry, V8.52) + Phase 3 (Rückkanal Sub-Welt→Heimat-Journal + native Manifest-Stufe, V8.53) sind live. Der KI-Übersetzer (ein fremdes Repo automatisch andocken) bleibt **W14**. | — | — |
-| **W13** Vibe-Pass | Self-Sovereign Identity (ed25519-Keypair) — der Avatar wird zur „Wallet" der Vision. | 5-7 Sessions | sehr hoch |
+| **W13** Vibe-Pass — **Phase 1 live (V8.54)** | Phase 1: die Schlüssel-Grundlage (ed25519-Keypair, Sign/Verify-Primitive, sichtbare + sicherbare Identität). Offen: Phase 2 (Bauplan-Signaturen), Phase 3 (Prüfung in Multi-User / Welt-Tor / Portal-Manifest). | 4-6 Sessions Rest | sehr hoch |
 | **W11 V4** Voice-Sync | Mitspieler hören deinen Companion-Output (SpeechSynthesis-Broadcast). Klein, baut auf V3 — schließt den Präsenz-Bogen (sehen/spüren/kennen/hören). | 1 Session | mittel |
 | **Welle 10b weitere Affordances** | balancing/broadcasting/lifting/radiating — pro Affordance ~1 Session, architektur-neutral. | klein-mittel | hoch |
 | **Welle 6.H V3** Kreatur-Beziehungen | Kreaturen sehen sich gegenseitig — Freundschaft, Konkurrenz, Hierarchie. | mittel | hoch |
 
-**Empfehlung**: **W13 (Vibe-Pass)** oder **W11 V4 (Voice-Sync)**. W12 (Welt-Portal) ist mit Phase 1 (Skelett, V8.51), Phase 2 (zwei fremde Welten + Brücke + Registry, V8.52) und Phase 3 (der Rückkanal Sub-Welt→Heimat-Journal + die native Manifest-Stufe, V8.53) **vollständig** — das Tor führt real in fremde Engines, die Brücke trägt beide Richtungen, jede Welt beschreibt sich selbst. W13 öffnet den nächsten Ring (souveräne Avatar-Identität, ed25519); W11 V4 ist klein und schließt den Multi-User-Präsenz-Bogen (sehen/spüren/kennen/hören). `docs/world-portal.md` + den V8.53-Eintrag in `CLAUDE.md` ZUERST lesen. Volle Detail-Tabelle in `roadmap.md`.
+**Empfehlung**: **W13 Phase 2** — Phase 1 (V8.54) legte das Fundament (`_vibeSign`/`_vibeVerify` stehen, die Identität ist sichtbar + sicherbar); Phase 2 wendet die Primitive an: der Schöpfer signiert seine Baupläne, ein Bauplan trägt eine Signatur + `authorPubKey`, die Werkstatt zeigt signiert/unsigniert. Danach Phase 3 (Signatur-Prüfung überall — Multi-User, Welt-Tor, Portal-Manifest). Alternativ einschiebbar: W11 V4 (Voice-Sync, ~1 Session, klein). `docs/world-portal.md` §4 + den V8.54-Eintrag in `CLAUDE.md` ZUERST lesen. Volle Detail-Tabelle in `roadmap.md`.
 
 ---
 
