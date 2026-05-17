@@ -15833,6 +15833,159 @@ function startSaveServer() {
                 check("W14 P3: Welt-Import-Tests laufen", false, w14p3Results ? w14p3Results.error : "no result");
             }
 
+            // ### KI-Übersetzer Phase 1 — fremde Welt → Portal-Manifest ###
+            const translatorResults = await page
+                .evaluate(async () => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    out.methods =
+                        typeof r._buildTranslatorPrompt === "function" &&
+                        typeof r._parseManifestResponse === "function" &&
+                        typeof r.translateWorldManifest === "function" &&
+                        typeof r.acceptTranslatedManifest === "function" &&
+                        typeof r.translatorInitDOM === "function";
+                    r.state.customWorlds = {};
+                    // _buildTranslatorPrompt nennt das Manifest-Schema.
+                    const prompt = r._buildTranslatorPrompt();
+                    out.promptNamesSchema =
+                        typeof prompt === "string" &&
+                        prompt.includes('"id"') &&
+                        prompt.includes('"label"') &&
+                        prompt.includes('"dsl"');
+                    // _parseManifestResponse — REIN DATEN, kein LLM nötig.
+                    const p1 = r._parseManifestResponse('{"id":"voxelwelt","label":"Voxel","dsl":["place_block"]}');
+                    out.parseClean = !!p1 && p1.id === "voxelwelt";
+                    const p2 = r._parseManifestResponse('```json\n{"id":"x","label":"X"}\n```');
+                    out.parseFenced = !!p2 && p2.id === "x";
+                    const p3 = r._parseManifestResponse('<think>ich überlege ...</think>{"id":"y","label":"Y"}');
+                    out.parseThink = !!p3 && p3.id === "y";
+                    out.parseGarbage = r._parseManifestResponse("ich bin kein json") === null;
+                    out.parseArray = r._parseManifestResponse("[1,2,3]") === null;
+                    // translateWorldManifest — llmCall stubben (kein API-Key im Headless).
+                    const origLlm = r.llmCall;
+                    try {
+                        r.llmCall = async () => ({
+                            say: "",
+                            program: null,
+                            raw: JSON.stringify({
+                                id: "voxel-traum",
+                                label: "Voxel-Traum",
+                                desc: "Eine Voxel-Sandbox mit Wetter.",
+                                dsl: ["place_block", "set_weather"],
+                            }),
+                        });
+                        // Zu kurze Beschreibung → vor dem LLM abgelehnt.
+                        const tooShort = await r.translateWorldManifest("kurz");
+                        out.rejectsTooShort = tooShort.ok === false && tooShort.reason === "description_too_short";
+                        // Gültige Übersetzung → sanitiertes Vorschau-Manifest.
+                        const tr = await r.translateWorldManifest("Eine Voxel-Sandbox mit Wetter und Block-Bauen.");
+                        out.translateOk =
+                            tr.ok === true &&
+                            !!tr.manifest &&
+                            tr.manifest.id === "voxel-traum" &&
+                            /^worlds\//.test(tr.manifest.world || "");
+                        // Übersetzer-UI-Pfad: _runTranslator füllt #translator-review.
+                        const inp = document.getElementById("translator-input");
+                        if (inp) inp.value = "Eine Voxel-Sandbox mit Wetter und Block-Bauen.";
+                        await r._runTranslator();
+                        const review = document.getElementById("translator-review");
+                        out.runTranslatorRendersReview =
+                            !!review && review.hidden === false && !!review.querySelector(".translator-review-title");
+                        // Übersetztes Manifest, das eine Built-in-id wählt → abgelehnt.
+                        r.llmCall = async () => ({ raw: JSON.stringify({ id: "fluid", label: "X" }) });
+                        const builtinId = await r.translateWorldManifest("Eine Welt namens fluid.");
+                        out.rejectsBuiltinId = builtinId.ok === false && builtinId.reason === "id_is_builtin";
+                        // LLM-Antwort ohne Manifest → no_manifest_in_response.
+                        r.llmCall = async () => ({ raw: "Tut mir leid, ich weiss es nicht." });
+                        const noManifest = await r.translateWorldManifest("Eine vage Welt ohne Form.");
+                        out.rejectsNoManifest =
+                            noManifest.ok === false && noManifest.reason === "no_manifest_in_response";
+                    } finally {
+                        r.llmCall = origLlm;
+                    }
+                    // acceptTranslatedManifest — committet in customWorlds.
+                    const acc = r.acceptTranslatedManifest({
+                        id: "voxel-traum",
+                        label: "Voxel-Traum",
+                        desc: "Eine Voxel-Sandbox.",
+                        dsl: ["place_block"],
+                    });
+                    const stored = r.state.customWorlds && r.state.customWorlds["voxel-traum"];
+                    out.acceptCommits =
+                        acc.ok === true &&
+                        acc.id === "voxel-traum" &&
+                        !!stored &&
+                        stored.translated === true &&
+                        stored.reachable === false;
+                    // _sanitizeImportedManifest bewahrt das translated-Feld.
+                    const reSan = r._sanitizeImportedManifest(stored);
+                    out.sanitizePreservesTranslated = !!reSan && reSan.translated === true;
+                    // localStorage-Rundlauf — die übersetzte Welt überlebt.
+                    const reloaded = r._loadCustomWorlds();
+                    out.roundtripKeepsTranslated =
+                        !!reloaded["voxel-traum"] && reloaded["voxel-traum"].translated === true;
+                    // _worldEntry + _libraryWorlds umfassen die übersetzte Welt.
+                    out.worldEntryMerged =
+                        !!r._worldEntry("voxel-traum") && r._libraryWorlds().some((w) => w.id === "voxel-traum");
+                    // obtainPortalForWorld verweigert die übersetzte Welt (kein totes Portal).
+                    const ob = r.obtainPortalForWorld("voxel-traum");
+                    out.obtainRefusesTranslated = ob.ok === false && ob.reason === "world_unreachable";
+                    // renderLibraryUI rendert eine „KI-übersetzt"-Karte.
+                    r.renderLibraryUI();
+                    out.uiTranslatedCard =
+                        !!document.querySelector("#library-list .library-card-translated") &&
+                        !!document.querySelector("#library-list .library-translated-mark");
+                    // UI: Übersetzer-Sektion im DOM.
+                    out.uiTranslatorSection =
+                        !!document.getElementById("translator-input") &&
+                        !!document.getElementById("translator-run") &&
+                        !!document.getElementById("translator-review");
+                    // Aufräumen.
+                    r.state.customWorlds = {};
+                    r._saveCustomWorlds();
+                    const cleanReview = document.getElementById("translator-review");
+                    if (cleanReview) {
+                        cleanReview.hidden = true;
+                        cleanReview.innerHTML = "";
+                    }
+                    const cleanInput = document.getElementById("translator-input");
+                    if (cleanInput) cleanInput.value = "";
+                    r.renderLibraryUI();
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (translatorResults && !translatorResults.error) {
+                check(
+                    "KI-Übersetzer: _buildTranslatorPrompt/_parseManifestResponse/translateWorldManifest/acceptTranslatedManifest/translatorInitDOM existieren",
+                    translatorResults.methods
+                );
+                check("KI-Übersetzer: _buildTranslatorPrompt nennt das Manifest-Schema (id/label/dsl)", translatorResults.promptNamesSchema);
+                check("KI-Übersetzer: _parseManifestResponse liest sauberes JSON", translatorResults.parseClean);
+                check("KI-Übersetzer: _parseManifestResponse liest JSON aus einem Markdown-Fence", translatorResults.parseFenced);
+                check("KI-Übersetzer: _parseManifestResponse strippt <think>-Reasoning + liest das JSON danach", translatorResults.parseThink);
+                check("KI-Übersetzer: _parseManifestResponse liefert null bei Müll (kein JSON)", translatorResults.parseGarbage);
+                check("KI-Übersetzer: _parseManifestResponse liefert null bei einem JSON-Array (kein Objekt)", translatorResults.parseArray);
+                check("KI-Übersetzer: translateWorldManifest lehnt eine zu kurze Beschreibung ab", translatorResults.rejectsTooShort);
+                check("KI-Übersetzer: translateWorldManifest liefert ein sanitiertes Vorschau-Manifest", translatorResults.translateOk);
+                check("KI-Übersetzer: _runTranslator rendert den KI-Vorschlag im Review-Bereich", translatorResults.runTranslatorRendersReview);
+                check("KI-Übersetzer: translateWorldManifest lehnt eine Built-in-id ab", translatorResults.rejectsBuiltinId);
+                check("KI-Übersetzer: translateWorldManifest meldet no_manifest_in_response bei einer LLM-Antwort ohne Manifest", translatorResults.rejectsNoManifest);
+                check("KI-Übersetzer: acceptTranslatedManifest committet in customWorlds (translated:true, reachable:false)", translatorResults.acceptCommits);
+                check("KI-Übersetzer: _sanitizeImportedManifest bewahrt das translated-Feld", translatorResults.sanitizePreservesTranslated);
+                check("KI-Übersetzer: eine übersetzte Welt überlebt den localStorage-Rundlauf", translatorResults.roundtripKeepsTranslated);
+                check("KI-Übersetzer: _worldEntry + _libraryWorlds umfassen die übersetzte Welt", translatorResults.worldEntryMerged);
+                check("KI-Übersetzer: obtainPortalForWorld verweigert eine übersetzte Welt (kein totes Portal)", translatorResults.obtainRefusesTranslated);
+                check("KI-Übersetzer: renderLibraryUI rendert eine 'KI-übersetzt'-Karte", translatorResults.uiTranslatedCard);
+                check("KI-Übersetzer: Übersetzer-Sektion (Eingabe + Knopf + Review) im DOM", translatorResults.uiTranslatorSection);
+            } else {
+                check(
+                    "KI-Übersetzer: Phase-1-Tests laufen",
+                    false,
+                    translatorResults ? translatorResults.error : "no result"
+                );
+            }
+
             // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
             const v840Results = await page
                 .evaluate(() => {

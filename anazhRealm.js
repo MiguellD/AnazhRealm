@@ -14269,6 +14269,13 @@ class AnazhRealm {
             out.signedHash = typeof m.signedHash === "string" ? m.signedHash : "";
             out.signedAt = typeof m.signedAt === "number" ? m.signedAt : 0;
         }
+        // KI-Übersetzer Phase 1 — eine übersetzte Welt trägt eine Marke, die
+        // den localStorage-Rundlauf überleben muss (sonst verlöre sie nach
+        // dem Reload ihren „übersetzt"-Status).
+        if (m.translated === true) {
+            out.translated = true;
+            out.translatedAt = typeof m.translatedAt === "number" ? m.translatedAt : Date.now();
+        }
         return out;
     }
 
@@ -14344,6 +14351,114 @@ class AnazhRealm {
             signature: signatureStatus,
         });
         return { ok: true, id: clean.id, signatureStatus, reachable };
+    }
+
+    // ### W14-Horizont — der KI-Übersetzer (Phase 1) ###
+    // Der letzte grosse Vision-Schritt (world-portal.md §2 Schicht 3): ein
+    // LLM liest eine fremde Welt und übersetzt sie in ein Portal-Manifest,
+    // damit AnazhRealm sie in seine Bibliothek aufnimmt. Phase 1 ist bewusst
+    // die SICHERE Phase: der LLM-Output ist DATEN (ein Manifest), kein Code —
+    // er wird per JSON.parse gelesen (nie eval, nie Function) und durch
+    // _sanitizeImportedManifest gesäubert, dieselbe Wand wie der W14-P3-
+    // Import. Eine übersetzte Welt ist browsbar, nicht betretbar: ihre
+    // Engine-Dateien werden erst in einer späteren Phase vendort (die eigene
+    // Sicherheits-Welle für LLM-generierten Adapter-Code).
+
+    // Der System-Prompt des Übersetzers — er weist das LLM an, eine frei
+    // beschriebene Welt ins schlanke Portal-Manifest zu übersetzen.
+    _buildTranslatorPrompt() {
+        return [
+            "Du bist der KI-Übersetzer von AnazhRealm — einem Tor zu fremden Vibecode-Welten.",
+            "Übersetze eine frei beschriebene fremde Welt (ein Three.js-Projekt, eine Engine,",
+            "ein Repo, ein Browser-Spiel) in ein Portal-Manifest, damit AnazhRealm sie in seine",
+            "Bibliothek aufnehmen kann.",
+            "",
+            "Antworte mit GENAU EINEM JSON-Objekt — kein weiterer Text, kein say-Feld, kein",
+            "program-Array, keine Erklärung. Genau diese vier Felder:",
+            '{ "id": "<slug>", "label": "<Titel>", "desc": "<Text>", "dsl": ["wort", "..."] }',
+            "",
+            "  id    — nur a-z 0-9 - _, 1-40 Zeichen, aus dem Welt-Namen abgeleitet.",
+            "  label — kurzer menschenlesbarer Name.",
+            "  desc  — 1-2 Sätze, was die Welt ist (höchstens ~200 Zeichen).",
+            "  dsl   — DSL-Vokabular: die Befehle, die die Welt sinnvoll verstehen würde,",
+            "          abgeleitet aus ihren Mechaniken (Wetter -> set_weather, Voxel ->",
+            "          place_block, Fluid -> inject_fluid, Terrain -> set_terrain_seed).",
+            "          Jedes Wort ausschliesslich Kleinbuchstaben und Unterstriche.",
+            "",
+            "Gib KEINEN world-Pfad an — die Engine-Dateien werden separat vendort.",
+            "Vermeide die ids fluid, terrain und skeleton (schon vergeben).",
+            "Ist die Beschreibung knapp, rate trotzdem ein stimmiges Manifest.",
+        ].join("\n");
+    }
+
+    // Liest ein Manifest-Objekt aus der rohen LLM-Antwort. REIN DATEN:
+    // <think>-Reasoning + Markdown-Fences entfernen, das erste {…} per
+    // JSON.parse lesen — nie eval, nie Function. Liefert ein Objekt oder
+    // null (kein Wurf). Spiegelt die Vorverarbeitung von llmParseResponse.
+    _parseManifestResponse(raw) {
+        if (typeof raw !== "string" || !raw.trim()) return null;
+        let text = raw.trim();
+        text = text.replace(/<think(?:ing)?>[\s\S]*?<\/think(?:ing)?>/gi, "").trim();
+        const fence = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+        if (fence) text = fence[1].trim();
+        const objMatch = text.match(/\{[\s\S]*\}/);
+        if (!objMatch) return null;
+        try {
+            const obj = JSON.parse(objMatch[0]);
+            return obj && typeof obj === "object" && !Array.isArray(obj) ? obj : null;
+        } catch {
+            return null;
+        }
+    }
+
+    // KI-Übersetzer Phase 1 — eine frei beschriebene Welt in ein Portal-
+    // Manifest übersetzen. Ruft das LLM über llmCall (denselben Transport
+    // wie der Welt-Grok + die Kreatur-Persona), liest das Manifest aus der
+    // Antwort und säubert es per _sanitizeImportedManifest. Liefert eine
+    // VORSCHAU ({ok, manifest}) — committet noch nichts; erst
+    // acceptTranslatedManifest trägt sie in die Bibliothek.
+    async translateWorldManifest(description) {
+        const desc = String(description || "").trim();
+        if (desc.length < 12) return { ok: false, reason: "description_too_short" };
+        if (desc.length > 4000) return { ok: false, reason: "description_too_long" };
+        const parsed = await this.llmCall(desc, this._buildTranslatorPrompt());
+        // Ein reiner llmCall-Fehler (kein API-Key, LLM aus, HTTP-Fehler) hat
+        // kein raw — direkt durchreichen. Kam eine Antwort, trägt sie raw.
+        if (parsed && parsed.error && !parsed.raw) return { ok: false, reason: parsed.error };
+        const obj = this._parseManifestResponse((parsed && parsed.raw) || "");
+        if (!obj) return { ok: false, reason: "no_manifest_in_response" };
+        const clean = this._sanitizeImportedManifest(obj);
+        if (!clean) {
+            const rawId = typeof obj.id === "string" ? obj.id.trim().toLowerCase() : "";
+            if (rawId && AnazhRealm.WORLD_REGISTRY[rawId]) return { ok: false, reason: "id_is_builtin" };
+            return { ok: false, reason: "invalid_manifest" };
+        }
+        return { ok: true, manifest: clean };
+    }
+
+    // KI-Übersetzer Phase 1 — ein übersetztes (ggf. vom Spieler nachjustiertes)
+    // Manifest in die Bibliothek aufnehmen. Markiert es `translated` und
+    // `reachable:false` — eine übersetzte Welt ist browsbar, nicht betretbar:
+    // ihre Engine-Dateien sind noch nicht vendort (Phase 2/3). So wird kein
+    // totes Portal versprochen (W14-P3-Disziplin: nichts versprechen, was
+    // nicht geprüft ist).
+    acceptTranslatedManifest(manifest) {
+        const src = manifest && typeof manifest === "object" ? manifest : {};
+        const clean = this._sanitizeImportedManifest(
+            Object.assign({}, src, { translated: true, translatedAt: Date.now(), reachable: false })
+        );
+        if (!clean) {
+            const rawId = typeof src.id === "string" ? src.id.trim().toLowerCase() : "";
+            if (rawId && AnazhRealm.WORLD_REGISTRY[rawId]) return { ok: false, reason: "id_is_builtin" };
+            return { ok: false, reason: "invalid_manifest" };
+        }
+        if (!this.state.customWorlds) this.state.customWorlds = {};
+        this.state.customWorlds[clean.id] = clean;
+        this._saveCustomWorlds();
+        this.journalAppend("growth", `Der KI-Übersetzer trug eine Welt in deine Bibliothek: „${clean.label}".`, {
+            world: clean.id,
+        });
+        return { ok: true, id: clean.id, label: clean.label };
     }
 
     // ### Welle 3 F — Welt-Tor ###
@@ -17175,8 +17290,13 @@ class AnazhRealm {
         list.innerHTML = "";
         for (const w of this._libraryWorlds()) {
             const isImported = !!(this.state.customWorlds && this.state.customWorlds[w.id]);
+            // KI-Übersetzer Phase 1 — eine übersetzte Welt ist ein customWorld
+            // mit translated-Marke; sie bekommt eine eigene Karten-Färbung.
+            const isTranslated = isImported && w.translated === true;
             const card = document.createElement("div");
-            card.className = "library-card" + (isImported ? " library-card-imported" : "");
+            card.className =
+                "library-card" +
+                (isTranslated ? " library-card-translated" : isImported ? " library-card-imported" : "");
 
             const head = document.createElement("div");
             head.className = "library-card-head";
@@ -17196,8 +17316,16 @@ class AnazhRealm {
                 ? "Diese Welt versteht ein DSL-Vokabular (Stufe übersetzt). Beim Betreten kann sie es nativ bestätigen."
                 : "Diese Welt ist spielbar, aber stumm gegenüber der DSL.";
             head.appendChild(stage);
-            // W14 Phase 3 — eine importierte Welt trägt eine „empfangen"-Marke.
-            if (isImported) {
+            // W14 Phase 3 — eine importierte Welt trägt eine „empfangen"-Marke;
+            // eine KI-übersetzte (KI-Übersetzer Phase 1) eine „KI-übersetzt"-Marke.
+            if (isTranslated) {
+                const tr = document.createElement("span");
+                tr.className = "library-translated-mark";
+                tr.textContent = "KI-übersetzt";
+                tr.title =
+                    "Diese Welt übersetzte der KI-Übersetzer aus einer Beschreibung in ein Portal-Manifest (Phase 1).";
+                head.appendChild(tr);
+            } else if (isImported) {
                 const imp = document.createElement("span");
                 imp.className = "library-imported-mark";
                 imp.textContent = "empfangen";
@@ -17237,11 +17365,15 @@ class AnazhRealm {
             const status = document.createElement("span");
             status.className = "library-status";
             if (unreachable) {
-                // Eine empfangene Welt ohne erreichbare Dateien: browsbar,
-                // aber nicht betretbar — ehrlich markiert statt totem Portal.
+                // Browsbar, aber nicht betretbar — ehrlich markiert statt
+                // totem Portal. Eine KI-übersetzte Welt wartet noch auf das
+                // Vendoren ihrer Engine (KI-Übersetzer Phase 2/3); eine
+                // empfangene Welt brachte nur ihr Manifest mit.
                 getBtn.disabled = true;
-                getBtn.title = "Die Welt-Dateien sind nicht verfügbar — nur das Manifest kam an.";
-                status.textContent = "Welt-Dateien nicht verfügbar";
+                getBtn.title = isTranslated
+                    ? "Übersetzt — die Engine-Dateien werden in einer späteren Phase vendort."
+                    : "Die Welt-Dateien sind nicht verfügbar — nur das Manifest kam an.";
+                status.textContent = isTranslated ? "Engine folgt (Phase 2)" : "Welt-Dateien nicht verfügbar";
                 status.className = "library-status library-unreachable";
             } else {
                 getBtn.addEventListener("click", () => {
@@ -17399,6 +17531,171 @@ class AnazhRealm {
         };
         reader.onerror = () => this.log(`FileReader-Fehler bei ${file.name}`, "ERROR");
         reader.readAsText(file);
+    }
+
+    // ===== KI-Übersetzer Phase 1 — UI =====
+    // Eine Sektion im Bibliothek-Drawer: der Spieler beschreibt eine fremde
+    // Welt, die KI übersetzt sie in ein Manifest, der Spieler prüft + nimmt
+    // sie auf. Der Review-Schritt ist Absicht — der Spieler ist eine Wand:
+    // er sieht, was die KI vorschlägt, bevor es in die Bibliothek wandert.
+    translatorInitDOM() {
+        if (typeof document === "undefined") return;
+        const runBtn = document.getElementById("translator-run");
+        if (runBtn && runBtn.dataset.wired !== "1") {
+            runBtn.dataset.wired = "1";
+            runBtn.addEventListener("click", () => this._runTranslator());
+        }
+    }
+
+    // Reason-Code → menschenlesbarer Hinweis (V7.98-Disziplin: dem Spieler
+    // einen klaren Weg nach vorn zeigen, nicht einen rohen Fehler-Code).
+    _translatorReasonText(reason) {
+        const map = {
+            description_too_short: "Beschreibe die Welt etwas ausführlicher (ein paar Worte mindestens).",
+            description_too_long: "Die Beschreibung ist zu lang — fasse dich kürzer (max. 4000 Zeichen).",
+            "LLM nicht aktiv": "Keine KI aktiv — schalte sie im Einstellungen-Drawer ein.",
+            "API-Key fehlt": "Der KI fehlt ein API-Key — siehe Einstellungen-Drawer.",
+            no_manifest_in_response:
+                "Die KI lieferte kein verwertbares Manifest. Versuch es nochmal oder beschreibe die Welt klarer.",
+            id_is_builtin: "Die KI wählte eine schon vergebene Welt-id — versuch es nochmal.",
+            invalid_manifest: "Das übersetzte Manifest war unbrauchbar — versuch es nochmal.",
+        };
+        return map[reason] || `Übersetzung fehlgeschlagen: ${reason}`;
+    }
+
+    // Den Übersetzer laufen lassen (Knopf-Handler).
+    async _runTranslator() {
+        if (typeof document === "undefined") return;
+        const input = document.getElementById("translator-input");
+        const status = document.getElementById("translator-status");
+        const review = document.getElementById("translator-review");
+        const runBtn = document.getElementById("translator-run");
+        if (!input || !status) return;
+        if (review) {
+            review.hidden = true;
+            review.innerHTML = "";
+        }
+        status.textContent = "Die KI übersetzt …";
+        status.className = "translator-status";
+        if (runBtn) runBtn.disabled = true;
+        let res;
+        try {
+            res = await this.translateWorldManifest(input.value || "");
+        } catch (e) {
+            res = { ok: false, reason: (e && e.message) || "Fehler" };
+        }
+        if (runBtn) runBtn.disabled = false;
+        if (res && res.ok) {
+            status.textContent = "";
+            this._renderTranslatorReview(res.manifest);
+        } else {
+            status.textContent = this._translatorReasonText(res ? res.reason : "Fehler");
+            status.className = "translator-status translator-status-error";
+        }
+    }
+
+    // Ein beschriftetes Feld für die Übersetzer-Vorschau.
+    _translatorField(label, el) {
+        const wrap = document.createElement("div");
+        wrap.className = "translator-field";
+        const lab = document.createElement("div");
+        lab.className = "translator-field-label";
+        lab.textContent = label;
+        wrap.appendChild(lab);
+        wrap.appendChild(el);
+        return wrap;
+    }
+
+    // Den KI-Vorschlag zum Prüfen rendern: id (fest), Name + Beschreibung
+    // (editierbar), DSL-Vokabular (Chips). „Aufnehmen" committet das (ggf.
+    // nachjustierte) Manifest, „Verwerfen" verwirft es.
+    _renderTranslatorReview(manifest) {
+        if (typeof document === "undefined") return;
+        const review = document.getElementById("translator-review");
+        if (!review) return;
+        review.innerHTML = "";
+        review.hidden = false;
+
+        const title = document.createElement("div");
+        title.className = "translator-review-title";
+        title.textContent = "KI-Vorschlag — prüfen und aufnehmen";
+        review.appendChild(title);
+
+        const idRow = document.createElement("div");
+        idRow.className = "translator-field-id";
+        idRow.textContent = "id: " + manifest.id;
+        review.appendChild(idRow);
+
+        const labelInput = document.createElement("input");
+        labelInput.type = "text";
+        labelInput.className = "translator-edit";
+        labelInput.maxLength = 60;
+        labelInput.value = manifest.label || "";
+        review.appendChild(this._translatorField("Name", labelInput));
+
+        const descInput = document.createElement("textarea");
+        descInput.className = "translator-edit translator-edit-desc";
+        descInput.rows = 2;
+        descInput.maxLength = 240;
+        descInput.value = manifest.desc || "";
+        review.appendChild(this._translatorField("Beschreibung", descInput));
+
+        const dslWrap = document.createElement("div");
+        dslWrap.className = "library-dsl";
+        const dsl = Array.isArray(manifest.dsl) ? manifest.dsl : [];
+        if (dsl.length) {
+            for (const op of dsl) {
+                const chip = document.createElement("span");
+                chip.className = "library-dsl-word";
+                chip.textContent = op;
+                dslWrap.appendChild(chip);
+            }
+        } else {
+            const none = document.createElement("span");
+            none.className = "library-dsl-empty";
+            none.textContent = "kein DSL-Vokabular";
+            dslWrap.appendChild(none);
+        }
+        review.appendChild(this._translatorField("DSL-Vokabular", dslWrap));
+
+        const actions = document.createElement("div");
+        actions.className = "actions";
+        const acceptBtn = document.createElement("button");
+        acceptBtn.type = "button";
+        acceptBtn.textContent = "In Bibliothek aufnehmen";
+        acceptBtn.addEventListener("click", () => {
+            const edited = Object.assign({}, manifest, {
+                label: labelInput.value,
+                desc: descInput.value,
+            });
+            const res = this.acceptTranslatedManifest(edited);
+            const status = document.getElementById("translator-status");
+            if (res.ok) {
+                if (status) {
+                    status.textContent = `✓ „${res.label}" steht jetzt in deiner Bibliothek.`;
+                    status.className = "translator-status";
+                }
+                review.hidden = true;
+                review.innerHTML = "";
+                const inp = document.getElementById("translator-input");
+                if (inp) inp.value = "";
+                this.renderLibraryUI();
+                this.log(`KI-Übersetzer: „${res.label}" in die Bibliothek aufgenommen.`, "INFO");
+            } else if (status) {
+                status.textContent = this._translatorReasonText(res.reason);
+                status.className = "translator-status translator-status-error";
+            }
+        });
+        const discardBtn = document.createElement("button");
+        discardBtn.type = "button";
+        discardBtn.textContent = "Verwerfen";
+        discardBtn.addEventListener("click", () => {
+            review.hidden = true;
+            review.innerHTML = "";
+        });
+        actions.appendChild(acceptBtn);
+        actions.appendChild(discardBtn);
+        review.appendChild(actions);
     }
 
     // W12 — ein DSL-Manifest säubern: nur op-förmige Strings (klein +
@@ -28807,6 +29104,8 @@ class AnazhRealm {
         this.creatureDrawerInitDOM();
         // W14 Phase 1 — Bibliothek-Drawer rendern (Welt-Registry browsbar).
         this.libraryInitDOM();
+        // KI-Übersetzer Phase 1 — die Übersetzer-Sektion verkabeln.
+        this.translatorInitDOM();
         // Ring 6.5 — Hotbar im DOM rendern. Wird hier einmal aufgesetzt;
         // setHotbarSlot löst ein Re-Render aus.
         this._renderHotbarDOM();

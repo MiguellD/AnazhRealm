@@ -31,7 +31,7 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: stun: turn: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self';"
         />
-        <title>Anazh Realm v8.67 – Das Ultiversum</title>
+        <title>Anazh Realm v8.68 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
              zusätzliche Datei. img-src 'self' data: in CSP erlaubt data-URI. -->
         <link
@@ -2430,6 +2430,94 @@
                 font-style: italic;
                 opacity: 0.85;
             }
+            /* KI-Übersetzer Phase 1 — die Übersetzer-Sektion + die
+               „KI-übersetzt"-Karte. Stil mirror't die Pergament-Sprache. */
+            .translator-input {
+                width: 100%;
+                box-sizing: border-box;
+                font-family: "JetBrains Mono", monospace;
+                font-size: 11px;
+                color: var(--parch-ink, #2b1a08);
+                background: rgba(255, 248, 230, 0.55);
+                border: 1px solid var(--brass-2, #8a6322);
+                border-radius: 3px;
+                padding: 6px 8px;
+                resize: vertical;
+                margin-bottom: 6px;
+            }
+            .translator-input:focus {
+                outline: 1px solid var(--brass-1, #b8893a);
+            }
+            .translator-status {
+                font-family: "IM Fell English", Georgia, serif;
+                font-size: 11px;
+                font-style: italic;
+                color: #2c8a5e;
+                margin-top: 6px;
+                min-height: 14px;
+            }
+            .translator-status.translator-status-error {
+                color: #a04848;
+            }
+            .translator-review {
+                margin-top: 8px;
+                border: 1px solid var(--brass-2, #8a6322);
+                border-left: 3px solid var(--violet-1, #6b4a8a);
+                border-radius: 3px;
+                padding: 8px 9px;
+                background: linear-gradient(180deg, rgba(255, 240, 205, 0.32), rgba(180, 140, 80, 0.1));
+            }
+            .translator-review-title {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 11px;
+                font-weight: bold;
+                color: var(--parch-ink, #2b1a08);
+                margin-bottom: 6px;
+            }
+            .translator-field-id {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 9.5px;
+                color: var(--parch-ink-faded, #7b5a2e);
+                margin-bottom: 5px;
+            }
+            .translator-field {
+                margin-bottom: 6px;
+            }
+            .translator-field-label {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9px;
+                letter-spacing: 0.1em;
+                text-transform: uppercase;
+                color: var(--parch-ink-soft, #5a3f1d);
+                margin-bottom: 2px;
+            }
+            .translator-edit {
+                width: 100%;
+                box-sizing: border-box;
+                font-family: "IM Fell English", Georgia, serif;
+                font-size: 12px;
+                color: var(--parch-ink, #2b1a08);
+                background: rgba(255, 248, 230, 0.6);
+                border: 1px solid var(--brass-2, #8a6322);
+                border-radius: 2px;
+                padding: 4px 6px;
+            }
+            .translator-edit-desc {
+                resize: vertical;
+            }
+            .library-card-translated {
+                border-left: 3px solid var(--violet-1, #6b4a8a);
+            }
+            .library-translated-mark {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 9px;
+                letter-spacing: 0.04em;
+                padding: 1px 6px;
+                border-radius: 8px;
+                background: rgba(139, 106, 168, 0.2);
+                color: #6b4a8a;
+                border: 1px solid rgba(139, 106, 168, 0.55);
+            }
             /* Ring 5: Spieler-Seele. Brass-getintetes <select>, passend zum
            Drawer-Pergament-Look. */
             .drawer .soul-row {
@@ -4306,7 +4394,7 @@
         <header id="topbar" class="hud-frame">
             <div class="topbar-inner">
                 <div class="title">
-                    Anazh Realm <span class="version">v8.67</span> <span class="sub">— Das Ultiversum</span>
+                    Anazh Realm <span class="version">v8.68</span> <span class="sub">— Das Ultiversum</span>
                 </div>
                 <nav class="tabs" role="tablist" aria-label="Hauptansichten">
                     <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">
@@ -4772,6 +4860,29 @@
         <aside class="drawer" data-drawer="bibliothek" aria-label="Bibliothek-Panel" hidden>
             <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
             <h2>Bibliothek</h2>
+            <!-- KI-Übersetzer Phase 1 — eine fremde Welt beschreiben, die KI
+                 übersetzt sie in ein Portal-Manifest. _runTranslator füllt
+                 #translator-review; acceptTranslatedManifest committet. -->
+            <section class="section">
+                <h3>KI-Übersetzer <span class="section-hint">(fremde Welt → Manifest)</span></h3>
+                <p class="drawer-hint">
+                    Beschreibe eine fremde Vibecode-Welt — ein Three.js-Projekt, eine Engine, ein Repo. Die KI
+                    übersetzt sie in ein Portal-Manifest und trägt sie als Eintrag in deine Bibliothek. Ein
+                    übersetzter Eintrag ist browsbar, noch nicht betretbar — seine Engine-Dateien werden in einer
+                    späteren Phase vendort. Braucht eine aktive KI (Einstellungen-Drawer).
+                </p>
+                <textarea
+                    id="translator-input"
+                    class="translator-input"
+                    rows="4"
+                    placeholder="z. B.: Eine Voxel-Sandbox mit Tag-Nacht-Zyklus, Wetter und Block-Bauen. Three.js, prozedurale Chunks, ein umherstreifender Spieler."
+                ></textarea>
+                <div class="actions">
+                    <button type="button" id="translator-run">Übersetzen</button>
+                </div>
+                <div id="translator-status" class="translator-status" aria-live="polite"></div>
+                <div id="translator-review" class="translator-review" hidden></div>
+            </section>
             <section class="section">
                 <h3>Welten <span class="section-hint">(durch ein Tor erreichbar)</span></h3>
                 <p class="drawer-hint">
@@ -5357,6 +5468,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=8.67" defer></script>
+        <script src="anazhRealm.js?v=8.68" defer></script>
     </body>
 </html>

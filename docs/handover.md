@@ -9,11 +9,13 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 17.05.2026, V8.67)
+## Schnell-Lage (Stand 17.05.2026, V8.68)
 
-**Du erbst eine sehr lebendige Welt**. **2545 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~31000 Zeilen in einer Datei, alles produktiv.
+**Du erbst eine sehr lebendige Welt**. **2564 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~31000 Zeilen in einer Datei, alles produktiv.
 
-**Jüngste Welle — V8.67 (W11 V4: Voice-Sync — der Präsenz-Bogen schliesst sich)**: der letzte offene Roadmap-Punkt vor dem KI-Übersetzer. W11 V3 gab dem Mitspieler seinen echten Soul (sehen), seine Aura (spüren), seinen Vibe-Pass (kennen) — V4 macht ihn **hörbar**: wenn dein Begleiter spricht (jeder Pfad durch `grokRender` — der EINE Sprech-Engpass), reist der Text via `companion-say` (`{peerId,text,voice}`) an alle Mitspieler; sie spielen ihn via `SpeechSynthesis` ab — gegated auf den eigenen Stimme-Toggle (`grok.speechEnabled`, ein Toggle für eigenen + fremden Begleiter), Silent-Drop bei laufender Stimme. Der Begleiter bekommt eine wählbare STIMME (`<select id="companion-voice">`, persistiert) — sie reist mit, ein Mitspieler erkennt den fremden Begleiter an seiner Stimme. Dedizierter Kanal wie `soul`/`aura`, kein DSL. +14 Invarianten 2531→2545, Zwei-Browser-verifiziert. **Lies `CLAUDE.md` V8.67 ZUERST.**
+**Jüngste Welle — V8.68 (KI-Übersetzer Phase 1: eine fremde Welt → ein Portal-Manifest)**: der letzte grosse Vision-Schritt aus `docs/world-portal.md` §2 Schicht 3 beginnt. Ein LLM übersetzt eine frei beschriebene fremde Welt in ein Portal-Manifest — Phase 1 ist bewusst die **sichere** Phase: der LLM-Output ist DATEN (ein Manifest), kein Code. `translateWorldManifest` ruft `llmCall` (denselben Transport wie Welt-Grok + Kreatur-Persona) mit dem Übersetzer-System-Prompt, `_parseManifestResponse` liest das Manifest per `JSON.parse` (nie eval), `_sanitizeImportedManifest` säubert es (dieselbe Wand wie der W14-P3-Import — op-förmige id, kein Built-in-Override, same-origin `worlds/`-Pfad). Der Spieler prüft den KI-Vorschlag in einem Review-Schritt (er ist die letzte Wand), `acceptTranslatedManifest` legt ihn `translated:true`/`reachable:false` in `customWorlds` — eine übersetzte Welt ist browsbar, nicht betretbar (die Engine-Vendierung ist Phase 2). Neue Sektion „KI-Übersetzer" im Bibliothek-Drawer. +19 Invarianten 2545→2564, playtest-grün. **Lies `CLAUDE.md` V8.68 ZUERST.**
+
+**Welle davor — V8.67 (W11 V4: Voice-Sync — der Präsenz-Bogen schliesst sich)**: der letzte offene Roadmap-Punkt vor dem KI-Übersetzer. W11 V3 gab dem Mitspieler seinen echten Soul (sehen), seine Aura (spüren), seinen Vibe-Pass (kennen) — V4 macht ihn **hörbar**: wenn dein Begleiter spricht (jeder Pfad durch `grokRender` — der EINE Sprech-Engpass), reist der Text via `companion-say` (`{peerId,text,voice}`) an alle Mitspieler; sie spielen ihn via `SpeechSynthesis` ab — gegated auf den eigenen Stimme-Toggle (`grok.speechEnabled`, ein Toggle für eigenen + fremden Begleiter), Silent-Drop bei laufender Stimme. Der Begleiter bekommt eine wählbare STIMME (`<select id="companion-voice">`, persistiert) — sie reist mit, ein Mitspieler erkennt den fremden Begleiter an seiner Stimme. Dedizierter Kanal wie `soul`/`aura`, kein DSL. +14 Invarianten 2531→2545, Zwei-Browser-verifiziert. **Lies `CLAUDE.md` V8.67 ZUERST.**
 
 **Davor — V8.62-V8.66 (W7 Compute-Sharing KOMPLETT)**: der ganze W7-Bogen. **P1 (V8.62)**: echte WebRTC-DataChannels — der `signaling-server` wird Rendezvous statt Relay, pos/dsl/soul/aura/vibe fliessen peer-to-peer, eine Mesh-Komplett-Wand gegen Doppel-Zustellung. **P2 (V8.63)**: der Welt-Snapshot reist mesh-nativ in 16-KiB-Stücken (`world-pull`/`world-chunk`), Guest-Resync per Knopf. **V8.64**: Multi-User-Bau-Sync — `confirmBuild`/`harvestArchitecture` broadcasten (geteilte string-`archId` + `remove_architecture`-Op). **P3 (V8.65)**: LLM-Pool — ein Peer teilt seine „Stimme" (Opt-in + Rate-Limit + dslRun-Sandbox). **P4 (V8.66)**: Public-Lobby (`lobby-publish`/`lobby-list`) + Kreatur-Sicht-Sync (jeder Peer streamt SEINE Kreaturen → `remoteCreatures`, NICHT in `state.creatures`). Jede Welle Zwei-Browser-verifiziert (`smoke-webrtc.cjs`). **Lies `CLAUDE.md` V8.62-V8.66 ZUERST.**
 
@@ -33,7 +35,7 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 **Wellen davor — V8.48-V8.54**: W12 Welt-Portal (V8.51-V8.53 — sandboxed iframe, zwei fremde Engines, generische DSL-Brücke, beidseitiger Kanal, native Manifest-Stufe) + W13 Phase 1 (V8.54 — der ed25519-Schlüssel als Fundament) + drei kleine Polish-Wellen (V8.48 Terrain-Schatten, V8.49 `updateCreatures`-Perf 2,4×, V8.50 Flaky-Test-Heilung über `_gameLoopTick`). Volle Wellen-Historie: Session-Tagebuch unten + `CLAUDE.md`.
 
-**Offen — die grossen Roadmap-Ringe sind gebaut.** W12 Welt-Portal, W13 Vibe-Pass, W14 Bibliothek, W7 Compute-Sharing — alle komplett. Was bleibt: der **KI-Übersetzer** (ein LLM liest ein fremdes Repo, vendort es, schreibt Manifest + Adapter) — der grosse Horizont innerhalb von W14, keine Vorbedingung mehr, aber bewusst zuletzt (LLM-generierter Code in der Sandbox = eigene Sicherheits-Welle). W11 V4 (Voice-Sync) ist mit V8.67 erledigt — damit ist die geplante Roadmap-Substanz bis auf den KI-Übersetzer erfüllt; weiteres Wachstum folgt der Vision der vier Testamente, nicht mehr einem vorgezeichneten Plan. `docs/roadmap.md` + `docs/world-portal.md` ZUERST lesen.
+**Offen — die grossen Roadmap-Ringe sind gebaut.** W12 Welt-Portal, W13 Vibe-Pass, W14 Bibliothek, W7 Compute-Sharing — alle komplett; der **KI-Übersetzer Phase 1** (V8.68) übersetzt eine fremde Welt-Beschreibung in ein Portal-Manifest. Was bleibt: **KI-Übersetzer Phase 2** — die Engine-Dateien einer übersetzten Welt vendorn (ein LLM schreibt den Adapter). Das ist die Code-Hälfte (LLM-generierter Code in der Sandbox = eine eigene Sicherheits-Welle, bewusst getrennt von der sicheren Daten-Phase 1). Danach folgt das Wachstum der Vision der vier Testamente, nicht mehr einem vorgezeichneten Plan. `docs/roadmap.md` + `docs/world-portal.md` ZUERST lesen.
 
 **Welle davor — V8.47 (Shadow-Acne-Heilung)**: Schöpfer-Befund „unnatürliche Schattenlinien nur auf komplett horizontalen flachen Flächen" (Bauwerks-Dächer). Diese Präzision war die Diagnose — Cel-Banding erscheint auf GEWÖLBTEN Flächen, nicht auf flachen; der Schöpfer sah das Gegenteil → Shadow-Map-Acne. Die `DirectionalLight` hatte keinen Shadow-Bias → flache, zur Sonne zeigende Flächen schatten sich selbst in Streifen. Fix: `shadow.normalBias = 1.0` + `shadow.bias = -0.0005` + mapSize 1024→2048.
 
@@ -69,7 +71,7 @@ Die Session-Hälfte davor (V8.23 → V8.33) war eine **Atmosphäre-Tiefe-Welle (
 
 **W12 + W13 + W14 + W7 sind live** — AnazhRealm ist ein Tor zu anderen Vibecode-Welten (W12 Welt-Portal), der Avatar trägt eine souveräne Identität (W13 Vibe-Pass), die Bibliothek von Alexandria steht (W14), und der WebRTC-Mesh trägt die Multi-User-Last (W7 Compute-Sharing). Wer an einer Portal- oder Bibliothek-Welle arbeitet: lies `docs/world-portal.md` ZUERST.
 
-**Die grossen Roadmap-Ringe sind gebaut.** Was als Horizont bleibt: der **KI-Übersetzer** (ein LLM dockt ein fremdes Repo automatisch an — liest es, vendort es, schreibt Manifest + Adapter), der grosse offene Schritt innerhalb von W14 — keine Vorbedingung mehr, aber bewusst zuletzt (LLM-generierter Adapter-Code in der Sandbox = eine eigene Sicherheits-Welle). W11 V4 (Voice-Sync) ist mit V8.67 erledigt. Danach folgt das Wachstum der Vision der vier Testamente, nicht mehr einem vorgezeichneten Plan. Der aktuelle Stand steht im Block „Aktuelle Roadmap" weiter unten und in `docs/roadmap.md` §3.
+**Die grossen Roadmap-Ringe sind gebaut.** Der **KI-Übersetzer Phase 1** (V8.68) steht — ein LLM übersetzt eine Welt-Beschreibung in ein Portal-Manifest (die sichere Daten-Phase). Was als Horizont bleibt: **KI-Übersetzer Phase 2** — die Engine-Dateien automatisch vendorn (ein LLM schreibt den Adapter); die Code-Hälfte, eine eigene Sicherheits-Welle (LLM-generierter Adapter-Code in der Sandbox). Danach folgt das Wachstum der Vision der vier Testamente, nicht mehr einem vorgezeichneten Plan. Der aktuelle Stand steht im Block „Aktuelle Roadmap" weiter unten und in `docs/roadmap.md` §3.
 
 **Atmosphäre-Disziplin**: alle atmosphärischen Methoden mit `[ATMOSPHERE]`-Marker werden von `audit-strict.cjs` (5. Schicht) auf Hardcode geprüft. Wert-aus-dem-Kopf ist verboten — immer „aus welcher state-Beobachtung emergiert das?".
 
@@ -165,11 +167,11 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3/V4 + 11 ext. + **W12 (Welt-Portal) 
 
 | Welle | Was | Aufwand | Vision-Tiefe |
 |---|---|---|---|
-| **KI-Übersetzer** (W14-Horizont) | Ein LLM liest ein fremdes Repo, vendort es, schreibt `manifest.json` + Adapter — eine neue Welt dockt automatisch ans Portal an. Bewusst zuletzt: LLM-generierter Adapter-Code läuft in der Sandbox = eine eigene Sicherheits-Welle. | groß | sehr hoch |
+| **KI-Übersetzer Phase 2** | Phase 1 (V8.68) übersetzt eine Welt-Beschreibung in ein Manifest. Phase 2 vendort die Engine-Dateien: ein LLM liest das echte Repo + schreibt den Adapter (`applyDsl` + postMessage-Handshake). Die Code-Hälfte — LLM-generierter Code in der Sandbox = eine eigene Sicherheits-Welle. | groß | sehr hoch |
 | **Welle 10b weitere Affordances** | balancing/broadcasting/lifting/radiating — pro Affordance ~1 Session, architektur-neutral. | klein-mittel | hoch |
 | **Welle 6.H V3** Kreatur-Beziehungen | Kreaturen sehen sich gegenseitig — Freundschaft, Konkurrenz, Hierarchie. | mittel | hoch |
 
-**Empfehlung**: die geplante Roadmap-Substanz ist erfüllt — W12/W13/W14/W7 alle komplett, W11 V4 (Voice-Sync) mit V8.67 erledigt. Der **KI-Übersetzer** ist der letzte große Vision-Schritt; er hängt an keiner Vorbedingung mehr, braucht aber eine eigene Sicherheits-Welle (LLM-generierter Code in der Sandbox, sorgfältig sandgesichert). Darüber hinaus folgt das Wachstum der Vision der vier Testamente, nicht mehr einem vorgezeichneten Plan — `docs/world-portal.md` + `docs/state-of-realm.md` ZUERST lesen.
+**Empfehlung**: **KI-Übersetzer Phase 2** — die natürliche Fortsetzung der V8.68-Welle. Phase 1 baute die sichere Daten-Hälfte (LLM → Manifest, sanitiert); Phase 2 ist die Code-Hälfte: ein LLM vendort die Engine-Dateien einer übersetzten Welt + schreibt den Adapter. Das ist die Sicherheits-Welle — LLM-generierter Code, der im sandboxed iframe läuft; vor dem ersten Code sorgfältig die Sandbox-Form festzurren (`allow-scripts` ohne `allow-same-origin`? eine declarative-statt-Code-Adapter-Form?). `docs/world-portal.md` §2 Schicht 3 + §3.2 ZUERST lesen. Darüber hinaus folgt das Wachstum der Vision der vier Testamente, nicht mehr einem vorgezeichneten Plan.
 
 **Kleinere Polish-Notiz**: die Bauplan-Signatur-Zeile im Werkstatt-Stats-Panel ist wenig auffindbar (Schöpfer-Befund V8.56 — sie wurde erst nach Hinweis gesehen). Ein UX-Auffindbarkeits-Punkt für eine spätere Polish-Runde.
 
@@ -332,6 +334,22 @@ Browser: geh den Menschen-Pfad selbst, vor dem „fertig".
 ---
 
 ## Session-Tagebuch (chronologisch, jüngste oben)
+
+### V8.68 — KI-Übersetzer Phase 1 (17.05.2026)
+
+Der letzte grosse Vision-Schritt beginnt — der KI-Übersetzer
+(`docs/world-portal.md` §2 Schicht 3). Ein LLM übersetzt eine frei
+beschriebene fremde Welt in ein Portal-Manifest. Phase 1 ist bewusst die
+SICHERE Phase: der LLM-Output ist DATEN (ein Manifest), kein Code —
+`translateWorldManifest` ruft `llmCall` mit dem Übersetzer-System-Prompt,
+`_parseManifestResponse` liest das Manifest per `JSON.parse` (nie eval),
+`_sanitizeImportedManifest` säubert es (dieselbe erprobte Wand wie der
+W14-P3-Import). Der Spieler prüft den KI-Vorschlag in einem
+Review-Schritt und nimmt ihn auf; `acceptTranslatedManifest` legt ihn
+`translated:true`/`reachable:false` in `customWorlds` — eine übersetzte
+Welt ist browsbar, nicht betretbar, die Engine-Vendierung ist Phase 2.
+Eine neue Sektion „KI-Übersetzer" im Bibliothek-Drawer. Vollständiger
+Eintrag: `CLAUDE.md` V8.68. 2545 → 2564 Invarianten.
 
 ### V8.67 — W11 V4 Voice-Sync (17.05.2026)
 
