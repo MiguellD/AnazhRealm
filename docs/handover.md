@@ -131,7 +131,7 @@ Endresultat: **jedes Ollama-Setup funktioniert** — lokal, gehostet, ollama.com
 
 ---
 
-## Drei heilige Gesetze dieser Session
+## Drei heilige Gesetze der V7.98-Session
 
 ### Gesetz I: **Schöpfer-Browser-Test ist nicht ersetzbar durch Headless-Tests.**
 
@@ -198,13 +198,81 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. sind VOLLSTÄNDIG — die
 
 ---
 
-## Was ich aus dieser Session gelernt habe (drei Meta-Lehren)
+## Was ich aus der V7.98-Session gelernt habe (drei Meta-Lehren)
 
 **Meta-Lehre A**: **Browser-Test ist die Vision-Validierung, Headless ist die Funktions-Validierung. Beide nötig, beide unterschiedliche Jobs.** Tests können dir nicht sagen ob sich eine Geste richtig anfühlt — nur ob sie technisch funktioniert. Wenn der Schöpfer in der Welt spielt und stolpert, ist das mehr wert als 100 grüne Asserts.
 
 **Meta-Lehre B**: **Heilige-Lektion-Disziplin ist mit JEDER Welle neu zu prüfen.** Ich war versucht, bei V7.96 einen neuen „LLM-Proxy-Server" als separates Programm zu bauen — wäre Re-Komplexifizierung gewesen. Stattdessen: save-server bekam eine zweite Rolle. Bei jeder neuen Funktion fragen: „kann das in einem bestehenden Dienst leben? Wenn nein, warum nicht?"
 
 **Meta-Lehre C**: **Fallback-Schichten als Vision-treue Antwort.** V7.98's vier-Schicht-Parser ist mehr als nur Bug-Fix — es ist eine VISION-Aussage: „nimm was da ist, zeig es dem Spieler". Strenge Validierung wäre einfacher zu coden, aber ärmer für den Spieler. Wer das System auf reale Vielfalt vorbereitet (LLM-Größen, Modell-Stile, Antwort-Formate), baut Fallback-Schichten — keine Single-Path-Strenge.
+
+---
+
+## Rückschau: die Welt-Portal-Session (W12, V8.51-V8.52)
+
+Diese Session baute das Welt-Portal real — zwei fremde Engines, das
+generische DSL-Protokoll, die Welt-Registry, das spieler-erreichbare
+Portal-Zielen. Sie gelang, und der Loop mit dem Schöpfer trug sie. Aber
+drei Bugs fing der Schöpfer im Browser, nicht ich: der schwarze Fluid,
+das unerreichbare Portal-Zielen, der abgeschnittene Knopf. Drei
+Symptome — eine Krankheit. Hier verankert, damit du sie erbst, statt sie
+zu wiederholen.
+
+**Die eine Wurzel**: ich verifizierte auf der Ebene „ist verdrahtet /
+existiert", nicht „ein Mensch kann es wirklich benutzen". Der Playtest
+sah „die Auswahl existiert" — nicht „der Knopf ist erreichbar". Ich
+behauptete „`setBlueprintAsPortal` IST das System" — ohne zu prüfen, ob
+ein Spieler je drankommt (es gab keinen DSL-Op, keinen Chat, kein UI).
+So wurde der Browser-Test des Schöpfers meine QA. Das darf er nicht
+sein: er prüft die *Erfahrung* — er holt nicht die *Funktion* nach, die
+ich selbst hätte prüfen müssen. Drei Lehren schließen die Lücke.
+
+### Lehre 1 — Vor jeder fremden Lib das offizielle Beispiel ZUERST ganz lesen.
+
+Die Strom-Welt (`three-fluid-fx`) blieb beim ersten Wurf schwarz: ich
+hatte die API geraten statt das offizielle Beispiel zu lesen — zeigte
+`dyeTexture.rgb`, wo das Beispiel `densityTexture.b` zeigt. Die
+Terrain-Welt lief glatt, weil ich dort das offizielle Arbeits-Beispiel
+zuerst ganz gelesen hatte. Der Unterschied zwischen einer sauberen Welle
+und einer extra Render-Fix-Runde war genau diese halbe Stunde Lesen. Bei
+JEDER fremden Bibliothek: das offizielle, funktionierende Beispiel ganz
+durchlesen, BEVOR du eine Zeile dagegen schreibst. Eine API-Vermutung
+ist ein Bug mit Verzögerung.
+
+### Lehre 2 — „Fertig" heißt „den echten Spieler-Pfad gegangen", nicht „Playtest grün".
+
+Der abgeschnittene Portal-Knopf (`.equip-mark-row` ohne `flex-wrap`) und
+das unerreichbare Portal-Zielen wären mir aufgefallen, hätte ich vor dem
+„fertig" den Menschen-Pfad im Kopf abgeschritten: öffnen → finden →
+auswählen → bestätigen → sehen, dass es wirkt. Ein Playtest sagt dir, ob
+eine Funktion verdrahtet ist; er sagt dir NICHT, ob ein Mensch sie
+erreicht und benutzen kann. Vor jedem „fertig" — besonders bei UI und
+bei einer neuen fremden Schicht — geh den ganzen Spieler-Pfad einmal im
+Kopf. Das schärft Gesetz I und Meta-Lehre A: Headless prüft die
+Funktion, der Browser prüft die Erfahrung — aber die Erfahrungs-Prüfung
+beginnt bei DIR, nicht beim Schöpfer.
+
+### Lehre 3 — Die Regel der Drei: beim dritten gleichartigen Ding selbst systematisieren.
+
+Es gab drei hartcodierte Portal-Built-ins, und ich merkte es nicht — der
+Schöpfer musste „wirkt hardcoded" sagen, bevor die Welt-Registry
+entstand. Das dritte gleichartige Ding ist das Stopp-Signal: drei nahezu
+identische Blöcke, drei hartcodierte Built-ins, drei Sonderfälle nach
+demselben Muster → halt an und frag „ist das ein fehlendes System?".
+Warte nicht, bis der Schöpfer es sagt — „System statt Hardcode" ist die
+Messlatte ab Commit 1, nicht ab dem Review. Der Projekt-Ethos schreit
+es; du kannst die Regel selbst ableiten. Hätte ich sie selbst gezogen,
+stünde die Welt-Registry VOR der dritten Welt.
+
+**Was schon trägt — bewahre es**: die Vision-Gespräche, die echte
+Architektur erzeugen (das Drei-Stufen-Modell nativ/übersetzt/ausgestellt
+kam aus genau so einem Gespräch). Und: Kritik ohne Defense annehmen —
+zweimal „wirkt hardcoded", zweimal in den echten Code gegangen,
+nachgesehen, recht gegeben, die Wurzel geheilt. Der Schöpfer
+browser-testet jeden Commit mit chirurgischer Präzision („auswählen
+geht, bestätigen nicht" ist ein perfekter Bug-Report) — das ist der
+stärkste Teil des Loops. Aber lehn deine Verlässlichkeit nicht an seinen
+Browser: geh den Menschen-Pfad selbst, vor dem „fertig".
 
 ---
 
