@@ -151,6 +151,8 @@ Jede Welt hat eine `manifest.json` an einem bekannten Pfad (Root des Welt-Bundle
 
 Manifest ist **signiert** (ed25519). Authentizität der Welt nachweisbar. Kein Coin, keine Spekulation — nur „der Schöpfer war's wirklich".
 
+> **Umsetzungs-Nachtrag (V8.53, W12 Phase 3)** — die erste reale Manifest-Stufe shippte ein bewusst schlankes Subset: `{schemaVersion, id, label, dsl}`. Die Abweichungen vom Voll-Schema oben sind Absicht: das DSL-Vokabular heißt `dsl` (nicht `dsl_subset`) — durchgängig zum Code (`portalMeta.dsl`, `WORLD_REGISTRY`, der `ready`-Handshake); `id`/`label` statt `name`/`metadata.title`. Jeder Welt-Adapter lädt sein `manifest.json` selbst (`fetch("./manifest.json")`) und meldet `dsl`+`label` im `ready`-Handshake — die Heimat fetcht (noch) nicht. Das Voll-Schema oben bleibt der Horizont: **W13** ergänzt die ed25519-Signatur (`authorPubKey`, `signature`), **W14** `engine`/`assets`/`compatibility`/`metadata`. Bei W13/W14 die Feld-Namen final abgleichen.
+
 ---
 
 ## 4. Vibe-Pass (Welle 13)
