@@ -1418,6 +1418,18 @@ class AnazhRealm {
                     });
                 }
             },
+            // W12 Phase 2 — einen Bauplan auf eine registrierte Welt richten.
+            // Der spieler-erreichbare Portal-Zielen-Pfad (Chat/Nexus/DSL).
+            set_portal: ([blueprintName, worldId], ctx) => {
+                const result = this.aimBlueprintAtWorld(blueprintName, worldId);
+                if (ctx && ctx.log) {
+                    ctx.log.push({
+                        event: result.ok ? "portal_aimed" : "portal_aim_failed",
+                        name: blueprintName,
+                        reason: result.reason,
+                    });
+                }
+            },
             equip_tool: ([name], ctx) => {
                 const result = this.equipTool(name);
                 if (ctx && ctx.log) {
@@ -5221,6 +5233,16 @@ class AnazhRealm {
                 build: (m) => ({
                     program: ["creature_task_all", "build", m[1].toLowerCase()],
                     describe: `alle Kreaturen bauen „${m[1].toLowerCase()}"`,
+                }),
+            },
+            // W12 Phase 2 — einen eigenen Bauplan auf eine registrierte Welt
+            // richten. Welt per id (fluid) oder Label (strom-welt).
+            {
+                example: "richte portal mein_ring auf strom-welt",
+                re: /^richte\s+portal\s+([a-zäöüß0-9_-]+)\s+auf\s+([a-zäöüß0-9_-]+)$/i,
+                build: (m) => ({
+                    program: ["set_portal", m[1].toLowerCase(), m[2].toLowerCase()],
+                    describe: `richtet „${m[1].toLowerCase()}" als Portal auf „${m[2].toLowerCase()}"`,
                 }),
             },
         ];
@@ -10122,6 +10144,7 @@ class AnazhRealm {
             apply_connection: (a) => `verbindet Teile von „${a[0]}" mit „${a[1]}"`,
             apply_op: (a) => `bearbeitet Teil ${a[1]} von „${a[0]}" mit „${a[2]}"`,
             set_mode: (a) => `wechselt die Welt-Beziehung auf „${a[0]}"`,
+            set_portal: (a) => `richtet „${a[0]}" als Portal auf die Welt „${a[1]}"`,
             add_to_inventory: (a) => `legt ${a[1] || 1}× „${a[0]}" ins Inventar`,
             creature_task: (a) => {
                 const extra = this._describeCreatureTaskArg(a[1], a[2]);
@@ -10379,6 +10402,21 @@ class AnazhRealm {
         // läuft er durch denselben Interpreter wie der Nexus — Budgets, Outcome,
         // Persistenz inklusive. Legacy-Pfad bleibt als Fallback für Befehle,
         // die noch kein DSL-Äquivalent haben (System-IO, Toggles, Phase-5-Themen).
+        // W12 Phase 2 — im Portal: ein Chat-Befehl wandert in die Sub-Welt
+        // statt auf der eingefrorenen Heimat-Welt zu laufen. Der Welt-
+        // Manifest entscheidet — _portalRouteDsl trägt die Drei-Stufen-Logik.
+        if (this._portalOverlay) {
+            const inWorld = this.parseChatToDsl(command);
+            const program = inWorld ? inWorld.program : this._portalParseWorldCommand(command);
+            if (program) {
+                this._portalRouteDsl(program, inWorld ? inWorld.describe : command, appendChatOutput);
+            } else {
+                appendChatOutput(`(Im Portal — „${command}" ist kein DSL-Befehl für diese Welt.)`);
+            }
+            chatInput.value = "";
+            return;
+        }
+
         const parsed = this.parseChatToDsl(command);
         if (parsed) {
             const result = this.dslRun(parsed.program, { source: "human" });
@@ -15125,6 +15163,287 @@ class AnazhRealm {
         return { ok: true, name };
     }
 
+    // W12 Phase 1 — Bauplan als Welt-Portal markieren. Die Tor-NATUR
+    // emergiert aus der Substanz (magie-leitender Ring, siehe
+    // _isPortalShaped) — diese Methode bindet das ZIEL (portalMeta.world,
+    // das nicht emergieren kann) und erzwingt zugleich die Rolle, analog
+    // setBlueprintAsConsumable/-Armor (roleManual = true). Beim Betreten
+    // (E-Taste, Commit 3) lädt die genannte Welt im sandboxed iframe.
+    setBlueprintAsPortal(name, portalMeta) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.builtIn) return { ok: false, reason: "cannot_modify_builtin" };
+        bp.role = "portal";
+        // manuellen Override merken (siehe setBlueprintAsArmor)
+        bp.roleManual = true;
+        bp.portalMeta = this._sanitizePortalMeta(portalMeta, bp.label || name);
+        return { ok: true, name };
+    }
+
+    // W12 Phase 2 — einen eigenen Bauplan auf eine registrierte Welt
+    // richten. Der spieler-erreichbare Pfad zum Portal-Zielen: man nennt
+    // eine Welt (per id oder Label), die Welt-Registry liefert Pfad +
+    // Manifest, setBlueprintAsPortal verdrahtet es. So wird aus jedem
+    // Magie-Ring ein gezieltes Tor — kein hardcodiertes Built-in nötig.
+    aimBlueprintAtWorld(blueprintName, worldId) {
+        const key = String(worldId || "")
+            .trim()
+            .toLowerCase();
+        let entry = AnazhRealm.WORLD_REGISTRY[key];
+        if (!entry) {
+            entry = Object.values(AnazhRealm.WORLD_REGISTRY).find((w) => w.label.toLowerCase() === key);
+        }
+        if (!entry) return { ok: false, reason: "world_unknown" };
+        return this.setBlueprintAsPortal(blueprintName, {
+            world: entry.world,
+            label: entry.label,
+            dsl: entry.dsl.slice(),
+        });
+    }
+
+    // Säubert portalMeta. world muss ein same-origin relativer worlds/-Pfad
+    // sein — kein "://", kein "..", kein führender Slash. Damit kann ein
+    // Bauplan kein fremdes Origin ins iframe ziehen (die CSP bleibt
+    // frame-src 'self'). Ungültiges world fällt auf die Skelett-Welt zurück.
+    _sanitizePortalMeta(portalMeta, fallbackLabel) {
+        const src = portalMeta && typeof portalMeta === "object" ? portalMeta : {};
+        let world = String(src.world || "").trim();
+        if (!/^worlds\/[\w./-]+$/.test(world) || world.includes("..")) {
+            world = AnazhRealm.PORTAL_SKELETON_WORLD;
+        }
+        const label =
+            typeof src.label === "string" && src.label.trim()
+                ? src.label.trim().slice(0, 60)
+                : String(fallbackLabel || "Portal").slice(0, 60);
+        // W12 Phase 2 — der Manifest: welche DSL-Wörter die Welt versteht.
+        // Eine externe Übersetzungs-Schicht (von der Bibliothek autoriert,
+        // nicht von der Welt). Nur op-förmige Strings, gedeckelt. Fehlt es →
+        // Stufe 0: die Welt ist ausgestellt, stumm gegenüber der DSL.
+        let dsl = null;
+        if (Array.isArray(src.dsl)) {
+            const ops = src.dsl.filter((op) => typeof op === "string" && /^[a-z_]{1,40}$/.test(op));
+            if (ops.length) dsl = ops.slice(0, 64);
+        }
+        return { world, label, dsl };
+    }
+
+    // W12 Phase 1 — Portal-Overlay: ein Vollbild-iframe, das die Sub-Welt
+    // (portalMeta.world) sandboxed lädt. Eltern-Seite des postMessage-
+    // Handshakes: beim iframe-load (und beim {type:"ready"} der Sub-Welt)
+    // einen Avatar-Schnappschuss senden. Refs liegen auf this._portalOverlay,
+    // damit _disposePortalOverlay sie tief räumen kann. Wird in Commit 3 von
+    // enterPortal/exitPortal verkabelt.
+    _buildPortalOverlay(portalMeta) {
+        if (this._portalOverlay) this._disposePortalOverlay();
+        if (typeof document === "undefined") return null;
+        // Defense-in-Depth: das world-Ziel wird hier nochmals gesäubert —
+        // selbst ein manipuliertes portalMeta kann kein fremdes Origin laden.
+        const meta = this._sanitizePortalMeta(portalMeta, "Portal-Welt");
+        const overlay = document.createElement("div");
+        overlay.id = "portal-overlay";
+        const iframe = document.createElement("iframe");
+        iframe.className = "portal-frame";
+        iframe.title = meta.label || "Portal-Welt";
+        // Sandbox: Skripte + eigenes (same-origin) Document genügt für die
+        // Skelett-Welt. Eine echte Fremd-Engine (W14) bekäme allow-scripts
+        // allein → null-origin, kein Zugriff auf unsere localStorage/Cookies.
+        iframe.setAttribute("sandbox", "allow-scripts allow-same-origin");
+        const hint = document.createElement("div");
+        hint.className = "portal-hint";
+        // Stufe-bewusster Hinweis: spricht die Welt die DSL (hat sie einen
+        // Manifest), kann der Spieler per Konsole Befehle hineinreichen.
+        hint.textContent = meta.dsl
+            ? "Esc — Heimkehr · Konsole — Befehle an diese Welt"
+            : "Esc — zurück zur Heimat-Welt";
+        overlay.appendChild(iframe);
+        overlay.appendChild(hint);
+        // Eltern-Seite des Handshakes: auf {type:"ready"} der Sub-Welt lauschen.
+        const onMessage = (event) => {
+            if (!this._portalOverlay || event.source !== iframe.contentWindow) return;
+            const msg = event.data;
+            if (!msg || typeof msg !== "object") return;
+            if (msg.type === "ready") this._portalSendEnter();
+            // Die Sub-Welt meldet Esc (Fokus liegt im iframe) → Heimkehr.
+            else if (msg.type === "exit") this.exitPortal();
+        };
+        window.addEventListener("message", onMessage);
+        iframe.addEventListener("load", () => this._portalSendEnter());
+        this._portalOverlay = {
+            overlayEl: overlay,
+            iframe,
+            onMessage,
+            world: meta.world,
+            label: meta.label,
+            dsl: meta.dsl,
+        };
+        document.body.appendChild(overlay);
+        // Die Konsole übers Overlay heben — DSL-Eingabe im Portal möglich.
+        document.body.classList.add("in-portal");
+        iframe.src = meta.world;
+        return this._portalOverlay;
+    }
+
+    // Sendet den Avatar-Schnappschuss an die Sub-Welt. Same-origin → das
+    // Ziel-Origin ist bekannt (window.location.origin), kein "*" nötig.
+    _portalSendEnter() {
+        const po = this._portalOverlay;
+        if (!po || !po.iframe || !po.iframe.contentWindow) return;
+        const player = this.state.player || {};
+        const avatar = { name: (player.name && String(player.name)) || "Schöpfer" };
+        po.iframe.contentWindow.postMessage({ type: "enter", avatar }, window.location.origin);
+    }
+
+    // Räumt das Portal-Overlay: Message-Listener ab, Overlay-DOM raus,
+    // Ref auf null. Idempotent.
+    _disposePortalOverlay() {
+        const po = this._portalOverlay;
+        if (!po) return;
+        if (po.onMessage) window.removeEventListener("message", po.onMessage);
+        if (po.overlayEl && po.overlayEl.parentNode) {
+            po.overlayEl.parentNode.removeChild(po.overlayEl);
+        }
+        if (typeof document !== "undefined" && document.body) {
+            document.body.classList.remove("in-portal");
+        }
+        this._portalOverlay = null;
+    }
+
+    // W12 Phase 1 — ein Portal betreten. Der Game-Loop sieht _portalOverlay
+    // und friert die Heimat-Welt ein (Early-Return); der Pointer-Lock wird
+    // gelöst, das iframe-Overlay gebaut. Das Ziel kommt aus dem Bauplan-
+    // portalMeta — fehlt es (etwa bei einem emergenten Magie-Ring), greift
+    // im Overlay-Builder die Skelett-Welt als Default.
+    enterPortal(entry) {
+        if (this._portalOverlay) return { ok: false, reason: "already_in_portal" };
+        if (!entry || !entry.affordances || !entry.affordances.isPortal) {
+            return { ok: false, reason: "not_a_portal" };
+        }
+        const bp = this.state.blueprints && this.state.blueprints[entry.type];
+        const portalMeta = bp && bp.portalMeta ? bp.portalMeta : null;
+        if (typeof document !== "undefined" && document.exitPointerLock) {
+            try {
+                document.exitPointerLock();
+            } catch {
+                /* Pointer-Lock war nicht aktiv — egal */
+            }
+        }
+        this._buildPortalOverlay(portalMeta);
+        this.log(`Portal betreten: „${(portalMeta && portalMeta.label) || entry.type}"`, "INFO");
+        return { ok: true };
+    }
+
+    // W12 Phase 1 — ein Portal verlassen. Räumt das Overlay; der Game-Loop
+    // sieht _portalOverlay = null und nimmt die Heimat-Welt wieder auf.
+    exitPortal() {
+        if (!this._portalOverlay) return { ok: false, reason: "not_in_portal" };
+        this._disposePortalOverlay();
+        // Tasten-Zustand verwerfen: ein keyup kann im iframe gelandet sein,
+        // sonst liefe der Avatar nach der Heimkehr von selbst weiter.
+        this.state.keys = {};
+        this.log("Portal verlassen — zurück in der Heimat-Welt", "INFO");
+        return { ok: true };
+    }
+
+    // W12 Phase 2 — die DSL-Brücke. Im Portal wandert ein Chat-DSL-Programm
+    // in die Sub-Welt statt auf der eingefrorenen Heimat-Welt zu laufen.
+    // Der Welt-Manifest (portalMeta.dsl) ist das Wörterbuch — Drei-Stufen-
+    // Klarheit: kein Manifest → ausgestellt/stumm; Op nicht im Subset → die
+    // Welt kennt das Wort nicht; Op im Subset → an den Welt-Adapter gereicht.
+    _portalRouteDsl(program, describe, append) {
+        const po = this._portalOverlay;
+        const say = typeof append === "function" ? append : (m) => this.log(m, "INFO");
+        if (!po) return { forwarded: false, reason: "not_in_portal" };
+        const label = po.label || "diese Welt";
+        if (!Array.isArray(po.dsl) || !po.dsl.length) {
+            say(`„${label}" ist ausgestellt — sie versteht die DSL noch nicht.`);
+            return { forwarded: false, reason: "exhibited" };
+        }
+        const ops = this._portalProgramOps(program);
+        const unknown = ops.find((op) => !po.dsl.includes(op));
+        if (!ops.length || unknown) {
+            say(`„${label}" versteht „${unknown || "diesen Befehl"}" nicht.`);
+            return { forwarded: false, reason: "unknown_op", op: unknown || null };
+        }
+        if (!this._portalForwardDsl(program)) {
+            say(`„${label}" konnte den Befehl nicht empfangen.`);
+            return { forwarded: false, reason: "no_frame" };
+        }
+        say(`→ ${describe || "an die Welt gesendet"}`);
+        return { forwarded: true, reason: "sent" };
+    }
+
+    // Alle wirksamen Op-Namen eines DSL-Programms einsammeln; chain ist ein
+    // struktureller Rahmen, nicht selbst ein Wort.
+    _portalProgramOps(program) {
+        const ops = [];
+        const walk = (node) => {
+            if (!Array.isArray(node) || typeof node[0] !== "string") return;
+            if (node[0] === "chain") {
+                for (let i = 1; i < node.length; i++) walk(node[i]);
+            } else {
+                ops.push(node[0]);
+            }
+        };
+        walk(program);
+        return ops;
+    }
+
+    // Ein DSL-Programm per postMessage an die Sub-Welt reichen (same-origin).
+    _portalForwardDsl(program) {
+        const po = this._portalOverlay;
+        if (!po || !po.iframe || !po.iframe.contentWindow) return false;
+        po.iframe.contentWindow.postMessage({ type: "dsl", program }, window.location.origin);
+        return true;
+    }
+
+    // W12 Phase 2 — im Portal ein welt-eigenes Wort parsen: ist das erste
+    // Token ein vom Manifest deklariertes Op, das der DSL-Kern nicht kennt,
+    // wird der Rest als Argumente genommen (Zahl als Zahl, sonst String). So
+    // erreicht der Spieler welt-eigene Wörter (sturm, set_turbulence …) — die
+    // DSL wächst am Rand, der Kern bleibt schlank.
+    _portalParseWorldCommand(command) {
+        const po = this._portalOverlay;
+        if (!po || !Array.isArray(po.dsl)) return null;
+        const tokens = String(command || "")
+            .trim()
+            .split(/\s+/);
+        const op = (tokens[0] || "").toLowerCase();
+        if (!op || !po.dsl.includes(op)) return null;
+        const args = tokens.slice(1).map((t) => {
+            const n = Number(t);
+            return t !== "" && Number.isFinite(n) ? n : t;
+        });
+        return [op, ...args];
+    }
+
+    // W12 Phase 1 — E-Tasten-Pfad: ist ein Portal in Reichweite, betritt es.
+    // Liefert true wenn betreten — die E-Taste fällt dann nicht auf Mount.
+    _tryEnterPortalAtPlayer() {
+        if (this._portalOverlay) return false;
+        const entry = this._findNearestAffordanceEntry("isPortal", AnazhRealm.PORTAL_REACH_M);
+        if (!entry) return false;
+        const res = this.enterPortal(entry);
+        return !!(res && res.ok);
+    }
+
+    // W12 Phase 1 — pro Frame (via tickAffordances): zeigt den Prompt
+    // „E — Portal betreten", wenn ein Portal in Reichweite ist. Läuft nur
+    // in der Heimat-Welt — im Portal selbst ist der Loop eingefroren.
+    _tickPortalAffordance() {
+        if (typeof document === "undefined") return;
+        const prompt = document.getElementById("portal-prompt");
+        if (!prompt) return;
+        const entry = this._findNearestAffordanceEntry("isPortal", AnazhRealm.PORTAL_REACH_M);
+        if (entry) {
+            const bp = this.state.blueprints && this.state.blueprints[entry.type];
+            const label = (bp && bp.portalMeta && bp.portalMeta.label) || entry.type;
+            prompt.textContent = `E — Portal betreten: ${label}`;
+            prompt.hidden = false;
+        } else if (!prompt.hidden) {
+            prompt.hidden = true;
+        }
+    }
+
     // Eine Konsumable aktivieren — addet einen Boost via Etappe-2-System.
     // Source ist `consume:<name>`, sodass Dedupe greift (zwei Doppelklicks
     // verlängern statt zu duplizieren). Zwei Pfade: zuerst Bauplan-mit-role-
@@ -15495,6 +15814,13 @@ class AnazhRealm {
     // konsultieren das Flag-Profil statt einer hardcoded Bauplan-Liste.
     computeBlueprintAffordances(bp) {
         if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return {};
+        // W12 — ein Portal IST ein Tor: seine einzige Affordance ist
+        // "betreten" (isPortal). Es ist kein Fahrzeug und keine Linse — die
+        // Rolle "portal" schließt die räumlichen Affordances aus. (Sonst
+        // erfüllt der welt_portal-Ring, dessen deckungsgleiche Parts +
+        // Quarz-Membran zufällig _isMoveable treffen, beim E-Druck den
+        // Mount-Pfad und klebt am Spieler — Schöpfer-Browser-Test V8.51.)
+        if (bp.role === "portal") return { isPortal: true };
         const out = {};
         if (this._isMoveable(bp)) out.moveable = true;
         if (this._isMagnifying(bp)) out.magnifying = true;
@@ -15701,6 +16027,61 @@ class AnazhRealm {
         const T = AnazhRealm.SUBSTANCE_ROLE_THRESHOLDS.food;
         const tags = this.computeCompoundTags(bp) || {};
         return (tags.lebendig || 0) >= T.lebendigMin && (tags.härte || 0) <= T.härteMax;
+    }
+
+    // portal — Tor-Signatur (W12). Ein Tor rahmt einen begehbaren
+    // Durchgang UND leitet Magie. Zwei emergente Signale:
+    //   1. FORM: das Compound trägt einen Torus, groß genug zum
+    //      Durchschreiten. Der Torus ist unter den neun Primitiven die
+    //      Ring-Form — das einzige mit einer Öffnung; kein Proxy-Whitelist,
+    //      sondern die definierende Geometrie eines Rahmens.
+    //   2. MATERIAL: hohe magieleitung aus computeCompoundTags. Die
+    //      Aktivierungsmatrix gibt dem Torus magieleitung 3 — ein
+    //      Quarz-Ring erreicht damit hohe Werte, ein Stein-/Eisen-Ring
+    //      nicht. So WIRD ein Magie-Ring ein Tor; ein schlichter Ring
+    //      bleibt Bauwerk. Das Ziel (wohin das Tor führt) emergiert NICHT
+    //      — es ist autorierte portalMeta (setBlueprintAsPortal).
+    // Wie groß muss ein Ring sein, damit der Reisende ihn durchschreiten
+    // kann? Die Schwelle EMERGIERT aus der Ausdehnung des aktuellen Avatars
+    // (Soul-bodyParts) — ein Drache braucht ein größeres Tor als ein
+    // Mensch. Ersetzt die feste minRingSize-Zahl: „begehbar" wird logisch
+    // am Körper gemessen, nicht an einer Konstante.
+    _avatarPassageSize() {
+        const soulName = (this.state.player && this.state.player.soul) || "human";
+        let parts = null;
+        const def = this.playerSoulDefs && this.playerSoulDefs[soulName];
+        if (def && Array.isArray(def.bodyParts)) parts = def.bodyParts;
+        if (!parts) {
+            const custom = this.state.customSouls && this.state.customSouls[soulName];
+            if (custom && Array.isArray(custom.bodyParts)) parts = custom.bodyParts;
+        }
+        if (!parts || !parts.length) return 1.7; // Fallback — Menschen-Höhe
+        const lo = { x: Infinity, y: Infinity, z: Infinity };
+        const hi = { x: -Infinity, y: -Infinity, z: -Infinity };
+        for (const p of parts) {
+            const pos = p.position || { x: 0, y: 0, z: 0 };
+            const sz = p.size || { x: 1, y: 1, z: 1 };
+            for (const ax of ["x", "y", "z"]) {
+                const c = pos[ax] || 0;
+                const h = (sz[ax] || 1) / 2;
+                if (c - h < lo[ax]) lo[ax] = c - h;
+                if (c + h > hi[ax]) hi[ax] = c + h;
+            }
+        }
+        const span = Math.max(hi.x - lo.x, hi.y - lo.y, hi.z - lo.z);
+        return Number.isFinite(span) && span > 0.5 ? span : 1.7;
+    }
+
+    _isPortalShaped(bp) {
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return false;
+        const T = AnazhRealm.SUBSTANCE_ROLE_THRESHOLDS.portal;
+        // begehbar = der Ring ist groß genug, dass der Reisende hindurchpasst
+        // — die Schwelle emergiert aus der Avatar-Größe, keine feste Zahl.
+        const minRing = this._avatarPassageSize();
+        const hasRing = bp.parts.some((p) => p.shape === "torus" && ((p.size && p.size.x) || 1) >= minRing);
+        if (!hasRing) return false;
+        const tags = this.computeCompoundTags(bp) || {};
+        return (tags.magieleitung || 0) >= T.magieleitungMin;
     }
 
     // ----- Welt-Reaktion: moveable (Spieler steigt ein, Compound folgt) -----
@@ -15910,6 +16291,7 @@ class AnazhRealm {
         if (!Number.isFinite(dt) || dt <= 0) return;
         this._tickMountedMovement();
         this._tickFocusingAffordances(dt);
+        this._tickPortalAffordance();
     }
 
     // Welle 9d — Bauplan als Seele anwenden. Wenn der Bauplan role="soul"
@@ -16885,6 +17267,70 @@ class AnazhRealm {
             },
         ];
 
+        // W12 Phase 1 — Welt-Portal: ein Tor zu anderen Welten. Stein-Ring
+        // (Torus, vertikal stehend wie ein Türrahmen) mit einer schimmernden
+        // Quarz-Membran im Innern. Quarz ist transparent + magieleitend → die
+        // Membran wirkt durchscheinend-arkan.
+        const weltPortalParts = [
+            {
+                shape: "torus",
+                material: "stein",
+                position: { x: 0, y: 2.2, z: 0 },
+                size: { x: 3.4, y: 3.4, z: 3.4 },
+            },
+            {
+                shape: "cylinder",
+                material: "quarz",
+                position: { x: 0, y: 2.2, z: 0 },
+                size: { x: 2.6, y: 0.16, z: 2.6 },
+                rotation: { x: Math.PI / 2, y: 0, z: 0 },
+            },
+        ];
+
+        // W12 Phase 2 — Strom-Welt-Portal: ein Quarz-Ring (Crystalline Tor,
+        // sichtbar abgesetzt vom Stein-Ring des welt_portal). Führt in die
+        // three-fluid-fx-Sub-Welt (worlds/fluid/).
+        const weltStromParts = [
+            {
+                shape: "torus",
+                material: "quarz",
+                position: { x: 0, y: 2.2, z: 0 },
+                size: { x: 3.4, y: 3.4, z: 3.4 },
+            },
+            {
+                shape: "cylinder",
+                material: "quarz",
+                position: { x: 0, y: 2.2, z: 0 },
+                size: { x: 2.6, y: 0.16, z: 2.6 },
+                rotation: { x: Math.PI / 2, y: 0, z: 0 },
+            },
+        ];
+
+        // W12 Phase 2 — Terrain-Welt-Portal: ein Quarz-Ring zur zweiten
+        // fremden Welt (three.terrain.js, worlds/terrain/).
+        const weltTerrainParts = [
+            {
+                shape: "torus",
+                material: "quarz",
+                position: { x: 0, y: 2.2, z: 0 },
+                size: { x: 3.6, y: 3.6, z: 3.6 },
+            },
+            {
+                shape: "cylinder",
+                material: "quarz",
+                position: { x: 0, y: 2.2, z: 0 },
+                size: { x: 2.8, y: 0.16, z: 2.8 },
+                rotation: { x: Math.PI / 2, y: 0, z: 0 },
+            },
+        ];
+
+        // W12 Phase 2 — portalMeta aus der Welt-Registry (eine Quelle der
+        // Wahrheit; je Bauplan eine eigene dsl-Kopie).
+        const portalTo = (id) => {
+            const w = AnazhRealm.WORLD_REGISTRY[id];
+            return { world: w.world, label: w.label, dsl: w.dsl.slice() };
+        };
+
         return {
             village: { name: "village", label: "Dorf", builtIn: true, parts: villageParts },
             temple: { name: "temple", label: "Tempel", builtIn: true, parts: templeParts },
@@ -16950,6 +17396,46 @@ class AnazhRealm {
                 roleManual: true,
                 workshopDomain: "mechanism",
                 parts: drehbankParts,
+            },
+            // W12 Phase 1 — Welt-Portal. Rolle "portal" — emergiert aus
+            // einem magie-leitenden Ring (siehe _isPortalShaped); hier als
+            // Built-in deklariert. portalMeta nennt das Ziel (Skelett-Welt);
+            // das Betreten kommt in Commit 3.
+            welt_portal: {
+                name: "welt_portal",
+                label: "Welt-Portal",
+                builtIn: true,
+                role: "portal",
+                roleManual: true,
+                portalMeta: portalTo("skeleton"),
+                parts: weltPortalParts,
+            },
+            // W12 Phase 2 — Strom-Welt-Portal. Führt in die erste lebendige
+            // Sub-Welt: three-fluid-fx (fremde Engine) auf modernem Three.js,
+            // gebündelt in worlds/fluid/. Eine Welt bringt ihre Engine mit.
+            // dsl: der Manifest — Kern-Ops (weather/skybox_color) + welt-eigene
+            // Wörter (sturm/ruhe/set_turbulence). Die DSL wächst am Rand.
+            welt_strom: {
+                name: "welt_strom",
+                label: "Strom-Welt",
+                builtIn: true,
+                role: "portal",
+                roleManual: true,
+                portalMeta: portalTo("fluid"),
+                parts: weltStromParts,
+            },
+            // W12 Phase 2 — Terrain-Welt-Portal: die zweite fremde Welt.
+            // three.terrain.js (klassisches Global-Skript) — eine 3D-Land-
+            // schaft. Beweist: dieselbe Brücke trägt eine strukturell andere
+            // Engine. dsl-Manifest: skybox_color (Kern) + gebirge/ebene/neu.
+            welt_terrain: {
+                name: "welt_terrain",
+                label: "Terrain-Welt",
+                builtIn: true,
+                role: "portal",
+                roleManual: true,
+                portalMeta: portalTo("terrain"),
+                parts: weltTerrainParts,
             },
         };
     }
@@ -17947,10 +18433,16 @@ class AnazhRealm {
     //   2. intrinsische FORM — bilateral-symmetrischer Glieder-Körper →
     //      "soul". Greift wenn keine Krafting-Domain spricht: eine geformte
     //      Gestalt IST ein Wesen, auch ungeschmiedet.
-    //   3. intrinsisches MATERIAL — lebendig+weiche Substanz → "consumable"
+    //   3. FORM + MATERIAL — ein magie-leitender Ring → "portal" (W12).
+    //      Die Aktivierungsmatrix gibt dem Torus magieleitung 3; ein
+    //      Quarz-Ring wird so zum Tor, ein schlichter Stein-Ring bleibt
+    //      Bauwerk. Siehe _isPortalShaped.
+    //   4. intrinsisches MATERIAL — lebendig+weiche Substanz → "consumable"
     //      (Nahrung).
-    //   4. Default — "architecture" (Bauwerk).
-    // forging-Split wird via Compound-Tag-Diskrimination aufgelöst.
+    //   5. Default — "architecture" (Bauwerk).
+    // forging-Split wird via Compound-Tag-Diskrimination aufgelöst. Das
+    // ZIEL eines Portals (portalMeta.world) emergiert NICHT — es ist
+    // autoriert (setBlueprintAsPortal), wie toolMeta/consumableMeta.
     computeBlueprintRole(blueprint) {
         const dom = this.computeBlueprintDomain(blueprint);
         if (dom) {
@@ -17959,6 +18451,7 @@ class AnazhRealm {
             if (role) return role;
         }
         if (this._isBodyShaped(blueprint)) return "soul";
+        if (this._isPortalShaped(blueprint)) return "portal";
         if (this._isFoodLike(blueprint)) return "consumable";
         return AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
     }
@@ -25178,15 +25671,13 @@ class AnazhRealm {
             const bp = this.state.blueprints[name];
             if (!bp || bp.builtIn) continue;
             if (bp.role === "armor") armorBlueprints.push(name);
-            // Welle 6.X.1 A3 — Audit 17.05.2026: Markier-Sektion zeigte vorher
-            // NUR Baupläne ohne Rolle (`!bp.role`). Welle 9a's emergente
-            // _refreshBlueprintRoleEmergent setzt aber bei jedem applyOpToPart
-            // eine Rolle (z.B. „tool" für forging+scharf). Damit verschwanden
-            // alle Baupläne mit opChain aus der Markier-UI — Schöpfer konnte
-            // sie nicht mehr als Rüstung markieren. Jetzt: alle eigenen Baupläne
-            // außer denen mit explizitem Manual-Override (bp.roleManual=true)
-            // werden Markier-Kandidaten. Explizite Geste sticht emergente Rolle.
-            else if (!bp.roleManual) candidateBlueprints.push(name);
+            // W12 Phase 2 — JEDER eigene Nicht-Rüstung-Bauplan ist Markier-
+            // Kandidat, auch ein bereits markierter (roleManual). Sonst
+            // verschwindet ein Bauplan nach dem Markieren aus der Sektion und
+            // die Wahl wird zur Sackgasse — ein versehentlich als Konsumabel
+            // markiertes Portal ließ sich nicht mehr umwidmen. Die Reihe zeigt
+            // die aktuelle Rolle; ein erneuter Klick widmet um.
+            else candidateBlueprints.push(name);
         }
         for (const name of armorBlueprints) {
             const bp = this.state.blueprints[name];
@@ -25205,9 +25696,9 @@ class AnazhRealm {
         });
         armorRow.appendChild(armorSel);
         container.appendChild(armorRow);
-        // Markier-Sektion: eigene Baupläne ohne Rolle bekommen zwei Buttons:
-        // „Als Rüstung" und „Als Konsumabel". So entscheidet der Schöpfer
-        // pro Bauplan, ob er physisch (Rüstung) oder verzehrbar (Trank) ist.
+        // Markier-Sektion: jeder eigene Bauplan bekommt Rüstung-/Konsumabel-/
+        // Portal-Optionen. So entscheidet der Schöpfer pro Bauplan, was es IST
+        // — und kann eine Wahl jederzeit umwidmen (die Reihe nennt die Rolle).
         if (candidateBlueprints.length > 0) {
             const markHeader = document.createElement("div");
             markHeader.className = "equip-mark-header";
@@ -25219,7 +25710,10 @@ class AnazhRealm {
                 row.className = "equip-mark-row";
                 const label = document.createElement("span");
                 label.className = "equip-mark-label";
-                label.textContent = bp.label || name;
+                // aktuelle Rolle anzeigen — der Schöpfer sieht, was der Bauplan
+                // gerade IST, und kann ihn gezielt umwidmen.
+                const roleLabel = bp.role ? AnazhRealm.BLUEPRINT_ROLE_LABELS[bp.role] || bp.role : "";
+                label.textContent = (bp.label || name) + (roleLabel ? ` — ${roleLabel}` : "");
                 row.appendChild(label);
                 const armorBtn = document.createElement("button");
                 armorBtn.type = "button";
@@ -25239,6 +25733,27 @@ class AnazhRealm {
                     this.renderPlayerEquipUI();
                 });
                 row.appendChild(consBtn);
+                // W12 Phase 2 — Portal-Zielen: einen eigenen Bauplan auf eine
+                // registrierte Welt richten (Welt-Auswahl + Knopf). Macht den
+                // systemischen Pfad spieler-erreichbar — kein Built-in nötig.
+                const portalSel = document.createElement("select");
+                portalSel.className = "equip-portal-select";
+                for (const wid of Object.keys(AnazhRealm.WORLD_REGISTRY)) {
+                    const wOpt = document.createElement("option");
+                    wOpt.value = wid;
+                    wOpt.textContent = AnazhRealm.WORLD_REGISTRY[wid].label;
+                    portalSel.appendChild(wOpt);
+                }
+                row.appendChild(portalSel);
+                const portalBtn = document.createElement("button");
+                portalBtn.type = "button";
+                portalBtn.textContent = "Portal";
+                portalBtn.addEventListener("click", () => {
+                    const result = this.aimBlueprintAtWorld(name, portalSel.value);
+                    if (!result.ok) this.log(`aimBlueprintAtWorld: ${result.reason}`, "ERROR");
+                    this.renderPlayerEquipUI();
+                });
+                row.appendChild(portalBtn);
                 container.appendChild(row);
             }
         }
@@ -26013,6 +26528,17 @@ class AnazhRealm {
         this.generateNewWorld();
 
         window.addEventListener("keydown", (event) => {
+            // W12 — ist ein Portal offen, ist die Heimat-Welt eingefroren:
+            // nur Esc verlässt das Portal, alle anderen Tasten sind gesperrt
+            // (kein WASD in der pausierten Welt). Bei Fokus im iframe meldet
+            // die Sub-Welt das Esc selbst (skeleton.js → {type:"exit"}).
+            if (this._portalOverlay) {
+                if (event.key === "Escape") {
+                    this.exitPortal();
+                    event.preventDefault();
+                }
+                return;
+            }
             // Wenn der Fokus in einem Eingabe-Feld liegt (Chat), keine
             // Spiel-Aktionen aus den Tasten lösen — sonst tippt der User
             // "1" und es geht in den Bau-Modus statt in den Chat.
@@ -26066,9 +26592,10 @@ class AnazhRealm {
             } else if (event.code === "KeyE") {
                 // Welle 10b.3 — E toggelt Mount/Dismount für moveable-
                 // Architekturen. Nur außerhalb des Werkstatt-Drawers (sonst
-                // ist E der Rotate-Modus-Shortcut).
+                // ist E der Rotate-Modus-Shortcut). W12 — ein Portal in
+                // Reichweite schlägt das Reiten: erst _tryEnterPortalAtPlayer.
                 if (this.state.uiActiveDrawer !== "werkstatt") {
-                    this.toggleMountAtPlayer();
+                    if (!this._tryEnterPortalAtPlayer()) this.toggleMountAtPlayer();
                     event.preventDefault();
                 }
             } else if (event.code === "KeyZ") {
@@ -26322,6 +26849,11 @@ class AnazhRealm {
             const delta = Math.max(0.001, (time - lastTime) / 1000);
             lastTime = time;
             const currentTime = time / 1000;
+
+            // W12 — ist ein Portal offen, friert die Heimat-Welt ein: der
+            // Loop kehrt VOR Physik/Ticks/Render um. lastTime wurde gerade
+            // gesetzt und bleibt frisch → kein Delta-Sprung beim Verlassen.
+            if (this._portalOverlay) return;
 
             // ### FPS aktualisieren ###
             this.updateFps(delta);
@@ -27709,6 +28241,39 @@ AnazhRealm.FORGING_ARMOR_TAGS = Object.freeze(["dichte", "zähigkeit", "wärmele
 // landen.
 AnazhRealm.DEFAULT_BLUEPRINT_ROLE = "architecture";
 
+// W12 Phase 1 — Welt-Portal. Die same-origin Skelett-Welt-Seite, die ein
+// Portal im sandboxed iframe lädt (Datei in Commit 2 angelegt).
+// portalMeta.world zeigt hierauf; _sanitizePortalMeta erlaubt nur
+// worlds/-Pfade — kein fremdes Origin, die CSP bleibt frame-src 'self'.
+AnazhRealm.PORTAL_SKELETON_WORLD = "worlds/skeleton/index.html";
+
+// W12 Phase 2 — die Welt-Registry: die EINE Quelle, welche Sub-Welten es
+// gibt, je mit Pfad + DSL-Manifest (welche Wörter die Welt versteht). Die
+// Built-in-Portale beziehen ihr portalMeta hieraus (statt 3 verstreuter
+// Literale); aimBlueprintAtWorld richtet jeden eigenen Magie-Ring auf einen
+// dieser Einträge. Der Same der W14-Bibliothek — wächst, wird einst
+// durchsuchbar.
+AnazhRealm.WORLD_REGISTRY = Object.freeze({
+    skeleton: Object.freeze({
+        id: "skeleton",
+        label: "Skelett-Welt",
+        world: AnazhRealm.PORTAL_SKELETON_WORLD,
+        dsl: Object.freeze(["skybox_color"]),
+    }),
+    fluid: Object.freeze({
+        id: "fluid",
+        label: "Strom-Welt",
+        world: "worlds/fluid/index.html",
+        dsl: Object.freeze(["weather", "skybox_color", "sturm", "ruhe", "set_turbulence"]),
+    }),
+    terrain: Object.freeze({
+        id: "terrain",
+        label: "Terrain-Welt",
+        world: "worlds/terrain/index.html",
+        dsl: Object.freeze(["skybox_color", "gebirge", "ebene", "neu"]),
+    }),
+});
+
 // Deutsche Labels für die Welt-Anzeige. Werkstatt-Status zeigt diese
 // statt der englischen Rolle-IDs.
 AnazhRealm.BLUEPRINT_ROLE_LABELS = Object.freeze({
@@ -27718,13 +28283,15 @@ AnazhRealm.BLUEPRINT_ROLE_LABELS = Object.freeze({
     consumable: "Konsumable",
     soul: "Seele",
     machine: "Maschine",
+    portal: "Portal",
 });
 
 // V8.39 — Farb-Sprache: jede Rolle eine feste Farbe. Rollen-Chip +
 // Bauplan-Zeile in der Werkstatt-Liste leuchten darin → ein Blick sagt,
 // was ein Ding IST. Bauwerk = Stein-Erdgrau, Werkzeug = Schmiede-Rot,
 // Rüstung = Stahl-Blau, Konsumable = Alchemie-Violett, Seele = Seelen-
-// Cyan, Maschine = Bronze. Sechs klar unterscheidbare Töne.
+// Cyan, Maschine = Bronze, Portal = Tor-Grün (W12). Sieben klar
+// unterscheidbare Töne.
 AnazhRealm.BLUEPRINT_ROLE_COLORS = Object.freeze({
     architecture: "#9a9088",
     tool: "#c44830",
@@ -27732,6 +28299,7 @@ AnazhRealm.BLUEPRINT_ROLE_COLORS = Object.freeze({
     consumable: "#a878b8",
     soul: "#88e1e1",
     machine: "#b08648",
+    portal: "#43c98a",
 });
 
 // Werkzeug-Domain-Labels (deutsch) für UI-Anzeige. null = generic
@@ -27823,6 +28391,14 @@ AnazhRealm.SUBSTANCE_ROLE_THRESHOLDS = Object.freeze({
         lebendigMin: 0.6, // klar lebendig (Fleisch, Laub, Frucht)
         härteMax: 0.5, // weich genug zum Essen
     }),
+    // W12 — Tor-Signatur. Die begehbare Größe ist KEINE feste Zahl mehr —
+    // _avatarPassageSize misst sie an der Ausdehnung des Reisenden (ein
+    // Drache-Tor ist größer als ein Menschen-Tor). magieleitungMin: ein Tor
+    // leitet Magie — ein Stein-/Eisen-Ring (magieleitung 0) bleibt darunter,
+    // ein Quarz-Ring darüber.
+    portal: Object.freeze({
+        magieleitungMin: 1.3,
+    }),
 });
 
 // Deutsche Affordance-Labels für UI-Anzeige.
@@ -27835,6 +28411,9 @@ AnazhRealm.AFFORDANCE_LABELS = Object.freeze({
 // Welt-Reaktion-Konstanten (Welle 10b.3).
 AnazhRealm.MOUNT_RANGE_M = 3; // Spieler muss diese Nähe für E-Mount haben
 AnazhRealm.MOUNT_FOLLOW_HEIGHT = 1.5; // Spieler sitzt oben drauf
+// W12 — E-Reichweite, um ein Portal zu betreten. Etwas großzügiger als
+// MOUNT_RANGE_M: ein Tor-Ring ist groß, der Spieler steht davor.
+AnazhRealm.PORTAL_REACH_M = 4.5;
 AnazhRealm.MOUNT_SPEED_FACTOR = 0.7; // Compounds fahren etwas langsamer als zu Fuß
 AnazhRealm.ZOOM_FOV_DEG = 25; // Magnifying-Compound zoomt auf 25°
 AnazhRealm.MAGNIFYING_RAY_RANGE_M = 8; // Spieler muss innerhalb dieser Reichweite drauf schauen

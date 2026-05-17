@@ -12741,6 +12741,923 @@ function startSaveServer() {
                 check("V8.39: Werkzeug-Klassen Tests laufen", false, v839Results ? v839Results.error : "no result");
             }
 
+            // ### W12 Phase 1 Commit 1 — Welt-Portal: Rolle + Built-in welt_portal ###
+            const w12c1Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    const C = r.constructor;
+
+                    // Rolle "portal" in Label- + Farb-Konstanten.
+                    out.roleLabel = !!C && !!C.BLUEPRINT_ROLE_LABELS && C.BLUEPRINT_ROLE_LABELS.portal === "Portal";
+                    out.roleColor =
+                        !!C && !!C.BLUEPRINT_ROLE_COLORS && typeof C.BLUEPRINT_ROLE_COLORS.portal === "string";
+
+                    // PORTAL_SKELETON_WORLD-Konstante zeigt auf einen worlds/-Pfad.
+                    out.skeletonConst =
+                        typeof C.PORTAL_SKELETON_WORLD === "string" && /^worlds\//.test(C.PORTAL_SKELETON_WORLD);
+
+                    // Built-in welt_portal-Bauplan.
+                    const wp = r.state.blueprints && r.state.blueprints.welt_portal;
+                    out.builtinExists = !!wp && wp.builtIn === true;
+                    out.builtinRole = !!wp && wp.role === "portal" && wp.roleManual === true;
+                    out.builtinMeta =
+                        !!wp &&
+                        !!wp.portalMeta &&
+                        typeof wp.portalMeta.world === "string" &&
+                        typeof wp.portalMeta.label === "string";
+                    out.builtinHasParts = !!wp && Array.isArray(wp.parts) && wp.parts.length >= 2;
+
+                    // setBlueprintAsPortal — Marker-Methode.
+                    out.markMethod = typeof r.setBlueprintAsPortal === "function";
+                    if (r.state.blueprints["_w12p"]) delete r.state.blueprints["_w12p"];
+                    r.createBlueprint("_w12p", "W12P");
+                    const markRes = r.setBlueprintAsPortal("_w12p");
+                    const marked = r.state.blueprints["_w12p"];
+                    out.markOk =
+                        !!markRes &&
+                        markRes.ok === true &&
+                        !!marked &&
+                        marked.role === "portal" &&
+                        marked.roleManual === true &&
+                        !!marked.portalMeta &&
+                        typeof marked.portalMeta.world === "string";
+
+                    // Manueller Override bleibt nach _refreshBlueprintRoleEmergent.
+                    r._refreshBlueprintRoleEmergent("_w12p");
+                    out.manualSticks = r.state.blueprints["_w12p"].role === "portal";
+
+                    // Built-in-Schutz + Unknown-Reject.
+                    const builtinRej = r.setBlueprintAsPortal("village");
+                    out.rejectBuiltin =
+                        !!builtinRej && builtinRej.ok === false && builtinRej.reason === "cannot_modify_builtin";
+                    const unknownRej = r.setBlueprintAsPortal("_does_not_exist_xyz");
+                    out.rejectUnknown =
+                        !!unknownRej && unknownRej.ok === false && unknownRej.reason === "blueprint_unknown";
+
+                    // _sanitizePortalMeta — fremdes Origin + Pfad-Traversal werden verworfen.
+                    const sanForeign = r._sanitizePortalMeta({ world: "https://evil.example/x" }, "fb");
+                    out.sanitizeForeign = sanForeign.world === C.PORTAL_SKELETON_WORLD;
+                    const sanTraversal = r._sanitizePortalMeta({ world: "worlds/../secret" }, "fb");
+                    out.sanitizeTraversal = sanTraversal.world === C.PORTAL_SKELETON_WORLD;
+                    const sanValid = r._sanitizePortalMeta(
+                        { world: "worlds/skeleton/index.html", label: "Test-Welt" },
+                        "fb"
+                    );
+                    out.sanitizeValid =
+                        sanValid.world === "worlds/skeleton/index.html" && sanValid.label === "Test-Welt";
+
+                    // W12-Korrektur — die Portal-NATUR emergiert aus der Substanz:
+                    // ein magie-leitender Ring wird zum Tor (das Ziel bleibt autoriert).
+                    out.portalShapedMethod = typeof r._isPortalShaped === "function";
+
+                    // Magie-Ring (Quarz-Torus, begehbar groß) → Portal.
+                    const magicRing = {
+                        parts: [
+                            {
+                                shape: "torus",
+                                material: "quarz",
+                                size: { x: 3.4, y: 3.4, z: 3.4 },
+                                position: { x: 0, y: 0, z: 0 },
+                            },
+                        ],
+                    };
+                    out.magicRingIsPortalShaped = r._isPortalShaped(magicRing) === true;
+                    out.magicRingRolePortal = r.computeBlueprintRole(magicRing) === "portal";
+
+                    // Stein-Ring (kein Magie-Material) → KEIN Portal. Die
+                    // "aus-Magie"-Diskrimination: ein schlichter Ring bleibt Bauwerk.
+                    const stoneRing = {
+                        parts: [
+                            {
+                                shape: "torus",
+                                material: "stein",
+                                size: { x: 3.4, y: 3.4, z: 3.4 },
+                                position: { x: 0, y: 0, z: 0 },
+                            },
+                        ],
+                    };
+                    out.stoneRingNotPortal =
+                        r._isPortalShaped(stoneRing) === false && r.computeBlueprintRole(stoneRing) !== "portal";
+
+                    // Winziger Deko-Torus aus Quarz → KEIN Portal (nicht begehbar groß).
+                    const tinyRing = {
+                        parts: [
+                            {
+                                shape: "torus",
+                                material: "quarz",
+                                size: { x: 0.8, y: 0.8, z: 0.8 },
+                                position: { x: 0, y: 0, z: 0 },
+                            },
+                        ],
+                    };
+                    out.tinyRingNotPortal = r._isPortalShaped(tinyRing) === false;
+
+                    // kristall_geode (magisch, aber massiv, kein Ring) → KEIN Portal.
+                    const geode = r.state.blueprints && r.state.blueprints.kristall_geode;
+                    out.geodeNotPortal = !!geode && r._isPortalShaped(geode) === false;
+
+                    // Built-in welt_portal erfüllt selbst die emergente Regel.
+                    out.builtinSatisfiesRule = !!wp && r._isPortalShaped(wp) === true;
+
+                    // Emergenter Pfad: ein eigener Bauplan mit Magie-Ring wird via
+                    // _refreshBlueprintRoleEmergent zum Portal — OHNE setBlueprintAsPortal.
+                    if (r.state.blueprints["_w12e"]) delete r.state.blueprints["_w12e"];
+                    r.createBlueprint("_w12e", "W12E");
+                    r.state.blueprints["_w12e"].parts = [
+                        {
+                            shape: "torus",
+                            material: "quarz",
+                            size: { x: 3.4, y: 3.4, z: 3.4 },
+                            position: { x: 0, y: 0, z: 0 },
+                        },
+                    ];
+                    r._refreshBlueprintRoleEmergent("_w12e");
+                    out.emergentRefreshPortal = r.state.blueprints["_w12e"].role === "portal";
+                    delete r.state.blueprints["_w12e"];
+
+                    delete r.state.blueprints["_w12p"];
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w12c1Results && !w12c1Results.error) {
+                check("W12 P1: Rolle 'portal' in BLUEPRINT_ROLE_LABELS", w12c1Results.roleLabel);
+                check("W12 P1: Rolle 'portal' in BLUEPRINT_ROLE_COLORS", w12c1Results.roleColor);
+                check("W12 P1: PORTAL_SKELETON_WORLD zeigt auf worlds/-Pfad", w12c1Results.skeletonConst);
+                check("W12 P1: Built-in welt_portal-Bauplan existiert", w12c1Results.builtinExists);
+                check("W12 P1: welt_portal hat role:'portal' + roleManual", w12c1Results.builtinRole);
+                check("W12 P1: welt_portal trägt portalMeta (world + label)", w12c1Results.builtinMeta);
+                check("W12 P1: welt_portal hat min. 2 Parts (Ring + Membran)", w12c1Results.builtinHasParts);
+                check("W12 P1: setBlueprintAsPortal-Methode existiert", w12c1Results.markMethod);
+                check("W12 P1: setBlueprintAsPortal markiert eigenen Bauplan", w12c1Results.markOk);
+                check(
+                    "W12 P1: manuelle Portal-Rolle überlebt _refreshBlueprintRoleEmergent",
+                    w12c1Results.manualSticks
+                );
+                check("W12 P1: setBlueprintAsPortal lehnt Built-in ab", w12c1Results.rejectBuiltin);
+                check("W12 P1: setBlueprintAsPortal lehnt unbekannten Bauplan ab", w12c1Results.rejectUnknown);
+                check("W12 P1: _sanitizePortalMeta verwirft fremdes Origin", w12c1Results.sanitizeForeign);
+                check("W12 P1: _sanitizePortalMeta verwirft Pfad-Traversal", w12c1Results.sanitizeTraversal);
+                check("W12 P1: _sanitizePortalMeta behält gültigen worlds/-Pfad", w12c1Results.sanitizeValid);
+                check("W12 P1: _isPortalShaped-Methode existiert", w12c1Results.portalShapedMethod);
+                check("W12 P1: Magie-Ring (Quarz-Torus) ist _isPortalShaped", w12c1Results.magicRingIsPortalShaped);
+                check(
+                    "W12 P1: Magie-Ring emergiert als Rolle 'portal' (computeBlueprintRole)",
+                    w12c1Results.magicRingRolePortal
+                );
+                check(
+                    "W12 P1: Stein-Ring ohne Magie wird NICHT Portal (aus-Magie-Diskrimination)",
+                    w12c1Results.stoneRingNotPortal
+                );
+                check("W12 P1: winziger Deko-Torus wird NICHT Portal (Begehbarkeit)", w12c1Results.tinyRingNotPortal);
+                check(
+                    "W12 P1: kristall_geode (magisch, massiv) wird NICHT Portal (kein Ring)",
+                    w12c1Results.geodeNotPortal
+                );
+                check("W12 P1: Built-in welt_portal erfüllt _isPortalShaped selbst", w12c1Results.builtinSatisfiesRule);
+                check(
+                    "W12 P1: Magie-Ring emergiert via _refreshBlueprintRoleEmergent zu 'portal'",
+                    w12c1Results.emergentRefreshPortal
+                );
+            } else {
+                check(
+                    "W12 P1: Welt-Portal Commit 1 Tests laufen",
+                    false,
+                    w12c1Results ? w12c1Results.error : "no result"
+                );
+            }
+
+            // ### W12 Phase 1 Commit 2 — Skelett-Welt + iframe-Overlay + CSP ###
+            const w12c2Results = await page
+                .evaluate(async () => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // CSP: frame-src 'self' (nur same-origin iframes erlaubt).
+                    const cspMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+                    const csp = cspMeta ? cspMeta.getAttribute("content") || "" : "";
+                    out.cspFrameSrc = /frame-src\s+'self'/.test(csp);
+
+                    // Skelett-Welt-Seite + Skript werden ausgeliefert.
+                    try {
+                        const htmlRes = await fetch("worlds/skeleton/index.html");
+                        const htmlBody = htmlRes.ok ? await htmlRes.text() : "";
+                        out.skeletonHtmlServed =
+                            htmlRes.ok &&
+                            /SKELETT-WELT/.test(htmlBody) &&
+                            /id="avatar-name"/.test(htmlBody) &&
+                            /skeleton\.js/.test(htmlBody);
+                        const jsRes = await fetch("worlds/skeleton/skeleton.js");
+                        const jsBody = jsRes.ok ? await jsRes.text() : "";
+                        out.skeletonJsServed =
+                            jsRes.ok &&
+                            /addEventListener\("message"/.test(jsBody) &&
+                            /"ready"/.test(jsBody) &&
+                            /"enter"/.test(jsBody);
+                    } catch (e) {
+                        out.skeletonHtmlServed = false;
+                        out.skeletonJsServed = false;
+                    }
+
+                    // Overlay-Methoden.
+                    out.buildMethod = typeof r._buildPortalOverlay === "function";
+                    out.disposeMethod = typeof r._disposePortalOverlay === "function";
+                    out.sendEnterMethod = typeof r._portalSendEnter === "function";
+
+                    // _buildPortalOverlay erzeugt das Overlay + sandboxed iframe.
+                    r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "Test" });
+                    const overlay = document.getElementById("portal-overlay");
+                    const iframe = overlay ? overlay.querySelector("iframe.portal-frame") : null;
+                    out.overlayBuilt = !!overlay && !!iframe;
+                    out.iframeSandboxed = !!iframe && (iframe.getAttribute("sandbox") || "").includes("allow-scripts");
+                    out.iframeSrcSkeleton = !!iframe && iframe.src.includes("worlds/skeleton/index.html");
+                    out.overlayRefSet = !!r._portalOverlay;
+
+                    // _disposePortalOverlay räumt Overlay + Ref.
+                    r._disposePortalOverlay();
+                    out.overlayDisposed = !document.getElementById("portal-overlay") && !r._portalOverlay;
+
+                    // Defense-in-Depth: ein fremdes Origin im world-Feld wird auch im
+                    // Overlay-Builder gesäubert (kein evil.example im iframe-src).
+                    r._buildPortalOverlay({ world: "https://evil.example/pwn" });
+                    const evilFrame = document.querySelector("#portal-overlay iframe.portal-frame");
+                    out.overlaySanitizesForeign =
+                        !!evilFrame &&
+                        !evilFrame.src.includes("evil.example") &&
+                        evilFrame.src.includes("worlds/skeleton");
+                    r._disposePortalOverlay();
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w12c2Results && !w12c2Results.error) {
+                check("W12 P1 C2: CSP enthält frame-src 'self'", w12c2Results.cspFrameSrc);
+                check("W12 P1 C2: Skelett-Welt-Seite wird ausgeliefert", w12c2Results.skeletonHtmlServed);
+                check("W12 P1 C2: skeleton.js mit Handshake wird ausgeliefert", w12c2Results.skeletonJsServed);
+                check("W12 P1 C2: _buildPortalOverlay-Methode existiert", w12c2Results.buildMethod);
+                check("W12 P1 C2: _disposePortalOverlay-Methode existiert", w12c2Results.disposeMethod);
+                check("W12 P1 C2: _portalSendEnter-Methode existiert", w12c2Results.sendEnterMethod);
+                check("W12 P1 C2: _buildPortalOverlay erzeugt Overlay + iframe", w12c2Results.overlayBuilt);
+                check("W12 P1 C2: iframe ist sandboxed (allow-scripts)", w12c2Results.iframeSandboxed);
+                check("W12 P1 C2: iframe-src zeigt auf die Skelett-Welt", w12c2Results.iframeSrcSkeleton);
+                check("W12 P1 C2: _portalOverlay-Ref nach Build gesetzt", w12c2Results.overlayRefSet);
+                check("W12 P1 C2: _disposePortalOverlay räumt Overlay + Ref", w12c2Results.overlayDisposed);
+                check(
+                    "W12 P1 C2: Overlay-Builder säubert fremdes Origin (Defense-in-Depth)",
+                    w12c2Results.overlaySanitizesForeign
+                );
+            } else {
+                check(
+                    "W12 P1 C2: Skelett-Welt Commit 2 Tests laufen",
+                    false,
+                    w12c2Results ? w12c2Results.error : "no result"
+                );
+            }
+
+            // ### W12 Phase 1 Commit 3 — Betreten / Pause / Rückkehr ###
+            const w12c3Results = await page
+                .evaluate(async () => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // Portal-Affordance: welt_portal trägt AUSSCHLIESSLICH isPortal
+                    // (kein moveable/magnifying/focusing — ein Tor ist kein Fahrzeug).
+                    const wpAff = r.computeBlueprintAffordances(r.state.blueprints.welt_portal);
+                    out.affPortal = wpAff.isPortal === true;
+                    out.affPortalExclusive = !wpAff.moveable && !wpAff.magnifying && !wpAff.focusing;
+                    out.affNonPortal = !r.computeBlueprintAffordances(r.state.blueprints.village).isPortal;
+
+                    out.methods =
+                        typeof r.enterPortal === "function" &&
+                        typeof r.exitPortal === "function" &&
+                        typeof r._tickPortalAffordance === "function" &&
+                        typeof r._tryEnterPortalAtPlayer === "function";
+
+                    // spawnArchitecture eines Portals → Entry trägt affordances.isPortal.
+                    const pm = r.state.playerMesh.position;
+                    r.spawnArchitecture("welt_portal", { x: pm.x, y: pm.y, z: pm.z });
+                    const portalEntry = (r.state.architectures || []).find((e) => e.type === "welt_portal");
+                    out.spawnedHasAffordance =
+                        !!portalEntry && !!portalEntry.affordances && portalEntry.affordances.isPortal === true;
+
+                    // enterPortal baut das Overlay.
+                    const enterRes = portalEntry ? r.enterPortal(portalEntry) : { ok: false };
+                    out.enterBuildsOverlay =
+                        !!enterRes.ok && !!document.getElementById("portal-overlay") && !!r._portalOverlay;
+                    // Doppel-Eintritt wird abgelehnt.
+                    const doubleRes = r.enterPortal(portalEntry);
+                    out.rejectsDoubleEnter = !doubleRes.ok && doubleRes.reason === "already_in_portal";
+
+                    // Loop friert die Heimat-Welt ein, solange das Portal offen ist.
+                    const framesBefore = r.state._fpsFrames;
+                    r._gameLoopTick(performance.now());
+                    const framesInPortal = r.state._fpsFrames;
+                    out.loopFreezesInPortal = framesInPortal === framesBefore;
+
+                    // exitPortal räumt Overlay + Tasten-Zustand.
+                    r.state.keys.w = true;
+                    const exitRes = r.exitPortal();
+                    out.exitDisposesOverlay =
+                        !!exitRes.ok && !document.getElementById("portal-overlay") && !r._portalOverlay;
+                    out.exitClearsKeys = !r.state.keys.w;
+
+                    // Loop nimmt die Heimat-Welt nach dem Verlassen wieder auf.
+                    r._gameLoopTick(performance.now());
+                    out.loopResumesAfterPortal = r.state._fpsFrames !== framesInPortal;
+
+                    // exitPortal ohne offenes Portal + enterPortal auf Nicht-Portal.
+                    const exitAgain = r.exitPortal();
+                    out.rejectsExitWhenIdle = !exitAgain.ok && exitAgain.reason === "not_in_portal";
+                    const badEnter = r.enterPortal({ type: "village", affordances: {} });
+                    out.rejectsNonPortal = !badEnter.ok && badEnter.reason === "not_a_portal";
+
+                    // Loop-Guard ist verdrahtet.
+                    out.loopGuard = /_portalOverlay/.test(r.startEternalLoop.toString());
+
+                    // _tickPortalAffordance zeigt den Prompt, wenn ein Portal nah ist.
+                    r._tickPortalAffordance();
+                    const promptEl = document.getElementById("portal-prompt");
+                    out.promptShownNearPortal =
+                        !!promptEl && !promptEl.hidden && /Portal betreten/.test(promptEl.textContent || "");
+
+                    // _tryEnterPortalAtPlayer betritt das nahe Portal.
+                    out.tryEnterWorks = r._tryEnterPortalAtPlayer() === true && !!r._portalOverlay;
+                    r.exitPortal();
+
+                    // Portal entfernen → Prompt verschwindet, _tryEnter scheitert.
+                    if (portalEntry) r.removeArchitecture(portalEntry);
+                    r._tickPortalAffordance();
+                    out.promptHiddenWhenNone = !!promptEl && promptEl.hidden === true;
+                    out.tryEnterFailsWhenNone = r._tryEnterPortalAtPlayer() === false;
+
+                    // skeleton.js meldet Esc als {type:"exit"} an die Heimat-Welt.
+                    try {
+                        const jsRes = await fetch("worlds/skeleton/skeleton.js");
+                        const jsBody = jsRes.ok ? await jsRes.text() : "";
+                        out.skeletonForwardsEsc = /Escape/.test(jsBody) && /"exit"/.test(jsBody);
+                    } catch (e) {
+                        out.skeletonForwardsEsc = false;
+                    }
+                    // _buildPortalOverlay behandelt die exit-Nachricht der Sub-Welt.
+                    out.overlayHandlesExit = /"exit"/.test(r._buildPortalOverlay.toString());
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w12c3Results && !w12c3Results.error) {
+                check("W12 P1 C3: welt_portal trägt die isPortal-Affordance", w12c3Results.affPortal);
+                check(
+                    "W12 P1 C3: ein Portal ist kein Fahrzeug/keine Linse (nur isPortal)",
+                    w12c3Results.affPortalExclusive
+                );
+                check("W12 P1 C3: ein Dorf trägt KEINE isPortal-Affordance", w12c3Results.affNonPortal);
+                check("W12 P1 C3: enterPortal/exitPortal/_tick/_tryEnter existieren", w12c3Results.methods);
+                check("W12 P1 C3: gespawntes Portal trägt affordances.isPortal", w12c3Results.spawnedHasAffordance);
+                check("W12 P1 C3: enterPortal baut das iframe-Overlay", w12c3Results.enterBuildsOverlay);
+                check("W12 P1 C3: enterPortal lehnt Doppel-Eintritt ab", w12c3Results.rejectsDoubleEnter);
+                check("W12 P1 C3: Loop friert die Heimat-Welt ein (Portal offen)", w12c3Results.loopFreezesInPortal);
+                check("W12 P1 C3: exitPortal räumt Overlay + Ref", w12c3Results.exitDisposesOverlay);
+                check("W12 P1 C3: exitPortal verwirft stale Tasten-Zustände", w12c3Results.exitClearsKeys);
+                check(
+                    "W12 P1 C3: Loop nimmt die Heimat-Welt nach dem Verlassen wieder auf",
+                    w12c3Results.loopResumesAfterPortal
+                );
+                check("W12 P1 C3: exitPortal ohne offenes Portal wird abgelehnt", w12c3Results.rejectsExitWhenIdle);
+                check("W12 P1 C3: enterPortal lehnt eine Nicht-Portal-Architektur ab", w12c3Results.rejectsNonPortal);
+                check("W12 P1 C3: Game-Loop hat den Portal-Guard verdrahtet", w12c3Results.loopGuard);
+                check(
+                    "W12 P1 C3: _tickPortalAffordance zeigt den Prompt am Portal",
+                    w12c3Results.promptShownNearPortal
+                );
+                check("W12 P1 C3: _tryEnterPortalAtPlayer betritt ein nahes Portal", w12c3Results.tryEnterWorks);
+                check("W12 P1 C3: Prompt verschwindet ohne Portal in Reichweite", w12c3Results.promptHiddenWhenNone);
+                check("W12 P1 C3: _tryEnterPortalAtPlayer scheitert ohne Portal", w12c3Results.tryEnterFailsWhenNone);
+                check(
+                    "W12 P1 C3: skeleton.js meldet Esc als exit an die Heimat-Welt",
+                    w12c3Results.skeletonForwardsEsc
+                );
+                check("W12 P1 C3: _buildPortalOverlay behandelt die exit-Nachricht", w12c3Results.overlayHandlesExit);
+            } else {
+                check(
+                    "W12 P1 C3: Betreten/Pause/Rückkehr Tests laufen",
+                    false,
+                    w12c3Results ? w12c3Results.error : "no result"
+                );
+            }
+
+            // ### W12 Phase 2 Commit 1 — Strom-Welt (three-fluid-fx) ###
+            const w12p2Results = await page
+                .evaluate(async () => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // Fluid-Welt-Seite + Skript + vendored Engine werden ausgeliefert.
+                    try {
+                        const htmlRes = await fetch("worlds/fluid/index.html");
+                        const htmlBody = htmlRes.ok ? await htmlRes.text() : "";
+                        out.fluidHtmlServed =
+                            htmlRes.ok &&
+                            /Strom-Welt/.test(htmlBody) &&
+                            /id="avatar-name"/.test(htmlBody) &&
+                            /type="module"/.test(htmlBody) &&
+                            /fluid\.js/.test(htmlBody);
+                        const jsRes = await fetch("worlds/fluid/fluid.js");
+                        const jsBody = jsRes.ok ? await jsRes.text() : "";
+                        out.fluidJsServed =
+                            jsRes.ok &&
+                            /FluidSimulation/.test(jsBody) &&
+                            /"ready"/.test(jsBody) &&
+                            /"enter"/.test(jsBody) &&
+                            /"exit"/.test(jsBody) &&
+                            jsBody.includes("./lib/");
+                        const coreRes = await fetch("worlds/fluid/lib/three.core.min.js");
+                        const modRes = await fetch("worlds/fluid/lib/three.module.min.js");
+                        const fxRes = await fetch("worlds/fluid/lib/three-fluid-fx.es.js");
+                        out.engineVendored = coreRes.ok && modRes.ok && fxRes.ok;
+                        const fxBody = fxRes.ok ? await fxRes.text() : "";
+                        // three-fluid-fx ist gepatcht: kein bare "three"-Import mehr.
+                        out.fxPatched =
+                            fxBody.includes('from "./three.module.min.js"') && !fxBody.includes('from "three"');
+                    } catch (e) {
+                        out.fluidHtmlServed = false;
+                        out.fluidJsServed = false;
+                        out.engineVendored = false;
+                        out.fxPatched = false;
+                    }
+
+                    // Built-in welt_strom-Portal.
+                    const ws = r.state.blueprints && r.state.blueprints.welt_strom;
+                    out.stromExists = !!ws && ws.builtIn === true;
+                    out.stromIsPortal = !!ws && ws.role === "portal" && ws.roleManual === true;
+                    out.stromMeta = !!ws && !!ws.portalMeta && ws.portalMeta.world === "worlds/fluid/index.html";
+
+                    // welt_strom trägt exklusiv die isPortal-Affordance + ist _isPortalShaped.
+                    const wsAff = r.computeBlueprintAffordances(ws);
+                    out.stromAffordance =
+                        wsAff.isPortal === true && !wsAff.moveable && !wsAff.magnifying && !wsAff.focusing;
+                    out.stromPortalShaped = r._isPortalShaped(ws) === true;
+
+                    // _sanitizePortalMeta akzeptiert den Fluid-Welt-Pfad.
+                    out.sanitizeFluidWorld =
+                        r._sanitizePortalMeta({ world: "worlds/fluid/index.html" }, "fb").world ===
+                        "worlds/fluid/index.html";
+
+                    // enterPortal(welt_strom) → Overlay-iframe zeigt auf die Fluid-Welt.
+                    const pm = r.state.playerMesh.position;
+                    r.spawnArchitecture("welt_strom", { x: pm.x, y: pm.y, z: pm.z });
+                    const stromEntry = (r.state.architectures || []).find((e) => e.type === "welt_strom");
+                    const enterRes = stromEntry ? r.enterPortal(stromEntry) : { ok: false };
+                    const frame = document.querySelector("#portal-overlay iframe.portal-frame");
+                    out.enterFluidWorld = !!enterRes.ok && !!frame && frame.src.includes("worlds/fluid/index.html");
+                    r.exitPortal();
+                    if (stromEntry) r.removeArchitecture(stromEntry);
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w12p2Results && !w12p2Results.error) {
+                check("W12 P2 C1: Fluid-Welt-Seite wird ausgeliefert", w12p2Results.fluidHtmlServed);
+                check(
+                    "W12 P2 C1: fluid.js (FluidSimulation + Handshake) wird ausgeliefert",
+                    w12p2Results.fluidJsServed
+                );
+                check("W12 P2 C1: Engine vendored (three.core/module + three-fluid-fx)", w12p2Results.engineVendored);
+                check("W12 P2 C1: three-fluid-fx three-Import auf lib gepatcht", w12p2Results.fxPatched);
+                check("W12 P2 C1: Built-in welt_strom-Portal existiert", w12p2Results.stromExists);
+                check("W12 P2 C1: welt_strom hat role:'portal'", w12p2Results.stromIsPortal);
+                check("W12 P2 C1: welt_strom portalMeta zeigt auf die Fluid-Welt", w12p2Results.stromMeta);
+                check("W12 P2 C1: welt_strom trägt exklusiv die isPortal-Affordance", w12p2Results.stromAffordance);
+                check(
+                    "W12 P2 C1: welt_strom ist _isPortalShaped (Quarz-Ring emergiert)",
+                    w12p2Results.stromPortalShaped
+                );
+                check("W12 P2 C1: _sanitizePortalMeta akzeptiert den Fluid-Welt-Pfad", w12p2Results.sanitizeFluidWorld);
+                check(
+                    "W12 P2 C1: enterPortal(welt_strom) lädt die Fluid-Welt ins iframe",
+                    w12p2Results.enterFluidWorld
+                );
+            } else {
+                check("W12 P2 C1: Strom-Welt Tests laufen", false, w12p2Results ? w12p2Results.error : "no result");
+            }
+
+            // ### W12 Phase 2 Commit 2 — DSL-Brücke (das Protokoll) ###
+            const w12bridgeResults = await page
+                .evaluate(async () => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // _sanitizePortalMeta säubert das dsl-Manifest.
+                    const sanA = r._sanitizePortalMeta({
+                        world: "worlds/fluid/index.html",
+                        dsl: ["weather", "BAD OP", 7, "set_turbulence"],
+                    });
+                    out.sanitizeDsl =
+                        Array.isArray(sanA.dsl) &&
+                        sanA.dsl.length === 2 &&
+                        sanA.dsl.includes("weather") &&
+                        sanA.dsl.includes("set_turbulence");
+                    out.sanitizeNoDsl = r._sanitizePortalMeta({ world: "worlds/skeleton/index.html" }).dsl === null;
+
+                    // Built-in-Manifeste.
+                    const ws = r.state.blueprints.welt_strom;
+                    const wp = r.state.blueprints.welt_portal;
+                    out.stromManifest =
+                        !!ws.portalMeta.dsl &&
+                        ws.portalMeta.dsl.includes("weather") &&
+                        ws.portalMeta.dsl.includes("sturm") &&
+                        ws.portalMeta.dsl.includes("set_turbulence");
+                    out.skeletonManifest = !!wp.portalMeta.dsl && wp.portalMeta.dsl.includes("skybox_color");
+
+                    // _portalProgramOps — chain ist Rahmen, kein Wort.
+                    out.opsSingle = JSON.stringify(r._portalProgramOps(["weather", "rainy"])) === '["weather"]';
+                    out.opsChain =
+                        JSON.stringify(r._portalProgramOps(["chain", ["weather", "sunny"], ["sturm"]])) ===
+                        '["weather","sturm"]';
+
+                    // enterPortal(welt_strom) → Overlay trägt das Manifest + body.in-portal.
+                    const pm = r.state.playerMesh.position;
+                    r.spawnArchitecture("welt_strom", { x: pm.x, y: pm.y, z: pm.z });
+                    const entry = (r.state.architectures || []).find((e) => e.type === "welt_strom");
+                    r.enterPortal(entry);
+                    out.overlayCarriesManifest =
+                        !!r._portalOverlay &&
+                        Array.isArray(r._portalOverlay.dsl) &&
+                        r._portalOverlay.dsl.includes("sturm");
+                    out.bodyInPortal = document.body.classList.contains("in-portal");
+
+                    // _portalParseWorldCommand — welt-eigene Wörter.
+                    const wc = r._portalParseWorldCommand("set_turbulence 0.8");
+                    out.parseWorldWord = Array.isArray(wc) && wc[0] === "set_turbulence" && wc[1] === 0.8;
+                    out.parseWorldRejects = r._portalParseWorldCommand("flieg hoch") === null;
+
+                    // _portalRouteDsl — Subset-Op weitergereicht, unbekanntes verworfen.
+                    const rt1 = r._portalRouteDsl(["weather", "rainy"], "Wetter", null);
+                    out.routeForward = rt1.forwarded === true && rt1.reason === "sent";
+                    const rt2 = r._portalRouteDsl(["spawn_creature", 3], "x", null);
+                    out.routeUnknown = rt2.forwarded === false && rt2.reason === "unknown_op";
+                    // Stufe 0 — ausgestellte Welt (kein Manifest).
+                    r._portalOverlay.dsl = null;
+                    const rt3 = r._portalRouteDsl(["weather", "rainy"], "x", null);
+                    out.routeExhibited = rt3.forwarded === false && rt3.reason === "exhibited";
+
+                    // Intercept: Chat-DSL im Portal läuft NICHT auf der Heimat-Welt.
+                    r._portalOverlay.dsl = ["weather"];
+                    r.state.weather = "sunny";
+                    r.processChatCommand("setze wetter rainy");
+                    out.homeWeatherUntouched = r.state.weather === "sunny";
+
+                    r.exitPortal();
+                    out.bodyClassCleared = !document.body.classList.contains("in-portal");
+                    if (entry) r.removeArchitecture(entry);
+
+                    // Sub-Welt-Adapter werden ausgeliefert.
+                    try {
+                        const fxBody = await (await fetch("worlds/fluid/fluid.js")).text();
+                        out.fluidAdapter =
+                            /function applyDsl/.test(fxBody) &&
+                            /"dsl"/.test(fxBody) &&
+                            /function setEnergy/.test(fxBody);
+                        // Render-Fix: das Dichtefeld (densityTexture) + Auto-Splats.
+                        out.fluidRenders =
+                            /densityTexture/.test(fxBody) && /addSplat/.test(fxBody) && /uBackdrop/.test(fxBody);
+                        const skBody = await (await fetch("worlds/skeleton/skeleton.js")).text();
+                        out.skeletonAdapter = /function applyDsl/.test(skBody) && /"dsl"/.test(skBody);
+                    } catch (e) {
+                        out.fluidAdapter = false;
+                        out.fluidRenders = false;
+                        out.skeletonAdapter = false;
+                    }
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w12bridgeResults && !w12bridgeResults.error) {
+                check("W12 P2 C2: _sanitizePortalMeta säubert das dsl-Manifest", w12bridgeResults.sanitizeDsl);
+                check("W12 P2 C2: _sanitizePortalMeta — kein dsl → null (Stufe 0)", w12bridgeResults.sanitizeNoDsl);
+                check("W12 P2 C2: welt_strom trägt ein DSL-Manifest", w12bridgeResults.stromManifest);
+                check("W12 P2 C2: welt_portal (Skelett) trägt ein DSL-Manifest", w12bridgeResults.skeletonManifest);
+                check("W12 P2 C2: _portalProgramOps liest ein einzelnes Op", w12bridgeResults.opsSingle);
+                check("W12 P2 C2: _portalProgramOps liest eine chain (ohne 'chain')", w12bridgeResults.opsChain);
+                check("W12 P2 C2: das Portal-Overlay trägt das Manifest", w12bridgeResults.overlayCarriesManifest);
+                check("W12 P2 C2: body.in-portal hebt die Konsole im Portal", w12bridgeResults.bodyInPortal);
+                check("W12 P2 C2: _portalParseWorldCommand parst welt-eigene Wörter", w12bridgeResults.parseWorldWord);
+                check(
+                    "W12 P2 C2: _portalParseWorldCommand verwirft Nicht-Manifest-Wörter",
+                    w12bridgeResults.parseWorldRejects
+                );
+                check("W12 P2 C2: _portalRouteDsl reicht ein Subset-Op weiter", w12bridgeResults.routeForward);
+                check("W12 P2 C2: _portalRouteDsl verwirft ein unbekanntes Op", w12bridgeResults.routeUnknown);
+                check("W12 P2 C2: _portalRouteDsl — Stufe 0 (ausgestellt, stumm)", w12bridgeResults.routeExhibited);
+                check(
+                    "W12 P2 C2: Chat-DSL im Portal läuft NICHT auf der Heimat-Welt",
+                    w12bridgeResults.homeWeatherUntouched
+                );
+                check("W12 P2 C2: exitPortal räumt body.in-portal", w12bridgeResults.bodyClassCleared);
+                check("W12 P2 C2: Fluid-Welt-Adapter (applyDsl + dsl-Handler)", w12bridgeResults.fluidAdapter);
+                check("W12 P2 C2: Strom-Welt rendert Dichtefeld + Auto-Splats", w12bridgeResults.fluidRenders);
+                check("W12 P2 C2: Skelett-Welt-Adapter (applyDsl + dsl-Handler)", w12bridgeResults.skeletonAdapter);
+            } else {
+                check(
+                    "W12 P2 C2: DSL-Brücke Tests laufen",
+                    false,
+                    w12bridgeResults ? w12bridgeResults.error : "no result"
+                );
+            }
+
+            // ### W12 Phase 2 — zweite fremde Welt: Terrain-Welt ###
+            const w12terrainResults = await page
+                .evaluate(async () => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // Terrain-Welt-Dateien + vendored Engine werden ausgeliefert.
+                    try {
+                        const htmlRes = await fetch("worlds/terrain/index.html");
+                        const htmlBody = htmlRes.ok ? await htmlRes.text() : "";
+                        out.terrainHtmlServed =
+                            htmlRes.ok &&
+                            /Terrain-Welt/.test(htmlBody) &&
+                            /id="avatar-name"/.test(htmlBody) &&
+                            /THREE\.Terrain\.min\.js/.test(htmlBody) &&
+                            /terrain\.js/.test(htmlBody);
+                        const jsRes = await fetch("worlds/terrain/terrain.js");
+                        const jsBody = jsRes.ok ? await jsRes.text() : "";
+                        out.terrainJsServed =
+                            jsRes.ok &&
+                            /THREE\.Terrain/.test(jsBody) &&
+                            /function applyDsl/.test(jsBody) &&
+                            /"ready"/.test(jsBody) &&
+                            /"enter"/.test(jsBody) &&
+                            /"exit"/.test(jsBody);
+                        const threeRes = await fetch("worlds/terrain/lib/three.min.js");
+                        const terrRes = await fetch("worlds/terrain/lib/THREE.Terrain.min.js");
+                        out.terrainEngineVendored = threeRes.ok && terrRes.ok;
+                    } catch (e) {
+                        out.terrainHtmlServed = false;
+                        out.terrainJsServed = false;
+                        out.terrainEngineVendored = false;
+                    }
+
+                    // Built-in welt_terrain-Portal + Manifest.
+                    const wt = r.state.blueprints && r.state.blueprints.welt_terrain;
+                    out.terrainExists = !!wt && wt.builtIn === true;
+                    out.terrainIsPortal = !!wt && wt.role === "portal" && wt.roleManual === true;
+                    out.terrainMeta = !!wt && !!wt.portalMeta && wt.portalMeta.world === "worlds/terrain/index.html";
+                    out.terrainManifest =
+                        !!wt &&
+                        !!wt.portalMeta.dsl &&
+                        wt.portalMeta.dsl.includes("gebirge") &&
+                        wt.portalMeta.dsl.includes("ebene") &&
+                        wt.portalMeta.dsl.includes("neu");
+
+                    const wtAff = r.computeBlueprintAffordances(wt);
+                    out.terrainAffordance = wtAff.isPortal === true && !wtAff.moveable;
+                    out.terrainPortalShaped = r._isPortalShaped(wt) === true;
+
+                    // enterPortal(welt_terrain) → iframe + Brücke trägt einen Manifest-Op.
+                    const pm = r.state.playerMesh.position;
+                    r.spawnArchitecture("welt_terrain", { x: pm.x, y: pm.y, z: pm.z });
+                    const entry = (r.state.architectures || []).find((e) => e.type === "welt_terrain");
+                    const enterRes = entry ? r.enterPortal(entry) : { ok: false };
+                    const frame = document.querySelector("#portal-overlay iframe.portal-frame");
+                    out.enterTerrainWorld = !!enterRes.ok && !!frame && frame.src.includes("worlds/terrain/index.html");
+                    const rt = r._portalRouteDsl(["gebirge"], "Gebirge", null);
+                    out.terrainBridge = rt.forwarded === true;
+                    r.exitPortal();
+                    if (entry) r.removeArchitecture(entry);
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w12terrainResults && !w12terrainResults.error) {
+                check("W12 P2: Terrain-Welt-Seite wird ausgeliefert", w12terrainResults.terrainHtmlServed);
+                check(
+                    "W12 P2: terrain.js (THREE.Terrain + Handshake) wird ausgeliefert",
+                    w12terrainResults.terrainJsServed
+                );
+                check(
+                    "W12 P2: Terrain-Engine vendored (three + THREE.Terrain)",
+                    w12terrainResults.terrainEngineVendored
+                );
+                check("W12 P2: Built-in welt_terrain-Portal existiert", w12terrainResults.terrainExists);
+                check("W12 P2: welt_terrain hat role:'portal'", w12terrainResults.terrainIsPortal);
+                check("W12 P2: welt_terrain portalMeta zeigt auf die Terrain-Welt", w12terrainResults.terrainMeta);
+                check(
+                    "W12 P2: welt_terrain trägt ein DSL-Manifest (gebirge/ebene/neu)",
+                    w12terrainResults.terrainManifest
+                );
+                check("W12 P2: welt_terrain trägt die isPortal-Affordance", w12terrainResults.terrainAffordance);
+                check("W12 P2: welt_terrain ist _isPortalShaped", w12terrainResults.terrainPortalShaped);
+                check("W12 P2: enterPortal(welt_terrain) lädt die Terrain-Welt", w12terrainResults.enterTerrainWorld);
+                check("W12 P2: die Brücke trägt einen Terrain-Manifest-Op", w12terrainResults.terrainBridge);
+            } else {
+                check(
+                    "W12 P2: Terrain-Welt Tests laufen",
+                    false,
+                    w12terrainResults ? w12terrainResults.error : "no result"
+                );
+            }
+
+            // ### W12 Phase 2 — Welt-Registry + Portal-Zielen ###
+            const w12registryResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    const REG = r.constructor.WORLD_REGISTRY;
+
+                    // Welt-Registry — eine Quelle, drei Welten je mit Pfad + Manifest.
+                    out.registryExists = !!REG && !!REG.skeleton && !!REG.fluid && !!REG.terrain;
+                    out.registryShape =
+                        !!REG &&
+                        REG.fluid.world === "worlds/fluid/index.html" &&
+                        Array.isArray(REG.fluid.dsl) &&
+                        REG.fluid.dsl.includes("sturm");
+
+                    // Die 3 Built-in-Portale beziehen ihr portalMeta aus der Registry.
+                    const ws = r.state.blueprints.welt_strom;
+                    const wt = r.state.blueprints.welt_terrain;
+                    const wp = r.state.blueprints.welt_portal;
+                    out.builtinsFromRegistry =
+                        ws.portalMeta.world === REG.fluid.world &&
+                        wt.portalMeta.world === REG.terrain.world &&
+                        wp.portalMeta.world === REG.skeleton.world &&
+                        ws.portalMeta.dsl.includes("sturm") &&
+                        wt.portalMeta.dsl.includes("gebirge");
+
+                    out.aimExists = typeof r.aimBlueprintAtWorld === "function";
+
+                    // Ein eigener (nicht-Built-in) Bauplan zum Zielen.
+                    r.state.blueprints.test_portal_ring = {
+                        name: "test_portal_ring",
+                        label: "Test-Ring",
+                        builtIn: false,
+                        parts: [],
+                    };
+
+                    // UI: die Markier-Reihe trägt eine Portal-Welt-Auswahl.
+                    r.renderPlayerEquipUI();
+                    out.uiPortalSelect = !!document.querySelector(".equip-portal-select");
+
+                    // aimBlueprintAtWorld per id.
+                    const aimId = r.aimBlueprintAtWorld("test_portal_ring", "fluid");
+                    out.aimById =
+                        aimId.ok === true &&
+                        r.state.blueprints.test_portal_ring.role === "portal" &&
+                        r.state.blueprints.test_portal_ring.portalMeta.world === "worlds/fluid/index.html";
+
+                    // aimBlueprintAtWorld per Label (case-insensitive).
+                    const aimLabel = r.aimBlueprintAtWorld("test_portal_ring", "Terrain-Welt");
+                    out.aimByLabel =
+                        aimLabel.ok === true &&
+                        r.state.blueprints.test_portal_ring.portalMeta.world === "worlds/terrain/index.html";
+
+                    // Unbekannte Welt + Built-in werden abgelehnt.
+                    out.aimUnknownRejected = r.aimBlueprintAtWorld("test_portal_ring", "nirgendwo").ok === false;
+                    out.aimBuiltinRejected = r.aimBlueprintAtWorld("welt_portal", "fluid").ok === false;
+
+                    // DSL-Op set_portal.
+                    r.dslRun(["set_portal", "test_portal_ring", "skeleton"]);
+                    out.dslSetPortal = r.state.blueprints.test_portal_ring.portalMeta.world === REG.skeleton.world;
+
+                    // Chat-Pattern „richte portal X auf Y".
+                    const parsed = r.parseChatToDsl("richte portal test_portal_ring auf fluid");
+                    out.chatPattern =
+                        !!parsed && JSON.stringify(parsed.program) === '["set_portal","test_portal_ring","fluid"]';
+
+                    delete r.state.blueprints.test_portal_ring;
+                    r.renderPlayerEquipUI();
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w12registryResults && !w12registryResults.error) {
+                check("W12 P2: WORLD_REGISTRY existiert (skeleton/fluid/terrain)", w12registryResults.registryExists);
+                check("W12 P2: Registry-Einträge tragen Pfad + DSL-Manifest", w12registryResults.registryShape);
+                check(
+                    "W12 P2: Built-in-Portale beziehen portalMeta aus der Registry",
+                    w12registryResults.builtinsFromRegistry
+                );
+                check("W12 P2: aimBlueprintAtWorld existiert", w12registryResults.aimExists);
+                check("W12 P2: Equip-UI trägt eine Portal-Welt-Auswahl", w12registryResults.uiPortalSelect);
+                check("W12 P2: aimBlueprintAtWorld richtet per Welt-id", w12registryResults.aimById);
+                check("W12 P2: aimBlueprintAtWorld richtet per Welt-Label", w12registryResults.aimByLabel);
+                check("W12 P2: aimBlueprintAtWorld verwirft unbekannte Welt", w12registryResults.aimUnknownRejected);
+                check("W12 P2: aimBlueprintAtWorld verwirft Built-in-Bauplan", w12registryResults.aimBuiltinRejected);
+                check("W12 P2: DSL-Op set_portal richtet den Bauplan", w12registryResults.dslSetPortal);
+                check("W12 P2: Chat-Pattern 'richte portal X auf Y'", w12registryResults.chatPattern);
+            } else {
+                check(
+                    "W12 P2: Welt-Registry Tests laufen",
+                    false,
+                    w12registryResults ? w12registryResults.error : "no result"
+                );
+            }
+
+            // ### W12 Phase 2 — Portal-Größe emergiert aus der Avatar-Größe ###
+            const w12portalSizeResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    out.passageExists = typeof r._avatarPassageSize === "function";
+                    const passage = r._avatarPassageSize();
+                    out.passageSane = typeof passage === "number" && passage > 0.5 && passage < 30;
+                    const torusBp = (sizeX, material) => ({
+                        name: "t_test",
+                        parts: [
+                            {
+                                shape: "torus",
+                                material: material,
+                                size: { x: sizeX, y: 1, z: 1 },
+                                position: { x: 0, y: 0, z: 0 },
+                            },
+                        ],
+                    });
+                    // Ein magieleitender Torus deutlich größer als der Reisende → Tor-Form.
+                    out.bigIsPortalShaped = r._isPortalShaped(torusBp(passage * 2.5, "quarz")) === true;
+                    // Derselbe Ring deutlich kleiner als der Reisende → kein Tor.
+                    out.smallNotPortalShaped = r._isPortalShaped(torusBp(passage * 0.3, "quarz")) === false;
+                    // Magieleitung bleibt nötig: ein großer Eisen-Ring ist kein Tor.
+                    out.ironStillNotPortal = r._isPortalShaped(torusBp(passage * 2.5, "eisen")) === false;
+                    // Built-in-Portale bleiben Tore (Ring 3.4/3.6 > Avatar).
+                    out.builtinsStayPortal =
+                        r._isPortalShaped(r.state.blueprints.welt_strom) === true &&
+                        r._isPortalShaped(r.state.blueprints.welt_terrain) === true;
+                    // minRingSize ist als feste Zahl entfernt.
+                    out.noFixedThreshold = r.constructor.SUBSTANCE_ROLE_THRESHOLDS.portal.minRingSize === undefined;
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w12portalSizeResults && !w12portalSizeResults.error) {
+                check("W12 P2: _avatarPassageSize existiert", w12portalSizeResults.passageExists);
+                check("W12 P2: Avatar-Durchgangsgröße ist plausibel", w12portalSizeResults.passageSane);
+                check("W12 P2: großer Magie-Ring ist Tor-förmig", w12portalSizeResults.bigIsPortalShaped);
+                check("W12 P2: zu kleiner Ring (< Avatar) ist kein Tor", w12portalSizeResults.smallNotPortalShaped);
+                check(
+                    "W12 P2: großer Eisen-Ring bleibt kein Tor (Magie nötig)",
+                    w12portalSizeResults.ironStillNotPortal
+                );
+                check("W12 P2: Built-in-Portale bleiben Tor-förmig", w12portalSizeResults.builtinsStayPortal);
+                check("W12 P2: feste minRingSize-Zahl ist entfernt", w12portalSizeResults.noFixedThreshold);
+            } else {
+                check(
+                    "W12 P2: Portal-Größe Tests laufen",
+                    false,
+                    w12portalSizeResults ? w12portalSizeResults.error : "no result"
+                );
+            }
+
+            // ### W12 Phase 2 — Markier-Sektion: Portal-Knopf erreichbar + umwidmbar ###
+            const w12markResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    r.state.blueprints.test_mark_ring = {
+                        name: "test_mark_ring",
+                        label: "TestMarkRing",
+                        builtIn: false,
+                        parts: [],
+                    };
+                    r.renderPlayerEquipUI();
+                    const rowsBefore = document.querySelectorAll(".equip-mark-row").length;
+                    out.markRowRendered = rowsBefore > 0 && !!document.querySelector(".equip-portal-select");
+                    // markieren → roleManual gesetzt
+                    r.aimBlueprintAtWorld("test_mark_ring", "fluid");
+                    r.renderPlayerEquipUI();
+                    const rowsAfter = document.querySelectorAll(".equip-mark-row").length;
+                    // Trap-Fix: ein markierter Bauplan bleibt re-markierbar in der Sektion.
+                    out.markPersistsAfterRole = rowsAfter === rowsBefore;
+                    // Die Reihe nennt die aktuelle Rolle.
+                    out.rowShowsRole = Array.from(document.querySelectorAll(".equip-mark-label")).some(
+                        (el) => /TestMarkRing/.test(el.textContent) && /portal/i.test(el.textContent)
+                    );
+                    delete r.state.blueprints.test_mark_ring;
+                    r.renderPlayerEquipUI();
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w12markResults && !w12markResults.error) {
+                check("W12 P2: Markier-Reihe + Portal-Auswahl gerendert", w12markResults.markRowRendered);
+                check(
+                    "W12 P2: markierter Bauplan bleibt umwidmbar (kein Sackgassen-Zustand)",
+                    w12markResults.markPersistsAfterRole
+                );
+                check("W12 P2: Markier-Reihe nennt die aktuelle Rolle", w12markResults.rowShowsRole);
+            } else {
+                check(
+                    "W12 P2: Markier-Sektion Tests laufen",
+                    false,
+                    w12markResults ? w12markResults.error : "no result"
+                );
+            }
+
             // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
             const v840Results = await page
                 .evaluate(() => {
