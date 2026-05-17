@@ -15738,6 +15738,136 @@ class AnazhRealm {
         });
     }
 
+    // ===== W14 Phase 1 — Bibliothek =====
+    // W12 baute das Tor + die WORLD_REGISTRY (Daten ohne Browse-Sicht);
+    // W14 macht die Registry zum spieler-erreichbaren Ort. Ein Klick legt
+    // einen Portal-Bauplan ins Inventar — der Spieler platziert ihn in
+    // seiner Welt und geht hindurch.
+
+    // Einen Portal-Bauplan für eine registrierte Welt holen. Komposit-
+    // Geste: einmal pro Welt wird der portal-förmige Magie-Ring welt_portal
+    // in einen eigenen Bauplan portal_<id> geklont (cloneBlueprint kopiert
+    // nur die Substanz → builtIn:false, editierbar) und via
+    // aimBlueprintAtWorld auf die Welt gerichtet. Danach landet er nur noch
+    // im Inventar (addToInventory stackt bei gleichem Namen) — eine Welt,
+    // ein Portal-Bauplan, kein Bauplan-Wildwuchs.
+    obtainPortalForWorld(worldId) {
+        const key = String(worldId || "")
+            .trim()
+            .toLowerCase();
+        const entry = AnazhRealm.WORLD_REGISTRY[key];
+        if (!entry) return { ok: false, reason: "world_unknown" };
+        const bpName = `portal_${entry.id}`;
+        if (!this.state.blueprints || !this.state.blueprints[bpName]) {
+            if (!this.cloneBlueprint("welt_portal", bpName)) {
+                return { ok: false, reason: "clone_failed" };
+            }
+            this.state.blueprints[bpName].label = `Portal: ${entry.label}`;
+            const aim = this.aimBlueprintAtWorld(bpName, entry.id);
+            if (!aim.ok) {
+                delete this.state.blueprints[bpName];
+                return { ok: false, reason: aim.reason };
+            }
+        }
+        if (!this.addToInventory(bpName, 1)) {
+            return { ok: false, reason: "inventory_full" };
+        }
+        // Die erste Entdeckung jeder Welt ist eine Erinnerung wert;
+        // journalAppendOnce verhindert ein Fluten bei wiederholtem Holen.
+        this.journalAppendOnce(
+            `portalObtained:${entry.id}`,
+            "growth",
+            `Ein Tor zur ${entry.label} fand den Weg in deine Sammlung.`,
+            { world: entry.id }
+        );
+        this.saveState();
+        return { ok: true, blueprint: bpName, label: entry.label };
+    }
+
+    // Die Bibliothek rendern: pro WORLD_REGISTRY-Eintrag eine Karte mit
+    // Label, Beschreibung, DSL-Vokabular, Stufen-Marke und „Portal holen".
+    // Die Registry ist statisch — ein Render beim Init genügt.
+    renderLibraryUI() {
+        if (typeof document === "undefined") return;
+        const list = document.getElementById("library-list");
+        if (!list) return;
+        list.innerHTML = "";
+        for (const w of Object.values(AnazhRealm.WORLD_REGISTRY)) {
+            const card = document.createElement("div");
+            card.className = "library-card";
+
+            const head = document.createElement("div");
+            head.className = "library-card-head";
+            const name = document.createElement("span");
+            name.className = "library-card-name";
+            name.textContent = w.label;
+            head.appendChild(name);
+            // Stufen-Marke: ein Registry-Eintrag mit DSL-Vokabular ist
+            // mindestens „übersetzt"; ohne wäre die Welt „ausgestellt"
+            // (spielbar, aber stumm gegenüber der DSL). Die Stufe „nativ"
+            // emergiert erst beim Betreten (W12 P3, _portalReceiveManifest).
+            const hasDsl = Array.isArray(w.dsl) && w.dsl.length > 0;
+            const stage = document.createElement("span");
+            stage.className = "library-stage" + (hasDsl ? "" : " stage-ausgestellt");
+            stage.textContent = hasDsl ? "übersetzt" : "ausgestellt";
+            stage.title = hasDsl
+                ? "Diese Welt versteht ein DSL-Vokabular (Stufe übersetzt). Beim Betreten kann sie es nativ bestätigen."
+                : "Diese Welt ist spielbar, aber stumm gegenüber der DSL.";
+            head.appendChild(stage);
+            card.appendChild(head);
+
+            const desc = document.createElement("div");
+            desc.className = "library-desc";
+            desc.textContent = w.desc || "";
+            card.appendChild(desc);
+
+            const dslWrap = document.createElement("div");
+            dslWrap.className = "library-dsl";
+            if (hasDsl) {
+                for (const op of w.dsl) {
+                    const chip = document.createElement("span");
+                    chip.className = "library-dsl-word";
+                    chip.textContent = op;
+                    dslWrap.appendChild(chip);
+                }
+            } else {
+                const none = document.createElement("span");
+                none.className = "library-dsl-empty";
+                none.textContent = "kein DSL-Vokabular";
+                dslWrap.appendChild(none);
+            }
+            card.appendChild(dslWrap);
+
+            const getBtn = document.createElement("button");
+            getBtn.type = "button";
+            getBtn.className = "library-get";
+            getBtn.textContent = "Portal holen";
+            const status = document.createElement("span");
+            status.className = "library-status";
+            getBtn.addEventListener("click", () => {
+                const res = this.obtainPortalForWorld(w.id);
+                if (res.ok) {
+                    status.textContent = `✓ „${res.label}" liegt im Inventar`;
+                    this.log(`Bibliothek: Portal zur ${res.label} ins Inventar gelegt.`, "INFO");
+                } else {
+                    status.textContent = res.reason === "inventory_full" ? "Inventar voll" : "konnte nicht holen";
+                    this.log(`obtainPortalForWorld: ${res.reason}`, "ERROR");
+                }
+            });
+            card.appendChild(getBtn);
+            card.appendChild(status);
+
+            list.appendChild(card);
+        }
+    }
+
+    // W14 Phase 1 — Bibliothek-Drawer aufsetzen. Die Registry ist statisch,
+    // also genügt ein Render beim Init.
+    libraryInitDOM() {
+        if (typeof document === "undefined") return;
+        this.renderLibraryUI();
+    }
+
     // W12 — ein DSL-Manifest säubern: nur op-förmige Strings (klein +
     // Unterstrich, ≤40 Zeichen), gedeckelt auf 64. Genutzt fürs portalMeta-
     // Manifest (Phase 2, Stufe „übersetzt") UND fürs native ready-Manifest
@@ -26955,6 +27085,8 @@ class AnazhRealm {
         this.keybindingsInitDOM();
         this.inventoryInitDOM();
         this.creatureDrawerInitDOM();
+        // W14 Phase 1 — Bibliothek-Drawer rendern (Welt-Registry browsbar).
+        this.libraryInitDOM();
         // Ring 6.5 — Hotbar im DOM rendern. Wird hier einmal aufgesetzt;
         // setHotbarSlot löst ein Re-Render aus.
         this._renderHotbarDOM();
@@ -28935,29 +29067,33 @@ AnazhRealm.DEFAULT_BLUEPRINT_ROLE = "architecture";
 AnazhRealm.PORTAL_SKELETON_WORLD = "worlds/skeleton/index.html";
 
 // W12 Phase 2 — die Welt-Registry: die EINE Quelle, welche Sub-Welten es
-// gibt, je mit Pfad + DSL-Manifest (welche Wörter die Welt versteht). Die
+// gibt, je mit Pfad + DSL-Manifest (welche Wörter die Welt versteht) +
+// einer kurzen Beschreibung (W14 — der Bibliothek-Tab rendert sie). Die
 // Built-in-Portale beziehen ihr portalMeta hieraus (statt 3 verstreuter
 // Literale); aimBlueprintAtWorld richtet jeden eigenen Magie-Ring auf einen
-// dieser Einträge. Der Same der W14-Bibliothek — wächst, wird einst
-// durchsuchbar.
+// dieser Einträge. W14 macht die Registry browsbar — der Same der
+// Bibliothek wächst, wird durchsuchbar.
 AnazhRealm.WORLD_REGISTRY = Object.freeze({
     skeleton: Object.freeze({
         id: "skeleton",
         label: "Skelett-Welt",
         world: AnazhRealm.PORTAL_SKELETON_WORLD,
         dsl: Object.freeze(["skybox_color"]),
+        desc: "Die ätherische Leere, an der das Portal-Protokoll geboren wurde — ein pulsierender Tor-Ring im Void.",
     }),
     fluid: Object.freeze({
         id: "fluid",
         label: "Strom-Welt",
         world: "worlds/fluid/index.html",
         dsl: Object.freeze(["weather", "skybox_color", "sturm", "ruhe", "set_turbulence"]),
+        desc: "Ein Stable-Fluids-Solver: Tinte strömt, Stürme wirbeln. Eine fremde Engine mit eigener Three.js.",
     }),
     terrain: Object.freeze({
         id: "terrain",
         label: "Terrain-Welt",
         world: "worlds/terrain/index.html",
         dsl: Object.freeze(["skybox_color", "gebirge", "ebene", "neu"]),
+        desc: "Eine prozedurale 3D-Landschaft, von einer umkreisenden Kamera als Diorama gezeigt.",
     }),
 });
 

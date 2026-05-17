@@ -14268,6 +14268,79 @@ function startSaveServer() {
                 check("W13 P3: signaling-server-Quell-Check läuft", false, err && err.message);
             }
 
+            // ### W14 Phase 1 — Bibliothek: browsbare Welt-Registry ###
+            const w14Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    const REG = r.constructor.WORLD_REGISTRY;
+                    out.methods =
+                        typeof r.renderLibraryUI === "function" &&
+                        typeof r.obtainPortalForWorld === "function" &&
+                        typeof r.libraryInitDOM === "function";
+                    // Jeder Registry-Eintrag trägt jetzt eine Beschreibung (W14).
+                    out.registryHasDesc = Object.values(REG).every(
+                        (w) => typeof w.desc === "string" && w.desc.length > 0
+                    );
+                    // Tab + Drawer im DOM.
+                    out.tabInDom = !!document.querySelector('#topbar .tab[data-tab="bibliothek"]');
+                    out.drawerInDom = !!document.querySelector('.drawer[data-drawer="bibliothek"]');
+                    // renderLibraryUI baut eine Karte pro Registry-Welt.
+                    r.renderLibraryUI();
+                    const cards = document.querySelectorAll("#library-list .library-card");
+                    out.cardPerWorld = cards.length === Object.keys(REG).length;
+                    // Eine Karte zeigt Label + DSL-Wörter + Stufen-Marke.
+                    const fluidCard = Array.from(cards).find((c) => /Strom-Welt/.test(c.textContent));
+                    out.cardShowsDsl =
+                        !!fluidCard && /sturm/.test(fluidCard.textContent) && /übersetzt/.test(fluidCard.textContent);
+                    // obtainPortalForWorld: klont welt_portal, richtet, legt ins Inventar.
+                    const res1 = r.obtainPortalForWorld("fluid");
+                    out.obtainOk = res1.ok === true && res1.blueprint === "portal_fluid";
+                    const bp = r.state.blueprints.portal_fluid;
+                    out.bpIsPortal = !!bp && bp.role === "portal" && bp.builtIn !== true;
+                    out.bpAimedAtFluid = !!bp && !!bp.portalMeta && bp.portalMeta.world === REG.fluid.world;
+                    // Der geholte Bauplan ist betretbar (Affordance isPortal).
+                    out.bpEnterable = !!bp && r.computeBlueprintAffordances(bp).isPortal === true;
+                    // Im Inventar gelandet.
+                    const slot1 = r.state.player.inventory.find((s) => s && s.blueprintName === "portal_fluid");
+                    out.inInventory = !!slot1 && slot1.count >= 1;
+                    // Zweites Holen stackt — kein zweiter Bauplan.
+                    const bpCountBefore = Object.keys(r.state.blueprints).length;
+                    const res2 = r.obtainPortalForWorld("fluid");
+                    const bpCountAfter = Object.keys(r.state.blueprints).length;
+                    const slot2 = r.state.player.inventory.find((s) => s && s.blueprintName === "portal_fluid");
+                    out.secondStacks =
+                        res2.ok === true && !!slot2 && slot2.count >= 2 && bpCountAfter === bpCountBefore;
+                    // Unbekannte Welt → abgelehnt.
+                    out.unknownRejected = r.obtainPortalForWorld("nirgendwo").ok === false;
+                    // Aufräumen, damit spätere Blöcke einen sauberen Stand sehen.
+                    delete r.state.blueprints.portal_fluid;
+                    for (let i = 0; i < r.state.player.inventory.length; i++) {
+                        const s = r.state.player.inventory[i];
+                        if (s && s.blueprintName === "portal_fluid") r.state.player.inventory[i] = null;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w14Results && !w14Results.error) {
+                check("W14 P1: renderLibraryUI/obtainPortalForWorld/libraryInitDOM existieren", w14Results.methods);
+                check("W14 P1: jeder WORLD_REGISTRY-Eintrag trägt eine Beschreibung", w14Results.registryHasDesc);
+                check("W14 P1: Bibliothek-Tab im Topbar", w14Results.tabInDom);
+                check("W14 P1: Bibliothek-Drawer im DOM", w14Results.drawerInDom);
+                check("W14 P1: renderLibraryUI baut eine Karte pro Welt", w14Results.cardPerWorld);
+                check("W14 P1: Karte zeigt Label + DSL-Vokabular + Stufen-Marke", w14Results.cardShowsDsl);
+                check("W14 P1: obtainPortalForWorld liefert ok + portal_fluid", w14Results.obtainOk);
+                check("W14 P1: der geholte Bauplan trägt role:portal + ist eigen (nicht built-in)", w14Results.bpIsPortal);
+                check("W14 P1: der geholte Bauplan ist auf die Strom-Welt gerichtet", w14Results.bpAimedAtFluid);
+                check("W14 P1: der geholte Portal-Bauplan ist betretbar (Affordance isPortal)", w14Results.bpEnterable);
+                check("W14 P1: das Portal liegt im Inventar", w14Results.inInventory);
+                check("W14 P1: zweites Holen stackt im Inventar (kein zweiter Bauplan)", w14Results.secondStacks);
+                check("W14 P1: obtainPortalForWorld verwirft eine unbekannte Welt", w14Results.unknownRejected);
+            } else {
+                check("W14 P1: Bibliothek-Tests laufen", false, w14Results ? w14Results.error : "no result");
+            }
+
             // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
             const v840Results = await page
                 .evaluate(() => {
@@ -20621,7 +20694,8 @@ function startSaveServer() {
                     // Tab-System
                     const tabs = document.querySelectorAll("#topbar .tab");
                     out.tabCount = tabs.length;
-                    out.allTabsPresent = tabs.length === 7;
+                    // W14 — der Bibliothek-Tab ist der 8.
+                    out.allTabsPresent = tabs.length === 8;
                     const weltTab = document.querySelector('#topbar .tab[data-tab="welt"]');
                     out.weltTabActive = weltTab && weltTab.classList.contains("active");
                     const weltDrawer = document.querySelector('.drawer[data-drawer="welt"]');
