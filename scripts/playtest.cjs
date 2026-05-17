@@ -4973,6 +4973,168 @@ function startSaveServer() {
                 check("W7 P3: 'Stimme teilen'-Knopf im DOM", w7p3Results.voiceButtonExists);
             }
 
+            // ### W7 Phase 4 — Public-Lobby + Kreatur-Sicht-Sync ###
+            // P4: Räume browsbar machen (lobby-publish/list/join). Kreatur-
+            // Sync: jeder Peer streamt SEINE Kreaturen, Mitspieler rendern sie
+            // als Sicht-Schicht (remoteCreatures, NICHT in state.creatures).
+            const w7p4Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    const p2p = r.state.p2p;
+
+                    // ── W7 P4 — Lobby ──
+                    out.lobbyState =
+                        !!p2p.lobby &&
+                        p2p.lobby.published === false &&
+                        Array.isArray(p2p.lobby.rooms) &&
+                        p2p.remoteCreatures instanceof Map;
+                    out.lobbyMethods = [
+                        "publishToLobby",
+                        "unpublishFromLobby",
+                        "requestLobbyList",
+                        "joinLobbyRoom",
+                        "_renderLobbyUI",
+                    ].every((m) => typeof r[m] === "function");
+
+                    // publishToLobby ohne Verbindung → not_connected.
+                    p2p.enabled = false;
+                    p2p.connected = false;
+                    out.publishNeedsConnection = r.publishToLobby("Testraum").reason === "not_connected";
+
+                    // Mit Verbindung: _p2pSignal stubben + Nachrichten fangen.
+                    const signals = [];
+                    const origSignal = r._p2pSignal;
+                    r._p2pSignal = (o) => signals.push(o);
+                    p2p.enabled = true;
+                    p2p.connected = true;
+                    const pubRes = r.publishToLobby("Mein Raum");
+                    out.publishSends =
+                        pubRes.ok === true &&
+                        p2p.lobby.published === true &&
+                        signals.some((s) => s.type === "lobby-publish" && s.label === "Mein Raum");
+                    r.unpublishFromLobby();
+                    out.unpublishSends =
+                        p2p.lobby.published === false && signals.some((s) => s.type === "lobby-unpublish");
+                    r.requestLobbyList();
+                    out.listRequestSends = signals.some((s) => s.type === "lobby-list");
+                    r._p2pSignal = origSignal;
+
+                    // lobby-rooms-Nachricht → Liste gespeichert + gerendert.
+                    r.p2pHandleMessage(
+                        JSON.stringify({
+                            type: "lobby-rooms",
+                            rooms: [{ room: "raum-xyz", label: "Anazhs Welt", peers: 3 }],
+                        })
+                    );
+                    out.lobbyRoomsStored = p2p.lobby.rooms.length === 1 && p2p.lobby.rooms[0].room === "raum-xyz";
+                    const listEl = document.getElementById("p2p-lobby-list");
+                    out.lobbyRendered =
+                        !!listEl && !!listEl.querySelector("button[data-lobby-room='raum-xyz']");
+
+                    // joinLobbyRoom setzt roomOverride.
+                    const joinRes = r.joinLobbyRoom("raum-xyz");
+                    out.joinSetsOverride = joinRes.ok === true && p2p.roomOverride === "raum-xyz";
+                    out.joinSameRejected = r.joinLobbyRoom("raum-xyz").reason === "already_here";
+
+                    out.lobbyDom =
+                        !!document.getElementById("p2p-lobby") &&
+                        !!document.getElementById("p2p-lobby-publish-toggle") &&
+                        !!document.getElementById("p2p-lobby-refresh");
+
+                    // ── Kreatur-Sicht-Sync ──
+                    out.creatureMethods = [
+                        "_p2pBroadcastCreatures",
+                        "_p2pHandleCreaturePos",
+                        "_p2pTickRemoteCreatures",
+                        "_disposeRemoteCreature",
+                    ].every((m) => typeof r[m] === "function");
+
+                    // spawnCreatureAt vergibt eine netId.
+                    const testC = r.spawnCreatureAt(20, 6, 20, "happy");
+                    out.creatureHasNetId =
+                        !!testC && typeof testC.userData.netId === "string" && testC.userData.netId.length > 0;
+
+                    // _p2pBroadcastCreatures sendet creature-pos mit der Kreatur.
+                    const csent = [];
+                    const origSend2 = r.p2pSend;
+                    r.p2pSend = (o) => csent.push(o);
+                    r._p2pBroadcastCreatures();
+                    const cmsg = csent.find((m) => m.type === "creature-pos");
+                    out.broadcastSendsCreatures =
+                        !!cmsg && Array.isArray(cmsg.list) && cmsg.list.some((e) => e.id === testC.userData.netId);
+                    r.p2pSend = origSend2;
+
+                    // _p2pHandleCreaturePos legt eine Sicht-Kreatur an.
+                    p2p.remoteCreatures.clear();
+                    r._p2pHandleCreaturePos("farPeer", {
+                        list: [{ id: "c9", x: 5, y: 6, z: 5, yaw: 0, soul: "wesen" }],
+                    });
+                    out.remoteCreatureCreated = p2p.remoteCreatures.has("farPeer:c9");
+                    // NICHT in state.creatures (updateCreatures ignoriert sie).
+                    const rc = p2p.remoteCreatures.get("farPeer:c9");
+                    out.remoteNotInLocalSim = !!rc && r.state.creatures.indexOf(rc.mesh) === -1;
+
+                    // Reconcile: eine Liste OHNE c9 → die Sicht-Kreatur verschwindet.
+                    r._p2pHandleCreaturePos("farPeer", {
+                        list: [{ id: "c10", x: 7, y: 6, z: 7, yaw: 0, soul: "sprite" }],
+                    });
+                    out.reconcileRemoves =
+                        !p2p.remoteCreatures.has("farPeer:c9") && p2p.remoteCreatures.has("farPeer:c10");
+
+                    // _p2pRemovePeer entsorgt die Sicht-Kreaturen des Peers.
+                    r._p2pRemovePeer("farPeer");
+                    out.removePeerCleansCreatures = !p2p.remoteCreatures.has("farPeer:c10");
+
+                    // creature-pos ist in der Kanal-Whitelist (mesh-zustellbar).
+                    p2p.remoteCreatures.clear();
+                    r._p2pHandleChannelMessage(
+                        "chPeer",
+                        JSON.stringify({ type: "creature-pos", list: [{ id: "c1", x: 1, y: 6, z: 1, soul: "wesen" }] })
+                    );
+                    out.creaturePosChannelAllowed = p2p.remoteCreatures.has("chPeer:c1");
+
+                    // Cleanup
+                    for (const [key, rcx] of p2p.remoteCreatures) r._disposeRemoteCreature(key, rcx);
+                    if (testC && typeof r.removeCreature === "function") r.removeCreature(testC);
+                    p2p.lobby.rooms = [];
+                    p2p.lobby.published = false;
+                    p2p.roomOverride = "";
+                    p2p.enabled = false;
+                    p2p.connected = false;
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!w7p4Results || w7p4Results.error) {
+                check(
+                    "W7 Phase 4: Snapshot erreichbar",
+                    false,
+                    (w7p4Results && w7p4Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("W7 P4: state.p2p trägt lobby + remoteCreatures", w7p4Results.lobbyState);
+                check("W7 P4: alle 5 Lobby-Methoden auf der Klasse", w7p4Results.lobbyMethods);
+                check("W7 P4: publishToLobby ohne Verbindung → not_connected", w7p4Results.publishNeedsConnection);
+                check("W7 P4: publishToLobby sendet lobby-publish + setzt published", w7p4Results.publishSends);
+                check("W7 P4: unpublishFromLobby sendet lobby-unpublish", w7p4Results.unpublishSends);
+                check("W7 P4: requestLobbyList sendet lobby-list", w7p4Results.listRequestSends);
+                check("W7 P4: lobby-rooms-Nachricht speichert die Liste", w7p4Results.lobbyRoomsStored);
+                check("W7 P4: _renderLobbyUI rendert eine Beitreten-Zeile", w7p4Results.lobbyRendered);
+                check("W7 P4: joinLobbyRoom setzt roomOverride", w7p4Results.joinSetsOverride);
+                check("W7 P4: joinLobbyRoom in denselben Raum → already_here", w7p4Results.joinSameRejected);
+                check("W7 P4: Lobby-UI-Elemente im DOM", w7p4Results.lobbyDom);
+                check("Kreatur-Sync: alle 4 Methoden auf der Klasse", w7p4Results.creatureMethods);
+                check("Kreatur-Sync: spawnCreatureAt vergibt eine netId", w7p4Results.creatureHasNetId);
+                check("Kreatur-Sync: _p2pBroadcastCreatures sendet creature-pos", w7p4Results.broadcastSendsCreatures);
+                check("Kreatur-Sync: creature-pos legt eine Sicht-Kreatur an", w7p4Results.remoteCreatureCreated);
+                check("Kreatur-Sync: Sicht-Kreatur liegt NICHT in state.creatures", w7p4Results.remoteNotInLocalSim);
+                check("Kreatur-Sync: Reconcile entfernt verschwundene Kreaturen", w7p4Results.reconcileRemoves);
+                check("Kreatur-Sync: _p2pRemovePeer entsorgt die Sicht-Kreaturen", w7p4Results.removePeerCleansCreatures);
+                check("Kreatur-Sync: creature-pos ist kanal-zustellbar", w7p4Results.creaturePosChannelAllowed);
+            }
+
             // ### Ring 11 V2 — DSL-AST-Broadcast (Welt-Sync) ###
             // Sandbox-Pfad: human-dslRun broadcastet via p2pSend wenn enabled+
             // connected; remote-dslRun (source="remote:*") läuft durch dslRun

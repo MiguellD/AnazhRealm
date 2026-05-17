@@ -357,6 +357,13 @@ class AnazhRealm {
                 _voiceServedAt: new Map(),
                 _voiceRequests: new Map(),
                 _voiceReqSeq: 0,
+                // W7 Phase 4 — Public-Lobby. published: mein Raum ist
+                // browsbar; rooms: die zuletzt geholte Lobby-Liste.
+                lobby: { published: false, label: "", rooms: [] },
+                // Kreatur-Sicht-Sync — remoteCreatures: <peerId>:<netId> →
+                // {mesh, …}, die Kreaturen der Mitspieler als Sicht-Schicht.
+                remoteCreatures: new Map(),
+                _lastCreatureBroadcast: 0,
             },
             // Welt-Identität (Ring 8+, siehe docs/state-of-realm.md §11). Felder
             // werden jetzt schon gesetzt, damit das Save-Schema zukunftsfest
@@ -4344,6 +4351,10 @@ class AnazhRealm {
         }
         p2p._voiceRequests.clear();
         p2p._voiceServedAt.clear();
+        // Kreatur-Sicht-Sync — alle Sicht-Kopien der Mitspieler entsorgen.
+        for (const [key, rc] of p2p.remoteCreatures) this._disposeRemoteCreature(key, rc);
+        // W7 Phase 4 — die geholte Lobby-Liste verfällt mit der Verbindung.
+        p2p.lobby.rooms = [];
     }
 
     // W7 Phase 1: roher WS-Versand. Trägt das Signaling (join, rtc-offer/
@@ -4510,7 +4521,7 @@ class AnazhRealm {
             this._p2pHandleLlmResponse(peerId, msg);
             return;
         }
-        const ALLOWED = ["pos", "dsl", "soul", "aura", "vibe"];
+        const ALLOWED = ["pos", "dsl", "soul", "aura", "vibe", "creature-pos"];
         if (!ALLOWED.includes(msg.type)) return;
         msg.peerId = peerId;
         this.p2pHandleMessage(JSON.stringify(msg));
@@ -4823,6 +4834,130 @@ class AnazhRealm {
         }
     }
 
+    // ── W7 Phase 4 — Public-Lobby: Räume browsbar machen ──
+
+    // Den eigenen Raum öffentlich in die Lobby stellen (Opt-in).
+    publishToLobby(label) {
+        const p2p = this.state.p2p;
+        if (!p2p.enabled || !p2p.connected) return { ok: false, reason: "not_connected" };
+        const clean = String(label || "")
+            .trim()
+            .slice(0, 48);
+        p2p.lobby.published = true;
+        p2p.lobby.label = clean;
+        this._p2pSignal({ type: "lobby-publish", label: clean });
+        this.p2pUpdateStatus();
+        return { ok: true };
+    }
+
+    unpublishFromLobby() {
+        const p2p = this.state.p2p;
+        p2p.lobby.published = false;
+        if (p2p.enabled && p2p.connected) this._p2pSignal({ type: "lobby-unpublish" });
+        this.p2pUpdateStatus();
+        return { ok: true };
+    }
+
+    // Die Liste der veröffentlichten Räume anfordern (Antwort: lobby-rooms).
+    requestLobbyList() {
+        const p2p = this.state.p2p;
+        if (!p2p.enabled || !p2p.connected) return { ok: false, reason: "not_connected" };
+        this._p2pSignal({ type: "lobby-list" });
+        return { ok: true };
+    }
+
+    // Einem Lobby-Raum beitreten: roomOverride setzen + neu verbinden.
+    joinLobbyRoom(roomId) {
+        const p2p = this.state.p2p;
+        if (typeof roomId !== "string" || !roomId) return { ok: false, reason: "bad_room" };
+        if (roomId === (p2p.roomOverride || (this.state.worldMeta && this.state.worldMeta.worldId))) {
+            return { ok: false, reason: "already_here" };
+        }
+        p2p.roomOverride = roomId;
+        this.p2pPersist();
+        if (p2p.enabled) this.initP2PSync(null);
+        this.p2pUpdateStatus();
+        this.log(`Lobby: Raum ${roomId.slice(0, 12)}… beigetreten`, "INFO");
+        return { ok: true };
+    }
+
+    // ── Kreatur-Sicht-Sync — die Kreaturen der Mitspieler sehen ──
+    // Wie die Peer-Avatare: jeder Peer streamt SEINE Kreaturen, die anderen
+    // rendern sie als reine Sicht-Schicht (kein Sim, keine Tasks, keine
+    // Physik). Die Kreaturen liegen NICHT in state.creatures — updateCreatures
+    // ignoriert sie per Konstruktion, keine Suppression nötig.
+
+    _p2pBroadcastCreatures() {
+        const creatures = this.state.creatures || [];
+        const list = [];
+        for (let i = 0; i < creatures.length && list.length < 40; i++) {
+            const c = creatures[i];
+            if (!c || !c.position) continue;
+            list.push({
+                id: (c.userData && c.userData.netId) || "i" + i,
+                x: +c.position.x.toFixed(2),
+                y: +c.position.y.toFixed(2),
+                z: +c.position.z.toFixed(2),
+                yaw: +((c.rotation && c.rotation.y) || 0).toFixed(2),
+                soul: (c.userData && c.userData.soul) || "wesen",
+            });
+        }
+        this.p2pSend({ type: "creature-pos", list });
+    }
+
+    _p2pHandleCreaturePos(peerId, msg) {
+        const remote = this.state.p2p.remoteCreatures;
+        const list = Array.isArray(msg.list) ? msg.list : [];
+        const nowSec = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
+        const seen = new Set();
+        for (const e of list) {
+            if (!e || typeof e.id !== "string") continue;
+            const key = peerId + ":" + e.id;
+            seen.add(key);
+            let rc = remote.get(key);
+            if (!rc) {
+                const mesh = this._buildCreatureGroup(typeof e.soul === "string" ? e.soul : "wesen");
+                if (!mesh) continue;
+                mesh.position.set(+e.x || 0, +e.y || 0, +e.z || 0);
+                if (this.state.scene) this.state.scene.add(mesh);
+                rc = { mesh, peerId };
+                remote.set(key, rc);
+            }
+            rc.tx = +e.x || 0;
+            rc.ty = +e.y || 0;
+            rc.tz = +e.z || 0;
+            rc.tyaw = +e.yaw || 0;
+            rc.lastSeen = nowSec;
+        }
+        // Reconcile: jede creature-pos-Nachricht ist die VOLLE Liste dieses
+        // Peers — Sicht-Kopien, die nicht mehr darin stehen, sind tot.
+        for (const [key, rc] of remote) {
+            if (rc.peerId === peerId && !seen.has(key)) this._disposeRemoteCreature(key, rc);
+        }
+    }
+
+    _p2pTickRemoteCreatures(t, dt) {
+        const remote = this.state.p2p.remoteCreatures;
+        if (!remote.size) return;
+        const k = Math.min(1, (dt || 0.016) * 12); // sanftes Nachziehen
+        for (const rc of remote.values()) {
+            const m = rc.mesh;
+            if (!m) continue;
+            m.position.x += ((rc.tx || 0) - m.position.x) * k;
+            m.position.y += ((rc.ty || 0) - m.position.y) * k + Math.sin(t * 2 + m.position.x) * 0.002;
+            m.position.z += ((rc.tz || 0) - m.position.z) * k;
+            if (m.rotation) m.rotation.y = rc.tyaw || 0;
+        }
+    }
+
+    _disposeRemoteCreature(key, rc) {
+        if (rc && rc.mesh) {
+            if (this.state.scene) this.state.scene.remove(rc.mesh);
+            if (typeof this._disposeSoulGroup === "function") this._disposeSoulGroup(rc.mesh);
+        }
+        this.state.p2p.remoteCreatures.delete(key);
+    }
+
     // W7 Phase 1: gepufferte ICE-Kandidaten anwenden, sobald die
     // Remote-Description gesetzt ist (addIceCandidate davor wirft).
     _p2pDrainIce(rtc, peerId) {
@@ -4904,6 +5039,19 @@ class AnazhRealm {
         }
         if (msg.type === "peer-leave") {
             if (typeof msg.peerId === "string") this._p2pRemovePeer(msg.peerId);
+            return;
+        }
+        if (msg.type === "lobby-rooms") {
+            // W7 Phase 4 — die Lobby-Liste vom Server.
+            p2p.lobby.rooms = Array.isArray(msg.rooms) ? msg.rooms : [];
+            if (typeof this._renderLobbyUI === "function") this._renderLobbyUI();
+            return;
+        }
+        if (msg.type === "creature-pos") {
+            // Kreatur-Sicht-Sync — die Kreatur-Positionen eines Mitspielers.
+            if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
+                this._p2pHandleCreaturePos(msg.peerId, msg);
+            }
             return;
         }
         if (msg.type === "pos") {
@@ -5417,6 +5565,10 @@ class AnazhRealm {
         // W7 Phase 1 — die WebRTC-Verbindung mit abbauen (auch wenn kein
         // Peer-Mesh-Eintrag mehr existiert).
         this._p2pCloseRtcPeer(peerId);
+        // Kreatur-Sicht-Sync — die Sicht-Kopien dieses Peers entsorgen.
+        for (const [key, rc] of p2p.remoteCreatures) {
+            if (rc.peerId === peerId) this._disposeRemoteCreature(key, rc);
+        }
         const entry = p2p.peers.get(peerId);
         if (!entry) return;
         if (entry.mesh) {
@@ -5468,6 +5620,12 @@ class AnazhRealm {
             p2p._lastAuraBroadcast = currentTimeMs;
             this._p2pBroadcastAura();
         }
+        // Kreatur-Sicht-Sync — die eigenen Kreatur-Positionen ~5,5 Hz
+        // streamen (Kreaturen bewegen sich gemächlich, kein Frame-Sync nötig).
+        if (currentTimeMs - (p2p._lastCreatureBroadcast || 0) > 180) {
+            p2p._lastCreatureBroadcast = currentTimeMs;
+            this._p2pBroadcastCreatures();
+        }
         // Peer-Avatare nachziehen: Position, Animation, Aura, Name-Schild +
         // idle-purge (kein update >10 s → entfernen, vermutlich verbindungslos).
         const nowSec = currentTimeMs / 1000;
@@ -5480,6 +5638,8 @@ class AnazhRealm {
             if (nowSec - entry.lastSeen > 10) stale.push(pid);
         }
         for (const pid of stale) this._p2pRemovePeer(pid);
+        // Kreatur-Sicht-Sync — die Kreatur-Meshes der Mitspieler nachziehen.
+        this._p2pTickRemoteCreatures(t, dt);
     }
 
     initP2PUI() {
@@ -5582,6 +5742,68 @@ class AnazhRealm {
                     statusEl.textContent = "Stimme teilen braucht ein aktives eigenes LLM.";
                 }
             });
+        }
+        // W7 Phase 4 — Public-Lobby-Steuerung.
+        const lobbyPub = document.getElementById("p2p-lobby-publish-toggle");
+        const lobbyLabel = document.getElementById("p2p-lobby-label");
+        const lobbyRefresh = document.getElementById("p2p-lobby-refresh");
+        const lobbyList = document.getElementById("p2p-lobby-list");
+        if (lobbyPub) {
+            lobbyPub.addEventListener("change", () => {
+                if (lobbyPub.checked) {
+                    const res = this.publishToLobby(lobbyLabel ? lobbyLabel.value : "");
+                    if (!res.ok) {
+                        lobbyPub.checked = false;
+                        if (statusEl) statusEl.textContent = "Lobby: erst Multi-User verbinden.";
+                    }
+                } else {
+                    this.unpublishFromLobby();
+                }
+            });
+        }
+        if (lobbyRefresh) {
+            lobbyRefresh.addEventListener("click", () => {
+                const res = this.requestLobbyList();
+                if (!res.ok && statusEl) statusEl.textContent = "Lobby: erst Multi-User verbinden.";
+            });
+        }
+        if (lobbyList) {
+            lobbyList.addEventListener("click", (ev) => {
+                const btn = ev.target && ev.target.closest("button[data-lobby-room]");
+                if (btn) this.joinLobbyRoom(btn.dataset.lobbyRoom);
+            });
+        }
+        this._renderLobbyUI();
+    }
+
+    // W7 Phase 4 — die Lobby-Liste rendern (Labels von Mitspielern sind
+    // fremde Daten → textContent, kein innerHTML).
+    _renderLobbyUI() {
+        const listEl = document.getElementById("p2p-lobby-list");
+        if (!listEl) return;
+        const rooms = (this.state.p2p.lobby && this.state.p2p.lobby.rooms) || [];
+        listEl.textContent = "";
+        if (!rooms.length) {
+            const empty = document.createElement("div");
+            empty.className = "drawer-hint";
+            empty.textContent = "Keine öffentlichen Räume — „Lobby durchsuchen“ klicken.";
+            listEl.appendChild(empty);
+            return;
+        }
+        for (const r of rooms) {
+            if (!r || typeof r.room !== "string") continue;
+            const row = document.createElement("div");
+            row.className = "p2p-lobby-row";
+            const name = document.createElement("span");
+            name.className = "p2p-lobby-name";
+            name.textContent = `${r.label || r.room.slice(0, 16)} · ${r.peers || 0} Spieler`;
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.textContent = "Beitreten";
+            btn.dataset.lobbyRoom = r.room;
+            row.appendChild(name);
+            row.appendChild(btn);
+            listEl.appendChild(row);
         }
     }
 
@@ -8671,6 +8893,10 @@ class AnazhRealm {
         group.userData.kind = "creature";
         group.userData.soul = chosenSoul;
         group.userData.name = this._pickCreatureName();
+        // Kreatur-Sicht-Sync — eine pro-Peer eindeutige netId für den
+        // creature-pos-Strom (Mitspieler keyen ihre Sicht-Kopie damit).
+        this.state._creatureNetSeq = (this.state._creatureNetSeq || 0) + 1;
+        group.userData.netId = "c" + this.state._creatureNetSeq;
         group.userData.task = { name: "wander", args: {}, since: performance.now() / 1000 };
         // Welle 6.H Phase 2D.1 — bornAt als Identitäts-Marker. Persistierte
         // Kreaturen überleben Reload mit demselben bornAt; neue bekommen den

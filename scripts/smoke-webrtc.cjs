@@ -206,6 +206,37 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
         );
         check("Bau abbauen synchronisiert peer-to-peer", true);
 
+        // Kreatur-Sicht-Sync — A spawnt eine Kreatur an einem markanten Ort
+        // und streamt sie (direkter _p2pBroadcastCreatures-Aufruf, da der
+        // rAF-Loop im Hintergrund-Tab gedrosselt ist — wie der pos-Test).
+        // B sieht sie als Sicht-Kreatur über das Mesh.
+        const CRX = 88.0;
+        const CRZ = -33.0;
+        await pageA.evaluate(
+            (x, z) => {
+                window.anazhRealm.spawnCreatureAt(x, 8, z, "happy");
+                window.anazhRealm._p2pBroadcastCreatures();
+            },
+            CRX,
+            CRZ
+        );
+        await waitFor(
+            pageB,
+            (x, z) => {
+                const rc = window.anazhRealm.state.p2p.remoteCreatures;
+                for (const c of rc.values()) {
+                    if (typeof c.tx !== "number" || typeof c.tz !== "number") continue;
+                    if (Math.abs(c.tx - x) < 1.5 && Math.abs(c.tz - z) < 1.5) return true;
+                }
+                return false;
+            },
+            10000,
+            "B sieht A's Kreatur als Sicht-Kreatur über das Mesh",
+            CRX,
+            CRZ
+        );
+        check("Kreatur-Sicht floss peer-to-peer über das Mesh", true);
+
         // W7 Phase 3 — LLM-Pool. A teilt seine Stimme (llmCall gestubbt, da
         // im CI kein API-Key); B (ohne eigenes LLM) routet eine Chat-Anfrage
         // peer-to-peer über A. Der Mesh-Round-Trip ist der echte Beweis.

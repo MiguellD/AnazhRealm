@@ -1846,6 +1846,43 @@
                 grid-template-columns: 1fr 1fr;
                 gap: 5px;
             }
+            /* W7 Phase 4 — Public-Lobby */
+            #p2p-lobby {
+                margin-top: 10px;
+                border-top: 1px solid var(--iron-2, #2a2f3a);
+                padding-top: 8px;
+            }
+            #p2p-lobby h3 {
+                margin: 0 0 6px;
+            }
+            .p2p-lobby-pub {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                margin-bottom: 5px;
+            }
+            #p2p-lobby-label {
+                width: 100%;
+                margin-bottom: 5px;
+            }
+            .p2p-lobby-list {
+                margin-top: 6px;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .p2p-lobby-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 6px;
+            }
+            .p2p-lobby-name {
+                font-size: 12px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
             /* Welle 6.C2 — Welt-Beziehungs-Modus-Radios */
             #game-mode-radios {
                 grid-template-columns: 1fr 1fr 1fr;
@@ -5087,6 +5124,27 @@
                     </button>
                 </div>
                 <div id="p2p-status" class="drawer-hint" aria-live="polite">Inaktiv.</div>
+                <!-- W7 Phase 4 — Public-Lobby. Raum veröffentlichen + andere
+                     öffentliche Räume browsen + beitreten. -->
+                <div id="p2p-lobby" class="p2p-lobby">
+                    <h3>Öffentliche Lobby <span class="section-hint">(W7 Phase 4)</span></h3>
+                    <label class="p2p-lobby-pub">
+                        <input type="checkbox" id="p2p-lobby-publish-toggle" />
+                        <span>Diesen Raum in der Lobby zeigen</span>
+                    </label>
+                    <input
+                        type="text"
+                        id="p2p-lobby-label"
+                        placeholder="Raum-Name für die Lobby"
+                        maxlength="48"
+                        autocomplete="off"
+                        spellcheck="false"
+                    />
+                    <div class="actions">
+                        <button type="button" id="p2p-lobby-refresh">Lobby durchsuchen</button>
+                    </div>
+                    <div id="p2p-lobby-list" class="p2p-lobby-list" aria-live="polite"></div>
+                </div>
             </section>
         </aside>
         <aside class="drawer" data-drawer="hilfe" aria-label="Hilfe-Panel" hidden>

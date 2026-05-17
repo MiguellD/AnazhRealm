@@ -57,6 +57,10 @@ const WS_MAGIC = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
 // rooms: Map<roomId, Set<wsClient>>
 const rooms = new Map();
+// W7 Phase 4 — Public-Lobby. lobby: Map<roomId, {label, publishedAt}>.
+// Ein Host veröffentlicht seinen Raum (Opt-in); Mitspieler browsen die
+// Liste. Beim Leeren eines Raums wird er auto-de-veröffentlicht.
+const lobby = new Map();
 // each socket carries .anazh = { peerId, room }
 
 function logLine(level, msg) {
@@ -167,6 +171,10 @@ function handleClientMessage(ws, raw) {
             if (oldSet) {
                 oldSet.delete(ws);
                 broadcastToRoom(ws.anazh.room, { type: "peer-leave", peerId: ws.anazh.peerId });
+                if (oldSet.size === 0) {
+                    rooms.delete(ws.anazh.room);
+                    lobby.delete(ws.anazh.room); // W7 P4
+                }
             }
         }
         ws.anazh = { peerId, room };
@@ -189,6 +197,16 @@ function handleClientMessage(ws, raw) {
         const yaw = Number(msg.yaw);
         if (![x, y, z, yaw].every(Number.isFinite)) return;
         broadcastToRoom(ws.anazh.room, { type: "pos", peerId: ws.anazh.peerId, x, y, z, yaw }, ws);
+        return;
+    }
+    if (msg.type === "creature-pos") {
+        // Kreatur-Sicht-Sync — ein Peer streamt die Positionen SEINER
+        // Kreaturen; Mitspieler rendern sie als Sicht-Schicht. Server
+        // validiert nicht den Inhalt (Client-Render-Schicht), deckelt nur
+        // die Listenlänge gegen Missbrauch.
+        if (!Array.isArray(msg.list)) return;
+        const list = msg.list.slice(0, 64);
+        broadcastToRoom(ws.anazh.room, { type: "creature-pos", peerId: ws.anazh.peerId, list }, ws);
         return;
     }
     if (msg.type === "dsl") {
@@ -302,6 +320,30 @@ function handleClientMessage(ws, raw) {
             // Voraus, welcher Peer Host ist)
             broadcastToRoom(ws.anazh.room, out, ws);
         }
+        return;
+    }
+    if (msg.type === "lobby-publish") {
+        // W7 Phase 4 — den eigenen Raum öffentlich browsbar machen.
+        const label = String(msg.label || "").slice(0, 48) || ws.anazh.room.slice(0, 24);
+        lobby.set(ws.anazh.room, { label, publishedAt: Date.now() });
+        logLine("INFO", `lobby-publish room=${ws.anazh.room} label="${label}"`);
+        return;
+    }
+    if (msg.type === "lobby-unpublish") {
+        lobby.delete(ws.anazh.room);
+        return;
+    }
+    if (msg.type === "lobby-list") {
+        // Liste aller veröffentlichten Räume mit aktueller Spielerzahl.
+        const list = [];
+        for (const [roomId, meta] of lobby) {
+            const set = rooms.get(roomId);
+            const peers = set ? set.size : 0;
+            if (peers <= 0) continue; // leerer Raum — überspringen
+            list.push({ room: roomId, label: meta.label, peers });
+        }
+        sendTo(ws, { type: "lobby-rooms", rooms: list });
+        return;
     }
 }
 
@@ -311,7 +353,10 @@ function handleDisconnect(ws) {
     if (set) {
         set.delete(ws);
         broadcastToRoom(ws.anazh.room, { type: "peer-leave", peerId: ws.anazh.peerId });
-        if (set.size === 0) rooms.delete(ws.anazh.room);
+        if (set.size === 0) {
+            rooms.delete(ws.anazh.room);
+            lobby.delete(ws.anazh.room); // W7 P4 — leerer Raum verlässt die Lobby
+        }
     }
     logLine("INFO", `leave room=${ws.anazh.room} peer=${ws.anazh.peerId}`);
 }
@@ -407,4 +452,4 @@ server.listen(PORT, HOST, () => {
 });
 
 // Export für Tests, falls als Modul geladen (kein Effect bei direct-run).
-module.exports = { server, rooms };
+module.exports = { server, rooms, lobby };
