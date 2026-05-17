@@ -14,7 +14,8 @@
         "playtest": "node scripts/playtest.cjs",
         "audit:strict": "node scripts/audit-strict.cjs",
         "verify:ring9": "node scripts/verify-ring9.cjs",
-        "smoke:multiuser": "node scripts/smoke-multiuser.cjs"
+        "smoke:multiuser": "node scripts/smoke-multiuser.cjs",
+        "smoke:webrtc": "node scripts/smoke-webrtc.cjs"
     },
     "devDependencies": {
         "eslint": "^9.18.0",

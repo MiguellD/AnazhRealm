@@ -326,6 +326,15 @@ class AnazhRealm {
                 // genutzt: nicht ws://127.0.0.1:..., sondern die LAN-IP,
                 // die Mitspieler erreichen können.
                 lanAddresses: [],
+                // W7 Phase 1: WebRTC-Mesh. rtcPeers hält pro Mitspieler
+                // eine RTCPeerConnection + den RTCDataChannel; sobald ALLE
+                // Kanäle offen sind (_p2pMeshReady), fliessen Position/DSL/
+                // Soul direkt peer-to-peer statt über den signaling-server
+                // (der bleibt Rendezvous + Fallback-Relay). meshActive
+                // spiegelt diesen Zustand für die UI.
+                rtcPeers: new Map(),
+                iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+                meshActive: false,
             },
             // Welt-Identität (Ring 8+, siehe docs/state-of-realm.md §11). Felder
             // werden jetzt schon gesetzt, damit das Save-Schema zukunftsfest
@@ -4224,7 +4233,7 @@ class AnazhRealm {
             p2p.ws = ws;
             ws.addEventListener("open", () => {
                 p2p.connected = true;
-                this.p2pSend({ type: "join", room: p2p.room, peerId: p2p.peerId });
+                this._p2pSignal({ type: "join", room: p2p.room, peerId: p2p.peerId });
                 this.log(`P2P verbunden mit ${url} (raum=${p2p.room.slice(0, 8)}, peer=${p2p.peerId})`, "INFO");
                 this.p2pUpdateStatus();
             });
@@ -4265,9 +4274,17 @@ class AnazhRealm {
         p2p.connected = false;
         p2p.room = null;
         this._p2pClearAllPeerMeshes();
+        // W7 Phase 1 — alle WebRTC-Verbindungen schliessen (auch etwaige
+        // ohne zugehörigen Peer-Mesh-Eintrag).
+        for (const pid of Array.from(p2p.rtcPeers.keys())) this._p2pCloseRtcPeer(pid);
+        p2p.meshActive = false;
     }
 
-    p2pSend(obj) {
+    // W7 Phase 1: roher WS-Versand. Trägt das Signaling (join, rtc-offer/
+    // answer/ice, world-request/snapshot) — das läuft IMMER über den
+    // signaling-server, auch wenn das Mesh steht. Spiel-Nachrichten gehen
+    // über das mesh-bewusste p2pSend (siehe unten).
+    _p2pSignal(obj) {
         const ws = this.state.p2p.ws;
         if (!ws || ws.readyState !== 1) return false;
         try {
@@ -4276,6 +4293,171 @@ class AnazhRealm {
         } catch {
             return false;
         }
+    }
+
+    p2pSend(obj) {
+        // W7 Phase 1: Spiel-Broadcast (pos/dsl/soul/aura/vibe). Steht das
+        // WebRTC-Mesh komplett (alle Peer-Kanäle offen), fliesst die
+        // Nachricht direkt peer-to-peer über die DataChannels — der
+        // signaling-server sieht sie dann nicht mehr. Sonst Fallback auf
+        // den WS-Relay. Die Mesh-Komplett-Wand verhindert Doppel-Zustellung:
+        // entweder ALLE Peers sind gemesht (→ Kanäle) oder noch nicht (→ WS).
+        const p2p = this.state.p2p;
+        if (this._p2pMeshReady()) {
+            const payload = JSON.stringify(obj);
+            let sent = 0;
+            for (const rtc of p2p.rtcPeers.values()) {
+                if (rtc.open && rtc.channel) {
+                    try {
+                        rtc.channel.send(payload);
+                        sent++;
+                    } catch {
+                        /* defensive — ein toter Kanal bricht den Broadcast nicht */
+                    }
+                }
+            }
+            return sent > 0;
+        }
+        return this._p2pSignal(obj);
+    }
+
+    // W7 Phase 1: das Mesh ist „komplett", wenn JEDER bekannte Peer einen
+    // offenen DataChannel hat. Nur dann fliesst Spiel-Traffic peer-to-peer.
+    _p2pMeshReady() {
+        const p2p = this.state.p2p;
+        if (!p2p.peers || p2p.peers.size === 0) return false;
+        for (const pid of p2p.peers.keys()) {
+            const rtc = p2p.rtcPeers.get(pid);
+            if (!rtc || !rtc.open) return false;
+        }
+        return true;
+    }
+
+    _p2pUpdateMeshActive() {
+        this.state.p2p.meshActive = this._p2pMeshReady();
+    }
+
+    // W7 Phase 1: eine RTCPeerConnection zu einem Peer eröffnen. Idempotent.
+    // Deterministischer Initiator: der Peer mit der lexikographisch
+    // kleineren ID baut den Offer — verhindert Glare (beide offerieren
+    // gleichzeitig). Der andere wartet auf den rtc-offer und antwortet.
+    _p2pConnectToPeer(peerId) {
+        const p2p = this.state.p2p;
+        if (!peerId || peerId === p2p.peerId) return;
+        if (p2p.rtcPeers.has(peerId)) return;
+        if (typeof RTCPeerConnection === "undefined") return;
+        const rtc = this._p2pCreatePeerConnection(peerId);
+        if (!rtc) return;
+        const iAmInitiator = String(p2p.peerId) < String(peerId);
+        if (!iAmInitiator) return; // der andere offeriert — wir warten auf rtc-offer
+        rtc.isInitiator = true;
+        const channel = rtc.pc.createDataChannel("anazh", { ordered: true });
+        this._p2pWireChannel(peerId, channel);
+        rtc.pc
+            .createOffer()
+            .then((offer) => rtc.pc.setLocalDescription(offer))
+            .then(() => {
+                this._p2pSignal({ type: "rtc-offer", to: peerId, sdp: rtc.pc.localDescription });
+            })
+            .catch((err) => this.log(`RTC-Offer an ${peerId} fehlgeschlagen: ${err.message}`, "WARN"));
+    }
+
+    _p2pCreatePeerConnection(peerId) {
+        const p2p = this.state.p2p;
+        if (typeof RTCPeerConnection === "undefined") return null;
+        let pc;
+        try {
+            pc = new RTCPeerConnection({ iceServers: p2p.iceServers });
+        } catch (err) {
+            this.log(`RTCPeerConnection-Aufbau fehlgeschlagen: ${err.message}`, "WARN");
+            return null;
+        }
+        const rtc = { pc, channel: null, open: false, isInitiator: false, pendingIce: [] };
+        p2p.rtcPeers.set(peerId, rtc);
+        pc.onicecandidate = (ev) => {
+            this._p2pSignal({
+                type: "rtc-ice",
+                to: peerId,
+                candidate: ev.candidate ? ev.candidate.toJSON() : null,
+            });
+        };
+        pc.ondatachannel = (ev) => this._p2pWireChannel(peerId, ev.channel);
+        pc.onconnectionstatechange = () => {
+            if (pc.connectionState === "failed" || pc.connectionState === "closed") {
+                rtc.open = false;
+                this._p2pUpdateMeshActive();
+                this.p2pUpdateStatus();
+            }
+        };
+        return rtc;
+    }
+
+    _p2pWireChannel(peerId, channel) {
+        const rtc = this.state.p2p.rtcPeers.get(peerId);
+        if (!rtc) return;
+        rtc.channel = channel;
+        channel.onopen = () => {
+            rtc.open = true;
+            this._p2pUpdateMeshActive();
+            this.log(`WebRTC-Mesh: Kanal zu ${peerId.slice(0, 12)}… offen`, "INFO");
+            this.p2pUpdateStatus();
+            // Eigene Seele + Vibe-Identität direkt peer-to-peer nachreichen.
+            this._p2pBroadcastSoul();
+            this._p2pBroadcastVibe();
+        };
+        channel.onmessage = (ev) => this._p2pHandleChannelMessage(peerId, ev.data);
+        channel.onclose = () => {
+            rtc.open = false;
+            this._p2pUpdateMeshActive();
+            this.p2pUpdateStatus();
+        };
+    }
+
+    // W7 Phase 1: Nachricht über einen Peer-DataChannel empfangen. Hier
+    // kommen NUR Spiel-Nachrichten an (Signaling läuft über den WS). Die
+    // peerId wird aus der Kanal-Identität gestempelt — ein Peer kann auf
+    // seinem eigenen Kanal keine fremde peerId vortäuschen.
+    _p2pHandleChannelMessage(peerId, raw) {
+        let msg;
+        try {
+            msg = JSON.parse(raw);
+        } catch {
+            return;
+        }
+        if (!msg || typeof msg !== "object") return;
+        const ALLOWED = ["pos", "dsl", "soul", "aura", "vibe"];
+        if (!ALLOWED.includes(msg.type)) return;
+        msg.peerId = peerId;
+        this.p2pHandleMessage(JSON.stringify(msg));
+    }
+
+    // W7 Phase 1: gepufferte ICE-Kandidaten anwenden, sobald die
+    // Remote-Description gesetzt ist (addIceCandidate davor wirft).
+    _p2pDrainIce(rtc, peerId) {
+        if (!rtc || !rtc.pendingIce.length) return;
+        const pending = rtc.pendingIce.splice(0);
+        for (const cand of pending) {
+            rtc.pc
+                .addIceCandidate(cand)
+                .catch((err) => this.log(`RTC ICE-Kandidat von ${peerId} verworfen: ${err.message}`, "WARN"));
+        }
+    }
+
+    _p2pCloseRtcPeer(peerId) {
+        const rtc = this.state.p2p.rtcPeers.get(peerId);
+        if (!rtc) return;
+        try {
+            if (rtc.channel) rtc.channel.close();
+        } catch {
+            /* defensive */
+        }
+        try {
+            rtc.pc.close();
+        } catch {
+            /* defensive */
+        }
+        this.state.p2p.rtcPeers.delete(peerId);
+        this._p2pUpdateMeshActive();
     }
 
     p2pHandleMessage(raw) {
@@ -4290,7 +4472,12 @@ class AnazhRealm {
         if (msg.type === "welcome") {
             if (Array.isArray(msg.peers)) {
                 for (const pid of msg.peers) {
-                    if (typeof pid === "string" && pid !== p2p.peerId) this._p2pEnsurePeerEntry(pid);
+                    if (typeof pid === "string" && pid !== p2p.peerId) {
+                        this._p2pEnsurePeerEntry(pid);
+                        // W7 Phase 1 — WebRTC-Verbindung zu jedem schon
+                        // anwesenden Peer aufbauen.
+                        this._p2pConnectToPeer(pid);
+                    }
                 }
             }
             // Ring 11.5: Server schickt seine LAN-Adressen mit, damit Host-
@@ -4314,6 +4501,8 @@ class AnazhRealm {
         if (msg.type === "peer-join") {
             if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
                 this._p2pEnsurePeerEntry(msg.peerId);
+                // W7 Phase 1 — WebRTC-Verbindung zum Neuankömmling aufbauen.
+                this._p2pConnectToPeer(msg.peerId);
                 // Ring 11 V3 — dem Neuankömmling meine Seele zeigen.
                 this._p2pBroadcastSoul();
                 // W13 Phase 3 — und meine Vibe-Pass-Identität.
@@ -4426,6 +4615,57 @@ class AnazhRealm {
             this._p2pRefreshPeerNameLabel(entry);
             return;
         }
+        if (msg.type === "rtc-offer") {
+            // W7 Phase 1 — eingehender WebRTC-Offer. Wir sind hier der
+            // Nicht-Initiator: pc ggf. anlegen, Remote-Description setzen,
+            // mit einem Answer zurück. Danach gepufferte ICE anwenden.
+            const pid = msg.peerId;
+            if (typeof pid !== "string" || pid === p2p.peerId || !msg.sdp) return;
+            let rtc = p2p.rtcPeers.get(pid);
+            if (!rtc) rtc = this._p2pCreatePeerConnection(pid);
+            if (!rtc) return;
+            rtc.pc
+                .setRemoteDescription(msg.sdp)
+                .then(() => {
+                    this._p2pDrainIce(rtc, pid);
+                    return rtc.pc.createAnswer();
+                })
+                .then((answer) => rtc.pc.setLocalDescription(answer))
+                .then(() => {
+                    this._p2pSignal({ type: "rtc-answer", to: pid, sdp: rtc.pc.localDescription });
+                })
+                .catch((err) => this.log(`RTC-Answer an ${pid} fehlgeschlagen: ${err.message}`, "WARN"));
+            return;
+        }
+        if (msg.type === "rtc-answer") {
+            // W7 Phase 1 — der Peer hat unseren Offer beantwortet.
+            const pid = msg.peerId;
+            if (typeof pid !== "string" || !msg.sdp) return;
+            const rtc = p2p.rtcPeers.get(pid);
+            if (!rtc) return;
+            rtc.pc
+                .setRemoteDescription(msg.sdp)
+                .then(() => this._p2pDrainIce(rtc, pid))
+                .catch((err) => this.log(`RTC setRemoteDescription(answer) von ${pid}: ${err.message}`, "WARN"));
+            return;
+        }
+        if (msg.type === "rtc-ice") {
+            // W7 Phase 1 — ICE-Kandidat eines Peers. candidate=null ist
+            // end-of-candidates (ignorieren). Vor gesetzter Remote-
+            // Description puffern (addIceCandidate würde sonst werfen).
+            const pid = msg.peerId;
+            if (typeof pid !== "string") return;
+            const rtc = p2p.rtcPeers.get(pid);
+            if (!rtc || !msg.candidate) return;
+            if (rtc.pc.remoteDescription && rtc.pc.remoteDescription.type) {
+                rtc.pc
+                    .addIceCandidate(msg.candidate)
+                    .catch((err) => this.log(`RTC ICE-Kandidat von ${pid} verworfen: ${err.message}`, "WARN"));
+            } else {
+                rtc.pendingIce.push(msg.candidate);
+            }
+            return;
+        }
         if (msg.type === "world-request") {
             // Ring 11.5: ein Peer (frischer Joiner) bittet um Welt-Snapshot.
             // Nur Hosts antworten — Guests haben selbst eine Kopie, sollen
@@ -4436,7 +4676,7 @@ class AnazhRealm {
             if (typeof requesterId !== "string" || requesterId === p2p.peerId) return;
             try {
                 const snapshot = this.buildStateSnapshot();
-                this.p2pSend({ type: "world-snapshot", to: requesterId, state: snapshot });
+                this._p2pSignal({ type: "world-snapshot", to: requesterId, state: snapshot });
                 this.log(`Welt-Snapshot an Joiner ${requesterId.slice(0, 8)}… gesendet`, "INFO");
             } catch (err) {
                 this.log(`Welt-Snapshot konnte nicht erstellt werden: ${err.message}`, "WARN");
@@ -4748,6 +4988,9 @@ class AnazhRealm {
 
     _p2pRemovePeer(peerId) {
         const p2p = this.state.p2p;
+        // W7 Phase 1 — die WebRTC-Verbindung mit abbauen (auch wenn kein
+        // Peer-Mesh-Eintrag mehr existiert).
+        this._p2pCloseRtcPeer(peerId);
         const entry = p2p.peers.get(peerId);
         if (!entry) return;
         if (entry.mesh) {
@@ -4890,7 +5133,10 @@ class AnazhRealm {
             } else {
                 const room = p.room ? `${p.room.slice(0, 8)}…` : "—";
                 const peerCount = p.peers.size;
-                statusEl.textContent = `Verbunden (Raum ${room}, ${peerCount} Mitspieler).`;
+                // W7 Phase 1 — Transport sichtbar machen: Mesh (peer-to-peer)
+                // sobald alle Kanäle stehen, sonst Relay über den Server.
+                const transport = peerCount > 0 ? (p.meshActive ? " · Mesh p2p" : " · Server-Relay") : "";
+                statusEl.textContent = `Verbunden (Raum ${room}, ${peerCount} Mitspieler${transport}).`;
             }
         }
         // Ring 11.5: Banner mit Connection-Stand aktualisieren (Host:

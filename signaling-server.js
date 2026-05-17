@@ -27,6 +27,17 @@
 //   Server → Client   { "type": "aura", "peerId": "...", "hue": .., "intensity": .. }
 //   Server → Client   { "type": "world-request", "peerId": "..." }   (forwarded)
 //   Server → Client   { "type": "world-snapshot", "peerId": "...", "state": {...} }
+//   Client → Server   { "type": "rtc-offer",  "to": "<peerId>", "sdp": {...} }   (W7 P1)
+//   Client → Server   { "type": "rtc-answer", "to": "<peerId>", "sdp": {...} }
+//   Client → Server   { "type": "rtc-ice",    "to": "<peerId>", "candidate": {...} }
+//   Server → Client   { "type": "rtc-offer/answer/ice", "peerId": "<from>", "to": "...", ... }
+//
+// W7 Phase 1 (Compute-Sharing): der Server wird vom Daten-Relay zum
+// reinen WebRTC-Rendezvous. Er reicht SDP-Offer/Answer + ICE-Kandidaten
+// zielgerichtet zwischen zwei Peers durch; danach fliessen Position/DSL/
+// Soul direkt peer-to-peer ueber RTCDataChannels. Die alten Relay-Pfade
+// (pos/dsl/soul/aura/vibe) bleiben als Fallback, falls eine WebRTC-
+// Verbindung nicht zustande kommt.
 //
 // Heilige Lektion: KEIN neues Modul-Geflecht. EINE Datei, ein Server-
 // Objekt, vier Handler (join/pos/dsl/disconnect).
@@ -223,6 +234,34 @@ function handleClientMessage(ws, raw) {
         const proof = typeof msg.proof === "string" ? msg.proof.slice(0, 256) : "";
         if (!vibePassId || !proof) return;
         broadcastToRoom(ws.anazh.room, { type: "vibe", peerId: ws.anazh.peerId, vibePassId, proof }, ws);
+        return;
+    }
+    if (msg.type === "rtc-offer" || msg.type === "rtc-answer" || msg.type === "rtc-ice") {
+        // W7 Phase 1: WebRTC-Signaling. Zielgerichtetes Durchreichen von
+        // SDP-Offer/Answer und ICE-Kandidaten zwischen genau zwei Peers,
+        // damit sie eine direkte RTCDataChannel-Verbindung aufbauen.
+        // Server stempelt die authoritative Sender-peerId; er validiert
+        // die SDP-/ICE-Payload NICHT — der Browser jedes Clients ist die
+        // Vertrauens-Wand (wie bei dsl/world-snapshot).
+        const target = typeof msg.to === "string" ? msg.to.slice(0, 64) : null;
+        if (!target) return;
+        const out = { type: msg.type, peerId: ws.anazh.peerId, to: target };
+        if (msg.type === "rtc-ice") {
+            // candidate darf ein Objekt oder null sein (end-of-candidates).
+            if (msg.candidate !== null && (!msg.candidate || typeof msg.candidate !== "object")) return;
+            out.candidate = msg.candidate;
+        } else {
+            if (!msg.sdp || typeof msg.sdp !== "object") return;
+            out.sdp = msg.sdp;
+        }
+        const rtcSet = rooms.get(ws.anazh.room);
+        if (!rtcSet) return;
+        for (const peer of rtcSet) {
+            if (peer.anazh && peer.anazh.peerId === target) {
+                sendTo(peer, out);
+                break;
+            }
+        }
         return;
     }
     if (msg.type === "world-request" || msg.type === "world-snapshot") {

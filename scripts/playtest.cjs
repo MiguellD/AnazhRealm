@@ -4251,6 +4251,206 @@ function startSaveServer() {
                 check("Ring 11 V1: Toggle-Klick wechselt aria-pressed", ring11Results.toggleFlipsAriaPressed);
             }
 
+            // ### W7 Phase 1 — WebRTC-Mesh (Compute-Sharing) ###
+            // Der signaling-server wird vom Daten-Relay zum Handshake-
+            // Rendezvous: Position/DSL/Soul fliessen über RTCDataChannels
+            // direkt peer-to-peer. Tests prüfen Datenstruktur, die Mesh-
+            // Komplett-Wand (_p2pMeshReady), die peerId-Stempelung über den
+            // Kanal (anti-spoof), den Transport-Wechsel in p2pSend, die
+            // RTC-Signaling-Handler + CSP-Erweiterung. Ein echter zwei-
+            // Browser-Handshake läuft in scripts/smoke-webrtc.cjs.
+            const w7Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    const p2p = r.state.p2p;
+
+                    out.w7StateFields =
+                        p2p.rtcPeers instanceof Map &&
+                        Array.isArray(p2p.iceServers) &&
+                        p2p.iceServers.length > 0 &&
+                        typeof p2p.meshActive === "boolean";
+                    out.w7MethodsPresent =
+                        typeof r._p2pSignal === "function" &&
+                        typeof r._p2pMeshReady === "function" &&
+                        typeof r._p2pConnectToPeer === "function" &&
+                        typeof r._p2pCreatePeerConnection === "function" &&
+                        typeof r._p2pWireChannel === "function" &&
+                        typeof r._p2pHandleChannelMessage === "function" &&
+                        typeof r._p2pCloseRtcPeer === "function" &&
+                        typeof r._p2pUpdateMeshActive === "function" &&
+                        typeof r._p2pDrainIce === "function";
+
+                    // sauberer Ausgangszustand
+                    p2p.peerId = "self-test";
+                    p2p.ws = null;
+                    for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+                    p2p.rtcPeers.clear();
+
+                    // Mesh ist NICHT bereit ohne Peers.
+                    out.meshNotReadyEmpty = r._p2pMeshReady() === false;
+
+                    // Ein Peer ohne offenen RTC-Kanal → Mesh nicht bereit.
+                    r._p2pEnsurePeerEntry("lonePeer");
+                    out.meshNotReadyUnconnected = r._p2pMeshReady() === false;
+
+                    // RTCPeerConnection: _p2pCreatePeerConnection legt einen
+                    // Eintrag an (pc + leerer pendingIce-Puffer), _p2pCloseRtcPeer
+                    // räumt ihn.
+                    out.rtcAvailable = typeof RTCPeerConnection !== "undefined";
+                    const rtc = r._p2pCreatePeerConnection("rtcTestPeer");
+                    out.createPcEntry =
+                        !!rtc && !!rtc.pc && rtc.open === false && Array.isArray(rtc.pendingIce);
+                    out.createPcRegistered = p2p.rtcPeers.has("rtcTestPeer");
+                    r._p2pCloseRtcPeer("rtcTestPeer");
+                    out.closePcRemoves = !p2p.rtcPeers.has("rtcTestPeer");
+
+                    // Deterministischer Initiator: kleinere peerId offeriert.
+                    r._p2pConnectToPeer("zzz-peer");
+                    const initRtc = p2p.rtcPeers.get("zzz-peer");
+                    out.initiatorMarked = !!initRtc && initRtc.isInitiator === true;
+                    r._p2pConnectToPeer("aaa-peer");
+                    const nonInitRtc = p2p.rtcPeers.get("aaa-peer");
+                    out.nonInitiatorWaits = !!nonInitRtc && nonInitRtc.isInitiator === false;
+                    r._p2pCloseRtcPeer("zzz-peer");
+                    r._p2pCloseRtcPeer("aaa-peer");
+
+                    // _p2pConnectToPeer ist idempotent.
+                    r._p2pConnectToPeer("dupPeer");
+                    const dupCountBefore = p2p.rtcPeers.size;
+                    r._p2pConnectToPeer("dupPeer");
+                    out.connectIdempotent = p2p.rtcPeers.size === dupCountBefore;
+                    r._p2pCloseRtcPeer("dupPeer");
+
+                    // Kanal-Empfang: die peerId wird aus der Kanal-Identität
+                    // gestempelt — anti-spoof.
+                    for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+                    r._p2pHandleChannelMessage(
+                        "realPeer",
+                        JSON.stringify({ type: "pos", peerId: "SPOOFED", x: 7, y: 8, z: 9, yaw: 0 })
+                    );
+                    const realPeer = p2p.peers.get("realPeer");
+                    out.channelStampsPeerId = !!realPeer && realPeer.x === 7 && !p2p.peers.has("SPOOFED");
+
+                    // Kanal trägt NUR Spiel-Nachrichten — welcome wird verworfen.
+                    const peersBeforeWelcome = p2p.peers.size;
+                    r._p2pHandleChannelMessage(
+                        "realPeer",
+                        JSON.stringify({ type: "welcome", peers: ["evilPeer"] })
+                    );
+                    out.channelDropsNonGame =
+                        p2p.peers.size === peersBeforeWelcome && !p2p.peers.has("evilPeer");
+
+                    // p2pSend-Transport: bei komplettem Mesh geht der Broadcast
+                    // über den DataChannel, nicht über den WS.
+                    for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+                    p2p.rtcPeers.clear();
+                    r._p2pEnsurePeerEntry("meshPeer");
+                    let channelPayload = null;
+                    p2p.rtcPeers.set("meshPeer", {
+                        pc: null,
+                        open: true,
+                        channel: {
+                            send: (payload) => {
+                                channelPayload = payload;
+                            },
+                        },
+                        isInitiator: false,
+                        pendingIce: [],
+                    });
+                    out.meshReadyWhenOpen = r._p2pMeshReady() === true;
+                    p2p.ws = null;
+                    const sendResult = r.p2pSend({ type: "pos", x: 42 });
+                    out.meshSendUsesChannel =
+                        sendResult === true && channelPayload !== null && JSON.parse(channelPayload).x === 42;
+
+                    // _p2pUpdateMeshActive spiegelt den Mesh-Zustand.
+                    r._p2pUpdateMeshActive();
+                    out.meshActiveTracked = p2p.meshActive === true;
+
+                    // rtc-offer-Nachricht legt eine RTCPeerConnection an.
+                    p2p.rtcPeers.clear();
+                    r.p2pHandleMessage(
+                        JSON.stringify({
+                            type: "rtc-offer",
+                            peerId: "offerPeer",
+                            to: "self-test",
+                            sdp: { type: "offer", sdp: "v=0" },
+                        })
+                    );
+                    out.rtcOfferCreatesPc = p2p.rtcPeers.has("offerPeer");
+                    r._p2pCloseRtcPeer("offerPeer");
+
+                    // shutdownP2PSync räumt alle RTC-Verbindungen.
+                    r._p2pCreatePeerConnection("shutTestPeer");
+                    r.shutdownP2PSync();
+                    out.shutdownClearsRtc = p2p.rtcPeers.size === 0 && p2p.meshActive === false;
+
+                    // CSP trägt stun: für die ICE-Server.
+                    const cspMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+                    const cspContent = cspMeta ? cspMeta.getAttribute("content") : "";
+                    out.cspHasStun = / stun: /.test(cspContent);
+
+                    // UI-Status zeigt den aktiven Transport (Mesh vs. Relay).
+                    p2p.enabled = true;
+                    p2p.connected = true;
+                    p2p.lastError = null;
+                    p2p.room = "ui-test-room";
+                    for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+                    r._p2pEnsurePeerEntry("uiPeer");
+                    p2p.meshActive = true;
+                    r.p2pUpdateStatus();
+                    const statusEl = document.getElementById("p2p-status");
+                    out.uiShowsMesh = !!statusEl && /Mesh p2p/.test(statusEl.textContent);
+                    p2p.meshActive = false;
+                    r.p2pUpdateStatus();
+                    out.uiShowsRelay = !!statusEl && /Server-Relay/.test(statusEl.textContent);
+
+                    // Cleanup
+                    for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+                    p2p.rtcPeers.clear();
+                    p2p.enabled = false;
+                    p2p.connected = false;
+                    p2p.meshActive = false;
+                    p2p.ws = null;
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!w7Results || w7Results.error) {
+                check(
+                    "W7 Phase 1: Snapshot erreichbar",
+                    false,
+                    (w7Results && w7Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("W7 P1: state.p2p trägt rtcPeers/iceServers/meshActive", w7Results.w7StateFields);
+                check("W7 P1: alle WebRTC-Methoden auf der Klasse vorhanden", w7Results.w7MethodsPresent);
+                check("W7 P1: _p2pMeshReady false ohne Peers", w7Results.meshNotReadyEmpty);
+                check("W7 P1: _p2pMeshReady false bei nicht-verbundenem Peer", w7Results.meshNotReadyUnconnected);
+                check("W7 P1: RTCPeerConnection im Headless verfügbar", w7Results.rtcAvailable);
+                check("W7 P1: _p2pCreatePeerConnection legt pc + pendingIce-Puffer an", w7Results.createPcEntry);
+                check("W7 P1: _p2pCreatePeerConnection registriert in rtcPeers", w7Results.createPcRegistered);
+                check("W7 P1: _p2pCloseRtcPeer entfernt den Eintrag", w7Results.closePcRemoves);
+                check("W7 P1: kleinere peerId wird Initiator (Glare-frei)", w7Results.initiatorMarked);
+                check("W7 P1: grössere peerId wartet auf rtc-offer", w7Results.nonInitiatorWaits);
+                check("W7 P1: _p2pConnectToPeer ist idempotent", w7Results.connectIdempotent);
+                check(
+                    "W7 P1: Kanal-Nachricht stempelt peerId aus der Kanal-Identität (anti-spoof)",
+                    w7Results.channelStampsPeerId
+                );
+                check("W7 P1: Kanal verwirft Nicht-Spiel-Nachrichten (welcome)", w7Results.channelDropsNonGame);
+                check("W7 P1: _p2pMeshReady true bei offenem Kanal", w7Results.meshReadyWhenOpen);
+                check("W7 P1: p2pSend nutzt bei komplettem Mesh den DataChannel", w7Results.meshSendUsesChannel);
+                check("W7 P1: _p2pUpdateMeshActive spiegelt den Mesh-Zustand", w7Results.meshActiveTracked);
+                check("W7 P1: rtc-offer-Nachricht legt eine RTCPeerConnection an", w7Results.rtcOfferCreatesPc);
+                check("W7 P1: shutdownP2PSync räumt alle RTC-Verbindungen", w7Results.shutdownClearsRtc);
+                check("W7 P1: CSP enthält stun: für die ICE-Server", w7Results.cspHasStun);
+                check("W7 P1: UI-Status zeigt 'Mesh p2p' bei aktivem Mesh", w7Results.uiShowsMesh);
+                check("W7 P1: UI-Status zeigt 'Server-Relay' bei Fallback", w7Results.uiShowsRelay);
+            }
+
             // ### Ring 11 V2 — DSL-AST-Broadcast (Welt-Sync) ###
             // Sandbox-Pfad: human-dslRun broadcastet via p2pSend wenn enabled+
             // connected; remote-dslRun (source="remote:*") läuft durch dslRun
@@ -4659,9 +4859,12 @@ function startSaveServer() {
                     out.snapshotRejectedWhenNotPending = r.state.worldMeta.role === originalRole;
 
                     // 8. world-request: nur Host antwortet (mit world-snapshot)
+                    // W7 P1: world-snapshot ist eine Signaling-Nachricht und
+                    // läuft über _p2pSignal (WS), nicht über das mesh-bewusste
+                    // p2pSend — der Mock fängt darum _p2pSignal ab.
                     const sentMsgs = [];
-                    const origSend = r.p2pSend;
-                    r.p2pSend = function (m) {
+                    const origSignal = r._p2pSignal;
+                    r._p2pSignal = function (m) {
                         sentMsgs.push(m);
                         return true;
                     };
@@ -4674,7 +4877,7 @@ function startSaveServer() {
                     r.p2pHandleMessage(JSON.stringify({ type: "world-request", peerId: "asker" }));
                     const sentSnap = sentMsgs.find((m) => m.type === "world-snapshot" && m.to === "asker");
                     out.hostAnswersRequestWithSnapshot = !!sentSnap && !!sentSnap.state;
-                    r.p2pSend = origSend;
+                    r._p2pSignal = origSignal;
                     sentMsgs.length = 0;
                     r.state.p2p.role = "solo";
 

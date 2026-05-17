@@ -19,7 +19,9 @@
         4. connect-src: vier LLM-Provider als Schicht-2-Stimme. Browser-Anfrage
            geht direkt vom Spieler-Browser an den jeweiligen Endpoint, Key liegt
            im localStorage — Single-User-Localhost-Spiel. Inklusive Ollama auf
-           localhost:11434 für offline-Setups.
+           localhost:11434 für offline-Setups. `stun:`/`turn:` (W7 Phase 1):
+           ICE-Server-URLs der WebRTC-Mesh-Verbindung — `connect-src` regelt
+           per Spec auch RTCPeerConnection-ICE-Server.
 
       `'unsafe-eval'` ist nach dem TF.js-Cleanup weg — unser eigener Code nutzt
       KEIN eval, das CI-Gate „Verbotenes dynamisches Auswerten" schützt diesen
@@ -27,7 +29,7 @@
     -->
         <meta
             http-equiv="Content-Security-Policy"
-            content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self';"
+            content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: stun: turn: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self';"
         />
         <title>Anazh Realm v8.61 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne

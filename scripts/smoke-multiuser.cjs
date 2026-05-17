@@ -75,6 +75,22 @@ async function run() {
     wsA.send(JSON.stringify({ type: "vibe" }));
     await sleep(150);
 
+    // W7 Phase 1: WebRTC-Signaling. A sendet einen rtc-offer an B (targeted),
+    // B antwortet mit rtc-answer an A, A schickt einen ICE-Kandidaten an B.
+    // Server stempelt die Sender-peerId + reicht zielgerichtet durch.
+    wsA.send(JSON.stringify({ type: "rtc-offer", to: "peerB", sdp: { type: "offer", sdp: "v=0..." } }));
+    await sleep(120);
+    wsB.send(JSON.stringify({ type: "rtc-answer", to: "peerA", sdp: { type: "answer", sdp: "v=0..." } }));
+    await sleep(120);
+    wsA.send(
+        JSON.stringify({ type: "rtc-ice", to: "peerB", candidate: { candidate: "candidate:1 ...", sdpMid: "0" } })
+    );
+    await sleep(120);
+    // Defensive: rtc-offer ohne `to` bzw. ohne `sdp` wird verworfen.
+    wsA.send(JSON.stringify({ type: "rtc-offer", sdp: { type: "offer", sdp: "x" } }));
+    wsA.send(JSON.stringify({ type: "rtc-offer", to: "peerB" }));
+    await sleep(120);
+
     // Ring 11.5: world-request (broadcast) + world-snapshot (targeted).
     // B sendet world-request → A bekommt es → A antwortet mit world-snapshot
     // to=peerB. Server forwarded zielgerichtet — andere Peers (hier nur A
@@ -151,6 +167,22 @@ async function run() {
     const aNotEchoedOwnVibe = !events.a.some((e) => e.type === "vibe");
     const bRejectedBadVibe = events.b.filter((e) => e.type === "vibe").length === 1;
 
+    // W7 Phase 1 Assertions — WebRTC-Signaling, zielgerichtet.
+    const bGotRtcOfferFromA = events.b.some(
+        (e) => e.type === "rtc-offer" && e.peerId === "peerA" && e.sdp && e.sdp.type === "offer"
+    );
+    const aGotRtcAnswerFromB = events.a.some(
+        (e) => e.type === "rtc-answer" && e.peerId === "peerB" && e.sdp && e.sdp.type === "answer"
+    );
+    const bGotRtcIceFromA = events.b.some(
+        (e) => e.type === "rtc-ice" && e.peerId === "peerA" && e.candidate && e.candidate.sdpMid === "0"
+    );
+    // Targeted: A bekommt seinen eigenen rtc-offer NICHT zurück.
+    const aNotEchoedOwnRtcOffer = !events.a.some((e) => e.type === "rtc-offer");
+    // Defensive: rtc-offer ohne `to`/`sdp` wird verworfen — B sieht genau
+    // den EINEN guten Offer.
+    const bRejectedBadRtcOffer = events.b.filter((e) => e.type === "rtc-offer").length === 1;
+
     console.log("\n=== Verdict ===");
     console.log("V1 A welcome:", aSawWelcome);
     console.log("V1 A sees B-join:", aSawBjoin);
@@ -172,6 +204,11 @@ async function run() {
     console.log("W13P3 B bekommt A's vibe (vibePassId/proof) mit peerId-Stempel:", bGotVibeFromA);
     console.log("W13P3 A bekommt eigene vibe NICHT zurück:", aNotEchoedOwnVibe);
     console.log("W13P3 Server verwirft vibe ohne proof:", bRejectedBadVibe);
+    console.log("W7P1 B bekommt A's rtc-offer (targeted, peerId-Stempel):", bGotRtcOfferFromA);
+    console.log("W7P1 A bekommt B's rtc-answer (targeted):", aGotRtcAnswerFromB);
+    console.log("W7P1 B bekommt A's rtc-ice (targeted):", bGotRtcIceFromA);
+    console.log("W7P1 A bekommt eigenen rtc-offer NICHT zurück:", aNotEchoedOwnRtcOffer);
+    console.log("W7P1 Server verwirft rtc-offer ohne to/sdp:", bRejectedBadRtcOffer);
 
     // B disconnects
     wsB.close();
@@ -204,7 +241,12 @@ async function run() {
         bRejectedBadAura &&
         bGotVibeFromA &&
         aNotEchoedOwnVibe &&
-        bRejectedBadVibe;
+        bRejectedBadVibe &&
+        bGotRtcOfferFromA &&
+        aGotRtcAnswerFromB &&
+        bGotRtcIceFromA &&
+        aNotEchoedOwnRtcOffer &&
+        bRejectedBadRtcOffer;
     server.kill();
     process.exit(allOk ? 0 : 1);
 }
