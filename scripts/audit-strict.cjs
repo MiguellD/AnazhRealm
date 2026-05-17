@@ -229,6 +229,10 @@ async function auditStateAndMethods() {
                 "groundChunks.length",
                 "selfAwareness.components",
                 "groundChunks.forEach",
+                // V8.57 — Lazy game-loop-Feld: die pitch-gesteuerte Wunsch-
+                // Kamera-Höhe, vom Render-Loop pro Frame gespiegelt (nie in
+                // init() gesetzt — der Playtest liest sie umgebungs-unabhängig).
+                "_cameraDesiredY",
                 // Browser-API-Wrapper
                 "playerMesh.position",
                 "playerMesh.rotation",
