@@ -195,7 +195,8 @@
             const avatar = msg.avatar && typeof msg.avatar === "object" ? msg.avatar : {};
             const name = typeof avatar.name === "string" && avatar.name ? avatar.name : "Reisender";
             const el = document.getElementById("avatar-name");
-            if (el) el.textContent = name;
+            // W13 V2 — der Vibe-Pass trägt die Identität des Reisenden mit.
+            if (el) el.textContent = avatar.fingerprint ? name + " · " + avatar.fingerprint : name;
         } else if (msg.type === "dsl") {
             applyDsl(msg.program);
         }

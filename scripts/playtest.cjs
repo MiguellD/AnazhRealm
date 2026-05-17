@@ -14501,6 +14501,96 @@ function startSaveServer() {
                 check("W14 P2: Manifest-Signatur-Tests laufen", false, w14p2Results ? w14p2Results.error : "no result");
             }
 
+            // ### W14 Phase 2 Teil B — W13 V2: das Schaffen reist mit ###
+            const w13v2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    out.payloadMethods =
+                        typeof r._portalEnterPayload === "function" && typeof r._portalSendEnter === "function";
+                    const baseP = r._portalEnterPayload();
+                    out.payloadName = typeof baseP.name === "string" && baseP.name.length > 0;
+                    out.payloadVibeId =
+                        typeof baseP.vibePassId === "string" && /^ed25519:[0-9a-f]{64}$/i.test(baseP.vibePassId);
+                    out.payloadFingerprint = typeof baseP.fingerprint === "string" && baseP.fingerprint.length > 0;
+                    out.payloadSoul =
+                        !!baseP.soul && typeof baseP.soul.name === "string" && typeof baseP.soul.label === "string";
+                    // Eigene Materialien/Werkzeuge reisen mit — Built-ins NICHT.
+                    // Plus: der 16er-Deckel hält den postMessage-Payload klein.
+                    for (let i = 0; i < 20; i++) {
+                        r.state.materials["_w14m" + i] = {
+                            builtIn: false,
+                            color: 0x44cc88,
+                            label: "M" + i,
+                            tags: {},
+                        };
+                    }
+                    r.state.tools._w14tool = {
+                        builtIn: false,
+                        label: "Testfeile",
+                        opName: "test_op",
+                        opClass: "subtractive",
+                    };
+                    const ownP = r._portalEnterPayload();
+                    out.payloadOwnMaterials =
+                        ownP.materials.some((m) => m.name === "_w14m0") &&
+                        !ownP.materials.some((m) => m.name === "stein");
+                    out.payloadMaterialCap = ownP.materials.length <= 16;
+                    out.payloadOwnTools =
+                        ownP.tools.some((t) => t.name === "_w14tool") &&
+                        !ownP.tools.some((t) => t.name === "hammer");
+                    for (let i = 0; i < 20; i++) delete r.state.materials["_w14m" + i];
+                    delete r.state.tools._w14tool;
+                    out.sendUsesPayload = /_portalEnterPayload/.test(r._portalSendEnter.toString());
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w13v2Results && !w13v2Results.error) {
+                check("W13 V2: _portalEnterPayload + _portalSendEnter existieren", w13v2Results.payloadMethods);
+                check("W13 V2: der enter-Payload trägt den Avatar-Namen", w13v2Results.payloadName);
+                check("W13 V2: der enter-Payload trägt die vibePassId (ed25519)", w13v2Results.payloadVibeId);
+                check("W13 V2: der enter-Payload trägt den Vibe-Pass-Fingerprint", w13v2Results.payloadFingerprint);
+                check("W13 V2: der enter-Payload trägt die aktive Seele (name + label)", w13v2Results.payloadSoul);
+                check("W13 V2: nur EIGENE Materialien reisen mit (Built-ins bleiben)", w13v2Results.payloadOwnMaterials);
+                check("W13 V2: die Materialien-Liste ist auf 16 gedeckelt", w13v2Results.payloadMaterialCap);
+                check("W13 V2: nur EIGENE Werkzeuge reisen mit (Built-ins bleiben)", w13v2Results.payloadOwnTools);
+                check("W13 V2: _portalSendEnter sendet den _portalEnterPayload", w13v2Results.sendUsesPayload);
+            } else {
+                check("W13 V2: enter-Payload-Tests laufen", false, w13v2Results ? w13v2Results.error : "no result");
+            }
+            // W13 V2 — die Sub-Welten empfangen + zeigen das Schaffen (Quell-Check).
+            try {
+                const skJs = fs.readFileSync(path.join(__dirname, "..", "worlds", "skeleton", "skeleton.js"), "utf8");
+                check(
+                    "W13 V2: skeleton.js hat renderBrought + liest soul/materials/tools",
+                    /function renderBrought/.test(skJs) &&
+                        /avatar\.soul/.test(skJs) &&
+                        /avatar\.materials/.test(skJs) &&
+                        /avatar\.tools/.test(skJs)
+                );
+                check(
+                    "W13 V2: skeleton.js rendert den Payload als Text + säubert Material-Farben",
+                    /textContent/.test(skJs) && /0xffffff/.test(skJs) && !/innerHTML/.test(skJs)
+                );
+                const skHtml = fs.readFileSync(
+                    path.join(__dirname, "..", "worlds", "skeleton", "index.html"),
+                    "utf8"
+                );
+                check(
+                    "W13 V2: skeleton/index.html trägt das Mitgebracht-Panel",
+                    /id="brought"/.test(skHtml) && /brought-mats/.test(skHtml) && /brought-tools/.test(skHtml)
+                );
+                const flJs = fs.readFileSync(path.join(__dirname, "..", "worlds", "fluid", "fluid.js"), "utf8");
+                const teJs = fs.readFileSync(path.join(__dirname, "..", "worlds", "terrain", "terrain.js"), "utf8");
+                check(
+                    "W13 V2: fluid + terrain zeigen den Vibe-Pass-Fingerprint des Reisenden",
+                    /avatar\.fingerprint/.test(flJs) && /avatar\.fingerprint/.test(teJs)
+                );
+            } catch (err) {
+                check("W13 V2: Sub-Welt-Quell-Checks laufen", false, err && err.message);
+            }
+
             // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
             const v840Results = await page
                 .evaluate(() => {

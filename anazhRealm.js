@@ -16208,14 +16208,73 @@ class AnazhRealm {
         });
     }
 
+    // W14 Phase 2 / W13 V2 — der Avatar-Schnappschuss, den der Vibe-Pass in
+    // die fremde Welt trägt: Name + souveräne Identität + das SCHAFFEN des
+    // Spielers (aktive Seele, eigene Materialien, eigene Werkzeuge). Built-in-
+    // Materialien/Werkzeuge sind kein Schaffen des Spielers — nur !builtIn
+    // reist mit. Gedeckelt (16 je Liste), damit der postMessage-Payload klein
+    // bleibt. Der PRIVATE Vibe-Pass-Schlüssel reist NIE mit — nur die
+    // öffentliche vibePassId + der Fingerprint (beide per Definition öffentlich).
+    _portalEnterPayload() {
+        const player = this.state.player || {};
+        const vp = this.state.vibePass || {};
+        const payload = { name: (player.name && String(player.name)) || "Schöpfer" };
+        if (vp.ready && vp.publicKeyHex) {
+            payload.vibePassId = "ed25519:" + vp.publicKeyHex;
+            payload.fingerprint = vp.fingerprint || this._vibeFingerprint(vp.publicKeyHex);
+        }
+        // Aktive Seele — die Form, die der Spieler trägt.
+        const soulName = player.soul || "human";
+        const custom = this.state.customSouls && this.state.customSouls[soulName];
+        const builtin = this.playerSoulDefs && this.playerSoulDefs[soulName];
+        const soul = {
+            name: String(soulName),
+            label: String((custom && custom.label) || (builtin && builtin.label) || soulName),
+            custom: !!custom,
+        };
+        if (custom && Array.isArray(custom.bodyParts)) {
+            soul.bodyParts = JSON.parse(JSON.stringify(custom.bodyParts.slice(0, 24)));
+        }
+        payload.soul = soul;
+        // Eigene Materialien (Schaffen des Spielers, nicht die Built-ins).
+        const materials = [];
+        for (const name of Object.keys(this.state.materials || {})) {
+            const m = this.state.materials[name];
+            if (!m || m.builtIn) continue;
+            materials.push({
+                name: String(name),
+                color: Number(m.color) || 0,
+                tags: m.tags && typeof m.tags === "object" ? { ...m.tags } : {},
+            });
+            if (materials.length >= 16) break;
+        }
+        payload.materials = materials;
+        // Eigene Werkzeuge.
+        const tools = [];
+        for (const name of Object.keys(this.state.tools || {})) {
+            const t = this.state.tools[name];
+            if (!t || t.builtIn) continue;
+            tools.push({
+                name: String(name),
+                label: (t.label && String(t.label)) || String(name),
+                opName: t.opName ? String(t.opName) : "",
+                opClass: t.opClass ? String(t.opClass) : "",
+            });
+            if (tools.length >= 16) break;
+        }
+        payload.tools = tools;
+        return payload;
+    }
+
     // Sendet den Avatar-Schnappschuss an die Sub-Welt. Same-origin → das
     // Ziel-Origin ist bekannt (window.location.origin), kein "*" nötig.
     _portalSendEnter() {
         const po = this._portalOverlay;
         if (!po || !po.iframe || !po.iframe.contentWindow) return;
-        const player = this.state.player || {};
-        const avatar = { name: (player.name && String(player.name)) || "Schöpfer" };
-        po.iframe.contentWindow.postMessage({ type: "enter", avatar }, window.location.origin);
+        po.iframe.contentWindow.postMessage(
+            { type: "enter", avatar: this._portalEnterPayload() },
+            window.location.origin
+        );
     }
 
     // Räumt das Portal-Overlay: Message-Listener ab, Overlay-DOM raus,
