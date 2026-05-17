@@ -17228,6 +17228,24 @@ class AnazhRealm {
             },
         ];
 
+        // W12 Phase 2 — Terrain-Welt-Portal: ein Quarz-Ring zur zweiten
+        // fremden Welt (three.terrain.js, worlds/terrain/).
+        const weltTerrainParts = [
+            {
+                shape: "torus",
+                material: "quarz",
+                position: { x: 0, y: 2.2, z: 0 },
+                size: { x: 3.6, y: 3.6, z: 3.6 },
+            },
+            {
+                shape: "cylinder",
+                material: "quarz",
+                position: { x: 0, y: 2.2, z: 0 },
+                size: { x: 2.8, y: 0.16, z: 2.8 },
+                rotation: { x: Math.PI / 2, y: 0, z: 0 },
+            },
+        ];
+
         return {
             village: { name: "village", label: "Dorf", builtIn: true, parts: villageParts },
             temple: { name: "temple", label: "Tempel", builtIn: true, parts: templeParts },
@@ -17331,6 +17349,23 @@ class AnazhRealm {
                     dsl: ["weather", "skybox_color", "sturm", "ruhe", "set_turbulence"],
                 },
                 parts: weltStromParts,
+            },
+            // W12 Phase 2 — Terrain-Welt-Portal: die zweite fremde Welt.
+            // three.terrain.js (klassisches Global-Skript) — eine 3D-Land-
+            // schaft. Beweist: dieselbe Brücke trägt eine strukturell andere
+            // Engine. dsl-Manifest: skybox_color (Kern) + gebirge/ebene/neu.
+            welt_terrain: {
+                name: "welt_terrain",
+                label: "Terrain-Welt",
+                builtIn: true,
+                role: "portal",
+                roleManual: true,
+                portalMeta: {
+                    world: "worlds/terrain/index.html",
+                    label: "Terrain-Welt",
+                    dsl: ["skybox_color", "gebirge", "ebene", "neu"],
+                },
+                parts: weltTerrainParts,
             },
         };
     }

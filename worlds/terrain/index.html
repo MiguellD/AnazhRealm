@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="de">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <!-- W12 Phase 2 — die Terrain-Welt: eigenes Document, eigene strikte
+             CSP. Skript nur same-origin (terrain.js + lib/), keine fremden
+             Origins. Die iframe-Sandbox trägt die Isolation. -->
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'self'; object-src 'none';"
+        />
+        <title>Terrain-Welt — AnazhRealm-Portal</title>
+        <style>
+            html,
+            body {
+                margin: 0;
+                height: 100%;
+                background: #121a2b;
+                overflow: hidden;
+                font-family: "Courier New", monospace;
+            }
+            canvas {
+                display: block;
+            }
+            #hud {
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: 16px;
+                text-align: center;
+                font-size: 13px;
+                line-height: 1.7;
+                color: #b8c4d8;
+                text-shadow: 0 0 8px #000;
+                pointer-events: none;
+            }
+            #hud b {
+                color: #43c98a;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="hud">
+            <div id="hud-line">Terrain-Welt — eine prozedurale Landschaft, von three.terrain.js geformt.</div>
+            <div>Reisender: <b id="avatar-name">…</b> · Esc — zurück zur Heimat-Welt</div>
+        </div>
+        <!-- Klassische Global-Skripte: erst Three.js (r130-Ära, three.terrain.js'
+             getesteter Pair), dann THREE.Terrain, dann der Welt-Adapter. -->
+        <script src="lib/three.min.js"></script>
+        <script src="lib/THREE.Terrain.min.js"></script>
+        <script src="terrain.js?v=1"></script>
+    </body>
+</html>

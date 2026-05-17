@@ -13369,6 +13369,101 @@ function startSaveServer() {
                 );
             }
 
+            // ### W12 Phase 2 — zweite fremde Welt: Terrain-Welt ###
+            const w12terrainResults = await page
+                .evaluate(async () => {
+                    const r = window.anazhRealm;
+                    const out = {};
+
+                    // Terrain-Welt-Dateien + vendored Engine werden ausgeliefert.
+                    try {
+                        const htmlRes = await fetch("worlds/terrain/index.html");
+                        const htmlBody = htmlRes.ok ? await htmlRes.text() : "";
+                        out.terrainHtmlServed =
+                            htmlRes.ok &&
+                            /Terrain-Welt/.test(htmlBody) &&
+                            /id="avatar-name"/.test(htmlBody) &&
+                            /THREE\.Terrain\.min\.js/.test(htmlBody) &&
+                            /terrain\.js/.test(htmlBody);
+                        const jsRes = await fetch("worlds/terrain/terrain.js");
+                        const jsBody = jsRes.ok ? await jsRes.text() : "";
+                        out.terrainJsServed =
+                            jsRes.ok &&
+                            /THREE\.Terrain/.test(jsBody) &&
+                            /function applyDsl/.test(jsBody) &&
+                            /"ready"/.test(jsBody) &&
+                            /"enter"/.test(jsBody) &&
+                            /"exit"/.test(jsBody);
+                        const threeRes = await fetch("worlds/terrain/lib/three.min.js");
+                        const terrRes = await fetch("worlds/terrain/lib/THREE.Terrain.min.js");
+                        out.terrainEngineVendored = threeRes.ok && terrRes.ok;
+                    } catch (e) {
+                        out.terrainHtmlServed = false;
+                        out.terrainJsServed = false;
+                        out.terrainEngineVendored = false;
+                    }
+
+                    // Built-in welt_terrain-Portal + Manifest.
+                    const wt = r.state.blueprints && r.state.blueprints.welt_terrain;
+                    out.terrainExists = !!wt && wt.builtIn === true;
+                    out.terrainIsPortal = !!wt && wt.role === "portal" && wt.roleManual === true;
+                    out.terrainMeta = !!wt && !!wt.portalMeta && wt.portalMeta.world === "worlds/terrain/index.html";
+                    out.terrainManifest =
+                        !!wt &&
+                        !!wt.portalMeta.dsl &&
+                        wt.portalMeta.dsl.includes("gebirge") &&
+                        wt.portalMeta.dsl.includes("ebene") &&
+                        wt.portalMeta.dsl.includes("neu");
+
+                    const wtAff = r.computeBlueprintAffordances(wt);
+                    out.terrainAffordance = wtAff.isPortal === true && !wtAff.moveable;
+                    out.terrainPortalShaped = r._isPortalShaped(wt) === true;
+
+                    // enterPortal(welt_terrain) → iframe + Brücke trägt einen Manifest-Op.
+                    const pm = r.state.playerMesh.position;
+                    r.spawnArchitecture("welt_terrain", { x: pm.x, y: pm.y, z: pm.z });
+                    const entry = (r.state.architectures || []).find((e) => e.type === "welt_terrain");
+                    const enterRes = entry ? r.enterPortal(entry) : { ok: false };
+                    const frame = document.querySelector("#portal-overlay iframe.portal-frame");
+                    out.enterTerrainWorld = !!enterRes.ok && !!frame && frame.src.includes("worlds/terrain/index.html");
+                    const rt = r._portalRouteDsl(["gebirge"], "Gebirge", null);
+                    out.terrainBridge = rt.forwarded === true;
+                    r.exitPortal();
+                    if (entry) r.removeArchitecture(entry);
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w12terrainResults && !w12terrainResults.error) {
+                check("W12 P2: Terrain-Welt-Seite wird ausgeliefert", w12terrainResults.terrainHtmlServed);
+                check(
+                    "W12 P2: terrain.js (THREE.Terrain + Handshake) wird ausgeliefert",
+                    w12terrainResults.terrainJsServed
+                );
+                check(
+                    "W12 P2: Terrain-Engine vendored (three + THREE.Terrain)",
+                    w12terrainResults.terrainEngineVendored
+                );
+                check("W12 P2: Built-in welt_terrain-Portal existiert", w12terrainResults.terrainExists);
+                check("W12 P2: welt_terrain hat role:'portal'", w12terrainResults.terrainIsPortal);
+                check("W12 P2: welt_terrain portalMeta zeigt auf die Terrain-Welt", w12terrainResults.terrainMeta);
+                check(
+                    "W12 P2: welt_terrain trägt ein DSL-Manifest (gebirge/ebene/neu)",
+                    w12terrainResults.terrainManifest
+                );
+                check("W12 P2: welt_terrain trägt die isPortal-Affordance", w12terrainResults.terrainAffordance);
+                check("W12 P2: welt_terrain ist _isPortalShaped", w12terrainResults.terrainPortalShaped);
+                check("W12 P2: enterPortal(welt_terrain) lädt die Terrain-Welt", w12terrainResults.enterTerrainWorld);
+                check("W12 P2: die Brücke trägt einen Terrain-Manifest-Op", w12terrainResults.terrainBridge);
+            } else {
+                check(
+                    "W12 P2: Terrain-Welt Tests laufen",
+                    false,
+                    w12terrainResults ? w12terrainResults.error : "no result"
+                );
+            }
+
             // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
             const v840Results = await page
                 .evaluate(() => {
