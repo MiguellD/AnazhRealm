@@ -344,6 +344,10 @@ class AnazhRealm {
                 worldXfers: new Map(),
                 pendingPullFrom: null,
                 _lastXferProgress: null,
+                _lastReceivedSnapshotLen: 0,
+                // W7 Phase 2 — peerId → Zeitstempel der letzten world-pull-
+                // Antwort (Rate-Limit gegen pull-Spam).
+                _pullServedAt: new Map(),
                 _testNoReload: false,
             },
             // Welt-Identität (Ring 8+, siehe docs/state-of-realm.md §11). Felder
@@ -4292,6 +4296,7 @@ class AnazhRealm {
         p2p.worldXfers.clear();
         p2p.pendingPullFrom = null;
         p2p._lastXferProgress = null;
+        p2p._pullServedAt.clear();
     }
 
     // W7 Phase 1: roher WS-Versand. Trägt das Signaling (join, rtc-offer/
@@ -4504,11 +4509,22 @@ class AnazhRealm {
     // P2P_WORLD_CHUNK_SIZE-Stücke zerlegen und über den DataChannel senden.
     // Backpressure über channel.bufferedAmount fängt grosse Welten ab.
     async _p2pHandleWorldPull(peerId) {
-        const rtc = this.state.p2p.rtcPeers.get(peerId);
+        const p2p = this.state.p2p;
+        const rtc = p2p.rtcPeers.get(peerId);
         if (!rtc || !rtc.open || !rtc.channel) return;
         // Nur eine echte (geteilte) Welt herausgeben.
-        const role = this.state.p2p.role;
+        const role = p2p.role;
         if (role !== "host" && role !== "guest") return;
+        // Rate-Limit: ein voller Snapshot ist teuer (serialisieren + senden).
+        // Ein Peer darf höchstens alle P2P_PULL_COOLDOWN_MS einen Pull
+        // auslösen — sonst wäre world-pull-Spam ein CPU-/Bandbreiten-DoS.
+        const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+        const last = p2p._pullServedAt.get(peerId) || 0;
+        if (now - last < AnazhRealm.P2P_PULL_COOLDOWN_MS) {
+            this.log(`Welt-Pull von ${peerId.slice(0, 12)}… zu schnell — abgewiesen`, "WARN");
+            return;
+        }
+        p2p._pullServedAt.set(peerId, now);
         let snap;
         try {
             snap = JSON.stringify(this.buildStateSnapshot());
@@ -4879,6 +4895,17 @@ class AnazhRealm {
                 this.saveState();
             } catch (err) {
                 this.log(`Save nach Welt-Snapshot fehlgeschlagen: ${err.message}`, "WARN");
+            }
+            // W7 Phase 2 — den Aktiv-Welt-Zeiger auf die übernommene Welt
+            // setzen. loadState hat worldMeta.worldId auf die Host-worldId
+            // gesetzt; ohne diesen Schritt würde ein Reload in die ALTE Welt
+            // des Spielers landen statt in die frisch geholte Host-Welt.
+            if (this.state.worldMeta && this.state.worldMeta.worldId && typeof this.activeWorldSet === "function") {
+                try {
+                    this.activeWorldSet(this.state.worldMeta.worldId);
+                } catch (err) {
+                    this.log(`Aktiv-Welt-Zeiger nach Welt-Snapshot fehlgeschlagen: ${err.message}`, "WARN");
+                }
             }
             this.log(`Welt-Snapshot empfangen + geladen, jetzt Guest in ${(p2p.room || "").slice(0, 8)}…`, "INFO");
             this.p2pUpdateStatus();
@@ -5296,6 +5323,16 @@ class AnazhRealm {
         const resyncBtn = document.getElementById("p2p-resync");
         if (resyncBtn) {
             resyncBtn.addEventListener("click", () => {
+                // Der Resync ersetzt die aktuelle Welt durch die des Hosts —
+                // lokale Änderungen seit dem Join gehen verloren. Rückfrage
+                // wie bei importVibePass (eine ersetzende Geste).
+                if (
+                    typeof window !== "undefined" &&
+                    typeof window.confirm === "function" &&
+                    !window.confirm("Welt vom Host neu holen? Deine aktuelle Welt wird durch die des Hosts ersetzt.")
+                ) {
+                    return;
+                }
                 const res = this._p2pRequestWorldResync();
                 if (!res.ok) {
                     const reason =
@@ -29738,6 +29775,10 @@ AnazhRealm.MOUSE_ACTION_STAMINA_COST = 5;
 // Stück ist die interop-sichere DataChannel-Nachrichtengröße; Backpressure
 // über channel.bufferedAmount fängt grosse Welten ab.
 AnazhRealm.P2P_WORLD_CHUNK_SIZE = 16384;
+// W7 Phase 2 — Mindestabstand zwischen zwei world-pull-Antworten an
+// denselben Peer. Schützt vor pull-Spam (jeder Pull serialisiert + sendet
+// die ganze Welt — ohne Limit ein DoS-Vektor).
+AnazhRealm.P2P_PULL_COOLDOWN_MS = 5000;
 
 // Welle 6.C3 — Keybindings. Default-Map (Aktion → Code). KeyboardEvent.code
 // für Tasten (Layout-unabhängig, z. B. "KeyF" statt "f"), "Mouse0"/"Mouse1"/

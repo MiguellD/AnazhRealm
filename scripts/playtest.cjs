@@ -4577,15 +4577,33 @@ function startSaveServer() {
                     const noHost = r._p2pRequestWorldResync();
                     out.resyncNoHost = noHost.ok === false && noHost.reason === "no_host";
 
-                    // _p2pApplyWorldSnapshot extrahiert: setzt role guest
-                    // (loadState gestubbt, damit kein echter Welt-Umbau läuft).
+                    // _p2pApplyWorldSnapshot extrahiert: setzt role guest +
+                    // ruft activeWorldSet (sonst landet ein Reload in der
+                    // ALTEN Welt). loadState + activeWorldSet gestubbt.
                     const origLoad = r.loadState;
-                    r.loadState = () => {};
+                    const origActive = r.activeWorldSet;
+                    let activeSetTo = null;
+                    r.loadState = () => {
+                        // loadState würde worldMeta.worldId setzen — wir
+                        // simulieren die Host-worldId.
+                        r.state.worldMeta.worldId = "host-world-xyz";
+                    };
+                    r.activeWorldSet = (wid) => {
+                        activeSetTo = wid;
+                    };
                     p2p.role = "host";
                     p2p._testNoReload = true;
                     const applyRes = r._p2pApplyWorldSnapshot("hostX", { worldMeta: {} }, { reload: false });
                     out.applyExtractedWorks = applyRes.ok === true && p2p.role === "guest";
+                    out.applySetsActiveWorld = activeSetTo === "host-world-xyz";
                     r.loadState = origLoad;
+                    r.activeWorldSet = origActive;
+
+                    // W7 P2 Härtung — Rate-Limit-Datenstruktur + Konstante.
+                    out.pullCooldownFields =
+                        p2p._pullServedAt instanceof Map &&
+                        Number.isInteger(r.constructor.P2P_PULL_COOLDOWN_MS) &&
+                        r.constructor.P2P_PULL_COOLDOWN_MS > 0;
 
                     // UI: der Resync-Knopf existiert im DOM.
                     out.resyncButtonExists = !!document.getElementById("p2p-resync");
@@ -4628,6 +4646,8 @@ function startSaveServer() {
                 check("W7 P2: Resync ohne Mesh → no_mesh", w7p2Results.resyncNoMesh);
                 check("W7 P2: Resync ohne host-Peer → no_host", w7p2Results.resyncNoHost);
                 check("W7 P2: _p2pApplyWorldSnapshot setzt die Guest-Rolle", w7p2Results.applyExtractedWorks);
+                check("W7 P2: _p2pApplyWorldSnapshot setzt den Aktiv-Welt-Zeiger", w7p2Results.applySetsActiveWorld);
+                check("W7 P2: world-pull Rate-Limit-Struktur + Cooldown-Konstante", w7p2Results.pullCooldownFields);
                 check("W7 P2: Resync-Knopf im DOM", w7p2Results.resyncButtonExists);
             }
 
