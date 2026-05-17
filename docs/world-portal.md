@@ -65,6 +65,8 @@ Beim Betreten (`E-Taste auf Portal`):
 
 ### Schicht 3 — Vibe-Bibliothek (Welle 14)
 
+> **Phase 1 live (V8.58)**: der „Bibliothek"-Tab + die Aktion „Portal holen" stehen — die `WORLD_REGISTRY` ist browsbar, ein Klick legt einen auf die Welt gerichteten Portal-Bauplan ins Inventar. Phase 2 (signierte Manifeste) + Phase 3 (fremde Welten empfangen) folgen — Detail in `roadmap.md` §3.
+
 Eine Welt-Registry — wie ein App-Store für Welten, aber dezentral:
 
 - Welten sind **content-addressed** (IPFS-Hash oder ähnlich)
@@ -203,7 +205,7 @@ Das ist die **Energy-Verschiebung nach Nutzen** die du beschrieben hast. Wer ein
 
 ## 6. Roadmap-Sequenz
 
-Stand V8.56 — die Sequenz bis zur Bibliothek:
+Stand V8.58 — die Sequenz bis zur Bibliothek:
 
 | Welle | Inhalt | Status |
 |---|---|---|
@@ -212,7 +214,7 @@ Stand V8.56 — die Sequenz bis zur Bibliothek:
 | **11 ext.** | Substanz-Rolle (Identität emergiert aus Substanz) | ✅ live (V8.35) |
 | **12** | **Welt-Portal** (Rolle „portal" + Sub-Engine-Adapter + DSL-Brücke) | ✅ live (V8.51-V8.53) |
 | **13** | **Vibe-Pass** (ed25519-Keypair + Bauplan-Signaturen + Avatar-Identity) | ✅ live (V8.54-V8.56) |
-| **14** | **Bibliothek** (Welt-Registry + Browse-UI + Auto-Portal-Bauplan) | 🔴 **nächste Welle** — Drei-Phasen-Plan in `roadmap.md` §3 |
+| **14** | **Bibliothek** (Welt-Registry + Browse-UI + Auto-Portal-Bauplan) | 🟡 **Phase 1 live (V8.58)** — browsbarer „Bibliothek"-Tab + „Portal holen"; P2 (signierte Manifeste) + P3 (fremde Welten empfangen) offen, Plan in `roadmap.md` §3 |
 | **7** | **Compute-Sharing** (WebRTC-Mesh als Server-Layer für Welt-Portale) | 🔴 offen — Skalierung |
 
 Welle 12 war das **Proof of Concept** (bewiesen). Welle 13 ✅ + 14 + 7 sind die **Skalierung zur Bibliothek**.
