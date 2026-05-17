@@ -19,7 +19,9 @@
         4. connect-src: vier LLM-Provider als Schicht-2-Stimme. Browser-Anfrage
            geht direkt vom Spieler-Browser an den jeweiligen Endpoint, Key liegt
            im localStorage — Single-User-Localhost-Spiel. Inklusive Ollama auf
-           localhost:11434 für offline-Setups.
+           localhost:11434 für offline-Setups. `stun:`/`turn:` (W7 Phase 1):
+           ICE-Server-URLs der WebRTC-Mesh-Verbindung — `connect-src` regelt
+           per Spec auch RTCPeerConnection-ICE-Server.
 
       `'unsafe-eval'` ist nach dem TF.js-Cleanup weg — unser eigener Code nutzt
       KEIN eval, das CI-Gate „Verbotenes dynamisches Auswerten" schützt diesen
@@ -27,7 +29,7 @@
     -->
         <meta
             http-equiv="Content-Security-Policy"
-            content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self';"
+            content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: stun: turn: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self';"
         />
         <title>Anazh Realm v8.61 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
@@ -512,7 +514,9 @@
                 background: rgba(8, 14, 11, 0.82);
                 border: 1px solid #43c98a;
                 color: #9ff0c8;
-                font: 14px/1.4 "JetBrains Mono", monospace;
+                font:
+                    14px/1.4 "JetBrains Mono",
+                    monospace;
                 pointer-events: none;
             }
             #portal-prompt[hidden] {
@@ -1841,6 +1845,43 @@
                 display: grid;
                 grid-template-columns: 1fr 1fr;
                 gap: 5px;
+            }
+            /* W7 Phase 4 — Public-Lobby */
+            #p2p-lobby {
+                margin-top: 10px;
+                border-top: 1px solid var(--iron-2, #2a2f3a);
+                padding-top: 8px;
+            }
+            #p2p-lobby h3 {
+                margin: 0 0 6px;
+            }
+            .p2p-lobby-pub {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                margin-bottom: 5px;
+            }
+            #p2p-lobby-label {
+                width: 100%;
+                margin-bottom: 5px;
+            }
+            .p2p-lobby-list {
+                margin-top: 6px;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .p2p-lobby-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 6px;
+            }
+            .p2p-lobby-name {
+                font-size: 12px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
             }
             /* Welle 6.C2 — Welt-Beziehungs-Modus-Radios */
             #game-mode-radios {
@@ -4116,7 +4157,9 @@
                 border-radius: 6px;
                 background: rgba(5, 6, 10, 0.72);
                 color: #9fb0c8;
-                font: 13px/1.4 "JetBrains Mono", monospace;
+                font:
+                    13px/1.4 "JetBrains Mono",
+                    monospace;
                 pointer-events: none;
             }
             /* W14 Phase 2 — „signiert von <Autor>"-Zeile im Portal-Overlay. */
@@ -4128,7 +4171,9 @@
                 padding: 4px 14px;
                 border-radius: 6px;
                 background: rgba(5, 6, 10, 0.78);
-                font: 12px/1.4 "JetBrains Mono", monospace;
+                font:
+                    12px/1.4 "JetBrains Mono",
+                    monospace;
                 pointer-events: none;
             }
             #portal-overlay .portal-sig.sig-valid {
@@ -4505,9 +4550,9 @@
             <section class="section" id="vibe-pass-section">
                 <h3>Vibe-Pass <span class="section-hint">(souveräne Identität)</span></h3>
                 <p class="drawer-hint">
-                    Ein ed25519-Schlüsselpaar, lokal erzeugt — deine unverfälschbare Identität. Damit signierst du
-                    deine Werke; andere können prüfen, dass sie wirklich von dir stammen. Kein Coin, keine Kette —
-                    nur Echtheit. Sichere ihn: ohne den Schlüssel ist die Identität verloren.
+                    Ein ed25519-Schlüsselpaar, lokal erzeugt — deine unverfälschbare Identität. Damit signierst du deine
+                    Werke; andere können prüfen, dass sie wirklich von dir stammen. Kein Coin, keine Kette — nur
+                    Echtheit. Sichere ihn: ohne den Schlüssel ist die Identität verloren.
                 </p>
                 <div id="vibe-pass-body"></div>
                 <div class="vibe-pass-actions">
@@ -4730,10 +4775,10 @@
             <section class="section">
                 <h3>Welten <span class="section-hint">(durch ein Tor erreichbar)</span></h3>
                 <p class="drawer-hint">
-                    Andere Welten, betretbar durch ein Portal. „Portal holen" legt einen Tor-Bauplan in dein
-                    Inventar — platziere ihn über die Hotbar in deiner Welt und geh per E-Taste hindurch.
-                    „Teilen…" exportiert das signierte Manifest einer Welt; „Welt empfangen…" liest ein
-                    fremdes Manifest ein — so wächst die Bibliothek (W14 Phase 3).
+                    Andere Welten, betretbar durch ein Portal. „Portal holen" legt einen Tor-Bauplan in dein Inventar —
+                    platziere ihn über die Hotbar in deiner Welt und geh per E-Taste hindurch. „Teilen…" exportiert das
+                    signierte Manifest einer Welt; „Welt empfangen…" liest ein fremdes Manifest ein — so wächst die
+                    Bibliothek (W14 Phase 3).
                 </p>
                 <!-- W14 Phase 3 — fremde Welt-Manifeste empfangen. Versteckter
                      Datei-Picker, vom „Welt empfangen"-Knopf ausgelöst. -->
@@ -5060,8 +5105,46 @@
                 </div>
                 <div class="actions">
                     <button type="button" id="p2p-toggle" aria-pressed="false">Aktivieren</button>
+                    <!-- W7 Phase 2 — ein Guest holt die Welt des Hosts frisch
+                         über das Mesh. Nur sichtbar wenn Mesh steht + Guest. -->
+                    <button type="button" id="p2p-resync" title="Welt des Hosts über das Mesh neu holen" hidden>
+                        Welt vom Host neu holen
+                    </button>
+                    <!-- W7 Phase 3 — LLM-Pool. Wer ein LLM hat, kann seine
+                         Stimme teilen; schlüssellose Mitspieler routen Chat
+                         darüber. Nur sichtbar mit eigenem aktivem LLM. -->
+                    <button
+                        type="button"
+                        id="p2p-voice-share"
+                        aria-pressed="false"
+                        title="Deine LLM-Stimme für Mitspieler ohne eigenen Schlüssel freigeben"
+                        hidden
+                    >
+                        Stimme teilen
+                    </button>
                 </div>
                 <div id="p2p-status" class="drawer-hint" aria-live="polite">Inaktiv.</div>
+                <!-- W7 Phase 4 — Public-Lobby. Raum veröffentlichen + andere
+                     öffentliche Räume browsen + beitreten. -->
+                <div id="p2p-lobby" class="p2p-lobby">
+                    <h3>Öffentliche Lobby <span class="section-hint">(W7 Phase 4)</span></h3>
+                    <label class="p2p-lobby-pub">
+                        <input type="checkbox" id="p2p-lobby-publish-toggle" />
+                        <span>Diesen Raum in der Lobby zeigen</span>
+                    </label>
+                    <input
+                        type="text"
+                        id="p2p-lobby-label"
+                        placeholder="Raum-Name für die Lobby"
+                        maxlength="48"
+                        autocomplete="off"
+                        spellcheck="false"
+                    />
+                    <div class="actions">
+                        <button type="button" id="p2p-lobby-refresh">Lobby durchsuchen</button>
+                    </div>
+                    <div id="p2p-lobby-list" class="p2p-lobby-list" aria-live="polite"></div>
+                </div>
             </section>
         </aside>
         <aside class="drawer" data-drawer="hilfe" aria-label="Hilfe-Panel" hidden>

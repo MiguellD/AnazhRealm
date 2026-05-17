@@ -55,7 +55,15 @@ async function run() {
 
     // Ring 11 V3: Soul-Sync. A teilt seine Seele + Aura → B bekommt beides
     // mit dem peerId-Stempel des Servers.
-    wsA.send(JSON.stringify({ type: "soul", soulName: "phoenix", name: "Aria", bodyParts: [{ shape: "box" }] }));
+    wsA.send(
+        JSON.stringify({
+            type: "soul",
+            soulName: "phoenix",
+            name: "Aria",
+            bodyParts: [{ shape: "box" }],
+            worldRole: "host",
+        })
+    );
     wsA.send(JSON.stringify({ type: "aura", hue: 270, intensity: 0.8 }));
     await sleep(150);
     // Defensive: soul ohne soulName + aura mit NaN-hue werden verworfen.
@@ -75,6 +83,22 @@ async function run() {
     wsA.send(JSON.stringify({ type: "vibe" }));
     await sleep(150);
 
+    // W7 Phase 1: WebRTC-Signaling. A sendet einen rtc-offer an B (targeted),
+    // B antwortet mit rtc-answer an A, A schickt einen ICE-Kandidaten an B.
+    // Server stempelt die Sender-peerId + reicht zielgerichtet durch.
+    wsA.send(JSON.stringify({ type: "rtc-offer", to: "peerB", sdp: { type: "offer", sdp: "v=0..." } }));
+    await sleep(120);
+    wsB.send(JSON.stringify({ type: "rtc-answer", to: "peerA", sdp: { type: "answer", sdp: "v=0..." } }));
+    await sleep(120);
+    wsA.send(
+        JSON.stringify({ type: "rtc-ice", to: "peerB", candidate: { candidate: "candidate:1 ...", sdpMid: "0" } })
+    );
+    await sleep(120);
+    // Defensive: rtc-offer ohne `to` bzw. ohne `sdp` wird verworfen.
+    wsA.send(JSON.stringify({ type: "rtc-offer", sdp: { type: "offer", sdp: "x" } }));
+    wsA.send(JSON.stringify({ type: "rtc-offer", to: "peerB" }));
+    await sleep(120);
+
     // Ring 11.5: world-request (broadcast) + world-snapshot (targeted).
     // B sendet world-request → A bekommt es → A antwortet mit world-snapshot
     // to=peerB. Server forwarded zielgerichtet — andere Peers (hier nur A
@@ -84,6 +108,19 @@ async function run() {
     // A simuliert Host-Antwort: snapshot mit to=peerB
     wsA.send(JSON.stringify({ type: "world-snapshot", to: "peerB", state: { hello: "world", v: 1 } }));
     await sleep(200);
+
+    // W7 Phase 4: Public-Lobby. A veröffentlicht test-room, B browst die
+    // Lobby → bekommt eine lobby-rooms-Antwort mit A's Raum.
+    wsA.send(JSON.stringify({ type: "lobby-publish", label: "Anazhs Probe-Raum" }));
+    await sleep(120);
+    wsB.send(JSON.stringify({ type: "lobby-list" }));
+    await sleep(150);
+
+    // Kreatur-Sicht-Sync: A streamt eine creature-pos-Liste, B empfängt sie.
+    wsA.send(
+        JSON.stringify({ type: "creature-pos", list: [{ id: "c1", x: 4, y: 6, z: 4, yaw: 0, soul: "wesen" }] })
+    );
+    await sleep(150);
 
     console.log("\n=== A received ===");
     for (const e of events.a) console.log(JSON.stringify(e));
@@ -130,7 +167,12 @@ async function run() {
 
     // Ring 11 V3 Assertions
     const bGotSoulFromA = events.b.some(
-        (e) => e.type === "soul" && e.peerId === "peerA" && e.soulName === "phoenix" && e.name === "Aria"
+        (e) =>
+            e.type === "soul" &&
+            e.peerId === "peerA" &&
+            e.soulName === "phoenix" &&
+            e.name === "Aria" &&
+            e.worldRole === "host"
     );
     const bGotAuraFromA = events.b.some(
         (e) => e.type === "aura" && e.peerId === "peerA" && e.hue === 270 && e.intensity === 0.8
@@ -150,6 +192,22 @@ async function run() {
     );
     const aNotEchoedOwnVibe = !events.a.some((e) => e.type === "vibe");
     const bRejectedBadVibe = events.b.filter((e) => e.type === "vibe").length === 1;
+
+    // W7 Phase 1 Assertions — WebRTC-Signaling, zielgerichtet.
+    const bGotRtcOfferFromA = events.b.some(
+        (e) => e.type === "rtc-offer" && e.peerId === "peerA" && e.sdp && e.sdp.type === "offer"
+    );
+    const aGotRtcAnswerFromB = events.a.some(
+        (e) => e.type === "rtc-answer" && e.peerId === "peerB" && e.sdp && e.sdp.type === "answer"
+    );
+    const bGotRtcIceFromA = events.b.some(
+        (e) => e.type === "rtc-ice" && e.peerId === "peerA" && e.candidate && e.candidate.sdpMid === "0"
+    );
+    // Targeted: A bekommt seinen eigenen rtc-offer NICHT zurück.
+    const aNotEchoedOwnRtcOffer = !events.a.some((e) => e.type === "rtc-offer");
+    // Defensive: rtc-offer ohne `to`/`sdp` wird verworfen — B sieht genau
+    // den EINEN guten Offer.
+    const bRejectedBadRtcOffer = events.b.filter((e) => e.type === "rtc-offer").length === 1;
 
     console.log("\n=== Verdict ===");
     console.log("V1 A welcome:", aSawWelcome);
@@ -172,6 +230,30 @@ async function run() {
     console.log("W13P3 B bekommt A's vibe (vibePassId/proof) mit peerId-Stempel:", bGotVibeFromA);
     console.log("W13P3 A bekommt eigene vibe NICHT zurück:", aNotEchoedOwnVibe);
     console.log("W13P3 Server verwirft vibe ohne proof:", bRejectedBadVibe);
+    console.log("W7P1 B bekommt A's rtc-offer (targeted, peerId-Stempel):", bGotRtcOfferFromA);
+    console.log("W7P1 A bekommt B's rtc-answer (targeted):", aGotRtcAnswerFromB);
+    console.log("W7P1 B bekommt A's rtc-ice (targeted):", bGotRtcIceFromA);
+    console.log("W7P1 A bekommt eigenen rtc-offer NICHT zurück:", aNotEchoedOwnRtcOffer);
+    console.log("W7P1 Server verwirft rtc-offer ohne to/sdp:", bRejectedBadRtcOffer);
+
+    // W7 Phase 4 + Kreatur-Sync Assertions
+    const bGotLobbyRooms = events.b.some(
+        (e) =>
+            e.type === "lobby-rooms" &&
+            Array.isArray(e.rooms) &&
+            e.rooms.some((r) => r.room === "test-room" && r.label === "Anazhs Probe-Raum" && r.peers >= 1)
+    );
+    const bGotCreaturePos = events.b.some(
+        (e) =>
+            e.type === "creature-pos" &&
+            e.peerId === "peerA" &&
+            Array.isArray(e.list) &&
+            e.list.some((c) => c.id === "c1")
+    );
+    const aNotEchoedOwnCreaturePos = !events.a.some((e) => e.type === "creature-pos");
+    console.log("W7P4 B bekommt lobby-rooms mit A's veröffentlichtem Raum:", bGotLobbyRooms);
+    console.log("KreaturSync B bekommt A's creature-pos (peerId-Stempel):", bGotCreaturePos);
+    console.log("KreaturSync A bekommt eigene creature-pos NICHT zurück:", aNotEchoedOwnCreaturePos);
 
     // B disconnects
     wsB.close();
@@ -204,7 +286,15 @@ async function run() {
         bRejectedBadAura &&
         bGotVibeFromA &&
         aNotEchoedOwnVibe &&
-        bRejectedBadVibe;
+        bRejectedBadVibe &&
+        bGotRtcOfferFromA &&
+        aGotRtcAnswerFromB &&
+        bGotRtcIceFromA &&
+        aNotEchoedOwnRtcOffer &&
+        bRejectedBadRtcOffer &&
+        bGotLobbyRooms &&
+        bGotCreaturePos &&
+        aNotEchoedOwnCreaturePos;
     server.kill();
     process.exit(allOk ? 0 : 1);
 }

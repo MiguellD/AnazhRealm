@@ -192,6 +192,8 @@ Avatar = Self-Sovereign Identity. Nicht Crypto-Wallet im Spekulations-Sinn, sond
 
 ## 5. Compute-Sharing (Welle 7, jetzt erweitert)
 
+> **Umsetzungsstand (V8.66, W7 KOMPLETT — Phase 1-4)** — der WebRTC-Mesh steht. **P1 (V8.62)**: echte `RTCPeerConnection`-DataChannels, der signaling-server wird Rendezvous statt Relay, eine Mesh-Komplett-Wand gegen Doppel-Zustellung. **P2 (V8.63)**: der Welt-Snapshot reist mesh-nativ in 16-KiB-Stücken (`world-pull`/`world-chunk`) — „verteiltes Chunk-Hosting" entfiel bewusst, weil deterministisches Terrain jeder Client selbst rechnet; die echte Last war der Joiner-Snapshot. **P3 (V8.65)**: der LLM-Pool — ein Peer teilt seine „Stimme" (Opt-in + Rate-Limit + dslRun-Sandbox), ein schlüsselloser Mitspieler routet Chat über ihn = „wer mehr nutzt, gibt mehr Compute" wird konkret. **P4 (V8.66)**: Public-Lobby — Räume browsbar (`lobby-publish`/`lobby-list`), per Klick beitreten. Plus Multi-User-Bau-Sync + Kreatur-Sicht-Sync. Vollständige Einträge in `CLAUDE.md` V8.62-V8.66.
+
 Welle 7 war ursprünglich „Kollektive Welt-Erkenntnis". Mit der Welt-Portal-Vision wird sie zu **Compute-Sharing für Welten**:
 
 - 10 Spieler in einer Voxelize-Welt → ihre Browser sind der gemeinsame Server (WebRTC-Mesh)
@@ -215,9 +217,9 @@ Stand V8.58 — die Sequenz bis zur Bibliothek:
 | **12** | **Welt-Portal** (Rolle „portal" + Sub-Engine-Adapter + DSL-Brücke) | ✅ live (V8.51-V8.53) |
 | **13** | **Vibe-Pass** (ed25519-Keypair + Bauplan-Signaturen + Avatar-Identity) | ✅ live (V8.54-V8.56) |
 | **14** | **Bibliothek** (Welt-Registry + Browse-UI + Auto-Portal-Bauplan) | ✅ **komplett (V8.58/V8.60/V8.61)** — browsbarer „Bibliothek"-Tab + „Portal holen" (P1), signierte Welt-Manifeste + „signiert von <Autor>" + W13 V2 (P2), fremde Welt-Manifeste exportieren/importieren — die Bibliothek wird ein wachsender Index (P3). KI-Übersetzer als Horizont. |
-| **7** | **Compute-Sharing** (WebRTC-Mesh als Server-Layer für Welt-Portale) | 🔴 offen — Skalierung |
+| **7** | **Compute-Sharing** (WebRTC-Mesh als Server-Layer für Welt-Portale) | ✅ **komplett (V8.62-V8.66)** — echte WebRTC-DataChannels (P1), Welt-Snapshot mesh-nativ chunked (P2), LLM-Pool über Peers (P3), Public-Lobby (P4) + Multi-User-Bau-/Kreatur-Sync |
 
-Welle 12 war das **Proof of Concept** (bewiesen). Welle 13 ✅ + 14 + 7 sind die **Skalierung zur Bibliothek**.
+Welle 12 war das **Proof of Concept** (bewiesen). Welle 13 ✅ + 14 ✅ + 7 ✅ sind die **Skalierung zur Bibliothek** — alle gebaut. Offener Horizont: der KI-Übersetzer (W14).
 
 ---
 

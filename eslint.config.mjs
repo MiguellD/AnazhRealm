@@ -31,6 +31,7 @@ export default [
                 HTMLElement: "readonly",
                 crypto: "readonly",
                 WebSocket: "readonly",
+                RTCPeerConnection: "readonly",
                 navigator: "readonly",
                 atob: "readonly",
                 btoa: "readonly",

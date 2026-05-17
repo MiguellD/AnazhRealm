@@ -326,6 +326,44 @@ class AnazhRealm {
                 // genutzt: nicht ws://127.0.0.1:..., sondern die LAN-IP,
                 // die Mitspieler erreichen können.
                 lanAddresses: [],
+                // W7 Phase 1: WebRTC-Mesh. rtcPeers hält pro Mitspieler
+                // eine RTCPeerConnection + den RTCDataChannel; sobald ALLE
+                // Kanäle offen sind (_p2pMeshReady), fliessen Position/DSL/
+                // Soul direkt peer-to-peer statt über den signaling-server
+                // (der bleibt Rendezvous + Fallback-Relay). meshActive
+                // spiegelt diesen Zustand für die UI.
+                rtcPeers: new Map(),
+                iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+                meshActive: false,
+                // W7 Phase 2 — Welt-Snapshot über das Mesh. worldXfers puffert
+                // eingehende Snapshot-Stücke (xferId → {from, total, parts,
+                // received}); pendingPullFrom merkt, von welchem Peer wir
+                // gerade einen Pull erwarten (nur dessen Stücke werden
+                // angenommen). _testNoReload unterdrückt den Reload nach dem
+                // Resync im Playtest.
+                worldXfers: new Map(),
+                pendingPullFrom: null,
+                _lastXferProgress: null,
+                _lastReceivedSnapshotLen: 0,
+                // W7 Phase 2 — peerId → Zeitstempel der letzten world-pull-
+                // Antwort (Rate-Limit gegen pull-Spam).
+                _pullServedAt: new Map(),
+                _testNoReload: false,
+                // W7 Phase 3 — LLM-Pool. voiceShared: ich teile meine Stimme
+                // (Opt-in). _voiceServedAt: peerId → letzte bediente Anfrage
+                // (Rate-Limit). _voiceRequests: reqId → {cb, timeout} meiner
+                // ausgehenden Anfragen.
+                voiceShared: false,
+                _voiceServedAt: new Map(),
+                _voiceRequests: new Map(),
+                _voiceReqSeq: 0,
+                // W7 Phase 4 — Public-Lobby. published: mein Raum ist
+                // browsbar; rooms: die zuletzt geholte Lobby-Liste.
+                lobby: { published: false, label: "", rooms: [] },
+                // Kreatur-Sicht-Sync — remoteCreatures: <peerId>:<netId> →
+                // {mesh, …}, die Kreaturen der Mitspieler als Sicht-Schicht.
+                remoteCreatures: new Map(),
+                _lastCreatureBroadcast: 0,
             },
             // Welt-Identität (Ring 8+, siehe docs/state-of-realm.md §11). Felder
             // werden jetzt schon gesetzt, damit das Save-Schema zukunftsfest
@@ -1379,7 +1417,7 @@ class AnazhRealm {
             // Bauplan-Namen (built-in oder eigen): `["spawn_blueprint",
             // "mein-tempelplatz", ["at_player"]]`. Wird vom Hotbar (6.5)
             // und Werkstatt (6.6) als universeller Pfad benutzt.
-            spawn_blueprint: ([name, positionNode, seed], ctx) => {
+            spawn_blueprint: ([name, positionNode, seed, archId], ctx) => {
                 if (typeof name !== "string") {
                     ctx.log.push({ event: "invalid_blueprint_name", name });
                     return;
@@ -1389,6 +1427,15 @@ class AnazhRealm {
                     ctx.log.push({ event: "unknown_blueprint", name });
                     return;
                 }
+                // Multi-User-Bau-Sync: ein optionales archId macht den Spawn
+                // peer-übergreifend identifizierbar (für remove_architecture).
+                // Idempotent — eine doppelt zugestellte Nachricht spawnt nicht
+                // ein zweites Mal.
+                const sharedId = typeof archId === "string" && archId ? archId : null;
+                if (sharedId && this.state.architectures.some((a) => a && a.id === sharedId)) {
+                    ctx.log.push({ event: "spawn_blueprint_duplicate", name, id: sharedId });
+                    return;
+                }
                 const pos = this.dslEvalPos(positionNode, ctx);
                 if (ctx.budget.spawnsLeft <= 0) {
                     ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
@@ -1396,8 +1443,28 @@ class AnazhRealm {
                 }
                 ctx.budget.spawnsLeft--;
                 const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
-                const entry = this.spawnArchitecture(name, pos, { seed: s });
+                const opts = { seed: s };
+                if (sharedId) opts.id = sharedId;
+                const entry = this.spawnArchitecture(name, pos, opts);
                 ctx.log.push({ event: "spawned_blueprint", name, id: entry ? entry.id : null, pos, seed: s });
+            },
+            // Multi-User-Bau-Sync — eine Architektur mit geteilter id entfernen.
+            // Der Sender hat sie lokal schon abgebaut (harvestArchitecture); die
+            // Mitspieler holen die Entfernung über diesen Op nach. Nur string-
+            // ids (spieler-gebaut) — eine numerische Worldgen-id würde nichts
+            // treffen (jeder Peer zählt anders) und nie fälschlich löschen.
+            remove_architecture: ([archId], ctx) => {
+                if (typeof archId !== "string" || !archId) {
+                    ctx.log.push({ event: "remove_architecture_invalid_id" });
+                    return;
+                }
+                const arch = (this.state.architectures || []).find((a) => a && a.id === archId);
+                if (!arch) {
+                    ctx.log.push({ event: "remove_architecture_not_found", id: archId });
+                    return;
+                }
+                this.removeArchitecture(arch);
+                ctx.log.push({ event: "removed_architecture", id: archId });
             },
             // Welle 2 B — Schöpfer-Werkzeuge. Der LLM (oder Chat-Befehl) kann
             // eigene Baupläne und Fähigkeiten erschaffen, nicht nur bestehende
@@ -3982,6 +4049,10 @@ class AnazhRealm {
             // haben aber denselben Raum nutzen wollen). Leer = aktive worldId
             // wird genommen (Default-Verhalten).
             if (typeof room === "string") this.state.p2p.roomOverride = room.trim();
+            // W7 Phase 3 — Opt-in „Stimme teilen". Beim Laden gesetzt; ob es
+            // wirklich greift, prüft setVoiceShared (braucht ein aktives LLM).
+            const voice = localStorage.getItem("anazh.p2p.voiceShared");
+            if (voice === "1") this.state.p2p.voiceShared = true;
         } catch {
             /* localStorage kann fehlen */
         }
@@ -4224,7 +4295,7 @@ class AnazhRealm {
             p2p.ws = ws;
             ws.addEventListener("open", () => {
                 p2p.connected = true;
-                this.p2pSend({ type: "join", room: p2p.room, peerId: p2p.peerId });
+                this._p2pSignal({ type: "join", room: p2p.room, peerId: p2p.peerId });
                 this.log(`P2P verbunden mit ${url} (raum=${p2p.room.slice(0, 8)}, peer=${p2p.peerId})`, "INFO");
                 this.p2pUpdateStatus();
             });
@@ -4265,9 +4336,32 @@ class AnazhRealm {
         p2p.connected = false;
         p2p.room = null;
         this._p2pClearAllPeerMeshes();
+        // W7 Phase 1 — alle WebRTC-Verbindungen schliessen (auch etwaige
+        // ohne zugehörigen Peer-Mesh-Eintrag).
+        for (const pid of Array.from(p2p.rtcPeers.keys())) this._p2pCloseRtcPeer(pid);
+        p2p.meshActive = false;
+        // W7 Phase 2 — laufende Welt-Transfers verwerfen.
+        p2p.worldXfers.clear();
+        p2p.pendingPullFrom = null;
+        p2p._lastXferProgress = null;
+        p2p._pullServedAt.clear();
+        // W7 Phase 3 — offene Stimm-Anfragen verwerfen + Timeouts räumen.
+        for (const pending of p2p._voiceRequests.values()) {
+            if (pending && pending.timeout) clearTimeout(pending.timeout);
+        }
+        p2p._voiceRequests.clear();
+        p2p._voiceServedAt.clear();
+        // Kreatur-Sicht-Sync — alle Sicht-Kopien der Mitspieler entsorgen.
+        for (const [key, rc] of p2p.remoteCreatures) this._disposeRemoteCreature(key, rc);
+        // W7 Phase 4 — die geholte Lobby-Liste verfällt mit der Verbindung.
+        p2p.lobby.rooms = [];
     }
 
-    p2pSend(obj) {
+    // W7 Phase 1: roher WS-Versand. Trägt das Signaling (join, rtc-offer/
+    // answer/ice, world-request/snapshot) — das läuft IMMER über den
+    // signaling-server, auch wenn das Mesh steht. Spiel-Nachrichten gehen
+    // über das mesh-bewusste p2pSend (siehe unten).
+    _p2pSignal(obj) {
         const ws = this.state.p2p.ws;
         if (!ws || ws.readyState !== 1) return false;
         try {
@@ -4276,6 +4370,621 @@ class AnazhRealm {
         } catch {
             return false;
         }
+    }
+
+    p2pSend(obj) {
+        // W7 Phase 1: Spiel-Broadcast (pos/dsl/soul/aura/vibe). Steht das
+        // WebRTC-Mesh komplett (alle Peer-Kanäle offen), fliesst die
+        // Nachricht direkt peer-to-peer über die DataChannels — der
+        // signaling-server sieht sie dann nicht mehr. Sonst Fallback auf
+        // den WS-Relay. Die Mesh-Komplett-Wand verhindert Doppel-Zustellung:
+        // entweder ALLE Peers sind gemesht (→ Kanäle) oder noch nicht (→ WS).
+        const p2p = this.state.p2p;
+        if (this._p2pMeshReady()) {
+            const payload = JSON.stringify(obj);
+            let sent = 0;
+            for (const rtc of p2p.rtcPeers.values()) {
+                if (rtc.open && rtc.channel) {
+                    try {
+                        rtc.channel.send(payload);
+                        sent++;
+                    } catch {
+                        /* defensive — ein toter Kanal bricht den Broadcast nicht */
+                    }
+                }
+            }
+            return sent > 0;
+        }
+        return this._p2pSignal(obj);
+    }
+
+    // W7 Phase 1: das Mesh ist „komplett", wenn JEDER bekannte Peer einen
+    // offenen DataChannel hat. Nur dann fliesst Spiel-Traffic peer-to-peer.
+    _p2pMeshReady() {
+        const p2p = this.state.p2p;
+        if (!p2p.peers || p2p.peers.size === 0) return false;
+        for (const pid of p2p.peers.keys()) {
+            const rtc = p2p.rtcPeers.get(pid);
+            if (!rtc || !rtc.open) return false;
+        }
+        return true;
+    }
+
+    _p2pUpdateMeshActive() {
+        this.state.p2p.meshActive = this._p2pMeshReady();
+    }
+
+    // W7 Phase 1: eine RTCPeerConnection zu einem Peer eröffnen. Idempotent.
+    // Deterministischer Initiator: der Peer mit der lexikographisch
+    // kleineren ID baut den Offer — verhindert Glare (beide offerieren
+    // gleichzeitig). Der andere wartet auf den rtc-offer und antwortet.
+    _p2pConnectToPeer(peerId) {
+        const p2p = this.state.p2p;
+        if (!peerId || peerId === p2p.peerId) return;
+        if (p2p.rtcPeers.has(peerId)) return;
+        if (typeof RTCPeerConnection === "undefined") return;
+        const rtc = this._p2pCreatePeerConnection(peerId);
+        if (!rtc) return;
+        const iAmInitiator = String(p2p.peerId) < String(peerId);
+        if (!iAmInitiator) return; // der andere offeriert — wir warten auf rtc-offer
+        rtc.isInitiator = true;
+        const channel = rtc.pc.createDataChannel("anazh", { ordered: true });
+        this._p2pWireChannel(peerId, channel);
+        rtc.pc
+            .createOffer()
+            .then((offer) => rtc.pc.setLocalDescription(offer))
+            .then(() => {
+                this._p2pSignal({ type: "rtc-offer", to: peerId, sdp: rtc.pc.localDescription });
+            })
+            .catch((err) => this.log(`RTC-Offer an ${peerId} fehlgeschlagen: ${err.message}`, "WARN"));
+    }
+
+    _p2pCreatePeerConnection(peerId) {
+        const p2p = this.state.p2p;
+        if (typeof RTCPeerConnection === "undefined") return null;
+        let pc;
+        try {
+            pc = new RTCPeerConnection({ iceServers: p2p.iceServers });
+        } catch (err) {
+            this.log(`RTCPeerConnection-Aufbau fehlgeschlagen: ${err.message}`, "WARN");
+            return null;
+        }
+        const rtc = { pc, channel: null, open: false, isInitiator: false, pendingIce: [] };
+        p2p.rtcPeers.set(peerId, rtc);
+        pc.onicecandidate = (ev) => {
+            this._p2pSignal({
+                type: "rtc-ice",
+                to: peerId,
+                candidate: ev.candidate ? ev.candidate.toJSON() : null,
+            });
+        };
+        pc.ondatachannel = (ev) => this._p2pWireChannel(peerId, ev.channel);
+        pc.onconnectionstatechange = () => {
+            if (pc.connectionState === "failed" || pc.connectionState === "closed") {
+                rtc.open = false;
+                this._p2pUpdateMeshActive();
+                this.p2pUpdateStatus();
+            }
+        };
+        return rtc;
+    }
+
+    _p2pWireChannel(peerId, channel) {
+        const rtc = this.state.p2p.rtcPeers.get(peerId);
+        if (!rtc) return;
+        rtc.channel = channel;
+        channel.onopen = () => {
+            rtc.open = true;
+            this._p2pUpdateMeshActive();
+            this.log(`WebRTC-Mesh: Kanal zu ${peerId.slice(0, 12)}… offen`, "INFO");
+            this.p2pUpdateStatus();
+            // Eigene Seele + Vibe-Identität direkt peer-to-peer nachreichen.
+            this._p2pBroadcastSoul();
+            this._p2pBroadcastVibe();
+        };
+        channel.onmessage = (ev) => this._p2pHandleChannelMessage(peerId, ev.data);
+        channel.onclose = () => {
+            rtc.open = false;
+            this._p2pUpdateMeshActive();
+            this.p2pUpdateStatus();
+        };
+    }
+
+    // W7 Phase 1: Nachricht über einen Peer-DataChannel empfangen. Hier
+    // kommen NUR Spiel-Nachrichten an (Signaling läuft über den WS). Die
+    // peerId wird aus der Kanal-Identität gestempelt — ein Peer kann auf
+    // seinem eigenen Kanal keine fremde peerId vortäuschen.
+    _p2pHandleChannelMessage(peerId, raw) {
+        let msg;
+        try {
+            msg = JSON.parse(raw);
+        } catch {
+            return;
+        }
+        if (!msg || typeof msg !== "object") return;
+        // W7 Phase 2 — Welt-Transfer läuft kanal-exklusiv (kann nicht über
+        // den WS injiziert werden, weil hier behandelt statt re-dispatcht).
+        if (msg.type === "world-pull") {
+            this._p2pHandleWorldPull(peerId);
+            return;
+        }
+        if (msg.type === "world-chunk") {
+            this._p2pHandleWorldChunk(peerId, msg);
+            return;
+        }
+        // W7 Phase 3 — LLM-Pool. Auch kanal-exklusiv (kein WS-Pfad).
+        if (msg.type === "llm-request") {
+            this._p2pHandleLlmRequest(peerId, msg);
+            return;
+        }
+        if (msg.type === "llm-response") {
+            this._p2pHandleLlmResponse(peerId, msg);
+            return;
+        }
+        const ALLOWED = ["pos", "dsl", "soul", "aura", "vibe", "creature-pos"];
+        if (!ALLOWED.includes(msg.type)) return;
+        msg.peerId = peerId;
+        this.p2pHandleMessage(JSON.stringify(msg));
+    }
+
+    // W7 Phase 2 — eine Nachricht an den Kanal genau eines Peers senden.
+    _p2pSendChannelTo(peerId, obj) {
+        const rtc = this.state.p2p.rtcPeers.get(peerId);
+        if (!rtc || !rtc.open || !rtc.channel) return false;
+        try {
+            rtc.channel.send(JSON.stringify(obj));
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    _p2pChunkXferId() {
+        return "x-" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+    }
+
+    // Multi-User-Bau-Sync — eine geteilte Architektur-Identität. String (statt
+    // der numerischen Worldgen-id), damit zwei Peers dieselbe spieler-gebaute
+    // Struktur eindeutig meinen können (Spawn + Abbau-Sync).
+    _newArchId() {
+        return "a-" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+    }
+
+    // W7 Phase 2 — den Resync vom Host anfordern: ein Guest holt die Welt
+    // des Hosts frisch über das Mesh. Nur sinnvoll, wenn das Mesh steht und
+    // ein host-Peer verbunden ist.
+    _p2pRequestWorldResync() {
+        const p2p = this.state.p2p;
+        if (!this._p2pMeshReady()) return { ok: false, reason: "no_mesh" };
+        let hostPeerId = null;
+        for (const [pid, entry] of p2p.peers) {
+            if (entry.worldRole === "host") {
+                hostPeerId = pid;
+                break;
+            }
+        }
+        if (!hostPeerId) return { ok: false, reason: "no_host" };
+        const rtc = p2p.rtcPeers.get(hostPeerId);
+        if (!rtc || !rtc.open) return { ok: false, reason: "no_channel" };
+        p2p.pendingWorldSnapshot = true;
+        p2p.pendingPullFrom = hostPeerId;
+        const sent = this._p2pSendChannelTo(hostPeerId, { type: "world-pull" });
+        if (!sent) {
+            p2p.pendingWorldSnapshot = false;
+            p2p.pendingPullFrom = null;
+            return { ok: false, reason: "send_failed" };
+        }
+        this.log(`Welt-Resync vom Host ${hostPeerId.slice(0, 12)}… angefordert`, "INFO");
+        this.p2pUpdateStatus();
+        return { ok: true, hostPeerId };
+    }
+
+    // W7 Phase 2 — auf einen world-pull antworten: den eigenen Snapshot in
+    // P2P_WORLD_CHUNK_SIZE-Stücke zerlegen und über den DataChannel senden.
+    // Backpressure über channel.bufferedAmount fängt grosse Welten ab.
+    async _p2pHandleWorldPull(peerId) {
+        const p2p = this.state.p2p;
+        const rtc = p2p.rtcPeers.get(peerId);
+        if (!rtc || !rtc.open || !rtc.channel) return;
+        // Nur eine echte (geteilte) Welt herausgeben.
+        const role = p2p.role;
+        if (role !== "host" && role !== "guest") return;
+        // Rate-Limit: ein voller Snapshot ist teuer (serialisieren + senden).
+        // Ein Peer darf höchstens alle P2P_PULL_COOLDOWN_MS einen Pull
+        // auslösen — sonst wäre world-pull-Spam ein CPU-/Bandbreiten-DoS.
+        // Sentinel: „noch nie bedient" = -Infinity, NICHT 0 — sonst würde ein
+        // Pull in den ersten COOLDOWN-ms der Seite fälschlich abgewiesen.
+        const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+        const last = p2p._pullServedAt.has(peerId) ? p2p._pullServedAt.get(peerId) : -Infinity;
+        if (now - last < AnazhRealm.P2P_PULL_COOLDOWN_MS) {
+            this.log(`Welt-Pull von ${peerId.slice(0, 12)}… zu schnell — abgewiesen`, "WARN");
+            return;
+        }
+        p2p._pullServedAt.set(peerId, now);
+        let snap;
+        try {
+            snap = JSON.stringify(this.buildStateSnapshot());
+        } catch (err) {
+            this.log(`Welt-Snapshot für Resync konnte nicht gebaut werden: ${err.message}`, "WARN");
+            return;
+        }
+        const size = AnazhRealm.P2P_WORLD_CHUNK_SIZE;
+        const total = Math.max(1, Math.ceil(snap.length / size));
+        const xferId = this._p2pChunkXferId();
+        for (let seq = 0; seq < total; seq++) {
+            // Backpressure: warten, bis der Sende-Puffer abgeflossen ist.
+            let guard = 0;
+            while (rtc.channel.bufferedAmount > 262144 && guard++ < 600) {
+                await new Promise((r) => setTimeout(r, 16));
+            }
+            if (rtc.channel.readyState !== "open") return;
+            try {
+                rtc.channel.send(
+                    JSON.stringify({
+                        type: "world-chunk",
+                        xferId,
+                        seq,
+                        total,
+                        data: snap.slice(seq * size, (seq + 1) * size),
+                    })
+                );
+            } catch (err) {
+                this.log(`Welt-Transfer abgebrochen: ${err.message}`, "WARN");
+                return;
+            }
+        }
+        this.log(`Welt in ${total} Stücken über das Mesh an ${peerId.slice(0, 12)}… gesendet`, "INFO");
+    }
+
+    // W7 Phase 2 — ein Snapshot-Stück empfangen + zusammensetzen. Nur Stücke
+    // vom Peer, von dem wir aktiv gepullt haben, werden angenommen.
+    _p2pHandleWorldChunk(peerId, msg) {
+        const p2p = this.state.p2p;
+        if (!p2p.pendingWorldSnapshot || peerId !== p2p.pendingPullFrom) return;
+        const xferId = msg.xferId;
+        const seq = msg.seq;
+        const total = msg.total;
+        if (typeof xferId !== "string" || !Number.isInteger(seq) || !Number.isInteger(total)) return;
+        if (total < 1 || total > 8192 || seq < 0 || seq >= total) return;
+        if (typeof msg.data !== "string") return;
+        let xfer = p2p.worldXfers.get(xferId);
+        if (!xfer) {
+            xfer = { from: peerId, total, parts: new Array(total).fill(null), received: 0 };
+            p2p.worldXfers.set(xferId, xfer);
+        }
+        if (xfer.total !== total || xfer.from !== peerId) return;
+        if (xfer.parts[seq] !== null) return; // Duplikat
+        xfer.parts[seq] = msg.data;
+        xfer.received++;
+        p2p._lastXferProgress = { xferId, received: xfer.received, total };
+        this.p2pUpdateStatus();
+        if (xfer.received < total) return;
+        // Komplett — zusammensetzen + übernehmen.
+        p2p.worldXfers.delete(xferId);
+        p2p.pendingPullFrom = null;
+        const joined = xfer.parts.join("");
+        p2p._lastReceivedSnapshotLen = joined.length;
+        let parsed;
+        try {
+            parsed = JSON.parse(joined);
+        } catch (err) {
+            this.log(`Welt-Transfer korrupt (${joined.length} Zeichen): ${err.message}`, "ERROR");
+            p2p.pendingWorldSnapshot = false;
+            p2p._lastXferProgress = null;
+            this.p2pUpdateStatus();
+            return;
+        }
+        this.log(`Welt-Transfer komplett (${total} Stücke) — übernehme`, "INFO");
+        p2p._lastXferProgress = null;
+        this._p2pApplyWorldSnapshot(peerId, parsed, { reload: true });
+    }
+
+    // ── W7 Phase 3 — LLM-Pool: eine LLM-Stimme über das Mesh teilen ──
+
+    // Habe ich ein nutzbares eigenes LLM (Provider aktiv + ggf. Key)?
+    _p2pVoiceCapable() {
+        const llm = this.state.llm;
+        if (!llm || !llm.enabled) return false;
+        const defs = this.llmProviderDefs();
+        const def = defs[llm.provider];
+        if (!def) return false;
+        const cfg = llm.providerConfig[llm.provider];
+        return !def.requiresKey || !!(cfg && cfg.apiKey);
+    }
+
+    // Opt-in: meine Stimme teilen (nur sinnvoll, wenn ich ein LLM habe).
+    setVoiceShared(on) {
+        const want = !!on && this._p2pVoiceCapable();
+        this.state.p2p.voiceShared = want;
+        try {
+            localStorage.setItem("anazh.p2p.voiceShared", want ? "1" : "0");
+        } catch {
+            /* defensive */
+        }
+        // Den Mitspielern den neuen Stand mitteilen (soul trägt voiceShared).
+        if (this.state.p2p.enabled) this._p2pBroadcastSoul();
+        this.p2pUpdateStatus();
+        return want;
+    }
+
+    // Einen verbundenen Peer finden, der seine Stimme teilt + einen offenen
+    // Kanal hat.
+    _p2pFindVoicePeer() {
+        const p2p = this.state.p2p;
+        for (const [pid, entry] of p2p.peers) {
+            if (!entry || !entry.voiceShared) continue;
+            const rtc = p2p.rtcPeers.get(pid);
+            if (rtc && rtc.open) return pid;
+        }
+        return null;
+    }
+
+    // Steht eine geteilte Stimme bereit, die ich nutzen könnte? (Mesh steht,
+    // ein Peer teilt, ich selbst habe KEIN eigenes aktives LLM.)
+    _p2pVoiceAvailable() {
+        if (this._p2pVoiceCapable()) return false;
+        if (!this._p2pMeshReady()) return false;
+        return this._p2pFindVoicePeer() !== null;
+    }
+
+    // Eine Chat-Anfrage über die geteilte Stimme eines Peers schicken.
+    _p2pRequestSharedVoice(prompt, appendChatOutput) {
+        const p2p = this.state.p2p;
+        const peerId = this._p2pFindVoicePeer();
+        if (!peerId) {
+            if (appendChatOutput) appendChatOutput("(Keine geteilte Stimme verfügbar.)");
+            return { ok: false, reason: "no_voice" };
+        }
+        const reqId = "v-" + p2p.peerId + "-" + p2p._voiceReqSeq++;
+        const sent = this._p2pSendChannelTo(peerId, {
+            type: "llm-request",
+            reqId,
+            prompt: String(prompt || "").slice(0, AnazhRealm.P2P_VOICE_PROMPT_MAX),
+        });
+        if (!sent) {
+            if (appendChatOutput) appendChatOutput("(Geteilte Stimme nicht erreichbar.)");
+            return { ok: false, reason: "send_failed" };
+        }
+        const timeout = setTimeout(() => {
+            const pending = p2p._voiceRequests.get(reqId);
+            if (!pending) return;
+            p2p._voiceRequests.delete(reqId);
+            if (pending.cb) pending.cb("(Geteilte Stimme schweigt — Zeitüberschreitung.)");
+        }, AnazhRealm.P2P_VOICE_TIMEOUT_MS);
+        p2p._voiceRequests.set(reqId, { cb: appendChatOutput, timeout, peerId });
+        if (appendChatOutput) appendChatOutput("Geteilte Stimme denkt nach…");
+        return { ok: true, reqId, peerId };
+    }
+
+    // Ich bin der Teiler: eine eingehende llm-request beantworten.
+    async _p2pHandleLlmRequest(peerId, msg) {
+        const p2p = this.state.p2p;
+        const reqId = msg && msg.reqId;
+        if (typeof reqId !== "string") return;
+        const respond = (payload) => this._p2pSendChannelTo(peerId, { type: "llm-response", reqId, ...payload });
+        // Opt-in-Wand: nur antworten, wenn ich wirklich teile + ein LLM habe.
+        if (!p2p.voiceShared || !this._p2pVoiceCapable()) {
+            respond({ error: "not_sharing" });
+            return;
+        }
+        // Rate-Limit pro anfragendem Peer — fremder Prompt kostet meine Token.
+        // Sentinel-Disziplin: „noch nie bedient" = -Infinity, NICHT 0 — sonst
+        // wäre jede Anfrage in den ersten COOLDOWN-ms der Seite fälschlich
+        // rate-limited (now - 0 < cooldown).
+        const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+        const last = p2p._voiceServedAt.has(peerId) ? p2p._voiceServedAt.get(peerId) : -Infinity;
+        if (now - last < AnazhRealm.P2P_VOICE_COOLDOWN_MS) {
+            respond({ error: "rate_limited" });
+            return;
+        }
+        p2p._voiceServedAt.set(peerId, now);
+        const prompt = String((msg && msg.prompt) || "").slice(0, AnazhRealm.P2P_VOICE_PROMPT_MAX);
+        if (!prompt) {
+            respond({ error: "empty_prompt" });
+            return;
+        }
+        this.log(`Geteilte Stimme: Anfrage von ${peerId.slice(0, 12)}… wird beantwortet`, "INFO");
+        let reply;
+        try {
+            reply = await this.llmCall(prompt);
+        } catch (err) {
+            reply = { error: (err && err.message) || "LLM-Fehler" };
+        }
+        if (reply && reply.error) {
+            respond({ error: reply.error });
+            return;
+        }
+        respond({ say: reply && reply.say ? String(reply.say) : "", program: (reply && reply.program) || null });
+    }
+
+    // Ich bin der Anfrager: die Antwort der geteilten Stimme empfangen.
+    _p2pHandleLlmResponse(peerId, msg) {
+        const p2p = this.state.p2p;
+        const reqId = msg && msg.reqId;
+        const pending = typeof reqId === "string" ? p2p._voiceRequests.get(reqId) : null;
+        if (!pending) return; // unbekannt / Timeout schon abgelaufen
+        // Nur vom Peer annehmen, an den ich die Anfrage geschickt habe.
+        if (pending.peerId !== peerId) return;
+        p2p._voiceRequests.delete(reqId);
+        if (pending.timeout) clearTimeout(pending.timeout);
+        const cb = pending.cb;
+        if (msg.error) {
+            const human =
+                {
+                    not_sharing: "Der Peer teilt seine Stimme nicht mehr.",
+                    rate_limited: "Geteilte Stimme gerade beschäftigt — kurze Pause.",
+                    empty_prompt: "Leere Anfrage.",
+                }[msg.error] || msg.error;
+            if (cb) cb(`(Geteilte Stimme: ${human})`);
+            return;
+        }
+        if (cb && msg.say) cb(`Geteilte Stimme: ${msg.say}`);
+        // Das DSL-Programm läuft durch DIESELBE Sandbox wie das eigene LLM
+        // (source ≠ human → kein Re-Broadcast; es ist meine lokale Welt-
+        // Reaktion). dslRun ist die Vertrauens-Wand, wie beim eigenen LLM.
+        if (Array.isArray(msg.program) && msg.program.length > 0 && typeof this.dslRun === "function") {
+            try {
+                const result = this.dslRun(msg.program, { source: "remote-voice" });
+                if (cb && result && result.ok) {
+                    cb(`(Welt verändert: ${JSON.stringify(msg.program).slice(0, 140)})`);
+                }
+            } catch {
+                /* Sandbox-Fehler schweigend — der say-Text steht schon */
+            }
+        }
+    }
+
+    // ── W7 Phase 4 — Public-Lobby: Räume browsbar machen ──
+
+    // Den eigenen Raum öffentlich in die Lobby stellen (Opt-in).
+    publishToLobby(label) {
+        const p2p = this.state.p2p;
+        if (!p2p.enabled || !p2p.connected) return { ok: false, reason: "not_connected" };
+        const clean = String(label || "")
+            .trim()
+            .slice(0, 48);
+        p2p.lobby.published = true;
+        p2p.lobby.label = clean;
+        this._p2pSignal({ type: "lobby-publish", label: clean });
+        this.p2pUpdateStatus();
+        return { ok: true };
+    }
+
+    unpublishFromLobby() {
+        const p2p = this.state.p2p;
+        p2p.lobby.published = false;
+        if (p2p.enabled && p2p.connected) this._p2pSignal({ type: "lobby-unpublish" });
+        this.p2pUpdateStatus();
+        return { ok: true };
+    }
+
+    // Die Liste der veröffentlichten Räume anfordern (Antwort: lobby-rooms).
+    requestLobbyList() {
+        const p2p = this.state.p2p;
+        if (!p2p.enabled || !p2p.connected) return { ok: false, reason: "not_connected" };
+        this._p2pSignal({ type: "lobby-list" });
+        return { ok: true };
+    }
+
+    // Einem Lobby-Raum beitreten: roomOverride setzen + neu verbinden.
+    joinLobbyRoom(roomId) {
+        const p2p = this.state.p2p;
+        if (typeof roomId !== "string" || !roomId) return { ok: false, reason: "bad_room" };
+        if (roomId === (p2p.roomOverride || (this.state.worldMeta && this.state.worldMeta.worldId))) {
+            return { ok: false, reason: "already_here" };
+        }
+        p2p.roomOverride = roomId;
+        this.p2pPersist();
+        if (p2p.enabled) this.initP2PSync(null);
+        this.p2pUpdateStatus();
+        this.log(`Lobby: Raum ${roomId.slice(0, 12)}… beigetreten`, "INFO");
+        return { ok: true };
+    }
+
+    // ── Kreatur-Sicht-Sync — die Kreaturen der Mitspieler sehen ──
+    // Wie die Peer-Avatare: jeder Peer streamt SEINE Kreaturen, die anderen
+    // rendern sie als reine Sicht-Schicht (kein Sim, keine Tasks, keine
+    // Physik). Die Kreaturen liegen NICHT in state.creatures — updateCreatures
+    // ignoriert sie per Konstruktion, keine Suppression nötig.
+
+    _p2pBroadcastCreatures() {
+        const creatures = this.state.creatures || [];
+        const list = [];
+        for (let i = 0; i < creatures.length && list.length < 40; i++) {
+            const c = creatures[i];
+            if (!c || !c.position) continue;
+            list.push({
+                id: (c.userData && c.userData.netId) || "i" + i,
+                x: +c.position.x.toFixed(2),
+                y: +c.position.y.toFixed(2),
+                z: +c.position.z.toFixed(2),
+                yaw: +((c.rotation && c.rotation.y) || 0).toFixed(2),
+                soul: (c.userData && c.userData.soul) || "wesen",
+            });
+        }
+        this.p2pSend({ type: "creature-pos", list });
+    }
+
+    _p2pHandleCreaturePos(peerId, msg) {
+        const remote = this.state.p2p.remoteCreatures;
+        const list = Array.isArray(msg.list) ? msg.list : [];
+        const nowSec = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
+        const seen = new Set();
+        for (const e of list) {
+            if (!e || typeof e.id !== "string") continue;
+            const key = peerId + ":" + e.id;
+            seen.add(key);
+            let rc = remote.get(key);
+            if (!rc) {
+                const mesh = this._buildCreatureGroup(typeof e.soul === "string" ? e.soul : "wesen");
+                if (!mesh) continue;
+                mesh.position.set(+e.x || 0, +e.y || 0, +e.z || 0);
+                if (this.state.scene) this.state.scene.add(mesh);
+                rc = { mesh, peerId };
+                remote.set(key, rc);
+            }
+            rc.tx = +e.x || 0;
+            rc.ty = +e.y || 0;
+            rc.tz = +e.z || 0;
+            rc.tyaw = +e.yaw || 0;
+            rc.lastSeen = nowSec;
+        }
+        // Reconcile: jede creature-pos-Nachricht ist die VOLLE Liste dieses
+        // Peers — Sicht-Kopien, die nicht mehr darin stehen, sind tot.
+        for (const [key, rc] of remote) {
+            if (rc.peerId === peerId && !seen.has(key)) this._disposeRemoteCreature(key, rc);
+        }
+    }
+
+    _p2pTickRemoteCreatures(t, dt) {
+        const remote = this.state.p2p.remoteCreatures;
+        if (!remote.size) return;
+        const k = Math.min(1, (dt || 0.016) * 12); // sanftes Nachziehen
+        for (const rc of remote.values()) {
+            const m = rc.mesh;
+            if (!m) continue;
+            m.position.x += ((rc.tx || 0) - m.position.x) * k;
+            m.position.y += ((rc.ty || 0) - m.position.y) * k + Math.sin(t * 2 + m.position.x) * 0.002;
+            m.position.z += ((rc.tz || 0) - m.position.z) * k;
+            if (m.rotation) m.rotation.y = rc.tyaw || 0;
+        }
+    }
+
+    _disposeRemoteCreature(key, rc) {
+        if (rc && rc.mesh) {
+            if (this.state.scene) this.state.scene.remove(rc.mesh);
+            if (typeof this._disposeSoulGroup === "function") this._disposeSoulGroup(rc.mesh);
+        }
+        this.state.p2p.remoteCreatures.delete(key);
+    }
+
+    // W7 Phase 1: gepufferte ICE-Kandidaten anwenden, sobald die
+    // Remote-Description gesetzt ist (addIceCandidate davor wirft).
+    _p2pDrainIce(rtc, peerId) {
+        if (!rtc || !rtc.pendingIce.length) return;
+        const pending = rtc.pendingIce.splice(0);
+        for (const cand of pending) {
+            rtc.pc
+                .addIceCandidate(cand)
+                .catch((err) => this.log(`RTC ICE-Kandidat von ${peerId} verworfen: ${err.message}`, "WARN"));
+        }
+    }
+
+    _p2pCloseRtcPeer(peerId) {
+        const rtc = this.state.p2p.rtcPeers.get(peerId);
+        if (!rtc) return;
+        try {
+            if (rtc.channel) rtc.channel.close();
+        } catch {
+            /* defensive */
+        }
+        try {
+            rtc.pc.close();
+        } catch {
+            /* defensive */
+        }
+        this.state.p2p.rtcPeers.delete(peerId);
+        this._p2pUpdateMeshActive();
     }
 
     p2pHandleMessage(raw) {
@@ -4290,7 +4999,12 @@ class AnazhRealm {
         if (msg.type === "welcome") {
             if (Array.isArray(msg.peers)) {
                 for (const pid of msg.peers) {
-                    if (typeof pid === "string" && pid !== p2p.peerId) this._p2pEnsurePeerEntry(pid);
+                    if (typeof pid === "string" && pid !== p2p.peerId) {
+                        this._p2pEnsurePeerEntry(pid);
+                        // W7 Phase 1 — WebRTC-Verbindung zu jedem schon
+                        // anwesenden Peer aufbauen.
+                        this._p2pConnectToPeer(pid);
+                    }
                 }
             }
             // Ring 11.5: Server schickt seine LAN-Adressen mit, damit Host-
@@ -4314,6 +5028,8 @@ class AnazhRealm {
         if (msg.type === "peer-join") {
             if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
                 this._p2pEnsurePeerEntry(msg.peerId);
+                // W7 Phase 1 — WebRTC-Verbindung zum Neuankömmling aufbauen.
+                this._p2pConnectToPeer(msg.peerId);
                 // Ring 11 V3 — dem Neuankömmling meine Seele zeigen.
                 this._p2pBroadcastSoul();
                 // W13 Phase 3 — und meine Vibe-Pass-Identität.
@@ -4323,6 +5039,19 @@ class AnazhRealm {
         }
         if (msg.type === "peer-leave") {
             if (typeof msg.peerId === "string") this._p2pRemovePeer(msg.peerId);
+            return;
+        }
+        if (msg.type === "lobby-rooms") {
+            // W7 Phase 4 — die Lobby-Liste vom Server.
+            p2p.lobby.rooms = Array.isArray(msg.rooms) ? msg.rooms : [];
+            if (typeof this._renderLobbyUI === "function") this._renderLobbyUI();
+            return;
+        }
+        if (msg.type === "creature-pos") {
+            // Kreatur-Sicht-Sync — die Kreatur-Positionen eines Mitspielers.
+            if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
+                this._p2pHandleCreaturePos(msg.peerId, msg);
+            }
             return;
         }
         if (msg.type === "pos") {
@@ -4383,6 +5112,10 @@ class AnazhRealm {
                     this._p2pRefreshPeerNameLabel(entry);
                 }
             }
+            // W7 Phase 2 — Welt-Rolle des Peers merken (Resync-Ziel-Findung).
+            if (typeof msg.worldRole === "string") entry.worldRole = msg.worldRole;
+            // W7 Phase 3 — teilt der Peer seine Stimme?
+            if (typeof msg.voiceShared === "boolean") entry.voiceShared = msg.voiceShared;
             if (changed) this._p2pApplyPeerSoul(entry);
             entry.lastSeen = performance.now() / 1000;
             return;
@@ -4426,6 +5159,57 @@ class AnazhRealm {
             this._p2pRefreshPeerNameLabel(entry);
             return;
         }
+        if (msg.type === "rtc-offer") {
+            // W7 Phase 1 — eingehender WebRTC-Offer. Wir sind hier der
+            // Nicht-Initiator: pc ggf. anlegen, Remote-Description setzen,
+            // mit einem Answer zurück. Danach gepufferte ICE anwenden.
+            const pid = msg.peerId;
+            if (typeof pid !== "string" || pid === p2p.peerId || !msg.sdp) return;
+            let rtc = p2p.rtcPeers.get(pid);
+            if (!rtc) rtc = this._p2pCreatePeerConnection(pid);
+            if (!rtc) return;
+            rtc.pc
+                .setRemoteDescription(msg.sdp)
+                .then(() => {
+                    this._p2pDrainIce(rtc, pid);
+                    return rtc.pc.createAnswer();
+                })
+                .then((answer) => rtc.pc.setLocalDescription(answer))
+                .then(() => {
+                    this._p2pSignal({ type: "rtc-answer", to: pid, sdp: rtc.pc.localDescription });
+                })
+                .catch((err) => this.log(`RTC-Answer an ${pid} fehlgeschlagen: ${err.message}`, "WARN"));
+            return;
+        }
+        if (msg.type === "rtc-answer") {
+            // W7 Phase 1 — der Peer hat unseren Offer beantwortet.
+            const pid = msg.peerId;
+            if (typeof pid !== "string" || !msg.sdp) return;
+            const rtc = p2p.rtcPeers.get(pid);
+            if (!rtc) return;
+            rtc.pc
+                .setRemoteDescription(msg.sdp)
+                .then(() => this._p2pDrainIce(rtc, pid))
+                .catch((err) => this.log(`RTC setRemoteDescription(answer) von ${pid}: ${err.message}`, "WARN"));
+            return;
+        }
+        if (msg.type === "rtc-ice") {
+            // W7 Phase 1 — ICE-Kandidat eines Peers. candidate=null ist
+            // end-of-candidates (ignorieren). Vor gesetzter Remote-
+            // Description puffern (addIceCandidate würde sonst werfen).
+            const pid = msg.peerId;
+            if (typeof pid !== "string") return;
+            const rtc = p2p.rtcPeers.get(pid);
+            if (!rtc || !msg.candidate) return;
+            if (rtc.pc.remoteDescription && rtc.pc.remoteDescription.type) {
+                rtc.pc
+                    .addIceCandidate(msg.candidate)
+                    .catch((err) => this.log(`RTC ICE-Kandidat von ${pid} verworfen: ${err.message}`, "WARN"));
+            } else {
+                rtc.pendingIce.push(msg.candidate);
+            }
+            return;
+        }
         if (msg.type === "world-request") {
             // Ring 11.5: ein Peer (frischer Joiner) bittet um Welt-Snapshot.
             // Nur Hosts antworten — Guests haben selbst eine Kopie, sollen
@@ -4436,7 +5220,7 @@ class AnazhRealm {
             if (typeof requesterId !== "string" || requesterId === p2p.peerId) return;
             try {
                 const snapshot = this.buildStateSnapshot();
-                this.p2pSend({ type: "world-snapshot", to: requesterId, state: snapshot });
+                this._p2pSignal({ type: "world-snapshot", to: requesterId, state: snapshot });
                 this.log(`Welt-Snapshot an Joiner ${requesterId.slice(0, 8)}… gesendet`, "INFO");
             } catch (err) {
                 this.log(`Welt-Snapshot konnte nicht erstellt werden: ${err.message}`, "WARN");
@@ -4454,36 +5238,56 @@ class AnazhRealm {
             const senderId = msg.peerId;
             if (typeof senderId !== "string" || senderId === p2p.peerId) return;
             if (!msg.state || typeof msg.state !== "object") return;
-            // Snapshot übernehmen: setze worldMeta.role = "guest", merke
-            // host-Info, dann loadState. Reload danach via UI-Pfad.
-            try {
-                // worldMeta.role wird durch loadState überschrieben — wir
-                // müssen es NACHHER auf guest setzen + persistieren.
-                this.loadState(msg.state);
-                if (this.state.worldMeta) {
-                    this.state.worldMeta.role = "guest";
-                    this.state.worldMeta.hostInfo = {
-                        url: p2p.url,
-                        roomId: p2p.room,
-                        peerId: senderId,
-                    };
-                }
-                p2p.role = "guest";
-                p2p.pendingWorldSnapshot = false;
-                // Save sofort schreiben, damit Reload die guest-Welt findet
-                try {
-                    this.saveState();
-                } catch (err) {
-                    this.log(`Save nach Welt-Snapshot fehlgeschlagen: ${err.message}`, "WARN");
-                }
-                this.log(`Welt-Snapshot empfangen + geladen, jetzt Guest in ${p2p.room.slice(0, 8)}…`, "INFO");
-                // UI-Banner ggf. updaten
-                this.p2pUpdateStatus();
-                this.updateWorldInfo();
-            } catch (err) {
-                this.log(`Welt-Snapshot konnte nicht geladen werden: ${err.message}`, "ERROR");
-                p2p.pendingWorldSnapshot = false;
+            this._p2pApplyWorldSnapshot(senderId, msg.state);
+        }
+    }
+
+    // Ring 11.5 / W7 Phase 2 — einen empfangenen Welt-Snapshot übernehmen:
+    // loadState, worldMeta.role = "guest" + hostInfo, saveState. Geteilt vom
+    // WS-`world-snapshot`-Pfad (Ring 11.5, reload=false — der UI-Join-Pfad
+    // reloadet selbst) und vom Mesh-Resync (W7 P2, reload=true — der Spieler
+    // hat bewusst „Welt neu holen" gewählt, ein Reload baut sauber neu auf).
+    _p2pApplyWorldSnapshot(senderId, state, { reload = false } = {}) {
+        const p2p = this.state.p2p;
+        try {
+            this.loadState(state);
+            if (this.state.worldMeta) {
+                this.state.worldMeta.role = "guest";
+                this.state.worldMeta.hostInfo = {
+                    url: p2p.url,
+                    roomId: p2p.room,
+                    peerId: senderId,
+                };
             }
+            p2p.role = "guest";
+            p2p.pendingWorldSnapshot = false;
+            try {
+                this.saveState();
+            } catch (err) {
+                this.log(`Save nach Welt-Snapshot fehlgeschlagen: ${err.message}`, "WARN");
+            }
+            // W7 Phase 2 — den Aktiv-Welt-Zeiger auf die übernommene Welt
+            // setzen. loadState hat worldMeta.worldId auf die Host-worldId
+            // gesetzt; ohne diesen Schritt würde ein Reload in die ALTE Welt
+            // des Spielers landen statt in die frisch geholte Host-Welt.
+            if (this.state.worldMeta && this.state.worldMeta.worldId && typeof this.activeWorldSet === "function") {
+                try {
+                    this.activeWorldSet(this.state.worldMeta.worldId);
+                } catch (err) {
+                    this.log(`Aktiv-Welt-Zeiger nach Welt-Snapshot fehlgeschlagen: ${err.message}`, "WARN");
+                }
+            }
+            this.log(`Welt-Snapshot empfangen + geladen, jetzt Guest in ${(p2p.room || "").slice(0, 8)}…`, "INFO");
+            this.p2pUpdateStatus();
+            this.updateWorldInfo();
+            if (reload && !p2p._testNoReload && typeof window !== "undefined" && window.location) {
+                window.location.reload();
+            }
+            return { ok: true };
+        } catch (err) {
+            this.log(`Welt-Snapshot konnte nicht geladen werden: ${err.message}`, "ERROR");
+            p2p.pendingWorldSnapshot = false;
+            return { ok: false, reason: err.message };
         }
     }
 
@@ -4518,6 +5322,11 @@ class AnazhRealm {
             // gegen diesen Schlüssel verifiziert — Identität, nicht Behauptung.
             vibePassId: null,
             vibeVerified: false,
+            // W7 Phase 2 — Welt-Rolle des Peers (host/guest/solo), kommt mit
+            // der `soul`-Nachricht. Der Resync-Pfad pullt vom host-Peer.
+            worldRole: null,
+            // W7 Phase 3 — teilt dieser Peer seine LLM-Stimme? (soul-Feld)
+            voiceShared: false,
             lastSeen: performance.now() / 1000,
         };
         p2p.peers.set(peerId, entry);
@@ -4717,6 +5526,11 @@ class AnazhRealm {
         if (custom && Array.isArray(custom.bodyParts)) msg.bodyParts = custom.bodyParts;
         const avatarName = this.state.player && this.state.player.name;
         if (typeof avatarName === "string" && avatarName.trim()) msg.name = avatarName.trim().slice(0, 48);
+        // W7 Phase 2 — die Welt-Rolle mitteilen, damit ein Guest weiss,
+        // welcher verbundene Peer der Host ist (Ziel des Welt-Resync).
+        msg.worldRole = (this.state.worldMeta && this.state.worldMeta.role) || "solo";
+        // W7 Phase 3 — mitteilen, ob ich meine LLM-Stimme teile.
+        msg.voiceShared = !!(this.state.p2p && this.state.p2p.voiceShared);
         this.p2pSend(msg);
     }
 
@@ -4748,6 +5562,13 @@ class AnazhRealm {
 
     _p2pRemovePeer(peerId) {
         const p2p = this.state.p2p;
+        // W7 Phase 1 — die WebRTC-Verbindung mit abbauen (auch wenn kein
+        // Peer-Mesh-Eintrag mehr existiert).
+        this._p2pCloseRtcPeer(peerId);
+        // Kreatur-Sicht-Sync — die Sicht-Kopien dieses Peers entsorgen.
+        for (const [key, rc] of p2p.remoteCreatures) {
+            if (rc.peerId === peerId) this._disposeRemoteCreature(key, rc);
+        }
         const entry = p2p.peers.get(peerId);
         if (!entry) return;
         if (entry.mesh) {
@@ -4799,6 +5620,12 @@ class AnazhRealm {
             p2p._lastAuraBroadcast = currentTimeMs;
             this._p2pBroadcastAura();
         }
+        // Kreatur-Sicht-Sync — die eigenen Kreatur-Positionen ~5,5 Hz
+        // streamen (Kreaturen bewegen sich gemächlich, kein Frame-Sync nötig).
+        if (currentTimeMs - (p2p._lastCreatureBroadcast || 0) > 180) {
+            p2p._lastCreatureBroadcast = currentTimeMs;
+            this._p2pBroadcastCreatures();
+        }
         // Peer-Avatare nachziehen: Position, Animation, Aura, Name-Schild +
         // idle-purge (kein update >10 s → entfernen, vermutlich verbindungslos).
         const nowSec = currentTimeMs / 1000;
@@ -4811,6 +5638,8 @@ class AnazhRealm {
             if (nowSec - entry.lastSeen > 10) stale.push(pid);
         }
         for (const pid of stale) this._p2pRemovePeer(pid);
+        // Kreatur-Sicht-Sync — die Kreatur-Meshes der Mitspieler nachziehen.
+        this._p2pTickRemoteCreatures(t, dt);
     }
 
     initP2PUI() {
@@ -4875,6 +5704,107 @@ class AnazhRealm {
             this.p2pPersist();
             this.p2pUpdateStatus();
         });
+        // W7 Phase 2 — Resync-Knopf: ein Guest holt die Welt des Hosts frisch
+        // über das Mesh (heilt eine ggf. divergierte Welt).
+        const resyncBtn = document.getElementById("p2p-resync");
+        if (resyncBtn) {
+            resyncBtn.addEventListener("click", () => {
+                // Der Resync ersetzt die aktuelle Welt durch die des Hosts —
+                // lokale Änderungen seit dem Join gehen verloren. Rückfrage
+                // wie bei importVibePass (eine ersetzende Geste).
+                if (
+                    typeof window !== "undefined" &&
+                    typeof window.confirm === "function" &&
+                    !window.confirm("Welt vom Host neu holen? Deine aktuelle Welt wird durch die des Hosts ersetzt.")
+                ) {
+                    return;
+                }
+                const res = this._p2pRequestWorldResync();
+                if (!res.ok) {
+                    const reason =
+                        {
+                            no_mesh: "Mesh steht noch nicht.",
+                            no_host: "Kein Host im Raum gefunden.",
+                            no_channel: "Kein offener Kanal zum Host.",
+                            send_failed: "Anfrage konnte nicht gesendet werden.",
+                        }[res.reason] || res.reason;
+                    if (statusEl) statusEl.textContent = `Resync nicht möglich: ${reason}`;
+                }
+            });
+        }
+        // W7 Phase 3 — „Stimme teilen"-Knopf: Opt-in zum LLM-Pool.
+        const voiceBtn = document.getElementById("p2p-voice-share");
+        if (voiceBtn) {
+            voiceBtn.addEventListener("click", () => {
+                const now = !this.state.p2p.voiceShared;
+                const applied = this.setVoiceShared(now);
+                if (now && !applied && statusEl) {
+                    statusEl.textContent = "Stimme teilen braucht ein aktives eigenes LLM.";
+                }
+            });
+        }
+        // W7 Phase 4 — Public-Lobby-Steuerung.
+        const lobbyPub = document.getElementById("p2p-lobby-publish-toggle");
+        const lobbyLabel = document.getElementById("p2p-lobby-label");
+        const lobbyRefresh = document.getElementById("p2p-lobby-refresh");
+        const lobbyList = document.getElementById("p2p-lobby-list");
+        if (lobbyPub) {
+            lobbyPub.addEventListener("change", () => {
+                if (lobbyPub.checked) {
+                    const res = this.publishToLobby(lobbyLabel ? lobbyLabel.value : "");
+                    if (!res.ok) {
+                        lobbyPub.checked = false;
+                        if (statusEl) statusEl.textContent = "Lobby: erst Multi-User verbinden.";
+                    }
+                } else {
+                    this.unpublishFromLobby();
+                }
+            });
+        }
+        if (lobbyRefresh) {
+            lobbyRefresh.addEventListener("click", () => {
+                const res = this.requestLobbyList();
+                if (!res.ok && statusEl) statusEl.textContent = "Lobby: erst Multi-User verbinden.";
+            });
+        }
+        if (lobbyList) {
+            lobbyList.addEventListener("click", (ev) => {
+                const btn = ev.target && ev.target.closest("button[data-lobby-room]");
+                if (btn) this.joinLobbyRoom(btn.dataset.lobbyRoom);
+            });
+        }
+        this._renderLobbyUI();
+    }
+
+    // W7 Phase 4 — die Lobby-Liste rendern (Labels von Mitspielern sind
+    // fremde Daten → textContent, kein innerHTML).
+    _renderLobbyUI() {
+        const listEl = document.getElementById("p2p-lobby-list");
+        if (!listEl) return;
+        const rooms = (this.state.p2p.lobby && this.state.p2p.lobby.rooms) || [];
+        listEl.textContent = "";
+        if (!rooms.length) {
+            const empty = document.createElement("div");
+            empty.className = "drawer-hint";
+            empty.textContent = "Keine öffentlichen Räume — „Lobby durchsuchen“ klicken.";
+            listEl.appendChild(empty);
+            return;
+        }
+        for (const r of rooms) {
+            if (!r || typeof r.room !== "string") continue;
+            const row = document.createElement("div");
+            row.className = "p2p-lobby-row";
+            const name = document.createElement("span");
+            name.className = "p2p-lobby-name";
+            name.textContent = `${r.label || r.room.slice(0, 16)} · ${r.peers || 0} Spieler`;
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.textContent = "Beitreten";
+            btn.dataset.lobbyRoom = r.room;
+            row.appendChild(name);
+            row.appendChild(btn);
+            listEl.appendChild(row);
+        }
     }
 
     p2pUpdateStatus() {
@@ -4887,11 +5817,41 @@ class AnazhRealm {
                 statusEl.textContent = `Fehler: ${p.lastError}`;
             } else if (!p.connected) {
                 statusEl.textContent = "Verbinde…";
+            } else if (p._lastXferProgress) {
+                // W7 Phase 2 — ein Welt-Transfer läuft.
+                const x = p._lastXferProgress;
+                statusEl.textContent = `Welt-Transfer: ${x.received}/${x.total} Stücke …`;
             } else {
                 const room = p.room ? `${p.room.slice(0, 8)}…` : "—";
                 const peerCount = p.peers.size;
-                statusEl.textContent = `Verbunden (Raum ${room}, ${peerCount} Mitspieler).`;
+                // W7 Phase 1 — Transport sichtbar machen: Mesh (peer-to-peer)
+                // sobald alle Kanäle stehen, sonst Relay über den Server.
+                const transport = peerCount > 0 ? (p.meshActive ? " · Mesh p2p" : " · Server-Relay") : "";
+                // W7 Phase 3 — Hinweis: nutzt der Chat eine geteilte Stimme?
+                let voice = "";
+                if (p.voiceShared && this._p2pVoiceCapable()) voice = " · Stimme geteilt";
+                else if (typeof this._p2pVoiceAvailable === "function" && this._p2pVoiceAvailable())
+                    voice = " · geteilte Stimme nutzbar";
+                statusEl.textContent = `Verbunden (Raum ${room}, ${peerCount} Mitspieler${transport}${voice}).`;
             }
+        }
+        // W7 Phase 2 — Resync-Knopf: nur für einen Guest mit stehendem Mesh
+        // sichtbar (er holt die Welt des Hosts frisch).
+        const resyncBtn = document.getElementById("p2p-resync");
+        if (resyncBtn) {
+            const p = this.state.p2p;
+            const show = p.enabled && p.connected && p.meshActive && p.role === "guest";
+            resyncBtn.hidden = !show;
+        }
+        // W7 Phase 3 — „Stimme teilen"-Knopf: nur sichtbar, wenn ich ein
+        // eigenes aktives LLM habe (sonst gibt es nichts zu teilen).
+        const voiceBtn = document.getElementById("p2p-voice-share");
+        if (voiceBtn) {
+            const capable = this._p2pVoiceCapable();
+            voiceBtn.hidden = !capable;
+            const on = !!this.state.p2p.voiceShared;
+            voiceBtn.setAttribute("aria-pressed", on ? "true" : "false");
+            voiceBtn.textContent = on ? "Stimme geteilt ✓" : "Stimme teilen";
         }
         // Ring 11.5: Banner mit Connection-Stand aktualisieren (Host:
         // peerCount, Guest: connected-Indikator).
@@ -7933,6 +8893,10 @@ class AnazhRealm {
         group.userData.kind = "creature";
         group.userData.soul = chosenSoul;
         group.userData.name = this._pickCreatureName();
+        // Kreatur-Sicht-Sync — eine pro-Peer eindeutige netId für den
+        // creature-pos-Strom (Mitspieler keyen ihre Sicht-Kopie damit).
+        this.state._creatureNetSeq = (this.state._creatureNetSeq || 0) + 1;
+        group.userData.netId = "c" + this.state._creatureNetSeq;
         group.userData.task = { name: "wander", args: {}, since: performance.now() / 1000 };
         // Welle 6.H Phase 2D.1 — bornAt als Identitäts-Marker. Persistierte
         // Kreaturen überleben Reload mit demselben bornAt; neue bekommen den
@@ -10235,6 +11199,7 @@ class AnazhRealm {
             spawn_temple: (a) => `errichtet einen Tempel ${pos(a[0])}`,
             spawn_waterfall: (a) => `formt einen Wasserfall ${pos(a[0])}`,
             spawn_blueprint: (a) => `baut „${a[0]}" ${pos(a[1])}`,
+            remove_architecture: () => `baut ein Bauwerk ab`,
             spawn_fractal: (a) => `lässt „${a[1]}" fraktal in Tiefe ${a[2]} wachsen ${pos(a[0])}`,
             define_blueprint: (a) => `legt einen neuen Bauplan „${a[0]}" an`,
             define_material: (a) => `definiert ein neues Material „${a[0]}"`,
@@ -10696,6 +11661,11 @@ class AnazhRealm {
             this.maybeAnswerWithLlm(command, appendChatOutput).catch((err) => {
                 appendChatOutput(`(Grok-Fehler: ${err.message || err})`);
             });
+        } else if (typeof this._p2pVoiceAvailable === "function" && this._p2pVoiceAvailable()) {
+            // W7 Phase 3 — LLM-Pool. Ich habe kein eigenes LLM, aber ein
+            // Mitspieler teilt seine Stimme: die Anfrage läuft über ihn,
+            // das DSL-Programm der Antwort durch meine eigene Sandbox.
+            this._p2pRequestSharedVoice(command, appendChatOutput);
         } else {
             const suggestion = this.chatSuggest(command);
             if (suggestion) {
@@ -12457,6 +13427,12 @@ class AnazhRealm {
             // Mesh wird beim Laden aus dem Seed rekonstruiert (kein Mesh-
             // Snapshot). V2 inkludiert scale für fraktale Sub-Strukturen.
             architectures: (this.state.architectures || []).map((a) => ({
+                // Multi-User-Bau-Sync: eine string-id ist eine GETEILTE
+                // Architektur-Identität (spieler-gebaut + broadcastet). Sie
+                // muss den Save + den W7-P2-Snapshot-Transfer überleben,
+                // sonst divergieren die ids zweier Peers und der Abbau-Sync
+                // bricht. Numerische ids (Worldgen) sind lokal — auch ok.
+                id: a.id,
                 type: a.type,
                 position: { x: a.position.x, y: a.position.y, z: a.position.z },
                 seed: a.seed,
@@ -13293,8 +14269,6 @@ class AnazhRealm {
         });
         return { ok: true, id: clean.id, signatureStatus, reachable };
     }
-
-    // ### Welle 3 F — Welt-Tor ###
 
     // ### Welle 3 F — Welt-Tor ###
     // Welt-Info im Welt-Drawer: die Welt wird sichtbar als Welt, mit
@@ -14165,7 +15139,7 @@ class AnazhRealm {
             this.state.architectures = [];
             for (const a of state.architectures) {
                 if (!a || typeof a.type !== "string" || !a.position) continue;
-                this.spawnArchitecture(a.type, a.position, { seed: a.seed, scale: a.scale });
+                this.spawnArchitecture(a.type, a.position, { seed: a.seed, scale: a.scale, id: a.id });
             }
             this.log(`Architekturen geladen: ${state.architectures.length}`);
         }
@@ -20268,7 +21242,7 @@ class AnazhRealm {
         const seed = Number.isFinite(opts.seed) ? opts.seed : Math.floor(Math.random() * 0xffffffff);
         const scale = Number.isFinite(opts.scale) && opts.scale > 0 ? opts.scale : 1;
         const entry = {
-            id: this.state.architectureNextId++,
+            id: typeof opts.id === "string" && opts.id ? opts.id : this.state.architectureNextId++,
             type,
             position: { x: position.x || 0, y: position.y || 0, z: position.z || 0 },
             seed,
@@ -20984,7 +21958,23 @@ class AnazhRealm {
             this._renderBuildModeHud && this._renderBuildModeHud();
             return false;
         }
-        this.spawnArchitecture(bm.blueprintName, spawnPos);
+        // Multi-User-Bau-Sync — eine geteilte string-id, damit das Bauwerk
+        // peer-übergreifend identifizierbar ist (Abbau-Sync). Lokal gespawnt
+        // wie bisher; der Broadcast lässt es auf den Welten der Mitspieler
+        // erscheinen. Ein eigener (nicht-built-in) Bauplan reist als
+        // define_blueprint mit — der Empfänger kennt ihn sonst nicht.
+        const archId = this._newArchId();
+        this.spawnArchitecture(bm.blueprintName, spawnPos, { id: archId });
+        if (this.state.p2p && this.state.p2p.enabled && typeof this.p2pBroadcastDsl === "function") {
+            const posNode = ["at", spawnPos.x, spawnPos.y, spawnPos.z];
+            const spawnOp = ["spawn_blueprint", bm.blueprintName, posNode, 0, archId];
+            const ownBp = this.state.blueprints[bm.blueprintName];
+            const prog =
+                ownBp && !ownBp.builtIn && Array.isArray(ownBp.parts)
+                    ? ["chain", ["define_blueprint", bm.blueprintName, ownBp.parts], spawnOp]
+                    : spawnOp;
+            this.p2pBroadcastDsl(prog);
+        }
         // Inventar-UI + HUD nach Konsum aktualisieren (pfad).
         if (!gate.free) {
             this.renderInventoryUI && this.renderInventoryUI();
@@ -21297,6 +22287,9 @@ class AnazhRealm {
         const pick = this._pickArchitectureAtCrosshair();
         if (pick && pick.entry) {
             this._consumeMouseStamina();
+            // Multi-User-Bau-Sync: die id VOR dem Abbau merken (harvest
+            // entfernt den Eintrag) — Mitspieler holen die Entfernung nach.
+            const archId = pick.entry.id;
             // Welle 6.H P2B.5 — harvestArchitecture statt nur removeArchitecture.
             // Die Materialien des Bauplans fließen ins Spieler-Inventar. Eine
             // Sprache für Spieler-LMB + Kreatur-gather: beide ernten gleich.
@@ -21309,6 +22302,17 @@ class AnazhRealm {
                     }
                 }
                 this.log(`Abgebaut: ${harvest.blueprint} → ${parts.join(", ") || "(kein Material)"}`, "INFO");
+            }
+            // Multi-User-Bau-Sync — Mitspieler entfernen ihre Kopie. Nur
+            // geteilte string-ids (spieler-gebaut); eine numerische Worldgen-
+            // id bleibt lokal (träfe bei einem Peer nichts oder das Falsche).
+            if (
+                typeof archId === "string" &&
+                this.state.p2p &&
+                this.state.p2p.enabled &&
+                typeof this.p2pBroadcastDsl === "function"
+            ) {
+                this.p2pBroadcastDsl(["remove_architecture", archId]);
             }
             return true;
         }
@@ -29284,6 +30288,26 @@ AnazhRealm.STAMINA_REGEN_PER_SEC = 5;
 // niedriger als TOOL_OP weil Bauen/Abbauen häufiger und niederschwelliger
 // als Polier-Schritte sind. Modus-Gate (frieden+schöpfer: 0, pfad: 5).
 AnazhRealm.MOUSE_ACTION_STAMINA_COST = 5;
+
+// W7 Phase 2 — Welt-Snapshot über das Mesh. Ein Joiner/Guest holt die
+// Welt des Hosts in Stücken über den RTCDataChannel statt in einem WS-
+// Frame (das hatte ein 1-MiB-Limit + war ein Host-Bottleneck). 16 KiB pro
+// Stück ist die interop-sichere DataChannel-Nachrichtengröße; Backpressure
+// über channel.bufferedAmount fängt grosse Welten ab.
+AnazhRealm.P2P_WORLD_CHUNK_SIZE = 16384;
+// W7 Phase 2 — Mindestabstand zwischen zwei world-pull-Antworten an
+// denselben Peer. Schützt vor pull-Spam (jeder Pull serialisiert + sendet
+// die ganze Welt — ohne Limit ein DoS-Vektor).
+AnazhRealm.P2P_PULL_COOLDOWN_MS = 5000;
+
+// W7 Phase 3 — LLM-Pool. Ein Peer mit aktivem LLM teilt seine „Stimme",
+// ein schlüsselloser Peer routet Chat-Anfragen über ihn. Sicherheits-
+// lastig (fremder Prompt über meinen Key): Opt-in + Rate-Limit. Cooldown
+// pro anfragendem Peer (eine LLM-Anfrage kostet Token + Zeit), Timeout
+// für den Anfrager (LLM-Calls sind langsam), Prompt-Längen-Deckel.
+AnazhRealm.P2P_VOICE_COOLDOWN_MS = 6000;
+AnazhRealm.P2P_VOICE_TIMEOUT_MS = 30000;
+AnazhRealm.P2P_VOICE_PROMPT_MAX = 2000;
 
 // Welle 6.C3 — Keybindings. Default-Map (Aktion → Code). KeyboardEvent.code
 // für Tasten (Layout-unabhängig, z. B. "KeyF" statt "f"), "Mouse0"/"Mouse1"/

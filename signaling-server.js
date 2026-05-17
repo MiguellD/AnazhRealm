@@ -27,6 +27,17 @@
 //   Server → Client   { "type": "aura", "peerId": "...", "hue": .., "intensity": .. }
 //   Server → Client   { "type": "world-request", "peerId": "..." }   (forwarded)
 //   Server → Client   { "type": "world-snapshot", "peerId": "...", "state": {...} }
+//   Client → Server   { "type": "rtc-offer",  "to": "<peerId>", "sdp": {...} }   (W7 P1)
+//   Client → Server   { "type": "rtc-answer", "to": "<peerId>", "sdp": {...} }
+//   Client → Server   { "type": "rtc-ice",    "to": "<peerId>", "candidate": {...} }
+//   Server → Client   { "type": "rtc-offer/answer/ice", "peerId": "<from>", "to": "...", ... }
+//
+// W7 Phase 1 (Compute-Sharing): der Server wird vom Daten-Relay zum
+// reinen WebRTC-Rendezvous. Er reicht SDP-Offer/Answer + ICE-Kandidaten
+// zielgerichtet zwischen zwei Peers durch; danach fliessen Position/DSL/
+// Soul direkt peer-to-peer ueber RTCDataChannels. Die alten Relay-Pfade
+// (pos/dsl/soul/aura/vibe) bleiben als Fallback, falls eine WebRTC-
+// Verbindung nicht zustande kommt.
 //
 // Heilige Lektion: KEIN neues Modul-Geflecht. EINE Datei, ein Server-
 // Objekt, vier Handler (join/pos/dsl/disconnect).
@@ -46,6 +57,10 @@ const WS_MAGIC = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
 // rooms: Map<roomId, Set<wsClient>>
 const rooms = new Map();
+// W7 Phase 4 — Public-Lobby. lobby: Map<roomId, {label, publishedAt}>.
+// Ein Host veröffentlicht seinen Raum (Opt-in); Mitspieler browsen die
+// Liste. Beim Leeren eines Raums wird er auto-de-veröffentlicht.
+const lobby = new Map();
 // each socket carries .anazh = { peerId, room }
 
 function logLine(level, msg) {
@@ -156,6 +171,10 @@ function handleClientMessage(ws, raw) {
             if (oldSet) {
                 oldSet.delete(ws);
                 broadcastToRoom(ws.anazh.room, { type: "peer-leave", peerId: ws.anazh.peerId });
+                if (oldSet.size === 0) {
+                    rooms.delete(ws.anazh.room);
+                    lobby.delete(ws.anazh.room); // W7 P4
+                }
             }
         }
         ws.anazh = { peerId, room };
@@ -180,6 +199,16 @@ function handleClientMessage(ws, raw) {
         broadcastToRoom(ws.anazh.room, { type: "pos", peerId: ws.anazh.peerId, x, y, z, yaw }, ws);
         return;
     }
+    if (msg.type === "creature-pos") {
+        // Kreatur-Sicht-Sync — ein Peer streamt die Positionen SEINER
+        // Kreaturen; Mitspieler rendern sie als Sicht-Schicht. Server
+        // validiert nicht den Inhalt (Client-Render-Schicht), deckelt nur
+        // die Listenlänge gegen Missbrauch.
+        if (!Array.isArray(msg.list)) return;
+        const list = msg.list.slice(0, 64);
+        broadcastToRoom(ws.anazh.room, { type: "creature-pos", peerId: ws.anazh.peerId, list }, ws);
+        return;
+    }
     if (msg.type === "dsl") {
         // Ring 11 V2: DSL-AST-Broadcast. Server forwarded das Programm,
         // jeder Empfänger lässt es durch seinen eigenen dslRun-Sandbox-
@@ -202,6 +231,10 @@ function handleClientMessage(ws, raw) {
             out.bodyParts = msg.bodyParts;
         }
         if (typeof msg.name === "string") out.name = msg.name.slice(0, 48);
+        // W7 Phase 2: die Welt-Rolle (host/guest/solo) durchreichen.
+        if (typeof msg.worldRole === "string") out.worldRole = msg.worldRole.slice(0, 16);
+        // W7 Phase 3: teilt der Peer seine LLM-Stimme?
+        if (typeof msg.voiceShared === "boolean") out.voiceShared = msg.voiceShared;
         broadcastToRoom(ws.anazh.room, out, ws);
         return;
     }
@@ -223,6 +256,34 @@ function handleClientMessage(ws, raw) {
         const proof = typeof msg.proof === "string" ? msg.proof.slice(0, 256) : "";
         if (!vibePassId || !proof) return;
         broadcastToRoom(ws.anazh.room, { type: "vibe", peerId: ws.anazh.peerId, vibePassId, proof }, ws);
+        return;
+    }
+    if (msg.type === "rtc-offer" || msg.type === "rtc-answer" || msg.type === "rtc-ice") {
+        // W7 Phase 1: WebRTC-Signaling. Zielgerichtetes Durchreichen von
+        // SDP-Offer/Answer und ICE-Kandidaten zwischen genau zwei Peers,
+        // damit sie eine direkte RTCDataChannel-Verbindung aufbauen.
+        // Server stempelt die authoritative Sender-peerId; er validiert
+        // die SDP-/ICE-Payload NICHT — der Browser jedes Clients ist die
+        // Vertrauens-Wand (wie bei dsl/world-snapshot).
+        const target = typeof msg.to === "string" ? msg.to.slice(0, 64) : null;
+        if (!target) return;
+        const out = { type: msg.type, peerId: ws.anazh.peerId, to: target };
+        if (msg.type === "rtc-ice") {
+            // candidate darf ein Objekt oder null sein (end-of-candidates).
+            if (msg.candidate !== null && (!msg.candidate || typeof msg.candidate !== "object")) return;
+            out.candidate = msg.candidate;
+        } else {
+            if (!msg.sdp || typeof msg.sdp !== "object") return;
+            out.sdp = msg.sdp;
+        }
+        const rtcSet = rooms.get(ws.anazh.room);
+        if (!rtcSet) return;
+        for (const peer of rtcSet) {
+            if (peer.anazh && peer.anazh.peerId === target) {
+                sendTo(peer, out);
+                break;
+            }
+        }
         return;
     }
     if (msg.type === "world-request" || msg.type === "world-snapshot") {
@@ -259,6 +320,30 @@ function handleClientMessage(ws, raw) {
             // Voraus, welcher Peer Host ist)
             broadcastToRoom(ws.anazh.room, out, ws);
         }
+        return;
+    }
+    if (msg.type === "lobby-publish") {
+        // W7 Phase 4 — den eigenen Raum öffentlich browsbar machen.
+        const label = String(msg.label || "").slice(0, 48) || ws.anazh.room.slice(0, 24);
+        lobby.set(ws.anazh.room, { label, publishedAt: Date.now() });
+        logLine("INFO", `lobby-publish room=${ws.anazh.room} label="${label}"`);
+        return;
+    }
+    if (msg.type === "lobby-unpublish") {
+        lobby.delete(ws.anazh.room);
+        return;
+    }
+    if (msg.type === "lobby-list") {
+        // Liste aller veröffentlichten Räume mit aktueller Spielerzahl.
+        const list = [];
+        for (const [roomId, meta] of lobby) {
+            const set = rooms.get(roomId);
+            const peers = set ? set.size : 0;
+            if (peers <= 0) continue; // leerer Raum — überspringen
+            list.push({ room: roomId, label: meta.label, peers });
+        }
+        sendTo(ws, { type: "lobby-rooms", rooms: list });
+        return;
     }
 }
 
@@ -268,7 +353,10 @@ function handleDisconnect(ws) {
     if (set) {
         set.delete(ws);
         broadcastToRoom(ws.anazh.room, { type: "peer-leave", peerId: ws.anazh.peerId });
-        if (set.size === 0) rooms.delete(ws.anazh.room);
+        if (set.size === 0) {
+            rooms.delete(ws.anazh.room);
+            lobby.delete(ws.anazh.room); // W7 P4 — leerer Raum verlässt die Lobby
+        }
     }
     logLine("INFO", `leave room=${ws.anazh.room} peer=${ws.anazh.peerId}`);
 }
@@ -364,4 +452,4 @@ server.listen(PORT, HOST, () => {
 });
 
 // Export für Tests, falls als Modul geladen (kein Effect bei direct-run).
-module.exports = { server, rooms };
+module.exports = { server, rooms, lobby };

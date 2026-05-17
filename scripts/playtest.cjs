@@ -4251,6 +4251,890 @@ function startSaveServer() {
                 check("Ring 11 V1: Toggle-Klick wechselt aria-pressed", ring11Results.toggleFlipsAriaPressed);
             }
 
+            // ### W7 Phase 1 — WebRTC-Mesh (Compute-Sharing) ###
+            // Der signaling-server wird vom Daten-Relay zum Handshake-
+            // Rendezvous: Position/DSL/Soul fliessen über RTCDataChannels
+            // direkt peer-to-peer. Tests prüfen Datenstruktur, die Mesh-
+            // Komplett-Wand (_p2pMeshReady), die peerId-Stempelung über den
+            // Kanal (anti-spoof), den Transport-Wechsel in p2pSend, die
+            // RTC-Signaling-Handler + CSP-Erweiterung. Ein echter zwei-
+            // Browser-Handshake läuft in scripts/smoke-webrtc.cjs.
+            const w7Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    const p2p = r.state.p2p;
+
+                    out.w7StateFields =
+                        p2p.rtcPeers instanceof Map &&
+                        Array.isArray(p2p.iceServers) &&
+                        p2p.iceServers.length > 0 &&
+                        typeof p2p.meshActive === "boolean";
+                    out.w7MethodsPresent =
+                        typeof r._p2pSignal === "function" &&
+                        typeof r._p2pMeshReady === "function" &&
+                        typeof r._p2pConnectToPeer === "function" &&
+                        typeof r._p2pCreatePeerConnection === "function" &&
+                        typeof r._p2pWireChannel === "function" &&
+                        typeof r._p2pHandleChannelMessage === "function" &&
+                        typeof r._p2pCloseRtcPeer === "function" &&
+                        typeof r._p2pUpdateMeshActive === "function" &&
+                        typeof r._p2pDrainIce === "function";
+
+                    // sauberer Ausgangszustand
+                    p2p.peerId = "self-test";
+                    p2p.ws = null;
+                    for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+                    p2p.rtcPeers.clear();
+
+                    // Mesh ist NICHT bereit ohne Peers.
+                    out.meshNotReadyEmpty = r._p2pMeshReady() === false;
+
+                    // Ein Peer ohne offenen RTC-Kanal → Mesh nicht bereit.
+                    r._p2pEnsurePeerEntry("lonePeer");
+                    out.meshNotReadyUnconnected = r._p2pMeshReady() === false;
+
+                    // RTCPeerConnection: _p2pCreatePeerConnection legt einen
+                    // Eintrag an (pc + leerer pendingIce-Puffer), _p2pCloseRtcPeer
+                    // räumt ihn.
+                    out.rtcAvailable = typeof RTCPeerConnection !== "undefined";
+                    const rtc = r._p2pCreatePeerConnection("rtcTestPeer");
+                    out.createPcEntry =
+                        !!rtc && !!rtc.pc && rtc.open === false && Array.isArray(rtc.pendingIce);
+                    out.createPcRegistered = p2p.rtcPeers.has("rtcTestPeer");
+                    r._p2pCloseRtcPeer("rtcTestPeer");
+                    out.closePcRemoves = !p2p.rtcPeers.has("rtcTestPeer");
+
+                    // Deterministischer Initiator: kleinere peerId offeriert.
+                    r._p2pConnectToPeer("zzz-peer");
+                    const initRtc = p2p.rtcPeers.get("zzz-peer");
+                    out.initiatorMarked = !!initRtc && initRtc.isInitiator === true;
+                    r._p2pConnectToPeer("aaa-peer");
+                    const nonInitRtc = p2p.rtcPeers.get("aaa-peer");
+                    out.nonInitiatorWaits = !!nonInitRtc && nonInitRtc.isInitiator === false;
+                    r._p2pCloseRtcPeer("zzz-peer");
+                    r._p2pCloseRtcPeer("aaa-peer");
+
+                    // _p2pConnectToPeer ist idempotent.
+                    r._p2pConnectToPeer("dupPeer");
+                    const dupCountBefore = p2p.rtcPeers.size;
+                    r._p2pConnectToPeer("dupPeer");
+                    out.connectIdempotent = p2p.rtcPeers.size === dupCountBefore;
+                    r._p2pCloseRtcPeer("dupPeer");
+
+                    // Kanal-Empfang: die peerId wird aus der Kanal-Identität
+                    // gestempelt — anti-spoof.
+                    for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+                    r._p2pHandleChannelMessage(
+                        "realPeer",
+                        JSON.stringify({ type: "pos", peerId: "SPOOFED", x: 7, y: 8, z: 9, yaw: 0 })
+                    );
+                    const realPeer = p2p.peers.get("realPeer");
+                    out.channelStampsPeerId = !!realPeer && realPeer.x === 7 && !p2p.peers.has("SPOOFED");
+
+                    // Kanal trägt NUR Spiel-Nachrichten — welcome wird verworfen.
+                    const peersBeforeWelcome = p2p.peers.size;
+                    r._p2pHandleChannelMessage(
+                        "realPeer",
+                        JSON.stringify({ type: "welcome", peers: ["evilPeer"] })
+                    );
+                    out.channelDropsNonGame =
+                        p2p.peers.size === peersBeforeWelcome && !p2p.peers.has("evilPeer");
+
+                    // p2pSend-Transport: bei komplettem Mesh geht der Broadcast
+                    // über den DataChannel, nicht über den WS.
+                    for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+                    p2p.rtcPeers.clear();
+                    r._p2pEnsurePeerEntry("meshPeer");
+                    let channelPayload = null;
+                    p2p.rtcPeers.set("meshPeer", {
+                        pc: null,
+                        open: true,
+                        channel: {
+                            send: (payload) => {
+                                channelPayload = payload;
+                            },
+                        },
+                        isInitiator: false,
+                        pendingIce: [],
+                    });
+                    out.meshReadyWhenOpen = r._p2pMeshReady() === true;
+                    p2p.ws = null;
+                    const sendResult = r.p2pSend({ type: "pos", x: 42 });
+                    out.meshSendUsesChannel =
+                        sendResult === true && channelPayload !== null && JSON.parse(channelPayload).x === 42;
+
+                    // _p2pUpdateMeshActive spiegelt den Mesh-Zustand.
+                    r._p2pUpdateMeshActive();
+                    out.meshActiveTracked = p2p.meshActive === true;
+
+                    // rtc-offer-Nachricht legt eine RTCPeerConnection an.
+                    p2p.rtcPeers.clear();
+                    r.p2pHandleMessage(
+                        JSON.stringify({
+                            type: "rtc-offer",
+                            peerId: "offerPeer",
+                            to: "self-test",
+                            sdp: { type: "offer", sdp: "v=0" },
+                        })
+                    );
+                    out.rtcOfferCreatesPc = p2p.rtcPeers.has("offerPeer");
+                    r._p2pCloseRtcPeer("offerPeer");
+
+                    // shutdownP2PSync räumt alle RTC-Verbindungen.
+                    r._p2pCreatePeerConnection("shutTestPeer");
+                    r.shutdownP2PSync();
+                    out.shutdownClearsRtc = p2p.rtcPeers.size === 0 && p2p.meshActive === false;
+
+                    // CSP trägt stun: für die ICE-Server.
+                    const cspMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+                    const cspContent = cspMeta ? cspMeta.getAttribute("content") : "";
+                    out.cspHasStun = / stun: /.test(cspContent);
+
+                    // UI-Status zeigt den aktiven Transport (Mesh vs. Relay).
+                    p2p.enabled = true;
+                    p2p.connected = true;
+                    p2p.lastError = null;
+                    p2p.room = "ui-test-room";
+                    for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+                    r._p2pEnsurePeerEntry("uiPeer");
+                    p2p.meshActive = true;
+                    r.p2pUpdateStatus();
+                    const statusEl = document.getElementById("p2p-status");
+                    out.uiShowsMesh = !!statusEl && /Mesh p2p/.test(statusEl.textContent);
+                    p2p.meshActive = false;
+                    r.p2pUpdateStatus();
+                    out.uiShowsRelay = !!statusEl && /Server-Relay/.test(statusEl.textContent);
+
+                    // Cleanup
+                    for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+                    p2p.rtcPeers.clear();
+                    p2p.enabled = false;
+                    p2p.connected = false;
+                    p2p.meshActive = false;
+                    p2p.ws = null;
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!w7Results || w7Results.error) {
+                check(
+                    "W7 Phase 1: Snapshot erreichbar",
+                    false,
+                    (w7Results && w7Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("W7 P1: state.p2p trägt rtcPeers/iceServers/meshActive", w7Results.w7StateFields);
+                check("W7 P1: alle WebRTC-Methoden auf der Klasse vorhanden", w7Results.w7MethodsPresent);
+                check("W7 P1: _p2pMeshReady false ohne Peers", w7Results.meshNotReadyEmpty);
+                check("W7 P1: _p2pMeshReady false bei nicht-verbundenem Peer", w7Results.meshNotReadyUnconnected);
+                check("W7 P1: RTCPeerConnection im Headless verfügbar", w7Results.rtcAvailable);
+                check("W7 P1: _p2pCreatePeerConnection legt pc + pendingIce-Puffer an", w7Results.createPcEntry);
+                check("W7 P1: _p2pCreatePeerConnection registriert in rtcPeers", w7Results.createPcRegistered);
+                check("W7 P1: _p2pCloseRtcPeer entfernt den Eintrag", w7Results.closePcRemoves);
+                check("W7 P1: kleinere peerId wird Initiator (Glare-frei)", w7Results.initiatorMarked);
+                check("W7 P1: grössere peerId wartet auf rtc-offer", w7Results.nonInitiatorWaits);
+                check("W7 P1: _p2pConnectToPeer ist idempotent", w7Results.connectIdempotent);
+                check(
+                    "W7 P1: Kanal-Nachricht stempelt peerId aus der Kanal-Identität (anti-spoof)",
+                    w7Results.channelStampsPeerId
+                );
+                check("W7 P1: Kanal verwirft Nicht-Spiel-Nachrichten (welcome)", w7Results.channelDropsNonGame);
+                check("W7 P1: _p2pMeshReady true bei offenem Kanal", w7Results.meshReadyWhenOpen);
+                check("W7 P1: p2pSend nutzt bei komplettem Mesh den DataChannel", w7Results.meshSendUsesChannel);
+                check("W7 P1: _p2pUpdateMeshActive spiegelt den Mesh-Zustand", w7Results.meshActiveTracked);
+                check("W7 P1: rtc-offer-Nachricht legt eine RTCPeerConnection an", w7Results.rtcOfferCreatesPc);
+                check("W7 P1: shutdownP2PSync räumt alle RTC-Verbindungen", w7Results.shutdownClearsRtc);
+                check("W7 P1: CSP enthält stun: für die ICE-Server", w7Results.cspHasStun);
+                check("W7 P1: UI-Status zeigt 'Mesh p2p' bei aktivem Mesh", w7Results.uiShowsMesh);
+                check("W7 P1: UI-Status zeigt 'Server-Relay' bei Fallback", w7Results.uiShowsRelay);
+            }
+
+            // ### W7 Phase 2 — Welt-Snapshot über das Mesh ###
+            // Ein Guest holt die Welt des Hosts in P2P_WORLD_CHUNK_SIZE-Stücken
+            // über den RTCDataChannel. Tests prüfen: Chunk-Reassembly, die
+            // Annahme-Wand (nur Stücke vom gepullten Peer + nur bei pending),
+            // worldRole im soul-Kanal, _p2pApplyWorldSnapshot extrahiert,
+            // Resync-Fehlerpfade. Der echte Transfer läuft in smoke-webrtc.cjs.
+            const w7p2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    const p2p = r.state.p2p;
+
+                    out.w7p2StateFields =
+                        p2p.worldXfers instanceof Map &&
+                        p2p.pendingPullFrom === null &&
+                        Number.isInteger(r.constructor.P2P_WORLD_CHUNK_SIZE) &&
+                        r.constructor.P2P_WORLD_CHUNK_SIZE > 0;
+                    out.w7p2MethodsPresent =
+                        typeof r._p2pApplyWorldSnapshot === "function" &&
+                        typeof r._p2pSendChannelTo === "function" &&
+                        typeof r._p2pChunkXferId === "function" &&
+                        typeof r._p2pRequestWorldResync === "function" &&
+                        typeof r._p2pHandleWorldPull === "function" &&
+                        typeof r._p2pHandleWorldChunk === "function";
+
+                    // _p2pChunkXferId: nicht-leer + zwei Aufrufe verschieden.
+                    const x1 = r._p2pChunkXferId();
+                    const x2 = r._p2pChunkXferId();
+                    out.xferIdShape = typeof x1 === "string" && x1.length > 4 && x1 !== x2;
+
+                    // soul-Broadcast trägt worldRole.
+                    const sent = [];
+                    const origSend = r.p2pSend;
+                    r.p2pSend = (o) => {
+                        sent.push(o);
+                        return true;
+                    };
+                    p2p.enabled = true;
+                    r.state.worldMeta.role = "host";
+                    r._p2pBroadcastSoul();
+                    out.soulCarriesWorldRole = sent.some((m) => m.type === "soul" && m.worldRole === "host");
+                    r.p2pSend = origSend;
+
+                    // soul-Empfang speichert worldRole am Peer-Eintrag.
+                    p2p.peerId = "self-test";
+                    for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+                    r.p2pHandleMessage(
+                        JSON.stringify({ type: "soul", peerId: "hostPeer", soulName: "human", worldRole: "host" })
+                    );
+                    const hp = p2p.peers.get("hostPeer");
+                    out.soulStoresWorldRole = !!hp && hp.worldRole === "host";
+
+                    // Chunk-Reassembly: ein Test-Snapshot in 3 Stücke geteilt,
+                    // über _p2pHandleWorldChunk gefüttert → auf Vollständigkeit
+                    // zusammengesetzt + _p2pApplyWorldSnapshot aufgerufen.
+                    const testSnap = JSON.stringify({ hello: "w7p2", n: 42, arr: [1, 2, 3, 4, 5] });
+                    const a = testSnap.slice(0, 10);
+                    const b = testSnap.slice(10, 22);
+                    const c = testSnap.slice(22);
+                    let applied = null;
+                    const origApply = r._p2pApplyWorldSnapshot;
+                    r._p2pApplyWorldSnapshot = (senderId, state) => {
+                        applied = { senderId, state };
+                        return { ok: true };
+                    };
+                    p2p.pendingWorldSnapshot = true;
+                    p2p.pendingPullFrom = "hostPeer";
+                    p2p.worldXfers.clear();
+                    const xid = "x-test-1";
+                    r._p2pHandleWorldChunk("hostPeer", { type: "world-chunk", xferId: xid, seq: 0, total: 3, data: a });
+                    out.chunkIncompleteAfterOne = p2p.worldXfers.has(xid) && applied === null;
+                    r._p2pHandleWorldChunk("hostPeer", { type: "world-chunk", xferId: xid, seq: 2, total: 3, data: c });
+                    // Duplikat von seq 0 — wird ignoriert, kein Doppel-Zählen.
+                    r._p2pHandleWorldChunk("hostPeer", { type: "world-chunk", xferId: xid, seq: 0, total: 3, data: a });
+                    out.chunkDuplicateIgnored = p2p.worldXfers.get(xid).received === 2;
+                    r._p2pHandleWorldChunk("hostPeer", { type: "world-chunk", xferId: xid, seq: 1, total: 3, data: b });
+                    out.chunkReassemblyApplies =
+                        applied !== null &&
+                        applied.senderId === "hostPeer" &&
+                        applied.state &&
+                        applied.state.hello === "w7p2" &&
+                        applied.state.n === 42;
+                    out.chunkXferClearedOnComplete = !p2p.worldXfers.has(xid);
+                    out.lastSnapshotLenTracked = p2p._lastReceivedSnapshotLen === testSnap.length;
+
+                    // Annahme-Wand: ein Chunk von einem FREMDEN Peer (nicht
+                    // pendingPullFrom) wird verworfen.
+                    p2p.pendingWorldSnapshot = true;
+                    p2p.pendingPullFrom = "hostPeer";
+                    p2p.worldXfers.clear();
+                    r._p2pHandleWorldChunk("evilPeer", {
+                        type: "world-chunk",
+                        xferId: "x-evil",
+                        seq: 0,
+                        total: 1,
+                        data: "{}",
+                    });
+                    out.chunkRejectsWrongPeer = !p2p.worldXfers.has("x-evil");
+
+                    // Annahme-Wand: ein Chunk ohne pendingWorldSnapshot wird
+                    // verworfen.
+                    p2p.pendingWorldSnapshot = false;
+                    p2p.worldXfers.clear();
+                    r._p2pHandleWorldChunk("hostPeer", {
+                        type: "world-chunk",
+                        xferId: "x-nopend",
+                        seq: 0,
+                        total: 1,
+                        data: "{}",
+                    });
+                    out.chunkRejectsWhenNotPending = !p2p.worldXfers.has("x-nopend");
+                    r._p2pApplyWorldSnapshot = origApply;
+
+                    // Resync-Fehlerpfade: kein Mesh → no_mesh.
+                    for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+                    p2p.rtcPeers.clear();
+                    const noMesh = r._p2pRequestWorldResync();
+                    out.resyncNoMesh = noMesh.ok === false && noMesh.reason === "no_mesh";
+
+                    // Mesh steht, aber kein host-Peer → no_host.
+                    r._p2pEnsurePeerEntry("plainPeer");
+                    p2p.rtcPeers.set("plainPeer", { pc: null, open: true, channel: {}, pendingIce: [] });
+                    const noHost = r._p2pRequestWorldResync();
+                    out.resyncNoHost = noHost.ok === false && noHost.reason === "no_host";
+
+                    // _p2pApplyWorldSnapshot extrahiert: setzt role guest +
+                    // ruft activeWorldSet (sonst landet ein Reload in der
+                    // ALTEN Welt). loadState + activeWorldSet gestubbt.
+                    const origLoad = r.loadState;
+                    const origActive = r.activeWorldSet;
+                    let activeSetTo = null;
+                    r.loadState = () => {
+                        // loadState würde worldMeta.worldId setzen — wir
+                        // simulieren die Host-worldId.
+                        r.state.worldMeta.worldId = "host-world-xyz";
+                    };
+                    r.activeWorldSet = (wid) => {
+                        activeSetTo = wid;
+                    };
+                    p2p.role = "host";
+                    p2p._testNoReload = true;
+                    const applyRes = r._p2pApplyWorldSnapshot("hostX", { worldMeta: {} }, { reload: false });
+                    out.applyExtractedWorks = applyRes.ok === true && p2p.role === "guest";
+                    out.applySetsActiveWorld = activeSetTo === "host-world-xyz";
+                    r.loadState = origLoad;
+                    r.activeWorldSet = origActive;
+
+                    // W7 P2 Härtung — Rate-Limit-Datenstruktur + Konstante.
+                    out.pullCooldownFields =
+                        p2p._pullServedAt instanceof Map &&
+                        Number.isInteger(r.constructor.P2P_PULL_COOLDOWN_MS) &&
+                        r.constructor.P2P_PULL_COOLDOWN_MS > 0;
+
+                    // UI: der Resync-Knopf existiert im DOM.
+                    out.resyncButtonExists = !!document.getElementById("p2p-resync");
+
+                    // Cleanup
+                    for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+                    p2p.rtcPeers.clear();
+                    p2p.worldXfers.clear();
+                    p2p.pendingWorldSnapshot = false;
+                    p2p.pendingPullFrom = null;
+                    p2p._lastXferProgress = null;
+                    p2p.enabled = false;
+                    p2p.connected = false;
+                    p2p.role = "solo";
+                    p2p._testNoReload = false;
+                    r.state.worldMeta.role = "solo";
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!w7p2Results || w7p2Results.error) {
+                check(
+                    "W7 Phase 2: Snapshot erreichbar",
+                    false,
+                    (w7p2Results && w7p2Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("W7 P2: state.p2p trägt worldXfers/pendingPullFrom + P2P_WORLD_CHUNK_SIZE", w7p2Results.w7p2StateFields);
+                check("W7 P2: alle Welt-Transfer-Methoden auf der Klasse", w7p2Results.w7p2MethodsPresent);
+                check("W7 P2: _p2pChunkXferId liefert eindeutige IDs", w7p2Results.xferIdShape);
+                check("W7 P2: soul-Broadcast trägt worldRole", w7p2Results.soulCarriesWorldRole);
+                check("W7 P2: soul-Empfang speichert worldRole am Peer", w7p2Results.soulStoresWorldRole);
+                check("W7 P2: ein Stück allein lässt den Transfer unvollständig", w7p2Results.chunkIncompleteAfterOne);
+                check("W7 P2: ein doppeltes Stück wird nicht doppelt gezählt", w7p2Results.chunkDuplicateIgnored);
+                check("W7 P2: vollständige Stücke werden zusammengesetzt + angewendet", w7p2Results.chunkReassemblyApplies);
+                check("W7 P2: der Transfer-Puffer wird nach Abschluss geräumt", w7p2Results.chunkXferClearedOnComplete);
+                check("W7 P2: die empfangene Snapshot-Länge wird festgehalten", w7p2Results.lastSnapshotLenTracked);
+                check("W7 P2: ein Stück vom falschen Peer wird verworfen", w7p2Results.chunkRejectsWrongPeer);
+                check("W7 P2: ein Stück ohne laufenden Pull wird verworfen", w7p2Results.chunkRejectsWhenNotPending);
+                check("W7 P2: Resync ohne Mesh → no_mesh", w7p2Results.resyncNoMesh);
+                check("W7 P2: Resync ohne host-Peer → no_host", w7p2Results.resyncNoHost);
+                check("W7 P2: _p2pApplyWorldSnapshot setzt die Guest-Rolle", w7p2Results.applyExtractedWorks);
+                check("W7 P2: _p2pApplyWorldSnapshot setzt den Aktiv-Welt-Zeiger", w7p2Results.applySetsActiveWorld);
+                check("W7 P2: world-pull Rate-Limit-Struktur + Cooldown-Konstante", w7p2Results.pullCooldownFields);
+                check("W7 P2: Resync-Knopf im DOM", w7p2Results.resyncButtonExists);
+            }
+
+            // ### Multi-User-Bau-Sync — Strukturen synchron platzieren + abbauen ###
+            // confirmBuild + tryMouseBreak broadcasten jetzt; eine geteilte
+            // string-archId macht eine spieler-gebaute Struktur peer-über-
+            // greifend identifizierbar. Tests: opts.id-Pfad, spawn_blueprint
+            // mit archId + Idempotenz, remove_architecture, confirmBuild-
+            // Broadcast (built-in direkt, eigener Bauplan als chain), Persistenz.
+            const buildSyncResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    const origBuildMode = r.state.buildMode;
+
+                    out.newArchIdUnique =
+                        typeof r._newArchId === "function" &&
+                        typeof r._newArchId() === "string" &&
+                        r._newArchId() !== r._newArchId();
+
+                    // spawnArchitecture mit opts.id → string-id; ohne → numerisch.
+                    const eShared = r.spawnArchitecture("stein_block", { x: 12, y: 4, z: 12 }, { id: "a-unit-1" });
+                    out.spawnAcceptsStringId = !!eShared && eShared.id === "a-unit-1";
+                    const eLocal = r.spawnArchitecture("stein_block", { x: 14, y: 4, z: 14 }, {});
+                    out.spawnDefaultNumericId = !!eLocal && typeof eLocal.id === "number";
+
+                    // spawn_blueprint-Op mit archId.
+                    r.dslRun(["spawn_blueprint", "stein_block", ["at", 20, 4, 20], 0, "a-unit-2"], { source: "test" });
+                    out.spawnBlueprintArchId = r.state.architectures.some((a) => a && a.id === "a-unit-2");
+                    // Idempotenz: zweiter Lauf mit derselben id → kein zweiter Spawn.
+                    const before = r.state.architectures.filter((a) => a && a.id === "a-unit-2").length;
+                    r.dslRun(["spawn_blueprint", "stein_block", ["at", 21, 4, 21], 0, "a-unit-2"], { source: "test" });
+                    const after = r.state.architectures.filter((a) => a && a.id === "a-unit-2").length;
+                    out.spawnBlueprintIdempotent = before === 1 && after === 1;
+
+                    // remove_architecture entfernt per string-id.
+                    r.dslRun(["remove_architecture", "a-unit-2"], { source: "test" });
+                    out.removeArchitectureWorks = !r.state.architectures.some((a) => a && a.id === "a-unit-2");
+                    // Unbekannte / nicht-string id → kein Crash, keine Entfernung.
+                    const cnt = r.state.architectures.length;
+                    r.dslRun(["remove_architecture", "a-does-not-exist"], { source: "test" });
+                    r.dslRun(["remove_architecture", 12345], { source: "test" });
+                    out.removeArchitectureSafe = r.state.architectures.length === cnt;
+
+                    // describeProgram kennt remove_architecture.
+                    out.describeRemove =
+                        typeof r.describeProgram === "function" &&
+                        /ab/i.test(r.describeProgram(["remove_architecture", "a-x"]) || "");
+
+                    // spawn_blueprint + remove_architecture MÜSSEN broadcasten
+                    // (nicht in NON_BROADCASTABLE_OPS).
+                    const nb = window.AnazhRealm ? window.AnazhRealm.NON_BROADCASTABLE_OPS : r.constructor.NON_BROADCASTABLE_OPS;
+                    out.opsAreBroadcastable = !nb.has("spawn_blueprint") && !nb.has("remove_architecture");
+
+                    // confirmBuild broadcastet spawn_blueprint mit string-archId.
+                    const sent = [];
+                    const origBroadcast = r.p2pBroadcastDsl;
+                    r.p2pBroadcastDsl = (prog) => sent.push(prog);
+                    r.state.p2p.enabled = true;
+                    r.setGameMode && r.setGameMode("schöpfer"); // Gates frei
+                    r.state.buildMode = {
+                        active: true,
+                        blueprintName: "stein_block",
+                        phantomMesh: { position: { x: 30, y: 4, z: 30 } },
+                        phantomOnGround: true,
+                    };
+                    const builtOk = r.confirmBuild();
+                    const builtInProg = sent[sent.length - 1];
+                    out.confirmBuildBroadcasts =
+                        builtOk === true &&
+                        Array.isArray(builtInProg) &&
+                        builtInProg[0] === "spawn_blueprint" &&
+                        builtInProg[1] === "stein_block" &&
+                        typeof builtInProg[4] === "string" &&
+                        builtInProg[4].length > 2;
+                    // Die lokal gebaute Struktur trägt dieselbe string-id.
+                    out.confirmBuildLocalSharedId = r.state.architectures.some(
+                        (a) => a && a.id === builtInProg[4]
+                    );
+
+                    // Eigener (nicht-built-in) Bauplan → chain(define_blueprint, spawn).
+                    const cloneName = "bausync_custom";
+                    const cloned = r.cloneBlueprint && r.cloneBlueprint("stein_block", cloneName);
+                    let chainOk = false;
+                    if (cloned && r.state.blueprints[cloneName] && !r.state.blueprints[cloneName].builtIn) {
+                        r.state.buildMode = {
+                            active: true,
+                            blueprintName: cloneName,
+                            phantomMesh: { position: { x: 33, y: 4, z: 33 } },
+                            phantomOnGround: true,
+                        };
+                        r.confirmBuild();
+                        const customProg = sent[sent.length - 1];
+                        chainOk =
+                            Array.isArray(customProg) &&
+                            customProg[0] === "chain" &&
+                            customProg[1][0] === "define_blueprint" &&
+                            customProg[2][0] === "spawn_blueprint";
+                    }
+                    out.confirmBuildCustomChains = chainOk;
+
+                    r.p2pBroadcastDsl = origBroadcast;
+                    r.state.p2p.enabled = false;
+                    // buildMode-Original wiederherstellen (Tests danach lesen
+                    // sein phantomOnGround-Feld); aktiv aus.
+                    r.state.buildMode = origBuildMode;
+                    r.state.buildMode.active = false;
+
+                    // Persistenz: buildStateSnapshot trägt die arch-id.
+                    const snap = r.buildStateSnapshot();
+                    out.snapshotKeepsArchId =
+                        Array.isArray(snap.architectures) &&
+                        snap.architectures.some((a) => a && a.id === "a-unit-1");
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!buildSyncResults || buildSyncResults.error) {
+                check(
+                    "Multi-User-Bau-Sync: Snapshot erreichbar",
+                    false,
+                    (buildSyncResults && buildSyncResults.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("Bau-Sync: _newArchId liefert eindeutige string-ids", buildSyncResults.newArchIdUnique);
+                check("Bau-Sync: spawnArchitecture nimmt eine geteilte string-id", buildSyncResults.spawnAcceptsStringId);
+                check("Bau-Sync: spawnArchitecture ohne id bleibt numerisch (Worldgen)", buildSyncResults.spawnDefaultNumericId);
+                check("Bau-Sync: spawn_blueprint spawnt unter der archId", buildSyncResults.spawnBlueprintArchId);
+                check("Bau-Sync: spawn_blueprint ist idempotent (kein Doppel-Spawn)", buildSyncResults.spawnBlueprintIdempotent);
+                check("Bau-Sync: remove_architecture entfernt per string-id", buildSyncResults.removeArchitectureWorks);
+                check("Bau-Sync: remove_architecture ist defensiv (unbekannt/nicht-string)", buildSyncResults.removeArchitectureSafe);
+                check("Bau-Sync: describeProgram kennt remove_architecture", buildSyncResults.describeRemove);
+                check("Bau-Sync: spawn_blueprint + remove_architecture broadcasten", buildSyncResults.opsAreBroadcastable);
+                check("Bau-Sync: confirmBuild broadcastet spawn_blueprint mit archId", buildSyncResults.confirmBuildBroadcasts);
+                check("Bau-Sync: die lokal gebaute Struktur trägt die geteilte id", buildSyncResults.confirmBuildLocalSharedId);
+                check("Bau-Sync: eigener Bauplan reist als chain(define_blueprint, spawn)", buildSyncResults.confirmBuildCustomChains);
+                check("Bau-Sync: buildStateSnapshot persistiert die arch-id", buildSyncResults.snapshotKeepsArchId);
+            }
+
+            // ### W7 Phase 3 — LLM-Pool: eine Stimme über das Mesh teilen ###
+            // Ein Peer mit aktivem LLM teilt seine „Stimme"; ein schlüsselloser
+            // Peer routet Chat darüber. Sicherheit: Opt-in (voiceShared),
+            // Rate-Limit, dslRun-Sandbox für das Antwort-Programm. Tests:
+            // Capability-Gate, soul trägt voiceShared, Anfrage/Antwort-Pfad,
+            // Annahme-Wand (not_sharing/rate_limited/wrong-peer).
+            const w7p3Results = await page
+                .evaluate(async () => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    const p2p = r.state.p2p;
+                    const K = r.constructor;
+
+                    out.stateFields =
+                        p2p.voiceShared === false &&
+                        p2p._voiceServedAt instanceof Map &&
+                        p2p._voiceRequests instanceof Map &&
+                        Number.isInteger(K.P2P_VOICE_COOLDOWN_MS) &&
+                        Number.isInteger(K.P2P_VOICE_TIMEOUT_MS) &&
+                        Number.isInteger(K.P2P_VOICE_PROMPT_MAX);
+                    out.methodsPresent = [
+                        "_p2pVoiceCapable",
+                        "setVoiceShared",
+                        "_p2pFindVoicePeer",
+                        "_p2pVoiceAvailable",
+                        "_p2pRequestSharedVoice",
+                        "_p2pHandleLlmRequest",
+                        "_p2pHandleLlmResponse",
+                    ].every((m) => typeof r[m] === "function");
+
+                    // Capability-Gate: ohne aktives LLM kann ich nicht teilen.
+                    const wasEnabled = r.state.llm.enabled;
+                    r.state.llm.enabled = false;
+                    out.setVoiceSharedGated = r.setVoiceShared(true) === false && p2p.voiceShared === false;
+                    r.state.llm.enabled = wasEnabled;
+
+                    // soul-Broadcast trägt voiceShared; soul-Empfang speichert es.
+                    const sent = [];
+                    const origSend = r.p2pSend;
+                    r.p2pSend = (o) => {
+                        sent.push(o);
+                        return true;
+                    };
+                    p2p.enabled = true;
+                    p2p.voiceShared = true;
+                    r._p2pBroadcastSoul();
+                    out.soulCarriesVoiceShared = sent.some((m) => m.type === "soul" && m.voiceShared === true);
+                    r.p2pSend = origSend;
+                    p2p.voiceShared = false;
+
+                    p2p.peerId = "self-w7p3";
+                    for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+                    r.p2pHandleMessage(
+                        JSON.stringify({ type: "soul", peerId: "voicePeer", soulName: "human", voiceShared: true })
+                    );
+                    const vp = p2p.peers.get("voicePeer");
+                    out.soulStoresVoiceShared = !!vp && vp.voiceShared === true;
+
+                    // _p2pFindVoicePeer findet den teilenden Peer mit offenem Kanal.
+                    p2p.rtcPeers.set("voicePeer", { pc: null, open: true, channel: {}, pendingIce: [] });
+                    out.findVoicePeer = r._p2pFindVoicePeer() === "voicePeer";
+
+                    // Stub _p2pVoiceCapable → true, _p2pSendChannelTo → capture,
+                    // llmCall → fester Reply. So lässt sich der Teiler-Pfad prüfen
+                    // ohne echtes LLM.
+                    const origCapable = r._p2pVoiceCapable;
+                    const origSendCh = r._p2pSendChannelTo;
+                    const origLlm = r.llmCall;
+                    const chSent = [];
+                    r._p2pVoiceCapable = () => true;
+                    r._p2pSendChannelTo = (pid, obj) => {
+                        chSent.push({ pid, obj });
+                        return true;
+                    };
+                    r.llmCall = async () => ({ say: "geteilte Antwort", program: null });
+
+                    // Teiler-Pfad: voiceShared an → eine Anfrage wird beantwortet.
+                    p2p.voiceShared = true;
+                    p2p._voiceServedAt.clear();
+                    await r._p2pHandleLlmRequest("askPeer", { reqId: "rq-1", prompt: "hallo" });
+                    const resp1 = chSent.find((c) => c.obj && c.obj.reqId === "rq-1");
+                    out.requestServed = !!resp1 && resp1.obj.type === "llm-response" && resp1.obj.say === "geteilte Antwort";
+
+                    // Rate-Limit: zweite Anfrage sofort danach → rate_limited.
+                    await r._p2pHandleLlmRequest("askPeer", { reqId: "rq-2", prompt: "nochmal" });
+                    const resp2 = chSent.find((c) => c.obj && c.obj.reqId === "rq-2");
+                    out.rateLimited = !!resp2 && resp2.obj.error === "rate_limited";
+
+                    // Opt-in-Wand: voiceShared aus → not_sharing.
+                    p2p.voiceShared = false;
+                    await r._p2pHandleLlmRequest("askPeer", { reqId: "rq-3", prompt: "x" });
+                    const resp3 = chSent.find((c) => c.obj && c.obj.reqId === "rq-3");
+                    out.notSharingWall = !!resp3 && resp3.obj.error === "not_sharing";
+
+                    // Leerer Prompt → empty_prompt.
+                    p2p.voiceShared = true;
+                    p2p._voiceServedAt.clear();
+                    await r._p2pHandleLlmRequest("askPeer2", { reqId: "rq-4", prompt: "" });
+                    const resp4 = chSent.find((c) => c.obj && c.obj.reqId === "rq-4");
+                    out.emptyPromptRejected = !!resp4 && resp4.obj.error === "empty_prompt";
+
+                    r._p2pVoiceCapable = origCapable;
+                    r._p2pSendChannelTo = origSendCh;
+                    r.llmCall = origLlm;
+                    p2p.voiceShared = false;
+
+                    // Anfrager-Pfad: _p2pHandleLlmResponse matched eine offene
+                    // Anfrage + ruft den Callback.
+                    let cbText = null;
+                    p2p._voiceRequests.set("rq-resp", { cb: (t) => (cbText = t), timeout: null, peerId: "voicePeer" });
+                    r._p2pHandleLlmResponse("voicePeer", { reqId: "rq-resp", say: "hallo zurück" });
+                    out.responseDelivered = cbText === "Geteilte Stimme: hallo zurück";
+                    out.responseConsumed = !p2p._voiceRequests.has("rq-resp");
+
+                    // Annahme-Wand: eine Antwort vom FALSCHEN Peer wird verworfen.
+                    let cbText2 = null;
+                    p2p._voiceRequests.set("rq-w", { cb: (t) => (cbText2 = t), timeout: null, peerId: "voicePeer" });
+                    r._p2pHandleLlmResponse("evilPeer", { reqId: "rq-w", say: "böse" });
+                    out.wrongPeerRejected = cbText2 === null && p2p._voiceRequests.has("rq-w");
+                    p2p._voiceRequests.delete("rq-w");
+
+                    // Das Antwort-Programm läuft durch dslRun (Sandbox).
+                    const weatherBefore = r.state.weather;
+                    p2p._voiceRequests.set("rq-prog", { cb: () => {}, timeout: null, peerId: "voicePeer" });
+                    r._p2pHandleLlmResponse("voicePeer", { reqId: "rq-prog", say: "", program: ["weather", "rainy"] });
+                    out.programRanInSandbox = r.state.weather === "rainy";
+                    r.dslRun(["weather", weatherBefore || "sunny"], { source: "test" });
+
+                    // _p2pRequestSharedVoice ohne Voice-Peer → no_voice.
+                    for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+                    p2p.rtcPeers.clear();
+                    const noVoice = r._p2pRequestSharedVoice("frage", null);
+                    out.requestNoVoice = noVoice.ok === false && noVoice.reason === "no_voice";
+
+                    // llm-request über _p2pHandleChannelMessage erreicht den Handler
+                    // (kanal-exklusiv, nicht von der Spiel-Whitelist verworfen).
+                    let handlerHit = false;
+                    const origReq = r._p2pHandleLlmRequest;
+                    r._p2pHandleLlmRequest = () => {
+                        handlerHit = true;
+                    };
+                    r._p2pHandleChannelMessage("chPeer", JSON.stringify({ type: "llm-request", reqId: "c1", prompt: "x" }));
+                    out.channelRoutesLlmRequest = handlerHit === true;
+                    r._p2pHandleLlmRequest = origReq;
+
+                    out.voiceButtonExists = !!document.getElementById("p2p-voice-share");
+
+                    // Cleanup
+                    for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+                    p2p.rtcPeers.clear();
+                    p2p._voiceRequests.clear();
+                    p2p._voiceServedAt.clear();
+                    p2p.voiceShared = false;
+                    p2p.enabled = false;
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!w7p3Results || w7p3Results.error) {
+                check(
+                    "W7 Phase 3: Snapshot erreichbar",
+                    false,
+                    (w7p3Results && w7p3Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("W7 P3: state.p2p trägt voiceShared + Voice-Maps + Konstanten", w7p3Results.stateFields);
+                check("W7 P3: alle 7 LLM-Pool-Methoden auf der Klasse", w7p3Results.methodsPresent);
+                check("W7 P3: setVoiceShared ohne aktives LLM bleibt false (Capability-Gate)", w7p3Results.setVoiceSharedGated);
+                check("W7 P3: soul-Broadcast trägt voiceShared", w7p3Results.soulCarriesVoiceShared);
+                check("W7 P3: soul-Empfang speichert voiceShared am Peer", w7p3Results.soulStoresVoiceShared);
+                check("W7 P3: _p2pFindVoicePeer findet den teilenden Peer", w7p3Results.findVoicePeer);
+                check("W7 P3: eine Anfrage an einen Teiler wird beantwortet", w7p3Results.requestServed);
+                check("W7 P3: eine zweite Anfrage sofort danach → rate_limited", w7p3Results.rateLimited);
+                check("W7 P3: Anfrage an einen Nicht-Teiler → not_sharing (Opt-in-Wand)", w7p3Results.notSharingWall);
+                check("W7 P3: leerer Prompt → empty_prompt", w7p3Results.emptyPromptRejected);
+                check("W7 P3: die Antwort erreicht den Anfrager-Callback", w7p3Results.responseDelivered);
+                check("W7 P3: die beantwortete Anfrage wird aus dem Puffer geräumt", w7p3Results.responseConsumed);
+                check("W7 P3: eine Antwort vom falschen Peer wird verworfen", w7p3Results.wrongPeerRejected);
+                check("W7 P3: das Antwort-Programm läuft durch die dslRun-Sandbox", w7p3Results.programRanInSandbox);
+                check("W7 P3: _p2pRequestSharedVoice ohne Voice-Peer → no_voice", w7p3Results.requestNoVoice);
+                check("W7 P3: llm-request ist kanal-exklusiv (erreicht den Handler)", w7p3Results.channelRoutesLlmRequest);
+                check("W7 P3: 'Stimme teilen'-Knopf im DOM", w7p3Results.voiceButtonExists);
+            }
+
+            // ### W7 Phase 4 — Public-Lobby + Kreatur-Sicht-Sync ###
+            // P4: Räume browsbar machen (lobby-publish/list/join). Kreatur-
+            // Sync: jeder Peer streamt SEINE Kreaturen, Mitspieler rendern sie
+            // als Sicht-Schicht (remoteCreatures, NICHT in state.creatures).
+            const w7p4Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    const p2p = r.state.p2p;
+
+                    // ── W7 P4 — Lobby ──
+                    out.lobbyState =
+                        !!p2p.lobby &&
+                        p2p.lobby.published === false &&
+                        Array.isArray(p2p.lobby.rooms) &&
+                        p2p.remoteCreatures instanceof Map;
+                    out.lobbyMethods = [
+                        "publishToLobby",
+                        "unpublishFromLobby",
+                        "requestLobbyList",
+                        "joinLobbyRoom",
+                        "_renderLobbyUI",
+                    ].every((m) => typeof r[m] === "function");
+
+                    // publishToLobby ohne Verbindung → not_connected.
+                    p2p.enabled = false;
+                    p2p.connected = false;
+                    out.publishNeedsConnection = r.publishToLobby("Testraum").reason === "not_connected";
+
+                    // Mit Verbindung: _p2pSignal stubben + Nachrichten fangen.
+                    const signals = [];
+                    const origSignal = r._p2pSignal;
+                    r._p2pSignal = (o) => signals.push(o);
+                    p2p.enabled = true;
+                    p2p.connected = true;
+                    const pubRes = r.publishToLobby("Mein Raum");
+                    out.publishSends =
+                        pubRes.ok === true &&
+                        p2p.lobby.published === true &&
+                        signals.some((s) => s.type === "lobby-publish" && s.label === "Mein Raum");
+                    r.unpublishFromLobby();
+                    out.unpublishSends =
+                        p2p.lobby.published === false && signals.some((s) => s.type === "lobby-unpublish");
+                    r.requestLobbyList();
+                    out.listRequestSends = signals.some((s) => s.type === "lobby-list");
+                    r._p2pSignal = origSignal;
+
+                    // lobby-rooms-Nachricht → Liste gespeichert + gerendert.
+                    r.p2pHandleMessage(
+                        JSON.stringify({
+                            type: "lobby-rooms",
+                            rooms: [{ room: "raum-xyz", label: "Anazhs Welt", peers: 3 }],
+                        })
+                    );
+                    out.lobbyRoomsStored = p2p.lobby.rooms.length === 1 && p2p.lobby.rooms[0].room === "raum-xyz";
+                    const listEl = document.getElementById("p2p-lobby-list");
+                    out.lobbyRendered =
+                        !!listEl && !!listEl.querySelector("button[data-lobby-room='raum-xyz']");
+
+                    // joinLobbyRoom setzt roomOverride.
+                    const joinRes = r.joinLobbyRoom("raum-xyz");
+                    out.joinSetsOverride = joinRes.ok === true && p2p.roomOverride === "raum-xyz";
+                    out.joinSameRejected = r.joinLobbyRoom("raum-xyz").reason === "already_here";
+
+                    out.lobbyDom =
+                        !!document.getElementById("p2p-lobby") &&
+                        !!document.getElementById("p2p-lobby-publish-toggle") &&
+                        !!document.getElementById("p2p-lobby-refresh");
+
+                    // ── Kreatur-Sicht-Sync ──
+                    out.creatureMethods = [
+                        "_p2pBroadcastCreatures",
+                        "_p2pHandleCreaturePos",
+                        "_p2pTickRemoteCreatures",
+                        "_disposeRemoteCreature",
+                    ].every((m) => typeof r[m] === "function");
+
+                    // spawnCreatureAt vergibt eine netId.
+                    const testC = r.spawnCreatureAt(20, 6, 20, "happy");
+                    out.creatureHasNetId =
+                        !!testC && typeof testC.userData.netId === "string" && testC.userData.netId.length > 0;
+
+                    // _p2pBroadcastCreatures sendet creature-pos mit der Kreatur.
+                    const csent = [];
+                    const origSend2 = r.p2pSend;
+                    r.p2pSend = (o) => csent.push(o);
+                    r._p2pBroadcastCreatures();
+                    const cmsg = csent.find((m) => m.type === "creature-pos");
+                    out.broadcastSendsCreatures =
+                        !!cmsg && Array.isArray(cmsg.list) && cmsg.list.some((e) => e.id === testC.userData.netId);
+                    r.p2pSend = origSend2;
+
+                    // _p2pHandleCreaturePos legt eine Sicht-Kreatur an.
+                    p2p.remoteCreatures.clear();
+                    r._p2pHandleCreaturePos("farPeer", {
+                        list: [{ id: "c9", x: 5, y: 6, z: 5, yaw: 0, soul: "wesen" }],
+                    });
+                    out.remoteCreatureCreated = p2p.remoteCreatures.has("farPeer:c9");
+                    // NICHT in state.creatures (updateCreatures ignoriert sie).
+                    const rc = p2p.remoteCreatures.get("farPeer:c9");
+                    out.remoteNotInLocalSim = !!rc && r.state.creatures.indexOf(rc.mesh) === -1;
+
+                    // Reconcile: eine Liste OHNE c9 → die Sicht-Kreatur verschwindet.
+                    r._p2pHandleCreaturePos("farPeer", {
+                        list: [{ id: "c10", x: 7, y: 6, z: 7, yaw: 0, soul: "sprite" }],
+                    });
+                    out.reconcileRemoves =
+                        !p2p.remoteCreatures.has("farPeer:c9") && p2p.remoteCreatures.has("farPeer:c10");
+
+                    // _p2pRemovePeer entsorgt die Sicht-Kreaturen des Peers.
+                    r._p2pRemovePeer("farPeer");
+                    out.removePeerCleansCreatures = !p2p.remoteCreatures.has("farPeer:c10");
+
+                    // creature-pos ist in der Kanal-Whitelist (mesh-zustellbar).
+                    p2p.remoteCreatures.clear();
+                    r._p2pHandleChannelMessage(
+                        "chPeer",
+                        JSON.stringify({ type: "creature-pos", list: [{ id: "c1", x: 1, y: 6, z: 1, soul: "wesen" }] })
+                    );
+                    out.creaturePosChannelAllowed = p2p.remoteCreatures.has("chPeer:c1");
+
+                    // Cleanup
+                    for (const [key, rcx] of p2p.remoteCreatures) r._disposeRemoteCreature(key, rcx);
+                    if (testC && typeof r.removeCreature === "function") r.removeCreature(testC);
+                    p2p.lobby.rooms = [];
+                    p2p.lobby.published = false;
+                    p2p.roomOverride = "";
+                    p2p.enabled = false;
+                    p2p.connected = false;
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!w7p4Results || w7p4Results.error) {
+                check(
+                    "W7 Phase 4: Snapshot erreichbar",
+                    false,
+                    (w7p4Results && w7p4Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("W7 P4: state.p2p trägt lobby + remoteCreatures", w7p4Results.lobbyState);
+                check("W7 P4: alle 5 Lobby-Methoden auf der Klasse", w7p4Results.lobbyMethods);
+                check("W7 P4: publishToLobby ohne Verbindung → not_connected", w7p4Results.publishNeedsConnection);
+                check("W7 P4: publishToLobby sendet lobby-publish + setzt published", w7p4Results.publishSends);
+                check("W7 P4: unpublishFromLobby sendet lobby-unpublish", w7p4Results.unpublishSends);
+                check("W7 P4: requestLobbyList sendet lobby-list", w7p4Results.listRequestSends);
+                check("W7 P4: lobby-rooms-Nachricht speichert die Liste", w7p4Results.lobbyRoomsStored);
+                check("W7 P4: _renderLobbyUI rendert eine Beitreten-Zeile", w7p4Results.lobbyRendered);
+                check("W7 P4: joinLobbyRoom setzt roomOverride", w7p4Results.joinSetsOverride);
+                check("W7 P4: joinLobbyRoom in denselben Raum → already_here", w7p4Results.joinSameRejected);
+                check("W7 P4: Lobby-UI-Elemente im DOM", w7p4Results.lobbyDom);
+                check("Kreatur-Sync: alle 4 Methoden auf der Klasse", w7p4Results.creatureMethods);
+                check("Kreatur-Sync: spawnCreatureAt vergibt eine netId", w7p4Results.creatureHasNetId);
+                check("Kreatur-Sync: _p2pBroadcastCreatures sendet creature-pos", w7p4Results.broadcastSendsCreatures);
+                check("Kreatur-Sync: creature-pos legt eine Sicht-Kreatur an", w7p4Results.remoteCreatureCreated);
+                check("Kreatur-Sync: Sicht-Kreatur liegt NICHT in state.creatures", w7p4Results.remoteNotInLocalSim);
+                check("Kreatur-Sync: Reconcile entfernt verschwundene Kreaturen", w7p4Results.reconcileRemoves);
+                check("Kreatur-Sync: _p2pRemovePeer entsorgt die Sicht-Kreaturen", w7p4Results.removePeerCleansCreatures);
+                check("Kreatur-Sync: creature-pos ist kanal-zustellbar", w7p4Results.creaturePosChannelAllowed);
+            }
+
             // ### Ring 11 V2 — DSL-AST-Broadcast (Welt-Sync) ###
             // Sandbox-Pfad: human-dslRun broadcastet via p2pSend wenn enabled+
             // connected; remote-dslRun (source="remote:*") läuft durch dslRun
@@ -4659,9 +5543,12 @@ function startSaveServer() {
                     out.snapshotRejectedWhenNotPending = r.state.worldMeta.role === originalRole;
 
                     // 8. world-request: nur Host antwortet (mit world-snapshot)
+                    // W7 P1: world-snapshot ist eine Signaling-Nachricht und
+                    // läuft über _p2pSignal (WS), nicht über das mesh-bewusste
+                    // p2pSend — der Mock fängt darum _p2pSignal ab.
                     const sentMsgs = [];
-                    const origSend = r.p2pSend;
-                    r.p2pSend = function (m) {
+                    const origSignal = r._p2pSignal;
+                    r._p2pSignal = function (m) {
                         sentMsgs.push(m);
                         return true;
                     };
@@ -4674,7 +5561,7 @@ function startSaveServer() {
                     r.p2pHandleMessage(JSON.stringify({ type: "world-request", peerId: "asker" }));
                     const sentSnap = sentMsgs.find((m) => m.type === "world-snapshot" && m.to === "asker");
                     out.hostAnswersRequestWithSnapshot = !!sentSnap && !!sentSnap.state;
-                    r.p2pSend = origSend;
+                    r._p2pSignal = origSignal;
                     sentMsgs.length = 0;
                     r.state.p2p.role = "solo";
 
