@@ -1,8 +1,10 @@
 # Welt-Portal — Bibliothek von Alexandria der Vibecode-Ära
 
-Konzept-Dokument für die Wellen 12-14 (jenseits der aktuellen Polish-Phase).
+Konzept-Dokument für die Wellen 12-14.
 
-Stand: 17.05.2026 (V8.22). Diese Doku ist **keine Implementierungs-Spec**, sondern ein **Vision-Anker**. Sie hält die Frage offen: was wird AnazhRealm, wenn der Spieler nicht nur Welten innerhalb einer Engine baut, sondern durch Welten zwischen Engines geht?
+Stand: 17.05.2026 (V8.52). Diese Doku ist **keine Implementierungs-Spec**, sondern ein **Vision-Anker**. Sie hält die Frage offen: was wird AnazhRealm, wenn der Spieler nicht nur Welten innerhalb einer Engine baut, sondern durch Welten zwischen Engines geht?
+
+> **Umsetzungsstand (V8.52)** — W12 **Phase 1 + 2 sind live**. Phase 1 (V8.51): das Portal-Skelett — emergente Rolle „portal", sandboxed iframe, Betreten/Pause/Rückkehr. Phase 2 (V8.52): das Tor ist real. Zwei fremde Engines docken an — die Strom-Welt (`three-fluid-fx`) und die Terrain-Welt (`three.terrain.js`), je in `worlds/<name>/` mit eigener Three.js-Version gebündelt. Eine generische DSL-Brücke trägt alle Welten; das Manifest (`portalMeta.dsl`) pro Welt ist das Wörterbuch — **Drei-Stufen-Klarheit**: kein Manifest → „ausgestellt" (spielbar, stumm zur DSL); Manifest → „übersetzt"; eine AnazhRealm-bewusste Welt → „nativ". Die `WORLD_REGISTRY` + `aimBlueprintAtWorld` machen das Portal-Zielen spieler-erreichbar. **Offen (Phase 3)**: Ereignisse zurück (Sub-Welt → Heimat-Journal) + die native Manifest-Stufe (`manifest.json` pro Welt). **Horizont**: der KI-Übersetzer (ein LLM liest ein fremdes Repo, vendort es, schreibt Manifest + Adapter) = W14. Der vollständige Wellen-Eintrag steht in `CLAUDE.md` V8.52.
 
 ---
 

@@ -9,11 +9,15 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 17.05.2026, V8.47)
+## Schnell-Lage (Stand 17.05.2026, V8.52)
 
-**Du erbst eine sehr lebendige Welt**. **2156 Playtest-Invarianten grün + 0 Audit-Strict-Failures + smoke-multiuser grün**, ~27800 Zeilen in einer Datei, alles produktiv.
+**Du erbst eine sehr lebendige Welt**. **2291 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~28000 Zeilen in einer Datei, alles produktiv.
 
-**Jüngste Welle — V8.47 (Shadow-Acne-Heilung)**: Schöpfer-Befund „unnatürliche Schattenlinien nur auf komplett horizontalen flachen Flächen" (Bauwerks-Dächer). Diese Präzision war die Diagnose — Cel-Banding erscheint auf GEWÖLBTEN Flächen, nicht auf flachen; der Schöpfer sah das Gegenteil → Shadow-Map-Acne. Die `DirectionalLight` hatte keinen Shadow-Bias → flache, zur Sonne zeigende Flächen schatten sich selbst in Streifen. Fix: `shadow.normalBias = 1.0` + `shadow.bias = -0.0005` + mapSize 1024→2048.
+**Jüngste Welle — V8.52 (W12 Phase 2: Welt-Portal wird real)**: das Tor führt jetzt in echte fremde Welten. Zwei fremde Engines docken über ein generisches DSL-Protokoll an — die Strom-Welt (`three-fluid-fx`, ein 2D-Fluid) und die Terrain-Welt (`three.terrain.js`, eine 3D-Landschaft), beide in `worlds/<name>/` mit ihrer eigenen Three.js-Version gebündelt. EINE Brücke trägt alle Welten; ein Manifest (`portalMeta.dsl`) pro Welt ist das Wörterbuch; `WORLD_REGISTRY` + `aimBlueprintAtWorld` machen das Portal-Zielen spieler-erreichbar. Sieben Commits, je Schöpfer-Browser-getestet. **Lies `CLAUDE.md` V8.52 + `docs/world-portal.md` ZUERST.**
+
+**Offen — die nächste Welle**: **W12 Phase 3** — Ereignisse zurück (die Sub-Welt spricht ins Heimat-Journal) + die native Manifest-Stufe (eine Welt bringt ihr eigenes `manifest.json` mit). Alternativ **W13 (Vibe-Pass)**. Die Drei-Stufen-Klarheit (nativ / übersetzt / ausgestellt) + der KI-Übersetzer-Horizont stehen in `docs/world-portal.md`. (Die älteren „Offen"-Notizen unten — Schatten/Performance — sind mit V8.48–V8.50 abgearbeitet.)
+
+**Welle davor — V8.47 (Shadow-Acne-Heilung)**: Schöpfer-Befund „unnatürliche Schattenlinien nur auf komplett horizontalen flachen Flächen" (Bauwerks-Dächer). Diese Präzision war die Diagnose — Cel-Banding erscheint auf GEWÖLBTEN Flächen, nicht auf flachen; der Schöpfer sah das Gegenteil → Shadow-Map-Acne. Die `DirectionalLight` hatte keinen Shadow-Bias → flache, zur Sonne zeigende Flächen schatten sich selbst in Streifen. Fix: `shadow.normalBias = 1.0` + `shadow.bias = -0.0005` + mapSize 1024→2048.
 
 **Welle davor — V8.46 (Sanfte Wetter-Übergänge)**: `_weatherBlendedValue` cross-fadet `weatherEffect` + `cloudCover` über die 45s-Transition (vorher flippten sie sofort → harter Wetter-Sprung).
 
@@ -149,12 +153,13 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. sind VOLLSTÄNDIG — die
 
 | Welle | Was | Aufwand | Vision-Tiefe |
 |---|---|---|---|
-| **W12** Welt-Portal | AnazhRealm wird Tor zu anderen Vibecode-Welten („Bibliothek von Alexandria"). Bauplan-Rolle „portal" + Sub-Engine-Adapter im iframe. PoC mit `three-fluid-fx`. Lies `docs/world-portal.md` ZUERST. | 6-8 Sessions | sehr hoch |
+| **W12 Phase 3** Welt-Portal | Phase 1 (Skelett) + Phase 2 (zwei fremde Welten + Brücke + Registry) sind live (V8.51+V8.52). Phase 3: Ereignisse zurück (Sub-Welt → Heimat-Journal) + native Manifest-Stufe (`manifest.json` pro Welt). Lies `docs/world-portal.md` ZUERST. | 2-4 Sessions | sehr hoch |
+| **W13** Vibe-Pass | Self-Sovereign Identity (ed25519-Keypair) — der Avatar wird zur „Wallet" der Vision. | 5-7 Sessions | sehr hoch |
 | **W11 V4** Voice-Sync | Mitspieler hören deinen Companion-Output (SpeechSynthesis-Broadcast). Klein, baut auf V3 — schließt den Präsenz-Bogen (sehen/spüren/kennen/hören). | 1 Session | mittel |
 | **Welle 10b weitere Affordances** | balancing/broadcasting/lifting/radiating — pro Affordance ~1 Session, architektur-neutral. | klein-mittel | hoch |
 | **Welle 6.H V3** Kreatur-Beziehungen | Kreaturen sehen sich gegenseitig — Freundschaft, Konkurrenz, Hierarchie. | mittel | hoch |
 
-**Empfehlung**: **W12 Phase 2** — W12 Phase 1 (Welt-Portal-Skelett) ist live (V8.51, Schöpfer-Browser-Test bestätigt): die emergente Rolle „portal" (ein magie-leitender Ring), die Skelett-Welt im sandboxed iframe, Betreten/Pause/Rückkehr stehen. Phase 2 bringt eine echte Sub-Engine + die DSL-Brücke am bestehenden postMessage-Handshake (`{enter}`/`{ready}`/`{exit}`). `docs/world-portal.md` + den V8.51-Eintrag in `CLAUDE.md` ZUERST lesen. Volle Detail-Tabelle in `roadmap.md`.
+**Empfehlung**: **W12 Phase 3** oder **W13 (Vibe-Pass)**. W12 Phase 1 (Skelett, V8.51) + Phase 2 (zwei fremde Welten, das generische DSL-Protokoll, die Welt-Registry, das spieler-erreichbare Portal-Zielen — V8.52) sind live und Schöpfer-Browser-bestätigt. Phase 3 schließt die Brücke beidseitig (Ereignisse zurück: Sub-Welt → Heimat-Journal) und bringt die native Manifest-Stufe (eine Welt liefert ihr eigenes `manifest.json`). W13 öffnet den nächsten Ring (souveräne Avatar-Identität). `docs/world-portal.md` + den V8.52-Eintrag in `CLAUDE.md` ZUERST lesen. Volle Detail-Tabelle in `roadmap.md`.
 
 ---
 
