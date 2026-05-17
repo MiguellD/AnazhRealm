@@ -4,9 +4,10 @@
 // Three.js r134; diese Welt bringt ihre eigene, neuere Engine mit. Das ist
 // das W12-Vision-Wort: ein Tor führt in eine Welt mit anderer Engine.
 //
-// Phase 2 Commit 1 baut die lebendige Sub-Welt (cursor-getriebener Fluid).
-// Die DSL-Brücke (Chat-Befehle wirken hier drin) folgt in Commit 2 — sie
-// dockt am bestehenden postMessage-Handshake an.
+// Anzeige nach dem offiziellen three-fluid-fx-Beispiel: die densityTexture
+// trägt das Dichtefeld im .b-Kanal. Ein Auto-Strom hält die Welt in
+// Bewegung; die DSL-Brücke (applyDsl) regelt die Lebhaftigkeit und wirft
+// Splat-Ausbrüche ein, damit Befehle SICHTBAR treffen.
 import * as THREE from "./lib/three.module.min.js";
 import {
     FluidSimulation,
@@ -23,6 +24,8 @@ function showFallback(text) {
 let renderer = null;
 let fluid = null;
 let display = null;
+// energy 0..1 — die Lebhaftigkeit des Stroms; die DSL-Brücke steuert sie.
+let energy = 0.5;
 
 // Die Fluid-Engine braucht WebGL2 + HalfFloat-FBOs. Schlägt das fehl (z. B.
 // ein Software-Renderer ohne HalfFloat), degradiert die Welt anmutig statt
@@ -34,16 +37,16 @@ try {
 
     fluid = new FluidSimulation(renderer, {
         profile: "balanced",
-        curlStrength: 1.7,
-        splatForce: 7,
-        densityDissipation: 0.975,
+        splatForce: 8,
+        curlStrength: 1.8,
+        densityDissipation: 0.98,
         reflectWalls: false,
     });
-    fluid.enableDye = true;
-    attachPointerSplats(renderer.domElement, fluid, { coloredStrokes: true });
+    attachPointerSplats(renderer.domElement, fluid);
 
-    // Fullscreen-Anzeige des Farb-Stroms (dyeTexture, RGB-Tinte) über einem
-    // Backdrop, den der DSL-Op skybox_color tönen kann.
+    // Anzeige: das Dichtefeld (densityTexture, Skalar im .b-Kanal) gefärbt —
+    // ruhig blau, wild magenta (die Strömungs-Geschwindigkeit verschiebt den
+    // Ton). Über einem Backdrop, den der DSL-Op skybox_color tönen kann.
     display = new FullscreenPass(
         new THREE.ShaderMaterial({
             vertexShader: FULLSCREEN_VERTEX,
@@ -51,16 +54,23 @@ try {
                 "precision highp float;",
                 "varying vec2 vUv;",
                 "uniform sampler2D tFluid;",
+                "uniform sampler2D tVel;",
                 "uniform vec3 uBackdrop;",
                 "void main() {",
-                "  vec3 ink = texture2D(tFluid, vUv).rgb;",
-                "  float glow = clamp(length(ink), 0.0, 1.5);",
-                "  gl_FragColor = vec4(uBackdrop + ink + ink * glow * 0.5, 1.0);",
+                "  float density = texture2D(tFluid, vUv).b;",
+                "  vec2 vel = texture2D(tVel, vUv).xy;",
+                "  float speed = clamp(length(vel), 0.0, 1.0);",
+                "  vec3 calm = vec3(0.22, 0.66, 1.0);",
+                "  vec3 wild = vec3(1.0, 0.40, 0.82);",
+                "  vec3 ink = mix(calm, wild, speed) * density;",
+                "  vec3 col = uBackdrop + ink * 1.3 + ink * density * 0.6;",
+                "  gl_FragColor = vec4(col, 1.0);",
                 "}",
             ].join("\n"),
             uniforms: {
-                tFluid: { value: null },
-                uBackdrop: { value: new THREE.Color(0.02, 0.024, 0.045) },
+                tFluid: { value: fluid.densityTexture },
+                tVel: { value: fluid.velocityTexture },
+                uBackdrop: { value: new THREE.Color(0.03, 0.045, 0.09) },
             },
         })
     );
@@ -78,14 +88,48 @@ function resize() {
 window.addEventListener("resize", resize);
 resize();
 
+// Ein sichtbarer Splat-Ausbruch — DSL-Wörter sollen den Strom SICHTBAR
+// treffen, nicht nur einen Parameter setzen. addSplat injiziert Dichte
+// (Tinte) + einen Geschwindigkeits-Stoß.
+function burst(count, force) {
+    if (!fluid) return;
+    for (let i = 0; i < count; i++) {
+        const a = Math.random() * Math.PI * 2;
+        fluid.addSplat(Math.random(), Math.random(), Math.cos(a) * force, Math.sin(a) * force);
+    }
+}
+
+// Auto-Strom: eine wandernde Quelle splattet fortlaufend Tinte — die Welt
+// lebt auch ohne Cursor. energy regelt Tempo + Wucht.
+let phase = 0;
+function autoSplat(dt) {
+    if (!fluid) return;
+    phase += dt * (0.6 + energy * 2.6);
+    const x = 0.5 + Math.cos(phase) * 0.34;
+    const y = 0.5 + Math.sin(phase * 1.27) * 0.34;
+    const f = 0.2 + energy * 1.1;
+    fluid.addSplat(x, y, Math.cos(phase * 2.3) * f, Math.sin(phase * 1.9) * f);
+}
+
 let last = performance.now();
+let splatTimer = 0;
 function frame(now) {
     if (renderer && fluid && display) {
         const dt = Math.min(0.033, Math.max(0.001, (now - last) / 1000));
         last = now;
+        fluid.curlStrength = 0.5 + energy * 3.4;
+        // Auto-Splats: häufiger bei hoher energy.
+        splatTimer += dt;
+        const interval = 0.32 - energy * 0.26;
+        let guard = 0;
+        while (splatTimer >= interval && guard++ < 8) {
+            splatTimer -= interval;
+            autoSplat(dt);
+        }
         try {
             fluid.step(dt);
-            display.material.uniforms.tFluid.value = fluid.dyeTexture;
+            display.material.uniforms.tFluid.value = fluid.densityTexture;
+            display.material.uniforms.tVel.value = fluid.velocityTexture;
             display.render(renderer, null);
         } catch (err) {
             showFallback("Strom-Welt: Render-Fehler — " + (err && err.message));
@@ -98,13 +142,9 @@ if (renderer && fluid && display) requestAnimationFrame(frame);
 
 // --- W12 Phase 2 — DSL-Brücke: die Heimat-Welt reicht Befehle herein. ---
 // three-fluid-fx kennt AnazhRealm nicht; die Übersetzung von DSL-Wörtern in
-// Fluid-Parameter ist Bibliotheks-Code (der Adapter), nicht Engine-Code.
+// Strom-Verhalten ist Bibliotheks-Code (der Adapter), nicht Engine-Code.
 function setEnergy(e) {
-    if (!fluid) return;
-    const v = Math.max(0, Math.min(1, e));
-    fluid.curlStrength = 0.3 + v * 3.4;
-    fluid.splatForce = 3 + v * 11;
-    fluid.densityDissipation = 0.99 - v * 0.04;
+    energy = Math.max(0, Math.min(1, e));
 }
 
 function applyBackdrop(arg) {
@@ -113,14 +153,15 @@ function applyBackdrop(arg) {
     if (!m) return;
     const n = parseInt(m[1], 16);
     display.material.uniforms.uBackdrop.value.setRGB(
-        (((n >> 16) & 255) / 255) * 0.5,
-        (((n >> 8) & 255) / 255) * 0.5,
-        ((n & 255) / 255) * 0.5
+        (((n >> 16) & 255) / 255) * 0.45,
+        (((n >> 8) & 255) / 255) * 0.45,
+        ((n & 255) / 255) * 0.45
     );
 }
 
 // Kern-Ops (weather, skybox_color) + welt-eigene Wörter (sturm, ruhe,
 // set_turbulence) — das per-Welt-Vokabular, das der Manifest deklariert.
+// Jedes Wort regelt energy UND wirft einen sichtbaren Ausbruch ein.
 function applyDsl(program) {
     if (!Array.isArray(program) || typeof program[0] !== "string") return;
     const op = program[0];
@@ -131,14 +172,20 @@ function applyDsl(program) {
     if (op === "skybox_color") {
         applyBackdrop(program[1]);
     } else if (op === "weather") {
-        setEnergy(String(program[1]) === "rainy" ? 0.16 : 0.62);
+        const rainy = String(program[1]) === "rainy";
+        setEnergy(rainy ? 0.16 : 0.66);
+        burst(rainy ? 8 : 18, rainy ? 0.5 : 1.3);
     } else if (op === "sturm") {
         setEnergy(1);
+        burst(44, 2.6);
     } else if (op === "ruhe") {
         setEnergy(0.05);
     } else if (op === "set_turbulence") {
         const t = Number(program[1]);
-        if (Number.isFinite(t)) setEnergy(t);
+        if (Number.isFinite(t)) {
+            setEnergy(t);
+            burst(10 + Math.round(t * 34), 0.6 + t * 2.2);
+        }
     }
 }
 

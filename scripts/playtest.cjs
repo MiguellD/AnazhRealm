@@ -13321,10 +13321,14 @@ function startSaveServer() {
                             /function applyDsl/.test(fxBody) &&
                             /"dsl"/.test(fxBody) &&
                             /function setEnergy/.test(fxBody);
+                        // Render-Fix: das Dichtefeld (densityTexture) + Auto-Splats.
+                        out.fluidRenders =
+                            /densityTexture/.test(fxBody) && /addSplat/.test(fxBody) && /uBackdrop/.test(fxBody);
                         const skBody = await (await fetch("worlds/skeleton/skeleton.js")).text();
                         out.skeletonAdapter = /function applyDsl/.test(skBody) && /"dsl"/.test(skBody);
                     } catch (e) {
                         out.fluidAdapter = false;
+                        out.fluidRenders = false;
                         out.skeletonAdapter = false;
                     }
 
@@ -13355,6 +13359,7 @@ function startSaveServer() {
                 );
                 check("W12 P2 C2: exitPortal räumt body.in-portal", w12bridgeResults.bodyClassCleared);
                 check("W12 P2 C2: Fluid-Welt-Adapter (applyDsl + dsl-Handler)", w12bridgeResults.fluidAdapter);
+                check("W12 P2 C2: Strom-Welt rendert Dichtefeld + Auto-Splats", w12bridgeResults.fluidRenders);
                 check("W12 P2 C2: Skelett-Welt-Adapter (applyDsl + dsl-Handler)", w12bridgeResults.skeletonAdapter);
             } else {
                 check(
