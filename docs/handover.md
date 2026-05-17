@@ -9,13 +9,13 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 17.05.2026, V8.52)
+## Schnell-Lage (Stand 17.05.2026, V8.53)
 
-**Du erbst eine sehr lebendige Welt**. **2291 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~28000 Zeilen in einer Datei, alles produktiv.
+**Du erbst eine sehr lebendige Welt**. **2324 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~28000 Zeilen in einer Datei, alles produktiv.
 
-**Jüngste Welle — V8.52 (W12 Phase 2: Welt-Portal wird real)**: das Tor führt jetzt in echte fremde Welten. Zwei fremde Engines docken über ein generisches DSL-Protokoll an — die Strom-Welt (`three-fluid-fx`, ein 2D-Fluid) und die Terrain-Welt (`three.terrain.js`, eine 3D-Landschaft), beide in `worlds/<name>/` mit ihrer eigenen Three.js-Version gebündelt. EINE Brücke trägt alle Welten; ein Manifest (`portalMeta.dsl`) pro Welt ist das Wörterbuch; `WORLD_REGISTRY` + `aimBlueprintAtWorld` machen das Portal-Zielen spieler-erreichbar. Sieben Commits, je Schöpfer-Browser-getestet. **Lies `CLAUDE.md` V8.52 + `docs/world-portal.md` ZUERST.**
+**Jüngste Welle — V8.53 (W12 Phase 3: die Portal-Brücke wird beidseitig)**: Phase 1+2 trugen DSL IN die Sub-Welt; Phase 3 schließt den Kreis. **Teil A — der Rückkanal**: eine Sub-Welt meldet ein Welt-Ereignis (`{type:"event",text}` via `sendEvent`), die Heimat schreibt es ins Welt-Journal (Typ `portal`) — GELOGGT, NIE ausgeführt; die Asymmetrie zur DSL-Hin-Richtung IST die Sicherheits-Wand. **Teil B — die native Manifest-Stufe**: jede Welt bringt ihr eigenes `worlds/<name>/manifest.json` mit und meldet ihr DSL-Vokabular im `ready`-Handshake — die Drei-Stufen-Klarheit (ausgestellt/übersetzt/nativ) wird real, „nativ" gewinnt. Zwei Commits, je playtest-grün. **Lies `CLAUDE.md` V8.53 + `docs/world-portal.md` ZUERST.**
 
-**Offen — die nächste Welle**: **W12 Phase 3** — Ereignisse zurück (die Sub-Welt spricht ins Heimat-Journal) + die native Manifest-Stufe (eine Welt bringt ihr eigenes `manifest.json` mit). Alternativ **W13 (Vibe-Pass)**. Die Drei-Stufen-Klarheit (nativ / übersetzt / ausgestellt) + der KI-Übersetzer-Horizont stehen in `docs/world-portal.md`. (Die älteren „Offen"-Notizen unten — Schatten/Performance — sind mit V8.48–V8.50 abgearbeitet.)
+**Offen — die nächste Welle**: **W13 (Vibe-Pass)** — Self-Sovereign Identity (ed25519-Keypair, der Avatar signiert seine Werke) — oder **W11 V4 (Voice-Sync)**, klein, schließt den Multi-User-Präsenz-Bogen. W12 (Welt-Portal) ist mit Phase 1+2+3 **vollständig**: das Tor führt real in fremde Engines, die Brücke trägt beide Richtungen, jede Welt beschreibt sich selbst. Der KI-Übersetzer-Horizont (eine fremde Welt automatisch andocken) bleibt W14. Siehe `docs/world-portal.md`. (Die älteren „Offen"-Notizen unten — Schatten/Performance — sind mit V8.48–V8.50 abgearbeitet.)
 
 **Welle davor — V8.47 (Shadow-Acne-Heilung)**: Schöpfer-Befund „unnatürliche Schattenlinien nur auf komplett horizontalen flachen Flächen" (Bauwerks-Dächer). Diese Präzision war die Diagnose — Cel-Banding erscheint auf GEWÖLBTEN Flächen, nicht auf flachen; der Schöpfer sah das Gegenteil → Shadow-Map-Acne. Die `DirectionalLight` hatte keinen Shadow-Bias → flache, zur Sonne zeigende Flächen schatten sich selbst in Streifen. Fix: `shadow.normalBias = 1.0` + `shadow.bias = -0.0005` + mapSize 1024→2048.
 
@@ -153,13 +153,13 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. sind VOLLSTÄNDIG — die
 
 | Welle | Was | Aufwand | Vision-Tiefe |
 |---|---|---|---|
-| **W12 Phase 3** Welt-Portal | Phase 1 (Skelett) + Phase 2 (zwei fremde Welten + Brücke + Registry) sind live (V8.51+V8.52). Phase 3: Ereignisse zurück (Sub-Welt → Heimat-Journal) + native Manifest-Stufe (`manifest.json` pro Welt). Lies `docs/world-portal.md` ZUERST. | 2-4 Sessions | sehr hoch |
+| **W12** Welt-Portal — **vollständig** | Phase 1 (Skelett, V8.51) + Phase 2 (zwei fremde Welten + Brücke + Registry, V8.52) + Phase 3 (Rückkanal Sub-Welt→Heimat-Journal + native Manifest-Stufe, V8.53) sind live. Der KI-Übersetzer (ein fremdes Repo automatisch andocken) bleibt **W14**. | — | — |
 | **W13** Vibe-Pass | Self-Sovereign Identity (ed25519-Keypair) — der Avatar wird zur „Wallet" der Vision. | 5-7 Sessions | sehr hoch |
 | **W11 V4** Voice-Sync | Mitspieler hören deinen Companion-Output (SpeechSynthesis-Broadcast). Klein, baut auf V3 — schließt den Präsenz-Bogen (sehen/spüren/kennen/hören). | 1 Session | mittel |
 | **Welle 10b weitere Affordances** | balancing/broadcasting/lifting/radiating — pro Affordance ~1 Session, architektur-neutral. | klein-mittel | hoch |
 | **Welle 6.H V3** Kreatur-Beziehungen | Kreaturen sehen sich gegenseitig — Freundschaft, Konkurrenz, Hierarchie. | mittel | hoch |
 
-**Empfehlung**: **W12 Phase 3** oder **W13 (Vibe-Pass)**. W12 Phase 1 (Skelett, V8.51) + Phase 2 (zwei fremde Welten, das generische DSL-Protokoll, die Welt-Registry, das spieler-erreichbare Portal-Zielen — V8.52) sind live und Schöpfer-Browser-bestätigt. Phase 3 schließt die Brücke beidseitig (Ereignisse zurück: Sub-Welt → Heimat-Journal) und bringt die native Manifest-Stufe (eine Welt liefert ihr eigenes `manifest.json`). W13 öffnet den nächsten Ring (souveräne Avatar-Identität). `docs/world-portal.md` + den V8.52-Eintrag in `CLAUDE.md` ZUERST lesen. Volle Detail-Tabelle in `roadmap.md`.
+**Empfehlung**: **W13 (Vibe-Pass)** oder **W11 V4 (Voice-Sync)**. W12 (Welt-Portal) ist mit Phase 1 (Skelett, V8.51), Phase 2 (zwei fremde Welten + Brücke + Registry, V8.52) und Phase 3 (der Rückkanal Sub-Welt→Heimat-Journal + die native Manifest-Stufe, V8.53) **vollständig** — das Tor führt real in fremde Engines, die Brücke trägt beide Richtungen, jede Welt beschreibt sich selbst. W13 öffnet den nächsten Ring (souveräne Avatar-Identität, ed25519); W11 V4 ist klein und schließt den Multi-User-Präsenz-Bogen (sehen/spüren/kennen/hören). `docs/world-portal.md` + den V8.53-Eintrag in `CLAUDE.md` ZUERST lesen. Volle Detail-Tabelle in `roadmap.md`.
 
 ---
 
