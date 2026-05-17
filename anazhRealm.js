@@ -13295,8 +13295,6 @@ class AnazhRealm {
     }
 
     // ### Welle 3 F — Welt-Tor ###
-
-    // ### Welle 3 F — Welt-Tor ###
     // Welt-Info im Welt-Drawer: die Welt wird sichtbar als Welt, mit
     // Identität, Alter, Erinnerungen. Export = bestehender Save-Snapshot
     // mit slug im Dateinamen. Import = bestehender File-Picker — der lädt
