@@ -65,9 +65,9 @@ Die Session-Hälfte davor (V8.23 → V8.33) war eine **Atmosphäre-Tiefe-Welle (
 
 **Die wiederkehrende Lehre dieser Welle** (vom Schöpfer dreimal eingefordert): *eine neue visuelle Schicht ist erst fertig, wenn sie an die bestehenden Schnittstellen angeschlossen ist — Tiefenpuffer, Physik, Tag-Nacht, Fog.* Drei Bugs in Folge (Sterne-Overlay, Wasser-ohne-Physik, Fog-nur-auf-Gras) hatten dieselbe Wurzel: ein Visual ohne Verkabelung. Custom-`ShaderMaterial` erbt KEINE Three.js-Features automatisch (kein Fog, kein Light) — alles muss manuell als Uniform durchgereicht werden. **V8.33 hat diese Lehre angewandt**: das Wasser-Erlebnis wurde EINMAL ganz durchdacht („hineingehen, schwimmen, tauchen, durchsehen") und in einer Welle vollendet, statt es über vier Versionen halb auszuliefern.
 
-**W12 + W13 sind live** — AnazhRealm ist ein Tor zu anderen Vibecode-Welten (W12 Welt-Portal), und der Avatar trägt eine souveräne Identität (W13 Vibe-Pass). Wer an W14 (Bibliothek) oder einer späteren Portal-Welle arbeitet: lies `docs/world-portal.md` ZUERST.
+**W12 + W13 + W14 + W7 sind live** — AnazhRealm ist ein Tor zu anderen Vibecode-Welten (W12 Welt-Portal), der Avatar trägt eine souveräne Identität (W13 Vibe-Pass), die Bibliothek von Alexandria steht (W14), und der WebRTC-Mesh trägt die Multi-User-Last (W7 Compute-Sharing). Wer an einer Portal- oder Bibliothek-Welle arbeitet: lies `docs/world-portal.md` ZUERST.
 
-**Die nächste große Welle ist W7 (Compute-Sharing)** — der WebRTC-Mesh als verteilter Server-Layer für die Bibliothek. **W14 (Bibliothek) ist mit Phase 1+2+3 komplett** (V8.58/V8.60/V8.61). Der KI-Übersetzer (ein LLM dockt ein fremdes Repo automatisch an) bleibt der Horizont innerhalb von W14 — keine Vorbedingung mehr, aber bewusst zuletzt (LLM-generierter Adapter-Code in der Sandbox = eigene Sicherheits-Welle). Einschiebbar: W11 V4 (Voice-Sync). Der Plan steht im Block „Aktuelle Roadmap" weiter unten und in `docs/roadmap.md` §3.
+**Die grossen Roadmap-Ringe sind gebaut.** Was als Horizont bleibt: der **KI-Übersetzer** (ein LLM dockt ein fremdes Repo automatisch an — liest es, vendort es, schreibt Manifest + Adapter), der grosse offene Schritt innerhalb von W14 — keine Vorbedingung mehr, aber bewusst zuletzt (LLM-generierter Adapter-Code in der Sandbox = eine eigene Sicherheits-Welle). Einschiebbar: W11 V4 (Voice-Sync, ~1 Session). Danach folgt das Wachstum der Vision der vier Testamente, nicht mehr einem vorgezeichneten Plan. Der aktuelle Stand steht im Block „Aktuelle Roadmap" weiter unten und in `docs/roadmap.md` §3.
 
 **Atmosphäre-Disziplin**: alle atmosphärischen Methoden mit `[ATMOSPHERE]`-Marker werden von `audit-strict.cjs` (5. Schicht) auf Hardcode geprüft. Wert-aus-dem-Kopf ist verboten — immer „aus welcher state-Beobachtung emergiert das?".
 
@@ -159,27 +159,16 @@ V7.89 (Kreatur-Boosts) war die kritische Prüfung dieses Gesetzes. Naive Lösung
 
 ## Aktuelle Roadmap (was als nächstes denkbar ist)
 
-Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. + **W12 (Welt-Portal) + W13 (Vibe-Pass) + W14 (Bibliothek)** sind VOLLSTÄNDIG — die Welt atmet, der Mitspieler ist sein echter Soul, das Tor führt in fremde Engines, der Avatar trägt eine souveräne Identität, und die Bibliothek von Alexandria steht (browsbar, signierbar, empfangend). Mögliche nächste Wellen, sortiert nach der empfohlenen Sequenz:
+Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. + **W12 (Welt-Portal) + W13 (Vibe-Pass) + W14 (Bibliothek) + W7 (Compute-Sharing)** sind VOLLSTÄNDIG — die Welt atmet, der Mitspieler ist sein echter Soul, das Tor führt in fremde Engines, der Avatar trägt eine souveräne Identität, die Bibliothek von Alexandria steht (browsbar, signierbar, empfangend), und der WebRTC-Mesh trägt die Multi-User-Last (P1 Kanäle → P2 Welt-Snapshot → P3 LLM-Pool → P4 Public-Lobby). Die grossen Roadmap-Ringe sind damit gebaut. Was offen bleibt, sortiert nach Vision-Tiefe:
 
 | Welle | Was | Aufwand | Vision-Tiefe |
 |---|---|---|---|
-| **W12** Welt-Portal — **vollständig** | Phase 1 (Skelett, V8.51) + Phase 2 (zwei fremde Welten + Brücke + Registry, V8.52) + Phase 3 (Rückkanal Sub-Welt→Heimat-Journal + native Manifest-Stufe, V8.53) sind live. Der KI-Übersetzer (ein fremdes Repo automatisch andocken) bleibt **W14**. | — | — |
-| **W13** Vibe-Pass — **vollständig (V8.54-V8.56)** | Phase 1: Schlüssel-Grundlage (ed25519-Keypair, Sign/Verify-Primitive). Phase 2: Bauplan-Signaturen (Signatur über die Substanz, Werkstatt-Anzeige). Phase 3: Vibe-Pass-Identität im Multi-User (`vibe`-WS-Protokoll, beweisbar via peerId-gebundenem Beweis, verifiziertes Name-Schild). | — | — |
-| **W14** Bibliothek — **vollständig (V8.58/V8.60/V8.61)** | Phase 1: browsbare Welt-Registry + „Portal holen". Phase 2: signierte Welt-Manifeste + „signiert von <Autor>" + W13 V2. Phase 3: fremde Welt-Manifeste exportieren/importieren — die Bibliothek wird ein wachsender Index. KI-Übersetzer als Horizont. | — | — |
-| **W13 V2** Vibe-Pass trägt das Schaffen — **vollständig (V8.60, Teil B)** | Custom-Seele + eigene Materialien + Werkzeuge reisen mit, wenn der Spieler durch ein Portal geht — `_portalEnterPayload`, die Skelett-Welt begrüßt den Reisenden damit. | — | — |
-| **W11 V4** Voice-Sync | Mitspieler hören deinen Companion-Output (SpeechSynthesis-Broadcast). Klein, baut auf V3 — schließt den Präsenz-Bogen (sehen/spüren/kennen/hören). | 1 Session | mittel |
+| **KI-Übersetzer** (W14-Horizont) | Ein LLM liest ein fremdes Repo, vendort es, schreibt `manifest.json` + Adapter — eine neue Welt dockt automatisch ans Portal an. Bewusst zuletzt: LLM-generierter Adapter-Code läuft in der Sandbox = eine eigene Sicherheits-Welle. | groß | sehr hoch |
+| **W11 V4** Voice-Sync | Mitspieler hören deinen Companion-Output (`companion-say`-Broadcast → SpeechSynthesis). Klein, baut auf W11 V3 — schließt den Präsenz-Bogen (sehen/spüren/kennen/hören). | 1 Session | mittel |
 | **Welle 10b weitere Affordances** | balancing/broadcasting/lifting/radiating — pro Affordance ~1 Session, architektur-neutral. | klein-mittel | hoch |
 | **Welle 6.H V3** Kreatur-Beziehungen | Kreaturen sehen sich gegenseitig — Freundschaft, Konkurrenz, Hierarchie. | mittel | hoch |
 
-**W14 — die drei Phasen** (volles Detail + Schnittstellen in `roadmap.md` §3):
-
-- **Phase 1 — die Bibliothek wird ein Ort** ✅ **live (V8.58)**: ein browsbarer „Bibliothek"-Tab über `WORLD_REGISTRY`; pro Welt eine Karte; „Portal holen" → `obtainPortalForWorld` klont `welt_portal` + `aimBlueprintAtWorld` + `addToInventory`. Macht die Registry spieler-erreichbar (W12 notierte selbst „die 3 Welten wirken hardcoded").
-- **Phase 2 — eine Welt veröffentlichen + signieren** ✅ **live (V8.60)**: `signWorld`/`verifyWorldSignature` versiegeln eine Welt mit dem Vibe-Pass (vier Status-Stufen, Self-Sovereign); das Portal-Overlay zeigt beim Betreten „signiert von &lt;Autor&gt;". Teil B = W13 V2: der Vibe-Pass trägt Seele + eigene Materialien/Werkzeuge durch ein Portal, die Skelett-Welt begrüßt den Reisenden damit.
-- **Phase 3 — fremde Welten empfangen** ✅ **live (V8.61)**: `exportWorldManifest`/`importWorldManifest` teilen + empfangen signierte Welt-Manifeste; `state.customWorlds` + `_worldEntry`/`_libraryWorlds` machen die Bibliothek zum wachsenden Index. Eine empfangene Welt ohne erreichbare Dateien ist browsbar, nicht betretbar. Der KI-Übersetzer (Welt-Dateien vendorn) bleibt der Horizont. **Damit ist W14 komplett.**
-
-**Schnittstellen, auf die W14 aufsetzt** (alles steht schon — W14 verbindet, baut keinen neuen Stamm): `WORLD_REGISTRY` + `aimBlueprintAtWorld` + `set_portal` (W12), `_portalReceiveManifest` + Drei-Stufen-Marke (W12 P3), `_vibeSign`/`_vibeVerify`/`vibePassId()` (W13), `addToInventory` (6.C1), Welt-Tor Export/Import (Ring 9).
-
-**Empfehlung**: **W14 ist komplett (Phase 1+2+3, V8.58/V8.60/V8.61)** — die nächste große Welle ist **W7 (Compute-Sharing)**, der WebRTC-Mesh als verteilter Server-Layer. Der KI-Übersetzer bleibt der Horizont innerhalb von W14 (LLM-generierter Adapter-Code in der Sandbox — eine eigene Sicherheits-Welle). W11 V4 (Voice-Sync, ~1 Session) ist jederzeit als Pause-Welle einschiebbar. `docs/world-portal.md` + den V8.61-Eintrag in `CLAUDE.md` ZUERST lesen.
+**Empfehlung**: die geplante Roadmap-Substanz ist erfüllt — W12/W13/W14/W7 alle komplett. Der **KI-Übersetzer** ist der letzte große Vision-Schritt; er hängt an keiner Vorbedingung mehr, braucht aber eine eigene Sicherheits-Welle (LLM-generierter Code in der Sandbox, sorgfältig sandgesichert). W11 V4 (Voice-Sync, ~1 Session) ist eine kleine, jederzeit einschiebbare Pause-Welle. Darüber hinaus folgt das Wachstum der Vision der vier Testamente, nicht mehr einem vorgezeichneten Plan — `docs/world-portal.md` + `docs/state-of-realm.md` ZUERST lesen.
 
 **Kleinere Polish-Notiz**: die Bauplan-Signatur-Zeile im Werkstatt-Stats-Panel ist wenig auffindbar (Schöpfer-Befund V8.56 — sie wurde erst nach Hinweis gesehen). Ein UX-Auffindbarkeits-Punkt für eine spätere Polish-Runde.
 
@@ -214,7 +203,7 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. + **W12 (Welt-Portal) + W
 - `CREATURE_PROPOSED_OPS` für Kreatur-Welt-Aktion (Defense in Depth)
 - save-server `/api/proxy/llm` mit strikten Whitelists (https-only, body-cap, header-allowlist)
 
-### Tests (2443 Invarianten)
+### Tests (2531 Invarianten)
 - `npm run playtest` — Headless-Chromium, ~25 s Logs, alle Schichten
 - `scripts/playtest.cjs` ist der Single-Source-Test
 - `npm run audit:strict` (5 generische Audit-Schichten) + `npm run smoke:multiuser`
@@ -342,6 +331,23 @@ Browser: geh den Menschen-Pfad selbst, vor dem „fertig".
 ---
 
 ## Session-Tagebuch (chronologisch, jüngste oben)
+
+### V8.62-V8.66 — W7 Compute-Sharing komplett (17.05.2026)
+
+Fünf Versionen, ein Bogen: W7 (Compute-Sharing) von „🔴 offen" zu
+„✅ komplett" — der WebRTC-Mesh. V8.62 (P1) — echte WebRTC-DataChannels,
+der `signaling-server` wird Rendezvous statt Relay (pos/dsl/soul/aura/vibe
+fliessen peer-to-peer, eine Mesh-Komplett-Wand gegen Doppel-Zustellung).
+V8.63 (P2) — der Welt-Snapshot reist mesh-nativ in 16-KiB-Stücken
+(`world-pull`/`world-chunk`), Guest-Resync per Knopf. V8.64 —
+Multi-User-Bau-Sync (`confirmBuild`/`harvestArchitecture` broadcasten via
+geteilter `archId` + `remove_architecture`-Op). V8.65 (P3) — LLM-Pool:
+ein Peer teilt seine „Stimme" über das Mesh (Opt-in + Rate-Limit +
+dslRun-Sandbox). V8.66 (P4) — Public-Lobby (Räume browsbar) +
+Kreatur-Sicht-Sync (jeder Peer streamt SEINE Kreaturen → `remoteCreatures`,
+nicht in `state.creatures`). Jede Welle Zwei-Browser-verifiziert
+(`smoke-webrtc.cjs`). Vollständige Einträge: `CLAUDE.md` V8.62-V8.66.
+2443 → 2531 Invarianten.
 
 ### V8.58-V8.61 — W14 Bibliothek komplett (17.05.2026)
 

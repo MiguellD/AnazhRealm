@@ -8,9 +8,9 @@ Diese Doc beschreibt das **gesamte Projekt vom heutigen Stand bis zum Vision-End
 
 ---
 
-## 1. Wo wir stehen (Mai 2026, V8.57)
+## 1. Wo wir stehen (Mai 2026, V8.66)
 
-✅ **Ring 0-11.5 + Welle 1-12 + W13 sind live.** Der Kern atmet (Hylomorphismus-Crafting, Tag-Nacht, lebendige Welt), der Multi-User ist tief (der Mitspieler ist sein echter Soul), das Welt-Portal trägt fremde Engines (W12), und der Avatar ist eine souveräne ed25519-Identität (W13). Chunk-Physik nutzt `btBvhTriangleMeshShape` (visuelles Mesh = Collider). 120 fps im Browser, **2377/2377 Playtest-Invarianten grün**, Audit-Strict 0 Failures.
+✅ **Ring 0-11.5 + Welle 1-14 + W7 sind live.** Der Kern atmet (Hylomorphismus-Crafting, Tag-Nacht, lebendige Welt), der Multi-User ist tief und mesh-nativ (der Mitspieler ist sein echter Soul, ein WebRTC-Mesh trägt pos/dsl/soul/aura/vibe peer-to-peer), das Welt-Portal trägt fremde Engines (W12), der Avatar ist eine souveräne ed25519-Identität (W13), die Bibliothek von Alexandria steht (W14), und das Compute-Sharing ist gebaut (W7 — WebRTC-Mesh, Welt-Snapshot mesh-nativ, LLM-Pool, Public-Lobby). Chunk-Physik nutzt `btBvhTriangleMeshShape` (visuelles Mesh = Collider). 120 fps im Browser, **2531/2531 Playtest-Invarianten grün**, Audit-Strict 0 Failures.
 
 **Die drei jüngsten großen Bögen**:
 
@@ -711,7 +711,7 @@ Themen, die kein eigener Ring sind, sondern durch alle Ringe ziehen.
 
 ### 5.1 Test-Coverage (CI-Gate)
 
-- Stand V8.57: **2377 Invarianten** in `scripts/playtest.cjs` (Headless-Chromium, ~25 s Log-Sammlung) + `audit:strict.cjs` (5 generische Audit-Schichten) + `smoke-multiuser.cjs`
+- Stand V8.66: **2531 Invarianten** in `scripts/playtest.cjs` (Headless-Chromium, ~25 s Log-Sammlung) + `audit:strict.cjs` (5 generische Audit-Schichten) + `smoke-multiuser.cjs` + `smoke-webrtc.cjs`
 - Pro Welle +6-35 neue Invarianten (Effekt sichtbar, kein Crash, Save-Schema OK, Emergenz statt Mechanik)
 - Disziplin: nach jeder substanziellen Änderung das Playtest-Gate, nicht nur Code-Analyse
 

@@ -2,11 +2,11 @@
 
 Ein als Co-Creation-Werk Mensch+KI entworfenes 3D-Browser-Sandbox-Ultiversum. Eine Datei, ein Stamm, viele Ringe.
 
-**Stand**: V8.61 (17.05.2026) — **W14 (Bibliothek) komplett**: die Welt-Registry ist browsbar (P1), signierbar mit dem Vibe-Pass (P2 — „signiert von <Autor>", plus W13 V2: das Schaffen reist durchs Portal mit) und empfangend (P3 — fremde Welt-Manifeste exportieren/importieren, die Bibliothek wird ein wachsender Index). Die Bibliothek von Alexandria der Vibecode-Ära steht; der KI-Übersetzer bleibt der Horizont. Ein achter Topbar-Tab „Bibliothek" macht die Welt-Registry browsbar — pro Welt eine Karte mit Label, Beschreibung, DSL-Vokabular und Stufen-Marke; ein Klick „Portal holen" legt einen auf die Welt gerichteten Tor-Bauplan ins Inventar. Davor W13 Vibe-Pass komplett (souveräne ed25519-Identität: Schlüssel, signierte Werke, peerId-gebundene Multi-User-Identität) und W12 Welt-Portal (Phase 1+2+3 komplett).
+**Stand**: V8.66 (17.05.2026) — **W7 (Compute-Sharing) komplett**: der WebRTC-Mesh steht. P1 echte WebRTC-DataChannels (der signaling-server wird Rendezvous statt Relay, pos/dsl/soul/aura/vibe fliessen peer-to-peer), P2 der Welt-Snapshot reist mesh-nativ in 16-KiB-Stücken, P3 LLM-Pool (ein Peer teilt seine „Stimme" über das Mesh), P4 Public-Lobby (Räume browsbar). Dazu Multi-User-Bau-Sync und Kreatur-Sicht-Sync — der ganze Multi-User-Bogen schliesst sich. Davor W14 (Bibliothek) komplett (die Welt-Registry ist browsbar, signierbar mit dem Vibe-Pass und empfangend — die Bibliothek von Alexandria der Vibecode-Ära steht), W13 Vibe-Pass komplett (souveräne ed25519-Identität: Schlüssel, signierte Werke, peerId-gebundene Multi-User-Identität) und W12 Welt-Portal komplett. Die grossen Roadmap-Ringe sind gebaut; offener Horizont: der KI-Übersetzer.
 
 ## Was es ist
 
-AnazhRealm ist eine 3D-Browser-Sandbox in **einer einzigen Datei** (`anazhRealm.js`, ~28000 Zeilen, Vanilla JS + Three.js + Ammo.js). Drei zentrale Vision-Pfeiler:
+AnazhRealm ist eine 3D-Browser-Sandbox in **einer einzigen Datei** (`anazhRealm.js`, ~31000 Zeilen, Vanilla JS + Three.js + Ammo.js). Drei zentrale Vision-Pfeiler:
 
 - **Hylomorphismus als Sprache**: Form × Material × Werkzeug × räumliche Konfiguration → emergente Identität. Player-Seele, Bauwerk, Kreatur, Werkzeug, Rüstung, Trank — alles spricht dieselbe Compound-Tag-Sprache.
 - **DSL als Co-Schöpfer-Werkzeug**: 41 Ops, Sandbox mit Budget-Limits + Op-Whitelist + kein `eval`. Mensch und Welt-LLM teilen sich die Sprache. CSP-strict.
@@ -29,7 +29,7 @@ Browser öffnen: `http://localhost:4312/` (oder `index.html` direkt).
 npm run check           # Syntax-Check (node --check)
 npm run lint            # ESLint
 npm run format:check    # Prettier
-npm run playtest        # 2377 Headless-Invarianten (~60s)
+npm run playtest        # 2531 Headless-Invarianten (~60s)
 npm run audit:strict    # 5 generische Audit-Schichten (~25s)
 ```
 

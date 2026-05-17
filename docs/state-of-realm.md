@@ -55,7 +55,7 @@ Konsequenz für jede künftige Iteration: **niemals re-komplexifizieren ohne Not
 
 | Pfeiler / Modul (Testament) | Status | Detail |
 |---|---|---|
-| ✅ Stabiles Fundament | erreicht | CI-Gate mit 2377 Playtest-Invarianten + Audit-Strict, Chunk-Welt mit BVH-Triangle-Mesh-Physik (visual = collision), 120 fps |
+| ✅ Stabiles Fundament | erreicht | CI-Gate mit 2531 Playtest-Invarianten + Audit-Strict, Chunk-Welt mit BVH-Triangle-Mesh-Physik (visual = collision), 120 fps |
 | ✅ Rendering (Three.js, Skybox, Planeten) | vorhanden | `vendor/three.min.js` r134 |
 | ✅ Physik (Ammo.js WASM) | vorhanden | gepoolte `tmpVec1/2`, 0 Hot-Path-Allocs |
 | ✅ Bewegung, Sprung, Egoperspektive | vorhanden | WASD + Sprint + Pointer-Lock |
