@@ -14707,6 +14707,17 @@ function startSaveServer() {
                     out.obtainCustomReachable = r.obtainPortalForWorld("void-zwei").ok === true;
                     const obUn = r.obtainPortalForWorld("void-fern");
                     out.obtainCustomUnreachable = obUn.ok === false && obUn.reason === "world_unreachable";
+                    // V8.61-Härtung — _runRaycast verzweigt defensiv bei
+                    // null-physicsWorld (sonst flakte ein rayTest-on-null im
+                    // rAF-Loop während eines Welt-Regens).
+                    const savedPW = r.state.physicsWorld;
+                    r.state.physicsWorld = null;
+                    try {
+                        out.raycastNullSafe = r._runRaycast(null, null, (_cb, hit) => hit) === false;
+                    } catch (e) {
+                        out.raycastNullSafe = false;
+                    }
+                    r.state.physicsWorld = savedPW;
                     // localStorage-Rundlauf.
                     const reloaded = r._loadCustomWorlds();
                     out.customWorldsRoundtrip =
@@ -14757,6 +14768,7 @@ function startSaveServer() {
                 check("W14 P3: importierte Welten überleben den localStorage-Rundlauf", w14p3Results.customWorldsRoundtrip);
                 check("W14 P3: Bibliothek rendert eine 'empfangen'-Karte für die importierte Welt", w14p3Results.uiImportedCard);
                 check("W14 P3: 'Welt empfangen'-Knopf + Datei-Picker im DOM", w14p3Results.uiImportButton);
+                check("W14 P3: _runRaycast ist defensiv gegen ein null-physicsWorld (kein rayTest-Crash)", w14p3Results.raycastNullSafe);
             } else {
                 check("W14 P3: Welt-Import-Tests laufen", false, w14p3Results ? w14p3Results.error : "no result");
             }

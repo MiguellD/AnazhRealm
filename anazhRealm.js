@@ -26322,6 +26322,13 @@ class AnazhRealm {
     // Der einfachere Pfad: _runRaycast bekommt einen Extractor-Callback.
     // Lifecycle bleibt komplett in einer Funktion, Caller ist 1 Zeile.
     _runRaycast(rayStart, rayEnd, extractor) {
+        // V8.61-Härtung — während eines Welt-Regens ist physicsWorld kurz null
+        // (Teardown vor Rebuild). Ein Raycast aus dem rAF-Loop in diesem
+        // Fenster liefe sonst auf null.rayTest. „Kein Treffer" IST hier das
+        // ehrliche Ergebnis: kein Physics-World → nichts zu treffen. Alle
+        // Extraktoren verzweigen auf `hit`, bevor sie `cb` anfassen, also ist
+        // extractor(null, false) sicher.
+        if (!this.state.physicsWorld) return extractor(null, false);
         const cb = new Ammo.ClosestRayResultCallback(rayStart, rayEnd);
         this.state.physicsWorld.rayTest(rayStart, rayEnd, cb);
         let result = null;
