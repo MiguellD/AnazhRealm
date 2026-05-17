@@ -213,6 +213,18 @@ function handleClientMessage(ws, raw) {
         broadcastToRoom(ws.anazh.room, { type: "aura", peerId: ws.anazh.peerId, hue, intensity }, ws);
         return;
     }
+    if (msg.type === "vibe") {
+        // W13 Phase 3: Vibe-Pass-Identität — der Peer teilt seinen
+        // öffentlichen ed25519-Schlüssel (vibePassId) + einen Beweis
+        // (Signatur über die eigene peerId). Der Server stempelt die
+        // authoritative peerId und reicht durch; die Verifikation des
+        // Beweises macht der Empfänger (der Server vertraut nichts).
+        const vibePassId = typeof msg.vibePassId === "string" ? msg.vibePassId.slice(0, 128) : "";
+        const proof = typeof msg.proof === "string" ? msg.proof.slice(0, 256) : "";
+        if (!vibePassId || !proof) return;
+        broadcastToRoom(ws.anazh.room, { type: "vibe", peerId: ws.anazh.peerId, vibePassId, proof }, ws);
+        return;
+    }
     if (msg.type === "world-request" || msg.type === "world-snapshot") {
         // Ring 11.5: Welt-Snapshot-Transfer beim Multi-User-Join. Wer
         // joinen will, sendet world-request (broadcast → Host antwortet);

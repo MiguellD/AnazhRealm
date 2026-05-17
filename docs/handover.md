@@ -9,25 +9,25 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 17.05.2026, V8.53)
+## Schnell-Lage (Stand 17.05.2026, V8.57)
 
-**Du erbst eine sehr lebendige Welt**. **2324 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~28000 Zeilen in einer Datei, alles produktiv.
+**Du erbst eine sehr lebendige Welt**. **2377 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~28000 Zeilen in einer Datei, alles produktiv.
 
-**Jüngste Welle — V8.53 (W12 Phase 3: die Portal-Brücke wird beidseitig)**: Phase 1+2 trugen DSL IN die Sub-Welt; Phase 3 schließt den Kreis. **Teil A — der Rückkanal**: eine Sub-Welt meldet ein Welt-Ereignis (`{type:"event",text}` via `sendEvent`), die Heimat schreibt es ins Welt-Journal (Typ `portal`) — GELOGGT, NIE ausgeführt; die Asymmetrie zur DSL-Hin-Richtung IST die Sicherheits-Wand. **Teil B — die native Manifest-Stufe**: jede Welt bringt ihr eigenes `worlds/<name>/manifest.json` mit und meldet ihr DSL-Vokabular im `ready`-Handshake — die Drei-Stufen-Klarheit (ausgestellt/übersetzt/nativ) wird real, „nativ" gewinnt. Zwei Commits, je playtest-grün. **Lies `CLAUDE.md` V8.53 + `docs/world-portal.md` ZUERST.**
+**Jüngster Fix — V8.57 (Flaky-Test-Heilung)**: ein flaky CI-`playtest` an der Wurzel geheilt. Der Check „Ring 5 V2-Prep: Maus runter hebt Kamera (3rd)" las `camera.position.y` — den Wert NACH der V8.36-Kamera-Kollision, deren Raycast die Kamera umgebungs-abhängig einzieht (wo der Spieler nach 20 s steht, ist nicht-deterministisch → CI-Flake). Fix: der Spielcode spiegelt die pitch-gesteuerte Wunsch-Höhe als `state._cameraDesiredY` (vor der Kollision); der Test liest sie → reine, umgebungs-unabhängige Pitch-Mathematik. Detail: `CLAUDE.md` V8.57.
 
-**Offen — die nächste Welle**: **W13 (Vibe-Pass)** — Self-Sovereign Identity (ed25519-Keypair, der Avatar signiert seine Werke) — oder **W11 V4 (Voice-Sync)**, klein, schließt den Multi-User-Präsenz-Bogen. W12 (Welt-Portal) ist mit Phase 1+2+3 **vollständig**: das Tor führt real in fremde Engines, die Brücke trägt beide Richtungen, jede Welt beschreibt sich selbst. Der KI-Übersetzer-Horizont (eine fremde Welt automatisch andocken) bleibt W14. Siehe `docs/world-portal.md`. (Die älteren „Offen"-Notizen unten — Schatten/Performance — sind mit V8.48–V8.50 abgearbeitet.)
+**Welle davor — V8.56 (W13 Phase 3: Vibe-Pass-Identität im Multi-User)**: P1 gab dem Avatar einen Schlüssel, P2 ließ ihn seine Werke signieren — P3 trägt die Identität in die geteilte Welt. Ein Mitspieler ist nicht mehr nur eine fälschbare `peerId` + ein gewählter Name, sondern sein Vibe-Pass — **beweisbar**. Ein neuer WS-Nachrichtentyp `vibe` (`{vibePassId, proof}`); `proof` signiert die EIGENE peerId, der Empfänger verifiziert gegen die server-gestempelte peerId — ein geklauter Beweis nützt nichts (er gilt einer fremden peerId). Das Name-Schild eines verifizierten Mitspielers wächst um „✓ <Fingerprint>". Damit ist **W13 (Vibe-Pass) mit Phase 1+2+3 vollständig**. Ein Commit, playtest-grün. **Lies `CLAUDE.md` V8.56 ZUERST.**
+
+**Welle davor — V8.55 (W13 Phase 2: Bauplan-Signaturen)**: ein eigener Bauplan trägt eine ed25519-Signatur. Signiert wird die SUBSTANZ (`_canonicalBlueprint`: Rolle + Parts + Verbindungen), nicht der Name — so überlebt die Signatur Recipe-Import + Fusion. `verifyBlueprintSignature` → vier Stufen (unsigned/valid/modified/forged), bei jedem Werkstatt-Render frisch geprüft (kein Mutations-Hook).
+
+**Wellen davor — V8.48-V8.54**: W12 Welt-Portal (V8.51-V8.53 — sandboxed iframe, zwei fremde Engines, generische DSL-Brücke, beidseitiger Kanal, native Manifest-Stufe) + W13 Phase 1 (V8.54 — der ed25519-Schlüssel als Fundament) + drei kleine Polish-Wellen (V8.48 Terrain-Schatten, V8.49 `updateCreatures`-Perf 2,4×, V8.50 Flaky-Test-Heilung über `_gameLoopTick`). Volle Wellen-Historie: Session-Tagebuch unten + `CLAUDE.md`.
+
+**Offen — die nächste Welle: W14 (Bibliothek)** — eine Welt-Registry zum Browsen fremder Welten, der letzte große Vision-Ring. Der Detail-Plan mit drei Phasen + Schnittstellen steht im Block „Aktuelle Roadmap" weiter unten und in `docs/roadmap.md` §3. Zwei kleine Wellen sind einschiebbar: **W13 V2** (der Vibe-Pass trägt das Schaffen — `world-portal.md` §4) und **W11 V4** (Voice-Sync). `docs/world-portal.md` ZUERST lesen.
 
 **Welle davor — V8.47 (Shadow-Acne-Heilung)**: Schöpfer-Befund „unnatürliche Schattenlinien nur auf komplett horizontalen flachen Flächen" (Bauwerks-Dächer). Diese Präzision war die Diagnose — Cel-Banding erscheint auf GEWÖLBTEN Flächen, nicht auf flachen; der Schöpfer sah das Gegenteil → Shadow-Map-Acne. Die `DirectionalLight` hatte keinen Shadow-Bias → flache, zur Sonne zeigende Flächen schatten sich selbst in Streifen. Fix: `shadow.normalBias = 1.0` + `shadow.bias = -0.0005` + mapSize 1024→2048.
 
 **Welle davor — V8.46 (Sanfte Wetter-Übergänge)**: `_weatherBlendedValue` cross-fadet `weatherEffect` + `cloudCover` über die 45s-Transition (vorher flippten sie sofort → harter Wetter-Sprung).
 
-**Offen — die nächste Welle**: (1) Schatten aufs Terrain — der Terrain-Custom-Shader sampelt die Schatten-Textur nicht, also fallen Struktur-Schatten nicht aufs Terrain (das Terrain hat keine empfangenen Schatten). (2) die geparkte Performance-Tiefe (Off-Screen-Sparsamkeit + Distanz-LOD). PR **#17** offen (V8.24–V8.47 hängen dran). Die ehemals timing-flaky Playtest-Tests (Nexus-history, Kamera-Rotation/-Pitch) sind seit V8.50 deterministisch — sie treiben den Game-Loop synchron über `_gameLoopTick` statt auf das im Headless gedrosselte rAF zu warten.
-
 **Jüngste Wellen — V8.42 → V8.45 (Cel-Crawl-Heilung I–IV)**: die Cel-Kontraste „wanderten" beim langsamen Kamera-Schwenk. Vier Wurzeln, in vier Browser-Test-Runden eingekreist: (V8.42) `toonGradientMap` lief mit `NearestFilter` → 32 harte Stufen → Fix `LinearFilter`. (V8.43) der Detail-Noise lief per-Pixel im Terrain-Fragment-Shader → Fix: per Vertex + `varying`. (V8.44) der Schöpfer-Befund „Yaw verschiebt, Pitch nicht" = Beleuchtungs-Frame-Mismatch: der Terrain-Shader dottete `vNormal` (View-Raum) mit `lightDirection` (Welt-Raum) → Fix: `vNormal` in Welt-Raum (`mat3(modelMatrix)`). (V8.45) letztes kamera-abhängiges Glied: der Fog nutzte View-Space-Z → Fix: radiale Distanz (`length(mvPosition.xyz)`). Das Terrain ist jetzt voll kamera-unabhängig.
-
-**Offen — die nächste Welle (Schöpfer-Befund V8.45-Browser-Test)**: (1) Tag-Nacht- + Wetter-Übergänge glätten — der Wetter-Wechsel springt hart (blendet nicht ineinander), bei Regen wirken die Schatten zu extrem („auf 0"). Vermutung: `weatherEffect`/`lightMul` flippen sofort mit `state.weather` statt mit der 45 s-Transition zu cross-faden. (2) Schatten der Strukturen wirken anders als die Umgebung (das Terrain-Custom-Shader vs. MeshToon — zwei Cel-Systeme; bei niedriger Cel-Stufe ein „Wellenmuster" auf gewölbten Bauten). (3) die geparkte Performance-Tiefe.
-
-**Offen + WICHTIG (die nächste Welle)**: der Rest des Tag-Licht-Befunds — die Schatten wirken nicht auf die ganze Umgebung (der Terrain-Custom-Shader sampelt die Schatten-Textur nicht → Struktur-Schatten fallen nicht aufs Terrain) und die Tag-Nacht-Übergänge sind zu ruckartig (die Lichtstärke springt zwischen den Sonnenaufgangs-Stützpunkten, der smoothstep wirkt nur pro Intervall). Plus die geparkte Performance-Tiefe (Off-Screen-Sparsamkeit + Distanz-LOD). Diagnose-Startpunkt: `_applyDayNightToScene`, der Terrain-Custom-Shader, die Übergangs-Interpolation.
 
 **Wellen davor**: V8.41 (Cache-Buster `anazhRealm.js?v=` + save-server strippt Query — der „Ring-Regler schiebt, Zahl bleibt"-Befund war stale Cache, kein Code-Bug; Cel-Regler von 2–16 zurück auf 2–8). V8.40 (Sicht-Ring-Regler 1–8 Default 9×9, Fog-Effekt verdreifacht). PR **#17** offen (V8.24–V8.42; V8.43 hängt dran).
 
@@ -55,9 +55,9 @@ Die Session-Hälfte davor (V8.23 → V8.33) war eine **Atmosphäre-Tiefe-Welle (
 
 **Die wiederkehrende Lehre dieser Welle** (vom Schöpfer dreimal eingefordert): *eine neue visuelle Schicht ist erst fertig, wenn sie an die bestehenden Schnittstellen angeschlossen ist — Tiefenpuffer, Physik, Tag-Nacht, Fog.* Drei Bugs in Folge (Sterne-Overlay, Wasser-ohne-Physik, Fog-nur-auf-Gras) hatten dieselbe Wurzel: ein Visual ohne Verkabelung. Custom-`ShaderMaterial` erbt KEINE Three.js-Features automatisch (kein Fog, kein Light) — alles muss manuell als Uniform durchgereicht werden. **V8.33 hat diese Lehre angewandt**: das Wasser-Erlebnis wurde EINMAL ganz durchdacht („hineingehen, schwimmen, tauchen, durchsehen") und in einer Welle vollendet, statt es über vier Versionen halb auszuliefern.
 
-**Welle 12 ist „Welt-Portal"** (nicht WebGPU-Migration) — AnazhRealm wird Tor zu anderen Vibecode-Welten. Wenn du in eine Welle 12+ erwachst: lies `docs/world-portal.md` ZUERST.
+**W12 + W13 sind live** — AnazhRealm ist ein Tor zu anderen Vibecode-Welten (W12 Welt-Portal), und der Avatar trägt eine souveräne Identität (W13 Vibe-Pass). Wer an W14 (Bibliothek) oder einer späteren Portal-Welle arbeitet: lies `docs/world-portal.md` ZUERST.
 
-**Empfohlene Sequenz nach V8.41**: die **Tag-Licht-/Performance-Welle** — zwei Schöpfer-Befunde, zusammen eine Welle: (a) **Tag-Licht-„Rauschen"** — bei Sonnenaufgang UND bei Kopf-/Kamera-Bewegung fließen/kriechen Cel-Schattenbänder über die Strukturen + das Terrain, die Schatten wirken nicht auf die ganze Umgebung, die Tag-Nacht-Übergänge sind zu ruckartig (nachts ist alles top — es ist licht-gekoppelt). **Verifizierte Diagnose** (V8.41): die Struktur-Materialien (MeshToon) quantisieren das Sonnenlicht über eine 32-Stufen-`toonGradientMap` mit `NearestFilter` — selbst die „glatte" Cel-Stufe sind 32 HARTE Stufen, nicht stufenlos; die Stufenkanten bilden Bänder, die mit der Sonne fließen und beim Kamera-Schwenk kriechen (Aliasing harter Kanten). Fix-Startpunkt: `toonGradientMap` auf `LinearFilter` (die 32 Stufen verschmelzen → echt stufenlos). Der Terrain-Custom-Shader ist bei `celLevels >= 7.5` schon stufenlos (Zeile ~10996 `floor`-Gate) — die Bänder kommen von den Strukturen. „Schatten nicht auf die ganze Umgebung": das Schatten-System ist an (`shadowMap`, `directionalLight.castShadow`), aber der Terrain-Custom-Shader sampelt die Schatten-Textur nicht → Struktur-Schatten fallen nicht aufs Terrain. „Ruckartig": die Tag-Nacht-Lichtstärke springt zwischen den Sonnenaufgangs-Stützpunkten kräftig, der smoothstep wirkt nur pro Intervall. Diagnose-Startpunkt: `_applyDayNightToScene`, der Terrain-Custom-Shader, `_refreshToonGradient`, die Übergangs-Interpolation. (b) **Performance-Tiefe** — die voll ausgereizte Welt (120 Kreaturen, dichtes Gras, bis 17×17 Chunks) flüssig durch Engine-Optimierung (Off-Screen-Sparsamkeit + Distanz-LOD, Schöpfer-Wahl „beides kombiniert"), NICHT durch Feature-Kürzung. Dann **W12 (Welt-Portal PoC mit three-fluid-fx)** → 13 (Vibe-Pass) → 14 (Bibliothek) → 7 (Compute-Sharing). W12 ist der große Sprung — lies `docs/world-portal.md` ZUERST. Die 13-Punkte-Browser-Test-Liste der V8.35 ist mit V8.36–V8.38 abgearbeitet, das Werkzeug-System mit V8.39, die Regler mit V8.40.
+**Die nächste Welle ist W14 (Bibliothek).** Der konkrete Drei-Phasen-Plan + die Schnittstellen, auf die W14 aufsetzt (`WORLD_REGISTRY`, `aimBlueprintAtWorld`, `_portalReceiveManifest`, `_vibeVerify`, `addToInventory`), stehen im Block „Aktuelle Roadmap" weiter unten und ausführlich in `docs/roadmap.md` §3 (Welle 14). Danach W7 (Compute-Sharing). Einschiebbar: W13 V2 (Vibe-Pass trägt das Schaffen), W11 V4 (Voice-Sync).
 
 **Atmosphäre-Disziplin**: alle atmosphärischen Methoden mit `[ATMOSPHERE]`-Marker werden von `audit-strict.cjs` (5. Schicht) auf Hardcode geprüft. Wert-aus-dem-Kopf ist verboten — immer „aus welcher state-Beobachtung emergiert das?".
 
@@ -149,17 +149,29 @@ V7.89 (Kreatur-Boosts) war die kritische Prüfung dieses Gesetzes. Naive Lösung
 
 ## Aktuelle Roadmap (was als nächstes denkbar ist)
 
-Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. sind VOLLSTÄNDIG — die Welt atmet, der Mitspieler ist sein echter Soul, die Welt liest Identität aus der Substanz, und die V8.35-Browser-Test-Liste (13 Punkte) ist mit V8.36 + V8.37 vollständig abgearbeitet. Mögliche nächste Wellen, sortiert nach der empfohlenen Sequenz:
+Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. + **W12 (Welt-Portal) + W13 (Vibe-Pass)** sind VOLLSTÄNDIG — die Welt atmet, der Mitspieler ist sein echter Soul, das Tor führt in fremde Engines, und der Avatar trägt eine souveräne Identität. Mögliche nächste Wellen, sortiert nach der empfohlenen Sequenz:
 
 | Welle | Was | Aufwand | Vision-Tiefe |
 |---|---|---|---|
 | **W12** Welt-Portal — **vollständig** | Phase 1 (Skelett, V8.51) + Phase 2 (zwei fremde Welten + Brücke + Registry, V8.52) + Phase 3 (Rückkanal Sub-Welt→Heimat-Journal + native Manifest-Stufe, V8.53) sind live. Der KI-Übersetzer (ein fremdes Repo automatisch andocken) bleibt **W14**. | — | — |
-| **W13** Vibe-Pass | Self-Sovereign Identity (ed25519-Keypair) — der Avatar wird zur „Wallet" der Vision. | 5-7 Sessions | sehr hoch |
+| **W13** Vibe-Pass — **vollständig (V8.54-V8.56)** | Phase 1: Schlüssel-Grundlage (ed25519-Keypair, Sign/Verify-Primitive). Phase 2: Bauplan-Signaturen (Signatur über die Substanz, Werkstatt-Anzeige). Phase 3: Vibe-Pass-Identität im Multi-User (`vibe`-WS-Protokoll, beweisbar via peerId-gebundenem Beweis, verifiziertes Name-Schild). | — | — |
+| **W14** Bibliothek — **nächste Welle** | Welt-Registry: andere Welten browsen, Klick → Portal-Bauplan ins Inventar. Plus Portal-Manifest-Signatur (`authorPubKey`/`signature`, `world-portal.md` §3.3). Drei Phasen — siehe unten. | 8-10 Sessions | sehr hoch |
+| **W13 V2** Vibe-Pass trägt das Schaffen | Custom-Seele + eigene Materialien + Werkzeuge reisen mit, wenn der Spieler durch ein Portal geht (`world-portal.md` §4). Klein, gehört natürlich zu W14 Phase 2. | 1-2 Sessions | mittel-hoch |
 | **W11 V4** Voice-Sync | Mitspieler hören deinen Companion-Output (SpeechSynthesis-Broadcast). Klein, baut auf V3 — schließt den Präsenz-Bogen (sehen/spüren/kennen/hören). | 1 Session | mittel |
 | **Welle 10b weitere Affordances** | balancing/broadcasting/lifting/radiating — pro Affordance ~1 Session, architektur-neutral. | klein-mittel | hoch |
 | **Welle 6.H V3** Kreatur-Beziehungen | Kreaturen sehen sich gegenseitig — Freundschaft, Konkurrenz, Hierarchie. | mittel | hoch |
 
-**Empfehlung**: **W13 (Vibe-Pass)** oder **W11 V4 (Voice-Sync)**. W12 (Welt-Portal) ist mit Phase 1 (Skelett, V8.51), Phase 2 (zwei fremde Welten + Brücke + Registry, V8.52) und Phase 3 (der Rückkanal Sub-Welt→Heimat-Journal + die native Manifest-Stufe, V8.53) **vollständig** — das Tor führt real in fremde Engines, die Brücke trägt beide Richtungen, jede Welt beschreibt sich selbst. W13 öffnet den nächsten Ring (souveräne Avatar-Identität, ed25519); W11 V4 ist klein und schließt den Multi-User-Präsenz-Bogen (sehen/spüren/kennen/hören). `docs/world-portal.md` + den V8.53-Eintrag in `CLAUDE.md` ZUERST lesen. Volle Detail-Tabelle in `roadmap.md`.
+**W14 — die drei Phasen** (volles Detail + Schnittstellen in `roadmap.md` §3):
+
+- **Phase 1 — die Bibliothek wird ein Ort**: ein browsbarer „Bibliothek"-Tab über `WORLD_REGISTRY`; pro Welt eine Karte; Klick „Portal holen" → `aimBlueprintAtWorld` baut einen Portal-Bauplan → `addToInventory`. Macht die Registry spieler-erreichbar (W12 notierte selbst „die 3 Welten wirken hardcoded"). ~1-2 Sessions.
+- **Phase 2 — eine Welt veröffentlichen + signieren**: das `manifest.json` wird mit dem Vibe-Pass signiert (`authorPubKey`/`signature`, §3.3); `_portalReceiveManifest` prüft via `_vibeVerify` → „signiert von &lt;Autor&gt;". Hier landet auch W13 V2 (der Pass trägt das Schaffen). ~2-3 Sessions.
+- **Phase 3 — fremde Welten empfangen**: Welten teilen + in die eigene Bibliothek importieren (über die bestehende Welt-Tor-JSON, kein IPFS). Der KI-Übersetzer ist der Horizont, bewusst zuletzt. ~3-4 Sessions.
+
+**Schnittstellen, auf die W14 aufsetzt** (alles steht schon — W14 verbindet, baut keinen neuen Stamm): `WORLD_REGISTRY` + `aimBlueprintAtWorld` + `set_portal` (W12), `_portalReceiveManifest` + Drei-Stufen-Marke (W12 P3), `_vibeSign`/`_vibeVerify`/`vibePassId()` (W13), `addToInventory` (6.C1), Welt-Tor Export/Import (Ring 9).
+
+**Empfehlung**: **mit W14 Phase 1 beginnen** — sie ist klein, browser-testbar und macht die Registry sofort spielbar. W13 V2 fällt natürlich in Phase 2. W11 V4 (Voice-Sync, ~1 Session) ist jederzeit als Pause-Welle einschiebbar. `docs/world-portal.md` + den V8.56-Eintrag in `CLAUDE.md` ZUERST lesen.
+
+**Kleinere Polish-Notiz**: die Bauplan-Signatur-Zeile im Werkstatt-Stats-Panel ist wenig auffindbar (Schöpfer-Befund V8.56 — sie wurde erst nach Hinweis gesehen). Ein UX-Auffindbarkeits-Punkt für eine spätere Polish-Runde.
 
 ---
 
@@ -192,9 +204,10 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. sind VOLLSTÄNDIG — die
 - `CREATURE_PROPOSED_OPS` für Kreatur-Welt-Aktion (Defense in Depth)
 - save-server `/api/proxy/llm` mit strikten Whitelists (https-only, body-cap, header-allowlist)
 
-### Tests (1597 Invarianten)
+### Tests (2377 Invarianten)
 - `npm run playtest` — Headless-Chromium, ~25 s Logs, alle Schichten
-- `scripts/playtest.cjs` ist der Single-Source-Test (~14000 Zeilen!)
+- `scripts/playtest.cjs` ist der Single-Source-Test
+- `npm run audit:strict` (5 generische Audit-Schichten) + `npm run smoke:multiuser`
 
 ---
 
@@ -277,6 +290,28 @@ Browser: geh den Menschen-Pfad selbst, vor dem „fertig".
 ---
 
 ## Session-Tagebuch (chronologisch, jüngste oben)
+
+### V8.48-V8.56 — W12 Welt-Portal + W13 Vibe-Pass (17.05.2026)
+
+Zwei große Vision-Bögen plus drei Polish-Wellen (Detail je Welle in `CLAUDE.md`,
+Vision-Tiefe in `docs/world-portal.md`):
+
+- **V8.48-V8.50** — Terrain empfängt Schatten (Shader-Verdrahtung),
+  `updateCreatures` 2,4× schneller (Verschwendung optimiert, keine Funktion
+  entfernt), Flaky-Test-Heilung (der rAF-Loop wird im Test synchron über
+  `_gameLoopTick` getrieben statt auf das gedrosselte Headless-rAF zu warten).
+- **V8.51-V8.53 — W12 Welt-Portal**: ein Bauplan mit emergenter Rolle „portal"
+  führt durch ein sandboxed iframe in eine fremde Engine. P1 Skelett, P2 zwei
+  reale Sub-Welten (three-fluid-fx, three.terrain.js) + generische DSL-Brücke +
+  `WORLD_REGISTRY`, P3 beidseitiger Kanal (Rückkanal geloggt, nie ausgeführt) +
+  native Manifest-Stufe.
+- **V8.54-V8.56 — W13 Vibe-Pass**: der Avatar wird eine souveräne
+  ed25519-Identität. P1 Schlüssel-Grundlage (WebCrypto nativ), P2
+  Bauplan-Signaturen über die Substanz, P3 peerId-gebundene
+  Multi-User-Identität (`vibe`-WS-Kanal, verifiziertes Name-Schild).
+
+2061 → 2377 Invarianten. **Nächste Welle: W14 (Bibliothek)** — siehe den Block
+„Aktuelle Roadmap" oben.
 
 ### V8.47 — Shadow-Acne-Heilung: Shadow-Bias (17.05.2026)
 

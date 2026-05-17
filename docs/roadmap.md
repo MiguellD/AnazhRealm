@@ -1,6 +1,6 @@
 # AnazhRealm Roadmap — Vollumfänglich
 
-Stand: 17.05.2026 (V8.53, W12 Phase 1+2+3 KOMPLETT — das Welt-Portal ist real UND die Brücke ist beidseitig: zwei fremde Engines (three-fluid-fx, ein 2D-Fluid; three.terrain.js, eine 3D-Landschaft) docken über ein generisches DSL-Protokoll an, eine Brücke trägt alle Welten. Phase 3 fügte den Rückkanal hinzu (eine Sub-Welt meldet Welt-Ereignisse zurück ins Heimat-Journal — geloggt, nie ausgeführt) und die native Manifest-Stufe (jede Welt bringt ihr `manifest.json` mit, beschreibt sich selbst). Davor: V8.48 Terrain-Schatten, V8.49 Performance-Politur, V8.50 Flaky-Test-Heilung, V8.51 Portal-Skelett, V8.52 Portal real. 2324/2324 Invarianten grün, Audit-Strict 0 Failures. Nächste empfohlene Welle: W13 (Vibe-Pass) oder W11 V4 (Voice-Sync).)
+Stand: 17.05.2026 (V8.57, W13 Vibe-Pass KOMPLETT (Phase 1+2+3) — souveräne Avatar-Identität. Phase 1 (V8.54): ein ed25519-Schlüsselpaar, lokal erzeugt (WebCrypto nativ), privat in `localStorage["anazh.vibePass"]`, nie im Welt-Save. Phase 2 (V8.55): Bauplan-Signaturen — `signBlueprint`/`verifyBlueprintSignature` signieren die SUBSTANZ (Rolle + Parts + Verbindungen, nicht den Namen), vier Status-Stufen, Werkstatt-Anzeige, Signatur reist durch Save/Welt-Tor/Fusion. Phase 3 (V8.56): Vibe-Pass-Identität im Multi-User — ein neuer WS-Typ `vibe` trägt vibePassId + einen Beweis (Signatur über die eigene peerId); der Mitspieler ist beweisbar sein Schlüssel, das Name-Schild zeigt „✓ <Fingerprint>". Davor: V8.51-V8.53 W12 Welt-Portal komplett. 2377/2377 Invarianten grün, Audit-Strict 0 Failures. Nächste empfohlene Welle: W14 (Bibliothek — Welt-Registry + Portal-Manifest-Signatur). V8.57 heilte einen flaky CI-Playtest (3rd-Person-Kamera-Pitch) an der Wurzel — Detail in `CLAUDE.md`.)
 
 Diese Doc beschreibt das **gesamte Projekt vom heutigen Stand bis zum Vision-Endziel** (Welten-Ultiversum). Sie ergänzt `state-of-realm.md` (Was/Warum) um eine puren Plan-Sicht (Wann/Wie). Aufwandsschätzungen sind realistische Tage für eine fokussierte Claude-Session pro Ring/Phase; gerechnet wird linear, ohne Puffer.
 
@@ -8,17 +8,17 @@ Diese Doc beschreibt das **gesamte Projekt vom heutigen Stand bis zum Vision-End
 
 ---
 
-## 1. Wo wir stehen (Mai 2026, V8.07)
+## 1. Wo wir stehen (Mai 2026, V8.57)
 
-✅ Ring 0-11 + Welle 1-5 + Welle 6.A/B/C/D/E/F1+F2/G(1-2)/H V1+V2 + Welle 9 (a-d) + Welle 10 (a + b.1-3) sind live. Chunk-Physik nutzt `btBvhTriangleMeshShape` (visuelles Mesh = Collider). 120 fps im Browser, **1791/1791 Playtest-Invarianten grün** (V8.07).
+✅ **Ring 0-11.5 + Welle 1-12 + W13 sind live.** Der Kern atmet (Hylomorphismus-Crafting, Tag-Nacht, lebendige Welt), der Multi-User ist tief (der Mitspieler ist sein echter Soul), das Welt-Portal trägt fremde Engines (W12), und der Avatar ist eine souveräne ed25519-Identität (W13). Chunk-Physik nutzt `btBvhTriangleMeshShape` (visuelles Mesh = Collider). 120 fps im Browser, **2377/2377 Playtest-Invarianten grün**, Audit-Strict 0 Failures.
 
-**Schöpfer-Audit 17.05.2026**: Eine 18-Punkte-Liste hat fünf akute Bugs (A1-A5), drei UI-Wünsche (B1-B4), fünf Vision-Tiefen (C1-C5), zwei Architektur-Fragen (D1-D2), zwei Multi-User-Lücken (E1-E2) und zwei kreative Wünsche (F1-F2) hervorgebracht. Daraus emergierte **Welle 6.X (Polish-Sammel)** als bewusst eingeschobene Welle vor 6.G Phase 3. Plus drei neue Wellen-Stellen: **Welle 11 V3 (Soul-Sync)** für echte Phönix/Drache-Sicht im Multi-User, **Welle 11 ext. (Substanz-Rolle)** für die Hylomorphismus-Diskrimination (eines der größten Vision-Worte: „Universum-Freiheit mit wenigen Stabilisierungs-Mechanismen"), **Ring 4 V2 (Lofi-Musik)** mit emotion-getriebenen Pad-Layern.
+**Die drei jüngsten großen Bögen**:
 
-**Welle 6.H V2 vollendet (14/14 Sub-Phasen)**: Kreaturen sind jetzt vollwertige Co-Schöpfer-Wesen mit 9 Identitäts-Schichten — Body+Specs+Equipped+Boosts (alle hylomorph aus computeCompoundTags), Tasks (5: wander/follow/wait/gather/build), Memory+Persistenz, Konversation (LLM-Persona aus voller Identität, @-Adresse, Soul-Farben), Proaktivität (pre-baked phrases bei Events, soul-aware, throttled), Welt-Aktion-Vorschläge (DSL via Sandbox, modus-abhängig, Defense in Depth).
+- **W12 Welt-Portal (V8.51-V8.53)** — ein Bauplan mit emergenter Rolle „portal" führt durch ein sandboxed iframe in eine fremde Engine. Zwei reale Sub-Welten docken an (three-fluid-fx, three.terrain.js), eine generische DSL-Brücke trägt sie alle, der Rückkanal meldet Ereignisse zurück ins Heimat-Journal (geloggt, nie ausgeführt — die Asymmetrie ist die Sicherheits-Wand). Detail: `docs/world-portal.md`.
+- **W13 Vibe-Pass (V8.54-V8.56)** — der Avatar erhält ein ed25519-Schlüsselpaar (WebCrypto nativ, kein Vendoring), signiert seine Baupläne über ihre Substanz, und im Multi-User beweist jeder Mitspieler seine Identität über einen peerId-gebundenen Beweis. Self-Sovereign Identity ohne Coin, ohne zentrale Authority.
+- **Atmosphäre-Tiefe + Co-Schöpfer (V8.08-V8.50)** — Welt-Lebendigkeit (Tag-Nacht, Wetter-Übergänge, Fauna-Lifecycle), die Atmosphäre-Welle 6.G4 (Sonne/Hemisphere/Fog, Sterne als Points, Cel-Shading, Wasser mit Wellen+Physik), Kreaturen als vollwertige Co-Schöpfer-Wesen (Welle 6.H V2, 14/14), Substanz-Rolle (V8.35), ein gegen Browser-Tests gehärtetes LLM-Provider-System.
 
-**LLM-Provider-System maximal robust (V7.94-V7.98)**: jedes Ollama-Setup funktioniert — lokal, gehostet, ollama.com Cloud, mit/ohne `<think>`-Reasoning, mit/ohne strict-JSON. CORS-Lösung via save-server `/api/proxy/llm` als loyaler Vermittler. Parser-Pipeline (think-strip → fence → json → plain-text-fallback) macht auch lokale 7B-Modelle nutzbar.
-
-Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) sind alle in V2+ angekommen. **Hylomorphismus-Crafting (Wellen 4+5+9+10) ist vollständig vertikal-integriert**. **Co-Schöpfer-Kreis (Welle 6.H V2) ist geschlossen**. **Was jetzt nahe der Oberfläche liegt** (nach Audit): 5 Polish-Sub-Phasen (6.X.1-5), dann Welt-Lebendigkeit (6.G Phase 3), dann Vision-Tiefen (10b ext., Welle 11 ext. Substanz-Rolle, Welle 11 V3 Soul-Sync), dann Skalierung (Welle 7 Kollektive Welt-Erkenntnis).
+Alle 5 Vision-Pfeiler (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) sind in V2+. Das Hylomorphismus-Crafting ist vertikal integriert, der Co-Schöpfer-Kreis geschlossen, das Welten-Ultiversum (Ringe 8-11.5) vollständig. **Was jetzt vor uns liegt**: die Bibliothek (W14) — eine Welt-Registry zum Browsen fremder Welten, der letzte große Vision-Ring (Detail in §3) — danach Compute-Sharing (W7) als Skalierungs-Schicht. Zwei kleine Wellen sind einschiebbar: W13 V2 (der Vibe-Pass trägt das Schaffen) und W11 V4 (Voice-Sync).
 
 ---
 
@@ -62,11 +62,12 @@ Aus den 5 Vision-Pfeilern (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) si
 | W11 V4 | **Voice-Sync (Begleiter-Stimme im Multi-User)** — nach Soul-Sync (V3): andere Spieler hören deinen Companion-Output. Broadcast: `companion-say { peerId, text, voice }`. Empfänger spielt SpeechSynthesis mit gewählter Voice ab. Vision §1.4 Multisensorik durch alle Peers. Vorbedingung W11 V3. | 🔴 offen (aus Projekt-Reflexion 17.05.2026) | 1 Session | W11 V3 |
 | W7 | **Kollektive Welt-Erkenntnis (Distributed Compute)** — Skalierungs-Block, vision-treues Modell für Multi-User-Last-Verteilung: Distributed Chunk-Pre-Gen, LLM-Pool über Peers, Shared Compute-Cache, optional Public-Lobby für „join random world". Antwort auf Audit-Punkt #8 (E1 ∞ Spieler). | 🔴 offen — Skizze in `docs/archiv/system-audit.md` §7 | 6-8 Sessions | W6 (insb. 6.H Kreaturen-Aufträge), W11 V3 für volle Vision |
 | W12 | **Welt-Portal (Bibliothek von Alexandria, V8.23 umbenannt von WebGPU)** — Bauplan-Rolle „portal" + portalMeta (engine + manifest). Sub-Engine-Adapter in iframe/Worker mit Sandbox. DSL als Universal-Bridge zwischen Engines (jede Engine implementiert DSL-Subset). Welt-Manifest-Schema (engine + dsl_subset + signature). PoC mit `three-fluid-fx` (13 KB, klare DSL-Subset, visueller WOW). Detail in `docs/world-portal.md`. | ✅ **Phase 1+2+3 komplett (V8.51-V8.53)** — Phase 1: Portal-Skelett (emergente Rolle „portal", sandboxed iframe, Betreten/Pause/Rückkehr). Phase 2: zwei fremde Engines (three-fluid-fx + three.terrain.js), das generische DSL-Protokoll (Manifest pro Welt), die `WORLD_REGISTRY` + spieler-erreichbares Portal-Zielen, avatar-abgeleitete Tor-Größe. Phase 3: der Rückkanal (Sub-Welt → Heimat-Journal, geloggt nie ausgeführt — die Asymmetrie ist die Sicherheits-Wand) + die native Manifest-Stufe (jede Welt bringt ihr `manifest.json` mit; Drei-Stufen-Klarheit ausgestellt/übersetzt/nativ). Schöpfer-Browser-Test bestätigt P1+P2. Der KI-Übersetzer (fremdes Repo automatisch andocken) bleibt W14. | ✅ komplett | W11 ext. + audit:strict |
-| W13 | **Vibe-Pass (Self-Sovereign Identity)** — Crypto-Keypair (ed25519, lokal generiert). Schöpfer signiert eigene Baupläne/Welten. Avatar-Identifier = Public-Key. Kein Coin/NFT-Hype, nur Authentizität. Welt-Memberships als signierte Records. Vorbedingung für Welt-Portale die Authentizität brauchen. | 🔴 offen (aus Vision-Sitzung 17.05.2026) | 5-7 Sessions | W12 |
-| W14 | **Bibliothek (Welt-Registry)** — content-addressed Welt-Index (IPFS-Hash oder simple shared-document). Browse + Suche im Bibliothek-Tab. Klick auf Welt → Portal-Bauplan automatisch ins Inventar. Spieler platziert Portal in Heimat-Welt → kann sie immer wieder besuchen. | 🔴 offen (aus Vision-Sitzung 17.05.2026) | 8-10 Sessions | W13 |
-| W11 V4 (verschoben) | **Voice-Sync (Begleiter-Stimme im Multi-User)** — bleibt offen, niedrige Priorität nach W12-14. | 🔴 offen | 1 Session | W11 V3 |
+| W13 | **Vibe-Pass (Self-Sovereign Identity)** — Crypto-Keypair (ed25519, lokal generiert). Schöpfer signiert eigene Baupläne/Welten. Avatar-Identifier = Public-Key. Kein Coin/NFT-Hype, nur Authentizität. Vorbedingung für Welt-Portale die Authentizität brauchen. | ✅ **komplett (V8.54-V8.56)** — Phase 1: Schlüssel-Grundlage (ed25519-Keypair, WebCrypto nativ; Sign/Verify-Primitive; globale localStorage-Persistenz `anazh.vibePass`, nie im Welt-Save). Phase 2: Bauplan-Signaturen — `signBlueprint`/`verifyBlueprintSignature` signieren die Substanz (nicht den Namen), vier Status-Stufen, Werkstatt-Anzeige, Signatur reist durch Save/Welt-Tor/Fusion. Phase 3: Vibe-Pass-Identität im Multi-User — der `vibe`-WS-Typ trägt vibePassId + einen peerId-gebundenen Beweis, der Mitspieler ist beweisbar sein Schlüssel, verifiziertes Name-Schild. | ✅ komplett | W12 ✅ |
+| W14 | **Bibliothek (Welt-Registry)** — die letzte große Vision-Schicht. Ein browsbarer Bibliothek-Tab über `WORLD_REGISTRY`, Klick → Portal-Bauplan ins Inventar (P1); eine veröffentlichte Welt signiert ihr `manifest.json` mit dem Vibe-Pass, `_vibeVerify` prüft es (P2); fremde Welten in die eigene Bibliothek importieren (P3, Horizont). **Drei-Phasen-Detail + Schnittstellen in §3.** | 🔴 **offen — nächste Welle** | 8-10 Sessions (3 Phasen) | W13 ✅ |
+| W13 V2 | **Vibe-Pass trägt das Schaffen (§4)** — der Pass speichert nicht nur den Schlüssel, sondern die Avatar-Anpassungen: Custom-Seele, eigene Materialien, eigene Werkzeuge reisen mit, wenn der Spieler durch ein Portal in eine fremde Welt geht (`world-portal.md` §4). Kleine Welle, am besten gemeinsam mit W14 Phase 2. | 🔴 offen (Vision-Sitzung 17.05.2026) | 1-2 Sessions | W13 ✅ |
+| W11 V4 | **Voice-Sync (Begleiter-Stimme im Multi-User)** — Mitspieler hören deinen Companion-Output (`companion-say`-Broadcast → SpeechSynthesis). Schließt den Präsenz-Bogen sehen/spüren/kennen/**hören**. Klein, niedrige Priorität, jederzeit einschiebbar. | 🔴 offen | 1 Session | W11 V3 ✅ |
 
-**Summe verbleibend**: ~21-33 Arbeitstage in fokussierten Sessions. **Empfohlene Sequenz nach V8.53 (W12 Welt-Portal mit Phase 1+2+3 KOMPLETT — das Tor führt real in fremde Engines, die Brücke trägt beide Richtungen, jede Welt beschreibt sich selbst)**: **W13 (Vibe-Pass)** → **W14 (Bibliothek)** → W7 (Compute-Sharing als verteilter Server-Layer für die Bibliothek). Optional einschiebbar: W11 V4 (Voice-Sync, ~1 Session) oder eine kleine Affordance-Welle (10b). Logik: Atmosphäre ✅ → Multi-User-Tiefe ✅ (Peer ist sein echter Soul) → Hylomorphismus-Vollausbau ✅ (V8.35 — Rolle emergiert aus der Substanz) → **Welt-Portal-Protokoll ✅ (W12 — das Tor trägt beide Richtungen, jede Welt beschreibt sich selbst)** → die Bibliothek (W13-14, souveräne Identität + fremde Welten) → Skalierung als Compute-Sharing-Layer.
+**Summe verbleibend**: ~15-25 Arbeitstage in fokussierten Sessions. **Empfohlene Sequenz nach V8.56 (W13 Vibe-Pass KOMPLETT — der Avatar hat einen Schlüssel, signiert seine Werke, und im Multi-User trägt jeder Mitspieler seine beweisbare Identität)**: **W14 (Bibliothek)** → W7 (Compute-Sharing als verteilter Server-Layer für die Bibliothek). Optional einschiebbar: W13 V2 (Vibe-Pass trägt das Schaffen, ~1-2 Sessions — gehört natürlich zu W14 Phase 2), W11 V4 (Voice-Sync, ~1 Session) oder eine kleine Affordance-Welle (10b). Logik: Atmosphäre ✅ → Multi-User-Tiefe ✅ (Peer ist sein echter Soul) → Hylomorphismus-Vollausbau ✅ (V8.35) → Welt-Portal-Protokoll ✅ (W12) → souveräne Identität ✅ (W13 — Schlüssel, signierte Werke, beweisbare Multi-User-Identität) → **die Bibliothek (W14, fremde Welten browsen + signierte Portal-Manifeste)** → Skalierung als Compute-Sharing-Layer.
 
 **Hinweis**: WebGPU+TSL ist nicht mehr eine eigene Welle — es ist eine **optionale Renderpipeline für eine andere Welt-Engine** im Welt-Portal-Konzept. Wenn jemand eine WebGPU-Welt veröffentlicht, läuft sie als Sub-Engine im iframe. Kein Pflicht-Migrationspfad für den AnazhRealm-Kern.
 
@@ -590,6 +591,55 @@ Geliefert in einer Session (in Kombination mit Ring 10.5 für die Vorbedingung):
 
 ---
 
+### Welle 12 + 13: ✅ erledigt (Detail in `world-portal.md` + `CLAUDE.md`)
+
+**W12 Welt-Portal (V8.51-V8.53)** und **W13 Vibe-Pass (V8.54-V8.56)** sind vollständig live. Der ausführliche Wellen-Eintrag steht in `CLAUDE.md` (V8.51-V8.56), die Vision-Tiefe in `docs/world-portal.md` §3-§4. Kurz: W12 baute das Tor (sandboxed iframe, zwei fremde Engines, generische DSL-Brücke, beidseitiger Kanal, native Manifest-Stufe), W13 die Identität (ed25519-Schlüssel, Bauplan-Signaturen über die Substanz, peerId-gebundene Multi-User-Identität). Beide sind die Vorbedingung für W14.
+
+---
+
+### Welle 14: Bibliothek (Welt-Registry) — die letzte große Vision-Schicht (~8-10 Sessions, 3 Phasen)
+
+**Ziel** (`docs/world-portal.md` §2 Schicht 3, §9): AnazhRealm wird das Tor, das andere Welten *sammelt*. Eine Welt-Registry, in der man fremde Welten browst, mit einem Klick einen Portal-Bauplan ins Inventar legt, ihn in der Heimat-Welt platziert und immer wieder hindurchgeht. W12 baute das Tor, W13 die Identität — **W14 baut die Bibliothek dahinter**. „Die Bibliothek von Alexandria der Vibecode-Ära."
+
+**Die Schnittstellen, auf die W14 aufsetzt** (alles steht schon — W14 verbindet, baut keinen neuen Stamm):
+
+- `AnazhRealm.WORLD_REGISTRY` (W12) — die EINE Quelle, welche Sub-Welten es gibt (`{id, label, world, dsl}`). Heute Daten ohne Browse-Sicht.
+- `aimBlueprintAtWorld(blueprint, welt)` + DSL-Op `set_portal` (W12) — ein Bauplan wird auf eine Welt gerichtet.
+- `_portalReceiveManifest` + die Drei-Stufen-Marke ausgestellt/übersetzt/nativ (W12 P3) — eine Welt beschreibt sich über ihr `manifest.json`.
+- `_vibeSign` / `_vibeVerify` / `vibePassId()` (W13) — die Krypto-Primitive, um ein Manifest zu signieren und zu prüfen.
+- `addToInventory(name, count)` (Welle 6.C1) — der Pfad, einen Bauplan ins Inventar zu legen.
+- Welt-Tor Export/Import (Ring 9) — der bestehende Welt-Teilen-Mechanismus (JSON-Datei).
+
+**Phase 1 — die Bibliothek wird ein Ort** (~1-2 Sessions):
+
+1. Ein neuer „Bibliothek"-Tab (8. Drawer in der Topbar) listet die `WORLD_REGISTRY`-Einträge browsbar.
+2. Pro Welt eine Karte: Label, DSL-Vokabular (was die Welt versteht), Drei-Stufen-Marke, kurze Beschreibung.
+3. Aktion „Portal holen" → `aimBlueprintAtWorld` baut einen Portal-Bauplan für die Welt → `addToInventory`. Der Spieler platziert ihn in seiner Welt und betritt ihn.
+4. Playtest-Invarianten + Schöpfer-Browser-Test.
+
+→ Damit wird die Registry vom Entwickler-Datum zum **spieler-erreichbaren Ort**. (W12 notierte selbst: „die 3 Welten wirken hardcoded" — Phase 1 schließt genau das.)
+
+**Phase 2 — eine Welt veröffentlichen + signieren** (~2-3 Sessions):
+
+1. Eine eigene (Sub-)Welt in die Bibliothek eintragen.
+2. Beim Veröffentlichen signiert der Vibe-Pass das `manifest.json`: `authorPubKey` + `signature` (`world-portal.md` §3.3) — `_vibeSign` über den kanonischen Manifest-Inhalt.
+3. Das Portal-Overlay prüft die Signatur bei `_portalReceiveManifest` via `_vibeVerify` und zeigt „signiert von &lt;Autor&gt;" / „unsigniert". **Hier trifft W13 auf W14.**
+4. Hier landet auch **W13 V2** (Vibe-Pass §4): der Pass trägt das Schaffen des Spielers — Custom-Seele, eigene Materialien, eigene Werkzeuge reisen mit, wenn er durch ein Portal in eine fremde Welt geht.
+
+**Phase 3 — fremde Welten empfangen** (~3-4 Sessions, Horizont):
+
+1. Welten teilen + in die eigene Bibliothek importieren (der dezentrale Teil — `world-portal.md` §2 Schicht 3).
+2. Realistischer Anfang: die bestehende Welt-Tor-JSON (Ring 9) IST der Teilen-Mechanismus; die Bibliothek wird ein Index importierbarer Welten. Kein IPFS, keine zentrale Authority (Heilige Lektion — kein neuer Dienst, wo ein bestehender reicht).
+3. Der KI-Übersetzer (ein LLM liest ein fremdes Repo, vendort es, schreibt Manifest + Adapter — `world-portal.md` §3.3-Horizont) ist die Krönung, aber bewusst zuletzt: P1+P2 hängen nicht davon ab.
+
+**Folgerung / Disziplin**: W14 ist groß, aber kein neuer Stamm — eine browsbare Registry + Portal-Baupläne sind ein Wachstumsring auf W12+W13. Phase 1 + 2 sind klar umrissen und browser-testbar; Phase 3 (Dezentralisierung) ist ein Horizont, der konkret ausgearbeitet wird, *wenn* P1+P2 stehen — nicht vorher (keine Spec für ein Szenario, das es noch nicht gibt).
+
+**Akzeptanz**: der Schöpfer öffnet den Bibliothek-Tab, sieht die verfügbaren Welten, holt sich mit einem Klick ein Portal, platziert es, geht hindurch — und beim Betreten einer veröffentlichten Welt steht „signiert von &lt;Autor&gt;".
+
+**Vision-Wort**: „**Andere bauen Welten FÜR Spieler. Wir bauen das Tor, das sie alle verbindet.**" Der Knotenpunkt, durch den man geht.
+
+---
+
 ## 4. Meilensteine
 
 Gruppierung der Ringe in größere Phasen mit deutlichen User-Eindrücken.
@@ -640,6 +690,17 @@ Gruppierung der Ringe in größere Phasen mit deutlichen User-Eindrücken.
 **Geschätzter Aufwand**: 5-7 Tage  
 **Wann „fertig"**: Multi-Browser-Tab-Demo läuft.
 
+### Meilenstein F — „Bibliothek von Alexandria" (Welle 12-14 + 7)
+
+**Ziel**: AnazhRealm wird nicht eine Welt, sondern ein Tor zu Welten. Der Spieler geht durch Portale in fremde Engines, trägt eine souveräne Identität, browst eine Registry anderer Welten.
+
+- Welle 12 (Welt-Portal) ✅ — das Tor in fremde Engines
+- Welle 13 (Vibe-Pass) ✅ — die souveräne Identität
+- Welle 14 (Bibliothek) 🔴 — die Welt-Registry
+- Welle 7 (Compute-Sharing) 🔴 — WebRTC-Mesh als verteilter Server-Layer
+
+**Wann „fertig"**: der Schöpfer browst im Bibliothek-Tab fremde Welten, holt sich ein Portal, geht hindurch — und seine Identität reist mit.
+
 **Gesamt-Roadmap**: ~25-33 Arbeitstage in fokussierten Sessions, realistisch 3-4 Monate kalendarisch.
 
 ---
@@ -650,9 +711,9 @@ Themen, die kein eigener Ring sind, sondern durch alle Ringe ziehen.
 
 ### 5.1 Test-Coverage (CI-Gate)
 
-- Heute: 36 Invarianten in `scripts/playtest.cjs`
-- Pro Ring +3-5 neue Invarianten (Effekt sichtbar, kein Crash, Save-Schema OK)
-- **Ziel Meilenstein E**: ~60-70 Invarianten
+- Stand V8.57: **2377 Invarianten** in `scripts/playtest.cjs` (Headless-Chromium, ~25 s Log-Sammlung) + `audit:strict.cjs` (5 generische Audit-Schichten) + `smoke-multiuser.cjs`
+- Pro Welle +6-35 neue Invarianten (Effekt sichtbar, kein Crash, Save-Schema OK, Emergenz statt Mechanik)
+- Disziplin: nach jeder substanziellen Änderung das Playtest-Gate, nicht nur Code-Analyse
 
 ### 5.2 Performance
 
@@ -665,9 +726,9 @@ Themen, die kein eigener Ring sind, sondern durch alle Ringe ziehen.
 
 ### 5.3 CSP & Security
 
-- Heute: locker (Default `'unsafe-eval'` möglich)
-- Ring 2 Phase 6 macht strict
-- Ring 11 (Multi-User): Welten-Daten zwischen Spielern werden validiert (kein arbitrary DSL-Code injizierbar — DSL-Interpreter hat eh harte Budget-Limits)
+- Stand V8.57: CSP **strict** seit Ring 2 Phase 6 — `script-src` ohne `eval`/`inline`, nur dokumentierte Vendor-Konzessionen (`wasm-unsafe-eval` für Ammo, `unsafe-inline` style für Three.js, `worker-src blob:`). CI-Gate erzwingt „kein dynamisches Auswerten im eigenen Bundle".
+- Multi-User: eingehende DSL läuft durch dieselbe `dslRun`-Sandbox wie eigene Programme (Op-Whitelist + Budget-Limits). `NON_BROADCASTABLE_OPS` schützt Spieler-private Ops, `CREATURE_PROPOSED_OPS` die Kreatur-Welt-Aktion.
+- W13 Vibe-Pass: WebCrypto-Ed25519 nativ (keine CSP-Lockerung), privater Schlüssel global in `localStorage`, NIE im teilbaren Welt-Save.
 
 ### 5.4 Doku-Pflege
 

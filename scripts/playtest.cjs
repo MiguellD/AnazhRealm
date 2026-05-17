@@ -13898,6 +13898,376 @@ function startSaveServer() {
                 check("W12 P3b: manifest.json-/Adapter-Quell-Check läuft", false, err && err.message);
             }
 
+            // ### W13 Phase 1 — Vibe-Pass: die souveräne Avatar-Identität ###
+            const w13p1Results = await page
+                .evaluate(async () => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    // Methoden-Existenz.
+                    out.methods =
+                        typeof r._ensureVibePass === "function" &&
+                        typeof r._vibeSign === "function" &&
+                        typeof r._vibeVerify === "function" &&
+                        typeof r.vibePassId === "function";
+                    // Identität ist nach init bereit.
+                    const vp = r.state.vibePass;
+                    out.ready = !!vp && vp.ready === true;
+                    // vibePassId — kanonisches ed25519:<64hex>-Format.
+                    const id = r.vibePassId();
+                    out.idFormat = typeof id === "string" && /^ed25519:[0-9a-f]{64}$/.test(id);
+                    // localStorage trägt den privaten Schlüssel als JWK.
+                    let stored = null;
+                    try {
+                        stored = JSON.parse(localStorage.getItem("anazh.vibePass"));
+                    } catch {
+                        stored = null;
+                    }
+                    out.persisted =
+                        !!stored &&
+                        stored.schemaVersion === "vibepass-1" &&
+                        !!stored.privateKeyJwk &&
+                        stored.privateKeyJwk.kty === "OKP" &&
+                        stored.privateKeyJwk.crv === "Ed25519" &&
+                        typeof stored.privateKeyJwk.d === "string" &&
+                        typeof stored.privateKeyJwk.x === "string";
+                    // Erneutes _ensureVibePass lädt denselben Schlüssel (kein Neu-Erzeugen).
+                    const idBefore = r.vibePassId();
+                    await r._ensureVibePass();
+                    out.idStable = r.vibePassId() === idBefore;
+                    // Fingerprint — Kurzform aus den ersten 16 Hex-Zeichen.
+                    out.fingerprint =
+                        typeof vp.fingerprint === "string" && vp.fingerprint.replace(/ /g, "").length === 16;
+                    // Signieren liefert eine 64-Byte-Signatur (128 Hex).
+                    const sig = await r._vibeSign("anazh-vibe-pass-test");
+                    out.signHex = typeof sig === "string" && /^[0-9a-f]{128}$/.test(sig);
+                    // Verifizieren: gültige Signatur → true.
+                    out.verifyValid = (await r._vibeVerify("anazh-vibe-pass-test", sig, vp.publicKeyHex)) === true;
+                    // Manipulierte Nachricht → false.
+                    out.verifyTampered =
+                        (await r._vibeVerify("anazh-vibe-pass-TAMPERED", sig, vp.publicKeyHex)) === false;
+                    // Falscher öffentlicher Schlüssel → false.
+                    out.verifyWrongKey =
+                        (await r._vibeVerify("anazh-vibe-pass-test", sig, "0".repeat(64))) === false;
+                    // Defensiv: Müll-Eingabe wirft nicht, liefert false.
+                    out.verifyDefensive =
+                        (await r._vibeVerify("x", null, null)) === false &&
+                        (await r._vibeVerify("x", "zzz", "kurz")) === false;
+                    // Genesis-Erinnerung im Journal (Typ "ritual").
+                    const entries = (r.state.worldJournal && r.state.worldJournal.entries) || [];
+                    out.journalGenesis = entries.some(
+                        (e) => e && e.type === "ritual" && /Vibe-Pass/.test(e.text || "")
+                    );
+                    // Sicherheit: der private Schlüssel darf NIE im Welt-Save landen.
+                    const snapJson = JSON.stringify(r.buildStateSnapshot());
+                    out.snapshotClean =
+                        snapJson.indexOf(vp._privateKeyJwk.d) === -1 && snapJson.indexOf('"vibePass"') === -1;
+                    // Export → Import-Rundlauf bewahrt die Identität.
+                    const exported = r.exportVibePass();
+                    out.exportShape =
+                        !!exported && exported.schemaVersion === "vibepass-1" && !!exported.privateKeyJwk;
+                    const imp = await r.importVibePass(exported, { skipConfirm: true });
+                    out.importRoundTrip = !!imp && imp.ok === true && r.vibePassId() === idBefore;
+                    const impBad = await r.importVibePass({ nonsense: true }, { skipConfirm: true });
+                    out.importRejectsGarbage = !!impBad && impBad.ok === false;
+                    // UI.
+                    out.uiSection = !!document.getElementById("vibe-pass-section");
+                    const body = document.getElementById("vibe-pass-body");
+                    out.uiBody = !!body && body.textContent.indexOf(vp.fingerprint) !== -1;
+                    out.uiButtons =
+                        !!document.getElementById("vibe-pass-export") &&
+                        !!document.getElementById("vibe-pass-import") &&
+                        !!document.getElementById("vibe-pass-file-input");
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w13p1Results && !w13p1Results.error) {
+                check("W13 P1: _ensureVibePass/_vibeSign/_vibeVerify/vibePassId existieren", w13p1Results.methods);
+                check("W13 P1: Vibe-Pass ist nach init bereit", w13p1Results.ready);
+                check("W13 P1: vibePassId liefert ed25519:<64hex>", w13p1Results.idFormat);
+                check("W13 P1: privater Schlüssel als JWK in localStorage persistiert", w13p1Results.persisted);
+                check("W13 P1: erneutes _ensureVibePass lädt denselben Schlüssel", w13p1Results.idStable);
+                check("W13 P1: Fingerprint = 16 Hex-Zeichen in Vierergruppen", w13p1Results.fingerprint);
+                check("W13 P1: _vibeSign liefert eine 64-Byte-Signatur (128 Hex)", w13p1Results.signHex);
+                check("W13 P1: _vibeVerify akzeptiert eine gültige Signatur", w13p1Results.verifyValid);
+                check("W13 P1: _vibeVerify weist eine manipulierte Nachricht ab", w13p1Results.verifyTampered);
+                check("W13 P1: _vibeVerify weist einen falschen Schlüssel ab", w13p1Results.verifyWrongKey);
+                check("W13 P1: _vibeVerify ist defensiv gegen Müll-Eingabe", w13p1Results.verifyDefensive);
+                check("W13 P1: Genesis-Erinnerung (ritual) im Journal", w13p1Results.journalGenesis);
+                check("W13 P1: privater Schlüssel leckt NICHT in den Welt-Save", w13p1Results.snapshotClean);
+                check("W13 P1: exportVibePass liefert ein gültiges Sicherungs-Objekt", w13p1Results.exportShape);
+                check("W13 P1: Export→Import-Rundlauf bewahrt die Identität", w13p1Results.importRoundTrip);
+                check("W13 P1: importVibePass weist ungültige Daten ab", w13p1Results.importRejectsGarbage);
+                check("W13 P1: Vibe-Pass-Sektion im DOM", w13p1Results.uiSection);
+                check("W13 P1: Vibe-Pass-Body zeigt den Fingerprint", w13p1Results.uiBody);
+                check("W13 P1: Sichern/Wiederherstellen-Knöpfe + File-Input im DOM", w13p1Results.uiButtons);
+            } else {
+                check("W13 P1: Vibe-Pass-Tests laufen", false, w13p1Results ? w13p1Results.error : "no result");
+            }
+
+            // ### W13 Phase 2 — Bauplan-Signaturen ###
+            const w13p2Results = await page
+                .evaluate(async () => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    out.methods =
+                        typeof r.signBlueprint === "function" &&
+                        typeof r.verifyBlueprintSignature === "function" &&
+                        typeof r._canonicalBlueprint === "function" &&
+                        typeof r._fastHash === "function";
+                    // Einen eigenen Bauplan mit einem Part anlegen.
+                    if (r.state.blueprints["_w13p2"]) delete r.state.blueprints["_w13p2"];
+                    r.createBlueprint("_w13p2", "W13P2-Werk");
+                    r.addPartToBlueprint("_w13p2", { shape: "box", material: "stein" });
+                    const bp = r.state.blueprints["_w13p2"];
+                    // _canonicalBlueprint ist deterministisch.
+                    out.canonDeterministic = r._canonicalBlueprint(bp) === r._canonicalBlueprint(bp);
+                    // Das Label ist NICHT Teil der signierten Substanz.
+                    const canonA = r._canonicalBlueprint(bp);
+                    bp.label = "Ein anderer Name";
+                    out.canonIgnoresLabel = r._canonicalBlueprint(bp) === canonA;
+                    bp.label = "W13P2-Werk";
+                    // Vor dem Signieren: Status "unsigned".
+                    out.statusUnsigned = (await r.verifyBlueprintSignature(bp)) === "unsigned";
+                    // Signieren.
+                    const signRes = await r.signBlueprint("_w13p2");
+                    out.signOk = !!signRes && signRes.ok === true;
+                    out.signFields =
+                        typeof bp.signature === "string" &&
+                        /^[0-9a-f]{128}$/.test(bp.signature) &&
+                        bp.authorPubKey === r.state.vibePass.publicKeyHex &&
+                        typeof bp.signedHash === "string" &&
+                        typeof bp.signedAt === "number";
+                    out.statusValid = (await r.verifyBlueprintSignature(bp)) === "valid";
+                    // Built-in lässt sich nicht signieren.
+                    const builtinRes = await r.signBlueprint("village");
+                    out.rejectBuiltin = !!builtinRes && builtinRes.ok === false && builtinRes.reason === "builtin";
+                    const unknownRes = await r.signBlueprint("_does_not_exist_w13");
+                    out.rejectUnknown = !!unknownRes && unknownRes.ok === false && unknownRes.reason === "unknown";
+                    // Substanz ändern → "modified".
+                    bp.parts[0].material = "eisen";
+                    out.statusModified = (await r.verifyBlueprintSignature(bp)) === "modified";
+                    // Neu signieren heilt es.
+                    await r.signBlueprint("_w13p2");
+                    out.resignValid = (await r.verifyBlueprintSignature(bp)) === "valid";
+                    // Signatur fälschen (ein Hex-Zeichen kippen, Substanz unverändert) → "forged".
+                    const goodSig = bp.signature;
+                    bp.signature = (goodSig[0] === "a" ? "b" : "a") + goodSig.slice(1);
+                    out.statusForged = (await r.verifyBlueprintSignature(bp)) === "forged";
+                    bp.signature = goodSig;
+                    // Die Signatur reist mit dem Bauplan durch den Snapshot.
+                    const snap = r.buildStateSnapshot();
+                    const snapBp = (snap.blueprints || []).find((b) => b && b.name === "_w13p2");
+                    out.snapshotKeepsSig =
+                        !!snapBp && snapBp.signature === bp.signature && snapBp.authorPubKey === bp.authorPubKey;
+                    // Cross-Autor: ein mit FREMDEM Schlüssel signierter Bauplan
+                    // verifiziert ebenso (das Fundament für W13 Phase 3).
+                    const foreignPair = await crypto.subtle.generateKey({ name: "Ed25519" }, true, [
+                        "sign",
+                        "verify",
+                    ]);
+                    const foreignJwk = await crypto.subtle.exportKey("jwk", foreignPair.privateKey);
+                    const foreignCanon = r._canonicalBlueprint(bp);
+                    const foreignSig = await crypto.subtle.sign(
+                        { name: "Ed25519" },
+                        foreignPair.privateKey,
+                        new TextEncoder().encode(foreignCanon)
+                    );
+                    bp.signature = r._vibeBytesToHex(new Uint8Array(foreignSig));
+                    bp.authorPubKey = r._vibeBytesToHex(r._vibeB64uToBytes(foreignJwk.x));
+                    bp.signedHash = r._fastHash(foreignCanon);
+                    out.crossAuthorValid = (await r.verifyBlueprintSignature(bp)) === "valid";
+                    out.crossAuthorForeign = bp.authorPubKey !== r.state.vibePass.publicKeyHex;
+                    // Ein Klon eines signierten Bauplans ist unsigniert (neues Werk).
+                    if (r.state.blueprints["_w13p2clone"]) delete r.state.blueprints["_w13p2clone"];
+                    r.cloneBlueprint("_w13p2", "_w13p2clone");
+                    const clone = r.state.blueprints["_w13p2clone"];
+                    out.cloneUnsigned = !!clone && !clone.signature && !clone.authorPubKey;
+                    // verifyBlueprintSignature ist defensiv.
+                    out.verifyDefensive = (await r.verifyBlueprintSignature(null)) === "unsigned";
+                    // UI: Signatur-Sektion im Werkstatt-Panel.
+                    r.selectBlueprintForEdit("_w13p2");
+                    const panel = document.getElementById("workshop-stats-panel");
+                    out.uiSigRow = !!panel && !!panel.querySelector(".workshop-sig-row");
+                    out.uiSigBtn = !!panel && !!panel.querySelector(".workshop-sig-btn");
+                    delete r.state.blueprints["_w13p2"];
+                    delete r.state.blueprints["_w13p2clone"];
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w13p2Results && !w13p2Results.error) {
+                check(
+                    "W13 P2: signBlueprint/verifyBlueprintSignature/_canonicalBlueprint/_fastHash existieren",
+                    w13p2Results.methods
+                );
+                check("W13 P2: _canonicalBlueprint ist deterministisch", w13p2Results.canonDeterministic);
+                check(
+                    "W13 P2: _canonicalBlueprint ignoriert das Label (signiert die Substanz)",
+                    w13p2Results.canonIgnoresLabel
+                );
+                check("W13 P2: unsignierter Bauplan → Status 'unsigned'", w13p2Results.statusUnsigned);
+                check("W13 P2: signBlueprint signiert einen eigenen Bauplan", w13p2Results.signOk);
+                check(
+                    "W13 P2: Signatur-Felder gesetzt (signature/authorPubKey/signedHash/signedAt)",
+                    w13p2Results.signFields
+                );
+                check("W13 P2: signierter Bauplan → Status 'valid'", w13p2Results.statusValid);
+                check("W13 P2: Built-in lässt sich nicht signieren", w13p2Results.rejectBuiltin);
+                check("W13 P2: unbekannter Bauplan-Name wird abgewiesen", w13p2Results.rejectUnknown);
+                check("W13 P2: geänderte Substanz → Status 'modified'", w13p2Results.statusModified);
+                check("W13 P2: neu signieren heilt 'modified' → 'valid'", w13p2Results.resignValid);
+                check("W13 P2: gefälschte Signatur → Status 'forged'", w13p2Results.statusForged);
+                check("W13 P2: Signatur überlebt den Snapshot-Rundlauf", w13p2Results.snapshotKeepsSig);
+                check("W13 P2: fremd-signierter Bauplan verifiziert (Cross-Autor)", w13p2Results.crossAuthorValid);
+                check("W13 P2: der Cross-Autor-Schlüssel ist nicht der eigene", w13p2Results.crossAuthorForeign);
+                check("W13 P2: Klon eines signierten Bauplans ist unsigniert", w13p2Results.cloneUnsigned);
+                check("W13 P2: verifyBlueprintSignature ist defensiv (null → 'unsigned')", w13p2Results.verifyDefensive);
+                check("W13 P2: Signatur-Sektion im Werkstatt-Panel", w13p2Results.uiSigRow);
+                check("W13 P2: Signier-Knopf im Werkstatt-Panel", w13p2Results.uiSigBtn);
+            } else {
+                check("W13 P2: Bauplan-Signatur-Tests laufen", false, w13p2Results ? w13p2Results.error : "no result");
+            }
+
+            // ### W13 Phase 3 — Vibe-Pass-Identität im Multi-User ###
+            const w13p3Results = await page
+                .evaluate(async () => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    const p2p = r.state.p2p;
+                    out.methods =
+                        typeof r._p2pBroadcastVibe === "function" &&
+                        typeof r._p2pBuildNameLabel === "function" &&
+                        typeof r._p2pRefreshPeerNameLabel === "function";
+                    // Peer-Entry trägt die Vibe-Pass-Felder.
+                    const probe = r._p2pEnsurePeerEntry("_w13p3probe");
+                    out.peerFields = "vibePassId" in probe && "vibeVerified" in probe;
+                    r._p2pRemovePeer("_w13p3probe");
+                    // --- _p2pBroadcastVibe: Payload + Beweis ---
+                    const origSend = r.p2pSend;
+                    const origEnabled = p2p.enabled;
+                    const origPeerId = p2p.peerId;
+                    let captured = null;
+                    r.p2pSend = (m) => {
+                        captured = m;
+                    };
+                    p2p.enabled = true;
+                    p2p.peerId = "_w13p3self";
+                    await r._p2pBroadcastVibe();
+                    out.broadcastShape =
+                        !!captured &&
+                        captured.type === "vibe" &&
+                        captured.vibePassId === r.vibePassId() &&
+                        typeof captured.proof === "string";
+                    out.broadcastProofVerifies =
+                        !!captured &&
+                        (await r._vibeVerify("_w13p3self", captured.proof, r.state.vibePass.publicKeyHex)) === true;
+                    // Bei deaktiviertem P2P sendet _p2pBroadcastVibe nichts.
+                    captured = null;
+                    p2p.enabled = false;
+                    await r._p2pBroadcastVibe();
+                    out.broadcastSkipsDisabled = captured === null;
+                    p2p.enabled = true;
+                    r.p2pSend = origSend;
+                    // --- vibe-Empfang: ein fremder Peer, drei Beweis-Fälle ---
+                    const foreign = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
+                    const foreignJwk = await crypto.subtle.exportKey("jwk", foreign.privateKey);
+                    const foreignPubHex = r._vibeBytesToHex(r._vibeB64uToBytes(foreignJwk.x));
+                    const foreignId = "ed25519:" + foreignPubHex;
+                    const sign = async (text) =>
+                        r._vibeBytesToHex(
+                            new Uint8Array(
+                                await crypto.subtle.sign(
+                                    { name: "Ed25519" },
+                                    foreign.privateKey,
+                                    new TextEncoder().encode(text)
+                                )
+                            )
+                        );
+                    // (a) gültiger Beweis (signiert die eigene peerId).
+                    const proofA = await sign("_w13p3peerA");
+                    r.p2pHandleMessage(
+                        JSON.stringify({ type: "vibe", peerId: "_w13p3peerA", vibePassId: foreignId, proof: proofA })
+                    );
+                    // (b) manipulierter Beweis (ein Hex-Zeichen gekippt).
+                    const proofB = await sign("_w13p3peerB");
+                    const proofBad = (proofB[0] === "a" ? "b" : "a") + proofB.slice(1);
+                    r.p2pHandleMessage(
+                        JSON.stringify({ type: "vibe", peerId: "_w13p3peerB", vibePassId: foreignId, proof: proofBad })
+                    );
+                    // (c) Beweis über eine FREMDE peerId — die Bindung greift.
+                    const proofWrong = await sign("_w13p3WRONG");
+                    r.p2pHandleMessage(
+                        JSON.stringify({ type: "vibe", peerId: "_w13p3peerC", vibePassId: foreignId, proof: proofWrong })
+                    );
+                    // (d) ohne Beweis — vibePassId notiert, aber nicht verifiziert.
+                    r.p2pHandleMessage(
+                        JSON.stringify({ type: "vibe", peerId: "_w13p3peerD", vibePassId: foreignId, proof: "" })
+                    );
+                    // (e) eigene peerId — wird ignoriert.
+                    r.p2pHandleMessage(
+                        JSON.stringify({ type: "vibe", peerId: "_w13p3self", vibePassId: foreignId, proof: proofA })
+                    );
+                    await new Promise((res) => setTimeout(res, 140));
+                    const peerA = p2p.peers.get("_w13p3peerA");
+                    const peerB = p2p.peers.get("_w13p3peerB");
+                    const peerC = p2p.peers.get("_w13p3peerC");
+                    const peerD = p2p.peers.get("_w13p3peerD");
+                    out.recvRecordsId = !!peerA && peerA.vibePassId === foreignId;
+                    out.recvValidVerifies = !!peerA && peerA.vibeVerified === true;
+                    out.recvTamperedRejected = !!peerB && peerB.vibeVerified === false;
+                    out.recvWrongBindingRejected = !!peerC && peerC.vibeVerified === false;
+                    out.recvNoProofUnverified = !!peerD && peerD.vibePassId === foreignId && peerD.vibeVerified === false;
+                    out.recvIgnoresSelf = !p2p.peers.has("_w13p3self");
+                    // Verifizierter Peer bekommt ein Name-Schild mit Fingerprint (zweizeilig).
+                    out.verifiedPeerLabel =
+                        !!peerA && !!peerA.nameLabel && Math.abs(peerA.nameLabel.scale.y - 0.98) < 0.05;
+                    // --- Name-Schild ein- vs. zweizeilig ---
+                    const oneLine = r._p2pBuildNameLabel("Reisender");
+                    const twoLine = r._p2pBuildNameLabel("Reisender", "a1b2 c3d4");
+                    out.labelOneLine = !!oneLine && Math.abs(oneLine.scale.y - 0.65) < 0.01;
+                    out.labelTwoLine = !!twoLine && Math.abs(twoLine.scale.y - 0.98) < 0.01;
+                    // Aufräumen.
+                    for (const id of ["_w13p3peerA", "_w13p3peerB", "_w13p3peerC", "_w13p3peerD"]) {
+                        r._p2pRemovePeer(id);
+                    }
+                    p2p.enabled = origEnabled;
+                    p2p.peerId = origPeerId;
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w13p3Results && !w13p3Results.error) {
+                check("W13 P3: _p2pBroadcastVibe/_p2pBuildNameLabel/_p2pRefreshPeerNameLabel existieren", w13p3Results.methods);
+                check("W13 P3: Peer-Entry trägt vibePassId + vibeVerified", w13p3Results.peerFields);
+                check("W13 P3: _p2pBroadcastVibe sendet {type:vibe, vibePassId, proof}", w13p3Results.broadcastShape);
+                check("W13 P3: der gesendete Beweis verifiziert gegen den eigenen Schlüssel", w13p3Results.broadcastProofVerifies);
+                check("W13 P3: _p2pBroadcastVibe sendet nichts bei deaktiviertem P2P", w13p3Results.broadcastSkipsDisabled);
+                check("W13 P3: vibe-Empfang notiert die vibePassId des Peers", w13p3Results.recvRecordsId);
+                check("W13 P3: gültiger Beweis → der Peer ist verifiziert", w13p3Results.recvValidVerifies);
+                check("W13 P3: manipulierter Beweis → nicht verifiziert", w13p3Results.recvTamperedRejected);
+                check("W13 P3: Beweis über fremde peerId → nicht verifiziert (Bindung greift)", w13p3Results.recvWrongBindingRejected);
+                check("W13 P3: vibe ohne Beweis → vibePassId notiert, aber nicht verifiziert", w13p3Results.recvNoProofUnverified);
+                check("W13 P3: vibe mit eigener peerId wird ignoriert", w13p3Results.recvIgnoresSelf);
+                check("W13 P3: verifizierter Peer trägt ein Name-Schild mit Fingerprint", w13p3Results.verifiedPeerLabel);
+                check("W13 P3: Name-Schild ohne Fingerprint bleibt einzeilig", w13p3Results.labelOneLine);
+                check("W13 P3: Name-Schild mit Fingerprint wird zweizeilig", w13p3Results.labelTwoLine);
+            } else {
+                check("W13 P3: Vibe-Pass-Multi-User-Tests laufen", false, w13p3Results ? w13p3Results.error : "no result");
+            }
+
+            // W13 P3 — der signaling-server hat einen vibe-Handler (Quell-Check).
+            try {
+                const srvSrc = fs.readFileSync(path.join(__dirname, "..", "signaling-server.js"), "utf8");
+                check(
+                    "W13 P3: signaling-server relayt den vibe-Nachrichtentyp mit peerId-Stempel",
+                    /msg\.type === "vibe"/.test(srvSrc) &&
+                        /broadcastToRoom\([^)]*type: "vibe", peerId: ws\.anazh\.peerId/.test(srvSrc)
+                );
+            } catch (err) {
+                check("W13 P3: signaling-server-Quell-Check läuft", false, err && err.message);
+            }
+
             // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
             const v840Results = await page
                 .evaluate(() => {
@@ -21068,27 +21438,33 @@ function startSaveServer() {
             // Pitch-Inversion + Boden-Clamp im 3rd-Modus prüfen: Maus hoch
             // (pitch positiv) muss Kamera SENKEN, nicht heben. Bei extremem
             // Pitch darf die Kamera nicht unter den Boden tauchen.
-            // Drei Pitch-Werte sequentiell prüfen. setTimeout innerhalb
-            // page.evaluate yields nicht an rAF im Headless — also außen
-            // warten zwischen "Pitch setzen" und "cam.y lesen", wie's auch
-            // beim Rotation-Test funktioniert.
-            // V8.50 — Pitch setzen + Loop SYNCHRON treiben + cam-Offset lesen,
-            // alles in EINEM evaluate. Vorher: setzen, 500 ms auf rAF warten,
-            // in zweitem evaluate lesen — im Headless (rAF ~1 Hz) landete
-            // vereinzelt 0 Ticks im Fenster → stale cam-y → flaky CI.
+            //
+            // V8.50 — Pitch setzen + Loop SYNCHRON treiben (statt auf das im
+            // Headless ~1 Hz gedrosselte rAF zu warten).
+            //
+            // V8.57 — Wurzel-Heilung des flaky CI-Falls. Gelesen wird jetzt
+            // `_cameraDesiredY` (die pitch-gesteuerte Wunsch-Höhe), NICHT
+            // `camera.position.y`. Grund: die V8.36-Kamera-Kollision zieht die
+            // Kamera per Raycast ein, sobald Terrain/Struktur/Kreatur hinter
+            // dem Spieler steht — und wo der Spieler nach 20 s autonomem Lauf
+            // landet, ist nicht-deterministisch. Die hohe "Maus runter"-Kamera
+            // wurde so vereinzelt unter die Schwelle gezogen → CI-Flake.
+            // `_cameraDesiredY` ist die reine Pitch-Mathematik (inkl.
+            // Boden-Clamp), umgebungs-unabhängig — genau das, was dieser Test
+            // prüfen will. Die Kamera-Kollision ist ein eigenes Feature.
             const setPitchAndRead = async (pitch) => {
                 return await page.evaluate((p) => {
                     const r = window.anazhRealm;
                     r.setCameraMode("third");
                     r.state.yaw = 0;
                     r.state.pitch = p;
-                    // Player-Velocity nullen, damit cam-Position nicht durch
-                    // Spieler-Bewegung schwankt.
+                    // Player-Velocity nullen, damit der Spieler während der
+                    // drei Messungen nicht driftet.
                     if (r.state.playerBody && r.state.tmpVec2) {
                         r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec2, 0, 0, 0));
                     }
                     if (typeof r._gameLoopTick === "function") r._gameLoopTick(performance.now());
-                    return r.state.camera.position.y - r.state.playerMesh.position.y;
+                    return r.state._cameraDesiredY - r.state.playerMesh.position.y;
                 }, pitch);
             };
             const upDelta = await setPitchAndRead(Math.PI / 6);

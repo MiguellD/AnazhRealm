@@ -380,6 +380,22 @@ class AnazhRealm {
                 entryCap: 200,
                 seen: {},
             },
+            // W13 Phase 1 — Vibe-Pass: die souveräne Avatar-Identität. Ein
+            // ed25519-Schlüsselpaar, lokal erzeugt, spieler-eigen und welt-
+            // unabhängig. Der private Schlüssel lebt im GLOBALEN localStorage-
+            // Schlüssel "anazh.vibePass" — NIE im Welt-Save (sonst leckte die
+            // Identität in geteilte Welt-Dateien). Dieses Feld ist reiner
+            // Laufzeit-Spiegel; _ensureVibePass() füllt es beim Erwachen.
+            vibePass: {
+                ready: false,
+                createdAt: null,
+                publicKeyHex: null,
+                fingerprint: null,
+                freshlyCreated: false,
+                publicKey: null,
+                privateKey: null,
+                _privateKeyJwk: null,
+            },
             // Ring 3 — Player-Emotionen. Sechs Achsen, jeweils 0..1.
             // Chat-Inputs füllen sie regelbasiert; im Game-Loop verflüchtigen
             // sie sich langsam; Schwellen-Trigger feuern DSL-Programme, sodass
@@ -4278,6 +4294,8 @@ class AnazhRealm {
             }
             // Ring 11 V3 — den bereits anwesenden Peers meine Seele zeigen.
             this._p2pBroadcastSoul();
+            // W13 Phase 3 — und meine Vibe-Pass-Identität (beweisbar).
+            this._p2pBroadcastVibe();
             return;
         }
         if (msg.type === "peer-join") {
@@ -4285,6 +4303,8 @@ class AnazhRealm {
                 this._p2pEnsurePeerEntry(msg.peerId);
                 // Ring 11 V3 — dem Neuankömmling meine Seele zeigen.
                 this._p2pBroadcastSoul();
+                // W13 Phase 3 — und meine Vibe-Pass-Identität.
+                this._p2pBroadcastVibe();
             }
             return;
         }
@@ -4364,6 +4384,33 @@ class AnazhRealm {
             if (Number.isFinite(hue)) entry.auraHue = hue;
             if (Number.isFinite(intensity)) entry.auraIntensity = intensity;
             entry.lastSeen = performance.now() / 1000;
+            return;
+        }
+        if (msg.type === "vibe") {
+            // W13 Phase 3 — Vibe-Pass-Identität eines Peers. vibePassId ist
+            // der behauptete öffentliche Schlüssel, proof eine Signatur über
+            // die peerId des Senders. Verifiziert die Signatur gegen den
+            // Schlüssel, IST der Peer dieser Schlüssel — beweisbar, nicht nur
+            // behauptet. Die Verifikation ist async; der Schlüssel-Wächter im
+            // .then verwirft veraltete Läufe (Peer hat neu gesendet).
+            const pid = msg.peerId;
+            if (typeof pid !== "string" || pid === p2p.peerId) return;
+            const entry = this._p2pEnsurePeerEntry(pid);
+            const vibePassId = typeof msg.vibePassId === "string" ? msg.vibePassId : "";
+            const proof = typeof msg.proof === "string" ? msg.proof : "";
+            entry.vibePassId = vibePassId || null;
+            entry.vibeVerified = false;
+            entry.lastSeen = performance.now() / 1000;
+            const m = /^ed25519:([0-9a-f]{64})$/i.exec(vibePassId);
+            if (m && proof) {
+                this._vibeVerify(pid, proof, m[1]).then((ok) => {
+                    const cur = p2p.peers.get(pid);
+                    if (!cur || cur.vibePassId !== vibePassId) return;
+                    cur.vibeVerified = ok === true;
+                    this._p2pRefreshPeerNameLabel(cur);
+                });
+            }
+            this._p2pRefreshPeerNameLabel(entry);
             return;
         }
         if (msg.type === "world-request") {
@@ -4452,6 +4499,12 @@ class AnazhRealm {
             auraIntensity: 0,
             auraGlow: null,
             nameLabel: null,
+            // W13 Phase 3 — Vibe-Pass-Identität des Peers. vibePassId ist der
+            // behauptete öffentliche ed25519-Schlüssel; vibeVerified wird erst
+            // true, wenn der mitgesendete Beweis (Signatur über die peerId)
+            // gegen diesen Schlüssel verifiziert — Identität, nicht Behauptung.
+            vibePassId: null,
+            vibeVerified: false,
             lastSeen: performance.now() / 1000,
         };
         p2p.peers.set(peerId, entry);
@@ -4534,25 +4587,35 @@ class AnazhRealm {
 
     // Ring 11 V3 — Name-Schild über dem Peer. Eine CanvasTexture mit dem
     // Avatar-Namen; depthTest aus, damit der Name immer lesbar bleibt.
-    _p2pBuildNameLabel(name) {
+    // W13 Phase 3 — bei verifizierter Vibe-Pass-Identität wächst das Schild
+    // um eine zweite Zeile: „✓ <Fingerprint>" in Verifiziert-Grün. Der Name
+    // ist gewählt + fälschbar; der Fingerprint ist die unverfälschbare
+    // Identität. fingerprint leer → ein-zeiliges Schild (Ring-11-V3-Verhalten).
+    _p2pBuildNameLabel(name, fingerprint) {
         if (typeof document === "undefined" || typeof THREE === "undefined") return null;
+        const hasFp = typeof fingerprint === "string" && fingerprint.length > 0;
         const canvas = document.createElement("canvas");
         canvas.width = 256;
-        canvas.height = 64;
+        canvas.height = hasFp ? 96 : 64;
         const ctx = canvas.getContext("2d");
         if (!ctx) return null;
         ctx.fillStyle = "rgba(18,16,26,0.74)";
-        ctx.fillRect(6, 14, 244, 36);
+        ctx.fillRect(6, 14, 244, hasFp ? 68 : 36);
         ctx.font = "bold 30px Cinzel, Georgia, serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillStyle = "#f0e6d2";
         ctx.fillText(String(name).slice(0, 24), 128, 33);
+        if (hasFp) {
+            ctx.font = "20px 'JetBrains Mono', monospace";
+            ctx.fillStyle = "#7fd49a";
+            ctx.fillText("✓ " + fingerprint, 128, 67);
+        }
         const tex = new THREE.CanvasTexture(canvas);
         tex.needsUpdate = true;
         const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, depthTest: false });
         const sprite = new THREE.Sprite(mat);
-        sprite.scale.set(2.6, 0.65, 1);
+        sprite.scale.set(2.6, hasFp ? 0.98 : 0.65, 1);
         sprite.renderOrder = 5;
         return sprite;
     }
@@ -4567,8 +4630,17 @@ class AnazhRealm {
             }
             entry.nameLabel = null;
         }
-        if (!entry.avatarName) return;
-        const label = this._p2pBuildNameLabel(entry.avatarName);
+        if (!entry.avatarName && !entry.vibePassId) return;
+        // W13 Phase 3 — bei verifizierter Identität die Kurzform des
+        // Fingerprints (erste 8 Hex in Vierergruppen) unter den Namen setzen.
+        let fingerprint = "";
+        if (entry.vibeVerified && entry.vibePassId) {
+            const m = /^ed25519:([0-9a-f]{8})/i.exec(entry.vibePassId);
+            if (m) {
+                fingerprint = m[1].replace(/(.{4})/g, "$1 ").trim();
+            }
+        }
+        const label = this._p2pBuildNameLabel(entry.avatarName || "Reisender", fingerprint);
         if (label && this.state.scene) {
             this.state.scene.add(label);
             entry.nameLabel = label;
@@ -4644,6 +4716,21 @@ class AnazhRealm {
         const intensity = this.state.player._auraIntensityOut;
         if (typeof hue !== "number" || typeof intensity !== "number") return;
         this.p2pSend({ type: "aura", hue, intensity });
+    }
+
+    // W13 Phase 3 — die eigene Vibe-Pass-Identität an alle Mitspieler senden
+    // (Join + peer-join, wie soul). vibePassId ist der öffentliche Schlüssel;
+    // proof eine Signatur über die eigene peerId — nur wer den privaten
+    // Schlüssel hält, kann sie erzeugen, und nur dann verifiziert sie. So ist
+    // die Identität beweisbar, nicht behauptet. Async (ed25519-Signatur).
+    async _p2pBroadcastVibe() {
+        const p2p = this.state.p2p;
+        if (!p2p || !p2p.enabled || !p2p.peerId) return;
+        const vibePassId = this.vibePassId();
+        if (!vibePassId) return;
+        const proof = await this._vibeSign(p2p.peerId);
+        if (!proof) return;
+        this.p2pSend({ type: "vibe", vibePassId, proof });
     }
 
     _p2pRemovePeer(peerId) {
@@ -12378,6 +12465,15 @@ class AnazhRealm {
                         out.role = "tool";
                         out.toolMeta = { opName: bp.toolMeta.opName, opClass: bp.toolMeta.opClass };
                     }
+                    // W13 Phase 2 — die Bauplan-Signatur reist mit dem Bauplan
+                    // (Save, Welt-Tor-Export, Recipe-Import, Fusion). Echtheit
+                    // prüft verifyBlueprintSignature beim Anzeigen.
+                    if (bp.signature && bp.authorPubKey) {
+                        out.signature = bp.signature;
+                        out.authorPubKey = bp.authorPubKey;
+                        if (bp.signedHash) out.signedHash = bp.signedHash;
+                        if (bp.signedAt) out.signedAt = bp.signedAt;
+                    }
                     return out;
                 }),
             // Welle 5 C — eigene Werkzeuge (aus registrierten Bauplänen)
@@ -12466,6 +12562,432 @@ class AnazhRealm {
         document.body.appendChild(a);
         a.click();
         a.remove();
+    }
+
+    // ### W13 Phase 1 — Vibe-Pass: die souveräne Avatar-Identität ###
+    // Ein ed25519-Schlüsselpaar, lokal beim ersten Erwachen erzeugt. Der
+    // öffentliche Schlüssel IST der Avatar — unverfälschbar. Der private
+    // Schlüssel signiert, was der Schöpfer baut; andere können prüfen, dass
+    // ein Werk wirklich von ihm stammt. Kein Coin, keine Kette — nur Echtheit.
+    // Phase 1 legt das Fundament (Schlüssel + Sign/Verify-Primitive + Sicht +
+    // Sicherung); Phase 2 signiert Baupläne, Phase 3 prüft überall.
+    //
+    // crypto.subtle (WebCrypto) trägt Ed25519 nativ — kein Vendoring, keine
+    // CSP-Lockerung. Verfügbar nur im Secure Context (https / localhost); die
+    // Methoden degradieren anmutig, wenn er fehlt.
+
+    _vibeBytesToHex(bytes) {
+        let s = "";
+        for (let i = 0; i < bytes.length; i++) s += bytes[i].toString(16).padStart(2, "0");
+        return s;
+    }
+
+    _vibeHexToBytes(hex) {
+        const clean = String(hex).replace(/[^0-9a-fA-F]/g, "");
+        const out = new Uint8Array(clean.length >> 1);
+        for (let i = 0; i < out.length; i++) out[i] = parseInt(clean.slice(i * 2, i * 2 + 2), 16);
+        return out;
+    }
+
+    _vibeB64uToBytes(b64u) {
+        let s = String(b64u).replace(/-/g, "+").replace(/_/g, "/");
+        while (s.length % 4) s += "=";
+        const bin = atob(s);
+        const out = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+        return out;
+    }
+
+    _vibeBytesToB64u(bytes) {
+        let bin = "";
+        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+        return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    }
+
+    // Die sichtbare Kurzform des Schlüssels — die ersten 16 Hex-Zeichen in
+    // Vierergruppen. Genug zum Wiedererkennen, kurz genug fürs Drawer.
+    _vibeFingerprint(pubHex) {
+        if (typeof pubHex !== "string" || pubHex.length < 16) return "—";
+        return pubHex
+            .slice(0, 16)
+            .replace(/(.{4})/g, "$1 ")
+            .trim();
+    }
+
+    // Der kanonische Identifier — dasselbe Format wie das Welt-Portal-Manifest
+    // (docs/world-portal.md §3.3: "authorPubKey": "ed25519:...").
+    vibePassId() {
+        const vp = this.state.vibePass;
+        return vp && vp.ready && vp.publicKeyHex ? "ed25519:" + vp.publicKeyHex : null;
+    }
+
+    // Übernimmt ein privates JWK in den Laufzeit-State: importiert beide
+    // CryptoKeys, leitet öffentlichen Hex-Schlüssel + Fingerprint ab. Die
+    // await-Importe laufen VOR jeder vp.*-Zuweisung — schlägt ein Import fehl,
+    // bleibt der bisherige State unberührt.
+    async _adoptVibePassJwk(privateKeyJwk, createdAt, fresh) {
+        const privateKey = await crypto.subtle.importKey("jwk", privateKeyJwk, { name: "Ed25519" }, true, ["sign"]);
+        const publicKey = await crypto.subtle.importKey(
+            "jwk",
+            { kty: "OKP", crv: "Ed25519", x: privateKeyJwk.x },
+            { name: "Ed25519" },
+            true,
+            ["verify"]
+        );
+        const vp = this.state.vibePass;
+        vp.privateKey = privateKey;
+        vp.publicKey = publicKey;
+        vp.publicKeyHex = this._vibeBytesToHex(this._vibeB64uToBytes(privateKeyJwk.x));
+        vp.fingerprint = this._vibeFingerprint(vp.publicKeyHex);
+        vp.createdAt = createdAt || Date.now();
+        vp.freshlyCreated = !!fresh;
+        vp._privateKeyJwk = privateKeyJwk;
+        vp.ready = true;
+    }
+
+    // Baut das Sicherungs-Objekt — auch der Inhalt der localStorage-Persistenz.
+    _vibePassExportObject() {
+        const vp = this.state.vibePass;
+        if (!vp || !vp.ready || !vp._privateKeyJwk) return null;
+        return {
+            schemaVersion: "vibepass-1",
+            createdAt: vp.createdAt || Date.now(),
+            publicKeyHex: vp.publicKeyHex,
+            privateKeyJwk: vp._privateKeyJwk,
+        };
+    }
+
+    _persistVibePass() {
+        const obj = this._vibePassExportObject();
+        if (!obj || typeof localStorage === "undefined") return;
+        try {
+            localStorage.setItem("anazh.vibePass", JSON.stringify(obj));
+        } catch (e) {
+            this.log(`Vibe-Pass speichern fehlgeschlagen: ${e && e.message}`, "ERROR");
+        }
+    }
+
+    // Lädt den Vibe-Pass aus dem globalen localStorage oder erzeugt beim
+    // allerersten Erwachen ein frisches Schlüsselpaar. Wirft nie — fehlt der
+    // Secure Context, ruht die Identität (ready bleibt false).
+    async _ensureVibePass() {
+        const vp = this.state.vibePass;
+        if (!vp) return;
+        if (typeof crypto === "undefined" || !crypto.subtle) {
+            this.log("Vibe-Pass ruht — kein Secure Context (crypto.subtle fehlt).", "WARN");
+            this._renderVibePassUI();
+            return;
+        }
+        let stored = null;
+        try {
+            const raw = typeof localStorage !== "undefined" ? localStorage.getItem("anazh.vibePass") : null;
+            if (raw) stored = JSON.parse(raw);
+        } catch {
+            stored = null;
+        }
+        try {
+            const jwk = stored && stored.privateKeyJwk;
+            if (jwk && jwk.kty === "OKP" && jwk.crv === "Ed25519" && typeof jwk.d === "string") {
+                await this._adoptVibePassJwk(jwk, stored.createdAt, false);
+            } else {
+                const pair = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
+                const freshJwk = await crypto.subtle.exportKey("jwk", pair.privateKey);
+                await this._adoptVibePassJwk(freshJwk, Date.now(), true);
+                this._persistVibePass();
+                this.log(`Vibe-Pass erzeugt: ${this.vibePassId()}`, "INFO");
+                this.journalAppendOnce(
+                    "vibepass:genesis",
+                    "ritual",
+                    `Der Avatar empfing seinen Vibe-Pass — eine souveräne Identität, ` +
+                        `ein Schlüssel, der nur ihm gehört (${vp.fingerprint}).`,
+                    { fingerprint: vp.fingerprint }
+                );
+            }
+        } catch (e) {
+            this.log(`Vibe-Pass-Initialisierung fehlgeschlagen: ${e && e.message}`, "ERROR");
+        }
+        this._renderVibePassUI();
+    }
+
+    // Signiert einen Text mit dem privaten Schlüssel → Signatur als Hex.
+    // Phase 2 (Bauplan-Signaturen) baut hierauf. Liefert null, wenn der
+    // Vibe-Pass nicht bereit ist.
+    async _vibeSign(message) {
+        const vp = this.state.vibePass;
+        if (!vp || !vp.ready || !vp.privateKey || typeof crypto === "undefined" || !crypto.subtle) {
+            return null;
+        }
+        try {
+            const data = new TextEncoder().encode(String(message));
+            const sig = await crypto.subtle.sign({ name: "Ed25519" }, vp.privateKey, data);
+            return this._vibeBytesToHex(new Uint8Array(sig));
+        } catch (e) {
+            this.log(`Vibe-Pass-Signatur fehlgeschlagen: ${e && e.message}`, "ERROR");
+            return null;
+        }
+    }
+
+    // Prüft eine Signatur gegen einen ÖFFENTLICHEN Schlüssel (Hex). Verifiziert
+    // damit jedes Autors Werk, nicht nur das eigene — Phase 3 baut hierauf.
+    // Defensiv: ungültige Eingabe → false, nie ein Wurf.
+    async _vibeVerify(message, signatureHex, publicKeyHex) {
+        if (typeof crypto === "undefined" || !crypto.subtle) return false;
+        if (typeof signatureHex !== "string" || typeof publicKeyHex !== "string") return false;
+        if (!/^[0-9a-f]+$/i.test(signatureHex) || !/^[0-9a-f]{64}$/i.test(publicKeyHex)) return false;
+        try {
+            const publicKey = await crypto.subtle.importKey(
+                "jwk",
+                {
+                    kty: "OKP",
+                    crv: "Ed25519",
+                    x: this._vibeBytesToB64u(this._vibeHexToBytes(publicKeyHex)),
+                },
+                { name: "Ed25519" },
+                true,
+                ["verify"]
+            );
+            const data = new TextEncoder().encode(String(message));
+            return await crypto.subtle.verify({ name: "Ed25519" }, publicKey, this._vibeHexToBytes(signatureHex), data);
+        } catch {
+            return false;
+        }
+    }
+
+    // Sichert den Vibe-Pass als Datei — die einzige Versicherung gegen den
+    // Verlust der Identität (localStorage kann gelöscht werden). Liefert das
+    // Sicherungs-Objekt auch zurück (für Tests + Diagnose).
+    exportVibePass() {
+        const obj = this._vibePassExportObject();
+        if (!obj) {
+            this.log("Vibe-Pass noch nicht bereit — kein Export.", "WARN");
+            return null;
+        }
+        const tag = (this.state.vibePass.publicKeyHex || "pass").slice(0, 12);
+        this.triggerStateDownload(obj, `anazh-vibe-pass-${tag}.json`);
+        this.journalAppend("ritual", "Ich sicherte meinen Vibe-Pass — den Schlüssel meiner Identität.");
+        return obj;
+    }
+
+    // Stellt einen gesicherten Vibe-Pass wieder her. Ersetzt die aktuelle
+    // Identität — daher die Rückfrage (außer der Aufrufer setzt skipConfirm,
+    // wie der Playtest; folgt dem {reload:false}-Muster der Welt-Methoden).
+    async importVibePass(parsed, opts) {
+        opts = opts || {};
+        if (!parsed || typeof parsed !== "object") {
+            return { ok: false, reason: "invalid" };
+        }
+        const jwk = parsed.privateKeyJwk;
+        if (
+            !jwk ||
+            typeof jwk !== "object" ||
+            jwk.kty !== "OKP" ||
+            jwk.crv !== "Ed25519" ||
+            typeof jwk.d !== "string" ||
+            typeof jwk.x !== "string"
+        ) {
+            this.log("Vibe-Pass-Import: kein gültiger ed25519-Schlüssel.", "ERROR");
+            return { ok: false, reason: "invalid_key" };
+        }
+        if (typeof crypto === "undefined" || !crypto.subtle) {
+            return { ok: false, reason: "no_crypto" };
+        }
+        if (!opts.skipConfirm && typeof window !== "undefined" && typeof window.confirm === "function") {
+            const accepted = window.confirm(
+                "Vibe-Pass wiederherstellen? Deine aktuelle Identität wird ersetzt — " +
+                    "sichere sie zuerst, falls du sie behalten willst."
+            );
+            if (!accepted) return { ok: false, reason: "cancelled" };
+        }
+        try {
+            await this._adoptVibePassJwk(jwk, parsed.createdAt, false);
+            this._persistVibePass();
+            this.journalAppend(
+                "ritual",
+                `Ein Vibe-Pass wurde wiederhergestellt — meine Identität ist nun ${this.state.vibePass.fingerprint}.`
+            );
+            this._renderVibePassUI();
+            this.log(`Vibe-Pass wiederhergestellt: ${this.vibePassId()}`, "INFO");
+            return { ok: true, id: this.vibePassId() };
+        } catch (e) {
+            this.log(`Vibe-Pass-Import fehlgeschlagen: ${e && e.message}`, "ERROR");
+            return { ok: false, reason: "import_failed" };
+        }
+    }
+
+    _handleVibePassFile(file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            let parsed = null;
+            try {
+                parsed = JSON.parse(reader.result);
+            } catch (e) {
+                this.log(`Vibe-Pass-Import fehlgeschlagen (${file.name}): ${e && e.message}`, "ERROR");
+                return;
+            }
+            this.importVibePass(parsed);
+        };
+        reader.onerror = () => this.log(`FileReader-Fehler bei ${file.name}`, "ERROR");
+        reader.readAsText(file);
+    }
+
+    vibePassInitDOM() {
+        if (typeof document === "undefined") return;
+        const exportBtn = document.getElementById("vibe-pass-export");
+        if (exportBtn && exportBtn.dataset.vibeWired !== "1") {
+            exportBtn.dataset.vibeWired = "1";
+            exportBtn.addEventListener("click", () => this.exportVibePass());
+        }
+        const importBtn = document.getElementById("vibe-pass-import");
+        if (importBtn && importBtn.dataset.vibeWired !== "1") {
+            importBtn.dataset.vibeWired = "1";
+            importBtn.addEventListener("click", () => {
+                const input = document.getElementById("vibe-pass-file-input");
+                if (input) {
+                    input.value = "";
+                    input.click();
+                }
+            });
+        }
+        const fileInput = document.getElementById("vibe-pass-file-input");
+        if (fileInput && fileInput.dataset.vibeWired !== "1") {
+            fileInput.dataset.vibeWired = "1";
+            fileInput.addEventListener("change", (e) => {
+                const f = e.target && e.target.files && e.target.files[0];
+                if (f) this._handleVibePassFile(f);
+            });
+        }
+        this._renderVibePassUI();
+    }
+
+    _renderVibePassUI() {
+        if (typeof document === "undefined") return;
+        const body = document.getElementById("vibe-pass-body");
+        if (!body) return;
+        body.innerHTML = "";
+        const vp = this.state.vibePass;
+        if (!vp || !vp.ready) {
+            const wait = document.createElement("div");
+            wait.className = "drawer-hint";
+            wait.textContent =
+                typeof crypto !== "undefined" && crypto.subtle
+                    ? "Der Vibe-Pass wird erzeugt …"
+                    : "Vibe-Pass ruht — öffne die Welt über https oder localhost.";
+            body.appendChild(wait);
+            return;
+        }
+        const fp = document.createElement("div");
+        fp.className = "vibe-pass-fingerprint";
+        fp.textContent = vp.fingerprint;
+        fp.title = "ed25519:" + vp.publicKeyHex;
+        body.appendChild(fp);
+
+        const idEl = document.createElement("div");
+        idEl.className = "vibe-pass-id";
+        idEl.textContent = "ed25519:" + vp.publicKeyHex;
+        body.appendChild(idEl);
+
+        if (vp.createdAt) {
+            const born = document.createElement("div");
+            born.className = "vibe-pass-born";
+            born.textContent = "Erweckt am " + new Date(vp.createdAt).toLocaleDateString();
+            body.appendChild(born);
+        }
+    }
+
+    // ### W13 Phase 2 — Bauplan-Signaturen ###
+    // Der Schöpfer versiegelt sein Werk mit dem Vibe-Pass. Die Signatur deckt
+    // die SUBSTANZ — Rolle + Parts (Form × Material × Geometrie × opChain) +
+    // Verbindungen, NICHT den Namen: ein Werk IST seine Substanz, nicht sein
+    // Etikett. Wer das Werk umbenennt, bricht die Signatur nicht; wer einen
+    // Part ändert, schon. So überlebt eine Signatur Recipe-Import + Fusion
+    // (die Namen umtaufen) und bricht nur bei echter Substanz-Änderung.
+    // Built-ins gehören dem Projekt — nur eigene Baupläne sind signierbar.
+
+    // Deterministische Serialisierung der signier-relevanten Substanz. Zahlen
+    // auf 4 Nachkommastellen gerundet (gegen Float-Drift), feste Schlüssel-
+    // Reihenfolge. Dieselbe Eingabe → derselbe String → dieselbe Prüfung.
+    _canonicalBlueprint(bp) {
+        if (!bp || typeof bp !== "object") return "";
+        const num = (v) => Math.round((Number(v) || 0) * 1e4) / 1e4;
+        const vec = (o) => ({ x: num(o && o.x), y: num(o && o.y), z: num(o && o.z) });
+        const parts = (Array.isArray(bp.parts) ? bp.parts : []).map((p) => ({
+            shape: String((p && p.shape) || ""),
+            material: String((p && p.material) || ""),
+            refName: p && p.refName ? String(p.refName) : "",
+            color: p && p.color != null ? String(p.color) : "",
+            position: vec(p && p.position),
+            size: vec(p && p.size),
+            rotation: vec(p && p.rotation),
+            opChain: (Array.isArray(p && p.opChain) ? p.opChain : []).map((op) => ({
+                tool: String((op && op.tool) || ""),
+                op: String((op && op.op) || ""),
+                cap: num(op && op.cap),
+            })),
+        }));
+        const connections = (Array.isArray(bp.connections) ? bp.connections : []).map((c) => ({
+            type: String((c && c.type) || ""),
+            partA: Number(c && c.partA) || 0,
+            partB: Number(c && c.partB) || 0,
+        }));
+        return JSON.stringify({ v: 1, role: String(bp.role || ""), parts, connections });
+    }
+
+    // Schneller, nicht-kryptografischer Hash (FNV-1a, 32-bit) — NUR zur
+    // Änderungs-Erkennung „seit dem Signieren geändert?". Die Echtheit prüft
+    // allein die ed25519-Signatur; dieser Hash unterscheidet bloß den
+    // freundlichen Fall (Eigentümer hat editiert → „modified") vom Fall einer
+    // gefälschten Signatur (Substanz unverändert, Signatur passt nicht
+    // → „forged").
+    _fastHash(str) {
+        let h = 0x811c9dc5;
+        const s = String(str);
+        for (let i = 0; i < s.length; i++) {
+            h ^= s.charCodeAt(i);
+            h = Math.imul(h, 0x01000193);
+        }
+        return (h >>> 0).toString(16).padStart(8, "0");
+    }
+
+    // Versiegelt einen eigenen Bauplan mit dem Vibe-Pass. Setzt signature +
+    // authorPubKey + signedHash + signedAt. Async (ed25519-Signatur).
+    async signBlueprint(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return { ok: false, reason: "unknown" };
+        if (bp.builtIn) return { ok: false, reason: "builtin" };
+        const vp = this.state.vibePass;
+        if (!vp || !vp.ready) return { ok: false, reason: "no_vibepass" };
+        const canonical = this._canonicalBlueprint(bp);
+        const sig = await this._vibeSign(canonical);
+        if (!sig) return { ok: false, reason: "sign_failed" };
+        bp.signature = sig;
+        bp.authorPubKey = vp.publicKeyHex;
+        bp.signedHash = this._fastHash(canonical);
+        bp.signedAt = Date.now();
+        this.saveState();
+        this.journalAppend("ritual", `Ich versiegelte „${bp.label || name}" mit meinem Vibe-Pass.`, {
+            blueprint: name,
+        });
+        return { ok: true, authorPubKey: bp.authorPubKey };
+    }
+
+    // Prüft den Signatur-Status eines Bauplans. Liefert:
+    //   "unsigned" — keine Signatur.
+    //   "modified" — signiert, aber die Substanz hat sich seither geändert.
+    //   "valid"    — die Signatur deckt die aktuelle Substanz und ist echt.
+    //   "forged"   — Signatur vorhanden, Substanz unverändert, verifiziert
+    //                aber NICHT gegen den angegebenen Autor.
+    // Async (ed25519-Verifikation). Defensiv: kein Wurf bei Müll-Eingabe.
+    async verifyBlueprintSignature(bp) {
+        if (!bp || typeof bp !== "object" || !bp.signature || !bp.authorPubKey) {
+            return "unsigned";
+        }
+        const canonical = this._canonicalBlueprint(bp);
+        if (bp.signedHash && this._fastHash(canonical) !== bp.signedHash) {
+            return "modified";
+        }
+        const ok = await this._vibeVerify(canonical, bp.signature, bp.authorPubKey);
+        return ok ? "valid" : "forged";
     }
 
     // ### Welle 3 F — Welt-Tor ###
@@ -13272,6 +13794,21 @@ class AnazhRealm {
                 ) {
                     restored.role = "tool";
                     restored.toolMeta = { opName: bp.toolMeta.opName, opClass: bp.toolMeta.opClass };
+                }
+                // W13 Phase 2 — Bauplan-Signatur wiederherstellen. Strukturell
+                // plausibel prüfen (Hex-Form); die echte Verifikation macht
+                // verifyBlueprintSignature beim Anzeigen — eine kaputte oder
+                // gefälschte Signatur wird dort als „forged" sichtbar.
+                if (
+                    typeof bp.signature === "string" &&
+                    /^[0-9a-f]{2,256}$/i.test(bp.signature) &&
+                    typeof bp.authorPubKey === "string" &&
+                    /^[0-9a-f]{64}$/i.test(bp.authorPubKey)
+                ) {
+                    restored.signature = bp.signature;
+                    restored.authorPubKey = bp.authorPubKey;
+                    if (typeof bp.signedHash === "string") restored.signedHash = bp.signedHash;
+                    if (typeof bp.signedAt === "number") restored.signedAt = bp.signedAt;
                 }
                 this.state.blueprints[bp.name] = restored;
             }
@@ -23440,6 +23977,64 @@ class AnazhRealm {
             precRow.appendChild(precChip);
             panel.appendChild(precRow);
         }
+        // ### W13 Phase 2 — Bauplan-Signatur ###
+        // Der Schöpfer versiegelt sein Werk mit dem Vibe-Pass. Built-ins
+        // gehören dem Projekt — sie tragen keine Signatur-Zeile (erst klonen).
+        // Der Status wird async geprüft (ed25519); ein veralteter .then-Lauf
+        // aktualisiert nur abgekoppelte Knoten, der Namens-Wächter fängt ihn.
+        if (!bp.builtIn) {
+            const sigRow = document.createElement("div");
+            sigRow.className = "stat-row workshop-sig-row";
+            const sigLab = document.createElement("span");
+            sigLab.className = "stat-label";
+            sigLab.textContent = "Signatur";
+            sigRow.appendChild(sigLab);
+            const sigStatus = document.createElement("span");
+            sigStatus.className = "workshop-sig-status";
+            sigStatus.textContent = "prüfe …";
+            sigRow.appendChild(sigStatus);
+            const sigBtn = document.createElement("button");
+            sigBtn.type = "button";
+            sigBtn.className = "workshop-sig-btn";
+            sigBtn.textContent = "Signieren";
+            sigBtn.disabled = true;
+            sigBtn.addEventListener("click", async () => {
+                sigBtn.disabled = true;
+                const res = await this.signBlueprint(bp.name);
+                if (!res.ok) this.log(`Signieren fehlgeschlagen: ${res.reason}`, "ERROR");
+                this._workshopRenderStatsPanel();
+            });
+            sigRow.appendChild(sigBtn);
+            panel.appendChild(sigRow);
+            const vpReady = !!(this.state.vibePass && this.state.vibePass.ready);
+            const bpName = bp.name;
+            this.verifyBlueprintSignature(bp).then((status) => {
+                if (ws.selectedBlueprint !== bpName) return;
+                const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
+                if (status === "valid") {
+                    const who = bp.authorPubKey === myKey ? "dein Vibe-Pass" : this._vibeFingerprint(bp.authorPubKey);
+                    sigStatus.textContent = `✓ signiert · ${who}`;
+                    sigStatus.className = "workshop-sig-status sig-valid";
+                    sigStatus.title = "ed25519:" + bp.authorPubKey;
+                    sigBtn.textContent = "Neu signieren";
+                } else if (status === "modified") {
+                    sigStatus.textContent = "geändert seit der Signatur — neu signieren";
+                    sigStatus.className = "workshop-sig-status sig-modified";
+                    sigBtn.textContent = "Neu signieren";
+                } else if (status === "forged") {
+                    sigStatus.textContent = `⚠ ungültig — passt nicht zu ${this._vibeFingerprint(bp.authorPubKey)}`;
+                    sigStatus.className = "workshop-sig-status sig-forged";
+                    sigStatus.title = "ed25519:" + bp.authorPubKey;
+                    sigBtn.textContent = "Neu signieren";
+                } else {
+                    sigStatus.textContent = "nicht signiert";
+                    sigStatus.className = "workshop-sig-status sig-unsigned";
+                    sigBtn.textContent = "Signieren";
+                }
+                sigBtn.disabled = !vpReady;
+                if (!vpReady) sigBtn.title = "Vibe-Pass nicht bereit — siehe Spieler-Drawer.";
+            });
+        }
     }
 
     // V8.05 — Editor-Toggle. Persistent in localStorage (Spieler will
@@ -26352,6 +26947,9 @@ class AnazhRealm {
         this.logbookInitDOM();
         // Welle 6.X.4 F1 — Begleiter-Name + Avatar-Name laden + binden.
         this.identityInitDOM();
+        // W13 Phase 1 — Vibe-Pass-Sektion verkabeln (Render folgt mit
+        // _ensureVibePass nach ensureWorldMeta).
+        this.vibePassInitDOM();
         // Welle 6.X.4 D2 — Drei Schieber (Master / Pings / Render-Ring).
         this.slidersInitDOM();
         this.keybindingsInitDOM();
@@ -26381,6 +26979,11 @@ class AnazhRealm {
         // Single-Welt-Save, falls vorhanden.
         this._preloadActiveWorldMeta();
         this.ensureWorldMeta();
+        // W13 Phase 1 — Vibe-Pass laden oder beim ersten Erwachen erzeugen.
+        // Nach ensureWorldMeta, damit die Genesis-Erinnerung ins Welt-Journal
+        // fließen kann. Die Identität ist welt-unabhängig, aber die Geburt
+        // wird in der dann aktiven Welt erinnert.
+        await this._ensureVibePass();
         // Welle 6.E2 — Intro-Overlay beim ersten Welt-Start. Liest seen.intro
         // aus dem soeben hydrierten worldJournal + localStorage `anazh.ui.skipIntro`.
         this.initIntroDialog();
@@ -27472,6 +28075,13 @@ class AnazhRealm {
                     // Boden-Clamp: Kamera nicht unter die Spieler-Füße.
                     const minCamY = player.position.y - 0.2;
                     if (camY < minCamY) camY = minCamY;
+                    // V8.57 — die pitch-gesteuerte Wunsch-Höhe der Kamera (nach
+                    // Boden-Clamp, VOR der Kamera-Kollision unten) als State
+                    // spiegeln. Der Playtest prüft die Pitch-Inversion daran
+                    // deterministisch: die Kollisions-Raycast unten hängt von der
+                    // nicht-deterministischen Umgebung des Spielers ab und gehört
+                    // nicht in den reinen Pitch-Test.
+                    this.state._cameraDesiredY = camY;
                     // V8.36 — echte Kamera-Kollision. Der statische minCamY-Clamp
                     // kannte das Terrain an der KAMERA-Position nicht — in einem
                     // Loch (oder hinter einer Wand) tauchte die Kamera durch das

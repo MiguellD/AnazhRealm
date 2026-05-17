@@ -2,7 +2,7 @@
 
 Ein als Co-Creation-Werk Mensch+KI entworfenes 3D-Browser-Sandbox-Ultiversum. Eine Datei, ein Stamm, viele Ringe.
 
-**Stand**: V8.53 (17.05.2026) — W12 Welt-Portal mit Phase 1+2+3 komplett: das Tor führt real in fremde Engines, die Brücke trägt beide Richtungen (Sub-Welt → Heimat-Journal), jede Welt beschreibt sich selbst via `manifest.json`.
+**Stand**: V8.57 (17.05.2026) — W13 Vibe-Pass komplett (Phase 1+2+3). Der Avatar ist eine souveräne ed25519-Identität: er hält einen Schlüssel, signiert seine Werke (Bauplan-Signaturen über die Substanz), und im Multi-User trägt jeder Mitspieler seine beweisbare Identität — ein peerId-gebundener Beweis, ein verifiziertes Name-Schild. Davor W12 Welt-Portal (Phase 1+2+3 komplett). V8.57 heilte einen flaky CI-Playtest (3rd-Person-Kamera-Pitch) an der Wurzel.
 
 ## Was es ist
 
@@ -29,7 +29,7 @@ Browser öffnen: `http://localhost:4312/` (oder `index.html` direkt).
 npm run check           # Syntax-Check (node --check)
 npm run lint            # ESLint
 npm run format:check    # Prettier
-npm run playtest        # 2324 Headless-Invarianten (~60s)
+npm run playtest        # 2377 Headless-Invarianten (~60s)
 npm run audit:strict    # 5 generische Audit-Schichten (~25s)
 ```
 

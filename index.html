@@ -29,7 +29,7 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self';"
         />
-        <title>Anazh Realm v8.53 – Das Ultiversum</title>
+        <title>Anazh Realm v8.57 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
              zusätzliche Datei. img-src 'self' data: in CSP erlaubt data-URI. -->
         <link
@@ -917,7 +917,8 @@
             .latch[hidden] {
                 display: none;
             }
-            #state-file-input {
+            #state-file-input,
+            #vibe-pass-file-input {
                 display: none;
             }
             /* Ring 9 — Welt-Tor Drei-Wahl-Dialog. Painterly: Pergament-Panel,
@@ -2468,6 +2469,48 @@
                 gap: 4px;
                 margin-top: 4px;
             }
+            /* W13 Phase 1 — Vibe-Pass: souveräne Avatar-Identität. */
+            .drawer .vibe-pass-fingerprint {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 14px;
+                letter-spacing: 0.06em;
+                color: var(--brass-1, #c69a4a);
+                padding: 4px 0 2px;
+            }
+            .drawer .vibe-pass-id {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 9px;
+                word-break: break-all;
+                color: var(--parch-ink-soft, #5a3f1d);
+                opacity: 0.7;
+                user-select: all;
+            }
+            .drawer .vibe-pass-born {
+                font-size: 9.5px;
+                color: var(--parch-ink-soft, #5a3f1d);
+                opacity: 0.8;
+                margin-top: 3px;
+            }
+            .drawer .vibe-pass-actions {
+                display: flex;
+                gap: 4px;
+                flex-wrap: wrap;
+                margin-top: 6px;
+            }
+            .drawer .vibe-pass-actions button {
+                background: linear-gradient(180deg, rgba(255, 235, 190, 0.55), rgba(180, 140, 80, 0.35));
+                color: var(--parch-ink, #2b1a08);
+                border: 1px solid var(--brass-2, #8a6322);
+                padding: 3px 9px;
+                font-size: 10.5px;
+                cursor: pointer;
+                border-radius: 2px;
+                font-family: "Cinzel", Georgia, serif;
+                letter-spacing: 0.03em;
+            }
+            .drawer .vibe-pass-actions button:hover {
+                background: linear-gradient(180deg, rgba(255, 248, 215, 0.75), rgba(210, 170, 110, 0.55));
+            }
             /* Welle 6.D Etappe 3b — Equipment-UI. */
             .drawer #player-equip {
                 display: flex;
@@ -3231,6 +3274,45 @@
                 font-size: 10px;
                 color: var(--brass-1, #d4a373);
                 line-height: 1.4;
+            }
+            /* W13 Phase 2 — Bauplan-Signatur-Status im Stats-Panel. */
+            #workshop-stats-panel .workshop-sig-status {
+                font-family: "JetBrains Mono", "Courier New", monospace;
+                font-size: 9.5px;
+                line-height: 1.4;
+                flex: 1;
+            }
+            #workshop-stats-panel .workshop-sig-status.sig-valid {
+                color: #3f8a4f;
+            }
+            #workshop-stats-panel .workshop-sig-status.sig-modified {
+                color: #b07a1f;
+            }
+            #workshop-stats-panel .workshop-sig-status.sig-forged {
+                color: #a04040;
+            }
+            #workshop-stats-panel .workshop-sig-status.sig-unsigned {
+                color: var(--parch-ink-soft, #5a3f1d);
+                opacity: 0.7;
+            }
+            #workshop-stats-panel .workshop-sig-btn {
+                margin-left: 4px;
+                padding: 1px 8px;
+                background: linear-gradient(180deg, rgba(255, 235, 190, 0.55), rgba(180, 140, 80, 0.35));
+                border: 1px solid var(--brass-2, #8a6322);
+                border-radius: 2px;
+                color: var(--parch-ink, #2b1a08);
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9.5px;
+                letter-spacing: 0.03em;
+                cursor: pointer;
+            }
+            #workshop-stats-panel .workshop-sig-btn:hover {
+                background: linear-gradient(180deg, rgba(255, 248, 215, 0.75), rgba(210, 170, 110, 0.55));
+            }
+            #workshop-stats-panel .workshop-sig-btn:disabled {
+                opacity: 0.45;
+                cursor: not-allowed;
             }
             /* V8.05 — Del-Button unter der Form-Palette */
             .workshop-delete-btn {
@@ -4011,7 +4093,7 @@
         <header id="topbar" class="hud-frame">
             <div class="topbar-inner">
                 <div class="title">
-                    Anazh Realm <span class="version">v8.53</span> <span class="sub">— Das Ultiversum</span>
+                    Anazh Realm <span class="version">v8.56</span> <span class="sub">— Das Ultiversum</span>
                 </div>
                 <nav class="tabs" role="tablist" aria-label="Hauptansichten">
                     <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">
@@ -4249,6 +4331,19 @@
                 <div class="soul-row">
                     <label for="player-soul-select">Form</label>
                     <select id="player-soul-select" aria-label="Spieler-Seele wählen"></select>
+                </div>
+            </section>
+            <section class="section" id="vibe-pass-section">
+                <h3>Vibe-Pass <span class="section-hint">(souveräne Identität)</span></h3>
+                <p class="drawer-hint">
+                    Ein ed25519-Schlüsselpaar, lokal erzeugt — deine unverfälschbare Identität. Damit signierst du
+                    deine Werke; andere können prüfen, dass sie wirklich von dir stammen. Kein Coin, keine Kette —
+                    nur Echtheit. Sichere ihn: ohne den Schlüssel ist die Identität verloren.
+                </p>
+                <div id="vibe-pass-body"></div>
+                <div class="vibe-pass-actions">
+                    <button type="button" id="vibe-pass-export">Vibe-Pass sichern…</button>
+                    <button type="button" id="vibe-pass-import">Wiederherstellen…</button>
                 </div>
             </section>
             <section class="section">
@@ -4822,6 +4917,7 @@
         </aside>
         <!-- Versteckter File-Picker für 'Lade Datei'-Chat-Befehl. -->
         <input type="file" id="state-file-input" accept="application/json,.json" />
+        <input type="file" id="vibe-pass-file-input" accept="application/json,.json" />
         <!-- Ring 9 — Welt-Tor: Drei-Wahl-Dialog beim Import einer fremden Welt.
              Native <dialog> mit painterly Styling. Vier Aktionen:
                Ersetzen      → aktuelle Welt wird überschrieben (mit Warnung)
@@ -4977,6 +5073,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=8.53" defer></script>
+        <script src="anazhRealm.js?v=8.57" defer></script>
     </body>
 </html>
