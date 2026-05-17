@@ -1418,6 +1418,18 @@ class AnazhRealm {
                     });
                 }
             },
+            // W12 Phase 2 — einen Bauplan auf eine registrierte Welt richten.
+            // Der spieler-erreichbare Portal-Zielen-Pfad (Chat/Nexus/DSL).
+            set_portal: ([blueprintName, worldId], ctx) => {
+                const result = this.aimBlueprintAtWorld(blueprintName, worldId);
+                if (ctx && ctx.log) {
+                    ctx.log.push({
+                        event: result.ok ? "portal_aimed" : "portal_aim_failed",
+                        name: blueprintName,
+                        reason: result.reason,
+                    });
+                }
+            },
             equip_tool: ([name], ctx) => {
                 const result = this.equipTool(name);
                 if (ctx && ctx.log) {
@@ -5221,6 +5233,16 @@ class AnazhRealm {
                 build: (m) => ({
                     program: ["creature_task_all", "build", m[1].toLowerCase()],
                     describe: `alle Kreaturen bauen „${m[1].toLowerCase()}"`,
+                }),
+            },
+            // W12 Phase 2 — einen eigenen Bauplan auf eine registrierte Welt
+            // richten. Welt per id (fluid) oder Label (strom-welt).
+            {
+                example: "richte portal mein_ring auf strom-welt",
+                re: /^richte\s+portal\s+([a-zäöüß0-9_-]+)\s+auf\s+([a-zäöüß0-9_-]+)$/i,
+                build: (m) => ({
+                    program: ["set_portal", m[1].toLowerCase(), m[2].toLowerCase()],
+                    describe: `richtet „${m[1].toLowerCase()}" als Portal auf „${m[2].toLowerCase()}"`,
                 }),
             },
         ];
@@ -10122,6 +10144,7 @@ class AnazhRealm {
             apply_connection: (a) => `verbindet Teile von „${a[0]}" mit „${a[1]}"`,
             apply_op: (a) => `bearbeitet Teil ${a[1]} von „${a[0]}" mit „${a[2]}"`,
             set_mode: (a) => `wechselt die Welt-Beziehung auf „${a[0]}"`,
+            set_portal: (a) => `richtet „${a[0]}" als Portal auf die Welt „${a[1]}"`,
             add_to_inventory: (a) => `legt ${a[1] || 1}× „${a[0]}" ins Inventar`,
             creature_task: (a) => {
                 const extra = this._describeCreatureTaskArg(a[1], a[2]);
@@ -15157,6 +15180,27 @@ class AnazhRealm {
         return { ok: true, name };
     }
 
+    // W12 Phase 2 — einen eigenen Bauplan auf eine registrierte Welt
+    // richten. Der spieler-erreichbare Pfad zum Portal-Zielen: man nennt
+    // eine Welt (per id oder Label), die Welt-Registry liefert Pfad +
+    // Manifest, setBlueprintAsPortal verdrahtet es. So wird aus jedem
+    // Magie-Ring ein gezieltes Tor — kein hardcodiertes Built-in nötig.
+    aimBlueprintAtWorld(blueprintName, worldId) {
+        const key = String(worldId || "")
+            .trim()
+            .toLowerCase();
+        let entry = AnazhRealm.WORLD_REGISTRY[key];
+        if (!entry) {
+            entry = Object.values(AnazhRealm.WORLD_REGISTRY).find((w) => w.label.toLowerCase() === key);
+        }
+        if (!entry) return { ok: false, reason: "world_unknown" };
+        return this.setBlueprintAsPortal(blueprintName, {
+            world: entry.world,
+            label: entry.label,
+            dsl: entry.dsl.slice(),
+        });
+    }
+
     // Säubert portalMeta. world muss ein same-origin relativer worlds/-Pfad
     // sein — kein "://", kein "..", kein führender Slash. Damit kann ein
     // Bauplan kein fremdes Origin ins iframe ziehen (die CSP bleibt
@@ -17246,6 +17290,13 @@ class AnazhRealm {
             },
         ];
 
+        // W12 Phase 2 — portalMeta aus der Welt-Registry (eine Quelle der
+        // Wahrheit; je Bauplan eine eigene dsl-Kopie).
+        const portalTo = (id) => {
+            const w = AnazhRealm.WORLD_REGISTRY[id];
+            return { world: w.world, label: w.label, dsl: w.dsl.slice() };
+        };
+
         return {
             village: { name: "village", label: "Dorf", builtIn: true, parts: villageParts },
             temple: { name: "temple", label: "Tempel", builtIn: true, parts: templeParts },
@@ -17322,14 +17373,7 @@ class AnazhRealm {
                 builtIn: true,
                 role: "portal",
                 roleManual: true,
-                // dsl: der Manifest — die Skelett-Welt versteht ein Wort
-                // (skybox_color tönt die Leere). Beweist mit der Strom-Welt:
-                // eine Brücke, zwei Welten, zwei Vokabulare.
-                portalMeta: {
-                    world: AnazhRealm.PORTAL_SKELETON_WORLD,
-                    label: "Skelett-Welt",
-                    dsl: ["skybox_color"],
-                },
+                portalMeta: portalTo("skeleton"),
                 parts: weltPortalParts,
             },
             // W12 Phase 2 — Strom-Welt-Portal. Führt in die erste lebendige
@@ -17343,11 +17387,7 @@ class AnazhRealm {
                 builtIn: true,
                 role: "portal",
                 roleManual: true,
-                portalMeta: {
-                    world: "worlds/fluid/index.html",
-                    label: "Strom-Welt",
-                    dsl: ["weather", "skybox_color", "sturm", "ruhe", "set_turbulence"],
-                },
+                portalMeta: portalTo("fluid"),
                 parts: weltStromParts,
             },
             // W12 Phase 2 — Terrain-Welt-Portal: die zweite fremde Welt.
@@ -17360,11 +17400,7 @@ class AnazhRealm {
                 builtIn: true,
                 role: "portal",
                 roleManual: true,
-                portalMeta: {
-                    world: "worlds/terrain/index.html",
-                    label: "Terrain-Welt",
-                    dsl: ["skybox_color", "gebirge", "ebene", "neu"],
-                },
+                portalMeta: portalTo("terrain"),
                 parts: weltTerrainParts,
             },
         };
@@ -25662,6 +25698,27 @@ class AnazhRealm {
                     this.renderPlayerEquipUI();
                 });
                 row.appendChild(consBtn);
+                // W12 Phase 2 — Portal-Zielen: einen eigenen Bauplan auf eine
+                // registrierte Welt richten (Welt-Auswahl + Knopf). Macht den
+                // systemischen Pfad spieler-erreichbar — kein Built-in nötig.
+                const portalSel = document.createElement("select");
+                portalSel.className = "equip-portal-select";
+                for (const wid of Object.keys(AnazhRealm.WORLD_REGISTRY)) {
+                    const wOpt = document.createElement("option");
+                    wOpt.value = wid;
+                    wOpt.textContent = AnazhRealm.WORLD_REGISTRY[wid].label;
+                    portalSel.appendChild(wOpt);
+                }
+                row.appendChild(portalSel);
+                const portalBtn = document.createElement("button");
+                portalBtn.type = "button";
+                portalBtn.textContent = "Portal";
+                portalBtn.addEventListener("click", () => {
+                    const result = this.aimBlueprintAtWorld(name, portalSel.value);
+                    if (!result.ok) this.log(`aimBlueprintAtWorld: ${result.reason}`, "ERROR");
+                    this.renderPlayerEquipUI();
+                });
+                row.appendChild(portalBtn);
                 container.appendChild(row);
             }
         }
@@ -28154,6 +28211,33 @@ AnazhRealm.DEFAULT_BLUEPRINT_ROLE = "architecture";
 // portalMeta.world zeigt hierauf; _sanitizePortalMeta erlaubt nur
 // worlds/-Pfade — kein fremdes Origin, die CSP bleibt frame-src 'self'.
 AnazhRealm.PORTAL_SKELETON_WORLD = "worlds/skeleton/index.html";
+
+// W12 Phase 2 — die Welt-Registry: die EINE Quelle, welche Sub-Welten es
+// gibt, je mit Pfad + DSL-Manifest (welche Wörter die Welt versteht). Die
+// Built-in-Portale beziehen ihr portalMeta hieraus (statt 3 verstreuter
+// Literale); aimBlueprintAtWorld richtet jeden eigenen Magie-Ring auf einen
+// dieser Einträge. Der Same der W14-Bibliothek — wächst, wird einst
+// durchsuchbar.
+AnazhRealm.WORLD_REGISTRY = Object.freeze({
+    skeleton: Object.freeze({
+        id: "skeleton",
+        label: "Skelett-Welt",
+        world: AnazhRealm.PORTAL_SKELETON_WORLD,
+        dsl: Object.freeze(["skybox_color"]),
+    }),
+    fluid: Object.freeze({
+        id: "fluid",
+        label: "Strom-Welt",
+        world: "worlds/fluid/index.html",
+        dsl: Object.freeze(["weather", "skybox_color", "sturm", "ruhe", "set_turbulence"]),
+    }),
+    terrain: Object.freeze({
+        id: "terrain",
+        label: "Terrain-Welt",
+        world: "worlds/terrain/index.html",
+        dsl: Object.freeze(["skybox_color", "gebirge", "ebene", "neu"]),
+    }),
+});
 
 // Deutsche Labels für die Welt-Anzeige. Werkstatt-Status zeigt diese
 // statt der englischen Rolle-IDs.

@@ -13464,6 +13464,101 @@ function startSaveServer() {
                 );
             }
 
+            // ### W12 Phase 2 — Welt-Registry + Portal-Zielen ###
+            const w12registryResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    const REG = r.constructor.WORLD_REGISTRY;
+
+                    // Welt-Registry — eine Quelle, drei Welten je mit Pfad + Manifest.
+                    out.registryExists = !!REG && !!REG.skeleton && !!REG.fluid && !!REG.terrain;
+                    out.registryShape =
+                        !!REG &&
+                        REG.fluid.world === "worlds/fluid/index.html" &&
+                        Array.isArray(REG.fluid.dsl) &&
+                        REG.fluid.dsl.includes("sturm");
+
+                    // Die 3 Built-in-Portale beziehen ihr portalMeta aus der Registry.
+                    const ws = r.state.blueprints.welt_strom;
+                    const wt = r.state.blueprints.welt_terrain;
+                    const wp = r.state.blueprints.welt_portal;
+                    out.builtinsFromRegistry =
+                        ws.portalMeta.world === REG.fluid.world &&
+                        wt.portalMeta.world === REG.terrain.world &&
+                        wp.portalMeta.world === REG.skeleton.world &&
+                        ws.portalMeta.dsl.includes("sturm") &&
+                        wt.portalMeta.dsl.includes("gebirge");
+
+                    out.aimExists = typeof r.aimBlueprintAtWorld === "function";
+
+                    // Ein eigener (nicht-Built-in) Bauplan zum Zielen.
+                    r.state.blueprints.test_portal_ring = {
+                        name: "test_portal_ring",
+                        label: "Test-Ring",
+                        builtIn: false,
+                        parts: [],
+                    };
+
+                    // UI: die Markier-Reihe trägt eine Portal-Welt-Auswahl.
+                    r.renderPlayerEquipUI();
+                    out.uiPortalSelect = !!document.querySelector(".equip-portal-select");
+
+                    // aimBlueprintAtWorld per id.
+                    const aimId = r.aimBlueprintAtWorld("test_portal_ring", "fluid");
+                    out.aimById =
+                        aimId.ok === true &&
+                        r.state.blueprints.test_portal_ring.role === "portal" &&
+                        r.state.blueprints.test_portal_ring.portalMeta.world === "worlds/fluid/index.html";
+
+                    // aimBlueprintAtWorld per Label (case-insensitive).
+                    const aimLabel = r.aimBlueprintAtWorld("test_portal_ring", "Terrain-Welt");
+                    out.aimByLabel =
+                        aimLabel.ok === true &&
+                        r.state.blueprints.test_portal_ring.portalMeta.world === "worlds/terrain/index.html";
+
+                    // Unbekannte Welt + Built-in werden abgelehnt.
+                    out.aimUnknownRejected = r.aimBlueprintAtWorld("test_portal_ring", "nirgendwo").ok === false;
+                    out.aimBuiltinRejected = r.aimBlueprintAtWorld("welt_portal", "fluid").ok === false;
+
+                    // DSL-Op set_portal.
+                    r.dslRun(["set_portal", "test_portal_ring", "skeleton"]);
+                    out.dslSetPortal = r.state.blueprints.test_portal_ring.portalMeta.world === REG.skeleton.world;
+
+                    // Chat-Pattern „richte portal X auf Y".
+                    const parsed = r.parseChatToDsl("richte portal test_portal_ring auf fluid");
+                    out.chatPattern =
+                        !!parsed && JSON.stringify(parsed.program) === '["set_portal","test_portal_ring","fluid"]';
+
+                    delete r.state.blueprints.test_portal_ring;
+                    r.renderPlayerEquipUI();
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w12registryResults && !w12registryResults.error) {
+                check("W12 P2: WORLD_REGISTRY existiert (skeleton/fluid/terrain)", w12registryResults.registryExists);
+                check("W12 P2: Registry-Einträge tragen Pfad + DSL-Manifest", w12registryResults.registryShape);
+                check(
+                    "W12 P2: Built-in-Portale beziehen portalMeta aus der Registry",
+                    w12registryResults.builtinsFromRegistry
+                );
+                check("W12 P2: aimBlueprintAtWorld existiert", w12registryResults.aimExists);
+                check("W12 P2: Equip-UI trägt eine Portal-Welt-Auswahl", w12registryResults.uiPortalSelect);
+                check("W12 P2: aimBlueprintAtWorld richtet per Welt-id", w12registryResults.aimById);
+                check("W12 P2: aimBlueprintAtWorld richtet per Welt-Label", w12registryResults.aimByLabel);
+                check("W12 P2: aimBlueprintAtWorld verwirft unbekannte Welt", w12registryResults.aimUnknownRejected);
+                check("W12 P2: aimBlueprintAtWorld verwirft Built-in-Bauplan", w12registryResults.aimBuiltinRejected);
+                check("W12 P2: DSL-Op set_portal richtet den Bauplan", w12registryResults.dslSetPortal);
+                check("W12 P2: Chat-Pattern 'richte portal X auf Y'", w12registryResults.chatPattern);
+            } else {
+                check(
+                    "W12 P2: Welt-Registry Tests laufen",
+                    false,
+                    w12registryResults ? w12registryResults.error : "no result"
+                );
+            }
+
             // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
             const v840Results = await page
                 .evaluate(() => {
