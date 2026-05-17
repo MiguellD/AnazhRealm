@@ -189,6 +189,12 @@ class AnazhRealm {
                 // in localStorage. Wird in LLM-System-Prompt + Chat-Output-
                 // Label referenziert.
                 companionName: "Grok",
+                // W11 Phase 4 (Voice-Sync) — die SpeechSynthesis-Stimme des
+                // Begleiters. Leer = Browser-Default. Editierbar in
+                // Einstellungen, persistiert in localStorage. Reist im
+                // `companion-say`-Broadcast mit, damit Mitspieler den eigenen
+                // Begleiter an seiner Stimme erkennen.
+                companionVoice: "",
                 // Sentinel -Infinity wie bei lastWorldgen: 0 würde den ersten
                 // Aufruf vom 30 s-Throttle blocken (3 - 0 < 30). Selbe Logik
                 // für jeden Trigger-Cooldown.
@@ -777,11 +783,22 @@ class AnazhRealm {
                 const voiceVol =
                     typeof this.state.symphony.voiceVolume === "number" ? this.state.symphony.voiceVolume : 1.0;
                 utterance.volume = Math.max(0, Math.min(1, voiceVol));
+                // W11 Phase 4 — die gewählte Begleiter-Stimme, falls vorhanden
+                // (getVoices() lädt async; fehlt sie noch, greift der Default).
+                const wantVoice = grok.companionVoice || "";
+                if (wantVoice) {
+                    const match = window.speechSynthesis.getVoices().find((v) => v.name === wantVoice);
+                    if (match) utterance.voice = match;
+                }
                 window.speechSynthesis.speak(utterance);
             } catch {
                 // Speech-API kann auf manchen Plattformen werfen; stumm fallback.
             }
         }
+        // W11 Phase 4 (Voice-Sync) — wenn der Begleiter spricht, den Text an
+        // alle Mitspieler senden; sie spielen ihn via SpeechSynthesis ab.
+        // grokRender ist der EINE Sprech-Engpass (Trigger/Journal/LLM/dsl).
+        if (this.state.p2p && this.state.p2p.enabled) this._p2pBroadcastCompanionSay(text);
     }
 
     grokMarkFirstSpawn() {
@@ -4521,7 +4538,7 @@ class AnazhRealm {
             this._p2pHandleLlmResponse(peerId, msg);
             return;
         }
-        const ALLOWED = ["pos", "dsl", "soul", "aura", "vibe", "creature-pos"];
+        const ALLOWED = ["pos", "dsl", "soul", "aura", "vibe", "creature-pos", "companion-say"];
         if (!ALLOWED.includes(msg.type)) return;
         msg.peerId = peerId;
         this.p2pHandleMessage(JSON.stringify(msg));
@@ -5054,6 +5071,13 @@ class AnazhRealm {
             }
             return;
         }
+        if (msg.type === "companion-say") {
+            // W11 Phase 4 — Voice-Sync: der Begleiter-Output eines Mitspielers.
+            if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
+                this._p2pHandleCompanionSay(msg.peerId, msg);
+            }
+            return;
+        }
         if (msg.type === "pos") {
             const pid = msg.peerId;
             if (typeof pid !== "string" || pid === p2p.peerId) return;
@@ -5543,6 +5567,58 @@ class AnazhRealm {
         const intensity = this.state.player._auraIntensityOut;
         if (typeof hue !== "number" || typeof intensity !== "number") return;
         this.p2pSend({ type: "aura", hue, intensity });
+    }
+
+    // W11 Phase 4 — Voice-Sync. Wenn der eigene Begleiter spricht (jeder Pfad
+    // durch grokRender), den Text an alle Mitspieler senden — wie soul/aura
+    // ein dedizierter Kanal, KEIN DSL (der Begleiter-Output ist eine
+    // Darstellungs-Tatsache, keine Welt-Mutation). Immer broadcastet; ob ein
+    // Mitspieler ihn HÖRT, entscheidet sein eigener Stimme-Toggle (Empfänger-
+    // seite) — exakt wie die Aura immer reist und der Empfänger sie rendert.
+    _p2pBroadcastCompanionSay(text) {
+        const p2p = this.state.p2p;
+        if (!p2p || !p2p.enabled || !p2p.connected) return;
+        const clean = typeof text === "string" ? text.trim().slice(0, 280) : "";
+        if (!clean) return;
+        const voice = (this.state.grok && this.state.grok.companionVoice) || "";
+        this.p2pSend({ type: "companion-say", text: clean, voice });
+    }
+
+    // W11 Phase 4 — der Begleiter-Output eines Mitspielers. Wird via
+    // SpeechSynthesis abgespielt — gegated auf den EIGENEN Stimme-Toggle
+    // (wer den Begleiter stummgeschaltet hat, hört auch keinen fremden;
+    // ein Toggle für beides, kein neues UI). Silent-Drop, wenn schon eine
+    // Stimme läuft (kein Speech-Stau bei vielen Mitspielern — V7.92-Disziplin).
+    _p2pHandleCompanionSay(peerId, msg) {
+        const grok = this.state.grok;
+        if (!grok || !grok.speechEnabled) return;
+        if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+        const text = typeof msg.text === "string" ? msg.text.trim().slice(0, 280) : "";
+        if (!text) return;
+        // Silent-Drop bei laufender/anstehender Stimme — kein Backlog.
+        if (window.speechSynthesis.speaking || window.speechSynthesis.pending) return;
+        try {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = "de-DE";
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+            const voiceVol =
+                typeof this.state.symphony.voiceVolume === "number" ? this.state.symphony.voiceVolume : 1.0;
+            utterance.volume = Math.max(0, Math.min(1, voiceVol));
+            const want = typeof msg.voice === "string" ? msg.voice : "";
+            if (want) {
+                const match = window.speechSynthesis.getVoices().find((v) => v.name === want);
+                if (match) utterance.voice = match;
+            }
+            window.speechSynthesis.speak(utterance);
+        } catch {
+            // Speech-API kann auf manchen Plattformen werfen; stumm fallback.
+        }
+        // Sicht-Spur im Log — wessen Begleiter sprach (Avatar-Name aus dem
+        // soul-Sync; fehlt er noch, ein peerId-Fragment).
+        const entry = this.state.p2p.peers.get(peerId);
+        const who = (entry && entry.avatarName) || String(peerId).slice(0, 8);
+        this.log(`${who} · Begleiter: ${text}`, "INFO");
     }
 
     // W13 Phase 3 — die eigene Vibe-Pass-Identität an alle Mitspieler senden
@@ -27779,8 +27855,34 @@ class AnazhRealm {
     }
 
     // Welle 6.X.4 F1 (Audit 17.05.2026) — Begleiter-Name + Avatar-Name.
-    // Lädt persistierte Werte aus localStorage und bindet die zwei Inputs
-    // an die state-Felder. Beide werden im LLM-System-Prompt referenziert.
+    // W11 Phase 4 — die Begleiter-Stimme-Auswahl mit den SpeechSynthesis-
+    // Stimmen des Browsers füllen. getVoices() lädt async — die Liste ist
+    // beim ersten Aufruf oft leer; das `voiceschanged`-Event füllt sie nach.
+    // Die aktuelle Wahl bleibt erhalten (auch wenn die Stimme noch fehlt).
+    _populateCompanionVoiceSelect() {
+        if (typeof document === "undefined" || typeof window === "undefined") return;
+        if (!("speechSynthesis" in window)) return;
+        const sel = document.getElementById("companion-voice");
+        if (!sel) return;
+        const voices = window.speechSynthesis.getVoices() || [];
+        const current = this.state.grok.companionVoice || "";
+        sel.textContent = "";
+        const def = document.createElement("option");
+        def.value = "";
+        def.textContent = "Standard (Browser)";
+        sel.appendChild(def);
+        for (const v of voices) {
+            const opt = document.createElement("option");
+            opt.value = v.name;
+            opt.textContent = `${v.name} (${v.lang})`;
+            sel.appendChild(opt);
+        }
+        sel.value = current;
+    }
+
+    // Lädt persistierte Werte aus localStorage und bindet die Inputs an die
+    // state-Felder. Name + Voice werden im LLM-System-Prompt bzw. im
+    // `companion-say`-Voice-Sync (W11 P4) referenziert.
     identityInitDOM() {
         if (typeof document === "undefined") return;
         // Begleiter-Name: aus localStorage laden, sonst Default „Grok".
@@ -27790,6 +27892,8 @@ class AnazhRealm {
                 if (cn && cn.trim()) this.state.grok.companionName = cn.trim().slice(0, 32);
                 const pn = localStorage.getItem("anazh.player.name");
                 if (pn && pn.trim()) this.state.player.name = pn.trim().slice(0, 32);
+                const cv = localStorage.getItem("anazh.companion.voice");
+                if (cv) this.state.grok.companionVoice = cv.slice(0, 80);
             } catch {
                 /* ignore */
             }
@@ -27818,6 +27922,25 @@ class AnazhRealm {
                 if (typeof localStorage !== "undefined") {
                     try {
                         localStorage.setItem("anazh.player.name", v);
+                    } catch {
+                        /* ignore */
+                    }
+                }
+            });
+        }
+        // W11 Phase 4 — Begleiter-Stimme-Auswahl (SpeechSynthesis-Voice).
+        // voiceschanged füllt die Liste nach (getVoices ist async; im
+        // Headless bleibt sie leer — nur die Default-Option).
+        const voiceSel = document.getElementById("companion-voice");
+        if (voiceSel && typeof window !== "undefined" && "speechSynthesis" in window) {
+            this._populateCompanionVoiceSelect();
+            window.speechSynthesis.addEventListener("voiceschanged", () => this._populateCompanionVoiceSelect());
+            voiceSel.addEventListener("change", () => {
+                const v = (voiceSel.value || "").slice(0, 80);
+                this.state.grok.companionVoice = v;
+                if (typeof localStorage !== "undefined") {
+                    try {
+                        localStorage.setItem("anazh.companion.voice", v);
                     } catch {
                         /* ignore */
                     }

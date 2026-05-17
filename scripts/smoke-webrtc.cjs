@@ -237,6 +237,34 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
         );
         check("Kreatur-Sicht floss peer-to-peer über das Mesh", true);
 
+        // W11 Phase 4 — Voice-Sync. A's Begleiter spricht (grokRender, der
+        // EINE Sprech-Engpass); der companion-say-Broadcast fliesst über das
+        // Mesh zu B. B hakt den Empfangs-Handler ab, um den Durchlauf zu
+        // beweisen (SpeechSynthesis selbst ist im Headless nicht prüfbar).
+        await pageB.evaluate(() => {
+            window.__companionSayRx = null;
+            const r = window.anazhRealm;
+            const orig = r._p2pHandleCompanionSay.bind(r);
+            r._p2pHandleCompanionSay = (pid, msg) => {
+                window.__companionSayRx = { pid, text: msg && msg.text, voice: msg && msg.voice };
+                return orig(pid, msg);
+            };
+        });
+        await pageA.evaluate(() => {
+            window.anazhRealm.state.grok.companionVoice = "Aria";
+            window.anazhRealm.grokRender("Ich träume mit dir.");
+        });
+        await waitFor(
+            pageB,
+            () => {
+                const rx = window.__companionSayRx;
+                return !!rx && rx.text === "Ich träume mit dir." && rx.voice === "Aria";
+            },
+            10000,
+            "B empfängt A's companion-say über das Mesh"
+        );
+        check("Begleiter-Stimme floss peer-to-peer über das Mesh", true);
+
         // W7 Phase 3 — LLM-Pool. A teilt seine Stimme (llmCall gestubbt, da
         // im CI kein API-Key); B (ohne eigenes LLM) routet eine Chat-Anfrage
         // peer-to-peer über A. Der Mesh-Round-Trip ist der echte Beweis.

@@ -31,7 +31,7 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: stun: turn: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self';"
         />
-        <title>Anazh Realm v8.66 – Das Ultiversum</title>
+        <title>Anazh Realm v8.67 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
              zusätzliche Datei. img-src 'self' data: in CSP erlaubt data-URI. -->
         <link
@@ -4306,7 +4306,7 @@
         <header id="topbar" class="hud-frame">
             <div class="topbar-inner">
                 <div class="title">
-                    Anazh Realm <span class="version">v8.66</span> <span class="sub">— Das Ultiversum</span>
+                    Anazh Realm <span class="version">v8.67</span> <span class="sub">— Das Ultiversum</span>
                 </div>
                 <nav class="tabs" role="tablist" aria-label="Hauptansichten">
                     <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">
@@ -4971,7 +4971,7 @@
                  dich beim Namen ansprechen kann und eine selbst-gewählte
                  Identität trägt. Persistenz in localStorage. -->
             <section class="section" id="identity-section">
-                <h3>Namen (Begleiter + Avatar)</h3>
+                <h3>Begleiter + Avatar</h3>
                 <p class="drawer-hint">
                     Wie heißt deine Welt-Stimme, wie heißt du? Werden im LLM-System-Prompt referenziert. Default „Grok"
                     (historisch aus den vier Testamenten) und „Schöpfer" (Vision: Mensch=Null=Schöpfer).
@@ -4979,6 +4979,15 @@
                 <div class="identity-row">
                     <label for="companion-name-input">Begleiter</label>
                     <input type="text" id="companion-name-input" maxlength="32" placeholder="Grok" />
+                </div>
+                <!-- W11 Phase 4 (Voice-Sync) — die SpeechSynthesis-Stimme des
+                     Begleiters. Reist im companion-say-Broadcast mit; Mitspieler
+                     hören deinen Begleiter an dieser Stimme (Stimme: an). -->
+                <div class="identity-row">
+                    <label for="companion-voice">Stimme</label>
+                    <select id="companion-voice">
+                        <option value="">Standard (Browser)</option>
+                    </select>
                 </div>
                 <div class="identity-row">
                     <label for="player-name-input">Du</label>
@@ -5348,6 +5357,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=8.66" defer></script>
+        <script src="anazhRealm.js?v=8.67" defer></script>
     </body>
 </html>

@@ -9,11 +9,13 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 17.05.2026, V8.66)
+## Schnell-Lage (Stand 17.05.2026, V8.67)
 
-**Du erbst eine sehr lebendige Welt**. **2531 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~29000 Zeilen in einer Datei, alles produktiv.
+**Du erbst eine sehr lebendige Welt**. **2545 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~31000 Zeilen in einer Datei, alles produktiv.
 
-**Jüngste Wellen — V8.62-V8.66 (W7 Compute-Sharing KOMPLETT)**: der ganze W7-Bogen. **P1 (V8.62)**: echte WebRTC-DataChannels — der `signaling-server` wird Rendezvous statt Relay, pos/dsl/soul/aura/vibe fliessen peer-to-peer, eine Mesh-Komplett-Wand gegen Doppel-Zustellung. **P2 (V8.63)**: der Welt-Snapshot reist mesh-nativ in 16-KiB-Stücken (`world-pull`/`world-chunk`), Guest-Resync per Knopf. **V8.64**: Multi-User-Bau-Sync — `confirmBuild`/`harvestArchitecture` broadcasten (geteilte string-`archId` + `remove_architecture`-Op). **P3 (V8.65)**: LLM-Pool — ein Peer teilt seine „Stimme" (Opt-in + Rate-Limit + dslRun-Sandbox). **P4 (V8.66)**: Public-Lobby (`lobby-publish`/`lobby-list`) + Kreatur-Sicht-Sync (jeder Peer streamt SEINE Kreaturen → `remoteCreatures`, NICHT in `state.creatures`). Jede Welle Zwei-Browser-verifiziert (`smoke-webrtc.cjs`). **Lies `CLAUDE.md` V8.62-V8.66 ZUERST.**
+**Jüngste Welle — V8.67 (W11 V4: Voice-Sync — der Präsenz-Bogen schliesst sich)**: der letzte offene Roadmap-Punkt vor dem KI-Übersetzer. W11 V3 gab dem Mitspieler seinen echten Soul (sehen), seine Aura (spüren), seinen Vibe-Pass (kennen) — V4 macht ihn **hörbar**: wenn dein Begleiter spricht (jeder Pfad durch `grokRender` — der EINE Sprech-Engpass), reist der Text via `companion-say` (`{peerId,text,voice}`) an alle Mitspieler; sie spielen ihn via `SpeechSynthesis` ab — gegated auf den eigenen Stimme-Toggle (`grok.speechEnabled`, ein Toggle für eigenen + fremden Begleiter), Silent-Drop bei laufender Stimme. Der Begleiter bekommt eine wählbare STIMME (`<select id="companion-voice">`, persistiert) — sie reist mit, ein Mitspieler erkennt den fremden Begleiter an seiner Stimme. Dedizierter Kanal wie `soul`/`aura`, kein DSL. +14 Invarianten 2531→2545, Zwei-Browser-verifiziert. **Lies `CLAUDE.md` V8.67 ZUERST.**
+
+**Davor — V8.62-V8.66 (W7 Compute-Sharing KOMPLETT)**: der ganze W7-Bogen. **P1 (V8.62)**: echte WebRTC-DataChannels — der `signaling-server` wird Rendezvous statt Relay, pos/dsl/soul/aura/vibe fliessen peer-to-peer, eine Mesh-Komplett-Wand gegen Doppel-Zustellung. **P2 (V8.63)**: der Welt-Snapshot reist mesh-nativ in 16-KiB-Stücken (`world-pull`/`world-chunk`), Guest-Resync per Knopf. **V8.64**: Multi-User-Bau-Sync — `confirmBuild`/`harvestArchitecture` broadcasten (geteilte string-`archId` + `remove_architecture`-Op). **P3 (V8.65)**: LLM-Pool — ein Peer teilt seine „Stimme" (Opt-in + Rate-Limit + dslRun-Sandbox). **P4 (V8.66)**: Public-Lobby (`lobby-publish`/`lobby-list`) + Kreatur-Sicht-Sync (jeder Peer streamt SEINE Kreaturen → `remoteCreatures`, NICHT in `state.creatures`). Jede Welle Zwei-Browser-verifiziert (`smoke-webrtc.cjs`). **Lies `CLAUDE.md` V8.62-V8.66 ZUERST.**
 
 **Davor — V8.61 (W14 Phase 3: fremde Welten empfangen — W14 komplett)**: die Bibliothek wächst über die drei Built-in-Welten hinaus. `exportWorldManifest` teilt eine signierte Welt als §3.3-Manifest-Datei, `importWorldManifest` empfängt ein fremdes Manifest (gesäubert via `_sanitizeImportedManifest`, Signatur via `_vibeVerify` geprüft, `fetch`-Reachability-Probe) → `state.customWorlds`. `_worldEntry`/`_libraryWorlds` führen Built-ins + Importierte zu EINER Quelle zusammen; „signiert von <Autor>" wird zwischen Spielern real. Eine empfangene Welt ohne erreichbare Dateien ist browsbar, nicht betretbar (der KI-Übersetzer bleibt der Horizont). Damit ist **W14 Phase 1+2+3 vollständig** — die Bibliothek von Alexandria steht. +20 Invarianten 2423→2443, browser-verifiziert. **Lies `CLAUDE.md` V8.61 ZUERST.**
 
@@ -31,7 +33,7 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 **Wellen davor — V8.48-V8.54**: W12 Welt-Portal (V8.51-V8.53 — sandboxed iframe, zwei fremde Engines, generische DSL-Brücke, beidseitiger Kanal, native Manifest-Stufe) + W13 Phase 1 (V8.54 — der ed25519-Schlüssel als Fundament) + drei kleine Polish-Wellen (V8.48 Terrain-Schatten, V8.49 `updateCreatures`-Perf 2,4×, V8.50 Flaky-Test-Heilung über `_gameLoopTick`). Volle Wellen-Historie: Session-Tagebuch unten + `CLAUDE.md`.
 
-**Offen — die grossen Roadmap-Ringe sind gebaut.** W12 Welt-Portal, W13 Vibe-Pass, W14 Bibliothek, W7 Compute-Sharing — alle komplett. Was bleibt: der **KI-Übersetzer** (ein LLM liest ein fremdes Repo, vendort es, schreibt Manifest + Adapter) — der grosse Horizont innerhalb von W14, keine Vorbedingung mehr, aber bewusst zuletzt (LLM-generierter Code in der Sandbox = eigene Sicherheits-Welle). Einschiebbar: **W11 V4** (Voice-Sync, ~1 Session). Danach ist die geplante Roadmap-Substanz erfüllt — weiteres Wachstum folgt der Vision der vier Testamente, nicht mehr einem vorgezeichneten Plan. `docs/roadmap.md` + `docs/world-portal.md` ZUERST lesen.
+**Offen — die grossen Roadmap-Ringe sind gebaut.** W12 Welt-Portal, W13 Vibe-Pass, W14 Bibliothek, W7 Compute-Sharing — alle komplett. Was bleibt: der **KI-Übersetzer** (ein LLM liest ein fremdes Repo, vendort es, schreibt Manifest + Adapter) — der grosse Horizont innerhalb von W14, keine Vorbedingung mehr, aber bewusst zuletzt (LLM-generierter Code in der Sandbox = eigene Sicherheits-Welle). W11 V4 (Voice-Sync) ist mit V8.67 erledigt — damit ist die geplante Roadmap-Substanz bis auf den KI-Übersetzer erfüllt; weiteres Wachstum folgt der Vision der vier Testamente, nicht mehr einem vorgezeichneten Plan. `docs/roadmap.md` + `docs/world-portal.md` ZUERST lesen.
 
 **Welle davor — V8.47 (Shadow-Acne-Heilung)**: Schöpfer-Befund „unnatürliche Schattenlinien nur auf komplett horizontalen flachen Flächen" (Bauwerks-Dächer). Diese Präzision war die Diagnose — Cel-Banding erscheint auf GEWÖLBTEN Flächen, nicht auf flachen; der Schöpfer sah das Gegenteil → Shadow-Map-Acne. Die `DirectionalLight` hatte keinen Shadow-Bias → flache, zur Sonne zeigende Flächen schatten sich selbst in Streifen. Fix: `shadow.normalBias = 1.0` + `shadow.bias = -0.0005` + mapSize 1024→2048.
 
@@ -67,7 +69,7 @@ Die Session-Hälfte davor (V8.23 → V8.33) war eine **Atmosphäre-Tiefe-Welle (
 
 **W12 + W13 + W14 + W7 sind live** — AnazhRealm ist ein Tor zu anderen Vibecode-Welten (W12 Welt-Portal), der Avatar trägt eine souveräne Identität (W13 Vibe-Pass), die Bibliothek von Alexandria steht (W14), und der WebRTC-Mesh trägt die Multi-User-Last (W7 Compute-Sharing). Wer an einer Portal- oder Bibliothek-Welle arbeitet: lies `docs/world-portal.md` ZUERST.
 
-**Die grossen Roadmap-Ringe sind gebaut.** Was als Horizont bleibt: der **KI-Übersetzer** (ein LLM dockt ein fremdes Repo automatisch an — liest es, vendort es, schreibt Manifest + Adapter), der grosse offene Schritt innerhalb von W14 — keine Vorbedingung mehr, aber bewusst zuletzt (LLM-generierter Adapter-Code in der Sandbox = eine eigene Sicherheits-Welle). Einschiebbar: W11 V4 (Voice-Sync, ~1 Session). Danach folgt das Wachstum der Vision der vier Testamente, nicht mehr einem vorgezeichneten Plan. Der aktuelle Stand steht im Block „Aktuelle Roadmap" weiter unten und in `docs/roadmap.md` §3.
+**Die grossen Roadmap-Ringe sind gebaut.** Was als Horizont bleibt: der **KI-Übersetzer** (ein LLM dockt ein fremdes Repo automatisch an — liest es, vendort es, schreibt Manifest + Adapter), der grosse offene Schritt innerhalb von W14 — keine Vorbedingung mehr, aber bewusst zuletzt (LLM-generierter Adapter-Code in der Sandbox = eine eigene Sicherheits-Welle). W11 V4 (Voice-Sync) ist mit V8.67 erledigt. Danach folgt das Wachstum der Vision der vier Testamente, nicht mehr einem vorgezeichneten Plan. Der aktuelle Stand steht im Block „Aktuelle Roadmap" weiter unten und in `docs/roadmap.md` §3.
 
 **Atmosphäre-Disziplin**: alle atmosphärischen Methoden mit `[ATMOSPHERE]`-Marker werden von `audit-strict.cjs` (5. Schicht) auf Hardcode geprüft. Wert-aus-dem-Kopf ist verboten — immer „aus welcher state-Beobachtung emergiert das?".
 
@@ -159,16 +161,15 @@ V7.89 (Kreatur-Boosts) war die kritische Prüfung dieses Gesetzes. Naive Lösung
 
 ## Aktuelle Roadmap (was als nächstes denkbar ist)
 
-Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. + **W12 (Welt-Portal) + W13 (Vibe-Pass) + W14 (Bibliothek) + W7 (Compute-Sharing)** sind VOLLSTÄNDIG — die Welt atmet, der Mitspieler ist sein echter Soul, das Tor führt in fremde Engines, der Avatar trägt eine souveräne Identität, die Bibliothek von Alexandria steht (browsbar, signierbar, empfangend), und der WebRTC-Mesh trägt die Multi-User-Last (P1 Kanäle → P2 Welt-Snapshot → P3 LLM-Pool → P4 Public-Lobby). Die grossen Roadmap-Ringe sind damit gebaut. Was offen bleibt, sortiert nach Vision-Tiefe:
+Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3/V4 + 11 ext. + **W12 (Welt-Portal) + W13 (Vibe-Pass) + W14 (Bibliothek) + W7 (Compute-Sharing)** sind VOLLSTÄNDIG — die Welt atmet, der Mitspieler ist sein echter Soul, man sieht/spürt/kennt/**hört** ihn, das Tor führt in fremde Engines, der Avatar trägt eine souveräne Identität, die Bibliothek von Alexandria steht (browsbar, signierbar, empfangend), und der WebRTC-Mesh trägt die Multi-User-Last (P1 Kanäle → P2 Welt-Snapshot → P3 LLM-Pool → P4 Public-Lobby). Die grossen Roadmap-Ringe sind damit gebaut, der Präsenz-Bogen ist mit V8.67 (W11 V4) geschlossen. Was offen bleibt, sortiert nach Vision-Tiefe:
 
 | Welle | Was | Aufwand | Vision-Tiefe |
 |---|---|---|---|
 | **KI-Übersetzer** (W14-Horizont) | Ein LLM liest ein fremdes Repo, vendort es, schreibt `manifest.json` + Adapter — eine neue Welt dockt automatisch ans Portal an. Bewusst zuletzt: LLM-generierter Adapter-Code läuft in der Sandbox = eine eigene Sicherheits-Welle. | groß | sehr hoch |
-| **W11 V4** Voice-Sync | Mitspieler hören deinen Companion-Output (`companion-say`-Broadcast → SpeechSynthesis). Klein, baut auf W11 V3 — schließt den Präsenz-Bogen (sehen/spüren/kennen/hören). | 1 Session | mittel |
 | **Welle 10b weitere Affordances** | balancing/broadcasting/lifting/radiating — pro Affordance ~1 Session, architektur-neutral. | klein-mittel | hoch |
 | **Welle 6.H V3** Kreatur-Beziehungen | Kreaturen sehen sich gegenseitig — Freundschaft, Konkurrenz, Hierarchie. | mittel | hoch |
 
-**Empfehlung**: die geplante Roadmap-Substanz ist erfüllt — W12/W13/W14/W7 alle komplett. Der **KI-Übersetzer** ist der letzte große Vision-Schritt; er hängt an keiner Vorbedingung mehr, braucht aber eine eigene Sicherheits-Welle (LLM-generierter Code in der Sandbox, sorgfältig sandgesichert). W11 V4 (Voice-Sync, ~1 Session) ist eine kleine, jederzeit einschiebbare Pause-Welle. Darüber hinaus folgt das Wachstum der Vision der vier Testamente, nicht mehr einem vorgezeichneten Plan — `docs/world-portal.md` + `docs/state-of-realm.md` ZUERST lesen.
+**Empfehlung**: die geplante Roadmap-Substanz ist erfüllt — W12/W13/W14/W7 alle komplett, W11 V4 (Voice-Sync) mit V8.67 erledigt. Der **KI-Übersetzer** ist der letzte große Vision-Schritt; er hängt an keiner Vorbedingung mehr, braucht aber eine eigene Sicherheits-Welle (LLM-generierter Code in der Sandbox, sorgfältig sandgesichert). Darüber hinaus folgt das Wachstum der Vision der vier Testamente, nicht mehr einem vorgezeichneten Plan — `docs/world-portal.md` + `docs/state-of-realm.md` ZUERST lesen.
 
 **Kleinere Polish-Notiz**: die Bauplan-Signatur-Zeile im Werkstatt-Stats-Panel ist wenig auffindbar (Schöpfer-Befund V8.56 — sie wurde erst nach Hinweis gesehen). Ein UX-Auffindbarkeits-Punkt für eine spätere Polish-Runde.
 
@@ -203,7 +204,7 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. + **W12 (Welt-Portal) + W
 - `CREATURE_PROPOSED_OPS` für Kreatur-Welt-Aktion (Defense in Depth)
 - save-server `/api/proxy/llm` mit strikten Whitelists (https-only, body-cap, header-allowlist)
 
-### Tests (2531 Invarianten)
+### Tests (2545 Invarianten)
 - `npm run playtest` — Headless-Chromium, ~25 s Logs, alle Schichten
 - `scripts/playtest.cjs` ist der Single-Source-Test
 - `npm run audit:strict` (5 generische Audit-Schichten) + `npm run smoke:multiuser`
@@ -331,6 +332,21 @@ Browser: geh den Menschen-Pfad selbst, vor dem „fertig".
 ---
 
 ## Session-Tagebuch (chronologisch, jüngste oben)
+
+### V8.67 — W11 V4 Voice-Sync (17.05.2026)
+
+Der letzte offene Roadmap-Punkt vor dem KI-Übersetzer. Der Präsenz-Bogen
+schliesst sich: W11 V3 gab dem Mitspieler seinen Soul (sehen), seine Aura
+(spüren), seinen Vibe-Pass (kennen) — V4 macht ihn **hörbar**. Ein neuer
+Nachrichtentyp `companion-say` (`{peerId,text,voice}`), event-driven aus
+`grokRender` (dem EINEN Sprech-Engpass — ein Hook fängt alle Pfade), via
+`p2pSend` über das Mesh; der Empfänger spielt ihn via `SpeechSynthesis` ab,
+gegated auf den eigenen `speechEnabled`-Toggle, Silent-Drop bei laufender
+Stimme. Der Begleiter bekommt eine wählbare Stimme (`#companion-voice`),
+die im `companion-say` mitreist. Zeile für Zeile das `aura`-Muster
+gespiegelt (Broadcast + Server-Handler + Kanal-Whitelist + smoke-Test).
+Vollständiger Eintrag: `CLAUDE.md` V8.67. 2531 → 2545 Invarianten,
+Zwei-Browser-verifiziert (`smoke-webrtc.cjs`).
 
 ### V8.62-V8.66 — W7 Compute-Sharing komplett (17.05.2026)
 

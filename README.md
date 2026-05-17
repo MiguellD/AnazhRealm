@@ -2,7 +2,7 @@
 
 Ein als Co-Creation-Werk Mensch+KI entworfenes 3D-Browser-Sandbox-Ultiversum. Eine Datei, ein Stamm, viele Ringe.
 
-**Stand**: V8.66 (17.05.2026) — **W7 (Compute-Sharing) komplett**: der WebRTC-Mesh steht. P1 echte WebRTC-DataChannels (der signaling-server wird Rendezvous statt Relay, pos/dsl/soul/aura/vibe fliessen peer-to-peer), P2 der Welt-Snapshot reist mesh-nativ in 16-KiB-Stücken, P3 LLM-Pool (ein Peer teilt seine „Stimme" über das Mesh), P4 Public-Lobby (Räume browsbar). Dazu Multi-User-Bau-Sync und Kreatur-Sicht-Sync — der ganze Multi-User-Bogen schliesst sich. Davor W14 (Bibliothek) komplett (die Welt-Registry ist browsbar, signierbar mit dem Vibe-Pass und empfangend — die Bibliothek von Alexandria der Vibecode-Ära steht), W13 Vibe-Pass komplett (souveräne ed25519-Identität: Schlüssel, signierte Werke, peerId-gebundene Multi-User-Identität) und W12 Welt-Portal komplett. Die grossen Roadmap-Ringe sind gebaut; offener Horizont: der KI-Übersetzer.
+**Stand**: V8.67 (17.05.2026) — **W11 V4 (Voice-Sync) komplett**: der Präsenz-Bogen schliesst sich — sehen / spüren / kennen / **hören**. Wenn dein Begleiter spricht, reist der Text via `companion-say` an alle Mitspieler; sie hören ihn via SpeechSynthesis (gegated auf den eigenen Stimme-Toggle). Der Begleiter bekommt eine wählbare Stimme, die mitreist. Davor W7 (Compute-Sharing) komplett — der WebRTC-Mesh (echte DataChannels, mesh-nativer Welt-Snapshot, LLM-Pool, Public-Lobby + Multi-User-Bau-/Kreatur-Sync); W14 (Bibliothek) komplett (browsbare, signierbare, empfangende Welt-Registry — die Bibliothek von Alexandria steht); W13 Vibe-Pass komplett (souveräne ed25519-Identität); W12 Welt-Portal komplett. Die geplante Roadmap-Substanz ist erfüllt; einziger offener Horizont: der KI-Übersetzer (ein LLM dockt ein fremdes Repo automatisch ans Portal an).
 
 ## Was es ist
 
@@ -29,7 +29,7 @@ Browser öffnen: `http://localhost:4312/` (oder `index.html` direkt).
 npm run check           # Syntax-Check (node --check)
 npm run lint            # ESLint
 npm run format:check    # Prettier
-npm run playtest        # 2531 Headless-Invarianten (~60s)
+npm run playtest        # 2545 Headless-Invarianten (~60s)
 npm run audit:strict    # 5 generische Audit-Schichten (~25s)
 ```
 
