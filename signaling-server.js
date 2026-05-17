@@ -258,6 +258,17 @@ function handleClientMessage(ws, raw) {
         broadcastToRoom(ws.anazh.room, { type: "vibe", peerId: ws.anazh.peerId, vibePassId, proof }, ws);
         return;
     }
+    if (msg.type === "companion-say") {
+        // W11 Phase 4: Voice-Sync — der Begleiter-Output eines Spielers.
+        // Mitspieler spielen ihn via SpeechSynthesis ab. Server stempelt die
+        // authoritative peerId, deckelt Text + Voice-Name; den Inhalt
+        // validiert er nicht (reine Client-Audio-Schicht).
+        const text = typeof msg.text === "string" ? msg.text.slice(0, 280) : "";
+        if (!text) return;
+        const voice = typeof msg.voice === "string" ? msg.voice.slice(0, 80) : "";
+        broadcastToRoom(ws.anazh.room, { type: "companion-say", peerId: ws.anazh.peerId, text, voice }, ws);
+        return;
+    }
     if (msg.type === "rtc-offer" || msg.type === "rtc-answer" || msg.type === "rtc-ice") {
         // W7 Phase 1: WebRTC-Signaling. Zielgerichtetes Durchreichen von
         // SDP-Offer/Answer und ICE-Kandidaten zwischen genau zwei Peers,

@@ -122,6 +122,12 @@ async function run() {
     );
     await sleep(150);
 
+    // W11 Phase 4: Voice-Sync. A's Begleiter spricht → B empfängt companion-say.
+    // Defensive: companion-say ohne text wird verworfen.
+    wsA.send(JSON.stringify({ type: "companion-say", text: "Ich träume mit dir.", voice: "Aria" }));
+    wsA.send(JSON.stringify({ type: "companion-say", voice: "Aria" }));
+    await sleep(150);
+
     console.log("\n=== A received ===");
     for (const e of events.a) console.log(JSON.stringify(e));
     console.log("\n=== B received ===");
@@ -251,9 +257,18 @@ async function run() {
             e.list.some((c) => c.id === "c1")
     );
     const aNotEchoedOwnCreaturePos = !events.a.some((e) => e.type === "creature-pos");
+    // W11 Phase 4: Voice-Sync.
+    const bGotCompanionSay = events.b.some(
+        (e) => e.type === "companion-say" && e.peerId === "peerA" && e.text === "Ich träume mit dir." && e.voice === "Aria"
+    );
+    const aNotEchoedOwnCompanionSay = !events.a.some((e) => e.type === "companion-say");
+    const bRejectedBadCompanionSay = events.b.filter((e) => e.type === "companion-say").length === 1;
     console.log("W7P4 B bekommt lobby-rooms mit A's veröffentlichtem Raum:", bGotLobbyRooms);
     console.log("KreaturSync B bekommt A's creature-pos (peerId-Stempel):", bGotCreaturePos);
     console.log("KreaturSync A bekommt eigene creature-pos NICHT zurück:", aNotEchoedOwnCreaturePos);
+    console.log("W11V4 B bekommt A's companion-say (peerId-Stempel):", bGotCompanionSay);
+    console.log("W11V4 A bekommt eigene companion-say NICHT zurück:", aNotEchoedOwnCompanionSay);
+    console.log("W11V4 Server verwirft companion-say ohne text:", bRejectedBadCompanionSay);
 
     // B disconnects
     wsB.close();
@@ -294,7 +309,10 @@ async function run() {
         bRejectedBadRtcOffer &&
         bGotLobbyRooms &&
         bGotCreaturePos &&
-        aNotEchoedOwnCreaturePos;
+        aNotEchoedOwnCreaturePos &&
+        bGotCompanionSay &&
+        aNotEchoedOwnCompanionSay &&
+        bRejectedBadCompanionSay;
     server.kill();
     process.exit(allOk ? 0 : 1);
 }

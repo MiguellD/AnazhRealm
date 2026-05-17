@@ -5135,6 +5135,179 @@ function startSaveServer() {
                 check("Kreatur-Sync: creature-pos ist kanal-zustellbar", w7p4Results.creaturePosChannelAllowed);
             }
 
+            // ### W11 Phase 4 — Voice-Sync (companion-say) ###
+            // grokRender ist der EINE Sprech-Engpass (Trigger/Journal/LLM/dsl);
+            // wenn der Begleiter spricht, reist der Text via companion-say an
+            // alle Mitspieler. Sie spielen ihn via SpeechSynthesis ab — gegated
+            // auf den eigenen Stimme-Toggle. Dedizierter Kanal wie soul/aura.
+            const w11v4Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    const p2p = r.state.p2p;
+                    const grok = r.state.grok;
+
+                    out.voiceField = typeof grok.companionVoice === "string";
+                    out.methods = [
+                        "_p2pBroadcastCompanionSay",
+                        "_p2pHandleCompanionSay",
+                        "_populateCompanionVoiceSelect",
+                    ].every((m) => typeof r[m] === "function");
+
+                    // p2pSend mocken.
+                    const sent = [];
+                    const origSend = r.p2pSend;
+                    r.p2pSend = (o) => sent.push(o);
+
+                    // (a) Broadcast bei enabled+connected → companion-say.
+                    p2p.enabled = true;
+                    p2p.connected = true;
+                    p2p.peerId = "self-test";
+                    grok.companionVoice = "";
+                    r._p2pBroadcastCompanionSay("Ich träume mit dir.");
+                    const m1 = sent.find((m) => m.type === "companion-say");
+                    out.broadcastSends = !!m1 && m1.text === "Ich träume mit dir.";
+
+                    // (b) Broadcast trägt die gewählte Stimme.
+                    sent.length = 0;
+                    grok.companionVoice = "Test-Voice";
+                    r._p2pBroadcastCompanionSay("Hallo.");
+                    const m2 = sent.find((m) => m.type === "companion-say");
+                    out.broadcastCarriesVoice = !!m2 && m2.voice === "Test-Voice";
+                    grok.companionVoice = "";
+
+                    // (c) leerer Text → kein Broadcast.
+                    sent.length = 0;
+                    r._p2pBroadcastCompanionSay("   ");
+                    out.emptyTextNoBroadcast = !sent.some((m) => m.type === "companion-say");
+
+                    // (d) P2P deaktiviert → kein Broadcast.
+                    sent.length = 0;
+                    p2p.enabled = false;
+                    r._p2pBroadcastCompanionSay("Stumm.");
+                    out.disabledNoBroadcast = !sent.some((m) => m.type === "companion-say");
+                    p2p.enabled = true;
+
+                    // (e) grokRender löst den Broadcast aus (der Sprech-Engpass).
+                    sent.length = 0;
+                    r.grokRender("Der Regen wäscht.");
+                    out.grokRenderBroadcasts = sent.some(
+                        (m) => m.type === "companion-say" && m.text === "Der Regen wäscht."
+                    );
+                    r.p2pSend = origSend;
+
+                    // (f) companion-say ist kanal-zustellbar (Kanal-Whitelist).
+                    let chanCalled = null;
+                    const origHandle = r._p2pHandleCompanionSay;
+                    r._p2pHandleCompanionSay = (pid, msg) => {
+                        chanCalled = { pid, text: msg && msg.text };
+                    };
+                    r._p2pHandleChannelMessage(
+                        "chPeerX",
+                        JSON.stringify({ type: "companion-say", text: "Kanal-Test", voice: "" })
+                    );
+                    out.channelAllowed = !!chanCalled && chanCalled.pid === "chPeerX";
+
+                    // (g) die eigene peerId wird ignoriert (kein Selbst-Echo).
+                    chanCalled = null;
+                    r.p2pHandleMessage(JSON.stringify({ type: "companion-say", peerId: "self-test", text: "Echo" }));
+                    out.ownPeerIgnored = chanCalled === null;
+                    r._p2pHandleCompanionSay = origHandle;
+
+                    // (h) Empfang: speechEnabled=false → kein Log, kein Wurf.
+                    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+                        window.speechSynthesis.cancel();
+                    }
+                    const logs = [];
+                    const origLog = r.log;
+                    r.log = (msg) => logs.push(String(msg));
+                    grok.speechEnabled = false;
+                    let threwOff = false;
+                    try {
+                        r._p2pHandleCompanionSay("peerY", { text: "Aus.", voice: "" });
+                    } catch {
+                        threwOff = true;
+                    }
+                    out.mutedNoLog = !threwOff && !logs.some((l) => l.includes("Begleiter"));
+
+                    // (i) speechEnabled=true → Log-Zeile mit "Begleiter".
+                    logs.length = 0;
+                    grok.speechEnabled = true;
+                    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+                        window.speechSynthesis.cancel();
+                    }
+                    try {
+                        r._p2pHandleCompanionSay("peerY", { text: "Träume sind sauber.", voice: "" });
+                    } catch {
+                        /* ignore */
+                    }
+                    out.heardLogsLine = logs.some(
+                        (l) => l.includes("Begleiter") && l.includes("Träume sind sauber.")
+                    );
+                    r.log = origLog;
+                    grok.speechEnabled = false;
+
+                    // (j) Voice-Select im DOM + Default-Option bleibt.
+                    out.voiceSelectDom = !!document.getElementById("companion-voice");
+                    r._populateCompanionVoiceSelect();
+                    const vs = document.getElementById("companion-voice");
+                    out.defaultOptionKept = !!vs && Array.from(vs.options).some((o) => o.value === "");
+
+                    // (k) Voice-Select-change persistiert companionVoice + localStorage.
+                    if (vs) {
+                        const opt = document.createElement("option");
+                        opt.value = "Probe-Stimme";
+                        opt.textContent = "Probe-Stimme";
+                        vs.appendChild(opt);
+                        vs.value = "Probe-Stimme";
+                        vs.dispatchEvent(new Event("change"));
+                        out.voiceChangePersists =
+                            grok.companionVoice === "Probe-Stimme" &&
+                            localStorage.getItem("anazh.companion.voice") === "Probe-Stimme";
+                        vs.value = "";
+                        vs.dispatchEvent(new Event("change"));
+                    } else {
+                        out.voiceChangePersists = false;
+                    }
+
+                    // Cleanup
+                    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+                        window.speechSynthesis.cancel();
+                    }
+                    p2p.enabled = false;
+                    p2p.connected = false;
+                    grok.companionVoice = "";
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!w11v4Results || w11v4Results.error) {
+                check(
+                    "W11 V4: Snapshot erreichbar",
+                    false,
+                    (w11v4Results && w11v4Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("W11 V4: state.grok.companionVoice existiert", w11v4Results.voiceField);
+                check("W11 V4: alle 3 Voice-Sync-Methoden auf der Klasse", w11v4Results.methods);
+                check("W11 V4: _p2pBroadcastCompanionSay sendet companion-say", w11v4Results.broadcastSends);
+                check("W11 V4: der Broadcast trägt die gewählte Stimme", w11v4Results.broadcastCarriesVoice);
+                check("W11 V4: leerer Begleiter-Text → kein Broadcast", w11v4Results.emptyTextNoBroadcast);
+                check("W11 V4: P2P deaktiviert → kein Broadcast", w11v4Results.disabledNoBroadcast);
+                check("W11 V4: grokRender löst den companion-say-Broadcast aus", w11v4Results.grokRenderBroadcasts);
+                check("W11 V4: companion-say ist kanal-zustellbar", w11v4Results.channelAllowed);
+                check("W11 V4: die eigene peerId wird ignoriert (kein Echo)", w11v4Results.ownPeerIgnored);
+                check("W11 V4: Stimme aus → fremder Begleiter stumm + kein Wurf", w11v4Results.mutedNoLog);
+                check("W11 V4: Stimme an → fremder Begleiter im Log", w11v4Results.heardLogsLine);
+                check("W11 V4: #companion-voice Select im DOM", w11v4Results.voiceSelectDom);
+                check(
+                    "W11 V4: _populateCompanionVoiceSelect behält die Default-Option",
+                    w11v4Results.defaultOptionKept
+                );
+                check("W11 V4: Voice-Wahl persistiert in companionVoice + localStorage", w11v4Results.voiceChangePersists);
+            }
+
             // ### Ring 11 V2 — DSL-AST-Broadcast (Welt-Sync) ###
             // Sandbox-Pfad: human-dslRun broadcastet via p2pSend wenn enabled+
             // connected; remote-dslRun (source="remote:*") läuft durch dslRun
