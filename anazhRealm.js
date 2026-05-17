@@ -402,6 +402,13 @@ class AnazhRealm {
             // localStorage-Schlüssel "anazh.signedWorlds". _loadSignedWorlds()
             // füllt es beim Init.
             signedWorlds: {},
+            // W14 Phase 3 — empfangene Welt-Manifeste. Eine importierte Welt
+            // (id NICHT in WORLD_REGISTRY) lebt hier: ein vollständiges,
+            // signiert-getragenes Manifest {id,label,desc,world,dsl,
+            // authorPubKey,signature,signedHash,reachable}. Spieler-global,
+            // persistiert als localStorage "anazh.customWorlds" — so wächst
+            // die Bibliothek über die drei Built-in-Welten hinaus.
+            customWorlds: {},
             // Ring 3 — Player-Emotionen. Sechs Achsen, jeweils 0..1.
             // Chat-Inputs füllen sie regelbasiert; im Game-Loop verflüchtigen
             // sie sich langsam; Schwellen-Trigger feuern DSL-Programme, sodass
@@ -13106,14 +13113,188 @@ class AnazhRealm {
         const key = String(worldId || "")
             .trim()
             .toLowerCase();
-        const entry = AnazhRealm.WORLD_REGISTRY[key];
-        const sig = this.state.signedWorlds && this.state.signedWorlds[key];
-        if (!entry || !sig || !sig.signature || !sig.authorPubKey) return "unsigned";
+        const entry = this._worldEntry(key);
+        if (!entry) return "unsigned";
+        // Eine importierte Welt (customWorlds) trägt ihre Signatur SELBST —
+        // manifest-getragen, vom Autor; eine Built-in-Welt wird heimat-seitig
+        // signiert (signedWorlds, W14 P2). Beide laufen durch dieselbe Prüfung.
+        const custom = this.state.customWorlds && this.state.customWorlds[key];
+        const sig = custom && custom.signature ? custom : this.state.signedWorlds && this.state.signedWorlds[key];
+        if (!sig || !sig.signature || !sig.authorPubKey) return "unsigned";
         const canonical = this._canonicalManifest(entry);
         if (sig.signedHash && this._fastHash(canonical) !== sig.signedHash) return "modified";
         const ok = await this._vibeVerify(canonical, sig.signature, sig.authorPubKey);
         return ok ? "valid" : "forged";
     }
+
+    // ### W14 Phase 3 — fremde Welten empfangen ###
+    // Die Bibliothek wächst über die drei Built-in-Welten hinaus: ein Spieler
+    // exportiert das signierte Manifest einer Welt, ein anderer importiert es.
+    // Die Signatur reist mit dem Manifest (world-portal.md §3.3) — so wird
+    // „signiert von <Autor>" zwischen Spielern real. Der KI-Übersetzer (ein
+    // fremdes Repo automatisch andocken) bleibt der Horizont; diese Welle baut
+    // die Metadaten-/Provenienz-Schicht.
+
+    // Built-in-Registry + importierte Welten als EINE Lookup-Quelle.
+    _worldEntry(id) {
+        const key = String(id || "")
+            .trim()
+            .toLowerCase();
+        return AnazhRealm.WORLD_REGISTRY[key] || (this.state.customWorlds && this.state.customWorlds[key]) || null;
+    }
+
+    // Die ganze Bibliothek als Array — Built-ins zuerst, dann Importierte.
+    _libraryWorlds() {
+        const out = Object.values(AnazhRealm.WORLD_REGISTRY);
+        const custom = this.state.customWorlds || {};
+        for (const id of Object.keys(custom)) out.push(custom[id]);
+        return out;
+    }
+
+    // Lädt die importierten Welten aus dem GLOBALEN localStorage-Schlüssel.
+    // Defensiv: jeder Eintrag läuft durch _sanitizeImportedManifest — ein
+    // korruptes Manifest wird verworfen, nie ein Wurf.
+    _loadCustomWorlds() {
+        const out = {};
+        try {
+            const raw = typeof localStorage !== "undefined" ? localStorage.getItem("anazh.customWorlds") : null;
+            if (!raw) return out;
+            const parsed = JSON.parse(raw);
+            if (!parsed || typeof parsed !== "object") return out;
+            for (const id of Object.keys(parsed)) {
+                const clean = this._sanitizeImportedManifest(parsed[id]);
+                if (clean) out[clean.id] = clean;
+            }
+        } catch {
+            /* korrupte Map → leer, kein Wurf */
+        }
+        return out;
+    }
+
+    _saveCustomWorlds() {
+        try {
+            if (typeof localStorage !== "undefined") {
+                localStorage.setItem("anazh.customWorlds", JSON.stringify(this.state.customWorlds || {}));
+            }
+        } catch (e) {
+            this.log(`customWorlds-Speichern fehlgeschlagen: ${e && e.message}`, "WARN");
+        }
+    }
+
+    // Säubert ein importiertes Manifest auf eine sichere customWorlds-Form.
+    // id muss op-förmig sein + darf KEINE Built-in-Welt überschreiben; world
+    // läuft durch _sanitizePortalMeta (erzwingt same-origin worlds/-Pfad);
+    // dsl durch _sanitizeDslSubset. Signatur strukturell hex-geprüft. Liefert
+    // null bei Unbrauchbarem. `reachable` bleibt erhalten (vom Import gesetzt).
+    _sanitizeImportedManifest(m) {
+        if (!m || typeof m !== "object") return null;
+        const id = String(m.id || "")
+            .trim()
+            .toLowerCase();
+        if (!/^[a-z0-9_-]{1,40}$/.test(id)) return null;
+        if (AnazhRealm.WORLD_REGISTRY[id]) return null; // kein Built-in-Override
+        const meta = this._sanitizePortalMeta(
+            { world: m.world, label: m.label, dsl: m.dsl },
+            typeof m.label === "string" ? m.label : id
+        );
+        const out = {
+            id,
+            label: meta.label,
+            world: meta.world,
+            dsl: meta.dsl ? meta.dsl.slice() : [],
+            desc: typeof m.desc === "string" ? m.desc.slice(0, 240) : "",
+            reachable: m.reachable === true,
+            importedAt: typeof m.importedAt === "number" ? m.importedAt : Date.now(),
+        };
+        if (
+            typeof m.authorPubKey === "string" &&
+            /^[0-9a-f]{64}$/i.test(m.authorPubKey) &&
+            typeof m.signature === "string" &&
+            /^[0-9a-f]{2,256}$/i.test(m.signature)
+        ) {
+            out.authorPubKey = m.authorPubKey;
+            out.signature = m.signature;
+            out.signedHash = typeof m.signedHash === "string" ? m.signedHash : "";
+            out.signedAt = typeof m.signedAt === "number" ? m.signedAt : 0;
+        }
+        return out;
+    }
+
+    // W14 Phase 3 — eine Welt teilen: ihr signiertes Manifest als Datei
+    // exportieren (das §3.3-Manifest, jetzt mit authorPubKey + signature). Die
+    // Welt muss signiert sein — ohne Signatur gäbe es keine Provenienz.
+    exportWorldManifest(worldId) {
+        const key = String(worldId || "")
+            .trim()
+            .toLowerCase();
+        const entry = this._worldEntry(key);
+        if (!entry) return { ok: false, reason: "world_unknown" };
+        const custom = this.state.customWorlds && this.state.customWorlds[key];
+        const sig = custom && custom.signature ? custom : this.state.signedWorlds && this.state.signedWorlds[key];
+        if (!sig || !sig.signature || !sig.authorPubKey) return { ok: false, reason: "not_signed" };
+        const manifest = {
+            schemaVersion: "1.0",
+            id: entry.id,
+            label: entry.label,
+            desc: entry.desc || "",
+            world: entry.world,
+            dsl: Array.isArray(entry.dsl) ? entry.dsl.slice() : [],
+            authorPubKey: sig.authorPubKey,
+            signature: sig.signature,
+            signedHash: sig.signedHash || "",
+            signedAt: sig.signedAt || 0,
+        };
+        this.triggerStateDownload(manifest, `anazh-welt-${entry.id}.json`);
+        this.journalAppend("share", `Ich teilte die ${entry.label} — ihr signiertes Manifest ging hinaus.`, {
+            world: entry.id,
+        });
+        return { ok: true, id: entry.id, manifest };
+    }
+
+    // W14 Phase 3 — ein fremdes Welt-Manifest empfangen. Validiert + säubert,
+    // verifiziert die mitgereiste Signatur, prüft per fetch, ob die Welt-
+    // Dateien erreichbar sind (sonst ist sie browsbar, aber nicht betretbar —
+    // der KI-Übersetzer müsste sie erst vendorn), legt sie in customWorlds.
+    async importWorldManifest(parsed) {
+        const clean = this._sanitizeImportedManifest(parsed);
+        if (!clean) {
+            // id-Kollision mit einer Built-in-Welt sauberer melden.
+            const rawId = parsed && typeof parsed === "object" ? String(parsed.id || "").toLowerCase() : "";
+            if (rawId && AnazhRealm.WORLD_REGISTRY[rawId]) return { ok: false, reason: "id_is_builtin" };
+            return { ok: false, reason: "invalid_manifest" };
+        }
+        // Erreichbarkeit prüfen: lädt der world-Pfad? (same-origin worlds/-Pfad).
+        let reachable = false;
+        try {
+            const res = await fetch(clean.world, { method: "GET" });
+            reachable = !!(res && res.ok);
+        } catch {
+            reachable = false;
+        }
+        clean.reachable = reachable;
+        // Signatur-Status (manifest-getragen).
+        let signatureStatus = "unsigned";
+        if (clean.signature && clean.authorPubKey) {
+            const canonical = this._canonicalManifest(clean);
+            if (clean.signedHash && this._fastHash(canonical) !== clean.signedHash) {
+                signatureStatus = "modified";
+            } else {
+                signatureStatus = (await this._vibeVerify(canonical, clean.signature, clean.authorPubKey))
+                    ? "valid"
+                    : "forged";
+            }
+        }
+        if (!this.state.customWorlds) this.state.customWorlds = {};
+        this.state.customWorlds[clean.id] = clean;
+        this._saveCustomWorlds();
+        this.journalAppend("growth", `Eine fremde Welt fand den Weg in deine Bibliothek: „${clean.label}".`, {
+            world: clean.id,
+            signature: signatureStatus,
+        });
+        return { ok: true, id: clean.id, signatureStatus, reachable };
+    }
+
+    // ### Welle 3 F — Welt-Tor ###
 
     // ### Welle 3 F — Welt-Tor ###
     // Welt-Info im Welt-Drawer: die Welt wird sichtbar als Welt, mit
@@ -15860,9 +16041,10 @@ class AnazhRealm {
         const key = String(worldId || "")
             .trim()
             .toLowerCase();
-        let entry = AnazhRealm.WORLD_REGISTRY[key];
+        // W14 Phase 3 — Built-in-Registry UND importierte Welten als Ziel.
+        let entry = this._worldEntry(key);
         if (!entry) {
-            entry = Object.values(AnazhRealm.WORLD_REGISTRY).find((w) => w.label.toLowerCase() === key);
+            entry = this._libraryWorlds().find((w) => w.label.toLowerCase() === key);
         }
         if (!entry) return { ok: false, reason: "world_unknown" };
         return this.setBlueprintAsPortal(blueprintName, {
@@ -15889,8 +16071,15 @@ class AnazhRealm {
         const key = String(worldId || "")
             .trim()
             .toLowerCase();
-        const entry = AnazhRealm.WORLD_REGISTRY[key];
+        // W14 Phase 3 — Built-in-Registry UND importierte Welten.
+        const entry = this._worldEntry(key);
         if (!entry) return { ok: false, reason: "world_unknown" };
+        // Eine importierte Welt ohne erreichbare Dateien ergäbe ein Portal
+        // ins Leere — kein Bauplan, ehrlicher Befund (der KI-Übersetzer
+        // müsste die Welt-Dateien erst vendorn).
+        if (this.state.customWorlds && this.state.customWorlds[key] && entry.reachable === false) {
+            return { ok: false, reason: "world_unreachable" };
+        }
         const bpName = `portal_${entry.id}`;
         // Bauplan einmal anlegen (Klon des portal-förmigen Magie-Rings).
         const justCloned = !this.state.blueprints || !this.state.blueprints[bpName];
@@ -15924,17 +16113,20 @@ class AnazhRealm {
         return { ok: true, blueprint: bpName, label: entry.label };
     }
 
-    // Die Bibliothek rendern: pro WORLD_REGISTRY-Eintrag eine Karte mit
-    // Label, Beschreibung, DSL-Vokabular, Stufen-Marke und „Portal holen".
-    // Die Registry ist statisch — ein Render beim Init genügt.
+    // W14 — die Bibliothek rendern: pro Welt (Built-in + importiert) eine
+    // Karte mit Label, Beschreibung, DSL-Vokabular, Stufen-Marke, Signatur
+    // und „Portal holen". Phase 3: importierte Welten tragen eine „empfangen"-
+    // Marke; eine importierte Welt ohne erreichbare Dateien ist browsbar,
+    // aber nicht betretbar (der KI-Übersetzer müsste sie erst vendorn).
     renderLibraryUI() {
         if (typeof document === "undefined") return;
         const list = document.getElementById("library-list");
         if (!list) return;
         list.innerHTML = "";
-        for (const w of Object.values(AnazhRealm.WORLD_REGISTRY)) {
+        for (const w of this._libraryWorlds()) {
+            const isImported = !!(this.state.customWorlds && this.state.customWorlds[w.id]);
             const card = document.createElement("div");
-            card.className = "library-card";
+            card.className = "library-card" + (isImported ? " library-card-imported" : "");
 
             const head = document.createElement("div");
             head.className = "library-card-head";
@@ -15954,6 +16146,14 @@ class AnazhRealm {
                 ? "Diese Welt versteht ein DSL-Vokabular (Stufe übersetzt). Beim Betreten kann sie es nativ bestätigen."
                 : "Diese Welt ist spielbar, aber stumm gegenüber der DSL.";
             head.appendChild(stage);
+            // W14 Phase 3 — eine importierte Welt trägt eine „empfangen"-Marke.
+            if (isImported) {
+                const imp = document.createElement("span");
+                imp.className = "library-imported-mark";
+                imp.textContent = "empfangen";
+                imp.title = "Diese Welt kam als signiertes Manifest in deine Bibliothek (W14 Phase 3).";
+                head.appendChild(imp);
+            }
             card.appendChild(head);
 
             const desc = document.createElement("div");
@@ -15978,51 +16178,69 @@ class AnazhRealm {
             }
             card.appendChild(dslWrap);
 
+            const worldId = w.id;
+            const unreachable = isImported && w.reachable === false;
             const getBtn = document.createElement("button");
             getBtn.type = "button";
             getBtn.className = "library-get";
             getBtn.textContent = "Portal holen";
             const status = document.createElement("span");
             status.className = "library-status";
-            getBtn.addEventListener("click", () => {
-                const res = this.obtainPortalForWorld(w.id);
-                if (res.ok) {
-                    status.textContent = `✓ „${res.label}" liegt im Inventar`;
-                    this.log(`Bibliothek: Portal zur ${res.label} ins Inventar gelegt.`, "INFO");
-                } else {
-                    status.textContent = res.reason === "inventory_full" ? "Inventar voll" : "konnte nicht holen";
-                    this.log(`obtainPortalForWorld: ${res.reason}`, "ERROR");
-                }
-            });
+            if (unreachable) {
+                // Eine empfangene Welt ohne erreichbare Dateien: browsbar,
+                // aber nicht betretbar — ehrlich markiert statt totem Portal.
+                getBtn.disabled = true;
+                getBtn.title = "Die Welt-Dateien sind nicht verfügbar — nur das Manifest kam an.";
+                status.textContent = "Welt-Dateien nicht verfügbar";
+                status.className = "library-status library-unreachable";
+            } else {
+                getBtn.addEventListener("click", () => {
+                    const res = this.obtainPortalForWorld(worldId);
+                    if (res.ok) {
+                        status.textContent = `✓ „${res.label}" liegt im Inventar`;
+                        this.log(`Bibliothek: Portal zur ${res.label} ins Inventar gelegt.`, "INFO");
+                    } else {
+                        status.textContent = res.reason === "inventory_full" ? "Inventar voll" : "konnte nicht holen";
+                        this.log(`obtainPortalForWorld: ${res.reason}`, "ERROR");
+                    }
+                });
+            }
             card.appendChild(getBtn);
             card.appendChild(status);
 
-            // W14 Phase 2 — Signatur-Zeile: der Spieler versiegelt die Welt
-            // mit seinem Vibe-Pass. Vier Status-Stufen, exakt wie die W13-P2-
-            // Bauplan-Signatur. refreshSig prüft async + aktualisiert nur die
-            // zwei Knoten — so bleibt die „Portal holen"-Statuszeile erhalten.
+            // W14 Phase 2/3 — Signatur-Zeile. Built-in-Welten signiert der
+            // Spieler selbst (signWorld); importierte tragen die Signatur
+            // ihres Autors schon. „Teilen" exportiert das signierte Manifest
+            // — so reist die Provenienz zwischen Spielern (W14 Phase 3).
             const sigRow = document.createElement("div");
             sigRow.className = "library-sig-row";
             const sigStatus = document.createElement("span");
             sigStatus.className = "library-sig-status";
             sigStatus.textContent = "prüfe …";
+            sigRow.appendChild(sigStatus);
             const sigBtn = document.createElement("button");
             sigBtn.type = "button";
             sigBtn.className = "library-sig-btn";
             sigBtn.textContent = "Signieren";
             sigBtn.disabled = true;
-            const worldId = w.id;
+            const exportBtn = document.createElement("button");
+            exportBtn.type = "button";
+            exportBtn.className = "library-sig-btn library-export-btn";
+            exportBtn.textContent = "Teilen…";
+            exportBtn.disabled = true;
             const refreshSig = () => {
                 const vpReady = !!(this.state.vibePass && this.state.vibePass.ready);
                 this.verifyWorldSignature(worldId).then((st) => {
                     const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
-                    const sig = this.state.signedWorlds && this.state.signedWorlds[worldId];
+                    const custom = this.state.customWorlds && this.state.customWorlds[worldId];
+                    const sig =
+                        custom && custom.signature
+                            ? custom
+                            : this.state.signedWorlds && this.state.signedWorlds[worldId];
                     if (st === "valid") {
                         const who =
-                            sig && sig.authorPubKey === myKey
-                                ? "dein Vibe-Pass"
-                                : this._vibeFingerprint(sig && sig.authorPubKey);
-                        sigStatus.textContent = `✓ signiert · ${who}`;
+                            sig && sig.authorPubKey === myKey ? "dir" : this._vibeFingerprint(sig && sig.authorPubKey);
+                        sigStatus.textContent = `✓ signiert von ${who}`;
                         sigStatus.className = "library-sig-status sig-valid";
                         if (sig) sigStatus.title = "ed25519:" + sig.authorPubKey;
                         sigBtn.textContent = "Neu signieren";
@@ -16039,8 +16257,13 @@ class AnazhRealm {
                         sigStatus.className = "library-sig-status sig-unsigned";
                         sigBtn.textContent = "Signieren";
                     }
-                    sigBtn.disabled = !vpReady;
-                    if (!vpReady) sigBtn.title = "Vibe-Pass nicht bereit — siehe Spieler-Drawer.";
+                    // Eine signierte Welt lässt sich teilen (Manifest exportieren).
+                    exportBtn.disabled = st === "unsigned";
+                    // Built-in-Welten signiert der Spieler; importierte sind es schon.
+                    sigBtn.disabled = isImported || !vpReady;
+                    if (!isImported && !vpReady) {
+                        sigBtn.title = "Vibe-Pass nicht bereit — siehe Spieler-Drawer.";
+                    }
                 });
             };
             sigBtn.addEventListener("click", async () => {
@@ -16050,8 +16273,14 @@ class AnazhRealm {
                 else this.log(`signWorld: ${res.reason}`, "ERROR");
                 refreshSig();
             });
-            sigRow.appendChild(sigStatus);
-            sigRow.appendChild(sigBtn);
+            exportBtn.addEventListener("click", () => {
+                const res = this.exportWorldManifest(worldId);
+                if (res.ok) this.log(`Bibliothek: Manifest der ${w.label} exportiert.`, "INFO");
+                else this.log(`exportWorldManifest: ${res.reason}`, "ERROR");
+            });
+            // Importierte Welten: kein „Signieren" (schon vom Autor signiert).
+            if (!isImported) sigRow.appendChild(sigBtn);
+            sigRow.appendChild(exportBtn);
             card.appendChild(sigRow);
             refreshSig();
 
@@ -16059,11 +16288,67 @@ class AnazhRealm {
         }
     }
 
-    // W14 Phase 1 — Bibliothek-Drawer aufsetzen. Die Registry ist statisch,
-    // also genügt ein Render beim Init.
+    // W14 Phase 1 — Bibliothek-Drawer aufsetzen. Phase 3: der „Welt
+    // empfangen"-Knopf verkabelt einen versteckten Datei-Picker (analog
+    // Vibe-Pass-Import).
     libraryInitDOM() {
         if (typeof document === "undefined") return;
+        const importBtn = document.getElementById("library-import");
+        if (importBtn && importBtn.dataset.libWired !== "1") {
+            importBtn.dataset.libWired = "1";
+            importBtn.addEventListener("click", () => {
+                const input = document.getElementById("library-import-input");
+                if (input) {
+                    input.value = "";
+                    input.click();
+                }
+            });
+        }
+        const fileInput = document.getElementById("library-import-input");
+        if (fileInput && fileInput.dataset.libWired !== "1") {
+            fileInput.dataset.libWired = "1";
+            fileInput.addEventListener("change", (e) => {
+                const f = e.target && e.target.files && e.target.files[0];
+                if (f) this._handleWorldManifestFile(f);
+            });
+        }
         this.renderLibraryUI();
+    }
+
+    // W14 Phase 3 — eine Welt-Manifest-Datei einlesen → importWorldManifest.
+    _handleWorldManifestFile(file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            let parsed = null;
+            try {
+                parsed = JSON.parse(reader.result);
+            } catch (e) {
+                this.log(`Welt-Import fehlgeschlagen (${file.name}): ${e && e.message}`, "ERROR");
+                return;
+            }
+            this.importWorldManifest(parsed).then((res) => {
+                if (res.ok) {
+                    const sigNote =
+                        res.signatureStatus === "valid"
+                            ? "signiert"
+                            : res.signatureStatus === "unsigned"
+                              ? "unsigniert"
+                              : "Signatur " + res.signatureStatus;
+                    this.log(
+                        `Bibliothek: Welt „${res.id}" empfangen (${sigNote}` +
+                            (res.reachable ? "" : ", Dateien nicht verfügbar") +
+                            ").",
+                        "INFO"
+                    );
+                    this.renderLibraryUI();
+                } else {
+                    this.log(`importWorldManifest: ${res.reason}`, "ERROR");
+                }
+            });
+        };
+        reader.onerror = () => this.log(`FileReader-Fehler bei ${file.name}`, "ERROR");
+        reader.readAsText(file);
     }
 
     // W12 — ein DSL-Manifest säubern: nur op-förmige Strings (klein +
@@ -16187,12 +16472,14 @@ class AnazhRealm {
     _portalShowSignature(worldPath) {
         const po = this._portalOverlay;
         if (!po || !po.sigEl) return;
-        const reg = Object.values(AnazhRealm.WORLD_REGISTRY).find((w) => w.world === worldPath);
+        const reg = this._libraryWorlds().find((w) => w.world === worldPath);
         if (!reg) return;
         this.verifyWorldSignature(reg.id).then((st) => {
             // Hat der Spieler das Portal vorher verlassen, ist po veraltet.
             if (this._portalOverlay !== po || !po.sigEl) return;
-            const sig = this.state.signedWorlds && this.state.signedWorlds[reg.id];
+            const custom = this.state.customWorlds && this.state.customWorlds[reg.id];
+            const sig =
+                custom && custom.signature ? custom : this.state.signedWorlds && this.state.signedWorlds[reg.id];
             if (st === "valid" && sig) {
                 const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
                 const who = sig.authorPubKey === myKey ? "dir" : this._vibeFingerprint(sig.authorPubKey);
@@ -27359,6 +27646,8 @@ class AnazhRealm {
         this.state.keybindRebind = null;
         // W14 Phase 2 — signierte Welt-Manifeste aus dem globalen localStorage.
         this.state.signedWorlds = this._loadSignedWorlds();
+        // W14 Phase 3 — empfangene (importierte) Welt-Manifeste.
+        this.state.customWorlds = this._loadCustomWorlds();
         this.themeInitDOM();
         this.grokInitDOM();
         this.symphonyInitDOM();

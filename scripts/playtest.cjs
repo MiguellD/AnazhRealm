@@ -14591,6 +14591,176 @@ function startSaveServer() {
                 check("W13 V2: Sub-Welt-Quell-Checks laufen", false, err && err.message);
             }
 
+            // ### W14 Phase 3 — fremde Welten empfangen ###
+            const w14p3Results = await page
+                .evaluate(async () => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    const REG = r.constructor.WORLD_REGISTRY;
+                    out.methods =
+                        typeof r._worldEntry === "function" &&
+                        typeof r._libraryWorlds === "function" &&
+                        typeof r._loadCustomWorlds === "function" &&
+                        typeof r._sanitizeImportedManifest === "function" &&
+                        typeof r.exportWorldManifest === "function" &&
+                        typeof r.importWorldManifest === "function";
+                    // Vorzustand säubern.
+                    r.state.customWorlds = {};
+                    r.state.signedWorlds = r.state.signedWorlds || {};
+                    delete r.state.signedWorlds.fluid;
+                    // _worldEntry: Built-in auflösbar.
+                    out.worldEntryBuiltin = r._worldEntry("fluid") === REG.fluid;
+                    // _sanitizeImportedManifest: Built-in-id + Müll-id abgelehnt.
+                    out.sanitizeRejectsBuiltin =
+                        r._sanitizeImportedManifest({
+                            id: "fluid",
+                            label: "X",
+                            world: "worlds/skeleton/index.html",
+                            dsl: [],
+                        }) === null;
+                    out.sanitizeRejectsBadId =
+                        r._sanitizeImportedManifest({ id: "BÖSE id!", label: "X", world: "worlds/skeleton/index.html" }) ===
+                        null;
+                    // exportWorldManifest: unsigniert → not_signed.
+                    out.exportUnsignedRejected = r.exportWorldManifest("fluid").reason === "not_signed";
+                    // fluid signieren, dann exportieren.
+                    await r.signWorld("fluid");
+                    const exp = r.exportWorldManifest("fluid");
+                    out.exportOk =
+                        exp.ok === true &&
+                        !!exp.manifest &&
+                        exp.manifest.id === "fluid" &&
+                        exp.manifest.schemaVersion === "1.0" &&
+                        /^[0-9a-f]{64}$/i.test(exp.manifest.authorPubKey || "");
+                    // importWorldManifest: Built-in-id-Kollision + Müll.
+                    const clash = await r.importWorldManifest({
+                        schemaVersion: "1.0",
+                        id: "terrain",
+                        label: "X",
+                        world: "worlds/skeleton/index.html",
+                        dsl: [],
+                    });
+                    out.importBuiltinRejected = clash.ok === false && clash.reason === "id_is_builtin";
+                    const garbage = await r.importWorldManifest({ nonsense: true });
+                    out.importGarbageRejected = garbage.ok === false;
+                    // Cross-Autor: ein fremd-signiertes Manifest (neue id, erreichbarer Pfad).
+                    const foreign = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
+                    const foreignJwk = await crypto.subtle.exportKey("jwk", foreign.privateKey);
+                    const foreignPubHex = r._vibeBytesToHex(r._vibeB64uToBytes(foreignJwk.x));
+                    const fm = {
+                        schemaVersion: "1.0",
+                        id: "void-zwei",
+                        label: "Void Zwei",
+                        desc: "Eine fremde Leere.",
+                        world: "worlds/skeleton/index.html",
+                        dsl: ["skybox_color"],
+                    };
+                    const fmCanon = r._canonicalManifest(fm);
+                    const sign = async (canon) =>
+                        r._vibeBytesToHex(
+                            new Uint8Array(
+                                await crypto.subtle.sign(
+                                    { name: "Ed25519" },
+                                    foreign.privateKey,
+                                    new TextEncoder().encode(canon)
+                                )
+                            )
+                        );
+                    const fmSig = await sign(fmCanon);
+                    const importValid = await r.importWorldManifest(
+                        Object.assign({}, fm, {
+                            authorPubKey: foreignPubHex,
+                            signature: fmSig,
+                            signedHash: r._fastHash(fmCanon),
+                        })
+                    );
+                    out.importCrossAuthorValid =
+                        importValid.ok === true &&
+                        importValid.signatureStatus === "valid" &&
+                        importValid.reachable === true;
+                    out.customWorldStored = !!(r.state.customWorlds && r.state.customWorlds["void-zwei"]);
+                    out.verifyCustomValid = (await r.verifyWorldSignature("void-zwei")) === "valid";
+                    out.worldEntryCustom = !!r._worldEntry("void-zwei");
+                    out.libraryWorldsMerged =
+                        r._libraryWorlds().some((w) => w.id === "void-zwei") &&
+                        r._libraryWorlds().length > Object.keys(REG).length;
+                    // Gefälschte Signatur → forged.
+                    const fmFalsch = Object.assign({}, fm, { id: "void-falsch" });
+                    const importForged = await r.importWorldManifest(
+                        Object.assign({}, fmFalsch, {
+                            authorPubKey: foreignPubHex,
+                            signature: (fmSig[0] === "a" ? "b" : "a") + fmSig.slice(1),
+                            signedHash: r._fastHash(r._canonicalManifest(fmFalsch)),
+                        })
+                    );
+                    out.importForged = importForged.ok === true && importForged.signatureStatus === "forged";
+                    // Unerreichbare Welt: die fetch-Probe schlägt fehl.
+                    const importUnreach = await r.importWorldManifest({
+                        schemaVersion: "1.0",
+                        id: "void-fern",
+                        label: "Ferne Welt",
+                        world: "worlds/erfundene-welt/index.html",
+                        dsl: [],
+                    });
+                    out.importUnreachable = importUnreach.ok === true && importUnreach.reachable === false;
+                    // obtainPortalForWorld: erreichbare custom-Welt ok, unerreichbare abgelehnt.
+                    out.obtainCustomReachable = r.obtainPortalForWorld("void-zwei").ok === true;
+                    const obUn = r.obtainPortalForWorld("void-fern");
+                    out.obtainCustomUnreachable = obUn.ok === false && obUn.reason === "world_unreachable";
+                    // localStorage-Rundlauf.
+                    const reloaded = r._loadCustomWorlds();
+                    out.customWorldsRoundtrip =
+                        !!reloaded["void-zwei"] &&
+                        reloaded["void-zwei"].signature === r.state.customWorlds["void-zwei"].signature;
+                    // UI: renderLibraryUI rendert eine importierte Karte + Import-Knopf im DOM.
+                    r.renderLibraryUI();
+                    out.uiImportedCard =
+                        !!document.querySelector("#library-list .library-card-imported") &&
+                        !!document.querySelector("#library-list .library-imported-mark");
+                    out.uiImportButton =
+                        !!document.getElementById("library-import") &&
+                        !!document.getElementById("library-import-input");
+                    // Aufräumen.
+                    r.state.customWorlds = {};
+                    r._saveCustomWorlds();
+                    delete r.state.signedWorlds.fluid;
+                    r._saveSignedWorlds();
+                    delete r.state.blueprints["portal_void-zwei"];
+                    for (let i = 0; i < r.state.player.inventory.length; i++) {
+                        const s = r.state.player.inventory[i];
+                        if (s && typeof s.blueprintName === "string" && s.blueprintName.indexOf("portal_void") === 0) {
+                            r.state.player.inventory[i] = null;
+                        }
+                    }
+                    r.renderLibraryUI();
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w14p3Results && !w14p3Results.error) {
+                check("W14 P3: _worldEntry/_libraryWorlds/_loadCustomWorlds/_sanitizeImportedManifest/export+importWorldManifest existieren", w14p3Results.methods);
+                check("W14 P3: _worldEntry löst eine Built-in-Welt auf", w14p3Results.worldEntryBuiltin);
+                check("W14 P3: _sanitizeImportedManifest lehnt eine Built-in-id ab (kein Override)", w14p3Results.sanitizeRejectsBuiltin);
+                check("W14 P3: _sanitizeImportedManifest lehnt eine ungültige id ab", w14p3Results.sanitizeRejectsBadId);
+                check("W14 P3: exportWorldManifest verlangt eine signierte Welt", w14p3Results.exportUnsignedRejected);
+                check("W14 P3: exportWorldManifest liefert das signierte §3.3-Manifest", w14p3Results.exportOk);
+                check("W14 P3: importWorldManifest verwirft eine Built-in-id-Kollision", w14p3Results.importBuiltinRejected);
+                check("W14 P3: importWorldManifest verwirft ein Müll-Manifest", w14p3Results.importGarbageRejected);
+                check("W14 P3: ein fremd-signiertes Manifest importiert + verifiziert (Cross-Autor)", w14p3Results.importCrossAuthorValid);
+                check("W14 P3: die importierte Welt landet in state.customWorlds", w14p3Results.customWorldStored);
+                check("W14 P3: verifyWorldSignature liest die manifest-getragene Signatur (valid)", w14p3Results.verifyCustomValid);
+                check("W14 P3: _worldEntry + _libraryWorlds umfassen die importierte Welt", w14p3Results.worldEntryCustom && w14p3Results.libraryWorldsMerged);
+                check("W14 P3: ein manipuliertes Manifest → Signatur 'forged'", w14p3Results.importForged);
+                check("W14 P3: eine Welt ohne erreichbare Dateien wird reachable:false markiert", w14p3Results.importUnreachable);
+                check("W14 P3: obtainPortalForWorld holt eine erreichbare importierte Welt", w14p3Results.obtainCustomReachable);
+                check("W14 P3: obtainPortalForWorld verweigert eine unerreichbare Welt (kein totes Portal)", w14p3Results.obtainCustomUnreachable);
+                check("W14 P3: importierte Welten überleben den localStorage-Rundlauf", w14p3Results.customWorldsRoundtrip);
+                check("W14 P3: Bibliothek rendert eine 'empfangen'-Karte für die importierte Welt", w14p3Results.uiImportedCard);
+                check("W14 P3: 'Welt empfangen'-Knopf + Datei-Picker im DOM", w14p3Results.uiImportButton);
+            } else {
+                check("W14 P3: Welt-Import-Tests laufen", false, w14p3Results ? w14p3Results.error : "no result");
+            }
+
             // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
             const v840Results = await page
                 .evaluate(() => {
