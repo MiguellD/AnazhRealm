@@ -4788,6 +4788,191 @@ function startSaveServer() {
                 check("Bau-Sync: buildStateSnapshot persistiert die arch-id", buildSyncResults.snapshotKeepsArchId);
             }
 
+            // ### W7 Phase 3 — LLM-Pool: eine Stimme über das Mesh teilen ###
+            // Ein Peer mit aktivem LLM teilt seine „Stimme"; ein schlüsselloser
+            // Peer routet Chat darüber. Sicherheit: Opt-in (voiceShared),
+            // Rate-Limit, dslRun-Sandbox für das Antwort-Programm. Tests:
+            // Capability-Gate, soul trägt voiceShared, Anfrage/Antwort-Pfad,
+            // Annahme-Wand (not_sharing/rate_limited/wrong-peer).
+            const w7p3Results = await page
+                .evaluate(async () => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    const p2p = r.state.p2p;
+                    const K = r.constructor;
+
+                    out.stateFields =
+                        p2p.voiceShared === false &&
+                        p2p._voiceServedAt instanceof Map &&
+                        p2p._voiceRequests instanceof Map &&
+                        Number.isInteger(K.P2P_VOICE_COOLDOWN_MS) &&
+                        Number.isInteger(K.P2P_VOICE_TIMEOUT_MS) &&
+                        Number.isInteger(K.P2P_VOICE_PROMPT_MAX);
+                    out.methodsPresent = [
+                        "_p2pVoiceCapable",
+                        "setVoiceShared",
+                        "_p2pFindVoicePeer",
+                        "_p2pVoiceAvailable",
+                        "_p2pRequestSharedVoice",
+                        "_p2pHandleLlmRequest",
+                        "_p2pHandleLlmResponse",
+                    ].every((m) => typeof r[m] === "function");
+
+                    // Capability-Gate: ohne aktives LLM kann ich nicht teilen.
+                    const wasEnabled = r.state.llm.enabled;
+                    r.state.llm.enabled = false;
+                    out.setVoiceSharedGated = r.setVoiceShared(true) === false && p2p.voiceShared === false;
+                    r.state.llm.enabled = wasEnabled;
+
+                    // soul-Broadcast trägt voiceShared; soul-Empfang speichert es.
+                    const sent = [];
+                    const origSend = r.p2pSend;
+                    r.p2pSend = (o) => {
+                        sent.push(o);
+                        return true;
+                    };
+                    p2p.enabled = true;
+                    p2p.voiceShared = true;
+                    r._p2pBroadcastSoul();
+                    out.soulCarriesVoiceShared = sent.some((m) => m.type === "soul" && m.voiceShared === true);
+                    r.p2pSend = origSend;
+                    p2p.voiceShared = false;
+
+                    p2p.peerId = "self-w7p3";
+                    for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+                    r.p2pHandleMessage(
+                        JSON.stringify({ type: "soul", peerId: "voicePeer", soulName: "human", voiceShared: true })
+                    );
+                    const vp = p2p.peers.get("voicePeer");
+                    out.soulStoresVoiceShared = !!vp && vp.voiceShared === true;
+
+                    // _p2pFindVoicePeer findet den teilenden Peer mit offenem Kanal.
+                    p2p.rtcPeers.set("voicePeer", { pc: null, open: true, channel: {}, pendingIce: [] });
+                    out.findVoicePeer = r._p2pFindVoicePeer() === "voicePeer";
+
+                    // Stub _p2pVoiceCapable → true, _p2pSendChannelTo → capture,
+                    // llmCall → fester Reply. So lässt sich der Teiler-Pfad prüfen
+                    // ohne echtes LLM.
+                    const origCapable = r._p2pVoiceCapable;
+                    const origSendCh = r._p2pSendChannelTo;
+                    const origLlm = r.llmCall;
+                    const chSent = [];
+                    r._p2pVoiceCapable = () => true;
+                    r._p2pSendChannelTo = (pid, obj) => {
+                        chSent.push({ pid, obj });
+                        return true;
+                    };
+                    r.llmCall = async () => ({ say: "geteilte Antwort", program: null });
+
+                    // Teiler-Pfad: voiceShared an → eine Anfrage wird beantwortet.
+                    p2p.voiceShared = true;
+                    p2p._voiceServedAt.clear();
+                    await r._p2pHandleLlmRequest("askPeer", { reqId: "rq-1", prompt: "hallo" });
+                    const resp1 = chSent.find((c) => c.obj && c.obj.reqId === "rq-1");
+                    out.requestServed = !!resp1 && resp1.obj.type === "llm-response" && resp1.obj.say === "geteilte Antwort";
+
+                    // Rate-Limit: zweite Anfrage sofort danach → rate_limited.
+                    await r._p2pHandleLlmRequest("askPeer", { reqId: "rq-2", prompt: "nochmal" });
+                    const resp2 = chSent.find((c) => c.obj && c.obj.reqId === "rq-2");
+                    out.rateLimited = !!resp2 && resp2.obj.error === "rate_limited";
+
+                    // Opt-in-Wand: voiceShared aus → not_sharing.
+                    p2p.voiceShared = false;
+                    await r._p2pHandleLlmRequest("askPeer", { reqId: "rq-3", prompt: "x" });
+                    const resp3 = chSent.find((c) => c.obj && c.obj.reqId === "rq-3");
+                    out.notSharingWall = !!resp3 && resp3.obj.error === "not_sharing";
+
+                    // Leerer Prompt → empty_prompt.
+                    p2p.voiceShared = true;
+                    p2p._voiceServedAt.clear();
+                    await r._p2pHandleLlmRequest("askPeer2", { reqId: "rq-4", prompt: "" });
+                    const resp4 = chSent.find((c) => c.obj && c.obj.reqId === "rq-4");
+                    out.emptyPromptRejected = !!resp4 && resp4.obj.error === "empty_prompt";
+
+                    r._p2pVoiceCapable = origCapable;
+                    r._p2pSendChannelTo = origSendCh;
+                    r.llmCall = origLlm;
+                    p2p.voiceShared = false;
+
+                    // Anfrager-Pfad: _p2pHandleLlmResponse matched eine offene
+                    // Anfrage + ruft den Callback.
+                    let cbText = null;
+                    p2p._voiceRequests.set("rq-resp", { cb: (t) => (cbText = t), timeout: null, peerId: "voicePeer" });
+                    r._p2pHandleLlmResponse("voicePeer", { reqId: "rq-resp", say: "hallo zurück" });
+                    out.responseDelivered = cbText === "Geteilte Stimme: hallo zurück";
+                    out.responseConsumed = !p2p._voiceRequests.has("rq-resp");
+
+                    // Annahme-Wand: eine Antwort vom FALSCHEN Peer wird verworfen.
+                    let cbText2 = null;
+                    p2p._voiceRequests.set("rq-w", { cb: (t) => (cbText2 = t), timeout: null, peerId: "voicePeer" });
+                    r._p2pHandleLlmResponse("evilPeer", { reqId: "rq-w", say: "böse" });
+                    out.wrongPeerRejected = cbText2 === null && p2p._voiceRequests.has("rq-w");
+                    p2p._voiceRequests.delete("rq-w");
+
+                    // Das Antwort-Programm läuft durch dslRun (Sandbox).
+                    const weatherBefore = r.state.weather;
+                    p2p._voiceRequests.set("rq-prog", { cb: () => {}, timeout: null, peerId: "voicePeer" });
+                    r._p2pHandleLlmResponse("voicePeer", { reqId: "rq-prog", say: "", program: ["weather", "rainy"] });
+                    out.programRanInSandbox = r.state.weather === "rainy";
+                    r.dslRun(["weather", weatherBefore || "sunny"], { source: "test" });
+
+                    // _p2pRequestSharedVoice ohne Voice-Peer → no_voice.
+                    for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+                    p2p.rtcPeers.clear();
+                    const noVoice = r._p2pRequestSharedVoice("frage", null);
+                    out.requestNoVoice = noVoice.ok === false && noVoice.reason === "no_voice";
+
+                    // llm-request über _p2pHandleChannelMessage erreicht den Handler
+                    // (kanal-exklusiv, nicht von der Spiel-Whitelist verworfen).
+                    let handlerHit = false;
+                    const origReq = r._p2pHandleLlmRequest;
+                    r._p2pHandleLlmRequest = () => {
+                        handlerHit = true;
+                    };
+                    r._p2pHandleChannelMessage("chPeer", JSON.stringify({ type: "llm-request", reqId: "c1", prompt: "x" }));
+                    out.channelRoutesLlmRequest = handlerHit === true;
+                    r._p2pHandleLlmRequest = origReq;
+
+                    out.voiceButtonExists = !!document.getElementById("p2p-voice-share");
+
+                    // Cleanup
+                    for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+                    p2p.rtcPeers.clear();
+                    p2p._voiceRequests.clear();
+                    p2p._voiceServedAt.clear();
+                    p2p.voiceShared = false;
+                    p2p.enabled = false;
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!w7p3Results || w7p3Results.error) {
+                check(
+                    "W7 Phase 3: Snapshot erreichbar",
+                    false,
+                    (w7p3Results && w7p3Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("W7 P3: state.p2p trägt voiceShared + Voice-Maps + Konstanten", w7p3Results.stateFields);
+                check("W7 P3: alle 7 LLM-Pool-Methoden auf der Klasse", w7p3Results.methodsPresent);
+                check("W7 P3: setVoiceShared ohne aktives LLM bleibt false (Capability-Gate)", w7p3Results.setVoiceSharedGated);
+                check("W7 P3: soul-Broadcast trägt voiceShared", w7p3Results.soulCarriesVoiceShared);
+                check("W7 P3: soul-Empfang speichert voiceShared am Peer", w7p3Results.soulStoresVoiceShared);
+                check("W7 P3: _p2pFindVoicePeer findet den teilenden Peer", w7p3Results.findVoicePeer);
+                check("W7 P3: eine Anfrage an einen Teiler wird beantwortet", w7p3Results.requestServed);
+                check("W7 P3: eine zweite Anfrage sofort danach → rate_limited", w7p3Results.rateLimited);
+                check("W7 P3: Anfrage an einen Nicht-Teiler → not_sharing (Opt-in-Wand)", w7p3Results.notSharingWall);
+                check("W7 P3: leerer Prompt → empty_prompt", w7p3Results.emptyPromptRejected);
+                check("W7 P3: die Antwort erreicht den Anfrager-Callback", w7p3Results.responseDelivered);
+                check("W7 P3: die beantwortete Anfrage wird aus dem Puffer geräumt", w7p3Results.responseConsumed);
+                check("W7 P3: eine Antwort vom falschen Peer wird verworfen", w7p3Results.wrongPeerRejected);
+                check("W7 P3: das Antwort-Programm läuft durch die dslRun-Sandbox", w7p3Results.programRanInSandbox);
+                check("W7 P3: _p2pRequestSharedVoice ohne Voice-Peer → no_voice", w7p3Results.requestNoVoice);
+                check("W7 P3: llm-request ist kanal-exklusiv (erreicht den Handler)", w7p3Results.channelRoutesLlmRequest);
+                check("W7 P3: 'Stimme teilen'-Knopf im DOM", w7p3Results.voiceButtonExists);
+            }
+
             // ### Ring 11 V2 — DSL-AST-Broadcast (Welt-Sync) ###
             // Sandbox-Pfad: human-dslRun broadcastet via p2pSend wenn enabled+
             // connected; remote-dslRun (source="remote:*") läuft durch dslRun

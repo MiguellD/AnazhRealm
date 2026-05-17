@@ -514,7 +514,9 @@
                 background: rgba(8, 14, 11, 0.82);
                 border: 1px solid #43c98a;
                 color: #9ff0c8;
-                font: 14px/1.4 "JetBrains Mono", monospace;
+                font:
+                    14px/1.4 "JetBrains Mono",
+                    monospace;
                 pointer-events: none;
             }
             #portal-prompt[hidden] {
@@ -4118,7 +4120,9 @@
                 border-radius: 6px;
                 background: rgba(5, 6, 10, 0.72);
                 color: #9fb0c8;
-                font: 13px/1.4 "JetBrains Mono", monospace;
+                font:
+                    13px/1.4 "JetBrains Mono",
+                    monospace;
                 pointer-events: none;
             }
             /* W14 Phase 2 — „signiert von <Autor>"-Zeile im Portal-Overlay. */
@@ -4130,7 +4134,9 @@
                 padding: 4px 14px;
                 border-radius: 6px;
                 background: rgba(5, 6, 10, 0.78);
-                font: 12px/1.4 "JetBrains Mono", monospace;
+                font:
+                    12px/1.4 "JetBrains Mono",
+                    monospace;
                 pointer-events: none;
             }
             #portal-overlay .portal-sig.sig-valid {
@@ -4507,9 +4513,9 @@
             <section class="section" id="vibe-pass-section">
                 <h3>Vibe-Pass <span class="section-hint">(souveräne Identität)</span></h3>
                 <p class="drawer-hint">
-                    Ein ed25519-Schlüsselpaar, lokal erzeugt — deine unverfälschbare Identität. Damit signierst du
-                    deine Werke; andere können prüfen, dass sie wirklich von dir stammen. Kein Coin, keine Kette —
-                    nur Echtheit. Sichere ihn: ohne den Schlüssel ist die Identität verloren.
+                    Ein ed25519-Schlüsselpaar, lokal erzeugt — deine unverfälschbare Identität. Damit signierst du deine
+                    Werke; andere können prüfen, dass sie wirklich von dir stammen. Kein Coin, keine Kette — nur
+                    Echtheit. Sichere ihn: ohne den Schlüssel ist die Identität verloren.
                 </p>
                 <div id="vibe-pass-body"></div>
                 <div class="vibe-pass-actions">
@@ -4732,10 +4738,10 @@
             <section class="section">
                 <h3>Welten <span class="section-hint">(durch ein Tor erreichbar)</span></h3>
                 <p class="drawer-hint">
-                    Andere Welten, betretbar durch ein Portal. „Portal holen" legt einen Tor-Bauplan in dein
-                    Inventar — platziere ihn über die Hotbar in deiner Welt und geh per E-Taste hindurch.
-                    „Teilen…" exportiert das signierte Manifest einer Welt; „Welt empfangen…" liest ein
-                    fremdes Manifest ein — so wächst die Bibliothek (W14 Phase 3).
+                    Andere Welten, betretbar durch ein Portal. „Portal holen" legt einen Tor-Bauplan in dein Inventar —
+                    platziere ihn über die Hotbar in deiner Welt und geh per E-Taste hindurch. „Teilen…" exportiert das
+                    signierte Manifest einer Welt; „Welt empfangen…" liest ein fremdes Manifest ein — so wächst die
+                    Bibliothek (W14 Phase 3).
                 </p>
                 <!-- W14 Phase 3 — fremde Welt-Manifeste empfangen. Versteckter
                      Datei-Picker, vom „Welt empfangen"-Knopf ausgelöst. -->
@@ -5066,6 +5072,18 @@
                          über das Mesh. Nur sichtbar wenn Mesh steht + Guest. -->
                     <button type="button" id="p2p-resync" title="Welt des Hosts über das Mesh neu holen" hidden>
                         Welt vom Host neu holen
+                    </button>
+                    <!-- W7 Phase 3 — LLM-Pool. Wer ein LLM hat, kann seine
+                         Stimme teilen; schlüssellose Mitspieler routen Chat
+                         darüber. Nur sichtbar mit eigenem aktivem LLM. -->
+                    <button
+                        type="button"
+                        id="p2p-voice-share"
+                        aria-pressed="false"
+                        title="Deine LLM-Stimme für Mitspieler ohne eigenen Schlüssel freigeben"
+                        hidden
+                    >
+                        Stimme teilen
                     </button>
                 </div>
                 <div id="p2p-status" class="drawer-hint" aria-live="polite">Inaktiv.</div>

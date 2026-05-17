@@ -206,6 +206,39 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
         );
         check("Bau abbauen synchronisiert peer-to-peer", true);
 
+        // W7 Phase 3 — LLM-Pool. A teilt seine Stimme (llmCall gestubbt, da
+        // im CI kein API-Key); B (ohne eigenes LLM) routet eine Chat-Anfrage
+        // peer-to-peer über A. Der Mesh-Round-Trip ist der echte Beweis.
+        await pageA.evaluate(() => {
+            const r = window.anazhRealm;
+            r._p2pVoiceCapable = () => true; // im Test: A „hat" ein LLM
+            r.llmCall = async () => ({ say: "Antwort aus A's Stimme", program: null });
+            r.state.p2p.voiceShared = true;
+            r._p2pBroadcastSoul(); // voiceShared an B verteilen
+        });
+        await waitFor(
+            pageB,
+            () => Array.from(window.anazhRealm.state.p2p.peers.values()).some((p) => p.voiceShared === true),
+            8000,
+            "B kennt A als Stimm-Teiler"
+        );
+        const voiceReply = await pageB.evaluate(
+            () =>
+                new Promise((resolve) => {
+                    const r = window.anazhRealm;
+                    const res = r._p2pRequestSharedVoice("hallo welt", (text) => {
+                        if (/Geteilte Stimme:/.test(text)) resolve(text);
+                    });
+                    if (!res.ok) resolve("FEHLER:" + res.reason);
+                    setTimeout(() => resolve("TIMEOUT"), 12000);
+                })
+        );
+        check(
+            "B's Chat-Anfrage lief peer-to-peer über A's geteilte Stimme",
+            /Antwort aus A's Stimme/.test(voiceReply),
+            voiceReply
+        );
+
         // W7 Phase 2 — Welt-Snapshot über das Mesh. A wird Host, B Guest;
         // B holt A's Welt in Stücken über den DataChannel (kein WS-Relay).
         const worldIdA = await pageA.evaluate(() => {
@@ -241,7 +274,11 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
         );
         check("B übernahm A's Welt-Snapshot peer-to-peer (chunked)", true);
         const snapLenB = await pageB.evaluate(() => window.anazhRealm.state.p2p._lastReceivedSnapshotLen);
-        check("B reassemblierte den vollständigen Snapshot", typeof snapLenB === "number" && snapLenB > 100, `len=${snapLenB}`);
+        check(
+            "B reassemblierte den vollständigen Snapshot",
+            typeof snapLenB === "number" && snapLenB > 100,
+            `len=${snapLenB}`
+        );
     } catch (err) {
         check(`Test-Ablauf ohne Fehler`, false, err.message);
     } finally {

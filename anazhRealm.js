@@ -349,6 +349,14 @@ class AnazhRealm {
                 // Antwort (Rate-Limit gegen pull-Spam).
                 _pullServedAt: new Map(),
                 _testNoReload: false,
+                // W7 Phase 3 — LLM-Pool. voiceShared: ich teile meine Stimme
+                // (Opt-in). _voiceServedAt: peerId → letzte bediente Anfrage
+                // (Rate-Limit). _voiceRequests: reqId → {cb, timeout} meiner
+                // ausgehenden Anfragen.
+                voiceShared: false,
+                _voiceServedAt: new Map(),
+                _voiceRequests: new Map(),
+                _voiceReqSeq: 0,
             },
             // Welt-Identität (Ring 8+, siehe docs/state-of-realm.md §11). Felder
             // werden jetzt schon gesetzt, damit das Save-Schema zukunftsfest
@@ -4034,6 +4042,10 @@ class AnazhRealm {
             // haben aber denselben Raum nutzen wollen). Leer = aktive worldId
             // wird genommen (Default-Verhalten).
             if (typeof room === "string") this.state.p2p.roomOverride = room.trim();
+            // W7 Phase 3 — Opt-in „Stimme teilen". Beim Laden gesetzt; ob es
+            // wirklich greift, prüft setVoiceShared (braucht ein aktives LLM).
+            const voice = localStorage.getItem("anazh.p2p.voiceShared");
+            if (voice === "1") this.state.p2p.voiceShared = true;
         } catch {
             /* localStorage kann fehlen */
         }
@@ -4326,6 +4338,12 @@ class AnazhRealm {
         p2p.pendingPullFrom = null;
         p2p._lastXferProgress = null;
         p2p._pullServedAt.clear();
+        // W7 Phase 3 — offene Stimm-Anfragen verwerfen + Timeouts räumen.
+        for (const pending of p2p._voiceRequests.values()) {
+            if (pending && pending.timeout) clearTimeout(pending.timeout);
+        }
+        p2p._voiceRequests.clear();
+        p2p._voiceServedAt.clear();
     }
 
     // W7 Phase 1: roher WS-Versand. Trägt das Signaling (join, rtc-offer/
@@ -4483,6 +4501,15 @@ class AnazhRealm {
             this._p2pHandleWorldChunk(peerId, msg);
             return;
         }
+        // W7 Phase 3 — LLM-Pool. Auch kanal-exklusiv (kein WS-Pfad).
+        if (msg.type === "llm-request") {
+            this._p2pHandleLlmRequest(peerId, msg);
+            return;
+        }
+        if (msg.type === "llm-response") {
+            this._p2pHandleLlmResponse(peerId, msg);
+            return;
+        }
         const ALLOWED = ["pos", "dsl", "soul", "aura", "vibe"];
         if (!ALLOWED.includes(msg.type)) return;
         msg.peerId = peerId;
@@ -4554,8 +4581,10 @@ class AnazhRealm {
         // Rate-Limit: ein voller Snapshot ist teuer (serialisieren + senden).
         // Ein Peer darf höchstens alle P2P_PULL_COOLDOWN_MS einen Pull
         // auslösen — sonst wäre world-pull-Spam ein CPU-/Bandbreiten-DoS.
+        // Sentinel: „noch nie bedient" = -Infinity, NICHT 0 — sonst würde ein
+        // Pull in den ersten COOLDOWN-ms der Seite fälschlich abgewiesen.
         const now = typeof performance !== "undefined" ? performance.now() : Date.now();
-        const last = p2p._pullServedAt.get(peerId) || 0;
+        const last = p2p._pullServedAt.has(peerId) ? p2p._pullServedAt.get(peerId) : -Infinity;
         if (now - last < AnazhRealm.P2P_PULL_COOLDOWN_MS) {
             this.log(`Welt-Pull von ${peerId.slice(0, 12)}… zu schnell — abgewiesen`, "WARN");
             return;
@@ -4637,6 +4666,161 @@ class AnazhRealm {
         this.log(`Welt-Transfer komplett (${total} Stücke) — übernehme`, "INFO");
         p2p._lastXferProgress = null;
         this._p2pApplyWorldSnapshot(peerId, parsed, { reload: true });
+    }
+
+    // ── W7 Phase 3 — LLM-Pool: eine LLM-Stimme über das Mesh teilen ──
+
+    // Habe ich ein nutzbares eigenes LLM (Provider aktiv + ggf. Key)?
+    _p2pVoiceCapable() {
+        const llm = this.state.llm;
+        if (!llm || !llm.enabled) return false;
+        const defs = this.llmProviderDefs();
+        const def = defs[llm.provider];
+        if (!def) return false;
+        const cfg = llm.providerConfig[llm.provider];
+        return !def.requiresKey || !!(cfg && cfg.apiKey);
+    }
+
+    // Opt-in: meine Stimme teilen (nur sinnvoll, wenn ich ein LLM habe).
+    setVoiceShared(on) {
+        const want = !!on && this._p2pVoiceCapable();
+        this.state.p2p.voiceShared = want;
+        try {
+            localStorage.setItem("anazh.p2p.voiceShared", want ? "1" : "0");
+        } catch {
+            /* defensive */
+        }
+        // Den Mitspielern den neuen Stand mitteilen (soul trägt voiceShared).
+        if (this.state.p2p.enabled) this._p2pBroadcastSoul();
+        this.p2pUpdateStatus();
+        return want;
+    }
+
+    // Einen verbundenen Peer finden, der seine Stimme teilt + einen offenen
+    // Kanal hat.
+    _p2pFindVoicePeer() {
+        const p2p = this.state.p2p;
+        for (const [pid, entry] of p2p.peers) {
+            if (!entry || !entry.voiceShared) continue;
+            const rtc = p2p.rtcPeers.get(pid);
+            if (rtc && rtc.open) return pid;
+        }
+        return null;
+    }
+
+    // Steht eine geteilte Stimme bereit, die ich nutzen könnte? (Mesh steht,
+    // ein Peer teilt, ich selbst habe KEIN eigenes aktives LLM.)
+    _p2pVoiceAvailable() {
+        if (this._p2pVoiceCapable()) return false;
+        if (!this._p2pMeshReady()) return false;
+        return this._p2pFindVoicePeer() !== null;
+    }
+
+    // Eine Chat-Anfrage über die geteilte Stimme eines Peers schicken.
+    _p2pRequestSharedVoice(prompt, appendChatOutput) {
+        const p2p = this.state.p2p;
+        const peerId = this._p2pFindVoicePeer();
+        if (!peerId) {
+            if (appendChatOutput) appendChatOutput("(Keine geteilte Stimme verfügbar.)");
+            return { ok: false, reason: "no_voice" };
+        }
+        const reqId = "v-" + p2p.peerId + "-" + p2p._voiceReqSeq++;
+        const sent = this._p2pSendChannelTo(peerId, {
+            type: "llm-request",
+            reqId,
+            prompt: String(prompt || "").slice(0, AnazhRealm.P2P_VOICE_PROMPT_MAX),
+        });
+        if (!sent) {
+            if (appendChatOutput) appendChatOutput("(Geteilte Stimme nicht erreichbar.)");
+            return { ok: false, reason: "send_failed" };
+        }
+        const timeout = setTimeout(() => {
+            const pending = p2p._voiceRequests.get(reqId);
+            if (!pending) return;
+            p2p._voiceRequests.delete(reqId);
+            if (pending.cb) pending.cb("(Geteilte Stimme schweigt — Zeitüberschreitung.)");
+        }, AnazhRealm.P2P_VOICE_TIMEOUT_MS);
+        p2p._voiceRequests.set(reqId, { cb: appendChatOutput, timeout, peerId });
+        if (appendChatOutput) appendChatOutput("Geteilte Stimme denkt nach…");
+        return { ok: true, reqId, peerId };
+    }
+
+    // Ich bin der Teiler: eine eingehende llm-request beantworten.
+    async _p2pHandleLlmRequest(peerId, msg) {
+        const p2p = this.state.p2p;
+        const reqId = msg && msg.reqId;
+        if (typeof reqId !== "string") return;
+        const respond = (payload) => this._p2pSendChannelTo(peerId, { type: "llm-response", reqId, ...payload });
+        // Opt-in-Wand: nur antworten, wenn ich wirklich teile + ein LLM habe.
+        if (!p2p.voiceShared || !this._p2pVoiceCapable()) {
+            respond({ error: "not_sharing" });
+            return;
+        }
+        // Rate-Limit pro anfragendem Peer — fremder Prompt kostet meine Token.
+        // Sentinel-Disziplin: „noch nie bedient" = -Infinity, NICHT 0 — sonst
+        // wäre jede Anfrage in den ersten COOLDOWN-ms der Seite fälschlich
+        // rate-limited (now - 0 < cooldown).
+        const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+        const last = p2p._voiceServedAt.has(peerId) ? p2p._voiceServedAt.get(peerId) : -Infinity;
+        if (now - last < AnazhRealm.P2P_VOICE_COOLDOWN_MS) {
+            respond({ error: "rate_limited" });
+            return;
+        }
+        p2p._voiceServedAt.set(peerId, now);
+        const prompt = String((msg && msg.prompt) || "").slice(0, AnazhRealm.P2P_VOICE_PROMPT_MAX);
+        if (!prompt) {
+            respond({ error: "empty_prompt" });
+            return;
+        }
+        this.log(`Geteilte Stimme: Anfrage von ${peerId.slice(0, 12)}… wird beantwortet`, "INFO");
+        let reply;
+        try {
+            reply = await this.llmCall(prompt);
+        } catch (err) {
+            reply = { error: (err && err.message) || "LLM-Fehler" };
+        }
+        if (reply && reply.error) {
+            respond({ error: reply.error });
+            return;
+        }
+        respond({ say: reply && reply.say ? String(reply.say) : "", program: (reply && reply.program) || null });
+    }
+
+    // Ich bin der Anfrager: die Antwort der geteilten Stimme empfangen.
+    _p2pHandleLlmResponse(peerId, msg) {
+        const p2p = this.state.p2p;
+        const reqId = msg && msg.reqId;
+        const pending = typeof reqId === "string" ? p2p._voiceRequests.get(reqId) : null;
+        if (!pending) return; // unbekannt / Timeout schon abgelaufen
+        // Nur vom Peer annehmen, an den ich die Anfrage geschickt habe.
+        if (pending.peerId !== peerId) return;
+        p2p._voiceRequests.delete(reqId);
+        if (pending.timeout) clearTimeout(pending.timeout);
+        const cb = pending.cb;
+        if (msg.error) {
+            const human =
+                {
+                    not_sharing: "Der Peer teilt seine Stimme nicht mehr.",
+                    rate_limited: "Geteilte Stimme gerade beschäftigt — kurze Pause.",
+                    empty_prompt: "Leere Anfrage.",
+                }[msg.error] || msg.error;
+            if (cb) cb(`(Geteilte Stimme: ${human})`);
+            return;
+        }
+        if (cb && msg.say) cb(`Geteilte Stimme: ${msg.say}`);
+        // Das DSL-Programm läuft durch DIESELBE Sandbox wie das eigene LLM
+        // (source ≠ human → kein Re-Broadcast; es ist meine lokale Welt-
+        // Reaktion). dslRun ist die Vertrauens-Wand, wie beim eigenen LLM.
+        if (Array.isArray(msg.program) && msg.program.length > 0 && typeof this.dslRun === "function") {
+            try {
+                const result = this.dslRun(msg.program, { source: "remote-voice" });
+                if (cb && result && result.ok) {
+                    cb(`(Welt verändert: ${JSON.stringify(msg.program).slice(0, 140)})`);
+                }
+            } catch {
+                /* Sandbox-Fehler schweigend — der say-Text steht schon */
+            }
+        }
     }
 
     // W7 Phase 1: gepufferte ICE-Kandidaten anwenden, sobald die
@@ -4782,6 +4966,8 @@ class AnazhRealm {
             }
             // W7 Phase 2 — Welt-Rolle des Peers merken (Resync-Ziel-Findung).
             if (typeof msg.worldRole === "string") entry.worldRole = msg.worldRole;
+            // W7 Phase 3 — teilt der Peer seine Stimme?
+            if (typeof msg.voiceShared === "boolean") entry.voiceShared = msg.voiceShared;
             if (changed) this._p2pApplyPeerSoul(entry);
             entry.lastSeen = performance.now() / 1000;
             return;
@@ -4991,6 +5177,8 @@ class AnazhRealm {
             // W7 Phase 2 — Welt-Rolle des Peers (host/guest/solo), kommt mit
             // der `soul`-Nachricht. Der Resync-Pfad pullt vom host-Peer.
             worldRole: null,
+            // W7 Phase 3 — teilt dieser Peer seine LLM-Stimme? (soul-Feld)
+            voiceShared: false,
             lastSeen: performance.now() / 1000,
         };
         p2p.peers.set(peerId, entry);
@@ -5193,6 +5381,8 @@ class AnazhRealm {
         // W7 Phase 2 — die Welt-Rolle mitteilen, damit ein Guest weiss,
         // welcher verbundene Peer der Host ist (Ziel des Welt-Resync).
         msg.worldRole = (this.state.worldMeta && this.state.worldMeta.role) || "solo";
+        // W7 Phase 3 — mitteilen, ob ich meine LLM-Stimme teile.
+        msg.voiceShared = !!(this.state.p2p && this.state.p2p.voiceShared);
         this.p2pSend(msg);
     }
 
@@ -5382,6 +5572,17 @@ class AnazhRealm {
                 }
             });
         }
+        // W7 Phase 3 — „Stimme teilen"-Knopf: Opt-in zum LLM-Pool.
+        const voiceBtn = document.getElementById("p2p-voice-share");
+        if (voiceBtn) {
+            voiceBtn.addEventListener("click", () => {
+                const now = !this.state.p2p.voiceShared;
+                const applied = this.setVoiceShared(now);
+                if (now && !applied && statusEl) {
+                    statusEl.textContent = "Stimme teilen braucht ein aktives eigenes LLM.";
+                }
+            });
+        }
     }
 
     p2pUpdateStatus() {
@@ -5404,7 +5605,12 @@ class AnazhRealm {
                 // W7 Phase 1 — Transport sichtbar machen: Mesh (peer-to-peer)
                 // sobald alle Kanäle stehen, sonst Relay über den Server.
                 const transport = peerCount > 0 ? (p.meshActive ? " · Mesh p2p" : " · Server-Relay") : "";
-                statusEl.textContent = `Verbunden (Raum ${room}, ${peerCount} Mitspieler${transport}).`;
+                // W7 Phase 3 — Hinweis: nutzt der Chat eine geteilte Stimme?
+                let voice = "";
+                if (p.voiceShared && this._p2pVoiceCapable()) voice = " · Stimme geteilt";
+                else if (typeof this._p2pVoiceAvailable === "function" && this._p2pVoiceAvailable())
+                    voice = " · geteilte Stimme nutzbar";
+                statusEl.textContent = `Verbunden (Raum ${room}, ${peerCount} Mitspieler${transport}${voice}).`;
             }
         }
         // W7 Phase 2 — Resync-Knopf: nur für einen Guest mit stehendem Mesh
@@ -5414,6 +5620,16 @@ class AnazhRealm {
             const p = this.state.p2p;
             const show = p.enabled && p.connected && p.meshActive && p.role === "guest";
             resyncBtn.hidden = !show;
+        }
+        // W7 Phase 3 — „Stimme teilen"-Knopf: nur sichtbar, wenn ich ein
+        // eigenes aktives LLM habe (sonst gibt es nichts zu teilen).
+        const voiceBtn = document.getElementById("p2p-voice-share");
+        if (voiceBtn) {
+            const capable = this._p2pVoiceCapable();
+            voiceBtn.hidden = !capable;
+            const on = !!this.state.p2p.voiceShared;
+            voiceBtn.setAttribute("aria-pressed", on ? "true" : "false");
+            voiceBtn.textContent = on ? "Stimme geteilt ✓" : "Stimme teilen";
         }
         // Ring 11.5: Banner mit Connection-Stand aktualisieren (Host:
         // peerCount, Guest: connected-Indikator).
@@ -11219,6 +11435,11 @@ class AnazhRealm {
             this.maybeAnswerWithLlm(command, appendChatOutput).catch((err) => {
                 appendChatOutput(`(Grok-Fehler: ${err.message || err})`);
             });
+        } else if (typeof this._p2pVoiceAvailable === "function" && this._p2pVoiceAvailable()) {
+            // W7 Phase 3 — LLM-Pool. Ich habe kein eigenes LLM, aber ein
+            // Mitspieler teilt seine Stimme: die Anfrage läuft über ihn,
+            // das DSL-Programm der Antwort durch meine eigene Sandbox.
+            this._p2pRequestSharedVoice(command, appendChatOutput);
         } else {
             const suggestion = this.chatSuggest(command);
             if (suggestion) {
@@ -29852,6 +30073,15 @@ AnazhRealm.P2P_WORLD_CHUNK_SIZE = 16384;
 // denselben Peer. Schützt vor pull-Spam (jeder Pull serialisiert + sendet
 // die ganze Welt — ohne Limit ein DoS-Vektor).
 AnazhRealm.P2P_PULL_COOLDOWN_MS = 5000;
+
+// W7 Phase 3 — LLM-Pool. Ein Peer mit aktivem LLM teilt seine „Stimme",
+// ein schlüsselloser Peer routet Chat-Anfragen über ihn. Sicherheits-
+// lastig (fremder Prompt über meinen Key): Opt-in + Rate-Limit. Cooldown
+// pro anfragendem Peer (eine LLM-Anfrage kostet Token + Zeit), Timeout
+// für den Anfrager (LLM-Calls sind langsam), Prompt-Längen-Deckel.
+AnazhRealm.P2P_VOICE_COOLDOWN_MS = 6000;
+AnazhRealm.P2P_VOICE_TIMEOUT_MS = 30000;
+AnazhRealm.P2P_VOICE_PROMPT_MAX = 2000;
 
 // Welle 6.C3 — Keybindings. Default-Map (Aktion → Code). KeyboardEvent.code
 // für Tasten (Layout-unabhängig, z. B. "KeyF" statt "f"), "Mouse0"/"Mouse1"/

@@ -215,6 +215,8 @@ function handleClientMessage(ws, raw) {
         if (typeof msg.name === "string") out.name = msg.name.slice(0, 48);
         // W7 Phase 2: die Welt-Rolle (host/guest/solo) durchreichen.
         if (typeof msg.worldRole === "string") out.worldRole = msg.worldRole.slice(0, 16);
+        // W7 Phase 3: teilt der Peer seine LLM-Stimme?
+        if (typeof msg.voiceShared === "boolean") out.voiceShared = msg.voiceShared;
         broadcastToRoom(ws.anazh.room, out, ws);
         return;
     }
