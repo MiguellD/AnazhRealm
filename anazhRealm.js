@@ -12394,6 +12394,15 @@ class AnazhRealm {
                         out.role = "tool";
                         out.toolMeta = { opName: bp.toolMeta.opName, opClass: bp.toolMeta.opClass };
                     }
+                    // W13 Phase 2 — die Bauplan-Signatur reist mit dem Bauplan
+                    // (Save, Welt-Tor-Export, Recipe-Import, Fusion). Echtheit
+                    // prüft verifyBlueprintSignature beim Anzeigen.
+                    if (bp.signature && bp.authorPubKey) {
+                        out.signature = bp.signature;
+                        out.authorPubKey = bp.authorPubKey;
+                        if (bp.signedHash) out.signedHash = bp.signedHash;
+                        if (bp.signedAt) out.signedAt = bp.signedAt;
+                    }
                     return out;
                 }),
             // Welle 5 C — eigene Werkzeuge (aus registrierten Bauplänen)
@@ -12813,6 +12822,101 @@ class AnazhRealm {
             born.textContent = "Erweckt am " + new Date(vp.createdAt).toLocaleDateString();
             body.appendChild(born);
         }
+    }
+
+    // ### W13 Phase 2 — Bauplan-Signaturen ###
+    // Der Schöpfer versiegelt sein Werk mit dem Vibe-Pass. Die Signatur deckt
+    // die SUBSTANZ — Rolle + Parts (Form × Material × Geometrie × opChain) +
+    // Verbindungen, NICHT den Namen: ein Werk IST seine Substanz, nicht sein
+    // Etikett. Wer das Werk umbenennt, bricht die Signatur nicht; wer einen
+    // Part ändert, schon. So überlebt eine Signatur Recipe-Import + Fusion
+    // (die Namen umtaufen) und bricht nur bei echter Substanz-Änderung.
+    // Built-ins gehören dem Projekt — nur eigene Baupläne sind signierbar.
+
+    // Deterministische Serialisierung der signier-relevanten Substanz. Zahlen
+    // auf 4 Nachkommastellen gerundet (gegen Float-Drift), feste Schlüssel-
+    // Reihenfolge. Dieselbe Eingabe → derselbe String → dieselbe Prüfung.
+    _canonicalBlueprint(bp) {
+        if (!bp || typeof bp !== "object") return "";
+        const num = (v) => Math.round((Number(v) || 0) * 1e4) / 1e4;
+        const vec = (o) => ({ x: num(o && o.x), y: num(o && o.y), z: num(o && o.z) });
+        const parts = (Array.isArray(bp.parts) ? bp.parts : []).map((p) => ({
+            shape: String((p && p.shape) || ""),
+            material: String((p && p.material) || ""),
+            refName: p && p.refName ? String(p.refName) : "",
+            color: p && p.color != null ? String(p.color) : "",
+            position: vec(p && p.position),
+            size: vec(p && p.size),
+            rotation: vec(p && p.rotation),
+            opChain: (Array.isArray(p && p.opChain) ? p.opChain : []).map((op) => ({
+                tool: String((op && op.tool) || ""),
+                op: String((op && op.op) || ""),
+                cap: num(op && op.cap),
+            })),
+        }));
+        const connections = (Array.isArray(bp.connections) ? bp.connections : []).map((c) => ({
+            type: String((c && c.type) || ""),
+            partA: Number(c && c.partA) || 0,
+            partB: Number(c && c.partB) || 0,
+        }));
+        return JSON.stringify({ v: 1, role: String(bp.role || ""), parts, connections });
+    }
+
+    // Schneller, nicht-kryptografischer Hash (FNV-1a, 32-bit) — NUR zur
+    // Änderungs-Erkennung „seit dem Signieren geändert?". Die Echtheit prüft
+    // allein die ed25519-Signatur; dieser Hash unterscheidet bloß den
+    // freundlichen Fall (Eigentümer hat editiert → „modified") vom Fall einer
+    // gefälschten Signatur (Substanz unverändert, Signatur passt nicht
+    // → „forged").
+    _fastHash(str) {
+        let h = 0x811c9dc5;
+        const s = String(str);
+        for (let i = 0; i < s.length; i++) {
+            h ^= s.charCodeAt(i);
+            h = Math.imul(h, 0x01000193);
+        }
+        return (h >>> 0).toString(16).padStart(8, "0");
+    }
+
+    // Versiegelt einen eigenen Bauplan mit dem Vibe-Pass. Setzt signature +
+    // authorPubKey + signedHash + signedAt. Async (ed25519-Signatur).
+    async signBlueprint(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return { ok: false, reason: "unknown" };
+        if (bp.builtIn) return { ok: false, reason: "builtin" };
+        const vp = this.state.vibePass;
+        if (!vp || !vp.ready) return { ok: false, reason: "no_vibepass" };
+        const canonical = this._canonicalBlueprint(bp);
+        const sig = await this._vibeSign(canonical);
+        if (!sig) return { ok: false, reason: "sign_failed" };
+        bp.signature = sig;
+        bp.authorPubKey = vp.publicKeyHex;
+        bp.signedHash = this._fastHash(canonical);
+        bp.signedAt = Date.now();
+        this.saveState();
+        this.journalAppend("ritual", `Ich versiegelte „${bp.label || name}" mit meinem Vibe-Pass.`, {
+            blueprint: name,
+        });
+        return { ok: true, authorPubKey: bp.authorPubKey };
+    }
+
+    // Prüft den Signatur-Status eines Bauplans. Liefert:
+    //   "unsigned" — keine Signatur.
+    //   "modified" — signiert, aber die Substanz hat sich seither geändert.
+    //   "valid"    — die Signatur deckt die aktuelle Substanz und ist echt.
+    //   "forged"   — Signatur vorhanden, Substanz unverändert, verifiziert
+    //                aber NICHT gegen den angegebenen Autor.
+    // Async (ed25519-Verifikation). Defensiv: kein Wurf bei Müll-Eingabe.
+    async verifyBlueprintSignature(bp) {
+        if (!bp || typeof bp !== "object" || !bp.signature || !bp.authorPubKey) {
+            return "unsigned";
+        }
+        const canonical = this._canonicalBlueprint(bp);
+        if (bp.signedHash && this._fastHash(canonical) !== bp.signedHash) {
+            return "modified";
+        }
+        const ok = await this._vibeVerify(canonical, bp.signature, bp.authorPubKey);
+        return ok ? "valid" : "forged";
     }
 
     // ### Welle 3 F — Welt-Tor ###
@@ -13619,6 +13723,21 @@ class AnazhRealm {
                 ) {
                     restored.role = "tool";
                     restored.toolMeta = { opName: bp.toolMeta.opName, opClass: bp.toolMeta.opClass };
+                }
+                // W13 Phase 2 — Bauplan-Signatur wiederherstellen. Strukturell
+                // plausibel prüfen (Hex-Form); die echte Verifikation macht
+                // verifyBlueprintSignature beim Anzeigen — eine kaputte oder
+                // gefälschte Signatur wird dort als „forged" sichtbar.
+                if (
+                    typeof bp.signature === "string" &&
+                    /^[0-9a-f]{2,256}$/i.test(bp.signature) &&
+                    typeof bp.authorPubKey === "string" &&
+                    /^[0-9a-f]{64}$/i.test(bp.authorPubKey)
+                ) {
+                    restored.signature = bp.signature;
+                    restored.authorPubKey = bp.authorPubKey;
+                    if (typeof bp.signedHash === "string") restored.signedHash = bp.signedHash;
+                    if (typeof bp.signedAt === "number") restored.signedAt = bp.signedAt;
                 }
                 this.state.blueprints[bp.name] = restored;
             }
@@ -23786,6 +23905,64 @@ class AnazhRealm {
                 "Feineres Werkzeug → höhere Qualität.";
             precRow.appendChild(precChip);
             panel.appendChild(precRow);
+        }
+        // ### W13 Phase 2 — Bauplan-Signatur ###
+        // Der Schöpfer versiegelt sein Werk mit dem Vibe-Pass. Built-ins
+        // gehören dem Projekt — sie tragen keine Signatur-Zeile (erst klonen).
+        // Der Status wird async geprüft (ed25519); ein veralteter .then-Lauf
+        // aktualisiert nur abgekoppelte Knoten, der Namens-Wächter fängt ihn.
+        if (!bp.builtIn) {
+            const sigRow = document.createElement("div");
+            sigRow.className = "stat-row workshop-sig-row";
+            const sigLab = document.createElement("span");
+            sigLab.className = "stat-label";
+            sigLab.textContent = "Signatur";
+            sigRow.appendChild(sigLab);
+            const sigStatus = document.createElement("span");
+            sigStatus.className = "workshop-sig-status";
+            sigStatus.textContent = "prüfe …";
+            sigRow.appendChild(sigStatus);
+            const sigBtn = document.createElement("button");
+            sigBtn.type = "button";
+            sigBtn.className = "workshop-sig-btn";
+            sigBtn.textContent = "Signieren";
+            sigBtn.disabled = true;
+            sigBtn.addEventListener("click", async () => {
+                sigBtn.disabled = true;
+                const res = await this.signBlueprint(bp.name);
+                if (!res.ok) this.log(`Signieren fehlgeschlagen: ${res.reason}`, "ERROR");
+                this._workshopRenderStatsPanel();
+            });
+            sigRow.appendChild(sigBtn);
+            panel.appendChild(sigRow);
+            const vpReady = !!(this.state.vibePass && this.state.vibePass.ready);
+            const bpName = bp.name;
+            this.verifyBlueprintSignature(bp).then((status) => {
+                if (ws.selectedBlueprint !== bpName) return;
+                const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
+                if (status === "valid") {
+                    const who = bp.authorPubKey === myKey ? "dein Vibe-Pass" : this._vibeFingerprint(bp.authorPubKey);
+                    sigStatus.textContent = `✓ signiert · ${who}`;
+                    sigStatus.className = "workshop-sig-status sig-valid";
+                    sigStatus.title = "ed25519:" + bp.authorPubKey;
+                    sigBtn.textContent = "Neu signieren";
+                } else if (status === "modified") {
+                    sigStatus.textContent = "geändert seit der Signatur — neu signieren";
+                    sigStatus.className = "workshop-sig-status sig-modified";
+                    sigBtn.textContent = "Neu signieren";
+                } else if (status === "forged") {
+                    sigStatus.textContent = `⚠ ungültig — passt nicht zu ${this._vibeFingerprint(bp.authorPubKey)}`;
+                    sigStatus.className = "workshop-sig-status sig-forged";
+                    sigStatus.title = "ed25519:" + bp.authorPubKey;
+                    sigBtn.textContent = "Neu signieren";
+                } else {
+                    sigStatus.textContent = "nicht signiert";
+                    sigStatus.className = "workshop-sig-status sig-unsigned";
+                    sigBtn.textContent = "Signieren";
+                }
+                sigBtn.disabled = !vpReady;
+                if (!vpReady) sigBtn.title = "Vibe-Pass nicht bereit — siehe Spieler-Drawer.";
+            });
         }
     }
 

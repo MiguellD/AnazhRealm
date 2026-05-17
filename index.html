@@ -29,7 +29,7 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self';"
         />
-        <title>Anazh Realm v8.54 – Das Ultiversum</title>
+        <title>Anazh Realm v8.55 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
              zusätzliche Datei. img-src 'self' data: in CSP erlaubt data-URI. -->
         <link
@@ -3275,6 +3275,45 @@
                 color: var(--brass-1, #d4a373);
                 line-height: 1.4;
             }
+            /* W13 Phase 2 — Bauplan-Signatur-Status im Stats-Panel. */
+            #workshop-stats-panel .workshop-sig-status {
+                font-family: "JetBrains Mono", "Courier New", monospace;
+                font-size: 9.5px;
+                line-height: 1.4;
+                flex: 1;
+            }
+            #workshop-stats-panel .workshop-sig-status.sig-valid {
+                color: #3f8a4f;
+            }
+            #workshop-stats-panel .workshop-sig-status.sig-modified {
+                color: #b07a1f;
+            }
+            #workshop-stats-panel .workshop-sig-status.sig-forged {
+                color: #a04040;
+            }
+            #workshop-stats-panel .workshop-sig-status.sig-unsigned {
+                color: var(--parch-ink-soft, #5a3f1d);
+                opacity: 0.7;
+            }
+            #workshop-stats-panel .workshop-sig-btn {
+                margin-left: 4px;
+                padding: 1px 8px;
+                background: linear-gradient(180deg, rgba(255, 235, 190, 0.55), rgba(180, 140, 80, 0.35));
+                border: 1px solid var(--brass-2, #8a6322);
+                border-radius: 2px;
+                color: var(--parch-ink, #2b1a08);
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9.5px;
+                letter-spacing: 0.03em;
+                cursor: pointer;
+            }
+            #workshop-stats-panel .workshop-sig-btn:hover {
+                background: linear-gradient(180deg, rgba(255, 248, 215, 0.75), rgba(210, 170, 110, 0.55));
+            }
+            #workshop-stats-panel .workshop-sig-btn:disabled {
+                opacity: 0.45;
+                cursor: not-allowed;
+            }
             /* V8.05 — Del-Button unter der Form-Palette */
             .workshop-delete-btn {
                 margin: 6px 0 0 0;
@@ -4054,7 +4093,7 @@
         <header id="topbar" class="hud-frame">
             <div class="topbar-inner">
                 <div class="title">
-                    Anazh Realm <span class="version">v8.54</span> <span class="sub">— Das Ultiversum</span>
+                    Anazh Realm <span class="version">v8.55</span> <span class="sub">— Das Ultiversum</span>
                 </div>
                 <nav class="tabs" role="tablist" aria-label="Hauptansichten">
                     <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">
@@ -5034,6 +5073,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=8.54" defer></script>
+        <script src="anazhRealm.js?v=8.55" defer></script>
     </body>
 </html>

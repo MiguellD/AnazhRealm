@@ -14005,6 +14005,130 @@ function startSaveServer() {
                 check("W13 P1: Vibe-Pass-Tests laufen", false, w13p1Results ? w13p1Results.error : "no result");
             }
 
+            // ### W13 Phase 2 — Bauplan-Signaturen ###
+            const w13p2Results = await page
+                .evaluate(async () => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    out.methods =
+                        typeof r.signBlueprint === "function" &&
+                        typeof r.verifyBlueprintSignature === "function" &&
+                        typeof r._canonicalBlueprint === "function" &&
+                        typeof r._fastHash === "function";
+                    // Einen eigenen Bauplan mit einem Part anlegen.
+                    if (r.state.blueprints["_w13p2"]) delete r.state.blueprints["_w13p2"];
+                    r.createBlueprint("_w13p2", "W13P2-Werk");
+                    r.addPartToBlueprint("_w13p2", { shape: "box", material: "stein" });
+                    const bp = r.state.blueprints["_w13p2"];
+                    // _canonicalBlueprint ist deterministisch.
+                    out.canonDeterministic = r._canonicalBlueprint(bp) === r._canonicalBlueprint(bp);
+                    // Das Label ist NICHT Teil der signierten Substanz.
+                    const canonA = r._canonicalBlueprint(bp);
+                    bp.label = "Ein anderer Name";
+                    out.canonIgnoresLabel = r._canonicalBlueprint(bp) === canonA;
+                    bp.label = "W13P2-Werk";
+                    // Vor dem Signieren: Status "unsigned".
+                    out.statusUnsigned = (await r.verifyBlueprintSignature(bp)) === "unsigned";
+                    // Signieren.
+                    const signRes = await r.signBlueprint("_w13p2");
+                    out.signOk = !!signRes && signRes.ok === true;
+                    out.signFields =
+                        typeof bp.signature === "string" &&
+                        /^[0-9a-f]{128}$/.test(bp.signature) &&
+                        bp.authorPubKey === r.state.vibePass.publicKeyHex &&
+                        typeof bp.signedHash === "string" &&
+                        typeof bp.signedAt === "number";
+                    out.statusValid = (await r.verifyBlueprintSignature(bp)) === "valid";
+                    // Built-in lässt sich nicht signieren.
+                    const builtinRes = await r.signBlueprint("village");
+                    out.rejectBuiltin = !!builtinRes && builtinRes.ok === false && builtinRes.reason === "builtin";
+                    const unknownRes = await r.signBlueprint("_does_not_exist_w13");
+                    out.rejectUnknown = !!unknownRes && unknownRes.ok === false && unknownRes.reason === "unknown";
+                    // Substanz ändern → "modified".
+                    bp.parts[0].material = "eisen";
+                    out.statusModified = (await r.verifyBlueprintSignature(bp)) === "modified";
+                    // Neu signieren heilt es.
+                    await r.signBlueprint("_w13p2");
+                    out.resignValid = (await r.verifyBlueprintSignature(bp)) === "valid";
+                    // Signatur fälschen (ein Hex-Zeichen kippen, Substanz unverändert) → "forged".
+                    const goodSig = bp.signature;
+                    bp.signature = (goodSig[0] === "a" ? "b" : "a") + goodSig.slice(1);
+                    out.statusForged = (await r.verifyBlueprintSignature(bp)) === "forged";
+                    bp.signature = goodSig;
+                    // Die Signatur reist mit dem Bauplan durch den Snapshot.
+                    const snap = r.buildStateSnapshot();
+                    const snapBp = (snap.blueprints || []).find((b) => b && b.name === "_w13p2");
+                    out.snapshotKeepsSig =
+                        !!snapBp && snapBp.signature === bp.signature && snapBp.authorPubKey === bp.authorPubKey;
+                    // Cross-Autor: ein mit FREMDEM Schlüssel signierter Bauplan
+                    // verifiziert ebenso (das Fundament für W13 Phase 3).
+                    const foreignPair = await crypto.subtle.generateKey({ name: "Ed25519" }, true, [
+                        "sign",
+                        "verify",
+                    ]);
+                    const foreignJwk = await crypto.subtle.exportKey("jwk", foreignPair.privateKey);
+                    const foreignCanon = r._canonicalBlueprint(bp);
+                    const foreignSig = await crypto.subtle.sign(
+                        { name: "Ed25519" },
+                        foreignPair.privateKey,
+                        new TextEncoder().encode(foreignCanon)
+                    );
+                    bp.signature = r._vibeBytesToHex(new Uint8Array(foreignSig));
+                    bp.authorPubKey = r._vibeBytesToHex(r._vibeB64uToBytes(foreignJwk.x));
+                    bp.signedHash = r._fastHash(foreignCanon);
+                    out.crossAuthorValid = (await r.verifyBlueprintSignature(bp)) === "valid";
+                    out.crossAuthorForeign = bp.authorPubKey !== r.state.vibePass.publicKeyHex;
+                    // Ein Klon eines signierten Bauplans ist unsigniert (neues Werk).
+                    if (r.state.blueprints["_w13p2clone"]) delete r.state.blueprints["_w13p2clone"];
+                    r.cloneBlueprint("_w13p2", "_w13p2clone");
+                    const clone = r.state.blueprints["_w13p2clone"];
+                    out.cloneUnsigned = !!clone && !clone.signature && !clone.authorPubKey;
+                    // verifyBlueprintSignature ist defensiv.
+                    out.verifyDefensive = (await r.verifyBlueprintSignature(null)) === "unsigned";
+                    // UI: Signatur-Sektion im Werkstatt-Panel.
+                    r.selectBlueprintForEdit("_w13p2");
+                    const panel = document.getElementById("workshop-stats-panel");
+                    out.uiSigRow = !!panel && !!panel.querySelector(".workshop-sig-row");
+                    out.uiSigBtn = !!panel && !!panel.querySelector(".workshop-sig-btn");
+                    delete r.state.blueprints["_w13p2"];
+                    delete r.state.blueprints["_w13p2clone"];
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w13p2Results && !w13p2Results.error) {
+                check(
+                    "W13 P2: signBlueprint/verifyBlueprintSignature/_canonicalBlueprint/_fastHash existieren",
+                    w13p2Results.methods
+                );
+                check("W13 P2: _canonicalBlueprint ist deterministisch", w13p2Results.canonDeterministic);
+                check(
+                    "W13 P2: _canonicalBlueprint ignoriert das Label (signiert die Substanz)",
+                    w13p2Results.canonIgnoresLabel
+                );
+                check("W13 P2: unsignierter Bauplan → Status 'unsigned'", w13p2Results.statusUnsigned);
+                check("W13 P2: signBlueprint signiert einen eigenen Bauplan", w13p2Results.signOk);
+                check(
+                    "W13 P2: Signatur-Felder gesetzt (signature/authorPubKey/signedHash/signedAt)",
+                    w13p2Results.signFields
+                );
+                check("W13 P2: signierter Bauplan → Status 'valid'", w13p2Results.statusValid);
+                check("W13 P2: Built-in lässt sich nicht signieren", w13p2Results.rejectBuiltin);
+                check("W13 P2: unbekannter Bauplan-Name wird abgewiesen", w13p2Results.rejectUnknown);
+                check("W13 P2: geänderte Substanz → Status 'modified'", w13p2Results.statusModified);
+                check("W13 P2: neu signieren heilt 'modified' → 'valid'", w13p2Results.resignValid);
+                check("W13 P2: gefälschte Signatur → Status 'forged'", w13p2Results.statusForged);
+                check("W13 P2: Signatur überlebt den Snapshot-Rundlauf", w13p2Results.snapshotKeepsSig);
+                check("W13 P2: fremd-signierter Bauplan verifiziert (Cross-Autor)", w13p2Results.crossAuthorValid);
+                check("W13 P2: der Cross-Autor-Schlüssel ist nicht der eigene", w13p2Results.crossAuthorForeign);
+                check("W13 P2: Klon eines signierten Bauplans ist unsigniert", w13p2Results.cloneUnsigned);
+                check("W13 P2: verifyBlueprintSignature ist defensiv (null → 'unsigned')", w13p2Results.verifyDefensive);
+                check("W13 P2: Signatur-Sektion im Werkstatt-Panel", w13p2Results.uiSigRow);
+                check("W13 P2: Signier-Knopf im Werkstatt-Panel", w13p2Results.uiSigBtn);
+            } else {
+                check("W13 P2: Bauplan-Signatur-Tests laufen", false, w13p2Results ? w13p2Results.error : "no result");
+            }
+
             // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
             const v840Results = await page
                 .evaluate(() => {
