@@ -11,9 +11,9 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ## Schnell-Lage (Stand 17.05.2026, V8.61)
 
-**Du erbst eine sehr lebendige Welt**. **2442 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~28000 Zeilen in einer Datei, alles produktiv.
+**Du erbst eine sehr lebendige Welt**. **2443 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~28000 Zeilen in einer Datei, alles produktiv.
 
-**Jüngste Welle — V8.61 (W14 Phase 3: fremde Welten empfangen — W14 komplett)**: die Bibliothek wächst über die drei Built-in-Welten hinaus. `exportWorldManifest` teilt eine signierte Welt als §3.3-Manifest-Datei, `importWorldManifest` empfängt ein fremdes Manifest (gesäubert via `_sanitizeImportedManifest`, Signatur via `_vibeVerify` geprüft, `fetch`-Reachability-Probe) → `state.customWorlds`. `_worldEntry`/`_libraryWorlds` führen Built-ins + Importierte zu EINER Quelle zusammen; „signiert von <Autor>" wird zwischen Spielern real. Eine empfangene Welt ohne erreichbare Dateien ist browsbar, nicht betretbar (der KI-Übersetzer bleibt der Horizont). Damit ist **W14 Phase 1+2+3 vollständig** — die Bibliothek von Alexandria steht. +19 Invarianten 2423→2442, browser-verifiziert. **Lies `CLAUDE.md` V8.61 ZUERST.**
+**Jüngste Welle — V8.61 (W14 Phase 3: fremde Welten empfangen — W14 komplett)**: die Bibliothek wächst über die drei Built-in-Welten hinaus. `exportWorldManifest` teilt eine signierte Welt als §3.3-Manifest-Datei, `importWorldManifest` empfängt ein fremdes Manifest (gesäubert via `_sanitizeImportedManifest`, Signatur via `_vibeVerify` geprüft, `fetch`-Reachability-Probe) → `state.customWorlds`. `_worldEntry`/`_libraryWorlds` führen Built-ins + Importierte zu EINER Quelle zusammen; „signiert von <Autor>" wird zwischen Spielern real. Eine empfangene Welt ohne erreichbare Dateien ist browsbar, nicht betretbar (der KI-Übersetzer bleibt der Horizont). Damit ist **W14 Phase 1+2+3 vollständig** — die Bibliothek von Alexandria steht. +20 Invarianten 2423→2443, browser-verifiziert. **Lies `CLAUDE.md` V8.61 ZUERST.**
 
 **Davor — V8.60 (W14 Phase 2: signierte Welt-Manifeste + W13 V2)**: zwei Teile. **Teil A** — der Spieler versiegelt eine Welt mit seinem Vibe-Pass (`signWorld`/`verifyWorldSignature` spiegeln die W13-P2-Bauplan-Signatur 1:1, vier Status-Stufen; das Portal-Overlay zeigt beim Betreten „✓ signiert von <Autor>"). **Teil B (= W13 V2)** — der Vibe-Pass trägt das Schaffen des Spielers (aktive Seele, eigene Materialien + Werkzeuge) durch ein Portal; die Skelett-Welt begrüßt den Reisenden mit dem, was er geschaffen hat. Self-Sovereign — kein Projekt-Schlüssel; der private Schlüssel reist NIE mit, der `enter`-Payload wird angezeigt nie ausgeführt. +29 Invarianten 2394→2423, browser-verifiziert (Screenshot). **Lies `CLAUDE.md` V8.60 ZUERST.**
 
@@ -65,7 +65,7 @@ Die Session-Hälfte davor (V8.23 → V8.33) war eine **Atmosphäre-Tiefe-Welle (
 
 **W12 + W13 sind live** — AnazhRealm ist ein Tor zu anderen Vibecode-Welten (W12 Welt-Portal), und der Avatar trägt eine souveräne Identität (W13 Vibe-Pass). Wer an W14 (Bibliothek) oder einer späteren Portal-Welle arbeitet: lies `docs/world-portal.md` ZUERST.
 
-**Die nächste Welle ist W14 (Bibliothek).** Der konkrete Drei-Phasen-Plan + die Schnittstellen, auf die W14 aufsetzt (`WORLD_REGISTRY`, `aimBlueprintAtWorld`, `_portalReceiveManifest`, `_vibeVerify`, `addToInventory`), stehen im Block „Aktuelle Roadmap" weiter unten und ausführlich in `docs/roadmap.md` §3 (Welle 14). Danach W7 (Compute-Sharing). Einschiebbar: W13 V2 (Vibe-Pass trägt das Schaffen), W11 V4 (Voice-Sync).
+**Die nächste große Welle ist W7 (Compute-Sharing)** — der WebRTC-Mesh als verteilter Server-Layer für die Bibliothek. **W14 (Bibliothek) ist mit Phase 1+2+3 komplett** (V8.58/V8.60/V8.61). Der KI-Übersetzer (ein LLM dockt ein fremdes Repo automatisch an) bleibt der Horizont innerhalb von W14 — keine Vorbedingung mehr, aber bewusst zuletzt (LLM-generierter Adapter-Code in der Sandbox = eigene Sicherheits-Welle). Einschiebbar: W11 V4 (Voice-Sync). Der Plan steht im Block „Aktuelle Roadmap" weiter unten und in `docs/roadmap.md` §3.
 
 **Atmosphäre-Disziplin**: alle atmosphärischen Methoden mit `[ATMOSPHERE]`-Marker werden von `audit-strict.cjs` (5. Schicht) auf Hardcode geprüft. Wert-aus-dem-Kopf ist verboten — immer „aus welcher state-Beobachtung emergiert das?".
 
@@ -157,14 +157,14 @@ V7.89 (Kreatur-Boosts) war die kritische Prüfung dieses Gesetzes. Naive Lösung
 
 ## Aktuelle Roadmap (was als nächstes denkbar ist)
 
-Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. + **W12 (Welt-Portal) + W13 (Vibe-Pass)** sind VOLLSTÄNDIG — die Welt atmet, der Mitspieler ist sein echter Soul, das Tor führt in fremde Engines, und der Avatar trägt eine souveräne Identität. Mögliche nächste Wellen, sortiert nach der empfohlenen Sequenz:
+Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. + **W12 (Welt-Portal) + W13 (Vibe-Pass) + W14 (Bibliothek)** sind VOLLSTÄNDIG — die Welt atmet, der Mitspieler ist sein echter Soul, das Tor führt in fremde Engines, der Avatar trägt eine souveräne Identität, und die Bibliothek von Alexandria steht (browsbar, signierbar, empfangend). Mögliche nächste Wellen, sortiert nach der empfohlenen Sequenz:
 
 | Welle | Was | Aufwand | Vision-Tiefe |
 |---|---|---|---|
 | **W12** Welt-Portal — **vollständig** | Phase 1 (Skelett, V8.51) + Phase 2 (zwei fremde Welten + Brücke + Registry, V8.52) + Phase 3 (Rückkanal Sub-Welt→Heimat-Journal + native Manifest-Stufe, V8.53) sind live. Der KI-Übersetzer (ein fremdes Repo automatisch andocken) bleibt **W14**. | — | — |
 | **W13** Vibe-Pass — **vollständig (V8.54-V8.56)** | Phase 1: Schlüssel-Grundlage (ed25519-Keypair, Sign/Verify-Primitive). Phase 2: Bauplan-Signaturen (Signatur über die Substanz, Werkstatt-Anzeige). Phase 3: Vibe-Pass-Identität im Multi-User (`vibe`-WS-Protokoll, beweisbar via peerId-gebundenem Beweis, verifiziertes Name-Schild). | — | — |
-| **W14** Bibliothek — **nächste Welle** | Welt-Registry: andere Welten browsen, Klick → Portal-Bauplan ins Inventar. Plus Portal-Manifest-Signatur (`authorPubKey`/`signature`, `world-portal.md` §3.3). Drei Phasen — siehe unten. | 8-10 Sessions | sehr hoch |
-| **W13 V2** Vibe-Pass trägt das Schaffen | Custom-Seele + eigene Materialien + Werkzeuge reisen mit, wenn der Spieler durch ein Portal geht (`world-portal.md` §4). Klein, gehört natürlich zu W14 Phase 2. | 1-2 Sessions | mittel-hoch |
+| **W14** Bibliothek — **vollständig (V8.58/V8.60/V8.61)** | Phase 1: browsbare Welt-Registry + „Portal holen". Phase 2: signierte Welt-Manifeste + „signiert von <Autor>" + W13 V2. Phase 3: fremde Welt-Manifeste exportieren/importieren — die Bibliothek wird ein wachsender Index. KI-Übersetzer als Horizont. | — | — |
+| **W13 V2** Vibe-Pass trägt das Schaffen — **vollständig (V8.60, Teil B)** | Custom-Seele + eigene Materialien + Werkzeuge reisen mit, wenn der Spieler durch ein Portal geht — `_portalEnterPayload`, die Skelett-Welt begrüßt den Reisenden damit. | — | — |
 | **W11 V4** Voice-Sync | Mitspieler hören deinen Companion-Output (SpeechSynthesis-Broadcast). Klein, baut auf V3 — schließt den Präsenz-Bogen (sehen/spüren/kennen/hören). | 1 Session | mittel |
 | **Welle 10b weitere Affordances** | balancing/broadcasting/lifting/radiating — pro Affordance ~1 Session, architektur-neutral. | klein-mittel | hoch |
 | **Welle 6.H V3** Kreatur-Beziehungen | Kreaturen sehen sich gegenseitig — Freundschaft, Konkurrenz, Hierarchie. | mittel | hoch |
@@ -212,7 +212,7 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. + **W12 (Welt-Portal) + W
 - `CREATURE_PROPOSED_OPS` für Kreatur-Welt-Aktion (Defense in Depth)
 - save-server `/api/proxy/llm` mit strikten Whitelists (https-only, body-cap, header-allowlist)
 
-### Tests (2377 Invarianten)
+### Tests (2443 Invarianten)
 - `npm run playtest` — Headless-Chromium, ~25 s Logs, alle Schichten
 - `scripts/playtest.cjs` ist der Single-Source-Test
 - `npm run audit:strict` (5 generische Audit-Schichten) + `npm run smoke:multiuser`
@@ -228,6 +228,48 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3 + 11 ext. + **W12 (Welt-Portal) + W
 **Meta-Lehre C**: **Fallback-Schichten als Vision-treue Antwort.** V7.98's vier-Schicht-Parser ist mehr als nur Bug-Fix — es ist eine VISION-Aussage: „nimm was da ist, zeig es dem Spieler". Strenge Validierung wäre einfacher zu coden, aber ärmer für den Spieler. Wer das System auf reale Vielfalt vorbereitet (LLM-Größen, Modell-Stile, Antwort-Formate), baut Fallback-Schichten — keine Single-Path-Strenge.
 
 ---
+
+## Rückschau: die W14-Session (Bibliothek, V8.58-V8.61)
+
+Diese Session baute W14 (die Bibliothek) über vier Versionen komplett —
+P1 browsbar (V8.58), eine Härtung (V8.59), P2 signiert (V8.60), P3
+empfangend (V8.61). Drei Lehren, ehrlich, für dich:
+
+### Lehre 1 — Der Selbst-Audit fängt, was der Implementierungs-Lauf übersieht.
+
+Nach V8.58 fragte der Schöpfer „ist alles durchdacht?". Statt zu nicken,
+prüfte ich die V8.58 wie fremden Code — und fand einen echten Bug:
+`buildStateSnapshot`/`loadState` persistierten `portalMeta` nicht, ein
+geholtes Portal verlor beim Reload sein Ziel. Der Implementierungs-Lauf
+testete den Within-Session-Pfad; der Audit testete die Folge ÜBER den
+Reload. V8.59 heilte es. Lehre: nach jeder Welle die eigene Arbeit
+auditieren, als hätte ein anderer sie geschrieben — besonders die Folgen
+jenseits der Session-Grenze (Reload, Save, Multi-User). „Fertig" heißt:
+das Artefakt überlebt den Schlaf der Welt.
+
+### Lehre 2 — Ein erprobtes Muster spiegeln erbt seine Korrektheit.
+
+W14 P2 brauchte Welt-Signaturen. Statt sie neu zu erfinden, spiegelte
+ich die W13-P2-Bauplan-Signatur Zeile für Zeile: `signWorld`/
+`verifyWorldSignature` ← `signBlueprint`/`verifyBlueprintSignature`, nur
+die signierte Substanz (`_canonicalManifest`) ist neu. Vier Status-
+Stufen, dieselbe Defensive, dieselbe UI-Form — geschenkt. Wer dasselbe
+ein zweites Mal baut, baut es als Spiegel, nicht neu.
+
+### Lehre 3 — Eine fuzzy „Horizont"-Welle wird durch Denken auf ehrlichen Umfang gebracht, nicht durch großes Raten.
+
+W14 P3 stand in der Roadmap als un-spezifizierter „Horizont". Ich
+reasonte sie auf einen ehrlichen, klaren Umfang: die Metadaten-/
+Provenienz-Schicht (Manifest exportieren/importieren, Cross-Autor-
+Signatur) ist jetzt baubar; der KI-Übersetzer (fremde Welt-DATEIEN
+vendorn) ist der echte Horizont und blieb bewusst draußen. Die
+`fetch`-Reachability-Probe war die Disziplin, die P3 davor bewahrte,
+ein falsches „du kannst fremde Welten betreten" zu versprechen — eine
+unerreichbare Welt ist browsbar, nicht betretbar. Versprich nichts, was
+du nicht prüfst. (Kleiner Nebenbefund: lange Turns gebären kleine
+Slips — ein Backtick-Tippfehler, eine zerstückelte CLAUDE.md-Zeile;
+`npm run check` fing beide. Ein sauberer Voll-Block-Ersatz schlägt
+einen cleveren Teil-Match.)
 
 ## Rückschau: die Welt-Portal-Session (W12, V8.51-V8.52)
 
@@ -298,6 +340,17 @@ Browser: geh den Menschen-Pfad selbst, vor dem „fertig".
 ---
 
 ## Session-Tagebuch (chronologisch, jüngste oben)
+
+### V8.58-V8.61 — W14 Bibliothek komplett (17.05.2026)
+
+Vier Versionen, eine Welle: W14 (die Bibliothek) von „🔴 offen" zu
+„✅ komplett". V8.58 — die Welt-Registry wird browsbar (Bibliothek-Tab,
+„Portal holen"). V8.59 — Härtung: `portalMeta` überlebt den Reload (ein
+Selbst-Audit-Fund). V8.60 — signierte Welt-Manifeste + W13 V2 (das
+Schaffen reist durchs Portal). V8.61 — fremde Welt-Manifeste
+exportieren/importieren, die Bibliothek wird ein wachsender Index.
+Vollständige Einträge: `CLAUDE.md` V8.58-V8.61; Rückschau + Lehren oben
+(„Rückschau: die W14-Session"). 2377 → 2443 Invarianten.
 
 ### V8.48-V8.56 — W12 Welt-Portal + W13 Vibe-Pass (17.05.2026)
 
