@@ -15265,6 +15265,9 @@ class AnazhRealm {
             if (msg.type === "ready") this._portalSendEnter();
             // Die Sub-Welt meldet Esc (Fokus liegt im iframe) → Heimkehr.
             else if (msg.type === "exit") this.exitPortal();
+            // W12 Phase 3 — die Sub-Welt spricht zurück: ein Welt-Ereignis
+            // wandert ins Heimat-Journal (geloggt, nie ausgeführt).
+            else if (msg.type === "event") this._portalReceiveEvent(msg);
         };
         window.addEventListener("message", onMessage);
         iframe.addEventListener("load", () => this._portalSendEnter());
@@ -15328,7 +15331,18 @@ class AnazhRealm {
             }
         }
         this._buildPortalOverlay(portalMeta);
-        this.log(`Portal betreten: „${(portalMeta && portalMeta.label) || entry.type}"`, "INFO");
+        const worldLabel = (portalMeta && portalMeta.label) || entry.type;
+        this.log(`Portal betreten: „${worldLabel}"`, "INFO");
+        // W12 Phase 3 — die erste Reise durch ein bestimmtes Tor ist eine
+        // Erinnerung wert. journalAppendOnce (Schlüssel = Welt-Pfad): das
+        // wiederholte Betreten desselben Tors flutet das Journal nicht. Die
+        // Welt-Ereignisse drinnen kommen über _portalReceiveEvent.
+        const worldKey = (portalMeta && portalMeta.world) || AnazhRealm.PORTAL_SKELETON_WORLD;
+        this.journalAppendOnce(
+            `portalVisit:${worldKey}`,
+            "portal",
+            `Du tratst zum ersten Mal durch das Tor „${worldLabel}".`
+        );
         return { ok: true };
     }
 
@@ -15341,6 +15355,10 @@ class AnazhRealm {
         // sonst liefe der Avatar nach der Heimkehr von selbst weiter.
         this.state.keys = {};
         this.log("Portal verlassen — zurück in der Heimat-Welt", "INFO");
+        // W12 Phase 3 — die Heimkehr ist der Speicher-Punkt: die im Portal
+        // gesammelten Erinnerungen (Erst-Besuch + Welt-Ereignisse) werden
+        // mit dem regulären State-Snapshot dauerhaft.
+        this.saveState();
         return { ok: true };
     }
 
@@ -15414,6 +15432,24 @@ class AnazhRealm {
             return t !== "" && Number.isFinite(n) ? n : t;
         });
         return [op, ...args];
+    }
+
+    // W12 Phase 3 — der Rückkanal. Die Sub-Welt meldet ein Welt-Ereignis
+    // (ein Sturm zog auf, ein Gebirge erhob sich); die Heimat schreibt es
+    // als Erinnerung ins Welt-Journal. Ein Ereignis wird GELOGGT, NIE
+    // ausgeführt — die Asymmetrie IST die Sicherheits-Wand: Heimat→Sub
+    // trägt DSL (wird in der Sub-Welt ausgeführt), Sub→Heimat trägt nur
+    // Ereignis-Text (wird erinnert). Selbst eine böswillige Sub-Welt kann
+    // so nur gedeckelten Text ins Journal legen — kein Code, keine Mutation
+    // des Heimat-States. Der Text wird auf 160 Zeichen gekappt, damit eine
+    // fremde Welt keine Journal-Zeile sprengt.
+    _portalReceiveEvent(msg) {
+        if (!this._portalOverlay) return false;
+        const text = String((msg && msg.text) || "").trim();
+        if (!text) return false;
+        const po = this._portalOverlay;
+        this.journalAppend("portal", text.slice(0, 160), { world: po.label || po.world || "Portal-Welt" });
+        return true;
     }
 
     // W12 Phase 1 — E-Tasten-Pfad: ist ein Portal in Reichweite, betritt es.

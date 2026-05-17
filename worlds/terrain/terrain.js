@@ -10,6 +10,13 @@
     function showFallback(text) {
         if (hudLine) hudLine.textContent = text;
     }
+    // W12 Phase 3 — der Rückkanal: ein Welt-Ereignis an die Heimat-Welt
+    // melden. Die Heimat schreibt es als Erinnerung ins Journal.
+    function sendEvent(text) {
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage({ type: "event", text: String(text) }, "*");
+        }
+    }
     if (typeof THREE === "undefined" || typeof THREE.Terrain !== "function") {
         showFallback("Terrain-Welt: THREE.Terrain konnte nicht laden.");
         return;
@@ -162,13 +169,17 @@
                     const c = new THREE.Color("#" + m[1]);
                     scene.background = c;
                     if (scene.fog) scene.fog.color.copy(c);
+                    sendEvent("Der Himmel der Terrain-Welt nahm eine neue Farbe an.");
                 }
             } else if (op === "gebirge") {
                 buildTerrain({ heightmap: THREE.Terrain.DiamondSquare, frequency: 3.4, maxHeight: 540 });
+                sendEvent("Ein Gebirge erhob sich in der Terrain-Welt.");
             } else if (op === "ebene") {
                 buildTerrain({ heightmap: THREE.Terrain.Perlin, frequency: 1.2, maxHeight: 70 });
+                sendEvent("Das Land der Terrain-Welt senkte sich zu einer weiten Ebene.");
             } else if (op === "neu") {
                 buildTerrain(randomSpec(150 + Math.random() * 320));
+                sendEvent("Eine neue Landschaft formte sich in der Terrain-Welt.");
             }
         } catch (err) {
             showFallback("Terrain-Welt: Befehl fehlgeschlagen — " + (err && err.message));

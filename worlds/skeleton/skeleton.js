@@ -6,6 +6,15 @@
     const nameEl = document.getElementById("avatar-name");
     const statusEl = document.getElementById("portal-status");
 
+    // W12 Phase 3 — der Rückkanal: ein Welt-Ereignis an die Heimat-Welt
+    // melden. Die Heimat schreibt es als Erinnerung ins Journal — sie führt
+    // es NICHT aus (ein Ereignis ist kein Befehl).
+    function sendEvent(text) {
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage({ type: "event", text: String(text) }, "*");
+        }
+    }
+
     // W12 Phase 2 — die DSL-Brücke. Die Skelett-Welt versteht ein einziges
     // Wort: skybox_color tönt die Leere. Beweis: dieselbe Brücke trägt die
     // Strom-Welt UND dieses Gerüst — das Protokoll ist generisch, der
@@ -18,7 +27,10 @@
         }
         if (program[0] === "skybox_color") {
             const m = /^#?([0-9a-fA-F]{6})$/.exec(String(program[1] == null ? "" : program[1]).trim());
-            if (m) document.body.style.background = "#" + m[1];
+            if (m) {
+                document.body.style.background = "#" + m[1];
+                sendEvent("Die Leere der Skelett-Welt nahm eine neue Farbe an.");
+            }
         }
     }
 
