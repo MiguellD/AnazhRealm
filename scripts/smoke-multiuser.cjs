@@ -63,6 +63,18 @@ async function run() {
     wsA.send(JSON.stringify({ type: "aura", hue: "x", intensity: 0.5 }));
     await sleep(150);
 
+    // W13 Phase 3: Vibe-Pass-Identität. A teilt vibePassId + proof → B
+    // bekommt beides mit dem peerId-Stempel des Servers. (Die echte
+    // ed25519-Verifikation prüft der Playtest — hier nur der Relay.)
+    wsA.send(
+        JSON.stringify({ type: "vibe", vibePassId: "ed25519:" + "ab".repeat(32), proof: "cd".repeat(64) })
+    );
+    await sleep(150);
+    // Defensive: vibe ohne proof bzw. ganz leer werden verworfen.
+    wsA.send(JSON.stringify({ type: "vibe", vibePassId: "ed25519:abc" }));
+    wsA.send(JSON.stringify({ type: "vibe" }));
+    await sleep(150);
+
     // Ring 11.5: world-request (broadcast) + world-snapshot (targeted).
     // B sendet world-request → A bekommt es → A antwortet mit world-snapshot
     // to=peerB. Server forwarded zielgerichtet — andere Peers (hier nur A
@@ -128,6 +140,17 @@ async function run() {
     const bRejectedBadSoul = events.b.filter((e) => e.type === "soul").length === 1;
     const bRejectedBadAura = events.b.filter((e) => e.type === "aura").length === 1;
 
+    // W13 Phase 3 Assertions
+    const bGotVibeFromA = events.b.some(
+        (e) =>
+            e.type === "vibe" &&
+            e.peerId === "peerA" &&
+            /^ed25519:[0-9a-f]+$/i.test(e.vibePassId || "") &&
+            typeof e.proof === "string"
+    );
+    const aNotEchoedOwnVibe = !events.a.some((e) => e.type === "vibe");
+    const bRejectedBadVibe = events.b.filter((e) => e.type === "vibe").length === 1;
+
     console.log("\n=== Verdict ===");
     console.log("V1 A welcome:", aSawWelcome);
     console.log("V1 A sees B-join:", aSawBjoin);
@@ -146,6 +169,9 @@ async function run() {
     console.log("V3 B bekommt A's aura (hue/intensity) mit peerId-Stempel:", bGotAuraFromA);
     console.log("V3 A bekommt eigene soul NICHT zurück:", aNotEchoedOwnSoul);
     console.log("V3 Server verwirft soul ohne soulName / aura mit NaN:", bRejectedBadSoul && bRejectedBadAura);
+    console.log("W13P3 B bekommt A's vibe (vibePassId/proof) mit peerId-Stempel:", bGotVibeFromA);
+    console.log("W13P3 A bekommt eigene vibe NICHT zurück:", aNotEchoedOwnVibe);
+    console.log("W13P3 Server verwirft vibe ohne proof:", bRejectedBadVibe);
 
     // B disconnects
     wsB.close();
@@ -175,7 +201,10 @@ async function run() {
         bGotAuraFromA &&
         aNotEchoedOwnSoul &&
         bRejectedBadSoul &&
-        bRejectedBadAura;
+        bRejectedBadAura &&
+        bGotVibeFromA &&
+        aNotEchoedOwnVibe &&
+        bRejectedBadVibe;
     server.kill();
     process.exit(allOk ? 0 : 1);
 }

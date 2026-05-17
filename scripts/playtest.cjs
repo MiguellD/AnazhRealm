@@ -14129,6 +14129,145 @@ function startSaveServer() {
                 check("W13 P2: Bauplan-Signatur-Tests laufen", false, w13p2Results ? w13p2Results.error : "no result");
             }
 
+            // ### W13 Phase 3 — Vibe-Pass-Identität im Multi-User ###
+            const w13p3Results = await page
+                .evaluate(async () => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    const p2p = r.state.p2p;
+                    out.methods =
+                        typeof r._p2pBroadcastVibe === "function" &&
+                        typeof r._p2pBuildNameLabel === "function" &&
+                        typeof r._p2pRefreshPeerNameLabel === "function";
+                    // Peer-Entry trägt die Vibe-Pass-Felder.
+                    const probe = r._p2pEnsurePeerEntry("_w13p3probe");
+                    out.peerFields = "vibePassId" in probe && "vibeVerified" in probe;
+                    r._p2pRemovePeer("_w13p3probe");
+                    // --- _p2pBroadcastVibe: Payload + Beweis ---
+                    const origSend = r.p2pSend;
+                    const origEnabled = p2p.enabled;
+                    const origPeerId = p2p.peerId;
+                    let captured = null;
+                    r.p2pSend = (m) => {
+                        captured = m;
+                    };
+                    p2p.enabled = true;
+                    p2p.peerId = "_w13p3self";
+                    await r._p2pBroadcastVibe();
+                    out.broadcastShape =
+                        !!captured &&
+                        captured.type === "vibe" &&
+                        captured.vibePassId === r.vibePassId() &&
+                        typeof captured.proof === "string";
+                    out.broadcastProofVerifies =
+                        !!captured &&
+                        (await r._vibeVerify("_w13p3self", captured.proof, r.state.vibePass.publicKeyHex)) === true;
+                    // Bei deaktiviertem P2P sendet _p2pBroadcastVibe nichts.
+                    captured = null;
+                    p2p.enabled = false;
+                    await r._p2pBroadcastVibe();
+                    out.broadcastSkipsDisabled = captured === null;
+                    p2p.enabled = true;
+                    r.p2pSend = origSend;
+                    // --- vibe-Empfang: ein fremder Peer, drei Beweis-Fälle ---
+                    const foreign = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
+                    const foreignJwk = await crypto.subtle.exportKey("jwk", foreign.privateKey);
+                    const foreignPubHex = r._vibeBytesToHex(r._vibeB64uToBytes(foreignJwk.x));
+                    const foreignId = "ed25519:" + foreignPubHex;
+                    const sign = async (text) =>
+                        r._vibeBytesToHex(
+                            new Uint8Array(
+                                await crypto.subtle.sign(
+                                    { name: "Ed25519" },
+                                    foreign.privateKey,
+                                    new TextEncoder().encode(text)
+                                )
+                            )
+                        );
+                    // (a) gültiger Beweis (signiert die eigene peerId).
+                    const proofA = await sign("_w13p3peerA");
+                    r.p2pHandleMessage(
+                        JSON.stringify({ type: "vibe", peerId: "_w13p3peerA", vibePassId: foreignId, proof: proofA })
+                    );
+                    // (b) manipulierter Beweis (ein Hex-Zeichen gekippt).
+                    const proofB = await sign("_w13p3peerB");
+                    const proofBad = (proofB[0] === "a" ? "b" : "a") + proofB.slice(1);
+                    r.p2pHandleMessage(
+                        JSON.stringify({ type: "vibe", peerId: "_w13p3peerB", vibePassId: foreignId, proof: proofBad })
+                    );
+                    // (c) Beweis über eine FREMDE peerId — die Bindung greift.
+                    const proofWrong = await sign("_w13p3WRONG");
+                    r.p2pHandleMessage(
+                        JSON.stringify({ type: "vibe", peerId: "_w13p3peerC", vibePassId: foreignId, proof: proofWrong })
+                    );
+                    // (d) ohne Beweis — vibePassId notiert, aber nicht verifiziert.
+                    r.p2pHandleMessage(
+                        JSON.stringify({ type: "vibe", peerId: "_w13p3peerD", vibePassId: foreignId, proof: "" })
+                    );
+                    // (e) eigene peerId — wird ignoriert.
+                    r.p2pHandleMessage(
+                        JSON.stringify({ type: "vibe", peerId: "_w13p3self", vibePassId: foreignId, proof: proofA })
+                    );
+                    await new Promise((res) => setTimeout(res, 140));
+                    const peerA = p2p.peers.get("_w13p3peerA");
+                    const peerB = p2p.peers.get("_w13p3peerB");
+                    const peerC = p2p.peers.get("_w13p3peerC");
+                    const peerD = p2p.peers.get("_w13p3peerD");
+                    out.recvRecordsId = !!peerA && peerA.vibePassId === foreignId;
+                    out.recvValidVerifies = !!peerA && peerA.vibeVerified === true;
+                    out.recvTamperedRejected = !!peerB && peerB.vibeVerified === false;
+                    out.recvWrongBindingRejected = !!peerC && peerC.vibeVerified === false;
+                    out.recvNoProofUnverified = !!peerD && peerD.vibePassId === foreignId && peerD.vibeVerified === false;
+                    out.recvIgnoresSelf = !p2p.peers.has("_w13p3self");
+                    // Verifizierter Peer bekommt ein Name-Schild mit Fingerprint (zweizeilig).
+                    out.verifiedPeerLabel =
+                        !!peerA && !!peerA.nameLabel && Math.abs(peerA.nameLabel.scale.y - 0.98) < 0.05;
+                    // --- Name-Schild ein- vs. zweizeilig ---
+                    const oneLine = r._p2pBuildNameLabel("Reisender");
+                    const twoLine = r._p2pBuildNameLabel("Reisender", "a1b2 c3d4");
+                    out.labelOneLine = !!oneLine && Math.abs(oneLine.scale.y - 0.65) < 0.01;
+                    out.labelTwoLine = !!twoLine && Math.abs(twoLine.scale.y - 0.98) < 0.01;
+                    // Aufräumen.
+                    for (const id of ["_w13p3peerA", "_w13p3peerB", "_w13p3peerC", "_w13p3peerD"]) {
+                        r._p2pRemovePeer(id);
+                    }
+                    p2p.enabled = origEnabled;
+                    p2p.peerId = origPeerId;
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (w13p3Results && !w13p3Results.error) {
+                check("W13 P3: _p2pBroadcastVibe/_p2pBuildNameLabel/_p2pRefreshPeerNameLabel existieren", w13p3Results.methods);
+                check("W13 P3: Peer-Entry trägt vibePassId + vibeVerified", w13p3Results.peerFields);
+                check("W13 P3: _p2pBroadcastVibe sendet {type:vibe, vibePassId, proof}", w13p3Results.broadcastShape);
+                check("W13 P3: der gesendete Beweis verifiziert gegen den eigenen Schlüssel", w13p3Results.broadcastProofVerifies);
+                check("W13 P3: _p2pBroadcastVibe sendet nichts bei deaktiviertem P2P", w13p3Results.broadcastSkipsDisabled);
+                check("W13 P3: vibe-Empfang notiert die vibePassId des Peers", w13p3Results.recvRecordsId);
+                check("W13 P3: gültiger Beweis → der Peer ist verifiziert", w13p3Results.recvValidVerifies);
+                check("W13 P3: manipulierter Beweis → nicht verifiziert", w13p3Results.recvTamperedRejected);
+                check("W13 P3: Beweis über fremde peerId → nicht verifiziert (Bindung greift)", w13p3Results.recvWrongBindingRejected);
+                check("W13 P3: vibe ohne Beweis → vibePassId notiert, aber nicht verifiziert", w13p3Results.recvNoProofUnverified);
+                check("W13 P3: vibe mit eigener peerId wird ignoriert", w13p3Results.recvIgnoresSelf);
+                check("W13 P3: verifizierter Peer trägt ein Name-Schild mit Fingerprint", w13p3Results.verifiedPeerLabel);
+                check("W13 P3: Name-Schild ohne Fingerprint bleibt einzeilig", w13p3Results.labelOneLine);
+                check("W13 P3: Name-Schild mit Fingerprint wird zweizeilig", w13p3Results.labelTwoLine);
+            } else {
+                check("W13 P3: Vibe-Pass-Multi-User-Tests laufen", false, w13p3Results ? w13p3Results.error : "no result");
+            }
+
+            // W13 P3 — der signaling-server hat einen vibe-Handler (Quell-Check).
+            try {
+                const srvSrc = fs.readFileSync(path.join(__dirname, "..", "signaling-server.js"), "utf8");
+                check(
+                    "W13 P3: signaling-server relayt den vibe-Nachrichtentyp mit peerId-Stempel",
+                    /msg\.type === "vibe"/.test(srvSrc) &&
+                        /broadcastToRoom\([^)]*type: "vibe", peerId: ws\.anazh\.peerId/.test(srvSrc)
+                );
+            } catch (err) {
+                check("W13 P3: signaling-server-Quell-Check läuft", false, err && err.message);
+            }
+
             // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
             const v840Results = await page
                 .evaluate(() => {

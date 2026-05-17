@@ -4294,6 +4294,8 @@ class AnazhRealm {
             }
             // Ring 11 V3 — den bereits anwesenden Peers meine Seele zeigen.
             this._p2pBroadcastSoul();
+            // W13 Phase 3 — und meine Vibe-Pass-Identität (beweisbar).
+            this._p2pBroadcastVibe();
             return;
         }
         if (msg.type === "peer-join") {
@@ -4301,6 +4303,8 @@ class AnazhRealm {
                 this._p2pEnsurePeerEntry(msg.peerId);
                 // Ring 11 V3 — dem Neuankömmling meine Seele zeigen.
                 this._p2pBroadcastSoul();
+                // W13 Phase 3 — und meine Vibe-Pass-Identität.
+                this._p2pBroadcastVibe();
             }
             return;
         }
@@ -4380,6 +4384,33 @@ class AnazhRealm {
             if (Number.isFinite(hue)) entry.auraHue = hue;
             if (Number.isFinite(intensity)) entry.auraIntensity = intensity;
             entry.lastSeen = performance.now() / 1000;
+            return;
+        }
+        if (msg.type === "vibe") {
+            // W13 Phase 3 — Vibe-Pass-Identität eines Peers. vibePassId ist
+            // der behauptete öffentliche Schlüssel, proof eine Signatur über
+            // die peerId des Senders. Verifiziert die Signatur gegen den
+            // Schlüssel, IST der Peer dieser Schlüssel — beweisbar, nicht nur
+            // behauptet. Die Verifikation ist async; der Schlüssel-Wächter im
+            // .then verwirft veraltete Läufe (Peer hat neu gesendet).
+            const pid = msg.peerId;
+            if (typeof pid !== "string" || pid === p2p.peerId) return;
+            const entry = this._p2pEnsurePeerEntry(pid);
+            const vibePassId = typeof msg.vibePassId === "string" ? msg.vibePassId : "";
+            const proof = typeof msg.proof === "string" ? msg.proof : "";
+            entry.vibePassId = vibePassId || null;
+            entry.vibeVerified = false;
+            entry.lastSeen = performance.now() / 1000;
+            const m = /^ed25519:([0-9a-f]{64})$/i.exec(vibePassId);
+            if (m && proof) {
+                this._vibeVerify(pid, proof, m[1]).then((ok) => {
+                    const cur = p2p.peers.get(pid);
+                    if (!cur || cur.vibePassId !== vibePassId) return;
+                    cur.vibeVerified = ok === true;
+                    this._p2pRefreshPeerNameLabel(cur);
+                });
+            }
+            this._p2pRefreshPeerNameLabel(entry);
             return;
         }
         if (msg.type === "world-request") {
@@ -4468,6 +4499,12 @@ class AnazhRealm {
             auraIntensity: 0,
             auraGlow: null,
             nameLabel: null,
+            // W13 Phase 3 — Vibe-Pass-Identität des Peers. vibePassId ist der
+            // behauptete öffentliche ed25519-Schlüssel; vibeVerified wird erst
+            // true, wenn der mitgesendete Beweis (Signatur über die peerId)
+            // gegen diesen Schlüssel verifiziert — Identität, nicht Behauptung.
+            vibePassId: null,
+            vibeVerified: false,
             lastSeen: performance.now() / 1000,
         };
         p2p.peers.set(peerId, entry);
@@ -4550,25 +4587,35 @@ class AnazhRealm {
 
     // Ring 11 V3 — Name-Schild über dem Peer. Eine CanvasTexture mit dem
     // Avatar-Namen; depthTest aus, damit der Name immer lesbar bleibt.
-    _p2pBuildNameLabel(name) {
+    // W13 Phase 3 — bei verifizierter Vibe-Pass-Identität wächst das Schild
+    // um eine zweite Zeile: „✓ <Fingerprint>" in Verifiziert-Grün. Der Name
+    // ist gewählt + fälschbar; der Fingerprint ist die unverfälschbare
+    // Identität. fingerprint leer → ein-zeiliges Schild (Ring-11-V3-Verhalten).
+    _p2pBuildNameLabel(name, fingerprint) {
         if (typeof document === "undefined" || typeof THREE === "undefined") return null;
+        const hasFp = typeof fingerprint === "string" && fingerprint.length > 0;
         const canvas = document.createElement("canvas");
         canvas.width = 256;
-        canvas.height = 64;
+        canvas.height = hasFp ? 96 : 64;
         const ctx = canvas.getContext("2d");
         if (!ctx) return null;
         ctx.fillStyle = "rgba(18,16,26,0.74)";
-        ctx.fillRect(6, 14, 244, 36);
+        ctx.fillRect(6, 14, 244, hasFp ? 68 : 36);
         ctx.font = "bold 30px Cinzel, Georgia, serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillStyle = "#f0e6d2";
         ctx.fillText(String(name).slice(0, 24), 128, 33);
+        if (hasFp) {
+            ctx.font = "20px 'JetBrains Mono', monospace";
+            ctx.fillStyle = "#7fd49a";
+            ctx.fillText("✓ " + fingerprint, 128, 67);
+        }
         const tex = new THREE.CanvasTexture(canvas);
         tex.needsUpdate = true;
         const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, depthTest: false });
         const sprite = new THREE.Sprite(mat);
-        sprite.scale.set(2.6, 0.65, 1);
+        sprite.scale.set(2.6, hasFp ? 0.98 : 0.65, 1);
         sprite.renderOrder = 5;
         return sprite;
     }
@@ -4583,8 +4630,17 @@ class AnazhRealm {
             }
             entry.nameLabel = null;
         }
-        if (!entry.avatarName) return;
-        const label = this._p2pBuildNameLabel(entry.avatarName);
+        if (!entry.avatarName && !entry.vibePassId) return;
+        // W13 Phase 3 — bei verifizierter Identität die Kurzform des
+        // Fingerprints (erste 8 Hex in Vierergruppen) unter den Namen setzen.
+        let fingerprint = "";
+        if (entry.vibeVerified && entry.vibePassId) {
+            const m = /^ed25519:([0-9a-f]{8})/i.exec(entry.vibePassId);
+            if (m) {
+                fingerprint = m[1].replace(/(.{4})/g, "$1 ").trim();
+            }
+        }
+        const label = this._p2pBuildNameLabel(entry.avatarName || "Reisender", fingerprint);
         if (label && this.state.scene) {
             this.state.scene.add(label);
             entry.nameLabel = label;
@@ -4660,6 +4716,21 @@ class AnazhRealm {
         const intensity = this.state.player._auraIntensityOut;
         if (typeof hue !== "number" || typeof intensity !== "number") return;
         this.p2pSend({ type: "aura", hue, intensity });
+    }
+
+    // W13 Phase 3 — die eigene Vibe-Pass-Identität an alle Mitspieler senden
+    // (Join + peer-join, wie soul). vibePassId ist der öffentliche Schlüssel;
+    // proof eine Signatur über die eigene peerId — nur wer den privaten
+    // Schlüssel hält, kann sie erzeugen, und nur dann verifiziert sie. So ist
+    // die Identität beweisbar, nicht behauptet. Async (ed25519-Signatur).
+    async _p2pBroadcastVibe() {
+        const p2p = this.state.p2p;
+        if (!p2p || !p2p.enabled || !p2p.peerId) return;
+        const vibePassId = this.vibePassId();
+        if (!vibePassId) return;
+        const proof = await this._vibeSign(p2p.peerId);
+        if (!proof) return;
+        this.p2pSend({ type: "vibe", vibePassId, proof });
     }
 
     _p2pRemovePeer(peerId) {
