@@ -176,13 +176,15 @@ Avatar = Self-Sovereign Identity. Nicht Crypto-Wallet im Spekulations-Sinn, sond
 - Welt-Memberships (du warst auf dieser Welt aktiv)
 - Avatar-Anpassungen (deine Custom-Seele, deine Materialien, deine Werkzeuge)
 
-> **Umsetzungsstand (V8.55, W13 Phase 1+2)** — der Avatar hat einen Schlüssel UND signiert damit seine Werke.
+> **Umsetzungsstand (V8.56, W13 KOMPLETT — Phase 1+2+3)** — der Avatar hat einen Schlüssel, signiert damit seine Werke, und im Multi-User trägt jeder Mitspieler seine beweisbare Identität.
 >
 > **Phase 1 (V8.54) — die Schlüssel-Grundlage.** `_ensureVibePass` erzeugt beim ersten Erwachen ein ed25519-Schlüsselpaar (WebCrypto nativ über `crypto.subtle` — kein Vendoring, keine CSP-Lockerung; im Playtest-Chrome 148 vorab geprüft) und persistiert es als privates JWK im GLOBALEN localStorage-Schlüssel `anazh.vibePass` — spieler-eigen, welt-unabhängig, NIE im Welt-Save. Der öffentliche Schlüssel ist der Avatar-Identifier (`vibePassId()` → `ed25519:<64hex>`, dasselbe Format wie `authorPubKey` in §3.3). Primitive: `_vibeSign(text)` und `_vibeVerify(text, sigHex, pubHex)`. Eine Sektion im Spieler-Drawer zeigt Fingerprint + Identifier und bietet Export/Import.
 >
 > **Phase 2 (V8.55) — Bauplan-Signaturen.** `signBlueprint(name)` versiegelt einen eigenen Bauplan: die Signatur deckt die **Substanz** (`_canonicalBlueprint` → Rolle + Parts + Verbindungen, deterministisch — NICHT den Namen, damit Recipe-Import + Fusion sie nicht brechen). `verifyBlueprintSignature(bp)` liefert vier Stufen (unsigned/valid/modified/forged), bei jedem Werkstatt-Render frisch geprüft. Die vier Felder `signature`/`authorPubKey`/`signedHash`/`signedAt` reisen mit dem Bauplan durch Save, Welt-Tor und Fusion. Das Werkstatt-Stats-Panel zeigt Status + [Signieren]-Knopf.
 >
-> **Offen — Phase 3**: die Prüfung der Signaturen wandert aus der Werkstatt in die Welt — Multi-User (ein Mitspieler-Avatar / seine Baupläne zeigen „signiert von X"), Welt-Tor (eine importierte Welt zeigt die Autorenschaft ihrer Baupläne) und das Portal-Manifest (das ergänzt die in §3.3 genannten `authorPubKey`/`signature`-Felder — eine Welt signiert ihr eigenes `manifest.json`). Der vollständige Wellen-Eintrag steht in `CLAUDE.md` V8.55.
+> **Phase 3 (V8.56) — Vibe-Pass-Identität im Multi-User.** Ein neuer WebSocket-Nachrichtentyp `vibe` (`{vibePassId, proof}`) trägt die Identität: `proof` ist eine Signatur über die EIGENE peerId des Senders, der Empfänger verifiziert sie gegen die server-gestempelte peerId — die Bindung macht den Beweis fälschungssicher (ein geklauter Beweis gilt einer fremden peerId). Der Mitspieler ist damit nicht mehr nur eine fälschbare peerId + ein gewählter Name, sondern beweisbar sein Vibe-Pass; das Name-Schild zeigt bei verifizierter Identität „✓ <Fingerprint>". `vibe` läuft NICHT über die DSL, der signaling-server relayt es als dummer (nichts verifizierender) Vermittler.
+>
+> **Offen — W14**: das Portal-Manifest bekommt das `authorPubKey`/`signature`-Feld (§3.3) — eine veröffentlichte Welt signiert ihr eigenes `manifest.json`, `_vibeVerify` (steht aus W13) prüft es. Das gehört zur Welt-Registry (W14), weil erst dort fremde, anderswo veröffentlichte Welten andocken. Der vollständige Wellen-Eintrag steht in `CLAUDE.md` V8.56.
 
 ---
 
