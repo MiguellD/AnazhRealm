@@ -2,7 +2,7 @@
 
 Ein als Co-Creation-Werk Mensch+KI entworfenes 3D-Browser-Sandbox-Ultiversum. Eine Datei, ein Stamm, viele Ringe.
 
-**Stand**: V8.54 (17.05.2026) — W13 Phase 1: der Vibe-Pass. Der Avatar bekommt eine souveräne Identität — ein ed25519-Schlüsselpaar, lokal erzeugt (WebCrypto nativ), der öffentliche Schlüssel IST der Avatar. Davor W12 Welt-Portal (Phase 1+2+3 komplett: das Tor führt real in fremde Engines).
+**Stand**: V8.55 (17.05.2026) — W13 Phase 2: Bauplan-Signaturen. Der Schöpfer versiegelt seine Werke mit dem Vibe-Pass — ein eigener Bauplan trägt eine ed25519-Signatur über seine Substanz; andere können prüfen, dass er wirklich von diesem Schöpfer stammt. Davor W13 Phase 1 (der Vibe-Pass — ed25519-Identität) und W12 Welt-Portal (Phase 1+2+3 komplett).
 
 ## Was es ist
 
