@@ -14313,6 +14313,41 @@ function startSaveServer() {
                         res2.ok === true && !!slot2 && slot2.count >= 2 && bpCountAfter === bpCountBefore;
                     // Unbekannte Welt → abgelehnt.
                     out.unknownRejected = r.obtainPortalForWorld("nirgendwo").ok === false;
+                    // V8.59 — portalMeta + role:portal überleben den Save.
+                    // buildStateSnapshot muss sie schreiben, loadState sie
+                    // wiederherstellen — sonst verlöre ein geholtes Portal beim
+                    // Reload seine Ausrichtung (und träfe wieder _isMoveable).
+                    const snap = r.buildStateSnapshot();
+                    const snapBp = (snap.blueprints || []).find((b) => b && b.name === "portal_fluid");
+                    out.snapPersistsPortal =
+                        !!snapBp &&
+                        snapBp.role === "portal" &&
+                        !!snapBp.portalMeta &&
+                        snapBp.portalMeta.world === REG.fluid.world;
+                    // Read-Seite: den Snapshot-Eintrag durch loadState zurückspielen.
+                    delete r.state.blueprints.portal_fluid;
+                    r.loadState({ blueprints: snapBp ? [snapBp] : [] });
+                    const reBp = r.state.blueprints.portal_fluid;
+                    out.loadRestoresPortal =
+                        !!reBp &&
+                        reBp.role === "portal" &&
+                        !!reBp.portalMeta &&
+                        reBp.portalMeta.world === REG.fluid.world;
+                    out.loadKeepsEnterable = !!reBp && r.computeBlueprintAffordances(reBp).isPortal === true;
+                    // obtainPortalForWorld richtet bei jedem Aufruf neu aus —
+                    // heilt ein Portal, dem (etwa aus einem alten Save) die
+                    // Ausrichtung fehlt.
+                    if (reBp) {
+                        delete reBp.portalMeta;
+                        reBp.role = "architecture";
+                    }
+                    r.obtainPortalForWorld("fluid");
+                    const healedBp = r.state.blueprints.portal_fluid;
+                    out.reaimHeals =
+                        !!healedBp &&
+                        healedBp.role === "portal" &&
+                        !!healedBp.portalMeta &&
+                        healedBp.portalMeta.world === REG.fluid.world;
                     // Aufräumen, damit spätere Blöcke einen sauberen Stand sehen.
                     delete r.state.blueprints.portal_fluid;
                     for (let i = 0; i < r.state.player.inventory.length; i++) {
@@ -14337,6 +14372,13 @@ function startSaveServer() {
                 check("W14 P1: das Portal liegt im Inventar", w14Results.inInventory);
                 check("W14 P1: zweites Holen stackt im Inventar (kein zweiter Bauplan)", w14Results.secondStacks);
                 check("W14 P1: obtainPortalForWorld verwirft eine unbekannte Welt", w14Results.unknownRejected);
+                check("W14 P1: buildStateSnapshot persistiert role:portal + portalMeta", w14Results.snapPersistsPortal);
+                check("W14 P1: loadState stellt role:portal + portalMeta wieder her", w14Results.loadRestoresPortal);
+                check("W14 P1: der wiederhergestellte Portal-Bauplan bleibt betretbar", w14Results.loadKeepsEnterable);
+                check(
+                    "W14 P1: obtainPortalForWorld richtet neu aus + heilt verlorenes portalMeta",
+                    w14Results.reaimHeals
+                );
             } else {
                 check("W14 P1: Bibliothek-Tests laufen", false, w14Results ? w14Results.error : "no result");
             }

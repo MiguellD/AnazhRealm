@@ -12465,6 +12465,22 @@ class AnazhRealm {
                         out.role = "tool";
                         out.toolMeta = { opName: bp.toolMeta.opName, opClass: bp.toolMeta.opClass };
                     }
+                    // W14 — Portal-Bauplan: Rolle + portalMeta (das Welt-Ziel)
+                    // müssen mitreisen. Ohne das verlöre ein über die Bibliothek
+                    // geholtes Portal beim Reload seine Ausrichtung — role +
+                    // portalMeta fehlten, es fiele auf die Skelett-Welt zurück
+                    // und der welt_portal-Klon träfe wieder _isMoveable (der
+                    // V8.51-„Portal klebt am Körper"-Bug). roleManual sichert,
+                    // dass die Rolle nicht von der Emergenz überschrieben wird.
+                    if (bp.role === "portal" && bp.portalMeta) {
+                        out.role = "portal";
+                        if (bp.roleManual) out.roleManual = true;
+                        out.portalMeta = {
+                            world: bp.portalMeta.world,
+                            label: bp.portalMeta.label,
+                            dsl: Array.isArray(bp.portalMeta.dsl) ? bp.portalMeta.dsl.slice() : null,
+                        };
+                    }
                     // W13 Phase 2 — die Bauplan-Signatur reist mit dem Bauplan
                     // (Save, Welt-Tor-Export, Recipe-Import, Fusion). Echtheit
                     // prüft verifyBlueprintSignature beim Anzeigen.
@@ -13794,6 +13810,15 @@ class AnazhRealm {
                 ) {
                     restored.role = "tool";
                     restored.toolMeta = { opName: bp.toolMeta.opName, opClass: bp.toolMeta.opClass };
+                }
+                // W14 — Portal-Bauplan wiederherstellen. portalMeta läuft durch
+                // _sanitizePortalMeta (erzwingt einen same-origin worlds/-Pfad)
+                // — ein manipulierter Save kann so kein fremdes Origin ins
+                // Portal-iframe schmuggeln.
+                if (bp.role === "portal" && bp.portalMeta && typeof bp.portalMeta === "object") {
+                    restored.role = "portal";
+                    if (bp.roleManual === true) restored.roleManual = true;
+                    restored.portalMeta = this._sanitizePortalMeta(bp.portalMeta, restored.label);
                 }
                 // W13 Phase 2 — Bauplan-Signatur wiederherstellen. Strukturell
                 // plausibel prüfen (Hex-Form); die echte Verifikation macht
@@ -15758,16 +15783,22 @@ class AnazhRealm {
         const entry = AnazhRealm.WORLD_REGISTRY[key];
         if (!entry) return { ok: false, reason: "world_unknown" };
         const bpName = `portal_${entry.id}`;
-        if (!this.state.blueprints || !this.state.blueprints[bpName]) {
+        // Bauplan einmal anlegen (Klon des portal-förmigen Magie-Rings).
+        const justCloned = !this.state.blueprints || !this.state.blueprints[bpName];
+        if (justCloned) {
             if (!this.cloneBlueprint("welt_portal", bpName)) {
                 return { ok: false, reason: "clone_failed" };
             }
             this.state.blueprints[bpName].label = `Portal: ${entry.label}`;
-            const aim = this.aimBlueprintAtWorld(bpName, entry.id);
-            if (!aim.ok) {
-                delete this.state.blueprints[bpName];
-                return { ok: false, reason: aim.reason };
-            }
+        }
+        // Immer (neu) ausrichten — der Bauplan trägt danach garantiert role
+        // "portal" + ein frisches portalMeta. Das heilt zugleich ein Portal,
+        // das (etwa aus einem Save von vor V8.59) seine Ausrichtung verloren
+        // hätte; die „existiert ⇒ ist gerichtet"-Annahme entfällt.
+        const aim = this.aimBlueprintAtWorld(bpName, entry.id);
+        if (!aim.ok) {
+            if (justCloned) delete this.state.blueprints[bpName];
+            return { ok: false, reason: aim.reason };
         }
         if (!this.addToInventory(bpName, 1)) {
             return { ok: false, reason: "inventory_full" };
