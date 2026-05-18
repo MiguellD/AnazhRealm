@@ -63,6 +63,32 @@ const PROXY_ALLOWED_HEADER_PREFIXES = [
     "anthropic-dangerous-direct-browser-access",
 ];
 
+// V8.71 — W15 Phase 1: der Auto-Vendor-Pfad. Der save-server schreibt ein
+// fremdes Welt-Bündel nach worlds/<id>/, damit eine neue Welt ohne
+// Handarbeit andockt. Wie der LLM-Proxy: der save-server läuft lokal auf
+// 127.0.0.1, die Vendor-Geste ist ein Dev-Werkzeug; ein Mensch reviewt +
+// committet das worlds/<id>/-Verzeichnis, danach hat es jeder (git ist die
+// unzerstörbare Bibliothek).
+//
+// Sicherheits-Disziplin (der save-server schreibt sonst NUR die eine
+// allowlistete anazhRealmState.json — dieser Endpunkt erweitert das auf
+// worlds/<id>/, also ist die Wand streng):
+//   - worldId: /^[a-z0-9_-]{1,40}$/, NICHT eine Built-in-Welt
+//   - jeder Datei-Pfad relativ: kein "..", kein führender Slash, kein
+//     Backslash, kein Doppelpunkt, kein Null-Byte; das Ziel MUSS in
+//     worlds/<id>/ bleiben (path.join + startsWith-Prüfung)
+//   - Endung-Whitelist (nur Text — html/js/css/json/...); kein .sh/.exe
+//   - Deckel: Datei-Anzahl, je-Datei-Bytes, Gesamt-Bytes, roher Request
+//   - NIE wird etwas ausgeführt — nur fs.writeFileSync (reines Schreiben)
+// Die Limits müssen mit anazhRealm.js (AnazhRealm.VENDOR_LIMITS) übereinstimmen.
+const VENDOR_MAX_FILES = 64;
+const VENDOR_MAX_FILE_BYTES = 4 * 1024 * 1024; // 4 MiB je Datei
+const VENDOR_MAX_TOTAL_BYTES = 12 * 1024 * 1024; // 12 MiB gesamt
+const VENDOR_MAX_BODY_BYTES = 20 * 1024 * 1024; // 20 MiB roher Request (JSON-Overhead)
+// Built-in-Welt-Verzeichnisse — ein Vendor darf sie NICHT überschreiben.
+const VENDOR_RESERVED_IDS = new Set(["skeleton", "fluid", "terrain", "schwarm", "translated"]);
+const VENDOR_ALLOWED_EXT = new Set([".html", ".htm", ".js", ".mjs", ".css", ".json", ".txt", ".md", ".glsl"]);
+
 function handleLlmProxy(req, res) {
     let rawBody = "";
     let aborted = false;
@@ -175,6 +201,131 @@ function handleLlmProxy(req, res) {
     });
 }
 
+// Liefert den gesäuberten relativen Pfad einer Bündel-Datei — oder null,
+// wenn er aus worlds/<id>/ ausbrechen könnte oder eine verbotene Endung
+// trägt. posix.normalize + Segment-Prüfung: ein "../"-Ausbruch ist
+// danach unmöglich, danach prüft handleVendorWorld noch per startsWith.
+function vendorSafeRelPath(p) {
+    if (typeof p !== "string" || !p || p.length > 200) return null;
+    if (p.includes("\0") || p.includes("\\") || p.includes(":")) return null;
+    const norm = path.posix.normalize(p.replace(/^\/+/, ""));
+    if (!norm || norm === "." || norm.startsWith("..") || norm.includes("/../") || norm.startsWith("/")) {
+        return null;
+    }
+    if (norm.split("/").some((s) => s === "" || s === "." || s === "..")) return null;
+    if (!VENDOR_ALLOWED_EXT.has(path.extname(norm).toLowerCase())) return null;
+    return norm;
+}
+
+function handleVendorWorld(req, res) {
+    let rawBody = "";
+    let aborted = false;
+    req.on("data", (chunk) => {
+        if (aborted) return;
+        rawBody += chunk;
+        if (rawBody.length > VENDOR_MAX_BODY_BYTES) {
+            aborted = true;
+            sendJson(res, 413, { error: "Bundle too large" });
+            req.destroy();
+        }
+    });
+    req.on("end", () => {
+        if (aborted) return;
+        let parsed;
+        try {
+            parsed = JSON.parse(rawBody || "{}");
+        } catch (e) {
+            sendJson(res, 400, { error: "Invalid JSON", details: e.message });
+            return;
+        }
+        const worldId = String(parsed.worldId || "")
+            .trim()
+            .toLowerCase();
+        if (!/^[a-z0-9_-]{1,40}$/.test(worldId)) {
+            sendJson(res, 400, { error: "Invalid worldId (a-z 0-9 - _, 1-40 Zeichen)" });
+            return;
+        }
+        if (VENDOR_RESERVED_IDS.has(worldId)) {
+            sendJson(res, 403, { error: "worldId is reserved (built-in world)" });
+            return;
+        }
+        const files = parsed.files;
+        if (!Array.isArray(files) || files.length === 0) {
+            sendJson(res, 400, { error: "No files in bundle" });
+            return;
+        }
+        if (files.length > VENDOR_MAX_FILES) {
+            sendJson(res, 400, { error: `Too many files (max ${VENDOR_MAX_FILES})` });
+            return;
+        }
+        const worldsRoot = path.join(PROJECT_ROOT, "worlds");
+        const worldDir = path.join(worldsRoot, worldId);
+        if (worldDir !== worldsRoot && !worldDir.startsWith(worldsRoot + path.sep)) {
+            sendJson(res, 403, { error: "Forbidden world directory" });
+            return;
+        }
+        const clean = [];
+        let total = 0;
+        let hasIndex = false;
+        for (const f of files) {
+            if (!f || typeof f !== "object") {
+                sendJson(res, 400, { error: "Bad file entry" });
+                return;
+            }
+            const rel = vendorSafeRelPath(f.path);
+            if (!rel) {
+                sendJson(res, 400, { error: `Unsafe or unsupported file path: ${String(f.path).slice(0, 80)}` });
+                return;
+            }
+            if (typeof f.content !== "string") {
+                sendJson(res, 400, { error: `File ${rel} has no string content` });
+                return;
+            }
+            const bytes = Buffer.byteLength(f.content, "utf8");
+            if (bytes > VENDOR_MAX_FILE_BYTES) {
+                sendJson(res, 413, { error: `File ${rel} exceeds per-file size cap` });
+                return;
+            }
+            total += bytes;
+            if (total > VENDOR_MAX_TOTAL_BYTES) {
+                sendJson(res, 413, { error: "Bundle exceeds total size cap" });
+                return;
+            }
+            const target = path.join(worldDir, rel);
+            if (target !== worldDir && !target.startsWith(worldDir + path.sep)) {
+                sendJson(res, 403, { error: `Path escapes world directory: ${rel}` });
+                return;
+            }
+            if (rel === "index.html") hasIndex = true;
+            clean.push({ rel, content: f.content, target });
+        }
+        if (!hasIndex) {
+            sendJson(res, 400, { error: "Bundle must contain a root index.html (the world entry point)" });
+            return;
+        }
+        try {
+            fs.mkdirSync(worldDir, { recursive: true });
+            for (const c of clean) {
+                fs.mkdirSync(path.dirname(c.target), { recursive: true });
+                fs.writeFileSync(c.target, c.content, "utf8");
+            }
+        } catch (e) {
+            sendJson(res, 500, { error: "Vendor write failed", details: e.message });
+            return;
+        }
+        sendJson(res, 200, {
+            ok: true,
+            worldId,
+            fileCount: clean.length,
+            totalBytes: total,
+            dir: `worlds/${worldId}`,
+        });
+    });
+    req.on("error", (err) => {
+        if (!aborted) sendJson(res, 400, { error: "Request stream error", details: err.message });
+    });
+}
+
 function sendStaticFile(req, res) {
     // V8.41 — Query-String abschneiden (Cache-Buster anazhRealm.js?v=8.41).
     // Ein Webserver bedient statische Dateien anhand des Pfads; die Query
@@ -264,6 +415,14 @@ const server = http.createServer((req, res) => {
     // Upstream-Response wird durchgereicht.
     if (req.method === "POST" && req.url === "/api/proxy/llm") {
         handleLlmProxy(req, res);
+        return;
+    }
+
+    // V8.71 — W15 Phase 1: Auto-Vendor. Browser → save-server → worlds/<id>/.
+    // Ein fremdes Welt-Bündel landet auf der Platte, ohne dass jemand
+    // anazhRealm.js anfasst. Strenge Pfad-/Größen-/Endung-Wand.
+    if (req.method === "POST" && req.url === "/api/vendor-world") {
+        handleVendorWorld(req, res);
         return;
     }
 

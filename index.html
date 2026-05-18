@@ -31,7 +31,7 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: stun: turn: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self';"
         />
-        <title>Anazh Realm v8.70 – Das Ultiversum</title>
+        <title>Anazh Realm v8.71 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
              zusätzliche Datei. img-src 'self' data: in CSP erlaubt data-URI. -->
         <link
@@ -2430,6 +2430,39 @@
                 font-style: italic;
                 opacity: 0.85;
             }
+            /* W15 Phase 1 — Auto-Vendor: die „Welt andocken"-Sektion + die
+               „angedockt"-Karte. Tor-Grün (#43c98a) wie die Portal-Rolle —
+               eine vendorte Welt läuft sandgesichert hinter einem Tor. */
+            .vendor-form {
+                display: flex;
+                flex-direction: column;
+                gap: 5px;
+                margin-bottom: 6px;
+            }
+            .vendor-status {
+                font-family: "IM Fell English", Georgia, serif;
+                font-size: 11px;
+                font-style: italic;
+                color: #2c8a5e;
+                margin-top: 6px;
+                min-height: 14px;
+            }
+            .vendor-status.vendor-status-error {
+                color: #a04848;
+            }
+            .library-card-vendored {
+                border-left: 3px solid #43c98a;
+            }
+            .library-vendored-mark {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 9px;
+                letter-spacing: 0.04em;
+                padding: 1px 6px;
+                border-radius: 8px;
+                background: rgba(67, 201, 138, 0.18);
+                color: #2c8a5e;
+                border: 1px solid rgba(67, 201, 138, 0.5);
+            }
             /* KI-Übersetzer Phase 1 — die Übersetzer-Sektion + die
                „KI-übersetzt"-Karte. Stil mirror't die Pergament-Sprache. */
             .translator-input {
@@ -4394,7 +4427,7 @@
         <header id="topbar" class="hud-frame">
             <div class="topbar-inner">
                 <div class="title">
-                    Anazh Realm <span class="version">v8.70</span> <span class="sub">— Das Ultiversum</span>
+                    Anazh Realm <span class="version">v8.71</span> <span class="sub">— Das Ultiversum</span>
                 </div>
                 <nav class="tabs" role="tablist" aria-label="Hauptansichten">
                     <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">
@@ -4882,6 +4915,49 @@
                 </div>
                 <div id="translator-status" class="translator-status" aria-live="polite"></div>
                 <div id="translator-review" class="translator-review" hidden></div>
+            </section>
+            <!-- W15 Phase 1 — Auto-Vendor: ein lokales Welt-Bündel andocken.
+                 Der save-server schreibt es nach worlds/<id>/, die Welt wird
+                 ein sandgesicherter Bibliothek-Eintrag. _runVendorDock. -->
+            <section class="section">
+                <h3>Welt andocken <span class="section-hint">(fremdes Bündel → Bibliothek)</span></h3>
+                <p class="drawer-hint">
+                    Dockt eine fremde, in sich geschlossene Welt an: wähle ihren Ordner (HTML/JS/CSS, eine index.html
+                    als Eingang), gib ihr eine id und einen Namen. Der lokale save-server schreibt sie nach
+                    worlds/&lt;id&gt;/ — danach steht sie unten in den „Welten" und ist durch ein Portal betretbar. Sie
+                    läuft sandgesichert (null-origin): eine fremde Engine läuft voll, kann AnazhRealm aber nicht
+                    berühren. Braucht die lokale Dev-Umgebung (npm start) und committet bleibt die Welt für alle.
+                </p>
+                <div class="vendor-form">
+                    <input
+                        type="text"
+                        id="vendor-id"
+                        class="translator-edit"
+                        maxlength="40"
+                        placeholder="welt-id (a-z 0-9 - _)"
+                    />
+                    <input type="text" id="vendor-label" class="translator-edit" maxlength="60" placeholder="Name der Welt" />
+                    <input
+                        type="text"
+                        id="vendor-desc"
+                        class="translator-edit"
+                        maxlength="200"
+                        placeholder="kurze Beschreibung (optional)"
+                    />
+                    <input
+                        type="text"
+                        id="vendor-dsl"
+                        class="translator-edit"
+                        maxlength="200"
+                        placeholder="DSL-Vokabular, kommagetrennt (optional)"
+                    />
+                </div>
+                <input type="file" id="vendor-files" webkitdirectory multiple hidden />
+                <div class="actions">
+                    <button type="button" id="vendor-pick">Ordner wählen…</button>
+                    <button type="button" id="vendor-dock">Andocken</button>
+                </div>
+                <div id="vendor-status" class="vendor-status" aria-live="polite"></div>
             </section>
             <section class="section">
                 <h3>Welten <span class="section-hint">(durch ein Tor erreichbar)</span></h3>
@@ -5468,6 +5544,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=8.70" defer></script>
+        <script src="anazhRealm.js?v=8.71" defer></script>
     </body>
 </html>

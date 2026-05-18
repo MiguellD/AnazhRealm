@@ -16336,6 +16336,163 @@ function startSaveServer() {
                 );
             }
 
+            // ### V8.71 — W15 Phase 1: der Auto-Vendor-Pfad ###
+            // _vendorPostBundle (der einzige Netz-Schritt) wird gestubbt —
+            // der echte save-server-Round-Trip lebt in smoke-vendor.cjs.
+            const vendorResults = await page
+                .evaluate(async () => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    out.methods =
+                        typeof r.vendorWorldBundle === "function" &&
+                        typeof r._vendorSanitizeBundle === "function" &&
+                        typeof r._vendorPostBundle === "function" &&
+                        typeof r._runVendorDock === "function" &&
+                        typeof r.vendorInitDOM === "function";
+                    r.state.customWorlds = {};
+                    const okBundle = [{ path: "index.html", content: "<!doctype html><title>x</title>" }];
+                    // _vendorSanitizeBundle — REIN, kein Netz.
+                    const s1 = r._vendorSanitizeBundle("voxel-fremd", okBundle);
+                    out.sanitizeOk = s1.ok === true && s1.worldId === "voxel-fremd" && s1.files.length === 1;
+                    out.rejectsBadId = r._vendorSanitizeBundle("Bad ID!", okBundle).reason === "invalid_world_id";
+                    out.rejectsReservedId = r._vendorSanitizeBundle("fluid", okBundle).reason === "reserved_world_id";
+                    out.rejectsTranslatedId =
+                        r._vendorSanitizeBundle("translated", okBundle).reason === "reserved_world_id";
+                    out.rejectsTraversal =
+                        r._vendorSanitizeBundle("w", [{ path: "../evil.js", content: "x" }].concat(okBundle))
+                            .reason === "bad_file_path";
+                    out.rejectsBackslash =
+                        r._vendorSanitizeBundle("w", [{ path: "lib\\x.js", content: "x" }].concat(okBundle))
+                            .reason === "bad_file_path";
+                    out.rejectsBadExt =
+                        r._vendorSanitizeBundle("w", [{ path: "evil.sh", content: "x" }].concat(okBundle))
+                            .reason === "bad_file_ext";
+                    out.rejectsNoIndex =
+                        r._vendorSanitizeBundle("w", [{ path: "main.js", content: "x" }]).reason === "no_index_html";
+                    out.rejectsNoFiles = r._vendorSanitizeBundle("w", []).reason === "no_files";
+                    out.rejectsFileTooLarge =
+                        r._vendorSanitizeBundle("w", [{ path: "index.html", content: "x".repeat(5 * 1024 * 1024) }])
+                            .reason === "file_too_large";
+                    // vendorWorldBundle — _vendorPostBundle stubben (kein echter Schreib).
+                    const origPost = r._vendorPostBundle;
+                    try {
+                        r._vendorPostBundle = async () => ({ ok: true, fileCount: 1, totalBytes: 31 });
+                        const v = await r.vendorWorldBundle({
+                            worldId: "vendor-test",
+                            label: "Vendor-Test",
+                            desc: "Eine angedockte Test-Welt.",
+                            dsl: ["sturm"],
+                            files: okBundle,
+                        });
+                        const stored = r.state.customWorlds && r.state.customWorlds["vendor-test"];
+                        out.vendorRegisters =
+                            v.ok === true &&
+                            !!stored &&
+                            stored.vendored === true &&
+                            stored.trust === "sandboxed" &&
+                            stored.reachable === true &&
+                            stored.world === "worlds/vendor-test/index.html";
+                        // Sanitize-Fehler durchgereicht (Bad id → nicht registriert).
+                        const vBad = await r.vendorWorldBundle({ worldId: "Bad ID!", files: okBundle });
+                        out.vendorPropagatesSanitizeFail =
+                            vBad.ok === false && vBad.reason === "invalid_world_id";
+                        // Post-Fehler durchgereicht (save-server weg → nicht registriert).
+                        r._vendorPostBundle = async () => ({ ok: false, reason: "save_server_unreachable" });
+                        const vUnreach = await r.vendorWorldBundle({
+                            worldId: "vendor-test-2",
+                            label: "X",
+                            files: okBundle,
+                        });
+                        out.vendorPropagatesPostFail =
+                            vUnreach.ok === false &&
+                            vUnreach.reason === "save_server_unreachable" &&
+                            !(r.state.customWorlds && r.state.customWorlds["vendor-test-2"]);
+                    } finally {
+                        r._vendorPostBundle = origPost;
+                    }
+                    // _sanitizeImportedManifest bewahrt trust + vendored.
+                    const reSan = r._sanitizeImportedManifest(r.state.customWorlds["vendor-test"]);
+                    out.sanitizeKeepsTrustVendored =
+                        !!reSan && reSan.trust === "sandboxed" && reSan.vendored === true;
+                    // vendored erzwingt trust:"sandboxed", auch bei trust:"trusted".
+                    const forced = r._sanitizeImportedManifest({
+                        id: "forced-test",
+                        label: "X",
+                        world: "worlds/forced-test/index.html",
+                        vendored: true,
+                        trust: "trusted",
+                    });
+                    out.vendoredForcesSandbox = !!forced && forced.trust === "sandboxed";
+                    // localStorage-Rundlauf — trust + vendored überleben.
+                    const reloaded = r._loadCustomWorlds();
+                    out.roundtripKeepsTrust =
+                        !!reloaded["vendor-test"] &&
+                        reloaded["vendor-test"].trust === "sandboxed" &&
+                        reloaded["vendor-test"].vendored === true;
+                    // obtainPortalForWorld — der Portal-Bauplan trägt trust:"sandboxed".
+                    const ob = r.obtainPortalForWorld("vendor-test");
+                    const portalBp = r.state.blueprints && r.state.blueprints["portal_vendor-test"];
+                    out.portalCarriesSandbox =
+                        ob.ok === true &&
+                        !!portalBp &&
+                        !!portalBp.portalMeta &&
+                        portalBp.portalMeta.trust === "sandboxed";
+                    // renderLibraryUI rendert eine „angedockt"-Karte.
+                    r.renderLibraryUI();
+                    out.uiVendoredCard =
+                        !!document.querySelector("#library-list .library-card-vendored") &&
+                        !!document.querySelector("#library-list .library-vendored-mark");
+                    // UI: Andocken-Sektion im DOM.
+                    out.uiVendorSection =
+                        !!document.getElementById("vendor-id") &&
+                        !!document.getElementById("vendor-files") &&
+                        !!document.getElementById("vendor-dock");
+                    // Aufräumen.
+                    if (r.state.blueprints) delete r.state.blueprints["portal_vendor-test"];
+                    if (r.state.player && Array.isArray(r.state.player.inventory)) {
+                        r.state.player.inventory.forEach((sl, i) => {
+                            if (sl && sl.blueprintName === "portal_vendor-test") r.state.player.inventory[i] = null;
+                        });
+                    }
+                    r.state.customWorlds = {};
+                    r._saveCustomWorlds();
+                    r.saveState();
+                    r.renderLibraryUI();
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (vendorResults && !vendorResults.error) {
+                check(
+                    "W15 Auto-Vendor: vendorWorldBundle/_vendorSanitizeBundle/_vendorPostBundle/_runVendorDock/vendorInitDOM existieren",
+                    vendorResults.methods
+                );
+                check("W15 Auto-Vendor: _vendorSanitizeBundle akzeptiert ein sauberes Bündel", vendorResults.sanitizeOk);
+                check("W15 Auto-Vendor: _vendorSanitizeBundle lehnt eine ungültige Welt-id ab", vendorResults.rejectsBadId);
+                check("W15 Auto-Vendor: _vendorSanitizeBundle lehnt eine Built-in-id (fluid) ab", vendorResults.rejectsReservedId);
+                check("W15 Auto-Vendor: _vendorSanitizeBundle lehnt die translated-id ab", vendorResults.rejectsTranslatedId);
+                check("W15 Auto-Vendor: _vendorSanitizeBundle lehnt einen Pfad-Ausbruch (../) ab", vendorResults.rejectsTraversal);
+                check("W15 Auto-Vendor: _vendorSanitizeBundle lehnt einen Backslash-Pfad ab", vendorResults.rejectsBackslash);
+                check("W15 Auto-Vendor: _vendorSanitizeBundle lehnt eine verbotene Datei-Endung (.sh) ab", vendorResults.rejectsBadExt);
+                check("W15 Auto-Vendor: _vendorSanitizeBundle lehnt ein Bündel ohne index.html ab", vendorResults.rejectsNoIndex);
+                check("W15 Auto-Vendor: _vendorSanitizeBundle lehnt ein leeres Bündel ab", vendorResults.rejectsNoFiles);
+                check("W15 Auto-Vendor: _vendorSanitizeBundle lehnt eine zu große Datei ab", vendorResults.rejectsFileTooLarge);
+                check(
+                    "W15 Auto-Vendor: vendorWorldBundle registriert einen customWorlds-Eintrag (trust:sandboxed, vendored, reachable, worlds/<id>/index.html)",
+                    vendorResults.vendorRegisters
+                );
+                check("W15 Auto-Vendor: vendorWorldBundle reicht einen Sanitize-Fehler durch (id → nicht registriert)", vendorResults.vendorPropagatesSanitizeFail);
+                check("W15 Auto-Vendor: vendorWorldBundle reicht einen Post-Fehler durch (save_server_unreachable → nicht registriert)", vendorResults.vendorPropagatesPostFail);
+                check("W15 Auto-Vendor: _sanitizeImportedManifest bewahrt trust + vendored", vendorResults.sanitizeKeepsTrustVendored);
+                check("W15 Auto-Vendor: vendored erzwingt trust:sandboxed (auch bei trust:trusted)", vendorResults.vendoredForcesSandbox);
+                check("W15 Auto-Vendor: trust + vendored überleben den localStorage-Rundlauf", vendorResults.roundtripKeepsTrust);
+                check("W15 Auto-Vendor: obtainPortalForWorld holt ein Portal — es trägt trust:sandboxed", vendorResults.portalCarriesSandbox);
+                check("W15 Auto-Vendor: renderLibraryUI rendert eine 'angedockt'-Karte", vendorResults.uiVendoredCard);
+                check("W15 Auto-Vendor: die 'Welt andocken'-Sektion (id + Ordner-Picker + Knopf) im DOM", vendorResults.uiVendorSection);
+            } else {
+                check("W15 Auto-Vendor: Phase-1-Tests laufen", false, vendorResults ? vendorResults.error : "no result");
+            }
+
             // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
             const v840Results = await page
                 .evaluate(() => {
