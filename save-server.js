@@ -294,6 +294,57 @@ function applyVendorBundle(worldId, files) {
     };
 }
 
+// W16 Phase 1 — die Lese-Seite zum Auto-Vendor: das Bündel einer vendorten
+// Welt von der Platte zurücklesen. Spiegelt applyVendorBundle (die Schreib-
+// Seite) — dieselbe Endung-Whitelist + dieselben Deckel. Der W16-Sender ruft
+// das auf, um die Dateien einer Welt über das Mesh an einen Mitspieler zu
+// reichen. Lesen ist streng weniger gefährlich als Schreiben; die op-förmige
+// id + die Verzeichnis-Eingrenzung sind die Wand. Liefert {status, body}.
+function readVendorBundle(worldId) {
+    if (!/^[a-z0-9_-]{1,40}$/.test(worldId)) {
+        return { status: 400, body: { error: "Invalid worldId (a-z 0-9 - _, 1-40 Zeichen)" } };
+    }
+    const worldsRoot = path.join(PROJECT_ROOT, "worlds");
+    const worldDir = path.join(worldsRoot, worldId);
+    if (worldDir === worldsRoot || !worldDir.startsWith(worldsRoot + path.sep)) {
+        return { status: 403, body: { error: "Forbidden world directory" } };
+    }
+    if (!fs.existsSync(worldDir) || !fs.statSync(worldDir).isDirectory()) {
+        return { status: 404, body: { error: "World not found" } };
+    }
+    const files = [];
+    let total = 0;
+    const walk = (dir, prefix) => {
+        for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+            const abs = path.join(dir, ent.name);
+            const rel = prefix ? `${prefix}/${ent.name}` : ent.name;
+            if (ent.isDirectory()) {
+                walk(abs, rel);
+                continue;
+            }
+            if (!ent.isFile()) continue;
+            // Nur Text-Endungen — Binär-Assets vendort W15 nicht (gleicher Rand).
+            if (!VENDOR_ALLOWED_EXT.has(path.extname(ent.name).toLowerCase())) continue;
+            if (files.length >= VENDOR_MAX_FILES) throw new Error("too many files");
+            const content = fs.readFileSync(abs, "utf8");
+            const bytes = Buffer.byteLength(content, "utf8");
+            if (bytes > VENDOR_MAX_FILE_BYTES) throw new Error(`file ${rel} too large`);
+            total += bytes;
+            if (total > VENDOR_MAX_TOTAL_BYTES) throw new Error("bundle too large");
+            files.push({ path: rel, content });
+        }
+    };
+    try {
+        walk(worldDir, "");
+    } catch (e) {
+        return { status: 413, body: { error: `Bundle read failed: ${e.message}` } };
+    }
+    if (!files.length) {
+        return { status: 404, body: { error: "World has no readable text files" } };
+    }
+    return { status: 200, body: { ok: true, worldId, files, fileCount: files.length, totalBytes: total } };
+}
+
 // Zero-dep HTTP(S)-GET mit Timeout + Byte-Deckel + einem Redirect-Hop.
 // expectJson → JSON.parse. Liefert ein Promise (resolve: Body, reject: Error).
 function vendorHttpGet(urlStr, opts) {
@@ -515,6 +566,20 @@ function handleVendorWorld(req, res) {
     });
 }
 
+// W16 Phase 1 — GET /api/vendor-bundle?worldId=<id>: das Bündel einer
+// vendorten Welt zurückgeben. Der W16-Sender holt es so von der Platte und
+// reicht es über das Mesh weiter.
+function handleVendorBundleRead(req, res) {
+    let worldId = "";
+    try {
+        worldId = (new URL(req.url, "http://localhost").searchParams.get("worldId") || "").trim().toLowerCase();
+    } catch {
+        worldId = "";
+    }
+    const out = readVendorBundle(worldId);
+    sendJson(res, out.status, out.body);
+}
+
 function sendStaticFile(req, res) {
     // V8.41 — Query-String abschneiden (Cache-Buster anazhRealm.js?v=8.41).
     // Ein Webserver bedient statische Dateien anhand des Pfads; die Query
@@ -612,6 +677,14 @@ const server = http.createServer((req, res) => {
     // anazhRealm.js anfasst. Strenge Pfad-/Größen-/Endung-Wand.
     if (req.method === "POST" && req.url === "/api/vendor-world") {
         handleVendorWorld(req, res);
+        return;
+    }
+
+    // W16 Phase 1 — Mesh-Welt-Verteilung: die Lese-Seite. Der W16-Sender holt
+    // ein vendortes Welt-Bündel von der Platte zurück, um es über das Mesh an
+    // einen Mitspieler zu reichen.
+    if (req.method === "GET" && (req.url || "").split("?")[0] === "/api/vendor-bundle") {
+        handleVendorBundleRead(req, res);
         return;
     }
 

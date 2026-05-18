@@ -2,7 +2,7 @@
 
 Ein als Co-Creation-Werk Mensch+KI entworfenes 3D-Browser-Sandbox-Ultiversum. Eine Datei, ein Stamm, viele Ringe.
 
-**Stand**: V8.72 (18.05.2026) — **der Auto-Vendor-Pfad (W15) komplett**: ein fremdes Welt-Bündel dockt OHNE Handarbeit an. Der save-server hat einen `/api/vendor-world`-Schreib-Pfad mit zwei Eingängen — ein lokal hochgeladenes Bündel (Phase 1, V8.71) ODER eine GitHub-Repo-URL (Phase 2, V8.72 — der Server holt die Dateien per Trees-API + Raw-Fetch selbst, kein SSRF). Die vendorte Welt läuft `trust:"sandboxed"` (null-origin). Davor V8.70 das **Untrusted-Welt-Tor** (eine echte, ungeprüfte fremde Engine läuft null-origin sandgesichert — `worlds/schwarm/` beweist es) + V8.68/V8.69 der **KI-Übersetzer** komplett. W7 Compute-Sharing, W14 Bibliothek, W13 Vibe-Pass, W12 Welt-Portal — alle komplett. Offen: W16 Mesh-Welt-Verteilung (vendorte Welten reisen peer-to-peer) + W17 Multiplayer-Sub-Welten (detailliert in `docs/roadmap.md` §3).
+**Stand**: V8.73 (18.05.2026) — **W16 Phase 1: Mesh-Welt-Verteilung** — eine vendorte Welt reist peer-to-peer: ein Mitspieler im selben Mesh-Raum holt ihr Bündel über das Mesh, ohne Repo, ohne GitHub. Zwei kanal-exklusive Nachrichten `world-bundle-pull`/`world-bundle-chunk` (Spiegel von W7 P2); der Sender liest sein Bündel über die neue save-server-Lese-Seite `GET /api/vendor-bundle` zurück, der Empfänger reicht es an die erprobte `vendorWorldBundle`-Schreib-Seite — ein dritter Eingang (lokal / GitHub / Mesh), eine Wand. Davor **W15 der Auto-Vendor-Pfad komplett** (ein lokales Bündel ODER eine GitHub-Repo-URL dockt OHNE Handarbeit an), V8.70 das **Untrusted-Welt-Tor** (eine echte, ungeprüfte fremde Engine läuft null-origin sandgesichert — `worlds/schwarm/` beweist es) + V8.68/V8.69 der **KI-Übersetzer** komplett. W7 Compute-Sharing, W14 Bibliothek, W13 Vibe-Pass, W12 Welt-Portal — alle komplett. Offen: W16 Phase 2 (browsbarer Welt-Katalog) + W17 Multiplayer-Sub-Welten (detailliert in `docs/roadmap.md` §3).
 
 ## Was es ist
 
@@ -29,7 +29,7 @@ Browser öffnen: `http://localhost:4312/` (oder `index.html` direkt).
 npm run check           # Syntax-Check (node --check)
 npm run lint            # ESLint
 npm run format:check    # Prettier
-npm run playtest        # 2629 Headless-Invarianten (~60s)
+npm run playtest        # 2648 Headless-Invarianten (~60s)
 npm run audit:strict    # 5 generische Audit-Schichten (~25s)
 ```
 

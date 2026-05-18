@@ -13,12 +13,16 @@
 // Voraussetzung: puppeteer als devDependency (`npm install`).
 const { spawn } = require("child_process");
 const path = require("path");
+const fs = require("fs");
 const puppeteer = require("puppeteer");
 
 const ROOT = "/home/user/AnazhRealm";
 const PAGE_URL = "http://127.0.0.1:4312/index.html";
 const SIGNALING_URL = "ws://127.0.0.1:4313";
 const ROOM = "smoke-webrtc-room";
+// W16 — die Test-Welt, die A vendort + B über das Mesh holt.
+const W16_ID = "smoke-mesh-w16";
+const W16_DIR = path.join(ROOT, "worlds", W16_ID);
 
 function sleep(ms) {
     return new Promise((r) => setTimeout(r, ms));
@@ -338,12 +342,72 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
             typeof snapLenB === "number" && snapLenB > 100,
             `len=${snapLenB}`
         );
+
+        // W16 Phase 1 — Mesh-Welt-Verteilung. A vendort eine kleine Test-Welt
+        // (der save-server schreibt worlds/<id>/); B hat sie nicht und holt
+        // ihr Bündel peer-to-peer über das Mesh. B's customWorlds bekommt den
+        // Eintrag — die Welt reiste über das Mesh, ohne Repo, ohne GitHub.
+        fs.rmSync(W16_DIR, { recursive: true, force: true });
+        const w16Vendor = await pageA.evaluate(async (id) => {
+            return window.anazhRealm.vendorWorldBundle({
+                worldId: id,
+                label: "Mesh-Test-Welt",
+                desc: "über das Mesh gereist",
+                dsl: ["sturm"],
+                files: [
+                    { path: "index.html", content: "<!doctype html><title>w16</title><body>mesh world</body>" },
+                    { path: "lib/engine.js", content: "console.log('w16 engine');" },
+                ],
+            });
+        }, W16_ID);
+        check(
+            "W16: A vendort eine Test-Welt (save-server schreibt worlds/<id>/)",
+            !!w16Vendor && w16Vendor.ok === true,
+            JSON.stringify(w16Vendor)
+        );
+        const bHasBefore = await pageB.evaluate(
+            (id) => !!(window.anazhRealm.state.customWorlds && window.anazhRealm.state.customWorlds[id]),
+            W16_ID
+        );
+        check("W16: B hat die Welt vor dem Mesh-Transfer nicht", bHasBefore === false);
+        // B holt die Welt von A über das Mesh.
+        const w16Req = await pageB.evaluate(
+            (id, pid) => window.anazhRealm.requestWorldBundleFromPeer(id, pid),
+            W16_ID,
+            peerIdA
+        );
+        check("W16: B fordert das Welt-Bündel von A an", !!w16Req && w16Req.ok === true, JSON.stringify(w16Req));
+        // Das Bündel reist p2p; B's customWorlds bekommt den Eintrag.
+        await waitFor(
+            pageB,
+            (id) => {
+                const cw = window.anazhRealm.state.customWorlds;
+                return !!(cw && cw[id] && cw[id].trust === "sandboxed");
+            },
+            15000,
+            "B empfängt A's Welt-Bündel über das Mesh",
+            W16_ID
+        );
+        check("W16: A's Welt reiste peer-to-peer in B's Bibliothek (trust:sandboxed)", true);
+        const w16Entry = await pageB.evaluate((id) => {
+            const e = window.anazhRealm.state.customWorlds[id];
+            return { label: e && e.label, vendored: e && e.vendored, world: e && e.world };
+        }, W16_ID);
+        check(
+            "W16: die mesh-empfangene Welt ist vendored + trägt ihren Namen + Tor-Pfad",
+            w16Entry.vendored === true &&
+                w16Entry.label === "Mesh-Test-Welt" &&
+                w16Entry.world === `worlds/${W16_ID}/index.html`,
+            JSON.stringify(w16Entry)
+        );
     } catch (err) {
         check(`Test-Ablauf ohne Fehler`, false, err.message);
     } finally {
         await browser.close();
         saveServer.kill();
         signaling.kill();
+        // W16 — das Test-Welt-Verzeichnis wegräumen.
+        fs.rmSync(W16_DIR, { recursive: true, force: true });
     }
 
     console.log(failures.length === 0 ? "\n✅ WebRTC-Mesh verifiziert" : `\n❌ ${failures.length} Fehler`);

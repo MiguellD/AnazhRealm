@@ -4980,6 +4980,33 @@
                 </div>
                 <div id="vendor-status" class="vendor-status" aria-live="polite"></div>
             </section>
+            <!-- W16 Phase 1 — Mesh-Welt-Verteilung: eine Welt, die ein
+                 Mitspieler vendort hat, peer-to-peer über das Mesh holen.
+                 _runMeshWorldGet → requestWorldBundleFromPeer. Der browsbare
+                 Welt-Katalog (Peers annoncieren ihre Bibliothek) ist W16 P2. -->
+            <section class="section">
+                <h3>Welt vom Mitspieler holen <span class="section-hint">(über das Mesh)</span></h3>
+                <p class="drawer-hint">
+                    Hat ein Mitspieler im selben Mesh-Raum eine Welt vendort, holst du sie hier — ihr Bündel reist
+                    peer-to-peer über das Mesh, du brauchst kein GitHub-Repo. Gib die Welt-id ein (frag den
+                    Mitspieler nach ihr) und wähl ihn aus. Die geholte Welt läuft sandgesichert wie jede vendorte
+                    Welt. Braucht eine stehende Mesh-Verbindung (Multi-User-Drawer).
+                </p>
+                <div class="vendor-form">
+                    <input
+                        type="text"
+                        id="mesh-world-id"
+                        class="translator-edit"
+                        maxlength="40"
+                        placeholder="welt-id des Mitspielers"
+                    />
+                    <select id="mesh-world-peer" class="translator-edit" aria-label="Mitspieler"></select>
+                </div>
+                <div class="actions">
+                    <button type="button" id="mesh-world-get">Welt holen</button>
+                </div>
+                <div id="mesh-world-status" class="vendor-status" aria-live="polite"></div>
+            </section>
             <section class="section">
                 <h3>Welten <span class="section-hint">(durch ein Tor erreichbar)</span></h3>
                 <p class="drawer-hint">
@@ -5565,6 +5592,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=8.72" defer></script>
+        <script src="anazhRealm.js?v=8.73" defer></script>
     </body>
 </html>
