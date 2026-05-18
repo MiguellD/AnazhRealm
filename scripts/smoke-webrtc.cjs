@@ -23,6 +23,29 @@ const ROOM = "smoke-webrtc-room";
 // W16 — die Test-Welt, die A vendort + B über das Mesh holt.
 const W16_ID = "smoke-mesh-w16";
 const W16_DIR = path.join(ROOT, "worlds", W16_ID);
+// W17 — die Multiplayer-Test-Welt: ihr Sub-Welt-iframe öffnet einen Shim-
+// WebSocket; ein ws-send fliesst als subworld-net peer-to-peer übers Mesh.
+const W17_ID = "smoke-mesh-w17";
+const W17_DIR = path.join(ROOT, "worlds", W17_ID);
+const W17_WORLD_HTML = `<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>W17 B-Relay Test-Welt</title></head>
+<body>
+<p>W17 B-Relay — Test-Welt</p>
+<script>
+(function () {
+  function note(t) { try { parent.postMessage({ type: "event", text: String(t) }, "*"); } catch (e) {} }
+  note(window.__anazhShim === true ? "subnet-shim-ok" : "subnet-shim-missing");
+  try {
+    var ws = new WebSocket("ws://anazh-subworld/");
+    ws.addEventListener("open", function () { note("subnet-open"); });
+    ws.addEventListener("message", function (ev) { note("subnet-recv:" + ev.data); });
+  } catch (e) { note("subnet-throw:" + (e && e.message)); }
+})();
+</script>
+</body>
+</html>
+`;
 
 function sleep(ms) {
     return new Promise((r) => setTimeout(r, ms));
@@ -354,6 +377,7 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
                 label: "Mesh-Test-Welt",
                 desc: "über das Mesh gereist",
                 dsl: ["sturm"],
+                multiplayer: true,
                 files: [
                     { path: "index.html", content: "<!doctype html><title>w16</title><body>mesh world</body>" },
                     { path: "lib/engine.js", content: "console.log('w16 engine');" },
@@ -389,7 +413,7 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
             (pid, wid) => {
                 const peer = window.anazhRealm.state.p2p.peers.get(pid);
                 const e = peer && peer.catalog && peer.catalog.find((w) => w.id === wid);
-                return e ? { id: e.id, label: e.label, hash: e.hash } : null;
+                return e ? { id: e.id, label: e.label, hash: e.hash, multiplayer: e.multiplayer } : null;
             },
             peerIdA,
             W16_ID
@@ -399,6 +423,7 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
             !!w16Cat && w16Cat.label === "Mesh-Test-Welt" && /^[0-9a-f]{64}$/.test(w16Cat.hash || ""),
             JSON.stringify(w16Cat)
         );
+        check("W17 MP: A's Multiplayer-Marke reist im Welt-Katalog mit", !!w16Cat && w16Cat.multiplayer === true);
 
         // B holt die Welt von A über das Mesh — worldId + Peer kommen aus dem
         // Katalog (der Phase-2-Spieler-Pfad, kein blankes Text-Feld mehr).
@@ -422,7 +447,7 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
         check("W16: A's Welt reiste peer-to-peer in B's Bibliothek (trust:sandboxed)", true);
         const w16Entry = await pageB.evaluate((id) => {
             const e = window.anazhRealm.state.customWorlds[id];
-            return { label: e && e.label, vendored: e && e.vendored, world: e && e.world };
+            return { label: e && e.label, vendored: e && e.vendored, world: e && e.world, multiplayer: e && e.multiplayer };
         }, W16_ID);
         check(
             "W16: die mesh-empfangene Welt ist vendored + trägt ihren Namen + Tor-Pfad",
@@ -431,14 +456,138 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
                 w16Entry.world === `worlds/${W16_ID}/index.html`,
             JSON.stringify(w16Entry)
         );
+        check(
+            "W17 MP: die Multiplayer-Marke überlebt den ganzen Mesh-Bündel-Transfer",
+            w16Entry.multiplayer === true,
+            JSON.stringify(w16Entry)
+        );
+
+        // W17 Phase B-Relay — der Sub-Welt-Verkehr fliesst peer-to-peer übers
+        // Mesh. Beide Seiten betreten dasselbe Multiplayer-Portal (eine Test-
+        // Welt mit dem Transport-Shim); A's ws-send erscheint bei B als
+        // ws-recv — das Mesh IST der Server, kein echter Server existiert.
+        fs.rmSync(W17_DIR, { recursive: true, force: true });
+        fs.mkdirSync(W17_DIR, { recursive: true });
+        fs.writeFileSync(path.join(W17_DIR, "index.html"), W17_WORLD_HTML, "utf8");
+        const SUBWORLD_PATH = `worlds/${W17_ID}/index.html`;
+        const buildSubPortal = (world) => {
+            window.anazhRealm._buildPortalOverlay({
+                world,
+                label: "W17 B-Relay",
+                multiplayer: true,
+                trust: "sandboxed",
+            });
+        };
+        await pageA.evaluate(buildSubPortal, SUBWORLD_PATH);
+        await pageB.evaluate(buildSubPortal, SUBWORLD_PATH);
+        // Warten, bis beide Sub-Welt-iframes ihren WebSocket geöffnet haben
+        // (der Shim meldet ws-open → _portalOverlay verfolgt den Kanal).
+        await waitFor(
+            pageA,
+            () => window.anazhRealm._portalOverlay && window.anazhRealm._portalOverlay.netChannels.size >= 1,
+            15000,
+            "A's Sub-Welt-iframe öffnete den Shim-WebSocket"
+        );
+        await waitFor(
+            pageB,
+            () => window.anazhRealm._portalOverlay && window.anazhRealm._portalOverlay.netChannels.size >= 1,
+            15000,
+            "B's Sub-Welt-iframe öffnete den Shim-WebSocket"
+        );
+        check("W17 B-Relay: beide Sub-Welt-iframes haben einen Shim-WebSocket geöffnet", true);
+        // A treibt ein ws-send (harness-getrieben — robust gegen die Tab-
+        // Drosselung des Hintergrund-iframes; den Shim-Sende-Pfad selbst
+        // beweist smoke-shim.cjs). _portalNetReceive macht daraus einen
+        // subworld-net-Broadcast übers Mesh.
+        await pageA.evaluate(() => {
+            window.anazhRealm._portalNetReceive({
+                __anazhNet: true,
+                kind: "ws-send",
+                channel: 1,
+                data: "subnet-from-A",
+            });
+        });
+        // B's Sub-Welt-iframe empfängt es als ws-recv → der `event`-Rückkanal
+        // schreibt einen Journal-Eintrag.
+        await waitFor(
+            pageB,
+            () =>
+                (window.anazhRealm.state.worldJournal.entries || []).some((e) =>
+                    String(e.text || "").includes("subnet-recv:subnet-from-A")
+                ),
+            12000,
+            "B's Sub-Welt empfängt A's ws-send über das Mesh"
+        );
+        check("W17 B-Relay: A's Sub-Welt-Verkehr floss peer-to-peer zu B", true);
+        // Gegenrichtung: B sendet, A's Sub-Welt empfängt.
+        await pageB.evaluate(() => {
+            window.anazhRealm._portalNetReceive({
+                __anazhNet: true,
+                kind: "ws-send",
+                channel: 1,
+                data: "subnet-from-B",
+            });
+        });
+        await waitFor(
+            pageA,
+            () =>
+                (window.anazhRealm.state.worldJournal.entries || []).some((e) =>
+                    String(e.text || "").includes("subnet-recv:subnet-from-B")
+                ),
+            12000,
+            "A's Sub-Welt empfängt B's ws-send über das Mesh"
+        );
+        check("W17 B-Relay: das Mesh trägt Sub-Welt-Verkehr in beide Richtungen", true);
+        await pageA.evaluate(() => window.anazhRealm._disposePortalOverlay());
+        await pageB.evaluate(() => window.anazhRealm._disposePortalOverlay());
+
+        // W17 Phase C — das Gruppen-Portal. A betritt ein Multiplayer-Portal
+        // und lädt die Mesh-Gruppe ein; B bekommt die Einladung + folgt ihr
+        // ins SELBE Multiplayer-Portal (die B2-Sub-Raum-Eingrenzung verbindet).
+        const w17cWorldA = await pageA.evaluate(() => {
+            const r = window.anazhRealm;
+            const obt = r.obtainPortalForWorld("skeleton");
+            if (!obt.ok) return null;
+            // Die Skelett-Welt ist nicht von Haus aus multiplayer — fürs Test
+            // setzen, dass A's Portal ein Multiplayer-Tor ist.
+            r.state.blueprints["portal_skeleton"].portalMeta.multiplayer = true;
+            r.enterPortal({ type: "portal_skeleton", affordances: { isPortal: true } });
+            return r._portalOverlay ? r._portalOverlay.world : null;
+        });
+        check("W17 C: A betritt ein Multiplayer-Portal", typeof w17cWorldA === "string", String(w17cWorldA));
+        // B muss die portal-invite über das Mesh empfangen.
+        await waitFor(
+            pageB,
+            () => {
+                const inv = window.anazhRealm.state.p2p.pendingInvite;
+                return !!inv && inv.worldId === "skeleton";
+            },
+            10000,
+            "B empfängt A's portal-invite über das Mesh"
+        );
+        check("W17 C: B bekommt die Gruppen-Portal-Einladung peer-to-peer", true);
+        // B folgt der Einladung → betritt dasselbe Multiplayer-Portal.
+        const w17cJoin = await pageB.evaluate(() => {
+            const res = window.anazhRealm.joinPortalInvite();
+            const po = window.anazhRealm._portalOverlay;
+            return { ok: res.ok, world: po ? po.world : null, multiplayer: po ? po.multiplayer : null };
+        });
+        check(
+            "W17 C: B folgt der Einladung + ist im selben Multiplayer-Portal wie A",
+            w17cJoin.ok === true && w17cJoin.world === w17cWorldA && w17cJoin.multiplayer === true,
+            JSON.stringify(w17cJoin)
+        );
+        await pageA.evaluate(() => window.anazhRealm._disposePortalOverlay());
+        await pageB.evaluate(() => window.anazhRealm._disposePortalOverlay());
     } catch (err) {
         check(`Test-Ablauf ohne Fehler`, false, err.message);
     } finally {
         await browser.close();
         saveServer.kill();
         signaling.kill();
-        // W16 — das Test-Welt-Verzeichnis wegräumen.
+        // W16 + W17 — die Test-Welt-Verzeichnisse wegräumen.
         fs.rmSync(W16_DIR, { recursive: true, force: true });
+        fs.rmSync(W17_DIR, { recursive: true, force: true });
     }
 
     console.log(failures.length === 0 ? "\n✅ WebRTC-Mesh verifiziert" : `\n❌ ${failures.length} Fehler`);

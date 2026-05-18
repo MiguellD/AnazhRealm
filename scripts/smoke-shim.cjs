@@ -1,19 +1,20 @@
-// W17 Phase A — End-to-End-Beweis des Transport-Shims.
+// W17 Transport-Shim — End-to-End-Beweis (Phase A Injektion + Phase B Send).
 //
-// Der headless playtest prüft die DATEN-Schicht (multiplayer-Flag in
-// portalMeta, der ?anazh-shim=1-Marker, der _portalNetReceive-Echo). Er
-// kann aber nicht prüfen, ob der Shim in einem ECHTEN null-origin-iframe
+// Der headless playtest prüft die DATEN-Schicht (multiplayer-Flag, der
+// ?anazh-shim=1-Marker, der subworld-net-Broadcast, die Sub-Raum-Eingrenzung).
+// Er kann aber nicht prüfen, ob der Shim in einem ECHTEN null-origin-iframe
 // `window.WebSocket` wirklich ersetzt und ein `send()` über die Sandbox-
 // Grenze als postMessage zu AnazhRealm fliesst. Dieser Test:
 //   1. der save-server injiziert den Shim in eine Welt-index.html, wenn die
 //      Anfrage `?anazh-shim=1` trägt — und NICHT ohne den Marker,
-//   2. der echte Loopback: eine Test-Welt im echten Portal-iframe öffnet
+//   2. der echte Sende-Pfad: eine Test-Welt im echten Portal-iframe öffnet
 //      einen Shim-`WebSocket`, sendet einen Ping; AnazhRealms echtes
-//      _portalNetReceive echot ihn zurück; die Welt empfängt das Echo.
+//      _portalNetReceive macht daraus einen subworld-net-Mesh-Broadcast.
 //
-// Phase A routet noch NICHT übers Mesh — der Echo IST die Akzeptanz: die
-// fremde Welt glaubt, sie habe einen Server. Phase B-Relay ersetzt den Echo
-// durch die Mesh-Verteilung.
+// W17 Phase B-Relay verteilt ein `ws-send` über das W7-Mesh — das Mesh IST
+// der Server. Den Zwei-Browser-Durchlauf (A's ws-send erscheint bei B) prüft
+// smoke-webrtc.cjs; dieser Test prüft die EINE Seite: iframe → Shim →
+// _portalNetReceive → subworld-net-Broadcast.
 //
 // Voraussetzung: puppeteer als devDependency (`npm install`).
 const { spawn } = require("child_process");
@@ -28,8 +29,9 @@ const TEST_DIR = path.join(ROOT, "worlds", TEST_ID);
 const WORLD_PATH = `worlds/${TEST_ID}/index.html`;
 
 // Die Test-Welt: sie öffnet einen WebSocket, sendet einen Ping und meldet
-// über den `event`-Rückkanal, ob der Shim installiert ist + ob der Loopback
-// funktioniert. KEIN echter Server existiert — der Shim trägt den Verkehr.
+// über den `event`-Rückkanal, ob der Shim installiert ist + dass sie
+// gesendet hat. KEIN echter Server existiert — der Shim trägt den Verkehr
+// als subworld-net über AnazhRealms Mesh.
 const TEST_WORLD_HTML = `<!doctype html>
 <html>
 <head><meta charset="utf-8"><title>W17 Shim-Test-Welt</title></head>
@@ -37,19 +39,14 @@ const TEST_WORLD_HTML = `<!doctype html>
 <p>W17 Transport-Shim — Test-Welt</p>
 <script>
 (function () {
-  var reported = false;
-  function note(t) { try { parent.postMessage({ type: "event", text: t }, "*"); } catch (e) {} }
-  function result(t) { if (reported) return; reported = true; note(t); }
+  function note(t) { try { parent.postMessage({ type: "event", text: String(t) }, "*"); } catch (e) {} }
   note(window.__anazhShim === true ? "shim-installed" : "shim-missing");
   try {
-    var ws = new WebSocket("ws://anazh-loopback-test/");
-    ws.addEventListener("open", function () { ws.send("shim-ping"); });
-    ws.addEventListener("message", function (ev) {
-      result(ev.data === "shim-ping" ? "shim-loopback-ok" : "shim-loopback-bad:" + ev.data);
-    });
-    ws.addEventListener("error", function () { result("shim-loopback-error"); });
-    setTimeout(function () { result("shim-loopback-timeout"); }, 5000);
-  } catch (e) { result("shim-loopback-throw:" + (e && e.message)); }
+    var ws = new WebSocket("ws://anazh-subworld-test/");
+    ws.addEventListener("open", function () { ws.send("shim-ping"); note("shim-sent"); });
+    ws.addEventListener("message", function (ev) { note("shim-recv:" + ev.data); });
+    ws.addEventListener("error", function () { note("shim-ws-error"); });
+  } catch (e) { note("shim-ws-throw:" + (e && e.message)); }
 })();
 </script>
 </body>
@@ -126,13 +123,24 @@ function startProc(script, readyRe) {
             withoutMarker.includes(SHIM_MARK) ? "(Shim fälschlich injiziert)" : ""
         );
 
-        // ── Teil B — der echte Loopback ──
-        // Auf AnazhRealms Boot warten, dann das echte Portal-Overlay bauen:
-        // _buildPortalOverlay → echtes sandboxed iframe → _portalNetReceive.
+        // ── Teil B — der echte Sende-Pfad (Phase B-Relay) ──
+        // Auf AnazhRealms Boot warten, p2pSend hooken (im Ein-Seiten-Test
+        // steht kein Mesh — der Hook IST der Empfänger), dann das echte
+        // Portal-Overlay bauen: _buildPortalOverlay → echtes sandboxed iframe
+        // → der Shim → _portalNetReceive → subworld-net-Broadcast.
         await page.waitForFunction(
             () => window.anazhRealm && window.anazhRealm.state && window.anazhRealm.state.worldJournal,
             { timeout: 30000 }
         );
+        await page.evaluate(() => {
+            window.__subnetOut = [];
+            const r = window.anazhRealm;
+            const orig = r.p2pSend.bind(r);
+            r.p2pSend = (obj) => {
+                if (obj && obj.type === "subworld-net") window.__subnetOut.push(obj);
+                return orig(obj);
+            };
+        });
         await page.evaluate((world) => {
             window.anazhRealm._buildPortalOverlay({
                 world,
@@ -150,7 +158,9 @@ function startProc(script, readyRe) {
             return {
                 multiplayer: !!(po && po.multiplayer),
                 src: po && po.iframe ? po.iframe.getAttribute("src") : "",
+                netChannels: po ? po.netChannels.size : 0,
                 journal,
+                subnetOut: window.__subnetOut || [],
             };
         });
 
@@ -165,9 +175,14 @@ function startProc(script, readyRe) {
             portalState.journal.find((t) => t.includes("shim-")) || "(keine Shim-Meldung)"
         );
         check(
-            "Der Loopback hält: ws.send() → _portalNetReceive-Echo → ws.onmessage",
-            portalState.journal.some((t) => t.includes("shim-loopback-ok")),
-            portalState.journal.find((t) => t.includes("loopback")) || "(keine Loopback-Meldung)"
+            "Der Shim meldet ws-open → _portalOverlay verfolgt den WebSocket-Kanal",
+            portalState.netChannels >= 1,
+            "netChannels=" + portalState.netChannels
+        );
+        check(
+            "ws.send() der Sub-Welt → _portalNetReceive macht einen subworld-net-Mesh-Broadcast",
+            portalState.subnetOut.some((m) => m && m.data === "shim-ping" && typeof m.worldId === "string"),
+            JSON.stringify(portalState.subnetOut)
         );
 
         await page.evaluate(() => window.anazhRealm._disposePortalOverlay());
@@ -182,7 +197,7 @@ function startProc(script, readyRe) {
         console.log(`\n❌ ${failures.length} Smoke-Check(s) fehlgeschlagen.`);
         process.exit(1);
     }
-    console.log("\n✅ W17 Phase A: der Transport-Shim trägt den Welt-Verkehr durch die Sandbox-Grenze.");
+    console.log("\n✅ W17 Phase B-Relay: ein Sub-Welt-ws-send wird ein subworld-net-Mesh-Broadcast.");
 })().catch((err) => {
     console.error("smoke-shim abgebrochen:", err && err.message);
     fs.rmSync(TEST_DIR, { recursive: true, force: true });

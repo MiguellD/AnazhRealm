@@ -31,6 +31,10 @@
 //   Client → Server   { "type": "rtc-answer", "to": "<peerId>", "sdp": {...} }
 //   Client → Server   { "type": "rtc-ice",    "to": "<peerId>", "candidate": {...} }
 //   Server → Client   { "type": "rtc-offer/answer/ice", "peerId": "<from>", "to": "...", ... }
+//   Client → Server   { "type": "subworld-net", "worldId": "...", "data": "..." }   (W17 B-Relay)
+//   Server → Client   { "type": "subworld-net", "peerId": "...", "worldId": "...", "data": "..." }
+//   Client → Server   { "type": "portal-invite", "worldId": "...", "label": "..." }   (W17 Phase C)
+//   Server → Client   { "type": "portal-invite", "peerId": "...", "worldId": "...", "label": "..." }
 //
 // W7 Phase 1 (Compute-Sharing): der Server wird vom Daten-Relay zum
 // reinen WebRTC-Rendezvous. Er reicht SDP-Offer/Answer + ICE-Kandidaten
@@ -236,8 +240,10 @@ function handleClientMessage(ws, raw) {
         // W7 Phase 3: teilt der Peer seine LLM-Stimme?
         if (typeof msg.voiceShared === "boolean") out.voiceShared = msg.voiceShared;
         // W16 Phase 2: der Welt-Katalog des Peers — seine vendorten Welten als
-        // [{id, label, hash}]. Der Server deckelt (dummer-aber-expliziter
-        // Relay); die strenge Prüfung macht der Client (_p2pSanitizeCatalog).
+        // [{id, label, hash, multiplayer}]. Der Server deckelt (dummer-aber-
+        // expliziter Relay); die strenge Prüfung macht der Client
+        // (_p2pSanitizeCatalog). Ein neues Feld (W17: multiplayer) MUSS hier
+        // ergänzt werden, sonst überlebt es den WS-Relay nicht.
         if (Array.isArray(msg.catalog)) {
             out.catalog = msg.catalog
                 .filter((c) => c && typeof c === "object" && typeof c.id === "string")
@@ -246,6 +252,7 @@ function handleClientMessage(ws, raw) {
                     id: c.id.slice(0, 40),
                     label: typeof c.label === "string" ? c.label.slice(0, 48) : "",
                     hash: typeof c.hash === "string" ? c.hash.slice(0, 64) : "",
+                    multiplayer: c.multiplayer === true,
                 }));
         }
         broadcastToRoom(ws.anazh.room, out, ws);
@@ -280,6 +287,31 @@ function handleClientMessage(ws, raw) {
         if (!text) return;
         const voice = typeof msg.voice === "string" ? msg.voice.slice(0, 80) : "";
         broadcastToRoom(ws.anazh.room, { type: "companion-say", peerId: ws.anazh.peerId, text, voice }, ws);
+        return;
+    }
+    if (msg.type === "subworld-net") {
+        // W17 Phase B-Relay — der Sub-Welt-Verkehr eines Multiplayer-Portals.
+        // Eine fremde Welt netzwerkt über ihren Transport-Shim; ihr ws-send
+        // wandert hier als subworld-net durchs Mesh — das Mesh IST der
+        // Server. Der Server stempelt die authoritative peerId, deckelt
+        // worldId + data; den Inhalt validiert er nicht (reine Client-
+        // Transport-Schicht). Die Sub-Raum-Eingrenzung (worldId-Pfad-Match)
+        // macht der Empfänger.
+        const worldId = typeof msg.worldId === "string" ? msg.worldId.slice(0, 200) : "";
+        const data = typeof msg.data === "string" ? msg.data : "";
+        if (!worldId || !data || data.length > 65536) return;
+        broadcastToRoom(ws.anazh.room, { type: "subworld-net", peerId: ws.anazh.peerId, worldId, data }, ws);
+        return;
+    }
+    if (msg.type === "portal-invite") {
+        // W17 Phase C — das Gruppen-Portal. Betritt ein Spieler ein
+        // Multiplayer-Portal, lädt er die Mesh-Gruppe ein. Server stempelt
+        // die authoritative peerId, deckelt worldId + label; den Inhalt
+        // validiert er nicht (reine Client-Schicht).
+        const worldId = typeof msg.worldId === "string" ? msg.worldId.slice(0, 64) : "";
+        if (!worldId) return;
+        const label = typeof msg.label === "string" ? msg.label.slice(0, 80) : "";
+        broadcastToRoom(ws.anazh.room, { type: "portal-invite", peerId: ws.anazh.peerId, worldId, label }, ws);
         return;
     }
     if (msg.type === "rtc-offer" || msg.type === "rtc-answer" || msg.type === "rtc-ice") {

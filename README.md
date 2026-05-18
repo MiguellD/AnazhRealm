@@ -2,7 +2,7 @@
 
 Ein als Co-Creation-Werk Mensch+KI entworfenes 3D-Browser-Sandbox-Ultiversum. Eine Datei, ein Stamm, viele Ringe.
 
-**Stand**: V8.75 (18.05.2026) — **W17 Phase A: der Transport-Shim** — eine fremde Multiplayer-Welt netzwerkt durch AnazhRealms Mesh statt zu einem echten Server. Eine fremde Welt netzwerkt nur über `WebSocket`; der save-server-injizierte Shim ersetzt `window.WebSocket` durch eine postMessage-Brücke — ein `send()` quert die Sandbox-Grenze zu AnazhRealm, die fremde Welt glaubt, sie habe einen Server. Phase A routet noch nicht übers Mesh (das ist Phase B-Relay) — die Akzeptanz ist ein Loopback-Echo. Davor **W16 die Mesh-Welt-Verteilung komplett** (eine vendorte Welt reist peer-to-peer + die Mesh-Bibliothek ist browsbar), **W15 der Auto-Vendor-Pfad komplett** (ein lokales Bündel ODER eine GitHub-Repo-URL dockt OHNE Handarbeit an), V8.70 das **Untrusted-Welt-Tor** (eine echte, ungeprüfte fremde Engine läuft null-origin sandgesichert — `worlds/schwarm/` beweist es) + V8.68/V8.69 der **KI-Übersetzer** komplett. W7 Compute-Sharing, W14 Bibliothek, W13 Vibe-Pass, W12 Welt-Portal — alle komplett. Offen: W17 Phase B+C (Mesh-als-Server + Gruppen-Portal, detailliert in `docs/roadmap.md` §3).
+**Stand**: V8.78 (18.05.2026) — **W17: die Multiplayer-Welt-Deklaration** — eine vendorte Welt erklärt sich selbst mehrspielerfähig (`multiplayer`-Flag durch Vendor-Pfad, Welt-Katalog, Bündel-Transfer + eine „Multiplayer-Welt"-Checkbox beim Andocken). Damit produziert `obtainPortalForWorld` für sie ein Multiplayer-Portal, und das W17-Gruppen-Portal funktioniert end-to-end für vendorte Welten. Davor **W17 Phase A+B-Relay+C komplett**: der Transport-Shim trägt den `WebSocket`-Verkehr einer fremden Welt über die Sandbox-Grenze, das Mesh-als-Server verteilt ihn peer-to-peer, das Gruppen-Portal (`portal-invite` + In-Game-Banner „X öffnete ein Tor — mitkommen?") bringt eine Gruppe gemeinsam in eine Relay-Multiplayer-Welt. Davor **W16 die Mesh-Welt-Verteilung komplett** (eine vendorte Welt reist peer-to-peer + die Mesh-Bibliothek ist browsbar), **W15 der Auto-Vendor-Pfad komplett** (ein lokales Bündel ODER eine GitHub-Repo-URL dockt OHNE Handarbeit an), V8.70 das **Untrusted-Welt-Tor** (eine echte, ungeprüfte fremde Engine läuft null-origin sandgesichert — `worlds/schwarm/` beweist es) + V8.68/V8.69 der **KI-Übersetzer** komplett. W7 Compute-Sharing, W14 Bibliothek, W13 Vibe-Pass, W12 Welt-Portal — alle komplett. Offen: W17 Phase B-JS-Compute (ein Peer wird Compute-Host für Welten mit autoritativer Server-Logik), detailliert in `docs/roadmap.md` §3.
 
 ## Was es ist
 
@@ -29,7 +29,7 @@ Browser öffnen: `http://localhost:4312/` (oder `index.html` direkt).
 npm run check           # Syntax-Check (node --check)
 npm run lint            # ESLint
 npm run format:check    # Prettier
-npm run playtest        # ~2669 Headless-Invarianten (~60s)
+npm run playtest        # ~2704 Headless-Invarianten (~60s)
 npm run audit:strict    # 5 generische Audit-Schichten (~25s)
 ```
 

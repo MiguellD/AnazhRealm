@@ -380,6 +380,11 @@ class AnazhRealm {
                 // {mesh, …}, die Kreaturen der Mitspieler als Sicht-Schicht.
                 remoteCreatures: new Map(),
                 _lastCreatureBroadcast: 0,
+                // W17 Phase C — das Gruppen-Portal. pendingInvite: ein
+                // Mitspieler öffnete ein Multiplayer-Portal + lud ein
+                // ({peerId, worldId, label, at}); null, wenn keine Einladung
+                // offen ist. Laufzeit-State, nicht im Welt-Save.
+                pendingInvite: null,
             },
             // Welt-Identität (Ring 8+, siehe docs/state-of-realm.md §11). Felder
             // werden jetzt schon gesetzt, damit das Save-Schema zukunftsfest
@@ -4567,7 +4572,17 @@ class AnazhRealm {
             this._p2pHandleLlmResponse(peerId, msg);
             return;
         }
-        const ALLOWED = ["pos", "dsl", "soul", "aura", "vibe", "creature-pos", "companion-say"];
+        const ALLOWED = [
+            "pos",
+            "dsl",
+            "soul",
+            "aura",
+            "vibe",
+            "creature-pos",
+            "companion-say",
+            "subworld-net",
+            "portal-invite",
+        ];
         if (!ALLOWED.includes(msg.type)) return;
         msg.peerId = peerId;
         this.p2pHandleMessage(JSON.stringify(msg));
@@ -4825,6 +4840,7 @@ class AnazhRealm {
                 label: entry.label || worldId,
                 desc: entry.desc || "",
                 dsl: Array.isArray(entry.dsl) ? entry.dsl : [],
+                multiplayer: entry.multiplayer === true,
                 files: bundle.files,
             });
         } catch {
@@ -4911,6 +4927,7 @@ class AnazhRealm {
                 label: parsed.label,
                 desc: parsed.desc,
                 dsl: parsed.dsl,
+                multiplayer: parsed.multiplayer === true,
                 files: parsed.files,
             })
         )
@@ -4956,7 +4973,11 @@ class AnazhRealm {
         const peerSig = peers
             .map(
                 ([pid, p]) =>
-                    pid + ":" + (p.avatarName || "") + ":" + (p.catalog || []).map((w) => w.id + w.hash).join(",")
+                    pid +
+                    ":" +
+                    (p.avatarName || "") +
+                    ":" +
+                    (p.catalog || []).map((w) => w.id + w.hash + (w.multiplayer ? "M" : "")).join(",")
             )
             .join("|");
         const mineSig = Object.keys(cw)
@@ -4991,6 +5012,14 @@ class AnazhRealm {
                 name.textContent = w.label || w.id;
                 name.title = "id: " + w.id + (w.hash ? " · Hash " + w.hash.slice(0, 12) + "…" : "");
                 row.appendChild(name);
+                // W17 — eine Multiplayer-Welt im Katalog kenntlich machen.
+                if (w.multiplayer === true) {
+                    const mp = document.createElement("span");
+                    mp.className = "library-mp-mark";
+                    mp.textContent = "Multiplayer";
+                    mp.title = "Eine Gruppe kann gemeinsam durch das Tor dieser Welt eintreten.";
+                    row.appendChild(mp);
+                }
                 if (this._haveWorldByHashOrId(w.id, w.hash)) {
                     const have = document.createElement("span");
                     have.className = "mesh-catalog-have";
@@ -5452,6 +5481,24 @@ class AnazhRealm {
             // W11 Phase 4 — Voice-Sync: der Begleiter-Output eines Mitspielers.
             if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
                 this._p2pHandleCompanionSay(msg.peerId, msg);
+            }
+            return;
+        }
+        if (msg.type === "subworld-net") {
+            // W17 Phase B-Relay — der Sub-Welt-Verkehr eines Mitspielers.
+            // _portalNetDeliver stellt ihn nur ins eigene iframe zu, wenn ich
+            // im SELBEN Multiplayer-Portal bin (B2 — worldId-Pfad-Match);
+            // sonst sähe ein Mesh-Mitspieler ohne Portal fremden Verkehr.
+            if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
+                this._portalNetDeliver(msg);
+            }
+            return;
+        }
+        if (msg.type === "portal-invite") {
+            // W17 Phase C — ein Mitspieler öffnete ein Multiplayer-Portal und
+            // lädt die Gruppe ein. _p2pHandlePortalInvite zeigt den Prompt.
+            if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
+                this._p2pHandlePortalInvite(msg.peerId, msg);
             }
             return;
         }
@@ -5942,6 +5989,9 @@ class AnazhRealm {
                 id,
                 label: typeof w.label === "string" ? w.label.slice(0, 48) : id,
                 hash: typeof w.bundleHash === "string" ? w.bundleHash : "",
+                // W17 — die Multiplayer-Marke reist im Katalog mit: ein Peer
+                // sieht, welche browsbaren Welten Gruppen-Portal-fähig sind.
+                multiplayer: w.multiplayer === true,
             });
             if (out.length >= 32) break;
         }
@@ -5966,6 +6016,7 @@ class AnazhRealm {
                 id,
                 label: typeof c.label === "string" ? c.label.slice(0, 48) : id,
                 hash,
+                multiplayer: c.multiplayer === true,
             });
             if (out.length >= 32) break;
         }
@@ -6111,6 +6162,11 @@ class AnazhRealm {
             }
         }
         p2p.peers.delete(peerId);
+        // W17 Phase C — eine offene Einladung dieses Peers verfällt mit ihm.
+        if (p2p.pendingInvite && p2p.pendingInvite.peerId === peerId) {
+            p2p.pendingInvite = null;
+            this._renderPortalInviteBanner();
+        }
     }
 
     _p2pClearAllPeerMeshes() {
@@ -14766,6 +14822,12 @@ class AnazhRealm {
                 out.bundleHash = m.bundleHash.toLowerCase();
             }
         }
+        // W17 — eine Multiplayer-Welt deklariert sich selbst mehrspielerfähig.
+        // Die Marke fliesst über aimBlueprintAtWorld in das portalMeta → ein
+        // geholtes Portal lädt mit dem Transport-Shim + broadcastet beim
+        // Betreten eine Gruppen-Portal-Einladung (W17 Phase C). Muss den
+        // localStorage-Rundlauf überleben (V8.59-Lehre).
+        if (m.multiplayer === true) out.multiplayer = true;
         return out;
     }
 
@@ -14788,6 +14850,9 @@ class AnazhRealm {
             desc: entry.desc || "",
             world: entry.world,
             dsl: Array.isArray(entry.dsl) ? entry.dsl.slice() : [],
+            // W17 — die Multiplayer-Marke reist mit dem geteilten Manifest
+            // (Metadaten, nicht signierte Substanz — wie world-Pfad/desc).
+            multiplayer: entry.multiplayer === true,
             authorPubKey: sig.authorPubKey,
             signature: sig.signature,
             signedHash: sig.signedHash || "",
@@ -15250,6 +15315,10 @@ class AnazhRealm {
             // W16 Phase 2 — der save-server lieferte den Content-Hash beim
             // Schreiben (BEIDE Vendor-Pfade reichen posted.bundleHash herein).
             bundleHash: typeof m.bundleHash === "string" ? m.bundleHash : "",
+            // W17 — eine Multiplayer-Welt deklariert sich mehrspielerfähig:
+            // ihr geholtes Portal lädt mit dem Transport-Shim + broadcastet
+            // beim Betreten eine Gruppen-Portal-Einladung (W17 Phase C).
+            multiplayer: m.multiplayer === true,
         });
         if (!entry) return { ok: false, reason: "invalid_manifest" };
         if (!this.state.customWorlds) this.state.customWorlds = {};
@@ -15287,6 +15356,7 @@ class AnazhRealm {
             desc: o.desc,
             dsl: o.dsl,
             bundleHash: posted.bundleHash,
+            multiplayer: o.multiplayer === true,
         });
         if (!reg.ok) return reg;
         return { ok: true, id: reg.id, label: reg.label, fileCount: posted.fileCount || san.files.length };
@@ -15316,6 +15386,7 @@ class AnazhRealm {
             desc: o.desc,
             dsl: o.dsl,
             bundleHash: posted.bundleHash,
+            multiplayer: o.multiplayer === true,
         });
         if (!reg.ok) return reg;
         return { ok: true, id: reg.id, label: reg.label, fileCount: posted.fileCount, branch: posted.branch };
@@ -18086,6 +18157,10 @@ class AnazhRealm {
         // sagt ihm beim enter-Handshake, welche Szene er aufbauen soll.
         const custom = this.state.customWorlds && this.state.customWorlds[entry.id];
         if (custom && custom.translated) meta.translatedWorldId = entry.id;
+        // W17 — trägt der Registry-/customWorlds-Eintrag die Multiplayer-
+        // Marke, wird das geholte Portal multiplayer (lädt mit dem Transport-
+        // Shim, broadcastet beim Betreten ein Gruppen-Portal-invite).
+        if (entry.multiplayer === true) meta.multiplayer = true;
         return this.setBlueprintAsPortal(blueprintName, meta);
     }
 
@@ -18218,6 +18293,15 @@ class AnazhRealm {
                 imp.textContent = "empfangen";
                 imp.title = "Diese Welt kam als signiertes Manifest in deine Bibliothek (W14 Phase 3).";
                 head.appendChild(imp);
+            }
+            // W17 — eine Multiplayer-Welt: eine Gruppe kann gemeinsam durch
+            // ihr Tor eintreten (Gruppen-Portal). Browsbar sichtbar gemacht.
+            if (w.multiplayer === true) {
+                const mp = document.createElement("span");
+                mp.className = "library-mp-mark";
+                mp.textContent = "Multiplayer";
+                mp.title = "Eine Gruppe kann gemeinsam durch das Tor dieser Welt eintreten (W17 — Gruppen-Portal).";
+                head.appendChild(mp);
             }
             card.appendChild(head);
 
@@ -18753,11 +18837,13 @@ class AnazhRealm {
             .filter(Boolean);
         let res;
         try {
+            const mpEl = document.getElementById("vendor-multiplayer");
             res = await this.vendorWorldBundle({
                 worldId: idEl.value,
                 label: labelEl ? labelEl.value : "",
                 desc: descEl ? descEl.value : "",
                 dsl,
+                multiplayer: !!(mpEl && mpEl.checked),
                 files,
             });
         } catch (e) {
@@ -18801,12 +18887,14 @@ class AnazhRealm {
             .filter(Boolean);
         let res;
         try {
+            const mpEl = document.getElementById("vendor-multiplayer");
             res = await this.vendorWorldFromRepo({
                 worldId: idEl.value,
                 repoUrl,
                 label: labelEl ? labelEl.value : "",
                 desc: descEl ? descEl.value : "",
                 dsl,
+                multiplayer: !!(mpEl && mpEl.checked),
             });
         } catch (e) {
             res = { ok: false, reason: (e && e.message) || "Fehler" };
@@ -18985,6 +19073,13 @@ class AnazhRealm {
             // W17 Phase A — eine Multiplayer-Welt: ihr `WebSocket`-Verkehr
             // fliesst über den Transport-Shim durch _portalNetReceive.
             multiplayer: meta.multiplayer === true,
+            // W17 Phase B-Relay — die offenen WebSocket-Kanäle des Sub-Welt-
+            // iframes (der Shim meldet ws-open/ws-close). Ein mesh-empfangener
+            // subworld-net wird in jeden zugestellt. netWindowStart/Count sind
+            // das Rate-Limit-Fenster (B3 — eine flutende Sub-Welt deckeln).
+            netChannels: new Set(),
+            netWindowStart: 0,
+            netWindowCount: 0,
         };
         document.body.appendChild(overlay);
         // W14 Phase 2 — ist die Ziel-Welt mit einem Vibe-Pass versiegelt,
@@ -19158,6 +19253,12 @@ class AnazhRealm {
             "portal",
             `Du tratst zum ersten Mal durch das Tor „${worldLabel}".`
         );
+        // W17 Phase C — das Gruppen-Portal. Betritt man ein Multiplayer-Tor,
+        // bekommen die Mitspieler eine „mitkommen?"-Einladung. Nur ein
+        // Multiplayer-Portal (B-Relay verbindet die Gruppe nur dort) + nur
+        // eine library-bekannte Welt (sonst könnte der Empfänger kein Portal
+        // holen — _resolvePortalWorldId liefert dann null).
+        this._p2pBroadcastPortalInvite();
         return { ok: true };
     }
 
@@ -19293,30 +19394,212 @@ class AnazhRealm {
         return true;
     }
 
-    // W17 Phase A — der Transport-Shim-Rückkanal. Eine Multiplayer-Welt hat
-    // statt `window.WebSocket` den Shim (save-server-injiziert); ihr Netz-
-    // Verkehr kommt als `__anazhNet`-Envelope hier an. Phase A routet noch
-    // NICHT übers Mesh (das ist B-Relay) — sie ECHOT: ein `ws-send` wird
-    // direkt als `ws-recv` an dasselbe iframe zurückgespielt. Die fremde Welt
-    // glaubt damit, sie habe einen Echo-Server. Das `data` wird unverändert
-    // zurückgereicht — nie ausgeführt (wie der `event`-Rückkanal: Daten, kein
-    // Code). Phase B ersetzt den Echo durch die Mesh-Verteilung.
+    // W17 Phase B-Relay — der Transport-Shim-Rückkanal. Eine Multiplayer-
+    // Welt hat statt `window.WebSocket` den Shim (save-server-injiziert);
+    // ihr Netz-Verkehr kommt als `__anazhNet`-Envelope vom eigenen iframe
+    // hier an. `ws-open`/`ws-close` verfolgen die offenen Kanäle des
+    // iframes — ein mesh-empfangener subworld-net wird in jeden zugestellt.
+    // Ein `ws-send` wandert über das W7-Mesh, statt geechot zu werden — das
+    // Mesh IST der Server (kein Host, kein externer Knoten). Größen-Deckel
+    // + Rate-Limit (B3) schützen den Kanal vor einer flutenden Sub-Welt;
+    // der Sub-Raum-Schlüssel ist der Welt-Pfad (B2). Phase A echote den
+    // ws-send noch im Loopback — B-Relay ersetzt den Echo durch die
+    // Mesh-Verteilung. Das `data` wird nie ausgeführt — wie der `event`-
+    // Rückkanal trägt der Shim-Kanal Daten, kein Code.
     _portalNetReceive(msg) {
         const po = this._portalOverlay;
         if (!po || !po.multiplayer || !msg || msg.__anazhNet !== true) return false;
         const channel = msg.channel;
         if (!Number.isInteger(channel)) return false;
-        // Phase A: ws-send → Echo zurück. ws-open/ws-close werden notiert,
-        // aber brauchen für den Loopback keine Aktion (Phase B nutzt sie für
-        // den Sub-Raum-Beitritt).
+        // B1 — die offenen WebSocket-Kanäle des eigenen iframes verfolgen.
+        // Ein mesh-empfangener subworld-net wird in jeden zugestellt (eine
+        // Relay-Welt öffnet typisch genau einen).
+        if (msg.kind === "ws-open") {
+            po.netChannels.add(channel);
+            return true;
+        }
+        if (msg.kind === "ws-close") {
+            po.netChannels.delete(channel);
+            return true;
+        }
         if (msg.kind !== "ws-send") return false;
-        if (!po.iframe || !po.iframe.contentWindow) return false;
-        // V8.70 — "*" für die null-origin (sandboxed) Multiplayer-Welt.
-        po.iframe.contentWindow.postMessage(
-            { __anazhNet: true, kind: "ws-recv", channel, data: msg.data },
-            po.trust === "sandboxed" ? "*" : window.location.origin
-        );
+        // B3 — Größen-Deckel: nur String-Daten (eine Relay-.io-Welt sendet
+        // JSON-Text; Binär ist eine bewusst spätere Schicht), gedeckelt.
+        const data = msg.data;
+        if (typeof data !== "string" || data.length > AnazhRealm.SUBWORLD_NET_MAX_BYTES) return false;
+        // B3 — Rate-Limit: ein Fenster-Zähler deckelt die Nachrichten je
+        // Sekunde. Eine flutende Sub-Welt überlastet so nicht das Mesh.
+        const now = performance.now();
+        if (now - po.netWindowStart >= AnazhRealm.SUBWORLD_NET_RATE_WINDOW_MS) {
+            po.netWindowStart = now;
+            po.netWindowCount = 0;
+        }
+        if (po.netWindowCount >= AnazhRealm.SUBWORLD_NET_RATE_MAX) return false;
+        po.netWindowCount++;
+        // B1 — ein ws-send wandert übers Mesh: jedes andere AnazhRealm im
+        // selben Sub-Welt-Raum (B2 — Schlüssel ist der Welt-Pfad) stellt es
+        // in sein iframe zu. p2pSend broadcastet nur an Peers — der Sender
+        // bekommt seinen eigenen Verkehr nicht zurück (wie ein echter Relay-
+        // Server: er reicht eine Nachricht an die ANDEREN Clients weiter).
+        this.p2pSend({ type: "subworld-net", worldId: po.world, data });
         return true;
+    }
+
+    // W17 Phase B-Relay — eine subworld-net-Nachricht eines Peers ins eigene
+    // Sub-Welt-iframe zustellen. B2 — die Sub-Raum-Eingrenzung: nur wenn ich
+    // im SELBEN Multiplayer-Portal bin (worldId-Pfad-Match); sonst sähe ein
+    // Mesh-Mitspieler, der gar nicht im Portal ist, fremden Sub-Welt-Verkehr.
+    // Der Sender-Kanal ist bedeutungslos (eine iframe-lokale id) — zugestellt
+    // wird in JEDEN offenen Kanal meines iframes (eine Relay-Welt öffnet
+    // typisch genau einen). Das `data` wird als `ws-recv` gereicht, nie
+    // ausgeführt (wie der ws-send-Hinweg: Daten, kein Code).
+    _portalNetDeliver(msg) {
+        const po = this._portalOverlay;
+        if (!po || !po.multiplayer || !msg) return false;
+        // B2 — nur Verkehr für GENAU diese Sub-Welt zustellen.
+        if (msg.worldId !== po.world) return false;
+        // B3 — Größen-Deckel auch auf dem Empfangs-Pfad.
+        const data = msg.data;
+        if (typeof data !== "string" || data.length > AnazhRealm.SUBWORLD_NET_MAX_BYTES) return false;
+        if (!po.iframe || !po.iframe.contentWindow || po.netChannels.size === 0) return false;
+        // V8.70 — "*" für die null-origin (sandboxed) Multiplayer-Welt.
+        const target = po.trust === "sandboxed" ? "*" : window.location.origin;
+        for (const channel of po.netChannels) {
+            po.iframe.contentWindow.postMessage({ __anazhNet: true, kind: "ws-recv", channel, data }, target);
+        }
+        return true;
+    }
+
+    // W17 Phase C — die worldId einer Portal-Welt auflösen (Registry-/
+    // customWorlds-Schlüssel, NICHT der Pfad). Der Empfänger einer
+    // portal-invite braucht sie für obtainPortalForWorld. Eine übersetzte
+    // Welt teilt sich den world-Pfad (worlds/translated/) — die
+    // translatedWorldId löst sie auf; sonst der Pfad-Match gegen die
+    // Bibliothek. Liefert null, wenn die Welt nicht library-bekannt ist
+    // (ein ad-hoc-Skelett-Portal lädt niemanden ein).
+    _resolvePortalWorldId(po) {
+        if (!po) return null;
+        if (po.translatedWorldId) {
+            return this._worldEntry(po.translatedWorldId) ? po.translatedWorldId : null;
+        }
+        const w = this._libraryWorlds().find((x) => x.world === po.world);
+        return w ? w.id : null;
+    }
+
+    // W17 Phase C — C1: betritt der Spieler ein Multiplayer-Portal, lädt er
+    // die Mesh-Gruppe ein. Ein `portal-invite`-Broadcast (`{worldId, label}`)
+    // — wie companion-say ein event-driven Spiel-Broadcast, kein DSL. Nur ein
+    // Multiplayer-Portal (B-Relay verbindet die Gruppe nur dort) und nur eine
+    // library-bekannte Welt (der Empfänger muss sie via obtainPortalForWorld
+    // holen können — _resolvePortalWorldId liefert sonst null).
+    _p2pBroadcastPortalInvite() {
+        const p2p = this.state.p2p;
+        if (!p2p || !p2p.enabled || !p2p.connected) return false;
+        const po = this._portalOverlay;
+        if (!po || !po.multiplayer) return false;
+        const worldId = this._resolvePortalWorldId(po);
+        if (!worldId) return false;
+        this.p2pSend({ type: "portal-invite", worldId, label: po.label || worldId });
+        return true;
+    }
+
+    // W17 Phase C — C2: ein Mitspieler öffnete ein Multiplayer-Portal. Den
+    // Prompt zeigen — aber nicht, wenn ich selbst gerade in einem Portal bin
+    // (der Game-Loop ist eingefroren). Die worldId wird op-förmig gesäubert;
+    // eine Welt, die ich nicht habe, wird erst beim Annehmen ehrlich
+    // abgewiesen (joinPortalInvite).
+    _p2pHandlePortalInvite(peerId, msg) {
+        if (this._portalOverlay) return;
+        const worldId = typeof msg.worldId === "string" ? msg.worldId.trim().toLowerCase() : "";
+        if (!/^[a-z0-9_-]{1,40}$/.test(worldId)) return;
+        const label = typeof msg.label === "string" ? msg.label.trim().slice(0, 60) : worldId;
+        this.state.p2p.pendingInvite = { peerId, worldId, label, at: Date.now() };
+        const entry = this.state.p2p.peers.get(peerId);
+        const who = (entry && entry.avatarName) || String(peerId).slice(0, 8);
+        this.log(`${who} öffnete ein Tor nach „${label}" — mitkommen?`, "INFO");
+        this._renderPortalInviteBanner();
+    }
+
+    // W17 Phase C — C3: die Einladung annehmen. obtainPortalForWorld holt
+    // (oder findet) den Portal-Bauplan + richtet ihn aus; danach wird das
+    // Portal direkt betreten. Der Overlay erzwingt `multiplayer:true` — die
+    // Einladung IST der Beweis (sie kommt nur aus einem Multiplayer-Portal);
+    // so verbindet die B2-Sub-Raum-Eingrenzung die Gruppe, auch wenn der
+    // library-Eintrag des Empfängers die Marke nicht selbst trägt. Hat der
+    // Spieler die Welt nicht, ehrlicher Hinweis (er müsste sie erst aus dem
+    // Welt-Katalog holen — W16).
+    joinPortalInvite() {
+        const inv = this.state.p2p && this.state.p2p.pendingInvite;
+        if (!inv) return { ok: false, reason: "no_invite" };
+        if (this._portalOverlay) return { ok: false, reason: "already_in_portal" };
+        const obtained = this.obtainPortalForWorld(inv.worldId);
+        if (!obtained.ok) {
+            const hint =
+                obtained.reason === "world_unknown"
+                    ? `Du hast „${inv.label}" nicht — hol die Welt erst aus dem Welt-Katalog.`
+                    : `Konnte das Tor nach „${inv.label}" nicht öffnen (${obtained.reason}).`;
+            this.log(hint, "WARN");
+            return { ok: false, reason: obtained.reason };
+        }
+        const bp = this.state.blueprints[obtained.blueprint];
+        const meta = Object.assign({}, bp.portalMeta, { multiplayer: true });
+        this.state.p2p.pendingInvite = null;
+        this._renderPortalInviteBanner();
+        // Direkt über _buildPortalOverlay — enterPortal bräuchte eine
+        // platzierte Affordance; die Einladung kennt nur die worldId.
+        this._buildPortalOverlay(meta);
+        this.log(`Du folgst der Einladung in „${inv.label}".`, "INFO");
+        this.journalAppendOnce(
+            `portalVisit:${(bp.portalMeta && bp.portalMeta.world) || inv.worldId}`,
+            "portal",
+            `Du tratst zum ersten Mal durch das Tor „${inv.label}".`
+        );
+        return { ok: true };
+    }
+
+    // W17 Phase C — die Einladung verwerfen.
+    dismissPortalInvite() {
+        if (!this.state.p2p || !this.state.p2p.pendingInvite) return;
+        this.state.p2p.pendingInvite = null;
+        this._renderPortalInviteBanner();
+    }
+
+    // W17 Phase C — den Einladungs-Banner rendern. Ein fixes Overlay-Element
+    // (#portal-invite-banner) mit „X öffnete ein Tor nach <Welt>" + einem
+    // Mitkommen-/Schließen-Knopf. Verborgen, wenn keine Einladung offen ist.
+    _renderPortalInviteBanner() {
+        if (typeof document === "undefined") return;
+        const banner = document.getElementById("portal-invite-banner");
+        if (!banner) return;
+        const inv = this.state.p2p && this.state.p2p.pendingInvite;
+        if (!inv) {
+            banner.hidden = true;
+            banner.innerHTML = "";
+            return;
+        }
+        const entry = this.state.p2p.peers.get(inv.peerId);
+        const who = (entry && entry.avatarName) || String(inv.peerId).slice(0, 8);
+        banner.hidden = false;
+        banner.innerHTML = "";
+        const text = document.createElement("div");
+        text.className = "portal-invite-text";
+        text.textContent = `${who} öffnete ein Tor nach „${inv.label}"`;
+        const row = document.createElement("div");
+        row.className = "portal-invite-row";
+        const joinBtn = document.createElement("button");
+        joinBtn.type = "button";
+        joinBtn.className = "portal-invite-join";
+        joinBtn.textContent = "Mitkommen";
+        joinBtn.addEventListener("click", () => this.joinPortalInvite());
+        const dismissBtn = document.createElement("button");
+        dismissBtn.type = "button";
+        dismissBtn.className = "portal-invite-dismiss";
+        dismissBtn.textContent = "Schließen";
+        dismissBtn.addEventListener("click", () => this.dismissPortalInvite());
+        row.appendChild(joinBtn);
+        row.appendChild(dismissBtn);
+        banner.appendChild(text);
+        banner.appendChild(row);
     }
 
     // W12 Phase 1 — E-Tasten-Pfad: ist ein Portal in Reichweite, betritt es.
@@ -32548,6 +32831,12 @@ AnazhRealm.MOUNT_FOLLOW_HEIGHT = 1.5; // Spieler sitzt oben drauf
 // W12 — E-Reichweite, um ein Portal zu betreten. Etwas großzügiger als
 // MOUNT_RANGE_M: ein Tor-Ring ist groß, der Spieler steht davor.
 AnazhRealm.PORTAL_REACH_M = 4.5;
+// W17 Phase B-Relay — der subworld-net-Kanal trägt den `WebSocket`-Verkehr
+// einer Multiplayer-Sub-Welt übers Mesh. Ein Größen-Deckel je Nachricht +
+// ein Rate-Limit je Sekunde schützen den Kanal vor einer flutenden Sub-Welt.
+AnazhRealm.SUBWORLD_NET_MAX_BYTES = 16384; // 16 KiB je ws-send (Relay-.io-Nachrichten sind winzig)
+AnazhRealm.SUBWORLD_NET_RATE_WINDOW_MS = 1000;
+AnazhRealm.SUBWORLD_NET_RATE_MAX = 120; // ~2 Nachrichten je 60-fps-Frame mit Reserve
 AnazhRealm.MOUNT_SPEED_FACTOR = 0.7; // Compounds fahren etwas langsamer als zu Fuß
 AnazhRealm.ZOOM_FOV_DEG = 25; // Magnifying-Compound zoomt auf 25°
 AnazhRealm.MAGNIFYING_RAY_RANGE_M = 8; // Spieler muss innerhalb dieser Reichweite drauf schauen

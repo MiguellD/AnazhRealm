@@ -5043,21 +5043,27 @@ function startSaveServer() {
                 check("W16 P2: die Welt-Katalog-Sektion im DOM", w16Results.uiInDom);
             }
 
-            // ### W17 Phase A — der Transport-Shim ###
-            // Eine fremde Multiplayer-Welt netzwerkt über `WebSocket`; der
-            // save-server-injizierte Shim ersetzt es durch eine postMessage-
-            // Brücke. Tests prüfen die Client-Schicht (multiplayer-Flag,
-            // ?anazh-shim=1-Marker, der _portalNetReceive-Echo); den echten
-            // Loopback im sandboxed iframe prüft smoke-shim.cjs.
-            const w17paResults = await page
+            // ### W17 Phase B-Relay — das Mesh-als-Server ###
+            // Phase A trug den `WebSocket`-Verkehr einer fremden Welt über den
+            // Transport-Shim zur Heimat (Loopback-Echo). B-Relay ersetzt den
+            // Echo durch die Mesh-Verteilung: ein `ws-send` wird ein
+            // subworld-net-Broadcast, jeder Peer im selben Sub-Welt-Raum
+            // stellt ihn in sein iframe zu. Tests prüfen die Client-Schicht
+            // (subworld-net-Broadcast, Kanal-Verfolgung, Sub-Raum-Eingrenzung,
+            // Rate-Limit + Deckel); den echten Zwei-Browser-Durchlauf prüft
+            // smoke-webrtc.cjs.
+            const w17bResults = await page
                 .evaluate(() => {
                     const r = window.anazhRealm;
                     if (!r) return null;
                     const out = {};
+                    const MAXB = r.constructor.SUBWORLD_NET_MAX_BYTES;
+                    const CAP = r.constructor.SUBWORLD_NET_RATE_MAX;
 
-                    out.methodPresent = typeof r._portalNetReceive === "function";
+                    out.methodsPresent =
+                        typeof r._portalNetReceive === "function" && typeof r._portalNetDeliver === "function";
 
-                    // _sanitizePortalMeta — das multiplayer-Flag.
+                    // _sanitizePortalMeta — das multiplayer-Flag (Phase-A-Erbe).
                     const sanDefault = r._sanitizePortalMeta({ world: "worlds/skeleton/index.html" }, "fb");
                     out.sanitizeDefaultsFalse = sanDefault.multiplayer === false;
                     const sanMp = r._sanitizePortalMeta(
@@ -5067,7 +5073,7 @@ function startSaveServer() {
                     out.sanitizeKeepsTrue = sanMp.multiplayer === true;
 
                     // _buildPortalOverlay — multiplayer:true hängt ?anazh-shim=1
-                    // an + setzt _portalOverlay.multiplayer.
+                    // an, setzt das Flag + legt einen netChannels-Set an.
                     r._buildPortalOverlay({
                         world: "worlds/skeleton/index.html",
                         multiplayer: true,
@@ -5077,6 +5083,7 @@ function startSaveServer() {
                     out.overlayMultiplayer =
                         !!r._portalOverlay &&
                         r._portalOverlay.multiplayer === true &&
+                        r._portalOverlay.netChannels instanceof Set &&
                         !!mpFrame &&
                         /\?anazh-shim=1$/.test(mpFrame.getAttribute("src") || "");
                     r._disposePortalOverlay();
@@ -5088,38 +5095,154 @@ function startSaveServer() {
                         !!plainFrame && !(plainFrame.getAttribute("src") || "").includes("anazh-shim");
                     r._disposePortalOverlay();
 
-                    // _portalNetReceive — Phase-A-Loopback: ws-send → ws-recv-Echo.
+                    // p2pSend hooken: subworld-net-Broadcasts einfangen (im
+                    // Playtest steht kein Mesh — der Hook IST der Empfänger).
+                    const sent = [];
+                    const origSend = r.p2pSend;
+                    r.p2pSend = (obj) => {
+                        if (obj && obj.type === "subworld-net") sent.push(obj);
+                        return false;
+                    };
+
+                    // Ein Multiplayer-Portal mit iframe-Spy + Rate-Limit-Fenster.
+                    const SUBW = "worlds/skeleton/index.html";
                     const posted = [];
-                    r._portalOverlay = {
+                    const makeOverlay = () => ({
                         multiplayer: true,
                         trust: "sandboxed",
+                        world: SUBW,
+                        netChannels: new Set(),
+                        netWindowStart: 0,
+                        netWindowCount: 0,
                         iframe: { contentWindow: { postMessage: (m, o) => posted.push({ m, o }) } },
-                    };
-                    const echoed = r._portalNetReceive({ __anazhNet: true, kind: "ws-send", channel: 7, data: "ping" });
-                    out.netReceiveEchoes =
-                        echoed === true &&
-                        posted.length === 1 &&
-                        posted[0].m.__anazhNet === true &&
-                        posted[0].m.kind === "ws-recv" &&
-                        posted[0].m.channel === 7 &&
-                        posted[0].m.data === "ping" &&
-                        posted[0].o === "*";
-                    // ws-open + ein Müll-Envelope (kein __anazhNet) → kein Echo.
-                    posted.length = 0;
-                    r._portalNetReceive({ __anazhNet: true, kind: "ws-open", channel: 7 });
-                    r._portalNetReceive({ kind: "ws-send", channel: 7, data: "x" });
-                    out.netReceiveIgnoresNonSend = posted.length === 0;
-                    // Ein Nicht-Multiplayer-Portal echot nicht.
+                    });
+                    r._portalOverlay = makeOverlay();
+
+                    // B1 — ws-open verfolgt den Kanal, ws-close entfernt ihn.
+                    r._portalNetReceive({ __anazhNet: true, kind: "ws-open", channel: 3 });
+                    out.wsOpenTracks = r._portalOverlay.netChannels.has(3);
+                    r._portalNetReceive({ __anazhNet: true, kind: "ws-close", channel: 3 });
+                    out.wsCloseUntracks = !r._portalOverlay.netChannels.has(3);
+
+                    // B1 — ws-send wird ein subworld-net-Broadcast (kein Echo
+                    // mehr): er trägt den Welt-Pfad als worldId + die Daten.
+                    sent.length = 0;
+                    const r1 = r._portalNetReceive({ __anazhNet: true, kind: "ws-send", channel: 1, data: "hallo" });
+                    out.wsSendBroadcasts =
+                        r1 === true &&
+                        sent.length === 1 &&
+                        sent[0].type === "subworld-net" &&
+                        sent[0].worldId === SUBW &&
+                        sent[0].data === "hallo";
+                    // ... der Sender bekommt KEIN Echo ins eigene iframe.
+                    out.wsSendNoEcho = posted.length === 0;
+
+                    // B3 — Größen-Deckel: Übergröße + Nicht-String verworfen.
+                    sent.length = 0;
+                    const rBig = r._portalNetReceive({
+                        __anazhNet: true,
+                        kind: "ws-send",
+                        channel: 1,
+                        data: "x".repeat(MAXB + 1),
+                    });
+                    const rObj = r._portalNetReceive({
+                        __anazhNet: true,
+                        kind: "ws-send",
+                        channel: 1,
+                        data: { not: "string" },
+                    });
+                    out.wsSendCapsSize = rBig === false && rObj === false && sent.length === 0;
+
+                    // B3 — Rate-Limit: nach SUBWORLD_NET_RATE_MAX Nachrichten
+                    // in einem Fenster wird die nächste verworfen.
+                    r._portalOverlay = makeOverlay();
+                    sent.length = 0;
+                    let allOk = true;
+                    for (let i = 0; i < CAP; i++) {
+                        if (
+                            r._portalNetReceive({ __anazhNet: true, kind: "ws-send", channel: 1, data: "m" + i }) !==
+                            true
+                        )
+                            allOk = false;
+                    }
+                    const overflow = r._portalNetReceive({
+                        __anazhNet: true,
+                        kind: "ws-send",
+                        channel: 1,
+                        data: "over",
+                    });
+                    out.wsSendRateLimited = allOk && overflow === false && sent.length === CAP;
+
+                    // Ein Nicht-Multiplayer-Portal broadcastet nicht.
+                    r._portalOverlay = makeOverlay();
                     r._portalOverlay.multiplayer = false;
-                    posted.length = 0;
+                    sent.length = 0;
                     r._portalNetReceive({ __anazhNet: true, kind: "ws-send", channel: 1, data: "y" });
-                    out.netReceiveGatedOnMultiplayer = posted.length === 0;
+                    out.gatedOnMultiplayer = sent.length === 0;
+
+                    // _portalNetDeliver — B2: ein subworld-net für GENAU diese
+                    // Sub-Welt wird in jeden offenen Kanal des iframes gereicht.
+                    r._portalOverlay = makeOverlay();
+                    r._portalOverlay.netChannels = new Set([5, 8]);
+                    posted.length = 0;
+                    const d1 = r._portalNetDeliver({
+                        type: "subworld-net",
+                        peerId: "px",
+                        worldId: SUBW,
+                        data: "eingang",
+                    });
+                    out.deliverPostsToChannels =
+                        d1 === true &&
+                        posted.length === 2 &&
+                        posted.every(
+                            (p) => p.m.__anazhNet === true && p.m.kind === "ws-recv" && p.m.data === "eingang"
+                        ) &&
+                        posted.some((p) => p.m.channel === 5) &&
+                        posted.some((p) => p.m.channel === 8) &&
+                        posted.every((p) => p.o === "*");
+
+                    // B2 — Verkehr einer ANDEREN Sub-Welt wird verworfen.
+                    posted.length = 0;
+                    const dOther = r._portalNetDeliver({
+                        type: "subworld-net",
+                        peerId: "px",
+                        worldId: "worlds/fluid/index.html",
+                        data: "fremd",
+                    });
+                    out.deliverDropsOtherRoom = dOther === false && posted.length === 0;
+
+                    // B3 — der Empfangs-Pfad verwirft Übergröße ebenso.
+                    posted.length = 0;
+                    const dBig = r._portalNetDeliver({
+                        type: "subworld-net",
+                        peerId: "px",
+                        worldId: SUBW,
+                        data: "x".repeat(MAXB + 1),
+                    });
+                    out.deliverCapsSize = dBig === false && posted.length === 0;
+
+                    // subworld-net ist kanal-zustellbar: _p2pHandleChannelMessage
+                    // reicht es (in der ALLOWED-Whitelist) an p2pHandleMessage →
+                    // _portalNetDeliver. Eine Fremd-Peer-Nachricht landet so im
+                    // iframe.
+                    r._portalOverlay = makeOverlay();
+                    r._portalOverlay.netChannels = new Set([1]);
+                    posted.length = 0;
+                    r._p2pHandleChannelMessage(
+                        "fern-peer",
+                        JSON.stringify({ type: "subworld-net", worldId: SUBW, data: "via-kanal" })
+                    );
+                    out.channelDeliverable = posted.some(
+                        (p) => p.m.kind === "ws-recv" && p.m.data === "via-kanal"
+                    );
+
                     r._portalOverlay = null;
+                    r.p2pSend = origSend;
 
                     // buildStateSnapshot persistiert multiplayer im portalMeta
                     // (der feste Feld-Satz — V8.59-Lehre); _sanitizePortalMeta
                     // (oben geprüft) ist der Lade-Pfad → zusammen der Rundlauf.
-                    const bpName = "_w17pa_portal";
+                    const bpName = "_w17b_portal";
                     const wp = r.state.blueprints["welt_portal"];
                     r.state.blueprints[bpName] = {
                         name: bpName,
@@ -5142,31 +5265,376 @@ function startSaveServer() {
                     return out;
                 })
                 .catch((err) => ({ error: err && err.message }));
-            if (!w17paResults || w17paResults.error) {
+            if (!w17bResults || w17bResults.error) {
                 check(
-                    "W17 Phase A: der Transport-Shim erreichbar",
+                    "W17 Phase B-Relay: das Mesh-als-Server erreichbar",
                     false,
-                    (w17paResults && w17paResults.error) || "page.evaluate fehlgeschlagen"
+                    (w17bResults && w17bResults.error) || "page.evaluate fehlgeschlagen"
                 );
             } else {
-                check("W17 PA: _portalNetReceive existiert", w17paResults.methodPresent);
-                check("W17 PA: _sanitizePortalMeta — multiplayer Default false", w17paResults.sanitizeDefaultsFalse);
-                check("W17 PA: _sanitizePortalMeta bewahrt multiplayer:true", w17paResults.sanitizeKeepsTrue);
+                check("W17 B: _portalNetReceive + _portalNetDeliver existieren", w17bResults.methodsPresent);
+                check("W17 B: _sanitizePortalMeta — multiplayer Default false", w17bResults.sanitizeDefaultsFalse);
+                check("W17 B: _sanitizePortalMeta bewahrt multiplayer:true", w17bResults.sanitizeKeepsTrue);
                 check(
-                    "W17 PA: _buildPortalOverlay (multiplayer) hängt ?anazh-shim=1 an + setzt das Flag",
-                    w17paResults.overlayMultiplayer
+                    "W17 B: _buildPortalOverlay (multiplayer) hängt ?anazh-shim=1 an + legt netChannels an",
+                    w17bResults.overlayMultiplayer
                 );
-                check("W17 PA: _buildPortalOverlay (single) lädt OHNE Shim-Marker", w17paResults.overlayNoMarkerWhenSingle);
                 check(
-                    "W17 PA: _portalNetReceive echot ein ws-send als ws-recv (Phase-A-Loopback)",
-                    w17paResults.netReceiveEchoes
+                    "W17 B: _buildPortalOverlay (single) lädt OHNE Shim-Marker",
+                    w17bResults.overlayNoMarkerWhenSingle
                 );
-                check("W17 PA: _portalNetReceive ignoriert ws-open / Müll-Envelope", w17paResults.netReceiveIgnoresNonSend);
-                check("W17 PA: _portalNetReceive echot nur für ein Multiplayer-Portal", w17paResults.netReceiveGatedOnMultiplayer);
                 check(
-                    "W17 PA: multiplayer im portalMeta überlebt den buildStateSnapshot-Schreib-Pfad",
-                    w17paResults.snapshotKeepsMultiplayer
+                    "W17 B: ws-open verfolgt den Kanal, ws-close entfernt ihn",
+                    w17bResults.wsOpenTracks && w17bResults.wsCloseUntracks
                 );
+                check(
+                    "W17 B: ein ws-send wird ein subworld-net-Mesh-Broadcast (worldId + data)",
+                    w17bResults.wsSendBroadcasts
+                );
+                check(
+                    "W17 B: der Sender bekommt keinen Echo-Loopback mehr (Phase A ersetzt)",
+                    w17bResults.wsSendNoEcho
+                );
+                check("W17 B: ws-send verwirft Übergröße + Nicht-String-Daten (B3)", w17bResults.wsSendCapsSize);
+                check(
+                    "W17 B: ws-send ist auf SUBWORLD_NET_RATE_MAX je Sekunde gedeckelt (B3)",
+                    w17bResults.wsSendRateLimited
+                );
+                check("W17 B: nur ein Multiplayer-Portal broadcastet", w17bResults.gatedOnMultiplayer);
+                check(
+                    "W17 B: _portalNetDeliver reicht einen subworld-net in jeden offenen Kanal",
+                    w17bResults.deliverPostsToChannels
+                );
+                check(
+                    "W17 B: _portalNetDeliver verwirft Verkehr einer anderen Sub-Welt (B2)",
+                    w17bResults.deliverDropsOtherRoom
+                );
+                check(
+                    "W17 B: _portalNetDeliver verwirft Übergröße auf dem Empfangs-Pfad (B3)",
+                    w17bResults.deliverCapsSize
+                );
+                check(
+                    "W17 B: subworld-net ist kanal-zustellbar (in der ALLOWED-Whitelist)",
+                    w17bResults.channelDeliverable
+                );
+                check(
+                    "W17 B: multiplayer im portalMeta überlebt den buildStateSnapshot-Schreib-Pfad",
+                    w17bResults.snapshotKeepsMultiplayer
+                );
+            }
+
+            // ### W17 Phase C — das Gruppen-Portal ###
+            // Betritt ein Spieler ein Multiplayer-Portal, broadcastet er einen
+            // portal-invite; die Mitspieler bekommen einen „mitkommen?"-Prompt,
+            // „Ja" holt das Portal + betritt es (B2 verbindet die Gruppe).
+            const w17cResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    out.methodsPresent =
+                        typeof r._resolvePortalWorldId === "function" &&
+                        typeof r._p2pBroadcastPortalInvite === "function" &&
+                        typeof r._p2pHandlePortalInvite === "function" &&
+                        typeof r.joinPortalInvite === "function" &&
+                        typeof r.dismissPortalInvite === "function" &&
+                        typeof r._renderPortalInviteBanner === "function";
+                    out.pendingInviteInit = r.state.p2p.pendingInvite === null;
+                    out.bannerInDom = !!document.getElementById("portal-invite-banner");
+
+                    // _resolvePortalWorldId — Pfad-Match gegen die Bibliothek.
+                    out.resolveByPath =
+                        r._resolvePortalWorldId({ world: "worlds/skeleton/index.html" }) === "skeleton";
+                    out.resolveUnknown =
+                        r._resolvePortalWorldId({ world: "worlds/_nonexist/index.html" }) === null;
+
+                    // aimBlueprintAtWorld trägt multiplayer aus dem Eintrag.
+                    let aimCarriesMp = false;
+                    r.state.customWorlds = r.state.customWorlds || {};
+                    r.state.customWorlds._w17c_mp = {
+                        id: "_w17c_mp",
+                        label: "W17C MP-Welt",
+                        world: "worlds/_w17c_mp/index.html",
+                        dsl: [],
+                        reachable: true,
+                        multiplayer: true,
+                    };
+                    if (r.cloneBlueprint("welt_portal", "_w17c_aimbp")) {
+                        const aim = r.aimBlueprintAtWorld("_w17c_aimbp", "_w17c_mp");
+                        const bp = r.state.blueprints["_w17c_aimbp"];
+                        aimCarriesMp = aim.ok && !!bp.portalMeta && bp.portalMeta.multiplayer === true;
+                        delete r.state.blueprints["_w17c_aimbp"];
+                    }
+                    delete r.state.customWorlds._w17c_mp;
+                    out.aimCarriesMp = aimCarriesMp;
+
+                    // p2pSend hooken: portal-invite-Broadcasts einfangen.
+                    const sent = [];
+                    const origSend = r.p2pSend;
+                    r.p2pSend = (obj) => {
+                        if (obj && obj.type === "portal-invite") sent.push(obj);
+                        return false;
+                    };
+                    const p2p = r.state.p2p;
+                    const wasEnabled = p2p.enabled;
+                    const wasConnected = p2p.connected;
+                    p2p.enabled = true;
+                    p2p.connected = true;
+
+                    // _p2pBroadcastPortalInvite — nur ein Multiplayer-Portal,
+                    // dessen Welt sich auflöst, broadcastet.
+                    r._portalOverlay = {
+                        multiplayer: true,
+                        world: "worlds/skeleton/index.html",
+                        label: "Skelett-Welt",
+                    };
+                    sent.length = 0;
+                    const b1 = r._p2pBroadcastPortalInvite();
+                    out.broadcastsForMpPortal =
+                        b1 === true &&
+                        sent.length === 1 &&
+                        sent[0].type === "portal-invite" &&
+                        sent[0].worldId === "skeleton" &&
+                        sent[0].label === "Skelett-Welt";
+                    // Ein Nicht-Multiplayer-Portal broadcastet nicht.
+                    r._portalOverlay.multiplayer = false;
+                    sent.length = 0;
+                    r._p2pBroadcastPortalInvite();
+                    out.noBroadcastForSinglePortal = sent.length === 0;
+                    // Eine nicht-library-bekannte Welt broadcastet nicht.
+                    r._portalOverlay = { multiplayer: true, world: "worlds/_nope/index.html", label: "X" };
+                    sent.length = 0;
+                    r._p2pBroadcastPortalInvite();
+                    out.noBroadcastForUnknownWorld = sent.length === 0;
+                    r._portalOverlay = null;
+
+                    // _p2pHandlePortalInvite — speichert die Einladung.
+                    p2p.pendingInvite = null;
+                    r._p2pHandlePortalInvite("peerA", { worldId: "skeleton", label: "Skelett-Welt" });
+                    out.handleStoresInvite =
+                        !!p2p.pendingInvite &&
+                        p2p.pendingInvite.peerId === "peerA" &&
+                        p2p.pendingInvite.worldId === "skeleton";
+                    // Eine Müll-worldId wird verworfen.
+                    p2p.pendingInvite = null;
+                    r._p2pHandlePortalInvite("peerA", { worldId: "../böse", label: "x" });
+                    out.handleRejectsBadWorldId = p2p.pendingInvite === null;
+                    // Bin ich schon im Portal, keine Einladung.
+                    r._portalOverlay = { multiplayer: true, world: "worlds/skeleton/index.html" };
+                    r._p2pHandlePortalInvite("peerA", { worldId: "skeleton", label: "x" });
+                    out.handleIgnoredWhenInPortal = p2p.pendingInvite === null;
+                    r._portalOverlay = null;
+
+                    // _renderPortalInviteBanner — Banner mit Knöpfen / verborgen.
+                    p2p.pendingInvite = { peerId: "peerA", worldId: "skeleton", label: "Skelett-Welt", at: 0 };
+                    r._renderPortalInviteBanner();
+                    const banner = document.getElementById("portal-invite-banner");
+                    out.bannerShows =
+                        !!banner &&
+                        banner.hidden === false &&
+                        !!banner.querySelector(".portal-invite-join") &&
+                        !!banner.querySelector(".portal-invite-dismiss") &&
+                        /Skelett-Welt/.test(banner.textContent || "");
+                    // dismissPortalInvite räumt + verbirgt den Banner.
+                    r.dismissPortalInvite();
+                    out.dismissClears = p2p.pendingInvite === null && banner.hidden === true;
+
+                    // joinPortalInvite — ohne Einladung abgelehnt.
+                    p2p.pendingInvite = null;
+                    out.joinNoInvite = r.joinPortalInvite().reason === "no_invite";
+                    // ... eine unbekannte Welt → world_unknown.
+                    p2p.pendingInvite = { peerId: "peerA", worldId: "_nichtda", label: "X", at: 0 };
+                    out.joinUnknownWorld = r.joinPortalInvite().reason === "world_unknown";
+                    // ... eine bekannte Welt → Portal geholt + multiplayer betreten.
+                    const invSlots = r.state.player.inventory.slice();
+                    p2p.pendingInvite = { peerId: "peerA", worldId: "skeleton", label: "Skelett-Welt", at: 0 };
+                    const jr = r.joinPortalInvite();
+                    out.joinEntersMultiplayer =
+                        jr.ok === true &&
+                        !!r._portalOverlay &&
+                        r._portalOverlay.multiplayer === true &&
+                        p2p.pendingInvite === null;
+                    r._disposePortalOverlay();
+                    delete r.state.blueprints["portal_skeleton"];
+                    r.state.player.inventory = invSlots;
+                    p2p.enabled = wasEnabled;
+                    p2p.connected = wasConnected;
+                    p2p.pendingInvite = null;
+                    r.p2pSend = origSend;
+                    r._renderPortalInviteBanner();
+
+                    // portal-invite ist kanal-zustellbar: _p2pHandleChannelMessage
+                    // reicht es (ALLOWED-Whitelist) an p2pHandleMessage.
+                    r._p2pHandleChannelMessage(
+                        "fern-peer",
+                        JSON.stringify({ type: "portal-invite", worldId: "skeleton", label: "Skelett-Welt" })
+                    );
+                    out.channelDeliverable =
+                        !!p2p.pendingInvite && p2p.pendingInvite.peerId === "fern-peer";
+                    p2p.pendingInvite = null;
+                    r._renderPortalInviteBanner();
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!w17cResults || w17cResults.error) {
+                check(
+                    "W17 Phase C: das Gruppen-Portal erreichbar",
+                    false,
+                    (w17cResults && w17cResults.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("W17 C: alle 6 Gruppen-Portal-Methoden existieren", w17cResults.methodsPresent);
+                check("W17 C: state.p2p.pendingInvite initial null", w17cResults.pendingInviteInit);
+                check("W17 C: #portal-invite-banner im DOM", w17cResults.bannerInDom);
+                check("W17 C: _resolvePortalWorldId löst eine Welt per Pfad auf", w17cResults.resolveByPath);
+                check("W17 C: _resolvePortalWorldId liefert null für eine unbekannte Welt", w17cResults.resolveUnknown);
+                check("W17 C: aimBlueprintAtWorld trägt multiplayer aus dem Eintrag", w17cResults.aimCarriesMp);
+                check(
+                    "W17 C: _p2pBroadcastPortalInvite broadcastet ein portal-invite (worldId + label)",
+                    w17cResults.broadcastsForMpPortal
+                );
+                check("W17 C: ein Nicht-Multiplayer-Portal broadcastet keine Einladung", w17cResults.noBroadcastForSinglePortal);
+                check(
+                    "W17 C: eine nicht-library-bekannte Welt broadcastet keine Einladung",
+                    w17cResults.noBroadcastForUnknownWorld
+                );
+                check("W17 C: _p2pHandlePortalInvite speichert die Einladung", w17cResults.handleStoresInvite);
+                check("W17 C: _p2pHandlePortalInvite verwirft eine Müll-worldId", w17cResults.handleRejectsBadWorldId);
+                check(
+                    "W17 C: _p2pHandlePortalInvite ignoriert eine Einladung, wenn ich schon im Portal bin",
+                    w17cResults.handleIgnoredWhenInPortal
+                );
+                check("W17 C: _renderPortalInviteBanner zeigt Text + Mitkommen-/Schließen-Knopf", w17cResults.bannerShows);
+                check("W17 C: dismissPortalInvite räumt die Einladung + verbirgt den Banner", w17cResults.dismissClears);
+                check("W17 C: joinPortalInvite ohne Einladung → no_invite", w17cResults.joinNoInvite);
+                check("W17 C: joinPortalInvite mit unbekannter Welt → world_unknown", w17cResults.joinUnknownWorld);
+                check(
+                    "W17 C: joinPortalInvite holt das Portal + betritt es als multiplayer",
+                    w17cResults.joinEntersMultiplayer
+                );
+                check("W17 C: portal-invite ist kanal-zustellbar (ALLOWED-Whitelist)", w17cResults.channelDeliverable);
+            }
+
+            // ### W17 — die Multiplayer-Welt-Deklaration ###
+            // Eine vendorte Welt erklärt sich selbst mehrspielerfähig; die
+            // Marke fliesst durch _sanitizeImportedManifest, _vendorRegisterWorld,
+            // den Welt-Katalog und aimBlueprintAtWorld → obtainPortalForWorld
+            // produziert ein Multiplayer-Portal, das beim Betreten einlädt.
+            const w17mpResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    // _sanitizeImportedManifest trägt multiplayer.
+                    const sanMp = r._sanitizeImportedManifest({
+                        id: "_mp_test",
+                        label: "MP-Welt",
+                        world: "worlds/_mp_test/index.html",
+                        dsl: [],
+                        multiplayer: true,
+                    });
+                    out.sanitizeCarriesMp = !!sanMp && sanMp.multiplayer === true;
+                    const sanNo = r._sanitizeImportedManifest({
+                        id: "_mp_test2",
+                        label: "Single-Welt",
+                        world: "worlds/_mp_test2/index.html",
+                        dsl: [],
+                    });
+                    out.sanitizeDefaultsNoMp = !!sanNo && sanNo.multiplayer !== true;
+                    // localStorage-Rundlauf — re-sanitize bewahrt die Marke.
+                    const rt = r._sanitizeImportedManifest(JSON.parse(JSON.stringify(sanMp)));
+                    out.sanitizeSurvivesRoundtrip = !!rt && rt.multiplayer === true;
+
+                    // _vendorRegisterWorld setzt multiplayer am customWorlds-Eintrag.
+                    r.state.customWorlds = r.state.customWorlds || {};
+                    const reg = r._vendorRegisterWorld("_mp_vend", {
+                        label: "MP Vendored",
+                        dsl: [],
+                        multiplayer: true,
+                    });
+                    out.vendorRegisterCarriesMp =
+                        reg.ok &&
+                        !!r.state.customWorlds["_mp_vend"] &&
+                        r.state.customWorlds["_mp_vend"].multiplayer === true;
+
+                    // aimBlueprintAtWorld + obtainPortalForWorld → ein selbst-
+                    // deklariertes Multiplayer-Portal (der Kern: A's geholtes
+                    // Portal IST multiplayer, broadcastet beim Betreten).
+                    const invSlots = r.state.player.inventory.slice();
+                    const obt = r.obtainPortalForWorld("_mp_vend");
+                    const portalBp = obt.ok && r.state.blueprints[obt.blueprint];
+                    out.obtainProducesMpPortal =
+                        !!portalBp && !!portalBp.portalMeta && portalBp.portalMeta.multiplayer === true;
+
+                    // _p2pBuildCatalog trägt multiplayer.
+                    const cat = r._p2pBuildCatalog();
+                    const catEntry = cat.find((c) => c.id === "_mp_vend");
+                    out.catalogCarriesMp = !!catEntry && catEntry.multiplayer === true;
+
+                    // _p2pSanitizeCatalog bewahrt multiplayer.
+                    const san = r._p2pSanitizeCatalog([
+                        { id: "_mpcat", label: "X", hash: "", multiplayer: true },
+                        { id: "_single", label: "Y", hash: "" },
+                    ]);
+                    out.catalogSanitizeKeepsMp =
+                        san.length === 2 &&
+                        san[0].multiplayer === true &&
+                        san[1].multiplayer === false;
+
+                    // renderLibraryUI rendert die Multiplayer-Marke — nur für
+                    // die Multiplayer-Welt, nicht für eine Single-Welt.
+                    r.state.customWorlds["_mp_single"] = r._sanitizeImportedManifest({
+                        id: "_mp_single",
+                        label: "Single Vendored",
+                        world: "worlds/_mp_single/index.html",
+                        dsl: [],
+                        vendored: true,
+                        reachable: true,
+                    });
+                    r.renderLibraryUI();
+                    const cards = Array.from(document.querySelectorAll("#library-list .library-card"));
+                    const mpCard = cards.find((c) => /MP Vendored/.test(c.textContent || ""));
+                    const singleCard = cards.find((c) => /Single Vendored/.test(c.textContent || ""));
+                    out.libraryRendersMark =
+                        !!mpCard && !!mpCard.querySelector(".library-mp-mark");
+                    out.libraryNoMarkForSingle =
+                        !!singleCard && !singleCard.querySelector(".library-mp-mark");
+
+                    out.vendorCheckboxInDom = !!document.getElementById("vendor-multiplayer");
+
+                    // Aufräumen.
+                    delete r.state.customWorlds["_mp_vend"];
+                    delete r.state.customWorlds["_mp_single"];
+                    delete r.state.blueprints["portal__mp_vend"];
+                    r.state.player.inventory = invSlots;
+                    r.renderLibraryUI();
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!w17mpResults || w17mpResults.error) {
+                check(
+                    "W17 Multiplayer-Welt-Deklaration erreichbar",
+                    false,
+                    (w17mpResults && w17mpResults.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("W17 MP: _sanitizeImportedManifest trägt multiplayer", w17mpResults.sanitizeCarriesMp);
+                check("W17 MP: _sanitizeImportedManifest — Default ohne Marke", w17mpResults.sanitizeDefaultsNoMp);
+                check("W17 MP: multiplayer überlebt den localStorage-Rundlauf", w17mpResults.sanitizeSurvivesRoundtrip);
+                check("W17 MP: _vendorRegisterWorld setzt multiplayer am customWorlds-Eintrag", w17mpResults.vendorRegisterCarriesMp);
+                check(
+                    "W17 MP: obtainPortalForWorld produziert für eine multiplayer-Welt ein Multiplayer-Portal",
+                    w17mpResults.obtainProducesMpPortal
+                );
+                check("W17 MP: _p2pBuildCatalog trägt multiplayer", w17mpResults.catalogCarriesMp);
+                check("W17 MP: _p2pSanitizeCatalog bewahrt multiplayer + Default false", w17mpResults.catalogSanitizeKeepsMp);
+                check("W17 MP: renderLibraryUI rendert die Multiplayer-Marke", w17mpResults.libraryRendersMark);
+                check("W17 MP: eine Single-Welt bekommt KEINE Multiplayer-Marke", w17mpResults.libraryNoMarkForSingle);
+                check("W17 MP: #vendor-multiplayer-Checkbox im DOM", w17mpResults.vendorCheckboxInDom);
             }
 
             // ### Multi-User-Bau-Sync — Strukturen synchron platzieren + abbauen ###

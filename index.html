@@ -31,7 +31,7 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: stun: turn: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self';"
         />
-        <title>Anazh Realm v8.72 – Das Ultiversum</title>
+        <title>Anazh Realm v8.78 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
              zusätzliche Datei. img-src 'self' data: in CSP erlaubt data-URI. -->
         <link
@@ -521,6 +521,54 @@
             }
             #portal-prompt[hidden] {
                 display: none;
+            }
+            /* W17 Phase C — Gruppen-Portal-Einladung: "X öffnete ein Tor nach
+               <Welt>" mit Mitkommen-/Schließen-Knopf. Tor-grüner Akzent, oben
+               mittig — pointer-events aktiv (anders als der Prompt: Knöpfe). */
+            #portal-invite-banner {
+                position: fixed;
+                left: 50%;
+                top: 130px;
+                transform: translateX(-50%);
+                z-index: 62;
+                padding: 10px 16px;
+                border-radius: 6px;
+                background: rgba(8, 14, 11, 0.92);
+                border: 1px solid #43c98a;
+                color: #9ff0c8;
+                font:
+                    13px/1.4 "JetBrains Mono",
+                    monospace;
+                text-align: center;
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+            }
+            #portal-invite-banner[hidden] {
+                display: none;
+            }
+            .portal-invite-row {
+                margin-top: 8px;
+                display: flex;
+                gap: 8px;
+                justify-content: center;
+            }
+            .portal-invite-row button {
+                font:
+                    12px "Cinzel",
+                    Georgia,
+                    serif;
+                padding: 4px 12px;
+                border-radius: 4px;
+                cursor: pointer;
+            }
+            .portal-invite-join {
+                background: #43c98a;
+                color: #06140d;
+                border: 1px solid #43c98a;
+            }
+            .portal-invite-dismiss {
+                background: transparent;
+                color: #9ff0c8;
+                border: 1px solid #43c98a;
             }
             /* Ring 6.5 — Hotbar. Neun Slots am unteren Bildschirmrand, brass-
            getintet, aktiver Slot mit Violet-Glow markiert. */
@@ -2483,6 +2531,17 @@
                 padding-top: 6px;
                 border-top: 1px dotted rgba(138, 106, 54, 0.3);
             }
+            /* W17 — die Multiplayer-Marke: eine vendorte Welt erklärt sich
+               mehrspielerfähig (Gruppen-Portal). */
+            .vendor-mp-row {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                font-family: "IM Fell English", Georgia, serif;
+                font-size: 11px;
+                color: #2c8a5e;
+                cursor: pointer;
+            }
             .vendor-status {
                 font-family: "IM Fell English", Georgia, serif;
                 font-size: 11px;
@@ -2506,6 +2565,18 @@
                 background: rgba(67, 201, 138, 0.18);
                 color: #2c8a5e;
                 border: 1px solid rgba(67, 201, 138, 0.5);
+            }
+            /* W17 — die Multiplayer-Marke: eine Gruppe tritt gemeinsam durch
+               das Tor dieser Welt. Tor-grüner Akzent wie das Portal-Overlay. */
+            .library-mp-mark {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 9px;
+                letter-spacing: 0.04em;
+                padding: 1px 6px;
+                border-radius: 8px;
+                background: rgba(67, 201, 138, 0.3);
+                color: #1f6f49;
+                border: 1px solid #43c98a;
             }
             /* KI-Übersetzer Phase 1 — die Übersetzer-Sektion + die
                „KI-übersetzt"-Karte. Stil mirror't die Pergament-Sprache. */
@@ -4360,6 +4431,7 @@
         <div id="dialogue-box" aria-live="polite"></div>
         <div id="build-mode-hud" aria-live="polite" hidden></div>
         <div id="portal-prompt" aria-live="polite" hidden></div>
+        <div id="portal-invite-banner" aria-live="polite" hidden></div>
         <!-- Welle 6.X.4 B3 V8.14 — Stats-HUD redesigned. Glyphen statt Text-
              Labels (Funke=HP, Spirale=Stamina), warme Brass-Endkappen, SVG-
              Bars mit inner Glow. Antik-modernes Gefühl: Eisen-Plattform mit
@@ -4471,7 +4543,7 @@
         <header id="topbar" class="hud-frame">
             <div class="topbar-inner">
                 <div class="title">
-                    Anazh Realm <span class="version">v8.72</span> <span class="sub">— Das Ultiversum</span>
+                    Anazh Realm <span class="version">v8.78</span> <span class="sub">— Das Ultiversum</span>
                 </div>
                 <nav class="tabs" role="tablist" aria-label="Hauptansichten">
                     <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">
@@ -4995,6 +5067,10 @@
                         maxlength="200"
                         placeholder="DSL-Vokabular, kommagetrennt (optional)"
                     />
+                    <label class="vendor-mp-row">
+                        <input type="checkbox" id="vendor-multiplayer" />
+                        Multiplayer-Welt (eine Gruppe tritt gemeinsam durch ein Tor)
+                    </label>
                 </div>
                 <input type="file" id="vendor-files" webkitdirectory multiple hidden />
                 <div class="actions">
@@ -5617,6 +5693,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=8.73" defer></script>
+        <script src="anazhRealm.js?v=8.78" defer></script>
     </body>
 </html>
