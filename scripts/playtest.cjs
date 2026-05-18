@@ -6174,6 +6174,127 @@ function startSaveServer() {
                 check("W17 MP: #vendor-multiplayer-Checkbox im DOM", w17mpResults.vendorCheckboxInDom);
             }
 
+            // ### W17 P-Vendor — die serverMode-Vendor-Ketten-Naht ###
+            // serverMode fliesst durch die Vendor-/Mesh-Kette (Spiegel der
+            // multiplayer-Naht oben): _sanitizeImportedManifest,
+            // _vendorRegisterWorld, _p2pBuildCatalog/-Sanitize, der Welt-
+            // Katalog. Ohne sie verlöre eine VENDORTE js-compute-Welt still
+            // ihren serverMode → sie degradierte zu relay.
+            const w17svResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    // _sanitizeImportedManifest trägt serverMode js-compute +
+                    // Default relay; eine js-compute-Welt wird mit-multiplayer.
+                    const sanJs = r._sanitizeImportedManifest({
+                        id: "_sv_test",
+                        label: "JS-Welt",
+                        world: "worlds/_sv_test/index.html",
+                        dsl: [],
+                        serverMode: "js-compute",
+                    });
+                    out.sanitizeCarriesJsCompute =
+                        !!sanJs && sanJs.serverMode === "js-compute" && sanJs.multiplayer === true;
+                    const sanRelay = r._sanitizeImportedManifest({
+                        id: "_sv_test2",
+                        label: "Relay-Welt",
+                        world: "worlds/_sv_test2/index.html",
+                        dsl: [],
+                    });
+                    out.sanitizeDefaultsRelay = !!sanRelay && sanRelay.serverMode === "relay";
+                    const rt = r._sanitizeImportedManifest(JSON.parse(JSON.stringify(sanJs)));
+                    out.sanitizeSurvivesRoundtrip = !!rt && rt.serverMode === "js-compute";
+
+                    // _vendorRegisterWorld setzt serverMode am customWorlds-Eintrag.
+                    r.state.customWorlds = r.state.customWorlds || {};
+                    const reg = r._vendorRegisterWorld("_sv_vend", {
+                        label: "JS Vendored",
+                        dsl: [],
+                        serverMode: "js-compute",
+                    });
+                    out.vendorRegisterCarriesServerMode =
+                        reg.ok &&
+                        !!r.state.customWorlds["_sv_vend"] &&
+                        r.state.customWorlds["_sv_vend"].serverMode === "js-compute";
+
+                    // obtainPortalForWorld → ein js-compute-Portal: eine
+                    // vendorte js-compute-Welt verliert ihren serverMode NICHT
+                    // mehr, das geholte Portal wird Compute-Host-fähig.
+                    const invSlots = r.state.player.inventory.slice();
+                    const obt = r.obtainPortalForWorld("_sv_vend");
+                    const portalBp = obt.ok && r.state.blueprints[obt.blueprint];
+                    out.obtainProducesJsComputePortal =
+                        !!portalBp && !!portalBp.portalMeta && portalBp.portalMeta.serverMode === "js-compute";
+
+                    // _p2pBuildCatalog trägt serverMode.
+                    const cat = r._p2pBuildCatalog();
+                    const catEntry = cat.find((c) => c.id === "_sv_vend");
+                    out.catalogCarriesServerMode = !!catEntry && catEntry.serverMode === "js-compute";
+
+                    // _p2pSanitizeCatalog bewahrt serverMode + Default relay.
+                    const san = r._p2pSanitizeCatalog([
+                        { id: "_svcat", label: "X", hash: "", serverMode: "js-compute" },
+                        { id: "_svrelay", label: "Y", hash: "" },
+                    ]);
+                    out.catalogSanitizeKeepsServerMode =
+                        san.length === 2 && san[0].serverMode === "js-compute" && san[1].serverMode === "relay";
+
+                    // renderLibraryUI markiert eine js-compute-Welt sichtbar.
+                    r.renderLibraryUI();
+                    const cards = Array.from(document.querySelectorAll("#library-list .library-card"));
+                    const jsCard = cards.find((c) => /JS Vendored/.test(c.textContent || ""));
+                    const jsMark = jsCard && jsCard.querySelector(".library-mp-mark");
+                    out.libraryRendersJsComputeMark = !!jsMark && /JS-Compute/.test(jsMark.textContent || "");
+
+                    out.vendorJsComputeCheckboxInDom = !!document.getElementById("vendor-js-compute");
+
+                    // Aufräumen.
+                    delete r.state.customWorlds["_sv_vend"];
+                    delete r.state.blueprints["portal__sv_vend"];
+                    r.state.player.inventory = invSlots;
+                    r.renderLibraryUI();
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!w17svResults || w17svResults.error) {
+                check(
+                    "W17 P-Vendor erreichbar",
+                    false,
+                    (w17svResults && w17svResults.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check(
+                    "W17 P-Vendor: _sanitizeImportedManifest trägt serverMode js-compute + erzwingt multiplayer",
+                    w17svResults.sanitizeCarriesJsCompute
+                );
+                check(
+                    "W17 P-Vendor: _sanitizeImportedManifest — Default serverMode relay",
+                    w17svResults.sanitizeDefaultsRelay
+                );
+                check("W17 P-Vendor: serverMode überlebt den localStorage-Rundlauf", w17svResults.sanitizeSurvivesRoundtrip);
+                check(
+                    "W17 P-Vendor: _vendorRegisterWorld setzt serverMode am customWorlds-Eintrag",
+                    w17svResults.vendorRegisterCarriesServerMode
+                );
+                check(
+                    "W17 P-Vendor: obtainPortalForWorld produziert für eine js-compute-Welt ein js-compute-Portal",
+                    w17svResults.obtainProducesJsComputePortal
+                );
+                check("W17 P-Vendor: _p2pBuildCatalog trägt serverMode", w17svResults.catalogCarriesServerMode);
+                check(
+                    "W17 P-Vendor: _p2pSanitizeCatalog bewahrt serverMode js-compute + Default relay",
+                    w17svResults.catalogSanitizeKeepsServerMode
+                );
+                check(
+                    "W17 P-Vendor: renderLibraryUI rendert die JS-Compute-Marke",
+                    w17svResults.libraryRendersJsComputeMark
+                );
+                check("W17 P-Vendor: #vendor-js-compute-Checkbox im DOM", w17svResults.vendorJsComputeCheckboxInDom);
+            }
+
             // ### Multi-User-Bau-Sync — Strukturen synchron platzieren + abbauen ###
             // confirmBuild + tryMouseBreak broadcasten jetzt; eine geteilte
             // string-archId macht eine spieler-gebaute Struktur peer-über-
