@@ -21665,10 +21665,20 @@ function startSaveServer() {
                             farMountRes && farMountRes.ok === false && farMountRes.reason === "none_in_range";
                         r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10b3_far");
 
-                        // Zoom-Test
+                        // Zoom-Test — deterministisch. _hasMagnifyingInSight
+                        // raycastet gegen ALLE Architekturen mit magnifying-
+                        // Affordance; eine autonom gespawnte transparent-
+                        // axiale Geode kann zufällig im Kamera-Strahl liegen
+                        // und die „kein Target"-Prüfung kippen. Für diese
+                        // Prüfung die Architektur-Liste kurz leeren + danach
+                        // wiederherstellen (V8.57-Lehre: ein Test ist erst
+                        // deterministisch, wenn ALLE seine Eingaben es sind).
                         const initialFov = r.state.camera.fov;
                         out.zoomInactiveInitial = !r.state._zoomActive;
+                        const zoomArchBackup = r.state.architectures;
+                        r.state.architectures = [];
                         const noTargetRes = r.setZoomActive(true);
+                        r.state.architectures = zoomArchBackup;
                         out.zoomFailsWithoutTarget =
                             noTargetRes === false && !r.state._zoomActive && r.state.camera.fov === initialFov;
 

@@ -4964,7 +4964,9 @@ class AnazhRealm {
             const o = document.createElement("option");
             o.value = pid;
             const peer = this.state.p2p.peers.get(pid);
-            o.textContent = (peer && peer.name ? peer.name : "Mitspieler") + " · " + pid.slice(0, 8);
+            // Der Peer-Eintrag trägt den Avatar-Namen als `avatarName` (aus
+            // dem soul-Kanal); ist er noch nicht da, generisch „Mitspieler".
+            o.textContent = (peer && peer.avatarName ? peer.avatarName : "Mitspieler") + " · " + pid.slice(0, 8);
             sel.appendChild(o);
         }
         if (peers.indexOf(prev) >= 0) sel.value = prev;

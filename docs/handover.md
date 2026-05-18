@@ -233,6 +233,58 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3/V4 + 11 ext. + **W12 (Welt-Portal) 
 
 ---
 
+## Rückschau: die W16-Session (Mesh-Welt-Verteilung Phase 1, V8.73)
+
+Diese Session baute W16 Phase 1 — eine vendorte Welt reist peer-to-peer.
+Eine saubere Welle: ein Commit, 2648 Invarianten grün, der Zwei-Browser-
+Smoke-Test bewies den echten Mesh-Transfer. Danach ein Selbst-Audit (W14-
+Lehre 1) — er fand drei Dinge, alle hier ehrlich verankert.
+
+### Lehre 1 — Der Plan trifft den Code, und der Code zeigt den besseren Weg.
+
+Mein Plan sagte: „vendorte Welten merken sich ihr Datei-Manifest
+(`bundleFiles`), der Sender re-fetcht jede Datei." Beim Bauen zeigte sich
+der synergetischere Weg: dem save-server die **symmetrische Lese-Seite**
+geben (`GET /api/vendor-bundle` ↔ der W15-Schreib-Pfad). So braucht der
+Client KEIN Manifest-Bookkeeping, und GitHub-vendorte Welten (deren
+Datei-Liste der Client nie sah) sind ohne Sonder-Plumbing transferierbar.
+Lehre: ein Plan ist eine Hypothese; wenn der Code einen symmetrischeren
+Schnitt anbietet (Schreiben ⇄ Lesen an EINER Stelle), nimm ihn — und
+schreib auf, dass du abgewichen bist.
+
+### Lehre 2 — Der Selbst-Audit MUSS den Playtest neu laufen lassen.
+
+Der Audit fand zwei Dinge, die der Implementierungs-Lauf nicht zeigte.
+(a) Ein **kosmetischer Bug**: `_renderMeshWorldPeers` las `peer.name`, das
+Peer-Feld heißt aber `avatarName` — das Dropdown zeigte immer „Mitspieler"
+statt des echten Namens. Der Playtest-Invariant prüfte, dass das
+`<option>`-ELEMENT existiert (`value`-Attribut), nicht seinen TEXT — er
+konnte den Bug nicht sehen. *Ein DOM-Invariant soll den bedeutungsvollen
+Inhalt prüfen, nicht nur `getElementById`-Wahrheit.* (b) Ein **vorbe-
+stehender flaky Test**: beim Audit-Re-Run kippte „Welle 10b.3 Zoom:
+setZoomActive ohne magnifying-Target" — rot, dann grün, identischer Code
+(der V8.57-Fingerabdruck). Wurzel: `_hasMagnifyingInSight` raycastet
+gegen alle Architekturen; eine autonom gespawnte transparent-axiale Geode
+kann zufällig im Kamera-Strahl liegen — umgebungs-abhängig. V8.57-style
+geheilt (der Test leert die Architektur-Liste für die „kein Target"-
+Prüfung + stellt sie wieder her). *Der Selbst-Audit ist erst echt, wenn
+er den Playtest neu laufen lässt — ein Flake versteckt sich, bis ein
+zweiter Lauf ihn zeigt.*
+
+### Lehre 3 — Eine transitionale UI ehrlich als transitional benennen.
+
+W16 P1 hat eine schlichte „Welt vom Mitspieler holen"-Sektion (worldId-
+Feld + Peer-Dropdown). Der Smoke-Test ruft `requestWorldBundleFromPeer`
+DIREKT — der Knopf-Klick-Pfad (`_runMeshWorldGet` ← Button) ist NICHT
+test-durchlaufen, nur die Methode darunter. Das ist bewusst akzeptiert:
+W16 P2 ersetzt diese ganze Sektion durch den browsbaren Welt-Katalog —
+einen Wegwerf-Knopf schwer zu testen wäre verschwendete Mühe. Aber: es
+ehrlich benennen (W12-Lehre 2 — „fertig" heißt den Spieler-Pfad gegangen;
+hier ist der Spieler-Pfad bewusst nur halb geprüft, weil P2 ihn ohnehin
+neu baut). Steht in `roadmap.md` §3 als „Offene Ränder von W16 Phase 1".
+
+---
+
 ## Rückschau: die W15-Session (Auto-Vendor, V8.71-V8.72)
 
 Diese Session baute W15 (den Auto-Vendor-Pfad) in zwei Wellen — P1 der
