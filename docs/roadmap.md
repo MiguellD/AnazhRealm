@@ -782,7 +782,7 @@ Der Schöpfer-Befund nach V8.84: die Lofi-Schicht ist „noch starr, hardcoded, 
 |---|---|---|
 | 1 — Harmonie | die feste Akkord-Schleife → eine seed- + emotion-getriebene funktionale Markov-Progression (Tonleiter + Stufen-Übergangs-Gewichte; joy/hope → helle Stufen, sorrow → dunkle) | ✅ **live (V8.85)** |
 | 2 — Melodie | eine Lead-Stimme improvisiert über den aktuellen Akkord (Akkord-/Durchgangston-Regel, Kontur, Dichte aus Emotion) — das fehlende „keine Melodien" | ✅ **live (V8.87)** |
-| 3 — Groove | eine Rhythmus-Schicht (Kick/Snare/Hihat synthetisch) + Swing; Genre = Parameter-Preset (Swing, Tempo, Akzente, Timbre) | 🔴 offen, ~1-2 Sessions |
+| 3 — Groove | eine Rhythmus-Schicht (Kick/Snare/Hihat synthetisch) + Swing; Genre = Parameter-Preset (Swing, Tempo, Akzente, Timbre) | ✅ **live (V8.91)** — Kick/Snare/Hihat + Swing; Genre-Wähler-UI eine kleine Folge-Naht |
 | 4 — Orchester | mehr Synth-Stimmen (Bass folgt den Akkord-Wurzeln, Pad, Lead), Stimmen-Zahl wächst mit der Welt-Stimmung | 🔴 offen, ~1-2 Sessions |
 
 **Tradeoff:** generative Musik kann ziellos klingen — jede Phase braucht ein Schöpfer-Browser-Ohr (wie die Shader: headless prüft Funktion, der Browser prüft Erfahrung).

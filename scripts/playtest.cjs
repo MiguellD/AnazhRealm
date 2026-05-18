@@ -6347,6 +6347,25 @@ function startSaveServer() {
                         r._lofiScaleSemitone(0) === 0 &&
                         r._lofiScaleSemitone(7) === 12 &&
                         r._lofiScaleSemitone(2) === 3;
+                    // W4 V3 Phase 3 — der Groove: Trommel-Muster + Swing.
+                    const gp = AnazhRealm.LOFI_GROOVE_PATTERN;
+                    out.grooveDefined =
+                        typeof AnazhRealm.GROOVE_SWING === "number" &&
+                        !!gp &&
+                        Object.isFrozen(gp) &&
+                        Array.isArray(gp.kick) &&
+                        Array.isArray(gp.snare) &&
+                        Array.isArray(gp.hihat) &&
+                        gp.kick.length >= 1 &&
+                        gp.snare.length >= 1 &&
+                        gp.hihat.length >= 1;
+                    // Swing: ein gerader Schritt liegt auf dem Schlag, ein
+                    // Off-Beat (ungerade) wird verzögert; swing 0.5 = gerade.
+                    out.grooveStepTime =
+                        r._grooveStepTime(0, 1, 0.58) === 0 &&
+                        r._grooveStepTime(2, 1, 0.58) === 2 &&
+                        r._grooveStepTime(1, 1, 0.58) > r._grooveStepTime(1, 1, 0.5) &&
+                        r._grooveStepTime(1, 1, 0.5) === 1;
                     // _lofiChordFreqs — positive Frequenzen, Wurzel A ≈ 110.
                     const freqs = r._lofiChordFreqs([0, 3, 7, 10], false);
                     out.freqsPositive = freqs.length === 4 && freqs.every((f) => f > 0);
@@ -6380,8 +6399,11 @@ function startSaveServer() {
                             !!sym.lofi.gain &&
                             !!sym.lofi.filter &&
                             !!sym.lofi.melodyGain &&
-                            // V8.88 — die Lead-Stimme sitzt klar über dem Pad.
-                            sym.lofi.melodyGain.gain.value >= 0.25 &&
+                            // V8.91 — die Lead-Stimme sitzt über dem Pad.
+                            sym.lofi.melodyGain.gain.value >= 0.2 &&
+                            // V8.91 Phase 3 — die Groove-Schicht + Noise-Puffer.
+                            !!sym.lofi.grooveGain &&
+                            !!sym.lofi.noiseBuffer &&
                             sym.lofi.degree === 0 &&
                             typeof sym.lofi.rngState === "number";
                         // W4 V3 Phase 2 — die Melodie: Form (startet + endet
@@ -6431,6 +6453,15 @@ function startSaveServer() {
                             void e;
                         }
                         out.melodyPlayRuns = melOk;
+                        // W4 V3 Phase 3 — der Groove spielt wurf-frei.
+                        let grooveOk = true;
+                        try {
+                            r._lofiPlayGroove(4);
+                        } catch (e) {
+                            grooveOk = false;
+                            void e;
+                        }
+                        out.groovePlayRuns = grooveOk;
                         // W4 V3 — _lofiNextDegree liefert eine in der Markov-
                         // Kette erreichbare Stufe (0..6).
                         const allowed = AnazhRealm.LOFI_HARMONY[0].map((t) => t[0]);
@@ -6504,6 +6535,8 @@ function startSaveServer() {
                 check("W4 V2: LOFI_BPM=60 + LOFI_BASE_FREQ=110 definiert", w4v2Results.bpmDefined);
                 check("W4 V3: _lofiChordFromDegree stapelt diatonische Terzen (i=Am7, iv=Dm7)", w4v2Results.chordFromDegree);
                 check("W4 V3: _lofiScaleSemitone wickelt Oktaven (idx 7 → +12 Halbtöne)", w4v2Results.scaleSemitone);
+                check("W4 V3 Phase 3: LOFI_GROOVE_PATTERN (kick/snare/hihat) + GROOVE_SWING definiert", w4v2Results.grooveDefined);
+                check("W4 V3 Phase 3: _grooveStepTime — Off-Beat-Schritt wird geswingt (verzögert)", w4v2Results.grooveStepTime);
                 check("W4 V2: _lofiChordFreqs liefert positive Frequenzen", w4v2Results.freqsPositive);
                 check("W4 V2: die Akkord-Wurzel ist A (≈110 Hz)", w4v2Results.rootIsA);
                 check("W4 V2: major-lean (hope) hebt die Terz, lässt die Wurzel", w4v2Results.majorLeanRaisesThird);
@@ -6521,6 +6554,7 @@ function startSaveServer() {
                         w4v2Results.melodyRhythmDynamics
                     );
                     check("W4 V3 Phase 2: _lofiPlayMelody spielt die Phrase wurf-frei", w4v2Results.melodyPlayRuns);
+                    check("W4 V3 Phase 3: _lofiPlayGroove spielt den Groove wurf-frei", w4v2Results.groovePlayRuns);
                     check("W4 V3: _lofiNextDegree liefert eine markov-erreichbare Stufe", w4v2Results.nextDegreeValid);
                     check("W4 V3: die Harmonie ist seed-deterministisch (selber RNG → selbe Folge)", w4v2Results.harmonyDeterministic);
                     check("W4 V3: Emotion biast die Harmonie (joy/hope → mehr helle Stufen)", w4v2Results.emotionBiasesHarmony);

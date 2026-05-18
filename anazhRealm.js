@@ -503,7 +503,7 @@ class AnazhRealm {
                 creaturePingCount: 0,
                 // W4 V2/V3 — die Lofi-Pad-Schicht: eine seed- + emotion-
                 // getriebene Akkordfolge (~60 BPM), lazy in initSymphony.
-                lofi: null, // { gain, filter, melodyGain, degree, lastChordAt, rngState }
+                lofi: null, // { gain, filter, melodyGain, grooveGain, noiseBuffer, degree, lastChordAt, rngState }
             },
             player: {
                 // Welle 6.X.4 F1 (Audit 17.05.2026) — Avatar-Name. Default
@@ -7428,15 +7428,33 @@ class AnazhRealm {
         // W4 V3 Phase 2 — die Lead-Stimme (Melodie) hat ihren eigenen Gain,
         // etwas präsenter als der Pad, damit die Melodie über ihm singt.
         const melodyGain = ctx.createGain();
-        melodyGain.gain.value = 0.3; // V8.88 — die Lead-Stimme sitzt klar über dem Pad
+        melodyGain.gain.value = 0.24; // V8.91 — Lead-Stimme −20% (Schöpfer-Wunsch)
         melodyGain.connect(masterGain);
+        // W4 V3 Phase 3 — die Groove-Schicht (synthetische Trommeln) + ein
+        // kurzer White-Noise-Puffer für Snare/Hihat (je Schlag eine frische,
+        // billige BufferSource aus diesem geteilten Puffer).
+        const grooveGain = ctx.createGain();
+        grooveGain.gain.value = 0.35;
+        grooveGain.connect(masterGain);
+        const noiseBuffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.4), ctx.sampleRate);
+        const nd = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
         // W4 V3 — der Harmonie-RNG, deterministisch aus worldMeta.seed: jede
         // Welt bekommt ihr eigenes Lied (Mulberry32, wie das Sternenfeld; ein
         // ":lofi"-Suffix entkoppelt die Akkordfolge vom Stern-Muster).
         const seedStr = ((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed") + ":lofi";
         let seedNum = 0;
         for (let i = 0; i < seedStr.length; i++) seedNum = (seedNum * 31 + seedStr.charCodeAt(i)) >>> 0;
-        return { filter, gain, melodyGain, degree: 0, lastChordAt: -Infinity, rngState: seedNum };
+        return {
+            filter,
+            gain,
+            melodyGain,
+            grooveGain,
+            noiseBuffer,
+            degree: 0,
+            lastChordAt: -Infinity,
+            rngState: seedNum,
+        };
     }
 
     // W4 V3 — ein Mulberry32-Schritt auf dem Lofi-Harmonie-RNG. Deterministisch
@@ -7567,6 +7585,99 @@ class AnazhRealm {
         }
     }
 
+    // W4 V3 Phase 3 — die Zeit eines Raster-Schritts mit Swing. Gerade
+    // Schritte liegen auf dem Schlag; ungerade (Off-Beats) werden verzögert
+    // (swing 0.5 = gerade, ~0.6 = Lofi/Jazz-Atem).
+    _grooveStepTime(step, stepDur, swing) {
+        if (step % 2 === 0) return step * stepDur;
+        return (step - 1) * stepDur + swing * 2 * stepDur;
+    }
+
+    // W4 V3 Phase 3 — eine synthetische Kick: ein Sinus mit schnellem
+    // Tonhöhen-Abfall (140 → 48 Hz) + scharfer Hüllkurve.
+    _lofiKick(t) {
+        const s = this.state.symphony;
+        if (!s.ctx || !s.lofi || !s.lofi.grooveGain) return;
+        const ctx = s.ctx;
+        const osc = ctx.createOscillator();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(140, t);
+        osc.frequency.exponentialRampToValueAtTime(48, t + 0.09);
+        const env = ctx.createGain();
+        env.gain.setValueAtTime(0.0001, t);
+        env.gain.exponentialRampToValueAtTime(0.7, t + 0.006);
+        env.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+        osc.connect(env);
+        env.connect(s.lofi.grooveGain);
+        osc.start(t);
+        osc.stop(t + 0.26);
+    }
+
+    // W4 V3 Phase 3 — eine synthetische Snare: ein White-Noise-Burst durch
+    // einen Hochpass, kurze scharfe Hüllkurve.
+    _lofiSnare(t) {
+        const s = this.state.symphony;
+        if (!s.ctx || !s.lofi || !s.lofi.grooveGain || !s.lofi.noiseBuffer) return;
+        const ctx = s.ctx;
+        const src = ctx.createBufferSource();
+        src.buffer = s.lofi.noiseBuffer;
+        const hp = ctx.createBiquadFilter();
+        hp.type = "highpass";
+        hp.frequency.value = 1800;
+        const env = ctx.createGain();
+        env.gain.setValueAtTime(0.0001, t);
+        env.gain.exponentialRampToValueAtTime(0.4, t + 0.005);
+        env.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+        src.connect(hp);
+        hp.connect(env);
+        env.connect(s.lofi.grooveGain);
+        src.start(t);
+        src.stop(t + 0.22);
+    }
+
+    // W4 V3 Phase 3 — ein synthetisches Hihat: ein sehr kurzer, hoch-
+    // gefilterter White-Noise-Tick.
+    _lofiHihat(t) {
+        const s = this.state.symphony;
+        if (!s.ctx || !s.lofi || !s.lofi.grooveGain || !s.lofi.noiseBuffer) return;
+        const ctx = s.ctx;
+        const src = ctx.createBufferSource();
+        src.buffer = s.lofi.noiseBuffer;
+        const hp = ctx.createBiquadFilter();
+        hp.type = "highpass";
+        hp.frequency.value = 7000;
+        const env = ctx.createGain();
+        env.gain.setValueAtTime(0.0001, t);
+        env.gain.exponentialRampToValueAtTime(0.14, t + 0.004);
+        env.gain.exponentialRampToValueAtTime(0.0001, t + 0.045);
+        src.connect(hp);
+        hp.connect(env);
+        env.connect(s.lofi.grooveGain);
+        src.start(t);
+        src.stop(t + 0.08);
+    }
+
+    // W4 V3 Phase 3 — den Groove einer Akkord-Dauer spielen: das Trommel-
+    // Muster über das 8-Schritt-Raster, mit Swing. peace dünnt die Off-Beat-
+    // Hihats aus (ruhiger), joy lässt sie voll (lebhafter).
+    _lofiPlayGroove(durSec) {
+        const s = this.state.symphony;
+        if (!s.enabled || !s.ctx || !s.lofi || !s.lofi.grooveGain || !s.lofi.noiseBuffer) return;
+        const STEPS = 8;
+        const stepDur = durSec / STEPS;
+        const now = s.ctx.currentTime;
+        const pat = AnazhRealm.LOFI_GROOVE_PATTERN;
+        const emotions = (this.state.player && this.state.player.emotions) || {};
+        const peace = Math.max(0, Math.min(1, emotions.peace || 0));
+        for (let step = 0; step < STEPS; step++) {
+            const t = now + this._grooveStepTime(step, stepDur, AnazhRealm.GROOVE_SWING);
+            if (pat.kick.indexOf(step) >= 0) this._lofiKick(t);
+            if (pat.snare.indexOf(step) >= 0) this._lofiSnare(t);
+            // peace > 0.6 lässt die Off-Beat-Hihats aus — ein ruhigerer Groove.
+            if (pat.hihat.indexOf(step) >= 0 && !(peace > 0.6 && step % 2 === 1)) this._lofiHihat(t);
+        }
+    }
+
     // W4 V3 — die nächste Akkord-Stufe per funktionaler Markov-Kette wählen.
     // Emotion biast die Wahl: joy/hope ziehen zu hellen Stufen (III/VI),
     // sorrow zu dunklen (i/ii°/iv) — die Harmonie spürt den Menschen.
@@ -7657,6 +7768,7 @@ class AnazhRealm {
         const degree = s.lofi.degree;
         this._lofiPlayChord(this._lofiChordFromDegree(degree));
         this._lofiPlayMelody(degree, durSec);
+        this._lofiPlayGroove(durSec);
         s.lofi.lastChordAt = now;
         s.lofi.degree = this._lofiNextDegree(degree);
     }
@@ -33655,6 +33767,18 @@ AnazhRealm.LOFI_BRIGHT_DEGREES = Object.freeze([2, 5]); // III, VI
 AnazhRealm.LOFI_DARK_DEGREES = Object.freeze([0, 1, 3]); // i, ii°, iv
 AnazhRealm.LOFI_BPM = 60; // ruhiges Lofi-Tempo
 AnazhRealm.LOFI_CHORD_BEATS = 4; // ein Akkord je 4 Schläge
+// W4 V3 Phase 3 — der Groove. Ein Trommel-Muster über demselben 8-Schritt-
+// Raster wie die Melodie (Schritt-Indizes je Trommel): Kick auf Takt-Eins +
+// dem „Und" vor Takt-Drei + Takt-Drei, Snare auf dem Backbeat, Hihat auf
+// allen Achteln. Synthetisch (Web Audio), kein Asset.
+AnazhRealm.LOFI_GROOVE_PATTERN = Object.freeze({
+    kick: Object.freeze([0, 3, 4]),
+    snare: Object.freeze([2, 6]),
+    hihat: Object.freeze([0, 1, 2, 3, 4, 5, 6, 7]),
+});
+// Swing: die Off-Beat-Schritte (ungerade) werden verzögert — 0.5 = gerade,
+// ~0.6 = der typische Lofi/Jazz-Atem (Genre-Preset-Parameter, W4 V3).
+AnazhRealm.GROOVE_SWING = 0.58;
 AnazhRealm.MOUNT_SPEED_FACTOR = 0.7; // Compounds fahren etwas langsamer als zu Fuß
 AnazhRealm.ZOOM_FOV_DEG = 25; // Magnifying-Compound zoomt auf 25°
 AnazhRealm.MAGNIFYING_RAY_RANGE_M = 8; // Spieler muss innerhalb dieser Reichweite drauf schauen
