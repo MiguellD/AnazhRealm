@@ -2,7 +2,19 @@
 
 Persistente Notizen. Diese Datei wird bei jeder neuen Session automatisch geladen. **Bei größeren Entscheidungen zuerst `docs/state-of-realm.md` lesen** – dort steht der ausführliche Stand, die Vision aus den vier Testamenten, der Plan und die Learnings.
 
-**Aktuelle Version: V8.88 (Stand 18.05.2026, Audio-Feinschliff nach Schöpfer-Browser-Befund — drei Wünsche: (1) die Wetter-Noise (Regen) hängt jetzt am selben Regler wie die Kreatur-Pings (`creaturePingVolume`, der „Umgebungsgeräusche"-Regler) + ist 60 % leiser (Basiswert 0.18 → 0.072); der Regler zieht die laufende Noise live nach. (2) Der Ambient-Drone −80 % (Gain 0.05 → 0.01, kaum hörbare Grundierung). (3) „höre keine Melodi" — die Melodie war zu leise + zu sparsam + zu plucky: melodyGain 0.16 → 0.30, Dichte-Basis 3 → 5, eine singende Hüllkurve statt eines Plucks. +1 Invariante, playtest-grün, Lint + Strict-Audit (0 Failures) sauber. Siehe V8.88-Eintrag.)**
+**Aktuelle Version: V8.89 (Stand 18.05.2026, Wetter-Noise −80% — Schöpfer-Browser-Befund: ein White-Noise-Rauschen, vom Schöpfer beim Drone vermutet. Diagnose nach Audio-Graph-Audit: es ist die Wetter-Schicht — gefiltertes White-Noise für Regen, die EINZIGE Rausch-Quelle der Symphonie (der Drone ist rein tonal, zwei Dreieck-Oszillatoren); bandpass-gefiltert klingt sie wie ein Hiss statt erkennbarem Regen. Fix: der Regen-Basiswert in `_symphonyWeatherTarget` 0.072 → 0.014 (~80% leiser, am „Umgebungsgeräusche"-Regler). Die Melodie (Phase 2) ist vom Schöpfer bestätigt — „melodie passt". +0 Invarianten (Test-Wert angepasst), playtest-grün. Siehe V8.89-Eintrag.)**
+
+**V8.89 — Wetter-Noise −80% (das White-Noise-Rauschen)**: Schöpfer-Browser-Befund nach V8.88 — ein White-Noise-Rauschen, vermutet als „etwas mit dem Drone implementiert". Plus: die Melodie ist bestätigt („melodie passt :D"). Ein Commit, playtest-grün.
+
+1. **Die Diagnose — es ist die Wetter-Schicht.** Ein Audit des Audio-Graphs: es gibt GENAU EINE White-Noise-Quelle — die Wetter-Schicht (`s.weather`, ein `createBuffer` mit `Math.random()` gefüllt, geloopt, durch einen Bandpass). Der Drone ist rein tonal (zwei Dreieck-Oszillatoren). Das Rauschen IST der Regen — aber bandpass-gefiltertes White-Noise (1500 Hz, weite Q) klingt wie ein Hiss, nicht wie patschender Regen; darum vermutete der Schöpfer eine eigene „Drone"-Quelle. Es spielt nur, wenn `state.weather === "rainy"` (weatherGain ist sonst 0).
+
+2. **Der Fix.** Der Regen-Basiswert in `_symphonyWeatherTarget` 0.072 → 0.014 (~80% leiser, wie der Drone in V8.88). Der Regen bleibt am „Umgebungsgeräusche"-Regler — wer ihn lauter will, dreht den Regler. `_symphonyWeatherTarget` ist die EINE Quelle, `symphonyTick` + der Slider-Handler ziehen automatisch nach.
+
+**Tests**: die `weatherOnPingSlider`-Invariante (V8.88) auf den neuen Basiswert 0.014 angepasst (kein neuer Check). ~2772 grün. Lint + Format + Strict-Audit (0 Failures) sauber.
+
+**Lehre der V8.89**: *(1) „Ein Rauschen vom Drone" — der Audio-Graph hat genau eine Rausch-Quelle (das Wetter-White-Noise); ein Audit findet sie in Sekunden. Wer einen Klang-Befund hat, sucht erst die Quelle im Graph, bevor er rät. (2) Bandpass-gefiltertes White-Noise klingt wie ein Hiss, nicht wie Regen — der Spieler erkennt es nicht als „Regen". Falls der Regen je erkennbar patschen soll, ist das eine eigene kleine Welle (die Filter-Form), nicht die Lautstärke.*
+
+**Nächste Welle: W4 V3 Phase 3 — der Groove.** Siehe `docs/roadmap.md` §3 „W4 V3".
 
 **V8.88 — Audio-Feinschliff (Wetter an den Umgebungs-Regler, Drone −80 %, die Melodie hörbar, +1 Invariante)**: drei Schöpfer-Browser-Wünsche aus einem Befund. Ein Commit, playtest-grün.
 

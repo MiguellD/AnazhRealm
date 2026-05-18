@@ -24774,7 +24774,7 @@ function startSaveServer() {
                         Math.abs(s.ambient.osc2.frequency.value - s.ambient.osc1.frequency.value) < 1;
                     out.hasWeather = !!s.weather && !!s.weather.noise && !!s.weather.gain;
                     // V8.88 — die Wetter-Noise (Regen) hängt am Umgebungs-
-                    // Regler (creaturePingVolume) + ist 60 % leiser (0.072).
+                    // Regler (creaturePingVolume) + ist ~80 % leiser (0.014).
                     const wReal = r.state.weather;
                     r.state.weather = "rainy";
                     s.creaturePingVolume = 1;
@@ -24786,7 +24786,7 @@ function startSaveServer() {
                     s.creaturePingVolume = 1;
                     r.state.weather = wReal;
                     out.weatherOnPingSlider =
-                        Math.abs(wFull - 0.072) < 0.001 && Math.abs(wHalf - 0.036) < 0.001 && wDry === 0;
+                        Math.abs(wFull - 0.014) < 0.001 && Math.abs(wHalf - 0.007) < 0.001 && wDry === 0;
 
                     // (b) Wetter-Layer-Gain folgt state.weather
                     r.state.weather = "sunny";
@@ -24840,7 +24840,7 @@ function startSaveServer() {
                 check("Ring 4: Ambient-Layer hat alle Nodes (osc1+osc2+lfo+filter)", ring4Results.hasAmbient);
                 check("V8.88: Ambient-Drone ist kaum hörbare Grundierung (Dreieck, Gain ≤ 0.02)", ring4Results.droneIsSoft);
                 check(
-                    "V8.88: Regen-Noise hängt am Umgebungs-Regler + ist 60% leiser (0.072)",
+                    "V8.89: Regen-Noise hängt am Umgebungs-Regler + ist ~80% leiser (0.014)",
                     ring4Results.weatherOnPingSlider
                 );
                 check("Ring 4: Wetter-Layer hat Noise-Source + Gain", ring4Results.hasWeather);

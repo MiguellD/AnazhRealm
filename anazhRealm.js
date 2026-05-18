@@ -7342,14 +7342,15 @@ class AnazhRealm {
         osc.stop(t + 0.2);
     }
 
-    // W4 V3 — die Ziel-Lautstärke der Wetter-Noise (Regen). Sie hängt am
+    // W4 V3 — die Ziel-Lautstärke der Wetter-Noise (Regen — gefiltertes
+    // White-Noise, die EINZIGE Rausch-Quelle der Symphonie). Sie hängt am
     // selben Regler wie die Kreatur-Pings (creaturePingVolume — „Umgebungs-
-    // geräusche"); der Regen-Basiswert ist 0.072 (60 % leiser als die alten
-    // 0.18, Schöpfer-Wunsch).
+    // geräusche"). V8.89 — Basiswert 0.014 (~80 % leiser als V8.88s 0.072,
+    // Schöpfer-Wunsch: das Rauschen war zu präsent).
     _symphonyWeatherTarget() {
         const s = this.state.symphony;
         const pingVol = typeof s.creaturePingVolume === "number" ? s.creaturePingVolume : 1.0;
-        return (this.state.weather === "rainy" ? 0.072 : 0) * pingVol;
+        return (this.state.weather === "rainy" ? 0.014 : 0) * pingVol;
     }
 
     // [ATMOSPHERE] Symphonie-Tick. V8.25-Erweiterung: ambient-Gain atmet
