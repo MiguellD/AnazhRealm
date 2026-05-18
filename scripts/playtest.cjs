@@ -4677,7 +4677,11 @@ function startSaveServer() {
                         typeof r._p2pHandleWorldBundlePull === "function" &&
                         typeof r._p2pHandleWorldBundleChunk === "function" &&
                         typeof r._p2pHandleWorldBundleFail === "function" &&
-                        typeof r._renderMeshWorldPeers === "function" &&
+                        typeof r._renderMeshWorldCatalog === "function" &&
+                        typeof r._p2pBuildCatalog === "function" &&
+                        typeof r._p2pSanitizeCatalog === "function" &&
+                        typeof r._haveWorldByHashOrId === "function" &&
+                        typeof r._runMeshWorldGet === "function" &&
                         typeof r.meshWorldInitDOM === "function";
 
                     // requestWorldBundleFromPeer — Validierungs-Pfade.
@@ -4833,27 +4837,162 @@ function startSaveServer() {
                     out.bundlePullOnChannelPath = pullSpy === 1;
                     r._p2pHandleWorldBundlePull = origPull;
 
-                    // UI: die „Welt vom Mitspieler holen"-Sektion im DOM.
-                    out.uiInDom =
-                        !!document.getElementById("mesh-world-id") &&
-                        !!document.getElementById("mesh-world-peer") &&
-                        !!document.getElementById("mesh-world-get") &&
-                        !!document.getElementById("mesh-world-status");
+                    // ### W16 Phase 2 — der Welt-Katalog ###
+                    // _p2pBuildCatalog — nur vendored-Welten (eine importierte
+                    // Manifest-Welt hat kein teilbares Bündel).
+                    r.state.customWorlds["cat-vendored-w16"] = {
+                        id: "cat-vendored-w16",
+                        label: "Katalog-Welt",
+                        world: "worlds/cat-vendored-w16/index.html",
+                        vendored: true,
+                        trust: "sandboxed",
+                        bundleHash: "abc123",
+                    };
+                    r.state.customWorlds["cat-imported-w16"] = {
+                        id: "cat-imported-w16",
+                        label: "Importiert",
+                        world: "worlds/cat-imported-w16/index.html",
+                    };
+                    const cat = r._p2pBuildCatalog();
+                    out.catalogBuildsVendoredOnly =
+                        cat.some((c) => c.id === "cat-vendored-w16" && c.label === "Katalog-Welt" && c.hash === "abc123") &&
+                        !cat.some((c) => c.id === "cat-imported-w16");
 
-                    // _renderMeshWorldPeers füllt das Peer-Dropdown.
-                    const sel = document.getElementById("mesh-world-peer");
-                    if (sel) sel.dataset.sig = "";
-                    r._renderMeshWorldPeers();
-                    out.peerDropdownFilled = !!sel && sel.querySelector('option[value="w16peer"]') !== null;
+                    // _p2pSanitizeCatalog — gültige Einträge bleiben, Müll fällt raus.
+                    const sanCat = r._p2pSanitizeCatalog([
+                        { id: "good-w16", label: "Gut", hash: "deadbeef" },
+                        { id: "BAD ID!", label: "x" },
+                        { label: "kein-id" },
+                        "string-müll",
+                    ]);
+                    out.catalogSanitizes =
+                        sanCat.length === 1 && sanCat[0].id === "good-w16" && sanCat[0].hash === "deadbeef";
+
+                    // _haveWorldByHashOrId — per id ODER per Content-Hash.
+                    out.haveById = r._haveWorldByHashOrId("cat-vendored-w16", "") === true;
+                    out.haveByHash = r._haveWorldByHashOrId("other-id-w16", "abc123") === true;
+                    out.haveFalseUnknown = r._haveWorldByHashOrId("ghost-w16", "nope") === false;
+
+                    // _p2pBroadcastSoul trägt den Katalog mit.
+                    let soulMsg = null;
+                    const origSend = r.p2pSend;
+                    r.p2pSend = (m) => {
+                        if (m && m.type === "soul") soulMsg = m;
+                    };
+                    p2p.enabled = true;
+                    r._p2pBroadcastSoul();
+                    out.soulCarriesCatalog =
+                        !!soulMsg &&
+                        Array.isArray(soulMsg.catalog) &&
+                        soulMsg.catalog.some((c) => c.id === "cat-vendored-w16");
+
+                    // _vendorRegisterWorld annonciert den Katalog neu (re-broadcast).
+                    soulMsg = null;
+                    r._vendorRegisterWorld("reg-broadcast-w16", { label: "Reg", bundleHash: "cafe11" });
+                    out.registerRebroadcastsSoul =
+                        !!soulMsg &&
+                        Array.isArray(soulMsg.catalog) &&
+                        soulMsg.catalog.some((c) => c.id === "reg-broadcast-w16" && c.hash === "cafe11");
+                    r.p2pSend = origSend;
+                    p2p.enabled = false;
+                    delete r.state.customWorlds["reg-broadcast-w16"];
+
+                    // Der soul-Handler speichert den Katalog am Peer-Eintrag.
+                    r._p2pEnsurePeerEntry("cat-peer-w16");
+                    r.p2pHandleMessage(
+                        JSON.stringify({
+                            type: "soul",
+                            peerId: "cat-peer-w16",
+                            soulName: "human",
+                            catalog: [{ id: "peer-world-w16", label: "Peer-Welt", hash: "feed00" }],
+                        })
+                    );
+                    const catPeer = p2p.peers.get("cat-peer-w16");
+                    out.soulHandlerStoresCatalog =
+                        !!catPeer &&
+                        Array.isArray(catPeer.catalog) &&
+                        catPeer.catalog.some((c) => c.id === "peer-world-w16" && c.hash === "feed00");
+
+                    // _sanitizeImportedManifest bewahrt bundleHash + überlebt
+                    // den localStorage-Rundlauf.
+                    const sanM = r._sanitizeImportedManifest({
+                        id: "hash-rt-w16",
+                        label: "Hash-RT",
+                        world: "worlds/hash-rt-w16/index.html",
+                        vendored: true,
+                        bundleHash: "ABCDEF0123",
+                    });
+                    out.sanitizeKeepsHash = !!sanM && sanM.bundleHash === "abcdef0123";
+                    r.state.customWorlds["hash-rt-w16"] = sanM;
+                    r._saveCustomWorlds();
+                    const reloaded = r._loadCustomWorlds();
+                    out.hashSurvivesRoundtrip =
+                        !!reloaded["hash-rt-w16"] && reloaded["hash-rt-w16"].bundleHash === "abcdef0123";
+
+                    // _renderMeshWorldCatalog — Holen-Knopf für eine fremde
+                    // Welt, „✓ vorhanden"-Marke für eine, die ich schon habe.
+                    const catHost = document.getElementById("mesh-world-catalog");
+                    if (catHost) catHost.dataset.sig = "";
+                    catPeer.catalog = [
+                        { id: "peer-world-w16", label: "Peer-Welt", hash: "feed00" },
+                        { id: "cat-vendored-w16", label: "Schon da", hash: "abc123" },
+                    ];
+                    r._renderMeshWorldCatalog();
+                    out.catalogRendersGetButton =
+                        !!catHost && catHost.querySelector('button[data-mesh-world="peer-world-w16"]') !== null;
+                    out.catalogRendersHaveBadge =
+                        !!catHost &&
+                        catHost.querySelector(".mesh-catalog-have") !== null &&
+                        catHost.querySelector('button[data-mesh-world="cat-vendored-w16"]') === null;
+
+                    // _runMeshWorldGet routet zu requestWorldBundleFromPeer.
+                    let routed = null;
+                    const origReq = r.requestWorldBundleFromPeer;
+                    r.requestWorldBundleFromPeer = (wid, pid) => {
+                        routed = { wid, pid };
+                        return { ok: false, reason: "no_channel" };
+                    };
+                    r._runMeshWorldGet("route-w16", "route-peer-w16");
+                    out.runMeshWorldGetRoutes =
+                        !!routed && routed.wid === "route-w16" && routed.pid === "route-peer-w16";
+                    r.requestWorldBundleFromPeer = origReq;
+
+                    // Der Holen-Knopf: ein ECHTER Klick routet durch den
+                    // delegierten Listener (meshWorldInitDOM) zur Transport-
+                    // Methode — der ganze Spieler-Pfad render→klick→holen
+                    // (W12-Lehre: „fertig" heißt den Spieler-Pfad gegangen).
+                    let clickRouted = null;
+                    const origReqClick = r.requestWorldBundleFromPeer;
+                    r.requestWorldBundleFromPeer = (wid, pid) => {
+                        clickRouted = { wid, pid };
+                        return { ok: false, reason: "no_channel" };
+                    };
+                    const getBtn = catHost && catHost.querySelector('button[data-mesh-world="peer-world-w16"]');
+                    if (getBtn) getBtn.click();
+                    out.catalogButtonClickRoutes =
+                        !!clickRouted && clickRouted.wid === "peer-world-w16" && clickRouted.pid === "cat-peer-w16";
+                    r.requestWorldBundleFromPeer = origReqClick;
+
+                    // UI: die Welt-Katalog-Sektion im DOM.
+                    out.uiInDom =
+                        !!document.getElementById("mesh-world-catalog") &&
+                        !!document.getElementById("mesh-world-status");
 
                     // Cleanup
                     r._p2pRemovePeer("w16peer");
+                    r._p2pRemovePeer("cat-peer-w16");
                     p2p.rtcPeers.clear();
                     p2p.bundleXfers.clear();
                     p2p.pendingBundlePull = null;
                     p2p._bundleServedAt.clear();
                     delete r.state.customWorlds["mesh-send-w16"];
                     delete r.state.customWorlds["have-w16"];
+                    delete r.state.customWorlds["cat-vendored-w16"];
+                    delete r.state.customWorlds["cat-imported-w16"];
+                    delete r.state.customWorlds["hash-rt-w16"];
+                    // localStorage von den Test-Welten säubern (der Rundlauf-
+                    // Test hat sie via _saveCustomWorlds geschrieben).
+                    r._saveCustomWorlds();
 
                     return out;
                 })
@@ -4886,9 +5025,147 @@ function startSaveServer() {
                     "W16: world-bundle-pull ist kanal-exklusiv (nicht über den WS-Pfad)",
                     w16Results.bundlePullNotOnWsPath && w16Results.bundlePullOnChannelPath
                 );
+                // ── W16 Phase 2 — der Welt-Katalog ──
+                check("W16 P2: _p2pBuildCatalog liefert nur vendored-Welten (id/label/hash)", w16Results.catalogBuildsVendoredOnly);
+                check("W16 P2: _p2pSanitizeCatalog behält gültige Einträge + verwirft Müll", w16Results.catalogSanitizes);
+                check("W16 P2: _haveWorldByHashOrId erkennt eine Welt per id", w16Results.haveById);
+                check("W16 P2: _haveWorldByHashOrId erkennt eine Welt per Content-Hash (andere id)", w16Results.haveByHash);
+                check("W16 P2: _haveWorldByHashOrId liefert false für eine unbekannte Welt", w16Results.haveFalseUnknown);
+                check("W16 P2: _p2pBroadcastSoul trägt den Welt-Katalog mit", w16Results.soulCarriesCatalog);
+                check("W16 P2: _vendorRegisterWorld annonciert den Katalog neu (soul-Re-Broadcast)", w16Results.registerRebroadcastsSoul);
+                check("W16 P2: der soul-Handler speichert den Katalog eines Peers", w16Results.soulHandlerStoresCatalog);
+                check("W16 P2: _sanitizeImportedManifest bewahrt bundleHash für eine vendorte Welt", w16Results.sanitizeKeepsHash);
+                check("W16 P2: bundleHash überlebt den localStorage-Rundlauf", w16Results.hashSurvivesRoundtrip);
+                check("W16 P2: _renderMeshWorldCatalog rendert einen Holen-Knopf für eine fremde Welt", w16Results.catalogRendersGetButton);
+                check("W16 P2: _renderMeshWorldCatalog zeigt „✓ vorhanden\" für eine schon vorhandene Welt (Dedup)", w16Results.catalogRendersHaveBadge);
+                check("W16 P2: _runMeshWorldGet routet zu requestWorldBundleFromPeer", w16Results.runMeshWorldGetRoutes);
+                check("W16 P2: ein Klick auf den Holen-Knopf routet durch den delegierten Listener (Spieler-Pfad)", w16Results.catalogButtonClickRoutes);
+                check("W16 P2: die Welt-Katalog-Sektion im DOM", w16Results.uiInDom);
+            }
+
+            // ### W17 Phase A — der Transport-Shim ###
+            // Eine fremde Multiplayer-Welt netzwerkt über `WebSocket`; der
+            // save-server-injizierte Shim ersetzt es durch eine postMessage-
+            // Brücke. Tests prüfen die Client-Schicht (multiplayer-Flag,
+            // ?anazh-shim=1-Marker, der _portalNetReceive-Echo); den echten
+            // Loopback im sandboxed iframe prüft smoke-shim.cjs.
+            const w17paResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    out.methodPresent = typeof r._portalNetReceive === "function";
+
+                    // _sanitizePortalMeta — das multiplayer-Flag.
+                    const sanDefault = r._sanitizePortalMeta({ world: "worlds/skeleton/index.html" }, "fb");
+                    out.sanitizeDefaultsFalse = sanDefault.multiplayer === false;
+                    const sanMp = r._sanitizePortalMeta(
+                        { world: "worlds/skeleton/index.html", multiplayer: true },
+                        "fb"
+                    );
+                    out.sanitizeKeepsTrue = sanMp.multiplayer === true;
+
+                    // _buildPortalOverlay — multiplayer:true hängt ?anazh-shim=1
+                    // an + setzt _portalOverlay.multiplayer.
+                    r._buildPortalOverlay({
+                        world: "worlds/skeleton/index.html",
+                        multiplayer: true,
+                        trust: "sandboxed",
+                    });
+                    const mpFrame = document.querySelector("#portal-overlay iframe.portal-frame");
+                    out.overlayMultiplayer =
+                        !!r._portalOverlay &&
+                        r._portalOverlay.multiplayer === true &&
+                        !!mpFrame &&
+                        /\?anazh-shim=1$/.test(mpFrame.getAttribute("src") || "");
+                    r._disposePortalOverlay();
+
+                    // multiplayer:false → kein Marker.
+                    r._buildPortalOverlay({ world: "worlds/skeleton/index.html", trust: "sandboxed" });
+                    const plainFrame = document.querySelector("#portal-overlay iframe.portal-frame");
+                    out.overlayNoMarkerWhenSingle =
+                        !!plainFrame && !(plainFrame.getAttribute("src") || "").includes("anazh-shim");
+                    r._disposePortalOverlay();
+
+                    // _portalNetReceive — Phase-A-Loopback: ws-send → ws-recv-Echo.
+                    const posted = [];
+                    r._portalOverlay = {
+                        multiplayer: true,
+                        trust: "sandboxed",
+                        iframe: { contentWindow: { postMessage: (m, o) => posted.push({ m, o }) } },
+                    };
+                    const echoed = r._portalNetReceive({ __anazhNet: true, kind: "ws-send", channel: 7, data: "ping" });
+                    out.netReceiveEchoes =
+                        echoed === true &&
+                        posted.length === 1 &&
+                        posted[0].m.__anazhNet === true &&
+                        posted[0].m.kind === "ws-recv" &&
+                        posted[0].m.channel === 7 &&
+                        posted[0].m.data === "ping" &&
+                        posted[0].o === "*";
+                    // ws-open + ein Müll-Envelope (kein __anazhNet) → kein Echo.
+                    posted.length = 0;
+                    r._portalNetReceive({ __anazhNet: true, kind: "ws-open", channel: 7 });
+                    r._portalNetReceive({ kind: "ws-send", channel: 7, data: "x" });
+                    out.netReceiveIgnoresNonSend = posted.length === 0;
+                    // Ein Nicht-Multiplayer-Portal echot nicht.
+                    r._portalOverlay.multiplayer = false;
+                    posted.length = 0;
+                    r._portalNetReceive({ __anazhNet: true, kind: "ws-send", channel: 1, data: "y" });
+                    out.netReceiveGatedOnMultiplayer = posted.length === 0;
+                    r._portalOverlay = null;
+
+                    // buildStateSnapshot persistiert multiplayer im portalMeta
+                    // (der feste Feld-Satz — V8.59-Lehre); _sanitizePortalMeta
+                    // (oben geprüft) ist der Lade-Pfad → zusammen der Rundlauf.
+                    const bpName = "_w17pa_portal";
+                    const wp = r.state.blueprints["welt_portal"];
+                    r.state.blueprints[bpName] = {
+                        name: bpName,
+                        label: "W17 Test-Portal",
+                        builtIn: false,
+                        parts: JSON.parse(JSON.stringify(wp.parts)),
+                        connections: [],
+                        role: "portal",
+                        portalMeta: r._sanitizePortalMeta(
+                            { world: "worlds/skeleton/index.html", label: "W17 Test-Portal", multiplayer: true },
+                            "W17 Test-Portal"
+                        ),
+                    };
+                    const snap = r.buildStateSnapshot();
+                    const snapBp = (snap.blueprints || []).find((b) => b.name === bpName);
+                    out.snapshotKeepsMultiplayer =
+                        !!snapBp && !!snapBp.portalMeta && snapBp.portalMeta.multiplayer === true;
+                    delete r.state.blueprints[bpName];
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!w17paResults || w17paResults.error) {
                 check(
-                    "W16: die „Welt vom Mitspieler holen\"-Sektion + Peer-Dropdown im DOM",
-                    w16Results.uiInDom && w16Results.peerDropdownFilled
+                    "W17 Phase A: der Transport-Shim erreichbar",
+                    false,
+                    (w17paResults && w17paResults.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("W17 PA: _portalNetReceive existiert", w17paResults.methodPresent);
+                check("W17 PA: _sanitizePortalMeta — multiplayer Default false", w17paResults.sanitizeDefaultsFalse);
+                check("W17 PA: _sanitizePortalMeta bewahrt multiplayer:true", w17paResults.sanitizeKeepsTrue);
+                check(
+                    "W17 PA: _buildPortalOverlay (multiplayer) hängt ?anazh-shim=1 an + setzt das Flag",
+                    w17paResults.overlayMultiplayer
+                );
+                check("W17 PA: _buildPortalOverlay (single) lädt OHNE Shim-Marker", w17paResults.overlayNoMarkerWhenSingle);
+                check(
+                    "W17 PA: _portalNetReceive echot ein ws-send als ws-recv (Phase-A-Loopback)",
+                    w17paResults.netReceiveEchoes
+                );
+                check("W17 PA: _portalNetReceive ignoriert ws-open / Müll-Envelope", w17paResults.netReceiveIgnoresNonSend);
+                check("W17 PA: _portalNetReceive echot nur für ein Multiplayer-Portal", w17paResults.netReceiveGatedOnMultiplayer);
+                check(
+                    "W17 PA: multiplayer im portalMeta überlebt den buildStateSnapshot-Schreib-Pfad",
+                    w17paResults.snapshotKeepsMultiplayer
                 );
             }
 

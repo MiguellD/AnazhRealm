@@ -370,12 +370,43 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
             W16_ID
         );
         check("W16: B hat die Welt vor dem Mesh-Transfer nicht", bHasBefore === false);
-        // B holt die Welt von A über das Mesh.
-        const w16Req = await pageB.evaluate(
-            (id, pid) => window.anazhRealm.requestWorldBundleFromPeer(id, pid),
-            W16_ID,
-            peerIdA
+
+        // W16 Phase 2 — A's vendorte Welt erscheint in B's Welt-Katalog: A
+        // annonciert sie über den soul-Kanal (_vendorRegisterWorld → soul-Re-
+        // Broadcast), B's soul-Handler speichert sie am Peer-Eintrag.
+        await waitFor(
+            pageB,
+            (pid, wid) => {
+                const peer = window.anazhRealm.state.p2p.peers.get(pid);
+                return !!(peer && Array.isArray(peer.catalog) && peer.catalog.some((w) => w.id === wid));
+            },
+            15000,
+            "A's Welt erscheint in B's Welt-Katalog",
+            peerIdA,
+            W16_ID
         );
+        const w16Cat = await pageB.evaluate(
+            (pid, wid) => {
+                const peer = window.anazhRealm.state.p2p.peers.get(pid);
+                const e = peer && peer.catalog && peer.catalog.find((w) => w.id === wid);
+                return e ? { id: e.id, label: e.label, hash: e.hash } : null;
+            },
+            peerIdA,
+            W16_ID
+        );
+        check(
+            "W16 P2: A's Welt steht in B's Katalog mit Label + sha256-Content-Hash",
+            !!w16Cat && w16Cat.label === "Mesh-Test-Welt" && /^[0-9a-f]{64}$/.test(w16Cat.hash || ""),
+            JSON.stringify(w16Cat)
+        );
+
+        // B holt die Welt von A über das Mesh — worldId + Peer kommen aus dem
+        // Katalog (der Phase-2-Spieler-Pfad, kein blankes Text-Feld mehr).
+        const w16Req = await pageB.evaluate((pid, wid) => {
+            const peer = window.anazhRealm.state.p2p.peers.get(pid);
+            const e = peer.catalog.find((w) => w.id === wid);
+            return window.anazhRealm.requestWorldBundleFromPeer(e.id, pid);
+        }, peerIdA, W16_ID);
         check("W16: B fordert das Welt-Bündel von A an", !!w16Req && w16Req.ok === true, JSON.stringify(w16Req));
         // Das Bündel reist p2p; B's customWorlds bekommt den Eintrag.
         await waitFor(

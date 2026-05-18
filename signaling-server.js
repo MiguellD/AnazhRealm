@@ -23,7 +23,7 @@
 //   Server → Client   { "type": "peer-leave", "peerId": "..." }
 //   Server → Client   { "type": "pos", "peerId": "...", "x":.., "y":.., "z":.., "yaw":.. }
 //   Server → Client   { "type": "dsl", "peerId": "...", "program": [...] }
-//   Server → Client   { "type": "soul", "peerId": "...", "soulName": "...", "bodyParts": [...], "name": "..." }
+//   Server → Client   { "type": "soul", "peerId": "...", "soulName": "...", "bodyParts": [...], "name": "...", "catalog": [...] }
 //   Server → Client   { "type": "aura", "peerId": "...", "hue": .., "intensity": .. }
 //   Server → Client   { "type": "world-request", "peerId": "..." }   (forwarded)
 //   Server → Client   { "type": "world-snapshot", "peerId": "...", "state": {...} }
@@ -235,6 +235,19 @@ function handleClientMessage(ws, raw) {
         if (typeof msg.worldRole === "string") out.worldRole = msg.worldRole.slice(0, 16);
         // W7 Phase 3: teilt der Peer seine LLM-Stimme?
         if (typeof msg.voiceShared === "boolean") out.voiceShared = msg.voiceShared;
+        // W16 Phase 2: der Welt-Katalog des Peers — seine vendorten Welten als
+        // [{id, label, hash}]. Der Server deckelt (dummer-aber-expliziter
+        // Relay); die strenge Prüfung macht der Client (_p2pSanitizeCatalog).
+        if (Array.isArray(msg.catalog)) {
+            out.catalog = msg.catalog
+                .filter((c) => c && typeof c === "object" && typeof c.id === "string")
+                .slice(0, 32)
+                .map((c) => ({
+                    id: c.id.slice(0, 40),
+                    label: typeof c.label === "string" ? c.label.slice(0, 48) : "",
+                    hash: typeof c.hash === "string" ? c.hash.slice(0, 64) : "",
+                }));
+        }
         broadcastToRoom(ws.anazh.room, out, ws);
         return;
     }

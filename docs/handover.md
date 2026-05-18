@@ -9,11 +9,15 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 18.05.2026, V8.73)
+## Schnell-Lage (Stand 18.05.2026, V8.75)
 
-**Du erbst eine sehr lebendige Welt**. **2648 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~31000 Zeilen in einer Datei, alles produktiv.
+**Du erbst eine sehr lebendige Welt**. **~2669 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~31000 Zeilen in einer Datei, alles produktiv. (Der Playtest-Konsolen-Zähler driftet ±2-3 je Lauf — einige Checks sind bedingt; „Alle Invarianten OK" ist die Wahrheit, nicht die exakte Zahl.)
 
-**Jüngste Welle — V8.73 (W16 Phase 1: Mesh-Welt-Verteilung — eine vendorte Welt reist peer-to-peer)**: W15 baute das Andocken aus einem lokalen Ordner ODER einem GitHub-Repo. W16 P1 lässt eine vendorte Welt ÜBER DAS MESH reisen — ein Mitspieler, der eine Welt nicht hat, holt ihr Bündel peer-to-peer von einem, der sie hat. Zwei kanal-exklusive Nachrichten `world-bundle-pull`/`world-bundle-chunk` — Zeile für Zeile das W7-P2-`world-pull`/`world-chunk`-Muster (direkt in `_p2pHandleChannelMessage` behandelt, gechunkt mit Backpressure, peer-gebundene Annahme-Wand `pendingBundlePull`, Rate-Limit mit `-Infinity`-Sentinel). Der Sender liest sein Bündel über die neue save-server-Lese-Seite `GET /api/vendor-bundle` (symmetrisch zur Schreib-Seite `applyVendorBundle`) von der Platte zurück + chunkt es über den DataChannel; der Empfänger reassembliert + reicht `{worldId,label,desc,dsl,files}` an die erprobte `vendorWorldBundle`-Schreib-Seite — ein DRITTER Eingang (lokales Bündel / GitHub / Mesh-Peer), NULL neue Schreib-Logik. Eine peer-empfangene Welt läuft `trust:"sandboxed"` (V8.71-Zwang über `vendored:true`); die ankommende worldId muss die angefragte sein (kein Welt-Schmuggel). Eine schlichte „Welt vom Mitspieler holen"-Sektion (worldId-Feld + Peer-Dropdown) — der browsbare Welt-Katalog ist W16 P2. +19 Invarianten 2629→2648, Zwei-Browser-verifiziert (`smoke-webrtc.cjs` — A vendort eine Welt, B holt sie über das Mesh). **Lies `CLAUDE.md` V8.73 ZUERST.**
+**Jüngste Welle — V8.75 (W17 Phase A: der Transport-Shim — eine fremde Multiplayer-Welt netzwerkt durch AnazhRealms Mesh)**: W16 schloss die Mesh-Welt-Verteilung; W17 macht das Tor mehrspielerfähig. Eine fremde Welt netzwerkt nur über `WebSocket` (ein globales Objekt). `PORTAL_TRANSPORT_SHIM` (eine JS-String-Konstante im save-server) ersetzt `window.WebSocket` durch eine postMessage-Brücke: `send()` → `parent.postMessage({__anazhNet:true, kind:"ws-send", …})`. Der save-server injiziert den Shim zur Serve-Zeit (`?anazh-shim=1` — `_buildPortalOverlay` hängt den Marker an, wenn `portalMeta.multiplayer`), als erstes `<head>`-`<script>` vor jeder Welt-CSP; die Welt-Dateien auf der Platte bleiben rein. Der Shim läuft IM null-origin-iframe der Welt (V8.70-Sandbox geerbt — er kann nur DATEN posten, AnazhRealms State nie berühren). Phase A routet noch NICHT übers Mesh (das ist B-Relay) — die Akzeptanz ist ein Loopback: `_portalNetReceive` echot ein `ws-send` direkt als `ws-recv` zurück, die fremde Welt glaubt an einen Echo-Server. +9 Invarianten, browser-verifiziert (`smoke-shim.cjs` — eine Test-Welt im echten sandboxed iframe öffnet einen Shim-`WebSocket`, der Loopback hält). **Lies `CLAUDE.md` V8.75 ZUERST.**
+
+**Welle davor — V8.74 (W16 Phase 2: der Welt-Katalog — die Mesh-Bibliothek wird browsbar)**: W16 P1 baute den Transport (eine vendorte Welt reist peer-to-peer), aber der Spieler musste die `worldId` kennen und den Peer aus einem Dropdown wählen. P2 macht die Mesh-Bibliothek browsbar: jeder Mitspieler annonciert seine vendorten Welten als `[{id, label, hash}]` über den `soul`-Kanal (wie `worldRole`/`voiceShared` — kein neuer Nachrichtentyp; der signaling-server-`soul`-Handler reicht `catalog` explizit durch). Der Bibliothek-Drawer zeigt „Mitspieler X hat: …" mit einem Holen-Knopf statt eines blanken worldId-Feldes (`_renderMeshWorldCatalog`, ein delegierter Klick-Listener — V8.37-Lehre). Eine vendorte Welt bekommt einen deterministischen sha256-Content-Hash über ihre Datei-MENGE — der save-server rechnet ihn (`bundleContentHash`, Hash-Autorität; `applyVendorBundle` UND `readVendorBundle` liefern ihn als `bundleHash`), der Browser hasht nie selbst (eine GitHub-vendorte Welt sieht der Client gar nicht). Zwei Spieler mit demselben Hash haben beweisbar dieselbe Welt; `_haveWorldByHashOrId` dedupt über id ODER Hash → die Katalog-Zeile zeigt „✓ vorhanden" statt eines Knopfes. `_vendorRegisterWorld` (die EINE Naht, durch die jede neu angedockte Welt fliesst — lokal/GitHub/Mesh) re-annonciert den `soul` → eine frisch vendorte Welt erscheint sofort bei allen Mitspielern + propagiert über das Mesh. +14 Invarianten 2648→2662, Zwei-Browser-verifiziert (`smoke-webrtc.cjs` — A's Welt erscheint in B's Katalog mit echtem sha256-Hash, B holt sie über die Katalog-Zeile). **Lies `CLAUDE.md` V8.74 ZUERST.**
+
+**Welle davor — V8.73 (W16 Phase 1: Mesh-Welt-Verteilung — eine vendorte Welt reist peer-to-peer)**: W15 baute das Andocken aus einem lokalen Ordner ODER einem GitHub-Repo. W16 P1 lässt eine vendorte Welt ÜBER DAS MESH reisen — ein Mitspieler, der eine Welt nicht hat, holt ihr Bündel peer-to-peer von einem, der sie hat. Zwei kanal-exklusive Nachrichten `world-bundle-pull`/`world-bundle-chunk` — Zeile für Zeile das W7-P2-`world-pull`/`world-chunk`-Muster (direkt in `_p2pHandleChannelMessage` behandelt, gechunkt mit Backpressure, peer-gebundene Annahme-Wand `pendingBundlePull`, Rate-Limit mit `-Infinity`-Sentinel). Der Sender liest sein Bündel über die neue save-server-Lese-Seite `GET /api/vendor-bundle` (symmetrisch zur Schreib-Seite `applyVendorBundle`) von der Platte zurück + chunkt es über den DataChannel; der Empfänger reassembliert + reicht `{worldId,label,desc,dsl,files}` an die erprobte `vendorWorldBundle`-Schreib-Seite — ein DRITTER Eingang (lokales Bündel / GitHub / Mesh-Peer), NULL neue Schreib-Logik. Eine peer-empfangene Welt läuft `trust:"sandboxed"` (V8.71-Zwang über `vendored:true`); die ankommende worldId muss die angefragte sein (kein Welt-Schmuggel). Eine schlichte „Welt vom Mitspieler holen"-Sektion (worldId-Feld + Peer-Dropdown) — der browsbare Welt-Katalog ist W16 P2. +19 Invarianten 2629→2648, Zwei-Browser-verifiziert (`smoke-webrtc.cjs` — A vendort eine Welt, B holt sie über das Mesh). **Lies `CLAUDE.md` V8.73 ZUERST.**
 
 **Welle davor — V8.72 (Auto-Vendor Phase 2: der GitHub-Fetch — ein fremdes Repo dockt aus dem Netz an)**: V8.71 baute die sichere Hälfte (ein LOKALES Bündel dockt an). W15 P2 fügt die Netz-Hälfte hinzu: eine GitHub-URL eingeben, der save-server holt das Repo selbst. Der `/api/vendor-world`-Endpunkt nimmt jetzt ZWEI Eingänge — `{worldId, files}` (Bündel) und `{worldId, repoUrl}` (GitHub); die Phase-1-Schreib-Logik ist zu `applyVendorBundle` extrahiert, BEIDE Eingänge enden dort. Der GitHub-Pfad: `parseGithubRepoUrl` (URL → owner/repo/branch, Regex-streng) → `vendorFromGithub` (Default-Branch auflösen, Trees-API lesen, Text-Dateien per Raw-Fetch holen — zero-dep `https`, `vendorHttpGet`). **Kein SSRF**: die Repo-URL liefert nur owner/repo/branch, die fetchbare URL baut der Server aus `VENDOR_GH_API_BASE`/`VENDOR_GH_RAW_BASE` (env, Default `api.github.com`/`raw.githubusercontent.com`) — eine Browser-Seite kann den Host nicht wählen. Die env-Bases sind echte Operator-Konfiguration (GitHub Enterprise) UND die Test-Naht: `smoke-vendor.cjs` Teil C startet ein lokales Fake-GitHub + zeigt die Bases darauf → der echte Fetch-Code läuft offline + deterministisch. Clientseitig spiegelt `vendorWorldFromRepo` das `vendorWorldBundle` (beide enden in `_vendorRegisterWorld`, `trust:"sandboxed"`); eine GitHub-URL-Zeile in der „Welt andocken"-Sektion. +12 Invarianten 2617→2629, smoke-verifiziert. **Lies `CLAUDE.md` V8.72 ZUERST.**
 
@@ -81,7 +85,7 @@ Die Session-Hälfte davor (V8.23 → V8.33) war eine **Atmosphäre-Tiefe-Welle (
 
 **W12 + W13 + W14 + W7 sind live** — AnazhRealm ist ein Tor zu anderen Vibecode-Welten (W12 Welt-Portal), der Avatar trägt eine souveräne Identität (W13 Vibe-Pass), die Bibliothek von Alexandria steht (W14), und der WebRTC-Mesh trägt die Multi-User-Last (W7 Compute-Sharing). Wer an einer Portal- oder Bibliothek-Welle arbeitet: lies `docs/world-portal.md` ZUERST.
 
-**Die grossen Roadmap-Ringe sind gebaut**, und der echte Fremd-Engine-Bogen läuft: der KI-Übersetzer ist vollständig (V8.68/V8.69), **V8.70 öffnete das Untrusted-Welt-Tor** (eine echte fremde Engine läuft null-origin sandgesichert), **V8.71 + V8.72 bauten den Auto-Vendor-Pfad komplett** (ein fremdes Bündel ODER ein GitHub-Repo dockt sandgesichert an). Offen in diesem Bogen: die Mesh-Welt-Verteilung (W16) + die Multiplayer-Sub-Welten (W17). Der aktuelle Stand steht im Block „Aktuelle Roadmap" weiter unten und in `docs/roadmap.md` §3.
+**Die grossen Roadmap-Ringe sind gebaut**, und der echte Fremd-Engine-Bogen läuft: der KI-Übersetzer ist vollständig (V8.68/V8.69), **V8.70 öffnete das Untrusted-Welt-Tor** (eine echte fremde Engine läuft null-origin sandgesichert), **V8.71 + V8.72 bauten den Auto-Vendor-Pfad komplett**, **V8.73 + V8.74 die Mesh-Welt-Verteilung komplett**, und **V8.75 begann W17 — Phase A der Transport-Shim** (der `WebSocket`-Verkehr einer fremden Welt quert die Sandbox-Grenze zu AnazhRealm). Offen in diesem Bogen: W17 Phase B-Relay + C. Der aktuelle Stand steht im Block „Aktuelle Roadmap" weiter unten und in `docs/roadmap.md` §3.
 
 **Atmosphäre-Disziplin**: alle atmosphärischen Methoden mit `[ATMOSPHERE]`-Marker werden von `audit-strict.cjs` (5. Schicht) auf Hardcode geprüft. Wert-aus-dem-Kopf ist verboten — immer „aus welcher state-Beobachtung emergiert das?".
 
@@ -173,15 +177,15 @@ V7.89 (Kreatur-Boosts) war die kritische Prüfung dieses Gesetzes. Naive Lösung
 
 ## Aktuelle Roadmap (was als nächstes denkbar ist)
 
-Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3/V4 + 11 ext. + **W12 (Welt-Portal) + W13 (Vibe-Pass) + W14 (Bibliothek) + W7 (Compute-Sharing) + der KI-Übersetzer + das Untrusted-Welt-Tor (V8.70) + der Auto-Vendor-Pfad (W15 — V8.71 Bündel-Pfad, V8.72 GitHub-Fetch)** sind gebaut. In Arbeit ist der **echte Fremd-Engine-Bogen** — das automatische Tor zu fremden Vibecode-Engines. V8.70 baute seinen Schlüsselstein, V8.71+V8.72 den Auto-Vendor-Pfad komplett, V8.73 W16 Phase 1 (die Mesh-Welt-Verteilung beginnt); die folgenden Schritte (W16 Phase 2 + W17) sind **detailliert in `docs/roadmap.md` §3 — „Der Fremd-Engine-Bogen (W15–W17)"** geplant:
+Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3/V4 + 11 ext. + **W12 (Welt-Portal) + W13 (Vibe-Pass) + W14 (Bibliothek) + W7 (Compute-Sharing) + der KI-Übersetzer + das Untrusted-Welt-Tor (V8.70) + der Auto-Vendor-Pfad (W15 — V8.71 Bündel-Pfad, V8.72 GitHub-Fetch) + die Mesh-Welt-Verteilung (W16 — V8.73 Bündel-Transport, V8.74 Welt-Katalog)** sind gebaut. In Arbeit ist der **echte Fremd-Engine-Bogen** — das automatische Tor zu fremden Vibecode-Engines. V8.70 baute seinen Schlüsselstein, V8.71+V8.72 den Auto-Vendor-Pfad komplett, V8.73+V8.74 die Mesh-Welt-Verteilung komplett; der letzte Schritt (W17) ist **detailliert in `docs/roadmap.md` §3 — „Der Fremd-Engine-Bogen (W15–W17)"** geplant:
 
 | Welle | Was | Aufwand | Vision-Tiefe |
 |---|---|---|---|
 | **W15 — Auto-Vendor-Pfad** | ✅ **komplett (V8.71 + V8.72)**: ein fremdes Welt-Bündel dockt ohne Handarbeit an — aus einem lokalen Ordner (P1) ODER direkt aus einem GitHub-Repo (P2, der save-server holt die Dateien selbst). | erledigt | sehr hoch |
-| **W16 — Mesh-Welt-Verteilung** | ⏳ **Phase 1 live (V8.73)**: der Welt-Bündel-Transport — `world-bundle-pull`/`world-bundle-chunk`, ein Mitspieler holt eine vendorte Welt peer-to-peer, der Empfänger reicht sie an `vendorWorldBundle`. **Phase 2 offen**: der browsbare Welt-Katalog (Peers annoncieren ihre Bibliothek + ein Content-Hash). | ~1-2 Sessions (P2) | sehr hoch |
-| **W17 — Multiplayer-Sub-Welten** | Der Transport-Shim (`WebSocket`/`fetch` der fremden Welt → AnazhRealms Mesh) + das Mesh-als-Server + das Gruppen-Portal. So taucht eine Gruppe gemeinsam in eine Server-Welt — auch voxelize/Shooter. | ~6-8 Sessions | sehr hoch |
+| **W16 — Mesh-Welt-Verteilung** | ✅ **komplett (V8.73 + V8.74)**: Phase 1 der Welt-Bündel-Transport (`world-bundle-pull`/`world-bundle-chunk`, ein Mitspieler holt eine vendorte Welt peer-to-peer); Phase 2 der browsbare Welt-Katalog (Peers annoncieren ihre `customWorlds` über den `soul`-Kanal + ein sha256-Content-Hash für Identität + Dedup). | erledigt | sehr hoch |
+| **W17 — Multiplayer-Sub-Welten** | ⏳ **Phase A ✅ (V8.75)**: der Transport-Shim — der `WebSocket`-Verkehr einer fremden Welt quert die Sandbox-Grenze zu AnazhRealm. Offen: Phase B-Relay (das Mesh-als-Server) + Phase C (das Gruppen-Portal) + B-JS-Compute / B-WASM. | ~5-7 Sessions (B+C) | sehr hoch |
 
-**Empfehlung**: **W16 Phase 2 — der Welt-Katalog** — die natürliche Fortsetzung. P1 baute den Transport (`world-bundle-pull`/`world-bundle-chunk`, der Empfänger reicht das Bündel an die erprobte `vendorWorldBundle`-Schreib-Seite — ein dritter Eingang nach lokalem Bündel + GitHub), aber der Spieler muss noch die `worldId` kennen + den Peer aus einem Dropdown wählen. P2 macht die Mesh-Bibliothek browsbar: Peers annoncieren ihren `customWorlds`-Katalog (id + label + ein Content-Hash über das Bündel — über den `soul`-Kanal, wie `worldRole`); der Bibliothek-Drawer zeigt „Mitspieler X hat: …" mit einem Holen-Knopf statt eines blanken Text-Feldes; der Hash gibt einer Welt eine peer-unabhängige Identität (zwei Spieler mit demselben Hash haben beweisbar dieselbe Welt) + erlaubt Dedup (habe ich den Hash schon, kein Pull). Danach W17 (Multiplayer-Sub-Welten — der Transport-Shim + das Mesh-als-Server; **Server-Welten wie voxelize/Shooter sind NICHT ausgeschlossen**, die ehrliche Server-Taxonomie steht im roadmap.md-§3-Plan). `docs/roadmap.md` §3 (Der Fremd-Engine-Bogen) + `docs/world-portal.md` ZUERST lesen.
+**Empfehlung**: **W17 Phase B-Relay — das Mesh-als-Server.** Phase A (V8.75) trägt den `WebSocket`-Verkehr einer fremden Welt über die Sandbox-Grenze: der save-server-injizierte Shim ersetzt `window.WebSocket`, ein `send()` kommt als `postMessage` bei `_portalNetReceive` an, das es in Phase A schlicht zurück-echot (der Loopback). B-Relay ersetzt den Echo durch die Mesh-Verteilung: ein neuer Mesh-Kanal `subworld-net` (`{worldId, data}`); ein `ws-send` aus dem Sub-Welt-iframe wird via `p2pSend` ans W7-Mesh gereicht, jedes andere AnazhRealm im selben Sub-Welt-Raum `postMessage`t es als `ws-recv` in SEIN iframe. Sub-Raum-Eingrenzung (keyed nach `worldId` — nur wer dasselbe Multiplayer-Portal betreten hat, empfängt) + Rate-Limit/Größen-Deckel (W16-Disziplin). Akzeptanz: zwei Browser im selben Multiplayer-Portal, A's Aktion erscheint bei B — peer-to-peer, kein echter Server. Trägt Relay-Welten (Server = blosser Rebroadcast); NICHT autoritative Server-Rechnung (das ist B-JS-Compute, später). Danach Phase C (Gruppen-Portal). **Der ausgearbeitete Phasen-Detailplan steht in `docs/roadmap.md` §3 — „W17 — Multiplayer-Sub-Welten" (B-Relay = B1-B3).** `docs/world-portal.md` ZUERST mitlesen.
 
 **Kleinere Polish-Notiz**: die Bauplan-Signatur-Zeile im Werkstatt-Stats-Panel ist wenig auffindbar (Schöpfer-Befund V8.56 — sie wurde erst nach Hinweis gesehen). Ein UX-Auffindbarkeits-Punkt für eine spätere Polish-Runde.
 
@@ -230,6 +234,75 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3/V4 + 11 ext. + **W12 (Welt-Portal) 
 **Meta-Lehre B**: **Heilige-Lektion-Disziplin ist mit JEDER Welle neu zu prüfen.** Ich war versucht, bei V7.96 einen neuen „LLM-Proxy-Server" als separates Programm zu bauen — wäre Re-Komplexifizierung gewesen. Stattdessen: save-server bekam eine zweite Rolle. Bei jeder neuen Funktion fragen: „kann das in einem bestehenden Dienst leben? Wenn nein, warum nicht?"
 
 **Meta-Lehre C**: **Fallback-Schichten als Vision-treue Antwort.** V7.98's vier-Schicht-Parser ist mehr als nur Bug-Fix — es ist eine VISION-Aussage: „nimm was da ist, zeig es dem Spieler". Strenge Validierung wäre einfacher zu coden, aber ärmer für den Spieler. Wer das System auf reale Vielfalt vorbereitet (LLM-Größen, Modell-Stile, Antwort-Formate), baut Fallback-Schichten — keine Single-Path-Strenge.
+
+---
+
+## Rückschau: die W17-Phase-A-Session (der Transport-Shim, V8.75)
+
+Eine saubere Welle — der Transport-Shim. Ein Commit, +9 Invarianten, der
+Browser-Beweis grün. Eine ehrliche Lehre:
+
+### Lehre — Ein Test-Marker muss exklusiv sein, sonst false-positiviert er.
+
+Der `smoke-shim.cjs`-Test prüft u.a. „ohne `?anazh-shim=1` bleibt die Welt-
+Datei rein". Erster Wurf: `!html.includes("__anazhShim")`. Rot — die un-
+injizierte Datei „enthielt" `__anazhShim`. Wurzel: die TEST-WELT prüft
+selbst `window.__anazhShim`, um zu melden ob der Shim da ist — also steht
+der String `__anazhShim` in ihrem eigenen Quelltext, injiziert oder nicht.
+Der Marker war nicht shim-exklusiv. Fix: `window.WebSocket=Shim` — diesen
+String schreibt NUR der injizierte Shim, nie eine Welt. *Lehre: ein Test,
+der „ist X injiziert?" prüft, braucht einen Marker, den NUR die Injektion
+erzeugt — nicht einen, den auch der getestete Gegenstand zufällig trägt.
+Beim Markersuchen fragen: könnte das Subjekt diesen String selbst haben?*
+
+Sonst: der Plan aus `roadmap.md` §3 (A1-A4) traf den Code sauber — Serve-
+Zeit-Injektion, der `__anazhNet`-Envelope, der Loopback-Echo. Die per
+`AskUserQuestion` offene Frage (Injektion Serve-Zeit vs. eingebacken) hatte
+der Schöpfer mit „nimm deine Empfehlung" beantwortet → Serve-Zeit.
+
+---
+
+## Rückschau: die W16-P2-Session (der Welt-Katalog, V8.74)
+
+Eine kleine, saubere Welle — der Welt-Katalog. Zwei ehrliche Lehren — die
+zweite kam erst durch einen Selbst-Audit (Schöpfer-getrieben) nach dem ersten
+Commit.
+
+### Lehre 1 — Eine hartcodierte Teil-Antwort verschluckt ein neues Feld stumm.
+
+Der Plan war klar: der save-server rechnet den Content-Hash, `vendorWorldBundle`/
+`vendorWorldFromRepo` reichen `posted.bundleHash` in den `customWorlds`-Eintrag.
+Ich änderte `applyVendorBundle` (Server, gibt `bundleHash` zurück) und
+`_vendorRegisterWorld` (Client, liest `meta.bundleHash`). Playtest grün — die
+P2-Invarianten testen `_sanitizeImportedManifest`/`_vendorRegisterWorld` mit
+synthetischen Hashes. Aber `smoke-webrtc` fiel: A's Katalog-Eintrag hatte
+`hash:""`. Wurzel: `_vendorPostJson` baut sein Rückgabe-Objekt aus einem
+**festen Feld-Satz** (`{ok, fileCount, totalBytes, branch}`) — der neue
+`bundleHash` vom Server fiel da stumm raus, bevor `vendorWorldBundle` ihn je
+sah. Der Playtest sah es nicht (er stubt `_vendorPostBundle` ganz weg), erst
+der echte save-server-Round-Trip im Smoke-Test deckte es auf. *Lehre: wenn
+eine Funktion eine Antwort durch einen festen Feld-Satz reicht (statt sie
+durchzuspiegeln), ist jedes neue Feld eine stille Lücke — beim Hinzufügen
+eines End-zu-End-Feldes JEDE Umpack-Stelle auf dem Weg prüfen. Und: ein
+gestubbter Pfad im Playtest testet das Stub, nicht die Naht — der Smoke-Test
+gegen den echten Server ist die Wahrheit.*
+
+### Lehre 2 — Ein Selbst-Audit fragt: ist der GANZE Spieler-Pfad getestet?
+
+Nach dem ersten Commit fragte der Schöpfer nach einem echten Selbst-Audit.
+Ich prüfte die V8.74 wie fremden Code — und fand eine Lücke: der Holen-Knopf
+des Katalogs war NICHT end-zu-end geprüft. Der Playtest testete `_render-
+MeshWorldCatalog` (Knopf existiert mit `data-`-Attributen) UND `_runMeshWorldGet`
+(routet zur Transport-Methode) — aber NICHT das Glied dazwischen: dass ein
+echter Klick durch den delegierten Listener (`meshWorldInitDOM`) zu `_runMesh-
+WorldGet` fliesst. Zwei geprüfte Hälften, eine ungeprüfte Naht. Das ist die
+W12-Lehre („fertig" heißt den Spieler-Pfad gegangen) — bei W16 P1 war der
+Knopf-Klick bewusst ungeprüft (transitional, P2 ersetzt ihn); bei P2 ist der
+Knopf das ENDGÜLTIGE UI, also MUSS der Klick geprüft sein. Fix: eine Invariante,
+die einen gerenderten Holen-Knopf mit `.click()` auslöst + prüft, dass es
+routet. *Lehre: ein Feature mit N Gliedern braucht N Tests ODER einen, der
+alle N durchläuft — zwei Tests, die je das halbe Band prüfen, lassen die Naht
+in der Mitte frei. Beim Audit den Pfad als KETTE durchgehen, Glied für Glied.*
 
 ---
 

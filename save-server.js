@@ -3,6 +3,7 @@ const https = require("https");
 const { URL } = require("url");
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 
 const HOST = "127.0.0.1";
 const PORT = 4312;
@@ -88,6 +89,72 @@ const VENDOR_MAX_BODY_BYTES = 20 * 1024 * 1024; // 20 MiB roher Request (JSON-Ov
 // Built-in-Welt-Verzeichnisse — ein Vendor darf sie NICHT überschreiben.
 const VENDOR_RESERVED_IDS = new Set(["skeleton", "fluid", "terrain", "schwarm", "translated"]);
 const VENDOR_ALLOWED_EXT = new Set([".html", ".htm", ".js", ".mjs", ".css", ".json", ".txt", ".md", ".glsl"]);
+
+// W17 Phase A — der Transport-Shim. Eine fremde Multiplayer-Welt kann nur
+// über `WebSocket` netzwerken; das ist ein globales Objekt. Dieser Shim
+// ersetzt `window.WebSocket` durch eine Klasse, die KEINEN echten Socket
+// öffnet — sie `postMessage`t an AnazhRealm (`__anazhNet`-Envelope). Die
+// fremde Welt glaubt, sie habe einen Server; in Wahrheit fliesst ihr Verkehr
+// durch AnazhRealm. Der save-server injiziert ihn als ERSTES `<script>` in
+// `<head>` (vor jeder Welt-CSP — ein Inline-Script vor einem meta-CSP läuft
+// unrestricted). Er läuft im null-origin-iframe der Welt: er kann nur DATEN
+// an `parent` posten, AnazhRealms State NICHT berühren — die V8.70-Sandbox
+// ist die Wand. Phase A shimt NUR `WebSocket` (fetch/XHR/RTC sind spätere
+// Schichten). AnazhRealm-geschriebener, vertrauenswürdiger Code.
+const PORTAL_TRANSPORT_SHIM = `(function(){
+  if(window.__anazhShim)return;window.__anazhShim=true;
+  var seq=0,live={};
+  window.addEventListener("message",function(ev){
+    var m=ev.data;if(!m||m.__anazhNet!==true)return;
+    var s=live[m.channel];if(!s)return;
+    if(m.kind==="ws-recv")s.__emit("message",{data:m.data});
+    else if(m.kind==="ws-close"){s.readyState=3;delete live[m.channel];s.__emit("close",{code:1000});}
+  });
+  function Shim(url){
+    this.url=String(url||"");this.readyState=0;this._ch=++seq;this._lis={};
+    this.onopen=this.onmessage=this.onclose=this.onerror=null;
+    live[this._ch]=this;var self=this;
+    Promise.resolve().then(function(){
+      if(self.readyState!==0)return;self.readyState=1;
+      parent.postMessage({__anazhNet:true,kind:"ws-open",channel:self._ch,url:self.url},"*");
+      self.__emit("open",{});
+    });
+  }
+  Shim.prototype.__emit=function(type,ev){
+    ev=ev||{};ev.type=type;var h=this["on"+type];
+    if(typeof h==="function"){try{h.call(this,ev);}catch(e){}}
+    var ls=this._lis[type];if(ls)for(var i=0;i<ls.length;i++){try{ls[i].call(this,ev);}catch(e){}}
+  };
+  Shim.prototype.send=function(data){
+    if(this.readyState!==1)return;
+    parent.postMessage({__anazhNet:true,kind:"ws-send",channel:this._ch,data:data},"*");
+  };
+  Shim.prototype.close=function(){
+    if(this.readyState===3)return;this.readyState=3;delete live[this._ch];
+    parent.postMessage({__anazhNet:true,kind:"ws-close",channel:this._ch},"*");
+    this.__emit("close",{code:1000});
+  };
+  Shim.prototype.addEventListener=function(t,fn){(this._lis[t]=this._lis[t]||[]).push(fn);};
+  Shim.prototype.removeEventListener=function(t,fn){
+    var ls=this._lis[t];if(ls)this._lis[t]=ls.filter(function(f){return f!==fn;});
+  };
+  Shim.CONNECTING=0;Shim.OPEN=1;Shim.CLOSING=2;Shim.CLOSED=3;
+  Shim.prototype.CONNECTING=0;Shim.prototype.OPEN=1;Shim.prototype.CLOSING=2;Shim.prototype.CLOSED=3;
+  window.WebSocket=Shim;
+})();`;
+
+// W17 Phase A — den Shim als erstes `<script>` in `<head>` einsetzen (vor
+// einer etwaigen Welt-CSP). Fehlt `<head>`, dann nach `<html>`; fehlt das
+// auch, vorangestellt. Die Welt-Dateien auf der Platte bleiben unberührt —
+// der Shim lebt nur in der ausgelieferten Antwort.
+function injectTransportShim(html) {
+    const tag = "<script>" + PORTAL_TRANSPORT_SHIM + "</" + "script>";
+    let m = html.match(/<head[^>]*>/i);
+    if (!m) m = html.match(/<html[^>]*>/i);
+    if (!m) return tag + html;
+    const at = m.index + m[0].length;
+    return html.slice(0, at) + tag + html.slice(at);
+}
 
 // V8.72 — W15 Phase 2: der GitHub-Fetch. Der `/api/vendor-world`-Endpunkt
 // bekommt einen zweiten Eingang — statt eines hochgeladenen Bündels eine
@@ -231,6 +298,26 @@ function vendorSafeRelPath(p) {
     return norm;
 }
 
+// W16 Phase 2 — der Content-Hash einer Welt: ein deterministischer sha256
+// über die Datei-MENGE (sortierte Pfade, path\0content\0). Er gibt einer
+// vendorten Welt eine peer-unabhängige Identität — zwei Spieler mit demselben
+// Hash haben beweisbar dieselbe Welt. Der save-server ist die Hash-Autorität:
+// er hat die Dateien (Schreib- UND Lese-Seite), der Browser muss den Hash
+// nicht selbst rechnen (eine GitHub-vendorte Welt sieht der Client nie). Die
+// Datei-id ist NICHT Teil des Hashs — die Identität ist der Inhalt, nicht der
+// vom vendoernden Spieler gewählte Name.
+function bundleContentHash(entries) {
+    const h = crypto.createHash("sha256");
+    const sorted = entries.slice().sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+    for (const e of sorted) {
+        h.update(e.path, "utf8");
+        h.update("\0", "utf8");
+        h.update(e.content, "utf8");
+        h.update("\0", "utf8");
+    }
+    return h.digest("hex");
+}
+
 // Die Schreib-Seite (Phase 1): ein Bündel [{path,content}] validieren +
 // nach worlds/<id>/ schreiben. worldId ist schon geprüft. Liefert
 // {status, body} — der Caller sendet. BEIDE Eingänge (hochgeladenes
@@ -290,7 +377,15 @@ function applyVendorBundle(worldId, files) {
     }
     return {
         status: 200,
-        body: { ok: true, worldId, fileCount: clean.length, totalBytes: total, dir: `worlds/${worldId}` },
+        body: {
+            ok: true,
+            worldId,
+            fileCount: clean.length,
+            totalBytes: total,
+            dir: `worlds/${worldId}`,
+            // W16 Phase 2 — die Content-Identität der Welt (für den Welt-Katalog).
+            bundleHash: bundleContentHash(clean.map((c) => ({ path: c.rel, content: c.content }))),
+        },
     };
 }
 
@@ -342,7 +437,20 @@ function readVendorBundle(worldId) {
     if (!files.length) {
         return { status: 404, body: { error: "World has no readable text files" } };
     }
-    return { status: 200, body: { ok: true, worldId, files, fileCount: files.length, totalBytes: total } };
+    return {
+        status: 200,
+        body: {
+            ok: true,
+            worldId,
+            files,
+            fileCount: files.length,
+            totalBytes: total,
+            // W16 Phase 2 — derselbe Content-Hash wie die Schreib-Seite: liest
+            // ein save-server eine Welt zurück, die er einst schrieb, stimmt
+            // der Hash überein (die zwei Code-Pfade müssen sich einig sein).
+            bundleHash: bundleContentHash(files),
+        },
+    };
 }
 
 // Zero-dep HTTP(S)-GET mit Timeout + Byte-Deckel + einem Redirect-Hop.
@@ -594,6 +702,12 @@ function sendStaticFile(req, res) {
         return;
     }
 
+    // W17 Phase A — Multiplayer-Portale laden die Welt-`index.html` mit dem
+    // Marker `?anazh-shim=1` (von `_buildPortalOverlay` angehängt). Trägt eine
+    // HTML-Anfrage unter `worlds/` diesen Marker, wird der Transport-Shim
+    // injiziert. Der Marker steht in der Query — `req.url` VOR dem Strip lesen.
+    const wantShim = /[?&]anazh-shim=1(?:&|$)/.test(req.url || "") && /^\/worlds\/[\w./-]+\.html?$/i.test(urlPath);
+
     fs.readFile(filePath, (err, content) => {
         if (err) {
             sendJson(res, 404, { error: "File not found" });
@@ -601,11 +715,15 @@ function sendStaticFile(req, res) {
         }
         const ext = path.extname(filePath).toLowerCase();
         const contentType = MIME_TYPES[ext] || "application/octet-stream";
+        let body = content;
+        if (wantShim && (ext === ".html" || ext === ".htm")) {
+            body = Buffer.from(injectTransportShim(content.toString("utf8")), "utf8");
+        }
         res.writeHead(200, {
             "Content-Type": contentType,
             "Access-Control-Allow-Origin": "*",
         });
-        res.end(content);
+        res.end(body);
     });
 }
 
