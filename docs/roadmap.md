@@ -18,7 +18,7 @@ Diese Doc beschreibt das **gesamte Projekt vom heutigen Stand bis zum Vision-End
 - **W13 Vibe-Pass (V8.54-V8.56)** — der Avatar erhält ein ed25519-Schlüsselpaar (WebCrypto nativ, kein Vendoring), signiert seine Baupläne über ihre Substanz, und im Multi-User beweist jeder Mitspieler seine Identität über einen peerId-gebundenen Beweis. Self-Sovereign Identity ohne Coin, ohne zentrale Authority.
 - **Atmosphäre-Tiefe + Co-Schöpfer (V8.08-V8.50)** — Welt-Lebendigkeit (Tag-Nacht, Wetter-Übergänge, Fauna-Lifecycle), die Atmosphäre-Welle 6.G4 (Sonne/Hemisphere/Fog, Sterne als Points, Cel-Shading, Wasser mit Wellen+Physik), Kreaturen als vollwertige Co-Schöpfer-Wesen (Welle 6.H V2, 14/14), Substanz-Rolle (V8.35), ein gegen Browser-Tests gehärtetes LLM-Provider-System.
 
-Alle 5 Vision-Pfeiler (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) sind in V2+. Das Hylomorphismus-Crafting ist vertikal integriert, der Co-Schöpfer-Kreis geschlossen, das Welten-Ultiversum (Ringe 8-11.5) vollständig. **Was jetzt vor uns liegt**: die grossen Vision-Ringe sind gebaut — W12 Welt-Portal, W13 Vibe-Pass, W14 Bibliothek, W7 Compute-Sharing alle komplett. Der **KI-Übersetzer** ist vollständig (V8.68 Manifest + V8.69 deklarative Szene). Offen ist der **echte Fremd-Engine-Bogen** — das automatische Tor zu fremden Vibecode-Engines: **V8.70** baute seinen Schlüsselstein (das Untrusted-Welt-Tor — eine echte fremde Engine läuft null-origin sandgesichert); es folgen der Auto-Vendor-Pfad (ein fremdes Repo dockt ohne Handarbeit an) + die Mesh-Welt-Verteilung (Welten reisen peer-to-peer).
+Alle 5 Vision-Pfeiler (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) sind in V2+. Das Hylomorphismus-Crafting ist vertikal integriert, der Co-Schöpfer-Kreis geschlossen, das Welten-Ultiversum (Ringe 8-11.5) vollständig. **Was jetzt vor uns liegt**: die grossen Vision-Ringe sind gebaut — W12 Welt-Portal, W13 Vibe-Pass, W14 Bibliothek, W7 Compute-Sharing alle komplett. Der **KI-Übersetzer** ist vollständig (V8.68 Manifest + V8.69 deklarative Szene). Offen ist der **echte Fremd-Engine-Bogen** — das automatische Tor zu fremden Vibecode-Engines: **V8.70** baute seinen Schlüsselstein (das Untrusted-Welt-Tor — eine echte fremde Engine läuft null-origin sandgesichert); es folgen der Auto-Vendor-Pfad (W15 — ein fremdes Repo dockt ohne Handarbeit an), die Mesh-Welt-Verteilung (W16 — Welten reisen peer-to-peer) und die Multiplayer-Sub-Welten (W17 — eine Gruppe taucht gemeinsam in eine Server-Welt, über den Transport-Shim + das Mesh-als-Server). **Detailliert geplant in §3 — „Der Fremd-Engine-Bogen (W15–W17)".**
 
 ---
 
@@ -637,6 +637,81 @@ Geliefert in einer Session (in Kombination mit Ring 10.5 für die Vorbedingung):
 **Akzeptanz**: der Schöpfer öffnet den Bibliothek-Tab, sieht die verfügbaren Welten, holt sich mit einem Klick ein Portal, platziert es, geht hindurch — und beim Betreten einer veröffentlichten Welt steht „signiert von &lt;Autor&gt;".
 
 **Vision-Wort**: „**Andere bauen Welten FÜR Spieler. Wir bauen das Tor, das sie alle verbindet.**" Der Knotenpunkt, durch den man geht.
+
+---
+
+### Der Fremd-Engine-Bogen (W15–W17): das echte automatische Welt-Tor
+
+**Stand**: das Untrusted-Welt-Tor (V8.70) ist der Schlüsselstein — eine echte, ungeprüfte fremde Engine läuft null-origin sandgesichert hinter dem Portal (`worlds/schwarm/` beweist es). Was bleibt: das Tor **automatisch** machen (jedes fremde Repo dockt ohne Handarbeit an) und **mehrspielerfähig** (eine Gruppe taucht gemeinsam in eine fremde Welt — auch in eine, die einen Server braucht). Niemand soll die Bibliothek verlassen müssen, um gemeinsam ein Buch zu lesen.
+
+**Das Vollbild — fünf Schichten.** Jede baut auf der vorigen; eine fremde Welt nutzt so viele, wie sie braucht.
+
+| Schicht | Was | Stand |
+|---|---|---|
+| 0 — Sandbox | das null-origin-iframe: fremder Code läuft voll, kann AnazhRealm nicht berühren | ✅ V8.70 |
+| 1 — DSL-Brücke | der universelle Befehls-Kanal (postMessage, JSON, asymmetrisch) | ✅ W12 |
+| 2 — Transport-Shim | die Netz-APIs der fremden Welt (`WebSocket`/`fetch`/`RTCPeerConnection`) werden durch AnazhRealm umgeleitet | offen — W17 |
+| 3 — Mesh-als-Server | AnazhRealms W7-Mesh trägt den Verkehr; ein Peer hostet die Server-Logik | offen — W17 |
+| 4 — Gruppen-Portal | eine Gruppe tritt gemeinsam durch ein Tor, teilt den Mesh-Raum der Sub-Welt | offen — W17 |
+
+**Die ehrliche Server-Taxonomie.** Nicht jede fremde Welt ist gleich. Der Auto-Vendor (W15) fragt vor jeder Welt: *was tut ihr Server — falls sie einen hat?*
+
+1. **Rein-clientseitige Welt** (three-fluid-fx, THREE.Terrain, die Schwarm-Welt) — kein Server. Läuft schon vollständig (V8.70). ✅
+2. **Relay-Server-Welt** — der „Server" ist nur ein Nachrichten-Verteiler (A sendet, der Server broadcastet an B/C/D). **Voll lösbar:** der Transport-Shim leitet die `WebSocket` der Welt auf AnazhRealms W7-Mesh um — das Mesh IST der Relay. Die Welt läuft komplett peer-to-peer, ohne je einen echten Server.
+3. **JS-Compute-Server-Welt** — der Server rechnet autoritativ (Node/JS). **Lösbar:** JS läuft im Browser — ein Peer der Gruppe wird der Compute-Host (sein Tab IST der Server), das Mesh trägt den Verkehr, Host-Migration fängt das Verlassen ab. Der Multiplayer-Shooter (WS-Server, meist Relay + etwas Logik) fällt hierher.
+4. **Native-Compute-Server-Welt** (voxelize — Rust-Server) — **zwei Wege:** (a) Rust kompiliert zu **WASM** — lässt sich der Server `wasm32`-bauen, läuft er in einem Peer-Browser wie ein JS-Server; (b) lässt er sich nicht client-seitig bauen (echte TCP-Sockets, Datenbank, OS-Zugriff), ist die Welt eine **Brücken-Welt**: ihr Server läuft extern (der Vibecoder hostet ihn, oder ein Community-Seed-Knoten), AnazhRealm verbindet sich dorthin. **Auch dann verlässt niemand die Bibliothek** — man tritt durch das AnazhRealm-Portal, mit seiner Gruppe, über das Mesh; nur die schwere Server-Maschine steht draußen. Das Buch wird durch ein Fenster gelesen — aber gemeinsam, von hier aus.
+
+Der Auto-Vendor klassifiziert jede Welt in diese vier Stufen und schreibt die Stufe ins Manifest (`portalMeta.server`). Das Portal weiß dann, was zu tun ist.
+
+#### W15 — Auto-Vendor-Pfad (~3–5 Sessions)
+
+**Ziel:** ein fremdes Repo dockt ohne Handarbeit an. Heute sind `worlds/fluid/`, `worlds/terrain/`, `worlds/schwarm/` hand-vendort; W15 automatisiert das.
+
+1. Der save-server (läuft lokal, hat schon den V7.96-LLM-Proxy) bekommt einen `/api/vendor-world`-Endpunkt: er nimmt eine Repo-URL (oder ein hochgeladenes Bundle), holt die Dateien, schreibt sie nach `worlds/<id>/`.
+2. **Sicherheits-Disziplin** (wie der LLM-Proxy): URL-Whitelist (`github.com`/`raw.githubusercontent.com`/npm), Größen-Deckel, Pfad-Sanitizing (kein `..`-Ausbruch aus `worlds/`), kein Ausführen beim Vendoren — nur Schreiben.
+3. Ein LLM-Schritt liest das Repo + schreibt das Manifest (`{id, label, desc, dsl, engine-entry, server-Stufe}`). Der LLM schreibt **nicht** die Engine (das ist der fremde Code, unangetastet) — nur das Bindeglied: bei einer ES-Modul-Welt den bare-Import-Patch (wie three-fluid-fx in W12 hand-gemacht), bei einer Server-Welt den vorangestellten Transport-Shim.
+4. Die vendorte Welt ist `trust:"sandboxed"` (V8.70) — sie läuft null-origin. Sie landet in `worlds/<id>/` + bekommt einen Registry-Eintrag.
+5. **Der git-Kern ist die unzerstörbare Bibliothek:** eine vendorte + committete Welt ist für jeden Spieler dauerhaft da — versioniert, brennt nie. Der save-server-Pfad funktioniert in der Dev-Umgebung; ein Mensch reviewt + committet; danach hat es jeder.
+
+**Ehrlicher Umfang:** W15 vendort rein-clientseitige + Relay-Welten zuerst (sie laufen sofort). Compute-Server-Welten werden vendort + klassifiziert, aber erst mit W17 spielbar.
+
+**Akzeptanz:** der Schöpfer gibt eine GitHub-URL eines kleinen Three.js-Projekts ein, klickt „andocken", und nach dem Vendoren steht die Welt in der Bibliothek + ist betretbar.
+
+#### W16 — Mesh-Welt-Verteilung (~3–4 Sessions)
+
+**Ziel:** Welten reisen peer-to-peer. Eine Welt, die ein Spieler hat, kann ein anderer betreten, ohne dass sie im Repo liegt — die Spieler tragen die Bibliothek.
+
+1. Eine vendorte Welt wird **content-adressiert** (Hash über ihr Bundle). W7 P2 streamt schon den Welt-Snapshot in 16-KiB-Stücken über die DataChannels — derselbe Mechanismus trägt ein Welt-Bundle (`world-bundle-pull`/`world-bundle-chunk`, Spiegel von `world-pull`).
+2. Will ich das Portal einer Welt betreten, die ein Mitspieler hat und ich nicht, holt mein Client das Bundle peer-to-peer von ihm.
+3. **Die ehrliche Schicht-Trennung:** das git-Repo ist die *persistente* Bibliothek (was committet ist, ist immer da); das Mesh ist die *lebende* Verteilung (Welten reisen zwischen Online-Spielern). Ein Browser-Tab ist ein schwacher Knoten — fällt er weg, ist die Welt nicht verloren, nur über das Repo oder einen anderen Peer zu holen. Keine reine Browser-Wolke trägt die Bibliothek allein; das Repo ist der Boden.
+4. Eine peer-empfangene Welt läuft `trust:"sandboxed"` — eine fremde Welt von einem fremden Peer ist per Konstruktion ungeprüft; der Sandbox (V8.70) ist die Wand.
+
+**Akzeptanz:** zwei Spieler im selben Mesh-Raum; einer hat eine Welt vendort, der andere nicht; der zweite betritt ihr Portal, das Bundle reist peer-to-peer, beide sind in der Welt.
+
+#### W17 — Multiplayer-Sub-Welten: der Transport-Shim + das Mesh-als-Server (~6–8 Sessions, mehrere Phasen)
+
+**Die Antwort auf „wie tauchen wir gemeinsam in eine Server-Welt?".** Niemand verlässt die Bibliothek.
+
+**Phase A — der Transport-Shim.** Eine fremde Browser-Welt kann nur über `WebSocket`, `fetch`, `RTCPeerConnection`, `XMLHttpRequest` netzwerken — und alle vier sind globale Objekte. Der Auto-Vendor (W15) stellt der Welt-`index.html` ein kleines, von AnazhRealm geschriebenes **Shim-`<script>`** voran, das diese Globalen überschreibt, BEVOR der fremde Code läuft. Das Shim-`WebSocket` öffnet keinen echten Socket — es `postMessage`t an AnazhRealm. Die fremde Welt glaubt, sie habe einen Server; in Wahrheit fließt ihr Verkehr durch AnazhRealm. **Ein null-origin-iframe braucht dafür GAR KEINE Netz-Berechtigung** — `postMessage` quert die Sandbox-Grenze ohne CSP. Eine sandgesicherte Multiplayer-Welt ist so voll vernetzt, ohne je selbst ins Netz zu dürfen.
+
+**Phase B — das Mesh-als-Server.** AnazhRealm empfängt den Shim-Verkehr und routet ihn über das W7-Mesh:
+- **Relay-Welt:** das Mesh broadcastet — es IST der Server. Kein Host, kein externer Knoten.
+- **JS-Compute-Welt:** ein Peer der Gruppe wird der **Compute-Host** — die Server-Logik der Welt (JS) läuft in seinem Tab; das Mesh trägt den Verkehr. Verlässt der Host, wandert die Rolle (Host-Migration — W7s `worldRole`-Mechanik kennt Host/Guest schon).
+- **Native-Compute-Welt:** der Server als WASM in einem Peer-Tab, oder die Brücken-Welt (externer Server).
+
+**Phase C — das Gruppen-Portal.** Ein Mesh-Raum gruppiert schon Spieler (W7 P4 Lobby). Öffnet einer ein Portal, bekommen die anderen einen Prompt „X öffnete ein Tor nach <Welt> — mitkommen?". Sagen sie ja, betritt jeder sein eigenes Portal-iframe; die iframes sind über das Mesh verbunden (jeder AnazhRealm relayt für sein eigenes iframe). Die Gruppe ist gemeinsam in der fremden Welt, ihr Multiplayer läuft auf dem geteilten Mesh. „Meta" (man sieht sich als AnazhRealm-Avatare im Vorraum) UND „direkt" (man ist zusammen IN der fremden Engine) — je nachdem, was die Welt zulässt.
+
+**Phasen-Reihenfolge:** A (Shim) → B-Relay (das Einfachste, voll p2p) → C (Gruppen-Portal) → B-JS-Compute (Host-Migration) → B-WASM (per-Projekt). Jede Phase eine eigene, browser-verifizierte Welle.
+
+**Akzeptanz:** eine Gruppe in einem AnazhRealm-Raum tritt gemeinsam durch ein Portal in eine vendorte Relay-Multiplayer-Welt; sie sehen einander dort, ihr Verkehr fließt peer-to-peer über das Mesh, kein echter Server existiert.
+
+**Ehrliche Grenzen des Bogens:**
+- Ein Browser-Tab als Compute-Host ist schwach (Hintergrund-Drosselung, begrenzte CPU, schließt jederzeit) — Host-Migration mildert, beseitigt es nicht. Gut für Koop, rau für kompetitive Twitch-Spiele.
+- Latenz: ein peer-gehosteter Server hat die Latenz des Hosts.
+- Rust→WASM ist nicht automatisch — manche native Server portieren sauber, manche nie. Der Auto-Vendor klassifiziert ehrlich; eine nicht-portierbare Welt wird eine Brücken-Welt, kein Versprechen-Bruch.
+- Eine Brücken-Welt braucht einen externen Server — Repo + Mesh tragen sie nicht allein. Aber der Eintritt bleibt das AnazhRealm-Portal, mit der Gruppe.
+
+**Vision-Wort:** „**Man muss die Bibliothek nicht verlassen, um gemeinsam ein Buch zu lesen.** Manche Bücher liest man von den Regalen der Bibliothek selbst, manche durch ein Fenster zu einem fernen Turm — aber immer von hier aus, immer zusammen."
 
 ---
 
