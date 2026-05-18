@@ -2,7 +2,7 @@
 
 Ein als Co-Creation-Werk Mensch+KI entworfenes 3D-Browser-Sandbox-Ultiversum. Eine Datei, ein Stamm, viele Ringe.
 
-**Stand**: V8.75 (18.05.2026) — **W17 Phase A: der Transport-Shim** — eine fremde Multiplayer-Welt netzwerkt durch AnazhRealms Mesh statt zu einem echten Server. Eine fremde Welt netzwerkt nur über `WebSocket`; der save-server-injizierte Shim ersetzt `window.WebSocket` durch eine postMessage-Brücke — ein `send()` quert die Sandbox-Grenze zu AnazhRealm, die fremde Welt glaubt, sie habe einen Server. Phase A routet noch nicht übers Mesh (das ist Phase B-Relay) — die Akzeptanz ist ein Loopback-Echo. Davor **W16 die Mesh-Welt-Verteilung komplett** (eine vendorte Welt reist peer-to-peer + die Mesh-Bibliothek ist browsbar), **W15 der Auto-Vendor-Pfad komplett** (ein lokales Bündel ODER eine GitHub-Repo-URL dockt OHNE Handarbeit an), V8.70 das **Untrusted-Welt-Tor** (eine echte, ungeprüfte fremde Engine läuft null-origin sandgesichert — `worlds/schwarm/` beweist es) + V8.68/V8.69 der **KI-Übersetzer** komplett. W7 Compute-Sharing, W14 Bibliothek, W13 Vibe-Pass, W12 Welt-Portal — alle komplett. Offen: W17 Phase B+C (Mesh-als-Server + Gruppen-Portal, detailliert in `docs/roadmap.md` §3).
+**Stand**: V8.76 (18.05.2026) — **W17 Phase B-Relay: das Mesh-als-Server** — der Sub-Welt-Verkehr einer fremden Multiplayer-Welt fliesst peer-to-peer übers W7-Mesh. W17 Phase A trug den `WebSocket`-Verkehr einer fremden Welt über die Sandbox-Grenze (Loopback-Echo); B-Relay ersetzt den Echo durch die Mesh-Verteilung: ein `ws-send` aus dem Sub-Welt-iframe wird ein `subworld-net`-Mesh-Broadcast, jedes andere AnazhRealm im selben Sub-Welt-Raum stellt es als `ws-recv` in SEIN iframe zu — das Mesh IST der Server, kein Host, kein externer Knoten. Zwei Browser im selben Multiplayer-Portal sehen einander, peer-to-peer. Davor **W16 die Mesh-Welt-Verteilung komplett** (eine vendorte Welt reist peer-to-peer + die Mesh-Bibliothek ist browsbar), **W15 der Auto-Vendor-Pfad komplett** (ein lokales Bündel ODER eine GitHub-Repo-URL dockt OHNE Handarbeit an), V8.70 das **Untrusted-Welt-Tor** (eine echte, ungeprüfte fremde Engine läuft null-origin sandgesichert — `worlds/schwarm/` beweist es) + V8.68/V8.69 der **KI-Übersetzer** komplett. W7 Compute-Sharing, W14 Bibliothek, W13 Vibe-Pass, W12 Welt-Portal — alle komplett. Offen: W17 Phase C (Gruppen-Portal) + B-JS-Compute, detailliert in `docs/roadmap.md` §3.
 
 ## Was es ist
 
@@ -29,7 +29,7 @@ Browser öffnen: `http://localhost:4312/` (oder `index.html` direkt).
 npm run check           # Syntax-Check (node --check)
 npm run lint            # ESLint
 npm run format:check    # Prettier
-npm run playtest        # ~2669 Headless-Invarianten (~60s)
+npm run playtest        # ~2676 Headless-Invarianten (~60s)
 npm run audit:strict    # 5 generische Audit-Schichten (~25s)
 ```
 

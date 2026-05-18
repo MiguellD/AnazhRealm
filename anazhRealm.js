@@ -4567,7 +4567,7 @@ class AnazhRealm {
             this._p2pHandleLlmResponse(peerId, msg);
             return;
         }
-        const ALLOWED = ["pos", "dsl", "soul", "aura", "vibe", "creature-pos", "companion-say"];
+        const ALLOWED = ["pos", "dsl", "soul", "aura", "vibe", "creature-pos", "companion-say", "subworld-net"];
         if (!ALLOWED.includes(msg.type)) return;
         msg.peerId = peerId;
         this.p2pHandleMessage(JSON.stringify(msg));
@@ -5452,6 +5452,16 @@ class AnazhRealm {
             // W11 Phase 4 — Voice-Sync: der Begleiter-Output eines Mitspielers.
             if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
                 this._p2pHandleCompanionSay(msg.peerId, msg);
+            }
+            return;
+        }
+        if (msg.type === "subworld-net") {
+            // W17 Phase B-Relay — der Sub-Welt-Verkehr eines Mitspielers.
+            // _portalNetDeliver stellt ihn nur ins eigene iframe zu, wenn ich
+            // im SELBEN Multiplayer-Portal bin (B2 — worldId-Pfad-Match);
+            // sonst sähe ein Mesh-Mitspieler ohne Portal fremden Verkehr.
+            if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
+                this._portalNetDeliver(msg);
             }
             return;
         }
@@ -18985,6 +18995,13 @@ class AnazhRealm {
             // W17 Phase A — eine Multiplayer-Welt: ihr `WebSocket`-Verkehr
             // fliesst über den Transport-Shim durch _portalNetReceive.
             multiplayer: meta.multiplayer === true,
+            // W17 Phase B-Relay — die offenen WebSocket-Kanäle des Sub-Welt-
+            // iframes (der Shim meldet ws-open/ws-close). Ein mesh-empfangener
+            // subworld-net wird in jeden zugestellt. netWindowStart/Count sind
+            // das Rate-Limit-Fenster (B3 — eine flutende Sub-Welt deckeln).
+            netChannels: new Set(),
+            netWindowStart: 0,
+            netWindowCount: 0,
         };
         document.body.appendChild(overlay);
         // W14 Phase 2 — ist die Ziel-Welt mit einem Vibe-Pass versiegelt,
@@ -19293,29 +19310,79 @@ class AnazhRealm {
         return true;
     }
 
-    // W17 Phase A — der Transport-Shim-Rückkanal. Eine Multiplayer-Welt hat
-    // statt `window.WebSocket` den Shim (save-server-injiziert); ihr Netz-
-    // Verkehr kommt als `__anazhNet`-Envelope hier an. Phase A routet noch
-    // NICHT übers Mesh (das ist B-Relay) — sie ECHOT: ein `ws-send` wird
-    // direkt als `ws-recv` an dasselbe iframe zurückgespielt. Die fremde Welt
-    // glaubt damit, sie habe einen Echo-Server. Das `data` wird unverändert
-    // zurückgereicht — nie ausgeführt (wie der `event`-Rückkanal: Daten, kein
-    // Code). Phase B ersetzt den Echo durch die Mesh-Verteilung.
+    // W17 Phase B-Relay — der Transport-Shim-Rückkanal. Eine Multiplayer-
+    // Welt hat statt `window.WebSocket` den Shim (save-server-injiziert);
+    // ihr Netz-Verkehr kommt als `__anazhNet`-Envelope vom eigenen iframe
+    // hier an. `ws-open`/`ws-close` verfolgen die offenen Kanäle des
+    // iframes — ein mesh-empfangener subworld-net wird in jeden zugestellt.
+    // Ein `ws-send` wandert über das W7-Mesh, statt geechot zu werden — das
+    // Mesh IST der Server (kein Host, kein externer Knoten). Größen-Deckel
+    // + Rate-Limit (B3) schützen den Kanal vor einer flutenden Sub-Welt;
+    // der Sub-Raum-Schlüssel ist der Welt-Pfad (B2). Phase A echote den
+    // ws-send noch im Loopback — B-Relay ersetzt den Echo durch die
+    // Mesh-Verteilung. Das `data` wird nie ausgeführt — wie der `event`-
+    // Rückkanal trägt der Shim-Kanal Daten, kein Code.
     _portalNetReceive(msg) {
         const po = this._portalOverlay;
         if (!po || !po.multiplayer || !msg || msg.__anazhNet !== true) return false;
         const channel = msg.channel;
         if (!Number.isInteger(channel)) return false;
-        // Phase A: ws-send → Echo zurück. ws-open/ws-close werden notiert,
-        // aber brauchen für den Loopback keine Aktion (Phase B nutzt sie für
-        // den Sub-Raum-Beitritt).
+        // B1 — die offenen WebSocket-Kanäle des eigenen iframes verfolgen.
+        // Ein mesh-empfangener subworld-net wird in jeden zugestellt (eine
+        // Relay-Welt öffnet typisch genau einen).
+        if (msg.kind === "ws-open") {
+            po.netChannels.add(channel);
+            return true;
+        }
+        if (msg.kind === "ws-close") {
+            po.netChannels.delete(channel);
+            return true;
+        }
         if (msg.kind !== "ws-send") return false;
-        if (!po.iframe || !po.iframe.contentWindow) return false;
+        // B3 — Größen-Deckel: nur String-Daten (eine Relay-.io-Welt sendet
+        // JSON-Text; Binär ist eine bewusst spätere Schicht), gedeckelt.
+        const data = msg.data;
+        if (typeof data !== "string" || data.length > AnazhRealm.SUBWORLD_NET_MAX_BYTES) return false;
+        // B3 — Rate-Limit: ein Fenster-Zähler deckelt die Nachrichten je
+        // Sekunde. Eine flutende Sub-Welt überlastet so nicht das Mesh.
+        const now = performance.now();
+        if (now - po.netWindowStart >= AnazhRealm.SUBWORLD_NET_RATE_WINDOW_MS) {
+            po.netWindowStart = now;
+            po.netWindowCount = 0;
+        }
+        if (po.netWindowCount >= AnazhRealm.SUBWORLD_NET_RATE_MAX) return false;
+        po.netWindowCount++;
+        // B1 — ein ws-send wandert übers Mesh: jedes andere AnazhRealm im
+        // selben Sub-Welt-Raum (B2 — Schlüssel ist der Welt-Pfad) stellt es
+        // in sein iframe zu. p2pSend broadcastet nur an Peers — der Sender
+        // bekommt seinen eigenen Verkehr nicht zurück (wie ein echter Relay-
+        // Server: er reicht eine Nachricht an die ANDEREN Clients weiter).
+        this.p2pSend({ type: "subworld-net", worldId: po.world, data });
+        return true;
+    }
+
+    // W17 Phase B-Relay — eine subworld-net-Nachricht eines Peers ins eigene
+    // Sub-Welt-iframe zustellen. B2 — die Sub-Raum-Eingrenzung: nur wenn ich
+    // im SELBEN Multiplayer-Portal bin (worldId-Pfad-Match); sonst sähe ein
+    // Mesh-Mitspieler, der gar nicht im Portal ist, fremden Sub-Welt-Verkehr.
+    // Der Sender-Kanal ist bedeutungslos (eine iframe-lokale id) — zugestellt
+    // wird in JEDEN offenen Kanal meines iframes (eine Relay-Welt öffnet
+    // typisch genau einen). Das `data` wird als `ws-recv` gereicht, nie
+    // ausgeführt (wie der ws-send-Hinweg: Daten, kein Code).
+    _portalNetDeliver(msg) {
+        const po = this._portalOverlay;
+        if (!po || !po.multiplayer || !msg) return false;
+        // B2 — nur Verkehr für GENAU diese Sub-Welt zustellen.
+        if (msg.worldId !== po.world) return false;
+        // B3 — Größen-Deckel auch auf dem Empfangs-Pfad.
+        const data = msg.data;
+        if (typeof data !== "string" || data.length > AnazhRealm.SUBWORLD_NET_MAX_BYTES) return false;
+        if (!po.iframe || !po.iframe.contentWindow || po.netChannels.size === 0) return false;
         // V8.70 — "*" für die null-origin (sandboxed) Multiplayer-Welt.
-        po.iframe.contentWindow.postMessage(
-            { __anazhNet: true, kind: "ws-recv", channel, data: msg.data },
-            po.trust === "sandboxed" ? "*" : window.location.origin
-        );
+        const target = po.trust === "sandboxed" ? "*" : window.location.origin;
+        for (const channel of po.netChannels) {
+            po.iframe.contentWindow.postMessage({ __anazhNet: true, kind: "ws-recv", channel, data }, target);
+        }
         return true;
     }
 
@@ -32548,6 +32615,12 @@ AnazhRealm.MOUNT_FOLLOW_HEIGHT = 1.5; // Spieler sitzt oben drauf
 // W12 — E-Reichweite, um ein Portal zu betreten. Etwas großzügiger als
 // MOUNT_RANGE_M: ein Tor-Ring ist groß, der Spieler steht davor.
 AnazhRealm.PORTAL_REACH_M = 4.5;
+// W17 Phase B-Relay — der subworld-net-Kanal trägt den `WebSocket`-Verkehr
+// einer Multiplayer-Sub-Welt übers Mesh. Ein Größen-Deckel je Nachricht +
+// ein Rate-Limit je Sekunde schützen den Kanal vor einer flutenden Sub-Welt.
+AnazhRealm.SUBWORLD_NET_MAX_BYTES = 16384; // 16 KiB je ws-send (Relay-.io-Nachrichten sind winzig)
+AnazhRealm.SUBWORLD_NET_RATE_WINDOW_MS = 1000;
+AnazhRealm.SUBWORLD_NET_RATE_MAX = 120; // ~2 Nachrichten je 60-fps-Frame mit Reserve
 AnazhRealm.MOUNT_SPEED_FACTOR = 0.7; // Compounds fahren etwas langsamer als zu Fuß
 AnazhRealm.ZOOM_FOV_DEG = 25; // Magnifying-Compound zoomt auf 25°
 AnazhRealm.MAGNIFYING_RAY_RANGE_M = 8; // Spieler muss innerhalb dieser Reichweite drauf schauen

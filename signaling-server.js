@@ -31,6 +31,8 @@
 //   Client → Server   { "type": "rtc-answer", "to": "<peerId>", "sdp": {...} }
 //   Client → Server   { "type": "rtc-ice",    "to": "<peerId>", "candidate": {...} }
 //   Server → Client   { "type": "rtc-offer/answer/ice", "peerId": "<from>", "to": "...", ... }
+//   Client → Server   { "type": "subworld-net", "worldId": "...", "data": "..." }   (W17 B-Relay)
+//   Server → Client   { "type": "subworld-net", "peerId": "...", "worldId": "...", "data": "..." }
 //
 // W7 Phase 1 (Compute-Sharing): der Server wird vom Daten-Relay zum
 // reinen WebRTC-Rendezvous. Er reicht SDP-Offer/Answer + ICE-Kandidaten
@@ -280,6 +282,20 @@ function handleClientMessage(ws, raw) {
         if (!text) return;
         const voice = typeof msg.voice === "string" ? msg.voice.slice(0, 80) : "";
         broadcastToRoom(ws.anazh.room, { type: "companion-say", peerId: ws.anazh.peerId, text, voice }, ws);
+        return;
+    }
+    if (msg.type === "subworld-net") {
+        // W17 Phase B-Relay — der Sub-Welt-Verkehr eines Multiplayer-Portals.
+        // Eine fremde Welt netzwerkt über ihren Transport-Shim; ihr ws-send
+        // wandert hier als subworld-net durchs Mesh — das Mesh IST der
+        // Server. Der Server stempelt die authoritative peerId, deckelt
+        // worldId + data; den Inhalt validiert er nicht (reine Client-
+        // Transport-Schicht). Die Sub-Raum-Eingrenzung (worldId-Pfad-Match)
+        // macht der Empfänger.
+        const worldId = typeof msg.worldId === "string" ? msg.worldId.slice(0, 200) : "";
+        const data = typeof msg.data === "string" ? msg.data : "";
+        if (!worldId || !data || data.length > 65536) return;
+        broadcastToRoom(ws.anazh.room, { type: "subworld-net", peerId: ws.anazh.peerId, worldId, data }, ws);
         return;
     }
     if (msg.type === "rtc-offer" || msg.type === "rtc-answer" || msg.type === "rtc-ice") {

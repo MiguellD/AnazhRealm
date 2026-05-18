@@ -130,6 +130,16 @@ async function run() {
     wsA.send(JSON.stringify({ type: "companion-say", voice: "Aria" }));
     await sleep(150);
 
+    // W17 Phase B-Relay: der Sub-Welt-Verkehr eines Multiplayer-Portals.
+    // A's ws-send fliesst als subworld-net durchs Mesh → B empfängt es.
+    // Defensive: subworld-net ohne data / ohne worldId wird verworfen.
+    wsA.send(
+        JSON.stringify({ type: "subworld-net", worldId: "worlds/_test/index.html", data: "subnet-payload" })
+    );
+    wsA.send(JSON.stringify({ type: "subworld-net", worldId: "worlds/_test/index.html" }));
+    wsA.send(JSON.stringify({ type: "subworld-net", data: "subnet-payload" }));
+    await sleep(150);
+
     console.log("\n=== A received ===");
     for (const e of events.a) console.log(JSON.stringify(e));
     console.log("\n=== B received ===");
@@ -274,12 +284,25 @@ async function run() {
     );
     const aNotEchoedOwnCompanionSay = !events.a.some((e) => e.type === "companion-say");
     const bRejectedBadCompanionSay = events.b.filter((e) => e.type === "companion-say").length === 1;
+    // W17 Phase B-Relay Assertions.
+    const bGotSubworldNet = events.b.some(
+        (e) =>
+            e.type === "subworld-net" &&
+            e.peerId === "peerA" &&
+            e.worldId === "worlds/_test/index.html" &&
+            e.data === "subnet-payload"
+    );
+    const aNotEchoedOwnSubworldNet = !events.a.some((e) => e.type === "subworld-net");
+    const bRejectedBadSubworldNet = events.b.filter((e) => e.type === "subworld-net").length === 1;
     console.log("W7P4 B bekommt lobby-rooms mit A's veröffentlichtem Raum:", bGotLobbyRooms);
     console.log("KreaturSync B bekommt A's creature-pos (peerId-Stempel):", bGotCreaturePos);
     console.log("KreaturSync A bekommt eigene creature-pos NICHT zurück:", aNotEchoedOwnCreaturePos);
     console.log("W11V4 B bekommt A's companion-say (peerId-Stempel):", bGotCompanionSay);
     console.log("W11V4 A bekommt eigene companion-say NICHT zurück:", aNotEchoedOwnCompanionSay);
     console.log("W11V4 Server verwirft companion-say ohne text:", bRejectedBadCompanionSay);
+    console.log("W17BR B bekommt A's subworld-net (peerId-Stempel):", bGotSubworldNet);
+    console.log("W17BR A bekommt eigene subworld-net NICHT zurück:", aNotEchoedOwnSubworldNet);
+    console.log("W17BR Server verwirft subworld-net ohne data / ohne worldId:", bRejectedBadSubworldNet);
 
     // B disconnects
     wsB.close();
@@ -324,7 +347,10 @@ async function run() {
         aNotEchoedOwnCreaturePos &&
         bGotCompanionSay &&
         aNotEchoedOwnCompanionSay &&
-        bRejectedBadCompanionSay;
+        bRejectedBadCompanionSay &&
+        bGotSubworldNet &&
+        aNotEchoedOwnSubworldNet &&
+        bRejectedBadSubworldNet;
     server.kill();
     process.exit(allOk ? 0 : 1);
 }

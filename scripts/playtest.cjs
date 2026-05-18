@@ -5043,21 +5043,27 @@ function startSaveServer() {
                 check("W16 P2: die Welt-Katalog-Sektion im DOM", w16Results.uiInDom);
             }
 
-            // ### W17 Phase A — der Transport-Shim ###
-            // Eine fremde Multiplayer-Welt netzwerkt über `WebSocket`; der
-            // save-server-injizierte Shim ersetzt es durch eine postMessage-
-            // Brücke. Tests prüfen die Client-Schicht (multiplayer-Flag,
-            // ?anazh-shim=1-Marker, der _portalNetReceive-Echo); den echten
-            // Loopback im sandboxed iframe prüft smoke-shim.cjs.
-            const w17paResults = await page
+            // ### W17 Phase B-Relay — das Mesh-als-Server ###
+            // Phase A trug den `WebSocket`-Verkehr einer fremden Welt über den
+            // Transport-Shim zur Heimat (Loopback-Echo). B-Relay ersetzt den
+            // Echo durch die Mesh-Verteilung: ein `ws-send` wird ein
+            // subworld-net-Broadcast, jeder Peer im selben Sub-Welt-Raum
+            // stellt ihn in sein iframe zu. Tests prüfen die Client-Schicht
+            // (subworld-net-Broadcast, Kanal-Verfolgung, Sub-Raum-Eingrenzung,
+            // Rate-Limit + Deckel); den echten Zwei-Browser-Durchlauf prüft
+            // smoke-webrtc.cjs.
+            const w17bResults = await page
                 .evaluate(() => {
                     const r = window.anazhRealm;
                     if (!r) return null;
                     const out = {};
+                    const MAXB = r.constructor.SUBWORLD_NET_MAX_BYTES;
+                    const CAP = r.constructor.SUBWORLD_NET_RATE_MAX;
 
-                    out.methodPresent = typeof r._portalNetReceive === "function";
+                    out.methodsPresent =
+                        typeof r._portalNetReceive === "function" && typeof r._portalNetDeliver === "function";
 
-                    // _sanitizePortalMeta — das multiplayer-Flag.
+                    // _sanitizePortalMeta — das multiplayer-Flag (Phase-A-Erbe).
                     const sanDefault = r._sanitizePortalMeta({ world: "worlds/skeleton/index.html" }, "fb");
                     out.sanitizeDefaultsFalse = sanDefault.multiplayer === false;
                     const sanMp = r._sanitizePortalMeta(
@@ -5067,7 +5073,7 @@ function startSaveServer() {
                     out.sanitizeKeepsTrue = sanMp.multiplayer === true;
 
                     // _buildPortalOverlay — multiplayer:true hängt ?anazh-shim=1
-                    // an + setzt _portalOverlay.multiplayer.
+                    // an, setzt das Flag + legt einen netChannels-Set an.
                     r._buildPortalOverlay({
                         world: "worlds/skeleton/index.html",
                         multiplayer: true,
@@ -5077,6 +5083,7 @@ function startSaveServer() {
                     out.overlayMultiplayer =
                         !!r._portalOverlay &&
                         r._portalOverlay.multiplayer === true &&
+                        r._portalOverlay.netChannels instanceof Set &&
                         !!mpFrame &&
                         /\?anazh-shim=1$/.test(mpFrame.getAttribute("src") || "");
                     r._disposePortalOverlay();
@@ -5088,38 +5095,154 @@ function startSaveServer() {
                         !!plainFrame && !(plainFrame.getAttribute("src") || "").includes("anazh-shim");
                     r._disposePortalOverlay();
 
-                    // _portalNetReceive — Phase-A-Loopback: ws-send → ws-recv-Echo.
+                    // p2pSend hooken: subworld-net-Broadcasts einfangen (im
+                    // Playtest steht kein Mesh — der Hook IST der Empfänger).
+                    const sent = [];
+                    const origSend = r.p2pSend;
+                    r.p2pSend = (obj) => {
+                        if (obj && obj.type === "subworld-net") sent.push(obj);
+                        return false;
+                    };
+
+                    // Ein Multiplayer-Portal mit iframe-Spy + Rate-Limit-Fenster.
+                    const SUBW = "worlds/skeleton/index.html";
                     const posted = [];
-                    r._portalOverlay = {
+                    const makeOverlay = () => ({
                         multiplayer: true,
                         trust: "sandboxed",
+                        world: SUBW,
+                        netChannels: new Set(),
+                        netWindowStart: 0,
+                        netWindowCount: 0,
                         iframe: { contentWindow: { postMessage: (m, o) => posted.push({ m, o }) } },
-                    };
-                    const echoed = r._portalNetReceive({ __anazhNet: true, kind: "ws-send", channel: 7, data: "ping" });
-                    out.netReceiveEchoes =
-                        echoed === true &&
-                        posted.length === 1 &&
-                        posted[0].m.__anazhNet === true &&
-                        posted[0].m.kind === "ws-recv" &&
-                        posted[0].m.channel === 7 &&
-                        posted[0].m.data === "ping" &&
-                        posted[0].o === "*";
-                    // ws-open + ein Müll-Envelope (kein __anazhNet) → kein Echo.
-                    posted.length = 0;
-                    r._portalNetReceive({ __anazhNet: true, kind: "ws-open", channel: 7 });
-                    r._portalNetReceive({ kind: "ws-send", channel: 7, data: "x" });
-                    out.netReceiveIgnoresNonSend = posted.length === 0;
-                    // Ein Nicht-Multiplayer-Portal echot nicht.
+                    });
+                    r._portalOverlay = makeOverlay();
+
+                    // B1 — ws-open verfolgt den Kanal, ws-close entfernt ihn.
+                    r._portalNetReceive({ __anazhNet: true, kind: "ws-open", channel: 3 });
+                    out.wsOpenTracks = r._portalOverlay.netChannels.has(3);
+                    r._portalNetReceive({ __anazhNet: true, kind: "ws-close", channel: 3 });
+                    out.wsCloseUntracks = !r._portalOverlay.netChannels.has(3);
+
+                    // B1 — ws-send wird ein subworld-net-Broadcast (kein Echo
+                    // mehr): er trägt den Welt-Pfad als worldId + die Daten.
+                    sent.length = 0;
+                    const r1 = r._portalNetReceive({ __anazhNet: true, kind: "ws-send", channel: 1, data: "hallo" });
+                    out.wsSendBroadcasts =
+                        r1 === true &&
+                        sent.length === 1 &&
+                        sent[0].type === "subworld-net" &&
+                        sent[0].worldId === SUBW &&
+                        sent[0].data === "hallo";
+                    // ... der Sender bekommt KEIN Echo ins eigene iframe.
+                    out.wsSendNoEcho = posted.length === 0;
+
+                    // B3 — Größen-Deckel: Übergröße + Nicht-String verworfen.
+                    sent.length = 0;
+                    const rBig = r._portalNetReceive({
+                        __anazhNet: true,
+                        kind: "ws-send",
+                        channel: 1,
+                        data: "x".repeat(MAXB + 1),
+                    });
+                    const rObj = r._portalNetReceive({
+                        __anazhNet: true,
+                        kind: "ws-send",
+                        channel: 1,
+                        data: { not: "string" },
+                    });
+                    out.wsSendCapsSize = rBig === false && rObj === false && sent.length === 0;
+
+                    // B3 — Rate-Limit: nach SUBWORLD_NET_RATE_MAX Nachrichten
+                    // in einem Fenster wird die nächste verworfen.
+                    r._portalOverlay = makeOverlay();
+                    sent.length = 0;
+                    let allOk = true;
+                    for (let i = 0; i < CAP; i++) {
+                        if (
+                            r._portalNetReceive({ __anazhNet: true, kind: "ws-send", channel: 1, data: "m" + i }) !==
+                            true
+                        )
+                            allOk = false;
+                    }
+                    const overflow = r._portalNetReceive({
+                        __anazhNet: true,
+                        kind: "ws-send",
+                        channel: 1,
+                        data: "over",
+                    });
+                    out.wsSendRateLimited = allOk && overflow === false && sent.length === CAP;
+
+                    // Ein Nicht-Multiplayer-Portal broadcastet nicht.
+                    r._portalOverlay = makeOverlay();
                     r._portalOverlay.multiplayer = false;
-                    posted.length = 0;
+                    sent.length = 0;
                     r._portalNetReceive({ __anazhNet: true, kind: "ws-send", channel: 1, data: "y" });
-                    out.netReceiveGatedOnMultiplayer = posted.length === 0;
+                    out.gatedOnMultiplayer = sent.length === 0;
+
+                    // _portalNetDeliver — B2: ein subworld-net für GENAU diese
+                    // Sub-Welt wird in jeden offenen Kanal des iframes gereicht.
+                    r._portalOverlay = makeOverlay();
+                    r._portalOverlay.netChannels = new Set([5, 8]);
+                    posted.length = 0;
+                    const d1 = r._portalNetDeliver({
+                        type: "subworld-net",
+                        peerId: "px",
+                        worldId: SUBW,
+                        data: "eingang",
+                    });
+                    out.deliverPostsToChannels =
+                        d1 === true &&
+                        posted.length === 2 &&
+                        posted.every(
+                            (p) => p.m.__anazhNet === true && p.m.kind === "ws-recv" && p.m.data === "eingang"
+                        ) &&
+                        posted.some((p) => p.m.channel === 5) &&
+                        posted.some((p) => p.m.channel === 8) &&
+                        posted.every((p) => p.o === "*");
+
+                    // B2 — Verkehr einer ANDEREN Sub-Welt wird verworfen.
+                    posted.length = 0;
+                    const dOther = r._portalNetDeliver({
+                        type: "subworld-net",
+                        peerId: "px",
+                        worldId: "worlds/fluid/index.html",
+                        data: "fremd",
+                    });
+                    out.deliverDropsOtherRoom = dOther === false && posted.length === 0;
+
+                    // B3 — der Empfangs-Pfad verwirft Übergröße ebenso.
+                    posted.length = 0;
+                    const dBig = r._portalNetDeliver({
+                        type: "subworld-net",
+                        peerId: "px",
+                        worldId: SUBW,
+                        data: "x".repeat(MAXB + 1),
+                    });
+                    out.deliverCapsSize = dBig === false && posted.length === 0;
+
+                    // subworld-net ist kanal-zustellbar: _p2pHandleChannelMessage
+                    // reicht es (in der ALLOWED-Whitelist) an p2pHandleMessage →
+                    // _portalNetDeliver. Eine Fremd-Peer-Nachricht landet so im
+                    // iframe.
+                    r._portalOverlay = makeOverlay();
+                    r._portalOverlay.netChannels = new Set([1]);
+                    posted.length = 0;
+                    r._p2pHandleChannelMessage(
+                        "fern-peer",
+                        JSON.stringify({ type: "subworld-net", worldId: SUBW, data: "via-kanal" })
+                    );
+                    out.channelDeliverable = posted.some(
+                        (p) => p.m.kind === "ws-recv" && p.m.data === "via-kanal"
+                    );
+
                     r._portalOverlay = null;
+                    r.p2pSend = origSend;
 
                     // buildStateSnapshot persistiert multiplayer im portalMeta
                     // (der feste Feld-Satz — V8.59-Lehre); _sanitizePortalMeta
                     // (oben geprüft) ist der Lade-Pfad → zusammen der Rundlauf.
-                    const bpName = "_w17pa_portal";
+                    const bpName = "_w17b_portal";
                     const wp = r.state.blueprints["welt_portal"];
                     r.state.blueprints[bpName] = {
                         name: bpName,
@@ -5142,30 +5265,61 @@ function startSaveServer() {
                     return out;
                 })
                 .catch((err) => ({ error: err && err.message }));
-            if (!w17paResults || w17paResults.error) {
+            if (!w17bResults || w17bResults.error) {
                 check(
-                    "W17 Phase A: der Transport-Shim erreichbar",
+                    "W17 Phase B-Relay: das Mesh-als-Server erreichbar",
                     false,
-                    (w17paResults && w17paResults.error) || "page.evaluate fehlgeschlagen"
+                    (w17bResults && w17bResults.error) || "page.evaluate fehlgeschlagen"
                 );
             } else {
-                check("W17 PA: _portalNetReceive existiert", w17paResults.methodPresent);
-                check("W17 PA: _sanitizePortalMeta — multiplayer Default false", w17paResults.sanitizeDefaultsFalse);
-                check("W17 PA: _sanitizePortalMeta bewahrt multiplayer:true", w17paResults.sanitizeKeepsTrue);
+                check("W17 B: _portalNetReceive + _portalNetDeliver existieren", w17bResults.methodsPresent);
+                check("W17 B: _sanitizePortalMeta — multiplayer Default false", w17bResults.sanitizeDefaultsFalse);
+                check("W17 B: _sanitizePortalMeta bewahrt multiplayer:true", w17bResults.sanitizeKeepsTrue);
                 check(
-                    "W17 PA: _buildPortalOverlay (multiplayer) hängt ?anazh-shim=1 an + setzt das Flag",
-                    w17paResults.overlayMultiplayer
+                    "W17 B: _buildPortalOverlay (multiplayer) hängt ?anazh-shim=1 an + legt netChannels an",
+                    w17bResults.overlayMultiplayer
                 );
-                check("W17 PA: _buildPortalOverlay (single) lädt OHNE Shim-Marker", w17paResults.overlayNoMarkerWhenSingle);
                 check(
-                    "W17 PA: _portalNetReceive echot ein ws-send als ws-recv (Phase-A-Loopback)",
-                    w17paResults.netReceiveEchoes
+                    "W17 B: _buildPortalOverlay (single) lädt OHNE Shim-Marker",
+                    w17bResults.overlayNoMarkerWhenSingle
                 );
-                check("W17 PA: _portalNetReceive ignoriert ws-open / Müll-Envelope", w17paResults.netReceiveIgnoresNonSend);
-                check("W17 PA: _portalNetReceive echot nur für ein Multiplayer-Portal", w17paResults.netReceiveGatedOnMultiplayer);
                 check(
-                    "W17 PA: multiplayer im portalMeta überlebt den buildStateSnapshot-Schreib-Pfad",
-                    w17paResults.snapshotKeepsMultiplayer
+                    "W17 B: ws-open verfolgt den Kanal, ws-close entfernt ihn",
+                    w17bResults.wsOpenTracks && w17bResults.wsCloseUntracks
+                );
+                check(
+                    "W17 B: ein ws-send wird ein subworld-net-Mesh-Broadcast (worldId + data)",
+                    w17bResults.wsSendBroadcasts
+                );
+                check(
+                    "W17 B: der Sender bekommt keinen Echo-Loopback mehr (Phase A ersetzt)",
+                    w17bResults.wsSendNoEcho
+                );
+                check("W17 B: ws-send verwirft Übergröße + Nicht-String-Daten (B3)", w17bResults.wsSendCapsSize);
+                check(
+                    "W17 B: ws-send ist auf SUBWORLD_NET_RATE_MAX je Sekunde gedeckelt (B3)",
+                    w17bResults.wsSendRateLimited
+                );
+                check("W17 B: nur ein Multiplayer-Portal broadcastet", w17bResults.gatedOnMultiplayer);
+                check(
+                    "W17 B: _portalNetDeliver reicht einen subworld-net in jeden offenen Kanal",
+                    w17bResults.deliverPostsToChannels
+                );
+                check(
+                    "W17 B: _portalNetDeliver verwirft Verkehr einer anderen Sub-Welt (B2)",
+                    w17bResults.deliverDropsOtherRoom
+                );
+                check(
+                    "W17 B: _portalNetDeliver verwirft Übergröße auf dem Empfangs-Pfad (B3)",
+                    w17bResults.deliverCapsSize
+                );
+                check(
+                    "W17 B: subworld-net ist kanal-zustellbar (in der ALLOWED-Whitelist)",
+                    w17bResults.channelDeliverable
+                );
+                check(
+                    "W17 B: multiplayer im portalMeta überlebt den buildStateSnapshot-Schreib-Pfad",
+                    w17bResults.snapshotKeepsMultiplayer
                 );
             }
 
