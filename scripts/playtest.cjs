@@ -117,7 +117,22 @@ function startSaveServer() {
             .evaluate(() => {
                 const r = window.anazhRealm;
                 if (!r || !r.state) return null;
-                const box = document.getElementById("dialogue-box");
+                // V8.83 — deterministische Mechanik-Probe statt der flaky
+                // Messung des Box-Inhalts am Lauf-Ende (V8.57-Disziplin):
+                // grokRender schreibt einen Prüfsatz, die Box muss ihn tragen;
+                // ein leerer Satz blankt sie NICHT (der V8.83-Guard).
+                let grokRenderProbe = null;
+                let grokRenderEmptyGuard = false;
+                try {
+                    r.grokRender("Prüfsatz für den Dialog.");
+                    const pb = document.getElementById("dialogue-box");
+                    grokRenderProbe = pb ? pb.textContent : null;
+                    r.grokRender("");
+                    r.grokRender(null);
+                    grokRenderEmptyGuard = !!pb && pb.textContent === "Prüfsatz für den Dialog.";
+                } catch (e) {
+                    grokRenderProbe = "ERR:" + (e && e.message);
+                }
                 return {
                     terrainEverGenerated: r.state.terrainEverGenerated,
                     groundChunks: r.state.groundChunks?.length || 0,
@@ -130,7 +145,8 @@ function startSaveServer() {
                     hasPlayerBody: !!r.state.playerBody,
                     grokSeenFirstSpawn: r.state.grok?.seenFirstSpawn === true,
                     grokLastSpoke: r.state.grok?.lastSpoke || 0,
-                    grokDialogueText: box ? box.textContent : null,
+                    grokRenderProbe,
+                    grokRenderEmptyGuard,
                 };
             })
             .catch(() => null);
@@ -189,9 +205,13 @@ function startSaveServer() {
                 `lastSpoke=${finalState.grokLastSpoke}`
             );
             check(
-                "Dialogue-Box trägt einen Satz",
-                typeof finalState.grokDialogueText === "string" && finalState.grokDialogueText.length > 0,
-                `text="${(finalState.grokDialogueText || "").slice(0, 60)}"`
+                "grokRender schreibt einen Satz in die Dialogue-Box",
+                finalState.grokRenderProbe === "Prüfsatz für den Dialog.",
+                `probe="${(finalState.grokRenderProbe || "").slice(0, 60)}"`
+            );
+            check(
+                "grokRender ignoriert leeren Text — die Stimme wird nicht geblankt",
+                finalState.grokRenderEmptyGuard === true
             );
             const grokLogs = logs.filter((l) => /\[INFO\] Grok: /.test(l.text));
             check(

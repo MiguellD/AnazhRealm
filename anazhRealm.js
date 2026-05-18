@@ -780,6 +780,12 @@ class AnazhRealm {
 
     grokRender(text) {
         const grok = this.state.grok;
+        // V8.83 — ein leerer/fehlender Satz blankt den Dialog NICHT. grokRender
+        // ist der EINE Sprech-Engpass; eine leere LLM-Antwort oder ein Pool-
+        // Fehler darf die Stimme nicht löschen (der Fade entfernt nur die
+        // `visible`-Klasse, nie den Text — ein einmal geblankter Dialog bliebe
+        // leer). V7.98-Disziplin, hier am Engpass.
+        if (typeof text !== "string" || text === "") return;
         const box = grok.dialogueBox || document.getElementById("dialogue-box");
         if (box) {
             box.textContent = text;
