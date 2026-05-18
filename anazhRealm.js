@@ -7434,7 +7434,7 @@ class AnazhRealm {
         // kurzer White-Noise-Puffer für Snare/Hihat (je Schlag eine frische,
         // billige BufferSource aus diesem geteilten Puffer).
         const grooveGain = ctx.createGain();
-        grooveGain.gain.value = 0.35;
+        grooveGain.gain.value = 0.5; // V8.92 — lauter (der Groove war zu leise; war 0.35)
         grooveGain.connect(masterGain);
         const noiseBuffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.4), ctx.sampleRate);
         const nd = noiseBuffer.getChannelData(0);
@@ -7593,24 +7593,44 @@ class AnazhRealm {
         return (step - 1) * stepDur + swing * 2 * stepDur;
     }
 
-    // W4 V3 Phase 3 — eine synthetische Kick: ein Sinus mit schnellem
-    // Tonhöhen-Abfall (140 → 48 Hz) + scharfer Hüllkurve.
+    // W4 V3 Phase 3 — eine synthetische Kick: ein Sinus mit Tonhöhen-Abfall
+    // (200 → 70 Hz — hoch genug, dass auch kleine Lautsprecher ihn tragen)
+    // + ein kurzer Noise-Klick, damit der Schlag-Transient auf JEDER Anlage
+    // hörbar ist (V8.92 — der reine 140→48-Hz-Tiefbass-Sinus war auf Laptops
+    // praktisch stumm; der Groove „nicht zu hören" war kein Bug, nur zu tief).
     _lofiKick(t) {
         const s = this.state.symphony;
-        if (!s.ctx || !s.lofi || !s.lofi.grooveGain) return;
+        if (!s.ctx || !s.lofi || !s.lofi.grooveGain || !s.lofi.noiseBuffer) return;
         const ctx = s.ctx;
+        // Körper: Sinus mit schnellem Tonhöhen-Abfall.
         const osc = ctx.createOscillator();
         osc.type = "sine";
-        osc.frequency.setValueAtTime(140, t);
-        osc.frequency.exponentialRampToValueAtTime(48, t + 0.09);
+        osc.frequency.setValueAtTime(200, t);
+        osc.frequency.exponentialRampToValueAtTime(70, t + 0.08);
         const env = ctx.createGain();
         env.gain.setValueAtTime(0.0001, t);
-        env.gain.exponentialRampToValueAtTime(0.7, t + 0.006);
-        env.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+        env.gain.exponentialRampToValueAtTime(0.85, t + 0.006);
+        env.gain.exponentialRampToValueAtTime(0.0001, t + 0.24);
         osc.connect(env);
         env.connect(s.lofi.grooveGain);
         osc.start(t);
-        osc.stop(t + 0.26);
+        osc.stop(t + 0.28);
+        // Klick: ein sehr kurzer hoch-gefilterter Noise-Tick — der Transient,
+        // der den Schlag auch ohne Tiefbass-Wiedergabe trägt.
+        const click = ctx.createBufferSource();
+        click.buffer = s.lofi.noiseBuffer;
+        const hp = ctx.createBiquadFilter();
+        hp.type = "highpass";
+        hp.frequency.value = 1600;
+        const cenv = ctx.createGain();
+        cenv.gain.setValueAtTime(0.0001, t);
+        cenv.gain.exponentialRampToValueAtTime(0.5, t + 0.002);
+        cenv.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
+        click.connect(hp);
+        hp.connect(cenv);
+        cenv.connect(s.lofi.grooveGain);
+        click.start(t);
+        click.stop(t + 0.05);
     }
 
     // W4 V3 Phase 3 — eine synthetische Snare: ein White-Noise-Burst durch
@@ -7623,10 +7643,10 @@ class AnazhRealm {
         src.buffer = s.lofi.noiseBuffer;
         const hp = ctx.createBiquadFilter();
         hp.type = "highpass";
-        hp.frequency.value = 1800;
+        hp.frequency.value = 1200;
         const env = ctx.createGain();
         env.gain.setValueAtTime(0.0001, t);
-        env.gain.exponentialRampToValueAtTime(0.4, t + 0.005);
+        env.gain.exponentialRampToValueAtTime(0.5, t + 0.005);
         env.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
         src.connect(hp);
         hp.connect(env);
@@ -7648,7 +7668,7 @@ class AnazhRealm {
         hp.frequency.value = 7000;
         const env = ctx.createGain();
         env.gain.setValueAtTime(0.0001, t);
-        env.gain.exponentialRampToValueAtTime(0.14, t + 0.004);
+        env.gain.exponentialRampToValueAtTime(0.22, t + 0.004);
         env.gain.exponentialRampToValueAtTime(0.0001, t + 0.045);
         src.connect(hp);
         hp.connect(env);

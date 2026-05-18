@@ -2,7 +2,19 @@
 
 Persistente Notizen. Diese Datei wird bei jeder neuen Session automatisch geladen. **Bei größeren Entscheidungen zuerst `docs/state-of-realm.md` lesen** – dort steht der ausführliche Stand, die Vision aus den vier Testamenten, der Plan und die Learnings.
 
-**Aktuelle Version: V8.91 (Stand 18.05.2026, W4 V3 Phase 3 — der Groove + Melodie −20%. Schöpfer: „melodie deutlich besser, 20% leiser". Plus Phase 3: eine Rhythmus-Schicht — synthetische Trommeln (Web Audio, kein Asset): Kick (Sinus mit Tonhöhen-Abfall 140→48 Hz), Snare (hochpass-gefiltertes White-Noise), Hihat (kurzer hoher Noise-Tick) — über dasselbe 8-Schritt-Raster wie die Melodie. Ein Trommel-Muster (Kick auf Takt-Eins/Und/Drei, Snare-Backbeat, Hihat-Achtel) + Swing (die Off-Beats verzögert, `GROOVE_SWING` 0.58 — der Lofi-Atem). peace dünnt die Off-Beat-Hihats aus. melodyGain 0.30→0.24. +3 Invarianten, playtest-grün, Lint + Strict-Audit (0 Failures) sauber. Phase 4 (Orchester) offen. Siehe V8.91-Eintrag.)**
+**Aktuelle Version: V8.92 (Stand 18.05.2026, Groove hörbar gemacht — Schöpfer-Browser-Befund: der Groove (V8.91) war „nicht zu hören". Kein Bug — die Wurzel war die Synthese: die Kick war ein reiner Sinus 140→48 Hz, also Tiefbass, den Laptop-/kleine Lautsprecher unter ~120-150 Hz hart abrollen und kaum wiedergeben. Fix: die Kick steigt auf 200→70 Hz (im hörbaren Bereich) + bekommt einen kurzen hoch-gefilterten Noise-Klick (der Schlag-Transient, der auf JEDER Anlage trägt); `grooveGain` 0.35→0.5, Snare-Pegel + Körper angehoben, Hihat lauter. playtest-grün, Lint + Strict-Audit (0 Failures) sauber. Phase 4 (Orchester) offen. Siehe V8.92-Eintrag.)**
+
+**V8.92 — Groove hörbar gemacht (kein Bug — die Kick war Tiefbass)**: Schöpfer-Browser-Befund nach V8.91 — der Groove „nicht zu hören, lauter oder ein anderer Fehler?". Ein Audit: kein Bug — `_lofiPlayGroove` läuft, ist sauber in `_lofiTick` verdrahtet, der Playtest bestätigt es wurf-frei. Die Wurzel war die Synthese. Ein Commit, playtest-grün.
+
+1. **Die Diagnose — die Kick war zu tief.** Die Kick war ein reiner Sinus mit Tonhöhen-Abfall 140 → 48 Hz. 48-140 Hz ist Tiefbass — ein Laptop- oder kleiner Lautsprecher rollt unter ~120-150 Hz hart ab und gibt davon fast nichts wieder. Eine reine Sinus-Kick in dem Bereich ist auf typischer Wiedergabe praktisch stumm. Snare/Hihat spielten, waren aber zu leise.
+
+2. **Der Fix.** Die Kick steigt auf **200 → 70 Hz** (genug im hörbaren Bereich) und bekommt einen **Noise-Klick** — ein sehr kurzer, hoch-gefilterter (1600 Hz) Tick am Anschlag. Der Klick IST der Schlag-Transient — er trägt die Kick auch auf Anlagen, die den Tiefbass schlucken. `grooveGain` 0.35 → 0.5, Snare-Pegel 0.4 → 0.5 (+ Hochpass 1800 → 1200 Hz für mehr Körper), Hihat 0.14 → 0.22. Der Groove ist jetzt die präsenteste Schicht — wie ein Lofi-Beat sein soll.
+
+**Tests**: keine neue Invariante (die Phase-3-Checks prüfen Struktur + wurf-frei, nicht den Pegel — den prüft das Schöpfer-Ohr). `_lofiKick` nutzt jetzt den Noise-Puffer (Guard um `noiseBuffer` erweitert). ~2776 grün. Lint + Format + Strict-Audit (0 Failures) sauber.
+
+**Lehre der V8.92**: *(1) „Nicht zu hören" ist nicht immer „spielt nicht" — eine Kick bei 48 Hz SPIELT, aber kein Laptop-Lautsprecher gibt 48 Hz wieder. Ein Klang-Befund braucht zuerst die Frage „in welchem Frequenzbereich liegt es, und kann die Anlage das?". (2) Ein perkussiver Schlag braucht einen Transienten im Mittel-/Hochbereich (den „Klick"), nicht nur einen Tiefbass-Körper — der Klick trägt den Schlag über jede Wiedergabe. (3) Headless prüft, DASS der Code läuft; ob ein Klang im hörbaren Bereich liegt, prüft nur ein Ohr auf echten Lautsprechern.*
+
+**Nächste Welle: W4 V3 Phase 4 — das Orchester.** Ein Bass (folgt den Akkord-Wurzeln) + mehr Synth-Stimmen. Siehe `docs/roadmap.md` §3 „W4 V3".
 
 **V8.91 — W4 V3 Phase 3 (der Groove) + Melodie −20% (+3 Invarianten)**: Schöpfer-Browser-Befund nach V8.90 — die Melodie „deutlich besser", −20% Lautstärke. Plus: weiter mit Phase 3, dem Groove. Ein Commit, playtest-grün.
 
