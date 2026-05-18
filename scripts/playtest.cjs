@@ -6380,6 +6380,8 @@ function startSaveServer() {
                             !!sym.lofi.gain &&
                             !!sym.lofi.filter &&
                             !!sym.lofi.melodyGain &&
+                            // V8.88 — die Lead-Stimme sitzt klar über dem Pad.
+                            sym.lofi.melodyGain.gain.value >= 0.25 &&
                             sym.lofi.degree === 0 &&
                             typeof sym.lofi.rngState === "number";
                         // W4 V3 Phase 2 — die Melodie: Form (startet + endet
@@ -24765,11 +24767,26 @@ function startSaveServer() {
                         !!s.ambient &&
                         s.ambient.osc1.type === "triangle" &&
                         s.ambient.osc2.type === "triangle" &&
-                        s.ambient.ambientGain.gain.value <= 0.1 &&
+                        // V8.88 — Drone −80%: kaum hörbare Grundierung (≤ 0.02).
+                        s.ambient.ambientGain.gain.value <= 0.02 &&
                         // V8.87 — sanfte Schwebung: < 1 Hz Verstimmung (kein
                         // extremer 1.5-Hz-Amplituden-Puls mehr).
                         Math.abs(s.ambient.osc2.frequency.value - s.ambient.osc1.frequency.value) < 1;
                     out.hasWeather = !!s.weather && !!s.weather.noise && !!s.weather.gain;
+                    // V8.88 — die Wetter-Noise (Regen) hängt am Umgebungs-
+                    // Regler (creaturePingVolume) + ist 60 % leiser (0.072).
+                    const wReal = r.state.weather;
+                    r.state.weather = "rainy";
+                    s.creaturePingVolume = 1;
+                    const wFull = r._symphonyWeatherTarget();
+                    s.creaturePingVolume = 0.5;
+                    const wHalf = r._symphonyWeatherTarget();
+                    r.state.weather = "sunny";
+                    const wDry = r._symphonyWeatherTarget();
+                    s.creaturePingVolume = 1;
+                    r.state.weather = wReal;
+                    out.weatherOnPingSlider =
+                        Math.abs(wFull - 0.072) < 0.001 && Math.abs(wHalf - 0.036) < 0.001 && wDry === 0;
 
                     // (b) Wetter-Layer-Gain folgt state.weather
                     r.state.weather = "sunny";
@@ -24821,7 +24838,11 @@ function startSaveServer() {
             } else {
                 check("Ring 4: initSymphony aktiviert Audio-Pipeline", ring4Results.initOk);
                 check("Ring 4: Ambient-Layer hat alle Nodes (osc1+osc2+lfo+filter)", ring4Results.hasAmbient);
-                check("V8.86: Ambient-Drone ist leise Grundierung (Dreieck, Gain ≤ 0.1)", ring4Results.droneIsSoft);
+                check("V8.88: Ambient-Drone ist kaum hörbare Grundierung (Dreieck, Gain ≤ 0.02)", ring4Results.droneIsSoft);
+                check(
+                    "V8.88: Regen-Noise hängt am Umgebungs-Regler + ist 60% leiser (0.072)",
+                    ring4Results.weatherOnPingSlider
+                );
                 check("Ring 4: Wetter-Layer hat Noise-Source + Gain", ring4Results.hasWeather);
                 check("Ring 4: symphonyTick ist idempotent bei gleichem Wetter", ring4Results.weatherTickIdempotent);
                 check(

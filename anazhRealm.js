@@ -7118,7 +7118,7 @@ class AnazhRealm {
         filter.Q.value = 0.7;
 
         const ambientGain = ctx.createGain();
-        ambientGain.gain.value = 0.05; // V8.87 — noch leiser (war 0.07)
+        ambientGain.gain.value = 0.01; // V8.88 — 80% leiser (Schöpfer-Wunsch; war 0.05)
 
         const osc1 = ctx.createOscillator();
         osc1.type = "triangle";
@@ -7342,6 +7342,16 @@ class AnazhRealm {
         osc.stop(t + 0.2);
     }
 
+    // W4 V3 — die Ziel-Lautstärke der Wetter-Noise (Regen). Sie hängt am
+    // selben Regler wie die Kreatur-Pings (creaturePingVolume — „Umgebungs-
+    // geräusche"); der Regen-Basiswert ist 0.072 (60 % leiser als die alten
+    // 0.18, Schöpfer-Wunsch).
+    _symphonyWeatherTarget() {
+        const s = this.state.symphony;
+        const pingVol = typeof s.creaturePingVolume === "number" ? s.creaturePingVolume : 1.0;
+        return (this.state.weather === "rainy" ? 0.072 : 0) * pingVol;
+    }
+
     // [ATMOSPHERE] Symphonie-Tick. V8.25-Erweiterung: ambient-Gain atmet
     // mit der Tageszeit — bei Nacht tiefer + ruhiger (×0.5), bei Mittag
     // hell + voll (×1.0), Übergänge sanft. Vision §4: Welt-Klang folgt
@@ -7353,13 +7363,13 @@ class AnazhRealm {
         this._lofiTick();
         // (1) Wetter-Cross-Fade (wie V8.24)
         if (s.lastWeather !== this.state.weather) {
-            const target = this.state.weather === "rainy" ? 0.18 : 0.0;
+            const target = this._symphonyWeatherTarget();
             const now = s.ctx.currentTime;
             s.weather.gain.gain.cancelScheduledValues(now);
             s.weather.gain.gain.setValueAtTime(s.weather.gain.gain.value, now);
             s.weather.gain.gain.linearRampToValueAtTime(target, now + 1.5);
             s.lastWeather = this.state.weather;
-            this.log(`Symphonie: wetter-Layer → ${target.toFixed(2)} (${this.state.weather})`, "DEBUG");
+            this.log(`Symphonie: wetter-Layer → ${target.toFixed(3)} (${this.state.weather})`, "DEBUG");
         }
         // (2) V8.25 — Tag-Nacht-Modulation des Ambient. Throttle auf 1 Hz.
         const ctx = s.ctx;
@@ -7371,9 +7381,9 @@ class AnazhRealm {
         const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
         const angle = t * Math.PI * 2 - Math.PI / 2;
         const sunHeight = Math.max(0, Math.sin(angle)); // 0=Nacht, 1=Mittag
-        // V8.87 — Gain: Nacht 0.025, Mittag 0.05 (noch leisere Grundierung
-        // unter der Lofi-Harmonie + Melodie).
-        const targetGain = 0.025 + 0.025 * sunHeight;
+        // V8.88 — Gain: Nacht 0.005, Mittag 0.01 (Drone −80%, Schöpfer-
+        // Wunsch — eine kaum hörbare Grundierung unter Harmonie + Melodie).
+        const targetGain = 0.005 + 0.005 * sunHeight;
         const nowCtx = ctx.currentTime;
         const ag = s.ambient.ambientGain;
         try {
@@ -7417,7 +7427,7 @@ class AnazhRealm {
         // W4 V3 Phase 2 — die Lead-Stimme (Melodie) hat ihren eigenen Gain,
         // etwas präsenter als der Pad, damit die Melodie über ihm singt.
         const melodyGain = ctx.createGain();
-        melodyGain.gain.value = 0.16;
+        melodyGain.gain.value = 0.3; // V8.88 — die Lead-Stimme sitzt klar über dem Pad
         melodyGain.connect(masterGain);
         // W4 V3 — der Harmonie-RNG, deterministisch aus worldMeta.seed: jede
         // Welt bekommt ihr eigenes Lied (Mulberry32, wie das Sternenfeld; ein
@@ -7468,7 +7478,9 @@ class AnazhRealm {
         const emotions = (this.state.player && this.state.player.emotions) || {};
         const joy = Math.max(0, Math.min(1, emotions.joy || 0));
         const peace = Math.max(0, Math.min(1, emotions.peace || 0));
-        const count = Math.max(1, Math.min(7, Math.round(3 + joy * 3 - peace * 1.5)));
+        // V8.88 — Dichte-Basis 5 (war 3): die Phrase fliesst als Melodie,
+        // nicht als vereinzelte Pings. joy lebhafter, peace ruhiger.
+        const count = Math.max(2, Math.min(9, Math.round(5 + joy * 3 - peace * 2)));
         const chordIdx = [degree, degree + 2, degree + 4, degree + 6];
         let idx = chordIdx[Math.floor(this._lofiRandom() * chordIdx.length)];
         let lastDelta = 0;
@@ -7519,10 +7531,13 @@ class AnazhRealm {
             osc.frequency.value = note.freq;
             const env = ctx.createGain();
             const t0 = now + note.start;
+            // V8.88 — eine SINGENDE Hüllkurve (Anschlag → Halt → Ausklang)
+            // statt eines Plucks: die Note füllt ihren Slot, die Phrase
+            // fliesst als Melodie statt als vereinzelte Pings.
             env.gain.setValueAtTime(0, t0);
-            env.gain.linearRampToValueAtTime(0.22, t0 + 0.04);
-            env.gain.exponentialRampToValueAtTime(0.0001, t0 + note.dur);
-            env.gain.setValueAtTime(0, t0 + note.dur);
+            env.gain.linearRampToValueAtTime(0.26, t0 + 0.05);
+            env.gain.linearRampToValueAtTime(0.16, t0 + note.dur * 0.7);
+            env.gain.linearRampToValueAtTime(0, t0 + note.dur);
             osc.connect(env);
             env.connect(s.lofi.melodyGain);
             osc.start(t0);
@@ -30230,6 +30245,15 @@ class AnazhRealm {
             ps.addEventListener("input", () => {
                 const v = parseFloat(ps.value) / 100;
                 this.state.symphony.creaturePingVolume = v;
+                // W4 V3 — der Regler steuert auch die Wetter-Noise (Regen):
+                // die laufende Noise-Schicht live nachziehen.
+                const sym = this.state.symphony;
+                if (sym.enabled && sym.ctx && sym.weather) {
+                    const t = sym.ctx.currentTime;
+                    sym.weather.gain.gain.cancelScheduledValues(t);
+                    sym.weather.gain.gain.setValueAtTime(sym.weather.gain.gain.value, t);
+                    sym.weather.gain.gain.linearRampToValueAtTime(this._symphonyWeatherTarget(), t + 0.3);
+                }
                 if (psv) psv.textContent = `${ps.value}%`;
                 if (typeof localStorage !== "undefined") {
                     try {
