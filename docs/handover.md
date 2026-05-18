@@ -171,7 +171,7 @@ V7.89 (Kreatur-Boosts) war die kritische Prüfung dieses Gesetzes. Naive Lösung
 
 ## Aktuelle Roadmap (was als nächstes denkbar ist)
 
-Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3/V4 + 11 ext. + **W12 (Welt-Portal) + W13 (Vibe-Pass) + W14 (Bibliothek) + W7 (Compute-Sharing) + der KI-Übersetzer + das Untrusted-Welt-Tor (V8.70) + der Auto-Vendor-Pfad Phase 1 (V8.71)** sind gebaut. In Arbeit ist der **echte Fremd-Engine-Bogen** — das automatische Tor zu fremden Vibecode-Engines. V8.70 baute seinen Schlüsselstein (eine echte fremde Engine läuft null-origin sandgesichert), V8.71 den Auto-Vendor-Pfad Phase 1 (ein lokales Bündel dockt sandgesichert an); die folgenden Schritte sind **detailliert in `docs/roadmap.md` §3 — „Der Fremd-Engine-Bogen (W15–W17)"** geplant:
+Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3/V4 + 11 ext. + **W12 (Welt-Portal) + W13 (Vibe-Pass) + W14 (Bibliothek) + W7 (Compute-Sharing) + der KI-Übersetzer + das Untrusted-Welt-Tor (V8.70) + der Auto-Vendor-Pfad (W15 — V8.71 Bündel-Pfad, V8.72 GitHub-Fetch)** sind gebaut. In Arbeit ist der **echte Fremd-Engine-Bogen** — das automatische Tor zu fremden Vibecode-Engines. V8.70 baute seinen Schlüsselstein, V8.71+V8.72 den Auto-Vendor-Pfad komplett; die folgenden Schritte (W16/W17) sind **detailliert in `docs/roadmap.md` §3 — „Der Fremd-Engine-Bogen (W15–W17)"** geplant:
 
 | Welle | Was | Aufwand | Vision-Tiefe |
 |---|---|---|---|
@@ -228,6 +228,48 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3/V4 + 11 ext. + **W12 (Welt-Portal) 
 **Meta-Lehre B**: **Heilige-Lektion-Disziplin ist mit JEDER Welle neu zu prüfen.** Ich war versucht, bei V7.96 einen neuen „LLM-Proxy-Server" als separates Programm zu bauen — wäre Re-Komplexifizierung gewesen. Stattdessen: save-server bekam eine zweite Rolle. Bei jeder neuen Funktion fragen: „kann das in einem bestehenden Dienst leben? Wenn nein, warum nicht?"
 
 **Meta-Lehre C**: **Fallback-Schichten als Vision-treue Antwort.** V7.98's vier-Schicht-Parser ist mehr als nur Bug-Fix — es ist eine VISION-Aussage: „nimm was da ist, zeig es dem Spieler". Strenge Validierung wäre einfacher zu coden, aber ärmer für den Spieler. Wer das System auf reale Vielfalt vorbereitet (LLM-Größen, Modell-Stile, Antwort-Formate), baut Fallback-Schichten — keine Single-Path-Strenge.
+
+---
+
+## Rückschau: die W15-Session (Auto-Vendor, V8.71-V8.72)
+
+Diese Session baute W15 (den Auto-Vendor-Pfad) in zwei Wellen — P1 der
+Bündel-Pfad (V8.71), P2 der GitHub-Fetch (V8.72). Der Code ist sauber,
+getestet, SSRF-sicher. Aber zwei ehrliche Lehren, gegen die du dich beim
+nächsten Mal wappnen sollst:
+
+### Lehre 1 — Doc-Sync ist eine Grep-Aufgabe, kein Headline-Update.
+
+In V8.71 UND V8.72 habe ich die Doku nur halb synchronisiert: ich
+aktualisierte die „Headline"-Absätze (CLAUDE.md-Versionsblock, der
+jeweils oberste Doc-Absatz), ließ aber ~13 stale Stellen stehen —
+`README.md` blieb ganz auf V8.70, die Invarianten-Zahl stand veraltet in
+`roadmap.md` an drei Stellen, in `world-portal.md` an zwei, in
+`state-of-realm.md` an zwei. Der Schöpfer fand es beim Audit. **Die
+Disziplin**: nach JEDER Welle, BEVOR du committest, laufe
+`grep -rn "<alte-Version>\|<alte-Invariantenzahl>" docs/*.md CLAUDE.md README.md`
+und heile JEDEN Treffer. Die „Doku-Disziplin — eine Quelle der Wahrheit"
+in CLAUDE.md ist das Ziel; der systematische Grep ist der Weg dahin. Ein
+Headline-Update fühlt sich nach „fertig" an — ist es aber nicht.
+
+### Lehre 2 — Beim Ersetzen eines mehrzeiligen Blocks den GANZEN Block matchen.
+
+Beim V8.72-CLAUDE.md-Versionsblock-Edit matchte ich nur den ANFANG des
+alten Blocks im `old_string`. Folge: der neue V8.71-Eintrags-Header
+klebte an den übrig gebliebenen alten Text — eine verstümmelte
+Doppel-Zeile entstand. Gefangen + geheilt, aber: wenn du einen Absatz
+oder Block ersetzt, muss `old_string` den GANZEN Block umspannen (oder
+nutze einen eindeutigen Anker am Anfang UND am Ende).
+
+### Lehre 3 — Ein Netz-Feature wird offline testbar, wenn die Gegenstelle eine operator-konfigurierbare Base ist.
+
+Der GitHub-Fetch (V8.72) ist ein Netz-Feature — und doch offline + grün
+im Smoke-Test. Der Trick: `VENDOR_GH_API_BASE`/`VENDOR_GH_RAW_BASE` sind
+env-Variablen (echte Operator-Konfiguration — GitHub Enterprise), kein
+Test-Hack. `smoke-vendor.cjs` startet ein lokales Fake-GitHub und zeigt
+die Bases darauf. Das ist eine legitime Test-Naht, KEIN Bypass — eine
+request-gesteuerte Base wäre ein SSRF-Loch, eine env-gesteuerte ist
+sicher UND testbar. Merke das Muster für jedes künftige Netz-Feature.
 
 ---
 

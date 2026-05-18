@@ -61,7 +61,7 @@ Konsequenz für jede künftige Iteration: **niemals re-komplexifizieren ohne Not
 
 | Pfeiler / Modul (Testament) | Status | Detail |
 |---|---|---|
-| ✅ Stabiles Fundament | erreicht | CI-Gate mit 2597 Playtest-Invarianten + Audit-Strict, Chunk-Welt mit BVH-Triangle-Mesh-Physik (visual = collision), 120 fps |
+| ✅ Stabiles Fundament | erreicht | CI-Gate mit 2629 Playtest-Invarianten + Audit-Strict, Chunk-Welt mit BVH-Triangle-Mesh-Physik (visual = collision), 120 fps |
 | ✅ Rendering (Three.js, Skybox, Planeten) | vorhanden | `vendor/three.min.js` r134 |
 | ✅ Physik (Ammo.js WASM) | vorhanden | gepoolte `tmpVec1/2`, 0 Hot-Path-Allocs |
 | ✅ Bewegung, Sprung, Egoperspektive | vorhanden | WASD + Sprint + Pointer-Lock |
@@ -175,7 +175,7 @@ Aggregat: **61 Commits** in dieser Konversations-Serie (von `5df65e3` zu HEAD, ~
 
 Begründung in einem Satz: **Der eine `anazhRealm.js` bleibt Stamm. Wir tragen sieben Wachstumsringe ein, jeder einzeln durch das CI-Gate gesichert, keiner re-komplexifiziert.**
 
-> **Stand V8.70**: die sieben Wachstumsringe der Ur-Tabelle unten sind **alle erledigt** — ebenso die Wellen 1-14 + W7 (Welten-Ultiversum, Hylomorphismus-Crafting, Co-Schöpfer-Kreis, Welt-Portal, Vibe-Pass, Bibliothek, Compute-Sharing), der KI-Übersetzer (V8.68/V8.69) und das Untrusted-Welt-Tor (V8.70). Der Stamm hat gehalten: eine Datei, ~31000 Zeilen, keine Re-Komplexifizierung. Die nächste Front ist der **echte Fremd-Engine-Bogen** — der Auto-Vendor-Pfad (W15), die Mesh-Welt-Verteilung (W16) + die Multiplayer-Sub-Welten (W17), detailliert geplant in `docs/roadmap.md` §3. Die Tabelle unten bleibt als historischer Ur-Plan stehen.
+> **Stand V8.72**: die sieben Wachstumsringe der Ur-Tabelle unten sind **alle erledigt** — ebenso die Wellen 1-14 + W7 (Welten-Ultiversum, Hylomorphismus-Crafting, Co-Schöpfer-Kreis, Welt-Portal, Vibe-Pass, Bibliothek, Compute-Sharing), der KI-Übersetzer (V8.68/V8.69), das Untrusted-Welt-Tor (V8.70) und der Auto-Vendor-Pfad (W15 — V8.71 Bündel-Pfad, V8.72 GitHub-Fetch). Der Stamm hat gehalten: eine Datei, ~31000 Zeilen, keine Re-Komplexifizierung. Die nächste Front ist der **Rest des Fremd-Engine-Bogens** — die Mesh-Welt-Verteilung (W16) + die Multiplayer-Sub-Welten (W17), detailliert geplant in `docs/roadmap.md` §3. Die Tabelle unten bleibt als historischer Ur-Plan stehen.
 
 | Ring | Pfeiler | Was konkret | Aufwand | Vorbedingung |
 |---|---|---|---|---|

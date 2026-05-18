@@ -2,7 +2,7 @@
 
 Ein als Co-Creation-Werk Mensch+KI entworfenes 3D-Browser-Sandbox-Ultiversum. Eine Datei, ein Stamm, viele Ringe.
 
-**Stand**: V8.70 (18.05.2026) — **das Untrusted-Welt-Tor**: eine echte, ungeprüfte fremde Engine läuft null-origin sandgesichert hinter dem Portal (`worlds/schwarm/` — eine eigenständige 2D-Boids-Engine — beweist es: voller Lauf drinnen, null Reichweite zu AnazhRealms localStorage/DOM/Cookies). Davor V8.68/V8.69 der **KI-Übersetzer** komplett (ein LLM übersetzt eine fremde Welt erst in ein Portal-Manifest, dann in eine deklarative Szene, die ein generischer Renderer betretbar macht). W7 Compute-Sharing (WebRTC-Mesh), W14 Bibliothek, W13 Vibe-Pass, W12 Welt-Portal — alle komplett. Offen: der echte Fremd-Engine-Bogen — der Auto-Vendor-Pfad (ein fremdes Repo dockt ohne Handarbeit an), die Mesh-Welt-Verteilung + die Multiplayer-Sub-Welten (detailliert in `docs/roadmap.md` §3).
+**Stand**: V8.72 (18.05.2026) — **der Auto-Vendor-Pfad (W15) komplett**: ein fremdes Welt-Bündel dockt OHNE Handarbeit an. Der save-server hat einen `/api/vendor-world`-Schreib-Pfad mit zwei Eingängen — ein lokal hochgeladenes Bündel (Phase 1, V8.71) ODER eine GitHub-Repo-URL (Phase 2, V8.72 — der Server holt die Dateien per Trees-API + Raw-Fetch selbst, kein SSRF). Die vendorte Welt läuft `trust:"sandboxed"` (null-origin). Davor V8.70 das **Untrusted-Welt-Tor** (eine echte, ungeprüfte fremde Engine läuft null-origin sandgesichert — `worlds/schwarm/` beweist es) + V8.68/V8.69 der **KI-Übersetzer** komplett. W7 Compute-Sharing, W14 Bibliothek, W13 Vibe-Pass, W12 Welt-Portal — alle komplett. Offen: W16 Mesh-Welt-Verteilung (vendorte Welten reisen peer-to-peer) + W17 Multiplayer-Sub-Welten (detailliert in `docs/roadmap.md` §3).
 
 ## Was es ist
 
@@ -29,7 +29,7 @@ Browser öffnen: `http://localhost:4312/` (oder `index.html` direkt).
 npm run check           # Syntax-Check (node --check)
 npm run lint            # ESLint
 npm run format:check    # Prettier
-npm run playtest        # 2597 Headless-Invarianten (~60s)
+npm run playtest        # 2629 Headless-Invarianten (~60s)
 npm run audit:strict    # 5 generische Audit-Schichten (~25s)
 ```
 
