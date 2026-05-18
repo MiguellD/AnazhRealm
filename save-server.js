@@ -89,6 +89,20 @@ const VENDOR_MAX_BODY_BYTES = 20 * 1024 * 1024; // 20 MiB roher Request (JSON-Ov
 const VENDOR_RESERVED_IDS = new Set(["skeleton", "fluid", "terrain", "schwarm", "translated"]);
 const VENDOR_ALLOWED_EXT = new Set([".html", ".htm", ".js", ".mjs", ".css", ".json", ".txt", ".md", ".glsl"]);
 
+// V8.72 — W15 Phase 2: der GitHub-Fetch. Der `/api/vendor-world`-Endpunkt
+// bekommt einen zweiten Eingang — statt eines hochgeladenen Bündels eine
+// Repo-URL; der save-server holt die Dateien selbst (GitHub-Trees-API +
+// Raw-Fetch, zero-dep über das https-Modul). Die Bases sind operator-
+// konfigurierbar (GitHub Enterprise; der Offline-Smoke-Test zeigt sie auf
+// ein lokales Fake-GitHub) — NICHT request-gesteuert: eine Browser-Seite
+// kann nicht ändern, WOHIN der Server greift, nur welchen owner/repo. Die
+// Sicherheit: die Repo-URL wird zu owner/repo/branch geparst (Regex-streng),
+// die fertigen API-/Raw-URLs baut der Server selbst — kein SSRF, kein
+// beliebiger Host. Datei-Pfade laufen durch dieselbe Phase-1-Wand.
+const VENDOR_GH_API_BASE = (process.env.VENDOR_GH_API_BASE || "https://api.github.com").replace(/\/+$/, "");
+const VENDOR_GH_RAW_BASE = (process.env.VENDOR_GH_RAW_BASE || "https://raw.githubusercontent.com").replace(/\/+$/, "");
+const VENDOR_FETCH_TIMEOUT_MS = 30_000;
+
 function handleLlmProxy(req, res) {
     let rawBody = "";
     let aborted = false;
@@ -217,6 +231,233 @@ function vendorSafeRelPath(p) {
     return norm;
 }
 
+// Die Schreib-Seite (Phase 1): ein Bündel [{path,content}] validieren +
+// nach worlds/<id>/ schreiben. worldId ist schon geprüft. Liefert
+// {status, body} — der Caller sendet. BEIDE Eingänge (hochgeladenes
+// Bündel + GitHub-Fetch) enden hier; W15 Phase 2 erbt diese Wand.
+function applyVendorBundle(worldId, files) {
+    if (!Array.isArray(files) || files.length === 0) {
+        return { status: 400, body: { error: "No files in bundle" } };
+    }
+    if (files.length > VENDOR_MAX_FILES) {
+        return { status: 400, body: { error: `Too many files (max ${VENDOR_MAX_FILES})` } };
+    }
+    const worldsRoot = path.join(PROJECT_ROOT, "worlds");
+    const worldDir = path.join(worldsRoot, worldId);
+    if (worldDir !== worldsRoot && !worldDir.startsWith(worldsRoot + path.sep)) {
+        return { status: 403, body: { error: "Forbidden world directory" } };
+    }
+    const clean = [];
+    let total = 0;
+    let hasIndex = false;
+    for (const f of files) {
+        if (!f || typeof f !== "object") {
+            return { status: 400, body: { error: "Bad file entry" } };
+        }
+        const rel = vendorSafeRelPath(f.path);
+        if (!rel) {
+            return { status: 400, body: { error: `Unsafe or unsupported file path: ${String(f.path).slice(0, 80)}` } };
+        }
+        if (typeof f.content !== "string") {
+            return { status: 400, body: { error: `File ${rel} has no string content` } };
+        }
+        const bytes = Buffer.byteLength(f.content, "utf8");
+        if (bytes > VENDOR_MAX_FILE_BYTES) {
+            return { status: 413, body: { error: `File ${rel} exceeds per-file size cap` } };
+        }
+        total += bytes;
+        if (total > VENDOR_MAX_TOTAL_BYTES) {
+            return { status: 413, body: { error: "Bundle exceeds total size cap" } };
+        }
+        const target = path.join(worldDir, rel);
+        if (target !== worldDir && !target.startsWith(worldDir + path.sep)) {
+            return { status: 403, body: { error: `Path escapes world directory: ${rel}` } };
+        }
+        if (rel === "index.html") hasIndex = true;
+        clean.push({ rel, content: f.content, target });
+    }
+    if (!hasIndex) {
+        return { status: 400, body: { error: "Bundle must contain a root index.html (the world entry point)" } };
+    }
+    try {
+        fs.mkdirSync(worldDir, { recursive: true });
+        for (const c of clean) {
+            fs.mkdirSync(path.dirname(c.target), { recursive: true });
+            fs.writeFileSync(c.target, c.content, "utf8");
+        }
+    } catch (e) {
+        return { status: 500, body: { error: "Vendor write failed", details: e.message } };
+    }
+    return {
+        status: 200,
+        body: { ok: true, worldId, fileCount: clean.length, totalBytes: total, dir: `worlds/${worldId}` },
+    };
+}
+
+// Zero-dep HTTP(S)-GET mit Timeout + Byte-Deckel + einem Redirect-Hop.
+// expectJson → JSON.parse. Liefert ein Promise (resolve: Body, reject: Error).
+function vendorHttpGet(urlStr, opts) {
+    const o = opts || {};
+    return new Promise((resolve, reject) => {
+        let u;
+        try {
+            u = new URL(urlStr);
+        } catch {
+            reject(new Error("invalid url"));
+            return;
+        }
+        const lib = u.protocol === "https:" ? https : http;
+        const req = lib.get(
+            urlStr,
+            {
+                headers: {
+                    "User-Agent": "AnazhRealm-AutoVendor",
+                    Accept: o.expectJson ? "application/vnd.github+json" : "*/*",
+                },
+            },
+            (resp) => {
+                if ((resp.statusCode === 301 || resp.statusCode === 302) && resp.headers.location) {
+                    resp.destroy();
+                    vendorHttpGet(new URL(resp.headers.location, urlStr).toString(), o).then(resolve, reject);
+                    return;
+                }
+                if (resp.statusCode !== 200) {
+                    resp.destroy();
+                    reject(new Error(`HTTP ${resp.statusCode}`));
+                    return;
+                }
+                const cap = o.maxBytes || VENDOR_MAX_FILE_BYTES;
+                let body = "";
+                let bad = false;
+                resp.on("data", (c) => {
+                    if (bad) return;
+                    body += c;
+                    if (body.length > cap) {
+                        bad = true;
+                        resp.destroy();
+                        reject(new Error("response too large"));
+                    }
+                });
+                resp.on("end", () => {
+                    if (bad) return;
+                    if (!o.expectJson) {
+                        resolve(body);
+                        return;
+                    }
+                    try {
+                        resolve(JSON.parse(body));
+                    } catch (e) {
+                        reject(new Error(`bad JSON: ${e.message}`));
+                    }
+                });
+                resp.on("error", reject);
+            }
+        );
+        req.setTimeout(VENDOR_FETCH_TIMEOUT_MS, () => req.destroy(new Error("timeout")));
+        req.on("error", reject);
+    });
+}
+
+// Eine github.com-Repo-URL → {owner, repo, branch?, subpath?}, oder null.
+// Akzeptiert .../<owner>/<repo>, .../tree/<branch>, .../tree/<branch>/<sub>.
+// owner/repo/branch streng Regex-geprüft — nur diese Stücke reisen in die
+// vom Server gebauten API-/Raw-URLs (kein SSRF).
+function parseGithubRepoUrl(url) {
+    let u;
+    try {
+        u = new URL(String(url));
+    } catch {
+        return null;
+    }
+    if (!/^(www\.)?github\.com$/i.test(u.hostname)) return null;
+    const parts = u.pathname.split("/").filter(Boolean);
+    if (parts.length < 2) return null;
+    const owner = parts[0];
+    const repo = parts[1].replace(/\.git$/i, "");
+    if (!/^[\w.-]{1,64}$/.test(owner) || !/^[\w.-]{1,64}$/.test(repo)) return null;
+    let branch = null;
+    let subpath = "";
+    if (parts[2] === "tree" && parts[3]) {
+        branch = parts[3];
+        subpath = parts.slice(4).join("/");
+    }
+    if (branch && !/^[\w./-]{1,80}$/.test(branch)) return null;
+    if (subpath && (subpath.includes("..") || !/^[\w./-]{1,160}$/.test(subpath))) return null;
+    return { owner, repo, branch, subpath };
+}
+
+// W15 Phase 2 — ein GitHub-Repo holen: Default-Branch auflösen, den Baum
+// per Trees-API lesen, die Text-Dateien (Endung-Whitelist, Größen-Deckel)
+// roh fetchen. Liefert {ok, files:[{path,content}], branch} oder
+// {ok:false, status, error}. NIE wird etwas ausgeführt — nur gelesen.
+async function vendorFromGithub(worldId, repoUrl) {
+    const gh = parseGithubRepoUrl(repoUrl);
+    if (!gh) return { ok: false, status: 400, error: "Not a valid github.com repo URL" };
+    try {
+        let branch = gh.branch;
+        if (!branch) {
+            const meta = await vendorHttpGet(`${VENDOR_GH_API_BASE}/repos/${gh.owner}/${gh.repo}`, {
+                expectJson: true,
+                maxBytes: 1 << 20,
+            });
+            branch =
+                meta && typeof meta.default_branch === "string" && /^[\w./-]{1,80}$/.test(meta.default_branch)
+                    ? meta.default_branch
+                    : "main";
+        }
+        const tree = await vendorHttpGet(
+            `${VENDOR_GH_API_BASE}/repos/${gh.owner}/${gh.repo}/git/trees/${branch}?recursive=1`,
+            { expectJson: true, maxBytes: 4 << 20 }
+        );
+        if (!tree || !Array.isArray(tree.tree)) {
+            return { ok: false, status: 502, error: "GitHub tree response unreadable" };
+        }
+        const prefix = gh.subpath ? gh.subpath.replace(/\/+$/, "") + "/" : "";
+        const picked = [];
+        for (const entry of tree.tree) {
+            if (!entry || entry.type !== "blob" || typeof entry.path !== "string") continue;
+            let rel = entry.path;
+            if (prefix) {
+                if (!rel.startsWith(prefix)) continue;
+                rel = rel.slice(prefix.length);
+            }
+            if (!rel || !VENDOR_ALLOWED_EXT.has(path.extname(rel).toLowerCase())) continue;
+            if (typeof entry.size === "number" && entry.size > VENDOR_MAX_FILE_BYTES) {
+                return { ok: false, status: 413, error: `File ${rel} too large` };
+            }
+            picked.push({ rel, ghPath: entry.path });
+            if (picked.length > VENDOR_MAX_FILES) {
+                return { ok: false, status: 400, error: `Repo has more than ${VENDOR_MAX_FILES} text files` };
+            }
+        }
+        if (!picked.length) {
+            return { ok: false, status: 400, error: "No text files found in the repo (at that path)" };
+        }
+        const files = [];
+        let total = 0;
+        for (const p of picked) {
+            const rawUrl = `${VENDOR_GH_RAW_BASE}/${gh.owner}/${gh.repo}/${branch}/${p.ghPath
+                .split("/")
+                .map(encodeURIComponent)
+                .join("/")}`;
+            let content;
+            try {
+                content = await vendorHttpGet(rawUrl, { maxBytes: VENDOR_MAX_FILE_BYTES });
+            } catch (e) {
+                return { ok: false, status: 502, error: `Raw fetch failed for ${p.rel}: ${e.message}` };
+            }
+            total += Buffer.byteLength(content, "utf8");
+            if (total > VENDOR_MAX_TOTAL_BYTES) {
+                return { ok: false, status: 413, error: "Repo bundle exceeds total size cap" };
+            }
+            files.push({ path: p.rel, content });
+        }
+        return { ok: true, files, branch };
+    } catch (e) {
+        return { ok: false, status: 502, error: `GitHub fetch failed: ${e.message}` };
+    }
+}
+
 function handleVendorWorld(req, res) {
     let rawBody = "";
     let aborted = false;
@@ -249,77 +490,25 @@ function handleVendorWorld(req, res) {
             sendJson(res, 403, { error: "worldId is reserved (built-in world)" });
             return;
         }
-        const files = parsed.files;
-        if (!Array.isArray(files) || files.length === 0) {
-            sendJson(res, 400, { error: "No files in bundle" });
+        // W15 Phase 2 — der GitHub-Fetch-Eingang: eine Repo-URL statt eines
+        // hochgeladenen Bündels. Der Server holt die Dateien selbst und
+        // reicht sie an dieselbe Schreib-Seite (applyVendorBundle).
+        if (typeof parsed.repoUrl === "string" && parsed.repoUrl.trim()) {
+            vendorFromGithub(worldId, parsed.repoUrl.trim())
+                .then((r) => {
+                    if (!r.ok) {
+                        sendJson(res, r.status || 502, { error: r.error });
+                        return;
+                    }
+                    const out = applyVendorBundle(worldId, r.files);
+                    if (out.body && out.body.ok) out.body.branch = r.branch;
+                    sendJson(res, out.status, out.body);
+                })
+                .catch((e) => sendJson(res, 502, { error: "Vendor fetch crashed", details: e.message }));
             return;
         }
-        if (files.length > VENDOR_MAX_FILES) {
-            sendJson(res, 400, { error: `Too many files (max ${VENDOR_MAX_FILES})` });
-            return;
-        }
-        const worldsRoot = path.join(PROJECT_ROOT, "worlds");
-        const worldDir = path.join(worldsRoot, worldId);
-        if (worldDir !== worldsRoot && !worldDir.startsWith(worldsRoot + path.sep)) {
-            sendJson(res, 403, { error: "Forbidden world directory" });
-            return;
-        }
-        const clean = [];
-        let total = 0;
-        let hasIndex = false;
-        for (const f of files) {
-            if (!f || typeof f !== "object") {
-                sendJson(res, 400, { error: "Bad file entry" });
-                return;
-            }
-            const rel = vendorSafeRelPath(f.path);
-            if (!rel) {
-                sendJson(res, 400, { error: `Unsafe or unsupported file path: ${String(f.path).slice(0, 80)}` });
-                return;
-            }
-            if (typeof f.content !== "string") {
-                sendJson(res, 400, { error: `File ${rel} has no string content` });
-                return;
-            }
-            const bytes = Buffer.byteLength(f.content, "utf8");
-            if (bytes > VENDOR_MAX_FILE_BYTES) {
-                sendJson(res, 413, { error: `File ${rel} exceeds per-file size cap` });
-                return;
-            }
-            total += bytes;
-            if (total > VENDOR_MAX_TOTAL_BYTES) {
-                sendJson(res, 413, { error: "Bundle exceeds total size cap" });
-                return;
-            }
-            const target = path.join(worldDir, rel);
-            if (target !== worldDir && !target.startsWith(worldDir + path.sep)) {
-                sendJson(res, 403, { error: `Path escapes world directory: ${rel}` });
-                return;
-            }
-            if (rel === "index.html") hasIndex = true;
-            clean.push({ rel, content: f.content, target });
-        }
-        if (!hasIndex) {
-            sendJson(res, 400, { error: "Bundle must contain a root index.html (the world entry point)" });
-            return;
-        }
-        try {
-            fs.mkdirSync(worldDir, { recursive: true });
-            for (const c of clean) {
-                fs.mkdirSync(path.dirname(c.target), { recursive: true });
-                fs.writeFileSync(c.target, c.content, "utf8");
-            }
-        } catch (e) {
-            sendJson(res, 500, { error: "Vendor write failed", details: e.message });
-            return;
-        }
-        sendJson(res, 200, {
-            ok: true,
-            worldId,
-            fileCount: clean.length,
-            totalBytes: total,
-            dir: `worlds/${worldId}`,
-        });
+        const out = applyVendorBundle(worldId, parsed.files);
+        sendJson(res, out.status, out.body);
     });
     req.on("error", (err) => {
         if (!aborted) sendJson(res, 400, { error: "Request stream error", details: err.message });

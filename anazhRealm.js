@@ -14730,16 +14730,15 @@ class AnazhRealm {
         return { ok: true, worldId: id, files: clean };
     }
 
-    // W15 Phase 1 — das Bündel an den save-server-Endpunkt schicken. Der
-    // EINZIGE Netz-Schritt — im Playtest gestubbt (wie llmCall). Liefert die
-    // Server-Antwort oder {ok:false, reason}; ein Netzfehler heißt, dass der
-    // save-server nicht läuft (Vendoring braucht die lokale Dev-Umgebung).
-    async _vendorPostBundle(worldId, files) {
+    // W15 — der POST an den save-server-Vendor-Endpunkt. Der EINZIGE
+    // Netz-Schritt; ein Netzfehler heißt, dass der save-server nicht läuft
+    // (Vendoring braucht die lokale Dev-Umgebung).
+    async _vendorPostJson(payload) {
         try {
             const res = await fetch("http://localhost:4312/api/vendor-world", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ worldId, files }),
+                body: JSON.stringify(payload),
             });
             let data = null;
             try {
@@ -14748,32 +14747,39 @@ class AnazhRealm {
                 data = null;
             }
             if (!res.ok) return { ok: false, reason: (data && data.error) || `HTTP ${res.status}` };
-            return { ok: true, fileCount: data && data.fileCount, totalBytes: data && data.totalBytes };
+            return {
+                ok: true,
+                fileCount: data && data.fileCount,
+                totalBytes: data && data.totalBytes,
+                branch: data && data.branch,
+            };
         } catch {
             return { ok: false, reason: "save_server_unreachable" };
         }
     }
 
-    // W15 Phase 1 — der Auto-Vendor-Pfad. Ein lokales Welt-Bündel dockt
-    // ohne Handarbeit an: prüfen → der save-server schreibt es nach
-    // worlds/<id>/ → die Welt wird ein customWorlds-Eintrag (trust:
-    // "sandboxed" — eine fremde Welt läuft null-origin), browsbar UND
-    // betretbar. Async (Netz). Liefert {ok, id, label} oder {ok:false, reason}.
-    async vendorWorldBundle(opts) {
-        const o = opts && typeof opts === "object" ? opts : {};
-        const san = this._vendorSanitizeBundle(o.worldId, o.files);
-        if (!san.ok) return san;
-        const posted = await this._vendorPostBundle(san.worldId, san.files);
-        // Die POST-Antwort {ok:true} ist der Beweis, dass die Dateien
-        // geschrieben sind — kein fetch-Probe nötig (anders als
-        // importWorldManifest: dort kamen die Dateien nicht von uns).
-        if (!posted.ok) return posted;
+    // Phase 1 — ein hochgeladenes Bündel POSTen. Im Playtest gestubbt (wie llmCall).
+    async _vendorPostBundle(worldId, files) {
+        return this._vendorPostJson({ worldId, files });
+    }
+
+    // Phase 2 — eine Repo-URL POSTen; der save-server holt die Dateien selbst.
+    async _vendorPostRepo(worldId, repoUrl) {
+        return this._vendorPostJson({ worldId, repoUrl });
+    }
+
+    // W15 — die vendorte Welt als customWorlds-Eintrag registrieren. BEIDE
+    // Pfade (lokales Bündel + GitHub-Fetch) enden hier. trust:"sandboxed" +
+    // vendored:true — _sanitizeImportedManifest erzwingt die Sandbox
+    // unforgeable (eine fremde, ungeprüfte Welt läuft IMMER null-origin).
+    _vendorRegisterWorld(worldId, meta) {
+        const m = meta && typeof meta === "object" ? meta : {};
         const entry = this._sanitizeImportedManifest({
-            id: san.worldId,
-            label: typeof o.label === "string" && o.label.trim() ? o.label : san.worldId,
-            desc: typeof o.desc === "string" ? o.desc : "",
-            world: `worlds/${san.worldId}/index.html`,
-            dsl: Array.isArray(o.dsl) ? o.dsl : [],
+            id: worldId,
+            label: typeof m.label === "string" && m.label.trim() ? m.label : worldId,
+            desc: typeof m.desc === "string" ? m.desc : "",
+            world: `worlds/${worldId}/index.html`,
+            dsl: Array.isArray(m.dsl) ? m.dsl : [],
             trust: "sandboxed",
             reachable: true,
             vendored: true,
@@ -14785,9 +14791,51 @@ class AnazhRealm {
         this._saveCustomWorlds();
         this.journalAppend("growth", `Eine fremde Welt dockte an deine Bibliothek an: „${entry.label}".`, {
             world: entry.id,
-            files: posted.fileCount || san.files.length,
         });
-        return { ok: true, id: entry.id, label: entry.label, fileCount: posted.fileCount || san.files.length };
+        return { ok: true, id: entry.id, label: entry.label };
+    }
+
+    // W15 Phase 1 — der Auto-Vendor-Pfad. Ein lokales Welt-Bündel dockt
+    // ohne Handarbeit an: prüfen → der save-server schreibt es nach
+    // worlds/<id>/ → die Welt wird ein customWorlds-Eintrag (trust:
+    // "sandboxed" — eine fremde Welt läuft null-origin), browsbar UND
+    // betretbar. Async (Netz). Liefert {ok, id, label} oder {ok:false, reason}.
+    // Die POST-Antwort {ok:true} ist der Beweis, dass die Dateien geschrieben
+    // sind — kein fetch-Probe nötig (anders als importWorldManifest: dort
+    // kamen die Dateien nicht von uns).
+    async vendorWorldBundle(opts) {
+        const o = opts && typeof opts === "object" ? opts : {};
+        const san = this._vendorSanitizeBundle(o.worldId, o.files);
+        if (!san.ok) return san;
+        const posted = await this._vendorPostBundle(san.worldId, san.files);
+        if (!posted.ok) return posted;
+        const reg = this._vendorRegisterWorld(san.worldId, { label: o.label, desc: o.desc, dsl: o.dsl });
+        if (!reg.ok) return reg;
+        return { ok: true, id: reg.id, label: reg.label, fileCount: posted.fileCount || san.files.length };
+    }
+
+    // W15 Phase 2 — der GitHub-Fetch. Statt eines lokalen Bündels eine
+    // github.com-Repo-URL: der save-server holt die Dateien selbst (Trees-API
+    // + Raw-Fetch) und schreibt sie nach worlds/<id>/. Die Schreib-Seite +
+    // die Registrierung sind dieselben wie beim Bündel-Pfad. Async (Netz).
+    async vendorWorldFromRepo(opts) {
+        const o = opts && typeof opts === "object" ? opts : {};
+        const id = String(o.worldId || "")
+            .trim()
+            .toLowerCase();
+        if (!/^[a-z0-9_-]{1,40}$/.test(id)) return { ok: false, reason: "invalid_world_id" };
+        const reserved = Object.keys(AnazhRealm.WORLD_REGISTRY).concat(["translated"]);
+        if (reserved.indexOf(id) >= 0) return { ok: false, reason: "reserved_world_id" };
+        const repoUrl = String(o.repoUrl || "").trim();
+        // Freundliche Vorab-Prüfung — der save-server parst die URL maßgeblich.
+        if (!/^https?:\/\/(www\.)?github\.com\/[^/\s]+\/[^/\s]+/i.test(repoUrl)) {
+            return { ok: false, reason: "not_a_github_url" };
+        }
+        const posted = await this._vendorPostRepo(id, repoUrl);
+        if (!posted.ok) return posted;
+        const reg = this._vendorRegisterWorld(id, { label: o.label, desc: o.desc, dsl: o.dsl });
+        if (!reg.ok) return reg;
+        return { ok: true, id: reg.id, label: reg.label, fileCount: posted.fileCount, branch: posted.branch };
     }
 
     // ### Welle 3 F — Welt-Tor ###
@@ -18131,6 +18179,7 @@ class AnazhRealm {
             save_server_unreachable:
                 "Der lokale save-server ist nicht erreichbar — Vendoring braucht die Dev-Umgebung (npm start).",
             invalid_manifest: "Das Welt-Manifest war unbrauchbar.",
+            not_a_github_url: "Das ist keine github.com-Repo-URL — z. B. https://github.com/owner/repo.",
         };
         return map[reason] || `Andocken fehlgeschlagen: ${reason}`;
     }
@@ -18242,8 +18291,56 @@ class AnazhRealm {
         }
     }
 
-    // W15 Phase 1 — die „Welt andocken"-Sektion verkabeln: der Ordner-Picker
-    // + der Andocken-Knopf.
+    // W15 Phase 2 — den GitHub-Fetch laufen lassen (Knopf-Handler). Teilt
+    // sich die id/Name/Beschreibung/DSL-Felder mit dem Bündel-Pfad.
+    async _runVendorRepoDock() {
+        if (typeof document === "undefined") return;
+        const idEl = document.getElementById("vendor-id");
+        const labelEl = document.getElementById("vendor-label");
+        const descEl = document.getElementById("vendor-desc");
+        const dslEl = document.getElementById("vendor-dsl");
+        const repoEl = document.getElementById("vendor-repo");
+        const status = document.getElementById("vendor-status");
+        const btn = document.getElementById("vendor-repo-dock");
+        if (!idEl || !status) return;
+        status.className = "vendor-status";
+        const repoUrl = String(repoEl ? repoEl.value : "").trim();
+        if (!repoUrl) {
+            status.textContent = "Gib eine GitHub-Repo-URL an.";
+            status.className = "vendor-status vendor-status-error";
+            return;
+        }
+        status.textContent = "Hole das Repo von GitHub …";
+        if (btn) btn.disabled = true;
+        const dsl = String(dslEl ? dslEl.value : "")
+            .split(/[\s,]+/)
+            .map((s) => s.trim().toLowerCase())
+            .filter(Boolean);
+        let res;
+        try {
+            res = await this.vendorWorldFromRepo({
+                worldId: idEl.value,
+                repoUrl,
+                label: labelEl ? labelEl.value : "",
+                desc: descEl ? descEl.value : "",
+                dsl,
+            });
+        } catch (e) {
+            res = { ok: false, reason: (e && e.message) || "Fehler" };
+        }
+        if (btn) btn.disabled = false;
+        if (res && res.ok) {
+            status.textContent = `✓ „${res.label}" aus GitHub geholt (${res.fileCount} Dateien) — siehe „Welten" unten.`;
+            this.renderLibraryUI();
+            this.log(`Auto-Vendor: Welt „${res.id}" aus GitHub angedockt.`, "INFO");
+        } else {
+            status.textContent = this._vendorReasonText(res ? res.reason : "Fehler");
+            status.className = "vendor-status vendor-status-error";
+        }
+    }
+
+    // W15 — die „Welt andocken"-Sektion verkabeln: der Ordner-Picker + der
+    // Andocken-Knopf (Phase 1) + der GitHub-Holen-Knopf (Phase 2).
     vendorInitDOM() {
         if (typeof document === "undefined") return;
         const pickBtn = document.getElementById("vendor-pick");
@@ -18260,6 +18357,11 @@ class AnazhRealm {
         if (dockBtn && dockBtn.dataset.wired !== "1") {
             dockBtn.dataset.wired = "1";
             dockBtn.addEventListener("click", () => this._runVendorDock());
+        }
+        const repoBtn = document.getElementById("vendor-repo-dock");
+        if (repoBtn && repoBtn.dataset.wired !== "1") {
+            repoBtn.dataset.wired = "1";
+            repoBtn.addEventListener("click", () => this._runVendorRepoDock());
         }
     }
 

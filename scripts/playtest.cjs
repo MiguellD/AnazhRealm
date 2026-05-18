@@ -16493,6 +16493,144 @@ function startSaveServer() {
                 check("W15 Auto-Vendor: Phase-1-Tests laufen", false, vendorResults ? vendorResults.error : "no result");
             }
 
+            // ### V8.72 — W15 Phase 2: der GitHub-Fetch ###
+            // _vendorPostRepo (der Netz-Schritt) wird gestubbt — der echte
+            // GitHub-Round-Trip lebt in smoke-vendor.cjs (gegen ein lokales
+            // Fake-GitHub, damit der Test offline + deterministisch bleibt).
+            const vendor2Results = await page
+                .evaluate(async () => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    out.methods =
+                        typeof r.vendorWorldFromRepo === "function" &&
+                        typeof r._vendorPostRepo === "function" &&
+                        typeof r._vendorPostJson === "function" &&
+                        typeof r._vendorRegisterWorld === "function" &&
+                        typeof r._runVendorRepoDock === "function";
+                    r.state.customWorlds = {};
+                    const origRepo = r._vendorPostRepo;
+                    const origBundle = r._vendorPostBundle;
+                    try {
+                        // Eingangs-Prüfungen — vor dem Netz-Schritt.
+                        const badId = await r.vendorWorldFromRepo({
+                            worldId: "Bad ID!",
+                            repoUrl: "https://github.com/a/b",
+                        });
+                        out.rejectsBadId = badId.ok === false && badId.reason === "invalid_world_id";
+                        const reservedId = await r.vendorWorldFromRepo({
+                            worldId: "fluid",
+                            repoUrl: "https://github.com/a/b",
+                        });
+                        out.rejectsReservedId = reservedId.ok === false && reservedId.reason === "reserved_world_id";
+                        const nonGh = await r.vendorWorldFromRepo({
+                            worldId: "gh-test",
+                            repoUrl: "https://evil.example.com/a/b",
+                        });
+                        out.rejectsNonGithub = nonGh.ok === false && nonGh.reason === "not_a_github_url";
+                        const emptyUrl = await r.vendorWorldFromRepo({ worldId: "gh-test", repoUrl: "" });
+                        out.rejectsEmptyUrl = emptyUrl.ok === false && emptyUrl.reason === "not_a_github_url";
+                        // Mit gestubbtem _vendorPostRepo → registriert die Welt.
+                        r._vendorPostRepo = async () => ({ ok: true, fileCount: 5, branch: "main" });
+                        const v = await r.vendorWorldFromRepo({
+                            worldId: "gh-test",
+                            repoUrl: "https://github.com/owner/repo",
+                            label: "GitHub-Test",
+                            desc: "Aus einem Repo geholt.",
+                            dsl: ["sturm"],
+                        });
+                        const stored = r.state.customWorlds && r.state.customWorlds["gh-test"];
+                        out.registersOnSuccess =
+                            v.ok === true &&
+                            v.fileCount === 5 &&
+                            v.branch === "main" &&
+                            !!stored &&
+                            stored.vendored === true &&
+                            stored.trust === "sandboxed" &&
+                            stored.reachable === true &&
+                            stored.world === "worlds/gh-test/index.html";
+                        // Eine /tree/<branch>-URL besteht die Client-URL-Prüfung.
+                        const treeUrl = await r.vendorWorldFromRepo({
+                            worldId: "gh-tree",
+                            repoUrl: "https://github.com/owner/repo/tree/dev",
+                            label: "Tree",
+                        });
+                        out.acceptsTreeUrl = treeUrl.ok === true;
+                        // Post-Fehler (GitHub 404 o.ä.) wird durchgereicht.
+                        r._vendorPostRepo = async () => ({ ok: false, reason: "GitHub fetch failed: HTTP 404" });
+                        const vFail = await r.vendorWorldFromRepo({
+                            worldId: "gh-missing",
+                            repoUrl: "https://github.com/owner/nope",
+                        });
+                        out.propagatesPostFail =
+                            vFail.ok === false &&
+                            /404/.test(vFail.reason) &&
+                            !(r.state.customWorlds && r.state.customWorlds["gh-missing"]);
+                        // _vendorRegisterWorld direkt — sandgesichert + vendored.
+                        const reg = r._vendorRegisterWorld("reg-test", { label: "Reg" });
+                        const regStored = r.state.customWorlds && r.state.customWorlds["reg-test"];
+                        out.registerWorldDirect =
+                            reg.ok === true &&
+                            !!regStored &&
+                            regStored.trust === "sandboxed" &&
+                            regStored.vendored === true &&
+                            regStored.world === "worlds/reg-test/index.html";
+                        // Regression: der Bündel-Pfad (Phase 1) läuft nach dem Refactor.
+                        r._vendorPostBundle = async () => ({ ok: true, fileCount: 1 });
+                        const vb = await r.vendorWorldBundle({
+                            worldId: "bundle-regress",
+                            label: "B",
+                            files: [{ path: "index.html", content: "<!doctype html><title>x</title>" }],
+                        });
+                        out.bundlePathStillWorks =
+                            vb.ok === true &&
+                            !!(r.state.customWorlds && r.state.customWorlds["bundle-regress"]) &&
+                            r.state.customWorlds["bundle-regress"].trust === "sandboxed";
+                    } finally {
+                        r._vendorPostRepo = origRepo;
+                        r._vendorPostBundle = origBundle;
+                    }
+                    // localStorage-Rundlauf — die repo-vendorte Welt überlebt.
+                    const reloaded = r._loadCustomWorlds();
+                    out.roundtripKeepsTrust =
+                        !!reloaded["gh-test"] &&
+                        reloaded["gh-test"].trust === "sandboxed" &&
+                        reloaded["gh-test"].vendored === true;
+                    // UI: die GitHub-Holen-Sektion im DOM.
+                    out.uiRepoSection =
+                        !!document.getElementById("vendor-repo") &&
+                        !!document.getElementById("vendor-repo-dock");
+                    // Aufräumen.
+                    r.state.customWorlds = {};
+                    r._saveCustomWorlds();
+                    r.saveState();
+                    r.renderLibraryUI();
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (vendor2Results && !vendor2Results.error) {
+                check(
+                    "W15 GitHub-Fetch: vendorWorldFromRepo/_vendorPostRepo/_vendorPostJson/_vendorRegisterWorld/_runVendorRepoDock existieren",
+                    vendor2Results.methods
+                );
+                check("W15 GitHub-Fetch: vendorWorldFromRepo lehnt eine ungültige Welt-id ab", vendor2Results.rejectsBadId);
+                check("W15 GitHub-Fetch: vendorWorldFromRepo lehnt eine Built-in-id ab", vendor2Results.rejectsReservedId);
+                check("W15 GitHub-Fetch: vendorWorldFromRepo lehnt eine Nicht-github.com-URL ab", vendor2Results.rejectsNonGithub);
+                check("W15 GitHub-Fetch: vendorWorldFromRepo lehnt eine leere URL ab", vendor2Results.rejectsEmptyUrl);
+                check(
+                    "W15 GitHub-Fetch: vendorWorldFromRepo registriert die Welt (trust:sandboxed, vendored, reachable, worlds/<id>/index.html)",
+                    vendor2Results.registersOnSuccess
+                );
+                check("W15 GitHub-Fetch: eine /tree/<branch>-URL besteht die Client-URL-Prüfung", vendor2Results.acceptsTreeUrl);
+                check("W15 GitHub-Fetch: vendorWorldFromRepo reicht einen Fetch-Fehler durch (404 → nicht registriert)", vendor2Results.propagatesPostFail);
+                check("W15 GitHub-Fetch: _vendorRegisterWorld registriert sandgesichert + vendored", vendor2Results.registerWorldDirect);
+                check("W15 GitHub-Fetch: der Bündel-Pfad (Phase 1) läuft nach dem Refactor weiter", vendor2Results.bundlePathStillWorks);
+                check("W15 GitHub-Fetch: die repo-vendorte Welt überlebt den localStorage-Rundlauf", vendor2Results.roundtripKeepsTrust);
+                check("W15 GitHub-Fetch: die GitHub-Holen-Sektion (URL-Feld + Knopf) im DOM", vendor2Results.uiRepoSection);
+            } else {
+                check("W15 GitHub-Fetch: Phase-2-Tests laufen", false, vendor2Results ? vendor2Results.error : "no result");
+            }
+
             // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
             const v840Results = await page
                 .evaluate(() => {

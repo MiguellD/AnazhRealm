@@ -31,7 +31,7 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: stun: turn: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self';"
         />
-        <title>Anazh Realm v8.71 – Das Ultiversum</title>
+        <title>Anazh Realm v8.72 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
              zusätzliche Datei. img-src 'self' data: in CSP erlaubt data-URI. -->
         <link
@@ -2439,6 +2439,13 @@
                 gap: 5px;
                 margin-bottom: 6px;
             }
+            /* W15 Phase 2 — die GitHub-URL-Zeile, dezent von der Ordner-Zeile
+               getrennt (ein Tor, zwei Wege herein). */
+            .vendor-repo-row {
+                margin-top: 2px;
+                padding-top: 6px;
+                border-top: 1px dotted rgba(138, 106, 54, 0.3);
+            }
             .vendor-status {
                 font-family: "IM Fell English", Georgia, serif;
                 font-size: 11px;
@@ -4427,7 +4434,7 @@
         <header id="topbar" class="hud-frame">
             <div class="topbar-inner">
                 <div class="title">
-                    Anazh Realm <span class="version">v8.71</span> <span class="sub">— Das Ultiversum</span>
+                    Anazh Realm <span class="version">v8.72</span> <span class="sub">— Das Ultiversum</span>
                 </div>
                 <nav class="tabs" role="tablist" aria-label="Hauptansichten">
                     <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">
@@ -4922,11 +4929,11 @@
             <section class="section">
                 <h3>Welt andocken <span class="section-hint">(fremdes Bündel → Bibliothek)</span></h3>
                 <p class="drawer-hint">
-                    Dockt eine fremde, in sich geschlossene Welt an: wähle ihren Ordner (HTML/JS/CSS, eine index.html
-                    als Eingang), gib ihr eine id und einen Namen. Der lokale save-server schreibt sie nach
-                    worlds/&lt;id&gt;/ — danach steht sie unten in den „Welten" und ist durch ein Portal betretbar. Sie
+                    Dockt eine fremde, in sich geschlossene Welt an — aus einem lokalen Ordner ODER direkt aus einem
+                    GitHub-Repo. Gib ihr eine id und einen Namen; der lokale save-server schreibt sie nach
+                    worlds/&lt;id&gt;/, danach steht sie unten in den „Welten" und ist durch ein Portal betretbar. Sie
                     läuft sandgesichert (null-origin): eine fremde Engine läuft voll, kann AnazhRealm aber nicht
-                    berühren. Braucht die lokale Dev-Umgebung (npm start) und committet bleibt die Welt für alle.
+                    berühren. Braucht die lokale Dev-Umgebung (npm start) — committet bleibt die Welt für alle.
                 </p>
                 <div class="vendor-form">
                     <input
@@ -4956,6 +4963,20 @@
                 <div class="actions">
                     <button type="button" id="vendor-pick">Ordner wählen…</button>
                     <button type="button" id="vendor-dock">Andocken</button>
+                </div>
+                <!-- W15 Phase 2 — der GitHub-Fetch: eine Repo-URL statt eines
+                     Ordners; der save-server holt die Dateien selbst. -->
+                <div class="vendor-form vendor-repo-row">
+                    <input
+                        type="text"
+                        id="vendor-repo"
+                        class="translator-edit"
+                        maxlength="200"
+                        placeholder="oder GitHub-URL: https://github.com/owner/repo"
+                    />
+                </div>
+                <div class="actions">
+                    <button type="button" id="vendor-repo-dock">Aus GitHub holen</button>
                 </div>
                 <div id="vendor-status" class="vendor-status" aria-live="polite"></div>
             </section>
@@ -5544,6 +5565,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=8.71" defer></script>
+        <script src="anazhRealm.js?v=8.72" defer></script>
     </body>
 </html>

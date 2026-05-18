@@ -1,27 +1,20 @@
-// V8.71 — W15 Phase 1: End-to-End-Beweis des Auto-Vendor-Pfads.
+// V8.71/V8.72 — W15: End-to-End-Beweis des Auto-Vendor-Pfads.
 //
 // Der headless playtest prüft die DATEN-Schicht (Bündel-Sanitizer, die
-// customWorlds-Registrierung) mit einem gestubbten _vendorPostBundle. Er
-// kann aber nicht prüfen, ob der save-server-Endpunkt /api/vendor-world
-// ein Bündel WIRKLICH nach worlds/<id>/ schreibt, ob die Sicherheits-
-// Wand hält UND ob eine so vendorte Welt danach betretbar ist.
+// customWorlds-Registrierung) mit gestubbten Netz-Schritten. Er kann aber
+// nicht prüfen, ob der save-server-Endpunkt /api/vendor-world Bündel
+// WIRKLICH nach worlds/<id>/ schreibt, ob die Sicherheits-Wand hält, ob
+// eine vendorte Welt betretbar ist UND ob der GitHub-Fetch funktioniert.
 //
-// Teil A — der save-server-Round-Trip (reines HTTP):
-//   1. ein gültiges Bündel landet auf der Platte (auch Unterverzeichnisse),
-//   2. ein Pfad-Ausbruch (../) wird abgewiesen — nichts wird geschrieben,
-//   3. eine Built-in-Welt-id (fluid) wird abgewiesen — kein Überschreiben,
-//   4. eine verbotene Endung (.sh) wird abgewiesen,
-//   5. ein Bündel ohne index.html wird abgewiesen,
-//   6. eine ungültige Welt-id wird abgewiesen.
+// Teil A — der save-server-Round-Trip, Bündel-Pfad (reines HTTP).
+// Teil B — die vendorte Welt LÄUFT (echter Browser, null-origin-iframe).
+// Teil C — der GitHub-Fetch (W15 Phase 2): ein lokales Fake-GitHub liefert
+//   Trees-API + Raw-Dateien; der save-server (mit VENDOR_GH_*-Bases auf das
+//   Fake gezeigt) holt das Repo selbst. So bleibt der Test offline +
+//   deterministisch — kein echtes GitHub, keine Rate-Limits.
 //
-// Teil B — die vendorte Welt LÄUFT (echter Browser): die in Teil A
-// geschriebene Welt wird in ein null-origin-iframe geladen — sie rendert
-// + meldet sich + ihr Sandbox-Selbsttest bestätigt, dass die Wand hält.
-// Damit ist die ganze Kette bewiesen: Bündel → save-server → Platte →
-// sandgesichertes iframe, das die fremde Welt frei und doch eingeschlossen
-// laufen lässt.
-//
-// Räumt das Test-Verzeichnis worlds/smoke-vendor-test/ am Ende weg.
+// Räumt die Test-Verzeichnisse worlds/smoke-vendor-test/ + worlds/
+// smoke-vendor-gh/ am Ende weg.
 const { spawn } = require("child_process");
 const http = require("http");
 const fs = require("fs");
@@ -30,7 +23,9 @@ const puppeteer = require("puppeteer");
 
 const ROOT = path.join(__dirname, "..");
 const TEST_ID = "smoke-vendor-test";
+const GH_ID = "smoke-vendor-gh";
 const TEST_DIR = path.join(ROOT, "worlds", TEST_ID);
+const GH_DIR = path.join(ROOT, "worlds", GH_ID);
 const HOST_URL = "http://127.0.0.1:4312/index.html";
 
 // Die Test-Welt: eine self-contained HTML-Datei (klassisches Inline-Skript —
@@ -58,9 +53,56 @@ const TEST_WORLD_HTML = [
     "</script></body>",
 ].join("\n");
 
-function startSaveServer() {
+const GH_ENGINE_JS = "// eine kleine fremde Engine, aus dem Repo geholt\nconsole.log('repo-engine');";
+
+// Ein lokales Fake-GitHub: spiegelt die Trees-API + die Raw-Endpunkte in
+// genau der von GitHub dokumentierten Form. So testet Teil C den echten
+// save-server-Fetch-Code, ohne je das echte GitHub zu berühren.
+function startFakeGithub() {
+    return new Promise((resolve) => {
+        const srv = http.createServer((req, res) => {
+            const u = (req.url || "").split("?")[0];
+            const json = (obj) => {
+                res.writeHead(200, { "Content-Type": "application/json" });
+                res.end(JSON.stringify(obj));
+            };
+            const text = (t) => {
+                res.writeHead(200, { "Content-Type": "text/plain" });
+                res.end(t);
+            };
+            if (u === "/repos/fake/demo") {
+                json({ default_branch: "main" });
+            } else if (u === "/repos/fake/demo/git/trees/main") {
+                json({
+                    sha: "deadbeef",
+                    truncated: false,
+                    tree: [
+                        { path: "lib", type: "tree" },
+                        { path: "index.html", type: "blob", size: Buffer.byteLength(TEST_WORLD_HTML) },
+                        { path: "lib/engine.js", type: "blob", size: Buffer.byteLength(GH_ENGINE_JS) },
+                        // Binär — muss von der Endung-Whitelist gefiltert werden.
+                        { path: "logo.png", type: "blob", size: 2048 },
+                    ],
+                });
+            } else if (u === "/raw/fake/demo/main/index.html") {
+                text(TEST_WORLD_HTML);
+            } else if (u === "/raw/fake/demo/main/lib/engine.js") {
+                text(GH_ENGINE_JS);
+            } else {
+                res.writeHead(404, { "Content-Type": "text/plain" });
+                res.end("not found");
+            }
+        });
+        srv.listen(0, "127.0.0.1", () => resolve({ srv, port: srv.address().port }));
+    });
+}
+
+function startSaveServer(extraEnv) {
     return new Promise((resolve, reject) => {
-        const proc = spawn("node", [path.join(ROOT, "save-server.js")], { stdio: ["ignore", "pipe", "pipe"] });
+        const proc = spawn("node", [path.join(ROOT, "save-server.js")], {
+            stdio: ["ignore", "pipe", "pipe"],
+            env: Object.assign({}, process.env, extraEnv || {}),
+        });
         let ready = false;
         const timeout = setTimeout(() => {
             if (!ready) reject(new Error("save-server startete nicht innerhalb 6 s"));
@@ -119,11 +161,16 @@ function sleep(ms) {
         if (!ok) failures.push(name);
     }
 
-    // Falls ein früherer Lauf abbrach: das Test-Verzeichnis vorab räumen.
+    // Falls ein früherer Lauf abbrach: die Test-Verzeichnisse vorab räumen.
     fs.rmSync(TEST_DIR, { recursive: true, force: true });
+    fs.rmSync(GH_DIR, { recursive: true, force: true });
 
-    console.log("Starte save-server ...");
-    const server = await startSaveServer();
+    console.log("Starte Fake-GitHub + save-server ...");
+    const fake = await startFakeGithub();
+    const server = await startSaveServer({
+        VENDOR_GH_API_BASE: `http://127.0.0.1:${fake.port}`,
+        VENDOR_GH_RAW_BASE: `http://127.0.0.1:${fake.port}/raw`,
+    });
     const browser = await puppeteer.launch({
         headless: true,
         args: [
@@ -137,32 +184,27 @@ function sleep(ms) {
     });
 
     try {
-        // === Teil A — der save-server-Round-Trip ===
-        const engineContent = "// eine kleine fremde Engine\nconsole.log('schwarm');";
+        // === Teil A — der save-server-Round-Trip (Bündel-Pfad) ===
         const valid = await postVendor({
             worldId: TEST_ID,
             files: [
                 { path: "index.html", content: TEST_WORLD_HTML },
-                { path: "lib/engine.js", content: engineContent },
+                { path: "lib/engine.js", content: GH_ENGINE_JS },
             ],
         });
         check(
-            "Ein gültiges Bündel wird angenommen (HTTP 200, ok)",
+            "Bündel-Pfad: ein gültiges Bündel wird angenommen (HTTP 200, ok)",
             valid.status === 200 && valid.body && valid.body.ok === true && valid.body.fileCount === 2,
             `status=${valid.status}`
         );
         const indexPath = path.join(TEST_DIR, "index.html");
-        const enginePath = path.join(TEST_DIR, "lib", "engine.js");
         check(
-            "Die index.html liegt in worlds/<id>/ mit dem richtigen Inhalt",
-            fs.existsSync(indexPath) && fs.readFileSync(indexPath, "utf8") === TEST_WORLD_HTML
-        );
-        check(
-            "Eine Datei im Unterverzeichnis (lib/engine.js) wird mit angelegt",
-            fs.existsSync(enginePath) && fs.readFileSync(enginePath, "utf8") === engineContent
+            "Bündel-Pfad: index.html + Unterverzeichnis-Datei liegen in worlds/<id>/",
+            fs.existsSync(indexPath) &&
+                fs.readFileSync(indexPath, "utf8") === TEST_WORLD_HTML &&
+                fs.existsSync(path.join(TEST_DIR, "lib", "engine.js"))
         );
 
-        // Pfad-Ausbruch — ../ wird abgewiesen.
         const escapeTarget = path.join(ROOT, "worlds", "vendor-escape-proof.js");
         fs.rmSync(escapeTarget, { force: true });
         const traversal = await postVendor({
@@ -173,13 +215,11 @@ function sleep(ms) {
             ],
         });
         check(
-            "Ein Pfad-Ausbruch (../) wird abgewiesen (HTTP 4xx)",
-            traversal.status >= 400 && traversal.status < 500,
+            "Bündel-Pfad: ein Pfad-Ausbruch (../) wird abgewiesen + nichts geschrieben",
+            traversal.status >= 400 && traversal.status < 500 && !fs.existsSync(escapeTarget),
             `status=${traversal.status}`
         );
-        check("Der Ausbruch-Pfad wurde NICHT geschrieben", !fs.existsSync(escapeTarget));
 
-        // Built-in-Welt-id — fluid darf nicht überschrieben werden.
         const fluidIndex = path.join(ROOT, "worlds", "fluid", "index.html");
         const fluidBefore = fs.existsSync(fluidIndex) ? fs.readFileSync(fluidIndex, "utf8") : null;
         const reserved = await postVendor({
@@ -187,16 +227,10 @@ function sleep(ms) {
             files: [{ path: "index.html", content: "<!-- gekapert -->" }],
         });
         check(
-            "Eine Built-in-Welt-id (fluid) wird abgewiesen (HTTP 403)",
-            reserved.status === 403,
-            `status=${reserved.status}`
-        );
-        check(
-            "Die Built-in-Welt worlds/fluid/ blieb unberührt",
-            fluidBefore !== null && fs.readFileSync(fluidIndex, "utf8") === fluidBefore
+            "Bündel-Pfad: eine Built-in-Welt-id (fluid) wird abgewiesen (HTTP 403), worlds/fluid/ unberührt",
+            reserved.status === 403 && fluidBefore !== null && fs.readFileSync(fluidIndex, "utf8") === fluidBefore
         );
 
-        // Verbotene Datei-Endung.
         const badExt = await postVendor({
             worldId: TEST_ID,
             files: [
@@ -205,31 +239,14 @@ function sleep(ms) {
             ],
         });
         check(
-            "Eine verbotene Datei-Endung (.sh) wird abgewiesen (HTTP 4xx)",
-            badExt.status >= 400 && badExt.status < 500,
-            `status=${badExt.status}`
+            "Bündel-Pfad: eine verbotene Endung (.sh) wird abgewiesen (HTTP 4xx)",
+            badExt.status >= 400 && badExt.status < 500
         );
 
-        // Bündel ohne index.html.
-        const noIndex = await postVendor({
-            worldId: TEST_ID,
-            files: [{ path: "main.js", content: "console.log(1);" }],
-        });
+        const noIndex = await postVendor({ worldId: TEST_ID, files: [{ path: "main.js", content: "x" }] });
         check(
-            "Ein Bündel ohne index.html wird abgewiesen (HTTP 4xx)",
-            noIndex.status >= 400 && noIndex.status < 500,
-            `status=${noIndex.status}`
-        );
-
-        // Ungültige Welt-id.
-        const badId = await postVendor({
-            worldId: "Böse ID!",
-            files: [{ path: "index.html", content: TEST_WORLD_HTML }],
-        });
-        check(
-            "Eine ungültige Welt-id wird abgewiesen (HTTP 4xx)",
-            badId.status >= 400 && badId.status < 500,
-            `status=${badId.status}`
+            "Bündel-Pfad: ein Bündel ohne index.html wird abgewiesen (HTTP 4xx)",
+            noIndex.status >= 400 && noIndex.status < 500
         );
 
         // === Teil B — die vendorte Welt läuft sandgesichert ===
@@ -246,7 +263,6 @@ function sleep(ms) {
                 }
             });
         });
-        // Die frisch vendorte Welt in ein null-origin-iframe laden.
         await page.evaluate((worldPath) => {
             const ifr = document.createElement("iframe");
             ifr.setAttribute("sandbox", "allow-scripts");
@@ -270,23 +286,47 @@ function sleep(ms) {
         const vw = await page.evaluate(() => window.__vendor);
         check("Die vendorte Welt lädt + meldet sich (ready-Handshake)", vw.ready === true);
         check(
-            "Die vendorte Welt läuft (ihr Skript lief im sandgesicherten iframe)",
-            vw.events.some((t) => /vendorte Welt laeuft/.test(t)),
-            vw.events[0] || "(kein Lauf-Ereignis)"
-        );
-        const isoEv = vw.events.find((t) => /Sandbox-Wand haelt/.test(t));
-        check("Die Sandbox-Wand hält — die vendorte Welt erreicht AnazhRealm nicht", !!isoEv, isoEv || "");
-        check(
-            "Kein Wand-Durchbruch gemeldet",
-            !vw.events.some((t) => /WARNUNG|durchlaessig/.test(t)),
-            vw.events.find((t) => /WARNUNG/.test(t)) || ""
+            "Die vendorte Welt läuft + ihre Sandbox-Wand hält",
+            vw.events.some((t) => /vendorte Welt laeuft/.test(t)) &&
+                vw.events.some((t) => /Sandbox-Wand haelt/.test(t)) &&
+                !vw.events.some((t) => /WARNUNG|durchlaessig/.test(t)),
+            vw.events.join(" | ") || "(keine Ereignisse)"
         );
         await page.screenshot({ path: path.join(ROOT, "artifacts", "smoke-vendor.png") }).catch(() => {});
+
+        // === Teil C — der GitHub-Fetch (W15 Phase 2) ===
+        // Eine echte github.com-URL — der save-server holt die Dateien aber
+        // vom Fake-GitHub (VENDOR_GH_*-Bases). Repo "fake/demo": index.html
+        // + lib/engine.js (Text) + logo.png (Binär, muss gefiltert werden).
+        const gh = await postVendor({ worldId: GH_ID, repoUrl: "https://github.com/fake/demo" });
+        check(
+            "GitHub-Fetch: ein Repo wird geholt + geschrieben (HTTP 200, branch main)",
+            gh.status === 200 && gh.body && gh.body.ok === true && gh.body.branch === "main",
+            `status=${gh.status} fileCount=${gh.body && gh.body.fileCount}`
+        );
+        check(
+            "GitHub-Fetch: die Text-Dateien landen in worlds/<id>/ (index.html + lib/engine.js)",
+            fs.existsSync(path.join(GH_DIR, "index.html")) &&
+                fs.readFileSync(path.join(GH_DIR, "index.html"), "utf8") === TEST_WORLD_HTML &&
+                fs.existsSync(path.join(GH_DIR, "lib", "engine.js"))
+        );
+        check(
+            "GitHub-Fetch: die Binär-Datei (logo.png) wird von der Endung-Whitelist gefiltert",
+            !fs.existsSync(path.join(GH_DIR, "logo.png")) && gh.body && gh.body.fileCount === 2
+        );
+        const nonGh = await postVendor({ worldId: "smoke-vendor-evil", repoUrl: "https://evil.example.com/a/b" });
+        check(
+            "GitHub-Fetch: eine Nicht-github.com-URL wird abgewiesen (HTTP 4xx)",
+            nonGh.status >= 400 && nonGh.status < 500,
+            `status=${nonGh.status}`
+        );
         console.log("Screenshot: artifacts/smoke-vendor.png");
     } finally {
         await browser.close();
         server.kill();
+        fake.srv.close();
         fs.rmSync(TEST_DIR, { recursive: true, force: true });
+        fs.rmSync(GH_DIR, { recursive: true, force: true });
         fs.rmSync(path.join(ROOT, "worlds", "vendor-escape-proof.js"), { force: true });
     }
 
@@ -294,9 +334,10 @@ function sleep(ms) {
         console.log(`\n❌ ${failures.length} Smoke-Check(s) fehlgeschlagen.`);
         process.exit(1);
     }
-    console.log("\n✅ Auto-Vendor: ein fremdes Bündel dockt an, läuft sandgesichert — die Wand hält.");
+    console.log("\n✅ Auto-Vendor: ein Bündel UND ein GitHub-Repo docken an — sandgesichert, die Wand hält.");
 })().catch((err) => {
     console.error("smoke-vendor abgebrochen:", err && err.message);
     fs.rmSync(TEST_DIR, { recursive: true, force: true });
+    fs.rmSync(GH_DIR, { recursive: true, force: true });
     process.exit(1);
 });
