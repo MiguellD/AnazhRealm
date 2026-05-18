@@ -14005,6 +14005,10 @@ class AnazhRealm {
                         // ein geholtes Untrusted-Portal beim Reload seine
                         // null-origin-Sandbox.
                         if (bp.portalMeta.trust) out.portalMeta.trust = bp.portalMeta.trust;
+                        // W17 Phase A — die Multiplayer-Marke reist mit, sonst
+                        // verlöre ein Multiplayer-Portal beim Reload den
+                        // Transport-Shim (V8.59-Lehre: der feste Feld-Satz).
+                        if (bp.portalMeta.multiplayer === true) out.portalMeta.multiplayer = true;
                     }
                     // W13 Phase 2 — die Bauplan-Signatur reist mit dem Bauplan
                     // (Save, Welt-Tor-Export, Recipe-Import, Fusion). Echtheit
@@ -18886,6 +18890,10 @@ class AnazhRealm {
         // V8.70 — die Vertrauensstufe. „sandboxed" → das Portal-iframe bekommt
         // allow-scripts ALLEIN (null-origin); alles andere ist „trusted".
         meta.trust = src.trust === "sandboxed" ? "sandboxed" : "trusted";
+        // W17 Phase A — eine Multiplayer-Welt: das Portal lädt sie mit dem
+        // Transport-Shim (`?anazh-shim=1`), ihr `WebSocket`-Verkehr quert die
+        // Sandbox-Grenze als postMessage statt zu einem echten Server.
+        meta.multiplayer = src.multiplayer === true;
         return meta;
     }
 
@@ -18948,6 +18956,9 @@ class AnazhRealm {
             // W12 Phase 3 — die Sub-Welt spricht zurück: ein Welt-Ereignis
             // wandert ins Heimat-Journal (geloggt, nie ausgeführt).
             else if (msg.type === "event") this._portalReceiveEvent(msg);
+            // W17 Phase A — der Transport-Shim einer Multiplayer-Welt postet
+            // ihren Netz-Verkehr (`__anazhNet`-Envelope, kein `type`-Feld).
+            else if (msg.__anazhNet === true) this._portalNetReceive(msg);
         };
         window.addEventListener("message", onMessage);
         iframe.addEventListener("load", () => this._portalSendEnter());
@@ -18971,6 +18982,9 @@ class AnazhRealm {
             // portalMeta-Manifest → übersetzt; meldet die Welt ihr eigenes
             // (ready-Handshake) → nativ. _portalReceiveManifest hebt auf nativ.
             manifestStage: meta.dsl ? "übersetzt" : "ausgestellt",
+            // W17 Phase A — eine Multiplayer-Welt: ihr `WebSocket`-Verkehr
+            // fliesst über den Transport-Shim durch _portalNetReceive.
+            multiplayer: meta.multiplayer === true,
         };
         document.body.appendChild(overlay);
         // W14 Phase 2 — ist die Ziel-Welt mit einem Vibe-Pass versiegelt,
@@ -18979,7 +18993,11 @@ class AnazhRealm {
         this._portalShowSignature(meta.world);
         // Die Konsole übers Overlay heben — DSL-Eingabe im Portal möglich.
         document.body.classList.add("in-portal");
-        iframe.src = meta.world;
+        // W17 Phase A — eine Multiplayer-Welt wird mit dem Transport-Shim-
+        // Marker geladen; der save-server injiziert den Shim in ihre
+        // index.html. Der Query ändert die Basis-URL nicht — relative
+        // Welt-Ressourcen (lib/engine.js) lösen weiter korrekt auf.
+        iframe.src = meta.multiplayer ? meta.world + "?anazh-shim=1" : meta.world;
         return this._portalOverlay;
     }
 
@@ -19272,6 +19290,32 @@ class AnazhRealm {
         if (po.hintEl) {
             po.hintEl.textContent = "Esc — Heimkehr · Konsole — Befehle an diese Welt";
         }
+        return true;
+    }
+
+    // W17 Phase A — der Transport-Shim-Rückkanal. Eine Multiplayer-Welt hat
+    // statt `window.WebSocket` den Shim (save-server-injiziert); ihr Netz-
+    // Verkehr kommt als `__anazhNet`-Envelope hier an. Phase A routet noch
+    // NICHT übers Mesh (das ist B-Relay) — sie ECHOT: ein `ws-send` wird
+    // direkt als `ws-recv` an dasselbe iframe zurückgespielt. Die fremde Welt
+    // glaubt damit, sie habe einen Echo-Server. Das `data` wird unverändert
+    // zurückgereicht — nie ausgeführt (wie der `event`-Rückkanal: Daten, kein
+    // Code). Phase B ersetzt den Echo durch die Mesh-Verteilung.
+    _portalNetReceive(msg) {
+        const po = this._portalOverlay;
+        if (!po || !po.multiplayer || !msg || msg.__anazhNet !== true) return false;
+        const channel = msg.channel;
+        if (!Number.isInteger(channel)) return false;
+        // Phase A: ws-send → Echo zurück. ws-open/ws-close werden notiert,
+        // aber brauchen für den Loopback keine Aktion (Phase B nutzt sie für
+        // den Sub-Raum-Beitritt).
+        if (msg.kind !== "ws-send") return false;
+        if (!po.iframe || !po.iframe.contentWindow) return false;
+        // V8.70 — "*" für die null-origin (sandboxed) Multiplayer-Welt.
+        po.iframe.contentWindow.postMessage(
+            { __anazhNet: true, kind: "ws-recv", channel, data: msg.data },
+            po.trust === "sandboxed" ? "*" : window.location.origin
+        );
         return true;
     }
 

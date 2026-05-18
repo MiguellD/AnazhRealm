@@ -5043,6 +5043,132 @@ function startSaveServer() {
                 check("W16 P2: die Welt-Katalog-Sektion im DOM", w16Results.uiInDom);
             }
 
+            // ### W17 Phase A — der Transport-Shim ###
+            // Eine fremde Multiplayer-Welt netzwerkt über `WebSocket`; der
+            // save-server-injizierte Shim ersetzt es durch eine postMessage-
+            // Brücke. Tests prüfen die Client-Schicht (multiplayer-Flag,
+            // ?anazh-shim=1-Marker, der _portalNetReceive-Echo); den echten
+            // Loopback im sandboxed iframe prüft smoke-shim.cjs.
+            const w17paResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    out.methodPresent = typeof r._portalNetReceive === "function";
+
+                    // _sanitizePortalMeta — das multiplayer-Flag.
+                    const sanDefault = r._sanitizePortalMeta({ world: "worlds/skeleton/index.html" }, "fb");
+                    out.sanitizeDefaultsFalse = sanDefault.multiplayer === false;
+                    const sanMp = r._sanitizePortalMeta(
+                        { world: "worlds/skeleton/index.html", multiplayer: true },
+                        "fb"
+                    );
+                    out.sanitizeKeepsTrue = sanMp.multiplayer === true;
+
+                    // _buildPortalOverlay — multiplayer:true hängt ?anazh-shim=1
+                    // an + setzt _portalOverlay.multiplayer.
+                    r._buildPortalOverlay({
+                        world: "worlds/skeleton/index.html",
+                        multiplayer: true,
+                        trust: "sandboxed",
+                    });
+                    const mpFrame = document.querySelector("#portal-overlay iframe.portal-frame");
+                    out.overlayMultiplayer =
+                        !!r._portalOverlay &&
+                        r._portalOverlay.multiplayer === true &&
+                        !!mpFrame &&
+                        /\?anazh-shim=1$/.test(mpFrame.getAttribute("src") || "");
+                    r._disposePortalOverlay();
+
+                    // multiplayer:false → kein Marker.
+                    r._buildPortalOverlay({ world: "worlds/skeleton/index.html", trust: "sandboxed" });
+                    const plainFrame = document.querySelector("#portal-overlay iframe.portal-frame");
+                    out.overlayNoMarkerWhenSingle =
+                        !!plainFrame && !(plainFrame.getAttribute("src") || "").includes("anazh-shim");
+                    r._disposePortalOverlay();
+
+                    // _portalNetReceive — Phase-A-Loopback: ws-send → ws-recv-Echo.
+                    const posted = [];
+                    r._portalOverlay = {
+                        multiplayer: true,
+                        trust: "sandboxed",
+                        iframe: { contentWindow: { postMessage: (m, o) => posted.push({ m, o }) } },
+                    };
+                    const echoed = r._portalNetReceive({ __anazhNet: true, kind: "ws-send", channel: 7, data: "ping" });
+                    out.netReceiveEchoes =
+                        echoed === true &&
+                        posted.length === 1 &&
+                        posted[0].m.__anazhNet === true &&
+                        posted[0].m.kind === "ws-recv" &&
+                        posted[0].m.channel === 7 &&
+                        posted[0].m.data === "ping" &&
+                        posted[0].o === "*";
+                    // ws-open + ein Müll-Envelope (kein __anazhNet) → kein Echo.
+                    posted.length = 0;
+                    r._portalNetReceive({ __anazhNet: true, kind: "ws-open", channel: 7 });
+                    r._portalNetReceive({ kind: "ws-send", channel: 7, data: "x" });
+                    out.netReceiveIgnoresNonSend = posted.length === 0;
+                    // Ein Nicht-Multiplayer-Portal echot nicht.
+                    r._portalOverlay.multiplayer = false;
+                    posted.length = 0;
+                    r._portalNetReceive({ __anazhNet: true, kind: "ws-send", channel: 1, data: "y" });
+                    out.netReceiveGatedOnMultiplayer = posted.length === 0;
+                    r._portalOverlay = null;
+
+                    // buildStateSnapshot persistiert multiplayer im portalMeta
+                    // (der feste Feld-Satz — V8.59-Lehre); _sanitizePortalMeta
+                    // (oben geprüft) ist der Lade-Pfad → zusammen der Rundlauf.
+                    const bpName = "_w17pa_portal";
+                    const wp = r.state.blueprints["welt_portal"];
+                    r.state.blueprints[bpName] = {
+                        name: bpName,
+                        label: "W17 Test-Portal",
+                        builtIn: false,
+                        parts: JSON.parse(JSON.stringify(wp.parts)),
+                        connections: [],
+                        role: "portal",
+                        portalMeta: r._sanitizePortalMeta(
+                            { world: "worlds/skeleton/index.html", label: "W17 Test-Portal", multiplayer: true },
+                            "W17 Test-Portal"
+                        ),
+                    };
+                    const snap = r.buildStateSnapshot();
+                    const snapBp = (snap.blueprints || []).find((b) => b.name === bpName);
+                    out.snapshotKeepsMultiplayer =
+                        !!snapBp && !!snapBp.portalMeta && snapBp.portalMeta.multiplayer === true;
+                    delete r.state.blueprints[bpName];
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!w17paResults || w17paResults.error) {
+                check(
+                    "W17 Phase A: der Transport-Shim erreichbar",
+                    false,
+                    (w17paResults && w17paResults.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("W17 PA: _portalNetReceive existiert", w17paResults.methodPresent);
+                check("W17 PA: _sanitizePortalMeta — multiplayer Default false", w17paResults.sanitizeDefaultsFalse);
+                check("W17 PA: _sanitizePortalMeta bewahrt multiplayer:true", w17paResults.sanitizeKeepsTrue);
+                check(
+                    "W17 PA: _buildPortalOverlay (multiplayer) hängt ?anazh-shim=1 an + setzt das Flag",
+                    w17paResults.overlayMultiplayer
+                );
+                check("W17 PA: _buildPortalOverlay (single) lädt OHNE Shim-Marker", w17paResults.overlayNoMarkerWhenSingle);
+                check(
+                    "W17 PA: _portalNetReceive echot ein ws-send als ws-recv (Phase-A-Loopback)",
+                    w17paResults.netReceiveEchoes
+                );
+                check("W17 PA: _portalNetReceive ignoriert ws-open / Müll-Envelope", w17paResults.netReceiveIgnoresNonSend);
+                check("W17 PA: _portalNetReceive echot nur für ein Multiplayer-Portal", w17paResults.netReceiveGatedOnMultiplayer);
+                check(
+                    "W17 PA: multiplayer im portalMeta überlebt den buildStateSnapshot-Schreib-Pfad",
+                    w17paResults.snapshotKeepsMultiplayer
+                );
+            }
+
             // ### Multi-User-Bau-Sync — Strukturen synchron platzieren + abbauen ###
             // confirmBuild + tryMouseBreak broadcasten jetzt; eine geteilte
             // string-archId macht eine spieler-gebaute Struktur peer-über-
