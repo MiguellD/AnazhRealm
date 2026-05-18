@@ -6342,6 +6342,11 @@ function startSaveServer() {
                     out.chordFromDegree =
                         JSON.stringify(deg0) === JSON.stringify([0, 3, 7, 10]) &&
                         JSON.stringify(deg3) === JSON.stringify([5, 8, 12, 15]);
+                    // W4 V3 Phase 2 — _lofiScaleSemitone wickelt Oktaven.
+                    out.scaleSemitone =
+                        r._lofiScaleSemitone(0) === 0 &&
+                        r._lofiScaleSemitone(7) === 12 &&
+                        r._lofiScaleSemitone(2) === 3;
                     // _lofiChordFreqs — positive Frequenzen, Wurzel A ≈ 110.
                     const freqs = r._lofiChordFreqs([0, 3, 7, 10], false);
                     out.freqsPositive = freqs.length === 4 && freqs.every((f) => f > 0);
@@ -6352,7 +6357,7 @@ function startSaveServer() {
                         freqsMajor[1] > freqs[1] && Math.abs(freqsMajor[0] - freqs[0]) < 0.01;
                     // _lofiChordDurationMs — sorrow verlangsamt das Tempo.
                     const emo = r.state.player.emotions;
-                    const eBefore = { joy: emo.joy, hope: emo.hope, sorrow: emo.sorrow };
+                    const eBefore = { joy: emo.joy, hope: emo.hope, sorrow: emo.sorrow, peace: emo.peace };
                     emo.sorrow = 0;
                     const durCalm = r._lofiChordDurationMs();
                     emo.sorrow = 1;
@@ -6374,8 +6379,40 @@ function startSaveServer() {
                             !!sym.lofi &&
                             !!sym.lofi.gain &&
                             !!sym.lofi.filter &&
+                            !!sym.lofi.melodyGain &&
                             sym.lofi.degree === 0 &&
                             typeof sym.lofi.rngState === "number";
+                        // W4 V3 Phase 2 — die Melodie: Form (startet + endet
+                        // auf einem Akkord-Ton, aufsteigende Startzeiten, über
+                        // dem Pad), emotion-gesteuerte Dichte, wurf-frei.
+                        const mel = r._lofiMelodyNotes(0, 4);
+                        const chordTones = [0, 2, 4, 6];
+                        let melAsc = true;
+                        for (let i = 1; i < mel.length; i++) if (mel[i].start <= mel[i - 1].start) melAsc = false;
+                        out.melodyShape =
+                            Array.isArray(mel) &&
+                            mel.length >= 1 &&
+                            mel.every((nt) => nt.freq > 200) &&
+                            melAsc &&
+                            chordTones.indexOf(mel[0].idx) >= 0 &&
+                            chordTones.indexOf(mel[mel.length - 1].idx) >= 0;
+                        emo.joy = 1;
+                        emo.peace = 0;
+                        const melJoy = r._lofiMelodyNotes(0, 4).length;
+                        emo.joy = 0;
+                        emo.peace = 1;
+                        const melPeace = r._lofiMelodyNotes(0, 4).length;
+                        emo.joy = 0;
+                        emo.peace = 0;
+                        out.melodyDensityEmotion = melJoy > melPeace;
+                        let melOk = true;
+                        try {
+                            r._lofiPlayMelody(0, 4);
+                        } catch (e) {
+                            melOk = false;
+                            void e;
+                        }
+                        out.melodyPlayRuns = melOk;
                         // W4 V3 — _lofiNextDegree liefert eine in der Markov-
                         // Kette erreichbare Stufe (0..6).
                         const allowed = AnazhRealm.LOFI_HARMONY[0].map((t) => t[0]);
@@ -6438,6 +6475,7 @@ function startSaveServer() {
                     emo.joy = eBefore.joy;
                     emo.hope = eBefore.hope;
                     emo.sorrow = eBefore.sorrow;
+                    emo.peace = eBefore.peace;
                     return out;
                 })
                 .catch((err) => ({ error: err && err.message }));
@@ -6447,13 +6485,20 @@ function startSaveServer() {
                 check("W4 V3: LOFI_SCALE (7 Töne) + LOFI_HARMONY (7 Stufen) frozen", w4v2Results.scaleHarmonyDefined);
                 check("W4 V2: LOFI_BPM=60 + LOFI_BASE_FREQ=110 definiert", w4v2Results.bpmDefined);
                 check("W4 V3: _lofiChordFromDegree stapelt diatonische Terzen (i=Am7, iv=Dm7)", w4v2Results.chordFromDegree);
+                check("W4 V3: _lofiScaleSemitone wickelt Oktaven (idx 7 → +12 Halbtöne)", w4v2Results.scaleSemitone);
                 check("W4 V2: _lofiChordFreqs liefert positive Frequenzen", w4v2Results.freqsPositive);
                 check("W4 V2: die Akkord-Wurzel ist A (≈110 Hz)", w4v2Results.rootIsA);
                 check("W4 V2: major-lean (hope) hebt die Terz, lässt die Wurzel", w4v2Results.majorLeanRaisesThird);
                 check("W4 V2: _lofiChordDurationMs — ruhig ≈ 4000 ms (60 BPM × 4)", w4v2Results.calmDuration4s);
                 check("W4 V2: sorrow verlangsamt das Lofi-Tempo (bis ~6 s)", w4v2Results.sorrowSlowsTempo);
                 if (w4v2Results.symphonyReady) {
-                    check("W4 V2: initSymphony baut die Lofi-Schicht (gain + filter + RNG)", w4v2Results.lofiLayerBuilt);
+                    check("W4 V2/V3: initSymphony baut die Lofi-Schicht (gain + filter + melodyGain + RNG)", w4v2Results.lofiLayerBuilt);
+                    check(
+                        "W4 V3 Phase 2: _lofiMelodyNotes — Phrase startet + endet auf Akkord-Ton, steigt zeitlich",
+                        w4v2Results.melodyShape
+                    );
+                    check("W4 V3 Phase 2: Melodie-Dichte folgt der Emotion (joy lebhafter als peace)", w4v2Results.melodyDensityEmotion);
+                    check("W4 V3 Phase 2: _lofiPlayMelody spielt die Phrase wurf-frei", w4v2Results.melodyPlayRuns);
                     check("W4 V3: _lofiNextDegree liefert eine markov-erreichbare Stufe", w4v2Results.nextDegreeValid);
                     check("W4 V3: die Harmonie ist seed-deterministisch (selber RNG → selbe Folge)", w4v2Results.harmonyDeterministic);
                     check("W4 V3: Emotion biast die Harmonie (joy/hope → mehr helle Stufen)", w4v2Results.emotionBiasesHarmony);
@@ -24720,7 +24765,10 @@ function startSaveServer() {
                         !!s.ambient &&
                         s.ambient.osc1.type === "triangle" &&
                         s.ambient.osc2.type === "triangle" &&
-                        s.ambient.ambientGain.gain.value <= 0.1;
+                        s.ambient.ambientGain.gain.value <= 0.1 &&
+                        // V8.87 — sanfte Schwebung: < 1 Hz Verstimmung (kein
+                        // extremer 1.5-Hz-Amplituden-Puls mehr).
+                        Math.abs(s.ambient.osc2.frequency.value - s.ambient.osc1.frequency.value) < 1;
                     out.hasWeather = !!s.weather && !!s.weather.noise && !!s.weather.gain;
 
                     // (b) Wetter-Layer-Gain folgt state.weather

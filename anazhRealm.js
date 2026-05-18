@@ -503,7 +503,7 @@ class AnazhRealm {
                 creaturePingCount: 0,
                 // W4 V2/V3 — die Lofi-Pad-Schicht: eine seed- + emotion-
                 // getriebene Akkordfolge (~60 BPM), lazy in initSymphony.
-                lofi: null, // { gain, filter, degree, lastChordAt, rngState }
+                lofi: null, // { gain, filter, melodyGain, degree, lastChordAt, rngState }
             },
             player: {
                 // Welle 6.X.4 F1 (Audit 17.05.2026) — Avatar-Name. Default
@@ -7118,14 +7118,17 @@ class AnazhRealm {
         filter.Q.value = 0.7;
 
         const ambientGain = ctx.createGain();
-        ambientGain.gain.value = 0.07;
+        ambientGain.gain.value = 0.05; // V8.87 — noch leiser (war 0.07)
 
         const osc1 = ctx.createOscillator();
         osc1.type = "triangle";
         osc1.frequency.value = 110;
         const osc2 = ctx.createOscillator();
         osc2.type = "triangle";
-        osc2.frequency.value = 111.5;
+        // V8.87 — nur 0.3 Hz verstimmt: eine sanfte, langsame Schwebung
+        // (~3 s Periode) statt des extremen 1.5-Hz-Puls (war 111.5 Hz —
+        // „einmal komplett weg, dann zu laut", die Schöpfer-Beobachtung).
+        osc2.frequency.value = 110.3;
 
         osc1.connect(filter);
         osc2.connect(filter);
@@ -7368,9 +7371,9 @@ class AnazhRealm {
         const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
         const angle = t * Math.PI * 2 - Math.PI / 2;
         const sunHeight = Math.max(0, Math.sin(angle)); // 0=Nacht, 1=Mittag
-        // V8.86 — Gain: Nacht 0.035, Mittag 0.07 (leise Grundierung unter
-        // der Lofi-Harmonie; war 0.075..0.15, als der Drone die Musik trug).
-        const targetGain = 0.035 + 0.035 * sunHeight;
+        // V8.87 — Gain: Nacht 0.025, Mittag 0.05 (noch leisere Grundierung
+        // unter der Lofi-Harmonie + Melodie).
+        const targetGain = 0.025 + 0.025 * sunHeight;
         const nowCtx = ctx.currentTime;
         const ag = s.ambient.ambientGain;
         try {
@@ -7411,13 +7414,18 @@ class AnazhRealm {
         gain.gain.value = 0.12; // leise — der Pad sitzt unter dem Ambient
         filter.connect(gain);
         gain.connect(masterGain);
+        // W4 V3 Phase 2 — die Lead-Stimme (Melodie) hat ihren eigenen Gain,
+        // etwas präsenter als der Pad, damit die Melodie über ihm singt.
+        const melodyGain = ctx.createGain();
+        melodyGain.gain.value = 0.16;
+        melodyGain.connect(masterGain);
         // W4 V3 — der Harmonie-RNG, deterministisch aus worldMeta.seed: jede
         // Welt bekommt ihr eigenes Lied (Mulberry32, wie das Sternenfeld; ein
         // ":lofi"-Suffix entkoppelt die Akkordfolge vom Stern-Muster).
         const seedStr = ((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed") + ":lofi";
         let seedNum = 0;
         for (let i = 0; i < seedStr.length; i++) seedNum = (seedNum * 31 + seedStr.charCodeAt(i)) >>> 0;
-        return { filter, gain, degree: 0, lastChordAt: -Infinity, rngState: seedNum };
+        return { filter, gain, melodyGain, degree: 0, lastChordAt: -Infinity, rngState: seedNum };
     }
 
     // W4 V3 — ein Mulberry32-Schritt auf dem Lofi-Harmonie-RNG. Deterministisch
@@ -7433,17 +7441,93 @@ class AnazhRealm {
         return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     }
 
+    // W4 V3 — ein Tonleiter-Index (kann > 6, wickelt in höhere Oktaven) zu
+    // einem Halbton-Abstand zur Wurzel. Negative Indizes werden gewickelt.
+    _lofiScaleSemitone(idx) {
+        const scale = AnazhRealm.LOFI_SCALE;
+        const n = scale.length;
+        const wrapped = ((idx % n) + n) % n;
+        return scale[wrapped] + 12 * Math.floor(idx / n);
+    }
+
     // W4 V3 — den diatonischen Septakkord einer Tonleiter-Stufe als Halbton-
     // Abstände: gestapelte Terzen (Stufe d, d+2, d+4, d+6), mit Oktav-Umbruch.
     _lofiChordFromDegree(degree) {
-        const scale = AnazhRealm.LOFI_SCALE;
-        const n = scale.length;
         const offsets = [];
-        for (let k = 0; k < 4; k++) {
-            const idx = degree + k * 2;
-            offsets.push(scale[idx % n] + 12 * Math.floor(idx / n));
-        }
+        for (let k = 0; k < 4; k++) offsets.push(this._lofiScaleSemitone(degree + k * 2));
         return offsets;
+    }
+
+    // W4 V3 Phase 2 — die Melodie. Eine improvisierte Phrase über dem Akkord
+    // der aktuellen Stufe: sie startet auf einem Akkord-Ton, wandert meist
+    // schrittweise (ein Sprung löst sich zur Gegenrichtung auf), der letzte
+    // Ton löst auf einem Akkord-Ton auf. Die Dichte wächst mit joy, schrumpft
+    // mit peace. Liefert [{freq, start, dur, idx}] — seed-deterministisch
+    // (derselbe RNG wie die Harmonie).
+    _lofiMelodyNotes(degree, durSec) {
+        const emotions = (this.state.player && this.state.player.emotions) || {};
+        const joy = Math.max(0, Math.min(1, emotions.joy || 0));
+        const peace = Math.max(0, Math.min(1, emotions.peace || 0));
+        const count = Math.max(1, Math.min(7, Math.round(3 + joy * 3 - peace * 1.5)));
+        const chordIdx = [degree, degree + 2, degree + 4, degree + 6];
+        let idx = chordIdx[Math.floor(this._lofiRandom() * chordIdx.length)];
+        let lastDelta = 0;
+        const slot = durSec / count;
+        const notes = [];
+        for (let i = 0; i < count; i++) {
+            let useIdx = idx;
+            // Der letzte Ton löst auf dem nächstgelegenen Akkord-Ton auf.
+            if (i === count - 1) {
+                useIdx = chordIdx.reduce(
+                    (best, c) => (Math.abs(c - idx) < Math.abs(best - idx) ? c : best),
+                    chordIdx[0]
+                );
+            }
+            const semi = this._lofiScaleSemitone(useIdx) + 24; // zwei Oktaven über dem Pad
+            notes.push({
+                freq: AnazhRealm.LOFI_BASE_FREQ * Math.pow(2, semi / 12),
+                start: i * slot,
+                dur: slot * 0.9,
+                idx: useIdx,
+            });
+            // Der nächste Schritt: meist Schritt, selten Sprung; ein Sprung
+            // (|Δ|≥2) löst sich — die Kontur tendiert zur Gegenrichtung.
+            const r = this._lofiRandom();
+            const step = r < 0.6 ? 1 : r < 0.85 ? 2 : 3;
+            let dir = this._lofiRandom() < 0.5 ? -1 : 1;
+            if (Math.abs(lastDelta) >= 2) dir = lastDelta > 0 ? -1 : 1;
+            const delta = step * dir;
+            idx += delta;
+            // In einer singbaren Spanne um die Stufe halten (~zwei Oktaven).
+            if (idx < degree - 2) idx = degree - 2 + step;
+            if (idx > degree + 12) idx = degree + 12 - step;
+            lastDelta = delta;
+        }
+        return notes;
+    }
+
+    // W4 V3 Phase 2 — die Melodie-Phrase spielen: je Note ein Sinus-Oszillator
+    // (klare, weiche Lead-Stimme über dem Dreieck-Pad) mit Pluck-Hüllkurve.
+    _lofiPlayMelody(degree, durSec) {
+        const s = this.state.symphony;
+        if (!s.enabled || !s.ctx || !s.lofi || !s.lofi.melodyGain) return;
+        const ctx = s.ctx;
+        const now = ctx.currentTime;
+        for (const note of this._lofiMelodyNotes(degree, durSec)) {
+            const osc = ctx.createOscillator();
+            osc.type = "sine";
+            osc.frequency.value = note.freq;
+            const env = ctx.createGain();
+            const t0 = now + note.start;
+            env.gain.setValueAtTime(0, t0);
+            env.gain.linearRampToValueAtTime(0.22, t0 + 0.04);
+            env.gain.exponentialRampToValueAtTime(0.0001, t0 + note.dur);
+            env.gain.setValueAtTime(0, t0 + note.dur);
+            osc.connect(env);
+            env.connect(s.lofi.melodyGain);
+            osc.start(t0);
+            osc.stop(t0 + note.dur + 0.05);
+        }
     }
 
     // W4 V3 — die nächste Akkord-Stufe per funktionaler Markov-Kette wählen.
@@ -7533,9 +7617,11 @@ class AnazhRealm {
         const now = s.ctx.currentTime;
         const durSec = this._lofiChordDurationMs() / 1000;
         if (now - s.lofi.lastChordAt < durSec) return;
-        this._lofiPlayChord(this._lofiChordFromDegree(s.lofi.degree));
+        const degree = s.lofi.degree;
+        this._lofiPlayChord(this._lofiChordFromDegree(degree));
+        this._lofiPlayMelody(degree, durSec);
         s.lofi.lastChordAt = now;
-        s.lofi.degree = this._lofiNextDegree(s.lofi.degree);
+        s.lofi.degree = this._lofiNextDegree(degree);
     }
 
     // ### Status-Panel (UI V1) ###
