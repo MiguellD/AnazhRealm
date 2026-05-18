@@ -4572,6 +4572,19 @@ class AnazhRealm {
             this._p2pHandleLlmResponse(peerId, msg);
             return;
         }
+        // W17 Phase B-JS-Compute — host-geroutetes Sub-Welt-Transport. Auch
+        // kanal-exklusiv: subworld-srv (Gast→Host) + subworld-cli (Host→Gast)
+        // KÖNNEN nicht über den WS injiziert werden, weil hier behandelt statt
+        // re-dispatcht. Die peerId ist kanal-gestempelt — beim subworld-srv IST
+        // sie die Verbindungs-id im Server-Kontext (unfälschbar).
+        if (msg.type === "subworld-srv") {
+            this._portalSrvFromGuest(peerId, msg);
+            return;
+        }
+        if (msg.type === "subworld-cli") {
+            this._portalCliReceive(peerId, msg);
+            return;
+        }
         const ALLOWED = [
             "pos",
             "dsl",
@@ -6141,6 +6154,21 @@ class AnazhRealm {
         // Kreatur-Sicht-Sync — die Sicht-Kopien dieses Peers entsorgen.
         for (const [key, rc] of p2p.remoteCreatures) {
             if (rc.peerId === peerId) this._disposeRemoteCreature(key, rc);
+        }
+        // W17 Phase B-JS-Compute — bin ich Compute-Host und hatte dieser Peer
+        // eine offene Server-Verbindung, schliesst sein Abgang sie (sein
+        // srv-close erreicht den Server-Kontext). Host-Migration, wenn der
+        // HOST selbst geht, ist eine Folge-Welle (Phase 2).
+        const po = this._portalOverlay;
+        if (
+            po &&
+            po.serverMode === "js-compute" &&
+            po.computeRole === "host" &&
+            po.serverConns &&
+            po.serverConns.has(peerId)
+        ) {
+            po.serverConns.delete(peerId);
+            this._portalSrvSend({ __anazhNet: true, kind: "srv-close", conn: peerId });
         }
         const entry = p2p.peers.get(peerId);
         if (!entry) return;
@@ -14065,6 +14093,12 @@ class AnazhRealm {
                         // verlöre ein Multiplayer-Portal beim Reload den
                         // Transport-Shim (V8.59-Lehre: der feste Feld-Satz).
                         if (bp.portalMeta.multiplayer === true) out.portalMeta.multiplayer = true;
+                        // W17 Phase B-JS-Compute — der Server-Modus reist mit,
+                        // sonst verlöre ein js-compute-Portal beim Reload den
+                        // Compute-Host-Pfad (es fiele auf relay zurück).
+                        if (bp.portalMeta.serverMode === "js-compute") {
+                            out.portalMeta.serverMode = "js-compute";
+                        }
                     }
                     // W13 Phase 2 — die Bauplan-Signatur reist mit dem Bauplan
                     // (Save, Welt-Tor-Export, Recipe-Import, Fusion). Echtheit
@@ -18159,8 +18193,11 @@ class AnazhRealm {
         if (custom && custom.translated) meta.translatedWorldId = entry.id;
         // W17 — trägt der Registry-/customWorlds-Eintrag die Multiplayer-
         // Marke, wird das geholte Portal multiplayer (lädt mit dem Transport-
-        // Shim, broadcastet beim Betreten ein Gruppen-Portal-invite).
+        // Shim, broadcastet beim Betreten ein Gruppen-Portal-invite). Trägt er
+        // `serverMode:"js-compute"`, wird es ein JS-Compute-Portal (ein Peer
+        // der Gruppe wird Compute-Host für die autoritative Server-JS).
         if (entry.multiplayer === true) meta.multiplayer = true;
+        if (entry.serverMode === "js-compute") meta.serverMode = "js-compute";
         return this.setBlueprintAsPortal(blueprintName, meta);
     }
 
@@ -18978,10 +19015,16 @@ class AnazhRealm {
         // V8.70 — die Vertrauensstufe. „sandboxed" → das Portal-iframe bekommt
         // allow-scripts ALLEIN (null-origin); alles andere ist „trusted".
         meta.trust = src.trust === "sandboxed" ? "sandboxed" : "trusted";
+        // W17 — der Server-Modus einer Multiplayer-Welt. "relay" (Default):
+        // das Mesh broadcastet (B-Relay, das Mesh IST der Server). "js-compute":
+        // die Welt hat eine echte autoritative Server-JS-Logik — ein Peer der
+        // Gruppe wird Compute-Host, sein Tab führt die Server-JS aus.
+        meta.serverMode = src.serverMode === "js-compute" ? "js-compute" : "relay";
         // W17 Phase A — eine Multiplayer-Welt: das Portal lädt sie mit dem
         // Transport-Shim (`?anazh-shim=1`), ihr `WebSocket`-Verkehr quert die
-        // Sandbox-Grenze als postMessage statt zu einem echten Server.
-        meta.multiplayer = src.multiplayer === true;
+        // Sandbox-Grenze als postMessage statt zu einem echten Server. Eine
+        // js-compute-Welt ist per Natur eine Multiplayer-Welt.
+        meta.multiplayer = src.multiplayer === true || meta.serverMode === "js-compute";
         return meta;
     }
 
@@ -18991,12 +19034,24 @@ class AnazhRealm {
     // einen Avatar-Schnappschuss senden. Refs liegen auf this._portalOverlay,
     // damit _disposePortalOverlay sie tief räumen kann. Wird in Commit 3 von
     // enterPortal/exitPortal verkabelt.
-    _buildPortalOverlay(portalMeta) {
+    _buildPortalOverlay(portalMeta, computeOpts) {
         if (this._portalOverlay) this._disposePortalOverlay();
         if (typeof document === "undefined") return null;
         // Defense-in-Depth: das world-Ziel wird hier nochmals gesäubert —
         // selbst ein manipuliertes portalMeta kann kein fremdes Origin laden.
         const meta = this._sanitizePortalMeta(portalMeta, "Portal-Welt");
+        // W17 Phase B-JS-Compute — die Compute-Rolle. Eine js-compute-Welt
+        // hat eine echte Server-JS-Logik; ein Peer der Gruppe wird der
+        // Compute-Host (sein Tab führt sie aus), die anderen sind Gäste, die
+        // ihren Verkehr an ihn routen. Wer ein js-compute-Portal direkt
+        // betritt, wird Host; ein Gast bekommt computeRole/hostPeerId beim
+        // Annehmen einer Einladung (joinPortalInvite) gereicht.
+        const opts = computeOpts && typeof computeOpts === "object" ? computeOpts : {};
+        const isJsCompute = meta.serverMode === "js-compute";
+        const computeRole = isJsCompute ? (opts.computeRole === "guest" ? "guest" : "host") : null;
+        const hostPeerId =
+            (typeof opts.hostPeerId === "string" && opts.hostPeerId) ||
+            (computeRole === "host" ? this._portalSelfConnId() : null);
         const overlay = document.createElement("div");
         overlay.id = "portal-overlay";
         const iframe = document.createElement("iframe");
@@ -19030,7 +19085,18 @@ class AnazhRealm {
         overlay.appendChild(sigEl);
         // Eltern-Seite des Handshakes: auf {type:"ready"} der Sub-Welt lauschen.
         const onMessage = (event) => {
-            if (!this._portalOverlay || event.source !== iframe.contentWindow) return;
+            if (!this._portalOverlay) return;
+            const po = this._portalOverlay;
+            // W17 Phase B-JS-Compute — Nachrichten aus dem Server-Kontext-
+            // iframe (beim Compute-Host) tragen den `__anazhNet`-Envelope
+            // (srv-send/srv-close-req); _portalSrvReceive routet das Ergebnis
+            // zurück an die richtige Verbindung (Host lokal / Gast übers Mesh).
+            if (po.serverIframe && event.source === po.serverIframe.contentWindow) {
+                const sm = event.data;
+                if (sm && sm.__anazhNet === true) this._portalSrvReceive(sm);
+                return;
+            }
+            if (event.source !== iframe.contentWindow) return;
             const msg = event.data;
             if (!msg || typeof msg !== "object") return;
             if (msg.type === "ready") {
@@ -19050,6 +19116,30 @@ class AnazhRealm {
         };
         window.addEventListener("message", onMessage);
         iframe.addEventListener("load", () => this._portalSendEnter());
+        // W17 Phase B-JS-Compute — der Compute-Host baut ein zweites,
+        // verborgenes iframe: den Server-Kontext. Es lädt dieselbe Welt mit
+        // `?anazh-server=1` (der save-server injiziert den Server-Shim) — die
+        // Server-JS der Welt läuft darin null-origin sandgesichert (sie kann
+        // AnazhRealms State nicht berühren, die V8.70-Sandbox ist die Wand).
+        // Ein Gast baut keinen Server-Kontext; er routet seinen Verkehr an
+        // den Host. Der Server-Kontext braucht keinen enter-Handshake (er
+        // rechnet nur), darum kein `load`→_portalSendEnter, nur serverReady.
+        let serverIframe = null;
+        if (isJsCompute && computeRole === "host") {
+            serverIframe = document.createElement("iframe");
+            serverIframe.className = "portal-server-frame";
+            serverIframe.title = "Server-Kontext";
+            serverIframe.setAttribute("aria-hidden", "true");
+            serverIframe.setAttribute("sandbox", "allow-scripts");
+            serverIframe.style.display = "none";
+            serverIframe.addEventListener("load", () => {
+                const p = this._portalOverlay;
+                if (!p || p.serverIframe !== serverIframe) return;
+                p.serverReady = true;
+                this._portalSrvFlush();
+            });
+            overlay.appendChild(serverIframe);
+        }
         this._portalOverlay = {
             overlayEl: overlay,
             iframe,
@@ -19080,6 +19170,20 @@ class AnazhRealm {
             netChannels: new Set(),
             netWindowStart: 0,
             netWindowCount: 0,
+            // W17 Phase B-JS-Compute — der Server-Modus + die Compute-Rolle.
+            // "relay" → das Mesh broadcastet (B-Relay). "js-compute" → ein
+            // Peer ist Compute-Host (computeRole "host", serverIframe gesetzt),
+            // die anderen sind Gäste (computeRole "guest", hostPeerId zeigt auf
+            // den Host). serverConns ist die Menge der offenen Server-
+            // Verbindungen (je Peer eine); serverQueue puffert srv-*-Envelopes,
+            // bis das Server-iframe geladen ist (serverReady).
+            serverMode: meta.serverMode,
+            computeRole,
+            hostPeerId,
+            serverIframe,
+            serverReady: false,
+            serverQueue: [],
+            serverConns: new Set(),
         };
         document.body.appendChild(overlay);
         // W14 Phase 2 — ist die Ziel-Welt mit einem Vibe-Pass versiegelt,
@@ -19093,6 +19197,22 @@ class AnazhRealm {
         // index.html. Der Query ändert die Basis-URL nicht — relative
         // Welt-Ressourcen (lib/engine.js) lösen weiter korrekt auf.
         iframe.src = meta.multiplayer ? meta.world + "?anazh-shim=1" : meta.world;
+        // W17 Phase B-JS-Compute — der Server-Kontext lädt dieselbe Welt mit
+        // dem Server-Shim-Marker; die Welt-`index.html` verzweigt über
+        // `window.__anazhRole` in ihren Server-Zweig.
+        if (serverIframe) serverIframe.src = meta.world + "?anazh-server=1";
+        // W17 Phase B-JS-Compute — ein Gast meldet dem Compute-Host seine
+        // Verbindung an, sobald er das Portal betritt (der Host registriert
+        // sie als srv-open im Server-Kontext). Geht die Meldung verloren
+        // (Kanal noch nicht offen), registriert der erste subworld-srv-send
+        // die Verbindung defensiv nach.
+        if (isJsCompute && computeRole === "guest" && hostPeerId) {
+            this._p2pSendChannelTo(hostPeerId, {
+                type: "subworld-srv",
+                kind: "open",
+                worldId: meta.world,
+            });
+        }
         return this._portalOverlay;
     }
 
@@ -19211,6 +19331,16 @@ class AnazhRealm {
     _disposePortalOverlay() {
         const po = this._portalOverlay;
         if (!po) return;
+        // W17 Phase B-JS-Compute — ein Gast meldet dem Compute-Host das Ende
+        // seiner Verbindung; der Host schliesst sie im Server-Kontext. Das
+        // Server-iframe des Hosts wird mit dem Overlay-DOM mit-entfernt.
+        if (po.serverMode === "js-compute" && po.computeRole === "guest" && po.hostPeerId) {
+            this._p2pSendChannelTo(po.hostPeerId, {
+                type: "subworld-srv",
+                kind: "close",
+                worldId: po.world,
+            });
+        }
         if (po.onMessage) window.removeEventListener("message", po.onMessage);
         if (po.overlayEl && po.overlayEl.parentNode) {
             po.overlayEl.parentNode.removeChild(po.overlayEl);
@@ -19240,7 +19370,11 @@ class AnazhRealm {
                 /* Pointer-Lock war nicht aktiv — egal */
             }
         }
-        this._buildPortalOverlay(portalMeta);
+        // W17 Phase B-JS-Compute — wer ein js-compute-Portal direkt betritt,
+        // wird der Compute-Host (sein Tab führt die Server-JS aus). Ein Gast
+        // bekommt seine Rolle über joinPortalInvite. Für ein Relay-Portal ist
+        // die computeRole folgenlos (kein Server-Kontext).
+        this._buildPortalOverlay(portalMeta, { computeRole: "host" });
         const worldLabel = (portalMeta && portalMeta.label) || entry.type;
         this.log(`Portal betreten: „${worldLabel}"`, "INFO");
         // W12 Phase 3 — die erste Reise durch ein bestimmtes Tor ist eine
@@ -19412,10 +19546,15 @@ class AnazhRealm {
         const channel = msg.channel;
         if (!Number.isInteger(channel)) return false;
         // B1 — die offenen WebSocket-Kanäle des eigenen iframes verfolgen.
-        // Ein mesh-empfangener subworld-net wird in jeden zugestellt (eine
-        // Relay-Welt öffnet typisch genau einen).
+        // Ein zugestellter Sub-Welt-Verkehr (B-Relay subworld-net ODER
+        // B-JS-Compute subworld-cli) wird in jeden gereicht.
         if (msg.kind === "ws-open") {
             po.netChannels.add(channel);
+            // W17 B-JS-Compute — der Host ist sein eigener Client: die erste
+            // eigene Verbindung im Server-Kontext registrieren.
+            if (po.serverMode === "js-compute" && po.computeRole === "host") {
+                this._portalSrvEnsureConn(this._portalSelfConnId());
+            }
             return true;
         }
         if (msg.kind === "ws-close") {
@@ -19436,11 +19575,35 @@ class AnazhRealm {
         }
         if (po.netWindowCount >= AnazhRealm.SUBWORLD_NET_RATE_MAX) return false;
         po.netWindowCount++;
-        // B1 — ein ws-send wandert übers Mesh: jedes andere AnazhRealm im
-        // selben Sub-Welt-Raum (B2 — Schlüssel ist der Welt-Pfad) stellt es
-        // in sein iframe zu. p2pSend broadcastet nur an Peers — der Sender
-        // bekommt seinen eigenen Verkehr nicht zurück (wie ein echter Relay-
-        // Server: er reicht eine Nachricht an die ANDEREN Clients weiter).
+        // W17 Phase B-JS-Compute — eine js-compute-Welt routet host-zentriert
+        // statt zu broadcasten: der Verkehr eines Clients geht an den EINEN
+        // Compute-Host, dessen Server-JS rechnet, die Antwort kommt gezielt
+        // zurück. Ist die Welt blosser Relay (B-Relay), broadcastet das Mesh.
+        if (po.serverMode === "js-compute") {
+            if (po.computeRole === "host") {
+                // Der Host ist sein eigener Client — direkt in den lokalen
+                // Server-Kontext (conn = die eigene peerId).
+                const myId = this._portalSelfConnId();
+                this._portalSrvEnsureConn(myId);
+                this._portalSrvSend({ __anazhNet: true, kind: "srv-recv", conn: myId, data });
+            } else {
+                // Ein Gast: der Verkehr geht NUR an den Compute-Host (kein
+                // Broadcast — die anderen Gäste sehen ihn nicht). subworld-srv
+                // ist kanal-exklusiv: der Host stempelt die peerId (= die
+                // Verbindungs-id, unfälschbar).
+                this._p2pSendChannelTo(po.hostPeerId, {
+                    type: "subworld-srv",
+                    kind: "send",
+                    worldId: po.world,
+                    data,
+                });
+            }
+            return true;
+        }
+        // B-Relay — der ws-send wird ein subworld-net-Broadcast: das Mesh IST
+        // der Server. p2pSend broadcastet nur an Peers — der Sender bekommt
+        // seinen eigenen Verkehr nicht zurück (wie ein echter Relay-Server:
+        // er reicht eine Nachricht an die ANDEREN Clients weiter).
         this.p2pSend({ type: "subworld-net", worldId: po.world, data });
         return true;
     }
@@ -19461,13 +19624,145 @@ class AnazhRealm {
         // B3 — Größen-Deckel auch auf dem Empfangs-Pfad.
         const data = msg.data;
         if (typeof data !== "string" || data.length > AnazhRealm.SUBWORLD_NET_MAX_BYTES) return false;
-        if (!po.iframe || !po.iframe.contentWindow || po.netChannels.size === 0) return false;
+        return this._portalDeliverToClient(data);
+    }
+
+    // W17 — `data` als `ws-recv` in jeden offenen Kanal des eigenen Client-
+    // iframes posten (der Sender-Kanal ist eine iframe-lokale id,
+    // bedeutungslos; jedes AnazhRealm stellt in SEINE Kanäle zu). Das `data`
+    // wird nie ausgeführt — wie der `event`-Rückkanal trägt der Shim Daten,
+    // kein Code. Geteilte Zustell-Naht: B-Relay (_portalNetDeliver) UND
+    // B-JS-Compute (_portalCliReceive, _portalSrvReceive lokal) enden hier.
+    _portalDeliverToClient(data) {
+        const po = this._portalOverlay;
+        if (!po || !po.iframe || !po.iframe.contentWindow || po.netChannels.size === 0) return false;
         // V8.70 — "*" für die null-origin (sandboxed) Multiplayer-Welt.
         const target = po.trust === "sandboxed" ? "*" : window.location.origin;
         for (const channel of po.netChannels) {
             po.iframe.contentWindow.postMessage({ __anazhNet: true, kind: "ws-recv", channel, data }, target);
         }
         return true;
+    }
+
+    // W17 Phase B-JS-Compute — die eigene Verbindungs-id im Server-Kontext.
+    // Es ist die eigene peerId; ein Solo-Host (ohne Mesh) ist trotzdem sein
+    // eigener Client → "self" als Sentinel, damit js-compute auch solo läuft.
+    _portalSelfConnId() {
+        const p2p = this.state.p2p;
+        return (p2p && p2p.peerId) || "self";
+    }
+
+    // W17 Phase B-JS-Compute — eine srv-*-Nachricht in den Server-Kontext
+    // posten. Gepuffert, bis das Server-iframe geladen ist (der Server-Shim
+    // ist dann da; er puffert seinerseits, bis die Welt `new WebSocketServer()`
+    // ruft — doppelt gepuffert, kein verlorener Envelope). Nur der Host hat
+    // einen Server-Kontext; ein Gast besitzt kein serverIframe.
+    _portalSrvSend(env) {
+        const po = this._portalOverlay;
+        if (!po || !po.serverIframe) return false;
+        if (!po.serverReady) {
+            po.serverQueue.push(env);
+            return true;
+        }
+        const cw = po.serverIframe.contentWindow;
+        if (!cw) return false;
+        // Der Server-Kontext ist null-origin (sandboxed) → "*".
+        cw.postMessage(env, "*");
+        return true;
+    }
+
+    // W17 Phase B-JS-Compute — die gepufferten srv-*-Envelopes nachreichen,
+    // sobald das Server-iframe geladen ist (load-Listener in _buildPortalOverlay).
+    _portalSrvFlush() {
+        const po = this._portalOverlay;
+        if (!po || !po.serverIframe || !po.serverReady) return;
+        const cw = po.serverIframe.contentWindow;
+        if (!cw) return;
+        const q = po.serverQueue;
+        po.serverQueue = [];
+        for (const env of q) cw.postMessage(env, "*");
+    }
+
+    // W17 Phase B-JS-Compute — eine Verbindung im Server-Kontext registrieren
+    // (idempotent — ein wiederholtes Registrieren bleibt folgenlos). Der erste
+    // Verkehr eines Peers erzeugt so genau ein srv-open.
+    _portalSrvEnsureConn(connId) {
+        const po = this._portalOverlay;
+        if (!po || !po.serverConns || !connId) return;
+        if (po.serverConns.has(connId)) return;
+        po.serverConns.add(connId);
+        this._portalSrvSend({ __anazhNet: true, kind: "srv-open", conn: connId });
+    }
+
+    // W17 Phase B-JS-Compute — der Server-Kontext (beim Compute-Host) hat für
+    // eine Verbindung gerechnet. srv-send: das Ergebnis an genau diese
+    // Verbindung zurück — ist es der Host selbst, lokal ins eigene Client-
+    // iframe; sonst gezielt über einen subworld-cli an den Gast-Peer. Das
+    // `data` ist DATEN, kein Code (wie der ws-recv-Hinweg). srv-close-req:
+    // der Server schliesst eine Verbindung von sich aus.
+    _portalSrvReceive(msg) {
+        const po = this._portalOverlay;
+        if (!po || po.serverMode !== "js-compute" || po.computeRole !== "host") return false;
+        if (!msg || msg.__anazhNet !== true) return false;
+        if (msg.kind === "srv-close-req") {
+            if (typeof msg.conn === "string" && po.serverConns) po.serverConns.delete(msg.conn);
+            return true;
+        }
+        if (msg.kind !== "srv-send") return false;
+        const data = msg.data;
+        if (typeof data !== "string" || data.length > AnazhRealm.SUBWORLD_NET_MAX_BYTES) return false;
+        const conn = msg.conn;
+        if (conn === this._portalSelfConnId()) {
+            // Der Host ist sein eigener Client — lokal ins eigene iframe.
+            this._portalDeliverToClient(data);
+        } else if (typeof conn === "string") {
+            // Ein Gast — gezielt an seinen Kanal (kein Broadcast).
+            this._p2pSendChannelTo(conn, { type: "subworld-cli", worldId: po.world, data });
+        }
+        return true;
+    }
+
+    // W17 Phase B-JS-Compute — ein Gast-Peer schickt seinen Sub-Welt-Verkehr
+    // an mich (den Compute-Host). subworld-srv ist kanal-exklusiv: die peerId
+    // ist kanal-gestempelt (sie IST die Verbindungs-id im Server-Kontext,
+    // unfälschbar). open/send/close → srv-open/srv-recv/srv-close. Nur für
+    // GENAU diese Sub-Welt (worldId-Match) — wie die B2-Eingrenzung.
+    _portalSrvFromGuest(peerId, msg) {
+        const po = this._portalOverlay;
+        if (!po || po.serverMode !== "js-compute" || po.computeRole !== "host") return false;
+        if (!msg || msg.worldId !== po.world) return false;
+        if (msg.kind === "open") {
+            this._portalSrvEnsureConn(peerId);
+            return true;
+        }
+        if (msg.kind === "close") {
+            if (po.serverConns && po.serverConns.has(peerId)) {
+                po.serverConns.delete(peerId);
+                this._portalSrvSend({ __anazhNet: true, kind: "srv-close", conn: peerId });
+            }
+            return true;
+        }
+        if (msg.kind !== "send") return false;
+        const data = msg.data;
+        if (typeof data !== "string" || data.length > AnazhRealm.SUBWORLD_NET_MAX_BYTES) return false;
+        // Defensiv: ein send ohne vorheriges open registriert die Verbindung.
+        this._portalSrvEnsureConn(peerId);
+        this._portalSrvSend({ __anazhNet: true, kind: "srv-recv", conn: peerId, data });
+        return true;
+    }
+
+    // W17 Phase B-JS-Compute — der Compute-Host schickt mir (einem Gast) die
+    // Server-Antwort. Nur vom EIGENEN Host (kanal-gestempelte peerId) + nur
+    // für die eigene Sub-Welt; das `data` geht als `ws-recv` ins Client-iframe,
+    // nie ausgeführt.
+    _portalCliReceive(peerId, msg) {
+        const po = this._portalOverlay;
+        if (!po || po.serverMode !== "js-compute" || po.computeRole !== "guest") return false;
+        if (peerId !== po.hostPeerId) return false;
+        if (!msg || msg.worldId !== po.world) return false;
+        const data = msg.data;
+        if (typeof data !== "string" || data.length > AnazhRealm.SUBWORLD_NET_MAX_BYTES) return false;
+        return this._portalDeliverToClient(data);
     }
 
     // W17 Phase C — die worldId einer Portal-Welt auflösen (Registry-/
@@ -19547,7 +19842,12 @@ class AnazhRealm {
         this._renderPortalInviteBanner();
         // Direkt über _buildPortalOverlay — enterPortal bräuchte eine
         // platzierte Affordance; die Einladung kennt nur die worldId.
-        this._buildPortalOverlay(meta);
+        // W17 Phase B-JS-Compute — der Beitretende ist Gast; sein Compute-Host
+        // ist der Einladende (inv.peerId broadcastete den portal-invite, sein
+        // Tab betrat das Portal zuerst). Für ein Relay-Portal ist die Rolle
+        // folgenlos. Phase 1 wählt damit den Host ohne Präsenz-Tabelle: Öffner
+        // = Host, Beitretender = Gast — Host-Migration ist eine Folge-Welle.
+        this._buildPortalOverlay(meta, { computeRole: "guest", hostPeerId: inv.peerId });
         this.log(`Du folgst der Einladung in „${inv.label}".`, "INFO");
         this.journalAppendOnce(
             `portalVisit:${(bp.portalMeta && bp.portalMeta.world) || inv.worldId}`,

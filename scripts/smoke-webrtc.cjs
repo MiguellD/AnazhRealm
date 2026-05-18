@@ -46,6 +46,50 @@ const W17_WORLD_HTML = `<!doctype html>
 </body>
 </html>
 `;
+// W17 Phase B-JS-Compute — die JS-Compute-Test-Welt. EINE index.html mit
+// zwei Zweigen: der CLIENT-Zweig öffnet einen Shim-WebSocket, der SERVER-
+// Zweig (beim Compute-Host, `?anazh-server=1` → window.__anazhRole) führt
+// eine echte autoritative Rechnung aus — eine laufende Summe. Ein blosser
+// Relay könnte die Summe nicht erzeugen; sie beweist, dass EIN Server in
+// EINEM Tab den Verkehr ALLER Gruppen-Mitglieder zusammenführt.
+const W17JS_ID = "smoke-mesh-w17js";
+const W17JS_DIR = path.join(ROOT, "worlds", W17JS_ID);
+const W17JS_WORLD_HTML = `<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>W17 JS-Compute Test-Welt</title></head>
+<body>
+<p>W17 B-JS-Compute — Test-Welt</p>
+<script>
+(function () {
+  function note(t) { try { parent.postMessage({ type: "event", text: String(t) }, "*"); } catch (e) {} }
+  if (window.__anazhRole === "server") {
+    // SERVER-Zweig — autoritative Rechnung: eine laufende Summe über ALLE
+    // Verbindungen. Ein Relay broadcastet nur; diese Summe beweist Compute.
+    note("jscompute-server-start");
+    if (typeof WebSocketServer !== "function") { note("jscompute-server-no-wss"); return; }
+    var total = 0;
+    var wss = new WebSocketServer();
+    wss.on("connection", function (sock) {
+      sock.on("message", function (data) {
+        total += Number(data) || 0;
+        sock.send(String(total));
+      });
+    });
+  } else {
+    // CLIENT-Zweig — einen Shim-WebSocket öffnen; den ws-send treibt das
+    // Harness (robust gegen die Tab-Drosselung des Hintergrund-iframes).
+    note(window.__anazhShim === true ? "jscompute-client-shim-ok" : "jscompute-client-shim-missing");
+    try {
+      var ws = new WebSocket("ws://anazh-jscompute/");
+      ws.addEventListener("open", function () { note("jscompute-client-open"); });
+      ws.addEventListener("message", function (ev) { note("jscompute-client-recv:" + ev.data); });
+    } catch (e) { note("jscompute-client-throw:" + (e && e.message)); }
+  }
+})();
+</script>
+</body>
+</html>
+`;
 
 function sleep(ms) {
     return new Promise((r) => setTimeout(r, ms));
@@ -579,6 +623,119 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
         );
         await pageA.evaluate(() => window.anazhRealm._disposePortalOverlay());
         await pageB.evaluate(() => window.anazhRealm._disposePortalOverlay());
+
+        // W17 Phase B-JS-Compute — eine JS-Compute-Welt: ein Peer wird
+        // Compute-Host, sein Tab führt die autoritative Server-JS in einem
+        // verborgenen Server-Kontext-iframe aus, das Mesh trägt den Verkehr.
+        // A ist Host, B ist Gast. Die Server-JS rechnet eine laufende Summe —
+        // ein Wert, den ein blosser Relay nicht erzeugen könnte.
+        fs.rmSync(W17JS_DIR, { recursive: true, force: true });
+        fs.mkdirSync(W17JS_DIR, { recursive: true });
+        fs.writeFileSync(path.join(W17JS_DIR, "index.html"), W17JS_WORLD_HTML, "utf8");
+        const JSCOMPUTE_PATH = `worlds/${W17JS_ID}/index.html`;
+        // A's peerId — B routet seinen Verkehr gezielt an den Compute-Host.
+        const aPeerId = await pageA.evaluate(() => window.anazhRealm.state.p2p.peerId);
+        // A: Compute-Host. _buildPortalOverlay baut ein zweites, verborgenes
+        // iframe (den Server-Kontext) mit `?anazh-server=1`.
+        await pageA.evaluate((world) => {
+            window.anazhRealm._buildPortalOverlay(
+                {
+                    world,
+                    label: "W17 JS-Compute",
+                    multiplayer: true,
+                    serverMode: "js-compute",
+                    trust: "sandboxed",
+                },
+                { computeRole: "host" }
+            );
+        }, JSCOMPUTE_PATH);
+        // B: Gast — sein Compute-Host ist A.
+        await pageB.evaluate(
+            (args) => {
+                window.anazhRealm._buildPortalOverlay(
+                    {
+                        world: args.world,
+                        label: "W17 JS-Compute",
+                        multiplayer: true,
+                        serverMode: "js-compute",
+                        trust: "sandboxed",
+                    },
+                    { computeRole: "guest", hostPeerId: args.host }
+                );
+            },
+            { world: JSCOMPUTE_PATH, host: aPeerId }
+        );
+        check(
+            "W17 JS-Compute: A ist Compute-Host (Server-Kontext-iframe gebaut)",
+            await pageA.evaluate(() => {
+                const po = window.anazhRealm._portalOverlay;
+                return !!po && po.serverMode === "js-compute" && po.computeRole === "host" && !!po.serverIframe;
+            })
+        );
+        check(
+            "W17 JS-Compute: B ist Gast (Host = A, kein eigener Server-Kontext)",
+            await pageB.evaluate((host) => {
+                const po = window.anazhRealm._portalOverlay;
+                return !!po && po.computeRole === "guest" && po.hostPeerId === host && !po.serverIframe;
+            }, aPeerId)
+        );
+        // Warten: A's Server-Kontext geladen + beide Client-iframes haben den
+        // Shim-WebSocket geöffnet.
+        await waitFor(
+            pageA,
+            () => window.anazhRealm._portalOverlay && window.anazhRealm._portalOverlay.serverReady === true,
+            15000,
+            "A's Server-Kontext-iframe geladen"
+        );
+        await waitFor(
+            pageA,
+            () => window.anazhRealm._portalOverlay && window.anazhRealm._portalOverlay.netChannels.size >= 1,
+            15000,
+            "A's Client-iframe öffnete den Shim-WebSocket"
+        );
+        await waitFor(
+            pageB,
+            () => window.anazhRealm._portalOverlay && window.anazhRealm._portalOverlay.netChannels.size >= 1,
+            15000,
+            "B's Client-iframe öffnete den Shim-WebSocket"
+        );
+        check("W17 JS-Compute: Server-Kontext + beide Client-iframes bereit", true);
+        // A's Client sendet "7" → A's Server-Kontext rechnet (total=7) → die
+        // Antwort kommt lokal zurück in A's Client-iframe.
+        await pageA.evaluate(() => {
+            window.anazhRealm._portalNetReceive({ __anazhNet: true, kind: "ws-send", channel: 1, data: "7" });
+        });
+        await waitFor(
+            pageA,
+            () =>
+                (window.anazhRealm.state.worldJournal.entries || []).some((e) =>
+                    String(e.text || "").includes("jscompute-client-recv:7")
+                ),
+            12000,
+            "A's Client empfängt die Server-Antwort auf 7"
+        );
+        check("W17 JS-Compute: A's Verkehr lief durch A's eigenen Server-Kontext", true);
+        // B's Client sendet "5" → peer-to-peer übers Mesh an A → A's Server
+        // rechnet (total = 7+5 = 12) → gezielt zurück an B. Die 12 beweist die
+        // autoritative Rechnung: ein Relay hätte nur "5" zurückgespielt.
+        await pageB.evaluate(() => {
+            window.anazhRealm._portalNetReceive({ __anazhNet: true, kind: "ws-send", channel: 1, data: "5" });
+        });
+        await waitFor(
+            pageB,
+            () =>
+                (window.anazhRealm.state.worldJournal.entries || []).some((e) =>
+                    String(e.text || "").includes("jscompute-client-recv:12")
+                ),
+            12000,
+            "B's Client empfängt die laufende Summe 12"
+        );
+        check(
+            "W17 JS-Compute: B's Verkehr lief peer-to-peer durch A's Server — die Summe 12 = 7+5 ist autoritativ berechnet",
+            true
+        );
+        await pageA.evaluate(() => window.anazhRealm._disposePortalOverlay());
+        await pageB.evaluate(() => window.anazhRealm._disposePortalOverlay());
     } catch (err) {
         check(`Test-Ablauf ohne Fehler`, false, err.message);
     } finally {
@@ -588,6 +745,7 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
         // W16 + W17 — die Test-Welt-Verzeichnisse wegräumen.
         fs.rmSync(W16_DIR, { recursive: true, force: true });
         fs.rmSync(W17_DIR, { recursive: true, force: true });
+        fs.rmSync(W17JS_DIR, { recursive: true, force: true });
     }
 
     console.log(failures.length === 0 ? "\n✅ WebRTC-Mesh verifiziert" : `\n❌ ${failures.length} Fehler`);
