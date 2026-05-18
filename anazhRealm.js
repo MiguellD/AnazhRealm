@@ -14256,7 +14256,7 @@ class AnazhRealm {
         if (!/^[a-z0-9_-]{1,40}$/.test(id)) return null;
         if (AnazhRealm.WORLD_REGISTRY[id]) return null; // kein Built-in-Override
         const meta = this._sanitizePortalMeta(
-            { world: m.world, label: m.label, dsl: m.dsl },
+            { world: m.world, label: m.label, dsl: m.dsl, trust: m.trust },
             typeof m.label === "string" ? m.label : id
         );
         const out = {
@@ -14267,6 +14267,11 @@ class AnazhRealm {
             desc: typeof m.desc === "string" ? m.desc.slice(0, 240) : "",
             reachable: m.reachable === true,
             importedAt: typeof m.importedAt === "number" ? m.importedAt : Date.now(),
+            // V8.71 — die Vertrauensstufe muss den localStorage-Rundlauf
+            // überleben (V8.59-Lehre): sonst verlöre eine vendorte Welt nach
+            // dem Reload ihre Sandbox. _sanitizePortalMeta whitelistet sie
+            // (Default "trusted", nur "sandboxed" wird durchgelassen).
+            trust: meta.trust,
         };
         if (
             typeof m.authorPubKey === "string" &&
@@ -14291,6 +14296,15 @@ class AnazhRealm {
         // Wand gilt auch für den localStorage-Rundlauf).
         if (m.scene && typeof m.scene === "object") {
             out.scene = this._sanitizeWorldScene(m.scene);
+        }
+        // W15 Phase 1 — eine vendorte Welt (ihr Bündel liegt in worlds/<id>/).
+        // Sie ist IMMER sandgesichert: ein fremdes, ungeprüftes Bündel läuft
+        // null-origin (V8.70). Die Marke `vendored` erzwingt trust:"sandboxed"
+        // — selbst ein manipulierter Manifest-Eintrag kann das nicht aufweichen.
+        if (m.vendored === true) {
+            out.vendored = true;
+            out.vendoredAt = typeof m.vendoredAt === "number" ? m.vendoredAt : Date.now();
+            out.trust = "sandboxed";
         }
         return out;
     }
@@ -14638,6 +14652,190 @@ class AnazhRealm {
             world: w.id,
         });
         return { ok: true, id: w.id, label: w.label };
+    }
+
+    // ### W15 Phase 1 — der Auto-Vendor-Pfad ###
+    // Heute sind worlds/fluid/, worlds/terrain/, worlds/schwarm/ von Hand
+    // vendort — jemand legte ihre Dateien ab + trug einen Eintrag nach. W15
+    // automatisiert das: ein fremdes Welt-Bündel dockt ohne Handarbeit an.
+    // Phase 1 ist bewusst die SICHERE Hälfte — ein LOKALES Bündel (Dateien,
+    // die der Spieler schon hat): der save-server schreibt sie nach
+    // worlds/<id>/, die Welt wird ein customWorlds-Eintrag, trust:"sandboxed"
+    // (V8.70 — eine fremde, ungeprüfte Welt läuft null-origin). Das Holen
+    // eines fremden Repos AUS DEM NETZ (der GitHub-Fetch) ist Phase 2 — es
+    // braucht Netz + eine URL-Whitelist; diese Phase baut die Schreib-Seite,
+    // die Phase 2 wiederverwendet. Es läuft NIE fremder Code beim Vendoren —
+    // nur Dateien werden geschrieben (der save-server) bzw. als sandgesicherte
+    // Welt geladen (das Portal-iframe, null-origin).
+
+    // Ein Bündel-Dateipfad gesäubert — oder null, wenn er aus worlds/<id>/
+    // ausbrechen könnte. Spiegelt vendorSafeRelPath in save-server.js
+    // (Defense in Depth: der Server ist die Wand, dies die freundliche
+    // Vorab-Prüfung). Lehnt "..", führenden Slash, Backslash, Doppelpunkt ab.
+    _vendorSafeRelPath(p) {
+        if (typeof p !== "string" || !p || p.length > 200) return null;
+        if (p.includes("\0") || p.includes("\\") || p.includes(":")) return null;
+        const out = [];
+        for (const seg of p.replace(/^\/+/, "").split("/")) {
+            if (seg === "" || seg === ".") continue;
+            if (seg === "..") return null;
+            out.push(seg);
+        }
+        return out.length ? out.join("/") : null;
+    }
+
+    // UTF-8-Byte-Länge eines Strings (TextEncoder ist ein Browser-Global,
+    // in der ESLint-Config seit V8.54 freigegeben).
+    _vendorByteLength(str) {
+        return new TextEncoder().encode(String(str == null ? "" : str)).length;
+    }
+
+    // W15 Phase 1 — ein Welt-Bündel clientseitig vorprüfen. REIN — kein
+    // Netz. Liefert {ok, worldId, files} oder {ok:false, reason}. Der Server
+    // prüft maßgeblich nochmal; dies fängt den Fehler vor dem POST + nennt
+    // einen klaren Grund (V7.98-Disziplin).
+    _vendorSanitizeBundle(worldId, files) {
+        const id = String(worldId || "")
+            .trim()
+            .toLowerCase();
+        if (!/^[a-z0-9_-]{1,40}$/.test(id)) return { ok: false, reason: "invalid_world_id" };
+        // Built-in-Welt-Verzeichnisse dürfen nicht überschrieben werden —
+        // die WORLD_REGISTRY-Welten plus der translated-Renderer.
+        const reserved = Object.keys(AnazhRealm.WORLD_REGISTRY).concat(["translated"]);
+        if (reserved.indexOf(id) >= 0) return { ok: false, reason: "reserved_world_id" };
+        if (!Array.isArray(files) || files.length === 0) return { ok: false, reason: "no_files" };
+        const lim = AnazhRealm.VENDOR_LIMITS;
+        if (files.length > lim.maxFiles) return { ok: false, reason: "too_many_files" };
+        const clean = [];
+        let total = 0;
+        let hasIndex = false;
+        for (const f of files) {
+            if (!f || typeof f !== "object" || typeof f.content !== "string") {
+                return { ok: false, reason: "bad_file_entry" };
+            }
+            const rel = this._vendorSafeRelPath(f.path);
+            if (!rel) return { ok: false, reason: "bad_file_path" };
+            const ext = (rel.split(".").pop() || "").toLowerCase();
+            if (lim.allowedExt.indexOf(ext) < 0) return { ok: false, reason: "bad_file_ext" };
+            const bytes = this._vendorByteLength(f.content);
+            if (bytes > lim.maxFileBytes) return { ok: false, reason: "file_too_large" };
+            total += bytes;
+            if (total > lim.maxTotalBytes) return { ok: false, reason: "bundle_too_large" };
+            if (rel === "index.html") hasIndex = true;
+            clean.push({ path: rel, content: f.content });
+        }
+        // Ein Portal lädt worlds/<id>/index.html — ohne index.html im Wurzel
+        // gäbe es kein Tor (W14-P3-Disziplin: nichts versprechen, was nicht da ist).
+        if (!hasIndex) return { ok: false, reason: "no_index_html" };
+        return { ok: true, worldId: id, files: clean };
+    }
+
+    // W15 — der POST an den save-server-Vendor-Endpunkt. Der EINZIGE
+    // Netz-Schritt; ein Netzfehler heißt, dass der save-server nicht läuft
+    // (Vendoring braucht die lokale Dev-Umgebung).
+    async _vendorPostJson(payload) {
+        try {
+            const res = await fetch("http://localhost:4312/api/vendor-world", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+            let data = null;
+            try {
+                data = await res.json();
+            } catch {
+                data = null;
+            }
+            if (!res.ok) return { ok: false, reason: (data && data.error) || `HTTP ${res.status}` };
+            return {
+                ok: true,
+                fileCount: data && data.fileCount,
+                totalBytes: data && data.totalBytes,
+                branch: data && data.branch,
+            };
+        } catch {
+            return { ok: false, reason: "save_server_unreachable" };
+        }
+    }
+
+    // Phase 1 — ein hochgeladenes Bündel POSTen. Im Playtest gestubbt (wie llmCall).
+    async _vendorPostBundle(worldId, files) {
+        return this._vendorPostJson({ worldId, files });
+    }
+
+    // Phase 2 — eine Repo-URL POSTen; der save-server holt die Dateien selbst.
+    async _vendorPostRepo(worldId, repoUrl) {
+        return this._vendorPostJson({ worldId, repoUrl });
+    }
+
+    // W15 — die vendorte Welt als customWorlds-Eintrag registrieren. BEIDE
+    // Pfade (lokales Bündel + GitHub-Fetch) enden hier. trust:"sandboxed" +
+    // vendored:true — _sanitizeImportedManifest erzwingt die Sandbox
+    // unforgeable (eine fremde, ungeprüfte Welt läuft IMMER null-origin).
+    _vendorRegisterWorld(worldId, meta) {
+        const m = meta && typeof meta === "object" ? meta : {};
+        const entry = this._sanitizeImportedManifest({
+            id: worldId,
+            label: typeof m.label === "string" && m.label.trim() ? m.label : worldId,
+            desc: typeof m.desc === "string" ? m.desc : "",
+            world: `worlds/${worldId}/index.html`,
+            dsl: Array.isArray(m.dsl) ? m.dsl : [],
+            trust: "sandboxed",
+            reachable: true,
+            vendored: true,
+            vendoredAt: Date.now(),
+        });
+        if (!entry) return { ok: false, reason: "invalid_manifest" };
+        if (!this.state.customWorlds) this.state.customWorlds = {};
+        this.state.customWorlds[entry.id] = entry;
+        this._saveCustomWorlds();
+        this.journalAppend("growth", `Eine fremde Welt dockte an deine Bibliothek an: „${entry.label}".`, {
+            world: entry.id,
+        });
+        return { ok: true, id: entry.id, label: entry.label };
+    }
+
+    // W15 Phase 1 — der Auto-Vendor-Pfad. Ein lokales Welt-Bündel dockt
+    // ohne Handarbeit an: prüfen → der save-server schreibt es nach
+    // worlds/<id>/ → die Welt wird ein customWorlds-Eintrag (trust:
+    // "sandboxed" — eine fremde Welt läuft null-origin), browsbar UND
+    // betretbar. Async (Netz). Liefert {ok, id, label} oder {ok:false, reason}.
+    // Die POST-Antwort {ok:true} ist der Beweis, dass die Dateien geschrieben
+    // sind — kein fetch-Probe nötig (anders als importWorldManifest: dort
+    // kamen die Dateien nicht von uns).
+    async vendorWorldBundle(opts) {
+        const o = opts && typeof opts === "object" ? opts : {};
+        const san = this._vendorSanitizeBundle(o.worldId, o.files);
+        if (!san.ok) return san;
+        const posted = await this._vendorPostBundle(san.worldId, san.files);
+        if (!posted.ok) return posted;
+        const reg = this._vendorRegisterWorld(san.worldId, { label: o.label, desc: o.desc, dsl: o.dsl });
+        if (!reg.ok) return reg;
+        return { ok: true, id: reg.id, label: reg.label, fileCount: posted.fileCount || san.files.length };
+    }
+
+    // W15 Phase 2 — der GitHub-Fetch. Statt eines lokalen Bündels eine
+    // github.com-Repo-URL: der save-server holt die Dateien selbst (Trees-API
+    // + Raw-Fetch) und schreibt sie nach worlds/<id>/. Die Schreib-Seite +
+    // die Registrierung sind dieselben wie beim Bündel-Pfad. Async (Netz).
+    async vendorWorldFromRepo(opts) {
+        const o = opts && typeof opts === "object" ? opts : {};
+        const id = String(o.worldId || "")
+            .trim()
+            .toLowerCase();
+        if (!/^[a-z0-9_-]{1,40}$/.test(id)) return { ok: false, reason: "invalid_world_id" };
+        const reserved = Object.keys(AnazhRealm.WORLD_REGISTRY).concat(["translated"]);
+        if (reserved.indexOf(id) >= 0) return { ok: false, reason: "reserved_world_id" };
+        const repoUrl = String(o.repoUrl || "").trim();
+        // Freundliche Vorab-Prüfung — der save-server parst die URL maßgeblich.
+        if (!/^https?:\/\/(www\.)?github\.com\/[^/\s]+\/[^/\s]+/i.test(repoUrl)) {
+            return { ok: false, reason: "not_a_github_url" };
+        }
+        const posted = await this._vendorPostRepo(id, repoUrl);
+        if (!posted.ok) return posted;
+        const reg = this._vendorRegisterWorld(id, { label: o.label, desc: o.desc, dsl: o.dsl });
+        if (!reg.ok) return reg;
+        return { ok: true, id: reg.id, label: reg.label, fileCount: posted.fileCount, branch: posted.branch };
     }
 
     // ### Welle 3 F — Welt-Tor ###
@@ -17482,10 +17680,19 @@ class AnazhRealm {
             // KI-Übersetzer Phase 1 — eine übersetzte Welt ist ein customWorld
             // mit translated-Marke; sie bekommt eine eigene Karten-Färbung.
             const isTranslated = isImported && w.translated === true;
+            // W15 Phase 1 — eine vendorte Welt ist ein customWorld, dessen
+            // Bündel der Auto-Vendor nach worlds/<id>/ schrieb (sandgesichert).
+            const isVendored = isImported && w.vendored === true;
             const card = document.createElement("div");
             card.className =
                 "library-card" +
-                (isTranslated ? " library-card-translated" : isImported ? " library-card-imported" : "");
+                (isVendored
+                    ? " library-card-vendored"
+                    : isTranslated
+                      ? " library-card-translated"
+                      : isImported
+                        ? " library-card-imported"
+                        : "");
 
             const head = document.createElement("div");
             head.className = "library-card-head";
@@ -17506,8 +17713,16 @@ class AnazhRealm {
                 : "Diese Welt ist spielbar, aber stumm gegenüber der DSL.";
             head.appendChild(stage);
             // W14 Phase 3 — eine importierte Welt trägt eine „empfangen"-Marke;
-            // eine KI-übersetzte (KI-Übersetzer Phase 1) eine „KI-übersetzt"-Marke.
-            if (isTranslated) {
+            // eine KI-übersetzte (KI-Übersetzer Phase 1) eine „KI-übersetzt"-Marke;
+            // eine vendorte (W15 Phase 1) eine „angedockt"-Marke.
+            if (isVendored) {
+                const vm = document.createElement("span");
+                vm.className = "library-vendored-mark";
+                vm.textContent = "angedockt";
+                vm.title =
+                    "Diese Welt dockte über den Auto-Vendor an — ihr Bündel liegt in worlds/, sie läuft sandgesichert (W15 Phase 1).";
+                head.appendChild(vm);
+            } else if (isTranslated) {
                 const tr = document.createElement("span");
                 tr.className = "library-translated-mark";
                 tr.textContent = "KI-übersetzt";
@@ -17940,6 +18155,213 @@ class AnazhRealm {
                 statusEl.textContent = this._translatorReasonText(res ? res.reason : "Fehler");
                 statusEl.className = "library-status library-unreachable";
             }
+        }
+    }
+
+    // ===== W15 Phase 1 — Auto-Vendor: UI =====
+    // Eine Sektion im Bibliothek-Drawer: der Spieler wählt den Ordner einer
+    // fremden Welt + nennt id/Name, der save-server schreibt sie nach
+    // worlds/<id>/, sie wird ein sandgesicherter Bibliothek-Eintrag.
+
+    // Reason-Code → menschenlesbarer Hinweis (wie _translatorReasonText).
+    _vendorReasonText(reason) {
+        const map = {
+            invalid_world_id: "Die Welt-id darf nur a-z, 0-9, - und _ enthalten (1-40 Zeichen).",
+            reserved_world_id: "Diese id gehört einer Built-in-Welt — wähle eine andere.",
+            no_files: "Es wurden keine Dateien gewählt.",
+            too_many_files: "Der Ordner enthält zu viele Dateien für ein Welt-Bündel.",
+            bad_file_entry: "Eine Datei im Bündel ist unbrauchbar.",
+            bad_file_path: "Ein Datei-Pfad ist unsicher (kein Verzeichnis-Aufstieg, kein absoluter Pfad).",
+            bad_file_ext: "Eine Datei hat eine nicht erlaubte Endung (nur Text: html/js/css/json/…).",
+            file_too_large: "Eine Datei ist zu groß fürs Vendoring.",
+            bundle_too_large: "Das Welt-Bündel ist insgesamt zu groß.",
+            no_index_html: "Dem Bündel fehlt eine index.html im Wurzel-Ordner (der Welt-Eingang).",
+            save_server_unreachable:
+                "Der lokale save-server ist nicht erreichbar — Vendoring braucht die Dev-Umgebung (npm start).",
+            invalid_manifest: "Das Welt-Manifest war unbrauchbar.",
+            not_a_github_url: "Das ist keine github.com-Repo-URL — z. B. https://github.com/owner/repo.",
+        };
+        return map[reason] || `Andocken fehlgeschlagen: ${reason}`;
+    }
+
+    // Picked File-Objekte → [{path, content}]. webkitdirectory liefert
+    // "<ordner>/<pfad>" — die erste Stufe (der Ordnername) fällt weg. Nur
+    // Text-Endungen, kein node_modules / .git / versteckte Pfade.
+    _vendorReadFiles(fileList) {
+        const lim = AnazhRealm.VENDOR_LIMITS;
+        const wanted = [];
+        for (const f of fileList) {
+            let rel = f.webkitRelativePath || f.name || "";
+            const slash = rel.indexOf("/");
+            if (slash >= 0 && f.webkitRelativePath) rel = rel.slice(slash + 1);
+            if (!rel) continue;
+            if (/(^|\/)(node_modules|\.git)(\/|$)/.test(rel) || /(^|\/)\./.test(rel)) continue;
+            const ext = (rel.split(".").pop() || "").toLowerCase();
+            if (lim.allowedExt.indexOf(ext) < 0) continue;
+            wanted.push({ file: f, rel });
+            if (wanted.length > lim.maxFiles) break;
+        }
+        return Promise.all(
+            wanted.map(
+                (w) =>
+                    new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve({ path: w.rel, content: String(reader.result || "") });
+                        reader.onerror = () => resolve(null);
+                        reader.readAsText(w.file);
+                    })
+            )
+        ).then((arr) => arr.filter(Boolean));
+    }
+
+    // Zeigt nach dem Ordner-Wählen, wie viele verwertbare Dateien drin sind.
+    _vendorRenderPicked() {
+        if (typeof document === "undefined") return;
+        const fileInput = document.getElementById("vendor-files");
+        const status = document.getElementById("vendor-status");
+        if (!fileInput || !status) return;
+        const lim = AnazhRealm.VENDOR_LIMITS;
+        let n = 0;
+        for (const f of fileInput.files || []) {
+            const rel = f.webkitRelativePath || f.name || "";
+            if (/(^|\/)(node_modules|\.git)(\/|$)/.test(rel) || /(^|\/)\./.test(rel)) continue;
+            if (lim.allowedExt.indexOf((rel.split(".").pop() || "").toLowerCase()) >= 0) n++;
+        }
+        status.className = "vendor-status";
+        status.textContent = n ? `${n} verwertbare Datei(en) gewählt — id + Name eingeben, dann Andocken.` : "";
+    }
+
+    // Den Auto-Vendor laufen lassen (Knopf-Handler).
+    async _runVendorDock() {
+        if (typeof document === "undefined") return;
+        const idEl = document.getElementById("vendor-id");
+        const labelEl = document.getElementById("vendor-label");
+        const descEl = document.getElementById("vendor-desc");
+        const dslEl = document.getElementById("vendor-dsl");
+        const fileInput = document.getElementById("vendor-files");
+        const status = document.getElementById("vendor-status");
+        const dockBtn = document.getElementById("vendor-dock");
+        if (!idEl || !status) return;
+        status.className = "vendor-status";
+        const picked = fileInput && fileInput.files ? Array.from(fileInput.files) : [];
+        if (!picked.length) {
+            status.textContent = "Wähle zuerst den Ordner einer Welt.";
+            status.className = "vendor-status vendor-status-error";
+            return;
+        }
+        status.textContent = "Lese die Dateien …";
+        if (dockBtn) dockBtn.disabled = true;
+        let files = null;
+        try {
+            files = await this._vendorReadFiles(picked);
+        } catch {
+            files = null;
+        }
+        if (!files || !files.length) {
+            status.textContent = "Keine verwertbaren Text-Dateien im Ordner gefunden.";
+            status.className = "vendor-status vendor-status-error";
+            if (dockBtn) dockBtn.disabled = false;
+            return;
+        }
+        status.textContent = "Die Welt dockt an …";
+        const dsl = String(dslEl ? dslEl.value : "")
+            .split(/[\s,]+/)
+            .map((s) => s.trim().toLowerCase())
+            .filter(Boolean);
+        let res;
+        try {
+            res = await this.vendorWorldBundle({
+                worldId: idEl.value,
+                label: labelEl ? labelEl.value : "",
+                desc: descEl ? descEl.value : "",
+                dsl,
+                files,
+            });
+        } catch (e) {
+            res = { ok: false, reason: (e && e.message) || "Fehler" };
+        }
+        if (dockBtn) dockBtn.disabled = false;
+        if (res && res.ok) {
+            status.textContent = `✓ „${res.label}" ist angedockt (${res.fileCount} Dateien) — siehe „Welten" unten.`;
+            this.renderLibraryUI();
+            this.log(`Auto-Vendor: Welt „${res.id}" angedockt.`, "INFO");
+        } else {
+            status.textContent = this._vendorReasonText(res ? res.reason : "Fehler");
+            status.className = "vendor-status vendor-status-error";
+        }
+    }
+
+    // W15 Phase 2 — den GitHub-Fetch laufen lassen (Knopf-Handler). Teilt
+    // sich die id/Name/Beschreibung/DSL-Felder mit dem Bündel-Pfad.
+    async _runVendorRepoDock() {
+        if (typeof document === "undefined") return;
+        const idEl = document.getElementById("vendor-id");
+        const labelEl = document.getElementById("vendor-label");
+        const descEl = document.getElementById("vendor-desc");
+        const dslEl = document.getElementById("vendor-dsl");
+        const repoEl = document.getElementById("vendor-repo");
+        const status = document.getElementById("vendor-status");
+        const btn = document.getElementById("vendor-repo-dock");
+        if (!idEl || !status) return;
+        status.className = "vendor-status";
+        const repoUrl = String(repoEl ? repoEl.value : "").trim();
+        if (!repoUrl) {
+            status.textContent = "Gib eine GitHub-Repo-URL an.";
+            status.className = "vendor-status vendor-status-error";
+            return;
+        }
+        status.textContent = "Hole das Repo von GitHub …";
+        if (btn) btn.disabled = true;
+        const dsl = String(dslEl ? dslEl.value : "")
+            .split(/[\s,]+/)
+            .map((s) => s.trim().toLowerCase())
+            .filter(Boolean);
+        let res;
+        try {
+            res = await this.vendorWorldFromRepo({
+                worldId: idEl.value,
+                repoUrl,
+                label: labelEl ? labelEl.value : "",
+                desc: descEl ? descEl.value : "",
+                dsl,
+            });
+        } catch (e) {
+            res = { ok: false, reason: (e && e.message) || "Fehler" };
+        }
+        if (btn) btn.disabled = false;
+        if (res && res.ok) {
+            status.textContent = `✓ „${res.label}" aus GitHub geholt (${res.fileCount} Dateien) — siehe „Welten" unten.`;
+            this.renderLibraryUI();
+            this.log(`Auto-Vendor: Welt „${res.id}" aus GitHub angedockt.`, "INFO");
+        } else {
+            status.textContent = this._vendorReasonText(res ? res.reason : "Fehler");
+            status.className = "vendor-status vendor-status-error";
+        }
+    }
+
+    // W15 — die „Welt andocken"-Sektion verkabeln: der Ordner-Picker + der
+    // Andocken-Knopf (Phase 1) + der GitHub-Holen-Knopf (Phase 2).
+    vendorInitDOM() {
+        if (typeof document === "undefined") return;
+        const pickBtn = document.getElementById("vendor-pick");
+        const fileInput = document.getElementById("vendor-files");
+        if (pickBtn && fileInput && pickBtn.dataset.wired !== "1") {
+            pickBtn.dataset.wired = "1";
+            pickBtn.addEventListener("click", () => {
+                fileInput.value = "";
+                fileInput.click();
+            });
+            fileInput.addEventListener("change", () => this._vendorRenderPicked());
+        }
+        const dockBtn = document.getElementById("vendor-dock");
+        if (dockBtn && dockBtn.dataset.wired !== "1") {
+            dockBtn.dataset.wired = "1";
+            dockBtn.addEventListener("click", () => this._runVendorDock());
+        }
+        const repoBtn = document.getElementById("vendor-repo-dock");
+        if (repoBtn && repoBtn.dataset.wired !== "1") {
+            repoBtn.dataset.wired = "1";
+            repoBtn.addEventListener("click", () => this._runVendorRepoDock());
         }
     }
 
@@ -29393,6 +29815,8 @@ class AnazhRealm {
         this.libraryInitDOM();
         // KI-Übersetzer Phase 1 — die Übersetzer-Sektion verkabeln.
         this.translatorInitDOM();
+        // W15 Phase 1 — die Auto-Vendor-Sektion („Welt andocken") verkabeln.
+        this.vendorInitDOM();
         // Ring 6.5 — Hotbar im DOM rendern. Wird hier einmal aufgesetzt;
         // setHotbarSlot löst ein Re-Render aus.
         this._renderHotbarDOM();
@@ -31439,6 +31863,17 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
         desc: "Ein 2D-Schwarm aus hunderten Wesen — eine fremde Engine, die null-origin sandgesichert läuft, ohne AnazhRealm je zu berühren.",
         trust: "sandboxed",
     }),
+});
+
+// V8.71 — W15 Phase 1: die Vendor-Limits. Müssen mit save-server.js
+// (VENDOR_MAX_*) übereinstimmen — der Server ist die maßgebliche Wand,
+// AnazhRealms _vendorSanitizeBundle ist die freundliche Vorab-Prüfung
+// (schneller, klarer Grund, ein Fehlschlag vor dem POST).
+AnazhRealm.VENDOR_LIMITS = Object.freeze({
+    maxFiles: 64,
+    maxFileBytes: 4 * 1024 * 1024,
+    maxTotalBytes: 12 * 1024 * 1024,
+    allowedExt: Object.freeze(["html", "htm", "js", "mjs", "css", "json", "txt", "md", "glsl"]),
 });
 
 // Deutsche Labels für die Welt-Anzeige. Werkstatt-Status zeigt diese

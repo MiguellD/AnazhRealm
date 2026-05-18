@@ -9,11 +9,15 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 18.05.2026, V8.70)
+## Schnell-Lage (Stand 18.05.2026, V8.72)
 
-**Du erbst eine sehr lebendige Welt**. **2597 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~31000 Zeilen in einer Datei, alles produktiv.
+**Du erbst eine sehr lebendige Welt**. **2629 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~31000 Zeilen in einer Datei, alles produktiv.
 
-**Jüngste Welle — V8.70 (Untrusted-Welt-Tor: eine echte fremde Engine läuft null-origin sandgesichert)**: der Schöpfer fragte zu Recht — „kann ich wirklich in eine andere Welt, oder ist alles Hardcode, nimmst du Freiheit für Sicherheit?". Antwort: das echte Tor zu fremden Engines, ohne Freiheits-Tausch. Eine Welt trägt eine Vertrauensstufe (`portalMeta.trust`): `"sandboxed"` → `_buildPortalOverlay` gibt dem Portal-iframe `sandbox="allow-scripts"` ALLEIN (keine `allow-same-origin`) → opake null-Herkunft. Fremder, ungeprüfter Code läuft VOLL (jede Physik, WebGL, WASM), kann aber AnazhRealms `localStorage`/`document`/Cookies NICHT berühren — die Wand IST die Bedingung dafür, dass beliebiger fremder Code überhaupt sicher laufen darf, kein Tausch. Die neue `worlds/schwarm/`-Welt beweist es: eine eigenständige 2D-Boids-Engine (eigenes Canvas, eigener Loop, kein Three.js, kein AnazhRealm-Code), die null-origin läuft + per Sandbox-Selbsttest meldet, dass die Wand hält. `_sanitizePortalMeta` + `buildStateSnapshot` tragen `trust`; `_portalSendEnter`/`_portalForwardDsl` posten `"*"` an die opake Welt. Diese Welle baut den MECHANISMUS; das automatische Andocken externer Repos ist die nächste (Auto-Vendor-Pfad). +13 Invarianten 2584→2597, browser-verifiziert (`smoke-sandbox.cjs`). **Lies `CLAUDE.md` V8.70 ZUERST.**
+**Jüngste Welle — V8.72 (Auto-Vendor Phase 2: der GitHub-Fetch — ein fremdes Repo dockt aus dem Netz an)**: V8.71 baute die sichere Hälfte (ein LOKALES Bündel dockt an). W15 P2 fügt die Netz-Hälfte hinzu: eine GitHub-URL eingeben, der save-server holt das Repo selbst. Der `/api/vendor-world`-Endpunkt nimmt jetzt ZWEI Eingänge — `{worldId, files}` (Bündel) und `{worldId, repoUrl}` (GitHub); die Phase-1-Schreib-Logik ist zu `applyVendorBundle` extrahiert, BEIDE Eingänge enden dort. Der GitHub-Pfad: `parseGithubRepoUrl` (URL → owner/repo/branch, Regex-streng) → `vendorFromGithub` (Default-Branch auflösen, Trees-API lesen, Text-Dateien per Raw-Fetch holen — zero-dep `https`, `vendorHttpGet`). **Kein SSRF**: die Repo-URL liefert nur owner/repo/branch, die fetchbare URL baut der Server aus `VENDOR_GH_API_BASE`/`VENDOR_GH_RAW_BASE` (env, Default `api.github.com`/`raw.githubusercontent.com`) — eine Browser-Seite kann den Host nicht wählen. Die env-Bases sind echte Operator-Konfiguration (GitHub Enterprise) UND die Test-Naht: `smoke-vendor.cjs` Teil C startet ein lokales Fake-GitHub + zeigt die Bases darauf → der echte Fetch-Code läuft offline + deterministisch. Clientseitig spiegelt `vendorWorldFromRepo` das `vendorWorldBundle` (beide enden in `_vendorRegisterWorld`, `trust:"sandboxed"`); eine GitHub-URL-Zeile in der „Welt andocken"-Sektion. +12 Invarianten 2617→2629, smoke-verifiziert. **Lies `CLAUDE.md` V8.72 ZUERST.**
+
+**Welle davor — V8.71 (Auto-Vendor-Pfad Phase 1: ein lokales Welt-Bündel dockt sandgesichert an)**: V8.70 baute den Schlüsselstein (eine fremde Engine läuft null-origin sandgesichert), aber `worlds/schwarm/` war hand-vendort — jemand legte ihre Datei ab + trug einen Eintrag nach. W15 automatisiert das. Der save-server (lokal, hat schon den V7.96-LLM-Proxy) bekommt einen zweiten Schreib-Pfad `/api/vendor-world`: er nimmt `{worldId, files:[{path,content}]}` und schreibt das Bündel nach `worlds/<id>/`. Die Wand spiegelt den LLM-Proxy — op-förmige `worldId` (keine Built-in-Welt), jeder Pfad relativ (kein `..`/Backslash/absoluter Pfad, `path.posix.normalize` + `startsWith`-Prüfung), Endung-Whitelist (Text), Größen-Deckel, `index.html` Pflicht; **NIE läuft etwas — nur `fs.writeFileSync`**. Clientseitig: `_vendorSanitizeBundle` prüft vorab (Defense in Depth), `_vendorPostBundle` POSTet (der einzige Netz-Schritt, im Playtest gestubbt wie `llmCall`), `vendorWorldBundle` registriert die Welt als `customWorlds`-Eintrag mit `trust:"sandboxed"` + `vendored:true`. Die Marke `vendored` ERZWINGT `trust:"sandboxed"` in `_sanitizeImportedManifest` (unforgeable — eine vendorte Welt läuft IMMER null-origin); `_sanitizeImportedManifest` trägt `trust`+`vendored` jetzt durch den localStorage-Rundlauf (V8.59-Lehre). Eine „Welt andocken"-Sektion im Bibliothek-Drawer nimmt einen Welt-Ordner. Phase 1 ist die netzfreie Hälfte (ein lokales Bündel) — der GitHub-Fetch ist Phase 2; sie baut zugleich die Schreib-Seite, die Phase 2 wiederverwendet. +20 Invarianten 2597→2617, browser-verifiziert (`smoke-vendor.cjs` — Teil A der save-server-Round-Trip, Teil B die frisch vendorte Welt läuft in einem echten null-origin-iframe). **Lies `CLAUDE.md` V8.71 ZUERST.**
+
+**Welle davor — V8.70 (Untrusted-Welt-Tor: eine echte fremde Engine läuft null-origin sandgesichert)**: der Schöpfer fragte zu Recht — „kann ich wirklich in eine andere Welt, oder ist alles Hardcode, nimmst du Freiheit für Sicherheit?". Antwort: das echte Tor zu fremden Engines, ohne Freiheits-Tausch. Eine Welt trägt eine Vertrauensstufe (`portalMeta.trust`): `"sandboxed"` → `_buildPortalOverlay` gibt dem Portal-iframe `sandbox="allow-scripts"` ALLEIN (keine `allow-same-origin`) → opake null-Herkunft. Fremder, ungeprüfter Code läuft VOLL (jede Physik, WebGL, WASM), kann aber AnazhRealms `localStorage`/`document`/Cookies NICHT berühren — die Wand IST die Bedingung dafür, dass beliebiger fremder Code überhaupt sicher laufen darf, kein Tausch. Die neue `worlds/schwarm/`-Welt beweist es: eine eigenständige 2D-Boids-Engine (eigenes Canvas, eigener Loop, kein Three.js, kein AnazhRealm-Code), die null-origin läuft + per Sandbox-Selbsttest meldet, dass die Wand hält. `_sanitizePortalMeta` + `buildStateSnapshot` tragen `trust`; `_portalSendEnter`/`_portalForwardDsl` posten `"*"` an die opake Welt. Diese Welle baut den MECHANISMUS; das automatische Andocken externer Repos ist die nächste (Auto-Vendor-Pfad). +13 Invarianten 2584→2597, browser-verifiziert (`smoke-sandbox.cjs`). **Lies `CLAUDE.md` V8.70 ZUERST.**
 
 **Welle davor — V8.69 (KI-Übersetzer Phase 2: das Tor öffnet sich — eine übersetzte Welt wird betretbar)**: der KI-Übersetzer ist damit **vollständig**. Phase 1 übersetzte eine fremde Welt in ein Manifest; Phase 2 öffnet das Tor — die übersetzte Welt wird ein betretbarer Ort. Der genial-sichere Kniff: statt LLM-generierten Adapter-Code auszuführen (die gefährliche Hälfte), übersetzt der LLM die Welt in eine deklarative **Szene** — wieder DATEN, kein Code. `buildTranslatedWorld(id)` ruft `translateWorldScene` (LLM → Szene), `_sanitizeWorldScene` säubert sie (jede Farbe striktes `#rrggbb`, jede Zahl geclampt, jede Liste gedeckelt — die Wand), heftet sie an die `customWorlds`-Welt + macht sie `reachable:true`. Der generische, hand-geschriebene Renderer `worlds/translated/` baut JEDE solche Szene auf (Gradient-Himmel, Boden, Objekt-Gruppen als `InstancedMesh`, Ambient-Partikel, Diorama-Kamera). Das Portal trägt eine `translatedWorldId`; `_portalSendEnter` schickt die Szene im `enter`-Handshake (Daten, gerendert, nie ausgeführt). Eine Welt, ausgedrückt in einer Sprache, die AnazhRealm selbst rendert — die Bibliothek von Alexandria, die nicht brennt. +20 Invarianten 2564→2584, der Renderer browser-verifiziert (`smoke-translated.cjs`). **Lies `CLAUDE.md` V8.69 ZUERST.**
 
@@ -39,7 +43,7 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 **Wellen davor — V8.48-V8.54**: W12 Welt-Portal (V8.51-V8.53 — sandboxed iframe, zwei fremde Engines, generische DSL-Brücke, beidseitiger Kanal, native Manifest-Stufe) + W13 Phase 1 (V8.54 — der ed25519-Schlüssel als Fundament) + drei kleine Polish-Wellen (V8.48 Terrain-Schatten, V8.49 `updateCreatures`-Perf 2,4×, V8.50 Flaky-Test-Heilung über `_gameLoopTick`). Volle Wellen-Historie: Session-Tagebuch unten + `CLAUDE.md`.
 
-**Offen — der echte Fremd-Engine-Bogen.** W12 Welt-Portal, W13 Vibe-Pass, W14 Bibliothek, W7 Compute-Sharing + der KI-Übersetzer (Phase 1+2) sind komplett. Der Schöpfer öffnete einen neuen Bogen: das echte automatische Tor zu fremden Vibecode-Engines (OASIS / Bibliothek von Alexandria). **V8.70 baute den ersten Teil** — das Untrusted-Welt-Tor: eine echte, ungeprüfte fremde Engine läuft null-origin sandgesichert hinter dem Portal (volle Freiheit drinnen, null Reichweite raus). Offen: der **Auto-Vendor-Pfad** (ein fremdes Repo dockt ohne Handarbeit an) + die **Mesh-Welt-Verteilung** (Welten reisen peer-to-peer, die Spieler tragen die Bibliothek). `docs/world-portal.md` + `docs/roadmap.md` + `docs/state-of-realm.md` ZUERST lesen.
+**In Arbeit — der echte Fremd-Engine-Bogen.** W12 Welt-Portal, W13 Vibe-Pass, W14 Bibliothek, W7 Compute-Sharing + der KI-Übersetzer (Phase 1+2) sind komplett. Der Schöpfer öffnete einen neuen Bogen: das echte automatische Tor zu fremden Vibecode-Engines (OASIS / Bibliothek von Alexandria). **V8.70 baute den Schlüsselstein** — das Untrusted-Welt-Tor: eine echte, ungeprüfte fremde Engine läuft null-origin sandgesichert hinter dem Portal (volle Freiheit drinnen, null Reichweite raus). **V8.71 + V8.72 bauten den Auto-Vendor-Pfad (W15) komplett** — ein fremdes Welt-Bündel dockt ohne Handarbeit an, aus einem lokalen Ordner (Phase 1) ODER direkt aus einem GitHub-Repo (Phase 2, der save-server holt die Dateien selbst). Offen: die **Mesh-Welt-Verteilung** (W16 — vendorte Welten reisen peer-to-peer, die Spieler tragen die Bibliothek) + die **Multiplayer-Sub-Welten** (W17). `docs/world-portal.md` + `docs/roadmap.md` + `docs/state-of-realm.md` ZUERST lesen.
 
 **Welle davor — V8.47 (Shadow-Acne-Heilung)**: Schöpfer-Befund „unnatürliche Schattenlinien nur auf komplett horizontalen flachen Flächen" (Bauwerks-Dächer). Diese Präzision war die Diagnose — Cel-Banding erscheint auf GEWÖLBTEN Flächen, nicht auf flachen; der Schöpfer sah das Gegenteil → Shadow-Map-Acne. Die `DirectionalLight` hatte keinen Shadow-Bias → flache, zur Sonne zeigende Flächen schatten sich selbst in Streifen. Fix: `shadow.normalBias = 1.0` + `shadow.bias = -0.0005` + mapSize 1024→2048.
 
@@ -75,7 +79,7 @@ Die Session-Hälfte davor (V8.23 → V8.33) war eine **Atmosphäre-Tiefe-Welle (
 
 **W12 + W13 + W14 + W7 sind live** — AnazhRealm ist ein Tor zu anderen Vibecode-Welten (W12 Welt-Portal), der Avatar trägt eine souveräne Identität (W13 Vibe-Pass), die Bibliothek von Alexandria steht (W14), und der WebRTC-Mesh trägt die Multi-User-Last (W7 Compute-Sharing). Wer an einer Portal- oder Bibliothek-Welle arbeitet: lies `docs/world-portal.md` ZUERST.
 
-**Die grossen Roadmap-Ringe sind gebaut**, und der echte Fremd-Engine-Bogen läuft: der KI-Übersetzer ist vollständig (V8.68/V8.69), und **V8.70 öffnete das Untrusted-Welt-Tor** — eine echte, ungeprüfte fremde Engine läuft null-origin sandgesichert hinter dem Portal. Offen in diesem Bogen: der Auto-Vendor-Pfad + die Mesh-Welt-Verteilung. Der aktuelle Stand steht im Block „Aktuelle Roadmap" weiter unten und in `docs/roadmap.md` §3.
+**Die grossen Roadmap-Ringe sind gebaut**, und der echte Fremd-Engine-Bogen läuft: der KI-Übersetzer ist vollständig (V8.68/V8.69), **V8.70 öffnete das Untrusted-Welt-Tor** (eine echte fremde Engine läuft null-origin sandgesichert), **V8.71 + V8.72 bauten den Auto-Vendor-Pfad komplett** (ein fremdes Bündel ODER ein GitHub-Repo dockt sandgesichert an). Offen in diesem Bogen: die Mesh-Welt-Verteilung (W16) + die Multiplayer-Sub-Welten (W17). Der aktuelle Stand steht im Block „Aktuelle Roadmap" weiter unten und in `docs/roadmap.md` §3.
 
 **Atmosphäre-Disziplin**: alle atmosphärischen Methoden mit `[ATMOSPHERE]`-Marker werden von `audit-strict.cjs` (5. Schicht) auf Hardcode geprüft. Wert-aus-dem-Kopf ist verboten — immer „aus welcher state-Beobachtung emergiert das?".
 
@@ -167,15 +171,15 @@ V7.89 (Kreatur-Boosts) war die kritische Prüfung dieses Gesetzes. Naive Lösung
 
 ## Aktuelle Roadmap (was als nächstes denkbar ist)
 
-Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3/V4 + 11 ext. + **W12 (Welt-Portal) + W13 (Vibe-Pass) + W14 (Bibliothek) + W7 (Compute-Sharing) + der KI-Übersetzer + das Untrusted-Welt-Tor (V8.70)** sind gebaut. Offen ist der **echte Fremd-Engine-Bogen** — das automatische Tor zu fremden Vibecode-Engines. V8.70 baute seinen Schlüsselstein (eine echte fremde Engine läuft null-origin sandgesichert); die drei folgenden Wellen sind **detailliert in `docs/roadmap.md` §3 — „Der Fremd-Engine-Bogen (W15–W17)"** geplant:
+Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3/V4 + 11 ext. + **W12 (Welt-Portal) + W13 (Vibe-Pass) + W14 (Bibliothek) + W7 (Compute-Sharing) + der KI-Übersetzer + das Untrusted-Welt-Tor (V8.70) + der Auto-Vendor-Pfad (W15 — V8.71 Bündel-Pfad, V8.72 GitHub-Fetch)** sind gebaut. In Arbeit ist der **echte Fremd-Engine-Bogen** — das automatische Tor zu fremden Vibecode-Engines. V8.70 baute seinen Schlüsselstein, V8.71+V8.72 den Auto-Vendor-Pfad komplett; die folgenden Schritte (W16/W17) sind **detailliert in `docs/roadmap.md` §3 — „Der Fremd-Engine-Bogen (W15–W17)"** geplant:
 
 | Welle | Was | Aufwand | Vision-Tiefe |
 |---|---|---|---|
-| **W15 — Auto-Vendor-Pfad** | Der save-server bekommt einen `/api/vendor-world`-Pfad, der ein fremdes Repo holt + nach `worlds/<id>/` schreibt — eine neue Welt dockt ohne Handarbeit an. Baut direkt auf dem V8.70-Untrusted-Tor auf. | ~3-5 Sessions | sehr hoch |
+| **W15 — Auto-Vendor-Pfad** | ✅ **komplett (V8.71 + V8.72)**: ein fremdes Welt-Bündel dockt ohne Handarbeit an — aus einem lokalen Ordner (P1) ODER direkt aus einem GitHub-Repo (P2, der save-server holt die Dateien selbst). | erledigt | sehr hoch |
 | **W16 — Mesh-Welt-Verteilung** | Welten reisen peer-to-peer über das gebaute W7-Mesh — was ein Spieler hat, kann ein anderer betreten. Das Knoten-Netz: die Spieler tragen die Bibliothek. | ~3-4 Sessions | sehr hoch |
 | **W17 — Multiplayer-Sub-Welten** | Der Transport-Shim (`WebSocket`/`fetch` der fremden Welt → AnazhRealms Mesh) + das Mesh-als-Server + das Gruppen-Portal. So taucht eine Gruppe gemeinsam in eine Server-Welt — auch voxelize/Shooter. | ~6-8 Sessions | sehr hoch |
 
-**Empfehlung**: **W15 — der Auto-Vendor-Pfad** — die natürliche Fortsetzung von V8.70. Der Untrusted-Mechanismus steht (eine fremde Engine läuft sicher); jetzt fehlt das automatische Beschaffen der Welt-Dateien. Der save-server (läuft lokal in der Dev-Umgebung, hat schon den V7.96-LLM-Proxy) bekommt einen `/api/vendor-world`-Pfad: ein fremdes Repo holen, validieren, nach `worlds/<id>/` schreiben — danach dockt es wie `worlds/schwarm/` an. **Server-Welten (voxelize/Shooter) sind NICHT ausgeschlossen** — W17 löst sie über den Transport-Shim + das Mesh-als-Server (Detail im roadmap.md-§3-Plan, inkl. der ehrlichen Server-Taxonomie: Relay-Welten laufen voll p2p, Compute-Welten brauchen einen Peer-Host oder eine Brücken-Welt). `docs/roadmap.md` §3 (Der Fremd-Engine-Bogen) + `docs/world-portal.md` ZUERST lesen.
+**Empfehlung**: **W16 — Mesh-Welt-Verteilung** — die natürliche Fortsetzung. Der Auto-Vendor (W15) ist komplett: eine fremde Welt dockt aus einem Ordner oder GitHub an + liegt in `worlds/<id>/`. W16 lässt vendorte Welten peer-to-peer reisen: eine Welt wird content-adressiert (Hash über ihr Bündel), und will ich das Portal einer Welt betreten, die ein Mitspieler hat und ich nicht, holt mein Client das Bündel über das W7-Mesh (`world-bundle-pull`/`world-bundle-chunk`, Spiegel von `world-pull` aus W7 P2 — der Chunk-Transfer-Mechanismus steht schon). Das git-Repo bleibt die persistente Bibliothek, das Mesh die lebende Verteilung; eine peer-empfangene Welt läuft `trust:"sandboxed"` (V8.70 — eine fremde Welt von einem fremden Peer ist per Konstruktion ungeprüft). Danach W17 (Multiplayer-Sub-Welten — der Transport-Shim + das Mesh-als-Server; **Server-Welten wie voxelize/Shooter sind NICHT ausgeschlossen**, die ehrliche Server-Taxonomie steht im roadmap.md-§3-Plan). `docs/roadmap.md` §3 (Der Fremd-Engine-Bogen) + `docs/world-portal.md` ZUERST lesen.
 
 **Kleinere Polish-Notiz**: die Bauplan-Signatur-Zeile im Werkstatt-Stats-Panel ist wenig auffindbar (Schöpfer-Befund V8.56 — sie wurde erst nach Hinweis gesehen). Ein UX-Auffindbarkeits-Punkt für eine spätere Polish-Runde.
 
@@ -210,7 +214,7 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3/V4 + 11 ext. + **W12 (Welt-Portal) 
 - `CREATURE_PROPOSED_OPS` für Kreatur-Welt-Aktion (Defense in Depth)
 - save-server `/api/proxy/llm` mit strikten Whitelists (https-only, body-cap, header-allowlist)
 
-### Tests (2597 Invarianten)
+### Tests (2629 Invarianten)
 - `npm run playtest` — Headless-Chromium, ~25 s Logs, alle Schichten
 - `scripts/playtest.cjs` ist der Single-Source-Test
 - `npm run audit:strict` (5 generische Audit-Schichten) + `npm run smoke:multiuser`
@@ -224,6 +228,48 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3/V4 + 11 ext. + **W12 (Welt-Portal) 
 **Meta-Lehre B**: **Heilige-Lektion-Disziplin ist mit JEDER Welle neu zu prüfen.** Ich war versucht, bei V7.96 einen neuen „LLM-Proxy-Server" als separates Programm zu bauen — wäre Re-Komplexifizierung gewesen. Stattdessen: save-server bekam eine zweite Rolle. Bei jeder neuen Funktion fragen: „kann das in einem bestehenden Dienst leben? Wenn nein, warum nicht?"
 
 **Meta-Lehre C**: **Fallback-Schichten als Vision-treue Antwort.** V7.98's vier-Schicht-Parser ist mehr als nur Bug-Fix — es ist eine VISION-Aussage: „nimm was da ist, zeig es dem Spieler". Strenge Validierung wäre einfacher zu coden, aber ärmer für den Spieler. Wer das System auf reale Vielfalt vorbereitet (LLM-Größen, Modell-Stile, Antwort-Formate), baut Fallback-Schichten — keine Single-Path-Strenge.
+
+---
+
+## Rückschau: die W15-Session (Auto-Vendor, V8.71-V8.72)
+
+Diese Session baute W15 (den Auto-Vendor-Pfad) in zwei Wellen — P1 der
+Bündel-Pfad (V8.71), P2 der GitHub-Fetch (V8.72). Der Code ist sauber,
+getestet, SSRF-sicher. Aber zwei ehrliche Lehren, gegen die du dich beim
+nächsten Mal wappnen sollst:
+
+### Lehre 1 — Doc-Sync ist eine Grep-Aufgabe, kein Headline-Update.
+
+In V8.71 UND V8.72 habe ich die Doku nur halb synchronisiert: ich
+aktualisierte die „Headline"-Absätze (CLAUDE.md-Versionsblock, der
+jeweils oberste Doc-Absatz), ließ aber ~13 stale Stellen stehen —
+`README.md` blieb ganz auf V8.70, die Invarianten-Zahl stand veraltet in
+`roadmap.md` an drei Stellen, in `world-portal.md` an zwei, in
+`state-of-realm.md` an zwei. Der Schöpfer fand es beim Audit. **Die
+Disziplin**: nach JEDER Welle, BEVOR du committest, laufe
+`grep -rn "<alte-Version>\|<alte-Invariantenzahl>" docs/*.md CLAUDE.md README.md`
+und heile JEDEN Treffer. Die „Doku-Disziplin — eine Quelle der Wahrheit"
+in CLAUDE.md ist das Ziel; der systematische Grep ist der Weg dahin. Ein
+Headline-Update fühlt sich nach „fertig" an — ist es aber nicht.
+
+### Lehre 2 — Beim Ersetzen eines mehrzeiligen Blocks den GANZEN Block matchen.
+
+Beim V8.72-CLAUDE.md-Versionsblock-Edit matchte ich nur den ANFANG des
+alten Blocks im `old_string`. Folge: der neue V8.71-Eintrags-Header
+klebte an den übrig gebliebenen alten Text — eine verstümmelte
+Doppel-Zeile entstand. Gefangen + geheilt, aber: wenn du einen Absatz
+oder Block ersetzt, muss `old_string` den GANZEN Block umspannen (oder
+nutze einen eindeutigen Anker am Anfang UND am Ende).
+
+### Lehre 3 — Ein Netz-Feature wird offline testbar, wenn die Gegenstelle eine operator-konfigurierbare Base ist.
+
+Der GitHub-Fetch (V8.72) ist ein Netz-Feature — und doch offline + grün
+im Smoke-Test. Der Trick: `VENDOR_GH_API_BASE`/`VENDOR_GH_RAW_BASE` sind
+env-Variablen (echte Operator-Konfiguration — GitHub Enterprise), kein
+Test-Hack. `smoke-vendor.cjs` startet ein lokales Fake-GitHub und zeigt
+die Bases darauf. Das ist eine legitime Test-Naht, KEIN Bypass — eine
+request-gesteuerte Base wäre ein SSRF-Loch, eine env-gesteuerte ist
+sicher UND testbar. Merke das Muster für jedes künftige Netz-Feature.
 
 ---
 
@@ -338,6 +384,49 @@ Browser: geh den Menschen-Pfad selbst, vor dem „fertig".
 ---
 
 ## Session-Tagebuch (chronologisch, jüngste oben)
+
+### V8.72 — Auto-Vendor Phase 2: der GitHub-Fetch (18.05.2026)
+
+V8.71 baute die sichere Hälfte (ein LOKALES Bündel dockt an). W15 P2 fügt
+die Netz-Hälfte hinzu: eine GitHub-URL eingeben, der save-server holt das
+Repo selbst. Der `/api/vendor-world`-Endpunkt nimmt jetzt ZWEI Eingänge —
+`{worldId, files}` (Bündel) und `{worldId, repoUrl}` (GitHub); die
+Phase-1-Schreib-Logik ist zu `applyVendorBundle` extrahiert, BEIDE
+Eingänge enden dort (der Bündel-Pfad blieb Zeile für Zeile unverändert).
+Der GitHub-Pfad: `parseGithubRepoUrl` (URL → owner/repo/branch, streng)
+→ `vendorFromGithub` (Default-Branch auflösen, Trees-API lesen,
+Text-Dateien per Raw-Fetch holen — `vendorHttpGet`, zero-dep `https`).
+**Kein SSRF**: die Repo-URL liefert nur owner/repo/branch, die fetchbare
+URL baut der Server aus `VENDOR_GH_API_BASE`/`VENDOR_GH_RAW_BASE` (env,
+operator-konfigurierbar — GitHub Enterprise; nicht request-gesteuert).
+Die env-Bases sind zugleich die Test-Naht: `smoke-vendor.cjs` Teil C
+startet ein lokales Fake-GitHub + zeigt die Bases darauf → der echte
+Fetch-Code läuft offline + deterministisch. Im Playtest ist
+`_vendorPostRepo` gestubbt (wie `_vendorPostBundle`/`llmCall`).
+Vollständiger Eintrag: `CLAUDE.md` V8.72. 2617 → 2629 Invarianten.
+
+### V8.71 — Auto-Vendor-Pfad Phase 1 (18.05.2026)
+
+V8.70 baute den Schlüsselstein (eine fremde Engine läuft null-origin
+sandgesichert), aber `worlds/schwarm/` war hand-vendort. W15 automatisiert
+das Andocken. Der save-server bekommt einen zweiten Schreib-Pfad
+`/api/vendor-world`: er nimmt `{worldId, files:[{path,content}]}` und
+schreibt das Bündel nach `worlds/<id>/`, mit einer strengen Wand
+(op-förmige id, keine Built-in-Welt, `vendorSafeRelPath` gegen `..`/
+Backslash/absoluten Pfad, Endung-Whitelist, Größen-Deckel, `index.html`
+Pflicht — NIE läuft etwas, nur `fs.writeFileSync`). Clientseitig:
+`_vendorSanitizeBundle` prüft vorab (Defense in Depth), `_vendorPostBundle`
+POSTet (der Playtest-Stub-Punkt, wie `llmCall`), `vendorWorldBundle`
+registriert die Welt als `customWorlds`-Eintrag mit `trust:"sandboxed"` +
+`vendored:true`. Die Marke `vendored` ERZWINGT `trust:"sandboxed"` in
+`_sanitizeImportedManifest` (unforgeable); `trust`+`vendored` reisen jetzt
+durch den localStorage-Rundlauf (V8.59-Lehre). Eine „Welt andocken"-Sektion
+im Bibliothek-Drawer nimmt einen Welt-Ordner. Phase 1 ist die netzfreie
+Hälfte (ein lokales Bündel) — der GitHub-Fetch ist Phase 2; sie baut
+zugleich die Schreib-Seite, die Phase 2 wiederverwendet. `smoke-vendor.cjs`
+ist der End-to-End-Beweis (save-server-Round-Trip + die frisch vendorte
+Welt läuft in einem echten null-origin-iframe). Vollständiger Eintrag:
+`CLAUDE.md` V8.71. 2597 → 2617 Invarianten.
 
 ### V8.70 — Untrusted-Welt-Tor (18.05.2026)
 

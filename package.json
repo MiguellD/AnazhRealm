@@ -17,7 +17,8 @@
         "smoke:multiuser": "node scripts/smoke-multiuser.cjs",
         "smoke:webrtc": "node scripts/smoke-webrtc.cjs",
         "smoke:translated": "node scripts/smoke-translated.cjs",
-        "smoke:sandbox": "node scripts/smoke-sandbox.cjs"
+        "smoke:sandbox": "node scripts/smoke-sandbox.cjs",
+        "smoke:vendor": "node scripts/smoke-vendor.cjs"
     },
     "devDependencies": {
         "eslint": "^9.18.0",
