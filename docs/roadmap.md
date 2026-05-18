@@ -720,7 +720,32 @@ Der Auto-Vendor klassifiziert jede Welt in diese vier Stufen und schreibt die St
 
 **Phasen-Reihenfolge:** A (Shim) → B-Relay (das Einfachste, voll p2p) → C (Gruppen-Portal) → B-JS-Compute (Host-Migration) → B-WASM (per-Projekt). Jede Phase eine eigene, browser-verifizierte Welle.
 
-**Akzeptanz:** eine Gruppe in einem AnazhRealm-Raum tritt gemeinsam durch ein Portal in eine vendorte Relay-Multiplayer-Welt; sie sehen einander dort, ihr Verkehr fließt peer-to-peer über das Mesh, kein echter Server existiert.
+#### Phasen-Detailplan (Sub-Schritte, ausgearbeitet — Stand V8.74)
+
+**Phase A — der Transport-Shim (~1 Session, die nächste Welle).** Ziel: der `WebSocket`-Verkehr einer fremden Welt quert die Sandbox-Grenze als `postMessage`; AnazhRealm empfängt ihn. Phase A routet noch NICHT (das ist B) — die Akzeptanz ist ein Loopback.
+- **A1 — der Shim selbst.** Eine Konstante `PORTAL_TRANSPORT_SHIM` (JS-String, ~40 Zeilen): ersetzt `window.WebSocket` durch eine Shim-Klasse. Pro Instanz eine Kanal-id; `send(data)` → `parent.postMessage({__anazhNet:true, kind:"ws-send", channel, data}, "*")`; ein `message`-Listener fängt `{kind:"ws-recv"}` und feuert `onmessage`. `readyState`/`onopen`/`onclose` modelliert (das `onopen` nach einem Microtask — die Welt erwartet ein async-Connect). Unterstützt BEIDE Idiome: `ws.onmessage = …` UND `ws.addEventListener("message", …)`. Phase A shimt NUR `WebSocket` (`fetch`/`XHR`/`RTCPeerConnection` sind bewusst spätere Schichten — ehrlich abgegrenzt).
+- **A2 — Injektion zur Serve-Zeit.** Der save-server injiziert den Shim als ERSTES `<script>` in `<head>` einer vendorten Welt-`index.html`, wenn die Anfrage einen Multiplayer-Marker trägt (`?anazh-shim=1` — der Query ändert die Basis-URL NICHT, relative Ressourcen `lib/engine.js` lösen weiter korrekt auf; der Handler liest den Query VOR dem V8.41-Query-Strip). Die Welt-Dateien auf der Platte bleiben unberührt — der Shim lebt nur in der ausgelieferten Antwort. Dev-verankert wie W15/W16.
+- **A3 — die Portal-Seite.** `portalMeta` bekommt ein Feld `multiplayer:true` (`_sanitizePortalMeta` whitelistet es, `buildStateSnapshot` persistiert es feldweise — V8.59-Lehre). `_buildPortalOverlay` lädt eine Multiplayer-Welt mit dem `?anazh-shim=1`-Marker. Ein `_portalNetReceive`-Handler nimmt `{__anazhNet, kind:"ws-send"}`-Nachrichten vom iframe an (Envelope + Kanal-id validiert — der Shim läuft im null-origin-iframe, kann nur DATEN posten, nie AnazhRealms State berühren; die V8.70-Sandbox ist die Wand).
+- **A4 — Akzeptanz: Loopback.** AnazhRealm echot ein `ws-send` direkt als `ws-recv` an dasselbe iframe zurück — die fremde Welt glaubt, sie habe einen echo-Server. Eine Test-Welt (`worlds/_shimtest/` oder eine Smoke-Fixture) öffnet einen Shim-`WebSocket`, sendet einen Ping, empfängt das Echo. `smoke`-Test beweist es im echten sandboxed iframe.
+- **Offene Design-Frage für den Wellen-Start**: Injektion via Serve-Zeit (A2, empfohlen — Dateien bleiben rein) ODER beim Vendoren in `index.html` eingebacken (überlebt ohne live save-server, mutiert aber die Welt-Datei). Per `AskUserQuestion` am Wellen-Start klären (W12-Muster).
+
+**Phase B-Relay — das Mesh-als-Server (~1–2 Sessions).** Ziel: der Shim-Verkehr aller Gruppen-Mitglieder wird über das W7-Mesh gebroadcastet — das Mesh IST der Server, kein Host.
+- **B1 — der `subworld-net`-Kanal.** Ein neuer Mesh-Nachrichtentyp `subworld-net` (`{worldId, data}`): ein `ws-send` aus dem Sub-Welt-iframe wird gewrappt + via `p2pSend` ans Mesh gereicht. Jedes andere AnazhRealm im selben Sub-Welt-Raum `postMessage`t es als `ws-recv` in SEIN iframe.
+- **B2 — die Sub-Raum-Eingrenzung.** Wer dasselbe Multiplayer-Portal betritt, tritt einem Sub-Raum bei (keyed nach `worldId`). Eine `subworld-net`-Nachricht wird nur ins iframe gereicht, wenn der Empfänger in DEMSELBEN Sub-Welt-Raum ist — sonst sieht ein Mesh-Mitspieler, der gar nicht im Portal ist, fremden Sub-Welt-Verkehr.
+- **B3 — Rate-Limit + Größen-Deckel.** Eine Sub-Welt könnte den Kanal fluten — Rate-Limit + Byte-Deckel, gespiegelt von der W16-Bündel-Disziplin.
+- **Akzeptanz:** zwei Browser betreten dasselbe Relay-Multiplayer-Portal; A's Aktion in der Sub-Welt erscheint bei B — peer-to-peer, kein echter Server. `smoke-webrtc`-Erweiterung. Trägt Relay-Welten (Server = blosser Rebroadcast: viele einfache .io-Spiele, geteilter Zustand per Broadcast); NICHT Welten mit autoritativer Server-Rechnung (das ist B-JS-Compute).
+
+**Phase C — das Gruppen-Portal (~1 Session).** Ziel: öffnet einer ein Portal, bekommen die anderen einen „mitkommen?"-Prompt.
+- **C1 — der `portal-invite`.** Betritt ein Spieler ein Multiplayer-Portal, broadcastet er einen `portal-invite` (`soul`-Feld oder Mesh-Nachricht, `{worldId, label}`).
+- **C2 — der Prompt.** Ein In-Game-Hinweis „X öffnete ein Tor nach <Welt> — mitkommen?" (Drawer-Notiz oder `AskUserQuestion`-artige Wahl).
+- **C3 — annehmen → mitreisen.** „Ja" ruft `obtainPortalForWorld` + `enterPortal` für dieselbe `worldId` → die B2-Sub-Raum-Eingrenzung verbindet die Gruppe.
+- **Akzeptanz:** A öffnet ein Portal, B bekommt den Prompt, nimmt an, beide sind zusammen in der Sub-Welt.
+
+**Phase B-JS-Compute (~1–2 Sessions, der harte Teil).** Für Welten, deren Server JS-Logik ist (nicht blosser Relay): ein Peer der Gruppe wird Compute-Host (W7s `worldRole`-Host/Guest-Mechanik steht schon), die Server-JS läuft in seinem Tab, das Mesh trägt den Verkehr. Host-Migration, wenn der Host geht. Eigener Bogen.
+
+**Phase B-WASM (per-Projekt, offen).** Ein Rust→WASM-Server in einem Peer-Tab, oder die Brücken-Welt (externer Server). Bewusst „per-Projekt, nicht automatisch" — der Auto-Vendor klassifiziert ehrlich.
+
+**Akzeptanz (Gesamt-W17):** eine Gruppe in einem AnazhRealm-Raum tritt gemeinsam durch ein Portal in eine vendorte Relay-Multiplayer-Welt; sie sehen einander dort, ihr Verkehr fließt peer-to-peer über das Mesh, kein echter Server existiert.
 
 **Ehrliche Grenzen des Bogens:**
 - Ein Browser-Tab als Compute-Host ist schwach (Hintergrund-Drosselung, begrenzte CPU, schließt jederzeit) — Host-Migration mildert, beseitigt es nicht. Gut für Koop, rau für kompetitive Twitch-Spiele.
