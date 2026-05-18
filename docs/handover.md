@@ -11,9 +11,9 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ## Schnell-Lage (Stand 18.05.2026, V8.74)
 
-**Du erbst eine sehr lebendige Welt**. **2661 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~31000 Zeilen in einer Datei, alles produktiv.
+**Du erbst eine sehr lebendige Welt**. **2662 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~31000 Zeilen in einer Datei, alles produktiv.
 
-**Jüngste Welle — V8.74 (W16 Phase 2: der Welt-Katalog — die Mesh-Bibliothek wird browsbar)**: W16 P1 baute den Transport (eine vendorte Welt reist peer-to-peer), aber der Spieler musste die `worldId` kennen und den Peer aus einem Dropdown wählen. P2 macht die Mesh-Bibliothek browsbar: jeder Mitspieler annonciert seine vendorten Welten als `[{id, label, hash}]` über den `soul`-Kanal (wie `worldRole`/`voiceShared` — kein neuer Nachrichtentyp; der signaling-server-`soul`-Handler reicht `catalog` explizit durch). Der Bibliothek-Drawer zeigt „Mitspieler X hat: …" mit einem Holen-Knopf statt eines blanken worldId-Feldes (`_renderMeshWorldCatalog`, ein delegierter Klick-Listener — V8.37-Lehre). Eine vendorte Welt bekommt einen deterministischen sha256-Content-Hash über ihre Datei-MENGE — der save-server rechnet ihn (`bundleContentHash`, Hash-Autorität; `applyVendorBundle` UND `readVendorBundle` liefern ihn als `bundleHash`), der Browser hasht nie selbst (eine GitHub-vendorte Welt sieht der Client gar nicht). Zwei Spieler mit demselben Hash haben beweisbar dieselbe Welt; `_haveWorldByHashOrId` dedupt über id ODER Hash → die Katalog-Zeile zeigt „✓ vorhanden" statt eines Knopfes. `_vendorRegisterWorld` (die EINE Naht, durch die jede neu angedockte Welt fliesst — lokal/GitHub/Mesh) re-annonciert den `soul` → eine frisch vendorte Welt erscheint sofort bei allen Mitspielern + propagiert über das Mesh. +13 Invarianten 2648→2661, Zwei-Browser-verifiziert (`smoke-webrtc.cjs` — A's Welt erscheint in B's Katalog mit echtem sha256-Hash, B holt sie über die Katalog-Zeile). **Lies `CLAUDE.md` V8.74 ZUERST.**
+**Jüngste Welle — V8.74 (W16 Phase 2: der Welt-Katalog — die Mesh-Bibliothek wird browsbar)**: W16 P1 baute den Transport (eine vendorte Welt reist peer-to-peer), aber der Spieler musste die `worldId` kennen und den Peer aus einem Dropdown wählen. P2 macht die Mesh-Bibliothek browsbar: jeder Mitspieler annonciert seine vendorten Welten als `[{id, label, hash}]` über den `soul`-Kanal (wie `worldRole`/`voiceShared` — kein neuer Nachrichtentyp; der signaling-server-`soul`-Handler reicht `catalog` explizit durch). Der Bibliothek-Drawer zeigt „Mitspieler X hat: …" mit einem Holen-Knopf statt eines blanken worldId-Feldes (`_renderMeshWorldCatalog`, ein delegierter Klick-Listener — V8.37-Lehre). Eine vendorte Welt bekommt einen deterministischen sha256-Content-Hash über ihre Datei-MENGE — der save-server rechnet ihn (`bundleContentHash`, Hash-Autorität; `applyVendorBundle` UND `readVendorBundle` liefern ihn als `bundleHash`), der Browser hasht nie selbst (eine GitHub-vendorte Welt sieht der Client gar nicht). Zwei Spieler mit demselben Hash haben beweisbar dieselbe Welt; `_haveWorldByHashOrId` dedupt über id ODER Hash → die Katalog-Zeile zeigt „✓ vorhanden" statt eines Knopfes. `_vendorRegisterWorld` (die EINE Naht, durch die jede neu angedockte Welt fliesst — lokal/GitHub/Mesh) re-annonciert den `soul` → eine frisch vendorte Welt erscheint sofort bei allen Mitspielern + propagiert über das Mesh. +14 Invarianten 2648→2662, Zwei-Browser-verifiziert (`smoke-webrtc.cjs` — A's Welt erscheint in B's Katalog mit echtem sha256-Hash, B holt sie über die Katalog-Zeile). **Lies `CLAUDE.md` V8.74 ZUERST.**
 
 **Welle davor — V8.73 (W16 Phase 1: Mesh-Welt-Verteilung — eine vendorte Welt reist peer-to-peer)**: W15 baute das Andocken aus einem lokalen Ordner ODER einem GitHub-Repo. W16 P1 lässt eine vendorte Welt ÜBER DAS MESH reisen — ein Mitspieler, der eine Welt nicht hat, holt ihr Bündel peer-to-peer von einem, der sie hat. Zwei kanal-exklusive Nachrichten `world-bundle-pull`/`world-bundle-chunk` — Zeile für Zeile das W7-P2-`world-pull`/`world-chunk`-Muster (direkt in `_p2pHandleChannelMessage` behandelt, gechunkt mit Backpressure, peer-gebundene Annahme-Wand `pendingBundlePull`, Rate-Limit mit `-Infinity`-Sentinel). Der Sender liest sein Bündel über die neue save-server-Lese-Seite `GET /api/vendor-bundle` (symmetrisch zur Schreib-Seite `applyVendorBundle`) von der Platte zurück + chunkt es über den DataChannel; der Empfänger reassembliert + reicht `{worldId,label,desc,dsl,files}` an die erprobte `vendorWorldBundle`-Schreib-Seite — ein DRITTER Eingang (lokales Bündel / GitHub / Mesh-Peer), NULL neue Schreib-Logik. Eine peer-empfangene Welt läuft `trust:"sandboxed"` (V8.71-Zwang über `vendored:true`); die ankommende worldId muss die angefragte sein (kein Welt-Schmuggel). Eine schlichte „Welt vom Mitspieler holen"-Sektion (worldId-Feld + Peer-Dropdown) — der browsbare Welt-Katalog ist W16 P2. +19 Invarianten 2629→2648, Zwei-Browser-verifiziert (`smoke-webrtc.cjs` — A vendort eine Welt, B holt sie über das Mesh). **Lies `CLAUDE.md` V8.73 ZUERST.**
 
@@ -237,9 +237,11 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3/V4 + 11 ext. + **W12 (Welt-Portal) 
 
 ## Rückschau: die W16-P2-Session (der Welt-Katalog, V8.74)
 
-Eine kleine, saubere Welle — ein Commit, der Welt-Katalog. Eine ehrliche Lehre:
+Eine kleine, saubere Welle — der Welt-Katalog. Zwei ehrliche Lehren — die
+zweite kam erst durch einen Selbst-Audit (Schöpfer-getrieben) nach dem ersten
+Commit.
 
-### Lehre — Eine hartcodierte Teil-Antwort verschluckt ein neues Feld stumm.
+### Lehre 1 — Eine hartcodierte Teil-Antwort verschluckt ein neues Feld stumm.
 
 Der Plan war klar: der save-server rechnet den Content-Hash, `vendorWorldBundle`/
 `vendorWorldFromRepo` reichen `posted.bundleHash` in den `customWorlds`-Eintrag.
@@ -257,6 +259,23 @@ durchzuspiegeln), ist jedes neue Feld eine stille Lücke — beim Hinzufügen
 eines End-zu-End-Feldes JEDE Umpack-Stelle auf dem Weg prüfen. Und: ein
 gestubbter Pfad im Playtest testet das Stub, nicht die Naht — der Smoke-Test
 gegen den echten Server ist die Wahrheit.*
+
+### Lehre 2 — Ein Selbst-Audit fragt: ist der GANZE Spieler-Pfad getestet?
+
+Nach dem ersten Commit fragte der Schöpfer nach einem echten Selbst-Audit.
+Ich prüfte die V8.74 wie fremden Code — und fand eine Lücke: der Holen-Knopf
+des Katalogs war NICHT end-zu-end geprüft. Der Playtest testete `_render-
+MeshWorldCatalog` (Knopf existiert mit `data-`-Attributen) UND `_runMeshWorldGet`
+(routet zur Transport-Methode) — aber NICHT das Glied dazwischen: dass ein
+echter Klick durch den delegierten Listener (`meshWorldInitDOM`) zu `_runMesh-
+WorldGet` fliesst. Zwei geprüfte Hälften, eine ungeprüfte Naht. Das ist die
+W12-Lehre („fertig" heißt den Spieler-Pfad gegangen) — bei W16 P1 war der
+Knopf-Klick bewusst ungeprüft (transitional, P2 ersetzt ihn); bei P2 ist der
+Knopf das ENDGÜLTIGE UI, also MUSS der Klick geprüft sein. Fix: eine Invariante,
+die einen gerenderten Holen-Knopf mit `.click()` auslöst + prüft, dass es
+routet. *Lehre: ein Feature mit N Gliedern braucht N Tests ODER einen, der
+alle N durchläuft — zwei Tests, die je das halbe Band prüfen, lassen die Naht
+in der Mitte frei. Beim Audit den Pfad als KETTE durchgehen, Glied für Glied.*
 
 ---
 

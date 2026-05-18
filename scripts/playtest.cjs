@@ -4957,6 +4957,22 @@ function startSaveServer() {
                         !!routed && routed.wid === "route-w16" && routed.pid === "route-peer-w16";
                     r.requestWorldBundleFromPeer = origReq;
 
+                    // Der Holen-Knopf: ein ECHTER Klick routet durch den
+                    // delegierten Listener (meshWorldInitDOM) zur Transport-
+                    // Methode — der ganze Spieler-Pfad render→klick→holen
+                    // (W12-Lehre: „fertig" heißt den Spieler-Pfad gegangen).
+                    let clickRouted = null;
+                    const origReqClick = r.requestWorldBundleFromPeer;
+                    r.requestWorldBundleFromPeer = (wid, pid) => {
+                        clickRouted = { wid, pid };
+                        return { ok: false, reason: "no_channel" };
+                    };
+                    const getBtn = catHost && catHost.querySelector('button[data-mesh-world="peer-world-w16"]');
+                    if (getBtn) getBtn.click();
+                    out.catalogButtonClickRoutes =
+                        !!clickRouted && clickRouted.wid === "peer-world-w16" && clickRouted.pid === "cat-peer-w16";
+                    r.requestWorldBundleFromPeer = origReqClick;
+
                     // UI: die Welt-Katalog-Sektion im DOM.
                     out.uiInDom =
                         !!document.getElementById("mesh-world-catalog") &&
@@ -5023,6 +5039,7 @@ function startSaveServer() {
                 check("W16 P2: _renderMeshWorldCatalog rendert einen Holen-Knopf für eine fremde Welt", w16Results.catalogRendersGetButton);
                 check("W16 P2: _renderMeshWorldCatalog zeigt „✓ vorhanden\" für eine schon vorhandene Welt (Dedup)", w16Results.catalogRendersHaveBadge);
                 check("W16 P2: _runMeshWorldGet routet zu requestWorldBundleFromPeer", w16Results.runMeshWorldGetRoutes);
+                check("W16 P2: ein Klick auf den Holen-Knopf routet durch den delegierten Listener (Spieler-Pfad)", w16Results.catalogButtonClickRoutes);
                 check("W16 P2: die Welt-Katalog-Sektion im DOM", w16Results.uiInDom);
             }
 
