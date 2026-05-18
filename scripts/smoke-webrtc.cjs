@@ -533,6 +533,45 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
         check("W17 B-Relay: das Mesh trägt Sub-Welt-Verkehr in beide Richtungen", true);
         await pageA.evaluate(() => window.anazhRealm._disposePortalOverlay());
         await pageB.evaluate(() => window.anazhRealm._disposePortalOverlay());
+
+        // W17 Phase C — das Gruppen-Portal. A betritt ein Multiplayer-Portal
+        // und lädt die Mesh-Gruppe ein; B bekommt die Einladung + folgt ihr
+        // ins SELBE Multiplayer-Portal (die B2-Sub-Raum-Eingrenzung verbindet).
+        const w17cWorldA = await pageA.evaluate(() => {
+            const r = window.anazhRealm;
+            const obt = r.obtainPortalForWorld("skeleton");
+            if (!obt.ok) return null;
+            // Die Skelett-Welt ist nicht von Haus aus multiplayer — fürs Test
+            // setzen, dass A's Portal ein Multiplayer-Tor ist.
+            r.state.blueprints["portal_skeleton"].portalMeta.multiplayer = true;
+            r.enterPortal({ type: "portal_skeleton", affordances: { isPortal: true } });
+            return r._portalOverlay ? r._portalOverlay.world : null;
+        });
+        check("W17 C: A betritt ein Multiplayer-Portal", typeof w17cWorldA === "string", String(w17cWorldA));
+        // B muss die portal-invite über das Mesh empfangen.
+        await waitFor(
+            pageB,
+            () => {
+                const inv = window.anazhRealm.state.p2p.pendingInvite;
+                return !!inv && inv.worldId === "skeleton";
+            },
+            10000,
+            "B empfängt A's portal-invite über das Mesh"
+        );
+        check("W17 C: B bekommt die Gruppen-Portal-Einladung peer-to-peer", true);
+        // B folgt der Einladung → betritt dasselbe Multiplayer-Portal.
+        const w17cJoin = await pageB.evaluate(() => {
+            const res = window.anazhRealm.joinPortalInvite();
+            const po = window.anazhRealm._portalOverlay;
+            return { ok: res.ok, world: po ? po.world : null, multiplayer: po ? po.multiplayer : null };
+        });
+        check(
+            "W17 C: B folgt der Einladung + ist im selben Multiplayer-Portal wie A",
+            w17cJoin.ok === true && w17cJoin.world === w17cWorldA && w17cJoin.multiplayer === true,
+            JSON.stringify(w17cJoin)
+        );
+        await pageA.evaluate(() => window.anazhRealm._disposePortalOverlay());
+        await pageB.evaluate(() => window.anazhRealm._disposePortalOverlay());
     } catch (err) {
         check(`Test-Ablauf ohne Fehler`, false, err.message);
     } finally {

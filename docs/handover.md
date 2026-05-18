@@ -9,11 +9,11 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 18.05.2026, V8.76)
+## Schnell-Lage (Stand 18.05.2026, V8.77)
 
-**Du erbst eine sehr lebendige Welt**. **~2676 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~31000 Zeilen in einer Datei, alles produktiv. (Der Playtest-Konsolen-Zähler driftet ±2-3 je Lauf — einige Checks sind bedingt; „Alle Invarianten OK" ist die Wahrheit, nicht die exakte Zahl.)
+**Du erbst eine sehr lebendige Welt**. **~2694 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~31000 Zeilen in einer Datei, alles produktiv. (Der Playtest-Konsolen-Zähler driftet ±2-3 je Lauf — einige Checks sind bedingt; „Alle Invarianten OK" ist die Wahrheit, nicht die exakte Zahl.)
 
-**Jüngste Welle — V8.76 (W17 Phase B-Relay: das Mesh-als-Server — der Sub-Welt-Verkehr einer fremden Multiplayer-Welt fliesst peer-to-peer übers Mesh)**: W17 Phase A trug den `WebSocket`-Verkehr einer fremden Welt über die Sandbox-Grenze; die Akzeptanz war ein Loopback-Echo. B-Relay ersetzt den Echo durch die Mesh-Verteilung — das W7-Mesh IST der Server, kein Host, kein externer Knoten. Ein neuer Mesh-Nachrichtentyp `subworld-net` (`{worldId, data}`, Zeile für Zeile das `companion-say`-Muster — Kanal-`ALLOWED`-Whitelist + expliziter signaling-server-Handler): `_portalNetReceive` macht aus einem `ws-send` einen `subworld-net`-Broadcast via `p2pSend` (broadcastet nur an Peers — der Sender bekommt seinen Verkehr nicht zurück, wie ein echter Relay-Server). `ws-open`/`ws-close` verfolgen die offenen Kanäle des Sub-Welt-iframes (`po.netChannels`); `_portalNetDeliver` (der neue Empfänger) stellt eine mesh-empfangene Nachricht als `ws-recv` in jeden offenen Kanal zu. B2 — die Sub-Raum-Eingrenzung: nur ein Empfänger im SELBEN Multiplayer-Portal (Schlüssel: der Welt-Pfad) nimmt sie an. B3 — Rate-Limit (`SUBWORLD_NET_RATE_MAX` 120/s) + Größen-Deckel (16 KiB) schützen den Kanal. +7 Invarianten, Zwei-Browser-verifiziert (`smoke-webrtc.cjs` — beide betreten dasselbe Multiplayer-Portal, A's `ws-send` erscheint bei B als `ws-recv`). **Lies `CLAUDE.md` V8.76 ZUERST.**
+**Jüngste Welle — V8.77 (W17 Phase C: das Gruppen-Portal — eine Gruppe tritt gemeinsam durch ein Tor)**: B-Relay (V8.76) trägt den Sub-Welt-Verkehr; Phase C bringt die Gruppe zusammen. Betritt ein Spieler ein Multiplayer-Portal (`enterPortal` → `_p2pBroadcastPortalInvite`), broadcastet er einen `portal-invite` (`{worldId, label}`, Zeile für Zeile das `companion-say`-Muster — event-driven Mesh-Broadcast, Kanal-`ALLOWED`-Whitelist, expliziter signaling-server-Handler). Die Mitspieler bekommen einen In-Game-Banner (`#portal-invite-banner`) „X öffnete ein Tor nach <Welt> — mitkommen?"; „Mitkommen" (`joinPortalInvite`) ruft `obtainPortalForWorld` + betritt das Portal direkt via `_buildPortalOverlay` — der Overlay erzwingt `multiplayer:true` (der Empfang einer Einladung BEWEIST, dass die Welt multiplayer ist), sodass die B2-Sub-Raum-Eingrenzung die Gruppe verbindet. `_resolvePortalWorldId` löst die worldId aus dem Portal-Welt-Pfad gegen die Bibliothek; `aimBlueprintAtWorld` trägt jetzt `multiplayer` aus dem Eintrag. Damit ist **W17 Phase A+B-Relay+C komplett**. +18 Invarianten, Zwei-Browser-verifiziert (`smoke-webrtc.cjs` — A betritt ein Multiplayer-Portal, B empfängt die Einladung + folgt ihr ins selbe Portal). **Lies `CLAUDE.md` V8.77 ZUERST.**
 
 **Welle davor — V8.74 (W16 Phase 2: der Welt-Katalog — die Mesh-Bibliothek wird browsbar)**: W16 P1 baute den Transport (eine vendorte Welt reist peer-to-peer), aber der Spieler musste die `worldId` kennen und den Peer aus einem Dropdown wählen. P2 macht die Mesh-Bibliothek browsbar: jeder Mitspieler annonciert seine vendorten Welten als `[{id, label, hash}]` über den `soul`-Kanal (wie `worldRole`/`voiceShared` — kein neuer Nachrichtentyp; der signaling-server-`soul`-Handler reicht `catalog` explizit durch). Der Bibliothek-Drawer zeigt „Mitspieler X hat: …" mit einem Holen-Knopf statt eines blanken worldId-Feldes (`_renderMeshWorldCatalog`, ein delegierter Klick-Listener — V8.37-Lehre). Eine vendorte Welt bekommt einen deterministischen sha256-Content-Hash über ihre Datei-MENGE — der save-server rechnet ihn (`bundleContentHash`, Hash-Autorität; `applyVendorBundle` UND `readVendorBundle` liefern ihn als `bundleHash`), der Browser hasht nie selbst (eine GitHub-vendorte Welt sieht der Client gar nicht). Zwei Spieler mit demselben Hash haben beweisbar dieselbe Welt; `_haveWorldByHashOrId` dedupt über id ODER Hash → die Katalog-Zeile zeigt „✓ vorhanden" statt eines Knopfes. `_vendorRegisterWorld` (die EINE Naht, durch die jede neu angedockte Welt fliesst — lokal/GitHub/Mesh) re-annonciert den `soul` → eine frisch vendorte Welt erscheint sofort bei allen Mitspielern + propagiert über das Mesh. +14 Invarianten 2648→2662, Zwei-Browser-verifiziert (`smoke-webrtc.cjs` — A's Welt erscheint in B's Katalog mit echtem sha256-Hash, B holt sie über die Katalog-Zeile). **Lies `CLAUDE.md` V8.74 ZUERST.**
 
@@ -49,7 +49,7 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 **Wellen davor — V8.48-V8.54**: W12 Welt-Portal (V8.51-V8.53 — sandboxed iframe, zwei fremde Engines, generische DSL-Brücke, beidseitiger Kanal, native Manifest-Stufe) + W13 Phase 1 (V8.54 — der ed25519-Schlüssel als Fundament) + drei kleine Polish-Wellen (V8.48 Terrain-Schatten, V8.49 `updateCreatures`-Perf 2,4×, V8.50 Flaky-Test-Heilung über `_gameLoopTick`). Volle Wellen-Historie: Session-Tagebuch unten + `CLAUDE.md`.
 
-**In Arbeit — der echte Fremd-Engine-Bogen.** W12 Welt-Portal, W13 Vibe-Pass, W14 Bibliothek, W7 Compute-Sharing + der KI-Übersetzer (Phase 1+2) sind komplett. Der Schöpfer öffnete einen neuen Bogen: das echte automatische Tor zu fremden Vibecode-Engines (OASIS / Bibliothek von Alexandria). **V8.70 baute den Schlüsselstein** — das Untrusted-Welt-Tor: eine echte, ungeprüfte fremde Engine läuft null-origin sandgesichert hinter dem Portal. **V8.71 + V8.72 bauten den Auto-Vendor-Pfad (W15) komplett**, **V8.73 + V8.74 die Mesh-Welt-Verteilung (W16) komplett** — eine vendorte Welt reist peer-to-peer + die Mesh-Bibliothek ist browsbar. **V8.75 + V8.76 bauten W17 Phase A + B-Relay** — der Transport-Shim trägt den `WebSocket`-Verkehr einer fremden Multiplayer-Welt über die Sandbox-Grenze, das Mesh-als-Server verteilt ihn peer-to-peer (`subworld-net`-Kanal). Offen: W17 Phase C (das Gruppen-Portal) + B-JS-Compute. `docs/world-portal.md` + `docs/roadmap.md` + `docs/state-of-realm.md` ZUERST lesen.
+**In Arbeit — der echte Fremd-Engine-Bogen.** W12 Welt-Portal, W13 Vibe-Pass, W14 Bibliothek, W7 Compute-Sharing + der KI-Übersetzer (Phase 1+2) sind komplett. Der Schöpfer öffnete einen neuen Bogen: das echte automatische Tor zu fremden Vibecode-Engines (OASIS / Bibliothek von Alexandria). **V8.70 baute den Schlüsselstein** — das Untrusted-Welt-Tor: eine echte, ungeprüfte fremde Engine läuft null-origin sandgesichert hinter dem Portal. **V8.71 + V8.72 bauten den Auto-Vendor-Pfad (W15) komplett**, **V8.73 + V8.74 die Mesh-Welt-Verteilung (W16) komplett** — eine vendorte Welt reist peer-to-peer + die Mesh-Bibliothek ist browsbar. **V8.75 + V8.76 + V8.77 bauten W17 komplett** — Phase A der Transport-Shim, B-Relay das Mesh-als-Server, C das Gruppen-Portal: der `WebSocket`-Verkehr einer fremden Multiplayer-Welt fliesst peer-to-peer übers Mesh, eine Gruppe taucht gemeinsam in eine Relay-Multiplayer-Welt. Offen im Bogen: nur W17 Phase B-JS-Compute (ein Peer wird Compute-Host). `docs/world-portal.md` + `docs/roadmap.md` + `docs/state-of-realm.md` ZUERST lesen.
 
 **Welle davor — V8.47 (Shadow-Acne-Heilung)**: Schöpfer-Befund „unnatürliche Schattenlinien nur auf komplett horizontalen flachen Flächen" (Bauwerks-Dächer). Diese Präzision war die Diagnose — Cel-Banding erscheint auf GEWÖLBTEN Flächen, nicht auf flachen; der Schöpfer sah das Gegenteil → Shadow-Map-Acne. Die `DirectionalLight` hatte keinen Shadow-Bias → flache, zur Sonne zeigende Flächen schatten sich selbst in Streifen. Fix: `shadow.normalBias = 1.0` + `shadow.bias = -0.0005` + mapSize 1024→2048.
 
@@ -85,7 +85,7 @@ Die Session-Hälfte davor (V8.23 → V8.33) war eine **Atmosphäre-Tiefe-Welle (
 
 **W12 + W13 + W14 + W7 sind live** — AnazhRealm ist ein Tor zu anderen Vibecode-Welten (W12 Welt-Portal), der Avatar trägt eine souveräne Identität (W13 Vibe-Pass), die Bibliothek von Alexandria steht (W14), und der WebRTC-Mesh trägt die Multi-User-Last (W7 Compute-Sharing). Wer an einer Portal- oder Bibliothek-Welle arbeitet: lies `docs/world-portal.md` ZUERST.
 
-**Die grossen Roadmap-Ringe sind gebaut**, und der echte Fremd-Engine-Bogen läuft: der KI-Übersetzer ist vollständig (V8.68/V8.69), **V8.70 öffnete das Untrusted-Welt-Tor** (eine echte fremde Engine läuft null-origin sandgesichert), **V8.71 + V8.72 bauten den Auto-Vendor-Pfad komplett**, **V8.73 + V8.74 die Mesh-Welt-Verteilung komplett**, und **W17 läuft — V8.75 Phase A der Transport-Shim, V8.76 Phase B-Relay das Mesh-als-Server** (der Sub-Welt-Verkehr einer fremden Multiplayer-Welt fliesst peer-to-peer übers Mesh). Offen in diesem Bogen: W17 Phase C (das Gruppen-Portal) + B-JS-Compute. Der aktuelle Stand steht im Block „Aktuelle Roadmap" weiter unten und in `docs/roadmap.md` §3.
+**Die grossen Roadmap-Ringe sind gebaut**, und der echte Fremd-Engine-Bogen läuft: der KI-Übersetzer ist vollständig (V8.68/V8.69), **V8.70 öffnete das Untrusted-Welt-Tor** (eine echte fremde Engine läuft null-origin sandgesichert), **V8.71 + V8.72 bauten den Auto-Vendor-Pfad komplett**, **V8.73 + V8.74 die Mesh-Welt-Verteilung komplett**, und **W17 ist komplett — V8.75 Phase A der Transport-Shim, V8.76 Phase B-Relay das Mesh-als-Server, V8.77 Phase C das Gruppen-Portal** (eine Gruppe taucht gemeinsam in eine Relay-Multiplayer-Welt). Offen in diesem Bogen: nur W17 Phase B-JS-Compute (ein Peer wird Compute-Host). Der aktuelle Stand steht im Block „Aktuelle Roadmap" weiter unten und in `docs/roadmap.md` §3.
 
 **Atmosphäre-Disziplin**: alle atmosphärischen Methoden mit `[ATMOSPHERE]`-Marker werden von `audit-strict.cjs` (5. Schicht) auf Hardcode geprüft. Wert-aus-dem-Kopf ist verboten — immer „aus welcher state-Beobachtung emergiert das?".
 
@@ -177,15 +177,15 @@ V7.89 (Kreatur-Boosts) war die kritische Prüfung dieses Gesetzes. Naive Lösung
 
 ## Aktuelle Roadmap (was als nächstes denkbar ist)
 
-Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3/V4 + 11 ext. + **W12 (Welt-Portal) + W13 (Vibe-Pass) + W14 (Bibliothek) + W7 (Compute-Sharing) + der KI-Übersetzer + das Untrusted-Welt-Tor (V8.70) + der Auto-Vendor-Pfad (W15 — V8.71 Bündel-Pfad, V8.72 GitHub-Fetch) + die Mesh-Welt-Verteilung (W16 — V8.73 Bündel-Transport, V8.74 Welt-Katalog)** sind gebaut. In Arbeit ist der **echte Fremd-Engine-Bogen** — das automatische Tor zu fremden Vibecode-Engines. V8.70 baute seinen Schlüsselstein, V8.71+V8.72 den Auto-Vendor-Pfad komplett, V8.73+V8.74 die Mesh-Welt-Verteilung komplett; der letzte Schritt (W17) ist **detailliert in `docs/roadmap.md` §3 — „Der Fremd-Engine-Bogen (W15–W17)"** geplant:
+Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3/V4 + 11 ext. + **W12 (Welt-Portal) + W13 (Vibe-Pass) + W14 (Bibliothek) + W7 (Compute-Sharing) + der KI-Übersetzer + das Untrusted-Welt-Tor (V8.70) + der Auto-Vendor-Pfad (W15 — V8.71 Bündel-Pfad, V8.72 GitHub-Fetch) + die Mesh-Welt-Verteilung (W16 — V8.73 Bündel-Transport, V8.74 Welt-Katalog) + die Multiplayer-Sub-Welten (W17 — V8.75 Transport-Shim, V8.76 Mesh-als-Server, V8.77 Gruppen-Portal)** sind gebaut. Der **echte Fremd-Engine-Bogen** — das automatische Tor zu fremden Vibecode-Engines — ist damit fast vollständig; offen im Bogen ist nur W17 Phase B-JS-Compute, **detailliert in `docs/roadmap.md` §3 — „Der Fremd-Engine-Bogen (W15–W17)"** geplant:
 
 | Welle | Was | Aufwand | Vision-Tiefe |
 |---|---|---|---|
 | **W15 — Auto-Vendor-Pfad** | ✅ **komplett (V8.71 + V8.72)**: ein fremdes Welt-Bündel dockt ohne Handarbeit an — aus einem lokalen Ordner (P1) ODER direkt aus einem GitHub-Repo (P2, der save-server holt die Dateien selbst). | erledigt | sehr hoch |
 | **W16 — Mesh-Welt-Verteilung** | ✅ **komplett (V8.73 + V8.74)**: Phase 1 der Welt-Bündel-Transport (`world-bundle-pull`/`world-bundle-chunk`, ein Mitspieler holt eine vendorte Welt peer-to-peer); Phase 2 der browsbare Welt-Katalog (Peers annoncieren ihre `customWorlds` über den `soul`-Kanal + ein sha256-Content-Hash für Identität + Dedup). | erledigt | sehr hoch |
-| **W17 — Multiplayer-Sub-Welten** | ⏳ **Phase A ✅ (V8.75) + Phase B-Relay ✅ (V8.76)**: der Transport-Shim trägt den `WebSocket`-Verkehr einer fremden Welt über die Sandbox-Grenze, das Mesh-als-Server verteilt ihn peer-to-peer (`subworld-net`-Kanal). Offen: Phase C (das Gruppen-Portal) + B-JS-Compute / B-WASM. | ~3-5 Sessions (C + B-JS) | sehr hoch |
+| **W17 — Multiplayer-Sub-Welten** | ✅ **Phase A (V8.75) + B-Relay (V8.76) + C (V8.77)**: der Transport-Shim trägt den `WebSocket`-Verkehr über die Sandbox-Grenze, das Mesh-als-Server verteilt ihn peer-to-peer, das Gruppen-Portal bringt eine Gruppe gemeinsam hindurch. Offen im Bogen: nur Phase B-JS-Compute / B-WASM. | ~2-4 Sessions (B-JS) | sehr hoch |
 
-**Empfehlung**: **W17 Phase C — das Gruppen-Portal.** Phase A (V8.75) + B-Relay (V8.76) tragen den Verkehr: ein `ws-send` einer fremden Multiplayer-Welt wird ein `subworld-net`-Mesh-Broadcast, jedes AnazhRealm im selben Sub-Welt-Raum (Schlüssel: der Welt-Pfad) stellt ihn als `ws-recv` ins eigene iframe zu — das Mesh IST der Server. Phase C bringt die Gruppe zusammen: öffnet ein Spieler ein Multiplayer-Portal, broadcastet er einen `portal-invite` (`{worldId, label}` — `soul`-Feld oder eigene Mesh-Nachricht); die Mitspieler bekommen einen In-Game-Hinweis „X öffnete ein Tor nach <Welt> — mitkommen?"; „Ja" ruft `obtainPortalForWorld` + `enterPortal` für dieselbe `worldId` → die B2-Sub-Raum-Eingrenzung (steht schon) verbindet die Gruppe. Akzeptanz: A öffnet ein Portal, B bekommt den Prompt, nimmt an, beide sind zusammen in der Sub-Welt. Danach W17 Phase B-JS-Compute (ein Peer wird Compute-Host, Host-Migration über W7s `worldRole`-Mechanik). **Der ausgearbeitete Phasen-Detailplan steht in `docs/roadmap.md` §3 — „W17 — Multiplayer-Sub-Welten" (Phase C = C1-C3).** `docs/world-portal.md` ZUERST mitlesen.
+**Empfehlung**: **W17 Phase B-JS-Compute — der Compute-Host.** Phase A+B-Relay+C tragen den Verkehr + die Gruppe für RELAY-Welten (Server = blosser Rebroadcast: viele einfache .io-Spiele). B-JS-Compute ist der harte Teil: für Welten, deren „Server" eine echte JS-Logik ist (autoritative Rechnung, nicht blosser Relay), wird ein Peer der Gruppe **Compute-Host** — die Server-JS-Logik der Welt läuft in seinem Tab, das Mesh trägt den Verkehr; verlässt der Host die Gruppe, wandert die Rolle (Host-Migration — W7s `worldRole`-Host/Guest-Mechanik kennt Host/Guest schon). Eigener Bogen, sicherheitslastig (fremde Server-JS in einem Peer-Tab). Eine kleine Vorarbeit, die sich anbietet: `_sanitizeImportedManifest` trägt `multiplayer` durch, damit eine vendorte Multiplayer-Welt sich selbst als multiplayer deklariert (heute erzwingt `joinPortalInvite` die Marke; eine selbst-deklarierte Welt machte auch A's `obtainPortalForWorld`-Portal von Haus aus multiplayer). **Der ausgearbeitete Phasen-Detailplan steht in `docs/roadmap.md` §3 — „W17 — Multiplayer-Sub-Welten" (Phase B-JS-Compute).** `docs/world-portal.md` ZUERST mitlesen.
 
 **Kleinere Polish-Notiz**: die Bauplan-Signatur-Zeile im Werkstatt-Stats-Panel ist wenig auffindbar (Schöpfer-Befund V8.56 — sie wurde erst nach Hinweis gesehen). Ein UX-Auffindbarkeits-Punkt für eine spätere Polish-Runde.
 
@@ -220,7 +220,7 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3/V4 + 11 ext. + **W12 (Welt-Portal) 
 - `CREATURE_PROPOSED_OPS` für Kreatur-Welt-Aktion (Defense in Depth)
 - save-server `/api/proxy/llm` mit strikten Whitelists (https-only, body-cap, header-allowlist)
 
-### Tests (~2676 Invarianten)
+### Tests (~2694 Invarianten)
 - `npm run playtest` — Headless-Chromium, ~25 s Logs, alle Schichten
 - `scripts/playtest.cjs` ist der Single-Source-Test
 - `npm run audit:strict` (5 generische Audit-Schichten) + `npm run smoke:multiuser`
@@ -234,6 +234,42 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3/V4 + 11 ext. + **W12 (Welt-Portal) 
 **Meta-Lehre B**: **Heilige-Lektion-Disziplin ist mit JEDER Welle neu zu prüfen.** Ich war versucht, bei V7.96 einen neuen „LLM-Proxy-Server" als separates Programm zu bauen — wäre Re-Komplexifizierung gewesen. Stattdessen: save-server bekam eine zweite Rolle. Bei jeder neuen Funktion fragen: „kann das in einem bestehenden Dienst leben? Wenn nein, warum nicht?"
 
 **Meta-Lehre C**: **Fallback-Schichten als Vision-treue Antwort.** V7.98's vier-Schicht-Parser ist mehr als nur Bug-Fix — es ist eine VISION-Aussage: „nimm was da ist, zeig es dem Spieler". Strenge Validierung wäre einfacher zu coden, aber ärmer für den Spieler. Wer das System auf reale Vielfalt vorbereitet (LLM-Größen, Modell-Stile, Antwort-Formate), baut Fallback-Schichten — keine Single-Path-Strenge.
+
+---
+
+## Rückschau: die W17-Phase-C-Session (das Gruppen-Portal, V8.77)
+
+Eine saubere Welle — das Gruppen-Portal. Ein Commit, +18 Invarianten, der
+Zwei-Browser-Beweis grün. Zwei ehrliche Lehren:
+
+### Lehre 1 — Eine Eigenschaft kann man aus einer Vorbedingung ableiten.
+
+`joinPortalInvite` betritt das Portal mit erzwungenem `multiplayer:true`.
+Der erste Instinkt war: die `multiplayer`-Marke im `portal-invite` mit-
+transportieren. Aber das ist unnötig — der EMPFANG einer Einladung BEWEIST
+schon, dass die Welt multiplayer ist: `_p2pBroadcastPortalInvite` feuert
+NUR aus einem Multiplayer-Portal. Wer eine Eigenschaft aus einer
+unfälschbaren Vorbedingung ableiten kann, braucht ihren Transport nicht —
+ein Feld weniger im Protokoll, kein Drift-Risiko. *Lehre: bevor du ein
+Feld in eine Nachricht packst, frag — folgt es schon zwingend daraus,
+dass die Nachricht überhaupt existiert?*
+
+### Lehre 2 — Eine Welle ehrlich schneiden lässt die Naht offen, ohne zu blockieren.
+
+Phase C braucht, dass A's Portal multiplayer IST. Woher? Entweder der
+library-Eintrag der Welt trägt die Marke (`aimBlueprintAtWorld` reicht sie
+jetzt durch — eine Zeile), oder — für eine vendorte Welt — ihr
+`customWorlds`-Eintrag deklariert sich selbst. Letzteres ist eine
+`_sanitizeImportedManifest`-Naht (W15/W16-Gebiet). Sie NICHT in Phase C zu
+ziehen war richtig: `joinPortalInvite`s `multiplayer`-Zwang (Lehre 1) macht
+den Einladungs-Mechanismus vollständig, unabhängig davon. *Lehre: eine
+Welle ehrlich schneiden heisst, die Teile zu identifizieren, die zu einem
+ANDEREN Bogen gehören — und sicherzustellen, dass die aktuelle Welle ohne
+sie vollständig ist.*
+
+Sonst: der Plan aus `roadmap.md` §3 (C1-C3) traf den Code sauber.
+`portal-invite` mirrort `companion-say`/`subworld-net` Zeile für Zeile —
+der dritte event-driven Mesh-Kanal in drei Wellen, dasselbe Muster.
 
 ---
 

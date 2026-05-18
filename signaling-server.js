@@ -33,6 +33,8 @@
 //   Server → Client   { "type": "rtc-offer/answer/ice", "peerId": "<from>", "to": "...", ... }
 //   Client → Server   { "type": "subworld-net", "worldId": "...", "data": "..." }   (W17 B-Relay)
 //   Server → Client   { "type": "subworld-net", "peerId": "...", "worldId": "...", "data": "..." }
+//   Client → Server   { "type": "portal-invite", "worldId": "...", "label": "..." }   (W17 Phase C)
+//   Server → Client   { "type": "portal-invite", "peerId": "...", "worldId": "...", "label": "..." }
 //
 // W7 Phase 1 (Compute-Sharing): der Server wird vom Daten-Relay zum
 // reinen WebRTC-Rendezvous. Er reicht SDP-Offer/Answer + ICE-Kandidaten
@@ -296,6 +298,17 @@ function handleClientMessage(ws, raw) {
         const data = typeof msg.data === "string" ? msg.data : "";
         if (!worldId || !data || data.length > 65536) return;
         broadcastToRoom(ws.anazh.room, { type: "subworld-net", peerId: ws.anazh.peerId, worldId, data }, ws);
+        return;
+    }
+    if (msg.type === "portal-invite") {
+        // W17 Phase C — das Gruppen-Portal. Betritt ein Spieler ein
+        // Multiplayer-Portal, lädt er die Mesh-Gruppe ein. Server stempelt
+        // die authoritative peerId, deckelt worldId + label; den Inhalt
+        // validiert er nicht (reine Client-Schicht).
+        const worldId = typeof msg.worldId === "string" ? msg.worldId.slice(0, 64) : "";
+        if (!worldId) return;
+        const label = typeof msg.label === "string" ? msg.label.slice(0, 80) : "";
+        broadcastToRoom(ws.anazh.room, { type: "portal-invite", peerId: ws.anazh.peerId, worldId, label }, ws);
         return;
     }
     if (msg.type === "rtc-offer" || msg.type === "rtc-answer" || msg.type === "rtc-ice") {

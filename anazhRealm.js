@@ -380,6 +380,11 @@ class AnazhRealm {
                 // {mesh, …}, die Kreaturen der Mitspieler als Sicht-Schicht.
                 remoteCreatures: new Map(),
                 _lastCreatureBroadcast: 0,
+                // W17 Phase C — das Gruppen-Portal. pendingInvite: ein
+                // Mitspieler öffnete ein Multiplayer-Portal + lud ein
+                // ({peerId, worldId, label, at}); null, wenn keine Einladung
+                // offen ist. Laufzeit-State, nicht im Welt-Save.
+                pendingInvite: null,
             },
             // Welt-Identität (Ring 8+, siehe docs/state-of-realm.md §11). Felder
             // werden jetzt schon gesetzt, damit das Save-Schema zukunftsfest
@@ -4567,7 +4572,17 @@ class AnazhRealm {
             this._p2pHandleLlmResponse(peerId, msg);
             return;
         }
-        const ALLOWED = ["pos", "dsl", "soul", "aura", "vibe", "creature-pos", "companion-say", "subworld-net"];
+        const ALLOWED = [
+            "pos",
+            "dsl",
+            "soul",
+            "aura",
+            "vibe",
+            "creature-pos",
+            "companion-say",
+            "subworld-net",
+            "portal-invite",
+        ];
         if (!ALLOWED.includes(msg.type)) return;
         msg.peerId = peerId;
         this.p2pHandleMessage(JSON.stringify(msg));
@@ -5465,6 +5480,14 @@ class AnazhRealm {
             }
             return;
         }
+        if (msg.type === "portal-invite") {
+            // W17 Phase C — ein Mitspieler öffnete ein Multiplayer-Portal und
+            // lädt die Gruppe ein. _p2pHandlePortalInvite zeigt den Prompt.
+            if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
+                this._p2pHandlePortalInvite(msg.peerId, msg);
+            }
+            return;
+        }
         if (msg.type === "pos") {
             const pid = msg.peerId;
             if (typeof pid !== "string" || pid === p2p.peerId) return;
@@ -6121,6 +6144,11 @@ class AnazhRealm {
             }
         }
         p2p.peers.delete(peerId);
+        // W17 Phase C — eine offene Einladung dieses Peers verfällt mit ihm.
+        if (p2p.pendingInvite && p2p.pendingInvite.peerId === peerId) {
+            p2p.pendingInvite = null;
+            this._renderPortalInviteBanner();
+        }
     }
 
     _p2pClearAllPeerMeshes() {
@@ -18096,6 +18124,10 @@ class AnazhRealm {
         // sagt ihm beim enter-Handshake, welche Szene er aufbauen soll.
         const custom = this.state.customWorlds && this.state.customWorlds[entry.id];
         if (custom && custom.translated) meta.translatedWorldId = entry.id;
+        // W17 — trägt der Registry-/customWorlds-Eintrag die Multiplayer-
+        // Marke, wird das geholte Portal multiplayer (lädt mit dem Transport-
+        // Shim, broadcastet beim Betreten ein Gruppen-Portal-invite).
+        if (entry.multiplayer === true) meta.multiplayer = true;
         return this.setBlueprintAsPortal(blueprintName, meta);
     }
 
@@ -19175,6 +19207,12 @@ class AnazhRealm {
             "portal",
             `Du tratst zum ersten Mal durch das Tor „${worldLabel}".`
         );
+        // W17 Phase C — das Gruppen-Portal. Betritt man ein Multiplayer-Tor,
+        // bekommen die Mitspieler eine „mitkommen?"-Einladung. Nur ein
+        // Multiplayer-Portal (B-Relay verbindet die Gruppe nur dort) + nur
+        // eine library-bekannte Welt (sonst könnte der Empfänger kein Portal
+        // holen — _resolvePortalWorldId liefert dann null).
+        this._p2pBroadcastPortalInvite();
         return { ok: true };
     }
 
@@ -19384,6 +19422,138 @@ class AnazhRealm {
             po.iframe.contentWindow.postMessage({ __anazhNet: true, kind: "ws-recv", channel, data }, target);
         }
         return true;
+    }
+
+    // W17 Phase C — die worldId einer Portal-Welt auflösen (Registry-/
+    // customWorlds-Schlüssel, NICHT der Pfad). Der Empfänger einer
+    // portal-invite braucht sie für obtainPortalForWorld. Eine übersetzte
+    // Welt teilt sich den world-Pfad (worlds/translated/) — die
+    // translatedWorldId löst sie auf; sonst der Pfad-Match gegen die
+    // Bibliothek. Liefert null, wenn die Welt nicht library-bekannt ist
+    // (ein ad-hoc-Skelett-Portal lädt niemanden ein).
+    _resolvePortalWorldId(po) {
+        if (!po) return null;
+        if (po.translatedWorldId) {
+            return this._worldEntry(po.translatedWorldId) ? po.translatedWorldId : null;
+        }
+        const w = this._libraryWorlds().find((x) => x.world === po.world);
+        return w ? w.id : null;
+    }
+
+    // W17 Phase C — C1: betritt der Spieler ein Multiplayer-Portal, lädt er
+    // die Mesh-Gruppe ein. Ein `portal-invite`-Broadcast (`{worldId, label}`)
+    // — wie companion-say ein event-driven Spiel-Broadcast, kein DSL. Nur ein
+    // Multiplayer-Portal (B-Relay verbindet die Gruppe nur dort) und nur eine
+    // library-bekannte Welt (der Empfänger muss sie via obtainPortalForWorld
+    // holen können — _resolvePortalWorldId liefert sonst null).
+    _p2pBroadcastPortalInvite() {
+        const p2p = this.state.p2p;
+        if (!p2p || !p2p.enabled || !p2p.connected) return false;
+        const po = this._portalOverlay;
+        if (!po || !po.multiplayer) return false;
+        const worldId = this._resolvePortalWorldId(po);
+        if (!worldId) return false;
+        this.p2pSend({ type: "portal-invite", worldId, label: po.label || worldId });
+        return true;
+    }
+
+    // W17 Phase C — C2: ein Mitspieler öffnete ein Multiplayer-Portal. Den
+    // Prompt zeigen — aber nicht, wenn ich selbst gerade in einem Portal bin
+    // (der Game-Loop ist eingefroren). Die worldId wird op-förmig gesäubert;
+    // eine Welt, die ich nicht habe, wird erst beim Annehmen ehrlich
+    // abgewiesen (joinPortalInvite).
+    _p2pHandlePortalInvite(peerId, msg) {
+        if (this._portalOverlay) return;
+        const worldId = typeof msg.worldId === "string" ? msg.worldId.trim().toLowerCase() : "";
+        if (!/^[a-z0-9_-]{1,40}$/.test(worldId)) return;
+        const label = typeof msg.label === "string" ? msg.label.trim().slice(0, 60) : worldId;
+        this.state.p2p.pendingInvite = { peerId, worldId, label, at: Date.now() };
+        const entry = this.state.p2p.peers.get(peerId);
+        const who = (entry && entry.avatarName) || String(peerId).slice(0, 8);
+        this.log(`${who} öffnete ein Tor nach „${label}" — mitkommen?`, "INFO");
+        this._renderPortalInviteBanner();
+    }
+
+    // W17 Phase C — C3: die Einladung annehmen. obtainPortalForWorld holt
+    // (oder findet) den Portal-Bauplan + richtet ihn aus; danach wird das
+    // Portal direkt betreten. Der Overlay erzwingt `multiplayer:true` — die
+    // Einladung IST der Beweis (sie kommt nur aus einem Multiplayer-Portal);
+    // so verbindet die B2-Sub-Raum-Eingrenzung die Gruppe, auch wenn der
+    // library-Eintrag des Empfängers die Marke nicht selbst trägt. Hat der
+    // Spieler die Welt nicht, ehrlicher Hinweis (er müsste sie erst aus dem
+    // Welt-Katalog holen — W16).
+    joinPortalInvite() {
+        const inv = this.state.p2p && this.state.p2p.pendingInvite;
+        if (!inv) return { ok: false, reason: "no_invite" };
+        if (this._portalOverlay) return { ok: false, reason: "already_in_portal" };
+        const obtained = this.obtainPortalForWorld(inv.worldId);
+        if (!obtained.ok) {
+            const hint =
+                obtained.reason === "world_unknown"
+                    ? `Du hast „${inv.label}" nicht — hol die Welt erst aus dem Welt-Katalog.`
+                    : `Konnte das Tor nach „${inv.label}" nicht öffnen (${obtained.reason}).`;
+            this.log(hint, "WARN");
+            return { ok: false, reason: obtained.reason };
+        }
+        const bp = this.state.blueprints[obtained.blueprint];
+        const meta = Object.assign({}, bp.portalMeta, { multiplayer: true });
+        this.state.p2p.pendingInvite = null;
+        this._renderPortalInviteBanner();
+        // Direkt über _buildPortalOverlay — enterPortal bräuchte eine
+        // platzierte Affordance; die Einladung kennt nur die worldId.
+        this._buildPortalOverlay(meta);
+        this.log(`Du folgst der Einladung in „${inv.label}".`, "INFO");
+        this.journalAppendOnce(
+            `portalVisit:${(bp.portalMeta && bp.portalMeta.world) || inv.worldId}`,
+            "portal",
+            `Du tratst zum ersten Mal durch das Tor „${inv.label}".`
+        );
+        return { ok: true };
+    }
+
+    // W17 Phase C — die Einladung verwerfen.
+    dismissPortalInvite() {
+        if (!this.state.p2p || !this.state.p2p.pendingInvite) return;
+        this.state.p2p.pendingInvite = null;
+        this._renderPortalInviteBanner();
+    }
+
+    // W17 Phase C — den Einladungs-Banner rendern. Ein fixes Overlay-Element
+    // (#portal-invite-banner) mit „X öffnete ein Tor nach <Welt>" + einem
+    // Mitkommen-/Schließen-Knopf. Verborgen, wenn keine Einladung offen ist.
+    _renderPortalInviteBanner() {
+        if (typeof document === "undefined") return;
+        const banner = document.getElementById("portal-invite-banner");
+        if (!banner) return;
+        const inv = this.state.p2p && this.state.p2p.pendingInvite;
+        if (!inv) {
+            banner.hidden = true;
+            banner.innerHTML = "";
+            return;
+        }
+        const entry = this.state.p2p.peers.get(inv.peerId);
+        const who = (entry && entry.avatarName) || String(inv.peerId).slice(0, 8);
+        banner.hidden = false;
+        banner.innerHTML = "";
+        const text = document.createElement("div");
+        text.className = "portal-invite-text";
+        text.textContent = `${who} öffnete ein Tor nach „${inv.label}"`;
+        const row = document.createElement("div");
+        row.className = "portal-invite-row";
+        const joinBtn = document.createElement("button");
+        joinBtn.type = "button";
+        joinBtn.className = "portal-invite-join";
+        joinBtn.textContent = "Mitkommen";
+        joinBtn.addEventListener("click", () => this.joinPortalInvite());
+        const dismissBtn = document.createElement("button");
+        dismissBtn.type = "button";
+        dismissBtn.className = "portal-invite-dismiss";
+        dismissBtn.textContent = "Schließen";
+        dismissBtn.addEventListener("click", () => this.dismissPortalInvite());
+        row.appendChild(joinBtn);
+        row.appendChild(dismissBtn);
+        banner.appendChild(text);
+        banner.appendChild(row);
     }
 
     // W12 Phase 1 — E-Tasten-Pfad: ist ein Portal in Reichweite, betritt es.

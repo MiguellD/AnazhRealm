@@ -5323,6 +5323,200 @@ function startSaveServer() {
                 );
             }
 
+            // ### W17 Phase C — das Gruppen-Portal ###
+            // Betritt ein Spieler ein Multiplayer-Portal, broadcastet er einen
+            // portal-invite; die Mitspieler bekommen einen „mitkommen?"-Prompt,
+            // „Ja" holt das Portal + betritt es (B2 verbindet die Gruppe).
+            const w17cResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    out.methodsPresent =
+                        typeof r._resolvePortalWorldId === "function" &&
+                        typeof r._p2pBroadcastPortalInvite === "function" &&
+                        typeof r._p2pHandlePortalInvite === "function" &&
+                        typeof r.joinPortalInvite === "function" &&
+                        typeof r.dismissPortalInvite === "function" &&
+                        typeof r._renderPortalInviteBanner === "function";
+                    out.pendingInviteInit = r.state.p2p.pendingInvite === null;
+                    out.bannerInDom = !!document.getElementById("portal-invite-banner");
+
+                    // _resolvePortalWorldId — Pfad-Match gegen die Bibliothek.
+                    out.resolveByPath =
+                        r._resolvePortalWorldId({ world: "worlds/skeleton/index.html" }) === "skeleton";
+                    out.resolveUnknown =
+                        r._resolvePortalWorldId({ world: "worlds/_nonexist/index.html" }) === null;
+
+                    // aimBlueprintAtWorld trägt multiplayer aus dem Eintrag.
+                    let aimCarriesMp = false;
+                    r.state.customWorlds = r.state.customWorlds || {};
+                    r.state.customWorlds._w17c_mp = {
+                        id: "_w17c_mp",
+                        label: "W17C MP-Welt",
+                        world: "worlds/_w17c_mp/index.html",
+                        dsl: [],
+                        reachable: true,
+                        multiplayer: true,
+                    };
+                    if (r.cloneBlueprint("welt_portal", "_w17c_aimbp")) {
+                        const aim = r.aimBlueprintAtWorld("_w17c_aimbp", "_w17c_mp");
+                        const bp = r.state.blueprints["_w17c_aimbp"];
+                        aimCarriesMp = aim.ok && !!bp.portalMeta && bp.portalMeta.multiplayer === true;
+                        delete r.state.blueprints["_w17c_aimbp"];
+                    }
+                    delete r.state.customWorlds._w17c_mp;
+                    out.aimCarriesMp = aimCarriesMp;
+
+                    // p2pSend hooken: portal-invite-Broadcasts einfangen.
+                    const sent = [];
+                    const origSend = r.p2pSend;
+                    r.p2pSend = (obj) => {
+                        if (obj && obj.type === "portal-invite") sent.push(obj);
+                        return false;
+                    };
+                    const p2p = r.state.p2p;
+                    const wasEnabled = p2p.enabled;
+                    const wasConnected = p2p.connected;
+                    p2p.enabled = true;
+                    p2p.connected = true;
+
+                    // _p2pBroadcastPortalInvite — nur ein Multiplayer-Portal,
+                    // dessen Welt sich auflöst, broadcastet.
+                    r._portalOverlay = {
+                        multiplayer: true,
+                        world: "worlds/skeleton/index.html",
+                        label: "Skelett-Welt",
+                    };
+                    sent.length = 0;
+                    const b1 = r._p2pBroadcastPortalInvite();
+                    out.broadcastsForMpPortal =
+                        b1 === true &&
+                        sent.length === 1 &&
+                        sent[0].type === "portal-invite" &&
+                        sent[0].worldId === "skeleton" &&
+                        sent[0].label === "Skelett-Welt";
+                    // Ein Nicht-Multiplayer-Portal broadcastet nicht.
+                    r._portalOverlay.multiplayer = false;
+                    sent.length = 0;
+                    r._p2pBroadcastPortalInvite();
+                    out.noBroadcastForSinglePortal = sent.length === 0;
+                    // Eine nicht-library-bekannte Welt broadcastet nicht.
+                    r._portalOverlay = { multiplayer: true, world: "worlds/_nope/index.html", label: "X" };
+                    sent.length = 0;
+                    r._p2pBroadcastPortalInvite();
+                    out.noBroadcastForUnknownWorld = sent.length === 0;
+                    r._portalOverlay = null;
+
+                    // _p2pHandlePortalInvite — speichert die Einladung.
+                    p2p.pendingInvite = null;
+                    r._p2pHandlePortalInvite("peerA", { worldId: "skeleton", label: "Skelett-Welt" });
+                    out.handleStoresInvite =
+                        !!p2p.pendingInvite &&
+                        p2p.pendingInvite.peerId === "peerA" &&
+                        p2p.pendingInvite.worldId === "skeleton";
+                    // Eine Müll-worldId wird verworfen.
+                    p2p.pendingInvite = null;
+                    r._p2pHandlePortalInvite("peerA", { worldId: "../böse", label: "x" });
+                    out.handleRejectsBadWorldId = p2p.pendingInvite === null;
+                    // Bin ich schon im Portal, keine Einladung.
+                    r._portalOverlay = { multiplayer: true, world: "worlds/skeleton/index.html" };
+                    r._p2pHandlePortalInvite("peerA", { worldId: "skeleton", label: "x" });
+                    out.handleIgnoredWhenInPortal = p2p.pendingInvite === null;
+                    r._portalOverlay = null;
+
+                    // _renderPortalInviteBanner — Banner mit Knöpfen / verborgen.
+                    p2p.pendingInvite = { peerId: "peerA", worldId: "skeleton", label: "Skelett-Welt", at: 0 };
+                    r._renderPortalInviteBanner();
+                    const banner = document.getElementById("portal-invite-banner");
+                    out.bannerShows =
+                        !!banner &&
+                        banner.hidden === false &&
+                        !!banner.querySelector(".portal-invite-join") &&
+                        !!banner.querySelector(".portal-invite-dismiss") &&
+                        /Skelett-Welt/.test(banner.textContent || "");
+                    // dismissPortalInvite räumt + verbirgt den Banner.
+                    r.dismissPortalInvite();
+                    out.dismissClears = p2p.pendingInvite === null && banner.hidden === true;
+
+                    // joinPortalInvite — ohne Einladung abgelehnt.
+                    p2p.pendingInvite = null;
+                    out.joinNoInvite = r.joinPortalInvite().reason === "no_invite";
+                    // ... eine unbekannte Welt → world_unknown.
+                    p2p.pendingInvite = { peerId: "peerA", worldId: "_nichtda", label: "X", at: 0 };
+                    out.joinUnknownWorld = r.joinPortalInvite().reason === "world_unknown";
+                    // ... eine bekannte Welt → Portal geholt + multiplayer betreten.
+                    const invSlots = r.state.player.inventory.slice();
+                    p2p.pendingInvite = { peerId: "peerA", worldId: "skeleton", label: "Skelett-Welt", at: 0 };
+                    const jr = r.joinPortalInvite();
+                    out.joinEntersMultiplayer =
+                        jr.ok === true &&
+                        !!r._portalOverlay &&
+                        r._portalOverlay.multiplayer === true &&
+                        p2p.pendingInvite === null;
+                    r._disposePortalOverlay();
+                    delete r.state.blueprints["portal_skeleton"];
+                    r.state.player.inventory = invSlots;
+                    p2p.enabled = wasEnabled;
+                    p2p.connected = wasConnected;
+                    p2p.pendingInvite = null;
+                    r.p2pSend = origSend;
+                    r._renderPortalInviteBanner();
+
+                    // portal-invite ist kanal-zustellbar: _p2pHandleChannelMessage
+                    // reicht es (ALLOWED-Whitelist) an p2pHandleMessage.
+                    r._p2pHandleChannelMessage(
+                        "fern-peer",
+                        JSON.stringify({ type: "portal-invite", worldId: "skeleton", label: "Skelett-Welt" })
+                    );
+                    out.channelDeliverable =
+                        !!p2p.pendingInvite && p2p.pendingInvite.peerId === "fern-peer";
+                    p2p.pendingInvite = null;
+                    r._renderPortalInviteBanner();
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!w17cResults || w17cResults.error) {
+                check(
+                    "W17 Phase C: das Gruppen-Portal erreichbar",
+                    false,
+                    (w17cResults && w17cResults.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("W17 C: alle 6 Gruppen-Portal-Methoden existieren", w17cResults.methodsPresent);
+                check("W17 C: state.p2p.pendingInvite initial null", w17cResults.pendingInviteInit);
+                check("W17 C: #portal-invite-banner im DOM", w17cResults.bannerInDom);
+                check("W17 C: _resolvePortalWorldId löst eine Welt per Pfad auf", w17cResults.resolveByPath);
+                check("W17 C: _resolvePortalWorldId liefert null für eine unbekannte Welt", w17cResults.resolveUnknown);
+                check("W17 C: aimBlueprintAtWorld trägt multiplayer aus dem Eintrag", w17cResults.aimCarriesMp);
+                check(
+                    "W17 C: _p2pBroadcastPortalInvite broadcastet ein portal-invite (worldId + label)",
+                    w17cResults.broadcastsForMpPortal
+                );
+                check("W17 C: ein Nicht-Multiplayer-Portal broadcastet keine Einladung", w17cResults.noBroadcastForSinglePortal);
+                check(
+                    "W17 C: eine nicht-library-bekannte Welt broadcastet keine Einladung",
+                    w17cResults.noBroadcastForUnknownWorld
+                );
+                check("W17 C: _p2pHandlePortalInvite speichert die Einladung", w17cResults.handleStoresInvite);
+                check("W17 C: _p2pHandlePortalInvite verwirft eine Müll-worldId", w17cResults.handleRejectsBadWorldId);
+                check(
+                    "W17 C: _p2pHandlePortalInvite ignoriert eine Einladung, wenn ich schon im Portal bin",
+                    w17cResults.handleIgnoredWhenInPortal
+                );
+                check("W17 C: _renderPortalInviteBanner zeigt Text + Mitkommen-/Schließen-Knopf", w17cResults.bannerShows);
+                check("W17 C: dismissPortalInvite räumt die Einladung + verbirgt den Banner", w17cResults.dismissClears);
+                check("W17 C: joinPortalInvite ohne Einladung → no_invite", w17cResults.joinNoInvite);
+                check("W17 C: joinPortalInvite mit unbekannter Welt → world_unknown", w17cResults.joinUnknownWorld);
+                check(
+                    "W17 C: joinPortalInvite holt das Portal + betritt es als multiplayer",
+                    w17cResults.joinEntersMultiplayer
+                );
+                check("W17 C: portal-invite ist kanal-zustellbar (ALLOWED-Whitelist)", w17cResults.channelDeliverable);
+            }
+
             // ### Multi-User-Bau-Sync — Strukturen synchron platzieren + abbauen ###
             // confirmBuild + tryMouseBreak broadcasten jetzt; eine geteilte
             // string-archId macht eine spieler-gebaute Struktur peer-über-

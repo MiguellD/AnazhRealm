@@ -140,6 +140,12 @@ async function run() {
     wsA.send(JSON.stringify({ type: "subworld-net", data: "subnet-payload" }));
     await sleep(150);
 
+    // W17 Phase C: das Gruppen-Portal. A öffnet ein Multiplayer-Portal →
+    // B bekommt die portal-invite. Defensive: ohne worldId wird verworfen.
+    wsA.send(JSON.stringify({ type: "portal-invite", worldId: "skeleton", label: "Skelett-Welt" }));
+    wsA.send(JSON.stringify({ type: "portal-invite", label: "ohne worldId" }));
+    await sleep(150);
+
     console.log("\n=== A received ===");
     for (const e of events.a) console.log(JSON.stringify(e));
     console.log("\n=== B received ===");
@@ -294,6 +300,16 @@ async function run() {
     );
     const aNotEchoedOwnSubworldNet = !events.a.some((e) => e.type === "subworld-net");
     const bRejectedBadSubworldNet = events.b.filter((e) => e.type === "subworld-net").length === 1;
+    // W17 Phase C Assertions.
+    const bGotPortalInvite = events.b.some(
+        (e) =>
+            e.type === "portal-invite" &&
+            e.peerId === "peerA" &&
+            e.worldId === "skeleton" &&
+            e.label === "Skelett-Welt"
+    );
+    const aNotEchoedOwnPortalInvite = !events.a.some((e) => e.type === "portal-invite");
+    const bRejectedBadPortalInvite = events.b.filter((e) => e.type === "portal-invite").length === 1;
     console.log("W7P4 B bekommt lobby-rooms mit A's veröffentlichtem Raum:", bGotLobbyRooms);
     console.log("KreaturSync B bekommt A's creature-pos (peerId-Stempel):", bGotCreaturePos);
     console.log("KreaturSync A bekommt eigene creature-pos NICHT zurück:", aNotEchoedOwnCreaturePos);
@@ -303,6 +319,9 @@ async function run() {
     console.log("W17BR B bekommt A's subworld-net (peerId-Stempel):", bGotSubworldNet);
     console.log("W17BR A bekommt eigene subworld-net NICHT zurück:", aNotEchoedOwnSubworldNet);
     console.log("W17BR Server verwirft subworld-net ohne data / ohne worldId:", bRejectedBadSubworldNet);
+    console.log("W17C B bekommt A's portal-invite (peerId-Stempel):", bGotPortalInvite);
+    console.log("W17C A bekommt eigene portal-invite NICHT zurück:", aNotEchoedOwnPortalInvite);
+    console.log("W17C Server verwirft portal-invite ohne worldId:", bRejectedBadPortalInvite);
 
     // B disconnects
     wsB.close();
@@ -350,7 +369,10 @@ async function run() {
         bRejectedBadCompanionSay &&
         bGotSubworldNet &&
         aNotEchoedOwnSubworldNet &&
-        bRejectedBadSubworldNet;
+        bRejectedBadSubworldNet &&
+        bGotPortalInvite &&
+        aNotEchoedOwnPortalInvite &&
+        bRejectedBadPortalInvite;
     server.kill();
     process.exit(allOk ? 0 : 1);
 }
