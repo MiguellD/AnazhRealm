@@ -2531,6 +2531,17 @@
                 padding-top: 6px;
                 border-top: 1px dotted rgba(138, 106, 54, 0.3);
             }
+            /* W17 — die Multiplayer-Marke: eine vendorte Welt erklärt sich
+               mehrspielerfähig (Gruppen-Portal). */
+            .vendor-mp-row {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                font-family: "IM Fell English", Georgia, serif;
+                font-size: 11px;
+                color: #2c8a5e;
+                cursor: pointer;
+            }
             .vendor-status {
                 font-family: "IM Fell English", Georgia, serif;
                 font-size: 11px;
@@ -2554,6 +2565,18 @@
                 background: rgba(67, 201, 138, 0.18);
                 color: #2c8a5e;
                 border: 1px solid rgba(67, 201, 138, 0.5);
+            }
+            /* W17 — die Multiplayer-Marke: eine Gruppe tritt gemeinsam durch
+               das Tor dieser Welt. Tor-grüner Akzent wie das Portal-Overlay. */
+            .library-mp-mark {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 9px;
+                letter-spacing: 0.04em;
+                padding: 1px 6px;
+                border-radius: 8px;
+                background: rgba(67, 201, 138, 0.3);
+                color: #1f6f49;
+                border: 1px solid #43c98a;
             }
             /* KI-Übersetzer Phase 1 — die Übersetzer-Sektion + die
                „KI-übersetzt"-Karte. Stil mirror't die Pergament-Sprache. */
@@ -5044,6 +5067,10 @@
                         maxlength="200"
                         placeholder="DSL-Vokabular, kommagetrennt (optional)"
                     />
+                    <label class="vendor-mp-row">
+                        <input type="checkbox" id="vendor-multiplayer" />
+                        Multiplayer-Welt (eine Gruppe tritt gemeinsam durch ein Tor)
+                    </label>
                 </div>
                 <input type="file" id="vendor-files" webkitdirectory multiple hidden />
                 <div class="actions">

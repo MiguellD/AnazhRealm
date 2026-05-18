@@ -4840,6 +4840,7 @@ class AnazhRealm {
                 label: entry.label || worldId,
                 desc: entry.desc || "",
                 dsl: Array.isArray(entry.dsl) ? entry.dsl : [],
+                multiplayer: entry.multiplayer === true,
                 files: bundle.files,
             });
         } catch {
@@ -4926,6 +4927,7 @@ class AnazhRealm {
                 label: parsed.label,
                 desc: parsed.desc,
                 dsl: parsed.dsl,
+                multiplayer: parsed.multiplayer === true,
                 files: parsed.files,
             })
         )
@@ -4971,7 +4973,11 @@ class AnazhRealm {
         const peerSig = peers
             .map(
                 ([pid, p]) =>
-                    pid + ":" + (p.avatarName || "") + ":" + (p.catalog || []).map((w) => w.id + w.hash).join(",")
+                    pid +
+                    ":" +
+                    (p.avatarName || "") +
+                    ":" +
+                    (p.catalog || []).map((w) => w.id + w.hash + (w.multiplayer ? "M" : "")).join(",")
             )
             .join("|");
         const mineSig = Object.keys(cw)
@@ -5006,6 +5012,14 @@ class AnazhRealm {
                 name.textContent = w.label || w.id;
                 name.title = "id: " + w.id + (w.hash ? " · Hash " + w.hash.slice(0, 12) + "…" : "");
                 row.appendChild(name);
+                // W17 — eine Multiplayer-Welt im Katalog kenntlich machen.
+                if (w.multiplayer === true) {
+                    const mp = document.createElement("span");
+                    mp.className = "library-mp-mark";
+                    mp.textContent = "Multiplayer";
+                    mp.title = "Eine Gruppe kann gemeinsam durch das Tor dieser Welt eintreten.";
+                    row.appendChild(mp);
+                }
                 if (this._haveWorldByHashOrId(w.id, w.hash)) {
                     const have = document.createElement("span");
                     have.className = "mesh-catalog-have";
@@ -5975,6 +5989,9 @@ class AnazhRealm {
                 id,
                 label: typeof w.label === "string" ? w.label.slice(0, 48) : id,
                 hash: typeof w.bundleHash === "string" ? w.bundleHash : "",
+                // W17 — die Multiplayer-Marke reist im Katalog mit: ein Peer
+                // sieht, welche browsbaren Welten Gruppen-Portal-fähig sind.
+                multiplayer: w.multiplayer === true,
             });
             if (out.length >= 32) break;
         }
@@ -5999,6 +6016,7 @@ class AnazhRealm {
                 id,
                 label: typeof c.label === "string" ? c.label.slice(0, 48) : id,
                 hash,
+                multiplayer: c.multiplayer === true,
             });
             if (out.length >= 32) break;
         }
@@ -14804,6 +14822,12 @@ class AnazhRealm {
                 out.bundleHash = m.bundleHash.toLowerCase();
             }
         }
+        // W17 — eine Multiplayer-Welt deklariert sich selbst mehrspielerfähig.
+        // Die Marke fliesst über aimBlueprintAtWorld in das portalMeta → ein
+        // geholtes Portal lädt mit dem Transport-Shim + broadcastet beim
+        // Betreten eine Gruppen-Portal-Einladung (W17 Phase C). Muss den
+        // localStorage-Rundlauf überleben (V8.59-Lehre).
+        if (m.multiplayer === true) out.multiplayer = true;
         return out;
     }
 
@@ -14826,6 +14850,9 @@ class AnazhRealm {
             desc: entry.desc || "",
             world: entry.world,
             dsl: Array.isArray(entry.dsl) ? entry.dsl.slice() : [],
+            // W17 — die Multiplayer-Marke reist mit dem geteilten Manifest
+            // (Metadaten, nicht signierte Substanz — wie world-Pfad/desc).
+            multiplayer: entry.multiplayer === true,
             authorPubKey: sig.authorPubKey,
             signature: sig.signature,
             signedHash: sig.signedHash || "",
@@ -15288,6 +15315,10 @@ class AnazhRealm {
             // W16 Phase 2 — der save-server lieferte den Content-Hash beim
             // Schreiben (BEIDE Vendor-Pfade reichen posted.bundleHash herein).
             bundleHash: typeof m.bundleHash === "string" ? m.bundleHash : "",
+            // W17 — eine Multiplayer-Welt deklariert sich mehrspielerfähig:
+            // ihr geholtes Portal lädt mit dem Transport-Shim + broadcastet
+            // beim Betreten eine Gruppen-Portal-Einladung (W17 Phase C).
+            multiplayer: m.multiplayer === true,
         });
         if (!entry) return { ok: false, reason: "invalid_manifest" };
         if (!this.state.customWorlds) this.state.customWorlds = {};
@@ -15325,6 +15356,7 @@ class AnazhRealm {
             desc: o.desc,
             dsl: o.dsl,
             bundleHash: posted.bundleHash,
+            multiplayer: o.multiplayer === true,
         });
         if (!reg.ok) return reg;
         return { ok: true, id: reg.id, label: reg.label, fileCount: posted.fileCount || san.files.length };
@@ -15354,6 +15386,7 @@ class AnazhRealm {
             desc: o.desc,
             dsl: o.dsl,
             bundleHash: posted.bundleHash,
+            multiplayer: o.multiplayer === true,
         });
         if (!reg.ok) return reg;
         return { ok: true, id: reg.id, label: reg.label, fileCount: posted.fileCount, branch: posted.branch };
@@ -18261,6 +18294,15 @@ class AnazhRealm {
                 imp.title = "Diese Welt kam als signiertes Manifest in deine Bibliothek (W14 Phase 3).";
                 head.appendChild(imp);
             }
+            // W17 — eine Multiplayer-Welt: eine Gruppe kann gemeinsam durch
+            // ihr Tor eintreten (Gruppen-Portal). Browsbar sichtbar gemacht.
+            if (w.multiplayer === true) {
+                const mp = document.createElement("span");
+                mp.className = "library-mp-mark";
+                mp.textContent = "Multiplayer";
+                mp.title = "Eine Gruppe kann gemeinsam durch das Tor dieser Welt eintreten (W17 — Gruppen-Portal).";
+                head.appendChild(mp);
+            }
             card.appendChild(head);
 
             const desc = document.createElement("div");
@@ -18795,11 +18837,13 @@ class AnazhRealm {
             .filter(Boolean);
         let res;
         try {
+            const mpEl = document.getElementById("vendor-multiplayer");
             res = await this.vendorWorldBundle({
                 worldId: idEl.value,
                 label: labelEl ? labelEl.value : "",
                 desc: descEl ? descEl.value : "",
                 dsl,
+                multiplayer: !!(mpEl && mpEl.checked),
                 files,
             });
         } catch (e) {
@@ -18843,12 +18887,14 @@ class AnazhRealm {
             .filter(Boolean);
         let res;
         try {
+            const mpEl = document.getElementById("vendor-multiplayer");
             res = await this.vendorWorldFromRepo({
                 worldId: idEl.value,
                 repoUrl,
                 label: labelEl ? labelEl.value : "",
                 desc: descEl ? descEl.value : "",
                 dsl,
+                multiplayer: !!(mpEl && mpEl.checked),
             });
         } catch (e) {
             res = { ok: false, reason: (e && e.message) || "Fehler" };

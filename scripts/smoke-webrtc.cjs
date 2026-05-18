@@ -377,6 +377,7 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
                 label: "Mesh-Test-Welt",
                 desc: "über das Mesh gereist",
                 dsl: ["sturm"],
+                multiplayer: true,
                 files: [
                     { path: "index.html", content: "<!doctype html><title>w16</title><body>mesh world</body>" },
                     { path: "lib/engine.js", content: "console.log('w16 engine');" },
@@ -412,7 +413,7 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
             (pid, wid) => {
                 const peer = window.anazhRealm.state.p2p.peers.get(pid);
                 const e = peer && peer.catalog && peer.catalog.find((w) => w.id === wid);
-                return e ? { id: e.id, label: e.label, hash: e.hash } : null;
+                return e ? { id: e.id, label: e.label, hash: e.hash, multiplayer: e.multiplayer } : null;
             },
             peerIdA,
             W16_ID
@@ -422,6 +423,7 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
             !!w16Cat && w16Cat.label === "Mesh-Test-Welt" && /^[0-9a-f]{64}$/.test(w16Cat.hash || ""),
             JSON.stringify(w16Cat)
         );
+        check("W17 MP: A's Multiplayer-Marke reist im Welt-Katalog mit", !!w16Cat && w16Cat.multiplayer === true);
 
         // B holt die Welt von A über das Mesh — worldId + Peer kommen aus dem
         // Katalog (der Phase-2-Spieler-Pfad, kein blankes Text-Feld mehr).
@@ -445,13 +447,18 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
         check("W16: A's Welt reiste peer-to-peer in B's Bibliothek (trust:sandboxed)", true);
         const w16Entry = await pageB.evaluate((id) => {
             const e = window.anazhRealm.state.customWorlds[id];
-            return { label: e && e.label, vendored: e && e.vendored, world: e && e.world };
+            return { label: e && e.label, vendored: e && e.vendored, world: e && e.world, multiplayer: e && e.multiplayer };
         }, W16_ID);
         check(
             "W16: die mesh-empfangene Welt ist vendored + trägt ihren Namen + Tor-Pfad",
             w16Entry.vendored === true &&
                 w16Entry.label === "Mesh-Test-Welt" &&
                 w16Entry.world === `worlds/${W16_ID}/index.html`,
+            JSON.stringify(w16Entry)
+        );
+        check(
+            "W17 MP: die Multiplayer-Marke überlebt den ganzen Mesh-Bündel-Transfer",
+            w16Entry.multiplayer === true,
             JSON.stringify(w16Entry)
         );
 

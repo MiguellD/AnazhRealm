@@ -63,7 +63,7 @@ async function run() {
             bodyParts: [{ shape: "box" }],
             worldRole: "host",
             // W16 Phase 2: der Welt-Katalog reist im soul-Kanal mit.
-            catalog: [{ id: "smoke-cat-w16", label: "Smoke-Welt", hash: "abc123" }],
+            catalog: [{ id: "smoke-cat-w16", label: "Smoke-Welt", hash: "abc123", multiplayer: true }],
         })
     );
     wsA.send(JSON.stringify({ type: "aura", hue: 270, intensity: 0.8 }));
@@ -204,7 +204,7 @@ async function run() {
             e.type === "soul" &&
             e.peerId === "peerA" &&
             Array.isArray(e.catalog) &&
-            e.catalog.some((c) => c.id === "smoke-cat-w16" && c.hash === "abc123")
+            e.catalog.some((c) => c.id === "smoke-cat-w16" && c.hash === "abc123" && c.multiplayer === true)
     );
     const bGotAuraFromA = events.b.some(
         (e) => e.type === "aura" && e.peerId === "peerA" && e.hue === 270 && e.intensity === 0.8

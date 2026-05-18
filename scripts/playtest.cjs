@@ -5517,6 +5517,126 @@ function startSaveServer() {
                 check("W17 C: portal-invite ist kanal-zustellbar (ALLOWED-Whitelist)", w17cResults.channelDeliverable);
             }
 
+            // ### W17 — die Multiplayer-Welt-Deklaration ###
+            // Eine vendorte Welt erklärt sich selbst mehrspielerfähig; die
+            // Marke fliesst durch _sanitizeImportedManifest, _vendorRegisterWorld,
+            // den Welt-Katalog und aimBlueprintAtWorld → obtainPortalForWorld
+            // produziert ein Multiplayer-Portal, das beim Betreten einlädt.
+            const w17mpResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    // _sanitizeImportedManifest trägt multiplayer.
+                    const sanMp = r._sanitizeImportedManifest({
+                        id: "_mp_test",
+                        label: "MP-Welt",
+                        world: "worlds/_mp_test/index.html",
+                        dsl: [],
+                        multiplayer: true,
+                    });
+                    out.sanitizeCarriesMp = !!sanMp && sanMp.multiplayer === true;
+                    const sanNo = r._sanitizeImportedManifest({
+                        id: "_mp_test2",
+                        label: "Single-Welt",
+                        world: "worlds/_mp_test2/index.html",
+                        dsl: [],
+                    });
+                    out.sanitizeDefaultsNoMp = !!sanNo && sanNo.multiplayer !== true;
+                    // localStorage-Rundlauf — re-sanitize bewahrt die Marke.
+                    const rt = r._sanitizeImportedManifest(JSON.parse(JSON.stringify(sanMp)));
+                    out.sanitizeSurvivesRoundtrip = !!rt && rt.multiplayer === true;
+
+                    // _vendorRegisterWorld setzt multiplayer am customWorlds-Eintrag.
+                    r.state.customWorlds = r.state.customWorlds || {};
+                    const reg = r._vendorRegisterWorld("_mp_vend", {
+                        label: "MP Vendored",
+                        dsl: [],
+                        multiplayer: true,
+                    });
+                    out.vendorRegisterCarriesMp =
+                        reg.ok &&
+                        !!r.state.customWorlds["_mp_vend"] &&
+                        r.state.customWorlds["_mp_vend"].multiplayer === true;
+
+                    // aimBlueprintAtWorld + obtainPortalForWorld → ein selbst-
+                    // deklariertes Multiplayer-Portal (der Kern: A's geholtes
+                    // Portal IST multiplayer, broadcastet beim Betreten).
+                    const invSlots = r.state.player.inventory.slice();
+                    const obt = r.obtainPortalForWorld("_mp_vend");
+                    const portalBp = obt.ok && r.state.blueprints[obt.blueprint];
+                    out.obtainProducesMpPortal =
+                        !!portalBp && !!portalBp.portalMeta && portalBp.portalMeta.multiplayer === true;
+
+                    // _p2pBuildCatalog trägt multiplayer.
+                    const cat = r._p2pBuildCatalog();
+                    const catEntry = cat.find((c) => c.id === "_mp_vend");
+                    out.catalogCarriesMp = !!catEntry && catEntry.multiplayer === true;
+
+                    // _p2pSanitizeCatalog bewahrt multiplayer.
+                    const san = r._p2pSanitizeCatalog([
+                        { id: "_mpcat", label: "X", hash: "", multiplayer: true },
+                        { id: "_single", label: "Y", hash: "" },
+                    ]);
+                    out.catalogSanitizeKeepsMp =
+                        san.length === 2 &&
+                        san[0].multiplayer === true &&
+                        san[1].multiplayer === false;
+
+                    // renderLibraryUI rendert die Multiplayer-Marke — nur für
+                    // die Multiplayer-Welt, nicht für eine Single-Welt.
+                    r.state.customWorlds["_mp_single"] = r._sanitizeImportedManifest({
+                        id: "_mp_single",
+                        label: "Single Vendored",
+                        world: "worlds/_mp_single/index.html",
+                        dsl: [],
+                        vendored: true,
+                        reachable: true,
+                    });
+                    r.renderLibraryUI();
+                    const cards = Array.from(document.querySelectorAll("#library-list .library-card"));
+                    const mpCard = cards.find((c) => /MP Vendored/.test(c.textContent || ""));
+                    const singleCard = cards.find((c) => /Single Vendored/.test(c.textContent || ""));
+                    out.libraryRendersMark =
+                        !!mpCard && !!mpCard.querySelector(".library-mp-mark");
+                    out.libraryNoMarkForSingle =
+                        !!singleCard && !singleCard.querySelector(".library-mp-mark");
+
+                    out.vendorCheckboxInDom = !!document.getElementById("vendor-multiplayer");
+
+                    // Aufräumen.
+                    delete r.state.customWorlds["_mp_vend"];
+                    delete r.state.customWorlds["_mp_single"];
+                    delete r.state.blueprints["portal__mp_vend"];
+                    r.state.player.inventory = invSlots;
+                    r.renderLibraryUI();
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!w17mpResults || w17mpResults.error) {
+                check(
+                    "W17 Multiplayer-Welt-Deklaration erreichbar",
+                    false,
+                    (w17mpResults && w17mpResults.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("W17 MP: _sanitizeImportedManifest trägt multiplayer", w17mpResults.sanitizeCarriesMp);
+                check("W17 MP: _sanitizeImportedManifest — Default ohne Marke", w17mpResults.sanitizeDefaultsNoMp);
+                check("W17 MP: multiplayer überlebt den localStorage-Rundlauf", w17mpResults.sanitizeSurvivesRoundtrip);
+                check("W17 MP: _vendorRegisterWorld setzt multiplayer am customWorlds-Eintrag", w17mpResults.vendorRegisterCarriesMp);
+                check(
+                    "W17 MP: obtainPortalForWorld produziert für eine multiplayer-Welt ein Multiplayer-Portal",
+                    w17mpResults.obtainProducesMpPortal
+                );
+                check("W17 MP: _p2pBuildCatalog trägt multiplayer", w17mpResults.catalogCarriesMp);
+                check("W17 MP: _p2pSanitizeCatalog bewahrt multiplayer + Default false", w17mpResults.catalogSanitizeKeepsMp);
+                check("W17 MP: renderLibraryUI rendert die Multiplayer-Marke", w17mpResults.libraryRendersMark);
+                check("W17 MP: eine Single-Welt bekommt KEINE Multiplayer-Marke", w17mpResults.libraryNoMarkForSingle);
+                check("W17 MP: #vendor-multiplayer-Checkbox im DOM", w17mpResults.vendorCheckboxInDom);
+            }
+
             // ### Multi-User-Bau-Sync — Strukturen synchron platzieren + abbauen ###
             // confirmBuild + tryMouseBreak broadcasten jetzt; eine geteilte
             // string-archId macht eine spieler-gebaute Struktur peer-über-

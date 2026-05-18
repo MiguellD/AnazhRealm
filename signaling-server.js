@@ -240,8 +240,10 @@ function handleClientMessage(ws, raw) {
         // W7 Phase 3: teilt der Peer seine LLM-Stimme?
         if (typeof msg.voiceShared === "boolean") out.voiceShared = msg.voiceShared;
         // W16 Phase 2: der Welt-Katalog des Peers — seine vendorten Welten als
-        // [{id, label, hash}]. Der Server deckelt (dummer-aber-expliziter
-        // Relay); die strenge Prüfung macht der Client (_p2pSanitizeCatalog).
+        // [{id, label, hash, multiplayer}]. Der Server deckelt (dummer-aber-
+        // expliziter Relay); die strenge Prüfung macht der Client
+        // (_p2pSanitizeCatalog). Ein neues Feld (W17: multiplayer) MUSS hier
+        // ergänzt werden, sonst überlebt es den WS-Relay nicht.
         if (Array.isArray(msg.catalog)) {
             out.catalog = msg.catalog
                 .filter((c) => c && typeof c === "object" && typeof c.id === "string")
@@ -250,6 +252,7 @@ function handleClientMessage(ws, raw) {
                     id: c.id.slice(0, 40),
                     label: typeof c.label === "string" ? c.label.slice(0, 48) : "",
                     hash: typeof c.hash === "string" ? c.hash.slice(0, 64) : "",
+                    multiplayer: c.multiplayer === true,
                 }));
         }
         broadcastToRoom(ws.anazh.room, out, ws);
