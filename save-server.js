@@ -3,6 +3,7 @@ const https = require("https");
 const { URL } = require("url");
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 
 const HOST = "127.0.0.1";
 const PORT = 4312;
@@ -231,6 +232,26 @@ function vendorSafeRelPath(p) {
     return norm;
 }
 
+// W16 Phase 2 — der Content-Hash einer Welt: ein deterministischer sha256
+// über die Datei-MENGE (sortierte Pfade, path\0content\0). Er gibt einer
+// vendorten Welt eine peer-unabhängige Identität — zwei Spieler mit demselben
+// Hash haben beweisbar dieselbe Welt. Der save-server ist die Hash-Autorität:
+// er hat die Dateien (Schreib- UND Lese-Seite), der Browser muss den Hash
+// nicht selbst rechnen (eine GitHub-vendorte Welt sieht der Client nie). Die
+// Datei-id ist NICHT Teil des Hashs — die Identität ist der Inhalt, nicht der
+// vom vendoernden Spieler gewählte Name.
+function bundleContentHash(entries) {
+    const h = crypto.createHash("sha256");
+    const sorted = entries.slice().sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+    for (const e of sorted) {
+        h.update(e.path, "utf8");
+        h.update("\0", "utf8");
+        h.update(e.content, "utf8");
+        h.update("\0", "utf8");
+    }
+    return h.digest("hex");
+}
+
 // Die Schreib-Seite (Phase 1): ein Bündel [{path,content}] validieren +
 // nach worlds/<id>/ schreiben. worldId ist schon geprüft. Liefert
 // {status, body} — der Caller sendet. BEIDE Eingänge (hochgeladenes
@@ -290,7 +311,15 @@ function applyVendorBundle(worldId, files) {
     }
     return {
         status: 200,
-        body: { ok: true, worldId, fileCount: clean.length, totalBytes: total, dir: `worlds/${worldId}` },
+        body: {
+            ok: true,
+            worldId,
+            fileCount: clean.length,
+            totalBytes: total,
+            dir: `worlds/${worldId}`,
+            // W16 Phase 2 — die Content-Identität der Welt (für den Welt-Katalog).
+            bundleHash: bundleContentHash(clean.map((c) => ({ path: c.rel, content: c.content }))),
+        },
     };
 }
 
@@ -342,7 +371,20 @@ function readVendorBundle(worldId) {
     if (!files.length) {
         return { status: 404, body: { error: "World has no readable text files" } };
     }
-    return { status: 200, body: { ok: true, worldId, files, fileCount: files.length, totalBytes: total } };
+    return {
+        status: 200,
+        body: {
+            ok: true,
+            worldId,
+            files,
+            fileCount: files.length,
+            totalBytes: total,
+            // W16 Phase 2 — derselbe Content-Hash wie die Schreib-Seite: liest
+            // ein save-server eine Welt zurück, die er einst schrieb, stimmt
+            // der Hash überein (die zwei Code-Pfade müssen sich einig sein).
+            bundleHash: bundleContentHash(files),
+        },
+    };
 }
 
 // Zero-dep HTTP(S)-GET mit Timeout + Byte-Deckel + einem Redirect-Hop.

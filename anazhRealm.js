@@ -4940,36 +4940,74 @@ class AnazhRealm {
         this._renderMeshWorldResult({ ok: false, reason });
     }
 
-    // W16 — die „Welt vom Mitspieler holen"-Sektion (Bibliothek-Drawer). P1
-    // ist die schlichte Form: ein worldId-Feld + ein Peer-Dropdown. Der
-    // browsbare Welt-Katalog (Peers annoncieren ihre Bibliothek) ist W16 P2.
-    _renderMeshWorldPeers() {
+    // W16 Phase 2 — der browsbare Welt-Katalog (Bibliothek-Drawer). Jeder
+    // Peer annonciert seine vendorten Welten über den soul-Kanal; hier werden
+    // sie als „Mitspieler X hat: …" mit einem Holen-Knopf gerendert. Ersetzt
+    // das blanke worldId-Feld + Peer-Dropdown der Phase 1. Eine Welt, die ich
+    // schon habe (per id ODER Content-Hash), zeigt „✓ vorhanden" statt Knopf.
+    _renderMeshWorldCatalog() {
         if (typeof document === "undefined") return;
-        const sel = document.getElementById("mesh-world-peer");
-        if (!sel) return;
-        const peers = Array.from(this.state.p2p.peers.keys());
-        const sig = peers.join("|");
-        if (sel.dataset.sig === sig) return; // unverändert — die Auswahl bewahren
-        sel.dataset.sig = sig;
-        const prev = sel.value;
-        sel.innerHTML = "";
-        if (!peers.length) {
-            const o = document.createElement("option");
-            o.value = "";
-            o.textContent = "(kein Mitspieler verbunden)";
-            sel.appendChild(o);
+        const host = document.getElementById("mesh-world-catalog");
+        if (!host) return;
+        const peers = Array.from(this.state.p2p.peers.entries());
+        const cw = this.state.customWorlds || {};
+        // Signatur: Peers + ihre Kataloge + meine Bibliothek (für die Dedup-
+        // Marken) — nur bei echter Änderung neu rendern.
+        const peerSig = peers
+            .map(
+                ([pid, p]) =>
+                    pid + ":" + (p.avatarName || "") + ":" + (p.catalog || []).map((w) => w.id + w.hash).join(",")
+            )
+            .join("|");
+        const mineSig = Object.keys(cw)
+            .map((k) => k + (cw[k] && cw[k].bundleHash ? cw[k].bundleHash : ""))
+            .sort()
+            .join(",");
+        const sig = peerSig + "##" + mineSig;
+        if (host.dataset.sig === sig) return;
+        host.dataset.sig = sig;
+        host.textContent = "";
+        const withWorlds = peers.filter(([, p]) => Array.isArray(p.catalog) && p.catalog.length);
+        if (!withWorlds.length) {
+            const empty = document.createElement("div");
+            empty.className = "drawer-hint";
+            empty.textContent =
+                "Kein Mitspieler hat eine Welt zu teilen — vendorte Welten erscheinen, sobald ein Mitspieler im Mesh-Raum eine hat.";
+            host.appendChild(empty);
             return;
         }
-        for (const pid of peers) {
-            const o = document.createElement("option");
-            o.value = pid;
-            const peer = this.state.p2p.peers.get(pid);
-            // Der Peer-Eintrag trägt den Avatar-Namen als `avatarName` (aus
-            // dem soul-Kanal); ist er noch nicht da, generisch „Mitspieler".
-            o.textContent = (peer && peer.avatarName ? peer.avatarName : "Mitspieler") + " · " + pid.slice(0, 8);
-            sel.appendChild(o);
+        for (const [pid, peer] of withWorlds) {
+            const group = document.createElement("div");
+            group.className = "mesh-catalog-peer";
+            const head = document.createElement("div");
+            head.className = "mesh-catalog-peer-name";
+            head.textContent = (peer.avatarName || "Mitspieler") + " · " + pid.slice(0, 8);
+            group.appendChild(head);
+            for (const w of peer.catalog) {
+                const row = document.createElement("div");
+                row.className = "mesh-catalog-row";
+                const name = document.createElement("span");
+                name.className = "mesh-catalog-world";
+                name.textContent = w.label || w.id;
+                name.title = "id: " + w.id + (w.hash ? " · Hash " + w.hash.slice(0, 12) + "…" : "");
+                row.appendChild(name);
+                if (this._haveWorldByHashOrId(w.id, w.hash)) {
+                    const have = document.createElement("span");
+                    have.className = "mesh-catalog-have";
+                    have.textContent = "✓ vorhanden";
+                    row.appendChild(have);
+                } else {
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.textContent = "Holen";
+                    btn.dataset.meshWorld = w.id;
+                    btn.dataset.meshPeer = pid;
+                    row.appendChild(btn);
+                }
+                group.appendChild(row);
+            }
+            host.appendChild(group);
         }
-        if (peers.indexOf(prev) >= 0) sel.value = prev;
     }
 
     // W16 — das Ergebnis eines Mesh-Welt-Holens anzeigen.
@@ -4990,7 +5028,7 @@ class AnazhRealm {
         const map = {
             invalid_world_id: "Ungültige Welt-id (a-z 0-9 - _, 1-40 Zeichen).",
             already_have: "Diese Welt hast du schon in deiner Bibliothek.",
-            no_such_peer: "Wähle einen verbundenen Mitspieler aus.",
+            no_such_peer: "Dieser Mitspieler ist nicht mehr verbunden.",
             no_channel: "Zu diesem Mitspieler steht keine Mesh-Verbindung.",
             send_failed: "Die Anfrage konnte nicht gesendet werden.",
             not_found: "Dieser Mitspieler hat diese Welt nicht.",
@@ -4999,31 +5037,39 @@ class AnazhRealm {
         return map[reason] || `Konnte die Welt nicht über das Mesh holen (${reason || "Fehler"}).`;
     }
 
-    // W16 — der Knopf-Handler. Liest worldId + Peer aus dem Drawer, löst den
-    // Pull aus; das Ergebnis kommt asynchron über _renderMeshWorldResult.
-    _runMeshWorldGet() {
-        if (typeof document === "undefined") return;
-        const idEl = document.getElementById("mesh-world-id");
-        const peerEl = document.getElementById("mesh-world-peer");
-        const status = document.getElementById("mesh-world-status");
-        if (!idEl || !status) return;
-        const res = this.requestWorldBundleFromPeer(idEl.value, peerEl ? peerEl.value : "");
-        if (res.ok) {
-            status.textContent = `Frage „${res.worldId}" beim Mitspieler an …`;
-            status.className = "vendor-status";
-        } else {
-            this._renderMeshWorldResult(res);
+    // W16 Phase 2 — der Holen-Knopf einer Katalog-Zeile. worldId + peerId
+    // kommen aus den data-Attributen des Knopfes; das Ergebnis kommt asynchron
+    // über _renderMeshWorldResult. Liefert das Sofort-Ergebnis (für Tests).
+    _runMeshWorldGet(worldId, peerId) {
+        const res = this.requestWorldBundleFromPeer(worldId, peerId);
+        if (typeof document !== "undefined") {
+            const status = document.getElementById("mesh-world-status");
+            if (status) {
+                if (res.ok) {
+                    status.textContent = `Frage „${res.worldId}" beim Mitspieler an …`;
+                    status.className = "vendor-status";
+                } else {
+                    this._renderMeshWorldResult(res);
+                }
+            }
         }
+        return res;
     }
 
-    // W16 — die „Welt vom Mitspieler holen"-Sektion verkabeln.
+    // W16 Phase 2 — den Welt-Katalog verkabeln. Ein delegierter Klick-Listener
+    // am bleibenden Container fängt jeden Holen-Knopf (auch nach jedem Re-
+    // Render — V8.37-Lehre: keine pro-Knopf-Listener, die ein Re-Render frisst).
     meshWorldInitDOM() {
         if (typeof document === "undefined") return;
-        this._renderMeshWorldPeers();
-        const btn = document.getElementById("mesh-world-get");
-        if (btn && btn.dataset.wired !== "1") {
-            btn.dataset.wired = "1";
-            btn.addEventListener("click", () => this._runMeshWorldGet());
+        this._renderMeshWorldCatalog();
+        const host = document.getElementById("mesh-world-catalog");
+        if (host && host.dataset.wired !== "1") {
+            host.dataset.wired = "1";
+            host.addEventListener("click", (ev) => {
+                const btn = ev.target && ev.target.closest("button[data-mesh-world]");
+                if (!btn) return;
+                this._runMeshWorldGet(btn.dataset.meshWorld, btn.dataset.meshPeer);
+            });
         }
     }
 
@@ -5471,6 +5517,11 @@ class AnazhRealm {
             if (typeof msg.worldRole === "string") entry.worldRole = msg.worldRole;
             // W7 Phase 3 — teilt der Peer seine Stimme?
             if (typeof msg.voiceShared === "boolean") entry.voiceShared = msg.voiceShared;
+            // W16 Phase 2 — der Welt-Katalog des Peers (seine vendorten Welten).
+            if (Array.isArray(msg.catalog)) {
+                entry.catalog = this._p2pSanitizeCatalog(msg.catalog);
+                this._renderMeshWorldCatalog();
+            }
             if (changed) this._p2pApplyPeerSoul(entry);
             entry.lastSeen = performance.now() / 1000;
             return;
@@ -5682,6 +5733,10 @@ class AnazhRealm {
             worldRole: null,
             // W7 Phase 3 — teilt dieser Peer seine LLM-Stimme? (soul-Feld)
             voiceShared: false,
+            // W16 Phase 2 — der Welt-Katalog des Peers: seine vendorten Welten
+            // als [{id, label, hash}], annonciert über den soul-Kanal. Der
+            // Bibliothek-Drawer macht ihn browsbar.
+            catalog: [],
             lastSeen: performance.now() / 1000,
         };
         p2p.peers.set(peerId, entry);
@@ -5873,6 +5928,64 @@ class AnazhRealm {
     // Ring 11 V3 — die eigene Seele an alle Mitspieler senden (Join + Wechsel).
     // Built-in-Seelen brauchen nur den Namen; Custom-Seelen tragen ihre
     // bodyParts mit, weil der Empfänger den Bauplan nicht hat.
+    // W16 Phase 2 — der eigene Welt-Katalog: jede vendorte Welt als
+    // {id, label, hash}. Nur `vendored`-Welten haben ein teilbares Datei-
+    // Bündel (eine importierte Manifest-Welt hat keine lokalen Dateien) —
+    // exakt die, die requestWorldBundleFromPeer auch herausgeben kann.
+    _p2pBuildCatalog() {
+        const cw = this.state.customWorlds || {};
+        const out = [];
+        for (const id of Object.keys(cw)) {
+            const w = cw[id];
+            if (!w || w.vendored !== true) continue;
+            out.push({
+                id,
+                label: typeof w.label === "string" ? w.label.slice(0, 48) : id,
+                hash: typeof w.bundleHash === "string" ? w.bundleHash : "",
+            });
+            if (out.length >= 32) break;
+        }
+        return out;
+    }
+
+    // W16 Phase 2 — den von einem Peer empfangenen Katalog säubern. Eine
+    // id-förmige id ist Pflicht (sie geht in requestWorldBundleFromPeer); der
+    // Hash ist optional (alt-vendorte Welten haben keinen). Defense in Depth:
+    // der signaling-server deckelt schon, der Client prüft maßgeblich.
+    _p2pSanitizeCatalog(arr) {
+        if (!Array.isArray(arr)) return [];
+        const out = [];
+        for (const c of arr) {
+            if (!c || typeof c !== "object") continue;
+            const id = String(c.id || "")
+                .trim()
+                .toLowerCase();
+            if (!/^[a-z0-9_-]{1,40}$/.test(id)) continue;
+            const hash = typeof c.hash === "string" && /^[0-9a-f]{0,64}$/i.test(c.hash) ? c.hash.toLowerCase() : "";
+            out.push({
+                id,
+                label: typeof c.label === "string" ? c.label.slice(0, 48) : id,
+                hash,
+            });
+            if (out.length >= 32) break;
+        }
+        return out;
+    }
+
+    // W16 Phase 2 — habe ich diese Welt schon? Per id ODER per Content-Hash
+    // (eine Welt mit denselben Dateien unter einer anderen id IST dieselbe
+    // Welt — der Hash ist ihre peer-unabhängige Identität).
+    _haveWorldByHashOrId(id, hash) {
+        const cw = this.state.customWorlds || {};
+        if (id && cw[id]) return true;
+        if (typeof hash === "string" && hash) {
+            for (const k of Object.keys(cw)) {
+                if (cw[k] && cw[k].bundleHash === hash) return true;
+            }
+        }
+        return false;
+    }
+
     _p2pBroadcastSoul() {
         if (!this.state.p2p || !this.state.p2p.enabled) return;
         const soulName = (this.state.player && this.state.player.soul) || "human";
@@ -5886,6 +5999,8 @@ class AnazhRealm {
         msg.worldRole = (this.state.worldMeta && this.state.worldMeta.role) || "solo";
         // W7 Phase 3 — mitteilen, ob ich meine LLM-Stimme teile.
         msg.voiceShared = !!(this.state.p2p && this.state.p2p.voiceShared);
+        // W16 Phase 2 — den eigenen Welt-Katalog annoncieren (wie worldRole).
+        msg.catalog = this._p2pBuildCatalog();
         this.p2pSend(msg);
     }
 
@@ -6242,9 +6357,10 @@ class AnazhRealm {
                 statusEl.textContent = `Verbunden (Raum ${room}, ${peerCount} Mitspieler${transport}${voice}).`;
             }
         }
-        // W16 — das Peer-Dropdown der „Welt vom Mitspieler holen"-Sektion
-        // mitziehen, sobald sich die Mitspieler-Liste ändert.
-        this._renderMeshWorldPeers();
+        // W16 Phase 2 — den Welt-Katalog der „Welt vom Mitspieler holen"-
+        // Sektion mitziehen, sobald sich die Mitspieler-Liste ändert (der
+        // Signatur-Wächter macht das billig, wenn sich nichts geändert hat).
+        this._renderMeshWorldCatalog();
         // W7 Phase 2 — Resync-Knopf: nur für einen Guest mit stehendem Mesh
         // sichtbar (er holt die Welt des Hosts frisch).
         const resyncBtn = document.getElementById("p2p-resync");
@@ -14639,6 +14755,12 @@ class AnazhRealm {
             out.vendored = true;
             out.vendoredAt = typeof m.vendoredAt === "number" ? m.vendoredAt : Date.now();
             out.trust = "sandboxed";
+            // W16 Phase 2 — der Content-Hash gibt der Welt eine peer-
+            // unabhängige Identität (Welt-Katalog-Dedup). Er muss den
+            // localStorage-Rundlauf überleben (V8.59-Lehre).
+            if (typeof m.bundleHash === "string" && /^[0-9a-f]{1,64}$/i.test(m.bundleHash)) {
+                out.bundleHash = m.bundleHash.toLowerCase();
+            }
         }
         return out;
     }
@@ -15086,6 +15208,9 @@ class AnazhRealm {
                 fileCount: data && data.fileCount,
                 totalBytes: data && data.totalBytes,
                 branch: data && data.branch,
+                // W16 Phase 2 — der save-server liefert den Content-Hash der
+                // geschriebenen Welt (er ist die Hash-Autorität).
+                bundleHash: data && data.bundleHash,
             };
         } catch {
             return { ok: false, reason: "save_server_unreachable" };
@@ -15118,6 +15243,9 @@ class AnazhRealm {
             reachable: true,
             vendored: true,
             vendoredAt: Date.now(),
+            // W16 Phase 2 — der save-server lieferte den Content-Hash beim
+            // Schreiben (BEIDE Vendor-Pfade reichen posted.bundleHash herein).
+            bundleHash: typeof m.bundleHash === "string" ? m.bundleHash : "",
         });
         if (!entry) return { ok: false, reason: "invalid_manifest" };
         if (!this.state.customWorlds) this.state.customWorlds = {};
@@ -15126,6 +15254,13 @@ class AnazhRealm {
         this.journalAppend("growth", `Eine fremde Welt dockte an deine Bibliothek an: „${entry.label}".`, {
             world: entry.id,
         });
+        // W16 Phase 2 — die Bibliothek wuchs: den Welt-Katalog neu annoncieren,
+        // damit Mitspieler die frisch angedockte Welt browsen können (self-
+        // guarded — _p2pBroadcastSoul ruht, wenn das Mesh nicht steht). Den
+        // eigenen Katalog-Drawer ebenso auffrischen — die neue Welt zeigt nun
+        // bei einem Mitspieler „✓ vorhanden" statt eines Holen-Knopfes.
+        this._p2pBroadcastSoul();
+        this._renderMeshWorldCatalog();
         return { ok: true, id: entry.id, label: entry.label };
     }
 
@@ -15143,7 +15278,12 @@ class AnazhRealm {
         if (!san.ok) return san;
         const posted = await this._vendorPostBundle(san.worldId, san.files);
         if (!posted.ok) return posted;
-        const reg = this._vendorRegisterWorld(san.worldId, { label: o.label, desc: o.desc, dsl: o.dsl });
+        const reg = this._vendorRegisterWorld(san.worldId, {
+            label: o.label,
+            desc: o.desc,
+            dsl: o.dsl,
+            bundleHash: posted.bundleHash,
+        });
         if (!reg.ok) return reg;
         return { ok: true, id: reg.id, label: reg.label, fileCount: posted.fileCount || san.files.length };
     }
@@ -15167,7 +15307,12 @@ class AnazhRealm {
         }
         const posted = await this._vendorPostRepo(id, repoUrl);
         if (!posted.ok) return posted;
-        const reg = this._vendorRegisterWorld(id, { label: o.label, desc: o.desc, dsl: o.dsl });
+        const reg = this._vendorRegisterWorld(id, {
+            label: o.label,
+            desc: o.desc,
+            dsl: o.dsl,
+            bundleHash: posted.bundleHash,
+        });
         if (!reg.ok) return reg;
         return { ok: true, id: reg.id, label: reg.label, fileCount: posted.fileCount, branch: posted.branch };
     }

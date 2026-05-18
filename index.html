@@ -1883,6 +1883,43 @@
                 text-overflow: ellipsis;
                 white-space: nowrap;
             }
+            /* W16 Phase 2 — Welt-Katalog der Mesh-Mitspieler */
+            .mesh-catalog {
+                margin-top: 6px;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            .mesh-catalog-peer {
+                display: flex;
+                flex-direction: column;
+                gap: 3px;
+            }
+            .mesh-catalog-peer-name {
+                font-size: 11px;
+                font-weight: 600;
+                color: var(--brass-1);
+                letter-spacing: 0.04em;
+            }
+            .mesh-catalog-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 6px;
+                padding-left: 8px;
+            }
+            .mesh-catalog-world {
+                font-size: 12px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            .mesh-catalog-have {
+                font-size: 11px;
+                color: var(--brass-1);
+                opacity: 0.8;
+                white-space: nowrap;
+            }
             /* Welle 6.C2 — Welt-Beziehungs-Modus-Radios */
             #game-mode-radios {
                 grid-template-columns: 1fr 1fr 1fr;
@@ -4980,31 +5017,19 @@
                 </div>
                 <div id="vendor-status" class="vendor-status" aria-live="polite"></div>
             </section>
-            <!-- W16 Phase 1 — Mesh-Welt-Verteilung: eine Welt, die ein
-                 Mitspieler vendort hat, peer-to-peer über das Mesh holen.
-                 _runMeshWorldGet → requestWorldBundleFromPeer. Der browsbare
-                 Welt-Katalog (Peers annoncieren ihre Bibliothek) ist W16 P2. -->
+            <!-- W16 Phase 2 — Welt-Katalog: jeder Mesh-Mitspieler annonciert
+                 seine vendorten Welten (über den soul-Kanal); „Holen" lädt
+                 das Bündel peer-to-peer in die Bibliothek. _renderMeshWorld-
+                 Catalog rendert, requestWorldBundleFromPeer trägt es. -->
             <section class="section">
-                <h3>Welt vom Mitspieler holen <span class="section-hint">(über das Mesh)</span></h3>
+                <h3>Welt-Katalog der Mitspieler <span class="section-hint">(über das Mesh)</span></h3>
                 <p class="drawer-hint">
-                    Hat ein Mitspieler im selben Mesh-Raum eine Welt vendort, holst du sie hier — ihr Bündel reist
-                    peer-to-peer über das Mesh, du brauchst kein GitHub-Repo. Gib die Welt-id ein (frag den
-                    Mitspieler nach ihr) und wähl ihn aus. Die geholte Welt läuft sandgesichert wie jede vendorte
-                    Welt. Braucht eine stehende Mesh-Verbindung (Multi-User-Drawer).
+                    Welten, die deine Mitspieler im selben Mesh-Raum vendort haben — „Holen" lädt ihr Bündel
+                    peer-to-peer in deine Bibliothek, du brauchst kein GitHub-Repo. Eine geholte Welt läuft
+                    sandgesichert wie jede vendorte Welt. „✓ vorhanden" heißt: du hast diese Welt schon (erkannt
+                    am Content-Hash). Braucht eine stehende Mesh-Verbindung (Multi-User-Drawer).
                 </p>
-                <div class="vendor-form">
-                    <input
-                        type="text"
-                        id="mesh-world-id"
-                        class="translator-edit"
-                        maxlength="40"
-                        placeholder="welt-id des Mitspielers"
-                    />
-                    <select id="mesh-world-peer" class="translator-edit" aria-label="Mitspieler"></select>
-                </div>
-                <div class="actions">
-                    <button type="button" id="mesh-world-get">Welt holen</button>
-                </div>
+                <div id="mesh-world-catalog" class="mesh-catalog" aria-live="polite"></div>
                 <div id="mesh-world-status" class="vendor-status" aria-live="polite"></div>
             </section>
             <section class="section">

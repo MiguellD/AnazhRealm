@@ -62,6 +62,8 @@ async function run() {
             name: "Aria",
             bodyParts: [{ shape: "box" }],
             worldRole: "host",
+            // W16 Phase 2: der Welt-Katalog reist im soul-Kanal mit.
+            catalog: [{ id: "smoke-cat-w16", label: "Smoke-Welt", hash: "abc123" }],
         })
     );
     wsA.send(JSON.stringify({ type: "aura", hue: 270, intensity: 0.8 }));
@@ -180,6 +182,14 @@ async function run() {
             e.name === "Aria" &&
             e.worldRole === "host"
     );
+    // W16 Phase 2: der Welt-Katalog überlebt den WS-Relay.
+    const bGotCatalogFromA = events.b.some(
+        (e) =>
+            e.type === "soul" &&
+            e.peerId === "peerA" &&
+            Array.isArray(e.catalog) &&
+            e.catalog.some((c) => c.id === "smoke-cat-w16" && c.hash === "abc123")
+    );
     const bGotAuraFromA = events.b.some(
         (e) => e.type === "aura" && e.peerId === "peerA" && e.hue === 270 && e.intensity === 0.8
     );
@@ -230,6 +240,7 @@ async function run() {
     console.log("V2.2 B bekommt world-snapshot targeted:", bGotWorldSnapshot);
     console.log("V2.2 A bekommt eigenen world-snapshot NICHT zurück:", aNotEchoedOwnSnapshot);
     console.log("V3 B bekommt A's soul (phoenix/Aria) mit peerId-Stempel:", bGotSoulFromA);
+    console.log("W16P2 B bekommt A's Welt-Katalog im soul-Kanal:", bGotCatalogFromA);
     console.log("V3 B bekommt A's aura (hue/intensity) mit peerId-Stempel:", bGotAuraFromA);
     console.log("V3 A bekommt eigene soul NICHT zurück:", aNotEchoedOwnSoul);
     console.log("V3 Server verwirft soul ohne soulName / aura mit NaN:", bRejectedBadSoul && bRejectedBadAura);
@@ -295,6 +306,7 @@ async function run() {
         !!bGotWorldSnapshot &&
         aNotEchoedOwnSnapshot &&
         bGotSoulFromA &&
+        bGotCatalogFromA &&
         bGotAuraFromA &&
         aNotEchoedOwnSoul &&
         bRejectedBadSoul &&
