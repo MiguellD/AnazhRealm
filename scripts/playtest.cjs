@@ -6315,6 +6315,99 @@ function startSaveServer() {
                 check("W17 P-Vendor: #vendor-js-compute-Checkbox im DOM", w17svResults.vendorJsComputeCheckboxInDom);
             }
 
+            // ### W4 V2 — die Lofi-Pad-Schicht ###
+            // Eine ruhige Minor-7th-Akkordfolge (~60 BPM) als vierte
+            // Symphonie-Schicht; hope hebt die Terz (heller), sorrow
+            // verlangsamt das Tempo.
+            const w4v2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    // Konstanten — die Akkordfolge.
+                    const chords = AnazhRealm.LOFI_CHORDS;
+                    out.chordsDefined =
+                        Array.isArray(chords) &&
+                        chords.length >= 4 &&
+                        Object.isFrozen(chords) &&
+                        chords.every((c) => Array.isArray(c) && c.length >= 3);
+                    out.bpmDefined = AnazhRealm.LOFI_BPM === 60 && AnazhRealm.LOFI_BASE_FREQ === 110;
+                    // _lofiChordFreqs — positive Frequenzen, Wurzel A ≈ 110.
+                    const freqs = r._lofiChordFreqs([0, 3, 7, 10], false);
+                    out.freqsPositive = freqs.length === 4 && freqs.every((f) => f > 0);
+                    out.rootIsA = Math.abs(freqs[0] - 110) < 0.01;
+                    // major-lean (hope) hebt die Terz (Ton 2), lässt die Wurzel.
+                    const freqsMajor = r._lofiChordFreqs([0, 3, 7, 10], true);
+                    out.majorLeanRaisesThird =
+                        freqsMajor[1] > freqs[1] && Math.abs(freqsMajor[0] - freqs[0]) < 0.01;
+                    // _lofiChordDurationMs — sorrow verlangsamt das Tempo.
+                    const emo = r.state.player.emotions;
+                    const sBefore = emo.sorrow;
+                    emo.sorrow = 0;
+                    const durCalm = r._lofiChordDurationMs();
+                    emo.sorrow = 1;
+                    const durSad = r._lofiChordDurationMs();
+                    emo.sorrow = sBefore;
+                    out.calmDuration4s = Math.abs(durCalm - 4000) < 1;
+                    out.sorrowSlowsTempo = durSad > durCalm && durSad <= 6001;
+                    // Frischer Symphony-Start, damit s.lofi vom aktuellen Code stammt.
+                    if (r.state.symphony && r.state.symphony.enabled && typeof r.disposeSymphony === "function") {
+                        r.disposeSymphony();
+                    }
+                    if (typeof r.initSymphony === "function") r.initSymphony();
+                    const sym = r.state.symphony;
+                    out.symphonyReady = !!(sym && sym.enabled && sym.ctx);
+                    if (out.symphonyReady) {
+                        out.lofiLayerBuilt =
+                            !!sym.lofi && !!sym.lofi.gain && !!sym.lofi.filter && sym.lofi.chordIndex === 0;
+                        // _lofiTick spielt den ersten Akkord (lastChordAt=-Infinity
+                        // → sofort fällig) und rückt den Index vor.
+                        const idxBefore = sym.lofi.chordIndex;
+                        r._lofiTick();
+                        out.tickAdvancesChord =
+                            sym.lofi.chordIndex === (idxBefore + 1) % AnazhRealm.LOFI_CHORDS.length &&
+                            sym.lofi.lastChordAt > -Infinity;
+                        // Ein zweiter Tick sofort danach spielt NICHT (Dauer nicht um).
+                        const idxAfter = sym.lofi.chordIndex;
+                        r._lofiTick();
+                        out.tickThrottled = sym.lofi.chordIndex === idxAfter;
+                        // symphonyTick ruft _lofiTick — kein Wurf.
+                        let symTickOk = true;
+                        try {
+                            r.symphonyTick();
+                        } catch (e) {
+                            symTickOk = false;
+                            void e;
+                        }
+                        out.symphonyTickRuns = symTickOk;
+                        // disposeSymphony räumt die Lofi-Schicht.
+                        r.disposeSymphony();
+                        out.disposeClearsLofi = sym.lofi === null;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!w4v2Results || w4v2Results.error) {
+                check("W4 V2 erreichbar", false, (w4v2Results && w4v2Results.error) || "page.evaluate fehlgeschlagen");
+            } else {
+                check("W4 V2: LOFI_CHORDS frozen, ≥4 Akkorde mit je ≥3 Tönen", w4v2Results.chordsDefined);
+                check("W4 V2: LOFI_BPM=60 + LOFI_BASE_FREQ=110 definiert", w4v2Results.bpmDefined);
+                check("W4 V2: _lofiChordFreqs liefert positive Frequenzen", w4v2Results.freqsPositive);
+                check("W4 V2: die Akkord-Wurzel ist A (≈110 Hz)", w4v2Results.rootIsA);
+                check("W4 V2: major-lean (hope) hebt die Terz, lässt die Wurzel", w4v2Results.majorLeanRaisesThird);
+                check("W4 V2: _lofiChordDurationMs — ruhig ≈ 4000 ms (60 BPM × 4)", w4v2Results.calmDuration4s);
+                check("W4 V2: sorrow verlangsamt das Lofi-Tempo (bis ~6 s)", w4v2Results.sorrowSlowsTempo);
+                if (w4v2Results.symphonyReady) {
+                    check("W4 V2: initSymphony baut die Lofi-Schicht (gain + filter)", w4v2Results.lofiLayerBuilt);
+                    check("W4 V2: _lofiTick spielt einen Akkord + rückt den Index vor", w4v2Results.tickAdvancesChord);
+                    check("W4 V2: _lofiTick ist akkord-dauer-gedrosselt", w4v2Results.tickThrottled);
+                    check("W4 V2: symphonyTick ruft _lofiTick wurf-frei", w4v2Results.symphonyTickRuns);
+                    check("W4 V2: disposeSymphony räumt die Lofi-Schicht", w4v2Results.disposeClearsLofi);
+                } else {
+                    check("W4 V2: Symphony im Headless initialisierbar", false, "initSymphony nicht bereit");
+                }
+            }
+
             // ### Multi-User-Bau-Sync — Strukturen synchron platzieren + abbauen ###
             // confirmBuild + tryMouseBreak broadcasten jetzt; eine geteilte
             // string-archId macht eine spieler-gebaute Struktur peer-über-

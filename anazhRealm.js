@@ -501,6 +501,9 @@ class AnazhRealm {
                 weather: null, // { noise, filter, gain }
                 lastWeather: null,
                 creaturePingCount: 0,
+                // W4 V2 — die Lofi-Pad-Schicht: eine langsame Minor-7th-
+                // Akkordfolge (~60 BPM), lazy in initSymphony gebaut.
+                lofi: null, // { gain, filter, chordIndex, lastChordAt }
             },
             player: {
                 // Welle 6.X.4 F1 (Audit 17.05.2026) — Avatar-Name. Default
@@ -7161,11 +7164,14 @@ class AnazhRealm {
 
         s.weather = { noise, filter: weatherFilter, gain: weatherGain };
 
+        // W4 V2 — die Lofi-Pad-Schicht: eine ruhige Minor-7th-Akkordfolge.
+        s.lofi = this._buildLofiLayer(ctx, masterGain);
+
         s.ctx = ctx;
         s.masterGain = masterGain;
         s.enabled = true;
         s.lastWeather = this.state.weather;
-        this.log("anazhSymphony V1 aktiviert: ambient + wetter live", "INFO");
+        this.log("anazhSymphony aktiviert: ambient + wetter + lofi live", "INFO");
         return true;
     }
 
@@ -7187,6 +7193,9 @@ class AnazhRealm {
         s.enabled = false;
         s.ambient = null;
         s.weather = null;
+        // W4 V2 — die Lofi-Akkord-Oszillatoren sind transient (auto-stop);
+        // Gain + Filter werden mit dem geschlossenen ctx vom GC geräumt.
+        s.lofi = null;
         s.masterGain = null;
     }
 
@@ -7334,6 +7343,8 @@ class AnazhRealm {
     symphonyTick() {
         const s = this.state.symphony;
         if (!s.enabled || !s.ctx) return;
+        // W4 V2 — der Lofi-Pad-Scheduler (eigene Akkord-Dauer-Drosselung).
+        this._lofiTick();
         // (1) Wetter-Cross-Fade (wie V8.24)
         if (s.lastWeather !== this.state.weather) {
             const target = this.state.weather === "rainy" ? 0.18 : 0.0;
@@ -7376,6 +7387,95 @@ class AnazhRealm {
                 void e;
             }
         }
+    }
+
+    // ### W4 V2 — die Lofi-Pad-Schicht ###
+    // Eine ruhige Minor-7th-Akkordfolge (~60 BPM) als vierte Symphonie-
+    // Schicht. Der Pad sitzt leise unter dem Ambient-Drone. Emotion-
+    // Modulation: hope hebt die Terz (Moll → Dur, heller), sorrow
+    // verlangsamt das Tempo. Web-Audio nativ, kein Asset.
+
+    // Die Lofi-Schicht im Audio-Graph aufbauen: ein warmer Tiefpass + ein
+    // leiser Gain an den Master-Bus. Die Akkord-Oszillatoren selbst sind
+    // transient (je Akkord neu, mit Hüllkurve, auto-stop).
+    _buildLofiLayer(ctx, masterGain) {
+        const filter = ctx.createBiquadFilter();
+        filter.type = "lowpass";
+        filter.frequency.value = 900; // warm, gedämpft — der Lofi-Charakter
+        filter.Q.value = 0.6;
+        const gain = ctx.createGain();
+        gain.gain.value = 0.12; // leise — der Pad sitzt unter dem Ambient
+        filter.connect(gain);
+        gain.connect(masterGain);
+        return { filter, gain, chordIndex: 0, lastChordAt: -Infinity };
+    }
+
+    // Die Halbton-Abstände eines Akkords zu Frequenzen. majorLean (aus der
+    // hope-Emotion) hebt die Terz (den 2. Ton) um einen Halbton: Moll → Dur,
+    // der Akkord klingt heller.
+    _lofiChordFreqs(offsets, majorLean) {
+        const base = AnazhRealm.LOFI_BASE_FREQ;
+        return offsets.map((semi, i) => {
+            const lifted = majorLean && i === 1 ? semi + 1 : semi;
+            return base * Math.pow(2, lifted / 12);
+        });
+    }
+
+    // Die Akkord-Dauer in ms. 60 BPM × 4 Schläge = 4 s; sorrow (Trauer)
+    // verlangsamt das Tempo um bis zu 50 % (bis ~6 s je Akkord).
+    _lofiChordDurationMs() {
+        const beatMs = 60000 / AnazhRealm.LOFI_BPM;
+        const base = beatMs * AnazhRealm.LOFI_CHORD_BEATS;
+        const emotions = (this.state.player && this.state.player.emotions) || {};
+        const sorrow = Math.max(0, Math.min(1, emotions.sorrow || 0));
+        return base * (1 + sorrow * 0.5);
+    }
+
+    // Einen Akkord spielen: je Ton ein Dreieck-Oszillator (weich, pad-artig)
+    // durch eine eigene Hüllkurve (langsamer Anschlag + Ausklang) in die
+    // Lofi-Schicht. Die Oszillatoren stoppen selbst nach dem Akkord.
+    _lofiPlayChord(offsets) {
+        const s = this.state.symphony;
+        if (!s.enabled || !s.ctx || !s.lofi) return;
+        const ctx = s.ctx;
+        const now = ctx.currentTime;
+        const durSec = this._lofiChordDurationMs() / 1000;
+        const emotions = (this.state.player && this.state.player.emotions) || {};
+        const majorLean = (emotions.hope || 0) > 0.6;
+        const freqs = this._lofiChordFreqs(offsets, majorLean);
+        const attack = 0.8;
+        const release = 1.4;
+        const sustainAt = now + Math.max(attack, durSec - release);
+        for (const freq of freqs) {
+            const osc = ctx.createOscillator();
+            osc.type = "triangle";
+            osc.frequency.value = freq;
+            const env = ctx.createGain();
+            env.gain.setValueAtTime(0, now);
+            env.gain.linearRampToValueAtTime(0.25, now + attack);
+            env.gain.setValueAtTime(0.25, sustainAt);
+            env.gain.linearRampToValueAtTime(0, now + durSec);
+            osc.connect(env);
+            env.connect(s.lofi.filter);
+            osc.start(now);
+            osc.stop(now + durSec + 0.1);
+        }
+    }
+
+    // Der Lofi-Scheduler. Läuft aus symphonyTick; spielt den nächsten Akkord,
+    // wenn die Akkord-Dauer seit dem letzten verstrichen ist. Eine leere
+    // Welt-Atmosphäre bekommt so eine ruhige, atmende Harmonie.
+    _lofiTick() {
+        const s = this.state.symphony;
+        if (!s.enabled || !s.ctx || !s.lofi) return;
+        const now = s.ctx.currentTime;
+        const durSec = this._lofiChordDurationMs() / 1000;
+        if (now - s.lofi.lastChordAt < durSec) return;
+        const chords = AnazhRealm.LOFI_CHORDS;
+        const chord = chords[s.lofi.chordIndex % chords.length];
+        this._lofiPlayChord(chord);
+        s.lofi.lastChordAt = now;
+        s.lofi.chordIndex = (s.lofi.chordIndex + 1) % chords.length;
     }
 
     // ### Status-Panel (UI V1) ###
@@ -33302,6 +33402,19 @@ AnazhRealm.SUBWORLD_NET_RATE_MAX = 120; // ~2 Nachrichten je 60-fps-Frame mit Re
 // Bursts (eine Welt meldet mehrere sichtbare Momente zugleich), hart gegen Flut.
 AnazhRealm.PORTAL_EVENT_RATE_WINDOW_MS = 1000;
 AnazhRealm.PORTAL_EVENT_RATE_MAX = 8;
+// W4 V2 — die Lofi-Pad-Schicht. Eine ruhige Akkordfolge in A-Moll (die Wurzel
+// 110 Hz = A2 deckt sich mit dem Ambient-Drone). Jeder Akkord ist eine Liste
+// von Halbton-Abständen zur Wurzel A — Am7/Dm7/Em7/Cmaj7, eine Minor-7th-
+// gefärbte Lofi-Schleife. ~60 BPM, ein Akkord je 4 Schläge. Web-Audio nativ.
+AnazhRealm.LOFI_BASE_FREQ = 110; // A2
+AnazhRealm.LOFI_CHORDS = Object.freeze([
+    Object.freeze([0, 3, 7, 10]), // Am7  (A C E G)
+    Object.freeze([5, 8, 12, 15]), // Dm7  (D F A C)
+    Object.freeze([7, 10, 14, 17]), // Em7  (E G B D)
+    Object.freeze([3, 7, 10, 14]), // Cmaj7 (C E G B)
+]);
+AnazhRealm.LOFI_BPM = 60; // ruhiges Lofi-Tempo
+AnazhRealm.LOFI_CHORD_BEATS = 4; // ein Akkord je 4 Schläge
 AnazhRealm.MOUNT_SPEED_FACTOR = 0.7; // Compounds fahren etwas langsamer als zu Fuß
 AnazhRealm.ZOOM_FOV_DEG = 25; // Magnifying-Compound zoomt auf 25°
 AnazhRealm.MAGNIFYING_RAY_RANGE_M = 8; // Spieler muss innerhalb dieser Reichweite drauf schauen
