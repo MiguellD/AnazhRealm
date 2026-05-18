@@ -501,9 +501,9 @@ class AnazhRealm {
                 weather: null, // { noise, filter, gain }
                 lastWeather: null,
                 creaturePingCount: 0,
-                // W4 V2 — die Lofi-Pad-Schicht: eine langsame Minor-7th-
-                // Akkordfolge (~60 BPM), lazy in initSymphony gebaut.
-                lofi: null, // { gain, filter, chordIndex, lastChordAt }
+                // W4 V2/V3 — die Lofi-Pad-Schicht: eine seed- + emotion-
+                // getriebene Akkordfolge (~60 BPM), lazy in initSymphony.
+                lofi: null, // { gain, filter, degree, lastChordAt, rngState }
             },
             player: {
                 // Welle 6.X.4 F1 (Audit 17.05.2026) — Avatar-Name. Default
@@ -7407,7 +7407,64 @@ class AnazhRealm {
         gain.gain.value = 0.12; // leise — der Pad sitzt unter dem Ambient
         filter.connect(gain);
         gain.connect(masterGain);
-        return { filter, gain, chordIndex: 0, lastChordAt: -Infinity };
+        // W4 V3 — der Harmonie-RNG, deterministisch aus worldMeta.seed: jede
+        // Welt bekommt ihr eigenes Lied (Mulberry32, wie das Sternenfeld; ein
+        // ":lofi"-Suffix entkoppelt die Akkordfolge vom Stern-Muster).
+        const seedStr = ((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed") + ":lofi";
+        let seedNum = 0;
+        for (let i = 0; i < seedStr.length; i++) seedNum = (seedNum * 31 + seedStr.charCodeAt(i)) >>> 0;
+        return { filter, gain, degree: 0, lastChordAt: -Infinity, rngState: seedNum };
+    }
+
+    // W4 V3 — ein Mulberry32-Schritt auf dem Lofi-Harmonie-RNG. Deterministisch
+    // (seed-getrieben), aber über die Akkordfolge hinweg fortschreitend — die
+    // Progression ist je Welt reproduzierbar, wiederholt sich aber nie exakt.
+    _lofiRandom() {
+        const lofi = this.state.symphony && this.state.symphony.lofi;
+        if (!lofi) return Math.random();
+        lofi.rngState = (lofi.rngState + 0x6d2b79f5) >>> 0;
+        let t = lofi.rngState;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    }
+
+    // W4 V3 — den diatonischen Septakkord einer Tonleiter-Stufe als Halbton-
+    // Abstände: gestapelte Terzen (Stufe d, d+2, d+4, d+6), mit Oktav-Umbruch.
+    _lofiChordFromDegree(degree) {
+        const scale = AnazhRealm.LOFI_SCALE;
+        const n = scale.length;
+        const offsets = [];
+        for (let k = 0; k < 4; k++) {
+            const idx = degree + k * 2;
+            offsets.push(scale[idx % n] + 12 * Math.floor(idx / n));
+        }
+        return offsets;
+    }
+
+    // W4 V3 — die nächste Akkord-Stufe per funktionaler Markov-Kette wählen.
+    // Emotion biast die Wahl: joy/hope ziehen zu hellen Stufen (III/VI),
+    // sorrow zu dunklen (i/ii°/iv) — die Harmonie spürt den Menschen.
+    _lofiNextDegree(degree) {
+        const table = AnazhRealm.LOFI_HARMONY;
+        const transitions = table[((degree % table.length) + table.length) % table.length] || table[0];
+        const emotions = (this.state.player && this.state.player.emotions) || {};
+        const bright = Math.max(0, Math.min(1, (emotions.joy || 0) * 0.5 + (emotions.hope || 0) * 0.5));
+        const dark = Math.max(0, Math.min(1, emotions.sorrow || 0));
+        let total = 0;
+        const weighted = transitions.map(([d, w]) => {
+            let weight = w;
+            if (AnazhRealm.LOFI_BRIGHT_DEGREES.indexOf(d) >= 0) weight *= 1 + bright * 0.8;
+            if (AnazhRealm.LOFI_DARK_DEGREES.indexOf(d) >= 0) weight *= 1 + dark * 0.8;
+            total += weight;
+            return [d, weight];
+        });
+        let r = this._lofiRandom() * total;
+        for (const [d, w] of weighted) {
+            r -= w;
+            if (r <= 0) return d;
+        }
+        return weighted[weighted.length - 1][0];
     }
 
     // Die Halbton-Abstände eines Akkords zu Frequenzen. majorLean (aus der
@@ -7463,19 +7520,18 @@ class AnazhRealm {
     }
 
     // Der Lofi-Scheduler. Läuft aus symphonyTick; spielt den nächsten Akkord,
-    // wenn die Akkord-Dauer seit dem letzten verstrichen ist. Eine leere
-    // Welt-Atmosphäre bekommt so eine ruhige, atmende Harmonie.
+    // wenn die Akkord-Dauer seit dem letzten verstrichen ist. W4 V3 — die
+    // Harmonie wächst: der Akkord der aktuellen Stufe wird gespielt, dann die
+    // nächste Stufe per funktionaler Markov-Kette gewählt (kein Loop mehr).
     _lofiTick() {
         const s = this.state.symphony;
         if (!s.enabled || !s.ctx || !s.lofi) return;
         const now = s.ctx.currentTime;
         const durSec = this._lofiChordDurationMs() / 1000;
         if (now - s.lofi.lastChordAt < durSec) return;
-        const chords = AnazhRealm.LOFI_CHORDS;
-        const chord = chords[s.lofi.chordIndex % chords.length];
-        this._lofiPlayChord(chord);
+        this._lofiPlayChord(this._lofiChordFromDegree(s.lofi.degree));
         s.lofi.lastChordAt = now;
-        s.lofi.chordIndex = (s.lofi.chordIndex + 1) % chords.length;
+        s.lofi.degree = this._lofiNextDegree(s.lofi.degree);
     }
 
     // ### Status-Panel (UI V1) ###
@@ -33402,17 +33458,65 @@ AnazhRealm.SUBWORLD_NET_RATE_MAX = 120; // ~2 Nachrichten je 60-fps-Frame mit Re
 // Bursts (eine Welt meldet mehrere sichtbare Momente zugleich), hart gegen Flut.
 AnazhRealm.PORTAL_EVENT_RATE_WINDOW_MS = 1000;
 AnazhRealm.PORTAL_EVENT_RATE_MAX = 8;
-// W4 V2 — die Lofi-Pad-Schicht. Eine ruhige Akkordfolge in A-Moll (die Wurzel
-// 110 Hz = A2 deckt sich mit dem Ambient-Drone). Jeder Akkord ist eine Liste
-// von Halbton-Abständen zur Wurzel A — Am7/Dm7/Em7/Cmaj7, eine Minor-7th-
-// gefärbte Lofi-Schleife. ~60 BPM, ein Akkord je 4 Schläge. Web-Audio nativ.
+// W4 V2/V3 — die Lofi-Pad-Schicht. Eine Harmonie in A-Moll (die Wurzel 110 Hz
+// = A2 deckt sich mit dem Ambient-Drone). W4 V3: die Akkordfolge wächst aus
+// einer Tonleiter + einer funktionalen Markov-Kette — kein fester Akkord-Satz
+// mehr. ~60 BPM, ein Akkord je 4 Schläge. Web-Audio nativ, kein Asset.
 AnazhRealm.LOFI_BASE_FREQ = 110; // A2
-AnazhRealm.LOFI_CHORDS = Object.freeze([
-    Object.freeze([0, 3, 7, 10]), // Am7  (A C E G)
-    Object.freeze([5, 8, 12, 15]), // Dm7  (D F A C)
-    Object.freeze([7, 10, 14, 17]), // Em7  (E G B D)
-    Object.freeze([3, 7, 10, 14]), // Cmaj7 (C E G B)
+// W4 V3 — die Tonleiter (A natürlich Moll: A B C D E F G) als Halbton-
+// Abstände zur Wurzel. Diatonische Septakkorde emergieren als gestapelte
+// Terzen über dieser Leiter (Stufe d → d, d+2, d+4, d+6).
+AnazhRealm.LOFI_SCALE = Object.freeze([0, 2, 3, 5, 7, 8, 10]);
+// W4 V3 — die funktionale Harmonie-Markov-Kette. Je Stufe (0=i … 6=VII) eine
+// Liste [nächste Stufe, Gewicht]: Tonika → Subdominante → Dominante → Tonika.
+// Eine seed-getriebene Wahl daraus — die Progression wiederholt sich nie
+// exakt, klingt aber zielgerichtet (kein Loop mehr).
+AnazhRealm.LOFI_HARMONY = Object.freeze([
+    Object.freeze([
+        [3, 3],
+        [5, 3],
+        [1, 2],
+        [4, 1],
+        [2, 1],
+    ]), // 0 i   → iv/VI/ii°
+    Object.freeze([
+        [4, 4],
+        [6, 3],
+        [0, 1],
+    ]), // 1 ii° → v/VII
+    Object.freeze([
+        [5, 3],
+        [3, 3],
+        [1, 2],
+        [0, 1],
+    ]), // 2 III → VI/iv
+    Object.freeze([
+        [4, 3],
+        [6, 3],
+        [0, 2],
+        [1, 1],
+    ]), // 3 iv  → v/VII/i
+    Object.freeze([
+        [0, 5],
+        [5, 2],
+        [2, 1],
+    ]), // 4 v   → i (Auflösung)
+    Object.freeze([
+        [3, 3],
+        [1, 3],
+        [4, 2],
+        [2, 1],
+    ]), // 5 VI  → iv/ii°
+    Object.freeze([
+        [0, 4],
+        [2, 3],
+        [5, 1],
+    ]), // 6 VII → i/III
 ]);
+// W4 V3 — helle (Dur-Qualität) + dunkle Stufen für die Emotion-Bias der
+// Harmonie-Wahl: joy/hope ziehen zu hell, sorrow zu dunkel.
+AnazhRealm.LOFI_BRIGHT_DEGREES = Object.freeze([2, 5]); // III, VI
+AnazhRealm.LOFI_DARK_DEGREES = Object.freeze([0, 1, 3]); // i, ii°, iv
 AnazhRealm.LOFI_BPM = 60; // ruhiges Lofi-Tempo
 AnazhRealm.LOFI_CHORD_BEATS = 4; // ein Akkord je 4 Schläge
 AnazhRealm.MOUNT_SPEED_FACTOR = 0.7; // Compounds fahren etwas langsamer als zu Fuß

@@ -774,6 +774,19 @@ Ein Selbst-Audit nach V8.80 sammelte alle ehrlich-benannten offenen Punkte und p
 | 6 | **W15-Politur** | Branch-Namen mit Slash (`feature/x`) im GitHub-Fetch auflösen (braucht eine SHA-Auflösung vor der Trees-API). | ~0.5 Session | 🔴 offen |
 | 7 | **W6.G P3-Rest** | Terrain-Höhlen/Überhänge/Klippen — der einzige nicht von W6.G4 abgedeckte Rest der alten 6.G-Phase-3-Liste. Ein Heightfield ist pro (x,z) eindeutig → Überhänge brauchen eine andere Terrain-Repräsentation (Voxel-Schichten oder angeheftete Überhang-Meshes). Eigene grosse Welle, kein Quick-Win. | 4-5 Sessions | 🔴 offen |
 
+#### W4 V3 — die generative Symphonie (Schöpfer-Wunsch 18.05.2026)
+
+Der Schöpfer-Befund nach V8.84: die Lofi-Schicht ist „noch starr, hardcoded, keine Melodien" — „Symphony, doch ein Brummen". Die Antwort: Musik wächst aus wenigen Regeln + einem Seed, wie die Welt selbst. Ein Song = `worldMeta.seed` + Regel-Schichten; jede Welt bekommt ihr eigenes Lied, es atmet mit Emotion/Welt-Feld/Tageszeit. Genre (Jazz/HipHop/Lofi) = ein **Parameter-Preset** EINER Engine, kein eigenes System. Vier Phasen:
+
+| Phase | Was | Stand |
+|---|---|---|
+| 1 — Harmonie | die feste Akkord-Schleife → eine seed- + emotion-getriebene funktionale Markov-Progression (Tonleiter + Stufen-Übergangs-Gewichte; joy/hope → helle Stufen, sorrow → dunkle) | ✅ **live (V8.85)** |
+| 2 — Melodie | eine Lead-Stimme improvisiert über den aktuellen Akkord (Akkord-/Durchgangston-Regel, Kontur, Dichte aus Emotion) — das fehlende „keine Melodien" | 🔴 offen, ~1-2 Sessions |
+| 3 — Groove | eine Rhythmus-Schicht (Kick/Snare/Hihat synthetisch) + Swing; Genre = Parameter-Preset (Swing, Tempo, Akzente, Timbre) | 🔴 offen, ~1-2 Sessions |
+| 4 — Orchester | mehr Synth-Stimmen (Bass folgt den Akkord-Wurzeln, Pad, Lead), Stimmen-Zahl wächst mit der Welt-Stimmung | 🔴 offen, ~1-2 Sessions |
+
+**Tradeoff:** generative Musik kann ziellos klingen — jede Phase braucht ein Schöpfer-Browser-Ohr (wie die Shader: headless prüft Funktion, der Browser prüft Erfahrung).
+
 **Bewusst per-Projekt / dauerhaft aufgeschoben (kein Versäumnis — die Heilige Lektion):**
 - **B-WASM** — ein Rust→WASM-Server im Peer-Tab, Stufe 4 der Server-Taxonomie. Kein baubares Feature: manche native Server portieren sauber nach `wasm32`, manche nie; der Compute-Host-Mechanismus (V8.79/80) trägt einen wasm-Server strukturell schon. Vorbedingung: Binär-Asset-Vendoring + eine echte Test-Welt. Spekulativ zu bauen verletzte „keine Validierung für Szenarien, die nicht eintreten".
 - **Binär-Asset-Vendoring** — der Vendor-Pfad trägt nur Text; `.png`/`.glb`/`.wasm` werden gefiltert. Wird konkret, sobald B-WASM eine echte Welt hat (dann base64-kodiert mitschreiben).

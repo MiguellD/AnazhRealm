@@ -6315,23 +6315,33 @@ function startSaveServer() {
                 check("W17 P-Vendor: #vendor-js-compute-Checkbox im DOM", w17svResults.vendorJsComputeCheckboxInDom);
             }
 
-            // ### W4 V2 — die Lofi-Pad-Schicht ###
-            // Eine ruhige Minor-7th-Akkordfolge (~60 BPM) als vierte
-            // Symphonie-Schicht; hope hebt die Terz (heller), sorrow
-            // verlangsamt das Tempo.
+            // ### W4 V2/V3 — die Lofi-Pad-Schicht (generative Harmonie) ###
+            // V2: ein Pad-Layer (~60 BPM). V3: die Akkordfolge wächst aus
+            // einer Tonleiter + einer funktionalen Markov-Kette (seed- +
+            // emotion-getrieben) — kein fester Akkord-Satz mehr.
             const w4v2Results = await page
                 .evaluate(() => {
                     const r = window.anazhRealm;
                     if (!r) return null;
                     const out = {};
-                    // Konstanten — die Akkordfolge.
-                    const chords = AnazhRealm.LOFI_CHORDS;
-                    out.chordsDefined =
-                        Array.isArray(chords) &&
-                        chords.length >= 4 &&
-                        Object.isFrozen(chords) &&
-                        chords.every((c) => Array.isArray(c) && c.length >= 3);
+                    // W4 V3 — Tonleiter + Harmonie-Markov-Kette definiert.
+                    const scale = AnazhRealm.LOFI_SCALE;
+                    const harmony = AnazhRealm.LOFI_HARMONY;
+                    out.scaleHarmonyDefined =
+                        Array.isArray(scale) &&
+                        scale.length === 7 &&
+                        Object.isFrozen(scale) &&
+                        Array.isArray(harmony) &&
+                        harmony.length === 7 &&
+                        Object.isFrozen(harmony) &&
+                        harmony.every((t) => Array.isArray(t) && t.length >= 1);
                     out.bpmDefined = AnazhRealm.LOFI_BPM === 60 && AnazhRealm.LOFI_BASE_FREQ === 110;
+                    // W4 V3 — _lofiChordFromDegree stapelt diatonische Terzen.
+                    const deg0 = r._lofiChordFromDegree(0);
+                    const deg3 = r._lofiChordFromDegree(3);
+                    out.chordFromDegree =
+                        JSON.stringify(deg0) === JSON.stringify([0, 3, 7, 10]) &&
+                        JSON.stringify(deg3) === JSON.stringify([5, 8, 12, 15]);
                     // _lofiChordFreqs — positive Frequenzen, Wurzel A ≈ 110.
                     const freqs = r._lofiChordFreqs([0, 3, 7, 10], false);
                     out.freqsPositive = freqs.length === 4 && freqs.every((f) => f > 0);
@@ -6342,35 +6352,76 @@ function startSaveServer() {
                         freqsMajor[1] > freqs[1] && Math.abs(freqsMajor[0] - freqs[0]) < 0.01;
                     // _lofiChordDurationMs — sorrow verlangsamt das Tempo.
                     const emo = r.state.player.emotions;
-                    const sBefore = emo.sorrow;
+                    const eBefore = { joy: emo.joy, hope: emo.hope, sorrow: emo.sorrow };
                     emo.sorrow = 0;
                     const durCalm = r._lofiChordDurationMs();
                     emo.sorrow = 1;
                     const durSad = r._lofiChordDurationMs();
-                    emo.sorrow = sBefore;
                     out.calmDuration4s = Math.abs(durCalm - 4000) < 1;
                     out.sorrowSlowsTempo = durSad > durCalm && durSad <= 6001;
                     // Frischer Symphony-Start, damit s.lofi vom aktuellen Code stammt.
                     if (r.state.symphony && r.state.symphony.enabled && typeof r.disposeSymphony === "function") {
                         r.disposeSymphony();
                     }
+                    emo.joy = 0;
+                    emo.hope = 0;
+                    emo.sorrow = 0;
                     if (typeof r.initSymphony === "function") r.initSymphony();
                     const sym = r.state.symphony;
                     out.symphonyReady = !!(sym && sym.enabled && sym.ctx);
                     if (out.symphonyReady) {
                         out.lofiLayerBuilt =
-                            !!sym.lofi && !!sym.lofi.gain && !!sym.lofi.filter && sym.lofi.chordIndex === 0;
-                        // _lofiTick spielt den ersten Akkord (lastChordAt=-Infinity
-                        // → sofort fällig) und rückt den Index vor.
-                        const idxBefore = sym.lofi.chordIndex;
+                            !!sym.lofi &&
+                            !!sym.lofi.gain &&
+                            !!sym.lofi.filter &&
+                            sym.lofi.degree === 0 &&
+                            typeof sym.lofi.rngState === "number";
+                        // W4 V3 — _lofiNextDegree liefert eine in der Markov-
+                        // Kette erreichbare Stufe (0..6).
+                        const allowed = AnazhRealm.LOFI_HARMONY[0].map((t) => t[0]);
+                        const nd = r._lofiNextDegree(0);
+                        out.nextDegreeValid = allowed.indexOf(nd) >= 0;
+                        // W4 V3 — Determinismus: selber rngState → selbe Folge.
+                        sym.lofi.rngState = 12345;
+                        const seqA = [];
+                        for (let i = 0; i < 6; i++) seqA.push(r._lofiNextDegree(seqA.length ? seqA[i - 1] : 0));
+                        sym.lofi.rngState = 12345;
+                        const seqB = [];
+                        for (let i = 0; i < 6; i++) seqB.push(r._lofiNextDegree(seqB.length ? seqB[i - 1] : 0));
+                        out.harmonyDeterministic = JSON.stringify(seqA) === JSON.stringify(seqB);
+                        // W4 V3 — Emotion biast die Harmonie: bei joy/hope
+                        // erscheinen helle Stufen (III/VI) häufiger als bei
+                        // sorrow (selber RNG-Strom → fairer Vergleich).
+                        const bright = AnazhRealm.LOFI_BRIGHT_DEGREES;
+                        const countBright = () => {
+                            sym.lofi.rngState = 777;
+                            let c = 0;
+                            for (let i = 0; i < 300; i++) if (bright.indexOf(r._lofiNextDegree(0)) >= 0) c++;
+                            return c;
+                        };
+                        emo.joy = 1;
+                        emo.hope = 1;
+                        emo.sorrow = 0;
+                        const brightJoy = countBright();
+                        emo.joy = 0;
+                        emo.hope = 0;
+                        emo.sorrow = 1;
+                        const brightSorrow = countBright();
+                        out.emotionBiasesHarmony = brightJoy > brightSorrow;
+                        // _lofiTick spielt den ersten Akkord (lastChordAt=
+                        // -Infinity → sofort fällig) + wählt die nächste Stufe.
+                        sym.lofi.degree = 0;
+                        sym.lofi.lastChordAt = -Infinity;
                         r._lofiTick();
-                        out.tickAdvancesChord =
-                            sym.lofi.chordIndex === (idxBefore + 1) % AnazhRealm.LOFI_CHORDS.length &&
-                            sym.lofi.lastChordAt > -Infinity;
+                        out.tickPlaysChord =
+                            sym.lofi.lastChordAt > -Infinity &&
+                            Number.isInteger(sym.lofi.degree) &&
+                            sym.lofi.degree >= 0 &&
+                            sym.lofi.degree <= 6;
                         // Ein zweiter Tick sofort danach spielt NICHT (Dauer nicht um).
-                        const idxAfter = sym.lofi.chordIndex;
+                        const degAfter = sym.lofi.degree;
                         r._lofiTick();
-                        out.tickThrottled = sym.lofi.chordIndex === idxAfter;
+                        out.tickThrottled = sym.lofi.degree === degAfter;
                         // symphonyTick ruft _lofiTick — kein Wurf.
                         let symTickOk = true;
                         try {
@@ -6384,22 +6435,29 @@ function startSaveServer() {
                         r.disposeSymphony();
                         out.disposeClearsLofi = sym.lofi === null;
                     }
+                    emo.joy = eBefore.joy;
+                    emo.hope = eBefore.hope;
+                    emo.sorrow = eBefore.sorrow;
                     return out;
                 })
                 .catch((err) => ({ error: err && err.message }));
             if (!w4v2Results || w4v2Results.error) {
-                check("W4 V2 erreichbar", false, (w4v2Results && w4v2Results.error) || "page.evaluate fehlgeschlagen");
+                check("W4 V2/V3 erreichbar", false, (w4v2Results && w4v2Results.error) || "page.evaluate fehlgeschlagen");
             } else {
-                check("W4 V2: LOFI_CHORDS frozen, ≥4 Akkorde mit je ≥3 Tönen", w4v2Results.chordsDefined);
+                check("W4 V3: LOFI_SCALE (7 Töne) + LOFI_HARMONY (7 Stufen) frozen", w4v2Results.scaleHarmonyDefined);
                 check("W4 V2: LOFI_BPM=60 + LOFI_BASE_FREQ=110 definiert", w4v2Results.bpmDefined);
+                check("W4 V3: _lofiChordFromDegree stapelt diatonische Terzen (i=Am7, iv=Dm7)", w4v2Results.chordFromDegree);
                 check("W4 V2: _lofiChordFreqs liefert positive Frequenzen", w4v2Results.freqsPositive);
                 check("W4 V2: die Akkord-Wurzel ist A (≈110 Hz)", w4v2Results.rootIsA);
                 check("W4 V2: major-lean (hope) hebt die Terz, lässt die Wurzel", w4v2Results.majorLeanRaisesThird);
                 check("W4 V2: _lofiChordDurationMs — ruhig ≈ 4000 ms (60 BPM × 4)", w4v2Results.calmDuration4s);
                 check("W4 V2: sorrow verlangsamt das Lofi-Tempo (bis ~6 s)", w4v2Results.sorrowSlowsTempo);
                 if (w4v2Results.symphonyReady) {
-                    check("W4 V2: initSymphony baut die Lofi-Schicht (gain + filter)", w4v2Results.lofiLayerBuilt);
-                    check("W4 V2: _lofiTick spielt einen Akkord + rückt den Index vor", w4v2Results.tickAdvancesChord);
+                    check("W4 V2: initSymphony baut die Lofi-Schicht (gain + filter + RNG)", w4v2Results.lofiLayerBuilt);
+                    check("W4 V3: _lofiNextDegree liefert eine markov-erreichbare Stufe", w4v2Results.nextDegreeValid);
+                    check("W4 V3: die Harmonie ist seed-deterministisch (selber RNG → selbe Folge)", w4v2Results.harmonyDeterministic);
+                    check("W4 V3: Emotion biast die Harmonie (joy/hope → mehr helle Stufen)", w4v2Results.emotionBiasesHarmony);
+                    check("W4 V3: _lofiTick spielt einen Akkord + wählt die nächste Stufe", w4v2Results.tickPlaysChord);
                     check("W4 V2: _lofiTick ist akkord-dauer-gedrosselt", w4v2Results.tickThrottled);
                     check("W4 V2: symphonyTick ruft _lofiTick wurf-frei", w4v2Results.symphonyTickRuns);
                     check("W4 V2: disposeSymphony räumt die Lofi-Schicht", w4v2Results.disposeClearsLofi);
