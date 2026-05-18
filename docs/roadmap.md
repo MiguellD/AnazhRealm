@@ -720,7 +720,7 @@ Der Auto-Vendor klassifiziert jede Welt in diese vier Stufen und schreibt die St
 
 **Phasen-Reihenfolge:** A (Shim) → B-Relay (das Einfachste, voll p2p) → C (Gruppen-Portal) → B-JS-Compute (Host-Migration) → B-WASM (per-Projekt). Jede Phase eine eigene, browser-verifizierte Welle.
 
-#### Phasen-Detailplan (Sub-Schritte, ausgearbeitet — Stand V8.77; Phase A + B-Relay + C gebaut)
+#### Phasen-Detailplan (Sub-Schritte, ausgearbeitet — Stand V8.78; Phase A + B-Relay + C + Multiplayer-Welt-Deklaration gebaut)
 
 **Phase A — der Transport-Shim ✅ komplett (V8.75).** Ziel: der `WebSocket`-Verkehr einer fremden Welt quert die Sandbox-Grenze als `postMessage`; AnazhRealm empfängt ihn. Phase A routet noch NICHT (das ist B) — die Akzeptanz ist ein Loopback. Alle vier Sub-Schritte gebaut, playtest-grün (+9 Invarianten), browser-verifiziert (`smoke-shim.cjs`):
 - **A1 ✅ der Shim selbst.** Die Konstante `PORTAL_TRANSPORT_SHIM` (JS-String im save-server, ~50 Zeilen): ersetzt `window.WebSocket` durch eine Shim-Klasse. Pro Instanz eine Kanal-id; `send(data)` → `parent.postMessage({__anazhNet:true, kind:"ws-send", channel, data}, "*")`; ein `message`-Listener fängt `{kind:"ws-recv"}` und feuert `onmessage`. `readyState`/`onopen`/`onclose` modelliert (das `onopen` nach einem Microtask). Unterstützt BEIDE Idiome (`ws.onmessage = …` UND `ws.addEventListener`). Phase A shimt NUR `WebSocket` (`fetch`/`XHR`/`RTCPeerConnection` sind bewusst spätere Schichten).
