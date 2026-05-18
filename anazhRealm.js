@@ -4585,6 +4585,12 @@ class AnazhRealm {
             this._portalCliReceive(peerId, msg);
             return;
         }
+        // W17 Phase B-JS-Compute Phase 2 — der Compute-Host annonciert die
+        // Roster (für die Host-Migration, wenn er das Mesh verlässt).
+        if (msg.type === "subworld-roster") {
+            this._portalRosterReceive(peerId, msg);
+            return;
+        }
         const ALLOWED = [
             "pos",
             "dsl",
@@ -6155,20 +6161,20 @@ class AnazhRealm {
         for (const [key, rc] of p2p.remoteCreatures) {
             if (rc.peerId === peerId) this._disposeRemoteCreature(key, rc);
         }
-        // W17 Phase B-JS-Compute — bin ich Compute-Host und hatte dieser Peer
-        // eine offene Server-Verbindung, schliesst sein Abgang sie (sein
-        // srv-close erreicht den Server-Kontext). Host-Migration, wenn der
-        // HOST selbst geht, ist eine Folge-Welle (Phase 2).
+        // W17 Phase B-JS-Compute — verlässt ein Peer das Mesh: bin ich
+        // Compute-Host, schliesst sein Abgang seine Server-Verbindung (sein
+        // srv-close erreicht den Server-Kontext); bin ich Gast und es war MEIN
+        // Compute-Host, übernimmt die Host-Migration (Phase 2 — ein
+        // deterministischer Nachfolger baut einen frischen Server-Kontext).
         const po = this._portalOverlay;
-        if (
-            po &&
-            po.serverMode === "js-compute" &&
-            po.computeRole === "host" &&
-            po.serverConns &&
-            po.serverConns.has(peerId)
-        ) {
-            po.serverConns.delete(peerId);
-            this._portalSrvSend({ __anazhNet: true, kind: "srv-close", conn: peerId });
+        if (po && po.serverMode === "js-compute") {
+            if (po.computeRole === "host" && po.serverConns && po.serverConns.has(peerId)) {
+                po.serverConns.delete(peerId);
+                this._portalSrvSend({ __anazhNet: true, kind: "srv-close", conn: peerId });
+                this._portalBroadcastRoster();
+            } else if (po.computeRole === "guest" && peerId === po.hostPeerId) {
+                this._portalMigrateHost(peerId);
+            }
         }
         const entry = p2p.peers.get(peerId);
         if (!entry) return;
@@ -19116,30 +19122,6 @@ class AnazhRealm {
         };
         window.addEventListener("message", onMessage);
         iframe.addEventListener("load", () => this._portalSendEnter());
-        // W17 Phase B-JS-Compute — der Compute-Host baut ein zweites,
-        // verborgenes iframe: den Server-Kontext. Es lädt dieselbe Welt mit
-        // `?anazh-server=1` (der save-server injiziert den Server-Shim) — die
-        // Server-JS der Welt läuft darin null-origin sandgesichert (sie kann
-        // AnazhRealms State nicht berühren, die V8.70-Sandbox ist die Wand).
-        // Ein Gast baut keinen Server-Kontext; er routet seinen Verkehr an
-        // den Host. Der Server-Kontext braucht keinen enter-Handshake (er
-        // rechnet nur), darum kein `load`→_portalSendEnter, nur serverReady.
-        let serverIframe = null;
-        if (isJsCompute && computeRole === "host") {
-            serverIframe = document.createElement("iframe");
-            serverIframe.className = "portal-server-frame";
-            serverIframe.title = "Server-Kontext";
-            serverIframe.setAttribute("aria-hidden", "true");
-            serverIframe.setAttribute("sandbox", "allow-scripts");
-            serverIframe.style.display = "none";
-            serverIframe.addEventListener("load", () => {
-                const p = this._portalOverlay;
-                if (!p || p.serverIframe !== serverIframe) return;
-                p.serverReady = true;
-                this._portalSrvFlush();
-            });
-            overlay.appendChild(serverIframe);
-        }
         this._portalOverlay = {
             overlayEl: overlay,
             iframe,
@@ -19180,10 +19162,14 @@ class AnazhRealm {
             serverMode: meta.serverMode,
             computeRole,
             hostPeerId,
-            serverIframe,
+            serverIframe: null,
             serverReady: false,
             serverQueue: [],
             serverConns: new Set(),
+            // W17 Phase B-JS-Compute Phase 2 — die zuletzt vom Compute-Host
+            // empfangene Roster (alle Sub-Welt-Mitglieder). Verlässt der Host
+            // das Mesh, wählt jeder Gast daraus deterministisch den Nachfolger.
+            roster: [],
         };
         document.body.appendChild(overlay);
         // W14 Phase 2 — ist die Ziel-Welt mit einem Vibe-Pass versiegelt,
@@ -19197,10 +19183,10 @@ class AnazhRealm {
         // index.html. Der Query ändert die Basis-URL nicht — relative
         // Welt-Ressourcen (lib/engine.js) lösen weiter korrekt auf.
         iframe.src = meta.multiplayer ? meta.world + "?anazh-shim=1" : meta.world;
-        // W17 Phase B-JS-Compute — der Server-Kontext lädt dieselbe Welt mit
-        // dem Server-Shim-Marker; die Welt-`index.html` verzweigt über
-        // `window.__anazhRole` in ihren Server-Zweig.
-        if (serverIframe) serverIframe.src = meta.world + "?anazh-server=1";
+        // W17 Phase B-JS-Compute — der Compute-Host baut seinen Server-Kontext
+        // (ein zweites, verborgenes iframe). Erst NACH dem _portalOverlay-Set,
+        // damit der Server-iframe-load-Listener den fertigen Overlay sieht.
+        if (isJsCompute && computeRole === "host") this._portalSpawnServerContext();
         // W17 Phase B-JS-Compute — ein Gast meldet dem Compute-Host seine
         // Verbindung an, sobald er das Portal betritt (der Host registriert
         // sie als srv-open im Server-Kontext). Geht die Meldung verloren
@@ -19652,6 +19638,109 @@ class AnazhRealm {
         return (p2p && p2p.peerId) || "self";
     }
 
+    // W17 Phase B-JS-Compute — den Server-Kontext bauen: ein zweites,
+    // verborgenes iframe, das dieselbe Welt mit `?anazh-server=1` lädt (der
+    // save-server injiziert den Server-Shim). Die Server-JS der Welt läuft
+    // darin null-origin sandgesichert — sie kann AnazhRealms State nicht
+    // berühren (die V8.70-Sandbox ist die Wand). Gebaut beim Betreten eines
+    // js-compute-Portals (Compute-Host) UND bei der Host-Migration (Phase 2 —
+    // ein Gast übernimmt). Idempotent. Der Server-Kontext braucht keinen
+    // enter-Handshake (er rechnet nur) — der `load`-Listener setzt serverReady.
+    _portalSpawnServerContext() {
+        const po = this._portalOverlay;
+        if (!po || typeof document === "undefined") return null;
+        if (po.serverIframe) return po.serverIframe;
+        const serverIframe = document.createElement("iframe");
+        serverIframe.className = "portal-server-frame";
+        serverIframe.title = "Server-Kontext";
+        serverIframe.setAttribute("aria-hidden", "true");
+        serverIframe.setAttribute("sandbox", "allow-scripts");
+        serverIframe.style.display = "none";
+        serverIframe.addEventListener("load", () => {
+            const p = this._portalOverlay;
+            if (!p || p.serverIframe !== serverIframe) return;
+            p.serverReady = true;
+            this._portalSrvFlush();
+        });
+        po.overlayEl.appendChild(serverIframe);
+        po.serverIframe = serverIframe;
+        serverIframe.src = po.world + "?anazh-server=1";
+        return serverIframe;
+    }
+
+    // W17 Phase B-JS-Compute Phase 2 — der Compute-Host annonciert die Roster
+    // (alle Verbindungen, inkl. seiner selbst) an jeden Gast. Verlässt der
+    // Host das Mesh, wählt jeder Gast aus der zuletzt empfangenen Roster
+    // deterministisch denselben Nachfolger. Gerufen bei jeder serverConns-
+    // Änderung (Gast-open/-close). subworld-roster ist kanal-exklusiv.
+    _portalBroadcastRoster() {
+        const po = this._portalOverlay;
+        if (!po || po.serverMode !== "js-compute" || po.computeRole !== "host") return;
+        const members = Array.from(po.serverConns);
+        const selfId = this._portalSelfConnId();
+        for (const conn of po.serverConns) {
+            if (conn === selfId) continue;
+            this._p2pSendChannelTo(conn, { type: "subworld-roster", worldId: po.world, members });
+        }
+    }
+
+    // W17 Phase B-JS-Compute Phase 2 — ein Gast cacht die Roster seines
+    // Compute-Hosts. Nur vom EIGENEN Host (kanal-gestempelte peerId) + nur
+    // für die eigene Sub-Welt. Die Roster ist die Kandidaten-Liste der
+    // Host-Migration.
+    _portalRosterReceive(peerId, msg) {
+        const po = this._portalOverlay;
+        if (!po || po.serverMode !== "js-compute" || po.computeRole !== "guest") return false;
+        if (peerId !== po.hostPeerId) return false;
+        if (!msg || msg.worldId !== po.world || !Array.isArray(msg.members)) return false;
+        po.roster = msg.members.filter((p) => typeof p === "string");
+        return true;
+    }
+
+    // W17 Phase B-JS-Compute Phase 2 — der Compute-Host hat das Mesh verlassen.
+    // Jeder verbliebene Gast wählt aus der zuletzt empfangenen Roster
+    // deterministisch denselben Nachfolger (die kleinste peerId, ohne den
+    // Abgegangenen — wie die W7-P1-Initiator-Regel). Bin ICH es, werde ich
+    // Host (ein FRISCHER Server-Kontext — der Server-Zustand des alten Hosts
+    // geht verloren, eine ehrliche Grenze); sonst zeige ich auf den Nachfolger
+    // und melde ihm meine Verbindung neu an.
+    _portalMigrateHost(departedHostId) {
+        const po = this._portalOverlay;
+        if (!po || po.serverMode !== "js-compute" || po.computeRole !== "guest") return;
+        const myId = this._portalSelfConnId();
+        // Kandidaten: die Roster ohne den Abgegangenen; ich bin immer dabei.
+        const cands = new Set((po.roster || []).filter((p) => p && p !== departedHostId));
+        cands.add(myId);
+        const successor = Array.from(cands).sort()[0];
+        if (successor === myId) {
+            this._portalPromoteToHost();
+        } else {
+            po.hostPeerId = successor;
+            this.log(`Compute-Host wechselte — neuer Host: ${String(successor).slice(0, 8)}…`, "INFO");
+            // Dem Nachfolger die eigene Verbindung neu anmelden.
+            this._p2pSendChannelTo(successor, { type: "subworld-srv", kind: "open", worldId: po.world });
+        }
+    }
+
+    // W17 Phase B-JS-Compute Phase 2 — ein Gast übernimmt die Compute-Host-
+    // Rolle. Er flippt computeRole, baut einen FRISCHEN Server-Kontext (der
+    // Server-Zustand des alten Hosts ist verloren — ehrliche Grenze) und
+    // registriert seine eigene Verbindung. Die übrigen Gäste melden sich per
+    // subworld-srv-open neu an → _portalSrvFromGuest füllt serverConns.
+    _portalPromoteToHost() {
+        const po = this._portalOverlay;
+        if (!po) return;
+        po.computeRole = "host";
+        po.hostPeerId = this._portalSelfConnId();
+        po.serverConns = new Set();
+        po.serverReady = false;
+        po.serverQueue = [];
+        this.log(`Du übernimmst den Compute-Host für „${po.label}".`, "INFO");
+        this._portalSpawnServerContext();
+        // Der Host ist sein eigener Client — die eigene Verbindung registrieren.
+        this._portalSrvEnsureConn(this._portalSelfConnId());
+    }
+
     // W17 Phase B-JS-Compute — eine srv-*-Nachricht in den Server-Kontext
     // posten. Gepuffert, bis das Server-iframe geladen ist (der Server-Shim
     // ist dann da; er puffert seinerseits, bis die Welt `new WebSocketServer()`
@@ -19692,6 +19781,8 @@ class AnazhRealm {
         if (po.serverConns.has(connId)) return;
         po.serverConns.add(connId);
         this._portalSrvSend({ __anazhNet: true, kind: "srv-open", conn: connId });
+        // Phase 2 — die Roster änderte sich: den Gästen die neue Liste annoncieren.
+        this._portalBroadcastRoster();
     }
 
     // W17 Phase B-JS-Compute — der Server-Kontext (beim Compute-Host) hat für
@@ -19739,6 +19830,8 @@ class AnazhRealm {
             if (po.serverConns && po.serverConns.has(peerId)) {
                 po.serverConns.delete(peerId);
                 this._portalSrvSend({ __anazhNet: true, kind: "srv-close", conn: peerId });
+                // Phase 2 — die Roster schrumpfte: den Gästen neu annoncieren.
+                this._portalBroadcastRoster();
             }
             return true;
         }

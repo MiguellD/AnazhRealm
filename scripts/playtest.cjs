@@ -5663,6 +5663,203 @@ function startSaveServer() {
                 );
             }
 
+            // ### W17 Phase B-JS-Compute Phase 2 — Host-Migration ###
+            // Verlässt der Compute-Host das Mesh, endet Phase 1's Sub-Welt.
+            // Phase 2: jeder Gast wählt aus der zuletzt vom Host annoncierten
+            // Roster deterministisch denselben Nachfolger (die kleinste
+            // peerId); der Nachfolger baut einen frischen Server-Kontext.
+            const w17mResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    const SUBW = "worlds/skeleton/index.html";
+                    const selfConn = r._portalSelfConnId();
+
+                    out.methodsPresent =
+                        typeof r._portalSpawnServerContext === "function" &&
+                        typeof r._portalBroadcastRoster === "function" &&
+                        typeof r._portalRosterReceive === "function" &&
+                        typeof r._portalMigrateHost === "function" &&
+                        typeof r._portalPromoteToHost === "function";
+
+                    const chanSent = [];
+                    const origChan = r._p2pSendChannelTo;
+                    r._p2pSendChannelTo = (pid, obj) => {
+                        chanSent.push({ pid, obj });
+                        return true;
+                    };
+                    const makeOv = (role, host, roster) => ({
+                        multiplayer: true,
+                        trust: "sandboxed",
+                        serverMode: "js-compute",
+                        computeRole: role,
+                        hostPeerId: host,
+                        world: SUBW,
+                        overlayEl: document.createElement("div"),
+                        netChannels: new Set([1]),
+                        netWindowStart: 0,
+                        netWindowCount: 0,
+                        iframe: { contentWindow: { postMessage: () => {} } },
+                        serverIframe: null,
+                        serverReady: false,
+                        serverQueue: [],
+                        serverConns: new Set(),
+                        roster: roster || [],
+                    });
+
+                    // _portalSpawnServerContext baut ein Server-Kontext-iframe.
+                    r._portalOverlay = makeOv("host", selfConn);
+                    const sf = r._portalSpawnServerContext();
+                    out.spawnBuildsServerFrame =
+                        !!sf &&
+                        r._portalOverlay.serverIframe === sf &&
+                        (sf.getAttribute("src") || "").includes("anazh-server=1") &&
+                        sf.getAttribute("sandbox") === "allow-scripts";
+
+                    // Ein Host annonciert die Roster bei jeder serverConns-
+                    // Änderung (subworld-roster an jeden Gast).
+                    r._portalOverlay = makeOv("host", selfConn);
+                    r._portalOverlay.serverConns = new Set([selfConn]);
+                    chanSent.length = 0;
+                    r._portalSrvEnsureConn("guestX");
+                    out.ensureConnBroadcastsRoster = chanSent.some(
+                        (c) =>
+                            c.pid === "guestX" &&
+                            c.obj.type === "subworld-roster" &&
+                            Array.isArray(c.obj.members) &&
+                            c.obj.members.includes("guestX") &&
+                            c.obj.members.includes(selfConn)
+                    );
+
+                    // Ein Gast cacht die Roster seines Hosts.
+                    r._portalOverlay = makeOv("guest", "p-host");
+                    const rOk = r._portalRosterReceive("p-host", {
+                        worldId: SUBW,
+                        members: ["p-host", "p-a", "p-b"],
+                    });
+                    out.rosterReceiveCaches =
+                        rOk === true &&
+                        JSON.stringify(r._portalOverlay.roster) === JSON.stringify(["p-host", "p-a", "p-b"]);
+
+                    // ... verwirft sie von fremdem Peer / für fremde Sub-Welt.
+                    r._portalOverlay = makeOv("guest", "p-host");
+                    const rWrongPeer = r._portalRosterReceive("p-stranger", { worldId: SUBW, members: ["x"] });
+                    const rWrongWorld = r._portalRosterReceive("p-host", {
+                        worldId: "worlds/fluid/index.html",
+                        members: ["x"],
+                    });
+                    out.rosterReceiveGated =
+                        rWrongPeer === false && rWrongWorld === false && r._portalOverlay.roster.length === 0;
+
+                    // subworld-roster ist kanal-exklusiv.
+                    r._portalOverlay = makeOv("guest", "p-host");
+                    r._p2pHandleChannelMessage(
+                        "p-host",
+                        JSON.stringify({ type: "subworld-roster", worldId: SUBW, members: ["p-host", "p-q"] })
+                    );
+                    out.channelExclusiveRoster =
+                        JSON.stringify(r._portalOverlay.roster) === JSON.stringify(["p-host", "p-q"]);
+
+                    // Migration — der Nachfolger ist die kleinste peerId der
+                    // Roster (ohne den Abgegangenen). "!early" sortiert vor jede
+                    // p-id → der Nachfolger ist nicht ich.
+                    r._portalOverlay = makeOv("guest", "p-host", ["p-host", "!early", selfConn]);
+                    chanSent.length = 0;
+                    r._portalMigrateHost("p-host");
+                    out.migrateElectsSmallest =
+                        r._portalOverlay.computeRole === "guest" &&
+                        r._portalOverlay.hostPeerId === "!early" &&
+                        chanSent.some(
+                            (c) => c.pid === "!early" && c.obj.type === "subworld-srv" && c.obj.kind === "open"
+                        );
+
+                    // Migration — bin ICH die kleinste peerId, werde ich Host.
+                    r._portalOverlay = makeOv("guest", "p-host", ["p-host", selfConn]);
+                    r._portalMigrateHost("p-host");
+                    out.migratePromotesSelf =
+                        r._portalOverlay.computeRole === "host" &&
+                        r._portalOverlay.hostPeerId === selfConn &&
+                        !!r._portalOverlay.serverIframe;
+
+                    // _portalMigrateHost auf einem HOST-Overlay ist folgenlos.
+                    r._portalOverlay = makeOv("host", selfConn);
+                    r._portalMigrateHost("p-irgendwer");
+                    out.migrateGatedOnGuest = r._portalOverlay.computeRole === "host";
+
+                    // _p2pRemovePeer des eigenen Hosts triggert die Migration.
+                    r._portalOverlay = makeOv("guest", "p-host", ["p-host", selfConn]);
+                    r._p2pRemovePeer("p-host");
+                    out.removeHostTriggersMigration = r._portalOverlay.computeRole === "host";
+
+                    // _p2pRemovePeer eines Nicht-Hosts triggert KEINE Migration.
+                    r._portalOverlay = makeOv("guest", "p-host", ["p-host", selfConn]);
+                    r._p2pRemovePeer("p-fremd");
+                    out.removeNonHostNoMigration =
+                        r._portalOverlay.computeRole === "guest" && r._portalOverlay.hostPeerId === "p-host";
+
+                    // _portalPromoteToHost flippt die Rolle + baut den Kontext.
+                    r._portalOverlay = makeOv("guest", "p-host");
+                    r._portalPromoteToHost();
+                    out.promoteFlipsRole =
+                        r._portalOverlay.computeRole === "host" &&
+                        r._portalOverlay.hostPeerId === selfConn &&
+                        !!r._portalOverlay.serverIframe &&
+                        r._portalOverlay.serverConns.has(selfConn);
+
+                    r._portalOverlay = null;
+                    r._p2pSendChannelTo = origChan;
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!w17mResults || w17mResults.error) {
+                check(
+                    "W17 Phase B-JS-Compute Phase 2: Host-Migration erreichbar",
+                    false,
+                    (w17mResults && w17mResults.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("W17 JS P2: die 5 Host-Migrations-Methoden existieren", w17mResults.methodsPresent);
+                check(
+                    "W17 JS P2: _portalSpawnServerContext baut ein Server-Kontext-iframe",
+                    w17mResults.spawnBuildsServerFrame
+                );
+                check(
+                    "W17 JS P2: ein Host annonciert die Roster bei serverConns-Änderung",
+                    w17mResults.ensureConnBroadcastsRoster
+                );
+                check("W17 JS P2: ein Gast cacht die Roster seines Hosts", w17mResults.rosterReceiveCaches);
+                check(
+                    "W17 JS P2: eine Roster von fremdem Peer / fremder Sub-Welt wird verworfen",
+                    w17mResults.rosterReceiveGated
+                );
+                check("W17 JS P2: subworld-roster ist kanal-exklusiv", w17mResults.channelExclusiveRoster);
+                check(
+                    "W17 JS P2: Migration wählt die kleinste peerId der Roster zum Nachfolger",
+                    w17mResults.migrateElectsSmallest
+                );
+                check(
+                    "W17 JS P2: Migration — bin ich die kleinste peerId, werde ich Compute-Host",
+                    w17mResults.migratePromotesSelf
+                );
+                check(
+                    "W17 JS P2: _portalMigrateHost auf einem Host-Overlay ist folgenlos",
+                    w17mResults.migrateGatedOnGuest
+                );
+                check(
+                    "W17 JS P2: _p2pRemovePeer des eigenen Hosts triggert die Migration",
+                    w17mResults.removeHostTriggersMigration
+                );
+                check(
+                    "W17 JS P2: _p2pRemovePeer eines Nicht-Hosts triggert keine Migration",
+                    w17mResults.removeNonHostNoMigration
+                );
+                check(
+                    "W17 JS P2: _portalPromoteToHost flippt die Rolle + baut den Server-Kontext",
+                    w17mResults.promoteFlipsRole
+                );
+            }
+
             // ### W17 Phase C — das Gruppen-Portal ###
             // Betritt ein Spieler ein Multiplayer-Portal, broadcastet er einen
             // portal-invite; die Mitspieler bekommen einen „mitkommen?"-Prompt,

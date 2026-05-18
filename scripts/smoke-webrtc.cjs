@@ -734,6 +734,42 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
             "W17 JS-Compute: B's Verkehr lief peer-to-peer durch A's Server — die Summe 12 = 7+5 ist autoritativ berechnet",
             true
         );
+
+        // W17 Phase B-JS-Compute Phase 2 — Host-Migration. A (der Compute-
+        // Host) verlässt das Mesh; B (Gast) erkennt es, wählt sich aus der
+        // Roster zum Nachfolger und baut einen FRISCHEN Server-Kontext. B's
+        // Verkehr läuft danach durch B's eigenen Server — die laufende Summe
+        // startet bei 0 (der Server-Zustand des alten Hosts ist verloren,
+        // eine ehrliche Phase-2-Grenze).
+        await pageB.evaluate((host) => window.anazhRealm._p2pRemovePeer(host), aPeerId);
+        await waitFor(
+            pageB,
+            () => {
+                const po = window.anazhRealm._portalOverlay;
+                return po && po.computeRole === "host" && po.serverReady === true;
+            },
+            15000,
+            "B übernahm den Compute-Host nach A's Abgang + baute einen frischen Server-Kontext"
+        );
+        check("W17 JS-Compute Phase 2: B erkannte A's Abgang + wurde Compute-Host", true);
+        // B's Client sendet "9" → B's neuer, frischer Server-Kontext rechnet
+        // (total = 0+9 = 9, NICHT 12+9) → die Antwort kommt lokal zurück.
+        await pageB.evaluate(() => {
+            window.anazhRealm._portalNetReceive({ __anazhNet: true, kind: "ws-send", channel: 1, data: "9" });
+        });
+        await waitFor(
+            pageB,
+            () =>
+                (window.anazhRealm.state.worldJournal.entries || []).some((e) =>
+                    String(e.text || "").includes("jscompute-client-recv:9")
+                ),
+            12000,
+            "B's Verkehr lief durch B's frischen Server-Kontext"
+        );
+        check(
+            "W17 JS-Compute Phase 2: B's Verkehr lief durch B's frischen Server-Kontext — die Summe startet bei 0 (9, nicht 21)",
+            true
+        );
         await pageA.evaluate(() => window.anazhRealm._disposePortalOverlay());
         await pageB.evaluate(() => window.anazhRealm._disposePortalOverlay());
     } catch (err) {
