@@ -6398,15 +6398,31 @@ function startSaveServer() {
                             melAsc &&
                             chordTones.indexOf(mel[0].idx) >= 0 &&
                             chordTones.indexOf(mel[mel.length - 1].idx) >= 0;
+                        // Dichte folgt der Emotion — über 8 Phrasen summiert
+                        // (joy belebt, peace lässt Pausen): robust statistisch.
                         emo.joy = 1;
                         emo.peace = 0;
-                        const melJoy = r._lofiMelodyNotes(0, 4).length;
+                        let melJoyTotal = 0;
+                        for (let i = 0; i < 8; i++) melJoyTotal += r._lofiMelodyNotes(0, 4).length;
                         emo.joy = 0;
                         emo.peace = 1;
-                        const melPeace = r._lofiMelodyNotes(0, 4).length;
+                        let melPeaceTotal = 0;
+                        for (let i = 0; i < 8; i++) melPeaceTotal += r._lofiMelodyNotes(0, 4).length;
                         emo.joy = 0;
                         emo.peace = 0;
-                        out.melodyDensityEmotion = melJoy > melPeace;
+                        out.melodyDensityEmotion = melJoyTotal > melPeaceTotal;
+                        // V8.90 — Rhythmus + Dynamik: über 12 Phrasen gibt es
+                        // verschiedene Noten-LÄNGEN (Halbtakt/Viertel) UND
+                        // verschiedene Lautstärken (starker vs schwacher Takt).
+                        const durSet = new Set();
+                        const velSet = new Set();
+                        for (let i = 0; i < 12; i++) {
+                            for (const nt of r._lofiMelodyNotes(0, 4)) {
+                                durSet.add(Math.round(nt.dur * 100));
+                                velSet.add(Math.round(nt.vel * 100));
+                            }
+                        }
+                        out.melodyRhythmDynamics = durSet.size >= 2 && velSet.size >= 2;
                         let melOk = true;
                         try {
                             r._lofiPlayMelody(0, 4);
@@ -6500,6 +6516,10 @@ function startSaveServer() {
                         w4v2Results.melodyShape
                     );
                     check("W4 V3 Phase 2: Melodie-Dichte folgt der Emotion (joy lebhafter als peace)", w4v2Results.melodyDensityEmotion);
+                    check(
+                        "W4 V3 Phase 2: Melodie hat Rhythmus + Dynamik (verschiedene Noten-Längen + Lautstärken)",
+                        w4v2Results.melodyRhythmDynamics
+                    );
                     check("W4 V3 Phase 2: _lofiPlayMelody spielt die Phrase wurf-frei", w4v2Results.melodyPlayRuns);
                     check("W4 V3: _lofiNextDegree liefert eine markov-erreichbare Stufe", w4v2Results.nextDegreeValid);
                     check("W4 V3: die Harmonie ist seed-deterministisch (selber RNG → selbe Folge)", w4v2Results.harmonyDeterministic);

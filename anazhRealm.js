@@ -7470,52 +7470,73 @@ class AnazhRealm {
     }
 
     // W4 V3 Phase 2 — die Melodie. Eine improvisierte Phrase über dem Akkord
-    // der aktuellen Stufe: sie startet auf einem Akkord-Ton, wandert meist
-    // schrittweise (ein Sprung löst sich zur Gegenrichtung auf), der letzte
-    // Ton löst auf einem Akkord-Ton auf. Die Dichte wächst mit joy, schrumpft
-    // mit peace. Liefert [{freq, start, dur, idx}] — seed-deterministisch
-    // (derselbe RNG wie die Harmonie).
+    // der aktuellen Stufe, auf einem 8-Schritt-Rhythmus-Raster (Achtel-Gefühl).
+    // V8.90 — eine ECHTE Rhythmik: nicht jeder Schritt trägt eine Note (eine
+    // Onset-Wahrscheinlichkeit lässt PAUSEN), die Noten haben verschiedene
+    // LÄNGEN (1-4 Schritte — Halbe, Viertel, Achtel) und DYNAMIK (ein starker
+    // Takt-Schritt klingt lauter), plus eine kleine Zeit-Humanisierung — die
+    // Phrase ist nicht mehr stur. Tonhöhe: startet auf einem Akkord-Ton,
+    // wandert meist schrittweise (Sprünge lösen sich), der letzte Ton löst
+    // auf. Liefert [{freq, start, dur, idx, vel}] — seed-deterministisch.
     _lofiMelodyNotes(degree, durSec) {
         const emotions = (this.state.player && this.state.player.emotions) || {};
         const joy = Math.max(0, Math.min(1, emotions.joy || 0));
         const peace = Math.max(0, Math.min(1, emotions.peace || 0));
-        // V8.88 — Dichte-Basis 5 (war 3): die Phrase fliesst als Melodie,
-        // nicht als vereinzelte Pings. joy lebhafter, peace ruhiger.
-        const count = Math.max(2, Math.min(9, Math.round(5 + joy * 3 - peace * 2)));
+        const STEPS = 8;
+        const stepDur = durSec / STEPS;
+        // Onset-Neigung: joy belebt (mehr Noten), peace beruhigt (mehr Pausen).
+        const onsetBias = Math.max(0.2, Math.min(0.95, 0.6 + joy * 0.3 - peace * 0.35));
         const chordIdx = [degree, degree + 2, degree + 4, degree + 6];
         let idx = chordIdx[Math.floor(this._lofiRandom() * chordIdx.length)];
         let lastDelta = 0;
-        const slot = durSec / count;
         const notes = [];
-        for (let i = 0; i < count; i++) {
-            let useIdx = idx;
-            // Der letzte Ton löst auf dem nächstgelegenen Akkord-Ton auf.
-            if (i === count - 1) {
-                useIdx = chordIdx.reduce(
-                    (best, c) => (Math.abs(c - idx) < Math.abs(best - idx) ? c : best),
-                    chordIdx[0]
-                );
+        let step = 0;
+        while (step < STEPS) {
+            // Metrisches Gewicht: Takt-Eins stark, Schlag mittel, Off-Beat schwach.
+            const strong = step % 4 === 0 ? 1.0 : step % 2 === 0 ? 0.65 : 0.4;
+            // Schritt 0 startet die Phrase immer; sonst entscheidet die
+            // Onset-Wahrscheinlichkeit — ein Nein ist eine PAUSE.
+            const onsetProb = step === 0 ? 1 : onsetBias * strong;
+            if (this._lofiRandom() >= onsetProb) {
+                step += 1;
+                continue;
             }
-            const semi = this._lofiScaleSemitone(useIdx) + 24; // zwei Oktaven über dem Pad
+            // Noten-LÄNGE in Schritten: kurz/mittel/lang; peace dehnt.
+            const lr = this._lofiRandom();
+            let len = lr < 0.5 ? 1 : lr < 0.82 ? 2 : 3;
+            if (peace > 0.5 && this._lofiRandom() < peace) len += 1;
+            len = Math.min(len, STEPS - step);
+            // DYNAMIK: ein starker Schritt klingt lauter.
+            const vel = 0.14 + 0.16 * strong;
+            // Kleine Zeit-Humanisierung (±6 % eines Schritts) — nicht stur.
+            const jitter = (this._lofiRandom() - 0.5) * 0.12 * stepDur;
             notes.push({
-                freq: AnazhRealm.LOFI_BASE_FREQ * Math.pow(2, semi / 12),
-                start: i * slot,
-                dur: slot * 0.9,
-                idx: useIdx,
+                freq: AnazhRealm.LOFI_BASE_FREQ * Math.pow(2, (this._lofiScaleSemitone(idx) + 24) / 12),
+                start: Math.max(0, step * stepDur + jitter),
+                dur: len * stepDur * 0.92,
+                idx,
+                vel,
             });
-            // Der nächste Schritt: meist Schritt, selten Sprung; ein Sprung
-            // (|Δ|≥2) löst sich — die Kontur tendiert zur Gegenrichtung.
+            // Tonhöhen-Walk: meist Schritt, selten Sprung; Sprünge lösen sich.
             const r = this._lofiRandom();
-            const step = r < 0.6 ? 1 : r < 0.85 ? 2 : 3;
+            const stepSize = r < 0.62 ? 1 : r < 0.86 ? 2 : 3;
             let dir = this._lofiRandom() < 0.5 ? -1 : 1;
             if (Math.abs(lastDelta) >= 2) dir = lastDelta > 0 ? -1 : 1;
-            const delta = step * dir;
+            const delta = stepSize * dir;
             idx += delta;
-            // In einer singbaren Spanne um die Stufe halten (~zwei Oktaven).
-            if (idx < degree - 2) idx = degree - 2 + step;
-            if (idx > degree + 12) idx = degree + 12 - step;
+            if (idx < degree - 2) idx = degree - 2 + stepSize;
+            if (idx > degree + 12) idx = degree + 12 - stepSize;
             lastDelta = delta;
+            step += len;
         }
+        // Der letzte Ton löst auf dem nächstgelegenen Akkord-Ton auf.
+        const last = notes[notes.length - 1];
+        const resolveIdx = chordIdx.reduce(
+            (best, c) => (Math.abs(c - last.idx) < Math.abs(best - last.idx) ? c : best),
+            chordIdx[0]
+        );
+        last.idx = resolveIdx;
+        last.freq = AnazhRealm.LOFI_BASE_FREQ * Math.pow(2, (this._lofiScaleSemitone(resolveIdx) + 24) / 12);
         return notes;
     }
 
@@ -7532,12 +7553,12 @@ class AnazhRealm {
             osc.frequency.value = note.freq;
             const env = ctx.createGain();
             const t0 = now + note.start;
-            // V8.88 — eine SINGENDE Hüllkurve (Anschlag → Halt → Ausklang)
-            // statt eines Plucks: die Note füllt ihren Slot, die Phrase
-            // fliesst als Melodie statt als vereinzelte Pings.
+            // V8.88 — eine SINGENDE Hüllkurve (Anschlag → Halt → Ausklang).
+            // V8.90 — der Spitzen-Pegel folgt der Noten-Dynamik (note.vel):
+            // ein starker Takt-Schritt klingt lauter, ein schwacher leiser.
             env.gain.setValueAtTime(0, t0);
-            env.gain.linearRampToValueAtTime(0.26, t0 + 0.05);
-            env.gain.linearRampToValueAtTime(0.16, t0 + note.dur * 0.7);
+            env.gain.linearRampToValueAtTime(note.vel, t0 + 0.05);
+            env.gain.linearRampToValueAtTime(note.vel * 0.6, t0 + note.dur * 0.7);
             env.gain.linearRampToValueAtTime(0, t0 + note.dur);
             osc.connect(env);
             env.connect(s.lofi.melodyGain);
