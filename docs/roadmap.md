@@ -8,7 +8,7 @@ Diese Doc beschreibt das **gesamte Projekt vom heutigen Stand bis zum Vision-End
 
 ---
 
-## 1. Wo wir stehen (Mai 2026, V8.70)
+## 1. Wo wir stehen (Mai 2026, V8.80)
 
 ✅ **Ring 0-11.5 + Welle 1-14 + W7 sind live.** Der Kern atmet (Hylomorphismus-Crafting, Tag-Nacht, lebendige Welt), der Multi-User ist tief und mesh-nativ (der Mitspieler ist sein echter Soul — man sieht/spürt/kennt/**hört** ihn, der Präsenz-Bogen ist mit W11 V4 geschlossen; ein WebRTC-Mesh trägt pos/dsl/soul/aura/vibe/companion-say peer-to-peer), das Welt-Portal trägt fremde Engines (W12), der Avatar ist eine souveräne ed25519-Identität (W13), die Bibliothek von Alexandria steht (W14), und das Compute-Sharing ist gebaut (W7 — WebRTC-Mesh, Welt-Snapshot mesh-nativ, LLM-Pool, Public-Lobby). Der Fremd-Engine-Bogen läuft: das Untrusted-Welt-Tor (W12-Erweiterung) + der Auto-Vendor-Pfad (W15) + die Mesh-Welt-Verteilung (W16 komplett) sind gebaut, und W17 (Multiplayer-Sub-Welten) ist vollständig — Phase A (Transport-Shim) + B-Relay (Mesh-als-Server) + C (Gruppen-Portal) + die Multiplayer-Welt-Deklaration (V8.78) + B-JS-Compute Phase 1 (V8.79 — der Compute-Host) + Phase 2 (V8.80 — Host-Migration, verlässt der Host das Mesh, übernimmt ein deterministisch gewählter Nachfolger). Eine Gruppe taucht gemeinsam in eine vendorte Relay- ODER JS-Compute-Multiplayer-Welt; offen im Bogen nur B-WASM (per-Projekt). Chunk-Physik nutzt `btBvhTriangleMeshShape` (visuelles Mesh = Collider). 120 fps im Browser, **~2737 Playtest-Invarianten grün**, Audit-Strict 0 Failures.
 
@@ -32,7 +32,7 @@ Alle 5 Vision-Pfeiler (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) sind i
 | 3 | Player-Emotionen → Welt | ✅ V1+V2 live | – | – |
 | 4 | `anazhSymphony` V1 (Web Audio) | ✅ V1 live | – | – |
 | UI | Bedien-Oberfläche (Painterly) | ✅ V1+V2 live, V3 optional | 2-3 h Rest | – |
-| 5 | `createPlayerSoul` (Mensch/Phönix/Drache) | 🔴 offen | 1-2 d | – |
+| 5 | `createPlayerSoul` (Mensch/Phönix/Drache) | ✅ V1+V2 live | – | – |
 | 6 | `architectureTemplates` V1+V2 (Bauplan-Universum mit Hotbar + Werkstatt) | ✅ V1+V2 live | – | Ring 2 Phase 3 |
 | 7 | **IQ-Schicht statt brain.js** (lernt aus Verhalten + Emotion + 4 LLM-Provider) | ✅ Schicht 1+2 live | – | Ring 3 + Ring 2 Phase 3 |
 | W1 | **Welt-Journal + LLM-Selbstwissen** (Welt erinnert, weiß wer sie ist) | ✅ live | – | Ring 7 |
@@ -252,7 +252,7 @@ Plus: inline-styles aus `index.html` entfernt (`#fps`, `#state-file-input`), Inl
 | **6.D — Stats fraktal** ⭐ | Soul × Soul-Material → Tags → Stats; Boosts (Konsum + Emotion + Welt-Effekt); Min-Regel-Hybrid (decay 0.7); Tod = Phönix-Wandlung + Welt-Trauer | 3-4 Sessions | W5 + 6.F2 |
 | **6.E — Lesbarkeit** | Fähigkeit-Beschreibung ✅ (6.E1), Intro-Overlay ✅ (6.E2), subtile Tooltips (6.E3 — wartet) | 2 Sessions, **2/3 erledigt** | – |
 | **6.F — Original-Crafting (alt 6.1-6.7)** | Visuelle Verbindungs-Linien, Brech-Mechanik, Energiequellen, Kreaturen-Körper als Baukasten, Physik-Constraints (Ammo Hinge/Fixed), Rüstung → in 6.D integriert | 8-10 Sessions | W5 |
-| **6.G — Welt-Sinne** (NEU, 13.05.2026) | **Phase 1 ✅ V7.73** + **Phase 1.5 ✅ V7.74** + **Phase 2 ✅ V7.75** (Welt-Affinitäts-Feld — 4 SimplexNoise-Schichten als Tag-Sprache, populateChunkVegetation füllt Chunks via Affinity-Resonanz, drei neue Baupläne stein_block/kristall_geode/glutbrunnen, organische Region-Emergenz ohne Biome-Tabelle, Schöpfer-Vision „wie kommt Welt-Leben rein" beantwortet). Phase 3 offen: Schatten, Shader (Höhe-Tint, Wind, Glow), Sterne-Stabilisierung + Variation, Terrain-Höhlen+Überhänge+Klippen, Wasser als Material+Layer mit DSL-Ops | 7-9 Sessions, **Phase 1+1.5+2 erledigt**, Phase 3 = 4-5 Sessions | – (Phase 1+2) / 6.D (Phase 3) |
+| **6.G — Welt-Sinne** (NEU, 13.05.2026) | **Phase 1 ✅ V7.73** + **Phase 1.5 ✅ V7.74** + **Phase 2 ✅ V7.75** (Welt-Affinitäts-Feld — 4 SimplexNoise-Schichten als Tag-Sprache, populateChunkVegetation füllt Chunks via Affinity-Resonanz, drei neue Baupläne stein_block/kristall_geode/glutbrunnen, organische Region-Emergenz ohne Biome-Tabelle, Schöpfer-Vision „wie kommt Welt-Leben rein" beantwortet). Phase 3 grösstenteils ✅ von W6.G4 (V8.27-V8.33: Schatten, Shader, Sterne-Stabilisierung + Variation, Wasser als Material+Layer). OFFEN aus der Phase-3-Liste nur noch: Terrain-Höhlen/Überhänge/Klippen — siehe §3 „Offene Punkte nach V8.80" (W6.G P3-Rest) | 7-9 Sessions, **Phase 1+1.5+2 + W6.G4 erledigt**, Höhlen-Rest = 4-5 Sessions | – (Phase 1+2) / 6.D (Phase 3) |
 | **6.H — Kreaturen-Aufträge** (NEU, 13.05.2026) | Autonome Co-Schöpfer. **Phase 1 ✅ V7.79** (wander/follow_player/wait + Aura + Audio + Journal). **Phase 2A ✅ V7.80** (Hylomorphismus — Kreaturen sind Compounds aus bodyParts×Material wie Spieler+Architektur). **Phase 2B.1 ✅ V7.81** (gather + memory). **Phase 2B.5 ✅ V7.82** (harvestArchitecture als Wurzel-Funktion + Material-Inventar + carrying-Bring-Phase). **Phase 2C ✅ V7.83** (computeBuildCost als wertneutrale Spiegelung, modus-symmetrisch). **Phase 2B.2 ✅ V7.84** (Kreatur baut für Spieler — Geste-Umkehrung zu gather: take→walk→spawn). **Phase 2D ✅ V7.85** (Spezialisierung aus Memory: gather:material und build:blueprint je 3 Erfolge ein Level, max 5; Speed-Bonus +15 %/Level; Audio + Journal bei Level-Up; UI-Pills Sammler/Bauer in Liste; KEINE Persistenz — Vision §1.1 konsequent). **Phase 2E 🔴 offen** (Konversationen — „Nira, was hast du gesehen?" via LLM-Provider mit pro-Kreatur memory + Specs als System-Prompt-Erweiterung; Specs sind jetzt Identitäts-Anker). 4-5 Sessions Original-Schätzung; aktuell 7 Sessions investiert (V7.79-V7.85) — bewusst tiefer als Plan, weil Hylomorphismus-Wurzel sich beim Bauen offenbarte | original 4-5 Sessions, jetzt 7/8 erledigt | 6.F4 (Multi-Mesh-Kreaturen, in 6.H P2A integriert) + 6.A4 (Raycast, in 6.A6 erledigt) |
 
 **Vision-Hebel der Welle**: Block 6.D macht den Spieler zum **Compound im selben Hylomorphismus-System** wie Materialien und Bauwerke. `STAT_FROM_TAGS`-Matrix analog `FORM_TAG_ACTIVATION`. Wenn das Stat-System ohne Bezug zu `MATERIAL_TAG_KEYS` funktioniert, wurde die Vision verfehlt — explizite Warnung im Design-Doc §9.
@@ -755,6 +755,32 @@ Der Auto-Vendor klassifiziert jede Welt in diese vier Stufen und schreibt die St
 - Eine Brücken-Welt braucht einen externen Server — Repo + Mesh tragen sie nicht allein. Aber der Eintritt bleibt das AnazhRealm-Portal, mit der Gruppe.
 
 **Vision-Wort:** „**Man muss die Bibliothek nicht verlassen, um gemeinsam ein Buch zu lesen.** Manche Bücher liest man von den Regalen der Bibliothek selbst, manche durch ein Fenster zu einem fernen Turm — aber immer von hier aus, immer zusammen."
+
+---
+
+### Offene Punkte nach V8.80 — eingeplant (Audit 2026-05-18)
+
+Ein Selbst-Audit nach V8.80 sammelte alle ehrlich-benannten offenen Punkte und plant sie hier nach Priorität ein. Drei Kategorien: **konkrete Wellen** (klar umrissen, abschließbar), **bewusst per-Projekt** (kein Versäumnis — die Heilige Lektion korrekt angewandt) und **Doc-Sync**.
+
+**Konkrete Wellen — in Reihenfolge:**
+
+| # | Welle | Was | Aufwand | Stand |
+|---|---|---|---|---|
+| 1 | **W12 P3-Härtung** | `_portalReceiveEvent`-Rate-Limit — der Portal-Rückkanal (Sub-Welt → Heimat-Journal) deckelt die Ereignisse je Sekunde (Fenster-Zähler, Spiegel von `_portalNetReceive` B3). V8.53 als „W14 (fremde Welten) MUSS" geflaggt; mit den vendorten Sandbox-Welten (V8.70/71/73) ist das Szenario real geworden — eine flutende fremde Welt verdrängte sonst das 200-Eintrag-Journal in Sekunden. | ~1 Session | ⏳ **in Arbeit (V8.81)** |
+| 2 | **W17 P-Vendor** | die `serverMode`-Vendor-Ketten-Naht — `serverMode` fliesst durch die ganze Vendor-/Mesh-Kette (Spiegel von V8.78 für `multiplayer`): `_sanitizeImportedManifest`, `_vendorRegisterWorld`, `vendorWorldBundle`/`-FromRepo`, `_p2pBuildCatalog`/`-Sanitize`/Katalog-Signatur, signaling-server-`soul`-Handler, Bündel-Transfer, `exportWorldManifest`, ein `serverMode`-Vendor-Bedienelement. Ohne sie verliert eine VENDORTE js-compute-Welt still ihren `serverMode` → sie degradiert zu relay, die autoritative Server-JS läuft nie. | ~1 Session | 🔴 offen |
+| 3 | **W4 V2** | Lofi-Musik-Schicht (Pad-Layer 60 BPM, emotion-moduliert) — siehe §2-Tabelle. | 1-2 Sessions | 🔴 offen |
+| 4 | **W16-Politur** | (a) Hash-Verifikation des empfangenen Welt-Bündels (der Katalog trägt den Content-Hash, der Empfänger prüft ihn nach dem Pull); (b) ein weicher Pull-Timeout (`pendingBundlePull` hängt sonst, wenn der Sender mitten im Chunk-Strom verschwindet). | ~1 Session | 🔴 offen |
+| 5 | **W10 ext.** | vier weitere Affordances (balancing/broadcasting/lifting/radiating) — je eine kleine Welle, räumliche Analyse + Welt-Reaktion, KEIN Form-Whitelist (W10b.2-Lehre). | ~1 Session je | 🔴 offen |
+| 6 | **W15-Politur** | Branch-Namen mit Slash (`feature/x`) im GitHub-Fetch auflösen (braucht eine SHA-Auflösung vor der Trees-API). | ~0.5 Session | 🔴 offen |
+| 7 | **W6.G P3-Rest** | Terrain-Höhlen/Überhänge/Klippen — der einzige nicht von W6.G4 abgedeckte Rest der alten 6.G-Phase-3-Liste. Ein Heightfield ist pro (x,z) eindeutig → Überhänge brauchen eine andere Terrain-Repräsentation (Voxel-Schichten oder angeheftete Überhang-Meshes). Eigene grosse Welle, kein Quick-Win. | 4-5 Sessions | 🔴 offen |
+
+**Bewusst per-Projekt / dauerhaft aufgeschoben (kein Versäumnis — die Heilige Lektion):**
+- **B-WASM** — ein Rust→WASM-Server im Peer-Tab, Stufe 4 der Server-Taxonomie. Kein baubares Feature: manche native Server portieren sauber nach `wasm32`, manche nie; der Compute-Host-Mechanismus (V8.79/80) trägt einen wasm-Server strukturell schon. Vorbedingung: Binär-Asset-Vendoring + eine echte Test-Welt. Spekulativ zu bauen verletzte „keine Validierung für Szenarien, die nicht eintreten".
+- **Binär-Asset-Vendoring** — der Vendor-Pfad trägt nur Text; `.png`/`.glb`/`.wasm` werden gefiltert. Wird konkret, sobald B-WASM eine echte Welt hat (dann base64-kodiert mitschreiben).
+- **fetch/XHR/RTC-Transport-Shims** — Phase A shimt nur `WebSocket`; die übrigen Netz-APIs sind bewusste spätere Schichten (gebaut, wenn eine Sub-Welt sie braucht).
+- **save-server-lose Verteilung** (Service-Worker) — eine eigene Architektur-Schicht.
+
+**Doc-Sync (mit diesem Audit erledigt):** §1-Header V8.70→V8.80; Ring-5-Zeile (war „🔴 offen", ist seit V2 live); der 6.G-Phase-3-Text in der „Welle 6 ALT"-Tabelle (listete W6.G4-erledigte Punkte noch als offen). Rest-Drift im historischen „Welle 6 ALT"-Block (z. B. 6.H Phase 2E) bewusst stehen gelassen — der §2-Tabellenkopf ist die kanonische Status-Quelle.
 
 ---
 

@@ -19152,6 +19152,10 @@ class AnazhRealm {
             netChannels: new Set(),
             netWindowStart: 0,
             netWindowCount: 0,
+            // W12 P3-Härtung — das Rate-Limit-Fenster des Portal-Rückkanals
+            // (_portalReceiveEvent): eine flutende fremde Welt deckeln.
+            eventWindowStart: 0,
+            eventWindowCount: 0,
             // W17 Phase B-JS-Compute — der Server-Modus + die Compute-Rolle.
             // "relay" → das Mesh broadcastet (B-Relay). "js-compute" → ein
             // Peer ist Compute-Host (computeRole "host", serverIframe gesetzt),
@@ -19488,6 +19492,22 @@ class AnazhRealm {
         const text = String((msg && msg.text) || "").trim();
         if (!text) return false;
         const po = this._portalOverlay;
+        // W12 P3-Härtung — Rate-Limit: ein Fenster-Zähler deckelt die
+        // Ereignisse je Sekunde (Spiegel von _portalNetReceive B3). Eine
+        // ungeprüfte vendorte Welt (V8.70+) könnte sonst pro Frame ein
+        // Ereignis posten und das 200-Eintrag-Journal verdrängen. Lazy-Init
+        // der Zähler — robust auch für ein minimales Overlay-Objekt.
+        if (typeof po.eventWindowStart !== "number") {
+            po.eventWindowStart = 0;
+            po.eventWindowCount = 0;
+        }
+        const now = performance.now();
+        if (now - po.eventWindowStart >= AnazhRealm.PORTAL_EVENT_RATE_WINDOW_MS) {
+            po.eventWindowStart = now;
+            po.eventWindowCount = 0;
+        }
+        if (po.eventWindowCount >= AnazhRealm.PORTAL_EVENT_RATE_MAX) return false;
+        po.eventWindowCount++;
         this.journalAppend("portal", text.slice(0, 160), { world: po.label || po.world || "Portal-Welt" });
         return true;
     }
@@ -33230,6 +33250,13 @@ AnazhRealm.PORTAL_REACH_M = 4.5;
 AnazhRealm.SUBWORLD_NET_MAX_BYTES = 16384; // 16 KiB je ws-send (Relay-.io-Nachrichten sind winzig)
 AnazhRealm.SUBWORLD_NET_RATE_WINDOW_MS = 1000;
 AnazhRealm.SUBWORLD_NET_RATE_MAX = 120; // ~2 Nachrichten je 60-fps-Frame mit Reserve
+// W12 P3-Härtung — der Portal-Rückkanal (_portalReceiveEvent: Sub-Welt →
+// Heimat-Journal) deckelt die Ereignisse je Sekunde. Eine ungeprüfte vendorte
+// Welt (V8.70+) könnte sonst pro Frame ein Ereignis posten und das 200-
+// Eintrag-Journal in Sekunden verdrängen. 8/s ist grosszügig für legitime
+// Bursts (eine Welt meldet mehrere sichtbare Momente zugleich), hart gegen Flut.
+AnazhRealm.PORTAL_EVENT_RATE_WINDOW_MS = 1000;
+AnazhRealm.PORTAL_EVENT_RATE_MAX = 8;
 AnazhRealm.MOUNT_SPEED_FACTOR = 0.7; // Compounds fahren etwas langsamer als zu Fuß
 AnazhRealm.ZOOM_FOV_DEG = 25; // Magnifying-Compound zoomt auf 25°
 AnazhRealm.MAGNIFYING_RAY_RANGE_M = 8; // Spieler muss innerhalb dieser Reichweite drauf schauen

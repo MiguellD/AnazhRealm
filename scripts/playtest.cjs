@@ -16280,6 +16280,25 @@ function startSaveServer() {
                     });
                     out.onMessageDispatches = lastEntry().text === "Dispatch-Probe.";
                     r._disposePortalOverlay();
+                    // W12 P3-Härtung — der Rückkanal-Rate-Limit deckelt eine
+                    // flutende fremde Welt: nach PORTAL_EVENT_RATE_MAX je
+                    // Fenster wird verworfen, das Journal nicht überrannt.
+                    r._portalOverlay = { label: "Flut-Welt", world: "worlds/skeleton/index.html", dsl: null };
+                    const floodBefore = journal().length;
+                    let floodAccepted = 0;
+                    for (let i = 0; i < 20; i++) {
+                        if (r._portalReceiveEvent({ type: "event", text: "Flut " + i }) === true) floodAccepted++;
+                    }
+                    out.rateLimitCapsBurst = floodAccepted === AnazhRealm.PORTAL_EVENT_RATE_MAX;
+                    out.rateLimitNoJournalOverflow =
+                        journal().length - floodBefore === AnazhRealm.PORTAL_EVENT_RATE_MAX;
+                    r._portalOverlay = null;
+                    // Das Overlay aus _buildPortalOverlay trägt das Rate-Limit-Fenster.
+                    r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "Fenster-Welt", dsl: null });
+                    out.overlayHasEventWindow =
+                        typeof r._portalOverlay.eventWindowStart === "number" &&
+                        typeof r._portalOverlay.eventWindowCount === "number";
+                    r._disposePortalOverlay();
                     // enterPortal schreibt den Erst-Besuch (journalAppendOnce).
                     // Der seen-Schlüssel wird vorab geleert — ein früherer
                     // Portal-Test könnte die Skelett-Welt schon betreten haben.
@@ -16319,6 +16338,15 @@ function startSaveServer() {
                 check("W12 P3a: onMessage-Dispatch leitet {type:event} weiter", w12p3aResults.onMessageDispatches);
                 check("W12 P3a: enterPortal schreibt den Erst-Besuch ins Journal", w12p3aResults.entryJournaled);
                 check("W12 P3a: wiederholtes Betreten flutet das Journal nicht", w12p3aResults.entryOncePerWorld);
+                check("W12 P3-Härtung: Rückkanal-Rate-Limit deckelt einen Burst", w12p3aResults.rateLimitCapsBurst);
+                check(
+                    "W12 P3-Härtung: das Journal wird nicht über den Deckel hinaus geflutet",
+                    w12p3aResults.rateLimitNoJournalOverflow
+                );
+                check(
+                    "W12 P3-Härtung: das Portal-Overlay trägt das Rate-Limit-Fenster",
+                    w12p3aResults.overlayHasEventWindow
+                );
             } else {
                 check("W12 P3a: Teil-A-Tests laufen", false, w12p3aResults ? w12p3aResults.error : "no result");
             }
