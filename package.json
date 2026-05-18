@@ -16,7 +16,8 @@
         "verify:ring9": "node scripts/verify-ring9.cjs",
         "smoke:multiuser": "node scripts/smoke-multiuser.cjs",
         "smoke:webrtc": "node scripts/smoke-webrtc.cjs",
-        "smoke:translated": "node scripts/smoke-translated.cjs"
+        "smoke:translated": "node scripts/smoke-translated.cjs",
+        "smoke:sandbox": "node scripts/smoke-sandbox.cjs"
     },
     "devDependencies": {
         "eslint": "^9.18.0",

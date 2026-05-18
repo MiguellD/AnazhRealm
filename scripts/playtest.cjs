@@ -16199,6 +16199,143 @@ function startSaveServer() {
                 );
             }
 
+            // ### V8.70 — Untrusted-Welt-Tor: echte fremde Engine, null-origin ###
+            const sandboxResults = await page
+                .evaluate(async () => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    const REG = r.constructor.WORLD_REGISTRY;
+                    // schwarm in der Registry, als sandboxed markiert.
+                    out.registryEntry =
+                        !!REG.schwarm &&
+                        REG.schwarm.trust === "sandboxed" &&
+                        typeof REG.schwarm.desc === "string" &&
+                        Array.isArray(REG.schwarm.dsl) &&
+                        REG.schwarm.dsl.length > 0;
+                    // Built-in-Welten bleiben trusted (kein sandboxed).
+                    out.builtinsTrusted =
+                        REG.skeleton.trust !== "sandboxed" &&
+                        REG.fluid.trust !== "sandboxed" &&
+                        REG.terrain.trust !== "sandboxed";
+                    // _sanitizePortalMeta: default trusted, bewahrt sandboxed, Müll → trusted.
+                    out.sanitizeTrust =
+                        r._sanitizePortalMeta({ world: "worlds/skeleton/index.html" }, "X").trust === "trusted" &&
+                        r._sanitizePortalMeta({ world: "worlds/schwarm/index.html", trust: "sandboxed" }, "X").trust ===
+                            "sandboxed" &&
+                        r._sanitizePortalMeta({ world: "worlds/skeleton/index.html", trust: "BÖSE" }, "X").trust ===
+                            "trusted";
+                    // aimBlueprintAtWorld trägt die Vertrauensstufe in den Bauplan.
+                    r.cloneBlueprint("welt_portal", "_t_sb");
+                    r.aimBlueprintAtWorld("_t_sb", "schwarm");
+                    r.cloneBlueprint("welt_portal", "_t_tr");
+                    r.aimBlueprintAtWorld("_t_tr", "terrain");
+                    out.aimCarriesTrust =
+                        r.state.blueprints["_t_sb"].portalMeta.trust === "sandboxed" &&
+                        r.state.blueprints["_t_tr"].portalMeta.trust === "trusted";
+                    delete r.state.blueprints["_t_sb"];
+                    delete r.state.blueprints["_t_tr"];
+                    // obtainPortalForWorld holt die Schwarm-Welt.
+                    const ob = r.obtainPortalForWorld("schwarm");
+                    const pbp = r.state.blueprints["portal_schwarm"];
+                    out.obtainSchwarm =
+                        ob.ok === true &&
+                        !!pbp &&
+                        pbp.portalMeta.world === "worlds/schwarm/index.html" &&
+                        pbp.portalMeta.trust === "sandboxed";
+                    // _buildPortalOverlay: sandboxed → allow-scripts ALLEIN.
+                    r._buildPortalOverlay({
+                        world: "worlds/schwarm/index.html",
+                        label: "S",
+                        dsl: ["sturm"],
+                        trust: "sandboxed",
+                    });
+                    out.overlaySandboxAttr = r._portalOverlay.iframe.getAttribute("sandbox") === "allow-scripts";
+                    out.overlayTrustField = r._portalOverlay.trust === "sandboxed";
+                    r._disposePortalOverlay();
+                    // trusted → mit allow-same-origin.
+                    r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "T", dsl: null });
+                    out.overlayTrustedAttr = /allow-same-origin/.test(
+                        r._portalOverlay.iframe.getAttribute("sandbox")
+                    );
+                    r._disposePortalOverlay();
+                    // _portalSendEnter / _portalForwardDsl: targetOrigin "*" für null-origin.
+                    const savedPo = r._portalOverlay;
+                    let capEnter = null;
+                    let capDsl = null;
+                    r._portalOverlay = {
+                        trust: "sandboxed",
+                        iframe: { contentWindow: { postMessage: (m, o) => (capEnter = { m: m, o: o }) } },
+                    };
+                    r._portalSendEnter();
+                    r._portalOverlay.iframe.contentWindow.postMessage = (m, o) => (capDsl = { m: m, o: o });
+                    r._portalForwardDsl(["sturm"]);
+                    out.starForSandbox =
+                        !!capEnter && capEnter.o === "*" && capEnter.m.type === "enter" && !!capDsl && capDsl.o === "*";
+                    let capTrusted = null;
+                    r._portalOverlay = {
+                        trust: "trusted",
+                        iframe: { contentWindow: { postMessage: (m, o) => (capTrusted = { m: m, o: o }) } },
+                    };
+                    r._portalSendEnter();
+                    out.originForTrusted = !!capTrusted && capTrusted.o === window.location.origin;
+                    r._portalOverlay = savedPo;
+                    // buildStateSnapshot/loadState — trust überlebt den Rundlauf.
+                    const snap = r.buildStateSnapshot();
+                    const snapBp = (snap.blueprints || []).find((b) => b && b.name === "portal_schwarm");
+                    delete r.state.blueprints["portal_schwarm"];
+                    r.loadState({ blueprints: snapBp ? [snapBp] : [] });
+                    const reBp = r.state.blueprints["portal_schwarm"];
+                    out.trustRoundtrip =
+                        !!snapBp &&
+                        snapBp.portalMeta &&
+                        snapBp.portalMeta.trust === "sandboxed" &&
+                        !!reBp &&
+                        reBp.portalMeta &&
+                        reBp.portalMeta.trust === "sandboxed";
+                    // renderLibraryUI rendert eine Schwarm-Welt-Karte.
+                    r.renderLibraryUI();
+                    out.uiSchwarmCard = Array.from(document.querySelectorAll("#library-list .library-card")).some((c) =>
+                        /Schwarm-Welt/.test(c.textContent)
+                    );
+                    // worlds/schwarm/index.html ist erreichbar (echte Datei).
+                    out.worldReachable = await fetch("worlds/schwarm/index.html")
+                        .then((res) => res.ok)
+                        .catch(() => false);
+                    // Aufräumen.
+                    delete r.state.blueprints["portal_schwarm"];
+                    for (let i = 0; i < r.state.player.inventory.length; i++) {
+                        const s = r.state.player.inventory[i];
+                        if (s && typeof s.blueprintName === "string" && s.blueprintName.indexOf("portal_schwarm") === 0) {
+                            r.state.player.inventory[i] = null;
+                        }
+                    }
+                    r.renderLibraryUI();
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (sandboxResults && !sandboxResults.error) {
+                check("Untrusted-Tor: WORLD_REGISTRY.schwarm existiert + trust:sandboxed + desc + dsl", sandboxResults.registryEntry);
+                check("Untrusted-Tor: Built-in-Welten (skeleton/fluid/terrain) bleiben trusted", sandboxResults.builtinsTrusted);
+                check("Untrusted-Tor: _sanitizePortalMeta — default trusted, bewahrt sandboxed, Müll-trust → trusted", sandboxResults.sanitizeTrust);
+                check("Untrusted-Tor: aimBlueprintAtWorld trägt die Vertrauensstufe (schwarm→sandboxed, terrain→trusted)", sandboxResults.aimCarriesTrust);
+                check("Untrusted-Tor: obtainPortalForWorld holt die Schwarm-Welt (Portal trägt trust:sandboxed)", sandboxResults.obtainSchwarm);
+                check("Untrusted-Tor: _buildPortalOverlay — sandboxed → iframe-sandbox ist 'allow-scripts' ALLEIN", sandboxResults.overlaySandboxAttr);
+                check("Untrusted-Tor: _buildPortalOverlay — trusted → iframe-sandbox enthält allow-same-origin", sandboxResults.overlayTrustedAttr);
+                check("Untrusted-Tor: _portalOverlay trägt die trust-Stufe", sandboxResults.overlayTrustField);
+                check("Untrusted-Tor: _portalSendEnter + _portalForwardDsl posten mit '*' an eine null-origin-Welt", sandboxResults.starForSandbox);
+                check("Untrusted-Tor: _portalSendEnter postet mit dem Seiten-Origin an eine trusted Welt", sandboxResults.originForTrusted);
+                check("Untrusted-Tor: trust überlebt den buildStateSnapshot/loadState-Rundlauf", sandboxResults.trustRoundtrip);
+                check("Untrusted-Tor: renderLibraryUI rendert eine Schwarm-Welt-Karte", sandboxResults.uiSchwarmCard);
+                check("Untrusted-Tor: worlds/schwarm/index.html ist erreichbar", sandboxResults.worldReachable);
+            } else {
+                check(
+                    "Untrusted-Tor: V8.70-Tests laufen",
+                    false,
+                    sandboxResults ? sandboxResults.error : "no result"
+                );
+            }
+
             // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
             const v840Results = await page
                 .evaluate(() => {

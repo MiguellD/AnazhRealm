@@ -13551,6 +13551,10 @@ class AnazhRealm {
                         if (bp.portalMeta.translatedWorldId) {
                             out.portalMeta.translatedWorldId = bp.portalMeta.translatedWorldId;
                         }
+                        // V8.70 — die Vertrauensstufe reist mit, sonst verlöre
+                        // ein geholtes Untrusted-Portal beim Reload seine
+                        // null-origin-Sandbox.
+                        if (bp.portalMeta.trust) out.portalMeta.trust = bp.portalMeta.trust;
                     }
                     // W13 Phase 2 — die Bauplan-Signatur reist mit dem Bauplan
                     // (Save, Welt-Tor-Export, Recipe-Import, Fusion). Echtheit
@@ -17392,6 +17396,10 @@ class AnazhRealm {
             label: entry.label,
             dsl: entry.dsl.slice(),
         };
+        // V8.70 — die Vertrauensstufe der Welt mitgeben (sandboxed → das
+        // Portal-iframe wird null-origin: eine echte fremde Engine läuft
+        // voll, kann AnazhRealm aber nicht berühren).
+        if (entry.trust) meta.trust = entry.trust;
         // KI-Übersetzer Phase 2 — eine aufgebaute übersetzte Welt teilt sich
         // den generischen Renderer worlds/translated/; die translatedWorldId
         // sagt ihm beim enter-Handshake, welche Szene er aufbauen soll.
@@ -17974,6 +17982,9 @@ class AnazhRealm {
         if (typeof src.translatedWorldId === "string" && /^[a-z0-9_-]{1,40}$/.test(src.translatedWorldId)) {
             meta.translatedWorldId = src.translatedWorldId;
         }
+        // V8.70 — die Vertrauensstufe. „sandboxed" → das Portal-iframe bekommt
+        // allow-scripts ALLEIN (null-origin); alles andere ist „trusted".
+        meta.trust = src.trust === "sandboxed" ? "sandboxed" : "trusted";
         return meta;
     }
 
@@ -17994,10 +18005,17 @@ class AnazhRealm {
         const iframe = document.createElement("iframe");
         iframe.className = "portal-frame";
         iframe.title = meta.label || "Portal-Welt";
-        // Sandbox: Skripte + eigenes (same-origin) Document genügt für die
-        // Skelett-Welt. Eine echte Fremd-Engine (W14) bekäme allow-scripts
-        // allein → null-origin, kein Zugriff auf unsere localStorage/Cookies.
-        iframe.setAttribute("sandbox", "allow-scripts allow-same-origin");
+        // V8.70 — die Sandbox emergiert aus der Vertrauensstufe der Welt.
+        // Eine „trusted" Welt (W12-Built-in, unser eigener Code) bekommt
+        // allow-scripts + allow-same-origin — sie darf ihr eigenes
+        // manifest.json fetchen. Eine „sandboxed" Welt (eine echte fremde,
+        // ungeprüfte Engine) bekommt allow-scripts ALLEIN → null-origin:
+        // fremder Code läuft VOLL (jede Physik, WebGL, WASM), kann aber
+        // AnazhRealms localStorage, DOM und Cookies NICHT berühren. Das ist
+        // kein Freiheits-Tausch — die Wand IST die Bedingung dafür, dass
+        // beliebiger fremder Code überhaupt sicher laufen darf.
+        const sandboxed = meta.trust === "sandboxed";
+        iframe.setAttribute("sandbox", sandboxed ? "allow-scripts" : "allow-scripts allow-same-origin");
         const hint = document.createElement("div");
         hint.className = "portal-hint";
         // Stufe-bewusster Hinweis: spricht die Welt die DSL (hat sie einen
@@ -18041,6 +18059,10 @@ class AnazhRealm {
             world: meta.world,
             label: meta.label,
             dsl: meta.dsl,
+            // V8.70 — die Vertrauensstufe (sandboxed → null-origin): sagt
+            // _portalSendEnter/_portalForwardDsl, mit welchem targetOrigin
+            // gepostet werden muss („*" für die null-origin-Welt).
+            trust: meta.trust,
             // KI-Übersetzer Phase 2 — gesetzt für eine übersetzte Welt: sagt
             // _portalSendEnter, welche deklarative Szene es mitschicken muss.
             translatedWorldId: meta.translatedWorldId || null,
@@ -18165,7 +18187,9 @@ class AnazhRealm {
             const w = this.state.customWorlds && this.state.customWorlds[po.translatedWorldId];
             if (w && w.scene) msg.scene = w.scene;
         }
-        po.iframe.contentWindow.postMessage(msg, window.location.origin);
+        // V8.70 — eine null-origin (sandboxed) Welt hat eine opake Herkunft;
+        // ein gezieltes targetOrigin würde die Nachricht verwerfen → "*".
+        po.iframe.contentWindow.postMessage(msg, po.trust === "sandboxed" ? "*" : window.location.origin);
     }
 
     // Räumt das Portal-Overlay: Message-Listener ab, Overlay-DOM raus,
@@ -18282,7 +18306,11 @@ class AnazhRealm {
     _portalForwardDsl(program) {
         const po = this._portalOverlay;
         if (!po || !po.iframe || !po.iframe.contentWindow) return false;
-        po.iframe.contentWindow.postMessage({ type: "dsl", program }, window.location.origin);
+        // V8.70 — "*" für eine null-origin (sandboxed) Welt (siehe _portalSendEnter).
+        po.iframe.contentWindow.postMessage(
+            { type: "dsl", program },
+            po.trust === "sandboxed" ? "*" : window.location.origin
+        );
         return true;
     }
 
@@ -20258,7 +20286,9 @@ class AnazhRealm {
         // Wahrheit; je Bauplan eine eigene dsl-Kopie).
         const portalTo = (id) => {
             const w = AnazhRealm.WORLD_REGISTRY[id];
-            return { world: w.world, label: w.label, dsl: w.dsl.slice() };
+            const meta = { world: w.world, label: w.label, dsl: w.dsl.slice() };
+            if (w.trust) meta.trust = w.trust;
+            return meta;
         };
 
         return {
@@ -31394,6 +31424,20 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
         world: "worlds/terrain/index.html",
         dsl: Object.freeze(["skybox_color", "gebirge", "ebene", "neu"]),
         desc: "Eine prozedurale 3D-Landschaft, von einer umkreisenden Kamera als Diorama gezeigt.",
+    }),
+    // V8.70 — die erste UNTRUSTED Welt: eine echte fremde Engine (2D-Boids,
+    // eigenes Canvas, eigener Loop — kein Three.js, kein AnazhRealm-Code),
+    // die in einem null-origin-iframe sandgesichert läuft. trust:"sandboxed"
+    // → das Portal entzieht ihr allow-same-origin: voller Lauf drinnen, null
+    // Reichweite raus. Der Beweis, dass fremder, ungeprüfter Code sicher
+    // hinter dem Tor laufen kann.
+    schwarm: Object.freeze({
+        id: "schwarm",
+        label: "Schwarm-Welt",
+        world: "worlds/schwarm/index.html",
+        dsl: Object.freeze(["sturm", "ruhe", "schwaermen", "skybox_color"]),
+        desc: "Ein 2D-Schwarm aus hunderten Wesen — eine fremde Engine, die null-origin sandgesichert läuft, ohne AnazhRealm je zu berühren.",
+        trust: "sandboxed",
     }),
 });
 
