@@ -355,6 +355,16 @@ class AnazhRealm {
                 // Antwort (Rate-Limit gegen pull-Spam).
                 _pullServedAt: new Map(),
                 _testNoReload: false,
+                // W16 Phase 1 — Mesh-Welt-Verteilung. bundleXfers puffert
+                // eingehende Welt-Bündel-Stücke (eigener Puffer — ein
+                // Bündel-Transfer darf nicht mit einem Snapshot-Transfer
+                // kollidieren). pendingBundlePull = {peerId, worldId} merkt
+                // einen laufenden Pull (nur Stücke von DIESEM Peer für DIESE
+                // Welt werden angenommen). _bundleServedAt: peerId → letzter
+                // bedienter Pull (Rate-Limit gegen Spam).
+                bundleXfers: new Map(),
+                pendingBundlePull: null,
+                _bundleServedAt: new Map(),
                 // W7 Phase 3 — LLM-Pool. voiceShared: ich teile meine Stimme
                 // (Opt-in). _voiceServedAt: peerId → letzte bediente Anfrage
                 // (Rate-Limit). _voiceRequests: reqId → {cb, timeout} meiner
@@ -4362,6 +4372,10 @@ class AnazhRealm {
         p2p.pendingPullFrom = null;
         p2p._lastXferProgress = null;
         p2p._pullServedAt.clear();
+        // W16 — laufende Welt-Bündel-Transfers verwerfen.
+        p2p.bundleXfers.clear();
+        p2p.pendingBundlePull = null;
+        p2p._bundleServedAt.clear();
         // W7 Phase 3 — offene Stimm-Anfragen verwerfen + Timeouts räumen.
         for (const pending of p2p._voiceRequests.values()) {
             if (pending && pending.timeout) clearTimeout(pending.timeout);
@@ -4529,6 +4543,21 @@ class AnazhRealm {
             this._p2pHandleWorldChunk(peerId, msg);
             return;
         }
+        // W16 Phase 1 — Mesh-Welt-Verteilung. Auch kanal-exklusiv: ein
+        // world-bundle-pull/-chunk/-fail KANN nicht über den WS injiziert
+        // werden, weil hier behandelt statt re-dispatcht.
+        if (msg.type === "world-bundle-pull") {
+            this._p2pHandleWorldBundlePull(peerId, msg);
+            return;
+        }
+        if (msg.type === "world-bundle-chunk") {
+            this._p2pHandleWorldBundleChunk(peerId, msg);
+            return;
+        }
+        if (msg.type === "world-bundle-fail") {
+            this._p2pHandleWorldBundleFail(peerId, msg);
+            return;
+        }
         // W7 Phase 3 — LLM-Pool. Auch kanal-exklusiv (kein WS-Pfad).
         if (msg.type === "llm-request") {
             this._p2pHandleLlmRequest(peerId, msg);
@@ -4694,6 +4723,308 @@ class AnazhRealm {
         this.log(`Welt-Transfer komplett (${total} Stücke) — übernehme`, "INFO");
         p2p._lastXferProgress = null;
         this._p2pApplyWorldSnapshot(peerId, parsed, { reload: true });
+    }
+
+    // ── W16 Phase 1 — Mesh-Welt-Verteilung: eine vendorte Welt reist p2p ──
+    //
+    // Eine vendorte Welt liegt in worlds/<id>/ (W15). W16 lässt sie über das
+    // Mesh reisen: ein Mitspieler, der sie nicht hat, holt ihr Bündel
+    // peer-to-peer. Der Transport spiegelt W7 P2 (world-pull/world-chunk);
+    // die Empfangs-Seite reicht das Bündel an die EINE erprobte Schreib-Seite
+    // vendorWorldBundle (W15) — ein dritter Eingang (lokales Bündel, GitHub,
+    // Mesh-Peer), eine Wand.
+
+    // Das Bündel einer vendorten Welt vom save-server zurücklesen (die
+    // Lese-Seite /api/vendor-bundle). Der EINZIGE Netz-Schritt des Senders;
+    // im Playtest gestubbt (wie _vendorPostBundle / llmCall).
+    async _p2pFetchVendorBundle(worldId) {
+        try {
+            const res = await fetch("http://localhost:4312/api/vendor-bundle?worldId=" + encodeURIComponent(worldId));
+            let data = null;
+            try {
+                data = await res.json();
+            } catch {
+                data = null;
+            }
+            if (!res.ok || !data || !Array.isArray(data.files)) {
+                return { ok: false, reason: (data && data.error) || `HTTP ${res.status}` };
+            }
+            return { ok: true, files: data.files };
+        } catch {
+            return { ok: false, reason: "save_server_unreachable" };
+        }
+    }
+
+    // W16 — eine Welt von einem Mitspieler über das Mesh holen. Schickt einen
+    // world-bundle-pull an genau EINEN Peer (peer-gebunden wie der W7-P2-
+    // Resync); dessen world-bundle-chunk-Antwort reassembliert
+    // _p2pHandleWorldBundleChunk. Liefert {ok} oder {ok:false, reason}.
+    requestWorldBundleFromPeer(worldId, peerId) {
+        const id = String(worldId || "")
+            .trim()
+            .toLowerCase();
+        if (!/^[a-z0-9_-]{1,40}$/.test(id)) return { ok: false, reason: "invalid_world_id" };
+        // Habe ich die Welt schon, ist kein Pull nötig.
+        if (this.state.customWorlds && this.state.customWorlds[id]) {
+            return { ok: false, reason: "already_have" };
+        }
+        const p2p = this.state.p2p;
+        if (!peerId || !p2p.peers.has(peerId)) return { ok: false, reason: "no_such_peer" };
+        const rtc = p2p.rtcPeers.get(peerId);
+        if (!rtc || !rtc.open) return { ok: false, reason: "no_channel" };
+        p2p.pendingBundlePull = { peerId, worldId: id };
+        const sent = this._p2pSendChannelTo(peerId, { type: "world-bundle-pull", worldId: id });
+        if (!sent) {
+            p2p.pendingBundlePull = null;
+            return { ok: false, reason: "send_failed" };
+        }
+        this.log(`Welt „${id}" von ${peerId.slice(0, 12)}… über das Mesh angefragt`, "INFO");
+        return { ok: true, worldId: id, peerId };
+    }
+
+    // W16 — auf einen world-bundle-pull antworten: das Bündel einer vendorten
+    // Welt vom save-server lesen + in Stücken über den DataChannel senden.
+    // Nur EIGENE vendorte Welten (eine importierte Manifest-Welt hat keine
+    // lokalen Dateien). Rate-Limit gegen pull-Spam.
+    async _p2pHandleWorldBundlePull(peerId, msg) {
+        const p2p = this.state.p2p;
+        const rtc = p2p.rtcPeers.get(peerId);
+        if (!rtc || !rtc.open || !rtc.channel) return;
+        const worldId = String((msg && msg.worldId) || "")
+            .trim()
+            .toLowerCase();
+        if (!/^[a-z0-9_-]{1,40}$/.test(worldId)) return;
+        // Rate-Limit. Sentinel: „noch nie bedient" = -Infinity, NICHT 0 —
+        // sonst würde ein Pull in den ersten COOLDOWN-ms fälschlich
+        // abgewiesen (V8.65-Lehre, zweimal erlebt).
+        const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+        const last = p2p._bundleServedAt.has(peerId) ? p2p._bundleServedAt.get(peerId) : -Infinity;
+        if (now - last < AnazhRealm.P2P_BUNDLE_PULL_COOLDOWN_MS) {
+            this.log(`Welt-Bündel-Pull von ${peerId.slice(0, 12)}… zu schnell — abgewiesen`, "WARN");
+            return;
+        }
+        p2p._bundleServedAt.set(peerId, now);
+        const fail = (reason) => this._p2pSendChannelTo(peerId, { type: "world-bundle-fail", worldId, reason });
+        const entry = this.state.customWorlds && this.state.customWorlds[worldId];
+        // Nur eine vendorte Welt hat lokale Dateien, die wir teilen können.
+        if (!entry || entry.vendored !== true) {
+            fail("not_found");
+            return;
+        }
+        const bundle = await this._p2pFetchVendorBundle(worldId);
+        if (!bundle.ok || !bundle.files || !bundle.files.length) {
+            fail("unavailable");
+            return;
+        }
+        // Das Meta reist mit (Spiegel des _vendorRegisterWorld-Eintrags) —
+        // der Empfänger registriert die Welt mit Name/Beschreibung/DSL.
+        let payload;
+        try {
+            payload = JSON.stringify({
+                worldId,
+                label: entry.label || worldId,
+                desc: entry.desc || "",
+                dsl: Array.isArray(entry.dsl) ? entry.dsl : [],
+                files: bundle.files,
+            });
+        } catch {
+            fail("unavailable");
+            return;
+        }
+        const size = AnazhRealm.P2P_WORLD_CHUNK_SIZE;
+        const total = Math.max(1, Math.ceil(payload.length / size));
+        const xferId = this._p2pChunkXferId();
+        for (let seq = 0; seq < total; seq++) {
+            // Backpressure: warten, bis der Sende-Puffer abgeflossen ist.
+            let guard = 0;
+            while (rtc.channel.bufferedAmount > 262144 && guard++ < 600) {
+                await new Promise((r) => setTimeout(r, 16));
+            }
+            if (rtc.channel.readyState !== "open") return;
+            try {
+                rtc.channel.send(
+                    JSON.stringify({
+                        type: "world-bundle-chunk",
+                        xferId,
+                        seq,
+                        total,
+                        data: payload.slice(seq * size, (seq + 1) * size),
+                    })
+                );
+            } catch (err) {
+                this.log(`Welt-Bündel-Transfer abgebrochen: ${err.message}`, "WARN");
+                return;
+            }
+        }
+        this.log(`Welt „${worldId}" in ${total} Stücken über das Mesh an ${peerId.slice(0, 12)}… gesendet`, "INFO");
+    }
+
+    // W16 — ein Welt-Bündel-Stück empfangen + zusammensetzen. Nur Stücke vom
+    // Peer, von dem wir aktiv gepullt haben (pendingBundlePull) — ein fremder
+    // Peer kann keine Stücke in einen laufenden Transfer schmuggeln.
+    _p2pHandleWorldBundleChunk(peerId, msg) {
+        const p2p = this.state.p2p;
+        const pend = p2p.pendingBundlePull;
+        if (!pend || peerId !== pend.peerId) return;
+        const xferId = msg.xferId;
+        const seq = msg.seq;
+        const total = msg.total;
+        if (typeof xferId !== "string" || !Number.isInteger(seq) || !Number.isInteger(total)) return;
+        if (total < 1 || total > 8192 || seq < 0 || seq >= total) return;
+        if (typeof msg.data !== "string") return;
+        let xfer = p2p.bundleXfers.get(xferId);
+        if (!xfer) {
+            xfer = { from: peerId, total, parts: new Array(total).fill(null), received: 0 };
+            p2p.bundleXfers.set(xferId, xfer);
+        }
+        if (xfer.total !== total || xfer.from !== peerId) return;
+        if (xfer.parts[seq] !== null) return; // Duplikat
+        xfer.parts[seq] = msg.data;
+        xfer.received++;
+        if (xfer.received < total) return;
+        // Komplett — zusammensetzen, prüfen, an die Schreib-Seite reichen.
+        p2p.bundleXfers.delete(xferId);
+        p2p.pendingBundlePull = null;
+        let parsed;
+        try {
+            parsed = JSON.parse(xfer.parts.join(""));
+        } catch (err) {
+            this.log(`Welt-Bündel-Transfer korrupt: ${err.message}`, "ERROR");
+            this._renderMeshWorldResult({ ok: false, reason: "unavailable" });
+            return;
+        }
+        // Die Welt, die ankommt, MUSS die sein, die wir angefragt haben — ein
+        // Peer kann keine fremde Welt unter falschem Namen schmuggeln.
+        if (!parsed || typeof parsed !== "object" || parsed.worldId !== pend.worldId) {
+            this.log("Welt-Bündel-Transfer: falsche worldId — verworfen", "WARN");
+            this._renderMeshWorldResult({ ok: false, reason: "unavailable" });
+            return;
+        }
+        this.log(`Welt „${pend.worldId}" über das Mesh empfangen — docke an …`, "INFO");
+        // Die EINE erprobte Schreib-Seite (W15): vendorWorldBundle prüft,
+        // schreibt (save-server) + registriert die Welt sandgesichert. Eine
+        // peer-empfangene Welt ist per Konstruktion ungeprüft → trust:
+        // "sandboxed" (über vendored:true unforgeable erzwungen, V8.71).
+        Promise.resolve(
+            this.vendorWorldBundle({
+                worldId: parsed.worldId,
+                label: parsed.label,
+                desc: parsed.desc,
+                dsl: parsed.dsl,
+                files: parsed.files,
+            })
+        )
+            .then((res) => {
+                if (res && res.ok) {
+                    this.log(`Mesh-Welt „${res.id}" angedockt — durch ein Tor betretbar.`, "INFO");
+                    if (typeof document !== "undefined" && this.renderLibraryUI) this.renderLibraryUI();
+                } else {
+                    this.log(`Mesh-Welt andocken fehlgeschlagen: ${res && res.reason}`, "WARN");
+                }
+                this._renderMeshWorldResult(res);
+            })
+            .catch((err) => this.log(`Mesh-Welt andocken: ${err && err.message}`, "ERROR"));
+    }
+
+    // W16 — der Peer hat die Welt nicht (oder kann sie nicht liefern). Den
+    // laufenden Pull beenden + den Grund anzeigen.
+    _p2pHandleWorldBundleFail(peerId, msg) {
+        const p2p = this.state.p2p;
+        const pend = p2p.pendingBundlePull;
+        if (!pend || peerId !== pend.peerId) return;
+        const worldId = String((msg && msg.worldId) || "").toLowerCase();
+        if (worldId && worldId !== pend.worldId) return;
+        p2p.pendingBundlePull = null;
+        const reason = (msg && msg.reason) || "unavailable";
+        this.log(`Mesh-Welt „${pend.worldId}": Mitspieler kann sie nicht liefern (${reason}).`, "WARN");
+        this._renderMeshWorldResult({ ok: false, reason });
+    }
+
+    // W16 — die „Welt vom Mitspieler holen"-Sektion (Bibliothek-Drawer). P1
+    // ist die schlichte Form: ein worldId-Feld + ein Peer-Dropdown. Der
+    // browsbare Welt-Katalog (Peers annoncieren ihre Bibliothek) ist W16 P2.
+    _renderMeshWorldPeers() {
+        if (typeof document === "undefined") return;
+        const sel = document.getElementById("mesh-world-peer");
+        if (!sel) return;
+        const peers = Array.from(this.state.p2p.peers.keys());
+        const sig = peers.join("|");
+        if (sel.dataset.sig === sig) return; // unverändert — die Auswahl bewahren
+        sel.dataset.sig = sig;
+        const prev = sel.value;
+        sel.innerHTML = "";
+        if (!peers.length) {
+            const o = document.createElement("option");
+            o.value = "";
+            o.textContent = "(kein Mitspieler verbunden)";
+            sel.appendChild(o);
+            return;
+        }
+        for (const pid of peers) {
+            const o = document.createElement("option");
+            o.value = pid;
+            const peer = this.state.p2p.peers.get(pid);
+            // Der Peer-Eintrag trägt den Avatar-Namen als `avatarName` (aus
+            // dem soul-Kanal); ist er noch nicht da, generisch „Mitspieler".
+            o.textContent = (peer && peer.avatarName ? peer.avatarName : "Mitspieler") + " · " + pid.slice(0, 8);
+            sel.appendChild(o);
+        }
+        if (peers.indexOf(prev) >= 0) sel.value = prev;
+    }
+
+    // W16 — das Ergebnis eines Mesh-Welt-Holens anzeigen.
+    _renderMeshWorldResult(res) {
+        if (typeof document === "undefined") return;
+        const status = document.getElementById("mesh-world-status");
+        if (!status) return;
+        if (res && res.ok) {
+            status.textContent = `✓ „${res.label || res.id}" über das Mesh geholt — siehe „Welten" unten.`;
+            status.className = "vendor-status";
+        } else {
+            status.textContent = this._meshWorldReasonText(res ? res.reason : "Fehler");
+            status.className = "vendor-status vendor-status-error";
+        }
+    }
+
+    _meshWorldReasonText(reason) {
+        const map = {
+            invalid_world_id: "Ungültige Welt-id (a-z 0-9 - _, 1-40 Zeichen).",
+            already_have: "Diese Welt hast du schon in deiner Bibliothek.",
+            no_such_peer: "Wähle einen verbundenen Mitspieler aus.",
+            no_channel: "Zu diesem Mitspieler steht keine Mesh-Verbindung.",
+            send_failed: "Die Anfrage konnte nicht gesendet werden.",
+            not_found: "Dieser Mitspieler hat diese Welt nicht.",
+            unavailable: "Der Mitspieler konnte die Welt nicht liefern.",
+        };
+        return map[reason] || `Konnte die Welt nicht über das Mesh holen (${reason || "Fehler"}).`;
+    }
+
+    // W16 — der Knopf-Handler. Liest worldId + Peer aus dem Drawer, löst den
+    // Pull aus; das Ergebnis kommt asynchron über _renderMeshWorldResult.
+    _runMeshWorldGet() {
+        if (typeof document === "undefined") return;
+        const idEl = document.getElementById("mesh-world-id");
+        const peerEl = document.getElementById("mesh-world-peer");
+        const status = document.getElementById("mesh-world-status");
+        if (!idEl || !status) return;
+        const res = this.requestWorldBundleFromPeer(idEl.value, peerEl ? peerEl.value : "");
+        if (res.ok) {
+            status.textContent = `Frage „${res.worldId}" beim Mitspieler an …`;
+            status.className = "vendor-status";
+        } else {
+            this._renderMeshWorldResult(res);
+        }
+    }
+
+    // W16 — die „Welt vom Mitspieler holen"-Sektion verkabeln.
+    meshWorldInitDOM() {
+        if (typeof document === "undefined") return;
+        this._renderMeshWorldPeers();
+        const btn = document.getElementById("mesh-world-get");
+        if (btn && btn.dataset.wired !== "1") {
+            btn.dataset.wired = "1";
+            btn.addEventListener("click", () => this._runMeshWorldGet());
+        }
     }
 
     // ── W7 Phase 3 — LLM-Pool: eine LLM-Stimme über das Mesh teilen ──
@@ -5911,6 +6242,9 @@ class AnazhRealm {
                 statusEl.textContent = `Verbunden (Raum ${room}, ${peerCount} Mitspieler${transport}${voice}).`;
             }
         }
+        // W16 — das Peer-Dropdown der „Welt vom Mitspieler holen"-Sektion
+        // mitziehen, sobald sich die Mitspieler-Liste ändert.
+        this._renderMeshWorldPeers();
         // W7 Phase 2 — Resync-Knopf: nur für einen Guest mit stehendem Mesh
         // sichtbar (er holt die Welt des Hosts frisch).
         const resyncBtn = document.getElementById("p2p-resync");
@@ -29817,6 +30151,8 @@ class AnazhRealm {
         this.translatorInitDOM();
         // W15 Phase 1 — die Auto-Vendor-Sektion („Welt andocken") verkabeln.
         this.vendorInitDOM();
+        // W16 Phase 1 — die „Welt vom Mitspieler holen"-Sektion verkabeln.
+        this.meshWorldInitDOM();
         // Ring 6.5 — Hotbar im DOM rendern. Wird hier einmal aufgesetzt;
         // setHotbarSlot löst ein Re-Render aus.
         this._renderHotbarDOM();
@@ -31432,6 +31768,13 @@ AnazhRealm.P2P_WORLD_CHUNK_SIZE = 16384;
 // denselben Peer. Schützt vor pull-Spam (jeder Pull serialisiert + sendet
 // die ganze Welt — ohne Limit ein DoS-Vektor).
 AnazhRealm.P2P_PULL_COOLDOWN_MS = 5000;
+
+// W16 Phase 1 — Mesh-Welt-Verteilung. Eine vendorte Welt reist peer-to-peer:
+// ihr Bündel wird in P2P_WORLD_CHUNK_SIZE-Stücken über den DataChannel
+// übertragen (Spiegel des W7-P2-world-pull). Mindestabstand zwischen zwei
+// bundle-pull-Antworten an denselben Peer — ein Bündel-Read + Versand ist
+// teuer, ohne Limit ein DoS-Vektor.
+AnazhRealm.P2P_BUNDLE_PULL_COOLDOWN_MS = 5000;
 
 // W7 Phase 3 — LLM-Pool. Ein Peer mit aktivem LLM teilt seine „Stimme",
 // ein schlüsselloser Peer routet Chat-Anfragen über ihn. Sicherheits-

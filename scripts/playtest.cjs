@@ -4651,6 +4651,247 @@ function startSaveServer() {
                 check("W7 P2: Resync-Knopf im DOM", w7p2Results.resyncButtonExists);
             }
 
+            // ### W16 Phase 1 — Mesh-Welt-Verteilung ###
+            // Eine vendorte Welt reist peer-to-peer: ein Mitspieler holt ihr
+            // Bündel über das Mesh (Transport spiegelt W7 P2 world-pull). Tests
+            // prüfen die Datenschicht — Sender, Empfänger, Annahme-Wand,
+            // Rate-Limit, kanal-exklusiv; den echten Zwei-Browser-Transfer
+            // prüft smoke-webrtc.cjs.
+            const w16Results = await page
+                .evaluate(async () => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    const p2p = r.state.p2p;
+                    if (!r.state.customWorlds) r.state.customWorlds = {};
+
+                    out.stateFields =
+                        p2p.bundleXfers instanceof Map &&
+                        p2p.pendingBundlePull === null &&
+                        p2p._bundleServedAt instanceof Map &&
+                        Number.isInteger(r.constructor.P2P_BUNDLE_PULL_COOLDOWN_MS) &&
+                        r.constructor.P2P_BUNDLE_PULL_COOLDOWN_MS > 0;
+                    out.methodsPresent =
+                        typeof r._p2pFetchVendorBundle === "function" &&
+                        typeof r.requestWorldBundleFromPeer === "function" &&
+                        typeof r._p2pHandleWorldBundlePull === "function" &&
+                        typeof r._p2pHandleWorldBundleChunk === "function" &&
+                        typeof r._p2pHandleWorldBundleFail === "function" &&
+                        typeof r._renderMeshWorldPeers === "function" &&
+                        typeof r.meshWorldInitDOM === "function";
+
+                    // requestWorldBundleFromPeer — Validierungs-Pfade.
+                    out.rejectsBadId = r.requestWorldBundleFromPeer("Bad ID!", "x").reason === "invalid_world_id";
+                    r.state.customWorlds["have-w16"] = { id: "have-w16", label: "Da", world: "worlds/have-w16/index.html" };
+                    out.rejectsAlreadyHave = r.requestWorldBundleFromPeer("have-w16", "x").reason === "already_have";
+                    delete r.state.customWorlds["have-w16"];
+                    out.rejectsNoPeer = r.requestWorldBundleFromPeer("fresh-w16", "ghost-peer").reason === "no_such_peer";
+                    r._p2pEnsurePeerEntry("chanless-w16");
+                    out.rejectsNoChannel =
+                        r.requestWorldBundleFromPeer("fresh-w16", "chanless-w16").reason === "no_channel";
+                    r._p2pRemovePeer("chanless-w16");
+
+                    // requestWorldBundleFromPeer — Erfolg: schickt einen
+                    // world-bundle-pull, setzt pendingBundlePull.
+                    const sent = [];
+                    r._p2pEnsurePeerEntry("w16peer");
+                    p2p.rtcPeers.set("w16peer", {
+                        pc: null,
+                        open: true,
+                        channel: { send: (s) => sent.push(s), readyState: "open", bufferedAmount: 0 },
+                    });
+                    const reqRes = r.requestWorldBundleFromPeer("mesh-w16", "w16peer");
+                    out.requestSendsPull =
+                        reqRes.ok === true &&
+                        !!p2p.pendingBundlePull &&
+                        p2p.pendingBundlePull.peerId === "w16peer" &&
+                        p2p.pendingBundlePull.worldId === "mesh-w16" &&
+                        sent.some((s) => {
+                            try {
+                                const m = JSON.parse(s);
+                                return m.type === "world-bundle-pull" && m.worldId === "mesh-w16";
+                            } catch {
+                                return false;
+                            }
+                        });
+                    p2p.pendingBundlePull = null;
+
+                    // _p2pHandleWorldBundlePull — Sender: ein vendortes Bündel
+                    // in Stücken senden. _p2pFetchVendorBundle gestubbt.
+                    const origFetch = r._p2pFetchVendorBundle;
+                    r._p2pFetchVendorBundle = async () => ({
+                        ok: true,
+                        files: [{ path: "index.html", content: "<html><body>w16</body></html>" }],
+                    });
+                    r.state.customWorlds["mesh-send-w16"] = {
+                        id: "mesh-send-w16",
+                        label: "Sende-Welt",
+                        desc: "Test",
+                        dsl: ["sturm"],
+                        world: "worlds/mesh-send-w16/index.html",
+                        vendored: true,
+                        trust: "sandboxed",
+                    };
+                    sent.length = 0;
+                    p2p._bundleServedAt.clear();
+                    await r._p2pHandleWorldBundlePull("w16peer", { type: "world-bundle-pull", worldId: "mesh-send-w16" });
+                    out.senderChunks = sent.some((s) => {
+                        try {
+                            return JSON.parse(s).type === "world-bundle-chunk";
+                        } catch {
+                            return false;
+                        }
+                    });
+                    delete r.state.customWorlds["mesh-send-w16"];
+
+                    // _p2pHandleWorldBundlePull — eine unbekannte Welt → fail.
+                    sent.length = 0;
+                    p2p._bundleServedAt.clear();
+                    await r._p2pHandleWorldBundlePull("w16peer", { type: "world-bundle-pull", worldId: "never-vendored-w16" });
+                    out.senderFailsUnknown = sent.some((s) => {
+                        try {
+                            const m = JSON.parse(s);
+                            return m.type === "world-bundle-fail" && m.reason === "not_found";
+                        } catch {
+                            return false;
+                        }
+                    });
+                    r._p2pFetchVendorBundle = origFetch;
+
+                    // _p2pHandleWorldBundleChunk — Reassembly: ein Test-Bündel
+                    // in 3 Stücken; auf Vollständigkeit an vendorWorldBundle.
+                    const origVendor = r.vendorWorldBundle;
+                    let vendored = null;
+                    r.vendorWorldBundle = async (opts) => {
+                        vendored = opts;
+                        return { ok: true, id: opts.worldId, label: opts.label };
+                    };
+                    const payload = JSON.stringify({
+                        worldId: "mesh-rx-w16",
+                        label: "Empfangs-Welt",
+                        desc: "d",
+                        dsl: ["ruhe"],
+                        files: [{ path: "index.html", content: "<html>rx</html>" }],
+                    });
+                    const pa = payload.slice(0, 12);
+                    const pb = payload.slice(12, 28);
+                    const pc = payload.slice(28);
+                    p2p.pendingBundlePull = { peerId: "w16peer", worldId: "mesh-rx-w16" };
+                    p2p.bundleXfers.clear();
+                    const bxid = "bx-test-1";
+                    r._p2pHandleWorldBundleChunk("w16peer", { type: "world-bundle-chunk", xferId: bxid, seq: 0, total: 3, data: pa });
+                    out.chunkIncompleteAfterOne = p2p.bundleXfers.has(bxid) && vendored === null;
+                    r._p2pHandleWorldBundleChunk("w16peer", { type: "world-bundle-chunk", xferId: bxid, seq: 2, total: 3, data: pc });
+                    r._p2pHandleWorldBundleChunk("w16peer", { type: "world-bundle-chunk", xferId: bxid, seq: 0, total: 3, data: pa });
+                    out.chunkDuplicateIgnored = p2p.bundleXfers.get(bxid).received === 2;
+                    r._p2pHandleWorldBundleChunk("w16peer", { type: "world-bundle-chunk", xferId: bxid, seq: 1, total: 3, data: pb });
+                    out.chunkReassemblyVendors =
+                        vendored !== null &&
+                        vendored.worldId === "mesh-rx-w16" &&
+                        Array.isArray(vendored.files) &&
+                        vendored.files.length === 1;
+                    out.chunkClearedOnComplete = !p2p.bundleXfers.has(bxid) && p2p.pendingBundlePull === null;
+
+                    // Annahme-Wand: ein Stück vom FALSCHEN Peer wird verworfen.
+                    p2p.pendingBundlePull = { peerId: "w16peer", worldId: "mesh-rx-w16" };
+                    p2p.bundleXfers.clear();
+                    r._p2pHandleWorldBundleChunk("evil-peer", { type: "world-bundle-chunk", xferId: "bx-evil", seq: 0, total: 1, data: "{}" });
+                    out.chunkRejectsWrongPeer = !p2p.bundleXfers.has("bx-evil");
+
+                    // Annahme-Wand: ein Stück ohne laufenden Pull wird verworfen.
+                    p2p.pendingBundlePull = null;
+                    p2p.bundleXfers.clear();
+                    r._p2pHandleWorldBundleChunk("w16peer", { type: "world-bundle-chunk", xferId: "bx-nopend", seq: 0, total: 1, data: "{}" });
+                    out.chunkRejectsWhenNotPending = !p2p.bundleXfers.has("bx-nopend");
+
+                    // Eine falsche worldId im Bündel wird verworfen (ein Peer
+                    // kann keine fremde Welt unter falschem Namen schmuggeln).
+                    vendored = null;
+                    p2p.pendingBundlePull = { peerId: "w16peer", worldId: "asked-w16" };
+                    p2p.bundleXfers.clear();
+                    const wrongPayload = JSON.stringify({ worldId: "smuggled-w16", files: [] });
+                    r._p2pHandleWorldBundleChunk("w16peer", { type: "world-bundle-chunk", xferId: "bx-wrong", seq: 0, total: 1, data: wrongPayload });
+                    out.chunkRejectsWrongWorldId = vendored === null;
+                    r.vendorWorldBundle = origVendor;
+
+                    // _p2pHandleWorldBundleFail — den laufenden Pull beenden.
+                    p2p.pendingBundlePull = { peerId: "w16peer", worldId: "fail-w16" };
+                    r._p2pHandleWorldBundleFail("w16peer", { worldId: "fail-w16", reason: "not_found" });
+                    out.failEndsPull = p2p.pendingBundlePull === null;
+
+                    // world-bundle-pull ist kanal-exklusiv: der WS-Pfad
+                    // (p2pHandleMessage) dispatcht ihn NICHT, der Kanal-Pfad
+                    // (_p2pHandleChannelMessage) schon.
+                    let pullSpy = 0;
+                    const origPull = r._p2pHandleWorldBundlePull;
+                    r._p2pHandleWorldBundlePull = () => {
+                        pullSpy++;
+                    };
+                    r.p2pHandleMessage(JSON.stringify({ type: "world-bundle-pull", peerId: "w16peer", worldId: "y" }));
+                    out.bundlePullNotOnWsPath = pullSpy === 0;
+                    r._p2pHandleChannelMessage("w16peer", JSON.stringify({ type: "world-bundle-pull", worldId: "y" }));
+                    out.bundlePullOnChannelPath = pullSpy === 1;
+                    r._p2pHandleWorldBundlePull = origPull;
+
+                    // UI: die „Welt vom Mitspieler holen"-Sektion im DOM.
+                    out.uiInDom =
+                        !!document.getElementById("mesh-world-id") &&
+                        !!document.getElementById("mesh-world-peer") &&
+                        !!document.getElementById("mesh-world-get") &&
+                        !!document.getElementById("mesh-world-status");
+
+                    // _renderMeshWorldPeers füllt das Peer-Dropdown.
+                    const sel = document.getElementById("mesh-world-peer");
+                    if (sel) sel.dataset.sig = "";
+                    r._renderMeshWorldPeers();
+                    out.peerDropdownFilled = !!sel && sel.querySelector('option[value="w16peer"]') !== null;
+
+                    // Cleanup
+                    r._p2pRemovePeer("w16peer");
+                    p2p.rtcPeers.clear();
+                    p2p.bundleXfers.clear();
+                    p2p.pendingBundlePull = null;
+                    p2p._bundleServedAt.clear();
+                    delete r.state.customWorlds["mesh-send-w16"];
+                    delete r.state.customWorlds["have-w16"];
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!w16Results || w16Results.error) {
+                check(
+                    "W16 Phase 1: Mesh-Welt-Verteilung erreichbar",
+                    false,
+                    (w16Results && w16Results.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check("W16: state.p2p trägt bundleXfers/pendingBundlePull + P2P_BUNDLE_PULL_COOLDOWN_MS", w16Results.stateFields);
+                check("W16: alle Mesh-Welt-Methoden auf der Klasse", w16Results.methodsPresent);
+                check("W16: requestWorldBundleFromPeer lehnt eine ungültige Welt-id ab", w16Results.rejectsBadId);
+                check("W16: requestWorldBundleFromPeer lehnt eine schon vorhandene Welt ab", w16Results.rejectsAlreadyHave);
+                check("W16: requestWorldBundleFromPeer lehnt einen unbekannten Peer ab", w16Results.rejectsNoPeer);
+                check("W16: requestWorldBundleFromPeer lehnt einen Peer ohne Mesh-Kanal ab", w16Results.rejectsNoChannel);
+                check("W16: requestWorldBundleFromPeer schickt einen world-bundle-pull + setzt pendingBundlePull", w16Results.requestSendsPull);
+                check("W16: _p2pHandleWorldBundlePull schickt ein vendortes Bündel in Stücken", w16Results.senderChunks);
+                check("W16: _p2pHandleWorldBundlePull schickt world-bundle-fail für eine unbekannte Welt", w16Results.senderFailsUnknown);
+                check("W16: ein Bündel-Stück allein lässt den Transfer unvollständig", w16Results.chunkIncompleteAfterOne);
+                check("W16: ein doppeltes Bündel-Stück wird nicht doppelt gezählt", w16Results.chunkDuplicateIgnored);
+                check("W16: vollständige Stücke werden zusammengesetzt + an vendorWorldBundle gereicht", w16Results.chunkReassemblyVendors);
+                check("W16: der Bündel-Puffer + pendingBundlePull werden nach Abschluss geräumt", w16Results.chunkClearedOnComplete);
+                check("W16: ein Stück vom falschen Peer wird verworfen", w16Results.chunkRejectsWrongPeer);
+                check("W16: ein Stück ohne laufenden Pull wird verworfen", w16Results.chunkRejectsWhenNotPending);
+                check("W16: eine falsche worldId im Bündel wird verworfen (kein vendorWorldBundle)", w16Results.chunkRejectsWrongWorldId);
+                check("W16: _p2pHandleWorldBundleFail beendet den laufenden Pull", w16Results.failEndsPull);
+                check(
+                    "W16: world-bundle-pull ist kanal-exklusiv (nicht über den WS-Pfad)",
+                    w16Results.bundlePullNotOnWsPath && w16Results.bundlePullOnChannelPath
+                );
+                check(
+                    "W16: die „Welt vom Mitspieler holen\"-Sektion + Peer-Dropdown im DOM",
+                    w16Results.uiInDom && w16Results.peerDropdownFilled
+                );
+            }
+
             // ### Multi-User-Bau-Sync — Strukturen synchron platzieren + abbauen ###
             // confirmBuild + tryMouseBreak broadcasten jetzt; eine geteilte
             // string-archId macht eine spieler-gebaute Struktur peer-über-
@@ -21424,10 +21665,20 @@ function startSaveServer() {
                             farMountRes && farMountRes.ok === false && farMountRes.reason === "none_in_range";
                         r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10b3_far");
 
-                        // Zoom-Test
+                        // Zoom-Test — deterministisch. _hasMagnifyingInSight
+                        // raycastet gegen ALLE Architekturen mit magnifying-
+                        // Affordance; eine autonom gespawnte transparent-
+                        // axiale Geode kann zufällig im Kamera-Strahl liegen
+                        // und die „kein Target"-Prüfung kippen. Für diese
+                        // Prüfung die Architektur-Liste kurz leeren + danach
+                        // wiederherstellen (V8.57-Lehre: ein Test ist erst
+                        // deterministisch, wenn ALLE seine Eingaben es sind).
                         const initialFov = r.state.camera.fov;
                         out.zoomInactiveInitial = !r.state._zoomActive;
+                        const zoomArchBackup = r.state.architectures;
+                        r.state.architectures = [];
                         const noTargetRes = r.setZoomActive(true);
+                        r.state.architectures = zoomArchBackup;
                         out.zoomFailsWithoutTarget =
                             noTargetRes === false && !r.state._zoomActive && r.state.camera.fov === initialFov;
 
