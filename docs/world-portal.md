@@ -2,7 +2,7 @@
 
 Konzept-Dokument für die Wellen 12-14.
 
-Stand: 17.05.2026 (V8.52). Diese Doku ist **keine Implementierungs-Spec**, sondern ein **Vision-Anker**. Sie hält die Frage offen: was wird AnazhRealm, wenn der Spieler nicht nur Welten innerhalb einer Engine baut, sondern durch Welten zwischen Engines geht?
+Stand: 18.05.2026 (laufend aktualisiert; ursprünglich bei V8.52 geschrieben — die Umsetzungs-Noten unten reichen bis V8.70). Diese Doku ist **keine Implementierungs-Spec**, sondern ein **Vision-Anker**. Sie hält die Frage offen: was wird AnazhRealm, wenn der Spieler nicht nur Welten innerhalb einer Engine baut, sondern durch Welten zwischen Engines geht?
 
 > **Umsetzungsstand (V8.53)** — W12 **Phase 1 + 2 + 3 sind live**. Phase 1 (V8.51): das Portal-Skelett — emergente Rolle „portal", sandboxed iframe, Betreten/Pause/Rückkehr. Phase 2 (V8.52): das Tor ist real — zwei fremde Engines docken an (die Strom-Welt `three-fluid-fx`, die Terrain-Welt `three.terrain.js`), je in `worlds/<name>/` mit eigener Three.js-Version gebündelt; eine generische DSL-Brücke trägt alle Welten. Phase 3 (V8.53): die Brücke wird **beidseitig** — eine Sub-Welt meldet Welt-Ereignisse zurück ins Heimat-Journal (`{type:"event"}`, geloggt, nie ausgeführt — die Asymmetrie ist die Sicherheits-Wand), und jede Welt bringt ihr eigenes `manifest.json` mit, das sie im `ready`-Handshake ankündigt. **Drei-Stufen-Klarheit, jetzt vollständig**: kein Manifest → „ausgestellt" (spielbar, stumm zur DSL); externes `portalMeta.dsl` → „übersetzt"; die Welt meldet ihr eigenes Manifest → „nativ" (gewinnt). Die `WORLD_REGISTRY` + `aimBlueprintAtWorld` machen das Portal-Zielen spieler-erreichbar. **KI-Übersetzer (W14-Horizont) — vollständig (V8.68 + V8.69)**: ein LLM dockt eine fremde Welt automatisch an die Bibliothek an. Phase 1 (V8.68) übersetzt sie in ein Portal-Manifest; Phase 2 (V8.69) gibt ihr einen Körper — der LLM übersetzt die Welt in eine deklarative Szene (Daten, kein Code), der generische Renderer `worlds/translated/` baut sie auf, die Welt wird betretbar. Statt einen fremden Adapter zu vendorn wird die Welt in AnazhRealms eigene Sprache wiedergeboren — die Bibliothek von Alexandria, die nicht brennt. **Untrusted-Welt-Tor (V8.70)**: eine Welt trägt eine Vertrauensstufe (`portalMeta.trust`) — `sandboxed` → das Portal-iframe läuft `allow-scripts` ALLEIN (null-origin): eine echte, ungeprüfte fremde Engine läuft voll, kann AnazhRealm aber nicht berühren. `worlds/schwarm/` (eine eigenständige 2D-Boids-Engine) ist der lebende Beweis. Der vollständige Wellen-Eintrag steht in `CLAUDE.md` V8.53 (W12) bzw. V8.68/V8.69 (KI-Übersetzer) bzw. V8.70 (Untrusted-Tor).
 
@@ -207,7 +207,7 @@ Das ist die **Energy-Verschiebung nach Nutzen** die du beschrieben hast. Wer ein
 
 ## 6. Roadmap-Sequenz
 
-Stand V8.58 — die Sequenz bis zur Bibliothek:
+Stand V8.70 — die Sequenz bis zur Bibliothek + der Beginn des Fremd-Engine-Bogens:
 
 | Welle | Inhalt | Status |
 |---|---|---|
@@ -216,10 +216,10 @@ Stand V8.58 — die Sequenz bis zur Bibliothek:
 | **11 ext.** | Substanz-Rolle (Identität emergiert aus Substanz) | ✅ live (V8.35) |
 | **12** | **Welt-Portal** (Rolle „portal" + Sub-Engine-Adapter + DSL-Brücke) | ✅ live (V8.51-V8.53) |
 | **13** | **Vibe-Pass** (ed25519-Keypair + Bauplan-Signaturen + Avatar-Identity) | ✅ live (V8.54-V8.56) |
-| **14** | **Bibliothek** (Welt-Registry + Browse-UI + Auto-Portal-Bauplan) | ✅ **komplett (V8.58/V8.60/V8.61)** — browsbarer „Bibliothek"-Tab + „Portal holen" (P1), signierte Welt-Manifeste + „signiert von <Autor>" + W13 V2 (P2), fremde Welt-Manifeste exportieren/importieren — die Bibliothek wird ein wachsender Index (P3). KI-Übersetzer als Horizont. |
+| **14** | **Bibliothek** (Welt-Registry + Browse-UI + Auto-Portal-Bauplan) | ✅ **komplett (V8.58/V8.60/V8.61)** — browsbarer „Bibliothek"-Tab + „Portal holen" (P1), signierte Welt-Manifeste + „signiert von <Autor>" + W13 V2 (P2), fremde Welt-Manifeste exportieren/importieren — die Bibliothek wird ein wachsender Index (P3). KI-Übersetzer ✅ (V8.68/V8.69). |
 | **7** | **Compute-Sharing** (WebRTC-Mesh als Server-Layer für Welt-Portale) | ✅ **komplett (V8.62-V8.66)** — echte WebRTC-DataChannels (P1), Welt-Snapshot mesh-nativ chunked (P2), LLM-Pool über Peers (P3), Public-Lobby (P4) + Multi-User-Bau-/Kreatur-Sync |
 
-Welle 12 war das **Proof of Concept** (bewiesen). Welle 13 ✅ + 14 ✅ + 7 ✅ sind die **Skalierung zur Bibliothek** — alle gebaut. Der **KI-Übersetzer** ist mit Phase 1 (V8.68) + Phase 2 (V8.69) vollständig: eine frei beschriebene fremde Welt dockt automatisch an, browsbar UND betretbar.
+Welle 12 war das **Proof of Concept** (bewiesen). Welle 13 ✅ + 14 ✅ + 7 ✅ sind die **Skalierung zur Bibliothek** — alle gebaut. Der **KI-Übersetzer** ist mit Phase 1 (V8.68) + Phase 2 (V8.69) vollständig: eine frei beschriebene fremde Welt dockt automatisch an, browsbar UND betretbar. **V8.70 — das Untrusted-Welt-Tor** — lässt zudem eine echte, ungeprüfte fremde Engine null-origin sandgesichert laufen (`worlds/schwarm/`). Offen ist der Rest des Fremd-Engine-Bogens: der Auto-Vendor-Pfad, die Mesh-Welt-Verteilung + die Multiplayer-Sub-Welten — detailliert in `roadmap.md` §3 („Der Fremd-Engine-Bogen, W15–W17").
 
 ---
 
