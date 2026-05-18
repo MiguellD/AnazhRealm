@@ -143,12 +143,74 @@ const PORTAL_TRANSPORT_SHIM = `(function(){
   window.WebSocket=Shim;
 })();`;
 
-// W17 Phase A — den Shim als erstes `<script>` in `<head>` einsetzen (vor
-// einer etwaigen Welt-CSP). Fehlt `<head>`, dann nach `<html>`; fehlt das
-// auch, vorangestellt. Die Welt-Dateien auf der Platte bleiben unberührt —
-// der Shim lebt nur in der ausgelieferten Antwort.
-function injectTransportShim(html) {
-    const tag = "<script>" + PORTAL_TRANSPORT_SHIM + "</" + "script>";
+// W17 Phase B-JS-Compute — der Server-Shim. Eine JS-Compute-Welt hat eine
+// echte autoritative Server-JS-Logik (kein blosser Relay). Beim Compute-Host
+// läuft sie in einem zweiten, verborgenen null-origin-iframe (`?anazh-server=1`);
+// dieser Shim stellt der Server-JS ein `WebSocketServer`-Global bereit (der
+// `ws`-Bibliothek nachempfunden): `new WebSocketServer()`, `.on("connection",
+// sock => …)`, je Verbindung `sock.on("message")`/`sock.send()`. Statt echter
+// Sockets `postMessage`t er `srv-*`-Envelopes an AnazhRealm (den Host), das
+// den Verkehr übers W7-Mesh routet. Der Server-Code läuft null-origin
+// sandgesichert — er kann AnazhRealms State NICHT berühren (die V8.70-Sandbox
+// ist die Wand). Envelopes, die vor `new WebSocketServer()` ankommen, werden
+// gepuffert + nachgereicht. AnazhRealm-geschriebener, vertrauenswürdiger Code.
+const PORTAL_SERVER_SHIM = `(function(){
+  if(window.__anazhServerShim)return;window.__anazhServerShim=true;
+  window.__anazhRole="server";
+  var servers=[],conns={},buffer=[];
+  function Sock(id){this.id=id;this.readyState=1;this._lis={};this.onmessage=this.onclose=null;}
+  Sock.prototype.__emit=function(t,d){
+    var h=this["on"+t];if(typeof h==="function"){try{h.call(this,d);}catch(e){}}
+    var ls=this._lis[t];if(ls)for(var i=0;i<ls.length;i++){try{ls[i].call(this,d);}catch(e){}}
+  };
+  Sock.prototype.on=function(t,fn){(this._lis[t]=this._lis[t]||[]).push(fn);return this;};
+  Sock.prototype.send=function(data){
+    if(this.readyState!==1)return;
+    parent.postMessage({__anazhNet:true,kind:"srv-send",conn:this.id,data:data},"*");
+  };
+  Sock.prototype.close=function(){
+    if(this.readyState===3)return;this.readyState=3;
+    parent.postMessage({__anazhNet:true,kind:"srv-close-req",conn:this.id},"*");
+  };
+  function deliver(m){
+    var s=conns[m.conn];
+    if(m.kind==="srv-open"){
+      if(s)return;s=new Sock(m.conn);conns[m.conn]=s;
+      for(var i=0;i<servers.length;i++){servers[i].clients.add(s);servers[i].__emit("connection",s);}
+    }else if(m.kind==="srv-recv"){
+      if(s)s.__emit("message",m.data);
+    }else if(m.kind==="srv-close"){
+      if(s){delete conns[m.conn];s.readyState=3;
+        for(var j=0;j<servers.length;j++)servers[j].clients.delete(s);
+        s.__emit("close");}
+    }
+  }
+  window.addEventListener("message",function(ev){
+    var m=ev.data;if(!m||m.__anazhNet!==true)return;
+    if(m.kind!=="srv-open"&&m.kind!=="srv-recv"&&m.kind!=="srv-close")return;
+    if(servers.length===0){buffer.push(m);return;}
+    deliver(m);
+  });
+  function WSS(){
+    this._lis={};this.clients=new Set();servers.push(this);
+    var b=buffer;buffer=[];for(var i=0;i<b.length;i++)deliver(b[i]);
+  }
+  WSS.prototype.on=function(t,fn){(this._lis[t]=this._lis[t]||[]).push(fn);return this;};
+  WSS.prototype.__emit=function(t,a){
+    var h=this["on"+t];if(typeof h==="function"){try{h.call(this,a);}catch(e){}}
+    var ls=this._lis[t];if(ls)for(var i=0;i<ls.length;i++){try{ls[i].call(this,a);}catch(e){}}
+  };
+  window.WebSocketServer=WSS;
+})();`;
+
+// W17 — einen Shim als erstes `<script>` in `<head>` einsetzen (vor einer
+// etwaigen Welt-CSP). Fehlt `<head>`, dann nach `<html>`; fehlt das auch,
+// vorangestellt. Die Welt-Dateien auf der Platte bleiben unberührt — der
+// Shim lebt nur in der ausgelieferten Antwort. Trägt den Transport-Shim
+// (Phase A — `?anazh-shim=1`) ODER den Server-Shim (Phase B-JS-Compute —
+// `?anazh-server=1`); EINE Injektions-Naht für beide.
+function injectShimScript(html, shimCode) {
+    const tag = "<script>" + shimCode + "</" + "script>";
     let m = html.match(/<head[^>]*>/i);
     if (!m) m = html.match(/<html[^>]*>/i);
     if (!m) return tag + html;
@@ -702,11 +764,14 @@ function sendStaticFile(req, res) {
         return;
     }
 
-    // W17 Phase A — Multiplayer-Portale laden die Welt-`index.html` mit dem
-    // Marker `?anazh-shim=1` (von `_buildPortalOverlay` angehängt). Trägt eine
-    // HTML-Anfrage unter `worlds/` diesen Marker, wird der Transport-Shim
-    // injiziert. Der Marker steht in der Query — `req.url` VOR dem Strip lesen.
-    const wantShim = /[?&]anazh-shim=1(?:&|$)/.test(req.url || "") && /^\/worlds\/[\w./-]+\.html?$/i.test(urlPath);
+    // W17 — Multiplayer-Portale laden die Welt-`index.html` mit einem Marker
+    // (von `_buildPortalOverlay` angehängt): `?anazh-shim=1` für den Client-
+    // Transport-Shim (Phase A), `?anazh-server=1` für den Server-Shim (Phase
+    // B-JS-Compute — der verborgene Server-Kontext beim Compute-Host). Der
+    // Marker steht in der Query — `req.url` VOR dem Strip lesen.
+    const isWorldHtml = /^\/worlds\/[\w./-]+\.html?$/i.test(urlPath);
+    const wantShim = /[?&]anazh-shim=1(?:&|$)/.test(req.url || "") && isWorldHtml;
+    const wantServer = /[?&]anazh-server=1(?:&|$)/.test(req.url || "") && isWorldHtml;
 
     fs.readFile(filePath, (err, content) => {
         if (err) {
@@ -716,8 +781,11 @@ function sendStaticFile(req, res) {
         const ext = path.extname(filePath).toLowerCase();
         const contentType = MIME_TYPES[ext] || "application/octet-stream";
         let body = content;
-        if (wantShim && (ext === ".html" || ext === ".htm")) {
-            body = Buffer.from(injectTransportShim(content.toString("utf8")), "utf8");
+        if ((wantShim || wantServer) && (ext === ".html" || ext === ".htm")) {
+            // Server-Shim hat Vorrang (die zwei Marker sind in der Praxis
+            // exklusiv — der Host baut zwei iframes mit je einem Marker).
+            const shim = wantServer ? PORTAL_SERVER_SHIM : PORTAL_TRANSPORT_SHIM;
+            body = Buffer.from(injectShimScript(content.toString("utf8"), shim), "utf8");
         }
         res.writeHead(200, {
             "Content-Type": contentType,
