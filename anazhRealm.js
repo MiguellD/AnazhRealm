@@ -7109,19 +7109,22 @@ class AnazhRealm {
         // Ambient: zwei sehr leise Sägezahn-Oszillatoren, leicht verstimmt
         // → langsame Schwebung. LFO auf den Tiefpass-Filter macht das Ganze
         // atmen statt zu stehen.
+        // V8.86 — der Drone ist eine LEISE Grundierung unter der Lofi-
+        // Harmonie (W4 V3), nicht der Träger der Musik: Dreieck statt
+        // Sägezahn (weich statt buzzig-intensiv), Gain 0.07 statt 0.15.
         const filter = ctx.createBiquadFilter();
         filter.type = "lowpass";
         filter.frequency.value = 600;
         filter.Q.value = 0.7;
 
         const ambientGain = ctx.createGain();
-        ambientGain.gain.value = 0.15;
+        ambientGain.gain.value = 0.07;
 
         const osc1 = ctx.createOscillator();
-        osc1.type = "sawtooth";
+        osc1.type = "triangle";
         osc1.frequency.value = 110;
         const osc2 = ctx.createOscillator();
-        osc2.type = "sawtooth";
+        osc2.type = "triangle";
         osc2.frequency.value = 111.5;
 
         osc1.connect(filter);
@@ -7132,7 +7135,7 @@ class AnazhRealm {
         const lfo = ctx.createOscillator();
         lfo.frequency.value = 0.08;
         const lfoGain = ctx.createGain();
-        lfoGain.gain.value = 250;
+        lfoGain.gain.value = 140; // V8.86 — sanfterer Filter-Atem (war 250)
         lfo.connect(lfoGain);
         lfoGain.connect(filter.frequency);
 
@@ -7365,8 +7368,9 @@ class AnazhRealm {
         const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
         const angle = t * Math.PI * 2 - Math.PI / 2;
         const sunHeight = Math.max(0, Math.sin(angle)); // 0=Nacht, 1=Mittag
-        // Gain: Nacht 0.075 (halb so laut), Mittag 0.15 (Original)
-        const targetGain = 0.075 + 0.075 * sunHeight;
+        // V8.86 — Gain: Nacht 0.035, Mittag 0.07 (leise Grundierung unter
+        // der Lofi-Harmonie; war 0.075..0.15, als der Drone die Musik trug).
+        const targetGain = 0.035 + 0.035 * sunHeight;
         const nowCtx = ctx.currentTime;
         const ag = s.ambient.ambientGain;
         try {

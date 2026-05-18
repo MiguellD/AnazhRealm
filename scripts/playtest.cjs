@@ -24714,6 +24714,13 @@ function startSaveServer() {
                     out.initOk = initOk === true && s.enabled === true && !!s.ctx;
                     out.hasAmbient =
                         !!s.ambient && !!s.ambient.osc1 && !!s.ambient.osc2 && !!s.ambient.lfo && !!s.ambient.filter;
+                    // V8.86 — der Drone ist eine leise Grundierung: weiches
+                    // Dreieck (kein buzzig-intensiver Sägezahn), Gain ≤ 0.1.
+                    out.droneIsSoft =
+                        !!s.ambient &&
+                        s.ambient.osc1.type === "triangle" &&
+                        s.ambient.osc2.type === "triangle" &&
+                        s.ambient.ambientGain.gain.value <= 0.1;
                     out.hasWeather = !!s.weather && !!s.weather.noise && !!s.weather.gain;
 
                     // (b) Wetter-Layer-Gain folgt state.weather
@@ -24766,6 +24773,7 @@ function startSaveServer() {
             } else {
                 check("Ring 4: initSymphony aktiviert Audio-Pipeline", ring4Results.initOk);
                 check("Ring 4: Ambient-Layer hat alle Nodes (osc1+osc2+lfo+filter)", ring4Results.hasAmbient);
+                check("V8.86: Ambient-Drone ist leise Grundierung (Dreieck, Gain ≤ 0.1)", ring4Results.droneIsSoft);
                 check("Ring 4: Wetter-Layer hat Noise-Source + Gain", ring4Results.hasWeather);
                 check("Ring 4: symphonyTick ist idempotent bei gleichem Wetter", ring4Results.weatherTickIdempotent);
                 check(
